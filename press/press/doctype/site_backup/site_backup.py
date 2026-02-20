@@ -577,3 +577,96 @@ def process_deactivate_site_job_update(job: AgentJob):
 
 def on_doctype_update():
 	frappe.db.add_index("Site Backup", ["files_availability", "job"])
+<<<<<<< HEAD
+=======
+
+
+def _create_site_backup_from_agent_job(job: "AgentJob"):
+	"""
+	Create Site Backup and Remote File records from 'Archive Site' or 'Uninstall App From Site' agent job's response.
+	"""
+	try:
+		from press.press.doctype.site_backup.site_backup import track_offsite_backups
+
+		if (job.job_type not in ["Archive Site", "Uninstall App from Site"]) or not job.data:
+			return
+
+		job_data = json.loads(job.data)
+		backup_data = job_data.get("backups", {})
+		offsite_backup_data = job_data.get("offsite", {})
+
+		if not backup_data or not offsite_backup_data:
+			return
+
+		if not _check_backup_steps_status(job.name):
+			return
+
+		(
+			remote_database,
+			remote_config_file,
+			remote_public,
+			remote_private,
+		) = track_offsite_backups(job.site, backup_data, offsite_backup_data)
+
+		site_server = frappe.db.get_value("Site", job.site, "server")
+		site_backup = frappe.get_doc(
+			{
+				"doctype": "Site Backup",
+				"site": job.site,
+				"server": site_server,
+				"status": "Success",
+				"with_files": True,
+				"offsite": True,
+				"job": job.name,
+				"files_availability": "Available",
+				"database_size": backup_data["database"]["size"],
+				"database_url": backup_data["database"]["url"],
+				"database_file": backup_data["database"]["file"],
+				"remote_database_file": remote_database,
+			}
+		)
+
+		if "site_config" in backup_data:
+			site_backup.config_file_size = backup_data["site_config"]["size"]
+			site_backup.config_file_url = backup_data["site_config"]["url"]
+			site_backup.config_file = backup_data["site_config"]["file"]
+			site_backup.remote_config_file = remote_config_file
+
+		if "private" in backup_data and "public" in backup_data:
+			site_backup.private_size = backup_data["private"]["size"]
+			site_backup.private_url = backup_data["private"]["url"]
+			site_backup.private_file = backup_data["private"]["file"]
+			site_backup.remote_private_file = remote_private
+
+			site_backup.public_size = backup_data["public"]["size"]
+			site_backup.public_url = backup_data["public"]["url"]
+			site_backup.public_file = backup_data["public"]["file"]
+			site_backup.remote_public_file = remote_public
+
+		site_backup.flags.skip_backup_after_insert = True
+		site_backup.insert(ignore_permissions=True)
+	except Exception as e:
+		frappe.log_error(
+			f"Failed to create Site Backup record from {job.job_type} agent job: {e!s}",
+			reference_doctype="Agent Job",
+			reference_name=job.name,
+		)
+
+
+def _check_backup_steps_status(agent_job: str) -> bool:
+	"""
+	Check if Backup Site and Upload Site Backup to S3 steps both succeeded.
+	"""
+	try:
+		steps = frappe.get_all(
+			"Agent Job Step",
+			filters={
+				"agent_job": agent_job,
+				"step_name": ("in", ["Backup Site", "Upload Site Backup to S3"]),
+				"status": "Success",
+			},
+		)
+		return len(steps) == 2
+	except Exception:
+		return False
+>>>>>>> b1e201720 (fix: Move site backup deletion to process_archive_site_job_update)

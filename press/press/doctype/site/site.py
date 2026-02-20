@@ -1564,15 +1564,6 @@ class Site(Document, TagHelpers):
 		)
 
 		self.db_set("host_name", None)
-
-		self.delete_physical_backups()
-		self.delete_offsite_backups()
-		frappe.db.set_value(
-			"Site Backup",
-			{"site": self.name, "offsite": False},
-			"files_availability",
-			"Unavailable",
-		)
 		self.disable_subscription()
 		self.disable_marketplace_subscriptions()
 
@@ -4207,7 +4198,24 @@ def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 		)
 		update_finished_backup_restoration_test(job.site, updated_status)
 		if updated_status == "Archived":
+<<<<<<< HEAD
 			site_cleanup_after_archive(job.site)
+=======
+			from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
+
+			site_cleanup_after_archive(job.site)
+			_create_site_backup_from_agent_job(job)
+
+			site = Site("Site", job.site)
+			site.delete_physical_backups()
+			site.delete_offsite_backups()
+			frappe.db.set_value(
+				"Site Backup",
+				{"site": job.site, "offsite": False},
+				"files_availability",
+				"Unavailable",
+			)
+>>>>>>> b1e201720 (fix: Move site backup deletion to process_archive_site_job_update)
 
 
 def process_install_app_site_job_update(job):
