@@ -202,7 +202,7 @@ scheduler_events = {
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 		"press.press.doctype.team.team.check_budget_alerts",
 		"press.press.doctype.site.site.archive_creation_failed_sites",
-		"press.press.doctype.site.site.cleanup_archived_site_backups",
+		"press.press.doctype.site_backup.site_backup.cleanup_archived_site_backups",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
