@@ -233,8 +233,7 @@ class TestSiteBackup(FrappeTestCase):
 		self.assertTrue(self.site_backup.remote_public_file)
 		self.assertTrue(self.site_backup.remote_private_file)
 		self.assertTrue(self.site_backup.remote_config_file)
-<<<<<<< HEAD
-=======
+
 
 	def test_archiving_site_with_offsite_backup_creates_site_backup_record(self):
 		"""
@@ -350,4 +349,3 @@ class TestSiteBackup(FrappeTestCase):
 			self.assertEqual(remote_file_doc.site, self.site.name)
 			self.assertIsNotNone(remote_file_doc.file_path)
 			self.assertIsNotNone(remote_file_doc.file_name)
->>>>>>> 1f70f6b05 (test: Remove extra db call)
