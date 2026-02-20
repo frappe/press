@@ -20,6 +20,9 @@ from press.press.doctype.server.test_server import (
 	create_test_proxy_server,
 	create_test_server,
 )
+from press.press.doctype.virtual_machine.test_virtual_machine import (
+	create_test_virtual_machine,
+)
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.utils.test import foreground_enqueue_doc
 
@@ -203,6 +206,9 @@ class TestIncidentInvestigator(FrappeTestCase):
 		cls.server = create_test_server(
 			proxy_server=cls.proxy_server.name, database_server=cls.database_server.name
 		)
+		cls.virtual_machine = create_test_virtual_machine()
+		cls.server.virtual_machine = cls.virtual_machine.name
+		cls.server.save()
 
 	@patch.object(IncidentInvestigator, "after_insert", Mock())
 	def test_investigation_creation_on_incident_creation(self):
@@ -255,11 +261,16 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_likely_cause)
 
 		self.assertEqual(investigator.status, "Completed")
-		self.assertEqual(len(investigator.action_steps), 2)
+		self.assertEqual(len(investigator.action_steps), 4)  # Investigate benches memory as well
 
 		self.assertListEqual(
 			[step.method_name for step in investigator.action_steps],
-			["capture_process_list", "initiate_database_reboot"],
+			[
+				"capture_process_list",
+				"initiate_database_reboot",
+				"get_bench_memory_usage_data",
+				"get_oom_kill_events",
+			],
 		)
 
 		self.assertEqual(
@@ -285,11 +296,16 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_likely_cause)
 
 		# Since database has high memory and high cpu add database action step
-		self.assertEqual(len(investigator.action_steps), 2)
+		self.assertEqual(len(investigator.action_steps), 4)  # App server actions
 
 		self.assertListEqual(
 			[step.method_name for step in investigator.action_steps],
-			["capture_process_list", "initiate_database_reboot"],
+			[
+				"capture_process_list",
+				"initiate_database_reboot",
+				"get_bench_memory_usage_data",
+				"get_oom_kill_events",
+			],
 		)
 
 	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
