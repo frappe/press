@@ -61,7 +61,11 @@
   "network_acl_id",
   "route_table_id",
   "docker_section",
-  "repository"
+  "repository",
+  "database_section",
+  "enable_periodic_flush_table",
+  "flush_table_execution_hour",
+  "column_break_vgmf"
  ],
  "fields": [
   {
@@ -405,6 +409,27 @@
    "fieldname": "digital_ocean_api_token",
    "fieldtype": "Password",
    "label": "Digital Ocean API Token"
+  },
+  {
+   "fieldname": "database_section",
+   "fieldtype": "Section Break",
+   "label": "Database"
+  },
+  {
+   "fieldname": "flush_table_execution_hour",
+   "fieldtype": "Int",
+   "label": "Flush Table Execution Hour (in IST)"
+  },
+  {
+   "fieldname": "column_break_vgmf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Applicable only for public database servers",
+   "fieldname": "enable_periodic_flush_table",
+   "fieldtype": "Check",
+   "label": "Enable Periodic FLUSH TABLE"
   }
  ],
  "image_field": "image",
@@ -441,7 +466,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2026-01-18 13:22:01.832912",
+ "modified": "2026-02-17 13:34:22.608364",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
