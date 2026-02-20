@@ -101,6 +101,11 @@ def _sync_machine_availability_status_of_plans():  # noqa
 		if not plan.instance_type:
 			continue
 
+		if not plan.cluster:
+			# Some plan types has no cluster assigned to them.
+			# Skip those as they are not relevant for machine availability status sync.
+			continue
+
 		if plan.cluster not in cluster_doc_map:
 			cluster_doc_map[plan.cluster] = frappe.get_doc("Cluster", plan.cluster)
 
