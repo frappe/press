@@ -151,7 +151,7 @@ def get_lower_bound_major(spec: sv.NpmSpec) -> int | None:
 		if getattr(c, "operator", None) in ("<", "<=") and getattr(c, "target", None) is not None
 	]
 
-	if max(uppers).major < min(lowers).major:
+	if max(uppers).major < min(lowers).major or min(uppers).major < min(lowers).major:
 		frappe.throw(
 			f"Invalid version range: The upper bound major version ({max(uppers).major}) "
 			f"and the lower bound major version ({min(lowers).major}) are inconsistent. "
