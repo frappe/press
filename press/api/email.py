@@ -128,8 +128,8 @@ def validate_plan(secret_key):
 		subscription = get_subscription_info(secret_key=secret_key)
 	except Exception as e:
 		frappe.throw(
-			(str(e) or "Something went wrong fetching subscription details of Email Delivery Service. Please raise a ticket at support.frappe.io. ")
-			+ '<a href="https://docs.frappe.io/cloud/billing/bill-payments" target="_blank">Learn more</a>',
+			(str(e) or "Something went wrong fetching subscription details of Email Delivery Service. Please raise a ticket at support.frappe.io.")
+			+ ' <a href="https://docs.frappe.io/cloud/billing/bill-payments" target="_blank">Learn more</a>',
 			type(e),
 		)
 
