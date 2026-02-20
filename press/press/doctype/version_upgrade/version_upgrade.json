@@ -43,7 +43,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "status",
-   "options": "Scheduled\nPending\nRunning\nSuccess\nFailure"
+   "options": "Scheduled\nPending\nRunning\nSuccess\nFailure\nCancelled"
   },
   {
    "fieldname": "site_update",
@@ -127,7 +127,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-05 11:45:17.659963",
+ "modified": "2026-02-17 17:30:22.256650",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Version Upgrade",

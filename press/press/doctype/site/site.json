@@ -13,6 +13,7 @@
   "server",
   "archive_failed",
   "creation_failed",
+  "fatal_site_update",
   "column_break_3",
   "bench",
   "group",
@@ -749,6 +750,12 @@
    "fieldname": "backup_timeout",
    "fieldtype": "Int",
    "label": "Backup Timeout"
+  },
+  {
+   "fieldname": "fatal_site_update",
+   "fieldtype": "Link",
+   "label": "Fatal Site Update",
+   "options": "Site Update"
   }
  ],
  "links": [
@@ -833,7 +840,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2026-02-03 10:01:03.086574",
+ "modified": "2026-02-09 16:05:29.084553",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -10,6 +10,9 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.agent_job.agent_job import poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
+	create_test_deploy_candidate_differences,
+)
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -20,6 +23,8 @@ from press.press.doctype.site_migration.site_migration import (
 	SiteMigration,
 	run_scheduled_migrations,
 )
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
+from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 BACKUP_JOB_RES = {
 	"backups": {
@@ -243,3 +248,46 @@ class TestSiteMigration(FrappeTestCase):
 		run_scheduled_migrations()
 		site_migration.reload()
 		self.assertEqual(site_migration.status, "Failure")
+
+	def test_migration_can_not_be_trigerred_with_unresolved_fatal_site_update(self):
+		app1 = create_test_app()  # frappe
+		app2 = create_test_app("app2", "App 2")
+		app3 = create_test_app("app3", "App 3")
+		app4 = create_test_app("app4", "App 4")
+
+		group = create_test_release_group([app1, app2, app3, app4])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		dest_bench = create_test_bench(group=group)
+
+		create_test_deploy_candidate_differences(bench2.candidate)  # for site update to be available
+
+		site = create_test_site(bench=bench1.name)
+		plan = create_test_plan(site.doctype, cpu_time=8)
+		create_test_subscription(site.name, plan.name, site.team)
+		site.reload()
+
+		with fake_agent_job(
+			{
+				"Update Site Pull": {"status": "Failure"},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site.schedule_update()
+			poll_pending_jobs()  # For update site pull
+			poll_pending_jobs()  # For recover failed site update
+
+		site_migration: SiteMigration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": site.name,
+				"destination_bench": dest_bench.name,
+				"scheduled_time": frappe.utils.now_datetime(),
+			}
+		)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			r".*Site has encountered a fatal error during last update*",
+			site_migration.insert,
+		)

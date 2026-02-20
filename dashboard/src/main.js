@@ -51,7 +51,7 @@ getInitialData().then(() => {
 	subscribeToJobUpdates(socket);
 	if (session.isLoggedIn) {
 		fetchPlans();
-		session.roles.fetch();
+		session.userPermissions.fetch();
 		unreadNotificationsCount.fetch();
 	}
 

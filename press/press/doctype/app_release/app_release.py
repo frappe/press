@@ -61,7 +61,7 @@ class AppRelease(Document):
 		output: DF.Code | None
 		public: DF.Check
 		source: DF.Link
-		status: DF.Literal["Draft", "Approved", "Awaiting Approval", "Rejected"]
+		status: DF.Literal["Draft", "Approved", "Awaiting Approval", "Rejected", "Yanked"]
 		team: DF.Link
 		timestamp: DF.Datetime | None
 	# end: auto-generated types
@@ -105,6 +105,8 @@ class AppRelease(Document):
 			self.set_clone_directory()
 
 	def before_save(self):
+		# We are approving any app with the name raven, could even be a custom app with the name raven or any featured apps
+		# Weird but not hurting anyone right now
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
 		teams = frappe.get_all("Auto Release Team", {"parent": "Marketplace Settings"}, pluck="team")
 		if self.team in teams or self.app in apps:
