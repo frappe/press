@@ -549,17 +549,10 @@ class Agent:
 		)
 
 	def backup_site(self, site, site_backup: SiteBackup):
-<<<<<<< HEAD
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
 		data = {"with_files": site_backup.with_files}
 
-=======
-		data = {
-			"with_files": site_backup.with_files,
-			"agent_job_timeout": site.backup_timeout,
-		}
->>>>>>> 67d8a9bc8 (fix(Site): Add site backup option on site drop)
 		if site_backup.offsite:
 			backups_path = os.path.join(site.name, str(date.today()))
 			offsite_config = self._get_offsite_backup_config(site.cluster, backups_path)
