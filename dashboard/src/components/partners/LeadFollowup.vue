@@ -111,6 +111,7 @@ const leadfollowups = computed(() => {
 				},
 			};
 		},
+		orderBy: 'date desc',
 	};
 });
 
