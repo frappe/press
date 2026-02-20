@@ -4217,7 +4217,6 @@ def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 		if updated_status == "Archived":
 			from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
 
-			site_cleanup_after_archive(job.site)
 			_create_site_backup_from_agent_job(job)
 
 			site = Site("Site", job.site)
@@ -4229,6 +4228,8 @@ def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 				"files_availability",
 				"Unavailable",
 			)
+
+			site_cleanup_after_archive(job.site)
 
 
 def process_install_app_site_job_update(job):
