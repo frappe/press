@@ -78,6 +78,8 @@ class Cluster(Document):
 		description: DF.Data | None
 		digital_ocean_api_token: DF.Password | None
 		enable_autoscaling: DF.Check
+		enable_periodic_flush_table: DF.Check
+		flush_table_execution_hour: DF.Int
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
 		hetzner_api_token: DF.Password | None
@@ -137,6 +139,7 @@ class Cluster(Document):
 		return None
 
 	def validate(self):
+		self.validate_flush_table_execution_hour()
 		self.validate_monitoring_password()
 		self.validate_cidr_block()
 		if self.cloud_provider == "AWS EC2":
@@ -186,6 +189,17 @@ class Cluster(Document):
 			from time import sleep
 
 			sleep(self.wait_for_aws_creds_seconds)  # wait for key to be valid
+
+	def validate_flush_table_execution_hour(self):
+		if not self.enable_periodic_flush_table:
+			return
+
+		if self.flush_table_execution_hour is None:
+			frappe.throw(
+				"Flush Table Execution Hour is required when Enable Periodic Flush Table is checked."
+			)
+		if not (0 <= self.flush_table_execution_hour <= 23):
+			frappe.throw("Flush Table Execution Hour must be between 0 and 23.")
 
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":

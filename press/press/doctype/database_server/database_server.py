@@ -2356,6 +2356,10 @@ fi
 	def update_database_schema_sizes(self):
 		self.agent.update_database_schema_sizes()
 
+	@frappe.whitelist()
+	def flush_tables(self):
+		self.agent.database_flush_tables()
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
 
@@ -2607,3 +2611,55 @@ def update_database_schema_sizes():
 			return
 		except Exception:
 			frappe.db.rollback()
+
+
+def database_flush_tables_of_public_servers():
+	clusters = frappe.db.get_all(
+		"Cluster",
+		filters={
+			"enable_periodic_flush_table": 1,
+		},
+		fields=["name", "flush_table_execution_hour"],
+	)
+
+	current_hour = datetime.now().hour
+
+	for cluster in clusters:
+		if cluster.flush_table_execution_hour is None or cluster.flush_table_execution_hour != current_hour:
+			continue
+
+		databases = frappe.db.get_all(
+			"Database Server",
+			filters={
+				"status": "Active",
+				"cluster": cluster.name,
+				"public": 1,
+			},
+			pluck="name",
+		)
+
+		for database in databases:
+			if has_job_timeout_exceeded():
+				return
+			try:
+				server: DatabaseServer = frappe.get_doc("Database Server", database)
+				# Check if we have already flushed the table in last 1hr
+				if frappe.db.exists(
+					"Agent Job",
+					{
+						"job_type": "Flush Tables",
+						"server_type": "Database Server",
+						"server": server.name,
+						"status": ["in", ["Running", "Success"]],
+						"modified": (">", frappe.utils.add_to_date(None, hours=-1)),
+					},
+				):
+					continue
+
+				server.flush_tables()
+				frappe.db.commit()
+			except rq.timeouts.JobTimeoutException:
+				frappe.db.rollback()
+				return
+			except Exception:
+				frappe.db.rollback()
