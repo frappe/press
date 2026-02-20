@@ -131,28 +131,6 @@ class TestApp(FrappeTestCase):
 
 	def test_version_parsing(self):
 		"""Test version parsing"""
-		frappe_versions = [
-			{"version": "Version 12", "number": 12, "public": 1, "status": "stable"},
-			{"version": "Version 13", "number": 13, "public": 1, "status": "stable"},
-			{"version": "Version 14", "number": 14, "public": 1, "status": "stable"},
-			{"version": "Version 15", "number": 15, "public": 1, "status": "stable"},
-			{"version": "Version 16", "number": 16, "public": 1, "status": "develop"},
-			{"version": "Nightly", "number": 15, "public": 1, "status": "stable"},
-		]
-
-		for version in frappe_versions:
-			(
-				frappe.get_doc(
-					{
-						"doctype": "Frappe Version",
-						"version": version["version"],
-						"number": version["number"],
-						"public": version["public"],
-						"status": version["status"],
-					}
-				)
-			)
-
 		accepted_frappe_version_strings = [
 			"Version 12",
 			"Version 13",
@@ -163,18 +141,18 @@ class TestApp(FrappeTestCase):
 		]
 
 		for version_string in accepted_frappe_version_strings:
-			parsed_version = parse_frappe_version(version_string)
+			parsed_version = parse_frappe_version(version_string, app_title="test-app")
 			self.assertSetEqual(parsed_version, {version_string})
 
 		accepted_custom_version_strings = [
-			(">=16.0.0,<17.0.0", {"Version 16", "Version 16 Beta", "Nightly"}),
-			(">=15.0.0,<16.0.0", {"Version 15", "Nightly"}),
+			(">=16.0.0,<17.0.0", {"Version 16", "Nightly"}),
+			(">=15.0.0,<16.0.0", {"Version 15", "Nightly"}),  # Nightly's version number is 15 for some reason
 			(">=14.0.0,<15.0.0", {"Version 14"}),
 			(">=13.0.0,<14.0.0", {"Version 13"}),
 		]
 
 		for accepted_custom_version_string, supported_versions in accepted_custom_version_strings:
-			parsed_version = parse_frappe_version(accepted_custom_version_string)
+			parsed_version = parse_frappe_version(accepted_custom_version_string, app_title="test-app")
 			self.assertSetEqual(parsed_version, supported_versions)
 
 		invalid_custom_version_strings = [
@@ -186,4 +164,34 @@ class TestApp(FrappeTestCase):
 
 		for invalid_custom_version_string in invalid_custom_version_strings:
 			with self.assertRaises(frappe.ValidationError):
-				parse_frappe_version(invalid_custom_version_string)
+				parse_frappe_version(invalid_custom_version_string, app_title="test-app")
+
+	def test_version_parsing_with_ease_versioning_constrains(self):
+		"""Test version parsing with ease_versioning_constrains=True basically only lower bound major version compatibility check"""
+		accepted_custom_version_strings = [
+			(">=16.0.0,<17.0.0", {"Version 16", "Nightly"}),
+			# Support stuff like alpha and dev
+			(">=17.0.0-dev,<18.0.0", {"Nightly"}),
+			(
+				">=15.75.0-alpha,<16.0.0",
+				{"Version 15", "Nightly"},
+			),  # Nightly's version number is 15 for some reason
+			(">=15.75.0,<16.0.0", {"Version 15", "Nightly"}),
+			(">=14.55.0,<15.0.0", {"Version 14"}),
+			(">=13.50.0,<14.0.0", {"Version 13"}),
+		]
+
+		for accepted_custom_version_string, supported_versions in accepted_custom_version_strings:
+			parsed_version = parse_frappe_version(
+				accepted_custom_version_string, app_title="test-app", ease_versioning_constrains=True
+			)
+			self.assertSetEqual(parsed_version, supported_versions)
+
+		with self.assertRaises(frappe.ValidationError):
+			parse_frappe_version(">=16.0.0", app_title="test-app", ease_versioning_constrains=True)
+
+		# Won't match any version but won't throw error either
+		self.assertEqual(
+			parse_frappe_version(">=15.75.0,<15.0.0", app_title="test-app", ease_versioning_constrains=False),
+			set(),
+		)

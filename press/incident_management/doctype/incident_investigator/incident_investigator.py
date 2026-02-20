@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 import frappe
+import pytz
 import requests
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -44,6 +45,12 @@ def get_prometheus_client() -> PrometheusConnect:
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server") or "monitor.frappe.cloud"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 	return PrometheusConnect(f"https://{monitor_server}/prometheus", auth=("frappe", password))
+
+
+def get_utc_time(time: datetime.datetime) -> datetime.datetime:
+	"""Convert given system time to utc time"""
+	system_time_zone = frappe.utils.get_system_timezone()
+	return pytz.timezone(system_time_zone).localize(time).astimezone(pytz.utc)
 
 
 @dataclass
@@ -104,6 +111,37 @@ class PrometheusInvestigationHelper:
 		step.is_unable_to_investigate = True
 		step.save()
 
+	def _fetch_with_time_shifts(
+		self,
+		fetch_fn: typing.Callable,
+		shifts: list[int] | int,
+		**kwargs,
+	):
+		"""Fetch range data with retries and shifted time windows in case of missing data"""
+		if isinstance(shifts, int):
+			shifts = [shifts]
+
+		if 0 not in shifts:
+			shifts.insert(0, 0)  # Ensure we check the original window first
+
+		# Return the first metric data found, or None if no data is found
+		for shift in shifts:
+			shifted_start_time = get_utc_time(
+				self.investigation_window_start_time - datetime.timedelta(minutes=shift)
+			)
+			shifted_end_time = get_utc_time(
+				self.investigation_window_end_time - datetime.timedelta(minutes=shift)
+			)
+			metric_data = fetch_fn(
+				start_time=shifted_start_time,
+				end_time=shifted_end_time,
+				**kwargs,
+			)
+			if metric_data:
+				return metric_data
+
+		return None
+
 	def has_high_system_load(self, instance: str, step: "InvestigationStep"):
 		"""Check number of processes waiting for cpu time
 		if the number is higher than 3 times the number of vcpus load is high
@@ -111,11 +149,12 @@ class PrometheusInvestigationHelper:
 		assert self.investigation_window_start_time and self.investigation_window_end_time, (
 			"Investigation window not set"
 		)
-		metric_data = self.prometheus_client.get_metric_range_data(
+
+		metric_data = self._fetch_with_time_shifts(
+			fetch_fn=self.prometheus_client.get_metric_range_data,
+			shifts=[2, 5],
 			metric_name="node_load5",
 			label_config={"instance": instance, "job": "node"},
-			start_time=self.investigation_window_start_time,
-			end_time=self.investigation_window_end_time,
 			chunk_size=(self.investigation_window_end_time - self.investigation_window_start_time),
 		)
 
@@ -134,11 +173,8 @@ class PrometheusInvestigationHelper:
 			"Investigation window not set"
 		)
 
-		metric_data = self.prometheus_client.custom_query_range(
-			query,
-			start_time=self.investigation_window_start_time,
-			end_time=self.investigation_window_end_time,
-			step="1m",
+		metric_data = self._fetch_with_time_shifts(
+			fetch_fn=self.prometheus_client.custom_query_range, shifts=[2, 5], query=query, step="1m"
 		)
 
 		if not metric_data or len(metric_data[0]["values"]) < 2:
@@ -166,11 +202,11 @@ class PrometheusInvestigationHelper:
 				) * 100
 				"""
 
-		metric_data = self.prometheus_client.custom_query_range(
-			query,
-			start_time=self.investigation_window_start_time,
-			end_time=self.investigation_window_end_time,
-			step="1m",  # Since investigation window is of 5m resolution of 1m is fine for now
+		metric_data = self._fetch_with_time_shifts(
+			fetch_fn=self.prometheus_client.custom_query_range,
+			shifts=[2, 5],
+			query=query,
+			step="1m",
 		)
 
 		if not metric_data:
@@ -276,12 +312,15 @@ class DatabaseInvestigationActions:
 		provider = frappe.db.get_value("Virtual Machine", virtual_machine, "cloud_provider")
 
 		virtual_machine_doc: VirtualMachine = frappe.get_cached_doc("Virtual Machine", virtual_machine)
-		if provider == "AWS EC2":
-			virtual_machine_doc.reboot_with_serial_console()
-		else:
-			virtual_machine_doc.reboot()
+		try:
+			if provider == "AWS EC2":
+				virtual_machine_doc.reboot_with_serial_console()
+			else:
+				virtual_machine_doc.reboot()
+			step.status = StepStatus.Success
+		except Exception:
+			step.status = StepStatus.Failure
 
-		step.status = StepStatus.Success
 		step.save()
 
 	def add_database_server_investigation_actions(self):
@@ -290,9 +329,13 @@ class DatabaseInvestigationActions:
 			- Unreachable or missing metrics from promethues results in a database server reboot
 			- Busy resources result in a mariadb reboot post a process list capture.
 		"""
-		if any(
-			[step for step in self.investigator.database_investigation_steps if step.is_unable_to_investigate]
-		):
+		database_resource_investigation_steps = [
+			step
+			for step in self.investigator.database_investigation_steps
+			if step.method != PrometheusInvestigationHelper.has_high_disk_usage.__name__
+		]  # If all resource investigation steps have missing data then just reboot?
+
+		if all([step.is_unable_to_investigate for step in database_resource_investigation_steps]):
 			# We need to think about missing data from prometheus here?
 			for step in self.investigator.get_steps([self.initiate_database_reboot]):
 				self.investigator.append("action_steps", step)
@@ -301,24 +344,19 @@ class DatabaseInvestigationActions:
 			return
 
 		database_likely_causes = set(self.investigator.likely_causes["database"])
-		if (
-			database_likely_causes
-			and database_likely_causes.issubset(
-				{
-					PrometheusInvestigationHelper.has_high_cpu_load.__name__,
-					PrometheusInvestigationHelper.has_high_memory_usage.__name__,
-					PrometheusInvestigationHelper.has_high_system_load.__name__,
-				}
-			)
-			and database_likely_causes
-			!= {
-				PrometheusInvestigationHelper.has_high_memory_usage.__name__
-			}  # This ensure that memory high is not the only likely cause
-		):  # don't trigger this only for high memory issues
-			for step in self.investigator.get_steps(
-				[self.capture_process_list, self.initiate_database_reboot]
-			):
-				self.investigator.append("action_steps", step)
+		if database_likely_causes:
+			all_three_causes = {
+				PrometheusInvestigationHelper.has_high_cpu_load.__name__,
+				PrometheusInvestigationHelper.has_high_memory_usage.__name__,
+				PrometheusInvestigationHelper.has_high_system_load.__name__,
+			}
+
+			# Check if all three causes are identified
+			if database_likely_causes.issubset(all_three_causes):
+				for step in self.investigator.get_steps(
+					[self.capture_process_list, self.initiate_database_reboot]
+				):
+					self.investigator.append("action_steps", step)
 
 		self.investigator.save()
 

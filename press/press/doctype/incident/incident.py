@@ -34,6 +34,9 @@ if TYPE_CHECKING:
 	from frappe.types import DF
 	from twilio.rest.api.v2010.account.call import CallInstance
 
+	from press.incident_management.doctype.incident_investigator.incident_investigator import (
+		IncidentInvestigator,
+	)
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
 	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
@@ -45,6 +48,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
 	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.server.server import Server
+
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
 INCIDENT_SCOPE = (
@@ -806,6 +810,24 @@ Likely due to insufficient balance or incorrect credentials""",
 		)
 
 	@property
+	def waited_enough_for_investigator_reactions(self) -> bool:
+		"""Check if the investigator has taken any action"""
+		investigator: IncidentInvestigator = frappe.get_doc("Incident Investigator", {"incident": self.name})
+		wait_time = get_wait_time_post_investigator_actions()
+		if investigator.status != "Completed":
+			return False
+
+		# Investigation is completed and actions are taken wait before calling
+		if (
+			investigator.status == "Completed"
+			and investigator.action_steps
+			and (investigator.modified > frappe.utils.now_datetime() - timedelta(minutes=wait_time))
+		):
+			return False
+
+		return True
+
+	@property
 	def time_to_call_for_help(self) -> bool:
 		return self.status == "Confirmed" and frappe.utils.now_datetime() - self.creation > timedelta(
 			seconds=get_confirmation_threshold_duration() + get_call_threshold_duration()
@@ -836,6 +858,10 @@ def get_confirmation_threshold_duration():
 		cint(frappe.db.get_value("Incident Settings", None, "confirmation_threshold_night"))
 		or CONFIRMATION_THRESHOLD_SECONDS_NIGHT
 	)
+
+
+def get_wait_time_post_investigator_actions() -> int:
+	return cint(frappe.db.get_single_value("Incident Settings", "wait_time_post_investigator_actions") or 5)
 
 
 def get_call_threshold_duration():
@@ -889,7 +915,9 @@ def resolve_incidents():
 	for incident_name in ongoing_incidents:
 		incident = Incident("Incident", incident_name)
 		incident.check_resolved()
-		if incident.time_to_call_for_help or incident.time_to_call_for_help_again:
+		if (
+			incident.time_to_call_for_help or incident.time_to_call_for_help_again
+		) and incident.waited_enough_for_investigator_reactions:
 			incident.create_log_for_server()
 			incident.call_humans()
 
