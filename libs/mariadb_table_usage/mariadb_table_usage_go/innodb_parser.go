@@ -283,6 +283,11 @@ func (p *InnoDBParser) scanInodePage(limit int, pageData []byte) {
 	}
 }
 
+// inodesPerPage returns the number of segment inodes that fit in one page
+func (p *InnoDBParser) inodesPerPage() int {
+	return int((p.pageSize - FSEG_ARR_OFFSET - 10) / FSEG_INODE_SIZE)
+}
+
 // traverseInodes walks a linked list of inode pages and scans all inodes.
 //
 // the FSP header contains two lists of inode pages:
@@ -308,7 +313,7 @@ func (p *InnoDBParser) traverseInodes(list ListBaseNode) {
 		p.visitedPages[curr.Page] = true
 
 		pageData := p.readPage(curr.Page)
-		p.scanInodePage(FSEG_INODES_PER_PAGE, pageData)
+		p.scanInodePage(p.inodesPerPage(), pageData)
 
 		if int(curr.Offset)+FLST_NODE_SIZE <= len(pageData) {
 			nodeData := pageData[curr.Offset : curr.Offset+FLST_NODE_SIZE]
@@ -381,7 +386,7 @@ func (p *InnoDBParser) checkInodePage(pageNum uint32) {
 		stat, _ := p.file.Stat()
 		if uint64(pageNum)*uint64(p.pageSize) < uint64(stat.Size()) {
 			pageData := p.readPage(pageNum)
-			p.scanInodePage(FSEG_INODES_PER_PAGE, pageData)
+			p.scanInodePage(p.inodesPerPage(), pageData)
 		}
 	}
 }
