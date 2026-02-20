@@ -83,7 +83,7 @@ export default {
 						{
 							type: 'data',
 							fieldname: 'search-text',
-							label: 'Search',
+							label: 'Search for org, lead or partner',
 						},
 						{
 							type: 'select',
