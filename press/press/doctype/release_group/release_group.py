@@ -6,9 +6,9 @@ from contextlib import suppress
 from functools import cached_property
 from itertools import chain
 from typing import TYPE_CHECKING, TypedDict
+from urllib.parse import urlparse
 
 import frappe
-import frappe.query_builder
 import semantic_version as sv
 from frappe import _
 from frappe.core.doctype.version.version import get_diff
@@ -31,6 +31,9 @@ from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.deploy_candidate.utils import is_suspended
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
+from press.press.doctype.marketplace_app.marketplace_app import (
+	validate_frappe_version_for_branch,
+)
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
@@ -68,6 +71,7 @@ class LastDeployInfo(TypedDict):
 
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
+	from press.press.doctype.app_release.app_release import AppRelease
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
@@ -198,6 +202,15 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 		if doc.enable_inplace_updates:
 			doc.inplace_update_failed_benches = self.get_inplace_update_failed_benches()
+
+		doc.linked_version_upgrade = frappe.db.exists(
+			"Version Upgrade",
+			{
+				"destination_group": self.name,
+				"deploy_private_bench": 1,
+				"status": ("in", ["Pending", "Scheduled"]),
+			},
+		)
 
 	def get_inplace_update_failed_benches(self):
 		return frappe.db.get_all(
@@ -497,7 +510,7 @@ class ReleaseGroup(Document, TagHelpers):
 		source = frappe.get_doc("App Source", app.source)
 		if all(row.version != self.version for row in source.versions):
 			branch, repo = frappe.db.get_values("App Source", app.source, ("branch", "repository"))[0]
-			msg = f"{repo.rsplit('/')[-1] or repo.rsplit('/')[-2]}:{branch} branch is no longer compatible with {self.version} version of Frappe"
+			msg = f"{repo.rsplit('/')[-1] or repo.rsplit('/')[-2]}:{branch} branch is no longer compatible with bench group of {self.version}"
 			frappe.throw(msg, frappe.ValidationError)
 
 	def validate_servers(self):
@@ -856,6 +869,7 @@ class ReleaseGroup(Document, TagHelpers):
 			"Bench", {"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))}
 		)
 		out.apps = self.get_app_updates(last_deployed_bench.apps if last_deployed_bench else [])
+
 		out.last_deploy = self.last_dc_info
 		out.deploy_in_progress = self.deploy_in_progress
 
@@ -875,7 +889,6 @@ class ReleaseGroup(Document, TagHelpers):
 				["name", "server", "bench"],
 			)
 		]
-
 		return out
 
 	@dashboard_whitelist()
@@ -1186,8 +1199,8 @@ class ReleaseGroup(Document, TagHelpers):
 			next_hash = app.hash
 
 			update_available = not current_hash or current_hash != next_hash or will_branch_change
-			if not app.releases:
-				update_available = False
+			if app.releases:
+				update_available = any(not release.is_yanked for release in app.releases)
 
 			apps.append(
 				frappe._dict(
@@ -1213,7 +1226,7 @@ class ReleaseGroup(Document, TagHelpers):
 			)
 		return apps
 
-	def get_next_apps(self, current_apps):
+	def get_next_apps(self, current_apps) -> list[frappe._dict[str, str | datetime]]:  # noqa: C901
 		marketplace_app_sources = self.get_marketplace_app_sources()
 		current_team = get_current_team(True)
 		app_publishers_team = [current_team.name]
@@ -1236,8 +1249,11 @@ class ReleaseGroup(Document, TagHelpers):
 
 		app_sources = [app.source for app in self.apps]
 		AppRelease = frappe.qb.DocType("App Release")
+		YankedAppRelease = frappe.qb.DocType("Yanked App Release")
 		latest_releases = (
 			frappe.qb.from_(AppRelease)
+			.left_join(YankedAppRelease)  # All rows in AppRelease and matched row in YankedAppRelease ?
+			.on(YankedAppRelease.hash == AppRelease.hash)
 			.where(AppRelease.source.isin(app_sources))
 			.select(
 				AppRelease.name,
@@ -1247,6 +1263,7 @@ class ReleaseGroup(Document, TagHelpers):
 				AppRelease.hash,
 				AppRelease.message,
 				AppRelease.creation,
+				(YankedAppRelease.hash.isnotnull()).as_("is_yanked"),
 			)
 			.orderby(AppRelease.creation, order=frappe.qb.desc)
 			.run(as_dict=True)
@@ -1261,6 +1278,15 @@ class ReleaseGroup(Document, TagHelpers):
 				latest_app_releases = find_all(latest_app_releases, can_use_release)
 			else:
 				latest_app_release = find(latest_app_releases, lambda x: x.source == app.source)
+
+			yanked_releases = frappe.db.get_all(
+				"Yanked App Release",
+				{"hash": ("in", [release.hash for release in latest_app_releases])},
+				pluck="hash",
+			)
+			if len(yanked_releases) == len(latest_app_releases):
+				# If all releases are yanked, we don't want to show them
+				latest_app_releases = []
 
 			# No release exists for this source
 			if not latest_app_release:
@@ -1298,7 +1324,6 @@ class ReleaseGroup(Document, TagHelpers):
 					}
 				)
 			)
-
 		return next_apps
 
 	def get_removed_apps(self):
@@ -1371,21 +1396,9 @@ class ReleaseGroup(Document, TagHelpers):
 			fields=["name", "team", "public"],
 		)
 
-		if required_app_source:
-			required_app_source = required_app_source[0]
-			if not required_app_source.public:
-				required_app_source = frappe.get_doc("App Source", required_app_source.name)
-				# check if the version already exists
-				if not any(vs.version == self.version for vs in required_app_source.versions):
-					required_app_source.append(
-						"versions",
-						{
-							"version": self.version,
-						},
-					)
-					required_app_source.save()
+		required_app_source = required_app_source[0] if required_app_source else None
 
-		else:
+		if not required_app_source:
 			versions = frappe.get_all(
 				"App Source Version", filters={"parent": current_app_source.name}, pluck="version"
 			)
@@ -1551,6 +1564,24 @@ class ReleaseGroup(Document, TagHelpers):
 		else:
 			app_doc = new_app(name, app["title"])
 
+		# Check if the app that's being has support for the release group version
+		parsed_url = urlparse(app["repository_url"])
+		path_parts = parsed_url.path.strip("/").split("/")
+
+		if len(path_parts) < 2:
+			frappe.throw("Invalid repository URL for app!")
+
+		with suppress(frappe.ValidationError):
+			validate_frappe_version_for_branch(
+				app_name=app_doc.name,
+				owner=path_parts[0],
+				repository=path_parts[1],
+				branch=app["branch"],
+				version=self.version,
+				github_installation_id=app.get("github_installation_id", None),
+				ease_versioning_constrains=True,  # Allow 15.75.0 in a version 15 release group, for example
+			)
+
 		source = app_doc.add_source(
 			frappe_version=self.version,
 			repository_url=app["repository_url"],
@@ -1578,6 +1609,18 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def archive(self):
+		# Cancel any pending/scheduled version upgrades linked to this bench
+		version_upgrades = frappe.db.get_all(
+			"Version Upgrade",
+			filters={
+				"destination_group": self.name,
+				"status": ("in", ["Pending", "Scheduled"]),
+			},
+			pluck="name",
+		)
+		for upgrade_name in version_upgrades:
+			frappe.db.set_value("Version Upgrade", upgrade_name, "status", "Cancelled")
+
 		benches = frappe.get_all("Bench", filters={"group": self.name, "status": "Active"}, pluck="name")
 		for bench in benches:
 			frappe.get_doc("Bench", bench).archive()
@@ -1590,7 +1633,6 @@ class ReleaseGroup(Document, TagHelpers):
 	@dashboard_whitelist()
 	def delete(self) -> None:
 		# Note: using delete instead of archive to avoid client api fetching the doc again
-
 		self.archive()
 
 	def set_default_app_cache_flags(self):
@@ -1759,12 +1801,15 @@ def prune_servers_without_sites():
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Release Group")
 
 
-def can_use_release(app_src):
-	if not app_src.public:
+def can_use_release(app_release: "AppRelease") -> bool:
+	"""Check if the app release can be used in the release group
+	For the time being allow Draft releases for public app sources as well
+	This will be removed when we have better review process for public app sources
+	"""
+	if not app_release.public:
 		return True
-	# For the time being allow Draft releases for public app sources as well
-	# This will be removed when we have better review process for public app sources
-	return app_src.status in ["Approved", "Draft"]
+
+	return app_release.status in ["Approved", "Draft"]
 
 
 def update_rg_app_source(rg: "ReleaseGroup", source: "AppSource"):

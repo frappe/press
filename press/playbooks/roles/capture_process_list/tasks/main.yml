@@ -1,4 +1,5 @@
 ---
 - name: Run show full process list
   shell: mysql -e "SHOW FULL PROCESSLIST"
+  timeout: "{{ timeout }}"
   register: processlist_output

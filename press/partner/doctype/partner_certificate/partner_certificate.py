@@ -58,6 +58,8 @@ class PartnerCertificate(Document):
 				PartnerCertificate.certificate_link,
 				Team.company_name.as_("team"),
 			)
+			.limit(list_args["limit"])
+			.offset(list_args["start"])
 		)
 		if filters:
 			if filters.get("team"):

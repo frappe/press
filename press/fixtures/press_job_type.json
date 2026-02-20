@@ -664,7 +664,7 @@
   "callback_script": null,
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2026-01-07 03:29:43.954581",
+  "modified": "2026-02-17 17:06:34.246514",
   "name": "Resize Server",
   "steps": [
    {
@@ -719,7 +719,7 @@
     "parent": "Resize Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.adjust_memory_config()\nelif doc.server_type == \"Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.auto_scale_workers()",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif getattr(server, \"is_unified_server\", False):\n    server_doc = frappe.get_doc(\"Server\", doc.server)\n    db_doc = frappe.get_doc(\"Database Server\", doc.server)\n\n    server_doc.auto_scale_workers()\n    db_doc.adjust_memory_config()\n\nelse:\n    if doc.server_type == \"Database Server\":\n        server.adjust_memory_config()\n\n    elif doc.server_type == \"Server\":\n        server.auto_scale_workers()\n",
     "step_name": "Set additional config",
     "wait_until_true": 0
    },

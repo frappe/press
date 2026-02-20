@@ -51,15 +51,6 @@ const leadfollowups = computed(() => {
 				width: '200px',
 			},
 		],
-		onRowClick: (row) => {
-			return renderDialog(
-				h(UpdateFollowupDialog, {
-					modelValue: true,
-					id: row.name,
-					leadId: route.params.leadId,
-				}),
-			);
-		},
 		rowActions: ({ row }) => {
 			return [
 				{

@@ -844,7 +844,7 @@ def daily_usage(name, timezone):
 	end = datetime.now(pytz_timezone(timezone))
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 
-	request_data = request_data = get_usage(
+	request_data = get_usage(
 		name,
 		"request",
 		timezone,
