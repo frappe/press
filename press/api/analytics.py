@@ -664,7 +664,7 @@ def get_cpu_usage(name: str, timezone: str, duration: str = "24h"):
 
 @frappe.whitelist()
 @protected("Site")
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get(name, timezone, start, end):
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
@@ -680,7 +680,7 @@ def get(name, timezone, start, end):
 		"usage_counter": [{"value": r.max, "date": r.date} for r in request_data],
 		"request_count": [{"value": r.count, "date": r.date} for r in request_data],
 		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
-		"uptime": (uptime_data + [{}] * 60)[:60],
+		"uptime": uptime_data,
 		"plan_limit": plan_limit,
 	}
 
@@ -836,7 +836,7 @@ def get_advanced_analytics(name, timezone, start, end, max_no_of_paths=MAX_NO_OF
 
 @frappe.whitelist()
 @protected("Site")
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def daily_usage(name, timezone):
 	timespan = 7 * 24 * 60 * 60
 	timegrain = 24 * 60 * 60
@@ -874,7 +874,7 @@ def rounded_time(dt: datetime | None = None, round_to=60):
 	return dt + timedelta(0, rounding - seconds, -dt.microsecond)
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC"):
 	"""
 	Round the start and end time to the nearest interval, because Elasticsearch does this
@@ -885,7 +885,7 @@ def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC")
 	return rounded_time(start, timegrain), rounded_time(end, timegrain)
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_rounded_boundary(dt: datetime, timegrain=60):
 	"""
 	Floor a datetime to the previous interval boundary.
@@ -906,13 +906,22 @@ def get_rounded_boundary(dt: datetime, timegrain=60):
 	return datetime.fromtimestamp(floored_ts, tz=dt.tzinfo)
 
 
-def get_uptime(site, timezone, start, end, timegrain):
+def get_uptime(site, timezone, start: datetime, end: datetime, _):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
 		return []
 
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+
+	# align to beginning of day of start date
+	start = start.astimezone(pytz_timezone(timezone)).replace(hour=0, minute=0, second=0, microsecond=0)
+	# align to end of day of end date
+	end = end.astimezone(pytz_timezone(timezone)).replace(
+		hour=0, minute=0, second=0, microsecond=0
+	) + timedelta(days=1)
+
+	timegrain = 86400  # 1 day
 
 	query = {
 		"query": (
@@ -955,7 +964,7 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 	return list(n_datasets.values())
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_request_by_(
 	name,
 	agg_type: AggType,
@@ -980,7 +989,7 @@ def get_request_by_(
 	).run()
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_nginx_request_by_(
 	name,
 	agg_type: AggType,
@@ -1004,7 +1013,7 @@ def get_nginx_request_by_(
 	).run()
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_background_job_by_(
 	site,
 	agg_type,
@@ -1049,7 +1058,7 @@ def get_slow_logs_by_query(
 	)
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_slow_logs(
 	name,
 	agg_type,

@@ -28,9 +28,9 @@ export default {
 
 		let $team = getTeam();
 		window.$team = $team;
-		if ($team.doc.onboarding.complete && $team.doc.onboarding.site_created) {
+		if ($team?.doc.onboarding.complete && $team?.doc.onboarding.site_created) {
 			next({ name: 'Site List' });
-		} else if (to.query.is_redirect && $team.doc.onboarding.site_created) {
+		} else if (to.query.is_redirect && $team?.doc.onboarding.site_created) {
 			next({ name: 'Site List' });
 		} else {
 			next();

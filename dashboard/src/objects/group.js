@@ -3,7 +3,6 @@ import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import LucideAppWindow from '~icons/lucide/app-window';
 import LucideHardDriveDownload from '~icons/lucide/hard-drive-download';
-import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import LucideRocket from '~icons/lucide/rocket';
 import AddAppDialog from '../components/group/AddAppDialog.vue';
 import ChangeAppBranchDialog from '../components/group/ChangeAppBranchDialog.vue';
@@ -954,7 +953,9 @@ export default {
 					label: 'Impersonate Group Owner',
 					title: 'Impersonate Group Owner', // for label to pop-up on hover
 					slots: {
-						icon: icon(LucideVenetianMask),
+						icon: defineAsyncComponent(
+							() => import('~icons/lucide/venetian-mask'),
+						),
 					},
 					condition: () =>
 						team.doc?.is_desk_user && group.doc.team !== team.name,
