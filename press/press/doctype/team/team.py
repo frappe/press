@@ -1752,21 +1752,13 @@ def get_country_dialing_code(country_name: str) -> str | None:
 
 
 def auto_enable_ssh_access_for_7_days_older_teams():
-	teams = frappe.get_all(
+	frappe.db.set_value(
 		"Team",
-		filters={
+		{
 			"enabled": 1,
 			"ssh_access_enabled": 0,
 			"creation": ("<", add_to_date(None, days=-7)),
 		},
-		pluck="name",
-	)
-
-	frappe.db.set_value(
-		"Team",
-		filters={
-			"name": ("in", teams),
-		},
-		fieldname="ssh_access_enabled",
-		value=1,
+		"ssh_access_enabled",
+		1,
 	)
