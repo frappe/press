@@ -13,6 +13,7 @@ from enum import Enum
 import frappe
 import pytz
 import requests
+from elasticsearch import Elasticsearch
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
@@ -23,6 +24,7 @@ from press.runner import Status as StepStatus
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 	from press.press.incident_management.doctype.action_step.action_step import ActionStep
 	from press.press.incident_management.doctype.investigation_step.investigation_step import (
@@ -95,14 +97,12 @@ class PrometheusInvestigationHelper:
 		investigation_window_end_time: datetime.datetime,
 	) -> "PrometheusInvestigationHelper":
 		"""Initialize PrometheusInvestigationHelper with server-specific thresholds"""
+		high_system_load_threshold = (3 * frappe.db.get_value("Virtual Machine", server, "vcpu")) or 4
 		return cls(
 			high_cpu_load_threshold=high_cpu_load_threshold,
 			high_memory_usage_threshold=high_memory_usage_threshold,
 			high_disk_usage_threshold_in_gb=high_disk_usage_threshold_in_gb,
-			high_system_load_threshold=3
-			* (
-				frappe.db.get_value("Virtual Machine", server, "vcpu") or 4
-			),  # Placeholder, will be set based on vcpus
+			high_system_load_threshold=high_system_load_threshold,
 			investigation_window_start_time=investigation_window_start_time,
 			investigation_window_end_time=investigation_window_end_time,
 		)
@@ -221,6 +221,7 @@ class PrometheusInvestigationHelper:
 		"""Determined if disk is full in any of the relevant mountpoints at present"""
 		is_unreachable = True
 		mountpoints = {"/": False, "/opt/volumes/benches": False, "/opt/volumes/mariadb": False}
+		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", instance)
 
 		for mountpoint in mountpoints:
 			query = f"""node_filesystem_avail_bytes{{instance="{instance}", job="node", mountpoint="{mountpoint}"}}"""
@@ -234,7 +235,13 @@ class PrometheusInvestigationHelper:
 			self.is_unable_to_investigate(step)
 			return None
 
-		step.is_likely_cause = any(mountpoints.values())
+		# We care about non-root mountpoints being full in case of machines without data volumes
+		# If there is no data volume then we consider root mountpoint only
+		step.is_likely_cause = (
+			any([mp for mp, is_full in mountpoints.items() if is_full and mp != "/"])
+			if virtual_machine.has_data_volume
+			else mountpoints["/"]
+		)
 		step.save()
 
 		return mountpoints
@@ -272,6 +279,33 @@ class PrometheusInvestigationHelper:
 
 		step.is_likely_cause = all(status != 200 for status in ping_results)
 		step.save()
+
+	def _get_bench_memory_usage(self, instance: str) -> dict[str, float] | None:
+		"""Get the average memory usage for each bench on the server averaged over the investigation window."""
+		benches = frappe.db.get_all(
+			"Bench",
+			fields=["name"],
+			filters={"server": instance, "status": "Active"},
+			pluck="name",
+		)
+		benches = "|".join(benches)
+		query = f'''
+			sum by (name) (
+				avg_over_time(
+					container_memory_usage_bytes{{job="cadvisor", name=~"{benches}"}}
+					[
+						{(self.investigation_window_end_time - self.investigation_window_start_time).total_seconds()}s
+					]
+				) / 1024 / 1024 / 1024
+			)
+		'''
+		metric_data = self._fetch_with_time_shifts(
+			fetch_fn=self.prometheus_client.custom_query, shifts=[2, 5], query=query
+		)
+		if not metric_data:
+			return None
+
+		return {item["metric"]["name"]: float(item["value"][1]) for item in metric_data}
 
 
 class DatabaseInvestigationActions:
@@ -343,22 +377,158 @@ class DatabaseInvestigationActions:
 			self.investigator.save()
 			return
 
+		resource_causes = {
+			PrometheusInvestigationHelper.has_high_cpu_load.__name__,
+			PrometheusInvestigationHelper.has_high_memory_usage.__name__,
+			PrometheusInvestigationHelper.has_high_system_load.__name__,
+		}
 		database_likely_causes = set(self.investigator.likely_causes["database"])
-		if database_likely_causes:
-			all_three_causes = {
-				PrometheusInvestigationHelper.has_high_cpu_load.__name__,
-				PrometheusInvestigationHelper.has_high_memory_usage.__name__,
-				PrometheusInvestigationHelper.has_high_system_load.__name__,
-			}
-
-			# Check if all three causes are identified
-			if database_likely_causes.issubset(all_three_causes):
-				for step in self.investigator.get_steps(
-					[self.capture_process_list, self.initiate_database_reboot]
-				):
-					self.investigator.append("action_steps", step)
+		if database_likely_causes and database_likely_causes.issubset(resource_causes):
+			for step in self.investigator.get_steps(
+				[self.capture_process_list, self.initiate_database_reboot]
+			):
+				self.investigator.append("action_steps", step)
 
 		self.investigator.save()
+
+
+class AppServerInvestigationActions:
+	def __init__(self, investigator: "IncidentInvestigator"):
+		self.investigator = investigator
+
+	# The following might look like investigations but they are more of actions taken to gather more data
+	# And assertain our responsibility boundaries
+	def get_bench_memory_usage_data(self, step: "ActionStep"):
+		"""Get memory usage data and do something with it"""
+		step.status = StepStatus.Running
+		step.save()
+
+		memory_usage_data = self.investigator.prometheus_investigation_helper._get_bench_memory_usage(
+			instance=self.investigator.server
+		)
+
+		if memory_usage_data is None:
+			step.status = StepStatus.Failure
+			step.save()
+			return
+
+		server_doc: Server = frappe.get_doc("Server", self.investigator.server)
+		memory_pressure_due_to_benches = (sum(memory_usage_data.values()) / server_doc.real_ram) * 100
+
+		step.output = json.dumps(
+			{
+				"memory_usage_data": memory_usage_data,
+				"memory_pressure_due_to_benches": memory_pressure_due_to_benches,
+			},
+			indent=2,
+		)
+		step.status = StepStatus.Success
+		step.save()
+
+	def get_oom_kill_events(self, step: "ActionStep"):
+		"""Get OOM kill events data and do something with it start and end time are UTC times!"""
+		step.status = StepStatus.Running
+		step.save()
+
+		# Mypy won't be happy otherwise
+		assert (
+			self.investigator.investigation_window_start_time
+			and self.investigator.investigation_window_end_time
+		), "Investigation window not set"
+
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+
+		if not log_server:
+			step.status = StepStatus.Failure
+			step.output = "Unable to fetch OOM kill events since log server is not configured"
+			step.save()
+			return
+
+		password = get_decrypted_password("Log Server", log_server, "password")
+
+		es = Elasticsearch(
+			f"https://{log_server}/elasticsearch", basic_auth=("frappe", password), request_timeout=120
+		)
+
+		instance = frappe.get_value("Server", self.investigator.server, "virtual_machine")
+		start_time = (
+			get_utc_time(
+				frappe.utils.add_to_date(
+					self.investigator.investigation_window_start_time, minutes=-INVESTIGATION_WINDOW * 6
+				)
+			)
+			.isoformat()
+			.replace("+00:00", "Z")
+		)  # We are looking at a larger window since we want to capture any OOM events leading up to the incident (30m?)
+		end_time = (
+			get_utc_time(self.investigator.investigation_window_end_time).isoformat().replace("+00:00", "Z")
+		)
+
+		query = {
+			"size": 1000,
+			"_source": ["@timestamp", "message", "process.pid", "process.name", "host.name"],
+			"query": {
+				"bool": {
+					"filter": [
+						{"term": {"process.name": "earlyoom"}},
+						{"term": {"host.name": instance}},
+						{"range": {"@timestamp": {"gte": start_time, "lte": end_time}}},
+					]
+				}
+			},
+			"sort": [{"@timestamp": {"order": "asc"}}],
+		}
+
+		response = es.search(index="filebeat-*", body=query)
+		oom_events = [hit["_source"] for hit in response["hits"]["hits"]]
+
+		if not oom_events:
+			step.status = StepStatus.Failure
+			step.output = "No OOM kill events found in the investigation window"
+			step.save()
+			return
+
+		for event in oom_events:
+			if "killing process" in event["message"]:
+				step.output += event["message"]
+
+		step.status = StepStatus.Success
+		step.save()
+
+	def add_app_server_investigation_actions(self):
+		"""In case of app server incidents we do the following
+		- Memory or CPU spikes
+			- Inform customers directly of application server issues, with upgrade options.
+			- Not a lot can be done here?
+
+		- Disk issues
+			Addressed by common actions
+
+		"""
+		resource_causes = {
+			PrometheusInvestigationHelper.has_high_cpu_load.__name__,
+			PrometheusInvestigationHelper.has_high_memory_usage.__name__,
+			PrometheusInvestigationHelper.has_high_system_load.__name__,
+		}
+
+		app_server_likely_causes = set(self.investigator.likely_causes["server"])
+
+		if app_server_likely_causes and app_server_likely_causes.issubset(resource_causes):
+			for step in self.investigator.get_steps(
+				[self.get_bench_memory_usage_data, self.get_oom_kill_events]
+			):
+				self.investigator.append("action_steps", step)
+
+
+class CommonInvestigationActions:
+	def __init__(self, investigator: "IncidentInvestigator"):
+		self.investigator = investigator
+
+	def add_common_investigation_actions(self):
+		"""Mute incidents in case of common causes like high disk issue on either app and database
+		server, and ensure that this is the only cause and nothing else was found to be a likely cause.
+		"""
+		...
 
 
 class IncidentInvestigator(Document, StepHandler):
@@ -484,6 +654,13 @@ class IncidentInvestigator(Document, StepHandler):
 		)
 		self.investigation_window_end_time = frappe.utils.now_datetime()
 
+		# For unified servers we set memory threshold to 80% (based on incidents data)
+		self.high_memory_usage_threshold = (
+			85
+			if frappe.db.get_value("Server", self.server, "is_unified_server")
+			else self.high_memory_usage_threshold
+		)
+
 		self.add_investigation_steps()
 		self.action_steps = []  # Ensure no action steps are already set
 		self.status = Status.INVESTIGATING
@@ -499,8 +676,9 @@ class IncidentInvestigator(Document, StepHandler):
 
 	def investigate(self):
 		"""Main method to execute investigation steps in order"""
-		prometheus_investigation_helper = PrometheusInvestigationHelper.load_from_server(
-			server=self.server,
+		virtual_machine = frappe.get_value("Server", self.server, "virtual_machine")
+		self.prometheus_investigation_helper = PrometheusInvestigationHelper.load_from_server(
+			server=virtual_machine,
 			high_cpu_load_threshold=self.high_cpu_load_threshold,
 			high_memory_usage_threshold=self.high_memory_usage_threshold,
 			high_disk_usage_threshold_in_gb=self.high_disk_usage_threshold_in_gb,
@@ -510,22 +688,26 @@ class IncidentInvestigator(Document, StepHandler):
 
 		for step_key, methods in PrometheusInvestigationHelper.INVESTIGATION_CHECKS.items():
 			for method in methods:
-				investigation_method = getattr(prometheus_investigation_helper, method)
+				investigation_method = getattr(self.prometheus_investigation_helper, method)
 				if step_key == "server_investigation_steps":
 					investigation_method(
-						instance=self.server,
+						instance=virtual_machine,
 						step=find(self.server_investigation_steps, lambda s: s.method == method),
 					)
 				elif step_key == "database_investigation_steps":
 					database_server = frappe.db.get_value("Server", self.server, "database_server")
+					database_virtual_machine = frappe.db.get_value(
+						"Database Server", database_server, "virtual_machine"
+					)
 					investigation_method(
-						instance=database_server,
+						instance=database_virtual_machine,
 						step=find(self.database_investigation_steps, lambda s: s.method == method),
 					)
 				elif step_key == "proxy_investigation_steps":
 					proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+					proxy_virtual_machine = frappe.db.get_value("Server", proxy_server, "virtual_machine")
 					investigation_method(
-						instance=proxy_server,
+						instance=proxy_virtual_machine,
 						step=find(self.proxy_investigation_steps, lambda s: s.method == method),
 					)
 
@@ -535,6 +717,9 @@ class IncidentInvestigator(Document, StepHandler):
 		"""Perform post-investigation actions"""
 		database_investigation_actions = DatabaseInvestigationActions(self)
 		database_investigation_actions.add_database_server_investigation_actions()
+
+		app_server_investigation_actions = AppServerInvestigationActions(self)
+		app_server_investigation_actions.add_app_server_investigation_actions()
 
 		execute_action_steps = frappe.db.get_single_value(
 			"Press Settings", "execute_incident_action", cache=True
