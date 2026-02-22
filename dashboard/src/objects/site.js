@@ -3,7 +3,6 @@ import {
 	createResource,
 	LoadingIndicator,
 } from 'frappe-ui';
-import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import { defineAsyncComponent, h } from 'vue';
 import { unparse } from 'papaparse';
 import { toast } from 'vue-sonner';
@@ -1662,7 +1661,9 @@ return { site: site.doc?.name };
 					label: 'Impersonate Site Owner',
 					title: 'Impersonate Site Owner', // for label to pop-up on hover
 					slots: {
-						icon: icon(LucideVenetianMask),
+						icon: defineAsyncComponent(
+							() => import('~icons/lucide/venetian-mask'),
+						),
 					},
 					condition: () =>
 						$team.doc?.is_desk_user && site.doc.team !== $team.name,
