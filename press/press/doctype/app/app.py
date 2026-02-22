@@ -62,7 +62,7 @@ class App(Document):
 			limit=1,
 		)
 		if existing_source:
-			source = frappe.get_doc("App Source", existing_source[0].name)
+			source = frappe.get_doc("App Source", existing_source[0].name, for_update=True)
 			versions = set(version.version for version in source.versions)
 			new_versions = supported_frappe_versions - versions
 			for new_version in new_versions:
