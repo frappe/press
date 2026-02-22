@@ -22,6 +22,7 @@
   "is_self_hosted",
   "enable_physical_backup",
   "halt_agent_jobs",
+  "enable_schema_size_parser",
   "column_break_qsqm",
   "is_server_setup",
   "is_server_renamed",
@@ -773,6 +774,12 @@
    "fieldname": "is_provisioning_press_job_completed",
    "fieldtype": "Check",
    "label": "Is Provisioning Job Completed"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_schema_size_parser",
+   "fieldtype": "Check",
+   "label": "Enable Schema Size Parser"
   }
  ],
  "grid_page_length": 50,
@@ -789,7 +796,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2026-01-18 16:20:34.150871",
+ "modified": "2026-02-20 14:05:17.357104",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

@@ -242,6 +242,7 @@ scheduler_events = {
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
+		"press.press.doctype.database_server.database_server.update_database_schema_sizes",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -278,9 +279,6 @@ scheduler_events = {
 		],
 		"*/2 * * * *": [
 			"press.press.doctype.incident.incident.resolve_incidents",
-		],
-		"45 * * * *": [
-			"press.press.doctype.database_server.database_server.update_database_schema_sizes",
 		],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
