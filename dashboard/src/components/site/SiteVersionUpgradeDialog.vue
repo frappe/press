@@ -118,7 +118,7 @@
 						</div>
 						<FormControl
 							v-if="!existingBenchGroup"
-							label="Release Group Title"
+							label="Bench Group Title"
 							type="text"
 							v-model="newReleaseGroupTitle"
 							placeholder="e.g., My Team - Version 15"
