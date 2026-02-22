@@ -330,7 +330,7 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits\nNEFT\nPartner Credits\nPaid By Partner"
+   "options": "\nCard\nPrepaid Credits\nNEFT\nPartner Credits\nPaid By Partner\nUPI Autopay"
   },
   {
    "fieldname": "frappe_partner_order",
@@ -550,11 +550,11 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2026-01-05 21:33:27.298700",
+ "modified": "2026-02-02 12:11:50.962790",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

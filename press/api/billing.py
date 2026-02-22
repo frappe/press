@@ -668,6 +668,179 @@ def is_paypal_enabled() -> bool:
 
 @frappe.whitelist()
 @role_guard.api("billing")
+def get_or_create_razorpay_customer() -> str:
+	"""Get existing or create new Razorpay customer for current team"""
+	team = get_current_team(get_doc=True)
+	return team.create_razorpay_customer()
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def create_razorpay_mandate(max_amount: int, auth_type: str = "upi") -> dict:
+	"""
+	Create a Razorpay mandate registration for UPI autopay (or eNACH - this is not setup currently).
+
+	Args:
+		max_amount: Maximum amount in INR for recurring debits
+		auth_type: 'upi' or 'netbanking' (for eNACH)
+
+	Returns:
+		dict with mandate_name, mandate_id, authorization_link, expires_on
+	"""
+	from press.press.doctype.razorpay_mandate.razorpay_mandate import (
+		create_razorpay_mandate as _create_mandate,
+	)
+
+	team = get_current_team()
+
+	if auth_type not in ("upi", "netbanking"):
+		frappe.throw(_("Invalid auth type. Must be 'upi' or 'netbanking'"))
+
+	if max_amount < 100:
+		frappe.throw(_("Maximum amount must be at least ₹100"))
+
+	return _create_mandate(team, max_amount, auth_type)
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def get_razorpay_mandates() -> list[dict]:
+	"""Get all Razorpay mandates for the current team"""
+	team = get_current_team()
+
+	mandates = frappe.get_all(
+		"Razorpay Mandate",
+		filters={"team": team},
+		fields=[
+			"name",
+			"mandate_id",
+			"status",
+			"method",
+			"auth_type",
+			"max_amount",
+			"expires_on",
+			"is_default",
+			"upi_vpa",
+			"creation",
+		],
+		order_by="creation desc",
+	)
+
+	return mandates
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def set_razorpay_mandate_as_default(mandate_name: str):
+	"""Set a Razorpay mandate as the default for the team"""
+	team = get_current_team()
+
+	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
+	mandate.set_default()
+
+	return {"success": True}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def cancel_razorpay_mandate(mandate_name: str):
+	"""Cancel a Razorpay mandate"""
+	team = get_current_team()
+
+	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
+	mandate.cancel("Cancelled by user")
+
+	return {"success": True}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def handle_razorpay_mandate_success(
+	razorpay_payment_id: str,
+	razorpay_order_id: str,
+	razorpay_signature: str,
+	mandate_name: str,
+):
+	"""
+	Handle successful Razorpay Checkout for UPI Autopay mandate authorization.
+	Verifies signature, fetches token, and activates the mandate. In case of failure,
+	update the mandate with information
+	"""
+	team = get_current_team()
+	client = get_razorpay_client()
+	# Verify the mandate belongs to this team
+	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
+	if not mandate:
+		frappe.throw(_("Mandate not found"))
+	# Verify signature
+	try:
+		client.utility.verify_payment_signature(
+			{
+				"razorpay_payment_id": razorpay_payment_id,
+				"razorpay_order_id": razorpay_order_id,
+				"razorpay_signature": razorpay_signature,
+			}
+		)
+	except Exception:
+		mandate.mark_failed(
+			error_code="SIGNATURE_VERIFICATION_FAILED",
+			error_description="Payment signature verification failed",
+		)
+		frappe.throw(_("Invalid payment signature"))
+
+	# Fetch payment details to get token_id
+	payment = client.payment.fetch(razorpay_payment_id)
+
+	# Check if payment has error
+	if payment.get("error_code"):
+		mandate.mark_failed(
+			error_code=payment.get("error_code"),
+			error_description=payment.get("error_description"),
+			error_source=payment.get("error_source"),
+			error_step=payment.get("error_step"),
+			error_reason=payment.get("error_reason"),
+		)
+		frappe.throw(_(payment.get("error_description") or "Payment failed"))
+
+	token_id = payment.get("token_id")
+	if not token_id:
+		mandate.mark_failed(
+			error_code="TOKEN_NOT_FOUND",
+			error_description="Token not found in payment response",
+		)
+		frappe.throw(_("Token not found in payment response"))
+
+	# Extract UPI VPA if available
+	upi_vpa = None
+	if payment.get("method") == "upi":
+		upi_vpa = payment.get("vpa")
+
+	# Activate the mandate with all details
+	mandate.activate(
+		token_id=token_id,
+		upi_vpa=upi_vpa,
+		authorization_payment_id=payment.get("id"),
+		contact=payment.get("contact"),
+		rrn=payment.get("acquirer_data", {}).get("rrn"),
+		authorization_fee=payment.get("fee"),
+		authorization_fee_tax=payment.get("tax"),
+		razorpay_signature=razorpay_signature,
+	)
+
+	# Set as default if this is the first mandate for the team
+	existing_active = frappe.db.count(
+		"Razorpay Mandate",
+		{"team": team, "status": "Active", "name": ("!=", mandate.name)},
+	)
+	if existing_active == 0:
+		mandate.reload()
+		mandate.set_default()
+
+	return {"success": True, "token_id": token_id}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
 def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | None:
 	if not transaction_type:
 		frappe.throw(_("Transaction type is not set"))
