@@ -12,6 +12,7 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.agent_job.agent_job import AgentJob, process_job_updates
 from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.site_activity.test_site_activity import create_test_site_activity
 
 if TYPE_CHECKING:
 	from datetime import datetime
@@ -348,3 +349,38 @@ class TestSiteBackup(FrappeTestCase):
 			self.assertEqual(remote_file_doc.site, self.site.name)
 			self.assertIsNotNone(remote_file_doc.file_path)
 			self.assertIsNotNone(remote_file_doc.file_name)
+
+	def test_cleanup_archived_site_backups(self):
+		"""Clear up backups if the site was archived before 6 months"""
+		from press.press.doctype.site_backup.site_backup import cleanup_archived_site_backups
+
+		site = create_test_site(subdomain="old-archive")
+		site.db_set("status", "Archived")
+
+		backup = create_test_site_backup(site=site.name, offsite=True, files_availability="Available")
+
+		archive_job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "Archive Site",
+				"site": site.name,
+				"server_type": "Server",
+				"server": site.server,
+				"request_method": "POST",
+				"request_path": f"benches/{site.bench}/sites/{site.name}/archive",
+				"request_data": "{}",
+				"status": "Success",
+			}
+		).insert()
+
+		activity = create_test_site_activity(site.name, "Archive")
+		activity.db_set("job", archive_job.name)
+		activity.db_set(
+			"creation",
+			frappe.utils.add_to_date(frappe.utils.now(), months=-7),
+		)
+
+		cleanup_archived_site_backups()
+
+		backup.reload()
+		self.assertEqual(backup.files_availability, "Unavailable")
