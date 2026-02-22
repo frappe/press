@@ -1712,17 +1712,13 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 					"name": ("not in", restricted_server_names),
 				},
 				pluck="name",
-				limit=1,
 			)
 
 			if not servers:
 				frappe.throw("No servers found for new benches!")
 			else:
-				server = servers[0]
+				server = _pick_least_loaded_server(servers)
 
-		servers = [{"server": server}]
-	elif server:
-		servers = [{"server": server}]
 	else:
 		servers = []
 	return frappe.get_doc(
@@ -1736,6 +1732,81 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 			"saas_app": saas_app,
 		}
 	).insert()
+
+
+def _pick_least_loaded_server(servers: list[str]) -> str:
+	"""
+	Sort all servers by bench count and keep the lowest quarter.
+	From that subset, sort by site count.
+	From the lowest quarter, compare real-time CPU/memory usage and pick the best.
+	"""
+	from press.api.server import get_cpu_and_memory_usage
+
+	if not servers:
+		raise ValueError("No servers provided")
+
+	if len(servers) == 1:
+		return servers[0]
+
+	benches = frappe.get_all(
+		"Bench",
+		filters={
+			"server": ["in", servers],
+			"status": ["!=", "Archived"],
+		},
+		fields=["server"],
+	)
+	bench_counts = {}
+	for b in benches:
+		bench_counts[b.server] = bench_counts.get(b.server, 0) + 1
+
+	server_data = [{"name": s, "bench": bench_counts.get(s, 0)} for s in servers]
+	server_data.sort(key=lambda x: x["bench"])
+
+	# First quarter of servers with least benches
+	quarter = max(1, len(server_data) // 4)
+	lowest_bench_batch = server_data[:quarter]
+
+	if len(lowest_bench_batch) == 1:
+		return lowest_bench_batch[0]["name"]
+
+	# Fetch and sort by site count
+	batch_servers = [s["name"] for s in lowest_bench_batch]
+
+	sites = frappe.get_all(
+		"Site",
+		filters={
+			"server": ["in", batch_servers],
+			"status": ["!=", "Archived"],
+		},
+		fields=["server"],
+	)
+
+	site_counts = {}
+	for s in sites:
+		site_counts[s.server] = site_counts.get(s.server, 0) + 1
+
+	for s in lowest_bench_batch:
+		s["site"] = site_counts.get(s["name"], 0)
+
+	lowest_bench_batch.sort(key=lambda x: x["site"])
+
+	# Take quarter of servers with least sites
+	quarter = max(1, len(lowest_bench_batch) // 4)
+	lowest_site_batch = lowest_bench_batch[:quarter]
+
+	if len(lowest_site_batch) == 1:
+		return lowest_site_batch[0]["name"]
+
+	best = min(lowest_site_batch, key=lambda x: get_cpu_load(x["name"]))
+
+	def get_cpu_load(server_name: str) -> float:
+		usage = get_cpu_and_memory_usage(server_name)
+		vcpu = float(usage.get("vcpu") or 0.0)
+		memory = float(usage.get("memory") or 0.0)
+		return max(vcpu, memory)
+
+	return best["name"]
 
 
 def get_status(name):
