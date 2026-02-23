@@ -4141,20 +4141,6 @@ def process_add_domain_job_update(job):
 			product_trial_request.save(ignore_permissions=True)
 
 
-def get_remove_step_status(job):
-	remove_step_name = {
-		"Archive Site": "Archive Site",
-		"Remove Site from Upstream": "Remove Site File from Upstream Directory",
-	}[job.job_type]
-
-	return frappe.db.get_value(
-		"Agent Job Step",
-		{"step_name": remove_step_name, "agent_job": job.name},
-		"status",
-		for_update=True,
-	)
-
-
 def get_finished_backup_restoration_tests(site: str) -> list[str]:
 	return frappe.get_all(
 		"Backup Restoration Test",
@@ -4179,7 +4165,61 @@ def update_finished_backup_restoration_test(site: str, status: str):
 		frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", "Archive Failed")
 
 
-def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
+def get_remove_or_backup_step_status(job):
+	remove_step_name = {
+		"Archive Site": ("Archive Site", "Backup Site"),
+		"Remove Site from Upstream": ("Remove Site File from Upstream Directory"),
+	}[job.job_type]
+
+	# consider archive site as skipped only if both archive site and backup site are skipped
+
+	statuses = frappe.db.get_values(
+		"Agent Job Step",
+		{"step_name": ("in", remove_step_name), "agent_job": job.name},
+		"status",
+		for_update=True,
+	)
+	if job.job_type == "Archive Site" and len(statuses) == 2:
+		if all(status == "Skipped" for status in statuses):
+			return "Skipped"
+		if any(status == "Failure" for status in statuses):
+			return "Failure"
+		if all(status == "Success" for status in statuses):
+			return "Success"
+		return "Running"
+	if job.job_type == "Remove Site from Upstream" and len(statuses) == 1:
+		return statuses[0][0]
+	raise NotImplementedError
+
+
+def get_other_job(job):
+	other_job_type = {
+		"Archive Site": "Remove Site from Upstream",
+		"Remove Site from Upstream": "Archive Site",
+	}[job.job_type]
+
+	return frappe.get_doc(
+		"Agent Job",
+		{"job_type": other_job_type, "site": job.site},
+		for_update=True,
+	)
+
+
+def get_remove_step_statuses(job):
+	other_job = get_other_job(job)
+	if job.job_type == "Archive Site":
+		archive_dir_step_status = get_remove_or_backup_step_status(job)
+		upstream_remove_step_status = get_remove_or_backup_step_status(other_job)
+	elif job.job_type == "Remove Site from Upstream":
+		upstream_remove_step_status = get_remove_or_backup_step_status(job)
+		archive_dir_step_status = get_remove_or_backup_step_status(other_job)
+	else:
+		raise NotImplementedError
+
+	return upstream_remove_step_status, archive_dir_step_status
+
+
+def process_archive_site_job_update(job: "AgentJob"):
 	with suppress(Exception):
 		is_secondary_server = frappe.db.get_value("Server", job.upstream, "is_secondary")
 		if is_secondary_server:
@@ -4187,37 +4227,17 @@ def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 
 	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
 
-	other_job_type = {
-		"Remove Site from Upstream": "Archive Site",
-		"Archive Site": "Remove Site from Upstream",
-	}[job.job_type]
+	upstream_status, bench_site_status = get_remove_step_statuses(job)
 
-	try:
-		other_job = frappe.get_last_doc(
-			"Agent Job",
-			filters={"job_type": other_job_type, "site": job.site},
-			for_update=True,
-		)
-
-	except frappe.DoesNotExistError:
-		# Site is already renamed, the other job beat us to it
-		# Our work is done
-		return
-
-	first = get_remove_step_status(job)
-	second = get_remove_step_status(other_job)
-
-	if (
-		("Success" == first == second)
-		or ("Skipped" == first == second)
-		or sorted(("Success", "Skipped")) == sorted((first, second))
+	if "Success" == bench_site_status == upstream_status or (
+		upstream_status == "Skipped" and bench_site_status == "Success"
 	):
 		updated_status = "Archived"
-	elif "Failure" in (first, second):
+	elif bench_site_status == "Skipped" or "Failure" in (bench_site_status, upstream_status):
 		updated_status = "Broken"
-	elif "Delivery Failure" == first == second:
+	elif "Delivery Failure" == bench_site_status == upstream_status:
 		updated_status = "Active"
-	elif "Delivery Failure" in (first, second):
+	elif "Delivery Failure" in (bench_site_status, upstream_status):
 		updated_status = "Broken"
 	else:
 		updated_status = "Pending"
