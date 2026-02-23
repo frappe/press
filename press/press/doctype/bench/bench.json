@@ -22,7 +22,6 @@
   "column_break_gxqm",
   "docker_image",
   "inplace_update_docker_image",
-  "retry_count",
   "section_break_6",
   "apps",
   "configuration_section",
@@ -377,16 +376,10 @@
    "label": "Build",
    "options": "Deploy Candidate Build",
    "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "retry_count",
-   "fieldtype": "Int",
-   "label": "Retry Count"
   }
  ],
  "links": [],
- "modified": "2026-02-23 18:55:19.238253",
+ "modified": "2026-02-23 20:57:55.325786",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
