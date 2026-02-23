@@ -2,7 +2,7 @@
 	<div class="flex h-screen overflow-hidden">
 		<div class="w-full overflow-auto">
 			<LoginBox
-				:title="'Let\'s set up your site'"
+				title="Let's set up your site"
 				subtitle="Enter site name to set up your site"
 			>
 				<template v-slot:logo v-if="saasProduct">
@@ -32,6 +32,7 @@
 								"
 								v-model="subdomain"
 								data-record="true"
+								ref="subdomainInput"
 							/>
 							<div
 								class="flex cursor-default items-center rounded-r bg-gray-100 px-2 text-base"
@@ -162,6 +163,9 @@ export default {
 		},
 	},
 	mounted() {
+		this.$nextTick(() => {
+			this.$refs.subdomainInput?.focus();
+		});
 		this.email = localStorage.getItem('login_email');
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {

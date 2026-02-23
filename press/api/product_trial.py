@@ -173,7 +173,7 @@ def get_request(product: str, account_request: str | None = None) -> dict:
 	# validate if there is already a site
 	if site := _get_active_site(product, team.name):
 		site_request = frappe.get_doc(
-			"Product Trial Request", {"product_trial": product, "team": team, "site": site}
+			"Product Trial Request", {"product_trial": product, "team": team.name, "site": site}
 		)
 	elif request := _get_existing_trial_request(product, team.name):
 		site_request = frappe.get_doc("Product Trial Request", request.name)

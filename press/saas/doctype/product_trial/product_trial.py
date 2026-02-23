@@ -28,6 +28,7 @@ class ProductTrial(Document):
 		from press.press.doctype.site.site import Site
 		from press.saas.doctype.hybrid_pool_item.hybrid_pool_item import HybridPoolItem
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
+		from press.saas.doctype.product_trial_help_text.product_trial_help_text import ProductTrialHelpText
 
 		apps: DF.Table[ProductTrialApp]
 		domain: DF.Link
@@ -37,6 +38,7 @@ class ProductTrial(Document):
 		email_subject: DF.Data
 		enable_hybrid_pooling: DF.Check
 		enable_pooling: DF.Check
+		help_texts: DF.Table[ProductTrialHelpText]
 		hybrid_pool_rules: DF.Table[HybridPoolItem]
 		logo: DF.AttachImage | None
 		published: DF.Check
@@ -58,6 +60,7 @@ class ProductTrial(Document):
 		"trial_days",
 		"trial_plan",
 		"redirect_to_after_login",
+		"help_texts",
 	)
 
 	def get_doc(self, doc):
@@ -91,7 +94,7 @@ class ProductTrial(Document):
 		self,
 		subdomain: str,
 		domain: str,
-		team: str,
+		team: str | None = None,
 		cluster: str | None = None,
 		account_request: str | None = None,
 	):
