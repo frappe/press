@@ -915,16 +915,15 @@ def get_uptime(site, timezone, start: datetime, end: datetime, timegrain):
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 
-	# align to beginning of day of start date
-	start = start.astimezone(pytz_timezone(timezone)).replace(hour=0, minute=0, second=0, microsecond=0)
-	# align to end of day of end date
-	end = end.astimezone(pytz_timezone(timezone)).replace(
-		hour=0, minute=0, second=0, microsecond=0
-	) + timedelta(days=1)
-
-	# if the difference is more than 14 day, set timegrain to 1 day
+	# if the difference is more than 30 day, set timegrain to 1 day
 	if (end - start).days >= 30:
 		timegrain = 86400
+		# align to beginning of day of start date
+		start = start.astimezone(pytz_timezone(timezone)).replace(hour=0, minute=0, second=0, microsecond=0)
+		# align to end of day of end date
+		end = end.astimezone(pytz_timezone(timezone)).replace(
+			hour=0, minute=0, second=0, microsecond=0
+		) + timedelta(days=1)
 
 	query = {
 		"query": (
