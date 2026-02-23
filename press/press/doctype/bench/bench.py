@@ -117,7 +117,6 @@ class Bench(Document):
 		mounts: DF.Table[BenchMount]
 		port_offset: DF.Int
 		resetting_bench: DF.Check
-		retry_count: DF.Int
 		server: DF.Link
 		skip_memory_limits: DF.Check
 		staging: DF.Check
@@ -487,7 +486,7 @@ class Bench(Document):
 		frappe.db.commit()
 
 	@dashboard_whitelist()
-	def archive(self, new_bench_after_archive: bool = False):
+	def archive(self, retry_new_bench: bool = False):
 		self.ready_to_archive()
 		self.status = "Pending"
 		self.save()  # lock 1
@@ -496,7 +495,7 @@ class Bench(Document):
 
 		self._mark_applied_patch_as_archived()
 		agent = Agent(self.server)
-		agent.archive_bench(self, new_bench_after_archive)
+		agent.archive_bench(self, retry_new_bench)
 
 	@dashboard_whitelist()
 	def take_process_snapshot(self):
@@ -1213,7 +1212,8 @@ def archive_staging_sites():
 	StagingSite.archive_expired()
 
 
-def check_registry_retry_loop(job: AgentJob):
+# This is a new bench job
+def cancel_and_retry_bench_job_if_required(job: AgentJob):
 	"""Check if Retrying in x seconds is present in the output, which would mean that we are stuck in a loop
 	of registry retries and should break out of it by marking the job as failed"""
 
@@ -1222,27 +1222,22 @@ def check_registry_retry_loop(job: AgentJob):
 
 	job.cancel_job()
 	frappe.db.set_value("Bench", job.bench, "status", "Broken")
-	log_error("Registry retry loop detected", reference_doctype="Agent Job", reference_name=job.name)
 
 	# Trigger immediate archival of bench to allow retry
 	bench: Bench = frappe.get_doc("Bench", job.bench)
-	bench.archive(new_bench_after_archive=True)
+	bench.archive(retry_new_bench=True)
 
 
-def retry_new_bench_job(bench: Bench):
-	"""Run retry bench in this case if retry count is less than 3, to avoid infinite loop of retries"""
-	if bench.retry_count >= 3:
+def retry_new_bench_job_if_possible(bench: Bench):
+	"""Check if there are retries left, if yes then trigger a new bench job immediately."""
+	retry_count = frappe.db.count(
+		"Bench", {"build": bench.build, "server": bench.server, "group": bench.group}
+	)
+
+	if retry_count >= 3:
 		return
 
 	bench.retry_bench()
-	# Using set value to avoid any possible timestamp errors (infinite loop in case of timestamp update failure)
-	frappe.db.set_value(
-		"Bench",
-		bench.name,
-		"retry_count",
-		bench.retry_count + 1,
-		update_modified=False,
-	)
 
 
 def process_new_bench_job_update(job: AgentJob):
@@ -1283,6 +1278,8 @@ def process_new_bench_job_update(job: AgentJob):
 	if version_upgrade:
 		frappe.get_doc("Version Upgrade", version_upgrade).update_version_upgrade_on_process_job(job)
 
+	cancel_and_retry_bench_job_if_required(job)
+
 	if updated_status != "Active":
 		return
 
@@ -1312,8 +1309,6 @@ def process_new_bench_job_update(job: AgentJob):
 		)
 		bench_update.update_sites_on_server(job.bench, bench.server)
 
-	check_registry_retry_loop(job)
-
 
 def process_archive_bench_job_update(job: AgentJob):
 	bench: Bench = Bench("Bench", job.bench)
@@ -1341,10 +1336,11 @@ def process_archive_bench_job_update(job: AgentJob):
 			bench.status = updated_status  # just to ensure the status got changed in webhook payload, reload_doc is costly here
 			create_webhook_event("Bench Status Update", bench, bench.team)
 
-	if updated_status == "Archived":
-		request_data = json.loads(job.request_data)
-		if request_data.get("new_bench_after_archive"):
-			retry_new_bench_job(bench=bench)
+	request_data = json.loads(job.request_data)
+	retry_new_bench = request_data.get("retry_new_bench", False)
+
+	if updated_status == "Archived" and retry_new_bench:
+		retry_new_bench_job_if_possible(bench)
 
 
 def process_add_ssh_user_job_update(job):
