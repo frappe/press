@@ -486,7 +486,7 @@ class Bench(Document):
 		frappe.db.commit()
 
 	@dashboard_whitelist()
-	def archive(self):
+	def archive(self, new_bench_after_archive: bool = False):
 		self.ready_to_archive()
 		self.status = "Pending"
 		self.save()  # lock 1
@@ -495,7 +495,7 @@ class Bench(Document):
 
 		self._mark_applied_patch_as_archived()
 		agent = Agent(self.server)
-		agent.archive_bench(self)
+		agent.archive_bench(self, new_bench_after_archive)
 
 	@dashboard_whitelist()
 	def take_process_snapshot(self):
@@ -869,6 +869,8 @@ class Bench(Document):
 		"""
 		if type(programs) is str:
 			programs = [programs]
+
+		assert isinstance(programs, list)
 
 		return Agent(self.server).call_supervisorctl(
 			self.name,
@@ -1249,7 +1251,23 @@ def archive_staging_sites():
 	StagingSite.archive_expired()
 
 
-def process_new_bench_job_update(job):
+def check_registry_retry_loop(job: AgentJob):
+	"""Check if Retrying in x seconds is present in the output, which would mean that we are stuck in a loop
+	of registry retries and should break out of it by marking the job as failed"""
+
+	if not ("Retrying in 10 seconds" in job.output and job.status == "Running"):
+		return
+
+	job.cancel_job()
+	frappe.db.set_value("Bench", job.bench, "status", "Broken")
+	log_error("Registry retry loop detected", reference_doctype="Agent Job", reference_name=job.name)
+
+	# Trigger immediate archival of bench to allow retry
+	bench: Bench = frappe.get_doc("Bench", job.bench)
+	bench.archive(new_bench_after_archive=True)
+
+
+def process_new_bench_job_update(job: AgentJob):
 	bench = Bench("Bench", job.bench)
 
 	updated_status = {
@@ -1316,8 +1334,10 @@ def process_new_bench_job_update(job):
 		)
 		bench_update.update_sites_on_server(job.bench, bench.server)
 
+	check_registry_retry_loop(job)
 
-def process_archive_bench_job_update(job):
+
+def process_archive_bench_job_update(job: AgentJob):
 	bench = Bench("Bench", job.bench)
 
 	updated_status = {
@@ -1342,6 +1362,11 @@ def process_archive_bench_job_update(job):
 		if bench.team != "Administrator":
 			bench.status = updated_status  # just to ensure the status got changed in webhook payload, reload_doc is costly here
 			create_webhook_event("Bench Status Update", bench, bench.team)
+
+	if updated_status == "Archived":
+		request_data = json.loads(job.request_data)
+		if request_data.get("new_bench_after_archive"):
+			...
 
 
 def process_add_ssh_user_job_update(job):
