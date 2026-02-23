@@ -181,7 +181,7 @@ export default {
 		currentHelpText() {
 			const defaultHelpTexts = [
 				'Find anything with the Awesome bar!',
-				'All Frappe apps are open source!',
+				'All Frappe apps are open-source!',
 				'You can install more apps later!',
 			];
 
