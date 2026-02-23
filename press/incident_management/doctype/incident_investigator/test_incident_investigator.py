@@ -20,6 +20,9 @@ from press.press.doctype.server.test_server import (
 	create_test_proxy_server,
 	create_test_server,
 )
+from press.press.doctype.virtual_machine.test_virtual_machine import (
+	create_test_virtual_machine,
+)
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.utils.test import foreground_enqueue_doc
 
@@ -195,6 +198,9 @@ def make_custom_query_range_side_effect(
 @patch.object(Incident, "identify_problem", Mock())
 @patch.object(Incident, "take_grafana_screenshots", Mock())
 @patch.object(VirtualMachine, "reboot_with_serial_console", Mock())
+@patch(
+	"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.db.commit", Mock()
+)
 class TestIncidentInvestigator(FrappeTestCase):
 	@classmethod
 	def setUpClass(cls):
@@ -203,6 +209,10 @@ class TestIncidentInvestigator(FrappeTestCase):
 		cls.server = create_test_server(
 			proxy_server=cls.proxy_server.name, database_server=cls.database_server.name
 		)
+		cls.virtual_machine = create_test_virtual_machine()
+		cls.server.virtual_machine = cls.virtual_machine.name
+		cls.server.save()
+		frappe.db.set_single_value("Press Settings", "execute_incident_action", 1)
 
 	@patch.object(IncidentInvestigator, "after_insert", Mock())
 	def test_investigation_creation_on_incident_creation(self):
@@ -230,8 +240,6 @@ class TestIncidentInvestigator(FrappeTestCase):
 			self.assertTrue(step.is_likely_cause)
 
 		self.assertEqual(investigator.status, "Completed")
-		# Since disk is a part of the high metrics we won't be taking any actions on db either since reboot might be a wasted effort if only 2GB of disk is left
-		self.assertEqual(investigator.action_steps, [])
 		self.assertEqual(
 			frappe.get_doc("Incident", investigator.incident).phone_call, True
 		)  # Ensure we get calls in case everything is high
@@ -255,11 +263,17 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_likely_cause)
 
 		self.assertEqual(investigator.status, "Completed")
-		self.assertEqual(len(investigator.action_steps), 2)
+		self.assertEqual(len(investigator.action_steps), 5)  # Investigate benches memory as well
 
 		self.assertListEqual(
 			[step.method_name for step in investigator.action_steps],
-			["capture_process_list", "initiate_database_reboot"],
+			[
+				"capture_process_list",
+				"initiate_database_reboot",
+				"restart_benches",
+				"get_bench_memory_usage_data",
+				"get_oom_kill_events",
+			],
 		)
 
 		self.assertEqual(
@@ -285,11 +299,17 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_likely_cause)
 
 		# Since database has high memory and high cpu add database action step
-		self.assertEqual(len(investigator.action_steps), 2)
+		self.assertEqual(len(investigator.action_steps), 5)  # App server actions
 
 		self.assertListEqual(
 			[step.method_name for step in investigator.action_steps],
-			["capture_process_list", "initiate_database_reboot"],
+			[
+				"capture_process_list",
+				"initiate_database_reboot",
+				"restart_benches",
+				"get_bench_memory_usage_data",
+				"get_oom_kill_events",
+			],
 		)
 
 	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
@@ -385,6 +405,22 @@ class TestIncidentInvestigator(FrappeTestCase):
 
 			# Ensure database action is taken in case of unreachable metrics
 			self.assertEqual(len(investigator.action_steps), 1)
+
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=True))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=False))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_no_action_on_only_disk_crisis(self):
+		"""Test all the action steps were executed successfully and investigation is marked completed"""
+		create_test_incident(self.server.name)
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		self.assertEqual(len(investigator.action_steps), 0)
+
+		self.assertEqual(investigator.status, "Completed")
 
 	@classmethod
 	def tearDownClass(cls):
