@@ -117,6 +117,7 @@ class Bench(Document):
 		mounts: DF.Table[BenchMount]
 		port_offset: DF.Int
 		resetting_bench: DF.Check
+		retry_count: DF.Int
 		server: DF.Link
 		skip_memory_limits: DF.Check
 		staging: DF.Check
@@ -1267,6 +1268,22 @@ def check_registry_retry_loop(job: AgentJob):
 	bench.archive(new_bench_after_archive=True)
 
 
+def retry_new_bench_job(bench: Bench):
+	"""Run retry bench in this case if retry count is less than 3, to avoid infinite loop of retries"""
+	if bench.retry_count >= 3:
+		return
+
+	bench.retry_bench()
+	# Using set value to avoid any possible timestamp errors (infinite loop in case of timestamp update failure)
+	frappe.db.set_value(
+		"Bench",
+		bench.name,
+		"retry_count",
+		bench.retry_count + 1,
+		update_modified=False,
+	)
+
+
 def process_new_bench_job_update(job: AgentJob):
 	bench = Bench("Bench", job.bench)
 
@@ -1338,7 +1355,7 @@ def process_new_bench_job_update(job: AgentJob):
 
 
 def process_archive_bench_job_update(job: AgentJob):
-	bench = Bench("Bench", job.bench)
+	bench: Bench = Bench("Bench", job.bench)
 
 	updated_status = {
 		"Pending": "Pending",
@@ -1366,7 +1383,7 @@ def process_archive_bench_job_update(job: AgentJob):
 	if updated_status == "Archived":
 		request_data = json.loads(job.request_data)
 		if request_data.get("new_bench_after_archive"):
-			...
+			retry_new_bench_job(bench=bench)
 
 
 def process_add_ssh_user_job_update(job):
