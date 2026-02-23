@@ -22,6 +22,7 @@
   "column_break_gxqm",
   "docker_image",
   "inplace_update_docker_image",
+  "retry_count",
   "section_break_6",
   "apps",
   "configuration_section",
@@ -376,10 +377,16 @@
    "label": "Build",
    "options": "Deploy Candidate Build",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "retry_count",
+   "fieldtype": "Int",
+   "label": "Retry Count"
   }
  ],
  "links": [],
- "modified": "2025-10-13 17:14:44.604617",
+ "modified": "2026-02-23 18:55:19.238253",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
@@ -411,6 +418,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
