@@ -69,7 +69,6 @@
 </template>
 <script>
 import LoginBox from '../../components/auth/LoginBox.vue';
-import Spinner from '../../components/LoginSpinner.vue';
 import { Progress } from 'frappe-ui';
 
 export default {
@@ -78,7 +77,6 @@ export default {
 	components: {
 		LoginBox,
 		Progress,
-		SignupSpinner: Spinner,
 	},
 	data() {
 		return {
