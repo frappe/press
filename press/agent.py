@@ -86,8 +86,13 @@ class Agent:
 
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
-	def archive_bench(self, bench):
-		return self.create_agent_job("Archive Bench", f"benches/{bench.name}/archive", bench=bench.name)
+	def archive_bench(self, bench, new_bench_after_archive=False):
+		return self.create_agent_job(
+			"Archive Bench",
+			f"benches/{bench.name}/archive",
+			bench=bench.name,
+			data={"new_bench_after_archive": new_bench_after_archive},
+		)
 
 	def restart_bench(self, bench, web_only=False):
 		return self.create_agent_job(
