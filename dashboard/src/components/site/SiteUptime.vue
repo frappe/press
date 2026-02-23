@@ -134,7 +134,7 @@ export default {
 	},
 	data() {
 		return {
-			chunkSize: 90,
+			chunkSize: 30,
 			currentChunkIndex: 0,
 			hoveringOn: {
 				key: null, // (== date)
