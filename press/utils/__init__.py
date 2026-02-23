@@ -995,6 +995,35 @@ def _get_country_offsets(timezones: list[str], now_utc: datetime) -> list[float]
 	return offsets
 
 
+@redis_cache(ttl=60 * 60 * 24)
+def get_cluster_timezone_map() -> dict[str, str]:
+	"""
+	Builds and returns a map of cluster name to its timezone
+	based on the country it is in
+	"""
+	from frappe.geo.country_info import get_country_info as get_frappe_country_info
+
+	clusters = frappe.get_all(
+		"Cluster",
+		filters={
+			"status": "Active",
+			"public": 1,
+			"country": ("is", "set"),
+		},
+		fields=["name", "country"],
+		order_by="modified desc",
+	)
+
+	cluster_timezone_map: dict[str, str] = {}
+	for cluster in clusters:
+		country_info = get_frappe_country_info(cluster.country) or {}
+		timezones = country_info.get("timezones") or []
+		if timezones:
+			cluster_timezone_map[cluster.name] = timezones[0]
+
+	return cluster_timezone_map
+
+
 def _get_closest_cluster_by_offsets(country_offsets: list[float], now_utc: datetime) -> str | None:
 	"""
 	Returns the closest cluster for a given list of country timezone offsets and current UTC time
@@ -1002,22 +1031,7 @@ def _get_closest_cluster_by_offsets(country_offsets: list[float], now_utc: datet
 	closest_cluster = None
 	closest_diff = float("inf")
 
-	CLUSTER_TIMEZONES = {
-		"Mumbai": "Asia/Kolkata",
-		"Zurich": "Europe/Zurich",
-		"Frankfurt": "Europe/Berlin",
-		"Singapore": "Asia/Singapore",
-		"London": "Europe/London",
-		"Virginia": "America/New_York",
-		"Jakarta": "Asia/Jakarta",
-		"Bahrain": "Asia/Bahrain",
-		"UAE": "Asia/Dubai",
-		"KSA": "Asia/Riyadh",
-		"Cape Town": "Africa/Johannesburg",
-		"Johannesburg": "Africa/Johannesburg",
-	}
-
-	for cluster_name, cluster_timezone in CLUSTER_TIMEZONES.items():
+	for cluster_name, cluster_timezone in get_cluster_timezone_map().items():
 		cluster_seconds = _get_timezone_offset_seconds(cluster_timezone, now_utc)
 		if cluster_seconds is None:
 			continue
