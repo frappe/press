@@ -26,7 +26,7 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import ExtensionOID
 from frappe.utils import get_datetime, get_system_timezone
-from frappe.utils.caching import site_cache
+from frappe.utils.caching import redis_cache, site_cache
 
 from press.utils.email_validator import validate_email
 
@@ -1030,6 +1030,31 @@ def _get_closest_cluster_by_offsets(country_offsets: list[float], now_utc: datet
 	return closest_cluster
 
 
+@redis_cache(ttl=60 * 60 * 24)
+def get_cluster_country_map() -> dict[str, str]:
+	clusters = frappe.get_all(
+		"Cluster",
+		filters={
+			"status": "Active",
+			"public": 1,
+			"country": ("is", "set"),
+		},
+		fields=["name", "country"],
+		order_by="modified desc",
+	)
+
+	country_map: dict[str, str] = {}
+	for cluster in clusters:
+		if cluster.country and cluster.country not in country_map:
+			country_map[cluster.country] = cluster.name
+
+	return country_map
+
+
+def _get_mapped_cluster_for_country(country: str) -> str | None:
+	return get_cluster_country_map().get(country)
+
+
 def get_nearest_cluster_for_country(country: str | None) -> str | None:
 	"""
 	Returns the nearest cluster for a given country based on timezone information.
@@ -1039,6 +1064,9 @@ def get_nearest_cluster_for_country(country: str | None) -> str | None:
 
 	if not country:
 		return None
+
+	if preferred_cluster := _get_mapped_cluster_for_country(country):
+		return preferred_cluster
 
 	country_info = get_frappe_country_info(country) or {}
 	timezones = country_info.get("timezones") or []
