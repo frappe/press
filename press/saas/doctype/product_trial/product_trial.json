@@ -8,6 +8,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "section_break_cszv",
   "title",
   "column_break_bqrh",
   "logo",
@@ -29,6 +30,8 @@
   "enable_hybrid_pooling",
   "hybrid_pool_rules",
   "signup_details_tab",
+  "help_text_section",
+  "help_texts",
   "email_section",
   "email_account",
   "column_break_gokr",
@@ -132,6 +135,17 @@
    "label": "Signup Details"
   },
   {
+   "fieldname": "help_text_section",
+   "fieldtype": "Section Break",
+   "label": "Signup Help Texts"
+  },
+  {
+   "fieldname": "help_texts",
+   "fieldtype": "Table",
+   "label": "Help Texts",
+   "options": "Product Trial Help Text"
+  },
+  {
    "default": "14",
    "fieldname": "trial_days",
    "fieldtype": "Int",
@@ -228,6 +242,10 @@
    "fieldname": "enable_hybrid_pooling",
    "fieldtype": "Check",
    "label": "Enable Hybrid Pooling"
+  },
+  {
+   "fieldname": "section_break_cszv",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
@@ -243,7 +261,7 @@
    "link_fieldname": "product_trial"
   }
  ],
- "modified": "2026-01-12 18:55:46.861737",
+ "modified": "2026-02-23 10:28:53.892118",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Product Trial",

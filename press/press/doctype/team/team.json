@@ -95,8 +95,6 @@
   "security_portal_enabled",
   "benches_enabled",
   "mpesa_enabled",
-  "hetzner_internal_user",
-  "allow_unified_servers",
   "discounts_section",
   "discounts",
   "is_us_eu",
@@ -651,18 +649,6 @@
    "label": "Hybrid Servers Enabled"
   },
   {
-   "default": "0",
-   "fieldname": "hetzner_internal_user",
-   "fieldtype": "Check",
-   "label": "Hetzner Internal User"
-  },
-  {
-   "default": "0",
-   "fieldname": "allow_unified_servers",
-   "fieldtype": "Check",
-   "label": "Allow Unified Servers"
-  },
-  {
    "fieldname": "phone_number",
    "fieldtype": "Phone",
    "in_list_view": 1,
@@ -739,7 +725,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2026-02-08 19:03:07.774884",
+ "modified": "2026-02-24 10:37:10.453850",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
