@@ -1255,11 +1255,12 @@ def archive_staging_sites():
 def cancel_and_retry_bench_job_if_required(job: AgentJob):
 	"""Check if Retrying in x seconds is present in the output, which would mean that we are stuck in a loop
 	of registry retries and should break out of it by marking the job as failed"""
-
 	if not ("Retrying in 10 seconds" in job.output and job.status == "Running"):
 		return
 
 	job.cancel_job()
+
+	frappe.db.set_value("Agent Job", job.name, "status", "Failure")
 	frappe.db.set_value("Bench", job.bench, "status", "Broken")
 
 	# Trigger immediate archival of bench to allow retry

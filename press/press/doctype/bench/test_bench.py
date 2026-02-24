@@ -632,7 +632,6 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	# @patch("press.press.doctype.agent_job.agent_job.frappe.enqueue", new=foreground_enqueue)
 	@patch.object(DeployCandidateBuild, "upload_build_context_for_docker_build", new=dummy_payload)
 	@patch("press.press.doctype.deploy_candidate_build.deploy_candidate_build.frappe.db.commit", new=Mock())
 	def test_successful_new_bench_is_not_retried(self):
@@ -678,6 +677,73 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			poll_pending_jobs()
 			self.assertEqual(
 				frappe.db.get_all("Agent Job", {"job_type": "New Bench", "bench": ("!=", bench.name)}), []
+			)
+
+		if os.path.exists("/tmp/.docker-builds"):
+			shutil.rmtree("/tmp/.docker-builds")
+
+		if os.path.exists("/tmp/.clones"):
+			shutil.rmtree("/tmp/.clones")
+
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	@patch.object(DeployCandidateBuild, "upload_build_context_for_docker_build", new=dummy_payload)
+	@patch("press.press.doctype.deploy_candidate_build.deploy_candidate_build.frappe.db.commit", new=Mock())
+	@patch("press.press.doctype.bench.bench.frappe.db.commit", new=Mock())
+	@patch.object(AgentJob, "cancel_job", Mock())
+	def test_network_failed_new_bench_is_retried_three_time(self):
+		import shutil
+
+		build_server = create_test_server()
+		deploy_on_server = create_test_server()
+
+		app = create_test_app()
+		app_source = app.add_source(
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-15",
+			frappe_version="Version 15",
+			team=get_current_team(),
+		)
+		release_group: ReleaseGroup = create_test_release_group(
+			apps=[app],
+			build_server=build_server.name,
+			public=False,
+			app_sources=[app_source],
+			frappe_version="Version 15",
+			servers=[deploy_on_server.name],
+		)
+
+		deploy_candidate: DeployCandidate = release_group.create_deploy_candidate()
+
+		frappe.db.set_single_value("Press Settings", "build_directory", "/tmp/.docker-builds")
+		frappe.db.set_single_value("Press Settings", "clone_directory", "/tmp/.clones")
+
+		# to ensure New Bench job is also polled and retried on failure
+		# Retry key is the "Retrying in 10 seconds" value in the output
+		# and the retry will only occure if job is still running (stuck in loop)
+
+		with (
+			fake_agent_job("Run Remote Builder", "Success"),
+			fake_agent_job("New Bench", "Running", data={"output": "Retrying in 10 seconds"}),
+			fake_agent_job("Archive Bench", "Success"),
+			fake_agent_job("Update Bench Configuration", "Success"),
+		):
+			deploy_candidate_build = deploy_candidate.create_build(deploy_after_build=True)
+			build = deploy_candidate_build.insert()
+			self.assertNotEqual(build.name, None)
+
+			poll_pending_jobs()
+			bench_name = frappe.db.get_value("Agent Job", {"job_type": "New Bench"}, ["bench"])
+			# This should have created a bench archival job
+			poll_pending_jobs()
+			self.assertNotEqual(
+				frappe.db.get_value(
+					"Agent Job",
+					{"job_type": "Archive Bench", "bench": bench_name},
+				),
+				None,
 			)
 
 		if os.path.exists("/tmp/.docker-builds"):
