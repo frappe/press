@@ -3,7 +3,7 @@
 		v-model="show"
 		:options="{
 			size: '4xl',
-			title: lastDeploy ? 'Update Bench Group' : 'Deploy Bench Group',
+			title: lastDeploy ? 'Update Bench' : 'Deploy Bench',
 		}"
 	>
 		<template #body-content>
