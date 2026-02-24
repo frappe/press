@@ -1,6 +1,6 @@
 <template>
 	<AlertBanner :title="title" :type="type">
-		<Button class="ml-auto" variant="outline" @click="show">View</Button>
+		<Button class="ml-auto" variant="solid" @click="show">Fix</Button>
 	</AlertBanner>
 </template>
 
