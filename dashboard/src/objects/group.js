@@ -41,7 +41,7 @@ export default {
 	},
 	list: {
 		route: '/groups',
-		title: 'Bench Groups',
+		title: 'Benches',
 		fields: [{ apps: ['app'] }],
 		searchField: 'title',
 		filterControls() {
@@ -101,7 +101,7 @@ export default {
 		],
 		primaryAction() {
 			return {
-				label: 'New Bench Group',
+				label: 'New Bench',
 				variant: 'solid',
 				slots: {
 					prefix: icon('plus'),
@@ -114,7 +114,7 @@ export default {
 		banner({ listResource: groups }) {
 			if (!groups.data?.length) {
 				return {
-					title: 'Learn how to create a new private bench group and sites',
+					title: 'Learn how to create a new private bench and sites',
 					button: {
 						label: 'Read docs',
 						variant: 'outline',

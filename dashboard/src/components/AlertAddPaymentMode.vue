@@ -2,7 +2,7 @@
 	<AlertBanner
 		:title="
 			title ??
-			'Add a payment mode to start creating sites, bench groups, and more.'
+			'Add a payment mode to start creating sites, benches, and more.'
 		"
 		:type="type ?? 'warning'"
 	>

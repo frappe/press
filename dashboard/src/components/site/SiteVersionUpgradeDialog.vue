@@ -19,7 +19,7 @@
 						<div class="mb-4 text-base">
 							<p>
 								The site <b>{{ $site.doc.host_name }}</b> will be moved to
-								<b>{{ existingBenchGroupTitle }}</b> bench group for upgrade to
+								<b>{{ existingBenchGroupTitle }}</b> bench for upgrade to
 								{{ nextVersion }}.
 							</p>
 						</div>
@@ -62,7 +62,7 @@
 						>
 							<p>
 								The site <b>{{ $site.doc.host_name }}</b> will be moved to a new
-								<b>{{ nextVersion }}</b> bench group for upgrade.
+								<b>{{ nextVersion }}</b> bench for upgrade.
 							</p>
 						</div>
 						<div
@@ -118,7 +118,7 @@
 						</div>
 						<FormControl
 							v-if="!existingBenchGroup"
-							label="Bench Group Title"
+							label="Bench Title"
 							type="text"
 							v-model="newReleaseGroupTitle"
 							placeholder="e.g., My Team - Version 15"

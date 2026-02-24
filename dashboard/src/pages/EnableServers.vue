@@ -8,8 +8,8 @@
 				<p class="text-p-base">
 					With Servers on Frappe Cloud, you now get dedicated compute resources
 					for your sites. Servers come in pairs (Application + Database). You
-					can run as many sites and bench groups as you want. All other features
-					like Private Bench Groups, SSH Access, Database Access work as is with
+					can run as many sites and benches as you want. All other features
+					like Private Benches, SSH Access, Database Access work as is with
 					servers.
 				</p>
 			</div>
