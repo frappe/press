@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 from urllib.parse import urlparse
@@ -28,7 +27,6 @@ from press.press.doctype.bench.bench import (
 	archive_obsolete_benches,
 	archive_obsolete_benches_for_server,
 )
-from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
@@ -37,7 +35,6 @@ from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
 from press.press.doctype.server.server import Server, scale_workers
-from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.site_update.test_site_update import create_test_site_update
@@ -49,7 +46,6 @@ from press.utils import get_current_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 if TYPE_CHECKING:
-	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.team.team import Team
 
@@ -628,126 +624,54 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			self.assertEqual(redis_cache_uri.password, redis_queue_uri.password)
 			self.assertEqual(redis_cache_uri.password, None)
 
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
-		new=foreground_enqueue_doc,
-	)
-	@patch.object(DeployCandidateBuild, "upload_build_context_for_docker_build", new=dummy_payload)
-	@patch("press.press.doctype.deploy_candidate_build.deploy_candidate_build.frappe.db.commit", new=Mock())
-	def test_successful_new_bench_is_not_retried(self):
-		import shutil
-
-		build_server = create_test_server()
-		deploy_on_server = create_test_server()
-
-		app = create_test_app()
-		app_source = app.add_source(
-			repository_url="https://github.com/frappe/frappe",
-			branch="version-15",
-			frappe_version="Version 15",
-			team=get_current_team(),
-		)
-		release_group: ReleaseGroup = create_test_release_group(
-			apps=[app],
-			build_server=build_server.name,
-			public=False,
-			app_sources=[app_source],
-			frappe_version="Version 15",
-			servers=[deploy_on_server.name],
-		)
-
-		deploy_candidate: DeployCandidate = release_group.create_deploy_candidate()
-
-		frappe.db.set_single_value("Press Settings", "build_directory", "/tmp/.docker-builds")
-		frappe.db.set_single_value("Press Settings", "clone_directory", "/tmp/.clones")
-
-		with fake_agent_job("Run Remote Builder", "Success"), fake_agent_job("New Bench", "Success"):
-			deploy_candidate_build = deploy_candidate.create_build(deploy_after_build=True)
-			build = deploy_candidate_build.insert()
-			self.assertNotEqual(build.name, None)
-
-			poll_pending_jobs()
-
-			# to ensure New Bench job is also polled
-			poll_pending_jobs()
-			bench: Bench = frappe.get_doc("Bench", {"build": build.name})
-			self.assertEqual(bench.status, "Active")
-
-			# to ensure no new bench job is triggered after successful bench creation
-			poll_pending_jobs()
-			self.assertEqual(
-				frappe.db.get_all("Agent Job", {"job_type": "New Bench", "bench": ("!=", bench.name)}), []
-			)
-
-		if os.path.exists("/tmp/.docker-builds"):
-			shutil.rmtree("/tmp/.docker-builds")
-
-		if os.path.exists("/tmp/.clones"):
-			shutil.rmtree("/tmp/.clones")
-
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
-		new=foreground_enqueue_doc,
-	)
-	@patch.object(DeployCandidateBuild, "upload_build_context_for_docker_build", new=dummy_payload)
-	@patch("press.press.doctype.deploy_candidate_build.deploy_candidate_build.frappe.db.commit", new=Mock())
-	@patch("press.press.doctype.bench.bench.frappe.db.commit", new=Mock())
+	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
+	@patch("press.press.doctype.bench.bench.frappe.db.commit", Mock())
+	@patch.object(Bench, "update_bench_config", Mock())
 	@patch.object(AgentJob, "cancel_job", Mock())
-	def test_network_failed_new_bench_is_retried_three_time(self):
-		import shutil
-
-		build_server = create_test_server()
-		deploy_on_server = create_test_server()
-
-		app = create_test_app()
-		app_source = app.add_source(
-			repository_url="https://github.com/frappe/frappe",
-			branch="version-15",
-			frappe_version="Version 15",
-			team=get_current_team(),
-		)
-		release_group: ReleaseGroup = create_test_release_group(
-			apps=[app],
-			build_server=build_server.name,
-			public=False,
-			app_sources=[app_source],
-			frappe_version="Version 15",
-			servers=[deploy_on_server.name],
-		)
-
-		deploy_candidate: DeployCandidate = release_group.create_deploy_candidate()
-
-		frappe.db.set_single_value("Press Settings", "build_directory", "/tmp/.docker-builds")
-		frappe.db.set_single_value("Press Settings", "clone_directory", "/tmp/.clones")
-
-		# to ensure New Bench job is also polled and retried on failure
-		# Retry key is the "Retrying in 10 seconds" value in the output
-		# and the retry will only occure if job is still running (stuck in loop)
-
+	def test_new_bench_job_failure_and_archival(self):
 		with (
-			fake_agent_job("Run Remote Builder", "Success"),
 			fake_agent_job("New Bench", "Running", data={"output": "Retrying in 10 seconds"}),
 			fake_agent_job("Archive Bench", "Success"),
-			fake_agent_job("Update Bench Configuration", "Success"),
 		):
-			deploy_candidate_build = deploy_candidate.create_build(deploy_after_build=True)
-			build = deploy_candidate_build.insert()
-			self.assertNotEqual(build.name, None)
+			bench = create_test_bench()
+			poll_pending_jobs()  # Should create archive job
 
-			poll_pending_jobs()
-			bench_name = frappe.db.get_value("Agent Job", {"job_type": "New Bench"}, ["bench"])
-			# This should have created a bench archival job
-			poll_pending_jobs()
-			self.assertNotEqual(
-				frappe.db.get_value(
-					"Agent Job",
-					{"job_type": "Archive Bench", "bench": bench_name},
-				),
-				None,
-			)
+			bench_jobs = frappe.get_all("Agent Job", {"bench": bench.name}, ["status", "job_type"])
 
-		if os.path.exists("/tmp/.docker-builds"):
-			shutil.rmtree("/tmp/.docker-builds")
+			# New bench job was marked failure due to Retrying in 10 seconds message in output
+			new_bench_jobs = [job for job in bench_jobs if job["job_type"] == "New Bench"]
+			self.assertEqual(len(new_bench_jobs), 1)
+			self.assertEqual(new_bench_jobs[0]["status"], "Failure")
 
-		if os.path.exists("/tmp/.clones"):
-			shutil.rmtree("/tmp/.clones")
+			# We should have triggered a automatic bench archival due to failure in new bench
+			archive_bench_jobs = [job for job in bench_jobs if job["job_type"] == "Archive Bench"]
+			self.assertEqual(len(archive_bench_jobs), 1)
+			self.assertEqual(archive_bench_jobs[0]["status"], "Pending")
+
+			poll_pending_jobs()  # Should archive the bench
+
+			bench_jobs = frappe.get_all("Agent Job", {"bench": bench.name}, ["status", "job_type", "data"])
+			archive_bench_jobs = [job for job in bench_jobs if job["job_type"] == "Archive Bench"]
+			self.assertEqual(len(archive_bench_jobs), 1)
+			self.assertEqual(archive_bench_jobs[0]["status"], "Success")
+
+	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
+	@patch("press.press.doctype.bench.bench.frappe.db.commit", Mock())
+	@patch.object(Bench, "update_bench_config", Mock())
+	@patch.object(AgentJob, "cancel_job", Mock())
+	def test_new_bench_job_no_failure_without_loop_message(self):
+		with (
+			fake_agent_job("New Bench", "Running"),
+		):
+			bench = create_test_bench()
+			poll_pending_jobs()  # Should not create archive job as there is no loop message in output
+
+			bench_jobs = frappe.get_all("Agent Job", {"bench": bench.name}, ["status", "job_type"])
+
+			# New bench job was marked failure due to Retrying in 10 seconds message in output
+			new_bench_jobs = [job for job in bench_jobs if job["job_type"] == "New Bench"]
+			self.assertEqual(len(new_bench_jobs), 1)
+
+			# No automatic bench archival after new bench job was successful
+			archive_bench_jobs = [job for job in bench_jobs if job["job_type"] == "Archive Bench"]
+			self.assertEqual(len(archive_bench_jobs), 0)
