@@ -140,6 +140,7 @@ def fake_agent_job_req(  # noqa: C901
 			"data": spec["data"],
 			# TODO: uncomment lines as needed and make new parameters #
 			"duration": "00:00:13.496281",
+			"output": spec["data"].get("output", ""),
 			"end": "2023-08-20 18:24:41.506067",
 			"id": job_id,
 			"start": "2023-08-20 18:24:28.009786",
