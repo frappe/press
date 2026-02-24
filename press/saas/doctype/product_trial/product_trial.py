@@ -234,14 +234,15 @@ class ProductTrial(Document):
 
 	@staticmethod
 	def get_preferred_site(filters) -> str | None:
-		sites = frappe.db.get_all(
+		sites = frappe.db.get_values(
 			"Site",
 			filters=filters,
-			pluck="name",
+			fieldname="name",
 			order_by="status,standby_for,creation asc",
 			limit=3,
 			for_update=True,
 			skip_locked=True,
+			pluck=True,
 		)
 		if not sites:
 			return None
