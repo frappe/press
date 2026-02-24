@@ -652,12 +652,6 @@ def options():
 		],
 	)
 
-	if not is_system_user and not (
-		frappe.local and frappe.local.team() and frappe.local.team().hetzner_internal_user
-	):
-		# filter out hetzner clusters
-		regions = [region for region in regions if region.get("cloud_provider") != "Hetzner"]
-
 	cloud_providers = get_cloud_providers()
 	"""
 	{
