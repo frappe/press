@@ -201,7 +201,8 @@ class ProxyFailover(Document, StepHandler):
 			{"status": ("!=", "Archived"), "server": ("in", servers)},
 			["name", "domain"],
 		)
-		for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
+		sorted_sites_domains = sorted(sites_domains, key=lambda x: x["domain"])
+		for domain_name, sites in groupby(sorted_sites_domains, lambda x: x["domain"]):
 			domain = frappe.get_doc("Root Domain", domain_name)
 			domain.update_dns_records_for_sites([site.name for site in sites], self.secondary, batch_size=250)
 
@@ -459,7 +460,8 @@ def reduce_ttl_of_sites(primary_proxy_name, secondary_proxy_name):
 		{"status": ("!=", "Archived"), "server": ("in", servers)},
 		["name", "domain"],
 	)
-	for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
+	sorted_sites_domains = sorted(sites_domains, key=lambda x: x["domain"])
+	for domain_name, sites in groupby(sorted_sites_domains, lambda x: x["domain"]):
 		domain = frappe.get_doc("Root Domain", domain_name)
 		domain.update_dns_records_for_sites(
 			[site.name for site in sites], primary_proxy.name, ttl=60, batch_size=250
