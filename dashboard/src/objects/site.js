@@ -110,7 +110,7 @@ export default {
 				},
 				{
 					type: 'link',
-					label: 'Bench Group',
+					label: 'Benches',
 					fieldname: 'group',
 					options: {
 						doctype: 'Release Group',
@@ -182,7 +182,7 @@ export default {
 				},
 			},
 			{
-				label: 'Bench Group',
+				label: 'Benches',
 				fieldname: 'group',
 				width: '15rem',
 				format(value, row) {
@@ -1069,7 +1069,7 @@ export default {
 
 						return getUpsellBanner(
 							site,
-							'Your site is currently on a shared bench group. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.',
+							'Your site is currently on a shared bench. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.',
 						);
 					},
 				},
@@ -1558,7 +1558,7 @@ export default {
 					},
 					banner({ documentResource: site }) {
 						const bannerTitle =
-							'Your site is currently on a shared bench group. Upgrade to a private bench group to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+							'Your site is currently on a shared bench. Upgrade to a private bench to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
 
 						return getUpsellBanner(site, bannerTitle);
 					},

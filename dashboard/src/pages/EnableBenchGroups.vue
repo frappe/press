@@ -4,9 +4,9 @@
 			class="mx-auto max-w-2xl rounded-lg border-0 px-2 py-8 sm:border sm:p-8 space-y-8 mt-10"
 		>
 			<div class="prose prose-sm max-w-none">
-				<h1 class="text-2xl font-semibold">Bench Groups</h1>
+				<h1 class="text-2xl font-semibold">Benches</h1>
 				<p class="text-p-base">
-					With Bench groups, you get more control. You can choose which apps to
+					With Benches, you get more control. You can choose which apps to
 					add, which apps to update, which region to deploy to and more.
 				</p>
 			</div>
@@ -30,7 +30,7 @@
 				</div>
 				<div v-if="!onboardingComplete" class="pt-2">
 					<p class="text-sm text-gray-700">
-						Finish onboarding to start using Bench Groups.
+						Finish onboarding to start using Benches.
 					</p>
 					<Button
 						:route="{ name: 'Welcome' }"

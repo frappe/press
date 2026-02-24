@@ -5,7 +5,7 @@
 			<Dropdown
 				:options="[
 					{ label: 'Site', route: { name: 'New Site' } },
-					{ label: 'Bench Group', route: { name: 'New Release Group' } },
+					{ label: 'Benches', route: { name: 'New Release Group' } },
 				]"
 			>
 				<Button
