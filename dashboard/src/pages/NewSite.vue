@@ -713,7 +713,7 @@ export default {
 			const hasMultipleServers = this.availableDedicatedServers.length > 1;
 			// Only show server selection when:
 			// 1. user_choice_multiple - User has enabled dedicated server checkbox AND there are multiple servers
-			// 2. dedicated_only_multiple - bench group has multiple dedicated servers linked to it and none public
+			// 2. dedicated_only_multiple - release group has multiple dedicated servers linked to it and none public
 			if (!this.useDedicatedServer || !hasMultipleServers) {
 				return false;
 			}
@@ -908,7 +908,7 @@ export default {
 			if (this.bench) {
 				let group = getCachedDocumentResource('Release Group', this.bench);
 				return [
-					{ label: 'Bench Groups', route: '/groups' },
+					{ label: 'Benches', route: '/groups' },
 					{
 						label: group ? group.doc.title : this.bench,
 						route: {
