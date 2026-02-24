@@ -64,6 +64,7 @@ class DatabaseServer(BaseServer):
 		enable_binlog_indexing: DF.Check
 		enable_binlog_upload_to_s3: DF.Check
 		enable_physical_backup: DF.Check
+		enable_schema_size_parser: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		gtid_binlog_pos: DF.Data | None
@@ -1391,6 +1392,30 @@ class DatabaseServer(BaseServer):
 			log_error("MariaDB Provide Frappe User DU Permission Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def provide_frappe_user_mariadb_table_usage_permission(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_provide_frappe_user_mariadb_table_usage_permission",
+			queue="long",
+			timeout=1200,
+		)
+
+	def _provide_frappe_user_mariadb_table_usage_permission(self):
+		try:
+			ansible = Ansible(
+				playbook="provide_frappe_user_mariadb_table_usage_permission.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error(
+				"MariaDB Provide Frappe User Mariadb Table Usage Permission Exception", server=self.as_dict()
+			)
+
+	@frappe.whitelist()
 	def setup_mariadb_debug_symbols(self):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_mariadb_debug_symbols", queue="long", timeout=1200
@@ -2593,9 +2618,7 @@ def auto_purge_binlogs_by_size_limit():
 def update_database_schema_sizes():
 	databases = frappe.db.get_all(
 		"Database Server",
-		filters={
-			"status": "Active",
-		},
+		filters={"status": "Active", "enable_schema_size_parser": 1},
 		pluck="name",
 	)
 

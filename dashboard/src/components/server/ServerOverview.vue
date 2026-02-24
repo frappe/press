@@ -195,6 +195,8 @@ import { toast } from 'vue-sonner';
 import { h, defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource, Progress } from 'frappe-ui';
 import { confirmDialog, renderDialog } from '../../utils/components';
+import StorageBreakdownDialog from './StorageBreakdownDialog.vue';
+import ServerPlansDialog from './ServerPlansDialog.vue';
 import { getToastErrorMessage } from '../../utils/toast';
 import ServerLoadAverage from './ServerLoadAverage.vue';
 import { getDocResource } from '../../utils/resource';

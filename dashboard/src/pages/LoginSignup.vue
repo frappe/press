@@ -354,6 +354,7 @@
 								:message="$resources.verifyOTP.error"
 							/>
 							<Button
+								type="submit"
 								class="mt-4"
 								variant="solid"
 								:loading="$resources.verifyOTP.loading"
