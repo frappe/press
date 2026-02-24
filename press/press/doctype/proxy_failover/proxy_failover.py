@@ -50,7 +50,11 @@ class ProxyFailover(Document, StepHandler):
 
 		if not primary.is_static_ip:
 			routing_steps.extend(
-				[self.build_nginx_with_stream_module, self.route_requests_from_primary_to_secondary]
+				[
+					self.build_nginx_with_stream_module,
+					self.route_requests_from_primary_to_secondary,
+					self.open_alternative_ports_for_communication,
+				]
 			)
 
 		for step in self.get_steps(
@@ -91,13 +95,8 @@ class ProxyFailover(Document, StepHandler):
 		)
 
 	def route_requests_from_primary_to_secondary(self, step=None):
-		"""Route all traffic from primary to secondary proxy server"""
-		step.status = Status.Running
-		step.save()
-
-		primary_proxy = frappe.get_doc("Proxy Server", self.primary)
-
 		try:
+			primary_proxy = frappe.get_doc("Proxy Server", self.primary)
 			ansible = Ansible(
 				playbook="nginx_conf_changes_for_tcp_streaming.yml",
 				server=primary_proxy,
@@ -105,14 +104,16 @@ class ProxyFailover(Document, StepHandler):
 				port=primary_proxy._ssh_port(),
 				variables={"secondary_proxy": self.secondary},
 			)
-			ansible_play = ansible.run()
-			if ansible_play.status == Status.Failure:
-				raise
+			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
-			return
+			raise
 
-		cluster = frappe.get_doc("Cluster", primary_proxy.cluster)
+	def open_alternative_ports_for_communication(self, step):
+		step.status = Status.Running
+		step.save()
+
+		cluster = frappe.get_doc("Cluster", frappe.db.get_value("Proxy Server", self.primary, "cluster"))
 		if cluster.cloud_provider == "AWS EC2":
 			client = cluster.get_aws_client()
 			client.authorize_security_group_ingress(
@@ -139,6 +140,14 @@ class ProxyFailover(Document, StepHandler):
 				"servers_using_alternative_http_port_for_communication",
 				"\n".join(alt_port_servers),
 			)
+
+		# open 8443 port internally
+		result = AnsibleAdHoc(sources=f"{self.primary},").run("ufw allow 8443/tcp")[0]
+		if result.get("status") != "Success":
+			step.status = Status.Failure
+			step.output = "Unable to open 8443 port internally"
+			step.save()
+			return  # not raising here - we can manually execute this command if things fail :P - and this should mostly not be needed
 
 		step.status = Status.Success
 		step.save()
@@ -186,10 +195,7 @@ class ProxyFailover(Document, StepHandler):
 		step.save()
 
 	def update_dns_records_for_all_sites(self, step):
-		step.status = Status.Running
-		step.save()
-
-		servers = frappe.get_all("Server", {"proxy_server": self.primary}, pluck="name")
+		servers = frappe.get_all("Server", {"proxy_server": self.secondary}, pluck="name")
 		sites_domains = frappe.get_all(
 			"Site",
 			{"status": ("!=", "Archived"), "server": ("in", servers)},
