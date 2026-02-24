@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 from urllib.parse import urlparse
@@ -27,6 +28,7 @@ from press.press.doctype.bench.bench import (
 	archive_obsolete_benches,
 	archive_obsolete_benches_for_server,
 )
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
@@ -35,6 +37,7 @@ from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
 from press.press.doctype.server.server import Server, scale_workers
+from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.site_update.test_site_update import create_test_site_update
@@ -46,8 +49,13 @@ from press.utils import get_current_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 if TYPE_CHECKING:
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.team.team import Team
+
+
+def dummy_payload(*args, **kwargs):
+	return {"dummy": "payload"}
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -590,8 +598,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 	def test_if_any_ongoing_jobs_are_running_on_bench(self):
 		with fake_agent_job({"New Bench": {"status": "Success"}, "Add User to Proxy": {"status": "Success"}}):
 			bench = create_test_bench()
-			bench.status = "Pending"
-			bench.save()
+			frappe.db.set_value("Bench", bench.name, "status", "Pending")
 			poll_pending_jobs()
 			with self.assertRaises(ArchiveBenchError):
 				bench.archive()
@@ -620,3 +627,61 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 
 			self.assertEqual(redis_cache_uri.password, redis_queue_uri.password)
 			self.assertEqual(redis_cache_uri.password, None)
+
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	# @patch("press.press.doctype.agent_job.agent_job.frappe.enqueue", new=foreground_enqueue)
+	@patch.object(DeployCandidateBuild, "upload_build_context_for_docker_build", new=dummy_payload)
+	@patch("press.press.doctype.deploy_candidate_build.deploy_candidate_build.frappe.db.commit", new=Mock())
+	def test_successful_new_bench_is_not_retried(self):
+		import shutil
+
+		build_server = create_test_server()
+		deploy_on_server = create_test_server()
+
+		app = create_test_app()
+		app_source = app.add_source(
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-15",
+			frappe_version="Version 15",
+			team=get_current_team(),
+		)
+		release_group: ReleaseGroup = create_test_release_group(
+			apps=[app],
+			build_server=build_server.name,
+			public=False,
+			app_sources=[app_source],
+			frappe_version="Version 15",
+			servers=[deploy_on_server.name],
+		)
+
+		deploy_candidate: DeployCandidate = release_group.create_deploy_candidate()
+
+		frappe.db.set_single_value("Press Settings", "build_directory", "/tmp/.docker-builds")
+		frappe.db.set_single_value("Press Settings", "clone_directory", "/tmp/.clones")
+
+		with fake_agent_job("Run Remote Builder", "Success"), fake_agent_job("New Bench", "Success"):
+			deploy_candidate_build = deploy_candidate.create_build(deploy_after_build=True)
+			build = deploy_candidate_build.insert()
+			self.assertNotEqual(build.name, None)
+
+			poll_pending_jobs()
+
+			# to ensure New Bench job is also polled
+			poll_pending_jobs()
+			bench: Bench = frappe.get_doc("Bench", {"build": build.name})
+			self.assertEqual(bench.status, "Active")
+
+			# to ensure no new bench job is triggered after successful bench creation
+			poll_pending_jobs()
+			self.assertEqual(
+				frappe.db.get_all("Agent Job", {"job_type": "New Bench", "bench": ("!=", bench.name)}), []
+			)
+
+		if os.path.exists("/tmp/.docker-builds"):
+			shutil.rmtree("/tmp/.docker-builds")
+
+		if os.path.exists("/tmp/.clones"):
+			shutil.rmtree("/tmp/.clones")
