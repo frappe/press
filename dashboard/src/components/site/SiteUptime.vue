@@ -140,7 +140,7 @@ export default {
 		return {
 			carouselId: uuid4(),
 			chunkSize: null,
-			maxChunkSize: 30,
+			maxChunkSize: 60,
 			currentChunkIndex: 0,
 			hoveringOn: {
 				key: null, // (== date)

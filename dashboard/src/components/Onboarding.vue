@@ -10,7 +10,7 @@
 			</p>
 		</div>
 		<p class="mt-6 text-base text-gray-800">
-			Complete the steps below to unlock sites, bench groups, dedicated servers
+			Complete the steps below to unlock sites, benches, dedicated servers
 			and more.
 		</p>
 		<div class="mt-6 space-y-6">
