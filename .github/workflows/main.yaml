@@ -90,7 +90,6 @@ jobs:
           ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
         run: |
           ruff check --output-format github ${ALL_CHANGED_FILES}
-        continue-on-error: true
 
       - name: Format Check
         id: format_check
@@ -99,7 +98,6 @@ jobs:
           ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
         run: |
           ruff format --check ${ALL_CHANGED_FILES} --diff
-        continue-on-error: true
 
       - name: Typing Check
         id: typing_check
@@ -108,16 +106,6 @@ jobs:
           ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
         run: |
           mypy ${ALL_CHANGED_FILES}
-        continue-on-error: true
-
-      - name: Fail if any check failed
-        if: |
-          steps.lint_check.outcome == 'failure' ||
-          steps.format_check.outcome == 'failure' ||
-          steps.typing_check.outcome == 'failure'
-        run: |
-          echo "One or more checks failed."
-          exit 1
 
   semgrep:
     name: Semgrep Rules
