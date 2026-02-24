@@ -21,7 +21,7 @@ import frappe.utils
 import pytz
 import requests
 import wrapt
-from babel.dates import format_timedelta
+from babel.dates import format_timedelta  # type: ignore[import-not-found]
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import ExtensionOID
@@ -921,8 +921,8 @@ def get_full_chain_cert_of_domain(domain: str) -> str:
 			break
 
 	cert_chain_str = ""
-	for cert in cert_chain:
-		cert_chain_str += cert + "\n"
+	for cert_pem in cert_chain:
+		cert_chain_str += cert_pem + "\n"
 	return cert_chain_str
 
 
