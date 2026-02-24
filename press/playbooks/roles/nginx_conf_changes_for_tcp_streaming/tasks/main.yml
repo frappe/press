@@ -4,6 +4,7 @@
   become_user: frappe
   shell: grep "^stream {" {{ nginx_conf_path }}
   register: stream_exists
+  ignore_errors: yes
 
 - name: Add stream block to main nginx.conf
   become: yes
