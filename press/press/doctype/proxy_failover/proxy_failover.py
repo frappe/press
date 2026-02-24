@@ -106,8 +106,8 @@ class ProxyFailover(Document, StepHandler):
 				variables={"secondary_proxy": self.secondary},
 			)
 			ansible_play = ansible.run()
-			if ansible_play.status != Status.Success:
-				raise Exception("Failed making changes for nginx tcp streaming")
+			if ansible_play.status == Status.Failure:
+				raise
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			return
@@ -197,7 +197,7 @@ class ProxyFailover(Document, StepHandler):
 		)
 		for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
 			domain = frappe.get_doc("Root Domain", domain_name)
-			domain.update_dns_records_for_sites([site.name for site in sites], self.secondary, batch_size=200)
+			domain.update_dns_records_for_sites([site.name for site in sites], self.secondary, batch_size=250)
 
 		step.status = Status.Success
 		step.save()
@@ -456,5 +456,5 @@ def reduce_ttl_of_sites(primary_proxy_name, secondary_proxy_name):
 	for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
 		domain = frappe.get_doc("Root Domain", domain_name)
 		domain.update_dns_records_for_sites(
-			[site.name for site in sites], primary_proxy.name, ttl=60, batch_size=200
+			[site.name for site in sites], primary_proxy.name, ttl=60, batch_size=250
 		)
