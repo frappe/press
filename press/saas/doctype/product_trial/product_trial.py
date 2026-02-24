@@ -239,7 +239,9 @@ class ProductTrial(Document):
 			filters=filters,
 			pluck="name",
 			order_by="status,standby_for,creation asc",
-			limit=10,
+			limit=3,
+			for_update=True,
+			skip_locked=True,
 		)
 		if not sites:
 			return None
