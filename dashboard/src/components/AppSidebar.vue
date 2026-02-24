@@ -15,7 +15,7 @@
 					{
 						label: 'Support & Docs',
 						icon: 'help-circle',
-						onClick: support,
+						onClick: docs,
 					},
 					{
 						label: 'Share Feedback',
@@ -94,8 +94,8 @@ export default {
 		};
 	},
 	methods: {
-		support() {
-			window.open('https://frappecloud.com/support', '_blank');
+		docs() {
+			window.open('https://docs.frappe.io/cloud', '_blank');
 		},
 		feedback() {
 			window.open(
