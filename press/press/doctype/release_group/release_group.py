@@ -222,20 +222,20 @@ class ReleaseGroup(Document, TagHelpers):
 	def get_actions(self):
 		return [
 			{
-				"action": "Rename Bench Group",
-				"description": "Rename the bench group",
+				"action": "Rename Bench",
+				"description": "Rename the bench",
 				"button_label": "Rename",
 				"doc_method": "rename",
 			},
 			{
-				"action": "Transfer Bench Group",
-				"description": "Transfer ownership of this bench group to another team",
+				"action": "Transfer Bench",
+				"description": "Transfer ownership of this bench to another team",
 				"button_label": "Transfer",
 				"doc_method": "send_change_team_request",
 			},
 			{
-				"action": "Drop Bench Group",
-				"description": "Drop the bench group",
+				"action": "Drop Bench",
+				"description": "Drop the bench",
 				"button_label": "Drop",
 				"doc_method": "drop",
 				"group": "Dangerous Actions",
@@ -479,7 +479,7 @@ class ReleaseGroup(Document, TagHelpers):
 			limit=1,
 		):
 			frappe.throw(
-				f"Bench Group of name {self.title} already exists. Please try another name.",
+				f"Bench of name {self.title} already exists. Please try another name.",
 				frappe.ValidationError,
 			)
 
@@ -510,7 +510,7 @@ class ReleaseGroup(Document, TagHelpers):
 		source = frappe.get_doc("App Source", app.source)
 		if all(row.version != self.version for row in source.versions):
 			branch, repo = frappe.db.get_values("App Source", app.source, ("branch", "repository"))[0]
-			msg = f"{repo.rsplit('/')[-1] or repo.rsplit('/')[-2]}:{branch} branch is no longer compatible with bench group of {self.version}"
+			msg = f"{repo.rsplit('/')[-1] or repo.rsplit('/')[-2]}:{branch} branch is no longer compatible with bench of {self.version}"
 			frappe.throw(msg, frappe.ValidationError)
 
 	def validate_servers(self):
@@ -1010,7 +1010,7 @@ class ReleaseGroup(Document, TagHelpers):
 		old_team = frappe.db.get_value("Team", self.team, "user")
 
 		if old_team == team_mail_id:
-			frappe.throw(f"Bench group is already owned by the team {team_mail_id}")
+			frappe.throw(f"Bench is already owned by the team {team_mail_id}")
 
 		key = frappe.generate_hash("Release Group Transfer Link", 20)
 		frappe.get_doc(

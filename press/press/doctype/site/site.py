@@ -3434,8 +3434,8 @@ class Site(Document, TagHelpers):
 				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
-				"action": "Change bench group",
-				"description": "Move your site to a different bench group",
+				"action": "Change bench",
+				"description": "Move your site to a different bench",
 				"button_label": "Change",
 				"doc_method": "change_bench",
 				"condition": self.status in ["Active", "Broken", "Inactive"],
@@ -5184,3 +5184,7 @@ def archive_creation_failed_sites():
 		except Exception:
 			frappe.log_error(title="Creation Failed Site Archive Error")
 			frappe.db.rollback()
+
+
+def on_doctype_update():
+	frappe.db.add_index("Site", ["standby_for_product", "is_standby", "status"])
