@@ -631,7 +631,17 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 	@patch.object(AgentJob, "cancel_job", Mock())
 	def test_new_bench_job_failure_and_archival(self):
 		with (
-			fake_agent_job("New Bench", "Running", data={"output": "Retrying in 10 seconds"}),
+			fake_agent_job(
+				"New Bench",
+				"Running",
+				steps=[
+					{
+						"name": "Initialize Bench",
+						"status": "Running",
+						"data": {"output": "Retrying in 10 seconds"},
+					},
+				],
+			),
 			fake_agent_job("Archive Bench", "Success"),
 		):
 			bench = create_test_bench()
@@ -686,7 +696,13 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			fake_agent_job(
 				"New Bench",
 				"Running",
-				data={"output": "Retrying in 10 seconds"},
+				steps=[
+					{
+						"name": "Initialize Bench",
+						"status": "Running",
+						"data": {"output": "Retrying in 10 seconds"},
+					},
+				],
 			),
 			fake_agent_job(
 				"Archive Bench",
@@ -738,7 +754,13 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			fake_agent_job(
 				"New Bench",
 				"Running",
-				data={"output": "Retrying in 10 seconds"},
+				steps=[
+					{
+						"name": "Initialize Bench",
+						"status": "Running",
+						"data": {"output": "Retrying in 10 seconds"},
+					},
+				],
 			),
 			fake_agent_job(
 				"Archive Bench",

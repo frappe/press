@@ -1257,7 +1257,19 @@ def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
 	of registry retries and should break out of it by marking the job as failed
 	returns if the job was cancelled and retried, or if it was left as is
 	"""
-	if not (job.output and "Retrying in 10 seconds" in job.output and job.status == "Running"):
+	initialize_bench_step = frappe.db.get_value(
+		"Agent Job Step",
+		{"agent_job": job.name, "step_name": "Initialize Bench"},
+		["output", "status"],
+		as_dict=True,
+	)
+
+	if not (
+		initialize_bench_step
+		and "Retrying in 10 seconds"
+		in (initialize_bench_step.get("output", "") or "")  # Output itself is sometimes None
+		and initialize_bench_step.get("status") == "Running"
+	):
 		return False
 
 	job.cancel_job()
