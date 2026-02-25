@@ -257,7 +257,10 @@ def app(owner, repository, branch, installation=None):
 
 
 @frappe.whitelist()
-def branches(owner, name, installation=None):
+def branches(owner, name, installation=None, source: str = ""):
+	if not installation and source:
+		installation = frappe.db.get_value("App Source", source, "github_installation_id")
+
 	if installation:
 		token = get_access_token(installation)
 	else:
