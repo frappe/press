@@ -2529,7 +2529,7 @@ def check_app_compatibility_for_upgrade(name, version):
 
 @frappe.whitelist()
 @protected("Site")
-def create_private_bench_for_upgrade(
+def create_private_bench_for_site_upgrade(
 	name,
 	version,
 	release_group_title,
@@ -2549,16 +2549,22 @@ def create_private_bench_for_upgrade(
 	custom_app_sources = custom_app_sources or []
 	custom_source_map = {c.get("app"): c for c in custom_app_sources}
 
-	current_apps = frappe.db.get_all(
+	current_rg_apps = frappe.db.get_all(
 		"Release Group App",
 		filters={"parent": site_group},
 		fields=["app", "source"],
 	)
-	if not current_apps:
+	current_site_apps = frappe.db.get_all(
+		"Site App",
+		filters={"parent": name},
+		pluck="app",
+	)
+
+	if not current_rg_apps:
 		frappe.throw("No apps found in current release group")
 
-	app_names = [a.app for a in current_apps]
-	source_names = [a.source for a in current_apps]
+	app_names = [a.app for a in current_rg_apps]
+	source_names = [a.source for a in current_rg_apps]
 
 	app_sources = frappe.db.get_all(
 		"App Source",
@@ -2582,7 +2588,8 @@ def create_private_bench_for_upgrade(
 	)
 
 	apps_for_new_group = _get_apps_for_version_upgrade(
-		current_apps,
+		current_site_apps,
+		current_rg_apps,
 		source_map,
 		compatible_apps_map,
 		custom_source_map,
@@ -2785,7 +2792,8 @@ def _get_custom_app_branches(repository_url, app_name, installation_id):
 
 
 def _get_apps_for_version_upgrade(
-	current_apps,
+	site_apps,
+	release_group_apps,
 	source_map,
 	compatible_map,
 	custom_source_map,
@@ -2793,7 +2801,7 @@ def _get_apps_for_version_upgrade(
 	team,
 ):
 	apps = []
-	for row in current_apps:
+	for row in release_group_apps:
 		app_name = row.app
 		source_name = row.source
 		source = source_map.get(source_name)
@@ -2814,6 +2822,8 @@ def _get_apps_for_version_upgrade(
 
 		custom_source = custom_source_map.get(app_name)
 		if not custom_source:
+			if app_name not in site_apps:
+				continue
 			frappe.throw(f"Custom app source not provided for {app_name}")
 		custom_source_name = _get_custom_app_upgrade_source(
 			app_name=app_name,
