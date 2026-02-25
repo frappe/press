@@ -1678,7 +1678,7 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2025-03-17 17:57:23.072792",
+  "modified": "2026-02-25 13:35:52.287640",
   "name": "Physical Restore Database",
   "request_method": "POST",
   "request_path": "/database/physical-restore",
@@ -1699,10 +1699,16 @@
     "step_name": "Warmup InnoDB Files"
    },
    {
+    "step_name": "Collect InnoDB FTS Index Metadata"
+   },
+   {
     "step_name": "Prepare Database for Restoration"
    },
    {
     "step_name": "Create Tables from Table Schema"
+   },
+   {
+    "step_name": "Sync FTS Indexes Prefix Length"
    },
    {
     "step_name": "Discard InnoDB Tablespaces"
