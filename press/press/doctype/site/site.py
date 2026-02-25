@@ -5184,3 +5184,7 @@ def archive_creation_failed_sites():
 		except Exception:
 			frappe.log_error(title="Creation Failed Site Archive Error")
 			frappe.db.rollback()
+
+
+def on_doctype_update():
+	frappe.db.add_index("Site", ["standby_for_product", "is_standby", "status"])
