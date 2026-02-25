@@ -1560,9 +1560,10 @@ class ReleaseGroup(Document, TagHelpers):
 			return
 
 		if frappe.db.exists("App", name):
-			app_doc: "App" = frappe.get_doc("App", name)
+			app_doc: "App" = frappe.get_doc("App", name, for_update=True)
 		else:
 			app_doc = new_app(name, app["title"])
+			frappe.get_value("App", app_doc.name, "name", for_update=True)  # to lock the app row
 
 		# Check if the app that's being has support for the release group version
 		parsed_url = urlparse(app["repository_url"])
