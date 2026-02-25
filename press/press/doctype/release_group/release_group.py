@@ -1269,7 +1269,14 @@ class ReleaseGroup(Document, TagHelpers):
 			.run(as_dict=True)
 		)
 
-		for app in self.apps:
+		erroneous_marketplace_apps = frappe.get_all(
+			"Marketplace App",
+			{"name": ("in", [app.app for app in self.apps]), "status": "Attention Required"},
+			pluck="name",
+		)
+		whitelisted_apps = [app for app in self.apps if app.app not in erroneous_marketplace_apps]
+
+		for app in whitelisted_apps:
 			latest_app_release = None
 			latest_app_releases = find_all(latest_releases, lambda x: x.source == app.source)
 
