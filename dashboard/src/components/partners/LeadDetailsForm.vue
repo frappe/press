@@ -145,6 +145,9 @@ const updateLeadInfo = createResource({
 		toast.success('Lead Information updated');
 		emit('success');
 	},
+	onError: (e) => {
+		errorMessage.value = e.messages[0] || 'Failed to update lead information';
+	},
 });
 
 function _updateLeadInfo() {
