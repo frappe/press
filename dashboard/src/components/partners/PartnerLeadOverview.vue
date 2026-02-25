@@ -60,7 +60,7 @@
 										{{ item.label }}
 									</div>
 									<div class="text-lg font-medium py-2">
-										{{ item.value }}
+										{{ item.value || '-' }}
 									</div>
 								</div>
 							</div>
@@ -81,7 +81,7 @@
 										{{ item.label }}
 									</div>
 									<div class="text-lg font-medium py-2">
-										{{ item.value }}
+										{{ item.value || '-' }}
 									</div>
 								</div>
 							</div>
@@ -110,7 +110,7 @@
 										/>
 									</div>
 									<div v-else class="text-lg font-medium py-2">
-										{{ item.value }}
+										{{ item.value || '-' }}
 									</div>
 								</div>
 							</div>
