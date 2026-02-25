@@ -74,7 +74,7 @@ def fake_agent_job_req(  # noqa: C901
 			"Use job_type['job_type'] = {'status': ..., 'data': ..., 'steps': ...} instead."
 		)
 
-	job_polling_response = dict()
+	job_polling_response: dict[int, dict] = dict()
 
 	def _fake_bulk_polling(request):
 		match = re.search(r"/agent/jobs/([\d,]+)", request.url)
