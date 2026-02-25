@@ -1197,7 +1197,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 			next_hash = app.hash
 
-			update_available = not current_hash or current_hash != next_hash or will_branch_change
+			update_available = (
+				not current_hash or current_hash != next_hash or will_branch_change
+			) and next_hash
 			if app.releases:
 				update_available = any(not release.is_yanked for release in app.releases)
 
@@ -1268,6 +1270,12 @@ class ReleaseGroup(Document, TagHelpers):
 			.run(as_dict=True)
 		)
 
+		erroneous_marketplace_apps = frappe.get_all(
+			"Marketplace App",
+			{"name": ("in", [app.app for app in self.apps]), "status": "Attention Required"},
+			pluck="name",
+		)
+
 		for app in self.apps:
 			latest_app_release = None
 			latest_app_releases = find_all(latest_releases, lambda x: x.source == app.source)
@@ -1283,8 +1291,8 @@ class ReleaseGroup(Document, TagHelpers):
 				{"hash": ("in", [release.hash for release in latest_app_releases])},
 				pluck="hash",
 			)
-			if len(yanked_releases) == len(latest_app_releases):
-				# If all releases are yanked, we don't want to show them
+			if len(yanked_releases) == len(latest_app_releases) or app.app in erroneous_marketplace_apps:
+				# If all releases are yanked, we don't want to show them, or if they are of an erroneous marketplace app
 				latest_app_releases = []
 
 			# No release exists for this source
@@ -1317,7 +1325,7 @@ class ReleaseGroup(Document, TagHelpers):
 						"app": app.app,
 						"source": app.source,
 						"release": upcoming_release,
-						"hash": upcoming_hash,
+						"hash": upcoming_hash if upcoming_releases else None,
 						"title": app.title,
 						"releases": upcoming_releases[:16],
 					}
