@@ -2358,7 +2358,7 @@ def version_upgrade(
 def check_existing_upgrade_bench(name, version):
 	"""
 	Check if an existing next-version bench exists on the same server
-	with apps than installed on the site.
+	which includes all the apps installed on the site.
 
 	Returns: {
 		"exists": bool,
