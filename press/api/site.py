@@ -2431,7 +2431,7 @@ def check_existing_upgrade_bench(name, version):
 def check_app_compatibility_for_upgrade(name, version):
 	"""
 	Check which apps in the current site are compatible with the next Frappe version.
-	Returns both site custom apps (installed on site) and bench custom apps (in release group but not on site).
+	Returns list of custom apps installed on the site, if any and other custom apps in the release group for selecting a compatible branch.
 	"""
 	next_version = get_next_version(version)
 	site_group = frappe.db.get_value("Site", name, "group")
