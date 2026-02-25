@@ -2359,7 +2359,7 @@ def version_upgrade(
 def check_existing_upgrade_bench(name, version):
 	"""
 	Check if an existing next-version bench exists on the same server
-	with compatible app list (all or more apps than current site's release group).
+	with apps than installed on the site.
 
 	Returns: {
 		"exists": bool,
@@ -2367,10 +2367,9 @@ def check_existing_upgrade_bench(name, version):
 		"release_group": str or None,
 	}
 	"""
-	site_server, site_group = frappe.db.get_value("Site", name, ["server", "group"])
+	site_server = frappe.db.get_value("Site", name, "server")
 	current_team = get_current_team()
-
-	current_apps = frappe.db.get_all("Release Group App", filters={"parent": site_group}, pluck="app")
+	site_apps = set(frappe.db.get_all("Site App", filters={"parent": name}, pluck="app"))
 
 	version_number = frappe.db.get_value("Frappe Version", version, "number")
 	next_version = frappe.db.get_value(
@@ -2415,10 +2414,9 @@ def check_existing_upgrade_bench(name, version):
 			bench_apps_map[row.parent] = []
 		bench_apps_map[row.parent].append(row.app)
 
-	current_apps_set = set(current_apps)
 	for bench in benches:
 		bench_app_list = bench_apps_map.get(bench.group, [])
-		if current_apps_set.issubset(bench_app_list):
+		if site_apps.issubset(bench_app_list):
 			return {
 				"exists": True,
 				"bench_name": bench.name,
