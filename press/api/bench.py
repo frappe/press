@@ -288,7 +288,7 @@ def options():
 
 	if not versions:
 		frappe.throw(
-			"No app versions found. Only enabled and public app sources are listed here. Please check your app source settings."
+			"No app versions found. Only enabled and public app sources are listed here."
 		)
 
 	return {"versions": versions, "clusters": clusters}
@@ -399,7 +399,7 @@ def update_dependencies(name: str, dependencies: str):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	if len(rg.dependencies) != len(dependencies):
 		frappe.throw(
-			"All required dependencies must be provided. <a href='https://docs.frappe.io/cloud/common-issues/required-app-not-found' target='_blank'>Learn more</a>"
+			"Need all required dependencies. <a href='https://docs.frappe.io/cloud/common-issues/required-app-not-found' target='_blank'>Learn more</a>"
 		)
 	if diff := set([d["key"] for d in dependencies]) - set(d.dependency for d in rg.dependencies):
 		frappe.throw(
@@ -414,7 +414,7 @@ def update_dependencies(name: str, dependencies: str):
 	):
 		if dep.dependency != new["key"]:
 			frappe.throw(
-				f"Invalid dependency: {new['key']}. <a href='https://docs.frappe.io/cloud/common-issues/incompatible-dependency-version' target='_blank'>Learn more</a>"
+				f"Invalid dependency: {new['key']}."
 			)
 		if not re.match(r"^\d+\.\d+\.*\d*$", new["value"]):
 			frappe.throw(
@@ -1176,10 +1176,7 @@ def redeploy(name: str, dc_name: str) -> str:
 	response = redeploy_candidate(dc_name)
 
 	if response["error"]:
-		frappe.throw(
-			"Unable to redeploy this build. It may have already been redeployed or is in an invalid state.",
-			frappe.ValidationError,
-		)
+		frappe.throw(response["message"], frappe.ValidationError)
 
 	return response["message"]
 

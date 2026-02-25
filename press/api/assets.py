@@ -116,7 +116,7 @@ def get_credentials() -> AssetStoreCredentials:
 	build_token = frappe.request.headers.get("build-token")
 	if not build_token:
 		frappe.throw(
-			"Build token is required to access asset store credentials. <a href='https://docs.frappe.io/cloud/local-fc-setup' target='_blank'>Learn more</a>",
+			"Build token is required to access asset store credentials.",
 			frappe.PermissionError,
 		)
 
@@ -131,6 +131,6 @@ def get_credentials() -> AssetStoreCredentials:
 	)
 
 	if not running_build:
-		frappe.throw("Expired token used. Request a new build token.", frappe.PermissionError)
+		frappe.throw("Expired token used.", frappe.PermissionError)
 
 	return _get_asset_store_credentials()

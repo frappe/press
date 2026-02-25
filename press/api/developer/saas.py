@@ -140,7 +140,7 @@ def send_verification_code(domain: str, route: str = ""):
 	team_info = frappe.get_value("Team", team_name, ["name", "enabled", "user", "enforce_2fa"], as_dict=True)
 	if not team_info or not team_info.get("enabled"):
 		frappe.throw(
-			"Your Frappe Cloud team is disabled currently. Please contact support to enable your team."
+			"Your Frappe Cloud team is disabled currently."
 		)
 
 	check_if_user_can_login(team_info, site_info)
@@ -174,7 +174,7 @@ def send_verification_code(domain: str, route: str = ""):
 def verify_verification_code(domain: str, verification_code: str, route: str = "dashboard"):
 	otp_hash = frappe.cache.get_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}", expires=True)
 	if not otp_hash or otp_hash != frappe.utils.sha256_hash(str(verification_code)):
-		frappe.throw("Invalid or expired verification code. Please request a new code and try again.")
+		frappe.throw("Invalid Code. Please try again.")
 
 	site = frappe.get_value("Site Domain", domain, "site")
 	team = frappe.get_value("Site", site, "team")
