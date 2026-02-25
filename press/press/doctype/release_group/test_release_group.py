@@ -49,6 +49,8 @@ def create_test_release_group(
 	public=False,
 	frappe_version="Version 14",
 	servers: list[str] | None = None,
+	build_server: str | None = None,
+	app_sources: list[str] | None = None,
 ) -> ReleaseGroup:
 	"""
 	Create Release Group doc.
@@ -64,11 +66,15 @@ def create_test_release_group(
 			"title": f"Test ReleaseGroup {frappe.generate_hash(length=10)}",
 			"team": frappe.get_value("Team", {"user": user}, "name"),
 			"public": public,
+			"build_server": build_server,
 		}
 	)
-	for app in apps:
-		app_source = create_test_app_source(release_group.version, app)
-		release_group.append("apps", {"app": app.name, "source": app_source.name})
+
+	if not app_sources:
+		app_sources = [create_test_app_source(release_group.version, app).name for app in apps]
+
+	for idx, app in enumerate(apps):
+		release_group.append("apps", {"app": app.name, "source": app_sources[idx]})
 
 	if servers:
 		for server in servers:

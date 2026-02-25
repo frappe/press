@@ -50,6 +50,10 @@ if TYPE_CHECKING:
 	from press.press.doctype.team.team import Team
 
 
+def dummy_payload(*args, **kwargs):
+	return {"dummy": "payload"}
+
+
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
@@ -590,7 +594,8 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 	def test_if_any_ongoing_jobs_are_running_on_bench(self):
 		with fake_agent_job({"New Bench": {"status": "Success"}, "Add User to Proxy": {"status": "Success"}}):
 			bench = create_test_bench()
-			frappe.db.set_value("Bench", bench.name, "status", "Pending")
+			bench.status = "Pending"
+			bench.save()
 			poll_pending_jobs()
 			with self.assertRaises(ArchiveBenchError):
 				bench.archive()
@@ -619,3 +624,160 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 
 			self.assertEqual(redis_cache_uri.password, redis_queue_uri.password)
 			self.assertEqual(redis_cache_uri.password, None)
+
+	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
+	@patch("press.press.doctype.bench.bench.frappe.db.commit", Mock())
+	@patch.object(Bench, "update_bench_config", Mock())
+	@patch.object(AgentJob, "cancel_job", Mock())
+	def test_new_bench_job_failure_and_archival(self):
+		with (
+			fake_agent_job("New Bench", "Running", data={"output": "Retrying in 10 seconds"}),
+			fake_agent_job("Archive Bench", "Success"),
+		):
+			bench = create_test_bench()
+			poll_pending_jobs()  # Should create archive job
+
+			bench_jobs = frappe.get_all("Agent Job", {"bench": bench.name}, ["status", "job_type"])
+
+			# New bench job was marked failure due to Retrying in 10 seconds message in output
+			new_bench_jobs = [job for job in bench_jobs if job["job_type"] == "New Bench"]
+			self.assertEqual(len(new_bench_jobs), 1)
+			self.assertEqual(new_bench_jobs[0]["status"], "Failure")
+
+			# We should have triggered a automatic bench archival due to failure in new bench
+			archive_bench_jobs = [job for job in bench_jobs if job["job_type"] == "Archive Bench"]
+			self.assertEqual(len(archive_bench_jobs), 1)
+			self.assertEqual(archive_bench_jobs[0]["status"], "Pending")
+
+			poll_pending_jobs()  # Should archive the bench
+
+			bench_jobs = frappe.get_all("Agent Job", {"bench": bench.name}, ["status", "job_type", "data"])
+			archive_bench_jobs = [job for job in bench_jobs if job["job_type"] == "Archive Bench"]
+			self.assertEqual(len(archive_bench_jobs), 1)
+			self.assertEqual(archive_bench_jobs[0]["status"], "Success")
+
+	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
+	@patch("press.press.doctype.bench.bench.frappe.db.commit", Mock())
+	@patch.object(Bench, "update_bench_config", Mock())
+	@patch.object(AgentJob, "cancel_job", Mock())
+	def test_new_bench_job_no_failure_without_loop_message(self):
+		with (
+			fake_agent_job("New Bench", "Running"),
+		):
+			bench = create_test_bench()
+			poll_pending_jobs()  # Should not create archive job as there is no loop message in output
+
+			bench_jobs = frappe.get_all("Agent Job", {"bench": bench.name}, ["status", "job_type"])
+
+			# New bench job was marked failure due to Retrying in 10 seconds message in output
+			new_bench_jobs = [job for job in bench_jobs if job["job_type"] == "New Bench"]
+			self.assertEqual(len(new_bench_jobs), 1)
+
+			# No automatic bench archival after new bench job was successful
+			archive_bench_jobs = [job for job in bench_jobs if job["job_type"] == "Archive Bench"]
+			self.assertEqual(len(archive_bench_jobs), 0)
+
+	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
+	@patch("press.press.doctype.bench.bench.frappe.db.commit", Mock())
+	@patch.object(Bench, "update_bench_config", Mock())
+	@patch.object(AgentJob, "cancel_job", Mock())
+	def test_new_bench_job_max_retries(self):
+		with (
+			fake_agent_job(
+				"New Bench",
+				"Running",
+				data={"output": "Retrying in 10 seconds"},
+			),
+			fake_agent_job(
+				"Archive Bench",
+				"Success",
+				data={"retry_new_bench": True},
+			),
+		):
+			# create initial bench
+			bench = create_test_bench()
+
+			# New bench will only be created if image is successfully built
+			frappe.db.set_value(
+				"Deploy Candidate Build",
+				{"status": ["!=", "Success"]},
+				"status",
+				"Success",
+			)
+			name, candidate = frappe.db.get_value(
+				"Deploy Candidate Build", {"status": "Success"}, ["name", "deploy_candidate"]
+			)
+			# Use defauly build platform
+			frappe.db.set_value("Deploy Candidate", candidate, "intel_build", name)
+			# Set docker image used during deploy
+			frappe.db.set_value("Deploy Candidate Build", name, "docker_image", "docker.io/test/test:latest")
+
+			# poll enough times to allow retries
+			for _ in range(10):
+				poll_pending_jobs()
+
+			benches = frappe.get_all(
+				"Bench",
+				filters={"server": bench.server},
+				fields=["name"],
+			)
+			new_bench_jobs = frappe.get_all(
+				"Agent Job",
+				filters={"job_type": "New Bench"},
+				fields=["name"],
+			)
+			self.assertEqual(len(new_bench_jobs), 3)  # Initial attempt + 2 retry attempts (max retries is 2)
+			self.assertEqual(len(benches), 3)
+
+	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
+	@patch("press.press.doctype.bench.bench.frappe.db.commit", Mock())
+	@patch.object(Bench, "update_bench_config", Mock())
+	@patch.object(AgentJob, "cancel_job", Mock())
+	def test_new_bench_job_retries_and_succeeds_in_an_attempt(self):
+		with (
+			fake_agent_job(
+				"New Bench",
+				"Running",
+				data={"output": "Retrying in 10 seconds"},
+			),
+			fake_agent_job(
+				"Archive Bench",
+				"Success",
+				data={"retry_new_bench": True},
+			),
+			fake_agent_job("New Bench", "Success"),
+		):
+			# create initial bench
+			bench = create_test_bench()
+
+			# New bench will only be created if image is successfully built
+			frappe.db.set_value(
+				"Deploy Candidate Build",
+				{"status": ["!=", "Success"]},
+				"status",
+				"Success",
+			)
+			name, candidate = frappe.db.get_value(
+				"Deploy Candidate Build", {"status": "Success"}, ["name", "deploy_candidate"]
+			)
+			# Use default build platform
+			frappe.db.set_value("Deploy Candidate", candidate, "intel_build", name)
+			# Set docker image used during deploy
+			frappe.db.set_value("Deploy Candidate Build", name, "docker_image", "docker.io/test/test:latest")
+
+			# poll enough times to allow retries
+			for _ in range(10):
+				poll_pending_jobs()
+
+			benches = frappe.get_all(
+				"Bench",
+				filters={"server": bench.server},
+				fields=["name"],
+			)
+			new_bench_jobs = frappe.get_all(
+				"Agent Job",
+				filters={"job_type": "New Bench"},
+				fields=["name"],
+			)
+			self.assertEqual(len(new_bench_jobs), 2)  # Initial attempt + retry attempt
+			self.assertEqual(len(benches), 2)  # Only two new benches created!

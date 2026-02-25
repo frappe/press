@@ -3339,7 +3339,7 @@ class Site(Document, TagHelpers):
 			},
 			{
 				"action": "Change bench group",
-				"description": "Move your site to a different bench group",
+				"description": "Move your site to a different bench",
 				"button_label": "Change",
 				"doc_method": "change_bench",
 				"condition": self.status in ["Active", "Broken", "Inactive"],
