@@ -2493,6 +2493,7 @@ def check_app_compatibility_for_upgrade(name, version):
 
 		app_data = {
 			"app": row.app,
+			"source": source.name,
 			"title": source.app_title or row.app,
 			"repository_url": source.repository_url,
 			"repository_owner": source.repository_owner,
@@ -2604,6 +2605,7 @@ def create_private_bench_for_site_upgrade(
 			}
 		)
 		version_upgrade.insert()
+		return release_group_doc.name
 	except Exception as e:
 		frappe.throw(f"Failed to create and deploy bench: {e!s}")
 

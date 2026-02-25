@@ -92,7 +92,6 @@
 										<tr
 											v-for="app in appCompatibility.site_custom_apps"
 											:key="app.app"
-											class="hover:bg-gray-100 transition-colors"
 										>
 											<td class="py-3 w-3/5">
 												<div class="font-medium text-sm">
@@ -131,8 +130,7 @@
 													@update:modelValue="
 														updateCustomAppSource(app, 'branch', $event)
 													"
-													placeholder="
-													Select Branch"
+													placeholder="Select Branch"
 												/>
 											</td>
 										</tr>
@@ -149,7 +147,6 @@
 										<tr
 											v-for="app in appCompatibility.other_custom_apps_on_rg"
 											:key="app.app"
-											class="hover:bg-gray-100 transition-colors"
 										>
 											<td class="py-3 w-3/5">
 												<div class="font-medium text-sm">
@@ -476,14 +473,16 @@ export default {
 			return {
 				url: 'press.api.site.create_private_bench_for_site_upgrade',
 				onSuccess(data) {
-					this.resetValues();
-					this.show = false;
 					this.$router.push({
 						name: 'Release Group Detail',
 						params: {
 							name: data,
 						},
 					});
+					toast.success('New bench deployment started', {
+						description: `Site app versions will be upgraded after successful deployment.`,
+					});
+					this.show = false;
 				},
 			};
 		},
@@ -507,6 +506,7 @@ export default {
 				const data = await this.$resources.branches.fetch({
 					owner: app.repository_owner,
 					name: app.app,
+					source: app.source || '',
 				});
 				this.appBranches[app.app] = (data || []).map((branch) => branch.name);
 			} catch (error) {
@@ -539,7 +539,7 @@ export default {
 				});
 
 				try {
-					const benchData = await this.$resources.createPrivateBench.fetch({
+					await this.$resources.createPrivateBench.fetch({
 						name: this.site,
 						version: this.$site.doc?.version,
 						release_group_title: this.newReleaseGroupTitle,
@@ -547,12 +547,6 @@ export default {
 						scheduled_time: this.datetimeInIST,
 						skip_failing_patches: this.skipFailingPatches,
 						skip_backups: this.skipBackups,
-					});
-
-					this.show = false;
-					router.replace({ name: 'Site List' });
-					toast.success('New bench deployment started', {
-						description: `Site app versions will be upgraded after successful deployment.`,
 					});
 				} catch (error) {
 					toast.error('Failed to create bench');
