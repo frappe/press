@@ -114,8 +114,8 @@ const updateStatus = createResource({
 		emit('update');
 		show.value = false;
 	},
-	onError: () => {
-		errorMessage.value = 'Failed to update lead as won';
+	onError: (e) => {
+		errorMessage.value = e.messages[0] || 'Failed to update lead as won';
 	},
 });
 
