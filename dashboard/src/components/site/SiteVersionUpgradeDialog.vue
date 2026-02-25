@@ -68,7 +68,7 @@
 					>
 						<AlertBanner
 							v-if="!appCompatibility.site_custom_apps?.length"
-							:title="`The site <b>${site.doc.host_name}</b> will be moved to a new <b>${nextVersion}</b> bench for upgrade.`"
+							:title="`The site <b>${$site.doc.host_name || $site.doc.name}</b> will be moved to a new <b>${nextVersion}</b> bench for upgrade.`"
 							type="warning"
 							class="mb-4"
 						/>
