@@ -291,19 +291,22 @@ class PrometheusInvestigationHelper:
 			pluck="name",
 		)
 		benches = "|".join(benches)
+		total_seconds = int(
+			(self.investigation_window_end_time - self.investigation_window_start_time).total_seconds()
+		)
 		query = f'''
 			sum by (name) (
 				avg_over_time(
 					container_memory_usage_bytes{{job="cadvisor", name=~"{benches}"}}
 					[
-						{(self.investigation_window_end_time - self.investigation_window_start_time).total_seconds()}s
+						{total_seconds}s
 					]
 				) / 1024 / 1024 / 1024
 			)
 		'''
-		metric_data = self._fetch_with_time_shifts(
-			fetch_fn=self.prometheus_client.custom_query_range, shifts=[2, 5], query=query
-		)
+		metric_data = self.prometheus_client.custom_query(
+			query=query
+		)  # Don't want rolling averages (step="1m")
 		if not metric_data:
 			return None
 
