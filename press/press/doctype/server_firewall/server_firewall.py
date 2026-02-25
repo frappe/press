@@ -209,3 +209,12 @@ class ServerFirewall(Document):
 	@property
 	def server(self) -> Server:
 		return frappe.get_doc("Server", self.server_id)
+
+
+def from_server(doc: Server, *args, **kwargs):
+	if frappe.db.exists("Server Firewall", {"server_id": doc.name}):
+		return frappe.get_doc("Server Firewall", doc.name)
+	firewall: ServerFirewall = frappe.new_doc("Server Firewall")
+	firewall.server_id = doc.name
+	firewall.enabled = False
+	return firewall.save()
