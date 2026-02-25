@@ -1071,6 +1071,7 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Migrate", job=job.name)
 		self.status = "Pending"
 		self.save()
+		return job.name
 
 	@frappe.whitelist()
 	def last_migrate_failed(self):
@@ -1336,6 +1337,87 @@ class Site(Document, TagHelpers):
 		doc.status = "Cancelled"
 		doc.save()
 
+<<<<<<< HEAD
+=======
+	@dashboard_whitelist()
+	def create_migration_plan(
+		self,
+		type: Literal[
+			"Update Site",
+			"Move From Shared To Private Bench",
+			"Move From Private To Shared Bench",
+			"Move Site To Different Server",
+			"Move Site To Different Region",
+		],
+		group: str | None = None,
+		server: str | None = None,
+		new_group_name: str | None = None,
+		skip_failing_patches: bool = False,
+		skip_backups: bool = False,
+		scheduled_time: str | None = None,
+		cluster: str | None = None,
+	) -> str:
+		doc = None
+		if type == "Move From Shared To Private Bench":
+			"""
+			There are two variants:
+			- User chose to move to existing private bench and server
+			- Create a new private bench and move that. For this, there are two more combination -
+				- For shared server, create the bench on same server
+				- For dedicated server, create the bench on mentioned server
+			"""
+			if group and new_group_name:
+				frappe.throw("Please provide either group or new_group_name, not both.")
+
+			doc = frappe.get_doc(
+				{
+					"doctype": "Site Action",
+					"site": self.name,
+					"action_type": type,
+					"arguments": json.dumps(
+						{
+							"destination_server": server or self.server,
+							"destination_release_group": group,
+							"new_release_group_name": new_group_name,
+							"skip_failing_patches": skip_failing_patches,
+						}
+					),
+					"scheduled_time": scheduled_time,
+				}
+			).insert()
+		elif type == "Move Site To Different Server":
+			doc = frappe.get_doc(
+				{
+					"doctype": "Site Action",
+					"site": self.name,
+					"action_type": type,
+					"arguments": json.dumps(
+						{
+							"destination_server": server,
+						}
+					),
+					"scheduled_time": scheduled_time,
+				}
+			).insert()
+		elif type == "Move Site To Different Region":
+			doc = frappe.get_doc(
+				{
+					"doctype": "Site Action",
+					"site": self.name,
+					"action_type": type,
+					"arguments": json.dumps(
+						{
+							"cluster": cluster,
+						}
+					),
+					"scheduled_time": scheduled_time,
+				}
+			).insert()
+
+		assert doc is not None, "Invalid migration plan type"
+		return doc.name
+
+>>>>>>> 69aebebe4 (refactor(site-action): Shared to Private Bench Migration Flow)
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
