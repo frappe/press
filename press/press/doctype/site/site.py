@@ -3331,7 +3331,6 @@ class Site(Document, TagHelpers):
 				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
-<<<<<<< HEAD
 				"action": "Change region",
 				"description": "Move your site to a different region",
 				"button_label": "Change",
@@ -3339,12 +3338,8 @@ class Site(Document, TagHelpers):
 				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
-				"action": "Change bench group",
-				"description": "Move your site to a different bench group",
-=======
 				"action": "Change bench",
 				"description": "Move your site to a different bench",
->>>>>>> eef20b702 (feat(bench-group): Rename bench group to benches [2] [experimental])
 				"button_label": "Change",
 				"doc_method": "change_bench",
 				"condition": self.status in ["Active", "Broken", "Inactive"],
