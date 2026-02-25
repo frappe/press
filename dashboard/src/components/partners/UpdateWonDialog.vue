@@ -8,7 +8,7 @@
 					type="select"
 					name="hosting_type"
 					:options="[
-						{ label: 'Self-Hosted', value: 'Self-Hosted' },
+						{ label: 'Self Hosted', value: 'Self Hosted' },
 						{ label: 'Frappe Cloud', value: 'Frappe Cloud' },
 					]"
 					:required="true"
@@ -27,7 +27,7 @@
 					:required="true"
 				/>
 				<FormControl
-					v-if="resource_type == 'Site' || hosting_type == 'Self-Hosted'"
+					v-if="resource_type == 'Site' || hosting_type == 'Self Hosted'"
 					v-model="site_url"
 					label="Site URL"
 					type="data"
@@ -93,7 +93,7 @@ const updateStatus = createResource({
 		};
 	},
 	validate: () => {
-		if (hosting_type.value === 'Self-Hosted' && site_url.value === undefined) {
+		if (hosting_type.value === 'Self Hosted' && site_url.value === undefined) {
 			let error = 'Please fill all the required fields';
 			errorMessage.value = error;
 			throw new DashboardError(error);
