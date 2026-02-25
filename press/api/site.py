@@ -2438,14 +2438,6 @@ def check_app_compatibility_for_upgrade(name, version):
 	site_group = frappe.db.get_value("Site", name, "group")
 
 	site_app_names = frappe.db.get_all("Site App", filters={"parent": name}, pluck="app")
-	if not site_app_names:
-		return {
-			"incompatible": [],
-			"site_custom_apps": [],
-			"other_custom_apps_on_rg": [],
-			"can_upgrade": True,
-		}
-
 	release_group_apps = frappe.db.get_all(
 		"Release Group App",
 		filters={"parent": site_group},
