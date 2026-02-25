@@ -594,7 +594,8 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 	def test_if_any_ongoing_jobs_are_running_on_bench(self):
 		with fake_agent_job({"New Bench": {"status": "Success"}, "Add User to Proxy": {"status": "Success"}}):
 			bench = create_test_bench()
-			frappe.db.set_value("Bench", bench.name, "status", "Pending")
+			bench.status = "Pending"
+			bench.save()
 			poll_pending_jobs()
 			with self.assertRaises(ArchiveBenchError):
 				bench.archive()
