@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import TYPE_CHECKING
 
 import frappe
@@ -2620,18 +2619,12 @@ def check_app_compatibility_for_upgrade(name, version):
 		if not source or source.public or source.repository_owner == "frappe" or not source.enabled:
 			continue
 
-		branches = _get_custom_app_branches(
-			source.repository_url,
-			row.app,
-			source.github_installation_id,
-		)
-
 		app_data = {
 			"app": row.app,
 			"title": source.app_title or row.app,
 			"repository_url": source.repository_url,
+			"repository_owner": source.repository_owner,
 			"branch": source.branch,
-			"branches": branches,
 		}
 
 		if row.app in site_app_names:
@@ -2739,7 +2732,6 @@ def create_private_bench_for_site_upgrade(
 			}
 		)
 		version_upgrade.insert()
-		return release_group_doc.name
 	except Exception as e:
 		frappe.throw(f"Failed to create and deploy bench: {e!s}")
 
@@ -2881,34 +2873,6 @@ def _check_public_apps_compatibility(public_apps, source_map, next_version):
 		incompatible.append(source.app_title if source else app)
 
 	return incompatible
-
-
-def _get_custom_app_branches(repository_url, app_name, installation_id):
-	if not repository_url:
-		return []
-
-	try:
-		match = re.search(r"github\.com/([^/]+)/([^/\.]+)", repository_url)
-		if not match:
-			return []
-
-		owner, repo = match.groups()
-
-		from press.api.github import branches as gh_branches
-
-		api_branches = gh_branches(
-			owner=owner,
-			name=repo,
-			installation=installation_id or None,
-		)
-		if api_branches:
-			return [b.get("name") for b in api_branches]
-	except Exception as e:
-		frappe.log_error(
-			f"Failed to fetch branches for {app_name}: {e!s}",
-			"check_app_compatibility_for_upgrade",
-		)
-	return []
 
 
 def _get_apps_for_version_upgrade(
