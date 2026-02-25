@@ -1218,7 +1218,7 @@ def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
 	of registry retries and should break out of it by marking the job as failed
 	returns if the job was cancelled and retried, or if it was left as is
 	"""
-	if not job.output or not ("Retrying in 10 seconds" in job.output and job.status == "Running"):
+	if not (job.output and "Retrying in 10 seconds" in job.output and job.status == "Running"):
 		return False
 
 	job.cancel_job()
