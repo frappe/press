@@ -6,13 +6,13 @@
 	>
 		<template #body-content>
 			<div class="space-y-4">
-				<!-- Public bench upgrade -->
+				<!-- Upgrade site on public bench -->
 				<p v-if="$site.doc?.group_public && nextVersion" class="text-base">
 					The site <b>{{ $site.doc.host_name }}</b> will be upgraded to
 					<b>{{ nextVersion }}</b>
 				</p>
 
-				<!-- Private bench upgrade -->
+				<!-- Upgrade site on private bench -->
 				<div v-else-if="!$site.doc?.group_public && nextVersion">
 					<!-- If existing compatible bench found  -->
 					<div v-if="upgradeStep === 'ready_to_upgrade' && existingBenchGroup">
@@ -57,7 +57,7 @@
 						"
 					>
 						<div
-							v-if="appCompatibility.custom_apps.length === 0"
+							v-if="!appCompatibility.site_custom_apps?.length"
 							class="mb-4 text-base"
 						>
 							<p>
@@ -67,54 +67,106 @@
 						</div>
 						<div
 							v-else-if="
-								appCompatibility.custom_apps &&
-								appCompatibility.custom_apps.length > 0
+								appCompatibility.site_custom_apps?.length > 0 ||
+								appCompatibility.other_custom_apps_on_rg?.length > 0
 							"
-							class="space-y-3 mt-4"
+							class="space-y-6 mt-4"
 						>
-							<div class="text-sm font-medium text-gray-700 mb-3">
-								Select Branch for Custom Apps
+							<div v-if="appCompatibility.site_custom_apps?.length > 0">
+								<div class="text-sm font-medium text-gray-700 mb-2">
+									Select Branch for Custom Apps
+								</div>
+								<div class="text-xs text-gray-600 mb-3">
+									These apps are installed on your site, select a branch
+									compatible with {{ nextVersion }}
+								</div>
+								<table class="w-full table-fixed pb-4 border-b border-gray-100">
+									<thead>
+										<tr class="text-sm text-gray-600">
+											<th class="font-medium text-left py-2 w-3/5">App</th>
+											<th class="font-medium text-left py-2 w-2/5">Branch *</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr
+											v-for="app in appCompatibility.site_custom_apps"
+											:key="app.app"
+											class="hover:bg-gray-100 transition-colors"
+										>
+											<td class="py-3 w-3/5">
+												<div class="font-medium text-sm">
+													{{ app.title }}
+												</div>
+												<div
+													class="text-xs text-gray-600 truncate mt-1"
+													:title="app.repository_url"
+												>
+													{{ app.repository_url }}
+												</div>
+											</td>
+											<td class="py-3 w-2/5">
+												<FormControl
+													type="combobox"
+													:options="
+														app.branches.map((b) => ({ label: b, value: b }))
+													"
+													:modelValue="customAppSources[app.app]?.branch"
+													@update:modelValue="
+														updateCustomAppSource(app, 'branch', $event)
+													"
+													:placeholder="`Current: ${app.branch}`"
+												/>
+											</td>
+										</tr>
+									</tbody>
+								</table>
 							</div>
-							<table class="w-full table-fixed pb-4 border-b border-gray-100">
-								<thead>
-									<tr class="text-sm text-gray-600">
-										<th class="font-medium text-left py-2 w-3/5">App</th>
-										<th class="font-medium text-left py-2 w-2/5">Branch *</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr
-										v-for="app in appCompatibility.custom_apps"
-										:key="app.app"
-										class="hover:bg-gray-100 transition-colors"
-									>
-										<td class="py-3 w-3/5">
-											<div class="font-medium text-sm">
-												{{ app.title }}
-											</div>
-											<div
-												class="text-xs text-gray-600 truncate mt-1"
-												:title="app.repository_url"
-											>
-												{{ app.repository_url }}
-											</div>
-										</td>
-										<td class="py-3 w-2/5">
-											<FormControl
-												type="combobox"
-												:options="
-													app.branches.map((b) => ({ label: b, value: b }))
-												"
-												:modelValue="customAppSources[app.app]?.branch"
-												@update:modelValue="
-													updateCustomAppSource(app, 'branch', $event)
-												"
-												placeholder="Select branch"
-											/>
-										</td>
-									</tr>
-								</tbody>
-							</table>
+
+							<div v-if="appCompatibility.other_custom_apps_on_rg?.length > 0">
+								<div class="text-sm font-medium text-gray-700 mb-2">
+									Other Custom Apps on Bench Group (Optional)
+								</div>
+								<table class="w-full table-fixed">
+									<thead>
+										<tr class="text-sm text-gray-600">
+											<th class="font-medium text-left py-2 w-3/5">App</th>
+											<th class="font-medium text-left py-2 w-2/5">Branch</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr
+											v-for="app in appCompatibility.other_custom_apps_on_rg"
+											:key="app.app"
+											class="hover:bg-gray-100 transition-colors"
+										>
+											<td class="py-3 w-3/5">
+												<div class="font-medium text-sm">
+													{{ app.title }}
+												</div>
+												<div
+													class="text-xs text-gray-600 truncate mt-1"
+													:title="app.repository_url"
+												>
+													{{ app.repository_url }}
+												</div>
+											</td>
+											<td class="py-3 w-2/5">
+												<FormControl
+													type="combobox"
+													:options="
+														app.branches.map((b) => ({ label: b, value: b }))
+													"
+													:modelValue="customAppSources[app.app]?.branch"
+													@update:modelValue="
+														updateCustomAppSource(app, 'branch', $event)
+													"
+													:placeholder="`Current: ${app.branch}`"
+												/>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
 						</div>
 						<FormControl
 							v-if="!existingBenchGroup"
@@ -250,7 +302,8 @@ export default {
 			existingBenchGroupTitle: null,
 			appCompatibility: {
 				incompatible: [],
-				custom_apps: [],
+				site_custom_apps: [],
+				other_custom_apps_on_rg: [],
 				can_upgrade: false,
 			},
 			newReleaseGroupTitle: '',
@@ -298,13 +351,13 @@ export default {
 			return getCachedDocumentResource('Site', this.site);
 		},
 		hasValidCustomAppSources() {
-			return this.appCompatibility.custom_apps.every((app) => {
+			// Only site custom apps need mandatory branch selection
+			const siteCustomApps = this.appCompatibility.site_custom_apps || [];
+			if (siteCustomApps.length === 0) return true;
+
+			return siteCustomApps.every((app) => {
 				const branch = this.customAppSources[app.app]?.branch;
-				if (!branch) return false;
-				if (Array.isArray(app.branches) && app.branches.length) {
-					return app.branches.includes(branch);
-				}
-				return true;
+				return branch ? true : false;
 			});
 		},
 		isScheduleTimeValid() {
@@ -347,6 +400,7 @@ export default {
 				},
 			};
 		},
+
 		checkExistingBench() {
 			return {
 				url: 'press.api.site.check_existing_upgrade_bench',
@@ -384,23 +438,8 @@ export default {
 			};
 		},
 		createPrivateBench() {
-			const custom_app_sources = this.appCompatibility.custom_apps.map(
-				(app) => ({
-					app: app.app,
-					branch: this.customAppSources[app.app]?.branch || app.branch,
-					repository_url: app.repository_url,
-					github_installation_id: app.github_installation_id,
-				}),
-			);
-
 			return {
-				url: 'press.api.site.create_private_bench_for_upgrade',
-				params: {
-					name: this.site,
-					version: this.$site.doc?.version,
-					release_group_title: this.newReleaseGroupTitle,
-					custom_app_sources: custom_app_sources,
-				},
+				url: 'press.api.site.create_private_bench_for_site_upgrade',
 				onSuccess(data) {
 					this.resetValues();
 					this.show = false;
@@ -428,21 +467,31 @@ export default {
 				this.$resources.versionUpgrade.submit();
 			} else {
 				// handle new bench deploy
-				const custom_app_sources = this.appCompatibility.custom_apps.map(
-					(app) => ({
-						app: app.app,
-						branch: this.customAppSources[app.app]?.branch || app.branch,
-						repository_url: app.repository_url,
-						github_installation_id: app.github_installation_id,
-					}),
-				);
+				custom_app_sources = [];
+				custom_apps =
+					this.appCompatibility.site_custom_apps +
+					this.appCompatibility.other_custom_apps_on_rg;
+				this.appCompatibility.bench_custom_apps
+					.forEach((app) => {
+						branch = this.customAppSources[app.app]?.branch || '';
+						if (branch) {
+							custom_app_sources.append({
+								app: app.app,
+								branch: this.customAppSources[app.app]?.branch || app.branch,
+								repository_url: app.repository_url,
+								github_installation_id: app.github_installation_id,
+							});
+						}
+					})
+					.filter(Boolean);
 
 				try {
 					const benchData = await this.$resources.createPrivateBench.fetch({
 						name: this.site,
 						version: this.$site.doc?.version,
 						release_group_title: this.newReleaseGroupTitle,
-						custom_app_sources: custom_app_sources,
+						site_custom_app_sources: site_custom_app_sources,
+						other_custom_app_sources: other_custom_app_sources,
 						scheduled_time: this.datetimeInIST,
 						skip_failing_patches: this.skipFailingPatches,
 						skip_backups: this.skipBackups,
@@ -468,7 +517,8 @@ export default {
 			this.existingBenchGroupTitle = null;
 			this.appCompatibility = {
 				incompatible: [],
-				custom_apps: [],
+				site_custom_apps: [],
+				other_custom_apps_on_rg: [],
 				can_upgrade: false,
 			};
 			this.newReleaseGroupTitle = '';
