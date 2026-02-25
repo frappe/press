@@ -151,7 +151,7 @@ def get_current_team(get_doc=False) -> Team | str:
 			frappe.AuthenticationError,
 		)
 
-	if not frappe.db.exists("Team", {"name": team, "enabled": 1}):
+	if not system_user and not frappe.db.exists("Team", {"name": team, "enabled": 1}):
 		frappe.throw("Invalid Team", frappe.AuthenticationError)
 
 	if get_doc:
