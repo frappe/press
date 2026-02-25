@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import TYPE_CHECKING
 
 import frappe
@@ -2359,7 +2358,7 @@ def version_upgrade(
 def check_existing_upgrade_bench(name, version):
 	"""
 	Check if an existing next-version bench exists on the same server
-	with compatible app list (all or more apps than current site's release group).
+	which includes all the apps installed on the site.
 
 	Returns: {
 		"exists": bool,
@@ -2367,10 +2366,9 @@ def check_existing_upgrade_bench(name, version):
 		"release_group": str or None,
 	}
 	"""
-	site_server, site_group = frappe.db.get_value("Site", name, ["server", "group"])
+	site_server = frappe.db.get_value("Site", name, "server")
 	current_team = get_current_team()
-
-	current_apps = frappe.db.get_all("Release Group App", filters={"parent": site_group}, pluck="app")
+	site_apps = set(frappe.db.get_all("Site App", filters={"parent": name}, pluck="app"))
 
 	version_number = frappe.db.get_value("Frappe Version", version, "number")
 	next_version = frappe.db.get_value(
@@ -2415,10 +2413,9 @@ def check_existing_upgrade_bench(name, version):
 			bench_apps_map[row.parent] = []
 		bench_apps_map[row.parent].append(row.app)
 
-	current_apps_set = set(current_apps)
 	for bench in benches:
 		bench_app_list = bench_apps_map.get(bench.group, [])
-		if current_apps_set.issubset(bench_app_list):
+		if site_apps.issubset(bench_app_list):
 			return {
 				"exists": True,
 				"bench_name": bench.name,
@@ -2433,24 +2430,20 @@ def check_existing_upgrade_bench(name, version):
 @protected("Site")
 def check_app_compatibility_for_upgrade(name, version):
 	"""
-	Check which apps in the current site's release group are compatible
-	with the next Frappe version.
+	Check which apps in the current site are compatible with the next Frappe version.
+	Returns list of custom apps installed on the site, if any and other custom apps in the release group for selecting a compatible branch.
 	"""
 	next_version = get_next_version(version)
 	site_group = frappe.db.get_value("Site", name, "group")
-	current_apps = frappe.db.get_all(
+
+	site_app_names = frappe.db.get_all("Site App", filters={"parent": name}, pluck="app")
+	release_group_apps = frappe.db.get_all(
 		"Release Group App",
 		filters={"parent": site_group},
 		fields=["app", "source"],
 	)
-	if not current_apps:
-		return {
-			"incompatible": [],
-			"custom_apps": [],
-			"can_upgrade": True,
-		}
 
-	source_names = list({a.source for a in current_apps})
+	source_names = list({a.source for a in release_group_apps})
 	app_sources = frappe.db.get_all(
 		"App Source",
 		filters={"name": ("in", source_names)},
@@ -2469,7 +2462,7 @@ def check_app_compatibility_for_upgrade(name, version):
 	source_map = {s.name: s for s in app_sources}
 	public_apps = []
 	public_source_map = {}
-	for row in current_apps:
+	for row in release_group_apps:
 		source = source_map.get(row.source)
 		if not source or not source.enabled:
 			continue
@@ -2486,42 +2479,43 @@ def check_app_compatibility_for_upgrade(name, version):
 	if incompatible_apps:
 		return {
 			"incompatible": incompatible_apps,
-			"custom_apps": [],
+			"site_custom_apps": [],
+			"other_custom_apps_on_rg": [],
 			"can_upgrade": False,
 		}
 
-	# Fetch custom app branches only if public apps are compatible
-	custom_apps = []
-	for row in current_apps:
+	site_custom_apps = []
+	other_custom_apps_on_rg = []  # Custom apps in the release group which aren't installed on the site
+	for row in release_group_apps:
 		source = source_map.get(row.source)
 		if not source or source.public or source.repository_owner == "frappe" or not source.enabled:
 			continue
 
-		branches = _get_custom_app_branches(
-			source.repository_url,
-			row.app,
-			source.github_installation_id,
-		)
-		custom_apps.append(
-			{
-				"app": row.app,
-				"title": source.app_title or row.app,
-				"repository_url": source.repository_url,
-				"branch": source.branch,
-				"branches": branches,
-			}
-		)
+		app_data = {
+			"app": row.app,
+			"source": source.name,
+			"title": source.app_title or row.app,
+			"repository_url": source.repository_url,
+			"repository_owner": source.repository_owner,
+			"branch": source.branch,
+		}
+
+		if row.app in site_app_names:
+			site_custom_apps.append(app_data)
+		else:
+			other_custom_apps_on_rg.append(app_data)
 
 	return {
 		"incompatible": [],
-		"custom_apps": custom_apps,
+		"site_custom_apps": site_custom_apps,
+		"other_custom_apps_on_rg": other_custom_apps_on_rg,
 		"can_upgrade": True,
 	}
 
 
 @frappe.whitelist()
 @protected("Site")
-def create_private_bench_for_upgrade(
+def create_private_bench_for_site_upgrade(
 	name,
 	version,
 	release_group_title,
@@ -2541,16 +2535,22 @@ def create_private_bench_for_upgrade(
 	custom_app_sources = custom_app_sources or []
 	custom_source_map = {c.get("app"): c for c in custom_app_sources}
 
-	current_apps = frappe.db.get_all(
+	current_rg_apps = frappe.db.get_all(
 		"Release Group App",
 		filters={"parent": site_group},
 		fields=["app", "source"],
 	)
-	if not current_apps:
+	current_site_apps = frappe.db.get_all(
+		"Site App",
+		filters={"parent": name},
+		pluck="app",
+	)
+
+	if not current_rg_apps:
 		frappe.throw("No apps found in current release group")
 
-	app_names = [a.app for a in current_apps]
-	source_names = [a.source for a in current_apps]
+	app_names = [a.app for a in current_rg_apps]
+	source_names = [a.source for a in current_rg_apps]
 
 	app_sources = frappe.db.get_all(
 		"App Source",
@@ -2574,7 +2574,8 @@ def create_private_bench_for_upgrade(
 	)
 
 	apps_for_new_group = _get_apps_for_version_upgrade(
-		current_apps,
+		current_site_apps,
+		current_rg_apps,
 		source_map,
 		compatible_apps_map,
 		custom_source_map,
@@ -2748,36 +2749,9 @@ def _check_public_apps_compatibility(public_apps, source_map, next_version):
 	return incompatible
 
 
-def _get_custom_app_branches(repository_url, app_name, installation_id):
-	if not repository_url:
-		return []
-
-	try:
-		match = re.search(r"github\.com/([^/]+)/([^/\.]+)", repository_url)
-		if not match:
-			return []
-
-		owner, repo = match.groups()
-
-		from press.api.github import branches as gh_branches
-
-		api_branches = gh_branches(
-			owner=owner,
-			name=repo,
-			installation=installation_id or None,
-		)
-		if api_branches:
-			return [b.get("name") for b in api_branches]
-	except Exception as e:
-		frappe.log_error(
-			f"Failed to fetch branches for {app_name}: {e!s}",
-			"check_app_compatibility_for_upgrade",
-		)
-	return []
-
-
 def _get_apps_for_version_upgrade(
-	current_apps,
+	site_apps,
+	release_group_apps,
 	source_map,
 	compatible_map,
 	custom_source_map,
@@ -2785,7 +2759,7 @@ def _get_apps_for_version_upgrade(
 	team,
 ):
 	apps = []
-	for row in current_apps:
+	for row in release_group_apps:
 		app_name = row.app
 		source_name = row.source
 		source = source_map.get(source_name)
@@ -2806,6 +2780,8 @@ def _get_apps_for_version_upgrade(
 
 		custom_source = custom_source_map.get(app_name)
 		if not custom_source:
+			if app_name not in site_apps:
+				continue
 			frappe.throw(f"Custom app source not provided for {app_name}")
 		custom_source_name = _get_custom_app_upgrade_source(
 			app_name=app_name,
