@@ -1252,11 +1252,13 @@ def archive_staging_sites():
 
 
 # This is a new bench job
-def cancel_and_retry_bench_job_if_required(job: AgentJob):
+def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
 	"""Check if Retrying in x seconds is present in the output, which would mean that we are stuck in a loop
-	of registry retries and should break out of it by marking the job as failed"""
+	of registry retries and should break out of it by marking the job as failed
+	returns if the job was cancelled and retried, or if it was left as is
+	"""
 	if not ("Retrying in 10 seconds" in job.output and job.status == "Running"):
-		return
+		return False
 
 	job.cancel_job()
 
@@ -1266,6 +1268,7 @@ def cancel_and_retry_bench_job_if_required(job: AgentJob):
 	# Trigger immediate archival of bench to allow retry
 	bench: Bench = frappe.get_doc("Bench", job.bench)
 	bench.archive(retry_new_bench=True)
+	return True
 
 
 def retry_new_bench_job_if_possible(bench: Bench):
@@ -1280,8 +1283,11 @@ def retry_new_bench_job_if_possible(bench: Bench):
 	bench.retry_bench()
 
 
-def process_new_bench_job_update(job: AgentJob):
+def process_new_bench_job_update(job: AgentJob):  # noqa: C901
 	bench = Bench("Bench", job.bench)
+
+	if cancel_and_retry_bench_job_if_required(job):
+		return
 
 	updated_status = {
 		"Pending": "Pending",
@@ -1317,8 +1323,6 @@ def process_new_bench_job_update(job: AgentJob):
 	)
 	if version_upgrade:
 		frappe.get_doc("Version Upgrade", version_upgrade).update_version_upgrade_on_process_job(job)
-
-	cancel_and_retry_bench_job_if_required(job)
 
 	if updated_status != "Active":
 		return
