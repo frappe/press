@@ -481,8 +481,13 @@ class ReleaseGroup(Document, TagHelpers):
 			limit=1,
 		):
 			frappe.throw(
+<<<<<<< HEAD
 				f"Bench of name {self.title} already exists. Please try another name.",
 				frappe.ValidationError,
+=======
+				f"Bench Group of name {self.title} already exists. Please try another name.",
+				frappe.UniqueValidationError,
+>>>>>>> 69aebebe4 (refactor(site-action): Shared to Private Bench Migration Flow)
 			)
 
 	def validate_frappe_app(self):

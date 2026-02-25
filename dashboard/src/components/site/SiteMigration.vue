@@ -85,7 +85,7 @@
 					>
 						<p class="text-sm text-gray-700">Select Bench Group</p>
 						<FormControl
-							type="select"
+							type="combobox"
 							:options="
 								availableReleaseGroupsForMovingToPrivateBench.map((e) => ({
 									label: e.title,
@@ -110,10 +110,10 @@
 					>
 						<p class="text-sm text-gray-700">Select Server</p>
 						<FormControl
-							type="select"
+							type="combobox"
 							:options="
 								availableServersForSelectedReleaseGroupForMovingToPrivateBench.map(
-									(e) => ({ label: e.title, value: e.name }),
+									(e) => ({ label: `${e.title} (${e.name})`, value: e.name }),
 								)
 							"
 							size="md"
@@ -176,10 +176,10 @@
 					>
 						<p class="text-sm text-gray-700">Select Server</p>
 						<FormControl
-							type="select"
+							type="combobox"
 							:options="
 								dedicatedServersForNewReleaseGroupForMovingToPrivateBench.map(
-									(e) => ({ label: e.title, value: e.name }),
+									(e) => ({ label: `${e.title} (${e.name})`, value: e.name }),
 								)
 							"
 							size="md"
@@ -200,7 +200,7 @@
 					<div class="flex flex-col gap-2">
 						<p class="text-sm text-gray-700">Select Server</p>
 						<FormControl
-							type="select"
+							type="combobox"
 							:options="
 								dedicatedServersToMoveSiteTo.map((e) => ({
 									label: e.title,
@@ -225,7 +225,7 @@
 					<div class="flex flex-col gap-2">
 						<p class="text-sm text-gray-700">Select Region</p>
 						<FormControl
-							type="select"
+							type="combobox"
 							:options="
 								availableRegionsToMoveSiteTo.map((e) => ({
 									label: e.title,
@@ -238,6 +238,22 @@
 							v-model="selectedRegion"
 							required
 						/>
+
+						<p
+							v-if="$site.doc.group_public"
+							class="mt-1 text-sm text-gray-600"
+							:showIcon="false"
+						>
+							If the region you're looking for isn't available, please follow
+							the
+							<a
+								href="https://docs.frappe.io/cloud/sites/move-site-across-region"
+								target="_blank"
+								class="underline"
+								>this documentation</a
+							>
+							to add it.
+						</p>
 					</div>
 				</div>
 
@@ -324,7 +340,14 @@ export default {
 						},
 					};
 				},
-				onSuccess: () => {
+				onSuccess: (result) => {
+					if (result?.message) {
+						console.log(result.message);
+						this.$router.push({
+							name: 'Site Migration',
+							params: { id: result.message },
+						});
+					}
 					this.hide();
 				},
 			};
@@ -342,7 +365,13 @@ export default {
 						},
 					};
 				},
-				onSuccess: () => {
+				onSuccess: (result) => {
+					if (result?.message) {
+						this.$router.push({
+							name: 'Site Job',
+							params: { id: result.message },
+						});
+					}
 					this.hide();
 				},
 			};

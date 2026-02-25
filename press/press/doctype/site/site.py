@@ -1072,6 +1072,7 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Migrate", job=job.name)
 		self.status = "Pending"
 		self.save()
+		return job.name
 
 	@frappe.whitelist()
 	def last_migrate_failed(self):
@@ -1337,6 +1338,8 @@ class Site(Document, TagHelpers):
 		doc.status = "Cancelled"
 		doc.save()
 
+<<<<<<< HEAD
+=======
 	@dashboard_whitelist()
 	def create_migration_plan(
 		self,
@@ -1354,7 +1357,7 @@ class Site(Document, TagHelpers):
 		skip_backups: bool = False,
 		scheduled_time: str | None = None,
 		cluster: str | None = None,
-	):
+	) -> str:
 		doc = None
 		if type == "Move From Shared To Private Bench":
 			"""
@@ -1374,7 +1377,7 @@ class Site(Document, TagHelpers):
 					"action_type": type,
 					"arguments": json.dumps(
 						{
-							"destination_server": server,
+							"destination_server": server or self.server,
 							"destination_release_group": group,
 							"new_release_group_name": new_group_name,
 							"skip_failing_patches": skip_failing_patches,
@@ -1412,8 +1415,10 @@ class Site(Document, TagHelpers):
 				}
 			).insert()
 
-		return doc
+		assert doc is not None, "Invalid migration plan type"
+		return doc.name
 
+>>>>>>> 69aebebe4 (refactor(site-action): Shared to Private Bench Migration Flow)
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
