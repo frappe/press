@@ -738,7 +738,8 @@ def _validate_prepaid_credits(amount, currency):
 
 
 def _validate_purchase_plan(amount, doc_name, currency):
-	if not doc_name or not frappe.db.exists("Plan", doc_name):
+	exists_result = frappe.db.exists("Site Plan", doc_name)
+	if not doc_name or not exists_result:
 		frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))
 
 	price_field = "price_inr" if currency == "INR" else "price_usd"
