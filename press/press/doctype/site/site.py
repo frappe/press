@@ -1393,6 +1393,7 @@ class Site(Document, TagHelpers):
 					"arguments": json.dumps(
 						{
 							"destination_server": server,
+							"skip_failing_patches": skip_failing_patches,
 						}
 					),
 					"scheduled_time": scheduled_time,
@@ -1407,6 +1408,7 @@ class Site(Document, TagHelpers):
 					"arguments": json.dumps(
 						{
 							"cluster": cluster,
+							"skip_failing_patches": skip_failing_patches,
 						}
 					),
 					"scheduled_time": scheduled_time,

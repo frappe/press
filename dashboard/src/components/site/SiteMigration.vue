@@ -269,7 +269,7 @@ import GenericList from '../GenericList.vue';
 import FormControl from 'frappe-ui/src/components/FormControl/FormControl.vue';
 
 export default {
-	props: ['site'],
+	props: ['site', 'defaultAction', 'defaultNewBenchName'],
 	components: {
 		AlertBanner,
 		Select,
@@ -280,7 +280,6 @@ export default {
 			show: true,
 			selectedMigrationMode: '',
 			skipFailingPatches: false,
-			skipBackups: false,
 			scheduledTime: '',
 
 			// For migration
@@ -311,6 +310,9 @@ export default {
 				},
 				initialData: {},
 				auto: true,
+				onSuccess: () => {
+					this.autoSelectMigrationOption();
+				},
 			};
 		},
 		createMigrationPlan() {
@@ -325,9 +327,10 @@ export default {
 							type: this.selectedMigrationMode,
 							group: this.selectedReleaseGroupToMoveTo,
 							server: this.selectedServerToMoveTo,
-							new_group_name: this.newBenchGroupName,
+							new_group_name: this.selectedReleaseGroupToMoveTo
+								? null
+								: this.newBenchGroupName,
 							skip_failing_patches: this.skipFailingPatches,
-							skip_backups: false,
 							scheduled_time: this.scheduledTime,
 							cluster: this.selectedRegion,
 						},
@@ -448,12 +451,34 @@ export default {
 		},
 	},
 	methods: {
+		autoSelectMigrationOption() {
+			// Check if 'action' is passed via prop or URL params
+			const actionFromProp = this.defaultAction;
+			const actionFromUrl = this.$route?.query?.action;
+			const actionToSelect = actionFromProp || actionFromUrl;
+
+			if (!actionToSelect) return;
+
+			// Check if the action exists in migration choices and is not hidden
+			const matchingChoice = this.migrationChoices.find(
+				(choice) => choice.value === actionToSelect,
+			);
+
+			if (matchingChoice) {
+				// Auto-select the option
+				this.selectedMigrationMode = actionToSelect;
+
+				// Set default new bench name if provided and not already set
+				if (this.defaultNewBenchName && !this.newBenchGroupName) {
+					this.newBenchGroupName = this.defaultNewBenchName;
+				}
+			}
+		},
 		resetValues(skip_migration_mode_set = false) {
 			if (!skip_migration_mode_set) {
 				this.selectedMigrationMode = '';
 			}
 			this.skipFailingPatches = false;
-			this.skipBackups = false;
 			this.scheduledTime = '';
 
 			// For migration
@@ -462,7 +487,8 @@ export default {
 			this.selectedServerToMoveTo = '';
 			this.selectedServerType = 'Shared Server';
 
-			this.newBenchGroupName = '';
+			// Reset to default bench name if provided, otherwise empty
+			this.newBenchGroupName = this.defaultNewBenchName || '';
 
 			// Reset the errors
 			if (this.$resources?.createMigrationPlan) {
