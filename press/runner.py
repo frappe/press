@@ -371,6 +371,7 @@ class StepHandler:
 		ansible: Ansible,
 		e: Exception | None = None,
 	) -> None:
+		step.job_type = "Ansible Play"
 		step.job = getattr(ansible, "play", None)
 		step.status = Status.Failure
 		step.output = str(e)

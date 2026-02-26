@@ -738,7 +738,13 @@ def _validate_prepaid_credits(amount, currency):
 
 
 def _validate_purchase_plan(amount, doc_name, currency):
-	if not doc_name or not frappe.db.exists("Site Plan", doc_name):
+	# Debug logging - remove after fixing
+	exists_result = frappe.db.exists("Site Plan", doc_name)
+	frappe.log_error(
+		title="Debug: _validate_purchase_plan",
+		message=f"doc_name={doc_name!r}, type={type(doc_name)}, exists={exists_result!r}",
+	)
+	if not doc_name or not exists_result:
 		frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))
 
 	price_field = "price_inr" if currency == "INR" else "price_usd"

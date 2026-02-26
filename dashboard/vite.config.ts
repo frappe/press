@@ -7,13 +7,10 @@ import pluginRewriteAll from 'vite-plugin-rewrite-all';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import vueDevTools from 'vite-plugin-vue-devtools'
 import dotenv from 'dotenv';
-import UnpluginComponents from 'unplugin-vue-components/vite';
-import { visualizer } from 'rollup-plugin-visualizer';
 dotenv.config();
 
 export default defineConfig({
 	plugins: [
-		UnpluginComponents({ dirs: [] }),
 		frappeui({
 			frappeProxy: true,
 			lucideIcons: true,
@@ -38,7 +35,6 @@ export default defineConfig({
 		}),
 		,
 		...(process.env.ENABLE_VUE_DEVTOOLS ? [vueDevTools()] : []),
-		...(process.env.OPEN_DEPENDENCY_VISUALIZER ? [visualizer({ open: true })] : []),
 	],
 	server: {
 		allowedHosts: true

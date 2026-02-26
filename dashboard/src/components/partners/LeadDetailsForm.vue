@@ -208,8 +208,8 @@ const indianStates = computed(() => {
 });
 
 const _engagementStageOptions = [
-	'Demo',
 	'Qualification',
+	'Demo',
 	'Quotation',
 	'Ready for Closing',
 ];

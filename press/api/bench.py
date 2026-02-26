@@ -1188,7 +1188,7 @@ def confirm_bench_transfer(key: str):
 	if frappe.session.user == "Guest":
 		return frappe.respond_as_web_page(
 			_("Not Permitted"),
-			_("You need to be logged in to confirm the bench group transfer."),
+			_("You need to be logged in to confirm the bench transfer."),
 			http_status_code=403,
 			indicator_color="red",
 			primary_action="/dashboard/login",

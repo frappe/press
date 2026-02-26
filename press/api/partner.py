@@ -808,11 +808,13 @@ def update_lead_details(lead_name, lead_details):
 
 @frappe.whitelist()
 @role_guard.api("partner")
-def update_lead_status(lead_name, status, **kwargs):
+def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 	if not is_lead_team(lead_name):
 		frappe.throw("You are not allowed to update this lead")
 
+	doc = frappe.get_doc("Partner Lead", lead_name)
 	status_dict = {"status": status}
+
 	if status == "In Process":
 		status_dict.update(
 			{
@@ -831,9 +833,36 @@ def update_lead_status(lead_name, status, **kwargs):
 		site = kwargs.get("site_url")
 		server = kwargs.get("server_name")
 		team = kwargs.get("team_name")
+
+		if hosting == "Frappe Cloud":
+			if server:
+				Server = frappe.qb.DocType("Server")
+				query = (
+					frappe.qb.from_(Server)
+					.select(Server.name)
+					.where((Server.status == "Active") & ((Server.title == server) | (Server.name == server)))
+				)
+				result = query.run(as_dict=True)
+				if not result:
+					frappe.throw("Server not found in Frappe Cloud")
+
+			elif team and not frappe.db.exists("Team", {"user": team, "enabled": 1}):
+				frappe.throw("Team not found in Frappe Cloud")
+
+			elif site:
+				Site = frappe.qb.DocType("Site")
+				query = (
+					frappe.qb.from_(Site)
+					.select(Site.name)
+					.where((Site.status == "Active") & ((Site.name == site) | (Site.host_name == site)))
+				)
+				result = query.run(as_dict=True)
+				if not result:
+					frappe.throw("Site not found in Frappe Cloud")
+
 		status_dict.update(
 			{
-				"conversion_date": kwargs.get("conversion_date"),
+				"conversion_date": frappe.utils.getdate(),
 				"hosting": hosting,
 				"site_url": site,
 				"server_name": server,
@@ -847,8 +876,21 @@ def update_lead_status(lead_name, status, **kwargs):
 				"lost_reason_specify": kwargs.get("other_reason"),
 			}
 		)
+	elif status == "Passed to Other Partner":
+		status_dict = {}
+		status_dict.update(
+			{
+				"partner_team": "",
+				"company_name": "",
+				"partner_email": "",
+				"partner_manager": "",
+				"status": "Open",
+			}
+		)
 
-	frappe.db.set_value("Partner Lead", lead_name, status_dict)
+	doc.update(status_dict)
+	doc.save(ignore_permissions=True)
+	doc.reload()
 
 
 @frappe.whitelist()

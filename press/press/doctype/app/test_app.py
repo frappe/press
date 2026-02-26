@@ -190,6 +190,23 @@ class TestApp(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			parse_frappe_version(">=16.0.0", app_title="test-app", ease_versioning_constrains=True)
 
+		with self.assertRaises(frappe.ValidationError):
+			parse_frappe_version(
+				">=16.0.0-dev,<15.0.0", app_title="test-app", ease_versioning_constrains=True
+			)
+
+		with self.assertRaises(frappe.ValidationError):
+			parse_frappe_version(
+				">=16.0.0,<15.0.0-dev", app_title="test-app", ease_versioning_constrains=True
+			)
+
+		with self.assertRaises(frappe.ValidationError):
+			parse_frappe_version(">=16.0.0,<15.0.0", app_title="test-app", ease_versioning_constrains=True)
+
+		self.assertEqual(
+			parse_frappe_version(">=16.0.0,<16.0.0", app_title="test-app", ease_versioning_constrains=True),
+			{"Version 16"},
+		)
 		# Won't match any version but won't throw error either
 		self.assertEqual(
 			parse_frappe_version(">=15.75.0,<15.0.0", app_title="test-app", ease_versioning_constrains=False),

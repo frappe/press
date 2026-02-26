@@ -83,7 +83,7 @@
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Move To Existing Bench'"
 					>
-						<p class="text-sm text-gray-700">Select Bench Group</p>
+						<p class="text-sm text-gray-700">Select Bench</p>
 						<FormControl
 							type="select"
 							:options="
@@ -124,7 +124,7 @@
 						/>
 					</div>
 
-					<!-- New Bench Group Name (For New) -->
+					<!-- New Bench Name (For New) -->
 					<div
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Create A New Bench'"

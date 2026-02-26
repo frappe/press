@@ -358,7 +358,7 @@ export default {
 							},
 							{
 								type: 'link',
-								label: 'Bench Group',
+								label: 'Benches',
 								fieldname: 'group',
 								options: {
 									doctype: 'Release Group',
@@ -409,7 +409,7 @@ export default {
 							},
 						},
 						{
-							label: 'Bench Group',
+							label: 'Bench',
 							fieldname: 'group_title',
 							width: '15rem',
 						},
@@ -422,7 +422,7 @@ export default {
 				},
 			},
 			{
-				label: 'Bench Groups',
+				label: 'Benches',
 				icon: icon('package'),
 				condition: (server) => {
 					return server.doc?.status !== 'Archived';
@@ -498,7 +498,7 @@ export default {
 					primaryAction({ listResource: benches, documentResource: server }) {
 						if (server?.doc?.status !== 'Active') return {};
 						return {
-							label: 'New Bench Group',
+							label: 'New Bench',
 							slots: {
 								prefix: icon('plus'),
 							},

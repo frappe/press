@@ -221,8 +221,8 @@ export default {
 			);
 		},
 		requiresReAuth() {
-			return this.$resources.options?.error?.messages.includes(
-				'Bad credentials',
+			return this.$resources.options?.error?.messages.some((msg) =>
+				msg.includes('Bad credentials'),
 			);
 		},
 		state() {
