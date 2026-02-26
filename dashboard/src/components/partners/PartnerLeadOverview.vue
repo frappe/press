@@ -186,6 +186,7 @@ import { h } from 'vue';
 import DropdownItem from '../billing/DropdownItem.vue';
 import UpdateEngagementStageDialog from './UpdateEngagementStageDialog.vue';
 import UpdateLostDialog from './UpdateLostDialog.vue';
+import { toast } from 'vue-sonner';
 export default {
 	name: 'PartnerLeadOverview',
 	components: {
@@ -203,6 +204,7 @@ export default {
 			showUpdateEngagementStageDialog: false,
 			showUpdateWonDialog: false,
 			showUpdateLostDialog: false,
+			errorMessage: null,
 		};
 	},
 	emits: ['success'],
@@ -225,6 +227,10 @@ export default {
 				},
 				onSuccess: () => {
 					this.$resources.lead.reload();
+				},
+				onError: (e) => {
+					this.errorMessage = e.messages[0] || 'Failed to update status';
+					toast.error(this.errorMessage);
 				},
 			};
 		},
@@ -358,13 +364,13 @@ export default {
 						}),
 				},
 				{
-					label: 'Passed to Other Partner',
-					value: 'Passed to Other Partner',
+					label: 'Pass to Other Partner',
+					value: 'Pass to Other Partner',
 					component: () =>
 						h(DropdownItem, {
-							label: 'Passed to Other Partner',
+							label: 'Pass to Other Partner',
 							onClick: () => {
-								this._updateStatus('Passed to Other Partner');
+								this._updateStatus('Pass to Other Partner');
 							},
 						}),
 				},
@@ -377,7 +383,7 @@ export default {
 				Won: 'green',
 				Lost: 'red',
 				Junk: 'gray',
-				'Passed to Other Partner': 'gray',
+				'Pass to Other Partner': 'gray',
 			};
 		},
 		probabilityTheme() {

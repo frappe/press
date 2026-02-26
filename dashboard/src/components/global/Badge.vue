@@ -63,7 +63,7 @@ export default {
 				Won: 'green',
 				Lost: 'red',
 				Junk: 'gray',
-				'Passed to Other Partner': 'gray',
+				'Pass to Other Partner': 'gray',
 				Restored: 'green',
 				Restoring: 'blue',
 				'Creating Servers': 'orange',

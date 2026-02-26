@@ -70,7 +70,7 @@ const _statusList = [
 	'Lost',
 	'In Process',
 	'Junk',
-	'Passed to Other Partner',
+	'Pass to Other Partner',
 ];
 
 const statusList = computed(() => {

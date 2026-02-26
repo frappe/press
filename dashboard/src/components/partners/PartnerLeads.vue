@@ -152,7 +152,7 @@ export default {
 								'Won',
 								'Lost',
 								'Junk',
-								'Passed to Other Partner',
+								'Pass to Other Partner',
 								'Other',
 							],
 						},
@@ -214,7 +214,7 @@ export default {
 				Won: 'green',
 				Lost: 'red',
 				Junk: 'gray',
-				'Passed to Other Partner': 'gray',
+				'Pass to Other Partner': 'gray',
 			};
 		},
 	},
