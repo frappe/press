@@ -3919,6 +3919,151 @@ class Site(Document, TagHelpers):
 
 		update_infos("Site", self.name, values)
 
+<<<<<<< HEAD
+=======
+	@dashboard_whitelist()
+	def get_migration_options(self):
+		site_update_information = self.get_update_information()
+		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
+		release_group_deploy_information = release_group.deploy_information()
+		# is_on_public_server = bool(frappe.db.get_value("Server", self.server, "public", cache=True))
+		is_on_public_release_group = release_group.public
+
+		# Moving from Shared to Private Bench
+		version = frappe.db.get_value("Release Group", self.group, "version")
+
+		Bench = frappe.qb.DocType("Bench")
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		Server = frappe.qb.DocType("Server")
+		query = (
+			frappe.qb.from_(Bench)
+			.select(
+				ReleaseGroup.name,
+				ReleaseGroup.title.as_("release_group_title"),
+				ReleaseGroup.public.as_("release_group_public"),
+				Server.title.as_("server_title"),
+				Server.name.as_("server_name"),
+				Server.public.as_("deployed_on_public_server"),
+			)
+			.inner_join(ReleaseGroup)
+			.on(ReleaseGroup.name == Bench.group)
+			.inner_join(Server)
+			.on(Server.name == Bench.server)
+			.where(Bench.status == "Active")
+			.where(ReleaseGroup.name != self.group)
+			.where(ReleaseGroup.version == version)
+			.where(ReleaseGroup.team == self.team)
+			.where(ReleaseGroup.public == 0)
+			.where(Bench.server == self.server)
+			.where(Server.name == Bench.server)
+		)
+
+		_compatible_release_groups = query.run(as_dict=True)
+		_compatible_release_groups_for_migration = {}
+		for grp in _compatible_release_groups:
+			if grp.name not in _compatible_release_groups_for_migration:
+				_compatible_release_groups_for_migration[grp.name] = {
+					"name": grp.name,
+					"title": grp.release_group_title,
+					"public": grp.release_group_public,
+					"servers": [],
+				}
+
+			_compatible_release_groups_for_migration[grp.name]["servers"].append(
+				{
+					"name": grp.server_name,
+					"title": grp.server_title,
+					"public": grp.deployed_on_public_server,
+				}
+			)
+		compatible_release_groups_for_migration = list(_compatible_release_groups_for_migration.values())
+
+		site_update_available = site_update_information.update_available and self.status in [
+			"Active",
+			"Inactive",
+			"Suspended",
+			"Broken",
+		]
+		deploy_information = release_group.deploy_information()
+		release_group_update_available = (
+			not is_on_public_release_group
+			and deploy_information.last_deploy
+			and not deploy_information.deploy_in_progress
+			and deploy_information.update_available
+			and release_group.status == "Active"
+		)
+
+		owned_dedicated_servers = frappe.get_all(
+			"Server",
+			filters={"status": "Active", "public": 0, "team": self.team},
+			fields=["name", "title", "cluster"],
+		)
+		cluster_names = release_group.get_clusters()
+		group_regions = frappe.get_all(
+			"Cluster", filters={"name": ("in", cluster_names)}, fields=["name", "title", "image"]
+		)
+
+		return {
+			"Update Site": {
+				"hidden": not site_update_available,
+				"allow_scheduling": True,
+				"description": "Update your site to the latest version of the application",
+				"button_label": "Update Site",
+				"options": {
+					"site_update_information": site_update_information,
+					"site_update_available": site_update_available,
+					"release_group_update_available": release_group_update_available,
+					"release_group_deploy_information": release_group_deploy_information,
+				},
+			},
+			"In-Place Migrate Site": {
+				"hidden": False,
+				"allow_scheduling": False,
+				"description": "Run bench migrate command on your site to migrate to a new version",
+				"button_label": "Migrate Site",
+				"options": {},
+			},
+			"Move From Shared To Private Bench": {
+				"hidden": not is_on_public_release_group,
+				"allow_scheduling": True,
+				"description": "Move your site from a shared bench to a private bench",
+				"button_label": "Move to Private Bench",
+				"options": {
+					"available_release_groups": compatible_release_groups_for_migration,
+					"dedicated_servers_for_new_release_group": owned_dedicated_servers,
+				},
+			},
+			# "Move From Private To Shared Bench": {
+			# 	"hidden": is_on_public_release_group,
+			# 	"allow_scheduling": True,
+			# 	"description": "Move your site from a private bench to a shared bench",
+			# 	"button_label": "Move to Shared Bench",
+			# 	"options": {
+			# 		# TODO
+			# 		"incompatible_apps": [],
+			# 	},
+			# },
+			"Move Site To Different Server": {
+				"hidden": False,
+				"allow_scheduling": True,
+				"description": "Move your site to a different server",
+				"button_label": "Move Site",
+				"options": {
+					"dedicated_servers": [x for x in owned_dedicated_servers if x.name != self.server]
+				},
+			},
+			"Move Site To Different Region": {
+				"hidden": False,
+				"allow_scheduling": True,
+				"description": "Move your site to a different region",
+				"button_label": "Move Site",
+				"options": {
+					"available_regions": [region for region in group_regions if region.name != self.cluster],
+				},
+			},
+		}
+
+>>>>>>> 8538c03fc (refactor(site-action): Move Site to Different Server)
 	@property
 	def recent_offsite_backups_(self):
 		site_backups = frappe.qb.DocType("Site Backup")

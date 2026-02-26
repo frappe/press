@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.release_group.release_group import ReleaseGroup
+	from press.press.doctype.server.server import Server
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_action_step.site_action_step import SiteActionStep
 	from press.press.doctype.site_migration.site_migration import SiteMigration
@@ -114,21 +115,24 @@ class SiteAction(Document):
 		# Else, add the server in release group. Trigger a re-deploy and move the site there.
 
 		current_bench: Bench = frappe.get_doc("Bench", self.site_doc.bench)
-		if current_bench.public:
+		current_release_group: ReleaseGroup = frappe.get_doc("Release Group", current_bench.group)
+		destination_server = self.get_argument("destination_server", current_bench.server)
+		self.set_argument("destination_server", destination_server)
+
+		server: Server = frappe.get_doc("Server", destination_server)
+		if not server.public and not server.has_permission("write"):
+			frappe.throw(f"You don't have permission to deploy on server {server.name}")
+
+		if current_release_group.public:
 			self.set_argument("new_release_group_name", current_bench.group + " - Clone")
 		else:
-			release_group: ReleaseGroup = frappe.get_doc("Release Group", current_bench.group)
-			# Check if current server exists in release group
-			destination_server = current_bench.server
-
-			if not any(server.server == destination_server for server in release_group.servers):
-				dcb_name = release_group.add_server(destination_server, deploy=True, force_new_build=True)
-				dcb: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dcb_name)
-
-				self.set_argument("destination_server", dcb.server)
-				self.set_argument("cloned_release_group", release_group.name)
-				self.set_argument("cloned_deploy_candidate", dcb.candidate)
-				self.set_argument("cloned_deploy_candidate_build", dcb_name)
+			if not any(server.server == destination_server for server in current_release_group.servers):
+				current_release_group.add_server(
+					destination_server,
+					deploy=False,
+					force_new_build=False,
+				)
+				self.set_argument("destination_release_group", current_release_group.name)
 
 	def pre_validate_move_site_from_shared_to_private_bench(self):
 		"""Pre Validate Move Site From Shared To Private Bench"""
@@ -180,14 +184,8 @@ class SiteAction(Document):
 				new_group: ReleaseGroup = frappe.get_doc(
 					"Release Group", self.get_argument("destination_release_group")
 				)
-				if not new_group.servers:
-					new_group.append(
-						"servers",
-						{"server": site.server, "default": False},
-					)
-					new_group.save()
-
-				if (requested_destination_server := self.get_argument("destination_server")) and not any(
+				requested_destination_server = self.get_argument("destination_server", site.server)
+				if requested_destination_server and not any(
 					server.server == requested_destination_server for server in new_group.servers
 				):
 					new_group.append(
@@ -195,6 +193,8 @@ class SiteAction(Document):
 						{"server": requested_destination_server, "default": False},
 					)
 					new_group.save()
+
+				self.set_argument("destination_server", requested_destination_server)
 
 			# Else, we will clone current release group
 			else:
