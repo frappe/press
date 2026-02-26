@@ -128,6 +128,9 @@ class SiteAction(Document):
 				)
 				self.set_argument("destination_release_group", current_release_group.name)
 
+		if self.get_argument("destination_release_group"):
+			self._validate_apps_in_release_group(self.get_argument("destination_release_group"))
+
 	def pre_validate_move_site_from_shared_to_private_bench(self):
 		"""Pre Validate Move Site From Shared To Private Bench"""
 		if not self.get_argument("destination_release_group"):
@@ -137,6 +140,8 @@ class SiteAction(Document):
 			frappe.throw(
 				f"Release Group {self.get_argument('destination_release_group')} is a public release group. Please select a different release group."
 			)
+
+		self._validate_apps_in_release_group(self.get_argument("destination_release_group"))
 
 	def clone_and_create_bench_group(self):  # noqa
 		"""Clone and Create Private Bench"""
@@ -741,6 +746,15 @@ class SiteAction(Document):
 		return any(
 			step.status in ("Pending", "Running") for step in self.steps if step.step_type == "Preparation"
 		)
+
+	def _validate_apps_in_release_group(self, release_group_name: str) -> None:
+		destination_release_group: ReleaseGroup = frappe.get_doc("Release Group", release_group_name)
+		rg_apps = set(app.app for app in destination_release_group.apps)
+		if diff := rg_apps - set(self.site_doc.apps):
+			frappe.throw(
+				f"Site has following apps {', '.join(diff)} which are not present in the destination release group. Please install those apps in the destination release group or remove them from the site before moving.",
+				frappe.ValidationError,
+			)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site Action")
