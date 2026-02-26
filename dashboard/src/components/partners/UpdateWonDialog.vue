@@ -21,6 +21,7 @@
 					type="data"
 					name="site_url"
 					:required="true"
+					placeholder="e.g. example.m.frappe.cloud"
 				/>
 				<FormControl
 					v-if="resource_type == 'Server'"
