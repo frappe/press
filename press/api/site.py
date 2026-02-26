@@ -287,10 +287,80 @@ def validate_plan(server: str, plan: str) -> None:
 
 @frappe.whitelist()
 def new(site):
+	"""
+	Dedicated server flow:
+	- Search for existing bench group with matching version and selected apps deployed on selected server
+	- Reuse group if found, otherwise provision new bench via Site Group Deploy
+
+	Shared/public server flow:
+	- If plans supports it, deploy private bench and create site
+	- Else create site on existing bench
+	"""
 	if not hasattr(site, "domain") and not site.get("domain"):
 		site["domain"] = frappe.db.get_single_value("Press Settings", "domain")
 
+	selected_server = site.get("selectedDedicatedServer")
 	plan = site.get("plan")
+	apps = site.get("apps", ["frappe"])
+	apps = [app for app in apps if app]
+
+	if selected_server:
+		if localisation_country := site.get("localisation_country"):
+			localisation_app = frappe.db.get_value(
+				"Marketplace Localisation App", {"country": localisation_country}, "marketplace_app"
+			)
+			if localisation_app and localisation_app not in apps:
+				apps.append(localisation_app)
+
+		version = site.get("version")
+		existing_release_group = get_existing_bench_group_for_dedicated_server(
+			server=selected_server,
+			version=version,
+			apps=apps,
+		)
+		if existing_release_group:
+			team = get_current_team(get_doc=True)
+			app_plans = site.get("selected_app_plans")
+			site_doc = frappe.get_doc(
+				{
+					"doctype": "Site",
+					"subdomain": site.get("name"),
+					"domain": site.get("domain"),
+					"group": existing_release_group,
+					"server": selected_server,
+					"cluster": site.get("cluster"),
+					"apps": [{"app": app} for app in apps],
+					"app_plans": app_plans,
+					"team": team.name,
+					"free": team.free_account,
+					"subscription_plan": plan,
+					"version": version,
+				},
+			)
+			site_doc.insert(ignore_permissions=True)
+
+			return {
+				"site": site_doc.name,
+				"job": frappe.db.get_value(
+					"Agent Job",
+					filters={
+						"site": site_doc.name,
+						"job_type": ("in", ["New Site", "New Site from Backup"]),
+					},
+				),
+			}
+
+		return create_site_on_private_bench(
+			subdomain=site.get("name"),
+			plan=plan,
+			cluster=site.get("cluster"),
+			apps=apps,
+			version=version,
+			provider=site.get("provider"),
+			localisation_country=localisation_country,
+			server=selected_server,
+		)
+
 	if frappe.db.get_value("Site Plan", plan, "private_bench_support"):
 		return create_site_on_private_bench(
 			subdomain=site.get("name"),
@@ -305,6 +375,56 @@ def new(site):
 	return _new(site)
 
 
+def get_existing_bench_group_for_dedicated_server(
+	server: str,
+	version: str,
+	apps: list[str],
+) -> str | None:
+	"""
+	Find an existing bench group deployed on the selected server that matches version and  includes all selected apps
+	"""
+	team = get_current_team()
+	selected_apps = {app for app in apps if app}
+	if not selected_apps or not version or not server:
+		return None
+
+	# Query benches on the selected server with matching app list
+	Bench = frappe.qb.DocType("Bench")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+
+	benches = (
+		frappe.qb.from_(Bench)
+		.join(ReleaseGroup)
+		.on(Bench.group == ReleaseGroup.name)
+		.select(Bench.group)
+		.where(Bench.server == server)
+		.where(Bench.team == team)
+		.where(Bench.status == "Active")
+		.where(ReleaseGroup.version == version)
+		.where(ReleaseGroup.enabled == 1)
+	).run(as_dict=True)
+
+	if not benches:
+		return None
+
+	release_groups = list({bench["group"] for bench in benches})
+	group_apps = frappe.db.get_all(
+		"Release Group App",
+		filters={"parent": ("in", release_groups)},
+		fields=["parent", "app"],
+	)
+	apps_by_group: dict[str, set[str]] = {}
+	for row in group_apps:
+		apps_by_group.setdefault(row.parent, set()).add(row.app)
+
+	for bench in benches:
+		bench_apps = apps_by_group.get(bench["group"], set())
+		if selected_apps.issubset(bench_apps):
+			return bench["group"]
+
+	return None
+
+
 def create_site_on_private_bench(
 	subdomain: str,
 	plan: str,
@@ -313,6 +433,7 @@ def create_site_on_private_bench(
 	version: str,
 	provider: str,
 	localisation_country: str | None = None,
+	server: str = "",
 ) -> dict:
 	team = get_current_team()
 
@@ -377,6 +498,7 @@ def create_site_on_private_bench(
 			"version": version,
 			"team": team,
 			"provider": provider,
+			"server": server,
 		}
 	).insert(ignore_permissions=True)
 
@@ -620,7 +742,7 @@ def app_details_for_new_public_site():
 	return marketplace_apps
 
 
-def get_dedicated_server_info(release_group_name: str) -> dict:
+def get_dedicated_server_info_for_release_group(release_group_name: str) -> dict:
 	"""
 	check servers linked to a release group and determine dedicated server deployment options.
 
@@ -685,6 +807,25 @@ def get_dedicated_server_info(release_group_name: str) -> dict:
 		"case": "no_dedicated_server",
 		"dedicated_servers": [],
 	}
+
+
+def _get_team_dedicated_server_info():
+	case = ""
+	team = get_current_team()
+	servers = frappe.db.get_all(
+		"Server",
+		filters={"team": team, "status": "Active", "public": False},
+		fields=["name", "title", "cluster", "provider"],
+	)
+	server_count = len(servers)
+	if server_count == 0:
+		case = "no_dedicated_server"
+	elif server_count == 1:
+		case = "user_choice_single"
+	else:
+		case = "user_choice_multiple"
+
+	return {"case": case, "dedicated_servers": servers}
 
 
 @frappe.whitelist()
@@ -786,6 +927,7 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 		"app_source_details": app_source_details_grouped,
 		"providers": list(unique_providers.values()),
 		"additional_clusters": private_bench_clusters,
+		"dedicated_server_config": _get_team_dedicated_server_info() if not for_bench else [],
 	}
 
 
@@ -841,7 +983,9 @@ def get_available_versions(for_bench: str | None = None):
 		if release_group:
 			version.group = release_group
 			if for_bench:
-				version.group.dedicated_server_config = get_dedicated_server_info(release_group.name) or {}
+				version.group.dedicated_server_config = (
+					get_dedicated_server_info_for_release_group(release_group.name) or {}
+				)
 
 			set_bench_and_clusters(version, for_bench)
 
@@ -2397,7 +2541,6 @@ def check_existing_upgrade_bench(name, version):
 		.where(Bench.server == site_server)
 		.where(Bench.team == current_team)
 		.where(ReleaseGroup.version == next_version)
-		.where(ReleaseGroup.public == 0)
 	).run(as_dict=True)
 
 	if not benches:
