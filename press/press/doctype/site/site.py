@@ -3397,13 +3397,6 @@ class Site(Document, TagHelpers):
 				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
-				"action": "Change bench group",
-				"description": "Move your site to a different bench group",
-				"button_label": "Change",
-				"doc_method": "change_bench",
-				"condition": self.status in ["Active", "Broken", "Inactive"],
-			},
-			{
 				"action": "Clear cache",
 				"description": "Clear cache on your site",
 				"button_label": "Clear",
@@ -3415,13 +3408,6 @@ class Site(Document, TagHelpers):
 				"button_label": "Deactivate",
 				"condition": self.status == "Active",
 				"doc_method": "deactivate",
-			},
-			{
-				"action": "In-Place Migrate Site",
-				"description": "Run bench migrate command on your site",
-				"button_label": "Migrate",
-				"doc_method": "migrate",
-				"group": "Dangerous Actions",
 			},
 			{
 				"action": "Restore with files",
