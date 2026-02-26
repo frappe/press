@@ -287,9 +287,7 @@ def options():
 	clusters = Cluster.get_all_for_new_bench()
 
 	if not versions:
-		frappe.throw(
-			"No app versions found. Only enabled and public app sources are listed here."
-		)
+		frappe.throw("No app versions found. Only enabled and public app sources are listed here.")
 
 	return {"versions": versions, "clusters": clusters}
 
@@ -413,9 +411,7 @@ def update_dependencies(name: str, dependencies: str):
 		strict=False,
 	):
 		if dep.dependency != new["key"]:
-			frappe.throw(
-				f"Invalid dependency: {new['key']}."
-			)
+			frappe.throw(f"Invalid dependency: {new['key']}.")
 		if not re.match(r"^\d+\.\d+\.*\d*$", new["value"]):
 			frappe.throw(
 				f"Invalid version format for {new['key']}. Expected X.Y.Z (e.g., 14.0.0). <a href='https://docs.frappe.io/cloud/common-issues/incompatible-app-version' target='_blank'>Learn more</a>"
@@ -1176,7 +1172,7 @@ def redeploy(name: str, dc_name: str) -> str:
 	response = redeploy_candidate(dc_name)
 
 	if response["error"]:
-		frappe.throw(response["message"], frappe.ValidationError)
+		frappe.throw("Unable to redeploy this build!", frappe.ValidationError)
 
 	return response["message"]
 

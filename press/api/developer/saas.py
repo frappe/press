@@ -139,9 +139,7 @@ def send_verification_code(domain: str, route: str = ""):
 	team_name = site_info.get("team")
 	team_info = frappe.get_value("Team", team_name, ["name", "enabled", "user", "enforce_2fa"], as_dict=True)
 	if not team_info or not team_info.get("enabled"):
-		frappe.throw(
-			"Your Frappe Cloud team is disabled currently."
-		)
+		frappe.throw("Your Frappe Cloud team is disabled currently.")
 
 	check_if_user_can_login(team_info, site_info)
 
