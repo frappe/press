@@ -21,7 +21,6 @@
 				<FormControl
 					class="mt-2"
 					type="text"
-					size="sm"
 					variant="subtle"
 					label="Label (to identify the user)"
 					v-model="label"
@@ -42,7 +41,6 @@
 							value: 'granular',
 						},
 					]"
-					size="sm"
 					variant="subtle"
 					:disabled="false"
 					label="Access Mode"
@@ -52,10 +50,16 @@
 					v-if="!isEditMode"
 					class="mt-2"
 					type="number"
-					size="sm"
 					variant="subtle"
 					label="Database Connections"
 					v-model="database_connections"
+				/>
+				<Checkbox
+					v-if="!isEditMode && isReplicaServerAvailable"
+					class="mt-2"
+					label="Use Replica Server"
+					size="sm"
+					v-model="use_replica_server"
 				/>
 				<!-- Permission configuration for Granular Mode -->
 				<div v-if="mode == 'granular'">
@@ -128,7 +132,7 @@
 <script>
 import { h } from 'vue';
 import ObjectList from '../ObjectList.vue';
-import { ErrorMessage, FormControl } from 'frappe-ui';
+import { ErrorMessage, FormControl, Checkbox } from 'frappe-ui';
 import { icon } from '../../utils/components';
 import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
@@ -145,12 +149,14 @@ export default {
 		icon,
 		AlertBanner,
 		SiteDatabaseColumnsSelector,
+		Checkbox,
 	},
 	data() {
 		return {
 			label: '',
 			mode: 'read_only',
 			database_connections: 1,
+			use_replica_server: false,
 			permissions: [],
 			lastGeneratedRowId: 0,
 		};
@@ -220,6 +226,7 @@ export default {
 							mode: this.mode,
 							permissions: permissions,
 							max_connections: parseInt(this.database_connections || 1),
+							use_replica_server: this.use_replica_server,
 						},
 					};
 				},
@@ -267,6 +274,19 @@ export default {
 					toast.success('User updated successfully');
 					this.$emit('success');
 				},
+			};
+		},
+		replicaServerAvailability() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams() {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'is_replica_server_available',
+					};
+				},
+				auto: true,
 			};
 		},
 	},
@@ -387,6 +407,9 @@ export default {
 				label: x,
 				value: x,
 			}));
+		},
+		isReplicaServerAvailable() {
+			return this.$resources?.replicaServerAvailability?.data?.message ?? false;
 		},
 	},
 	methods: {

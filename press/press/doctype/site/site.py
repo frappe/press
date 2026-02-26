@@ -308,6 +308,20 @@ class Site(Document, TagHelpers):
 	def database_server_agent(self) -> Agent:
 		return Agent(self.database_server_name, server_type="Database Server")
 
+	@dashboard_whitelist()
+	def is_replica_server_available(self) -> bool:
+		return bool(
+			frappe.db.exists(
+				"Database Server",
+				{
+					"status": ["!=", "Archived"],
+					"is_primary": False,
+					"primary": self.database_server_name,
+					"is_replication_setup": 1,
+				},
+			)
+		)
+
 	def get_doc(self, doc):
 		from press.api.client import get
 
