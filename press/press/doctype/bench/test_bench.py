@@ -61,7 +61,7 @@ def dummy_payload(*args, **kwargs):
 class TestStagingSite(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
-		frappe.cache.clear()
+		frappe.clear_cache()
 
 	def test_create_staging_site(self):
 		bench = create_test_bench()  # also creates press settings
