@@ -13,6 +13,7 @@
 						},
 					]
 				: [],
+			size: 'xl',
 		}"
 		v-model="show"
 		@close="resetValues"
