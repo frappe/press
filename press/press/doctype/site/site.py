@@ -3924,6 +3924,8 @@ class Site(Document, TagHelpers):
 
 		update_infos("Site", self.name, values)
 
+<<<<<<< HEAD
+=======
 	@dashboard_whitelist()
 	def get_migration_options(self):
 		site_update_information = self.get_update_information()
@@ -3987,11 +3989,12 @@ class Site(Document, TagHelpers):
 			"Suspended",
 			"Broken",
 		]
+		deploy_information = release_group.deploy_information()
 		release_group_update_available = (
 			not is_on_public_release_group
-			and release_group.deploy_information.last_deploy
-			and not release_group.deploy_information.deploy_in_progress
-			and release_group.deploy_information.update_available
+			and deploy_information.last_deploy
+			and not deploy_information.deploy_in_progress
+			and deploy_information.update_available
 			and release_group.status == "Active"
 		)
 
@@ -4051,7 +4054,7 @@ class Site(Document, TagHelpers):
 				"description": "Move your site to a different server",
 				"button_label": "Move Site",
 				"options": {
-					"dedicated_servers": [x for x in owned_dedicated_servers if x.name == self.server]
+					"dedicated_servers": [x for x in owned_dedicated_servers if x.name != self.server]
 				},
 			},
 			"Move Site To Different Region": {
@@ -4065,6 +4068,7 @@ class Site(Document, TagHelpers):
 			},
 		}
 
+>>>>>>> 8538c03fc (refactor(site-action): Move Site to Different Server)
 	@property
 	def recent_offsite_backups_(self):
 		site_backups = frappe.qb.DocType("Site Backup")
