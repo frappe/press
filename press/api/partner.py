@@ -876,7 +876,7 @@ def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 				"lost_reason_specify": kwargs.get("other_reason"),
 			}
 		)
-	elif status == "Passed to Other Partner":
+	elif status == "Pass to Other Partner":
 		status_dict = {}
 		status_dict.update(
 			{
