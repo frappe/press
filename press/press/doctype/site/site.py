@@ -3427,6 +3427,7 @@ class Site(Document, TagHelpers):
 				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
+<<<<<<< HEAD
 				"action": "Change region",
 				"description": "Move your site to a different region",
 				"button_label": "Change",
@@ -3448,6 +3449,8 @@ class Site(Document, TagHelpers):
 				"condition": self.status in ["Active", "Broken", "Inactive"] and not self.is_group_public,
 			},
 			{
+=======
+>>>>>>> 54b7becde (refactor(site): Remove Change Bench Group from actions)
 				"action": "Clear cache",
 				"description": "Clear cache on your site",
 				"button_label": "Clear",
@@ -3461,6 +3464,7 @@ class Site(Document, TagHelpers):
 				"doc_method": "deactivate",
 			},
 			{
+<<<<<<< HEAD
 				"action": "Migrate site",
 				"description": "Run bench migrate command on your site",
 				"button_label": "Migrate",
@@ -3468,6 +3472,8 @@ class Site(Document, TagHelpers):
 				"group": "Dangerous Actions",
 			},
 			{
+=======
+>>>>>>> 54b7becde (refactor(site): Remove Change Bench Group from actions)
 				"action": "Restore with files",
 				"description": "Restore with database, public and private files",
 				"button_label": "Restore",
