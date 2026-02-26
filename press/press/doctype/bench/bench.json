@@ -379,7 +379,7 @@
   }
  ],
  "links": [],
- "modified": "2025-10-13 17:14:44.604617",
+ "modified": "2026-02-23 20:57:55.325786",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
@@ -411,6 +411,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

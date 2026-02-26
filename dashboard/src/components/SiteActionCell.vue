@@ -131,59 +131,16 @@ function onActivateSite() {
 }
 
 function onDropSite() {
-	return confirmDialog({
-		title: 'Drop Site',
-		message: `
-            Are you sure you want to drop your site? The site will be archived and
-            all of its files and Offsite Backups will be deleted. This action cannot
-            be undone.
-        `,
-		fields: [
-			{
-				label: 'Please type the site name to confirm.',
-				fieldname: 'confirmSiteName',
-			},
-			{
-				label: 'Force drop site',
-				fieldname: 'force',
-				type: 'checkbox',
-			},
-		],
-		primaryAction: {
-			label: 'Drop Site',
-			variant: 'solid',
-			theme: 'red',
-			onClick: async ({ hide, values }) => {
-				if (
-					![site.doc.name, site.doc.host_name].includes(values.confirmSiteName)
-				) {
-					throw new Error('Site name does not match.');
-				}
+	const ArchiveSiteDialog = defineAsyncComponent(
+		() => import('./site/ArchiveSiteDialog.vue'),
+	);
 
-				const val = await isLastSite(site.doc.team);
-				const FeedbackDialog = defineAsyncComponent(
-					() => import('./ChurnFeedbackDialog.vue'),
-				);
-
-				return site.archive.submit({ force: values.force }).then(() => {
-					hide();
-					if (val) {
-						renderDialog(
-							h(FeedbackDialog, {
-								team: site.doc.team,
-								onUpdated() {
-									router.replace({ name: 'Site List' });
-									toast.success('Site dropped successfully');
-								},
-							}),
-						);
-					} else {
-						router.replace({ name: 'Site List' });
-					}
-				});
-			},
-		},
-	});
+	return renderDialog(
+		h(ArchiveSiteDialog, {
+			site: site,
+			modelValue: true,
+		}),
+	);
 }
 
 function onMigrateSite() {

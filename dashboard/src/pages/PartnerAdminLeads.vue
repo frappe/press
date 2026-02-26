@@ -22,6 +22,11 @@ export default {
 	},
 	computed: {
 		partnerAdminLeadsList() {
+			const resources = this.$resources.originList.data || [];
+			const origins = resources.map((d) => {
+				return { label: d.name, value: d.name };
+			});
+
 			return {
 				doctype: 'Partner Lead',
 				columns: [
@@ -32,7 +37,7 @@ export default {
 						class: 'truncate',
 						format: (value) => {
 							if (!value) return '';
-							return value.length > 30 ? `${value.slice(0, 30)}...` : value;
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
 						},
 					},
 					{
@@ -57,7 +62,7 @@ export default {
 						class: 'truncate',
 						format: (value) => {
 							if (!value) return '';
-							return value.length > 30 ? `${value.slice(0, 30)}...` : value;
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
 						},
 					},
 					{
@@ -78,7 +83,7 @@ export default {
 						{
 							type: 'data',
 							fieldname: 'search-text',
-							label: 'Search',
+							label: 'Search for org, lead or partner',
 						},
 						{
 							type: 'select',
@@ -88,6 +93,20 @@ export default {
 								{ label: 'Partner Owned', value: 'Partner Owned' },
 								{ label: 'Passed to Partner', value: 'Passed to Partner' },
 								{ label: 'Partner Listing', value: 'Partner Listing' },
+							],
+						},
+						{
+							type: 'select',
+							fieldname: 'engagement_stage',
+							label: 'Engagement Stage',
+							options: [
+								'',
+								'Demo',
+								'Qualification',
+								'Quotation',
+								'Ready for Closing',
+								'Negotiation',
+								'Learning',
 							],
 						},
 						{
@@ -110,11 +129,10 @@ export default {
 							type: 'select',
 							fieldname: 'origin',
 							label: 'Origin',
-							options: this.leadOrigins,
+							options: origins,
 						},
 					];
 				},
-				orderBy: 'modified desc',
 				onRowClick: (row) => {
 					this.$router.push({
 						name: 'LeadOverview',
@@ -122,11 +140,6 @@ export default {
 					});
 				},
 			};
-		},
-		leadOrigins() {
-			return this.$resources.originList.data.map((d) => {
-				return { label: d.name, value: d.name };
-			});
 		},
 	},
 };

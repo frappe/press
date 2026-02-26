@@ -345,3 +345,39 @@ class TestSiteAction(FrappeTestCase):
 			self.fail("Expected validation error for missing apps in destination release group")
 		except frappe.ValidationError as e:
 			self.assertIn("erpnext", str(e).lower())
+
+	def test_validate_private_to_shared_unavailable(self):
+		"""Ensure 'Move From Private To Shared Bench' action is not available"""
+		source_bench: Bench = create_test_bench(public_server=True)
+		source_site: Site = create_test_site(bench=source_bench.name)
+
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "Site Action",
+					"site": source_site.name,
+					"action_type": "Move From Private To Shared Bench",
+					"team": source_site.team,
+					"arguments": frappe.as_json({}),
+				}
+			).insert()
+			self.fail("Expected validation error for unavailable action type")
+		except frappe.ValidationError as e:
+			self.assertIn("not available", str(e).lower())
+
+	def test_cancel_action_raises_when_not_scheduled(self):
+		"""Cancel should raise when action is not in Scheduled state"""
+		source_bench: Bench = create_test_bench(public_server=True)
+		source_site: Site = create_test_site(bench=source_bench.name)
+
+		action_name = source_site.create_migration_plan(
+			type="Move From Shared To Private Bench",
+			new_group_name="Test Group",
+		)
+
+		action: SiteAction = frappe.get_doc("Site Action", action_name)
+		action.status = "Running"
+		action.save()
+
+		with self.assertRaises(frappe.ValidationError):
+			action.cancel_action()

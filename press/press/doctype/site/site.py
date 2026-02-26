@@ -171,6 +171,7 @@ class Site(Document, TagHelpers):
 		disable_site_usage_exceed_check: DF.Check
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
+		fatal_site_update: DF.Link | None
 		free: DF.Check
 		group: DF.Link
 		hide_config: DF.Check
@@ -262,6 +263,7 @@ class Site(Document, TagHelpers):
 		"is_monitoring_disabled",
 		"reason_for_disabling_monitoring",
 		"creation_failed",
+		"fatal_site_update",
 	)
 
 	@staticmethod
@@ -830,14 +832,14 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
-	def uninstall_app(self, app: str, feedback: str = "") -> str:
+	def uninstall_app(self, app: str, create_offsite_backup: bool = False, feedback: str = "") -> str:
 		from press.marketplace.doctype.marketplace_app_feedback.marketplace_app_feedback import (
 			collect_app_uninstall_feedback,
 		)
 
 		collect_app_uninstall_feedback(app, feedback, self.name)
 		agent = Agent(self.server)
-		job = agent.uninstall_app_site(self, app)
+		job = agent.uninstall_app_site(self, app, create_offsite_backup)
 
 		log_site_activity(self.name, "Uninstall App", app, job.name)
 
@@ -1259,6 +1261,12 @@ class Site(Document, TagHelpers):
 		self.status = "Pending"
 		self.save()
 
+	def check_fatal_site_update(self):
+		if self.fatal_site_update:
+			frappe.throw(
+				"Site has encountered a fatal error during last update. Please open a ticket at support.frappe.io with the error details to resolve the issue.",
+			)
+
 	@dashboard_whitelist()
 	@site_action(["Active", "Inactive", "Suspended", "Broken"])
 	def schedule_update(
@@ -1632,11 +1640,11 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Inactive", "Suspended"])
-	def archive(self, site_name=None, reason=None, force=False):
+	def archive(self, site_name=None, reason=None, force=False, create_offsite_backup=True):
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
-		job = agent.archive_site(self, site_name, force)
+		job = agent.archive_site(self, site_name, force, create_offsite_backup)
 		log_site_activity(self.name, "Archive", reason, job.name)
 
 		server = frappe.get_all("Server", filters={"name": self.server}, fields=["proxy_server"], limit=1)[0]
@@ -1649,15 +1657,6 @@ class Site(Document, TagHelpers):
 		)
 
 		self.db_set("host_name", None)
-
-		self.delete_physical_backups()
-		self.delete_offsite_backups()
-		frappe.db.set_value(
-			"Site Backup",
-			{"site": self.name, "offsite": False},
-			"files_availability",
-			"Unavailable",
-		)
 		self.disable_subscription()
 		self.disable_marketplace_subscriptions()
 
@@ -1687,7 +1686,7 @@ class Site(Document, TagHelpers):
 			# the background sync job might cause timestamp mismatch error or version error
 			frappe.get_doc("Virtual Disk Snapshot", snapshot, for_update=True).delete_snapshot()
 
-	def delete_offsite_backups(self):
+	def delete_offsite_backups(self, keep_latest: bool = True):
 		from press.press.doctype.remote_file.remote_file import (
 			delete_remote_backup_objects,
 		)
@@ -1695,7 +1694,7 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Drop Offsite Backups")
 
 		sites_remote_files = []
-		site_backups = frappe.get_all(
+		all_backups = frappe.get_all(
 			"Site Backup",
 			filters={
 				"site": self.name,
@@ -1705,7 +1704,8 @@ class Site(Document, TagHelpers):
 			},
 			pluck="name",
 			order_by="creation desc",
-		)[1:]  # Keep latest backup
+		)
+		site_backups = all_backups[1:] if keep_latest else all_backups
 		for backup_files in frappe.get_all(
 			"Site Backup",
 			filters={"name": ("in", site_backups)},
@@ -2654,9 +2654,17 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Activate Site")
 		if self.status == "Suspended":
 			self.reset_disk_usage_exceeded_status()
+
 		# If site was broken, check if it's responsive before marking it as active
-		self.status = "Broken" if (self.status == "Broken" and not self.is_responsive()) else "Active"
-		self.update_site_config({"maintenance_mode": 0})
+		self.status = (
+			"Broken"
+			if (self.status == "Broken" and not (self.is_responsive() or self.fatal_site_update))
+			else "Active"
+		)
+		# If fatal site update has been detected, do not allow site to be activated until it's resolved by support team
+		if not self.fatal_site_update:
+			self.update_site_config({"maintenance_mode": 0})
+
 		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
 
@@ -3399,6 +3407,13 @@ class Site(Document, TagHelpers):
 				"description": "Upgrade your site to a major version",
 				"button_label": "Upgrade",
 				"doc_method": "upgrade",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
+			},
+			{
+				"action": "Change bench",
+				"description": "Move your site to a different bench",
+				"button_label": "Change",
+				"doc_method": "change_bench",
 				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
@@ -4367,6 +4382,20 @@ def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 		)
 		update_finished_backup_restoration_test(job.site, updated_status)
 		if updated_status == "Archived":
+			from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
+
+			_create_site_backup_from_agent_job(job)
+
+			site = Site("Site", job.site)
+			site.delete_physical_backups()
+			site.delete_offsite_backups()
+			frappe.db.set_value(
+				"Site Backup",
+				{"site": job.site, "offsite": False},
+				"files_availability",
+				"Unavailable",
+			)
+
 			site_cleanup_after_archive(job.site)
 
 
@@ -4391,6 +4420,8 @@ def process_install_app_site_job_update(job):
 
 
 def process_uninstall_app_site_job_update(job):
+	from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
+
 	updated_status = {
 		"Pending": "Pending",
 		"Running": "Installing",
@@ -4400,6 +4431,7 @@ def process_uninstall_app_site_job_update(job):
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
+	_create_site_backup_from_agent_job(job)
 	if updated_status != site_status:
 		site: Site = frappe.get_doc("Site", job.site)
 		site.sync_apps()
@@ -5089,3 +5121,7 @@ def archive_creation_failed_sites():
 		except Exception:
 			frappe.log_error(title="Creation Failed Site Archive Error")
 			frappe.db.rollback()
+
+
+def on_doctype_update():
+	frappe.db.add_index("Site", ["standby_for_product", "is_standby", "status"])

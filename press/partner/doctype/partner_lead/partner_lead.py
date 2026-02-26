@@ -137,6 +137,7 @@ class PartnerLead(Document):
 			)
 			.limit(list_args["limit"])
 			.offset(list_args["start"])
+			.orderby(PartnerLead.modified, order=frappe.qb.desc)
 		)
 
 		if filters:
@@ -146,6 +147,8 @@ class PartnerLead(Document):
 				query = query.where(PartnerLead.status == filters.get("status"))
 			if filters.get("origin"):
 				query = query.where(PartnerLead.origin == filters.get("origin"))
+			if filters.get("engagement_stage"):
+				query = query.where(PartnerLead.engagement_stage == filters.get("engagement_stage"))
 			if filters.get("search-text"):
 				search_text = f"%{filters.get('search-text')}%"
 				query = query.where(
