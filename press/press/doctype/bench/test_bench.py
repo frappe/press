@@ -61,6 +61,7 @@ def dummy_payload(*args, **kwargs):
 class TestStagingSite(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
+		frappe.clear_cache()
 
 	def test_create_staging_site(self):
 		bench = create_test_bench()  # also creates press settings
@@ -635,16 +636,24 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 				"New Bench",
 				"Running",
 				steps=[
-					{
-						"name": "Initialize Bench",
-						"status": "Running",
-						"data": {"output": "Retrying in 10 seconds"},
-					},
+					{"name": "Initialize Bench", "status": "Running"},
 				],
 			),
 			fake_agent_job("Archive Bench", "Success"),
 		):
 			bench = create_test_bench()
+			job_step_names = frappe.db.get_all(
+				"Agent Job Step",
+				{"step_name": "Initialize Bench"},
+				pluck="name",
+			)
+			for job_step_name in job_step_names:
+				frappe.cache().hset(
+					"agent_job_step_output",
+					job_step_name,
+					"Retrying in 10 seconds",
+				)
+
 			poll_pending_jobs()  # Should create archive job
 
 			bench_jobs = frappe.get_all("Agent Job", {"bench": bench.name}, ["status", "job_type"])
@@ -697,11 +706,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 				"New Bench",
 				"Running",
 				steps=[
-					{
-						"name": "Initialize Bench",
-						"status": "Running",
-						"data": {"output": "Retrying in 10 seconds"},
-					},
+					{"name": "Initialize Bench", "status": "Running"},
 				],
 			),
 			fake_agent_job(
@@ -730,6 +735,19 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 
 			# poll enough times to allow retries
 			for _ in range(10):
+				# Propogate the loop message in cache to simulate the retry mechanism working
+				job_step_names = frappe.db.get_all(
+					"Agent Job Step",
+					{"step_name": "Initialize Bench", "status": "Running"},
+					pluck="name",
+				)
+				for job_step_name in job_step_names:
+					frappe.cache().hset(
+						"agent_job_step_output",
+						job_step_name,
+						"Retrying in 10 seconds",
+					)
+
 				poll_pending_jobs()
 
 			benches = frappe.get_all(
@@ -755,11 +773,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 				"New Bench",
 				"Running",
 				steps=[
-					{
-						"name": "Initialize Bench",
-						"status": "Running",
-						"data": {"output": "Retrying in 10 seconds"},
-					},
+					{"name": "Initialize Bench", "status": "Running"},
 				],
 			),
 			fake_agent_job(
@@ -786,6 +800,13 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			frappe.db.set_value("Deploy Candidate", candidate, "intel_build", name)
 			# Set docker image used during deploy
 			frappe.db.set_value("Deploy Candidate Build", name, "docker_image", "docker.io/test/test:latest")
+
+			# Set the output variable in cache
+			job_step_names = frappe.db.get_all(
+				"Agent Job Step", {"step_name": "Initialize Bench"}, pluck="name"
+			)
+			for job_step_name in job_step_names:
+				frappe.cache().hset("agent_job_step_output", job_step_name, "Retrying in 10 seconds")
 
 			# poll enough times to allow retries
 			for _ in range(10):
