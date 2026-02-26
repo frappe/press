@@ -57,6 +57,7 @@ class PartnerLead(Document):
 		full_name: DF.Data | None
 		hosting: DF.Literal["Frappe Cloud", "Self Hosted"]
 		lead_name: DF.Data | None
+		lead_owner: DF.Link | None
 		lead_rating: DF.Rating
 		lead_source: DF.Literal["", "Partner Owned", "Passed to Partner", "Partner Listing"]
 		lead_type: DF.Link | None

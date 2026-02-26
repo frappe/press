@@ -53,6 +53,7 @@
   "column_break_jonl",
   "partner_email",
   "partner_manager",
+  "lead_owner",
   "deal_assistance_section",
   "require_deal_assistance",
   "assistance_type",
@@ -439,12 +440,18 @@
    "fieldname": "team_name",
    "fieldtype": "Data",
    "label": "Team Name"
+  },
+  {
+   "fieldname": "lead_owner",
+   "fieldtype": "Link",
+   "label": "Lead Owner",
+   "options": "User"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-26 11:28:24.486463",
+ "modified": "2026-02-26 15:55:38.199784",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Lead",
