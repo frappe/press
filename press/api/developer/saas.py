@@ -130,7 +130,7 @@ def send_verification_code(domain: str, route: str = ""):
 	domain_info = frappe.get_value("Site Domain", domain, ["site", "status"], as_dict=True)
 	if not domain_info or domain_info.get("status") != "Active":
 		frappe.throw(
-			"The domain is not active currently. Please try again after activation.<a href='https://docs.frappe.io/cloud/sites/custom-domains' target='_blank'>Learn more</a>"
+			"The domain is not active currently. Please try again after activation. <a href='https://docs.frappe.io/cloud/sites/custom-domains' target='_blank' rel='noopener noreferrer'>Learn more</a>"
 		)
 
 	site_info = frappe.get_value(
