@@ -71,6 +71,7 @@ class TestStagingSite(FrappeTestCase):
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
+@patch("press.press.doctype.server_firewall.server_firewall.from_server", new=MagicMock)
 @patch("press.press.doctype.server.server.frappe.enqueue_doc", new=foreground_enqueue_doc)
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
