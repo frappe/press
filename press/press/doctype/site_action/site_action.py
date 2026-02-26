@@ -124,7 +124,7 @@ class SiteAction(Document):
 			frappe.throw(f"You don't have permission to deploy on server {server.name}")
 
 		if current_release_group.public:
-			self.set_argument("new_release_group_name", current_bench.group + " - Clone")
+			self.set_argument("new_release_group_name", current_release_group.title + " - Clone")
 		else:
 			if not any(server.server == destination_server for server in current_release_group.servers):
 				current_release_group.add_server(
@@ -391,12 +391,37 @@ class SiteAction(Document):
 			frappe.throw("Target cluster must be different from current cluster.")
 
 		# create the `Site Migration`
-		doc = self.site_doc.change_region(
-			cluster=target_cluster,
-			scheduled_time=self.scheduled_time,
-			skip_failing_patches=self.get_argument("skip_failing_patches", False),
+		current_group = frappe.db.get_value("Site", self.site, "group")
+		bench_vals = frappe.db.get_value(
+			"Bench",
+			{"group": current_group, "cluster": target_cluster, "status": "Active"},
+			["name", "server"],
 		)
-		self.set_argument("site_migration", doc.name)
+
+		if bench_vals is None:
+			frappe.throw(f"Bench {current_group} does not have an existing deploy in {target_cluster}")
+
+		bench, server = bench_vals
+
+		site_migration: SiteMigration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": self.site,
+				"destination_group": current_group,
+				"destination_bench": bench,
+				"destination_server": server,
+				"destination_cluster": target_cluster,
+				"scheduled_time": self.scheduled_time,
+				"skip_failing_patches": self.get_argument("skip_failing_patches", False),
+			}
+		).insert()
+
+		if not self.scheduled_time:
+			site_migration.start()
+
+		self.set_argument("site_migration", site_migration.name)
+		self.current_running_step.reference_doctype = "Site Migration"
+		self.current_running_step.reference_name = site_migration.name
 
 	def process_move_site_to_different_cluster(self):
 		"""Move Site To Different Cluster"""
@@ -515,6 +540,7 @@ class SiteAction(Document):
 
 		return data
 
+	@frappe.whitelist()
 	def execute(self):
 		if self.status == "Scheduled" and self.scheduled_time and self.scheduled_time > now_datetime():
 			# Not yet time to execute

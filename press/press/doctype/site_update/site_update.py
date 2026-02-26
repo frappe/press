@@ -696,6 +696,18 @@ class SiteUpdate(Document):
 
 		if self.activate_site_job:
 			steps.extend(self.get_job_steps(self.activate_site_job, "Activate Site"))
+
+		# If there is no steps, add a dummy step to show that the update is scheduled but yet to start
+		if not steps:
+			steps = [
+				{
+					"name": "site_update_scheduled",
+					"title": f"Scheduled at {convert_utc_to_system_timezone(self.scheduled_time).strftime('%Y-%m-%d %H:%M:%S') if self.scheduled_time and self.status == 'Scheduled' else ''}",
+					"status": "Pending",
+					"output": "",
+					"stage": "Site Update",
+				}
+			]
 		return steps
 
 	def get_job_steps(self, job: str, stage: str):

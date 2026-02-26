@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.utils import convert_utc_to_system_timezone
 
 from press.agent import Agent
 from press.exceptions import (
@@ -804,6 +805,17 @@ class SiteMigration(Document):
 						"stage": "Migrating Site",
 					}
 				)
+
+		if not steps:
+			steps.append(
+				{
+					"name": "site_migration_scheduled",
+					"title": f"Scheduled at {convert_utc_to_system_timezone(self.scheduled_time).strftime('%Y-%m-%d %H:%M:%S') if self.scheduled_time and self.status == 'Scheduled' else ''}",
+					"status": "Pending",
+					"output": "",
+					"stage": "Migrating Site",
+				}
+			)
 
 		return steps
 
