@@ -42,16 +42,9 @@
 				<!-- <p v-if="selectedMigrationMode" class="text-base text-gray-700 mb-2">
 					{{ selectedMigrationChoiceDetails?.description }}
 				</p> -->
-				<!-- Update Site Migration -->
-				<div v-if="selectedMigrationMode == 'Update Site'">
-					<GenericList :options="updateSiteListOptions" />
-				</div>
-
 				<!-- Move From Shared To Private Bench -->
 				<div
-					v-else-if="
-						selectedMigrationMode == 'Move From Shared To Private Bench'
-					"
+					v-if="selectedMigrationMode == 'Move From Shared To Private Bench'"
 					class="flex flex-col gap-3"
 				>
 					<!-- Chose Bench Related Opinion -->
@@ -414,74 +407,6 @@ export default {
 		},
 		selectedMigrationChoiceOptions() {
 			return this.selectedMigrationChoiceDetails?.options || {};
-		},
-		updatableApps() {
-			if (this.selectedMigrationMode !== 'Update Site') return [];
-
-			if (!this.selectedMigrationChoiceOptions.site_update_available) return [];
-			let installedApps =
-				this.selectedMigrationChoiceOptions.site_update_information.installed_apps.map(
-					(d) => d.app,
-				);
-			return this.selectedMigrationChoiceOptions.site_update_information.apps.filter(
-				(app) => installedApps.includes(app.app),
-			);
-		},
-		updateSiteListOptions() {
-			return {
-				data: this.updatableApps.filter(
-					(app) => app.current_hash !== app.next_hash,
-				),
-				columns: [
-					{
-						label: 'App',
-						fieldname: 'app',
-						format(value, row) {
-							return row.title || value;
-						},
-					},
-					{
-						label: 'Current Version',
-						type: 'Badge',
-						format(value, row) {
-							return row.will_branch_change
-								? row.current_branch
-								: row.current_tag || row.current_hash.slice(0, 7);
-						},
-						link(value, row) {
-							if (row.will_branch_change) {
-								return `${row.repository_url}/tree/${row.current_branch}`;
-							}
-							if (row.current_tag) {
-								return `${row.repository_url}/releases/tag/${row.current_tag}`;
-							}
-							if (row.current_hash) {
-								return `${row.repository_url}/commit/${row.current_hash}`;
-							}
-						},
-					},
-					{
-						label: 'Next Version',
-						type: 'Badge',
-						format(value, row) {
-							return row.will_branch_change
-								? row.branch
-								: row.next_tag || row.next_hash.slice(0, 7);
-						},
-						link(value, row) {
-							if (row.will_branch_change) {
-								return `${row.repository_url}/tree/${row.branch}`;
-							}
-							if (row.next_tag) {
-								return `${row.repository_url}/releases/tag/${row.next_tag}`;
-							}
-							if (row.next_hash) {
-								return `${row.repository_url}/commit/${row.next_hash}`;
-							}
-						},
-					},
-				],
-			};
 		},
 		// Move Site From Shared Bench to Private Bench
 		availableReleaseGroupsForMovingToPrivateBench() {
