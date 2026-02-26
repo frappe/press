@@ -741,14 +741,8 @@ def _validate_purchase_plan(amount, doc_name, currency):
 	exists_result = frappe.db.exists("Site Plan", doc_name)
 	if not doc_name or not exists_result:
 		frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))
-<<<<<<< HEAD
 	price_field = "price_inr" if currency == "INR" else "price_usd"
-	plan_amount = frappe.db.get_value("Plan", doc_name, price_field)
-
-=======
-	price_field= "price_inr" if currency == "INR" else "price_usd"
-	plan_amount= frappe.db.get_value("Site Plan", doc_name, price_field)
->>>>>>> 899dde588 (fix(billing): Plan issue in prod alone)
+	plan_amount = frappe.db.get_value("Site Plan", doc_name, price_field)
 	if amount < plan_amount:
 		currency_symbol = "₹" if currency == "INR" else "$"
 		frappe.throw(
