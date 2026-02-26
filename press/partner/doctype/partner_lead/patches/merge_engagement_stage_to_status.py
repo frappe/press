@@ -14,7 +14,7 @@ def execute():
 	for lead in leads:
 		status = ""
 		if not lead.engagement_stage:
-			status = "Qualification"
+			status = "Open"
 		elif lead.engagement_stage in engagement_stage_status_map:
 			status = engagement_stage_status_map[lead.engagement_stage]
 		else:
