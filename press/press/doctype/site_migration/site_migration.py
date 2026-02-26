@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.utils import convert_utc_to_system_timezone
 
 from press.agent import Agent
 from press.exceptions import (
@@ -776,6 +777,8 @@ class SiteMigration(Document):
 			)  # sometimes site may not even get created in destination to clean it up
 		)
 
+<<<<<<< HEAD
+=======
 	def get_steps(self) -> list[dict]:
 		steps = []
 		for step in self.steps:
@@ -809,8 +812,20 @@ class SiteMigration(Document):
 					}
 				)
 
+		if not steps:
+			steps.append(
+				{
+					"name": "site_migration_scheduled",
+					"title": f"Scheduled at {convert_utc_to_system_timezone(self.scheduled_time).strftime('%Y-%m-%d %H:%M:%S') if self.scheduled_time and self.status == 'Scheduled' else ''}",
+					"status": "Pending",
+					"output": "",
+					"stage": "Migrating Site",
+				}
+			)
+
 		return steps
 
+>>>>>>> a3b97fa49 (refactor(site-action): Move Site to Different Cluster)
 
 def process_required_job_callbacks(job):
 	if job.job_type == "Backup Site":
