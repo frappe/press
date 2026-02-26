@@ -624,9 +624,10 @@ class SiteAction(Document):
 				step.attempts = step.attempts + 1 if step.attempts else 1
 				time.sleep(1)
 
-		except Exception:
+		except Exception as e:
 			step.status = "Failure"
 			step.traceback = frappe.get_traceback(with_context=True)
+			step.error_message = str(e)
 
 		step.end = now_datetime()
 		step.duration = (step.end - step.start).total_seconds()
