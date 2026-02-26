@@ -3446,6 +3446,21 @@ class Site(Document, TagHelpers):
 				"doc_method": "send_change_team_request",
 			},
 			{
+				"action": "Version upgrade",
+				"description": "Upgrade your site to a major version",
+				"button_label": "Upgrade",
+				"doc_method": "upgrade",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
+			},
+			{
+<<<<<<< HEAD
+				"action": "Change region",
+				"description": "Move your site to a different region",
+				"button_label": "Change",
+				"doc_method": "change_region",
+				"condition": self.status in ["Active", "Broken", "Inactive"],
+			},
+			{
 				"action": "Change bench group",
 				"description": "Move your site to a different bench",
 				"button_label": "Change",
@@ -3453,6 +3468,15 @@ class Site(Document, TagHelpers):
 				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
+				"action": "Change server",
+				"description": "Move your site to a different server",
+				"button_label": "Change",
+				"doc_method": "change_server",
+				"condition": self.status in ["Active", "Broken", "Inactive"] and not self.is_group_public,
+			},
+			{
+=======
+>>>>>>> 54b7becde (refactor(site): Remove Change Bench Group from actions)
 				"action": "Clear cache",
 				"description": "Clear cache on your site",
 				"button_label": "Clear",
@@ -3466,13 +3490,16 @@ class Site(Document, TagHelpers):
 				"doc_method": "deactivate",
 			},
 			{
-				"action": "In-Place Migrate Site",
+<<<<<<< HEAD
+				"action": "Migrate site",
 				"description": "Run bench migrate command on your site",
 				"button_label": "Migrate",
 				"doc_method": "migrate",
 				"group": "Dangerous Actions",
 			},
 			{
+=======
+>>>>>>> 54b7becde (refactor(site): Remove Change Bench Group from actions)
 				"action": "Restore with files",
 				"description": "Restore with database, public and private files",
 				"button_label": "Restore",

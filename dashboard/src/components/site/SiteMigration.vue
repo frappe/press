@@ -238,7 +238,6 @@
 							:showIcon="false"
 						>
 							If the region you're looking for isn't available, please follow
-							the
 							<a
 								href="https://docs.frappe.io/cloud/sites/move-site-across-region"
 								target="_blank"
@@ -252,6 +251,7 @@
 
 				<!-- Checkbox  -->
 				<Checkbox
+					v-if="selectedMigrationMode"
 					v-model="skipFailingPatches"
 					label="Skip Failing Patches"
 					size="sm"
