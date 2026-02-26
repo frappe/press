@@ -533,10 +533,10 @@ class AgentUpdate(Document):
 			if play_status == "Success":
 				current_agent_update_to_process.status = "Rolled Back"
 				current_agent_update_to_process.end = frappe.utils.now_datetime()
+				self._resume_agent_jobs(current_agent_update_to_process)
 				self.save(ignore_version=True)
 			elif play_status == "Failure":
 				current_agent_update_to_process.status = "Fatal"
-				self._resume_agent_jobs(current_agent_update_to_process)
 				self.save(ignore_version=True)
 
 			return False
