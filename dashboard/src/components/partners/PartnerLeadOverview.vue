@@ -139,6 +139,7 @@
 				v-if="showUpdateEngagementStageDialog"
 				v-model="showUpdateEngagementStageDialog"
 				:lead_id="lead.name"
+				:status="status"
 				@update="
 					() => {
 						$resources.lead.reload();
@@ -205,6 +206,7 @@ export default {
 			showUpdateWonDialog: false,
 			showUpdateLostDialog: false,
 			errorMessage: null,
+			status: null,
 		};
 	},
 	emits: ['success'],
@@ -320,13 +322,68 @@ export default {
 						}),
 				},
 				{
-					label: 'In Process',
-					value: 'In Process',
+					label: 'Qualification',
+					value: 'Qualification',
 					component: () =>
 						h(DropdownItem, {
-							label: 'In Process',
+							label: 'Qualification',
 							onClick: () => {
-								this._updateStatus('In Process');
+								this._updateStatus('Qualification');
+							},
+						}),
+				},
+				{
+					label: 'Demo/Making',
+					value: 'Demo/Making',
+					component: () =>
+						h(DropdownItem, {
+							label: 'Demo/Making',
+							onClick: () => {
+								this._updateStatus('Demo/Making');
+							},
+						}),
+				},
+				{
+					label: 'Follow Up',
+					value: 'Follow Up',
+					component: () =>
+						h(DropdownItem, {
+							label: 'Follow Up',
+							onClick: () => {
+								this._updateStatus('Follow Up');
+							},
+						}),
+				},
+				{
+					label: 'Proposal/Quotation',
+					value: 'Proposal/Quotation',
+					component: () =>
+						h(DropdownItem, {
+							label: 'Proposal/Quotation',
+							onClick: () => {
+								this._updateStatus('Proposal/Quotation');
+							},
+						}),
+				},
+				{
+					label: 'Negotiation',
+					value: 'Negotiation',
+					component: () =>
+						h(DropdownItem, {
+							label: 'Negotiation',
+							onClick: () => {
+								this._updateStatus('Negotiation');
+							},
+						}),
+				},
+				{
+					label: 'Ready to Close',
+					value: 'Ready to Close',
+					component: () =>
+						h(DropdownItem, {
+							label: 'Ready to Close',
+							onClick: () => {
+								this._updateStatus('Ready to Close');
 							},
 						}),
 				},
@@ -364,13 +421,13 @@ export default {
 						}),
 				},
 				{
-					label: 'Pass to Other Partner',
-					value: 'Pass to Other Partner',
+					label: 'Closed',
+					value: 'Closed',
 					component: () =>
 						h(DropdownItem, {
-							label: 'Pass to Other Partner',
+							label: 'Closed',
 							onClick: () => {
-								this._updateStatus('Pass to Other Partner');
+								this._updateStatus('Closed');
 							},
 						}),
 				},
@@ -379,11 +436,16 @@ export default {
 		themeMap() {
 			return {
 				Open: 'blue',
-				'In Process': 'orange',
+				Qualification: 'blue',
+				'Demo/Making': 'orange',
+				'Follow Up': 'blue',
+				'Proposal/Quotation': 'orange',
+				Negotiation: 'orange',
+				'Ready to Close': 'blue',
 				Won: 'green',
 				Lost: 'red',
 				Junk: 'gray',
-				'Pass to Other Partner': 'gray',
+				Closed: 'gray',
 			};
 		},
 		probabilityTheme() {
@@ -397,7 +459,8 @@ export default {
 	methods: {
 		_updateStatus(status) {
 			if (status === this.lead.status && status !== 'In Process') return;
-			if (status === 'In Process') {
+			if (['Ready to Close', 'Proposal/Quotation'].includes(status)) {
+				this.status = status;
 				this.showUpdateEngagementStageDialog = true;
 			} else if (status === 'Won') {
 				this.showUpdateWonDialog = true;

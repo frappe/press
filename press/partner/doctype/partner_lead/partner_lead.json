@@ -131,12 +131,13 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Open\nIn Process\nWon\nLost\nJunk\nPass to Other Partner"
+   "options": "Open\nQualification\nDemo/Making\nFollow Up\nProposal/Quotation\nNegotiation\nReady to Close\nWon\nLost\nJunk\nClosed"
   },
   {
    "depends_on": "eval:in_list(['In Process'], doc.status)",
    "fieldname": "engagement_stage",
    "fieldtype": "Select",
+   "hidden": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Engagement Stage",
@@ -443,7 +444,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-19 09:19:48.744420",
+ "modified": "2026-02-26 11:28:24.486463",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Lead",
