@@ -243,11 +243,6 @@ export default {
 				{ label: 'Company Name', value: this.lead?.organization_name },
 				{ label: 'Lead Source', value: this.lead?.lead_source },
 				{ label: 'Lead Type', value: this.lead?.lead_type },
-				{
-					label: 'Engagement Stage',
-					value: this.lead?.engagement_stage,
-					condition: this.lead?.status === 'In Process',
-				},
 				{ label: 'Industry', value: this.lead?.domain },
 				{
 					label: 'Conversion Date',
@@ -264,6 +259,16 @@ export default {
 					value: this.lead?.lost_reason_specify,
 					condition:
 						this.lead?.status === 'Lost' && this.lead?.lost_reason === 'Other',
+				},
+				{
+					label: 'Partner',
+					value: this.lead?.company_name,
+					condition: this.$team.doc.is_desk_user,
+				},
+				{
+					label: 'Lead Owner',
+					value: this.lead?.lead_owner,
+					condition: this.$team.doc.is_desk_user,
 				},
 			].filter((d) => d.condition ?? true);
 		},
