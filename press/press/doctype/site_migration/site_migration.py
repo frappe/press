@@ -333,6 +333,41 @@ class SiteMigration(Document):
 		self.update_next_step_status("Skipped")
 		return self.run_next_step()
 
+	def _add_step_for_removing_redirects_for_custom_domain_with_A_record(self):
+		step = {
+			"step_title": self.remove_redirects_for_custom_domain_with_A_record.__doc__,
+			"status": "Pending",
+			"method_name": self.remove_redirects_for_custom_domain_with_A_record.__name__,
+		}
+		self.append("steps", step)
+
+	def remove_redirects_for_custom_domain_with_A_record(self):
+		"""Remove redirects for custom domain with A record"""
+		primary_domain = frappe.db.get_value("Site", self.site, "host_name")
+		if self.site == primary_domain:
+			self.update_next_step_status("Skipped")
+			return self.run_next_step()
+
+		if not frappe.db.exists("Site Domain", primary_domain):
+			self.update_next_step_status("Skipped")
+			return self.run_next_step()
+
+		site_domain: SiteDomain = frappe.get_doc("Site Domain", primary_domain)
+		if site_domain.dns_type == "CNAME":
+			self.update_next_step_status("Skipped")
+			return self.run_next_step()
+
+		# Remove the redirects for default domain and make that primary
+		site: Site = frappe.get_doc("Site", self.site)
+		if site_domain.redirect_to_primary:
+			site.unset_redirect(site_domain.name)
+
+		# Make the default domain as primary
+		site.set_host_name(self.site)
+
+		self.update_next_step_status("Success")
+		return self.run_next_step()
+
 	def add_steps_for_domains(self):
 		domains = frappe.get_all("Site Domain", {"site": self.site}, pluck="name")
 		for domain in domains:
@@ -343,6 +378,12 @@ class SiteMigration(Document):
 			self._add_add_host_to_destination_proxy_step(domain)
 		if len(domains) > 1:
 			self._add_setup_redirects_step()
+			if (
+				self.migration_type == "Cluster"
+				and (site_primary_domain := frappe.db.get_value("Site", self.site, "host_name"))
+				and frappe.db.get_value("Site Domain", site_primary_domain, "dns_type") == "A"
+			):
+				self._add_step_for_removing_redirects_for_custom_domain_with_A_record()
 
 	def add_steps_for_user_defined_domains(self):
 		domains = frappe.get_all("Site Domain", {"site": self.site, "name": ["!=", self.site]}, pluck="name")
