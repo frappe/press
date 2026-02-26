@@ -1343,7 +1343,6 @@ class Site(Document, TagHelpers):
 	def create_migration_plan(
 		self,
 		type: Literal[
-			"Update Site",
 			"Move From Shared To Private Bench",
 			"Move From Private To Shared Bench",
 			"Move Site To Different Server",
@@ -1353,7 +1352,6 @@ class Site(Document, TagHelpers):
 		server: str | None = None,
 		new_group_name: str | None = None,
 		skip_failing_patches: bool = False,
-		skip_backups: bool = False,
 		scheduled_time: str | None = None,
 		cluster: str | None = None,
 	) -> str:
@@ -3923,9 +3921,7 @@ class Site(Document, TagHelpers):
 =======
 	@dashboard_whitelist()
 	def get_migration_options(self):
-		site_update_information = self.get_update_information()
 		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		release_group_deploy_information = release_group.deploy_information()
 		# is_on_public_server = bool(frappe.db.get_value("Server", self.server, "public", cache=True))
 		is_on_public_release_group = release_group.public
 
@@ -3978,21 +3974,6 @@ class Site(Document, TagHelpers):
 			)
 		compatible_release_groups_for_migration = list(_compatible_release_groups_for_migration.values())
 
-		site_update_available = site_update_information.update_available and self.status in [
-			"Active",
-			"Inactive",
-			"Suspended",
-			"Broken",
-		]
-		deploy_information = release_group.deploy_information()
-		release_group_update_available = (
-			not is_on_public_release_group
-			and deploy_information.last_deploy
-			and not deploy_information.deploy_in_progress
-			and deploy_information.update_available
-			and release_group.status == "Active"
-		)
-
 		owned_dedicated_servers = frappe.get_all(
 			"Server",
 			filters={"status": "Active", "public": 0, "team": self.team},
@@ -4004,18 +3985,6 @@ class Site(Document, TagHelpers):
 		)
 
 		return {
-			"Update Site": {
-				"hidden": not site_update_available,
-				"allow_scheduling": True,
-				"description": "Update your site to the latest version of the application",
-				"button_label": "Update Site",
-				"options": {
-					"site_update_information": site_update_information,
-					"site_update_available": site_update_available,
-					"release_group_update_available": release_group_update_available,
-					"release_group_deploy_information": release_group_deploy_information,
-				},
-			},
 			"In-Place Migrate Site": {
 				"hidden": False,
 				"allow_scheduling": False,
