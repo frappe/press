@@ -206,6 +206,22 @@ class AgentUpdate(Document):
 
 	@frappe.whitelist()
 	def split_updates(self, no_of_batches: int):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_split_updates",
+			no_of_batches=no_of_batches,
+			queue="default",
+			timeout=1200,
+			job_id=f"agent_update||split_updates||{self.name}",
+			deduplicate=True,
+			at_front=True,
+		)
+		frappe.msgprint("Splitting updates queued in background.")
+
+	def _split_updates(self, no_of_batches: int):
+		self.get_value(self.doctype, self.name, "name", for_update=True)
+
 		if self.status != "Pending":
 			frappe.throw("You can only split updates when the status is Pending")
 
