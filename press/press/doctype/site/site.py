@@ -3930,14 +3930,12 @@ class Site(Document, TagHelpers):
 			"In-Place Migrate Site": {
 				"hidden": False,
 				"allow_scheduling": False,
-				"description": "Run bench migrate command on your site to migrate to a new version",
 				"button_label": "Migrate Site",
 				"options": {},
 			},
 			"Move From Shared To Private Bench": {
 				"hidden": not is_on_public_release_group,
 				"allow_scheduling": True,
-				"description": "Move your site from a shared bench to a private bench",
 				"button_label": "Move to Private Bench",
 				"options": {
 					"available_release_groups": compatible_release_groups_for_migration,
@@ -3957,7 +3955,6 @@ class Site(Document, TagHelpers):
 			"Move Site To Different Server": {
 				"hidden": False,
 				"allow_scheduling": True,
-				"description": "Move your site to a different server",
 				"button_label": "Move Site",
 				"options": {
 					"dedicated_servers": [x for x in owned_dedicated_servers if x.name != self.server]
@@ -3966,7 +3963,6 @@ class Site(Document, TagHelpers):
 			"Move Site To Different Region": {
 				"hidden": False,
 				"allow_scheduling": True,
-				"description": "Move your site to a different region",
 				"button_label": "Move Site",
 				"options": {
 					"available_regions": [region for region in group_regions if region.name != self.cluster],

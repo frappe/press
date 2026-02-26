@@ -38,10 +38,15 @@
 						required
 					/>
 				</div>
-				<!-- Show description -->
-				<!-- <p v-if="selectedMigrationMode" class="text-base text-gray-700 mb-2">
-					{{ selectedMigrationChoiceDetails?.description }}
-				</p> -->
+
+				<!-- Warning -->
+				<AlertBanner
+					v-if="warningMessage"
+					:type="'warning'"
+					:title="warningMessage"
+					:show-icon="false"
+				/>
+
 				<!-- Move From Shared To Private Bench -->
 				<div
 					v-if="selectedMigrationMode == 'Move From Shared To Private Bench'"
@@ -106,7 +111,10 @@
 							type="combobox"
 							:options="
 								availableServersForSelectedReleaseGroupForMovingToPrivateBench.map(
-									(e) => ({ label: `${e.title} (${e.name})`, value: e.name }),
+									(e) => ({
+										label: e.title ? `${e.title} (${e.name})` : e.name,
+										value: e.name,
+									}),
 								)
 							"
 							size="md"
@@ -172,7 +180,10 @@
 							type="combobox"
 							:options="
 								dedicatedServersForNewReleaseGroupForMovingToPrivateBench.map(
-									(e) => ({ label: `${e.title} (${e.name})`, value: e.name }),
+									(e) => ({
+										label: e.title ? `${e.title} (${e.name})` : e.name,
+										value: e.name,
+									}),
 								)
 							"
 							size="md"
@@ -456,6 +467,18 @@ export default {
 			if (this.selectedMigrationMode !== 'Move Site To Different Region')
 				return [];
 			return this.selectedMigrationChoiceOptions?.available_regions ?? [];
+		},
+		warningMessage() {
+			return {
+				'In-Place Migrate Site':
+					'Runs `bench migrate` without a backup. Proceed with caution.',
+				'Move From Shared To Private Bench':
+					'Site will be unavailable during this process.',
+				'Move Site To Different Server':
+					'Site will be unavailable during this process.',
+				'Move Site To Different Region':
+					'Site will be unavailable during this process.',
+			}[this.selectedMigrationMode];
 		},
 	},
 	methods: {
