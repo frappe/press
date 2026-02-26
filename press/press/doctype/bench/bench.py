@@ -1221,16 +1221,20 @@ def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
 	initialize_bench_step = frappe.db.get_value(
 		"Agent Job Step",
 		{"agent_job": job.name, "step_name": "Initialize Bench"},
-		["output", "status"],
+		["name", "status"],
 		as_dict=True,
 	)
 
-	if not (
-		initialize_bench_step
-		and "Retrying in 10 seconds"
-		in (initialize_bench_step.get("output", "") or "")  # Output itself is sometimes None
-		and initialize_bench_step.get("status") == "Running"
-	):
+	if not initialize_bench_step:
+		return False
+
+	# https://github.com/frappe/press/blob/131077ed5708c63199c3dafc7fd96902f53728a8/press/press/doctype/agent_job/agent_job.py#L569
+	output_from_cache = frappe.cache.hget("agent_job_step_output", initialize_bench_step.get("name"))
+
+	if not output_from_cache or "Retrying in 10 seconds" not in output_from_cache:
+		return False
+
+	if initialize_bench_step.get("status") != "Running":
 		return False
 
 	job.cancel_job()
