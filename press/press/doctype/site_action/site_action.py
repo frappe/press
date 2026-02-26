@@ -14,6 +14,7 @@ from frappe.model.document import Document
 from frappe.utils import add_to_date, now_datetime
 from rq.timeouts import JobTimeoutException
 
+from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils.jobs import has_job_timeout_exceeded
 
@@ -64,8 +65,11 @@ class SiteAction(Document):
 			"Move Site To Different Region",
 		]
 		arguments: DF.SmallText
+		duration: DF.Duration | None
+		end: DF.Datetime | None
 		scheduled_time: DF.Datetime | None
 		site: DF.Link
+		start: DF.Datetime | None
 		status: DF.Literal["Scheduled", "Cancelled", "Running", "Failure", "Success"]
 		steps: DF.Table[SiteActionStep]
 		team: DF.Link
@@ -73,12 +77,7 @@ class SiteAction(Document):
 
 	current_step: SiteActionStep | None = None
 
-	dashboard_fields = (
-		"action_type",
-		"scheduled_time",
-		"site",
-		"status",
-	)
+	dashboard_fields = ("action_type", "scheduled_time", "site", "status", "start", "end", "duration")
 
 	def get_steps_for_action(self) -> list[tuple[Callable, str]]:
 		if self.action_type == "Move From Shared To Private Bench":
@@ -496,6 +495,22 @@ class SiteAction(Document):
 		if self.action_type == "Move From Private To Shared Bench":
 			frappe.throw("Move From Private To Shared Bench action is not available currently.")
 
+	def on_update(self):
+		save_doc = False
+		if self.has_value_changed("status"):
+			if self.status == "Running" and not self.start:
+				self.start = now_datetime()
+				save_doc = True
+
+			elif self.status in ["Success", "Failure"] and not self.end:
+				self.end = now_datetime()
+				if self.start:
+					self.duration = int((self.end - self.start).total_seconds())
+				save_doc = True
+
+		if save_doc:
+			self.save()
+
 	def run_pre_validation_steps(self):
 		steps = self.get_steps_for_action()
 		for method, step_type in steps:
@@ -549,6 +564,25 @@ class SiteAction(Document):
 
 		return data
 
+	@dashboard_whitelist()
+	def start_now(self):
+		self.scheduled_time = None
+		self.save()
+
+		self.execute()
+
+	@dashboard_whitelist()
+	def cancel_action(self):
+		if self.status != "Scheduled":
+			frappe.throw("Only Scheduled actions can be cancelled.")
+			return
+
+		self.status = "Cancelled"
+		for step in self.steps:
+			if step.status in ("Pending", "Running"):
+				step.status = "Skipped"
+		self.save(ignore_version=True)
+
 	@frappe.whitelist()
 	def execute(self):
 		if (
@@ -565,6 +599,9 @@ class SiteAction(Document):
 	def execute_step(self, step_name):
 		frappe.set_user(self.owner)
 		frappe.local._current_team = frappe.get_cached_doc("Team", self.team)
+
+		if self.status == "Cancelled":
+			return
 
 		step = self.get_step(step_name)
 		self.current_step = step
@@ -644,6 +681,9 @@ class SiteAction(Document):
 			and self.scheduled_time_formatted
 			and self.scheduled_time_formatted > now_datetime()
 		) and not self.is_preparation_steps_pending_or_running():
+			return
+
+		if self.status == "Cancelled":
 			return
 
 		frappe.enqueue_doc(
