@@ -574,7 +574,7 @@ def get_metrics(
 		promql_query = promql_query.format(benches=benches)
 		datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
 		return {response_key: {"datasets": datasets, "labels": labels}}
-	except ValueError:
+	except (ValueError, TypeError):
 		frappe.throw("Unable to fetch metrics")
 
 
