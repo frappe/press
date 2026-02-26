@@ -129,7 +129,9 @@ def send_verification_code(domain: str, route: str = ""):
 
 	domain_info = frappe.get_value("Site Domain", domain, ["site", "status"], as_dict=True)
 	if not domain_info or domain_info.get("status") != "Active":
-		frappe.throw("The domain is not active currently. Please try again.")
+		frappe.throw(
+			"The domain is not active currently. Please try again after activation. <a href='https://docs.frappe.io/cloud/sites/custom-domains' target='_blank' rel='noopener noreferrer'>Learn more</a>"
+		)
 
 	site_info = frappe.get_value(
 		"Site", domain_info.get("site"), ["name", "team", "standby_for", "standby_for_product"], as_dict=True
@@ -137,7 +139,9 @@ def send_verification_code(domain: str, route: str = ""):
 	team_name = site_info.get("team")
 	team_info = frappe.get_value("Team", team_name, ["name", "enabled", "user", "enforce_2fa"], as_dict=True)
 	if not team_info or not team_info.get("enabled"):
-		frappe.throw("Your Frappe Cloud team is disabled currently.")
+		frappe.throw(
+			"Your Frappe Cloud team is disabled currently."
+		)
 
 	check_if_user_can_login(team_info, site_info)
 
@@ -222,17 +226,19 @@ def is_user_logged_in(user):
 def check_if_user_can_login(team_info, site_info):
 	if team_info.get("enforce_2fa"):
 		frappe.throw(
-			"Sorry, you cannot login with this method as 2FA is enabled. Please visit https://frappecloud.com/dashboard to login."
+			"Sorry, you cannot login with this method as 2FA is enabled. Please visit https://frappecloud.com/dashboard to login.<a href='https://docs.frappe.io/cloud/two-factor-authentication-2fa' target='_blank'>Learn more</a>"
 		)
 	if (
 		team_info.get("user") == "Administrator"
 		or frappe.db.get_value("User", team_info.get("user"), "user_type") != "Website User"
 	):
-		frappe.throw("Sorry, you cannot login with this method. Please contact support for more details.")
+		frappe.throw("Sorry, you cannot login with this method. Please contact support for assistance.")
 
 	# restrict to SaaS Site
 	if not (site_info.get("standby_for") or site_info.get("standby_for_product")):
-		frappe.throw("Only SaaS sites are allowed to login to Frappe Cloud via current method.")
+		frappe.throw(
+			"Only SaaS sites are allowed to login to Frappe Cloud via this method.<a href='https://docs.frappe.io/cloud/simplified-login-to-frappe-cloud-dashboard' target='_blank'>Learn more</a>"
+		)
 
 
 def send_email_with_verification_code(email, otp):
