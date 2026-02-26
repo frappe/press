@@ -1332,6 +1332,11 @@ class Site(Document, TagHelpers):
 		scheduled_time: str | None = None,
 		cluster: str | None = None,
 	) -> str:
+		if scheduled_time:
+			scheduled_time = get_datetime(scheduled_time)
+			if scheduled_time and scheduled_time < get_datetime():
+				frappe.throw("Scheduled time must be in the future. Please provide a valid scheduled time.")
+
 		doc = None
 		if type == "Move From Shared To Private Bench":
 			"""
