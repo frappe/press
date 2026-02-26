@@ -1268,9 +1268,9 @@ def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
 		return False
 
 	# https://github.com/frappe/press/blob/131077ed5708c63199c3dafc7fd96902f53728a8/press/press/doctype/agent_job/agent_job.py#L569
-	if "Retrying in 10 seconds" not in frappe.cache.hget(
-		"agent_job_step_output", initialize_bench_step.get("name")
-	):
+	output_from_cache = frappe.cache.hget("agent_job_step_output", initialize_bench_step.get("name"))
+
+	if not output_from_cache or "Retrying in 10 seconds" not in output_from_cache:
 		return False
 
 	if initialize_bench_step.get("status") != "Running":
