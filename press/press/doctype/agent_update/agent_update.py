@@ -399,16 +399,22 @@ class AgentUpdate(Document):
 			failed_update.update_ansible_play = None
 			failed_update.rollback_ansible_play = None
 
+		self.status = "Pending"
 		self.save(ignore_version=True)
 		self.execute()
 
 	@frappe.whitelist()
 	def pause(self):
+		if self.status not in ["Running"]:
+			frappe.throw("You can only pause when the update is Running")
 		self.status = "Paused"
 		self.save(ignore_version=True)
 
 	@frappe.whitelist()
 	def execute(self):
+		if self.status not in ["Pending", "Running"]:
+			frappe.throw("You can only call execute when the status is Pending or Running")
+
 		if self._process_next_step():
 			frappe.enqueue_doc(
 				self.doctype,
