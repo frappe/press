@@ -211,7 +211,9 @@ class ServerFirewall(Document):
 		return frappe.get_doc("Server", self.server_id)
 
 
-def from_server(doc: Server, *args, **kwargs):
+def from_server(doc: Server, *args, **kwargs) -> ServerFirewall | None:
+	if doc.is_self_hosted:
+		return None
 	if frappe.db.exists("Server Firewall", {"server_id": doc.name}):
 		return frappe.get_doc("Server Firewall", doc.name)
 	firewall: ServerFirewall = frappe.new_doc("Server Firewall")
