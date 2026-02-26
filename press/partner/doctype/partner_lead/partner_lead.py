@@ -88,7 +88,19 @@ class PartnerLead(Document):
 		server_name: DF.Data | None
 		site_url: DF.Data | None
 		state: DF.Data | None
-		status: DF.Literal["Open", "In Process", "Won", "Lost", "Junk", "Pass to Other Partner"]
+		status: DF.Literal[
+			"Open",
+			"Qualification",
+			"Demo/Making",
+			"Follow Up",
+			"Proposal/Quotation",
+			"Negotiation",
+			"Ready to Close",
+			"Won",
+			"Lost",
+			"Junk",
+			"Closed",
+		]
 		team_name: DF.Data | None
 		territory: DF.Data | None
 	# end: auto-generated types

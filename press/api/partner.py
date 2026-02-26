@@ -401,7 +401,6 @@ def get_lead_activities(name):  # noqa: C901
 
 
 def handle_multiple_versions(versions):  # noqa: C901
-	# print(versions)
 	activities = []
 	grouped_versions = []
 	old_version = None
@@ -789,7 +788,6 @@ def update_lead_details(lead_name, lead_details):
 	doc.update(
 		{
 			"organization_name": lead_details.organization_name,
-			"status": lead_details.status,
 			"full_name": lead_details.full_name,
 			"domain": lead_details.domain,
 			"email": lead_details.email,
@@ -799,7 +797,6 @@ def update_lead_details(lead_name, lead_details):
 			"plan_proposed": lead_details.plan_proposed,
 			"requirement": lead_details.requirement,
 			"probability": lead_details.probability,
-			"engagement_stage": lead_details.engagement_stage,
 		}
 	)
 	doc.save(ignore_permissions=True)
@@ -815,12 +812,7 @@ def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 	doc = frappe.get_doc("Partner Lead", lead_name)
 	status_dict = {"status": status}
 
-	if status == "In Process":
-		status_dict.update(
-			{
-				"engagement_stage": kwargs.get("engagement_stage"),
-			}
-		)
+	if status in ["Ready to Close", "Proposal/Quotation"]:
 		if kwargs.get("proposed_plan") and kwargs.get("expected_close_date"):
 			status_dict.update(
 				{
@@ -874,17 +866,6 @@ def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 			{
 				"lost_reason": kwargs.get("lost_reason"),
 				"lost_reason_specify": kwargs.get("other_reason"),
-			}
-		)
-	elif status == "Pass to Other Partner":
-		status_dict = {}
-		status_dict.update(
-			{
-				"partner_team": "",
-				"company_name": "",
-				"partner_email": "",
-				"partner_manager": "",
-				"status": "Open",
 			}
 		)
 
