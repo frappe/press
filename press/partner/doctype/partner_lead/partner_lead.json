@@ -67,10 +67,12 @@
   "feedback_for_frappe",
   "more_info_tab",
   "hosting",
-  "column_break_rdxj",
   "site_url",
+  "site_plan",
+  "column_break_rdxj",
   "server_name",
   "team_name",
+  "total_invoice_amount",
   "reference_section",
   "crm_deal",
   "passed_date"
@@ -446,12 +448,22 @@
    "fieldtype": "Link",
    "label": "Lead Owner",
    "options": "User"
+  },
+  {
+   "fieldname": "total_invoice_amount",
+   "fieldtype": "Float",
+   "label": "Total Invoice Amount"
+  },
+  {
+   "fieldname": "site_plan",
+   "fieldtype": "Data",
+   "label": "Site Plan"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-26 15:55:38.199784",
+ "modified": "2026-02-26 21:34:02.969038",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Lead",

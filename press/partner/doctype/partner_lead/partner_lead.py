@@ -87,6 +87,7 @@ class PartnerLead(Document):
 		requirement: DF.Text | None
 		requirements: DF.SmallText | None
 		server_name: DF.Data | None
+		site_plan: DF.Data | None
 		site_url: DF.Data | None
 		state: DF.Data | None
 		status: DF.Literal[
@@ -104,6 +105,7 @@ class PartnerLead(Document):
 		]
 		team_name: DF.Data | None
 		territory: DF.Data | None
+		total_invoice_amount: DF.Float
 	# end: auto-generated types
 
 	dashboard_fields = (
