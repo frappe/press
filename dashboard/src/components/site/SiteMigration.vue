@@ -250,6 +250,13 @@
 					</div>
 				</div>
 
+				<!-- Checkbox  -->
+				<Checkbox
+					v-model="skipFailingPatches"
+					label="Skip Failing Patches"
+					size="sm"
+				/>
+
 				<!-- Scheduling Option -->
 				<div v-if="showSchedulingOption" class="flex flex-col gap-2">
 					<p class="text-sm text-gray-700">Choose Scheduled Time</p>
@@ -263,7 +270,7 @@
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource, Select } from 'frappe-ui';
+import { getCachedDocumentResource, Select, Checkbox } from 'frappe-ui';
 import AlertBanner from '../AlertBanner.vue';
 import GenericList from '../GenericList.vue';
 import FormControl from 'frappe-ui/src/components/FormControl/FormControl.vue';
@@ -274,6 +281,7 @@ export default {
 		AlertBanner,
 		Select,
 		GenericList,
+		Checkbox,
 	},
 	data() {
 		return {
