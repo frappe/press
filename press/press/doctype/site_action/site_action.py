@@ -18,6 +18,7 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
+	import datetime
 	from collections.abc import Callable
 
 	from press.press.doctype.bench.bench import Bench
@@ -78,12 +79,6 @@ class SiteAction(Document):
 		"site",
 		"status",
 	)
-
-	def before_insert(self):
-		# If any key is blank string or None, remove it from arguments
-		args = self.arguments_dict
-		cleaned_args = {k: v for k, v in args.items() if v not in ("", None)}
-		self.arguments = json.dumps(cleaned_args, indent=2)
 
 	def get_steps_for_action(self) -> list[tuple[Callable, str]]:
 		if self.action_type == "Move From Shared To Private Bench":
@@ -411,12 +406,12 @@ class SiteAction(Document):
 				"destination_bench": bench,
 				"destination_server": server,
 				"destination_cluster": target_cluster,
-				"scheduled_time": self.scheduled_time,
+				"scheduled_time": self.scheduled_time_formatted,
 				"skip_failing_patches": self.get_argument("skip_failing_patches", False),
 			}
 		).insert()
 
-		if not self.scheduled_time:
+		if not self.scheduled_time_formatted:
 			site_migration.start()
 
 		self.set_argument("site_migration", site_migration.name)
@@ -448,8 +443,8 @@ class SiteAction(Document):
 				"backup_type": "Physical" if args.get("physical_backup", False) else "Logical",
 				"skipped_failing_patches": args.get("skip_failing_patches", False),
 				"skipped_backups": args.get("skip_backups", False),
-				"status": "Scheduled" if self.scheduled_time else "Pending",
-				"scheduled_time": self.scheduled_time,
+				"status": "Scheduled" if self.scheduled_time_formatted else "Pending",
+				"scheduled_time": self.scheduled_time_formatted,
 			}
 		).insert()
 		self.set_argument("site_update", doc.name)
@@ -482,14 +477,24 @@ class SiteAction(Document):
 				},
 			)
 
-	def validate(self):
-		if self.action_type == "Move From Private To Shared Bench":
-			frappe.throw("Move From Private To Shared Bench action is not available currently.")
+	def before_insert(self):
+		# If any key is blank string or None, remove it from arguments
+		args = self.arguments_dict
+		cleaned_args = {k: v for k, v in args.items() if v not in ("", None)}
+		self.arguments = json.dumps(cleaned_args, indent=2)
 
 	def after_insert(self):
 		self.add_steps()
 		self.run_pre_validation_steps()
 		self.save()
+
+		# Run Preparation steps after insert
+		if self.scheduled_time_formatted and self.is_preparation_steps_pending_or_running():
+			self.execute()
+
+	def validate(self):
+		if self.action_type == "Move From Private To Shared Bench":
+			frappe.throw("Move From Private To Shared Bench action is not available currently.")
 
 	def run_pre_validation_steps(self):
 		steps = self.get_steps_for_action()
@@ -498,6 +503,10 @@ class SiteAction(Document):
 				continue
 
 			method()
+
+	@property
+	def scheduled_time_formatted(self) -> datetime.datetime | None:
+		return frappe.utils.data.get_datetime(self.scheduled_time) if self.scheduled_time else None
 
 	@property
 	def arguments_dict(self):
@@ -542,7 +551,12 @@ class SiteAction(Document):
 
 	@frappe.whitelist()
 	def execute(self):
-		if self.status == "Scheduled" and self.scheduled_time and self.scheduled_time > now_datetime():
+		if (
+			self.status == "Scheduled"
+			and self.scheduled_time_formatted
+			and self.scheduled_time_formatted > now_datetime()
+			and not self.is_preparation_steps_pending_or_running()
+		):
 			# Not yet time to execute
 			return
 
@@ -599,7 +613,15 @@ class SiteAction(Document):
 		self.save()
 
 	def next(self) -> None:
-		if self.status != "Running" and self.status not in ("Success", "Failure"):
+		if (
+			self.status != "Running"
+			and self.status not in ("Success", "Failure")
+			and not (
+				self.status == "Scheduled"
+				and self.scheduled_time_formatted
+				and self.scheduled_time_formatted > now_datetime()
+			)
+		):
 			self.status = "Running"
 			self.save(ignore_version=True)
 
@@ -615,6 +637,13 @@ class SiteAction(Document):
 		if not next_step_to_run:
 			# We've executed everything
 			self.finish()
+			return
+
+		if (
+			self.status == "Scheduled"
+			and self.scheduled_time_formatted
+			and self.scheduled_time_formatted > now_datetime()
+		) and not self.is_preparation_steps_pending_or_running():
 			return
 
 		frappe.enqueue_doc(
@@ -667,6 +696,11 @@ class SiteAction(Document):
 
 	def is_main_steps_successful(self) -> bool:
 		return all(step.status in ("Skipped", "Success") for step in self.steps if step.step_type == "Main")
+
+	def is_preparation_steps_pending_or_running(self) -> bool:
+		return any(
+			step.status in ("Pending", "Running") for step in self.steps if step.step_type == "Preparation"
+		)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site Action")

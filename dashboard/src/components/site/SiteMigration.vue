@@ -207,7 +207,7 @@
 							type="combobox"
 							:options="
 								dedicatedServersToMoveSiteTo.map((e) => ({
-									label: e.title,
+									label: e.title ? `${e.title} (${e.name})` : e.name,
 									value: e.name,
 								}))
 							"
