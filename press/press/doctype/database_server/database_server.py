@@ -1860,7 +1860,11 @@ rm -f $TO_DELETE
 if [ -f "$INDEX_FILE" ]; then
   grep -vF -f <(printf "%s\n" $TO_DELETE) "$INDEX_FILE" > "$INDEX_FILE.tmp"
   mv "$INDEX_FILE.tmp" "$INDEX_FILE"
+  chown mysql:mysql "$INDEX_FILE"
 fi
+
+# Restart mariadb, as it could be stuck due to full disk
+systemctl restart mariadb
 """
 
 		is_failed = False
