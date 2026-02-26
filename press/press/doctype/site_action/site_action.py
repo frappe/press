@@ -638,6 +638,10 @@ class SiteAction(Document):
 		self.save(ignore_version=True)
 		# TODO: need optimization
 		# Some callback, else will take lot of resources
+
+		if frappe.flags.disable_auto_enqueue_next_step:
+			return
+
 		self.next()
 
 	def fail(self, save: bool = True) -> None:
