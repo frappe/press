@@ -23,6 +23,7 @@ class SiteGroupDeploy(Document):
 		cluster: DF.Link
 		provider: DF.Link | None
 		release_group: DF.Link | None
+		server: DF.Link | None
 		site: DF.Link | None
 		site_plan: DF.Link | None
 		status: DF.Literal[
@@ -108,9 +109,8 @@ class SiteGroupDeploy(Document):
 
 		apps = [{"app": app.app, "source": app.source} for app in self.apps]
 
-		server = ""
-		if self.auto_provision_bench and self.provider:
-			server = self.get_optimal_server_for_private_bench()
+		if not self.server and self.auto_provision_bench and self.provider:
+			self.server = self.get_optimal_server_for_private_bench()
 
 		group = new_release_group(
 			title=self.subdomain,
@@ -118,7 +118,7 @@ class SiteGroupDeploy(Document):
 			apps=apps,
 			team=self.team,
 			cluster=self.cluster,
-			server=server if server else None,
+			server=self.server or None,
 		)
 
 		self.release_group = group.name

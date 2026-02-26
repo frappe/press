@@ -112,9 +112,8 @@
 			</div>
 			<div
 				v-if="
-					bench &&
-					(showDedicatedServerOption ||
-						dedicatedServerConfig?.case === 'dedicated_only_multiple')
+					showDedicatedServerOption ||
+					dedicatedServerConfig?.case === 'dedicated_only_multiple'
 				"
 				class="space-y-4"
 			>
@@ -412,6 +411,7 @@ export default {
 			appPlans: {},
 			selectedApp: null,
 			closestCluster: null,
+			dedicated_servers: [],
 			selectedLocalisationCountry: null,
 			showLocalisationOption: false,
 			showAppPlanSelectorDialog: false,
@@ -423,8 +423,10 @@ export default {
 	},
 	watch: {
 		apps() {
-			if (!(this.bench && this.selectedDedicatedServer)) {
+			if (!this.selectedDedicatedServer) {
 				this.version = this.autoSelectVersion();
+				this.cluster = null;
+			} else if (this.bench) {
 				this.cluster = null;
 			}
 			this.agreedToRegionConsent = false;
@@ -454,7 +456,7 @@ export default {
 			this.showLocalisationOption = false;
 		},
 		provider() {
-			if (this.bench) {
+			if (this.bench || this.selectedDedicatedServer) {
 				// provider is inferred from cluster selection, so avoid clearing it
 				return;
 			}
@@ -468,7 +470,7 @@ export default {
 			this.agreedToRegionConsent = false;
 
 			// For bench flow, set provider based on the selected cluster's cloud_provider
-			if (this.bench && this.cluster) {
+			if ((this.bench || this.selectedDedicatedServer) && this.cluster) {
 				const selectedCluster = this.selectedVersion?.group?.clusters.find(
 					(c) => c.name === this.cluster,
 				);
@@ -644,6 +646,7 @@ export default {
 								share_details_consent: this.shareDetailsConsent,
 								selected_app_plans: appPlans,
 								domain: this.domain,
+								server: this.selectedDedicatedServer || null,
 								// files: this.selectedFiles,
 								// skip_failing_patches: this.skipFailingPatches,
 							},
@@ -692,8 +695,11 @@ export default {
 			return this.options?.versions.find((v) => v.name === this.version);
 		},
 		dedicatedServerConfig() {
-			if (!this.bench) return {};
-			return this.selectedVersion?.group?.dedicated_server_config || {};
+			if (this.bench) {
+				return this.selectedVersion?.group?.dedicated_server_config || {};
+			} else {
+				return this.options.dedicated_server_config || {};
+			}
 		},
 		showDedicatedServerOption() {
 			const case_type = this.dedicatedServerConfig?.case || '';
