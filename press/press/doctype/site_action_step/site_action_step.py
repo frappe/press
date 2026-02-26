@@ -17,6 +17,7 @@ class SiteActionStep(Document):
 		attempts: DF.Int
 		duration: DF.Duration | None
 		end: DF.Datetime | None
+		error_message: DF.SmallText | None
 		method: DF.Data
 		parent: DF.Data
 		parentfield: DF.Data
@@ -50,7 +51,7 @@ class SiteActionStep(Document):
 				"name": self.name,
 				"title": "",
 				"status": self.status,
-				"output": self.traceback if self.status == "Failure" else None,
+				"output": self.error_message if self.status == "Failure" else None,
 				"stage": self.step,
 			}
 		]
