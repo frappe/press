@@ -1072,6 +1072,7 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Migrate", job=job.name)
 		self.status = "Pending"
 		self.save()
+		return job.name
 
 	@frappe.whitelist()
 	def last_migrate_failed(self):
@@ -1341,7 +1342,6 @@ class Site(Document, TagHelpers):
 	def create_migration_plan(
 		self,
 		type: Literal[
-			"Update Site",
 			"Move From Shared To Private Bench",
 			"Move From Private To Shared Bench",
 			"Move Site To Different Server",
@@ -1351,10 +1351,14 @@ class Site(Document, TagHelpers):
 		server: str | None = None,
 		new_group_name: str | None = None,
 		skip_failing_patches: bool = False,
-		skip_backups: bool = False,
 		scheduled_time: str | None = None,
 		cluster: str | None = None,
-	):
+	) -> str:
+		if scheduled_time:
+			scheduled_time = get_datetime(scheduled_time)
+			if scheduled_time and scheduled_time < get_datetime():
+				frappe.throw("Scheduled time must be in the future. Please provide a valid scheduled time.")
+
 		doc = None
 		if type == "Move From Shared To Private Bench":
 			"""
@@ -1374,7 +1378,7 @@ class Site(Document, TagHelpers):
 					"action_type": type,
 					"arguments": json.dumps(
 						{
-							"destination_server": server,
+							"destination_server": server or self.server,
 							"destination_release_group": group,
 							"new_release_group_name": new_group_name,
 							"skip_failing_patches": skip_failing_patches,
@@ -1392,6 +1396,7 @@ class Site(Document, TagHelpers):
 					"arguments": json.dumps(
 						{
 							"destination_server": server,
+							"skip_failing_patches": skip_failing_patches,
 						}
 					),
 					"scheduled_time": scheduled_time,
@@ -1406,13 +1411,15 @@ class Site(Document, TagHelpers):
 					"arguments": json.dumps(
 						{
 							"cluster": cluster,
+							"skip_failing_patches": skip_failing_patches,
 						}
 					),
 					"scheduled_time": scheduled_time,
 				}
 			).insert()
 
-		return doc
+		assert doc is not None, "Invalid migration plan type"
+		return doc.name
 
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False, skip_backups=False):
@@ -1442,37 +1449,6 @@ class Site(Document, TagHelpers):
 		log_site_activity(self.name, "Update", job=job.name)
 
 		return job
-
-	def change_region(
-		self, cluster: str, scheduled_time: str | None = None, skip_failing_patches: bool = False
-	):
-		group = frappe.db.get_value("Site", self.name, "group")
-		bench_vals = frappe.db.get_value(
-			"Bench", {"group": group, "cluster": cluster, "status": "Active"}, ["name", "server"]
-		)
-
-		if bench_vals is None:
-			frappe.throw(f"Bench {group} does not have an existing deploy in {cluster}")
-
-		bench, server = bench_vals
-
-		site_migration = frappe.get_doc(
-			{
-				"doctype": "Site Migration",
-				"site": self.name,
-				"destination_group": group,
-				"destination_bench": bench,
-				"destination_server": server,
-				"destination_cluster": cluster,
-				"scheduled_time": scheduled_time,
-				"skip_failing_patches": skip_failing_patches,
-			}
-		).insert()
-
-		if not scheduled_time:
-			site_migration.start()
-
-		return site_migration
 
 	def reset_previous_status(self, fix_broken=False):
 		if self.status == "Archived":
@@ -3468,13 +3444,6 @@ class Site(Document, TagHelpers):
 				"doc_method": "deactivate",
 			},
 			{
-				"action": "In-Place Migrate Site",
-				"description": "Run bench migrate command on your site",
-				"button_label": "Migrate",
-				"doc_method": "migrate",
-				"group": "Dangerous Actions",
-			},
-			{
 				"action": "Restore with files",
 				"description": "Restore with database, public and private files",
 				"button_label": "Restore",
@@ -3928,9 +3897,7 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def get_migration_options(self):
-		site_update_information = self.get_update_information()
 		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		release_group_deploy_information = release_group.deploy_information()
 		# is_on_public_server = bool(frappe.db.get_value("Server", self.server, "public", cache=True))
 		is_on_public_release_group = release_group.public
 
@@ -3983,20 +3950,6 @@ class Site(Document, TagHelpers):
 			)
 		compatible_release_groups_for_migration = list(_compatible_release_groups_for_migration.values())
 
-		site_update_available = site_update_information.update_available and self.status in [
-			"Active",
-			"Inactive",
-			"Suspended",
-			"Broken",
-		]
-		release_group_update_available = (
-			not is_on_public_release_group
-			and release_group.deploy_information.last_deploy
-			and not release_group.deploy_information.deploy_in_progress
-			and release_group.deploy_information.update_available
-			and release_group.status == "Active"
-		)
-
 		owned_dedicated_servers = frappe.get_all(
 			"Server",
 			filters={"status": "Active", "public": 0, "team": self.team},
@@ -4008,29 +3961,15 @@ class Site(Document, TagHelpers):
 		)
 
 		return {
-			"Update Site": {
-				"hidden": not site_update_available,
-				"allow_scheduling": True,
-				"description": "Update your site to the latest version of the application",
-				"button_label": "Update Site",
-				"options": {
-					"site_update_information": site_update_information,
-					"site_update_available": site_update_available,
-					"release_group_update_available": release_group_update_available,
-					"release_group_deploy_information": release_group_deploy_information,
-				},
-			},
 			"In-Place Migrate Site": {
 				"hidden": False,
 				"allow_scheduling": False,
-				"description": "Run bench migrate command on your site to migrate to a new version",
 				"button_label": "Migrate Site",
 				"options": {},
 			},
 			"Move From Shared To Private Bench": {
 				"hidden": not is_on_public_release_group,
 				"allow_scheduling": True,
-				"description": "Move your site from a shared bench to a private bench",
 				"button_label": "Move to Private Bench",
 				"options": {
 					"available_release_groups": compatible_release_groups_for_migration,
@@ -4050,16 +3989,14 @@ class Site(Document, TagHelpers):
 			"Move Site To Different Server": {
 				"hidden": False,
 				"allow_scheduling": True,
-				"description": "Move your site to a different server",
 				"button_label": "Move Site",
 				"options": {
-					"dedicated_servers": [x for x in owned_dedicated_servers if x.name == self.server]
+					"dedicated_servers": [x for x in owned_dedicated_servers if x.name != self.server]
 				},
 			},
 			"Move Site To Different Region": {
 				"hidden": False,
 				"allow_scheduling": True,
-				"description": "Move your site to a different region",
 				"button_label": "Move Site",
 				"options": {
 					"available_regions": [region for region in group_regions if region.name != self.cluster],

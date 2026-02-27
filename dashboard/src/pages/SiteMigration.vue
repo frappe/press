@@ -51,8 +51,8 @@
 						<div class="text-sm font-medium text-gray-500">Duration</div>
 						<div class="mt-2 text-sm text-gray-900">
 							{{
-								siteAction.update_duration
-									? this.format_seconds(siteAction.update_duration)
+								siteAction.duration
+									? this.format_seconds(siteAction.duration)
 									: '-'
 							}}
 						</div>
@@ -60,17 +60,15 @@
 					<div>
 						<div class="text-sm font-medium text-gray-500">Start</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ $format.date(siteAction.update_start, 'lll') }}
+							{{
+								siteAction.start ? $format.date(siteAction.start, 'lll') : '-'
+							}}
 						</div>
 					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">End</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{
-								siteAction.update_end
-									? $format.date(siteAction.update_end, 'lll')
-									: '-'
-							}}
+							{{ siteAction.end ? $format.date(siteAction.end, 'lll') : '-' }}
 						</div>
 					</div>
 				</div>
@@ -84,6 +82,8 @@
 	</div>
 </template>
 <script>
+import { createResource } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 import JobStep from '../components/JobStep.vue';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
 import AlertBanner from '../components/AlertBanner.vue';
@@ -145,6 +145,58 @@ export default {
 							`${window.location.protocol}//${window.location.host}/app/site-action/${this.id}`,
 							'_blank',
 						);
+					},
+				},
+				{
+					label: 'Start Now',
+					icon: 'play',
+					condition: () => this.siteAction?.status === 'Scheduled',
+					onClick: () => {
+						let startNowAction = createResource({
+							url: 'press.api.client.run_doc_method',
+							makeParams: () => {
+								return {
+									dt: 'Site Action',
+									dn: this.siteAction.name,
+									method: 'start_now',
+								};
+							},
+						});
+
+						toast.promise(startNowAction.submit(), {
+							loading: 'Starting migration...',
+							success: () => {
+								this.$resources.siteAction.reload();
+								return 'Site migration started';
+							},
+							error: 'Failed to start migration',
+						});
+					},
+				},
+				{
+					label: 'Cancel',
+					icon: 'x',
+					condition: () => this.siteAction?.status === 'Scheduled',
+					onClick: () => {
+						let cancelAction = createResource({
+							url: 'press.api.client.run_doc_method',
+							makeParams: () => {
+								return {
+									dt: 'Site Action',
+									dn: this.siteAction.name,
+									method: 'cancel_action',
+								};
+							},
+						});
+
+						toast.promise(cancelAction.submit(), {
+							loading: 'Cancelling migration...',
+							success: () => {
+								this.$resources.siteAction.reload();
+								return 'Site migration cancelled';
+							},
+							error: 'Failed to cancel migration',
+						});
 					},
 				},
 			].filter((option) => option.condition?.() ?? true);

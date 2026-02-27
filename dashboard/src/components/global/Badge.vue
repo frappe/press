@@ -34,6 +34,7 @@ export default {
 				Failure: 'red',
 				Fatal: 'red',
 				Failed: 'red',
+				Cancelled: 'orange',
 				'Update Available': 'blue',
 				Enabled: 'blue',
 				'Awaiting Approval': 'orange',
