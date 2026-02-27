@@ -425,8 +425,6 @@ export default {
 			if (!this.selectedDedicatedServer) {
 				this.version = this.autoSelectVersion();
 				this.cluster = null;
-			} else if (this.bench) {
-				this.cluster = null;
 			}
 			this.agreedToRegionConsent = false;
 		},
@@ -447,7 +445,7 @@ export default {
 			}
 		},
 		version() {
-			if (!this.server) {
+			if (!this.selectedDedicatedServer) {
 				this.cluster = null;
 				this.provider = null;
 			}
@@ -1013,12 +1011,10 @@ export default {
 		},
 		applyDedicatedServerDefaults() {
 			const config = this.dedicatedServerConfig;
-			console.log(config);
 			if (!config || !config.dedicated_servers) return;
 			if (config.case === 'dedicated_only_single') {
 				this.useDedicatedServer = true;
 				this.selectedDedicatedServer = this.server;
-				console.log(this.selectedDedicatedServer);
 			} else if (config.case === 'dedicated_only_multiple') {
 				// Multiple servers, none public - user must choose
 				this.useDedicatedServer = true;
