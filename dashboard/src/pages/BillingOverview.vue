@@ -14,10 +14,25 @@
 <script setup>
 import BillingSummary from '../components/billing/BillingSummary.vue';
 import PaymentDetails from '../components/billing/PaymentDetails.vue';
-import { Spinner, createResource } from 'frappe-ui';
+import { Spinner, FeatherIcon, createResource } from 'frappe-ui';
 import { computed, provide, inject } from 'vue';
 
 const team = inject('team');
+
+const hasBillingDetails = computed(() => {
+	return (
+		team.doc?.billing_details &&
+		Object.keys(team.doc.billing_details).length > 0
+	);
+});
+
+const hasPaymentMode = computed(() => {
+	return !!team.doc?.payment_mode;
+});
+
+const isBillingSetupComplete = computed(() => {
+	return hasBillingDetails.value && hasPaymentMode.value;
+});
 
 const upcomingInvoice = createResource({
 	url: 'press.api.billing.upcoming_invoice',

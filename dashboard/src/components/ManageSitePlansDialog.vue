@@ -43,6 +43,7 @@
 				<ErrorMessage class="mt-2" :message="$site.setPlan.error" />
 			</div>
 
+			<!-- Commented out - redirecting to billing tab instead
 			<div v-else-if="step === 'billing-details'">
 				<Progress
 					class="my-8"
@@ -133,6 +134,7 @@
 					@success="paymentModeAdded"
 				/>
 			</div>
+			-->
 		</template>
 		<template #actions v-if="step === 'site-plans'">
 			<Button
