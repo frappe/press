@@ -202,7 +202,9 @@ class PressJob(Document):
 			return
 
 		local = {"arguments": frappe._dict(json.loads(self.arguments)), "doc": self}
+		current_user = frappe.session.user
 		try:
+			frappe.set_user("Administrator")
 			safe_exec(job_type.callback_script, _locals=local)
 			self.callback_failed = False
 			self.callback_executed = True
@@ -213,6 +215,8 @@ class PressJob(Document):
 			self.callback_failed = True
 			self.callback_failure_count += 1
 			self.next_callback_retry_at = add_to_date(None, minutes=5)
+		finally:
+			frappe.set_user(current_user)
 
 		if save:
 			self.save()
