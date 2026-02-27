@@ -1271,10 +1271,23 @@ class ReleaseGroup(Document, TagHelpers):
 			.run(as_dict=True)
 		)
 
-		erroneous_marketplace_apps = frappe.get_all(
-			"Marketplace App",
-			{"name": ("in", [app.app for app in self.apps]), "status": "Attention Required"},
-			pluck="name",
+		erroneous_marketplace_app_sources = frappe.get_all(
+			"Marketplace App Version",
+			{
+				"parenttype": "Marketplace App",
+				"parent": (
+					"in",
+					frappe.get_all(
+						"Marketplace App",
+						{
+							"name": ("in", [app.app for app in self.apps]),
+							"status": "Attention Required",
+						},
+						pluck="name",
+					),
+				),
+			},
+			pluck="source",
 		)
 
 		for app in self.apps:
@@ -1292,7 +1305,10 @@ class ReleaseGroup(Document, TagHelpers):
 				{"hash": ("in", [release.hash for release in latest_app_releases])},
 				pluck="hash",
 			)
-			if len(yanked_releases) == len(latest_app_releases) or app.app in erroneous_marketplace_apps:
+			if (
+				len(yanked_releases) == len(latest_app_releases)
+				or app.source in erroneous_marketplace_app_sources
+			):
 				# If all releases are yanked, we don't want to show them, or if they are of an erroneous marketplace app
 				latest_app_releases = []
 
