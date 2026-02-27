@@ -349,7 +349,7 @@ def new(site):
 					},
 				),
 			}
-
+		apps = site.get("apps")
 		return create_site_on_private_bench(
 			subdomain=site.get("name"),
 			plan=plan,
@@ -366,7 +366,7 @@ def new(site):
 			subdomain=site.get("name"),
 			plan=plan,
 			cluster=site.get("cluster"),
-			apps=site.get("apps", ["frappe"]),
+			apps=apps,
 			version=site.get("version"),
 			provider=site.get("provider"),
 			localisation_country=site.get("localisation_country"),

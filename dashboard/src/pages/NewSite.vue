@@ -411,7 +411,6 @@ export default {
 			appPlans: {},
 			selectedApp: null,
 			closestCluster: null,
-			dedicated_servers: [],
 			selectedLocalisationCountry: null,
 			showLocalisationOption: false,
 			showAppPlanSelectorDialog: false,
@@ -686,7 +685,7 @@ export default {
 			if (this.bench) {
 				return this.selectedVersion?.group?.dedicated_server_config || {};
 			} else {
-				return this.options.dedicated_server_config || {};
+				return this.options?.dedicated_server_config || {};
 			}
 		},
 		showDedicatedServerOption() {
