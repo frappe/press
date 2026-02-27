@@ -1198,7 +1198,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 			next_hash = app.hash
 
-			update_available = not current_hash or current_hash != next_hash or will_branch_change
+			update_available = (
+				not current_hash or current_hash != next_hash or will_branch_change
+			) and next_hash
 			if app.releases:
 				update_available = any(not release.is_yanked for release in app.releases)
 
@@ -1269,6 +1271,12 @@ class ReleaseGroup(Document, TagHelpers):
 			.run(as_dict=True)
 		)
 
+		erroneous_marketplace_apps = frappe.get_all(
+			"Marketplace App",
+			{"name": ("in", [app.app for app in self.apps]), "status": "Attention Required"},
+			pluck="name",
+		)
+
 		for app in self.apps:
 			latest_app_release = None
 			latest_app_releases = find_all(latest_releases, lambda x: x.source == app.source)
@@ -1284,8 +1292,8 @@ class ReleaseGroup(Document, TagHelpers):
 				{"hash": ("in", [release.hash for release in latest_app_releases])},
 				pluck="hash",
 			)
-			if len(yanked_releases) == len(latest_app_releases):
-				# If all releases are yanked, we don't want to show them
+			if len(yanked_releases) == len(latest_app_releases) or app.app in erroneous_marketplace_apps:
+				# If all releases are yanked, we don't want to show them, or if they are of an erroneous marketplace app
 				latest_app_releases = []
 
 			# No release exists for this source
@@ -1318,7 +1326,7 @@ class ReleaseGroup(Document, TagHelpers):
 						"app": app.app,
 						"source": app.source,
 						"release": upcoming_release,
-						"hash": upcoming_hash,
+						"hash": upcoming_hash if upcoming_releases else None,
 						"title": app.title,
 						"releases": upcoming_releases[:16],
 					}
@@ -1487,48 +1495,47 @@ class ReleaseGroup(Document, TagHelpers):
 			return None
 
 	@frappe.whitelist()
-	def add_server(self, server: str, deploy=False, force_new_build: bool = False):
+	def add_server(self, server: str, deploy=False, force_new_build: bool = False) -> str | None:
 		"""
 		Add a server to the release group in case last successful deploy candidate exists
 		create a deploy check if the image has not been pruned from the registry in case of
 		missing image create new build.
 		"""
-		if not deploy:
-			return None
-
-		server_platform = frappe.get_value("Server", server, "platform")
-		last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
-			platform=server_platform
-		)
-
-		if not last_successful_deploy_candidate_build or force_new_build:
-			# No build of this platform is available creating new build
-			last_candidate_build = (
-				self.get_last_successful_candidate_build()
-			)  # Checking for any platform build
-
-			if not last_candidate_build:
-				frappe.throw("No build present for this release group", frappe.ValidationError)
-
-			self.append("servers", {"server": server, "default": False})
-			self.save()
-
-			return create_platform_build_and_deploy(
-				deploy_candidate=last_candidate_build.candidate.name,  # type: ignore
-				server=server,
-				platform=server_platform,
+		if deploy:
+			server_platform = frappe.get_value("Server", server, "platform")
+			last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
+				platform=server_platform
 			)
+
+			if not last_successful_deploy_candidate_build or force_new_build:
+				# No build of this platform is available creating new build
+				last_candidate_build = (
+					self.get_last_successful_candidate_build()
+				)  # Checking for any platform build
+
+				if not last_candidate_build:
+					frappe.throw("No build present for this release group", frappe.ValidationError)
+
+				self.append("servers", {"server": server, "default": False})
+				self.save()
+
+				return create_platform_build_and_deploy(
+					deploy_candidate=last_candidate_build.candidate.name,  # type: ignore
+					server=server,
+					platform=server_platform,
+				)
+
+			try:
+				return last_successful_deploy_candidate_build._create_deploy(
+					[server],
+					check_image_exists=True,
+				)
+			except ImageNotFoundInRegistry:
+				return self.add_server(server=server, deploy=True, force_new_build=True)
 
 		self.append("servers", {"server": server, "default": False})
 		self.save()
-
-		try:
-			return last_successful_deploy_candidate_build._create_deploy(
-				[server],
-				check_image_exists=True,
-			)
-		except ImageNotFoundInRegistry:
-			return self.add_server(server=server, deploy=True, force_new_build=True)
+		return None
 
 	@frappe.whitelist()
 	def change_server(self, server: str):
