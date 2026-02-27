@@ -193,11 +193,18 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				'Provide Frappe User Mariadb Table Usage Permission',
+				'provide_frappe_user_mariadb_table_usage_permission',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				'Trigger Schema Size Sync',
 				'update_database_schema_sizes',
 				false,
 				frm.doc.is_server_setup,
 			],
+			['Trigger Flush Tables', 'flush_tables', true, frm.doc.is_server_setup],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

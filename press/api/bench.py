@@ -762,6 +762,30 @@ def deploy(name, apps):
 	return deploy_candidate_build["name"]
 
 
+def validate_app_hashes(apps: list[dict[str, str]]):
+	"""Ensure none of them are yanked"""
+	hashes = []
+	for app in apps:
+		if not app.get("release") or not app.get("hash"):
+			frappe.throw("Each app must have a release and hash to run deploy and update!")
+		else:
+			hashes.append(app.get("hash"))
+
+	YankedAppRelease = frappe.qb.DocType("Yanked App Release")
+	has_yanked_apps = (
+		frappe.qb.from_(YankedAppRelease)
+		.where(YankedAppRelease.hash.isin(hashes))
+		.select(YankedAppRelease.hash)
+		.run(as_dict=True)
+	)
+
+	if has_yanked_apps:
+		frappe.throw(
+			"Some app versions have been yanked and cannot be deployed, please refresh and retry deploy. "
+			'<a href="https://docs.frappe.io/cloud/benches/updating_a_bench#yanked-app-releases" target="_blank">Learn more</a>'
+		)
+
+
 @frappe.whitelist()
 @protected("Release Group")
 def deploy_and_update(
@@ -770,6 +794,8 @@ def deploy_and_update(
 	sites: list | None = None,
 	run_will_fail_check: bool = True,
 ):
+	validate_app_hashes(apps)
+
 	# Returns name of the Deploy Candidate that is running the build
 	return get_bench_update(
 		name,
@@ -786,6 +812,7 @@ def update_inplace(
 	apps: list,
 	sites: list,
 ):
+	validate_app_hashes(apps)
 	# Returns name of the Agent Job name that runs the inplace update
 	return get_bench_update(
 		name,
@@ -1142,7 +1169,7 @@ def confirm_bench_transfer(key: str):
 	if frappe.session.user == "Guest":
 		return frappe.respond_as_web_page(
 			_("Not Permitted"),
-			_("You need to be logged in to confirm the bench group transfer."),
+			_("You need to be logged in to confirm the bench transfer."),
 			http_status_code=403,
 			indicator_color="red",
 			primary_action="/dashboard/login",
@@ -1192,16 +1219,29 @@ def search_releases(
 	source: str,
 	fields: list,
 	query: str | None = None,
-	page_length: int = 20,
+	limit: int = 10,
+	current_release: str | None = None,
 ):
+	if not query:
+		return []
+
 	DocType = frappe.qb.DocType("App Release")
 	q = (
 		frappe.qb.from_(DocType)
 		.select(*fields)
-		.where(DocType.hash.like(f"%{query}%") | DocType.message.like(f"%{query}%"))
-		.where((DocType.public == 1) & (DocType.status == "Approved"))
+		.where(DocType.hash.like(f"%{query.strip()}%") | DocType.message.like(f"%{query.strip()}%"))
+	)
+
+	if current_release:
+		current_release_creation = frappe.get_value("App Release", current_release, "creation")
+		# downgrading apps is not supported
+		q = q.where(DocType.creation > current_release_creation)
+
+	q = (
+		q.where((DocType.public == 1) & (DocType.status == "Approved"))
 		.where((DocType.app == app) & (DocType.source == source))
 		.orderby(DocType.timestamp, order=frappe.qb.desc)
-		.limit(page_length)
+		.limit(limit)
 	)
+
 	return q.run(as_dict=1)

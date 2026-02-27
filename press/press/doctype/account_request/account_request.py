@@ -124,6 +124,8 @@ class AccountRequest(Document):
 		Disallow temporary email providers for account requests. Throws
 		validation error if a temporary email provider is detected.
 		"""
+		if frappe.conf.developer_mode and frappe.local.dev_server:
+			return
 		if not self.email:
 			return
 		if disposable_emails.is_disposable(self.email):

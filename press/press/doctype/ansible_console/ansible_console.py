@@ -145,13 +145,15 @@ class AnsibleAdHoc:
 
 		self.callback = AnsibleCallback()
 
-	def run(self, command, nonce=None, raw_params: bool = False):
+	def run(self, command, nonce=None, raw_params: bool = False, become_user: str = "root"):
 		shell_command_args = command
 		if raw_params:
 			shell_command_args = {
 				"_raw_params": command,
 			}
-		self.tasks = [dict(action=dict(module="shell", args=shell_command_args))]
+		self.tasks = [
+			dict(action=dict(module="shell", args=shell_command_args), become=True, become_user=become_user)
+		]
 		source = dict(
 			name="Ansible Play",
 			hosts="all",

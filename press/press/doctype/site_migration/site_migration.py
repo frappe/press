@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.utils import convert_utc_to_system_timezone
 
 from press.agent import Agent
 from press.exceptions import (
@@ -41,7 +42,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.site_domain.site_domain import SiteDomain
 
 
-def get_ongoing_migration(site: Link, scheduled=False):
+def get_ongoing_migration(site: Link | None, scheduled=False) -> str:
 	"""
 	Return ongoing Site Migration for site.
 
@@ -84,6 +85,7 @@ class SiteMigration(Document):
 			frappe.throw(f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists.")
 		site: Site = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
+		site.check_fatal_site_update()
 
 	def check_for_existing_domains(self):
 		"""
@@ -331,6 +333,41 @@ class SiteMigration(Document):
 		self.update_next_step_status("Skipped")
 		return self.run_next_step()
 
+	def _add_step_for_removing_redirects_for_custom_domain_with_A_record(self):
+		step = {
+			"step_title": self.remove_redirects_for_custom_domain_with_A_record.__doc__,
+			"status": "Pending",
+			"method_name": self.remove_redirects_for_custom_domain_with_A_record.__name__,
+		}
+		self.append("steps", step)
+
+	def remove_redirects_for_custom_domain_with_A_record(self):
+		"""Remove redirects for custom domain with A record"""
+		primary_domain = frappe.db.get_value("Site", self.site, "host_name")
+		if self.site == primary_domain:
+			self.update_next_step_status("Skipped")
+			return self.run_next_step()
+
+		if not frappe.db.exists("Site Domain", primary_domain):
+			self.update_next_step_status("Skipped")
+			return self.run_next_step()
+
+		site_domain: SiteDomain = frappe.get_doc("Site Domain", primary_domain)
+		if site_domain.dns_type == "CNAME":
+			self.update_next_step_status("Skipped")
+			return self.run_next_step()
+
+		# Remove the redirects for default domain and make that primary
+		site: Site = frappe.get_doc("Site", self.site)
+		if site_domain.redirect_to_primary:
+			site.unset_redirect(site_domain.name)
+
+		# Make the default domain as primary
+		site.set_host_name(self.site)
+
+		self.update_next_step_status("Success")
+		return self.run_next_step()
+
 	def add_steps_for_domains(self):
 		domains = frappe.get_all("Site Domain", {"site": self.site}, pluck="name")
 		for domain in domains:
@@ -341,6 +378,12 @@ class SiteMigration(Document):
 			self._add_add_host_to_destination_proxy_step(domain)
 		if len(domains) > 1:
 			self._add_setup_redirects_step()
+			if (
+				self.migration_type == "Cluster"
+				and (site_primary_domain := frappe.db.get_value("Site", self.site, "host_name"))
+				and frappe.db.get_value("Site Domain", site_primary_domain, "dns_type") == "A"
+			):
+				self._add_step_for_removing_redirects_for_custom_domain_with_A_record()
 
 	def add_steps_for_user_defined_domains(self):
 		domains = frappe.get_all("Site Domain", {"site": self.site, "name": ["!=", self.site]}, pluck="name")
@@ -771,6 +814,52 @@ class SiteMigration(Document):
 				)
 			)  # sometimes site may not even get created in destination to clean it up
 		)
+
+	def get_steps(self) -> list[dict]:
+		steps = []
+		for step in self.steps:
+			# Now if the step has agent job expand that as well
+			if step.step_job:
+				job = frappe.get_doc("Agent Job", step.step_job)
+				agent_steps = frappe.get_all(
+					"Agent Job Step",
+					{"agent_job": step.step_job},
+					["name", "step_name", "status", "output"],
+					order_by="creation asc",
+				)
+				for s in agent_steps:
+					steps.append(
+						{
+							"name": s.name,
+							"title": s.step_name,
+							"status": s.status,
+							"output": s.output,
+							"stage": job.job_type,
+						}
+					)
+			else:
+				steps.append(
+					{
+						"name": step.name,
+						"title": step.step_title,
+						"status": step.status,
+						"output": "",
+						"stage": "Migrating Site",
+					}
+				)
+
+		if not steps:
+			steps.append(
+				{
+					"name": "site_migration_scheduled",
+					"title": f"Scheduled at {convert_utc_to_system_timezone(self.scheduled_time).strftime('%Y-%m-%d %H:%M:%S') if self.scheduled_time and self.status == 'Scheduled' else ''}",
+					"status": "Pending",
+					"output": "",
+					"stage": "Migrating Site",
+				}
+			)
+
+		return steps
 
 
 def process_required_job_callbacks(job):

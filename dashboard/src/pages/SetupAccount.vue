@@ -81,6 +81,14 @@
 								variant="outline"
 								required
 							/>
+							<FormControl
+								v-if="!isInvitation"
+								type="tel"
+								label="Phone Number (Optional)"
+								v-model="phoneNumber"
+								placeholder="9876543210"
+								variant="outline"
+							/>
 						</div>
 						<ErrorMessage
 							class="mt-4"
@@ -183,6 +191,7 @@ export default {
 			signupValues: {},
 			detailsSharedProducts,
 			shareDetailsConsent: false,
+			phoneNumber: '',
 		};
 	},
 	resources: {
@@ -223,6 +232,7 @@ export default {
 					first_name: this.firstName,
 					last_name: this.lastName,
 					country: this.country,
+					phone: this.phoneNumber || null,
 					is_invitation: this.isInvitation,
 					user_exists: this.userExists,
 					invited_by_parent_team: this.invitedByParentTeam,

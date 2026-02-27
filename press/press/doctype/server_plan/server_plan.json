@@ -24,6 +24,7 @@
   "cluster",
   "instance_type",
   "platform",
+  "cloud_provider",
   "column_break_ypkt",
   "vcpu",
   "memory",
@@ -169,11 +170,18 @@
    "fieldname": "ignore_machine_availability_sync",
    "fieldtype": "Check",
    "label": "Ignore Machine Availability Sync"
+  },
+  {
+   "fetch_from": "cluster.cloud_provider",
+   "fieldname": "cloud_provider",
+   "fieldtype": "Link",
+   "label": "Cloud Provider",
+   "options": "Cloud Provider"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 13:37:13.763512",
+ "modified": "2026-02-17 16:00:50.529321",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Plan",

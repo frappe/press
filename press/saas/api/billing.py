@@ -125,10 +125,11 @@ def get_invoice(name: str):
 
 @whitelist_saas_api
 def download_invoice(name: str):
-	invoice_pdf = frappe.get_value("Invoice", name, "invoice_pdf")
-	if not invoice_pdf:
+	invoice = frappe.get_doc("Invoice", name)
+	invoice.has_permission("read")
+	if not invoice.invoice_pdf:
 		frappe.throw("Invoice PDF not found")
-	file_name = os.path.basename(invoice_pdf)
+	file_name = os.path.basename(invoice.invoice_pdf)
 	file = frappe.get_doc("File", {"file_name": file_name})
 	frappe.local.response.filename = file.file_name
 	frappe.local.response.filecontent = file.get_content()

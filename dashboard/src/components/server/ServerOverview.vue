@@ -195,10 +195,10 @@ import { toast } from 'vue-sonner';
 import { h, defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource, Progress } from 'frappe-ui';
 import { confirmDialog, renderDialog } from '../../utils/components';
-import { getToastErrorMessage } from '../../utils/toast';
-import ServerPlansDialog from './ServerPlansDialog.vue';
-import ServerLoadAverage from './ServerLoadAverage.vue';
 import StorageBreakdownDialog from './StorageBreakdownDialog.vue';
+import ServerPlansDialog from './ServerPlansDialog.vue';
+import { getToastErrorMessage } from '../../utils/toast';
+import ServerLoadAverage from './ServerLoadAverage.vue';
 import { getDocResource } from '../../utils/resource';
 import { createResource } from 'frappe-ui';
 import Badge from '../global/Badge.vue';
@@ -249,23 +249,61 @@ export default {
 				}),
 			);
 		},
-		showStorageBreakdownDialog(serverType) {
-			let StorageBreakdownDialog = defineAsyncComponent(
-				() => import('./StorageBreakdownDialog.vue'),
-			);
-			renderDialog(
-				h(StorageBreakdownDialog, {
-					server:
-						serverType === 'Server'
-							? this.$appServer.name
-							: serverType === 'Database Server'
-								? this.$dbServer.name
-								: serverType === 'Replication Server'
-									? this.$dbReplicaServer?.name
-									: null,
-					serverType,
-				}),
-			);
+		showStorageBreakdownDialog(serverType, ignoreUnifiedServer = false) {
+			if (
+				!ignoreUnifiedServer &&
+				serverType === 'Server' &&
+				this.$appServer.doc.is_unified_server
+			) {
+				confirmDialog({
+					title: 'Select Storage Breakdown Type',
+					message:
+						'Would you like to view the breakdown for the Database component or the Application component of the server?',
+					fields: [
+						{
+							fieldname: 'breakdownType',
+							type: 'select',
+							label: 'Breakdown Type',
+							options: [
+								{ label: 'Database', value: 'database' },
+								{ label: 'Application', value: 'application' },
+							],
+							default: 'database',
+						},
+					],
+					onSuccess: ({ values, hide }) => {
+						hide();
+						if (values.breakdownType === 'database') {
+							this.showStorageBreakdownDialog(
+								'Database Server',
+								(ignoreUnifiedServer = true),
+							);
+						} else {
+							this.showStorageBreakdownDialog(
+								'Server',
+								(ignoreUnifiedServer = true),
+							);
+						}
+					},
+				});
+			} else {
+				let StorageBreakdownDialog = defineAsyncComponent(
+					() => import('./StorageBreakdownDialog.vue'),
+				);
+				renderDialog(
+					h(StorageBreakdownDialog, {
+						server:
+							serverType === 'Server'
+								? this.$appServer.name
+								: serverType === 'Database Server'
+									? this.$dbServer.name
+									: serverType === 'Replication Server'
+										? this.$dbReplicaServer?.name
+										: null,
+						serverType,
+					}),
+				);
+			}
 		},
 		scaleUp() {
 			toast.promise(this.$appServer.scaleUp.submit({}), {

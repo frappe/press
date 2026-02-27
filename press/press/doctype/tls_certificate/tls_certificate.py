@@ -162,6 +162,7 @@ class TLSCertificate(Document):
 		if self.wildcard:
 			self.trigger_server_tls_setup_callback()
 			self._update_secondary_wildcard_domains()
+			self.setup_standalone_wildcard_hosts()
 
 	def _update_secondary_wildcard_domains(self):
 		"""
@@ -227,6 +228,30 @@ class TLSCertificate(Document):
 	def trigger_self_hosted_server_callback(self):
 		with suppress(Exception):
 			frappe.get_doc("Self Hosted Server", self.name).process_tls_cert_update()
+
+	def setup_standalone_wildcard_hosts(self):
+		standalone_servers = frappe.get_all(
+			"Server",
+			filters={
+				"status": ("not in", ["Archived", "Installing"]),
+				"is_standalone_setup": 1,
+			},
+			pluck="name",
+		)
+		if standalone_servers:
+			servers = frappe.get_all(
+				"Site",
+				filters={
+					"status": ("!=", "Archived"),
+					"domain": self.domain,
+					"server": ("in", standalone_servers),
+				},
+				distinct=True,
+				pluck="server",
+			)
+
+			for server in servers:
+				frappe.get_doc("Server", server).setup_wildcard_hosts()
 
 	def _extract_certificate_details(self):
 		x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, self.certificate)

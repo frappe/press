@@ -6,7 +6,10 @@
 	</Button>
 	<component :is="$isMobile ? 'DialogWrapper' : 'div'" v-bind="wrapperProps">
 		<div
-			:class="['flex', $isMobile ? 'flex-col gap-y-4' : 'items-center gap-x-2']"
+			:class="[
+				'flex',
+				$isMobile ? 'flex-col gap-y-4' : 'items-center gap-4 pl-2',
+			]"
 		>
 			<template v-for="control in filterControls" :key="control.fieldname">
 				<component

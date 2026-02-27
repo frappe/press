@@ -1,75 +1,75 @@
 <template>
-	<div class="space-y-4 p-5">
-		<div
-			class="flex flex-col justify-end sticky top-5 z-10 p-3 bg-white border justify-self-center rounded-md space-y-2"
-		>
-			<div class="flex space-x-4">
-				<!-- Group all content items so spacing is consistent -->
-				<div class="flex space-x-4">
-					<!-- Start date group -->
-					<div class="flex space-x-2">
-						<label class="text-base text-gray-600 self-center">
-							Absolute <span class="text-black">from</span>
-						</label>
-						<DateTimePicker
-							:modelValue="inputStartDate"
-							variant="subtle"
-							label="Start date"
-							:disabled="false"
-							:formatter="dateFormatter"
-							@update:modelValue="updateStartDate"
-						/>
-					</div>
-
-					<!-- End date group -->
-					<div class="flex space-x-2">
-						<label class="text-base self-center">to</label>
-						<DateTimePicker
-							:modelValue="inputEndDate"
-							variant="subtle"
-							label="End date"
-							:disabled="false"
-							:formatter="dateFormatter"
-							@update:modelValue="updateEndDate"
-						/>
-					</div>
-
-					<!-- Divider -->
-					<div class="w-px bg-gray-200" />
-
-					<!-- Duration group -->
-					<div class="flex space-x-2">
-						<label class="text-base self-center text-gray-600">Relative</label>
-						<FormControl
-							type="select"
-							class="w-32"
-							:options="durationOptions"
-							v-model="duration"
-						/>
-					</div>
-
-					<!-- Divider -->
-					<div class="w-px bg-gray-200" />
-
-					<Tooltip text="Copy a shareable link to this Dashboard">
-						<!-- Share button -->
-						<ActionButton
-							variant="subtle"
-							label="Share"
-							class="text-gray-300 hover:text-black duration-200"
-							@click="(e) => shareDashboard(e, `global`)"
-							:slots="{
-								prefix: shareDashboardActionPrefix,
-							}"
-						/>
-					</Tooltip>
+	<div
+		class="flex flex-col justify-end items-center sticky top-0 z-20 p-3 px-5 w-full bg-white border-b justify-self-center space-y-2"
+	>
+		<div class="flex space-x-4 w-full">
+			<!-- Group all content items so spacing is consistent -->
+			<div class="flex space-x-4 w-full">
+				<!-- Start date group -->
+				<div class="flex space-x-2">
+					<label class="text-base text-gray-600 self-center whitespace-nowrap">
+						Absolute <span class="text-black">from</span>
+					</label>
+					<DateTimePicker
+						:modelValue="inputStartDate"
+						variant="subtle"
+						label="Start date"
+						:disabled="false"
+						format="D MMM YYYY, hh:mm a"
+						@update:modelValue="updateStartDate"
+					/>
 				</div>
-			</div>
 
-			<div v-if="!!dateRangeError" class="text-red-500 text-sm">
-				{{ dateRangeError }}
+				<!-- End date group -->
+				<div class="flex space-x-2">
+					<label class="text-base self-center">to</label>
+					<DateTimePicker
+						:modelValue="inputEndDate"
+						variant="subtle"
+						label="End date"
+						:disabled="false"
+						format="D MMM YYYY, hh:mm a"
+						@update:modelValue="updateEndDate"
+					/>
+				</div>
+
+				<!-- Divider -->
+				<div class="w-px bg-gray-200" />
+
+				<!-- Duration group -->
+				<div class="flex space-x-2">
+					<label class="text-base self-center text-gray-600">Relative</label>
+					<FormControl
+						type="select"
+						class="w-36"
+						:options="durationOptions"
+						v-model="duration"
+					/>
+				</div>
+
+				<!-- Grow -->
+				<div class="flex-grow" />
+
+				<Tooltip text="Copy a shareable link to this Dashboard">
+					<!-- Share button -->
+					<ActionButton
+						variant="subtle"
+						label="Share"
+						class="text-gray-300 hover:text-black duration-200"
+						@click="(e) => shareDashboard(e, `global`)"
+						:slots="{
+							prefix: shareDashboardActionPrefix,
+						}"
+					/>
+				</Tooltip>
 			</div>
 		</div>
+
+		<div v-if="!!dateRangeError" class="text-red-500 text-sm">
+			{{ dateRangeError }}
+		</div>
+	</div>
+	<div class="space-y-4 p-5">
 		<ErrorMessage
 			:message="
 				$resources.analytics.error || $resources.advancedAnalytics.error
@@ -439,7 +439,7 @@
 <script>
 import { TabButtons, DateTimePicker, Button, Tooltip } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import dayjs from '../../utils/dayjs';
+import dayjs, { dayjsFloorToMinutes } from '../../utils/dayjs';
 import LineChart from '@/components/charts/LineChart.vue';
 import BarChart from '@/components/charts/BarChart.vue';
 import SiteUptime from './SiteUptime.vue';
@@ -469,12 +469,12 @@ export default {
 			highlightedCardId: null,
 			now: dayjs(),
 			defaultDuration: '1h',
-			allowTimestampSyncToUrl: false,
+			allowTimestampSyncToUrl: true,
 			inputStartDate: null,
 			logicalStartDate: null,
 			inputEndDate: null,
 			logicalEndDate: null,
-			showAdvancedAnalytics: true,
+			showAdvancedAnalytics: false,
 			localTimezone: dayjs.tz.guess(),
 			slowLogsDurationType: 'Denormalized',
 			slowLogsFrequencyType: 'Denormalized',
@@ -491,7 +491,7 @@ export default {
 		};
 	},
 	mounted() {
-		// Initialise date range from URL if present
+		// Initialize date range from URL if present
 		const start = dayjs(this.$route.query.start);
 		const end = dayjs(this.$route.query.end);
 		if (start.isValid && end.isValid && start.isBefore(end)) {
@@ -853,7 +853,9 @@ export default {
 		duration(newValue) {
 			if (!newValue) return;
 			this.now = dayjs();
-			this.updateEndDate(this.now, false);
+			// floor to 15 minutes to avoid issues with caching
+			const flooredEndDate = dayjsFloorToMinutes(this.now, 15);
+			this.updateEndDate(flooredEndDate, false);
 			const int = parseInt(newValue.slice(0, -1));
 			const unit = newValue.slice(-1);
 			this.updateStartDate(dayjs(this.inputEndDate).subtract(int, unit), false);

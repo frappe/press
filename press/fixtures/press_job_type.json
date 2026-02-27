@@ -664,7 +664,7 @@
   "callback_script": null,
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2026-01-07 03:29:43.954581",
+  "modified": "2026-02-22 22:29:46.984146",
   "name": "Resize Server",
   "steps": [
    {
@@ -719,7 +719,7 @@
     "parent": "Resize Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.adjust_memory_config()\nelif doc.server_type == \"Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.auto_scale_workers()",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif server.is_unified_server:\n    server_doc = frappe.get_doc(\"Server\", doc.server)\n    db_doc = frappe.get_doc(\"Database Server\", doc.server)\n\n    server_doc.auto_scale_workers()\n    db_doc.adjust_memory_config()\n\nelse:\n    if doc.server_type == \"Database Server\":\n        server.adjust_memory_config()\n\n    elif doc.server_type == \"Server\":\n        server.auto_scale_workers()\n",
     "step_name": "Set additional config",
     "wait_until_true": 0
    },
@@ -738,7 +738,7 @@
   "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()\n            \nif doc.server_type in [\"Server\", \"Database Server\"] and \"logical_replication_backup\" in arguments:\n    if doc.status == \"Success\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).next()\n    if doc.status == \"Failure\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).fail()\n        \nif doc.server_type in [\"Server\", \"Database Server\"] and doc.status == \"Success\":\n    server.is_provisioning_press_job_completed = 1\n    server.save(ignore_permissions=True)\n    \n    if server.is_unified_server:\n        frappe.db.set_value(\"Database Server\", server.database_server, \"is_provisioning_press_job_completed\", 1, update_modified =False)",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2026-01-21 18:03:50.212370",
+  "modified": "2026-02-27 11:03:50.212370",
   "name": "Create Server",
   "steps": [
    {
@@ -793,7 +793,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    try:\n        vm = frappe.get_doc(\"Virtual Machine\", server.virtual_machine)\n        vm.sync()\n        \n        if len(vm.volumes) == 0 or (vm.data_disk_snapshot_attached and len(vm.volumes) == 1):\n            result = (False, False)\n        else:\n            server.reload()\n            server.validate_mounts()\n            server.save()\n            result = (True, False)\n    except (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.exceptions.TimestampMismatchError):\n        result = (False, False)\n    except Exception as e:\n        raise e\nelse:\n    result = (True, False)",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nif server.provider == \"AWS EC2\" and frappe.db.get_value(\"Virtual Machine\", server.virtual_machine, \"data_disk_snapshot\"):\n    try:\n        vm = frappe.get_doc(\"Virtual Machine\", server.virtual_machine)\n        vm.sync()\n        \n        if len(vm.volumes) == 0 or (vm.data_disk_snapshot_attached and len(vm.volumes) == 1):\n            result = (False, False)\n        else:\n            server.reload()\n            server.validate_mounts()\n            server.save()\n            result = (True, False)\n    except (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.TimestampMismatchError):\n        result = (False, False)\n    except Exception as e:\n        raise e\nelse:\n    result = (True, False)",
     "step_name": "Sync Attached Volumes",
     "wait_until_true": 1
    },

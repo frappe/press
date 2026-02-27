@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import json
 
 import frappe
 from frappe.utils import unique
@@ -16,6 +16,8 @@ from press.utils import log_error
 class ProxyServer(BaseServer):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -46,6 +48,7 @@ class ProxyServer(BaseServer):
 		is_ssh_proxy_setup: DF.Check
 		is_static_ip: DF.Check
 		is_wireguard_setup: DF.Check
+		mem_limits: DF.Code | None
 		plan: DF.Link | None
 		primary: DF.Link | None
 		private_ip: DF.Data | None
@@ -481,23 +484,32 @@ class ProxyServer(BaseServer):
 	def pre_failover_tasks(self):
 		from press.press.doctype.proxy_failover.proxy_failover import reduce_ttl_of_sites
 
+		primary = frappe.db.get_value("Proxy Server", self.primary, ["cluster", "is_static_ip"], as_dict=True)
+		if self.cluster != primary.cluster:
+			frappe.throw("Failover can only be initiated between Proxy Servers in the same cluster")
+
+		if (not primary.is_static_ip and not self.is_static_ip) or (
+			primary.is_static_ip and self.is_static_ip
+		):
+			frappe.throw("Failover can only be initiated if one of the proxy server has a static ip")
+
 		frappe.get_doc(
 			{
 				"doctype": "Dashboard Banner",
 				"enabled": 1,
 				"type": "Warning",
-				"title": f"Proxy Failover Pre Warning - {self.name}",
 				"message": f"There is currently an issue with the proxy server in {self.cluster} region. You may experience some interruptions while accessing your sites in that region. Our team is working to resolve this as quickly as possible.",
 				"is_scheduled": 1,
 				"scheduled_start_time": frappe.utils.now(),
-				"scheduled_end_time": frappe.utils.add_to_date(frappe.utils.now(), hours=10),
+				"scheduled_end_time": frappe.utils.add_to_date(frappe.utils.now(), hours=6),
 				"is_global": 1,
 			}
 		).insert()
 
 		frappe.enqueue(
 			reduce_ttl_of_sites,
-			proxy=self.name,
+			primary_proxy_name=self.primary,
+			secondary_proxy_name=self.name,
 			queue="long",
 			timeout=3600,
 			enqueue_after_commit=True,
@@ -505,6 +517,51 @@ class ProxyServer(BaseServer):
 		)
 
 		return "Added a dashboard banner and queued reduction of dns record ttl on sites"
+
+	@frappe.whitelist()
+	def get_memory_limits(self):
+		if self.mem_limits:
+			return json.loads(self.mem_limits)
+		return None
+
+	@frappe.whitelist()
+	def set_memory_limits(self, limits: list):
+		already_seen_processes = set()
+		for limit in limits:
+			if limit["process"] in already_seen_processes:
+				frappe.throw(f"Duplicate process {limit['process']} found in memory limits")
+
+			if int(limit["memory_high"]) > int(limit["memory_max"]):
+				frappe.throw(f"MemoryHigh cannot be more than MemoryMax for process {limit['process']}")
+
+			for key in list(limit.keys()):
+				if key not in ("process", "memory_high", "memory_max"):
+					del limit[key]
+
+			already_seen_processes.add(limit["process"])
+
+		self.mem_limits = json.dumps(limits, indent=1)
+		self.save()
+
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_set_memory_limits",
+			enqueue_after_commit=True,
+		)
+
+		return "Queued memory limit update"
+
+	def _set_memory_limits(self):
+		Ansible(
+			playbook="set_proxy_memory_limits.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+			variables={
+				"memory_limits": json.loads(self.mem_limits),
+			},
+		).run()
 
 
 def process_update_nginx_job_update(job):

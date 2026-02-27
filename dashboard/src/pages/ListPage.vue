@@ -5,7 +5,7 @@
 				:items="[{ label: object.list.title, route: object.list.route }]"
 			/>
 		</Header>
-		<div class="p-5">
+		<div class="p-5 pb-0">
 			<AlertAddPaymentMode
 				class="mb-5"
 				v-if="$team?.doc && !$team.doc.payment_mode && !$team.doc.parent_team"

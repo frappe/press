@@ -50,6 +50,16 @@
 						</div>
 					</div>
 				</div>
+				<div class="flex items-center gap-2">
+					<div>Valid For</div>
+					<div>
+						<Select
+							v-model="request.doc.allowed_for"
+							:options="validityOptions"
+							:disabled="!isPending"
+						/>
+					</div>
+				</div>
 				<div v-if="request.doc?.reason" class="space-y-2">
 					<p class="font-medium">Reason:</p>
 					<p class="leading-relaxed">{{ request.doc?.reason }}</p>
@@ -74,8 +84,13 @@
 
 <script setup lang="ts">
 import Link from './Link.vue';
-import { Badge, createDocumentResource, createResource } from 'frappe-ui';
-import { computed, ref } from 'vue';
+import {
+	Badge,
+	Select,
+	createResource,
+	createDocumentResource,
+} from 'frappe-ui';
+import { computed, ref, watch } from 'vue';
 import { getTeam } from '../data/team';
 import { toast } from 'vue-sonner';
 
@@ -99,6 +114,15 @@ const isReceived = computed(() => {
 const isPending = computed(() => {
 	return request.doc?.status === 'Pending';
 });
+
+const validityOptions = [
+	{ label: '3 Hours', value: '3' },
+	{ label: '6 Hours', value: '6' },
+	{ label: '12 Hours', value: '12' },
+	{ label: '1 Day', value: '24' },
+	{ label: '3 Days', value: '72' },
+	{ label: '7 Days', value: '168' },
+];
 
 const permissions = computed(() =>
 	[
@@ -132,6 +156,7 @@ const update = createResource({
 		name: props.name,
 		fieldname: {
 			status: args.status,
+			allowed_for: args.allowed_for,
 		},
 	}),
 	onSuccess: (data: any) => {
@@ -177,6 +202,7 @@ const actions = computed(() => {
 				onClick: () => {
 					update.submit({
 						status: 'Rejected',
+						allowed_for: request.doc.allowed_for,
 					});
 				},
 			},
@@ -186,6 +212,7 @@ const actions = computed(() => {
 				onClick: () => {
 					update.submit({
 						status: 'Accepted',
+						allowed_for: request.doc.allowed_for,
 					});
 				},
 			},
@@ -200,6 +227,7 @@ const actions = computed(() => {
 			onClick: () => {
 				update.submit({
 					status: 'Revoked',
+					allowed_for: request.doc.allowed_for,
 				});
 			},
 		});
@@ -213,6 +241,7 @@ const actions = computed(() => {
 			onClick: () => {
 				update.submit({
 					status: 'Forfeited',
+					allowed_for: request.doc.allowed_for,
 				});
 			},
 		});

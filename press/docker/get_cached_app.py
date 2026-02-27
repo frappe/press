@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -124,14 +125,23 @@ def _write_js_and_css_assets(app: str, dist_folder: str) -> None:
 	assets_rtl_file = os.path.join(os.getcwd(), "sites", "assets", "assets-rtl.json")
 
 	for assets in ["js", "css"]:
-		for file in os.scandir(os.path.join(dist_folder, assets)):
+		assets_path = os.path.join(dist_folder, assets)
+
+		if not os.path.exists(assets_path):
+			continue
+
+		for file in os.scandir(assets_path):
 			if file.name.endswith(".map"):
 				continue
 
 			relative_path = f"/assets/{app}/dist/{assets}/{file.name}"
 			_write_assets(file, assets_file, relative_path)
 
-	for file in os.scandir(os.path.join(dist_folder, "css-rtl")):
+	css_rtl_path = os.path.join(dist_folder, "css-rtl")
+	if not os.path.exists(css_rtl_path):
+		return
+
+	for file in os.scandir(css_rtl_path):
 		if file.name.endswith(".map"):
 			continue
 
@@ -155,17 +165,9 @@ def _update_assets_json(app: str) -> None:
 
 def tar_and_compress_folder(folder_path: str, output_filename: str) -> str:
 	"""Tars and compresses the given folder into a .tar.gz file."""
-	with tarfile.open(output_filename, "w:gz") as tar:
-		tar.add(folder_path, arcname=os.path.basename(folder_path))
+	with tarfile.open(output_filename, "w:gz", dereference=True) as tar:
+		tar.add(folder_path, arcname=os.path.basename(folder_path), recursive=True)
 	return output_filename
-
-
-def extract_and_flatten_tar(file_stream: BytesIO):
-	"""Flatten tarfile in the correct assets directory"""
-	change_working_directory()
-
-	with tarfile.open(fileobj=file_stream, mode="r:*") as tar:
-		tar.extractall(path=os.path.join(os.getcwd(), "sites", "assets"), filter="fully_trusted")
 
 
 def build_assets(app: str) -> str:
@@ -181,6 +183,39 @@ def build_assets(app: str) -> str:
 	assets_path = os.path.join(os.getcwd(), "sites", "assets", app)
 	print(f"Build Command Completed. Return Code: {completed_process.returncode}.")
 	return assets_path
+
+
+def extract_and_link_assets(app_name: str, file_stream: BytesIO):
+	"""
+	Extracts assets to sites/assets, moves them to the app source, and restores the symlink.
+	"""
+	change_working_directory()
+	bench_path = os.getcwd()
+
+	app_public_path = os.path.join(bench_path, "apps", app_name, app_name, "public")
+	assets_path = os.path.join(bench_path, "sites", "assets", app_name)
+
+	# 1. Remove existing symlink/dir so tar can extract a fresh physical directory
+	if os.path.exists(assets_path):
+		if os.path.islink(assets_path):
+			os.unlink(assets_path)
+		else:
+			shutil.rmtree(assets_path)
+
+	# 2. Extract into sites/assets
+	with tarfile.open(fileobj=file_stream, mode="r:*") as tar:
+		tar.extractall(path=os.path.join(bench_path, "sites", "assets"), filter="fully_trusted")
+
+	# 3. Move to app public
+	if os.path.exists(app_public_path):
+		shutil.rmtree(app_public_path)
+
+	shutil.move(assets_path, app_public_path)
+
+	# 4. Restore symlink since we deploy with cp -LR
+	os.symlink(app_public_path, assets_path)
+
+	print(f"Assets moved to {app_public_path} and symlink restored at {assets_path}")
 
 
 def main():
@@ -201,7 +236,7 @@ def main():
 	if check_existing_asset_in_s3(credentials, asset_filename):
 		print(f"Assets {asset_filename} found in store. Extracting and setting up...")
 		file_stream = download_asset_from_store(credentials, asset_filename)
-		extract_and_flatten_tar(file_stream)
+		extract_and_link_assets(APP_NAME, file_stream)
 		_update_assets_json(APP_NAME)
 	else:
 		print(f"Assets {asset_filename} not found in store. Building...")
