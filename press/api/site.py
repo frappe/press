@@ -290,21 +290,21 @@ def new(site):
 	"""
 	Dedicated server flow:
 	- Search for existing bench group with matching version and selected apps deployed on selected server
-	- Reuse group if found, otherwise provision new bench via Site Group Deploy
+	- Reuse group if found, otherwise provision new bench and create site
 
 	Shared/public server flow:
 	- If plans supports it, deploy private bench and create site
-	- Else create site on existing bench
+	- Else create site on shared bench
 	"""
 	if not hasattr(site, "domain") and not site.get("domain"):
 		site["domain"] = frappe.db.get_single_value("Press Settings", "domain")
 
-	selected_server = site.get("selectedDedicatedServer")
+	selected_dedicated_server = site.get("server")
 	plan = site.get("plan")
 	apps = site.get("apps", ["frappe"])
 	apps = [app for app in apps if app]
 
-	if selected_server:
+	if selected_dedicated_server:
 		if localisation_country := site.get("localisation_country"):
 			localisation_app = frappe.db.get_value(
 				"Marketplace Localisation App", {"country": localisation_country}, "marketplace_app"
@@ -313,8 +313,8 @@ def new(site):
 				apps.append(localisation_app)
 
 		version = site.get("version")
-		existing_release_group = get_existing_bench_group_for_dedicated_server(
-			server=selected_server,
+		existing_release_group = _get_existing_bench_group_for_dedicated_server(
+			server=selected_dedicated_server,
 			version=version,
 			apps=apps,
 		)
@@ -327,7 +327,7 @@ def new(site):
 					"subdomain": site.get("name"),
 					"domain": site.get("domain"),
 					"group": existing_release_group,
-					"server": selected_server,
+					"server": selected_dedicated_server,
 					"cluster": site.get("cluster"),
 					"apps": [{"app": app} for app in apps],
 					"app_plans": app_plans,
@@ -358,7 +358,7 @@ def new(site):
 			version=version,
 			provider=site.get("provider"),
 			localisation_country=localisation_country,
-			server=selected_server,
+			server=selected_dedicated_server,
 		)
 
 	if frappe.db.get_value("Site Plan", plan, "private_bench_support"):
@@ -375,7 +375,7 @@ def new(site):
 	return _new(site)
 
 
-def get_existing_bench_group_for_dedicated_server(
+def _get_existing_bench_group_for_dedicated_server(
 	server: str,
 	version: str,
 	apps: list[str],
@@ -742,7 +742,7 @@ def app_details_for_new_public_site():
 	return marketplace_apps
 
 
-def get_dedicated_server_info_for_release_group(release_group_name: str) -> dict:
+def _get_dedicated_server_info_for_release_group(release_group_name: str) -> dict:
 	"""
 	check servers linked to a release group and determine dedicated server deployment options.
 
@@ -809,27 +809,43 @@ def get_dedicated_server_info_for_release_group(release_group_name: str) -> dict
 	}
 
 
-def _get_team_dedicated_server_info():
-	case = ""
+def _get_team_dedicated_server_info(for_server: str | None = None):
 	team = get_current_team()
+
+	filters = {
+		"team": team,
+		"status": "Active",
+		**({"name": for_server} if for_server else {}),
+	}
+
 	servers = frappe.db.get_all(
 		"Server",
-		filters={"team": team, "status": "Active", "public": False},
+		filters=filters,
 		fields=["name", "title", "cluster", "provider"],
 	)
-	server_count = len(servers)
-	if server_count == 0:
-		case = "no_dedicated_server"
-	elif server_count == 1:
-		case = "user_choice_single"
-	else:
-		case = "user_choice_multiple"
 
-	return {"case": case, "dedicated_servers": servers}
+	if not servers:
+		if for_server:
+			frappe.throw(f"Server {for_server} not found")
+		return {
+			"case": "no_dedicated_server",
+			"dedicated_servers": [],
+		}
+
+	if len(servers) == 1:
+		return {
+			"case": "dedicated_only_single" if for_server else "user_choice_single",
+			"dedicated_servers": servers,
+		}
+
+	return {
+		"case": "user_choice_multiple",
+		"dedicated_servers": servers,
+	}
 
 
 @frappe.whitelist()
-def options_for_new(for_bench: str | None = None):  # noqa: C901
+def options_for_new(for_bench: str | None = None, for_server: str | None = None):  # noqa: C901
 	from press.press.doctype.cloud_provider.cloud_provider import get_cloud_providers
 	from press.utils import get_nearest_cluster
 
@@ -927,7 +943,7 @@ def options_for_new(for_bench: str | None = None):  # noqa: C901
 		"app_source_details": app_source_details_grouped,
 		"providers": list(unique_providers.values()),
 		"additional_clusters": private_bench_clusters,
-		"dedicated_server_config": _get_team_dedicated_server_info() if not for_bench else [],
+		"dedicated_server_config": _get_team_dedicated_server_info(for_server) if not for_bench else [],
 	}
 
 
@@ -984,7 +1000,7 @@ def get_available_versions(for_bench: str | None = None):
 			version.group = release_group
 			if for_bench:
 				version.group.dedicated_server_config = (
-					get_dedicated_server_info_for_release_group(release_group.name) or {}
+					_get_dedicated_server_info_for_release_group(release_group.name) or {}
 				)
 
 			set_bench_and_clusters(version, for_bench)

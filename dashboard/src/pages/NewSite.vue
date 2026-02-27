@@ -385,7 +385,7 @@ import { getCountry } from '../utils/country';
 
 export default {
 	name: 'NewSite',
-	props: ['bench'],
+	props: ['bench', 'server'],
 	components: {
 		FBreadcrumbs: Breadcrumbs,
 		NewSiteAppSelector,
@@ -448,8 +448,10 @@ export default {
 			}
 		},
 		version() {
-			this.cluster = null;
-			this.provider = null;
+			if (!this.server) {
+				this.cluster = null;
+				this.provider = null;
+			}
 			this.agreedToRegionConsent = false;
 			// Reset localisation selection when version changes
 			this.selectedLocalisationCountry = null;
@@ -516,28 +518,14 @@ export default {
 			return {
 				url: 'press.api.site.options_for_new',
 				makeParams() {
-					return { for_bench: this.bench };
+					return { for_bench: this.bench, for_server: this.server };
 				},
 				onSuccess() {
 					this.closestCluster = this.options.closest_cluster;
 					if (this.bench && this.options.versions.length > 0) {
 						this.version = this.options.versions[0].name;
-
-						this.$nextTick(() => {
-							const config = this.dedicatedServerConfig;
-							if (!config || !config.dedicated_servers) return;
-
-							if (config.case === 'dedicated_only_single') {
-								this.useDedicatedServer = true;
-								const server = config.dedicated_servers[0];
-								this.cluster = server.cluster;
-								this.provider = server.provider;
-								this.selectedDedicatedServer = server.name;
-							} else if (config.case === 'dedicated_only_multiple') {
-								this.useDedicatedServer = true;
-							}
-						});
 					}
+					this.applyDedicatedServerDefaults();
 				},
 				auto: true,
 			};
@@ -709,7 +697,7 @@ export default {
 			);
 		},
 		isDedicatedServerSite() {
-			return this.useDedicatedServer && this.selectedDedicatedServer;
+			return !!(this.useDedicatedServer && this.selectedDedicatedServer);
 		},
 		availableDedicatedServers() {
 			return this.dedicatedServerConfig?.dedicated_servers || [];
@@ -1023,6 +1011,19 @@ export default {
 			return this.availableVersions
 				.sort((a, b) => b.name.localeCompare(a.name))
 				.find((v) => !v.disabled)?.name;
+		},
+		applyDedicatedServerDefaults() {
+			const config = this.dedicatedServerConfig;
+			console.log(config);
+			if (!config || !config.dedicated_servers) return;
+			if (config.case === 'dedicated_only_single') {
+				this.useDedicatedServer = true;
+				this.selectedDedicatedServer = this.server;
+				console.log(this.selectedDedicatedServer);
+			} else if (config.case === 'dedicated_only_multiple') {
+				// Multiple servers, none public - user must choose
+				this.useDedicatedServer = true;
+			}
 		},
 	},
 };
