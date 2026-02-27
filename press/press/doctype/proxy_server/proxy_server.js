@@ -215,3 +215,19 @@ frappe.ui.form.on('Proxy Server', {
 		press.set_hostname_abbreviation(frm);
 	},
 });
+
+// Enable manual IP entry for AWS instances
+frappe.ui.form.on('Proxy Server', {
+	refresh: function (frm) {
+		// Enable IP fields for manual entry in case Virtual Machine is not used
+		if (!frm.doc.virtual_machine && frm.doc.provider == "Generic") {
+			frm.set_df_property('ip', 'read_only', 0);
+			frm.set_df_property('private_ip', 'read_only', 0);
+			frm.set_df_property('ip', 'reqd', 1);
+			frm.set_df_property('private_ip', 'reqd', 1);
+
+		}
+
+	}
+
+});

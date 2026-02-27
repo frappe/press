@@ -80,6 +80,7 @@ class ProxyServer(BaseServer):
 		super().validate()
 		self.validate_domains()
 		self.validate_proxysql_admin_password()
+		self.validate_ips()
 
 	def validate_domains(self):
 		domains_to_validate = unique([self.domain] + [row.domain for row in self.domains])
@@ -93,6 +94,13 @@ class ProxyServer(BaseServer):
 	def validate_proxysql_admin_password(self):
 		if not self.proxysql_admin_password:
 			self.proxysql_admin_password = frappe.generate_hash(length=32)
+
+	
+	def validate_ips(self):
+		# If Virtual machine is not available, valid IP addresses of the Proxy server must be entered to continue with the setup. 
+		if not self.virtual_machine and not (self.ip and self.private_ip):
+			frappe.throw("Enter the public and private IP addresses while configuring of the Proxy Server.")
+
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
