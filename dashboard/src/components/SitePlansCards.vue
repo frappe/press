@@ -1,7 +1,10 @@
 <template>
 	<div class="space-y-6">
 		<div class="text-base text-gray-800">
-			<div>Not sure? Start with the smallest plan and upgrade anytime. Billing is prorated.</div>
+			<div>
+				Not sure? Start with the smallest plan and upgrade anytime. Billing is
+				prorated.
+			</div>
 		</div>
 		<div class="@container space-y-4" v-if="hasPlans">
 			<div
@@ -31,7 +34,9 @@
 							>
 								<div class="flex items-center gap-2">
 									<component
-										:is="_icon(feature.icon || 'circle', 'size-3.5 text-gray-600')"
+										:is="
+											_icon(feature.icon || 'circle', 'size-3.5 text-gray-600')
+										"
 									/>
 									<span>{{ feature.label }}</span>
 								</div>
@@ -53,44 +58,56 @@
 							]"
 							@click="$emit('update:modelValue', plan)"
 						>
-								<div class="min-w-0">
-									<div class="flex items-baseline gap-2">
-										<Tooltip
-											:text="$format.userCurrency($format.pricePerDay($team.doc.currency === 'INR' ? plan.price_inr : plan.price_usd)) + '/day'"
-											:disabled="!(plan.price_inr || plan.price_usd)"
-										>
-											<span class="text-base whitespace-nowrap font-semibold text-gray-900">
-												<template v-if="plan.label">{{ plan.label }}</template>
-												<template v-else>
-													{{ plan.displayTitle }}
-													<span v-if="plan.displayUnit" class="text-gray-700">
-														{{ plan.displayUnit }}
-													</span>
-												</template>
-											</span>
-										</Tooltip>
-									</div>
-								</div>
-								<div
-									class="grid items-center gap-4 text-sm text-gray-800"
-									style="grid-template-columns: repeat(3, minmax(100px, 1fr))"
-								>
+							<div class="min-w-0">
+								<div class="flex items-baseline gap-2">
 									<Tooltip
-										v-for="(item, itemIndex) in getAllPlanItems(plan, group)"
-										:key="`${plan.name}-item-${itemIndex}`"
-										:disabled="!item?.tooltip"
-										:text="item.tooltip"
-										placement="top"
-										:hover-delay="0"
+										:text="
+											$format.userCurrency(
+												$format.pricePerDay(
+													$team.doc.currency === 'INR'
+														? plan.price_inr
+														: plan.price_usd,
+												),
+											) + '/day'
+										"
+										:disabled="!(plan.price_inr || plan.price_usd)"
 									>
-										<div class="flex items-center gap-2">
-											<component
-												:is="_icon(item.icon || 'circle', 'size-3.5 text-gray-600')"
-											/>
-											<span>{{ item.label }}</span>
-										</div>
+										<span
+											class="text-base whitespace-nowrap font-semibold text-gray-900"
+										>
+											<template v-if="plan.label">{{ plan.label }}</template>
+											<template v-else>
+												{{ plan.displayTitle }}
+												<span v-if="plan.displayUnit" class="text-gray-700">
+													{{ plan.displayUnit }}
+												</span>
+											</template>
+										</span>
 									</Tooltip>
 								</div>
+							</div>
+							<div
+								class="grid items-center gap-4 text-sm text-gray-800"
+								style="grid-template-columns: repeat(3, minmax(100px, 1fr))"
+							>
+								<Tooltip
+									v-for="(item, itemIndex) in getAllPlanItems(plan, group)"
+									:key="`${plan.name}-item-${itemIndex}`"
+									:disabled="!item?.tooltip"
+									:text="item.tooltip"
+									placement="top"
+									:hover-delay="0"
+								>
+									<div class="flex items-center gap-2">
+										<component
+											:is="
+												_icon(item.icon || 'circle', 'size-3.5 text-gray-600')
+											"
+										/>
+										<span>{{ item.label }}</span>
+									</div>
+								</Tooltip>
+							</div>
 						</button>
 					</div>
 				</div>
@@ -162,7 +179,7 @@ export default {
 			if (this.isPrivateBenchSite) {
 				plans = plans.filter((plan) => plan.private_benches);
 			}
-			if (this.isPrivateBenchSite && this.isDedicatedServerSite) {
+			if (this.isDedicatedServerSite) {
 				plans = plans.filter((plan) => plan.dedicated_server_plan);
 			} else {
 				plans = plans.filter((plan) => !plan.dedicated_server_plan);
@@ -209,10 +226,8 @@ export default {
 				plans = plans.filter((plan) => !plan.restricted_plan);
 			}
 			if (this.selectedProvider) {
-				const provider = ["Generic", "Scaleway"].includes(
-					this.selectedProvider,
-				)
-					? "AWS EC2"
+				const provider = ['Generic', 'Scaleway'].includes(this.selectedProvider)
+					? 'AWS EC2'
 					: this.selectedProvider;
 
 				plans = plans.map((plan) => {
@@ -247,7 +262,9 @@ export default {
 						{
 							label: 'Database',
 							condition: !plan.name.includes('Unlimited'),
-							value: this.$format.bytes(plan.max_database_usage, 1, 2).replace(/\s/g, ''),
+							value: this.$format
+								.bytes(plan.max_database_usage, 1, 2)
+								.replace(/\s/g, ''),
 							tooltip: 'Maximum database storage allowed',
 							icon: 'database',
 							scope: 'plan',
@@ -255,7 +272,9 @@ export default {
 						{
 							label: 'Disk',
 							condition: !plan.name.includes('Unlimited'),
-							value: this.$format.bytes(plan.max_storage_usage, 1, 2).replace(/\s/g, ''),
+							value: this.$format
+								.bytes(plan.max_storage_usage, 1, 2)
+								.replace(/\s/g, ''),
 							tooltip: 'Maximum disk storage allowed',
 							icon: 'hard-drive',
 							scope: 'plan',
@@ -370,7 +389,7 @@ export default {
 				return {
 					...group,
 					plans: group.plans.map((plan) => {
-										const display = this.$format.planDisplay(plan, false);
+						const display = this.$format.planDisplay(plan, false);
 						return {
 							...plan,
 							displayTitle: display.title,
@@ -421,7 +440,6 @@ export default {
 			}
 			return 'low';
 		},
-
 	},
 };
 </script>
