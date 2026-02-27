@@ -568,6 +568,7 @@
         "signup",
         "sina",
         "SLXVDP",
+        "slugified",
         "smembers",
         "SNUBA",
         "snuba",
@@ -737,6 +738,11 @@
         "unyanking",
         "unyanked",
         "shirou",
-        "gopsutil"
+        "gopsutil",
+        "SSIZE",
+        "innobase",
+        "FSEG",
+        "XDES",
+        "FLST"
     ]
 }

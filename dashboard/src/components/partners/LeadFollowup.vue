@@ -35,20 +35,24 @@ const leadfollowups = computed(() => {
 			{
 				label: 'Followup By',
 				fieldname: 'followup_by',
+				width: '180px',
 			},
 			{
 				label: 'Communication',
 				fieldname: 'communication_type',
+				width: '120px',
 			},
 			{
 				label: 'Spoke To',
 				fieldname: 'spoke_to',
+				width: '180px',
+				class: 'truncate',
 			},
 			{
 				label: 'Notes',
 				fieldname: 'discussion',
 				class: 'break-all',
-				width: '200px',
+				width: '220px',
 			},
 		],
 		rowActions: ({ row }) => {
@@ -111,6 +115,7 @@ const leadfollowups = computed(() => {
 				},
 			};
 		},
+		orderBy: 'date desc',
 	};
 });
 

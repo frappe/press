@@ -112,9 +112,8 @@
 			</div>
 			<div
 				v-if="
-					bench &&
-					(showDedicatedServerOption ||
-						dedicatedServerConfig?.case === 'dedicated_only_multiple')
+					showDedicatedServerOption ||
+					dedicatedServerConfig?.case === 'dedicated_only_multiple'
 				"
 				class="space-y-4"
 			>
@@ -386,7 +385,7 @@ import { getCountry } from '../utils/country';
 
 export default {
 	name: 'NewSite',
-	props: ['bench'],
+	props: ['bench', 'server'],
 	components: {
 		FBreadcrumbs: Breadcrumbs,
 		NewSiteAppSelector,
@@ -423,8 +422,10 @@ export default {
 	},
 	watch: {
 		apps() {
-			if (!(this.bench && this.selectedDedicatedServer)) {
+			if (!this.selectedDedicatedServer) {
 				this.version = this.autoSelectVersion();
+				this.cluster = null;
+			} else if (this.bench) {
 				this.cluster = null;
 			}
 			this.agreedToRegionConsent = false;
@@ -446,15 +447,17 @@ export default {
 			}
 		},
 		version() {
-			this.cluster = null;
-			this.provider = null;
+			if (!this.server) {
+				this.cluster = null;
+				this.provider = null;
+			}
 			this.agreedToRegionConsent = false;
 			// Reset localisation selection when version changes
 			this.selectedLocalisationCountry = null;
 			this.showLocalisationOption = false;
 		},
 		provider() {
-			if (this.bench) {
+			if (this.bench || this.selectedDedicatedServer) {
 				// provider is inferred from cluster selection, so avoid clearing it
 				return;
 			}
@@ -468,7 +471,7 @@ export default {
 			this.agreedToRegionConsent = false;
 
 			// For bench flow, set provider based on the selected cluster's cloud_provider
-			if (this.bench && this.cluster) {
+			if ((this.bench || this.selectedDedicatedServer) && this.cluster) {
 				const selectedCluster = this.selectedVersion?.group?.clusters.find(
 					(c) => c.name === this.cluster,
 				);
@@ -514,28 +517,14 @@ export default {
 			return {
 				url: 'press.api.site.options_for_new',
 				makeParams() {
-					return { for_bench: this.bench };
+					return { for_bench: this.bench, for_server: this.server };
 				},
 				onSuccess() {
 					this.closestCluster = this.options.closest_cluster;
 					if (this.bench && this.options.versions.length > 0) {
 						this.version = this.options.versions[0].name;
-
-						this.$nextTick(() => {
-							const config = this.dedicatedServerConfig;
-							if (!config || !config.dedicated_servers) return;
-
-							if (config.case === 'dedicated_only_single') {
-								this.useDedicatedServer = true;
-								const server = config.dedicated_servers[0];
-								this.cluster = server.cluster;
-								this.provider = server.provider;
-								this.selectedDedicatedServer = server.name;
-							} else if (config.case === 'dedicated_only_multiple') {
-								this.useDedicatedServer = true;
-							}
-						});
 					}
+					this.applyDedicatedServerDefaults();
 				},
 				auto: true,
 			};
@@ -644,6 +633,7 @@ export default {
 								share_details_consent: this.shareDetailsConsent,
 								selected_app_plans: appPlans,
 								domain: this.domain,
+								server: this.selectedDedicatedServer || null,
 								// files: this.selectedFiles,
 								// skip_failing_patches: this.skipFailingPatches,
 							},
@@ -692,8 +682,11 @@ export default {
 			return this.options?.versions.find((v) => v.name === this.version);
 		},
 		dedicatedServerConfig() {
-			if (!this.bench) return {};
-			return this.selectedVersion?.group?.dedicated_server_config || {};
+			if (this.bench) {
+				return this.selectedVersion?.group?.dedicated_server_config || {};
+			} else {
+				return this.options?.dedicated_server_config || {};
+			}
 		},
 		showDedicatedServerOption() {
 			const case_type = this.dedicatedServerConfig?.case || '';
@@ -703,7 +696,7 @@ export default {
 			);
 		},
 		isDedicatedServerSite() {
-			return this.useDedicatedServer && this.selectedDedicatedServer;
+			return !!(this.useDedicatedServer && this.selectedDedicatedServer);
 		},
 		availableDedicatedServers() {
 			return this.dedicatedServerConfig?.dedicated_servers || [];
@@ -713,7 +706,7 @@ export default {
 			const hasMultipleServers = this.availableDedicatedServers.length > 1;
 			// Only show server selection when:
 			// 1. user_choice_multiple - User has enabled dedicated server checkbox AND there are multiple servers
-			// 2. dedicated_only_multiple - bench group has multiple dedicated servers linked to it and none public
+			// 2. dedicated_only_multiple - release group has multiple dedicated servers linked to it and none public
 			if (!this.useDedicatedServer || !hasMultipleServers) {
 				return false;
 			}
@@ -908,7 +901,7 @@ export default {
 			if (this.bench) {
 				let group = getCachedDocumentResource('Release Group', this.bench);
 				return [
-					{ label: 'Bench Groups', route: '/groups' },
+					{ label: 'Benches', route: '/groups' },
 					{
 						label: group ? group.doc.title : this.bench,
 						route: {
@@ -1017,6 +1010,19 @@ export default {
 			return this.availableVersions
 				.sort((a, b) => b.name.localeCompare(a.name))
 				.find((v) => !v.disabled)?.name;
+		},
+		applyDedicatedServerDefaults() {
+			const config = this.dedicatedServerConfig;
+			console.log(config);
+			if (!config || !config.dedicated_servers) return;
+			if (config.case === 'dedicated_only_single') {
+				this.useDedicatedServer = true;
+				this.selectedDedicatedServer = this.server;
+				console.log(this.selectedDedicatedServer);
+			} else if (config.case === 'dedicated_only_multiple') {
+				// Multiple servers, none public - user must choose
+				this.useDedicatedServer = true;
+			}
 		},
 	},
 };

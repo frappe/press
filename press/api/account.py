@@ -21,6 +21,7 @@ from frappe.utils.password import get_decrypted_password
 from frappe.website.utils import build_response
 
 from press.guards import mfa
+from press.guards.role_guard import roles_enabled
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -553,15 +554,6 @@ def current_team():
 	return get("Team", frappe.local.team().name)
 
 
-@frappe.whitelist()
-def has_method_permission(doctype, docname, method) -> bool:
-	from press.press.doctype.press_permission_group.press_permission_group import (
-		has_method_permission,
-	)
-
-	return has_method_permission(doctype, docname, method)
-
-
 @frappe.whitelist(allow_guest=True)
 def signup_settings(product=None, fetch_countries=False, timezone=None):
 	from press.utils.country_timezone import get_country_from_timezone
@@ -1086,7 +1078,9 @@ def user_permissions():
 		for field in permission_fields:
 			permissions[field] = permissions[field] or row.get(field, 0)
 	is_owner = team.user == frappe.session.user
-	is_admin = is_owner or permissions["admin_access"] or user_utils.is_system_manager()
+	is_admin = (
+		is_owner or (not roles_enabled()) or permissions["admin_access"] or user_utils.is_system_manager()
+	)
 	result = {
 		"owner": is_owner,
 		"admin": is_admin,

@@ -3,7 +3,6 @@ import {
 	createResource,
 	LoadingIndicator,
 } from 'frappe-ui';
-import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import { defineAsyncComponent, h } from 'vue';
 import { unparse } from 'papaparse';
 import { toast } from 'vue-sonner';
@@ -110,7 +109,7 @@ export default {
 				},
 				{
 					type: 'link',
-					label: 'Bench Group',
+					label: 'Benches',
 					fieldname: 'group',
 					options: {
 						doctype: 'Release Group',
@@ -182,7 +181,7 @@ export default {
 				},
 			},
 			{
-				label: 'Bench Group',
+				label: 'Benches',
 				fieldname: 'group',
 				width: '15rem',
 				format(value, row) {
@@ -1069,7 +1068,7 @@ export default {
 
 						return getUpsellBanner(
 							site,
-							'Your site is currently on a shared bench group. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.',
+							'Your site is currently on a shared bench. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.',
 						);
 					},
 				},
@@ -1495,7 +1494,7 @@ return { site: site.doc?.name };
 					},
 					banner({ documentResource: site }) {
 						const bannerTitle =
-							'Your site is currently on a shared bench group. Upgrade to a private bench group to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+							'Your site is currently on a shared bench. Upgrade to a private bench to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
 
 						return getUpsellBanner(site, bannerTitle);
 					},
@@ -1662,7 +1661,9 @@ return { site: site.doc?.name };
 					label: 'Impersonate Site Owner',
 					title: 'Impersonate Site Owner', // for label to pop-up on hover
 					slots: {
-						icon: icon(LucideVenetianMask),
+						icon: defineAsyncComponent(
+							() => import('~icons/lucide/venetian-mask'),
+						),
 					},
 					condition: () =>
 						$team.doc?.is_desk_user && site.doc.team !== $team.name,
