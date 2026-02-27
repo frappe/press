@@ -220,7 +220,7 @@ class AgentUpdate(Document):
 		frappe.msgprint("Splitting updates queued in background.")
 
 	def _split_updates(self, no_of_batches: int):
-		self.get_value(self.doctype, self.name, "name", for_update=True)
+		frappe.db.get_value(self.doctype, self.name, "name", for_update=True)
 
 		if self.status != "Pending":
 			frappe.throw("You can only split updates when the status is Pending")
