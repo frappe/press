@@ -155,6 +155,7 @@ has_permission = {
 	"Site Database User": "press.overrides.has_permission",
 	"Server Snapshot": "press.overrides.has_permission",
 	"Server Snapshot Recovery": "press.overrides.has_permission",
+	"Server Firewall": "press.press.doctype.server_firewall.server_firewall.has_permission",
 }
 
 # Document Events
