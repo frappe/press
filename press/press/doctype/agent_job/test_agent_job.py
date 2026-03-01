@@ -74,7 +74,7 @@ def fake_agent_job_req(  # noqa: C901
 			"Use job_type['job_type'] = {'status': ..., 'data': ..., 'steps': ...} instead."
 		)
 
-	job_polling_response = dict()
+	job_polling_response: dict[int, dict] = dict()
 
 	def _fake_bulk_polling(request):
 		match = re.search(r"/agent/jobs/([\d,]+)", request.url)
@@ -114,7 +114,7 @@ def fake_agent_job_req(  # noqa: C901
 		# Add timestamps and other fields
 		for step in steps_for_job:
 			step["start"] = "2023-08-20 18:24:28.024885"
-			step["data"] = {}
+			step["data"] = step.get("data", {})
 			if step["status"] in ["Success", "Failure"]:
 				step["duration"] = "00:00:13.464445"
 				step["end"] = "2023-08-20 18:24:41.489330"
@@ -140,6 +140,7 @@ def fake_agent_job_req(  # noqa: C901
 			"data": spec["data"],
 			# TODO: uncomment lines as needed and make new parameters #
 			"duration": "00:00:13.496281",
+			"output": spec["data"].get("output", ""),
 			"end": "2023-08-20 18:24:41.506067",
 			"id": job_id,
 			"start": "2023-08-20 18:24:28.009786",

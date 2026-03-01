@@ -120,7 +120,10 @@ def fetch_installations(token):
 			params={"per_page": 100, "page": current_page},
 			headers=headers,
 		)
-		if len(response.json().get("installations", [])) < 100:
+		data = response.json()
+		if not response.ok:
+			frappe.throw("Error fetching installations from GitHub: " + data.get("message", "Unknown error"))
+		if len(data.get("installations", [])) < 100:
 			is_last_page = True
 		installations.extend(response.json().get("installations", []))
 		current_page += 1
@@ -254,7 +257,10 @@ def app(owner, repository, branch, installation=None):
 
 
 @frappe.whitelist()
-def branches(owner, name, installation=None):
+def branches(owner, name, installation=None, source: str = ""):
+	if not installation and source:
+		installation = frappe.db.get_value("App Source", source, "github_installation_id")
+
 	if installation:
 		token = get_access_token(installation)
 	else:
@@ -286,7 +292,7 @@ def get_auth_headers(installation_id: str | None = None) -> "dict[str, str]":
 
 
 def _get_compatible_frappe_version_from_pyproject(
-	owner: str, repository: str, branch_info: str, headers: dict[str, str]
+	owner: str, repository: str, branch_info: dict, headers: dict[str, str]
 ) -> str:
 	"""Get frappe version from pyproject.toml file."""
 	compatible_frappe_version = None
@@ -311,17 +317,18 @@ def _get_compatible_frappe_version_from_pyproject(
 			frappe.throw("\n".join(out))
 
 		lines = e.doc.splitlines()
+
 		start = max(e.lineno - 3, 0)
 		end = e.lineno + 2
 
 		for i, line in enumerate(lines[start:end], start=start + 1):
 			out.append(f"{i:>4}: {line}")
 
-		out = "\n".join(out)
-		frappe.throw(out)
+		out_s = "\n".join(out)
+		frappe.throw(out_s)
 
 	with contextlib.suppress(Exception):
-		compatible_frappe_version = (
+		compatible_frappe_version = str(
 			pyproject.get("tool", {})
 			.get("bench", {})
 			.get("frappe-dependencies", {})
@@ -334,8 +341,9 @@ def _get_compatible_frappe_version_from_pyproject(
 		frappe.throw(
 			"Could not find compatible Frappe version in pyproject.toml file. "
 			"Please ensure '[tool.bench.frappe-dependencies]' is defined. "
-			"Click <a href='https://docs.frappe.io/cloud/benches/custom-app#note'>here</a> for more details."
+			"Click <a class='underline' href='https://docs.frappe.io/cloud/benches/custom-app#note'>here</a> for more details."
 		)
+		raise  # for mypy: NoReturn
 
 	return compatible_frappe_version
 
@@ -369,9 +377,12 @@ def _get_app_name_and_title_from_hooks(
 			continue
 
 		content = b64decode(hooks["content"]).decode()
-		match = re.search(r"""app_title = ["'](.*)["']""", content)
-
-		if match:
+		# - app_title\s*=\s*   : matches 'app_title', optional spaces, '=', optional spaces
+		# - ["\']              : matches opening quote (single or double)
+		# - ([^"\']+)          : captures any characters except quotes (the app title)
+		# - ["\']              : matches closing quote
+		pattern = r'app_title\s*=\s*["\']([^"\']+)["\']'
+		if match := re.search(pattern, content):
 			return directory, match.group(1)
 
 		reason_for_invalidation = (

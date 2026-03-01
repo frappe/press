@@ -34,7 +34,7 @@ func main() {
 
 	args := flag.Args()
 	if len(args) < 1 {
-		fmt.Println("Usage: go run . [--io-wait-threshold=50.0] [--io-ops-limit=200] [--parallel=1] [--exclude=pattern] <path>")
+		fmt.Fprintln(os.Stderr, "Usage: go run . [--io-wait-threshold=50.0] [--io-ops-limit=200] [--parallel=1] [--exclude=pattern] <path>")
 		return
 	}
 	inputPath := strings.Join(args, " ")
@@ -202,6 +202,6 @@ func printErrorAndExit(msg string) {
 		Error string `json:"error"`
 	}
 	b, _ := json.MarshalIndent(ErrorOutput{Error: msg}, "", "  ")
-	fmt.Println(string(b))
+	fmt.Fprintln(os.Stderr, string(b))
 	os.Exit(1)
 }

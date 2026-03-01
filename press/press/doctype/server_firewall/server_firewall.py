@@ -7,9 +7,10 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from press.overrides import has_permission as has_press_permission
 from press.press.doctype.server.server import Server
 from press.runner import Ansible
-from press.utils import log_error
+from press.utils import get_current_team, log_error
 
 
 class ServerFirewall(Document):
@@ -33,8 +34,14 @@ class ServerFirewall(Document):
 		"rules",
 	)
 
-	def has_permission(self, permtype="read", *, debug=False, user=None) -> bool:
-		return self.server.has_permission(permtype, debug=debug, user=user)
+	@staticmethod
+	def get_list_query(query):
+		Server = frappe.qb.DocType("Server")
+		Firewall = frappe.qb.DocType("Server Firewall")
+		current_team = get_current_team()
+		return (
+			query.inner_join(Server).on(Server.name == Firewall.server_id).where(Server.team == current_team)
+		)
 
 	def after_insert(self):
 		self.setup()
@@ -209,3 +216,7 @@ class ServerFirewall(Document):
 	@property
 	def server(self) -> Server:
 		return frappe.get_doc("Server", self.server_id)
+
+
+def has_permission(doc, user=None, permission_type=None) -> bool:
+	return has_press_permission(doc.server, permission_type, user)

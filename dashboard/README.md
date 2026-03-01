@@ -24,7 +24,7 @@ Run:
 yarn run dev
 ```
 
-> Note: If you are getting `CSRFTokenError` in your local development machine, please add the following key value pair in your site_cofig.json
+> Note: If you are getting `CSRFTokenError` in your local development machine, please add the following key value pair in your site_config.json
 >
 > ```json
 > "ignore_csrf": 1

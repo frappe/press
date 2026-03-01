@@ -60,8 +60,8 @@
 							purposes.
 						</p>
 						<p>
-							Do not install/uninstall apps as you would on a local machine. Use
-							the dashboard instead.
+							The changes(app/files) made during the SSH session are not
+							guaranteed to persist after the session ends.
 						</p>
 					</div>
 				</div>

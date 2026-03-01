@@ -23,7 +23,7 @@ export default {
 					{
 						label: 'Member Name',
 						fieldname: 'partner_member_name',
-						width: 0.6,
+						width: 0.8,
 						class: 'truncate',
 						format: (value) => {
 							if (!value) return '';
@@ -33,7 +33,7 @@ export default {
 					{
 						label: 'Member Email',
 						fieldname: 'partner_member_email',
-						width: 0.6,
+						width: 0.8,
 						class: 'truncate',
 						format: (value) => {
 							if (!value) return '';
@@ -65,11 +65,11 @@ export default {
 					{
 						label: 'Partner',
 						fieldname: 'team',
-						width: 0.6,
+						width: 0.8,
 						class: 'truncate',
 						format: (value) => {
 							if (!value) return '';
-							return value.length > 30 ? `${value.slice(0, 30)}...` : value;
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
 						},
 					},
 					{

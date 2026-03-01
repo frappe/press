@@ -47,7 +47,6 @@ class Team(Document):
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
-		allow_unified_servers: DF.Check
 		apply_npo_discount: DF.Check
 		banned: DF.Check
 		benches_enabled: DF.Check
@@ -76,7 +75,6 @@ class Team(Document):
 		free_account: DF.Check
 		free_credits_allocated: DF.Check
 		github_access_token: DF.Data | None
-		hetzner_internal_user: DF.Check
 		hybrid_servers_enabled: DF.Check
 		introduction: DF.SmallText | None
 		is_code_server_user: DF.Check
@@ -1752,21 +1750,13 @@ def get_country_dialing_code(country_name: str) -> str | None:
 
 
 def auto_enable_ssh_access_for_7_days_older_teams():
-	teams = frappe.get_all(
+	frappe.db.set_value(
 		"Team",
-		filters={
+		{
 			"enabled": 1,
 			"ssh_access_enabled": 0,
 			"creation": ("<", add_to_date(None, days=-7)),
 		},
-		pluck="name",
-	)
-
-	frappe.db.set_value(
-		"Team",
-		filters={
-			"name": ("in", teams),
-		},
-		fieldname="ssh_access_enabled",
-		value=1,
+		"ssh_access_enabled",
+		1,
 	)

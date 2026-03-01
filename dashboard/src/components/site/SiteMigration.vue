@@ -13,6 +13,7 @@
 						},
 					]
 				: [],
+			size: 'xl',
 		}"
 		v-model="show"
 		@close="resetValues"
@@ -38,20 +39,18 @@
 						required
 					/>
 				</div>
-				<!-- Show description -->
-				<!-- <p v-if="selectedMigrationMode" class="text-base text-gray-700 mb-2">
-					{{ selectedMigrationChoiceDetails?.description }}
-				</p> -->
-				<!-- Update Site Migration -->
-				<div v-if="selectedMigrationMode == 'Update Site'">
-					<GenericList :options="updateSiteListOptions" />
-				</div>
+
+				<!-- Warning -->
+				<AlertBanner
+					v-if="warningMessage"
+					:type="'warning'"
+					:title="warningMessage"
+					:show-icon="false"
+				/>
 
 				<!-- Move From Shared To Private Bench -->
 				<div
-					v-else-if="
-						selectedMigrationMode == 'Move From Shared To Private Bench'
-					"
+					v-if="selectedMigrationMode == 'Move From Shared To Private Bench'"
 					class="flex flex-col gap-3"
 				>
 					<!-- Chose Bench Related Opinion -->
@@ -83,9 +82,9 @@
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Move To Existing Bench'"
 					>
-						<p class="text-sm text-gray-700">Select Bench Group</p>
+						<p class="text-sm text-gray-700">Select Bench</p>
 						<FormControl
-							type="select"
+							type="combobox"
 							:options="
 								availableReleaseGroupsForMovingToPrivateBench.map((e) => ({
 									label: e.title,
@@ -110,10 +109,13 @@
 					>
 						<p class="text-sm text-gray-700">Select Server</p>
 						<FormControl
-							type="select"
+							type="combobox"
 							:options="
 								availableServersForSelectedReleaseGroupForMovingToPrivateBench.map(
-									(e) => ({ label: e.title, value: e.name }),
+									(e) => ({
+										label: e.title ? `${e.title} (${e.name})` : e.name,
+										value: e.name,
+									}),
 								)
 							"
 							size="md"
@@ -124,7 +126,7 @@
 						/>
 					</div>
 
-					<!-- New Bench Group Name (For New) -->
+					<!-- New Bench Name (For New) -->
 					<div
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Create A New Bench'"
@@ -176,10 +178,13 @@
 					>
 						<p class="text-sm text-gray-700">Select Server</p>
 						<FormControl
-							type="select"
+							type="combobox"
 							:options="
 								dedicatedServersForNewReleaseGroupForMovingToPrivateBench.map(
-									(e) => ({ label: e.title, value: e.name }),
+									(e) => ({
+										label: e.title ? `${e.title} (${e.name})` : e.name,
+										value: e.name,
+									}),
 								)
 							"
 							size="md"
@@ -200,10 +205,10 @@
 					<div class="flex flex-col gap-2">
 						<p class="text-sm text-gray-700">Select Server</p>
 						<FormControl
-							type="select"
+							type="combobox"
 							:options="
 								dedicatedServersToMoveSiteTo.map((e) => ({
-									label: e.title,
+									label: e.title ? `${e.title} (${e.name})` : e.name,
 									value: e.name,
 								}))
 							"
@@ -225,7 +230,7 @@
 					<div class="flex flex-col gap-2">
 						<p class="text-sm text-gray-700">Select Region</p>
 						<FormControl
-							type="select"
+							type="combobox"
 							:options="
 								availableRegionsToMoveSiteTo.map((e) => ({
 									label: e.title,
@@ -238,8 +243,31 @@
 							v-model="selectedRegion"
 							required
 						/>
+
+						<p
+							v-if="$site.doc.group_public"
+							class="mt-1 text-sm text-gray-600"
+							:showIcon="false"
+						>
+							If the region you're looking for isn't available, please follow
+							<a
+								href="https://docs.frappe.io/cloud/sites/move-site-across-region"
+								target="_blank"
+								class="underline"
+								>this documentation</a
+							>
+							to add it.
+						</p>
 					</div>
 				</div>
+
+				<!-- Checkbox  -->
+				<Checkbox
+					v-if="selectedMigrationMode"
+					v-model="skipFailingPatches"
+					label="Skip Failing Patches"
+					size="sm"
+				/>
 
 				<!-- Scheduling Option -->
 				<div v-if="showSchedulingOption" class="flex flex-col gap-2">
@@ -254,24 +282,24 @@
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource, Select } from 'frappe-ui';
+import { getCachedDocumentResource, Select, Checkbox } from 'frappe-ui';
 import AlertBanner from '../AlertBanner.vue';
 import GenericList from '../GenericList.vue';
 import FormControl from 'frappe-ui/src/components/FormControl/FormControl.vue';
 
 export default {
-	props: ['site'],
+	props: ['site', 'defaultAction', 'defaultNewBenchName'],
 	components: {
 		AlertBanner,
 		Select,
 		GenericList,
+		Checkbox,
 	},
 	data() {
 		return {
 			show: true,
 			selectedMigrationMode: '',
 			skipFailingPatches: false,
-			skipBackups: false,
 			scheduledTime: '',
 
 			// For migration
@@ -302,6 +330,9 @@ export default {
 				},
 				initialData: {},
 				auto: true,
+				onSuccess: () => {
+					this.autoSelectMigrationOption();
+				},
 			};
 		},
 		createMigrationPlan() {
@@ -316,15 +347,23 @@ export default {
 							type: this.selectedMigrationMode,
 							group: this.selectedReleaseGroupToMoveTo,
 							server: this.selectedServerToMoveTo,
-							new_group_name: this.newBenchGroupName,
+							new_group_name: this.selectedReleaseGroupToMoveTo
+								? null
+								: this.newBenchGroupName,
 							skip_failing_patches: this.skipFailingPatches,
-							skip_backups: false,
 							scheduled_time: this.scheduledTime,
 							cluster: this.selectedRegion,
 						},
 					};
 				},
-				onSuccess: () => {
+				onSuccess: (result) => {
+					if (result?.message) {
+						console.log(result.message);
+						this.$router.push({
+							name: 'Site Migration',
+							params: { id: result.message },
+						});
+					}
 					this.hide();
 				},
 			};
@@ -342,7 +381,13 @@ export default {
 						},
 					};
 				},
-				onSuccess: () => {
+				onSuccess: (result) => {
+					if (result?.message) {
+						this.$router.push({
+							name: 'Site Job',
+							params: { id: result.message },
+						});
+					}
 					this.hide();
 				},
 			};
@@ -386,74 +431,6 @@ export default {
 		selectedMigrationChoiceOptions() {
 			return this.selectedMigrationChoiceDetails?.options || {};
 		},
-		updatableApps() {
-			if (this.selectedMigrationMode !== 'Update Site') return [];
-
-			if (!this.selectedMigrationChoiceOptions.site_update_available) return [];
-			let installedApps =
-				this.selectedMigrationChoiceOptions.site_update_information.installed_apps.map(
-					(d) => d.app,
-				);
-			return this.selectedMigrationChoiceOptions.site_update_information.apps.filter(
-				(app) => installedApps.includes(app.app),
-			);
-		},
-		updateSiteListOptions() {
-			return {
-				data: this.updatableApps.filter(
-					(app) => app.current_hash !== app.next_hash,
-				),
-				columns: [
-					{
-						label: 'App',
-						fieldname: 'app',
-						format(value, row) {
-							return row.title || value;
-						},
-					},
-					{
-						label: 'Current Version',
-						type: 'Badge',
-						format(value, row) {
-							return row.will_branch_change
-								? row.current_branch
-								: row.current_tag || row.current_hash.slice(0, 7);
-						},
-						link(value, row) {
-							if (row.will_branch_change) {
-								return `${row.repository_url}/tree/${row.current_branch}`;
-							}
-							if (row.current_tag) {
-								return `${row.repository_url}/releases/tag/${row.current_tag}`;
-							}
-							if (row.current_hash) {
-								return `${row.repository_url}/commit/${row.current_hash}`;
-							}
-						},
-					},
-					{
-						label: 'Next Version',
-						type: 'Badge',
-						format(value, row) {
-							return row.will_branch_change
-								? row.branch
-								: row.next_tag || row.next_hash.slice(0, 7);
-						},
-						link(value, row) {
-							if (row.will_branch_change) {
-								return `${row.repository_url}/tree/${row.branch}`;
-							}
-							if (row.next_tag) {
-								return `${row.repository_url}/releases/tag/${row.next_tag}`;
-							}
-							if (row.next_hash) {
-								return `${row.repository_url}/commit/${row.next_hash}`;
-							}
-						},
-					},
-				],
-			};
-		},
 		// Move Site From Shared Bench to Private Bench
 		availableReleaseGroupsForMovingToPrivateBench() {
 			if (this.selectedMigrationMode !== 'Move From Shared To Private Bench')
@@ -492,14 +469,48 @@ export default {
 				return [];
 			return this.selectedMigrationChoiceOptions?.available_regions ?? [];
 		},
+		warningMessage() {
+			return {
+				'In-Place Migrate Site':
+					'Runs `bench migrate` without a backup. Proceed with caution.',
+				'Move From Shared To Private Bench':
+					'Site will be unavailable during this process.',
+				'Move Site To Different Server':
+					'Site will be unavailable during this process.',
+				'Move Site To Different Region':
+					'Site will be unavailable during this process.',
+			}[this.selectedMigrationMode];
+		},
 	},
 	methods: {
+		autoSelectMigrationOption() {
+			// Check if 'action' is passed via prop or URL params
+			const actionFromProp = this.defaultAction;
+			const actionFromUrl = this.$route?.query?.action;
+			const actionToSelect = actionFromProp || actionFromUrl;
+
+			if (!actionToSelect) return;
+
+			// Check if the action exists in migration choices and is not hidden
+			const matchingChoice = this.migrationChoices.find(
+				(choice) => choice.value === actionToSelect,
+			);
+
+			if (matchingChoice) {
+				// Auto-select the option
+				this.selectedMigrationMode = actionToSelect;
+
+				// Set default new bench name if provided and not already set
+				if (this.defaultNewBenchName && !this.newBenchGroupName) {
+					this.newBenchGroupName = this.defaultNewBenchName;
+				}
+			}
+		},
 		resetValues(skip_migration_mode_set = false) {
 			if (!skip_migration_mode_set) {
 				this.selectedMigrationMode = '';
 			}
 			this.skipFailingPatches = false;
-			this.skipBackups = false;
 			this.scheduledTime = '';
 
 			// For migration
@@ -508,7 +519,8 @@ export default {
 			this.selectedServerToMoveTo = '';
 			this.selectedServerType = 'Shared Server';
 
-			this.newBenchGroupName = '';
+			// Reset to default bench name if provided, otherwise empty
+			this.newBenchGroupName = this.defaultNewBenchName || '';
 
 			// Reset the errors
 			if (this.$resources?.createMigrationPlan) {
