@@ -1056,7 +1056,12 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
+<<<<<<< HEAD
 	def migrate(self, skip_failing_patches=False):
+=======
+	def migrate(self, skip_failing_patches: bool = False):
+		self.check_fatal_site_update()
+>>>>>>> 5d22498c2 (fix(site): Don't allow migrate on fatal site update)
 		agent = Agent(self.server)
 		activate = True
 		if self.status in ("Inactive", "Suspended"):
