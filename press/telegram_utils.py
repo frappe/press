@@ -37,6 +37,7 @@ class Telegram:
 				text=text,
 				parse_mode=parse_mode,
 				message_thread_id=self.topic_id,
+				timeout=3,
 			)
 		except Exception:
 			if reraise:
