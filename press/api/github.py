@@ -377,9 +377,12 @@ def _get_app_name_and_title_from_hooks(
 			continue
 
 		content = b64decode(hooks["content"]).decode()
-		match = re.search(r"""app_title = ["'](.*)["']""", content)
-
-		if match:
+		# - app_title\s*=\s*   : matches 'app_title', optional spaces, '=', optional spaces
+		# - ["\']              : matches opening quote (single or double)
+		# - ([^"\']+)          : captures any characters except quotes (the app title)
+		# - ["\']              : matches closing quote
+		pattern = r'app_title\s*=\s*["\']([^"\']+)["\']'
+		if match := re.search(pattern, content):
 			return directory, match.group(1)
 
 		reason_for_invalidation = (
