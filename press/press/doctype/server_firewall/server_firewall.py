@@ -7,6 +7,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from press.overrides import has_permission as has_press_permission
 from press.press.doctype.server.server import Server
 from press.runner import Ansible
 from press.utils import log_error
@@ -32,9 +33,6 @@ class ServerFirewall(Document):
 		"enabled",
 		"rules",
 	)
-
-	def has_permission(self, permtype="read", *, debug=False, user=None) -> bool:
-		return self.server.has_permission(permtype, debug=debug, user=user)
 
 	def after_insert(self):
 		self.setup()
@@ -209,3 +207,7 @@ class ServerFirewall(Document):
 	@property
 	def server(self) -> Server:
 		return frappe.get_doc("Server", self.server_id)
+
+
+def has_permission(doc, user=None, permission_type=None) -> bool:
+	return has_press_permission(doc.server, permission_type, user)
