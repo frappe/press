@@ -214,6 +214,24 @@ class Team(Document):
 			),
 		}
 
+	def before_validate(self):
+		self.auth_relaxed_permissions()
+
+	def auth_relaxed_permissions(self):
+		"""
+		Prevent unauthorized users from changing relaxed permissions. Only team
+		owner or admins can change relaxed permissions as it can lead to
+		security implications.
+		"""
+		if self.is_new():
+			return
+		if not self.has_value_changed("relaxed_permissions"):
+			return
+		if self.is_team_owner() or self.is_admin_user():
+			return
+		message = _("Only team owner or admins can make changes to relaxed permissions.")
+		frappe.throw(message, frappe.PermissionError)
+
 	def validate(self):
 		self.validate_duplicate_members()
 		self.set_team_currency()
