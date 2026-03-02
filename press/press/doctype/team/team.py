@@ -151,6 +151,7 @@ class Team(Document):
 		"monthly_alert_threshold",
 		"company_name",
 		"hybrid_servers_enabled",
+		"relaxed_permissions",
 	)
 
 	def get_doc(self, doc):
