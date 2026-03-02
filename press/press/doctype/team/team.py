@@ -235,7 +235,7 @@ class Team(Document):
 			return
 
 		client = get_frappe_io_connection()
-		self.company_name = client.get_value("Partner", "company_name", {"email": self.partner_email})
+		self.company_name = client.get_value("Partner", {"email": self.partner_email}, "company_name")
 
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
