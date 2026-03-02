@@ -57,6 +57,7 @@ class PartnerLead(Document):
 		full_name: DF.Data | None
 		hosting: DF.Literal["Frappe Cloud", "Self Hosted"]
 		lead_name: DF.Data | None
+		lead_owner: DF.Link | None
 		lead_rating: DF.Rating
 		lead_source: DF.Literal["", "Partner Owned", "Passed to Partner", "Partner Listing"]
 		lead_type: DF.Link | None
@@ -86,11 +87,25 @@ class PartnerLead(Document):
 		requirement: DF.Text | None
 		requirements: DF.SmallText | None
 		server_name: DF.Data | None
+		site_plan: DF.Data | None
 		site_url: DF.Data | None
 		state: DF.Data | None
-		status: DF.Literal["Open", "In Process", "Won", "Lost", "Junk", "Pass to Other Partner"]
+		status: DF.Literal[
+			"Open",
+			"Qualification",
+			"Demo/Making",
+			"Follow Up",
+			"Proposal/Quotation",
+			"Negotiation",
+			"Ready to Close",
+			"Won",
+			"Lost",
+			"Junk",
+			"Closed",
+		]
 		team_name: DF.Data | None
 		territory: DF.Data | None
+		total_invoice_amount: DF.Float
 	# end: auto-generated types
 
 	dashboard_fields = (
@@ -147,8 +162,6 @@ class PartnerLead(Document):
 				query = query.where(PartnerLead.status == filters.get("status"))
 			if filters.get("origin"):
 				query = query.where(PartnerLead.origin == filters.get("origin"))
-			if filters.get("engagement_stage"):
-				query = query.where(PartnerLead.engagement_stage == filters.get("engagement_stage"))
 			if filters.get("search-text"):
 				search_text = f"%{filters.get('search-text')}%"
 				query = query.where(
