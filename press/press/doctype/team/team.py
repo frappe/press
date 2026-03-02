@@ -218,7 +218,6 @@ class Team(Document):
 		self.set_default_user()
 		self.set_billing_name()
 		self.set_partner_email()
-		self.set_partner_details()
 		self.unset_saas_team_type_if_required()
 		self.validate_disable()
 		self.validate_billing_team()
@@ -229,13 +228,6 @@ class Team(Document):
 
 		if not self.referrer_id:
 			self.set_referrer_id()
-
-	def set_partner_details(self):
-		if is_frappe_auth_disabled() or (not self.erpnext_partner and self.partner_status != "Active"):
-			return
-
-		client = get_frappe_io_connection()
-		self.company_name = client.get_value("Partner", {"email": self.partner_email}, "company_name")
 
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
