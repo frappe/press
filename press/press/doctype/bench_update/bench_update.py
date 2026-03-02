@@ -26,7 +26,6 @@ class BenchUpdate(Document):
 
 		from press.press.doctype.bench_site_update.bench_site_update import BenchSiteUpdate
 		from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
-		from press.press.doctype.release_group.release_group import ReleaseGroup
 
 		apps: DF.Table[BenchUpdateApp]
 		bench: DF.Link | None
@@ -157,7 +156,7 @@ class BenchUpdate(Document):
 def get_bench_update(
 	name: str,
 	apps: list,
-	sites: str | list[str] | None = None,
+	sites: list | None = None,
 	is_inplace_update: bool = False,
 ) -> BenchUpdate:
 	if sites is None:
