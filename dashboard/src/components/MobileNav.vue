@@ -4,9 +4,9 @@
 			<span class="font-semibold">
 				<router-link :to="{ name: 'Site List' }">
 					<img
-						:src="`/assets/press/images/frappecloud-logo.png`"
+						:src="`/assets/press/images/rukn-logo.svg`"
 						class="h-7 w-7 shrink-0"
-						alt="Frappe Cloud Logo"
+						alt="Rukn Logo"
 					/>
 				</router-link>
 			</span>
