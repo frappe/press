@@ -21,7 +21,7 @@ from frappe.utils.password import get_decrypted_password
 from frappe.website.utils import build_response
 
 from press.guards import mfa
-from press.guards.role_guard import roles_enabled
+from press.guards.role_guard import roles_enabled, skip_roles
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -1089,7 +1089,11 @@ def user_permissions():
 			permissions[field] = permissions[field] or row.get(field, 0)
 	is_owner = team.user == frappe.session.user
 	is_admin = (
-		is_owner or (not roles_enabled()) or permissions["admin_access"] or user_utils.is_system_manager()
+		is_owner
+		or (not roles_enabled())
+		or skip_roles()
+		or permissions["admin_access"]
+		or user_utils.is_system_manager()
 	)
 	result = {
 		"owner": is_owner,
