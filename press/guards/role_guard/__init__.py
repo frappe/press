@@ -115,9 +115,6 @@ def document(
 	"""
 
 	def wrapper(fn):
-		def gen_key(document_type: str) -> str:
-			return injection_key or document_type.lower().replace(" ", "_") + "s"
-
 		@functools.wraps(fn)
 		def inner(*args, **kwargs):
 			bound_args = inspect.signature(fn).bind(*args, **kwargs)
@@ -153,7 +150,7 @@ def base_query() -> QueryBuilder:
 	)
 
 
-def check(document_type: str, document_name: str) -> bool | list[str]:
+def check(document_type: str, document_name: str) -> bool | list[str]:  # noqa: C901
 	"""
 	Check if the user has permission to access a specific document type and name.
 	"""
