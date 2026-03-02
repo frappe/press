@@ -681,7 +681,7 @@ def _check_backup_steps_status(agent_job: str) -> bool:
 		return False
 
 
-def cleanup_archived_site_backups():
+def delete_backups_for_archived_sites_after_retention():
 	"""
 	Delete all backups of archived sites if 6 months have passed since archival.
 	Only processes sites that still have available backups.
@@ -691,23 +691,20 @@ def cleanup_archived_site_backups():
 	SiteActivity = frappe.qb.DocType("Site Activity")
 	AgentJob = frappe.qb.DocType("Agent Job")
 	Site = frappe.qb.DocType("Site")
-	SiteBackup = frappe.qb.DocType("Site Backup")
 
 	query = (
-		frappe.qb.from_(SiteActivity)
+		frappe.qb.from_(Site)
+		.join(SiteActivity)
+		.on(SiteActivity.site == Site.name)
 		.join(AgentJob)
 		.on(AgentJob.name == SiteActivity.job)
-		.join(Site)
-		.on(Site.name == SiteActivity.site)
-		.join(SiteBackup)
-		.on(SiteBackup.site == SiteActivity.site)
-		.select(SiteActivity.site)
+		.select(Site.name)
 		.distinct()
+		.where(Site.status == "Archived")
 		.where(SiteActivity.action == "Archive")
 		.where(SiteActivity.creation < ARCHIVED_SITE_BACKUP_RETENTION_CUTOFF_DATE)
 		.where(AgentJob.status == "Success")
-		.where(Site.status == "Archived")
-		.where(SiteBackup.files_availability == "Available")
+		.limit(1000)
 	)
 	site_names = query.run(pluck=True)
 	if not site_names:
@@ -719,7 +716,11 @@ def cleanup_archived_site_backups():
 			site.delete_offsite_backups(keep_latest=False)
 		except Exception as e:
 			frappe.log_error(
-				f"Failed to cleanup backups for archived site {site_name}: {e}",
+				f"Failed to delete backups for archived site {site_name}: {e}",
 				reference_doctype="Site",
 				reference_name=site_name,
 			)
+	frappe.db.delete("Site Activity", {"site": ("in", site_names)})
+	frappe.db.delete("Agent Job", {"site": ("in", site_names)})
+	frappe.db.delete("Agent Job Step", {"site": ("in", site_names)})
+	frappe.db.commit()
