@@ -99,6 +99,7 @@ class Team(Document):
 		razorpay_enabled: DF.Check
 		receive_budget_alerts: DF.Check
 		referrer_id: DF.Data | None
+		relaxed_permissions: DF.Check
 		security_portal_enabled: DF.Check
 		self_hosted_servers_enabled: DF.Check
 		send_notifications: DF.Check
