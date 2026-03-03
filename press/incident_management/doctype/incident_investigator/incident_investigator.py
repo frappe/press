@@ -469,7 +469,7 @@ class AppServerInvestigationActions:
 			step.save()
 			return
 
-		password = get_decrypted_password("Log Server", log_server, "password")
+		password = get_decrypted_password("Log Server", log_server, "kibana_password")
 
 		es = Elasticsearch(
 			f"https://{log_server}/elasticsearch", basic_auth=("frappe", password), request_timeout=120
@@ -504,7 +504,14 @@ class AppServerInvestigationActions:
 			"sort": [{"@timestamp": {"order": "asc"}}],
 		}
 
-		response = es.search(index="filebeat-*", body=query)
+		try:
+			response = es.search(index="filebeat-*", body=query)
+		except Exception:
+			step.status = StepStatus.Failure
+			step.output = "Unable to fetch OOM kill events from Elasticsearch"
+			step.save()
+			return
+
 		oom_events = [hit["_source"] for hit in response["hits"]["hits"]]
 
 		if not oom_events:
@@ -514,7 +521,7 @@ class AppServerInvestigationActions:
 			return
 
 		for event in oom_events:
-			if "killing process" in event["message"]:
+			if "killing process" in event["message"] or "low memory" in event["message"]:
 				step.output += event["message"]
 
 		step.status = StepStatus.Success
