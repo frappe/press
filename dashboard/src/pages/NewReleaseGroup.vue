@@ -151,7 +151,7 @@
 					"
 					:loading="$resources.createBench.loading"
 				>
-					Create Bench Template
+					Create Bench
 				</Button>
 			</div>
 		</div>
