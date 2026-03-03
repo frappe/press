@@ -419,6 +419,21 @@ export default {
 							width: 0.5,
 						},
 					],
+					primaryAction({ documentResource: server }) {
+						if (server?.doc?.status !== 'Active') return {};
+						return {
+							label: 'New Site',
+							slots: {
+								prefix: icon('plus'),
+							},
+							onClick() {
+								router.push({
+									name: 'Server New Site',
+									params: { server: server.doc.name },
+								});
+							},
+						};
+					},
 				},
 			},
 			{
@@ -667,9 +682,7 @@ export default {
 									h(
 										defineAsyncComponent(
 											() =>
-												import(
-													'../components/server/ServerNewSnapshotDialog.vue'
-												),
+												import('../components/server/ServerNewSnapshotDialog.vue'),
 										),
 										{
 											server: server.name,
@@ -689,9 +702,7 @@ export default {
 								onClick() {
 									let ServerSnapshotDetailsDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/server/ServerSnapshotDetailsDialog.vue'
-											),
+											import('../components/server/ServerSnapshotDetailsDialog.vue'),
 									);
 									renderDialog(
 										h(ServerSnapshotDetailsDialog, {
@@ -706,9 +717,7 @@ export default {
 								onClick() {
 									let ServerSnapshotRecoverSitesDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/server/ServerSnapshotRecoverSitesDialog.vue'
-											),
+											import('../components/server/ServerSnapshotRecoverSitesDialog.vue'),
 									);
 									renderDialog(
 										h(ServerSnapshotRecoverSitesDialog, {

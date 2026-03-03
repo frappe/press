@@ -18,7 +18,8 @@
   "step_type",
   "attempts",
   "section_break_czvk",
-  "traceback"
+  "traceback",
+  "error_message"
  ],
  "fields": [
   {
@@ -99,13 +100,18 @@
    "in_list_view": 1,
    "label": "Step Type",
    "options": "Preparation\nMain\nCleanup"
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Small Text",
+   "label": "Error Message"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-02-08 11:14:11.662769",
+ "modified": "2026-02-26 17:46:05.735911",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Action Step",

@@ -102,6 +102,12 @@ let router = createRouter({
 			props: true,
 		},
 		{
+			name: 'Server New Site',
+			path: '/servers/:server/sites/new',
+			component: () => import('./pages/NewSite.vue'),
+			props: true,
+		},
+		{
 			name: 'New Release Group',
 			path: '/groups/new',
 			component: () => import('./pages/NewReleaseGroup.vue'),

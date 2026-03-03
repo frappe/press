@@ -16,6 +16,7 @@
   "password",
   "user_created_in_database",
   "user_added_in_proxysql",
+  "use_replica_server",
   "section_break_cpbg",
   "permissions",
   "section_break_ubkn",
@@ -138,6 +139,13 @@
    "in_list_view": 1,
    "label": "Label",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "use_replica_server",
+   "fieldtype": "Check",
+   "label": "Use Replica Server",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -148,7 +156,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2025-09-01 13:44:51.350883",
+ "modified": "2026-02-26 23:07:56.340919",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Database User",
