@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 import frappe.utils
-import pyotp
+import pyotp  # type: ignore[import-not-found]
 from frappe import _
 from frappe.core.doctype.user.user import update_password
 from frappe.core.utils import find

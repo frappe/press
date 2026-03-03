@@ -1757,7 +1757,7 @@ def send_budget_alert_email(team_info, invoice):
 
 def get_country_dialing_code(country_name: str) -> str | None:
 	"""Get the dialing code for a given country name using phonenumbers library."""
-	from phonenumbers import country_code_for_region
+	from phonenumbers import country_code_for_region  # type: ignore[import-not-found]
 
 	# Get the ISO 3166 ALPHA-2 code from Country doctype
 	country_code = frappe.db.get_value("Country", country_name, "code")
