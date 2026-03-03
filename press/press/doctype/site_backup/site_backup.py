@@ -681,12 +681,45 @@ def _check_backup_steps_status(agent_job: str) -> bool:
 		return False
 
 
+def delete_successful_unavailable_backups_for_archived_sites():
+	"""Clear 'Unavailable' backup records after 3 days of site archival, rataining failed backups to know the cause of failure"""
+	cutoff_date = frappe.utils.add_to_date(frappe.utils.now(), days=-3)
+
+	Site = frappe.qb.DocType("Site")
+	SiteBackup = frappe.qb.DocType("Site Backup")
+
+	backups = (
+		frappe.qb.from_(SiteBackup)
+		.join(Site)
+		.on(Site.name == SiteBackup.site)
+		.select(SiteBackup.name, SiteBackup.job)
+		.where(SiteBackup.files_availability == "Unavailable")
+		.where(SiteBackup.status == "Success")
+		.where(Site.status == "Archived")
+		.where(Site.modified < cutoff_date)
+	).run(as_dict=True)
+
+	if not backups:
+		return
+
+	backup_names = [b.name for b in backups]
+	job_names = [b.job for b in backups if b.job]
+
+	frappe.db.delete("Site Backup", {"name": ("in", backup_names)})
+
+	if job_names:
+		frappe.db.delete("Agent Job Step", {"agent_job": ("in", job_names)})
+		frappe.db.delete("Agent Job", {"name": ("in", job_names)})
+
+	frappe.db.commit()
+
+
 def delete_backups_for_archived_sites_after_retention():
 	"""
 	Delete all backups of archived sites if 6 months have passed since archival.
 	Only processes sites that still have available backups.
 	"""
-	ARCHIVED_SITE_BACKUP_RETENTION_CUTOFF_DATE = frappe.utils.add_to_date(frappe.utils.now(), months=-6)
+	cutoff_date = frappe.utils.add_to_date(frappe.utils.now(), months=-6)
 
 	SiteActivity = frappe.qb.DocType("Site Activity")
 	AgentJob = frappe.qb.DocType("Agent Job")
@@ -702,9 +735,8 @@ def delete_backups_for_archived_sites_after_retention():
 		.distinct()
 		.where(Site.status == "Archived")
 		.where(SiteActivity.action == "Archive")
-		.where(SiteActivity.creation < ARCHIVED_SITE_BACKUP_RETENTION_CUTOFF_DATE)
+		.where(SiteActivity.creation < cutoff_date)
 		.where(AgentJob.status == "Success")
-		.limit(1000)
 	)
 	site_names = query.run(pluck=True)
 	if not site_names:
