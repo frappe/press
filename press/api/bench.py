@@ -764,6 +764,9 @@ def deploy(name, apps):
 
 def validate_app_hashes(apps: list[dict[str, str]]):
 	"""Ensure none of them are yanked"""
+	if not apps:
+		return
+
 	hashes = []
 	for app in apps:
 		if not app.get("release") or not app.get("hash"):
@@ -774,7 +777,7 @@ def validate_app_hashes(apps: list[dict[str, str]]):
 	YankedAppRelease = frappe.qb.DocType("Yanked App Release")
 	has_yanked_apps = (
 		frappe.qb.from_(YankedAppRelease)
-		.where(YankedAppRelease.hash.isin(hashes))
+		.where(YankedAppRelease.hash.isin(hashes or [""]))
 		.select(YankedAppRelease.hash)
 		.run(as_dict=True)
 	)
