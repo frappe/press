@@ -522,7 +522,10 @@ class AppServerInvestigationActions:
 
 		for event in oom_events:
 			if "killing process" in event["message"] or "low memory" in event["message"]:
-				step.output += event["message"]
+				timestamped_message = f"{event['@timestamp']}: {event['message']}"
+				step.output = (
+					timestamped_message if not step.output else step.output + "\n" + timestamped_message
+				)
 
 		step.status = StepStatus.Success
 		step.save()
