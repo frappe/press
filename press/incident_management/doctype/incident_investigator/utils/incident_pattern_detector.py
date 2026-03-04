@@ -70,9 +70,7 @@ class IncidentPatternDetector:
 		threshold = self.DB_REPEAT_THRESHOLD if server == "database" else self.APP_REPEAT_THRESHOLD
 		parentfield = "database_investigation_steps" if server == "database" else "server_investigation_steps"
 		cause_key = ",".join(sorted(cause_subset))
-		likely_causes = (
-			GroupConcat(InvestigationStep.step_method).distinct().orderby(InvestigationStep.step_method)
-		)
+		likely_causes = GroupConcat(InvestigationStep.method).distinct()
 		matching_incidents_count = (
 			frappe.qb.from_(IncidentInvestigator)
 			.join(InvestigationStep)
@@ -86,10 +84,10 @@ class IncidentPatternDetector:
 			)
 			.groupby(IncidentInvestigator.name)
 			.having(likely_causes == cause_key)
-		).run()
+		).run(pluck=True)
 
 		if len(matching_incidents_count) >= threshold:
-			frappe.msgprint(
+			frappe.throw(
 				"We noticed your database server has been under stress multiple times this week. "
 				"We recommend running a slow query analysis to identify and resolve "
 				"long-running queries, if there aren't any consider a plan upgrade."
