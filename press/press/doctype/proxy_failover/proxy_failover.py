@@ -6,6 +6,13 @@ from itertools import groupby
 
 import frappe
 from frappe.model.document import Document
+from oci.core import VirtualNetworkClient
+from oci.core.models import (
+	AddNetworkSecurityGroupSecurityRulesDetails,
+	AddSecurityRuleDetails,
+	PortRange,
+	TcpOptions,
+)
 
 from press.press.doctype.agent_job.agent_job import Agent, handle_polled_jobs, poll_random_jobs
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
@@ -131,6 +138,22 @@ class ProxyFailover(Document, StepHandler):
 						"ToPort": 8443,
 					},
 				],
+			)
+		elif cluster.cloud_provider == "OCI":
+			vcn_client = VirtualNetworkClient(cluster.get_oci_config())
+			vcn_client.add_network_security_group_security_rules(
+				cluster.proxy_security_group_id,
+				AddNetworkSecurityGroupSecurityRulesDetails(
+					security_rules=[
+						AddSecurityRuleDetails(
+							description="HTTPS Alternative Port for Agent and Prometheus",
+							direction="INGRESS",
+							protocol="6",
+							source="0.0.0.0/0",
+							tcp_options=TcpOptions(destination_port_range=PortRange(min=8443, max=8443)),
+						),
+					]
+				),
 			)
 
 		if self.primary not in (alt_port_servers := servers_using_alternative_port_for_communication()):
