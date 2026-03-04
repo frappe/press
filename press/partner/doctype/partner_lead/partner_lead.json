@@ -53,6 +53,7 @@
   "column_break_jonl",
   "partner_email",
   "partner_manager",
+  "lead_owner",
   "deal_assistance_section",
   "require_deal_assistance",
   "assistance_type",
@@ -66,10 +67,12 @@
   "feedback_for_frappe",
   "more_info_tab",
   "hosting",
-  "column_break_rdxj",
   "site_url",
+  "site_plan",
+  "column_break_rdxj",
   "server_name",
   "team_name",
+  "total_invoice_amount",
   "reference_section",
   "crm_deal",
   "passed_date"
@@ -131,12 +134,13 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Open\nIn Process\nWon\nLost\nJunk\nPass to Other Partner"
+   "options": "Open\nQualification\nDemo/Making\nFollow Up\nProposal/Quotation\nNegotiation\nReady to Close\nWon\nLost\nJunk\nClosed"
   },
   {
    "depends_on": "eval:in_list(['In Process'], doc.status)",
    "fieldname": "engagement_stage",
    "fieldtype": "Select",
+   "hidden": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Engagement Stage",
@@ -438,12 +442,28 @@
    "fieldname": "team_name",
    "fieldtype": "Data",
    "label": "Team Name"
+  },
+  {
+   "fieldname": "lead_owner",
+   "fieldtype": "Link",
+   "label": "Lead Owner",
+   "options": "User"
+  },
+  {
+   "fieldname": "total_invoice_amount",
+   "fieldtype": "Float",
+   "label": "Total Invoice Amount"
+  },
+  {
+   "fieldname": "site_plan",
+   "fieldtype": "Data",
+   "label": "Site Plan"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-19 09:19:48.744420",
+ "modified": "2026-02-26 21:34:02.969038",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Lead",

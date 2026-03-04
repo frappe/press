@@ -4485,7 +4485,7 @@ def process_restore_job_update(job, force=False):
 	if force or updated_status != site_status:
 		if job.status == "Success":
 			apps_from_backup: list[str] = [line.split()[0] for line in job.output.splitlines() if line]
-			site: Site = Site("Site", job.site)
+			site = Site("Site", job.site)
 			is_unified_server = frappe.db.get_value("Server", site.server, "is_unified_server")
 			# Only noticed this on unified servers
 			if is_unified_server:
@@ -4494,7 +4494,9 @@ def process_restore_job_update(job, force=False):
 				)  # In case the permissions are missing correct them
 			process_marketplace_hooks_for_backup_restore(set(apps_from_backup), site)
 			site.set_apps(apps_from_backup)
-			frappe.db.set_value("Site", site.name, "creation_failed", None)
+			site.db_set("creation_failed", None)
+			site.db_set("fatal_site_update", None)
+
 		elif job.status == "Failure":
 			frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
 		frappe.db.set_value("Site", job.site, "status", updated_status)
@@ -4666,6 +4668,7 @@ def process_restore_tables_job_update(job):
 	if updated_status != site_status:
 		if updated_status == "Active":
 			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
+			frappe.db.set_value("Site", job.site, "fatal_site_update", None)
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
 			frappe.db.set_value("Site", job.site, "database_name", None)
