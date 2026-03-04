@@ -69,7 +69,7 @@ class IncidentPatternDetector:
 
 		threshold = self.DB_REPEAT_THRESHOLD if server == "database" else self.APP_REPEAT_THRESHOLD
 		parentfield = "database_investigation_steps" if server == "database" else "server_investigation_steps"
-		cause_key = ",".join(sorted(cause_subset))
+		cause_key = ",".join(cause_subset)
 		likely_causes = GroupConcat(InvestigationStep.method).distinct()
 		matching_incidents_count = (
 			frappe.qb.from_(IncidentInvestigator)
