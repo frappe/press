@@ -99,6 +99,7 @@ class Team(Document):
 		razorpay_enabled: DF.Check
 		receive_budget_alerts: DF.Check
 		referrer_id: DF.Data | None
+		relaxed_permissions: DF.Check
 		security_portal_enabled: DF.Check
 		self_hosted_servers_enabled: DF.Check
 		send_notifications: DF.Check
@@ -150,6 +151,7 @@ class Team(Document):
 		"monthly_alert_threshold",
 		"company_name",
 		"hybrid_servers_enabled",
+		"relaxed_permissions",
 	)
 
 	def get_doc(self, doc):
@@ -211,6 +213,24 @@ class Team(Document):
 				["name", "host_name", "status"],
 			),
 		}
+
+	def before_validate(self):
+		self.auth_relaxed_permissions()
+
+	def auth_relaxed_permissions(self):
+		"""
+		Prevent unauthorized users from changing relaxed permissions. Only team
+		owner or admins can change relaxed permissions as it can lead to
+		security implications.
+		"""
+		if self.is_new():
+			return
+		if not self.has_value_changed("relaxed_permissions"):
+			return
+		if self.is_team_owner() or self.is_admin_user():
+			return
+		message = _("Only team owner or admins can make changes to relaxed permissions.")
+		frappe.throw(message, frappe.PermissionError)
 
 	def validate(self):
 		self.validate_duplicate_members()
@@ -1737,7 +1757,7 @@ def send_budget_alert_email(team_info, invoice):
 
 def get_country_dialing_code(country_name: str) -> str | None:
 	"""Get the dialing code for a given country name using phonenumbers library."""
-	from phonenumbers import country_code_for_region
+	from phonenumbers import country_code_for_region  # type: ignore[import-not-found]
 
 	# Get the ISO 3166 ALPHA-2 code from Country doctype
 	country_code = frappe.db.get_value("Country", country_name, "code")
