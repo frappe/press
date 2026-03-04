@@ -71,7 +71,7 @@ class PrometheusInvestigationHelper:
 		if self.prometheus_client is None:
 			self.prometheus_client = get_prometheus_client()
 
-	# Define the investigation steps for different servers
+	# Define the investigation steps for different servers for prometheus based investigations
 	INVESTIGATION_CHECKS: typing.ClassVar = {
 		"server_investigation_steps": [
 			"has_high_disk_usage",
@@ -85,7 +85,6 @@ class PrometheusInvestigationHelper:
 			"has_high_memory_usage",
 			"has_high_system_load",
 		],
-		"proxy_investigation_steps": ["are_sites_on_proxy_down"],
 	}
 
 	@classmethod
