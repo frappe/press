@@ -491,6 +491,10 @@ jobs:
           path: /home/runner/frappe-bench/sites/coverage.xml
         if: always()
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ failure() && contains( github.event.pull_request.labels.*.name, 'debug-gha') }}
+
       - name: Upload bench start logs
         uses: actions/upload-artifact@v4
         with:
