@@ -124,6 +124,7 @@ DOCTYPE_SERVER_TYPE_MAP = {
 }
 
 ARCHIVE_AFTER_SUSPEND_DAYS = 21
+NOTIFY_BEFORE_ARCHIVAL_DAYS = 2
 CREATION_FAILURE_RETENTION_DAYS = 14
 PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-bench"
 SERVER_SCRIPT_DISABLED_VERSION = (
@@ -4726,13 +4727,14 @@ def get_suspended_time(site: str):
 
 def archive_suspended_site(site_dict: SiteToArchive):
 	archive_after_days = ARCHIVE_AFTER_SUSPEND_DAYS
-
 	suspended_days = frappe.utils.date_diff(frappe.utils.today(), get_suspended_time(site_dict.name))
 
-	if suspended_days <= archive_after_days:
+	if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
 		return
 
-	if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
+	if suspended_days <= archive_after_days:
+		if suspended_days == archive_after_days - NOTIFY_BEFORE_ARCHIVAL_DAYS:
+			notify_site_scheduled_for_archival(site_dict.name)
 		return
 
 	site = Site("Site", site_dict.name)
@@ -4745,7 +4747,7 @@ def archive_suspended_site(site_dict: SiteToArchive):
 
 
 def archive_suspended_sites():
-	archive_at_once = 4
+	archive_at_once = 10
 
 	sites = frappe.qb.DocType("Site")
 	site_plans = frappe.qb.DocType("Site Plan")
@@ -4781,6 +4783,39 @@ def archive_suspended_sites():
 	agent = frappe.get_doc("Proxy Server", {"cluster": signup_cluster}).agent
 	if archived_now:
 		agent.reload_nginx()
+
+
+def notify_site_scheduled_for_archival(site_name: str):
+	try:
+		if frappe.db.exists(
+			"Site Activity",
+			{
+				"site": site_name,
+				"action": "Archive Notification",
+				"creation": [">=", frappe.utils.add_to_date(frappe.utils.now(), days=-7)],
+			},
+		):
+			return
+
+		frappe.sendmail(
+			recipients=get_communication_info("Email", "Site Activity", "Site", site_name),
+			subject=f"Alert: Your site {site_name} will be archived in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
+			template="notify_before_site_archival",
+			args={
+				"site_name": site_name,
+				"site_archive_notification_days": NOTIFY_BEFORE_ARCHIVAL_DAYS,
+			},
+			reference_doctype="Site",
+			reference_name=site_name,
+		)
+		log_site_activity(
+			site_name,
+			"Archive Notification",
+			f"Notified user about pending archival in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
+		)
+	except Exception:
+		frappe.db.rollback()
+		frappe.log_error(title="Site Archive Notification Error")
 
 
 def send_warning_mail_regarding_sites_exceeding_disk_usage():
