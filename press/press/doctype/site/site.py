@@ -4869,7 +4869,7 @@ def archive_suspended_site(site_dict: SiteToArchive):
 
 
 def archive_suspended_sites():
-	archive_at_once = 10
+	archive_at_once = 5
 
 	sites = frappe.qb.DocType("Site")
 	site_plans = frappe.qb.DocType("Site Plan")
@@ -4887,14 +4887,10 @@ def archive_suspended_sites():
 		.run(as_dict=True)
 	)
 
-	archived_now = 0
 	for site_dict in sites_to_drop:
 		try:
-			if archived_now > archive_at_once:
-				break
 			archive_suspended_site(site_dict)
 			frappe.db.commit()
-			archived_now = archived_now + 1
 		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
 			frappe.db.rollback()
 		except Exception:
@@ -4903,8 +4899,7 @@ def archive_suspended_sites():
 
 	signup_cluster = frappe.db.get_value("Saas Settings", "erpnext", "cluster")
 	agent = frappe.get_doc("Proxy Server", {"cluster": signup_cluster}).agent
-	if archived_now:
-		agent.reload_nginx()
+	agent.reload_nginx()
 
 
 def notify_site_scheduled_for_archival(site_name: str):
