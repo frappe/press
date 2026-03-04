@@ -228,6 +228,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
 		foreground_enqueue_doc,
 	)
+	@patch("press.runner.frappe.enqueue_doc", foreground_enqueue_doc)
 	def test_all_high_metrics(self):
 		"""Since instance is not taken into account while mocking both database and sever will have same likely causes"""
 		create_test_incident(self.server.name)
@@ -263,7 +264,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_likely_cause)
 
 		self.assertEqual(investigator.status, "Completed")
-		self.assertEqual(len(investigator.action_steps), 5)  # Investigate benches memory as well
+		self.assertEqual(len(investigator.action_steps), 6)  # Investigate benches memory as well
 
 		self.assertListEqual(
 			[step.method_name for step in investigator.action_steps],
@@ -273,6 +274,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 				"restart_benches",
 				"get_bench_memory_usage_data",
 				"get_oom_kill_events",
+				"get_recent_agent_jobs",
 			],
 		)
 
@@ -299,7 +301,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_likely_cause)
 
 		# Since database has high memory and high cpu add database action step
-		self.assertEqual(len(investigator.action_steps), 5)  # App server actions
+		self.assertEqual(len(investigator.action_steps), 6)  # App server actions
 
 		self.assertListEqual(
 			[step.method_name for step in investigator.action_steps],
@@ -309,6 +311,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 				"restart_benches",
 				"get_bench_memory_usage_data",
 				"get_oom_kill_events",
+				"get_recent_agent_jobs",
 			],
 		)
 
