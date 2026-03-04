@@ -484,13 +484,6 @@ export default {
 							},
 						},
 						{
-							label: 'Apps',
-							format(value, row) {
-								return (row.apps || []).join(', ');
-							},
-							width: '20rem',
-						},
-						{
 							label: 'Duration',
 							fieldname: 'build_duration',
 							format: duration,
