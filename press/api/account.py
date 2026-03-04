@@ -156,7 +156,7 @@ def resend_otp(account_request: str, for_2fa_keys: bool = False):
 def send_otp(email: str, for_2fa_keys: bool = False):
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
-	if not account_request:
+	if not account_request or (account_request and not frappe.db.exists("User", email)):
 		frappe.throw("Please sign up first")
 
 	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
