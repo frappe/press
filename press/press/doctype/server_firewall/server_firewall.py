@@ -118,6 +118,8 @@ class ServerFirewall(Document):
 			self.validate_ip(rule.destination)
 
 	def on_update(self):
+		if self.is_new():
+			return
 		self.sync()
 
 	@frappe.whitelist()

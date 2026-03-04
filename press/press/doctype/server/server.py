@@ -2195,6 +2195,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		"""Setup monitor json & mariadb logrotate"""
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_logrotate", queue="long", timeout=1200)
 
+	def setup_firewall(self):
+		return frappe.get_doc(
+			{
+				"doctype": "Server Firewall",
+				"server_id": self.name,
+				"enabled": 0,
+			}
+		).insert()
+
 	@frappe.whitelist()
 	def install_cadvisor(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_install_cadvisor")
@@ -2271,6 +2280,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			self.install_earlyoom()
 			self.setup_ncdu()
 			self.setup_iptables()
+			self.setup_firewall()
 
 			if self.has_data_volume:
 				self.setup_archived_folder()
