@@ -530,6 +530,36 @@ class AppServerInvestigationActions:
 		step.status = StepStatus.Success
 		step.save()
 
+	def get_recent_agent_jobs(self, step: "ActionStep"):
+		"""Get agent jobs running during in the larger investigation window"""
+		# This again is a data gathering step we need to do something with this as well later on?
+		step.status = StepStatus.Running
+		step.save()
+
+		# Looking at a larger window here as well since we want to capture any jobs leading up to the incident which might have caused resource contention (30m?)
+		start_time = frappe.utils.add_to_date(self.investigator.investigation_window_start_time, minutes=-30)
+		end_time = self.investigator.investigation_window_end_time
+
+		agent_jobs_on_server = frappe.db.get_all(
+			"Agent Job",
+			["name", "job_type", "status", "creation", "duration"],
+			{
+				"server": self.investigator.server,
+				"creation": [
+					"between",
+					(start_time, end_time),
+				],
+			},
+			order_by="creation desc",
+		)
+		step.output = (
+			json.dumps(agent_jobs_on_server, default=str, indent=2)
+			if agent_jobs_on_server
+			else "No agent jobs found in the investigation window"
+		)
+		step.status = StepStatus.Success
+		step.save()
+
 	def add_app_server_investigation_actions(self):
 		"""In case of app server incidents we do the following
 		- Memory or CPU spikes
@@ -550,7 +580,11 @@ class AppServerInvestigationActions:
 
 		if app_server_likely_causes and app_server_likely_causes.intersection(resource_causes):
 			for step in self.investigator.get_steps(
-				[self.get_bench_memory_usage_data, self.get_oom_kill_events]
+				[
+					self.get_bench_memory_usage_data,
+					self.get_oom_kill_events,
+					self.get_recent_agent_jobs,
+				]
 			):
 				self.investigator.append("action_steps", step)
 
