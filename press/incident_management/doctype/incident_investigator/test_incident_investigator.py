@@ -264,7 +264,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_likely_cause)
 
 		self.assertEqual(investigator.status, "Completed")
-		self.assertEqual(len(investigator.action_steps), 6)  # Investigate benches memory as well
+		self.assertEqual(len(investigator.action_steps), 7)  # Investigate benches memory as well
 
 		self.assertListEqual(
 			[step.method_name for step in investigator.action_steps],
@@ -275,6 +275,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 				"get_bench_memory_usage_data",
 				"get_oom_kill_events",
 				"get_recent_agent_jobs",
+				"detect_patterns",
 			],
 		)
 
@@ -301,7 +302,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_likely_cause)
 
 		# Since database has high memory and high cpu add database action step
-		self.assertEqual(len(investigator.action_steps), 6)  # App server actions
+		self.assertEqual(len(investigator.action_steps), 7)  # App server actions
 
 		self.assertListEqual(
 			[step.method_name for step in investigator.action_steps],
@@ -312,6 +313,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 				"get_bench_memory_usage_data",
 				"get_oom_kill_events",
 				"get_recent_agent_jobs",
+				"detect_patterns",
 			],
 		)
 
@@ -331,7 +333,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_unable_to_investigate)
 
 		self.assertEqual(
-			len(investigator.action_steps), 1
+			len(investigator.action_steps), 2
 		)  # All of resource investigations need to be unreachable for action to be added
 		step = investigator.action_steps[0]
 		self.assertEqual(step.method_name, "initiate_database_reboot")
@@ -407,7 +409,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 				self.assertTrue(step.is_unable_to_investigate)
 
 			# Ensure database action is taken in case of unreachable metrics
-			self.assertEqual(len(investigator.action_steps), 1)
+			self.assertEqual(len(investigator.action_steps), 2)
 
 	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=True))
 	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=False))

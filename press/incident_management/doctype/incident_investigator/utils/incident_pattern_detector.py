@@ -61,7 +61,7 @@ class IncidentPatternDetector:
 		self.now = frappe.utils.now_datetime()
 
 		# Pattern detection parameters
-		self.detection_window = frappe.utils.timedelta(days=7)
+		self.detection_window = frappe.utils.add_to_date(days=-7)
 
 	def _detect_patterns(self, server: str, cause_subset: list[str]):
 		IncidentInvestigator = frappe.qb.DocType("Incident Investigator")
