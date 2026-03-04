@@ -21,6 +21,9 @@
               server {{ secondary_proxy }}:443;
           }
 
+          log_format proxy_stream '$remote_addr - [$time_local] $protocol "$ssl_preread_server_name"';
+          access_log /var/log/nginx/stream_access.log proxy_stream;
+
           server {
               listen 80;
               proxy_pass secondary_80;
@@ -28,6 +31,7 @@
           server {
               listen 443;
               proxy_pass secondary_443;
+              ssl_preread on;
           }
       }
     insertafter: EOF
