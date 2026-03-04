@@ -4738,11 +4738,6 @@ def archive_suspended_site(site_dict: SiteToArchive):
 		return
 
 	site = Site("Site", site_dict.name)
-	# take an offsite backup before archive
-	if not site_dict.offsite_backups and not site.recent_offsite_backup_exists:
-		if not site.recent_offsite_backup_pending:
-			site.backup(with_files=True, offsite=True)
-		return  # last backup ongoing
 	site.archive(reason="Archive suspended site")
 
 
