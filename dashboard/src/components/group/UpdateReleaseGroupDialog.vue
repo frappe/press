@@ -631,14 +631,16 @@ export default {
 					return {
 						app: app.name,
 						source: app.source,
-						release: app.releases.find(
-							(release) =>
-								release.name === app.next_release && !release.is_yanked,
-						)?.name,
-						hash: app.releases.find(
-							(release) =>
-								release.name === app.next_release && !release.is_yanked,
-						)?.hash,
+						release:
+							app.releases.find(
+								(release) =>
+									release.name === app.next_release && !release.is_yanked,
+							)?.name ?? app.next_release,
+						hash:
+							app.releases.find(
+								(release) =>
+									release.name === app.next_release && !release.is_yanked,
+							)?.hash ?? app.next_release_hash,
 					};
 				});
 		},
