@@ -288,6 +288,7 @@
         "iour",
         "iowait",
         "ipaddress",
+        "ipdb",
         "IPEYBICE",
         "iputils",
         "ipython",
