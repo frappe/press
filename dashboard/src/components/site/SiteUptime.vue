@@ -68,7 +68,7 @@
 								:key="d.date"
 								@mouseenter="inspectBar(d)"
 								@mouseleave="clearInspect()"
-								class="rounded-full flex-shrink-0 h-full"
+								class="rounded-full flex-shrink-0 h-full max-w-4"
 								:style="`width: ${barWidth};`"
 								:class="[
 									'hover:brightness-[110%] border-r border-white',
