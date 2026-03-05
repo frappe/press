@@ -1546,13 +1546,10 @@ class ReleaseGroup(Document, TagHelpers):
 		create a deploy check if the image has not been pruned from the registry in case of
 		missing image create new build.
 		"""
-		if deploy:
-			self.append("servers", {"server": server, "default": False})
-			self.save()
-			return self.deploy_on_server(server, force_new_build=force_new_build)
-
 		self.append("servers", {"server": server, "default": False})
 		self.save()
+		if deploy:
+			return self.deploy_on_server(server, force_new_build=force_new_build)
 		return None
 
 	@frappe.whitelist()
