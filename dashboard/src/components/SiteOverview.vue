@@ -375,6 +375,24 @@ export default {
 			);
 			renderDialog(h(SitePlansDialog, { site: this.site }));
 		},
+<<<<<<< HEAD
+=======
+		moveToPrivateBench() {
+			let SiteMigrationDialog = defineAsyncComponent(
+				() => import('./site/SiteMigration.vue'),
+			);
+			const defaultBenchName = this.$site?.doc?.group_title
+				? `${this.$site.doc.group_title} - Cloned`
+				: null;
+			renderDialog(
+				h(SiteMigrationDialog, {
+					site: this.site,
+					defaultAction: 'Move Site To Different Server / Bench',
+					defaultNewBenchName: defaultBenchName,
+				}),
+			);
+		},
+>>>>>>> b625bebbb (feat(site-action): Merge move to private bench and database into one)
 		showEnableMonitoringDialog() {
 			let SiteEnableMonitoringDialog = defineAsyncComponent(
 				() => import('./site/SiteEnableMonitoringDialog.vue'),
