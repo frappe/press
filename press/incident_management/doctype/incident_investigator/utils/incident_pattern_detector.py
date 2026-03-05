@@ -6,6 +6,10 @@ if typing.TYPE_CHECKING:
 	from press.incident_management.doctype.incident_investigator.incident_investigator import (
 		IncidentInvestigator,
 	)
+	from press.incident_management.doctype.incident_pattern.incident_pattern import (
+		IncidentPattern,
+	)
+
 
 from frappe.query_builder.functions import GroupConcat
 
@@ -44,8 +48,8 @@ class IncidentPatternDetector:
 					plan to handle the load."
 	"""
 
-	DB_REPEAT_THRESHOLD: typing.ClassVar = 2
-	APP_REPEAT_THRESHOLD: typing.ClassVar = 2
+	DB_REPEAT_THRESHOLD: typing.ClassVar = 3
+	APP_REPEAT_THRESHOLD: typing.ClassVar = 3
 	REPEAT_WINDOW_DAYS: typing.ClassVar = 7
 
 	INVESTIGATION_STEPS: typing.ClassVar = [
@@ -63,12 +67,44 @@ class IncidentPatternDetector:
 		# Pattern detection parameters
 		self.detection_window = frappe.utils.add_to_date(days=-7)
 
+	def _create_pattern_record(
+		self, server_type: str, server: str, cause_subset: list[str], investigations: list[str]
+	):
+		"""Will create a pattern record if one hasn't already been created for the same server and the causes this week"""
+
+		server = (
+			server if server_type == "Server" else frappe.db.get_value("Server", server, "database_server")
+		)
+		cause_key = ",".join(cause_subset)
+		incident_pattern: IncidentPattern = frappe.new_doc("Incident Pattern")
+		incident_pattern.server = server
+		incident_pattern.server_type = server_type
+		incident_pattern.causes = cause_key
+
+		for investigation in investigations:
+			incident_pattern.append("investigations", {"investigation": investigation})
+
+		record_created_this_week = frappe.db.get_value(
+			"Incident Pattern",
+			{
+				"server": server,
+				"server_type": server_type,
+				"causes": cause_key,
+				"creation": (">=", frappe.utils.add_to_date(days=-self.REPEAT_WINDOW_DAYS)),
+			},
+		)
+
+		if not record_created_this_week:
+			incident_pattern.save()
+
 	def _detect_patterns(self, server: str, cause_subset: list[str]):
 		IncidentInvestigator = frappe.qb.DocType("Incident Investigator")
 		InvestigationStep = frappe.qb.DocType("Investigation Step")
 
-		threshold = self.DB_REPEAT_THRESHOLD if server == "database" else self.APP_REPEAT_THRESHOLD
-		parentfield = "database_investigation_steps" if server == "database" else "server_investigation_steps"
+		threshold = self.DB_REPEAT_THRESHOLD if server == "Database Server" else self.APP_REPEAT_THRESHOLD
+		parentfield = (
+			"database_investigation_steps" if server == "Database Server" else "server_investigation_steps"
+		)
 		cause_key = ",".join(cause_subset)
 		likely_causes = GroupConcat(InvestigationStep.method).distinct()
 		matching_incidents_count = (
@@ -87,10 +123,11 @@ class IncidentPatternDetector:
 		).run(pluck=True)
 
 		if len(matching_incidents_count) >= threshold:
-			frappe.throw(
-				"We noticed your database server has been under stress multiple times this week. "
-				"We recommend running a slow query analysis to identify and resolve "
-				"long-running queries, if there aren't any consider a plan upgrade."
+			self._create_pattern_record(
+				server_type=server,
+				server=self.investigator.server,
+				cause_subset=cause_subset,
+				investigations=matching_incidents_count,
 			)
 
 	def detect_patterns(self):
@@ -99,7 +136,7 @@ class IncidentPatternDetector:
 		app_server_causes = self.investigator.likely_causes["server"]
 
 		if database_server_causes:
-			self._detect_patterns("database", database_server_causes)
+			self._detect_patterns("Database Server", database_server_causes)
 
 		if app_server_causes:
-			self._detect_patterns("server", app_server_causes)
+			self._detect_patterns("Server", app_server_causes)
