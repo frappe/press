@@ -1342,9 +1342,7 @@ class Site(Document, TagHelpers):
 	def create_migration_plan(
 		self,
 		type: Literal[
-			"Move From Shared To Private Bench",
-			"Move From Private To Shared Bench",
-			"Move Site To Different Server",
+			"Move Site To Different Server / Bench",
 			"Move Site To Different Region",
 		],
 		group: str | None = None,
@@ -1360,14 +1358,7 @@ class Site(Document, TagHelpers):
 				frappe.throw("Scheduled time must be in the future. Please provide a valid scheduled time.")
 
 		doc = None
-		if type == "Move From Shared To Private Bench":
-			"""
-			There are two variants:
-			- User chose to move to existing private bench and server
-			- Create a new private bench and move that. For this, there are two more combination -
-				- For shared server, create the bench on same server
-				- For dedicated server, create the bench on mentioned server
-			"""
+		if type == "Move Site To Different Server / Bench":
 			if group and new_group_name:
 				frappe.throw("Please provide either group or new_group_name, not both.")
 
@@ -1381,21 +1372,6 @@ class Site(Document, TagHelpers):
 							"destination_server": server or self.server,
 							"destination_release_group": group,
 							"new_release_group_name": new_group_name,
-							"skip_failing_patches": skip_failing_patches,
-						}
-					),
-					"scheduled_time": scheduled_time,
-				}
-			).insert()
-		elif type == "Move Site To Different Server":
-			doc = frappe.get_doc(
-				{
-					"doctype": "Site Action",
-					"site": self.name,
-					"action_type": type,
-					"arguments": json.dumps(
-						{
-							"destination_server": server,
 							"skip_failing_patches": skip_failing_patches,
 						}
 					),
@@ -3922,12 +3898,9 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	def get_migration_options(self):
 		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		# is_on_public_server = bool(frappe.db.get_value("Server", self.server, "public", cache=True))
-		is_on_public_release_group = release_group.public
-
-		# Moving from Shared to Private Bench
 		version = frappe.db.get_value("Release Group", self.group, "version")
 
+		# Compatible private release groups with active benches (excluding current group)
 		Bench = frappe.qb.DocType("Bench")
 		ReleaseGroup = frappe.qb.DocType("Release Group")
 		Server = frappe.qb.DocType("Server")
@@ -3950,8 +3923,6 @@ class Site(Document, TagHelpers):
 			.where(ReleaseGroup.version == version)
 			.where(ReleaseGroup.team == self.team)
 			.where(ReleaseGroup.public == 0)
-			.where(Bench.server == self.server)
-			.where(Server.name == Bench.server)
 		)
 
 		_compatible_release_groups = query.run(as_dict=True)
@@ -3991,31 +3962,15 @@ class Site(Document, TagHelpers):
 				"button_label": "Migrate Site",
 				"options": {},
 			},
-			"Move From Shared To Private Bench": {
-				"hidden": not is_on_public_release_group,
+			"Move Site To Different Server / Bench": {
+				"hidden": False,
 				"allow_scheduling": True,
-				"button_label": "Move to Private Bench",
+				"button_label": "Move Site To Private Bench"
+				if release_group.public
+				else "Move Site To Bench",
 				"options": {
 					"available_release_groups": compatible_release_groups_for_migration,
 					"dedicated_servers_for_new_release_group": owned_dedicated_servers,
-				},
-			},
-			# "Move From Private To Shared Bench": {
-			# 	"hidden": is_on_public_release_group,
-			# 	"allow_scheduling": True,
-			# 	"description": "Move your site from a private bench to a shared bench",
-			# 	"button_label": "Move to Shared Bench",
-			# 	"options": {
-			# 		# TODO
-			# 		"incompatible_apps": [],
-			# 	},
-			# },
-			"Move Site To Different Server": {
-				"hidden": False,
-				"allow_scheduling": True,
-				"button_label": "Move Site",
-				"options": {
-					"dedicated_servers": [x for x in owned_dedicated_servers if x.name != self.server]
 				},
 			},
 			"Move Site To Different Region": {
