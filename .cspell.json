@@ -20,6 +20,7 @@
         "2.4.6",
         "Aaiun",
         "Ababa",
+        "activites",
         "Adak",
         "adblockers",
         "Addis",
@@ -727,15 +728,12 @@
         "zloirock",
         "Zpyihv",
         "ZSTD",
-        "Wazuh",
-        "DBUS",
         "Zvkq",
+        "botocore",
         "reka",
         "pydo",
         "erpnextv",
         "hrmsv",
-        "Zvkq",
-        "botocore",
         "unyank",
         "unyanking",
         "unyanked",
@@ -745,6 +743,10 @@
         "innobase",
         "FSEG",
         "XDES",
-        "FLST"
+        "FLST",
+        "pyotp",
+        "noopener",
+        "noreferrer",
+        "centralise"
     ]
 }
