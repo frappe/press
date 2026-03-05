@@ -530,7 +530,12 @@ class ServerSnapshot(Document):
 
 		cluster.proxy_server = frappe.get_all(
 			"Proxy Server",
-			{"status": "Active", "cluster": cluster.name, "is_primary": True},
+			{
+				"status": "Active",
+				"cluster": cluster.name,
+				"is_primary": True,
+				"exclude_from_auto_selection": False,
+			},
 			pluck="name",
 			limit=1,
 		)[0]
