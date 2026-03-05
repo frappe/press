@@ -34,7 +34,6 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_press_admin_team
-from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 
 class TestAPISite(FrappeTestCase):
@@ -723,106 +722,6 @@ erpnext 0.8.3	    HEAD
 		self.assertEqual(site.apps[0].app, "frappe")
 		self.assertEqual(site.apps[1].app, "erpnext")
 		self.assertEqual(site.status, "Active")
-
-	def test_change_group_changes_group_and_bench_of_site(self):
-		from press.api.site import change_group, change_group_options
-		from press.press.doctype.site_update.site_update import process_update_site_job_update
-
-		app = create_test_app()
-		server = create_test_server()
-		group1 = create_test_release_group([app])
-		group2 = create_test_release_group([app])
-		bench1 = create_test_bench(group=group1, server=server.name)
-		bench2 = create_test_bench(group=group2, server=server.name)
-		site = create_test_site(
-			bench=bench1.name, team=self.team.name, plan=create_test_plan("Site", private_benches=True).name
-		)
-
-		self.assertEqual(change_group_options(site.name), [{"name": group2.name, "title": group2.title}])
-
-		with fake_agent_job(
-			"Update Site Migrate",
-			"Success",
-			steps=[{"name": "Move Site", "status": "Success"}],
-		):
-			change_group(site.name, group2.name)
-
-			responses.get(
-				f"https://{site.host_name}/",
-				status=200,
-			)
-			poll_pending_jobs()
-
-			site_update = frappe.get_last_doc("Site Update")
-			job = frappe.get_doc("Agent Job", site_update.update_job)
-
-			process_update_site_job_update(job)
-
-		site.reload()
-
-		self.assertEqual(site.group, group2.name)
-		self.assertEqual(site.bench, bench2.name)
-
-	@patch(
-		"press.press.doctype.agent_job.agent_job.process_site_migration_job_update",
-		new=Mock(),
-	)
-	@patch("press.press.doctype.site.site.create_dns_record", new=Mock())
-	@patch("press.press.doctype.site_migration.site_migration.frappe.db.commit", new=MagicMock)
-	@patch("press.press.doctype.agent_job.agent_job.frappe.enqueue_doc", new=foreground_enqueue_doc)
-	@patch("press.press.doctype.agent_job.agent_job.frappe.enqueue", new=foreground_enqueue)
-	@patch.object(Agent, "get", mock_image_size(3))
-	def test_site_change_region(self):
-		from press.api.site import change_region, change_region_options
-
-		app = create_test_app()
-		tokyo_cluster = create_test_cluster("Tokyo", public=True)
-		seoul_cluster = create_test_cluster("Seoul", public=True)
-		tokyo_server = create_test_server(cluster=tokyo_cluster.name)
-		seoul_server = create_test_server(cluster=seoul_cluster.name)
-		group = create_test_release_group([app])
-		group.append(
-			"servers",
-			{
-				"server": tokyo_server.name,
-			},
-		)
-		group.save()
-		with fake_agent_job("New Bench"):
-			tokyo_server_bench = create_test_bench(group=group, server=tokyo_server.name)
-
-		group.append(
-			"servers",
-			{
-				"server": seoul_server.name,
-			},
-		)
-		group.save()
-		with fake_agent_job("New Bench"):
-			create_test_bench(group=group, server=seoul_server.name)
-
-		site = create_test_site(bench=tokyo_server_bench.name)
-
-		options = change_region_options(site.name)
-
-		self.assertEqual(
-			options["regions"],
-			[frappe.get_value("Cluster", seoul_server.cluster, ["name", "title", "image"], as_dict=True)],
-		)
-		self.assertEqual(options["current_region"], tokyo_server.cluster)
-
-		with fake_agent_job("Update Site Migrate") and fake_agent_job("Backup Site"):
-			responses.post(
-				f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.host_name}/config",
-				json={"jobs": []},
-				status=200,
-			)
-			change_region(site.name, seoul_server.cluster)
-			site_migration = frappe.get_last_doc("Site Migration")
-			site_migration.update_site_record_fields()
-
-		site.reload()
-		self.assertEqual(site.cluster, seoul_server.cluster)
 
 	def test_version_upgrade_api_upgrades_site(self):
 		from press.api.site import get_private_groups_for_upgrade, version_upgrade

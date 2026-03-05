@@ -61,22 +61,12 @@ class ProductTrialRequest(Document):
 
 	agent_job_step_to_frontend_step = {  # noqa: RUF012
 		"New Site": {
-			"New Site": "Building Site",
-			"Install Apps": "Installing Apps",
-			"Update Site Configuration": "Updating Configuration",
-			"Enable Scheduler": "Finalizing Site",
-			"Bench Setup Nginx": "Finalizing Site",
-			"Reload Nginx": "Just a moment",
-		},
-		"Rename Site": {
-			"Enable Maintenance Mode": "Starting",
-			"Wait for Enqueued Jobs": "Starting",
-			"Update Site Configuration": "Preparing Site",
-			"Rename Site": "Preparing Site",
-			"Bench Setup NGINX": "Preparing Site",
-			"Reload NGINX": "Finalizing Site",
-			"Disable Maintenance Mode": "Finalizing Site",
-			"Enable Scheduler": "Just a moment",
+			"New Site": "Creating your site",
+			"Install Apps": "Installing apps",
+			"Update Site Configuration": "Configuring your site",
+			"Enable Scheduler": "Finalizing your setup",
+			"Bench Setup Nginx": "Finalizing your setup",
+			"Reload Nginx": "Almost there",
 		},
 	}
 
@@ -296,7 +286,9 @@ class ProductTrialRequest(Document):
 				return {"progress": 100, "current_step": self.status}
 			if self.status == "Adding Domain":
 				return {"progress": 90, "current_step": self.status}
-			return {"progress": 80, "current_step": self.status}
+			current_progress = max(current_progress, 30)
+			progress = current_progress + 0.4
+			return {"progress": progress, "current_step": self.status}
 
 		if status == "Running":
 			steps = frappe.db.get_all(

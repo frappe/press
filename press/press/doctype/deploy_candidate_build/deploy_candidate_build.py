@@ -24,7 +24,6 @@ import requests
 import semantic_version
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.query_builder.custom import GROUP_CONCAT
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -266,36 +265,6 @@ class DeployCandidateBuild(Document):
 		"deploy_candidate",
 	)
 
-	@staticmethod
-	def get_list_query(query, filters=None, **list_args):
-		DeployCandidate, DeployCandidateBuild, DeployCandidateApp = (
-			frappe.qb.DocType("Deploy Candidate"),
-			frappe.qb.DocType("Deploy Candidate Build"),
-			frappe.qb.DocType("Deploy Candidate App"),
-		)
-		query = (
-			query.left_join(DeployCandidate)
-			.on(DeployCandidateBuild.deploy_candidate == DeployCandidate.name)
-			.left_join(DeployCandidateApp)
-			.on(DeployCandidateApp.parent == DeployCandidate.name)
-			.select(
-				DeployCandidateBuild.name,
-				DeployCandidateBuild.creation,
-				DeployCandidateBuild.status,
-				DeployCandidateBuild.build_duration,
-				DeployCandidateBuild.owner,
-				GROUP_CONCAT(DeployCandidateApp.app).as_("apps"),
-			)
-			.groupby(DeployCandidateBuild.name)
-		)
-		results = query.run(as_dict=True)
-
-		for deploy in results:
-			if not isinstance(deploy["apps"], list):
-				deploy["apps"] = [deploy["apps"]]
-
-		return results
-
 	@cached_property
 	def candidate(self) -> DeployCandidate:
 		return frappe.get_doc("Deploy Candidate", self.deploy_candidate)
@@ -371,7 +340,6 @@ class DeployCandidateBuild(Document):
 				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
 					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
 
-			team_deploying = frappe.db.get_value("Release Group", self.group, "team")
 			content = frappe.render_template(
 				dockerfile_template,
 				{
@@ -379,14 +347,8 @@ class DeployCandidateBuild(Document):
 					"remove_distutils": not is_distutils_supported,
 					"requires_version_based_get_pip": requires_version_based_get_pip,
 					"is_arm_build": self.platform == "arm64",
-					"use_asset_store": int(
-						frappe.db.get_single_value("Press Settings", "use_asset_store")
-						or team_deploying == "team@erpnext.com"
-					),
-					"upload_assets": int(
-						frappe.db.get_value("Release Group", self.group, "public")
-						or team_deploying == "team@erpnext.com"
-					),
+					"use_asset_store": False,
+					"upload_assets": False,
 					"site_url": frappe.utils.get_url(),
 				},
 				is_path=True,
@@ -648,7 +610,7 @@ class DeployCandidateBuild(Document):
 		if job.status == "Failure":
 			return True
 
-		if job_data.get("build_failure"):
+		if job_data.get("build_failed"):
 			return True
 
 		if (usu := self.upload_step_updater) and usu.upload_step and usu.upload_step.status == "Failure":

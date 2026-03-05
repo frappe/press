@@ -84,6 +84,7 @@ class SiteMigration(Document):
 			frappe.throw(f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists.")
 		site: Site = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
+		site.check_fatal_site_update()
 
 	def check_for_existing_domains(self):
 		"""
@@ -474,7 +475,10 @@ class SiteMigration(Document):
 				message,
 			)
 		else:
-			agent_job_id = find(self.steps, lambda x: x.status == "Failure").get("step_job")
+			step = find(self.steps, lambda x: x.status == "Failure")
+			if not step:
+				return
+			agent_job_id = step.get("step_job")
 
 			job = frappe.get_doc("Agent Job", agent_job_id)
 			create_job_failed_notification(job, site.team, "Site Migrate", "Site Migrate", message)

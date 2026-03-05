@@ -62,6 +62,7 @@ function getServerActionHandler(action) {
 		'Update Max DB Connections': onUpdateMaxDBConnections,
 		'View Database Configuration': onViewDatabaseConfiguration,
 		'Update Binlog Retention': onUpdateBinlogRetention,
+		'Forcefully Purge Binlogs': onPurgeBinlogsForcefully,
 		'Update Binlog Size Limit': onUpdateBinlogSizeLimit,
 		'Manage Database Binlogs': onViewMariaDBBinlogs,
 	};
@@ -530,6 +531,46 @@ function onUpdateInnodbBufferPoolSize() {
 								'Failed to update InnoDB Buffer Pool Size',
 						),
 					duration: 5000,
+				},
+			);
+		},
+	});
+}
+
+function onPurgeBinlogsForcefully() {
+	if (!server.purgeBinlogsForcefully) return;
+	confirmDialog({
+		title: 'Forcefully Purge Binlogs',
+		message: `Are you sure you want to forcefully purge binlogs on the database server <b>${server.doc.name}</b>?<br><br>This action will reboot the database as well.`,
+		fields: [
+			{
+				label: 'Enter no of binlogs to delete',
+				fieldname: 'binlogsToDelete',
+				type: 'number',
+				default: 5,
+			},
+		],
+		primaryAction: {
+			label: 'Purge Binlogs',
+			theme: 'red',
+		},
+		onSuccess({ hide, values }) {
+			if (server.purgeBinlogsForcefully.loading) return;
+			toast.promise(
+				server.purgeBinlogsForcefully.submit(
+					{
+						no_of_binlogs: parseInt(values.binlogsToDelete),
+					},
+					{
+						onSuccess() {
+							hide();
+						},
+					},
+				),
+				{
+					loading: 'Purging binlogs...',
+					success: 'Binlogs purged successfully',
+					error: 'Failed to purge binlogs',
 				},
 			);
 		},

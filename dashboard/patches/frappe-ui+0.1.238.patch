@@ -141,3 +141,73 @@ index e775982..f20eb9c 100644
    placement?: 'start' | 'center' | 'end'
 +  allowCustomValue?: boolean
  }
+diff --git a/node_modules/frappe-ui/src/components/ListView/ListRow.vue b/node_modules/frappe-ui/src/components/ListView/ListRow.vue
+index 3259022..f351998 100644
+--- a/node_modules/frappe-ui/src/components/ListView/ListRow.vue
++++ b/node_modules/frappe-ui/src/components/ListView/ListRow.vue
+@@ -23,6 +23,10 @@
+     >
+       <div
+         class="grid items-center space-x-4 px-2"
++        :class="{
++          'cursor-not-allowed': props.row.__disabled,
++          'opacity-50': props.row.__disabled,
++        }"
+         :style="{
+           height: rowHeight,
+           gridTemplateColumns: getGridTemplateColumns(
+@@ -40,6 +44,7 @@
+           <Checkbox
+             :modelValue="isSelected"
+             class="cursor-pointer duration-300"
++            :disabled="props.row.__disabled"
+             @click.stop="handleCheckboxClick"
+           />
+         </div>
+@@ -168,9 +173,11 @@ const handleCheckboxClick = (event) => {
+     const start = Math.min(lastIndex, curIndex)
+     const end = Math.max(lastIndex, curIndex)
+     for (let i = start; i <= end; i++) {
++      if (rows[i].__disabled) continue
+       list.value.selections.add(rows[i][list.value.rowKey])
+     }
+   } else {
++    if (props.row.__disabled) return
+     list.value.toggleRow(value)
+   }
+ }
+diff --git a/node_modules/frappe-ui/src/components/ListView/ListView.vue b/node_modules/frappe-ui/src/components/ListView/ListView.vue
+index 7f50517..b75275a 100644
+--- a/node_modules/frappe-ui/src/components/ListView/ListView.vue
++++ b/node_modules/frappe-ui/src/components/ListView/ListView.vue
+@@ -123,7 +123,7 @@ let showGroupedRows = computed(() => {
+ })
+ 
+ function toggleRow(row) {
+-  if (!selections.delete(row)) {
++  if (!selections.delete(row) && !row.__disabled) {
+     selections.add(row)
+   }
+ }
+@@ -135,11 +135,19 @@ function toggleAllRows(select) {
+   }
+   if (showGroupedRows.value) {
+     props.rows.forEach((row) => {
+-      row.rows.forEach((r) => selections.add(r[props.rowKey]))
++      row.rows.forEach((r) => {
++        if (!r.__disabled) {
++          selections.add(r[props.rowKey])
++        }
++      })
+     })
+     return
+   }
+-  props.rows.forEach((row) => selections.add(row[props.rowKey]))
++  props.rows.forEach((row) => {
++    if (!row.__disabled) {
++      selections.add(row[props.rowKey])
++    }
++  })
+ }
+ 
+ provide(

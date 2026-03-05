@@ -18,6 +18,7 @@
 					:method="row.doc_method"
 					:description="row.description"
 					:buttonLabel="row.button_label"
+					:linkedVersionUpgrade="$releaseGroup?.doc?.linked_version_upgrade"
 				/>
 			</div>
 		</div>

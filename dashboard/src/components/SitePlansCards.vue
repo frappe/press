@@ -37,7 +37,7 @@ export default {
 			if (this.isPrivateBenchSite) {
 				plans = plans.filter((plan) => plan.private_benches);
 			}
-			if (this.isPrivateBenchSite && this.isDedicatedServerSite) {
+			if (this.isDedicatedServerSite) {
 				plans = plans.filter((plan) => plan.dedicated_server_plan);
 			} else {
 				plans = plans.filter((plan) => !plan.dedicated_server_plan);
@@ -84,10 +84,8 @@ export default {
 				plans = plans.filter((plan) => !plan.restricted_plan);
 			}
 			if (this.selectedProvider) {
-				const provider = ["Generic", "Scaleway"].includes(
-					this.selectedProvider,
-				)
-					? "AWS EC2"
+				const provider = ['Generic', 'Scaleway'].includes(this.selectedProvider)
+					? 'AWS EC2'
 					: this.selectedProvider;
 
 				plans = plans.map((plan) => {
