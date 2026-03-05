@@ -1596,7 +1596,8 @@ class ReleaseGroup(Document, TagHelpers):
 	@frappe.whitelist()
 	def redeploy_on_missing_servers(self):
 		"""
-		Redeploy if latest candidate is not deployed on any server
+		Redeploy the latest successful candidate on servers in this release group
+		that do not currently have a Bench in an active, installing, or pending state.
 		"""
 		deployed_servers = frappe.db.get_all(
 			"Bench",
