@@ -138,6 +138,7 @@ class PressSettings(Document):
 		press_monitoring_password: DF.Password | None
 		press_trial_plan: DF.Link | None
 		print_format: DF.Data | None
+		production_server_ip: DF.Data | None
 		publish_docs: DF.Check
 		razorpay_key_id: DF.Data | None
 		razorpay_key_secret: DF.Password | None
