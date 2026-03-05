@@ -463,8 +463,44 @@ class TestIncidentInvestigator(FrappeTestCase):
 		)
 
 		pattern_detector: IncidentPatternDetector = IncidentPatternDetector(investigator_2)
-		with self.assertRaises(frappe.ValidationError):
-			pattern_detector.detect_patterns()
+		pattern_detector.detect_patterns()
+
+		self.assertEqual(
+			len(frappe.get_all("Incident Pattern", {"server": self.server.name})), 0
+		)  # Still below the threshold (3)
+
+		investigator_2.db_set("creation", frappe.utils.add_to_date(days=-1))
+		investigator_2 = investigator_2.reload()
+		incident_3 = create_test_incident(self.server.name)
+		investigator_3: IncidentInvestigator = frappe.get_doc(
+			"Incident Investigator", {"incident": incident_3.name}
+		)
+
+		pattern_detector: IncidentPatternDetector = IncidentPatternDetector(investigator_3)
+		pattern_detector.detect_patterns()
+
+		self.assertEqual(
+			len(frappe.get_all("Incident Pattern", {"server": self.server.name})), 1
+		)  # Pattern should be detected now that we have 3 similar incidents within a week
+
+		self.assertEqual(
+			len(frappe.get_all("Incident Pattern", {"server": self.server.database_server})), 1
+		)  # Pattern should be detected now that we have 3 similar incidents within a week
+
+		investigator_3.db_set("creation", frappe.utils.add_to_date(days=-1))
+		investigator_3 = investigator_3.reload()
+		incident_4 = create_test_incident(self.server.name)
+		investigator_4: IncidentInvestigator = frappe.get_doc(
+			"Incident Investigator", {"incident": incident_4.name}
+		)
+
+		pattern_detector: IncidentPatternDetector = IncidentPatternDetector(investigator_4)
+		pattern_detector.detect_patterns()
+
+		# No records created this pattern record has been created this week already
+		self.assertEqual(len(frappe.get_all("Incident Pattern", {"server": self.server.name})), 1)
+
+		self.assertEqual(len(frappe.get_all("Incident Pattern", {"server": self.server.database_server})), 1)
 
 	@classmethod
 	def tearDownClass(cls):
