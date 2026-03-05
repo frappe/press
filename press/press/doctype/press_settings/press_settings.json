@@ -1635,8 +1635,6 @@
    "fieldname": "asset_store_region",
    "fieldtype": "Data",
    "label": "Asset Store Region"
-<<<<<<< HEAD
-=======
   },
   {
    "fieldname": "default_server_plan_type",
@@ -1677,18 +1675,12 @@
    "fieldname": "production_server_ip",
    "fieldtype": "Data",
    "label": "Production Server IP"
->>>>>>> 4baef8e08 (feat(settings): Field for production server IP)
   }
  ],
  "issingle": 1,
  "links": [],
-<<<<<<< HEAD
- "modified": "2026-01-17 11:49:01.799269",
- "modified_by": "Administrator",
-=======
  "modified": "2026-03-05 12:43:48.138570",
  "modified_by": "hello@ssiyad.com",
->>>>>>> 4baef8e08 (feat(settings): Field for production server IP)
  "module": "Press",
  "name": "Press Settings",
  "owner": "Administrator",
