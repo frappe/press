@@ -1076,25 +1076,11 @@ def set_bench_and_clusters(version, for_bench):
 			)
 			allowed_cluster_names = list(set(public_servers_clusters))
 
-		clusters = frappe.db.get_all(
+		version.group.clusters = frappe.db.get_all(
 			"Cluster",
 			filters={"name": ("in", allowed_cluster_names)},
 			fields=["name", "title", "image", "beta", "cloud_provider"],
 		)
-		if not for_bench:
-			proxy_servers = frappe.db.get_all(
-				"Proxy Server",
-				{
-					"cluster": ("in", allowed_cluster_names),
-					"is_primary": 1,
-				},
-				["name", "cluster"],
-			)
-
-			for cluster in clusters:
-				cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
-
-		version.group.clusters = clusters
 
 
 def get_additional_clusters_for_private_benches(existing_clusters, cloud_providers, unique_providers):
