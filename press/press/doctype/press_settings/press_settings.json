@@ -190,6 +190,8 @@
   "plausible_site_id",
   "plausible_api_key",
   "infrastructure_tab",
+  "general_section",
+  "production_server_ip",
   "agent_section",
   "agent_repository_owner",
   "agent_sentry_dsn",
@@ -1633,12 +1635,52 @@
    "fieldname": "asset_store_region",
    "fieldtype": "Data",
    "label": "Asset Store Region"
+  },
+  {
+   "fieldname": "default_server_plan_type",
+   "fieldtype": "Link",
+   "label": "Default Server Plan Type",
+   "options": "Server Plan Type"
+  },
+  {
+   "fieldname": "frappe_school_authentication_section",
+   "fieldtype": "Section Break",
+   "label": "Frappe School Authentication"
+  },
+  {
+   "fieldname": "school_url",
+   "fieldtype": "Data",
+   "label": "School URL"
+  },
+  {
+   "fieldname": "school_api_key",
+   "fieldtype": "Data",
+   "label": "School API Key"
+  },
+  {
+   "fieldname": "column_break_uxxz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "school_api_secret",
+   "fieldtype": "Password",
+   "label": "School API Secret"
+  },
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "General"
+  },
+  {
+   "fieldname": "production_server_ip",
+   "fieldtype": "Data",
+   "label": "Production Server IP"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-01-17 11:49:01.799269",
- "modified_by": "Administrator",
+ "modified": "2026-03-05 12:43:48.138570",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Press Settings",
  "owner": "Administrator",
