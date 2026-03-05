@@ -743,6 +743,7 @@
         "innobase",
         "FSEG",
         "XDES",
-        "FLST"
+        "FLST",
+        "pyotp"
     ]
 }
