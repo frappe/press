@@ -1548,6 +1548,7 @@ class ReleaseGroup(Document, TagHelpers):
 		missing image create new build.
 		"""
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if not deploy:
 			return None
 
@@ -1590,8 +1591,12 @@ class ReleaseGroup(Document, TagHelpers):
 			self.save()
 			return self.deploy_on_server(server, force_new_build=force_new_build)
 
+=======
+>>>>>>> cac260f31 (refactor(release-group): Write common step once)
 		self.append("servers", {"server": server, "default": False})
 		self.save()
+		if deploy:
+			return self.deploy_on_server(server, force_new_build=force_new_build)
 		return None
 >>>>>>> c43bf5c8d (feat(release-group): Add button to redeploy on missing servers)
 
