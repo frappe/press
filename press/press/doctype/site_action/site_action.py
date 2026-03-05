@@ -402,8 +402,6 @@ class SiteAction(Document):
 		).insert()
 
 		self.set_argument("site_migration", site_migration.name)
-		self.current_running_step.reference_doctype = "Site Migration"
-		self.current_running_step.reference_name = site_migration.name
 
 	def process_move_site_to_different_cluster(self):
 		"""Move Site To Different Cluster"""
