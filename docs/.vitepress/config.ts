@@ -22,6 +22,9 @@ export default defineConfig(
 		{
 			documentRootPath: '/docs',
 			capitalizeFirst: true,
-		},
+			useTitleFromFileHeading: true,
+			useFolderLinkFromIndexFile: true,
+			useFolderTitleFromIndexFile: true,
+		}
 	),
 );

@@ -294,25 +294,6 @@ export default {
 				},
 			},
 			{
-				label: 'Firewall',
-				icon: icon('shield'),
-				condition: (server) => {
-					return (
-						server.doc?.status !== 'Archived' && !server.doc?.is_self_hosted
-					);
-				},
-				route: 'firewall',
-				type: 'Component',
-				component: defineAsyncComponent(
-					() => import('../components/server/ServerFirewall.vue'),
-				),
-				props: (server) => {
-					return {
-						id: server.doc.name,
-					};
-				},
-			},
-			{
 				label: 'Sites',
 				icon: icon(LucideAppWindow),
 				condition: (server) => {
@@ -682,7 +663,9 @@ export default {
 									h(
 										defineAsyncComponent(
 											() =>
-												import('../components/server/ServerNewSnapshotDialog.vue'),
+												import(
+													'../components/server/ServerNewSnapshotDialog.vue'
+												),
 										),
 										{
 											server: server.name,
@@ -702,7 +685,9 @@ export default {
 								onClick() {
 									let ServerSnapshotDetailsDialog = defineAsyncComponent(
 										() =>
-											import('../components/server/ServerSnapshotDetailsDialog.vue'),
+											import(
+												'../components/server/ServerSnapshotDetailsDialog.vue'
+											),
 									);
 									renderDialog(
 										h(ServerSnapshotDetailsDialog, {
@@ -717,7 +702,9 @@ export default {
 								onClick() {
 									let ServerSnapshotRecoverSitesDialog = defineAsyncComponent(
 										() =>
-											import('../components/server/ServerSnapshotRecoverSitesDialog.vue'),
+											import(
+												'../components/server/ServerSnapshotRecoverSitesDialog.vue'
+											),
 									);
 									renderDialog(
 										h(ServerSnapshotRecoverSitesDialog, {
@@ -968,6 +955,25 @@ export default {
 				props: (server) => {
 					return {
 						server: server.doc.name,
+					};
+				},
+			},
+			{
+				label: 'Firewall',
+				icon: icon('shield'),
+				condition: (server) => {
+					return (
+						server.doc?.status !== 'Archived' && !server.doc?.is_self_hosted
+					);
+				},
+				route: 'firewall',
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../components/server/ServerFirewall.vue'),
+				),
+				props: (server) => {
+					return {
+						id: server.doc.name,
 					};
 				},
 			},
