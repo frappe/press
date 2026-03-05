@@ -743,6 +743,8 @@
         "innobase",
         "FSEG",
         "XDES",
-        "FLST"
+        "FLST",
+        "noopener",
+        "noreferrer"
     ]
 }
