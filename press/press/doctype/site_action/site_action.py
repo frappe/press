@@ -59,9 +59,8 @@ class SiteAction(Document):
 		from press.press.doctype.site_action_step.site_action_step import SiteActionStep
 
 		action_type: DF.Literal[
-			"Move From Shared To Private Bench",
 			"Move From Private To Shared Bench",
-			"Move Site To Different Server",
+			"Move Site To Different Server / Bench",
 			"Move Site To Different Region",
 		]
 		arguments: DF.SmallText
@@ -80,20 +79,13 @@ class SiteAction(Document):
 	dashboard_fields = ("action_type", "scheduled_time", "site", "status", "start", "end", "duration")
 
 	def get_steps_for_action(self) -> list[tuple[Callable, str]]:
-		if self.action_type == "Move From Shared To Private Bench":
-			return [
-				(self.pre_validate_move_site_from_shared_to_private_bench, StepType.Validation),
-				(self.clone_and_create_bench_group, StepType.Preparation),
-				(self.move_site_to_bench_group, StepType.Main),
-			]
-
 		if self.action_type == "Move Site To Different Region":
 			return [
 				(self.pre_validate_move_site_to_different_cluster, StepType.Validation),
 				(self.process_move_site_to_different_cluster, StepType.Main),
 			]
 
-		if self.action_type == "Move Site To Different Server":
+		if self.action_type == "Move Site To Different Server / Bench":
 			return [
 				(self.pre_validate_move_site_to_different_server, StepType.Validation),
 				(self.clone_and_create_bench_group, StepType.Preparation),
@@ -103,10 +95,7 @@ class SiteAction(Document):
 		return []
 
 	def pre_validate_move_site_to_different_server(self):
-		"""Pre Validate Move Site To Different Server"""
-
-		# If public bench, just clone the bench group with `- Clone` suffix and deploy bench there
-		# Else, add the server in release group. Trigger a re-deploy and move the site there.
+		"""Pre Validate Move Site To Different Server / Bench"""
 
 		current_bench: Bench = frappe.get_doc("Bench", self.site_doc.bench)
 		current_release_group: ReleaseGroup = frappe.get_doc("Release Group", current_bench.group)
@@ -117,34 +106,26 @@ class SiteAction(Document):
 		if not server.public and not server.has_permission("write"):
 			frappe.throw(f"You don't have permission to deploy on server {server.name}")
 
-		if current_release_group.public:
-			self.set_argument(
-				"new_release_group_name",
-				self._ensure_no_duplicate_release_group_title(current_release_group.title + " - Clone"),
-			)
-		else:
-			if not any(server.server == destination_server for server in current_release_group.servers):
-				current_release_group.add_server(
-					destination_server,
-					deploy=False,
-					force_new_build=False,
-				)
-				self.set_argument("destination_release_group", current_release_group.name)
-
 		if self.get_argument("destination_release_group"):
+			# Existing bench chosen - validate the release group
+			if frappe.db.get_value("Release Group", self.get_argument("destination_release_group"), "public"):
+				frappe.throw(
+					f"Release Group {self.get_argument('destination_release_group')} is a public release group. Please select a different release group."
+				)
 			self._validate_apps_in_release_group(self.get_argument("destination_release_group"))
-
-	def pre_validate_move_site_from_shared_to_private_bench(self):
-		"""Pre Validate Move Site From Shared To Private Bench"""
-		if not self.get_argument("destination_release_group"):
-			return
-
-		if frappe.db.get_value("Release Group", self.get_argument("destination_release_group"), "public"):
-			frappe.throw(
-				f"Release Group {self.get_argument('destination_release_group')} is a public release group. Please select a different release group."
-			)
-
-		self._validate_apps_in_release_group(self.get_argument("destination_release_group"))
+		elif not self.get_argument("new_release_group_name"):
+			# No destination group and no new name provided - auto-generate
+			if current_release_group.public:
+				self.set_argument("new_release_group_name", current_release_group.title + " - Clone")
+			else:
+				# Private group - add the destination server to the current group if needed
+				if not any(s.server == destination_server for s in current_release_group.servers):
+					current_release_group.append(
+						"servers",
+						{"server": destination_server, "default": False},
+					)
+					current_release_group.save()
+				self.set_argument("destination_release_group", current_release_group.name)
 
 	def clone_and_create_bench_group(self):  # noqa
 		"""Clone and Create Private Bench"""
@@ -760,7 +741,11 @@ class SiteAction(Document):
 	def _validate_apps_in_release_group(self, release_group_name: str) -> None:
 		destination_release_group: ReleaseGroup = frappe.get_doc("Release Group", release_group_name)
 		rg_apps = set(app.app for app in destination_release_group.apps)
-		if diff := rg_apps - set(self.site_doc.apps):
+		site_apps = set(app.app for app in self.site_doc.apps)
+		# Remove frappe from site_apps
+		rg_apps.discard("frappe")
+		site_apps.discard("frappe")
+		if diff := site_apps - rg_apps:
 			frappe.throw(
 				f"Site has following apps {', '.join(diff)} which are not present in the destination release group. Please install those apps in the destination release group or remove them from the site before moving.",
 				frappe.ValidationError,
