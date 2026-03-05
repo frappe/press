@@ -212,7 +212,7 @@ class ServerFirewall(Document):
 					"action": "ACCEPT",
 				}
 			)
-		if production_ip := frappe.get_single_value("Press Settings", "production_server_ip"):
+		if production_ip := frappe.db.get_single_value("Press Settings", "production_server_ip", cache=True):
 			rules.append(
 				{
 					"source": production_ip,
