@@ -2339,12 +2339,16 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return frappe._dict()
 
 	@frappe.whitelist()
+	def get_static_ip(self):
+		if self.provider == "AWS EC2":
+			return self.get_aws_static_ip()
+		if self.provider == "OCI":
+			return self.get_oci_static_ip()
+
+		frappe.throw(f"Not implemented for {self.provider} provider")
+		return None
+
 	def get_aws_static_ip(self):
-		if self.provider != "AWS EC2":
-			frappe.throw("Failed to proceed as VM is not AWS EC2")
-
-		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
-
 		cluster_doc = frappe.get_doc("Cluster", self.cluster)
 		region_name = cluster_doc.region
 		aws_access_key_id = cluster_doc.aws_access_key_id
@@ -2352,6 +2356,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			"Cluster", self.cluster, fieldname="aws_secret_access_key"
 		)
 
+		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		instance_id = vm_doc.instance_id
 
 		# Initialize EC2 client
@@ -2374,6 +2379,56 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		vm_doc.sync()
 
 		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
+
+	def get_oci_static_ip(self):
+		import oci
+
+		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		cluster_doc = frappe.get_doc("Cluster", self.cluster)
+		config = cluster_doc.get_oci_config()
+
+		compute_client = oci.core.ComputeClient(config)
+		network_client = oci.core.VirtualNetworkClient(config)
+
+		# 1. Get VNIC ID (Compute instances can have multiple, we'll take the primary)
+		vnic_attachments = compute_client.list_vnic_attachments(
+			compartment_id=cluster_doc.oci_tenancy, instance_id=vm_doc.instance_id
+		).data
+
+		if not vnic_attachments:
+			frappe.throw("No VNIC found for this OCI instance.")
+
+		vnic_id = vnic_attachments[0].vnic_id
+
+		# 2. Find the Primary Private IP ID (Public IPs are linked to Private IPs in OCI)
+		private_ips = network_client.list_private_ips(vnic_id=vnic_id).data
+		primary_private_ip = next((ip for ip in private_ips if ip.is_primary), None)
+
+		if not primary_private_ip:
+			frappe.throw("Primary Private IP not found.")
+
+		# 3. Check for existing Public IP and remove it if it exists
+		existing_public_ip = network_client.get_public_ip_by_private_ip_id(
+			get_public_ip_by_private_ip_id_details=oci.core.models.GetPublicIpByPrivateIpIdDetails(
+				private_ip_id=primary_private_ip.id
+			)
+		).data
+
+		if existing_public_ip:
+			# If it's ephemeral, we can just delete/detach it
+			network_client.delete_public_ip(existing_public_ip.id)
+
+		# 4. Create (Allocate) a Reserved Public IP
+		reserved_ip_details = oci.core.models.CreatePublicIpDetails(
+			compartment_id=cluster_doc.oci_tenancy,
+			lifetime="RESERVED",
+			private_ip_id=primary_private_ip.id,  # This assigns it immediately
+		)
+
+		reserved_ip_response = network_client.create_public_ip(reserved_ip_details).data
+
+		vm_doc.sync()
+		return f"Static IP {reserved_ip_response.ip_address} allotted to the VM (OCID: {reserved_ip_response.id})"
 
 
 class Server(BaseServer):
