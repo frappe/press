@@ -2,7 +2,11 @@ import typing
 
 import frappe
 
+from press.runner import Status as StepStatus
+
 if typing.TYPE_CHECKING:
+	from press.press.incident_management.doctype.action_step.action_step import ActionStep
+
 	from press.incident_management.doctype.incident_investigator.incident_investigator import (
 		IncidentInvestigator,
 	)
@@ -130,13 +134,28 @@ class IncidentPatternDetector:
 				investigations=matching_incidents_count,
 			)
 
-	def detect_patterns(self):
-		"""Detects if the current incident matches any known patterns of resource contention"""
-		database_server_causes = self.investigator.likely_causes["database"]
-		app_server_causes = self.investigator.likely_causes["server"]
+	def detect_patterns(self, step: "ActionStep"):
+		"""Detects if the current incident matches any known patterns of resource contention."""
+		step.status = StepStatus.Running
+		step.save()
 
-		if database_server_causes:
-			self._detect_patterns("Database Server", database_server_causes)
+		try:
+			database_server_causes = self.investigator.likely_causes.get("database", [])
+			app_server_causes = self.investigator.likely_causes.get("server", [])
 
-		if app_server_causes:
-			self._detect_patterns("Server", app_server_causes)
+			# Detect patterns for database server causes
+			if database_server_causes:
+				self._detect_patterns("Database Server", database_server_causes)
+
+			# Detect patterns for application server causes
+			if app_server_causes:
+				self._detect_patterns("Server", app_server_causes)
+
+			step.status = StepStatus.Success
+
+		except Exception as e:
+			step.status = StepStatus.Failure
+			step.output = frappe.safe_decode(str(e))
+
+		finally:
+			step.save()
