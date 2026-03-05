@@ -212,6 +212,21 @@ class ServerFirewall(Document):
 					"action": "ACCEPT",
 				}
 			)
+		if production_ip := frappe.get_single_value("Press Settings", "production_server_ip"):
+			rules.append(
+				{
+					"source": production_ip,
+					"protocol": "TCP",
+					"action": "ACCEPT",
+				}
+			)
+			rules.append(
+				{
+					"destination": production_ip,
+					"protocol": "TCP",
+					"action": "ACCEPT",
+				}
+			)
 		return rules
 
 	def transform_action(self, action: str):
