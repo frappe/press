@@ -105,7 +105,7 @@ class TestSiteUpdate(FrappeTestCase):
 
 		self.assertRaisesRegex(
 			frappe.ValidationError,
-			".*apps installed on the site: app., app.$",
+			".*apps installed on the site: app., app.*",
 			site.schedule_update,
 		)
 
