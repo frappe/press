@@ -401,9 +401,6 @@ class SiteAction(Document):
 			}
 		).insert()
 
-		if not self.scheduled_time_formatted:
-			site_migration.start()
-
 		self.set_argument("site_migration", site_migration.name)
 		self.current_running_step.reference_doctype = "Site Migration"
 		self.current_running_step.reference_name = site_migration.name
