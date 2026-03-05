@@ -1510,6 +1510,35 @@ class ReleaseGroup(Document, TagHelpers):
 		except frappe.DoesNotExistError:
 			return None
 
+	def deploy_on_server(self, server: str, force_new_build=False):
+		server_platform = frappe.get_value("Server", server, "platform")
+		last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
+			platform=server_platform
+		)
+
+		if not last_successful_deploy_candidate_build or force_new_build:
+			# No build of this platform is available creating new build
+			last_candidate_build = (
+				self.get_last_successful_candidate_build()
+			)  # Checking for any platform build
+
+			if not last_candidate_build:
+				frappe.throw("No build present for this release group", frappe.ValidationError)
+
+			return create_platform_build_and_deploy(
+				deploy_candidate=last_candidate_build.candidate.name,  # type: ignore
+				server=server,
+				platform=server_platform,
+			)
+
+		try:
+			last_successful_deploy_candidate_build._create_deploy(
+				[server],
+				check_image_exists=True,
+			)
+		except ImageNotFoundInRegistry:
+			self.deploy_on_server(server=server, force_new_build=True)
+
 	@frappe.whitelist()
 	def add_server(self, server: str, deploy=False, force_new_build: bool = False) -> str | None:
 		"""
@@ -1518,40 +1547,27 @@ class ReleaseGroup(Document, TagHelpers):
 		missing image create new build.
 		"""
 		if deploy:
-			server_platform = frappe.get_value("Server", server, "platform")
-			last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
-				platform=server_platform
-			)
-
-			if not last_successful_deploy_candidate_build or force_new_build:
-				# No build of this platform is available creating new build
-				last_candidate_build = (
-					self.get_last_successful_candidate_build()
-				)  # Checking for any platform build
-
-				if not last_candidate_build:
-					frappe.throw("No build present for this release group", frappe.ValidationError)
-
-				self.append("servers", {"server": server, "default": False})
-				self.save()
-
-				return create_platform_build_and_deploy(
-					deploy_candidate=last_candidate_build.candidate.name,  # type: ignore
-					server=server,
-					platform=server_platform,
-				)
-
-			try:
-				return last_successful_deploy_candidate_build._create_deploy(
-					[server],
-					check_image_exists=True,
-				)
-			except ImageNotFoundInRegistry:
-				return self.add_server(server=server, deploy=True, force_new_build=True)
+			self.deploy_on_server(server, force_new_build=force_new_build)
 
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 		return None
+
+	@frappe.whitelist()
+	def redeploy_on_missing_servers(self):
+		"""
+		Redeploy if latest candidate is not deployed on any server
+		"""
+		deployed_servers = frappe.db.get_all(
+			"Bench",
+			filters={"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))},
+			pluck="server",
+		)
+
+		for server in self.servers:
+			if server.server in deployed_servers:
+				continue
+			self.deploy_on_server(server.server)
 
 	@frappe.whitelist()
 	def change_server(self, server: str):

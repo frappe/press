@@ -101,6 +101,22 @@ frappe.ui.form.on('Release Group', {
 			},
 			__('Actions'),
 		);
+		frm.add_custom_button(
+			'Redeploy on Missing Servers',
+			() => {
+				frappe.confirm(
+					'This will trigger a redeploy of the last successful candidate on servers which are missing a bench. Do you want to continue?',
+					() => {
+						frm.call('redeploy_on_missing_servers').then((r) => {
+							if (!r.exc) {
+								frappe.show_alert(`Redeploy triggered on missing servers`);
+							}
+						});
+					},
+				);
+			},
+			__('Actions'),
+		);
 
 		frm.set_df_property('dependencies', 'cannot_add_rows', 1);
 	},
