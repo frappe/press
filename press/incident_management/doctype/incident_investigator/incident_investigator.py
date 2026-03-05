@@ -19,6 +19,9 @@ from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 from prometheus_api_client import MetricRangeDataFrame, PrometheusConnect
 
+from press.incident_management.doctype.incident_investigator.utils.incident_pattern_detector import (
+	IncidentPatternDetector,
+)
 from press.runner import Ansible, StepHandler
 from press.runner import Status as StepStatus
 
@@ -71,7 +74,7 @@ class PrometheusInvestigationHelper:
 		if self.prometheus_client is None:
 			self.prometheus_client = get_prometheus_client()
 
-	# Define the investigation steps for different servers
+	# Define the investigation steps for different servers for prometheus based investigations
 	INVESTIGATION_CHECKS: typing.ClassVar = {
 		"server_investigation_steps": [
 			"has_high_disk_usage",
@@ -85,7 +88,6 @@ class PrometheusInvestigationHelper:
 			"has_high_memory_usage",
 			"has_high_system_load",
 		],
-		"proxy_investigation_steps": ["are_sites_on_proxy_down"],
 	}
 
 	@classmethod
@@ -796,8 +798,16 @@ class IncidentInvestigator(Document, StepHandler):
 			"Press Settings", "execute_incident_action", cache=True
 		)
 
+		pattern_detector = IncidentPatternDetector(self)
+
 		if self.action_steps and execute_action_steps:
 			# Execute action steps via step handler
+			pattern_detector_step = self.get_steps([pattern_detector.detect_patterns])[
+				0
+			]  # Add pattern detection as the last step in the workflow
+			self.append("action_steps", pattern_detector_step)
+			self.save()
+
 			frappe.enqueue_doc(
 				self.doctype,
 				self.name,
@@ -805,6 +815,7 @@ class IncidentInvestigator(Document, StepHandler):
 				method_objects=[
 					database_investigation_actions,
 					app_server_investigation_actions,
+					pattern_detector,
 				],
 				start_status=Status.REACTING,
 				success_status=Status.COMPLETED,
