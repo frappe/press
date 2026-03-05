@@ -190,6 +190,8 @@
   "plausible_site_id",
   "plausible_api_key",
   "infrastructure_tab",
+  "general_section",
+  "production_server_ip",
   "agent_section",
   "agent_repository_owner",
   "agent_sentry_dsn",
@@ -1633,12 +1635,22 @@
    "fieldname": "school_api_secret",
    "fieldtype": "Password",
    "label": "School API Secret"
+  },
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "General"
+  },
+  {
+   "fieldname": "production_server_ip",
+   "fieldtype": "Data",
+   "label": "Production Server IP"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-01-21 10:16:18.560642",
- "modified_by": "Administrator",
+ "modified": "2026-03-05 12:43:48.138570",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Press Settings",
  "owner": "Administrator",
