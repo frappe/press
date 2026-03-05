@@ -1533,12 +1533,12 @@ class ReleaseGroup(Document, TagHelpers):
 			)
 
 		try:
-			last_successful_deploy_candidate_build._create_deploy(
+			return last_successful_deploy_candidate_build._create_deploy(
 				[server],
 				check_image_exists=True,
 			)
 		except ImageNotFoundInRegistry:
-			self.deploy_on_server(server=server, force_new_build=True)
+			return self.deploy_on_server(server=server, force_new_build=True)
 
 	@frappe.whitelist()
 	def add_server(self, server: str, deploy=False, force_new_build: bool = False) -> str | None:
@@ -1586,7 +1586,9 @@ class ReleaseGroup(Document, TagHelpers):
 			return self.add_server(server=server, deploy=True, force_new_build=True)
 =======
 		if deploy:
-			self.deploy_on_server(server, force_new_build=force_new_build)
+			self.append("servers", {"server": server, "default": False})
+			self.save()
+			return self.deploy_on_server(server, force_new_build=force_new_build)
 
 		self.append("servers", {"server": server, "default": False})
 		self.save()
