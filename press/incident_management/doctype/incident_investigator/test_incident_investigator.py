@@ -462,8 +462,9 @@ class TestIncidentInvestigator(FrappeTestCase):
 			"Incident Investigator", {"incident": incident_2.name}
 		)
 
+		mock_action_step = MockStep()
 		pattern_detector: IncidentPatternDetector = IncidentPatternDetector(investigator_2)
-		pattern_detector.detect_patterns()
+		pattern_detector.detect_patterns(mock_action_step)
 
 		self.assertEqual(
 			len(frappe.get_all("Incident Pattern", {"server": self.server.name})), 0
@@ -476,8 +477,9 @@ class TestIncidentInvestigator(FrappeTestCase):
 			"Incident Investigator", {"incident": incident_3.name}
 		)
 
+		mock_action_step = MockStep()
 		pattern_detector: IncidentPatternDetector = IncidentPatternDetector(investigator_3)
-		pattern_detector.detect_patterns()
+		pattern_detector.detect_patterns(mock_action_step)
 
 		self.assertEqual(
 			len(frappe.get_all("Incident Pattern", {"server": self.server.name})), 1
@@ -494,8 +496,9 @@ class TestIncidentInvestigator(FrappeTestCase):
 			"Incident Investigator", {"incident": incident_4.name}
 		)
 
+		mock_action_step = MockStep()
 		pattern_detector: IncidentPatternDetector = IncidentPatternDetector(investigator_4)
-		pattern_detector.detect_patterns()
+		pattern_detector.detect_patterns(mock_action_step)
 
 		# No records created this pattern record has been created this week already
 		self.assertEqual(len(frappe.get_all("Incident Pattern", {"server": self.server.name})), 1)
