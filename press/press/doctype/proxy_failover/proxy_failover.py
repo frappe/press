@@ -250,6 +250,12 @@ class ProxyFailover(Document, StepHandler):
 			{"is_primary": True, "is_replication_setup": False, "primary": None},
 		)
 
+		frappe.db.set_value(
+			"Proxy Server",
+			self.primary,
+			{"exclude_from_auto_selection": True},
+		)
+
 		step.status = Status.Success
 		step.save()
 
