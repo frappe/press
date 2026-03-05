@@ -818,8 +818,6 @@ class SiteMigration(Document):
 			)  # sometimes site may not even get created in destination to clean it up
 		)
 
-<<<<<<< HEAD
-=======
 	def get_steps(self) -> list[dict]:
 		steps = []
 		for step in self.steps:
@@ -866,7 +864,6 @@ class SiteMigration(Document):
 
 		return steps
 
->>>>>>> a3b97fa49 (refactor(site-action): Move Site to Different Cluster)
 
 def process_required_job_callbacks(job):
 	if job.job_type == "Backup Site":

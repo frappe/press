@@ -1338,8 +1338,6 @@ class Site(Document, TagHelpers):
 		doc.status = "Cancelled"
 		doc.save()
 
-<<<<<<< HEAD
-=======
 	@dashboard_whitelist()
 	def create_migration_plan(
 		self,
@@ -1423,7 +1421,6 @@ class Site(Document, TagHelpers):
 		assert doc is not None, "Invalid migration plan type"
 		return doc.name
 
->>>>>>> 69aebebe4 (refactor(site-action): Shared to Private Bench Migration Flow)
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
@@ -3458,30 +3455,6 @@ class Site(Document, TagHelpers):
 				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{
-<<<<<<< HEAD
-				"action": "Change region",
-				"description": "Move your site to a different region",
-				"button_label": "Change",
-				"doc_method": "change_region",
-				"condition": self.status in ["Active", "Broken", "Inactive"],
-			},
-			{
-				"action": "Change bench group",
-				"description": "Move your site to a different bench",
-				"button_label": "Change",
-				"doc_method": "change_bench",
-				"condition": self.status in ["Active", "Broken", "Inactive"],
-			},
-			{
-				"action": "Change server",
-				"description": "Move your site to a different server",
-				"button_label": "Change",
-				"doc_method": "change_server",
-				"condition": self.status in ["Active", "Broken", "Inactive"] and not self.is_group_public,
-			},
-			{
-=======
->>>>>>> 54b7becde (refactor(site): Remove Change Bench Group from actions)
 				"action": "Clear cache",
 				"description": "Clear cache on your site",
 				"button_label": "Clear",
@@ -3495,16 +3468,6 @@ class Site(Document, TagHelpers):
 				"doc_method": "deactivate",
 			},
 			{
-<<<<<<< HEAD
-				"action": "Migrate site",
-				"description": "Run bench migrate command on your site",
-				"button_label": "Migrate",
-				"doc_method": "migrate",
-				"group": "Dangerous Actions",
-			},
-			{
-=======
->>>>>>> 54b7becde (refactor(site): Remove Change Bench Group from actions)
 				"action": "Restore with files",
 				"description": "Restore with database, public and private files",
 				"button_label": "Restore",
@@ -3956,8 +3919,6 @@ class Site(Document, TagHelpers):
 
 		update_infos("Site", self.name, values)
 
-<<<<<<< HEAD
-=======
 	@dashboard_whitelist()
 	def get_migration_options(self):
 		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
@@ -4067,7 +4028,6 @@ class Site(Document, TagHelpers):
 			},
 		}
 
->>>>>>> 8538c03fc (refactor(site-action): Move Site to Different Server)
 	@property
 	def recent_offsite_backups_(self):
 		site_backups = frappe.qb.DocType("Site Backup")
