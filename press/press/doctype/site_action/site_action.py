@@ -118,7 +118,10 @@ class SiteAction(Document):
 			frappe.throw(f"You don't have permission to deploy on server {server.name}")
 
 		if current_release_group.public:
-			self.set_argument("new_release_group_name", current_release_group.title + " - Clone")
+			self.set_argument(
+				"new_release_group_name",
+				self._ensure_no_duplicate_release_group_title(current_release_group.title + " - Clone"),
+			)
 		else:
 			if not any(server.server == destination_server for server in current_release_group.servers):
 				current_release_group.add_server(
@@ -197,7 +200,9 @@ class SiteAction(Document):
 
 			# Else, we will clone current release group
 			else:
-				new_group_title = self.get_argument("new_release_group_name") or f"{site.group} - Cloned"
+				new_group_title = self._ensure_no_duplicate_release_group_title(
+					self.get_argument("new_release_group_name") or f"{site.group} - Cloned"
+				)
 				new_group: ReleaseGroup = frappe.new_doc("Release Group")
 				new_group.update(
 					{
@@ -760,6 +765,22 @@ class SiteAction(Document):
 				f"Site has following apps {', '.join(diff)} which are not present in the destination release group. Please install those apps in the destination release group or remove them from the site before moving.",
 				frappe.ValidationError,
 			)
+
+	def _ensure_no_duplicate_release_group_title(self, name: str) -> str:
+		if not name:
+			return frappe.generate_hash(length=10)
+
+		while True:
+			if not frappe.db.exists(
+				"Release Group",
+				{
+					"team": self.team,
+					"title": name,
+					"enabled": True,
+				},
+			):
+				return name
+			name = f"{name} - {frappe.generate_hash(length=5)}"
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site Action")
