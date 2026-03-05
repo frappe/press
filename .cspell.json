@@ -747,9 +747,14 @@
         "FLST",
 <<<<<<< HEAD
         "noopener",
+<<<<<<< HEAD
         "noreferrer"
 =======
         "pyotp"
 >>>>>>> 90948b56e (docs(guards): Documentation for guards)
+=======
+        "noreferrer",
+        "centralise"
+>>>>>>> 92b3785c6 (docs(guards): Introduction)
     ]
 }
