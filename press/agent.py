@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_backup.site_backup import SiteBackup
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 APPS_LIST_REGEX = re.compile(r"\[.*\]")
@@ -1423,13 +1424,22 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			database_server.guess_data_disk_mountpoint()
 		)
 
+		iops = None
+
+		if database_server.provider in ["AWS EC2", "OCI"] and data_disk_volume and data_disk_volume.volume_id:
+			vm: VirtualMachine = frappe.get_doc("Virtual Machine", database_server.virtual_machine)
+			for disk in vm.volumes:
+				if disk.volume_id == data_disk_volume.volume_id:
+					iops = disk.iops
+					break
+
 		return self.create_agent_job(
 			"Update Database Schema Sizes",
 			"database/update-schema-sizes",
 			data={
 				"private_ip": database_server.private_ip,
 				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
-				"io_ops_limit": min(int(data_disk_volume.iops * 0.2), 300) if data_disk_volume else 300,
+				"io_ops_limit": max(int(iops * 0.2), 300) if iops else 300,
 				"concurrency": 50,
 			},
 			reference_doctype=self.server_type,
