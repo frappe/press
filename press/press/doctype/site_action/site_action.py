@@ -121,11 +121,11 @@ class SiteAction(Document):
 			self.set_argument("new_release_group_name", current_release_group.title + " - Clone")
 		else:
 			if not any(server.server == destination_server for server in current_release_group.servers):
-				current_release_group.add_server(
-					destination_server,
-					deploy=False,
-					force_new_build=False,
+				current_release_group.append(
+					"servers",
+					{"server": destination_server, "default": False},
 				)
+				current_release_group.save()
 				self.set_argument("destination_release_group", current_release_group.name)
 
 		if self.get_argument("destination_release_group"):
@@ -755,7 +755,10 @@ class SiteAction(Document):
 	def _validate_apps_in_release_group(self, release_group_name: str) -> None:
 		destination_release_group: ReleaseGroup = frappe.get_doc("Release Group", release_group_name)
 		rg_apps = set(app.app for app in destination_release_group.apps)
-		if diff := rg_apps - set(self.site_doc.apps):
+		site_apps = set(app.app for app in self.site_doc.apps)
+		# Remove frappe from site_apps
+		site_apps.discard("frappe")
+		if diff := rg_apps - site_apps:
 			frappe.throw(
 				f"Site has following apps {', '.join(diff)} which are not present in the destination release group. Please install those apps in the destination release group or remove them from the site before moving.",
 				frappe.ValidationError,
