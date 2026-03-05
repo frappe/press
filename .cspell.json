@@ -744,7 +744,9 @@
         "FSEG",
         "XDES",
         "FLST",
+        "pyotp",
         "noopener",
-        "noreferrer"
+        "noreferrer",
+        "centralise"
     ]
 }
