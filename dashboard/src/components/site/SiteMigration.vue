@@ -218,13 +218,13 @@
 						/>
 
 						<p
-							v-if="$site.doc.group_public"
+							v-if="!$site.doc.group_public"
 							class="mt-1 text-sm text-gray-600"
 							:showIcon="false"
 						>
 							If the region you're looking for isn't available, please follow
 							<a
-								href="https://docs.frappe.io/cloud/sites/move-site-across-region"
+								href="https://docs.frappe.io/cloud/site/site-migrations/move-site-to-different-region"
 								target="_blank"
 								class="underline"
 								>this documentation</a
