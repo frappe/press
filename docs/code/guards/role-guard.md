@@ -7,21 +7,6 @@ documents based on roles defined in the `Press Role` doctype.
 Source:
 [`press/guards/role_guard/`](https://github.com/frappe/press/blob/develop/press/guards/role_guard/__init__.py)
 
-<<<<<<< HEAD
-[Example](https://github.com/frappe/press/blob/d8d02f37f21b76f49599f7e48647746dd591412c/press/api/billing.py#L506-L516)
-
-Here, the `get_invoice_usage` API is protected by the `role_guard` and only
-users with the "billing" role can access it. Additionally, we apply a team
-filter to ensure that users can only access invoices that belong to their team.
-
-Technically, the `role_guard` checks if the user has the required role in
-current team before allowing access to the API. It will not alter your queries
-or protect you from writing APIs that can potentially leak data. So, you should
-always apply necessary filters to your queries to ensure that users can only
-access data they are supposed to.
-
-[Example](https://github.com/frappe/press/blob/d8d02f37f21b76f49599f7e48647746dd591412c/press/api/partner.py#L50-L53)
-=======
 ## Overview
 
 The role guard enforces permissions at three levels:
@@ -97,7 +82,6 @@ def get_partner_request_status(team):
         "Partner Approval Request", {"requested_by": team}, "status"
     )
 ```
->>>>>>> 90948b56e (docs(guards): Documentation for guards)
 
 ## `role_guard.action`
 
@@ -106,13 +90,6 @@ permissions. This is a class method decorator.
 
 ### Action Mapping
 
-<<<<<<< HEAD
-Examples:
-
-[1](https://github.com/frappe/press/blob/d8d02f37f21b76f49599f7e48647746dd591412c/press/press/doctype/server/server.py#L2468-L2471)
-
-[2](https://github.com/frappe/press/blob/d8d02f37f21b76f49599f7e48647746dd591412c/press/api/notifications.py#L7-L25)
-=======
 The action key is determined by the document type and state:
 
 | Document Type   | Condition   | Press Role Field              |
@@ -190,7 +167,6 @@ def get_notifications(
 ):
     # ...
 ```
->>>>>>> 90948b56e (docs(guards): Documentation for guards)
 
 Multiple `@role_guard.document` decorators can be stacked. Each one
 independently checks permission for its document type.
