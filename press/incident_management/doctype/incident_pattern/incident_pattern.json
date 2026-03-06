@@ -28,12 +28,14 @@
   {
    "fieldname": "server",
    "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
    "label": "Server",
    "options": "server_type"
   },
   {
    "fieldname": "server_type",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Server Type",
    "options": "DocType"
   }
@@ -41,7 +43,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-05 15:38:25.034970",
+ "modified": "2026-03-06 11:13:13.445747",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Incident Pattern",
