@@ -34,7 +34,7 @@ class PressWebhook(Document):
 		)
 
 		enabled: DF.Check
-		endpoint: DF.Data
+		endpoint: DF.SmallText
 		events: DF.Table[PressWebhookSelectedEvent]
 		secret: DF.Data
 		team: DF.Link
