@@ -9,6 +9,7 @@ EVENT_TYPE_MAP = {
 	"invoice.finalized": "Finalized",
 	"invoice.payment_succeeded": "Succeeded",
 	"invoice.payment_failed": "Failed",
+	"invoice.paid": "Succeeded",
 }
 
 DISPUTE_EVENT_TYPE_MAP = {
@@ -62,7 +63,7 @@ class StripeWebhookHandler:
 
 		event_type = self.webhook_log.event_type
 		payment_status = "Unpaid"
-		if event_type == "invoice.payment_succeeded" or (
+		if event_type in ["invoice.payment_succeeded", "invoice.paid"] or (
 			event_type == "invoice.finalized" and stripe_invoice["status"] == "paid"
 		):
 			payment_status = "Paid"
