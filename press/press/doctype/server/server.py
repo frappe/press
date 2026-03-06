@@ -1578,7 +1578,12 @@ class BaseServer(Document, TagHelpers):
 	@property
 	def real_ram(self):
 		"""Ram detected by OS after h/w reservation"""
-		return 0.972 * self.ram - 218
+		real_ram = 0.972 * self.ram - 218
+
+		if hasattr(self, "is_unified_server") and self.is_unified_server:
+			return real_ram / 2
+
+		return real_ram
 
 	@frappe.whitelist()
 	def reboot_with_serial_console(self):
@@ -2233,6 +2238,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			log_error("Sever File Copy Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def setup_logrotate(self):
+		"""Setup monitor json & mariadb logrotate"""
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_logrotate", queue="long", timeout=1200)
+
+	@frappe.whitelist()
 	def install_cadvisor(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_install_cadvisor")
 
@@ -2261,6 +2271,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		self.setup_ncdu()
 		self.setup_iptables()
 		self.install_cadvisor()
+		self.setup_logrotate()  # Logrotate monitor json
 
 		# Database Server specific config
 		database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
@@ -2271,7 +2282,8 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		database_server.adjust_memory_config()
 		database_server.provide_frappe_user_du_and_find_permission()
-		database_server.setup_logrotate()
+		database_server.provide_frappe_user_mariadb_table_usage_permission()
+		database_server.setup_logrotate()  # Logrotate mariadb logs
 		database_server.setup_user_lingering()
 
 		self.validate_mounts()
@@ -2298,6 +2310,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		self.set_swappiness()
 		self.add_glass_file()
 		self.install_filebeat()
+		self.setup_logrotate()
 
 		if self.doctype == "Server":
 			self.install_nfs_common()
@@ -2320,7 +2333,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
 			self.provide_frappe_user_du_and_find_permission()
-			self.setup_logrotate()
+			self.provide_frappe_user_mariadb_table_usage_permission()
 			self.setup_user_lingering()
 
 			if self.has_data_volume:
@@ -2380,12 +2393,16 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return None
 
 	@frappe.whitelist()
+	def get_static_ip(self):
+		if self.provider == "AWS EC2":
+			return self.get_aws_static_ip()
+		if self.provider == "OCI":
+			return self.get_oci_static_ip()
+
+		frappe.throw(f"Not implemented for {self.provider} provider")
+		return None
+
 	def get_aws_static_ip(self):
-		if self.provider != "AWS EC2":
-			frappe.throw("Failed to proceed as VM is not AWS EC2")
-
-		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
-
 		cluster_doc = frappe.get_doc("Cluster", self.cluster)
 		region_name = cluster_doc.region
 		aws_access_key_id = cluster_doc.aws_access_key_id
@@ -2393,6 +2410,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			"Cluster", self.cluster, fieldname="aws_secret_access_key"
 		)
 
+		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		instance_id = vm_doc.instance_id
 
 		# Initialize EC2 client
@@ -2415,6 +2433,56 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		vm_doc.sync()
 
 		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
+
+	def get_oci_static_ip(self):
+		import oci
+
+		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		cluster_doc = frappe.get_doc("Cluster", self.cluster)
+		config = cluster_doc.get_oci_config()
+
+		compute_client = oci.core.ComputeClient(config)
+		network_client = oci.core.VirtualNetworkClient(config)
+
+		# 1. Get VNIC ID (Compute instances can have multiple, we'll take the primary)
+		vnic_attachments = compute_client.list_vnic_attachments(
+			compartment_id=cluster_doc.oci_tenancy, instance_id=vm_doc.instance_id
+		).data
+
+		if not vnic_attachments:
+			frappe.throw("No VNIC found for this OCI instance.")
+
+		vnic_id = vnic_attachments[0].vnic_id
+
+		# 2. Find the Primary Private IP ID (Public IPs are linked to Private IPs in OCI)
+		private_ips = network_client.list_private_ips(vnic_id=vnic_id).data
+		primary_private_ip = next((ip for ip in private_ips if ip.is_primary), None)
+
+		if not primary_private_ip:
+			frappe.throw("Primary Private IP not found.")
+
+		# 3. Check for existing Public IP and remove it if it exists
+		existing_public_ip = network_client.get_public_ip_by_private_ip_id(
+			get_public_ip_by_private_ip_id_details=oci.core.models.GetPublicIpByPrivateIpIdDetails(
+				private_ip_id=primary_private_ip.id
+			)
+		).data
+
+		if existing_public_ip:
+			# If it's ephemeral, we can just delete/detach it
+			network_client.delete_public_ip(existing_public_ip.id)
+
+		# 4. Create (Allocate) a Reserved Public IP
+		reserved_ip_details = oci.core.models.CreatePublicIpDetails(
+			compartment_id=cluster_doc.oci_tenancy,
+			lifetime="RESERVED",
+			private_ip_id=primary_private_ip.id,  # This assigns it immediately
+		)
+
+		reserved_ip_response = network_client.create_public_ip(reserved_ip_details).data
+
+		vm_doc.sync()
+		return f"Static IP {reserved_ip_response.ip_address} allotted to the VM (OCID: {reserved_ip_response.id})"
 
 
 class Server(BaseServer):
@@ -2675,6 +2743,18 @@ class Server(BaseServer):
 		"""Drop secondary server"""
 		server: "Server" = frappe.get_doc("Server", self.secondary_server)
 		server.archive()
+
+	def _setup_logrotate(self):
+		try:
+			ansible = Ansible(
+				playbook="rotate_monitor_json_logs.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Logrotate Setup Exception", server=self.as_dict())
 
 	@dashboard_whitelist()
 	@frappe.whitelist()

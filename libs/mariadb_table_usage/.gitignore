@@ -1,0 +1,12 @@
+test*
+*.wal
+
+**/lib/**
+__pycache__
+env
+venv
+dist
+build
+*.egg-info
+*.prof
+tmp*

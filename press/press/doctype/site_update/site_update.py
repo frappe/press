@@ -231,7 +231,7 @@ class SiteUpdate(Document):
 
 		if diff := set(site_apps) - set(bench_apps):
 			frappe.throw(
-				f"Destination Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
+				f"Destination Bench <b>{self.destination_bench}</b> doesn't have some of the apps installed on the site: {', '.join(diff)}. Please uninstall them from the site or add them back to the bench (and update the same) before proceeding.",
 				frappe.ValidationError,
 			)
 
@@ -239,6 +239,7 @@ class SiteUpdate(Document):
 		self.backup_type = "Logical"
 		site: "Site" = frappe.get_cached_doc("Site", self.site)
 		site.check_move_scheduled()
+		site.check_fatal_site_update()
 
 	def after_insert(self):
 		if not self.scheduled_time:
@@ -576,6 +577,7 @@ class SiteUpdate(Document):
 					update_status(self.name, "Fatal")
 					# mark site as broken
 					frappe.db.set_value("Site", self.site, "status", "Broken")
+					frappe.db.set_value("Site", self.site, "fatal_site_update", self.name)
 					return
 				if physical_backup_restoration_status != "Success":
 					# just to be safe
@@ -696,6 +698,18 @@ class SiteUpdate(Document):
 
 		if self.activate_site_job:
 			steps.extend(self.get_job_steps(self.activate_site_job, "Activate Site"))
+
+		# If there is no steps, add a dummy step to show that the update is scheduled but yet to start
+		if not steps:
+			steps = [
+				{
+					"name": "site_update_scheduled",
+					"title": f"Scheduled at {convert_utc_to_system_timezone(self.scheduled_time).strftime('%Y-%m-%d %H:%M:%S') if self.scheduled_time and self.status == 'Scheduled' else ''}",
+					"status": "Pending",
+					"output": "",
+					"stage": "Site Update",
+				}
+			]
 		return steps
 
 	def get_job_steps(self, job: str, stage: str):
@@ -719,6 +733,9 @@ class SiteUpdate(Document):
 	@frappe.whitelist()
 	def set_cause_of_failure_is_resolved(self):
 		frappe.db.set_value("Site Update", self.name, "cause_of_failure_is_resolved", 1)
+		site: Site = frappe.get_doc("Site", self.site)
+		if site.fatal_site_update == self.name:
+			frappe.db.set_value("Site", self.site, "fatal_site_update", None)
 
 	@frappe.whitelist()
 	def set_status(self, status):
@@ -1135,6 +1152,7 @@ def process_update_site_recover_job_update(job: AgentJob):
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
+			frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
 
 
 def mark_stuck_updates_as_fatal():

@@ -1,16 +1,22 @@
-{% extends "templates/emails/base.html" %} 
+{% extends "templates/emails/base.html" %}
 
 {% block content %}
 <td class="text-base leading-6 text-gray-900">
 	<div class="p-8 bg-white">
         <p class="mb-4 font-bold">
-			Automated Version Upgrade Failed. Please resolve the issue and try again.
-		</p>
-        <p class="mb-6">
-            Site: {{ site }}
-            Traceback: <pre> {{ traceback }} </pre>
-            Output: <pre> {{ output }} </pre>
+            Automated Version Upgrade Failed. Please resolve the issue and try again.
         </p>
+        {% if bench_deploy_failure %}
+            <p class="mb-4">
+                This version upgrade requires creating a new bench, and that step failed.
+                Please resolve the bench deploy issue and try again, or contact support if needed.
+            </p>
+        {% endif %}
+        <div class="mb-6">
+           <p> Site: <b>{{ site }} </b></p>
+           <p>Traceback: <pre> {{ traceback }} </pre></p>
+           <p> Output: <pre> {{ output }} </pre></p>
+        </div>
     </div>
 </td>
 {% endblock %}

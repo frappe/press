@@ -3,7 +3,6 @@ import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import LucideAppWindow from '~icons/lucide/app-window';
 import LucideHardDriveDownload from '~icons/lucide/hard-drive-download';
-import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import LucideRocket from '~icons/lucide/rocket';
 import AddAppDialog from '../components/group/AddAppDialog.vue';
 import ChangeAppBranchDialog from '../components/group/ChangeAppBranchDialog.vue';
@@ -42,7 +41,7 @@ export default {
 	},
 	list: {
 		route: '/groups',
-		title: 'Bench Groups',
+		title: 'Benches',
 		fields: [{ apps: ['app'] }],
 		searchField: 'title',
 		filterControls() {
@@ -102,7 +101,7 @@ export default {
 		],
 		primaryAction() {
 			return {
-				label: 'New Bench Group',
+				label: 'New Bench',
 				variant: 'solid',
 				slots: {
 					prefix: icon('plus'),
@@ -115,7 +114,7 @@ export default {
 		banner({ listResource: groups }) {
 			if (!groups.data?.length) {
 				return {
-					title: 'Learn how to create a new private bench group and sites',
+					title: 'Learn how to create a new private bench and sites',
 					button: {
 						label: 'Read docs',
 						variant: 'outline',
@@ -483,13 +482,6 @@ export default {
 									() => h(icon('alert-circle', 'w-3 h-3'), {}),
 								);
 							},
-						},
-						{
-							label: 'Apps',
-							format(value, row) {
-								return (row.apps || []).join(', ');
-							},
-							width: '20rem',
 						},
 						{
 							label: 'Duration',
@@ -954,7 +946,9 @@ export default {
 					label: 'Impersonate Group Owner',
 					title: 'Impersonate Group Owner', // for label to pop-up on hover
 					slots: {
-						icon: icon(LucideVenetianMask),
+						icon: defineAsyncComponent(
+							() => import('~icons/lucide/venetian-mask'),
+						),
 					},
 					condition: () =>
 						team.doc?.is_desk_user && group.doc.team !== team.name,

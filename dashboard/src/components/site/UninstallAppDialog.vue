@@ -21,14 +21,22 @@
 					<b>{{ site.doc?.host_name || site.doc?.name }}</b>
 					?
 				</p>
-				<div
-					class="flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-gray-600"
+				<AlertBanner
+					title="All <b>doctypes</b> & <b>modules</b>, along with all the
+						<b>data</b> within this app will be removed from the site."
+					type="warning"
 				>
-					<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
-					<div>
-						All <b>doctypes</b> & <b>modules</b>, along with all the
-						<b>data</b> within this app will be removed from the site.
-					</div>
+				</AlertBanner>
+				<div class="">
+					<FormControl
+						type="checkbox"
+						label="Create an offsite backup"
+						v-model="createOffsiteBackup"
+					/>
+					<span class="block text-xs text-ink-gray-5 ml-[1.4rem]"
+						>An offsite backup of your site will be taken before uninstalling
+						app</span
+					>
 				</div>
 				<div v-if="app.collect_feedback" class="space-y-4">
 					<FormControl
@@ -62,6 +70,7 @@ import { useRouter } from 'vue-router';
 import { DocumentResource } from '../../objects/common/types';
 import { getToastErrorMessage } from '../../utils/toast';
 import { PropType, ref } from 'vue';
+import AlertBanner from '../AlertBanner.vue';
 
 const props = defineProps({
 	site: {
@@ -80,6 +89,7 @@ const showDialog = defineModel<boolean>({ default: true });
 const giveFeedback = ref(false);
 const feedback = ref('');
 const specifyFeedback = ref('');
+const createOffsiteBackup = ref(true);
 const feedbackOptions = [
 	'Switched to another tool',
 	'Was just testing, not a long-term user',
@@ -98,6 +108,7 @@ const uninstallApp = createResource({
 		method: 'uninstall_app',
 		args: {
 			app: props.app.app,
+			create_offsite_backup: createOffsiteBackup.value,
 			feedback:
 				feedback.value === 'Other' ? specifyFeedback.value : feedback.value,
 		},

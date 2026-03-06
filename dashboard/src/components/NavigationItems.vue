@@ -79,16 +79,16 @@ export default {
 						routeName.startsWith('Site Detail'),
 					disabled: enforce2FA,
 				},
-				{
+				/* {
 					name: 'Benches',
 					icon: () => h(Package),
 					route: '/benches',
 					isActive: routeName.startsWith('Bench'),
 					condition: this.$team.doc?.is_desk_user,
 					disabled: !onboardingComplete || enforce2FA,
-				},
+				}, */
 				{
-					name: 'Bench Groups',
+					name: 'Benches',
 					icon: () => h(Boxes),
 					route: onboardingComplete ? '/groups' : '/enable-bench-groups',
 					isActive:
@@ -100,7 +100,7 @@ export default {
 							'Deploy Candidate',
 						].includes(routeName) ||
 						routeName.startsWith('Release Group Detail') ||
-						routeName === 'Enable Bench Groups',
+						routeName === 'Enable Benches',
 					disabled: enforce2FA,
 				},
 				{

@@ -13,6 +13,8 @@
   "subdomain",
   "site_plan",
   "auto_provision_bench",
+  "column_break_ydwn",
+  "server",
   "provider",
   "release_group_section",
   "release_group",
@@ -130,11 +132,21 @@
    "hidden": 1,
    "label": "Provider",
    "options": "Cloud Provider"
+  },
+  {
+   "fieldname": "column_break_ydwn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "label": "Server",
+   "options": "Server"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 00:55:22.675800",
+ "modified": "2026-02-26 19:15:15.297073",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Group Deploy",

@@ -27,6 +27,7 @@ from oci.core.models import (
 	CreateBootVolumeBackupDetails,
 	CreateVnicDetails,
 	CreateVolumeBackupDetails,
+	GetPublicIpByIpAddressDetails,
 	InstanceOptions,
 	InstanceSourceViaImageDetails,
 	LaunchInstanceDetails,
@@ -1194,6 +1195,17 @@ class VirtualMachine(Document):
 				try:
 					vnic = self.client(VirtualNetworkClient).get_vnic(vnic_id=vnic_attachment.vnic_id).data
 					self.public_ip_address = vnic.public_ip
+					if self.public_ip_address:
+						# Look up the Public IP details using the IP address string
+						public_ip_details = (
+							self.client(VirtualNetworkClient)
+							.get_public_ip_by_ip_address(
+								GetPublicIpByIpAddressDetails(ip_address=self.public_ip_address)
+							)
+							.data
+						)
+
+						self.is_static_ip = public_ip_details.lifetime == "RESERVED"
 				except Exception:
 					log_error(
 						title="OCI VNIC Fetch Error",
@@ -1249,16 +1261,14 @@ class VirtualMachine(Document):
 		self.save()
 		self.update_servers()
 
-	def has_static_ip(self, instance) -> bool:
-		sip = False
-		try:
-			ip_owner_id = instance["NetworkInterfaces"][0]["Association"]["IpOwnerId"]
-			sip = ip_owner_id.lower() != "amazon"
-		except (KeyError, IndexError):
-			pass
-		return sip
-
 	def _sync_aws(self, response=None):  # noqa: C901
+		def _has_static_ip(instance) -> bool:
+			try:
+				ip_owner_id = instance["NetworkInterfaces"][0]["Association"]["IpOwnerId"]
+				return ip_owner_id.lower() != "amazon"
+			except (KeyError, IndexError):
+				return False
+
 		if not response:
 			try:
 				response = self.client().describe_instances(InstanceIds=[self.instance_id])
@@ -1273,7 +1283,7 @@ class VirtualMachine(Document):
 
 			self.public_ip_address = instance.get("PublicIpAddress")
 			self.private_ip_address = instance.get("PrivateIpAddress")
-			self.is_static_ip = self.has_static_ip(instance)
+			self.is_static_ip = _has_static_ip(instance)
 
 			if instance.get("NetworkInterfaces"):
 				self.secondary_private_ip = next(

@@ -29,7 +29,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action",
-   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nClear Cache\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups\nDrop Physical Backups\nEnable Database Access\nDisable Database Access\nCreate Database User\nRemove Database User\nModify Database User Permissions\nDisable Monitoring And Alerts\nEnable Monitoring And Alerts",
+   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nClear Cache\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups\nDrop Physical Backups\nEnable Database Access\nDisable Database Access\nCreate Database User\nRemove Database User\nModify Database User Permissions\nDisable Monitoring And Alerts\nEnable Monitoring And Alerts\nAccess Offsite Backups",
    "read_only": 1,
    "reqd": 1,
    "search_index": 1
@@ -57,7 +57,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-07 19:31:49.273641",
+ "modified": "2026-02-04 16:49:17.673505",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Activity",

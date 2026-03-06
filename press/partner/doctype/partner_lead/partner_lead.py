@@ -57,6 +57,7 @@ class PartnerLead(Document):
 		full_name: DF.Data | None
 		hosting: DF.Literal["Frappe Cloud", "Self Hosted"]
 		lead_name: DF.Data | None
+		lead_owner: DF.Link | None
 		lead_rating: DF.Rating
 		lead_source: DF.Literal["", "Partner Owned", "Passed to Partner", "Partner Listing"]
 		lead_type: DF.Link | None
@@ -85,10 +86,26 @@ class PartnerLead(Document):
 		require_deal_assistance: DF.Check
 		requirement: DF.Text | None
 		requirements: DF.SmallText | None
+		server_name: DF.Data | None
+		site_plan: DF.Data | None
 		site_url: DF.Data | None
 		state: DF.Data | None
-		status: DF.Literal["Open", "In Process", "Won", "Lost", "Junk", "Pass to Other Partner"]
+		status: DF.Literal[
+			"Open",
+			"Qualification",
+			"Demo/Making",
+			"Follow Up",
+			"Proposal/Quotation",
+			"Negotiation",
+			"Ready to Close",
+			"Won",
+			"Lost",
+			"Junk",
+			"Closed",
+		]
+		team_name: DF.Data | None
 		territory: DF.Data | None
+		total_invoice_amount: DF.Float
 	# end: auto-generated types
 
 	dashboard_fields = (
@@ -122,14 +139,20 @@ class PartnerLead(Document):
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		PartnerLead = frappe.qb.DocType("Partner Lead")
-		query = frappe.qb.from_(PartnerLead).select(
-			PartnerLead.name,
-			PartnerLead.organization_name,
-			PartnerLead.status,
-			PartnerLead.engagement_stage,
-			PartnerLead.lead_source,
-			PartnerLead.lead_name,
-			PartnerLead.company_name,
+		query = (
+			frappe.qb.from_(PartnerLead)
+			.select(
+				PartnerLead.name,
+				PartnerLead.organization_name,
+				PartnerLead.status,
+				PartnerLead.engagement_stage,
+				PartnerLead.lead_source,
+				PartnerLead.lead_name,
+				PartnerLead.company_name,
+			)
+			.limit(list_args["limit"])
+			.offset(list_args["start"])
+			.orderby(PartnerLead.modified, order=frappe.qb.desc)
 		)
 
 		if filters:

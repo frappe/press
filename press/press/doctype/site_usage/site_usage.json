@@ -22,7 +22,8 @@
    "in_standard_filter": 1,
    "label": "Site",
    "options": "Site",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "database",
@@ -61,8 +62,9 @@
    "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "links": [],
- "modified": "2023-10-19 14:31:13.374011",
+ "modified": "2026-02-18 18:13:11.271217",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Usage",
@@ -82,6 +84,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

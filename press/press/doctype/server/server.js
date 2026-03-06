@@ -2,6 +2,17 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Server', {
+	onload: (frm) => {
+		frm.set_query('proxy_server', () => {
+			return {
+				filters: {
+					status: 'Active',
+					is_server_setup: 1,
+					exclude_from_auto_selection: 0,
+				},
+			};
+		});
+	},
 	refresh: function (frm) {
 		frm.add_web_link(
 			`/dashboard/servers/${frm.doc.name}`,
@@ -64,12 +75,8 @@ frappe.ui.form.on('Server', {
 				true,
 				frm.doc.is_server_setup,
 			],
-			[
-				__('Get AWS Static IP'),
-				'get_aws_static_ip',
-				false,
-				frm.doc.provider === 'AWS EC2',
-			],
+			[__('Get Static IP'), 'get_static_ip', false],
+			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
 			[
 				__('Setup PySpy'),
 				'setup_pyspy',
@@ -263,11 +270,17 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Setup Wildcard Hosts'),
+				'setup_wildcard_hosts',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_standalone_setup,
+			],
+      [
 				__('Install NAT iptables'),
 				'install_nat_iptables',
 				true,
 				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.private_ip,
-			],
+      ],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -300,36 +313,36 @@ frappe.ui.form.on('Server', {
 			}
 		});
 
-		if ((frm.doc.is_server_setup, frm.doc.is_primary)) {
-			frm.add_custom_button(
-				'Setup Secondary Server',
-				() => {
-					frappe.prompt(
-						[
-							{
-								fieldtype: 'Link',
-								fieldname: 'server_plan',
-								label: __('Server Plan'),
-								options: 'Server Plan',
-								reqd: 1,
-							},
-						],
-						({ server_plan }) => {
-							frm
-								.call('setup_secondary_server', {
-									server_plan: server_plan,
-								})
-								.then((r) => {
-									frm.refresh();
-								});
-						},
-					);
-				},
-				__('Actions'),
-			);
-		}
-
 		if (frm.doc.is_server_setup) {
+			if (frm.doc.is_primary) {
+				frm.add_custom_button(
+					'Setup Secondary Server',
+					() => {
+						frappe.prompt(
+							[
+								{
+									fieldtype: 'Link',
+									fieldname: 'server_plan',
+									label: __('Server Plan'),
+									options: 'Server Plan',
+									reqd: 1,
+								},
+							],
+							({ server_plan }) => {
+								frm
+									.call('setup_secondary_server', {
+										server_plan: server_plan,
+									})
+									.then((r) => {
+										frm.refresh();
+									});
+							},
+						);
+					},
+					__('Actions'),
+				);
+			}
+
 			frm.add_custom_button(
 				__('Increase Swap'),
 				() => {

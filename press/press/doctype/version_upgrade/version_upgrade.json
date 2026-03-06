@@ -15,6 +15,10 @@
   "destination_group",
   "skip_failing_patches",
   "skip_backups",
+  "section_break_jyaj",
+  "deploy_private_bench",
+  "column_break_iqgs",
+  "bench_deploy_successful",
   "section_break_8",
   "last_output",
   "last_traceback"
@@ -39,7 +43,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "status",
-   "options": "Scheduled\nPending\nRunning\nSuccess\nFailure"
+   "options": "Scheduled\nPending\nRunning\nSuccess\nFailure\nCancelled"
   },
   {
    "fieldname": "site_update",
@@ -97,11 +101,33 @@
    "fieldname": "skip_backups",
    "fieldtype": "Check",
    "label": "Skip Backups"
+  },
+  {
+   "fieldname": "section_break_jyaj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "deploy_private_bench",
+   "fieldtype": "Check",
+   "label": "Deploy Private Bench",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_iqgs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "bench_deploy_successful",
+   "fieldtype": "Check",
+   "label": "Bench Deploy Successful",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-23 22:33:56.984926",
+ "modified": "2026-02-17 17:30:22.256650",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Version Upgrade",
@@ -140,6 +166,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

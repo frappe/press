@@ -28,6 +28,7 @@ class ProductTrial(Document):
 		from press.press.doctype.site.site import Site
 		from press.saas.doctype.hybrid_pool_item.hybrid_pool_item import HybridPoolItem
 		from press.saas.doctype.product_trial_app.product_trial_app import ProductTrialApp
+		from press.saas.doctype.product_trial_help_text.product_trial_help_text import ProductTrialHelpText
 
 		apps: DF.Table[ProductTrialApp]
 		domain: DF.Link
@@ -37,6 +38,7 @@ class ProductTrial(Document):
 		email_subject: DF.Data
 		enable_hybrid_pooling: DF.Check
 		enable_pooling: DF.Check
+		help_texts: DF.Table[ProductTrialHelpText]
 		hybrid_pool_rules: DF.Table[HybridPoolItem]
 		logo: DF.AttachImage | None
 		published: DF.Check
@@ -58,6 +60,7 @@ class ProductTrial(Document):
 		"trial_days",
 		"trial_plan",
 		"redirect_to_after_login",
+		"help_texts",
 	)
 
 	def get_doc(self, doc):
@@ -65,7 +68,6 @@ class ProductTrial(Document):
 			frappe.throw("Not permitted")
 
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
-		doc.prefilled_subdomain = self.get_unique_site_name()
 		return doc
 
 	def validate(self):
@@ -92,7 +94,7 @@ class ProductTrial(Document):
 		self,
 		subdomain: str,
 		domain: str,
-		team: str,
+		team: str | None = None,
 		cluster: str | None = None,
 		account_request: str | None = None,
 	):
@@ -232,12 +234,15 @@ class ProductTrial(Document):
 
 	@staticmethod
 	def get_preferred_site(filters) -> str | None:
-		sites = frappe.db.get_all(
+		sites = frappe.db.get_values(
 			"Site",
 			filters=filters,
-			pluck="name",
+			fieldname="name",
 			order_by="status,standby_for,creation asc",
-			limit=10,
+			limit=3,
+			for_update=True,
+			skip_locked=True,
+			pluck=True,
 		)
 		if not sites:
 			return None
@@ -391,16 +396,67 @@ class ProductTrial(Document):
 		standby_sites = query.run(pluck=True)
 		return len(standby_sites)
 
+	def get_prefilled_subdomain(self, account_request: str | None = None) -> str:
+		"""
+		Get the prefilled subdomain based on the email domain of the account request.
+		If the email domain belongs to a free email provider, generate a unique site name instead.
+		"""
+		if not account_request:
+			return self.get_unique_site_name()
+
+		email = frappe.db.get_value("Account Request", account_request, "email")
+		free_email_providers = {
+			"gmail.com",
+			"yahoo.com",
+			"hotmail.com",
+			"outlook.com",
+			"aol.com",
+			"icloud.com",
+			"mail.com",
+			"zoho.com",
+			"protonmail.com",
+			"gmx.com",
+			"yandex.com",
+			"live.com",
+			"me.com",
+			"msn.com",
+			"googlemail.com",
+			"163.com",
+			"sina.com",
+			"qq.com",
+			"naver.com",
+			"hanmail.net",
+			"daum.net",
+			"nate.com",
+			"yahoo.co.jp",
+			"yahoo.co.in",
+			"yahoo.co.uk",
+			"hotmail.co.uk",
+			"live.co.uk",
+			"outlook.in",
+			"rediffmail.com",
+		}
+
+		if email and "@" in email:
+			domain = email.split("@")[1].lower()
+			if domain not in free_email_providers:
+				suggested_subdomain = domain.split(".")[0]
+				if len(suggested_subdomain) < 5:
+					suggested_subdomain += f"-{domain.split('.')[1]}"
+
+				return suggested_subdomain
+
+		return self.get_unique_site_name()
+
 	def get_unique_site_name(self):
-		subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
 		filters = {
-			"subdomain": subdomain,
+			"subdomain": f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}",
 			"domain": self.domain,
 			"status": ("!=", "Archived"),
 		}
 		while frappe.db.exists("Site", filters):
-			subdomain = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
-		return subdomain
+			filters["subdomain"] = f"{self.name}-{generate_random_name(segment_length=3, num_segments=2)}"
+		return filters["subdomain"]
 
 	def get_server_from_cluster(self, cluster):
 		"""Return the server with the least number of standby sites in the cluster"""

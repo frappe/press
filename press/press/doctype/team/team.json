@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "banned",
   "team_title",
   "user",
   "account_request",
@@ -31,6 +32,7 @@
   "subscription_details_section",
   "stripe_customer_id",
   "country",
+  "phone_number",
   "currency",
   "payment_mode",
   "billing_team",
@@ -82,6 +84,7 @@
   "ssh_access_enabled",
   "skip_backups",
   "enable_inplace_updates",
+  "relaxed_permissions",
   "column_break_31",
   "database_access_enabled",
   "enable_performance_tuning",
@@ -93,8 +96,6 @@
   "security_portal_enabled",
   "benches_enabled",
   "mpesa_enabled",
-  "hetzner_internal_user",
-  "allow_unified_servers",
   "discounts_section",
   "discounts",
   "is_us_eu",
@@ -258,7 +259,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "ssh_access_enabled",
    "fieldtype": "Check",
    "label": "SSH Access Enabled"
@@ -649,16 +650,23 @@
    "label": "Hybrid Servers Enabled"
   },
   {
-   "default": "0",
-   "fieldname": "hetzner_internal_user",
-   "fieldtype": "Check",
-   "label": "Hetzner Internal User"
+   "fieldname": "phone_number",
+   "fieldtype": "Phone",
+   "in_list_view": 1,
+   "label": "Phone Number",
+   "options": "Country"
   },
   {
    "default": "0",
-   "fieldname": "allow_unified_servers",
+   "fieldname": "banned",
    "fieldtype": "Check",
-   "label": "Allow Unified Servers"
+   "label": "Banned"
+  },
+  {
+   "default": "0",
+   "fieldname": "relaxed_permissions",
+   "fieldtype": "Check",
+   "label": "Relaxed Permissions"
   }
  ],
  "grid_page_length": 50,
@@ -724,8 +732,8 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2026-01-13 20:23:37.626353",
- "modified_by": "Administrator",
+ "modified": "2026-03-02 12:15:11.542102",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Team",
  "naming_rule": "Random",
