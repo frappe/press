@@ -237,6 +237,7 @@ class PressSettings(Document):
 				"payment_method.attached",
 				"invoice.payment_action_required",
 				"invoice.payment_succeeded",
+				"invoice.paid",
 				"invoice.payment_failed",
 				"invoice.finalized",
 				"mandate.updated",
