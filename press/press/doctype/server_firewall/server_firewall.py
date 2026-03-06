@@ -43,50 +43,6 @@ class ServerFirewall(Document):
 			query.inner_join(Server).on(Server.name == Firewall.server_id).where(Server.team == current_team)
 		)
 
-	def after_insert(self):
-		self.setup()
-
-	@frappe.whitelist()
-	def setup(self):
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_setup",
-		)
-
-	def _setup(self):
-		try:
-			Ansible(
-				playbook="firewall_setup.yml",
-				server=self.server,
-				user=self.server._ssh_user(),
-				port=self.server._ssh_port(),
-			).run()
-		except Exception:
-			log_error("Failed to setup firewall", doc=self)
-
-	def on_trash(self):
-		self.teardown()
-
-	@frappe.whitelist()
-	def teardown(self):
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_teardown",
-		)
-
-	def _teardown(self):
-		try:
-			Ansible(
-				playbook="firewall_teardown.yml",
-				server=self.server,
-				user=self.server._ssh_user(),
-				port=self.server._ssh_port(),
-			).run()
-		except Exception:
-			log_error("Failed to teardown firewall", doc=self)
-
 	def before_validate(self):
 		self.deduplicate_rules()
 
