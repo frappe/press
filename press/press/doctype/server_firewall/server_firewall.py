@@ -202,14 +202,14 @@ class ServerFirewall(Document):
 				{
 					"source": monitor,
 					"protocol": "TCP",
-					"action": "ACCEPT",
+					"action": "allow",
 				}
 			)
 			rules.append(
 				{
 					"destination": monitor,
 					"protocol": "TCP",
-					"action": "ACCEPT",
+					"action": "allow",
 				}
 			)
 		if production_ip := frappe.db.get_single_value("Press Settings", "production_server_ip", cache=True):
@@ -217,14 +217,14 @@ class ServerFirewall(Document):
 				{
 					"source": production_ip,
 					"protocol": "TCP",
-					"action": "ACCEPT",
+					"action": "allow",
 				}
 			)
 			rules.append(
 				{
 					"destination": production_ip,
 					"protocol": "TCP",
-					"action": "ACCEPT",
+					"action": "allow",
 				}
 			)
 		return rules
@@ -232,11 +232,11 @@ class ServerFirewall(Document):
 	def transform_action(self, action: str):
 		match action:
 			case "Allow":
-				return "ACCEPT"
+				return "allow"
 			case "Block":
-				return "DROP"
+				return "deny"
 			case _:
-				return "REJECT"
+				return "deny"
 
 	@property
 	def server(self) -> Server:

@@ -1,74 +1,58 @@
 ---
-- name: Link Input Chain
-  ansible.builtin.iptables:
-    chain: INPUT
-    jump: "{{ chain_main }}"
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
     state: present
-  when: enabled | bool
+  become: true
 
-- name: Link Docker Chain
-  ansible.builtin.iptables:
-    chain: DOCKER-USER
-    jump: "{{ chain_main }}"
-    state: present
-  when: enabled | bool
+- name: Check if ufw-docker exists
+  ansible.builtin.stat:
+    path: /usr/local/bin/ufw-docker
+  register: ufw_docker_stat
 
-- name: Link Output Chain
-  ansible.builtin.iptables:
-    chain: OUTPUT
-    jump: "{{ chain_main }}"
-    state: present
-  when: enabled | bool
+- name: Get UFW Docker
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/chaifeng/ufw-docker/2b419bbdde946a4fd1a8651940ad95b6b0b96dfa/ufw-docker
+    dest: /usr/local/bin/ufw-docker
+    mode: '0755'
+  become: true
+  when: not ufw_docker_stat.stat.exists
 
-- name: Unlink Input Chain
-  ansible.builtin.iptables:
-    chain: INPUT
-    jump: "{{ chain_main }}"
-    state: absent
-  when: not (enabled | bool)
+- name: Reset UFW
+  ufw:
+    state: reset
+  become: true
 
-- name: Unlink Docker Chain
-  ansible.builtin.iptables:
-    chain: DOCKER-USER
-    jump: "{{ chain_main }}"
-    state: absent
-  when: not (enabled | bool)
+- name: Allow traffic by default
+  ufw:
+    default: allow
+  become: true
 
-- name: Unlink Output Chain
-  ansible.builtin.iptables:
-    chain: OUTPUT
-    jump: "{{ chain_main }}"
-    state: absent
-  when: not (enabled | bool)
+- name: Enable UFW
+  ufw:
+    state: enabled
+  become: true
 
-- name: Clear Existing Main Rules
-  ansible.builtin.iptables:
-    chain: "{{ chain_main }}"
-    flush: yes
+- name: Install UFW Docker
+  ansible.builtin.command: ufw-docker install
+  become: true
 
-- name: Clear Existing Bypass Rules
-  ansible.builtin.iptables:
-    chain: "{{ chain_bypass }}"
-    flush: yes
+- name: Install UFW Docker service
+  ansible.builtin.command: ufw-docker install-service --force
+  become: true
 
-- name: Sync Rules (raw)
-  ansible.builtin.raw: >
-    iptables -A {{ chain_main }} \
-      -m conntrack --ctstate NEW,ESTABLISHED \
-      {% if item.source is defined %}--ctorigsrc {{ item.source }} {% endif %} \
-      {% if item.destination is defined %}--ctorigdst {{ item.destination }} {% endif %} \
-      -p {{ item.protocol }} -j {{ item.action }}
-  loop: "{{ rules }}"
-
-- name: Sync Bypass Rules using raw command
-  ansible.builtin.raw: >-
-    iptables -A {{ chain_bypass }} \
-      -m conntrack --ctstate NEW,ESTABLISHED \
-      {% if item.source is defined %}-m conntrack --ctorigsrc {{ item.source }} {% endif %}\
-      {% if item.destination is defined %}-m conntrack --ctorigdst {{ item.destination }} {% endif %}\
-      -p {{ item.protocol }} -j {{ item.action }}
+- name: Add bypass rules
+  ufw:
+    rule: "{{ item.action | lower }}"
+    from_ip: "{{ item.source | default('any') }}"
+    to_ip: "{{ item.destination | default('any') }}"
+    proto: "{{ item.protocol }}"
   loop: "{{ rules_bypass }}"
 
-- name: Persist rules across reboots
-  ansible.builtin.shell: iptables-save > /etc/iptables/rules.v4
-  become: true
+- name: Add user rules
+  ufw:
+    rule: "{{ item.action | lower }}"
+    from_ip: "{{ item.source | default('any') }}"
+    to_ip: "{{ item.destination | default('any') }}"
+    proto: "{{ item.protocol | lower }}"
+  loop: "{{ rules }}"
