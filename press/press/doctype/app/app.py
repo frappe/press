@@ -11,6 +11,7 @@ import semantic_version as sv
 from frappe.model.document import Document
 from semantic_version.base import AllOf, AnyOf
 
+from press.press.doctype.marketplace_app.marketplace_app import VersioningError
 from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
@@ -69,6 +70,12 @@ class App(Document):
 				source.add_version(new_version)
 		else:
 			# Add new App Source
+			if not supported_frappe_versions:
+				frappe.throw(
+					f"{frappe_version} does not match any supported versions, try relaxing the version constrains",
+					VersioningError,
+				)
+
 			source = frappe.get_doc(
 				{
 					"doctype": "App Source",
