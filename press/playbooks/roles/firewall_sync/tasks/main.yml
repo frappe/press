@@ -56,7 +56,7 @@
     rule: "{{ item.action | lower }}"
     from_ip: "{{ item.source | default('any') }}"
     to_ip: "{{ item.destination | default('any') }}"
-    proto: "{{ item.protocol }}"
+    proto: "{{ item.protocol | lower }}"
   loop: "{{ rules_bypass }}"
   become: true
   when: enabled | bool
