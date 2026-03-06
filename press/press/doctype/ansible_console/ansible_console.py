@@ -42,7 +42,7 @@ class AnsibleConsole(Document):
 	def run(self):
 		frappe.only_for("System Manager")
 		try:
-			self.set_inventory()
+			self.get_inventory()
 			ad_hoc = AnsibleAdHoc(sources=self.inventory)
 			for host in ad_hoc.run(self.command, self.nonce):
 				self.append("output", host)
@@ -56,7 +56,7 @@ class AnsibleConsole(Document):
 		frappe.get_doc(log).insert()
 		frappe.db.commit()
 
-	def set_inventory(self):
+	def get_inventory(self):
 		safe_exec(
 			self.inventory_console,
 			script_filename="Ansible Console",
@@ -154,10 +154,7 @@ class AnsibleAdHoc:
 		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
 
 		self._apply_proxy_configurations(proxy_map)
-		self.callback = self._callback()
-
-	def _callback(self):
-		return AnsibleCallback()
+		self.callback = AnsibleCallback()
 
 	def run(self, command, nonce=None, raw_params: bool = False, become_user: str = "root"):
 		shell_command_args = command
