@@ -206,8 +206,6 @@ scheduler_events = {
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 		"press.press.doctype.team.team.check_budget_alerts",
 		"press.press.doctype.site.site.archive_creation_failed_sites",
-		"press.press.doctype.site_backup.site_backup.delete_successful_unavailable_backups_for_archived_sites"
-		"press.press.doctype.site_backup.site_backup.delete_backups_for_archived_sites_after_retention",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -230,6 +228,7 @@ scheduler_events = {
 		"press.press.doctype.registry_server.registry_server.delete_old_images_from_registry",
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",
+		"press.press.doctype.site_backup.site_backup.delete_backups_for_archived_sites_after_retention",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -278,6 +277,10 @@ scheduler_events = {
 		"press.press.doctype.site.sync.sync_setup_wizard_status",
 		"press.press.doctype.site.archive.archive_suspended_trial_sites",
 		"press.press.doctype.agent_job.agent_job.flush",
+		"press.press.doctype.site_backup.site_backup.delete_successful_unavailable_backups_for_archived_sites"
+		"press.press.doctype.site_backup.site_backup.delete_failed_unavailable_backups_for_archived_sites"
+		"press.press.doctype.site_backup.site_backup.delete_agent_job_records_for_archived_sites"
+		"press.press.doctype.site_backup.site_backup.delete_site_activity_records_for_archived_sites",
 	],
 	"cron": {
 		"1-59/2 * * * *": [

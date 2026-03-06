@@ -767,6 +767,30 @@ def delete_agent_job_records_for_archived_sites():
 		frappe.db.commit()
 
 
+def delete_site_activity_records_for_archived_sites():
+	"""
+	For sites archived > 90 days ago, delete Site Activity records except 'Archive'
+	"""
+	cutoff_date = frappe.utils.add_to_date(frappe.utils.now(), days=-90)
+	Site = frappe.qb.DocType("Site")
+	SiteActivity = frappe.qb.DocType("Site Activity")
+
+	activities = (
+		frappe.qb.from_(SiteActivity)
+		.join(Site)
+		.on(Site.name == SiteActivity.site)
+		.select(SiteActivity.name)
+		.where(Site.status == "Archived")
+		.where(Site.modified < cutoff_date)
+		.where(SiteActivity.action != "Archive")
+		.limit(4000)
+	).run(pluck=True)
+
+	if activities:
+		frappe.db.delete("Site Activity", {"name": ("in", activities)})
+		frappe.db.commit()
+
+
 def delete_backups_for_archived_sites_after_retention():
 	"""
 	Delete all backups of archived sites if 6 months have passed since archival.
@@ -805,7 +829,6 @@ def delete_backups_for_archived_sites_after_retention():
 				reference_doctype="Site",
 				reference_name=site_name,
 			)
-	frappe.db.delete("Site Activity", {"site": ("in", site_names)})
 	frappe.db.delete("Agent Job", {"site": ("in", site_names)})
-	frappe.db.delete("Agent Job Step", {"site": ("in", site_names)})
+	frappe.db.delete("Site Activity", {"site": ("in", site_names)})
 	frappe.db.commit()
