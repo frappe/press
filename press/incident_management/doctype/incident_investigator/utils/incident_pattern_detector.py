@@ -65,11 +65,9 @@ class IncidentPatternDetector:
 
 	def __init__(self, investigator: "IncidentInvestigator"):
 		self.investigator = investigator
-		self.server = investigator.server
-		self.now = frappe.utils.now_datetime()
 
 		# Pattern detection parameters
-		self.detection_window = frappe.utils.add_to_date(days=-7)
+		self.detection_window = frappe.utils.add_to_date(days=-self.REPEAT_WINDOW_DAYS)
 
 	def _create_pattern_record(
 		self, server_type: str, server: str, cause_subset: list[str], investigations: list[str]
@@ -94,7 +92,7 @@ class IncidentPatternDetector:
 				"server": server,
 				"server_type": server_type,
 				"causes": cause_key,
-				"creation": (">=", frappe.utils.add_to_date(days=-self.REPEAT_WINDOW_DAYS)),
+				"creation": (">=", self.detection_window),
 			},
 		)
 
@@ -120,7 +118,7 @@ class IncidentPatternDetector:
 				(InvestigationStep.is_likely_cause == 1)
 				& (InvestigationStep.parentfield == parentfield)
 				& (IncidentInvestigator.server == self.investigator.server)
-				& (IncidentInvestigator.creation >= self.now - self.detection_window)
+				& (IncidentInvestigator.creation >= self.detection_window)
 			)
 			.groupby(IncidentInvestigator.name)
 			.having(likely_causes == cause_key)
@@ -142,14 +140,15 @@ class IncidentPatternDetector:
 		try:
 			database_server_causes = self.investigator.likely_causes.get("database", [])
 			app_server_causes = self.investigator.likely_causes.get("server", [])
-
-			# Detect patterns for database server causes
-			if database_server_causes:
-				self._detect_patterns("Database Server", database_server_causes)
+			is_unified_server = frappe.db.get_value("Server", self.investigator.server, "is_unified_server")
 
 			# Detect patterns for application server causes
 			if app_server_causes:
 				self._detect_patterns("Server", app_server_causes)
+
+			# Detect patterns for database server causes, we don't need to run this in case of unified servers, telemetry would be the same
+			if database_server_causes and not is_unified_server:
+				self._detect_patterns("Database Server", database_server_causes)
 
 			step.status = StepStatus.Success
 

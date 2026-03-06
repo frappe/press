@@ -747,6 +747,7 @@
         "pyotp",
         "noopener",
         "noreferrer",
-        "centralise"
+        "centralise",
+        "serialised"
     ]
 }

@@ -13,6 +13,7 @@ import frappe.utils
 import rq
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
+from frappe.utils import now_datetime
 from frappe.utils.password import get_decrypted_password
 
 from press.api.client import dashboard_whitelist
@@ -2649,7 +2650,7 @@ def database_flush_tables_of_public_servers():
 		fields=["name", "flush_table_execution_hour"],
 	)
 
-	current_hour = datetime.now().hour
+	current_hour = now_datetime().hour
 
 	for cluster in clusters:
 		if cluster.flush_table_execution_hour is None or cluster.flush_table_execution_hour != current_hour:
