@@ -204,7 +204,6 @@ import {
 } from '../../utils/components';
 import { computed, ref, inject, h, defineAsyncComponent } from 'vue';
 import router from '../../router';
-import { switchToTeam } from '../../data/team';
 
 const team = inject('team');
 const {
