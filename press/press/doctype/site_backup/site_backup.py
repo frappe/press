@@ -682,7 +682,7 @@ def _check_backup_steps_status(agent_job: str) -> bool:
 
 
 def delete_successful_unavailable_backups_for_archived_sites():
-	"""Clear 'Unavailable' backup records after 3 days of site archival, rataining failed backups to know the cause of failure"""
+	"""Clear 'Unavailable' backup records after 3 days of site archival, retain failed backups to know the cause of failure"""
 	cutoff_date = frappe.utils.add_to_date(frappe.utils.now(), days=-3)
 
 	Site = frappe.qb.DocType("Site")
@@ -706,11 +706,38 @@ def delete_successful_unavailable_backups_for_archived_sites():
 	job_names = [b.job for b in backups if b.job]
 
 	frappe.db.delete("Site Backup", {"name": ("in", backup_names)})
+	frappe.db.delete("Agent Job Step", {"agent_job": ("in", job_names)})
+	frappe.db.delete("Agent Job", {"name": ("in", job_names)})
+	frappe.db.commit()
 
-	if job_names:
-		frappe.db.delete("Agent Job Step", {"agent_job": ("in", job_names)})
-		frappe.db.delete("Agent Job", {"name": ("in", job_names)})
 
+def delete_failed_unavailable_backups_after_retention():
+	"""Clear failed backup records after 90 days of site archival"""
+	cutoff_date = frappe.utils.add_to_date(frappe.utils.now(), days=-90)
+
+	Site = frappe.qb.DocType("Site")
+	SiteBackup = frappe.qb.DocType("Site Backup")
+
+	backups = (
+		frappe.qb.from_(SiteBackup)
+		.join(Site)
+		.on(Site.name == SiteBackup.site)
+		.select(SiteBackup.name, SiteBackup.job)
+		.where(SiteBackup.status == "Failure")
+		.where(Site.status == "Archived")
+		.where(Site.modified < cutoff_date)
+		.limit(2000)
+	).run(as_dict=True)
+
+	if not backups:
+		return
+
+	backup_names = [b.name for b in backups]
+	job_names = [b.job for b in backups if b.job]
+
+	frappe.db.delete("Site Backup", {"name": ("in", backup_names)})
+	frappe.db.delete("Agent Job Step", {"agent_job": ("in", job_names)})
+	frappe.db.delete("Agent Job", {"name": ("in", job_names)})
 	frappe.db.commit()
 
 
