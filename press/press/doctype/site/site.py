@@ -4892,10 +4892,6 @@ def archive_suspended_sites():
 			frappe.log_error(title="Suspended Site Archive Error")
 			frappe.db.rollback()
 
-	signup_cluster = frappe.db.get_value("Saas Settings", "erpnext", "cluster")
-	agent = frappe.get_doc("Proxy Server", {"cluster": signup_cluster}).agent
-	agent.reload_nginx()
-
 
 def notify_site_scheduled_for_archival(site_name: str):
 	try:
