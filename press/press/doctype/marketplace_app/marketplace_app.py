@@ -188,21 +188,14 @@ class MarketplaceApp(WebsiteGenerator):
 			app_doc = new_app_doc(self.name, self.title)
 
 		if not self.sources:
-			try:
-				source = app_doc.add_source(
-					repository_url=self.repository_url,
-					branch=self.branch,
-					team=self.team,
-					github_installation_id=self.github_installation_id,
-					frappe_version=self.frappe_version,
-					public=True,
-				)
-			except frappe.MandatoryError:
-				frappe.throw(
-					"Failed to create app source since no version was found matching "
-					f"{self.frappe_version} try relaxing the version constraints",
-					VersioningError,
-				)
+			source = app_doc.add_source(
+				repository_url=self.repository_url,
+				branch=self.branch,
+				team=self.team,
+				github_installation_id=self.github_installation_id,
+				frappe_version=self.frappe_version,
+				public=True,
+			)
 			self.app = source.app
 			for version in source.versions:
 				self.append("sources", {"version": version.version, "source": source.name})
