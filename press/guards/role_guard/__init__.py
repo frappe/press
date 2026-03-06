@@ -29,7 +29,7 @@ def api(scope: Literal["billing", "partner"]):
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(*args, **kwargs):
-			if (not roles_enabled()) or utils_user.is_system_manager():
+			if (not roles_enabled()) or (skip_roles()) or utils_user.is_system_manager():
 				return fn(*args, **kwargs)
 			key = api_key(scope)
 			if not key:
@@ -66,7 +66,7 @@ def action():
 	def wrapper(fn):
 		@functools.wraps(fn)
 		def inner(self: Document, *args, **kwargs):
-			if (not roles_enabled()) or utils_user.is_system_manager():
+			if (not roles_enabled()) or (skip_roles()) or utils_user.is_system_manager():
 				return fn(self, *args, **kwargs)
 			key = action_key(self)
 			if not key:
@@ -115,16 +115,13 @@ def document(
 	"""
 
 	def wrapper(fn):
-		def gen_key(document_type: str) -> str:
-			return injection_key or document_type.lower().replace(" ", "_") + "s"
-
 		@functools.wraps(fn)
 		def inner(*args, **kwargs):
 			bound_args = inspect.signature(fn).bind(*args, **kwargs)
 			bound_args.apply_defaults()
 			t = document_type(bound_args.arguments)
 			n = document_name(bound_args.arguments)
-			r = (not roles_enabled()) or utils_user.is_system_manager() or check(t, n)
+			r = (not roles_enabled()) or (skip_roles()) or utils_user.is_system_manager() or check(t, n)
 			if not r and default_value:
 				return default_value(bound_args.arguments)
 			if not r:
@@ -153,7 +150,7 @@ def base_query() -> QueryBuilder:
 	)
 
 
-def check(document_type: str, document_name: str) -> bool | list[str]:
+def check(document_type: str, document_name: str) -> bool | list[str]:  # noqa: C901
 	"""
 	Check if the user has permission to access a specific document type and name.
 	"""
@@ -210,4 +207,34 @@ def roles_enabled() -> bool:
 				"team": get_current_team(),
 			}
 		)
+	)
+
+
+def is_relaxed_mode() -> bool:
+	"""
+	Check if the current team is in relaxed permissions mode, which allows
+	users to bypass role checks if they don't have any roles assigned.
+	"""
+	return bool(int(frappe.get_value("Team", get_current_team(), "relaxed_permissions")))
+
+
+def skip_roles() -> bool:
+	"""
+	Check if the current user has no roles assigned in the current team.
+	"""
+	if not is_relaxed_mode():
+		return False
+	PressRole = frappe.qb.DocType("Press Role")
+	PressRoleUser = frappe.qb.DocType("Press Role User")
+	return (
+		frappe.qb.from_(PressRole)
+		.inner_join(PressRoleUser)
+		.on(PressRoleUser.parent == PressRole.name)
+		.select(Count(PressRole.name).as_("roles_count"))
+		.where(PressRole.team == get_current_team())
+		.where(PressRoleUser.user == frappe.session.user)
+		.run(as_dict=True)
+		.pop()
+		.get("roles_count")
+		== 0
 	)

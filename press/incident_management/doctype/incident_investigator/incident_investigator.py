@@ -19,6 +19,9 @@ from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 from prometheus_api_client import MetricRangeDataFrame, PrometheusConnect
 
+from press.incident_management.doctype.incident_investigator.utils.incident_pattern_detector import (
+	IncidentPatternDetector,
+)
 from press.runner import Ansible, StepHandler
 from press.runner import Status as StepStatus
 
@@ -71,7 +74,7 @@ class PrometheusInvestigationHelper:
 		if self.prometheus_client is None:
 			self.prometheus_client = get_prometheus_client()
 
-	# Define the investigation steps for different servers
+	# Define the investigation steps for different servers for prometheus based investigations
 	INVESTIGATION_CHECKS: typing.ClassVar = {
 		"server_investigation_steps": [
 			"has_high_disk_usage",
@@ -85,7 +88,6 @@ class PrometheusInvestigationHelper:
 			"has_high_memory_usage",
 			"has_high_system_load",
 		],
-		"proxy_investigation_steps": ["are_sites_on_proxy_down"],
 	}
 
 	@classmethod
@@ -530,6 +532,36 @@ class AppServerInvestigationActions:
 		step.status = StepStatus.Success
 		step.save()
 
+	def get_recent_agent_jobs(self, step: "ActionStep"):
+		"""Get agent jobs running during in the larger investigation window"""
+		# This again is a data gathering step we need to do something with this as well later on?
+		step.status = StepStatus.Running
+		step.save()
+
+		# Looking at a larger window here as well since we want to capture any jobs leading up to the incident which might have caused resource contention (30m?)
+		start_time = frappe.utils.add_to_date(self.investigator.investigation_window_start_time, minutes=-30)
+		end_time = self.investigator.investigation_window_end_time
+
+		agent_jobs_on_server = frappe.db.get_all(
+			"Agent Job",
+			["name", "job_type", "status", "creation", "duration"],
+			{
+				"server": self.investigator.server,
+				"creation": [
+					"between",
+					(start_time, end_time),
+				],
+			},
+			order_by="creation desc",
+		)
+		step.output = (
+			json.dumps(agent_jobs_on_server, default=str, indent=2)
+			if agent_jobs_on_server
+			else "No agent jobs found in the investigation window"
+		)
+		step.status = StepStatus.Success
+		step.save()
+
 	def add_app_server_investigation_actions(self):
 		"""In case of app server incidents we do the following
 		- Memory or CPU spikes
@@ -550,7 +582,11 @@ class AppServerInvestigationActions:
 
 		if app_server_likely_causes and app_server_likely_causes.intersection(resource_causes):
 			for step in self.investigator.get_steps(
-				[self.get_bench_memory_usage_data, self.get_oom_kill_events]
+				[
+					self.get_bench_memory_usage_data,
+					self.get_oom_kill_events,
+					self.get_recent_agent_jobs,
+				]
 			):
 				self.investigator.append("action_steps", step)
 
@@ -762,8 +798,16 @@ class IncidentInvestigator(Document, StepHandler):
 			"Press Settings", "execute_incident_action", cache=True
 		)
 
+		pattern_detector = IncidentPatternDetector(self)
+
 		if self.action_steps and execute_action_steps:
 			# Execute action steps via step handler
+			pattern_detector_step = self.get_steps([pattern_detector.detect_patterns])[
+				0
+			]  # Add pattern detection as the last step in the workflow
+			self.append("action_steps", pattern_detector_step)
+			self.save()
+
 			frappe.enqueue_doc(
 				self.doctype,
 				self.name,
@@ -771,6 +815,7 @@ class IncidentInvestigator(Document, StepHandler):
 				method_objects=[
 					database_investigation_actions,
 					app_server_investigation_actions,
+					pattern_detector,
 				],
 				start_status=Status.REACTING,
 				success_status=Status.COMPLETED,

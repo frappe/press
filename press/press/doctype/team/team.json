@@ -84,6 +84,7 @@
   "ssh_access_enabled",
   "skip_backups",
   "enable_inplace_updates",
+  "relaxed_permissions",
   "column_break_31",
   "database_access_enabled",
   "enable_performance_tuning",
@@ -660,6 +661,12 @@
    "fieldname": "banned",
    "fieldtype": "Check",
    "label": "Banned"
+  },
+  {
+   "default": "0",
+   "fieldname": "relaxed_permissions",
+   "fieldtype": "Check",
+   "label": "Relaxed Permissions"
   }
  ],
  "grid_page_length": 50,
@@ -725,8 +732,8 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2026-02-24 10:37:10.453850",
- "modified_by": "Administrator",
+ "modified": "2026-03-02 12:15:11.542102",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Team",
  "naming_rule": "Random",

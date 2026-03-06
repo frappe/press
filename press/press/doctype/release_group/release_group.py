@@ -62,6 +62,8 @@ DEFAULT_DEPENDENCIES = [
 
 SUPPORTED_WKHTMLTOPDF_VERSIONS = ["0.12.5", "0.12.6"]
 
+MAX_REGION_LIMIT = 4
+
 
 class LastDeployInfo(TypedDict):
 	name: str
@@ -1477,8 +1479,8 @@ class ReleaseGroup(Document, TagHelpers):
 		Add new region to release group (limits to 2). Meant for dashboard use only.
 		"""
 
-		if len(self.get_clusters()) >= 2:
-			frappe.throw("More than 2 regions for bench not allowed")
+		if len(self.get_clusters()) >= MAX_REGION_LIMIT:
+			frappe.throw(f"More than {MAX_REGION_LIMIT} for bench not allowed")
 		self.add_cluster(region)
 
 	def add_cluster(self, cluster: str):
@@ -1510,7 +1512,7 @@ class ReleaseGroup(Document, TagHelpers):
 			return None
 
 	@frappe.whitelist()
-	def add_server(self, server: str, deploy=False, force_new_build: bool = False):
+	def add_server(self, server: str, deploy=False, force_new_build: bool = False) -> str | None:
 		"""
 		Add a server to the release group in case last successful deploy candidate exists
 		create a deploy check if the image has not been pruned from the registry in case of
@@ -1542,14 +1544,14 @@ class ReleaseGroup(Document, TagHelpers):
 				platform=server_platform,
 			)
 
-		self.append("servers", {"server": server, "default": False})
-		self.save()
-
 		try:
-			return last_successful_deploy_candidate_build._create_deploy(
+			deploy = last_successful_deploy_candidate_build._create_deploy(
 				[server],
 				check_image_exists=True,
 			)
+			self.append("servers", {"server": server, "default": False})
+			self.save()
+			return deploy.name
 		except ImageNotFoundInRegistry:
 			return self.add_server(server=server, deploy=True, force_new_build=True)
 
@@ -1901,7 +1903,7 @@ def add_public_servers_to_public_groups():
 	)
 	public_servers = frappe.get_all(
 		"Server",
-		filters={"public": 1, "status": "Active"},
+		filters={"public": 1, "status": "Active", "provider": ["!=", "Hetzner"]},
 		pluck="name",
 	)
 
