@@ -19,8 +19,8 @@ from press.api.github import app, get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
 )
+from press.press.doctype.app.app import VersioningError, parse_frappe_version
 from press.press.doctype.app.app import new_app as new_app_doc
-from press.press.doctype.app.app import parse_frappe_version
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
 	AppReleaseApprovalRequest,
 )
@@ -30,9 +30,6 @@ from press.utils import get_current_team, get_last_doc
 if TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.site.site import Site
-
-
-class VersioningError(Exception): ...
 
 
 class MarketplaceApp(WebsiteGenerator):
