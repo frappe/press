@@ -124,6 +124,7 @@ DOCTYPE_SERVER_TYPE_MAP = {
 }
 
 ARCHIVE_AFTER_SUSPEND_DAYS = 21
+NOTIFY_BEFORE_ARCHIVAL_DAYS = 2
 CREATION_FAILURE_RETENTION_DAYS = 14
 PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-bench"
 SERVER_SCRIPT_DISABLED_VERSION = (
@@ -1343,9 +1344,7 @@ class Site(Document, TagHelpers):
 	def create_migration_plan(
 		self,
 		type: Literal[
-			"Move From Shared To Private Bench",
-			"Move From Private To Shared Bench",
-			"Move Site To Different Server",
+			"Move Site To Different Server / Bench",
 			"Move Site To Different Region",
 		],
 		group: str | None = None,
@@ -1361,14 +1360,7 @@ class Site(Document, TagHelpers):
 				frappe.throw("Scheduled time must be in the future. Please provide a valid scheduled time.")
 
 		doc = None
-		if type == "Move From Shared To Private Bench":
-			"""
-			There are two variants:
-			- User chose to move to existing private bench and server
-			- Create a new private bench and move that. For this, there are two more combination -
-				- For shared server, create the bench on same server
-				- For dedicated server, create the bench on mentioned server
-			"""
+		if type == "Move Site To Different Server / Bench":
 			if group and new_group_name:
 				frappe.throw("Please provide either group or new_group_name, not both.")
 
@@ -1382,21 +1374,6 @@ class Site(Document, TagHelpers):
 							"destination_server": server or self.server,
 							"destination_release_group": group,
 							"new_release_group_name": new_group_name,
-							"skip_failing_patches": skip_failing_patches,
-						}
-					),
-					"scheduled_time": scheduled_time,
-				}
-			).insert()
-		elif type == "Move Site To Different Server":
-			doc = frappe.get_doc(
-				{
-					"doctype": "Site Action",
-					"site": self.name,
-					"action_type": type,
-					"arguments": json.dumps(
-						{
-							"destination_server": server,
 							"skip_failing_patches": skip_failing_patches,
 						}
 					),
@@ -3899,12 +3876,9 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	def get_migration_options(self):
 		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		# is_on_public_server = bool(frappe.db.get_value("Server", self.server, "public", cache=True))
-		is_on_public_release_group = release_group.public
-
-		# Moving from Shared to Private Bench
 		version = frappe.db.get_value("Release Group", self.group, "version")
 
+		# Compatible private release groups with active benches (excluding current group)
 		Bench = frappe.qb.DocType("Bench")
 		ReleaseGroup = frappe.qb.DocType("Release Group")
 		Server = frappe.qb.DocType("Server")
@@ -3927,8 +3901,6 @@ class Site(Document, TagHelpers):
 			.where(ReleaseGroup.version == version)
 			.where(ReleaseGroup.team == self.team)
 			.where(ReleaseGroup.public == 0)
-			.where(Bench.server == self.server)
-			.where(Server.name == Bench.server)
 		)
 
 		_compatible_release_groups = query.run(as_dict=True)
@@ -3968,31 +3940,15 @@ class Site(Document, TagHelpers):
 				"button_label": "Migrate Site",
 				"options": {},
 			},
-			"Move From Shared To Private Bench": {
-				"hidden": not is_on_public_release_group,
+			"Move Site To Different Server / Bench": {
+				"hidden": False,
 				"allow_scheduling": True,
-				"button_label": "Move to Private Bench",
+				"button_label": "Move Site To Private Bench"
+				if release_group.public
+				else "Move Site To Bench",
 				"options": {
 					"available_release_groups": compatible_release_groups_for_migration,
 					"dedicated_servers_for_new_release_group": owned_dedicated_servers,
-				},
-			},
-			# "Move From Private To Shared Bench": {
-			# 	"hidden": is_on_public_release_group,
-			# 	"allow_scheduling": True,
-			# 	"description": "Move your site from a private bench to a shared bench",
-			# 	"button_label": "Move to Shared Bench",
-			# 	"options": {
-			# 		# TODO
-			# 		"incompatible_apps": [],
-			# 	},
-			# },
-			"Move Site To Different Server": {
-				"hidden": False,
-				"allow_scheduling": True,
-				"button_label": "Move Site",
-				"options": {
-					"dedicated_servers": [x for x in owned_dedicated_servers if x.name != self.server]
 				},
 			},
 			"Move Site To Different Region": {
@@ -4893,26 +4849,22 @@ def get_suspended_time(site: str):
 
 def archive_suspended_site(site_dict: SiteToArchive):
 	archive_after_days = ARCHIVE_AFTER_SUSPEND_DAYS
-
 	suspended_days = frappe.utils.date_diff(frappe.utils.today(), get_suspended_time(site_dict.name))
-
-	if suspended_days <= archive_after_days:
-		return
 
 	if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
 		return
 
+	if suspended_days <= archive_after_days:
+		if suspended_days == archive_after_days - NOTIFY_BEFORE_ARCHIVAL_DAYS:
+			notify_site_scheduled_for_archival(site_dict.name)
+		return
+
 	site = Site("Site", site_dict.name)
-	# take an offsite backup before archive
-	if not site_dict.offsite_backups and not site.recent_offsite_backup_exists:
-		if not site.recent_offsite_backup_pending:
-			site.backup(with_files=True, offsite=True)
-		return  # last backup ongoing
 	site.archive(reason="Archive suspended site")
 
 
 def archive_suspended_sites():
-	archive_at_once = 4
+	archive_at_once = 5
 
 	sites = frappe.qb.DocType("Site")
 	site_plans = frappe.qb.DocType("Site Plan")
@@ -4930,24 +4882,48 @@ def archive_suspended_sites():
 		.run(as_dict=True)
 	)
 
-	archived_now = 0
 	for site_dict in sites_to_drop:
 		try:
-			if archived_now > archive_at_once:
-				break
 			archive_suspended_site(site_dict)
 			frappe.db.commit()
-			archived_now = archived_now + 1
 		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
 			frappe.db.rollback()
 		except Exception:
 			frappe.log_error(title="Suspended Site Archive Error")
 			frappe.db.rollback()
 
-	signup_cluster = frappe.db.get_value("Saas Settings", "erpnext", "cluster")
-	agent = frappe.get_doc("Proxy Server", {"cluster": signup_cluster}).agent
-	if archived_now:
-		agent.reload_nginx()
+
+def notify_site_scheduled_for_archival(site_name: str):
+	try:
+		if frappe.db.exists(
+			"Site Activity",
+			{
+				"site": site_name,
+				"action": "Archive Notification",
+				"creation": [">=", frappe.utils.add_to_date(frappe.utils.now(), days=-7)],
+			},
+		):
+			return
+
+		frappe.sendmail(
+			recipients=get_communication_info("Email", "Site Activity", "Site", site_name),
+			subject=f"Alert: Your site {site_name} will be archived in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
+			template="notify_before_site_archival",
+			args={
+				"site_name": site_name,
+				"site_archive_notification_days": NOTIFY_BEFORE_ARCHIVAL_DAYS,
+			},
+			reference_doctype="Site",
+			reference_name=site_name,
+		)
+		log_site_activity(
+			site_name,
+			"Archive Notification",
+			f"Notified user about pending archival in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
+		)
+	except Exception:
+		frappe.db.rollback()
+		frappe.log_error(title="Site Archive Notification Error")
 
 
 def send_warning_mail_regarding_sites_exceeding_disk_usage():

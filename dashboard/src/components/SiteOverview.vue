@@ -402,7 +402,7 @@ export default {
 			renderDialog(
 				h(SiteMigrationDialog, {
 					site: this.site,
-					defaultAction: 'Move From Shared To Private Bench',
+					defaultAction: 'Move Site To Different Server / Bench',
 					defaultNewBenchName: defaultBenchName,
 				}),
 			);
