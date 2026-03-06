@@ -1761,74 +1761,72 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 
 def _pick_least_loaded_server(servers: list[str]) -> str:
 	"""
-	Sort all servers by bench count and keep the lowest quarter.
-	From that subset, sort by site count.
-	From the lowest quarter, compare real-time CPU/memory usage and pick the best.
+	Select the least loaded server for deploying public release groups
+	1. Filter servers by lowest bench count (keep lowest 25%).
+	2. From those, filter by lowest site count (keep lowest 25%).
+	3. From remaining servers, check real CPU/memory usage for max 4 servers and choose the least loaded.
 	"""
-	from press.api.server import get_cpu_and_memory_usage
-
 	if len(servers) == 1:
 		return servers[0]
 
-	benches = frappe.get_all(
+	from press.api.server import get_cpu_and_memory_usage
+
+	bench_counts = frappe.get_all(
 		"Bench",
 		filters={
 			"server": ["in", servers],
 			"status": ["!=", "Archived"],
 		},
-		fields=["server"],
+		fields=["server", "count(name) as count"],
+		group_by="server",
 	)
-	bench_counts: dict[str, int] = {}
-	for b in benches:
-		bench_counts[b.server] = bench_counts.get(b.server, 0) + 1
+	server_bench_count_map = {b.server: b.count for b in bench_counts}
+	server_bench_count = [{"name": s, "bench": server_bench_count_map.get(s, 0)} for s in servers]
+	server_bench_count.sort(key=lambda x: x["bench"])
 
-	server_data = [{"name": s, "bench": bench_counts.get(s, 0)} for s in servers]
-	server_data.sort(key=lambda x: x["bench"])
+	quarter = max(1, len(server_bench_count) // 4)
+	lowest_bench_count_batch = server_bench_count[:quarter]
 
-	# First quarter of servers with least benches
-	quarter = max(1, len(server_data) // 4)
-	lowest_bench_batch = server_data[:quarter]
+	if len(lowest_bench_count_batch) == 1:
+		return lowest_bench_count_batch[0]["name"]
 
-	if len(lowest_bench_batch) == 1:
-		return lowest_bench_batch[0]["name"]
+	low_bench_count_servers = [s["name"] for s in lowest_bench_count_batch]
 
-	# Fetch and sort by site count
-	batch_servers = [s["name"] for s in lowest_bench_batch]
-
-	sites = frappe.get_all(
+	site_counts = frappe.get_all(
 		"Site",
 		filters={
-			"server": ["in", batch_servers],
+			"server": ["in", low_bench_count_servers],
 			"status": ["!=", "Archived"],
 		},
-		fields=["server"],
+		fields=["server", "count(name) as count"],
+		group_by="server",
 	)
+	server_site_count_map = {s.server: s.count for s in site_counts}
+	server_site_count = [
+		{"name": s, "site": server_site_count_map.get(s, 0)} for s in low_bench_count_servers
+	]
+	server_site_count.sort(key=lambda x: x["site"])
 
-	site_counts: dict[str, int] = {}
-	for s in sites:
-		site_counts[s.server] = site_counts.get(s.server, 0) + 1
+	quarter = max(1, len(server_site_count) // 4)
+	low_site_count_servers = server_site_count[:quarter]
 
-	for s in lowest_bench_batch:
-		s["site"] = site_counts.get(s["name"], 0)
-
-	lowest_bench_batch.sort(key=lambda x: x["site"])
-
-	# Take quarter of servers with least sites
-	quarter = max(1, len(lowest_bench_batch) // 4)
-	lowest_site_batch = lowest_bench_batch[:quarter]
-
-	if len(lowest_site_batch) == 1:
-		return lowest_site_batch[0]["name"]
-
-	best = min(lowest_site_batch, key=lambda x: get_cpu_load(x["name"]))
+	if len(low_site_count_servers) == 1:
+		return low_site_count_servers[0]["name"]
 
 	def get_cpu_load(server_name: str) -> float:
-		usage = get_cpu_and_memory_usage(server_name)
-		vcpu = float(usage.get("vcpu") or 0.0)
-		memory = float(usage.get("memory") or 0.0)
-		return max(vcpu, memory)
+		try:
+			usage = get_cpu_and_memory_usage(server_name)
+			vcpu = float(usage.get("vcpu") or 0.0)
+			memory = float(usage.get("memory") or 0.0)
+			return max(vcpu, memory)
+		except Exception as e:
+			frappe.log_error(f"Failed to get CPU load for {server_name}: {e}")
+			return 1.0
 
-	return best["name"]
+	max_checks = min(4, len(low_site_count_servers))  # Limit Prometheus queries
+	shortlisted_servers = low_site_count_servers[:max_checks]
+
+	return min(shortlisted_servers, key=lambda s: get_cpu_load(s["name"]))["name"]
 
 
 def get_status(name):
