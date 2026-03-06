@@ -100,6 +100,7 @@
   "build_directory",
   "build_server",
   "minimum_rebuild_memory",
+  "new_bench_concurrency_limit",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -1675,12 +1676,18 @@
    "fieldname": "production_server_ip",
    "fieldtype": "Data",
    "label": "Production Server IP"
+  },
+  {
+   "default": "30",
+   "fieldname": "new_bench_concurrency_limit",
+   "fieldtype": "Int",
+   "label": "New Bench Concurrency Limit"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-03-05 12:43:48.138570",
- "modified_by": "hello@ssiyad.com",
+ "modified": "2026-03-06 18:09:29.791618",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
  "owner": "Administrator",
