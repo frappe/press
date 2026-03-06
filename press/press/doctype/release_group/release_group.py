@@ -1767,9 +1767,6 @@ def _pick_least_loaded_server(servers: list[str]) -> str:
 	"""
 	from press.api.server import get_cpu_and_memory_usage
 
-	if not servers:
-		raise ValueError("No servers provided")
-
 	if len(servers) == 1:
 		return servers[0]
 
@@ -1781,7 +1778,7 @@ def _pick_least_loaded_server(servers: list[str]) -> str:
 		},
 		fields=["server"],
 	)
-	bench_counts = {}
+	bench_counts: dict[str, int] = {}
 	for b in benches:
 		bench_counts[b.server] = bench_counts.get(b.server, 0) + 1
 
@@ -1807,7 +1804,7 @@ def _pick_least_loaded_server(servers: list[str]) -> str:
 		fields=["server"],
 	)
 
-	site_counts = {}
+	site_counts: dict[str, int] = {}
 	for s in sites:
 		site_counts[s.server] = site_counts.get(s.server, 0) + 1
 
