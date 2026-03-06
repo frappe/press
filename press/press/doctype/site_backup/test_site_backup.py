@@ -350,9 +350,11 @@ class TestSiteBackup(FrappeTestCase):
 			self.assertIsNotNone(remote_file_doc.file_path)
 			self.assertIsNotNone(remote_file_doc.file_name)
 
-	def test_cleanup_archived_site_backups(self):
+	def test_delete_backups_for_archived_sites_after_retention(self):
 		"""Clear up backups if the site was archived before 6 months"""
-		from press.press.doctype.site_backup.site_backup import cleanup_archived_site_backups
+		from press.press.doctype.site_backup.site_backup import (
+			delete_backups_for_archived_sites_after_retention,
+		)
 
 		site = create_test_site(subdomain="old-archive")
 		site.db_set("status", "Archived")
@@ -380,7 +382,7 @@ class TestSiteBackup(FrappeTestCase):
 			frappe.utils.add_to_date(frappe.utils.now(), months=-7),
 		)
 
-		cleanup_archived_site_backups()
+		delete_backups_for_archived_sites_after_retention()
 
 		backup.reload()
 		self.assertEqual(backup.files_availability, "Unavailable")
