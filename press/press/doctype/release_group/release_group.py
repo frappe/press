@@ -1512,7 +1512,7 @@ class ReleaseGroup(Document, TagHelpers):
 			return None
 
 	@frappe.whitelist()
-	def add_server(self, server: str, deploy=False, force_new_build: bool = False):
+	def add_server(self, server: str, deploy=False, force_new_build: bool = False) -> str | None:
 		"""
 		Add a server to the release group in case last successful deploy candidate exists
 		create a deploy check if the image has not been pruned from the registry in case of
@@ -1544,14 +1544,14 @@ class ReleaseGroup(Document, TagHelpers):
 				platform=server_platform,
 			)
 
-		self.append("servers", {"server": server, "default": False})
-		self.save()
-
 		try:
-			return last_successful_deploy_candidate_build._create_deploy(
+			deploy = last_successful_deploy_candidate_build._create_deploy(
 				[server],
 				check_image_exists=True,
 			)
+			self.append("servers", {"server": server, "default": False})
+			self.save()
+			return deploy.name
 		except ImageNotFoundInRegistry:
 			return self.add_server(server=server, deploy=True, force_new_build=True)
 
@@ -1903,7 +1903,7 @@ def add_public_servers_to_public_groups():
 	)
 	public_servers = frappe.get_all(
 		"Server",
-		filters={"public": 1, "status": "Active"},
+		filters={"public": 1, "status": "Active", "provider": ["!=", "Hetzner"]},
 		pluck="name",
 	)
 
