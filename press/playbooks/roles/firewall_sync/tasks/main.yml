@@ -1,5 +1,5 @@
 ---
-- name: Install UFW
+- name: Install ufw
   ansible.builtin.apt:
     name: ufw
     state: present
@@ -10,7 +10,7 @@
     path: /usr/local/bin/ufw-docker
   register: ufw_docker_stat
 
-- name: Get UFW Docker
+- name: Get ufw-docker
   ansible.builtin.get_url:
     url: https://raw.githubusercontent.com/chaifeng/ufw-docker/2b419bbdde946a4fd1a8651940ad95b6b0b96dfa/ufw-docker
     dest: /usr/local/bin/ufw-docker
@@ -18,7 +18,7 @@
   become: true
   when: not ufw_docker_stat.stat.exists
 
-- name: Reset UFW
+- name: Reset ufw
   ufw:
     state: reset
   become: true
@@ -28,18 +28,27 @@
     default: allow
   become: true
 
-- name: Enable UFW
+- name: Disable ufw
+  ufw:
+    state: disabled
+  become: true
+  when: not (enabled | bool)
+
+- name: Enable ufw
   ufw:
     state: enabled
   become: true
+  when: enabled | bool
 
-- name: Install UFW Docker
+- name: Install ufw-docker
   ansible.builtin.command: ufw-docker install
   become: true
+  when: enabled | bool
 
-- name: Install UFW Docker service
+- name: Install ufw-docker service
   ansible.builtin.command: ufw-docker install-service --force
   become: true
+  when: enabled | bool
 
 - name: Add bypass rules
   ufw:
@@ -48,6 +57,8 @@
     to_ip: "{{ item.destination | default('any') }}"
     proto: "{{ item.protocol }}"
   loop: "{{ rules_bypass }}"
+  become: true
+  when: enabled | bool
 
 - name: Add user rules
   ufw:
@@ -56,3 +67,5 @@
     to_ip: "{{ item.destination | default('any') }}"
     proto: "{{ item.protocol | lower }}"
   loop: "{{ rules }}"
+  become: true
+  when: enabled | bool
