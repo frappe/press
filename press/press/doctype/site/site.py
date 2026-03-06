@@ -124,6 +124,7 @@ DOCTYPE_SERVER_TYPE_MAP = {
 }
 
 ARCHIVE_AFTER_SUSPEND_DAYS = 21
+NOTIFY_BEFORE_ARCHIVAL_DAYS = 2
 CREATION_FAILURE_RETENTION_DAYS = 14
 PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-bench"
 SERVER_SCRIPT_DISABLED_VERSION = (
@@ -4848,26 +4849,22 @@ def get_suspended_time(site: str):
 
 def archive_suspended_site(site_dict: SiteToArchive):
 	archive_after_days = ARCHIVE_AFTER_SUSPEND_DAYS
-
 	suspended_days = frappe.utils.date_diff(frappe.utils.today(), get_suspended_time(site_dict.name))
-
-	if suspended_days <= archive_after_days:
-		return
 
 	if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
 		return
 
+	if suspended_days <= archive_after_days:
+		if suspended_days == archive_after_days - NOTIFY_BEFORE_ARCHIVAL_DAYS:
+			notify_site_scheduled_for_archival(site_dict.name)
+		return
+
 	site = Site("Site", site_dict.name)
-	# take an offsite backup before archive
-	if not site_dict.offsite_backups and not site.recent_offsite_backup_exists:
-		if not site.recent_offsite_backup_pending:
-			site.backup(with_files=True, offsite=True)
-		return  # last backup ongoing
 	site.archive(reason="Archive suspended site")
 
 
 def archive_suspended_sites():
-	archive_at_once = 4
+	archive_at_once = 5
 
 	sites = frappe.qb.DocType("Site")
 	site_plans = frappe.qb.DocType("Site Plan")
@@ -4885,24 +4882,48 @@ def archive_suspended_sites():
 		.run(as_dict=True)
 	)
 
-	archived_now = 0
 	for site_dict in sites_to_drop:
 		try:
-			if archived_now > archive_at_once:
-				break
 			archive_suspended_site(site_dict)
 			frappe.db.commit()
-			archived_now = archived_now + 1
 		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
 			frappe.db.rollback()
 		except Exception:
 			frappe.log_error(title="Suspended Site Archive Error")
 			frappe.db.rollback()
 
-	signup_cluster = frappe.db.get_value("Saas Settings", "erpnext", "cluster")
-	agent = frappe.get_doc("Proxy Server", {"cluster": signup_cluster}).agent
-	if archived_now:
-		agent.reload_nginx()
+
+def notify_site_scheduled_for_archival(site_name: str):
+	try:
+		if frappe.db.exists(
+			"Site Activity",
+			{
+				"site": site_name,
+				"action": "Archive Notification",
+				"creation": [">=", frappe.utils.add_to_date(frappe.utils.now(), days=-7)],
+			},
+		):
+			return
+
+		frappe.sendmail(
+			recipients=get_communication_info("Email", "Site Activity", "Site", site_name),
+			subject=f"Alert: Your site {site_name} will be archived in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
+			template="notify_before_site_archival",
+			args={
+				"site_name": site_name,
+				"site_archive_notification_days": NOTIFY_BEFORE_ARCHIVAL_DAYS,
+			},
+			reference_doctype="Site",
+			reference_name=site_name,
+		)
+		log_site_activity(
+			site_name,
+			"Archive Notification",
+			f"Notified user about pending archival in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
+		)
+	except Exception:
+		frappe.db.rollback()
+		frappe.log_error(title="Site Archive Notification Error")
 
 
 def send_warning_mail_regarding_sites_exceeding_disk_usage():
