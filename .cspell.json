@@ -747,6 +747,9 @@
         "pyotp",
         "noopener",
         "noreferrer",
-        "centralise"
+        "centralise",
+        "PSIIO",
+        "journalctl",
+        "ptrs"
     ]
 }
