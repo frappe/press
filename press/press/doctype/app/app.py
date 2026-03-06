@@ -11,11 +11,13 @@ import semantic_version as sv
 from frappe.model.document import Document
 from semantic_version.base import AllOf, AnyOf
 
-from press.press.doctype.marketplace_app.marketplace_app import VersioningError
 from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
+
+
+class VersioningError(Exception): ...
 
 
 class App(Document):
