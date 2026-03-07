@@ -451,6 +451,58 @@ class SiteAction(Document):
 				release_group: ReleaseGroup = frappe.get_doc("Release Group", release_group_name)
 				release_group.archive()
 
+	def get_press_error_notifications(self) -> list[dict]:  # noqa: C901
+		if self.status != "Failure":
+			return []
+
+		notifications = []
+		for step in self.steps:
+			if step.status != "Failure":
+				continue
+			if not step.reference_doctype or not step.reference_name:
+				continue
+			if step.reference_doctype == "Deploy Candidate Build":
+				notifications.extend(
+					frappe.get_all(
+						"Press Notification",
+						filters={
+							"team": self.team,
+							"type": "Bench Deploy",
+							"document_type": step.reference_doctype,
+							"document_name": step.reference_name,
+							"class": "Error",
+							"is_actionable": True,
+						},
+						fields=["title", "name"],
+					)
+				)
+
+			elif step.reference_doctype == "Site Update":
+				agent_jobs = []
+				site_update_doc: SiteUpdate = frappe.get_doc(step.reference_doctype, step.reference_name)
+				if site_update_doc.update_job:
+					agent_jobs.append(site_update_doc.update_job)
+				if site_update_doc.recover_job:
+					agent_jobs.append(site_update_doc.recover_job)
+
+				if agent_jobs:
+					notifications.extend(
+						frappe.get_all(
+							"Press Notification",
+							filters={
+								"team": self.team,
+								"type": "Site Update",
+								"document_type": "Agent Job",
+								"document_name": ("in", agent_jobs),
+								"class": "Error",
+								"is_actionable": True,
+							},
+							fields=["title", "name"],
+						)
+					)
+
+		return notifications
+
 	# Internal
 
 	def add_steps(self):
@@ -534,6 +586,7 @@ class SiteAction(Document):
 
 	def get_doc(self, doc):
 		doc.steps = self.get_steps()
+		doc.errors = self.get_press_error_notifications()
 		return doc
 
 	def get_steps(self):
