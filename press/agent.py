@@ -1876,7 +1876,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Update Nginx Access",
 			"/server/update-nginx-access",
 			data={
-				"ip_access": ip_accept,
+				"ip_accept": ip_accept,
 				"ip_drop": ip_drop,
 			},
 		)
