@@ -59,8 +59,8 @@
 					type="select"
 					:options="[
 						{
-							label: 'Block',
-							value: 'Block',
+							label: 'Deny',
+							value: 'Deny',
 						},
 						{
 							label: 'Allow',
