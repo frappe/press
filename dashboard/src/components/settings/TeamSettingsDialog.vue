@@ -14,8 +14,8 @@
 				/>
 				<Switch
 					v-model="enableBenchGroups"
-					label="Enable Bench Groups"
-					description="Enable bench groups for your team"
+					label="Enable Benches"
+					description="Enable benches for your team"
 				/>
 				<Switch
 					v-model="enableServers"

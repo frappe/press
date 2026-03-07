@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_backup.site_backup import SiteBackup
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 APPS_LIST_REGEX = re.compile(r"\[.*\]")
@@ -65,8 +66,8 @@ class Agent:
 
 		data = {
 			"name": bench.name,
-			"bench_config": json.loads(bench.bench_config),
-			"common_site_config": json.loads(bench.config),
+			"bench_config": json.loads(bench.bench_config) if bench.bench_config else {},
+			"common_site_config": json.loads(bench.config) if bench.config else {},
 			"registry": {
 				"url": registry_url,
 				"username": settings.docker_registry_username,
@@ -86,8 +87,13 @@ class Agent:
 
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
-	def archive_bench(self, bench):
-		return self.create_agent_job("Archive Bench", f"benches/{bench.name}/archive", bench=bench.name)
+	def archive_bench(self, bench, retry_new_bench: bool = False):
+		return self.create_agent_job(
+			"Archive Bench",
+			f"benches/{bench.name}/archive",
+			bench=bench.name,
+			data={"retry_new_bench": retry_new_bench},
+		)
 
 	def restart_bench(self, bench, web_only=False):
 		return self.create_agent_job(
@@ -130,7 +136,7 @@ class Agent:
 		apps = [app.app for app in site.apps]
 
 		data = {
-			"config": json.loads(site.config),
+			"config": json.loads(site.config) if site.config else {},
 			"apps": apps,
 			"name": site.name,
 			"mariadb_root_password": get_mariadb_root_password(site),
@@ -261,7 +267,7 @@ class Agent:
 				new_config = site_config.get_content()
 				new_config["maintenance_mode"] = 0  # Don't allow deactivated sites to be created
 				sanitized_config = sanitize_config(new_config)
-				existing_config = json.loads(site.config)
+				existing_config = json.loads(site.config) if site.config else {}
 				existing_config.update(sanitized_config)
 				site._update_configuration(existing_config)
 				log_site_activity(site.name, "Update Configuration")
@@ -278,7 +284,7 @@ class Agent:
 		assert site.config is not None, "Site config is required to restore site from backup"
 
 		data = {
-			"config": json.loads(site.config),
+			"config": json.loads(site.config) if site.config else {},
 			"apps": apps,
 			"name": site.name,
 			"mariadb_root_password": get_mariadb_root_password(site),
@@ -309,11 +315,20 @@ class Agent:
 			site=site.name,
 		)
 
-	def uninstall_app_site(self, site, app):
+	def uninstall_app_site(self, site, app, create_offsite_backup=False):
+		data = {}
+		if create_offsite_backup:
+			backups_path = os.path.join(site.name, str(date.today()))
+			offsite_config = self._get_offsite_backup_config(site.cluster, backups_path)
+			if offsite_config:
+				data.update({"offsite": offsite_config})
+			else:
+				log_error("Offsite Backups aren't set yet")
 		return self.create_agent_job(
 			"Uninstall App from Site",
 			f"benches/{site.bench}/sites/{site.name}/apps/{app}",
 			method="DELETE",
+			data=data,
 			bench=site.bench,
 			site=site.name,
 		)
@@ -438,8 +453,10 @@ class Agent:
 
 	def update_site_config(self, site):
 		data = {
-			"config": json.loads(site.config),
-			"remove": json.loads(site._keys_removed_in_last_update),
+			"config": json.loads(site.config) if site.config else {},
+			"remove": json.loads(site._keys_removed_in_last_update)
+			if site._keys_removed_in_last_update
+			else {},
 		}
 		return self.create_agent_job(
 			"Update Site Configuration",
@@ -458,7 +475,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def archive_site(self, site, site_name=None, force=False):
+	def archive_site(self, site, site_name=None, force=False, create_offsite_backup=False):
 		site_name = site_name or site.name
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
@@ -467,6 +484,13 @@ class Agent:
 			),
 			"force": force,
 		}
+		if create_offsite_backup:
+			backups_path = os.path.join(site_name, str(date.today()))
+			offsite_config = self._get_offsite_backup_config(site.cluster, backups_path)
+			if offsite_config:
+				data.update({"offsite": offsite_config})
+			else:
+				log_error("Offsite Backups aren't set yet")
 
 		return self.create_agent_job(
 			"Archive Site",
@@ -531,22 +555,15 @@ class Agent:
 		)
 
 	def backup_site(self, site, site_backup: SiteBackup):
-		from press.press.doctype.site_backup.site_backup import get_backup_bucket
-
-		data = {"with_files": site_backup.with_files}
-
+		data = {
+			"with_files": site_backup.with_files,
+			"agent_job_timeout": site.backup_timeout,
+		}
 		if site_backup.offsite:
-			settings = frappe.get_single("Press Settings")
 			backups_path = os.path.join(site.name, str(date.today()))
-			backup_bucket = get_backup_bucket(site.cluster, region=True)
-			bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
-			if settings.aws_s3_bucket or bucket_name:
-				auth = {
-					"ACCESS_KEY": settings.offsite_backups_access_key_id,
-					"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
-					"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
-				}
-				data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
+			offsite_config = self._get_offsite_backup_config(site.cluster, backups_path)
+			if offsite_config:
+				data.update({"offsite": offsite_config})
 			else:
 				log_error("Offsite Backups aren't set yet")
 
@@ -796,10 +813,9 @@ class Agent:
 			reference_name=reference_name,
 		)
 
-	def create_database_access_credentials(self, site, mode):
+	def create_database_access_credentials(self, site: Site):
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
-			"mode": mode,
 			"mariadb_root_password": get_decrypted_password(
 				"Database Server", database_server, "mariadb_root_password"
 			),
@@ -1403,17 +1419,46 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if self.server_type != "Database Server":
 			return NotImplementedError("This method is only supported for Database Server")
 
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.server)
+		data_disk_volume = database_server.find_mountpoint_volume(
+			database_server.guess_data_disk_mountpoint()
+		)
+
+		iops = None
+
+		if database_server.provider in ["AWS EC2", "OCI"] and data_disk_volume and data_disk_volume.volume_id:
+			vm: VirtualMachine = frappe.get_doc("Virtual Machine", database_server.virtual_machine)
+			for disk in vm.volumes:
+				if disk.volume_id == data_disk_volume.volume_id:
+					iops = disk.iops
+					break
+
 		return self.create_agent_job(
 			"Update Database Schema Sizes",
 			"database/update-schema-sizes",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"io_ops_limit": max(int(iops * 0.2), 300) if iops else 300,
+				"concurrency": 50,
+			},
+			reference_doctype=self.server_type,
+			reference_name=self.server,
+		)
+
+	def database_flush_tables(self):
+		if self.server_type != "Database Server":
+			return NotImplementedError("This method is only supported for Database Server")
+
+		return self.create_agent_job(
+			"Flush Tables",
+			"database/flush-tables",
 			data={
 				"private_ip": frappe.get_value("Database Server", self.server, "private_ip"),
 				"mariadb_root_password": get_decrypted_password(
 					"Database Server", self.server, "mariadb_root_password"
 				),
 			},
-			reference_doctype=self.server_type,
-			reference_name=self.server,
 		)
 
 	def fetch_database_variables(self):
@@ -1479,29 +1524,16 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		)
 
 	def upload_binlogs_to_s3(self, binlogs: list[str]):
-		from press.press.doctype.site_backup.site_backup import get_backup_bucket
-
 		if self.server_type != "Database Server":
 			return NotImplementedError("Only Database Server supports this method")
 
-		settings = frappe.get_single("Press Settings")
-		backup_bucket = get_backup_bucket(
-			frappe.get_value("Database Server", self.server, "cluster"), region=True
-		)
-		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
-		if not (settings.aws_s3_bucket or bucket_name):
-			return ValueError("Offsite Backups aren't set yet")
-
-		auth = {
-			"ACCESS_KEY": settings.offsite_backups_access_key_id,
-			"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
-			"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
-		}
+		cluster = frappe.get_value("Database Server", self.server, "cluster")
+		offsite_config = self._get_offsite_backup_config(cluster, backups_path=self.server)
 
 		return self.create_agent_job(
 			"Upload Binlogs To S3",
 			"/database/binlogs/upload",
-			data={"binlogs": binlogs, "offsite": {"bucket": bucket_name, "auth": auth, "path": self.server}},
+			data={"binlogs": binlogs, "offsite": offsite_config},
 		)
 
 	def add_binlogs_to_indexer(self, binlogs):
@@ -1675,8 +1707,6 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		reference_doctype=None,
 		reference_name=None,
 	):
-		from press.press.doctype.site_backup.site_backup import get_backup_bucket
-
 		database_server_doc: DatabaseServer = frappe.get_doc("Database Server", database_server)  # type: ignore
 		data = {
 			"site": site,
@@ -1688,17 +1718,10 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		}
 
 		# offsite config
-		settings = frappe.get_single("Press Settings")
 		backups_path = os.path.join(site, str(date.today()))
-		backup_bucket = get_backup_bucket(cluster, region=True)
-		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
-		if settings.aws_s3_bucket or bucket_name:
-			auth = {
-				"ACCESS_KEY": settings.offsite_backups_access_key_id,
-				"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
-				"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
-			}
-			data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
+		offsite_config = self._get_offsite_backup_config(cluster, backups_path)
+		if offsite_config:
+			data.update({"offsite": offsite_config})
 		else:
 			frappe.throw("Offsite Backups aren't setup yet")
 
@@ -1718,25 +1741,16 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		reference_doctype=None,
 		reference_name=None,
 	):
-		from press.press.doctype.site_backup.site_backup import get_backup_bucket
-
 		data: dict[str, Any] = {
 			"site": site,
 			"bench": bench,
 		}
 
 		# offsite config
-		settings = frappe.get_single("Press Settings")
 		backups_path = os.path.join(site, str(date.today()))
-		backup_bucket = get_backup_bucket(cluster, region=True)
-		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
-		if settings.aws_s3_bucket or bucket_name:
-			auth = {
-				"ACCESS_KEY": settings.offsite_backups_access_key_id,
-				"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
-				"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
-			}
-			data.update({"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}})
+		offsite_config = self._get_offsite_backup_config(cluster, backups_path)
+		if offsite_config:
+			data.update({"offsite": offsite_config})
 		else:
 			frappe.throw("Offsite Backups aren't setup yet")
 
@@ -1858,6 +1872,38 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_doctype=reference_doctype,
 			reference_name=reference_name,
 		)
+
+	def update_nginx_access(self, ip_accept: list[str], ip_drop: list[str]) -> AgentJob:
+		return self.create_agent_job(
+			"Update Nginx Access",
+			"/server/update-nginx-access",
+			data={
+				"ip_access": ip_accept,
+				"ip_drop": ip_drop,
+			},
+		)
+
+	def _get_offsite_backup_config(self, cluster: str, backups_path: str) -> dict | None:
+		from press.press.doctype.site_backup.site_backup import get_backup_bucket
+
+		settings = frappe.get_single("Press Settings")
+		backup_bucket = get_backup_bucket(cluster, region=True)
+		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
+
+		if not (settings.aws_s3_bucket or bucket_name):
+			return None
+
+		auth = {
+			"ACCESS_KEY": settings.offsite_backups_access_key_id,
+			"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
+			"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
+		}
+
+		return {
+			"bucket": bucket_name,
+			"auth": auth,
+			"path": backups_path,
+		}
 
 
 class AgentCallbackException(Exception):

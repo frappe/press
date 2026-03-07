@@ -31,7 +31,9 @@ export default defineConfig({
 			project: process.env.SENTRY_PROJECT,
 			applicationKey: 'press-dashboard',
 			authToken: process.env.SENTRY_AUTH_TOKEN,
+			errorHandler: (err) => console.warn(err),
 		}),
+		,
 		...(process.env.ENABLE_VUE_DEVTOOLS ? [vueDevTools()] : []),
 	],
 	server: {
@@ -45,4 +47,7 @@ export default defineConfig({
 	optimizeDeps: {
 		include: ['feather-icons', 'showdown', 'highlight.js/lib/core', 'interactjs'],
 	},
+	build: {
+		chunkSizeWarningLimit: 2000,
+	}
 });

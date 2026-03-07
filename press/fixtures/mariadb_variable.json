@@ -628,5 +628,19 @@
   "set_on_new_servers": 0,
   "skippable": 0,
   "title": null
+ },
+ {
+  "configurable_by_user": 0,
+  "datatype": "Str",
+  "default_value": "OFF",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2026-02-05 18:20:59.047473",
+  "name": "local_infile",
+  "set_on_new_servers": 1,
+  "skippable": 0,
+  "title": null
  }
 ]

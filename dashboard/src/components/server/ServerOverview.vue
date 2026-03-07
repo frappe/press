@@ -18,6 +18,11 @@
 				class="col-span-1 rounded-md border lg:col-span-2"
 			>
 				<div
+					v-if="
+						!(
+							server === 'Database Server' && $appServer?.doc?.is_unified_server
+						)
+					"
 					class="grid grid-cols-2 lg:grid-cols-4"
 					:class="{
 						'opacity-70 pointer-events-none':
@@ -38,7 +43,10 @@
 									class="mt-2 flex flex-col space-y-2"
 								>
 									<div class="flex items-center text-base text-gray-700">
-										<span>{{ d.label }}</span>
+										<span v-if="!$appServer?.doc?.is_unified_server">{{
+											d.label
+										}}</span>
+										<span v-else>Unified Server Plan</span>
 										<Badge
 											v-if="
 												server === 'App Secondary Server' &&
@@ -187,10 +195,10 @@ import { toast } from 'vue-sonner';
 import { h, defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource, Progress } from 'frappe-ui';
 import { confirmDialog, renderDialog } from '../../utils/components';
-import { getToastErrorMessage } from '../../utils/toast';
-import ServerPlansDialog from './ServerPlansDialog.vue';
-import ServerLoadAverage from './ServerLoadAverage.vue';
 import StorageBreakdownDialog from './StorageBreakdownDialog.vue';
+import ServerPlansDialog from './ServerPlansDialog.vue';
+import { getToastErrorMessage } from '../../utils/toast';
+import ServerLoadAverage from './ServerLoadAverage.vue';
 import { getDocResource } from '../../utils/resource';
 import { createResource } from 'frappe-ui';
 import Badge from '../global/Badge.vue';
@@ -241,23 +249,61 @@ export default {
 				}),
 			);
 		},
-		showStorageBreakdownDialog(serverType) {
-			let StorageBreakdownDialog = defineAsyncComponent(
-				() => import('./StorageBreakdownDialog.vue'),
-			);
-			renderDialog(
-				h(StorageBreakdownDialog, {
-					server:
-						serverType === 'Server'
-							? this.$appServer.name
-							: serverType === 'Database Server'
-								? this.$dbServer.name
-								: serverType === 'Replication Server'
-									? this.$dbReplicaServer?.name
-									: null,
-					serverType,
-				}),
-			);
+		showStorageBreakdownDialog(serverType, ignoreUnifiedServer = false) {
+			if (
+				!ignoreUnifiedServer &&
+				serverType === 'Server' &&
+				this.$appServer.doc.is_unified_server
+			) {
+				confirmDialog({
+					title: 'Select Storage Breakdown Type',
+					message:
+						'Would you like to view the breakdown for the Database component or the Application component of the server?',
+					fields: [
+						{
+							fieldname: 'breakdownType',
+							type: 'select',
+							label: 'Breakdown Type',
+							options: [
+								{ label: 'Database', value: 'database' },
+								{ label: 'Application', value: 'application' },
+							],
+							default: 'database',
+						},
+					],
+					onSuccess: ({ values, hide }) => {
+						hide();
+						if (values.breakdownType === 'database') {
+							this.showStorageBreakdownDialog(
+								'Database Server',
+								(ignoreUnifiedServer = true),
+							);
+						} else {
+							this.showStorageBreakdownDialog(
+								'Server',
+								(ignoreUnifiedServer = true),
+							);
+						}
+					},
+				});
+			} else {
+				let StorageBreakdownDialog = defineAsyncComponent(
+					() => import('./StorageBreakdownDialog.vue'),
+				);
+				renderDialog(
+					h(StorageBreakdownDialog, {
+						server:
+							serverType === 'Server'
+								? this.$appServer.name
+								: serverType === 'Database Server'
+									? this.$dbServer.name
+									: serverType === 'Replication Server'
+										? this.$dbReplicaServer?.name
+										: null,
+						serverType,
+					}),
+				);
+			}
 		},
 		scaleUp() {
 			toast.promise(this.$appServer.scaleUp.submit({}), {
@@ -471,6 +517,7 @@ export default {
 										label: 'Increase Storage',
 										icon: 'plus',
 										variant: 'ghost',
+										condition: () => doc.provider != 'Hetzner',
 										onClick: () => {
 											confirmDialog({
 												title: 'Increase Storage',
@@ -543,6 +590,7 @@ export default {
 										label: 'Configure Auto Increase Storage',
 										icon: 'tool',
 										variant: 'ghost',
+										condition: () => doc.provider != 'Hetzner',
 										onClick: () => {
 											confirmDialog({
 												title: 'Configure Auto Increase Storage',
@@ -651,7 +699,14 @@ export default {
 											this.showStorageBreakdownDialog(serverType);
 										},
 									},
-								].filter((e) => e.hidden !== true),
+								]
+									.filter((e) => e.hidden !== true)
+									.filter((e) => {
+										if (e.condition) {
+											return e.condition();
+										}
+										return true;
+									}),
 							},
 						]),
 			];
@@ -661,7 +716,13 @@ export default {
 		serverInformation() {
 			return [
 				{
-					label: 'Application server',
+					label: 'Hosted on',
+					value: `${this.$appServer.doc.provider} - ${this.$appServer.doc.cluster}`,
+				},
+				{
+					label: this.$appServer.doc.is_unified_server
+						? 'Server'
+						: 'Application Server',
 					value: this.$appServer.doc.name,
 				},
 				{
@@ -670,7 +731,9 @@ export default {
 				},
 				{
 					label: 'Database server',
-					value: this.$appServer.doc.database_server,
+					value: !this.$appServer.doc.is_unified_server
+						? this.$appServer.doc.database_server
+						: false,
 				},
 				{
 					label: 'Replication server',

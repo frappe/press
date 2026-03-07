@@ -13,12 +13,14 @@
   "server",
   "archive_failed",
   "creation_failed",
+  "fatal_site_update",
   "column_break_3",
   "bench",
   "group",
   "cluster",
   "admin_password",
   "additional_system_user_created",
+  "backup_timeout",
   "config_tab",
   "hide_config",
   "host_name",
@@ -742,6 +744,18 @@
    "fieldtype": "Datetime",
    "label": "Creation Failed",
    "read_only": 1
+  },
+  {
+   "default": "18000",
+   "fieldname": "backup_timeout",
+   "fieldtype": "Int",
+   "label": "Backup Timeout"
+  },
+  {
+   "fieldname": "fatal_site_update",
+   "fieldtype": "Link",
+   "label": "Fatal Site Update",
+   "options": "Site Update"
   }
  ],
  "links": [
@@ -792,7 +806,7 @@
   },
   {
    "group": "Related Documents",
-   "link_doctype": "ERPNext Site Settings",
+   "link_doctype": "Site Action",
    "link_fieldname": "site"
   },
   {
@@ -819,9 +833,14 @@
    "group": "Related Documents",
    "link_doctype": "Physical Backup Restoration",
    "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "ERPNext Site Settings",
+   "link_fieldname": "site"
   }
  ],
- "modified": "2025-12-12 22:26:41.654346",
+ "modified": "2026-02-09 16:05:29.084553",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

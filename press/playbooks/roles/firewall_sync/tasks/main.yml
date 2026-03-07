@@ -1,0 +1,74 @@
+---
+- name: Link Input Chain
+  ansible.builtin.iptables:
+    chain: INPUT
+    jump: "{{ chain_main }}"
+    state: present
+  when: enabled | bool
+
+- name: Link Docker Chain
+  ansible.builtin.iptables:
+    chain: DOCKER-USER
+    jump: "{{ chain_main }}"
+    state: present
+  when: enabled | bool
+
+- name: Link Output Chain
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    jump: "{{ chain_main }}"
+    state: present
+  when: enabled | bool
+
+- name: Unlink Input Chain
+  ansible.builtin.iptables:
+    chain: INPUT
+    jump: "{{ chain_main }}"
+    state: absent
+  when: not (enabled | bool)
+
+- name: Unlink Docker Chain
+  ansible.builtin.iptables:
+    chain: DOCKER-USER
+    jump: "{{ chain_main }}"
+    state: absent
+  when: not (enabled | bool)
+
+- name: Unlink Output Chain
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    jump: "{{ chain_main }}"
+    state: absent
+  when: not (enabled | bool)
+
+- name: Clear Existing Main Rules
+  ansible.builtin.iptables:
+    chain: "{{ chain_main }}"
+    flush: yes
+
+- name: Clear Existing Bypass Rules
+  ansible.builtin.iptables:
+    chain: "{{ chain_bypass }}"
+    flush: yes
+
+- name: Sync Rules (raw)
+  ansible.builtin.raw: >
+    iptables -A {{ chain_main }} \
+      -m conntrack --ctstate NEW,ESTABLISHED \
+      {% if item.source is defined %}--ctorigsrc {{ item.source }} {% endif %} \
+      {% if item.destination is defined %}--ctorigdst {{ item.destination }} {% endif %} \
+      -p {{ item.protocol }} -j {{ item.action }}
+  loop: "{{ rules }}"
+
+- name: Sync Bypass Rules using raw command
+  ansible.builtin.raw: >-
+    iptables -A {{ chain_bypass }} \
+      -m conntrack --ctstate NEW,ESTABLISHED \
+      {% if item.source is defined %}-m conntrack --ctorigsrc {{ item.source }} {% endif %}\
+      {% if item.destination is defined %}-m conntrack --ctorigdst {{ item.destination }} {% endif %}\
+      -p {{ item.protocol }} -j {{ item.action }}
+  loop: "{{ rules_bypass }}"
+
+- name: Persist rules across reboots
+  ansible.builtin.shell: iptables-save > /etc/iptables/rules.v4
+  become: true

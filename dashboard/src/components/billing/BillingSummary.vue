@@ -45,7 +45,12 @@
 		<AddPrepaidCreditsDialog
 			v-if="showAddPrepaidCreditsDialog"
 			v-model="showAddPrepaidCreditsDialog"
-			@success="upcomingInvoice.reload()"
+			@success="
+				() => {
+					upcomingInvoice.reload();
+					unpaidAmount.reload();
+				}
+			"
 		/>
 		<UpcomingInvoiceDialog v-model="showInvoiceDialog" />
 	</div>

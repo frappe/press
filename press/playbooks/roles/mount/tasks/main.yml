@@ -5,6 +5,10 @@
     volume_mounts: '{{ volume_mounts_json | from_json }}'
     bind_mounts: '{{ bind_mounts_json | from_json }}'
 
+- name: Initialize resolved_devices
+  set_fact:
+    resolved_devices: []
+
 - name: Stop Filebeat
   service:
     name: filebeat
@@ -44,29 +48,38 @@
   loop: '{{ volume_mounts }}'
   loop_control:
     label: '{{ item.source }}'
-  when: rotate_additional_volume_metadata | default(false) | bool
+  when:
+    - rotate_additional_volume_metadata | default(false) | bool
+    - volume_mounts | length > 0
 
 - name: Wipe VFAT Filesystem Signatures
   command: wipefs -a {{ item }}
-  loop: '{{ vfat_devices.results | map(attribute="stdout") | select("!=","") | list }}'
+  loop: '{{ vfat_devices.results | default([]) | map(attribute="stdout") | select("!=","") | list }}'
   ignore_errors: true
   loop_control:
     label: '{{ item }}'
-  when: rotate_additional_volume_metadata | default(false) | bool
+  when:
+    - rotate_additional_volume_metadata | default(false) | bool
+    - vfat_devices is defined
 
 - name: Find ext4 partitions on disks
   shell: >-
     if lsblk -no TYPE {{ item.source | quote }} | grep -q "^disk$"; then
-    lsblk {{ item.source | quote }} -rno NAME,FSTYPE | grep -E "(ext4|^[[:space:]]*$)" | head -1 | awk '{print "/dev/" $1}';
+      RESULT=$(lsblk {{ item.source | quote }} -rno NAME,FSTYPE | grep -E "(ext4|^[[:space:]]*$)" | head -1 | awk '{print "/dev/" $1}');
+      if [ -n "$RESULT" ]; then
+        echo "$RESULT";
+      else
+        echo {{ item.source | quote }};
+      fi
     else
-    echo {{ item.source | quote }};
+      echo {{ item.source | quote }};
     fi
-
   register: target_devices
   changed_when: false
   loop: '{{ volume_mounts }}'
   loop_control:
     label: '{{ item.source }}'
+  when: volume_mounts | length > 0
 
 - name: Set target device facts
   set_fact:
@@ -79,17 +92,20 @@
           'is_empty_partition': (item.stdout.strip() != item.item.source and item.stdout.strip() != "")
         }]
       }}
-  loop: '{{ target_devices.results }}'
+  loop: '{{ target_devices.results | default([]) }}'
   loop_control:
     label: '{{ item.item.source }}'
+  when: target_devices is defined
 
 - name: Check if filesystem exists on target devices
   command: lsblk -rno FSTYPE {{ item.target_device }}
   register: fs_check
   changed_when: false
   failed_when: false
-  loop: '{{ resolved_devices | default([]) }}'
-  when: item.target_device != ""
+  loop: '{{ resolved_devices }}'
+  when:
+    - resolved_devices | length > 0
+    - item.target_device != ""
   loop_control:
     label: '{{ item.target_device }}'
 
@@ -102,7 +118,7 @@
     - format_volumes | default(true)
     - item.item.target_device != ""
     - item.stdout == "" or item.rc != 0
-  loop: '{{ fs_check.results }}'
+  loop: '{{ fs_check.results | default([]) }}'
   loop_control:
     label: '{{ item.item.target_device }}'
 
@@ -112,6 +128,7 @@
     state: unmounted
   loop: '{{ resolved_devices }}'
   when:
+    - resolved_devices | length > 0
     - item.target_device != ""
     - item.original_item.mount_point is defined
   loop_control:
@@ -123,7 +140,9 @@
     path: '{{ item.mount_point }}'
     state: unmounted
   loop: '{{ bind_mounts }}'
-  when: item.mount_point is defined
+  when:
+    - bind_mounts | length > 0
+    - item.mount_point is defined
   loop_control:
     label: '{{ item.mount_point }}'
 
@@ -136,7 +155,9 @@
           'new_label': 'disk' ~ 9999 | random
         }) | list
       }}
-  when: rotate_additional_volume_metadata | default(false) | bool
+  when:
+    - rotate_additional_volume_metadata | default(false) | bool
+    - resolved_devices | length > 0
 
 - name: Force Check Filesystem on ext4 Devices
   command: e2fsck -f -y {{ item.target_device }}
@@ -165,8 +186,10 @@
 
 - name: Show Block Device UUIDs
   command: 'lsblk {{ item.target_device }} -no UUID'
-  loop: '{{ resolved_devices | default([]) }}'
-  when: item.target_device != ""
+  loop: '{{ resolved_devices }}'
+  when:
+    - resolved_devices | length > 0
+    - item.target_device != ""
   register: block_devices
   loop_control:
     label: '{{ item.target_device }}'
@@ -178,8 +201,10 @@
     fstype: '{{ item.item.original_item.filesystem }}'
     opts: '{{ item.item.original_item.mount_options }}'
     state: mounted
-  loop: '{{ block_devices.results }}'
-  when: item.stdout.strip() != ""
+  loop: '{{ block_devices.results | default([]) }}'
+  when:
+    - block_devices is defined
+    - item.stdout.strip() != ""
   loop_control:
     label: '{{ item.item.original_item.mount_point }}'
 
@@ -191,10 +216,12 @@
     group: '{{ item.mount_point_group }}'
     mode: '{{ item.mount_point_mode }}'
   loop: '{{ bind_mounts }}'
+  when: bind_mounts | length > 0
 
 - name: Copy existing data to bind mount source if needed
   command: cp -a {{ item.mount_point }}/. {{ item.source }}/
   when:
+    - bind_mounts | length > 0
     - item.mount_point is defined
     - item.source is defined
     - hetzner_cloud | default(false) | bool
@@ -211,6 +238,7 @@
     opts: '{{ item.mount_options }}'
     state: mounted
   loop: '{{ bind_mounts }}'
+  when: bind_mounts | length > 0
 
 - name: Cleanup DB Replication Files
   file:

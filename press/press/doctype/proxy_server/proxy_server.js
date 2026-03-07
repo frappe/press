@@ -22,12 +22,7 @@ frappe.ui.form.on('Proxy Server', {
 			],
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
-			[
-				__('Get AWS Static IP'),
-				'get_aws_static_ip',
-				false,
-				frm.doc.provider === 'AWS EC2',
-			],
+			[__('Get Static IP'), 'get_static_ip', false],
 			[
 				__('Setup SSH Proxy'),
 				'setup_ssh_proxy',
@@ -77,6 +72,12 @@ frappe.ui.form.on('Proxy Server', {
 					!frm.doc.is_replication_setup,
 			],
 			[
+				__('Execute Pre Failover Tasks'),
+				'pre_failover_tasks',
+				true,
+				frm.doc.is_server_setup && !frm.doc.is_primary,
+			],
+			[
 				__('Trigger Failover'),
 				'trigger_failover',
 				true,
@@ -86,6 +87,7 @@ frappe.ui.form.on('Proxy Server', {
 			],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
 			[__('Setup Fail2ban'), 'setup_fail2ban', true, frm.doc.is_server_setup],
+			[__('Remove Fail2ban'), 'remove_fail2ban', true, frm.doc.is_server_setup],
 			[__('Setup Wireguard'), 'setup_wireguard', true],
 			[__('Reload Wireguard'), 'reload_wireguard', true],
 			[
@@ -125,6 +127,83 @@ frappe.ui.form.on('Proxy Server', {
 				);
 			}
 		});
+
+		if (frm.doc.is_server_setup) {
+			frm.add_custom_button(
+				__('Update Memory Limits'),
+				() => {
+					let process_options = ['', 'nginx', 'filebeat'];
+					frm.doc.is_proxysql_setup && process_options.push('proxysql');
+					frm.doc.is_ssh_proxy_setup && process_options.push('ssh');
+
+					const dialog = new frappe.ui.Dialog({
+						title: 'Set Memory Limits',
+						fields: [
+							{
+								fieldname: 'process_table',
+								fieldtype: 'Table',
+								label: 'Processes',
+								reqd: 1,
+								description: 'Use -1 for unsetting limits',
+								in_place_edit: true,
+								data: [],
+								fields: [
+									{
+										fieldname: 'process',
+										fieldtype: 'Select',
+										label: 'Process',
+										in_list_view: 1,
+										columns: 4,
+										options: process_options.join('\n'),
+										reqd: 1,
+									},
+									{
+										fieldname: 'memory_high',
+										fieldtype: 'Int',
+										label: 'Memory High (MB)',
+										in_list_view: 1,
+										reqd: 1,
+										columns: 3,
+									},
+									{
+										fieldname: 'memory_max',
+										fieldtype: 'Int',
+										label: 'Memory Max (MB)',
+										in_list_view: 1,
+										reqd: 1,
+										columns: 5,
+									},
+								],
+							},
+						],
+						primary_action_label: 'Update',
+						primary_action(values) {
+							frm
+								.call('set_memory_limits', { limits: values.process_table })
+								.then((r) => {
+									frappe.show_alert(r.message);
+									dialog.hide();
+								});
+						},
+					});
+					dialog.show();
+
+					frm.call('get_memory_limits').then((r) => {
+						if (r.message) {
+							r.message.forEach((limit) => {
+								dialog.fields_dict.process_table.df.data.push({
+									process: limit.process,
+									memory_high: limit.memory_high,
+									memory_max: limit.memory_max,
+								});
+							});
+						}
+						dialog.fields_dict.process_table.grid.refresh();
+					});
+				},
+				__('Actions'),
+			);
+		}
 	},
 
 	hostname: function (frm) {

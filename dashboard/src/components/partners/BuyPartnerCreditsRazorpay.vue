@@ -1,14 +1,18 @@
 <template>
 	<div>
 		<span
-			v-if="team.doc.currency === 'INR'"
+			v-if="team.doc.currency === 'INR' || showPaypal"
 			class="mt-2.5 inline-flex gap-2 text-base text-gray-700"
 		>
 			<FeatherIcon name="info" class="my-1 h-4" />
-			<span class="leading-5">
+			<span class="leading-5" v-if="team.doc.currency === 'INR'">
 				If you select Razorpay, you can pay using Credit Card, Debit Card, Net
 				Banking, UPI, Wallets, etc. If you are using Net Banking, it may take
 				upto 5 days for balance to reflect.
+			</span>
+			<span class="leading-5" v-if="showPaypal">
+				You can pay using your PayPal account. Processing may take a few minutes
+				for the balance to reflect.
 			</span>
 		</span>
 		<ErrorMessage class="mt-3" :message="createRazorpayOrder.error" />
@@ -18,7 +22,7 @@
 				class="w-full"
 				size="md"
 				variant="solid"
-				label="Proceed to payment using Razorpay"
+				:label="`Proceed to payment using ${showPaypal ? 'PayPal' : 'Razorpay'}`"
 				:loading="createRazorpayOrder.loading"
 				@click="createRazorpayOrder.submit()"
 			/>
@@ -35,7 +39,7 @@
 </template>
 <script setup>
 import { Button, ErrorMessage, FeatherIcon, createResource } from 'frappe-ui';
-import { ref, onMounted, onBeforeUnmount, inject } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, inject } from 'vue';
 import { toast } from 'vue-sonner';
 import { DashboardError } from '../../utils/error';
 
@@ -52,10 +56,18 @@ const props = defineProps({
 		type: String,
 		default: 'Prepaid Credits',
 	},
+	paypalEnabled: {
+		type: Boolean,
+		default: false,
+	},
 });
 
 const emit = defineEmits(['success']);
 const team = inject('team');
+
+const showPaypal = computed(() => {
+	return team.doc.currency === 'USD' && props.paypalEnabled;
+});
 
 const isPaymentComplete = ref(false);
 const isVerifyingPayment = ref(false);
@@ -108,6 +120,29 @@ function processOrder(data) {
 		prefill: { email: team.doc?.user },
 		handler: handlePaymentSuccess,
 		theme: { color: '#171717' },
+		...(showPaypal.value
+			? {
+					config: {
+						display: {
+							blocks: {
+								wallets: {
+									name: 'Pay using PayPal',
+									instruments: [
+										{
+											method: 'wallet',
+											wallets: ['paypal'],
+										},
+									],
+								},
+							},
+							sequence: ['block.wallets'],
+							preferences: {
+								show_default_blocks: false,
+							},
+						},
+					},
+				}
+			: {}),
 	};
 
 	const rzp = new Razorpay(options);

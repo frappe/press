@@ -2,24 +2,43 @@
 	<div class="space-y-4">
 		<div class="flex space-x-2">
 			<FormControl
-				class="w-40"
+				v-if="serverOptions.length > 1"
+				class="w-50"
 				label="Server"
 				type="select"
 				:options="serverOptions"
 				v-model="chosenServer"
 			/>
 			<FormControl
-				class="w-32"
+				class="w-36"
 				label="Duration"
 				type="select"
-				:options="
-					durationOptions.map((option) => ({ label: option, value: option }))
-				"
+				:options="durationOptions"
 				v-model="duration"
 			/>
+			<div v-if="duration === 'custom'" class="flex flex-col gap-1.5">
+				<div class="text-xs text-ink-gray-5">Start</div>
+				<DateTimePicker
+					class="w-52"
+					type="datetime"
+					format="D MMM YYYY, hh:mm a"
+					:model-value="customStartTime"
+					@update:model-value="customStartTime = new Date($event)"
+				/>
+			</div>
+			<div v-if="duration === 'custom'" class="flex flex-col gap-1.5">
+				<div class="text-xs text-ink-gray-5">End</div>
+				<DateTimePicker
+					class="w-52"
+					type="datetime"
+					format="D MMM YYYY, hh:mm a"
+					:model-value="customEndTime"
+					@update:model-value="customEndTime = new Date($event)"
+				/>
+			</div>
 		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-			<AnalyticsCard title="Uptime" v-if="!isServerType('Application Server')">
+			<AnalyticsCard title="Uptime" v-if="isServerType('Database Server')">
 				<LineChart
 					type="time"
 					title="Uptime"
@@ -127,7 +146,7 @@
 					title="Disk I/O"
 					:key="iopsData"
 					:data="iopsData"
-					unit="I0ps"
+					unit="IOps"
 					:chartTheme="[$theme.colors.purple[500], $theme.colors.blue[500]]"
 					:loading="$resources.iops.loading"
 					:error="$resources.iops.error"
@@ -225,7 +244,7 @@
 				/>
 			</AnalyticsCard>
 
-			<AnalyticsCard title="Queries" v-if="!isServerType('Application Server')">
+			<AnalyticsCard title="Queries" v-if="isServerType('Database Server')">
 				<LineChart
 					type="time"
 					title="Queries"
@@ -251,7 +270,7 @@
 
 			<AnalyticsCard
 				title="DB Connections"
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 			>
 				<LineChart
 					type="time"
@@ -272,7 +291,7 @@
 
 			<AnalyticsCard
 				title="Average Row Lock Time"
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 			>
 				<LineChart
 					type="time"
@@ -290,7 +309,7 @@
 
 			<AnalyticsCard
 				title="Buffer Pool Size"
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 			>
 				<LineChart
 					type="time"
@@ -308,7 +327,7 @@
 
 			<AnalyticsCard
 				title="Buffer Pool Size of Total Ram"
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 			>
 				<LineChart
 					type="time"
@@ -337,7 +356,7 @@
 
 			<AnalyticsCard
 				title="Buffer Pool Miss Percent"
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 			>
 				<LineChart
 					type="time"
@@ -365,7 +384,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 				class="sm:col-span-2"
 				title="Frequent Slow queries"
 			>
@@ -389,7 +408,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
-				v-if="!isServerType('Application Server')"
+				v-if="isServerType('Database Server')"
 				class="sm:col-span-2"
 				title="Slowest queries"
 			>
@@ -416,11 +435,16 @@
 </template>
 
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
+import {
+	DateTimePicker,
+	getCachedDocumentResource,
+	TabButtons,
+} from 'frappe-ui';
 import LineChart from '@/components/charts/LineChart.vue';
 import BarChart from '@/components/charts/BarChart.vue';
 import AnalyticsCard from '../site/AnalyticsCard.vue';
-import dayjs from '../../utils/dayjs';
+import dayjs, { dayjsFloorToMinutes } from '../../utils/dayjs';
+import { duration } from '../../utils/format';
 
 export default {
 	props: ['serverName'],
@@ -428,16 +452,31 @@ export default {
 		AnalyticsCard,
 		BarChart,
 		LineChart,
+		DateTimePicker,
 	},
 	data() {
+		const defaultDuration = '1h';
+
 		return {
-			duration: '1 Hour',
+			defaultDuration,
+			duration: defaultDuration,
+			customStartTime: null,
+			customEndTime: null,
 			showAdvancedAnalytics: false,
 			localTimezone: dayjs.tz.guess(),
 			slowLogsDurationType: 'Denormalized',
 			slowLogsFrequencyType: 'Denormalized',
 			chosenServer: this.$route.query.server ?? this.serverName,
-			durationOptions: ['1 Hour', '6 Hour', '24 Hour', '7 Days', '15 Days'],
+			durationOptions: [
+				{ label: 'Duration', value: null, disabled: true },
+				{ label: '1 hour', value: '1h' },
+				{ label: '6 hours', value: '6h' },
+				{ label: '24 hours', value: '24h' },
+				{ label: '3 days', value: '3d' },
+				{ label: '7 days', value: '7d' },
+				{ label: '15 days', value: '15d' },
+				{ label: 'Custom', value: 'custom' },
+			],
 			chartColors: [
 				this.$theme.colors.green[500],
 				this.$theme.colors.red[500],
@@ -460,6 +499,17 @@ export default {
 				},
 			});
 		},
+		duration() {
+			const now = dayjs();
+			// floor to 15 minutes to avoid issues with caching
+			const flooredEndDate = dayjsFloorToMinutes(now, 15);
+			this.customEndTime = flooredEndDate.toDate();
+			const dur =
+				this.duration === 'custom'
+					? this.defaultDurationToArray
+					: this.inputDurationToArray;
+			this.customStartTime = flooredEndDate.subtract(...dur).toDate();
+		},
 	},
 	resources: {
 		loadavg() {
@@ -469,7 +519,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'loadavg',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
 					)?.label,
@@ -484,7 +535,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'cpu',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
 					)?.label,
@@ -499,7 +551,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'memory',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
 					)?.label,
@@ -514,7 +567,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'network',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
 					)?.label,
@@ -529,7 +583,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'iops',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
 					)?.label,
@@ -544,7 +599,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'space',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
 					)?.label,
@@ -559,7 +615,8 @@ export default {
 					name: this.chosenServer,
 					query: 'count',
 					timezone: this.localTimezone,
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics && this.isServerType('Application Server'),
@@ -572,7 +629,8 @@ export default {
 					name: this.chosenServer,
 					query: 'duration',
 					timezone: this.localTimezone,
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics && this.isServerType('Application Server'),
@@ -585,7 +643,8 @@ export default {
 					name: this.chosenServer,
 					query: 'count',
 					timezone: this.localTimezone,
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics && this.isServerType('Application Server'),
@@ -598,7 +657,8 @@ export default {
 					name: this.chosenServer,
 					query: 'duration',
 					timezone: this.localTimezone,
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics && this.isServerType('Application Server'),
@@ -611,7 +671,8 @@ export default {
 					name: this.chosenServer,
 					query: 'count',
 					timezone: this.localTimezone,
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					normalize: this.slowLogsFrequencyType === 'Normalized',
 				},
 				auto:
@@ -626,7 +687,8 @@ export default {
 					name: this.chosenServer,
 					query: 'duration',
 					timezone: this.localTimezone,
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 					normalize: this.slowLogsDurationType === 'Normalized',
 				},
 				auto:
@@ -641,7 +703,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'database_uptime',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.isServerType('Database Server') ||
@@ -655,7 +718,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'database_commands_count',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics &&
@@ -670,7 +734,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'database_connections',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics &&
@@ -685,7 +750,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'innodb_bp_size',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics &&
@@ -700,7 +766,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'innodb_bp_size_of_total_ram',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics &&
@@ -715,7 +782,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'innodb_bp_miss_percent',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics &&
@@ -730,7 +798,8 @@ export default {
 					name: this.chosenServer,
 					timezone: this.localTimezone,
 					query: 'innodb_avg_row_lock_time',
-					duration: this.duration,
+					start: this.startTime,
+					end: this.endTime,
 				},
 				auto:
 					this.showAdvancedAnalytics &&
@@ -744,20 +813,58 @@ export default {
 			return getCachedDocumentResource('Server', this.serverName);
 		},
 		serverOptions() {
-			return [
+			const options = [
 				{
-					label: 'Application Server',
+					label: this.$server.doc.is_unified_server
+						? 'Unified Server'
+						: 'Application Server',
 					value: this.$server.doc.name,
 				},
 				{
 					label: 'Database Server',
-					value: this.$server.doc.database_server,
+					value: !this.$server.doc.is_unified_server
+						? this.$server.doc.database_server
+						: false,
 				},
 				{
 					label: 'Replication Server',
 					value: this.$server.doc.replication_server,
 				},
 			].filter((v) => v.value);
+			if (options.length === 1 && !this.chosenServer) {
+				this.chosenServer = options[0].value;
+			}
+			return options;
+		},
+		inputDurationToArray() {
+			if (this.duration === 'custom') {
+				return null;
+			}
+			const durationValue = Number(this.duration.slice(0, -1));
+			const durationUnit = this.duration.slice(-1);
+			return [durationValue, durationUnit];
+		},
+		defaultDurationToArray() {
+			const durationValue = Number(this.defaultDuration.slice(0, -1));
+			const durationUnit = this.defaultDuration.slice(-1);
+			return [durationValue, durationUnit];
+		},
+		startTime() {
+			if (this.duration === 'custom') {
+				return this.customStartTime;
+			}
+			return dayjs(this.endTime)
+				.subtract(...this.inputDurationToArray)
+				.toDate();
+		},
+		endTime() {
+			if (this.duration === 'custom') {
+				return this.customEndTime;
+			}
+			const now = dayjs();
+			// floor to 15 minutes to avoid issues with caching
+			const flooredNow = dayjsFloorToMinutes(now, 15);
+			return flooredNow.toDate();
 		},
 		loadAverageData() {
 			let loadavg = this.$resources.loadavg.data;
@@ -875,7 +982,7 @@ export default {
 		},
 		innodbBufferPoolSizeOfTotalRamData() {
 			let data = this.$resources.innodbBufferPoolSizeOfTotalRam.data;
-			if (!data) return;
+			if (!data || (data.datasets && data.datasets.length === 0)) return;
 			let payload = this.transformSingleLineChartData(data, true);
 			payload['markLine'] = {
 				data: [
@@ -908,7 +1015,8 @@ export default {
 		},
 		innodbBufferPoolMissPercentageData() {
 			let data = this.$resources.innodbBufferPoolMissPercentage.data;
-			if (!data) return;
+			if (!data || (data.datasets && data.datasets.length === 0)) return;
+
 			let payload = this.transformSingleLineChartData(data, false);
 			payload['markLine'] = {
 				data: [
@@ -980,6 +1088,10 @@ export default {
 			return { datasets, yMax: percentage ? 100 : null };
 		},
 		isServerType(type) {
+			// Show all analytics for Unified Server
+			if (this.$server.doc.is_unified_server) {
+				type = 'Unified Server';
+			}
 			return (
 				this.chosenServer ===
 				this.serverOptions.find((s) => s.label === type)?.value

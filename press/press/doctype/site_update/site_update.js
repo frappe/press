@@ -47,9 +47,7 @@ frappe.ui.form.on('Site Update', {
 			__('Change Status'),
 			() => {
 				let options = ['Success', 'Recovered', 'Failure', 'Fatal'];
-				['Scheduled', 'Pending'].includes(frm.doc.status)
-					? options.push('Cancelled')
-					: null;
+				frm.doc.status === 'Scheduled' ? options.push('Cancelled') : null;
 
 				const dialog = new frappe.ui.Dialog({
 					title: __('Change Status'),

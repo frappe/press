@@ -6,6 +6,16 @@
 	</Header>
 	<div>
 		<TabsWithRouter :tabs="tabs">
+			<template #tab-item="{ tab }">
+				<router-link
+					:to="{ name: tab.routeName }"
+					class="flex whitespace-nowrap items-center py-2.5 gap-1.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9 data-[state=active]:text-ink-gray-9"
+				>
+					<component v-if="tab.icon" :is="tab.icon" class="size-4"> </component>
+
+					{{ tab.label }}
+				</router-link>
+			</template>
 			<template #tab-content="{ tab }">
 				<router-view :key="tab.routeName"></router-view>
 			</template>

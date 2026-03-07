@@ -2,9 +2,15 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import frappe
 
 from press.press.doctype.site_plan.plan import Plan
+from press.utils.jobs import has_job_timeout_exceeded
+
+if TYPE_CHECKING:
+	from press.press.doctype.cluster.cluster import Cluster
 
 
 class ServerPlan(Plan):
@@ -17,12 +23,17 @@ class ServerPlan(Plan):
 		from frappe.core.doctype.has_role.has_role import HasRole
 		from frappe.types import DF
 
+		allow_unified_server: DF.Check
+		cloud_provider: DF.Link | None
 		cluster: DF.Link | None
 		disk: DF.Int
 		enabled: DF.Check
+		ignore_machine_availability_sync: DF.Check
 		instance_type: DF.Data | None
 		legacy_plan: DF.Check
+		machine_unavailable: DF.Check
 		memory: DF.Int
+		plan_type: DF.Link | None
 		platform: DF.Literal["x86_64", "arm64", "amd64"]
 		premium: DF.Check
 		price_inr: DF.Currency
@@ -42,6 +53,9 @@ class ServerPlan(Plan):
 		"disk",
 		"platform",
 		"premium",
+		"plan_type",
+		"allow_unified_server",
+		"machine_unavailable",
 	)
 
 	def get_doc(self, doc):
@@ -60,3 +74,77 @@ class ServerPlan(Plan):
 				frappe.throw(
 					f"Cannot disable this plan. This plan is used in {active_sub_count} active subscription(s)."
 				)
+
+
+def sync_machine_availability_status_of_plans():
+	frappe.enqueue(
+		_sync_machine_availability_status_of_plans,
+		timeout=3600,
+		deduplicate=True,
+		job_id="sync_machine_availability_status_of_plans",
+	)
+
+
+def _sync_machine_availability_status_of_plans():  # noqa
+	plans = frappe.get_all(
+		"Server Plan",
+		filters={"ignore_machine_availability_sync": 0, "enabled": 1},
+		fields=["name", "cluster", "machine_unavailable", "instance_type"],
+	)
+
+	# Sync also disabled but legacy_plan
+	legacy_plans = frappe.get_all(
+		"Server Plan",
+		filters={"legacy_plan": 1, "ignore_machine_availability_sync": 0, "enabled": 0},
+		fields=["name", "cluster", "machine_unavailable", "instance_type"],
+	)
+	plans.extend(legacy_plans)
+
+	cluster_doc_map: dict[str, Cluster] = {}
+	cluster_plans: dict[str, list[dict]] = {}
+
+	for plan in plans:
+		if has_job_timeout_exceeded():
+			return
+
+		if not plan.instance_type:
+			continue
+
+		if not plan.cluster:
+			# Some plan types has no cluster assigned to them.
+			# Skip those as they are not relevant for machine availability status sync.
+			continue
+
+		if plan.cluster not in cluster_doc_map:
+			cluster_doc_map[plan.cluster] = frappe.get_doc("Cluster", plan.cluster)
+
+		if plan.cluster not in cluster_plans:
+			cluster_plans[plan.cluster] = []
+		cluster_plans[plan.cluster].append(plan)
+
+	for c in cluster_plans:
+		if has_job_timeout_exceeded():
+			return
+
+		try:
+			cluster: Cluster = cluster_doc_map[c]
+			instance_types = [p["instance_type"] for p in cluster_plans[c]]
+			plan_availability_results = cluster.check_machine_availability(instance_types)
+
+			# Some Cluster implementations may return a boolean instead of a dict.
+			# Normalize to a dict so that the code below can safely use .get(...).
+			if isinstance(plan_availability_results, bool):
+				plan_availability_results = {
+					instance_type: plan_availability_results for instance_type in instance_types
+				}
+			for plan in cluster_plans[c]:
+				is_unavailable = not plan_availability_results.get(plan.instance_type, False)
+				if is_unavailable != plan.machine_unavailable:
+					frappe.db.set_value("Server Plan", plan.name, "machine_unavailable", is_unavailable)
+
+			frappe.db.commit()
+		except Exception:
+			frappe.log_error(
+				f"Failed to sync machine availability status for Server Plan {plan.name}",
+			)
+			frappe.db.rollback()

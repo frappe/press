@@ -142,7 +142,7 @@ function getList() {
 				format: (value, row) => String(row.cluster_title || value || ''),
 				prefix: getClusterImagePrefix
 			},
-			{ label: 'Bench Group', fieldname: 'group_title', width: '350px' }
+			{ label: 'Bench', fieldname: 'group_title', width: '350px' }
 		],
 		filterControls
 	} satisfies List as List;
@@ -222,7 +222,7 @@ function filterControls() {
 		},
 		{
 			type: 'link',
-			label: 'Bench Group',
+			label: 'Bench',
 			fieldname: 'group',
 			options: {
 				doctype: 'Release Group'

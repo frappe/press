@@ -41,6 +41,15 @@
 			<div class="text-xs text-gray-600">Select Payment Gateway</div>
 			<div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
 				<Button
+					size="lg"
+					:class="{
+						'border-[1.5px] border-gray-700': paymentGateway === 'Stripe',
+					}"
+					@click="paymentGateway = 'Stripe'"
+				>
+					<StripeLogo class="h-7 w-24" />
+				</Button>
+				<Button
 					v-if="team.doc.currency === 'INR' || team.doc.razorpay_enabled"
 					size="lg"
 					:class="{
@@ -51,13 +60,14 @@
 					<RazorpayLogo class="w-24" />
 				</Button>
 				<Button
+					v-if="team.doc.currency === 'USD' && paypalEnabled.data"
 					size="lg"
 					:class="{
-						'border-[1.5px] border-gray-700': paymentGateway === 'Stripe',
+						'border-[1.5px] border-gray-700': paymentGateway === 'Razorpay',
 					}"
-					@click="paymentGateway = 'Stripe'"
+					@click="paymentGateway = 'Razorpay'"
 				>
-					<StripeLogo class="h-7 w-24" />
+					<PayPalLogo class="h-7 w-20" />
 				</Button>
 			</div>
 		</div>
@@ -75,6 +85,7 @@
 			v-if="paymentGateway === 'Razorpay'"
 			:amount="creditsToBuy"
 			:maximumAmount="maximumAmount"
+			:paypalEnabled="paypalEnabled.data"
 			type="Partnership Fee"
 			@success="() => emit('success')"
 			@cancel="show = false"
@@ -86,12 +97,24 @@ import BuyPartnerCreditsStripe from './BuyPartnerCreditsStripe.vue';
 import BuyPartnerCreditsRazorpay from './BuyPartnerCreditsRazorpay.vue';
 import RazorpayLogo from '../../logo/RazorpayLogo.vue';
 import StripeLogo from '../../logo/StripeLogo.vue';
-import { FormControl, Button, createDocumentResource } from 'frappe-ui';
+import PayPalLogo from '../../logo/PayPalLogo.vue';
+import {
+	FormControl,
+	Button,
+	createDocumentResource,
+	createResource,
+} from 'frappe-ui';
 import { ref, computed, inject, defineEmits } from 'vue';
 
 const emit = defineEmits(['success']);
 
 const team = inject('team');
+
+const paypalEnabled = createResource({
+	url: 'press.api.billing.is_paypal_enabled',
+	cache: 'paypalEnabled',
+	auto: true,
+});
 
 const pressSettings = createDocumentResource({
 	doctype: 'Press Settings',

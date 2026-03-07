@@ -9,6 +9,7 @@
   "step_name",
   "method_name",
   "status",
+  "attempt",
   "column_break_jrwk",
   "job_type",
   "job",
@@ -33,6 +34,11 @@
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nSkipped\nFailure"
   },
+  {
+    "fieldname": "attempt",
+    "fieldtype": "Int",
+    "label": "Attempt"
+   },
   {
    "fieldname": "column_break_jrwk",
    "fieldtype": "Column Break"
@@ -60,7 +66,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-11-28 11:20:48.651264",
+ "modified": "2025-11-30 11:20:48.651264",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Failover Steps",

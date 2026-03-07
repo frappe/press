@@ -1,0 +1,33 @@
+---
+- name: Unreference Main Chain in INPUT
+  command: iptables -D INPUT -j {{ chain_main }}
+  ignore_errors: yes
+
+- name: Unreference Bypass Chain in INPUT
+  command: iptables -D INPUT -j {{ chain_bypass }}
+  ignore_errors: yes
+
+- name: Unreference Main Chain in DOCKER-USER
+  command: iptables -D DOCKER-USER -j {{ chain_main }}
+  ignore_errors: yes
+
+- name: Unreference Bypass Chain in DOCKER-USER
+  command: iptables -D DOCKER-USER -j {{ chain_bypass }}
+  ignore_errors: yes
+
+- name: Unreference Main Chain in OUTPUT
+  command: iptables -D OUTPUT -j {{ chain_main }}
+  ignore_errors: yes
+
+- name: Unreference Bypass Chain in OUTPUT
+  command: iptables -D OUTPUT -j {{ chain_bypass }}
+  ignore_errors: yes
+
+- name: Remove Main Chain
+  command: iptables -X {{ chain_main }}
+  ignore_errors: yes
+
+- name: Remove Bypass Chain
+  command: iptables -X {{ chain_bypass }}
+  ignore_errors: yes
+

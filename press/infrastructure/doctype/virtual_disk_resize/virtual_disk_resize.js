@@ -15,7 +15,9 @@ frappe.ui.form.on('Virtual Disk Resize', {
 					() => {
 						frappe.confirm(
 							`Are you sure you want to ${label.toLowerCase()}?`,
-							() => frm.call(method).then(() => frm.refresh()),
+							() => {
+								frm.call(method).then(() => frm.refresh());
+							},
 						);
 					},
 					__('Actions'),

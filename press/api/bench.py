@@ -7,11 +7,12 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING
 
 import frappe
+import requests
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import flt, sbool
 
-from press.api.github import branches
+from press.api.github import branches, get_access_token
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_patch.app_patch import create_app_patch
@@ -761,6 +762,33 @@ def deploy(name, apps):
 	return deploy_candidate_build["name"]
 
 
+def validate_app_hashes(apps: list[dict[str, str]]):
+	"""Ensure none of them are yanked"""
+	if not apps:
+		return
+
+	hashes = []
+	for app in apps:
+		if not app.get("release") or not app.get("hash"):
+			frappe.throw("Each app must have a release and hash to run deploy and update!")
+		else:
+			hashes.append(app.get("hash"))
+
+	YankedAppRelease = frappe.qb.DocType("Yanked App Release")
+	has_yanked_apps = (
+		frappe.qb.from_(YankedAppRelease)
+		.where(YankedAppRelease.hash.isin(hashes or [""]))
+		.select(YankedAppRelease.hash)
+		.run(as_dict=True)
+	)
+
+	if has_yanked_apps:
+		frappe.throw(
+			"Some app versions have been yanked and cannot be deployed, please refresh and retry deploy. "
+			'<a href="https://docs.frappe.io/cloud/benches/updating_a_bench#yanked-app-releases" target="_blank">Learn more</a>'
+		)
+
+
 @frappe.whitelist()
 @protected("Release Group")
 def deploy_and_update(
@@ -769,6 +797,8 @@ def deploy_and_update(
 	sites: list | None = None,
 	run_will_fail_check: bool = True,
 ):
+	validate_app_hashes(apps)
+
 	# Returns name of the Deploy Candidate that is running the build
 	return get_bench_update(
 		name,
@@ -785,6 +815,7 @@ def update_inplace(
 	apps: list,
 	sites: list,
 ):
+	validate_app_hashes(apps)
 	# Returns name of the Agent Job name that runs the inplace update
 	return get_bench_update(
 		name,
@@ -871,6 +902,34 @@ def branch_list(name: str, app: str) -> list[dict]:
 		return get_branches_for_marketplace_app(app, marketplace_app[0], app_source)
 
 	return branches(repo_owner, repo_name, installation_id)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def validate_branch(name: str, app: str, branch: str):
+	"""Validates whether a branch is available for the `app`"""
+	release_group = frappe.get_doc("Release Group", name)
+	app_source = release_group.get_app_source(app)
+
+	token = get_access_token(app_source.github_installation_id)
+
+	if token:
+		headers = {
+			"Authorization": f"token {token}",
+		}
+	else:
+		headers = {}
+
+	response = requests.get(
+		f"https://api.github.com/repos/{app_source.repository_owner}/{app_source.repository}/branches/{branch}",
+		headers=headers,
+		timeout=10,
+	)
+
+	if response.ok:
+		return response.json()
+	frappe.throw("Error validating branch from GitHub: " + response.text)
+	return None
 
 
 def get_branches_for_marketplace_app(app: str, marketplace_app: str, app_source: AppSource) -> list[dict]:
@@ -1113,7 +1172,7 @@ def confirm_bench_transfer(key: str):
 	if frappe.session.user == "Guest":
 		return frappe.respond_as_web_page(
 			_("Not Permitted"),
-			_("You need to be logged in to confirm the bench group transfer."),
+			_("You need to be logged in to confirm the bench transfer."),
 			http_status_code=403,
 			indicator_color="red",
 			primary_action="/dashboard/login",
@@ -1155,3 +1214,41 @@ def confirm_bench_transfer(key: str):
 		http_status_code=403,
 		indicator_color="red",
 	)
+
+
+@frappe.whitelist()
+def search_releases(
+	app: str,
+	source: str,
+	fields: list,
+	query: str | None = None,
+	limit: int = 10,
+	current_release: str | None = None,
+):
+	if not query:
+		return []
+
+	AppRelease = frappe.qb.DocType("App Release")
+	YankedAppRelease = frappe.qb.DocType("Yanked App Release")
+	q = (
+		frappe.qb.from_(AppRelease)
+		.left_join(YankedAppRelease)
+		.on(YankedAppRelease.hash == AppRelease.hash)
+		.select(*fields)
+		.where(YankedAppRelease.hash.isnull())
+		.where(AppRelease.hash.like(f"%{query.strip()}%") | AppRelease.message.like(f"%{query.strip()}%"))
+	)
+
+	if current_release:
+		current_release_creation = frappe.get_value("App Release", current_release, "creation")
+		# downgrading apps is not supported
+		q = q.where(AppRelease.creation > current_release_creation)
+
+	q = (
+		q.where((AppRelease.public == 1) & (AppRelease.status == "Approved"))
+		.where((AppRelease.app == app) & (AppRelease.source == source))
+		.orderby(AppRelease.timestamp, order=frappe.qb.desc)
+		.limit(limit)
+	)
+
+	return q.run(as_dict=1)

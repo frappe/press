@@ -1,0 +1,16 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white">
+		<p>Hi,</p>
+        <p>This is to inform you that your suspended site <strong>{{site_name}}</strong> will be automatically archived in <strong>{{site_archive_notification_days}} days</strong>. Once archived, the site will no longer be accessible.</p>
+        <p>A backup of your site will be retained for 6 months in case you want to restore.</p>
+		{{ utils.separator() }}
+		{{ utils.signature() }}
+	</div>
+</td>
+
+{% endblock %}

@@ -17,10 +17,15 @@
 			<div class="space-y-4">
 				<div :class="{ 'pointer-events-none': config }">
 					<FormControl
-						type="autocomplete"
+						type="combobox"
 						label="Config Name"
 						:options="keyOptions"
-						v-model="selectedConfig"
+						:modelValue="selectedConfig?.value"
+						@update:modelValue="
+							selectedConfig = keyOptions.find(
+								(option) => option.value === $event,
+							)
+						"
 					/>
 					<div
 						v-if="

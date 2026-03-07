@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "banned",
   "team_title",
   "user",
   "account_request",
@@ -31,6 +32,7 @@
   "subscription_details_section",
   "stripe_customer_id",
   "country",
+  "phone_number",
   "currency",
   "payment_mode",
   "billing_team",
@@ -82,12 +84,14 @@
   "ssh_access_enabled",
   "skip_backups",
   "enable_inplace_updates",
+  "relaxed_permissions",
   "column_break_31",
   "database_access_enabled",
   "enable_performance_tuning",
   "razorpay_enabled",
   "servers_enabled",
   "code_servers_enabled",
+  "hybrid_servers_enabled",
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
@@ -135,7 +139,8 @@
    "fieldname": "stripe_customer_id",
    "fieldtype": "Data",
    "label": "Stripe Customer ID",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "country",
@@ -254,7 +259,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "ssh_access_enabled",
    "fieldtype": "Check",
    "label": "SSH Access Enabled"
@@ -637,6 +642,31 @@
    "fieldname": "company_name",
    "fieldtype": "Data",
    "label": "Company Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "hybrid_servers_enabled",
+   "fieldtype": "Check",
+   "label": "Hybrid Servers Enabled"
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Phone",
+   "in_list_view": 1,
+   "label": "Phone Number",
+   "options": "Country"
+  },
+  {
+   "default": "0",
+   "fieldname": "banned",
+   "fieldtype": "Check",
+   "label": "Banned"
+  },
+  {
+   "default": "0",
+   "fieldname": "relaxed_permissions",
+   "fieldtype": "Check",
+   "label": "Relaxed Permissions"
   }
  ],
  "grid_page_length": 50,
@@ -702,8 +732,8 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-11-06 18:07:54.307229",
- "modified_by": "Administrator",
+ "modified": "2026-03-02 12:15:11.542102",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Team",
  "naming_rule": "Random",

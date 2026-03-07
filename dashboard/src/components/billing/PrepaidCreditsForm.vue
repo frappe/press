@@ -186,8 +186,9 @@ const minimumAmount = computed(() => {
 const creditsToBuy = ref(minimumAmount.value);
 const paymentGateway = ref('');
 
-watch(minimumAmount, () => {
-	creditsToBuy.value = minimumAmount.value;
+watch(totalUnpaidAmount, () => {
+	creditsToBuy.value =
+		totalUnpaidAmount.data > 0 ? totalUnpaidAmount.data : minimumAmount.value;
 });
 
 const totalAmount = computed(() => {

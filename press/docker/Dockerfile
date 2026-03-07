@@ -9,7 +9,7 @@ ENV OPENBLAS_NUM_THREADS 1
 ENV MKL_NUM_THREADS 1
 
 # Install essential packages
-RUN --mount=type=cache,target=/var/cache/apt apt-get update \
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   # Essentials
   build-essential \
@@ -41,6 +41,22 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   libpangocairo-1.0-0 \
   # Chromium and dependencies
   chromium-browser \
+  libnss3 \
+  libatk1.0-0 \
+  fonts-liberation \
+  libatk-bridge2.0-0 \
+  ibatspi2.0-0 \
+  libgbm1 \
+  libgtk-3-0 \
+  libnspr4 \
+  xdg-utils \
+  libvulkan1 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxfixes3 \
+  libxkbcommon0 \
+  libxrandr2 \
+  libasound2 \
   # wkhtmltopdf dependencies
   ca-certificates \
   fontconfig \
@@ -64,7 +80,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
 COPY --chown=root:root supervisord.conf /etc/supervisor/supervisord.conf
 
 # Install Redis from PPA
-RUN --mount=type=cache,target=/var/cache/apt curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg \
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg \
   && echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb jammy main" | tee /etc/apt/sources.list.d/redis.list \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
@@ -73,7 +89,7 @@ RUN --mount=type=cache,target=/var/cache/apt curl -fsSL https://packages.redis.i
 
 # Install Python from DeadSnakes PPA
 ENV {{ doc.get_dependency_version("python", True) }}
-RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
     python${PYTHON_VERSION} \
@@ -143,7 +159,7 @@ RUN useradd -ms /bin/bash frappe
 
 # Run before install scripts
 {% if p.prerequisites %}
-RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt {{ p.prerequisites }} \
   `#stage-pre_before-{{ p.package }}`
 {% endif %}
 
@@ -162,7 +178,7 @@ RUN apt-get update \
 
 # Run after install scripts
 {% if p.after_install %}
-RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
+RUN  --mount=type=cache,sharing=locked,target=/var/cache/apt {{ p.after_install }} \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre_after-{{ p.package }}`
 {% endif %}
@@ -198,7 +214,6 @@ ENV PATH "$PATH:/home/frappe/.nvm/versions/node/v${NODE_VERSION}/bin"
 # Install Yarn
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install -g yarn `#stage-pre-yarn`
 
-
 # Install Bench
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
@@ -228,6 +243,11 @@ RUN `#stage-bench-env`
 ENV {{v.key}} {{ v.value }}
 {% endfor %}
 
+# Install Boto and Requests for Asset store access
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
+  python${PYTHON_VERSION} -m pip install boto3 botocore requests \
+  `#stage-pre-Configure Asset Store`
+
 # Install Frappe app
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench init --python /usr/bin/python${PYTHON_VERSION} --no-backups --frappe-path file:///home/frappe/context/apps/frappe frappe-bench `#stage-apps-frappe`
 WORKDIR /home/frappe/frappe-bench
@@ -239,18 +259,32 @@ COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
 COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
+# Pass control of get-app to a python file
+COPY get_cached_app.py /usr/local/bin/get_cached_app.py
+RUN chmod +x /usr/local/bin/get_cached_app.py
+
 # Install other apps
 {% for app in doc.apps %}
-{% if app.app != "frappe" %}
+{% if app.app != "frappe"%}
 
+
+{% if app.use_cached and use_asset_store %}
+RUN --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+    --mount=type=secret,id=build_token,mode=0444 \
+    BUILD_TOKEN="$(cat /run/secrets/build_token)" && python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
+        {{ app.app }} \
+        {{ app.hash }} \
+        "$BUILD_TOKEN" \
+        {{ site_url }} \
+        {{ upload_assets }} \
+        `#stage-apps-{{ app.app }}`
+{% else %}
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
-  --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-  bench get-app file:///home/frappe/context/apps/{{ app.app }} \
-    {% if app.use_cached %}
-    # Bench get-app flags to use get-app cache
-    --cache-key {{ app.hash }} {% if doc.compress_app_cache %}--compress-artifacts{% endif %} \
-    {% endif %}
-  `#stage-apps-{{ app.app }}`
+    --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+    bench get-app file:///home/frappe/context/apps/{{ app.app }} \
+    `#stage-apps-{{ app.app }}`
+{% endif %}
+
 
 {% endif %}
 {% endfor %}

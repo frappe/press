@@ -52,8 +52,8 @@ function getServerActionHandler(action) {
 		'Rename server': onRenameServer,
 		'Drop server': onDropServer,
 		'Cleanup Server': onCleanupServer,
-		'Setup Secondary Server': onSetupSecondaryServer,
-		'Teardown Secondary Server': onTeardownSecondaryServer,
+		'Enable Autoscale': onSetupSecondaryServer,
+		'Disable Autoscale': onTeardownSecondaryServer,
 		'Enable Performance Schema': onEnablePerformanceSchema,
 		'Disable Performance Schema': onDisablePerformanceSchema,
 		'Enable Binlog Indexer': onEnableBinlogIndexing,
@@ -62,6 +62,7 @@ function getServerActionHandler(action) {
 		'Update Max DB Connections': onUpdateMaxDBConnections,
 		'View Database Configuration': onViewDatabaseConfiguration,
 		'Update Binlog Retention': onUpdateBinlogRetention,
+		'Forcefully Purge Binlogs': onPurgeBinlogsForcefully,
 		'Update Binlog Size Limit': onUpdateBinlogSizeLimit,
 		'Manage Database Binlogs': onViewMariaDBBinlogs,
 	};
@@ -140,7 +141,10 @@ function onTeardownSecondaryServer() {
 				{
 					loading: 'Tearing down secondary server...',
 					success: 'Secondary server teardown started',
-					error: 'Failed to start secondary server teardown',
+					error: (error) =>
+						error.messages.length
+							? error.messages.join('\n')
+							: 'Failed to drop servers',
 				},
 			);
 		},
@@ -329,7 +333,9 @@ function onDropServer() {
 
 	confirmDialog({
 		title: 'Drop Server',
-		message: `<div class="prose text-base">Are you sure you want to drop your servers?<br><br>Following servers will be dropped<ul><li>${server.doc.title} (<b>${server.doc.name}</b>)</li><li>${databaseServer.doc.title} (<b>${server.doc.database_server}</b>)</li></ul><br>This action cannot be undone.</div>`,
+		message: server.doc.is_unified_server
+			? `<div class="prose text-base">Are you sure you want to drop your unified server?<br><br>The following server will be dropped<ul><li>${server.doc.title} (<b>${server.doc.name}</b>)</li></ul><br>This action cannot be undone.</div>`
+			: `<div class="prose text-base">Are you sure you want to drop your servers?<br><br>Following servers will be dropped<ul><li>${server.doc.title} (<b>${server.doc.name}</b>)</li><li>${databaseServer.doc.title} (<b>${server.doc.database_server}</b>)</li></ul><br>This action cannot be undone.</div>`,
 		fields: [
 			{
 				label: "Please type either server's name or title to confirm",
@@ -525,6 +531,46 @@ function onUpdateInnodbBufferPoolSize() {
 								'Failed to update InnoDB Buffer Pool Size',
 						),
 					duration: 5000,
+				},
+			);
+		},
+	});
+}
+
+function onPurgeBinlogsForcefully() {
+	if (!server.purgeBinlogsForcefully) return;
+	confirmDialog({
+		title: 'Forcefully Purge Binlogs',
+		message: `Are you sure you want to forcefully purge binlogs on the database server <b>${server.doc.name}</b>?<br><br>This action will reboot the database as well.`,
+		fields: [
+			{
+				label: 'Enter no of binlogs to delete',
+				fieldname: 'binlogsToDelete',
+				type: 'number',
+				default: 5,
+			},
+		],
+		primaryAction: {
+			label: 'Purge Binlogs',
+			theme: 'red',
+		},
+		onSuccess({ hide, values }) {
+			if (server.purgeBinlogsForcefully.loading) return;
+			toast.promise(
+				server.purgeBinlogsForcefully.submit(
+					{
+						no_of_binlogs: parseInt(values.binlogsToDelete),
+					},
+					{
+						onSuccess() {
+							hide();
+						},
+					},
+				),
+				{
+					loading: 'Purging binlogs...',
+					success: 'Binlogs purged successfully',
+					error: 'Failed to purge binlogs',
 				},
 			);
 		},

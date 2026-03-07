@@ -25,6 +25,7 @@ const leadInfo = reactive({
 	country: '',
 	state: '',
 	status: '',
+	engagement_stage: '',
 });
 
 createResource({
@@ -48,6 +49,7 @@ createResource({
 			probability: data.probability || 0,
 			requirement: data.requirement || '',
 			plan_proposed: data.plan_proposed || '',
+			engagement_stage: data.engagement_stage || '',
 		});
 	},
 });
