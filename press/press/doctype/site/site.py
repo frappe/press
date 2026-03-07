@@ -3912,15 +3912,22 @@ class Site(Document, TagHelpers):
 					"title": grp.release_group_title,
 					"public": grp.release_group_public,
 					"servers": [],
+					"_seen_servers": set(),
 				}
 
-			_compatible_release_groups_for_migration[grp.name]["servers"].append(
-				{
-					"name": grp.server_name,
-					"title": grp.server_title,
-					"public": grp.deployed_on_public_server,
-				}
-			)
+			if grp.server_name not in _compatible_release_groups_for_migration[grp.name]["_seen_servers"]:
+				_compatible_release_groups_for_migration[grp.name]["_seen_servers"].add(grp.server_name)
+				_compatible_release_groups_for_migration[grp.name]["servers"].append(
+					{
+						"name": grp.server_name,
+						"title": grp.server_title,
+						"public": grp.deployed_on_public_server,
+					}
+				)
+
+		for grp in _compatible_release_groups_for_migration.values():
+			grp.pop("_seen_servers")
+
 		compatible_release_groups_for_migration = list(_compatible_release_groups_for_migration.values())
 
 		owned_dedicated_servers = frappe.get_all(
