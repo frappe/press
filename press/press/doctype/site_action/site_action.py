@@ -16,6 +16,7 @@ from rq.timeouts import JobTimeoutException
 
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
 from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
@@ -225,16 +226,21 @@ class SiteAction(Document):
 			# Set essential arguments for next steps
 			self.set_argument("destination_server", self.get_argument("destination_server", site.server))
 			self.set_argument("destination_release_group", new_group.name)
+			server: Server = frappe.get_doc("Server", self.get_argument("destination_server"))
 
 			# Create deploy candidate and schedule build and deploy
 			deploy_candidate = new_group.create_deploy_candidate()
-			deploy_candidate_build = deploy_candidate.schedule_build_and_deploy()
+			deploy_candidate_build_name = create_platform_build_and_deploy(
+				deploy_candidate=deploy_candidate.name,
+				server=server.name,
+				platform=server.platform,
+			)
 
 			self.set_argument("new_deploy_candidate", deploy_candidate.name)
-			self.set_argument("new_deploy_candidate_build", deploy_candidate_build["name"])
+			self.set_argument("new_deploy_candidate_build", deploy_candidate_build_name)
 
 			self.current_step.reference_doctype = "Deploy Candidate Build"
-			self.current_step.reference_name = deploy_candidate_build["name"]
+			self.current_step.reference_name = deploy_candidate_build_name
 
 			return StepStatus.Running
 
