@@ -158,8 +158,6 @@ class ServerFirewall(Document):
 			entry = {
 				"source": rule.source,
 				"action": rule.action,
-				# "port": None,
-				# "protocol": None,
 			}
 			if rule.port and rule.protocol:
 				entry["port"] = rule.port
