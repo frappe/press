@@ -120,9 +120,9 @@ class ServerFirewall(Document):
 			log_error("Failed to sync firewall rules", doc=self)
 
 	def _sync_nginx(self):
-		"""Update Nginx access rules with allowed and blocked IPs."""
+		"""Update Nginx access rules with allowed and denied IPs."""
 		ip_accept = self.get_allowed_ips_for_nginx()
-		ip_drop = [rule.source for rule in self.rules if rule.action == "Block" and rule.source]
+		ip_drop = [rule.source for rule in self.rules if rule.action == "Deny" and rule.source]
 		try:
 			return self.server.agent.update_nginx_access(ip_accept, ip_drop)
 		except Exception:
