@@ -43,50 +43,6 @@ class ServerFirewall(Document):
 			query.inner_join(Server).on(Server.name == Firewall.server_id).where(Server.team == current_team)
 		)
 
-	def after_insert(self):
-		self.setup()
-
-	@frappe.whitelist()
-	def setup(self):
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_setup",
-		)
-
-	def _setup(self):
-		try:
-			Ansible(
-				playbook="firewall_setup.yml",
-				server=self.server,
-				user=self.server._ssh_user(),
-				port=self.server._ssh_port(),
-			).run()
-		except Exception:
-			log_error("Failed to setup firewall", doc=self)
-
-	def on_trash(self):
-		self.teardown()
-
-	@frappe.whitelist()
-	def teardown(self):
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_teardown",
-		)
-
-	def _teardown(self):
-		try:
-			Ansible(
-				playbook="firewall_teardown.yml",
-				server=self.server,
-				user=self.server._ssh_user(),
-				port=self.server._ssh_port(),
-			).run()
-		except Exception:
-			log_error("Failed to teardown firewall", doc=self)
-
 	def before_validate(self):
 		self.deduplicate_rules()
 
@@ -202,14 +158,14 @@ class ServerFirewall(Document):
 				{
 					"source": monitor,
 					"protocol": "TCP",
-					"action": "ACCEPT",
+					"action": "allow",
 				}
 			)
 			rules.append(
 				{
 					"destination": monitor,
 					"protocol": "TCP",
-					"action": "ACCEPT",
+					"action": "allow",
 				}
 			)
 		if production_ip := frappe.db.get_single_value("Press Settings", "production_server_ip", cache=True):
@@ -217,14 +173,14 @@ class ServerFirewall(Document):
 				{
 					"source": production_ip,
 					"protocol": "TCP",
-					"action": "ACCEPT",
+					"action": "allow",
 				}
 			)
 			rules.append(
 				{
 					"destination": production_ip,
 					"protocol": "TCP",
-					"action": "ACCEPT",
+					"action": "allow",
 				}
 			)
 		return rules
@@ -232,11 +188,11 @@ class ServerFirewall(Document):
 	def transform_action(self, action: str):
 		match action:
 			case "Allow":
-				return "ACCEPT"
+				return "allow"
 			case "Block":
-				return "DROP"
+				return "deny"
 			case _:
-				return "REJECT"
+				return "deny"
 
 	@property
 	def server(self) -> Server:
