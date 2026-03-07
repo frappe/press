@@ -53,20 +53,18 @@
 
 - name: Add bypass rules
   ufw:
-    rule: "{{ item.action | lower }}"
-    from_ip: "{{ item.source | default('any') }}"
-    to_ip: "{{ item.destination | default('any') }}"
-    proto: "{{ item.protocol | lower }}"
+    rule: "{{ item.action | lower | default('deny') }}"
+    from_ip: "{{ item.source | default(omit) }}"
+    to_ip: "{{ item.destination | default(omit) }}"
   loop: "{{ rules_bypass }}"
   become: true
   when: enabled | bool
 
 - name: Add user rules
   ufw:
-    rule: "{{ item.action | lower }}"
-    from_ip: "{{ item.source | default('any') }}"
-    to_ip: "{{ item.destination | default('any') }}"
-    proto: "{{ item.protocol | lower }}"
+    rule: "{{ item.action | lower | default('deny') }}"
+    from_ip: "{{ item.source | default(omit) }}"
+    to_ip: "{{ item.destination | default(omit) }}"
   loop: "{{ rules }}"
   become: true
   when: enabled | bool
