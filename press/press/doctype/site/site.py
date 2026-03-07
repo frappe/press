@@ -3929,6 +3929,18 @@ class Site(Document, TagHelpers):
 		for grp in _compatible_release_groups_for_migration.values():
 			grp.pop("_seen_servers")
 
+		# Always ensure the current release group is in the list.
+		# The sql query will not return it if its other servers hae no active bench yet.
+		_compatible_release_groups_for_migration.setdefault(
+			self.group,
+			{
+				"name": release_group.name,
+				"title": release_group.title,
+				"public": release_group.public,
+				"servers": [],
+			},
+		)
+
 		compatible_release_groups_for_migration = list(_compatible_release_groups_for_migration.values())
 
 		owned_dedicated_servers = frappe.get_all(
@@ -3955,6 +3967,11 @@ class Site(Document, TagHelpers):
 						"public": False,
 					}
 				)
+
+		# Drop entries with no available servers
+		compatible_release_groups_for_migration = [
+			grp for grp in compatible_release_groups_for_migration if grp["servers"]
+		]
 
 		cluster_names = release_group.get_clusters()
 		group_regions = frappe.get_all(
