@@ -1341,7 +1341,7 @@ class Site(Document, TagHelpers):
 		doc.save()
 
 	@dashboard_whitelist()
-	def create_migration_plan(
+	def create_migration_plan(  # noqa: C901
 		self,
 		type: Literal[
 			"Move Site To Different Server / Bench",
@@ -1363,6 +1363,24 @@ class Site(Document, TagHelpers):
 		if type == "Move Site To Different Server / Bench":
 			if group and new_group_name:
 				frappe.throw("Please provide either group or new_group_name, not both.")
+
+			if not server:
+				# Server choice might not be provided in case
+				# user wants to move site to Shared Server
+				if frappe.get_value("Server", self.server, "public"):
+					# Don't change the server if the site is already on public server
+					server = self.server
+				else:
+					# Pick the public server in the same cluster
+					public_server = frappe.db.get_all(
+						"Server",
+						{"use_for_new_benches": 1, "status": "Active", "cluster": self.cluster},
+						pluck="name",
+						limit=1,
+					)
+					if not public_server:
+						frappe.throw("No public server available in the cluster to move the site.")
+					server = public_server[0]
 
 			doc = frappe.get_doc(
 				{
