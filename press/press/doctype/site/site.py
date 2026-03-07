@@ -3897,7 +3897,7 @@ class Site(Document, TagHelpers):
 			.inner_join(Server)
 			.on(Server.name == Bench.server)
 			.where(Bench.status == "Active")
-			.where(ReleaseGroup.name != self.group)
+			.where((ReleaseGroup.name != self.group) | (Server.name != self.server))
 			.where(ReleaseGroup.version == version)
 			.where(ReleaseGroup.team == self.team)
 			.where(ReleaseGroup.public == 0)
