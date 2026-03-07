@@ -205,9 +205,9 @@ def has_permission(doc, user=None, permission_type=None) -> bool:
 	return has_press_permission(doc.server, permission_type, user)
 
 
-def from_server(server) -> ServerFirewall:
-	if frappe.db.exists({"doctype": "Server Firewall", "server_id": server.name}):
-		return frappe.get_doc("Server Firewall", server.name)
-	doc = frappe.new_doc("Server Firewall")
-	doc.server_id = server.name
-	return doc.insert()
+def from_server(doc, method=None) -> ServerFirewall:
+	if frappe.db.exists({"doctype": "Server Firewall", "server_id": doc.name}):
+		return frappe.get_doc("Server Firewall", doc.name)
+	firewall = frappe.new_doc("Server Firewall")
+	firewall.server_id = doc.name
+	return firewall.insert()
