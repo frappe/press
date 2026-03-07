@@ -78,6 +78,8 @@ class ServerFirewall(Document):
 
 	@frappe.whitelist()
 	def sync(self):
+		if not self.server.is_server_prepared:
+			return
 		if not self.server.is_server_setup:
 			return
 		frappe.enqueue_doc(
