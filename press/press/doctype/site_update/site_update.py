@@ -913,7 +913,7 @@ def schedule_updates_server(server):
 			frappe.db.rollback()
 
 
-def should_try_update(site):
+def should_try_update(site: Site):
 	source = frappe.db.get_value("Bench", site.bench, "candidate")
 	candidates = frappe.get_all(
 		"Deploy Candidate Difference", filters={"source": source}, pluck="destination"
@@ -941,6 +941,10 @@ def should_try_update(site):
 	dest_apps = [app.app for app in destination_bench.apps]
 
 	if set(source_apps) - set(dest_apps):
+		return False
+
+	# If site has fatal update which is not resolved, then don't trigger update
+	if site.fatal_site_update:
 		return False
 
 	return not frappe.db.exists(
