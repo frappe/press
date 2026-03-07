@@ -1215,6 +1215,8 @@ export default {
 				},
 				childrenRoutes: ['Site Migration'],
 				list: {
+					documentation:
+						'https://docs.frappe.io/cloud/site/site-migrations/introduction-to-site-migration',
 					doctype: 'Site Action',
 					filters: (site) => {
 						return { site: site.doc?.name };
@@ -1542,9 +1544,7 @@ export default {
 								onClick() {
 									let ConfigureAutoUpdateDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/site/ConfigureAutoUpdateDialog.vue'
-											),
+											import('../components/site/ConfigureAutoUpdateDialog.vue'),
 									);
 
 									renderDialog(
