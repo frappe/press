@@ -100,14 +100,14 @@ const values = reactive({
 	source: '',
 	port: '',
 	protocol: 'TCP',
-	action: 'Block',
+	action: 'Deny',
 });
 
 const onClose = () => {
 	values.source = '';
 	values.port = '';
 	values.protocol = 'TCP';
-	values.action = 'Block';
+	values.action = 'Deny';
 	emit('update:modelValue', false);
 };
 
