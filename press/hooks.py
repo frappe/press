@@ -132,7 +132,7 @@ permission_query_conditions = {
 }
 has_permission = {
 	"Site": "press.overrides.has_permission",
-	"Site Action": "press.overrides.has_permission",
+	"Site Action": "press.press.doctype.site_action.site_action.has_permission",
 	"Site Backup": "press.overrides.has_permission",
 	"Site Domain": "press.overrides.has_permission",
 	"TLS Certificate": "press.overrides.has_permission",
