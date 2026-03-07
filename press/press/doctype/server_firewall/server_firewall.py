@@ -78,9 +78,7 @@ class ServerFirewall(Document):
 
 	@frappe.whitelist()
 	def sync(self):
-		if not self.server.is_server_prepared:
-			return
-		if not self.server.is_server_setup:
+		if frappe.flags.in_test:  # TODO: Remove
 			return
 		frappe.enqueue_doc(
 			self.doctype,
