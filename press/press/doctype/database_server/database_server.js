@@ -205,6 +205,12 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup,
 			],
 			['Trigger Flush Tables', 'flush_tables', true, frm.doc.is_server_setup],
+      [
+				__('Install NAT iptables'),
+				'install_nat_iptables',
+				true,
+				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.private_ip,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

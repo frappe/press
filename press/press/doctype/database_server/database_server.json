@@ -39,6 +39,7 @@
   "auto_increase_storage",
   "networking_section",
   "ip",
+  "nat_gateway_private_ip",
   "column_break_10",
   "private_ip",
   "private_mac_address",
@@ -774,6 +775,13 @@
    "fieldname": "is_provisioning_press_job_completed",
    "fieldtype": "Check",
    "label": "Is Provisioning Job Completed"
+  },
+  {
+   "read_only": 1,
+   "depends_on": "eval: !!!doc.ip",
+   "fieldname": "nat_gateway_private_ip",
+   "fieldtype": "Data",
+   "label": "NAT Gateway Private IP"
   },
   {
    "default": "0",
