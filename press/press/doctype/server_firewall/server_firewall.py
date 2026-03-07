@@ -74,12 +74,12 @@ class ServerFirewall(Document):
 			self.validate_ip(rule.destination)
 
 	def on_update(self):
-		if self.is_new():
-			return
 		self.sync()
 
 	@frappe.whitelist()
 	def sync(self):
+		if not self.server.is_server_setup:
+			return
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
