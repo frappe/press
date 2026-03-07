@@ -163,24 +163,10 @@ class ServerFirewall(Document):
 					"action": "allow",
 				}
 			)
-			rules.append(
-				{
-					"destination": monitor,
-					"protocol": "TCP",
-					"action": "allow",
-				}
-			)
 		if production_ip := frappe.db.get_single_value("Press Settings", "production_server_ip", cache=True):
 			rules.append(
 				{
 					"source": production_ip,
-					"protocol": "TCP",
-					"action": "allow",
-				}
-			)
-			rules.append(
-				{
-					"destination": production_ip,
 					"protocol": "TCP",
 					"action": "allow",
 				}
