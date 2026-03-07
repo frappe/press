@@ -61,8 +61,8 @@
 						format: (value: string) => value || '—',
 					},
 					{
-						label: 'Destination',
-						fieldname: 'destination',
+						label: 'Port',
+						fieldname: 'port',
 						format: (value: string) => value || '—',
 					},
 					{ label: 'Protocol', fieldname: 'protocol' },
@@ -88,7 +88,7 @@
 								(rule: any) =>
 									!(
 										rule.source === row.source &&
-										rule.destination === row.destination &&
+										rule.port === row.port &&
 										rule.protocol === row.protocol &&
 										rule.action === row.action
 									),

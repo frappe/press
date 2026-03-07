@@ -30,9 +30,8 @@
 					variant="subtle"
 				/>
 				<FormControl
-					v-model="values.destination"
-					label="Destination"
-					placeholder="1.2.3.4"
+					v-model="values.port"
+					label="Port"
 					type="text"
 					size="sm"
 					variant="subtle"
@@ -78,6 +77,7 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue';
+import { FormControl } from 'frappe-ui';
 
 defineProps<{
 	modelValue: boolean;
@@ -89,7 +89,7 @@ const emit = defineEmits<{
 		event: 'submit',
 		values: {
 			source: string;
-			destination: string;
+			port: string;
 			protocol: string;
 			action: string;
 		},
@@ -98,14 +98,14 @@ const emit = defineEmits<{
 
 const values = reactive({
 	source: '',
-	destination: '',
+	port: '',
 	protocol: 'TCP',
 	action: 'Block',
 });
 
 const onClose = () => {
 	values.source = '';
-	values.destination = '';
+	values.port = '';
 	values.protocol = 'TCP';
 	values.action = 'Block';
 	emit('update:modelValue', false);
