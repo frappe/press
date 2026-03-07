@@ -15,8 +15,8 @@
     url: https://raw.githubusercontent.com/chaifeng/ufw-docker/2b419bbdde946a4fd1a8651940ad95b6b0b96dfa/ufw-docker
     dest: /usr/local/bin/ufw-docker
     mode: '0755'
+    checksum: sha256:16bc578c0cd78b7d44c53e5780c0d3d545860e428457a8910a3d2138fb225374
   become: true
-  checksum: sha256:16bc578c0cd78b7d44c53e5780c0d3d545860e428457a8910a3d2138fb225374
   when: not ufw_docker_stat.stat.exists
 
 - name: Reset ufw
