@@ -14,6 +14,7 @@ from frappe.model.document import Document
 from frappe.utils import add_to_date, now_datetime
 from rq.timeouts import JobTimeoutException
 
+from press.access.support_access import has_support_access
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils.jobs import has_job_timeout_exceeded
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.site_action_step.site_action_step import SiteActionStep
 	from press.press.doctype.site_migration.site_migration import SiteMigration
 	from press.press.doctype.site_update.site_update import SiteUpdate
+	from press.press.doctype.team.team import Team
 
 
 class StepType:
@@ -210,7 +212,7 @@ class SiteAction(Document):
 				counter = 1
 				while True:
 					try:
-						new_group.insert()
+						new_group.insert(ignore_permissions=True)
 						break
 					except frappe.UniqueValidationError as e:
 						# If there is a unique validation error, it means that there is already a release group with same name. So, we will append a counter to the name and try again.
@@ -338,7 +340,7 @@ class SiteAction(Document):
 					"scheduled_time": scheduled_time,
 					"skip_failing_patches": self.get_argument("skip_failing_patches", False),
 				}
-			).insert()
+			).insert(ignore_permissions=True)
 
 			with contextlib.suppress(Exception):
 				doc.start()
@@ -356,7 +358,7 @@ class SiteAction(Document):
 					"skipped_backups": False,
 					"ignore_past_failures": True,
 				}
-			).insert()
+			).insert(ignore_permissions=True)
 
 			with contextlib.suppress(Exception):
 				doc.start()
@@ -399,7 +401,7 @@ class SiteAction(Document):
 				"scheduled_time": self.scheduled_time_formatted,
 				"skip_failing_patches": self.get_argument("skip_failing_patches", False),
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 		self.set_argument("site_migration", site_migration.name)
 
@@ -431,7 +433,7 @@ class SiteAction(Document):
 				"status": "Scheduled" if self.scheduled_time_formatted else "Pending",
 				"scheduled_time": self.scheduled_time_formatted,
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 		self.set_argument("site_update", doc.name)
 
 	def _archive_newly_created_release_group(self):
@@ -764,6 +766,35 @@ class SiteAction(Document):
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site Action")
+
+
+def has_permission(doc: SiteAction, ptype, user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+
+	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
+	if user_type == "System User":
+		return True
+
+	if ptype == "create":
+		return True
+
+	team: Team = (
+		get_current_team(get_doc=True)
+		if hasattr(frappe.local, "request")
+		else frappe.get_doc("Team", doc.team)
+	)
+
+	child_team_members = [d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])]
+	if doc.team == team.name or team.user == user or doc.team in child_team_members:
+		return True
+
+	if has_support_access(doc.doctype, doc.name):
+		return True
+
+	return False
 
 
 # Utility functions
