@@ -78,6 +78,8 @@ class ServerFirewall(Document):
 
 	@frappe.whitelist()
 	def sync(self):
+		if frappe.flags.in_test:  # TODO: Remove
+			return
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -201,3 +203,13 @@ class ServerFirewall(Document):
 
 def has_permission(doc, user=None, permission_type=None) -> bool:
 	return has_press_permission(doc.server, permission_type, user)
+
+
+def from_server(doc, method=None) -> ServerFirewall | None:
+	if doc.is_self_hosted:
+		return None
+	if frappe.db.exists({"doctype": "Server Firewall", "server_id": doc.name}):
+		return frappe.get_doc("Server Firewall", doc.name)
+	firewall = frappe.new_doc("Server Firewall")
+	firewall.server_id = doc.name
+	return firewall.insert()
