@@ -799,7 +799,7 @@
   },
   {
    "group": "Related Documents",
-   "link_doctype": "ERPNext Site Settings",
+   "link_doctype": "Site Action",
    "link_fieldname": "site"
   },
   {
@@ -825,6 +825,11 @@
   {
    "group": "Related Documents",
    "link_doctype": "Physical Backup Restoration",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "ERPNext Site Settings",
    "link_fieldname": "site"
   }
  ],
