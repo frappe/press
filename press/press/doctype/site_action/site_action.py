@@ -583,8 +583,8 @@ class SiteAction(Document):
 		self.next()
 
 	def execute_step(self, step_name):
-		frappe.set_user(self.owner)
-		frappe.local._current_team = frappe.get_cached_doc("Team", self.team)
+		# frappe.set_user(self.owner)
+		# frappe.local._current_team = frappe.get_cached_doc("Team", self.team)
 
 		if self.status == "Cancelled":
 			return
