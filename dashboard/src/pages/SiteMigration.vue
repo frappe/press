@@ -1,5 +1,15 @@
 <template>
 	<div class="p-5">
+		<div v-if="errors" class="flex flex-col gap-2">
+			<AlertAddressableError
+				v-for="error in errors"
+				class="mb-5"
+				:name="error.name"
+				:title="error.title"
+				@done="$resources.siteAction.reload()"
+			/>
+		</div>
+
 		<Button :route="{ name: 'Site Detail Migrations' }">
 			<template #prefix>
 				<lucide-arrow-left class="inline-block h-4 w-4" />
@@ -133,6 +143,9 @@ export default {
 		},
 		steps() {
 			return this.$resources.siteAction?.doc?.steps || [];
+		},
+		errors() {
+			return this.$resources.siteAction?.doc?.errors || [];
 		},
 		dropdownOptions() {
 			return [
