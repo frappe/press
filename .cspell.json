@@ -748,12 +748,9 @@
         "noopener",
         "noreferrer",
         "centralise",
-<<<<<<< HEAD
-        "serialised"
-=======
         "PSIIO",
         "journalctl",
-        "ptrs"
->>>>>>> 3757f1b74 (feat(database): Resource monitor to find anomaly and reboot db)
+        "ptrs",
+        "serialised"
     ]
 }
