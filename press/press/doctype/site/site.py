@@ -1354,7 +1354,11 @@ class Site(Document, TagHelpers):
 		cluster: str | None = None,
 	) -> str:
 		if scheduled_time:
-			scheduled_time = get_datetime(scheduled_time)
+			try:
+				scheduled_time = get_datetime(scheduled_time)
+			except Exception as e:
+				frappe.throw(f"Invalid scheduled time format: {e}")
+
 			if scheduled_time and scheduled_time < get_datetime():
 				frappe.throw("Scheduled time must be in the future. Please provide a valid scheduled time.")
 
