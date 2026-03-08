@@ -597,6 +597,7 @@ class SiteAction(Document):
 		return frappe.get_doc("Site", self.site)
 
 	def get_doc(self, doc):
+		doc.arguments_dict = self.arguments_dict
 		doc.steps = self.get_steps()
 		doc.errors = self.get_press_error_notifications()
 		return doc
