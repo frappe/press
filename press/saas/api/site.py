@@ -13,7 +13,7 @@ def info():
 	site = frappe.get_value(
 		"Site",
 		frappe.local.site_name,
-		["trial_end_date", "plan", "standby_for_product", "team"],
+		["trial_end_date", "plan", "standby_for_product", "team", "status"],
 		as_dict=True,
 	)
 	site_user = frappe.request.headers.get("x-site-user")
@@ -31,6 +31,7 @@ def info():
 		"name": frappe.local.site_name,
 		"trial_end_date": site.trial_end_date,
 		"plan": frappe.db.get_value("Site Plan", plan, ["is_trial_plan"], as_dict=True) if plan else None,
+		"is_read_only": site.status == "Suspended",
 	}
 
 
