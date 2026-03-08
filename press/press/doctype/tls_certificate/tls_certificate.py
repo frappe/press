@@ -555,12 +555,15 @@ class LetsEncrypt(BaseCA):
 	def _obtain_wildcard(self):
 		domain = frappe.get_doc("Root Domain", self.domain[2:])
 		environment = os.environ.copy()
-		environment.update(
-			{
-				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,
-				"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
-			}
-		)
+
+		if(domain.dns_provider == 'AWS Route 53'):
+			environment.update(
+				{
+					"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,
+					"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
+				}
+			)
+
 		if domain.aws_region:
 			environment["AWS_DEFAULT_REGION"] = domain.aws_region
 		self.run(self._certbot_command(), environment=environment)
@@ -569,13 +572,15 @@ class LetsEncrypt(BaseCA):
 		domain = frappe.get_all("Root Domain", pluck="name", limit=1)[0]
 		domain = frappe.get_doc("Root Domain", domain)
 		environment = os.environ.copy()
-		environment.update(
-			{
-				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,
-				"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
-			}
-		)
-		self.run(self._certbot_command(), environment=environment)
+
+		if(domain.dns_provider == 'AWS Route 53'):
+			environment.update(
+				{
+					"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,
+					"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
+				}
+			)
+
 
 	def _obtain_naked(self):
 		if not os.path.exists(self.webroot_directory):
@@ -583,8 +588,17 @@ class LetsEncrypt(BaseCA):
 		self.run(self._certbot_command())
 
 	def _certbot_command(self):
+		domain = frappe.get_doc("Root Domain", self.domain[2:])
 		if self.wildcard or frappe.conf.developer_mode:
-			plugin = "--dns-route53"
+			if(domain.dns_provider == 'AWS Route 53'):
+				plugin = "--dns-route53"
+
+			if(domain.dns_provider == 'Cloud Flare'):
+				cloudflare_creds = os.path.join(self.directory, "cloudflare.ini")
+				with open(cloudflare_creds, "w") as f:
+					f.write(f"dns_cloudflare_api_token = {domain.get_password('cloud_flare_api_key')}")
+				os.chmod(cloudflare_creds, 0o600)
+				plugin = f"--dns-cloudflare --dns-cloudflare-credentials {cloudflare_creds}"
 		else:
 			plugin = f"--webroot --webroot-path {self.webroot_directory}"
 
