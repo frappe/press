@@ -44,7 +44,36 @@
 				</div>
 			</div>
 			<div>
-				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
+					<div>
+						<div class="text-sm font-medium text-gray-500">
+							Destination Bench
+						</div>
+						<div
+							class="mt-2 text-sm text-ink-blue-3 font-medium"
+							@click="openDestinationBenchPage"
+							v-if="destinationReleaseGroupName"
+							style="cursor: pointer"
+						>
+							{{ destinationReleaseGroupName || '-'
+							}}<span>&#8599;&#65038;</span>
+						</div>
+						<div class="mt-2 text-sm text-gray-900" v-else>-</div>
+					</div>
+					<div>
+						<div class="text-sm font-medium text-gray-500">
+							Destination Server
+						</div>
+						<div
+							class="mt-2 text-sm text-ink-blue-3 font-medium"
+							@click="openDestinationServerPage"
+							v-if="destinationServerName"
+							style="cursor: pointer"
+						>
+							{{ destinationServerName || '-' }}<span>&#8599;&#65038;</span>
+						</div>
+						<div class="mt-2 text-sm text-gray-900" v-else>-</div>
+					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">Creation</div>
 						<div class="mt-2 text-sm text-gray-900">
@@ -214,6 +243,22 @@ export default {
 				},
 			].filter((option) => option.condition?.() ?? true);
 		},
+		destinationServerName() {
+			try {
+				return (
+					this.siteAction.arguments_dict?.destination_server || '-'
+				).split('.')[0];
+			} catch (e) {
+				console.error('Error parsing destination server:', e);
+				return null;
+			}
+		},
+		destinationServerFullName() {
+			return this.siteAction.arguments_dict?.destination_server;
+		},
+		destinationReleaseGroupName() {
+			return this.siteAction.arguments_dict?.destination_release_group;
+		},
 	},
 	methods: {
 		format_seconds(seconds) {
@@ -226,6 +271,24 @@ export default {
 			const minutes = Math.floor(seconds / 60);
 			const remainingSeconds = Math.ceil(seconds % 60);
 			return `${minutes}m ${remainingSeconds}s`;
+		},
+		openDestinationServerPage() {
+			if (this.destinationServerFullName) {
+				const route = this.$router.resolve({
+					name: 'Server Detail',
+					params: { name: this.destinationServerFullName },
+				});
+				window.open(route.href, '_blank');
+			}
+		},
+		openDestinationBenchPage() {
+			if (this.destinationReleaseGroupName) {
+				const route = this.$router.resolve({
+					name: 'Release Group Detail',
+					params: { name: this.destinationReleaseGroupName },
+				});
+				window.open(route.href, '_blank');
+			}
 		},
 	},
 };

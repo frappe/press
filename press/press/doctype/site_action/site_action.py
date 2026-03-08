@@ -521,6 +521,18 @@ class SiteAction(Document):
 			)
 
 	def before_insert(self):
+		# Check if no other site action is running for the same site
+		if frappe.db.exists(
+			"Site Action",
+			{
+				"site": self.site,
+				"status": ("not in", ["Success", "Failure", "Cancelled"]),
+			},
+		):
+			frappe.throw(
+				"Another site action is already scheduled / running for this site. Please wait for it to complete before starting a new one."
+			)
+
 		# If any key is blank string or None, remove it from arguments
 		args = self.arguments_dict
 		cleaned_args = {k: v for k, v in args.items() if v not in ("", None)}
@@ -585,6 +597,7 @@ class SiteAction(Document):
 		return frappe.get_doc("Site", self.site)
 
 	def get_doc(self, doc):
+		doc.arguments_dict = self.arguments_dict
 		doc.steps = self.get_steps()
 		doc.errors = self.get_press_error_notifications()
 		return doc
