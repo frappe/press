@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net"
-	"strconv"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -26,7 +25,7 @@ func checkReachable(socketPath string) bool {
 	return true
 }
 
-func checkProcesslist(creds MySQLCredentials, stuckThreshold time.Duration) DBHealth {
+func checkProcesslist(creds MySQLCredentials) DBHealth {
 	health := DBHealth{Reachable: true}
 
 	dsn := fmt.Sprintf("%s:%s@unix(%s)/?timeout=5s&readTimeout=5s&writeTimeout=5s", creds.User, creds.Password, creds.Socket)
@@ -53,21 +52,15 @@ func checkProcesslist(creds MySQLCredentials, stuckThreshold time.Duration) DBHe
 		return health
 	}
 
-	var timeIdx, stateIdx, commandIdx, infoIdx int = -1, -1, -1, -1
+	var stateIdx, infoIdx int = -1, -1
 	for i, col := range columns {
 		switch col {
-		case "Time":
-			timeIdx = i
 		case "State":
 			stateIdx = i
-		case "Command":
-			commandIdx = i
 		case "Info":
 			infoIdx = i
 		}
 	}
-
-	thresholdSecs := int64(stuckThreshold.Seconds())
 
 	for rows.Next() {
 		values := make([]sql.NullString, len(columns))
@@ -80,32 +73,20 @@ func checkProcesslist(creds MySQLCredentials, stuckThreshold time.Duration) DBHe
 			continue
 		}
 
-		if commandIdx >= 0 && values[commandIdx].Valid {
-			cmd := values[commandIdx].String
-			if cmd == "Sleep" || cmd == "Daemon" || cmd == "Binlog Dump" {
-				continue
-			}
+		// Only flag processes that are explicitly in a known-stuck state.
+		// We only act on states where MariaDB itself is blocked/stuck.
+		if stateIdx < 0 || !values[stateIdx].Valid {
+			continue
 		}
 
+		state := values[stateIdx].String
 		isStuck := false
 		reason := ""
 
-		if stateIdx >= 0 && values[stateIdx].Valid {
-			state := values[stateIdx].String
-			switch state {
-			case "Opening tables", "Killed":
-				isStuck = true
-				reason = fmt.Sprintf("state=%q", state)
-			}
-		}
-
-		if timeIdx >= 0 && values[timeIdx].Valid && !isStuck {
-			if queryTime, err := strconv.ParseInt(values[timeIdx].String, 10, 64); err == nil {
-				if queryTime > thresholdSecs {
-					isStuck = true
-					reason = fmt.Sprintf("running for %ds (threshold %ds)", queryTime, thresholdSecs)
-				}
-			}
+		switch state {
+		case "Opening tables", "Killed":
+			isStuck = true
+			reason = fmt.Sprintf("state=%q", state)
 		}
 
 		if isStuck {
