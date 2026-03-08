@@ -244,10 +244,10 @@ export default {
 			].filter((option) => option.condition?.() ?? true);
 		},
 		destinationServerName() {
+			let server_name = this.siteAction.arguments_dict?.destination_server;
+			if (!server_name) return null;
 			try {
-				return (
-					this.siteAction.arguments_dict?.destination_server || '-'
-				).split('.')[0];
+				return server_name.split('.')[0];
 			} catch (e) {
 				console.error('Error parsing destination server:', e);
 				return null;
