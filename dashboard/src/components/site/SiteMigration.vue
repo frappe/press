@@ -259,6 +259,7 @@ import { getCachedDocumentResource, Select, Checkbox } from 'frappe-ui';
 import AlertBanner from '../AlertBanner.vue';
 import GenericList from '../GenericList.vue';
 import FormControl from 'frappe-ui/src/components/FormControl/FormControl.vue';
+import { dayjsIST } from '../../utils/dayjs';
 
 export default {
 	props: ['site', 'defaultAction', 'defaultNewBenchName'],
@@ -324,7 +325,7 @@ export default {
 								? null
 								: this.newBenchGroupName,
 							skip_failing_patches: this.skipFailingPatches,
-							scheduled_time: this.scheduledTime,
+							scheduled_time: this.scheduledTimeInIST,
 							cluster: this.selectedRegion,
 						},
 					};
@@ -455,6 +456,10 @@ export default {
 		},
 	},
 	methods: {
+		scheduledTimeInIST() {
+			if (!this.scheduledTime) return;
+			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm');
+		},
 		autoSelectMigrationOption() {
 			// Check if 'action' is passed via prop or URL params
 			const actionFromProp = this.defaultAction;
