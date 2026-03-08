@@ -38,8 +38,6 @@ type Config struct {
 	PageRateThreshold       float64       `yaml:"page_rate_threshold"`
 	IOFreezeTimeout         time.Duration `yaml:"io_freeze_timeout"`
 
-	StuckQueryThreshold time.Duration `yaml:"stuck_query_threshold"`
-
 	MaxRecoveriesPerHour int `yaml:"max_recoveries_per_hour"`
 	DropCachesMode       int `yaml:"drop_caches_mode"`
 }
@@ -68,7 +66,6 @@ func DefaultConfig() Config {
 		SwapHeadroom:            10.0,
 		PageRateThreshold:       100000,
 		IOFreezeTimeout:         5 * time.Second,
-		StuckQueryThreshold:     30 * time.Second,
 		MaxRecoveriesPerHour:    3,
 		DropCachesMode:          1,
 	}
@@ -98,7 +95,6 @@ func LoadConfig() (Config, error) {
 	parseDuration(raw, "cooldown_after_recovery", &cfg.CooldownAfterRecovery)
 	parseDuration(raw, "stop_timeout", &cfg.StopTimeout)
 	parseDuration(raw, "io_freeze_timeout", &cfg.IOFreezeTimeout)
-	parseDuration(raw, "stuck_query_threshold", &cfg.StuckQueryThreshold)
 
 	return cfg, nil
 }
