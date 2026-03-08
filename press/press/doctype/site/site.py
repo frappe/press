@@ -4015,7 +4015,7 @@ class Site(Document, TagHelpers):
 				},
 			},
 			"Move Site To Different Region": {
-				"hidden": False,
+				"hidden": not release_group.public,
 				"allow_scheduling": True,
 				"button_label": "Move Site",
 				"options": {
