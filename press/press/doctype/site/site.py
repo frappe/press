@@ -124,6 +124,7 @@ DOCTYPE_SERVER_TYPE_MAP = {
 }
 
 ARCHIVE_AFTER_SUSPEND_DAYS = 21
+NOTIFY_BEFORE_ARCHIVAL_DAYS = 2
 CREATION_FAILURE_RETENTION_DAYS = 14
 PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-bench"
 SERVER_SCRIPT_DISABLED_VERSION = (
@@ -1340,7 +1341,7 @@ class Site(Document, TagHelpers):
 		doc.save()
 
 	@dashboard_whitelist()
-	def create_migration_plan(
+	def create_migration_plan(  # noqa: C901
 		self,
 		type: Literal[
 			"Move Site To Different Server / Bench",
@@ -1362,6 +1363,24 @@ class Site(Document, TagHelpers):
 		if type == "Move Site To Different Server / Bench":
 			if group and new_group_name:
 				frappe.throw("Please provide either group or new_group_name, not both.")
+
+			if not server:
+				# Server choice might not be provided in case
+				# user wants to move site to Shared Server
+				if frappe.get_value("Server", self.server, "public"):
+					# Don't change the server if the site is already on public server
+					server = self.server
+				else:
+					# Pick the public server in the same cluster
+					public_server = frappe.db.get_all(
+						"Server",
+						{"use_for_new_benches": 1, "status": "Active", "cluster": self.cluster},
+						pluck="name",
+						limit=1,
+					)
+					if not public_server:
+						frappe.throw("No public server available in the cluster to move the site.")
+					server = public_server[0]
 
 			doc = frappe.get_doc(
 				{
@@ -3873,11 +3892,12 @@ class Site(Document, TagHelpers):
 		update_infos("Site", self.name, values)
 
 	@dashboard_whitelist()
-	def get_migration_options(self):
+	def get_migration_options(self):  # noqa
 		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		version = frappe.db.get_value("Release Group", self.group, "version")
 
-		# Compatible private release groups with active benches (excluding current group)
+		# Compatible private release groups with active benches.
+		# Exclude the exact combination of current release group + current server.
 		Bench = frappe.qb.DocType("Bench")
 		ReleaseGroup = frappe.qb.DocType("Release Group")
 		Server = frappe.qb.DocType("Server")
@@ -3896,13 +3916,13 @@ class Site(Document, TagHelpers):
 			.inner_join(Server)
 			.on(Server.name == Bench.server)
 			.where(Bench.status == "Active")
-			.where(ReleaseGroup.name != self.group)
+			.where((ReleaseGroup.name != self.group) | (Server.name != self.server))
 			.where(ReleaseGroup.version == version)
 			.where(ReleaseGroup.team == self.team)
 			.where(ReleaseGroup.public == 0)
 		)
 
-		_compatible_release_groups = query.run(as_dict=True)
+		_compatible_release_groups: list[frappe._dict] = query.run(as_dict=True)
 		_compatible_release_groups_for_migration = {}
 		for grp in _compatible_release_groups:
 			if grp.name not in _compatible_release_groups_for_migration:
@@ -3911,15 +3931,34 @@ class Site(Document, TagHelpers):
 					"title": grp.release_group_title,
 					"public": grp.release_group_public,
 					"servers": [],
+					"_seen_servers": set(),
 				}
 
-			_compatible_release_groups_for_migration[grp.name]["servers"].append(
-				{
-					"name": grp.server_name,
-					"title": grp.server_title,
-					"public": grp.deployed_on_public_server,
-				}
-			)
+			if grp.server_name not in _compatible_release_groups_for_migration[grp.name]["_seen_servers"]:
+				_compatible_release_groups_for_migration[grp.name]["_seen_servers"].add(grp.server_name)
+				_compatible_release_groups_for_migration[grp.name]["servers"].append(
+					{
+						"name": grp.server_name,
+						"title": grp.server_title,
+						"public": grp.deployed_on_public_server,
+					}
+				)
+
+		for grp in _compatible_release_groups_for_migration.values():
+			grp.pop("_seen_servers")
+
+		# Always ensure the current release group is in the list.
+		# The sql query will not return it if its other servers hae no active bench yet.
+		_compatible_release_groups_for_migration.setdefault(
+			self.group,
+			{
+				"name": release_group.name,
+				"title": release_group.title,
+				"public": release_group.public,
+				"servers": [],
+			},
+		)
+
 		compatible_release_groups_for_migration = list(_compatible_release_groups_for_migration.values())
 
 		owned_dedicated_servers = frappe.get_all(
@@ -3927,6 +3966,31 @@ class Site(Document, TagHelpers):
 			filters={"status": "Active", "public": 0, "team": self.team},
 			fields=["name", "title", "cluster"],
 		)
+
+		# For each compatible release group, append any owned dedicated server not
+		# already in the servers list. Skip the current server for the current group
+		# (user can't stay on the same group + same server).
+		owned_server_map = {s.name: s for s in owned_dedicated_servers}
+		for grp in compatible_release_groups_for_migration:
+			existing_server_names = {s["name"] for s in grp["servers"]}
+			for server_name, server in owned_server_map.items():
+				if server_name in existing_server_names:
+					continue
+				if grp["name"] == self.group and server_name == self.server:
+					continue
+				grp["servers"].append(
+					{
+						"name": server.name,
+						"title": server.title,
+						"public": False,
+					}
+				)
+
+		# Drop entries with no available servers
+		compatible_release_groups_for_migration = [
+			grp for grp in compatible_release_groups_for_migration if grp["servers"]
+		]
+
 		cluster_names = release_group.get_clusters()
 		group_regions = frappe.get_all(
 			"Cluster", filters={"name": ("in", cluster_names)}, fields=["name", "title", "image"]
@@ -4848,26 +4912,22 @@ def get_suspended_time(site: str):
 
 def archive_suspended_site(site_dict: SiteToArchive):
 	archive_after_days = ARCHIVE_AFTER_SUSPEND_DAYS
-
 	suspended_days = frappe.utils.date_diff(frappe.utils.today(), get_suspended_time(site_dict.name))
-
-	if suspended_days <= archive_after_days:
-		return
 
 	if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
 		return
 
+	if suspended_days <= archive_after_days:
+		if suspended_days == archive_after_days - NOTIFY_BEFORE_ARCHIVAL_DAYS:
+			notify_site_scheduled_for_archival(site_dict.name)
+		return
+
 	site = Site("Site", site_dict.name)
-	# take an offsite backup before archive
-	if not site_dict.offsite_backups and not site.recent_offsite_backup_exists:
-		if not site.recent_offsite_backup_pending:
-			site.backup(with_files=True, offsite=True)
-		return  # last backup ongoing
 	site.archive(reason="Archive suspended site")
 
 
 def archive_suspended_sites():
-	archive_at_once = 4
+	archive_at_once = 5
 
 	sites = frappe.qb.DocType("Site")
 	site_plans = frappe.qb.DocType("Site Plan")
@@ -4885,24 +4945,48 @@ def archive_suspended_sites():
 		.run(as_dict=True)
 	)
 
-	archived_now = 0
 	for site_dict in sites_to_drop:
 		try:
-			if archived_now > archive_at_once:
-				break
 			archive_suspended_site(site_dict)
 			frappe.db.commit()
-			archived_now = archived_now + 1
 		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
 			frappe.db.rollback()
 		except Exception:
 			frappe.log_error(title="Suspended Site Archive Error")
 			frappe.db.rollback()
 
-	signup_cluster = frappe.db.get_value("Saas Settings", "erpnext", "cluster")
-	agent = frappe.get_doc("Proxy Server", {"cluster": signup_cluster}).agent
-	if archived_now:
-		agent.reload_nginx()
+
+def notify_site_scheduled_for_archival(site_name: str):
+	try:
+		if frappe.db.exists(
+			"Site Activity",
+			{
+				"site": site_name,
+				"action": "Archive Notification",
+				"creation": [">=", frappe.utils.add_to_date(frappe.utils.now(), days=-7)],
+			},
+		):
+			return
+
+		frappe.sendmail(
+			recipients=get_communication_info("Email", "Site Activity", "Site", site_name),
+			subject=f"Alert: Your site {site_name} will be archived in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
+			template="notify_before_site_archival",
+			args={
+				"site_name": site_name,
+				"site_archive_notification_days": NOTIFY_BEFORE_ARCHIVAL_DAYS,
+			},
+			reference_doctype="Site",
+			reference_name=site_name,
+		)
+		log_site_activity(
+			site_name,
+			"Archive Notification",
+			f"Notified user about pending archival in {NOTIFY_BEFORE_ARCHIVAL_DAYS} days",
+		)
+	except Exception:
+		frappe.db.rollback()
+		frappe.log_error(title="Site Archive Notification Error")
 
 
 def send_warning_mail_regarding_sites_exceeding_disk_usage():

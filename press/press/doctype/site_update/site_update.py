@@ -846,6 +846,7 @@ def sites_with_available_update(server=None):
 			"bench": ("in", benches),
 			"only_update_at_specified_time": False,  # will be taken care of by another scheduled job
 			"skip_auto_updates": False,
+			"fatal_site_update": ("is", "not set"),
 		},
 		fields=["name", "timezone", "bench", "server", "status"],
 	)
@@ -913,7 +914,7 @@ def schedule_updates_server(server):
 			frappe.db.rollback()
 
 
-def should_try_update(site):
+def should_try_update(site: Site):
 	source = frappe.db.get_value("Bench", site.bench, "candidate")
 	candidates = frappe.get_all(
 		"Deploy Candidate Difference", filters={"source": source}, pluck="destination"
@@ -941,6 +942,10 @@ def should_try_update(site):
 	dest_apps = [app.app for app in destination_bench.apps]
 
 	if set(source_apps) - set(dest_apps):
+		return False
+
+	# If site has fatal update which is not resolved, then don't trigger update
+	if site.fatal_site_update:
 		return False
 
 	return not frappe.db.exists(

@@ -750,6 +750,7 @@
         "centralise",
         "PSIIO",
         "journalctl",
-        "ptrs"
+        "ptrs",
+        "serialised"
     ]
 }
