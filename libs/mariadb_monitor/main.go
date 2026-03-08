@@ -268,9 +268,16 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 		return false
 	}
 
+	// sustained_swap_usage alone is not actionable — swap 100% ussage even can be normal
+	// So it requires at least one additional trigger to act.
+	if len(triggers) == 1 && triggers[0] == "sustained_swap_usage" {
+		slog.Debug("ignoring sole sustained_swap_usage trigger, requires at least one more trigger to act")
+		return false
+	}
+
 	slog.Warn("pressure detected", "triggers", triggers)
 
-	dbHealth := checkMariaDBHealth(creds, cfg.StuckQueryThreshold)
+	dbHealth := checkMariaDBHealth(creds)
 	if dbHealth.Reachable && !dbHealth.IsStuck {
 		slog.Warn("pressure detected but mariadb is healthy, skipping recovery", "triggers", triggers)
 		return false
@@ -300,13 +307,13 @@ func recentRecoveryCount(maxPerHour int) bool {
 	return count >= maxPerHour
 }
 
-func checkMariaDBHealth(creds MySQLCredentials, stuckThreshold time.Duration) DBHealth {
+func checkMariaDBHealth(creds MySQLCredentials) DBHealth {
 	if !checkReachable(creds.Socket) {
 		slog.Warn("mariadb is unreachable", "socket", creds.Socket)
 		return DBHealth{Reachable: false}
 	}
 
-	health := checkProcesslist(creds, stuckThreshold)
+	health := checkProcesslist(creds)
 	if health.IsStuck {
 		slog.Warn("mariadb has stuck queries", "stuck_count", health.StuckQueries, "details", health.Details)
 	} else {
