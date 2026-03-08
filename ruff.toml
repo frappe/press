@@ -1,6 +1,6 @@
 line-length = 110
 indent-width = 4
-target-version = "py310"
+target-version = "py314"
 
 [format]
 quote-style = "double"
@@ -31,7 +31,6 @@ ignore = [
   "W191",   # indentation contains tabs, cause when the world zigs, we zag
   "B023",   # function doesn't bind loop variable - will have last iteration's value
   "UP037",  # remove quotes from annotations, messes up DF.Literal typing
-  "UP038",  # is deprecated and isn't recommended practice
   "SIM103", # return condition directly, readability suffers at times
 ]
 

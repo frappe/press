@@ -4,16 +4,18 @@
 from __future__ import annotations
 
 import json
+import os
 from functools import cached_property
 
 import frappe
-from ansible import constants, context
+from ansible import context
 from ansible.executor.task_queue_manager import TaskQueueManager
 from ansible.inventory.manager import InventoryManager
 from ansible.module_utils.common.collections import ImmutableDict
 from ansible.parsing.dataloader import DataLoader
 from ansible.playbook.play import Play
 from ansible.plugins.callback import CallbackBase
+from ansible.plugins.loader import init_plugin_loader
 from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
 
@@ -240,7 +242,7 @@ class SSHAccessAudit(Document):
 
 class AnsibleAdHoc:
 	def __init__(self, sources):
-		constants.HOST_KEY_CHECKING = False
+		os.environ["ANSIBLE_HOST_KEY_CHECKING"] = "False"
 		context.CLIARGS = ImmutableDict(
 			become_method="sudo",
 			check=False,
@@ -252,6 +254,7 @@ class AnsibleAdHoc:
 			verbosity=3,
 		)
 
+		init_plugin_loader()
 		self.loader = DataLoader()
 		self.passwords = dict({})
 

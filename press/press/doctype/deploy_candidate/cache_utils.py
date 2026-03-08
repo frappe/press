@@ -8,15 +8,14 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 from textwrap import dedent
-from typing import Tuple, TypedDict
+from typing import TypedDict
 
-CommandOutput = TypedDict(
-	"CommandOutput",
-	cwd=str,
-	image_tag=str,
-	returncode=int,
-	output=str,
-)
+
+class CommandOutput(TypedDict):
+	cwd: str
+	image_tag: str
+	returncode: int
+	output: str
 
 
 def copy_file_from_docker_cache(
@@ -39,10 +38,7 @@ def copy_file_from_docker_cache(
 	filename = Path(container_source).name
 	container_dest_dirpath = Path(cache_target).parent / "container_dest"
 	container_dest_filepath = container_dest_dirpath / filename
-	command = (
-		f"mkdir -p {container_dest_dirpath} && "
-		+ f"cp {container_source} {container_dest_filepath}"
-	)
+	command = f"mkdir -p {container_dest_dirpath} && " + f"cp {container_source} {container_dest_filepath}"
 	output = run_command_in_docker_cache(
 		command,
 		cache_target,
@@ -86,8 +82,7 @@ def run_command_in_docker_cache(
 		cache_target,
 	)
 	df_path = prep_dockerfile_path(dockerfile)
-	output = run_build_command(df_path, remove_image)
-	return output
+	return run_build_command(df_path, remove_image)
 
 
 def get_cache_check_dockerfile(command: str, cache_target: str) -> str:
@@ -133,16 +128,12 @@ def copy_file_from_container(
 	)
 
 	if not proc.returncode:
-		print(
-			f"file copied:\n"
-			f"- from {container_source}\n"
-			f"- to   {host_dest.absolute().as_posix()}"
-		)
+		print(f"file copied:\n- from {container_source}\n- to   {host_dest.absolute().as_posix()}")
 	else:
 		print(proc.stdout)
 
 
-def remove_container(container_id: str) -> str:
+def remove_container(container_id: str) -> None:
 	args = shlex.split(f"docker rm -v {container_id}")
 	subprocess.run(
 		args,
@@ -150,7 +141,7 @@ def remove_container(container_id: str) -> str:
 		stdout=subprocess.PIPE,
 		stderr=subprocess.STDOUT,
 		text=True,
-	).stdout
+	)
 
 
 def prep_dockerfile_path(dockerfile: str) -> Path:
@@ -190,13 +181,9 @@ def run_build_command(df_path: Path, remove_image: bool) -> CommandOutput:
 	)
 
 
-def get_cache_check_build_command() -> Tuple[str, str]:
+def get_cache_check_build_command() -> tuple[str, str]:
 	command = "docker build"
-	if (
-		platform.machine() == "arm64"
-		and platform.system() == "Darwin"
-		and platform.processor() == "arm"
-	):
+	if platform.machine() == "arm64" and platform.system() == "Darwin" and platform.processor() == "arm":
 		command += "x build --platform linux/amd64"
 
 	now_ts = datetime.timestamp(datetime.today())
@@ -209,9 +196,7 @@ def get_cache_check_build_command() -> Tuple[str, str]:
 
 def run_image_rm(image_tag: str):
 	command = f"docker image rm {image_tag}"
-	subprocess.run(
-		shlex.split(command), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-	)
+	subprocess.run(shlex.split(command), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def strip_build_output(stdout: str) -> str:
@@ -238,7 +223,7 @@ def get_cached_apps() -> dict[str, list[str]]:
 		cache_target="/home/frappe/.cache",
 	)
 
-	apps = dict()
+	apps: dict[str, list[str]] = dict()
 	if result["returncode"] != 0:
 		return apps
 
