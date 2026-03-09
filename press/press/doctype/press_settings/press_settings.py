@@ -123,6 +123,7 @@ class PressSettings(Document):
 		minimum_rebuild_memory: DF.Int
 		monitor_server: DF.Link | None
 		monitor_token: DF.Data | None
+		new_bench_concurrency_limit: DF.Int
 		ngrok_auth_token: DF.Data | None
 		npo_discount: DF.Float
 		offsite_backups_access_key_id: DF.Data | None
