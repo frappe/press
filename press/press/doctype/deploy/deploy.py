@@ -89,6 +89,7 @@ class Deploy(Document):
 						"environment_variables": environment_variables,
 						"mounts": mounts,
 					},
+					"group": self.group,
 				}
 			).insert()
 			bench.bench = new_bench_queue.name  # Instead of giving it the bench link it with the created queue now? (assuming this is mostly internal?) this field is also optional can be ignored?

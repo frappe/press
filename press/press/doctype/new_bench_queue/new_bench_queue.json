@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
+  "group",
   "bench",
   "payload"
  ],
@@ -30,12 +31,20 @@
    "in_list_view": 1,
    "label": "Bench",
    "options": "Bench"
+  },
+  {
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Group",
+   "options": "Release Group",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-06 18:38:03.375958",
+ "modified": "2026-03-09 10:59:45.728701",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "New Bench Queue",
