@@ -1155,7 +1155,7 @@ def get_nearest_cluster_for_ip() -> str | None:
 	return nearest_cluster
 
 
-def get_nearest_cluster(country: str | None = None):
+def get_nearest_cluster(country: str | None = None) -> str | None:
 	if country and (nearest_cluster_for_country := get_nearest_cluster_for_country(country)):
 		return nearest_cluster_for_country
 

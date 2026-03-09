@@ -176,7 +176,7 @@ def _get_or_create_site_request(product: str, team_name: str, account_request: s
 	).insert(ignore_permissions=True)
 
 
-def _get_cluster_for_request(product_trial: ProductTrial, account_request: str | None) -> str:
+def _get_cluster_for_request(product_trial: ProductTrial, account_request: str | None) -> str | None:
 	from press.utils import get_nearest_cluster
 
 	account_request_data = None
