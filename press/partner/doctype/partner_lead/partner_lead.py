@@ -56,6 +56,7 @@ class PartnerLead(Document):
 		followup: DF.Table[LeadFollowup]
 		full_name: DF.Data | None
 		hosting: DF.Literal["Frappe Cloud", "Self Hosted"]
+		is_starter_pack: DF.Check
 		lead_name: DF.Data | None
 		lead_owner: DF.Link | None
 		lead_rating: DF.Rating
@@ -134,6 +135,7 @@ class PartnerLead(Document):
 		"lost_reason",
 		"lost_reason_specify",
 		"company_name",
+		"is_starter_pack",
 	)
 
 	@staticmethod
@@ -162,6 +164,8 @@ class PartnerLead(Document):
 				query = query.where(PartnerLead.status == filters.get("status"))
 			if filters.get("origin"):
 				query = query.where(PartnerLead.origin == filters.get("origin"))
+			if filters.get("is_starter_pack"):
+				query = query.where(PartnerLead.is_starter_pack == filters.get("is_starter_pack"))
 			if filters.get("search-text"):
 				search_text = f"%{filters.get('search-text')}%"
 				query = query.where(
