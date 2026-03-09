@@ -1011,7 +1011,7 @@ def get_cluster_timezone_map() -> dict[str, str]:
 			"country": ("is", "set"),
 		},
 		fields=["name", "country"],
-		order_by="modified desc",
+		order_by="name desc",
 	)
 
 	cluster_timezone_map: dict[str, str] = {}
@@ -1054,7 +1054,7 @@ def get_cluster_country_map() -> dict[str, str]:
 			"country": ("is", "set"),
 		},
 		fields=["name", "country"],
-		order_by="modified desc",
+		order_by="name desc",
 	)
 
 	country_map: dict[str, str] = {}
