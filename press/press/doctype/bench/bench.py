@@ -1147,6 +1147,9 @@ class Bench(Document):
 		if get_unfinished_site_migrations(self):
 			frappe.throw("Cannot archive bench due to pending site migrations", ArchiveBenchError)
 
+		if get_unfinished_site_actions(self):
+			frappe.throw("Cannot archive bench due to pending site actions", ArchiveBenchError)
+
 	def update_apps_after_inplace_update(
 		self,
 		update_apps: list[dict],
@@ -1444,6 +1447,17 @@ def get_unfinished_site_migrations(bench: BenchLike | Bench):
 	return frappe.db.exists(
 		"Site Migration",
 		{"status": ("in", ["Scheduled", "Pending", "Running"]), "destination_bench": bench.name},
+	)
+
+
+def get_unfinished_site_actions(bench: BenchLike | Bench):
+	frappe.db.commit()
+	return frappe.db.exists(
+		"Site Action",
+		{
+			"status": ("in", ["Scheduled", "Running"]),
+			"destination_bench": bench.name,
+		},
 	)
 
 
