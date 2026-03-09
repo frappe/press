@@ -42,6 +42,7 @@ if TYPE_CHECKING:
 
 	from frappe.types import DF
 
+	from press.press.doctype.new_bench_queue.new_bench_queue import NewBenchQueue
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
@@ -1661,6 +1662,38 @@ def group_supervisor_processes(processes: list[SupervisorProcess]):
 
 		group_grouped[group].append(p)
 	return status_grouped
+
+
+def process_bench_queue():
+	"""Process the new bench job queue and trigger agent jobs for them"""
+	# We actually only need to check the initialize bench step however sometimes they are left in running
+	# Even after the new bench job fails.
+	running_jobs = frappe.db.count("Agent Job", {"status": "Running", "job_type": "New Bench"})
+	concurrency_limit = frappe.db.get_single_value("Press Settings", "new_bench_concurrency_limit") or 50
+	slots_available = concurrency_limit - running_jobs
+
+	if slots_available <= 0:
+		return
+
+	# Here we can fetch as many queued tasks as there are slots.
+	# First come first serve for now? Can priorities private benches later on
+	tasks = frappe.get_all(
+		"New Bench Queue", filters={"status": "Queued"}, limit=slots_available, order_by="creation asc"
+	)
+
+	for task_name in tasks:
+		queued_new_bench: NewBenchQueue = frappe.get_doc("New Bench Queue", task_name)
+		metadata = json.loads(queued_new_bench.payload)
+
+		try:
+			new_bench: NewBenchQueue = frappe.get_doc({"doctype": "Bench", **metadata}).insert()
+			queued_new_bench.status = "Started"
+			queued_new_bench.bench = new_bench.name
+			queued_new_bench.save()
+		except Exception:
+			# On failure maybe mark the bench as broken as well for now let it be
+			queued_new_bench.status = "Failure"
+			queued_new_bench.save()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")
