@@ -187,7 +187,10 @@ export default {
 							prefix: icon('plus', 'w-4 h-4'),
 						},
 						disabled:
-							!this.$resources.benches.data?.length > 0 ||
+							!this.$resources.benches.data?.length ||
+							!this.$resources.benches.data?.some(
+								(bench) => bench.status === 'Active',
+							) ||
 							!this.$releaseGroup.doc?.deploy_information?.last_deploy,
 						route: {
 							name: 'Release Group New Site',
