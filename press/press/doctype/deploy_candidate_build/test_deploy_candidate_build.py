@@ -10,7 +10,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
-from press.press.doctype.bench.bench import Bench
+from press.press.doctype.bench.bench import Bench, process_bench_queue
 from press.press.doctype.deploy_candidate.test_deploy_candidate import (
 	create_test_deploy_candidate,
 	create_test_deploy_candidate_build,
@@ -166,10 +166,13 @@ class TestDeployCandidateBuild(FrappeTestCase):
 		newly_created_build.process_run_build(job, response_data=None)
 		self.assertEqual(len(frappe.get_all("Deploy", {"candidate": dc.name})), 1)
 
+		process_bench_queue()  # Ensure bench ref exists
+
 		# Check correct build association with the bench
 		deploy: Deploy = frappe.get_doc("Deploy", {"candidate": dc.name})
 		for bench_ref in deploy.benches:
-			server, bench = bench_ref.server, bench_ref.bench
+			server, bench_queue = bench_ref.server, bench_ref.bench
+			bench = frappe.db.get_value("New Bench Queue", bench_queue, "bench")
 			build = frappe.get_value("Bench", bench, "build")
 			server_platform = frappe.get_value("Server", server, "platform")
 			build_platform = frappe.get_value("Deploy Candidate Build", build, "platform")

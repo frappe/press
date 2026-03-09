@@ -1,12 +1,13 @@
-# Copyright (c) 2020, Frappe and contributors
+# Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
-
 # import frappe
+import typing
+
 from frappe.model.document import Document
 
 
-class DeployBench(Document):
+class NewBenchQueue(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -16,10 +17,9 @@ class DeployBench(Document):
 		from frappe.types import DF
 
 		bench: DF.Link | None
-		parent: DF.Data
-		parentfield: DF.Data
-		parenttype: DF.Data
-		server: DF.Link
+		group: DF.Link
+		payload: DF.JSON
+		status: DF.Literal["Queued", "Started", "Failure"]
 	# end: auto-generated types
 
-	pass
+	dashboard_fields: typing.ClassVar = ["status", "group"]

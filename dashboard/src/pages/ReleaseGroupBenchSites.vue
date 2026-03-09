@@ -16,6 +16,12 @@
 				Upgrade Now
 			</Button>
 		</DismissableBanner>
+		<AlertBanner
+			:title="`You have ${$resources.inQueueBenches.data.length} benche(s) in queue. Please wait for them to be provisioned.`"
+			type="warning"
+			v-if="$resources.inQueueBenches.data?.length > 0"
+		>
+		</AlertBanner>
 		<ObjectList class="mt-3" :options="listOptions" />
 		<Dialog
 			v-model="showAppVersionDialog"
@@ -74,6 +80,21 @@ export default {
 				onSuccess() {
 					this.$resources.sites.fetch();
 				},
+			};
+		},
+		inQueueBenches() {
+			return {
+				type: 'list',
+				doctype: 'New Bench Queue',
+				filters: {
+					group: this.$releaseGroup.name,
+					status: 'Queued',
+					skip_team_filter_for_system_user_and_support_agent: true,
+				},
+				fields: ['status', 'group'],
+				orderBy: 'creation desc',
+				pageLength: 99999,
+				auto: true,
 			};
 		},
 		sites() {
@@ -165,7 +186,12 @@ export default {
 						slots: {
 							prefix: icon('plus', 'w-4 h-4'),
 						},
-						disabled: !this.$releaseGroup.doc?.deploy_information?.last_deploy,
+						disabled:
+							!this.$resources.benches.data?.length ||
+							!this.$resources.benches.data?.some(
+								(bench) => bench.status === 'Active',
+							) ||
+							!this.$releaseGroup.doc?.deploy_information?.last_deploy,
 						route: {
 							name: 'Release Group New Site',
 							params: { bench: this.releaseGroup },
