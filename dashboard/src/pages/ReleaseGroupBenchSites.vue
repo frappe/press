@@ -16,6 +16,22 @@
 				Upgrade Now
 			</Button>
 		</DismissableBanner>
+<<<<<<< HEAD
+=======
+		<AlertBanner
+			:title="`You have ${$resources.inQueueBenches.data.length} benche(s) in queue. Please wait for them to be provisioned.`"
+			type="info"
+			v-if="$resources.inQueueBenches.data?.length > 0"
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/benches/updating_a_bench#bench-provisioning-amp-queueing"
+			>
+				Know More
+			</Button>
+		</AlertBanner>
+>>>>>>> cde1152f0 (fix(banner): Update docs link in banner)
 		<ObjectList class="mt-3" :options="listOptions" />
 		<Dialog
 			v-model="showAppVersionDialog"
