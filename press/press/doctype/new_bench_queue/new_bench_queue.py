@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+import typing
+
 from frappe.model.document import Document
 
 
@@ -15,7 +17,9 @@ class NewBenchQueue(Document):
 		from frappe.types import DF
 
 		bench: DF.Link | None
+		group: DF.Link
 		payload: DF.JSON
 		status: DF.Literal["Queued", "Started", "Failure"]
 	# end: auto-generated types
-	pass
+
+	dashboard_fields: typing.ClassVar = ["status", "group"]
