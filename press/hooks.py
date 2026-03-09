@@ -184,7 +184,10 @@ doc_events = {
 		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
 	},
 	"Server": {
-		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
+		"after_insert": [
+			"press.press.doctype.press_role.press_role.create_user_resource",
+			"press.press.doctype.server_firewall.server_firewall.from_server",
+		],
 	},
 }
 

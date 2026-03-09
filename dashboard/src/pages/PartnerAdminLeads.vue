@@ -120,6 +120,11 @@ export default {
 							label: 'Origin',
 							options: origins,
 						},
+						{
+							type: 'checkbox',
+							fieldname: 'is_starter_pack',
+							label: 'Starter Pack',
+						},
 					];
 				},
 				onRowClick: (row) => {

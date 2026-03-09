@@ -21,27 +21,27 @@
 				changes to take effect.
 			</p>
 		</div>
-		<div class="flex items-center justify-between">
+		<div v-if="firewall.doc" class="flex items-center justify-between">
 			<Switch
 				label="Enabled"
 				class="border w-60"
-				v-model="server.doc.enabled"
-				:disabled="server.get.loading"
+				v-model="firewall.doc.enabled"
+				:disabled="firewall.get.loading"
 			/>
 			<div class="flex justify-center gap-2">
 				<Button
 					label="Discard"
 					icon-left="trash-2"
 					theme="gray"
-					:disabled="!server.isDirty"
-					@click.stop.prevent="() => server.reload()"
+					:disabled="!firewall.isDirty"
+					@click.stop.prevent="() => firewall.reload()"
 				/>
 				<Button
 					label="Save"
 					icon-left="save"
 					theme="green"
-					:disabled="!server.isDirty"
-					@click.stop.prevent="() => server.save.submit()"
+					:disabled="!firewall.isDirty"
+					@click.stop.prevent="() => firewall.save.submit()"
 				/>
 				<Button
 					label="Add Rule"
@@ -52,8 +52,9 @@
 			</div>
 		</div>
 		<ObjectList
+			v-if="firewall.doc"
 			:options="{
-				data: () => server.doc.rules,
+				data: () => firewall.doc.rules,
 				columns: [
 					{
 						label: 'Source',
@@ -61,8 +62,8 @@
 						format: (value: string) => value || '—',
 					},
 					{
-						label: 'Destination',
-						fieldname: 'destination',
+						label: 'Port',
+						fieldname: 'port',
 						format: (value: string) => value || '—',
 					},
 					{ label: 'Protocol', fieldname: 'protocol' },
@@ -84,11 +85,11 @@
 					{
 						label: 'Remove',
 						onClick: () => {
-							server.doc.rules = server.doc.rules.filter(
+							firewall.doc.rules = firewall.doc.rules.filter(
 								(rule: any) =>
 									!(
 										rule.source === row.source &&
-										rule.destination === row.destination &&
+										rule.port === row.port &&
 										rule.protocol === row.protocol &&
 										rule.action === row.action
 									),
@@ -100,7 +101,7 @@
 		/>
 		<ServerFirewallDialog
 			v-model="openAddDialog"
-			@submit="(values) => server.doc.rules.push({ ...values })"
+			@submit="(values) => firewall.doc.rules.push({ ...values })"
 		/>
 	</div>
 </template>
@@ -117,7 +118,7 @@ const props = defineProps<{
 
 const openAddDialog = ref(false);
 
-const server = createDocumentResource({
+const firewall = createDocumentResource({
 	doctype: 'Server Firewall',
 	name: props.id,
 	auto: true,
