@@ -17,7 +17,7 @@
 			</Button>
 		</DismissableBanner>
 		<AlertBanner
-			:title="`You have ${$resources.inQueueBenches.data.length} benche(s) in queue. Please wait for them to be provisioned.`"
+			:title="`You have ${$resources.inQueueBenches.data.length} bench(es) in queue. Please wait for them to be provisioned.`"
 			type="info"
 			v-if="$resources.inQueueBenches.data?.length > 0"
 		>
