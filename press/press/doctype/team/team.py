@@ -314,7 +314,7 @@ class Team(Document):
 		self.add_comment("Info", "enabled account")
 
 	@classmethod
-	def create_new(  # noqa: C901
+	def create_new(
 		cls,
 		account_request: AccountRequest,
 		first_name: str,
@@ -327,14 +327,7 @@ class Team(Document):
 		user_exists: bool = False,
 	):
 		"""Create new team along with user (user created first)."""
-		# Get full phone number with country code
-		full_phone = None
-		if phone and country:
-			dialing_code = get_country_dialing_code(country)
-			if dialing_code:
-				full_phone = f"+{dialing_code}-{phone}"
-			else:
-				full_phone = phone
+		full_phone = phone or None
 
 		team: "Team" = frappe.get_doc(
 			{
@@ -1753,20 +1746,6 @@ def send_budget_alert_email(team_info, invoice):
 	except Exception as e:
 		frappe.log_error(f"Failed to send budget alert email: {team_info['user']}", {e})
 		return False
-
-
-def get_country_dialing_code(country_name: str) -> str | None:
-	"""Get the dialing code for a given country name using phonenumbers library."""
-	from phonenumbers import country_code_for_region  # type: ignore[import-not-found]
-
-	# Get the ISO 3166 ALPHA-2 code from Country doctype
-	country_code = frappe.db.get_value("Country", country_name, "code")
-	if not country_code:
-		return None
-
-	# phonenumbers expects uppercase country code
-	dialing_code = country_code_for_region(country_code.upper())
-	return str(dialing_code) if dialing_code else None
 
 
 def auto_enable_ssh_access_for_7_days_older_teams():
