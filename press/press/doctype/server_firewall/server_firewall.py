@@ -167,6 +167,8 @@ class ServerFirewall(Document):
 	def get_protected_ips(self) -> list[str]:
 		"""Return IPs that should always be allowed through the firewall."""
 		ips = frappe.get_all("Monitor Server", pluck="ip")
+		if proxy_ip := self.server.get_proxy_ip():
+			ips.append(proxy_ip)
 		if self.production_ip:
 			ips.append(self.production_ip)
 		return ips
