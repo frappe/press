@@ -49,6 +49,8 @@ if TYPE_CHECKING:
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
 
+RETRYABLE_ERROR_PATTERNS = ["TLS handshake timeout", "Retrying in 10 seconds"]
+
 EMPTY_BENCH_COURTESY_DAYS = 3
 
 MAX_GUNICORN_WORKERS = 36
@@ -1254,10 +1256,7 @@ def archive_staging_sites():
 
 # This is a new bench job
 def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
-	"""Check if Retrying in x seconds is present in the output, which would mean that we are stuck in a loop
-	of registry retries and should break out of it by marking the job as failed
-	returns if the job was cancelled and retried, or if it was left as is
-	"""
+	"""Check if retryable patterns are present in output and archive and retry such benches"""
 	initialize_bench_step = frappe.db.get_value(
 		"Agent Job Step",
 		{"agent_job": job.name, "step_name": "Initialize Bench"},
@@ -1271,10 +1270,14 @@ def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
 	# https://github.com/frappe/press/blob/131077ed5708c63199c3dafc7fd96902f53728a8/press/press/doctype/agent_job/agent_job.py#L569
 	output_from_cache = frappe.cache.hget("agent_job_step_output", initialize_bench_step.get("name"))
 
-	if not output_from_cache or "Retrying in 10 seconds" not in output_from_cache:
+	if not output_from_cache:
 		return False
 
 	if initialize_bench_step.get("status") != "Running":
+		return False
+
+	has_retryable_error = any(pattern in output_from_cache for pattern in RETRYABLE_ERROR_PATTERNS)
+	if not has_retryable_error:
 		return False
 
 	job.cancel_job()
