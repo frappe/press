@@ -1731,7 +1731,7 @@ def process_bench_queue():
 	slots_available = concurrency_limit - running_jobs
 
 	if slots_available <= 0:
-		frappe.cache.delete(BENCH_QUEUE_EXECUTION_LOCK_KEY)  # Release lock
+		frappe.cache.delete(BENCH_QUEUE_EXECUTION_LOCK_KEY)  # Release lock on no slots as well
 		return
 
 	tasks = get_benches_to_process(slots_available)
