@@ -1757,10 +1757,9 @@ def process_bench_queue():
 			# On failure maybe mark the bench as broken as well for now let it be
 			queued_new_bench.status = "Failure"
 			queued_new_bench.save()
-		finally:
-			# Commit after each bench to ensure accurate data is given for next runs
-			frappe.db.commit()
 
+	# Commit after each run to ensure accurate data is given for next runs
+	frappe.db.commit()
 	frappe.cache.delete(BENCH_QUEUE_EXECUTION_LOCK_KEY)  # Release lock
 
 
