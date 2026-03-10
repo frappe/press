@@ -454,12 +454,12 @@ export default {
 					'Site will be unavailable during this process.',
 			}[this.selectedMigrationMode];
 		},
-	},
-	methods: {
 		scheduledTimeInIST() {
 			if (!this.scheduledTime) return;
 			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm');
 		},
+	},
+	methods: {
 		autoSelectMigrationOption() {
 			// Check if 'action' is passed via prop or URL params
 			const actionFromProp = this.defaultAction;
