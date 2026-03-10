@@ -265,3 +265,33 @@ class TestServer(FrappeTestCase):
 		group2.reload()
 		# Assert server removed from group2
 		self.assertFalse(any(s.server == server.name for s in group2.servers))
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_release_group_modifications_on_archival(self):
+		server = create_test_server()
+		other_servers = create_test_server()
+		one_more_server = create_test_server()
+		apps = [create_test_app()]
+		group1 = create_test_release_group(apps, public=True, servers=[server.name])
+		group2 = create_test_release_group(apps, public=True, servers=[server.name, other_servers.name])
+		group3 = create_test_release_group(
+			apps, public=True, servers=[server.name, other_servers.name, one_more_server.name]
+		)
+
+		# Test the archival of this server
+		server.archive()
+
+		# Reload groups
+		group1.reload()
+		group2.reload()
+		group3.reload()
+
+		# Test only group with that one server is disbled, others remain enabled
+		self.assertEqual(group1.enabled, 0)
+		self.assertEqual(group2.enabled, 1)
+		self.assertEqual(group3.enabled, 1)
+
+		# Test the server is removed from all groups that had more than one server
+		self.assertListEqual([s.server for s in group2.servers], [other_servers.name])
+		self.assertListEqual([s.server for s in group3.servers], [other_servers.name, one_more_server.name])
