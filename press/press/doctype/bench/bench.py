@@ -42,11 +42,14 @@ if TYPE_CHECKING:
 
 	from frappe.types import DF
 
+	from press.press.doctype.new_bench_queue.new_bench_queue import NewBenchQueue
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
+
+RETRYABLE_ERROR_PATTERNS = ["TLS handshake timeout", "Retrying in 10 seconds"]
 
 EMPTY_BENCH_COURTESY_DAYS = 3
 
@@ -486,7 +489,7 @@ class Bench(Document):
 		frappe.db.commit()
 
 	@dashboard_whitelist()
-	def archive(self):
+	def archive(self, retry_new_bench: bool = False):
 		self.ready_to_archive()
 		self.status = "Pending"
 		self.save()  # lock 1
@@ -495,7 +498,7 @@ class Bench(Document):
 
 		self._mark_applied_patch_as_archived()
 		agent = Agent(self.server)
-		agent.archive_bench(self)
+		agent.archive_bench(self, retry_new_bench)
 
 	@dashboard_whitelist()
 	def take_process_snapshot(self):
@@ -870,6 +873,8 @@ class Bench(Document):
 		if type(programs) is str:
 			programs = [programs]
 
+		assert isinstance(programs, list)
+
 		return Agent(self.server).call_supervisorctl(
 			self.name,
 			action,
@@ -1142,6 +1147,9 @@ class Bench(Document):
 		if get_unfinished_site_migrations(self):
 			frappe.throw("Cannot archive bench due to pending site migrations", ArchiveBenchError)
 
+		if get_unfinished_site_actions(self):
+			frappe.throw("Cannot archive bench due to pending site actions", ArchiveBenchError)
+
 	def update_apps_after_inplace_update(
 		self,
 		update_apps: list[dict],
@@ -1249,8 +1257,60 @@ def archive_staging_sites():
 	StagingSite.archive_expired()
 
 
-def process_new_bench_job_update(job):
+# This is a new bench job
+def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
+	"""Check if retryable patterns are present in output and archive and retry such benches"""
+	initialize_bench_step = frappe.db.get_value(
+		"Agent Job Step",
+		{"agent_job": job.name, "step_name": "Initialize Bench"},
+		["name", "status"],
+		as_dict=True,
+	)
+
+	if not initialize_bench_step:
+		return False
+
+	# https://github.com/frappe/press/blob/131077ed5708c63199c3dafc7fd96902f53728a8/press/press/doctype/agent_job/agent_job.py#L569
+	output_from_cache = frappe.cache.hget("agent_job_step_output", initialize_bench_step.get("name"))
+
+	if not output_from_cache:
+		return False
+
+	if initialize_bench_step.get("status") != "Running":
+		return False
+
+	has_retryable_error = any(pattern in output_from_cache for pattern in RETRYABLE_ERROR_PATTERNS)
+	if not has_retryable_error:
+		return False
+
+	job.cancel_job()
+
+	frappe.db.set_value("Agent Job", job.name, "status", "Failure")
+	frappe.db.set_value("Bench", job.bench, "status", "Broken")
+
+	# Trigger immediate archival of bench to allow retry
+	bench: Bench = frappe.get_doc("Bench", job.bench)
+	bench.archive(retry_new_bench=True)
+	return True
+
+
+def retry_new_bench_job_if_possible(bench: Bench):
+	"""Check if there are retries left, if yes then trigger a new bench job immediately."""
+	retry_count = frappe.db.count(
+		"Bench", {"build": bench.build, "server": bench.server, "group": bench.group}
+	)
+
+	if retry_count >= 3:
+		return
+
+	bench.retry_bench()
+
+
+def process_new_bench_job_update(job: AgentJob):  # noqa: C901
 	bench = Bench("Bench", job.bench)
+
+	if cancel_and_retry_bench_job_if_required(job):
+		return
 
 	updated_status = {
 		"Pending": "Pending",
@@ -1317,8 +1377,8 @@ def process_new_bench_job_update(job):
 		bench_update.update_sites_on_server(job.bench, bench.server)
 
 
-def process_archive_bench_job_update(job):
-	bench = Bench("Bench", job.bench)
+def process_archive_bench_job_update(job: AgentJob):
+	bench: Bench = Bench("Bench", job.bench)
 
 	updated_status = {
 		"Pending": "Pending",
@@ -1342,6 +1402,12 @@ def process_archive_bench_job_update(job):
 		if bench.team != "Administrator":
 			bench.status = updated_status  # just to ensure the status got changed in webhook payload, reload_doc is costly here
 			create_webhook_event("Bench Status Update", bench, bench.team)
+
+	request_data = json.loads(job.request_data)
+	retry_new_bench = request_data.get("retry_new_bench", False)
+
+	if updated_status == "Archived" and retry_new_bench:
+		retry_new_bench_job_if_possible(bench)
 
 
 def process_add_ssh_user_job_update(job):
@@ -1381,6 +1447,17 @@ def get_unfinished_site_migrations(bench: BenchLike | Bench):
 	return frappe.db.exists(
 		"Site Migration",
 		{"status": ("in", ["Scheduled", "Pending", "Running"]), "destination_bench": bench.name},
+	)
+
+
+def get_unfinished_site_actions(bench: BenchLike | Bench):
+	frappe.db.commit()
+	return frappe.db.exists(
+		"Site Action",
+		{
+			"status": ("in", ["Scheduled", "Running"]),
+			"destination_bench": bench.name,
+		},
 	)
 
 
@@ -1602,6 +1679,38 @@ def group_supervisor_processes(processes: list[SupervisorProcess]):
 
 		group_grouped[group].append(p)
 	return status_grouped
+
+
+def process_bench_queue():
+	"""Process the new bench job queue and trigger agent jobs for them"""
+	# We actually only need to check the initialize bench step however sometimes they are left in running
+	# Even after the new bench job fails.
+	running_jobs = frappe.db.count("Agent Job", {"status": "Running", "job_type": "New Bench"})
+	concurrency_limit = frappe.db.get_single_value("Press Settings", "new_bench_concurrency_limit") or 50
+	slots_available = concurrency_limit - running_jobs
+
+	if slots_available <= 0:
+		return
+
+	# Here we can fetch as many queued tasks as there are slots.
+	# First come first serve for now? Can priorities private benches later on
+	tasks = frappe.get_all(
+		"New Bench Queue", filters={"status": "Queued"}, limit=slots_available, order_by="creation asc"
+	)
+
+	for task_name in tasks:
+		queued_new_bench: NewBenchQueue = frappe.get_doc("New Bench Queue", task_name)
+		metadata = json.loads(queued_new_bench.payload)
+
+		try:
+			new_bench: NewBenchQueue = frappe.get_doc({"doctype": "Bench", **metadata}).insert()
+			queued_new_bench.status = "Started"
+			queued_new_bench.bench = new_bench.name
+			queued_new_bench.save()
+		except Exception:
+			# On failure maybe mark the bench as broken as well for now let it be
+			queued_new_bench.status = "Failure"
+			queued_new_bench.save()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")

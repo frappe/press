@@ -257,7 +257,10 @@ def app(owner, repository, branch, installation=None):
 
 
 @frappe.whitelist()
-def branches(owner, name, installation=None):
+def branches(owner, name, installation=None, source: str = ""):
+	if not installation and source:
+		installation = frappe.db.get_value("App Source", source, "github_installation_id")
+
 	if installation:
 		token = get_access_token(installation)
 	else:
@@ -374,9 +377,12 @@ def _get_app_name_and_title_from_hooks(
 			continue
 
 		content = b64decode(hooks["content"]).decode()
-		match = re.search(r"""app_title = ["'](.*)["']""", content)
-
-		if match:
+		# - app_title\s*=\s*   : matches 'app_title', optional spaces, '=', optional spaces
+		# - ["\']              : matches opening quote (single or double)
+		# - ([^"\']+)          : captures any characters except quotes (the app title)
+		# - ["\']              : matches closing quote
+		pattern = r'app_title\s*=\s*["\']([^"\']+)["\']'
+		if match := re.search(pattern, content):
 			return directory, match.group(1)
 
 		reason_for_invalidation = (

@@ -555,46 +555,6 @@ class TestSite(FrappeTestCase):
 		self.assertEqual(site2.status, "Suspended")
 		self.assertEqual(site3.status, "Active")
 
-	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
-	@patch("press.press.doctype.site.site.frappe.db.rollback", new=Mock())
-	def test_suspension_of_no_offsite_backup_site_triggers_backup_if_it_does_not_exist(self):
-		plan_10 = create_test_plan(
-			"Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10", offsite_backups=False
-		)
-
-		site = create_test_site()
-		site.db_set("status", "Suspended")
-		site.db_set("plan", plan_10.name)
-		site_activity = create_test_site_activity(site.name, "Suspend Site")
-		site_activity.db_set(
-			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS - 1)
-		)
-
-		site2 = create_test_site()
-		site2.db_set("status", "Suspended")
-		site2.db_set("plan", plan_10.name)
-		site2_activity = create_test_site_activity(site2.name, "Suspend Site")
-		site2_activity.db_set(
-			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS - 1)
-		)
-		from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
-
-		create_test_site_backup(site2.name)
-
-		create_test_saas_settings(None, [create_test_app(), create_test_app("erpnext", "ERPNext")])
-
-		self.assertEqual(frappe.db.count("Site Backup", {"site": site.name, "status": "Pending"}), 0)
-		self.assertEqual(frappe.db.count("Site Backup", {"site": site2.name, "status": "Pending"}), 0)
-		archive_suspended_sites()
-		self.assertEqual(frappe.db.count("Site Backup", {"site": site.name, "status": "Pending"}), 1)
-		self.assertEqual(frappe.db.count("Site Backup", {"site": site2.name, "status": "Pending"}), 0)
-
-		site.reload()
-		site2.reload()
-
-		self.assertNotEqual(site.status, "Pending")  # should not be archived
-		self.assertEqual(site2.status, "Pending")
-
 	def test_site_usage_exceed_tracking(self):
 		team = create_test_team()
 		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")

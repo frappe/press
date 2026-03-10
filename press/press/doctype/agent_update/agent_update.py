@@ -6,6 +6,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import math
+from typing import TYPE_CHECKING, Any
 
 import frappe
 import frappe.utils
@@ -14,6 +15,9 @@ from frappe.model.document import Document
 
 from press.agent import Agent
 from press.runner import Ansible
+
+if TYPE_CHECKING:
+	from press.press.doctype.agent_update_server.agent_update_server import AgentUpdateServer
 
 
 def bool_to_str(b: bool) -> str:
@@ -202,6 +206,22 @@ class AgentUpdate(Document):
 
 	@frappe.whitelist()
 	def split_updates(self, no_of_batches: int):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_split_updates",
+			no_of_batches=no_of_batches,
+			queue="default",
+			timeout=1200,
+			job_id=f"agent_update||split_updates||{self.name}",
+			deduplicate=True,
+			at_front=True,
+		)
+		frappe.msgprint("Splitting updates queued in background.")
+
+	def _split_updates(self, no_of_batches: int):
+		frappe.db.get_value(self.doctype, self.name, "name", for_update=True)
+
 		if self.status != "Pending":
 			frappe.throw("You can only split updates when the status is Pending")
 
@@ -361,12 +381,40 @@ class AgentUpdate(Document):
 		self.save()
 
 	@frappe.whitelist()
+	def force_continue(self):
+		if self.status not in ["Failure", "Partial Success"]:
+			frappe.throw("You can only force continue when the status is Failure or Partial Success")
+
+		# Reset failed updates
+		for failed_update in self.servers:
+			if (failed_update.status not in ["Fatal", "Rolled Back"] and self.stop_after_single_rollback) or (
+				failed_update.status != "Fatal" and not self.stop_after_single_rollback
+			):
+				continue
+			failed_update.status = "Pending"
+			failed_update.start = None
+			failed_update.end = None
+			failed_update.agent_status = None
+			failed_update.reason_of_fatal_status = None
+			failed_update.update_ansible_play = None
+			failed_update.rollback_ansible_play = None
+
+		self.status = "Pending"
+		self.save(ignore_version=True)
+		self.execute()
+
+	@frappe.whitelist()
 	def pause(self):
+		if self.status not in ["Running"]:
+			frappe.throw("You can only pause when the update is Running")
 		self.status = "Paused"
 		self.save(ignore_version=True)
 
 	@frappe.whitelist()
 	def execute(self):
+		if self.status not in ["Pending", "Running"]:
+			frappe.throw("You can only call execute when the status is Pending or Running")
+
 		if self._process_next_step():
 			frappe.enqueue_doc(
 				self.doctype,
@@ -425,8 +473,8 @@ class AgentUpdate(Document):
 			self.save()
 			return False
 
-		current_agent_update_to_process = self.current_agent_update_to_process
-		if self.current_agent_update_to_process is None:
+		current_agent_update_to_process: AgentUpdateServer | None = self.current_agent_update_to_process
+		if current_agent_update_to_process is None:
 			return False
 
 		"""
@@ -485,10 +533,10 @@ class AgentUpdate(Document):
 			if play_status == "Success":
 				current_agent_update_to_process.status = "Rolled Back"
 				current_agent_update_to_process.end = frappe.utils.now_datetime()
+				self._resume_agent_jobs(current_agent_update_to_process)
 				self.save(ignore_version=True)
 			elif play_status == "Failure":
 				current_agent_update_to_process.status = "Fatal"
-				self._resume_agent_jobs(current_agent_update_to_process)
 				self.save(ignore_version=True)
 
 			return False
@@ -604,19 +652,21 @@ class AgentUpdate(Document):
 		return {"Authorization": f"Bearer {github_access_token}"}
 
 	def fetch_commit_hash(self, ref: str) -> str:
-		return self._get_commit_info(ref).get("sha")
+		return self._get_commit_info(ref).get("sha", "")
 
 	def fetch_commit_message(self, ref: str) -> str:
-		return self._get_commit_info(ref).get("commit").get("message")
+		return self._get_commit_info(ref).get("commit", {}).get("message", "")
 
 	def fetch_commit_date(self, ref: str) -> datetime.datetime | None:
-		return datetime.datetime.strptime(
-			self._get_commit_info(ref).get("commit").get("committer").get("date"), "%Y-%m-%dT%H:%M:%SZ"
-		)
+		commit_info = self._get_commit_info(ref).get("commit", {}).get("committer", {})
+		date_str = commit_info.get("date")
+		if date_str:
+			return datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ")
+		return None
 
-	def _get_commit_info(self, ref: str) -> dict:
+	def _get_commit_info(self, ref: str) -> dict[str, Any]:
 		if not hasattr(self, "git_commit_info"):
-			self.git_commit_info = {}
+			self.git_commit_info: dict[str, dict[str, Any]] = {}
 
 		if ref in self.git_commit_info:
 			return self.git_commit_info[ref]

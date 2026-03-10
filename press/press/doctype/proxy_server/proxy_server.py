@@ -34,6 +34,7 @@ class ProxyServer(BaseServer):
 		domain: DF.Link | None
 		domains: DF.Table[ProxyServerDomain]
 		enabled_default_routing: DF.Check
+		exclude_from_auto_selection: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		halt_agent_jobs: DF.Check

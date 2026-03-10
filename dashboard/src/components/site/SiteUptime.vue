@@ -32,7 +32,7 @@
 					<div class="text-[11px] whitespace-nowrap flex gap-1 items-center">
 						<span>{{ subtitle }}</span>
 						<Tooltip
-							:text="`Aggregated over ${firstDateTime} to ${lastDateTime}`"
+							:text="`Aggregated over ${firstOverallDateTime} to ${lastOverallDateTime}`"
 						>
 							<Help />
 						</Tooltip>
@@ -51,12 +51,15 @@
 					</Button>
 
 					<div
+						@wheel.prevent
+						@touchmove.prevent
 						ref="scrollContainer"
 						class="flex h-full overflow-x-auto snap-x snap-mandatory no-scrollbar flex-grow"
 					>
 						<div
 							v-for="(group, index) in chunkedData"
 							:key="index"
+							:ref="getUptimeChunkId(index)"
 							class="flex w-full flex-shrink-0 snap-start justify-center"
 							:class="chunkedData.length > 1 && 'px-2'"
 						>
@@ -65,7 +68,7 @@
 								:key="d.date"
 								@mouseenter="inspectBar(d)"
 								@mouseleave="clearInspect()"
-								class="rounded-full flex-shrink-0 h-full"
+								class="rounded-full flex-shrink-0 h-full max-w-4"
 								:style="`width: ${barWidth};`"
 								:class="[
 									'hover:brightness-[110%] border-r border-white',
@@ -123,6 +126,7 @@
 import dayjs from '../../utils/dayjs';
 import { icon } from '../../utils/components';
 import { Tooltip, debounce } from 'frappe-ui';
+import { uuid4 } from '@sentry/core';
 
 export default {
 	name: 'SiteUptime',
@@ -134,7 +138,9 @@ export default {
 	},
 	data() {
 		return {
-			chunkSize: 90,
+			carouselId: uuid4(),
+			chunkSize: null,
+			maxChunkSize: 60,
 			currentChunkIndex: 0,
 			hoveringOn: {
 				key: null, // (== date)
@@ -144,19 +150,11 @@ export default {
 				colour: null,
 			},
 			highlightDates: false,
+			firstRender: true,
 		};
 	},
 	mounted() {
-		this.$nextTick(() => {
-			const totalChunks = this.chunkedData.length;
-			if (!totalChunks) return;
-
-			this.currentChunkIndex = totalChunks - 1;
-			this.scrollToCurrentChunk();
-
-			const el = this.$refs.scrollContainer;
-			el?.addEventListener('scroll', this.handleScroll);
-		});
+		setTimeout(() => {}, 2000);
 	},
 	beforeUnmount() {
 		const el = this.$refs.scrollContainer;
@@ -189,7 +187,9 @@ export default {
 		},
 		filteredData() {
 			if (!this.data?.length) return [];
-			return this.data.filter((obj) => !!obj.value);
+			const filtered = this.data.filter((obj) => !!obj.value);
+			this.chunkSize = this.getOptimalChunkSizeFromDataLength(filtered.length);
+			return filtered;
 		},
 		chunkedData() {
 			const size = this.chunkSize;
@@ -206,10 +206,16 @@ export default {
 				this.chunkedData.at(this.currentChunkIndex).at(0)?.date,
 			);
 		},
+		firstOverallDateTime() {
+			return this.formatDate(this.filteredData.at(0)?.date);
+		},
 		lastDateTime() {
 			return this.formatDate(
 				this.chunkedData.at(this.currentChunkIndex).at(-1)?.date,
 			);
+		},
+		lastOverallDateTime() {
+			return this.formatDate(this.filteredData.at(-1)?.date);
 		},
 		barWidth() {
 			if (!this.filteredData?.length) return '0%';
@@ -219,7 +225,7 @@ export default {
 	},
 	methods: {
 		formatDate(date) {
-			return dayjs(date).format('D MMM YYYY, hh:mm a');
+			return dayjs(date).format('ddd, D MMM YYYY, hh:mm a');
 		},
 		inspectBar({ date, value }) {
 			const prettyDate = this.formatDate(date);
@@ -233,6 +239,9 @@ export default {
 
 			this.hoveringOn = { key: date, value, percentValue, prettyDate, colour };
 		},
+		getUptimeChunkId(chunkIndex) {
+			return `uptime-${this.carouselId}-${chunkIndex}`;
+		},
 		clearInspect() {
 			this.hoveringOn = {
 				key: null,
@@ -244,31 +253,33 @@ export default {
 		scrollNext() {
 			if (this.currentChunkIndex >= this.chunkedData.length - 1) return;
 			this.currentChunkIndex++;
-			this.scrollToCurrentChunk();
 		},
 		scrollPrev() {
 			if (this.currentChunkIndex <= 0) return;
 			this.currentChunkIndex--;
-			this.scrollToCurrentChunk();
 		},
-		handleScroll: debounce(() => {
-			const el = this?.$refs.scrollContainer;
-			if (!el) return;
-
-			const index = Math.round(el.scrollLeft / el.clientWidth);
-			this.currentChunkIndex = index;
-		}, 500),
 		scrollToCurrentChunk() {
-			const el = this.$refs.scrollContainer;
-			if (!el) return;
-
-			el.scrollTo({
-				left: el.clientWidth * this.currentChunkIndex,
-				behavior: 'smooth',
+			this.$nextTick(() => {
+				this.$refs[
+					this.getUptimeChunkId(this.currentChunkIndex)
+				]?.[0]?.scrollIntoView({ behavior: 'smooth', container: 'nearest' });
 			});
+		},
+		getOptimalChunkSizeFromDataLength(N) {
+			const maxSize = this.maxChunkSize;
+			const numChunks = Math.ceil(N / maxSize);
+			const baseSize = Math.floor(N / numChunks);
+			return baseSize + 1;
 		},
 	},
 	watch: {
+		chunkedData() {
+			if (!!this.chunkedData.length && this.firstRender) {
+				this.$nextTick(() => {
+					this.currentChunkIndex = this.chunkedData.length - 1;
+				});
+			}
+		},
 		currentChunkIndex() {
 			this.highlightDates = true;
 
@@ -277,6 +288,8 @@ export default {
 			this._highlightTimeout = setTimeout(() => {
 				this.highlightDates = false;
 			}, 300);
+
+			this.scrollToCurrentChunk();
 		},
 	},
 };

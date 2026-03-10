@@ -24,7 +24,6 @@ import requests
 import semantic_version
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.query_builder.custom import GROUP_CONCAT
 from frappe.utils import now_datetime as now
 from frappe.utils import rounded
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -265,36 +264,6 @@ class DeployCandidateBuild(Document):
 		"team",
 		"deploy_candidate",
 	)
-
-	@staticmethod
-	def get_list_query(query, filters=None, **list_args):
-		DeployCandidate, DeployCandidateBuild, DeployCandidateApp = (
-			frappe.qb.DocType("Deploy Candidate"),
-			frappe.qb.DocType("Deploy Candidate Build"),
-			frappe.qb.DocType("Deploy Candidate App"),
-		)
-		query = (
-			query.left_join(DeployCandidate)
-			.on(DeployCandidateBuild.deploy_candidate == DeployCandidate.name)
-			.left_join(DeployCandidateApp)
-			.on(DeployCandidateApp.parent == DeployCandidate.name)
-			.select(
-				DeployCandidateBuild.name,
-				DeployCandidateBuild.creation,
-				DeployCandidateBuild.status,
-				DeployCandidateBuild.build_duration,
-				DeployCandidateBuild.owner,
-				GROUP_CONCAT(DeployCandidateApp.app).as_("apps"),
-			)
-			.groupby(DeployCandidateBuild.name)
-		)
-		results = query.run(as_dict=True)
-
-		for deploy in results:
-			if not isinstance(deploy["apps"], list):
-				deploy["apps"] = [deploy["apps"]]
-
-		return results
 
 	@cached_property
 	def candidate(self) -> DeployCandidate:

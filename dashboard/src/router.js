@@ -102,6 +102,12 @@ let router = createRouter({
 			props: true,
 		},
 		{
+			name: 'Server New Site',
+			path: '/servers/:server/sites/new',
+			component: () => import('./pages/NewSite.vue'),
+			props: true,
+		},
+		{
 			name: 'New Release Group',
 			path: '/groups/new',
 			component: () => import('./pages/NewReleaseGroup.vue'),
@@ -393,7 +399,7 @@ let router = createRouter({
 		},
 		{
 			path: '/enable-bench-groups',
-			name: 'Enable Bench Groups',
+			name: 'Enable Benches',
 			component: () => import('./pages/EnableBenchGroups.vue'),
 		},
 		{
@@ -538,10 +544,10 @@ router.beforeEach(async (to, from, next) => {
 					console.warn('Auto-enable benches failed:', e);
 				}
 			if (!onboardingComplete) {
-				next({ name: 'Enable Bench Groups' });
+				next({ name: 'Enable Benches' });
 				return;
 			}
-		} else if (to.name === 'Enable Bench Groups' && onboardingComplete) {
+		} else if (to.name === 'Enable Benches' && onboardingComplete) {
 			next({ name: 'Release Group List' });
 		}
 

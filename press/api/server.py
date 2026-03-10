@@ -217,7 +217,12 @@ def new_unified(server: UnifiedServerDetails):
 
 	proxy_server = frappe.get_all(
 		"Proxy Server",
-		{"status": "Active", "cluster": cluster.name, "is_primary": True},
+		{
+			"status": "Active",
+			"cluster": cluster.name,
+			"is_primary": True,
+			"exclude_from_auto_selection": False,
+		},
 		limit=1,
 	)[0]
 
@@ -259,7 +264,12 @@ def new(server):
 
 	proxy_server = frappe.get_all(
 		"Proxy Server",
-		{"status": "Active", "cluster": cluster.name, "is_primary": True},
+		{
+			"status": "Active",
+			"cluster": cluster.name,
+			"is_primary": True,
+			"exclude_from_auto_selection": False,
+		},
 		limit=1,
 	)[0]
 
@@ -652,12 +662,6 @@ def options():
 		],
 	)
 
-	if not is_system_user and not (
-		frappe.local and frappe.local.team() and frappe.local.team().hetzner_internal_user
-	):
-		# filter out hetzner clusters
-		regions = [region for region in regions if region.get("cloud_provider") != "Hetzner"]
-
 	cloud_providers = get_cloud_providers()
 	"""
 	{
@@ -846,19 +850,7 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 		if not plan.get("plan_type"):
 			plan["plan_type"] = default_server_plan_type
 
-		if (
-			(frappe.session and frappe.session.data and frappe.session.data.user_type)
-			or (
-				frappe.session
-				and frappe.session.user
-				and frappe.get_cached_value("User", frappe.session.user, "user_type")
-			)
-		) == "System User":
-			plan["allow_unified_server"] = plan.get("allow_unified_server", False)
-		else:
-			plan["allow_unified_server"] = frappe.local.team().allow_unified_servers and plan.get(
-				"allow_unified_server", False
-			)
+		plan["allow_unified_server"] = plan.get("allow_unified_server", False)
 
 	server_plan_types = get_server_plan_types()
 

@@ -74,20 +74,20 @@
 							/>
 							<FormControl
 								type="select"
-								:options="countries"
+								:options="countryOptions"
 								v-if="!isInvitation"
 								label="Country"
 								v-model="country"
 								variant="outline"
 								required
 							/>
-							<FormControl
+							<PhoneInput
 								v-if="!isInvitation"
-								type="tel"
-								label="Phone Number"
+								label="Phone Number(Optional)"
 								v-model="phoneNumber"
+								:countries="countries"
+								:country="country"
 								placeholder="9876543210"
-								variant="outline"
 							/>
 						</div>
 						<ErrorMessage
@@ -152,6 +152,7 @@
 import LoginBox from '../components/auth/LoginBox.vue';
 import Link from '@/components/Link.vue';
 import Form from '@/components/Form.vue';
+import PhoneInput from '@/components/PhoneInput.vue';
 
 const detailsSharedProducts = [
 	'erpnext',
@@ -169,6 +170,7 @@ export default {
 		LoginBox,
 		Link,
 		Form,
+		PhoneInput,
 	},
 	props: ['requestKey', 'joinRequest'],
 	data() {
@@ -291,6 +293,9 @@ export default {
 				this.saasProduct &&
 				this.detailsSharedProducts.includes(this.saasProduct.name.toLowerCase())
 			);
+		},
+		countryOptions() {
+			return this.countries.map((c) => c.name);
 		},
 	},
 	methods: {

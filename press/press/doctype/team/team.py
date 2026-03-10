@@ -47,7 +47,6 @@ class Team(Document):
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
-		allow_unified_servers: DF.Check
 		apply_npo_discount: DF.Check
 		banned: DF.Check
 		benches_enabled: DF.Check
@@ -76,7 +75,6 @@ class Team(Document):
 		free_account: DF.Check
 		free_credits_allocated: DF.Check
 		github_access_token: DF.Data | None
-		hetzner_internal_user: DF.Check
 		hybrid_servers_enabled: DF.Check
 		introduction: DF.SmallText | None
 		is_code_server_user: DF.Check
@@ -101,6 +99,7 @@ class Team(Document):
 		razorpay_enabled: DF.Check
 		receive_budget_alerts: DF.Check
 		referrer_id: DF.Data | None
+		relaxed_permissions: DF.Check
 		security_portal_enabled: DF.Check
 		self_hosted_servers_enabled: DF.Check
 		send_notifications: DF.Check
@@ -152,6 +151,7 @@ class Team(Document):
 		"monthly_alert_threshold",
 		"company_name",
 		"hybrid_servers_enabled",
+		"relaxed_permissions",
 	)
 
 	def get_doc(self, doc):
@@ -213,6 +213,24 @@ class Team(Document):
 				["name", "host_name", "status"],
 			),
 		}
+
+	def before_validate(self):
+		self.auth_relaxed_permissions()
+
+	def auth_relaxed_permissions(self):
+		"""
+		Prevent unauthorized users from changing relaxed permissions. Only team
+		owner or admins can change relaxed permissions as it can lead to
+		security implications.
+		"""
+		if self.is_new():
+			return
+		if not self.has_value_changed("relaxed_permissions"):
+			return
+		if self.is_team_owner() or self.is_admin_user():
+			return
+		message = _("Only team owner or admins can make changes to relaxed permissions.")
+		frappe.throw(message, frappe.PermissionError)
 
 	def validate(self):
 		self.validate_duplicate_members()
@@ -296,7 +314,7 @@ class Team(Document):
 		self.add_comment("Info", "enabled account")
 
 	@classmethod
-	def create_new(  # noqa: C901
+	def create_new(
 		cls,
 		account_request: AccountRequest,
 		first_name: str,
@@ -309,14 +327,7 @@ class Team(Document):
 		user_exists: bool = False,
 	):
 		"""Create new team along with user (user created first)."""
-		# Get full phone number with country code
-		full_phone = None
-		if phone and country:
-			dialing_code = get_country_dialing_code(country)
-			if dialing_code:
-				full_phone = f"+{dialing_code}-{phone}"
-			else:
-				full_phone = phone
+		full_phone = phone or None
 
 		team: "Team" = frappe.get_doc(
 			{
@@ -985,6 +996,15 @@ class Team(Document):
 			# if balance is greater than 0 or have atleast 2 paid invoices, then allow to create site
 			if (
 				self.get_balance() > 0
+				or frappe.db.exists(
+					"Invoice",
+					{
+						"team": self.name,
+						"type": "Prepaid Credits",
+						"status": "Paid",
+						"amount_paid": ("!=", 0),
+					},
+				)
 				or frappe.db.count(
 					"Invoice",
 					{
@@ -1735,20 +1755,6 @@ def send_budget_alert_email(team_info, invoice):
 	except Exception as e:
 		frappe.log_error(f"Failed to send budget alert email: {team_info['user']}", {e})
 		return False
-
-
-def get_country_dialing_code(country_name: str) -> str | None:
-	"""Get the dialing code for a given country name using phonenumbers library."""
-	from phonenumbers import country_code_for_region
-
-	# Get the ISO 3166 ALPHA-2 code from Country doctype
-	country_code = frappe.db.get_value("Country", country_name, "code")
-	if not country_code:
-		return None
-
-	# phonenumbers expects uppercase country code
-	dialing_code = country_code_for_region(country_code.upper())
-	return str(dialing_code) if dialing_code else None
 
 
 def auto_enable_ssh_access_for_7_days_older_teams():

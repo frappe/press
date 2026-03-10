@@ -1,5 +1,15 @@
 <template>
 	<div class="p-5">
+		<div v-if="errors" class="flex flex-col gap-2">
+			<AlertAddressableError
+				v-for="error in errors"
+				class="mb-5"
+				:name="error.name"
+				:title="error.title"
+				@done="$resources.siteAction.reload()"
+			/>
+		</div>
+
 		<Button :route="{ name: 'Site Detail Migrations' }">
 			<template #prefix>
 				<lucide-arrow-left class="inline-block h-4 w-4" />
@@ -34,7 +44,36 @@
 				</div>
 			</div>
 			<div>
-				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
+					<div>
+						<div class="text-sm font-medium text-gray-500">
+							Destination Bench
+						</div>
+						<div
+							class="mt-2 text-sm text-ink-blue-3 font-medium"
+							@click="openDestinationBenchPage"
+							v-if="destinationReleaseGroupName"
+							style="cursor: pointer"
+						>
+							{{ destinationReleaseGroupName || '-'
+							}}<span>&#8599;&#65038;</span>
+						</div>
+						<div class="mt-2 text-sm text-gray-900" v-else>-</div>
+					</div>
+					<div>
+						<div class="text-sm font-medium text-gray-500">
+							Destination Server
+						</div>
+						<div
+							class="mt-2 text-sm text-ink-blue-3 font-medium"
+							@click="openDestinationServerPage"
+							v-if="destinationServerName"
+							style="cursor: pointer"
+						>
+							{{ destinationServerName || '-' }}<span>&#8599;&#65038;</span>
+						</div>
+						<div class="mt-2 text-sm text-gray-900" v-else>-</div>
+					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">Creation</div>
 						<div class="mt-2 text-sm text-gray-900">
@@ -51,8 +90,8 @@
 						<div class="text-sm font-medium text-gray-500">Duration</div>
 						<div class="mt-2 text-sm text-gray-900">
 							{{
-								siteAction.update_duration
-									? this.format_seconds(siteAction.update_duration)
+								siteAction.duration
+									? this.format_seconds(siteAction.duration)
 									: '-'
 							}}
 						</div>
@@ -60,17 +99,15 @@
 					<div>
 						<div class="text-sm font-medium text-gray-500">Start</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ $format.date(siteAction.update_start, 'lll') }}
+							{{
+								siteAction.start ? $format.date(siteAction.start, 'lll') : '-'
+							}}
 						</div>
 					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">End</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{
-								siteAction.update_end
-									? $format.date(siteAction.update_end, 'lll')
-									: '-'
-							}}
+							{{ siteAction.end ? $format.date(siteAction.end, 'lll') : '-' }}
 						</div>
 					</div>
 				</div>
@@ -84,6 +121,8 @@
 	</div>
 </template>
 <script>
+import { createResource } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 import JobStep from '../components/JobStep.vue';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
 import AlertBanner from '../components/AlertBanner.vue';
@@ -134,6 +173,9 @@ export default {
 		steps() {
 			return this.$resources.siteAction?.doc?.steps || [];
 		},
+		errors() {
+			return this.$resources.siteAction?.doc?.errors || [];
+		},
 		dropdownOptions() {
 			return [
 				{
@@ -147,7 +189,75 @@ export default {
 						);
 					},
 				},
+				{
+					label: 'Start Now',
+					icon: 'play',
+					condition: () => this.siteAction?.status === 'Scheduled',
+					onClick: () => {
+						let startNowAction = createResource({
+							url: 'press.api.client.run_doc_method',
+							makeParams: () => {
+								return {
+									dt: 'Site Action',
+									dn: this.siteAction.name,
+									method: 'start_now',
+								};
+							},
+						});
+
+						toast.promise(startNowAction.submit(), {
+							loading: 'Starting migration...',
+							success: () => {
+								this.$resources.siteAction.reload();
+								return 'Site migration started';
+							},
+							error: 'Failed to start migration',
+						});
+					},
+				},
+				{
+					label: 'Cancel',
+					icon: 'x',
+					condition: () => this.siteAction?.status === 'Scheduled',
+					onClick: () => {
+						let cancelAction = createResource({
+							url: 'press.api.client.run_doc_method',
+							makeParams: () => {
+								return {
+									dt: 'Site Action',
+									dn: this.siteAction.name,
+									method: 'cancel_action',
+								};
+							},
+						});
+
+						toast.promise(cancelAction.submit(), {
+							loading: 'Cancelling migration...',
+							success: () => {
+								this.$resources.siteAction.reload();
+								return 'Site migration cancelled';
+							},
+							error: 'Failed to cancel migration',
+						});
+					},
+				},
 			].filter((option) => option.condition?.() ?? true);
+		},
+		destinationServerName() {
+			let server_name = this.siteAction.arguments_dict?.destination_server;
+			if (!server_name) return null;
+			try {
+				return server_name.split('.')[0];
+			} catch (e) {
+				console.error('Error parsing destination server:', e);
+				return null;
+			}
+		},
+		destinationServerFullName() {
+			return this.siteAction.arguments_dict?.destination_server;
+		},
+		destinationReleaseGroupName() {
+			return this.siteAction.arguments_dict?.destination_release_group;
 		},
 	},
 	methods: {
@@ -161,6 +271,24 @@ export default {
 			const minutes = Math.floor(seconds / 60);
 			const remainingSeconds = Math.ceil(seconds % 60);
 			return `${minutes}m ${remainingSeconds}s`;
+		},
+		openDestinationServerPage() {
+			if (this.destinationServerFullName) {
+				const route = this.$router.resolve({
+					name: 'Server Detail',
+					params: { name: this.destinationServerFullName },
+				});
+				window.open(route.href, '_blank');
+			}
+		},
+		openDestinationBenchPage() {
+			if (this.destinationReleaseGroupName) {
+				const route = this.$router.resolve({
+					name: 'Release Group Detail',
+					params: { name: this.destinationReleaseGroupName },
+				});
+				window.open(route.href, '_blank');
+			}
 		},
 	},
 };

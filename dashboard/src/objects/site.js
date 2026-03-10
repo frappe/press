@@ -110,7 +110,7 @@ export default {
 				},
 				{
 					type: 'link',
-					label: 'Bench Group',
+					label: 'Benches',
 					fieldname: 'group',
 					options: {
 						doctype: 'Release Group',
@@ -182,7 +182,7 @@ export default {
 				},
 			},
 			{
-				label: 'Bench Group',
+				label: 'Benches',
 				fieldname: 'group',
 				width: '15rem',
 				format(value, row) {
@@ -1069,7 +1069,7 @@ export default {
 
 						return getUpsellBanner(
 							site,
-							'Your site is currently on a shared bench group. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.',
+							'Your site is currently on a shared bench. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.',
 						);
 					},
 				},
@@ -1215,6 +1215,8 @@ export default {
 				},
 				childrenRoutes: ['Site Migration'],
 				list: {
+					documentation:
+						'https://docs.frappe.io/cloud/site/site-migrations/introduction-to-site-migration',
 					doctype: 'Site Action',
 					filters: (site) => {
 						return { site: site.doc?.name };
@@ -1542,9 +1544,7 @@ export default {
 								onClick() {
 									let ConfigureAutoUpdateDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/site/ConfigureAutoUpdateDialog.vue'
-											),
+											import('../components/site/ConfigureAutoUpdateDialog.vue'),
 									);
 
 									renderDialog(
@@ -1558,7 +1558,7 @@ export default {
 					},
 					banner({ documentResource: site }) {
 						const bannerTitle =
-							'Your site is currently on a shared bench group. Upgrade to a private bench group to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+							'Your site is currently on a shared bench. Upgrade to a private bench to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
 
 						return getUpsellBanner(site, bannerTitle);
 					},
@@ -1739,9 +1739,14 @@ export default {
 					label: 'Impersonate Site Owner',
 					title: 'Impersonate Site Owner', // for label to pop-up on hover
 					slots: {
-						icon: defineAsyncComponent(
-							() => import('~icons/lucide/venetian-mask'),
-						),
+						icon: defineAsyncComponent(async () => {
+							const mod = await import('~icons/lucide/venetian-mask');
+							return {
+								render() {
+									return h(mod.default, { class: 'w-5 h-5' });
+								},
+							};
+						}),
 					},
 					condition: () =>
 						$team.doc?.is_desk_user && site.doc.team !== $team.name,

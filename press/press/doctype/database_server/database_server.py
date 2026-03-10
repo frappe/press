@@ -13,6 +13,7 @@ import frappe.utils
 import rq
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
+from frappe.utils import now_datetime
 from frappe.utils.password import get_decrypted_password
 
 from press.api.client import dashboard_whitelist
@@ -1885,7 +1886,11 @@ rm -f $TO_DELETE
 if [ -f "$INDEX_FILE" ]; then
   grep -vF -f <(printf "%s\n" $TO_DELETE) "$INDEX_FILE" > "$INDEX_FILE.tmp"
   mv "$INDEX_FILE.tmp" "$INDEX_FILE"
+  chown mysql:mysql "$INDEX_FILE"
 fi
+
+# Restart mariadb, as it could be stuck due to full disk
+systemctl restart mariadb
 """
 
 		is_failed = False
@@ -2645,7 +2650,7 @@ def database_flush_tables_of_public_servers():
 		fields=["name", "flush_table_execution_hour"],
 	)
 
-	current_hour = datetime.now().hour
+	current_hour = now_datetime().hour
 
 	for cluster in clusters:
 		if cluster.flush_table_execution_hour is None or cluster.flush_table_execution_hour != current_hour:

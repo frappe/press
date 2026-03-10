@@ -84,6 +84,7 @@
   "ssh_access_enabled",
   "skip_backups",
   "enable_inplace_updates",
+  "relaxed_permissions",
   "column_break_31",
   "database_access_enabled",
   "enable_performance_tuning",
@@ -95,8 +96,6 @@
   "security_portal_enabled",
   "benches_enabled",
   "mpesa_enabled",
-  "hetzner_internal_user",
-  "allow_unified_servers",
   "discounts_section",
   "discounts",
   "is_us_eu",
@@ -651,18 +650,6 @@
    "label": "Hybrid Servers Enabled"
   },
   {
-   "default": "0",
-   "fieldname": "hetzner_internal_user",
-   "fieldtype": "Check",
-   "label": "Hetzner Internal User"
-  },
-  {
-   "default": "0",
-   "fieldname": "allow_unified_servers",
-   "fieldtype": "Check",
-   "label": "Allow Unified Servers"
-  },
-  {
    "fieldname": "phone_number",
    "fieldtype": "Phone",
    "in_list_view": 1,
@@ -674,6 +661,12 @@
    "fieldname": "banned",
    "fieldtype": "Check",
    "label": "Banned"
+  },
+  {
+   "default": "0",
+   "fieldname": "relaxed_permissions",
+   "fieldtype": "Check",
+   "label": "Relaxed Permissions"
   }
  ],
  "grid_page_length": 50,
@@ -739,8 +732,8 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2026-02-08 19:03:07.774884",
- "modified_by": "Administrator",
+ "modified": "2026-03-02 12:15:11.542102",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Team",
  "naming_rule": "Random",

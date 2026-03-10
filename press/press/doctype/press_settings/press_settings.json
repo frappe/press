@@ -100,6 +100,7 @@
   "build_directory",
   "build_server",
   "minimum_rebuild_memory",
+  "new_bench_concurrency_limit",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -190,6 +191,8 @@
   "plausible_site_id",
   "plausible_api_key",
   "infrastructure_tab",
+  "general_section",
+  "production_server_ip",
   "agent_section",
   "agent_repository_owner",
   "agent_sentry_dsn",
@@ -1633,11 +1636,27 @@
    "fieldname": "school_api_secret",
    "fieldtype": "Password",
    "label": "School API Secret"
+  },
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "General"
+  },
+  {
+   "fieldname": "production_server_ip",
+   "fieldtype": "Data",
+   "label": "Production Server IP"
+  },
+  {
+   "default": "30",
+   "fieldname": "new_bench_concurrency_limit",
+   "fieldtype": "Int",
+   "label": "New Bench Concurrency Limit"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-01-21 10:16:18.560642",
+ "modified": "2026-03-06 18:09:29.791618",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
