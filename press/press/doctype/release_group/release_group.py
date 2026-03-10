@@ -1744,7 +1744,9 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 				frappe.throw("No servers found for new benches!")
 			else:
 				server = _pick_least_loaded_server(servers)
-
+		servers = [{"server": server}]
+	elif server:
+		servers = [{"server": server}]
 	else:
 		servers = []
 	return frappe.get_doc(
@@ -1821,7 +1823,7 @@ def _pick_least_loaded_server(servers: list[str]) -> str:
 			memory = float(usage.get("memory") or 0.0)
 			return max(vcpu, memory)
 		except Exception as e:
-			frappe.log_error(f"Failed to get CPU load for {server_name}: {e}")
+			log_error(f"Failed to get CPU load for {server_name}: {e}")
 			return 1.0
 
 	max_checks = min(4, len(low_site_count_servers))  # Limit Prometheus queries
