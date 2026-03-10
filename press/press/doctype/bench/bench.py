@@ -1710,6 +1710,15 @@ def get_benches_to_process(slots_available: int) -> list[dict]:
 	return private_bench_tasks + public_benches_tasks
 
 
+def process_bench_queue_trigger():
+	"""Trigger the bench queue processing, for scheduler calls"""
+	frappe.enqueue(
+		"press.press.doctype.bench.bench.process_bench_queue",
+		deduplicate=True,
+		queue="long",
+	)
+
+
 def process_bench_queue():
 	"""Process the new bench job queue and trigger agent jobs for them, in order to ensure the
 	scheduler doesn't call this function while the older one is still running using a cache lock here
@@ -1748,6 +1757,9 @@ def process_bench_queue():
 			# On failure maybe mark the bench as broken as well for now let it be
 			queued_new_bench.status = "Failure"
 			queued_new_bench.save()
+		finally:
+			# Commit after each bench to ensure accurate data is given for next runs
+			frappe.db.commit()
 
 	frappe.cache.delete(BENCH_QUEUE_EXECUTION_LOCK_KEY)  # Release lock
 
