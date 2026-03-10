@@ -1731,6 +1731,7 @@ def process_bench_queue():
 	slots_available = concurrency_limit - running_jobs
 
 	if slots_available <= 0:
+		frappe.cache.delete(BENCH_QUEUE_EXECUTION_LOCK_KEY)  # Release lock on no slots as well
 		return
 
 	tasks = get_benches_to_process(slots_available)
@@ -1749,6 +1750,8 @@ def process_bench_queue():
 			queued_new_bench.status = "Failure"
 			queued_new_bench.save()
 
+	# Commit after each run to ensure accurate data is given for next runs
+	frappe.db.commit()
 	frappe.cache.delete(BENCH_QUEUE_EXECUTION_LOCK_KEY)  # Release lock
 
 
