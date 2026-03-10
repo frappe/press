@@ -217,7 +217,12 @@ def new_unified(server: UnifiedServerDetails):
 
 	proxy_server = frappe.get_all(
 		"Proxy Server",
-		{"status": "Active", "cluster": cluster.name, "is_primary": True},
+		{
+			"status": "Active",
+			"cluster": cluster.name,
+			"is_primary": True,
+			"exclude_from_auto_selection": False,
+		},
 		limit=1,
 	)[0]
 
@@ -259,7 +264,12 @@ def new(server):
 
 	proxy_server = frappe.get_all(
 		"Proxy Server",
-		{"status": "Active", "cluster": cluster.name, "is_primary": True},
+		{
+			"status": "Active",
+			"cluster": cluster.name,
+			"is_primary": True,
+			"exclude_from_auto_selection": False,
+		},
 		limit=1,
 	)[0]
 

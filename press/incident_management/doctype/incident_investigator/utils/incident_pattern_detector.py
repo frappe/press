@@ -2,7 +2,11 @@ import typing
 
 import frappe
 
+from press.runner import Status as StepStatus
+
 if typing.TYPE_CHECKING:
+	from press.press.incident_management.doctype.action_step.action_step import ActionStep
+
 	from press.incident_management.doctype.incident_investigator.incident_investigator import (
 		IncidentInvestigator,
 	)
@@ -61,11 +65,9 @@ class IncidentPatternDetector:
 
 	def __init__(self, investigator: "IncidentInvestigator"):
 		self.investigator = investigator
-		self.server = investigator.server
-		self.now = frappe.utils.now_datetime()
 
 		# Pattern detection parameters
-		self.detection_window = frappe.utils.add_to_date(days=-7)
+		self.detection_window = frappe.utils.add_to_date(days=-self.REPEAT_WINDOW_DAYS)
 
 	def _create_pattern_record(
 		self, server_type: str, server: str, cause_subset: list[str], investigations: list[str]
@@ -90,7 +92,7 @@ class IncidentPatternDetector:
 				"server": server,
 				"server_type": server_type,
 				"causes": cause_key,
-				"creation": (">=", frappe.utils.add_to_date(days=-self.REPEAT_WINDOW_DAYS)),
+				"creation": (">=", self.detection_window),
 			},
 		)
 
@@ -116,7 +118,7 @@ class IncidentPatternDetector:
 				(InvestigationStep.is_likely_cause == 1)
 				& (InvestigationStep.parentfield == parentfield)
 				& (IncidentInvestigator.server == self.investigator.server)
-				& (IncidentInvestigator.creation >= self.now - self.detection_window)
+				& (IncidentInvestigator.creation >= self.detection_window)
 			)
 			.groupby(IncidentInvestigator.name)
 			.having(likely_causes == cause_key)
@@ -130,13 +132,29 @@ class IncidentPatternDetector:
 				investigations=matching_incidents_count,
 			)
 
-	def detect_patterns(self):
-		"""Detects if the current incident matches any known patterns of resource contention"""
-		database_server_causes = self.investigator.likely_causes["database"]
-		app_server_causes = self.investigator.likely_causes["server"]
+	def detect_patterns(self, step: "ActionStep"):
+		"""Detects if the current incident matches any known patterns of resource contention."""
+		step.status = StepStatus.Running
+		step.save()
 
-		if database_server_causes:
-			self._detect_patterns("Database Server", database_server_causes)
+		try:
+			database_server_causes = self.investigator.likely_causes.get("database", [])
+			app_server_causes = self.investigator.likely_causes.get("server", [])
+			is_unified_server = frappe.db.get_value("Server", self.investigator.server, "is_unified_server")
 
-		if app_server_causes:
-			self._detect_patterns("Server", app_server_causes)
+			# Detect patterns for application server causes
+			if app_server_causes:
+				self._detect_patterns("Server", app_server_causes)
+
+			# Detect patterns for database server causes, we don't need to run this in case of unified servers, telemetry would be the same
+			if database_server_causes and not is_unified_server:
+				self._detect_patterns("Database Server", database_server_causes)
+
+			step.status = StepStatus.Success
+
+		except Exception as e:
+			step.status = StepStatus.Failure
+			step.output = frappe.safe_decode(str(e))
+
+		finally:
+			step.save()

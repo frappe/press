@@ -1215,6 +1215,8 @@ export default {
 				},
 				childrenRoutes: ['Site Migration'],
 				list: {
+					documentation:
+						'https://docs.frappe.io/cloud/site/site-migrations/introduction-to-site-migration',
 					doctype: 'Site Action',
 					filters: (site) => {
 						return { site: site.doc?.name };
@@ -1542,9 +1544,7 @@ export default {
 								onClick() {
 									let ConfigureAutoUpdateDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/site/ConfigureAutoUpdateDialog.vue'
-											),
+											import('../components/site/ConfigureAutoUpdateDialog.vue'),
 									);
 
 									renderDialog(
@@ -1739,9 +1739,14 @@ export default {
 					label: 'Impersonate Site Owner',
 					title: 'Impersonate Site Owner', // for label to pop-up on hover
 					slots: {
-						icon: defineAsyncComponent(
-							() => import('~icons/lucide/venetian-mask'),
-						),
+						icon: defineAsyncComponent(async () => {
+							const mod = await import('~icons/lucide/venetian-mask');
+							return {
+								render() {
+									return h(mod.default, { class: 'w-5 h-5' });
+								},
+							};
+						}),
 					},
 					condition: () =>
 						$team.doc?.is_desk_user && site.doc.team !== $team.name,

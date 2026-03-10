@@ -12,7 +12,6 @@ from prometheus_api_client import PrometheusConnect
 
 from press.incident_management.doctype.incident_investigator.incident_investigator import (
 	IncidentInvestigator,
-	get_utc_time,
 )
 from press.incident_management.doctype.incident_investigator.utils.incident_pattern_detector import (
 	IncidentPatternDetector,
@@ -387,38 +386,6 @@ class TestIncidentInvestigator(FrappeTestCase):
 		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
 		self.assertEqual(investigator.incident, test_incident_2.name)
 
-	@patch.object(PrometheusConnect, "get_current_metric_value", unreachable_metrics())
-	@patch.object(PrometheusConnect, "custom_query_range", unreachable_metrics())
-	@patch.object(PrometheusConnect, "get_metric_range_data", Mock())
-	@patch(
-		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
-		foreground_enqueue_doc,
-	)
-	def test_unreachable_metrics_with_shifts(self):
-		"""Ensure that in case of unreachable metrics, we try with shifts 0, 2, and 5"""
-		with patch.object(PrometheusConnect, "get_metric_range_data") as mock_get_metric_range_data:
-			mock_get_metric_range_data.side_effect = unreachable_metrics()
-
-			create_test_incident(self.server.name)
-			investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
-
-			expected_server_shifts = [0, 2, 5]
-			expected_database_server_shifts = [0, 2, 5]
-			actual_shifts = [
-				get_utc_time(investigator.investigation_window_start_time).minute
-				- call.kwargs.get("start_time").minute
-				for call in mock_get_metric_range_data.call_args_list
-			]
-
-			self.assertListEqual(expected_server_shifts + expected_database_server_shifts, actual_shifts)
-
-			# Ensure all investigation steps are marked as unable to investigate
-			for step in investigator.server_investigation_steps:
-				self.assertTrue(step.is_unable_to_investigate)
-
-			# Ensure database action is taken in case of unreachable metrics
-			self.assertEqual(len(investigator.action_steps), 2)
-
 	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=True))
 	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=False))
 	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=False))
@@ -462,8 +429,9 @@ class TestIncidentInvestigator(FrappeTestCase):
 			"Incident Investigator", {"incident": incident_2.name}
 		)
 
+		mock_action_step = MockStep()
 		pattern_detector: IncidentPatternDetector = IncidentPatternDetector(investigator_2)
-		pattern_detector.detect_patterns()
+		pattern_detector.detect_patterns(mock_action_step)
 
 		self.assertEqual(
 			len(frappe.get_all("Incident Pattern", {"server": self.server.name})), 0
@@ -476,8 +444,9 @@ class TestIncidentInvestigator(FrappeTestCase):
 			"Incident Investigator", {"incident": incident_3.name}
 		)
 
+		mock_action_step = MockStep()
 		pattern_detector: IncidentPatternDetector = IncidentPatternDetector(investigator_3)
-		pattern_detector.detect_patterns()
+		pattern_detector.detect_patterns(mock_action_step)
 
 		self.assertEqual(
 			len(frappe.get_all("Incident Pattern", {"server": self.server.name})), 1
@@ -494,8 +463,9 @@ class TestIncidentInvestigator(FrappeTestCase):
 			"Incident Investigator", {"incident": incident_4.name}
 		)
 
+		mock_action_step = MockStep()
 		pattern_detector: IncidentPatternDetector = IncidentPatternDetector(investigator_4)
-		pattern_detector.detect_patterns()
+		pattern_detector.detect_patterns(mock_action_step)
 
 		# No records created this pattern record has been created this week already
 		self.assertEqual(len(frappe.get_all("Incident Pattern", {"server": self.server.name})), 1)

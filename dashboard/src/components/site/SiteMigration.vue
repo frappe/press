@@ -48,12 +48,14 @@
 					:show-icon="false"
 				/>
 
-				<!-- Move From Shared To Private Bench -->
+				<!-- Move Site To Different Server / Bench -->
 				<div
-					v-if="selectedMigrationMode == 'Move From Shared To Private Bench'"
+					v-if="
+						selectedMigrationMode == 'Move Site To Different Server / Bench'
+					"
 					class="flex flex-col gap-3"
 				>
-					<!-- Chose Bench Related Opinion -->
+					<!-- Choose Bench Type -->
 					<div
 						class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
 					>
@@ -86,7 +88,7 @@
 						<FormControl
 							type="combobox"
 							:options="
-								availableReleaseGroupsForMovingToPrivateBench.map((e) => ({
+								availableReleaseGroups.map((e) => ({
 									label: e.title,
 									value: e.name,
 								}))
@@ -111,12 +113,10 @@
 						<FormControl
 							type="combobox"
 							:options="
-								availableServersForSelectedReleaseGroupForMovingToPrivateBench.map(
-									(e) => ({
-										label: e.title ? `${e.title} (${e.name})` : e.name,
-										value: e.name,
-									}),
-								)
+								availableServersForSelectedReleaseGroup.map((e) => ({
+									label: e.title ? `${e.title} (${e.name})` : e.name,
+									value: e.name,
+								}))
 							"
 							size="md"
 							variant="outline"
@@ -142,7 +142,7 @@
 						/>
 					</div>
 
-					<!-- Chose Server Type (For New) -->
+					<!-- Choose Server Type (For New) -->
 					<div
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Create A New Bench'"
@@ -168,7 +168,7 @@
 						/>
 					</div>
 
-					<!-- Chose The Server -->
+					<!-- Choose The Server (For New + Dedicated) -->
 					<div
 						class="flex flex-col gap-2"
 						v-if="
@@ -180,34 +180,7 @@
 						<FormControl
 							type="combobox"
 							:options="
-								dedicatedServersForNewReleaseGroupForMovingToPrivateBench.map(
-									(e) => ({
-										label: e.title ? `${e.title} (${e.name})` : e.name,
-										value: e.name,
-									}),
-								)
-							"
-							size="md"
-							variant="outline"
-							placeholder="Select Server"
-							v-model="selectedServerToMoveTo"
-							required
-						/>
-					</div>
-				</div>
-
-				<!-- Move Site To Different Server -->
-				<div
-					v-else-if="selectedMigrationMode == 'Move Site To Different Server'"
-					class="flex flex-col gap-3"
-				>
-					<!-- Chose The Server -->
-					<div class="flex flex-col gap-2">
-						<p class="text-sm text-gray-700">Select Server</p>
-						<FormControl
-							type="combobox"
-							:options="
-								dedicatedServersToMoveSiteTo.map((e) => ({
+								dedicatedServersForNewReleaseGroup.map((e) => ({
 									label: e.title ? `${e.title} (${e.name})` : e.name,
 									value: e.name,
 								}))
@@ -245,13 +218,13 @@
 						/>
 
 						<p
-							v-if="$site.doc.group_public"
+							v-if="!$site.doc.group_public"
 							class="mt-1 text-sm text-gray-600"
 							:showIcon="false"
 						>
 							If the region you're looking for isn't available, please follow
 							<a
-								href="https://docs.frappe.io/cloud/sites/move-site-across-region"
+								href="https://docs.frappe.io/cloud/site/site-migrations/move-site-to-different-region"
 								target="_blank"
 								class="underline"
 								>this documentation</a
@@ -286,6 +259,7 @@ import { getCachedDocumentResource, Select, Checkbox } from 'frappe-ui';
 import AlertBanner from '../AlertBanner.vue';
 import GenericList from '../GenericList.vue';
 import FormControl from 'frappe-ui/src/components/FormControl/FormControl.vue';
+import { dayjsIST } from '../../utils/dayjs';
 
 export default {
 	props: ['site', 'defaultAction', 'defaultNewBenchName'],
@@ -345,13 +319,13 @@ export default {
 						method: 'create_migration_plan',
 						args: {
 							type: this.selectedMigrationMode,
-							group: this.selectedReleaseGroupToMoveTo,
+							group: this.selectedReleaseGroupToMoveTo || null,
 							server: this.selectedServerToMoveTo,
 							new_group_name: this.selectedReleaseGroupToMoveTo
 								? null
 								: this.newBenchGroupName,
 							skip_failing_patches: this.skipFailingPatches,
-							scheduled_time: this.scheduledTime,
+							scheduled_time: this.scheduledTimeInIST,
 							cluster: this.selectedRegion,
 						},
 					};
@@ -431,26 +405,32 @@ export default {
 		selectedMigrationChoiceOptions() {
 			return this.selectedMigrationChoiceDetails?.options || {};
 		},
-		// Move Site From Shared Bench to Private Bench
-		availableReleaseGroupsForMovingToPrivateBench() {
-			if (this.selectedMigrationMode !== 'Move From Shared To Private Bench')
-				return {};
+		// Move Site To Different Server / Bench
+		availableReleaseGroups() {
+			if (
+				this.selectedMigrationMode !== 'Move Site To Different Server / Bench'
+			)
+				return [];
 			return (
-				this.selectedMigrationChoiceOptions?.available_release_groups ?? {}
+				this.selectedMigrationChoiceOptions?.available_release_groups ?? []
 			);
 		},
-		availableServersForSelectedReleaseGroupForMovingToPrivateBench() {
-			if (this.selectedMigrationMode !== 'Move From Shared To Private Bench')
+		availableServersForSelectedReleaseGroup() {
+			if (
+				this.selectedMigrationMode !== 'Move Site To Different Server / Bench'
+			)
 				return [];
 			if (this.benchMovementType !== 'Move To Existing Bench') return [];
 			return (
-				this.availableReleaseGroupsForMovingToPrivateBench.find(
+				this.availableReleaseGroups.find(
 					(e) => e.name === this.selectedReleaseGroupToMoveTo,
 				)?.servers ?? []
 			);
 		},
-		dedicatedServersForNewReleaseGroupForMovingToPrivateBench() {
-			if (this.selectedMigrationMode !== 'Move From Shared To Private Bench')
+		dedicatedServersForNewReleaseGroup() {
+			if (
+				this.selectedMigrationMode !== 'Move Site To Different Server / Bench'
+			)
 				return [];
 			if (this.benchMovementType !== 'Create A New Bench') return [];
 			if (this.selectedServerType !== 'Dedicated Server') return [];
@@ -458,11 +438,6 @@ export default {
 				this.selectedMigrationChoiceOptions
 					?.dedicated_servers_for_new_release_group ?? []
 			);
-		},
-		dedicatedServersToMoveSiteTo() {
-			if (this.selectedMigrationMode !== 'Move Site To Different Server')
-				return [];
-			return this.selectedMigrationChoiceOptions?.dedicated_servers ?? [];
 		},
 		availableRegionsToMoveSiteTo() {
 			if (this.selectedMigrationMode !== 'Move Site To Different Region')
@@ -473,9 +448,7 @@ export default {
 			return {
 				'In-Place Migrate Site':
 					'Runs `bench migrate` without a backup. Proceed with caution.',
-				'Move From Shared To Private Bench':
-					'Site will be unavailable during this process.',
-				'Move Site To Different Server':
+				'Move Site To Different Server / Bench':
 					'Site will be unavailable during this process.',
 				'Move Site To Different Region':
 					'Site will be unavailable during this process.',
@@ -483,6 +456,10 @@ export default {
 		},
 	},
 	methods: {
+		scheduledTimeInIST() {
+			if (!this.scheduledTime) return;
+			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm');
+		},
 		autoSelectMigrationOption() {
 			// Check if 'action' is passed via prop or URL params
 			const actionFromProp = this.defaultAction;
