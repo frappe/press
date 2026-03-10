@@ -277,10 +277,6 @@ scheduler_events = {
 		"press.press.doctype.site.sync.sync_setup_wizard_status",
 		"press.press.doctype.site.archive.archive_suspended_trial_sites",
 		"press.press.doctype.agent_job.agent_job.flush",
-		"press.press.doctype.site_backup.site_backup.delete_successful_unavailable_backups_for_archived_sites"
-		"press.press.doctype.site_backup.site_backup.delete_failed_unavailable_backups_for_archived_sites"
-		"press.press.doctype.site_backup.site_backup.delete_agent_job_records_for_archived_sites"
-		"press.press.doctype.site_backup.site_backup.delete_site_activity_records_for_archived_sites",
 	],
 	"cron": {
 		"1-59/2 * * * *": [
@@ -367,6 +363,10 @@ scheduler_events = {
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
 			"press.press.doctype.team.suspend_sites.execute",
+			"press.press.doctype.site_backup.site_backup.delete_successful_unavailable_backups_for_archived_sites"
+			"press.press.doctype.site_backup.site_backup.delete_failed_unavailable_backups_for_archived_sites"
+			"press.press.doctype.site_backup.site_backup.delete_agent_job_records_for_archived_sites"
+			"press.press.doctype.site_backup.site_backup.delete_site_activity_records_for_archived_sites",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
