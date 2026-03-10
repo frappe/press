@@ -823,12 +823,12 @@ def delete_backups_for_archived_sites_after_retention():
 		try:
 			site = frappe.get_doc("Site", site_name)
 			site.delete_offsite_backups(keep_latest=False)
+			frappe.db.delete("Agent Job", {"site": site_name})
+			frappe.db.delete("Site Activity", {"site": site_names})
 		except Exception as e:
 			frappe.log_error(
 				f"Failed to delete backups for archived site {site_name}: {e}",
 				reference_doctype="Site",
 				reference_name=site_name,
 			)
-	frappe.db.delete("Agent Job", {"site": ("in", site_names)})
-	frappe.db.delete("Site Activity", {"site": ("in", site_names)})
 	frappe.db.commit()
