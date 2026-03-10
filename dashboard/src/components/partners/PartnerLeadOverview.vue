@@ -59,7 +59,18 @@
 									<div class="text-sm text-gray-600">
 										{{ item.label }}
 									</div>
-									<div class="text-lg font-medium py-2">
+									<div
+										v-if="item.label === 'Plan Type' && item.value"
+										class="py-1"
+									>
+										<Badge
+											variant="outline"
+											theme="blue"
+											size="lg"
+											label="Starter Pack"
+										/>
+									</div>
+									<div v-else class="text-lg font-medium py-2">
 										{{ item.value || '-' }}
 									</div>
 								</div>
@@ -269,6 +280,11 @@ export default {
 					label: 'Lead Owner',
 					value: this.lead?.lead_owner,
 					condition: this.$team.doc.is_desk_user,
+				},
+				{
+					label: 'Plan Type',
+					value: this.lead?.is_starter_pack,
+					condition: this.lead?.is_starter_pack !== undefined,
 				},
 			].filter((d) => d.condition ?? true);
 		},
