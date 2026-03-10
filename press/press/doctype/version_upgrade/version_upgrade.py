@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import now_datetime
 
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.press_notification.press_notification import (
@@ -52,6 +53,12 @@ class VersionUpgrade(Document):
 		if not self.deploy_private_bench or self.bench_deploy_successful:
 			self.validate_same_server()
 		self.validate_apps()
+
+	def before_insert(self):
+		if frappe.db.get_value("Site", self.site, "fatal_site_update"):
+			frappe.throw(
+				"Site has an fatal update. Please contact support at support.frappe.io to resolve the issue before upgrading."
+			)
 
 	def after_insert(self):
 		if self.deploy_private_bench and self.destination_group:
@@ -104,6 +111,11 @@ class VersionUpgrade(Document):
 	@frappe.whitelist()
 	def start(self):
 		site: "Site" = frappe.get_doc("Site", self.site)
+		if site.fatal_site_update:
+			frappe.throw(
+				"Site has an fatal update. Please contact support at support.frappe.io to resolve the issue before upgrading."
+			)
+
 		if site.status in TRANSITORY_STATES:
 			frappe.throw("Site is under maintenance. Cannot Update")
 		try:
@@ -160,11 +172,10 @@ class VersionUpgrade(Document):
 
 		if job.status == "Success":
 			self.bench_deploy_successful = 1
-			if self.scheduled_time:
-				self.status = "Scheduled"
-				self.save()
-			else:
-				self.start()
+			if not self.scheduled_time:
+				self.scheduled_time = now_datetime()
+			self.status = "Scheduled"
+			self.save()
 		elif job.status in ["Failure", "Delivery Failure"]:
 			self.status = "Cancelled"
 			self.send_version_upgrade_failure_email(agent_job=job.name, bench_deploy_failure=True)

@@ -108,7 +108,7 @@ class BenchUpdate(Document):
 
 		return bench.update_inplace(self.apps, sites)
 
-	def update_sites_on_server(self, bench, server):
+	def update_sites_on_server(self, bench, server):  # noqa: C901
 		# This method gets called multiple times concurrently when a new candidate is deployed
 		# Avoid saving the doc to avoid TimestampMismatchError
 		if frappe.get_value("Bench", bench, "status") != "Active":
@@ -136,6 +136,12 @@ class BenchUpdate(Document):
 						limit=1,
 					):
 						continue
+
+					if frappe.db.get_value("Site", row.site, "fatal_site_update"):
+						frappe.db.set_value("Bench Site Update", row.name, "status", "Failure")
+						frappe.db.commit()
+						continue
+
 					site_update = frappe.get_doc("Site", row.site).schedule_update(
 						skip_failing_patches=row.skip_failing_patches, skip_backups=row.skip_backups
 					)

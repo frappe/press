@@ -36,6 +36,7 @@
   "estimated_closure_date",
   "column_break_jtbg",
   "probability",
+  "is_starter_pack",
   "success_pack_section",
   "erpnext_success_pack_interested_in",
   "need_demo_before_implementation",
@@ -458,12 +459,18 @@
    "fieldname": "site_plan",
    "fieldtype": "Data",
    "label": "Site Plan"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_starter_pack",
+   "fieldtype": "Check",
+   "label": "Is Starter Pack"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-26 21:34:02.969038",
+ "modified": "2026-03-09 10:26:50.154674",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Lead",
