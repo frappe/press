@@ -107,7 +107,7 @@ class SiteMigration(Document):
 			)
 
 	def validate_bench(self):
-		if frappe.db.get_value("Bench", self.destination_bench, "status", for_update=True) != "Active":
+		if frappe.db.get_value("Bench", self.destination_bench, "status") != "Active":
 			frappe.throw("Destination bench does not exist")
 
 	@cached_property
