@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 import frappe
 import requests
-from frappe.query_builder.functions import Cast_
+from frappe.query_builder.functions import Cast_, Count
 from frappe.utils.caching import redis_cache
 from frappe.utils.safe_exec import safe_exec
 from frappe.website.utils import cleanup_page_name
@@ -551,54 +551,64 @@ class MarketplaceApp(WebsiteGenerator):
 		return frappe.db.count("Site App", filters={"app": self.app})
 
 	def total_active_sites(self):
-		return frappe.db.sql(
-			"""
-			SELECT
-				count(*)
-			FROM
-				tabSite site
-			LEFT JOIN
-				`tabSite App` app
-			ON
-				app.parent = site.name
-			WHERE
-				site.status = "Active" AND app.app = %s
-		""",
-			(self.app,),
-		)[0][0]
+		site = frappe.qb.DocType("Site")
+		site_app = frappe.qb.DocType("Site App")
+
+		query = (
+			frappe.qb.from_(site)
+			.select(Count("*").as_("count"))
+			.left_join(site_app)
+			.on(site_app.parent == site.name)
+			.where(site.status == "Active")
+			.where(site_app.app == self.app)
+		)
+		return query.run(as_dict=True)[0]["count"]
 
 	def total_active_benches(self):
-		return frappe.db.sql(
-			"""
-			SELECT
-				count(*)
-			FROM
-				tabBench bench
-			LEFT JOIN
-				`tabBench App` app
-			ON
-				app.parent = bench.name
-			WHERE
-				bench.status = "Active" AND app.app = %s
-		""",
-			(self.app,),
-		)[0][0]
+		bench = frappe.qb.DocType("Bench")
+		bench_app = frappe.qb.DocType("Bench App")
+
+		query = (
+			frappe.qb.from_(bench)
+			.select(Count("*").as_("count"))
+			.left_join(bench_app)
+			.on(bench_app.parent == bench.name)
+			.where(bench.status == "Active")
+			.where(bench_app.app == self.app)
+		)
+		return query.run(as_dict=True)[0]["count"]
 
 	def get_payout_amount(self, status: str = "", total_for: str = "net_amount"):
 		"""Return the payout amount for this app"""
-		filters = {"team": self.team}
-		if status:
-			filters["status"] = status
-		payout_orders = frappe.get_all("Payout Order", filters=filters, pluck="name")
-		payout = frappe.get_all(
-			"Payout Order Item",
-			filters={"parent": ("in", payout_orders), "document_name": self.name},
-			fields=[
-				f"SUM(CASE WHEN currency = 'USD' THEN {total_for} ELSE 0 END) AS usd_amount",
-				f"SUM(CASE WHEN currency = 'INR' THEN {total_for} ELSE 0 END) AS inr_amount",
-			],
+		from pypika.functions import Coalesce, Sum
+		from pypika.terms import Case
+
+		payout_order = frappe.qb.DocType("Payout Order")
+		payout_order_item = frappe.qb.DocType("Payout Order Item")
+		# Dynamically select the field based on total_for parameter
+		# total_for can be "net_amount", "commission", etc.
+		amount_field = getattr(payout_order_item, total_for)
+		query = (
+			frappe.qb.from_(payout_order)
+			.left_join(payout_order_item)
+			.on(payout_order_item.parent == payout_order.name)
+			.select(
+				Coalesce(Sum(Case().when(payout_order_item.currency == "USD", amount_field).else_(0)), 0).as_(
+					"usd_amount"
+				),
+				Coalesce(Sum(Case().when(payout_order_item.currency == "INR", amount_field).else_(0)), 0).as_(
+					"inr_amount"
+				),
+			)
+			.where(payout_order.team == self.team)
+			.where(payout_order_item.document_name == self.name)
+			.where(payout_order_item.document_type == "Marketplace App")
 		)
-		return payout[0] if payout else {"usd_amount": 0, "inr_amount": 0}
+		# Add status filter if provided
+		if status:
+			query = query.where(payout_order.status == status)
+		result = query.run(as_dict=True)
+		return result[0] if result else {"usd_amount": 0, "inr_amount": 0}
 
 	@dashboard_whitelist()
 	def site_installs(self):
