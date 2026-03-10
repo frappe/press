@@ -12,6 +12,7 @@
   "column_break_qqmh",
   "status",
   "scheduled_time",
+  "destination_bench",
   "column_break_vnej",
   "start",
   "end",
@@ -27,7 +28,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action Type",
-   "options": "Move From Shared To Private Bench\nMove From Private To Shared Bench\nMove Site To Different Server\nMove Site To Different Region",
+   "options": "Move From Private To Shared Bench\nMove Site To Different Server / Bench\nMove Site To Different Region",
    "reqd": 1
   },
   {
@@ -44,6 +45,8 @@
    "default": "Scheduled",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Scheduled\nCancelled\nRunning\nFailure\nSuccess",
    "reqd": 1
@@ -78,6 +81,8 @@
    "fetch_from": "site.team",
    "fieldname": "team",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Team",
    "options": "Team",
    "reqd": 1
@@ -100,12 +105,18 @@
    "fieldname": "duration",
    "fieldtype": "Duration",
    "label": "Duration"
+  },
+  {
+   "fieldname": "destination_bench",
+   "fieldtype": "Link",
+   "label": "Destination Bench",
+   "options": "Bench"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-26 15:34:16.015504",
+ "modified": "2026-03-09 17:46:03.756750",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Action",
@@ -143,7 +154,8 @@
    "read": 1,
    "report": 1,
    "role": "Press Member",
-   "share": 1
+   "share": 1,
+   "write": 1
   }
  ],
  "row_format": "Dynamic",
