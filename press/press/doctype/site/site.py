@@ -1904,8 +1904,9 @@ class Site(Document, TagHelpers):
 		sid = None
 		if user == "Administrator":
 			password = get_decrypted_password("Site", self.name, "admin_password")
+			host = self.host_name or self.name
 			response = requests.post(
-				f"https://{self.name}/api/method/login",
+				f"https://{host}/api/method/login",
 				data={"usr": user, "pwd": password},
 			)
 			sid = response.cookies.get("sid")

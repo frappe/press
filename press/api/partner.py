@@ -904,7 +904,7 @@ def calculate_total_amount(server_name):
 	ServerPlan = frappe.qb.DocType("Server Plan")
 	query = (
 		frappe.qb.from_(ServerPlan)
-		.select(Sum(ServerPlan.price_inr).as_("total_amount"))
+		.select(Sum(ServerPlan.price_usd).as_("total_amount"))
 		.where(
 			ServerPlan.name.isin([server_plan, db_server_plan]),
 		)
@@ -918,7 +918,7 @@ def calculate_total_team_amount(team_name):
 
 	total_amount = 0
 	for d in subscriptions:
-		total_amount += frappe.db.get_value(d.plan_type, d.plan, "price_inr") or 0
+		total_amount += frappe.db.get_value(d.plan_type, d.plan, "price_usd") or 0
 
 	return total_amount
 
