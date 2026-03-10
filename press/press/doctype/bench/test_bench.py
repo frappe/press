@@ -844,3 +844,55 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			)
 			self.assertEqual(len(new_bench_jobs), 1)  # Now a new bench job should be queued.
 			self.assertEqual(len(benches), 2)  # Only two new benches created!
+
+	@patch.object(Bench, "after_insert", Mock())
+	def test_execution_queue_limit(self):
+		frappe.db.set_single_value(
+			"Press Settings", "new_bench_concurrency_limit", 5
+		)  # Allow only 5 concurrent bench creation jobs
+
+		release_group_private = create_test_release_group(apps=[create_test_app()], public=False)
+		release_group_public = create_test_release_group(apps=[create_test_app()], public=True)
+		bench = create_test_bench(group=release_group_public)
+
+		for i in range(15):
+			# Create 15 execution queue entries for new bench creation
+			# Frist ten are public benches to ensure that they are not picked first due to lower priority
+			frappe.get_doc(
+				{
+					"doctype": "New Bench Queue",
+					"group": release_group_public.name if i < 10 else release_group_private.name,
+					"payload": {
+						"server": bench.server,
+						"build": bench.build,
+						"docker_image": "registry.frappe.cloud/production/frappe.cloud/mock-build",
+						"group": release_group_public.name if i < 10 else release_group_private.name,
+						"candidate": frappe.db.get_value(
+							"Deploy Candidate Build", bench.build, "deploy_candidate"
+						),
+						"workers": 1,
+						"staging": 0,
+						"environment_variables": [],
+						"mounts": [],
+					},
+				}
+			).insert()
+
+		# Since execution is done based on creation time, we want to make sure the order of entries in queue is as expected,
+		# We want to make sure even though the creation time of public benches is earlier, private benches are picked first for execution due to higher priority
+		self.assertListEqual(
+			frappe.get_all("New Bench Queue", pluck="group", order_by="creation"),
+			[release_group_public.name] * 10 + [release_group_private.name] * 5,
+		)
+
+		for i in range(3):
+			# Since execution queue limit is 5, only 5 jobs should be picked up in each poll
+			process_bench_queue()
+			started_bench_execution = frappe.get_all("New Bench Queue", {"status": "Started"}, pluck="group")
+			if i == 0:
+				# Since there are only 5 private benches inserted at the end, only those should be picked up in the first round of execution
+				self.assertEqual(
+					all(group == release_group_private.name for group in started_bench_execution), True
+				)
+
+			self.assertEqual(len(started_bench_execution), 5 + (i * 5))
