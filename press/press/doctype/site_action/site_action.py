@@ -65,6 +65,7 @@ class SiteAction(Document):
 			"Move Site To Different Region",
 		]
 		arguments: DF.SmallText
+		destination_bench: DF.Link | None
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		scheduled_time: DF.Datetime | None
@@ -588,6 +589,9 @@ class SiteAction(Document):
 		return args.get(key, default)
 
 	def set_argument(self, key: str, value) -> None:
+		if key == "destination_bench":
+			self.destination_bench = value
+
 		args = self.arguments_dict
 		args[key] = value
 		self.arguments = json.dumps(args, indent=2)

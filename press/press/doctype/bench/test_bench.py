@@ -26,6 +26,7 @@ from press.press.doctype.bench.bench import (
 	StagingSite,
 	archive_obsolete_benches,
 	archive_obsolete_benches_for_server,
+	process_bench_queue,
 )
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
@@ -749,6 +750,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 					)
 
 				poll_pending_jobs()
+				process_bench_queue()  # Process the bench queue to trigger the retry
 
 			benches = frappe.get_all(
 				"Bench",
@@ -756,11 +758,12 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 				fields=["name"],
 			)
 			new_bench_jobs = frappe.get_all(
-				"Agent Job",
-				filters={"job_type": "New Bench"},
+				"New Bench Queue",
 				fields=["name"],
 			)
-			self.assertEqual(len(new_bench_jobs), 3)  # Initial attempt + 2 retry attempts (max retries is 2)
+			self.assertEqual(
+				len(new_bench_jobs), 2
+			)  # Initial attempt is just the direct agent job creation + 2 retry attempts (max retries is 2)
 			self.assertEqual(len(benches), 3)
 
 	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
@@ -811,6 +814,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			# poll enough times to allow retries
 			for _ in range(10):
 				poll_pending_jobs()
+				process_bench_queue()  # Process the bench queue to trigger the retry
 
 			benches = frappe.get_all(
 				"Bench",
@@ -818,9 +822,25 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 				fields=["name"],
 			)
 			new_bench_jobs = frappe.get_all(
-				"Agent Job",
-				filters={"job_type": "New Bench"},
+				"New Bench Queue",
 				fields=["name"],
 			)
-			self.assertEqual(len(new_bench_jobs), 2)  # Initial attempt + retry attempt
+			self.assertEqual(len(new_bench_jobs), 1)  # Now a new bench job should be queued.
+			self.assertEqual(len(benches), 2)  # Only two new benches created!
+
+			# Poll again just to make sure
+			for _ in range(10):
+				poll_pending_jobs()
+				process_bench_queue()  # Process the bench queue to trigger the retry
+
+			benches = frappe.get_all(
+				"Bench",
+				filters={"server": bench.server},
+				fields=["name"],
+			)
+			new_bench_jobs = frappe.get_all(
+				"New Bench Queue",
+				fields=["name"],
+			)
+			self.assertEqual(len(new_bench_jobs), 1)  # Now a new bench job should be queued.
 			self.assertEqual(len(benches), 2)  # Only two new benches created!

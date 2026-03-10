@@ -96,6 +96,7 @@ ALLOWED_DOCTYPES = [
 	"Partner Lead Origin",
 	"Auto Scale Record",
 	"Server Firewall",
+	"New Bench Queue",
 ]
 
 whitelisted_methods = set()
@@ -167,7 +168,7 @@ def get_list(
 def get_list_query(
 	doctype: str,
 	meta: "Meta",
-	filters: dict,
+	filters,
 	valid_filters: frappe._dict,
 	valid_fields: list | None,
 	start: int,
