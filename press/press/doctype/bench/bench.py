@@ -1710,15 +1710,6 @@ def get_benches_to_process(slots_available: int) -> list[dict]:
 	return private_bench_tasks + public_benches_tasks
 
 
-def process_bench_queue_trigger():
-	"""Trigger the bench queue processing, for scheduler calls"""
-	frappe.enqueue(
-		"press.press.doctype.bench.bench.process_bench_queue",
-		deduplicate=True,
-		queue="long",
-	)
-
-
 def process_bench_queue():
 	"""Process the new bench job queue and trigger agent jobs for them, in order to ensure the
 	scheduler doesn't call this function while the older one is still running using a cache lock here
@@ -1740,6 +1731,7 @@ def process_bench_queue():
 	slots_available = concurrency_limit - running_jobs
 
 	if slots_available <= 0:
+		frappe.cache.delete(BENCH_QUEUE_EXECUTION_LOCK_KEY)  # Release lock
 		return
 
 	tasks = get_benches_to_process(slots_available)
