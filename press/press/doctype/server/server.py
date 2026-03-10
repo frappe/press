@@ -1173,6 +1173,18 @@ class BaseServer(Document, TagHelpers):
 		if self.doctype != "Server":
 			return
 
+		# Incase function is used independently of archival flow.
+		if frappe.get_all(
+			"Bench",
+			filters={"server": self.name, "status": ("!=", "Archived")},
+			ignore_ifnull=True,
+		):
+			frappe.throw(
+				_(
+					"Cannot modify bench group. Please drop all active benches from their respective dashboards."
+				)
+			)
+
 		ReleaseGroup = frappe.qb.DocType("Release Group")
 		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 
