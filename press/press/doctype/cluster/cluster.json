@@ -65,7 +65,9 @@
   "database_section",
   "enable_periodic_flush_table",
   "flush_table_execution_hour",
-  "column_break_vgmf"
+  "column_break_vgmf",
+  "location_section",
+  "country"
  ],
  "fields": [
   {
@@ -121,6 +123,12 @@
    "mandatory_depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "options": "Cloud Region",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
   },
   {
    "fieldname": "column_break_2",
@@ -430,6 +438,11 @@
    "fieldname": "enable_periodic_flush_table",
    "fieldtype": "Check",
    "label": "Enable Periodic FLUSH TABLE"
+  },
+  {
+   "fieldname": "location_section",
+   "fieldtype": "Section Break",
+   "label": "Location"
   }
  ],
  "image_field": "image",
@@ -466,7 +479,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2026-02-17 13:34:22.608364",
+ "modified": "2026-02-23 18:19:39.118128",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
