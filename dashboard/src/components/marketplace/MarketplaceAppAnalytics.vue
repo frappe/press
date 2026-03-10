@@ -207,18 +207,13 @@ export default {
 			return {};
 		},
 		totalEarnings() {
-			if (!this.installAnalytics.total_payout.inr_amount) return 0;
+			const payout = this.installAnalytics?.total_payout;
+			if (!payout) return 0;
 
 			if (this.$team.doc.currency === 'INR') {
-				return (
-					this.installAnalytics.total_payout.inr_amount +
-					this.installAnalytics.total_payout.usd_amount * 82
-				);
+				return payout.converted_total_inr || 0;
 			} else {
-				return (
-					this.installAnalytics.total_payout.inr_amount / 82 +
-					this.installAnalytics.total_payout.usd_amount
-				);
+				return payout.converted_total_usd || 0;
 			}
 		},
 	},

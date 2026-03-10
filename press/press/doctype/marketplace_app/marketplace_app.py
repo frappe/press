@@ -666,6 +666,20 @@ class MarketplaceApp(WebsiteGenerator):
 		today = frappe.utils.today()
 		last_week = frappe.utils.add_days(today, -7)
 
+		exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate")
+		# Exchange rate as of 10th March 2026 would be fallback value
+		exchange_rate = exchange_rate if exchange_rate > 0 else 91.97
+
+		total_payout = self.get_payout_amount()
+		total_payout["converted_total_usd"] = total_payout.get("usd_amount", 0) + (
+			total_payout.get("inr_amount", 0) / exchange_rate
+		)
+
+		total_payout["converted_total_inr"] = total_payout.get("inr_amount", 0) + (
+			total_payout.get("usd_amount", 0) * exchange_rate
+		)
+		total_payout["exchange_rate"] = exchange_rate
+
 		return {
 			"total_installs": self.total_installs(),
 			"installs_active_sites": self.total_active_sites(),
@@ -678,7 +692,7 @@ class MarketplaceApp(WebsiteGenerator):
 					"creation": (">=", last_week),
 				},
 			),
-			"total_payout": self.get_payout_amount(),
+			"total_payout": total_payout,
 			"paid_payout": self.get_payout_amount(status="Paid"),
 			"pending_payout": self.get_payout_amount(status="Draft"),
 			"commission": self.get_payout_amount(total_for="commission"),
