@@ -26,7 +26,7 @@ from press.press.doctype.bench.bench import (
 	StagingSite,
 	archive_obsolete_benches,
 	archive_obsolete_benches_for_server,
-	process_bench_queue_trigger,
+	process_bench_queue,
 )
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
@@ -846,7 +846,6 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			self.assertEqual(len(benches), 2)  # Only two new benches created!
 
 	@patch.object(Bench, "after_insert", Mock())
-	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
 	def test_execution_queue_limit(self):
 		frappe.db.set_single_value(
 			"Press Settings", "new_bench_concurrency_limit", 5
@@ -888,7 +887,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 
 		for i in range(3):
 			# Since execution queue limit is 5, only 5 jobs should be picked up in each poll
-			process_bench_queue_trigger()
+			process_bench_queue()
 			started_bench_execution = frappe.get_all("New Bench Queue", {"status": "Started"}, pluck="group")
 			if i == 0:
 				# Since there are only 5 private benches inserted at the end, only those should be picked up in the first round of execution
