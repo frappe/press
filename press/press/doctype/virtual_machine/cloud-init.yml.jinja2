@@ -15,7 +15,7 @@ users:
 
 runcmd:
 - mkdir /etc/ssh/auth_principals
-- curl https://frappecloud.com/files/ca.pub > /etc/ssh/ca.pub && chmod 644 /etc/ssh/ca.pub
+- curl https://cloud.frappe.io/files/ca.pub > /etc/ssh/ca.pub && chmod 644 /etc/ssh/ca.pub
 - su - frappe -c "cd /home/frappe/agent && env/bin/agent setup config --name {{ server.name }} --workers 2"
 - su - frappe -c "cd /home/frappe/agent && env/bin/agent setup authentication --password {{ agent_password }}"
 - su - frappe -c "htpasswd -Bbc /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password }}"
