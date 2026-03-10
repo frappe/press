@@ -751,6 +751,7 @@
         "PSIIO",
         "journalctl",
         "ptrs",
-        "serialised"
+        "serialised",
+        "setnx"
     ]
 }

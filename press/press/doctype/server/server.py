@@ -61,8 +61,9 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 	from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-
 from typing import Literal, TypedDict
+
+from frappe.query_builder.functions import Count
 
 
 class BenchInfoType(TypedDict):
@@ -1165,6 +1166,63 @@ class BaseServer(Document, TagHelpers):
 		self.save()
 		frappe.enqueue_doc(self.doctype, self.name, "_rename_server", queue="long", timeout=2400)
 
+	def remove_from_release_groups(self):
+		"""Remove application server from all enabled release groups.
+		This is done to allow successful deploys on the release group post server archival
+		"""
+		if self.doctype != "Server":
+			return
+
+		# Incase function is used independently of archival flow.
+		if frappe.get_all(
+			"Bench",
+			filters={"server": self.name, "status": ("!=", "Archived")},
+			ignore_ifnull=True,
+		):
+			frappe.throw(
+				_(
+					"Cannot modify bench group. Please drop all active benches from their respective dashboards."
+				)
+			)
+
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+
+		release_group_filter = (
+			frappe.qb.from_(ReleaseGroupServer)
+			.select(ReleaseGroupServer.parent)
+			.where(ReleaseGroupServer.server == self.name)
+		)
+
+		query = (
+			frappe.qb.from_(ReleaseGroup)
+			.join(ReleaseGroupServer)
+			.on(ReleaseGroupServer.parent == ReleaseGroup.name)
+			.select(ReleaseGroup.name, Count(ReleaseGroupServer.server).as_("server_count"))
+			.where(ReleaseGroup.enabled == 1)
+			.where(ReleaseGroup.name.isin(release_group_filter))
+			.groupby(ReleaseGroup.name)
+		)
+
+		results = query.run(as_dict=True)
+
+		# Disable all release groups that just had this server in them.
+		frappe.db.set_value(
+			"Release Group",
+			{"name": ("in", [group["name"] for group in results if group["server_count"] == 1])},
+			"enabled",
+			False,
+		)
+
+		# Remove server from all other release groups.
+		frappe.db.delete(
+			"Release Group Server",
+			{
+				"server": self.name,
+				"parent": ("in", [group["name"] for group in results if group["server_count"] > 1]),
+			},
+		)
+
 	@frappe.whitelist()
 	def archive(self):  # noqa: C901
 		if frappe.db.exists(
@@ -1219,6 +1277,7 @@ class BaseServer(Document, TagHelpers):
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
+		self.remove_from_release_groups()
 
 	def _archive(self):
 		self.run_press_job("Archive Server")
