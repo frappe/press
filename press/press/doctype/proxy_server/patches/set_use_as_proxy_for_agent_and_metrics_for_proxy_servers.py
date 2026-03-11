@@ -9,7 +9,10 @@ def execute():
 		):
 			frappe.db.set_value(
 				"Proxy Server",
-				frappe.db.get_value("Proxy Server", {"status": "Active", "cluster": cluster.name}),
+				frappe.db.get_value(
+					"Proxy Server",
+					{"status": "Active", "cluster": cluster.name, "exclude_from_auto_selection": False},
+				),
 				"use_as_proxy_for_agent_and_metrics",
 				1,
 			)
