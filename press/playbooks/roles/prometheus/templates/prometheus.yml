@@ -148,6 +148,14 @@ scrape_configs:
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
+      - source_labels: [proxy_host, instance, base_path]
+        regex: '(.+);(.+);(.+)'
+        target_label: __metrics_path__
+        replacement: /${2}${3}
+      - source_labels: [proxy_host]
+        regex: '(.+)'
+        target_label: __address__
+        replacement: '${1}'
     file_sd_configs:
       - files:
           - '/home/frappe/prometheus/file_sd/cluster.{{ cluster.name }}.yml'

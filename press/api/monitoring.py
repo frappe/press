@@ -48,7 +48,7 @@ def get_benches():
 	return benches
 
 
-def get_clusters():  # noqa: C901
+def get_clusters():
 	servers = {}
 	servers["proxy"] = frappe.get_all(
 		"Proxy Server",
@@ -70,8 +70,6 @@ def get_clusters():  # noqa: C901
 	)
 	servers["nat"] = frappe.get_all("NAT Server", {"status": ("!=", "Archived")}, ["name", "cluster", "ip"])
 
-	proxy_servers_by_clusters = groupby(servers["proxy"], lambda x: x.cluster)
-
 	clusters = frappe.get_all("Cluster")
 	job_map = get_job_map()
 	servers_using_alternative_port = servers_using_alternative_port_for_communication()
@@ -90,20 +88,24 @@ def get_clusters():  # noqa: C901
 
 						if server.ip:
 							cluster["jobs"].setdefault(job, []).append(_server)
-						elif server.private_ip:
-							proxies = proxy_servers_by_clusters[cluster.name]
-							relevant_proxy_server = [
-								p for p in proxies if p.use_as_proxy_for_agent_and_metrics
-							]
-							if relevant_proxy_server:
-								proxy_server = (
-									f"{relevant_proxy_server[0].name}:8443"
-									if relevant_proxy_server[0].name in servers_using_alternative_port
-									else relevant_proxy_server[0].name
-								)
-								cluster["jobs"]["proxied"].setdefault(job, []).append(
-									{"proxy": proxy_server, "server": _server}
-								)
+						elif server.private_ip and (
+							relevant_proxy_server := next(
+								(
+									p
+									for p in servers["proxy"]
+									if p.cluster == cluster.name and p.use_as_proxy_for_agent_and_metrics
+								),
+								None,
+							)
+						):
+							proxy_server = (
+								f"{relevant_proxy_server.name}:8443"
+								if relevant_proxy_server.name in servers_using_alternative_port
+								else relevant_proxy_server.name
+							)
+							cluster["jobs"].setdefault("proxied", {}).setdefault(job, {}).setdefault(
+								proxy_server, []
+							).append(_server)
 
 	return clusters
 
