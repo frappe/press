@@ -76,6 +76,7 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[__('Get Static IP'), 'get_static_ip', false],
+			[__('Update DNS Record', 'create_dns_record', true)],
 			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
 			[
 				__('Setup PySpy'),
@@ -268,12 +269,12 @@ frappe.ui.form.on('Server', {
 				true,
 				frm.doc.is_server_setup && frm.doc.is_standalone_setup,
 			],
-      [
+			[
 				__('Install NAT iptables'),
 				'install_nat_iptables',
 				true,
-				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.private_ip,
-      ],
+				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.nat_server,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
