@@ -3598,32 +3598,47 @@ class Server(BaseServer):
 		]  # To avoid adding child table in server doc
 
 	def get_next_plan(self, requires_cpu: bool = False, requires_memory: bool = False) -> ServerPlan:
-		"""Depending on the requirements get the next server plan for scaling up"""
+		"""Depending on the requirements get the next server plan for scaling up.
+		In case we require more CPU but not more memory, we will try to find a plan with higher CPU and same memory,
+		if not found we will relax the memory requirement to find a plan with higher CPU and higher memory.
+		"""
 		if not requires_cpu and not requires_memory:
 			frappe.throw("Specify CPU and/or memory requirements", frappe.ValidationError)
 
 		current_plan: frappe._dict = frappe.db.get_value(
 			"Server Plan", self.plan, ["vcpu", "memory", "enabled", "legacy_plan"], as_dict=True
 		)
-		next_plans = frappe.db.get_value(
+		base_filters = {
+			"vcpu": (">", current_plan.vcpu) if requires_cpu else current_plan.vcpu,
+			"memory": (">", current_plan.memory) if requires_memory else current_plan.memory,
+			"cluster": self.cluster,
+			"server_type": self.doctype,
+			"enabled": current_plan.enabled,
+			"legacy_plan": current_plan.legacy_plan,
+		}
+
+		next_plan = frappe.db.get_value(
 			"Server Plan",
-			filters={
-				"vcpu": (">", current_plan.vcpu) if requires_cpu else current_plan.vcpu,
-				"memory": (">", current_plan.memory) if requires_memory else current_plan.memory,
-				"cluster": self.cluster,
-				# Let the current plan handle this enabled;legacy bs
-				"enabled": current_plan.enabled,
-				"legacy_plan": current_plan.legacy_plan,
-			},
+			filters=base_filters,
 			order_by="vcpu asc, memory asc",
 		)
 
-		if not next_plans:
+		# If no plan is found and only CPU is required, relax the memory requirement since we mostly won't have a plan, with higher CPU and same memory
+		if not next_plan and requires_cpu and not requires_memory:
+			base_filters["memory"] = (">", current_plan.memory)
+			next_plan = frappe.db.get_value(
+				"Server Plan",
+				filters=base_filters,
+				order_by="vcpu asc, memory asc",
+			)
+
+		if not next_plan:
 			frappe.throw(
 				"No higher server plan available with the specified requirements", frappe.ValidationError
 			)
 
-		return frappe.get_doc("Server Plan", next_plans)
+		# Return the next server plan document
+		return frappe.get_doc("Server Plan", next_plan)
 
 
 def scale_workers(now=False):
