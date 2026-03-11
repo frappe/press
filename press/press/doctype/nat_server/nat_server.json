@@ -136,7 +136,8 @@
    "fieldname": "secondary_private_ip",
    "fieldtype": "Data",
    "label": "Secondary Private IP",
-   "read_only": 1
+   "read_only": 1,
+   "fetch_from": "virtual_machine.secondary_private_ip"
   }
  ],
  "grid_page_length": 50,
