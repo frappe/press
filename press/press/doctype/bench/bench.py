@@ -1710,6 +1710,31 @@ def get_benches_to_process(slots_available: int) -> list[dict]:
 	return private_bench_tasks + public_benches_tasks
 
 
+def get_active_bench_job_count() -> int:
+	"""Get the count of active bench jobs that are executing or will be executing soon. Undelivered, Pending and Running.
+	Ignoring zombie undelivered jobs created more than 5 minutes ago
+	"""
+	AgentJobDocType: AgentJob = frappe.qb.DocType("Agent Job")
+	fresh_threshold = frappe.utils.add_to_date(frappe.utils.now(), minutes=-5)
+
+	running_benches_estimate = (
+		frappe.qb.from_(AgentJobDocType)
+		.select(frappe.query_builder.functions.Count("*"))
+		.where(AgentJobDocType.job_type == "New Bench")
+		.where(
+			(
+				AgentJobDocType.status.isin(["Running", "Pending"])
+			)  # In case of running pending we don't care about zombies
+			| (
+				(AgentJobDocType.status == "Undelivered") & (AgentJobDocType.creation > fresh_threshold)
+			)  # We do have undelivered zombies however
+		)
+		.run(pluck=True)
+	)
+
+	return running_benches_estimate[0] if running_benches_estimate else 0
+
+
 def process_bench_queue():
 	"""Process the new bench job queue and trigger agent jobs for them, in order to ensure the
 	scheduler doesn't call this function while the older one is still running using a cache lock here
@@ -1726,7 +1751,7 @@ def process_bench_queue():
 		BENCH_QUEUE_EXECUTION_LOCK_KEY, 60 * 5
 	)  # expire lock after 5 mins just in case the process dies in the middle and can't release the lock
 
-	running_jobs = frappe.db.count("Agent Job", {"status": "Running", "job_type": "New Bench"})
+	running_jobs = get_active_bench_job_count()
 	concurrency_limit = frappe.db.get_single_value("Press Settings", "new_bench_concurrency_limit") or 50
 	slots_available = concurrency_limit - running_jobs
 

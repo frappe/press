@@ -43,6 +43,7 @@ class SiteGroupDeploy(Document):
 	dashboard_fields = ("status", "site", "release_group")
 
 	def before_insert(self):
+		self.check_if_team_can_create_site()
 		self.set_latest_version()
 		self.check_if_rg_or_site_exists()
 
@@ -62,6 +63,11 @@ class SiteGroupDeploy(Document):
 			return
 
 		self.version = frappe.db.get_value("Frappe Version", {"status": "stable"}, order_by="number desc")
+
+	def check_if_team_can_create_site(self):
+		from press.press.doctype.team.team import validate_site_creation
+
+		validate_site_creation(self.team, None)
 
 	def check_if_rg_or_site_exists(self):
 		from press.press.doctype.site.site import Site
