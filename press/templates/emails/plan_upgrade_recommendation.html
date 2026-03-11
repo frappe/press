@@ -1,0 +1,26 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p>Hello,</p>
+        <p>We have noticed frequent incidents with your current plan and recommend upgrading to a more suitable plan to better meet your needs.</p>
+        <p>
+            Here are the details of the recommended plan:
+        </p>
+        <ul>
+            <li><strong>Plan Name:</strong> {{ plan_name }}</li>
+            <li><strong>vCPU:</strong> {{ vcpu }}</li>
+            <li><strong>Memory:</strong> {{ memory }} GB</li>
+        </ul>
+        <p>
+            Upgrading to this plan can help reduce incidents and improve your overall experience. If you have any questions or need further assistance, feel free to reach out to our support team.
+        </p>
+        {{ utils.signature() }}
+    </div>
+</td>
+
+{% endblock %}
+
