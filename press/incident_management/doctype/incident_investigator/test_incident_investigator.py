@@ -529,6 +529,10 @@ class TestIncidentInvestigator(FrappeTestCase):
 		# Requires CPU and Memory
 		self.assertEqual(incident_pattern._get_requirements_from_pattern(), (True, True))
 
+		self.assertEqual(
+			incident_pattern._get_upgrade_target_name(), f"{self.server.database_server} (Database Server)"
+		)
+
 	@classmethod
 	def tearDownClass(cls):
 		frappe.db.rollback()
