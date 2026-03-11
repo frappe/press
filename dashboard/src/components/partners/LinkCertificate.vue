@@ -35,6 +35,12 @@
 					</div>
 				</div>
 
+				<ErrorMessage
+					v-if="certExist === false"
+					class="mt-4"
+					:message="`No certificates found for ${userEmail}.`"
+				/>
+
 				<div class="pt-4">
 					<Button
 						class="w-full"
@@ -86,7 +92,7 @@ const linkCertificate = createResource({
 });
 
 const certCount = ref(0);
-const certExist = ref(false);
+const certExist = ref(null);
 const emailChange = debounce(async () => {
 	if (!userEmail.value) return;
 	let response = await frappeRequest({
@@ -99,6 +105,8 @@ const emailChange = debounce(async () => {
 	if (response > 0) {
 		certCount.value = response;
 		certExist.value = true;
+	} else {
+		certExist.value = false;
 	}
 }, 500);
 
