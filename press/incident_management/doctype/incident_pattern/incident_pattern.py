@@ -34,9 +34,9 @@ class IncidentPattern(Document):
 		"""We have a cause list already stored in the patterns"""
 		cause_list = self.causes.split(",")
 		requires_cpu = any(
-			"has_high_cpu_load" in cause or "has_high_system_load" in cause for cause in cause_list
+			cause == "has_high_cpu_load" or cause == "has_high_system_load" for cause in cause_list
 		)
-		requires_memory = any("has_high_memory_usage" in cause for cause in cause_list)
+		requires_memory = any(cause == "has_high_memory_usage" for cause in cause_list)
 		return requires_cpu, requires_memory
 
 	def _get_plan_recommendation(self, server: Server | DatabaseServer) -> ServerPlan | None:
