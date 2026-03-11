@@ -86,7 +86,7 @@
   {
    "fieldname": "statistics_section",
    "fieldtype": "Section Break",
-   "label": "Agreagate Statistics"
+"label": "Aggregated Statistics"
   },
   {
    "fieldname": "changed",
