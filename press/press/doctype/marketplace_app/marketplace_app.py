@@ -667,8 +667,9 @@ class MarketplaceApp(WebsiteGenerator):
 		last_week = frappe.utils.add_days(today, -7)
 
 		exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate")
-		# Exchange rate as of 10th March 2026 would be fallback value
-		exchange_rate = exchange_rate if exchange_rate > 0 else 91.97
+		# exchange rate fallback is set to 82 to match the standard exchange rate used in other places across the codebase
+		# ?Note: Exchange rate can be updated once it is approved by the team
+		exchange_rate = exchange_rate if exchange_rate > 0 else 82
 
 		total_payout = self.get_payout_amount()
 		total_payout["converted_total_usd"] = total_payout.get("usd_amount", 0) + (
