@@ -45,6 +45,7 @@ frappe.ui.form.on('Database Server', {
 				!frm.doc.is_server_prepared,
 			],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[__('Update DNS Record', 'create_dns_record', true)],
 			[
 				__('Setup Rename'),
 				'rename_server',
@@ -205,11 +206,11 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup,
 			],
 			['Trigger Flush Tables', 'flush_tables', true, frm.doc.is_server_setup],
-      [
+			[
 				__('Install NAT iptables'),
 				'install_nat_iptables',
 				true,
-				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.private_ip,
+				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.nat_server,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
