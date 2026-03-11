@@ -41,13 +41,13 @@ export default {
 						class: 'truncate',
 						format: (value) => {
 							if (!value) return '';
-							return value.length > 30 ? `${value.slice(0, 30)}...` : value;
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
 						},
 					},
 					{
 						label: 'Member Email',
 						fieldname: 'partner_member_email',
-						width: 0.6,
+						width: 0.8,
 						class: 'truncate',
 						format: (value) => {
 							if (!value) return '';
@@ -74,7 +74,7 @@ export default {
 								? 'Framework'
 								: 'ERPNext';
 						},
-						width: 0.6,
+						width: 0.5,
 					},
 					{
 						label: 'Version',
