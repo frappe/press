@@ -48,6 +48,14 @@ class IncidentPattern(Document):
 			# No higher plan present!
 			return None
 
+	def _get_upgrade_target_name(self) -> str:
+		is_unified_server = frappe.db.get_value(self.server_type, self.server, "is_unified_server")
+		return (
+			f"{self.server} ({'Application Server' if self.server_type == 'Server' else 'Database Server'})"
+			if not is_unified_server
+			else f"{self.server} (Unified Server)"
+		)
+
 	def _notify_plan_recommendation(self, server_doc: Server | DatabaseServer, recommended_plan: ServerPlan):
 		"""Send an email notification for the recommended plan upgrade."""
 		frappe.sendmail(
@@ -61,6 +69,7 @@ class IncidentPattern(Document):
 				"vcpu": recommended_plan.vcpu,
 				"memory": recommended_plan.memory // 1024,
 				"server_name": server_doc.name,
+				"upgrade_target": self._get_upgrade_target_name(),
 			},
 			now=True,
 		)
