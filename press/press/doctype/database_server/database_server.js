@@ -45,6 +45,7 @@ frappe.ui.form.on('Database Server', {
 				!frm.doc.is_server_prepared,
 			],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[__('Update DNS Record', 'create_dns_record', true)],
 			[
 				__('Setup Rename'),
 				'rename_server',
@@ -206,12 +207,15 @@ frappe.ui.form.on('Database Server', {
 			],
 <<<<<<< HEAD
 			['Trigger Flush Tables', 'flush_tables', true, frm.doc.is_server_setup],
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> a826d876d (refactor(database-server): use nat_server link field instead of nat ip field)
 			[
 				__('Install NAT iptables'),
 				'install_nat_iptables',
 				true,
-				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.private_ip,
+				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.nat_server,
 			],
 >>>>>>> 4c7293e40 (feat: action to install nat iptables on app & db server)
 		].forEach(([label, method, confirm, condition]) => {

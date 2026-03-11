@@ -97,7 +97,7 @@ class DatabaseServer(BaseServer):
 		memory_max: DF.Float
 		memory_swap_max: DF.Float
 		mounts: DF.Table[ServerMount]
-		nat_gateway_private_ip: DF.Data | None
+		nat_server: DF.Link | None
 		plan: DF.Link | None
 		primary: DF.Link | None
 		private_ip: DF.Data | None
@@ -766,6 +766,14 @@ class DatabaseServer(BaseServer):
 
 	def _setup_server(self):
 		config = self._get_config()
+		nat_server_private_ips = (
+			frappe.db.get_value(
+				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+			)
+			if self.nat_server
+			else None
+		)
+
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_db.yml" if getattr(self, "is_self_hosted", False) else "database.yml",
@@ -791,7 +799,8 @@ class DatabaseServer(BaseServer):
 					"certificate_full_chain": config.certificate.full_chain,
 					"certificate_intermediate_chain": config.certificate.intermediate_chain,
 					"mariadb_depends_on_mounts": self.mariadb_depends_on_mounts,
-					"nat_gateway_ip": self.nat_gateway_private_ip,
+					"nat_gateway_ip": nat_server_private_ips
+					and (nat_server_private_ips.secondary_private_ip or nat_server_private_ips.private_ip),
 					**self.get_mount_variables(),
 				},
 			)
@@ -840,8 +849,8 @@ class DatabaseServer(BaseServer):
 		)
 
 	def ansible_run(self, command: str) -> dict[str, str]:
-		doc = {"ip": self.ip, "private_ip": self.private_ip, "cluster": self.cluster}
-		return AnsibleAdHoc(sources=[doc]).run(command, self.name)[0]
+		inventory = f"{self.ip},"
+		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
 	@frappe.whitelist()
 	def setup_essentials(self):
@@ -2308,8 +2317,7 @@ systemctl restart mariadb
 	@dashboard_whitelist()
 	def get_storage_usage(self):
 		try:
-			doc = {"ip": self.ip, "private_ip": self.private_ip, "cluster": self.cluster}
-			result = AnsibleAdHoc(sources=[doc]).run(
+			result = AnsibleAdHoc(sources=f"{self.ip},").run(
 				'df --output=source,size,used,target | tail -n +2  && echo -e "\n\n" && du -s /var/lib/mysql/*',
 				self.name,
 				raw_params=True,
@@ -2319,7 +2327,7 @@ systemctl restart mariadb
 
 			binlog_indexes_size = 0
 			with contextlib.suppress(Exception):
-				binlog_indexes_size_result = AnsibleAdHoc(sources=[doc]).run(
+				binlog_indexes_size_result = AnsibleAdHoc(sources=f"{self.ip},").run(
 					"du -sk /home/frappe/binlog_indexes/ | cut -f1",
 					self.name,
 					raw_params=True,
