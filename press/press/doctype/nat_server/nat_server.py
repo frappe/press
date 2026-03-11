@@ -112,6 +112,14 @@ class NATServer(BaseServer):
 			play = ansible.run()
 			if play.status != "Success":
 				raise
+
+			for dt in ("Server", "Database Server"):
+				frappe.db.set_value(
+					dt,
+					{"nat_server": self.name},
+					"nat_server",
+					secondary,
+				)
 		except Exception:
 			log_error(
 				"NAT Server Failover Exception",
