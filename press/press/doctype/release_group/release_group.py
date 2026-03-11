@@ -1738,12 +1738,14 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 					"name": ("not in", restricted_server_names),
 				},
 				pluck="name",
+				limit=1,
 			)
 
 			if not servers:
 				frappe.throw("No servers found for new benches!")
 			else:
-				server = _pick_least_loaded_server(servers)
+				server = servers[0]
+
 		servers = [{"server": server}]
 	elif server:
 		servers = [{"server": server}]
@@ -1760,76 +1762,6 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 			"saas_app": saas_app,
 		}
 	).insert()
-
-
-def _pick_least_loaded_server(servers: list[str]) -> str:
-	"""
-	Select the least loaded server for deploying public release groups
-	1. Filter servers by lowest bench count (keep lowest 25%).
-	2. From those, filter by lowest site count (keep lowest 25%).
-	3. From remaining servers, check real CPU/memory usage for max 4 servers and choose the least loaded.
-	"""
-	if len(servers) == 1:
-		return servers[0]
-
-	from press.api.server import get_cpu_and_memory_usage
-
-	bench_counts = frappe.get_all(
-		"Bench",
-		filters={
-			"server": ["in", servers],
-			"status": ["!=", "Archived"],
-		},
-		fields=["server", "count(name) as count"],
-		group_by="server",
-	)
-	server_bench_count_map = {b.server: b.count for b in bench_counts}
-	server_bench_count = [{"name": s, "bench": server_bench_count_map.get(s, 0)} for s in servers]
-	server_bench_count.sort(key=lambda x: x["bench"])
-
-	quarter = max(1, len(server_bench_count) // 4)
-	lowest_bench_count_batch = server_bench_count[:quarter]
-
-	if len(lowest_bench_count_batch) == 1:
-		return lowest_bench_count_batch[0]["name"]
-
-	low_bench_count_servers = [s["name"] for s in lowest_bench_count_batch]
-
-	site_counts = frappe.get_all(
-		"Site",
-		filters={
-			"server": ["in", low_bench_count_servers],
-			"status": ["!=", "Archived"],
-		},
-		fields=["server", "count(name) as count"],
-		group_by="server",
-	)
-	server_site_count_map = {s.server: s.count for s in site_counts}
-	server_site_count = [
-		{"name": s, "site": server_site_count_map.get(s, 0)} for s in low_bench_count_servers
-	]
-	server_site_count.sort(key=lambda x: x["site"])
-
-	quarter = max(1, len(server_site_count) // 4)
-	low_site_count_servers = server_site_count[:quarter]
-
-	if len(low_site_count_servers) == 1:
-		return low_site_count_servers[0]["name"]
-
-	def get_cpu_load(server_name: str) -> float:
-		try:
-			usage = get_cpu_and_memory_usage(server_name)
-			vcpu = float(usage.get("vcpu") or 0.0)
-			memory = float(usage.get("memory") or 0.0)
-			return max(vcpu, memory)
-		except Exception as e:
-			log_error(f"Failed to get CPU load for {server_name}: {e}")
-			return 1.0
-
-	max_checks = min(4, len(low_site_count_servers))  # Limit Prometheus queries
-	shortlisted_servers = low_site_count_servers[:max_checks]
-
-	return min(shortlisted_servers, key=lambda s: get_cpu_load(s["name"]))["name"]
 
 
 def get_status(name):
