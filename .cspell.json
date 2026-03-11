@@ -755,6 +755,7 @@
         "journalctl",
         "ptrs",
         "serialised",
-        "setnx"
+        "setnx",
+        "vitepress"
     ]
 }
