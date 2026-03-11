@@ -1505,12 +1505,13 @@ class ReleaseGroup(Document, TagHelpers):
 		except frappe.DoesNotExistError:
 			return None
 
-	def get_last_deploy_candidate_build(self) -> DeployCandidateBuild:
+	def get_last_deploy_candidate_build(self) -> DeployCandidateBuild | None:
 		try:
 			return frappe.get_last_doc("Deploy Candidate Build", {"group": self.name})
 		except frappe.DoesNotExistError:
 			return None
 
+<<<<<<< HEAD
 	@frappe.whitelist()
 	def add_server(self, server: str, deploy=False, force_new_build: bool = False) -> str | None:
 		"""
@@ -1521,6 +1522,9 @@ class ReleaseGroup(Document, TagHelpers):
 		if not deploy:
 			return None
 
+=======
+	def deploy_on_server(self, server: str, force_new_build=False) -> str | None:
+>>>>>>> e17bf8179 (fix(release-group): Return str | None in new method)
 		server_platform = frappe.get_value("Server", server, "platform")
 		last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
 			platform=server_platform
@@ -1548,10 +1552,14 @@ class ReleaseGroup(Document, TagHelpers):
 			deploy = last_successful_deploy_candidate_build._create_deploy(
 				[server],
 				check_image_exists=True,
+<<<<<<< HEAD
 			)
 			self.append("servers", {"server": server, "default": False})
 			self.save()
 			return deploy.name
+=======
+			).name
+>>>>>>> e17bf8179 (fix(release-group): Return str | None in new method)
 		except ImageNotFoundInRegistry:
 			return self.add_server(server=server, deploy=True, force_new_build=True)
 
