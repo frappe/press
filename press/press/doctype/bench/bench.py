@@ -10,7 +10,6 @@ from itertools import groupby
 from typing import TYPE_CHECKING, Literal
 
 import frappe
-import frappe.query_builder
 import pytz
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
