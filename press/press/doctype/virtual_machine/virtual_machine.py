@@ -71,10 +71,10 @@ server_doctypes = [
 
 SERIES_TO_SERVER_TYPE = {
 	"f": "Server",
-	"fs": "Server",
-	"u": "Server",
 	"m": "Database Server",
 	"n": "Proxy Server",
+	"fs": "Server",
+	"u": "Server",
 	"nat": "NAT Server",
 	"nfs": "NFS Server",
 	"p": "Monitor Server",
@@ -1439,7 +1439,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def assign_secondary_private_ip(self):
-		self.attach_secondary_private_ip()
+		return self.attach_secondary_private_ip()
 
 	def attach_secondary_private_ip(self, secondary_private_ip=None):
 		if self.cloud_provider != "AWS EC2":
