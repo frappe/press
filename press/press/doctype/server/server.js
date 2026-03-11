@@ -76,6 +76,7 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[__('Get Static IP'), 'get_static_ip', false],
+			[__('Update DNS Record', 'create_dns_record', true)],
 			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
 			[
 				__('Setup PySpy'),
@@ -268,6 +269,7 @@ frappe.ui.form.on('Server', {
 				'setup_wildcard_hosts',
 				true,
 				frm.doc.is_server_setup && frm.doc.is_standalone_setup,
+<<<<<<< HEAD
 =======
 				__('Install NAT iptables'),
 				'install_nat_iptables',
@@ -278,6 +280,14 @@ frappe.ui.form.on('Server', {
 =======
 				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.private_ip,
 >>>>>>> 05a27a7ba (fix: show the install nat ip tables actions iff public ip is not present)
+=======
+			],
+			[
+				__('Install NAT iptables'),
+				'install_nat_iptables',
+				true,
+				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.nat_server,
+>>>>>>> 45a55faeb (refactor(server): use nat_server link field instead of nat ip field)
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
