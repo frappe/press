@@ -794,13 +794,13 @@ def delete_site_activity_records_for_archived_sites():
 def delete_backups_for_archived_sites_after_retention():
 	"""
 	Delete all backups of archived sites if 6 months have passed since archival.
-	Only processes sites that still have available backups.
 	"""
 	cutoff_date = frappe.utils.add_to_date(frappe.utils.now(), months=-6)
 
+	Site = frappe.qb.DocType("Site")
 	SiteActivity = frappe.qb.DocType("Site Activity")
 	AgentJob = frappe.qb.DocType("Agent Job")
-	Site = frappe.qb.DocType("Site")
+	SiteBackup = frappe.qb.DocType("Site Backup")
 
 	query = (
 		frappe.qb.from_(Site)
@@ -808,6 +808,8 @@ def delete_backups_for_archived_sites_after_retention():
 		.on(SiteActivity.site == Site.name)
 		.join(AgentJob)
 		.on(AgentJob.name == SiteActivity.job)
+		.join(SiteBackup)
+		.on(SiteBackup.site == Site.name)
 		.select(Site.name)
 		.distinct()
 		.where(Site.status == "Archived")
@@ -816,6 +818,7 @@ def delete_backups_for_archived_sites_after_retention():
 		.where(AgentJob.status == "Success")
 	)
 	site_names = query.run(pluck=True)
+
 	if not site_names:
 		return
 
@@ -823,12 +826,22 @@ def delete_backups_for_archived_sites_after_retention():
 		try:
 			site = frappe.get_doc("Site", site_name)
 			site.delete_offsite_backups(keep_latest=False)
-			frappe.db.delete("Agent Job", {"site": site_name})
-			frappe.db.delete("Site Activity", {"site": site_names})
+
+			job_names = frappe.get_all(
+				"Agent Job",
+				filters={"site": site_name},
+				pluck="name",
+			)
+			if job_names:
+				frappe.db.delete("Agent Job Step", {"agent_job": ("in", job_names)})
+				frappe.db.delete("Agent Job", {"name": ("in", job_names)})
+
+			frappe.db.delete("Site Activity", {"site": site_name})
 		except Exception as e:
 			frappe.log_error(
 				f"Failed to delete backups for archived site {site_name}: {e}",
 				reference_doctype="Site",
 				reference_name=site_name,
 			)
+
 	frappe.db.commit()
