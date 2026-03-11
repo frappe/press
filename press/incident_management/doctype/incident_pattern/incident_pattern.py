@@ -57,9 +57,10 @@ class IncidentPattern(Document):
 			),
 			template="plan_upgrade_recommendation",
 			args={
-				"plan_name": recommended_plan.name,
+				"instance_type": recommended_plan.instance_type,
 				"vcpu": recommended_plan.vcpu,
 				"memory": recommended_plan.memory // 1024,
+				"server_name": server_doc.name,
 			},
 			now=True,
 		)
