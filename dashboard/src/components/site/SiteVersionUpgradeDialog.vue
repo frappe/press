@@ -505,7 +505,7 @@ export default {
 			try {
 				const data = await this.$resources.branches.fetch({
 					owner: app.repository_owner,
-					name: app.app,
+					name: app.repository,
 					source: app.source || '',
 				});
 				this.appBranches[app.app] = (data || []).map((branch) => branch.name);

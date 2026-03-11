@@ -294,25 +294,6 @@ export default {
 				},
 			},
 			{
-				label: 'Firewall',
-				icon: icon('shield'),
-				condition: (server) => {
-					return (
-						server.doc?.status !== 'Archived' && !server.doc?.is_self_hosted
-					);
-				},
-				route: 'firewall',
-				type: 'Component',
-				component: defineAsyncComponent(
-					() => import('../components/server/ServerFirewall.vue'),
-				),
-				props: (server) => {
-					return {
-						id: server.doc.name,
-					};
-				},
-			},
-			{
 				label: 'Sites',
 				icon: icon(LucideAppWindow),
 				condition: (server) => {
@@ -419,6 +400,21 @@ export default {
 							width: 0.5,
 						},
 					],
+					primaryAction({ documentResource: server }) {
+						if (server?.doc?.status !== 'Active') return {};
+						return {
+							label: 'New Site',
+							slots: {
+								prefix: icon('plus'),
+							},
+							onClick() {
+								router.push({
+									name: 'Server New Site',
+									params: { server: server.doc.name },
+								});
+							},
+						};
+					},
 				},
 			},
 			{
@@ -959,6 +955,25 @@ export default {
 				props: (server) => {
 					return {
 						server: server.doc.name,
+					};
+				},
+			},
+			{
+				label: 'Firewall',
+				icon: icon('shield'),
+				condition: (server) => {
+					return (
+						server.doc?.status !== 'Archived' && !server.doc?.is_self_hosted
+					);
+				},
+				route: 'firewall',
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../components/server/ServerFirewall.vue'),
+				),
+				props: (server) => {
+					return {
+						id: server.doc.name,
 					};
 				},
 			},

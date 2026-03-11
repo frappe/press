@@ -104,6 +104,7 @@ notification_config = "press.notifications.get_notification_config"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
+	"Site Action": "press.press.doctype.site_action.site_action.get_permission_query_conditions",
 	"Site Backup": "press.press.doctype.site_backup.site_backup.get_permission_query_conditions",
 	"Site Domain": ("press.press.doctype.site_domain.site_domain.get_permission_query_conditions"),
 	"TLS Certificate": "press.press.doctype.tls_certificate.tls_certificate.get_permission_query_conditions",
@@ -131,6 +132,7 @@ permission_query_conditions = {
 }
 has_permission = {
 	"Site": "press.overrides.has_permission",
+	"Site Action": "press.overrides.has_permission",
 	"Site Backup": "press.overrides.has_permission",
 	"Site Domain": "press.overrides.has_permission",
 	"TLS Certificate": "press.overrides.has_permission",
@@ -155,6 +157,7 @@ has_permission = {
 	"Site Database User": "press.overrides.has_permission",
 	"Server Snapshot": "press.overrides.has_permission",
 	"Server Snapshot Recovery": "press.overrides.has_permission",
+	"Server Firewall": "press.press.doctype.server_firewall.server_firewall.has_permission",
 }
 
 # Document Events
@@ -180,7 +183,10 @@ doc_events = {
 		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
 	},
 	"Server": {
-		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
+		"after_insert": [
+			"press.press.doctype.press_role.press_role.create_user_resource",
+			"press.press.doctype.server_firewall.server_firewall.from_server",
+		],
 	},
 }
 
@@ -239,6 +245,7 @@ scheduler_events = {
 		"press.press.doctype.server_snapshot.server_snapshot.expire_snapshots",
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
+		"press.press.doctype.database_server.database_server.update_database_schema_sizes",
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 	],
 	"hourly_long": [
@@ -277,9 +284,6 @@ scheduler_events = {
 		"*/2 * * * *": [
 			"press.press.doctype.incident.incident.resolve_incidents",
 		],
-		"45 * * * *": [
-			"press.press.doctype.database_server.database_server.update_database_schema_sizes",
-		],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.doctype.site.backups.expire_physical",
@@ -301,10 +305,12 @@ scheduler_events = {
 			"press.press.doctype.press_job.press_job.process_failed_callbacks",
 			"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.resume_warmed_up_restorations",
 			"press.press.doctype.server_snapshot.server_snapshot.move_pending_snapshots_to_processing",
+			"press.press.doctype.bench.bench.process_bench_queue",
 		],
 		"* * * * * 0/30": [
 			"press.press.doctype.account_request.account_request.expire_request_key",
 			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
+			"press.press.doctype.site_action.site_action.process_site_actions",
 		],
 		"0 */2 * * *": [
 			"press.signup_e2e.run_signup_e2e",

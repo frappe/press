@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_backup.site_backup import SiteBackup
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 APPS_LIST_REGEX = re.compile(r"\[.*\]")
@@ -1416,14 +1417,28 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if self.server_type != "Database Server":
 			return NotImplementedError("This method is only supported for Database Server")
 
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.server)
+		data_disk_volume = database_server.find_mountpoint_volume(
+			database_server.guess_data_disk_mountpoint()
+		)
+
+		iops = None
+
+		if database_server.provider in ["AWS EC2", "OCI"] and data_disk_volume and data_disk_volume.volume_id:
+			vm: VirtualMachine = frappe.get_doc("Virtual Machine", database_server.virtual_machine)
+			for disk in vm.volumes:
+				if disk.volume_id == data_disk_volume.volume_id:
+					iops = disk.iops
+					break
+
 		return self.create_agent_job(
 			"Update Database Schema Sizes",
 			"database/update-schema-sizes",
 			data={
-				"private_ip": frappe.get_value("Database Server", self.server, "private_ip"),
-				"mariadb_root_password": get_decrypted_password(
-					"Database Server", self.server, "mariadb_root_password"
-				),
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"io_ops_limit": max(int(iops * 0.2), 300) if iops else 300,
+				"concurrency": 50,
 			},
 			reference_doctype=self.server_type,
 			reference_name=self.server,
@@ -1861,7 +1876,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Update Nginx Access",
 			"/server/update-nginx-access",
 			data={
-				"ip_access": ip_accept,
+				"ip_accept": ip_accept,
 				"ip_drop": ip_drop,
 			},
 		)

@@ -61,8 +61,9 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 	from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-
 from typing import Literal, TypedDict
+
+from frappe.query_builder.functions import Count
 
 
 class BenchInfoType(TypedDict):
@@ -1168,6 +1169,63 @@ class BaseServer(Document, TagHelpers):
 		self.save()
 		frappe.enqueue_doc(self.doctype, self.name, "_rename_server", queue="long", timeout=2400)
 
+	def remove_from_release_groups(self):
+		"""Remove application server from all enabled release groups.
+		This is done to allow successful deploys on the release group post server archival
+		"""
+		if self.doctype != "Server":
+			return
+
+		# Incase function is used independently of archival flow.
+		if frappe.get_all(
+			"Bench",
+			filters={"server": self.name, "status": ("!=", "Archived")},
+			ignore_ifnull=True,
+		):
+			frappe.throw(
+				_(
+					"Cannot modify bench group. Please drop all active benches from their respective dashboards."
+				)
+			)
+
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+
+		release_group_filter = (
+			frappe.qb.from_(ReleaseGroupServer)
+			.select(ReleaseGroupServer.parent)
+			.where(ReleaseGroupServer.server == self.name)
+		)
+
+		query = (
+			frappe.qb.from_(ReleaseGroup)
+			.join(ReleaseGroupServer)
+			.on(ReleaseGroupServer.parent == ReleaseGroup.name)
+			.select(ReleaseGroup.name, Count(ReleaseGroupServer.server).as_("server_count"))
+			.where(ReleaseGroup.enabled == 1)
+			.where(ReleaseGroup.name.isin(release_group_filter))
+			.groupby(ReleaseGroup.name)
+		)
+
+		results = query.run(as_dict=True)
+
+		# Disable all release groups that just had this server in them.
+		frappe.db.set_value(
+			"Release Group",
+			{"name": ("in", [group["name"] for group in results if group["server_count"] == 1])},
+			"enabled",
+			False,
+		)
+
+		# Remove server from all other release groups.
+		frappe.db.delete(
+			"Release Group Server",
+			{
+				"server": self.name,
+				"parent": ("in", [group["name"] for group in results if group["server_count"] > 1]),
+			},
+		)
+
 	@frappe.whitelist()
 	def archive(self):  # noqa: C901
 		if frappe.db.exists(
@@ -1222,6 +1280,7 @@ class BaseServer(Document, TagHelpers):
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
+		self.remove_from_release_groups()
 
 	def _archive(self):
 		self.run_press_job("Archive Server")
@@ -2238,6 +2297,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 
 		database_server.adjust_memory_config()
 		database_server.provide_frappe_user_du_and_find_permission()
+		database_server.provide_frappe_user_mariadb_table_usage_permission()
 		database_server.setup_logrotate()  # Logrotate mariadb logs
 		database_server.setup_user_lingering()
 
@@ -2288,6 +2348,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if self.doctype == "Database Server":
 			self.adjust_memory_config()
 			self.provide_frappe_user_du_and_find_permission()
+			self.provide_frappe_user_mariadb_table_usage_permission()
 			self.setup_user_lingering()
 
 			if self.has_data_volume:
@@ -2337,12 +2398,16 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return frappe._dict()
 
 	@frappe.whitelist()
+	def get_static_ip(self):
+		if self.provider == "AWS EC2":
+			return self.get_aws_static_ip()
+		if self.provider == "OCI":
+			return self.get_oci_static_ip()
+
+		frappe.throw(f"Not implemented for {self.provider} provider")
+		return None
+
 	def get_aws_static_ip(self):
-		if self.provider != "AWS EC2":
-			frappe.throw("Failed to proceed as VM is not AWS EC2")
-
-		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
-
 		cluster_doc = frappe.get_doc("Cluster", self.cluster)
 		region_name = cluster_doc.region
 		aws_access_key_id = cluster_doc.aws_access_key_id
@@ -2350,6 +2415,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			"Cluster", self.cluster, fieldname="aws_secret_access_key"
 		)
 
+		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		instance_id = vm_doc.instance_id
 
 		# Initialize EC2 client
@@ -2372,6 +2438,56 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		vm_doc.sync()
 
 		return f"Static IP {public_ip} alloted to the VM (Allocation ID: {allocation_id})"
+
+	def get_oci_static_ip(self):
+		import oci
+
+		vm_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		cluster_doc = frappe.get_doc("Cluster", self.cluster)
+		config = cluster_doc.get_oci_config()
+
+		compute_client = oci.core.ComputeClient(config)
+		network_client = oci.core.VirtualNetworkClient(config)
+
+		# 1. Get VNIC ID (Compute instances can have multiple, we'll take the primary)
+		vnic_attachments = compute_client.list_vnic_attachments(
+			compartment_id=cluster_doc.oci_tenancy, instance_id=vm_doc.instance_id
+		).data
+
+		if not vnic_attachments:
+			frappe.throw("No VNIC found for this OCI instance.")
+
+		vnic_id = vnic_attachments[0].vnic_id
+
+		# 2. Find the Primary Private IP ID (Public IPs are linked to Private IPs in OCI)
+		private_ips = network_client.list_private_ips(vnic_id=vnic_id).data
+		primary_private_ip = next((ip for ip in private_ips if ip.is_primary), None)
+
+		if not primary_private_ip:
+			frappe.throw("Primary Private IP not found.")
+
+		# 3. Check for existing Public IP and remove it if it exists
+		existing_public_ip = network_client.get_public_ip_by_private_ip_id(
+			get_public_ip_by_private_ip_id_details=oci.core.models.GetPublicIpByPrivateIpIdDetails(
+				private_ip_id=primary_private_ip.id
+			)
+		).data
+
+		if existing_public_ip:
+			# If it's ephemeral, we can just delete/detach it
+			network_client.delete_public_ip(existing_public_ip.id)
+
+		# 4. Create (Allocate) a Reserved Public IP
+		reserved_ip_details = oci.core.models.CreatePublicIpDetails(
+			compartment_id=cluster_doc.oci_tenancy,
+			lifetime="RESERVED",
+			private_ip_id=primary_private_ip.id,  # This assigns it immediately
+		)
+
+		reserved_ip_response = network_client.create_public_ip(reserved_ip_details).data
+
+		vm_doc.sync()
+		return f"Static IP {reserved_ip_response.ip_address} allotted to the VM (OCID: {reserved_ip_response.id})"
 
 
 class Server(BaseServer):

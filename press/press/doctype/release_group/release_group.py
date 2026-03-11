@@ -62,6 +62,8 @@ DEFAULT_DEPENDENCIES = [
 
 SUPPORTED_WKHTMLTOPDF_VERSIONS = ["0.12.5", "0.12.6"]
 
+MAX_REGION_LIMIT = 4
+
 
 class LastDeployInfo(TypedDict):
 	name: str
@@ -1270,10 +1272,23 @@ class ReleaseGroup(Document, TagHelpers):
 			.run(as_dict=True)
 		)
 
-		erroneous_marketplace_apps = frappe.get_all(
-			"Marketplace App",
-			{"name": ("in", [app.app for app in self.apps]), "status": "Attention Required"},
-			pluck="name",
+		erroneous_marketplace_app_sources = frappe.get_all(
+			"Marketplace App Version",
+			{
+				"parenttype": "Marketplace App",
+				"parent": (
+					"in",
+					frappe.get_all(
+						"Marketplace App",
+						{
+							"name": ("in", [app.app for app in self.apps]),
+							"status": "Attention Required",
+						},
+						pluck="name",
+					),
+				),
+			},
+			pluck="source",
 		)
 
 		for app in self.apps:
@@ -1291,7 +1306,10 @@ class ReleaseGroup(Document, TagHelpers):
 				{"hash": ("in", [release.hash for release in latest_app_releases])},
 				pluck="hash",
 			)
-			if len(yanked_releases) == len(latest_app_releases) or app.app in erroneous_marketplace_apps:
+			if (
+				len(yanked_releases) == len(latest_app_releases)
+				or app.source in erroneous_marketplace_app_sources
+			):
 				# If all releases are yanked, we don't want to show them, or if they are of an erroneous marketplace app
 				latest_app_releases = []
 
@@ -1461,8 +1479,8 @@ class ReleaseGroup(Document, TagHelpers):
 		Add new region to release group (limits to 2). Meant for dashboard use only.
 		"""
 
-		if len(self.get_clusters()) >= 2:
-			frappe.throw("More than 2 regions for bench not allowed")
+		if len(self.get_clusters()) >= MAX_REGION_LIMIT:
+			frappe.throw(f"More than {MAX_REGION_LIMIT} for bench not allowed")
 		self.add_cluster(region)
 
 	def add_cluster(self, cluster: str):
@@ -1494,7 +1512,7 @@ class ReleaseGroup(Document, TagHelpers):
 			return None
 
 	@frappe.whitelist()
-	def add_server(self, server: str, deploy=False, force_new_build: bool = False):
+	def add_server(self, server: str, deploy=False, force_new_build: bool = False) -> str | None:
 		"""
 		Add a server to the release group in case last successful deploy candidate exists
 		create a deploy check if the image has not been pruned from the registry in case of
@@ -1526,14 +1544,14 @@ class ReleaseGroup(Document, TagHelpers):
 				platform=server_platform,
 			)
 
-		self.append("servers", {"server": server, "default": False})
-		self.save()
-
 		try:
-			return last_successful_deploy_candidate_build._create_deploy(
+			deploy = last_successful_deploy_candidate_build._create_deploy(
 				[server],
 				check_image_exists=True,
 			)
+			self.append("servers", {"server": server, "default": False})
+			self.save()
+			return deploy.name
 		except ImageNotFoundInRegistry:
 			return self.add_server(server=server, deploy=True, force_new_build=True)
 
@@ -1885,7 +1903,7 @@ def add_public_servers_to_public_groups():
 	)
 	public_servers = frappe.get_all(
 		"Server",
-		filters={"public": 1, "status": "Active"},
+		filters={"public": 1, "status": "Active", "provider": ["!=", "Hetzner"]},
 		pluck="name",
 	)
 
