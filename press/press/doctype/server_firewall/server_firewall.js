@@ -3,12 +3,8 @@
 
 frappe.ui.form.on('Server Firewall', {
 	refresh(frm) {
-		[
-			['↑', 'Setup', 'setup'],
-			['↓', 'Teardown', 'teardown'],
-			['🗘', 'Sync', 'sync'],
-		].forEach(([icon, label, action]) => {
-			frm.add_custom_button(icon + ' ' + __(label), () => {
+		[['Sync', 'sync']].forEach(([label, action]) => {
+			frm.add_custom_button(__(label), () => {
 				frm.call(action).then(() => {
 					frm.refresh();
 				});

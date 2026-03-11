@@ -748,6 +748,10 @@
         "noopener",
         "noreferrer",
         "centralise",
-        "serialised"
+        "PSIIO",
+        "journalctl",
+        "ptrs",
+        "serialised",
+        "setnx"
     ]
 }

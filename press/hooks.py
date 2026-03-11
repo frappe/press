@@ -184,7 +184,10 @@ doc_events = {
 		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
 	},
 	"Server": {
-		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
+		"after_insert": [
+			"press.press.doctype.press_role.press_role.create_user_resource",
+			"press.press.doctype.server_firewall.server_firewall.from_server",
+		],
 	},
 }
 
@@ -303,6 +306,7 @@ scheduler_events = {
 			"press.press.doctype.press_job.press_job.process_failed_callbacks",
 			"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.resume_warmed_up_restorations",
 			"press.press.doctype.server_snapshot.server_snapshot.move_pending_snapshots_to_processing",
+			"press.press.doctype.bench.bench.process_bench_queue",
 		],
 		"* * * * * 0/30": [
 			"press.press.doctype.account_request.account_request.expire_request_key",

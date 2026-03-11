@@ -784,7 +784,7 @@
    "label": "NAT Gateway Private IP"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "enable_schema_size_parser",
    "fieldtype": "Check",
    "label": "Enable Schema Size Parser"
@@ -804,7 +804,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2026-02-20 14:05:17.357104",
+ "modified": "2026-03-08 14:05:17.357104",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

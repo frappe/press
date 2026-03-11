@@ -16,6 +16,7 @@ from rq.timeouts import JobTimeoutException
 
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
 from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
@@ -64,6 +65,7 @@ class SiteAction(Document):
 			"Move Site To Different Region",
 		]
 		arguments: DF.SmallText
+		destination_bench: DF.Link | None
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		scheduled_time: DF.Datetime | None
@@ -225,16 +227,21 @@ class SiteAction(Document):
 			# Set essential arguments for next steps
 			self.set_argument("destination_server", self.get_argument("destination_server", site.server))
 			self.set_argument("destination_release_group", new_group.name)
+			server: Server = frappe.get_doc("Server", self.get_argument("destination_server"))
 
 			# Create deploy candidate and schedule build and deploy
 			deploy_candidate = new_group.create_deploy_candidate()
-			deploy_candidate_build = deploy_candidate.schedule_build_and_deploy()
+			deploy_candidate_build_name = create_platform_build_and_deploy(
+				deploy_candidate=deploy_candidate.name,
+				server=server.name,
+				platform=server.platform,
+			)
 
 			self.set_argument("new_deploy_candidate", deploy_candidate.name)
-			self.set_argument("new_deploy_candidate_build", deploy_candidate_build["name"])
+			self.set_argument("new_deploy_candidate_build", deploy_candidate_build_name)
 
 			self.current_step.reference_doctype = "Deploy Candidate Build"
-			self.current_step.reference_name = deploy_candidate_build["name"]
+			self.current_step.reference_name = deploy_candidate_build_name
 
 			return StepStatus.Running
 
@@ -445,6 +452,58 @@ class SiteAction(Document):
 				release_group: ReleaseGroup = frappe.get_doc("Release Group", release_group_name)
 				release_group.archive()
 
+	def get_press_error_notifications(self) -> list[dict]:  # noqa: C901
+		if self.status != "Failure":
+			return []
+
+		notifications = []
+		for step in self.steps:
+			if step.status != "Failure":
+				continue
+			if not step.reference_doctype or not step.reference_name:
+				continue
+			if step.reference_doctype == "Deploy Candidate Build":
+				notifications.extend(
+					frappe.get_all(
+						"Press Notification",
+						filters={
+							"team": self.team,
+							"type": "Bench Deploy",
+							"document_type": step.reference_doctype,
+							"document_name": step.reference_name,
+							"class": "Error",
+							"is_actionable": True,
+						},
+						fields=["title", "name"],
+					)
+				)
+
+			elif step.reference_doctype == "Site Update":
+				agent_jobs = []
+				site_update_doc: SiteUpdate = frappe.get_doc(step.reference_doctype, step.reference_name)
+				if site_update_doc.update_job:
+					agent_jobs.append(site_update_doc.update_job)
+				if site_update_doc.recover_job:
+					agent_jobs.append(site_update_doc.recover_job)
+
+				if agent_jobs:
+					notifications.extend(
+						frappe.get_all(
+							"Press Notification",
+							filters={
+								"team": self.team,
+								"type": "Site Update",
+								"document_type": "Agent Job",
+								"document_name": ("in", agent_jobs),
+								"class": "Error",
+								"is_actionable": True,
+							},
+							fields=["title", "name"],
+						)
+					)
+
+		return notifications
+
 	# Internal
 
 	def add_steps(self):
@@ -463,6 +522,18 @@ class SiteAction(Document):
 			)
 
 	def before_insert(self):
+		# Check if no other site action is running for the same site
+		if frappe.db.exists(
+			"Site Action",
+			{
+				"site": self.site,
+				"status": ("not in", ["Success", "Failure", "Cancelled"]),
+			},
+		):
+			frappe.throw(
+				"Another site action is already scheduled / running for this site. Please wait for it to complete before starting a new one."
+			)
+
 		# If any key is blank string or None, remove it from arguments
 		args = self.arguments_dict
 		cleaned_args = {k: v for k, v in args.items() if v not in ("", None)}
@@ -518,6 +589,9 @@ class SiteAction(Document):
 		return args.get(key, default)
 
 	def set_argument(self, key: str, value) -> None:
+		if key == "destination_bench":
+			self.destination_bench = value
+
 		args = self.arguments_dict
 		args[key] = value
 		self.arguments = json.dumps(args, indent=2)
@@ -527,7 +601,9 @@ class SiteAction(Document):
 		return frappe.get_doc("Site", self.site)
 
 	def get_doc(self, doc):
+		doc.arguments_dict = self.arguments_dict
 		doc.steps = self.get_steps()
+		doc.errors = self.get_press_error_notifications()
 		return doc
 
 	def get_steps(self):
@@ -583,8 +659,8 @@ class SiteAction(Document):
 		self.next()
 
 	def execute_step(self, step_name):
-		frappe.set_user(self.owner)
-		frappe.local._current_team = frappe.get_cached_doc("Team", self.team)
+		# frappe.set_user(self.owner)
+		# frappe.local._current_team = frappe.get_cached_doc("Team", self.team)
 
 		if self.status == "Cancelled":
 			return

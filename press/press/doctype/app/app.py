@@ -70,6 +70,10 @@ class App(Document):
 			new_versions = supported_frappe_versions - versions
 			for new_version in new_versions:
 				source.add_version(new_version)
+
+			if github_installation_id and source.github_installation_id != github_installation_id:
+				source.github_installation_id = github_installation_id
+				source.save()
 		else:
 			# Add new App Source
 			if not supported_frappe_versions:
