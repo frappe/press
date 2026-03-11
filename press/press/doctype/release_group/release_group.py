@@ -1547,58 +1547,11 @@ class ReleaseGroup(Document, TagHelpers):
 		create a deploy check if the image has not been pruned from the registry in case of
 		missing image create new build.
 		"""
-<<<<<<< HEAD
-<<<<<<< HEAD
-		if not deploy:
-			return None
-
-		server_platform = frappe.get_value("Server", server, "platform")
-		last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
-			platform=server_platform
-		)
-
-		if not last_successful_deploy_candidate_build or force_new_build:
-			# No build of this platform is available creating new build
-			last_candidate_build = (
-				self.get_last_successful_candidate_build()
-			)  # Checking for any platform build
-
-			if not last_candidate_build:
-				frappe.throw("No build present for this release group", frappe.ValidationError)
-
-			self.append("servers", {"server": server, "default": False})
-			self.save()
-
-			return create_platform_build_and_deploy(
-				deploy_candidate=last_candidate_build.candidate.name,  # type: ignore
-				server=server,
-				platform=server_platform,
-			)
-
-		try:
-			deploy = last_successful_deploy_candidate_build._create_deploy(
-				[server],
-				check_image_exists=True,
-			)
-			self.append("servers", {"server": server, "default": False})
-			self.save()
-			return deploy.name
-		except ImageNotFoundInRegistry:
-			return self.add_server(server=server, deploy=True, force_new_build=True)
-=======
-		if deploy:
-			self.append("servers", {"server": server, "default": False})
-			self.save()
-			return self.deploy_on_server(server, force_new_build=force_new_build)
-
-=======
->>>>>>> cac260f31 (refactor(release-group): Write common step once)
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 		if deploy:
 			return self.deploy_on_server(server, force_new_build=force_new_build)
 		return None
->>>>>>> c43bf5c8d (feat(release-group): Add button to redeploy on missing servers)
 
 	@frappe.whitelist()
 	def redeploy_on_missing_servers(self):
