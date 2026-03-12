@@ -6,7 +6,6 @@ import datetime
 import json
 import random
 import typing
-from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 
@@ -147,9 +146,7 @@ class PrometheusInvestigationHelper:
 		return None
 
 	def has_high_system_load(self, instance: str, step: "InvestigationStep"):
-		"""Check number of processes waiting for cpu time
-		if the number is higher than 3 times the number of vcpus load is high
-		"""
+		"""Check system load during investigation window"""
 		assert self.investigation_window_start_time and self.investigation_window_end_time, (
 			"Investigation window not set"
 		)
@@ -638,10 +635,28 @@ class IncidentInvestigator(Document, StepHandler):
 		self.status = status
 		self.save()
 
-	def add_investigation_findings(self, step: str, data: Mapping[str, int | str | bool] | list):
+	def add_investigation_findings(self):
 		"""Add investigation findings from each step"""
-		findings = json.loads(self.investigation_findings) if self.investigation_findings else {}
-		findings[step] = data
+		findings = []
+		is_unified_server = frappe.db.get_value("Server", self.server, "is_unified_server")
+		investigation_steps = (
+			self.server_investigation_steps
+			if is_unified_server
+			else self.server_investigation_steps + self.database_investigation_steps
+		)
+
+		for step in investigation_steps:
+			step_type = "Server" if step in self.server_investigation_steps else "Database"
+			findings.append(
+				{
+					"step_type": step_type,
+					"step_name": step.step_name,
+					"method": step.method,
+					"is_likely_cause": bool(step.is_likely_cause),
+					"is_unable_to_investigate": bool(step.is_unable_to_investigate),
+				}
+			)
+
 		self.investigation_findings = json.dumps(findings, indent=2)
 		self.save()
 
@@ -801,11 +816,11 @@ class IncidentInvestigator(Document, StepHandler):
 		pattern_detector = IncidentPatternDetector(self)
 
 		if self.action_steps and execute_action_steps:
-			# Execute action steps via step handler
-			pattern_detector_step = self.get_steps([pattern_detector.detect_patterns])[
-				0
-			]  # Add pattern detection as the last step in the workflow
-			self.append("action_steps", pattern_detector_step)
+			for terminal_step in self.get_steps(
+				[self.add_investigation_findings, pattern_detector.detect_patterns]
+			):
+				self.append("action_steps", terminal_step)
+
 			self.save()
 
 			frappe.enqueue_doc(

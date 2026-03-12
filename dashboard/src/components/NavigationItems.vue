@@ -219,6 +219,13 @@ export default {
 					disabled: enforce2FA,
 				},
 				{
+					name: 'Status',
+					icon: () => h(Globe),
+					route: '/status',
+					isActive: routeName === 'Status',
+					disabled: enforce2FA,
+				},
+				{
 					name: 'Partner Admin',
 					icon: () => h(Shield),
 					route: '/partner-admin',
