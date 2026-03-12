@@ -494,6 +494,7 @@ class Team(Document):
 				and frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0
 			):
 				frappe.throw("No card added")
+			# This check to verify recent pending payment is added to avoid validation issue when updating team doctype with payment mode as credits without balance as transaction is on going
 			if (
 				self.payment_mode == "Prepaid Credits"
 				and self.get_balance() <= 0
