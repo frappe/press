@@ -201,6 +201,9 @@ class AnsibleAdHoc:
 			server_type = (
 				SERIES_TO_SERVER_TYPE.get(matched_key) if matched_key else SERIES_TO_SERVER_TYPE.get(src[0])
 			)
+			if not server_type:
+				continue
+
 			type_to_sources.setdefault(server_type, []).append(src)
 
 		all_servers = []
