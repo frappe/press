@@ -1,0 +1,6 @@
+---
+- name: Remove NAT gateway config
+  command: rm -f /etc/netplan/99-custom-gateway.yaml
+
+- name: Apply Netplan
+  command: netplan apply

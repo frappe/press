@@ -1893,6 +1893,22 @@ class BaseServer(Document, TagHelpers):
 			log_error("NAT Iptables Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def remove_nat_iptables(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_remove_nat_iptables")
+
+	def _remove_nat_iptables(self):
+		try:
+			ansible = Ansible(
+				playbook="remove_nat_iptables.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("NAT Iptables Removal Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def start_active_benches(self):
 		benches = frappe.get_all("Bench", {"server": self.name, "status": "Active"}, pluck="name")
 		frappe.enqueue_doc(self.doctype, self.name, "_start_active_benches", benches=benches)
