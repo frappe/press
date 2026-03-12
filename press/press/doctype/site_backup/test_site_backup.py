@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -350,6 +350,7 @@ class TestSiteBackup(FrappeTestCase):
 			self.assertIsNotNone(remote_file_doc.file_path)
 			self.assertIsNotNone(remote_file_doc.file_name)
 
+	@patch("press.press.doctype.site_backup.site_backup.frappe.db.commit", new=MagicMock)
 	def test_delete_backups_for_archived_sites_after_retention(self):
 		"""Clear up backups if the site was archived before 6 months"""
 		from press.press.doctype.site_backup.site_backup import (
