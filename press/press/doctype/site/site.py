@@ -2595,12 +2595,16 @@ class Site(Document, TagHelpers):
 		if team.payment_mode == "Paid By Partner" and team.billing_team:
 			team = frappe.get_doc("Team", team.billing_team)
 
+		# Allow plan change if user just authorized a Razorpay payment
+		if team.has_recent_pending_payment():
+			return
+
 		trial_plans = frappe.get_all("Site Plan", {"is_trial_plan": 1, "enabled": 1}, pluck="name")
-		if (
-			not (team.default_payment_method or team.get_balance()) and self.plan in trial_plans
-		) or not team.payment_mode:
+		has_valid_payment = team.default_payment_method or team.get_balance()
+
+		if (not has_valid_payment and self.plan in trial_plans) or not team.payment_mode:
 			frappe.throw(
-				"Cannot change plan because you haven't added a card and not have enough balance",
+				"Cannot change plan because you have neither added a card nor have enough credit balance",
 				CannotChangePlan,
 			)
 

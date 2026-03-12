@@ -7,7 +7,7 @@
 		v-model="show"
 	>
 		<template #body-content>
-			<!-- steps are for users without payment method added, 
+			<!-- steps are for users without payment method added,
 		 otherwise user will only go through just the initial step to change plan  -->
 
 			<div v-if="step === 'site-plans'">
@@ -56,7 +56,11 @@
 					<FeatherIcon class="h-4" name="info" />
 					<span> Add billing details to your account before proceeding.</span>
 				</div>
-				<BillingDetails ref="billingRef" @success="step = 'add-payment-mode'" />
+				<BillingDetails
+					ref="billingRef"
+					@back="step = 'site-plans'"
+					@success="step = 'add-payment-mode'"
+				/>
 			</div>
 
 			<div v-else-if="step === 'add-payment-mode'">
@@ -141,7 +145,9 @@
 					!$team.doc.payment_mode ||
 					!$team.doc.billing_details ||
 					!Object.keys(this.$team.doc.billing_details).length
-						? 'Next'
+						? plan
+							? `Select Plan: ${planDisplayTitle(plan)}`
+							: 'Next'
 						: $site.doc?.current_plan?.is_trial_plan
 							? 'Upgrade Plan'
 							: 'Change plan'
@@ -151,7 +157,7 @@
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource, Progress } from 'frappe-ui';
+import { getCachedDocumentResource, createResource, Progress } from 'frappe-ui';
 import SitePlansCards from './SitePlansCards.vue';
 import { getPlans, getPlan } from '../data/plans';
 import CardForm from './billing/CardForm.vue';
@@ -181,6 +187,9 @@ export default {
 			isAutomatedBilling: true,
 			showAddPaymentModeDialog: false,
 			showBillingDetailsDialog: false,
+			changePaymentMode: createResource({
+				url: 'press.api.billing.change_payment_mode',
+			}),
 		};
 	},
 	watch: {
@@ -228,11 +237,11 @@ export default {
 		},
 		paymentModeAdded() {
 			this.$team.reload();
-			this.show = false;
-			this.$toast.success(
-				'Payment mode added and the plan has been changed successfully',
+			const mode = this.isAutomatedBilling ? 'Card' : 'Prepaid Credits';
+			this.changePaymentMode.submit(
+				{ mode },
+				{ onSuccess: () => this.changePlan() },
 			);
-			this.changePlan();
 		},
 	},
 	computed: {
