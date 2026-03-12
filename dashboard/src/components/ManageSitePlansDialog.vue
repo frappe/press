@@ -141,17 +141,7 @@
 				@click="handleNext()"
 				class="w-full"
 			>
-				{{
-					!$team.doc.payment_mode ||
-					!$team.doc.billing_details ||
-					!Object.keys(this.$team.doc.billing_details).length
-						? plan
-							? `Select Plan: ${planDisplayTitle(plan)}`
-							: 'Next'
-						: $site.doc?.current_plan?.is_trial_plan
-							? 'Upgrade Plan'
-							: 'Change plan'
-				}}
+				{{ nextButtonLabel }}
 			</Button>
 		</template>
 	</Dialog>
@@ -254,6 +244,16 @@ export default {
 				!this.$team.doc.billing_details ||
 				!Object.keys(this.$team.doc.billing_details).length
 			);
+		},
+		nextButtonLabel() {
+			if (this.showSetupSubscription) {
+				return this.plan
+					? `Select Plan: ${this.planDisplayTitle(this.plan)}`
+					: 'Next';
+			}
+			return this.$site.doc?.current_plan?.is_trial_plan
+				? 'Upgrade Plan'
+				: 'Change plan';
 		},
 		progressLabel() {
 			if (this.step === 'site-plans') {
