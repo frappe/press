@@ -145,13 +145,9 @@
 					!$team.doc.payment_mode ||
 					!$team.doc.billing_details ||
 					!Object.keys(this.$team.doc.billing_details).length
-<<<<<<< HEAD
-						? 'Next'
-=======
 						? plan
 							? `Select Plan: ${planDisplayTitle(plan)}`
 							: 'Next'
->>>>>>> 2446ffd3e (fix(billing): Upgrade plan once user adds credit)
 						: $site.doc?.current_plan?.is_trial_plan
 							? 'Upgrade Plan'
 							: 'Change plan'
