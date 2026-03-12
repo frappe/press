@@ -10,23 +10,8 @@ export default {
 	components: {
 		ObjectList,
 	},
-	resources: {
-		originList() {
-			return {
-				type: 'list',
-				doctype: 'Partner Lead Origin',
-				fields: ['name'],
-				auto: true,
-			};
-		},
-	},
 	computed: {
 		partnerAdminLeadsList() {
-			const resources = this.$resources.originList.data || [];
-			const origins = resources.map((d) => {
-				return { label: d.name, value: d.name };
-			});
-
 			return {
 				doctype: 'Partner Lead',
 				columns: [
@@ -90,6 +75,7 @@ export default {
 							fieldname: 'source',
 							label: 'Source',
 							options: [
+								{ label: 'All', value: 'All' },
 								{ label: 'Partner Owned', value: 'Partner Owned' },
 								{ label: 'Passed to Partner', value: 'Passed to Partner' },
 								{ label: 'Partner Listing', value: 'Partner Listing' },
@@ -100,6 +86,7 @@ export default {
 							fieldname: 'status',
 							label: 'Status',
 							options: [
+								{ label: 'All', value: 'All' },
 								{ label: 'Open', value: 'Open' },
 								{ label: 'Qualification', value: 'Qualification' },
 								{ label: 'Demo/Making', value: 'Demo/Making' },
@@ -113,12 +100,6 @@ export default {
 								{ label: 'Junk', value: 'Junk' },
 								{ label: 'Closed', value: 'Closed' },
 							],
-						},
-						{
-							type: 'select',
-							fieldname: 'origin',
-							label: 'Origin',
-							options: origins,
 						},
 						{
 							type: 'checkbox',

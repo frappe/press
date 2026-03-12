@@ -661,17 +661,17 @@ def get_partner_customers():
 
 @frappe.whitelist()
 @role_guard.api("partner")
-def get_partner_leads(lead_name=None, status=None, engagement_stage=None, source=None):
+def get_partner_leads(lead_name=None, status=None, source=None, is_starter_pack=None):
 	team = get_current_team()
 	filters = {"partner_team": team}
 	if lead_name:
 		filters["lead_name"] = ("like", f"%{lead_name}%")
-	if status:
+	if status and status != "All":
 		filters["status"] = status
-	if engagement_stage:
-		filters["engagement_stage"] = engagement_stage
-	if source:
+	if source and source != "All":
 		filters["lead_source"] = source
+	if is_starter_pack:
+		filters["is_starter_pack"] = is_starter_pack
 	return frappe.get_all(
 		"Partner Lead",
 		filters,

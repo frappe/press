@@ -146,7 +146,7 @@ export default {
 							fieldname: 'status',
 							label: 'Status',
 							options: [
-								'',
+								'All',
 								'Open',
 								'Qualification',
 								'Demo/Making',
@@ -165,10 +165,16 @@ export default {
 							fieldname: 'source',
 							label: 'Lead Source',
 							options: [
+								{ label: 'All', value: 'All' },
 								{ label: 'Partner Owned', value: 'Partner Owned' },
 								{ label: 'Passed to Partner', value: 'Passed to Partner' },
 								{ label: 'Partner Listing', value: 'Partner Listing' },
 							],
+						},
+						{
+							type: 'checkbox',
+							fieldname: 'is_starter_pack',
+							label: 'Starter Pack',
 						},
 					];
 				},

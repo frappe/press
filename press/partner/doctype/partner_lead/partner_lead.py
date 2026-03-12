@@ -136,6 +136,7 @@ class PartnerLead(Document):
 		"lost_reason_specify",
 		"company_name",
 		"is_starter_pack",
+		"lead_owner",
 	)
 
 	@staticmethod
@@ -147,7 +148,6 @@ class PartnerLead(Document):
 				PartnerLead.name,
 				PartnerLead.organization_name,
 				PartnerLead.status,
-				PartnerLead.engagement_stage,
 				PartnerLead.lead_source,
 				PartnerLead.lead_name,
 				PartnerLead.company_name,
@@ -158,12 +158,10 @@ class PartnerLead(Document):
 		)
 
 		if filters:
-			if filters.get("source"):
+			if filters.get("source") and filters.get("source") != "All":
 				query = query.where(PartnerLead.lead_source == filters.get("source"))
-			if filters.get("status"):
+			if filters.get("status") and filters.get("status") != "All":
 				query = query.where(PartnerLead.status == filters.get("status"))
-			if filters.get("origin"):
-				query = query.where(PartnerLead.origin == filters.get("origin"))
 			if filters.get("is_starter_pack"):
 				query = query.where(PartnerLead.is_starter_pack == filters.get("is_starter_pack"))
 			if filters.get("search-text"):
