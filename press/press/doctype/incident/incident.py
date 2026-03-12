@@ -91,12 +91,14 @@ class Incident(WebsiteGenerator):
 		alerts: DF.Table[IncidentAlerts]
 		called_customer: DF.Check
 		cluster: DF.Link | None
+		confirmed_at: DF.Datetime | None
 		corrective_suggestions: DF.Table[IncidentSuggestion]
 		description: DF.TextEditor | None
 		investigation: DF.Link | None
 		likely_cause: DF.Text | None
 		phone_call: DF.Check
 		preventive_suggestions: DF.Table[IncidentSuggestion]
+		resolved_at: DF.Datetime | None
 		resolved_by: DF.Link | None
 		resource: DF.DynamicLink | None
 		resource_type: DF.Link | None
@@ -152,9 +154,14 @@ class Incident(WebsiteGenerator):
 
 	def on_update(self):
 		if self.has_value_changed("status"):
+			current_datetime = frappe.utils.now_datetime()
 			self.send_email_notification()
-			if self.status == "Confirmed" and not self.called_customer:
-				self.call_customers()
+			if self.status == "Resolved":
+				self.db_set("resolved_at", current_datetime)
+			elif self.status == "Confirmed" and not self.confirmed_at:
+				self.db_set("confirmed_at", current_datetime)
+				if not self.called_customer:
+					self.call_customers()
 
 	def vcpu(self, server_type, server_name):
 		vm_name = str(frappe.db.get_value(server_type, server_name, "virtual_machine"))

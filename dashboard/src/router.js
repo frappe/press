@@ -244,6 +244,24 @@ let router = createRouter({
 			],
 		},
 		{
+			name: 'Status Page',
+			path: '/status',
+			component: () => import('./pages/PrivateStatusPage.vue'),
+			redirect: { name: 'OngoingIncidents' },
+			children: [
+				{
+					name: 'OngoingIncidents',
+					path: 'ongoing-incidents',
+					component: () => import('./components/status/PrivateIncident.vue'),
+				},
+				{
+					name: 'IncidentHistory',
+					path: 'incident-history',
+					component: () => import('./components/status/PrivateIncident.vue'),
+				},
+			],
+		},
+		{
 			name: 'Partnership',
 			path: '/partners',
 			redirect: { name: 'PartnerOverview' },
