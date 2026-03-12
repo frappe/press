@@ -226,11 +226,14 @@ export default {
 			);
 		},
 		paymentModeAdded() {
-			this.$team.reload();
 			const mode = this.isAutomatedBilling ? 'Card' : 'Prepaid Credits';
 			this.changePaymentMode.submit(
 				{ mode },
-				{ onSuccess: () => this.changePlan() },
+				{
+					onSuccess: () => {
+						this.$team.reload().then(() => this.changePlan());
+					},
+				},
 			);
 		},
 	},
@@ -247,7 +250,7 @@ export default {
 		},
 		nextButtonLabel() {
 			if (this.showSetupSubscription) {
-				return this.plan ? 'Select Plan' : 'Next';
+				return this.plan ? 'Next' : 'Select Plan';
 			}
 			return this.$site.doc?.current_plan?.is_trial_plan
 				? 'Upgrade Plan'
