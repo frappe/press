@@ -16,6 +16,9 @@ from press.incident_management.doctype.incident_investigator.incident_investigat
 from press.incident_management.doctype.incident_investigator.utils.incident_pattern_detector import (
 	IncidentPatternDetector,
 )
+from press.incident_management.doctype.incident_pattern.incident_pattern import (
+	IncidentPattern,
+)
 from press.press.doctype.incident.incident import Incident
 from press.press.doctype.server.test_server import (
 	create_test_database_server,
@@ -415,6 +418,7 @@ class TestIncidentInvestigator(FrappeTestCase):
 	)
 	@patch("press.runner.frappe.enqueue_doc", foreground_enqueue_doc)
 	@patch("press.runner.frappe.db.commit", Mock())
+	@patch.object(IncidentPattern, "after_insert", Mock())
 	def test_pattern_detection(self):
 		"""Test similar incidents within a week will trigger a pattern detection message"""
 		incident_1 = create_test_incident(self.server.name)
@@ -471,6 +475,63 @@ class TestIncidentInvestigator(FrappeTestCase):
 		self.assertEqual(len(frappe.get_all("Incident Pattern", {"server": self.server.name})), 1)
 
 		self.assertEqual(len(frappe.get_all("Incident Pattern", {"server": self.server.database_server})), 1)
+
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.get_prometheus_client",
+		get_mock_prometheus_client,
+	)
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=True))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	@patch("press.runner.frappe.enqueue_doc", foreground_enqueue_doc)
+	@patch("press.runner.frappe.db.commit", Mock())
+	@patch.object(IncidentPattern, "after_insert", Mock())
+	def test_pattern_detection_actions(self):
+		incident_1 = create_test_incident(self.server.name)
+		investigator_1: IncidentInvestigator = frappe.get_doc(
+			"Incident Investigator", {"incident": incident_1.name}
+		)
+
+		investigator_1.db_set("creation", frappe.utils.add_to_date(days=-1))
+		investigator_1 = investigator_1.reload()
+		incident_2 = create_test_incident(self.server.name)
+		investigator_2: IncidentInvestigator = frappe.get_doc(
+			"Incident Investigator", {"incident": incident_2.name}
+		)
+
+		mock_action_step = MockStep()
+		pattern_detector: IncidentPatternDetector = IncidentPatternDetector(investigator_2)
+		pattern_detector.detect_patterns(mock_action_step)
+
+		self.assertEqual(
+			len(frappe.get_all("Incident Pattern", {"server": self.server.name})), 0
+		)  # Still below the threshold (3)
+
+		investigator_2.db_set("creation", frappe.utils.add_to_date(days=-1))
+		investigator_2 = investigator_2.reload()
+		incident_3 = create_test_incident(self.server.name)
+		investigator_3: IncidentInvestigator = frappe.get_doc(
+			"Incident Investigator", {"incident": incident_3.name}
+		)
+
+		mock_action_step = MockStep()
+		pattern_detector: IncidentPatternDetector = IncidentPatternDetector(investigator_3)
+		pattern_detector.detect_patterns(mock_action_step)
+
+		incident_pattern: IncidentPattern = frappe.get_last_doc("Incident Pattern")
+		self.assertEqual(
+			incident_pattern.causes, "has_high_cpu_load,has_high_memory_usage,has_high_system_load"
+		)
+		# Requires CPU and Memory
+		self.assertEqual(incident_pattern._get_requirements_from_pattern(), (True, True))
+
+		self.assertEqual(
+			incident_pattern._get_upgrade_target_name(), f"{self.server.database_server} (Database Server)"
+		)
 
 	@classmethod
 	def tearDownClass(cls):

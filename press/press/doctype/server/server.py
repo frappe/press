@@ -61,8 +61,9 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 	from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-
 from typing import Literal, TypedDict
+
+from frappe.query_builder.functions import Count
 
 
 class BenchInfoType(TypedDict):
@@ -1165,6 +1166,63 @@ class BaseServer(Document, TagHelpers):
 		self.save()
 		frappe.enqueue_doc(self.doctype, self.name, "_rename_server", queue="long", timeout=2400)
 
+	def remove_from_release_groups(self):
+		"""Remove application server from all enabled release groups.
+		This is done to allow successful deploys on the release group post server archival
+		"""
+		if self.doctype != "Server":
+			return
+
+		# Incase function is used independently of archival flow.
+		if frappe.get_all(
+			"Bench",
+			filters={"server": self.name, "status": ("!=", "Archived")},
+			ignore_ifnull=True,
+		):
+			frappe.throw(
+				_(
+					"Cannot modify bench group. Please drop all active benches from their respective dashboards."
+				)
+			)
+
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+
+		release_group_filter = (
+			frappe.qb.from_(ReleaseGroupServer)
+			.select(ReleaseGroupServer.parent)
+			.where(ReleaseGroupServer.server == self.name)
+		)
+
+		query = (
+			frappe.qb.from_(ReleaseGroup)
+			.join(ReleaseGroupServer)
+			.on(ReleaseGroupServer.parent == ReleaseGroup.name)
+			.select(ReleaseGroup.name, Count(ReleaseGroupServer.server).as_("server_count"))
+			.where(ReleaseGroup.enabled == 1)
+			.where(ReleaseGroup.name.isin(release_group_filter))
+			.groupby(ReleaseGroup.name)
+		)
+
+		results = query.run(as_dict=True)
+
+		# Disable all release groups that just had this server in them.
+		frappe.db.set_value(
+			"Release Group",
+			{"name": ("in", [group["name"] for group in results if group["server_count"] == 1])},
+			"enabled",
+			False,
+		)
+
+		# Remove server from all other release groups.
+		frappe.db.delete(
+			"Release Group Server",
+			{
+				"server": self.name,
+				"parent": ("in", [group["name"] for group in results if group["server_count"] > 1]),
+			},
+		)
+
 	@frappe.whitelist()
 	def archive(self):  # noqa: C901
 		if frappe.db.exists(
@@ -1219,6 +1277,7 @@ class BaseServer(Document, TagHelpers):
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
+		self.remove_from_release_groups()
 
 	def _archive(self):
 		self.run_press_job("Archive Server")
@@ -3534,6 +3593,49 @@ class Server(BaseServer):
 				fields=["name"],
 			)
 		]  # To avoid adding child table in server doc
+
+	def get_next_plan(self, requires_cpu: bool = False, requires_memory: bool = False) -> ServerPlan:
+		"""Depending on the requirements get the next server plan for scaling up.
+		In case we require more CPU but not more memory, we will try to find a plan with higher CPU and same memory,
+		if not found we will relax the memory requirement to find a plan with higher CPU and higher memory.
+		"""
+		if not requires_cpu and not requires_memory:
+			frappe.throw("Specify CPU and/or memory requirements", frappe.ValidationError)
+
+		current_plan: frappe._dict = frappe.db.get_value(
+			"Server Plan", self.plan, ["vcpu", "memory", "enabled", "legacy_plan"], as_dict=True
+		)
+		base_filters = {
+			"vcpu": (">", current_plan.vcpu) if requires_cpu else current_plan.vcpu,
+			"memory": (">", current_plan.memory) if requires_memory else current_plan.memory,
+			"cluster": self.cluster,
+			"server_type": self.doctype,
+			"enabled": current_plan.enabled,
+			"legacy_plan": current_plan.legacy_plan,
+		}
+
+		next_plan = frappe.db.get_value(
+			"Server Plan",
+			filters=base_filters,
+			order_by="vcpu asc, memory asc",
+		)
+
+		# If no plan is found and only CPU is required, relax the memory requirement since we mostly won't have a plan, with higher CPU and same memory
+		if not next_plan and requires_cpu and not requires_memory:
+			base_filters["memory"] = (">", current_plan.memory)
+			next_plan = frappe.db.get_value(
+				"Server Plan",
+				filters=base_filters,
+				order_by="vcpu asc, memory asc",
+			)
+
+		if not next_plan:
+			frappe.throw(
+				"No higher server plan available with the specified requirements", frappe.ValidationError
+			)
+
+		# Return the next server plan document
+		return frappe.get_doc("Server Plan", next_plan)
 
 
 def scale_workers(now=False):

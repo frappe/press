@@ -494,10 +494,16 @@ class TestReleaseGroup(FrappeTestCase):
 		f2_server.save()
 
 		rg = create_test_release_group([create_test_app()], servers=[f1_server.name])
+		frappe.db.savepoint("release_group_setup")
 
 		with self.assertRaises(frappe.ValidationError):
 			# No previous builds present
 			rg.add_server(f2_server.name, True)
+
+		frappe.db.rollback(
+			save_point="release_group_setup"
+		)  # to simulate different request/transaction after error
+		rg.reload()
 
 		create_build_and_succeed(rg)
 

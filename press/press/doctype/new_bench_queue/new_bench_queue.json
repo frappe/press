@@ -38,13 +38,14 @@
    "in_list_view": 1,
    "label": "Group",
    "options": "Release Group",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-09 10:59:45.728701",
+ "modified": "2026-03-10 17:05:04.376682",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "New Bench Queue",
