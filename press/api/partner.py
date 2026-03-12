@@ -661,7 +661,7 @@ def get_partner_customers():
 
 @frappe.whitelist()
 @role_guard.api("partner")
-def get_partner_leads(lead_name=None, status=None, source=None, is_starter_pack=None):
+def get_partner_leads(lead_name=None, status=None, source=None, is_starter_pack=None, lead_owner=None):
 	team = get_current_team()
 	filters = {"partner_team": team}
 	if lead_name:
@@ -670,6 +670,8 @@ def get_partner_leads(lead_name=None, status=None, source=None, is_starter_pack=
 		filters["status"] = status
 	if source and source != "All":
 		filters["lead_source"] = source
+	if lead_owner and lead_owner != "All":
+		filters["lead_owner"] = lead_owner
 	if is_starter_pack:
 		filters["is_starter_pack"] = is_starter_pack
 	return frappe.get_all(
@@ -678,6 +680,23 @@ def get_partner_leads(lead_name=None, status=None, source=None, is_starter_pack=
 		["name", "organization_name", "lead_name", "status", "lead_source", "partner_team"],
 		order_by="modified desc",
 	)
+
+
+@frappe.whitelist()
+@role_guard.api("partner")
+def get_lead_owners():
+	PartnerLead = frappe.qb.DocType("Partner Lead")
+	User = frappe.qb.DocType("User")
+	query = (
+		frappe.qb.from_(PartnerLead)
+		.join(User)
+		.on(PartnerLead.lead_owner == User.name)
+		.select(PartnerLead.lead_owner, User.full_name)
+		.distinct()
+		.groupby(PartnerLead.lead_owner)
+	)
+	owners = query.run(as_dict=True)
+	return [{"label": d.full_name, "value": d.lead_owner} for d in owners]
 
 
 @frappe.whitelist()

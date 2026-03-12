@@ -10,8 +10,18 @@ export default {
 	components: {
 		ObjectList,
 	},
+	resources: {
+		leadOwners() {
+			return {
+				url: 'press.api.partner.get_lead_owners',
+				auto: true,
+				initialData: [],
+			};
+		},
+	},
 	computed: {
 		partnerAdminLeadsList() {
+			let leadOwners = this.$resources.leadOwners.data || [];
 			return {
 				doctype: 'Partner Lead',
 				columns: [
@@ -99,6 +109,18 @@ export default {
 								{ label: 'Lost', value: 'Lost' },
 								{ label: 'Junk', value: 'Junk' },
 								{ label: 'Closed', value: 'Closed' },
+							],
+						},
+						{
+							type: 'select',
+							fieldname: 'lead_owner',
+							label: 'Lead Owner',
+							options: [
+								{ label: 'All', value: 'All' },
+								...leadOwners.map((owner) => ({
+									label: owner.label,
+									value: owner.value,
+								})),
 							],
 						},
 						{

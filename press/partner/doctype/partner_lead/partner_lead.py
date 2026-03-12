@@ -164,6 +164,8 @@ class PartnerLead(Document):
 				query = query.where(PartnerLead.status == filters.get("status"))
 			if filters.get("is_starter_pack"):
 				query = query.where(PartnerLead.is_starter_pack == filters.get("is_starter_pack"))
+			if filters.get("lead_owner") and filters.get("lead_owner") != "All":
+				query = query.where(PartnerLead.lead_owner == filters.get("lead_owner"))
 			if filters.get("search-text"):
 				search_text = f"%{filters.get('search-text')}%"
 				query = query.where(
