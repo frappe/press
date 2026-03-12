@@ -222,17 +222,50 @@ export default {
 			);
 		},
 		async paymentModeAdded() {
-			await this.$team.reload();
-			const mode = this.isAutomatedBilling ? 'Card' : 'Prepaid Credits';
-			this.changePaymentMode.submit(
-				{ mode },
+			this.$site.setPlan.submit(
+				{ plan: this.plan.name },
 				{
-					onSuccess: () => {
-						this.$team.reload().then(() => this.changePlan());
+					onSuccess: async () => {
+						const mode = this.isAutomatedBilling ? 'Card' : 'Prepaid Credits';
+
+						await new Promise((resolve) => setTimeout(resolve, 1000));
+						await this.$team.reload();
+
+						this.changePaymentMode.submit(
+							{ mode },
+							{
+								onSuccess: () => {
+									this.show = false;
+									this.$toast.success('Plan changed and payment mode updated!');
+								},
+								onError: () => {
+									this.show = false;
+									this.$toast.success('Plan changed successfully');
+									console.warn(
+										'Payment mode sync failed, but plan is updated.',
+									);
+								},
+							},
+						);
+					},
+					onError: (err) => {
+						this.$toast.error(err.message || 'Failed to change plan');
 					},
 				},
 			);
 		},
+		// async paymentModeAdded() {
+		// 	await this.$team.reload();
+		// 	const mode = this.isAutomatedBilling ? 'Card' : 'Prepaid Credits';
+		// 	this.changePaymentMode.submit(
+		// 		{ mode },
+		// 		{
+		// 			onSuccess: () => {
+		// 				this.$team.reload().then(() => this.changePlan());
+		// 			},
+		// 		},
+		// 	);
+		// },
 	},
 	computed: {
 		$site() {
