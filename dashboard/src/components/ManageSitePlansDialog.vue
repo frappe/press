@@ -7,11 +7,7 @@
 		v-model="show"
 	>
 		<template #body-content>
-<<<<<<< HEAD
-			<!-- steps are for users without payment method added, 
-=======
 			<!-- steps are for users without payment method added,
->>>>>>> 2446ffd3e (fix(billing): Upgrade plan once user adds credit)
 		 otherwise user will only go through just the initial step to change plan  -->
 
 			<div v-if="step === 'site-plans'">
@@ -60,15 +56,11 @@
 					<FeatherIcon class="h-4" name="info" />
 					<span> Add billing details to your account before proceeding.</span>
 				</div>
-<<<<<<< HEAD
-				<BillingDetails ref="billingRef" @success="step = 'add-payment-mode'" />
-=======
 				<BillingDetails
 					ref="billingRef"
 					@back="step = 'site-plans'"
 					@success="step = 'add-payment-mode'"
 				/>
->>>>>>> 2446ffd3e (fix(billing): Upgrade plan once user adds credit)
 			</div>
 
 			<div v-else-if="step === 'add-payment-mode'">
