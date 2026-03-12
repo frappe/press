@@ -150,6 +150,7 @@
 import { getCachedDocumentResource, createResource, Progress } from 'frappe-ui';
 import SitePlansCards from './SitePlansCards.vue';
 import { getPlans, getPlan } from '../data/plans';
+import { planDisplay } from '../utils/format';
 import CardForm from './billing/CardForm.vue';
 import BillingDetails from './billing/BillingDetails.vue';
 import PrepaidCreditsForm from './billing/PrepaidCreditsForm.vue';
@@ -225,6 +226,13 @@ export default {
 				},
 			);
 		},
+<<<<<<< HEAD
+=======
+		planDisplayTitle(plan) {
+			const display = planDisplay(plan, false);
+			return `${display.title}${display.unit}`;
+		},
+>>>>>>> 9c0a340cf (fix(billing): Fix for missing button to upgrade plan)
 		paymentModeAdded() {
 			this.$team.reload();
 			const mode = this.isAutomatedBilling ? 'Card' : 'Prepaid Credits';
@@ -248,7 +256,7 @@ export default {
 		nextButtonLabel() {
 			if (this.showSetupSubscription) {
 				if (this.plan) {
-					const display = this.$format.planDisplay(this.plan, false);
+					const display = planDisplay(this.plan, false);
 					return `Select Plan: ${display.title}${display.unit}`;
 				}
 				return 'Next';
