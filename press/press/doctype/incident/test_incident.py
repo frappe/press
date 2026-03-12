@@ -540,7 +540,7 @@ class TestIncident(FrappeTestCase):
 		investigator.db_set("status", "Completed")
 
 		self.assertEqual(
-			len(investigator.action_steps), 6
+			len(investigator.action_steps), 8
 		)  # Since `execute_incident_action` is not enabled we won't add pattern detector step
 		resolve_incidents()
 
