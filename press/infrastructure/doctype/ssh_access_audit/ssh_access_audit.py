@@ -95,26 +95,24 @@ class SSHAccessAudit(Document):
 		for server_type in SERVER_TYPES:
 			# Skip self-hosted servers
 			filters = {"status": "Active", "domain": domain}
-			fields = ("ip", "private_ip")
 			meta = frappe.get_meta(server_type)
 			if meta.has_field("cluster"):
 				filters["cluster"] = ("!=", "Hybrid")
-				fields.add("cluster")
 
 			if meta.has_field("is_self_hosted"):
 				filters["is_self_hosted"] = False
 
-			servers = frappe.get_all(server_type, filters=filters, fields=fields)
+			servers = frappe.get_all(server_type, filters=filters, pluck="name")
 			all_servers.extend(servers)
 
 		all_servers.extend(self.get_self_inventory())
-		self.inventory = all_servers
+		self.inventory = ",".join(all_servers)
 
 	def get_self_inventory(self):
 		# Press should audit itself
-		servers = [{"name": frappe.local.site}, {"name": f"db.{frappe.local.site}"}]
+		servers = [frappe.local.site, f"db.{frappe.local.site}"]
 		if frappe.conf.replica_host:
-			servers.append({"name": f"db2.{frappe.local.site}"})
+			servers.append(f"db2.{frappe.local.site}")
 		return servers
 
 	def get_acceptable_key_fields(self):
