@@ -1,5 +1,5 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'Add Conversion Date' }">
+	<Dialog v-model="show" :options="{ title: 'Add Won Details' }">
 		<template #body-content>
 			<div class="flex flex-col gap-5">
 				<FormControl
