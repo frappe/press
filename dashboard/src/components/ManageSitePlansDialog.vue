@@ -226,13 +226,10 @@ export default {
 				},
 			);
 		},
-<<<<<<< HEAD
-=======
 		planDisplayTitle(plan) {
 			const display = planDisplay(plan, false);
 			return `${display.title}${display.unit}`;
 		},
->>>>>>> 9c0a340cf (fix(billing): Fix for missing button to upgrade plan)
 		paymentModeAdded() {
 			this.$team.reload();
 			const mode = this.isAutomatedBilling ? 'Card' : 'Prepaid Credits';
