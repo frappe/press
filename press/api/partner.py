@@ -840,7 +840,7 @@ def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 				}
 			)
 	elif status == "Won":
-		site = kwargs.get("site_url").removeprefix("https://").removeprefix("http://")
+		site = kwargs.get("site_url").removeprefix("https://").removeprefix("http://").split("/")[0]
 		server = kwargs.get("server_name")
 		team = kwargs.get("team_name")
 
