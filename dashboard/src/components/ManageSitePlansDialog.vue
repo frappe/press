@@ -247,9 +247,11 @@ export default {
 		},
 		nextButtonLabel() {
 			if (this.showSetupSubscription) {
-				return this.plan
-					? `Select Plan: ${this.planDisplayTitle(this.plan)}`
-					: 'Next';
+				if (this.plan) {
+					const display = this.$format.planDisplay(this.plan, false);
+					return `Select Plan: ${display.title}${display.unit}`;
+				}
+				return 'Next';
 			}
 			return this.$site.doc?.current_plan?.is_trial_plan
 				? 'Upgrade Plan'
