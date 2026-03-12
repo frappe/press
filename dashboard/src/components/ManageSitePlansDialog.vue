@@ -217,15 +217,17 @@ export default {
 						let plan = getPlans().find(
 							(plan) => plan.name === this.$site.doc.plan,
 						);
-						let formattedPlan = plan
-							? `${this.$format.planTitle(plan)}/mo`
-							: this.$site.doc.plan;
-						this.$toast.success(`Plan changed to ${formattedPlan}`);
+						// let formattedPlan = plan
+						// 	? `${this.$format.planTitle(plan)}/mo`
+						// 	: this.$site.doc.plan;
+						// this.$toast.success(`Plan changed to ${formattedPlan}`);
+						this.$toast.success(`Plan changed successfully`);
 					},
 				},
 			);
 		},
-		paymentModeAdded() {
+		async paymentModeAdded() {
+			await this.$team.reload();
 			const mode = this.isAutomatedBilling ? 'Card' : 'Prepaid Credits';
 			this.changePaymentMode.submit(
 				{ mode },
