@@ -217,7 +217,16 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.nat_server,
 			],
+<<<<<<< HEAD
 >>>>>>> 4c7293e40 (feat: action to install nat iptables on app & db server)
+=======
+			[
+				__('Remove NAT iptables'),
+				'remove_nat_iptables',
+				true,
+				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.nat_server,
+			],
+>>>>>>> 5561e935e (feat(base-server): support for removal of nat iptables)
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
