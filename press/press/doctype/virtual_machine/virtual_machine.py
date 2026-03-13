@@ -1410,7 +1410,7 @@ class VirtualMachine(Document):
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])
 
 	def update_name_tag(self, name):
-		if self.cloud_provider == "AWS EC2":
+		if self.cloud_provider == "AWS EC2" and self.instance_id:
 			self.client().create_tags(
 				Resources=[self.instance_id],
 				Tags=[
