@@ -58,6 +58,18 @@ frappe.ui.form.on('On-Prem Failover', {
 				true,
 				frm.doc.enabled,
 			],
+			[
+				'Stop Replication from App Server',
+				'stop_replication_from_app_server',
+				true,
+				frm.doc.enabled,
+			],
+			[
+				'Stop Replication from DB Server',
+				'stop_replication_from_db_server',
+				true,
+				frm.doc.enabled,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
