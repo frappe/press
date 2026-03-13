@@ -995,8 +995,7 @@ def update_followup_details(id, lead, followup_details):
 				row.spoke_to = followup_details.spoke_to
 				row.designation = followup_details.designation
 				row.discussion = followup_details.discussion
-				row.no_show = followup_details.no_show
-				row.save(ignore_permissions=True)
+
 	else:
 		doc.append(
 			"followup",
@@ -1007,7 +1006,6 @@ def update_followup_details(id, lead, followup_details):
 				"spoke_to": followup_details.spoke_to,
 				"designation": followup_details.designation,
 				"discussion": followup_details.discussion,
-				"no_show": followup_details.no_show,
 			},
 		)
 
