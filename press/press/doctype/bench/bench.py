@@ -1117,6 +1117,7 @@ class Bench(Document):
 			.where(
 				(site_updates.status == "Fatal")
 				& (site_updates.creation > frappe.utils.add_to_date(None, days=-EMPTY_BENCH_COURTESY_DAYS))
+				& (not site_updates.cause_of_failure_is_resolved)
 			)
 			.limit(1)
 		).run()
