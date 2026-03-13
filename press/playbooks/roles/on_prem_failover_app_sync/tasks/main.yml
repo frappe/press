@@ -1,0 +1,59 @@
+---
+- name: Ensure target directory exists on on-premise server
+  become: yes
+  become_user: root
+  command: "ssh -o BatchMode=yes -o StrictHostKeyChecking=no root@{{ on_prem_ip }} 'mkdir -p {{ app_server_base_directory }}/home/frappe/benches'"
+
+- name: Install Lsyncd
+  apt:
+    name: lsyncd
+    state: present
+
+- name: Create Lsyncd Configuration Directory
+  file:
+    path: /etc/on-prem-lsyncd-app
+    state: directory
+    owner: root
+    group: root
+
+- name: Create Lsyncd Log Directory
+  file:
+    path: /var/log/on-prem-lsyncd-app
+    state: directory
+    owner: root
+    group: root
+
+- name: Add Lsyncd Configuration
+  template:
+    src: lsyncd.conf.lua.j2
+    dest: /etc/on-prem-lsyncd-app/lsyncd.conf.lua
+
+- name: Add Lsyncd Systemd Service File
+  template:
+    src: lsyncd.service
+    dest: /etc/systemd/system/on-prem-lsyncd-app.service
+
+- name: Reload Systemd Daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Start Lsyncd Service
+  systemd:
+    name: on-prem-lsyncd-app
+    state: started
+    enabled: yes
+
+- name: Deploy Docker image sync script
+  template:
+    src: sync_docker_images.sh.j2
+    dest: /usr/local/bin/sync_docker_images_to_on_prem.sh
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Set up cron job to sync docker images periodically
+  cron:
+    name: "Sync internal Docker images to On-Premise Server"
+    job: "/usr/bin/flock -n /var/run/on_prem_docker_sync.lock /usr/local/bin/sync_docker_images_to_on_prem.sh > /var/log/on_prem_docker_sync.log 2>&1"
+    minute: "*/5"
+    hour: "*"

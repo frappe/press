@@ -52,6 +52,12 @@ frappe.ui.form.on('On-Prem Failover', {
 				true,
 				frm.doc.enabled,
 			],
+			[
+				'Setup App Server Replica',
+				'setup_app_server_replica',
+				true,
+				frm.doc.enabled,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

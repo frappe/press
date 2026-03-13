@@ -322,6 +322,24 @@ PersistentKeepalive = 25
 		if play.status != "Success":
 			frappe.throw("Failed to setup replica on the on-premise server.")
 
+	@frappe.whitelist()
+	def setup_app_server_replica(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_app_server_replica", timeout=3600)
+
+	def _setup_app_server_replica(self):
+		ansible = Ansible(
+			playbook="setup_on_prem_failover_app_sync.yml",
+			server=self.app_server_doc,
+			variables={
+				"on_prem_ip": self.on_prem_server_wireguard_private_ip,
+				"app_server_base_directory": self.benches_base_directory,
+			},
+		)
+		play = ansible.run()
+
+		if play.status != "Success":
+			frappe.throw("Failed to setup App Server replica synchronization on the on-premise server.")
+
 	# Internal methods
 
 	def _set_default_wireguard_network(self):
