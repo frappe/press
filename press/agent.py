@@ -1553,24 +1553,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if self.server_type != "Database Server":
 			return NotImplementedError("Only Database Server supports this method")
 
-<<<<<<< HEAD
 		cluster = frappe.get_value("Database Server", self.server, "cluster")
 		offsite_config = self._get_offsite_backup_config(cluster, backups_path=self.server)
-=======
-		settings = frappe.get_single("Press Settings")
-		backup_bucket = get_backup_bucket(
-			frappe.get_value("Database Server", self.server, "cluster"), region=True
-		)
-		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
-		if not (settings.aws_s3_bucket or bucket_name):
-			return ValueError("Offsite Backups aren't set yet")
-
-		auth = {
-			"ACCESS_KEY": settings.offsite_backups_access_key_id,
-			"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
-			"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
-		}
->>>>>>> 98c85136b (refactor(minor): find proxy using cluster in _get_request_url)
 
 		return self.create_agent_job(
 			"Upload Binlogs To S3",

@@ -777,23 +777,10 @@
    "label": "Is Provisioning Job Completed"
   },
   {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> a826d876d (refactor(database-server): use nat_server link field instead of nat ip field)
    "default": "1",
    "fieldname": "enable_schema_size_parser",
    "fieldtype": "Check",
    "label": "Enable Schema Size Parser"
-<<<<<<< HEAD
-=======
-   "read_only": 1,
-   "depends_on": "eval: !!!doc.ip",
-   "fieldname": "nat_gateway_private_ip",
-   "fieldtype": "Data",
-   "label": "NAT Gateway Private IP"
->>>>>>> 32dc917f8 (fix(database-server): add dedicated field for nat gateway private ip)
-=======
   },
   {
    "depends_on": "eval: !!!doc.ip",
@@ -801,7 +788,6 @@
    "fieldtype": "Link",
    "label": "NAT Server",
    "options": "NAT Server"
->>>>>>> a826d876d (refactor(database-server): use nat_server link field instead of nat ip field)
   }
  ],
  "grid_page_length": 50,
@@ -818,15 +804,7 @@
    "link_fieldname": "database_server"
   }
  ],
-<<<<<<< HEAD
-<<<<<<< HEAD
- "modified": "2026-03-08 14:05:17.357104",
-=======
- "modified": "2026-01-28 03:25:09.850029",
->>>>>>> 32dc917f8 (fix(database-server): add dedicated field for nat gateway private ip)
-=======
  "modified": "2026-03-11 16:26:28.352783",
->>>>>>> a826d876d (refactor(database-server): use nat_server link field instead of nat ip field)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

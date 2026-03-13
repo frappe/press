@@ -121,21 +121,7 @@ class ProxyFailover(Document, StepHandler):
 		step.status = Status.Running
 		step.save()
 
-<<<<<<< HEAD
 		cluster = frappe.get_doc("Cluster", frappe.db.get_value("Proxy Server", self.primary, "cluster"))
-=======
-		primary_proxy = frappe.get_doc("Proxy Server", self.primary)
-
-		Ansible(
-			playbook="nginx_conf_changes_for_tcp_streaming.yml",
-			server=primary_proxy,
-			user=primary_proxy._ssh_user(),
-			port=primary_proxy._ssh_port(),
-			variables={"secondary_proxy": self.secondary},
-		).run()
-
-		cluster = frappe.get_doc("Cluster", primary_proxy.cluster)
->>>>>>> bb83c8218 (fix(proxy-failover): set use_as_proxy_for_agent_and_metrics on secondary if set on primary)
 		if cluster.cloud_provider == "AWS EC2":
 			client = cluster.get_aws_client()
 			client.authorize_security_group_ingress(
@@ -154,7 +140,6 @@ class ProxyFailover(Document, StepHandler):
 					},
 				],
 			)
-<<<<<<< HEAD
 		elif cluster.cloud_provider == "OCI":
 			vcn_client = VirtualNetworkClient(cluster.get_oci_config())
 			vcn_client.add_network_security_group_security_rules(
@@ -171,8 +156,6 @@ class ProxyFailover(Document, StepHandler):
 					]
 				),
 			)
-=======
->>>>>>> bb83c8218 (fix(proxy-failover): set use_as_proxy_for_agent_and_metrics on secondary if set on primary)
 
 		if self.primary not in (alt_port_servers := servers_using_alternative_port_for_communication()):
 			alt_port_servers.append(self.primary)

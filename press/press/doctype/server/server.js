@@ -264,30 +264,16 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
-<<<<<<< HEAD
 				__('Setup Wildcard Hosts'),
 				'setup_wildcard_hosts',
 				true,
 				frm.doc.is_server_setup && frm.doc.is_standalone_setup,
-<<<<<<< HEAD
-=======
-				__('Install NAT iptables'),
-				'install_nat_iptables',
-				true,
-<<<<<<< HEAD
-				frm.doc.is_server_setup,
->>>>>>> 4c7293e40 (feat: action to install nat iptables on app & db server)
-=======
-				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.private_ip,
->>>>>>> 05a27a7ba (fix: show the install nat ip tables actions iff public ip is not present)
-=======
 			],
 			[
 				__('Install NAT iptables'),
 				'install_nat_iptables',
 				true,
 				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.nat_server,
->>>>>>> 45a55faeb (refactor(server): use nat_server link field instead of nat ip field)
 			],
 			[
 				__('Remove NAT iptables'),

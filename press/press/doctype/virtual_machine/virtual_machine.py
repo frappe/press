@@ -1283,26 +1283,7 @@ class VirtualMachine(Document):
 
 			self.public_ip_address = instance.get("PublicIpAddress")
 			self.private_ip_address = instance.get("PrivateIpAddress")
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 			self.is_static_ip = _has_static_ip(instance)
-=======
-			self.secondary_private_ip = None
-=======
-			self.secondary_private_ip = next(
-				(
-					x["PrivateIpAddress"]
-					for x in instance["NetworkInterfaces"][0]["PrivateIpAddresses"]
-					if not x["Primary"]
-				),
-				None,
-			)
->>>>>>> e99477257 (fix(virtual-machine): get secondary private ip logic)
-=======
->>>>>>> 0f11200b1 (feat(virtual-machine): add checkbox to when provisioning to assign public ip or not)
-			self.is_static_ip = self.has_static_ip(instance)
->>>>>>> 133667527 (feat(virtual-machine): add nat server bindings in virtual machine controllers)
 
 			if instance.get("NetworkInterfaces"):
 				self.secondary_private_ip = next(
