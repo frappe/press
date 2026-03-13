@@ -72,10 +72,12 @@ def get_incidents(resolved: bool = False) -> list[dict]:
 		.where(Incident.server.isin(all_user_servers))
 	)
 
-	query = (
-		query.where(Incident.status == "Resolved")
-		if resolved
-		else query.where(Incident.status.isin(["Confirmed", "Validating", "Investigating"]))
-	).groupby(Investigation.name)
-
-	return query.run(as_dict=True)
+	return (
+		(
+			query.where(Incident.status == "Resolved")
+			if resolved
+			else query.where(Incident.status.isin(["Confirmed", "Validating", "Investigating"]))
+		)
+		.groupby(Incident.name)
+		.run(as_dict=True)
+	)
