@@ -34,6 +34,24 @@ frappe.ui.form.on('On-Prem Failover', {
 				false,
 				frm.doc.enabled,
 			],
+			[
+				'Setup DB Lsync for Initial Sync',
+				'setup_db_lsync_for_initial_sync',
+				true,
+				frm.doc.enabled,
+			],
+			[
+				'Setup DB Rsync for Final Sync',
+				'setup_db_rsync_for_final_sync',
+				true,
+				frm.doc.enabled,
+			],
+			[
+				'Setup Replica on On-Prem',
+				'setup_replica_on_prem',
+				true,
+				frm.doc.enabled,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

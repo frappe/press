@@ -37,7 +37,13 @@
   "is_db_server_wireguard_setup",
   "is_db_server_failover_setup",
   "is_on_prem_server_reachable_from_db_server",
-  "is_on_prem_server_ssh_from_db_server_working"
+  "is_on_prem_server_ssh_from_db_server_working",
+  "database_section",
+  "is_lsyncd_running_for_db",
+  "column_break_rvzx",
+  "db_lsyncd_started_on",
+  "column_break_vkjf",
+  "db_lsyncd_stop_at"
  ],
  "fields": [
   {
@@ -235,12 +241,41 @@
    "fieldname": "is_db_server_wireguard_setup",
    "fieldtype": "Check",
    "label": "Is DB Server Wireguard Setup"
+  },
+  {
+   "fieldname": "database_section",
+   "fieldtype": "Section Break",
+   "label": "Database"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_lsyncd_running_for_db",
+   "fieldtype": "Check",
+   "label": "Lsyncd Running"
+  },
+  {
+   "fieldname": "column_break_rvzx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "db_lsyncd_started_on",
+   "fieldtype": "Datetime",
+   "label": "Lsyncd Started On"
+  },
+  {
+   "fieldname": "column_break_vkjf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "db_lsyncd_stop_at",
+   "fieldtype": "Datetime",
+   "label": "Lsyncd Stop At"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-13 11:00:35.872123",
+ "modified": "2026-03-13 11:17:56.542305",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "On-Prem Failover",

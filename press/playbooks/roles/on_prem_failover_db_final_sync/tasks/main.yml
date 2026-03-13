@@ -1,0 +1,36 @@
+---
+- name: Perform Final Sync
+  block:
+    - name: Stop On-Premise Lsyncd service
+      systemd:
+        name: on-prem-lsyncd-db
+        state: stopped
+
+    - name: Stop MariaDB service
+      systemd:
+        name: mariadb
+        state: stopped
+
+    - name: Replace bind-address IP in config file
+      ansible.builtin.replace:
+        path: /etc/mysql/conf.d/frappe.cnf
+        regexp: '^bind-address\s*=\s*.*'
+        replace: 'bind-address = {{ mariadb_bind_address }}'
+      when: mariadb_bind_address is defined and mariadb_bind_address != ""
+
+    - name: Flush filesystem buffers
+      command: sync
+
+    - name: Final Rsync for /var/lib/mysql
+      command: "rsync -a --delete -e 'ssh -o BatchMode=yes -o StrictHostKeyChecking=no -p 22' /var/lib/mysql/ root@{{ on_prem_ip }}:{{ database_base_directory }}/var/lib/mysql/"
+      # 30 minute timeout
+      async: 1800
+      poll: 10
+
+    - name: Final Rsync for /etc/mysql
+      command: "rsync -a --delete -e 'ssh -o BatchMode=yes -o StrictHostKeyChecking=no -p 22' /etc/mysql/ root@{{ on_prem_ip }}:{{ database_base_directory }}/etc/mysql/"
+  always:
+    - name: Start MariaDB service
+      systemd:
+        name: mariadb
+        state: started
