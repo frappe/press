@@ -7,7 +7,7 @@
 		v-model="show"
 	>
 		<template #body-content>
-		<!-- steps are for users without payment method added,
+			<!-- steps are for users without payment method added,
 		 otherwise user will only go through just the initial step to change plan  -->
 
 			<div v-if="step === 'site-plans'">
@@ -47,7 +47,11 @@
 					<FeatherIcon class="h-4" name="info" />
 					<span> Add billing details to your account before proceeding.</span>
 				</div>
-				<BillingDetails ref="billingRef" @back="step= 'site-plans'" @success="step = 'add-payment-mode'" />
+				<BillingDetails
+					ref="billingRef"
+					@back="step = 'site-plans'"
+					@success="step = 'add-payment-mode'"
+				/>
 			</div>
 
 			<div v-else-if="step === 'add-payment-mode'">
@@ -131,21 +135,13 @@
 				@click="handleNext()"
 				class="w-full"
 			>
-				{{
-					!$team.doc.payment_mode ||
-					!$team.doc.billing_details ||
-					!Object.keys(this.$team.doc.billing_details).length
-						? (plan ? `Select Plan: ${planDisplayTitle(plan)}` : 'Next')
-						: $site.doc?.current_plan?.is_trial_plan
-							? 'Upgrade Plan'
-							: 'Change plan'
-				}}
+				{{ nextButtonLabel }}
 			</Button>
 		</template>
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource, Progress } from 'frappe-ui';
+import { getCachedDocumentResource, createResource, Progress } from 'frappe-ui';
 import SitePlansCards from './SitePlansCards.vue';
 import { getPlans, getPlan } from '../data/plans';
 import CardForm from './billing/CardForm.vue';
@@ -176,6 +172,9 @@ export default {
 			isAutomatedBilling: true,
 			showAddPaymentModeDialog: false,
 			showBillingDetailsDialog: false,
+			changePaymentMode: createResource({
+				url: 'press.api.billing.change_payment_mode',
+			}),
 		};
 	},
 	watch: {
@@ -213,26 +212,60 @@ export default {
 						let plan = getPlans().find(
 							(plan) => plan.name === this.$site.doc.plan,
 						);
-						let formattedPlan = plan
-							? `${this.$format.planTitle(plan)}/mo`
-							: this.$site.doc.plan;
-						this.$toast.success(`Plan changed to ${formattedPlan}`);
+						// let formattedPlan = plan
+						// 	? `${this.$format.planTitle(plan)}/mo`
+						// 	: this.$site.doc.plan;
+						// this.$toast.success(`Plan changed to ${formattedPlan}`);
+						this.$toast.success(`Plan changed successfully`);
 					},
 				},
 			);
 		},
-		planDisplayTitle(plan) {
-			const display = this.$format.planDisplay(plan, false);
-			return `${display.title}${display.unit}`;
-		},
-		paymentModeAdded() {
-			this.$team.reload();
-			this.show = false;
-			this.$toast.success(
-				'Payment mode added and the plan has been changed successfully',
+		async paymentModeAdded() {
+			this.$site.setPlan.submit(
+				{ plan: this.plan.name },
+				{
+					onSuccess: async () => {
+						const mode = this.isAutomatedBilling ? 'Card' : 'Prepaid Credits';
+
+						await new Promise((resolve) => setTimeout(resolve, 1000));
+						await this.$team.reload();
+
+						this.changePaymentMode.submit(
+							{ mode },
+							{
+								onSuccess: () => {
+									this.show = false;
+									this.$toast.success('Plan changed and payment mode updated!');
+								},
+								onError: () => {
+									this.show = false;
+									this.$toast.success('Plan changed successfully');
+									console.warn(
+										'Payment mode sync failed, but plan is updated.',
+									);
+								},
+							},
+						);
+					},
+					onError: (err) => {
+						this.$toast.error(err.message || 'Failed to change plan');
+					},
+				},
 			);
-			this.changePlan();
 		},
+		// async paymentModeAdded() {
+		// 	await this.$team.reload();
+		// 	const mode = this.isAutomatedBilling ? 'Card' : 'Prepaid Credits';
+		// 	this.changePaymentMode.submit(
+		// 		{ mode },
+		// 		{
+		// 			onSuccess: () => {
+		// 				this.$team.reload().then(() => this.changePlan());
+		// 			},
+		// 		},
+		// 	);
+		// },
 	},
 	computed: {
 		$site() {
@@ -244,6 +277,14 @@ export default {
 				!this.$team.doc.billing_details ||
 				!Object.keys(this.$team.doc.billing_details).length
 			);
+		},
+		nextButtonLabel() {
+			if (this.showSetupSubscription) {
+				return this.plan ? 'Next' : 'Select Plan';
+			}
+			return this.$site.doc?.current_plan?.is_trial_plan
+				? 'Upgrade Plan'
+				: 'Change plan';
 		},
 		progressLabel() {
 			if (this.step === 'site-plans') {

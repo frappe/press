@@ -362,7 +362,7 @@ class VirtualMachineMigration(Document):
 		# Remove these labels from the old volume
 		# So the new machine doesn't mount these as root or efi partitions
 		# Important: Update fstab so we can still boot the old machine
-		parsed_devices = json.loads(self.parsed_devices)
+		parsed_devices = json.loads(self.parsed_devices)  # type: ignore[arg-type]
 		for device in parsed_devices:
 			old_label = device["label"]
 			if not old_label:
