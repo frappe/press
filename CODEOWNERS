@@ -1,25 +1,15 @@
-# Each line is a file pattern followed by one or more owners
+# Each line is a file pattern followed by one or more owners These owners will
+# be the default owners for everything in the repo. Unless a later match takes
+# precedence.
 
-# These owners will be the default owners for everything in
-
-# the repo. Unless a later match takes precedence
-
-backbone/ @adityahase
-ssh* @adityahase
-nginx.conf @adityahase
-*server @adityahase
-playbooks/ @adityahase @balamurali27
-
-site* @balamurali27
-team/ @shadrak98
-
-invoice/ @shadrak98
-stripe* @shadrak98
-razorpay* @shadrak98
-subscription/ @shadrak98
-dashboard/ @regdocs
-
-saas @rutwikhdev
-
-deploy* @18alantom
-press/Dockerfile @18alantom
+backbone/         @adityahase
+ssh*              @adityahase
+nginx.conf        @adityahase
+*server           @adityahase
+playbooks/        @adityahase @balamurali27
+site*             @balamurali27
+team/             @shadrak98
+invoice/          @shadrak98
+stripe*           @shadrak98
+razorpay*         @shadrak98
+subscription/     @shadrak98
