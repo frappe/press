@@ -66,7 +66,7 @@
 			</NavigationItems>
 		</nav>
 		<!-- TODO: update component name after dashboard-beta merges -->
-		<SwitchTeamDialog2 v-model="showTeamSwitcher" />
+		<SwitchTeamDialog2 v-model="showTeamSwitcher" :key="showTeamSwitcher" />
 	</div>
 </template>
 

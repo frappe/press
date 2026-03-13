@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -39,6 +40,15 @@ func checkProcesslist(creds MySQLCredentials) DBHealth {
 	db.SetConnMaxLifetime(5 * time.Second)
 	db.SetMaxOpenConns(1)
 
+	var uptime int
+	var varName, varValue string
+	err = db.QueryRow("SHOW GLOBAL STATUS LIKE 'Uptime'").Scan(&varName, &varValue)
+	if parsedUptime, convErr := strconv.Atoi(varValue); convErr == nil {
+		uptime = parsedUptime
+	} else {
+		uptime = 3600 // Default to a safe high value if it fails
+	}
+
 	rows, err := db.Query("SHOW PROCESSLIST")
 	if err != nil {
 		health.Reachable = false
@@ -52,13 +62,15 @@ func checkProcesslist(creds MySQLCredentials) DBHealth {
 		return health
 	}
 
-	var stateIdx, infoIdx int = -1, -1
+	var stateIdx, infoIdx, timeIdx int = -1, -1, -1
 	for i, col := range columns {
 		switch col {
 		case "State":
 			stateIdx = i
 		case "Info":
 			infoIdx = i
+		case "Time":
+			timeIdx = i
 		}
 	}
 
@@ -83,10 +95,25 @@ func checkProcesslist(creds MySQLCredentials) DBHealth {
 		isStuck := false
 		reason := ""
 
+		var timeSec int
+		if timeIdx >= 0 && values[timeIdx].Valid {
+			timeSec, _ = strconv.Atoi(values[timeIdx].String)
+		}
+
 		switch state {
-		case "Opening tables", "Killed":
-			isStuck = true
-			reason = fmt.Sprintf("state=%q", state)
+		case "Opening tables":
+			// If MariaDB recently started (e.g., uptime < 10 mins), Opening tables is normal.
+			// Otherwise, if it has been opening for > 5 minutes, consider it stuck.
+			if uptime > 600 && timeSec >= 300 {
+				isStuck = true
+				reason = fmt.Sprintf("state=%q time=%ds", state, timeSec)
+			}
+		case "Killed":
+			// If a killed process is stuck for > 5 mins
+			if timeSec >= 300 {
+				isStuck = true
+				reason = fmt.Sprintf("state=%q time=%ds", state, timeSec)
+			}
 		}
 
 		if isStuck {

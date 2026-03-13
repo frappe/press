@@ -75,12 +75,8 @@ If you are planning to migrate your site to Frappe Cloud, please refer to [this 
 
 ### Pre-commit
 
-There's a [pre-commit](https://pre-commit.com/) hook included in the repo. You can set it up by doing
+There's a [pre-commit](https://pre-commit.com/) hook included in the repo. You can set it up by running [setup-pre-commit.sh](https://github.com/frappe/press/blob/develop/setup-pre-commit.sh) script.
 
-```bash
-pip install pre-commit
-pre-commit install
-```
 ## Learn and connect
 
 - [Telegram Public Group](https://t.me/frappecloud)
