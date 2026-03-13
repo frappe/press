@@ -1448,9 +1448,11 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			return NotImplementedError("This method is only supported for Database Server")
 
 		database_server: DatabaseServer = frappe.get_doc("Database Server", self.server)
-		data_disk_volume = database_server.find_mountpoint_volume(
-			database_server.guess_data_disk_mountpoint()
-		)
+		data_disk_volume = None
+		if database_server.virtual_machine:
+			data_disk_volume = database_server.find_mountpoint_volume(
+				database_server.guess_data_disk_mountpoint()
+			)
 
 		iops = None
 
@@ -1466,7 +1468,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"database/update-schema-sizes",
 			data={
 				"private_ip": database_server.private_ip,
-				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"mariadb_root_password": 	database_server.get_password("mariadb_root_password"),
 				"io_ops_limit": max(int(iops * 0.2), 300) if iops else 300,
 				"concurrency": 50,
 			},
