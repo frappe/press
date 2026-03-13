@@ -21,7 +21,7 @@
 			</div>
 			<div class="mt-3">
 				<TextInput
-					v-if="sortedTeams.length > 5"
+					ref="searchRef"
 					size="sm"
 					placeholder="Search"
 					:debounce="500"
@@ -43,6 +43,12 @@
 							icon="external-link"
 							:link="`/app/team/${team.name}`"
 							variant="ghost"
+						/>
+						<Badge
+							class="whitespace-nowrap"
+							v-if="team.user === $session.user"
+							label="Your team"
+							theme="blue"
 						/>
 					</div>
 					<Badge
@@ -91,10 +97,17 @@ export default {
 			},
 		},
 		sortedTeams() {
-			if (!this.$team?.doc?.valid_teams) return [];
-			return [...this.$team.doc.valid_teams].sort((a, b) => {
+			const validTeams = this.$team?.doc?.valid_teams;
+			if (!validTeams) return [];
+
+			const sorted = [...validTeams].sort((a, b) => {
 				return a.user.localeCompare(b.user);
 			});
+
+			return [
+				...sorted.filter((team) => team.user === this.$session.user),
+				...sorted.filter((team) => team.user !== this.$session.user),
+			];
 		},
 		filteredTeams() {
 			if (!this.searchQuery.trim()) {
@@ -116,6 +129,13 @@ export default {
 	},
 	methods: {
 		switchToTeam,
+	},
+	mounted() {
+		setTimeout(() => {
+			const textInput = this.$refs.searchRef?.$el;
+			const inputHtmlElement = textInput?.querySelector('input');
+			inputHtmlElement?.focus();
+		}, 200);
 	},
 };
 </script>
