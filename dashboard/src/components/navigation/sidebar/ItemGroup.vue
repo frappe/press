@@ -26,14 +26,14 @@ watch(
 
 <template>
 	<div @click="toggle"
-		class="mt-0.5 flex cursor-pointer select-none items-center rounded px-2 py-1 text-gray-800 transition hover:bg-gray-100"
+		class="mt-0.5 flex cursor-pointer select-none items-center rounded px-2 py-1 text-ink-gray-6 transition hover:bg-gray-100"
 		:class="[
 			item.disabled ? 'pointer-events-none opacity-50' : '',
 			$attrs.class,
 		]">
 		<div class="flex w-full items-center space-x-2">
 			<span class="grid h-5 w-6 place-items-center">
-				<component :is="item.icon" class="h-4 w-4 text-gray-500" />
+				<component :is="item.icon" class="h-4 w-4 text-ink-gray-6" />
 			</span>
 			<span class="text-sm">{{ item.name }}</span>
 			<component :is="item.badge" />
