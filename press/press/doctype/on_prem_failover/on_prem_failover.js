@@ -1,8 +1,57 @@
 // Copyright (c) 2026, Frappe and contributors
 // For license information, please see license.txt
 
-// frappe.ui.form.on("On-Prem Failover", {
-// 	refresh(frm) {
-
-// 	},
-// });
+frappe.ui.form.on('On-Prem Failover', {
+	refresh(frm) {
+		[
+			[
+				'Setup Wireguard on App Server',
+				'setup_wireguard_on_app_server',
+				false,
+				frm.doc.enabled,
+			],
+			[
+				'Setup Wireguard on Database Server',
+				'setup_wireguard_on_database_server',
+				false,
+				frm.doc.enabled,
+			],
+			[
+				'View On-Prem Wireguard Config',
+				'view_on_prem_server_wireguard_config',
+				false,
+				frm.doc.enabled,
+			],
+		].forEach(([label, method, confirm, condition]) => {
+			if (typeof condition === 'undefined' || condition) {
+				frm.add_custom_button(
+					label,
+					() => {
+						if (confirm) {
+							frappe.confirm(
+								`Are you sure you want to ${label.toLowerCase()}?`,
+								() =>
+									frm.call(method).then((r) => {
+										if (r.message) {
+											frappe.msgprint(r.message);
+										} else {
+											frm.refresh();
+										}
+									}),
+							);
+						} else {
+							frm.call(method).then((r) => {
+								if (r.message) {
+									frappe.msgprint(r.message);
+								} else {
+									frm.refresh();
+								}
+							});
+						}
+					},
+					__('Actions'),
+				);
+			}
+		});
+	},
+});
