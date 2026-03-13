@@ -10,7 +10,7 @@
           missingok
           notifempty
           nocompress
-          create 640 root adm
+          create 640 frappe frappe
       }
 - name: Force logrotate to apply new configuration
   command: logrotate -f /etc/logrotate.d/monitor_json_logs

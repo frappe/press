@@ -7,6 +7,7 @@ frappe.ui.form.on('NAT Server', {
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[__('Archive Server'), 'archive', true, frm.doc.is_server_setup],
+			[__('Get Static IP'), 'get_static_ip', true, !frm.doc.is_static_ip],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
