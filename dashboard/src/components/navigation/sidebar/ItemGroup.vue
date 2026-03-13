@@ -1,6 +1,7 @@
 <script setup lang='ts'>
 import { ref, watch } from 'vue';
 import Item from './Item.vue';
+import LucideChevronRight from '~icons/lucide/chevron-right';
 
 let props = defineProps({
 	item: {
@@ -37,8 +38,8 @@ watch(
 			<span class="text-sm">{{ item.name }}</span>
 			<component :is="item.badge" />
 			<span class="!ml-auto">
-				<lucide-chevron-down v-if="isOpened" class="h-4 w-4 text-gray-500" />
-				<lucide-chevron-right v-else class="h-4 w-4 text-gray-500" />
+				<LucideChevronRight class="size-4 text-gray-500 transition-transform duration-200"
+					:class="{ 'rotate-90': isOpened }" />
 			</span>
 		</div>
 	</div>
