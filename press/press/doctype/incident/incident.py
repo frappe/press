@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import urllib.parse
 from base64 import b64encode
+from contextlib import suppress
 from datetime import timedelta
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -38,6 +39,7 @@ if TYPE_CHECKING:
 		IncidentInvestigator,
 	)
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
+	from press.press.doctype.dashboard_banner.dashboard_banner import DashboardBanner
 	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
 		IncidentSettingsSelfHostedUser,
@@ -133,21 +135,76 @@ class Incident(WebsiteGenerator):
 	def global_email_alerts_enabled(self) -> bool:
 		return bool(frappe.db.get_single_value("Incident Settings", "email_alerts", cache=True))
 
-	def after_insert(self):
-		"""
-		Start investigating the incident since we have already waited 5m before creating it
-		send sms and email notifications
-		"""
-		try:
+	def create_investigation_if_possible(self):
+		"""Investigations have a cool off period of 5m therefore consecutive incidents on the same server might not trigger investigations"""
+		with suppress(frappe.ValidationError):
 			incident_investigator = frappe.get_doc(
 				{"doctype": "Incident Investigator", "incident": self.name, "server": self.server}
 			)
 			incident_investigator.insert(ignore_permissions=True)
 			self.investigation = incident_investigator.name
 			self.save()
-		except frappe.ValidationError:
-			# Investigator in cool off period
-			pass
+
+	def create_banner_for_status_page(self):
+		"""Add a banner directing users to the status page in case of ongoing incidents"""
+		filters = {
+			"type_of_scope": "Server",
+			"enabled": 1,
+			"title": f"Incident on {self.server}",
+			"message": f"There is an ongoing incident affecting sites on {self.server}.",
+		}
+		has_existing_active_banner = frappe.db.exists("Dashboard Banner", filters)
+
+		if has_existing_active_banner:
+			return
+
+		filters.pop(
+			"enabled"
+		)  # we want to check if there's an existing banner even if it's disabled, to avoid creating multiple banners for the same server
+		has_existing_banner = frappe.db.exists("Dashboard Banner", filters)
+
+		if has_existing_banner:
+			frappe.db.set_value("Dashboard Banner", has_existing_banner, "enabled", 1)
+			return
+
+		# There is no such banner present
+		dashboard_banner: DashboardBanner = frappe.get_doc(
+			{
+				"doctype": "Dashboard Banner",
+				"title": f"Incident on {self.server}",
+				"message": f"There is an ongoing incident affecting sites on {self.server}.",
+				"has_action": 1,
+				"is_dismissible": 1,
+				"help_url": "http://fc.live:8080/dashboard/status",
+				"type_of_scope": "Server",
+				"server": self.server,
+				"type": "Info",
+				"enabled": 1,
+			}
+		)
+		dashboard_banner.insert()
+
+	def _resolve_banner_if_exists(self):
+		"""When an incident is resolved, we should resolve the banner as well"""
+		frappe.db.set_value(
+			"Dashboard Banner",
+			{
+				"type_of_scope": "Server",
+				"enabled": 1,
+				"title": f"Incident on {self.server}",
+				"message": f"There is an ongoing incident affecting sites on {self.server}.",
+			},
+			"enabled",
+			0,
+		)
+
+	def after_insert(self):
+		"""
+		Start investigating the incident since we have already waited 5m before creating it
+		send sms and email notifications, also add a dashboard banner in case of insert taking users to the status page
+		"""
+		self.create_investigation_if_possible()
+		self.create_banner_for_status_page()
 		self.send_sms_via_twilio()
 		self.send_email_notification()
 		self.identify_affected_resource()
@@ -158,6 +215,7 @@ class Incident(WebsiteGenerator):
 			self.send_email_notification()
 			if self.status == "Resolved":
 				self.db_set("resolved_at", current_datetime)
+				self._resolve_banner_if_exists()
 			elif self.status == "Confirmed" and not self.confirmed_at:
 				self.db_set("confirmed_at", current_datetime)
 				if not self.called_customer:
