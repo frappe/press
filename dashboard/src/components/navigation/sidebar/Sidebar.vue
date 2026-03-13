@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Tooltip } from 'frappe-ui';
+import LucideChevronDown from '~icons/lucide/chevron-down';
 import { ref, defineAsyncComponent } from 'vue';
 
 import Item from './Item.vue';
@@ -69,7 +70,7 @@ const feedback = () => {
 								</div>
 							</Tooltip>
 						</div>
-						<lucide-chevron-down class="ml-auto h-5 w-5 text-gray-700" />
+						<LucideChevronDown class="ml-auto size-4" />
 					</button>
 				</template>
 			</Dropdown>
