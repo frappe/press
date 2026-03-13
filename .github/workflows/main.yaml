@@ -150,7 +150,7 @@ jobs:
       - name: Run Semgrep rules
         run: |
           pip install semgrep==1.32
-          semgrep ci --config ./press-semgrep-rules.yml --config r/python.lang.correctness
+          semgrep ci --config ./press-semgrep-rules.yml --config r/python.lang.correctness --baseline-commit "${{ github.base_ref || 'master' }}"
 
   install:
     name: Setup Bench

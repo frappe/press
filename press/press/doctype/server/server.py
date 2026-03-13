@@ -526,8 +526,15 @@ class BaseServer(Document, TagHelpers):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
 
 	def after_insert(self):
-		if self.ip and (
-			self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted
+		if self.ip:
+			if self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted:
+				self.create_dns_record()
+				self.update_virtual_machine_name()
+		elif (
+			self.private_ip
+			and self.doctype in ["Server", "Database Server"]
+			and not self.is_self_hosted
+			and not frappe.flags.in_test
 		):
 			self.create_dns_record()
 			self.update_virtual_machine_name()
@@ -560,7 +567,7 @@ class BaseServer(Document, TagHelpers):
 								"Name": self.name,
 								"Type": "A",
 								"TTL": 3600 if self.doctype == "Proxy Server" else 300,
-								"ResourceRecords": [{"Value": self.ip}],
+								"ResourceRecords": [{"Value": self.ip or self.private_ip}],
 							},
 						}
 					]
@@ -730,6 +737,13 @@ class BaseServer(Document, TagHelpers):
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
 		database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
 		database_server_config = database_server._get_config()
+		nat_server_private_ips = (
+			frappe.db.get_value(
+				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+			)
+			if self.nat_server
+			else None
+		)
 
 		self.status = "Installing"
 		database_server.status = "Installing"
@@ -765,6 +779,8 @@ class BaseServer(Document, TagHelpers):
 					"allocator": database_server.memory_allocator.lower(),
 					"mariadb_root_password": database_server_config.mariadb_root_password,
 					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
+					"nat_gateway_ip": nat_server_private_ips
+					and (nat_server_private_ips.secondary_private_ip or nat_server_private_ips.private_ip),
 					**self.get_mount_variables(),  # Currently same as database server since no volumes
 				},
 			)
@@ -1117,8 +1133,6 @@ class BaseServer(Document, TagHelpers):
 		return find(machine.volumes, lambda v: v.device == "/dev/sda1")
 
 	def update_virtual_machine_name(self):
-		if self.provider not in ("AWS EC2", "OCI"):
-			return None
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
 
@@ -1852,6 +1866,52 @@ class BaseServer(Document, TagHelpers):
 		return f"<a href=/app/arm-build-record/{arm_build_record.name}> ARM Build Record"
 
 	@frappe.whitelist()
+	def install_nat_iptables(self):
+		if self.ip:
+			frappe.throw("NAT Iptables can only be installed on servers without public IP")
+
+		if not getattr(self, "nat_server", None):
+			frappe.throw("NAT Iptables requires a NAT server to be set")
+
+		frappe.enqueue_doc(self.doctype, self.name, "_install_nat_iptables")
+
+	def _install_nat_iptables(self):
+		nat_server_private_ips = frappe.db.get_value(
+			"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+		)
+
+		try:
+			ansible = Ansible(
+				playbook="nat_iptables.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"nat_gateway_ip": nat_server_private_ips.secondary_private_ip
+					or nat_server_private_ips.private_ip
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("NAT Iptables Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def remove_nat_iptables(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_remove_nat_iptables")
+
+	def _remove_nat_iptables(self):
+		try:
+			ansible = Ansible(
+				playbook="remove_nat_iptables.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("NAT Iptables Removal Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def start_active_benches(self):
 		benches = frappe.get_all("Bench", {"server": self.name, "status": "Active"}, pluck="name")
 		frappe.enqueue_doc(self.doctype, self.name, "_start_active_benches", benches=benches)
@@ -2395,7 +2455,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			return frappe.get_cached_value(
 				"Bastion Server", self.bastion_server, ["ssh_user", "ssh_port", "ip"], as_dict=True
 			)
-		return frappe._dict()
+
+		# if bastion server is not found and server doesnt have public ip, use proxy server as bastion/jump server
+		if not self.ip and self.private_ip:
+			return frappe.db.get_value(
+				"Proxy Server",
+				{"status": "Active", "cluster": self.cluster},
+				["ssh_user", "ssh_port", "name as ip"],
+				as_dict=True,
+			)
+
+		return None
 
 	@frappe.whitelist()
 	def get_static_ip(self):
@@ -2546,6 +2616,7 @@ class Server(BaseServer):
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
+		nat_server: DF.Link | None
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
 		platform: DF.Literal["x86_64", "arm64"]
@@ -2864,6 +2935,13 @@ class Server(BaseServer):
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
+		nat_server_private_ips = (
+			frappe.db.get_value(
+				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+			)
+			if self.nat_server
+			else None
+		)
 
 		# If database server is set, then define db port under configuration
 		db_port = (
@@ -2897,6 +2975,8 @@ class Server(BaseServer):
 					"db_port": db_port,
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
+					"nat_gateway_ip": nat_server_private_ips
+					and (nat_server_private_ips.secondary_private_ip or nat_server_private_ips.private_ip),
 					**self.get_mount_variables(),
 				},
 			)

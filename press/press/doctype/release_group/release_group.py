@@ -1539,9 +1539,6 @@ class ReleaseGroup(Document, TagHelpers):
 			if not last_candidate_build:
 				frappe.throw("No build present for this release group", frappe.ValidationError)
 
-			self.append("servers", {"server": server, "default": False})
-			self.save()
-
 			return create_platform_build_and_deploy(
 				deploy_candidate=last_candidate_build.candidate.name,  # type: ignore
 				server=server,
@@ -1554,7 +1551,24 @@ class ReleaseGroup(Document, TagHelpers):
 				check_image_exists=True,
 			).name
 		except ImageNotFoundInRegistry:
-			return self.add_server(server=server, deploy=True, force_new_build=True)
+			return self.deploy_on_server(server=server, force_new_build=True)
+
+	@frappe.whitelist()
+	def redeploy_on_missing_servers(self):
+		"""
+		Redeploy the latest successful candidate on servers in this release group
+		that do not currently have a Bench in an active, installing, or pending state.
+		"""
+		deployed_servers = frappe.db.get_all(
+			"Bench",
+			filters={"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))},
+			pluck="server",
+		)
+
+		for server in self.servers:
+			if server.server in deployed_servers:
+				continue
+			self.deploy_on_server(server.server)
 
 	@frappe.whitelist()
 	def change_server(self, server: str):
