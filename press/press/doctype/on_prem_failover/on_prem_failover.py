@@ -36,11 +36,14 @@ class OnPremFailover(Document):
 		database_server_wireguard_private_ip: DF.Data | None
 		database_server_wireguard_private_key: DF.Password | None
 		database_server_wireguard_public_key: DF.Data | None
+		db_lsyncd_started_on: DF.Datetime | None
+		db_lsyncd_stop_at: DF.Datetime | None
 		enabled: DF.Check
 		is_app_server_failover_setup: DF.Check
 		is_app_server_wireguard_setup: DF.Check
 		is_db_server_failover_setup: DF.Check
 		is_db_server_wireguard_setup: DF.Check
+		is_lsyncd_running_for_db: DF.Check
 		is_on_prem_server_reachable_from_app_server: DF.Check
 		is_on_prem_server_reachable_from_db_server: DF.Check
 		is_on_prem_server_ssh_from_app_server_working: DF.Check
@@ -240,6 +243,84 @@ PersistentKeepalive = 25
 				self.is_on_prem_server_ssh_from_db_server_working = is_ssh_reachable
 
 		self.save()
+
+	def setup_replica(self):
+		"""
+		First Lsyncd for estimated time
+		Stop Primary DB
+		DB Flush + Final Rsync
+		Start Primary DB -- do always
+		Start Replica Setup
+		"""
+		pass
+
+	@frappe.whitelist()
+	def setup_db_lsync_for_initial_sync(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_db_lsync_for_initial_sync", timeout=300)
+
+	def _setup_db_lsync_for_initial_sync(self):
+		# Stop replica container on the on-prem
+		if self.is_lsyncd_running_for_db:
+			return
+
+		ansible = Ansible(
+			playbook="setup_on_prem_failover_db_lsync.yml",
+			server=self.database_server_doc,
+			variables={
+				"on_prem_ip": self.on_prem_server_wireguard_private_ip,
+				"database_base_directory": self.database_base_directory,
+			},
+		)
+		play = ansible.run()
+
+		if play.status == "Success":
+			self.is_lsyncd_running_for_db = True
+			self.db_lsyncd_started_on = frappe.utils.now_datetime()
+			# TODO: Perform network testing and setup db_lsyncd_stop_at accordingly
+			# Else, by default assume 5 MB/s transfer speed
+			self.db_lsyncd_stop_at = frappe.utils.add_to_date(self.db_lsyncd_started_on, hour=1)
+			self.save()
+
+	@frappe.whitelist()
+	def setup_db_rsync_for_final_sync(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_db_rsync_for_final_sync", timeout=3600)
+
+	def _setup_db_rsync_for_final_sync(self):
+		ansible = Ansible(
+			playbook="setup_on_prem_failover_db_final_sync.yml",
+			server=self.database_server_doc,
+			variables={
+				"on_prem_ip": self.on_prem_server_wireguard_private_ip,
+				"database_base_directory": self.database_base_directory,
+				"mariadb_bind_address": "0.0.0.0",
+			},
+		)
+		play = ansible.run()
+
+		if play.status != "Success":
+			frappe.throw("Failed to perform the final database sync.")
+
+	@frappe.whitelist()
+	def setup_replica_on_prem(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_replica_on_prem", timeout=3600)
+
+	def _setup_replica_on_prem(self):
+		ansible = Ansible(
+			playbook="setup_on_prem_failover_replica.yml",
+			server=self.database_server_doc,
+			variables={
+				"on_prem_ip": self.on_prem_server_wireguard_private_ip,
+				"database_base_directory": self.database_base_directory,
+				"mariadb_root_password": self.database_server_doc.get_password("mariadb_root_password"),
+				"primary_private_ip": self.database_server_wireguard_private_ip,
+				"primary_db_port": 3306,
+				"mariadb_bind_address": "0.0.0.0",
+			},
+		)
+		play = ansible.run()
+
+		if play.status != "Success":
+			frappe.throw("Failed to setup replica on the on-premise server.")
 
 	# Internal methods
 
