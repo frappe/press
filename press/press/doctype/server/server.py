@@ -3001,6 +3001,15 @@ class Server(BaseServer):
 		with_mask = private_ip + "/24"
 		return str(ipaddress.ip_network(with_mask, strict=False))
 
+	def get_nat_ip(self):
+		if not self.ip and self.nat_server:
+			nat_ips = frappe.db.get_value(
+				"NAT Server", self.nat_server, ["private_ip", "secondary_private_ip"], as_dict=True
+			)
+			private_ip = nat_ips.secondary_private_ip or nat_ips.private_ip
+			return str(ipaddress.ip_network(private_ip + "/16", strict=False))
+		return None
+
 	@frappe.whitelist()
 	def setup_standalone(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_standalone", queue="short", timeout=1200)
