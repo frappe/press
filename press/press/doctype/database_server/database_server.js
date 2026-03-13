@@ -210,13 +210,13 @@ frappe.ui.form.on('Database Server', {
 				__('Install NAT iptables'),
 				'install_nat_iptables',
 				true,
-				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.nat_server,
+				frm.doc.is_server_setup && frm.doc.nat_server,
 			],
 			[
 				__('Remove NAT iptables'),
 				'remove_nat_iptables',
 				true,
-				frm.doc.is_server_setup && !!!frm.doc.ip && frm.doc.nat_server,
+				frm.doc.is_server_setup && !frm.doc.nat_server,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
