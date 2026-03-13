@@ -34,13 +34,10 @@ def get_incidents(resolved: bool = False) -> list[dict]:
 		{"team": team, "status": ("in", ["Active", "Broken", "Pending"])},
 		pluck="server",
 	)
-	benches_servers = frappe.get_all(
-		"Bench",
-		{"team": team, "status": ("in", ["Active", "Broken"])},
-		pluck="server",
-	)
 
-	all_user_servers = set(site_servers + benches_servers)
+	all_user_servers = set(
+		site_servers + frappe.get_all("Server", {"team": team}, pluck="name")
+	)  # Include shared + dedicated server customers
 
 	Incident = frappe.qb.DocType("Incident")
 	Investigation = frappe.qb.DocType("Incident Investigator")
