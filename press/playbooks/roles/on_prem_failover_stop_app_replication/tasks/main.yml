@@ -1,0 +1,19 @@
+---
+- name: Stop App Lsyncd Service
+  systemd:
+    name: on-prem-lsyncd-app
+    state: stopped
+    enabled: no
+  ignore_errors: true
+
+- name: Remove Docker Sync Cron Job
+  cron:
+    name: "Sync internal Docker images to On-Premise Server"
+    state: absent
+
+- name: Stop Wireguard on App Server
+  systemd:
+    name: "wg-quick@{{ interface_id }}"
+    state: stopped
+    enabled: no
+  ignore_errors: true

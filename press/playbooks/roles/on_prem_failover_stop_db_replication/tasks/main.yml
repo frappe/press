@@ -1,0 +1,14 @@
+---
+- name: Stop DB Lsyncd Service
+  systemd:
+    name: on-prem-lsyncd-db
+    state: stopped
+    enabled: no
+  ignore_errors: true
+
+- name: Stop Wireguard on DB Server
+  systemd:
+    name: "wg-quick@{{ interface_id }}"
+    state: stopped
+    enabled: no
+  ignore_errors: true

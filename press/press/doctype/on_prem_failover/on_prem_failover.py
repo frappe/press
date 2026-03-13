@@ -340,6 +340,34 @@ PersistentKeepalive = 25
 		if play.status != "Success":
 			frappe.throw("Failed to setup App Server replica synchronization on the on-premise server.")
 
+	@frappe.whitelist()
+	def stop_replication_from_app_server(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_stop_replication_from_app_server", timeout=300)
+
+	def _stop_replication_from_app_server(self):
+		ansible = Ansible(
+			playbook="stop_on_prem_failover_app_replication.yml",
+			server=self.app_server_doc,
+			variables={"interface_id": self.wireguard_interface or "wg0"},
+		)
+		play = ansible.run()
+		if play.status != "Success":
+			frappe.throw("Failed to stop replication on the App Server.")
+
+	@frappe.whitelist()
+	def stop_replication_from_db_server(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_stop_replication_from_db_server", timeout=300)
+
+	def _stop_replication_from_db_server(self):
+		ansible = Ansible(
+			playbook="stop_on_prem_failover_db_replication.yml",
+			server=self.database_server_doc,
+			variables={"interface_id": self.wireguard_interface or "wg0"},
+		)
+		play = ansible.run()
+		if play.status != "Success":
+			frappe.throw("Failed to stop replication on the Database Server.")
+
 	# Internal methods
 
 	def _set_default_wireguard_network(self):
