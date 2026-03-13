@@ -168,7 +168,7 @@ class Ansible:
 		self.server = server
 		self.playbook = playbook
 		self.playbook_path = frappe.get_app_path("press", "playbooks", self.playbook)
-		self.host = f"{server.ip}:{port}"
+		self.host = server.ip if server.ip else server.private_ip
 		self.variables = variables or {}
 
 		constants.HOST_KEY_CHECKING = False
@@ -190,6 +190,8 @@ class Ansible:
 
 		self.sources = f"{self.host},"
 		self.inventory = InventoryManager(loader=self.loader, sources=self.sources)
+		self.inventory.get_host(self.host).set_variable("ansible_port", port)
+
 		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
 
 		self.callback = AnsibleCallback()

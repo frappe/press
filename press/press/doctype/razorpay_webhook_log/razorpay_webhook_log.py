@@ -27,8 +27,10 @@ class RazorpayWebhookLog(Document):
 		payment_record = frappe.get_doc("Razorpay Payment Record", {"order_id": self.name})
 
 		if self.event in ("order.paid", "payment.captured") and payment_record.status != "Captured":
-			payment_record.update({"payment_id": self.payment_id, "status": "Captured"})
-			payment_record.save(ignore_permissions=True)
+			payment_record.reload()
+			if payment_record.status != "Captured":
+				payment_record.update({"payment_id": self.payment_id, "status": "Captured"})
+				payment_record.save(ignore_permissions=True)
 
 
 @frappe.whitelist(allow_guest=True)
