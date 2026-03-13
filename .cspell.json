@@ -755,6 +755,7 @@
         "ptrs",
         "serialised",
         "setnx",
-        "vitepress"
+        "vitepress",
+        "resolvconf"
     ]
 }
