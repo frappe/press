@@ -316,16 +316,14 @@ def _check_dns_cname_a(name, domain, ignore_proxying=False):
 
 	if cname["matched"] and a["exists"] and not a["matched"]:
 		frappe.throw(
-			f"""
-			Domain <b>{domain}</b> has correct CNAME record <b>{cname["answer"].strip().split()[-1]}</b>, but also an A record that points to an incorrect IP address <b>{a["answer"].strip().split()[-1]}</b>.
+			f"""Domain <b>{domain}</b> has correct CNAME record <b>{cname["answer"].strip().split()[-1]}</b>, but also an A record that points to an incorrect IP address <b>{a["answer"].strip().split()[-1]}</b>.
 			<br>Please remove or update the <b>A</b> record{get_dns_provider_link_substr(domain)}.
 			""",
 			ConflictingDNSRecord,
 		)
 	if a["matched"] and cname["exists"] and not cname["matched"]:
 		frappe.throw(
-			f"""
-			Domain <b>{domain}</b> has correct A record <b>{a["answer"].strip().split()[-1]}</b>, but also a CNAME record that points to an incorrect domain <b>{cname["answer"].strip().split()[-1]}</b>.
+			f"""Domain <b>{domain}</b> has correct A record <b>{a["answer"].strip().split()[-1]}</b>, but also a CNAME record that points to an incorrect domain <b>{cname["answer"].strip().split()[-1]}</b>.
 			<br>Please remove or update the <b>CNAME</b> record{get_dns_provider_link_substr(domain)}.
 			""",
 			ConflictingDNSRecord,
