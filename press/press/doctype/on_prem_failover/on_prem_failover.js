@@ -22,6 +22,18 @@ frappe.ui.form.on('On-Prem Failover', {
 				false,
 				frm.doc.enabled,
 			],
+			[
+				'View On-Prem SSH Authorized Keys',
+				'view_on_prem_server_ssh_authorized_keys',
+				false,
+				frm.doc.enabled,
+			],
+			[
+				'Test Connectivity to On-Premise Server',
+				'test_connectivity_to_on_premise_server',
+				false,
+				frm.doc.enabled,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
