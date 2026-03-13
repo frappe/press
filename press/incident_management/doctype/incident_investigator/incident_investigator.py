@@ -219,7 +219,7 @@ class PrometheusInvestigationHelper:
 		step.save()
 
 	def has_high_disk_usage(self, instance: str, step: "InvestigationStep"):
-		"""Determined if disk is full in any of the relevant mountpoints at present"""
+		"""Determined if disk is full"""
 		is_unreachable = True
 		mountpoints = {"/": False, "/opt/volumes/benches": False, "/opt/volumes/mariadb": False}
 		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", instance)
@@ -282,7 +282,7 @@ class PrometheusInvestigationHelper:
 		step.save()
 
 	def _get_bench_memory_usage(self, instance: str) -> dict[str, float] | None:
-		"""Get the average memory usage for each bench on the server averaged over the investigation window."""
+		"""Get the average memory usage over the investigation window."""
 		benches = frappe.db.get_all(
 			"Bench",
 			fields=["name"],
@@ -362,7 +362,7 @@ class DatabaseInvestigationActions:
 		step.save()
 
 	def restart_benches(self, step: "ActionStep"):
-		"""Restart benches since framework sometimes is not able to establish connection after reboot"""
+		"""Restart benches to establish connection after reboot"""
 		step.status = StepStatus.Running
 		step.save()
 
@@ -450,7 +450,7 @@ class AppServerInvestigationActions:
 		step.save()
 
 	def get_oom_kill_events(self, step: "ActionStep"):
-		"""Get OOM kill events data and do something with it start and end time are UTC times!"""
+		"""Get OOM kill events data"""
 		step.status = StepStatus.Running
 		step.save()
 
