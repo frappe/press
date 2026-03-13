@@ -48,7 +48,7 @@ def get_incidents(resolved: bool = False) -> list[dict]:
 	query = (
 		frappe.qb.from_(Incident)
 		.left_join(Investigation)
-		.on(Incident.name == Investigation.incident)
+		.on(Incident.investigation == Investigation.name)
 		.left_join(InvestigationAction)
 		.on(Investigation.name == InvestigationAction.parent)
 		.select(
