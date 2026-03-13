@@ -168,6 +168,7 @@ class Incident(WebsiteGenerator):
 		has_existing_banner = frappe.db.exists("Dashboard Banner", filters)
 
 		if has_existing_banner:
+			print("WE HAVE THIS!")
 			frappe.db.set_value("Dashboard Banner", has_existing_banner, "enabled", 1)
 			return
 
@@ -178,18 +179,30 @@ class Incident(WebsiteGenerator):
 				"title": f"Incident on {self.server}",
 				"message": f"There is an ongoing incident affecting sites on {self.server}.",
 				"has_action": 1,
-				"is_dismissible": 1,
-				"help_url": "http://fc.live:8080/dashboard/status",
 				"type_of_scope": "Server",
 				"server": self.server,
 				"type": "Info",
 				"enabled": 1,
+				"action_label": "View Status",
+				"help_url": "http://fc.live:8080/dashboard/status",
+				"action_endpoint": "http://fc.live:8080/dashboard/status",
 			}
 		)
 		dashboard_banner.insert()
 
-	def _resolve_banner_if_exists(self):
+	def _resolve_banner_if_ready(self):
 		"""When an incident is resolved, we should resolve the banner as well"""
+		pending_incidents_on_the_server = frappe.db.get_value(
+			"Incident",
+			{
+				"server": self.server,
+				"status": ("in", ["Validating", "Confirmed", "Acknowledged", "Investigating"]),
+			},
+		)
+
+		if pending_incidents_on_the_server:
+			return
+
 		frappe.db.set_value(
 			"Dashboard Banner",
 			{
@@ -219,7 +232,7 @@ class Incident(WebsiteGenerator):
 			self.send_email_notification()
 			if self.status == "Resolved":
 				self.db_set("resolved_at", current_datetime)
-				self._resolve_banner_if_exists()
+				self._resolve_banner_if_ready()
 			elif self.status == "Confirmed" and not self.confirmed_at:
 				self.db_set("confirmed_at", current_datetime)
 				if not self.called_customer:
