@@ -756,6 +756,8 @@
         "serialised",
         "setnx",
         "vitepress",
-        "resolvconf"
+        "resolvconf",
+        "lsync",
+        "lsyncd"
     ]
 }
