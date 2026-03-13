@@ -747,6 +747,7 @@
         "pyotp",
         "noopener",
         "noreferrer",
+        "nosemgrep",
         "centralise",
         "PSIIO",
         "journalctl",
