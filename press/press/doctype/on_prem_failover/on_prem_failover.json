@@ -29,9 +29,15 @@
   "on_prem_server_wireguard_public_key",
   "on_prem_server_wireguard_private_key",
   "status_tab",
+  "is_app_server_wireguard_setup",
   "is_app_server_failover_setup",
+  "is_on_prem_server_reachable_from_app_server",
+  "is_on_prem_server_ssh_from_app_server_working",
   "column_break_gywf",
-  "is_db_server_failover_setup"
+  "is_db_server_wireguard_setup",
+  "is_db_server_failover_setup",
+  "is_on_prem_server_reachable_from_db_server",
+  "is_on_prem_server_ssh_from_db_server_working"
  ],
  "fields": [
   {
@@ -193,12 +199,48 @@
    "fieldtype": "Data",
    "label": "Wireguard Interface",
    "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_on_prem_server_reachable_from_app_server",
+   "fieldtype": "Check",
+   "label": "Is On Prem Server Reachable From App Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_on_prem_server_reachable_from_db_server",
+   "fieldtype": "Check",
+   "label": "Is On Prem Server Reachable From DB Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_on_prem_server_ssh_from_app_server_working",
+   "fieldtype": "Check",
+   "label": "Is On Prem Server SSH From App Server Working"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_on_prem_server_ssh_from_db_server_working",
+   "fieldtype": "Check",
+   "label": "Is On Prem Server SSH From DB Server Working"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_app_server_wireguard_setup",
+   "fieldtype": "Check",
+   "label": "Is App Server Wireguard Setup"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_db_server_wireguard_setup",
+   "fieldtype": "Check",
+   "label": "Is DB Server Wireguard Setup"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-11 16:52:46.739477",
+ "modified": "2026-03-13 11:00:35.872123",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "On-Prem Failover",

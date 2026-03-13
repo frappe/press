@@ -38,7 +38,13 @@ class OnPremFailover(Document):
 		database_server_wireguard_public_key: DF.Data | None
 		enabled: DF.Check
 		is_app_server_failover_setup: DF.Check
+		is_app_server_wireguard_setup: DF.Check
 		is_db_server_failover_setup: DF.Check
+		is_db_server_wireguard_setup: DF.Check
+		is_on_prem_server_reachable_from_app_server: DF.Check
+		is_on_prem_server_reachable_from_db_server: DF.Check
+		is_on_prem_server_ssh_from_app_server_working: DF.Check
+		is_on_prem_server_ssh_from_db_server_working: DF.Check
 		on_prem_server_wireguard_private_ip: DF.Data | None
 		on_prem_server_wireguard_private_key: DF.Password | None
 		on_prem_server_wireguard_public_key: DF.Data | None
@@ -92,7 +98,7 @@ class OnPremFailover(Document):
 		)
 		play = ansible.run()
 		if play.status == "Success":
-			self.is_app_server_failover_setup = True
+			self.is_app_server_wireguard_setup = True
 			self.save()
 
 	@frappe.whitelist()
@@ -127,7 +133,7 @@ class OnPremFailover(Document):
 		)
 		play = ansible.run()
 		if play.status == "Success":
-			self.is_db_server_failover_setup = True
+			self.is_db_server_wireguard_setup = True
 			self.save()
 
 	@frappe.whitelist()
@@ -152,6 +158,7 @@ class OnPremFailover(Document):
 		"""
 		frappe.msgprint(message, title="On-Premise WireGuard Setup Guide", wide=True)
 
+	@frappe.whitelist()
 	def generate_on_prem_server_wireguard_config(self):
 		return f"""[Interface]
 Address = {self.on_prem_server_wireguard_private_ip}/{self.wireguard_network.split("/")[1]}
@@ -171,6 +178,68 @@ Endpoint = {self.database_server_doc.ip or self.database_server_doc.private_ip}:
 AllowedIPs = {self.database_server_wireguard_private_ip}/32
 PersistentKeepalive = 25
 """
+
+	@frappe.whitelist()
+	def view_on_prem_server_ssh_authorized_keys(self):
+		message = f"""
+		<h4>Step 1: Add Authorized Keys</h4>
+		<p>Run the following command on your on-premise server to add the authorized_keys:</p>
+		<pre>sudo echo '{self.generate_ssh_authorized_keys_to_add()}' >> /root/.ssh/authorized_keys</pre>
+		"""
+		frappe.msgprint(message, title="On-Premise SSH Authorized Keys Setup Guide", wide=True)
+
+	@frappe.whitelist()
+	def generate_ssh_authorized_keys_to_add(self):
+		# Add authorized_keys to on-premise server
+		keys = [
+			self.app_server_doc.root_public_key,
+			self.app_server_doc.frappe_public_key,
+			self.database_server_doc.root_public_key,
+			self.database_server_doc.frappe_public_key,
+		]
+
+		valid_keys = [key for key in keys if key]
+		return "\n".join(valid_keys)
+
+	@frappe.whitelist()
+	def test_connectivity_to_on_premise_server(self):
+		frappe.enqueue_doc(self.doctype, self.name, "check_connectivity_to_on_premise_server", timeout=300)
+
+	def check_connectivity_to_on_premise_server(self):
+		for server_doc in [self.app_server_doc, self.database_server_doc]:
+			ansible = Ansible(
+				playbook="ping_on_prem.yml",
+				server=server_doc,
+				variables={
+					"on_prem_ip": self.on_prem_server_wireguard_private_ip,
+				},
+			)
+			play = ansible.run()
+
+			ping_task = frappe.get_all(
+				"Ansible Task",
+				filters={"play": play.name, "task": "Ping on-premise server over WireGuard"},
+				limit=1,
+				pluck="status",
+			)
+			ssh_task = frappe.get_all(
+				"Ansible Task",
+				filters={"play": play.name, "task": "Verify SSH connectivity to on-premise server"},
+				limit=1,
+				pluck="status",
+			)
+
+			is_ping_reachable = bool(ping_task and ping_task[0] == "Success")
+			is_ssh_reachable = bool(ssh_task and ssh_task[0] == "Success")
+
+			if server_doc.name == self.app_server:
+				self.is_on_prem_server_reachable_from_app_server = is_ping_reachable
+				self.is_on_prem_server_ssh_from_app_server_working = is_ssh_reachable
+			else:
+				self.is_on_prem_server_reachable_from_db_server = is_ping_reachable
+				self.is_on_prem_server_ssh_from_db_server_working = is_ssh_reachable
+
+		self.save()
 
 	# Internal methods
 
