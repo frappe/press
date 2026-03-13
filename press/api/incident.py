@@ -67,7 +67,11 @@ def get_incidents(resolved: bool = False) -> list[dict]:
 				order_by=InvestigationAction.idx,
 				order=Order.asc,
 			).as_("investigation_action_steps"),
-			GroupConcat(InvestigationAction.status).as_("investigation_action_steps_status"),
+			GroupConcat(
+				InvestigationAction.status,
+				order_by=InvestigationAction.idx,
+				order=Order.asc,
+			).as_("investigation_action_steps_status"),
 		)
 		.where(Incident.server.isin(all_user_servers))
 	)
