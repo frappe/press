@@ -8,9 +8,10 @@ nginx.conf        @adityahase
 *server           @adityahase
 playbooks/        @adityahase @balamurali27
 site*             @balamurali27
-team/             @shadrak98
 invoice/          @shadrak98
-stripe*           @shadrak98
+partner/          @shadrak98
 razorpay*         @shadrak98
+stripe*           @shadrak98
 subscription/     @shadrak98
+team/             @shadrak98
 press/            @ssiyad
