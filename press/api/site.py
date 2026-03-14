@@ -2608,14 +2608,14 @@ def check_app_compatibility_for_upgrade(name, version):
 	source_map = {s.name: s for s in app_sources}
 	public_apps = []
 	public_source_map = {}
-	for row in release_group_apps:
-		source = source_map.get(row.source)
+	for app in site_app_names:
+		source = source_map.get(app)
 		if not source or not source.enabled:
 			continue
 		# Treat frappe-owned apps as public apps requiring compatibility checks
 		if source.public or source.repository_owner == "frappe":
-			public_apps.append(row.app)
-			public_source_map[row.app] = source
+			public_apps.append(app)
+			public_source_map[app] = source
 
 	incompatible_apps = _check_public_apps_compatibility(
 		public_apps,
