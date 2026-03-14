@@ -74,6 +74,9 @@ CALL_THRESHOLD_SECONDS_NIGHT = (
 CALL_REPEAT_INTERVAL_DAY = 15 * 60
 CALL_REPEAT_INTERVAL_NIGHT = 20 * 60
 
+INCIDENT_BANNER_TITLE = "Incident on server: {0}"
+INCIDENT_BANNER_MESSAGE = "There is an ongoing incident affecting sites on {0}."
+
 
 class Incident(WebsiteGenerator):
 	# begin: auto-generated types
@@ -153,8 +156,8 @@ class Incident(WebsiteGenerator):
 		"""Add a banner directing users to the status page in case of ongoing incidents"""
 		filters = {
 			"enabled": 1,
-			"title": f"Incident on {self.server}",
-			"message": f"There is an ongoing incident affecting sites on {self.server}.",
+			"title": INCIDENT_BANNER_TITLE.format(self.server),
+			"message": INCIDENT_BANNER_MESSAGE.format(self.server),
 		}
 		has_existing_active_banner = frappe.db.exists("Dashboard Banner", filters)
 
@@ -174,10 +177,9 @@ class Incident(WebsiteGenerator):
 		dashboard_banner: DashboardBanner = frappe.get_doc(
 			{
 				"doctype": "Dashboard Banner",
-				"title": f"Incident on {self.server}",
-				"message": f"There is an ongoing incident affecting sites on {self.server}.",
+				"title": INCIDENT_BANNER_TITLE.format(self.server),
+				"message": INCIDENT_BANNER_MESSAGE.format(self.server),
 				"has_action": 1,
-				"server": self.server,
 				"type": "Info",
 				"enabled": 1,
 				"action_label": "View Status",
@@ -213,10 +215,9 @@ class Incident(WebsiteGenerator):
 		frappe.db.set_value(
 			"Dashboard Banner",
 			{
-				"type_of_scope": "Server",
 				"enabled": 1,
-				"title": f"Incident on {self.server}",
-				"message": f"There is an ongoing incident affecting sites on {self.server}.",
+				"title": INCIDENT_BANNER_TITLE.format(self.server),
+				"message": INCIDENT_BANNER_MESSAGE.format(self.server),
 			},
 			"enabled",
 			0,
@@ -227,11 +228,11 @@ class Incident(WebsiteGenerator):
 		Start investigating the incident since we have already waited 5m before creating it
 		send sms and email notifications, also add a dashboard banner in case of insert taking users to the status page
 		"""
-		# self.create_investigation_if_possible()
+		self.create_investigation_if_possible()
 		self.create_banner_for_status_page()
-		# self.send_sms_via_twilio()
-		# self.send_email_notification()
-		# self.identify_affected_resource()
+		self.send_sms_via_twilio()
+		self.send_email_notification()
+		self.identify_affected_resource()
 
 	def on_update(self):
 		if self.has_value_changed("status"):
