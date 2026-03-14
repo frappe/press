@@ -985,37 +985,31 @@ def update_followup_details(id, lead, followup_details):
 		frappe.throw("You are not allowed to update this followup")
 
 	followup_details = frappe._dict(followup_details)
-	if id:
-		doc = frappe.get_doc("Lead Followup", id)
-		doc.update(
-			{
-				"date": frappe.utils.getdate(followup_details.followup_date),
-				"communication_type": followup_details.communication_type,
-				"followup_by": followup_details.followup_by,
-				"spoke_to": followup_details.spoke_to,
-				"designation": followup_details.designation,
-				"discussion": followup_details.discussion,
-				"no_show": followup_details.no_show,
-			}
-		)
-		doc.save(ignore_permissions=True)
+	doc = frappe.get_doc("Partner Lead", lead)
+	if doc.followup and [row.name for row in doc.followup if row.name == id]:
+		for row in doc.followup:
+			if row.name == id:
+				row.date = frappe.utils.getdate(followup_details.followup_date)
+				row.communication_type = followup_details.communication_type
+				row.followup_by = followup_details.followup_by
+				row.spoke_to = followup_details.spoke_to
+				row.designation = followup_details.designation
+				row.discussion = followup_details.discussion
+
 	else:
-		doc = frappe.new_doc("Lead Followup")
-		doc.update(
+		doc.append(
+			"followup",
 			{
-				"parent": lead,
-				"parenttype": "Partner Lead",
-				"parentfield": "followup",
 				"date": frappe.utils.getdate(followup_details.followup_date),
 				"communication_type": followup_details.communication_type,
 				"followup_by": followup_details.followup_by,
 				"spoke_to": followup_details.spoke_to,
 				"designation": followup_details.designation,
 				"discussion": followup_details.discussion,
-				"no_show": followup_details.no_show,
-			}
+			},
 		)
-		doc.insert(ignore_permissions=True)
+
+	doc.save(ignore_permissions=True)
 	doc.reload()
 
 

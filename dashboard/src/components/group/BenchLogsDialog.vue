@@ -126,7 +126,7 @@ const listOptions = ref({
 	actions: () => [
 		{
 			slots: {
-				prefix: () => h(LucideSparkleIcon),
+				prefix: () => h(LucideSparkleIcon, { class: 'h-4 w-4' }),
 			},
 			label: 'View in Log Browser',
 			onClick: () => {
