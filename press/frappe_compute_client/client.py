@@ -13,3 +13,28 @@ class Client:
 			"orchestrator.api.private_network.create_private_network",
 			params={"name": name, "range": cidr_block},
 		)
+
+	def provision_virtual_machine(
+		self,
+		name: str,
+		machine_type: str,
+		virtual_machine_image: str,
+		root_disk_size: str,
+		ssh_key: str,
+		cloud_init: str,
+		vpc_id: str,
+		private_ip_address: str,
+	):
+		return self.client.post_api(
+			"orchestrator.api.virtual_machine.new",
+			params={
+				"name": name,
+				"machine_type": machine_type,
+				"virtual_machine_image": virtual_machine_image,
+				"root_disk_size": root_disk_size,
+				"ssh_key": ssh_key,
+				"cloud_init": cloud_init,
+				"private_network": vpc_id,
+				"private_ip_address": private_ip_address,
+			},
+		)
