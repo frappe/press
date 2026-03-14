@@ -152,7 +152,6 @@ class Incident(WebsiteGenerator):
 	def create_banner_for_status_page(self):
 		"""Add a banner directing users to the status page in case of ongoing incidents"""
 		filters = {
-			"type_of_scope": "Server",
 			"enabled": 1,
 			"title": f"Incident on {self.server}",
 			"message": f"There is an ongoing incident affecting sites on {self.server}.",
@@ -168,7 +167,6 @@ class Incident(WebsiteGenerator):
 		has_existing_banner = frappe.db.exists("Dashboard Banner", filters)
 
 		if has_existing_banner:
-			print("WE HAVE THIS!")
 			frappe.db.set_value("Dashboard Banner", has_existing_banner, "enabled", 1)
 			return
 
@@ -179,7 +177,6 @@ class Incident(WebsiteGenerator):
 				"title": f"Incident on {self.server}",
 				"message": f"There is an ongoing incident affecting sites on {self.server}.",
 				"has_action": 1,
-				"type_of_scope": "Server",
 				"server": self.server,
 				"type": "Info",
 				"enabled": 1,
@@ -188,6 +185,16 @@ class Incident(WebsiteGenerator):
 				"action_endpoint": "http://fc.live:8080/dashboard/status",
 			}
 		)
+
+		site_teams_affected = frappe.get_all(
+			"Site",
+			{"server": self.server, "status": ("in", ["Active", "Pending", "Updating", "Broken"])},
+			pluck="team",
+		)
+		server_team = frappe.db.get_value("Server", self.server, "team")
+		teams_affected = set([*site_teams_affected, server_team])
+
+		dashboard_banner.extend("team", [{"team": team} for team in teams_affected])
 		dashboard_banner.insert()
 
 	def _resolve_banner_if_ready(self):
@@ -220,11 +227,11 @@ class Incident(WebsiteGenerator):
 		Start investigating the incident since we have already waited 5m before creating it
 		send sms and email notifications, also add a dashboard banner in case of insert taking users to the status page
 		"""
-		self.create_investigation_if_possible()
+		# self.create_investigation_if_possible()
 		self.create_banner_for_status_page()
-		self.send_sms_via_twilio()
-		self.send_email_notification()
-		self.identify_affected_resource()
+		# self.send_sms_via_twilio()
+		# self.send_email_notification()
+		# self.identify_affected_resource()
 
 	def on_update(self):
 		if self.has_value_changed("status"):
