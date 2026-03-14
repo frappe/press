@@ -7,3 +7,9 @@ class Client:
 
 	def validate(self):
 		return self.client.get_api("frappe.auth.get_logged_user") == "Administrator"
+
+	def provision_cluster(self, name: str, cidr_block):
+		return self.client.post_api(
+			"orchestrator.api.private_network.create_private_network",
+			params={"name": name, "range": cidr_block},
+		)
