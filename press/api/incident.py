@@ -39,6 +39,9 @@ def get_incidents(resolved: bool = False) -> list[dict]:
 		site_servers + frappe.get_all("Server", {"team": team}, pluck="name")
 	)  # Include shared + dedicated server customers
 
+	if not all_user_servers:
+		return []
+
 	Incident = frappe.qb.DocType("Incident")
 	Investigation = frappe.qb.DocType("Incident Investigator")
 	InvestigationAction = frappe.qb.DocType("Action Step")
