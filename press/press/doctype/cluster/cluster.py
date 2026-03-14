@@ -1397,6 +1397,8 @@ class Cluster(Document):
 			return "VM.Standard.E4.Flex"
 		if self.cloud_provider == "Hetzner":
 			return "cpx21"
+		if self.cloud_provider == "Frappe Compute":
+			return "CPX22"
 		return None
 
 	def get_or_create_basic_plan(self, server_type) -> ServerPlan:
