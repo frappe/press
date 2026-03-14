@@ -225,6 +225,18 @@ class Cluster(Document):
 			self.provision_on_hetzner()
 		elif self.cloud_provider == "DigitalOcean":
 			self.provision_on_digital_ocean()
+		elif self.cloud_provider == "Frappe Compute":
+			self.provision_on_frappe_compute()
+
+	def provision_on_frappe_compute(self):
+		api_secret = self.get_password("frappe_compute_api_secret")
+		client = FrappeComputeClient(
+			url=self.frappe_compute_base_url, api_key=self.frappe_compute_api_key, api_secret=api_secret
+		)
+		vpc_id = client.provision_cluster(f"Frappe-Cloud-{self.name}".replace(" ", ""), self.cidr_block)
+		self.vpc_id = vpc_id
+
+		self.save()
 
 	def provision_on_digital_ocean(self):
 		api_token = self.get_password("digital_ocean_api_token")
