@@ -2611,7 +2611,7 @@ def check_app_compatibility_for_upgrade(name, version):
 	for app in site_app_names:
 		source = source_map.get(app)
 		if not source or not source.enabled:
-			continue
+			frappe.throw(f"Could not find a valid source for app {app}")
 		# Treat frappe-owned apps as public apps requiring compatibility checks
 		if source.public or source.repository_owner == "frappe":
 			public_apps.append(app)
@@ -2730,6 +2730,15 @@ def create_private_bench_for_site_upgrade(
 		team,
 	)
 	apps_payload = [{"app": app, "source": source} for app, source in apps_for_new_group]
+
+	# Validate all site apps are covered before creating bench
+	new_bench_app_names = {a["app"] for a in apps_payload}
+	missing_site_apps = set(current_site_apps) - new_bench_app_names
+	if missing_site_apps:
+		frappe.throw(
+			f"Cannot upgrade site: the following apps are installed on {name} but no compatible source for {next_version} could be resolved — "
+			f"{', '.join(sorted(missing_site_apps))}"
+		)
 
 	try:
 		release_group_doc = new_release_group(
@@ -2997,7 +3006,6 @@ def _get_custom_app_upgrade_source(
 
 
 def get_compatible_public_apps_and_sources(app_names, next_version):
-	# Treat frappe-owned apps and public enabled as public apps
 	if not app_names:
 		return set(), {}
 
@@ -3013,7 +3021,7 @@ def get_compatible_public_apps_and_sources(app_names, next_version):
 		)
 		.where(AppSourceVersion.version == next_version)
 		.where(AppSource.app.isin(app_names))
-		.where((AppSource.public == 1) | (AppSource.repository_owner == "frappe"))
+		.where(AppSource.public == 1)
 		.where(AppSource.enabled == 1)
 	).run(as_dict=True)
 

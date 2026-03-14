@@ -849,7 +849,7 @@ class DatabaseServer(BaseServer):
 		)
 
 	def ansible_run(self, command: str) -> dict[str, str]:
-		inventory = f"{self.ip},"
+		inventory = f"{self.name},"
 		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
 	@frappe.whitelist()
@@ -2317,7 +2317,7 @@ systemctl restart mariadb
 	@dashboard_whitelist()
 	def get_storage_usage(self):
 		try:
-			result = AnsibleAdHoc(sources=f"{self.ip},").run(
+			result = AnsibleAdHoc(sources=f"{self.name},").run(
 				'df --output=source,size,used,target | tail -n +2  && echo -e "\n\n" && du -s /var/lib/mysql/*',
 				self.name,
 				raw_params=True,
@@ -2327,7 +2327,7 @@ systemctl restart mariadb
 
 			binlog_indexes_size = 0
 			with contextlib.suppress(Exception):
-				binlog_indexes_size_result = AnsibleAdHoc(sources=f"{self.ip},").run(
+				binlog_indexes_size_result = AnsibleAdHoc(sources=f"{self.name},").run(
 					"du -sk /home/frappe/binlog_indexes/ | cut -f1",
 					self.name,
 					raw_params=True,
@@ -2423,7 +2423,8 @@ def monitor_disk_performance():
 	databases = frappe.db.get_all(
 		"Database Server",
 		filters={"status": "Active", "is_server_setup": 1, "is_self_hosted": 0},
-		fields=("name", "ip", "private_ip", "cluster"),
+		fields=("name"),
+		as_list=True,
 	)
 	if databases:
 		frappe.enqueue(
