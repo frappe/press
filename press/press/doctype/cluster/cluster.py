@@ -69,7 +69,7 @@ class Cluster(Document):
 		beta: DF.Check
 		by_default_select_unified_mode: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "DigitalOcean"]
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "DigitalOcean", "Frappe Compute"]
 		country: DF.Link | None
 		default_app_server_plan: DF.Link | None
 		default_app_server_plan_type: DF.Link | None
@@ -80,6 +80,9 @@ class Cluster(Document):
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
 		flush_table_execution_hour: DF.Int
+		frappe_compute_api_key: DF.Data | None
+		frappe_compute_api_secret: DF.Password | None
+		frappe_compute_base_url: DF.Data | None
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
 		has_unified_server_support: DF.Check
