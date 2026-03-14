@@ -2897,7 +2897,7 @@ class Server(BaseServer):
 		agent.new_server(self.name)
 
 	def ansible_run(self, command: str) -> dict[str, str]:
-		inventory = f"{self.ip},"
+		inventory = f"{self.name},"
 		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
 	def setup_docker(self, now: bool | None = None):
