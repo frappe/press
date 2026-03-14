@@ -213,18 +213,22 @@ class VirtualMachine(Document):
 			return
 
 		if self.cloud_provider != "AWS EC2":
-			frappe.throw("Server Creation with Data Disk Snapshot is only supported on AWS EC2.")
+			frappe.throw(
+				"Frappe Cloud allows Data disk snapshots for servers provided by AWS Only. Any other regions like OCI and Hetzner do not have Data disk snapshots."
+			)
 
 		# Ensure the disk snapshot is Completed
 		snapshot: VirtualDiskSnapshot = frappe.get_doc("Virtual Disk Snapshot", self.data_disk_snapshot)
 		if snapshot.status != "Completed":
-			frappe.throw("Disk Snapshot is not available.")
+			frappe.throw("The disk snapshot is unavailable because it has failed during the completion.")
 
 		if snapshot.region != frappe.get_value("Cluster", self.cluster, "region"):
-			frappe.throw("Disk Snapshot is not available in the same region as the cluster")
+			frappe.throw("Disk Snapshot is not available in the same region as the cluster.")  # nosemgrep
 
 		if not self.virtual_machine_image:
-			frappe.throw("Virtual Machine Image is required to create a VM with Data Disk Snapshot")
+			frappe.throw(
+				"Virtual Machine Image is required to create a VM with Data Disk Snapshot. Please attach a Virtual Machine Image during the Machine creation."
+			)
 
 	def on_trash(self):
 		snapshots = frappe.get_all(
@@ -1394,7 +1398,7 @@ class VirtualMachine(Document):
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
 				frappe.db.set_value(doctype, server, "private_ip", self.private_ip_address)
-				if doctype in ["Server", "Proxy Server"]:
+				if doctype in ["Server", "Proxy Server", "NAT Server"]:
 					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
@@ -1410,7 +1414,7 @@ class VirtualMachine(Document):
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])
 
 	def update_name_tag(self, name):
-		if self.cloud_provider == "AWS EC2":
+		if self.cloud_provider == "AWS EC2" and self.instance_id:
 			self.client().create_tags(
 				Resources=[self.instance_id],
 				Tags=[

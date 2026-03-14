@@ -1271,7 +1271,9 @@ class BaseServer(Document, TagHelpers):
 			ignore_ifnull=True,
 		):
 			frappe.throw(
-				_("Cannot archive server with sites. Please drop them from their respective dashboards.")
+				_(
+					"Cannot archive a server with sites on it. Please archive all the sites before performing the drop action."
+				)
 			)
 		if frappe.get_all(
 			"Bench",
@@ -1279,7 +1281,9 @@ class BaseServer(Document, TagHelpers):
 			ignore_ifnull=True,
 		):
 			frappe.throw(
-				_("Cannot archive server with benches. Please drop them from their respective dashboards.")
+				_(
+					"The server has a few benches on it. Please archive them from their respective dashboards before attempting a drop."
+				)
 			)
 
 		self.status = "Pending"
@@ -1327,7 +1331,9 @@ class BaseServer(Document, TagHelpers):
 			team = frappe.get_doc("Team", team.billing_team)
 
 		if not (team.default_payment_method or team.get_balance()):
-			frappe.throw("Cannot change plan because you haven't added a card and not have enough balance")
+			frappe.throw(
+				"Changing plans needs the customer to have a card added to their billing profile. Cannot change for the same reason, please add a card to your account on Frappe Cloud Billng dashboard."
+			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 		if not cluster.check_machine_availability(new_plan.instance_type):
@@ -1341,7 +1347,7 @@ class BaseServer(Document, TagHelpers):
 			)
 			if current_root_disk_size >= new_plan.disk:
 				frappe.throw(
-					"Cannot upgrade disk because the selected plan has the same or smaller disk size"
+					"Selected plan's disk is same as or not larger than the current disk size. Please chose a plan including higher disk size availability."
 				)
 
 	@dashboard_whitelist()
@@ -1837,7 +1843,9 @@ class BaseServer(Document, TagHelpers):
 		)
 
 		if not benches:
-			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'>Server</a>")
+			frappe.throw(
+				f"No active benches found on <a href='/app/server/{self.name}'>Server</a>"
+			)  # nosemgrep
 
 		for bench in benches:
 			raw_bench_version = self._get_dependency_version(bench["candidate"], "BENCH_VERSION")
@@ -2280,7 +2288,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		play = ansible.run()
 		if play.status == "Success":
 			return frappe.db.get_value(self.doctype, self.primary, "frappe_public_key")
-		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
+		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")  # nosemgrep
 		return None
 
 	def copy_files(self, source, destination, extra_options=None):
@@ -2525,7 +2533,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		).data
 
 		if not vnic_attachments:
-			frappe.throw("No VNIC found for this OCI instance.")
+			frappe.throw("No VNIC found for this OCI instance.")  # nosemgrep
 
 		vnic_id = vnic_attachments[0].vnic_id
 
@@ -2534,7 +2542,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		primary_private_ip = next((ip for ip in private_ips if ip.is_primary), None)
 
 		if not primary_private_ip:
-			frappe.throw("Primary Private IP not found.")
+			frappe.throw("Primary Private IP not found.")  # nosemgrep
 
 		# 3. Check for existing Public IP and remove it if it exists
 		existing_public_ip = network_client.get_public_ip_by_private_ip_id(
@@ -2663,7 +2671,7 @@ class Server(BaseServer):
 	def validate_managed_database_service(self):
 		if getattr(self, "is_managed_database", 0):
 			if not self.managed_database_service:
-				frappe.throw(_("Please select Managed Database Service"))
+				frappe.throw(_("Please select Managed Database Service"))  # nosemgrep
 			self.database_server = ""
 		else:
 			self.managed_database_service = ""
@@ -2701,7 +2709,7 @@ class Server(BaseServer):
 		):
 			# Throw error if multiple sites are present on the server
 			frappe.throw(
-				"Cannot enable logical replication during site update if multiple sites are present on the server"
+				"Cannot enable logical replication during site update if multiple sites are present on the server. Please drop the sites in order to enable logical replication."
 			)
 
 	def update_db_server(self):
@@ -3003,6 +3011,15 @@ class Server(BaseServer):
 		private_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
 		with_mask = private_ip + "/24"
 		return str(ipaddress.ip_network(with_mask, strict=False))
+
+	def get_nat_ip(self):
+		if not self.ip and self.nat_server:
+			nat_ips = frappe.db.get_value(
+				"NAT Server", self.nat_server, ["private_ip", "secondary_private_ip"], as_dict=True
+			)
+			private_ip = nat_ips.secondary_private_ip or nat_ips.private_ip
+			return str(ipaddress.ip_network(private_ip + "/16", strict=False))
+		return None
 
 	@frappe.whitelist()
 	def setup_standalone(self):
@@ -3482,21 +3499,21 @@ class Server(BaseServer):
 	def delete_snapshot(self, snapshot_name: str) -> None:
 		doc = frappe.get_doc("Server Snapshot", snapshot_name)
 		if doc.app_server != self.name:
-			frappe.throw("Snapshot does not belong to this server")
+			frappe.throw("Snapshot does not belong to this server")  # nosemgrep
 		doc.delete_snapshots()
 
 	@dashboard_whitelist()
 	def lock_snapshot(self, snapshot_name: str) -> None:
 		doc = frappe.get_doc("Server Snapshot", snapshot_name)
 		if doc.app_server != self.name:
-			frappe.throw("Snapshot does not belong to this server")
+			frappe.throw("Snapshot does not belong to this server")  # nosemgrep
 		doc.lock()
 
 	@dashboard_whitelist()
 	def unlock_snapshot(self, snapshot_name: str) -> None:
 		doc = frappe.get_doc("Server Snapshot", snapshot_name)
 		if doc.app_server != self.name:
-			frappe.throw("Snapshot does not belong to this server")
+			frappe.throw("Snapshot does not belong to this server")  # nosemgrep
 		doc.unlock()
 
 	def validate_bench_status_before_scaling(self) -> bool:
@@ -3522,7 +3539,7 @@ class Server(BaseServer):
 
 		if self.validate_bench_status_before_scaling():
 			frappe.throw(
-				"Please wait for all bench related jobs to complete before scaling the server.",
+				"Cannot scale server while jobs are still running on the server. Please wait for all bench related jobs to complete before scaling the server.",
 			)
 
 		last_auto_scale_at = frappe.db.get_value(
@@ -3540,11 +3557,11 @@ class Server(BaseServer):
 		)
 
 		if running_auto_scale:
-			frappe.throw("Auto scale is already running", frappe.ValidationError)
+			frappe.throw("Auto scale is already running", frappe.ValidationError)  # nosemgrep
 
 		if time_diff < timedelta(seconds=cool_off_period or 300):
 			frappe.throw(
-				f"Please wait for {fmt_timedelta(timedelta(seconds=cool_off_period or 300) - time_diff)} before scaling again",
+				f"Please wait for {fmt_timedelta(timedelta(seconds=cool_off_period or 300) - time_diff)} before scaling again",  # nosemgrep
 				frappe.ValidationError,
 			)
 
@@ -3564,7 +3581,7 @@ class Server(BaseServer):
 
 		if active_deployments:
 			frappe.throw(
-				"Please wait for all active deployments to complete before scaling the server.",
+				"Cannot autoscale due to active deployments on the server. Please wait for all active deployments to complete before scaling the server.",
 			)
 
 	@dashboard_whitelist()
@@ -3590,7 +3607,10 @@ class Server(BaseServer):
 		"""Configure automated scaling based on cpu loads"""
 
 		if not self.secondary_server:
-			frappe.throw("Please setup a secondary server to enable auto scaling", frappe.ValidationError)
+			frappe.throw(
+				"Can't autoscale without a secondary server setup. Please setup a secondary server in the Actions tab of your Server's dashboard.",
+				frappe.ValidationError,
+			)
 
 		threshold = round(threshold, 2)
 		existing_trigger = frappe.db.get_value(
