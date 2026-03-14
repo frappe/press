@@ -3006,7 +3006,6 @@ def _get_custom_app_upgrade_source(
 
 
 def get_compatible_public_apps_and_sources(app_names, next_version):
-	# Treat frappe-owned apps and public enabled as public apps
 	if not app_names:
 		return set(), {}
 
@@ -3022,7 +3021,7 @@ def get_compatible_public_apps_and_sources(app_names, next_version):
 		)
 		.where(AppSourceVersion.version == next_version)
 		.where(AppSource.app.isin(app_names))
-		.where((AppSource.public == 1) | (AppSource.repository_owner == "frappe"))
+		.where(AppSource.public == 1)
 		.where(AppSource.enabled == 1)
 	).run(as_dict=True)
 
