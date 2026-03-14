@@ -2,6 +2,9 @@
 # will be the default reviewers for everything in the repository unless a later
 # match overrides them.
 
+# Catch all.
+*                           @ssiyad
+
 # Wildcards.
 nginx.conf                  @adityahase
 *server                     @adityahase
