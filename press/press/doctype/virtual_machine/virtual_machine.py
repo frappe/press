@@ -40,6 +40,7 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
+from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.utils import log_error
@@ -441,6 +442,8 @@ class VirtualMachine(Document):
 			return self._provision_hetzner()
 		if self.cloud_provider == "DigitalOcean":
 			return self._provision_digital_ocean()
+		if self.cloud_provider == "Frappe Compute":
+			return self._provision_frappe_compute()
 
 		return None
 
@@ -453,6 +456,22 @@ class VirtualMachine(Document):
 			frappe.throw(f"No SSH Key found on Digital Ocean with the name {self.ssh_key}")
 
 		return existing_key[0]["id"]
+
+	def _provision_frappe_compute(self):
+		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
+		ssh_key = frappe.db.get_value("SSH Key", self.ssh_key, "public_key")
+		instance_id = self.client().provision_virtual_machine(
+			self.name,
+			self.machine_type,
+			self.virtual_machine_image or self.machine_image,
+			self.root_disk_size,
+			ssh_key,
+			self.get_cloud_init(),
+			vpc_id,
+			self.private_ip_address,
+		)
+		self.instance_id = instance_id
+		self.save()
 
 	def _provision_digital_ocean(self):
 		"""Provision a Digital Ocean Droplet"""
@@ -1902,6 +1921,14 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "DigitalOcean":
 			api_token = cluster.get_password("digital_ocean_api_token")
 			return pydo.Client(token=api_token)
+
+		if self.cloud_provider == "Frappe Compute":
+			cluster = frappe.get_doc("Cluster", self.cluster)
+			return FrappeComputeClient(
+				url=cluster.frappe_compute_base_url,
+				api_key=cluster.frappe_compute_api_key,
+				api_secret=cluster.get_password("frappe_compute_api_secret"),
+			)
 
 		return None
 
