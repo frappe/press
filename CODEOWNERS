@@ -1,17 +1,26 @@
-# Each line is a file pattern followed by one or more owners. These owners will
-# be the default owners for everything in the repo. Unless a later match takes
-# precedence.
+# Each line specifies a file pattern followed by one or more owners. Owners
+# will be the default reviewers for everything in the repository unless a later
+# match overrides them.
 
-/backbone/                @adityahase
-ssh*                      @adityahase
-nginx.conf                @adityahase
-*server                   @adityahase
-site*                     @balamurali27
-razorpay*                 @shadrak98
-stripe*                   @shadrak98
-/press/                   @ssiyad
-/press/invoice/           @shadrak98
-/press/partner/           @shadrak98
-/press/playbooks/         @adityahase @balamurali27
-/press/subscription/      @shadrak98
-/press/team/              @shadrak98
+# Wildcards.
+nginx.conf                  @adityahase
+*server                     @adityahase
+razorpay*                   @shadrak98
+ssh*                        @adityahase
+stripe*                     @shadrak98
+
+# Specific files.
+/press/agent.py             @adityahase @balamurali27 @tanmoysrt @Aradhya-Tripathi
+
+# Directories or sections.
+backbone/                   @adityahase
+bench*/                     @Aradhya-Tripathi
+dashboard/                  @siduck
+database_server/            @tanmoysrt
+invoice/                    @shadrak98
+marketplace/                @prathameshkurunkar7
+partner/                    @shadrak98
+playbooks/                  @adityahase @balamurali27
+site*/                      @tanmoysrt @balamurali27
+subscription/               @shadrak98
+team/                       @shadrak98
