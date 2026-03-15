@@ -170,7 +170,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean\nFrappe Compute",
    "set_only_once": 1
   },
   {
@@ -498,7 +498,7 @@
   }
  ],
  "links": [],
- "modified": "2026-03-05 18:15:53.238373",
+ "modified": "2026-03-15 19:01:43.557830",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
