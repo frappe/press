@@ -121,11 +121,11 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
+   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "fieldname": "region",
    "fieldtype": "Link",
    "label": "Region",
-   "mandatory_depends_on": "eval:![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
+   "mandatory_depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "options": "Cloud Region",
    "set_only_once": 1
   },
@@ -161,11 +161,11 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
+   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
-   "mandatory_depends_on": "eval:![\"Generic\", \"Frappe Compute\"].includes(doc.cloud_provider)",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
    "set_only_once": 1
   },
   {
@@ -509,7 +509,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2026-03-14 23:18:36.835288",
+ "modified": "2026-03-14 22:47:04.117885",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
