@@ -828,6 +828,16 @@ class VirtualMachine(Document):
 				return frappe.get_doc(doctype, server)
 		return None
 
+	def get_frappe_compute_status_map(self):
+		return {
+			"Running": "Running",
+			# what better status when the agent is down?
+			"Unavailable": "Pending",
+			"Stopped": "Stopped",
+			"Terminated": "Terminated",
+			"Provisioning": "Provisioning",
+		}
+
 	def get_digital_ocean_status_map(self):
 		return {
 			"new": "Pending",
