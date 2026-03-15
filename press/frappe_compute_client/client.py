@@ -41,3 +41,11 @@ class Client:
 
 	def sync(self, instance_id: str):
 		return self.client.get_api("orchestrator.api.virtual_machine.sync", {"instance_id": instance_id})
+
+	def stop(self, instance_id: str, force: bool = False):
+		return self.client.post_api(
+			"orchestrator.api.virtual_machine.stop", {"instance_id": instance_id, "force": force}
+		)
+
+	def start(self, instance_id: str):
+		return self.client.post_api("orchestrator.api.virtual_machine.start", {"instance_id": instance_id})
