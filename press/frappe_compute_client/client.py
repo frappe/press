@@ -54,3 +54,8 @@ class Client:
 		return self.client.post_api(
 			"orchestrator.api.virtual_machine.terminate", {"instance_id": instance_id}
 		)
+
+	def create_virtual_machine_image(self, instance_id: str):
+		return self.client.post_api(
+			"orchestrator.api.virtual_machine_image.new", {"instance_id": instance_id}
+		)
