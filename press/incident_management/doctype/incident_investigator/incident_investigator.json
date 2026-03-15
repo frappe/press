@@ -149,7 +149,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-16 14:05:16.606257",
+ "modified": "2026-03-12 13:29:45.279736",
  "modified_by": "Administrator",
  "module": "Incident Management",
  "name": "Incident Investigator",
@@ -166,6 +166,24 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
   }
  ],
  "row_format": "Dynamic",
