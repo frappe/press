@@ -172,3 +172,6 @@ press/public/css/marketplace-next.css
 # Vitepress
 docs/.vitepress/cache
 docs/.vitepress/dist
+
+# Tmp
+on_prem_dr
