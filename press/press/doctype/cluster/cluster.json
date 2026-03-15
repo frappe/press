@@ -15,6 +15,7 @@
   "section_break_ymkq",
   "public",
   "beta",
+  "disable_public_ips_for_servers",
   "column_break_ynby",
   "hybrid",
   "has_arm_support",
@@ -450,6 +451,7 @@
    "label": "Location"
   },
   {
+<<<<<<< HEAD
    "depends_on": "eval: doc.cloud_provider == \"Frappe Compute\"",
    "fieldname": "frappe_compute_section",
    "fieldtype": "Section Break",
@@ -473,6 +475,13 @@
    "fieldname": "frappe_compute_api_secret",
    "fieldtype": "Password",
    "label": "Frappe Compute API Secret"
+=======
+   "default": "0",
+   "description": "Disable public IP assignment on servers created from dashboard",
+   "fieldname": "disable_public_ips_for_servers",
+   "fieldtype": "Check",
+   "label": "Disable Public IPs for Servers"
+>>>>>>> 26b62b3dd (feat(cluster): Support for enable/disable public ip provisioning for new servers)
   }
  ],
  "image_field": "image",
@@ -509,7 +518,11 @@
    "link_fieldname": "document_name"
   }
  ],
+<<<<<<< HEAD
  "modified": "2026-03-14 22:47:04.117885",
+=======
+ "modified": "2026-03-15 19:57:19.647890",
+>>>>>>> 26b62b3dd (feat(cluster): Support for enable/disable public ip provisioning for new servers)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
