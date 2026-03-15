@@ -226,6 +226,7 @@ def new_unified(server: UnifiedServerDetails):
 		limit=1,
 	)[0]
 
+	_add_nat_server_if_required(cluster)
 	cluster.proxy_server = proxy_server.get("name")
 	server_doc, database_server_doc, job = cluster.create_unified_server(
 		server["title"], app_plan, team=team.name, auto_increase_storage=auto_increase_storage
@@ -247,6 +248,7 @@ def new(server):
 		frappe.throw("You cannot create a new server because your account is disabled")
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
+	_add_nat_server_if_required(cluster)
 
 	db_plan: ServerPlan = frappe.get_doc("Server Plan", server["db_plan"])
 	if not cluster.check_machine_availability(db_plan.instance_type):
@@ -288,6 +290,20 @@ def new(server):
 	)
 
 	return {"server": app_server.name, "job": job.name}
+
+
+def _add_nat_server_if_required(cluster: Cluster):
+	if cluster.disable_public_ips_for_servers:
+		nat_server = frappe.db.get_value(
+			"NAT Server",
+			{"status": "Active", "cluster": cluster.name, "secondary_private_ip": ("is", "set")},
+			"name",
+		)
+		if not nat_server:
+			nat_server = frappe.db.get_value(
+				"NAT Server", {"status": "Active", "cluster": cluster.name}, "name"
+			)
+		cluster.nat_server = nat_server
 
 
 def get_cpu_and_memory_usage(name: str, time_range: str = "4m") -> dict[str, float]:
@@ -598,8 +614,8 @@ def prometheus_query(
 	except requests.exceptions.RequestException:
 		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
 
-	datasets = []
-	labels = []
+	datasets: list[dict] = []
+	labels: list[float] = []
 
 	if not response["data"]["result"]:
 		return {"datasets": datasets, "labels": labels}
@@ -616,12 +632,12 @@ def prometheus_query(
 			dataset["values"][labels.index(label)] = flt(value, 2)
 		datasets.append(dataset)
 
-	labels = [
+	converted_labels: list[datetime] = [
 		convert_utc_to_timezone(datetime.fromtimestamp(label, tz=tz.utc).replace(tzinfo=None), timezone)
 		for label in labels
 	]
 
-	return {"datasets": datasets, "labels": labels}
+	return {"datasets": datasets, "labels": converted_labels}
 
 
 @frappe.whitelist()

@@ -77,6 +77,7 @@ class Cluster(Document):
 		default_db_server_plan_type: DF.Link | None
 		description: DF.Data | None
 		digital_ocean_api_token: DF.Password | None
+		disable_public_ips_for_servers: DF.Check
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
 		flush_table_execution_hour: DF.Int
@@ -1273,6 +1274,10 @@ class Cluster(Document):
 		database_server.auto_purge_binlog_based_on_size = True
 		database_server.binlog_max_disk_usage_percent = 75 if auto_increase_storage else 20
 
+		if hasattr(self, "nat_server") and self.nat_server:
+			server.nat_server = self.nat_server
+			database_server.nat_server = self.nat_server
+
 		server.save()  # Creating server before database server to use the preset agent password
 		database_server.save()
 
@@ -1368,6 +1373,9 @@ class Cluster(Document):
 					server.auto_purge_binlog_based_on_size = True
 					server.binlog_max_disk_usage_percent = 20
 
+				if hasattr(self, "nat_server") and self.nat_server:
+					server.nat_server = self.nat_server
+
 			case "Server":
 				server = vm.create_server(is_secondary=is_secondary, primary=primary)
 				server.title = f"{title} - Application" if not is_secondary else title
@@ -1385,6 +1393,10 @@ class Cluster(Document):
 				server.new_worker_allocation = True
 				server.auto_increase_storage = auto_increase_storage
 				server.is_for_recovery = is_for_recovery
+
+				if hasattr(self, "nat_server") and self.nat_server:
+					server.nat_server = self.nat_server
+
 			case "Proxy Server":
 				server = vm.create_proxy_server()
 				server.title = f"{title} - Proxy"
