@@ -38,3 +38,6 @@ class Client:
 				"private_ip_address": private_ip_address,
 			},
 		)
+
+	def sync(self, instance_id: str):
+		return self.client.get_api("orchestrator.api.virtual_machine.sync", {"instance_id": instance_id})
