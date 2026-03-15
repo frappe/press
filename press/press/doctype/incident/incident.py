@@ -196,6 +196,11 @@ class Incident(WebsiteGenerator):
 		server_team = frappe.db.get_value("Server", self.server, "team")
 		teams_affected = set([*site_teams_affected, server_team])
 
+		# In case there are no teams affected (which is unlikely since an incident was created),
+		# we can skip adding teams to the banner
+		if not teams_affected or not any(teams_affected):
+			return
+
 		dashboard_banner.extend("team", [{"team": team} for team in teams_affected])
 		dashboard_banner.insert()
 
