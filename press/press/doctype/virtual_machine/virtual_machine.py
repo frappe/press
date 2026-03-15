@@ -1108,6 +1108,8 @@ class VirtualMachine(Document):
 			return self._sync_hetzner(*args, **kwargs)
 		if self.cloud_provider == "DigitalOcean":
 			return self._sync_digital_ocean(*args, **kwargs)
+		if self.cloud_provider == "Frappe Compute":
+			return self._sync_frappe_compute(*args, **kwargs)
 		return None
 
 	def _update_volume_info_after_sync(self):
@@ -1213,6 +1215,35 @@ class VirtualMachine(Document):
 
 		self.save()
 		self.update_servers()
+
+	def _sync_frappe_compute(self, instance=None):
+		try:
+			virtual_machine = self.client().sync(instance_id=self.instance_id)
+		except Exception:
+			self.status = "Terminated"
+			self.save()
+			frappe.db.commit()
+			return
+		virtual_machine = frappe._dict(virtual_machine)
+		self.status = self.get_frappe_compute_status_map()[virtual_machine.status]
+		self.ram = virtual_machine.memory * 1024
+		self.vcpu = virtual_machine.number_of_vcpus
+		self.machine_type = virtual_machine.virtual_machine_type
+		self.public_ip_address = virtual_machine.public_ip_address
+
+		self.volumes = []
+
+		for disk in virtual_machine.disks:
+			disk = frappe._dict(disk)
+			self.append(
+				"volumes", {"device": "/dev/" + disk.device, "volume_id": disk.disk, "size": disk.size}
+			)
+
+		self.root_disk_size = self.get_root_volume().size
+		self.disk_size = self.get_data_volume().size
+
+		self.save()
+		frappe.db.commit()
 
 	def _sync_oci(self, instance=None):  # noqa: C901
 		if not instance:
@@ -1392,6 +1423,7 @@ class VirtualMachine(Document):
 			"OCI": lambda v: ".bootvolume." in v.volume_id,
 			"Hetzner": lambda v: v.device == "/dev/sda",
 			"DigitalOcean": lambda v: v.device == "/dev/sda",
+			"Frappe Compute": lambda v: v.device == "/dev/vda",
 		}
 		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, root_volume_filter)
