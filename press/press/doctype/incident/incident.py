@@ -185,6 +185,7 @@ class Incident(WebsiteGenerator):
 				"action_label": "View Status",
 				"help_url": "http://fc.live:8080/dashboard/status",
 				"action_endpoint": "http://fc.live:8080/dashboard/status",
+				"type_of_scope": "Team",
 			}
 		)
 
