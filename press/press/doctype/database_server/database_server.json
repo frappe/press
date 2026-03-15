@@ -179,7 +179,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean\nFrappe Compute",
    "set_only_once": 1
   },
   {
@@ -804,7 +804,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2026-03-11 16:26:28.352783",
+ "modified": "2026-03-15 20:00:07.165619",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
