@@ -15,6 +15,7 @@
   "section_break_ymkq",
   "public",
   "beta",
+  "disable_public_ips_for_servers",
   "column_break_ynby",
   "hybrid",
   "has_arm_support",
@@ -443,6 +444,13 @@
    "fieldname": "location_section",
    "fieldtype": "Section Break",
    "label": "Location"
+  },
+  {
+   "default": "0",
+   "description": "Disable public IP assignment on servers created from dashboard",
+   "fieldname": "disable_public_ips_for_servers",
+   "fieldtype": "Check",
+   "label": "Disable Public IPs for Servers"
   }
  ],
  "image_field": "image",
@@ -479,7 +487,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2026-02-23 18:19:39.118128",
+ "modified": "2026-03-15 19:57:19.647890",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
