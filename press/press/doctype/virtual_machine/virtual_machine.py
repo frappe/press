@@ -461,10 +461,16 @@ class VirtualMachine(Document):
 		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
 		ssh_key = frappe.db.get_value("SSH Key", self.ssh_key, "public_key")
 		try:
+			if self.virtual_machine_image:
+				image_id = frappe.db.get_value(
+					"Virtual Machine Image", self.virtual_machine_image, "image_id"
+				)
+			else:
+				image_id = self.machine_image
 			instance_id = self.client().provision_virtual_machine(
 				self.name,
 				self.machine_type,
-				self.virtual_machine_image or self.machine_image,
+				image_id,
 				self.root_disk_size,
 				ssh_key,
 				self.get_cloud_init(),
