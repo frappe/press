@@ -75,6 +75,7 @@ def get_clusters():
 	servers_using_alternative_port = servers_using_alternative_port_for_communication()
 	for cluster in clusters:
 		cluster["jobs"] = {}
+		cluster["proxied_jobs"] = {}
 
 		for server_type, server_type_servers in servers.items():
 			for server in server_type_servers:
@@ -103,9 +104,9 @@ def get_clusters():
 								if relevant_proxy_server.name in servers_using_alternative_port
 								else relevant_proxy_server.name
 							)
-							cluster["jobs"].setdefault("proxied", {}).setdefault(job, {}).setdefault(
-								proxy_server, []
-							).append(_server)
+							cluster["proxied_jobs"].setdefault(job, {}).setdefault(proxy_server, []).append(
+								_server
+							)
 
 	return clusters
 
