@@ -1,3 +1,4 @@
+from frappe import _dict
 from frappe.frappeclient import FrappeClient
 
 
@@ -58,4 +59,9 @@ class Client:
 	def create_virtual_machine_image(self, instance_id: str):
 		return self.client.post_api(
 			"orchestrator.api.virtual_machine_image.new", {"instance_id": instance_id}
+		)
+
+	def sync_virtual_machine_image(self, image_id: str):
+		return _dict(
+			self.client.get_api("orchestrator.api.virtual_machine_image.sync", {"image_id": image_id})
 		)
