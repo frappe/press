@@ -460,18 +460,24 @@ class VirtualMachine(Document):
 	def _provision_frappe_compute(self):
 		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
 		ssh_key = frappe.db.get_value("SSH Key", self.ssh_key, "public_key")
-		instance_id = self.client().provision_virtual_machine(
-			self.name,
-			self.machine_type,
-			self.virtual_machine_image or self.machine_image,
-			self.root_disk_size,
-			ssh_key,
-			self.get_cloud_init(),
-			vpc_id,
-			self.private_ip_address,
-		)
-		self.instance_id = instance_id
+		try:
+			instance_id = self.client().provision_virtual_machine(
+				self.name,
+				self.machine_type,
+				self.virtual_machine_image or self.machine_image,
+				self.root_disk_size,
+				ssh_key,
+				self.get_cloud_init(),
+				vpc_id,
+				self.private_ip_address,
+			)
+			self.instance_id = instance_id
+			self.status = "Pending"
+		except Exception:
+			self.status = "Terminated"
+
 		self.save()
+		frappe.db.commit()
 
 	def _provision_digital_ocean(self):
 		"""Provision a Digital Ocean Droplet"""
