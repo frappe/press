@@ -49,3 +49,8 @@ class Client:
 
 	def start(self, instance_id: str):
 		return self.client.post_api("orchestrator.api.virtual_machine.start", {"instance_id": instance_id})
+
+	def terminate(self, instance_id: str):
+		return self.client.post_api(
+			"orchestrator.api.virtual_machine.terminate", {"instance_id": instance_id}
+		)
