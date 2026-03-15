@@ -56,11 +56,7 @@
 					<FeatherIcon class="h-4" name="info" />
 					<span> Add billing details to your account before proceeding.</span>
 				</div>
-				<BillingDetails
-					ref="billingRef"
-					@back="step = 'site-plans'"
-					@success="step = 'add-payment-mode'"
-				/>
+				<BillingDetails ref="billingRef" @success="step = 'add-payment-mode'" />
 			</div>
 
 			<div v-else-if="step === 'add-payment-mode'">
