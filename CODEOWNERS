@@ -13,17 +13,20 @@ ssh*                        @adityahase
 stripe*                     @shadrak98
 
 # Specific files.
-/press/agent.py             @adityahase @balamurali27 @tanmoysrt @Aradhya-Tripathi
+/press/agent.py             @balamurali27 @tanmoysrt @Aradhya-Tripathi
 
 # Directories or sections.
 backbone/                   @adityahase
 bench*/                     @Aradhya-Tripathi
 dashboard/                  @siduck
 database_server/            @tanmoysrt
+deploy*/                    @Aradhya-Tripathi
 invoice/                    @shadrak98
 marketplace/                @prathameshkurunkar7
 partner/                    @shadrak98
 playbooks/                  @adityahase @balamurali27
+release_group*/             @Aradhya-Tripathi
 site*/                      @tanmoysrt @balamurali27
 subscription/               @shadrak98
 team/                       @shadrak98
+virtual_machine/            @balamurali27 @tanmoysrt @Aradhya-Tripathi
