@@ -835,7 +835,7 @@ class VirtualMachine(Document):
 			"Unavailable": "Pending",
 			"Stopped": "Stopped",
 			"Terminated": "Terminated",
-			"Pending": "Provisioning",
+			"Provisioning": "Pending",
 		}
 
 	def get_digital_ocean_status_map(self):
@@ -1226,7 +1226,7 @@ class VirtualMachine(Document):
 			return
 		virtual_machine = frappe._dict(virtual_machine)
 		self.status = self.get_frappe_compute_status_map()[virtual_machine.status]
-		if self.status not in ["Provisioning", "Terminated"]:
+		if self.status not in ["Pending", "Terminated"]:
 			self.ram = virtual_machine.memory * 1024
 			self.vcpu = virtual_machine.number_of_vcpus
 			self.machine_type = virtual_machine.virtual_machine_type
@@ -1844,7 +1844,7 @@ class VirtualMachine(Document):
 				self.delete_volume(volume.volume_id, sync=False)
 
 			self.client().droplets.destroy(self.instance_id)
-		elif self.cloud_provider == "":
+		elif self.cloud_provider == "Frappe Compute":
 			self.client().terminate(instance_id=self.instance_id)
 
 		if server := self.get_server():
