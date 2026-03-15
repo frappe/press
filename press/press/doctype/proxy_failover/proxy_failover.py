@@ -54,8 +54,8 @@ class ProxyFailover(Document, StepHandler):
 			primary.is_static_ip and secondary.is_static_ip
 		):
 			frappe.throw(
-				"Failover can only be initiated if only one of the proxy server has a static ip"
-			)  # nosemgrep
+				"Failover can only be initiated if only one of the proxy server has a static ip"  # nosemgrep
+			)
 
 		if not primary.is_static_ip:
 			routing_steps.extend(
