@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 import typing
+from datetime import datetime
 
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, flt, getdate
+from frappe.utils import cint, flt, getdate, add_to_date
 from frappe.utils.data import fmt_money
 
 from press.api.billing import get_stripe
@@ -21,6 +22,7 @@ from press.utils.billing import (
 	get_frappe_io_connection,
 	get_gateway_details,
 	get_partner_external_connection,
+	get_razorpay_client,
 	is_frappe_auth_disabled,
 )
 
@@ -36,10 +38,7 @@ class Invoice(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
-		from press.press.doctype.invoice_credit_allocation.invoice_credit_allocation import (
-			InvoiceCreditAllocation,
-		)
+		from press.press.doctype.invoice_credit_allocation.invoice_credit_allocation import InvoiceCreditAllocation
 		from press.press.doctype.invoice_discount.invoice_discount import InvoiceDiscount
 		from press.press.doctype.invoice_item.invoice_item import InvoiceItem
 		from press.press.doctype.invoice_transaction_fee.invoice_transaction_fee import InvoiceTransactionFee
@@ -79,7 +78,7 @@ class Invoice(Document):
 		payment_attempt_count: DF.Int
 		payment_attempt_date: DF.Date | None
 		payment_date: DF.Date | None
-		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "NEFT", "Partner Credits", "Paid By Partner"]
+		payment_mode: DF.Literal["", "Card", "Prepaid Credits", "NEFT", "Partner Credits", "Paid By Partner", "UPI Autopay"]
 		period_end: DF.Date | None
 		period_start: DF.Date | None
 		razorpay_order_id: DF.Data | None
@@ -87,9 +86,7 @@ class Invoice(Document):
 		razorpay_payment_method: DF.Data | None
 		razorpay_payment_record: DF.Link | None
 		refund_reason: DF.Data | None
-		status: DF.Literal[
-			"Draft", "Invoice Created", "Unpaid", "Paid", "Refunded", "Uncollectible", "Collected", "Empty"
-		]
+		status: DF.Literal["Draft", "Invoice Created", "Unpaid", "Paid", "Refunded", "Uncollectible", "Collected", "Empty"]
 		stripe_invoice_id: DF.Data | None
 		stripe_invoice_url: DF.Text | None
 		stripe_payment_intent_id: DF.Data | None
@@ -319,6 +316,8 @@ class Invoice(Document):
 			# there should be a separate field in team to decide whether to create automatic invoices or not
 			if self.payment_mode == "Card":
 				self.create_stripe_invoice()
+			elif self.payment_mode == "UPI Autopay":
+				self.create_razorpay_payment()
 
 		if self.status == "Paid":
 			self.submit()
@@ -479,6 +478,141 @@ class Invoice(Document):
 		if not mandate_id:
 			return ""
 		return mandate_id
+
+	def create_razorpay_payment(self):
+		"""Create a recurring payment via Razorpay mandate"""
+		print("Going to create razorpay payment")
+		if self.razorpay_payment_id:
+			# Payment already created, check status
+			try:
+				client = get_razorpay_client()
+				payment = client.payment.fetch(self.razorpay_payment_id)
+				if payment.get("status") == "captured":
+					self.status = "Paid"
+					self.update_razorpay_transaction_details(payment)
+					self.submit()
+					self.unsuspend_sites_if_applicable()
+					return
+			except Exception:
+				pass
+
+		if self.amount_due_with_tax <= 0:
+			return
+
+		# Get the default Razorpay mandate for the team
+		mandate = frappe.db.get_value(
+			"Razorpay Mandate",
+			{"team": self.team, "is_default": 1, "status": "Active"},
+			["name", "token_id", "razorpay_customer_id", "max_amount"],
+			as_dict=True,
+		)
+
+		if not mandate:
+			self.add_comment(
+				"Comment",
+				"No active Razorpay mandate found for auto-debit. Please set up a mandate.",
+			)
+			return
+
+		if not mandate.token_id:
+			self.add_comment(
+				"Comment",
+				"Razorpay mandate is not yet activated. Waiting for authorization.",
+			)
+			return
+
+		# Check if amount exceeds mandate limit
+		if self.amount_due_with_tax > mandate.max_amount:
+			self.add_comment(
+				"Comment",
+				f"Invoice amount (₹{self.amount_due_with_tax}) exceeds mandate limit (₹{mandate.max_amount}).",
+			)
+			return
+
+		amount = int(self.amount_due_with_tax * 100)  # Convert to paise
+		self._make_razorpay_payment(mandate, amount)
+
+	def _make_razorpay_payment(self, mandate, amount):
+		"""Create recurring payment using Razorpay mandate token"""
+		try:
+			client = get_razorpay_client()
+			order_response = client.order.create(
+			{
+				"amount": amount,
+				"currency": "INR",
+				"method": "upi",
+				"payment_capture": True,
+				"customer_id": mandate.razorpay_customer_id,
+				"receipt": self.name,
+				"notes": {
+					"notes_key_1": self.team,
+				},
+			}
+			)
+			print("Razorpay order response:", order_response)
+			order_id = order_response.get("id")
+
+			# Step 1: Create an order for the recurring payment
+			# Ref: https://razorpay.com/docs/api/payments/recurring-payments/upi/create-subsequent-payments/
+			order_data = {
+				"amount": amount,
+				"currency": "INR",
+				"receipt": self.name,
+				"notes": {
+					"invoice": self.name,
+					"team": self.team,
+					"mandate": mandate.name,
+				},
+			}
+			order = client.order.create(order_data)
+			order_id = order.get("id")
+
+			# Step 2: Create recurring payment with the order via POST /payments/create/recurring
+			payment = client.payment.createRecurring({
+				"email": frappe.db.get_value("Team", self.team, "user"),
+				"contact": frappe.db.get_value("Razorpay Mandate", mandate.name, "contact") or "",
+				"amount": amount,
+				"currency": "INR",
+				"order_id": order_id,
+				"customer_id": mandate.razorpay_customer_id,
+				"order_id": order_id,
+				"token": mandate.token_id,
+				"recurring": "1",
+				"description": self.get_razorpay_payment_description(),
+				"notes": {
+					"invoice": self.name,
+					"team": self.team,
+					"mandate": mandate.name,
+				},
+			})
+
+			print("Razorpay payment response:", payment)
+			self.db_set(
+				{
+					"razorpay_order_id": order_id,
+					"razorpay_payment_id": payment.get("razorpay_payment_id"),
+					"razorpay_order_id": order_id,
+					"razorpay_payment_method": "emandate",
+					"status": "Invoice Created",
+				},
+				commit=True,
+			)
+			self.reload()
+			return payment
+		except Exception:
+			frappe.db.rollback()
+			self.reload()
+
+			# Log the traceback as comment
+			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
+			self.add_comment("Comment", _("Razorpay Payment Creation Failed") + "<br><br>" + msg)
+			frappe.db.commit()
+
+	def get_razorpay_payment_description(self):
+		start = getdate(self.period_start)
+		end = getdate(self.period_end)
+		period_string = f"{start.strftime('%b %d')} - {end.strftime('%b %d')} {end.year}"
+		return f"Frappe Cloud Subscription ({period_string})"
 
 	def find_stripe_invoice_if_not_set(self):
 		if self.stripe_invoice_id:
@@ -1114,7 +1248,7 @@ def finalize_draft_invoices():
 	for name in invoices:
 		invoice = frappe.get_doc("Invoice", name)
 		# don't finalize if invoice ends today and time is before 6 PM
-		if invoice.period_end == today and current_time.hour < 18:
+		if invoice.period_end == today and current_time.hour < 10:
 			continue
 		finalize_draft_invoice(invoice)
 
