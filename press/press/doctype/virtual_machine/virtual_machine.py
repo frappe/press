@@ -1226,21 +1226,22 @@ class VirtualMachine(Document):
 			return
 		virtual_machine = frappe._dict(virtual_machine)
 		self.status = self.get_frappe_compute_status_map()[virtual_machine.status]
-		self.ram = virtual_machine.memory * 1024
-		self.vcpu = virtual_machine.number_of_vcpus
-		self.machine_type = virtual_machine.virtual_machine_type
-		self.public_ip_address = virtual_machine.public_ip_address
+		if self.status not in ["Provisioning", "Terminated"]:
+			self.ram = virtual_machine.memory * 1024
+			self.vcpu = virtual_machine.number_of_vcpus
+			self.machine_type = virtual_machine.virtual_machine_type
+			self.public_ip_address = virtual_machine.public_ip_address
 
-		self.volumes = []
+			self.volumes = []
 
-		for disk in virtual_machine.disks:
-			disk = frappe._dict(disk)
-			self.append(
-				"volumes", {"device": "/dev/" + disk.device, "volume_id": disk.disk, "size": disk.size}
-			)
+			for disk in virtual_machine.disks:
+				disk = frappe._dict(disk)
+				self.append(
+					"volumes", {"device": "/dev/" + disk.device, "volume_id": disk.disk, "size": disk.size}
+				)
 
-		self.root_disk_size = self.get_root_volume().size
-		self.disk_size = self.get_data_volume().size
+			self.root_disk_size = self.get_root_volume().size
+			self.disk_size = self.get_data_volume().size
 
 		self.save()
 		frappe.db.commit()
