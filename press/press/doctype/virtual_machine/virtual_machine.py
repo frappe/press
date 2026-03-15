@@ -1844,6 +1844,8 @@ class VirtualMachine(Document):
 				self.delete_volume(volume.volume_id, sync=False)
 
 			self.client().droplets.destroy(self.instance_id)
+		elif self.cloud_provider == "":
+			self.client().terminate(instance_id=self.instance_id)
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
