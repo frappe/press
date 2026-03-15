@@ -835,7 +835,7 @@ class VirtualMachine(Document):
 			"Unavailable": "Pending",
 			"Stopped": "Stopped",
 			"Terminated": "Terminated",
-			"Provisioning": "Provisioning",
+			"Pending": "Provisioning",
 		}
 
 	def get_digital_ocean_status_map(self):
