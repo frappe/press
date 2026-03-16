@@ -424,7 +424,7 @@ jobs:
       - name: Restore mariadb data directory from cache
         uses: actions/cache/restore@v5
         with:
-          key: mariadb-data-${{ github.run_id }}
+          key: mariadb-data-${{ github.ref }}
           path: /data/mariadb_data
 
       - name: Change ownership of mariadb data directory (post cache restore)
@@ -462,7 +462,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: /home/runner/frappe-bench
-          key: bench-dir-${{ github.run_id }}
+          key: bench-dir-${{ github.ref }}
 
       - name: Install Bench command
         run: pip install frappe-bench
