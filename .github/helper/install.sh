@@ -20,7 +20,6 @@ bench get-app press "${GITHUB_WORKSPACE}"
 
 bench setup requirements --dev
 
-export CI=Yes
 bench new-site --mariadb-user-host-login-scope='%' --db-root-password root --admin-password admin test_site
 bench --site test_site install-app press
 bench set-config -g server_script_enabled 1

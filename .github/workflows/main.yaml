@@ -1,4 +1,6 @@
 name: Press Tests
+env:
+  CI: yes
 
 on:
   push:
