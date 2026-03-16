@@ -9,7 +9,12 @@
 			ctx_type="Site"
 			:ctx_name="$site?.doc?.name"
 		/>
-
+		<CustomAlerts
+			:disable-last-child-bottom-margin="true"
+			container-class="col-span-1 lg:col-span-2"
+			ctx_type="List Page"
+			:ctx_name="$site?.doc?.name"
+		/>
 		<AlertBanner
 			v-if="$site?.doc?.creation_failed"
 			class="col-span-1 lg:col-span-2"

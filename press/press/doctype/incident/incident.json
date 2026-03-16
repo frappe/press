@@ -21,6 +21,8 @@
   "cluster",
   "resolved_by",
   "investigation",
+  "resolved_at",
+  "confirmed_at",
   "section_break_kjey",
   "subject",
   "description",
@@ -211,20 +213,31 @@
    "fieldname": "investigation",
    "fieldtype": "Link",
    "label": "Investigation",
-   "options": "Incident Investigator"
+   "options": "Incident Investigator",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "called_customer",
    "fieldtype": "Check",
    "label": "Called Customer"
+  },
+  {
+   "fieldname": "resolved_at",
+   "fieldtype": "Datetime",
+   "label": "Resolved At"
+  },
+  {
+   "fieldname": "confirmed_at",
+   "fieldtype": "Datetime",
+   "label": "Confirmed At"
   }
  ],
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "is_published_field": "show_in_website",
  "links": [],
- "modified": "2025-09-30 17:33:41.729833",
+ "modified": "2026-03-13 13:38:20.041662",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",
@@ -241,10 +254,29 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
   }
  ],
  "route": "incidents",
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
