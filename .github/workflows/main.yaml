@@ -231,6 +231,7 @@ jobs:
         with:
           key: ${{ runner.os }}-bench-dir-${{ github.ref }}
           path: /home/runner/frappe-bench
+          enableCrossOsArchive: false
 
       - name: Cache mariadb data directory
         id: cache-mariadb-data
@@ -366,6 +367,7 @@ jobs:
         with:
           path: /home/runner/frappe-bench
           key: ${{ runner.os }}-bench-dir-${{ github.ref }}
+          enableCrossOsArchive: false
 
       - name: Install Bench command
         run: pip install frappe-bench
@@ -488,6 +490,7 @@ jobs:
         with:
           path: /home/runner/frappe-bench
           key: ${{ runner.os }}-bench-dir-${{ github.ref }}
+          enableCrossOsArchive: false
 
       - name: Install Bench command
         run: pip install frappe-bench
