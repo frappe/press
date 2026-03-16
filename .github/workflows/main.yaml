@@ -260,6 +260,12 @@ jobs:
         run: pip install frappe-bench
         if: steps.cache-bench-dir.outputs.cache-hit == 'true' && steps.cache-mariadb-data.outputs.cache-hit == 'true'
 
+      - name: Bench start if cached
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench start &> bench_start_logs.txt &
+        if: steps.cache-bench-dir.outputs.cache-hit == 'true' && steps.cache-mariadb-data.outputs.cache-hit == 'true'
+
       - name: Bench migrate if cached
         working-directory: /home/runner/frappe-bench
         run: |
