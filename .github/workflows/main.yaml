@@ -235,9 +235,6 @@ jobs:
           key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ github.run_week }}
           path: /home/runner/frappe-bench
 
-      - name: Verify Symlinks
-        run: ls -lah /home/runner/frappe-bench/env/bin/
-
       - name: Cache mariadb data directory
         id: cache-mariadb-data
         uses: actions/cache@v5
@@ -276,7 +273,7 @@ jobs:
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: failure()
+        if: ${{ failure() && contains( github.event.pull_request.labels.*.name, 'debug-gha') }}
 
       - name: Stop mariadb service
         run: |
@@ -436,7 +433,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: [1, 2, 3]
+        container: [1, 2, 3, 4, 5]
     if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-build == 'true'
 
     steps:
@@ -501,7 +498,7 @@ jobs:
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: failure()
+        if: ${{ failure() && contains( github.event.pull_request.labels.*.name, 'debug-gha') }}
 
       - name: Start Bench
         working-directory: /home/runner/frappe-bench
@@ -523,7 +520,7 @@ jobs:
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |
-          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 3 --build-number ${{ matrix.container }}
+          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 5 --build-number ${{ matrix.container }}
         env:
           TYPE: server
           COVERAGE_RCFILE: /home/runner/frappe-bench/apps/press/.coveragerc
