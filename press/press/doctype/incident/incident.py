@@ -126,10 +126,6 @@ class Incident(WebsiteGenerator):
 		updates: DF.Table[IncidentUpdates]
 	# end: auto-generated types
 
-	def on_doctype_update(self):
-		"""Add index on server and status for faster querying when filtering incidents for the status page"""
-		frappe.db.add_index(self.doctype, ["server", "status"])
-
 	def validate(self):
 		if not hasattr(self, "phone_call") and self.global_phone_call_enabled:
 			self.phone_call = True
