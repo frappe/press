@@ -500,6 +500,7 @@
         "procs",
         "proot",
         "promql",
+        "proot",
         "protoc",
         "psync",
         "ptype",

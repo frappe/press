@@ -4,7 +4,6 @@ set -e
 
 cd ~ || exit
 
-pip install frappe-bench
 bench init --skip-assets --python "$(which python)" ~/frappe-bench --frappe-path https://github.com/balamurali27/frappe --frappe-branch fc-ci
 
 mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
