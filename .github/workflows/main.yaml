@@ -73,7 +73,7 @@ jobs:
 
       - name: Cache pip
         if: steps.changed-python-files.outputs.any_changed == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
@@ -104,7 +104,7 @@ jobs:
           python-version: '3.10.20'
 
       - name: Cache pip
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
@@ -193,7 +193,7 @@ jobs:
 
       - name: Cache wkhtmltopdf
         id: cache-wkhtmltopdf
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: /usr/local/bin/wkhtmltopdf
           key: ${{ runner.os }}-wkhtmltopdf-0.12.3
@@ -207,7 +207,7 @@ jobs:
           sudo chmod o+x /usr/local/bin/wkhtmltopdf
 
       - name: Cache pip
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
@@ -220,7 +220,7 @@ jobs:
         run: 'echo "::set-output name=dir::$(yarn cache dir)"'
 
       - name: Cache yarn
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -228,14 +228,28 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
+      - name: Cache bench directory
+        id: cache-bench-dir
+        uses: actions/cache@v5
+        with:
+          key: bench-dir-${{ github.ref }}
+          path: /home/runner/frappe-bench
+
+      - name: Cache mariadb data directory
+        id: cache-mariadb-data
+        uses: actions/cache@v5
+        with:
+          key: mariadb-data-${{ github.ref }}
+          path: /data/mariadb_data
+
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+        if: steps.cache-bench-dir.outputs.cache-hit != 'true' || steps.cache-mariadb-data.outputs.cache-hit != 'true'
 
-      - name: Cache bench directory
-        uses: actions/cache/save@v4
-        with:
-          key: bench-dir-${{ github.run_id }}
-          path: /home/runner/frappe-bench
+      - name: Bench migrate if cached
+        run: |
+          bench --site test_site migrate
+        if: steps.cache-bench-dir.outputs.cache-hit == 'true' && steps.cache-mariadb-data.outputs.cache-hit == 'true'
 
       - name: Stop mariadb service
         run: |
@@ -244,12 +258,6 @@ jobs:
       - name: Change ownership of mariadb data directory (for caching)
         run: |
           sudo chown -R runner:runner /data/mariadb_data
-
-      - name: Cache mariadb data directory
-        uses: actions/cache/save@v4
-        with:
-          key: mariadb-data-${{ github.run_id }}
-          path: /data/mariadb_data
 
   ui-tests:
     needs: [changes, install]
@@ -271,9 +279,9 @@ jobs:
           sudo chown -R runner:runner /data/mariadb_data
 
       - name: Restore mariadb data directory from cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
-          key: mariadb-data-${{ github.run_id }}
+          key: mariadb-data-${{ github.ref }}
           path: /data/mariadb_data
 
       - name: Change ownership of mariadb data directory (post cache restore)
@@ -315,7 +323,7 @@ jobs:
 
       - name: Cache wkhtmltopdf
         id: cache-wkhtmltopdf
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: /usr/local/bin/wkhtmltopdf
           key: ${{ runner.os }}-wkhtmltopdf-0.12.3
@@ -329,10 +337,10 @@ jobs:
           sudo chmod o+x /usr/local/bin/wkhtmltopdf
 
       - name: Restore bench directory from cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: /home/runner/frappe-bench
-          key: bench-dir-${{ github.run_id }}
+          key: bench-dir-${{ github.ref }}
 
       - name: Install Bench command
         run: pip install frappe-bench
@@ -414,7 +422,7 @@ jobs:
           sudo chown -R runner:runner /data/mariadb_data
 
       - name: Restore mariadb data directory from cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
@@ -451,7 +459,7 @@ jobs:
           version: 1.0 # Arbitrary version to bust cache when needed
 
       - name: Restore bench directory from cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: /home/runner/frappe-bench
           key: bench-dir-${{ github.run_id }}
@@ -475,9 +483,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           install: true
-
-      - name: Run tmate
-        uses: mxschmitt/action-tmate@v3
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
