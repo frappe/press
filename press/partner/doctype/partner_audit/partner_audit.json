@@ -1,0 +1,114 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "ADT-.####",
+ "creation": "2026-03-16 08:56:15.064380",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "partner_team",
+  "mode_of_audit",
+  "partner_audit_request",
+  "column_break_bdae",
+  "date",
+  "conducted_by",
+  "result"
+ ],
+ "fields": [
+  {
+   "fieldname": "partner_team",
+   "fieldtype": "Link",
+   "label": "Partner Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "mode_of_audit",
+   "fieldtype": "Select",
+   "label": "Mode of Audit",
+   "options": "\nOnline\nIn-Person\nHybrid"
+  },
+  {
+   "fieldname": "partner_audit_request",
+   "fieldtype": "Data",
+   "label": "Partner Audit Request"
+  },
+  {
+   "fieldname": "column_break_bdae",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "conducted_by",
+   "fieldtype": "Link",
+   "label": "Conducted By",
+   "options": "User"
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "Result",
+   "options": "\nCompliant\nNon-Compliant"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-16 09:05:01.586898",
+ "modified_by": "Administrator",
+ "module": "Partner",
+ "name": "Partner Audit",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Partner Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Partner",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
