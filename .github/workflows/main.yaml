@@ -492,6 +492,10 @@ jobs:
       - name: Install Bench command
         run: pip install frappe-bench
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: failure()
+
       - name: Allow tests
         working-directory: /home/runner/frappe-bench
         run: |
@@ -521,10 +525,6 @@ jobs:
         env:
           TYPE: server
           COVERAGE_RCFILE: /home/runner/frappe-bench/apps/press/.coveragerc
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ failure() && contains( github.event.pull_request.labels.*.name, 'debug-gha') }}
 
       - name: Upload coverage reports to Codecov
         uses: actions/upload-artifact@v4
