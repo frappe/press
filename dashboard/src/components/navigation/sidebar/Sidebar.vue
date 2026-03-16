@@ -1,3 +1,33 @@
+<script setup lang="ts">
+import { Tooltip } from 'frappe-ui';
+import LucideChevronDown from '~icons/lucide/chevron-down';
+import { ref, defineAsyncComponent } from 'vue';
+
+import Item from './Item.vue';
+import NavList from './NavList.vue';
+import ItemGroup from './ItemGroup.vue';
+
+import { getTeam } from '@/data/team';
+import { session } from '@/data/session';
+
+const $team = getTeam();
+const $session = session;
+
+const showTeamSwitcher = ref(false);
+
+const SwitchTeamDialog2 = defineAsyncComponent(
+	() => import('../../SwitchTeamDialog.vue'),
+);
+
+const docs = () => {
+	window.open('https://docs.frappe.io/cloud', '_blank');
+};
+
+const feedback = () => {
+	window.open('https://frappecloud.com/frappe-cloud-feedback/new', '_blank');
+};
+</script>
+
 <template>
 	<div
 		class="relative flex min-h-screen w-[220px] flex-col border-r bg-gray-50"
@@ -47,62 +77,26 @@
 								</div>
 							</Tooltip>
 						</div>
-						<FeatherIcon
-							name="chevron-down"
-							class="ml-auto h-5 w-5 text-gray-700"
-						/>
+						<LucideChevronDown class="ml-auto size-4" />
 					</button>
 				</template>
 			</Dropdown>
 		</div>
+
 		<nav class="px-2">
-			<NavigationItems>
+			<NavList>
 				<template v-slot="{ navigation }">
-					<template v-for="(item, i) in navigation" :key="item.name">
-						<AppSidebarItemGroup v-if="item.children" :item="item" />
-						<AppSidebarItem class="mt-0.5" v-else :item="item" />
+					<template v-for="(item, _) in navigation" :key="item.name">
+						<ItemGroup v-if="item.children" :item="item" />
+						<Item class="mt-0.5" v-else :item="item" />
 					</template>
 				</template>
-			</NavigationItems>
+			</NavList>
 		</nav>
 		<!-- TODO: update component name after dashboard-beta merges -->
-		<SwitchTeamDialog2 v-model="showTeamSwitcher" :key="showTeamSwitcher" />
+		<SwitchTeamDialog2
+			v-model="showTeamSwitcher"
+			:key="String(showTeamSwitcher)"
+		/>
 	</div>
 </template>
-
-<script>
-import { defineAsyncComponent } from 'vue';
-import AppSidebarItem from './AppSidebarItem.vue';
-import { Tooltip } from 'frappe-ui';
-import NavigationItems from './NavigationItems.vue';
-import AppSidebarItemGroup from './AppSidebarItemGroup.vue';
-
-export default {
-	name: 'AppSidebar',
-	components: {
-		AppSidebarItem,
-		AppSidebarItemGroup,
-		SwitchTeamDialog2: defineAsyncComponent(
-			() => import('./SwitchTeamDialog.vue'),
-		),
-		Tooltip,
-		NavigationItems,
-	},
-	data() {
-		return {
-			showTeamSwitcher: false,
-		};
-	},
-	methods: {
-		docs() {
-			window.open('https://docs.frappe.io/cloud', '_blank');
-		},
-		feedback() {
-			window.open(
-				'https://frappecloud.com/frappe-cloud-feedback/new',
-				'_blank',
-			);
-		},
-	},
-};
-</script>
