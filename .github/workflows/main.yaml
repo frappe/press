@@ -233,6 +233,9 @@ jobs:
           path: /home/runner/frappe-bench
           enableCrossOsArchive: false
 
+      - name: Verify Symlinks
+        run: ls -lah /home/runner/frappe-bench/env/bin/
+
       - name: Cache mariadb data directory
         id: cache-mariadb-data
         uses: actions/cache@v5
