@@ -635,30 +635,41 @@ class IncidentInvestigator(Document, StepHandler):
 		self.status = status
 		self.save()
 
-	def add_investigation_findings(self):
+	def add_investigation_findings(self, step: "ActionStep"):
 		"""Add investigation findings from each step"""
-		findings = []
-		is_unified_server = frappe.db.get_value("Server", self.server, "is_unified_server")
-		investigation_steps = (
-			self.server_investigation_steps
-			if is_unified_server
-			else self.server_investigation_steps + self.database_investigation_steps
-		)
+		step.status = StepStatus.Running
+		step.save()
 
-		for step in investigation_steps:
-			step_type = "Server" if step in self.server_investigation_steps else "Database"
-			findings.append(
-				{
-					"step_type": step_type,
-					"step_name": step.step_name,
-					"method": step.method,
-					"is_likely_cause": bool(step.is_likely_cause),
-					"is_unable_to_investigate": bool(step.is_unable_to_investigate),
-				}
+		try:
+			findings = []
+			is_unified_server = frappe.db.get_value("Server", self.server, "is_unified_server")
+			investigation_steps = (
+				self.server_investigation_steps
+				if is_unified_server
+				else self.server_investigation_steps + self.database_investigation_steps
 			)
 
-		self.investigation_findings = json.dumps(findings, indent=2)
-		self.save()
+			for step in investigation_steps:
+				step_type = "Server" if step in self.server_investigation_steps else "Database"
+				findings.append(
+					{
+						"step_type": step_type,
+						"step_name": step.step_name,
+						"method": step.method,
+						"is_likely_cause": bool(step.is_likely_cause),
+						"is_unable_to_investigate": bool(step.is_unable_to_investigate),
+					}
+				)
+
+			self.investigation_findings = json.dumps(findings, indent=2)
+			step.status = StepStatus.Success
+
+		except Exception as e:
+			step.status = StepStatus.Failure
+			step.output = frappe.safe_decode(str(e))
+
+		finally:
+			self.save()
 
 	### Some helper methods for initiating investigation steps
 	@property
