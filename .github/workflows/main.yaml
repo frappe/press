@@ -285,6 +285,18 @@ jobs:
         run: |
           sudo chown -R runner:runner /data/mariadb_data
 
+      - name: Cache bench directory
+        uses: actions/cache/save@v5
+        with:
+          key: bench-dir-${{ github.ref }}-${{ github.run_week }}
+          path: /home/runner/frappe-bench
+
+      - name: Cache mariadb data directory
+        uses: actions/cache/save@v5
+        with:
+          key: mariadb-data-${{ github.ref }}-${{ github.run_week }}
+          path: /data/mariadb_data
+
   ui-tests:
     needs: [changes, install]
     name: Client
