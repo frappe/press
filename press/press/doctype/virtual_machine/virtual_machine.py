@@ -1224,7 +1224,7 @@ class VirtualMachine(Document):
 
 	def _sync_frappe_compute(self, instance=None):
 		try:
-			virtual_machine = self.client().sync(instance_id=self.instance_id)
+			virtual_machine = self.client().sync_virtual_machine(instance_id=self.instance_id)
 		except Exception:
 			self.status = "Terminated"
 			self.save()
@@ -1793,7 +1793,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "power_on"})
 		elif self.cloud_provider == "Frappe Compute":
-			self.client().start(instance_id=self.instance_id)
+			self.client().start_virtual_machine(instance_id=self.instance_id)
 
 		# Digital Ocean `start` takes some time therefore this sync is useless for DO.
 		self.sync()
@@ -1809,7 +1809,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "power_off"})
 		elif self.cloud_provider == "Frappe Compute":
-			self.client().stop(self.instance_id, force=False)
+			self.client().stop_virtual_machine(self.instance_id, force=False)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1851,7 +1851,7 @@ class VirtualMachine(Document):
 
 			self.client().droplets.destroy(self.instance_id)
 		elif self.cloud_provider == "Frappe Compute":
-			self.client().terminate(instance_id=self.instance_id)
+			self.client().terminate_virtual_machine(instance_id=self.instance_id)
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
