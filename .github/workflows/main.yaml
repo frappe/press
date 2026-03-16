@@ -250,6 +250,10 @@ jobs:
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
         if: steps.cache-bench-dir.outputs.cache-hit != 'true' || steps.cache-mariadb-data.outputs.cache-hit != 'true'
 
+      - name: Install Bench command if cached
+        run: pip install frappe-bench
+        if: steps.cache-bench-dir.outputs.cache-hit == 'true' && steps.cache-mariadb-data.outputs.cache-hit == 'true'
+
       - name: Bench migrate if cached
         run: |
           bench --site test_site migrate
