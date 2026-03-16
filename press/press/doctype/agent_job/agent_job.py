@@ -808,7 +808,9 @@ def retry_undelivered_jobs(server):
 		if delivered_jobs:
 			update_job_ids_for_delivered_jobs(delivered_jobs)
 
-		undelivered_jobs = list(set(server_jobs[server]) - set(delivered_jobs))
+		undelivered_jobs = list(
+			set(server_jobs[server]) - set([job["agent_job_id"] for job in delivered_jobs])
+		)
 
 		for job_name in undelivered_jobs:
 			job = AgentJob("Agent Job", job_name)
