@@ -104,6 +104,7 @@ notification_config = "press.notifications.get_notification_config"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
+	"Site Action": "press.press.doctype.site_action.site_action.get_permission_query_conditions",
 	"Site Backup": "press.press.doctype.site_backup.site_backup.get_permission_query_conditions",
 	"Site Domain": ("press.press.doctype.site_domain.site_domain.get_permission_query_conditions"),
 	"TLS Certificate": "press.press.doctype.tls_certificate.tls_certificate.get_permission_query_conditions",
@@ -130,38 +131,12 @@ permission_query_conditions = {
 	"Server Snapshot Recovery": "press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.get_permission_query_conditions",
 }
 has_permission = {
-<<<<<<< HEAD
 	"Site": "press.overrides.has_permission",
-=======
-	"App Release": "press.press.doctype.app_release.app_release.has_permission",
-	"App Source": "press.overrides.has_permission",
-	"Balance Transaction": "press.overrides.has_permission",
-	"Bench": "press.overrides.has_permission",
-	"Database Server": "press.overrides.has_permission",
-	"Deploy Candidate Difference": "press.overrides.has_permission",
-	"Deploy Candidate": "press.overrides.has_permission",
-	"Deploy": "press.overrides.has_permission",
-	"Invoice": "press.press.doctype.invoice.invoice.has_permission",
-	"Press Webhook Attempt": "press.press.doctype.press_webhook_attempt.press_webhook_attempt.has_permission",
-	"Press Webhook Log": "press.overrides.has_permission",
-	"Press Webhook": "press.overrides.has_permission",
-	"Release Group": "press.overrides.has_permission",
-	"SQL Playground Log": "press.overrides.has_permission",
-	"Server Snapshot Recovery": "press.overrides.has_permission",
-	"Server Snapshot": "press.overrides.has_permission",
-	"Server": "press.overrides.has_permission",
 	"Site Action": "press.overrides.has_permission",
->>>>>>> ac0af132f (fix(access): Move `has_permission` to hooks)
 	"Site Backup": "press.overrides.has_permission",
-	"Site Database User": "press.overrides.has_permission",
 	"Site Domain": "press.overrides.has_permission",
-	"Site": "press.overrides.has_permission",
-	"Stripe Payment Method": "press.overrides.has_permission",
-	"Subscription": "press.overrides.has_permission",
-	"Support Access": "press.press.doctype.support_access.support_access.has_permission",
 	"TLS Certificate": "press.overrides.has_permission",
 	"Team": "press.press.doctype.team.team.has_permission",
-<<<<<<< HEAD
 	"Subscription": "press.overrides.has_permission",
 	"Stripe Payment Method": "press.overrides.has_permission",
 	"Balance Transaction": "press.overrides.has_permission",
@@ -183,8 +158,7 @@ has_permission = {
 	"Server Snapshot": "press.overrides.has_permission",
 	"Server Snapshot Recovery": "press.overrides.has_permission",
 	"Server Firewall": "press.press.doctype.server_firewall.server_firewall.has_permission",
-=======
->>>>>>> ac0af132f (fix(access): Move `has_permission` to hooks)
+	"Support Access": "press.press.doctype.support_access.support_access.has_permission",
 }
 
 # Document Events
@@ -210,7 +184,10 @@ doc_events = {
 		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
 	},
 	"Server": {
-		"after_insert": "press.press.doctype.press_role.press_role.create_user_resource",
+		"after_insert": [
+			"press.press.doctype.press_role.press_role.create_user_resource",
+			"press.press.doctype.server_firewall.server_firewall.from_server",
+		],
 	},
 }
 
@@ -252,6 +229,7 @@ scheduler_events = {
 		"press.press.doctype.registry_server.registry_server.delete_old_images_from_registry",
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",
+		"press.press.doctype.site_backup.site_backup.delete_backups_for_archived_sites_after_retention",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -329,10 +307,12 @@ scheduler_events = {
 			"press.press.doctype.press_job.press_job.process_failed_callbacks",
 			"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.resume_warmed_up_restorations",
 			"press.press.doctype.server_snapshot.server_snapshot.move_pending_snapshots_to_processing",
+			"press.press.doctype.bench.bench.process_bench_queue",
 		],
 		"* * * * * 0/30": [
 			"press.press.doctype.account_request.account_request.expire_request_key",
 			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
+			"press.press.doctype.site_action.site_action.process_site_actions",
 		],
 		"0 */2 * * *": [
 			"press.signup_e2e.run_signup_e2e",
@@ -384,6 +364,10 @@ scheduler_events = {
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
 			"press.press.doctype.team.suspend_sites.execute",
+			"press.press.doctype.site_backup.site_backup.delete_successful_unavailable_backups_for_archived_sites",
+			"press.press.doctype.site_backup.site_backup.delete_failed_unavailable_backups_for_archived_sites",
+			"press.press.doctype.site_backup.site_backup.delete_agent_job_records_for_archived_sites",
+			"press.press.doctype.site_backup.site_backup.delete_site_activity_records_for_archived_sites",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
