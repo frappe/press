@@ -261,6 +261,18 @@ jobs:
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
         if: steps.cache-bench-dir.outputs.cache-hit != 'true' || steps.cache-mariadb-data.outputs.cache-hit != 'true'
 
+      - name: Setup python requirements if needed
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench setup requirements --python
+        if: steps.cache-pip.outputs.cache-hit != 'true'
+
+      - name: Setup node modules if needed
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench setup requirements --node
+        if: steps.cache-yarn.outputs.cache-hit != 'true'
+
       - name: Bench start if cached
         working-directory: /home/runner/frappe-bench
         run: |
