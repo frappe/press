@@ -1,12 +1,11 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
-import typing
-
+# import frappe
 from frappe.model.document import Document
 
 
-class NewBenchQueue(Document):
+class DashboardBannerTeam(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -15,10 +14,9 @@ class NewBenchQueue(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		bench: DF.Link | None
-		group: DF.Link
-		payload: DF.JSON
-		status: DF.Literal["Queued", "Started", "Failure"]
+		parent: DF.Data
+		parentfield: DF.Data
+		parenttype: DF.Data
+		team: DF.Link
 	# end: auto-generated types
-
-	dashboard_fields: typing.ClassVar = ["status", "group"]
+	pass
