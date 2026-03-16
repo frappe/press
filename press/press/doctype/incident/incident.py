@@ -183,8 +183,8 @@ class Incident(WebsiteGenerator):
 				"type": "Info",
 				"enabled": 1,
 				"action_label": "View Status",
-				"help_url": "http://fc.live:8080/dashboard/status",
-				"action_endpoint": "http://fc.live:8080/dashboard/status",
+				"help_url": "https://cloud.frappe.io/dashboard/status",
+				"action_endpoint": "https://cloud.frappe.io/dashboard/status",
 				"type_of_scope": "Team",
 			}
 		)
