@@ -235,7 +235,7 @@ jobs:
           key: ${{ runner.os }}-bench-dir-${{ github.ref }}
           path: /home/runner/frappe-bench
 
-      - name: Change ownership of mariadb data directory (for cache restore)
+      - name: Allow runner user to access mariadb data directory (for cache restore)
         run: |
           sudo usermod -aG mysql runner # pragma: allowlist secret
 
