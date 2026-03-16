@@ -126,10 +126,6 @@ class Incident(WebsiteGenerator):
 		updates: DF.Table[IncidentUpdates]
 	# end: auto-generated types
 
-	def on_doctype_update(self):
-		"""Add index on server and status for faster querying when filtering incidents for the status page"""
-		frappe.db.add_index(self.doctype, ["server", "status"])
-
 	def validate(self):
 		if not hasattr(self, "phone_call") and self.global_phone_call_enabled:
 			self.phone_call = True
@@ -183,8 +179,8 @@ class Incident(WebsiteGenerator):
 				"type": "Info",
 				"enabled": 1,
 				"action_label": "View Status",
-				"help_url": "http://fc.live:8080/dashboard/status",
-				"action_endpoint": "http://fc.live:8080/dashboard/status",
+				"help_url": "https://cloud.frappe.io/dashboard/status",
+				"action_endpoint": "https://cloud.frappe.io/dashboard/status",
 				"type_of_scope": "Team",
 			}
 		)
