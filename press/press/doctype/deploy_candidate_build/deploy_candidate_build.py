@@ -265,6 +265,11 @@ class DeployCandidateBuild(Document):
 		"deploy_candidate",
 	)
 
+	def on_doctype_update(self):
+		# Ignoring filesorts
+		# https://dev.mysql.com/doc/refman/8.4/en/order-by-optimization.html#order-by-index-use
+		frappe.db.add_index(self.doctype, ["team", "group", "creation"])
+
 	@cached_property
 	def candidate(self) -> DeployCandidate:
 		return frappe.get_doc("Deploy Candidate", self.deploy_candidate)
