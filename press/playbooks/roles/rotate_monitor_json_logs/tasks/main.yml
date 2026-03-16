@@ -1,13 +1,4 @@
 ---
-- name: Fix permissions for existing monitor.json.log files
-  ansible.builtin.file:
-    path: "{{ item }}"
-    mode: '0640'
-    owner: frappe
-    group: frappe
-  with_fileglob:
-    - /home/frappe/benches/*/logs/monitor.json.log
-
 - name: Ensure logrotate configuration for monitor.json.log
   copy:
     dest: /etc/logrotate.d/monitor_json_logs
@@ -21,6 +12,5 @@
           nocompress
           create 640 frappe frappe
       }
-
 - name: Force logrotate to apply new configuration
   command: logrotate -f /etc/logrotate.d/monitor_json_logs
