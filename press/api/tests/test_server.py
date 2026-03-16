@@ -3,12 +3,11 @@
 
 from __future__ import annotations
 
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
-from moto import mock_aws
 
 from press.api.server import all, change_plan, new
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
@@ -21,6 +20,9 @@ from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
 	create_test_virtual_machine_image,
+)
+from press.press.doctype.virtual_machine_image.virtual_machine_image import (
+	VirtualMachineImage,
 )
 from press.runner import Ansible
 from press.utils.test import foreground_enqueue_doc_with_user
@@ -103,6 +105,8 @@ def successful_wait_for_cloud_init(self: BaseServer):
 	)
 
 
+@patch.object(VirtualMachineImage, "client", new=MagicMock())
+@patch.object(VirtualMachine, "client", new=MagicMock())
 @patch.object(Ansible, "run", new=Mock())
 @patch.object(BaseServer, "ping_ansible", new=successful_ping_ansible)
 @patch.object(DatabaseServer, "upgrade_mariadb", new=successful_upgrade_mariadb)
@@ -111,7 +115,6 @@ def successful_wait_for_cloud_init(self: BaseServer):
 @patch.object(BaseServer, "update_tls_certificate", new=successful_tls_certificate)
 @patch.object(BaseServer, "update_agent_ansible", new=successful_update_agent_ansible)
 @patch.object(Cluster, "check_machine_availability", new=available_check_machine_availability)
-@mock_aws
 class TestAPIServer(FrappeTestCase):
 	@patch.object(Cluster, "provision_on_aws_ec2", new=Mock())
 	def setUp(self):
