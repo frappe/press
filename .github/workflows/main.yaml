@@ -234,7 +234,6 @@ jobs:
         with:
           key: ${{ runner.os }}-bench-dir-${{ github.ref }}
           path: /home/runner/frappe-bench
-          enableCrossOsArchive: false
 
       - name: Verify Symlinks
         run: ls -lah /home/runner/frappe-bench/env/bin/
@@ -372,7 +371,6 @@ jobs:
         with:
           path: /home/runner/frappe-bench
           key: ${{ runner.os }}-bench-dir-${{ github.ref }}
-          enableCrossOsArchive: false
 
       - name: Don't run unnecessary services
         working-directory: /home/runner/frappe-bench
@@ -495,7 +493,6 @@ jobs:
         with:
           path: /home/runner/frappe-bench
           key: ${{ runner.os }}-bench-dir-${{ github.ref }}
-          enableCrossOsArchive: false
 
       - name: Allow tests
         working-directory: /home/runner/frappe-bench
