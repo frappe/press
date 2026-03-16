@@ -237,7 +237,7 @@ jobs:
 
       - name: Change ownership of mariadb data directory (for cache restore)
         run: |
-          sudo chown -R runner:runner /data/mariadb_data
+          sudo usermod -aG mysql runner # pragma: allowlist secret
 
       - name: Cache mariadb data directory
         id: cache-mariadb-data
