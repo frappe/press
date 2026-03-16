@@ -497,14 +497,14 @@ jobs:
           key: ${{ runner.os }}-bench-dir-${{ github.ref }}
           enableCrossOsArchive: false
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: failure()
-
       - name: Allow tests
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site set-config allow_tests true
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: failure()
 
       - name: Start Bench
         working-directory: /home/runner/frappe-bench
