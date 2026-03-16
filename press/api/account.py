@@ -1371,6 +1371,7 @@ def get_user_banners():
 			| ((DashboardBanner.type_of_scope == "Server") & (DashboardBanner.server.isin(servers or [""])))
 			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBannerTeam.team == team))
 		)
+		.distinct()
 		.run(as_dict=True)
 	)
 
