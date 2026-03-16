@@ -278,7 +278,7 @@ jobs:
 
       - name: Stop mariadb service
         run: |
-          docker stop ${{ job.services.mariadb.id }}
+          docker stop mariadb
 
       - name: Change ownership of mariadb data directory (for caching)
         run: |
