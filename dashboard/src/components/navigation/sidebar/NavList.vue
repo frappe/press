@@ -1,5 +1,4 @@
-<script setup lang='ts'>
-
+<script setup lang="ts">
 import { h, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue';
 
 import DoorOpen from '~icons/lucide/door-open';
@@ -30,7 +29,7 @@ import { useRoute } from 'vue-router';
 const $route = useRoute();
 const $team = getTeam();
 const $session = session;
-const $socket = getCurrentInstance().proxy.$socket
+const $socket = getCurrentInstance().proxy.$socket;
 
 const navigation = computed(() => {
 	if (!$team?.doc) return [];
@@ -47,7 +46,7 @@ const navigation = computed(() => {
 	return [
 		{
 			name: 'Welcome',
-			icon: (DoorOpen),
+			icon: DoorOpen,
 			route: '/welcome',
 			isActive: routeName === 'Welcome',
 			condition: !onboardingComplete,
@@ -159,13 +158,13 @@ const navigation = computed(() => {
 				},
 				{
 					name: 'SQL Playground',
-					icon: (DatabaseZap),
+					icon: DatabaseZap,
 					route: '/sql-playground',
 					isActive: routeName === 'SQL Playground',
 				},
 				{
 					name: 'Binlog Browser',
-					icon: (FileSearch),
+					icon: FileSearch,
 					route: '/binlog-browser',
 					isActive: routeName === 'Binlog Browser',
 					condition: $team.doc.is_binlog_indexer_enabled ?? false,
@@ -181,7 +180,7 @@ const navigation = computed(() => {
 		},
 		{
 			name: 'Marketplace',
-			icon: (App),
+			icon: App,
 			route: '/apps',
 			isActive: routeName.startsWith('Marketplace'),
 			condition:
@@ -191,23 +190,22 @@ const navigation = computed(() => {
 		},
 		{
 			name: 'Billing',
-			icon: (WalletCards),
+			icon: WalletCards,
 			route: '/billing',
 			isActive: routeName.startsWith('Billing'),
-			condition:
-				$team.doc?.is_desk_user || $session.hasBillingAccess,
+			condition: $team.doc?.is_desk_user || $session.hasBillingAccess,
 			disabled: enforce2FA,
 		},
 		{
 			name: 'Access Requests',
-			icon: (Key),
+			icon: Key,
 			route: '/access-requests',
 			isActive: routeName === 'Access Requests',
 			disabled: enforce2FA,
 		},
 		{
 			name: 'Partnership',
-			icon: (Globe),
+			icon: Globe,
 			route: '/partners',
 			isActive: routeName === 'Partnership',
 			condition: Boolean($team.doc.erpnext_partner),
@@ -215,20 +213,27 @@ const navigation = computed(() => {
 		},
 		{
 			name: 'Settings',
-			icon: (Settings),
+			icon: Settings,
 			route: '/settings',
 			isActive: routeName.startsWith('Settings'),
 			disabled: enforce2FA,
 		},
 		{
+			name: 'Status',
+			icon: () => h(Globe),
+			route: '/status',
+			isActive: routeName === 'Status',
+			disabled: enforce2FA,
+		},
+		{
 			name: 'Partner Admin',
-			icon: (Shield),
+			icon: Shield,
 			route: '/partner-admin',
 			isActive: routeName === 'Partner Admin',
 			condition: Boolean($team.doc.is_desk_user),
 		},
 	].filter((item) => item.condition ?? true);
-})
+});
 
 onMounted(() => {
 	$socket.emit('doctype_subscribe', 'Press Notification');
@@ -237,7 +242,7 @@ onMounted(() => {
 			unreadNotificationsCount.setData((data) => data + 1);
 		}
 	});
-})
+});
 
 onUnmounted(() => {
 	$socket.off('press_notification');
