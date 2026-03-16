@@ -159,17 +159,6 @@ jobs:
     needs: changes
     if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-js-vue == 'true' || needs.changes.outputs.changed-build == 'true'
 
-    services:
-      mariadb:
-        image: mariadb:10.6
-        env:
-          MYSQL_ROOT_PASSWORD: root
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
-        volumes:
-          - /data/mariadb_data:/var/lib/mysql
-
     steps:
       - name: Clone
         uses: actions/checkout@v4
@@ -245,6 +234,19 @@ jobs:
         with:
           key: ${{ runner.os }}-mariadb-data-${{ github.ref }}
           path: /data/mariadb_data
+
+      - name: Start mariadb service
+        run: |
+          docker run -d \
+            --name mariadb \
+            -e MYSQL_ROOT_PASSWORD=root \
+            -p 3306:3306 \
+            -v /data/mariadb_data:/var/lib/mysql \
+            --health-cmd="mysqladmin ping" \
+            --health-interval=5s \
+            --health-timeout=2s \
+            --health-retries=3 \
+            mariadb:10.6
 
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
