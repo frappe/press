@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Get changed python files
         id: changed-python-files
@@ -96,7 +96,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -143,7 +143,7 @@ jobs:
     name: Semgrep Rules
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: '3.10.20'
@@ -169,7 +169,7 @@ jobs:
           sudo chown -R runner:runner /data/mariadb_data
 
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -329,7 +329,7 @@ jobs:
             mariadb:10.6
 
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -472,7 +472,7 @@ jobs:
             mariadb:10.6
 
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -549,7 +549,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
