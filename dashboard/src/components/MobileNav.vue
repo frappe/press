@@ -70,7 +70,7 @@
 <script setup>
 import { defineAsyncComponent, ref } from 'vue';
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
-import NavigationItems from './NavigationItems.vue';
+import NavigationItems from './navigation/sidebar/NavList.vue';
 import MobileNavItem from './MobileNavItem.vue';
 import MobileNavItemGroup from './MobileNavItemGroup.vue';
 
