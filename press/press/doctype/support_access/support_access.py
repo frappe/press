@@ -306,6 +306,8 @@ class SupportAccess(Document):
 
 
 def has_permission(doc, user=None, permission_type=None) -> bool:
+	if doc.is_new():
+		return True
 	if get_current_team() in (doc.requested_team, doc.target_team):
 		return True
 	return False
