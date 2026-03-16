@@ -255,6 +255,7 @@ jobs:
         if: steps.cache-bench-dir.outputs.cache-hit == 'true' && steps.cache-mariadb-data.outputs.cache-hit == 'true'
 
       - name: Bench migrate if cached
+        working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site migrate
         if: steps.cache-bench-dir.outputs.cache-hit == 'true' && steps.cache-mariadb-data.outputs.cache-hit == 'true'
