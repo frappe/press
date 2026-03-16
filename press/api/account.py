@@ -1381,11 +1381,10 @@ def get_user_banners():
 			| ((DashboardBanner.type_of_scope == "Server") & (DashboardBanner.server.isin(servers or [""])))
 			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBannerTeam.team == team))
 		)
-		.distinct()
 		.run(as_dict=True)
 	)
 
-	# filter out dismissed banners
+	# filter out dismissed banners)
 	banner_dismissals_by_user = frappe.get_all(
 		"Dashboard Banner Dismissal",
 		filters={"user": frappe.session.user, "parent": ["in", [b["name"] for b in all_enabled_banners]]},
