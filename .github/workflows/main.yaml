@@ -272,6 +272,10 @@ jobs:
           bench --site test_site migrate
         if: steps.cache-bench-dir.outputs.cache-hit == 'true' && steps.cache-mariadb-data.outputs.cache-hit == 'true'
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ failure() && contains( github.event.pull_request.labels.*.name, 'debug-gha') }}
+
       - name: Stop mariadb service
         run: |
           docker stop ${{ job.services.mariadb.id }}
