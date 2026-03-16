@@ -265,11 +265,6 @@ class DeployCandidateBuild(Document):
 		"deploy_candidate",
 	)
 
-	def on_doctype_update(self):
-		# Ignoring filesorts
-		# https://dev.mysql.com/doc/refman/8.4/en/order-by-optimization.html#order-by-index-use
-		frappe.db.add_index(self.doctype, ["team", "group", "creation"])
-
 	@cached_property
 	def candidate(self) -> DeployCandidate:
 		return frappe.get_doc("Deploy Candidate", self.deploy_candidate)
@@ -1680,3 +1675,9 @@ def is_image_in_registry(image: str, group: str, settings: dict[str, str]) -> bo
 
 	image_tags = response.json().get("tags")
 	return image in image_tags
+
+
+def on_doctype_update():
+	# Ignoring filesorts
+	# https://dev.mysql.com/doc/refman/8.4/en/order-by-optimization.html#order-by-index-use
+	frappe.db.add_index("Deploy Candidate Build", ["team", "group", "creation"])

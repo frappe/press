@@ -28,8 +28,9 @@ class ActionStep(Document):
 		step_name: DF.Data | None
 	# end: auto-generated types
 
-	def on_doctype_update(self):
-		"""Add index on parent and idx fields for faster ordered action step lookup
-		https://dev.mysql.com/doc/refman/8.4/en/order-by-optimization.html#order-by-index-use
-		"""
-		frappe.db.add_index(self.doctype, ["parent", "idx"])
+
+def on_doctype_update():
+	"""Add index on parent and idx fields for faster ordered action step lookup
+	https://dev.mysql.com/doc/refman/8.4/en/order-by-optimization.html#order-by-index-use
+	"""
+	frappe.db.add_index("Action Step", ["parent", "idx"])
