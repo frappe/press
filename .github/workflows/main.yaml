@@ -274,7 +274,7 @@ jobs:
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: ${{ failure() && contains( github.event.pull_request.labels.*.name, 'debug-gha') }}
+        if: failure()
 
       - name: Stop mariadb service
         run: |
