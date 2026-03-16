@@ -2180,6 +2180,77 @@ class VirtualMachine(Document):
 
 		self.sync()
 
+	def attach_to_firewall(self, firewall_id: int):
+		if self.cloud_provider == "AWS EC2":
+			self.client().modify_instance_attribute(
+				InstanceId=self.instance_id,
+				Groups=[*self.get_security_groups(), firewall_id],
+			)
+
+		elif self.cloud_provider == "OCI":
+			from oci.core.models import UpdateVnicDetails
+
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			network_client: VirtualNetworkClient = self.client(VirtualNetworkClient)
+			compute_client: ComputeClient = self.client(ComputeClient)
+
+			attachments = compute_client.list_vnic_attachments(
+				compartment_id=cluster.oci_tenancy, instance_id=self.instance_id
+			).data
+
+			vnic_id = attachments[0].vnic_id
+			network_client.update_vnic(
+				vnic_id,
+				UpdateVnicDetails(network_security_group_ids=[*self.get_security_groups() + firewall_id]),
+			)
+
+		elif self.cloud_provider == "Hetzner":
+			from hcloud.firewalls.domain import FirewallResource
+
+			client = self.client()
+			firewall = client.firewalls.get_by_id(firewall_id)
+			firewall.apply_to_resources(
+				resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
+			)
+
+	def detach_from_firewall(self, firewall_id: int):
+		if self.cloud_provider == "AWS EC2":
+			security_groups = [sg for sg in self.get_security_groups() if sg != firewall_id]
+
+			self.client().modify_instance_attribute(
+				InstanceId=self.instance_id,
+				Groups=security_groups,
+			)
+
+		elif self.cloud_provider == "OCI":
+			from oci.core.models import UpdateVnicDetails
+
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			network_client: VirtualNetworkClient = self.client(VirtualNetworkClient)
+			compute_client: ComputeClient = self.client(ComputeClient)
+
+			attachments = compute_client.list_vnic_attachments(
+				compartment_id=cluster.oci_tenancy, instance_id=self.instance_id
+			).data
+
+			vnic_id = attachments[0].vnic_id
+
+			nsg_ids = [nsg for nsg in self.get_security_groups() if nsg != firewall_id]
+
+			network_client.update_vnic(vnic_id, UpdateVnicDetails(network_security_group_ids=nsg_ids))
+
+		elif self.cloud_provider == "Hetzner":
+			from hcloud.firewalls.domain import FirewallResource
+
+			client = self.client()
+			firewall = client.firewalls.get_by_id(firewall_id)
+
+			firewall.remove_from_resources(
+				resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
+			)
+
 	@classmethod
 	def bulk_sync_aws(cls):
 		try:

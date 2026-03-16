@@ -6,6 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "wireguard_port",
+  "firewall_id",
+  "cluster",
   "column_break_swdr",
   "wireguard_network",
   "wireguard_interface",
@@ -270,12 +273,32 @@
    "fieldname": "db_lsyncd_stop_at",
    "fieldtype": "Datetime",
    "label": "Lsyncd Stop At"
+  },
+  {
+   "fieldname": "firewall_id",
+   "fieldtype": "Data",
+   "label": "Firewall ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "app_server.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1
+  },
+  {
+   "fieldname": "wireguard_port",
+   "fieldtype": "Int",
+   "label": "Wireguard Port",
+   "set_only_once": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-13 11:17:56.542305",
+ "modified": "2026-03-16 17:01:39.165906",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "On-Prem Failover",
