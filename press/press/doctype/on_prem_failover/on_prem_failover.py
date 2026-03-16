@@ -13,8 +13,11 @@ from frappe.model.document import Document
 from press.runner import Ansible
 
 if TYPE_CHECKING:
+	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.server.server import Server
+
+WIREGUARD_DEFAULT_PORT = 51820
 
 
 class OnPremFailover(Document):
@@ -31,6 +34,7 @@ class OnPremFailover(Document):
 		app_server_wireguard_private_key: DF.Password | None
 		app_server_wireguard_public_key: DF.Data | None
 		benches_base_directory: DF.Data
+		cluster: DF.Link
 		database_base_directory: DF.Data
 		database_server: DF.Link
 		database_server_wireguard_private_ip: DF.Data | None
@@ -39,6 +43,7 @@ class OnPremFailover(Document):
 		db_lsyncd_started_on: DF.Datetime | None
 		db_lsyncd_stop_at: DF.Datetime | None
 		enabled: DF.Check
+		firewall_id: DF.Data | None
 		is_app_server_failover_setup: DF.Check
 		is_app_server_wireguard_setup: DF.Check
 		is_db_server_failover_setup: DF.Check
@@ -53,6 +58,7 @@ class OnPremFailover(Document):
 		on_prem_server_wireguard_public_key: DF.Data | None
 		wireguard_interface: DF.Data | None
 		wireguard_network: DF.Data | None
+		wireguard_port: DF.Int
 	# end: auto-generated types
 
 	@property
@@ -64,10 +70,14 @@ class OnPremFailover(Document):
 		return frappe.get_cached_doc("Database Server", self.database_server)
 
 	def before_insert(self):
+		self._set_default_wireguard_port()
 		self._set_default_wireguard_network()
 		self._set_app_server_configuration()
 		self._set_database_server_configuration()
 		self._set_on_prem_server_configuration()
+
+	def after_insert(self):
+		self._create_firewall()
 
 	@frappe.whitelist()
 	def setup_wireguard_on_app_server(self):
@@ -244,17 +254,28 @@ PersistentKeepalive = 25
 
 		self.save()
 
-	def setup_replica(self):
-		"""
-		First Lsyncd for estimated time
-		Stop Primary DB
-		DB Flush + Final Rsync
-		Start Primary DB -- do always
-		Start Replica Setup
-		"""
+	def setup(self):
+		server = self.app_server_doc
+		frappe.get_doc(
+			{
+				"doctype": "Press Job",
+				"job_type": "Setup On-Prem Failover Server",
+				"server_type": server.doctype,
+				"server": server.name,
+				"virtual_machine": server.virtual_machine,
+				"arguments": json.dumps(
+					{
+						"failover": self.name,
+					},
+					indent=2,
+					sort_keys=True,
+				),
+			}
+		).insert()
+
+	def destroy(self):
 		pass
 
-	@frappe.whitelist()
 	def setup_db_lsync_for_initial_sync(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_db_lsync_for_initial_sync", timeout=300)
 
@@ -281,7 +302,6 @@ PersistentKeepalive = 25
 			self.db_lsyncd_stop_at = frappe.utils.add_to_date(self.db_lsyncd_started_on, hour=1)
 			self.save()
 
-	@frappe.whitelist()
 	def setup_db_rsync_for_final_sync(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_db_rsync_for_final_sync", timeout=3600)
 
@@ -300,7 +320,6 @@ PersistentKeepalive = 25
 		if play.status != "Success":
 			frappe.throw("Failed to perform the final database sync.")
 
-	@frappe.whitelist()
 	def setup_replica_on_prem(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_replica_on_prem", timeout=3600)
 
@@ -322,7 +341,6 @@ PersistentKeepalive = 25
 		if play.status != "Success":
 			frappe.throw("Failed to setup replica on the on-premise server.")
 
-	@frappe.whitelist()
 	def setup_app_server_replica(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_app_server_replica", timeout=3600)
 
@@ -340,7 +358,6 @@ PersistentKeepalive = 25
 		if play.status != "Success":
 			frappe.throw("Failed to setup App Server replica synchronization on the on-premise server.")
 
-	@frappe.whitelist()
 	def stop_replication_from_app_server(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_stop_replication_from_app_server", timeout=300)
 
@@ -354,7 +371,6 @@ PersistentKeepalive = 25
 		if play.status != "Success":
 			frappe.throw("Failed to stop replication on the App Server.")
 
-	@frappe.whitelist()
 	def stop_replication_from_db_server(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_stop_replication_from_db_server", timeout=300)
 
@@ -369,6 +385,10 @@ PersistentKeepalive = 25
 			frappe.throw("Failed to stop replication on the Database Server.")
 
 	# Internal methods
+
+	def _set_default_wireguard_port(self):
+		if not self.wireguard_port:
+			self.wireguard_port = WIREGUARD_DEFAULT_PORT
 
 	def _set_default_wireguard_network(self):
 		if self.wireguard_network:
@@ -394,6 +414,15 @@ PersistentKeepalive = 25
 		self.on_prem_server_wireguard_private_key, self.on_prem_server_wireguard_public_key = (
 			self._generate_wireguard_keys()
 		)
+
+	def _create_firewall(self):
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+		self.firewall_id = cluster.create_firewall(
+			ports=[self.wireguard_port],
+			is_ingress=True,
+			description=f"Firewall for On-Prem Failover {self.name}",
+		)
+		self.save()
 
 	def _add_value_in_ip_address(self, ip: str, value: int) -> str:
 		ip_obj = ipaddress.IPv4Address(ip.split("/")[0])
