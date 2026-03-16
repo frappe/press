@@ -63,7 +63,7 @@ class SupportAccess(Document):
 			.select(Count(AccessResource.name).as_("resource_count"))
 			.groupby(Access.name)
 			.select(AccessResource.document_name.as_("resource_name"))
-			.where(Access.requested_team == team | Access.target_team == team)
+			.where(Criterion.any([Access.requested_team == team, Access.target_team == team]))
 		)
 		conditions = []
 		match filters.get("source"):
