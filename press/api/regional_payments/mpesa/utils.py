@@ -277,7 +277,7 @@ def get_details_from_request_log(transaction_id):
 			exchange_rate = request_data_dict.get("exchange_rate")
 		except json.JSONDecodeError:
 			frappe.throw(_("Invalid JSON format in request_data"))  # nosemgrep
-			team = Nonegit
+			team = None
 			partner = None
 
 	return frappe._dict(
