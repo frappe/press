@@ -21,6 +21,7 @@
   "team",
   "public",
   "halt_agent_jobs",
+  "exclude_from_auto_selection",
   "storage_section",
   "auto_add_storage_min",
   "auto_add_storage_max",
@@ -37,6 +38,7 @@
   "agent_password",
   "column_break_mznm",
   "disable_agent_job_auto_retry",
+  "use_as_proxy_for_agent_and_metrics",
   "replica_section",
   "is_primary",
   "primary",
@@ -479,10 +481,24 @@
    "fieldtype": "Code",
    "options": "JSON",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Dont use/consider this proxy when adding a new server",
+   "fieldname": "exclude_from_auto_selection",
+   "fieldtype": "Check",
+   "label": "Exclude from Auto Selection"
+  },
+  {
+   "default": "0",
+   "description": "If checked, this server will be used for passing requests to servers (app and db) without public ip",
+   "fieldname": "use_as_proxy_for_agent_and_metrics",
+   "fieldtype": "Check",
+   "label": "Use as Proxy for Agent and Metrics"
   }
  ],
  "links": [],
- "modified": "2026-02-13 18:06:59.344863",
+ "modified": "2026-03-05 18:15:53.238373",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

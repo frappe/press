@@ -15,7 +15,7 @@
 					{
 						label: 'Support & Docs',
 						icon: 'help-circle',
-						onClick: support,
+						onClick: docs,
 					},
 					{
 						label: 'Share Feedback',
@@ -66,7 +66,7 @@
 			</NavigationItems>
 		</nav>
 		<!-- TODO: update component name after dashboard-beta merges -->
-		<SwitchTeamDialog2 v-model="showTeamSwitcher" />
+		<SwitchTeamDialog2 v-model="showTeamSwitcher" :key="showTeamSwitcher" />
 	</div>
 </template>
 
@@ -94,8 +94,8 @@ export default {
 		};
 	},
 	methods: {
-		support() {
-			window.open('https://frappecloud.com/support', '_blank');
+		docs() {
+			window.open('https://docs.frappe.io/cloud', '_blank');
 		},
 		feedback() {
 			window.open(

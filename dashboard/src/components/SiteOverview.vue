@@ -9,12 +9,17 @@
 			ctx_type="Site"
 			:ctx_name="$site?.doc?.name"
 		/>
-
+		<CustomAlerts
+			:disable-last-child-bottom-margin="true"
+			container-class="col-span-1 lg:col-span-2"
+			ctx_type="List Page"
+			:ctx_name="$site?.doc?.name"
+		/>
 		<AlertBanner
 			v-if="$site?.doc?.creation_failed"
 			class="col-span-1 lg:col-span-2"
 			type="error"
-			:title="`Site creation failed. You can restore the site from a backup or drop this site to create a new one. The site will be automatically dropped after ${$site?.doc?.creation_failure_retention_days} days if not restored.`"
+			:title="`Site creation failed. You can restore the site from a backup (from another site) or drop this site to create a new one. The site will be automatically dropped after ${$site?.doc?.creation_failure_retention_days} days if not restored.`"
 		>
 		</AlertBanner>
 
@@ -113,6 +118,23 @@
 				Upgrade Plan
 			</Button>
 		</DismissableBanner>
+
+		<DismissableBanner
+			v-else-if="
+				$site.doc.current_plan &&
+				$site.doc.current_plan?.private_benches &&
+				$site.doc.group_public &&
+				$site.doc.status !== 'Archived'
+			"
+			class="col-span-1 lg:col-span-2"
+			title="Your site is eligible to move to a private bench with server scripts and custom apps support enabled."
+			:id="$site.name"
+		>
+			<Button class="ml-auto" variant="outline" @click="moveToPrivateBench">
+				Move to Private Bench
+			</Button>
+		</DismissableBanner>
+
 		<div class="col-span-1 rounded-md border lg:col-span-2">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
@@ -374,6 +396,21 @@ export default {
 				() => import('../components/ManageSitePlansDialog.vue'),
 			);
 			renderDialog(h(SitePlansDialog, { site: this.site }));
+		},
+		moveToPrivateBench() {
+			let SiteMigrationDialog = defineAsyncComponent(
+				() => import('./site/SiteMigration.vue'),
+			);
+			const defaultBenchName = this.$site?.doc?.group_title
+				? `${this.$site.doc.group_title} - Cloned`
+				: null;
+			renderDialog(
+				h(SiteMigrationDialog, {
+					site: this.site,
+					defaultAction: 'Move Site To Different Server / Bench',
+					defaultNewBenchName: defaultBenchName,
+				}),
+			);
 		},
 		showEnableMonitoringDialog() {
 			let SiteEnableMonitoringDialog = defineAsyncComponent(

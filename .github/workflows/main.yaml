@@ -14,11 +14,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  format:
-    name: Lint and Format
+  changes:
+    name: Check for Changes and Lint
     runs-on: ubuntu-latest
     outputs:
       changed-python: ${{ steps.changed-python-files.outputs.any_changed }}
+      changed-python-files: ${{ steps.changed-python-files.outputs.all_changed_files }}
       changed-build: ${{ steps.changed-build-files.outputs.any_changed }}
       changed-json: ${{ steps.changed-json-files.outputs.any_changed }}
       changed-js-vue: ${{ steps.changed-js-vue-files.outputs.any_changed }}
@@ -26,24 +27,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          pip install -r dev-requirements.txt
 
       - name: Get changed python files
         id: changed-python-files
@@ -74,33 +57,85 @@ jobs:
             **.js
             **.vue
 
-      - name: List all changed files
-        if: steps.changed-python-files.outputs.any_changed == 'true'
-        env:
-          ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
+      - name: Check for valid Python & Merge Conflicts
         run: |
-          for file in ${ALL_CHANGED_FILES}; do
-            echo "$file was changed"
-          done
+          python -m compileall -q -f "${GITHUB_WORKSPACE}"
+          if grep -lr --exclude-dir=node_modules "^<<<<<<< " "${GITHUB_WORKSPACE}"
+              then echo "Found merge conflicts"
+              exit 1
+          fi
+
+      - name: Set up Python
+        if: steps.changed-python-files.outputs.any_changed == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Cache pip
+        if: steps.changed-python-files.outputs.any_changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
 
       - name: Lint Check
         if: steps.changed-python-files.outputs.any_changed == 'true'
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
         run: |
+          pip install ruff
           ruff check --output-format github ${ALL_CHANGED_FILES}
 
-      - name: Format Check
-        if: steps.changed-python-files.outputs.any_changed == 'true'
+  format:
+    name: Format & Type Check
+    runs-on: ubuntu-latest
+    needs: changes
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          pip install -r dev-requirements.txt
+
+      - name: List all changed files
+        if: needs.changes.outputs.changed-python == 'true'
         env:
-          ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
+          ALL_CHANGED_FILES: ${{ needs.changes.outputs.changed-python-files }}
+        run: |
+          for file in ${ALL_CHANGED_FILES}; do
+            echo "$file was changed"
+          done
+
+      - name: Format Check
+        if: needs.changes.outputs.changed-python == 'true'
+        env:
+          ALL_CHANGED_FILES: ${{ needs.changes.outputs.changed-python-files }}
         run: |
           ruff format --check ${ALL_CHANGED_FILES} --diff
 
       - name: Typing Check
-        if: steps.changed-python-files.outputs.any_changed == 'true'
+        if: needs.changes.outputs.changed-python == 'true'
         env:
-          ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
+          ALL_CHANGED_FILES: ${{ needs.changes.outputs.changed-python-files }}
         run: |
           mypy ${ALL_CHANGED_FILES}
 
@@ -115,13 +150,13 @@ jobs:
       - name: Run Semgrep rules
         run: |
           pip install semgrep==1.32
-          semgrep ci --config ./press-semgrep-rules.yml --config r/python.lang.correctness
+          semgrep ci --config ./press-semgrep-rules.yml --config r/python.lang.correctness --baseline-commit "${{ github.base_ref || 'master' }}"
 
   install:
     name: Setup Bench
     runs-on: ubuntu-latest
-    needs: format
-    if: needs.format.outputs.changed-python == 'true' || needs.format.outputs.changed-json == 'true' || needs.format.outputs.changed-js-vue == 'true' || needs.format.outputs.changed-build == 'true'
+    needs: changes
+    if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-js-vue == 'true' || needs.changes.outputs.changed-build == 'true'
 
     services:
       mariadb:
@@ -137,14 +172,6 @@ jobs:
     steps:
       - name: Clone
         uses: actions/checkout@v4
-
-      - name: Check for valid Python & Merge Conflicts
-        run: |
-          python -m compileall -q -f "${GITHUB_WORKSPACE}"
-          if grep -lr --exclude-dir=node_modules "^<<<<<<< " "${GITHUB_WORKSPACE}"
-              then echo "Found merge conflicts"
-              exit 1
-          fi
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -224,13 +251,14 @@ jobs:
           path: /data/mariadb_data
 
   ui-tests:
-    needs: install
+    needs: [changes, install]
     name: Client
     runs-on: ubuntu-latest
     env:
       PRESS_ADMIN_USER_EMAIL: playwright@example.com
       PRESS_ADMIN_USER_PASSWORD: playwright
       BASE_URL: http://test_site:8000
+    if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-js-vue == 'true' || needs.changes.outputs.changed-build == 'true'
 
     steps:
       - name: Create mariadb data directory
@@ -366,14 +394,14 @@ jobs:
           flags: dashboard
 
   server-tests:
-    needs: install
+    needs: [changes, install]
     name: Server
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         container: [1, 2, 3]
-    if: needs.format.outputs.changed-python == 'true' || needs.format.outputs.changed-json == 'true' || needs.format.outputs.changed-build == 'true'
+    if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-build == 'true'
 
     steps:
       - name: Create mariadb data directory

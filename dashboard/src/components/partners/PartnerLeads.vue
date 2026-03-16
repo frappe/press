@@ -61,9 +61,17 @@ export default {
 				auto: true,
 			};
 		},
+		leadOwners() {
+			return {
+				url: 'press.api.partner.get_lead_owners',
+				auto: true,
+				initialData: [],
+			};
+		},
 	},
 	computed: {
 		partnerLeadsList() {
+			let leadOwners = this.$resources.leadOwners.data || [];
 			return {
 				resource() {
 					return {
@@ -146,28 +154,18 @@ export default {
 							fieldname: 'status',
 							label: 'Status',
 							options: [
-								'',
+								'All',
 								'Open',
-								'In Process',
+								'Qualification',
+								'Demo/Making',
+								'Proposal/Quotation',
+								'Follow Up',
+								'Negotiation',
+								'Ready to Close',
 								'Won',
 								'Lost',
 								'Junk',
-								'Passed to Other Partner',
-								'Other',
-							],
-						},
-						{
-							type: 'select',
-							fieldname: 'engagement_stage',
-							label: 'Engagement Stage',
-							options: [
-								'',
-								'Demo',
-								'Qualification',
-								'Quotation',
-								'Ready for Closing',
-								'Negotiation',
-								'Learning',
+								'Closed',
 							],
 						},
 						{
@@ -175,10 +173,28 @@ export default {
 							fieldname: 'source',
 							label: 'Lead Source',
 							options: [
+								{ label: 'All', value: 'All' },
 								{ label: 'Partner Owned', value: 'Partner Owned' },
 								{ label: 'Passed to Partner', value: 'Passed to Partner' },
 								{ label: 'Partner Listing', value: 'Partner Listing' },
 							],
+						},
+						{
+							type: 'select',
+							fieldname: 'lead_owner',
+							label: 'Lead Owner',
+							options: [
+								{ label: 'All', value: 'All' },
+								...leadOwners.map((owner) => ({
+									label: owner.label,
+									value: owner.value,
+								})),
+							],
+						},
+						{
+							type: 'checkbox',
+							fieldname: 'is_starter_pack',
+							label: 'Starter Pack',
 						},
 					];
 				},
@@ -210,11 +226,17 @@ export default {
 		statusTheme() {
 			return {
 				Open: 'blue',
+				Qualification: 'orange',
+				'Demo/Making': 'orange',
+				'Proposal/Quotation': 'orange',
+				'Follow Up': 'blue',
+				Negotiation: 'orange',
+				'Ready to Close': 'blue',
 				'In Process': 'orange',
 				Won: 'green',
 				Lost: 'red',
 				Junk: 'gray',
-				'Passed to Other Partner': 'gray',
+				Closed: 'gray',
 			};
 		},
 	},

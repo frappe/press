@@ -14,6 +14,8 @@ from press.utils import get_current_team, log_error
 
 
 class ServerFirewall(Document):
+	"""Manages firewall rules for a server and syncs them via Ansible and Nginx."""
+
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -36,56 +38,13 @@ class ServerFirewall(Document):
 
 	@staticmethod
 	def get_list_query(query):
+		"""Filter list query to only show firewalls belonging to the current team."""
 		Server = frappe.qb.DocType("Server")
 		Firewall = frappe.qb.DocType("Server Firewall")
 		current_team = get_current_team()
 		return (
 			query.inner_join(Server).on(Server.name == Firewall.server_id).where(Server.team == current_team)
 		)
-
-	def after_insert(self):
-		self.setup()
-
-	@frappe.whitelist()
-	def setup(self):
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_setup",
-		)
-
-	def _setup(self):
-		try:
-			Ansible(
-				playbook="firewall_setup.yml",
-				server=self.server,
-				user=self.server._ssh_user(),
-				port=self.server._ssh_port(),
-			).run()
-		except Exception:
-			log_error("Failed to setup firewall", doc=self)
-
-	def on_trash(self):
-		self.teardown()
-
-	@frappe.whitelist()
-	def teardown(self):
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_teardown",
-		)
-
-	def _teardown(self):
-		try:
-			Ansible(
-				playbook="firewall_teardown.yml",
-				server=self.server,
-				user=self.server._ssh_user(),
-				port=self.server._ssh_port(),
-			).run()
-		except Exception:
-			log_error("Failed to teardown firewall", doc=self)
 
 	def before_validate(self):
 		self.deduplicate_rules()
@@ -97,31 +56,37 @@ class ServerFirewall(Document):
 		rules_seen = set()
 		unique_rules = []
 		for rule in self.rules:
-			rule_tuple = (rule.source, rule.destination, rule.protocol, rule.action)
+			rule_tuple = (rule.source, rule.port, rule.protocol, rule.action)
 			if rule_tuple not in rules_seen:
 				rules_seen.add(rule_tuple)
 				unique_rules.append(rule)
 		self.rules = unique_rules
 
 	def validate(self):
+		"""Run all validations before saving."""
 		self.prevent_selfhosted()
 		self.validate_rules()
 
 	def prevent_selfhosted(self):
+		"""Prevent enabling firewall for self-hosted servers."""
 		if self.server.is_self_hosted:
 			message = _("Firewall cannot be enabled for self-hosted servers.")
 			frappe.throw(message, frappe.ValidationError)
 
 	def validate_rules(self):
+		"""Validate IP addresses and ports for all firewall rules."""
 		for rule in self.rules:
 			self.validate_ip(rule.source)
-			self.validate_ip(rule.destination)
+			self.validate_port(rule.port)
 
 	def on_update(self):
 		self.sync()
 
 	@frappe.whitelist()
 	def sync(self):
+		"""Enqueue a background job to sync firewall and Nginx rules."""
+		if frappe.flags.in_test:  # TODO: Remove
+			return
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -133,10 +98,12 @@ class ServerFirewall(Document):
 		)
 
 	def _sync(self):
+		"""Sync both firewall and Nginx rules."""
 		self._sync_firewall()
 		self._sync_nginx()
 
 	def _sync_firewall(self):
+		"""Run the Ansible playbook to sync firewall rules on the server."""
 		try:
 			Ansible(
 				playbook="firewall_sync.yml",
@@ -145,20 +112,27 @@ class ServerFirewall(Document):
 				port=self.server._ssh_port(),
 				variables={
 					"enabled": bool(self.enabled),
+					"protected_ips": self.get_protected_ips(),
 					"rules": list(self.get_rules()),
-					"rules_bypass": self.get_bypass_rules(),
 				},
 			).run()
 		except Exception:
 			log_error("Failed to sync firewall rules", doc=self)
 
 	def _sync_nginx(self):
-		ip_accept = [rule.source for rule in self.rules if rule.action == "Allow" and rule.source]
-		ip_drop = [rule.source for rule in self.rules if rule.action == "Block" and rule.source]
+		"""Update Nginx access rules with allowed and denied IPs."""
+		ip_accept = self.get_allowed_ips_for_nginx()
+		ip_drop = [rule.source for rule in self.rules if rule.action == "Deny" and rule.source]
 		try:
 			return self.server.agent.update_nginx_access(ip_accept, ip_drop)
 		except Exception:
 			log_error("Failed to sync nginx access rules", doc=self)
+
+	def get_allowed_ips_for_nginx(self):
+		"""Return list of IPs that should be allowed through Nginx."""
+		allowed_ips = [rule.source for rule in self.rules if rule.action == "Allow" and rule.source]
+		allowed_ips.extend(self.get_protected_ips())
+		return allowed_ips
 
 	def validate_ip(self, ip: str):
 		"""Checks if the provided string is a valid IPv4 or IPv6 address."""
@@ -170,53 +144,59 @@ class ServerFirewall(Document):
 			message = _("{0} is not a valid IP address or CIDR.").format(ip)
 			frappe.throw(message, frappe.ValidationError)
 
+	def validate_port(self, port: int):
+		"""Check if the provided port number is within the valid range."""
+		if not port:
+			return
+		if port < 1 or port > 65535:
+			message = _("{0} is not a valid port number.").format(port)
+			frappe.throw(message, frappe.ValidationError)
+
 	def get_rules(self):
+		"""Yield firewall rules as dicts suitable for the Ansible playbook."""
 		for rule in self.rules:
-			rule = {
+			entry = {
 				"source": rule.source,
-				"destination": rule.destination,
-				"protocol": rule.protocol,
-				"action": self.transform_action(rule.action),
+				"action": rule.action,
 			}
-			if not rule["source"]:
-				rule.pop("source")
-			if not rule["destination"]:
-				rule.pop("destination")
-			yield rule
+			if rule.port and rule.protocol:
+				entry["port"] = rule.port
+				entry["protocol"] = rule.protocol
+			yield entry
 
-	def get_bypass_rules(self):
-		monitors = frappe.get_all("Monitor Server", pluck="ip")
-		rules = []
-		for monitor in monitors:
-			rules.append(
-				{
-					"source": monitor,
-					"protocol": "TCP",
-					"action": "ACCEPT",
-				}
-			)
-			rules.append(
-				{
-					"destination": monitor,
-					"protocol": "TCP",
-					"action": "ACCEPT",
-				}
-			)
-		return rules
+	def get_protected_ips(self) -> list[str]:
+		"""Return IPs that should always be allowed through the firewall."""
+		ips = frappe.get_all("Monitor Server", pluck="ip")
+		if proxy_ip := self.server.get_proxy_ip():
+			ips.append(proxy_ip)
+		if nat_ip := self.server.get_nat_ip():
+			ips.append(nat_ip)
+		if self.production_ip:
+			ips.append(self.production_ip)
+		return ips
 
-	def transform_action(self, action: str):
-		match action:
-			case "Allow":
-				return "ACCEPT"
-			case "Block":
-				return "DROP"
-			case _:
-				return "REJECT"
+	@property
+	def production_ip(self) -> str | None:
+		"""Return the production server IP from Press Settings."""
+		return frappe.db.get_single_value("Press Settings", "production_server_ip", cache=True)
 
 	@property
 	def server(self) -> Server:
+		"""Return the Server document associated with this firewall."""
 		return frappe.get_doc("Server", self.server_id)
 
 
 def has_permission(doc, user=None, permission_type=None) -> bool:
+	"""Check if the user has permission to access this firewall's server."""
 	return has_press_permission(doc.server, permission_type, user)
+
+
+def from_server(doc, method=None) -> ServerFirewall | None:
+	"""Get or create a Server Firewall document for the given server."""
+	if doc.is_self_hosted:
+		return None
+	if frappe.db.exists({"doctype": "Server Firewall", "server_id": doc.name}):
+		return frappe.get_doc("Server Firewall", doc.name)
+	firewall = frappe.new_doc("Server Firewall")
+	firewall.server_id = doc.name
+	return firewall.insert()

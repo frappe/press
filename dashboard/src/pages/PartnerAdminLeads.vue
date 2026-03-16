@@ -11,22 +11,17 @@ export default {
 		ObjectList,
 	},
 	resources: {
-		originList() {
+		leadOwners() {
 			return {
-				type: 'list',
-				doctype: 'Partner Lead Origin',
-				fields: ['name'],
+				url: 'press.api.partner.get_lead_owners',
 				auto: true,
+				initialData: [],
 			};
 		},
 	},
 	computed: {
 		partnerAdminLeadsList() {
-			const resources = this.$resources.originList.data || [];
-			const origins = resources.map((d) => {
-				return { label: d.name, value: d.name };
-			});
-
+			let leadOwners = this.$resources.leadOwners.data || [];
 			return {
 				doctype: 'Partner Lead',
 				columns: [
@@ -90,6 +85,7 @@ export default {
 							fieldname: 'source',
 							label: 'Source',
 							options: [
+								{ label: 'All', value: 'All' },
 								{ label: 'Partner Owned', value: 'Partner Owned' },
 								{ label: 'Passed to Partner', value: 'Passed to Partner' },
 								{ label: 'Partner Listing', value: 'Partner Listing' },
@@ -97,39 +93,40 @@ export default {
 						},
 						{
 							type: 'select',
-							fieldname: 'engagement_stage',
-							label: 'Engagement Stage',
-							options: [
-								'',
-								'Demo',
-								'Qualification',
-								'Quotation',
-								'Ready for Closing',
-								'Negotiation',
-								'Learning',
-							],
-						},
-						{
-							type: 'select',
 							fieldname: 'status',
 							label: 'Status',
 							options: [
+								{ label: 'All', value: 'All' },
 								{ label: 'Open', value: 'Open' },
+								{ label: 'Qualification', value: 'Qualification' },
+								{ label: 'Demo/Making', value: 'Demo/Making' },
+								{ label: 'Follow Up', value: 'Follow Up' },
+								{ label: 'Proposal/Quotation', value: 'Proposal/Quotation' },
+								{ label: 'Negotiation', value: 'Negotiation' },
+								{ label: 'Ready to Close', value: 'Ready to Close' },
 								{ label: 'In Process', value: 'In Process' },
 								{ label: 'Won', value: 'Won' },
 								{ label: 'Lost', value: 'Lost' },
 								{ label: 'Junk', value: 'Junk' },
-								{
-									label: 'Pass to Other Partner',
-									value: 'Pass to Other Partner',
-								},
+								{ label: 'Closed', value: 'Closed' },
 							],
 						},
 						{
 							type: 'select',
-							fieldname: 'origin',
-							label: 'Origin',
-							options: origins,
+							fieldname: 'lead_owner',
+							label: 'Lead Owner',
+							options: [
+								{ label: 'All', value: 'All' },
+								...leadOwners.map((owner) => ({
+									label: owner.label,
+									value: owner.value,
+								})),
+							],
+						},
+						{
+							type: 'checkbox',
+							fieldname: 'is_starter_pack',
+							label: 'Starter Pack',
 						},
 					];
 				},

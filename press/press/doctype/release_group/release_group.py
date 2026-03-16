@@ -62,6 +62,8 @@ DEFAULT_DEPENDENCIES = [
 
 SUPPORTED_WKHTMLTOPDF_VERSIONS = ["0.12.5", "0.12.6"]
 
+MAX_REGION_LIMIT = 4
+
 
 class LastDeployInfo(TypedDict):
 	name: str
@@ -1477,8 +1479,8 @@ class ReleaseGroup(Document, TagHelpers):
 		Add new region to release group (limits to 2). Meant for dashboard use only.
 		"""
 
-		if len(self.get_clusters()) >= 2:
-			frappe.throw("More than 2 regions for bench not allowed")
+		if len(self.get_clusters()) >= MAX_REGION_LIMIT:
+			frappe.throw(f"More than {MAX_REGION_LIMIT} for bench not allowed")
 		self.add_cluster(region)
 
 	def add_cluster(self, cluster: str):
@@ -1503,22 +1505,26 @@ class ReleaseGroup(Document, TagHelpers):
 		except frappe.DoesNotExistError:
 			return None
 
-	def get_last_deploy_candidate_build(self) -> DeployCandidateBuild:
+	def get_last_deploy_candidate_build(self) -> DeployCandidateBuild | None:
 		try:
 			return frappe.get_last_doc("Deploy Candidate Build", {"group": self.name})
 		except frappe.DoesNotExistError:
 			return None
 
 	@frappe.whitelist()
-	def add_server(self, server: str, deploy=False, force_new_build: bool = False):
+	def add_server(self, server: str, deploy=False, force_new_build: bool = False) -> str | None:
 		"""
 		Add a server to the release group in case last successful deploy candidate exists
 		create a deploy check if the image has not been pruned from the registry in case of
 		missing image create new build.
 		"""
-		if not deploy:
-			return None
+		self.append("servers", {"server": server, "default": False})
+		self.save()
+		if deploy:
+			return self.deploy_on_server(server, force_new_build=force_new_build)
+		return None
 
+	def deploy_on_server(self, server: str, force_new_build=False) -> str | None:
 		server_platform = frappe.get_value("Server", server, "platform")
 		last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
 			platform=server_platform
@@ -1533,25 +1539,36 @@ class ReleaseGroup(Document, TagHelpers):
 			if not last_candidate_build:
 				frappe.throw("No build present for this release group", frappe.ValidationError)
 
-			self.append("servers", {"server": server, "default": False})
-			self.save()
-
 			return create_platform_build_and_deploy(
 				deploy_candidate=last_candidate_build.candidate.name,  # type: ignore
 				server=server,
 				platform=server_platform,
 			)
 
-		self.append("servers", {"server": server, "default": False})
-		self.save()
-
 		try:
 			return last_successful_deploy_candidate_build._create_deploy(
 				[server],
 				check_image_exists=True,
-			)
+			).name
 		except ImageNotFoundInRegistry:
-			return self.add_server(server=server, deploy=True, force_new_build=True)
+			return self.deploy_on_server(server=server, force_new_build=True)
+
+	@frappe.whitelist()
+	def redeploy_on_missing_servers(self):
+		"""
+		Redeploy the latest successful candidate on servers in this release group
+		that do not currently have a Bench in an active, installing, or pending state.
+		"""
+		deployed_servers = frappe.db.get_all(
+			"Bench",
+			filters={"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))},
+			pluck="server",
+		)
+
+		for server in self.servers:
+			if server.server in deployed_servers:
+				continue
+			self.deploy_on_server(server.server)
 
 	@frappe.whitelist()
 	def change_server(self, server: str):
@@ -1901,7 +1918,7 @@ def add_public_servers_to_public_groups():
 	)
 	public_servers = frappe.get_all(
 		"Server",
-		filters={"public": 1, "status": "Active"},
+		filters={"public": 1, "status": "Active", "provider": ["!=", "Hetzner"]},
 		pluck="name",
 	)
 

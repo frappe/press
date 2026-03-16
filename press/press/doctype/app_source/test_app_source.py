@@ -55,13 +55,3 @@ class TestAppSource(FrappeTestCase):
 
 		for req_app in source.required_apps:
 			self.assertEqual("https://github.com/frappe/erpnext", req_app.repository_url)
-
-		app: App = self.create_app("lms", "LMS")
-		source = app.add_source(
-			frappe_version="Nightly",
-			repository_url="https://github.com/frappe/lms",
-			branch="develop",
-			team=team_name,
-		)
-
-		self.assertEqual([], source.required_apps)

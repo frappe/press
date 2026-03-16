@@ -22,19 +22,22 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Bench",
-   "options": "Bench",
+   "options": "New Bench Queue",
    "read_only": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2020-12-16 18:32:30.211437",
+ "modified": "2026-03-06 17:48:42.897343",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Bench",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

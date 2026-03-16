@@ -3,6 +3,7 @@ import {
 	createResource,
 	LoadingIndicator,
 } from 'frappe-ui';
+import ArrowLeftRightIcon from '~icons/lucide/arrow-left-right';
 import { defineAsyncComponent, h } from 'vue';
 import { unparse } from 'papaparse';
 import { toast } from 'vue-sonner';
@@ -1205,16 +1206,81 @@ export default {
 				},
 			},
 			{
-				label: 'Actions',
-				icon: icon('sliders'),
-				route: 'actions',
-				type: 'Component',
+				label: 'Migrations',
+				icon: icon(ArrowLeftRightIcon),
+				route: 'migrations',
+				type: 'list',
 				condition: (site) => {
 					return site.doc?.status !== 'Archived';
 				},
-component: SiteActions,
-props: (site) => {
-return { site: site.doc?.name };
+				childrenRoutes: ['Site Migration'],
+				list: {
+					documentation:
+						'https://docs.frappe.io/cloud/site/site-migrations/introduction-to-site-migration',
+					doctype: 'Site Action',
+					filters: (site) => {
+						return { site: site.doc?.name };
+					},
+					orderBy: 'creation',
+					fields: ['action_type', 'status', 'scheduled_time', 'owner'],
+					columns: [
+						{
+							label: 'Migration',
+							fieldname: 'action_type',
+							width: 1,
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							type: 'Badge',
+							width: 0.6,
+						},
+						{
+							label: 'Created By',
+							fieldname: 'owner',
+						},
+						{
+							label: 'Scheduled At',
+							fieldname: 'scheduled_time',
+							format(value) {
+								return date(value, 'lll');
+							},
+						},
+						// {
+						// 	label: 'Updated On',
+						// 	fieldname: 'updated_on',
+						// 	format(value) {
+						// 		return date(value, 'lll');
+						// 	},
+						// },
+					],
+					route(row) {
+						return {
+							name: 'Site Migration',
+							params: { id: row.name },
+						};
+					},
+					primaryAction({ listResource: backups, documentResource: site }) {
+						return {
+							label: 'Trigger Migration',
+							slots: {
+								prefix: icon('upload-cloud'),
+							},
+							loading: site.backup.loading,
+							onClick() {
+								renderDialog(
+									h(
+										defineAsyncComponent(
+											() => import('../components/site/SiteMigration.vue'),
+										),
+										{
+											site: site.name,
+										},
+									),
+								);
+							},
+						};
+					}
 				},
 			},
 			{
@@ -1478,9 +1544,7 @@ return { site: site.doc?.name };
 								onClick() {
 									let ConfigureAutoUpdateDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/site/ConfigureAutoUpdateDialog.vue'
-											),
+											import('../components/site/ConfigureAutoUpdateDialog.vue'),
 									);
 
 									renderDialog(
@@ -1500,6 +1564,20 @@ return { site: site.doc?.name };
 					},
 				},
 			},
+			{
+				label: 'Actions',
+				icon: icon('sliders'),
+				route: 'actions',
+				type: 'Component',
+				condition: (site) => {
+					return site.doc?.status !== 'Archived';
+				},
+				component: SiteActions,
+				props: (site) => {
+					return { site: site.doc?.name };
+				},
+			},
+
 			{
 				label: 'Activity',
 				icon: icon('activity'),
@@ -1661,9 +1739,14 @@ return { site: site.doc?.name };
 					label: 'Impersonate Site Owner',
 					title: 'Impersonate Site Owner', // for label to pop-up on hover
 					slots: {
-						icon: defineAsyncComponent(
-							() => import('~icons/lucide/venetian-mask'),
-						),
+						icon: defineAsyncComponent(async () => {
+							const mod = await import('~icons/lucide/venetian-mask');
+							return {
+								render() {
+									return h(mod.default, { class: 'w-5 h-5' });
+								},
+							};
+						}),
 					},
 					condition: () =>
 						$team.doc?.is_desk_user && site.doc.team !== $team.name,
@@ -1771,6 +1854,11 @@ return { site: site.doc?.name };
 			name: 'Site Update',
 			path: 'updates/:id',
 			component: () => import('../pages/SiteUpdate.vue'),
+		},
+		{
+			name: 'Site Migration',
+			path: 'migrations/:id',
+			component: () => import('../pages/SiteMigration.vue'),
 		},
 	],
 };

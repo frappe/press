@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 import frappe.utils
-import pyotp
+import pyotp  # type: ignore[import-not-found]
 from frappe import _
 from frappe.core.doctype.user.user import update_password
 from frappe.core.utils import find
@@ -21,7 +21,7 @@ from frappe.utils.password import get_decrypted_password
 from frappe.website.utils import build_response
 
 from press.guards import mfa
-from press.guards.role_guard import roles_enabled
+from press.guards.role_guard import roles_enabled, skip_roles
 from press.press.doctype.team.team import (
 	Team,
 	get_child_team_members,
@@ -156,7 +156,7 @@ def resend_otp(account_request: str, for_2fa_keys: bool = False):
 def send_otp(email: str, for_2fa_keys: bool = False):
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
-	if not account_request:
+	if not account_request or (account_request and not frappe.db.exists("User", email)):
 		frappe.throw("Please sign up first")
 
 	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
@@ -432,7 +432,7 @@ def validate_request_key(key, timezone=None):
 			"first_name": account_request.first_name,
 			"last_name": account_request.last_name,
 			"country": possible_country,
-			"countries": frappe.db.get_all("Country", pluck="name"),
+			"countries": get_countries_with_isd_codes(),
 			"user_exists": frappe.db.exists("User", account_request.email),
 			"team": account_request.team,
 			"is_invitation": frappe.db.get_value("Team", account_request.team, "enabled"),
@@ -448,6 +448,33 @@ def validate_request_key(key, timezone=None):
 		}
 
 	return None
+
+
+def get_countries_with_isd_codes():
+	"""Get list of countries with their ISD codes from Frappe's country_info."""
+	import phonenumbers
+	from frappe.geo.country_info import get_all as get_country_data
+
+	country_data = get_country_data()
+	countries = []
+	for name, info in country_data.items():
+		code = info.get("code", "")
+		example = ""
+		if code:
+			try:
+				num = phonenumbers.example_number_for_type(code.upper(), phonenumbers.PhoneNumberType.MOBILE)
+				example = phonenumbers.national_significant_number(num)
+			except Exception:
+				pass
+		countries.append(
+			{
+				"name": name,
+				"code": code,
+				"isd": info.get("isd", ""),
+				"example": example,
+			}
+		)
+	return sorted(countries, key=lambda x: x["name"])
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1079,7 +1106,11 @@ def user_permissions():
 			permissions[field] = permissions[field] or row.get(field, 0)
 	is_owner = team.user == frappe.session.user
 	is_admin = (
-		is_owner or (not roles_enabled()) or permissions["admin_access"] or user_utils.is_system_manager()
+		is_owner
+		or (not roles_enabled())
+		or skip_roles()
+		or permissions["admin_access"]
+		or user_utils.is_system_manager()
 	)
 	result = {
 		"owner": is_owner,
@@ -1316,11 +1347,14 @@ def get_user_banners():
 	servers = list(set([pair["server"] for pair in site_server_pairs if pair.get("server")]))
 
 	DashboardBanner = frappe.qb.DocType("Dashboard Banner")
+	DashboardBannerTeam = frappe.qb.DocType("Dashboard Banner Team")
 	now = frappe.utils.now()
 
 	# fetch all enabled banners for this user
 	all_enabled_banners = (
 		frappe.qb.from_(DashboardBanner)
+		.left_join(DashboardBannerTeam)
+		.on(DashboardBannerTeam.parent == DashboardBanner.name)
 		.select("*")
 		.where(
 			((DashboardBanner.enabled == 1) & (DashboardBanner.is_scheduled == 0))
@@ -1335,7 +1369,7 @@ def get_user_banners():
 			(DashboardBanner.is_global == 1)
 			| ((DashboardBanner.type_of_scope == "Site") & (DashboardBanner.site.isin(sites or [""])))
 			| ((DashboardBanner.type_of_scope == "Server") & (DashboardBanner.server.isin(servers or [""])))
-			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBanner.team == team))
+			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBannerTeam.team == team))
 		)
 		.run(as_dict=True)
 	)

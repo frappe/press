@@ -34,6 +34,7 @@ class ProxyServer(BaseServer):
 		domain: DF.Link | None
 		domains: DF.Table[ProxyServerDomain]
 		enabled_default_routing: DF.Check
+		exclude_from_auto_selection: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		halt_agent_jobs: DF.Check
@@ -67,6 +68,7 @@ class ProxyServer(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		team: DF.Link | None
 		tls_certificate_renewal_failed: DF.Check
+		use_as_proxy_for_agent_and_metrics: DF.Check
 		virtual_machine: DF.Link | None
 		wireguard_interface_id: DF.Data | None
 		wireguard_network: DF.Data | None
@@ -80,6 +82,19 @@ class ProxyServer(BaseServer):
 		super().validate()
 		self.validate_domains()
 		self.validate_proxysql_admin_password()
+
+		if (
+			not frappe.db.get_value(
+				self.doctype,
+				{
+					"status": ["!=", "Archived"],
+					"cluster": self.cluster,
+					"use_as_proxy_for_agent_and_metrics": 1,
+				},
+			)
+			and self.status != "Archived"
+		):
+			self.use_as_proxy_for_agent_and_metrics = 1
 
 	def validate_domains(self):
 		domains_to_validate = unique([self.domain] + [row.domain for row in self.domains])

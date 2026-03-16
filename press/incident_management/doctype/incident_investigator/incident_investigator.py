@@ -6,7 +6,6 @@ import datetime
 import json
 import random
 import typing
-from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 
@@ -19,6 +18,9 @@ from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 from prometheus_api_client import MetricRangeDataFrame, PrometheusConnect
 
+from press.incident_management.doctype.incident_investigator.utils.incident_pattern_detector import (
+	IncidentPatternDetector,
+)
 from press.runner import Ansible, StepHandler
 from press.runner import Status as StepStatus
 
@@ -71,7 +73,7 @@ class PrometheusInvestigationHelper:
 		if self.prometheus_client is None:
 			self.prometheus_client = get_prometheus_client()
 
-	# Define the investigation steps for different servers
+	# Define the investigation steps for different servers for prometheus based investigations
 	INVESTIGATION_CHECKS: typing.ClassVar = {
 		"server_investigation_steps": [
 			"has_high_disk_usage",
@@ -85,7 +87,6 @@ class PrometheusInvestigationHelper:
 			"has_high_memory_usage",
 			"has_high_system_load",
 		],
-		"proxy_investigation_steps": ["are_sites_on_proxy_down"],
 	}
 
 	@classmethod
@@ -145,9 +146,7 @@ class PrometheusInvestigationHelper:
 		return None
 
 	def has_high_system_load(self, instance: str, step: "InvestigationStep"):
-		"""Check number of processes waiting for cpu time
-		if the number is higher than 3 times the number of vcpus load is high
-		"""
+		"""Check system load during investigation window"""
 		assert self.investigation_window_start_time and self.investigation_window_end_time, (
 			"Investigation window not set"
 		)
@@ -220,7 +219,7 @@ class PrometheusInvestigationHelper:
 		step.save()
 
 	def has_high_disk_usage(self, instance: str, step: "InvestigationStep"):
-		"""Determined if disk is full in any of the relevant mountpoints at present"""
+		"""Determined if disk is full"""
 		is_unreachable = True
 		mountpoints = {"/": False, "/opt/volumes/benches": False, "/opt/volumes/mariadb": False}
 		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", instance)
@@ -283,7 +282,7 @@ class PrometheusInvestigationHelper:
 		step.save()
 
 	def _get_bench_memory_usage(self, instance: str) -> dict[str, float] | None:
-		"""Get the average memory usage for each bench on the server averaged over the investigation window."""
+		"""Get the average memory usage over the investigation window."""
 		benches = frappe.db.get_all(
 			"Bench",
 			fields=["name"],
@@ -363,7 +362,7 @@ class DatabaseInvestigationActions:
 		step.save()
 
 	def restart_benches(self, step: "ActionStep"):
-		"""Restart benches since framework sometimes is not able to establish connection after reboot"""
+		"""Restart benches to establish connection after reboot"""
 		step.status = StepStatus.Running
 		step.save()
 
@@ -451,7 +450,7 @@ class AppServerInvestigationActions:
 		step.save()
 
 	def get_oom_kill_events(self, step: "ActionStep"):
-		"""Get OOM kill events data and do something with it start and end time are UTC times!"""
+		"""Get OOM kill events data"""
 		step.status = StepStatus.Running
 		step.save()
 
@@ -469,7 +468,7 @@ class AppServerInvestigationActions:
 			step.save()
 			return
 
-		password = get_decrypted_password("Log Server", log_server, "password")
+		password = get_decrypted_password("Log Server", log_server, "kibana_password")
 
 		es = Elasticsearch(
 			f"https://{log_server}/elasticsearch", basic_auth=("frappe", password), request_timeout=120
@@ -504,7 +503,14 @@ class AppServerInvestigationActions:
 			"sort": [{"@timestamp": {"order": "asc"}}],
 		}
 
-		response = es.search(index="filebeat-*", body=query)
+		try:
+			response = es.search(index="filebeat-*", body=query)
+		except Exception:
+			step.status = StepStatus.Failure
+			step.output = "Unable to fetch OOM kill events from Elasticsearch"
+			step.save()
+			return
+
 		oom_events = [hit["_source"] for hit in response["hits"]["hits"]]
 
 		if not oom_events:
@@ -514,9 +520,42 @@ class AppServerInvestigationActions:
 			return
 
 		for event in oom_events:
-			if "killing process" in event["message"]:
-				step.output += event["message"]
+			if "killing process" in event["message"] or "low memory" in event["message"]:
+				timestamped_message = f"{event['@timestamp']}: {event['message']}"
+				step.output = (
+					timestamped_message if not step.output else step.output + "\n" + timestamped_message
+				)
 
+		step.status = StepStatus.Success
+		step.save()
+
+	def get_recent_agent_jobs(self, step: "ActionStep"):
+		"""Get agent jobs running during in the larger investigation window"""
+		# This again is a data gathering step we need to do something with this as well later on?
+		step.status = StepStatus.Running
+		step.save()
+
+		# Looking at a larger window here as well since we want to capture any jobs leading up to the incident which might have caused resource contention (30m?)
+		start_time = frappe.utils.add_to_date(self.investigator.investigation_window_start_time, minutes=-30)
+		end_time = self.investigator.investigation_window_end_time
+
+		agent_jobs_on_server = frappe.db.get_all(
+			"Agent Job",
+			["name", "job_type", "status", "creation", "duration"],
+			{
+				"server": self.investigator.server,
+				"creation": [
+					"between",
+					(start_time, end_time),
+				],
+			},
+			order_by="creation desc",
+		)
+		step.output = (
+			json.dumps(agent_jobs_on_server, default=str, indent=2)
+			if agent_jobs_on_server
+			else "No agent jobs found in the investigation window"
+		)
 		step.status = StepStatus.Success
 		step.save()
 
@@ -540,7 +579,11 @@ class AppServerInvestigationActions:
 
 		if app_server_likely_causes and app_server_likely_causes.intersection(resource_causes):
 			for step in self.investigator.get_steps(
-				[self.get_bench_memory_usage_data, self.get_oom_kill_events]
+				[
+					self.get_bench_memory_usage_data,
+					self.get_oom_kill_events,
+					self.get_recent_agent_jobs,
+				]
 			):
 				self.investigator.append("action_steps", step)
 
@@ -592,12 +635,41 @@ class IncidentInvestigator(Document, StepHandler):
 		self.status = status
 		self.save()
 
-	def add_investigation_findings(self, step: str, data: Mapping[str, int | str | bool] | list):
+	def add_investigation_findings(self, step: "ActionStep"):
 		"""Add investigation findings from each step"""
-		findings = json.loads(self.investigation_findings) if self.investigation_findings else {}
-		findings[step] = data
-		self.investigation_findings = json.dumps(findings, indent=2)
-		self.save()
+		step.status = StepStatus.Running
+		step.save()
+
+		try:
+			findings = []
+			is_unified_server = frappe.db.get_value("Server", self.server, "is_unified_server")
+			investigation_steps = (
+				self.server_investigation_steps
+				if is_unified_server
+				else self.server_investigation_steps + self.database_investigation_steps
+			)
+
+			for step in investigation_steps:
+				step_type = "Server" if step in self.server_investigation_steps else "Database"
+				findings.append(
+					{
+						"step_type": step_type,
+						"step_name": step.step_name,
+						"method": step.method,
+						"is_likely_cause": bool(step.is_likely_cause),
+						"is_unable_to_investigate": bool(step.is_unable_to_investigate),
+					}
+				)
+
+			self.investigation_findings = json.dumps(findings, indent=2)
+			step.status = StepStatus.Success
+
+		except Exception as e:
+			step.status = StepStatus.Failure
+			step.output = frappe.safe_decode(str(e))
+
+		finally:
+			self.save()
 
 	### Some helper methods for initiating investigation steps
 	@property
@@ -752,8 +824,16 @@ class IncidentInvestigator(Document, StepHandler):
 			"Press Settings", "execute_incident_action", cache=True
 		)
 
+		pattern_detector = IncidentPatternDetector(self)
+
 		if self.action_steps and execute_action_steps:
-			# Execute action steps via step handler
+			for terminal_step in self.get_steps(
+				[self.add_investigation_findings, pattern_detector.detect_patterns]
+			):
+				self.append("action_steps", terminal_step)
+
+			self.save()
+
 			frappe.enqueue_doc(
 				self.doctype,
 				self.name,
@@ -761,6 +841,7 @@ class IncidentInvestigator(Document, StepHandler):
 				method_objects=[
 					database_investigation_actions,
 					app_server_investigation_actions,
+					pattern_detector,
 				],
 				start_status=Status.REACTING,
 				success_status=Status.COMPLETED,

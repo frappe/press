@@ -99,6 +99,7 @@ class Team(Document):
 		razorpay_enabled: DF.Check
 		receive_budget_alerts: DF.Check
 		referrer_id: DF.Data | None
+		relaxed_permissions: DF.Check
 		security_portal_enabled: DF.Check
 		self_hosted_servers_enabled: DF.Check
 		send_notifications: DF.Check
@@ -150,6 +151,7 @@ class Team(Document):
 		"monthly_alert_threshold",
 		"company_name",
 		"hybrid_servers_enabled",
+		"relaxed_permissions",
 	)
 
 	def get_doc(self, doc):
@@ -211,6 +213,24 @@ class Team(Document):
 				["name", "host_name", "status"],
 			),
 		}
+
+	def before_validate(self):
+		self.auth_relaxed_permissions()
+
+	def auth_relaxed_permissions(self):
+		"""
+		Prevent unauthorized users from changing relaxed permissions. Only team
+		owner or admins can change relaxed permissions as it can lead to
+		security implications.
+		"""
+		if self.is_new():
+			return
+		if not self.has_value_changed("relaxed_permissions"):
+			return
+		if self.is_team_owner() or self.is_admin_user():
+			return
+		message = _("Only team owner or admins can make changes to relaxed permissions.")
+		frappe.throw(message, frappe.PermissionError)
 
 	def validate(self):
 		self.validate_duplicate_members()
@@ -294,7 +314,7 @@ class Team(Document):
 		self.add_comment("Info", "enabled account")
 
 	@classmethod
-	def create_new(  # noqa: C901
+	def create_new(
 		cls,
 		account_request: AccountRequest,
 		first_name: str,
@@ -307,14 +327,7 @@ class Team(Document):
 		user_exists: bool = False,
 	):
 		"""Create new team along with user (user created first)."""
-		# Get full phone number with country code
-		full_phone = None
-		if phone and country:
-			dialing_code = get_country_dialing_code(country)
-			if dialing_code:
-				full_phone = f"+{dialing_code}-{phone}"
-			else:
-				full_phone = phone
+		full_phone = phone or None
 
 		team: "Team" = frappe.get_doc(
 			{
@@ -457,6 +470,20 @@ class Team(Document):
 				frappe.DuplicateEntryError,
 			)
 
+	def has_recent_pending_payment(self) -> bool:
+		"""Returns True if there's a Razorpay payment authorized in the last 5 minutes
+		but not yet captured (webhook is still in processing state)."""
+		return bool(
+			frappe.db.exists(
+				"Razorpay Payment Record",
+				{
+					"team": self.name,
+					"status": "Pending",
+					"creation": (">", frappe.utils.add_to_date(frappe.utils.now_datetime(), minutes=-5)),
+				},
+			)
+		)
+
 	def validate_payment_mode(self):  # noqa: C901
 		if not self.payment_mode and self.get_balance() > 0:
 			self.payment_mode = "Prepaid Credits"
@@ -467,7 +494,12 @@ class Team(Document):
 				and frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0
 			):
 				frappe.throw("No card added")
-			if self.payment_mode == "Prepaid Credits" and self.get_balance() <= 0:
+			# This check to verify recent pending payment is added to avoid validation issue when updating team doctype with payment mode as credits without balance as transaction is on going
+			if (
+				self.payment_mode == "Prepaid Credits"
+				and self.get_balance() <= 0
+				and not self.has_recent_pending_payment()
+			):
 				frappe.throw("Account does not have sufficient balance")
 
 		if not self.is_new() and not self.default_payment_method:
@@ -983,6 +1015,15 @@ class Team(Document):
 			# if balance is greater than 0 or have atleast 2 paid invoices, then allow to create site
 			if (
 				self.get_balance() > 0
+				or frappe.db.exists(
+					"Invoice",
+					{
+						"team": self.name,
+						"type": "Prepaid Credits",
+						"status": "Paid",
+						"amount_paid": ("!=", 0),
+					},
+				)
 				or frappe.db.count(
 					"Invoice",
 					{
@@ -1733,20 +1774,6 @@ def send_budget_alert_email(team_info, invoice):
 	except Exception as e:
 		frappe.log_error(f"Failed to send budget alert email: {team_info['user']}", {e})
 		return False
-
-
-def get_country_dialing_code(country_name: str) -> str | None:
-	"""Get the dialing code for a given country name using phonenumbers library."""
-	from phonenumbers import country_code_for_region
-
-	# Get the ISO 3166 ALPHA-2 code from Country doctype
-	country_code = frappe.db.get_value("Country", country_name, "code")
-	if not country_code:
-		return None
-
-	# phonenumbers expects uppercase country code
-	dialing_code = country_code_for_region(country_code.upper())
-	return str(dialing_code) if dialing_code else None
 
 
 def auto_enable_ssh_access_for_7_days_older_teams():

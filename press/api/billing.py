@@ -469,7 +469,7 @@ def get_unpaid_invoices():
 @role_guard.api("billing")
 def change_payment_mode(mode):
 	team = get_current_team(get_doc=True)
-
+	team.reload()
 	team.payment_mode = mode
 	if team.partner_email and mode == "Paid By Partner" and not team.billing_team:
 		team.billing_team = frappe.db.get_value(
@@ -805,7 +805,6 @@ def total_unpaid_amount():
 	team = get_current_team(get_doc=True)
 	balance = team.get_balance()
 	negative_balance = -1 * balance if balance < 0 else 0
-
 
 	try:
 		return (

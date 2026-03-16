@@ -87,6 +87,7 @@
       --with-http_sub_module \
       --with-stream_ssl_module \
       --with-stream \
+      --with-stream_ssl_preread_module \
       --with-openssl-opt="no-deprecated"
   args:
     chdir: "{{ nginx_source_dir }}"

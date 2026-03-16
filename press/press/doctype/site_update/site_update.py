@@ -231,7 +231,7 @@ class SiteUpdate(Document):
 
 		if diff := set(site_apps) - set(bench_apps):
 			frappe.throw(
-				f"Destination Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
+				f"Destination Bench <b>{self.destination_bench}</b> doesn't have some of the apps installed on the site: {', '.join(diff)}. Please uninstall them from the site or add them back to the bench (and update the same) before proceeding.",
 				frappe.ValidationError,
 			)
 
@@ -698,6 +698,18 @@ class SiteUpdate(Document):
 
 		if self.activate_site_job:
 			steps.extend(self.get_job_steps(self.activate_site_job, "Activate Site"))
+
+		# If there is no steps, add a dummy step to show that the update is scheduled but yet to start
+		if not steps:
+			steps = [
+				{
+					"name": "site_update_scheduled",
+					"title": f"Scheduled at {convert_utc_to_system_timezone(self.scheduled_time).strftime('%Y-%m-%d %H:%M:%S') if self.scheduled_time and self.status == 'Scheduled' else ''}",
+					"status": "Pending",
+					"output": "",
+					"stage": "Site Update",
+				}
+			]
 		return steps
 
 	def get_job_steps(self, job: str, stage: str):
@@ -834,6 +846,7 @@ def sites_with_available_update(server=None):
 			"bench": ("in", benches),
 			"only_update_at_specified_time": False,  # will be taken care of by another scheduled job
 			"skip_auto_updates": False,
+			"fatal_site_update": ("is", "not set"),
 		},
 		fields=["name", "timezone", "bench", "server", "status"],
 	)
@@ -901,7 +914,7 @@ def schedule_updates_server(server):
 			frappe.db.rollback()
 
 
-def should_try_update(site):
+def should_try_update(site: Site):
 	source = frappe.db.get_value("Bench", site.bench, "candidate")
 	candidates = frappe.get_all(
 		"Deploy Candidate Difference", filters={"source": source}, pluck="destination"
@@ -929,6 +942,10 @@ def should_try_update(site):
 	dest_apps = [app.app for app in destination_bench.apps]
 
 	if set(source_apps) - set(dest_apps):
+		return False
+
+	# If site has fatal update which is not resolved, then don't trigger update
+	if site.fatal_site_update:
 		return False
 
 	return not frappe.db.exists(

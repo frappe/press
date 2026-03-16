@@ -401,7 +401,6 @@ def get_lead_activities(name):  # noqa: C901
 
 
 def handle_multiple_versions(versions):  # noqa: C901
-	# print(versions)
 	activities = []
 	grouped_versions = []
 	old_version = None
@@ -662,23 +661,42 @@ def get_partner_customers():
 
 @frappe.whitelist()
 @role_guard.api("partner")
-def get_partner_leads(lead_name=None, status=None, engagement_stage=None, source=None):
+def get_partner_leads(lead_name=None, status=None, source=None, is_starter_pack=None, lead_owner=None):
 	team = get_current_team()
 	filters = {"partner_team": team}
 	if lead_name:
 		filters["lead_name"] = ("like", f"%{lead_name}%")
-	if status:
+	if status and status != "All":
 		filters["status"] = status
-	if engagement_stage:
-		filters["engagement_stage"] = engagement_stage
-	if source:
+	if source and source != "All":
 		filters["lead_source"] = source
+	if lead_owner and lead_owner != "All":
+		filters["lead_owner"] = lead_owner
+	if is_starter_pack:
+		filters["is_starter_pack"] = is_starter_pack
 	return frappe.get_all(
 		"Partner Lead",
 		filters,
 		["name", "organization_name", "lead_name", "status", "lead_source", "partner_team"],
 		order_by="modified desc",
 	)
+
+
+@frappe.whitelist()
+@role_guard.api("partner")
+def get_lead_owners():
+	PartnerLead = frappe.qb.DocType("Partner Lead")
+	User = frappe.qb.DocType("User")
+	query = (
+		frappe.qb.from_(PartnerLead)
+		.join(User)
+		.on(PartnerLead.lead_owner == User.name)
+		.select(PartnerLead.lead_owner, User.full_name)
+		.distinct()
+		.groupby(PartnerLead.lead_owner)
+	)
+	owners = query.run(as_dict=True)
+	return [{"label": d.full_name, "value": d.lead_owner} for d in owners]
 
 
 @frappe.whitelist()
@@ -789,7 +807,6 @@ def update_lead_details(lead_name, lead_details):
 	doc.update(
 		{
 			"organization_name": lead_details.organization_name,
-			"status": lead_details.status,
 			"full_name": lead_details.full_name,
 			"domain": lead_details.domain,
 			"email": lead_details.email,
@@ -799,7 +816,6 @@ def update_lead_details(lead_name, lead_details):
 			"plan_proposed": lead_details.plan_proposed,
 			"requirement": lead_details.requirement,
 			"probability": lead_details.probability,
-			"engagement_stage": lead_details.engagement_stage,
 		}
 	)
 	doc.save(ignore_permissions=True)
@@ -815,12 +831,7 @@ def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 	doc = frappe.get_doc("Partner Lead", lead_name)
 	status_dict = {"status": status}
 
-	if status == "In Process":
-		status_dict.update(
-			{
-				"engagement_stage": kwargs.get("engagement_stage"),
-			}
-		)
+	if status in ["Ready to Close", "Proposal/Quotation"]:
 		if kwargs.get("proposed_plan") and kwargs.get("expected_close_date"):
 			status_dict.update(
 				{
@@ -829,44 +840,63 @@ def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 				}
 			)
 	elif status == "Won":
-		hosting = kwargs.get("hosting")
-		site = kwargs.get("site_url")
+		site = kwargs.get("site_url").removeprefix("https://").removeprefix("http://").split("/")[0]
 		server = kwargs.get("server_name")
 		team = kwargs.get("team_name")
 
-		if hosting == "Frappe Cloud":
-			if server:
-				Server = frappe.qb.DocType("Server")
-				query = (
-					frappe.qb.from_(Server)
-					.select(Server.name)
-					.where((Server.status == "Active") & ((Server.title == server) | (Server.name == server)))
-				)
-				result = query.run(as_dict=True)
-				if not result:
-					frappe.throw("Server not found in Frappe Cloud")
+		amount = 0
 
-			elif team and not frappe.db.exists("Team", {"user": team, "enabled": 1}):
+		if server:
+			Server = frappe.qb.DocType("Server")
+			query = (
+				frappe.qb.from_(Server)
+				.select(Server.name)
+				.where((Server.status == "Active") & ((Server.title == server) | (Server.name == server)))
+			)
+			result = query.run(as_dict=True)
+			if not result:
+				frappe.throw("Server not found in Frappe Cloud")
+
+			amount = calculate_total_amount(result[0].name)
+
+		elif team:
+			team_id = frappe.db.exists("Team", {"user": team, "enabled": 1})
+			if not team_id:
 				frappe.throw("Team not found in Frappe Cloud")
+			else:
+				amount = calculate_total_team_amount(team_id)
 
-			elif site:
-				Site = frappe.qb.DocType("Site")
-				query = (
-					frappe.qb.from_(Site)
-					.select(Site.name)
-					.where((Site.status == "Active") & ((Site.name == site) | (Site.host_name == site)))
-				)
-				result = query.run(as_dict=True)
-				if not result:
-					frappe.throw("Site not found in Frappe Cloud")
+		elif site:
+			Site = frappe.qb.DocType("Site")
+			query = (
+				frappe.qb.from_(Site)
+				.select(Site.name, Site.plan)
+				.where((Site.status == "Active") & ((Site.name == site) | (Site.host_name == site)))
+			)
+			result = query.run(as_dict=True)
+			if not result:
+				frappe.throw("Site not found in Frappe Cloud")
+
+			SitePlan = frappe.qb.DocType("Site Plan")
+			paid_plans = (
+				frappe.qb.from_(SitePlan)
+				.select(SitePlan.name)
+				.where((SitePlan.price_inr > 0) & ((SitePlan.enabled == 1) | (SitePlan.legacy_plan == 1)))
+				.run(pluck=True)
+			)
+			site_plan = result[0].plan
+			if site_plan not in paid_plans:
+				frappe.throw("The site is not on a paid plan, please select the correct hosting")
 
 		status_dict.update(
 			{
 				"conversion_date": frappe.utils.getdate(),
-				"hosting": hosting,
+				"hosting": "Frappe Cloud",
 				"site_url": site,
 				"server_name": server,
 				"team_name": team,
+				"site_plan": site_plan if site else None,
+				"total_invoice_amount": amount,
 			}
 		)
 	elif status == "Lost":
@@ -876,21 +906,40 @@ def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 				"lost_reason_specify": kwargs.get("other_reason"),
 			}
 		)
-	elif status == "Passed to Other Partner":
-		status_dict = {}
-		status_dict.update(
-			{
-				"partner_team": "",
-				"company_name": "",
-				"partner_email": "",
-				"partner_manager": "",
-				"status": "Open",
-			}
-		)
 
 	doc.update(status_dict)
 	doc.save(ignore_permissions=True)
 	doc.reload()
+
+
+def calculate_total_amount(server_name):
+	if not server_name:
+		return 0
+
+	server = frappe.get_doc("Server", server_name)
+	server_plan = server.plan
+	db_server_plan = frappe.get_value("Database Server", server.database_server, "plan")
+
+	ServerPlan = frappe.qb.DocType("Server Plan")
+	query = (
+		frappe.qb.from_(ServerPlan)
+		.select(Sum(ServerPlan.price_usd).as_("total_amount"))
+		.where(
+			ServerPlan.name.isin([server_plan, db_server_plan]),
+		)
+	)
+	result = query.run(as_dict=True)
+	return result[0].total_amount if result else 0
+
+
+def calculate_total_team_amount(team_name):
+	subscriptions = frappe.get_all("Subscription", {"team": team_name, "enabled": 1}, ["plan_type", "plan"])
+
+	total_amount = 0
+	for d in subscriptions:
+		total_amount += frappe.db.get_value(d.plan_type, d.plan, "price_usd") or 0
+
+	return total_amount
 
 
 @frappe.whitelist()
@@ -936,37 +985,31 @@ def update_followup_details(id, lead, followup_details):
 		frappe.throw("You are not allowed to update this followup")
 
 	followup_details = frappe._dict(followup_details)
-	if id:
-		doc = frappe.get_doc("Lead Followup", id)
-		doc.update(
-			{
-				"date": frappe.utils.getdate(followup_details.followup_date),
-				"communication_type": followup_details.communication_type,
-				"followup_by": followup_details.followup_by,
-				"spoke_to": followup_details.spoke_to,
-				"designation": followup_details.designation,
-				"discussion": followup_details.discussion,
-				"no_show": followup_details.no_show,
-			}
-		)
-		doc.save(ignore_permissions=True)
+	doc = frappe.get_doc("Partner Lead", lead)
+	if doc.followup and [row.name for row in doc.followup if row.name == id]:
+		for row in doc.followup:
+			if row.name == id:
+				row.date = frappe.utils.getdate(followup_details.followup_date)
+				row.communication_type = followup_details.communication_type
+				row.followup_by = followup_details.followup_by
+				row.spoke_to = followup_details.spoke_to
+				row.designation = followup_details.designation
+				row.discussion = followup_details.discussion
+
 	else:
-		doc = frappe.new_doc("Lead Followup")
-		doc.update(
+		doc.append(
+			"followup",
 			{
-				"parent": lead,
-				"parenttype": "Partner Lead",
-				"parentfield": "followup",
 				"date": frappe.utils.getdate(followup_details.followup_date),
 				"communication_type": followup_details.communication_type,
 				"followup_by": followup_details.followup_by,
 				"spoke_to": followup_details.spoke_to,
 				"designation": followup_details.designation,
 				"discussion": followup_details.discussion,
-				"no_show": followup_details.no_show,
-			}
+			},
 		)
-		doc.insert(ignore_permissions=True)
+
+	doc.save(ignore_permissions=True)
 	doc.reload()
 
 
