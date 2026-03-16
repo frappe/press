@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.server.server import Server
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 WIREGUARD_DEFAULT_PORT = 51820
 
@@ -79,11 +80,7 @@ class OnPremFailover(Document):
 	def after_insert(self):
 		self._create_firewall()
 
-	@frappe.whitelist()
 	def setup_wireguard_on_app_server(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_wireguard_on_app_server", timeout=300)
-
-	def _setup_wireguard_on_app_server(self):
 		peers = [
 			{
 				"public_key": self.database_server_wireguard_public_key,
@@ -114,11 +111,7 @@ class OnPremFailover(Document):
 			self.is_app_server_wireguard_setup = True
 			self.save()
 
-	@frappe.whitelist()
 	def setup_wireguard_on_database_server(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_wireguard_on_database_server", timeout=300)
-
-	def _setup_wireguard_on_database_server(self):
 		peers = [
 			{
 				"public_key": self.app_server_wireguard_public_key,
@@ -214,10 +207,6 @@ PersistentKeepalive = 25
 		valid_keys = [key for key in keys if key]
 		return "\n".join(valid_keys)
 
-	@frappe.whitelist()
-	def test_connectivity_to_on_premise_server(self):
-		frappe.enqueue_doc(self.doctype, self.name, "check_connectivity_to_on_premise_server", timeout=300)
-
 	def check_connectivity_to_on_premise_server(self):
 		for server_doc in [self.app_server_doc, self.database_server_doc]:
 			ansible = Ansible(
@@ -254,12 +243,13 @@ PersistentKeepalive = 25
 
 		self.save()
 
-	def setup(self):
+	@frappe.whitelist()
+	def setup_failover(self):
 		server = self.app_server_doc
 		frappe.get_doc(
 			{
 				"doctype": "Press Job",
-				"job_type": "Setup On-Prem Failover Server",
+				"job_type": "Setup On-Prem Failover",
 				"server_type": server.doctype,
 				"server": server.name,
 				"virtual_machine": server.virtual_machine,
@@ -273,11 +263,28 @@ PersistentKeepalive = 25
 			}
 		).insert()
 
-	def destroy(self):
-		pass
+	@frappe.whitelist()
+	def disable_failover(self):
+		server = self.app_server_doc
+		frappe.get_doc(
+			{
+				"doctype": "Press Job",
+				"job_type": "Remove On-Prem Failover",
+				"server_type": server.doctype,
+				"server": server.name,
+				"virtual_machine": server.virtual_machine,
+				"arguments": json.dumps(
+					{
+						"failover": self.name,
+					},
+					indent=2,
+					sort_keys=True,
+				),
+			}
+		).insert()
 
 	def setup_db_lsync_for_initial_sync(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_db_lsync_for_initial_sync", timeout=300)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_db_lsync_for_initial_sync", timeout=1800)
 
 	def _setup_db_lsync_for_initial_sync(self):
 		# Stop replica container on the on-prem
@@ -320,10 +327,10 @@ PersistentKeepalive = 25
 		if play.status != "Success":
 			frappe.throw("Failed to perform the final database sync.")
 
-	def setup_replica_on_prem(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_replica_on_prem", timeout=3600)
+	def setup_and_configure_database_replica(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_and_configure_database_replica", timeout=3600)
 
-	def _setup_replica_on_prem(self):
+	def _setup_and_configure_database_replica(self):
 		ansible = Ansible(
 			playbook="setup_on_prem_failover_replica.yml",
 			server=self.database_server_doc,
@@ -359,7 +366,7 @@ PersistentKeepalive = 25
 			frappe.throw("Failed to setup App Server replica synchronization on the on-premise server.")
 
 	def stop_replication_from_app_server(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_stop_replication_from_app_server", timeout=300)
+		frappe.enqueue_doc(self.doctype, self.name, "_stop_replication_from_app_server", timeout=1800)
 
 	def _stop_replication_from_app_server(self):
 		ansible = Ansible(
@@ -423,6 +430,38 @@ PersistentKeepalive = 25
 			description=f"Firewall for On-Prem Failover {self.name}",
 		)
 		self.save()
+
+	def delete_firewall(self):
+		if not self.firewall_id:
+			return
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+		cluster.delete_firewall(self.firewall_id)
+		self.firewall_id = None
+		self.save()
+
+	def add_app_server_to_firewall(self):
+		if not self.firewall_id:
+			return
+		vm: VirtualMachine = frappe.get_doc("Virtual Machine", self.app_server_doc.virtual_machine)
+		vm.attach_to_firewall(self.firewall_id)
+
+	def remove_app_server_from_firewall(self):
+		if not self.firewall_id:
+			return
+		vm: VirtualMachine = frappe.get_doc("Virtual Machine", self.app_server_doc.virtual_machine)
+		vm.detach_from_firewall(self.firewall_id)
+
+	def add_db_server_to_firewall(self):
+		if not self.firewall_id:
+			return
+		vm: VirtualMachine = frappe.get_doc("Virtual Machine", self.database_server_doc.virtual_machine)
+		vm.attach_to_firewall(self.firewall_id)
+
+	def remove_db_server_from_firewall(self):
+		if not self.firewall_id:
+			return
+		vm: VirtualMachine = frappe.get_doc("Virtual Machine", self.database_server_doc.virtual_machine)
+		vm.detach_from_firewall(self.firewall_id)
 
 	def _add_value_in_ip_address(self, ip: str, value: int) -> str:
 		ip_obj = ipaddress.IPv4Address(ip.split("/")[0])

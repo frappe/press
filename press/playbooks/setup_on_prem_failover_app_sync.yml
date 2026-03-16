@@ -1,5 +1,5 @@
 ---
-- name: Setup App Server Replcation Sync
+- name: Setup App Server Replication Sync
   hosts: all
   become: yes
   become_user: root
