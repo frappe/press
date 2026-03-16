@@ -14,12 +14,24 @@ class PartnerAudit(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		audit_date: DF.Date | None
 		conducted_by: DF.Link | None
-		date: DF.Date | None
+		implementation_finding: DF.TextEditor | None
+		implementation_observation: DF.TextEditor | None
+		implementation_summary: DF.TextEditor | None
 		mode_of_audit: DF.Literal["", "Online", "In-Person", "Hybrid"]
-		partner_audit_request: DF.Data | None
+		next_actions: DF.TextEditor | None
 		partner_team: DF.Link | None
-		result: DF.Literal["", "Compliant", "Non-Compliant"]
+		partner_tier: DF.Data | None
+		proposed_audit_date: DF.Date | None
+		requested_on: DF.Date | None
+		sales_finding: DF.TextEditor | None
+		sales_observation: DF.TextEditor | None
+		sales_summary: DF.TextEditor | None
+		status: DF.Literal["Requested", "Scheduled", "In Progress", "Completed", "On Hold", "Cancelled"]
+		support_finding: DF.TextEditor | None
+		support_observation: DF.TextEditor | None
+		support_summary: DF.TextEditor | None
 	# end: auto-generated types
 
 	pass
