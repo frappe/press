@@ -357,10 +357,20 @@ class Site(Document, TagHelpers):
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
 		server = frappe.get_value(
-			"Server", self.server, ["ip", "proxy_server", "team", "title", "provider"], as_dict=1
+			"Server",
+			self.server,
+			["ip", "nat_server", "proxy_server", "team", "title", "provider"],
+			as_dict=1,
 		)
 		doc.cluster = frappe.db.get_value("Cluster", self.cluster, ["title", "image"], as_dict=1)
-		doc.outbound_ip = server.ip
+		doc.outbound_ip = server.ip or (
+			server.nat_server
+			and frappe.db.get_value(
+				"NAT Server",
+				server.nat_server,
+				"ip",
+			)
+		)
 		doc.server_team = server.team
 		doc.server_title = server.title
 		doc.server_provider = server.provider
@@ -1937,8 +1947,9 @@ class Site(Document, TagHelpers):
 		sid = None
 		if user == "Administrator":
 			password = get_decrypted_password("Site", self.name, "admin_password")
+			host = self.host_name or self.name
 			response = requests.post(
-				f"https://{self.name}/api/method/login",
+				f"https://{host}/api/method/login",
 				data={"usr": user, "pwd": password},
 			)
 			sid = response.cookies.get("sid")
@@ -2601,12 +2612,16 @@ class Site(Document, TagHelpers):
 		if team.payment_mode == "Paid By Partner" and team.billing_team:
 			team = frappe.get_doc("Team", team.billing_team)
 
+		# Allow plan change if user just authorized a Razorpay payment
+		if team.has_recent_pending_payment():
+			return
+
 		trial_plans = frappe.get_all("Site Plan", {"is_trial_plan": 1, "enabled": 1}, pluck="name")
-		if (
-			not (team.default_payment_method or team.get_balance()) and self.plan in trial_plans
-		) or not team.payment_mode:
+		has_valid_payment = team.default_payment_method or team.get_balance()
+
+		if (not has_valid_payment and self.plan in trial_plans) or not team.payment_mode:
 			frappe.throw(
-				"Cannot change plan because you haven't added a card and not have enough balance.",
+				"Cannot change plan because you have neither added a card nor have enough credit balance",
 				CannotChangePlan,
 			)  # nosemgrep
 

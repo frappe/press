@@ -50,6 +50,7 @@ TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
 
 RETRYABLE_ERROR_PATTERNS = ["TLS handshake timeout", "Retrying in 10 seconds"]
+BENCH_QUEUE_EXECUTION_LOCK_KEY = "process_bench_queue_lock"
 
 EMPTY_BENCH_COURTESY_DAYS = 3
 
@@ -1714,22 +1715,84 @@ def group_supervisor_processes(processes: list[SupervisorProcess]):
 	return status_grouped
 
 
+def get_benches_to_process(slots_available: int) -> list[dict]:
+	"""Prioritize the private benches over public ones, and fill the remaining slots with public benches if available."""
+	# Prioritize private benches that are not running yet
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	NewBenchQueue = frappe.qb.DocType("New Bench Queue")
+
+	query = (
+		frappe.qb.from_(NewBenchQueue)
+		.join(ReleaseGroup)
+		.on(NewBenchQueue.group == ReleaseGroup.name)
+		.select(NewBenchQueue.name)
+		.where(NewBenchQueue.status == "Queued")
+		.orderby(NewBenchQueue.creation)
+	)
+
+	# Initially we fill up the slots with the private benches.
+	private_bench_tasks = query.where(ReleaseGroup.public == 0).limit(slots_available).run(as_dict=True)
+	remaining_slots = slots_available - len(private_bench_tasks)
+	# In case there are still slots available after queuing all private benches, we can queue public benches as well.
+	public_benches_tasks = (
+		query.where(ReleaseGroup.public == 1).limit(remaining_slots).run(as_dict=True)
+		if remaining_slots > 0
+		else []
+	)
+
+	return private_bench_tasks + public_benches_tasks
+
+
+def get_active_bench_job_count() -> int:
+	"""Get the count of active bench jobs that are executing or will be executing soon. Undelivered, Pending and Running.
+	Ignoring zombie undelivered jobs created more than 5 minutes ago
+	"""
+	AgentJobDocType: AgentJob = frappe.qb.DocType("Agent Job")
+	fresh_threshold = frappe.utils.add_to_date(frappe.utils.now(), minutes=-5)
+
+	running_benches_estimate = (
+		frappe.qb.from_(AgentJobDocType)
+		.select(frappe.query_builder.functions.Count("*"))
+		.where(AgentJobDocType.job_type == "New Bench")
+		.where(
+			(
+				AgentJobDocType.status.isin(["Running", "Pending"])
+			)  # In case of running pending we don't care about zombies
+			| (
+				(AgentJobDocType.status == "Undelivered") & (AgentJobDocType.creation > fresh_threshold)
+			)  # We do have undelivered zombies however
+		)
+		.run(pluck=True)
+	)
+
+	return running_benches_estimate[0] if running_benches_estimate else 0
+
+
 def process_bench_queue():
-	"""Process the new bench job queue and trigger agent jobs for them"""
+	"""Process the new bench job queue and trigger agent jobs for them, in order to ensure the
+	scheduler doesn't call this function while the older one is still running using a cache lock here
+	"""
 	# We actually only need to check the initialize bench step however sometimes they are left in running
 	# Even after the new bench job fails.
-	running_jobs = frappe.db.count("Agent Job", {"status": "Running", "job_type": "New Bench"})
+
+	# Try to take lock
+	if not frappe.cache.setnx(BENCH_QUEUE_EXECUTION_LOCK_KEY, 1):
+		# Someone has taken lock already
+		return
+
+	frappe.cache.expire(
+		BENCH_QUEUE_EXECUTION_LOCK_KEY, 60 * 5
+	)  # expire lock after 5 mins just in case the process dies in the middle and can't release the lock
+
+	running_jobs = get_active_bench_job_count()
 	concurrency_limit = frappe.db.get_single_value("Press Settings", "new_bench_concurrency_limit") or 50
 	slots_available = concurrency_limit - running_jobs
 
 	if slots_available <= 0:
+		frappe.cache.delete(BENCH_QUEUE_EXECUTION_LOCK_KEY)  # Release lock on no slots as well
 		return
 
-	# Here we can fetch as many queued tasks as there are slots.
-	# First come first serve for now? Can priorities private benches later on
-	tasks = frappe.get_all(
-		"New Bench Queue", filters={"status": "Queued"}, limit=slots_available, order_by="creation asc"
-	)
+	tasks = get_benches_to_process(slots_available)
 
 	for task_name in tasks:
 		queued_new_bench: NewBenchQueue = frappe.get_doc("New Bench Queue", task_name)
@@ -1744,6 +1807,10 @@ def process_bench_queue():
 			# On failure maybe mark the bench as broken as well for now let it be
 			queued_new_bench.status = "Failure"
 			queued_new_bench.save()
+
+	# Commit after each run to ensure accurate data is given for next runs
+	frappe.db.commit()
+	frappe.cache.delete(BENCH_QUEUE_EXECUTION_LOCK_KEY)  # Release lock
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")

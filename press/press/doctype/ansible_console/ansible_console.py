@@ -17,6 +17,7 @@ from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
 from frappe.utils import get_timedelta
 
+from press.press.doctype.virtual_machine.virtual_machine import SERIES_TO_SERVER_TYPE
 from press.utils import reconnect_on_failure
 
 
@@ -143,7 +144,11 @@ class AnsibleAdHoc:
 		self.inventory = InventoryManager(loader=self.loader, sources=sources)
 		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
 
-		self.callback = AnsibleCallback()
+		self._apply_proxy_configurations(self._fetch_proxy_mapping(sources))
+		self.callback = self._callback()
+
+	def _callback(self):
+		return AnsibleCallback()
 
 	def run(self, command, nonce=None, raw_params: bool = False, become_user: str = "root"):
 		shell_command_args = command
@@ -181,3 +186,61 @@ class AnsibleAdHoc:
 
 		self.callback.publish_update()
 		return list(self.callback.hosts.values())
+
+	def _fetch_proxy_mapping(self, sources):  # noqa: C901
+		proxy_map = {}
+		source_list = list(set(s.strip() for s in sources.split(",") if s.strip()))
+		if not source_list:
+			return proxy_map
+
+		multiple_char_server_type = [k for k in SERIES_TO_SERVER_TYPE if len(k) > 1]
+
+		type_to_sources = {}
+		for src in source_list:
+			matched_key = next((k for k in multiple_char_server_type if src.startswith(k)), None)
+			server_type = (
+				SERIES_TO_SERVER_TYPE.get(matched_key) if matched_key else SERIES_TO_SERVER_TYPE.get(src[0])
+			)
+			if not server_type:
+				continue
+
+			type_to_sources.setdefault(server_type, []).append(src)
+
+		all_servers = []
+		for server_type, names in type_to_sources.items():
+			try:
+				servers = frappe.get_all(
+					server_type,
+					filters={"name": ["in", names]},
+					fields=["name", "cluster", "ip", "private_ip"],
+				)
+				all_servers.extend(servers)
+			except frappe.db.OperationalError:
+				# Handles cases where 'cluster' might not exist in the schema
+				continue
+
+		cluster_cache = {}
+		clusters = [s.cluster for s in all_servers if not s.ip and s.private_ip and s.cluster]
+		if clusters:
+			proxies = frappe.get_all(
+				"Proxy Server",
+				filters={"status": "Active", "cluster": ["in", clusters]},
+				fields=["name", "cluster"],
+			)
+			cluster_cache = {p.cluster: p.name for p in proxies}
+
+		for server in all_servers:
+			if not server.ip and server.private_ip and server.cluster:
+				proxy_name = cluster_cache.get(server.cluster)
+				if proxy_name:
+					proxy_map[server.name] = proxy_name
+
+		return proxy_map
+
+	def _apply_proxy_configurations(self, proxy_map):
+		"""Applies SSH ProxyJump arguments to the Ansible variable manager."""
+		for target, proxy in proxy_map.items():
+			host = self.inventory.get_host(target)
+			if host:
+				ssh_args = f'-o ProxyCommand="ssh -W %h:%p root@{proxy}"'
+				self.variable_manager.set_host_variable(host.get_name(), "ansible_ssh_common_args", ssh_args)

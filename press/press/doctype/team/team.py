@@ -470,6 +470,20 @@ class Team(Document):
 				frappe.DuplicateEntryError,
 			)
 
+	def has_recent_pending_payment(self) -> bool:
+		"""Returns True if there's a Razorpay payment authorized in the last 5 minutes
+		but not yet captured (webhook is still in processing state)."""
+		return bool(
+			frappe.db.exists(
+				"Razorpay Payment Record",
+				{
+					"team": self.name,
+					"status": "Pending",
+					"creation": (">", frappe.utils.add_to_date(frappe.utils.now_datetime(), minutes=-5)),
+				},
+			)
+		)
+
 	def validate_payment_mode(self):  # noqa: C901
 		if not self.payment_mode and self.get_balance() > 0:
 			self.payment_mode = "Prepaid Credits"
@@ -480,7 +494,12 @@ class Team(Document):
 				and frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0
 			):
 				frappe.throw("No card added")
-			if self.payment_mode == "Prepaid Credits" and self.get_balance() <= 0:
+			# This check to verify recent pending payment is added to avoid validation issue when updating team doctype with payment mode as credits without balance as transaction is on going
+			if (
+				self.payment_mode == "Prepaid Credits"
+				and self.get_balance() <= 0
+				and not self.has_recent_pending_payment()
+			):
 				frappe.throw("Account does not have sufficient balance")
 
 		if not self.is_new() and not self.default_payment_method:

@@ -61,8 +61,9 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 	from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-
 from typing import Literal, TypedDict
+
+from frappe.query_builder.functions import Count
 
 
 class BenchInfoType(TypedDict):
@@ -524,8 +525,15 @@ class BaseServer(Document, TagHelpers):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
 
 	def after_insert(self):
-		if self.ip and (
-			self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted
+		if self.ip:
+			if self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted:
+				self.create_dns_record()
+				self.update_virtual_machine_name()
+		elif (
+			self.private_ip
+			and self.doctype in ["Server", "Database Server"]
+			and not self.is_self_hosted
+			and not frappe.flags.in_test
 		):
 			self.create_dns_record()
 			self.update_virtual_machine_name()
@@ -558,7 +566,7 @@ class BaseServer(Document, TagHelpers):
 								"Name": self.name,
 								"Type": "A",
 								"TTL": 3600 if self.doctype == "Proxy Server" else 300,
-								"ResourceRecords": [{"Value": self.ip}],
+								"ResourceRecords": [{"Value": self.ip or self.private_ip}],
 							},
 						}
 					]
@@ -728,6 +736,13 @@ class BaseServer(Document, TagHelpers):
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
 		database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
 		database_server_config = database_server._get_config()
+		nat_server_private_ips = (
+			frappe.db.get_value(
+				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+			)
+			if self.nat_server
+			else None
+		)
 
 		self.status = "Installing"
 		database_server.status = "Installing"
@@ -763,6 +778,8 @@ class BaseServer(Document, TagHelpers):
 					"allocator": database_server.memory_allocator.lower(),
 					"mariadb_root_password": database_server_config.mariadb_root_password,
 					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
+					"nat_gateway_ip": nat_server_private_ips
+					and (nat_server_private_ips.secondary_private_ip or nat_server_private_ips.private_ip),
 					**self.get_mount_variables(),  # Currently same as database server since no volumes
 				},
 			)
@@ -1113,8 +1130,6 @@ class BaseServer(Document, TagHelpers):
 		return find(machine.volumes, lambda v: v.device == "/dev/sda1")
 
 	def update_virtual_machine_name(self):
-		if self.provider not in ("AWS EC2", "OCI"):
-			return None
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
 
@@ -1164,6 +1179,63 @@ class BaseServer(Document, TagHelpers):
 		self.status = "Installing"
 		self.save()
 		frappe.enqueue_doc(self.doctype, self.name, "_rename_server", queue="long", timeout=2400)
+
+	def remove_from_release_groups(self):
+		"""Remove application server from all enabled release groups.
+		This is done to allow successful deploys on the release group post server archival
+		"""
+		if self.doctype != "Server":
+			return
+
+		# Incase function is used independently of archival flow.
+		if frappe.get_all(
+			"Bench",
+			filters={"server": self.name, "status": ("!=", "Archived")},
+			ignore_ifnull=True,
+		):
+			frappe.throw(
+				_(
+					"Cannot modify bench group. Please drop all active benches from their respective dashboards."
+				)
+			)
+
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+
+		release_group_filter = (
+			frappe.qb.from_(ReleaseGroupServer)
+			.select(ReleaseGroupServer.parent)
+			.where(ReleaseGroupServer.server == self.name)
+		)
+
+		query = (
+			frappe.qb.from_(ReleaseGroup)
+			.join(ReleaseGroupServer)
+			.on(ReleaseGroupServer.parent == ReleaseGroup.name)
+			.select(ReleaseGroup.name, Count(ReleaseGroupServer.server).as_("server_count"))
+			.where(ReleaseGroup.enabled == 1)
+			.where(ReleaseGroup.name.isin(release_group_filter))
+			.groupby(ReleaseGroup.name)
+		)
+
+		results = query.run(as_dict=True)
+
+		# Disable all release groups that just had this server in them.
+		frappe.db.set_value(
+			"Release Group",
+			{"name": ("in", [group["name"] for group in results if group["server_count"] == 1])},
+			"enabled",
+			False,
+		)
+
+		# Remove server from all other release groups.
+		frappe.db.delete(
+			"Release Group Server",
+			{
+				"server": self.name,
+				"parent": ("in", [group["name"] for group in results if group["server_count"] > 1]),
+			},
+		)
 
 	@frappe.whitelist()
 	def archive(self):  # noqa: C901
@@ -1223,6 +1295,7 @@ class BaseServer(Document, TagHelpers):
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
+		self.remove_from_release_groups()
 
 	def _archive(self):
 		self.run_press_job("Archive Server")
@@ -1798,6 +1871,52 @@ class BaseServer(Document, TagHelpers):
 		return f"<a href=/app/arm-build-record/{arm_build_record.name}> ARM Build Record"
 
 	@frappe.whitelist()
+	def install_nat_iptables(self):
+		if self.ip:
+			frappe.throw("NAT Iptables can only be installed on servers without public IP")
+
+		if not getattr(self, "nat_server", None):
+			frappe.throw("NAT Iptables requires a NAT server to be set")
+
+		frappe.enqueue_doc(self.doctype, self.name, "_install_nat_iptables")
+
+	def _install_nat_iptables(self):
+		nat_server_private_ips = frappe.db.get_value(
+			"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+		)
+
+		try:
+			ansible = Ansible(
+				playbook="nat_iptables.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"nat_gateway_ip": nat_server_private_ips.secondary_private_ip
+					or nat_server_private_ips.private_ip
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("NAT Iptables Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def remove_nat_iptables(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_remove_nat_iptables")
+
+	def _remove_nat_iptables(self):
+		try:
+			ansible = Ansible(
+				playbook="remove_nat_iptables.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("NAT Iptables Removal Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def start_active_benches(self):
 		benches = frappe.get_all("Bench", {"server": self.name, "status": "Active"}, pluck="name")
 		frappe.enqueue_doc(self.doctype, self.name, "_start_active_benches", benches=benches)
@@ -2341,7 +2460,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			return frappe.get_cached_value(
 				"Bastion Server", self.bastion_server, ["ssh_user", "ssh_port", "ip"], as_dict=True
 			)
-		return frappe._dict()
+
+		# if bastion server is not found and server doesnt have public ip, use proxy server as bastion/jump server
+		if not self.ip and self.private_ip:
+			return frappe.db.get_value(
+				"Proxy Server",
+				{"status": "Active", "cluster": self.cluster},
+				["ssh_user", "ssh_port", "name as ip"],
+				as_dict=True,
+			)
+
+		return None
 
 	@frappe.whitelist()
 	def get_static_ip(self):
@@ -2492,6 +2621,7 @@ class Server(BaseServer):
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
+		nat_server: DF.Link | None
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
 		platform: DF.Literal["x86_64", "arm64"]
@@ -2764,7 +2894,7 @@ class Server(BaseServer):
 		agent.new_server(self.name)
 
 	def ansible_run(self, command: str) -> dict[str, str]:
-		inventory = f"{self.ip},"
+		inventory = f"{self.name},"
 		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
 	def setup_docker(self, now: bool | None = None):
@@ -2810,6 +2940,13 @@ class Server(BaseServer):
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
+		nat_server_private_ips = (
+			frappe.db.get_value(
+				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+			)
+			if self.nat_server
+			else None
+		)
 
 		# If database server is set, then define db port under configuration
 		db_port = (
@@ -2843,6 +2980,8 @@ class Server(BaseServer):
 					"db_port": db_port,
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
+					"nat_gateway_ip": nat_server_private_ips
+					and (nat_server_private_ips.secondary_private_ip or nat_server_private_ips.private_ip),
 					**self.get_mount_variables(),
 				},
 			)
@@ -2869,6 +3008,15 @@ class Server(BaseServer):
 		private_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
 		with_mask = private_ip + "/24"
 		return str(ipaddress.ip_network(with_mask, strict=False))
+
+	def get_nat_ip(self):
+		if not self.ip and self.nat_server:
+			nat_ips = frappe.db.get_value(
+				"NAT Server", self.nat_server, ["private_ip", "secondary_private_ip"], as_dict=True
+			)
+			private_ip = nat_ips.secondary_private_ip or nat_ips.private_ip
+			return str(ipaddress.ip_network(private_ip + "/16", strict=False))
+		return None
 
 	@frappe.whitelist()
 	def setup_standalone(self):
@@ -3545,6 +3693,49 @@ class Server(BaseServer):
 				fields=["name"],
 			)
 		]  # To avoid adding child table in server doc
+
+	def get_next_plan(self, requires_cpu: bool = False, requires_memory: bool = False) -> ServerPlan:
+		"""Depending on the requirements get the next server plan for scaling up.
+		In case we require more CPU but not more memory, we will try to find a plan with higher CPU and same memory,
+		if not found we will relax the memory requirement to find a plan with higher CPU and higher memory.
+		"""
+		if not requires_cpu and not requires_memory:
+			frappe.throw("Specify CPU and/or memory requirements", frappe.ValidationError)
+
+		current_plan: frappe._dict = frappe.db.get_value(
+			"Server Plan", self.plan, ["vcpu", "memory", "enabled", "legacy_plan"], as_dict=True
+		)
+		base_filters = {
+			"vcpu": (">", current_plan.vcpu) if requires_cpu else current_plan.vcpu,
+			"memory": (">", current_plan.memory) if requires_memory else current_plan.memory,
+			"cluster": self.cluster,
+			"server_type": self.doctype,
+			"enabled": current_plan.enabled,
+			"legacy_plan": current_plan.legacy_plan,
+		}
+
+		next_plan = frappe.db.get_value(
+			"Server Plan",
+			filters=base_filters,
+			order_by="vcpu asc, memory asc",
+		)
+
+		# If no plan is found and only CPU is required, relax the memory requirement since we mostly won't have a plan, with higher CPU and same memory
+		if not next_plan and requires_cpu and not requires_memory:
+			base_filters["memory"] = (">", current_plan.memory)
+			next_plan = frappe.db.get_value(
+				"Server Plan",
+				filters=base_filters,
+				order_by="vcpu asc, memory asc",
+			)
+
+		if not next_plan:
+			frappe.throw(
+				"No higher server plan available with the specified requirements", frappe.ValidationError
+			)
+
+		# Return the next server plan document
+		return frappe.get_doc("Server Plan", next_plan)
 
 
 def scale_workers(now=False):
