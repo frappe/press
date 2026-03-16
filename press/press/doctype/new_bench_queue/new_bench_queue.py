@@ -3,7 +3,6 @@
 
 import typing
 
-import frappe
 from frappe.model.document import Document
 
 
@@ -23,7 +22,3 @@ class NewBenchQueue(Document):
 	# end: auto-generated types
 
 	dashboard_fields: typing.ClassVar = ["status", "group"]
-
-	def on_doctype_update(self):
-		# For faster ordering
-		frappe.db.add_index(self.doctype, ["creation"])
