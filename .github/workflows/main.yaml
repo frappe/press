@@ -235,6 +235,10 @@ jobs:
           key: bench-dir-${{ github.ref }}
           path: /home/runner/frappe-bench
 
+      - name: Change ownership of mariadb data directory (for cache restore)
+        run: |
+          sudo chown -R runner:runner /data/mariadb_data
+
       - name: Cache mariadb data directory
         id: cache-mariadb-data
         uses: actions/cache@v5
