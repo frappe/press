@@ -61,6 +61,7 @@
   "proxy_security_group_id",
   "network_acl_id",
   "route_table_id",
+  "nat_security_group_id",
   "docker_section",
   "repository",
   "database_section",
@@ -447,10 +448,17 @@
   },
   {
    "default": "0",
-   "description": "Disable public IP assignment on servers created from dashboard",
+   "depends_on": "eval: doc.cloud_provider === 'AWS EC2'",
+   "description": "Disable (auto) public IP assignment on servers",
    "fieldname": "disable_public_ips_for_servers",
    "fieldtype": "Check",
    "label": "Disable Public IPs for Servers"
+  },
+  {
+   "fieldname": "nat_security_group_id",
+   "fieldtype": "Data",
+   "label": "NAT Security Group ID",
+   "read_only": 1
   }
  ],
  "image_field": "image",
@@ -487,7 +495,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2026-03-15 19:57:19.647890",
+ "modified": "2026-03-18 03:03:43.401941",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

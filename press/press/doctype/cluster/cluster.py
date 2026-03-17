@@ -88,6 +88,7 @@ class Cluster(Document):
 		hybrid: DF.Check
 		image: DF.AttachImage | None
 		monitoring_password: DF.Password | None
+		nat_security_group_id: DF.Data | None
 		network_acl_id: DF.Data | None
 		oci_private_key: DF.Password | None
 		oci_public_key: DF.Code | None
@@ -704,6 +705,7 @@ class Cluster(Document):
 			],
 		)
 		self.create_proxy_security_group()
+		self.create_nat_security_group()
 
 		try:  # noqa: SIM105
 			# We don't care if the key already exists in this region
@@ -760,6 +762,88 @@ class Cluster(Document):
 					"IpProtocol": "tcp",
 					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "MariaDB from anywhere"}],
 					"ToPort": 3306,
+				},
+			],
+		)
+
+	def create_nat_security_group(self):
+		client = self.get_aws_client()
+		response = client.create_security_group(
+			GroupName=f"Frappe Cloud - {self.name} - NAT - Security Group",
+			Description="Allow Inbound Traffic on NAT",
+			VpcId=self.vpc_id,
+			TagSpecifications=[
+				{
+					"ResourceType": "security-group",
+					"Tags": [
+						{
+							"Key": "Name",
+							"Value": f"Frappe Cloud - {self.name} - NAT - Security Group",
+						},
+					],
+				},
+			],
+		)
+		self.nat_security_group_id = response["GroupId"]
+
+		client.authorize_security_group_ingress(
+			GroupId=self.nat_security_group_id,
+			IpPermissions=[
+				{
+					"FromPort": 465,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "SMTP from private network"}
+					],
+					"ToPort": 465,
+				},
+				{
+					"FromPort": 587,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "SMTP from private network"}
+					],
+					"ToPort": 587,
+				},
+				{
+					"FromPort": 25,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "SMTP from private network"}
+					],
+					"ToPort": 25,
+				},
+				{
+					"FromPort": 143,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "IMAP from private network"}
+					],
+					"ToPort": 143,
+				},
+				{
+					"FromPort": 993,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "IMAP from private network"}
+					],
+					"ToPort": 993,
+				},
+				{
+					"FromPort": 995,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "POP3 from private network"}
+					],
+					"ToPort": 993,
+				},
+				{
+					"FromPort": 110,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "POP3 from private network"}
+					],
+					"ToPort": 110,
 				},
 			],
 		)
@@ -1269,14 +1353,13 @@ class Cluster(Document):
 		server.new_worker_allocation = True
 		server.database_server = database_server.name
 		server.proxy_server = self.proxy_server
+		self._add_nat_server_if_supported(server)
 
 		# Database configurations
 		database_server.auto_purge_binlog_based_on_size = True
 		database_server.binlog_max_disk_usage_percent = 75 if auto_increase_storage else 20
-
-		if hasattr(self, "nat_server") and self.nat_server:
-			server.nat_server = self.nat_server
-			database_server.nat_server = self.nat_server
+		if getattr(server, "nat_server", None):
+			database_server.nat_server = server.nat_server
 
 		server.save()  # Creating server before database server to use the preset agent password
 		database_server.save()
@@ -1373,9 +1456,7 @@ class Cluster(Document):
 					server.auto_purge_binlog_based_on_size = True
 					server.binlog_max_disk_usage_percent = 20
 
-				if hasattr(self, "nat_server") and self.nat_server:
-					server.nat_server = self.nat_server
-
+				self._add_nat_server_if_supported(server)
 			case "Server":
 				server = vm.create_server(is_secondary=is_secondary, primary=primary)
 				server.title = f"{title} - Application" if not is_secondary else title
@@ -1394,9 +1475,7 @@ class Cluster(Document):
 				server.auto_increase_storage = auto_increase_storage
 				server.is_for_recovery = is_for_recovery
 
-				if hasattr(self, "nat_server") and self.nat_server:
-					server.nat_server = self.nat_server
-
+				self._add_nat_server_if_supported(server)
 			case "Proxy Server":
 				server = vm.create_proxy_server()
 				server.title = f"{title} - Proxy"
@@ -1492,3 +1571,16 @@ class Cluster(Document):
 
 			return best_plan
 		return None
+
+	def _add_nat_server_if_supported(self, server):
+		if self.disable_public_ips_for_servers and self.cloud_provider == "AWS EC2":
+			nat_server = frappe.db.get_value(
+				"NAT Server",
+				{"status": "Active", "cluster": self.name, "secondary_private_ip": ("is", "set")},
+				"name",
+			)
+			if not nat_server:
+				nat_server = frappe.db.get_value(
+					"NAT Server", {"status": "Active", "cluster": self.name}, "name"
+				)
+			server.nat_server = nat_server
