@@ -65,3 +65,29 @@ fi
 
 docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "CHANGE MASTER TO MASTER_HOST='{{ primary_private_ip }}', MASTER_USER='root', MASTER_PASSWORD='{{ mariadb_root_password }}', MASTER_PORT={{ primary_db_port }}, MASTER_USE_GTID=slave_pos;"
 docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "START SLAVE;"
+
+
+# Wait and check slave status
+echo "Checking replication status..."
+for i in {1..30}; do  # max 30 attempts
+    STATUS=$(docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -N -B -e "SHOW SLAVE STATUS\G" | grep -E 'Last_IO_Error|Last_SQL_Error' | awk '{print $2}')
+
+    IO_ERROR=$(echo "$STATUS" | sed -n '1p')
+    SQL_ERROR=$(echo "$STATUS" | sed -n '2p')
+
+    if [ -z "$IO_ERROR" ] && [ -z "$SQL_ERROR" ]; then
+        echo "Replication is running fine!"
+        break
+    else
+        echo "Replication not ready yet. Last_IO_Error='$IO_ERROR', Last_SQL_Error='$SQL_ERROR'. Waiting..."
+        sleep 2
+    fi
+done
+
+# Final check
+if [ -n "$IO_ERROR" ] || [ -n "$SQL_ERROR" ]; then
+    echo "Warning: Replication has errors!"
+    echo "Last_IO_Error: $IO_ERROR"
+    echo "Last_SQL_Error: $SQL_ERROR"
+    exit 1
+fi
