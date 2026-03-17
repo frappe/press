@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import add_to_date
 
 from press.runner import Ansible
 
@@ -79,6 +80,14 @@ class OnPremFailover(Document):
 
 	def after_insert(self):
 		self._create_firewall()
+
+	def on_update(self):
+		if self.has_value_changed("enabled") and not self.enabled:
+			self.is_on_prem_server_reachable_from_app_server = False
+			self.is_on_prem_server_ssh_from_app_server_working = False
+			self.is_on_prem_server_reachable_from_db_server = False
+			self.is_on_prem_server_ssh_from_db_server_working = False
+			self.save()
 
 	def setup_wireguard_on_app_server(self):
 		peers = [
@@ -283,6 +292,7 @@ PersistentKeepalive = 25
 			}
 		).insert()
 
+	@frappe.whitelist()
 	def setup_db_lsync_for_initial_sync(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_db_lsync_for_initial_sync", timeout=1800)
 
@@ -302,12 +312,15 @@ PersistentKeepalive = 25
 		play = ansible.run()
 
 		if play.status == "Success":
+			self.reload()
+
 			self.is_lsyncd_running_for_db = True
 			self.db_lsyncd_started_on = frappe.utils.now_datetime()
 			# TODO: Perform network testing and setup db_lsyncd_stop_at accordingly
 			# Else, by default assume 5 MB/s transfer speed
-			self.db_lsyncd_stop_at = frappe.utils.add_to_date(self.db_lsyncd_started_on, hour=1)
+			self.db_lsyncd_stop_at = add_to_date(self.db_lsyncd_started_on, hours=1)
 			self.save()
+			frappe.db.commit()
 
 	def setup_db_rsync_for_final_sync(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_db_rsync_for_final_sync", timeout=3600)
