@@ -744,10 +744,17 @@
    "label": "Is Provisioning Job Completed"
   },
   {
+<<<<<<< HEAD
    "default": "0",
    "fieldname": "enable_on_prem_failover_support",
    "fieldtype": "Check",
    "label": "Enable On-Prem Failover Support"
+=======
+   "fieldname": "nat_server",
+   "fieldtype": "Link",
+   "label": "NAT Server",
+   "options": "NAT Server"
+>>>>>>> 7c6f0999d (fix(server): show nat server field by default)
   }
  ],
  "links": [
@@ -760,7 +767,11 @@
    "link_fieldname": "app_server"
   }
  ],
+<<<<<<< HEAD
  "modified": "2026-03-17 17:02:43.407765",
+=======
+ "modified": "2026-03-18 02:33:48.730257",
+>>>>>>> 7c6f0999d (fix(server): show nat server field by default)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
