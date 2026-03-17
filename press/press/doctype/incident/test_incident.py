@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
+import frappe.utils
 from frappe.tests.utils import FrappeTestCase
 from hypothesis import given, settings
 from hypothesis import strategies as st
@@ -595,6 +596,68 @@ class TestIncident(FrappeTestCase):
 			mock_calls_create.assert_called_with(
 				to=self.test_phno_2, from_=self.from_, url="http://demo.twilio.com/docs/voice.xml"
 			)
+
+	def test_banner_flow_on_incident(self):
+		create_test_alertmanager_webhook_log()
+		incident: Incident = frappe.get_last_doc("Incident")
+		# Banner creation | enabling and disabling on incident creation and resolution respectively
+		banner = frappe.db.get_value(
+			"Dashboard Banner",
+			{"title": f"Incident on server: {incident.server}"},
+			["enabled", "message", "name"],
+			as_dict=True,
+		)
+
+		self.assertEqual(banner["enabled"], 1)
+		self.assertEqual(
+			banner["message"], f"There is an ongoing incident affecting sites on {incident.server}."
+		)
+
+		incident = incident.reload()
+		incident.status = "Resolved"
+		incident.save()
+
+		self.assertEqual(frappe.db.get_value("Dashboard Banner", banner.name, "enabled"), 0)
+
+		# Check same banner is enabled if another incident on same server is created
+		new_incident: Incident = frappe.copy_doc(incident)
+		new_incident.name = None
+		new_incident.status = "Validating"
+		new_incident.insert()
+
+		banner = frappe.db.get_value(
+			"Dashboard Banner",
+			banner.name,  # It should be the same banner since it's based on same server
+			["enabled", "message", "name"],
+			as_dict=True,
+		)
+
+		self.assertEqual(banner["enabled"], 1)
+		self.assertEqual(
+			banner["message"], f"There is an ongoing incident affecting sites on {new_incident.server}."
+		)
+
+		# Testing thar banner doesn't get disabled until all incidents on the server are resolved
+		another_incident: Incident = frappe.copy_doc(incident)
+		another_incident.name = None
+		another_incident.status = "Validating"
+		another_incident.insert()
+
+		new_incident = new_incident.reload()
+		new_incident.status = "Resolved"
+		new_incident.save()
+
+		self.assertEqual(
+			frappe.db.get_value("Dashboard Banner", banner.name, "enabled"), 1
+		)  # One incident is still ongoing on this server!
+
+		another_incident = another_incident.reload()
+		another_incident.status = "Resolved"
+		another_incident.save()
+
+		self.assertEqual(
+			frappe.db.get_value("Dashboard Banner", banner.name, "enabled"), 0
+		)  # Now all incidents on this server are resolved, disable the banner
 
 	@patch.object(TelegramMessage, "enqueue")
 	def test_telegram_message_is_sent_when_unable_to_reach_twilio(self, mock_telegram_send):
