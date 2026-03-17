@@ -115,18 +115,22 @@ const toggleIncident = () => (toggled.value = !toggled.value);
 						<Badge :label="data.investigation.status" variant="solid" />
 					</div>
 
-					<div
+					<details
+						open="true"
 						v-for="group in data.investigation.groups"
 						:key="group.label"
-						class="mb-4 last:mb-0"
+						class="mb-4 last:mb-0 group"
 					>
-						<div
-							class="mb-2 flex items-center gap-1.5 border-b border-outline-gray-2 pb-2"
+						<summary
+							class="mb-2 flex items-center gap-1.5 group-open:border-b border-outline-gray-2 pb-2 cursor-pointer"
 						>
 							<LucideServer v-if="group.label === 'Server'" class="size-3" />
 							<LucideDatabase v-else class="size-3" />
 							<span class="text-sm font-semibold">{{ group.label }}</span>
-						</div>
+							<LucideChevronRight
+								class="ml-auto size-3.5 group-open:rotate-90 transition-transform"
+							/>
+						</summary>
 
 						<div
 							v-for="(step, idx) in group.steps"
@@ -163,7 +167,7 @@ const toggleIncident = () => (toggled.value = !toggled.value);
 								<span class="text-sm">Passed</span>
 							</div>
 						</div>
-					</div>
+					</details>
 				</div>
 			</div>
 
