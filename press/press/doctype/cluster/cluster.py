@@ -163,7 +163,9 @@ class Cluster(Document):
 			url=self.frappe_compute_base_url, api_key=self.frappe_compute_api_key, api_secret=api_secret
 		)
 		if not client.validate():
-			frappe.throw("You do not have Administrator permissions to the Frappe Compute instance.")
+			frappe.throw(
+				"You do not have Administrator permissions to the Frappe Compute instance. Please refer to your frappe_compute_api_secret and frappe_compute_api_key fields and try to check and ensure that the correct credentials have been used."
+			)
 
 	def validate_hetzner_api_token(self):
 		api_token = self.get_password("hetzner_api_token")
