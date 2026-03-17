@@ -47,7 +47,7 @@ const props = defineProps<Props>();
 	>
 		<!-- Card header & toggle btn -->
 		<summary
-			class="w-full flex cursor-pointer items-center gap-2.5 p-3 hover:bg-surface-gray-1 transition-colors truncate text-sm font-medium text-ink-gray-9"
+			class="w-full flex cursor-pointer items-center gap-2.5 p-3 group-open/card:bg-surface-gray-1 hover:bg-surface-gray-1 transition-colors truncate text-sm font-medium text-ink-gray-9"
 		>
 			<LucideChevronRight
 				class="size-4 shrink-0 text-ink-gray-6 transition-transform group-open/card:rotate-90"
@@ -59,6 +59,7 @@ const props = defineProps<Props>();
 				:label="data.status"
 				:theme="statusClasses[data.status]"
 				class="ml-auto"
+				variant="outline"
 			>
 				<template #prefix>
 					<div class="size-1.5 rounded-full r-1 bg-current opacity-80" />
@@ -120,7 +121,6 @@ const props = defineProps<Props>();
 					</div>
 
 					<details
-						open
 						v-for="group in data.investigation.groups"
 						:key="group.label"
 						class="mb-4 last:mb-0 group/investigation"
@@ -161,7 +161,7 @@ const props = defineProps<Props>();
 
 							<div
 								v-else-if="step.is_likely_cause"
-								class="flex shrink-0 items-center gap-1.5 text-ink-amber-3"
+								class="flex shrink-0 items-center gap-1.5 text-amber-300"
 							>
 								<LucideAlert class="size-3" />
 								<span class="text-sm">Likely Cause</span>
@@ -169,7 +169,7 @@ const props = defineProps<Props>();
 
 							<div
 								v-else
-								class="flex shrink-0 items-center gap-1 text-ink-green-2"
+								class="flex shrink-0 items-center gap-1 text-green-300"
 							>
 								<LucideCheck class="size-3" />
 								<span class="text-sm">Passed</span>
