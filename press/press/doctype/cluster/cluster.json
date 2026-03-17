@@ -66,6 +66,7 @@
   "proxy_security_group_id",
   "network_acl_id",
   "route_table_id",
+  "nat_security_group_id",
   "docker_section",
   "repository",
   "database_section",
@@ -477,11 +478,21 @@
    "label": "Frappe Compute API Secret"
 =======
    "default": "0",
-   "description": "Disable public IP assignment on servers created from dashboard",
+   "depends_on": "eval: doc.cloud_provider === 'AWS EC2'",
+   "description": "Disable (auto) public IP assignment on servers",
    "fieldname": "disable_public_ips_for_servers",
    "fieldtype": "Check",
    "label": "Disable Public IPs for Servers"
+<<<<<<< HEAD
 >>>>>>> 26b62b3dd (feat(cluster): Support for enable/disable public ip provisioning for new servers)
+=======
+  },
+  {
+   "fieldname": "nat_security_group_id",
+   "fieldtype": "Data",
+   "label": "NAT Security Group ID",
+   "read_only": 1
+>>>>>>> 4b28254f4 (feat(cluster): Support for nat security group)
   }
  ],
  "image_field": "image",
@@ -519,10 +530,14 @@
   }
  ],
 <<<<<<< HEAD
+<<<<<<< HEAD
  "modified": "2026-03-14 22:47:04.117885",
 =======
  "modified": "2026-03-15 19:57:19.647890",
 >>>>>>> 26b62b3dd (feat(cluster): Support for enable/disable public ip provisioning for new servers)
+=======
+ "modified": "2026-03-18 03:03:43.401941",
+>>>>>>> 4b28254f4 (feat(cluster): Support for nat security group)
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

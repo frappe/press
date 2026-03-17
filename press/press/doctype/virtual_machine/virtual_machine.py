@@ -2234,6 +2234,8 @@ class VirtualMachine(Document):
 		groups = [self.security_group_id]
 		if self.series == "n":
 			groups.append(frappe.db.get_value("Cluster", self.cluster, "proxy_security_group_id"))
+		elif self.series == "nat":
+			groups.append(frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id"))
 		return groups
 
 	@frappe.whitelist()
