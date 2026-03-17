@@ -2605,7 +2605,7 @@ def check_app_compatibility_for_upgrade(name, version):
 			"branch",
 		],
 	)
-	source_map = {s.name: s for s in app_sources}
+	source_map = {s.app: s for s in app_sources}
 	public_apps = []
 	public_source_map = {}
 	for app in site_app_names:
