@@ -299,7 +299,9 @@ PersistentKeepalive = 25
 
 	@frappe.whitelist()
 	def setup_db_lsync_for_initial_sync(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_db_lsync_for_initial_sync", timeout=1800)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_db_lsync_for_initial_sync", timeout=1800, queue="long"
+		)
 
 	def _setup_db_lsync_for_initial_sync(self):
 		# Stop replica container on the on-prem
@@ -336,7 +338,9 @@ PersistentKeepalive = 25
 			frappe.db.commit()
 
 	def setup_db_rsync_for_final_sync(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_db_rsync_for_final_sync", timeout=3600)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_db_rsync_for_final_sync", timeout=3600, queue="long"
+		)
 
 	def _setup_db_rsync_for_final_sync(self):
 		ansible = Ansible(
@@ -355,7 +359,9 @@ PersistentKeepalive = 25
 			frappe.throw("Failed to perform the final database sync.")
 
 	def setup_and_configure_database_replica(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_and_configure_database_replica", timeout=3600)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_and_configure_database_replica", timeout=3600, queue="long"
+		)
 
 	def _setup_and_configure_database_replica(self):
 		ansible = Ansible(
@@ -376,7 +382,7 @@ PersistentKeepalive = 25
 			frappe.throw("Failed to setup replica on the on-premise server.")
 
 	def setup_app_server_replica(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_app_server_replica", timeout=3600)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_app_server_replica", timeout=3600, queue="long")
 
 	def _setup_app_server_replica(self):
 		ansible = Ansible(
@@ -393,7 +399,9 @@ PersistentKeepalive = 25
 			frappe.throw("Failed to setup App Server replica synchronization on the on-premise server.")
 
 	def stop_replication_from_app_server(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_stop_replication_from_app_server", timeout=1800)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_stop_replication_from_app_server", timeout=1800, queue="long"
+		)
 
 	def _stop_replication_from_app_server(self):
 		ansible = Ansible(
@@ -406,7 +414,9 @@ PersistentKeepalive = 25
 			frappe.throw("Failed to stop replication on the App Server.")
 
 	def stop_replication_from_db_server(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_stop_replication_from_db_server", timeout=300)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_stop_replication_from_db_server", timeout=300, queue="long"
+		)
 
 	def _stop_replication_from_db_server(self):
 		ansible = Ansible(
