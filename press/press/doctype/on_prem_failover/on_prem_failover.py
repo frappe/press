@@ -333,6 +333,7 @@ PersistentKeepalive = 25
 				"on_prem_ip": self.on_prem_server_wireguard_private_ip,
 				"database_base_directory": self.database_base_directory,
 				"mariadb_bind_address": "0.0.0.0",
+				"mariadb_root_password": self.database_server_doc.get_password("mariadb_root_password"),
 			},
 		)
 		play = ansible.run()
