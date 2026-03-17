@@ -744,7 +744,6 @@
    "label": "Is Provisioning Job Completed"
   },
   {
-   "depends_on": "eval: !!!doc.ip || !!!doc.ipv6",
    "fieldname": "nat_server",
    "fieldtype": "Link",
    "label": "NAT Server",
@@ -757,7 +756,7 @@
    "link_fieldname": "primary_server"
   }
  ],
- "modified": "2026-03-11 16:25:30.069916",
+ "modified": "2026-03-18 02:33:48.730257",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

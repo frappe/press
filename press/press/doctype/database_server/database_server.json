@@ -783,7 +783,6 @@
    "label": "Enable Schema Size Parser"
   },
   {
-   "depends_on": "eval: !!!doc.ip",
    "fieldname": "nat_server",
    "fieldtype": "Link",
    "label": "NAT Server",
@@ -804,7 +803,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2026-03-11 16:26:28.352783",
+ "modified": "2026-03-18 03:08:29.199702",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
