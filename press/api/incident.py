@@ -78,10 +78,11 @@ def get_incidents(resolved: bool = False) -> list[dict]:
 
 	return (
 		(
-			query.where(Incident.status == "Resolved")
+			query.where((Incident.status == "Resolved") | (Incident.status == "Auto-Resolved"))
 			if resolved
 			else query.where(Incident.status.isin(["Confirmed", "Validating", "Investigating"]))
 		)
 		.groupby(Incident.name)
+		.orderby(Incident.creation, order=Order.desc)
 		.run(as_dict=True)
 	)
