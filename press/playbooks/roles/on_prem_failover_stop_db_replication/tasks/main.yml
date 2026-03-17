@@ -12,3 +12,7 @@
     state: stopped
     enabled: no
   ignore_errors: true
+
+- name: Make sure to disable the wireguard interface
+  command: "wg-quick down {{ interface_id }}"
+  ignore_errors: true
