@@ -1,0 +1,24 @@
+---
+- name: Replace bind-address IP in config file
+  ansible.builtin.replace:
+    path: /etc/mysql/conf.d/frappe.cnf
+    regexp: '^bind-address\s*=\s*.*'
+    replace: 'bind-address = {{ mariadb_bind_address }}'
+  when: mariadb_bind_address is defined and mariadb_bind_address != ""
+
+- name: Restart MariaDB service
+  systemd:
+    name: mariadb
+    state: restarted
+
+- name: Template replica setup script on DB Server
+  template:
+    src: setup_replica.sh.j2
+    dest: /tmp/setup_replica_on_prem.sh
+    mode: '0755'
+
+- name: SCP setup script to on-prem server
+  command: "scp -o BatchMode=yes -o StrictHostKeyChecking=no -P 22 /tmp/setup_replica_on_prem.sh root@{{ on_prem_ip }}:/tmp/setup_replica_on_prem.sh"
+
+- name: Execute setup script on on-prem server
+  command: "ssh -o BatchMode=yes -o StrictHostKeyChecking=no -p 22 root@{{ on_prem_ip }} 'bash /tmp/setup_replica_on_prem.sh'"

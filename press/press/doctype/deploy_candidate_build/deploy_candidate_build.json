@@ -272,8 +272,7 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team",
-   "reqd": 1,
-   "search_index": 1
+   "reqd": 1
   },
   {
    "fieldname": "platform",
@@ -315,7 +314,7 @@
    "link_fieldname": "build"
   }
  ],
- "modified": "2026-03-04 11:32:51.553140",
+ "modified": "2026-03-16 16:23:51.449383",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",
