@@ -534,11 +534,11 @@
   "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()\n            \nif doc.server_type in [\"Server\", \"Database Server\"] and \"logical_replication_backup\" in arguments:\n    if doc.status == \"Success\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).next()\n    if doc.status == \"Failure\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).fail()\n        \nif doc.server_type in [\"Server\", \"Database Server\"] and doc.status == \"Success\":\n    server.is_provisioning_press_job_completed = 1\n    server.save(ignore_permissions=True)\n    \n    if server.is_unified_server:\n        frappe.db.set_value(\"Database Server\", server.database_server, \"is_provisioning_press_job_completed\", 1, update_modified =False)",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2026-03-15 21:28:00.551361",
+  "modified": "2026-03-18 03:26:32.961899",
   "name": "Create Server",
   "steps": [
    {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nassign_public_ip = (\n    frappe.db.get_value(\"Cluster\", machine.cluster, \"disable_public_ips_for_servers\") \n    if machine.series in (\"f\", \"m\") \n    else True\n)\nmachine.provision(assign_public_ip)\n",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nassign_public_ip = bool(\n    frappe.db.get_value(\"Cluster\", machine.cluster, \"disable_public_ips_for_servers\") \n    if machine.series in (\"f\", \"m\") \n    else True\n)\nmachine.provision(assign_public_ip)\n",
     "step_name": "Create Server",
     "wait_until_true": 0
    },
@@ -583,9 +583,14 @@
     "wait_until_true": 1
    },
    {
-    "script": "if doc.server_type in (\"Server\", \"Database Server\"):\n    server = frappe.db.get_value(doc.servert_type, doc.server, (\"public_ip_address\", \"nat_server\"), as_dict=True)\n    if not server.public_ip_address and server.nat_server:\n        doc.install_nat_iptables()\n",
+    "script": "if doc.server_type in (\"Server\", \"Database Server\"):\n    server = frappe.get_doc(doc.server_type, doc.server)\n    if not server.ip and server.nat_server:\n        server.install_nat_iptables()\n",
     "step_name": "Install NAT Iptables",
     "wait_until_true": 0
+   },
+   {
+    "script": "if doc.server_type in (\"Server\", \"Database Server\"):\n    server = frappe.get_doc(doc.server_type, doc.server)\n    if not server.ip and server.nat_server:\n        plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Configure nat iptables\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n        result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n    else:\n        result = None\nelse:\n    result = None",
+    "step_name": "Wait for NAT Iptables to install",
+    "wait_until_true": 1
    },
    {
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.wait_for_cloud_init()",
