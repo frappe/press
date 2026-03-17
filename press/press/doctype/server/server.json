@@ -44,7 +44,6 @@
   "ip",
   "is_static_ip",
   "ipv6",
-  "nat_server",
   "column_break_3",
   "private_ip",
   "private_mac_address",
@@ -742,22 +741,19 @@
    "fieldname": "is_provisioning_press_job_completed",
    "fieldtype": "Check",
    "label": "Is Provisioning Job Completed"
-  },
-  {
-   "depends_on": "eval: !!!doc.ip || !!!doc.ipv6",
-   "fieldname": "nat_server",
-   "fieldtype": "Link",
-   "label": "NAT Server",
-   "options": "NAT Server"
   }
  ],
  "links": [
   {
    "link_doctype": "Auto Scale Record",
    "link_fieldname": "primary_server"
+  },
+  {
+   "link_doctype": "On-Prem Failover",
+   "link_fieldname": "app_server"
   }
  ],
- "modified": "2026-03-11 16:25:30.069916",
+ "modified": "2026-03-17 10:56:33.843136",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
