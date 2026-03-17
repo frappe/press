@@ -83,10 +83,17 @@ class OnPremFailover(Document):
 
 	def on_update(self):
 		if self.has_value_changed("enabled") and not self.enabled:
+			self.is_app_server_wireguard_setup = False
+			self.is_db_server_wireguard_setup = False
+			self.is_app_server_failover_setup = False
+			self.is_db_server_failover_setup = False
 			self.is_on_prem_server_reachable_from_app_server = False
 			self.is_on_prem_server_ssh_from_app_server_working = False
 			self.is_on_prem_server_reachable_from_db_server = False
 			self.is_on_prem_server_ssh_from_db_server_working = False
+			self.is_lsyncd_running_for_db = False
+			self.db_lsyncd_started_on = None
+			self.db_lsyncd_stop_at = None
 			self.save()
 
 	def setup_wireguard_on_app_server(self):
@@ -314,9 +321,17 @@ PersistentKeepalive = 25
 
 			self.is_lsyncd_running_for_db = True
 			self.db_lsyncd_started_on = frappe.utils.now_datetime()
+
 			# TODO: Perform network testing and setup db_lsyncd_stop_at accordingly
-			# Else, by default assume 5 MB/s transfer speed
-			self.db_lsyncd_stop_at = add_to_date(self.db_lsyncd_started_on, hours=1)
+			try:
+				usage: dict = self.database_server_doc.get_storage_usage()
+				disk_usage = usage.get("disk_used", 0)
+				# Assuming 5 MB/s transfer speed for estimation
+				estimated_seconds = disk_usage / (5 * 1024 * 1024)
+				self.db_lsyncd_stop_at = add_to_date(self.db_lsyncd_started_on, seconds=estimated_seconds)
+			except Exception:
+				self.db_lsyncd_stop_at = add_to_date(self.db_lsyncd_started_on, hours=1)
+
 			self.save()
 			frappe.db.commit()
 
