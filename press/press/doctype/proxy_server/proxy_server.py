@@ -438,7 +438,7 @@ class ProxyServer(BaseServer):
 					"wireguard_network": self.wireguard_network_ip
 					+ "/"
 					+ self.wireguard_network.split("/")[1],
-					"interface_id": self.private_ip_interface_id,
+					"external_interface_id": self.private_ip_interface_id,
 					"wireguard_private_key": False,
 					"wireguard_public_key": False,
 					"peers": "",
@@ -485,7 +485,7 @@ class ProxyServer(BaseServer):
 					"wireguard_network": self.wireguard_network_ip
 					+ "/"
 					+ self.wireguard_network.split("/")[1],
-					"interface_id": self.private_ip_interface_id,
+					"external_interface_id": self.private_ip_interface_id,
 					"wireguard_private_key": self.get_password("wireguard_private_key"),
 					"wireguard_public_key": self.get_password("wireguard_public_key"),
 					"peers": json.dumps(peers),

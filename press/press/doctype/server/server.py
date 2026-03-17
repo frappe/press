@@ -1329,7 +1329,7 @@ class BaseServer(Document, TagHelpers):
 
 		if not (team.default_payment_method or team.get_balance()):
 			frappe.throw(
-				"Changing plans needs the customer to have a card added to their billing profile. Cannot change for the same reason, please add a card to your account on Frappe Cloud Billng dashboard."
+				"Changing plans needs the customer to have a card added to their billing profile. Cannot change for the same reason, please add a card to your account on Frappe Cloud Billing dashboard."
 			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
@@ -2621,7 +2621,6 @@ class Server(BaseServer):
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
-		nat_server: DF.Link | None
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
 		platform: DF.Literal["x86_64", "arm64"]
