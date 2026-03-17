@@ -9,6 +9,7 @@
   "wireguard_port",
   "firewall_id",
   "cluster",
+  "team",
   "column_break_swdr",
   "wireguard_network",
   "wireguard_interface",
@@ -293,12 +294,20 @@
    "fieldtype": "Int",
    "label": "Wireguard Port",
    "set_only_once": 1
+  },
+  {
+   "fetch_from": "app_server.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-16 17:28:32.596473",
+ "modified": "2026-03-17 13:13:22.179325",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "On-Prem Failover",

@@ -58,6 +58,7 @@ class OnPremFailover(Document):
 		on_prem_server_wireguard_private_ip: DF.Data | None
 		on_prem_server_wireguard_private_key: DF.Password | None
 		on_prem_server_wireguard_public_key: DF.Data | None
+		team: DF.Link
 		wireguard_interface: DF.Data | None
 		wireguard_network: DF.Data | None
 		wireguard_port: DF.Int
