@@ -34,23 +34,18 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-
-const toggled = ref(true);
-const toggleIncident = () => (toggled.value = !toggled.value);
 </script>
 
 <template>
-	<div
-		class="mb-5 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-cards transition-all"
+	<details
+		class="mb-5 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-cards transition-all group"
 	>
 		<!-- Card header & toggle btn -->
-		<button
+		<summary
 			class="w-full flex cursor-pointer items-center gap-2.5 p-3 hover:bg-surface-gray-1 transition-colors truncate text-sm font-medium text-ink-gray-9"
-			@click="toggleIncident"
 		>
 			<LucideChevronRight
-				class="size-4 shrink-0 text-ink-gray-6 transition-transform"
-				:class="{ 'rotate-90': !toggled }"
+				class="size-4 shrink-0 text-ink-gray-6 transition-transform group-open:rotate-90"
 			/>
 
 			{{ data.server }}
@@ -64,10 +59,10 @@ const toggleIncident = () => (toggled.value = !toggled.value);
 					<div class="size-1.5 rounded-full r-1 bg-current opacity-80" />
 				</template>
 			</Badge>
-		</button>
+		</summary>
 
 		<!-- Card body -->
-		<div v-if="!toggled" class="border-t border-outline-gray-2 px-4 pb-4">
+		<div class="border-t border-outline-gray-2 px-4 pb-4">
 			<!-- Timeline -->
 			<div v-if="data.timelineSteps.length" class="mt-3">
 				<div class="mb-2 flex items-center gap-2.5">
@@ -206,5 +201,5 @@ const toggleIncident = () => (toggled.value = !toggled.value);
 				</div>
 			</div>
 		</div>
-	</div>
+	</details>
 </template>
