@@ -240,7 +240,7 @@ class Incident(WebsiteGenerator):
 		if self.has_value_changed("status"):
 			current_datetime = frappe.utils.now_datetime()
 			self.send_email_notification()
-			if self.status == "Resolved":
+			if self.status == "Resolved" or self.status == "Auto-Resolved":
 				self.db_set("resolved_at", current_datetime)
 				self._resolve_banner_if_ready()
 			elif self.status == "Confirmed" and not self.confirmed_at:
