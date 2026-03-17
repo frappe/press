@@ -1252,7 +1252,7 @@ class VirtualMachine(Document):
 			self.disk_size = self.get_data_volume().size
 
 		self.save()
-		frappe.db.commit()
+		self.update_servers()
 
 	def _sync_oci(self, instance=None):  # noqa: C901
 		if not instance:
