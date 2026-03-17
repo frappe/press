@@ -54,6 +54,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
 	from press.press.doctype.nfs_volume_detachment.nfs_volume_detachment import NFSVolumeDetachment
+	from press.press.doctype.on_prem_failover.on_prem_failover import OnPremFailover
 	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
@@ -106,6 +107,7 @@ class BaseServer(Document, TagHelpers):
 		"is_monitoring_disabled",
 		"is_provisioning_press_job_completed",
 		"is_unified_server",
+		"enable_on_prem_failover_support",
 	)
 
 	@staticmethod
@@ -386,6 +388,13 @@ class BaseServer(Document, TagHelpers):
 
 		actions = [
 			{
+				"action": "Manage On-Prem Replication",
+				"description": "Manage On-Prem Replication & Failover",
+				"button_label": "Manage",
+				"condition": self.status == "Active" and self.doctype == "Server",
+				"group": "Application Server Actions",
+			},
+			{
 				"action": "Rename server",
 				"description": f"Rename the {server_type}",
 				"button_label": "Rename",
@@ -437,7 +446,7 @@ class BaseServer(Document, TagHelpers):
 				"action": "Drop server",
 				"description": "Drop both the application and database servers"
 				if not getattr(self, "is_unified_server", False)
-				else "Drop the unifed server",
+				else "Drop the unified server",
 				"button_label": "Drop",
 				"condition": self.status == "Active" and self.doctype == "Server",
 				"doc_method": "drop_server",
@@ -2592,6 +2601,7 @@ class Server(BaseServer):
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
+		enable_on_prem_failover_support: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		halt_agent_jobs: DF.Check
@@ -3286,6 +3296,111 @@ class Server(BaseServer):
 			self.status = "Broken"
 			log_error("Server Rename Exception", server=self.as_dict())
 		self.save()
+
+	def get_existing_on_prem_failover(self):
+		if not self.enable_on_prem_failover_support:
+			return None
+
+		return frappe.db.exists(
+			"On-Prem Failover",
+			{
+				"enabled": True,
+				"app_server": self.name,
+			},
+		)
+
+	@dashboard_whitelist()
+	def generate_on_prem_failover_config(self):
+		if not self.enable_on_prem_failover_support:
+			frappe.throw("On-Prem Failover support is not enabled for this server.")  # nosemgrep
+			return None
+
+		existsing_on_prem_failover = self.get_existing_on_prem_failover()
+
+		if not existsing_on_prem_failover:
+			on_prem_failover: OnPremFailover = frappe.get_doc(
+				{
+					"doctype": "On-Prem Failover",
+					"enabled": True,
+					"app_server": self.name,
+					"primary_server": self.primary if self.is_secondary else self.name,
+					"secondary_server": self.secondary_server if self.is_primary else self.name,
+					"benches_base_directory": "/root/frappe-cloud/benches",
+					"database_base_directory": "/root/frappe-cloud/database",
+				}
+			)
+			on_prem_failover.insert(ignore_permissions=True)
+		else:
+			on_prem_failover: OnPremFailover = frappe.get_doc("On-Prem Failover", existsing_on_prem_failover)
+
+		# Find last 2 press-job
+		press_jobs = frappe.get_all(
+			"Press Job",
+			filters={"job_type": "Setup On-Prem Failover", "server": self.name},
+			fields=["name", "job_type", "status", "creation", "start", "end", "duration"],
+			order_by="creation desc",
+			limit=2,
+		)
+		running_press_job = next((job for job in press_jobs if job.status in ("Pending", "Running")), None)
+		if press_jobs:
+			for press_job in press_jobs:
+				press_job["steps"] = frappe.get_all(
+					"Press Job Step",
+					filters={"job": press_job.name},
+					fields=["name", "step_name", "status", "result", "traceback", "start", "end", "duration"],
+					order_by="creation asc",
+				)
+
+		return {
+			"running_press_job_type": running_press_job.job_type if running_press_job else None,
+			"status": {
+				"app_server": {
+					"id": on_prem_failover.app_server.split(".")[0],
+					"setup_completed": on_prem_failover.is_app_server_failover_setup,
+					"wireguard_setup_completed": on_prem_failover.is_app_server_wireguard_setup,
+					"on_prem_server_reachable": on_prem_failover.is_on_prem_server_reachable_from_app_server,
+					"on_prem_server_ssh_access": on_prem_failover.is_on_prem_server_ssh_from_app_server_working,
+				},
+				"db_server": {
+					"id": on_prem_failover.database_server.split(".")[0],
+					"setup_completed": on_prem_failover.is_db_server_failover_setup,
+					"wireguard_setup_completed": on_prem_failover.is_db_server_wireguard_setup,
+					"on_prem_server_reachable": on_prem_failover.is_on_prem_server_reachable_from_db_server,
+					"on_prem_server_ssh_access": on_prem_failover.is_on_prem_server_ssh_from_db_server_working,
+				},
+			},
+			"wireguard_config": on_prem_failover.generate_on_prem_server_wireguard_config(),
+			"authorized_ssh_keys": on_prem_failover.generate_ssh_authorized_keys_to_add(),
+			"jobs": press_jobs,
+		}
+
+	@dashboard_whitelist()
+	def start_on_prem_server_replication(self):
+		existsing_on_prem_failover = self.get_existing_on_prem_failover()
+		if not existsing_on_prem_failover:
+			frappe.throw("On-Prem Failover is not configured for this server.")  # nosemgrep
+			return
+
+		current_user = frappe.session.user
+		try:
+			frappe.set_user("Administrator")
+			frappe.get_doc("On-Prem Failover", existsing_on_prem_failover).setup_failover()
+		finally:
+			frappe.set_user(current_user)
+
+	@dashboard_whitelist()
+	def stop_on_prem_server_replication(self):
+		existsing_on_prem_failover = self.get_existing_on_prem_failover()
+		if not existsing_on_prem_failover:
+			frappe.throw("On-Prem Failover is not configured for this server.")  # nosemgrep
+			return
+
+		current_user = frappe.session.user
+		try:
+			frappe.set_user("Administrator")
+			frappe.get_doc("On-Prem Failover", existsing_on_prem_failover).teardown_failover()
+		finally:
+			frappe.set_user(current_user)
 
 	@frappe.whitelist()
 	def auto_scale_workers(self, commit=True):

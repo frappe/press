@@ -17,7 +17,13 @@ frappe.ui.form.on('On-Prem Failover', {
 				!frm.doc.is_app_server_failover_setup ||
 					!frm.doc.is_db_server_failover_setup,
 			],
-			['Disable On-Prem Failover', 'disable_failover', true, frm.doc.enabled],
+			[
+				'Teardown On-Prem Failover',
+				'teardown_failover',
+				true,
+				frm.doc.is_app_server_failover_setup &&
+					frm.doc.is_db_server_failover_setup,
+			],
 			[
 				'View On-Prem SSH Authorized Keys',
 				'view_on_prem_server_ssh_authorized_keys',
