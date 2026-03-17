@@ -2641,7 +2641,7 @@ def check_app_compatibility_for_upgrade(name, version):
 	site_custom_apps = []
 	other_custom_apps_on_rg = []  # Custom apps in the release group which aren't installed on the site
 	for row in release_group_apps:
-		source = source_map.get(row.source)
+		source = source_map.get(row.app)
 		if not source or source.public or source.repository_owner == "frappe" or not source.enabled:
 			continue
 
