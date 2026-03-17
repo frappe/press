@@ -83,5 +83,6 @@ def get_incidents(resolved: bool = False) -> list[dict]:
 			else query.where(Incident.status.isin(["Confirmed", "Validating", "Investigating"]))
 		)
 		.groupby(Incident.name)
+		.orderby(Incident.creation, order=Order.desc)
 		.run(as_dict=True)
 	)
