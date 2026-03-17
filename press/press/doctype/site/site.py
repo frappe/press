@@ -125,7 +125,7 @@ DOCTYPE_SERVER_TYPE_MAP = {
 
 ARCHIVE_AFTER_SUSPEND_DAYS = 21
 NOTIFY_BEFORE_ARCHIVAL_DAYS = 2
-CREATION_FAILURE_RETENTION_DAYS = 1
+CREATION_FAILURE_RETENTION_DAYS = 14
 PRIVATE_BENCH_DOC = "https://docs.frappe.io/cloud/sites/move-site-to-private-bench"
 SERVER_SCRIPT_DISABLED_VERSION = (
 	15  # version from which server scripts were disabled on public benches. No longer set in site
