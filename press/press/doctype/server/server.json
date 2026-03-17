@@ -33,6 +33,7 @@
   "stop_deployments",
   "is_for_recovery",
   "is_monitoring_disabled",
+  "enable_on_prem_failover_support",
   "billing_section",
   "team",
   "plan",
@@ -741,6 +742,12 @@
    "fieldname": "is_provisioning_press_job_completed",
    "fieldtype": "Check",
    "label": "Is Provisioning Job Completed"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_on_prem_failover_support",
+   "fieldtype": "Check",
+   "label": "Enable On-Prem Failover Support"
   }
  ],
  "links": [
@@ -753,7 +760,7 @@
    "link_fieldname": "app_server"
   }
  ],
- "modified": "2026-03-17 10:56:33.843136",
+ "modified": "2026-03-17 17:02:43.407765",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

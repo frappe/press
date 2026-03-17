@@ -38,7 +38,8 @@
    "label": "Status",
    "options": "Pending\nRunning\nSkipped\nSuccess\nFailure",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "job",
@@ -48,7 +49,8 @@
    "label": "Job ",
    "options": "Press Job",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_4",
@@ -109,13 +111,15 @@
    "fieldtype": "Link",
    "label": "Job Type",
    "options": "Press Job Type",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   }
  ],
+ "grid_page_length": 50,
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-05 16:56:46.525168",
+ "modified": "2026-03-17 19:27:08.481981",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job Step",
@@ -145,6 +149,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

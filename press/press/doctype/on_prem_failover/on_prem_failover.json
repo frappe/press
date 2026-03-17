@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "field:app_server",
+ "autoname": "hash",
  "creation": "2026-03-11 16:07:23.854035",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -76,8 +76,7 @@
    "in_list_view": 1,
    "label": "Server",
    "options": "Server",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "fieldname": "app_server_wireguard_private_ip",
@@ -285,7 +284,7 @@
    "fieldname": "wireguard_port",
    "fieldtype": "Int",
    "label": "Wireguard Port",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fetch_from": "app_server.team",
@@ -299,11 +298,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-17 13:50:53.770530",
+ "modified": "2026-03-17 17:58:09.502720",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "On-Prem Failover",
- "naming_rule": "By fieldname",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {
