@@ -8,7 +8,7 @@ frappe.ui.form.on('On-Prem Failover', {
 				'View On-Prem Wireguard Config',
 				'view_on_prem_server_wireguard_config',
 				false,
-				frm.doc.enabled,
+				true,
 			],
 			[
 				'Setup On-Prem Failover',
@@ -22,7 +22,7 @@ frappe.ui.form.on('On-Prem Failover', {
 				'View On-Prem SSH Authorized Keys',
 				'view_on_prem_server_ssh_authorized_keys',
 				false,
-				frm.doc.enabled,
+				true,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
