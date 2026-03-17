@@ -6,13 +6,12 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
-  "wireguard_port",
-  "firewall_id",
   "cluster",
   "team",
   "column_break_swdr",
   "wireguard_network",
-  "wireguard_interface",
+  "wireguard_port",
+  "firewall_id",
   "app_server_section",
   "app_server",
   "app_server_wireguard_private_ip",
@@ -204,13 +203,6 @@
    "label": "Is DB Server Failover Setup"
   },
   {
-   "default": "wgdr",
-   "fieldname": "wireguard_interface",
-   "fieldtype": "Data",
-   "label": "Wireguard Interface",
-   "set_only_once": 1
-  },
-  {
    "default": "0",
    "fieldname": "is_on_prem_server_reachable_from_app_server",
    "fieldtype": "Check",
@@ -307,7 +299,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-17 13:13:22.179325",
+ "modified": "2026-03-17 13:50:53.770530",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "On-Prem Failover",

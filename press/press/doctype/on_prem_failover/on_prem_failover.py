@@ -59,7 +59,6 @@ class OnPremFailover(Document):
 		on_prem_server_wireguard_private_key: DF.Password | None
 		on_prem_server_wireguard_public_key: DF.Data | None
 		team: DF.Link
-		wireguard_interface: DF.Data | None
 		wireguard_network: DF.Data | None
 		wireguard_port: DF.Int
 	# end: auto-generated types
@@ -109,7 +108,6 @@ class OnPremFailover(Document):
 			server=self.app_server_doc,
 			variables={
 				"wireguard_port": 51820,
-				"interface_id": self.wireguard_interface or "eth0",
 				"wireguard_network": f"{self.app_server_wireguard_private_ip}/{self.wireguard_network.split('/')[1]}",
 				"wireguard_private_key": self.get_password("app_server_wireguard_private_key"),
 				"wireguard_public_key": self.app_server_wireguard_public_key,
@@ -140,7 +138,6 @@ class OnPremFailover(Document):
 			server=self.database_server_doc,
 			variables={
 				"wireguard_port": 51820,
-				"interface_id": self.wireguard_interface or "eth0",
 				"wireguard_network": f"{self.database_server_wireguard_private_ip}/{self.wireguard_network.split('/')[1]}",
 				"wireguard_private_key": self.get_password("database_server_wireguard_private_key"),
 				"wireguard_public_key": self.database_server_wireguard_public_key,
@@ -387,7 +384,7 @@ PersistentKeepalive = 25
 		ansible = Ansible(
 			playbook="stop_on_prem_failover_app_replication.yml",
 			server=self.app_server_doc,
-			variables={"interface_id": self.wireguard_interface or "wg0"},
+			variables={},
 		)
 		play = ansible.run()
 		if play.status != "Success":
@@ -400,7 +397,7 @@ PersistentKeepalive = 25
 		ansible = Ansible(
 			playbook="stop_on_prem_failover_db_replication.yml",
 			server=self.database_server_doc,
-			variables={"interface_id": self.wireguard_interface or "wg0"},
+			variables={},
 		)
 		play = ansible.run()
 		if play.status != "Success":
