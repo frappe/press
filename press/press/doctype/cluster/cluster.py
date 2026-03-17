@@ -35,6 +35,7 @@ from oci.core.models import (
 )
 from oci.identity import IdentityClient
 
+from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
@@ -70,7 +71,7 @@ class Cluster(Document):
 		beta: DF.Check
 		by_default_select_unified_mode: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "DigitalOcean"]
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "DigitalOcean", "Frappe Compute"]
 		country: DF.Link | None
 		default_app_server_plan: DF.Link | None
 		default_app_server_plan_type: DF.Link | None
@@ -81,6 +82,9 @@ class Cluster(Document):
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
 		flush_table_execution_hour: DF.Int
+		frappe_compute_api_key: DF.Data | None
+		frappe_compute_api_secret: DF.Password | None
+		frappe_compute_base_url: DF.Data | None
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
 		has_unified_server_support: DF.Check
@@ -149,6 +153,19 @@ class Cluster(Document):
 			self.set_oci_availability_zone()
 		elif self.cloud_provider == "Hetzner":
 			self.validate_hetzner_api_token()
+		elif self.cloud_provider == "Frappe Compute":
+			self.validate_frappe_compute_credentials()
+
+	def validate_frappe_compute_credentials(self):
+		api_secret = self.get_password("frappe_compute_api_secret")
+
+		client = FrappeComputeClient(
+			url=self.frappe_compute_base_url, api_key=self.frappe_compute_api_key, api_secret=api_secret
+		)
+		if not client.validate():
+			frappe.throw(
+				"You do not have Administrator permissions to the Frappe Compute instance. Please refer to your frappe_compute_api_secret and frappe_compute_api_key fields and try to check and ensure that the correct credentials have been used."
+			)
 
 	def validate_hetzner_api_token(self):
 		api_token = self.get_password("hetzner_api_token")
@@ -211,6 +228,18 @@ class Cluster(Document):
 			self.provision_on_hetzner()
 		elif self.cloud_provider == "DigitalOcean":
 			self.provision_on_digital_ocean()
+		elif self.cloud_provider == "Frappe Compute":
+			self.provision_on_frappe_compute()
+
+	def provision_on_frappe_compute(self):
+		api_secret = self.get_password("frappe_compute_api_secret")
+		client = FrappeComputeClient(
+			url=self.frappe_compute_base_url, api_key=self.frappe_compute_api_key, api_secret=api_secret
+		)
+		vpc_id = client.provision_cluster(f"Frappe-Cloud-{self.name}".replace(" ", ""), self.cidr_block)
+		self.vpc_id = vpc_id
+
+		self.save()
 
 	def provision_on_digital_ocean(self):
 		api_token = self.get_password("digital_ocean_api_token")
@@ -1370,6 +1399,8 @@ class Cluster(Document):
 			return "VM.Standard.E4.Flex"
 		if self.cloud_provider == "Hetzner":
 			return "cpx21"
+		if self.cloud_provider == "Frappe Compute":
+			return "CPX22"
 		return None
 
 	def get_or_create_basic_plan(self, server_type) -> ServerPlan:
