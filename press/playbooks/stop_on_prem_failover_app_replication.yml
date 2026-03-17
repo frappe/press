@@ -5,8 +5,5 @@
   become_user: root
   gather_facts: yes
 
-  vars:
-    interface_id: "wg0"
-
   roles:
     - role: on_prem_failover_stop_app_replication
