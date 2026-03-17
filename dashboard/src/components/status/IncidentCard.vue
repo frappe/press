@@ -49,7 +49,7 @@ const toggleIncident = () => (toggled.value = !toggled.value);
 			@click="toggleIncident"
 		>
 			<LucideChevronRight
-				class="size-4 shrink-0 text-ink-gray-6 transition-transform duration-200"
+				class="size-4 shrink-0 text-ink-gray-6 transition-transform"
 				:class="{ 'rotate-90': !toggled }"
 			/>
 
@@ -107,12 +107,16 @@ const toggleIncident = () => (toggled.value = !toggled.value);
 					>
 				</div>
 
-				<div class="rounded-lg bg-surface-gray-1 px-4 py-3">
+				<div class="rounded-lg bg-gray-900 text-white px-4 py-3">
 					<div class="mb-2.5 flex items-center justify-between">
-						<span class="text-sm font-medium text-ink-gray-9">{{
+						<span class="text-sm font-medium">{{
 							data.investigation.name
 						}}</span>
-						<Badge :label="data.investigation.status" variant="solid" />
+						<Badge
+							:label="data.investigation.status"
+							class="text-white"
+							variant="outline"
+						/>
 					</div>
 
 					<details
@@ -122,7 +126,7 @@ const toggleIncident = () => (toggled.value = !toggled.value);
 						class="mb-4 last:mb-0 group"
 					>
 						<summary
-							class="mb-2 flex items-center gap-1.5 group-open:border-b border-outline-gray-2 pb-2 cursor-pointer"
+							class="mb-2 flex items-center gap-1.5 group-open:border-b border-gray-700 group-open:pb-2 cursor-pointer"
 						>
 							<LucideServer v-if="group.label === 'Server'" class="size-3" />
 							<LucideDatabase v-else class="size-3" />
@@ -138,14 +142,14 @@ const toggleIncident = () => (toggled.value = !toggled.value);
 							class="flex items-center gap-2 py-1"
 						>
 							<p
-								class="min-w-0 flex-1 truncate text-sm font-medium text-ink-gray-8"
+								class="min-w-0 flex-1 truncate text-sm font-medium text-gray-400"
 							>
 								{{ step.step_name }}
 							</p>
 
 							<div
 								v-if="step.is_unable_to_investigate"
-								class="flex items-center gap-1.5 text-ink-gray-5"
+								class="flex items-center gap-1.5 text-gray-500"
 							>
 								<LucideBan class="size-3" />
 								<span class="text-sm">Unable To Investigate</span>
