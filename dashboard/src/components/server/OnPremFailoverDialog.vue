@@ -20,8 +20,25 @@
 			</div>
 			<div v-else>
 				<!-- Status -->
-				<div>
+				<div class="flex flex-row justify-between items-center">
 					<div class="text-base font-medium text-gray-800">Current Status</div>
+					<Button
+						variant="subtle"
+						theme="red"
+						size="sm"
+						class="ml-2"
+						icon-left="pause"
+						v-if="
+							appServerStatusFlags &&
+							databaseServerStatusFlags &&
+							appServerStatusFlags?.setup_completed &&
+							databaseServerStatusFlags?.setup_completed
+						"
+						@click="stopReplication"
+						:loading="this.$resources?.stopOnPremReplicationSetup?.loading"
+					>
+						Stop Replication
+					</Button>
 				</div>
 				<div class="overflow-hidden rounded-md border border-gray-300 mt-2">
 					<table class="min-w-full">
@@ -113,7 +130,7 @@
 				</div>
 
 				<!-- Setup Guide -->
-				<div class="output-container mt-2">
+				<div class="output-container mt-4">
 					<div class="flex flex-row items-center gap-1">
 						<Button
 							:icon="isSetupGuideVisible ? 'chevron-down' : 'chevron-right'"
@@ -211,7 +228,7 @@ systemctl enable --now wg-quick@wg0"
 				</div>
 
 				<!-- Jobs -->
-				<div class="text-base font-medium text-gray-800 mt-3">Recent Jobs</div>
+				<div class="text-base font-medium text-gray-800 mt-4">Recent Jobs</div>
 				<div>
 					<div
 						v-for="job in jobs"
@@ -299,7 +316,9 @@ tbody tr:last-child td {
 }
 </style>
 <script>
+import { Button } from 'frappe-ui';
 import ClickToCopyField from '../ClickToCopyField.vue';
+import { confirmDialog } from '../../utils/components';
 
 import { toast } from 'vue-sonner';
 import Badge from '../global/Badge.vue';
@@ -317,6 +336,7 @@ export default {
 		ClickToCopyField,
 		Badge,
 		JobStep,
+		Button,
 	},
 	emits: ['update:show'],
 	data() {
@@ -454,6 +474,25 @@ export default {
 			if (s || parts.length === 0) parts.push(`${s}s`);
 
 			return parts.join(' ');
+		},
+		stopReplication() {
+			confirmDialog({
+				title: 'Stop Replication Setup',
+				message:
+					'Are you sure you want to stop the replication setup? The DR Server will stop syncing any new data from the Primary Server.',
+				primaryAction: {
+					label: 'Stop',
+					variant: 'solid',
+					theme: 'red',
+					onClick: ({ hide }) => {
+						return this.$resources?.stopOnPremReplicationSetup
+							?.submit()
+							.then(() => {
+								hide();
+							});
+					},
+				},
+			});
 		},
 	},
 };
