@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import LucideChevronRight from '~icons/lucide/chevron-right';
 import LucideClock from '~icons/lucide/clock';
 import LucideCheck from '~icons/lucide/circle-check';
@@ -44,14 +43,14 @@ const props = defineProps<Props>();
 
 <template>
 	<details
-		class="mb-5 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-cards transition-all group"
+		class="group/card mb-5 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-cards transition-all"
 	>
 		<!-- Card header & toggle btn -->
 		<summary
 			class="w-full flex cursor-pointer items-center gap-2.5 p-3 hover:bg-surface-gray-1 transition-colors truncate text-sm font-medium text-ink-gray-9"
 		>
 			<LucideChevronRight
-				class="size-4 shrink-0 text-ink-gray-6 transition-transform group-open:rotate-90"
+				class="size-4 shrink-0 text-ink-gray-6 transition-transform group-open/card:rotate-90"
 			/>
 
 			{{ data.server }}
@@ -103,16 +102,16 @@ const props = defineProps<Props>();
 			<div v-if="data.investigation" class="mt-4">
 				<div class="mb-4 flex items-center gap-1.5">
 					<LucideZap class="size-3.5" />
-					<span class="text-sm font-semibold uppercase tracking-widest"
-						>Investigation</span
-					>
+					<span class="text-sm font-semibold uppercase tracking-widest">
+						Investigation
+					</span>
 				</div>
 
 				<div class="rounded-lg bg-gray-900 text-white px-4 py-3">
 					<div class="mb-2.5 flex items-center justify-between">
-						<span class="text-sm font-medium">{{
-							data.investigation.name
-						}}</span>
+						<span class="text-sm font-medium">
+							{{ data.investigation.name }}
+						</span>
 						<Badge
 							:label="data.investigation.status"
 							class="text-white"
@@ -121,19 +120,23 @@ const props = defineProps<Props>();
 					</div>
 
 					<details
-						open="true"
+						open
 						v-for="group in data.investigation.groups"
 						:key="group.label"
-						class="mb-4 last:mb-0 group"
+						class="mb-4 last:mb-0 group/investigation"
 					>
 						<summary
-							class="mb-2 flex items-center gap-1.5 group-open:border-b border-gray-700 group-open:pb-2 cursor-pointer"
+							class="mb-2 flex items-center gap-1.5 cursor-pointer border-gray-700 group-open/investigation:border-b group-open/investigation:pb-2"
 						>
 							<LucideServer v-if="group.label === 'Server'" class="size-3" />
 							<LucideDatabase v-else class="size-3" />
-							<span class="text-sm font-semibold">{{ group.label }}</span>
+
+							<span class="text-sm font-semibold">
+								{{ group.label }}
+							</span>
+
 							<LucideChevronRight
-								class="ml-auto size-3.5 group-open:rotate-90 transition-transform"
+								class="ml-auto size-3.5 transition-transform group-open/investigation:rotate-90"
 							/>
 						</summary>
 
@@ -180,9 +183,9 @@ const props = defineProps<Props>();
 			<div v-if="data.actionSteps && data.actionSteps.length" class="mt-4">
 				<div class="mb-4 flex items-center gap-1.5">
 					<LucideWrench class="size-3.5" />
-					<span class="text-sm font-semibold uppercase tracking-wiest"
-						>Action Taken</span
-					>
+					<span class="text-sm font-semibold uppercase tracking-widest">
+						Action Taken
+					</span>
 				</div>
 
 				<div class="flex flex-col gap-1">
@@ -191,9 +194,9 @@ const props = defineProps<Props>();
 						:key="idx"
 						class="flex items-center justify-between rounded-md bg-surface-gray-1 px-3 py-2"
 					>
-						<span class="truncate text-sm font-medium text-ink-gray-8">{{
-							action.label
-						}}</span>
+						<span class="truncate text-sm font-medium text-ink-gray-8">
+							{{ action.label }}
+						</span>
 						<span
 							:class="[
 								'ml-3 shrink-0 text-sm font-medium',
