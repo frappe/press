@@ -471,7 +471,7 @@ class VirtualMachine(Document):
 				self.name,
 				self.machine_type,
 				image_id,
-				self.root_disk_size,
+				self.disk_size,
 				ssh_key,
 				self.get_cloud_init(),
 				vpc_id,
