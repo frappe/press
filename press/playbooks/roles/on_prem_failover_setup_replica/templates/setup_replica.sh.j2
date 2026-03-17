@@ -2,6 +2,8 @@
 set -e
 export DEBIAN_FRONTEND=noninteractive
 
+sync
+
 # 1. Install Docker if not present
 if ! command -v docker &> /dev/null; then
     curl -fsSL https://get.docker.com | bash -
@@ -43,16 +45,22 @@ done
 
 # 7. Setup Replication
 
-# Extract current GTID position from the restored database
-CURRENT_GTID=$(docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -N -B -e "SELECT @@GLOBAL.gtid_binlog_pos;")
-echo "Current GTID Position before reset: $CURRENT_GTID"
+# Read GTID captured from master snapshot (file copied from master)
+if [ ! -f {{ database_base_directory }}/master_gtid.txt ]; then
+    echo "Error: master GTID file not found!"
+    exit 1
+fi
 
+MASTER_GTID=$(cat {{ database_base_directory }}/master_gtid.txt)
+echo "Using master GTID: $MASTER_GTID"
+
+# Stop and reset slave
 docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "STOP SLAVE;" || true
 docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "RESET SLAVE ALL;" || true
 
 # Apply the GTID position back to the replica
-if [ ! -z "$CURRENT_GTID" ]; then
-    docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "SET GLOBAL gtid_slave_pos = '$CURRENT_GTID';"
+if [ ! -z "$MASTER_GTID" ]; then
+    docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "SET GLOBAL gtid_slave_pos = '$MASTER_GTID';"
 fi
 
 docker exec fc-dr-db-replica mysql -uroot -p'{{ mariadb_root_password }}' -e "CHANGE MASTER TO MASTER_HOST='{{ primary_private_ip }}', MASTER_USER='root', MASTER_PASSWORD='{{ mariadb_root_password }}', MASTER_PORT={{ primary_db_port }}, MASTER_USE_GTID=slave_pos;"
