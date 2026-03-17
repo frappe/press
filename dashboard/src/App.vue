@@ -45,7 +45,7 @@ import { getTeam } from './data/team';
 import { session } from './data/session.js';
 
 const AppSidebar = defineAsyncComponent(
-	() => import('./components/AppSidebar.vue'),
+	() => import('./components/navigation/sidebar/Sidebar.vue'),
 );
 const MobileNav = defineAsyncComponent(
 	() => import('./components/MobileNav.vue'),

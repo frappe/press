@@ -1918,7 +1918,12 @@ def add_public_servers_to_public_groups():
 	)
 	public_servers = frappe.get_all(
 		"Server",
-		filters={"public": 1, "status": "Active", "provider": ["!=", "Hetzner"]},
+		filters={
+			"public": 1,
+			"status": "Active",
+			"provider": ["!=", "Hetzner"],
+			"cluster": ["!=", "Dar Es Salaam"],
+		},
 		pluck="name",
 	)
 
