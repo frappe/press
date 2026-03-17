@@ -214,7 +214,7 @@ PersistentKeepalive = 25
 			self.database_server_doc.frappe_public_key,
 		]
 
-		valid_keys = [key for key in keys if key]
+		valid_keys = [key + " fc-dr" for key in keys if key]
 		return "\n".join(valid_keys)
 
 	def check_connectivity_to_on_premise_server(self):
