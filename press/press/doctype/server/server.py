@@ -391,7 +391,9 @@ class BaseServer(Document, TagHelpers):
 				"action": "Manage On-Prem Replication",
 				"description": "Manage On-Prem Replication & Failover",
 				"button_label": "Manage",
-				"condition": self.status == "Active" and self.doctype == "Server",
+				"condition": self.status == "Active"
+				and self.doctype == "Server"
+				and self.enable_on_prem_failover_support,
 				"group": "Application Server Actions",
 			},
 			{
