@@ -24,7 +24,9 @@ def sync_product_site_user(**data):
 	site_token = headers.get("x-site-token")
 
 	if not frappe.db.exists("Site", site):
-		frappe.throw("The site ")
+		frappe.throw(
+			"The site does not seem to exist. Please <a href='https://docs.frappe.io/cloud/sites/creating-a-new-site'>create a new site</a> or reach out to us at <a href='https://support.frappe.io/'>support.frappe.io</a> if you don't think this should be expected."
+		)
 
 	if not site_token:
 		frappe.throw("Invalid communication secret. Please verify your key secret and retry.")
