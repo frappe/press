@@ -754,6 +754,10 @@
         "journalctl",
         "ptrs",
         "serialised",
-        "setnx"
+        "setnx",
+        "vitepress",
+        "resolvconf",
+        "lsync",
+        "lsyncd"
     ]
 }
