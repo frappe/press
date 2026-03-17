@@ -12,16 +12,22 @@ import LucideWrench from '~icons/lucide/wrench';
 import { Badge } from 'frappe-ui';
 
 const statusClasses = {
-	Resolved: 'green',
 	Validating: 'orange',
-	Confirming: 'orange',
+	Investigating: 'blue',
+	Confirmed: 'blue',
+	Acknowledged: 'gray',
+	Resolved: 'green',
+	'Auto-Resolved': 'green',
+	'Press-Resolved': 'green',
 	default: 'red',
 };
+
 const timelineDotClasses = {
 	Created: 'text-ink-gray-6',
 	Confirmed: 'text-ink-amber-3',
 	Resolved: 'text-ink-green-2',
 };
+
 const actionStatusClasses = {
 	Success: 'text-ink-green-2',
 	Failure: 'text-ink-red-3',
