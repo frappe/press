@@ -108,16 +108,12 @@ const props = defineProps<Props>();
 					</span>
 				</div>
 
-				<div class="rounded-lg bg-gray-900 text-white px-4 py-3">
+				<div class="rounded-lg bg-surface-gray-1 px-4 py-3">
 					<div class="mb-2.5 flex items-center justify-between">
 						<span class="text-sm">
 							{{ data.investigation.name }}
 						</span>
-						<Badge
-							:label="data.investigation.status"
-							class="text-white"
-							variant="outline"
-						/>
+						<Badge :label="data.investigation.status" variant="solid" />
 					</div>
 
 					<details
@@ -126,7 +122,7 @@ const props = defineProps<Props>();
 						class="mb-4 last:mb-0 group/investigation"
 					>
 						<summary
-							class="mb-2 flex items-center gap-1.5 cursor-pointer border-gray-700 group-open/investigation:border-b group-open/investigation:pb-2"
+							class="mb-2 flex items-center gap-1.5 cursor-pointer border-outline-gray-2 group-open/investigation:border-b group-open/investigation:pb-2"
 						>
 							<LucideServer v-if="group.label === 'Server'" class="size-3" />
 							<LucideDatabase v-else class="size-3" />
@@ -145,13 +141,13 @@ const props = defineProps<Props>();
 							:key="idx"
 							class="flex items-center gap-2 py-1"
 						>
-							<p class="min-w-0 flex-1 truncate text-sm text-gray-400">
+							<p class="min-w-0 flex-1 truncate text-sm text-ink-gray-6">
 								{{ step.step_name }}
 							</p>
 
 							<div
 								v-if="step.is_unable_to_investigate"
-								class="flex items-center gap-1.5 text-gray-500"
+								class="flex items-center gap-1.5 text-ink-gray-5"
 							>
 								<LucideBan class="size-3" />
 								<span class="text-sm">Unable To Investigate</span>
@@ -159,7 +155,7 @@ const props = defineProps<Props>();
 
 							<div
 								v-else-if="step.is_likely_cause"
-								class="flex shrink-0 items-center gap-1.5 text-amber-300"
+								class="flex shrink-0 items-center gap-1.5 text-ink-amber-3"
 							>
 								<LucideAlert class="size-3" />
 								<span class="text-sm">Likely Cause</span>
@@ -167,7 +163,7 @@ const props = defineProps<Props>();
 
 							<div
 								v-else
-								class="flex shrink-0 items-center gap-1 text-green-300"
+								class="flex shrink-0 items-center gap-1 text-ink-green-3"
 							>
 								<LucideCheck class="size-3" />
 								<span class="text-sm">Passed</span>
