@@ -28,10 +28,10 @@ const timelineDotClasses = {
 };
 
 const actionStatusClasses = {
-	Success: 'text-ink-green-2',
-	Failure: 'text-ink-red-3',
-	Pending: 'text-ink-amber-3',
-	default: 'text-ink-gray-5',
+	Success: 'green',
+	Failure: 'red',
+	Pending: 'amber',
+	default: 'gray',
 };
 
 interface Props {
@@ -110,7 +110,7 @@ const props = defineProps<Props>();
 
 				<div class="rounded-lg bg-gray-900 text-white px-4 py-3">
 					<div class="mb-2.5 flex items-center justify-between">
-						<span class="text-sm font-medium">
+						<span class="text-sm">
 							{{ data.investigation.name }}
 						</span>
 						<Badge
@@ -145,9 +145,7 @@ const props = defineProps<Props>();
 							:key="idx"
 							class="flex items-center gap-2 py-1"
 						>
-							<p
-								class="min-w-0 flex-1 truncate text-sm font-medium text-gray-400"
-							>
+							<p class="min-w-0 flex-1 truncate text-sm text-gray-400">
 								{{ step.step_name }}
 							</p>
 
@@ -180,13 +178,21 @@ const props = defineProps<Props>();
 			</div>
 
 			<!-- Action steps -->
-			<div v-if="data.actionSteps && data.actionSteps.length" class="mt-4">
-				<div class="mb-4 flex items-center gap-1.5">
+			<details
+				v-if="data.actionSteps && data.actionSteps.length"
+				class="mb-1 mt-4 group/actions"
+			>
+				<summary
+					class="group-open/actions:pb-4 flex items-center gap-1.5 cursor-pointer"
+				>
 					<LucideWrench class="size-3.5" />
 					<span class="text-sm font-semibold uppercase tracking-widest">
 						Action Taken
 					</span>
-				</div>
+					<LucideChevronRight
+						class="ml-auto size-3.5 transition-transform group-open/actions:rotate-90"
+					/>
+				</summary>
 
 				<div class="flex flex-col gap-1">
 					<div
@@ -194,21 +200,21 @@ const props = defineProps<Props>();
 						:key="idx"
 						class="flex items-center justify-between rounded-md bg-surface-gray-1 px-3 py-2"
 					>
-						<span class="truncate text-sm font-medium text-ink-gray-8">
+						<span class="truncate text-sm text-ink-gray-8">
 							{{ action.label }}
 						</span>
-						<span
-							:class="[
-								'ml-3 shrink-0 text-sm font-medium',
+
+						<Badge
+							:label="action.status"
+							variant="outline"
+							:theme="
 								actionStatusClasses[action.status] ||
-									actionStatusClasses.default,
-							]"
-						>
-							{{ action.status }}
-						</span>
+								actionStatusClasses.default
+							"
+						/>
 					</div>
 				</div>
-			</div>
+			</details>
 		</div>
 	</details>
 </template>
