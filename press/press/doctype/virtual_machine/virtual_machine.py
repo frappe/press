@@ -1230,7 +1230,6 @@ class VirtualMachine(Document):
 		except Exception:
 			self.status = "Terminated"
 			self.save()
-			frappe.db.commit()
 			return
 		virtual_machine = frappe._dict(virtual_machine)
 		self.status = self.get_frappe_compute_status_map()[virtual_machine.status]
@@ -1986,7 +1985,6 @@ class VirtualMachine(Document):
 			return pydo.Client(token=api_token)
 
 		if self.cloud_provider == "Frappe Compute":
-			cluster = frappe.get_doc("Cluster", self.cluster)
 			return FrappeComputeClient(
 				url=cluster.frappe_compute_base_url,
 				api_key=cluster.frappe_compute_api_key,
