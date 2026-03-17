@@ -45,6 +45,7 @@
   "ip",
   "is_static_ip",
   "ipv6",
+  "nat_server",
   "column_break_3",
   "private_ip",
   "private_mac_address",
