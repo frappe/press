@@ -3,63 +3,27 @@
 
 frappe.ui.form.on('Virtual Machine', {
 	refresh: function (frm) {
-		if (frm.doc.status == 'Draft' && frm.doc.cloud_provider == 'AWS EC2') {
-			frm.add_custom_button(
-				__('Provision'),
-				() => {
-					frappe.db
-						.get_value(
-							'Cluster',
-							{ name: frm.doc.cluster },
-							'disable_public_ips_for_servers',
-						)
-						.then((r) => {
-							let default_value =
-								r.message && r.message.disable_public_ips_for_servers ? 0 : 1;
-							let d = new frappe.ui.Dialog({
-								title: __('Provision AWS Instance'),
-								fields: [
-									{
-										label: __('Assign Public IP?'),
-										fieldname: 'assign_public_ip',
-										fieldtype: 'Check',
-										default: default_value,
-									},
-								],
-								primary_action_label: __('Provision'),
-								primary_action(values) {
-									frm
-										.call({
-											doc: frm.doc,
-											method: 'provision',
-											args: {
-												assign_public_ip: values.assign_public_ip,
-											},
-										})
-										.then((r) => {
-											if (r.message) {
-												frappe.msgprint(r.message);
-											} else {
-												frm.refresh();
-											}
-										});
-									d.hide();
-								},
-							}).show();
-						});
-				},
-				__('Actions'),
-			);
+		if (frm.is_new()) {
+			frappe.db
+				.get_value(
+					'Cluster',
+					{ name: frm.doc.cluster },
+					'disable_public_ips_for_servers',
+				)
+				.then((r) => {
+					if (r.message && r.message.disable_public_ips_for_servers) {
+						frm.set_value('assign_public_ip', 0);
+					} else {
+						frm.set_value('assign_public_ip', 1);
+					}
+				});
+		} else {
+			frm.set_df_property('assign_public_ip', 'hidden', 1);
 		}
 
 		[
 			[__('Sync'), 'sync', false, frm.doc.status != 'Draft'],
-			[
-				__('Provision'),
-				'provision',
-				true,
-				frm.doc.status == 'Draft' && frm.doc.cloud_provider != 'AWS EC2',
-			],
+			[__('Provision'), 'provision', true, frm.doc.status == 'Draft'],
 			[__('Reboot'), 'reboot', true, frm.doc.status == 'Running'],
 			[__('Stop'), 'stop', true, frm.doc.status == 'Running'],
 			[__('Force Stop'), 'force_stop', true, frm.doc.status == 'Running'],
