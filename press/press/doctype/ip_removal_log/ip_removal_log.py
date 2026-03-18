@@ -23,6 +23,7 @@ class IPRemovalLog(Document, StepHandler):
 		cluster: DF.Link
 		error: DF.Text | None
 		limit: DF.Int
+		nat_server: DF.Link | None
 		removal_steps: DF.Table[IPRemovalLogSteps]
 		server_type: DF.Link
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
@@ -90,7 +91,7 @@ class IPRemovalLog(Document, StepHandler):
 			frappe.db.commit()
 
 		doc.reload()
-		doc.nat_server = self.get_nat_server()
+		doc.nat_server = self.nat_server
 		doc.save()
 
 		try:
@@ -107,22 +108,6 @@ class IPRemovalLog(Document, StepHandler):
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			# not raising here - we can sort these out manually, let the rest complete
-
-	def get_nat_server(self):
-		nat_server = frappe.db.get_value(
-			"NAT Server",
-			{"status": "Active", "cluster": self.cluster, "secondary_private_ip": ("is", "set")},
-			"name",
-		)
-		if not nat_server:
-			nat_server = frappe.db.get_value(
-				"NAT Server", {"status": "Active", "cluster": self.cluster}, "name"
-			)
-
-		if not nat_server:
-			frappe.throw("No active NAT Server found for the cluster. Please add one.")
-
-		return nat_server
 
 	def handle_step_failure(self):
 		self.error = frappe.get_traceback(with_context=True)
