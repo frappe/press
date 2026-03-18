@@ -1,0 +1,123 @@
+# Copyright (c) 2026, Frappe and contributors
+# For license information, please see license.txt
+
+import frappe
+from frappe.model.document import Document
+from frappe.query_builder import Interval
+from frappe.query_builder.functions import Now
+
+from press.runner import Ansible, StepHandler
+
+
+class IPRemovalLog(Document, StepHandler):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		from press.press.doctype.ip_removal_log_steps.ip_removal_log_steps import IPRemovalLogSteps
+
+		cluster: DF.Link
+		error: DF.Text | None
+		limit: DF.Int
+		removal_steps: DF.Table[IPRemovalLogSteps]
+		server_type: DF.Link
+	# end: auto-generated types
+
+	@staticmethod
+	def clear_old_logs(days=30):
+		table = frappe.qb.DocType("IP Removal Log")
+		frappe.db.delete(table, filters=(table.creation < (Now() - Interval(days=days))))
+
+	def before_insert(self):
+		if self.server_type not in ("Server", "Database Server"):
+			frappe.throw(
+				"Server Type must be either 'Server' or 'Database Server'. Please select one of those."
+			)
+
+		filters = {"cluster": self.cluster, "nat_server": ("is", "not set"), "is_self_hosted": 0}
+		if self.server_type == "Server":
+			filters |= {"is_static_ip": 0}
+
+		servers = frappe.get_all(
+			self.server_type, filters=filters, fields=["name"], limit_page_length=self.limit, as_list=True
+		)
+		for server in servers:
+			step = {
+				"method_name": self.remove_ip_and_add_nat_conf.__name__,
+				"status": "Pending",
+				"server": server,
+			}
+			self.append("removal_steps", step)
+
+	def after_insert(self):
+		self.execute_removal_steps()
+
+	def execute_removal_steps(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_execute_steps",
+			steps=self.removal_steps,
+			queue="long",
+			timeout=3600,
+			enqueue_after_commit=True,
+			job_id=f"ip_removal_{self.name}",
+			deduplicate=True,
+		)
+
+	def remove_ip_and_add_nat_conf(self, step):
+		doc = frappe.get_doc(self.server_type, step.server)
+		if doc.ip:
+			try:
+				vm = frappe.get_doc("Virtual Machine", doc.virtual_machine)
+				vm.disassociate_auto_assigned_public_ip()
+			except frappe.ValidationError:
+				step.output = "Failed to disassociate public ip. Possibly failed to get a lock on the VM."
+				step.status = "Failed"
+				step.save()
+				return
+
+			frappe.db.commit()
+
+		doc.reload()
+		doc.nat_server = self.get_nat_server()
+		doc.save()
+
+		try:
+			ansible = Ansible(
+				playbook="nat_iptables.yml",
+				server=doc,
+				user=doc._ssh_user(),
+				port=doc._ssh_port(),
+				variables={
+					"nat_gateway_ip": doc.get_nat_gateway_ip(),
+				},
+			)
+			self.handle_ansible_play(step, ansible)
+		except Exception as e:
+			self._fail_ansible_step(step, ansible, e)
+			# not raising here - we can sort these out manually, let the rest complete
+
+	def get_nat_server(self):
+		nat_server = frappe.db.get_value(
+			"NAT Server",
+			{"status": "Active", "cluster": self.cluster, "secondary_private_ip": ("is", "set")},
+			"name",
+		)
+		if not nat_server:
+			nat_server = frappe.db.get_value(
+				"NAT Server", {"status": "Active", "cluster": self.cluster}, "name"
+			)
+
+		if not nat_server:
+			frappe.throw("No active NAT Server found for the cluster. Please add one.")
+
+		return nat_server
+
+	def handle_step_failure(self):
+		self.error = frappe.get_traceback(with_context=True)
+		self.save()
