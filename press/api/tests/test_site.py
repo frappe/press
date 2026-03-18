@@ -852,6 +852,76 @@ erpnext 0.8.3	    HEAD
 	def test_get_upload_link(self):
 		pass
 
+	def test_archive_site_job_with_backup_step_failed_and_archive_skipped_doesnt_archive_site(self):
+		site = create_test_site()
+		with (
+			fake_agent_job(
+				"Archive Site",
+				"Failure",
+				steps=[
+					{"name": "Backup Site", "status": "Failure"},
+					{"name": "Archive Site", "status": "Skipped"},
+				],
+			),
+			fake_agent_job("Remove Site from Upstream", "Success"),
+		):
+			site.archive()
+			poll_pending_jobs()
+			poll_pending_jobs()
+		self.assertFalse(
+			frappe.db.exists("Site", f"{site.name}.archived"),
+			msg="Site got marked archived even when backup failed",
+		)
+		site.reload()
+		self.assertEqual(site.status, "Broken")
+
+	def test_archive_site_job_with_successful_backup_and_archive_step_archives_site(self):
+		site = create_test_site()
+		with (
+			fake_agent_job(
+				"Archive Site",
+				"Success",
+				steps=[
+					{"name": "Backup Site", "status": "Success"},
+					{"name": "Archive Site", "status": "Success"},
+				],
+			),
+			fake_agent_job("Remove Site from Upstream", "Success"),
+		):
+			site.archive()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		site_name = frappe.db.exists("Site", f"{site.name}.archived")
+		self.assertTrue(
+			site_name,
+			msg="Site didn't get marked archived even when backup & archive was successful",
+		)
+		self.assertEqual(frappe.db.get_value("Site", site_name, "status"), "Archived")
+
+	def test_archive_site_job_with_backup_step_successful_but_archive_step_failed_doesnt_archive_site(self):
+		site = create_test_site()
+		with (
+			fake_agent_job(
+				"Archive Site",
+				"Failure",
+				steps=[
+					{"name": "Backup Site", "status": "Success"},
+					{"name": "Archive Site", "status": "Failure"},
+				],
+			),
+			fake_agent_job("Remove Site from Upstream", "Success"),
+		):
+			site.archive()
+			poll_pending_jobs()
+			poll_pending_jobs()
+		self.assertFalse(
+			frappe.db.exists("Site", f"{site.name}.archived"),
+			msg="Site got marked archived even when archive step failed",
+		)
+		site.reload()
+		self.assertEqual(site.status, "Broken")
+
 
 class TestAPISiteList(FrappeTestCase):
 	def setUp(self):

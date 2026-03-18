@@ -6,9 +6,11 @@
  "engine": "InnoDB",
  "field_order": [
   "server_type",
+  "status",
   "cluster",
   "column_break_nwvz",
   "limit",
+  "nat_server",
   "section_break_ndsx",
   "removal_steps",
   "section_break_oiwu",
@@ -62,12 +64,27 @@
    "fieldtype": "Text",
    "label": "Error/Traceback",
    "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure"
+  },
+  {
+   "fieldname": "nat_server",
+   "fieldtype": "Link",
+   "label": "NAT Server",
+   "options": "NAT Server",
+   "set_only_once": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-18 14:06:18.688768",
+ "modified": "2026-03-18 19:07:13.079503",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "IP Removal Log",

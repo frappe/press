@@ -63,7 +63,7 @@
 							<tr>
 								<td>ID</td>
 								<td>{{ appServerStatusFlags?.id }}</td>
-								<td>{{ appServerStatusFlags?.id }}</td>
+								<td>{{ databaseServerStatusFlags?.id }}</td>
 							</tr>
 							<tr>
 								<td>Wireguard Setup</td>
@@ -141,7 +141,7 @@
 							class="cursor-pointer text-gray-700 font-medium"
 							@click="toggleSetupGuide"
 						>
-							Open Setup Guide
+							On-Prem Server Setup Guide
 						</p>
 					</div>
 					<div
@@ -166,7 +166,7 @@
 							</div>
 							<ClickToCopyField
 								text-content="apt update -y
-apt install -y wireguard resolvconf rsync awk curl wget"
+apt install -y wireguard resolvconf rsync gawk curl wget"
 							/>
 						</div>
 						<!-- Configure Wireguard -->
@@ -186,8 +186,7 @@ apt install -y wireguard resolvconf rsync awk curl wget"
 								4. Start Wireguard Service
 							</div>
 							<ClickToCopyField
-								text-content="wg-quick up wg0
-systemctl enable --now wg-quick@wg0"
+								text-content="systemctl enable --now wg-quick@wg0"
 							/>
 						</div>
 						<!-- Trigger Replication Setup -->
@@ -389,6 +388,7 @@ export default {
 				onSuccess: () => {
 					toast.success('On-Prem Replication Setup Started');
 					this.$resources.onPremFailoverConfig.reload();
+					this.isSetupGuideVisible = false;
 				},
 				onError: () => {
 					toast.error('Failed to start replication setup. Please try again.');
