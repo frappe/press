@@ -165,7 +165,7 @@
 								2. Install Necessary Tools
 							</div>
 							<ClickToCopyField
-								text-content="sudo apt update
+								text-content="apt update -y
 apt install -y wireguard resolvconf rsync awk curl wget"
 							/>
 						</div>
