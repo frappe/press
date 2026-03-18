@@ -63,7 +63,7 @@
 							<tr>
 								<td>ID</td>
 								<td>{{ appServerStatusFlags?.id }}</td>
-								<td>{{ appServerStatusFlags?.id }}</td>
+								<td>{{ databaseServerStatusFlags?.id }}</td>
 							</tr>
 							<tr>
 								<td>Wireguard Setup</td>
@@ -166,7 +166,7 @@
 							</div>
 							<ClickToCopyField
 								text-content="apt update -y
-apt install -y wireguard resolvconf rsync awk curl wget"
+apt install -y wireguard resolvconf rsync gawk curl wget"
 							/>
 						</div>
 						<!-- Configure Wireguard -->
@@ -186,8 +186,7 @@ apt install -y wireguard resolvconf rsync awk curl wget"
 								4. Start Wireguard Service
 							</div>
 							<ClickToCopyField
-								text-content="wg-quick up wg0
-systemctl enable --now wg-quick@wg0"
+								text-content="systemctl enable --now wg-quick@wg0"
 							/>
 						</div>
 						<!-- Trigger Replication Setup -->
