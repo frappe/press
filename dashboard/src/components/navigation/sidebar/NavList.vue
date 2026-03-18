@@ -176,7 +176,6 @@ const navigation = computed(() => {
 				'Log Browser',
 				'Binlog Browser',
 			].includes(routeName),
-			disabled: enforce2FA,
 		},
 		{
 			name: 'Marketplace',
