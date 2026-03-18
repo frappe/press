@@ -247,10 +247,6 @@ scheduler_events = {
 		"press.press.doctype.server_snapshot.server_snapshot.expire_snapshots",
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
-<<<<<<< HEAD
-		"press.press.doctype.database_server.database_server.update_database_schema_sizes",
-=======
->>>>>>> a541cbe48 (feat(site): Add option to refresh database usage)
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 	],
 	"hourly_long": [
