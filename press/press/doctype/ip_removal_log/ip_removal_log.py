@@ -25,6 +25,7 @@ class IPRemovalLog(Document, StepHandler):
 		limit: DF.Int
 		removal_steps: DF.Table[IPRemovalLogSteps]
 		server_type: DF.Link
+		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 	# end: auto-generated types
 
 	@staticmethod
@@ -37,6 +38,8 @@ class IPRemovalLog(Document, StepHandler):
 			frappe.throw(
 				"Server Type must be either 'Server' or 'Database Server'. Please select one of those."
 			)
+
+		self.status = "Pending"
 
 		filters = {
 			"status": "Active",
@@ -58,9 +61,7 @@ class IPRemovalLog(Document, StepHandler):
 			}
 			self.append("removal_steps", step)
 
-	def after_insert(self):
-		self.execute_removal_steps()
-
+	@frappe.whitelist()
 	def execute_removal_steps(self):
 		frappe.enqueue_doc(
 			self.doctype,
