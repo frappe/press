@@ -54,6 +54,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
 	from press.press.doctype.nfs_volume_detachment.nfs_volume_detachment import NFSVolumeDetachment
+	from press.press.doctype.on_prem_failover.on_prem_failover import OnPremFailover
 	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
@@ -106,6 +107,7 @@ class BaseServer(Document, TagHelpers):
 		"is_monitoring_disabled",
 		"is_provisioning_press_job_completed",
 		"is_unified_server",
+		"enable_on_prem_failover_support",
 	)
 
 	@staticmethod
@@ -386,6 +388,15 @@ class BaseServer(Document, TagHelpers):
 
 		actions = [
 			{
+				"action": "Manage On-Prem Replication",
+				"description": "Manage On-Prem Replication & Failover",
+				"button_label": "Manage",
+				"condition": self.status == "Active"
+				and self.doctype == "Server"
+				and self.enable_on_prem_failover_support,
+				"group": "Application Server Actions",
+			},
+			{
 				"action": "Rename server",
 				"description": f"Rename the {server_type}",
 				"button_label": "Rename",
@@ -437,7 +448,7 @@ class BaseServer(Document, TagHelpers):
 				"action": "Drop server",
 				"description": "Drop both the application and database servers"
 				if not getattr(self, "is_unified_server", False)
-				else "Drop the unifed server",
+				else "Drop the unified server",
 				"button_label": "Drop",
 				"condition": self.status == "Active" and self.doctype == "Server",
 				"doc_method": "drop_server",
@@ -736,13 +747,6 @@ class BaseServer(Document, TagHelpers):
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
 		database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
 		database_server_config = database_server._get_config()
-		nat_server_private_ips = (
-			frappe.db.get_value(
-				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
-			)
-			if self.nat_server
-			else None
-		)
 
 		self.status = "Installing"
 		database_server.status = "Installing"
@@ -778,8 +782,7 @@ class BaseServer(Document, TagHelpers):
 					"allocator": database_server.memory_allocator.lower(),
 					"mariadb_root_password": database_server_config.mariadb_root_password,
 					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
-					"nat_gateway_ip": nat_server_private_ips
-					and (nat_server_private_ips.secondary_private_ip or nat_server_private_ips.private_ip),
+					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					**self.get_mount_variables(),  # Currently same as database server since no volumes
 				},
 			)
@@ -1329,7 +1332,7 @@ class BaseServer(Document, TagHelpers):
 
 		if not (team.default_payment_method or team.get_balance()):
 			frappe.throw(
-				"Changing plans needs the customer to have a card added to their billing profile. Cannot change for the same reason, please add a card to your account on Frappe Cloud Billng dashboard."
+				"Changing plans needs the customer to have a card added to their billing profile. Cannot change for the same reason, please add a card to your account on Frappe Cloud Billing dashboard."
 			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
@@ -1651,7 +1654,7 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def reboot(self):
-		if self.provider not in ("AWS EC2", "OCI", "DigitalOcean", "Hetzner"):
+		if self.provider not in ("AWS EC2", "OCI", "DigitalOcean", "Hetzner", "Frappe Compute"):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
@@ -1881,10 +1884,6 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(self.doctype, self.name, "_install_nat_iptables")
 
 	def _install_nat_iptables(self):
-		nat_server_private_ips = frappe.db.get_value(
-			"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
-		)
-
 		try:
 			ansible = Ansible(
 				playbook="nat_iptables.yml",
@@ -1892,8 +1891,7 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
-					"nat_gateway_ip": nat_server_private_ips.secondary_private_ip
-					or nat_server_private_ips.private_ip
+					"nat_gateway_ip": self.get_nat_gateway_ip(),
 				},
 			)
 			ansible.run()
@@ -2256,6 +2254,14 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Prune Docker System Exception", doc=self)
 
+	def get_nat_gateway_ip(self):
+		if hasattr(self, "nat_server") and self.nat_server:
+			nat_private_ips = frappe.db.get_value(
+				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+			)
+			return nat_private_ips.secondary_private_ip or nat_private_ips.private_ip
+		return None
+
 	@frappe.whitelist()
 	def reload_nginx(self):
 		agent = Agent(self.name, server_type=self.doctype)
@@ -2592,6 +2598,7 @@ class Server(BaseServer):
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
+		enable_on_prem_failover_support: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		halt_agent_jobs: DF.Check
@@ -2621,7 +2628,6 @@ class Server(BaseServer):
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
-		nat_server: DF.Link | None
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
 		platform: DF.Literal["x86_64", "arm64"]
@@ -2629,7 +2635,9 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
+		provider: DF.Literal[
+			"Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean", "Frappe Compute"
+		]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
@@ -2894,7 +2902,7 @@ class Server(BaseServer):
 		agent.new_server(self.name)
 
 	def ansible_run(self, command: str) -> dict[str, str]:
-		inventory = f"{self.ip},"
+		inventory = f"{self.name},"
 		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
 	def setup_docker(self, now: bool | None = None):
@@ -2940,13 +2948,6 @@ class Server(BaseServer):
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
-		nat_server_private_ips = (
-			frappe.db.get_value(
-				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
-			)
-			if self.nat_server
-			else None
-		)
 
 		# If database server is set, then define db port under configuration
 		db_port = (
@@ -2980,8 +2981,7 @@ class Server(BaseServer):
 					"db_port": db_port,
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
-					"nat_gateway_ip": nat_server_private_ips
-					and (nat_server_private_ips.secondary_private_ip or nat_server_private_ips.private_ip),
+					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					**self.get_mount_variables(),
 				},
 			)
@@ -3287,6 +3287,115 @@ class Server(BaseServer):
 			self.status = "Broken"
 			log_error("Server Rename Exception", server=self.as_dict())
 		self.save()
+
+	def get_existing_on_prem_failover(self):
+		if not self.enable_on_prem_failover_support:
+			return None
+
+		return frappe.db.exists(
+			"On-Prem Failover",
+			{
+				"enabled": True,
+				"app_server": self.name,
+			},
+		)
+
+	@dashboard_whitelist()
+	def generate_on_prem_failover_config(self):
+		if not self.enable_on_prem_failover_support:
+			frappe.throw("On-Prem Failover support is not enabled for this server.")  # nosemgrep
+			return None
+
+		existsing_on_prem_failover = self.get_existing_on_prem_failover()
+
+		if not existsing_on_prem_failover:
+			on_prem_failover: OnPremFailover = frappe.get_doc(
+				{
+					"doctype": "On-Prem Failover",
+					"enabled": True,
+					"app_server": self.name,
+					"primary_server": self.primary if self.is_secondary else self.name,
+					"secondary_server": self.secondary_server if self.is_primary else self.name,
+					"benches_base_directory": "/root/frappe-cloud/benches",
+					"database_base_directory": "/root/frappe-cloud/database",
+				}
+			)
+			on_prem_failover.insert(ignore_permissions=True)
+		else:
+			on_prem_failover: OnPremFailover = frappe.get_doc("On-Prem Failover", existsing_on_prem_failover)
+
+		# Find last 2 press-job
+		press_jobs = frappe.get_all(
+			"Press Job",
+			filters={"job_type": "Setup On-Prem Failover", "server": self.name},
+			fields=["name", "job_type", "status", "creation", "start", "end", "duration"],
+			order_by="creation desc",
+			limit=2,
+		)
+		running_press_job = next((job for job in press_jobs if job.status in ("Pending", "Running")), None)
+		if press_jobs:
+			for press_job in press_jobs:
+				press_job["steps"] = frappe.get_all(
+					"Press Job Step",
+					filters={"job": press_job.name},
+					fields=["name", "step_name", "status", "result", "traceback", "start", "end", "duration"],
+					order_by="creation asc",
+				)
+
+		return {
+			"running_press_job_type": running_press_job.job_type if running_press_job else None,
+			"status": {
+				"app_server": {
+					"id": on_prem_failover.app_server.split(".")[0],
+					"setup_completed": on_prem_failover.is_app_server_failover_setup,
+					"wireguard_setup_completed": on_prem_failover.is_app_server_wireguard_setup,
+					"on_prem_server_reachable": on_prem_failover.is_on_prem_server_reachable_from_app_server,
+					"on_prem_server_ssh_access": on_prem_failover.is_on_prem_server_ssh_from_app_server_working,
+				},
+				"db_server": {
+					"id": on_prem_failover.database_server.split(".")[0],
+					"setup_completed": on_prem_failover.is_db_server_failover_setup,
+					"wireguard_setup_completed": on_prem_failover.is_db_server_wireguard_setup,
+					"on_prem_server_reachable": on_prem_failover.is_on_prem_server_reachable_from_db_server,
+					"on_prem_server_ssh_access": on_prem_failover.is_on_prem_server_ssh_from_db_server_working,
+				},
+			},
+			"wireguard_config": on_prem_failover.generate_on_prem_server_wireguard_config(),
+			"authorized_ssh_keys": on_prem_failover.generate_ssh_authorized_keys_to_add(),
+			"jobs": press_jobs,
+		}
+
+	@dashboard_whitelist()
+	def start_on_prem_server_replication(self):
+		existsing_on_prem_failover = self.get_existing_on_prem_failover()
+		if not existsing_on_prem_failover:
+			frappe.throw("On-Prem Failover is not configured for this server.")  # nosemgrep
+			return
+
+		current_user = frappe.session.user
+		session_data = frappe.session.data
+		try:
+			frappe.set_user("Administrator")
+			frappe.get_doc("On-Prem Failover", existsing_on_prem_failover).setup_failover()
+		finally:
+			frappe.set_user(current_user)
+			frappe.session.data = session_data
+
+	@dashboard_whitelist()
+	def stop_on_prem_server_replication(self):
+		existsing_on_prem_failover = self.get_existing_on_prem_failover()
+		if not existsing_on_prem_failover:
+			frappe.throw("On-Prem Failover is not configured for this server.")  # nosemgrep
+			return
+
+		current_user = frappe.session.user
+		session_data = frappe.session.data
+		try:
+			frappe.set_user("Administrator")
+			frappe.get_doc("On-Prem Failover", existsing_on_prem_failover).teardown_failover()
+		finally:
+			frappe.set_user(current_user)
+			frappe.session.data = session_data
 
 	@frappe.whitelist()
 	def auto_scale_workers(self, commit=True):

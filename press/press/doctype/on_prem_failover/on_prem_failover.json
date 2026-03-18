@@ -1,0 +1,337 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-03-11 16:07:23.854035",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "cluster",
+  "team",
+  "column_break_swdr",
+  "wireguard_network",
+  "wireguard_port",
+  "firewall_id",
+  "app_server_section",
+  "app_server",
+  "app_server_wireguard_private_ip",
+  "column_break_dxat",
+  "app_server_wireguard_public_key",
+  "app_server_wireguard_private_key",
+  "database_server_section",
+  "database_server",
+  "database_server_wireguard_private_ip",
+  "column_break_ifhw",
+  "database_server_wireguard_public_key",
+  "database_server_wireguard_private_key",
+  "on_prem_server",
+  "on_prem_server_wireguard_private_ip",
+  "benches_base_directory",
+  "database_base_directory",
+  "column_break_hilm",
+  "on_prem_server_wireguard_public_key",
+  "on_prem_server_wireguard_private_key",
+  "status_tab",
+  "is_app_server_failover_setup",
+  "is_app_server_wireguard_setup",
+  "is_on_prem_server_reachable_from_app_server",
+  "is_on_prem_server_ssh_from_app_server_working",
+  "column_break_gywf",
+  "is_db_server_failover_setup",
+  "is_db_server_wireguard_setup",
+  "is_on_prem_server_reachable_from_db_server",
+  "is_on_prem_server_ssh_from_db_server_working",
+  "database_section",
+  "is_lsyncd_running_for_db",
+  "column_break_rvzx",
+  "db_lsyncd_started_on",
+  "column_break_vkjf",
+  "db_lsyncd_stop_at"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "column_break_swdr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "wireguard_network",
+   "fieldtype": "Data",
+   "label": "Wireguard Network",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "app_server_section",
+   "fieldtype": "Section Break",
+   "label": "App Server"
+  },
+  {
+   "fieldname": "app_server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Server",
+   "options": "Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "app_server_wireguard_private_ip",
+   "fieldtype": "Data",
+   "label": "WG Private IP",
+   "length": 128,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dxat",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "app_server_wireguard_public_key",
+   "fieldtype": "Data",
+   "label": "WG Public Key",
+   "length": 512,
+   "read_only": 1
+  },
+  {
+   "fieldname": "app_server_wireguard_private_key",
+   "fieldtype": "Password",
+   "label": "WG Private Key",
+   "length": 512,
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_server_section",
+   "fieldtype": "Section Break",
+   "label": "Database Server"
+  },
+  {
+   "fetch_from": "app_server.database_server",
+   "fieldname": "database_server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Server",
+   "options": "Database Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "database_server_wireguard_private_ip",
+   "fieldtype": "Data",
+   "label": "WG Private IP",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ifhw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "database_server_wireguard_public_key",
+   "fieldtype": "Data",
+   "label": "WG Public Key",
+   "length": 512,
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_server_wireguard_private_key",
+   "fieldtype": "Password",
+   "label": "WG Private Key",
+   "length": 512,
+   "read_only": 1
+  },
+  {
+   "fieldname": "on_prem_server",
+   "fieldtype": "Section Break",
+   "label": "On-Prem Server"
+  },
+  {
+   "fieldname": "benches_base_directory",
+   "fieldtype": "Data",
+   "label": "Benches Base Directory",
+   "reqd": 1
+  },
+  {
+   "fieldname": "database_base_directory",
+   "fieldtype": "Data",
+   "label": "Database Base Directory",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_hilm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "on_prem_server_wireguard_private_ip",
+   "fieldtype": "Data",
+   "label": "WG Private IP",
+   "read_only": 1
+  },
+  {
+   "fieldname": "on_prem_server_wireguard_public_key",
+   "fieldtype": "Data",
+   "label": "WG Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "on_prem_server_wireguard_private_key",
+   "fieldtype": "Password",
+   "label": "WG Private Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_tab",
+   "fieldtype": "Tab Break",
+   "label": "State"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_app_server_failover_setup",
+   "fieldtype": "Check",
+   "label": "Is App Server Failover Setup"
+  },
+  {
+   "fieldname": "column_break_gywf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_db_server_failover_setup",
+   "fieldtype": "Check",
+   "label": "Is DB Server Failover Setup"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_on_prem_server_reachable_from_app_server",
+   "fieldtype": "Check",
+   "label": "Is On Prem Server Reachable From App Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_on_prem_server_reachable_from_db_server",
+   "fieldtype": "Check",
+   "label": "Is On Prem Server Reachable From DB Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_on_prem_server_ssh_from_app_server_working",
+   "fieldtype": "Check",
+   "label": "Is On Prem Server SSH From App Server Working"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_on_prem_server_ssh_from_db_server_working",
+   "fieldtype": "Check",
+   "label": "Is On Prem Server SSH From DB Server Working"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_app_server_wireguard_setup",
+   "fieldtype": "Check",
+   "label": "Is App Server Wireguard Setup"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_db_server_wireguard_setup",
+   "fieldtype": "Check",
+   "label": "Is DB Server Wireguard Setup"
+  },
+  {
+   "fieldname": "database_section",
+   "fieldtype": "Section Break",
+   "label": "Database"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_lsyncd_running_for_db",
+   "fieldtype": "Check",
+   "label": "Lsyncd Running"
+  },
+  {
+   "fieldname": "column_break_rvzx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "db_lsyncd_started_on",
+   "fieldtype": "Datetime",
+   "label": "Lsyncd Started On"
+  },
+  {
+   "fieldname": "column_break_vkjf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "db_lsyncd_stop_at",
+   "fieldtype": "Datetime",
+   "label": "Lsyncd Stop At"
+  },
+  {
+   "fieldname": "firewall_id",
+   "fieldtype": "Data",
+   "label": "Firewall ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "app_server.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1
+  },
+  {
+   "fieldname": "wireguard_port",
+   "fieldtype": "Int",
+   "label": "Wireguard Port",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "app_server.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-17 17:58:09.502720",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "On-Prem Failover",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

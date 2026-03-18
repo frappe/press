@@ -829,7 +829,7 @@ class PhysicalBackupRestoration(Document):
 		return None
 
 	def ansible_run(self, command, raw_params: bool = False):
-		inventory = f"{self.virtual_machine.public_ip_address},"
+		inventory = f"{self.destination_server},"
 		result = AnsibleAdHoc(sources=inventory).run(command, self.name, raw_params=raw_params)[0]
 		self.add_command(command, result)
 		return result

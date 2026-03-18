@@ -808,7 +808,9 @@ def retry_undelivered_jobs(server):
 		if delivered_jobs:
 			update_job_ids_for_delivered_jobs(delivered_jobs)
 
-		undelivered_jobs = list(set(server_jobs[server]) - set(delivered_jobs))
+		undelivered_jobs = list(
+			set(server_jobs[server]) - set([job["agent_job_id"] for job in delivered_jobs])
+		)
 
 		for job_name in undelivered_jobs:
 			job = AgentJob("Agent Job", job_name)
@@ -1009,6 +1011,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_migrate_site_job_update,
 			process_move_site_to_bench_job_update,
 			process_new_site_job_update,
+			process_refresh_database_usage_job_update,
 			process_reinstall_site_job_update,
 			process_rename_site_job_update,
 			process_restore_job_update,
@@ -1151,6 +1154,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_backup_database_from_snapshot_job_callback(job)
 		elif job.job_type == "Backup Files From Snapshot":
 			process_backup_files_from_snapshot_job_callback(job)
+		elif job.job_type == "Refresh Database Usage":
+			process_refresh_database_usage_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":

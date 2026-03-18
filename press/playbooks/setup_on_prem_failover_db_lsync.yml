@@ -1,0 +1,9 @@
+---
+- name: Setup Database Lsyncd for On-Premise Failover
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+
+  roles:
+    - role: on_prem_failover_db_lsync

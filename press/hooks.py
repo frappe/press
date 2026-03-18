@@ -248,7 +248,6 @@ scheduler_events = {
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
-		"press.press.doctype.database_server.database_server.update_database_schema_sizes",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
@@ -298,6 +297,9 @@ scheduler_events = {
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_all_snapshots_from_aws",
+		],
+		"30 2-23/5 * * *": [
+			"press.press.doctype.database_server.database_server.update_database_schema_sizes",
 		],
 		"* * * * * 0/5": [
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
