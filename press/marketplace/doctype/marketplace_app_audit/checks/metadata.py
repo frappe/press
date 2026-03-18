@@ -5,6 +5,12 @@ import frappe
 
 from press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit import CheckResult
 
+# Summary of checks present in metadata.py with their respective severity levels:
+# - long description checks: Major
+# - screenshots: Major
+# - links: Major
+# - categories: Minor
+
 CATEGORY = "Metadata"
 
 # Patterns that indicate the publisher used bench install instructions which are not relevant on FC Listing.
