@@ -758,6 +758,8 @@
         "vitepress",
         "resolvconf",
         "lsync",
-        "lsyncd"
+        "lsyncd",
+        "awk",
+        "gawk"
     ]
 }
