@@ -103,12 +103,35 @@ export default {
 				},
 			};
 		},
+		countriesWithIsd() {
+			return {
+				url: 'press.api.account.get_countries_with_isd_codes',
+				auto: true,
+			};
+		},
 	},
 	methods: {
 		buyCreditsWithRazorpay() {
 			this.$resources.createRazorpayOrder.submit();
 		},
+		getTeamCallingCode() {
+			const countries = this.$resources.countriesWithIsd?.data || [];
+			const teamCountry = this.$team.doc.country;
+			if (!teamCountry || countries.length === 0) {
+				return null;
+			}
+			const match = countries.find((country) => country.name === teamCountry);
+			if (!match?.isd) {
+				return null;
+			}
+			const isd = String(match.isd).trim();
+			if (!isd) {
+				return null;
+			}
+			return isd.startsWith('+') ? isd : `+${isd}`;
+		},
 		processOrder(data) {
+			const callingCode = this.getTeamCallingCode();
 			const options = {
 				key: data.key_id,
 				order_id: data.order_id,
@@ -116,6 +139,7 @@ export default {
 				image: '/assets/press/images/frappe-cloud-logo.png',
 				prefill: {
 					email: this.$team.doc.user,
+					...(callingCode ? { contact: callingCode } : {}),
 				},
 				handler: this.handlePaymentSuccess,
 				theme: { color: '#171717' },
