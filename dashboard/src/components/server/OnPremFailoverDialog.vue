@@ -166,7 +166,7 @@
 							</div>
 							<ClickToCopyField
 								text-content="apt update -y
-apt install -y wireguard resolvconf rsync awk curl wget"
+apt install -y wireguard resolvconf rsync gawk curl wget"
 							/>
 						</div>
 						<!-- Configure Wireguard -->
