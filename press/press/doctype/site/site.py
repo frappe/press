@@ -2354,7 +2354,7 @@ class Site(Document, TagHelpers):
 			)
 
 	def validate_encryption_key(self, key: str, value: Any):
-		if key != "encryption_key":
+		if key != "encryption_key" or key != "backup_encryption_key":
 			return
 		from cryptography.fernet import Fernet, InvalidToken
 
