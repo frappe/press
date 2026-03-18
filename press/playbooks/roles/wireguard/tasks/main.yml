@@ -54,3 +54,8 @@
     name: wg-quick@wg0
     state: started
     enabled: yes
+
+- name: Start Wireguard
+  shell: |
+    wg-quick up wg0
+  ignore_errors: yes
