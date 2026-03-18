@@ -291,21 +291,22 @@ class Invoice(Document):
 
 		if self.status == "Paid" and self.stripe_invoice_id and self.amount_paid == 0:
 			stripe = get_stripe()
-			invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
-			payment_intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
-			if payment_intent.status == "processing":
-				# mark the fc invoice as Paid
-				# if the payment intent is processing, it means the invoice cannot be voided yet
-				# wait for invoice to be updated and then mark it as void if payment failed
-				# or issue a refund if succeeded
-				self.save()  # status is already Paid, so no need to set again
-			else:
-				self.change_stripe_invoice_status("Void")
-				self.add_comment(
-					text=(
-						f"Stripe Invoice {self.stripe_invoice_id} voided because payment is done via credits."
+			stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+			if stripe_invoice.status == "open":
+				payment_intent = stripe.PaymentIntent.retrieve(stripe_invoice.payment_intent)
+				if payment_intent.status == "processing":
+					# mark the fc invoice as Paid
+					# if the payment intent is processing, it means the invoice cannot be voided yet
+					# wait for invoice to be updated and then mark it as void if payment failed
+					# or issue a refund if succeeded
+					self.save()  # status is already Paid, so no need to set again
+				else:
+					self.change_stripe_invoice_status("Void")
+					self.add_comment(
+						text=(
+							f"Stripe Invoice {self.stripe_invoice_id} voided because payment is done via credits."
+						)
 					)
-				)
 
 		self.save()
 
