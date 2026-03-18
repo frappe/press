@@ -4423,12 +4423,29 @@ def get_remove_step_status(job):
 		"Remove Site from Upstream": "Remove Site File from Upstream Directory",
 	}[job.job_type]
 
-	return frappe.db.get_value(
+	status = frappe.db.get_value(
 		"Agent Job Step",
 		{"step_name": remove_step_name, "agent_job": job.name},
 		"status",
 		for_update=True,
 	)
+
+	if (
+		remove_step_name == "Archive Site"
+		and status == "Skipped"
+		and (
+			frappe.db.get_value(
+				"Agent Job Step",
+				{"step_name": "Backup Site", "agent_job": job.name},
+				"status",
+				for_update=True,
+			)
+			== "Failure"
+		)
+	):
+		# consider as failure if archive was skipped because of backup failure
+		status = "Failure"
+	return status
 
 
 def get_finished_backup_restoration_tests(site: str) -> list[str]:
@@ -4455,7 +4472,29 @@ def update_finished_backup_restoration_test(site: str, status: str):
 		frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", "Archive Failed")
 
 
-def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
+def get_new_status_for_archive_attempted_site(job: AgentJob, other_job: AgentJob) -> str:
+	first = get_remove_step_status(job)
+	second = get_remove_step_status(other_job)
+
+	if (
+		("Success" == first == second)
+		or ("Skipped" == first == second)
+		or sorted(("Success", "Skipped")) == sorted((first, second))
+	):
+		updated_status = "Archived"
+	elif "Failure" in (first, second):
+		updated_status = "Broken"
+	elif "Delivery Failure" == first == second:
+		updated_status = "Active"
+	elif "Delivery Failure" in (first, second):
+		updated_status = "Broken"
+	else:
+		updated_status = "Pending"
+
+	return updated_status
+
+
+def process_archive_site_job_update(job: "AgentJob"):
 	with suppress(Exception):
 		is_secondary_server = frappe.db.get_value("Server", job.upstream, "is_secondary")
 		if is_secondary_server:
@@ -4480,32 +4519,16 @@ def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 		# Our work is done
 		return
 
-	first = get_remove_step_status(job)
-	second = get_remove_step_status(other_job)
-
-	if (
-		("Success" == first == second)
-		or ("Skipped" == first == second)
-		or sorted(("Success", "Skipped")) == sorted((first, second))
-	):
-		updated_status = "Archived"
-	elif "Failure" in (first, second):
-		updated_status = "Broken"
-	elif "Delivery Failure" == first == second:
-		updated_status = "Active"
-	elif "Delivery Failure" in (first, second):
-		updated_status = "Broken"
-	else:
-		updated_status = "Pending"
+	updated_status = get_new_status_for_archive_attempted_site(job, other_job)
 
 	if updated_status == site_status:
 		return
 	frappe.db.set_value(
 		"Site",
-		job.site,
+		str(job.site),
 		{"status": updated_status, "archive_failed": updated_status != "Archived"},
 	)
-	update_finished_backup_restoration_test(job.site, updated_status)
+	update_finished_backup_restoration_test(str(job.site), updated_status)
 	if updated_status != "Archived":
 		return
 	from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
