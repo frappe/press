@@ -31,6 +31,7 @@ from oci.core.models import (
 	PortRange,
 	RouteRule,
 	TcpOptions,
+	UdpOptions,
 	UpdateRouteTableDetails,
 )
 from oci.identity import IdentityClient
@@ -1288,17 +1289,19 @@ class Cluster(Document):
 
 		return True
 
-	def create_firewall(self, ports, is_ingress=True, description=None):
-		"""Creates a new firewall/security group with the specified ports and direction and returns the ID."""
-		if isinstance(ports, (str, int)):
-			ports = [ports]
+	def create_firewall(self, rules, is_ingress=True, description=None):
+		"""Creates a new firewall/security group and returns the firewall ID.
+
+		rules should be a list of [port, protocol] pairs, e.g. [["22", "tcp"], ["51820", "udp"]].
+		"""
+		normalized_rules = self._normalize_firewall_rules(rules)
 
 		if self.cloud_provider == "AWS EC2":
-			return self.create_aws_firewall(ports, is_ingress, description)
+			return self.create_aws_firewall(normalized_rules, is_ingress, description)
 		if self.cloud_provider == "Hetzner":
-			return self.create_hetzner_firewall(ports, is_ingress, description)
+			return self.create_hetzner_firewall(normalized_rules, is_ingress, description)
 		if self.cloud_provider == "OCI":
-			return self.create_oci_firewall(ports, is_ingress, description)
+			return self.create_oci_firewall(normalized_rules, is_ingress, description)
 
 		return None
 
@@ -1351,7 +1354,7 @@ class Cluster(Document):
 			if "not found" not in str(e).lower():
 				raise
 
-	def create_aws_firewall(self, ports: list, is_ingress: bool, description: str):
+	def create_aws_firewall(self, rules: list[tuple[str | int, str]], is_ingress: bool, description: str):
 		client = self.get_aws_client()
 		sg_name = f"Frappe Cloud - {self.name} - Custom - {frappe.generate_hash(length=4)}"
 		response = client.create_security_group(
@@ -1362,13 +1365,13 @@ class Cluster(Document):
 		sg_id = response["GroupId"]
 
 		ip_permissions = []
-		for port in ports:
+		for port, protocol in rules:
 			from_port, to_port = self._parse_port_range(port)
 			ip_permissions.append(
 				{
 					"FromPort": from_port,
 					"ToPort": to_port,
-					"IpProtocol": "tcp",
+					"IpProtocol": protocol,
 					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": description or ""}],
 				}
 			)
@@ -1380,29 +1383,29 @@ class Cluster(Document):
 
 		return sg_id
 
-	def create_hetzner_firewall(self, ports, is_ingress, description):
+	def create_hetzner_firewall(self, rules, is_ingress, description):
 		client = self.get_hetzner_client()
-		rules = []
-		for port in ports:
+		firewall_rules = []
+		for port, protocol in rules:
 			rule_params = {
 				"description": description,
 				"direction": "in" if is_ingress else "out",
-				"protocol": "tcp",
+				"protocol": protocol,
 				"port": str(port),
 			}
 			if is_ingress:
 				rule_params["source_ips"] = ["0.0.0.0/0"]
 			else:
 				rule_params["destination_ips"] = ["0.0.0.0/0"]
-			rules.append(HetznerFirewallRule(**rule_params))
+			firewall_rules.append(HetznerFirewallRule(**rule_params))
 
 		firewall_response = client.firewalls.create(
 			name=f"Frappe Cloud - {self.name} - Custom - {frappe.generate_hash(length=4)}",
-			rules=rules,
+			rules=firewall_rules,
 		)
 		return firewall_response.firewall.id
 
-	def create_oci_firewall(self, ports, direction, description):
+	def create_oci_firewall(self, rules, is_ingress, description):
 		vcn_client = VirtualNetworkClient(self.get_oci_config())
 		security_group = vcn_client.create_network_security_group(
 			CreateNetworkSecurityGroupDetails(
@@ -1413,15 +1416,24 @@ class Cluster(Document):
 		).data
 
 		security_rules = []
-		for port in ports:
+		if isinstance(is_ingress, str):
+			is_ingress = is_ingress.lower() in ["in", "ingress"]
+		for port, protocol in rules:
 			from_port, to_port = self._parse_port_range(port)
-			is_ingress = direction.lower() in ["in", "ingress"]
+			oci_protocol = "6" if protocol == "tcp" else "17"
 			rule_details = {
 				"description": description,
 				"direction": "INGRESS" if is_ingress else "EGRESS",
-				"protocol": "6",  # TCP
-				"tcp_options": TcpOptions(destination_port_range=PortRange(min=from_port, max=to_port)),
+				"protocol": oci_protocol,
 			}
+			if protocol == "tcp":
+				rule_details["tcp_options"] = TcpOptions(
+					destination_port_range=PortRange(min=from_port, max=to_port)
+				)
+			else:
+				rule_details["udp_options"] = UdpOptions(
+					destination_port_range=PortRange(min=from_port, max=to_port)
+				)
 			if is_ingress:
 				rule_details["source"] = "0.0.0.0/0"
 			else:
@@ -1434,6 +1446,34 @@ class Cluster(Document):
 			AddNetworkSecurityGroupSecurityRulesDetails(security_rules=security_rules),
 		)
 		return security_group.id
+
+	def _normalize_firewall_rules(self, rules) -> list[tuple[str | int, str]]:
+		if isinstance(rules, (str, int)):
+			rules = [[rules, "tcp"]]
+
+		normalized_rules: list[tuple[str | int, str]] = []
+		for rule in rules:
+			if isinstance(rule, (str, int)):
+				port, protocol = rule, "tcp"
+			elif isinstance(rule, (list, tuple)) and len(rule) == 2:
+				port, protocol = rule
+			else:
+				frappe.throw(
+					"Each firewall rule must be [port, protocol], for example: [['22', 'tcp'], ['51820', 'udp']]"
+				)
+
+			normalized_rules.append((port, self._normalize_firewall_protocol(protocol)))
+
+		if not normalized_rules:
+			frappe.throw("At least one firewall rule is required")
+
+		return normalized_rules
+
+	def _normalize_firewall_protocol(self, protocol: str) -> str:
+		protocol = (protocol or "tcp").lower().strip()
+		if protocol not in {"tcp", "udp"}:
+			frappe.throw("Firewall protocol must be one of: tcp, udp")
+		return protocol
 
 	def _parse_port_range(self, port: str | int) -> tuple[int, int]:
 		if isinstance(port, int):

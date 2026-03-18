@@ -1131,7 +1131,7 @@ class Bench(Document):
 		frappe.db.commit()
 		if frappe.db.exists("Site", {"bench": self.name, "status": ("!=", "Archived")}):
 			frappe.throw(
-				"There are sites on the server which aren't archived. Please archive all the sites on the Bench / Server.",
+				"Cannot archive bench due to unarchived sites on bench. Please archive all the sites on the bench and retry.",
 				ArchiveBenchError,
 			)
 
