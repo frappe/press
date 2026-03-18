@@ -388,6 +388,7 @@ export default {
 				onSuccess: () => {
 					toast.success('On-Prem Replication Setup Started');
 					this.$resources.onPremFailoverConfig.reload();
+					this.isSetupGuideVisible = false;
 				},
 				onError: () => {
 					toast.error('Failed to start replication setup. Please try again.');

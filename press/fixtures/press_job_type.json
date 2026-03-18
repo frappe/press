@@ -681,10 +681,55 @@
  },
  {
   "callback_max_retry": 1,
+  "callback_script": "if doc.status == \"Success\":\n    failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n    failover.is_db_server_failover_setup = False\n    failover.is_app_server_failover_setup = False\n    failover.enabled = False\n    failover.save()",
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2026-03-18 17:20:29.325620",
+  "name": "Remove On-Prem Failover",
+  "steps": [
+   {
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\nfailover.remove_app_server_from_firewall()",
+    "step_name": "Remove Wireguard Port Access from App Server",
+    "wait_until_true": 0
+   },
+   {
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\nfailover.remove_db_server_from_firewall()",
+    "step_name": "Remove Wireguard Port Access from DB Server",
+    "wait_until_true": 0
+   },
+   {
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\nfailover.stop_replication_from_app_server()",
+    "step_name": "Stop Replication from App Server",
+    "wait_until_true": 0
+   },
+   {
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.app_server, \"play\": \"Stop App Server Replication to On-Premise\", \"creation\": (\">=\", doc.creation)}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
+    "step_name": "Wait for Stop Replication from App Server",
+    "wait_until_true": 1
+   },
+   {
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\nfailover.stop_replication_from_db_server()",
+    "step_name": "Stop Replication from DB Server",
+    "wait_until_true": 0
+   },
+   {
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.database_server, \"play\": \"Stop Database Server Replication to On-Premise\", \"creation\": (\">=\", doc.creation)}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
+    "step_name": "Wait for Stop Replication from DB Server",
+    "wait_until_true": 1
+   },
+   {
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\nfailover.delete_firewall()",
+    "step_name": "Delete Firewall",
+    "wait_until_true": 0
+   }
+  ]
+ },
+ {
+  "callback_max_retry": 1,
   "callback_script": "if doc.status == \"Success\":\n    failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n    failover.is_db_server_failover_setup = True\n    failover.is_app_server_failover_setup = True\n    failover.save()",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2026-03-18 14:16:39.256328",
+  "modified": "2026-03-18 17:17:19.436686",
   "name": "Setup On-Prem Failover",
   "steps": [
    {
@@ -718,7 +763,7 @@
     "wait_until_true": 0
    },
    {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.app_server, \"play\": \"Setup App Server Replication Sync\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.app_server, \"play\": \"Setup App Server Replication Sync\", \"creation\": (\">=\", doc.creation)}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
     "step_name": "Wait For Replication Setup for App Server",
     "wait_until_true": 1
    },
@@ -728,7 +773,7 @@
     "wait_until_true": 0
    },
    {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.database_server, \"play\": \"Setup Database Lsyncd for On-Premise Failover\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.database_server, \"play\": \"Setup Database Lsyncd for On-Premise Failover\", \"creation\": (\">=\", doc.creation)}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
     "step_name": "Wait For Setup Lsyncd For Initial DB Sync",
     "wait_until_true": 1
    },
@@ -743,7 +788,7 @@
     "wait_until_true": 0
    },
    {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.database_server, \"play\": \"Final Database Sync for On-Premise Failover\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.database_server, \"play\": \"Final Database Sync for On-Premise Failover\", \"creation\": (\">=\", doc.creation)}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
     "step_name": "Wait For Rsync New DB Files",
     "wait_until_true": 1
    },
@@ -753,54 +798,9 @@
     "wait_until_true": 0
    },
    {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.database_server, \"play\": \"Setup Replica on On-Premise Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.database_server, \"play\": \"Setup Replica on On-Premise Server\", \"creation\": (\">=\", doc.creation)}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
     "step_name": "Wait For Setup Replica In On-Prem Server",
     "wait_until_true": 1
-   }
-  ]
- },
- {
-  "callback_max_retry": 1,
-  "callback_script": "if doc.status == \"Success\":\n    failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n    failover.is_db_server_failover_setup = False\n    failover.is_app_server_failover_setup = False\n    failover.enabled = False\n    failover.save()",
-  "docstatus": 0,
-  "doctype": "Press Job Type",
-  "modified": "2026-03-16 17:37:59.701206",
-  "name": "Remove On-Prem Failover",
-  "steps": [
-   {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\nfailover.remove_app_server_from_firewall()",
-    "step_name": "Remove Wireguard Port Access from App Server",
-    "wait_until_true": 0
-   },
-   {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\nfailover.remove_db_server_from_firewall()",
-    "step_name": "Remove Wireguard Port Access from DB Server",
-    "wait_until_true": 0
-   },
-   {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\nfailover.stop_replication_from_app_server()",
-    "step_name": "Stop Replication from App Server",
-    "wait_until_true": 0
-   },
-   {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.app_server, \"play\": \"Stop App Server Replication to On-Premise\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
-    "step_name": "Wait for Stop Replication from App Server",
-    "wait_until_true": 1
-   },
-   {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\nfailover.stop_replication_from_db_server()",
-    "step_name": "Stop Replication from DB Server",
-    "wait_until_true": 0
-   },
-   {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.database_server, \"play\": \"Stop Database Server Replication to On-Premise\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
-    "step_name": "Wait for Stop Replication from DB Server",
-    "wait_until_true": 1
-   },
-   {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\nfailover.delete_firewall()",
-    "step_name": "Delete Firewall",
-    "wait_until_true": 0
    }
   ]
  }
