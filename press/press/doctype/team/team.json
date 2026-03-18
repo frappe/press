@@ -17,6 +17,7 @@
   "is_developer",
   "is_saas_user",
   "is_code_server_user",
+  "is_frappe_compute_internal_user",
   "free_account",
   "via_erpnext",
   "enforce_2fa",
@@ -667,6 +668,13 @@
    "fieldname": "relaxed_permissions",
    "fieldtype": "Check",
    "label": "Relaxed Permissions"
+  },
+  {
+   "default": "0",
+   "description": "If checked, the users can access the internal Frappe Compute cluster.",
+   "fieldname": "is_frappe_compute_internal_user",
+   "fieldtype": "Check",
+   "label": "Is Frappe Compute Internal User"
   }
  ],
  "grid_page_length": 50,
@@ -732,8 +740,8 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2026-03-02 12:15:11.542102",
- "modified_by": "hello@ssiyad.com",
+ "modified": "2026-03-18 15:58:34.156826",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
  "naming_rule": "Random",
