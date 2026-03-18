@@ -10,6 +10,8 @@
   "method_name",
   "job",
   "job_type",
+  "server_ping",
+  "agent_ping",
   "column_break_cawj",
   "status",
   "attempt",
@@ -60,13 +62,29 @@
    "fieldtype": "Link",
    "label": "Job Type",
    "options": "DocType"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "agent_ping",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Agent Ping",
+   "options": "Pending\nSuccess\nFailure"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "server_ping",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Server Egress Ping",
+   "options": "Pending\nSuccess\nFailure"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-18 13:49:03.803551",
+ "modified": "2026-03-19 01:28:57.897631",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "IP Removal Log Steps",
