@@ -222,17 +222,34 @@ PersistentKeepalive = 25
 		keys = []
 
 		def _find_root_public_key(server_doc):
+			# If the server already has a root public key, return it directly
 			if server_doc.root_public_key:
 				return server_doc.root_public_key
 
-			# If server was created from vmi, it might not have root public key
-			# so we need to check the vmi
-			if server_doc.virtual_machine:
-				vm: VirtualMachine = frappe.get_doc("Virtual Machine", server_doc.virtual_machine)
-				server = vm.get_server()
-				if server and hasattr(server, "root_public_key") and server.root_public_key:
-					return server.root_public_key
-			return None
+			# If server was created from a VM, it might not have a root key
+			# so check the associated Virtual Machine
+			vm_name = server_doc.virtual_machine
+			if not vm_name:
+				return None
+
+			vm = frappe.get_doc("Virtual Machine", vm_name)
+
+			# If the VM was created from a Virtual Machine Image (VMI),
+			# trace back to the original VM used to create that image
+			vmi_name = vm.virtual_machine_image
+			if not vmi_name:
+				return None
+
+			vm_of_vmi = frappe.get_value("Virtual Machine Image", vmi_name, "virtual_machine")
+			if not vm_of_vmi:
+				return None
+
+			# Fetch the original VM and its server
+			vm = frappe.get_doc("Virtual Machine", vm_of_vmi)
+			server = vm.get_server()
+
+			# Return the root public key if available
+			return getattr(server, "root_public_key", None) if server else None
 
 		if key := _find_root_public_key(self.app_server_doc):
 			keys.append(key)
