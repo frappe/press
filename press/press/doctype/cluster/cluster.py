@@ -796,6 +796,7 @@ class Cluster(Document):
 			],
 		)
 
+	@frappe.whitelist()
 	def create_nat_security_group(self):
 		client = self.get_aws_client()
 		response = client.create_security_group(
