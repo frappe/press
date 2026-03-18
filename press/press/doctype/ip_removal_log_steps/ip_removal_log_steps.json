@@ -64,7 +64,6 @@
    "options": "DocType"
   },
   {
-   "default": "Pending",
    "fieldname": "agent_ping",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -72,7 +71,6 @@
    "options": "Pending\nSuccess\nFailure"
   },
   {
-   "default": "Pending",
    "fieldname": "server_ping",
    "fieldtype": "Select",
    "in_list_view": 1,
