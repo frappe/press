@@ -3373,11 +3373,13 @@ class Server(BaseServer):
 			return
 
 		current_user = frappe.session.user
+		session_data = frappe.session.data
 		try:
 			frappe.set_user("Administrator")
 			frappe.get_doc("On-Prem Failover", existsing_on_prem_failover).setup_failover()
 		finally:
 			frappe.set_user(current_user)
+			frappe.session.data = session_data
 
 	@dashboard_whitelist()
 	def stop_on_prem_server_replication(self):
@@ -3387,11 +3389,13 @@ class Server(BaseServer):
 			return
 
 		current_user = frappe.session.user
+		session_data = frappe.session.data
 		try:
 			frappe.set_user("Administrator")
 			frappe.get_doc("On-Prem Failover", existsing_on_prem_failover).teardown_failover()
 		finally:
 			frappe.set_user(current_user)
+			frappe.session.data = session_data
 
 	@frappe.whitelist()
 	def auto_scale_workers(self, commit=True):
