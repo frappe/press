@@ -425,22 +425,6 @@ class SiteAction(Document):
 		self.current_step.reference_name = self.get_argument("site_migration")
 		return StepStatus.Running
 
-	def pre_validate_schedule_site_update(self):
-		"""Schedule Site Update"""
-		args = self.arguments_dict
-		doc: SiteUpdate = frappe.get_doc(
-			{
-				"doctype": "Site Update",
-				"site": self.site,
-				"backup_type": "Physical" if args.get("physical_backup", False) else "Logical",
-				"skipped_failing_patches": args.get("skip_failing_patches", False),
-				"skipped_backups": args.get("skip_backups", False),
-				"status": "Scheduled" if self.scheduled_time_formatted else "Pending",
-				"scheduled_time": self.scheduled_time_formatted,
-			}
-		).insert()
-		self.set_argument("site_update", doc.name)
-
 	def _archive_newly_created_release_group(self):
 		# If Release Group is 'Awaiting Deploy'
 		from press.press.doctype.release_group.release_group import get_status
@@ -643,6 +627,20 @@ class SiteAction(Document):
 		for step in self.steps:
 			if step.status in ("Pending", "Running"):
 				step.status = "Skipped"
+
+		if self.action_type == "Move Site To Different Region":
+			site_migration_name = self.get_argument("site_migration")
+			if site_migration_name and frappe.db.exists("Site Migration", site_migration_name):
+				status = frappe.db.get_value("Site Migration", site_migration_name, "status", for_update=True)
+				if status != "Scheduled":
+					frappe.throw(
+						"Site Migration is already in progress. Cannot cancel the action.",
+						frappe.ValidationError,
+					)
+					return
+
+				frappe.delete_doc("Site Migration", site_migration_name, ignore_permissions=True)
+
 		self.save(ignore_version=True)
 
 	@frappe.whitelist()
