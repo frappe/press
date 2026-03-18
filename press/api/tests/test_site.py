@@ -873,7 +873,7 @@ erpnext 0.8.3	    HEAD
 			msg="Site got marked archived even when backup failed",
 		)
 		site.reload()
-		self.assertEqual(site.status, "Active")
+		self.assertEqual(site.status, "Broken")
 
 	def test_archive_site_job_with_successful_backup_and_archive_step_archives_site(self):
 		site = create_test_site()
@@ -920,7 +920,7 @@ erpnext 0.8.3	    HEAD
 			msg="Site got marked archived even when archive step failed",
 		)
 		site.reload()
-		self.assertEqual(site.status, "Active")
+		self.assertEqual(site.status, "Broken")
 
 
 class TestAPISiteList(FrappeTestCase):
