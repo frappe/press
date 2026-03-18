@@ -29,7 +29,9 @@
 					variant="subtle"
 					iconLeft="refresh-ccw"
 					@click="refreshDatabaseUsage"
-					:loading="refreshingDatabaseUsage || !isRequiredInformationReceived"
+					:loading="
+						site && (refreshingDatabaseUsage || !isRequiredInformationReceived)
+					"
 					>Refresh</Button
 				>
 			</div>
