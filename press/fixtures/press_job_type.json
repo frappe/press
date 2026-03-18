@@ -684,7 +684,7 @@
   "callback_script": "if doc.status == \"Success\":\n    failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n    failover.is_db_server_failover_setup = True\n    failover.is_app_server_failover_setup = True\n    failover.save()",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2026-03-16 17:29:02.639155",
+  "modified": "2026-03-18 14:16:39.256328",
   "name": "Setup On-Prem Failover",
   "steps": [
    {
@@ -720,7 +720,7 @@
    {
     "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.app_server, \"play\": \"Setup App Server Replication Sync\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
     "step_name": "Wait For Replication Setup for App Server",
-    "wait_until_true": 0
+    "wait_until_true": 1
    },
    {
     "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\nfailover.setup_db_lsync_for_initial_sync()",
@@ -733,7 +733,7 @@
     "wait_until_true": 1
    },
    {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nif frappe.utils.now_datetime() > failover.db_lsyncd_stop_at:\n    result = (True, False)\nelse:\n    result = (False, False)",
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nif failover.db_lsyncd_stop_at and (frappe.utils.now_datetime() > failover.db_lsyncd_stop_at):\n    result = (True, False)\nelse:\n    result = (False, False)",
     "step_name": "Wait For Initial DB Sync To Complete",
     "wait_until_true": 1
    },

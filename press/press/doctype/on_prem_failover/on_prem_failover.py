@@ -504,7 +504,7 @@ PersistentKeepalive = 25
 	def _create_firewall(self):
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 		self.firewall_id = cluster.create_firewall(
-			ports=[self.wireguard_port],
+			rules=[[self.wireguard_port, "udp"]],
 			is_ingress=True,
 			description=f"Firewall for On-Prem Failover {self.name}",
 		)
