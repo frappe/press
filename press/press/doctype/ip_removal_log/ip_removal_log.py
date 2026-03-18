@@ -63,6 +63,8 @@ class IPRemovalLog(Document, StepHandler):
 				"method_name": self.remove_ip_and_add_nat_conf.__name__,
 				"status": "Pending",
 				"server": server,
+				"agent_ping": "Pending",
+				"server_ping": "Pending",
 			}
 			self.append("removal_steps", step)
 
@@ -117,10 +119,9 @@ class IPRemovalLog(Document, StepHandler):
 		self.server_egress_ping(step)
 		self.agent_ping(step)
 
+		step.status = "Failure"
 		if step.agent_ping == "Success" and step.server_ping == "Success":
 			step.status = "Success"
-		else:
-			step.status = "Failure"
 		step.save()
 
 	def agent_ping(self, step):
@@ -129,18 +130,12 @@ class IPRemovalLog(Document, StepHandler):
 		with suppress(Exception):
 			message = agent.ping()
 
-		if message == "pong":
-			step.agent_ping = "Success"
-		else:
-			step.agent_ping = "Failure"
+		step.agent_ping = "Success" if message == "pong" else "Failure"
 		step.save()
 
 	def server_egress_ping(self, step):
 		result = AnsibleAdHoc(sources=f"{step.server},").run("curl ifconfig.me")[0]
-		if result.get("status") == "Success":
-			step.server_ping = "Success"
-		else:
-			step.server_ping = "Failure"
+		step.server_ping = "Success" if result.get("status") == "Success" else "Failure"
 		step.save()
 
 	def handle_step_failure(self):
