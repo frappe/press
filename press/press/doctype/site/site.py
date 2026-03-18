@@ -3787,6 +3787,42 @@ class Site(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	@site_action(["Active"])
+	def refresh_database_usage(self):
+		# Check if schema parser enabled on db server
+		if not frappe.db.get_value("Database Server", self.database_server_name, "enable_schema_size_parser"):
+			self.sync_info()
+			return {
+				"synced": True,
+			}
+
+		# Find "Refresh Database Usage" job in last 30 minutes
+		database_usage_refresh_job = frappe.db.exists(
+			"Agent Job",
+			{
+				"site": self.name,
+				"job_type": "Refresh Database Usage",
+				"status": ("not in", ("Failure", "Delivery Failure")),
+				"creation": (">", frappe.utils.add_to_date(None, minutes=-15)),
+			},
+		)
+		if not database_usage_refresh_job:
+			# If not found, create a new job to refresh database usage
+			agent = self.database_server_agent
+			job = agent.refresh_database_schema_size(self)
+			database_usage_refresh_job = job.name
+
+		job = frappe.db.get_value(
+			"Agent Job", database_usage_refresh_job, ["status", "creation"], as_dict=True
+		)
+		return {
+			"synced": job.status == "Success",
+			"refresh_after_seconds": (
+				frappe.utils.add_to_date(job.creation, minutes=15) - frappe.utils.now_datetime()
+			).total_seconds(),
+		}
+
+	@dashboard_whitelist()
+	@site_action(["Active"])
 	def fetch_certificate(self, domain: str):
 		tls_certificate: TLSCertificate = frappe.get_last_doc("TLS Certificate", {"domain": domain})
 		tls_certificate.obtain_certificate()
@@ -4504,7 +4540,8 @@ def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 			job.site,
 			{"status": updated_status, "archive_failed": updated_status != "Archived"},
 		)
-		update_finished_backup_restoration_test(job.site, updated_status)
+		if job.site:
+			update_finished_backup_restoration_test(job.site, updated_status)
 		if updated_status == "Archived":
 			from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
 
@@ -5270,6 +5307,18 @@ def archive_creation_failed_sites():
 		except Exception:
 			frappe.log_error(title="Creation Failed Site Archive Error")
 			frappe.db.rollback()
+
+
+def process_refresh_database_usage_job_update(job: AgentJob):
+	if job.status != "Success":
+		return
+	if not job.site:
+		return
+
+	site: Site = frappe.get_doc("Site", job.site)
+	with suppress(Exception):
+		# Don't throw error on failure of syncing also
+		site.sync_info()
 
 
 def on_doctype_update():
