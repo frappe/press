@@ -1,182 +1,169 @@
 rules:
-  # - id: possible-mutable-default-args
-  #   pattern-either:
-  #     - pattern: |
-  #         def $FUNC(..., $ARG = $FUNC2(...), ...):
-  #           ...
-  #     - pattern: |
-  #         def $FUNC(..., $ARG = $FUNC2(...).$ATTR, ...):
-  #           ...
-  #     - pattern: |
-  #         def $FUNC(..., $ARG = frappe.$ATTR, ...):
-  #           ...
-
-  #   message: |
-  #     `$ARG` is possibly a mutable default argument. May not work as expected during subsequent calls of `$FUNC` without $ARG.
-  #   languages:
-  #     - python
-  #   severity: WARNING
-  #   metadata:
-  #     category: correctness
-  #     technology:
-  #       - python
-  #     references:
-  #       - https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments
-
-  # - id: frappe-using-db-sql
-  #   pattern-either:
-  #     - pattern: frappe.db.sql(...)
-  #     - pattern: frappe.db.sql_ddl(...)
-  #     - pattern: frappe.db.sql_list(...)
-  #   paths:
-  #     exclude:
-  #       - 'test_*.py'
-  #   message: |
-  #     The PR contains a SQL query that may be re-written with frappe.qb (https://frappeframework.com/docs/user/en/api/query-builder) or the Database API (https://frappeframework.com/docs/user/en/api/database)
-  #   languages: [python]
-  #   severity: WARNING
-
-  # - id: except-with-db-code
-  #   languages:
-  #     - python
-  #   patterns:
-  #     - pattern-inside: |
-  #         try:
-  #           ...
-  #         except ...:
-  #           $ERR_HANDL_BLK
-  #     - pattern-either:
-  #         - pattern: |
-  #             try:
-  #               ...
-  #             except ...:
-  #               ...
-  #               $DOC.save(...)
-  #               ...
-  #               raise
-  #               ...
-  #         - pattern: |
-  #             try:
-  #               ...
-  #             except ...:
-  #               ...
-  #               frappe. ... .set_value(...)
-  #               ...
-  #               raise
-  #               ...
-  #         - pattern: |
-  #             try:
-  #               ...
-  #             except ...:
-  #               ...
-  #               $DOC.db_set(...)
-  #               ...
-  #               raise
-  #               ...
-  #     - pattern-not: |
-  #         try:
-  #           ...
-  #         except ...:
-  #           ...
-  #           $DOC.save(...)
-  #           ...
-  #           frappe.db.commit(...)
-  #           raise
-  #         ...
-  #     - pattern-not: |
-  #         try:
-  #           ...
-  #         except ...:
-  #           ...
-  #           frappe. ... .set_value(...)
-  #           ...
-  #           frappe.db.commit(...)
-  #           raise
-  #           ...
-  #     - pattern-not: |
-  #         try:
-  #           ...
-  #         except ...:
-  #           ...
-  #           $DOC.db_set(...)
-  #           ...
-  #           frappe.db.commit(...)
-  #           ...
-  #           raise
-  #           ...
-  #     - focus-metavariable: $ERR_HANDL_BLK
-
-  #   message: except block has no db commit before raise. The db changes made won't persist assuming innodb tables.
-  #   severity: ERROR
-
-  # - id: retries-without-until
-  #   languages:
-  #     - yaml
-  #   patterns:
-  #     - pattern: |
-  #         ...
-  #         retries: $RETRIES
-  #         delay: $DELAY
-  #         ...
-
-  #     - pattern-not: |
-  #         ...
-  #         retries: $RETRIES
-  #         delay: $DELAY
-  #         until: $UNTIL
-  #         ...
-
-  #   paths:
-  #     include:
-  #       - 'press/playbooks/**/*.yml'
-  #   message: retry block doesn't have until condition. Only works with ansible 2.16 and above.
-  #   severity: ERROR
-  #   metadata:
-  #     category: correctness
-  #     references:
-  #       - https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_loops.html#retrying-a-task-until-a-condition-is-met
-  #       - https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-community-changelogs
-
-  # - id: frappe-exceptions-in-press-job-type
-  #   languages:
-  #     - generic
-  #   patterns:
-  #     - pattern-regex: 'frappe\.exceptions\.'
-  #   paths:
-  #     include:
-  #       - 'press/fixtures/press_job_type.json'
-  #   message: |
-  #     Usage of frappe.exceptions found in press_job_type.json fixture. Frappe exception classes are available directly from the frappe module. Instead of frappe.exceptions.QueryTimeoutError use frappe.QueryTimeoutError. Similarly, use frappe.QueryDeadlockError, frappe.TimestampMismatchError, etc.
-  #   severity: ERROR
-  #   metadata:
-  #     category: correctness
-  #     technology:
-  #       - frappe
-
-  # - id: non-actionable-error-message
-  #   patterns:
-  #     - pattern-either:
-  #         - pattern: frappe.throw("$MSG")
-  #         - pattern: new Error("$MSG")
-  #         - pattern: toast.error("$MSG")
-  #     - metavariable-regex:
-  #         metavariable: $MSG
-  #         # Matches strings that do NOT have a second sentence (no period + space)
-  #         # and do NOT contain common instructional keywords.
-  #         regex: '^(?![^.]*\. [A-Z])(?!.*(try|please|check|contact|ensure|use|click|refer)).*$'
-  #   message: 'This error message is a single sentence and lacks user instructions. High-quality errors should explain what happened and how to fix it.'
-  #   languages: [javascript, typescript, python]
-  #   severity: WARNING
-
-  - id: anchor-with-underline-class
-    patterns:
+  - id: possible-mutable-default-args
+    pattern-either:
       - pattern: |
-          <a ... class="underline" ...>
+          def $FUNC(..., $ARG = $FUNC2(...), ...):
+            ...
+      - pattern: |
+          def $FUNC(..., $ARG = $FUNC2(...).$ATTR, ...):
+            ...
+      - pattern: |
+          def $FUNC(..., $ARG = frappe.$ATTR, ...):
+            ...
+
     message: |
-      Anchor tag uses the 'underline' class. This is not allowed as it would not work as expected.
-    languages: ['generic']
-    severity: ERROR
+      `$ARG` is possibly a mutable default argument. May not work as expected during subsequent calls of `$FUNC` without $ARG.
+    languages:
+      - python
+    severity: WARNING
+    metadata:
+      category: correctness
+      technology:
+        - python
+      references:
+        - https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments
+
+  - id: frappe-using-db-sql
+    pattern-either:
+      - pattern: frappe.db.sql(...)
+      - pattern: frappe.db.sql_ddl(...)
+      - pattern: frappe.db.sql_list(...)
     paths:
       exclude:
-        - "*.yml"
-        - "*.yaml"
+        - 'test_*.py'
+    message: |
+      The PR contains a SQL query that may be re-written with frappe.qb (https://frappeframework.com/docs/user/en/api/query-builder) or the Database API (https://frappeframework.com/docs/user/en/api/database)
+    languages: [python]
+    severity: WARNING
+
+  - id: except-with-db-code
+    languages:
+      - python
+    patterns:
+      - pattern-inside: |
+          try:
+            ...
+          except ...:
+            $ERR_HANDL_BLK
+      - pattern-either:
+          - pattern: |
+              try:
+                ...
+              except ...:
+                ...
+                $DOC.save(...)
+                ...
+                raise
+                ...
+          - pattern: |
+              try:
+                ...
+              except ...:
+                ...
+                frappe. ... .set_value(...)
+                ...
+                raise
+                ...
+          - pattern: |
+              try:
+                ...
+              except ...:
+                ...
+                $DOC.db_set(...)
+                ...
+                raise
+                ...
+      - pattern-not: |
+          try:
+            ...
+          except ...:
+            ...
+            $DOC.save(...)
+            ...
+            frappe.db.commit(...)
+            raise
+          ...
+      - pattern-not: |
+          try:
+            ...
+          except ...:
+            ...
+            frappe. ... .set_value(...)
+            ...
+            frappe.db.commit(...)
+            raise
+            ...
+      - pattern-not: |
+          try:
+            ...
+          except ...:
+            ...
+            $DOC.db_set(...)
+            ...
+            frappe.db.commit(...)
+            ...
+            raise
+            ...
+      - focus-metavariable: $ERR_HANDL_BLK
+
+    message: except block has no db commit before raise. The db changes made won't persist assuming innodb tables.
+    severity: ERROR
+
+  - id: retries-without-until
+    languages:
+      - yaml
+    patterns:
+      - pattern: |
+          ...
+          retries: $RETRIES
+          delay: $DELAY
+          ...
+
+      - pattern-not: |
+          ...
+          retries: $RETRIES
+          delay: $DELAY
+          until: $UNTIL
+          ...
+
+    paths:
+      include:
+        - 'press/playbooks/**/*.yml'
+    message: retry block doesn't have until condition. Only works with ansible 2.16 and above.
+    severity: ERROR
+    metadata:
+      category: correctness
+      references:
+        - https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_loops.html#retrying-a-task-until-a-condition-is-met
+        - https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-community-changelogs
+
+  - id: frappe-exceptions-in-press-job-type
+    languages:
+      - generic
+    patterns:
+      - pattern-regex: 'frappe\.exceptions\.'
+    paths:
+      include:
+        - 'press/fixtures/press_job_type.json'
+    message: |
+      Usage of frappe.exceptions found in press_job_type.json fixture. Frappe exception classes are available directly from the frappe module. Instead of frappe.exceptions.QueryTimeoutError use frappe.QueryTimeoutError. Similarly, use frappe.QueryDeadlockError, frappe.TimestampMismatchError, etc.
+    severity: ERROR
+    metadata:
+      category: correctness
+      technology:
+        - frappe
+
+  - id: non-actionable-error-message
+    patterns:
+      - pattern-either:
+          - pattern: frappe.throw("$MSG")
+          - pattern: new Error("$MSG")
+          - pattern: toast.error("$MSG")
+      - metavariable-regex:
+          metavariable: $MSG
+          # Matches strings that do NOT have a second sentence (no period + space)
+          # and do NOT contain common instructional keywords.
+          regex: '^(?![^.]*\. [A-Z])(?!.*(try|please|check|contact|ensure|use|click|refer)).*$'
+    message: 'This error message is a single sentence and lacks user instructions. High-quality errors should explain what happened and how to fix it.'
+    languages: [javascript, typescript, python]
+    severity: WARNING
