@@ -4475,29 +4475,31 @@ def process_archive_site_job_update(job: "AgentJob"):  # noqa: C901
 	else:
 		updated_status = "Pending"
 
-	if updated_status != site_status:
-		frappe.db.set_value(
-			"Site",
-			job.site,
-			{"status": updated_status, "archive_failed": updated_status != "Archived"},
-		)
-		update_finished_backup_restoration_test(job.site, updated_status)
-		if updated_status == "Archived":
-			from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
+	if updated_status == site_status:
+		return
+	frappe.db.set_value(
+		"Site",
+		job.site,
+		{"status": updated_status, "archive_failed": updated_status != "Archived"},
+	)
+	update_finished_backup_restoration_test(job.site, updated_status)
+	if updated_status != "Archived":
+		return
+	from press.press.doctype.site_backup.site_backup import _create_site_backup_from_agent_job
 
-			_create_site_backup_from_agent_job(job)
+	_create_site_backup_from_agent_job(job)
 
-			site = Site("Site", job.site)
-			site.delete_physical_backups()
-			site.delete_offsite_backups()
-			frappe.db.set_value(
-				"Site Backup",
-				{"site": job.site, "offsite": False},
-				"files_availability",
-				"Unavailable",
-			)
+	site = Site("Site", job.site)
+	site.delete_physical_backups()
+	site.delete_offsite_backups()
+	frappe.db.set_value(
+		"Site Backup",
+		{"site": job.site, "offsite": False},
+		"files_availability",
+		"Unavailable",
+	)
 
-			site_cleanup_after_archive(job.site)
+	site_cleanup_after_archive(job.site)
 
 
 def process_install_app_site_job_update(job):
