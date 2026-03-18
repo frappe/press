@@ -176,3 +176,7 @@ rules:
       Anchor tag uses the 'underline' class. This is not allowed as it would not work as expected.
     languages: ['generic']
     severity: ERROR
+    paths:
+      exclude:
+        - "*.yml"
+        - "*.yaml"
