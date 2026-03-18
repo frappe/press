@@ -1,3 +1,7 @@
+# This workflow,
+# will get triggered once the release PR is merged to master.
+# It will generate a new release using semantic release and push the changes to master. It will also create a new tag for the release.
+
 name: Generate Semantic Release
 on:
   workflow_dispatch:
