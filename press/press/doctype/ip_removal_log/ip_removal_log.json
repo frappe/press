@@ -9,6 +9,7 @@
   "cluster",
   "column_break_nwvz",
   "limit",
+  "status",
   "section_break_ndsx",
   "removal_steps",
   "section_break_oiwu",
@@ -62,12 +63,19 @@
    "fieldtype": "Text",
    "label": "Error/Traceback",
    "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-18 14:06:18.688768",
+ "modified": "2026-03-18 16:55:16.239635",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "IP Removal Log",
