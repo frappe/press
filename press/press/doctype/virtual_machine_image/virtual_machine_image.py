@@ -137,13 +137,10 @@ class VirtualMachineImage(Document):
 			)
 			action = action["action"]
 			self.action_id = action["id"]
-<<<<<<< HEAD
-=======
 
 		elif cluster.cloud_provider == "Frappe Compute":
 			self.image_id = self.client.create_virtual_machine_image(self.instance_id)
 
->>>>>>> dda392f62 (feat(compute): Virtual Machine APIs)
 		self.sync()
 
 	def create_image_from_copy(self):
