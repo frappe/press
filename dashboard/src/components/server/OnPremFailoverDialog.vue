@@ -165,7 +165,7 @@
 								2. Install Necessary Tools
 							</div>
 							<ClickToCopyField
-								text-content="sudo apt update
+								text-content="apt update -y
 apt install -y wireguard resolvconf rsync awk curl wget"
 							/>
 						</div>
@@ -219,7 +219,7 @@ systemctl enable --now wg-quick@wg0"
 										runningPressJobType
 											? `Running ${runningPressJobType}...`
 											: `Start On-Prem
-                                    Replication Setup`
+									Replication Setup`
 									}}
 								</Button>
 							</div>
@@ -228,7 +228,12 @@ systemctl enable --now wg-quick@wg0"
 				</div>
 
 				<!-- Jobs -->
-				<div class="text-base font-medium text-gray-800 mt-4">Recent Jobs</div>
+				<div
+					class="text-base font-medium text-gray-800 mt-4"
+					v-if="jobs && jobs.length"
+				>
+					Recent Jobs
+				</div>
 				<div>
 					<div
 						v-for="job in jobs"
