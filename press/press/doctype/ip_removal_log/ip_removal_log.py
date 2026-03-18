@@ -1,11 +1,15 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+from contextlib import suppress
+
 import frappe
 from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 
+from press.agent import Agent
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.runner import Ansible, StepHandler
 
 
@@ -23,7 +27,7 @@ class IPRemovalLog(Document, StepHandler):
 		cluster: DF.Link
 		error: DF.Text | None
 		limit: DF.Int
-		nat_server: DF.Link | None
+		nat_server: DF.Link
 		removal_steps: DF.Table[IPRemovalLogSteps]
 		server_type: DF.Link
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
@@ -59,6 +63,8 @@ class IPRemovalLog(Document, StepHandler):
 				"method_name": self.remove_ip_and_add_nat_conf.__name__,
 				"status": "Pending",
 				"server": server,
+				"agent_ping": "Pending",
+				"server_ping": "Pending",
 			}
 			self.append("removal_steps", step)
 
@@ -84,7 +90,7 @@ class IPRemovalLog(Document, StepHandler):
 				vm.disassociate_auto_assigned_public_ip()
 			except frappe.ValidationError:
 				step.output = "Failed to disassociate public ip. Possibly failed to get a lock on the VM."
-				step.status = "Failed"
+				step.status = "Failure"
 				step.save()
 				return
 
@@ -108,6 +114,29 @@ class IPRemovalLog(Document, StepHandler):
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			# not raising here - we can sort these out manually, let the rest complete
+			return
+
+		self.server_egress_ping(step)
+		self.agent_ping(step)
+
+		step.status = "Failure"
+		if step.agent_ping == "Success" and step.server_ping == "Success":
+			step.status = "Success"
+		step.save()
+
+	def agent_ping(self, step):
+		message = ""
+		agent = Agent(step.server, self.server_type)
+		with suppress(Exception):
+			message = agent.ping()
+
+		step.agent_ping = "Success" if message == "pong" else "Failure"
+		step.save()
+
+	def server_egress_ping(self, step):
+		result = AnsibleAdHoc(sources=f"{step.server},").run("curl ifconfig.me")[0]
+		step.server_ping = "Success" if result.get("status") == "Success" else "Failure"
+		step.save()
 
 	def handle_step_failure(self):
 		self.error = frappe.get_traceback(with_context=True)
