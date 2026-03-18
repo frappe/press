@@ -1441,6 +1441,45 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			},
 		)
 
+	def refresh_database_schema_size(self, site: Site):
+		if self.server_type != "Database Server":
+			return NotImplementedError("This method is only supported for Database Server")
+
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.server)
+		data_disk_volume = None
+		if database_server.virtual_machine:
+			data_disk_volume = database_server.find_mountpoint_volume(
+				database_server.guess_data_disk_mountpoint()
+			)
+
+		iops = None
+
+		if database_server.provider in ["AWS EC2", "OCI"] and data_disk_volume and data_disk_volume.volume_id:
+			vm: VirtualMachine = frappe.get_doc("Virtual Machine", database_server.virtual_machine)
+			for disk in vm.volumes:
+				if disk.volume_id == data_disk_volume.volume_id:
+					iops = disk.iops
+					break
+
+		if not site.database_name:
+			site.sync_info()
+			site.reload()
+			if not site.database_name:
+				return ValueError("Failed to fetch site's database name. Please try again later.")
+
+		return self.create_agent_job(
+			"Refresh Database Usage",
+			"database/refresh-usage",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"io_ops_limit": max(int(iops * 0.2), 300) if iops else 300,
+				"concurrency": 50,
+				"database": site.database_name,
+			},
+			site=site.name,
+		)
+
 	def update_database_schema_sizes(self):
 		if self.server_type != "Database Server":
 			return NotImplementedError("This method is only supported for Database Server")
@@ -1466,7 +1505,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"database/update-schema-sizes",
 			data={
 				"private_ip": database_server.private_ip,
-				"mariadb_root_password": 	database_server.get_password("mariadb_root_password"),
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
 				"io_ops_limit": max(int(iops * 0.2), 300) if iops else 300,
 				"concurrency": 50,
 			},
