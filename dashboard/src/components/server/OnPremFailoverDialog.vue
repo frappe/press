@@ -141,7 +141,7 @@
 							class="cursor-pointer text-gray-700 font-medium"
 							@click="toggleSetupGuide"
 						>
-							Open Setup Guide
+							On-Prem Server Setup Guide
 						</p>
 					</div>
 					<div
