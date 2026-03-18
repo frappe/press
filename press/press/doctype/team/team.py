@@ -79,6 +79,7 @@ class Team(Document):
 		introduction: DF.SmallText | None
 		is_code_server_user: DF.Check
 		is_developer: DF.Check
+		is_frappe_compute_internal_user: DF.Check
 		is_saas_user: DF.Check
 		is_us_eu: DF.Check
 		last_used_team: DF.Link | None

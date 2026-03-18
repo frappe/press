@@ -141,7 +141,7 @@
 							class="cursor-pointer text-gray-700 font-medium"
 							@click="toggleSetupGuide"
 						>
-							Open Setup Guide
+							On-Prem Server Setup Guide
 						</p>
 					</div>
 					<div
@@ -388,6 +388,7 @@ export default {
 				onSuccess: () => {
 					toast.success('On-Prem Replication Setup Started');
 					this.$resources.onPremFailoverConfig.reload();
+					this.isSetupGuideVisible = false;
 				},
 				onError: () => {
 					toast.error('Failed to start replication setup. Please try again.');
