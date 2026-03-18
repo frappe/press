@@ -427,7 +427,7 @@ export default {
 			return this.onPremFailoverConfig?.status?.app_server || {};
 		},
 		databaseServerStatusFlags() {
-			return this.onPremFailoverConfig?.status?.database_server || {};
+			return this.onPremFailoverConfig?.status?.db_server || {};
 		},
 		wireguardConfig() {
 			return this.onPremFailoverConfig?.wireguard_config || '';
