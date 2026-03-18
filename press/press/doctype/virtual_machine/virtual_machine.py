@@ -40,6 +40,7 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
+from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.utils import log_error
@@ -101,8 +102,8 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "DigitalOcean"]
+		availability_zone: DF.Data | None
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "DigitalOcean", "Frappe Compute"]
 		cluster: DF.Link
 		data_disk_snapshot: DF.Link | None
 		data_disk_snapshot_attached: DF.Check
@@ -124,7 +125,7 @@ class VirtualMachine(Document):
 		public_ip_address: DF.Data | None
 		ram: DF.Int
 		ready_for_conversion: DF.Check
-		region: DF.Link
+		region: DF.Link | None
 		root_disk_size: DF.Int
 		secondary_private_ip: DF.Data | None
 		security_group_id: DF.Data | None
@@ -441,6 +442,8 @@ class VirtualMachine(Document):
 			return self._provision_hetzner()
 		if self.cloud_provider == "DigitalOcean":
 			return self._provision_digital_ocean()
+		if self.cloud_provider == "Frappe Compute":
+			return self._provision_frappe_compute()
 
 		return None
 
@@ -453,6 +456,34 @@ class VirtualMachine(Document):
 			frappe.throw(f"No SSH Key found on Digital Ocean with the name {self.ssh_key}")
 
 		return existing_key[0]["id"]
+
+	def _provision_frappe_compute(self):
+		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
+		ssh_key = frappe.db.get_value("SSH Key", self.ssh_key, "public_key")
+		try:
+			if self.virtual_machine_image:
+				image_id = frappe.db.get_value(
+					"Virtual Machine Image", self.virtual_machine_image, "image_id"
+				)
+			else:
+				image_id = self.machine_image
+			instance_id = self.client().provision_virtual_machine(
+				self.name,
+				self.machine_type,
+				image_id,
+				self.disk_size,
+				ssh_key,
+				self.get_cloud_init(),
+				vpc_id,
+				self.private_ip_address,
+			)
+			self.instance_id = instance_id
+			self.status = "Pending"
+		except Exception:
+			self.status = "Terminated"
+
+		self.save()
+		frappe.db.commit()
 
 	def _provision_digital_ocean(self):
 		"""Provision a Digital Ocean Droplet"""
@@ -803,6 +834,16 @@ class VirtualMachine(Document):
 				return frappe.get_doc(doctype, server)
 		return None
 
+	def get_frappe_compute_status_map(self):
+		return {
+			"Running": "Running",
+			# what better status when the agent is down?
+			"Unavailable": "Pending",
+			"Stopped": "Stopped",
+			"Terminated": "Terminated",
+			"Provisioning": "Pending",
+		}
+
 	def get_digital_ocean_status_map(self):
 		return {
 			"new": "Pending",
@@ -898,6 +939,8 @@ class VirtualMachine(Document):
 			self.client().servers.reboot(self.get_hetzner_server_instance(fetch_data=False))
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "reboot"})
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().reboot_virtual_machine(instance_id=self.instance_id)
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Reboot")
@@ -1073,6 +1116,8 @@ class VirtualMachine(Document):
 			return self._sync_hetzner(*args, **kwargs)
 		if self.cloud_provider == "DigitalOcean":
 			return self._sync_digital_ocean(*args, **kwargs)
+		if self.cloud_provider == "Frappe Compute":
+			return self._sync_frappe_compute(*args, **kwargs)
 		return None
 
 	def _update_volume_info_after_sync(self):
@@ -1175,6 +1220,35 @@ class VirtualMachine(Document):
 		self.termination_protection = server_instance.protection.get("delete", False)
 
 		self._update_volume_info_after_sync()
+
+		self.save()
+		self.update_servers()
+
+	def _sync_frappe_compute(self, instance=None):
+		try:
+			virtual_machine = self.client().sync_virtual_machine(instance_id=self.instance_id)
+		except Exception:
+			self.status = "Terminated"
+			self.save()
+			return
+		virtual_machine = frappe._dict(virtual_machine)
+		self.status = self.get_frappe_compute_status_map()[virtual_machine.status]
+		if self.status not in ["Pending", "Terminated"]:
+			self.ram = virtual_machine.memory * 1024
+			self.vcpu = virtual_machine.number_of_vcpus
+			self.machine_type = virtual_machine.virtual_machine_type
+			self.public_ip_address = virtual_machine.public_ip_address
+
+			self.volumes = []
+
+			for disk in virtual_machine.disks:
+				disk = frappe._dict(disk)
+				self.append(
+					"volumes", {"device": "/dev/" + disk.device, "volume_id": disk.disk, "size": disk.size}
+				)
+
+			self.root_disk_size = self.get_root_volume().size
+			self.disk_size = self.get_data_volume().size
 
 		self.save()
 		self.update_servers()
@@ -1357,6 +1431,7 @@ class VirtualMachine(Document):
 			"OCI": lambda v: ".bootvolume." in v.volume_id,
 			"Hetzner": lambda v: v.device == "/dev/sda",
 			"DigitalOcean": lambda v: v.device == "/dev/sda",
+			"Frappe Compute": lambda v: v.device == "/dev/vda",
 		}
 		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, root_volume_filter)
@@ -1718,6 +1793,8 @@ class VirtualMachine(Document):
 			self.client().servers.power_on(self.get_hetzner_server_instance(fetch_data=False))
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "power_on"})
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().start_virtual_machine(instance_id=self.instance_id)
 
 		# Digital Ocean `start` takes some time therefore this sync is useless for DO.
 		self.sync()
@@ -1732,6 +1809,8 @@ class VirtualMachine(Document):
 			self.client().servers.shutdown(self.get_hetzner_server_instance(fetch_data=False))
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "power_off"})
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().stop_virtual_machine(self.instance_id, force=False)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1772,6 +1851,8 @@ class VirtualMachine(Document):
 				self.delete_volume(volume.volume_id, sync=False)
 
 			self.client().droplets.destroy(self.instance_id)
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().terminate_virtual_machine(instance_id=self.instance_id)
 
 		if server := self.get_server():
 			log_server_activity(self.series, server.name, action="Terminated")
@@ -1902,6 +1983,13 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "DigitalOcean":
 			api_token = cluster.get_password("digital_ocean_api_token")
 			return pydo.Client(token=api_token)
+
+		if self.cloud_provider == "Frappe Compute":
+			return FrappeComputeClient(
+				url=cluster.frappe_compute_base_url,
+				api_key=cluster.frappe_compute_api_key,
+				api_secret=cluster.get_password("frappe_compute_api_secret"),
+			)
 
 		return None
 

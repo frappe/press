@@ -50,6 +50,11 @@
   "column_break_bpar",
   "oci_tenancy",
   "oci_private_key",
+  "frappe_compute_section",
+  "frappe_compute_base_url",
+  "column_break_nwos",
+  "frappe_compute_api_key",
+  "frappe_compute_api_secret",
   "networking_section",
   "cidr_block",
   "subnet_cidr_block",
@@ -88,7 +93,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nDigitalOcean",
+   "options": "AWS EC2\nGeneric\nOCI\nHetzner\nDigitalOcean\nFrappe Compute",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -443,6 +448,31 @@
    "fieldname": "location_section",
    "fieldtype": "Section Break",
    "label": "Location"
+  },
+  {
+   "depends_on": "eval: doc.cloud_provider == \"Frappe Compute\"",
+   "fieldname": "frappe_compute_section",
+   "fieldtype": "Section Break",
+   "label": "Frappe Compute"
+  },
+  {
+   "fieldname": "frappe_compute_base_url",
+   "fieldtype": "Data",
+   "label": "Frappe Compute Base URL"
+  },
+  {
+   "fieldname": "column_break_nwos",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "frappe_compute_api_key",
+   "fieldtype": "Data",
+   "label": "Frappe Compute API Key"
+  },
+  {
+   "fieldname": "frappe_compute_api_secret",
+   "fieldtype": "Password",
+   "label": "Frappe Compute API Secret"
   }
  ],
  "image_field": "image",
@@ -479,7 +509,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2026-02-23 18:19:39.118128",
+ "modified": "2026-03-14 22:47:04.117885",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
