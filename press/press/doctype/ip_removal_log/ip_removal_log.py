@@ -38,7 +38,12 @@ class IPRemovalLog(Document, StepHandler):
 				"Server Type must be either 'Server' or 'Database Server'. Please select one of those."
 			)
 
-		filters = {"cluster": self.cluster, "nat_server": ("is", "not set"), "is_self_hosted": 0}
+		filters = {
+			"status": "Active",
+			"cluster": self.cluster,
+			"nat_server": ("is", "not set"),
+			"is_self_hosted": 0,
+		}
 		if self.server_type == "Server":
 			filters |= {"is_static_ip": 0}
 
