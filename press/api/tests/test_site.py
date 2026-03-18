@@ -852,7 +852,7 @@ erpnext 0.8.3	    HEAD
 	def test_get_upload_link(self):
 		pass
 
-	def test_archive_site_job_with_backup_step_skipped_doesnt_archive_site(self):
+	def test_archive_site_job_with_backup_step_failed_and_archive_skipped_doesnt_archive_site(self):
 		site = create_test_site()
 		with (
 			fake_agent_job(
