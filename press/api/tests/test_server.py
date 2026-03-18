@@ -54,7 +54,7 @@ def create_test_server_plan(
 	return plan
 
 
-def successful_provision(self: VirtualMachine, assign_public_ip: bool = True):
+def successful_provision(self: VirtualMachine):
 	self.status = "Running"
 	self.save()
 
