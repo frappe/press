@@ -27,7 +27,7 @@ class IPRemovalLog(Document, StepHandler):
 		cluster: DF.Link
 		error: DF.Text | None
 		limit: DF.Int
-		nat_server: DF.Link | None
+		nat_server: DF.Link
 		removal_steps: DF.Table[IPRemovalLogSteps]
 		server_type: DF.Link
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
