@@ -31,10 +31,12 @@ from oci.core.models import (
 	PortRange,
 	RouteRule,
 	TcpOptions,
+	UdpOptions,
 	UpdateRouteTableDetails,
 )
 from oci.identity import IdentityClient
 
+from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
@@ -70,7 +72,7 @@ class Cluster(Document):
 		beta: DF.Check
 		by_default_select_unified_mode: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "DigitalOcean"]
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "DigitalOcean", "Frappe Compute"]
 		country: DF.Link | None
 		default_app_server_plan: DF.Link | None
 		default_app_server_plan_type: DF.Link | None
@@ -78,9 +80,13 @@ class Cluster(Document):
 		default_db_server_plan_type: DF.Link | None
 		description: DF.Data | None
 		digital_ocean_api_token: DF.Password | None
+		disable_public_ips_for_servers: DF.Check
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
 		flush_table_execution_hour: DF.Int
+		frappe_compute_api_key: DF.Data | None
+		frappe_compute_api_secret: DF.Password | None
+		frappe_compute_base_url: DF.Data | None
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
 		has_unified_server_support: DF.Check
@@ -88,6 +94,7 @@ class Cluster(Document):
 		hybrid: DF.Check
 		image: DF.AttachImage | None
 		monitoring_password: DF.Password | None
+		nat_security_group_id: DF.Data | None
 		network_acl_id: DF.Data | None
 		oci_private_key: DF.Password | None
 		oci_public_key: DF.Code | None
@@ -149,6 +156,19 @@ class Cluster(Document):
 			self.set_oci_availability_zone()
 		elif self.cloud_provider == "Hetzner":
 			self.validate_hetzner_api_token()
+		elif self.cloud_provider == "Frappe Compute":
+			self.validate_frappe_compute_credentials()
+
+	def validate_frappe_compute_credentials(self):
+		api_secret = self.get_password("frappe_compute_api_secret")
+
+		client = FrappeComputeClient(
+			url=self.frappe_compute_base_url, api_key=self.frappe_compute_api_key, api_secret=api_secret
+		)
+		if not client.validate():
+			frappe.throw(
+				"You do not have Administrator permissions to the Frappe Compute instance. Please refer to your frappe_compute_api_secret and frappe_compute_api_key fields and try to check and ensure that the correct credentials have been used."
+			)
 
 	def validate_hetzner_api_token(self):
 		api_token = self.get_password("hetzner_api_token")
@@ -211,6 +231,18 @@ class Cluster(Document):
 			self.provision_on_hetzner()
 		elif self.cloud_provider == "DigitalOcean":
 			self.provision_on_digital_ocean()
+		elif self.cloud_provider == "Frappe Compute":
+			self.provision_on_frappe_compute()
+
+	def provision_on_frappe_compute(self):
+		api_secret = self.get_password("frappe_compute_api_secret")
+		client = FrappeComputeClient(
+			url=self.frappe_compute_base_url, api_key=self.frappe_compute_api_key, api_secret=api_secret
+		)
+		vpc_id = client.provision_cluster(f"Frappe-Cloud-{self.name}".replace(" ", ""), self.cidr_block)
+		self.vpc_id = vpc_id
+
+		self.save()
 
 	def provision_on_digital_ocean(self):
 		api_token = self.get_password("digital_ocean_api_token")
@@ -704,6 +736,7 @@ class Cluster(Document):
 			],
 		)
 		self.create_proxy_security_group()
+		self.create_nat_security_group()
 
 		try:  # noqa: SIM105
 			# We don't care if the key already exists in this region
@@ -760,6 +793,89 @@ class Cluster(Document):
 					"IpProtocol": "tcp",
 					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "MariaDB from anywhere"}],
 					"ToPort": 3306,
+				},
+			],
+		)
+
+	@frappe.whitelist()
+	def create_nat_security_group(self):
+		client = self.get_aws_client()
+		response = client.create_security_group(
+			GroupName=f"Frappe Cloud - {self.name} - NAT - Security Group",
+			Description="Allow Inbound Traffic on NAT",
+			VpcId=self.vpc_id,
+			TagSpecifications=[
+				{
+					"ResourceType": "security-group",
+					"Tags": [
+						{
+							"Key": "Name",
+							"Value": f"Frappe Cloud - {self.name} - NAT - Security Group",
+						},
+					],
+				},
+			],
+		)
+		self.nat_security_group_id = response["GroupId"]
+
+		client.authorize_security_group_ingress(
+			GroupId=self.nat_security_group_id,
+			IpPermissions=[
+				{
+					"FromPort": 465,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "SMTP from private network"}
+					],
+					"ToPort": 465,
+				},
+				{
+					"FromPort": 587,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "SMTP from private network"}
+					],
+					"ToPort": 587,
+				},
+				{
+					"FromPort": 25,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "SMTP from private network"}
+					],
+					"ToPort": 25,
+				},
+				{
+					"FromPort": 143,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "IMAP from private network"}
+					],
+					"ToPort": 143,
+				},
+				{
+					"FromPort": 993,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "IMAP from private network"}
+					],
+					"ToPort": 993,
+				},
+				{
+					"FromPort": 995,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "POP3 from private network"}
+					],
+					"ToPort": 993,
+				},
+				{
+					"FromPort": 110,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "POP3 from private network"}
+					],
+					"ToPort": 110,
 				},
 			],
 		)
@@ -1173,17 +1289,19 @@ class Cluster(Document):
 
 		return True
 
-	def create_firewall(self, ports, is_ingress=True, description=None):
-		"""Creates a new firewall/security group with the specified ports and direction and returns the ID."""
-		if isinstance(ports, (str, int)):
-			ports = [ports]
+	def create_firewall(self, rules, is_ingress=True, description=None):
+		"""Creates a new firewall/security group and returns the firewall ID.
+
+		rules should be a list of [port, protocol] pairs, e.g. [["22", "tcp"], ["51820", "udp"]].
+		"""
+		normalized_rules = self._normalize_firewall_rules(rules)
 
 		if self.cloud_provider == "AWS EC2":
-			return self.create_aws_firewall(ports, is_ingress, description)
+			return self.create_aws_firewall(normalized_rules, is_ingress, description)
 		if self.cloud_provider == "Hetzner":
-			return self.create_hetzner_firewall(ports, is_ingress, description)
+			return self.create_hetzner_firewall(normalized_rules, is_ingress, description)
 		if self.cloud_provider == "OCI":
-			return self.create_oci_firewall(ports, is_ingress, description)
+			return self.create_oci_firewall(normalized_rules, is_ingress, description)
 
 		return None
 
@@ -1236,7 +1354,7 @@ class Cluster(Document):
 			if "not found" not in str(e).lower():
 				raise
 
-	def create_aws_firewall(self, ports: list, is_ingress: bool, description: str):
+	def create_aws_firewall(self, rules: list[tuple[str | int, str]], is_ingress: bool, description: str):
 		client = self.get_aws_client()
 		sg_name = f"Frappe Cloud - {self.name} - Custom - {frappe.generate_hash(length=4)}"
 		response = client.create_security_group(
@@ -1247,13 +1365,13 @@ class Cluster(Document):
 		sg_id = response["GroupId"]
 
 		ip_permissions = []
-		for port in ports:
+		for port, protocol in rules:
 			from_port, to_port = self._parse_port_range(port)
 			ip_permissions.append(
 				{
 					"FromPort": from_port,
 					"ToPort": to_port,
-					"IpProtocol": "tcp",
+					"IpProtocol": protocol,
 					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": description or ""}],
 				}
 			)
@@ -1265,29 +1383,29 @@ class Cluster(Document):
 
 		return sg_id
 
-	def create_hetzner_firewall(self, ports, is_ingress, description):
+	def create_hetzner_firewall(self, rules, is_ingress, description):
 		client = self.get_hetzner_client()
-		rules = []
-		for port in ports:
+		firewall_rules = []
+		for port, protocol in rules:
 			rule_params = {
 				"description": description,
 				"direction": "in" if is_ingress else "out",
-				"protocol": "tcp",
+				"protocol": protocol,
 				"port": str(port),
 			}
 			if is_ingress:
 				rule_params["source_ips"] = ["0.0.0.0/0"]
 			else:
 				rule_params["destination_ips"] = ["0.0.0.0/0"]
-			rules.append(HetznerFirewallRule(**rule_params))
+			firewall_rules.append(HetznerFirewallRule(**rule_params))
 
 		firewall_response = client.firewalls.create(
 			name=f"Frappe Cloud - {self.name} - Custom - {frappe.generate_hash(length=4)}",
-			rules=rules,
+			rules=firewall_rules,
 		)
 		return firewall_response.firewall.id
 
-	def create_oci_firewall(self, ports, direction, description):
+	def create_oci_firewall(self, rules, is_ingress, description):
 		vcn_client = VirtualNetworkClient(self.get_oci_config())
 		security_group = vcn_client.create_network_security_group(
 			CreateNetworkSecurityGroupDetails(
@@ -1298,15 +1416,24 @@ class Cluster(Document):
 		).data
 
 		security_rules = []
-		for port in ports:
+		if isinstance(is_ingress, str):
+			is_ingress = is_ingress.lower() in ["in", "ingress"]
+		for port, protocol in rules:
 			from_port, to_port = self._parse_port_range(port)
-			is_ingress = direction.lower() in ["in", "ingress"]
+			oci_protocol = "6" if protocol == "tcp" else "17"
 			rule_details = {
 				"description": description,
 				"direction": "INGRESS" if is_ingress else "EGRESS",
-				"protocol": "6",  # TCP
-				"tcp_options": TcpOptions(destination_port_range=PortRange(min=from_port, max=to_port)),
+				"protocol": oci_protocol,
 			}
+			if protocol == "tcp":
+				rule_details["tcp_options"] = TcpOptions(
+					destination_port_range=PortRange(min=from_port, max=to_port)
+				)
+			else:
+				rule_details["udp_options"] = UdpOptions(
+					destination_port_range=PortRange(min=from_port, max=to_port)
+				)
 			if is_ingress:
 				rule_details["source"] = "0.0.0.0/0"
 			else:
@@ -1319,6 +1446,34 @@ class Cluster(Document):
 			AddNetworkSecurityGroupSecurityRulesDetails(security_rules=security_rules),
 		)
 		return security_group.id
+
+	def _normalize_firewall_rules(self, rules) -> list[tuple[str | int, str]]:
+		if isinstance(rules, (str, int)):
+			rules = [[rules, "tcp"]]
+
+		normalized_rules: list[tuple[str | int, str]] = []
+		for rule in rules:
+			if isinstance(rule, (str, int)):
+				port, protocol = rule, "tcp"
+			elif isinstance(rule, (list, tuple)) and len(rule) == 2:
+				port, protocol = rule
+			else:
+				frappe.throw(
+					"Each firewall rule must be [port, protocol], for example: [['22', 'tcp'], ['51820', 'udp']]"
+				)
+
+			normalized_rules.append((port, self._normalize_firewall_protocol(protocol)))
+
+		if not normalized_rules:
+			frappe.throw("At least one firewall rule is required")
+
+		return normalized_rules
+
+	def _normalize_firewall_protocol(self, protocol: str) -> str:
+		protocol = (protocol or "tcp").lower().strip()
+		if protocol not in {"tcp", "udp"}:
+			frappe.throw("Firewall protocol must be one of: tcp, udp")
+		return protocol
 
 	def _parse_port_range(self, port: str | int) -> tuple[int, int]:
 		if isinstance(port, int):
@@ -1370,6 +1525,8 @@ class Cluster(Document):
 			return "VM.Standard.E4.Flex"
 		if self.cloud_provider == "Hetzner":
 			return "cpx21"
+		if self.cloud_provider == "Frappe Compute":
+			return "CPX22"
 		return None
 
 	def get_or_create_basic_plan(self, server_type) -> ServerPlan:
@@ -1424,10 +1581,13 @@ class Cluster(Document):
 		server.new_worker_allocation = True
 		server.database_server = database_server.name
 		server.proxy_server = self.proxy_server
+		self._add_nat_server_if_supported(server)
 
 		# Database configurations
 		database_server.auto_purge_binlog_based_on_size = True
 		database_server.binlog_max_disk_usage_percent = 75 if auto_increase_storage else 20
+		if getattr(server, "nat_server", None):
+			database_server.nat_server = server.nat_server
 
 		server.save()  # Creating server before database server to use the preset agent password
 		database_server.save()
@@ -1524,6 +1684,7 @@ class Cluster(Document):
 					server.auto_purge_binlog_based_on_size = True
 					server.binlog_max_disk_usage_percent = 20
 
+				self._add_nat_server_if_supported(server)
 			case "Server":
 				server = vm.create_server(is_secondary=is_secondary, primary=primary)
 				server.title = f"{title} - Application" if not is_secondary else title
@@ -1541,6 +1702,8 @@ class Cluster(Document):
 				server.new_worker_allocation = True
 				server.auto_increase_storage = auto_increase_storage
 				server.is_for_recovery = is_for_recovery
+
+				self._add_nat_server_if_supported(server)
 			case "Proxy Server":
 				server = vm.create_proxy_server()
 				server.title = f"{title} - Proxy"
@@ -1636,3 +1799,16 @@ class Cluster(Document):
 
 			return best_plan
 		return None
+
+	def _add_nat_server_if_supported(self, server):
+		if self.disable_public_ips_for_servers and self.cloud_provider == "AWS EC2":
+			nat_server = frappe.db.get_value(
+				"NAT Server",
+				{"status": "Active", "cluster": self.name, "secondary_private_ip": ("is", "set")},
+				"name",
+			)
+			if not nat_server:
+				nat_server = frappe.db.get_value(
+					"NAT Server", {"status": "Active", "cluster": self.name}, "name"
+				)
+			server.nat_server = nat_server

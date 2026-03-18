@@ -125,6 +125,10 @@ class OnPremFailover(Document):
 		if play.status == "Success":
 			self.is_app_server_wireguard_setup = True
 			self.save()
+		else:
+			frappe.throw(
+				"Failed to setup WireGuard on the App Server. Please check the Ansible playbook execution logs for more details."
+			)
 
 	def setup_wireguard_on_database_server(self):
 		peers = [
@@ -155,6 +159,10 @@ class OnPremFailover(Document):
 		if play.status == "Success":
 			self.is_db_server_wireguard_setup = True
 			self.save()
+		else:
+			frappe.throw(
+				"Failed to setup WireGuard on the Database Server. Please check the Ansible playbook execution logs for more details."
+			)
 
 	@frappe.whitelist()
 	def view_on_prem_server_wireguard_config(self):
@@ -211,12 +219,43 @@ PersistentKeepalive = 25
 	@frappe.whitelist()
 	def generate_ssh_authorized_keys_to_add(self):
 		# Add authorized_keys to on-premise server
-		keys = [
-			self.app_server_doc.root_public_key,
-			self.app_server_doc.frappe_public_key,
-			self.database_server_doc.root_public_key,
-			self.database_server_doc.frappe_public_key,
-		]
+		keys = []
+
+		def _find_root_public_key(server_doc):
+			# If the server already has a root public key, return it directly
+			if server_doc.root_public_key:
+				return server_doc.root_public_key
+
+			# If server was created from a VM, it might not have a root key
+			# so check the associated Virtual Machine
+			vm_name = server_doc.virtual_machine
+			if not vm_name:
+				return None
+
+			vm = frappe.get_doc("Virtual Machine", vm_name)
+
+			# If the VM was created from a Virtual Machine Image (VMI),
+			# trace back to the original VM used to create that image
+			vmi_name = vm.virtual_machine_image
+			if not vmi_name:
+				return None
+
+			vm_of_vmi = frappe.get_value("Virtual Machine Image", vmi_name, "virtual_machine")
+			if not vm_of_vmi:
+				return None
+
+			# Fetch the original VM and its server
+			vm = frappe.get_doc("Virtual Machine", vm_of_vmi)
+			server = vm.get_server()
+
+			# Return the root public key if available
+			return getattr(server, "root_public_key", None) if server else None
+
+		if key := _find_root_public_key(self.app_server_doc):
+			keys.append(key)
+
+		if key := _find_root_public_key(self.database_server_doc):
+			keys.append(key)
 
 		valid_keys = [key + " fc-dr" for key in keys if key]
 		return "\n".join(valid_keys)
@@ -275,10 +314,10 @@ PersistentKeepalive = 25
 					sort_keys=True,
 				),
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	@frappe.whitelist()
-	def disable_failover(self):
+	def teardown_failover(self):
 		server = self.app_server_doc
 		frappe.get_doc(
 			{
@@ -295,7 +334,7 @@ PersistentKeepalive = 25
 					sort_keys=True,
 				),
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def setup_db_lsync_for_initial_sync(self):
@@ -335,7 +374,10 @@ PersistentKeepalive = 25
 				self.db_lsyncd_stop_at = add_to_date(self.db_lsyncd_started_on, hours=1)
 
 			self.save()
-			frappe.db.commit()
+		else:
+			frappe.throw(
+				"Failed to setup lsyncd for initial database synchronization. Please check the Ansible playbook execution logs for more details."
+			)
 
 	def setup_db_rsync_for_final_sync(self):
 		frappe.enqueue_doc(
@@ -462,7 +504,7 @@ PersistentKeepalive = 25
 	def _create_firewall(self):
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 		self.firewall_id = cluster.create_firewall(
-			ports=[self.wireguard_port],
+			rules=[[self.wireguard_port, "udp"]],
 			is_ingress=True,
 			description=f"Firewall for On-Prem Failover {self.name}",
 		)

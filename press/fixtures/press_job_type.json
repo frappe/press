@@ -534,11 +534,11 @@
   "callback_script": "server = frappe.get_doc(doc.server_type, doc.server)\n\nif doc.server_type in [\"Server\", \"Database Server\"] and server.is_for_recovery:\n    filter_field = \"app_server\" if doc.server_type == \"Server\" else \"database_server\"\n    recovery_record_name = frappe.db.get_value(\"Server Snapshot Recovery\", {filter_field: doc.server}, \"name\")\n    if recovery_record_name:\n        recovery_record = frappe.get_doc(\"Server Snapshot Recovery\", recovery_record_name, for_update=True)\n    \n        if doc.status == \"Success\":\n            if doc.server_type == \"Server\":\n                recovery_record.is_app_server_ready = True\n            else:\n                recovery_record.is_database_server_ready = True\n            recovery_record.save()\n        else:\n            recovery_record.mark_server_provisioning_as_failed()\n            \nif doc.server_type in [\"Server\", \"Database Server\"] and \"logical_replication_backup\" in arguments:\n    if doc.status == \"Success\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).next()\n    if doc.status == \"Failure\":\n        frappe.get_doc(\"Logical Replication Backup\", arguments.get(\"logical_replication_backup\")).fail()\n        \nif doc.server_type in [\"Server\", \"Database Server\"] and doc.status == \"Success\":\n    server.is_provisioning_press_job_completed = 1\n    server.save(ignore_permissions=True)\n    \n    if server.is_unified_server:\n        frappe.db.set_value(\"Database Server\", server.database_server, \"is_provisioning_press_job_completed\", 1, update_modified =False)",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2026-02-27 11:03:50.212370",
+  "modified": "2026-03-18 12:32:20.242687",
   "name": "Create Server",
   "steps": [
    {
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.provision()\n",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.assign_public_ip = bool(\n    frappe.db.get_value(\"Cluster\", machine.cluster, \"disable_public_ips_for_servers\") \n    if machine.series in (\"f\", \"m\") \n    else True\n)\nmachine.provision()\n",
     "step_name": "Create Server",
     "wait_until_true": 0
    },
@@ -684,7 +684,7 @@
   "callback_script": "if doc.status == \"Success\":\n    failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n    failover.is_db_server_failover_setup = True\n    failover.is_app_server_failover_setup = True\n    failover.save()",
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2026-03-16 17:29:02.639155",
+  "modified": "2026-03-18 14:16:39.256328",
   "name": "Setup On-Prem Failover",
   "steps": [
    {
@@ -720,7 +720,7 @@
    {
     "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": failover.app_server, \"play\": \"Setup App Server Replication Sync\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
     "step_name": "Wait For Replication Setup for App Server",
-    "wait_until_true": 0
+    "wait_until_true": 1
    },
    {
     "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\nfailover.setup_db_lsync_for_initial_sync()",
@@ -733,7 +733,7 @@
     "wait_until_true": 1
    },
    {
-    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nif frappe.utils.now_datetime() > failover.db_lsyncd_stop_at:\n    result = (True, False)\nelse:\n    result = (False, False)",
+    "script": "failover = frappe.get_doc(\"On-Prem Failover\", arguments.failover)\n\nif failover.db_lsyncd_stop_at and (frappe.utils.now_datetime() > failover.db_lsyncd_stop_at):\n    result = (True, False)\nelse:\n    result = (False, False)",
     "step_name": "Wait For Initial DB Sync To Complete",
     "wait_until_true": 1
    },

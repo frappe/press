@@ -33,6 +33,7 @@
   "stop_deployments",
   "is_for_recovery",
   "is_monitoring_disabled",
+  "enable_on_prem_failover_support",
   "billing_section",
   "team",
   "plan",
@@ -44,6 +45,7 @@
   "ip",
   "is_static_ip",
   "ipv6",
+  "nat_server",
   "column_break_3",
   "private_ip",
   "private_mac_address",
@@ -286,7 +288,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean\nFrappe Compute",
    "set_only_once": 1
   },
   {
@@ -334,7 +336,7 @@
    "label": "Staging"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\", \"DigitalOcean\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\", \"DigitalOcean\", \"Frappe Compute\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -741,6 +743,18 @@
    "fieldname": "is_provisioning_press_job_completed",
    "fieldtype": "Check",
    "label": "Is Provisioning Job Completed"
+  },
+  {
+   "fieldname": "nat_server",
+   "fieldtype": "Link",
+   "label": "NAT Server",
+   "options": "NAT Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_on_prem_failover_support",
+   "fieldtype": "Check",
+   "label": "Enable On-Prem Failover Support"
   }
  ],
  "links": [
@@ -753,7 +767,7 @@
    "link_fieldname": "app_server"
   }
  ],
- "modified": "2026-03-17 10:56:33.843136",
+ "modified": "2026-03-18 02:33:48.730257",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

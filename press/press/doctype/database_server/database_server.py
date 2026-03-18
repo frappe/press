@@ -103,7 +103,9 @@ class DatabaseServer(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
+		provider: DF.Literal[
+			"Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean", "Frappe Compute"
+		]
 		public: DF.Check
 		ram: DF.Float
 		root_public_key: DF.Code | None
@@ -766,13 +768,6 @@ class DatabaseServer(BaseServer):
 
 	def _setup_server(self):
 		config = self._get_config()
-		nat_server_private_ips = (
-			frappe.db.get_value(
-				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
-			)
-			if self.nat_server
-			else None
-		)
 
 		try:
 			ansible = Ansible(
@@ -799,8 +794,7 @@ class DatabaseServer(BaseServer):
 					"certificate_full_chain": config.certificate.full_chain,
 					"certificate_intermediate_chain": config.certificate.intermediate_chain,
 					"mariadb_depends_on_mounts": self.mariadb_depends_on_mounts,
-					"nat_gateway_ip": nat_server_private_ips
-					and (nat_server_private_ips.secondary_private_ip or nat_server_private_ips.private_ip),
+					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					**self.get_mount_variables(),
 				},
 			)
