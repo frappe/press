@@ -951,10 +951,7 @@
 		</p>
 		<p>
 			Or you can
-			<a
-				class="underline"
-				href="https://frappecloud.com/support"
-				target="_blank"
+			<a href="https://frappecloud.com/support" target="_blank"
 				>contact support</a
 			>
 			to enable it.

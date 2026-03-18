@@ -51,12 +51,7 @@
 					<div class="space-y-1 text-base">
 						<p>
 							Use wisely and only for
-							<a
-								href="/docs/benches/debugging"
-								class="underline"
-								target="_blank"
-								>debugging</a
-							>
+							<a href="/docs/benches/debugging" target="_blank">debugging</a>
 							purposes.
 						</p>
 						<p>
@@ -71,7 +66,6 @@
 					It looks like you haven't added your SSH public key. Go to
 					<router-link
 						:to="{ name: 'SettingsDeveloper' }"
-						class="underline"
 						@click="show = false"
 					>
 						Developer Settings</router-link
@@ -89,7 +83,7 @@
 				</p>
 				<p>
 					Please refer to the
-					<a href="/docs/benches/ssh" class="underline" target="_blank"
+					<a href="/docs/benches/ssh" target="_blank"
 						>SSH Access documentation</a
 					>
 					for more details.

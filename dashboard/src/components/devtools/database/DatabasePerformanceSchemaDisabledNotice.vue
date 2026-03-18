@@ -5,9 +5,7 @@
 		</p>
 		<p class="text-base text-gray-700">
 			Please reach out to
-			<a href="https://support.frappe.io/" target="_blank" class="underline"
-				>support</a
-			>
+			<a href="https://support.frappe.io/" target="_blank">support</a>
 			to enable it
 		</p>
 	</div>

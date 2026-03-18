@@ -167,10 +167,7 @@
 				<p class="text-base leading-6 text-gray-700">
 					By clicking "I Agree", you confirm that you have read and accepted the
 					terms and conditions of the
-					<a
-						href="https://frappe.io/partners/terms"
-						target="_blank"
-						class="underline"
+					<a href="https://frappe.io/partners/terms" target="_blank"
 						><strong>Frappe Partnership Agreement</strong></a
 					>.
 				</p>

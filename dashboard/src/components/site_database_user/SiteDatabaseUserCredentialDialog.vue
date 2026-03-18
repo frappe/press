@@ -79,7 +79,6 @@
 						<a
 							href="https://docs.frappe.io/cloud/database-users-and-permission-manager#faq"
 							target="_blank"
-							class="underline"
 							>documentation</a
 						>
 						to get guides on troubleshooting.

@@ -23,9 +23,7 @@
 							<p>It looks like something went wrong!</p>
 							<p class="">
 								Contact
-								<a href="mailto:support@frappe.io" class="underline">
-									support@frappe.io
-								</a>
+								<a href="mailto:support@frappe.io"> support@frappe.io </a>
 								to resolve the issue
 							</p>
 						</div>

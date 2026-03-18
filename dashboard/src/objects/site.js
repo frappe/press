@@ -1069,7 +1069,7 @@ export default {
 
 						return getUpsellBanner(
 							site,
-							'Your site is currently on a shared bench. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.',
+							'Your site is currently on a shared bench. Upgrade plan for offsite backups and <a href="https://frappecloud.com/shared-hosting#benches" target="_blank">more</a>.',
 						);
 					},
 				},
@@ -1544,7 +1544,9 @@ export default {
 								onClick() {
 									let ConfigureAutoUpdateDialog = defineAsyncComponent(
 										() =>
-											import('../components/site/ConfigureAutoUpdateDialog.vue'),
+											import(
+												'../components/site/ConfigureAutoUpdateDialog.vue'
+											),
 									);
 
 									renderDialog(
@@ -1558,7 +1560,7 @@ export default {
 					},
 					banner({ documentResource: site }) {
 						const bannerTitle =
-							'Your site is currently on a shared bench. Upgrade to a private bench to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+							'Your site is currently on a shared bench. Upgrade to a private bench to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" target="_blank">more</a>.';
 
 						return getUpsellBanner(site, bannerTitle);
 					},

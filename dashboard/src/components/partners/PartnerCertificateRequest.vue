@@ -40,9 +40,7 @@
 				<div v-else>
 					<p class="text-p-base">
 						You have used both of your free certifications. Please navigate to
-						<a :href="batch_link" target="_blank" class="underline">
-							this batch
-						</a>
+						<a :href="batch_link" target="_blank"> this batch </a>
 						and complete the billing process to enroll in the paid batch.
 					</p>
 				</div>

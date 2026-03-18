@@ -226,7 +226,6 @@
 							<a
 								href="https://docs.frappe.io/cloud/site/site-migrations/move-site-to-different-region"
 								target="_blank"
-								class="underline"
 								>this documentation</a
 							>
 							to add it.

@@ -37,7 +37,6 @@
 								<a
 									href="https://docs.frappe.io/cloud/benches/ssh"
 									target="_blank"
-									class="underline"
 									>ssh</a
 								>.
 							</div>

@@ -123,7 +123,6 @@
 						<a
 							href="https://docs.frappe.io/cloud/benches#pricing"
 							target="_blank"
-							class="underline"
 							>Why?</a
 						>
 					</div>

@@ -43,7 +43,6 @@
 						<secret>Note:</secret> Secret is optional. Check
 						<a
 							href="https://docs.frappe.io/cloud/webhook-introduction"
-							class="underline"
 							target="_blank"
 							>the documentation</a
 						>
