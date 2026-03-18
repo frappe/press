@@ -37,3 +37,5 @@ ignore = [
 
 [lint.mccabe]
 max-complexity = 8
+[lint.per-file-ignores]
+"**/test_*.py" = ["C901"]  # ignore too complex in tests
