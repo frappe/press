@@ -168,10 +168,10 @@ rules:
     languages: [javascript, typescript, python]
     severity: WARNING
 
-  - id: anchor-with-underline-clas
+  - id: anchor-with-underline-class
     patterns:
       - pattern: |
-          <a class="underline" ...>
+          <a ... class="underline" ...>
     message: |
       Anchor tag uses the 'underline' class. This is not allowed as it would not work as expected.
     languages: ['generic']
