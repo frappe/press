@@ -598,8 +598,8 @@ def prometheus_query(
 	except requests.exceptions.RequestException:
 		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
 
-	datasets = []
-	labels = []
+	datasets: list[dict] = []
+	labels: list[float] = []
 
 	if not response["data"]["result"]:
 		return {"datasets": datasets, "labels": labels}
@@ -616,12 +616,12 @@ def prometheus_query(
 			dataset["values"][labels.index(label)] = flt(value, 2)
 		datasets.append(dataset)
 
-	labels = [
+	converted_labels: list[datetime] = [
 		convert_utc_to_timezone(datetime.fromtimestamp(label, tz=tz.utc).replace(tzinfo=None), timezone)
 		for label in labels
 	]
 
-	return {"datasets": datasets, "labels": labels}
+	return {"datasets": datasets, "labels": converted_labels}
 
 
 @frappe.whitelist()

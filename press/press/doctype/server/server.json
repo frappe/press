@@ -45,6 +45,7 @@
   "ip",
   "is_static_ip",
   "ipv6",
+  "nat_server",
   "column_break_3",
   "private_ip",
   "private_mac_address",
@@ -744,6 +745,12 @@
    "label": "Is Provisioning Job Completed"
   },
   {
+   "fieldname": "nat_server",
+   "fieldtype": "Link",
+   "label": "NAT Server",
+   "options": "NAT Server"
+  },
+  {
    "default": "0",
    "fieldname": "enable_on_prem_failover_support",
    "fieldtype": "Check",
@@ -760,7 +767,7 @@
    "link_fieldname": "app_server"
   }
  ],
- "modified": "2026-03-17 17:02:43.407765",
+ "modified": "2026-03-18 02:33:48.730257",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

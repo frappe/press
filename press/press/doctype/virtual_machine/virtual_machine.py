@@ -102,6 +102,7 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
+		assign_public_ip: DF.Check
 		availability_zone: DF.Data | None
 		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "DigitalOcean", "Frappe Compute"]
 		cluster: DF.Link
@@ -433,9 +434,9 @@ class VirtualMachine(Document):
 		return
 
 	@frappe.whitelist()
-	def provision(self, assign_public_ip=True):
+	def provision(self):
 		if self.cloud_provider == "AWS EC2":
-			return self._provision_aws(assign_public_ip)
+			return self._provision_aws()
 		if self.cloud_provider == "OCI":
 			return self._provision_oci()
 		if self.cloud_provider == "Hetzner":
@@ -580,7 +581,7 @@ class VirtualMachine(Document):
 		# Enqueue enable protection separately to avoid any issue
 		frappe.enqueue_doc(self.doctype, self.name, "enable_termination_protection", sync=False)
 
-	def _provision_aws(self, assign_public_ip=True):  # noqa: C901
+	def _provision_aws(self):  # noqa: C901
 		additional_volumes = []
 		if self.virtual_machine_image:
 			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
@@ -656,7 +657,7 @@ class VirtualMachine(Document):
 			},
 			"NetworkInterfaces": [
 				{
-					"AssociatePublicIpAddress": bool(assign_public_ip),
+					"AssociatePublicIpAddress": bool(self.assign_public_ip),
 					"DeleteOnTermination": True,
 					"DeviceIndex": 0,
 					"PrivateIpAddress": self.private_ip_address,
@@ -683,7 +684,6 @@ class VirtualMachine(Document):
 		self.save()
 
 		if self.series == "nat":
-			# Disable Source/Dest Check for NAT instances
 			self.disable_source_dest_check()
 
 	def _provision_oci(self):
@@ -787,6 +787,7 @@ class VirtualMachine(Document):
 				is_path=True,
 			),
 			"is_unified_server": getattr(server, "is_unified_server", False),
+			"nat_gateway_ip": server.get_nat_gateway_ip() if not self.assign_public_ip else None,
 		}
 		if server.doctype == "Database Server" or getattr(server, "is_unified_server", False):
 			memory = frappe.db.get_value("Server Plan", server.plan, "memory") or 1024
@@ -2234,6 +2235,8 @@ class VirtualMachine(Document):
 		groups = [self.security_group_id]
 		if self.series == "n":
 			groups.append(frappe.db.get_value("Cluster", self.cluster, "proxy_security_group_id"))
+		elif self.series == "nat":
+			groups.append(frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id"))
 		return groups
 
 	@frappe.whitelist()
