@@ -639,7 +639,7 @@ def options():
 		)
 	) == "System User"
 
-	if is_system_user:
+	if is_system_user or get_current_team(get_doc=True).is_frappe_compute_internal_user:
 		regions_filter.pop("public", None)
 
 	regions = frappe.get_all(
