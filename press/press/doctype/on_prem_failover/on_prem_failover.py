@@ -219,12 +219,26 @@ PersistentKeepalive = 25
 	@frappe.whitelist()
 	def generate_ssh_authorized_keys_to_add(self):
 		# Add authorized_keys to on-premise server
-		keys = [
-			self.app_server_doc.root_public_key,
-			self.app_server_doc.frappe_public_key,
-			self.database_server_doc.root_public_key,
-			self.database_server_doc.frappe_public_key,
-		]
+		keys = []
+
+		def _find_root_public_key(server_doc):
+			if server_doc.root_public_key:
+				return server_doc.root_public_key
+
+			# If server was created from vmi, it might not have root public key
+			# so we need to check the vmi
+			if server_doc.virtual_machine:
+				vm: VirtualMachine = frappe.get_doc("Virtual Machine", server_doc.virtual_machine)
+				server = vm.get_server()
+				if server and hasattr(server, "root_public_key") and server.root_public_key:
+					return server.root_public_key
+			return None
+
+		if key := _find_root_public_key(self.app_server_doc):
+			keys.append(key)
+
+		if key := _find_root_public_key(self.database_server_doc):
+			keys.append(key)
 
 		valid_keys = [key + " fc-dr" for key in keys if key]
 		return "\n".join(valid_keys)
