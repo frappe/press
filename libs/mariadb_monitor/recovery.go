@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MySQLCredentials) bool {
+func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MySQLCredentials, frozen *frozenState) bool {
 	slog.Error("recovery triggered",
 		"triggers", triggers,
 		"mariadb_reachable", dbHealth.Reachable,
@@ -20,7 +20,14 @@ func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MyS
 		"details", dbHealth.Details,
 	)
 
-	isFrozen, reason := checkMachineFrozen()
+	isFrozen := false
+	reason := ""
+	if frozen != nil {
+		isFrozen = frozen.frozen
+		reason = frozen.reason
+	} else {
+		isFrozen, reason = checkMachineFrozen()
+	}
 
 	if isFrozen {
 		slog.Warn("machine appears frozen, skipping graceful stop and killing mariadb directly", "reason", reason)
