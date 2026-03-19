@@ -172,9 +172,11 @@ func LoadMySQLCredentials() (MySQLCredentials, error) {
 		case "host":
 			creds.Host = value
 		case "port":
-			if p, err := strconv.Atoi(value); err == nil {
-				creds.Port = p
+			p, err := strconv.Atoi(value)
+			if err != nil {
+				return creds, fmt.Errorf("invalid port %q in %s: %w", value, myCnfPath, err)
 			}
+			creds.Port = p
 		}
 	}
 

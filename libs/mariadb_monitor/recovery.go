@@ -146,5 +146,5 @@ func startMariaDB(creds MySQLCredentials) {
 		}
 	}
 
-	slog.Warn("mariadb started but socket not reachable after 10s")
+	slog.Warn("mariadb started but is not reachable (socket/TCP) after 10s")
 }
