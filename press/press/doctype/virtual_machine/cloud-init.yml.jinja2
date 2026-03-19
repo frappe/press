@@ -37,13 +37,13 @@ runcmd:
 - su - frappe -c "cd /home/frappe/agent && env/bin/agent setup authentication --password {{ agent_password }}"
 - su - frappe -c "htpasswd -Bbc /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password }}"
 - supervisorctl restart all
-{% if server.doctype == 'Database Server' and server.provider != 'Hetzner' and server.provider != 'DigitalOcean' %}
+{% if server.doctype == 'Database Server' and server.provider != 'Hetzner' and server.provider != 'DigitalOcean' and server.provider != 'Frappe Compute' %}
 - resize2fs $(findmnt /opt/volumes/mariadb --noheadings --output SOURCE)
 - systemctl daemon-reload
 - systemctl restart mariadb
 - systemctl restart mysqld_exporter
 - systemctl restart deadlock_logger
-{% elif server.doctype == 'Server' and server.provider != 'Hetzner' and server.provider != 'DigitalOcean' %}
+{% elif server.doctype == 'Server' and server.provider != 'Hetzner' and server.provider != 'DigitalOcean' and server.provider != 'Frappe Compute' %}
 - resize2fs $(findmnt /opt/volumes/benches --noheadings --output SOURCE)
 {% endif %}
 {% if server.provider == 'OCI' %}
