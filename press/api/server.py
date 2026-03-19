@@ -639,8 +639,12 @@ def options():
 		)
 	) == "System User"
 
-	if is_system_user or get_current_team(get_doc=True).is_frappe_compute_internal_user:
+	if is_system_user:
 		regions_filter.pop("public", None)
+
+	# Temporarily here to skip the Frappe Compute cloud provider
+	if not get_current_team(get_doc=True).is_frappe_compute_internal_user:
+		regions_filter["cloud_provider"] = ("not in", ["Generic", "Frappe Compute"])
 
 	regions = frappe.get_all(
 		"Cluster",
