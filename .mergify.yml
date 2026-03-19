@@ -32,6 +32,7 @@ pull_request_rules:
           - master
         assignees:
           - "{{ author }}"
+<<<<<<< HEAD
 
   - name: Label PRs targeting develop with 'backport-master'
     conditions:
@@ -40,3 +41,5 @@ pull_request_rules:
       label:
         add:
           - backport-master
+=======
+>>>>>>> 9d668d4af (ci(Mergify): configuration update)
