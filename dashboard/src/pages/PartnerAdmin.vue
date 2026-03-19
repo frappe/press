@@ -1,7 +1,7 @@
 <template>
 	<div class="sticky top-0 z-10 shrink-0">
 		<Header>
-			<FBreadcrumbs
+			<Breadcrumbs
 				:items="[{ label: 'Partner Admin', route: '/partner-admin' }]"
 			/>
 		</Header>
@@ -15,29 +15,21 @@
 		</div>
 	</div>
 </template>
-<script>
-import { Tabs, Breadcrumbs } from 'frappe-ui';
-import Header from '../components/Header.vue';
-import TabsWithRouter from '../components/TabsWithRouter.vue';
 
-export default {
-	name: 'PartnerAdmin',
-	components: {
-		Header,
-		FBreadcrumbs: Breadcrumbs,
-		FTabs: Tabs,
-		TabsWithRouter,
-	},
-	data() {
-		return {
-			currentTab: 0,
-			tabs: [
-				{ label: 'Partner', route: { name: 'PartnerList' } },
-				{ label: 'Certificates', route: { name: 'CertificateList' } },
-				{ label: 'Leads', route: { name: 'PartnerAdminLeads' } },
-				{ label: 'Resources', route: { name: 'PartnerAdminResources' } },
-			],
-		};
-	},
-};
+<script setup lang="ts">
+import { getTeam } from '@/data/team';
+import { Breadcrumbs } from 'frappe-ui';
+import Header from '@/components/Header.vue';
+import TabsWithRouter from '@/components/TabsWithRouter.vue';
+import LucideAlertTriangle from '~icons/lucide/alert-triangle';
+
+const $team = getTeam();
+defineOptions({ name: 'PartnerAdmin' });
+
+const tabs = [
+	{ label: 'Partner', route: { name: 'PartnerList' } },
+	{ label: 'Certificates', route: { name: 'CertificateList' } },
+	{ label: 'Leads', route: { name: 'PartnerAdminLeads' } },
+	{ label: 'Resources', route: { name: 'PartnerAdminResources' } },
+];
 </script>
