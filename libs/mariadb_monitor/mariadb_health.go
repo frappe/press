@@ -17,12 +17,24 @@ type DBHealth struct {
 	Details      []string
 }
 
-func checkReachable(socketPath string) bool {
-	conn, err := net.DialTimeout("unix", socketPath, 3*time.Second)
-	if err != nil {
-		return false
+func checkReachable(creds MySQLCredentials) bool {
+	if creds.Socket != "" {
+		conn, err := net.DialTimeout("unix", creds.Socket, 3*time.Second)
+		if err != nil {
+			return false
+		}
+		conn.Close()
 	}
-	conn.Close()
+
+	if creds.Host != "" && creds.Port > 0 {
+		tcpAddr := net.JoinHostPort(creds.Host, strconv.Itoa(creds.Port))
+		conn, err := net.DialTimeout("tcp", tcpAddr, 3*time.Second)
+		if err != nil {
+			return false
+		}
+		conn.Close()
+	}
+
 	return true
 }
 

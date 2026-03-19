@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,6 +47,8 @@ type MySQLCredentials struct {
 	User     string
 	Password string
 	Socket   string
+	Host     string
+	Port     int
 }
 
 func DefaultConfig() Config {
@@ -103,6 +106,8 @@ func LoadMySQLCredentials() (MySQLCredentials, error) {
 	creds := MySQLCredentials{
 		User:   "root",
 		Socket: "/var/run/mysqld/mysqld.sock",
+		Host:   "127.0.0.1",
+		Port:   3306,
 	}
 
 	f, err := os.Open(myCnfPath)
@@ -141,6 +146,12 @@ func LoadMySQLCredentials() (MySQLCredentials, error) {
 			creds.Password = value //pragma: allowlist secret
 		case "socket":
 			creds.Socket = value
+		case "host":
+			creds.Host = value
+		case "port":
+			if p, err := strconv.Atoi(value); err == nil {
+				creds.Port = p
+			}
 		}
 	}
 

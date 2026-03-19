@@ -2,8 +2,11 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
+	"net"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -253,4 +256,57 @@ func checkIOFreeze(timeout time.Duration) bool {
 	case <-time.After(timeout):
 		return true // timed out, I/O is frozen
 	}
+}
+
+func checkMachineFrozen() (bool, string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	// 1. Check process spawning (fork/exec). Tests PID limits, memory for fork, and basic scheduling.
+	cmd := exec.CommandContext(ctx, "true")
+	if err := cmd.Run(); err != nil {
+		return true, "fork_failed"
+	}
+
+	// 2. Check File Descriptor (FD) limits. SSH often hangs when the OS runs out of file handles.
+	r, w, err := os.Pipe()
+	if err != nil {
+		return true, "fd_exhausted"
+	}
+	r.Close()
+	w.Close()
+
+	// 3. Check Network Stack and Memory limits. 
+	// Verifies if the OS has enough memory to open, dial, and accept TCP connections.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return true, "tcp_listen_failed"
+	}
+	defer ln.Close()
+
+	errCh := make(chan error, 1)
+	go func() {
+		conn, err := ln.Accept()
+		if err == nil {
+			conn.Close()
+		}
+		errCh <- err
+	}()
+
+	conn, err := net.DialTimeout("tcp", ln.Addr().String(), 1*time.Second)
+	if err != nil {
+		return true, "tcp_dial_failed"
+	}
+	conn.Close()
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			return true, "tcp_accept_failed"
+		}
+	case <-time.After(1 * time.Second):
+		return true, "tcp_accept_timeout"
+	}
+
+	return false, ""
 }
