@@ -1,13 +1,4 @@
 pull_request_rules:
-  - name: hotfix to master
-    conditions:
-      - label="hotfix"
-    actions:
-      backport:
-        branches:
-          - master
-        assignees:
-          - "{{ author }}"
   - name: Auto-close PRs on stable branch
     conditions:
       - and:
@@ -41,10 +32,3 @@ pull_request_rules:
           - master
         assignees:
           - "{{ author }}"
-  - name: Label PRs targeting develop with 'backport-master'
-    conditions:
-      - base=develop
-    actions:
-      label:
-        add:
-          - backport-master
