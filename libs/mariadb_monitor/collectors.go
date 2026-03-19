@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -231,7 +232,7 @@ func checkIOFreeze(timeout time.Duration) bool {
 	done := make(chan bool, 1)
 
 	go func() {
-		path := "/tmp/.mariadb_monitor_io_test"
+		path := filepath.Join(os.TempDir(), ".mariadb_monitor_io_test")
 		f, err := os.Create(path)
 		if err != nil {
 			done <- false

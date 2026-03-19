@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net"
 	"strconv"
 	"time"
@@ -18,7 +19,10 @@ type DBHealth struct {
 }
 
 func checkReachable(creds MySQLCredentials) bool {
+	checked := false
+
 	if creds.Socket != "" {
+		checked = true
 		conn, err := net.DialTimeout("unix", creds.Socket, 3*time.Second)
 		if err != nil {
 			return false
@@ -27,12 +31,17 @@ func checkReachable(creds MySQLCredentials) bool {
 	}
 
 	if creds.Host != "" && creds.Port > 0 {
+		checked = true
 		tcpAddr := net.JoinHostPort(creds.Host, strconv.Itoa(creds.Port))
 		conn, err := net.DialTimeout("tcp", tcpAddr, 3*time.Second)
 		if err != nil {
 			return false
 		}
 		conn.Close()
+	}
+
+	if !checked {
+		slog.Warn("no connection method configured, skipping reachability check")
 	}
 
 	return true
@@ -54,11 +63,14 @@ func checkProcesslist(creds MySQLCredentials) DBHealth {
 
 	var uptime int
 	var varName, varValue string
-	err = db.QueryRow("SHOW GLOBAL STATUS LIKE 'Uptime'").Scan(&varName, &varValue)
-	if parsedUptime, convErr := strconv.Atoi(varValue); convErr == nil {
+	if err = db.QueryRow("SHOW GLOBAL STATUS LIKE 'Uptime'").Scan(&varName, &varValue); err != nil {
+		slog.Warn("failed to query mariadb uptime, defaulting to 3600", "error", err)
+		uptime = 3600
+	} else if parsedUptime, convErr := strconv.Atoi(varValue); convErr == nil {
 		uptime = parsedUptime
 	} else {
-		uptime = 3600 // Default to a safe high value if it fails
+		slog.Warn("failed to parse mariadb uptime value, defaulting to 3600", "value", varValue)
+		uptime = 3600
 	}
 
 	rows, err := db.Query("SHOW PROCESSLIST")

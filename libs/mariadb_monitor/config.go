@@ -99,7 +99,30 @@ func LoadConfig() (Config, error) {
 	parseDuration(raw, "stop_timeout", &cfg.StopTimeout)
 	parseDuration(raw, "io_freeze_timeout", &cfg.IOFreezeTimeout)
 
+	if err := cfg.Validate(); err != nil {
+		return cfg, fmt.Errorf("config validation: %w", err)
+	}
+
 	return cfg, nil
+}
+
+func (c Config) Validate() error {
+	if c.WindowSize <= 0 {
+		return fmt.Errorf("window_size must be > 0, got %d", c.WindowSize)
+	}
+	if c.SustainedRatio < 0 || c.SustainedRatio > 1 {
+		return fmt.Errorf("sustained_ratio must be between 0 and 1, got %.2f", c.SustainedRatio)
+	}
+	if c.CheckInterval <= 0 {
+		return fmt.Errorf("check_interval must be > 0")
+	}
+	if c.MaxRecoveriesPerHour < 0 {
+		return fmt.Errorf("max_recoveries_per_hour must be >= 0, got %d", c.MaxRecoveriesPerHour)
+	}
+	if c.DropCachesMode < 0 || c.DropCachesMode > 3 {
+		return fmt.Errorf("drop_caches_mode must be 0-3, got %d", c.DropCachesMode)
+	}
+	return nil
 }
 
 func LoadMySQLCredentials() (MySQLCredentials, error) {
@@ -185,13 +208,46 @@ func GenerateDefaultConfig() error {
 	}
 
 	cfg := DefaultConfig()
-	data, err := yaml.Marshal(&cfg)
-	if err != nil {
-		return fmt.Errorf("marshal default config: %w", err)
-	}
+	content := fmt.Sprintf(`# MariaDB Monitor Configuration
 
-	header := []byte("# MariaDB Monitor Configuration\n\n")
-	fullData := append(header, data...)
+log_level: %s
+check_interval: %s
+cooldown_after_recovery: %s
+stop_timeout: %s
+window_size: %d
+sustained_ratio: %.1f
+psi_cpu_threshold: %.0f
+psi_memory_threshold: %.0f
+psi_io_threshold: %.0f
+iowait_threshold: %.0f
+memory_usage_threshold: %.0f
+critical_memory_threshold: %.0f
+swap_usage_threshold: %.0f
+swap_headroom: %.0f
+page_rate_threshold: %.0f
+io_freeze_timeout: %s
+max_recoveries_per_hour: %d
+drop_caches_mode: %d
+`,
+		cfg.LogLevel,
+		cfg.CheckInterval,
+		cfg.CooldownAfterRecovery,
+		cfg.StopTimeout,
+		cfg.WindowSize,
+		cfg.SustainedRatio,
+		cfg.PSICPUThreshold,
+		cfg.PSIMemoryThreshold,
+		cfg.PSIIOThreshold,
+		cfg.IOWaitThreshold,
+		cfg.MemoryUsageThreshold,
+		cfg.CriticalMemoryThreshold,
+		cfg.SwapUsageThreshold,
+		cfg.SwapHeadroom,
+		cfg.PageRateThreshold,
+		cfg.IOFreezeTimeout,
+		cfg.MaxRecoveriesPerHour,
+		cfg.DropCachesMode,
+	)
 
-	return os.WriteFile(configFile, fullData, 0644)
+	return os.WriteFile(configFile, []byte(content), 0644)
 }
