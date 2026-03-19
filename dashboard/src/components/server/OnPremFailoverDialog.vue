@@ -189,10 +189,35 @@ apt install -y wireguard resolvconf rsync gawk curl wget"
 								text-content="systemctl enable --now wg-quick@wg0"
 							/>
 						</div>
+						<!-- Install Docker -->
+						<div class="flex flex-col gap-2">
+							<div class="font-medium text-gray-700">
+								5. Install Docker (Only if not already installed)
+							</div>
+							<ClickToCopyField
+								text-content="curl -fsSL get.docker.com | bash -"
+							/>
+						</div>
+						<!-- Install Nginx -->
+						<div class="flex flex-col gap-2">
+							<div class="font-medium text-gray-700">6. Install Nginx</div>
+							<ClickToCopyField text-content="apt install -y nginx" />
+						</div>
+						<!-- Install & Setup Failover Management -->
+						<div class="flex flex-col gap-2">
+							<div class="font-medium text-gray-700">7. Install Nginx</div>
+							<ClickToCopyField text-content="apt install -y nginx" />
+						</div>
+						<div class="flex flex-col gap-2">
+							<div class="font-medium text-gray-700">
+								8. Install Redis Server
+							</div>
+							<ClickToCopyField text-content="apt install -y redis-server" />
+						</div>
 						<!-- Trigger Replication Setup -->
 						<div class="flex flex-col gap-2">
 							<div class="font-medium text-gray-700">
-								5. Trigger Replication Setup
+								9. Trigger Replication Setup
 							</div>
 							<div class="text-gray-600">
 								&nbsp;&nbsp;&nbsp;Once the above steps are completed, click the
