@@ -41,10 +41,3 @@ pull_request_rules:
           - master
         assignees:
           - "{{ author }}"
-  - name: Label PRs targeting develop with 'backport-master'
-    conditions:
-      - base=develop
-    actions:
-      label:
-        add:
-          - backport-master
