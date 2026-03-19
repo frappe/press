@@ -263,6 +263,12 @@ func checkMachineFrozen() (bool, string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		// Fallback: context should always have a deadline here, but be defensive.
+		deadline = time.Now().Add(2 * time.Second)
+	}
+
 	// 1. Check process spawning (fork/exec). Tests PID limits, memory for fork, and basic scheduling.
 	cmd := exec.CommandContext(ctx, "true")
 	if err := cmd.Run(); err != nil {
@@ -285,6 +291,12 @@ func checkMachineFrozen() (bool, string) {
 	}
 	defer ln.Close()
 
+	// Ensure we still have time left in the overall budget before network checks.
+	remaining := time.Until(deadline)
+	if remaining <= 0 {
+		return true, "deadline_exceeded"
+	}
+
 	errCh := make(chan error, 1)
 	go func() {
 		conn, err := ln.Accept()
@@ -294,18 +306,34 @@ func checkMachineFrozen() (bool, string) {
 		errCh <- err
 	}()
 
-	conn, err := net.DialTimeout("tcp", ln.Addr().String(), 1*time.Second)
+	// Dial timeout is derived from the remaining overall budget, capped at 1s.
+	dialTimeout := remaining
+	if dialTimeout > time.Second {
+		dialTimeout = time.Second
+	}
+
+	conn, err := net.DialTimeout("tcp", ln.Addr().String(), dialTimeout)
 	if err != nil {
 		return true, "tcp_dial_failed"
 	}
 	conn.Close()
+
+	// Recompute remaining time for the accept phase, again capped at 1s.
+	remaining = time.Until(deadline)
+	if remaining <= 0 {
+		return true, "deadline_exceeded"
+	}
+	acceptTimeout := remaining
+	if acceptTimeout > time.Second {
+		acceptTimeout = time.Second
+	}
 
 	select {
 	case err := <-errCh:
 		if err != nil {
 			return true, "tcp_accept_failed"
 		}
-	case <-time.After(1 * time.Second):
+	case <-time.After(acceptTimeout):
 		return true, "tcp_accept_timeout"
 	}
 

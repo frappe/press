@@ -20,31 +20,35 @@ type DBHealth struct {
 
 func checkReachable(creds MySQLCredentials) bool {
 	checked := false
+	reachable := false
 
-	if creds.Socket != "" {
-		checked = true
-		conn, err := net.DialTimeout("unix", creds.Socket, 3*time.Second)
-		if err != nil {
-			return false
-		}
-		conn.Close()
-	}
-
+	// Prefer TCP if host and port are configured.
 	if creds.Host != "" && creds.Port > 0 {
 		checked = true
 		tcpAddr := net.JoinHostPort(creds.Host, strconv.Itoa(creds.Port))
 		conn, err := net.DialTimeout("tcp", tcpAddr, 3*time.Second)
-		if err != nil {
-			return false
+		if err == nil {
+			conn.Close()
+			reachable = true
 		}
-		conn.Close()
+	}
+
+	// Fall back to Unix socket only if TCP is not configured or failed.
+	if !reachable && creds.Socket != "" {
+		checked = true
+		conn, err := net.DialTimeout("unix", creds.Socket, 3*time.Second)
+		if err == nil {
+			conn.Close()
+			reachable = true
+		}
 	}
 
 	if !checked {
 		slog.Warn("no connection method configured, skipping reachability check")
+		return true
 	}
 
-	return true
+	return reachable
 }
 
 func checkProcesslist(creds MySQLCredentials) DBHealth {
