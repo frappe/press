@@ -252,6 +252,10 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 	if w.pageRate.IsSustained(cfg.SustainedRatio) {
 		triggers = append(triggers, "sustained_page_rate")
 	}
+	
+	if isFrozen, reason := checkMachineFrozen(); isFrozen {
+		triggers = append(triggers, fmt.Sprintf("machine_frozen(%s)", reason))
+	}
 
 	if memErr == nil && mem.SwapTotal > 0 {
 		swapFreePercent := float64(mem.SwapFree) / float64(mem.SwapTotal) * 100.0
@@ -291,7 +295,7 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 		return false
 	}
 
-	return performRecovery(cfg, triggers, dbHealth)
+	return performRecovery(cfg, triggers, dbHealth, creds)
 }
 
 var recoveryTimestamps []time.Time
@@ -308,8 +312,8 @@ func recentRecoveryCount(maxPerHour int) bool {
 }
 
 func checkMariaDBHealth(creds MySQLCredentials) DBHealth {
-	if !checkReachable(creds.Socket) {
-		slog.Warn("mariadb is unreachable", "socket", creds.Socket)
+	if !checkReachable(creds) {
+		slog.Warn("mariadb is unreachable", "socket", creds.Socket, "host", creds.Host, "port", creds.Port)
 		return DBHealth{Reachable: false}
 	}
 
