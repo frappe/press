@@ -158,9 +158,5 @@ press.patches.v0_8_0.add_cloud_providers_to_site_plans
 press.patches.v0_8_0.update_tmpdir_for_data_volume_dbs
 press.patches.v0_0_1.cancel_pending_version_upgrades_for_disabled_bench_groups
 press.partner.doctype.partner_lead.patches.merge_engagement_stage_to_status
-<<<<<<< HEAD
 press.press.doctype.proxy_server.patches.set_use_as_proxy_for_agent_and_metrics_for_proxy_servers
-press.patches.v0_0_1.add_job_status_index_on_press_job_step
-=======
 press.patches.v0_0_1.add_job_status_index_press_job_step
->>>>>>> fa6ce06e3 (fix(patch): Typo in the file name added in patch)
