@@ -196,6 +196,11 @@ let router = createRouter({
 					path: 'mpesa-invoices',
 					component: () => import('./pages/BillingMpesaInvoices.vue'),
 				},
+				{
+					name: 'BillingUPIAutopay',
+					path: 'upi-autopay',
+					component: () => import('./pages/BillingUPIAutopay.vue'),
+				},
 			],
 		},
 		{
