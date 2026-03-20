@@ -39,7 +39,6 @@ if TYPE_CHECKING:
 		IncidentInvestigator,
 	)
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
-	from press.press.doctype.dashboard_banner.dashboard_banner import DashboardBanner
 	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
 		IncidentSettingsSelfHostedUser,
@@ -148,90 +147,12 @@ class Incident(WebsiteGenerator):
 			self.investigation = incident_investigator.name
 			self.save()
 
-	def create_banner_for_status_page(self):
-		"""Add a banner directing users to the status page in case of ongoing incidents"""
-		filters = {
-			"enabled": 1,
-			"title": INCIDENT_BANNER_TITLE.format(self.server),
-			"message": INCIDENT_BANNER_MESSAGE.format(self.server),
-		}
-		has_existing_active_banner = frappe.db.exists("Dashboard Banner", filters)
-
-		if has_existing_active_banner:
-			return
-
-		filters.pop(
-			"enabled"
-		)  # we want to check if there's an existing banner even if it's disabled, to avoid creating multiple banners for the same server
-		has_existing_banner = frappe.db.exists("Dashboard Banner", filters)
-
-		if has_existing_banner:
-			frappe.db.set_value("Dashboard Banner", has_existing_banner, "enabled", 1)
-			return
-
-		# There is no such banner present
-		dashboard_banner: DashboardBanner = frappe.get_doc(
-			{
-				"doctype": "Dashboard Banner",
-				"title": INCIDENT_BANNER_TITLE.format(self.server),
-				"message": INCIDENT_BANNER_MESSAGE.format(self.server),
-				"has_action": 1,
-				"type": "Info",
-				"enabled": 1,
-				"action_label": "View Status",
-				"help_url": "https://cloud.frappe.io/dashboard/status",
-				"action_endpoint": "https://cloud.frappe.io/dashboard/status",
-				"type_of_scope": "Team",
-			}
-		)
-
-		site_teams_affected = frappe.get_all(
-			"Site",
-			{"server": self.server, "status": ("in", ["Active", "Pending", "Updating", "Broken"])},
-			pluck="team",
-		)
-		server_team = frappe.db.get_value("Server", self.server, "team")
-		teams_affected = set([*site_teams_affected, server_team])
-
-		# In case there are no teams affected (which is unlikely since an incident was created),
-		# we can skip adding teams to the banner
-		if not teams_affected or not any(teams_affected):
-			return
-
-		dashboard_banner.extend("team", [{"team": team} for team in teams_affected])
-		dashboard_banner.insert()
-
-	def _resolve_banner_if_ready(self):
-		"""When an incident is resolved, we should resolve the banner as well"""
-		pending_incidents_on_the_server = frappe.db.get_value(
-			"Incident",
-			{
-				"server": self.server,
-				"status": ("in", ["Validating", "Confirmed", "Acknowledged", "Investigating"]),
-			},
-		)
-
-		if pending_incidents_on_the_server:
-			return
-
-		frappe.db.set_value(
-			"Dashboard Banner",
-			{
-				"enabled": 1,
-				"title": INCIDENT_BANNER_TITLE.format(self.server),
-				"message": INCIDENT_BANNER_MESSAGE.format(self.server),
-			},
-			"enabled",
-			0,
-		)
-
 	def after_insert(self):
 		"""
 		Start investigating the incident since we have already waited 5m before creating it
 		send sms and email notifications, also add a dashboard banner in case of insert taking users to the status page
 		"""
 		self.create_investigation_if_possible()
-		self.create_banner_for_status_page()
 		self.send_sms_via_twilio()
 		self.send_email_notification()
 		self.identify_affected_resource()
@@ -242,7 +163,6 @@ class Incident(WebsiteGenerator):
 			self.send_email_notification()
 			if self.status == "Resolved" or self.status == "Auto-Resolved":
 				self.db_set("resolved_at", current_datetime)
-				self._resolve_banner_if_ready()
 			elif self.status == "Confirmed" and not self.confirmed_at:
 				self.db_set("confirmed_at", current_datetime)
 				if not self.called_customer:
