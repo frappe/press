@@ -166,7 +166,9 @@
 							</div>
 							<ClickToCopyField
 								text-content="apt update -y
-apt install -y wireguard resolvconf rsync gawk curl wget"
+apt install -y wireguard resolvconf rsync gawk curl wget nginx redis-server
+command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
+"
 							/>
 						</div>
 						<!-- Configure Wireguard -->
@@ -198,22 +200,10 @@ apt install -y wireguard resolvconf rsync gawk curl wget"
 								text-content="curl -fsSL get.docker.com | bash -"
 							/>
 						</div>
-						<!-- Install Nginx -->
-						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">6. Install Nginx</div>
-							<ClickToCopyField text-content="apt install -y nginx" />
-						</div>
-						<!-- Install Redis -->
-						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">
-								7. Install Redis Server
-							</div>
-							<ClickToCopyField text-content="apt install -y redis-server" />
-						</div>
 						<!-- Install Failover Management Service -->
 						<div class="flex flex-col gap-2">
 							<div class="font-medium text-gray-700">
-								8. Setup Failover Management Service
+								6. Setup Failover Management Service
 							</div>
 							<ClickToCopyField
 								text-content="curl -fsSL https://raw.githubusercontent.com/frappe/fc-scripts/refs/heads/develop/press-on-prem-failover.sh -o press-on-prem-failover.sh && chmod +x ./press-on-prem-failover.sh && ./press-on-prem-failover.sh"
@@ -222,7 +212,7 @@ apt install -y wireguard resolvconf rsync gawk curl wget"
 						<!-- Trigger Replication Setup -->
 						<div class="flex flex-col gap-2">
 							<div class="font-medium text-gray-700">
-								9. Trigger Replication Setup
+								7. Trigger Replication Setup
 							</div>
 							<div class="text-gray-600">
 								&nbsp;&nbsp;&nbsp;Once the above steps are completed, click the
