@@ -228,10 +228,16 @@ def _handle_token_confirmed(form_dict):
 		return
 	upi_vpa = token_entity.get("vpa")
 
-	# Get max_amount from token if available
+	# Get max_amount from token if available. This can be less than what customer has set based on the bank limitation.
 	max_amount = token_entity.get("max_amount")
 	if max_amount:
-		mandate_doc.max_amount = max_amount / 100  # Convert from paise
+		confirmed_amount = max_amount / 100  # Convert from paise
+		if confirmed_amount < mandate_doc.max_amount:
+			frappe.get_doc("Team", mandate_doc.team).send_email_for_mandate_amount_capped(
+				requested_amount=mandate_doc.max_amount,
+				confirmed_amount=confirmed_amount,
+			)
+		mandate_doc.max_amount = confirmed_amount
 
 	mandate_doc.activate(token_id, upi_vpa=upi_vpa)
 

@@ -89,13 +89,11 @@ class RazorpayMandate(Document):
 			self.unset_other_defaults()
 
 	def unset_other_defaults(self):
-		frappe.db.sql(
-			"""
-			UPDATE `tabRazorpay Mandate`
-			SET is_default = 0
-			WHERE team = %s AND name != %s AND is_default = 1
-			""",
-			(self.team, self.name),
+		frappe.db.set_value(
+			"Razorpay Mandate",
+			{"team": self.team, "name": ("!=", self.name), "is_default": 1},
+			"is_default",
+			0,
 		)
 
 	def activate(

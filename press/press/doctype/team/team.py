@@ -1366,6 +1366,21 @@ class Team(Document):
 			},
 		)
 
+	def send_email_for_mandate_amount_capped(self, requested_amount, confirmed_amount):
+		email = get_communication_info("Email", "Billing", "Team", self.name) or [self.user]
+		subject = "Your UPI Autopay limit was adjusted by your bank"
+		frappe.sendmail(
+			recipients=email,
+			subject=subject,
+			template="mandate_amount_capped",
+			args={
+				"subject": subject,
+				"requested_amount": f"{requested_amount:,.0f}",
+				"confirmed_amount": f"{confirmed_amount:,.0f}",
+				"upi_autopay_link": frappe.utils.get_url("/dashboard/billing/upi-autopay"),
+			},
+		)
+
 	@frappe.whitelist()
 	def send_email_for_failed_payment(self, invoice, sites=None):
 		invoice = frappe.get_doc("Invoice", invoice)
