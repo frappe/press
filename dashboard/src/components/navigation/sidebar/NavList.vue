@@ -224,13 +224,6 @@ const navigation = computed(() => {
 			isActive: routeName === 'Status',
 			disabled: enforce2FA,
 		},
-		{
-			name: 'Partner Admin',
-			icon: Shield,
-			route: '/partner-admin',
-			isActive: routeName === 'Partner Admin',
-			condition: Boolean($team.doc.is_desk_user),
-		},
 	].filter((item) => item.condition ?? true);
 });
 
