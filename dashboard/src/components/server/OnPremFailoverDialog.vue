@@ -191,19 +191,10 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 								text-content="systemctl enable --now wg-quick@wg0"
 							/>
 						</div>
-						<!-- Install Docker -->
-						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">
-								5. Install Docker (Only if not already installed)
-							</div>
-							<ClickToCopyField
-								text-content="curl -fsSL get.docker.com | bash -"
-							/>
-						</div>
 						<!-- Install Failover Management Service -->
 						<div class="flex flex-col gap-2">
 							<div class="font-medium text-gray-700">
-								6. Setup Failover Management Service
+								5. Setup Failover Management Service
 							</div>
 							<ClickToCopyField
 								text-content="curl -fsSL https://raw.githubusercontent.com/frappe/fc-scripts/refs/heads/develop/press-on-prem-failover.sh -o press-on-prem-failover.sh && chmod +x ./press-on-prem-failover.sh && ./press-on-prem-failover.sh"
@@ -212,7 +203,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 						<!-- Trigger Replication Setup -->
 						<div class="flex flex-col gap-2">
 							<div class="font-medium text-gray-700">
-								7. Trigger Replication Setup
+								6. Trigger Replication Setup
 							</div>
 							<div class="text-gray-600">
 								&nbsp;&nbsp;&nbsp;Once the above steps are completed, click the
