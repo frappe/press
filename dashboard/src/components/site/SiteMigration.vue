@@ -28,7 +28,7 @@
 			<div v-else class="flex flex-col gap-3">
 				<!-- Chose Migration Mode -->
 				<div class="flex flex-col gap-2">
-					<p class="text-base text-gray-800">Select Migration Type</p>
+					<p class="text-base text-ink-gray-8">Select Migration Type</p>
 					<FormControl
 						type="select"
 						:options="migrationChoices"
@@ -57,7 +57,7 @@
 				>
 					<!-- Choose Bench Type -->
 					<div
-						class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
+						class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
 					>
 						<div
 							class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"

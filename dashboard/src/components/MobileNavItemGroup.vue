@@ -1,7 +1,7 @@
 <template>
 	<div
 		@click="toggle"
-		class="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-gray-800 transition hover:bg-gray-100"
+		class="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-ink-gray-8 transition hover:bg-gray-100"
 		:class="[
 			item.disabled ? 'pointer-events-none opacity-50' : '',
 			$attrs.class,

@@ -80,7 +80,7 @@
 						</a>
 					</div>
 					<p
-						class="text-base font-medium text-gray-800"
+						class="text-base font-medium text-ink-gray-8"
 						v-html="restrictMessage"
 					></p>
 					<div class="mt-4">

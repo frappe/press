@@ -80,7 +80,7 @@
 						:key="file.name"
 					>
 						<div class="card-header bg-gray-200 p-3">
-							<h2 class="text-md font-semibold text-gray-800">
+							<h2 class="text-md font-semibold text-ink-gray-8">
 								{{ file.name }} - {{ file.score }} issues
 							</h2>
 						</div>
@@ -97,7 +97,7 @@
 								>
 									<div class="flex items-center mb-3">
 										<span class="text-red-600 mr-2">{{ issue.severity }}</span>
-										<span class="text-gray-800">({{ issue.violation }})</span>
+										<span class="text-ink-gray-8">({{ issue.violation }})</span>
 										<span class="text-orange-500 font-semibold pl-2">
 											- {{ issue.match }}</span
 										>
@@ -158,7 +158,7 @@
 														</span>
 													</Tooltip>
 												</div>
-												<p class="text-gray-800 text-base p-2 ml-6">
+												<p class="text-ink-gray-8 text-base p-2 ml-6">
 													{{ comment.comment }}
 												</p>
 											</div>

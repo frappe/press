@@ -9,9 +9,9 @@
 				more.
 			</p>
 		</div>
-		<p class="mt-6 text-base text-gray-800">
-			Complete the steps below to unlock sites, benches, dedicated servers
-			and more.
+		<p class="mt-6 text-base text-ink-gray-8">
+			Complete the steps below to unlock sites, benches, dedicated servers and
+			more.
 		</p>
 		<div class="mt-6 space-y-6">
 			<div class="rounded-md">
@@ -47,13 +47,13 @@
 					</div>
 				</div>
 				<div class="mt-2 pl-7" v-if="pendingSiteRequest.status == 'Error'">
-					<p class="mt-2 text-p-base text-gray-800">
+					<p class="mt-2 text-p-base text-ink-gray-8">
 						Please contact Frappe Cloud support by clicking on the button below.
 					</p>
 					<Button class="mt-2" link="/support"> Contact Support </Button>
 				</div>
 				<div class="mt-2 pl-7" v-else>
-					<p class="mt-2 text-p-base text-gray-800">
+					<p class="mt-2 text-p-base text-ink-gray-8">
 						You can try out the {{ pendingSiteRequest.title }} app for free by
 						clicking on the button below.
 					</p>
@@ -93,10 +93,10 @@
 							target="_blank"
 						>
 							https://{{ trialSite.host_name || trialSite.name }}
-							<lucide-external-link class="ml-1 h-3.5 w-3.5 text-gray-800" />
+							<lucide-external-link class="ml-1 h-3.5 w-3.5 text-ink-gray-8" />
 						</a>
 					</div>
-					<p class="mt-2 text-p-base text-gray-800">
+					<p class="mt-2 text-p-base text-ink-gray-8">
 						Your trial is set to expire on
 						<span class="font-medium">
 							{{ $format.date(trialSite.trial_end_date, 'LL') }} </span
@@ -160,7 +160,7 @@
 					<div class="mt-4 pl-7" v-if="isBillingDetailsSet">
 						<!-- Payment Method Selector -->
 						<div
-							class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
+							class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
 						>
 							<div
 								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
@@ -227,7 +227,7 @@
 						</div>
 					</div>
 					<div
-						class="mt-1.5 pl-7 text-p-base text-gray-800"
+						class="mt-1.5 pl-7 text-p-base text-ink-gray-8"
 						v-if="$team.doc.payment_mode === 'Prepaid Credits'"
 					>
 						Account balance: {{ $format.userCurrency($team.doc.balance) }}

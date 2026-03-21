@@ -60,7 +60,7 @@
 										v-for="header in headerGroup.headers"
 										:key="header.id"
 										:colSpan="header.colSpan"
-										class="text-gray-800"
+										class="text-ink-gray-8"
 										:class="{
 											'w-2/12': header.column.columnDef.id === 'level',
 											'w-3/12': header.column.columnDef.id === 'time',

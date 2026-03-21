@@ -30,7 +30,7 @@
 				v-if="unpaidAmount.data"
 				class="m-1.5 flex items-center justify-between rounded-lg bg-surface-gray-1 px-2.5 py-2"
 			>
-				<div class="flex h-7 items-center gap-2 text-gray-800">
+				<div class="flex h-7 items-center gap-2 text-ink-gray-8">
 					<lucide-receipt class="h-4 w-4" />
 					<div>
 						<span>Unpaid amount is </span>

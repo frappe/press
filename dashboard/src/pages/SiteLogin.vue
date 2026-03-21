@@ -162,7 +162,7 @@
 									class="flex min-h-[40px] w-full items-center justify-between"
 								>
 									<div class="space-y-2">
-										<div class="text-base text-gray-800">
+										<div class="text-base text-ink-gray-8">
 											{{ site.host_name || site.name }}
 										</div>
 									</div>

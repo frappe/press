@@ -1,6 +1,6 @@
 <template>
 	<div
-		:class="`flex items-center justify-between rounded-md border border-${color}-200 bg-${color}-100 px-3.5 py-2.5`"
+		:class="`flex items-center justify-between rounded-md border border-outline-${color}-2 bg-surface-${color}-1 px-3.5 py-2.5`"
 	>
 		<div class="flex items-center">
 			<lucide-alert-triangle
@@ -13,7 +13,7 @@
 			/>
 			<div
 				:class="{ 'ml-3': showIcon }"
-				class="text-p-base font-medium text-gray-800"
+				class="text-p-base font-medium text-ink-gray-8"
 				v-html="title"
 			/>
 		</div>

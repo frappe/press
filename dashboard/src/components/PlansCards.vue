@@ -73,7 +73,7 @@
 							</template>
 						</div>
 					</div>
-					<div class="p-3 text-p-sm text-gray-800">
+					<div class="p-3 text-p-sm text-ink-gray-8">
 						<div v-for="feature in plan.features">
 							<div v-if="feature.value" class="flex space-x-2">
 								<component

@@ -43,7 +43,7 @@
 			<!-- Database Size Analyzer -->
 			<div>
 				<div class="flex flex-row items-center justify-between">
-					<p class="text-base font-medium text-gray-800">
+					<p class="text-base font-medium text-ink-gray-8">
 						Database Size Breakup
 					</p>
 					<div class="flex flex-row gap-2">
@@ -95,8 +95,8 @@
 							class="h-2 w-2 rounded-full"
 							style="background-color: #e86c13"
 						></div>
-						<span class="text-sm text-gray-800">Data Size</span
-						><span class="ml-auto text-sm text-gray-800">{{
+						<span class="text-sm text-ink-gray-8">Data Size</span
+						><span class="ml-auto text-sm text-ink-gray-8">{{
 							formatSizeInMB(this.databaseSizeBreakup.data_size)
 						}}</span>
 					</div>
@@ -107,8 +107,8 @@
 							class="h-2 w-2 rounded-full"
 							style="background-color: #34bae3"
 						></div>
-						<span class="text-sm text-gray-800">Index Size</span
-						><span class="ml-auto text-sm text-gray-800"
+						<span class="text-sm text-ink-gray-8">Index Size</span
+						><span class="ml-auto text-sm text-ink-gray-8"
 							>{{ formatSizeInMB(this.databaseSizeBreakup.index_size) }}
 						</span>
 					</div>
@@ -119,8 +119,8 @@
 							class="h-2 w-2 rounded-full"
 							style="background-color: #ffbf00"
 						></div>
-						<span class="text-sm text-gray-800">Claimable Space</span
-						><span class="ml-auto text-sm text-gray-800"
+						<span class="text-sm text-ink-gray-8">Claimable Space</span
+						><span class="ml-auto text-sm text-ink-gray-8"
 							>{{ formatSizeInMB(this.databaseSizeBreakup.claimable_size) }}
 						</span>
 					</div>
@@ -131,8 +131,8 @@
 							class="h-2 w-2 rounded-full"
 							style="background-color: #e2e2e2"
 						></div>
-						<span class="text-sm text-gray-800">Free Space</span
-						><span class="ml-auto text-sm text-gray-800"
+						<span class="text-sm text-ink-gray-8">Free Space</span
+						><span class="ml-auto text-sm text-ink-gray-8"
 							>{{ formatSizeInMB(this.databaseSizeBreakup.free_size) }}
 						</span>
 					</div>

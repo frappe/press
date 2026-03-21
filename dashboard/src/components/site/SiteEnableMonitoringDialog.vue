@@ -14,7 +14,7 @@
 				<Spinner class="w-4" /> Loading data...
 			</div>
 			<div v-else-if="siteDoc?.is_monitoring_disabled" class="w-full">
-				<p class="mb-2 text-gray-800 text-base font-medium">
+				<p class="mb-2 text-ink-gray-8 text-base font-medium">
 					Cause of disabling monitoring :
 				</p>
 				<div
@@ -33,14 +33,14 @@
 						:showIcon="true"
 						title="Failed to enable monitoring"
 					/>
-					<p class="mt-1 text-gray-800 text-base font-medium">Reason -</p>
+					<p class="mt-1 text-ink-gray-8 text-base font-medium">Reason -</p>
 					<div
 						class="rounded border bg-surface-gray-1 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-full"
 						style="line-height: inherit"
 					>
 						{{ reasonForFailureInEnablingMonitoring }}
 					</div>
-					<p class="mt-1 text-gray-800 text-base font-medium">
+					<p class="mt-1 text-ink-gray-8 text-base font-medium">
 						Possible Solution -
 					</p>
 					<div

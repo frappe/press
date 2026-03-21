@@ -19,7 +19,7 @@
 
 				<div
 					v-if="newDomain && !dnsVerified"
-					class="prose prose-sm space-y-2 prose-strong:text-gray-800"
+					class="prose prose-sm space-y-2 prose-strong:text-ink-gray-8"
 				>
 					<p>Create one of the following DNS records:</p>
 					<ul>
@@ -54,7 +54,7 @@
 							class="flex flex-row items-center justify-between rounded-lg border-2 p-2"
 						>
 							<p
-								class="select-all overflow-hidden font-mono text-sm text-gray-800"
+								class="select-all overflow-hidden font-mono text-sm text-ink-gray-8"
 							>
 								{{ dnsResult.CNAME.answer }}
 							</p>
@@ -71,7 +71,7 @@
 							class="flex flex-row items-center justify-between rounded-lg border-2 p-2"
 						>
 							<p
-								class="select-all overflow-hidden font-mono text-sm text-gray-800"
+								class="select-all overflow-hidden font-mono text-sm text-ink-gray-8"
 							>
 								{{ dnsResult.A.answer }}
 							</p>

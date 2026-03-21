@@ -30,7 +30,7 @@
 				/>
 				<div class="mt-4 text-xs text-gray-700">
 					<div
-						class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base font-medium text-gray-800"
+						class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base font-medium text-ink-gray-8"
 					>
 						<lucide-badge-check class="mr-2 h-5 w-12 text-gray-600" />
 						<span>
@@ -69,7 +69,7 @@
 					:value="99"
 				/>
 				<div
-					class="mb-5 flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
+					class="mb-5 flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
 				>
 					<div
 						class="w-1/2 cursor-pointer rounded-[7px] py-1.5 text-center transition-all"

@@ -235,7 +235,7 @@
 						class="z-1000 h-80 bg-surface-white-overlay-900 absolute inset-0 flex justify-center items-center"
 						v-else
 					>
-						<div class="flex text-md text-gray-800 items-center gap-1.5">
+						<div class="flex text-md text-ink-gray-8 items-center gap-1.5">
 							<lucide-triangle-alert class="h-5 w-5 text-amber-600" />
 							To view or search SQL queries, choose a time range of less than 6
 							hours
@@ -250,7 +250,7 @@
 			class="z-1000 bg-surface-white-overlay-800 absolute inset-0 flex justify-center items-center"
 			v-if="binlog_index_state_loaded && this.$resources?.timeline?.loading"
 		>
-			<div class="flex gap-2 text-base text-gray-800">
+			<div class="flex gap-2 text-base text-ink-gray-8">
 				<Spinner class="w-4" />
 				Building timeline...
 			</div>
@@ -261,7 +261,7 @@
 			v-if="binlog_index_state_loaded && binlog_indexer_running"
 		>
 			<div class="flex flex-col items-center gap-3 text-center px-6 max-w-lg">
-				<lucide-construction class="h-8 w-8 text-gray-800 mb-1" />
+				<lucide-construction class="h-8 w-8 text-ink-gray-8 mb-1" />
 				<h2 class="text-xl font-semibold text-ink-gray-9">
 					Binlog Browser Temporarily Unavailable
 				</h2>
@@ -279,7 +279,7 @@
 			v-if="binlog_index_state_loaded && !binlog_indexer_enabled"
 		>
 			<div class="flex flex-col items-center gap-3 text-center px-6 max-w-lg">
-				<lucide-construction class="h-8 w-8 text-gray-800 mb-1" />
+				<lucide-construction class="h-8 w-8 text-ink-gray-8 mb-1" />
 				<h2
 					class="text-xl font-semibold text-ink-gray-9"
 					v-if="

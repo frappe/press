@@ -8,7 +8,7 @@
 			<ObjectList :options="reportOptions" />
 		</div>
 		<div class="flex justify-center" v-else>
-			<span class="mt-16 p-2 text-base text-gray-800">
+			<span class="mt-16 p-2 text-base text-ink-gray-8">
 				Your plan doesn't support this feature. Please
 				<span class="cursor-pointer underline" @click="showPlanChangeDialog"
 					>upgrade your plan</span
