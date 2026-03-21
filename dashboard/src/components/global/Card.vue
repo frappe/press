@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col rounded-lg border bg-white px-6 py-5">
+	<div class="flex flex-col rounded-lg border bg-surface-white px-6 py-5">
 		<div class="flex items-baseline justify-between">
 			<div class="flex items-baseline space-x-2">
 				<div class="flex items-center space-x-2" v-if="$slots['actions-left']">
@@ -37,7 +37,7 @@ export default {
 	name: 'Card',
 	props: ['title', 'subtitle', 'loading', 'stopOverflow'],
 	components: {
-		LoadingText
-	}
+		LoadingText,
+	},
 };
 </script>

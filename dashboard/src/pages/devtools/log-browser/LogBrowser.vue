@@ -1,6 +1,6 @@
 <template>
 	<div class="flex flex-col">
-		<Header class="bg-white">
+		<Header class="bg-surface-white">
 			<div
 				class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
 			>

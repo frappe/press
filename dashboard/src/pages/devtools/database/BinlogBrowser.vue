@@ -7,7 +7,7 @@
 				!binlog_indexer_enabled,
 		}"
 	>
-		<Header class="sticky top-0 z-10 bg-white">
+		<Header class="sticky top-0 z-10 bg-surface-white">
 			<div
 				class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
 			>
@@ -232,7 +232,7 @@
 
 					<!-- Block  -->
 					<div
-						class="z-1000 h-80 bg-white-overlay-900 absolute inset-0 flex justify-center items-center"
+						class="z-1000 h-80 bg-surface-white-overlay-900 absolute inset-0 flex justify-center items-center"
 						v-else
 					>
 						<div class="flex text-md text-gray-800 items-center gap-1.5">
@@ -247,7 +247,7 @@
 
 		<!-- Overlay to hide controls while building timeline -->
 		<div
-			class="z-1000 bg-white-overlay-800 absolute inset-0 flex justify-center items-center"
+			class="z-1000 bg-surface-white-overlay-800 absolute inset-0 flex justify-center items-center"
 			v-if="binlog_index_state_loaded && this.$resources?.timeline?.loading"
 		>
 			<div class="flex gap-2 text-base text-gray-800">
@@ -257,7 +257,7 @@
 		</div>
 
 		<div
-			class="z-2000 bg-white absolute inset-0 flex justify-center items-center"
+			class="z-2000 bg-surface-white absolute inset-0 flex justify-center items-center"
 			v-if="binlog_index_state_loaded && binlog_indexer_running"
 		>
 			<div class="flex flex-col items-center gap-3 text-center px-6 max-w-lg">
@@ -275,7 +275,7 @@
 		</div>
 
 		<div
-			class="z-3000 bg-white absolute inset-0 flex justify-center items-center"
+			class="z-3000 bg-surface-white absolute inset-0 flex justify-center items-center"
 			v-if="binlog_index_state_loaded && !binlog_indexer_enabled"
 		>
 			<div class="flex flex-col items-center gap-3 text-center px-6 max-w-lg">

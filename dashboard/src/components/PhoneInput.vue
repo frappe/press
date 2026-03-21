@@ -25,7 +25,7 @@
 				</template>
 				<template #body="{ close }">
 					<div
-						class="mt-1 max-h-60 w-64 overflow-auto rounded-lg bg-white p-1 shadow-2xl"
+						class="mt-1 max-h-60 w-64 overflow-auto rounded-lg bg-surface-white p-1 shadow-2xl"
 					>
 						<input
 							v-model="searchQuery"
@@ -64,7 +64,7 @@
 				type="tel"
 				v-model="phoneNumber"
 				:placeholder="selectedCountry?.example || placeholder"
-				class="h-7 w-full rounded-r border border-gray-100 bg-gray-100 px-2 text-base text-gray-800 placeholder-gray-500 focus:border-gray-500 focus:bg-white focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
+				class="h-7 w-full rounded-r border border-gray-100 bg-gray-100 px-2 text-base text-gray-800 placeholder-gray-500 focus:border-gray-500 focus:bg-surface-white focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 				@input="emitValue"
 			/>
 		</div>

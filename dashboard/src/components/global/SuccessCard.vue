@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col rounded-md border bg-white p-10 shadow-sm">
+	<div class="flex flex-col rounded-md border bg-surface-white p-10 shadow-sm">
 		<div class="flex items-center">
 			<GreenCheckIcon class="mr-2 h-5 w-5" />
 			<h2 class="text-lg font-medium text-gray-900">
@@ -15,6 +15,6 @@
 <script>
 export default {
 	name: 'SuccessCard',
-	props: ['title', 'message']
+	props: ['title', 'message'],
 };
 </script>

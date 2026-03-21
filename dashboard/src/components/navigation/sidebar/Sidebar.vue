@@ -62,7 +62,7 @@ const feedback = () => {
 				<template v-slot="{ open }">
 					<button
 						class="flex w-[204px] items-center rounded-md px-2 py-2 text-left"
-						:class="open ? 'bg-white shadow-sm' : 'hover:bg-gray-200'"
+						:class="open ? 'bg-surface-white shadow-sm' : 'hover:bg-gray-200'"
 					>
 						<FCLogo class="mb-1 h-8 w-8 shrink-0 rounded" />
 						<div class="ml-2 flex flex-1 flex-col overflow-hidden">

@@ -75,7 +75,7 @@
 					</Dialog>
 
 					<div
-						class="card bg-white shadow-md rounded-md overflow-hidden"
+						class="card bg-surface-white shadow-md rounded-md overflow-hidden"
 						v-for="file in getResults"
 						:key="file.name"
 					>

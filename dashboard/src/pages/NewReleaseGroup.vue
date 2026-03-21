@@ -51,7 +51,7 @@
 							:class="[
 								benchVersion === version.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'bg-white text-gray-900  hover:bg-surface-gray-1',
+									: 'bg-surface-white text-gray-900  hover:bg-surface-gray-1',
 								'flex cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none',
 							]"
 							@click="benchVersion = version.name"
@@ -80,7 +80,7 @@
 							:class="[
 								benchRegion === c.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
+									: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
 								'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
 							]"
 						>
