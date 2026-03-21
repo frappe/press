@@ -31,4 +31,11 @@
 		width: 12px;
 		height: 12px;
 	}
+
+	body {
+  background-color: var(--surface-white);
+  color: var(--ink-gray-9);
+  @apply text-base;
+	}
+
 }
