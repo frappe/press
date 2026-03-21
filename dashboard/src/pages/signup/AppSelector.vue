@@ -30,7 +30,7 @@
 							class="flex cursor-pointer items-center rounded border border-gray-100 p-2"
 							:class="{
 								'bg-gray-100': selectedApp?.name === app.name,
-								'border-gray-100 hover:bg-gray-50':
+								'border-gray-100 hover:bg-surface-gray-1':
 									selectedApp?.name !== app.name,
 							}"
 							@click="selectedApp = app"
@@ -118,7 +118,7 @@ export default {
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
 				app: 'frappe_cloud',
-				action: 'login_signup'
+				action: 'login_signup',
 			});
 
 			window.posthog.startSessionRecording();

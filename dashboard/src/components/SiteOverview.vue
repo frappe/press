@@ -303,7 +303,7 @@
 				<div
 					v-for="d in siteInformation"
 					:key="d.label"
-					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
+					class="flex items-center px-5 py-3 last:pb-5 even:bg-surface-gray-1/70"
 				>
 					<div class="w-1/3 text-base text-gray-600">{{ d.label }}</div>
 					<div

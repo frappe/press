@@ -17,7 +17,7 @@
 				</thead>
 				<tbody>
 					<template v-for="(items, type) in groupedLineItems" :key="type">
-						<tr class="mt-1 bg-gray-50">
+						<tr class="mt-1 bg-surface-gray-1">
 							<td colspan="100" class="rounded p-2 text-base font-medium">
 								{{ type }}
 							</td>

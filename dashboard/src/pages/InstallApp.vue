@@ -81,7 +81,7 @@
 									:class="[
 										cluster === c.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'bg-white text-gray-900  hover:bg-gray-50',
+											: 'bg-white text-gray-900  hover:bg-surface-gray-1',
 										'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
 									]"
 								>

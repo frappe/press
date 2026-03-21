@@ -10,7 +10,7 @@
 				<div v-if="request">
 					<p class="text-xs text-gray-600">Request</p>
 					<pre
-						class="mt-2 whitespace-pre-wrap rounded bg-gray-50 px-2 py-1.5 text-sm text-gray-600"
+						class="mt-2 whitespace-pre-wrap rounded bg-surface-gray-1 px-2 py-1.5 text-sm text-gray-600"
 						>{{ request }}</pre
 					>
 				</div>
@@ -24,7 +24,7 @@
 				<div v-if="response">
 					<p class="text-xs text-gray-600">Response</p>
 					<pre
-						class="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-gray-50 px-2 py-1.5 text-sm text-gray-600"
+						class="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-surface-gray-1 px-2 py-1.5 text-sm text-gray-600"
 						>{{ response }}</pre
 					>
 				</div>

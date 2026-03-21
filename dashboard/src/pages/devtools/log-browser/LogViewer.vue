@@ -83,7 +83,7 @@
 									v-for="(row, index) in table.getRowModel().rows"
 									:key="row.id"
 								>
-									<tr class="hover:bg-gray-50">
+									<tr class="hover:bg-surface-gray-1">
 										<td
 											v-for="cell in row.getVisibleCells()"
 											:key="cell.id"

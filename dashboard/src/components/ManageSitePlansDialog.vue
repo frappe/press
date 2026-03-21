@@ -30,7 +30,7 @@
 				/>
 				<div class="mt-4 text-xs text-gray-700">
 					<div
-						class="flex items-center rounded bg-gray-50 p-2 text-p-base font-medium text-gray-800"
+						class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base font-medium text-gray-800"
 					>
 						<lucide-badge-check class="mr-2 h-5 w-12 text-gray-600" />
 						<span>

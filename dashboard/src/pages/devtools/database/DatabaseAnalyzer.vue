@@ -61,7 +61,7 @@
 
 				<!-- Slider -->
 				<div
-					class="mb-4 mt-4 flex h-7 w-full cursor-pointer items-start justify-start overflow-clip rounded border bg-gray-50 pl-0"
+					class="mb-4 mt-4 flex h-7 w-full cursor-pointer items-start justify-start overflow-clip rounded border bg-surface-gray-1 pl-0"
 					@click="showTableSchemaSizeDetailsDialog = true"
 				>
 					<div

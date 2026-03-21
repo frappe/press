@@ -17,7 +17,7 @@
 				<div class="mt-4">
 					<p class="text-sm text-gray-600">Query</p>
 					<pre
-						class="mt-1.5 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-gray-50 px-2 py-1.5 text-sm text-gray-600"
+						class="mt-1.5 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-surface-gray-1 px-2 py-1.5 text-sm text-gray-600"
 						>{{ selectedRow.query }}</pre
 					>
 				</div>

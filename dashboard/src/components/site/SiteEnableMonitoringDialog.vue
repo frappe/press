@@ -18,7 +18,7 @@
 					Cause of disabling monitoring :
 				</p>
 				<div
-					class="rounded border bg-gray-50 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-ful"
+					class="rounded border bg-surface-gray-1 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-ful"
 				>
 					{{ siteDoc.reason_for_disabling_monitoring || 'Unknown Reason' }}
 				</div>
@@ -35,7 +35,7 @@
 					/>
 					<p class="mt-1 text-gray-800 text-base font-medium">Reason -</p>
 					<div
-						class="rounded border bg-gray-50 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-full"
+						class="rounded border bg-surface-gray-1 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-full"
 						style="line-height: inherit"
 					>
 						{{ reasonForFailureInEnablingMonitoring }}
@@ -44,7 +44,7 @@
 						Possible Solution -
 					</p>
 					<div
-						class="rounded border bg-gray-50 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-full"
+						class="rounded border bg-surface-gray-1 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-full"
 						style="line-height: inherit"
 					>
 						{{ solutionToResolveIssue }}

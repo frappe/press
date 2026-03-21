@@ -177,7 +177,7 @@
 					<div
 						v-for="d in serverInformation"
 						:key="d.label"
-						class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
+						class="flex items-center px-5 py-3 last:pb-5 even:bg-surface-gray-1/70"
 					>
 						<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
 						<div class="w-2/3 text-base font-medium">{{ d.value }}</div>
@@ -594,7 +594,7 @@ export default {
 										onClick: () => {
 											confirmDialog({
 												title: 'Configure Auto Increase Storage',
-												message: `<div class="rounded my-4 p-2 prose-sm prose bg-gray-50 border">
+												message: `<div class="rounded my-4 p-2 prose-sm prose bg-surface-gray-1 border">
 
 									This feature will automatically increases the storage as it reaches over <b>90%</b> of its capacity.
 

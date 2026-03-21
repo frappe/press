@@ -41,7 +41,7 @@
 								:class="[
 									serverType === c.name
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
 									'flex w-full items-center rounded-md border p-3 text-left text-base text-gray-900',
 								]"
 							>
@@ -100,7 +100,7 @@
 									:class="[
 										serverProvider === provider.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
 										'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
 									]"
 								>
@@ -148,7 +148,7 @@
 									:class="[
 										serverRegion === r.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
 										'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
 									]"
 								>
@@ -195,7 +195,7 @@
 									:class="[
 										unifiedServer == c.unifiedServer
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
 										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-gray-900',
 									]"
 								>
@@ -254,7 +254,7 @@
 									:class="[
 										serviceType === c.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
 										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-gray-900',
 									]"
 								>
@@ -345,7 +345,7 @@
 													: index === availableAppPlanTypes.length - 1
 														? 'rounded-b-md sm:rounded-r-md sm:rounded-bl-none'
 														: 'rounded-none',
-												'relative flex w-full flex-col overflow-hidden border text-left hover:bg-gray-50',
+												'relative flex w-full flex-col overflow-hidden border text-left hover:bg-surface-gray-1',
 											]"
 										>
 											<div class="w-full p-3">
@@ -451,7 +451,7 @@
 													: index === availableDbPlanTypes.length - 1
 														? 'rounded-b-md sm:rounded-r-md sm:rounded-bl-none'
 														: 'rounded-none',
-												'relative flex w-full flex-col overflow-hidden border text-left hover:bg-gray-50',
+												'relative flex w-full flex-col overflow-hidden border text-left hover:bg-surface-gray-1',
 											]"
 										>
 											<div class="w-full p-3">
@@ -560,7 +560,9 @@
 					<h2 class="text-base font-semibold leading-6 text-gray-900">
 						Auto Add-on Storage
 					</h2>
-					<div class="my-4 rounded-md border bg-gray-50 p-2 prose-sm prose">
+					<div
+						class="my-4 rounded-md border bg-surface-gray-1 p-2 prose-sm prose"
+					>
 						This feature will automatically increases the storage as it reaches
 						over <b>90%</b> of its capacity.
 

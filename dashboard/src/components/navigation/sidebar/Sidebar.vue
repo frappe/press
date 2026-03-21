@@ -30,7 +30,7 @@ const feedback = () => {
 
 <template>
 	<div
-		class="relative flex min-h-screen w-[220px] flex-col border-r bg-gray-50"
+		class="relative flex min-h-screen w-[220px] flex-col border-r bg-surface-gray-1"
 	>
 		<div class="p-2">
 			<Dropdown

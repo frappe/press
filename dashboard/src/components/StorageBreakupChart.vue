@@ -4,7 +4,7 @@
 		<div v-if="!isTree">
 			<div
 				v-if="showSlider"
-				class="mb-4 mt-4 flex h-7 w-full items-start justify-start overflow-clip rounded border bg-gray-50 pl-0"
+				class="mb-4 mt-4 flex h-7 w-full items-start justify-start overflow-clip rounded border bg-surface-gray-1 pl-0"
 				:class="{
 					'cursor-pointer': onclickSlider,
 				}"
@@ -56,7 +56,7 @@
 				<b>Additional Disk Usage:</b> {{ data.additionalUsage }}
 			</div>
 
-			<div class="prose-sm my-4 rounded border bg-gray-50 p-2">
+			<div class="prose-sm my-4 rounded border bg-surface-gray-1 p-2">
 				The <b>Additional Disk Usage</b> value represents disk space consumed by
 				files and folders that are not included in the main bench size
 				calculation. These typically include:

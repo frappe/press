@@ -53,7 +53,7 @@
 			</div>
 			<div
 				v-else
-				class="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-6 text-center space-y-3"
+				class="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-surface-gray-1 p-6 text-center space-y-3"
 			>
 				<p class="text-gray-900">Autoscale scheduling is unavailable</p>
 

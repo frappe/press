@@ -355,7 +355,7 @@ Are you sure you want to run the query?`,
 				message: `
 Are you sure you want to run the query?
 <br>
-<pre class="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-gray-50 px-2 py-1.5 text-sm text-gray-700">${this.selectedQuery}</pre>
+<pre class="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-surface-gray-1 px-2 py-1.5 text-sm text-gray-700">${this.selectedQuery}</pre>
 				`,
 				primaryAction: {
 					label: 'Run Query',

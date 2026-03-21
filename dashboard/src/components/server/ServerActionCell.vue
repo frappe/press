@@ -103,7 +103,7 @@ function onTeardownSecondaryServer() {
 			while it is being removed.
 		</p>
 
-		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 p-3 text-sm">
+		<div class="mt-3 rounded-md bg-surface-gray-1 border border-gray-200 p-3 text-sm">
 			<div class="p-2">
 				<p>
 					This action <strong>archives the secondary server instance and fully disables auto-scaling</strong> until a new secondary server is set up.
@@ -164,7 +164,7 @@ function onSetupSecondaryServer() {
 			number and size of the benches on the server.
 		</p>
 
-		<div class="mt-3 rounded-md bg-gray-50 border border-gray-200 text-sm">
+		<div class="mt-3 rounded-md bg-surface-gray-1 border border-gray-200 text-sm">
 			<div class="p-2">
 				<p>
 					Select a <strong>secondary server plan</strong> — this is the plan the secondary server will run on.  

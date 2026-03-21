@@ -94,13 +94,13 @@
 			>
 				<h2 class="text-lg mb-4">Summary</h2>
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-					<div class="bg-gray-50 p-3 rounded">
+					<div class="bg-surface-gray-1 p-3 rounded">
 						<div class="text-sm text-gray-500">Total Amount</div>
 						<div class="text-xl font-semibold">
 							{{ formatCurrency(total_amount) }}
 						</div>
 					</div>
-					<div class="bg-gray-50 p-3 rounded">
+					<div class="bg-surface-gray-1 p-3 rounded">
 						<div class="text-sm text-gray-500">
 							Commission ({{ partnerCommission }}%)
 						</div>
@@ -108,7 +108,7 @@
 							{{ formatCurrency(commission) }}
 						</div>
 					</div>
-					<div class="bg-gray-50 p-3 rounded">
+					<div class="bg-surface-gray-1 p-3 rounded">
 						<div class="text-sm text-gray-500">Net Amount</div>
 						<div class="text-xl font-semibold">
 							{{ formatCurrency(net_amount) }}

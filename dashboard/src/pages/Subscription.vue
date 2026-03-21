@@ -1,5 +1,5 @@
 <template>
-	<div class="min-h-screen bg-gray-50">
+	<div class="min-h-screen bg-surface-gray-1">
 		<LoginBox>
 			<h1 class="text-base text-gray-600">Manage Subscription</h1>
 			<div class="mt-4">

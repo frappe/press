@@ -15,7 +15,7 @@
 						'bg-green-50 border-green-200 text-green-800':
 							banner.type === 'success',
 						'bg-red-50 border-red-200 text-red-800': banner.type === 'error',
-						'bg-gray-50 border-gray-200 text-gray-800':
+						'bg-surface-gray-1 border-gray-200 text-gray-800':
 							banner.type === 'neutral',
 					}"
 				>

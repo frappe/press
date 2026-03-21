@@ -12,7 +12,7 @@
 				placement="top"
 			>
 				<button
-					class="flex flex-col overflow-hidden rounded-md border text-left hover:bg-gray-50"
+					class="flex flex-col overflow-hidden rounded-md border text-left hover:bg-surface-gray-1"
 					:class="[
 						modelValue?.name === plan?.name
 							? 'border-gray-900 ring-1 ring-gray-900'
