@@ -9,7 +9,7 @@
 
 		<div class="mt-3">
 			<div class="flex w-full items-center">
-				<h2 class="text-lg font-medium text-gray-900">
+				<h2 class="text-lg font-medium text-ink-gray-9">
 					{{ autoScale.action }}
 				</h2>
 				<Badge class="ml-2" :label="autoScale.status" />
@@ -37,25 +37,25 @@
 				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
 					<div>
 						<div class="text-sm font-medium text-gray-500">Creation</div>
-						<div class="mt-2 text-sm text-gray-900">
+						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ $format.date(autoScale.creation, 'lll') }}
 						</div>
 					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">Creator</div>
-						<div class="mt-2 text-sm text-gray-900">
+						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ autoScale.owner }}
 						</div>
 					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">Start</div>
-						<div class="mt-2 text-sm text-gray-900">
+						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ $format.date(autoScale.start_time, 'lll') }}
 						</div>
 					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">Duration</div>
-						<div class="mt-2 text-sm text-gray-900">
+						<div class="mt-2 text-sm text-ink-gray-9">
 							{{
 								autoScale.duration != null
 									? $format.duration(autoScale.duration)

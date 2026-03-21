@@ -34,7 +34,7 @@
 					<div v-if="$team.doc.onboarding.site_created">
 						<div v-if="plans.length">
 							<div class="flex items-center justify-between">
-								<h2 class="text-base font-medium leading-6 text-gray-900">
+								<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 									Select Plan
 								</h2>
 							</div>
@@ -44,7 +44,7 @@
 						</div>
 
 						<div v-if="options.private_groups.length">
-							<h2 class="text-base font-medium leading-6 text-gray-900">
+							<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 								Select Bench
 								<span class="text-sm text-gray-500"> (Optional) </span>
 							</h2>
@@ -69,7 +69,7 @@
 					</div>
 
 					<div>
-						<h2 class="text-base font-medium leading-6 text-gray-900">
+						<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 							Select Region
 						</h2>
 						<div class="mt-2 w-full space-y-2">
@@ -81,8 +81,8 @@
 									:class="[
 										cluster === c.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'bg-surface-white text-gray-900  hover:bg-surface-gray-1',
-										'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
+											: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
+										'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 									]"
 								>
 									<div class="flex w-full items-center justify-between">
@@ -100,7 +100,7 @@
 					</div>
 
 					<div>
-						<h2 class="text-base font-medium leading-6 text-gray-900">
+						<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 							Enter Subdomain
 						</h2>
 						<div class="mt-2 items-center">

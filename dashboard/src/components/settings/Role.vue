@@ -7,7 +7,7 @@
 				</template>
 			</Button>
 		</Tooltip>
-		<h3 class="text-lg font-medium text-gray-900">
+		<h3 class="text-lg font-medium text-ink-gray-9">
 			{{ role.doc?.title }}
 		</h3>
 		<Tooltip text="Admin Role" v-if="role.doc?.admin_access">

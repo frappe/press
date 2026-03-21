@@ -1,10 +1,10 @@
 <template>
 	<div class="flex flex-col gap-4">
-		<div class="text-lg font-semibold text-gray-900">Payment details</div>
+		<div class="text-lg font-semibold text-ink-gray-9">Payment details</div>
 		<div class="flex flex-col">
 			<div
 				v-if="team.doc.payment_mode == 'Card'"
-				class="flex items-center justify-between text-base text-gray-900"
+				class="flex items-center justify-between text-base text-ink-gray-9"
 			>
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Active Card</div>
@@ -38,7 +38,7 @@
 				v-if="team.doc.payment_mode == 'Card'"
 				class="my-3 h-px bg-gray-100"
 			/>
-			<div class="flex items-center justify-between text-base text-gray-900">
+			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Mode of payment</div>
 					<div
@@ -68,7 +68,7 @@
 				</div>
 			</div>
 			<div class="my-3 h-px bg-gray-100" />
-			<div class="flex items-center justify-between text-base text-gray-900">
+			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Credit balance</div>
 					<div class="text-gray-700">
@@ -97,7 +97,7 @@
 				</div>
 			</div>
 			<div class="my-3 h-px bg-gray-100" />
-			<div class="flex items-center justify-between text-base text-gray-900">
+			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Billing address</div>
 					<div v-if="billingDetailsSummary" class="leading-5 text-gray-700">
@@ -122,7 +122,7 @@
 				</div>
 			</div>
 			<div class="my-3 h-px bg-gray-100" />
-			<div class="flex items-center justify-between text-base text-gray-900">
+			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Budget Alerts</div>
 					<div

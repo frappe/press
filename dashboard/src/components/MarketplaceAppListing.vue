@@ -3,7 +3,7 @@
 		<div>
 			<div class="flex justify-between border-b pb-4">
 				<div>
-					<h2 class="text-lg font-medium text-gray-900">App Profile</h2>
+					<h2 class="text-lg font-medium text-ink-gray-9">App Profile</h2>
 					<p class="mt-1 text-sm leading-6 text-gray-600">
 						This information will be displayed publicly on the marketplace. Make
 						sure you enter correct information without any broken links and

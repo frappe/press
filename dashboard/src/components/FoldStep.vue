@@ -17,7 +17,7 @@
 						:class="iconClass"
 					>
 						<LoadingIndicator
-							class="h-3.5 w-3.5 text-gray-900"
+							class="h-3.5 w-3.5 text-ink-gray-9"
 							v-if="status === 'Running'"
 						/>
 						<FeatherIcon

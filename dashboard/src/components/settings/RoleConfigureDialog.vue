@@ -20,7 +20,7 @@
 			>
 				<template #tab-item="{ tab }">
 					<div
-						class="flex cursor-pointer items-center gap-1.5 py-3 text-base text-gray-600 duration-300 ease-in-out hover:border-gray-400 hover:text-gray-900 focus:outline-none focus:transition-none [&>div]:pl-0"
+						class="flex cursor-pointer items-center gap-1.5 py-3 text-base text-gray-600 duration-300 ease-in-out hover:border-gray-400 hover:text-ink-gray-9 focus:outline-none focus:transition-none [&>div]:pl-0"
 					>
 						<span>{{ tab.label }}</span>
 					</div>

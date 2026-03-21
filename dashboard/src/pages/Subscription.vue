@@ -3,7 +3,7 @@
 		<LoginBox>
 			<h1 class="text-base text-gray-600">Manage Subscription</h1>
 			<div class="mt-4">
-				<div class="text-xl font-medium text-gray-900">
+				<div class="text-xl font-medium text-ink-gray-9">
 					{{ site }}
 				</div>
 				<div
@@ -32,7 +32,7 @@
 							}}
 						</span>
 						<span
-							class="text-sm font-bold text-gray-900"
+							class="text-sm font-bold text-ink-gray-9"
 							v-if="currentStep === 2"
 						>
 							{{ selectedPlan.plan_title }}<span class="font-normal">/mo</span>
@@ -52,7 +52,7 @@
 						>
 							<div class="flex items-center justify-between">
 								<div>
-									<span class="text-base font-medium text-gray-900">
+									<span class="text-base font-medium text-ink-gray-9">
 										{{ plan.plan_title }}
 									</span>
 									<span class="text-base text-gray-600">/mo</span>

@@ -39,7 +39,7 @@
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div>
 				<div class="flex items-center justify-between">
-					<h2 class="text-sm font-medium leading-6 text-gray-900">
+					<h2 class="text-sm font-medium leading-6 text-ink-gray-9">
 						Select Frappe Framework Version
 					</h2>
 				</div>
@@ -51,7 +51,7 @@
 							:class="[
 								benchVersion === version.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'bg-surface-white text-gray-900  hover:bg-surface-gray-1',
+									: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
 								'flex cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none',
 							]"
 							@click="benchVersion = version.name"
@@ -68,7 +68,7 @@
 				class="flex flex-col"
 				v-if="options?.clusters.length && benchVersion && !server"
 			>
-				<h2 class="text-sm font-medium leading-6 text-gray-900">
+				<h2 class="text-sm font-medium leading-6 text-ink-gray-9">
 					Select Region
 				</h2>
 				<div class="mt-2 w-full space-y-2">
@@ -80,8 +80,8 @@
 							:class="[
 								benchRegion === c.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
-								'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
+									: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+								'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 							]"
 						>
 							<div class="flex w-full items-center justify-between">
@@ -98,7 +98,7 @@
 				</div>
 			</div>
 			<div v-if="benchVersion && (benchRegion || server)" class="flex flex-col">
-				<h2 class="text-sm font-medium leading-6 text-gray-900">
+				<h2 class="text-sm font-medium leading-6 text-ink-gray-9">
 					Enter Bench Title
 				</h2>
 				<div class="mt-2">

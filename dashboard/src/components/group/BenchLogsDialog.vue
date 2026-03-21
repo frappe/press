@@ -15,7 +15,9 @@
 							<lucide-arrow-left class="inline-block h-4 w-4" />
 						</template>
 					</Button>
-					<h2 class="ml-4 text-lg font-medium text-gray-900">{{ logName }}</h2>
+					<h2 class="ml-4 text-lg font-medium text-ink-gray-9">
+						{{ logName }}
+					</h2>
 					<div class="!ml-auto flex gap-2">
 						<Button @click="log.reload()" :loading="log.loading">
 							<template #icon>

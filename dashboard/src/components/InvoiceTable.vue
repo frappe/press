@@ -11,7 +11,7 @@
 		</div>
 		<div v-if="doc" class="overflow-x-auto">
 			<table
-				class="text w-full border-separate border-spacing-y-2 text-base font-normal text-gray-900"
+				class="text w-full border-separate border-spacing-y-2 text-base font-normal text-ink-gray-9"
 			>
 				<thead class="bg-gray-100">
 					<tr class="text-gray-600">

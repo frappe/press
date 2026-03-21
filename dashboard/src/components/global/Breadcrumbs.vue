@@ -8,8 +8,8 @@
 					class="flex items-center rounded px-0.5 py-1 text-lg font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
 					:class="[
 						i == linkItems.length - 1
-							? 'text-gray-900'
-							: 'text-gray-600 hover:text-gray-700'
+							? 'text-ink-gray-9'
+							: 'text-gray-600 hover:text-gray-700',
 					]"
 					:to="item.route"
 				>
@@ -35,8 +35,8 @@ import { computed } from 'vue';
 const props = defineProps({
 	items: {
 		type: Array,
-		required: true
-	}
+		required: true,
+	},
 });
 
 const items = computed(() => {

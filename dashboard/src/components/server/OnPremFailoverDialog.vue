@@ -272,19 +272,19 @@ apt install -y wireguard resolvconf rsync gawk curl wget"
 							<div class="mt-1 mb-1 flex flex-row justify-between w-full px-2">
 								<div>
 									<div class="text-sm font-medium text-gray-500">Start</div>
-									<div class="mt-2 text-sm text-gray-900">
+									<div class="mt-2 text-sm text-ink-gray-9">
 										{{ job.start ? $format.date(job.start, 'lll') : '-' }}
 									</div>
 								</div>
 								<div>
 									<div class="text-sm font-medium text-gray-500">End</div>
-									<div class="mt-2 text-sm text-gray-900">
+									<div class="mt-2 text-sm text-ink-gray-9">
 										{{ job.end ? $format.date(job.end, 'lll') : '-' }}
 									</div>
 								</div>
 								<div>
 									<div class="text-sm font-medium text-gray-500">Duration</div>
-									<div class="mt-2 text-sm text-gray-900">
+									<div class="mt-2 text-sm text-ink-gray-9">
 										{{ job.duration ? humanizeDuration(job.duration) : '-' }}
 									</div>
 								</div>

@@ -3,7 +3,7 @@
 		<div>
 			<div class="flex justify-start">
 				<img class="mr-2 h-4" v-if="image" :src="image" :alt="title" />
-				<h3 class="text-base font-medium text-gray-900">
+				<h3 class="text-base font-medium text-ink-gray-9">
 					{{ title }}
 				</h3>
 			</div>
@@ -25,7 +25,7 @@ export default {
 		secondaryText() {
 			let text = this.subtitle || this.description || '';
 			return text.replace('\n', '<br>');
-		}
-	}
+		},
+	},
 };
 </script>

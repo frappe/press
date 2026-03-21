@@ -55,7 +55,7 @@
 				v-else
 				class="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-surface-gray-1 p-6 text-center space-y-3"
 			>
-				<p class="text-gray-900">Autoscale scheduling is unavailable</p>
+				<p class="text-ink-gray-9">Autoscale scheduling is unavailable</p>
 
 				<p class="text-gray-600 max-w-md">
 					You can only schedule autoscale records when automatic scaling is not
@@ -67,7 +67,7 @@
 					<a
 						href="https://docs.frappe.io/cloud/application-server-horizontal-scaling"
 						target="_blank"
-						class="text-gray-900 underline hover:text-gray-700"
+						class="text-ink-gray-9 underline hover:text-gray-700"
 					>
 						documentation
 					</a>

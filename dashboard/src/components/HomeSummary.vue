@@ -14,7 +14,7 @@
 					:key="site.name"
 					:to="{ name: 'Site Detail', params: { name: site.name } }"
 				>
-					<div class="text-base text-gray-900">
+					<div class="text-base text-ink-gray-9">
 						{{ site.host_name || site.name }}
 					</div>
 					<div>

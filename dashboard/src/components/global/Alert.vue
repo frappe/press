@@ -4,11 +4,11 @@
 			<FeatherIcon
 				v-if="type === 'warning'"
 				name="alert-circle"
-				class="h-5 w-5 text-gray-900"
+				class="h-5 w-5 text-ink-gray-9"
 			/>
 			<div class="ml-2 w-full">
 				<div class="flex flex-col md:flex-row md:items-baseline">
-					<h3 class="text-lg font-medium text-gray-900" v-if="title">
+					<h3 class="text-lg font-medium text-ink-gray-9" v-if="title">
 						{{ title }}
 					</h3>
 					<div class="mt-1 md:ml-2 md:mt-0">

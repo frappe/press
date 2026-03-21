@@ -13,7 +13,7 @@
 			>
 				<div class="mb-2" v-if="title">
 					<span
-						class="text-2xl font-bold leading-5 tracking-tight text-gray-900"
+						class="text-2xl font-bold leading-5 tracking-tight text-ink-gray-9"
 					>
 						{{ title }}
 					</span>

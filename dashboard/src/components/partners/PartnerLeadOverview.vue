@@ -37,7 +37,7 @@
 						</Dropdown>
 					</div>
 				</div>
-				<div class="rounded-lg text-base text-gray-900 border">
+				<div class="rounded-lg text-base text-ink-gray-9 border">
 					<div class="p-4">
 						<div class="flex items-center justify-between pb-2">
 							<div class="font-semibold text-xl">Company Information</div>
@@ -79,7 +79,7 @@
 					</div>
 				</div>
 
-				<div class="rounded-lg text-base text-gray-900 border">
+				<div class="rounded-lg text-base text-ink-gray-9 border">
 					<div class="p-4">
 						<div class="flex items-center justify-between pb-2">
 							<div class="font-semibold text-xl">Contact Info</div>
@@ -100,7 +100,7 @@
 					</div>
 				</div>
 
-				<div class="rounded-lg text-base text-gray-900 border">
+				<div class="rounded-lg text-base text-ink-gray-9 border">
 					<div class="p-4">
 						<div class="flex items-center justify-between pb-2">
 							<div class="font-semibold text-xl">Deal Info</div>

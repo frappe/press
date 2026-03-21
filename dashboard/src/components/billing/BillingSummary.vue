@@ -1,6 +1,6 @@
 <template>
 	<div class="flex flex-col gap-4">
-		<div class="flex flex-col rounded-lg text-base text-gray-900 shadow">
+		<div class="flex flex-col rounded-lg text-base text-ink-gray-9 shadow">
 			<div class="flex flex-col gap-2.5 px-4 py-3">
 				<div class="flex items-center justify-between">
 					<div class="flex flex-col gap-1.5">
@@ -16,7 +16,7 @@
 						<lucide-credit-card class="h-4 w-4" />
 						<div>
 							<span>Current billing amount so far is </span>
-							<span class="font-medium text-gray-900">
+							<span class="font-medium text-ink-gray-9">
 								{{ currency }} {{ currentBillingAmount?.toFixed(2) || '0.00' }}
 							</span>
 						</div>

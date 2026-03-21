@@ -29,7 +29,7 @@
 			<!-- Main configuration section -->
 			<div class="w-full lg:min-w-[42rem] lg:max-w-[42rem] space-y-8">
 				<div class="flex flex-col" v-if="$team.doc?.hybrid_servers_enabled">
-					<h2 class="text-base font-semibold leading-6 text-gray-900">
+					<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 						Choose Server Type
 					</h2>
 					<div class="mt-2 w-full space-y-2">
@@ -41,8 +41,8 @@
 								:class="[
 									serverType === c.name
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-										: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
-									'flex w-full items-center rounded-md border p-3 text-left text-base text-gray-900',
+										: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+									'flex w-full items-center rounded-md border p-3 text-left text-base text-ink-gray-9',
 								]"
 							>
 								<div class="flex w-full items-center justify-between space-x-2">
@@ -59,7 +59,7 @@
 				</div>
 
 				<div v-if="serverType" class="flex flex-col">
-					<h2 class="text-base font-semibold leading-6 text-gray-900">
+					<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 						Enter Name For Your Server<span class="text-red-500">&nbsp;*</span>
 					</h2>
 					<div class="mt-2">
@@ -74,7 +74,7 @@
 					<!-- Choose Server Provider -->
 					<div class="flex flex-col" v-if="allProviders.length">
 						<div class="flex items-center justify-between items-center">
-							<h2 class="text-base font-semibold leading-6 text-gray-900">
+							<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 								Select Provider
 							</h2>
 							<div>
@@ -100,8 +100,8 @@
 									:class="[
 										serverProvider === provider.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
-										'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
+											: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+										'flex w-full items-center rounded-md border p-2 text-left text-base text-ink-gray-9',
 									]"
 								>
 									<div class="flex w-full items-center justify-between">
@@ -136,7 +136,7 @@
 						class="flex flex-col"
 						v-if="serverProvider && regionsForProvider.length"
 					>
-						<h2 class="text-base font-semibold leading-6 text-gray-900">
+						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 							Select Region
 						</h2>
 						<div class="mt-2 w-full space-y-2">
@@ -148,8 +148,8 @@
 									:class="[
 										serverRegion === r.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
-										'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
+											: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+										'flex w-full items-center rounded-md border p-2 text-left text-base text-ink-gray-9',
 									]"
 								>
 									<div class="flex w-full items-center justify-between">
@@ -169,7 +169,7 @@
 						v-if="showUnifiedServerOption"
 						class="flex flex-col space-y-2 text-sm text-gray-600 w-full"
 					>
-						<h2 class="text-base font-semibold leading-6 text-gray-900">
+						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 							Deployment Mode
 						</h2>
 
@@ -195,8 +195,8 @@
 									:class="[
 										unifiedServer == c.unifiedServer
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
-										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-gray-900',
+											: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-ink-gray-9',
 									]"
 								>
 									<div
@@ -220,7 +220,7 @@
 						class="flex flex-col"
 					>
 						<div class="flex items-center justify-between">
-							<h2 class="text-base font-semibold leading-6 text-gray-900">
+							<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 								Service Type
 							</h2>
 							<div>
@@ -254,8 +254,8 @@
 									:class="[
 										serviceType === c.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
-										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-gray-900',
+											: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-ink-gray-9',
 									]"
 								>
 									<div
@@ -283,13 +283,13 @@
 								<div class="flex flex-row justify-between items-center">
 									<h2
 										v-if="!unifiedServer"
-										class="text-base font-semibold leading-6 text-gray-900"
+										class="text-base font-semibold leading-6 text-ink-gray-9"
 									>
 										Select Application Server Plan
 									</h2>
 									<h2
 										v-else
-										class="text-base font-semibold leading-6 text-gray-900"
+										class="text-base font-semibold leading-6 text-ink-gray-9"
 									>
 										Select Unified Server Plan
 									</h2>
@@ -352,7 +352,7 @@
 												<div class="flex items-center justify-between">
 													<div class="flex w-full items-center">
 														<span
-															class="truncate text-base font-semibold text-gray-900"
+															class="truncate text-base font-semibold text-ink-gray-9"
 														>
 															{{ planType.title }}
 														</span>
@@ -374,7 +374,7 @@
 									v-else-if="availableAppPlanTypes.length === 1"
 									class="flex flex-col rounded-md border border-gray-300 p-3 gap-2"
 								>
-									<p class="text-base text-gray-900">
+									<p class="text-base text-ink-gray-9">
 										<span class="font-medium">{{
 											availableAppPlanTypes[0].title
 										}}</span>
@@ -412,7 +412,7 @@
 						>
 							<div class="flex flex-col space-y-2">
 								<div class="flex flex-row justify-between items-center">
-									<h2 class="text-base font-semibold leading-6 text-gray-900">
+									<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 										Select Database Server Plan
 									</h2>
 									<div>
@@ -458,7 +458,7 @@
 												<div class="flex items-center justify-between">
 													<div class="flex w-full items-center">
 														<span
-															class="truncate text-base font-semibold text-gray-900"
+															class="truncate text-base font-semibold text-ink-gray-9"
 														>
 															{{ planType.title }}
 														</span>
@@ -480,7 +480,7 @@
 									v-else-if="availableDbPlanTypes.length === 1"
 									class="flex flex-col rounded-md border border-gray-300 p-3 gap-2"
 								>
-									<p class="text-base text-gray-900">
+									<p class="text-base text-ink-gray-9">
 										<span class="font-medium">{{
 											availableDbPlanTypes[0].title
 										}}</span>
@@ -505,7 +505,7 @@
 				</div>
 				<div v-else-if="serverType === 'hybrid'" class="space-y-8">
 					<div class="flex flex-col space-y-2">
-						<h2 class="text-base font-semibold leading-6 text-gray-900">
+						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 							App Server IP Addresses
 						</h2>
 						<div class="flex flex-col sm:flex-row gap-3">
@@ -524,7 +524,7 @@
 						</div>
 					</div>
 					<div class="flex flex-col space-y-2">
-						<h2 class="text-base font-semibold leading-6 text-gray-900">
+						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 							Database Server IP Addresses
 						</h2>
 						<div class="flex flex-col sm:flex-row gap-3">
@@ -543,7 +543,7 @@
 						</div>
 					</div>
 					<div class="flex flex-col space-y-2">
-						<h2 class="text-base font-semibold leading-6 text-gray-900">
+						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 							Add SSH Key
 						</h2>
 						<span class="text-xs text-gray-600">
@@ -557,7 +557,7 @@
 					</div>
 				</div>
 				<div class="flex flex-col space-y-3" v-if="showAutoAddStorageOption">
-					<h2 class="text-base font-semibold leading-6 text-gray-900">
+					<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 						Auto Add-on Storage
 					</h2>
 					<div
@@ -604,7 +604,7 @@
 
 				<!-- Mobile only Summary -->
 				<div
-					class="lg:hidden rounded border-gray-400 bg-surface-white text-gray-900 ring-gray-200 border p-6 space-y-4"
+					class="lg:hidden rounded border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 border p-6 space-y-4"
 					v-if="showSummary"
 				>
 					<h2 class="text-md font-semibold">Summary</h2>
@@ -770,7 +770,7 @@
 
 			<!-- Desktop only Summary -->
 			<div
-				class="hidden lg:block sticky top-[4.5rem] rounded border-gray-400 bg-surface-white text-gray-900 ring-gray-200 border p-6 h-fit w-[25rem] space-y-4"
+				class="hidden lg:block sticky top-[4.5rem] rounded border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 border p-6 h-fit w-[25rem] space-y-4"
 				v-if="showSummary"
 			>
 				<h2 class="text-md font-semibold">Summary</h2>
@@ -875,7 +875,7 @@
 				<!-- Auto Add-on Storage -->
 				<div class="flex flex-col space-y-1" v-if="showAutoAddStorageOption">
 					<div class="text-base text-gray-700">Auto Add-on Storage</div>
-					<div class="text-base font-medium text-gray-900">
+					<div class="text-base font-medium text-ink-gray-9">
 						{{ enableAutoAddStorage ? 'Enabled' : 'Disabled' }}
 					</div>
 				</div>

@@ -138,7 +138,7 @@
 							<div class="mt-2 flex justify-between">
 								<div>
 									<div class="leading-4">
-										<span class="flex items-center text-base text-gray-900">
+										<span class="flex items-center text-base text-ink-gray-9">
 											<template v-if="$site.doc.trial_end_date">
 												{{ trialDays($site.doc.trial_end_date) }}
 											</template>
@@ -297,7 +297,7 @@
 		</div>
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
-				<h2 class="text-lg font-medium text-gray-900">Site Information</h2>
+				<h2 class="text-lg font-medium text-ink-gray-9">Site Information</h2>
 			</div>
 			<div>
 				<div
@@ -307,7 +307,7 @@
 				>
 					<div class="w-1/3 text-base text-gray-600">{{ d.label }}</div>
 					<div
-						class="flex w-2/3 items-center space-x-2 text-base text-gray-900"
+						class="flex w-2/3 items-center space-x-2 text-base text-ink-gray-9"
 					>
 						<div v-if="d.prefix">
 							<component :is="d.prefix" />

@@ -61,7 +61,7 @@
 									</div>
 
 									<div class="space-y-1">
-										<div class="flex items-center text-base text-gray-900">
+										<div class="flex items-center text-base text-ink-gray-9">
 											{{ d.value }}
 											<Tooltip v-if="d.isPremium" text="Premium Server">
 												<!-- this icon isn't available in unplugin package yet -->
@@ -171,7 +171,9 @@
 
 			<div class="rounded-md border">
 				<div class="h-12 border-b px-5 py-4">
-					<h2 class="text-lg font-medium text-gray-900">Server Information</h2>
+					<h2 class="text-lg font-medium text-ink-gray-9">
+						Server Information
+					</h2>
 				</div>
 				<div>
 					<div

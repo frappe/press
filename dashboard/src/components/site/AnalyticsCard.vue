@@ -9,7 +9,7 @@
 	>
 		<div class="flex h-12 items-center justify-between border-b px-5 gap-2">
 			<div class="flex items-center">
-				<h3 class="text-lg font-medium text-gray-900">{{ title }}</h3>
+				<h3 class="text-lg font-medium text-ink-gray-9">{{ title }}</h3>
 				<div class="pl-2">
 					<Tooltip text="Share Link to this Card">
 						<CopyIcon

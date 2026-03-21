@@ -146,7 +146,7 @@
 														size="md"
 													/>
 
-													<strong class="text-gray-900 pl-2 pr-2 text-lg">
+													<strong class="text-ink-gray-9 pl-2 pr-2 text-lg">
 														{{ comment.commented_by }}
 													</strong>
 													<Tooltip

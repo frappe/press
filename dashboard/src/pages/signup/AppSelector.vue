@@ -62,7 +62,7 @@
 					{{ 'Skip creating a site? ' }}
 				</span>
 				<router-link
-					class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+					class="text-base font-normal text-ink-gray-9 underline hover:text-gray-700"
 					:to="{
 						name: 'Site List',
 					}"

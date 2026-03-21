@@ -40,8 +40,8 @@
 						:class="[
 							planType === c.name
 								? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-								: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
-							'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
+								: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+							'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 						]"
 					>
 						<div class="flex w-full items-center justify-between space-x-2">
@@ -118,7 +118,7 @@
 							<div class="w-full p-3">
 								<div class="flex items-center justify-between">
 									<div class="flex w-full items-center">
-										<span class="truncate text-lg font-medium text-gray-900">
+										<span class="truncate text-lg font-medium text-ink-gray-9">
 											{{ planType.title }}
 										</span>
 									</div>
@@ -139,7 +139,7 @@
 					v-else-if="Object.keys(serverPlanTypes).length === 1"
 					class="flex flex-col rounded border border-gray-300 p-3 gap-2 mb-4"
 				>
-					<p class="text-base text-gray-900">
+					<p class="text-base text-ink-gray-9">
 						<span class="font-medium">{{
 							Object.values(serverPlanTypes)[0].title
 						}}</span>

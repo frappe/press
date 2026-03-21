@@ -28,7 +28,7 @@
 			/>
 			<div v-if="!bench">
 				<div class="flex items-center justify-between">
-					<h2 class="text-base font-medium leading-6 text-gray-900">
+					<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 						Select Frappe Framework Version
 					</h2>
 				</div>
@@ -52,7 +52,7 @@
 								:class="[
 									version === v.name
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-										: 'bg-surface-white text-gray-900  hover:bg-surface-gray-1',
+										: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
 									v.disabled && 'opacity-50 hover:cursor-default',
 									'flex w-full cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none',
 								]"
@@ -124,7 +124,7 @@
 					label="Host this site on your dedicated server"
 				/>
 				<div v-if="shouldShowDedicatedServerDropdown">
-					<h2 class="text-base font-medium leading-6 text-gray-900 mb-2">
+					<h2 class="text-base font-medium leading-6 text-ink-gray-9 mb-2">
 						Select Dedicated Server
 					</h2>
 					<FormControl
@@ -149,7 +149,7 @@
 				"
 				class="flex flex-col"
 			>
-				<h2 class="text-base font-medium leading-6 text-gray-900">
+				<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 					Select Provider
 				</h2>
 				<div class="mt-2 w-full space-y-2">
@@ -161,8 +161,8 @@
 							:class="[
 								provider === p.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-surface-gray-1',
-								'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
+									: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+								'flex w-full items-center rounded-md border p-2 text-left text-base text-ink-gray-9',
 							]"
 						>
 							<div class="flex w-full items-center justify-between">
@@ -190,7 +190,7 @@
 					(provider || bench)
 				"
 			>
-				<h2 class="text-base font-medium leading-6 text-gray-900">
+				<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 					Select Region
 				</h2>
 				<div class="mt-2 w-full space-y-2">
@@ -202,8 +202,8 @@
 							:class="[
 								cluster === c.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'bg-surface-white text-gray-900  hover:bg-surface-gray-1',
-								'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
+									: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
+								'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 							]"
 						>
 							<div class="flex w-full items-center justify-between">
@@ -221,7 +221,7 @@
 			</div>
 			<div v-if="selectedVersion && cluster">
 				<div class="flex items-center justify-between">
-					<h2 class="text-base font-medium leading-6 text-gray-900">
+					<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 						Select Plan
 					</h2>
 					<div>
@@ -272,7 +272,7 @@
 			</div>
 			<div v-if="selectedVersion && plan && cluster">
 				<div class="flex justify-between items-center">
-					<h2 class="text-base font-medium leading-6 text-gray-900">
+					<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 						Enter Subdomain
 					</h2>
 					<Tooltip

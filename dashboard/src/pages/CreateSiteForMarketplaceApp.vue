@@ -53,7 +53,7 @@
 					>
 						<div class="flex items-center space-x-4">
 							<LoadingIndicator
-								class="h-4 w-4 text-gray-900"
+								class="h-4 w-4 text-ink-gray-9"
 								v-if="step.icon() === 'loading'"
 							/>
 							<FeatherIcon
