@@ -1718,6 +1718,48 @@ class ReleaseGroup(Document, TagHelpers):
 		for key, value in flags.items():
 			setattr(self, key, value)
 
+	@dashboard_whitelist()
+	def clone_group(self, title: str | None):
+		if not title:
+			title = self.title + " - Cloned - " + frappe.generate_hash(length=5)
+
+		new_group: ReleaseGroup = frappe.new_doc("Release Group")
+		new_group.update(
+			{
+				"title": title,
+				"team": self.team,
+				"public": 0,
+				"enabled": 1,
+				"version": self.version,
+				"dependencies": self.dependencies,
+				"is_redisearch_enabled": self.is_redisearch_enabled,
+			}
+		)
+
+		for s in self.servers:
+			new_group.append(
+				"servers",
+				{"server": s.server, "default": s.default},
+			)
+
+		for s in self.apps:
+			new_group.append(
+				"apps",
+				{
+					"app": s.app,
+					"source": s.source,
+					"title": s.title,
+					"enable_auto_deploy": s.enable_auto_deploy,
+				},
+			)
+
+		new_group.insert(ignore_permissions=True)
+		new_group.initial_deploy()  # Deploy also
+		frappe.msgprint(
+			f"New release group <a href='{new_group.get_url()}' target='_blank'>{new_group.title}</a> created and deployed successfully!"
+		)
+		return new_group
+
 
 @redis_cache(ttl=60)
 def are_builds_suspended() -> bool:
