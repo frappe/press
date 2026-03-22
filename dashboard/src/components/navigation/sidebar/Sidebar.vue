@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Tooltip } from 'frappe-ui';
 import LucideChevronDown from '~icons/lucide/chevron-down';
+import LucideMoon from '~icons/lucide/moon';
 import { ref, defineAsyncComponent } from 'vue';
 
 import Item from './Item.vue';
@@ -9,6 +10,7 @@ import ItemGroup from './ItemGroup.vue';
 
 import { getTeam } from '@/data/team';
 import { session } from '@/data/session';
+import { setTheme } from '@/components/utils/UseTheme';
 
 const $team = getTeam();
 const $session = session;
@@ -30,7 +32,7 @@ const feedback = () => {
 
 <template>
 	<div
-		class="relative flex min-h-screen w-[220px] flex-col border-r bg-surface-gray-1"
+		class="relative flex min-h-screen w-[220px] flex-col border-r bg-surface-gray-1 dark:bg-surface-white"
 	>
 		<div class="p-2">
 			<Dropdown
@@ -52,6 +54,28 @@ const feedback = () => {
 						icon: 'file-text',
 						onClick: feedback,
 					},
+					{
+						label: 'Theme',
+						icon: LucideMoon,
+						submenu: [
+							{
+								label: 'Light Mode',
+								icon: 'sun',
+								onClick: () => setTheme('light'),
+							},
+							{
+								label: 'Dark Mode',
+								icon: 'moon',
+								onClick: () => setTheme('dark'),
+							},
+							{
+								label: 'System Default',
+								icon: 'monitor',
+								onClick: () => setTheme('system'),
+							},
+						],
+					},
+
 					{
 						label: 'Logout',
 						icon: 'log-out',

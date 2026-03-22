@@ -43,6 +43,9 @@ import { dialogs } from './utils/components';
 import { useRoute } from 'vue-router';
 import { getTeam } from './data/team';
 import { session } from './data/session.js';
+import { initializeTheme } from '@/components/utils/UseTheme';
+
+initializeTheme();
 
 const AppSidebar = defineAsyncComponent(
 	() => import('./components/navigation/sidebar/Sidebar.vue'),
