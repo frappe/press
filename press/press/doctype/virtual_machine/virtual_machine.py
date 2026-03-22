@@ -460,27 +460,22 @@ class VirtualMachine(Document):
 	def _provision_frappe_compute(self):
 		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
 		ssh_key = frappe.db.get_value("SSH Key", self.ssh_key, "public_key")
-		try:
-			if self.virtual_machine_image:
-				image_id = frappe.db.get_value(
-					"Virtual Machine Image", self.virtual_machine_image, "image_id"
-				)
-			else:
-				image_id = self.machine_image
-			instance_id = self.client().provision_virtual_machine(
-				self.name,
-				self.machine_type,
-				image_id,
-				self.disk_size,
-				ssh_key,
-				self.get_cloud_init(),
-				vpc_id,
-				self.private_ip_address,
-			)
-			self.instance_id = instance_id
-			self.status = "Pending"
-		except Exception:
-			self.status = "Terminated"
+		if self.virtual_machine_image:
+			image_id = frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "image_id")
+		else:
+			image_id = self.machine_image
+		instance_id = self.client().provision_virtual_machine(
+			self.name,
+			self.machine_type,
+			image_id,
+			self.disk_size,
+			ssh_key,
+			self.get_cloud_init(),
+			vpc_id,
+			self.private_ip_address,
+		)
+		self.instance_id = instance_id
+		self.status = "Pending"
 
 		self.save()
 		frappe.db.commit()

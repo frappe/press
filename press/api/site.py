@@ -2915,7 +2915,7 @@ def _check_public_apps_compatibility(public_apps, source_map, next_version):
 	return incompatible
 
 
-def _get_apps_for_version_upgrade(
+def _get_apps_for_version_upgrade(  # noqa: C901
 	site_apps,
 	release_group_apps,
 	source_map,
@@ -2925,32 +2925,44 @@ def _get_apps_for_version_upgrade(
 	team,
 ):
 	apps = []
+	frappe_app = None
+
 	for row in release_group_apps:
 		app_name = row.app
-		source_name = row.source
-		source = source_map.get(source_name)
-		if not source or not source.enabled:
-			frappe.throw(f"Invalid source for {app_name}. Please verify the app source and retry")
+		source = source_map.get(row.source)
+		is_site_app = app_name in site_apps
 
-		# Treat frappe-owned apps as public apps requiring compatibility checks
+		if not source or not source.enabled:
+			if not is_site_app:
+				continue
+			frappe.throw(f"Invalid source for {app_name}")
+
+		# Public / Frappe app
 		if source.public or source.repository_owner == "frappe":
 			compatible_source = compatible_map.get(app_name)
+
 			if not compatible_source:
+				if not is_site_app:
+					continue
 				frappe.throw(
 					f"No compatible source for app {app_name} for {next_version}. Please reach out to <a href='https://support.frappe.io'>support.frappe.io</a>"
 				)
+
 			app_entry = (app_name, compatible_source)
+
 			if app_name == "frappe":
-				apps.insert(0, app_entry)
+				frappe_app = app_entry
 			else:
 				apps.append(app_entry)
 			continue
 
+		# Custom app
 		custom_source = custom_source_map.get(app_name)
 		if not custom_source:
-			if app_name not in site_apps:
+			if not is_site_app:
 				continue
-			frappe.throw(f"Custom app source not provided for {app_name}. Please, provide the app source.")
+			frappe.throw(f"Custom app source not provided for {app_name}")
+
 		custom_source_name = _get_custom_app_upgrade_source(
 			app_name=app_name,
 			app_source=source,
@@ -2959,7 +2971,8 @@ def _get_apps_for_version_upgrade(
 			team=team,
 		)
 		apps.append((app_name, custom_source_name))
-	return apps
+
+	return [frappe_app, *apps]
 
 
 def _get_custom_app_upgrade_source(
