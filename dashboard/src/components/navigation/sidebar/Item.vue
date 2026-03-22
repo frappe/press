@@ -12,9 +12,11 @@ let props = defineProps({
 		<a
 			:href="href"
 			@click="navigate"
-			class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition"
+			class="flex items-center rounded px-2 py-1 text-ink-gray-6"
 			:class="[
-				item.isActive ? 'bg-surface-white shadow-sm' : 'hover:bg-gray-100',
+				item.isActive
+					? 'bg-surface-white shadow-sm'
+					: 'hover:bg-surface-gray-3 dark:hover:bg-surface-gray-1',
 				item.disabled ? 'pointer-events-none opacity-50' : '',
 				$attrs.class,
 			]"

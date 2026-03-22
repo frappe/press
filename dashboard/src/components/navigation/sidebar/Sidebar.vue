@@ -86,7 +86,11 @@ const feedback = () => {
 				<template v-slot="{ open }">
 					<button
 						class="flex w-[204px] items-center rounded-md px-2 py-2 text-left"
-						:class="open ? 'bg-surface-white shadow-sm' : 'hover:bg-gray-200'"
+						:class="
+							open
+								? 'bg-surface-white shadow-sm'
+								: 'hover:bg-surface-gray-3 dark:hover:bg-surface-gray-1'
+						"
 					>
 						<FCLogo class="mb-1 h-8 w-8 shrink-0 rounded" />
 						<div class="ml-2 flex flex-1 flex-col overflow-hidden">
@@ -95,7 +99,7 @@ const feedback = () => {
 							</div>
 							<Tooltip :text="$team?.doc?.user || null">
 								<div
-									class="mt-1 hidden overflow-hidden text-ellipsis whitespace-nowrap pb-1 text-sm leading-none text-gray-700 sm:inline"
+									class="mt-1 hidden overflow-hidden text-ellipsis whitespace-nowrap pb-1 text-sm leading-none text-ink-gray-7 sm:inline"
 								>
 									{{ $team?.get.loading ? 'Loading...' : $team?.doc?.user }}
 								</div>
