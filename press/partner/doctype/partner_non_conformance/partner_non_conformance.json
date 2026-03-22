@@ -27,12 +27,16 @@
   {
    "fieldname": "partner_team",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Partner Team",
    "options": "Team"
   },
   {
    "fieldname": "partner_audit",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Partner Audit",
    "options": "Partner Audit"
   },
@@ -45,6 +49,8 @@
   {
    "fieldname": "audit_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Audit Date"
   },
   {
@@ -59,6 +65,8 @@
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Open\nWIP\nClosed\nDiscarded\nOn Hold"
   },
@@ -111,7 +119,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-16 11:40:08.535163",
+ "modified": "2026-03-16 22:35:33.619186",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Non Conformance",
