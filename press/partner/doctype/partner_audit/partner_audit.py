@@ -34,4 +34,12 @@ class PartnerAudit(Document):
 		support_summary: DF.TextEditor | None
 	# end: auto-generated types
 
-	pass
+	dashboard_fields = (
+		"partner_team",
+		"partner_tier",
+		"mode_of_audit",
+		"status",
+		"audit_date",
+		"conducted_by",
+		"proposed_audit_date",
+	)

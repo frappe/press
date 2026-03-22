@@ -98,6 +98,8 @@ ALLOWED_DOCTYPES = [
 	"Auto Scale Record",
 	"Server Firewall",
 	"New Bench Queue",
+	"Partner Audit",
+	"Partner Non Conformance",
 ]
 
 whitelisted_methods = set()
