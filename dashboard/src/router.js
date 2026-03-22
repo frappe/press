@@ -341,6 +341,26 @@ let router = createRouter({
 						import('./components/partners/PartnerContributionList.vue'),
 				},
 				{
+					name: 'PartnerAudits',
+					path: 'audits',
+					component: () => import('./components/partners/PartnerAudits.vue'),
+				},
+				{
+					name: 'PartnerNCList',
+					path: 'audits/nc-list/:partner_audit?',
+					component: () => import('./components/partners/PartnerNCList.vue'),
+					props: true,
+					children: [
+						{
+							name: 'PartnerNCSummary',
+							path: 'nc-summary/:nc?',
+							props: true,
+							component: () =>
+								import('./components/partners/PartnerNCSummary.vue'),
+						},
+					],
+				},
+				{
 					name: 'LocalPaymentSetup',
 					path: 'local-payment-setup',
 					component: () =>

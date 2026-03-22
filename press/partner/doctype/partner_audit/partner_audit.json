@@ -34,12 +34,16 @@
   {
    "fieldname": "partner_team",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Partner Team",
    "options": "Team"
   },
   {
    "fieldname": "mode_of_audit",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Mode of Audit",
    "options": "\nOnline\nIn-Person\nHybrid"
   },
@@ -144,11 +148,15 @@
   {
    "fieldname": "audit_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Audit Date"
   },
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Requested\nScheduled\nIn Progress\nCompleted\nOn Hold\nCancelled"
   }
@@ -161,7 +169,7 @@
    "link_fieldname": "partner_audit"
   }
  ],
- "modified": "2026-03-16 17:11:16.165613",
+ "modified": "2026-03-16 22:36:28.265537",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Audit",
