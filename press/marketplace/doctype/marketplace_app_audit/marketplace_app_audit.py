@@ -37,7 +37,8 @@ class MarketplaceAppAudit(Document):
 		approval_request: DF.Link | None
 		audit_checks: DF.Table[MarketplaceAppAuditChecks]
 		audit_summary: DF.LongText | None
-		audit_type: DF.Literal["", "Submission Gate", "Manual Run", "Scheduled Audit"]
+		audit_type: DF.Literal["", "Release Change", "Submission Gate", "Manual Run", "Scheduled Audit"]
+		error_traceback: DF.LongText | None
 		finished_at: DF.Datetime | None
 		marketplace_app: DF.Link
 		result: DF.Literal["Pass", "Needs Improvement", "Warn", "Fail", "Inconclusive"]
