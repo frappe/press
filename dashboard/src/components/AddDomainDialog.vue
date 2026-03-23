@@ -81,7 +81,7 @@
 				<p class="flex text-base" v-if="dnsVerified === false">
 					<FeatherIcon
 						name="x"
-						class="mr-2 h-5 w-5 rounded-full bg-red-100 p-1 text-red-500"
+						class="mr-2 h-5 w-5 rounded-full bg-red-100 p-1 text-ink-red-3"
 					/>
 					DNS Verification Failed
 				</p>

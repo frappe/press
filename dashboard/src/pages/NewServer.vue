@@ -60,7 +60,9 @@
 
 				<div v-if="serverType" class="flex flex-col">
 					<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
-						Enter Name For Your Server<span class="text-red-500">&nbsp;*</span>
+						Enter Name For Your Server<span class="text-ink-red-3"
+							>&nbsp;*</span
+						>
 					</h2>
 					<div class="mt-2">
 						<FormControl

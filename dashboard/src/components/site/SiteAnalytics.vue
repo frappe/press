@@ -67,7 +67,7 @@
 			</div>
 		</div>
 
-		<div v-if="!!dateRangeError" class="text-red-500 text-sm">
+		<div v-if="!!dateRangeError" class="text-ink-red-3 text-sm">
 			{{ dateRangeError }}
 		</div>
 	</div>

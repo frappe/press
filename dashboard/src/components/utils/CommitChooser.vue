@@ -77,7 +77,7 @@
 							</span>
 							<span
 								v-if="option.is_yanked"
-								class="text-xs text-red-500 font-medium"
+								class="text-xs text-ink-red-3 font-medium"
 							>
 								Yanked
 							</span>

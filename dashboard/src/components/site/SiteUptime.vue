@@ -234,7 +234,7 @@ export default {
 				value === 1
 					? 'text-green-500'
 					: value === 0
-						? 'text-red-500'
+						? 'text-ink-red-3'
 						: 'text-ink-amber-2';
 
 			this.hoveringOn = { key: date, value, percentValue, prettyDate, colour };

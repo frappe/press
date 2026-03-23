@@ -105,7 +105,7 @@ export default {
 									h(
 										'div',
 										{
-											class: 'ml-2  text-red-500',
+											class: 'ml-2  text-ink-red-3',
 										},
 										h(AlertIcon),
 									),

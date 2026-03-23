@@ -32,7 +32,7 @@
 						<template #subtitle>
 							<span
 								class="text-base"
-								:class="error ? 'text-red-500' : 'text-ink-gray-6'"
+								:class="error ? 'text-ink-red-3' : 'text-ink-gray-6'"
 							>
 								{{
 									uploading

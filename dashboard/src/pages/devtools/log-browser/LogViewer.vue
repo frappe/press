@@ -110,7 +110,7 @@
 														getBadgeLabel(cell) === 'Error' ||
 														getBadgeLabel(cell) === 'Critical'
 													"
-													class="h-4 w-4 text-red-500"
+													class="h-4 w-4 text-ink-red-3"
 												/>
 												<span
 													class="text-xs"
@@ -118,7 +118,7 @@
 														'text-blue-500': getBadgeLabel(cell) === 'Info',
 														'text-ink-amber-2':
 															getBadgeLabel(cell) === 'Warning',
-														'text-red-500':
+														'text-ink-red-3':
 															getBadgeLabel(cell) === 'Error' ||
 															getBadgeLabel(cell) === 'Critical',
 													}"
