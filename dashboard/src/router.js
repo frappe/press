@@ -443,12 +443,6 @@ let router = createRouter({
 			component: () => import('./pages/devtools/log-browser/LogBrowser.vue'),
 			props: true,
 		},
-		{
-			path: '/backups/snapshots',
-			name: 'Snapshots',
-			component: () => import('./pages/backups/ServerSnapshots.vue'),
-			props: true,
-		},
 		...generateRoutes(),
 		// TODO: makeshift redirect fixes for /insights paths
 		{
