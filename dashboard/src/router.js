@@ -444,12 +444,6 @@ let router = createRouter({
 			props: true,
 		},
 		{
-			path: '/backups/sites',
-			name: 'Site Backups',
-			component: () => import('./pages/backups/SiteBackups.vue'),
-			props: true,
-		},
-		{
 			path: '/backups/snapshots',
 			name: 'Snapshots',
 			component: () => import('./pages/backups/ServerSnapshots.vue'),
