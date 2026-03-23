@@ -496,9 +496,6 @@ class Invoice(Document):
 			self._check_existing_razorpay_payment()
 			return
 
-		if self.amount_due_with_tax <= 0:
-			return
-
 		mandate = self._get_valid_razorpay_mandate()
 		if not mandate:
 			return
@@ -1265,7 +1262,7 @@ def finalize_draft_invoices():
 	for name in invoices:
 		invoice = frappe.get_doc("Invoice", name)
 		# don't finalize if invoice ends today and time is before 6 PM
-		if invoice.period_end == today and current_time.hour < 10:
+		if invoice.period_end == today and current_time.hour < 18:
 			continue
 		finalize_draft_invoice(invoice)
 
