@@ -88,7 +88,7 @@
 				<p class="flex text-base" v-if="dnsVerified === true">
 					<FeatherIcon
 						name="check"
-						class="mr-2 h-5 w-5 rounded-full bg-green-100 p-1 text-green-500"
+						class="mr-2 h-5 w-5 rounded-full bg-green-100 p-1 text-ink-green-2"
 					/>
 					DNS records successfully verified. Click on Add Domain.
 				</p>

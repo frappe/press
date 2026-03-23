@@ -232,7 +232,7 @@ export default {
 			const percentValue = (value * 100).toFixed(2);
 			const colour =
 				value === 1
-					? 'text-green-500'
+					? 'text-ink-green-2'
 					: value === 0
 						? 'text-ink-red-3'
 						: 'text-ink-amber-2';
