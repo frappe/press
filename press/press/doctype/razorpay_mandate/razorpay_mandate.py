@@ -183,7 +183,9 @@ class RazorpayMandate(Document):
 	def set_default(self):
 		"""Set this mandate as default for the team"""
 		if self.status != "Active":
-			frappe.throw("Only active mandates can be set as default")
+			frappe.throw(
+				"Only active mandates can be set as default. Please activate this mandate before setting it as default"
+			)
 
 		# Unset other defaults
 		self.unset_other_defaults()
