@@ -13,6 +13,7 @@
   "section_break_rmut",
   "audit_type",
   "result",
+  "error_traceback",
   "column_break_diow",
   "status",
   "started_at",
@@ -67,7 +68,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Audit Type",
-   "options": "\nSubmission Gate\nManual Run\nScheduled Audit"
+   "options": "\nRelease Change\nSubmission Gate\nManual Run\nScheduled Audit"
   },
   {
    "fieldname": "status",
@@ -112,12 +113,18 @@
    "fieldtype": "Table",
    "label": "Audit Checks",
    "options": "Marketplace App Audit Checks"
+  },
+  {
+   "depends_on": "eval: doc.status === \"Failed\"",
+   "fieldname": "error_traceback",
+   "fieldtype": "Long Text",
+   "label": "Error Traceback"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-13 11:29:47.986211",
+ "modified": "2026-03-23 16:56:56.090114",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Audit",
