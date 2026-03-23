@@ -202,6 +202,8 @@ class MarketplaceAppAudit(Document):
 		if crit["Fail"] > 0:
 			return "Fail"
 		if major["Fail"] > 0 or major["Warn"] > 0:
+			if major["Fail"] >= major["Warn"]:
+				return "Fail"
 			return "Warn"
 		if minor["Fail"] > 0 or minor["Warn"] > 0:
 			return "Needs Improvement"
