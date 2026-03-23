@@ -249,6 +249,18 @@ class MarketplaceApp(WebsiteGenerator):
 				"Cannot publish: No App Approval Request found with 'Approved' status. At least one release must be approved."
 			)
 
+		audit = frappe.get_all(
+			"Marketplace App Audit",
+			filters={"app_release": approved_release},
+			fields=["name", "status", "result"],
+			order_by="creation desc",
+			limit=1,
+		)
+		if audit and audit[0].status == "Completed" and audit[0].result not in ["Pass", "Needs Improvement"]:
+			frappe.throw(
+				f"Cannot publish: Audit {audit.name} failed. Please investigate and rerun the audit."
+			)
+
 	def on_update(self):
 		self.set_published_on_date()
 
