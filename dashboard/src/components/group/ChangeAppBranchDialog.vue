@@ -47,7 +47,7 @@
 					<!-- GitHub verification error -->
 					<span
 						v-else-if="branchVerificationSuccess"
-						class="text-sm text-green-600 w-full mt-3"
+						class="text-sm text-ink-green-3 w-full mt-3"
 					>
 						{{ branchVerificationSuccess }}
 					</span>

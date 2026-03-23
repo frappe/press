@@ -67,7 +67,11 @@
 					@input="referralCodeChange"
 				/>
 				<div class="mt-1">
-					<div v-if="partnerExists" class="text-sm text-green-600" role="alert">
+					<div
+						v-if="partnerExists"
+						class="text-sm text-ink-green-3"
+						role="alert"
+					>
 						Referral Code {{ code }} belongs to {{ partner }}
 					</div>
 				</div>

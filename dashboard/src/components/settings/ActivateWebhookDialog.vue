@@ -29,7 +29,7 @@
 					>
 				</div>
 				<div class="flex items-center" v-if="validated">
-					<ILucideCheck class="h-4 text-green-600" />
+					<ILucideCheck class="h-4 text-ink-green-3" />
 					<div class="ml-2 text-sm font-medium text-ink-gray-7">
 						Endpoint has been validated
 					</div>

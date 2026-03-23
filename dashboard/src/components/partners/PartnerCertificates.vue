@@ -98,7 +98,7 @@ export default {
 									() =>
 										h(FeatherIcon, {
 											name: 'check-circle',
-											class: 'h-4 w-4 text-green-600',
+											class: 'h-4 w-4 text-ink-green-3',
 										}),
 								);
 							}

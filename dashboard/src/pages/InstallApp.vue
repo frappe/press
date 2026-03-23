@@ -134,7 +134,7 @@
 							>
 								<div
 									v-if="$resources.subdomainExists.data"
-									class="text-sm text-green-600"
+									class="text-sm text-ink-green-3"
 								>
 									{{ subdomain }}.{{ options.domain }} is available
 								</div>

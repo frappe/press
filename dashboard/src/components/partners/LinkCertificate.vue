@@ -25,7 +25,7 @@
 					@input="emailChange"
 				/>
 				<div class="mt-2">
-					<div v-if="certExist" class="text-sm text-green-600" role="alert">
+					<div v-if="certExist" class="text-sm text-ink-green-3" role="alert">
 						Found {{ certCount }} certificates with email {{ userEmail }} of
 						{{
 							courseTypes.find((course) => course.value === certificateType)
