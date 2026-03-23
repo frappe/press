@@ -62,12 +62,13 @@ def check_long_description(marketplace_app):
 
 	"""
 	long_description = (marketplace_app.long_description).strip()
+	plain_text = frappe.core.utils.html2text(long_description)
 
 	check_id = "meta_long_description_checks"
 	severity = "Major"
 
 	# Check 1: if the long description is missing
-	if not long_description:
+	if not plain_text:
 		return CheckResult(
 			check_id,
 			check_name="Missing Long Description",
@@ -83,7 +84,6 @@ def check_long_description(marketplace_app):
 
 	# firstly convert the long description to plain text as the field is of Rich Text Editor.
 	# frappe.utils.html2text returns markdown text.
-	plain_text = frappe.utils.html2text(long_description)
 	found_patterns = []
 	for pattern in INSTALL_INSTRUCTION_PATTERNS:
 		if re.search(pattern, plain_text):
