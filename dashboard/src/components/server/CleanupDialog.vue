@@ -16,7 +16,7 @@
 
 			<div
 				v-else-if="$resources?.cleanupSpaceEstimation?.error"
-				class="flex h-80 w-full items-center justify-center text-red-600"
+				class="flex h-80 w-full items-center justify-center text-ink-red-4"
 			>
 				Failed to fetch cleanup data.
 			</div>

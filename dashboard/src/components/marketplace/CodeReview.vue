@@ -96,7 +96,9 @@
 									:key="issue.violation"
 								>
 									<div class="flex items-center mb-3">
-										<span class="text-red-600 mr-2">{{ issue.severity }}</span>
+										<span class="text-ink-red-4 mr-2">{{
+											issue.severity
+										}}</span>
 										<span class="text-ink-gray-8">({{ issue.violation }})</span>
 										<span class="text-orange-500 font-semibold pl-2">
 											- {{ issue.match }}</span

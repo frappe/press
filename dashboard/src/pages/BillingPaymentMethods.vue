@@ -90,7 +90,7 @@ export default {
 									() =>
 										h(FeatherIcon, {
 											name: 'alert-circle',
-											class: 'h-4 w-4 text-red-600',
+											class: 'h-4 w-4 text-ink-red-4',
 										}),
 								);
 							}

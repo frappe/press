@@ -39,7 +39,7 @@
 					<!-- GitHub verification error -->
 					<span
 						v-if="branchVerificationError"
-						class="text-sm text-red-600 w-full mt-3"
+						class="text-sm text-ink-red-4 w-full mt-3"
 					>
 						{{ branchVerificationError }}
 					</span>

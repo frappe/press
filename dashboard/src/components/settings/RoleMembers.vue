@@ -35,7 +35,7 @@
 					<Button
 						icon="trash-2"
 						variant="ghost"
-						class="text-red-600"
+						class="text-ink-red-4"
 						@click="$emit('remove', user.user)"
 					/>
 				</div>

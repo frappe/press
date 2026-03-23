@@ -15,7 +15,7 @@
 			</div>
 			<div
 				v-else-if="$resources?.showAppVersions?.error"
-				class="flex h-80 w-full items-center justify-center text-red-600"
+				class="flex h-80 w-full items-center justify-center text-ink-red-4"
 			>
 				Failed to fetch app versions
 			</div>

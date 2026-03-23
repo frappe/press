@@ -138,7 +138,7 @@
 								>
 									{{ subdomain }}.{{ options.domain }} is available
 								</div>
-								<div v-else class="text-sm text-red-600">
+								<div v-else class="text-sm text-ink-red-4">
 									{{ subdomain }}.{{ options.domain }} is not available
 								</div>
 							</template>

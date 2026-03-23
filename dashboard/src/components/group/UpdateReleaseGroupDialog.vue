@@ -76,7 +76,7 @@
 							target="_blank"
 							class="cursor-pointer rounded-full border border-gray-200 bg-gray-100 p-0.5 text-base text-ink-gray-7"
 						>
-							<lucide-help-circle :class="`h-4 w-4 text-red-600`" />
+							<lucide-help-circle :class="`h-4 w-4 text-ink-red-4`" />
 						</a>
 					</div>
 					<p

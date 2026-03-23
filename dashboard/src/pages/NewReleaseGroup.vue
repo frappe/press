@@ -31,7 +31,7 @@
 		v-if="!$team.doc?.is_desk_user && !$session.hasBenchCreationAccess"
 		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-ink-gray-6"
 	>
-		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-ink-red-4" />
 		<ErrorMessage message="You aren't permitted to create new benches" />
 	</div>
 

@@ -103,7 +103,7 @@
 							}
 						"
 					>
-						<span :class="{ 'text-red-600': teamEnabled }">{{
+						<span :class="{ 'text-ink-red-4': teamEnabled }">{{
 							teamEnabled ? 'Disable' : 'Enable'
 						}}</span>
 					</Button>
