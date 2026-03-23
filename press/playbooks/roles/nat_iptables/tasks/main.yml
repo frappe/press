@@ -1,15 +1,11 @@
 ---
-- name: Get network interface
-  shell: ip route show default | awk '{for(i=1;i<=NF;i++) if ($i=="dev") print $(i+1)}' | head -n 1
-  register: network_interface
-
 - name: Add NAT gateway
   copy:
     dest: /etc/netplan/99-custom-gateway.yaml
     content: |
       network:
         ethernets:
-          {{ network_interface.stdout }}:
+          {{ ansible_default_ipv4.interface }}:
             routes:
               - to: default
                 via: {{ nat_gateway_ip }}
