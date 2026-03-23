@@ -24,6 +24,9 @@ def run_code_quality_checks(clone_dir: str) -> list[CheckResult]:
 	results = []
 
 	hooks_path = get_filepath(clone_dir, "hooks.py", 2)
+	if not hooks_path:
+		return []
+
 	with open(hooks_path) as f:
 		tree = ast.parse(f.read())
 	assignments = _extract_top_level_assignments(tree)
