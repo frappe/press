@@ -98,7 +98,7 @@ function getAppsTabColumns(forSite: boolean) {
 		{
 			label: 'Plan',
 			width: 0.75,
-			class: 'text-gray-600 text-sm',
+			class: 'text-ink-gray-6 text-sm',
 			format(_, row) {
 				const planText = planTitle(row.plan_info);
 				if (planText) return `${planText}/mo`;

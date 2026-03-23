@@ -79,7 +79,7 @@
 
 			<div
 				v-if="payments.length === 0 && fetchAttempted"
-				class="text-center mt-4 text-gray-500"
+				class="text-center mt-4 text-ink-gray-5"
 			>
 				No payments found.
 			</div>

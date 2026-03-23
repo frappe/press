@@ -55,7 +55,7 @@ export default {
 					{
 						label: 'Duration',
 						fieldname: 'duration',
-						class: 'text-gray-600',
+						class: 'text-ink-gray-6',
 						width: 0.3,
 						align: 'right',
 						format: (value) => value.toFixed(2),
@@ -63,21 +63,21 @@ export default {
 					{
 						label: 'Rows Examined',
 						fieldname: 'rows_examined',
-						class: 'text-gray-600',
+						class: 'text-ink-gray-6',
 						align: 'right',
 						width: 0.3,
 					},
 					{
 						label: 'Rows Sent',
 						fieldname: 'rows_sent',
-						class: 'text-gray-600',
+						class: 'text-ink-gray-6',
 						align: 'right',
 						width: 0.3,
 					},
 					{
 						label: 'Count',
 						fieldname: 'count',
-						class: 'text-gray-600',
+						class: 'text-ink-gray-6',
 						align: 'right',
 						width: 0.3,
 					},

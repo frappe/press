@@ -9,7 +9,7 @@
 		<div :class="{ 'opacity-0': !ready }">
 			<div v-show="!tryingMicroCharge">
 				<label class="block">
-					<span class="block text-xs text-gray-600">
+					<span class="block text-xs text-ink-gray-6">
 						Credit or Debit Card
 					</span>
 					<div

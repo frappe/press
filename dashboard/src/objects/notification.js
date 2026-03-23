@@ -121,7 +121,7 @@ export default {
 				width: '40rem',
 				component({ row }) {
 					return h('div', {
-						class: 'truncate text-base text-gray-600',
+						class: 'truncate text-base text-ink-gray-6',
 						// replace all html tags except <b>
 						innerHTML: row.message
 							.replace(/<(?!\/?b\b)[^>]*>/g, '')

@@ -8,7 +8,7 @@
 			<template v-for="option in options" :key="option.label">
 				<div
 					v-if="option.condition ? option.condition() : true"
-					class="text-gray-600"
+					class="text-ink-gray-6"
 				>
 					{{ option.label }}:
 				</div>

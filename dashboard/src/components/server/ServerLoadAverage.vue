@@ -9,7 +9,7 @@
 					:link="'https://docs.frappe.io/cloud/server-analytics#load-average'"
 				/>
 				<router-link
-					class="text-base text-gray-600 hover:text-ink-gray-7"
+					class="text-base text-ink-gray-6 hover:text-ink-gray-7"
 					:to="{ name: 'Server Detail Analytics', params: { name: server } }"
 				>
 					All analytics →

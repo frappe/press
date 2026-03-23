@@ -2,15 +2,15 @@
 	<div v-if="$resources.attempt.loading">Loading...</div>
 	<div v-else class="space-y-4">
 		<div>
-			<p class="text-xs text-gray-600">Endpoint</p>
+			<p class="text-xs text-ink-gray-6">Endpoint</p>
 			<p class="mt-2 text-sm text-ink-gray-7">
 				{{ $resources.attempt?.data?.endpoint }}
 			</p>
 		</div>
 		<div>
-			<p class="text-xs text-gray-600">Request</p>
+			<p class="text-xs text-ink-gray-6">Request</p>
 			<pre
-				class="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-surface-gray-1 px-2 py-1.5 text-sm text-gray-600"
+				class="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-surface-gray-1 px-2 py-1.5 text-sm text-ink-gray-6"
 				>{{ $resources.attempt?.data?.request_payload }}</pre
 			>
 		</div>
@@ -19,20 +19,20 @@
 				is_valid_status_code($resources.attempt?.data?.response_status_code)
 			"
 		>
-			<p class="text-xs text-gray-600">Response Status Code</p>
+			<p class="text-xs text-ink-gray-6">Response Status Code</p>
 			<p class="mt-2 text-sm text-ink-gray-7">
 				{{ $resources.attempt?.data?.response_status_code }}
 			</p>
 		</div>
 		<div v-if="$resources.attempt?.data?.response_body">
-			<p class="text-xs text-gray-600">Response</p>
+			<p class="text-xs text-ink-gray-6">Response</p>
 			<pre
-				class="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-surface-gray-1 px-2 py-1.5 text-sm text-gray-600"
+				class="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-surface-gray-1 px-2 py-1.5 text-sm text-ink-gray-6"
 				>{{ $resources.attempt?.data?.response_body }}</pre
 			>
 		</div>
 		<div>
-			<p class="text-xs text-gray-600">Timestamp</p>
+			<p class="text-xs text-ink-gray-6">Timestamp</p>
 			<p class="mt-2 text-sm text-ink-gray-7">
 				{{ $resources.attempt?.data?.creation }}
 			</p>

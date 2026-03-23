@@ -46,7 +46,7 @@
 			<div>
 				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
 					<div>
-						<div class="text-sm font-medium text-gray-500">
+						<div class="text-sm font-medium text-ink-gray-5">
 							Destination Bench
 						</div>
 						<div
@@ -61,7 +61,7 @@
 						<div class="mt-2 text-sm text-ink-gray-9" v-else>-</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">
+						<div class="text-sm font-medium text-ink-gray-5">
 							Destination Server
 						</div>
 						<div
@@ -75,19 +75,19 @@
 						<div class="mt-2 text-sm text-ink-gray-9" v-else>-</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">Creation</div>
+						<div class="text-sm font-medium text-ink-gray-5">Creation</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ $format.date(siteAction.creation, 'lll') }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">Creator</div>
+						<div class="text-sm font-medium text-ink-gray-5">Creator</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ siteAction.owner }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">Duration</div>
+						<div class="text-sm font-medium text-ink-gray-5">Duration</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{
 								siteAction.duration
@@ -97,7 +97,7 @@
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">Start</div>
+						<div class="text-sm font-medium text-ink-gray-5">Start</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{
 								siteAction.start ? $format.date(siteAction.start, 'lll') : '-'
@@ -105,7 +105,7 @@
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">End</div>
+						<div class="text-sm font-medium text-ink-gray-5">End</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ siteAction.end ? $format.date(siteAction.end, 'lll') : '-' }}
 						</div>

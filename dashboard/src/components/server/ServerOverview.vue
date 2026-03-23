@@ -75,7 +75,7 @@
 													stroke-width="2"
 													stroke-linecap="round"
 													stroke-linejoin="round"
-													class="lucide lucide-circle-parking ml-2 h-4 w-4 text-gray-600"
+													class="lucide lucide-circle-parking ml-2 h-4 w-4 text-ink-gray-6"
 												>
 													<circle cx="12" cy="12" r="10" />
 													<path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
@@ -83,9 +83,12 @@
 											</Tooltip>
 										</div>
 										<div class="flex space-x-1">
-											<div class="text-sm text-gray-600" v-html="d.subValue" />
+											<div
+												class="text-sm text-ink-gray-6"
+												v-html="d.subValue"
+											/>
 											<Tooltip v-if="d.help" :text="d.help">
-												<lucide-info class="h-3.5 w-3.5 text-gray-500" />
+												<lucide-info class="h-3.5 w-3.5 text-ink-gray-5" />
 											</Tooltip>
 										</div>
 									</div>
@@ -146,12 +149,12 @@
 									<Progress size="md" :value="d.progress_value || 0" />
 									<div class="flex space-x-2">
 										<div class="mt-2 flex justify-between">
-											<div class="text-sm text-gray-600">
+											<div class="text-sm text-ink-gray-6">
 												{{ d.value }}
 											</div>
 										</div>
 										<Tooltip v-if="d.help" :text="d.help">
-											<lucide-info class="mt-2 h-4 w-4 text-gray-500" />
+											<lucide-info class="mt-2 h-4 w-4 text-ink-gray-5" />
 										</Tooltip>
 									</div>
 								</div>
@@ -160,7 +163,7 @@
 								<div class="flex items-center justify-between">
 									<div class="text-base text-ink-gray-7">{{ d.label }}</div>
 								</div>
-								<div class="mt-1 text-sm text-gray-600">
+								<div class="mt-1 text-sm text-ink-gray-6">
 									{{ d.value }}
 								</div>
 							</div>

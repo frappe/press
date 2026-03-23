@@ -39,7 +39,10 @@
 				</option>
 			</select>
 		</div>
-		<div class="text-base text-gray-600" v-else-if="column.type == 'Timestamp'">
+		<div
+			class="text-base text-ink-gray-6"
+			v-else-if="column.type == 'Timestamp'"
+		>
 			<div class="flex">
 				<Tooltip :text="$format.date(value)">
 					{{ value ? $dayjs(value).fromNow() : '' }}

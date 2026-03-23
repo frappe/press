@@ -12,7 +12,7 @@
 				<template v-if="showInvoice">
 					<div
 						v-if="showInvoice.status === 'Empty'"
-						class="text-base text-gray-600"
+						class="text-base text-ink-gray-6"
 					>
 						Nothing to show
 					</div>

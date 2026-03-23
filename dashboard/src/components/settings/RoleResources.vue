@@ -12,7 +12,7 @@
 						}"
 					>
 						<div
-							class="size-full flex items-center justify-center rounded-l text-gray-500 font-semibold text-2xl"
+							class="size-full flex items-center justify-center rounded-l text-ink-gray-5 font-semibold text-2xl"
 						>
 							<FeatherIcon
 								class="size-6"

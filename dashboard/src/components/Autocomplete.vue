@@ -1,6 +1,6 @@
 <template>
 	<div class="relative space-y-1.5">
-		<label class="block text-xs text-gray-600" v-if="label">
+		<label class="block text-xs text-ink-gray-6" v-if="label">
 			{{ label }}
 		</label>
 		<Combobox

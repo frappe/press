@@ -44,7 +44,7 @@
 		<div class="mt-3">
 			<div class="mt-8 space-y-4">
 				<div
-					class="overflow-auto rounded border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-gray-200"
+					class="overflow-auto rounded border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-ink-gray-2"
 				>
 					<pre>{{
 						$resources.log.loading ? 'Loading...' : log || 'No output'

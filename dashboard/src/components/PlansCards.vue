@@ -52,13 +52,13 @@
 								</span>
 								<Tooltip text="Product support included">
 									<lucide-badge-check
-										class="ml-1 h-4 w-6 text-gray-600"
+										class="ml-1 h-4 w-6 text-ink-gray-6"
 										v-if="plan.support_included"
 									/>
 								</Tooltip>
 							</div>
 						</div>
-						<div class="mt-1 text-sm text-gray-600" v-if="!hourlyPricing">
+						<div class="mt-1 text-sm text-ink-gray-6" v-if="!hourlyPricing">
 							<template v-if="plan.sublabel">
 								{{ plan.sublabel }}
 							</template>
@@ -85,7 +85,7 @@
 									"
 								/>
 								<span>{{ feature.value }} </span>
-								<span class="ml-1 text-gray-600">
+								<span class="ml-1 text-ink-gray-6">
 									{{ feature.label }}
 								</span>
 							</div>
@@ -96,7 +96,7 @@
 		</div>
 	</div>
 	<div v-else class="flex h-6 items-center">
-		<div class="text-base text-gray-600">No plans available</div>
+		<div class="text-base text-ink-gray-6">No plans available</div>
 	</div>
 </template>
 

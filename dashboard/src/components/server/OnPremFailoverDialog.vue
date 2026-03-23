@@ -153,7 +153,7 @@
 						<!-- Add SSH Key -->
 						<div class="flex flex-col gap-2">
 							<div class="font-medium text-ink-gray-7">1. Add SSH Keys</div>
-							<div class="text-gray-600">
+							<div class="text-ink-gray-6">
 								&nbsp;&nbsp;&nbsp;Add the following authorized keys to your
 								on-prem server's
 								<b>/root/.ssh/authorized_keys</b>
@@ -176,7 +176,7 @@ apt install -y wireguard resolvconf rsync gawk curl wget"
 							<div class="font-medium text-ink-gray-7">
 								3. Update Wireguard Configuration
 							</div>
-							<div class="text-gray-600">
+							<div class="text-ink-gray-6">
 								&nbsp;&nbsp;&nbsp;Copy and paste the following config at
 								<b>/etc/wireguard/wg0.conf</b>
 							</div>
@@ -196,7 +196,7 @@ apt install -y wireguard resolvconf rsync gawk curl wget"
 							<div class="font-medium text-ink-gray-7">
 								5. Trigger Replication Setup
 							</div>
-							<div class="text-gray-600">
+							<div class="text-ink-gray-6">
 								&nbsp;&nbsp;&nbsp;Once the above steps are completed, click the
 								button to start the setup.
 							</div>
@@ -273,19 +273,21 @@ apt install -y wireguard resolvconf rsync gawk curl wget"
 						>
 							<div class="mt-1 mb-1 flex flex-row justify-between w-full px-2">
 								<div>
-									<div class="text-sm font-medium text-gray-500">Start</div>
+									<div class="text-sm font-medium text-ink-gray-5">Start</div>
 									<div class="mt-2 text-sm text-ink-gray-9">
 										{{ job.start ? $format.date(job.start, 'lll') : '-' }}
 									</div>
 								</div>
 								<div>
-									<div class="text-sm font-medium text-gray-500">End</div>
+									<div class="text-sm font-medium text-ink-gray-5">End</div>
 									<div class="mt-2 text-sm text-ink-gray-9">
 										{{ job.end ? $format.date(job.end, 'lll') : '-' }}
 									</div>
 								</div>
 								<div>
-									<div class="text-sm font-medium text-gray-500">Duration</div>
+									<div class="text-sm font-medium text-ink-gray-5">
+										Duration
+									</div>
 									<div class="mt-2 text-sm text-ink-gray-9">
 										{{ job.duration ? humanizeDuration(job.duration) : '-' }}
 									</div>

@@ -13,7 +13,7 @@
 					/>
 					<div
 						v-else
-						class="size-full bg-gray-200 flex items-center justify-center rounded-l text-gray-500 font-semibold text-3xl"
+						class="size-full bg-gray-200 flex items-center justify-center rounded-l text-ink-gray-5 font-semibold text-3xl"
 					>
 						{{
 							user.full_name

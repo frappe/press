@@ -30,7 +30,7 @@
 				<h3 class="text-base font-semibold">
 					{{ user.first_name }} {{ user.last_name }}
 				</h3>
-				<p class="mt-1 text-base text-gray-600">{{ user.email }}</p>
+				<p class="mt-1 text-base text-ink-gray-6">{{ user.email }}</p>
 			</div>
 			<div class="ml-auto">
 				<Button icon-left="edit" @click="showProfileEditDialog = true">

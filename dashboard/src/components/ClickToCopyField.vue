@@ -15,7 +15,7 @@
 			>
 		</div>
 		<button
-			class="absolute right-2 top-2 rounded-sm border border-gray-200 bg-surface-white p-1 text-xs text-gray-600"
+			class="absolute right-2 top-2 rounded-sm border border-gray-200 bg-surface-white p-1 text-xs text-ink-gray-6"
 			variant="outline"
 			@click="copyTextContentToClipboard"
 		>

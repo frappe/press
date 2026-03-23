@@ -29,7 +29,7 @@
 
 	<div
 		v-if="!$team.doc?.is_desk_user && !$session.hasBenchCreationAccess"
-		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-ink-gray-6"
 	>
 		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 		<ErrorMessage message="You aren't permitted to create new benches" />
@@ -57,7 +57,7 @@
 							@click="benchVersion = version.name"
 						>
 							<span class="font-medium">{{ version.name }} </span>
-							<span class="ml-1 text-gray-600">
+							<span class="ml-1 text-ink-gray-6">
 								{{ version.status }}
 							</span>
 						</button>
@@ -115,7 +115,7 @@
 				v-if="benchVersion && (benchRegion || server) && benchTitle"
 			>
 				<div
-					class="flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-gray-600"
+					class="flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-ink-gray-6"
 				>
 					<lucide-info class="mr-4 inline-block h-6 w-6" />
 					<div>

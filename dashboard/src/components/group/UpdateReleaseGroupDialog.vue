@@ -36,7 +36,7 @@
 						:options="updatableAppOptions"
 						@update:selections="handleAppSelection"
 					/>
-					<p v-else class="text-center text-base text-gray-600">
+					<p v-else class="text-center text-base text-ink-gray-6">
 						No apps to update
 					</p>
 				</div>
@@ -57,7 +57,7 @@
 						@update:selections="handleSiteSelection"
 					/>
 					<p
-						class="text-center text-base font-medium text-gray-600"
+						class="text-center text-base font-medium text-ink-gray-6"
 						v-else-if="!benchDocResource.doc.deploy_information.sites.length"
 					>
 						No active sites to update
@@ -103,7 +103,7 @@
 							href="https://docs.frappe.io/cloud/in-place-updates"
 							target="_blank"
 						>
-							<lucide-help-circle :class="`h-4 w-4 text-gray-600`" />
+							<lucide-help-circle :class="`h-4 w-4 text-ink-gray-6`" />
 						</a>
 					</Tooltip>
 				</div>

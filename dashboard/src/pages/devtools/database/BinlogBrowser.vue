@@ -265,7 +265,7 @@
 				<h2 class="text-xl font-semibold text-ink-gray-9">
 					Binlog Browser Temporarily Unavailable
 				</h2>
-				<p class="text-gray-600">
+				<p class="text-ink-gray-6">
 					We are indexing new binlogs. This can take up to
 					<strong>5 minutes</strong>.
 					<br />
@@ -291,12 +291,15 @@
 				<h2 class="text-xl font-semibold text-ink-gray-9" v-else>
 					Binlog Indexing Disabled
 				</h2>
-				<p class="text-gray-600" v-if="site_hosted_on_shared_server">
+				<p class="text-ink-gray-6" v-if="site_hosted_on_shared_server">
 					Binlog Browser is only available for sites on dedicated servers.
 					<br />
 					This site is currently on shared hosting.
 				</p>
-				<p class="text-gray-600" v-else-if="database_server_memory < 8 * 1024">
+				<p
+					class="text-ink-gray-6"
+					v-else-if="database_server_memory < 8 * 1024"
+				>
 					<span
 						>This feature requires at least <strong>8 GB RAM</strong> on the db
 						server.</span
@@ -306,7 +309,7 @@
 					<strong>{{ Math.round(database_server_memory / 1024) }} GB RAM</strong
 					>.
 				</p>
-				<p class="text-gray-600" v-else>
+				<p class="text-ink-gray-6" v-else>
 					Follow the
 					<a
 						href="https://docs.frappe.io/cloud/database-server-actions#enable--disable-binlog-indexer"

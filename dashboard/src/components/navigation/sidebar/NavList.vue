@@ -62,7 +62,7 @@ const navigation = computed(() => {
 					return h(
 						'span',
 						{
-							class: '!ml-auto px-1.5 py-0.5 text-xs text-gray-600',
+							class: '!ml-auto px-1.5 py-0.5 text-xs text-ink-gray-6',
 						},
 						unreadNotificationsCount.data > 99
 							? '99+'

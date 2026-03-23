@@ -7,18 +7,21 @@
 
 	<div
 		v-if="!$team.doc?.is_desk_user && !$session.hasSiteCreationAccess"
-		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-ink-gray-6"
 	>
 		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 		<ErrorMessage message="You aren't permitted to create new sites" />
 	</div>
 
 	<div v-else class="mx-auto max-w-2xl px-5">
-		<div v-if="$resources.options.loading" class="py-4 text-base text-gray-600">
+		<div
+			v-if="$resources.options.loading"
+			class="py-4 text-base text-ink-gray-6"
+		>
 			Loading...
 		</div>
 		<div v-if="$route.name === 'NewBenchSite' && !bench">
-			<div class="py-4 text-base text-gray-600">Something went wrong</div>
+			<div class="py-4 text-base text-ink-gray-6">Something went wrong</div>
 		</div>
 		<div v-else-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<NewSiteAppSelector
@@ -71,9 +74,9 @@
 									<Tooltip
 										text="This version is under development and may have bugs. Do not use for production sites."
 									>
-										<lucide-info class="h-4 w-4 text-gray-500" />
+										<lucide-info class="h-4 w-4 text-ink-gray-5" />
 									</Tooltip>
-									<span class="ml-1 text-gray-600">
+									<span class="ml-1 text-ink-gray-6">
 										{{ v.status }}
 									</span>
 								</div>
@@ -92,7 +95,7 @@
 					<Tooltip
 						text="A local compliance app allows creating transactions as per statutory compliance. They're maintained by community partners."
 					>
-						<lucide-info class="h-4 w-4 text-gray-500" />
+						<lucide-info class="h-4 w-4 text-ink-gray-5" />
 					</Tooltip>
 				</div>
 				<FormControl
@@ -261,7 +264,7 @@
 					<div
 						class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base font-medium text-ink-gray-8"
 					>
-						<lucide-badge-check class="h-4 w-8 text-gray-600" />
+						<lucide-badge-check class="h-4 w-8 text-ink-gray-6" />
 						<span class="ml-4">
 							<strong>Support</strong> covers only issues of Frappe apps and not
 							functional queries. You can raise a support ticket for Frappe
@@ -279,7 +282,7 @@
 						v-if="this.domain !== this.options.domain"
 						text="The root domain can change depending on the region you choose"
 					>
-						<lucide-help-circle class="h-4 w-4 text-gray-500" />
+						<lucide-help-circle class="h-4 w-4 text-ink-gray-5" />
 					</Tooltip>
 				</div>
 				<div class="mt-2 items-center">
@@ -297,7 +300,7 @@
 				<div class="mt-1">
 					<div
 						v-if="$resources.subdomainExists.loading"
-						class="text-base text-gray-600"
+						class="text-base text-ink-gray-6"
 					>
 						Checking...
 					</div>
@@ -952,7 +955,7 @@ export default {
 						this.selectedVersionApps.find((a) => a.app === app.app).app_title
 					} ${
 						app.plan?.price_inr
-							? `- <span class="text-gray-600">${this.$format.userCurrency(
+							? `- <span class="text-ink-gray-6">${this.$format.userCurrency(
 									this.$team.doc.currency == 'INR'
 										? app.plan.price_inr
 										: app.plan.price_usd,
@@ -995,7 +998,7 @@ export default {
 				},
 				{
 					label: 'Total',
-					value: `${this.totalPerMonth} per month <div class="text-gray-600">${this.totalPerDay} per day</div>`,
+					value: `${this.totalPerMonth} per month <div class="text-ink-gray-6">${this.totalPerDay} per day</div>`,
 					condition: () => this._totalPerMonth,
 				},
 			];

@@ -17,14 +17,14 @@
 
 			<div v-if="doc.traceback" class="relative mt-6">
 				<button
-					class="absolute right-2 top-2 rounded-sm border border-gray-200 bg-surface-white p-1 text-xs text-gray-600"
+					class="absolute right-2 top-2 rounded-sm border border-gray-200 bg-surface-white p-1 text-xs text-ink-gray-6"
 					variant="outline"
 					@click="copyTraceback"
 				>
 					{{ copied ? 'copied' : 'copy' }}
 				</button>
 				<div
-					class="max-h-48 w-full overflow-scroll rounded-sm border border-gray-200 bg-gray-100 p-3 text-xs text-gray-600"
+					class="max-h-48 w-full overflow-scroll rounded-sm border border-gray-200 bg-gray-100 p-3 text-xs text-ink-gray-6"
 				>
 					<pre>{{ doc.traceback }}</pre>
 				</div>

@@ -1,7 +1,7 @@
 <template>
 	<section>
 		<h2 class="text-xl font-medium text-ink-gray-9">{{ title }}</h2>
-		<p class="text-base text-gray-500" v-if="description">
+		<p class="text-base text-ink-gray-5" v-if="description">
 			{{ description }}
 		</p>
 		<div class="mt-6">

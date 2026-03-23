@@ -663,9 +663,7 @@ export default {
 									h(
 										defineAsyncComponent(
 											() =>
-												import(
-													'../components/server/ServerNewSnapshotDialog.vue'
-												),
+												import('../components/server/ServerNewSnapshotDialog.vue'),
 										),
 										{
 											server: server.name,
@@ -685,9 +683,7 @@ export default {
 								onClick() {
 									let ServerSnapshotDetailsDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/server/ServerSnapshotDetailsDialog.vue'
-											),
+											import('../components/server/ServerSnapshotDetailsDialog.vue'),
 									);
 									renderDialog(
 										h(ServerSnapshotDetailsDialog, {
@@ -702,9 +698,7 @@ export default {
 								onClick() {
 									let ServerSnapshotRecoverSitesDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/server/ServerSnapshotRecoverSitesDialog.vue'
-											),
+											import('../components/server/ServerSnapshotRecoverSitesDialog.vue'),
 									);
 									renderDialog(
 										h(ServerSnapshotRecoverSitesDialog, {
@@ -1013,7 +1007,7 @@ export default {
 						{
 							label: 'Description',
 							fieldname: 'reason',
-							class: 'text-gray-600',
+							class: 'text-ink-gray-6',
 						},
 						{
 							label: '',

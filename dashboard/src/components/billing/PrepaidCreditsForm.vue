@@ -54,7 +54,7 @@
 
 		<!-- Payment Gateway -->
 		<div class="mt-4">
-			<div class="text-xs text-gray-600">Select Payment Gateway</div>
+			<div class="text-xs text-ink-gray-6">Select Payment Gateway</div>
 			<div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
 				<Button
 					size="lg"

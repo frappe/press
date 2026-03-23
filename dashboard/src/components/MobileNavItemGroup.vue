@@ -9,12 +9,12 @@
 	>
 		<div class="flex w-full items-center space-x-2">
 			<span class="grid h-5 w-5 place-items-center">
-				<component :is="item.icon" class="h-4 w-4 text-gray-500" />
+				<component :is="item.icon" class="h-4 w-4 text-ink-gray-5" />
 			</span>
 			<span class="text-base">{{ item.name }}</span>
 			<span class="!ml-auto">
-				<lucide-chevron-down v-if="isOpened" class="h-4 w-4 text-gray-500" />
-				<lucide-chevron-right v-else class="h-4 w-4 text-gray-500" />
+				<lucide-chevron-down v-if="isOpened" class="h-4 w-4 text-ink-gray-5" />
+				<lucide-chevron-right v-else class="h-4 w-4 text-ink-gray-5" />
 			</span>
 		</div>
 	</div>

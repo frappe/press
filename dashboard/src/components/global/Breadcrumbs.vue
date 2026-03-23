@@ -9,7 +9,7 @@
 					:class="[
 						i == linkItems.length - 1
 							? 'text-ink-gray-9'
-							: 'text-gray-600 hover:text-ink-gray-7',
+							: 'text-ink-gray-6 hover:text-ink-gray-7',
 					]"
 					:to="item.route"
 				>
@@ -20,7 +20,7 @@
 				</router-link>
 				<span
 					v-if="i != linkItems.length - 1"
-					class="mx-0.5 text-base text-gray-500"
+					class="mx-0.5 text-base text-ink-gray-5"
 				>
 					/
 				</span>

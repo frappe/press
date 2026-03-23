@@ -153,7 +153,7 @@
 														:text="formatTime(comment.time)"
 														:placement="'top'"
 													>
-														<span class="text-gray-600 text-sm">
+														<span class="text-ink-gray-6 text-sm">
 															{{ $dayjs(comment.time).fromNow() }}
 														</span>
 													</Tooltip>

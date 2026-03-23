@@ -12,7 +12,7 @@
 		</Header>
 
 		<div class="m-12 mx-auto max-w-2xl px-5">
-			<div v-if="$resources.app.loading" class="py-4 text-base text-gray-600">
+			<div v-if="$resources.app.loading" class="py-4 text-base text-ink-gray-6">
 				Loading...
 			</div>
 			<div v-else class="space-y-6">
@@ -24,7 +24,7 @@
 					/>
 					<div class="my-1 ml-4 flex flex-col justify-between">
 						<h1 class="text-lg font-semibold">{{ appDoc.title }}</h1>
-						<p class="text-sm text-gray-600">{{ appDoc.description }}</p>
+						<p class="text-sm text-ink-gray-6">{{ appDoc.description }}</p>
 					</div>
 				</div>
 

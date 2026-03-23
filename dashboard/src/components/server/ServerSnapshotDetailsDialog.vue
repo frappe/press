@@ -5,31 +5,31 @@
 				<!-- Meta -->
 				<div class="flex flex-row justify-between">
 					<div>
-						<p class="text-xs text-gray-600">Status</p>
+						<p class="text-xs text-ink-gray-6">Status</p>
 						<p class="mt-2 text-sm text-ink-gray-7">
 							{{ snapshot?.status }}
 						</p>
 					</div>
 					<div>
-						<p class="text-xs text-gray-600">Progress</p>
+						<p class="text-xs text-ink-gray-6">Progress</p>
 						<p class="mt-2 text-sm text-ink-gray-7">
 							{{ snapshot?.progress }}%
 						</p>
 					</div>
 					<div>
-						<p class="text-xs text-gray-600">Mode</p>
+						<p class="text-xs text-ink-gray-6">Mode</p>
 						<p class="mt-2 text-sm text-ink-gray-7">
 							{{ snapshot.consistent ? 'Consistent' : 'Inconsistent' }}
 						</p>
 					</div>
 					<div>
-						<p class="text-xs text-gray-600">Cost</p>
+						<p class="text-xs text-ink-gray-6">Cost</p>
 						<p class="mt-2 text-sm text-ink-gray-7">
 							{{ snapshot?.free ? 'Free' : 'Chargable' }}
 						</p>
 					</div>
 					<div>
-						<p class="text-xs text-gray-600">Size</p>
+						<p class="text-xs text-ink-gray-6">Size</p>
 						<p class="mt-2 text-sm text-ink-gray-7">
 							{{
 								snapshot?.total_size_gb ? `${snapshot.total_size_gb} GB` : '--'

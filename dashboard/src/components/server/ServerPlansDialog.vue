@@ -49,7 +49,7 @@
 								{{ c.name }}
 							</span>
 							<Tooltip :text="c.description">
-								<lucide-info class="h-4 w-4 text-gray-500" />
+								<lucide-info class="h-4 w-4 text-ink-gray-5" />
 							</Tooltip>
 						</div>
 					</button>
@@ -124,7 +124,7 @@
 									</div>
 								</div>
 								<div
-									class="mt-1 text-sm text-gray-600"
+									class="mt-1 text-sm text-ink-gray-6"
 									v-if="planType.description"
 								>
 									{{ planType.description }}
@@ -146,7 +146,7 @@
 						machines are available.
 					</p>
 
-					<p class="text-base text-gray-600">
+					<p class="text-base text-ink-gray-6">
 						{{ Object.values(serverPlanTypes)[0].description }}
 					</p>
 				</div>

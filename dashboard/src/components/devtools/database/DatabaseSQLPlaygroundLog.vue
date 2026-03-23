@@ -15,20 +15,20 @@
 					>
 				</div>
 				<div class="mt-4">
-					<p class="text-sm text-gray-600">Query</p>
+					<p class="text-sm text-ink-gray-6">Query</p>
 					<pre
-						class="mt-1.5 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-surface-gray-1 px-2 py-1.5 text-sm text-gray-600"
+						class="mt-1.5 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-surface-gray-1 px-2 py-1.5 text-sm text-ink-gray-6"
 						>{{ selectedRow.query }}</pre
 					>
 				</div>
 				<div class="mt-3">
-					<p class="text-sm text-gray-600">Timestamp</p>
+					<p class="text-sm text-ink-gray-6">Timestamp</p>
 					<p class="mt-1.5 text-sm text-ink-gray-7">
 						{{ new Date(selectedRow.creation).toLocaleString() }}
 					</p>
 				</div>
 				<div class="mt-3">
-					<p class="text-sm text-gray-600">Committed in DB</p>
+					<p class="text-sm text-ink-gray-6">Committed in DB</p>
 					<p class="mt-1.5 text-sm text-ink-gray-7">
 						{{ selectedRow.committed ? 'Yes' : 'No' }}
 					</p>

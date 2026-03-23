@@ -1,7 +1,7 @@
 <template>
 	<div class="min-h-screen bg-surface-gray-1">
 		<LoginBox>
-			<h1 class="text-base text-gray-600">Manage Subscription</h1>
+			<h1 class="text-base text-ink-gray-6">Manage Subscription</h1>
 			<div class="mt-4">
 				<div class="text-xl font-medium text-ink-gray-9">
 					{{ site }}
@@ -55,7 +55,7 @@
 									<span class="text-base font-medium text-ink-gray-9">
 										{{ plan.plan_title }}
 									</span>
-									<span class="text-base text-gray-600">/mo</span>
+									<span class="text-base text-ink-gray-6">/mo</span>
 								</div>
 								<Badge
 									v-if="$resources.subscription.data.current_plan == plan.name"
@@ -67,7 +67,7 @@
 									class="h-5 w-5"
 								/>
 							</div>
-							<div class="mt-1 text-sm text-gray-600">
+							<div class="mt-1 text-sm text-ink-gray-6">
 								<span>
 									CPU {{ plan.cpu_time_per_day }}
 									{{ plan.cpu_time_per_day == 1 ? 'hour' : 'hours' }}/day

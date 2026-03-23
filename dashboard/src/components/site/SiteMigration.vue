@@ -23,7 +23,7 @@
 				v-if="this.$resources?.migrationOptions?.loading"
 				class="flex flex-col items-center justify-center h-[200px]"
 			>
-				<Spinner class="h-4 w-4 text-gray-600" />
+				<Spinner class="h-4 w-4 text-ink-gray-6" />
 			</div>
 			<div v-else class="flex flex-col gap-3">
 				<!-- Chose Migration Mode -->
@@ -219,7 +219,7 @@
 
 						<p
 							v-if="!$site.doc.group_public"
-							class="mt-1 text-sm text-gray-600"
+							class="mt-1 text-sm text-ink-gray-6"
 							:showIcon="false"
 						>
 							If the region you're looking for isn't available, please follow

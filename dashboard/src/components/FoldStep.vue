@@ -8,7 +8,7 @@
 			<div class="flex items-center space-x-2">
 				<FeatherIcon
 					:name="open || status == 'Running' ? 'chevron-down' : 'chevron-right'"
-					class="h-3 w-3 text-gray-600"
+					class="h-3 w-3 text-ink-gray-6"
 					:stroke-width="3"
 				/>
 				<Tooltip :text="status">
@@ -33,7 +33,7 @@
 				</span>
 			</div>
 
-			<div class="text-gray-600" v-if="caption">
+			<div class="text-ink-gray-6" v-if="caption">
 				{{ caption }}
 			</div>
 		</button>

@@ -57,12 +57,12 @@
 			>
 				<p class="text-ink-gray-9">Autoscale scheduling is unavailable</p>
 
-				<p class="text-gray-600 max-w-md">
+				<p class="text-ink-gray-6 max-w-md">
 					You can only schedule autoscale records when automatic scaling is not
 					already configured for this server.
 				</p>
 
-				<p class="text-gray-600">
+				<p class="text-ink-gray-6">
 					Please read the
 					<a
 						href="https://docs.frappe.io/cloud/application-server-horizontal-scaling"

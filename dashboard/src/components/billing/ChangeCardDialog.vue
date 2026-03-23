@@ -30,7 +30,7 @@
 										theme="green"
 									/>
 								</div>
-								<div class="text-gray-600">
+								<div class="text-ink-gray-6">
 									Expiry
 									{{
 										card.expiry_month < 10

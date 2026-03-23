@@ -27,7 +27,7 @@
 							v-if="!$site.doc.group_public"
 						/>
 						<div
-							class="flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-gray-600"
+							class="flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-ink-gray-6"
 							v-if="skipBackups"
 						>
 							<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
@@ -45,7 +45,7 @@
 					</div>
 				</div>
 			</template>
-			<div v-else class="text-center text-base text-gray-600">
+			<div v-else class="text-center text-base text-ink-gray-6">
 				No apps to update
 			</div>
 			<ErrorMessage class="mt-4" :message="$site.scheduleUpdate.error" />

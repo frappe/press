@@ -13,7 +13,7 @@
 				<div class="pl-2">
 					<Tooltip text="Share Link to this Card">
 						<CopyIcon
-							class="h-4 text-gray-600 outline-none duration-200 hover:text-current cursor-pointer"
+							class="h-4 text-ink-gray-6 outline-none duration-200 hover:text-current cursor-pointer"
 							@click="shareCard"
 						/>
 					</Tooltip>

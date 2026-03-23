@@ -33,7 +33,7 @@
 
 					<div
 						v-if="!searchQuery.length"
-						class="text-xs font-medium text-gray-500 py-2 pl-2"
+						class="text-xs font-medium text-ink-gray-5 py-2 pl-2"
 					>
 						Recent
 					</div>
@@ -83,7 +83,7 @@
 							</span>
 						</div>
 					</div>
-					<div class="*:text-center *:mb-2 *:mt-3 *:text-xs *:text-gray-400">
+					<div class="*:text-center *:mb-2 *:mt-3 *:text-xs *:text-ink-gray-4">
 						<div v-if="$resources.releases.loading && !!searchQuery.length">
 							Searching...
 						</div>

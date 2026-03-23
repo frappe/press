@@ -51,7 +51,10 @@
 						<DonutChart :config="donutConfig" />
 					</div>
 				</div>
-				<div v-else class="flex h-64 items-center justify-center text-gray-500">
+				<div
+					v-else
+					class="flex h-64 items-center justify-center text-ink-gray-5"
+				>
 					No usage data available for this month
 				</div>
 			</div>

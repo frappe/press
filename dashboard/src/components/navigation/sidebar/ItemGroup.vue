@@ -42,7 +42,7 @@ watch(
 			<component :is="item.badge" />
 			<span class="!ml-auto">
 				<LucideChevronRight
-					class="size-4 text-gray-500 transition-transform duration-200"
+					class="size-4 text-ink-gray-5 transition-transform duration-200"
 					:class="{ 'rotate-90': isOpened }"
 				/>
 			</span>

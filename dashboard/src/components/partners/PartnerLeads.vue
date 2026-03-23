@@ -37,7 +37,7 @@
 		<div v-if="partnerLeadsList">
 			<ObjectList :options="partnerLeadsList" />
 		</div>
-		<div v-else class="text-base text-gray-600">
+		<div v-else class="text-base text-ink-gray-6">
 			No partner leads available.
 		</div>
 	</div>

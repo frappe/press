@@ -9,7 +9,7 @@
 				<template v-if="showPayout">
 					<div
 						v-if="showPayout.status === 'Empty'"
-						class="text-base text-gray-600"
+						class="text-base text-ink-gray-6"
 					>
 						Nothing to show
 					</div>
