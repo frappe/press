@@ -166,7 +166,9 @@
 							</div>
 							<ClickToCopyField
 								text-content="apt update -y
-apt install -y wireguard resolvconf rsync gawk curl wget"
+apt install -y wireguard resolvconf rsync gawk curl wget nginx redis-server
+command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
+"
 							/>
 						</div>
 						<!-- Configure Wireguard -->
@@ -189,10 +191,19 @@ apt install -y wireguard resolvconf rsync gawk curl wget"
 								text-content="systemctl enable --now wg-quick@wg0"
 							/>
 						</div>
+						<!-- Install Failover Management Service -->
+						<div class="flex flex-col gap-2">
+							<div class="font-medium text-gray-700">
+								5. Setup Failover Management Service
+							</div>
+							<ClickToCopyField
+								text-content="curl -fsSL https://raw.githubusercontent.com/frappe/fc-scripts/refs/heads/develop/press-on-prem-failover.sh -o press-on-prem-failover.sh && chmod +x ./press-on-prem-failover.sh && ./press-on-prem-failover.sh"
+							/>
+						</div>
 						<!-- Trigger Replication Setup -->
 						<div class="flex flex-col gap-2">
 							<div class="font-medium text-gray-700">
-								5. Trigger Replication Setup
+								6. Trigger Replication Setup
 							</div>
 							<div class="text-gray-600">
 								&nbsp;&nbsp;&nbsp;Once the above steps are completed, click the
