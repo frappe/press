@@ -6,13 +6,13 @@
 		<template #body-content>
 			<div
 				v-if="$resources.databaseCredential.loading"
-				class="flex w-full items-center justify-center gap-2 py-20 text-gray-700"
+				class="flex w-full items-center justify-center gap-2 py-20 text-ink-gray-7"
 			>
 				<Spinner class="w-4" /> Loading
 			</div>
 			<div v-else>
 				<div v-if="databaseCredential">
-					<p class="mb-2 text-base font-semibold text-gray-700">
+					<p class="mb-2 text-base font-semibold text-ink-gray-7">
 						Using an Analytics or Business Intelligence Tool
 					</p>
 					<p class="mb-2 text-base">
@@ -42,7 +42,7 @@
 					</p>
 				</div>
 				<div class="pb-2 pt-5">
-					<p class="mb-2 text-base font-semibold text-gray-700">
+					<p class="mb-2 text-base font-semibold text-ink-gray-7">
 						Using MariaDB CLI
 					</p>
 					<p class="mb-2 text-base">
@@ -56,7 +56,7 @@
 					</p>
 				</div>
 				<div class="pb-2 pt-5">
-					<p class="mb-2 text-base font-semibold text-gray-700">SSL Info</p>
+					<p class="mb-2 text-base font-semibold text-ink-gray-7">SSL Info</p>
 					<p class="text-sm">
 						You need to <b>use SSL</b> to connect to the database.
 					</p>
@@ -73,7 +73,7 @@
 					/>
 				</div>
 				<div class="pb-2 pt-5">
-					<p class="mb-2 text-base font-semibold text-gray-700">Need Help?</p>
+					<p class="mb-2 text-base font-semibold text-ink-gray-7">Need Help?</p>
 					<p class="text-sm">
 						Please check out the
 						<a

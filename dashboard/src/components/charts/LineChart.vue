@@ -24,7 +24,7 @@
 			class="flex h-full items-center justify-center"
 		>
 			<ErrorMessage v-if="error" :message="error" />
-			<span v-else class="text-base text-gray-700">No data</span>
+			<span v-else class="text-base text-ink-gray-7">No data</span>
 		</div>
 		<VChart
 			v-else

@@ -28,7 +28,7 @@
 					:isDedicatedServerSite="$site.doc.is_dedicated_server"
 					:selectedProvider="$site.doc.server_provider"
 				/>
-				<div class="mt-4 text-xs text-gray-700">
+				<div class="mt-4 text-xs text-ink-gray-7">
 					<div
 						class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base font-medium text-ink-gray-8"
 					>
@@ -52,7 +52,7 @@
 					:intervals="true"
 					:value="65"
 				/>
-				<div class="mb-5 inline-flex gap-1.5 text-base text-gray-700">
+				<div class="mb-5 inline-flex gap-1.5 text-base text-ink-gray-7">
 					<FeatherIcon class="h-4" name="info" />
 					<span> Add billing details to your account before proceeding.</span>
 				</div>
@@ -94,7 +94,7 @@
 				<div>
 					<div
 						v-if="isAutomatedBilling"
-						class="mb-5 flex items-center gap-2 text-sm text-gray-700"
+						class="mb-5 flex items-center gap-2 text-sm text-ink-gray-7"
 					>
 						<FeatherIcon class="h-4" name="info" />
 						<span>
@@ -104,7 +104,7 @@
 					</div>
 					<div
 						v-else
-						class="mb-5 flex items-center gap-2 text-sm text-gray-700"
+						class="mb-5 flex items-center gap-2 text-sm text-ink-gray-7"
 					>
 						<FeatherIcon class="h-4" name="info" />
 						<span>

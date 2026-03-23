@@ -113,7 +113,7 @@
 				/>
 				<template #action>
 					<router-link
-						class="text-base text-gray-600 hover:text-gray-700"
+						class="text-base text-gray-600 hover:text-ink-gray-7"
 						:to="{ name: 'Site Performance Request Logs' }"
 					>
 						Request Log Report →
@@ -142,7 +142,7 @@
 		>
 			<h2 class="text-lg font-semibold">Advanced Analytics</h2>
 			<FeatherIcon
-				class="h-5 w-5 text-gray-500 hover:text-gray-700"
+				class="h-5 w-5 text-gray-500 hover:text-ink-gray-7"
 				:name="showAdvancedAnalytics ? 'chevron-down' : 'chevron-right'"
 			/>
 		</div>
@@ -379,7 +379,7 @@
 				<template #action>
 					<Tooltip text="Show Detailed Reports">
 						<router-link
-							class="mr-auto text-base text-gray-600 hover:text-gray-700"
+							class="mr-auto text-base text-gray-600 hover:text-ink-gray-7"
 							:to="{ name: 'Site Performance Slow Queries' }"
 						>
 							→
@@ -410,7 +410,7 @@
 				<template #action>
 					<Tooltip text="Show Detailed Reports">
 						<router-link
-							class="mr-auto text-base text-gray-600 hover:text-gray-700"
+							class="mr-auto text-base text-gray-600 hover:text-ink-gray-7"
 							:to="{ name: 'Site Performance Slow Queries' }"
 						>
 							→

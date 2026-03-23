@@ -19,7 +19,7 @@
 					</span>
 				</div>
 				<p
-					class="mb-6 break-words text-base font-normal leading-[21px] text-gray-700"
+					class="mb-6 break-words text-base font-normal leading-[21px] text-ink-gray-7"
 					v-if="subtitle"
 				>
 					{{ subtitle }}

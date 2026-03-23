@@ -54,7 +54,7 @@
 			</div>
 
 			<div v-show="currency === 'INR'">
-				<span class="mb-2 block text-sm leading-4 text-gray-700">
+				<span class="mb-2 block text-sm leading-4 text-ink-gray-7">
 					GSTIN(only for Indian customers)
 				</span>
 				<FormControl

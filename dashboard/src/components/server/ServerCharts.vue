@@ -161,7 +161,7 @@
 		>
 			<h2 class="text-lg font-semibold">Advanced Analytics</h2>
 			<FeatherIcon
-				class="h-5 w-5 text-gray-500 hover:text-gray-700"
+				class="h-5 w-5 text-gray-500 hover:text-ink-gray-7"
 				:name="showAdvancedAnalytics ? 'chevron-down' : 'chevron-right'"
 			/>
 		</div>
@@ -343,7 +343,7 @@
 				/>
 				<template #action>
 					<router-link
-						class="text-base text-gray-600 hover:text-gray-700"
+						class="text-base text-gray-600 hover:text-ink-gray-7"
 						:to="{
 							name: 'Server Detail Actions',
 							params: { name: this.serverName },
@@ -372,7 +372,7 @@
 				/>
 				<template #action>
 					<router-link
-						class="text-base text-gray-600 hover:text-gray-700"
+						class="text-base text-gray-600 hover:text-ink-gray-7"
 						:to="{
 							name: 'Server Detail Actions',
 							params: { name: this.serverName },

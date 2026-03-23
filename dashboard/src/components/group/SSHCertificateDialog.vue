@@ -9,7 +9,7 @@
 		<template #body-content v-if="$bench.doc">
 			<div v-if="certificate" class="space-y-4">
 				<div class="space-y-2" v-if="isWindows">
-					<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
+					<h4 class="text-base font-semibold text-ink-gray-7">Step 1</h4>
 					<div class="space-y-2">
 						<p class="text-base">
 							Execute the following shell command to set the encoding to UTF-8.
@@ -21,7 +21,7 @@
 					</div>
 				</div>
 				<div class="space-y-2">
-					<h4 class="text-base font-semibold text-gray-700">
+					<h4 class="text-base font-semibold text-ink-gray-7">
 						Step {{ isWindows ? '2' : '1' }}
 					</h4>
 					<div class="space-y-2">
@@ -36,7 +36,7 @@
 					</div>
 				</div>
 				<div class="space-y-2">
-					<h4 class="text-base font-semibold text-gray-700">
+					<h4 class="text-base font-semibold text-ink-gray-7">
 						Step {{ isWindows ? '3' : '2' }}
 					</h4>
 					<div class="space-y-1">
@@ -66,7 +66,7 @@
 					</div>
 				</div>
 			</div>
-			<div class="space-y-2 text-p-base text-gray-700" v-else>
+			<div class="space-y-2 text-p-base text-ink-gray-7" v-else>
 				<p v-if="!$bench.doc.user_ssh_key">
 					It looks like you haven't added your SSH public key. Go to
 					<router-link

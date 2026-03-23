@@ -5,14 +5,14 @@
 				<div class="flex items-center justify-between">
 					<div class="flex flex-col gap-1.5">
 						<div class="text-lg font-semibold">Recurring Charges</div>
-						<div class="text-gray-700">
+						<div class="text-ink-gray-7">
 							<span>Next charge date — </span>
 							<span>{{ currentMonthEnd() }}</span>
 						</div>
 					</div>
 				</div>
 				<div class="flex items-center justify-between">
-					<div class="flex gap-2 text-gray-700">
+					<div class="flex gap-2 text-ink-gray-7">
 						<lucide-credit-card class="h-4 w-4" />
 						<div>
 							<span>Current billing amount so far is </span>

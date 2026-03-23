@@ -158,7 +158,7 @@ export default {
 							{bench.has_app_patch_applied && (
 								<Tooltip text="Apps in this bench may have been patched">
 									<a
-										class="p-1 ml-2 text-gray-700 bg-gray-100 rounded"
+										class="p-1 ml-2 text-ink-gray-7 bg-gray-100 rounded"
 										href="https://docs.frappe.io/cloud/benches/app-patches"
 										target="_blank"
 									>
@@ -169,7 +169,7 @@ export default {
 							{bench.has_updated_inplace && (
 								<Tooltip text="This bench has been updated in place">
 									<a
-										class="p-1 ml-2 text-gray-700 bg-gray-100 rounded"
+										class="p-1 ml-2 text-ink-gray-7 bg-gray-100 rounded"
 										href="https://docs.frappe.io/cloud/in-place-updates"
 										target="_blank"
 									>

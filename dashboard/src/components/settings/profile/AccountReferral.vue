@@ -7,7 +7,7 @@
 	>
 		<div class="flex flex-col space-y-4 overflow-hidden">
 			<ClickToCopyField :textContent="referralLink" />
-			<span class="text-sm font-medium leading-4 text-gray-700">
+			<span class="text-sm font-medium leading-4 text-ink-gray-7">
 				Invite someone to Frappe Cloud and
 				<strong>
 					get

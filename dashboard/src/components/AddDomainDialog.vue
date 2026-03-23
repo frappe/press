@@ -40,7 +40,7 @@
 				<div v-if="dnsResult && !dnsResult.matched" class="space-y-2">
 					<p class="text-base">
 						Received following DNS query responses for
-						<span class="font-semibold text-gray-700">{{ newDomain }}</span
+						<span class="font-semibold text-ink-gray-7">{{ newDomain }}</span
 						>.
 					</p>
 					<div
@@ -48,7 +48,7 @@
 						class="space-y-2"
 					>
 						<p class="text-base">
-							<span class="font-semibold text-gray-700">CNAME</span>
+							<span class="font-semibold text-ink-gray-7">CNAME</span>
 						</p>
 						<div
 							class="flex flex-row items-center justify-between rounded-lg border-2 p-2"
@@ -65,7 +65,7 @@
 						class="space-y-2"
 					>
 						<p class="text-base">
-							<span class="font-semibold text-gray-700">A</span>
+							<span class="font-semibold text-ink-gray-7">A</span>
 						</p>
 						<div
 							class="flex flex-row items-center justify-between rounded-lg border-2 p-2"

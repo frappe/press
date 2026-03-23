@@ -174,7 +174,7 @@
 				<template #default>
 					<div
 						v-if="this.$resources.databaseProcesses.loading"
-						class="flex h-60 w-full items-center justify-center gap-2 text-base text-gray-700"
+						class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 					>
 						<Spinner class="w-4" /> Loading Database Processes
 					</div>
@@ -276,7 +276,7 @@
 										"
 										>Suggest Indexes</Button
 									>
-									<p class="text-base text-gray-700">
+									<p class="text-base text-ink-gray-7">
 										This may take a while to analyze
 									</p>
 								</div>
@@ -332,12 +332,12 @@
 		</div>
 		<div
 			v-else-if="!site"
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 		>
 			Select a site to get started
 		</div>
 		<div
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 			v-else
 		>
 			<Spinner class="w-4" /> Loading Table Schemas

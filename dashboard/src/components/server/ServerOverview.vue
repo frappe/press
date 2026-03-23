@@ -42,7 +42,7 @@
 									v-if="d.type === 'header'"
 									class="mt-2 flex flex-col space-y-2"
 								>
-									<div class="flex items-center text-base text-gray-700">
+									<div class="flex items-center text-base text-ink-gray-7">
 										<span v-if="!$appServer?.doc?.is_unified_server">{{
 											d.label
 										}}</span>
@@ -126,7 +126,7 @@
 							</div>
 							<div v-else-if="d.type === 'progress'">
 								<div class="flex items-center justify-between space-x-2">
-									<div class="text-base text-gray-700">{{ d.label }}</div>
+									<div class="text-base text-ink-gray-7">{{ d.label }}</div>
 									<div v-if="d.actions" class="flex items-center space-x-2">
 										<Badge
 											v-if="d.actionRequired"
@@ -158,7 +158,7 @@
 							</div>
 							<div v-else-if="d.type === 'info'">
 								<div class="flex items-center justify-between">
-									<div class="text-base text-gray-700">{{ d.label }}</div>
+									<div class="text-base text-ink-gray-7">{{ d.label }}</div>
 								</div>
 								<div class="mt-1 text-sm text-gray-600">
 									{{ d.value }}
@@ -181,7 +181,7 @@
 						:key="d.label"
 						class="flex items-center px-5 py-3 last:pb-5 even:bg-surface-gray-1/70"
 					>
-						<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
+						<div class="w-1/3 text-base text-ink-gray-7">{{ d.label }}</div>
 						<div class="w-2/3 text-base font-medium">{{ d.value }}</div>
 					</div>
 				</div>
@@ -526,7 +526,7 @@ export default {
 												message: `Enter the disk size you want to increase to the server <b>${
 													doc.title || doc.name
 												}</b>
-									<div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">
+									<div class="rounded mt-4 p-2 text-sm text-ink-gray-7 bg-gray-100 border">
 									You will be charged at the rate of
 									<strong>
 										${this.$format.userCurrency(doc.storage_plan[priceField])}/mo
@@ -538,7 +538,7 @@ export default {
 											: ''
 									}
 									</div>
-									<p class="mt-4 text-sm text-gray-700"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.
+									<p class="mt-4 text-sm text-ink-gray-7"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.
 										</div>`,
 												fields: [
 													{

@@ -12,7 +12,7 @@
 				:max="maximumAmount"
 			>
 				<template #prefix>
-					<div class="grid w-4 place-items-center text-sm text-gray-700">
+					<div class="grid w-4 place-items-center text-sm text-ink-gray-7">
 						{{ team.doc.currency === 'INR' ? '₹' : '$' }}
 					</div>
 				</template>
@@ -29,7 +29,7 @@
 				type="number"
 			>
 				<template #prefix>
-					<div class="grid w-4 place-items-center text-sm text-gray-700">
+					<div class="grid w-4 place-items-center text-sm text-ink-gray-7">
 						{{ team.doc.currency === 'INR' ? '₹' : '$' }}
 					</div>
 				</template>

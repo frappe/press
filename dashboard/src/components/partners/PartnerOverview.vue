@@ -18,7 +18,7 @@
 			<div class="flex flex-col gap-2.5 p-4">
 				<div class="flex">
 					<div class="flex items-center gap-0.5">
-						<FeatherIcon name="award" class="h-5 text-gray-700" />
+						<FeatherIcon name="award" class="h-5 text-ink-gray-7" />
 						<h3 class="text-xl font-semibold">
 							{{ partnerDetails.data?.partner_type }} Tier
 						</h3>
@@ -97,7 +97,7 @@
 					</div>
 					<div class="flex items-center justify-between">
 						<div class="flex">
-							<span class="text-base font-medium text-gray-700">
+							<span class="text-base font-medium text-ink-gray-7">
 								{{ formatDate(partnerDetails.data?.end_date) }}
 							</span>
 						</div>
@@ -164,7 +164,7 @@
 			}"
 		>
 			<template #body-content>
-				<p class="text-base leading-6 text-gray-700">
+				<p class="text-base leading-6 text-ink-gray-7">
 					By clicking "I Agree", you confirm that you have read and accepted the
 					terms and conditions of the
 					<a

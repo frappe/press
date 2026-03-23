@@ -227,7 +227,7 @@
 					<div>
 						<Button link="https://frappecloud.com/pricing" variant="ghost">
 							<template #prefix>
-								<lucide-help-circle class="h-4 w-4 text-gray-700" />
+								<lucide-help-circle class="h-4 w-4 text-ink-gray-7" />
 							</template>
 							Help
 						</Button>
@@ -245,7 +245,7 @@
 						:hideRestrictedPlans="selectedLocalisationCountry"
 					/>
 				</div>
-				<div v-if="isPrivateBenchPlan" class="mt-4 text-xs text-gray-700">
+				<div v-if="isPrivateBenchPlan" class="mt-4 text-xs text-ink-gray-7">
 					<div
 						class="flex items-center rounded bg-blue-50 p-2 text-p-base font-medium text-blue-800"
 					>
@@ -257,7 +257,7 @@
 						</span>
 					</div>
 				</div>
-				<div class="mt-4 text-xs text-gray-700">
+				<div class="mt-4 text-xs text-ink-gray-7">
 					<div
 						class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base font-medium text-ink-gray-8"
 					>

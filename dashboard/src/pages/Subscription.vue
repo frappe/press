@@ -7,7 +7,7 @@
 					{{ site }}
 				</div>
 				<div
-					class="mt-1 text-base text-gray-700"
+					class="mt-1 text-base text-ink-gray-7"
 					v-if="$resources.subscription.data?.trial_end_date"
 				>
 					Trial ends
@@ -24,7 +24,7 @@
 						class="flex w-full items-center justify-between rounded-sm bg-gray-100 p-2 hover:bg-gray-200"
 						@click="currentStep = 1"
 					>
-						<span class="text-sm font-medium text-gray-700">
+						<span class="text-sm font-medium text-ink-gray-7">
 							{{
 								$resources.subscription.data.current_plan
 									? 'Change plan'
@@ -102,7 +102,7 @@
 				</div>
 				<div class="mt-2" v-if="currentStep == 2">
 					<div
-						class="rounded-sm bg-gray-100 p-2 text-sm font-medium text-gray-700"
+						class="rounded-sm bg-gray-100 p-2 text-sm font-medium text-ink-gray-7"
 					>
 						Step 2: Setup billing
 					</div>

@@ -23,7 +23,7 @@
 		</template>
 		<div class="py-4">
 			<span
-				class="text-base font-medium text-gray-700"
+				class="text-base font-medium text-ink-gray-7"
 				v-if="!$team.doc?.partner_email"
 			>
 				Have a Frappe Partner Referral Code? Click on
@@ -53,7 +53,7 @@
 					Enter the partner code provided by your Partner
 				</p>
 				<div class="rounded border border-gray-200 bg-gray-100 p-2 mb-4">
-					<span class="text-sm leading-[1.5] text-gray-700">
+					<span class="text-sm leading-[1.5] text-ink-gray-7">
 						<strong>Note</strong>: After linking with Partner, following details
 						shall be shared with your partner team:
 						<br />

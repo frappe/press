@@ -48,7 +48,7 @@
 			<!-- Steps for user to follow -->
 			<div class="rounded border border-gray-200 bg-surface-gray-1 p-4">
 				<h3 class="text-lg font-semibold">Steps to Enable 2FA</h3>
-				<ol class="ml-1 mt-2 list-disc pl-2 text-sm text-gray-700">
+				<ol class="ml-1 mt-2 list-disc pl-2 text-sm text-ink-gray-7">
 					<li>
 						Download an authenticator app on your phone, such as
 						<a
@@ -85,7 +85,7 @@
 					</li>
 					<li>Enter the code from the authenticator app below</li>
 				</ol>
-				<p class="mt-4 text-sm text-gray-700">
+				<p class="mt-4 text-sm text-ink-gray-7">
 					<strong>Note:</strong> If you lose access to your authenticator app,
 					your account will be locked out. Make sure to backup your vault/key.
 				</p>

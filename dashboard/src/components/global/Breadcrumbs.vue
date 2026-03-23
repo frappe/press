@@ -9,7 +9,7 @@
 					:class="[
 						i == linkItems.length - 1
 							? 'text-ink-gray-9'
-							: 'text-gray-600 hover:text-gray-700',
+							: 'text-gray-600 hover:text-ink-gray-7',
 					]"
 					:to="item.route"
 				>

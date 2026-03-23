@@ -11,7 +11,7 @@
 					{{ app.title }}
 				</p>
 				<p
-					class="line-clamp-2 text-sm leading-5 tracking-[0.26px] text-gray-700"
+					class="line-clamp-2 text-sm leading-5 tracking-[0.26px] text-ink-gray-7"
 				>
 					{{ app.description }}
 				</p>

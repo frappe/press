@@ -134,7 +134,7 @@
 				<div class="border-b border-r p-5 lg:border-b-0">
 					<div class="flex h-full items-center justify-between">
 						<div>
-							<div class="text-base text-gray-700">Current Plan</div>
+							<div class="text-base text-ink-gray-7">Current Plan</div>
 							<div class="mt-2 flex justify-between">
 								<div>
 									<div class="leading-4">
@@ -176,7 +176,7 @@
 				</div>
 				<div class="border-b p-5 lg:border-b-0 lg:border-r">
 					<div
-						class="flex items-center justify-between text-base text-gray-700"
+						class="flex items-center justify-between text-base text-ink-gray-7"
 					>
 						<span>Compute</span>
 						<div class="h-7"></div>
@@ -207,7 +207,7 @@
 				</div>
 				<div class="border-r p-5">
 					<div
-						class="flex items-center justify-between text-base text-gray-700"
+						class="flex items-center justify-between text-base text-ink-gray-7"
 					>
 						<span>Storage</span>
 						<div class="h-7"></div>
@@ -243,7 +243,7 @@
 					<div
 						class="min-h-[1.75rem] flex items-center justify-between space-x-2"
 					>
-						<span class="text-base text-gray-700">Database</span>
+						<span class="text-base text-ink-gray-7">Database</span>
 						<div class="flex items-center space-x-2">
 							<Button
 								v-if="

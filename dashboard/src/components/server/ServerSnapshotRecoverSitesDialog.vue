@@ -18,7 +18,7 @@
 					</div>
 					<div class="w-full">
 						<p
-							class="rounded mb-4 p-2 text-sm text-gray-700 bg-gray-100 border"
+							class="rounded mb-4 p-2 text-sm text-ink-gray-7 bg-gray-100 border"
 						>
 							Frappe Cloud will start temporary servers from the snapshot and
 							<b>backup the selected sites from the snapshot</b>. You will be

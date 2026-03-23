@@ -11,7 +11,7 @@
 				:min="minimumAmount"
 			>
 				<template #prefix>
-					<div class="grid w-4 place-items-center text-sm text-gray-700">
+					<div class="grid w-4 place-items-center text-sm text-ink-gray-7">
 						{{ team.doc.currency === 'INR' ? '₹' : '$' }}
 					</div>
 				</template>
@@ -27,7 +27,7 @@
 				type="number"
 			>
 				<template #prefix>
-					<div class="grid w-4 place-items-center text-sm text-gray-700">
+					<div class="grid w-4 place-items-center text-sm text-ink-gray-7">
 						{{ team.doc.currency === 'INR' ? '₹' : '$' }}
 					</div>
 				</template>
@@ -43,7 +43,9 @@
 				type="number"
 			>
 				<template #prefix>
-					<div class="-ml-1 grid w-4 place-items-center text-sm text-gray-700">
+					<div
+						class="-ml-1 grid w-4 place-items-center text-sm text-ink-gray-7"
+					>
 						{{ 'Ksh' }}
 					</div>
 				</template>

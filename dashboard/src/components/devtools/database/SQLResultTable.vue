@@ -168,7 +168,7 @@ const downloadCSV = async () => {
 	>
 		<template #body-content>
 			<pre
-				class="mt-2 whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-100 p-3 text-sm text-gray-700"
+				class="mt-2 whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-100 p-3 text-sm text-ink-gray-7"
 				>{{ fullViewDialogBody }}</pre
 			>
 		</template>
@@ -240,7 +240,7 @@ const downloadCSV = async () => {
 							<MaximizedIcon
 								v-if="isTextTruncated(cell)"
 								@click="handleViewFull(cell)"
-								class="!my-0 ml-2 inline-block !h-4 !w-4 cursor-pointer text-gray-700"
+								class="!my-0 ml-2 inline-block !h-4 !w-4 cursor-pointer text-ink-gray-7"
 							/>
 						</td>
 						<td

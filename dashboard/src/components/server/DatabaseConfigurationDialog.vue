@@ -9,7 +9,7 @@
 				class="flex h-[200px] w-full items-center justify-center"
 				v-if="this.$resources.mariadbVariables.loading"
 			>
-				<div class="flex flex-row items-center gap-2 text-gray-700">
+				<div class="flex flex-row items-center gap-2 text-ink-gray-7">
 					<Spinner class="w-4" />
 					Loading database configurations
 				</div>

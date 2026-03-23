@@ -11,19 +11,19 @@
 					<div class="flex">
 						<div class="flex-1 flex-col">
 							<div class="text-sm text-gray-600">Partner Website</div>
-							<div class="text-base font-medium text-gray-700 py-2">
+							<div class="text-base font-medium text-ink-gray-7 py-2">
 								{{ partnerDetails.data?.partner_website || '' }}
 							</div>
 						</div>
 						<div class="flex-1 flex-col">
 							<div class="text-sm text-gray-600">Contact</div>
-							<div class="text-base font-medium text-gray-700 py-2">
+							<div class="text-base font-medium text-ink-gray-7 py-2">
 								{{ partnerDetails.data?.phone_number || '' }}
 							</div>
 						</div>
 						<div class="flex-1 flex-col">
 							<div class="text-sm text-gray-600">Journey Blog Link</div>
-							<div class="text-base font-medium text-gray-700 py-2">
+							<div class="text-base font-medium text-ink-gray-7 py-2">
 								{{ partnerDetails.data?.custom_journey_blog_link || '-' }}
 							</div>
 						</div>
@@ -31,7 +31,7 @@
 					<div class="flex">
 						<div class="flex-1 flex-col">
 							<div class="text-sm text-gray-600">Foundation Date</div>
-							<div class="text-base font-medium text-gray-700 py-2">
+							<div class="text-base font-medium text-ink-gray-7 py-2">
 								{{
 									formatDate(partnerDetails.data?.custom_foundation_date) || '-'
 								}}
@@ -39,13 +39,13 @@
 						</div>
 						<div class="flex-1 flex-col">
 							<div class="text-sm text-gray-600">Team Size</div>
-							<div class="text-base font-medium text-gray-700 py-2">
+							<div class="text-base font-medium text-ink-gray-7 py-2">
 								{{ partnerDetails.data?.custom_team_size || '-' }}
 							</div>
 						</div>
 						<div class="flex-1 flex-col">
 							<div class="text-sm text-gray-600">Successfull Projects</div>
-							<div class="text-base font-medium text-gray-700 py-2">
+							<div class="text-base font-medium text-ink-gray-7 py-2">
 								{{
 									partnerDetails.data?.custom_successful_projects_count || '-'
 								}}
@@ -55,7 +55,7 @@
 					<div class="flex gap-4 pt-4">
 						<div class="flex-1">
 							<div class="text-sm text-gray-600 pb-3">Introduction</div>
-							<div class="text-base leading-6 text-gray-700 py-1">
+							<div class="text-base leading-6 text-ink-gray-7 py-1">
 								<div v-html="partnerDetails.data?.introduction"></div>
 							</div>
 						</div>
@@ -63,7 +63,7 @@
 							<div class="text-sm text-gray-600 pb-3">Customers</div>
 							<div
 								v-for="customer in customerList.slice(0, 10)"
-								class="text-base text-gray-700 py-1"
+								class="text-base text-ink-gray-7 py-1"
 							>
 								<li>{{ customer }}</li>
 							</div>
@@ -76,7 +76,7 @@
 						</div>
 						<div class="flex-1 flex-col">
 							<div class="text-sm text-gray-600">Address</div>
-							<div class="text-base leading-6 text-gray-700 py-2">
+							<div class="text-base leading-6 text-ink-gray-7 py-2">
 								<div v-html="partnerDetails.data?.address"></div>
 							</div>
 						</div>

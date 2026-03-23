@@ -11,7 +11,7 @@
 				<p class="font-medium text-ink-gray-8">
 					{{ label }}
 				</p>
-				<p class="mt-2 text-sm text-gray-700" v-if="subLabel">
+				<p class="mt-2 text-sm text-ink-gray-7" v-if="subLabel">
 					{{ subLabel }}
 				</p>
 			</div>

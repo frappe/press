@@ -11,7 +11,7 @@
 				<div class="grid gap-3">
 					<div class="flex items-center mb-2">
 						<div class="flex items-center">
-							<span class="text-lg font-medium text-gray-700 mr-2"
+							<span class="text-lg font-medium text-ink-gray-7 mr-2"
 								>Status:</span
 							>
 							<Badge

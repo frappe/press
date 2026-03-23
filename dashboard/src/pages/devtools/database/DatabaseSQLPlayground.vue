@@ -62,7 +62,7 @@
 		<!-- body -->
 		<div
 			v-if="!site"
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 		>
 			Select a site to get started
 		</div>
@@ -150,7 +150,7 @@
 </template>
 <style scoped>
 .output-container {
-	@apply rounded border p-4 text-base text-gray-700;
+	@apply rounded border p-4 text-base text-ink-gray-7;
 }
 </style>
 <script>
@@ -355,7 +355,7 @@ Are you sure you want to run the query?`,
 				message: `
 Are you sure you want to run the query?
 <br>
-<pre class="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-surface-gray-1 px-2 py-1.5 text-sm text-gray-700">${this.selectedQuery}</pre>
+<pre class="mt-2 max-h-52 overflow-y-auto whitespace-pre-wrap rounded bg-surface-gray-1 px-2 py-1.5 text-sm text-ink-gray-7">${this.selectedQuery}</pre>
 				`,
 				primaryAction: {
 					label: 'Run Query',

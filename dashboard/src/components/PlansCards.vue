@@ -39,13 +39,15 @@
 									<template v-if="plan.label">{{ plan.label }}</template>
 									<template v-if="hourlyPricing">
 										{{ $format.planTitleHourly(plan) }}
-										<span v-if="plan.price_inr" class="text-gray-700"
+										<span v-if="plan.price_inr" class="text-ink-gray-7"
 											>/hour</span
 										>
 									</template>
 									<template v-else>
 										{{ $format.planTitle(plan) }}
-										<span v-if="plan.price_inr" class="text-gray-700">/mo</span>
+										<span v-if="plan.price_inr" class="text-ink-gray-7"
+											>/mo</span
+										>
 									</template>
 								</span>
 								<Tooltip text="Product support included">

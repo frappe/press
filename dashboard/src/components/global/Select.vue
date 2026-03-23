@@ -2,7 +2,7 @@
 	<label class="block">
 		<span
 			v-if="label"
-			class="mb-2 inline-block text-sm leading-4 text-gray-700"
+			class="mb-2 inline-block text-sm leading-4 text-ink-gray-7"
 		>
 			{{ label }}
 		</span>
@@ -33,8 +33,8 @@ export default {
 			},
 			set(val) {
 				this.$emit('input', val);
-			}
-		}
-	}
+			},
+		},
+	},
 };
 </script>

@@ -3,7 +3,7 @@
 	<div v-else class="space-y-4">
 		<div>
 			<p class="text-xs text-gray-600">Endpoint</p>
-			<p class="mt-2 text-sm text-gray-700">
+			<p class="mt-2 text-sm text-ink-gray-7">
 				{{ $resources.attempt?.data?.endpoint }}
 			</p>
 		</div>
@@ -20,7 +20,7 @@
 			"
 		>
 			<p class="text-xs text-gray-600">Response Status Code</p>
-			<p class="mt-2 text-sm text-gray-700">
+			<p class="mt-2 text-sm text-ink-gray-7">
 				{{ $resources.attempt?.data?.response_status_code }}
 			</p>
 		</div>
@@ -33,7 +33,7 @@
 		</div>
 		<div>
 			<p class="text-xs text-gray-600">Timestamp</p>
-			<p class="mt-2 text-sm text-gray-700">
+			<p class="mt-2 text-sm text-ink-gray-7">
 				{{ $resources.attempt?.data?.creation }}
 			</p>
 		</div>

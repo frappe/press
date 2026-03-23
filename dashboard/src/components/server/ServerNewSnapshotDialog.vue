@@ -2,7 +2,7 @@
 	<Dialog v-model="show" :options="{ title: 'Create Snapshot', size: 'xl' }">
 		<template #body-content>
 			<div
-				class="prose prose-sm rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border"
+				class="prose prose-sm rounded mt-4 p-2 text-sm text-ink-gray-7 bg-gray-100 border"
 			>
 				This feature creates a snapshot of both the <b>App Server</b> and
 				<b>Database Server</b>.<br /><br />
@@ -24,7 +24,7 @@
 				The snapshot will cost <b>{{ snapshotPlanRate }}</b
 				>.
 			</div>
-			<div class="mt-4 text-sm text-gray-700" label="Consistent Snapshot">
+			<div class="mt-4 text-sm text-ink-gray-7" label="Consistent Snapshot">
 				<Checkbox
 					size="sm"
 					v-model="consistent_snapshot"

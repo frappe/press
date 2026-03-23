@@ -12,7 +12,7 @@
 			<div
 				:if="doc.message"
 				v-html="doc.message"
-				class="flex flex-col gap-2 whitespace-pre-wrap text-p-base text-gray-700"
+				class="flex flex-col gap-2 whitespace-pre-wrap text-p-base text-ink-gray-7"
 			></div>
 
 			<div v-if="doc.traceback" class="relative mt-6">

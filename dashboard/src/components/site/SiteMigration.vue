@@ -84,7 +84,7 @@
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Move To Existing Bench'"
 					>
-						<p class="text-sm text-gray-700">Select Bench</p>
+						<p class="text-sm text-ink-gray-7">Select Bench</p>
 						<FormControl
 							type="combobox"
 							:options="
@@ -109,7 +109,7 @@
 							selectedReleaseGroupToMoveTo
 						"
 					>
-						<p class="text-sm text-gray-700">Select Server</p>
+						<p class="text-sm text-ink-gray-7">Select Server</p>
 						<FormControl
 							type="combobox"
 							:options="
@@ -131,7 +131,7 @@
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Create A New Bench'"
 					>
-						<p class="text-sm text-gray-700">Provide New Bench Name</p>
+						<p class="text-sm text-ink-gray-7">Provide New Bench Name</p>
 						<FormControl
 							type="text"
 							size="md"
@@ -147,7 +147,7 @@
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Create A New Bench'"
 					>
-						<p class="text-sm text-gray-700">Select Server Type</p>
+						<p class="text-sm text-ink-gray-7">Select Server Type</p>
 						<FormControl
 							type="select"
 							:options="[
@@ -176,7 +176,7 @@
 							selectedServerType == 'Dedicated Server'
 						"
 					>
-						<p class="text-sm text-gray-700">Select Server</p>
+						<p class="text-sm text-ink-gray-7">Select Server</p>
 						<FormControl
 							type="combobox"
 							:options="
@@ -201,7 +201,7 @@
 				>
 					<!-- Chose The Region -->
 					<div class="flex flex-col gap-2">
-						<p class="text-sm text-gray-700">Select Region</p>
+						<p class="text-sm text-ink-gray-7">Select Region</p>
 						<FormControl
 							type="combobox"
 							:options="
@@ -244,7 +244,7 @@
 
 				<!-- Scheduling Option -->
 				<div v-if="showSchedulingOption" class="flex flex-col gap-2">
-					<p class="text-sm text-gray-700">Choose Scheduled Time</p>
+					<p class="text-sm text-ink-gray-7">Choose Scheduled Time</p>
 					<DateTimeControl v-model="scheduledTime" :hideLabel="true" />
 				</div>
 

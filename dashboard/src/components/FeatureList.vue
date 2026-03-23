@@ -1,5 +1,5 @@
 <template>
-	<ul class="space-y-2 text-sm text-gray-700">
+	<ul class="space-y-2 text-sm text-ink-gray-7">
 		<li
 			class="flex flex-row justify-items-center"
 			v-for="feature in features"
@@ -14,6 +14,6 @@
 <script>
 export default {
 	name: 'FeatureList',
-	props: ['features']
+	props: ['features'],
 };
 </script>

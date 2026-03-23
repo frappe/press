@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<label class="block mt-4">
-			<span class="text-sm leading-4 text-gray-700"> </span>
+			<span class="text-sm leading-4 text-ink-gray-7"> </span>
 			<ErrorMessage class="mt-1" :message="paymentErrorMessage" />
 		</label>
 

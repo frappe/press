@@ -62,13 +62,13 @@
 		<div class="mx-5 my-2.5">
 			<div
 				v-if="!site"
-				class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+				class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 			>
 				Select a site to get started
 			</div>
 			<div
 				v-else-if="!binlog_index_state_loaded"
-				class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+				class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 			>
 				<Spinner class="w-4" />
 				Loading Binlog Browser...
@@ -208,7 +208,7 @@
 					<div class="mt-3" v-if="isBinlogSearchAccessible">
 						<div
 							v-if="this.$resources?.searchBinlogs?.loading"
-							class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
+							class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 						>
 							<Spinner class="w-4" /> Searching for binlogs...
 						</div>

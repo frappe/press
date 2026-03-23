@@ -8,7 +8,7 @@
 	>
 		<template #body-content>
 			<div v-if="appDoc.doc.review_stage === 'Ready for Review'">
-				<p class="text-p-base text-gray-700">
+				<p class="text-p-base text-ink-gray-7">
 					Your app is sent for review to our team. Please wait for the review to
 					be completed.
 				</p>

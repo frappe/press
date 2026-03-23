@@ -6,7 +6,7 @@
 		}"
 	>
 		<template #body-content>
-			<p class="mb-2 text-sm text-gray-700">Select Table</p>
+			<p class="mb-2 text-sm text-ink-gray-7">Select Table</p>
 			<div class="flex flex-row gap-2">
 				<FormControl
 					class="w-full"

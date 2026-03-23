@@ -8,19 +8,19 @@
 			>
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Active Card</div>
-					<div class="overflow-hidden text-ellipsis text-gray-700">
+					<div class="overflow-hidden text-ellipsis text-ink-gray-7">
 						<div
 							v-if="team.doc.payment_method"
 							class="inline-flex items-center gap-2"
 						>
 							<component :is="cardBrandIcon(team.doc.payment_method.brand)" />
-							<div class="text-gray-700">
+							<div class="text-ink-gray-7">
 								<span>{{ team.doc.payment_method.name_on_card }}</span>
 								<span> &middot; Card ending in •••• </span>
 								<span>{{ team.doc.payment_method.last_4 }}</span>
 							</div>
 						</div>
-						<span v-else class="text-gray-700">No card added</span>
+						<span v-else class="text-ink-gray-7">No card added</span>
 					</div>
 				</div>
 				<div class="shrink-0">
@@ -43,12 +43,12 @@
 					<div class="font-medium">Mode of payment</div>
 					<div
 						v-if="team.doc.payment_mode"
-						class="inline-flex items-center gap-2 text-gray-700"
+						class="inline-flex items-center gap-2 text-ink-gray-7"
 					>
 						<FeatherIcon class="h-4" name="info" />
 						{{ paymentMode.description }}
 					</div>
-					<span v-else class="text-gray-700">Not set</span>
+					<span v-else class="text-ink-gray-7">Not set</span>
 				</div>
 				<div class="shrink-0">
 					<Dropdown :options="paymentModeOptions">
@@ -71,7 +71,7 @@
 			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Credit balance</div>
-					<div class="text-gray-700">
+					<div class="text-ink-gray-7">
 						{{ availableCredits || currency + ' 0.00' }}
 					</div>
 				</div>
@@ -100,10 +100,10 @@
 			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Billing address</div>
-					<div v-if="billingDetailsSummary" class="leading-5 text-gray-700">
+					<div v-if="billingDetailsSummary" class="leading-5 text-ink-gray-7">
 						{{ billingDetailsSummary }}
 					</div>
-					<div v-else class="text-gray-700">No address</div>
+					<div v-else class="text-ink-gray-7">No address</div>
 				</div>
 				<div class="shrink-0">
 					<Button
@@ -127,12 +127,12 @@
 					<div class="font-medium">Budget Alerts</div>
 					<div
 						v-if="team.doc.receive_budget_alerts"
-						class="leading-5 text-gray-700"
+						class="leading-5 text-ink-gray-7"
 					>
 						Alert threshold is set at {{ currency
 						}}{{ team.doc.monthly_alert_threshold }} per month
 					</div>
-					<div v-else class="text-gray-700">
+					<div v-else class="text-ink-gray-7">
 						Receive an email alert if monthly total exceeds limit set
 					</div>
 				</div>
