@@ -70,7 +70,6 @@ class MarketplaceAppAudit(Document):
 		audit.trigger_audit()
 		return audit
 
-	@frappe.whitelist()
 	def trigger_audit(self):
 		"""
 		This will trigger the run_audit method in background job.
@@ -82,7 +81,7 @@ class MarketplaceAppAudit(Document):
 			"run_audit",
 			queue="long",
 			timeout=3600,
-			# now=True,
+			enqueue_after_commit=True,
 		)
 
 	def run_audit(self):
@@ -117,6 +116,7 @@ class MarketplaceAppAudit(Document):
 			"run_audit",
 			queue="long",
 			timeout=3600,
+			enqueue_after_commit=True,
 		)
 
 	def execute_audit_checks(self):
@@ -132,14 +132,17 @@ class MarketplaceAppAudit(Document):
 		clone_dir = release.clone_directory
 		results = []
 
+		from press.marketplace.doctype.marketplace_app_audit.checks.code_quality import (
+			run_code_quality_checks,
+		)
 		from press.marketplace.doctype.marketplace_app_audit.checks.dependencies import run_dependency_checks
 		from press.marketplace.doctype.marketplace_app_audit.checks.metadata import run_metadata_checks
 		from press.marketplace.doctype.marketplace_app_audit.checks.versioning import run_versioning_checks
-		# from press.marketplace.doctype.marketplace_app_audit.checks.code_quality import run_code_quality_checks
 
 		results.extend(run_metadata_checks(marketplace_app))
 		results.extend(run_versioning_checks(clone_dir))
 		results.extend(run_dependency_checks(clone_dir))
+		results.extend(run_code_quality_checks(clone_dir))
 		return results
 
 	def populate_audit_checks(self, results: list[CheckResult]):
