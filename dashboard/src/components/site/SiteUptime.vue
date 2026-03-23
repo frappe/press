@@ -104,14 +104,14 @@
 					class="flex justify-between w-full text-[11px] text-ink-gray-7 font-normal mt-1"
 				>
 					<div
-						class="flex-shrink transition-all duration-300 bg-gray-200"
+						class="flex-shrink transition-all duration-300 bg-surface-gray-3"
 						:class="highlightDates ? 'bg-opacity-100' : 'bg-opacity-0'"
 					>
 						{{ firstDateTime }}
 					</div>
 
 					<div
-						class="w-fit flex-shrink transition-all duration-300 bg-gray-200"
+						class="w-fit flex-shrink transition-all duration-300 bg-surface-gray-3"
 						:class="highlightDates ? 'bg-opacity-100' : 'bg-opacity-0'"
 					>
 						{{ lastDateTime }}

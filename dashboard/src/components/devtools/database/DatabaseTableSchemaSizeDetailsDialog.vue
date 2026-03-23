@@ -110,7 +110,7 @@ export default {
 								'button',
 								{
 									class:
-										'inline-flex items-center justify-center gap-2 transition-colors focus:outline-none text-ink-gray-8 bg-surface-gray-2 hover:bg-gray-200 active:bg-surface-gray-4 focus-visible:ring focus-visible:ring-gray-400 h-7 text-base px-2 rounded',
+										'inline-flex items-center justify-center gap-2 transition-colors focus:outline-none text-ink-gray-8 bg-surface-gray-2 hover:bg-surface-gray-3 active:bg-surface-gray-4 focus-visible:ring focus-visible:ring-gray-400 h-7 text-base px-2 rounded',
 									onClick: (_) => {
 										console.log(row.table_name);
 										this.optimizeTable(row.table_name);
@@ -130,7 +130,7 @@ export default {
 								'button',
 								{
 									class:
-										'inline-flex items-center justify-center gap-2 transition-colors focus:outline-none text-ink-gray-8 bg-surface-gray-2 hover:bg-gray-200 active:bg-surface-gray-4 focus-visible:ring focus-visible:ring-gray-400 h-7 text-base px-2 rounded',
+										'inline-flex items-center justify-center gap-2 transition-colors focus:outline-none text-ink-gray-8 bg-surface-gray-2 hover:bg-surface-gray-3 active:bg-surface-gray-4 focus-visible:ring focus-visible:ring-gray-400 h-7 text-base px-2 rounded',
 									onClick: () => {
 										this.viewSchemaDetails(row.table_name);
 									},

@@ -55,7 +55,7 @@
 		<div v-else-if="column.type == 'Actions'">
 			<Dropdown v-if="showDropdown" :options="actions" @click.stop>
 				<button
-					class="flex items-center rounded bg-surface-gray-2 px-1 py-0.5 hover:bg-gray-200"
+					class="flex items-center rounded bg-surface-gray-2 px-1 py-0.5 hover:bg-surface-gray-3"
 				>
 					<FeatherIcon name="more-horizontal" class="h-4 w-4" />
 				</button>

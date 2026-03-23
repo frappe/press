@@ -21,7 +21,7 @@
 			<div class="mt-8" v-if="$resources.subscription.data">
 				<div>
 					<button
-						class="flex w-full items-center justify-between rounded-sm bg-surface-gray-2 p-2 hover:bg-gray-200"
+						class="flex w-full items-center justify-between rounded-sm bg-surface-gray-2 p-2 hover:bg-surface-gray-3"
 						@click="currentStep = 1"
 					>
 						<span class="text-sm font-medium text-ink-gray-7">

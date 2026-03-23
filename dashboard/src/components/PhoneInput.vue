@@ -9,7 +9,7 @@
 					<button
 						type="button"
 						@click="togglePopover"
-						class="flex h-7 items-center gap-1 rounded-l border border-r-0 border-gray-100 bg-surface-gray-2 px-2 text-sm text-ink-gray-8 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
+						class="flex h-7 items-center gap-1 rounded-l border border-r-0 border-gray-100 bg-surface-gray-2 px-2 text-sm text-ink-gray-8 hover:bg-surface-gray-3 focus:outline-none focus:ring-2 focus:ring-gray-400"
 					>
 						<span v-if="selectedCountry" class="flex items-center gap-1">
 							<img

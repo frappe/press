@@ -36,7 +36,7 @@
 				</div>
 
 				<!-- Divider -->
-				<div class="w-px bg-gray-200" />
+				<div class="w-px bg-surface-gray-3" />
 
 				<!-- Duration group -->
 				<div class="flex space-x-2">

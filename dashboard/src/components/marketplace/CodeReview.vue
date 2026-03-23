@@ -79,7 +79,7 @@
 						v-for="file in getResults"
 						:key="file.name"
 					>
-						<div class="card-header bg-gray-200 p-3">
+						<div class="card-header bg-surface-gray-3 p-3">
 							<h2 class="text-md font-semibold text-ink-gray-8">
 								{{ file.name }} - {{ file.score }} issues
 							</h2>
