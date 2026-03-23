@@ -189,28 +189,29 @@ class Invoice(Document):
 		currency_symbol = "₹" if currency == "INR" else "$"
 
 		for item in doc["items"]:
-			if item.document_type in ("Server", "Database Server"):
-				is_primary = frappe.get_value(item.document_type, item.document_name, "is_primary")
-				item.document_name = frappe.get_value(item.document_type, item.document_name, "title")
-				if server_plan := frappe.get_value("Server Plan", item.plan, price_field):
-					if not is_primary and item.document_type == "Server":
-						item.plan = (
-							f"{currency_symbol}{calculate_secondary_server_price(self.team, item.plan)}/hour"
-						)
-					else:
-						item.plan = f"{currency_symbol}{server_plan}/mo"
-				elif server_plan := frappe.get_value("Server Storage Plan", item.plan, price_field):
-					item.plan = f"Storage Add-on {currency_symbol}{server_plan}/GB"
+			self._format_invoice_item(item, price_field, currency_symbol)
 
-			elif item.document_type == "Marketplace App":
-				item.document_name = frappe.get_value(item.document_type, item.document_name, "title")
-				item.plan = (
-					f"{currency_symbol}{frappe.get_value('Marketplace App Plan', item.plan, price_field)}"
-				)
-			elif item.document_type == "Site":
-				hostname = frappe.get_value(item.document_type, item.document_name, "host_name")
-				if hostname:
-					item.document_name = hostname
+	def _format_invoice_item(self, item, price_field, currency_symbol):
+		if item.document_type in ("Server", "Database Server"):
+			is_primary = frappe.get_value(item.document_type, item.document_name, "is_primary")
+			item.document_name = frappe.get_value(item.document_type, item.document_name, "title")
+			if server_plan := frappe.get_value("Server Plan", item.plan, price_field):
+				if not is_primary and item.document_type == "Server":
+					item.plan = (
+						f"{currency_symbol}{calculate_secondary_server_price(self.team, item.plan)}/hour"
+					)
+				else:
+					item.plan = f"{currency_symbol}{server_plan}/mo"
+			elif server_plan := frappe.get_value("Server Storage Plan", item.plan, price_field):
+				item.plan = f"Storage Add-on {currency_symbol}{server_plan}/GB"
+
+		elif item.document_type == "Marketplace App":
+			item.document_name = frappe.get_value(item.document_type, item.document_name, "title")
+			item.plan = f"{currency_symbol}{frappe.get_value('Marketplace App Plan', item.plan, price_field)}"
+		elif item.document_type == "Site":
+			hostname = frappe.get_value(item.document_type, item.document_name, "host_name")
+			if hostname:
+				item.document_name = hostname
 
 	@dashboard_whitelist()
 	def stripe_payment_url(self):
