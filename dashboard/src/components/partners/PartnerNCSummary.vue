@@ -1,25 +1,26 @@
 <template>
-	<div class="py-5 pl-5 flex-col">
-		<div class="text-2xl text-gray-800 font-medium">
-			Non Conformance Details
+	<div v-if="ncSummary?.doc" class="pl-5 flex-col">
+		<div class="text-lg text-gray-600 flex">
+			<FeatherIcon name="file-text" class="mr-2 h-5 w-5 text-gray-600" />
+			Details
 		</div>
-		<div class="p-4 my-4 rounded border gap-5 bg-gray-50 flex flex-col">
-			<div>
-				<div class="text-sm text-gray-600">Department</div>
-				<div class="text-base text-gray-800">
-					{{ ncSummary?.doc?.department }}
-				</div>
-			</div>
+		<div class="p-4 my-4 rounded gap-5 bg-gray-50">
 			<div class="flex justify-between">
 				<div class="flex flex-col gap-5">
 					<div>
-						<div class="text-sm text-gray-600">Audit Conducted By</div>
+						<div class="text-base text-gray-600 pb-1">Summary</div>
+						<div class="text-base text-gray-800">
+							{{ ncSummary?.doc?.nc_statement }}
+						</div>
+					</div>
+					<div>
+						<div class="text-base text-gray-600 pb-1">Audit Conducted By</div>
 						<div class="text-base text-gray-800">
 							{{ ncSummary?.doc?.auditor }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm text-gray-600">Conducted On</div>
+						<div class="text-base text-gray-600 pb-1">Conducted On</div>
 						<div class="text-base text-gray-800">
 							{{ formatDate(ncSummary?.doc?.audit_date) }}
 						</div>
@@ -27,13 +28,19 @@
 				</div>
 				<div class="flex flex-col gap-5 text-right">
 					<div>
-						<div class="text-sm text-gray-600">NC Closed By</div>
+						<div class="text-base text-gray-600 pb-1">ID</div>
+						<div class="text-base text-gray-800">
+							{{ ncSummary?.doc?.name }}
+						</div>
+					</div>
+					<div>
+						<div class="text-base text-gray-600 pb-1">Closed By</div>
 						<div class="text-base text-gray-800">
 							{{ ncSummary?.doc?.closed_by }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm text-gray-600">NC Closed On</div>
+						<div class="text-base text-gray-600 pb-1">Closed On</div>
 						<div class="text-base text-gray-800">
 							{{ formatDate(ncSummary?.doc?.closed_on) }}
 						</div>
@@ -41,28 +48,28 @@
 				</div>
 			</div>
 		</div>
-		<div class="p-4 mt-4 gap-5 flex-col border rounded bg-gray-50">
-			<div class="flex-1 pb-5">
-				<div class="text-sm text-gray-600">Statement</div>
-				<div class="text-base text-gray-800">
-					{{ ncSummary?.doc?.nc_statement }}
+		<div class="p-4 mt-4 gap-5 flex-col rounded border-[1.5px]">
+			<div v-if="ncSummary?.doc?.nc_description" class="flex-1 pb-5">
+				<div class="text-base text-gray-600 pb-1">Description</div>
+				<div class="text-base text-gray-800 whitespace-pre-line leading-normal">
+					{{ ncSummary?.doc?.nc_description }}
 				</div>
 			</div>
-			<div class="flex-1">
-				<div class="text-sm text-gray-600">Description</div>
-				<div class="text-base text-gray-800 whitespace-pre-line leading-6">
-					<p>
-						{{ ncSummary?.doc?.nc_description }}
-					</p>
+			<div v-if="ncSummary?.doc?.measures_to_close_nc" class="flex-1">
+				<div class="text-base text-gray-600 pb-1">Measures to be taken</div>
+				<div class="text-base text-gray-800 whitespace-pre-line leading-normal">
+					{{ ncSummary?.doc?.measures_to_close_nc }}
 				</div>
 			</div>
 		</div>
-		<div class="p-4 mt-4 flex-col border rounded bg-gray-50">
-			<div class="flex-1">
-				<div class="text-sm text-gray-600 mb-2">Measures to be taken</div>
-				<div class="text-base text-gray-800 whitespace-pre-line leading-6">
-					{{ ncSummary?.doc?.measures_to_close_nc }}
-				</div>
+	</div>
+	<div v-else>
+		<div
+			class="flex flex-col gap-6 items-center justify-center h-96 border-[1.5px] rounded p-5"
+		>
+			<FeatherIcon name="file-text" class="mr-2 h-10 w-10 text-gray-500" />
+			<div class="text-lg text-gray-600">
+				Select a Non Conformance to view details
 			</div>
 		</div>
 	</div>
@@ -81,17 +88,19 @@ const props = defineProps({
 const ncSummary = createDocumentResource({
 	doctype: 'Partner Non Conformance',
 	name: props.nc,
-	auto: true,
 });
 
 watch(
 	() => props.nc,
 	(newVal) => {
-		if (newVal) {
+		if (newVal && ncSummary) {
 			ncSummary.name = newVal;
-			ncSummary.reload();
+			ncSummary.get.fetch();
+		} else if (newVal) {
+			ncSummary.get.fetch();
 		}
 	},
+	{ immediate: true },
 );
 
 const formatDate = (dateString) => {
