@@ -52,6 +52,24 @@ class MarketplaceAppAudit(Document):
 		series = f"AUD-{self.marketplace_app}-.#####"
 		self.name = make_autoname(series)
 
+	@staticmethod
+	def create_for_release(
+		marketplace_app: str,
+		app_release: str,
+		approval_request: str | None = None,
+		audit_type: str = "Release Change",
+	) -> "MarketplaceAppAudit":
+		audit = frappe.new_doc("Marketplace App Audit")
+		audit.marketplace_app = marketplace_app
+		audit.app_release = app_release
+		audit.approval_request = approval_request
+		audit.audit_type = audit_type
+		audit.status = "Queued"
+		audit.team = frappe.db.get_value("Marketplace App", marketplace_app, "team")
+		audit.insert()
+		audit.trigger_audit()
+		return audit
+
 	@frappe.whitelist()
 	def trigger_audit(self):
 		"""
@@ -78,14 +96,28 @@ class MarketplaceAppAudit(Document):
 			results = self.execute_audit_checks()
 			self.populate_audit_checks(results)
 			self.compute_results()
-			self.save()
+			self.status = "Completed"
 		except Exception:
 			self.status = "Failed"
-			# log the error somewhere
+			self.result = "Inconclusive"
+			self.audit_summary = "Audit failed due to an unexpected error."
+			# log the error traceback
+			self.error_traceback = frappe.get_traceback(with_context=True)
 		finally:
 			self.finished_at = frappe.utils.now_datetime()
-			self.status = "Completed"
 			self.save()
+
+	@frappe.whitelist()
+	def rerun_audit(self):
+		self.status = "Queued"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"run_audit",
+			queue="long",
+			timeout=3600,
+		)
 
 	def execute_audit_checks(self):
 		"""
