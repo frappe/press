@@ -13,7 +13,7 @@
 		<div class="m-12 mx-auto max-w-2xl px-5">
 			<div v-if="!siteGroupDeployName" class="py-4 text-base text-ink-gray-6">
 				<p>Missing deployment information.</p>
-				<router-link to="/sites/new" class="mt-2 text-blue-600 underline">
+				<router-link to="/sites/new" class="mt-2 text-ink-blue-2 underline">
 					Go back to site creation
 				</router-link>
 			</div>

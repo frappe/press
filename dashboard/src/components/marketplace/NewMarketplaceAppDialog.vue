@@ -62,7 +62,7 @@
 						</div>
 						<Link
 							href="https://frappecloud.com/marketplace/terms"
-							class="font-medium text-blue-600 hover:underline"
+							class="font-medium text-ink-blue-2 hover:underline"
 						>
 							Read our Terms and Policy
 						</Link>

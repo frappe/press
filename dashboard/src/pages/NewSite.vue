@@ -252,7 +252,7 @@
 					<div
 						class="flex items-center rounded bg-blue-50 p-2 text-p-base font-medium text-blue-800"
 					>
-						<lucide-info class="h-4 w-8 text-blue-600" />
+						<lucide-info class="h-4 w-8 text-ink-blue-2" />
 						<span class="ml-4">
 							Your site will be created on a
 							<strong>private bench</strong>.<br />You can install custom apps

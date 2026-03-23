@@ -36,7 +36,7 @@
 				<input
 					id="skip-failing"
 					type="checkbox"
-					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+					class="h-4 w-4 rounded border-gray-300 text-ink-blue-2 focus:ring-blue-500"
 					v-model="skipFailingPatches"
 				/>
 				<label for="skip-failing" class="ml-2 text-sm text-ink-gray-9">

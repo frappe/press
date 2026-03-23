@@ -6,7 +6,7 @@
 					<input
 						type="checkbox"
 						id="enabled-checkbox"
-						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						class="h-4 w-4 rounded border-gray-300 text-ink-blue-2 focus:ring-blue-500"
 						v-model="currentEditingPlan.enabled"
 					/>
 					<label for="enabled-checkbox" class="ml-1 text-sm text-ink-gray-9">

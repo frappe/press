@@ -313,7 +313,7 @@
 					Follow the
 					<a
 						href="https://docs.frappe.io/cloud/database-server-actions#enable--disable-binlog-indexer"
-						class="text-blue-600 underline"
+						class="text-ink-blue-2 underline"
 						target="_blank"
 						rel="noopener noreferrer"
 					>
