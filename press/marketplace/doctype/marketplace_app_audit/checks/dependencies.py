@@ -3,6 +3,10 @@ import json
 import os
 from pathlib import Path
 
+from press.marketplace.doctype.marketplace_app_audit.checks.utils import (
+	_extract_string_assignment,
+	_get_call_name,
+)
 from press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit import CheckResult
 from press.utils import get_filepath
 
@@ -276,34 +280,3 @@ def check_required_apps(hooks_path: str) -> CheckResult:
 		result="Pass",
 		message=f"required_apps is well-formed: {required_apps}",
 	)
-
-
-# utility functions
-
-
-def _extract_string_assignment(filepath: str, variable_name: str) -> str | None:
-	"""Extract the string value of a top-level assignment like `app_name = "press"` via AST."""
-	with open(filepath) as f:
-		tree = ast.parse(f.read())
-
-	for node in tree.body:
-		if not isinstance(node, ast.Assign):
-			continue
-		for target in node.targets:
-			if (
-				isinstance(target, ast.Name)
-				and target.id == variable_name
-				and isinstance(node.value, ast.Constant)
-				and isinstance(node.value.value, str)
-			):
-				return node.value.value
-	return None
-
-
-def _get_call_name(func_node: ast.expr) -> str | None:
-	"""Return a readable name for a Call's func node, or None if it's a safe pattern."""
-	if isinstance(func_node, ast.Name):
-		return func_node.id
-	if isinstance(func_node, ast.Attribute):
-		return f"...{func_node.attr}"
-	return None
