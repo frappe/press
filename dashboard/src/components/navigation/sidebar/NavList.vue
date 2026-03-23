@@ -123,19 +123,13 @@ const navigation = computed(() => {
 			disabled: enforce2FA,
 			children: [
 				{
-					name: 'Site Backups',
-					icon: PanelTopInactive,
-					route: '/backups/sites',
-					isActive: routeName === 'Site Backups',
-				},
-				{
 					name: 'Snapshots',
 					icon: Camera,
 					route: '/backups/snapshots',
 					isActive: routeName === 'Snapshots',
 				},
 			].filter((item) => item.condition ?? true),
-			isActive: ['Site Backups', 'Snapshots'].includes(routeName),
+			isActive: ['Snapshots'].includes(routeName),
 		},
 		{
 			name: 'Dev Tools',
