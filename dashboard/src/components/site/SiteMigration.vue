@@ -62,7 +62,7 @@
 						<div
 							class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"
 							:class="{
-								'bg-gray-100': benchMovementType == 'Create A New Bench',
+								'bg-surface-gray-2': benchMovementType == 'Create A New Bench',
 							}"
 							@click="benchMovementType = 'Create A New Bench'"
 						>
@@ -71,7 +71,7 @@
 						<div
 							class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"
 							:class="{
-								'bg-gray-100': benchMovementType == 'Move To Existing Bench',
+								'bg-surface-gray-2': benchMovementType == 'Move To Existing Bench',
 							}"
 							@click="benchMovementType = 'Move To Existing Bench'"
 						>

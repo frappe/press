@@ -88,7 +88,7 @@ function getAppsTabColumns(forSite: boolean) {
 					'div',
 					{
 						title: 'App has been patched',
-						class: 'rounded-full bg-gray-100 p-1',
+						class: 'rounded-full bg-surface-gray-2 p-1',
 					},
 					h(icon('hash', 'w-3 h-3'))
 				);

@@ -529,7 +529,7 @@ export default {
 												message: `Enter the disk size you want to increase to the server <b>${
 													doc.title || doc.name
 												}</b>
-									<div class="rounded mt-4 p-2 text-sm text-ink-gray-7 bg-gray-100 border">
+									<div class="rounded mt-4 p-2 text-sm text-ink-gray-7 bg-surface-gray-2 border">
 									You will be charged at the rate of
 									<strong>
 										${this.$format.userCurrency(doc.storage_plan[priceField])}/mo

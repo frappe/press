@@ -74,7 +74,7 @@
 						<a
 							href="https://docs.frappe.io/cloud/common-issues/build-might-fail"
 							target="_blank"
-							class="cursor-pointer rounded-full border border-gray-200 bg-gray-100 p-0.5 text-base text-ink-gray-7"
+							class="cursor-pointer rounded-full border border-gray-200 bg-surface-gray-2 p-0.5 text-base text-ink-gray-7"
 						>
 							<lucide-help-circle :class="`h-4 w-4 text-ink-red-4`" />
 						</a>

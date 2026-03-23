@@ -48,7 +48,7 @@
 					</div>
 				</Tooltip>
 				<Tooltip v-if="options.documentation" text="View documentation">
-					<div class="rounded-md bg-gray-100 p-1.5">
+					<div class="rounded-md bg-surface-gray-2 p-1.5">
 						<a :href="options.documentation" target="_blank">
 							<lucide-help-circle class="h-4 w-4" />
 						</a>

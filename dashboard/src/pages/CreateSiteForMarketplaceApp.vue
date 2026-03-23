@@ -30,7 +30,7 @@
 
 				<div
 					v-if="failure"
-					class="flex items-center space-x-2 rounded border border-gray-200 bg-gray-100 p-4 text-base text-ink-gray-7"
+					class="flex items-center space-x-2 rounded border border-gray-200 bg-surface-gray-2 p-4 text-base text-ink-gray-7"
 				>
 					<lucide-alert-circle class="inline-block h-5 w-5" />
 					<p>

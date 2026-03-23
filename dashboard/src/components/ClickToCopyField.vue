@@ -1,5 +1,5 @@
 <template>
-	<div class="relative rounded-lg border-2 border-gray-200 bg-gray-100 p-3">
+	<div class="relative rounded-lg border-2 border-gray-200 bg-surface-gray-2 p-3">
 		<div class="select-all break-all text-xs text-ink-gray-8">
 			<pre
 				:class="{

@@ -33,7 +33,7 @@
 							@change="handleQueryChange"
 							:displayValue="getDisplayValue"
 							:placeholder="!modelValue ? placeholder : null"
-							class="focus:ring-outline-gray-3 h-full w-full rounded border border-gray-100 bg-gray-100 bg-transparent pl-2 pr-5 text-base text-ink-gray-8 placeholder-gray-500 transition-colors focus:border-gray-500 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
+							class="focus:ring-outline-gray-3 h-full w-full rounded border border-gray-100 bg-surface-gray-2 bg-transparent pl-2 pr-5 text-base text-ink-gray-8 placeholder-gray-500 transition-colors focus:border-gray-500 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 						/>
 					</div>
 				</template>
@@ -70,7 +70,7 @@
 										v-else
 										class="flex w-full cursor-pointer select-none items-center justify-between truncate rounded px-2.5 py-1.5 text-base"
 										:class="{
-											'bg-gray-100': active,
+											'bg-surface-gray-2': active,
 											'bg-surface-gray-4': selected,
 										}"
 									>

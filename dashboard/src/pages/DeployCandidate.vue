@@ -284,7 +284,7 @@ export default {
 				title: 'Fail Running Build',
 				message: `
 				Are you sure you want to fail this running build?<br><br>
-				<div class="text-bg-base bg-gray-100 p-2 rounded-md">
+				<div class="text-bg-base bg-surface-gray-2 p-2 rounded-md">
 				This will <strong>stop the current build immediately</strong>.  
 				All progress made so far will be <strong>discarded</strong>, and the next triggered build will start from scratch.
 				<br><br>

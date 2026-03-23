@@ -49,7 +49,7 @@
 				</Button>
 			</DisclosureButton>
 		</div>
-		<DisclosurePanel class="border-b bg-gray-100 px-5 py-2">
+		<DisclosurePanel class="border-b bg-surface-gray-2 px-5 py-2">
 			<NavigationItems>
 				<template v-slot="{ navigation }">
 					<template v-for="(item, i) in navigation">

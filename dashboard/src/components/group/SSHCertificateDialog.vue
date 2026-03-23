@@ -46,7 +46,7 @@
 						<ClickToCopyField :textContent="sshCommand" />
 					</div>
 				</div>
-				<div class="flex items-center gap-2 rounded bg-gray-100 p-3">
+				<div class="flex items-center gap-2 rounded bg-surface-gray-2 p-3">
 					<FeatherIcon name="alert-triangle" class="h-4 w-4" />
 					<div class="space-y-1 text-base">
 						<p>

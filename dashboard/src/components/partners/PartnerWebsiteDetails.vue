@@ -6,7 +6,7 @@
 					<h3 class="font-semibold text-lg">Website Info</h3>
 					<Button label="Edit" @click="showUpdateWebsiteInfo = true" />
 				</div>
-				<div class="my-1 h-px bg-gray-100" />
+				<div class="my-1 h-px bg-surface-gray-2" />
 				<div class="flex flex-col gap-6">
 					<div class="flex">
 						<div class="flex-1 flex-col">

@@ -27,7 +27,7 @@
 						</div>
 					</Tooltip>
 					<Tooltip text="View documentation">
-						<div class="rounded-md bg-gray-100 p-1.5">
+						<div class="rounded-md bg-surface-gray-2 p-1.5">
 							<a
 								href="https://docs.frappe.io/cloud/binlog-browser"
 								target="_blank"

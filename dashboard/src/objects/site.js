@@ -453,7 +453,7 @@ export default {
 													default: () => {
 														return h('pre', {
 															class:
-																'whitespace-pre-wrap text-sm rounded border-2 p-3 border-gray-200 bg-gray-100',
+																'whitespace-pre-wrap text-sm rounded border-2 p-3 border-gray-200 bg-surface-gray-2',
 															innerHTML: site.doc.broken_domain_error,
 														});
 													},
@@ -781,7 +781,7 @@ export default {
 									site.doc?.host_name || site.doc?.name
 								}</b> that was created on ${date(backup.creation, 'llll')}.${
 									!backup.offsite
-										? '<br><br><div class="p-2 bg-gray-100 rounded border-gray-200">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
+										? '<br><br><div class="p-2 bg-surface-gray-2 rounded border-gray-200">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
 										: ''
 								}`,
 								onSuccess({ hide }) {

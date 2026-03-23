@@ -5,7 +5,7 @@
 			@click="navigate"
 			class="flex items-center rounded px-2 py-1.5 text-ink-gray-8 transition"
 			:class="[
-				item.isActive ? 'bg-surface-white shadow-sm' : 'hover:bg-gray-100',
+				item.isActive ? 'bg-surface-white shadow-sm' : 'hover:bg-surface-gray-2',
 				item.disabled ? 'pointer-events-none opacity-50' : '',
 				$attrs.class,
 			]"

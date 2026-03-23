@@ -35,7 +35,7 @@
 								ref="subdomainInput"
 							/>
 							<div
-								class="flex cursor-default items-center rounded-r bg-gray-100 px-2 text-base"
+								class="flex cursor-default items-center rounded-r bg-surface-gray-2 px-2 text-base"
 							>
 								.{{ domain }}
 							</div>

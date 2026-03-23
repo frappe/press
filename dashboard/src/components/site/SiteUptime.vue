@@ -73,7 +73,7 @@
 								:class="[
 									'hover:brightness-[110%] border-r border-white',
 									d.value === undefined
-										? 'bg-gray-100'
+										? 'bg-surface-gray-2'
 										: d.value === 1
 											? 'bg-green-500'
 											: d.value === 0

@@ -10,7 +10,7 @@
 					<div
 						v-for="card in cards.data"
 						:key="card.name"
-						class="flex justify-between gap-2 rounded p-2.5 text-base text-ink-gray-9 hover:bg-gray-100"
+						class="flex justify-between gap-2 rounded p-2.5 text-base text-ink-gray-9 hover:bg-surface-gray-2"
 					>
 						<div class="flex gap-2">
 							<component :is="cardBrandIcon(card.brand)" class="my-auto" />

@@ -155,7 +155,7 @@
 							<div
 								v-for="site in sites.data"
 								:key="site.name"
-								class="flex items-center justify-between rounded-md px-3 py-2 hover:cursor-pointer hover:bg-gray-100"
+								class="flex items-center justify-between rounded-md px-3 py-2 hover:cursor-pointer hover:bg-surface-gray-2"
 								@click="loginToSite(site.name)"
 							>
 								<div

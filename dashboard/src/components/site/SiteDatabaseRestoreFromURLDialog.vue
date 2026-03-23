@@ -7,7 +7,7 @@
 	>
 		<template #body-content>
 			<div
-				class="mb-6 flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-ink-gray-6"
+				class="mb-6 flex items-center rounded border border-gray-200 bg-surface-gray-2 p-4 text-sm text-ink-gray-6"
 			>
 				<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
 				<div>

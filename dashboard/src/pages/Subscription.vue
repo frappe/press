@@ -21,7 +21,7 @@
 			<div class="mt-8" v-if="$resources.subscription.data">
 				<div>
 					<button
-						class="flex w-full items-center justify-between rounded-sm bg-gray-100 p-2 hover:bg-gray-200"
+						class="flex w-full items-center justify-between rounded-sm bg-surface-gray-2 p-2 hover:bg-gray-200"
 						@click="currentStep = 1"
 					>
 						<span class="text-sm font-medium text-ink-gray-7">
@@ -102,7 +102,7 @@
 				</div>
 				<div class="mt-2" v-if="currentStep == 2">
 					<div
-						class="rounded-sm bg-gray-100 p-2 text-sm font-medium text-ink-gray-7"
+						class="rounded-sm bg-surface-gray-2 p-2 text-sm font-medium text-ink-gray-7"
 					>
 						Step 2: Setup billing
 					</div>

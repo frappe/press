@@ -52,7 +52,7 @@
 				<p class="pb-2 text-p-base">
 					Enter the partner code provided by your Partner
 				</p>
-				<div class="rounded border border-gray-200 bg-gray-100 p-2 mb-4">
+				<div class="rounded border border-gray-200 bg-surface-gray-2 p-2 mb-4">
 					<span class="text-sm leading-[1.5] text-ink-gray-7">
 						<strong>Note</strong>: After linking with Partner, following details
 						shall be shared with your partner team:

@@ -9,7 +9,7 @@
 					<button
 						type="button"
 						@click="togglePopover"
-						class="flex h-7 items-center gap-1 rounded-l border border-r-0 border-gray-100 bg-gray-100 px-2 text-sm text-ink-gray-8 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
+						class="flex h-7 items-center gap-1 rounded-l border border-r-0 border-gray-100 bg-surface-gray-2 px-2 text-sm text-ink-gray-8 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
 					>
 						<span v-if="selectedCountry" class="flex items-center gap-1">
 							<img
@@ -38,9 +38,9 @@
 							v-for="country in filteredCountries"
 							:key="country.name"
 							@click="selectCountry(country, close)"
-							class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-100"
+							class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-surface-gray-2"
 							:class="{
-								'bg-gray-100': selectedCountry?.name === country.name,
+								'bg-surface-gray-2': selectedCountry?.name === country.name,
 							}"
 						>
 							<img
@@ -64,7 +64,7 @@
 				type="tel"
 				v-model="phoneNumber"
 				:placeholder="selectedCountry?.example || placeholder"
-				class="h-7 w-full rounded-r border border-gray-100 bg-gray-100 px-2 text-base text-ink-gray-8 placeholder-gray-500 focus:border-gray-500 focus:bg-surface-white focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
+				class="h-7 w-full rounded-r border border-gray-100 bg-surface-gray-2 px-2 text-base text-ink-gray-8 placeholder-gray-500 focus:border-gray-500 focus:bg-surface-white focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 				@input="emitValue"
 			/>
 		</div>

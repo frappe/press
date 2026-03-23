@@ -41,7 +41,7 @@
 							class="mb-3.5 flex w-full items-stretch"
 						>
 							<div
-								class="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs"
+								class="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-surface-gray-2 text-xs"
 							>
 								{{ idx + 1 }}
 							</div>

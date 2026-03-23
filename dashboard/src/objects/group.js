@@ -227,7 +227,7 @@ export default {
 									{
 										text: "What's this?",
 										placement: 'top',
-										class: 'rounded-full bg-gray-100 p-1',
+										class: 'rounded-full bg-surface-gray-2 p-1',
 									},
 									() => [
 										h(
@@ -477,7 +477,7 @@ export default {
 									{
 										text: 'Attention required!',
 										placement: 'top',
-										class: 'rounded-full bg-gray-100 p-1',
+										class: 'rounded-full bg-surface-gray-2 p-1',
 									},
 									() => h(icon('alert-circle', 'w-3 h-3'), {}),
 								);
@@ -788,7 +788,7 @@ export default {
 									{
 										text: 'Custom version',
 										placement: 'top',
-										class: 'rounded-full bg-gray-100 p-1',
+										class: 'rounded-full bg-surface-gray-2 p-1',
 									},
 									() => h(icon('alert-circle', 'w-3 h-3'), {}),
 								);

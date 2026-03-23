@@ -1,7 +1,7 @@
 <template>
 	<Dialog :options="{ title: 'Switch Team' }" v-model="show">
 		<template #body-content v-if="$team?.doc">
-			<div class="rounded bg-gray-100 px-3 py-2.5">
+			<div class="rounded bg-surface-gray-2 px-3 py-2.5">
 				<div class="text-base text-ink-gray-9">
 					You are logged in as the user
 					<span class="font-medium">{{ $session.user }}</span>
