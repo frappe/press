@@ -1,23 +1,25 @@
 <template>
 	<div class="flex divide-x p-5">
-		<div class="w-1/3">
+		<div class="w-1/5">
+			<div class="text-lg text-gray-600 flex">
+				<FeatherIcon name="align-justify" class="mr-2 h-5 w-5 text-gray-600" />
+				Non Conformance List
+			</div>
 			<template v-for="tab in tabs">
 				<router-link
 					:to="{ name: tab.value, params: { nc: tab.name } }"
-					class="flex my-4 mr-4 justify-between gap-6 border rounded cursor-pointer text-base text-gray-600 hover:bg-gray-100"
+					class="flex p-4 my-4 mr-4 justify-between border gap-6 rounded cursor-pointer text-base text-gray-600 hover:bg-gray-100"
 					:class="{
-						' bg-gray-50 text-gray-800': isActiveTab(tab),
-						'text-gray-600': !isActiveTab(tab),
+						'text-gray-800': isActiveTab(tab),
+						'text-gray-400': !isActiveTab(tab),
 					}"
 				>
-					<div class="p-4">
-						<div>{{ tab.label }}</div>
-						<Badge :theme="theme_map[tab.status]" :label="tab.status" />
-					</div>
+					<div>{{ tab.label }}</div>
+					<Badge :theme="theme_map[tab.status]" :label="tab.status" />
 				</router-link>
 			</template>
 		</div>
-		<div class="w-2/3 overflow-auto">
+		<div class="w-3/5 overflow-auto">
 			<router-view />
 		</div>
 	</div>
@@ -25,7 +27,10 @@
 <script setup>
 import { onMounted, defineProps, ref } from 'vue';
 import router from '../../router';
-import { createListResource } from 'frappe-ui';
+import { createListResource, FeatherIcon } from 'frappe-ui';
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
 
 const props = defineProps({
 	partner_audit: {
@@ -59,7 +64,7 @@ const ncList = createListResource({
 	],
 	onSuccess() {
 		tabs.value = ncList.data.map((nc) => ({
-			label: nc.name,
+			label: nc.department,
 			value: 'PartnerNCSummary',
 			name: nc.name,
 			status: nc.status,
@@ -68,13 +73,12 @@ const ncList = createListResource({
 });
 
 const isActiveTab = (tab) => {
-	return [tab.value, ...(tab.children || [])].find(
-		(child) => child === router.currentRoute.value.name,
-	);
+	// console.log(route.params.nc, tab.name);
+	return [tab.name].find((child) => child === route.params.nc);
 };
 
 onMounted(() => {
-	if (router.currentRoute.value.name === 'PartnerNCList') {
+	if (route.name === 'PartnerNCList') {
 		router.replace({ name: 'PartnerNCSummary' });
 	}
 });
