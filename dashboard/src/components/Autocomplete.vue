@@ -71,7 +71,7 @@
 										class="flex w-full cursor-pointer select-none items-center justify-between truncate rounded px-2.5 py-1.5 text-base"
 										:class="{
 											'bg-gray-100': active,
-											'bg-gray-300': selected,
+											'bg-surface-gray-4': selected,
 										}"
 									>
 										{{ option.label }}
