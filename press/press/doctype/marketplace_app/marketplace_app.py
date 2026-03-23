@@ -198,6 +198,10 @@ class MarketplaceApp(WebsiteGenerator):
 				self.append("sources", {"version": version.version, "source": source.name})
 
 	def validate(self):
+		# if status is being changed to Published, then first check if the audit is passing
+		if self.status == "Published":
+			self.validate_has_approved_release_with_passing_audit()
+
 		self.published = self.status == "Published"
 		self.validate_sources()
 		self.validate_number_of_screenshots()
@@ -225,6 +229,25 @@ class MarketplaceApp(WebsiteGenerator):
 		max_allowed_screenshots = frappe.db.get_single_value("Press Settings", "max_allowed_screenshots")
 		if len(self.screenshots) > max_allowed_screenshots:
 			frappe.throw(f"You cannot add more than {max_allowed_screenshots} screenshots for an app.")
+
+	def validate_has_approved_release_with_passing_audit(self):
+		"""
+		We already do a mandatory audit check before marking any app approval request as "Approved".
+		So, we need to check if there is at least one approved release with a passing audit.
+		"""
+		sources = [s.source for s in self.sources]
+		if not sources:
+			frappe.throw("Cannot publish: No sources configured")
+		approved_release = frappe.get_value(
+			"App Release",
+			{"source": ("in", sources), "status": "Approved"},
+			"name",
+			order_by="creation desc",
+		)
+		if not approved_release:
+			frappe.throw(
+				"Cannot publish: No App Approval Request found with 'Approved' status. At least one release must be approved."
+			)
 
 	def on_update(self):
 		self.set_published_on_date()
@@ -815,3 +838,33 @@ def get_total_installs_by_app():
 			order_by=None,
 		)
 	return {installs["app"]: installs["count"] for installs in total_installs}
+
+
+@frappe.whitelist(methods=["POST"])
+def run_audit_for_marketplace_app(marketplace_app: str, app_release: str | None = None):
+	from press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit import MarketplaceAppAudit
+
+	if not app_release:
+		# find the latest release for this marketplace app
+		sources = frappe.get_all(
+			"Marketplace App Version",
+			{"parent": marketplace_app},
+			pluck="source",
+		)
+		if not sources:
+			frappe.throw("No sources found for this Marketplace App")
+
+		app_release = frappe.get_value(
+			"App Release",
+			{"source": ("in", sources)},
+			"name",
+			order_by="creation desc",
+		)
+		if not app_release:
+			frappe.throw("No releases found for this Marketplace App's sources")
+
+	return MarketplaceAppAudit.create_for_release(
+		marketplace_app=marketplace_app,
+		app_release=app_release,
+		audit_type="Manual Run",
+	).name
