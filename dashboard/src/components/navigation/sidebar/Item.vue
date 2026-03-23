@@ -23,4 +23,5 @@ let props = defineProps({
 		<span class="text-sm">{{ item.name }}</span>
 		<component :is="item.badge" />
 	</router-link>
+	<div v-if="item.spacer" class="h-[10px] w-full" />
 </template>

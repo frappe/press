@@ -55,6 +55,7 @@ const navigation = computed(() => {
 			name: 'Notifications',
 			icon: Notification,
 			route: '/notifications',
+			spacer: true,
 			isActive: routeName === 'Press Notification List',
 			condition: onboardingComplete && !isSaasUser,
 			badge: () => {
@@ -108,6 +109,7 @@ const navigation = computed(() => {
 		{
 			name: 'Servers',
 			icon: Server,
+			spacer: true,
 			route: onboardingComplete ? '/servers' : '/enable-servers',
 			isActive:
 				['New Server'].includes(routeName) ||
