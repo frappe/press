@@ -1,19 +1,14 @@
 <template>
 	<div class="p-5">
-		<!-- <div class="-m-5 flex divide-x">
-			<div class="w-1/3">dd</div>
-			<div class="w-2/3 overflow-auto">
-				data3
-			</div>
-		</div> -->
 		<ObjectList :options="partnerAuditsList" />
 	</div>
 </template>
 <script setup>
-import { computed, inject } from 'vue';
+import { computed, inject, h } from 'vue';
 import ObjectList from '../ObjectList.vue';
-import { icon } from '../../utils/components';
+import { icon, renderDialog } from '../../utils/components';
 import router from '../../router';
+import NewPartnerAudit from './NewPartnerAudit.vue';
 
 const team = inject('team');
 
@@ -63,6 +58,28 @@ const partnerAuditsList = computed(() => {
 				},
 			},
 		],
+		filterControls() {
+			return [
+				{
+					type: 'date',
+					fieldname: 'proposed_audit_date',
+					label: 'Audit Date',
+				},
+				{
+					type: 'select',
+					fieldname: 'status',
+					label: 'Status',
+					options: [
+						{ label: 'Requested', value: 'Requested' },
+						{ label: 'Scheduled', value: 'Scheduled' },
+						{ label: 'In Progress', value: 'In Progress' },
+						{ label: 'Completed', value: 'Completed' },
+						{ label: 'On Hold', value: 'On Hold' },
+						{ label: 'Cancelled', value: 'Cancelled' },
+					],
+				},
+			];
+		},
 		actions() {
 			return [
 				{
@@ -71,8 +88,11 @@ const partnerAuditsList = computed(() => {
 						prefix: icon('plus'),
 					},
 					onClick: () => {
-						console.log('Request for Audit');
-						// router.push({ name: 'PartnerNCList' });
+						return renderDialog(
+							h(NewPartnerAudit, {
+								modelValue: true,
+							}),
+						);
 					},
 				},
 			];
