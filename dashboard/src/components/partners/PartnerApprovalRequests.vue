@@ -79,7 +79,7 @@ export default {
 									},
 									() =>
 										h(Clock, {
-											class: 'h-4 w-4 text-yellow-500',
+											class: 'h-4 w-4 text-ink-amber-2',
 										}),
 								);
 							}
@@ -112,7 +112,7 @@ export default {
 									},
 									() =>
 										h(Clock, {
-											class: 'h-4 w-4 text-yellow-500',
+											class: 'h-4 w-4 text-ink-amber-2',
 										}),
 								);
 							}

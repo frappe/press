@@ -103,7 +103,7 @@
 												/>
 												<lucide-alert-triangle
 													v-else-if="getBadgeLabel(cell) === 'Warning'"
-													class="h-4 w-4 text-yellow-500"
+													class="h-4 w-4 text-ink-amber-2"
 												/>
 												<lucide-alert-circle
 													v-else-if="
@@ -116,7 +116,7 @@
 													class="text-xs"
 													:class="{
 														'text-blue-500': getBadgeLabel(cell) === 'Info',
-														'text-yellow-500':
+														'text-ink-amber-2':
 															getBadgeLabel(cell) === 'Warning',
 														'text-red-500':
 															getBadgeLabel(cell) === 'Error' ||
