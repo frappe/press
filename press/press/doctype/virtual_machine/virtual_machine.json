@@ -40,6 +40,7 @@
   "subnet_id",
   "private_ip_address",
   "public_ip_address",
+  "assign_public_ip",
   "is_static_ip",
   "column_break_15",
   "subnet_cidr_block",
@@ -66,7 +67,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "\nAWS EC2\nOCI\nHetzner\nDigitalOcean",
+   "options": "\nAWS EC2\nOCI\nHetzner\nDigitalOcean\nFrappe Compute",
    "read_only": 1,
    "reqd": 1
   },
@@ -391,6 +392,13 @@
    "fieldtype": "Data",
    "label": "Secondary Private IP Address",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "assign_public_ip",
+   "fieldtype": "Check",
+   "label": "Assign Public IP",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -436,7 +444,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2026-01-23 02:22:14.828385",
+ "modified": "2026-03-18 12:04:02.955392",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

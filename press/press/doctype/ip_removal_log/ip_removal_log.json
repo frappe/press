@@ -1,0 +1,112 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-03-18 12:58:19.831449",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "server_type",
+  "status",
+  "cluster",
+  "column_break_nwvz",
+  "limit",
+  "nat_server",
+  "section_break_ndsx",
+  "removal_steps",
+  "section_break_oiwu",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Server Type",
+   "options": "DocType",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_nwvz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "limit",
+   "fieldtype": "Int",
+   "label": "Limit",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_ndsx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "removal_steps",
+   "fieldtype": "Table",
+   "options": "IP Removal Log Steps"
+  },
+  {
+   "fieldname": "section_break_oiwu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Text",
+   "label": "Error/Traceback",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure"
+  },
+  {
+   "fieldname": "nat_server",
+   "fieldtype": "Link",
+   "label": "NAT Server",
+   "options": "NAT Server",
+   "reqd": 1,
+   "set_only_once": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-19 01:54:10.242334",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "IP Removal Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

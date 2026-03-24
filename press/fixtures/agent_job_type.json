@@ -2128,5 +2128,23 @@
     "step_name": "Flush Tables"
    }
   ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2026-03-18 14:56:39.959844",
+  "name": "Refresh Database Usage",
+  "request_method": "POST",
+  "request_path": "/database/refresh-usage",
+  "steps": [
+   {
+    "step_name": "Analyze Tables of Database"
+   },
+   {
+    "step_name": "Update Database Schema Size"
+   }
+  ]
  }
 ]
