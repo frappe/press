@@ -71,14 +71,6 @@ class IPRemovalLog(Document, StepHandler):
 			}
 			self.append("removal_steps", step)
 
-		# set the ip in cache
-		nat_private_ip = frappe.db.get_value(
-			"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
-		)
-		frappe.cache.set_value(
-			f"{self.name}:{self.nat_server}", nat_private_ip.secondary_private_ip or nat_private_ip.private_ip
-		)
-
 	@frappe.whitelist()
 	def execute_removal_steps(self):
 		frappe.enqueue_doc(
