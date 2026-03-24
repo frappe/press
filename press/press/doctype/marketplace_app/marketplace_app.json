@@ -435,9 +435,14 @@
    "group": "App Subscription",
    "link_doctype": "Marketplace App Subscription",
    "link_fieldname": "app"
+  },
+  {
+   "group": "General",
+   "link_doctype": "Marketplace App Audit",
+   "link_fieldname": "marketplace_app"
   }
  ],
- "modified": "2025-09-30 11:48:31.952469",
+ "modified": "2026-03-24 13:11:45.116095",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
