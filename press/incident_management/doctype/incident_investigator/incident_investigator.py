@@ -6,7 +6,6 @@ import datetime
 import json
 import random
 import typing
-from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 
@@ -147,9 +146,7 @@ class PrometheusInvestigationHelper:
 		return None
 
 	def has_high_system_load(self, instance: str, step: "InvestigationStep"):
-		"""Check number of processes waiting for cpu time
-		if the number is higher than 3 times the number of vcpus load is high
-		"""
+		"""Check system load during investigation window"""
 		assert self.investigation_window_start_time and self.investigation_window_end_time, (
 			"Investigation window not set"
 		)
@@ -222,7 +219,7 @@ class PrometheusInvestigationHelper:
 		step.save()
 
 	def has_high_disk_usage(self, instance: str, step: "InvestigationStep"):
-		"""Determined if disk is full in any of the relevant mountpoints at present"""
+		"""Determined if disk is full"""
 		is_unreachable = True
 		mountpoints = {"/": False, "/opt/volumes/benches": False, "/opt/volumes/mariadb": False}
 		virtual_machine: VirtualMachine = frappe.get_cached_doc("Virtual Machine", instance)
@@ -285,7 +282,7 @@ class PrometheusInvestigationHelper:
 		step.save()
 
 	def _get_bench_memory_usage(self, instance: str) -> dict[str, float] | None:
-		"""Get the average memory usage for each bench on the server averaged over the investigation window."""
+		"""Get the average memory usage over the investigation window."""
 		benches = frappe.db.get_all(
 			"Bench",
 			fields=["name"],
@@ -365,7 +362,7 @@ class DatabaseInvestigationActions:
 		step.save()
 
 	def restart_benches(self, step: "ActionStep"):
-		"""Restart benches since framework sometimes is not able to establish connection after reboot"""
+		"""Restart benches to establish connection after reboot"""
 		step.status = StepStatus.Running
 		step.save()
 
@@ -453,7 +450,7 @@ class AppServerInvestigationActions:
 		step.save()
 
 	def get_oom_kill_events(self, step: "ActionStep"):
-		"""Get OOM kill events data and do something with it start and end time are UTC times!"""
+		"""Get OOM kill events data"""
 		step.status = StepStatus.Running
 		step.save()
 
@@ -638,12 +635,40 @@ class IncidentInvestigator(Document, StepHandler):
 		self.status = status
 		self.save()
 
-	def add_investigation_findings(self, step: str, data: Mapping[str, int | str | bool] | list):
+	def add_investigation_findings(self, step: "ActionStep"):
 		"""Add investigation findings from each step"""
-		findings = json.loads(self.investigation_findings) if self.investigation_findings else {}
-		findings[step] = data
-		self.investigation_findings = json.dumps(findings, indent=2)
-		self.save()
+		step.status = StepStatus.Running
+		step.save()
+
+		findings = []
+		is_unified_server = frappe.db.get_value("Server", self.server, "is_unified_server")
+		investigation_steps = (
+			self.server_investigation_steps
+			if is_unified_server
+			else self.server_investigation_steps + self.database_investigation_steps
+		)
+
+		for investigation_step in investigation_steps:
+			step_type = "Server" if investigation_step in self.server_investigation_steps else "Database"
+			findings.append(
+				{
+					"step_type": step_type,
+					"step_name": investigation_step.step_name,
+					"method": investigation_step.method,
+					"is_likely_cause": bool(investigation_step.is_likely_cause),
+					"is_unable_to_investigate": bool(investigation_step.is_unable_to_investigate),
+				}
+			)
+
+		frappe.db.set_value(
+			self.doctype,
+			self.name,
+			"investigation_findings",
+			json.dumps(findings, indent=2),
+		)
+
+		step.status = StepStatus.Success
+		step.save()
 
 	### Some helper methods for initiating investigation steps
 	@property
@@ -801,11 +826,11 @@ class IncidentInvestigator(Document, StepHandler):
 		pattern_detector = IncidentPatternDetector(self)
 
 		if self.action_steps and execute_action_steps:
-			# Execute action steps via step handler
-			pattern_detector_step = self.get_steps([pattern_detector.detect_patterns])[
-				0
-			]  # Add pattern detection as the last step in the workflow
-			self.append("action_steps", pattern_detector_step)
+			for terminal_step in self.get_steps(
+				[self.add_investigation_findings, pattern_detector.detect_patterns]
+			):
+				self.append("action_steps", terminal_step)
+
 			self.save()
 
 			frappe.enqueue_doc(

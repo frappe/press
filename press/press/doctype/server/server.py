@@ -54,6 +54,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.mariadb_variable.mariadb_variable import MariaDBVariable
 	from press.press.doctype.nfs_volume_detachment.nfs_volume_detachment import NFSVolumeDetachment
+	from press.press.doctype.on_prem_failover.on_prem_failover import OnPremFailover
 	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
@@ -106,6 +107,7 @@ class BaseServer(Document, TagHelpers):
 		"is_monitoring_disabled",
 		"is_provisioning_press_job_completed",
 		"is_unified_server",
+		"enable_on_prem_failover_support",
 	)
 
 	@staticmethod
@@ -386,6 +388,15 @@ class BaseServer(Document, TagHelpers):
 
 		actions = [
 			{
+				"action": "Manage On-Prem Replication",
+				"description": "Manage On-Prem Replication & Failover",
+				"button_label": "Manage",
+				"condition": self.status == "Active"
+				and self.doctype == "Server"
+				and self.enable_on_prem_failover_support,
+				"group": "Application Server Actions",
+			},
+			{
 				"action": "Rename server",
 				"description": f"Rename the {server_type}",
 				"button_label": "Rename",
@@ -437,7 +448,7 @@ class BaseServer(Document, TagHelpers):
 				"action": "Drop server",
 				"description": "Drop both the application and database servers"
 				if not getattr(self, "is_unified_server", False)
-				else "Drop the unifed server",
+				else "Drop the unified server",
 				"button_label": "Drop",
 				"condition": self.status == "Active" and self.doctype == "Server",
 				"doc_method": "drop_server",
@@ -525,8 +536,15 @@ class BaseServer(Document, TagHelpers):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
 
 	def after_insert(self):
-		if self.ip and (
-			self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted
+		if self.ip:
+			if self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted:
+				self.create_dns_record()
+				self.update_virtual_machine_name()
+		elif (
+			self.private_ip
+			and self.doctype in ["Server", "Database Server"]
+			and not self.is_self_hosted
+			and not frappe.flags.in_test
 		):
 			self.create_dns_record()
 			self.update_virtual_machine_name()
@@ -559,7 +577,7 @@ class BaseServer(Document, TagHelpers):
 								"Name": self.name,
 								"Type": "A",
 								"TTL": 3600 if self.doctype == "Proxy Server" else 300,
-								"ResourceRecords": [{"Value": self.ip}],
+								"ResourceRecords": [{"Value": self.ip or self.private_ip}],
 							},
 						}
 					]
@@ -764,6 +782,7 @@ class BaseServer(Document, TagHelpers):
 					"allocator": database_server.memory_allocator.lower(),
 					"mariadb_root_password": database_server_config.mariadb_root_password,
 					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
+					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					**self.get_mount_variables(),  # Currently same as database server since no volumes
 				},
 			)
@@ -1114,8 +1133,6 @@ class BaseServer(Document, TagHelpers):
 		return find(machine.volumes, lambda v: v.device == "/dev/sda1")
 
 	def update_virtual_machine_name(self):
-		if self.provider not in ("AWS EC2", "OCI"):
-			return None
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
 
@@ -1254,7 +1271,9 @@ class BaseServer(Document, TagHelpers):
 			ignore_ifnull=True,
 		):
 			frappe.throw(
-				_("Cannot archive server with sites. Please drop them from their respective dashboards.")
+				_(
+					"Cannot archive a server with sites on it. Please archive all the sites before performing the drop action."
+				)
 			)
 		if frappe.get_all(
 			"Bench",
@@ -1262,7 +1281,9 @@ class BaseServer(Document, TagHelpers):
 			ignore_ifnull=True,
 		):
 			frappe.throw(
-				_("Cannot archive server with benches. Please drop them from their respective dashboards.")
+				_(
+					"The server has a few benches on it. Please archive them from their respective dashboards before attempting a drop."
+				)
 			)
 
 		self.status = "Pending"
@@ -1310,7 +1331,9 @@ class BaseServer(Document, TagHelpers):
 			team = frappe.get_doc("Team", team.billing_team)
 
 		if not (team.default_payment_method or team.get_balance()):
-			frappe.throw("Cannot change plan because you haven't added a card and not have enough balance")
+			frappe.throw(
+				"Changing plans needs the customer to have a card added to their billing profile. Cannot change for the same reason, please add a card to your account on Frappe Cloud Billing dashboard."
+			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 		if not cluster.check_machine_availability(new_plan.instance_type):
@@ -1324,7 +1347,7 @@ class BaseServer(Document, TagHelpers):
 			)
 			if current_root_disk_size >= new_plan.disk:
 				frappe.throw(
-					"Cannot upgrade disk because the selected plan has the same or smaller disk size"
+					"Selected plan's disk is same as or not larger than the current disk size. Please chose a plan including higher disk size availability."
 				)
 
 	@dashboard_whitelist()
@@ -1631,7 +1654,7 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def reboot(self):
-		if self.provider not in ("AWS EC2", "OCI", "DigitalOcean", "Hetzner"):
+		if self.provider not in ("AWS EC2", "OCI", "DigitalOcean", "Hetzner", "Frappe Compute"):
 			raise NotImplementedError
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
@@ -1820,7 +1843,9 @@ class BaseServer(Document, TagHelpers):
 		)
 
 		if not benches:
-			frappe.throw(f"No active benches found on <a href='/app/server/{self.name}'>Server</a>")
+			frappe.throw(
+				f"No active benches found on <a href='/app/server/{self.name}'>Server</a>"
+			)  # nosemgrep
 
 		for bench in benches:
 			raw_bench_version = self._get_dependency_version(bench["candidate"], "BENCH_VERSION")
@@ -1847,6 +1872,47 @@ class BaseServer(Document, TagHelpers):
 
 		arm_build_record.save()
 		return f"<a href=/app/arm-build-record/{arm_build_record.name}> ARM Build Record"
+
+	@frappe.whitelist()
+	def install_nat_iptables(self):
+		if self.ip:
+			frappe.throw("NAT Iptables can only be installed on servers without public IP")
+
+		if not getattr(self, "nat_server", None):
+			frappe.throw("NAT Iptables requires a NAT server to be set")
+
+		frappe.enqueue_doc(self.doctype, self.name, "_install_nat_iptables")
+
+	def _install_nat_iptables(self):
+		try:
+			ansible = Ansible(
+				playbook="nat_iptables.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"nat_gateway_ip": self.get_nat_gateway_ip(),
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("NAT Iptables Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def remove_nat_iptables(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_remove_nat_iptables")
+
+	def _remove_nat_iptables(self):
+		try:
+			ansible = Ansible(
+				playbook="remove_nat_iptables.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("NAT Iptables Removal Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def start_active_benches(self):
@@ -2188,6 +2254,14 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Prune Docker System Exception", doc=self)
 
+	def get_nat_gateway_ip(self):
+		if hasattr(self, "nat_server") and self.nat_server:
+			nat_private_ips = frappe.db.get_value(
+				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+			)
+			return nat_private_ips.secondary_private_ip or nat_private_ips.private_ip
+		return None
+
 	@frappe.whitelist()
 	def reload_nginx(self):
 		agent = Agent(self.name, server_type=self.doctype)
@@ -2217,7 +2291,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		play = ansible.run()
 		if play.status == "Success":
 			return frappe.db.get_value(self.doctype, self.primary, "frappe_public_key")
-		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")
+		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")  # nosemgrep
 		return None
 
 	def copy_files(self, source, destination, extra_options=None):
@@ -2392,7 +2466,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			return frappe.get_cached_value(
 				"Bastion Server", self.bastion_server, ["ssh_user", "ssh_port", "ip"], as_dict=True
 			)
-		return frappe._dict()
+
+		# if bastion server is not found and server doesnt have public ip, use proxy server as bastion/jump server
+		if not self.ip and self.private_ip:
+			return frappe.db.get_value(
+				"Proxy Server",
+				{"status": "Active", "cluster": self.cluster},
+				["ssh_user", "ssh_port", "name as ip"],
+				as_dict=True,
+			)
+
+		return None
 
 	@frappe.whitelist()
 	def get_static_ip(self):
@@ -2452,7 +2536,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		).data
 
 		if not vnic_attachments:
-			frappe.throw("No VNIC found for this OCI instance.")
+			frappe.throw("No VNIC found for this OCI instance.")  # nosemgrep
 
 		vnic_id = vnic_attachments[0].vnic_id
 
@@ -2461,7 +2545,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		primary_private_ip = next((ip for ip in private_ips if ip.is_primary), None)
 
 		if not primary_private_ip:
-			frappe.throw("Primary Private IP not found.")
+			frappe.throw("Primary Private IP not found.")  # nosemgrep
 
 		# 3. Check for existing Public IP and remove it if it exists
 		existing_public_ip = network_client.get_public_ip_by_private_ip_id(
@@ -2514,6 +2598,7 @@ class Server(BaseServer):
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
+		enable_on_prem_failover_support: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		halt_agent_jobs: DF.Check
@@ -2550,7 +2635,9 @@ class Server(BaseServer):
 		private_ip: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
+		provider: DF.Literal[
+			"Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean", "Frappe Compute"
+		]
 		proxy_server: DF.Link | None
 		public: DF.Check
 		ram: DF.Float
@@ -2589,7 +2676,7 @@ class Server(BaseServer):
 	def validate_managed_database_service(self):
 		if getattr(self, "is_managed_database", 0):
 			if not self.managed_database_service:
-				frappe.throw(_("Please select Managed Database Service"))
+				frappe.throw(_("Please select Managed Database Service"))  # nosemgrep
 			self.database_server = ""
 		else:
 			self.managed_database_service = ""
@@ -2627,7 +2714,7 @@ class Server(BaseServer):
 		):
 			# Throw error if multiple sites are present on the server
 			frappe.throw(
-				"Cannot enable logical replication during site update if multiple sites are present on the server"
+				"Cannot enable logical replication during site update if multiple sites are present on the server. Please drop the sites in order to enable logical replication."
 			)
 
 	def update_db_server(self):
@@ -2815,7 +2902,7 @@ class Server(BaseServer):
 		agent.new_server(self.name)
 
 	def ansible_run(self, command: str) -> dict[str, str]:
-		inventory = f"{self.ip},"
+		inventory = f"{self.name},"
 		return AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 
 	def setup_docker(self, now: bool | None = None):
@@ -2894,6 +2981,7 @@ class Server(BaseServer):
 					"db_port": db_port,
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
+					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					**self.get_mount_variables(),
 				},
 			)
@@ -2920,6 +3008,15 @@ class Server(BaseServer):
 		private_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
 		with_mask = private_ip + "/24"
 		return str(ipaddress.ip_network(with_mask, strict=False))
+
+	def get_nat_ip(self):
+		if not self.ip and self.nat_server:
+			nat_ips = frappe.db.get_value(
+				"NAT Server", self.nat_server, ["private_ip", "secondary_private_ip"], as_dict=True
+			)
+			private_ip = nat_ips.secondary_private_ip or nat_ips.private_ip
+			return str(ipaddress.ip_network(private_ip + "/16", strict=False))
+		return None
 
 	@frappe.whitelist()
 	def setup_standalone(self):
@@ -3191,6 +3288,115 @@ class Server(BaseServer):
 			log_error("Server Rename Exception", server=self.as_dict())
 		self.save()
 
+	def get_existing_on_prem_failover(self):
+		if not self.enable_on_prem_failover_support:
+			return None
+
+		return frappe.db.exists(
+			"On-Prem Failover",
+			{
+				"enabled": True,
+				"app_server": self.name,
+			},
+		)
+
+	@dashboard_whitelist()
+	def generate_on_prem_failover_config(self):
+		if not self.enable_on_prem_failover_support:
+			frappe.throw("On-Prem Failover support is not enabled for this server.")  # nosemgrep
+			return None
+
+		existsing_on_prem_failover = self.get_existing_on_prem_failover()
+
+		if not existsing_on_prem_failover:
+			on_prem_failover: OnPremFailover = frappe.get_doc(
+				{
+					"doctype": "On-Prem Failover",
+					"enabled": True,
+					"app_server": self.name,
+					"primary_server": self.primary if self.is_secondary else self.name,
+					"secondary_server": self.secondary_server if self.is_primary else self.name,
+					"benches_base_directory": "/root/frappe-cloud/benches",
+					"database_base_directory": "/root/frappe-cloud/database",
+				}
+			)
+			on_prem_failover.insert(ignore_permissions=True)
+		else:
+			on_prem_failover: OnPremFailover = frappe.get_doc("On-Prem Failover", existsing_on_prem_failover)
+
+		# Find last 2 press-job
+		press_jobs = frappe.get_all(
+			"Press Job",
+			filters={"job_type": "Setup On-Prem Failover", "server": self.name},
+			fields=["name", "job_type", "status", "creation", "start", "end", "duration"],
+			order_by="creation desc",
+			limit=2,
+		)
+		running_press_job = next((job for job in press_jobs if job.status in ("Pending", "Running")), None)
+		if press_jobs:
+			for press_job in press_jobs:
+				press_job["steps"] = frappe.get_all(
+					"Press Job Step",
+					filters={"job": press_job.name},
+					fields=["name", "step_name", "status", "result", "traceback", "start", "end", "duration"],
+					order_by="creation asc",
+				)
+
+		return {
+			"running_press_job_type": running_press_job.job_type if running_press_job else None,
+			"status": {
+				"app_server": {
+					"id": on_prem_failover.app_server.split(".")[0],
+					"setup_completed": on_prem_failover.is_app_server_failover_setup,
+					"wireguard_setup_completed": on_prem_failover.is_app_server_wireguard_setup,
+					"on_prem_server_reachable": on_prem_failover.is_on_prem_server_reachable_from_app_server,
+					"on_prem_server_ssh_access": on_prem_failover.is_on_prem_server_ssh_from_app_server_working,
+				},
+				"db_server": {
+					"id": on_prem_failover.database_server.split(".")[0],
+					"setup_completed": on_prem_failover.is_db_server_failover_setup,
+					"wireguard_setup_completed": on_prem_failover.is_db_server_wireguard_setup,
+					"on_prem_server_reachable": on_prem_failover.is_on_prem_server_reachable_from_db_server,
+					"on_prem_server_ssh_access": on_prem_failover.is_on_prem_server_ssh_from_db_server_working,
+				},
+			},
+			"wireguard_config": on_prem_failover.generate_on_prem_server_wireguard_config(),
+			"authorized_ssh_keys": on_prem_failover.generate_ssh_authorized_keys_to_add(),
+			"jobs": press_jobs,
+		}
+
+	@dashboard_whitelist()
+	def start_on_prem_server_replication(self):
+		existsing_on_prem_failover = self.get_existing_on_prem_failover()
+		if not existsing_on_prem_failover:
+			frappe.throw("On-Prem Failover is not configured for this server.")  # nosemgrep
+			return
+
+		current_user = frappe.session.user
+		session_data = frappe.session.data
+		try:
+			frappe.set_user("Administrator")
+			frappe.get_doc("On-Prem Failover", existsing_on_prem_failover).setup_failover()
+		finally:
+			frappe.set_user(current_user)
+			frappe.session.data = session_data
+
+	@dashboard_whitelist()
+	def stop_on_prem_server_replication(self):
+		existsing_on_prem_failover = self.get_existing_on_prem_failover()
+		if not existsing_on_prem_failover:
+			frappe.throw("On-Prem Failover is not configured for this server.")  # nosemgrep
+			return
+
+		current_user = frappe.session.user
+		session_data = frappe.session.data
+		try:
+			frappe.set_user("Administrator")
+			frappe.get_doc("On-Prem Failover", existsing_on_prem_failover).teardown_failover()
+		finally:
+			frappe.set_user(current_user)
+			frappe.session.data = session_data
+
 	@frappe.whitelist()
 	def auto_scale_workers(self, commit=True):
 		if self.new_worker_allocation:
@@ -3399,21 +3605,21 @@ class Server(BaseServer):
 	def delete_snapshot(self, snapshot_name: str) -> None:
 		doc = frappe.get_doc("Server Snapshot", snapshot_name)
 		if doc.app_server != self.name:
-			frappe.throw("Snapshot does not belong to this server")
+			frappe.throw("Snapshot does not belong to this server")  # nosemgrep
 		doc.delete_snapshots()
 
 	@dashboard_whitelist()
 	def lock_snapshot(self, snapshot_name: str) -> None:
 		doc = frappe.get_doc("Server Snapshot", snapshot_name)
 		if doc.app_server != self.name:
-			frappe.throw("Snapshot does not belong to this server")
+			frappe.throw("Snapshot does not belong to this server")  # nosemgrep
 		doc.lock()
 
 	@dashboard_whitelist()
 	def unlock_snapshot(self, snapshot_name: str) -> None:
 		doc = frappe.get_doc("Server Snapshot", snapshot_name)
 		if doc.app_server != self.name:
-			frappe.throw("Snapshot does not belong to this server")
+			frappe.throw("Snapshot does not belong to this server")  # nosemgrep
 		doc.unlock()
 
 	def validate_bench_status_before_scaling(self) -> bool:
@@ -3439,7 +3645,7 @@ class Server(BaseServer):
 
 		if self.validate_bench_status_before_scaling():
 			frappe.throw(
-				"Please wait for all bench related jobs to complete before scaling the server.",
+				"Cannot scale server while jobs are still running on the server. Please wait for all bench related jobs to complete before scaling the server.",
 			)
 
 		last_auto_scale_at = frappe.db.get_value(
@@ -3457,11 +3663,11 @@ class Server(BaseServer):
 		)
 
 		if running_auto_scale:
-			frappe.throw("Auto scale is already running", frappe.ValidationError)
+			frappe.throw("Auto scale is already running", frappe.ValidationError)  # nosemgrep
 
 		if time_diff < timedelta(seconds=cool_off_period or 300):
 			frappe.throw(
-				f"Please wait for {fmt_timedelta(timedelta(seconds=cool_off_period or 300) - time_diff)} before scaling again",
+				f"Please wait for {fmt_timedelta(timedelta(seconds=cool_off_period or 300) - time_diff)} before scaling again",  # nosemgrep
 				frappe.ValidationError,
 			)
 
@@ -3481,7 +3687,7 @@ class Server(BaseServer):
 
 		if active_deployments:
 			frappe.throw(
-				"Please wait for all active deployments to complete before scaling the server.",
+				"Cannot autoscale due to active deployments on the server. Please wait for all active deployments to complete before scaling the server.",
 			)
 
 	@dashboard_whitelist()
@@ -3507,7 +3713,10 @@ class Server(BaseServer):
 		"""Configure automated scaling based on cpu loads"""
 
 		if not self.secondary_server:
-			frappe.throw("Please setup a secondary server to enable auto scaling", frappe.ValidationError)
+			frappe.throw(
+				"Can't autoscale without a secondary server setup. Please setup a secondary server in the Actions tab of your Server's dashboard.",
+				frappe.ValidationError,
+			)
 
 		threshold = round(threshold, 2)
 		existing_trigger = frappe.db.get_value(

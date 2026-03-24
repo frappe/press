@@ -40,11 +40,13 @@
   "subnet_id",
   "private_ip_address",
   "public_ip_address",
+  "assign_public_ip",
   "is_static_ip",
   "column_break_15",
   "subnet_cidr_block",
   "public_dns_name",
   "private_dns_name",
+  "secondary_private_ip",
   "security_section",
   "security_group_id",
   "column_break_18",
@@ -65,7 +67,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "\nAWS EC2\nOCI\nHetzner\nDigitalOcean",
+   "options": "\nAWS EC2\nOCI\nHetzner\nDigitalOcean\nFrappe Compute",
    "read_only": 1,
    "reqd": 1
   },
@@ -249,7 +251,7 @@
    "fieldname": "series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "n\nf\nm\nc\np\ne\nr\nu\nt\nnfs\nfs",
+   "options": "n\nf\nm\nc\np\ne\nr\nu\nt\nnfs\nfs\nnat",
    "reqd": 1
   },
   {
@@ -384,6 +386,19 @@
    "fieldtype": "Check",
    "label": "Is Static IP",
    "read_only": 1
+  },
+  {
+   "fieldname": "secondary_private_ip",
+   "fieldtype": "Data",
+   "label": "Secondary Private IP Address",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "assign_public_ip",
+   "fieldtype": "Check",
+   "label": "Assign Public IP",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -409,6 +424,11 @@
    "link_fieldname": "virtual_machine"
   },
   {
+   "group": "Servers",
+   "link_doctype": "NAT Server",
+   "link_fieldname": "virtual_machine"
+  },
+  {
    "group": "Snapshots",
    "link_doctype": "Virtual Disk Snapshot",
    "link_fieldname": "virtual_machine"
@@ -424,7 +444,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2026-01-18 13:54:28.206523",
+ "modified": "2026-03-18 12:04:02.955392",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
@@ -456,7 +476,6 @@
   }
  ],
  "row_format": "Dynamic",
- "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

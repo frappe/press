@@ -3,6 +3,24 @@
 
 frappe.ui.form.on('Virtual Machine', {
 	refresh: function (frm) {
+		if (frm.is_new()) {
+			frappe.db
+				.get_value(
+					'Cluster',
+					{ name: frm.doc.cluster },
+					'disable_public_ips_for_servers',
+				)
+				.then((r) => {
+					if (r.message && r.message.disable_public_ips_for_servers) {
+						frm.set_value('assign_public_ip', 0);
+					} else {
+						frm.set_value('assign_public_ip', 1);
+					}
+				});
+		} else {
+			frm.set_df_property('assign_public_ip', 'hidden', 1);
+		}
+
 		[
 			[__('Sync'), 'sync', false, frm.doc.status != 'Draft'],
 			[__('Provision'), 'provision', true, frm.doc.status == 'Draft'],
@@ -74,10 +92,34 @@ frappe.ui.form.on('Virtual Machine', {
 				frm.doc.series === 'e',
 			],
 			[
+				__('Create NAT Server'),
+				'create_nat_server',
+				false,
+				frm.doc.series === 'nat',
+			],
+			[
 				__('Reboot with serial console'),
 				'reboot_with_serial_console',
 				true,
 				frm.doc.status === 'Running' && frm.doc.cloud_provider === 'AWS EC2',
+			],
+			[
+				__('Assign Secondary Private IP'),
+				'assign_secondary_private_ip',
+				true,
+				frm.doc.status === 'Running' &&
+					frm.doc.cloud_provider === 'AWS EC2' &&
+					!!!frm.doc.secondary_private_ip &&
+					frm.doc.series === 'nat',
+			],
+			[
+				__('Disassociate Auto Assigned Public IP'),
+				'disassociate_auto_assigned_public_ip',
+				true,
+				frm.doc.status === 'Running' &&
+					frm.doc.cloud_provider === 'AWS EC2' &&
+					!!frm.doc.public_ip_address &&
+					!frm.doc.is_static_ip,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
@@ -115,7 +157,7 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Resize'),
 				'resize',
 				frm.doc.status == 'Stopped' ||
-				(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
+					(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
 			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
@@ -381,7 +423,12 @@ frappe.ui.form.on('Virtual Machine', {
 
 frappe.ui.form.on('Virtual Machine Volume', {
 	toggle_rightsize(frm, cdt, cdn) {
-		frappe.model.set_value(cdt, cdn, 'skip_rightsize', !frm.selected_doc.skip_rightsize);
+		frappe.model.set_value(
+			cdt,
+			cdn,
+			'skip_rightsize',
+			!frm.selected_doc.skip_rightsize,
+		);
 		frm.save();
 	},
 	detach(frm, cdt, cdn) {

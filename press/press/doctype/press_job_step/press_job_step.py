@@ -91,4 +91,5 @@ class PressJobStep(Document):
 
 
 def on_doctype_update():
-	frappe.db.add_index("Press Job Step", ["job", "status"])
+	if not frappe.db.has_index("tabPress Job Step", "job_status_idx"):
+		frappe.db.add_index("Press Job Step", ["job", "status"], "job_status_idx")
