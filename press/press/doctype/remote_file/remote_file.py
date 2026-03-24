@@ -223,7 +223,13 @@ class RemoteFile(Document):
 			self.db_set("status", "Unavailable")
 			return False
 		try:
-			return self.s3_client.head_object(Bucket=self.bucket, Key=self.file_path)
+			bucket = self.bucket
+			if frappe.db.exists("Backup Bucket", self.bucket):
+				backup_bucket: BackupBucket = frappe.get_doc("Backup Bucket", self.bucket)
+				if backup_bucket.replication_enabled:
+					bucket = backup_bucket.replication_bucket
+
+			return self.s3_client.head_object(Bucket=bucket, Key=self.file_path)
 		except Exception:
 			self.db_set("status", "Unavailable")
 			return False
