@@ -1,5 +1,5 @@
 <template>
-	<div v-if="ncSummary?.doc" class="pl-5 flex-col">
+	<div v-if="ncSummaryDoc?.doc" class="pl-5 flex-col">
 		<div class="text-lg text-gray-600 flex">
 			<FeatherIcon name="file-text" class="mr-2 h-5 w-5 text-gray-600" />
 			Details
@@ -10,19 +10,19 @@
 					<div>
 						<div class="text-base text-gray-600 pb-1">Summary</div>
 						<div class="text-base text-gray-800">
-							{{ ncSummary?.doc?.nc_statement }}
+							{{ ncSummaryDoc?.doc?.nc_statement }}
 						</div>
 					</div>
 					<div>
 						<div class="text-base text-gray-600 pb-1">Audit Conducted By</div>
 						<div class="text-base text-gray-800">
-							{{ ncSummary?.doc?.auditor }}
+							{{ ncSummaryDoc?.doc?.auditor }}
 						</div>
 					</div>
 					<div>
 						<div class="text-base text-gray-600 pb-1">Conducted On</div>
 						<div class="text-base text-gray-800">
-							{{ formatDate(ncSummary?.doc?.audit_date) }}
+							{{ formatDate(ncSummaryDoc?.doc?.audit_date) }}
 						</div>
 					</div>
 				</div>
@@ -30,35 +30,35 @@
 					<div>
 						<div class="text-base text-gray-600 pb-1">ID</div>
 						<div class="text-base text-gray-800">
-							{{ ncSummary?.doc?.name }}
+							{{ ncSummaryDoc?.doc?.name }}
 						</div>
 					</div>
 					<div>
 						<div class="text-base text-gray-600 pb-1">Closed By</div>
 						<div class="text-base text-gray-800">
-							{{ ncSummary?.doc?.closed_by }}
+							{{ ncSummaryDoc?.doc?.closed_by }}
 						</div>
 					</div>
 					<div>
 						<div class="text-base text-gray-600 pb-1">Closed On</div>
 						<div class="text-base text-gray-800">
-							{{ formatDate(ncSummary?.doc?.closed_on) }}
+							{{ formatDate(ncSummaryDoc?.doc?.closed_on) }}
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 		<div class="p-4 mt-4 gap-5 flex-col rounded border-[1.5px]">
-			<div v-if="ncSummary?.doc?.nc_description" class="flex-1 pb-5">
+			<div v-if="ncSummaryDoc?.doc?.nc_description" class="flex-1 pb-5">
 				<div class="text-base text-gray-600 pb-1">Description</div>
 				<div class="text-base text-gray-800 whitespace-pre-line leading-normal">
-					{{ ncSummary?.doc?.nc_description }}
+					{{ ncSummaryDoc?.doc?.nc_description }}
 				</div>
 			</div>
-			<div v-if="ncSummary?.doc?.measures_to_close_nc" class="flex-1">
+			<div v-if="ncSummaryDoc?.doc?.measures_to_close_nc" class="flex-1">
 				<div class="text-base text-gray-600 pb-1">Measures to be taken</div>
 				<div class="text-base text-gray-800 whitespace-pre-line leading-normal">
-					{{ ncSummary?.doc?.measures_to_close_nc }}
+					{{ ncSummaryDoc?.doc?.measures_to_close_nc }}
 				</div>
 			</div>
 		</div>
@@ -85,19 +85,16 @@ const props = defineProps({
 	},
 });
 
-const ncSummary = createDocumentResource({
-	doctype: 'Partner Non Conformance',
-	name: props.nc,
-});
+let ncSummaryDoc = {};
 
 watch(
 	() => props.nc,
 	(newVal) => {
-		if (newVal && ncSummary) {
-			ncSummary.name = newVal;
-			ncSummary.get.fetch();
-		} else if (newVal) {
-			ncSummary.get.fetch();
+		if (newVal) {
+			ncSummaryDoc = createDocumentResource({
+				doctype: 'Partner Non Conformance',
+				name: props.nc,
+			});
 		}
 	},
 	{ immediate: true },
