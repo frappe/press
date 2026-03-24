@@ -1,6 +1,8 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+import socket
+import time
 from contextlib import suppress
 
 import frappe
@@ -49,6 +51,7 @@ class IPRemovalLog(Document, StepHandler):
 		filters = {
 			"status": "Active",
 			"cluster": self.cluster,
+			"ip": ("is", "set"),
 			"nat_server": ("is", "not set"),
 			"is_self_hosted": 0,
 		}
@@ -56,7 +59,7 @@ class IPRemovalLog(Document, StepHandler):
 			filters |= {"is_static_ip": 0}
 
 		servers = frappe.get_all(
-			self.server_type, filters=filters, fields=["name"], limit_page_length=self.limit, as_list=True
+			self.server_type, filters=filters, limit_page_length=self.limit, pluck="name"
 		)
 		for server in servers:
 			step = {
@@ -67,6 +70,14 @@ class IPRemovalLog(Document, StepHandler):
 				"server_ping": "Pending",
 			}
 			self.append("removal_steps", step)
+
+		# set the ip in cache
+		nat_private_ip = frappe.db.get_value(
+			"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+		)
+		frappe.cache.set_value(
+			f"{self.name}:{self.nat_server}", nat_private_ip.secondary_private_ip or nat_private_ip.private_ip
+		)
 
 	@frappe.whitelist()
 	def execute_removal_steps(self):
@@ -83,6 +94,16 @@ class IPRemovalLog(Document, StepHandler):
 		)
 
 	def remove_ip_and_add_nat_conf(self, step):
+		if not frappe.cache.get_value(f"{self.name}:{self.nat_server}"):
+			# set the ip in cache
+			nat_private_ip = frappe.db.get_value(
+				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+			)
+			frappe.cache.set_value(
+				f"{self.name}:{self.nat_server}",
+				nat_private_ip.secondary_private_ip or nat_private_ip.private_ip,
+			)
+
 		doc = frappe.get_doc(self.server_type, step.server)
 		if doc.ip:
 			try:
@@ -107,13 +128,21 @@ class IPRemovalLog(Document, StepHandler):
 				user=doc._ssh_user(),
 				port=doc._ssh_port(),
 				variables={
-					"nat_gateway_ip": doc.get_nat_gateway_ip(),
+					"nat_gateway_ip": frappe.cache.get_value(f"{self.name}:{self.nat_server}"),
 				},
 			)
 			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
 			# not raising here - we can sort these out manually, let the rest complete
+			return
+
+		if not self.check_local_dns_propagation(step, doc.name, doc.private_ip):
+			step.output = (
+				"DNS propagation did not complete in expected time. Please check if the server is accessible."
+			)
+			step.status = "Failure"
+			step.save()
 			return
 
 		self.server_egress_ping(step)
@@ -137,6 +166,24 @@ class IPRemovalLog(Document, StepHandler):
 		result = AnsibleAdHoc(sources=f"{step.server},").run("curl ifconfig.me")[0]
 		step.server_ping = "Success" if result.get("status") == "Success" else "Failure"
 		step.save()
+
+	def check_local_dns_propagation(self, step, server_name, private_ip, counter=30, interval=10):
+		step.attempt = 0
+		while counter > 0:
+			try:
+				ip = socket.gethostbyname(server_name)
+				if ip == private_ip:
+					return True
+			except socket.gaierror:
+				pass
+
+			step.attempt += 1
+			step.save()
+
+			counter -= 1
+			time.sleep(interval)
+
+		return False
 
 	def handle_step_failure(self):
 		self.error = frappe.get_traceback(with_context=True)
