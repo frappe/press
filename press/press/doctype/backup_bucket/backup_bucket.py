@@ -18,6 +18,10 @@ class BackupBucket(Document):
 		cluster: DF.Link | None
 		endpoint_url: DF.Data | None
 		region: DF.Data | None
+		replication_bucket: DF.Data | None
+		replication_enabled: DF.Check
+		replication_endpoint_url: DF.Data | None
+		replication_region: DF.Data | None
 	# end: auto-generated types
 
 	pass

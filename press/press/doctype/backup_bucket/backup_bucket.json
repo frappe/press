@@ -10,36 +10,74 @@
   "cluster",
   "bucket_name",
   "region",
-  "endpoint_url"
+  "endpoint_url",
+  "replication_enabled",
+  "replication_bucket",
+  "replication_region",
+  "replication_endpoint_url"
  ],
  "fields": [
   {
    "fieldname": "cluster",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Cluster",
    "options": "Cluster"
   },
   {
    "fieldname": "bucket_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Bucket Name",
    "unique": 1
   },
   {
    "fieldname": "region",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Region"
   },
   {
    "fieldname": "endpoint_url",
    "fieldtype": "Data",
    "label": "Endpoint URL"
+  },
+  {
+   "default": "0",
+   "fieldname": "replication_enabled",
+   "fieldtype": "Check",
+   "label": "Replication Enabled"
+  },
+  {
+   "fieldname": "replication_bucket",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Replication Bucket",
+   "mandatory_depends_on": "eval: doc.replication_enabled"
+  },
+  {
+   "fieldname": "replication_region",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Replication  Region",
+   "mandatory_depends_on": "eval: doc.replication_enabled"
+  },
+  {
+   "fieldname": "replication_endpoint_url",
+   "fieldtype": "Data",
+   "label": "Replication Endpoint URL",
+   "mandatory_depends_on": "eval: doc.replication_enabled"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-03-12 15:34:52.023834",
+ "modified": "2026-03-24 15:27:04.797966",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Backup Bucket",
@@ -59,6 +97,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
