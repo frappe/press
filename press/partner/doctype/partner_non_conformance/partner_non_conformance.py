@@ -18,7 +18,7 @@ class PartnerNonConformance(Document):
 		auditor: DF.Link | None
 		closed_by: DF.Link | None
 		closed_on: DF.Date | None
-		department: DF.Literal["General", "Sales", "Implementation", "Support"]
+		department: DF.Literal["General", "Implementation", "Support", "Sales"]
 		evidence: DF.Attach | None
 		expected_closure: DF.Date | None
 		measures_to_close_nc: DF.Text | None

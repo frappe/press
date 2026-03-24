@@ -15,6 +15,7 @@ class PartnerAudit(Document):
 		from frappe.types import DF
 
 		audit_date: DF.Date | None
+		audit_report: DF.Attach | None
 		conducted_by: DF.Link | None
 		implementation_finding: DF.TextEditor | None
 		implementation_observation: DF.TextEditor | None
