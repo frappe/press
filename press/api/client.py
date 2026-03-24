@@ -7,6 +7,7 @@ import inspect
 import typing
 
 import frappe
+from frappe import _
 from frappe.client import set_value as _set_value
 from frappe.handler import run_doc_method as _run_doc_method
 from frappe.model import child_table_fields, default_fields
@@ -283,6 +284,13 @@ def set_value(doctype: str, name: str, fieldname: dict | str, value: str | None 
 	for field in fieldname:
 		# fields mentioned in dashboard_fields are allowed to be set via set_value
 		is_allowed_field(doctype, field)
+
+	controller = get_controller(doctype)
+	readonly_fields = getattr(controller, "readonly_fields", ())
+	for readonly_field in readonly_fields:
+		if (readonly_field == fieldname) or (readonly_field in fieldname):
+			message = _("You are not permitted to update field: {}").format(readonly_field)
+			frappe.throw(message, frappe.PermissionError)
 
 	_set_value(doctype, name, fieldname, value)
 

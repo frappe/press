@@ -160,6 +160,8 @@ class Team(Document):
 		"upi_autopay_enabled",
 	)
 
+	readonly_fields = ("benches_enabled", "servers_enabled")
+
 	def get_doc(self, doc):
 		if (
 			not frappe.local.system_user()
