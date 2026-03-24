@@ -347,7 +347,7 @@ let router = createRouter({
 				},
 				{
 					name: 'PartnerNCList',
-					path: 'audits/nc-list/:partner_audit?',
+					path: 'audit/:partner_audit?',
 					component: () => import('./components/partners/PartnerNCList.vue'),
 					props: true,
 					children: [
@@ -379,6 +379,43 @@ let router = createRouter({
 			],
 		},
 		{
+<<<<<<< HEAD
+=======
+			name: 'Partner Admin',
+			path: '/partner-admin',
+			redirect: { name: 'PartnerList' },
+			component: () => import('./pages/PartnerAdmin.vue'),
+			children: [
+				{
+					name: 'PartnerList',
+					path: 'partner-list',
+					component: () => import('./pages/PartnerList.vue'),
+				},
+				{
+					name: 'CertificateList',
+					path: 'certificate-list',
+					component: () => import('./pages/PartnerAdminCertificates.vue'),
+				},
+				{
+					name: 'PartnerAdminLeads',
+					path: 'partner-admin-lead-list',
+					component: () => import('./pages/PartnerAdminLeads.vue'),
+				},
+				{
+					name: 'PartnerAdminResources',
+					path: 'admin-resources',
+					component: () => import('./components/partners/PartnerResources.vue'),
+				},
+				{
+					name: 'PartnerAdminAudits',
+					path: 'admin-audits',
+					component: () =>
+						import('./components/partners/PartnerAdminAudits.vue'),
+				},
+			],
+		},
+		{
+>>>>>>> 016c531c5 (feat(prm): Audit screens for Admins)
 			name: 'Signup Create Site',
 			path: '/create-site',
 			redirect: { name: 'Home' },

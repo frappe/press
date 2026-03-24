@@ -37,3 +37,33 @@ const tabs = [
 		<ErrorMessage message="You aren't permitted to view the billing page" />
 	</div>
 </template>
+<<<<<<< HEAD
+=======
+<script>
+import { Tabs, Breadcrumbs } from 'frappe-ui';
+import Header from '../components/Header.vue';
+import TabsWithRouter from '../components/TabsWithRouter.vue';
+
+export default {
+	name: 'PartnerAdmin',
+	components: {
+		Header,
+		FBreadcrumbs: Breadcrumbs,
+		FTabs: Tabs,
+		TabsWithRouter,
+	},
+	data() {
+		return {
+			currentTab: 0,
+			tabs: [
+				{ label: 'Partner', route: { name: 'PartnerList' } },
+				{ label: 'Certificates', route: { name: 'CertificateList' } },
+				{ label: 'Leads', route: { name: 'PartnerAdminLeads' } },
+				{ label: 'Resources', route: { name: 'PartnerAdminResources' } },
+				{ label: 'Audits', route: { name: 'PartnerAdminAudits' } },
+			],
+		};
+	},
+};
+</script>
+>>>>>>> 016c531c5 (feat(prm): Audit screens for Admins)
