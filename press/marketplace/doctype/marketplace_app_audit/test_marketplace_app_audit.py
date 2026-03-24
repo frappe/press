@@ -75,7 +75,7 @@ class TestMarketplaceAppAudit(FrappeTestCase):
 				"app_release": app_release,
 				"audit_type": "Manual Run",
 				"status": status,
-				"result": result,
+				"audit_result": result,
 				"audit_summary": audit_summary,
 				"team": self.team.name,
 			}
@@ -128,7 +128,7 @@ class TestMarketplaceAppAudit(FrappeTestCase):
 			audit.run_audit()
 		audit.reload()
 		self.assertEqual(audit.status, "Completed")
-		self.assertEqual(audit.result, "Pass")
+		self.assertEqual(audit.audit_result, "Pass")
 		self.assertEqual(len(audit.audit_checks), 1)
 		self.assertIn("checks run", audit.audit_summary or "")
 		self.assertIsNotNone(audit.finished_at)
@@ -142,7 +142,7 @@ class TestMarketplaceAppAudit(FrappeTestCase):
 			audit.run_audit()
 		audit.reload()
 		self.assertEqual(audit.status, "Failed")
-		self.assertEqual(audit.result, "Inconclusive")
+		self.assertEqual(audit.audit_result, "Inconclusive")
 		self.assertIn("unexpected error", (audit.audit_summary or "").lower())
 		self.assertTrue(audit.error_traceback)
 
@@ -162,7 +162,7 @@ class TestMarketplaceAppAudit(FrappeTestCase):
 		with patch.object(MarketplaceAppAudit, "execute_audit_checks", return_value=results):
 			audit.run_audit()
 		audit.reload()
-		self.assertEqual(audit.result, "Fail")
+		self.assertEqual(audit.audit_result, "Fail")
 
 	def test_approval_blocked_when_audit_fails(self):
 		release = self.create_release(self.source)
