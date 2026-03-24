@@ -125,6 +125,8 @@ class MarketplaceApp(WebsiteGenerator):
 	def on_trash(self):
 		frappe.db.delete("Marketplace App Plan", {"app": self.name})
 		frappe.db.delete("App Release Approval Request", {"marketplace_app": self.name})
+		# delete all audits for this app
+		frappe.db.delete("Marketplace App Audit", {"marketplace_app": self.name})
 
 	@dashboard_whitelist()
 	def create_approval_request(self, app_release: str):
