@@ -274,6 +274,12 @@ let router = createRouter({
 							component: () =>
 								import('./components/partners/PartnerResources.vue'),
 						},
+						{
+							name: 'PartnerAdminAudits',
+							path: 'admin-audits',
+							component: () =>
+								import('./components/partners/PartnerAdminAudits.vue'),
+						},
 					],
 				},
 			],
@@ -347,7 +353,7 @@ let router = createRouter({
 				},
 				{
 					name: 'PartnerNCList',
-					path: 'audits/nc-list/:partner_audit?',
+					path: 'audit/:partner_audit?',
 					component: () => import('./components/partners/PartnerNCList.vue'),
 					props: true,
 					children: [
