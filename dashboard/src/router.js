@@ -196,6 +196,11 @@ let router = createRouter({
 					path: 'mpesa-invoices',
 					component: () => import('./pages/BillingMpesaInvoices.vue'),
 				},
+				{
+					name: 'BillingUPIAutopay',
+					path: 'upi-autopay',
+					component: () => import('./pages/BillingUPIAutopay.vue'),
+				},
 			],
 		},
 		{
@@ -240,6 +245,24 @@ let router = createRouter({
 							props: true,
 						},
 					],
+				},
+			],
+		},
+		{
+			name: 'Status Page',
+			path: '/status',
+			component: () => import('./pages/PrivateStatusPage.vue'),
+			redirect: { name: 'OngoingIncidents' },
+			children: [
+				{
+					name: 'OngoingIncidents',
+					path: 'ongoing-incidents',
+					component: () => import('./components/status/PrivateIncident.vue'),
+				},
+				{
+					name: 'IncidentHistory',
+					path: 'incident-history',
+					component: () => import('./components/status/PrivateIncident.vue'),
 				},
 			],
 		},

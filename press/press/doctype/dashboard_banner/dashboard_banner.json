@@ -81,12 +81,12 @@
   },
   {
    "depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Team\"",
-   "description": "Recipients are users part of this Team",
+   "description": "Recipients are users part of this Team(s)",
    "fieldname": "team",
-   "fieldtype": "Link",
+   "fieldtype": "Table MultiSelect",
    "label": "Team",
    "mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Team\"",
-   "options": "Team"
+   "options": "Dashboard Banner Team"
   },
   {
    "depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Server\"",
@@ -213,7 +213,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-30 20:48:50.537360",
+ "modified": "2026-03-14 13:20:40.242637",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Dashboard Banner",

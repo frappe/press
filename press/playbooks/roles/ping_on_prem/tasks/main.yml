@@ -1,0 +1,11 @@
+---
+- name: Ping on-premise server over WireGuard
+  ansible.builtin.command: ping -c 4 {{ on_prem_ip }}
+  register: ping_result
+  changed_when: false
+
+- name: Verify SSH connectivity to on-premise server
+  ansible.builtin.command: >
+    ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no root@{{ on_prem_ip }} 'echo SSH connection successful'
+  register: ssh_result
+  changed_when: false

@@ -60,6 +60,7 @@ frappe.ui.form.on('Release Group', {
 			},
 			__('Actions'),
 		);
+
 		frm.add_custom_button(
 			'Add Server',
 			() => {
@@ -113,6 +114,27 @@ frappe.ui.form.on('Release Group', {
 							}
 						});
 					},
+				);
+			},
+			__('Actions'),
+		);
+
+		frm.add_custom_button(
+			'Clone Group',
+			() => {
+				frappe.prompt(
+					[
+						{
+							fieldtype: 'Data',
+							fieldname: 'group_title',
+							label: 'New Group Name',
+							reqd: 1,
+						},
+					],
+					({ group_title }) => {
+						frm.call('clone_group', { title: group_title });
+					},
+					'Clone Group',
 				);
 			},
 			__('Actions'),

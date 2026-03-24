@@ -61,9 +61,17 @@ export default {
 				auto: true,
 			};
 		},
+		leadOwners() {
+			return {
+				url: 'press.api.partner.get_lead_owners',
+				auto: true,
+				initialData: [],
+			};
+		},
 	},
 	computed: {
 		partnerLeadsList() {
+			let leadOwners = this.$resources.leadOwners.data || [];
 			return {
 				resource() {
 					return {
@@ -146,7 +154,7 @@ export default {
 							fieldname: 'status',
 							label: 'Status',
 							options: [
-								'',
+								'All',
 								'Open',
 								'Qualification',
 								'Demo/Making',
@@ -165,10 +173,28 @@ export default {
 							fieldname: 'source',
 							label: 'Lead Source',
 							options: [
+								{ label: 'All', value: 'All' },
 								{ label: 'Partner Owned', value: 'Partner Owned' },
 								{ label: 'Passed to Partner', value: 'Passed to Partner' },
 								{ label: 'Partner Listing', value: 'Partner Listing' },
 							],
+						},
+						{
+							type: 'select',
+							fieldname: 'lead_owner',
+							label: 'Lead Owner',
+							options: [
+								{ label: 'All', value: 'All' },
+								...leadOwners.map((owner) => ({
+									label: owner.label,
+									value: owner.value,
+								})),
+							],
+						},
+						{
+							type: 'checkbox',
+							fieldname: 'is_starter_pack',
+							label: 'Starter Pack',
 						},
 					];
 				},
