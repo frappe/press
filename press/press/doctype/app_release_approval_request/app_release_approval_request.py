@@ -160,7 +160,7 @@ class AppReleaseApprovalRequest(Document):
 		latest_audit = frappe.get_all(
 			"Marketplace App Audit",
 			filters={"app_release": self.app_release},
-			fields=["name", "status", "result", "audit_summary"],
+			fields=["name", "status", "audit_result", "audit_summary"],
 			order_by="creation desc",
 			limit=1,
 		)
@@ -181,9 +181,9 @@ class AppReleaseApprovalRequest(Document):
 				f"Cannot approve: Audit {audit.name} failed. Please investigate and rerun the audit."
 			)
 
-		if audit.result not in ["Pass", "Needs Improvement"]:
+		if audit.audit_result not in ["Pass", "Needs Improvement"]:
 			frappe.throw(
-				f"Cannot approve: Audit {audit.name} completed with result '{audit.result}'. "
+				f"Cannot approve: Audit {audit.name} completed with result '{audit.audit_result}'. "
 				f"Only 'Pass' or 'Needs Improvement' results allow approval.\n\n"
 				f"Summary: {audit.audit_summary or 'N/A'}"
 			)

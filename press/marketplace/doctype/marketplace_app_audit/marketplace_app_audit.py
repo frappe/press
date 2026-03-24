@@ -36,12 +36,12 @@ class MarketplaceAppAudit(Document):
 		app_release: DF.Link
 		approval_request: DF.Link | None
 		audit_checks: DF.Table[MarketplaceAppAuditChecks]
+		audit_result: DF.Literal["Pass", "Needs Improvement", "Warn", "Fail", "Inconclusive"]
 		audit_summary: DF.LongText | None
 		audit_type: DF.Literal["", "Release Change", "Submission Gate", "Manual Run", "Scheduled Audit"]
 		error_traceback: DF.LongText | None
 		finished_at: DF.Datetime | None
 		marketplace_app: DF.Link
-		result: DF.Literal["Pass", "Needs Improvement", "Warn", "Fail", "Inconclusive"]
 		started_at: DF.Datetime | None
 		status: DF.Literal["Queued", "Running", "Completed", "Failed"]
 		team: DF.Link | None
@@ -98,7 +98,7 @@ class MarketplaceAppAudit(Document):
 			self.status = "Completed"
 		except Exception:
 			self.status = "Failed"
-			self.result = "Inconclusive"
+			self.audit_result = "Inconclusive"
 			self.audit_summary = "Audit failed due to an unexpected error."
 			# log the error traceback
 			self.error_traceback = frappe.get_traceback(with_context=True)
@@ -159,7 +159,7 @@ class MarketplaceAppAudit(Document):
 
 		"""
 		tally = self._tally_checks()
-		self.result = self._determine_overall_result(tally)
+		self.audit_result = self._determine_overall_result(tally)
 		self.audit_summary = self._build_summary(tally)
 
 	def _tally_checks(self) -> dict:
