@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 import frappe
 import requests
+from frappe import _
 from frappe.query_builder.functions import Cast_, Count
 from frappe.utils.caching import redis_cache
 from frappe.utils.safe_exec import safe_exec
@@ -239,7 +240,7 @@ class MarketplaceApp(WebsiteGenerator):
 		"""
 		sources = [s.source for s in self.sources]
 		if not sources:
-			frappe.throw("Cannot publish: No sources configured")
+			frappe.throw(_("Cannot publish: No sources configured"))
 		approved_release = frappe.get_value(
 			"App Release",
 			{"source": ("in", sources), "status": "Approved"},
@@ -248,7 +249,9 @@ class MarketplaceApp(WebsiteGenerator):
 		)
 		if not approved_release:
 			frappe.throw(
-				"Cannot publish: No App Approval Request found with 'Approved' status. At least one release must be approved."
+				_(
+					"Cannot publish: No App Approval Request found with 'Approved' status. At least one release must be approved."
+				)
 			)
 
 		audit = frappe.get_all(
@@ -264,7 +267,9 @@ class MarketplaceApp(WebsiteGenerator):
 			and audit[0].audit_result not in ["Pass", "Needs Improvement"]
 		):
 			frappe.throw(
-				f"Cannot publish: Audit {audit[0].name} failed. Please investigate and rerun the audit."
+				_("Cannot publish: Audit {name} failed. Please investigate and rerun the audit.").format(
+					name=audit[0].name
+				)
 			)
 
 	def on_update(self):
@@ -870,7 +875,7 @@ def run_audit_for_marketplace_app(marketplace_app: str, app_release: str | None 
 			pluck="source",
 		)
 		if not sources:
-			frappe.throw("No sources found for this Marketplace App")
+			frappe.throw(_("No sources found for this Marketplace App"))
 
 		app_release = frappe.get_value(
 			"App Release",
@@ -879,7 +884,7 @@ def run_audit_for_marketplace_app(marketplace_app: str, app_release: str | None 
 			order_by="creation desc",
 		)
 		if not app_release:
-			frappe.throw("No releases found for this Marketplace App's sources")
+			frappe.throw(_("No releases found for this Marketplace App's sources"))
 
 	return MarketplaceAppAudit.create_for_release(
 		marketplace_app=marketplace_app,
