@@ -11,6 +11,7 @@ from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
+from press.agent import Agent
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -295,3 +296,37 @@ class TestServer(FrappeTestCase):
 		# Test the server is removed from all groups that had more than one server
 		self.assertListEqual([s.server for s in group2.servers], [other_servers.name])
 		self.assertListEqual([s.server for s in group3.servers], [other_servers.name, one_more_server.name])
+
+	@patch.object(Agent, "get", return_value={"benches": ["bench1", "bench2"]})
+	def test_process_running_benches_on_server(self, mock_get):
+		from press.press.doctype.server.server import _process_running_benches_on_server
+
+		server = create_test_server()
+		bench_1 = create_test_bench(server=server.name)
+		bench_2 = create_test_bench(server=server.name)
+
+		frappe.db.set_value("Bench", bench_1.name, "name", "bench1")
+		frappe.db.set_value("Bench", bench_2.name, "name", "bench2")
+
+		_process_running_benches_on_server(server.name)
+		mock_get.assert_called_once_with("/server/running-benches")
+
+		agent_job_created = frappe.get_all(
+			"Agent Job", {"server": server.name, "job_type": "Force Remove Zombie Benches"}, pluck="name"
+		)
+		self.assertEqual(
+			len(agent_job_created), 0
+		)  # Benches not marked as archived, so no agent job should be created
+
+		frappe.db.set_value("Bench", "bench1", "status", "Archived")
+		frappe.db.set_value("Bench", "bench2", "status", "Archived")
+
+		_process_running_benches_on_server(server.name)
+		mock_get.assert_called_with("/server/running-benches")
+
+		agent_job_created = frappe.get_all(
+			"Agent Job", {"server": server.name, "job_type": "Force Remove Zombie Benches"}, ["name", "data"]
+		)
+		self.assertEqual(
+			len(agent_job_created), 1
+		)  # Benches marked as archived, so agent job should be created to force remove zombie benches
