@@ -39,7 +39,7 @@ class TestMarketplaceAppAudit(FrappeTestCase):
 
 	def create_test_source(self, app, team):
 		"""Create an app source without auto-creating a release during setup."""
-		with patch.object(AppSource, "after_insert", new=Mock()):
+		with patch.object(AppSource, "create_release", return_value=None):
 			return app.add_source(
 				repository_url="https://github.com/frappe/erpnext",
 				branch="master",

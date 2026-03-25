@@ -57,6 +57,7 @@ class MarketplaceApp(WebsiteGenerator):
 		after_uninstall_script: DF.Code | None
 		app: DF.Link
 		average_rating: DF.Float
+		bypass_automated_audit: DF.Check
 		categories: DF.Table[MarketplaceAppCategories]
 		collect_feedback: DF.Check
 		custom_verify_template: DF.Check
@@ -253,6 +254,9 @@ class MarketplaceApp(WebsiteGenerator):
 					"Cannot publish: No App Approval Request found with 'Approved' status. At least one release must be approved."
 				)
 			)
+
+		if self.bypass_automated_audit:
+			return
 
 		audit = frappe.get_all(
 			"Marketplace App Audit",
@@ -866,6 +870,11 @@ def get_total_installs_by_app():
 @frappe.whitelist(methods=["POST"])
 def run_audit_for_marketplace_app(marketplace_app: str, app_release: str | None = None):
 	from press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit import MarketplaceAppAudit
+
+	# don't allow running audit if the marketplace app has bypass_automated_audit set to True
+	bypass_automated_audit = frappe.db.get_value("Marketplace App", marketplace_app, "bypass_automated_audit")
+	if bypass_automated_audit:
+		frappe.throw(_("Automated audit is disabled for this Marketplace App"))
 
 	if not app_release:
 		# find the latest release for this marketplace app
