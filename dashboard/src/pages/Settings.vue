@@ -37,12 +37,12 @@ let $session = session || {};
 const tabs = [
 	{
 		label: 'Profile',
-		icon: icon('user'),
+		icon: LucideUser,
 		routeName: 'SettingsProfile',
 	},
 	{
 		label: 'Team',
-		icon: icon('users'),
+		icon: LucideUsers,
 		routeName: 'SettingsTeam',
 		condition: () =>
 			$team.doc?.user === $session.user ||
@@ -51,7 +51,7 @@ const tabs = [
 	},
 	{
 		label: 'Roles',
-		icon: icon('lock'),
+		icon: LucideLock,
 		routeName: 'SettingsPermission',
 		childrenRoutes: [
 			'SettingsPermissionRoles',
@@ -64,8 +64,21 @@ const tabs = [
 	},
 	{
 		label: 'Developer',
-		icon: icon('code'),
+		icon: LucideCode,
 		routeName: 'SettingsDeveloper',
+	},
+
+	{
+		label: 'Partner Admin',
+		icon: LucideShield,
+		routeName: 'SettingsPartnerAdmin',
+		condition: () => Boolean($team.doc.is_desk_user),
+		childrenRoutes: [
+			'PartnerList',
+			'CertificateList',
+			'PartnerAdminLeads',
+			'PartnerAdminResources',
+		],
 	},
 ];
 </script>

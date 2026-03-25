@@ -14,11 +14,8 @@ import DatabaseZap from '~icons/lucide/database-zap';
 import Activity from '~icons/lucide/activity';
 import Logs from '~icons/lucide/scroll-text';
 import Globe from '~icons/lucide/globe';
-import Shield from '~icons/lucide/shield';
 import Notification from '~icons/lucide/inbox';
 import Code from '~icons/lucide/code';
-import Archive from '~icons/lucide/archive';
-import Camera from '~icons/lucide/camera';
 import FileSearch from '~icons/lucide/file-search';
 import { unreadNotificationsCount } from '@/data/notifications';
 
@@ -55,6 +52,7 @@ const navigation = computed(() => {
 			name: 'Notifications',
 			icon: Notification,
 			route: '/notifications',
+			spacer: true,
 			isActive: routeName === 'Press Notification List',
 			condition: onboardingComplete && !isSaasUser,
 			badge: () => {
@@ -108,34 +106,13 @@ const navigation = computed(() => {
 		{
 			name: 'Servers',
 			icon: Server,
+			spacer: true,
 			route: onboardingComplete ? '/servers' : '/enable-servers',
 			isActive:
 				['New Server'].includes(routeName) ||
 				routeName.startsWith('Server') ||
 				routeName === 'Enable Servers',
 			disabled: enforce2FA,
-		},
-		{
-			name: 'Backups',
-			icon: Archive,
-			route: '/backups',
-			condition: onboardingComplete && !isSaasUser,
-			disabled: enforce2FA,
-			children: [
-				{
-					name: 'Site Backups',
-					icon: PanelTopInactive,
-					route: '/backups/sites',
-					isActive: routeName === 'Site Backups',
-				},
-				{
-					name: 'Snapshots',
-					icon: Camera,
-					route: '/backups/snapshots',
-					isActive: routeName === 'Snapshots',
-				},
-			].filter((item) => item.condition ?? true),
-			isActive: ['Site Backups', 'Snapshots'].includes(routeName),
 		},
 		{
 			name: 'Dev Tools',
@@ -223,13 +200,6 @@ const navigation = computed(() => {
 			route: '/status',
 			isActive: routeName === 'Status',
 			disabled: enforce2FA,
-		},
-		{
-			name: 'Partner Admin',
-			icon: Shield,
-			route: '/partner-admin',
-			isActive: routeName === 'Partner Admin',
-			condition: Boolean($team.doc.is_desk_user),
 		},
 	].filter((item) => item.condition ?? true);
 });

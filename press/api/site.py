@@ -1080,9 +1080,14 @@ def set_bench_and_clusters(version, for_bench):
 			)
 			allowed_cluster_names = list(set(public_servers_clusters))
 
+		filters = {"name": ("in", allowed_cluster_names)}
+
+		if not get_current_team(get_doc=True).is_frappe_compute_internal_user:
+			filters["cloud_provider"] = ("!=", "Frappe Compute")
+
 		version.group.clusters = frappe.db.get_all(
 			"Cluster",
-			filters={"name": ("in", allowed_cluster_names)},
+			filters=filters,
 			fields=["name", "title", "image", "beta", "cloud_provider"],
 		)
 
@@ -1100,9 +1105,14 @@ def get_additional_clusters_for_private_benches(existing_clusters, cloud_provide
 	if not private_bench_site_plans_providers:
 		return []
 
+	filters = {"parent": ("in", private_bench_site_plans_providers)}
+
+	if not get_current_team(get_doc=True).is_frappe_compute_internal_user:
+		filters["name"] = ("!=", "Frappe Compute")
+
 	allowed_providers = frappe.db.get_all(
 		"Cloud Providers",
-		filters={"parent": ("in", private_bench_site_plans_providers)},
+		filters=filters,
 		pluck="cloud_provider",
 	)
 

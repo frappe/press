@@ -58,7 +58,32 @@ class MarketplaceAppAudit(Document):
 		app_release: str,
 		approval_request: str | None = None,
 		audit_type: str = "Release Change",
-	) -> "MarketplaceAppAudit":
+	) -> "MarketplaceAppAudit | None":
+		# For Release Change: reuse the single existing audit per marketplace app
+		# reason: on every new commit, a new release is being created, we don't want to create new records for every new release.
+		# we can reuse the existing audit record and update the release.
+		if audit_type == "Release Change":
+			existing = frappe.db.get_value(
+				"Marketplace App Audit",
+				{"marketplace_app": marketplace_app, "audit_type": "Release Change"},
+				["name", "status"],
+				as_dict=True,
+			)
+			if existing:
+				if existing.status == "Running":
+					return None
+
+				audit = frappe.get_doc("Marketplace App Audit", existing.name)
+				audit.app_release = app_release
+				audit.status = "Queued"
+				audit.audit_result = ""
+				audit.audit_summary = ""
+				audit.error_traceback = ""
+				audit.audit_checks = []
+				audit.save()
+				audit.trigger_audit()
+				return audit
+
 		audit = frappe.new_doc("Marketplace App Audit")
 		audit.marketplace_app = marketplace_app
 		audit.app_release = app_release
