@@ -7,7 +7,7 @@ import json
 from collections import OrderedDict
 from functools import cached_property
 from itertools import groupby
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
 import pytz
@@ -1811,6 +1811,49 @@ def process_bench_queue():
 	# Commit after each run to ensure accurate data is given for next runs
 	frappe.db.commit()
 	frappe.cache.delete(BENCH_QUEUE_EXECUTION_LOCK_KEY)  # Release lock
+
+
+def mark_false_archived_benches_as_active(running_benches: list[str]):
+	"""In case any of the running benches on the server were marked as archived on press
+	but they had active sites, mark them back to active to avoid issues with port offset
+	"""
+	Bench: Any = frappe.qb.DocType("Bench")
+	Site: Any = frappe.qb.DocType("Site")
+
+	zombie_benches_with_active_sites = (
+		frappe.qb.from_(Bench)
+		.left_join(Site)
+		.on(Site.bench == Bench.name)
+		.where(
+			(Bench.name.isin(running_benches))
+			& (Bench.status == "Archived")
+			& (Site.status.notin(["Archived", "Broken"]))
+		)
+		.select(Bench.name)
+	).run(pluck="name")
+
+	if zombie_benches_with_active_sites:
+		frappe.db.set_value(
+			"Bench",
+			{"name": ("in", zombie_benches_with_active_sites)},
+			"status",
+			"Active",
+		)
+
+
+def identify_and_kill_zombie_benches(server: str, running_benches: list[str]):
+	"""Check running benches and force remove zombie benches"""
+	try:
+		# skipping this check for now since agent already checks for this
+		# mark_false_archived_benches_as_active(running_benches)
+		zombie_benches = frappe.db.get_all(
+			"Bench", filters={"name": ("in", running_benches), "status": "Archived"}, pluck="name"
+		)
+		if zombie_benches:
+			Agent(server).force_remove_zombie_benches(zombie_benches)
+
+	except Exception as e:
+		frappe.log_error("Failed To Kill Zombie Benches", str(e))
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")

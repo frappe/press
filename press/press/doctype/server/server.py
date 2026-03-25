@@ -37,6 +37,7 @@ from press.press.doctype.auto_scale_record.auto_scale_record import (
 	is_secondary_ready_for_scale_down,
 	update_or_delete_prometheus_rule_for_scaling,
 )
+from press.press.doctype.bench.bench import identify_and_kill_zombie_benches
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
@@ -3881,6 +3882,31 @@ def cleanup_unused_files():
 			frappe.get_doc("Server", server.name).cleanup_unused_files()
 		except Exception:
 			log_error("Server File Cleanup Error", server=server)
+
+
+def process_running_benches_on_server():
+	"""Trigger cron job to identify and kill zombie benches on active servers."""
+	servers = frappe.get_all(
+		"Server",
+		filters={"status": "Active", "kill_zombie_benches": True},
+		pluck="name",
+	)
+	for server in servers:
+		frappe.enqueue(
+			"press.press.doctype.server.server._process_running_benches_on_server",
+			server=server,
+			job_id=f"zombie-benches:{server}",
+			deduplicate=True,
+		)
+
+
+def _process_running_benches_on_server(server: str):
+	"""Identify and kill zombie benches on the specified server."""
+	try:
+		running_benches = Agent(server).get("/server/running-benches").get("benches", [])
+		identify_and_kill_zombie_benches(server, running_benches)
+	except Exception as e:
+		log_error("Error Processing Running Benches On Server", server=server, exception=e)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Server")
