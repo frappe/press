@@ -3883,6 +3883,29 @@ def cleanup_unused_files():
 			log_error("Server File Cleanup Error", server=server)
 
 
+def process_running_benches_on_server():
+	"""Trigger cron job to identify and kill zombie benches on active servers."""
+	servers = frappe.get_all("Server", filters={"status": "Active"}, pluck="name")
+	for server in servers:
+		frappe.enqueue(
+			"press.press.doctype.server.server._process_running_benches_on_server",
+			server=server,
+			job_id=f"zombie-benches:{server}",
+			deduplicate=True,
+		)
+
+
+def _process_running_benches_on_server(server: str):
+	"""Identify and kill zombie benches on the specified server."""
+	from press.press.doctype.bench.bench import identify_and_kill_zombie_benches
+
+	try:
+		running_benches = Agent(server).get("/server/running-benches").get("benches", [])
+		identify_and_kill_zombie_benches(server, running_benches)
+	except Exception as e:
+		log_error("Error Processing Running Benches On Server", server=server, exception=e)
+
+
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Server")
 
 
