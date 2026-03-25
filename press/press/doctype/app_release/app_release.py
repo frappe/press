@@ -397,8 +397,13 @@ class AppRelease(Document):
 		Currently, we only audit marketplace app releases. Later we can extend this to custom apps as well.
 		"""
 		# determine whether the release's source is a marketplace app
-		marketplace_app = frappe.db.get_value("Marketplace App", {"app": self.app}, "name")
-		if not marketplace_app:
+		if not frappe.db.exists("Marketplace App", {"app": self.app}):
+			return
+
+		marketplace_app, bypass_automated_audit = frappe.db.get_value(
+			"Marketplace App", {"app": self.app}, ["name", "bypass_automated_audit"]
+		)
+		if bypass_automated_audit:
 			return
 
 		is_registered_source = frappe.db.exists(

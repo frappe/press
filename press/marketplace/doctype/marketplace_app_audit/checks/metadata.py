@@ -174,6 +174,14 @@ def check_links(marketplace_app):
 	privacy_policy = marketplace_app.privacy_policy
 	terms_of_service = marketplace_app.terms_of_service
 
+	link_labels = {
+		"website": "Website",
+		"support": "Support",
+		"documentation": "Documentation",
+		"privacy_policy": "Privacy Policy",
+		"terms_of_service": "Terms of Service",
+	}
+
 	check_id = "meta_links_checks"
 	severity = "Major"
 	# Check 1: Check if any of the links are missing
@@ -191,9 +199,7 @@ def check_links(marketplace_app):
 			details=json.dumps(
 				{
 					"missing_links": [
-						link
-						for link in [website, support, documentation, privacy_policy, terms_of_service]
-						if link is None or link == ""
+						link_labels.get(link) for link in link_labels if link is None or link == ""
 					],
 				}
 			),
