@@ -10,11 +10,8 @@ import frappe
 import requests
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
-from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool
-from passlib.hash import pbkdf2_sha256 as pbkdf2
 
-from press.agent import Agent
 from press.api.github import branches, get_access_token
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
@@ -1257,68 +1254,3 @@ def search_releases(
 	)
 
 	return q.run(as_dict=1)
-
-
-def mark_false_archived_benches_as_active(running_benches: list[str]):
-	"""In case any of the running benches on the server were marked as archived on press
-	but they had active sites, mark them back to active to avoid issues with port offset
-	"""
-	Bench: Any = frappe.qb.DocType("Bench")
-	Site: Any = frappe.qb.DocType("Site")
-
-	zombie_benches_with_active_sites = (
-		frappe.qb.from_(Bench)
-		.left_join(Site)
-		.on(Site.bench == Bench.name)
-		.where(
-			(Bench.name.isin(running_benches))
-			& (Bench.status == "Archived")
-			& (Site.status.notin(["Archived", "Broken"]))
-		)
-		.select(Bench.name)
-	).run(pluck="name")
-
-	if zombie_benches_with_active_sites:
-		frappe.db.set_value(
-			"Bench",
-			{"name": ("in", zombie_benches_with_active_sites)},
-			"status",
-			"Active",
-		)
-
-
-@frappe.whitelist(allow_guest=True, methods=["POST"])
-@rate_limit(limit=10, seconds=60)
-def identify_zombie_benches():
-	"""Check running benches and force remove zombie benches"""
-	server = frappe.request.headers.get("server")
-	sent_password = frappe.request.headers.get("agent-token")
-	insufficient_permissions_message = "Insufficient permissions to access this resource"
-
-	if not sent_password or not server or not frappe.db.exists("Server", server):
-		frappe.throw(insufficient_permissions_message, frappe.PermissionError)
-
-	agent_password = frappe.get_doc("Server", server).get_password(
-		"agent_password",
-	)
-	pbkdf2.verify(agent_password, sent_password) or frappe.throw(
-		insufficient_permissions_message, frappe.PermissionError
-	)
-
-	running_benches = frappe.request.get_json().get("benches", [])
-	user = frappe.session.user
-
-	try:
-		frappe.set_user("Administrator")
-		mark_false_archived_benches_as_active(running_benches)
-		zombie_benches = frappe.db.get_all(
-			"Bench", filters={"name": ("in", running_benches), "status": "Archived"}, pluck="name"
-		)
-		if zombie_benches:
-			Agent(server).force_remove_zombie_benches(zombie_benches)
-
-	except Exception as e:
-		frappe.log_error("Failed To Kill Zombie Benches", str(e))
-
-	finally:
-		frappe.set_user(user)
