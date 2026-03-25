@@ -210,7 +210,8 @@ def check_links(marketplace_app):
 	broken_links = []
 	for link in [website, support, documentation, privacy_policy, terms_of_service]:
 		try:
-			response = requests.get(link)
+			# add timeout to the request to avoid hanging requests(timeout = (connect timeout, read timeout))
+			response = requests.get(link, timeout=(3, 10))
 			# 0k or redirect is fine.
 			if response.status_code not in [200, 301, 302]:
 				broken_links.append(link)
