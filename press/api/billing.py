@@ -231,7 +231,9 @@ def details():
 def fetch_invoice_items(invoice):
 	team = get_current_team()
 	if frappe.db.get_value("Invoice", invoice, "team") != team:
-		frappe.throw("Only team owners and members are permitted to download Invoice")
+		frappe.throw(
+			"Only team owners and members are permitted to download Invoice. Please contact your team admin."
+		)
 
 	return frappe.get_all(
 		"Invoice Item",
@@ -309,7 +311,9 @@ def create_payment_intent_for_buying_credits(amount):
 	total_unpaid = total_unpaid_amount()
 
 	if amount < total_unpaid and not team.erpnext_partner:
-		frappe.throw(f"Amount {amount} is less than the total unpaid amount {total_unpaid}.")
+		frappe.throw(
+			f"Amount {amount} is less than the total unpaid amount {total_unpaid}. Please add credits to your payment method and retry again."
+		)
 
 	if team.currency == "INR":
 		gst_amount = amount * frappe.db.get_single_value("Press Settings", "gst_percentage")
@@ -469,7 +473,7 @@ def get_unpaid_invoices():
 @role_guard.api("billing")
 def change_payment_mode(mode):
 	team = get_current_team(get_doc=True)
-
+	team.reload()
 	team.payment_mode = mode
 	if team.partner_email and mode == "Paid By Partner" and not team.billing_team:
 		team.billing_team = frappe.db.get_value(
@@ -613,18 +617,22 @@ def validate_gst(address, method=None):
 		return
 
 	if address.state not in states_with_tin:
-		frappe.throw("Invalid State for India.")
+		frappe.throw("Invalid State for India.")  # nosemgrep
 
 	if not address.gstin:
-		frappe.throw("GSTIN is required for Indian customers.")
+		frappe.throw("GSTIN is required for Indian customers.")  # nosemgrep
 
 	if address.gstin and address.gstin != "Not Applicable":
 		if not GSTIN_FORMAT.match(address.gstin):
-			frappe.throw("Invalid GSTIN. The input you've entered does not match the format of GSTIN.")
+			frappe.throw(
+				"Invalid GSTIN. The input you've entered does not match the format of GSTIN. Please recheck and verify your GSTIN."
+			)
 
 		tin_code = states_with_tin[address.state]
 		if not address.gstin.startswith(tin_code):
-			frappe.throw(f"GSTIN must start with {tin_code} for {address.state}.")
+			frappe.throw(
+				f"GSTIN must start with {tin_code} for {address.state}. Please recheck and verify your GSTIN."
+			)
 
 		validate_gstin_check_digit(address.gstin)
 
@@ -670,9 +678,9 @@ def is_paypal_enabled() -> bool:
 @role_guard.api("billing")
 def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | None:
 	if not transaction_type:
-		frappe.throw(_("Transaction type is not set"))
+		frappe.throw(_("Transaction type is not set. Please set a transaction type and retry"))
 	if not amount or amount <= 0:
-		frappe.throw(_("Amount should be greater than zero"))
+		frappe.throw(_("Amount should be greater than zero"))  # nosemgrep
 
 	team = get_current_team(get_doc=True)
 
@@ -734,25 +742,29 @@ def _validate_prepaid_credits(amount, currency):
 	minimum_amount = 100 if currency == "INR" else 5
 	if amount < minimum_amount:
 		currency_symbol = "₹" if currency == "INR" else "$"
-		frappe.throw(_("Amount should be at least {0}{1}").format(currency_symbol, minimum_amount))
+		frappe.throw(
+			_("Amount should be at least {0}{1}").format(currency_symbol, minimum_amount)
+		)  # nosemgrep
 
 
 def _validate_purchase_plan(amount, doc_name, currency):
 	exists_result = frappe.db.exists("Site Plan", doc_name)
 	if not doc_name or not exists_result:
-		frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))
+		frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))  # nosemgrep
 	price_field = "price_inr" if currency == "INR" else "price_usd"
 	plan_amount = frappe.db.get_value("Site Plan", doc_name, price_field)
 	if amount < plan_amount:
 		currency_symbol = "₹" if currency == "INR" else "$"
 		frappe.throw(
-			_("Amount should not be less than plan amount of {0}{1}").format(currency_symbol, plan_amount)
+			_(
+				"Amount should not be less than plan amount of {0}{1}. Please verify your amount and plan amount"
+			).format(currency_symbol, plan_amount)
 		)
 
 
 def _validate_invoice_payment(amount, doc_name, currency):
 	if not doc_name or not frappe.db.exists("Invoice", doc_name):
-		frappe.throw(_("Invoice {0} does not exist").format(doc_name or ""))
+		frappe.throw(_("Invoice {0} does not exist").format(doc_name or ""))  # nosemgrep
 
 	invoice_amount = frappe.db.get_value("Invoice", doc_name, "amount_due_with_tax")
 	if amount < invoice_amount:
@@ -761,7 +773,7 @@ def _validate_invoice_payment(amount, doc_name, currency):
 			_("Amount should not be less than invoice amount of {0}{1}").format(
 				currency_symbol, invoice_amount
 			)
-		)
+		)  # nosemgrep
 
 
 @frappe.whitelist()
@@ -856,7 +868,9 @@ def generate_stk_push(**kwargs):
 	# Fetch the team document based on the extracted partner value
 	partner = frappe.get_all("Team", filters={"user": partner_value, "erpnext_partner": 1}, pluck="name")
 	if not partner:
-		frappe.throw(_(f"Partner team {partner_value} not found"), title=_("Mpesa Express Error"))
+		frappe.throw(
+			_(f"Partner team {partner_value} not found"), title=_("Mpesa Express Error")
+		)  # nosemgrep
 
 	# Get Mpesa settings for the partner's team
 	mpesa_setup = get_mpesa_setup_for_team(partner[0])
@@ -892,7 +906,7 @@ def generate_stk_push(**kwargs):
 		frappe.throw(
 			_("Issue detected with Mpesa configuration, check the error logs for more details"),
 			title=_("Mpesa Express Error"),
-		)
+		)  # nosemgrep
 
 
 @frappe.whitelist(allow_guest=True)
@@ -909,12 +923,12 @@ def parse_transaction_response(kwargs):
 
 	if "Body" not in kwargs or "stkCallback" not in kwargs["Body"]:
 		frappe.log_error(title="Invalid transaction response format", message=kwargs)
-		frappe.throw(_("Invalid transaction response format"))
+		frappe.throw(_("Invalid transaction response format"))  # nosemgrep
 
 	transaction_response = frappe._dict(kwargs["Body"]["stkCallback"])
 	checkout_id = getattr(transaction_response, "CheckoutRequestID", "")
 	if not isinstance(checkout_id, str):
-		frappe.throw(_("Invalid Checkout Request ID"))
+		frappe.throw(_("Invalid Checkout Request ID"))  # nosemgrep
 
 	return transaction_response, checkout_id
 
@@ -991,7 +1005,7 @@ def handle_api_mpesa_response(global_id, request_dict, response):
 	create_mpesa_request_log(request_dict, "Host", "Mpesa Express", req_name, error, output=response)
 
 	if error:
-		frappe.throw(_(response.errorMessage), title=_("Transaction Error"))
+		frappe.throw(_(response.errorMessage), title=_("Transaction Error"))  # nosemgrep
 
 
 def create_mpesa_payment_record(transaction_response):

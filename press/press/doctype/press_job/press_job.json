@@ -36,7 +36,8 @@
    "label": "Job Type",
    "options": "Press Job Type",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "status",
@@ -46,7 +47,8 @@
    "label": "Status",
    "options": "Pending\nRunning\nSkipped\nSuccess\nFailure",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "default": "{}",
@@ -89,7 +91,8 @@
    "fieldtype": "Link",
    "label": "Server Type",
    "options": "DocType",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "server",
@@ -98,7 +101,8 @@
    "in_standard_filter": 1,
    "label": "Server",
    "options": "server_type",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fetch_if_empty": 1,
@@ -175,7 +179,7 @@
    "link_fieldname": "job"
   }
  ],
- "modified": "2025-07-31 11:51:16.216581",
+ "modified": "2026-03-17 19:26:46.940966",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job",

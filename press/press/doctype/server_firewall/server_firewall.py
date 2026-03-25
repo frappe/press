@@ -144,8 +144,9 @@ class ServerFirewall(Document):
 			message = _("{0} is not a valid IP address or CIDR.").format(ip)
 			frappe.throw(message, frappe.ValidationError)
 
-	def validate_port(self, port: int):
+	def validate_port(self, port):
 		"""Check if the provided port number is within the valid range."""
+		port = int(port)
 		if not port:
 			return
 		if port < 1 or port > 65535:
@@ -169,6 +170,8 @@ class ServerFirewall(Document):
 		ips = frappe.get_all("Monitor Server", pluck="ip")
 		if proxy_ip := self.server.get_proxy_ip():
 			ips.append(proxy_ip)
+		if nat_ip := self.server.get_nat_ip():
+			ips.append(nat_ip)
 		if self.production_ip:
 			ips.append(self.production_ip)
 		return ips

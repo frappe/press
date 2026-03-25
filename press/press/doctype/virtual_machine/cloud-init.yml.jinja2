@@ -26,7 +26,7 @@ runcmd:
 - systemctl restart mariadb
 - systemctl restart mysqld_exporter
 - systemctl restart deadlock_logger
-{% elif server.doctype == 'Server' and server.provider != 'Hetzner' and server.provider != 'DigitalOcean' %}
+{% elif server.doctype == 'Server' and server.provider != 'Hetzner' and server.provider != 'DigitalOcean' and server.provider != 'Frappe Compute' %}
 - resize2fs $(findmnt /opt/volumes/benches --noheadings --output SOURCE)
 {% endif %}
 {% if server.provider == 'OCI' %}

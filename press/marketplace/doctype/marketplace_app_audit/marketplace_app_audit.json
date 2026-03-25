@@ -1,0 +1,162 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-03-10 20:26:17.468469",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "marketplace_app",
+  "approval_request",
+  "column_break_ckcy",
+  "app_release",
+  "team",
+  "section_break_rmut",
+  "audit_type",
+  "audit_result",
+  "error_traceback",
+  "column_break_diow",
+  "status",
+  "started_at",
+  "finished_at",
+  "audit_summary",
+  "section_break_wqqk",
+  "audit_checks"
+ ],
+ "fields": [
+  {
+   "fieldname": "marketplace_app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Marketplace App",
+   "options": "Marketplace App",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "app_release",
+   "fieldtype": "Link",
+   "label": "App Release",
+   "options": "App Release",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "approval_request",
+   "fieldtype": "Link",
+   "label": "Approval Request",
+   "options": "App Release Approval Request"
+  },
+  {
+   "fieldname": "column_break_ckcy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "section_break_rmut",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "audit_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Audit Type",
+   "options": "\nRelease Change\nSubmission Gate\nManual Run\nScheduled Audit"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Queued\nRunning\nCompleted\nFailed"
+  },
+  {
+   "fieldname": "column_break_diow",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At"
+  },
+  {
+   "fieldname": "finished_at",
+   "fieldtype": "Datetime",
+   "label": "Finished At"
+  },
+  {
+   "fieldname": "audit_summary",
+   "fieldtype": "Long Text",
+   "label": "Audit Summary"
+  },
+  {
+   "fieldname": "section_break_wqqk",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "audit_checks",
+   "fieldtype": "Table",
+   "label": "Audit Checks",
+   "options": "Marketplace App Audit Checks"
+  },
+  {
+   "depends_on": "eval: doc.status === \"Failed\"",
+   "fieldname": "error_traceback",
+   "fieldtype": "Long Text",
+   "label": "Error Traceback"
+  },
+  {
+   "fieldname": "audit_result",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Audit Result",
+   "options": "Pass\nNeeds Improvement\nWarn\nFail\nInconclusive"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-24 11:23:17.524158",
+ "modified_by": "Administrator",
+ "module": "Marketplace",
+ "name": "Marketplace App Audit",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Marketplace Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

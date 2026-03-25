@@ -75,6 +75,7 @@
         "bouy",
         "buildx",
         "Busingen",
+        "Billing",
         "Cabo",
         "CCONTENT",
         "cellbuf",
@@ -215,6 +216,7 @@
         "Fzqt",
         "gcore",
         "Gekx",
+        "gaierror",
         "genproto",
         "getdate",
         "getitimer",
@@ -747,11 +749,18 @@
         "pyotp",
         "noopener",
         "noreferrer",
+        "nosemgrep",
         "centralise",
         "PSIIO",
         "journalctl",
         "ptrs",
         "serialised",
-        "setnx"
+        "setnx",
+        "vitepress",
+        "resolvconf",
+        "lsync",
+        "lsyncd",
+        "awk",
+        "gawk"
     ]
 }

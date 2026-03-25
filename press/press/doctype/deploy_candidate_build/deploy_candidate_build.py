@@ -1675,3 +1675,11 @@ def is_image_in_registry(image: str, group: str, settings: dict[str, str]) -> bo
 
 	image_tags = response.json().get("tags")
 	return image in image_tags
+
+
+def on_doctype_update():
+	if frappe.flags.in_install:
+		return
+	# Ignoring filesorts
+	# https://dev.mysql.com/doc/refman/8.4/en/order-by-optimization.html#order-by-index-use
+	frappe.db.add_index("Deploy Candidate Build", ["team", "group", "creation"])

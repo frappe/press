@@ -56,7 +56,9 @@ class ProxyServer(BaseServer):
 		private_ip_interface_id: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
+		provider: DF.Literal[
+			"Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean", "Frappe Compute"
+		]
 		proxysql_admin_password: DF.Password | None
 		proxysql_monitor_password: DF.Password | None
 		public: DF.Check
@@ -68,6 +70,7 @@ class ProxyServer(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		team: DF.Link | None
 		tls_certificate_renewal_failed: DF.Check
+		use_as_proxy_for_agent_and_metrics: DF.Check
 		virtual_machine: DF.Link | None
 		wireguard_interface_id: DF.Data | None
 		wireguard_network: DF.Data | None
@@ -81,6 +84,19 @@ class ProxyServer(BaseServer):
 		super().validate()
 		self.validate_domains()
 		self.validate_proxysql_admin_password()
+
+		if (
+			not frappe.db.get_value(
+				self.doctype,
+				{
+					"status": ["!=", "Archived"],
+					"cluster": self.cluster,
+					"use_as_proxy_for_agent_and_metrics": 1,
+				},
+			)
+			and self.status != "Archived"
+		):
+			self.use_as_proxy_for_agent_and_metrics = 1
 
 	def validate_domains(self):
 		domains_to_validate = unique([self.domain] + [row.domain for row in self.domains])
@@ -425,7 +441,7 @@ class ProxyServer(BaseServer):
 					"wireguard_network": self.wireguard_network_ip
 					+ "/"
 					+ self.wireguard_network.split("/")[1],
-					"interface_id": self.private_ip_interface_id,
+					"external_interface_id": self.private_ip_interface_id,
 					"wireguard_private_key": False,
 					"wireguard_public_key": False,
 					"peers": "",
@@ -472,7 +488,7 @@ class ProxyServer(BaseServer):
 					"wireguard_network": self.wireguard_network_ip
 					+ "/"
 					+ self.wireguard_network.split("/")[1],
-					"interface_id": self.private_ip_interface_id,
+					"external_interface_id": self.private_ip_interface_id,
 					"wireguard_private_key": self.get_password("wireguard_private_key"),
 					"wireguard_public_key": self.get_password("wireguard_public_key"),
 					"peers": json.dumps(peers),

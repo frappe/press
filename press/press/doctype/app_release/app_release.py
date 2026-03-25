@@ -199,6 +199,9 @@ class AppRelease(Document):
 		self.create_release_differences()
 		frappe.enqueue_doc(self.doctype, self.name, "auto_deploy", enqueue_after_commit=True)
 
+		# create a marketplace app audit for this release
+		self.create_marketplace_app_audit()
+
 	def get_source(self) -> AppSource:
 		"""Return the `App Source` associated with this `App Release`"""
 		return frappe.get_doc("App Source", self.source)
@@ -388,6 +391,34 @@ class AppRelease(Document):
 
 		finally:
 			frappe.set_user(current_user)
+
+	def create_marketplace_app_audit(self):
+		"""
+		Currently, we only audit marketplace app releases. Later we can extend this to custom apps as well.
+		"""
+		# determine whether the release's source is a marketplace app
+		if not frappe.db.exists("Marketplace App", {"app": self.app}):
+			return
+
+		marketplace_app, bypass_automated_audit = frappe.db.get_value(
+			"Marketplace App", {"app": self.app}, ["name", "bypass_automated_audit"]
+		)
+		if bypass_automated_audit:
+			return
+
+		is_registered_source = frappe.db.exists(
+			"Marketplace App Version",
+			{"parent": marketplace_app, "source": self.source},
+		)
+		if not is_registered_source:
+			return
+
+		from press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit import MarketplaceAppAudit
+
+		MarketplaceAppAudit.create_for_release(
+			marketplace_app=marketplace_app,
+			app_release=self.name,
+		)
 
 
 def cleanup_unused_releases():

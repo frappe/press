@@ -25,20 +25,15 @@
 					v-model="site"
 				/>
 				<Button
-					iconLeft="refresh-ccw"
-					variant="subtle"
-					:loading="site && !isRequiredInformationReceived"
 					:disabled="!site"
-					@click="
-						() =>
-							fetchTableSchemas({
-								reload: true,
-							})
+					variant="subtle"
+					iconLeft="refresh-ccw"
+					@click="refreshDatabaseUsage"
+					:loading="
+						site && (refreshingDatabaseUsage || !isRequiredInformationReceived)
 					"
+					>Refresh</Button
 				>
-					<span class="md:hidden">Schema</span>
-					<span class="hidden md:inline">Refresh Schema</span>
-				</Button>
 			</div>
 		</div>
 	</Header>
@@ -392,8 +387,10 @@ export default {
 			preSelectedSchemaForSchemaDialog: null,
 			showTableSchemasDialog: false,
 			fetchingDatabaseIndex: false,
+			forceSchemaRefresh: false,
 			DatabaseProcessKillButton: markRaw(DatabaseProcessKillButton),
 			DatabaseAddIndexButton: markRaw(DatabaseAddIndexButton),
+			refreshingDatabaseUsage: false,
 		};
 	},
 	mounted() {
@@ -451,9 +448,13 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'fetch_database_table_schema',
+						args: {
+							reload: this.forceSchemaRefresh,
+						},
 					};
 				},
 				onSuccess: (data) => {
+					this.forceSchemaRefresh = false;
 					if (data?.message?.loading) {
 						setTimeout(this.fetchTableSchemas, 5000);
 					}
@@ -533,6 +534,38 @@ export default {
 						dn: this.site,
 						method: 'fetch_database_processes',
 					};
+				},
+				auto: false,
+			};
+		},
+		refreshDatabaseUsage() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams() {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'refresh_database_usage',
+					};
+				},
+				onSuccess: (e) => {
+					let isSynced = e?.message?.synced ?? true;
+					let refreshAfterSeconds = e?.message?.refresh_after_seconds ?? 0;
+					let refreshAfterMinutes = Math.ceil(refreshAfterSeconds / 60);
+					if (isSynced) {
+						this.refreshingDatabaseUsage = false;
+						let message = refreshAfterSeconds
+							? `Database usage refreshed. You can refresh again after ${refreshAfterMinutes} minute(s).`
+							: 'Database usage refreshed.';
+						toast.success(message);
+						this.fetchTableSchemas({
+							reload: true,
+						});
+					} else {
+						setTimeout(() => {
+							this.$resources.refreshDatabaseUsage.reload();
+						}, 3000);
+					}
 				},
 				auto: false,
 			};
@@ -797,14 +830,8 @@ export default {
 		fetchTableSchemas({ site_name = null, reload = false } = {}) {
 			if (!site_name) site_name = this.site;
 			if (!site_name) return;
-			this.$resources.tableSchemas.submit({
-				dt: 'Site',
-				dn: site_name,
-				method: 'fetch_database_table_schema',
-				args: {
-					reload,
-				},
-			});
+			this.forceSchemaRefresh = reload;
+			this.$resources.tableSchemas.submit();
 		},
 		optimizeTable(tableName = null) {
 			this.showTableSchemaSizeDetailsDialog = false;
@@ -837,6 +864,8 @@ export default {
 			this.showTableSchemasDialog = true;
 		},
 		formatSizeInMB(mb) {
+			if (!mb) return '0 MB';
+			if (isNaN(mb)) return '0 MB';
 			try {
 				let floatMB = parseFloat(mb);
 				if (floatMB < 1) {
@@ -851,6 +880,10 @@ export default {
 			} catch (error) {
 				return `${mb} MB`; // Return MB without decimal
 			}
+		},
+		refreshDatabaseUsage() {
+			this.refreshingDatabaseUsage = true;
+			this.$resources.refreshDatabaseUsage.submit();
 		},
 	},
 };

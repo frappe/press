@@ -13,6 +13,7 @@ from typing import ClassVar, Literal
 
 import boto3
 import frappe
+import oci
 import pydo
 from frappe.model.document import Document
 from hcloud import APIException, Client
@@ -30,10 +31,12 @@ from oci.core.models import (
 	PortRange,
 	RouteRule,
 	TcpOptions,
+	UdpOptions,
 	UpdateRouteTableDetails,
 )
 from oci.identity import IdentityClient
 
+from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
@@ -69,7 +72,7 @@ class Cluster(Document):
 		beta: DF.Check
 		by_default_select_unified_mode: DF.Check
 		cidr_block: DF.Data | None
-		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "DigitalOcean"]
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI", "Hetzner", "DigitalOcean", "Frappe Compute"]
 		country: DF.Link | None
 		default_app_server_plan: DF.Link | None
 		default_app_server_plan_type: DF.Link | None
@@ -80,6 +83,9 @@ class Cluster(Document):
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
 		flush_table_execution_hour: DF.Int
+		frappe_compute_api_key: DF.Data | None
+		frappe_compute_api_secret: DF.Password | None
+		frappe_compute_base_url: DF.Data | None
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
 		hetzner_api_token: DF.Password | None
@@ -148,6 +154,19 @@ class Cluster(Document):
 			self.set_oci_availability_zone()
 		elif self.cloud_provider == "Hetzner":
 			self.validate_hetzner_api_token()
+		elif self.cloud_provider == "Frappe Compute":
+			self.validate_frappe_compute_credentials()
+
+	def validate_frappe_compute_credentials(self):
+		api_secret = self.get_password("frappe_compute_api_secret")
+
+		client = FrappeComputeClient(
+			url=self.frappe_compute_base_url, api_key=self.frappe_compute_api_key, api_secret=api_secret
+		)
+		if not client.validate():
+			frappe.throw(
+				"You do not have Administrator permissions to the Frappe Compute instance. Please refer to your frappe_compute_api_secret and frappe_compute_api_key fields and try to check and ensure that the correct credentials have been used."
+			)
 
 	def validate_hetzner_api_token(self):
 		api_token = self.get_password("hetzner_api_token")
@@ -210,6 +229,18 @@ class Cluster(Document):
 			self.provision_on_hetzner()
 		elif self.cloud_provider == "DigitalOcean":
 			self.provision_on_digital_ocean()
+		elif self.cloud_provider == "Frappe Compute":
+			self.provision_on_frappe_compute()
+
+	def provision_on_frappe_compute(self):
+		api_secret = self.get_password("frappe_compute_api_secret")
+		client = FrappeComputeClient(
+			url=self.frappe_compute_base_url, api_key=self.frappe_compute_api_key, api_secret=api_secret
+		)
+		vpc_id = client.provision_cluster(f"Frappe-Cloud-{self.name}".replace(" ", ""), self.cidr_block)
+		self.vpc_id = vpc_id
+
+		self.save()
 
 	def provision_on_digital_ocean(self):
 		api_token = self.get_password("digital_ocean_api_token")
@@ -1172,6 +1203,200 @@ class Cluster(Document):
 
 		return True
 
+	def create_firewall(self, rules, is_ingress=True, description=None):
+		"""Creates a new firewall/security group and returns the firewall ID.
+
+		rules should be a list of [port, protocol] pairs, e.g. [["22", "tcp"], ["51820", "udp"]].
+		"""
+		normalized_rules = self._normalize_firewall_rules(rules)
+
+		if self.cloud_provider == "AWS EC2":
+			return self.create_aws_firewall(normalized_rules, is_ingress, description)
+		if self.cloud_provider == "Hetzner":
+			return self.create_hetzner_firewall(normalized_rules, is_ingress, description)
+		if self.cloud_provider == "OCI":
+			return self.create_oci_firewall(normalized_rules, is_ingress, description)
+
+		return None
+
+	def delete_firewall(self, firewall_id):
+		"""Deletes a firewall/security group by its ID."""
+		try:
+			if self.cloud_provider == "AWS EC2":
+				self.delete_aws_firewall(firewall_id)
+			elif self.cloud_provider == "Hetzner":
+				self.delete_hetzner_firewall(firewall_id)
+			elif self.cloud_provider == "OCI":
+				self.delete_oci_firewall(firewall_id)
+			elif self.cloud_provider == "DigitalOcean":
+				self.delete_digital_ocean_firewall(firewall_id)
+		except Exception as e:
+			frappe.msgprint(f"Failed to delete firewall {firewall_id}: {e!s}")
+
+	def delete_aws_firewall(self, firewall_id):
+		client = self.get_aws_client()
+		try:
+			client.delete_security_group(GroupId=firewall_id)
+		except client.exceptions.ClientError as e:
+			if e.response["Error"]["Code"] != "InvalidGroup.NotFound":
+				raise
+
+	def delete_hetzner_firewall(self, firewall_id):
+		client = self.get_hetzner_client()
+		try:
+			firewall = client.firewalls.get_by_id(firewall_id)
+			if firewall:
+				firewall.delete()
+		except APIException as e:
+			if e.code != "not_found":
+				raise
+
+	def delete_oci_firewall(self, firewall_id):
+		vcn_client = VirtualNetworkClient(self.get_oci_config())
+		try:
+			vcn_client.delete_network_security_group(firewall_id)
+		except oci.exceptions.ServiceError as e:
+			if e.status != 404:
+				raise
+
+	def delete_digital_ocean_firewall(self, firewall_id):
+		api_token = self.get_password("digital_ocean_api_token")
+		client = pydo.Client(api_token)
+		try:
+			client.firewalls.delete(firewall_id)
+		except Exception as e:
+			if "not found" not in str(e).lower():
+				raise
+
+	def create_aws_firewall(self, rules: list[tuple[str | int, str]], is_ingress: bool, description: str):
+		client = self.get_aws_client()
+		sg_name = f"Frappe Cloud - {self.name} - Custom - {frappe.generate_hash(length=4)}"
+		response = client.create_security_group(
+			GroupName=sg_name,
+			Description=description or "Custom Security Group",
+			VpcId=self.vpc_id,
+		)
+		sg_id = response["GroupId"]
+
+		ip_permissions = []
+		for port, protocol in rules:
+			from_port, to_port = self._parse_port_range(port)
+			ip_permissions.append(
+				{
+					"FromPort": from_port,
+					"ToPort": to_port,
+					"IpProtocol": protocol,
+					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": description or ""}],
+				}
+			)
+
+		if is_ingress:
+			client.authorize_security_group_ingress(GroupId=sg_id, IpPermissions=ip_permissions)
+		else:
+			client.authorize_security_group_egress(GroupId=sg_id, IpPermissions=ip_permissions)
+
+		return sg_id
+
+	def create_hetzner_firewall(self, rules, is_ingress, description):
+		client = self.get_hetzner_client()
+		firewall_rules = []
+		for port, protocol in rules:
+			rule_params = {
+				"description": description,
+				"direction": "in" if is_ingress else "out",
+				"protocol": protocol,
+				"port": str(port),
+			}
+			if is_ingress:
+				rule_params["source_ips"] = ["0.0.0.0/0"]
+			else:
+				rule_params["destination_ips"] = ["0.0.0.0/0"]
+			firewall_rules.append(HetznerFirewallRule(**rule_params))
+
+		firewall_response = client.firewalls.create(
+			name=f"Frappe Cloud - {self.name} - Custom - {frappe.generate_hash(length=4)}",
+			rules=firewall_rules,
+		)
+		return firewall_response.firewall.id
+
+	def create_oci_firewall(self, rules, is_ingress, description):
+		vcn_client = VirtualNetworkClient(self.get_oci_config())
+		security_group = vcn_client.create_network_security_group(
+			CreateNetworkSecurityGroupDetails(
+				compartment_id=self.oci_tenancy,
+				display_name=f"Frappe Cloud - {self.name} - Custom - {frappe.generate_hash(length=4)}",
+				vcn_id=self.vpc_id,
+			)
+		).data
+
+		security_rules = []
+		if isinstance(is_ingress, str):
+			is_ingress = is_ingress.lower() in ["in", "ingress"]
+		for port, protocol in rules:
+			from_port, to_port = self._parse_port_range(port)
+			oci_protocol = "6" if protocol == "tcp" else "17"
+			rule_details = {
+				"description": description,
+				"direction": "INGRESS" if is_ingress else "EGRESS",
+				"protocol": oci_protocol,
+			}
+			if protocol == "tcp":
+				rule_details["tcp_options"] = TcpOptions(
+					destination_port_range=PortRange(min=from_port, max=to_port)
+				)
+			else:
+				rule_details["udp_options"] = UdpOptions(
+					destination_port_range=PortRange(min=from_port, max=to_port)
+				)
+			if is_ingress:
+				rule_details["source"] = "0.0.0.0/0"
+			else:
+				rule_details["destination"] = "0.0.0.0/0"
+
+			security_rules.append(AddSecurityRuleDetails(**rule_details))
+
+		vcn_client.add_network_security_group_security_rules(
+			security_group.id,
+			AddNetworkSecurityGroupSecurityRulesDetails(security_rules=security_rules),
+		)
+		return security_group.id
+
+	def _normalize_firewall_rules(self, rules) -> list[tuple[str | int, str]]:
+		if isinstance(rules, (str, int)):
+			rules = [[rules, "tcp"]]
+
+		normalized_rules: list[tuple[str | int, str]] = []
+		for rule in rules:
+			if isinstance(rule, (str, int)):
+				port, protocol = rule, "tcp"
+			elif isinstance(rule, (list, tuple)) and len(rule) == 2:
+				port, protocol = rule
+			else:
+				frappe.throw(
+					"Each firewall rule must be [port, protocol], for example: [['22', 'tcp'], ['51820', 'udp']]"
+				)
+
+			normalized_rules.append((port, self._normalize_firewall_protocol(protocol)))
+
+		if not normalized_rules:
+			frappe.throw("At least one firewall rule is required")
+
+		return normalized_rules
+
+	def _normalize_firewall_protocol(self, protocol: str) -> str:
+		protocol = (protocol or "tcp").lower().strip()
+		if protocol not in {"tcp", "udp"}:
+			frappe.throw("Firewall protocol must be one of: tcp, udp")
+		return protocol
+
+	def _parse_port_range(self, port: str | int) -> tuple[int, int]:
+		if isinstance(port, int):
+			return port, port
+		if isinstance(port, str) and "-" in port:
+			start, end = port.split("-")
+			return int(start), int(end)
+		return int(port), int(port)
+
 	def create_vm(
 		self,
 		machine_type: str,
@@ -1214,6 +1439,8 @@ class Cluster(Document):
 			return "VM.Standard.E4.Flex"
 		if self.cloud_provider == "Hetzner":
 			return "cpx21"
+		if self.cloud_provider == "Frappe Compute":
+			return "CPX22"
 		return None
 
 	def get_or_create_basic_plan(self, server_type) -> ServerPlan:
@@ -1419,7 +1646,12 @@ class Cluster(Document):
 		if extra_filters is None:
 			extra_filters = {}
 		cluster_names = unique(frappe.db.get_all("Server", filters={"status": "Active"}, pluck="cluster"))
+		# Temporarily here to skip the Frappe Compute cloud provider
 		filters = {"name": ("in", cluster_names), "public": True}
+
+		if not get_current_team(get_doc=True).is_frappe_compute_internal_user:
+			filters["cloud_provider"] = ("!=", "Frappe Compute")
+
 		return frappe.db.get_all(
 			"Cluster",
 			filters={**filters, **extra_filters},

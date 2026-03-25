@@ -39,6 +39,7 @@
   "auto_increase_storage",
   "networking_section",
   "ip",
+  "nat_server",
   "column_break_10",
   "private_ip",
   "private_mac_address",
@@ -178,11 +179,11 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean\nFrappe Compute",
    "set_only_once": 1
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\", \"DigitalOcean\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\", \"DigitalOcean\", \"Frappe Compute\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -780,6 +781,13 @@
    "fieldname": "enable_schema_size_parser",
    "fieldtype": "Check",
    "label": "Enable Schema Size Parser"
+  },
+  {
+   "depends_on": "eval: !!!doc.ip",
+   "fieldname": "nat_server",
+   "fieldtype": "Link",
+   "label": "NAT Server",
+   "options": "NAT Server"
   }
  ],
  "grid_page_length": 50,
@@ -796,7 +804,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2026-03-08 14:05:17.357104",
+ "modified": "2026-03-15 20:00:07.165619",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

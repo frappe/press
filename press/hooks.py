@@ -158,6 +158,7 @@ has_permission = {
 	"Server Snapshot": "press.overrides.has_permission",
 	"Server Snapshot Recovery": "press.overrides.has_permission",
 	"Server Firewall": "press.press.doctype.server_firewall.server_firewall.has_permission",
+	"Support Access": "press.press.doctype.support_access.support_access.has_permission",
 }
 
 # Document Events
@@ -246,7 +247,6 @@ scheduler_events = {
 		"press.press.doctype.server_snapshot.server_snapshot.expire_snapshots",
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
-		"press.press.doctype.database_server.database_server.update_database_schema_sizes",
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
 	],
 	"hourly_long": [
@@ -297,6 +297,9 @@ scheduler_events = {
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_all_snapshots_from_aws",
+		],
+		"30 2-23/5 * * *": [
+			"press.press.doctype.database_server.database_server.update_database_schema_sizes",
 		],
 		"* * * * * 0/5": [
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",

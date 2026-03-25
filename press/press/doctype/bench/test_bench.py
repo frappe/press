@@ -587,7 +587,7 @@ class TestArchiveObsoleteBenches(FrappeTestCase):
 			with self.assertRaises(ArchiveBenchError) as e:
 				bench.archive()
 			self.assertIn(
-				"Cannot archive bench due to unarchived sites on bench",
+				"Cannot archive bench due to unarchived sites on bench. Please archive all the sites on the bench and retry.",
 				str(e.exception),
 			)
 

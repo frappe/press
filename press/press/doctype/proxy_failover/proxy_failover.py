@@ -53,7 +53,10 @@ class ProxyFailover(Document, StepHandler):
 		if (not primary.is_static_ip and not secondary.is_static_ip) or (
 			primary.is_static_ip and secondary.is_static_ip
 		):
-			frappe.throw("Failover can only be initiated if one of the proxy server has a static ip")
+			frappe.throw(
+				"Failover can only be initiated if only one of the proxy server has a static ip. "
+				"Please ensure that either primary OR secondary proxy server has a static ip and try again."
+			)
 
 		if not primary.is_static_ip:
 			routing_steps.extend(
@@ -70,6 +73,8 @@ class ProxyFailover(Document, StepHandler):
 				self.wait_for_pending_agent_jobs_to_complete,
 				self.stop_replication,
 				self.replicate_once_manually,
+				self.exclude_primary_from_autoselection,
+				self.use_secondary_as_proxy_for_agent_and_metrics,
 				self.move_wildcard_domains_from_primary,
 				self.wait_for_wildcard_domains_setup,
 				self.attach_static_ip_to_secondary,
@@ -260,8 +265,35 @@ class ProxyFailover(Document, StepHandler):
 		step.status = Status.Success
 		step.save()
 
+	def exclude_primary_from_autoselection(self, step):
+		frappe.db.set_value(
+			"Proxy Server",
+			self.primary,
+			{"exclude_from_auto_selection": True},
+		)
+
+		step.status = Status.Success
+		step.save()
+
 	def update_app_servers(self, step):
 		frappe.db.set_value("Server", {"proxy_server": self.primary}, "proxy_server", self.secondary)
+
+		step.status = Status.Success
+		step.save()
+
+	def use_secondary_as_proxy_for_agent_and_metrics(self, step):
+		if frappe.db.get_value("Proxy Server", self.primary, "use_as_proxy_for_agent_and_metrics"):
+			frappe.db.set_value(
+				"Proxy Server",
+				self.secondary,
+				{"use_as_proxy_for_agent_and_metrics": 1},
+			)
+
+			frappe.db.set_value(
+				"Proxy Server",
+				self.primary,
+				{"use_as_proxy_for_agent_and_metrics": 0},
+			)
 
 		step.status = Status.Success
 		step.save()
@@ -271,12 +303,6 @@ class ProxyFailover(Document, StepHandler):
 			"Proxy Server",
 			self.secondary,
 			{"is_primary": True, "is_replication_setup": False, "primary": None},
-		)
-
-		frappe.db.set_value(
-			"Proxy Server",
-			self.primary,
-			{"exclude_from_auto_selection": True},
 		)
 
 		step.status = Status.Success

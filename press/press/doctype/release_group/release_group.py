@@ -1505,7 +1505,7 @@ class ReleaseGroup(Document, TagHelpers):
 		except frappe.DoesNotExistError:
 			return None
 
-	def get_last_deploy_candidate_build(self) -> DeployCandidateBuild:
+	def get_last_deploy_candidate_build(self) -> DeployCandidateBuild | None:
 		try:
 			return frappe.get_last_doc("Deploy Candidate Build", {"group": self.name})
 		except frappe.DoesNotExistError:
@@ -1518,9 +1518,13 @@ class ReleaseGroup(Document, TagHelpers):
 		create a deploy check if the image has not been pruned from the registry in case of
 		missing image create new build.
 		"""
-		if not deploy:
-			return None
+		self.append("servers", {"server": server, "default": False})
+		self.save()
+		if deploy:
+			return self.deploy_on_server(server, force_new_build=force_new_build)
+		return None
 
+	def deploy_on_server(self, server: str, force_new_build=False) -> str | None:
 		server_platform = frappe.get_value("Server", server, "platform")
 		last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
 			platform=server_platform
@@ -1535,9 +1539,6 @@ class ReleaseGroup(Document, TagHelpers):
 			if not last_candidate_build:
 				frappe.throw("No build present for this release group", frappe.ValidationError)
 
-			self.append("servers", {"server": server, "default": False})
-			self.save()
-
 			return create_platform_build_and_deploy(
 				deploy_candidate=last_candidate_build.candidate.name,  # type: ignore
 				server=server,
@@ -1545,15 +1546,29 @@ class ReleaseGroup(Document, TagHelpers):
 			)
 
 		try:
-			deploy = last_successful_deploy_candidate_build._create_deploy(
+			return last_successful_deploy_candidate_build._create_deploy(
 				[server],
 				check_image_exists=True,
-			)
-			self.append("servers", {"server": server, "default": False})
-			self.save()
-			return deploy.name
+			).name
 		except ImageNotFoundInRegistry:
-			return self.add_server(server=server, deploy=True, force_new_build=True)
+			return self.deploy_on_server(server=server, force_new_build=True)
+
+	@frappe.whitelist()
+	def redeploy_on_missing_servers(self):
+		"""
+		Redeploy the latest successful candidate on servers in this release group
+		that do not currently have a Bench in an active, installing, or pending state.
+		"""
+		deployed_servers = frappe.db.get_all(
+			"Bench",
+			filters={"group": self.name, "status": ("in", ("Active", "Installing", "Pending"))},
+			pluck="server",
+		)
+
+		for server in self.servers:
+			if server.server in deployed_servers:
+				continue
+			self.deploy_on_server(server.server)
 
 	@frappe.whitelist()
 	def change_server(self, server: str):
@@ -1702,6 +1717,48 @@ class ReleaseGroup(Document, TagHelpers):
 		flags = DEFAULT_FEATURE_FLAGS.get(self.version, {})
 		for key, value in flags.items():
 			setattr(self, key, value)
+
+	@dashboard_whitelist()
+	def clone_group(self, title: str | None):
+		if not title:
+			title = self.title + " - Cloned - " + frappe.generate_hash(length=5)
+
+		new_group: ReleaseGroup = frappe.new_doc("Release Group")
+		new_group.update(
+			{
+				"title": title,
+				"team": self.team,
+				"public": 0,
+				"enabled": 1,
+				"version": self.version,
+				"dependencies": self.dependencies,
+				"is_redisearch_enabled": self.is_redisearch_enabled,
+			}
+		)
+
+		for s in self.servers:
+			new_group.append(
+				"servers",
+				{"server": s.server, "default": s.default},
+			)
+
+		for s in self.apps:
+			new_group.append(
+				"apps",
+				{
+					"app": s.app,
+					"source": s.source,
+					"title": s.title,
+					"enable_auto_deploy": s.enable_auto_deploy,
+				},
+			)
+
+		new_group.insert(ignore_permissions=True)
+		new_group.initial_deploy()  # Deploy also
+		frappe.msgprint(
+			f"New release group <a href='{new_group.get_url()}' target='_blank'>{new_group.title}</a> created and deployed successfully!"
+		)
+		return new_group
 
 
 @redis_cache(ttl=60)
@@ -1903,7 +1960,12 @@ def add_public_servers_to_public_groups():
 	)
 	public_servers = frappe.get_all(
 		"Server",
-		filters={"public": 1, "status": "Active", "provider": ["!=", "Hetzner"]},
+		filters={
+			"public": 1,
+			"status": "Active",
+			"provider": ["!=", "Hetzner"],
+			"cluster": ["!=", "Dar Es Salaam"],
+		},
 		pluck="name",
 	)
 

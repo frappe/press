@@ -79,6 +79,7 @@ class Team(Document):
 		introduction: DF.SmallText | None
 		is_code_server_user: DF.Check
 		is_developer: DF.Check
+		is_frappe_compute_internal_user: DF.Check
 		is_saas_user: DF.Check
 		is_us_eu: DF.Check
 		last_used_team: DF.Link | None
@@ -160,7 +161,7 @@ class Team(Document):
 			and self.user != frappe.session.user
 			and frappe.session.user not in self.get_user_list()
 		):
-			frappe.throw("You are not allowed to access this document")
+			frappe.throw("You are not allowed to access this document")  # nosemgrep
 
 		user = frappe.db.get_value(
 			"User",
@@ -229,7 +230,9 @@ class Team(Document):
 			return
 		if self.is_team_owner() or self.is_admin_user():
 			return
-		message = _("Only team owner or admins can make changes to relaxed permissions.")
+		message = _(
+			"Only team owner or admins can make changes to relaxed permissions. Please contact your team admin for the same."
+		)
 		frappe.throw(message, frappe.PermissionError)
 
 	def validate(self):
@@ -269,7 +272,9 @@ class Team(Document):
 			return
 
 		if self.payment_mode == "Paid By Partner" and not self.billing_team:
-			frappe.throw("Billing Team is mandatory for Paid By Partner payment mode")
+			frappe.throw(
+				"<b>Billing Team is mandatory</b> for Paid By Partner payment mode. Please add a billing team from the Billing Dashboard."
+			)
 
 		if self.payment_mode == "Paid By Partner" and has_unsettled_invoices(self.name):
 			frappe.throw(
@@ -470,6 +475,20 @@ class Team(Document):
 				frappe.DuplicateEntryError,
 			)
 
+	def has_recent_pending_payment(self) -> bool:
+		"""Returns True if there's a Razorpay payment authorized in the last 5 minutes
+		but not yet captured (webhook is still in processing state)."""
+		return bool(
+			frappe.db.exists(
+				"Razorpay Payment Record",
+				{
+					"team": self.name,
+					"status": "Pending",
+					"creation": (">", frappe.utils.add_to_date(frappe.utils.now_datetime(), minutes=-5)),
+				},
+			)
+		)
+
 	def validate_payment_mode(self):  # noqa: C901
 		if not self.payment_mode and self.get_balance() > 0:
 			self.payment_mode = "Prepaid Credits"
@@ -479,9 +498,16 @@ class Team(Document):
 				self.payment_mode == "Card"
 				and frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0
 			):
-				frappe.throw("No card added")
-			if self.payment_mode == "Prepaid Credits" and self.get_balance() <= 0:
-				frappe.throw("Account does not have sufficient balance")
+				frappe.throw("No card added. Please add a card to your account.")
+			# This check to verify recent pending payment is added to avoid validation issue when updating team doctype with payment mode as credits without balance as transaction is on going
+			if (
+				self.payment_mode == "Prepaid Credits"
+				and self.get_balance() <= 0
+				and not self.has_recent_pending_payment()
+			):
+				frappe.throw(
+					"Currently, account does not have sufficient balance. Please make sure you have sufficient balance in your account."
+				)
 
 		if not self.is_new() and not self.default_payment_method:
 			# if default payment method is unset
@@ -598,7 +624,7 @@ class Team(Document):
 		client = get_frappe_io_connection()
 		data = client.get_value("Partner", "start_date", {"email": self.partner_email})
 		if not data:
-			frappe.throw("Partner not found on frappe.io")
+			frappe.throw("Partner not found on frappe.io")  # nosemgrep
 		return frappe.utils.getdate(data.get("start_date"))
 
 	def create_referral_bonus(self, referrer_id):
