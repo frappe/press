@@ -25,7 +25,9 @@ def doc_equal(self: Document, other: Document) -> bool:
 
 def FrappeTestCase_setUp(self) -> None:
 	frappe.clear_cache()
+	self.SHOW_TRANSACTION_COMMIT_WARNINGS = False
 	frappe.db.truncate("Agent Request Failure")
+	self.SHOW_TRANSACTION_COMMIT_WARNINGS = True
 	frappe.local.conf.update({"throttle_user_limit": 600})
 
 
@@ -42,7 +44,6 @@ def execute():
 	Document.__eq__ = doc_equal
 
 	FrappeTestCase.setUp = FrappeTestCase_setUp
-	FrappeTestCase.SHOW_TRANSACTION_COMMIT_WARNINGS = True
 	FrappeTestCase.tearDown = lambda self: frappe.db.rollback()
 	FrappeTestCase.freeze_time = staticmethod(freeze_time)
 
