@@ -47,6 +47,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
+	from press.press.doctype.site.site import Site
 
 
 @frappe.whitelist()
@@ -1278,9 +1279,31 @@ def identify_zombie_benches():
 		insufficient_permissions_message, frappe.PermissionError
 	)
 
-	benches = frappe.request.get_json().get("benches", [])
+	running_benches = frappe.request.get_json().get("benches", [])
+
+	Bench: Bench = frappe.qb.DocType("Bench")
+	Site: Site = frappe.qb.DocType("Site")
+
+	zombie_benches_with_active_sites = (
+		frappe.qb.from_(Bench)
+		.left_join(Site)
+		.on(Site.bench == Bench.name)
+		.where((Bench.status == "Archived") & (Site.status.notin(["Archived", "Broken"])))
+		.select(Bench.name)
+	).run(pluck="name")
+
+	# Mark benches that have active sites as active if they are some how marked as archived
+	# So that port offset takes them into consideration.
+	if zombie_benches_with_active_sites:
+		frappe.db.set_value(
+			"Bench",
+			{"name": ("in", zombie_benches_with_active_sites)},
+			"status",
+			"Active",
+		)
+
 	zombie_benches = frappe.db.get_all(
-		"Bench", filters={"name": ("in", benches), "status": "Archived"}, pluck="name"
+		"Bench", filters={"name": ("in", running_benches), "status": "Archived"}, pluck="name"
 	)
 
 	# Agent already checks if the bench has sites on it and will fail in that case, so we can directly force remove the bench here
