@@ -19,7 +19,7 @@ const tabs = [
 				v-for="tab in tabs"
 				:key="tab.label"
 				:to="tab.route"
-				class="text-base text-ink-gray-5 py-2 px-4 pr-15 transition-colors hover:bg-surface-gray-2 rounded"
+				class="text-base text-ink-gray-5 py-2 px-3.5 pr-15 transition-colors hover:bg-surface-gray-2 rounded"
 				active-class="bg-surface-gray-2 text-ink-gray-9"
 			>
 				{{ tab.label }}
