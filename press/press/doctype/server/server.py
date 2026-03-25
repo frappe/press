@@ -3902,11 +3902,7 @@ def cleanup_unused_files():
 
 def process_running_benches_on_server():
 	"""Trigger cron job to identify and kill zombie benches on active servers."""
-	servers = frappe.get_all(
-		"Server",
-		filters={"status": "Active", "kill_zombie_benches": True},
-		pluck="name",
-	)
+	servers = frappe.get_all("Server", filters={"status": "Active"}, pluck="name")
 	for server in servers:
 		frappe.enqueue(
 			"press.press.doctype.server.server._process_running_benches_on_server",
