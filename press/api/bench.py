@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import re
 from collections import OrderedDict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import frappe
 import requests
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
+from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, sbool
+from passlib.hash import pbkdf2_sha256 as pbkdf2
 
+from press.agent import Agent
 from press.api.github import branches, get_access_token
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
@@ -43,6 +46,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+	from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 
 
 @frappe.whitelist()
@@ -935,7 +939,7 @@ def validate_branch(name: str, app: str, branch: str):
 def get_branches_for_marketplace_app(app: str, marketplace_app: str, app_source: AppSource) -> list[dict]:
 	"""Return list of branches allowed for this `marketplace` app"""
 	branch_set = set()
-	marketplace_app = frappe.get_doc("Marketplace App", marketplace_app)
+	marketplace_app: MarketplaceApp = frappe.get_doc("Marketplace App", marketplace_app)
 
 	for marketplace_app_source in marketplace_app.sources:
 		app_source = frappe.get_doc("App Source", marketplace_app_source.source)
@@ -1122,7 +1126,7 @@ def fail_and_redeploy(name: str, dc_name: str):
 
 @frappe.whitelist()
 @protected("Release Group")
-def show_app_versions(name: str, dc_name: str) -> dict[str, str]:
+def show_app_versions(name: str, dc_name: str) -> list[dict[str, Any]]:
 	"""Get app versions from the deploy candidate"""
 	candidate = frappe.db.get_value("Deploy Candidate Build", dc_name, "deploy_candidate")
 	deploy_candidate: "DeployCandidate" = frappe.get_cached_doc("Deploy Candidate", candidate)
@@ -1151,6 +1155,7 @@ def show_app_versions(name: str, dc_name: str) -> dict[str, str]:
 			"repository_url": sources.get(app.source).get("repository_url"),
 		}
 		for app in deploy_candidate.apps
+		if app
 	]
 
 
@@ -1252,3 +1257,35 @@ def search_releases(
 	)
 
 	return q.run(as_dict=1)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@rate_limit(limit=10, seconds=60)
+def identify_zombie_benches():
+	"""Check running benches and force remove zombie benches"""
+	user = frappe.session.user
+	server = frappe.request.headers.get("server")
+	sent_password = frappe.request.headers.get("agent-token")
+	insufficient_permissions_message = "Insufficient permissions to access this resource"
+
+	if not sent_password or not server or not frappe.db.exists("Server", server):
+		frappe.throw(insufficient_permissions_message, frappe.PermissionError)
+
+	agent_password = frappe.get_doc("Server", server).get_password(
+		"agent_password",
+	)
+	pbkdf2.verify(agent_password, sent_password) or frappe.throw(
+		insufficient_permissions_message, frappe.PermissionError
+	)
+
+	benches = frappe.request.get_json().get("benches", [])
+	zombie_benches = frappe.db.get_all(
+		"Bench", filters={"name": ("in", benches), "status": "Archived"}, pluck="name"
+	)
+
+	# Agent already checks if the bench has sites on it and will fail in that case, so we can directly force remove the bench here
+	if zombie_benches:
+		frappe.set_user("Administrator")
+		Agent(server).force_remove_zombie_benches(zombie_benches)
+
+	frappe.set_user(user)
