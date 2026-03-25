@@ -37,7 +37,6 @@ from press.press.doctype.auto_scale_record.auto_scale_record import (
 	is_secondary_ready_for_scale_down,
 	update_or_delete_prometheus_rule_for_scaling,
 )
-from press.press.doctype.bench.bench import identify_and_kill_zombie_benches
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
@@ -3898,6 +3897,8 @@ def process_running_benches_on_server():
 
 def _process_running_benches_on_server(server: str):
 	"""Identify and kill zombie benches on the specified server."""
+	from press.press.doctype.bench.bench import identify_and_kill_zombie_benches
+
 	try:
 		running_benches = Agent(server).get("/server/running-benches").get("benches", [])
 		identify_and_kill_zombie_benches(server, running_benches)
