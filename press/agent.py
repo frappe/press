@@ -96,6 +96,11 @@ class Agent:
 			data={"retry_new_bench": retry_new_bench},
 		)
 
+	def force_remove_zombie_benches(self, bench_names: list[str]):
+		return self.create_agent_job(
+			"Force Remove Zombie Benches", "benches/force-remove", data={"benches": bench_names}
+		)
+
 	def restart_bench(self, bench, web_only=False):
 		return self.create_agent_job(
 			"Bench Restart",
