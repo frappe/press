@@ -42,6 +42,7 @@ def execute():
 	Document.__eq__ = doc_equal
 
 	FrappeTestCase.setUp = FrappeTestCase_setUp
+	FrappeTestCase.SHOW_TRANSACTION_COMMIT_WARNINGS = True
 	FrappeTestCase.tearDown = lambda self: frappe.db.rollback()
 	FrappeTestCase.freeze_time = staticmethod(freeze_time)
 
@@ -71,7 +72,7 @@ def create_test_stripe_credentials():
 def freeze_time(time_to_freeze: Any, is_utc: bool = False, *args: Any, **kwargs: Any):
 	"""freeze time using freezegun, compatible with Python 3.10 and 3.11+."""
 	try:
-		from datetime import UTC
+		from datetime import UTC  # type: ignore
 	except ImportError:
 		from datetime import timezone
 

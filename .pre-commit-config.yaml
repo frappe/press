@@ -80,6 +80,7 @@ repos:
             --exclude-gitignore,
             --no-warn-no-return,
             --disable-error-code=annotation-unchecked,
+            --python-version=3.10,
           ]
         exclude: ^tests/|test_.*\.py$ # Exclude the 'tests/' directory and files starting with 'test_'
         additional_dependencies:
