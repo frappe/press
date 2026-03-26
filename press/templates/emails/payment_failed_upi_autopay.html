@@ -1,0 +1,62 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white">
+		<p class="mb-4 font-bold">{{ subject }}</p>
+
+		{% if error_reason == "INSUFFICIENT_FUNDS" %}
+			<p>We attempted to auto-debit <strong>{{ amount }}</strong>{% if upi_vpa %} from your UPI account (<strong>{{ upi_vpa }}</strong>){% endif %} but the payment failed due to <strong>insufficient funds</strong>.</p>
+			<p>Please ensure your UPI account has sufficient balance. We will retry automatically. If the payment continues to fail, your sites may be suspended. If you need help, <a href="https://frappecloud.com/support">contact support</a>.</p>
+			<p><a href="{{ upi_autopay_link }}">Manage UPI Autopay</a></p>
+			<p><a href="{{ billing_link }}">Pay Now</a></p>
+
+		{% elif error_reason == "MAX_PAYMENT_AMOUNT_EXCEEDED" %}
+			<p>We were unable to auto-debit <strong>{{ amount }}</strong>{% if upi_vpa %} from your UPI account (<strong>{{ upi_vpa }}</strong>){% endif %} because the invoice amount exceeds your <strong>current mandate limit</strong>.</p>
+			<p>Please cancel your existing mandate and set up a new one with a higher limit, or pay this invoice now. If you need help, <a href="https://frappecloud.com/support">contact support</a>.</p>
+			<p><a href="{{ upi_autopay_link }}">Manage UPI Autopay</a></p>
+			<p><a href="{{ billing_link }}">Pay Now</a></p>
+
+		{% elif error_reason == "TOKEN_EXPIRED" %}
+			<p>Your UPI Autopay mandate has <strong>expired</strong>. We were unable to process the payment of <strong>{{ amount }}</strong>.</p>
+			<p>Please set up a new UPI Autopay mandate to continue automatic payments, or pay this invoice now. If you need help, <a href="https://frappecloud.com/support">contact support</a>.</p>
+			<p><a href="{{ upi_autopay_link }}">Set Up New Mandate</a></p>
+			<p><a href="{{ billing_link }}">Pay Now</a></p>
+
+		{% elif error_reason == "TOKEN_NOT_ACTIVE" %}
+			<p>Your UPI Autopay mandate has <strong>been revoked or deactivated</strong>. We were unable to process the payment of <strong>{{ amount }}</strong>.</p>
+			<p>Please set up a new UPI Autopay mandate to continue automatic payments, or pay this invoice now. If you need help, <a href="https://frappecloud.com/support">contact support</a>.</p>
+			<p><a href="{{ upi_autopay_link }}">Set Up New Mandate</a></p>
+			<p><a href="{{ billing_link }}">Pay Now</a></p>
+
+		{% elif error_reason == "GATEWAY_ERROR" %}
+			<p>We attempted to auto-debit <strong>{{ amount }}</strong>{% if upi_vpa %} from your UPI account (<strong>{{ upi_vpa }}</strong>){% endif %} but the payment failed due to a <strong>temporary bank or gateway issue</strong>.</p>
+			<p>No action is needed — we will retry the payment automatically. If the issue persists, please contact your bank or pay now. You can also <a href="https://frappecloud.com/support">contact support</a>.</p>
+			<p><a href="{{ billing_link }}">Pay Now</a></p>
+
+		{% elif error_reason == "FREQUENCY_LIMIT_EXCEEDED" %}
+			<p>We attempted to auto-debit <strong>{{ amount }}</strong>{% if upi_vpa %} from your UPI account (<strong>{{ upi_vpa }}</strong>){% endif %} but the payment failed due to a <strong>transaction frequency limit</strong> set by your bank.</p>
+			<p>We will retry the payment automatically once the limit resets. You can also pay now if needed. If you need help, <a href="https://frappecloud.com/support">contact support</a>.</p>
+			<p><a href="{{ billing_link }}">Pay Now</a></p>
+
+		{% elif error_reason == "PAYMENT_CREATION_FAILED" %}
+			<p>We were unable to initiate the UPI Autopay payment of <strong>{{ amount }}</strong> due to a technical error. Our team has been notified.</p>
+			<p>Please check your UPI Autopay mandate or pay this invoice now. If you need help, <a href="https://frappecloud.com/support">contact support</a>.</p>
+			<p><a href="{{ upi_autopay_link }}">Manage UPI Autopay</a></p>
+			<p><a href="{{ billing_link }}">Pay Now</a></p>
+
+		{% else %}
+			<p>We attempted to auto-debit <strong>{{ amount }}</strong>{% if upi_vpa %} from your UPI account (<strong>{{ upi_vpa }}</strong>){% endif %} for your Frappe Cloud subscription, but the payment failed.</p>
+			<p>Please check your UPI Autopay mandate or pay this invoice now. Your sites may be suspended if the invoice remains unpaid. If you need help, <a href="https://frappecloud.com/support">contact support</a>.</p>
+			<p><a href="{{ upi_autopay_link }}">Manage UPI Autopay</a></p>
+			<p><a href="{{ billing_link }}">Pay Now</a></p>
+		{% endif %}
+
+		{{ utils.separator() }}
+		{{ utils.signature() }}
+	</div>
+</td>
+
+{% endblock %}
