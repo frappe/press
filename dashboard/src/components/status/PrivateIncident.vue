@@ -221,9 +221,8 @@ const incidents = createResource({
 });
 
 const incidentCount = createResource({
-	url: 'frappe.client.get_count',
+	url: 'press.api.incident.get_incident_count',
 	params: {
-		doctype: 'Incident',
 		filters: {
 			resolved: isHistory.value,
 		},
