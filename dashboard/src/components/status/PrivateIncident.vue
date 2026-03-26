@@ -75,14 +75,20 @@
 		</div>
 
 		<template v-else>
-			<IncidentCard v-for="incident in incidentTrees" :data="incident" />
+			<template
+				v-for="(incident, i) in incidentTrees"
+				:key="incident.id || 'dummyInc' + i"
+			>
+				<IncidentCard v-if="incident.server" :data="incident" />
+				<div v-else class="p-3.5 text-sm mb-5 border invisible">k</div>
+			</template>
 
 			<Pagination
 				v-if="Number(incidentCount.data)"
 				:total-pages="incidentCount.data"
 				:limit="limit"
 				v-model:page="currentPage"
-				class="w-fit mx-auto"
+				class="w-fit mx-auto fade-in"
 			/>
 		</template>
 	</div>
@@ -119,8 +125,8 @@ const filteredData = computed(() => {
 
 	return data.filter(
 		(incident) =>
-			incident.server?.toLowerCase().includes(query) ||
-			incident.name?.toLowerCase().includes(query),
+			incident?.server?.toLowerCase().includes(query) ||
+			incident?.name?.toLowerCase().includes(query),
 	);
 });
 
@@ -128,20 +134,20 @@ const incidentTrees = computed(() =>
 	filteredData.value.map((incident) => {
 		// Timeline
 		const timelineSteps = [];
-		if (incident.creation) {
+		if (incident?.creation) {
 			timelineSteps.push({
 				type: 'timeline-step',
 				label: 'Created',
 				time: formatDate(incident.creation),
 			});
 		}
-		if (incident.confirmed_at) {
+		if (incident?.confirmed_at) {
 			timelineSteps.push({
 				label: 'Confirmed',
 				time: formatDate(incident.confirmed_at),
 			});
 		}
-		if (incident.resolved_at) {
+		if (incident?.resolved_at) {
 			timelineSteps.push({
 				type: 'timeline-step',
 				label: 'Resolved',
@@ -151,7 +157,7 @@ const incidentTrees = computed(() =>
 
 		// Investigation
 		let investigation = null;
-		if (incident.investigation_name) {
+		if (incident?.investigation_name) {
 			const findings = incident.investigation_findings
 				? typeof incident.investigation_findings === 'string'
 					? JSON.parse(incident.investigation_findings)
@@ -173,7 +179,7 @@ const incidentTrees = computed(() =>
 
 		// Action steps
 		let actionSteps = null;
-		if (incident.investigation_action_steps) {
+		if (incident?.investigation_action_steps) {
 			const labels = incident.investigation_action_steps
 				.split(',')
 				.map((s) => s.trim());
@@ -189,9 +195,9 @@ const incidentTrees = computed(() =>
 		}
 
 		return {
-			id: incident.name,
-			server: incident.server,
-			status: incident.status,
+			id: incident?.name,
+			server: incident?.server,
+			status: incident?.status,
 			timelineSteps,
 			investigation,
 			actionSteps,
@@ -204,7 +210,13 @@ const incidents = createResource({
 	makeParams: () => {
 		return { page: currentPage.value, limit, resolved: isHistory.value };
 	},
-
+	transform: (data) => {
+		if (data.length !== 0 && data.length < limit) {
+			const dataToAdd = limit - data.length;
+			data.push(...Array(dataToAdd).fill(null));
+			return data;
+		}
+	},
 	auto: true,
 });
 
