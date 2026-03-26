@@ -84,9 +84,13 @@ class BenchUpdate(Document):
 				frappe.ValidationError,
 			)
 
-	def deploy(self, run_will_fail_check=False) -> str:
+	def deploy(self, run_will_fail_check=False, validate_pre_candidate_checks: bool = True) -> str:
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		candidate = rg.create_deploy_candidate(self.apps, run_will_fail_check)
+		candidate = rg.create_deploy_candidate(
+			apps_to_update=self.apps,
+			run_will_fail_check=run_will_fail_check,
+			validate_pre_candidate_checks=validate_pre_candidate_checks,
+		)
 		deploy = candidate.schedule_build_and_deploy()
 
 		self.candidate = candidate.name
@@ -164,7 +168,6 @@ def get_bench_update(
 	apps: list,
 	sites: list | None = None,
 	is_inplace_update: bool = False,
-	create_deploy: bool = False,
 ) -> BenchUpdate:
 	if sites is None:
 		sites = []
@@ -193,16 +196,5 @@ def get_bench_update(
 			"is_inplace_update": is_inplace_update,
 		}
 	).insert(ignore_permissions=True)
-
-	if create_deploy:
-		frappe.enqueue_doc(
-			"Bench Update",
-			bench_update.name,
-			"deploy",
-			queue="default"
-			if frappe.conf.developer_mode
-			else "short",  # For now putting this in short as well
-			run_will_fail_check=True,
-		)
 
 	return bench_update

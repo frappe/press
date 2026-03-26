@@ -725,15 +725,14 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def create_deploy_candidate(
-		self,
-		apps_to_update=None,
-		run_will_fail_check=False,
+		self, apps_to_update=None, run_will_fail_check=False, validate_pre_candidate_checks: bool = True
 	) -> "DeployCandidate | None":
 		if not self.enabled:
 			return None
 
-		self.check_app_server_storage()
-		self.check_auto_scales()
+		if validate_pre_candidate_checks:
+			self.check_app_server_storage()
+			self.check_auto_scales()
 
 		apps = self.get_apps_to_update(apps_to_update)
 		if apps_to_update is None:

@@ -765,6 +765,9 @@
         "lsync",
         "lsyncd",
         "awk",
-        "gawk"
+        "gawk",
+        "picklable",
+        "ndarray",
+        "mult"
     ]
 }

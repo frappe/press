@@ -1,0 +1,245 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-02-28 18:27:35.577710",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "column_break_lkci",
+  "linked_doctype",
+  "column_break_xuyw",
+  "linked_docname",
+  "section_break_bicj",
+  "main_method_name",
+  "main_method_title",
+  "column_break_ccie",
+  "args",
+  "kwargs",
+  "kv_storage_section",
+  "key_value_store",
+  "section_break_zpgq",
+  "start",
+  "column_break_oqfs",
+  "end",
+  "column_break_nxoy",
+  "duration",
+  "section_break_djui",
+  "steps",
+  "section_break_pfpj",
+  "output",
+  "column_break_lhnh",
+  "exception",
+  "section_break_xglm",
+  "stdout",
+  "traceback"
+ ],
+ "fields": [
+  {
+   "fieldname": "linked_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Linked Doctype",
+   "options": "DocType",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_ccie",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "linked_docname",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Linked Docname",
+   "options": "linked_doctype",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Queued",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Queued\nRunning\nSuccess\nFailure\nFatal",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_lkci",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_xuyw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_bicj",
+   "fieldtype": "Section Break",
+   "label": "Execution Details"
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Link",
+   "label": "Output",
+   "options": "Press Workflow Object",
+   "read_only": 1
+  },
+  {
+   "fieldname": "exception",
+   "fieldtype": "Link",
+   "label": "Exception",
+   "options": "Press Workflow Object",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kv_storage_section",
+   "fieldtype": "Section Break",
+   "label": "KV Storage"
+  },
+  {
+   "fieldname": "key_value_store",
+   "fieldtype": "Table",
+   "label": "Key Value Store",
+   "options": "Press Workflow KV",
+   "read_only": 1
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Duration",
+   "label": "Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "main_method_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Main Method Name",
+   "length": 512,
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "main_method_title",
+   "fieldtype": "Data",
+   "label": "Main Method Title",
+   "length": 512,
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_pfpj",
+   "fieldtype": "Section Break",
+   "label": "Result"
+  },
+  {
+   "fieldname": "column_break_lhnh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_xglm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "stdout",
+   "fieldtype": "Long Text",
+   "label": "Stdout",
+   "read_only": 1
+  },
+  {
+   "fieldname": "traceback",
+   "fieldtype": "Long Text",
+   "label": "Traceback",
+   "read_only": 1
+  },
+  {
+   "fieldname": "args",
+   "fieldtype": "Link",
+   "label": "Args",
+   "options": "Press Workflow Object",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "kwargs",
+   "fieldtype": "Link",
+   "label": "Kwargs",
+   "options": "Press Workflow Object",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_zpgq",
+   "fieldtype": "Section Break",
+   "label": "Progress"
+  },
+  {
+   "fieldname": "column_break_oqfs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_nxoy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_djui",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "steps",
+   "fieldtype": "Table",
+   "label": "Steps",
+   "options": "Press Workflow Step",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Press Workflow Task",
+   "link_fieldname": "workflow"
+  }
+ ],
+ "modified": "2026-03-11 00:51:08.486677",
+ "modified_by": "Administrator",
+ "module": "Workflow Engine",
+ "name": "Press Workflow",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

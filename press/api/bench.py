@@ -799,17 +799,6 @@ def deploy_and_update(
 	run_will_fail_check: bool = True,
 ):
 	validate_app_hashes(apps)
-	frappe.enqueue(
-		"press.press.doctype.bench_update.bench_update.get_bench_update",
-		name=name,
-		apps=apps,
-		sites=sites,
-		create_deploy=True,
-		in_inplace_update=False,
-		at_front=True,
-		queue="default" if frappe.conf.developer_mode else "short",  # For now putting this in short
-	)
-
 	# Returns name of the Deploy Candidate that is running the build
 	return get_bench_update(
 		name,
