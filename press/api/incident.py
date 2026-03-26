@@ -23,7 +23,7 @@ class GroupConcat(DistinctOptionFunction):
 
 
 @frappe.whitelist()
-def get_incidents(resolved: bool = False) -> list[dict]:
+def get_incidents(resolved: bool = False, limit: int = 20, offset: int = 0) -> list[dict]:
 	"""Get all active incidents relevant to this team with their investigation details and action steps."""
 	team = get_current_team()
 	if not team:
@@ -84,5 +84,7 @@ def get_incidents(resolved: bool = False) -> list[dict]:
 		)
 		.groupby(Incident.name)
 		.orderby(Incident.creation, order=Order.desc)
+		.limit(limit)
+		.offset(offset)
 		.run(as_dict=True)
 	)
