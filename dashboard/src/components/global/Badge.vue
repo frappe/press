@@ -83,6 +83,9 @@ export default {
 				'In Process': 'orange',
 				Scheduled: 'blue',
 				'Not Scheduled': 'red',
+				Requested: 'orange',
+				'In Progress': 'blue',
+				'On Hold': 'gray',
 			}[this.label];
 		},
 	},
