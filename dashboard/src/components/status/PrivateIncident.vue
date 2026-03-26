@@ -104,7 +104,7 @@ import IncidentCard from './IncidentCard.vue';
 import Pagination from '@/components/common/Pagination.vue';
 
 const currentPage = ref(1);
-const limit = 4;
+const limit = 10;
 
 defineOptions({ name: 'IncidentHistory' });
 
