@@ -2,8 +2,12 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
+	"net"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -228,7 +232,7 @@ func checkIOFreeze(timeout time.Duration) bool {
 	done := make(chan bool, 1)
 
 	go func() {
-		path := "/tmp/.mariadb_monitor_io_test"
+		path := filepath.Join(os.TempDir(), ".mariadb_monitor_io_test")
 		f, err := os.Create(path)
 		if err != nil {
 			done <- false
@@ -253,4 +257,85 @@ func checkIOFreeze(timeout time.Duration) bool {
 	case <-time.After(timeout):
 		return true // timed out, I/O is frozen
 	}
+}
+
+func checkMachineFrozen() (bool, string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		// Fallback: context should always have a deadline here, but be defensive.
+		deadline = time.Now().Add(2 * time.Second)
+	}
+
+	// 1. Check process spawning (fork/exec). Tests PID limits, memory for fork, and basic scheduling.
+	cmd := exec.CommandContext(ctx, "true")
+	if err := cmd.Run(); err != nil {
+		return true, "fork_failed"
+	}
+
+	// 2. Check File Descriptor (FD) limits. SSH often hangs when the OS runs out of file handles.
+	r, w, err := os.Pipe()
+	if err != nil {
+		return true, "fd_exhausted"
+	}
+	r.Close()
+	w.Close()
+
+	// 3. Check Network Stack and Memory limits. 
+	// Verifies if the OS has enough memory to open, dial, and accept TCP connections.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return true, "tcp_listen_failed"
+	}
+	defer ln.Close()
+
+	// Ensure we still have time left in the overall budget before network checks.
+	remaining := time.Until(deadline)
+	if remaining <= 0 {
+		return true, "deadline_exceeded"
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		conn, err := ln.Accept()
+		if err == nil {
+			conn.Close()
+		}
+		errCh <- err
+	}()
+
+	// Dial timeout is derived from the remaining overall budget, capped at 1s.
+	dialTimeout := remaining
+	if dialTimeout > time.Second {
+		dialTimeout = time.Second
+	}
+
+	conn, err := net.DialTimeout("tcp", ln.Addr().String(), dialTimeout)
+	if err != nil {
+		return true, "tcp_dial_failed"
+	}
+	conn.Close()
+
+	// Recompute remaining time for the accept phase, again capped at 1s.
+	remaining = time.Until(deadline)
+	if remaining <= 0 {
+		return true, "deadline_exceeded"
+	}
+	acceptTimeout := remaining
+	if acceptTimeout > time.Second {
+		acceptTimeout = time.Second
+	}
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			return true, "tcp_accept_failed"
+		}
+	case <-time.After(acceptTimeout):
+		return true, "tcp_accept_timeout"
+	}
+
+	return false, ""
 }

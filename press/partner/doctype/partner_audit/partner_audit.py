@@ -1,7 +1,7 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -15,6 +15,7 @@ class PartnerAudit(Document):
 		from frappe.types import DF
 
 		audit_date: DF.Date | None
+		audit_report: DF.Attach | None
 		conducted_by: DF.Link | None
 		implementation_finding: DF.TextEditor | None
 		implementation_observation: DF.TextEditor | None
@@ -34,4 +35,36 @@ class PartnerAudit(Document):
 		support_summary: DF.TextEditor | None
 	# end: auto-generated types
 
-	pass
+	dashboard_fields = (
+		"partner_team",
+		"partner_tier",
+		"mode_of_audit",
+		"status",
+		"audit_date",
+		"conducted_by",
+		"proposed_audit_date",
+	)
+
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		PartnerAudit = frappe.qb.DocType("Partner Audit")
+		Team = frappe.qb.DocType("Team")
+
+		query = (
+			frappe.qb.from_(PartnerAudit)
+			.inner_join(Team)
+			.on(PartnerAudit.partner_team == Team.name)
+			.select(
+				Team.company_name.as_("partner_team"),
+				PartnerAudit.mode_of_audit,
+				PartnerAudit.status,
+				PartnerAudit.audit_date,
+				PartnerAudit.conducted_by,
+				PartnerAudit.proposed_audit_date,
+				PartnerAudit.name,
+			)
+			.limit(list_args["limit"])
+			.offset(list_args["start"])
+		)
+
+		return query.run(as_dict=True)

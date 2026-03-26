@@ -18,7 +18,7 @@ class PartnerNonConformance(Document):
 		auditor: DF.Link | None
 		closed_by: DF.Link | None
 		closed_on: DF.Date | None
-		department: DF.Literal["General", "Sales", "Implementation", "Support"]
+		department: DF.Literal["General", "Implementation", "Support", "Sales"]
 		evidence: DF.Attach | None
 		expected_closure: DF.Date | None
 		measures_to_close_nc: DF.Text | None
@@ -29,4 +29,16 @@ class PartnerNonConformance(Document):
 		status: DF.Literal["Open", "WIP", "Closed", "Discarded", "On Hold"]
 	# end: auto-generated types
 
-	pass
+	dashboard_fields = (
+		"name",
+		"status",
+		"department",
+		"closed_by",
+		"closed_on",
+		"expected_closure",
+		"measures_to_close_nc",
+		"nc_description",
+		"nc_statement",
+		"auditor",
+		"audit_date",
+	)
