@@ -22,8 +22,12 @@
 				class="w-full"
 				size="md"
 				variant="solid"
-				:label="`Proceed to payment using ${paypalEnabled ? 'PayPal' : 'Razorpay'}`"
-				:loading="createRazorpayOrder.loading"
+				:label="
+					razorpayScriptLoading
+						? 'Loading payment gateway...'
+						: `Proceed to payment using ${paypalEnabled ? 'PayPal' : 'Razorpay'}`
+				"
+				:loading="createRazorpayOrder.loading || razorpayScriptLoading"
 				@click="createRazorpayOrder.submit()"
 			/>
 			<Button
@@ -42,6 +46,7 @@ import { Button, ErrorMessage, FeatherIcon, createResource } from 'frappe-ui';
 import { ref, onMounted, onBeforeUnmount, inject } from 'vue';
 import { toast } from 'vue-sonner';
 import { DashboardError } from '../../utils/error';
+import { loadRazorpayScript } from '../../utils/razorpay';
 
 const props = defineProps({
 	amount: {
@@ -73,20 +78,18 @@ const paypalEnabled = team.doc.currency === 'USD' && props.paypalEnabled;
 const isPaymentComplete = ref(false);
 const isVerifyingPayment = ref(false);
 
-const razorpayCheckoutJS = ref(null);
+const razorpayScriptLoading = ref(!window.Razorpay);
 
 onMounted(() => {
-	razorpayCheckoutJS.value = document.createElement('script');
-	razorpayCheckoutJS.value.setAttribute(
-		'src',
-		'https://checkout.razorpay.com/v1/checkout.js',
-	);
-	razorpayCheckoutJS.value.async = true;
-	document.head.appendChild(razorpayCheckoutJS.value);
-});
-
-onBeforeUnmount(() => {
-	razorpayCheckoutJS.value?.remove();
+	loadRazorpayScript()
+		.then(() => {
+			razorpayScriptLoading.value = false;
+		})
+		.catch(() => {
+			toast.error(
+				'Failed to load payment gateway. Please refresh and try again.',
+			);
+		});
 });
 
 const createRazorpayOrder = createResource({
@@ -96,7 +99,10 @@ const createRazorpayOrder = createResource({
 		transaction_type: props.type,
 		doc_name: props.docName,
 	},
-	onSuccess: (data) => processOrder(data),
+	onSuccess: async (data) => {
+		await loadRazorpayScript();
+		processOrder(data);
+	},
 	validate: () => {
 		if (props.amount < props.minimumAmount) {
 			throw new DashboardError('Amount less than minimum amount required');
