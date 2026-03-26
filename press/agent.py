@@ -290,7 +290,7 @@ class Agent:
 		assert site.config is not None, "Site config is required to restore site from backup"
 
 		data = {
-			"config": json.loads(site.config),
+			"config": json.loads(site.config) if site.config else {},
 			"apps": apps,
 			"name": site.name,
 			"mariadb_root_password": get_mariadb_root_password(site),
@@ -561,8 +561,10 @@ class Agent:
 		)
 
 	def backup_site(self, site, site_backup: SiteBackup):
-		data = {"with_files": site_backup.with_files}
-
+		data = {
+			"with_files": site_backup.with_files,
+			"agent_job_timeout": site.backup_timeout,
+		}
 		if site_backup.offsite:
 			backups_path = os.path.join(site.name, str(date.today()))
 			offsite_config = self._get_offsite_backup_config(site.cluster, backups_path)
