@@ -207,6 +207,7 @@ scheduler_events = {
 		"press.press.doctype.database_server.database_server.delete_mariadb_binlog_for_archived_servers",
 		"press.press.doctype.team.team.check_budget_alerts",
 		"press.press.doctype.site.site.archive_creation_failed_sites",
+		"press.press.doctype.server.server.process_running_benches_on_server",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -256,6 +257,7 @@ scheduler_events = {
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
+		"press.press.doctype.invoice.invoice.finalize_razorpay_mandate_invoices",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
 		"press.press.doctype.press_job.press_job.fail_stuck_press_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",

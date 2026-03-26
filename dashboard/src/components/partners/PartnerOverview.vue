@@ -128,22 +128,6 @@
 		</Dialog>
 
 		<Dialog
-			:show="showPartnerCreditsDialog"
-			v-model="showPartnerCreditsDialog"
-			:options="{ title: 'Pay Partnership Fee' }"
-		>
-			<template #body-content>
-				<PartnerCreditsForm
-					@success="
-						() => {
-							showPartnerCreditsDialog = false;
-						}
-					"
-				/>
-			</template>
-		</Dialog>
-
-		<Dialog
 			:show="showRenewalConfirmationDialog"
 			v-model="showRenewalConfirmationDialog"
 			:options="{
@@ -192,14 +176,12 @@ import {
 } from 'frappe-ui';
 import PartnerContribution from './PartnerContribution.vue';
 import ClickToCopyField from '../ClickToCopyField.vue';
-import PartnerCreditsForm from './PartnerCreditsForm.vue';
 import { toast } from 'vue-sonner';
 import router from '../../router';
 
 const team = inject('team');
 
 const showPartnerContributionDialog = ref(false);
-const showPartnerCreditsDialog = ref(false);
 const showRenewalConfirmationDialog = ref(false);
 
 const partnerDetails = createResource({
@@ -217,7 +199,6 @@ const partnerDetails = createResource({
 const partnerConsent = createListResource({
 	doctype: 'Partner Consent',
 	onSuccess() {
-		showPartnerCreditsDialog.value = true;
 		toast.success('Partner consent recorded successfully');
 	},
 });

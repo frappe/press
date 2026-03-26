@@ -1,89 +1,72 @@
+<script setup lang="ts">
+import { onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { isMobile } from '@/utils/device';
+
+defineOptions({ name: 'SiteInsights' });
+
+const tabs = [
+	{
+		label: 'Analytics',
+		value: 'Site Analytics',
+	},
+	{
+		label: 'Reports',
+		value: 'Site Performance Reports',
+		children: [
+			'Site Performance Slow Queries',
+			'Site Performance Process List',
+			'Site Performance Request Logs',
+			'Site Performance Deadlock Report',
+		],
+	},
+	{
+		label: 'Logs',
+		value: 'Site Logs',
+		children: ['Site Log'],
+	},
+	{
+		label: 'Jobs',
+		value: 'Site Jobs',
+		children: ['Site Job'],
+	},
+];
+
+const route = useRoute();
+const router = useRouter();
+
+onMounted(() => {
+	if (route.name === 'Site Insights') {
+		router.push({ name: 'Site Analytics' });
+	}
+});
+</script>
+
 <template>
 	<div
 		class="-m-5 flex divide-x"
 		:class="{
-			'flex-col': $isMobile,
+			'flex-col': isMobile(),
 		}"
 	>
-		<div
+		<aside
+			class="p-2"
 			:class="{
-				'ml-5 mt-5 w-60 divide-y rounded-sm border': $isMobile,
-				'w-60': !$isMobile,
+				'ml-5 mt-5 w-60 divide-y rounded-sm border': isMobile(),
 			}"
 		>
 			<template v-for="tab in tabs">
 				<router-link
 					:to="{ name: tab.value }"
-					class="flex cursor-pointer text-base text-gray-600 hover:bg-gray-100"
-					:class="{
-						' bg-gray-50 text-gray-800': isActiveTab(tab),
-						'text-gray-600': !isActiveTab(tab),
-						'border-b': !$isMobile,
-					}"
+					class="py-2 pr-15 flex cursor-pointer text-base text-ink-gray-5 rounded hover:bg-surface-gray-1 px-3.5"
+					active-class="bg-surface-gray-2 text-ink-gray-9"
 				>
-					<div
-						class="px-4"
-						:class="{
-							'py-2': $isMobile,
-							'py-2.5': !$isMobile,
-						}"
-					>
-						{{ tab.label }}
-					</div>
+					{{ tab.label }}
 				</router-link>
 			</template>
-		</div>
+		</aside>
 		<div class="w-full overflow-auto sm:h-[88vh]">
 			<router-view />
 		</div>
 	</div>
 </template>
-
-<script>
-export default {
-	name: 'SiteInsights',
-	props: ['site'],
-	data() {
-		return {
-			tabs: [
-				{
-					label: 'Analytics',
-					value: 'Site Analytics',
-				},
-				{
-					label: 'Reports',
-					value: 'Site Performance Reports',
-					children: [
-						'Site Performance Slow Queries',
-						'Site Performance Process List',
-						'Site Performance Request Logs',
-						'Site Performance Deadlock Report',
-					],
-				},
-				{
-					label: 'Logs',
-					value: 'Site Logs',
-					children: ['Site Log'],
-				},
-				{
-					label: 'Jobs',
-					value: 'Site Jobs',
-					children: ['Site Job'],
-				},
-			],
-		};
-	},
-	mounted() {
-		if (this.$route.name === 'Site Insights') {
-			this.$router.push({ name: 'Site Analytics' });
-		}
-	},
-	methods: {
-		isActiveTab(tab) {
-			return [tab.value, ...(tab.children || [])].find(
-				(child) => child === this.$route.name,
-			);
-		},
-	},
-};
-</script>
