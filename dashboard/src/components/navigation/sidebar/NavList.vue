@@ -17,6 +17,7 @@ import Globe from '~icons/lucide/globe';
 import Notification from '~icons/lucide/inbox';
 import Code from '~icons/lucide/code';
 import FileSearch from '~icons/lucide/file-search';
+import ActivityIcon from '~icons/lucide/activity';
 import { unreadNotificationsCount } from '@/data/notifications';
 
 import { getTeam } from '@/data/team';
@@ -196,7 +197,7 @@ const navigation = computed(() => {
 		},
 		{
 			name: 'Status',
-			icon: () => h(Globe),
+			icon: ActivityIcon,
 			route: '/status',
 			isActive: routeName === 'Status',
 			disabled: enforce2FA,
