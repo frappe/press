@@ -164,6 +164,7 @@ def get_bench_update(
 	apps: list,
 	sites: list | None = None,
 	is_inplace_update: bool = False,
+	create_deploy: bool = False,
 ) -> BenchUpdate:
 	if sites is None:
 		sites = []
@@ -192,4 +193,16 @@ def get_bench_update(
 			"is_inplace_update": is_inplace_update,
 		}
 	).insert(ignore_permissions=True)
+
+	if create_deploy:
+		frappe.enqueue_doc(
+			"Bench Update",
+			bench_update.name,
+			"deploy",
+			queue="default"
+			if frappe.conf.developer_mode
+			else "short",  # For now putting this in short as well
+			run_will_fail_check=True,
+		)
+
 	return bench_update
