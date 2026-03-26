@@ -701,6 +701,33 @@ def get_lead_owners():
 
 @frappe.whitelist()
 @role_guard.api("partner")
+def create_audit_request(audit_date, audit_type="Online"):
+	team = get_current_team(get_doc=True)
+	if not team.erpnext_partner and team.partner_status != "Active":
+		frappe.throw(
+			"Only Active Partner team can create audit request. Please ensure your partner status is renewed and active."
+		)
+
+	if frappe.db.exists("Partner Audit", {"partner_team": team.name, "audit_date": audit_date}):
+		frappe.throw(
+			"An audit request already exists for this date. Please select a different date or check your existing requests."
+		)
+
+	if frappe.utils.getdate(audit_date) <= frappe.utils.getdate():
+		frappe.throw("Audit date must be in the future. Please choose a date later than today's date.")
+
+	try:
+		doc = frappe.new_doc("Partner Audit")
+		doc.partner_team = team.name
+		doc.proposed_audit_date = audit_date
+		doc.mode_of_audit = audit_type
+		doc.insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error("Error creating new Partner audit")
+
+
+@frappe.whitelist()
+@role_guard.api("partner")
 def change_partner(lead_name, partner):
 	doc = frappe.get_doc("Partner Lead", lead_name)
 	if not is_lead_team(lead_name):
