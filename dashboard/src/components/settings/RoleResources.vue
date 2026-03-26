@@ -19,7 +19,11 @@
 							{{ resource.name }}
 						</span>
 						<span class="font-medium">{{ resource.document_name }}</span>
-						<span class="text-ink-gray-5">{{ resource.document_type }}</span>
+						<span class="text-ink-gray-5">{{
+							resource.document_type == 'Release Group'
+								? 'Bench'
+								: resource.document_type
+						}}</span>
 					</div>
 				</div>
 				<Button
