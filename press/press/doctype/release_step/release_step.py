@@ -5,13 +5,17 @@ from functools import cached_property
 from typing import Any
 
 import frappe
+from frappe.utils.background_jobs import get_redis_conn
+from rq.job import Job, JobStatus, NoSuchJobError
 
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
+from press.workflow_engine.doctype.press_workflow.exceptions import PressWorkflowTaskEnqueued
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.bench_update.bench_update import BenchUpdate
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
@@ -57,17 +61,60 @@ class ReleaseStep(WorkflowBuilder):
 		create_deploy: bool = False,
 	):
 		"""Create a Deploy Candidate for the release group."""
+		assert isinstance(self.release_group, str)
 		bench_update: BenchUpdate = get_bench_update(
 			self.release_group,
 			apps,
 			sites,
 			is_inplace_update=False,
 		)
-		bench_update.deploy(
+		candidate_name = bench_update.deploy(
 			run_will_fail_check=run_will_fail_check,
 			validate_pre_candidate_checks=False,
 			create_build=create_deploy,
 		)
+		self.kv.set("candidate", candidate_name)
+
+	@task
+	def initiate_pre_build_validations(self):
+		"""Clone apps that are to be built in this release."""
+		candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", self.kv.get("candidate"))
+		deploy_candidate_build = candidate.schedule_build_and_deploy()
+		self.kv.delete("candidate")
+		self.kv.set("deploy_candidate_build", deploy_candidate_build["name"])
+		self.start_and_monitor_pre_build_validation()
+
+	@task
+	def start_and_monitor_pre_build_validation(self):
+		"""Monitors the Deploy Candidate Build until the remote build job is created."""
+		deploy_candidate_build_name = self.kv.get("deploy_candidate_build")
+		job_id = f"deploy_candidate_build:{deploy_candidate_build_name}"
+
+		try:
+			job = Job.fetch(job_id, connection=get_redis_conn())
+			job_status = job.get_status()
+		except NoSuchJobError:
+			raise PressWorkflowTaskEnqueued(
+				f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build_name}"
+			) from None  # Raise a completely new exception without chaining so that the workflow engine is not confused
+
+		if job_status in [JobStatus.QUEUED, JobStatus.SCHEDULED, JobStatus.STARTED]:
+			raise PressWorkflowTaskEnqueued(
+				f"Waiting for build job to complete from Deploy Candidate Build {deploy_candidate_build_name}"
+			)
+
+		if job_status == JobStatus.FINISHED:
+			return  # Pre Build Validation completed can mark as success and proceed
+
+		if job_status == JobStatus.FAILED:
+			raise Exception(
+				f"Pre Build Validation failed for Deploy Candidate Build {deploy_candidate_build_name}. Please check the build logs for more details."
+			)
+
+	@task
+	def monitor_remote_build_job(self):
+		"""Monitor the remote build agent job until terminal state is reached."""
+		...
 
 	@flow
 	def create_release(
@@ -86,3 +133,5 @@ class ReleaseStep(WorkflowBuilder):
 			run_will_fail_check=run_will_fail_check,
 			create_deploy=False,
 		)
+		self.initiate_pre_build_validations()
+		self.monitor_remote_build_job()

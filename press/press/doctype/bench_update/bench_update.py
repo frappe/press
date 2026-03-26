@@ -84,14 +84,19 @@ class BenchUpdate(Document):
 				frappe.ValidationError,
 			)
 
-	def deploy(self, run_will_fail_check=False, validate_pre_candidate_checks: bool = True) -> str:
+	def deploy(
+		self,
+		run_will_fail_check=False,
+		validate_pre_candidate_checks: bool = True,
+		create_build: bool = True,
+	) -> str:
+		"""Creates and returns candidate name or build name depending on the point of invocation."""
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		candidate = rg.create_deploy_candidate(
 			apps_to_update=self.apps,
 			run_will_fail_check=run_will_fail_check,
 			validate_pre_candidate_checks=validate_pre_candidate_checks,
 		)
-		deploy = candidate.schedule_build_and_deploy()
 
 		self.candidate = candidate.name
 		self.save()
@@ -100,6 +105,12 @@ class BenchUpdate(Document):
 			raise Exception(
 				f"Invalid name found for deploy candidate '{candidate.name}' of type {type(candidate.name)}"
 			)
+
+		if not create_build:
+			# In case we are not scheduling build from here (eg. new build flow) return candidate name here
+			return candidate.name
+
+		deploy = candidate.schedule_build_and_deploy()
 
 		return deploy["name"]
 
