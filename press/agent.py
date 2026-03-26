@@ -531,8 +531,6 @@ class Agent:
 		)
 
 	def backup_site(self, site, site_backup: SiteBackup):
-		from press.press.doctype.site_backup.site_backup import get_backup_bucket
-
 		data = {
 			"with_files": site_backup.with_files,
 			"agent_job_timeout": site.backup_timeout,
