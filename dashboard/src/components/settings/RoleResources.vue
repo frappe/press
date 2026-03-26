@@ -6,15 +6,18 @@
 				:to="toLink(resource)"
 				class="text-sm border rounded flex group px-4"
 			>
-				<div class="flex gap-4 rounded transition w-fit">
+				<div class="flex gap-4 rounded transition min-w-0">
 					<div
-						class="m-auto size-12 rounded-lg shrink-0 flex items-center justify-center p-3"
+						class="m-auto size-12 rounded-lg flex items-center justify-center p-3"
 						:class="colorClasses[resource.document_type]"
 					>
 						<FeatherIcon class="size-6" :name="icons[resource.document_type]" />
 					</div>
-					<div class="py-3 flex flex-col leading-relaxed justify-evenly">
-						<span class="text-ink-gray-5">{{ resource.name }}</span>
+
+					<div class="py-3 flex flex-col leading-relaxed min-w-0">
+						<span class="text-ink-gray-5 truncate" :title="resource.name">
+							{{ resource.name }}
+						</span>
 						<span class="font-medium">{{ resource.document_name }}</span>
 						<span class="text-ink-gray-5">{{ resource.document_type }}</span>
 					</div>
