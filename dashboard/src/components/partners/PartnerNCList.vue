@@ -61,7 +61,7 @@ const ncList = createListResource({
 	],
 	onSuccess() {
 		tabs.value = ncList.data.map((nc) => ({
-			label: nc.department,
+			label: nc.nc_statement,
 			value: 'PartnerNCSummary',
 			name: nc.name,
 			status: nc.status,

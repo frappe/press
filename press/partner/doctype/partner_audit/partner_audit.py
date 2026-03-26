@@ -66,5 +66,7 @@ class PartnerAudit(Document):
 			.limit(list_args["limit"])
 			.offset(list_args["start"])
 		)
+		if filters.get("team"):
+			query = query.where(PartnerAudit.partner_team == filters["team"])
 
 		return query.run(as_dict=True)
