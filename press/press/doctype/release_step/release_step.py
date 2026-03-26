@@ -24,10 +24,7 @@ class ReleaseStep(WorkflowBuilder):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.release_step_item.release_step_item import ReleaseStepItem
-
 		release_group: DF.Link | None
-		release_step_items: DF.Table[ReleaseStepItem]
 		team: DF.Link
 
 	@cached_property
@@ -51,21 +48,41 @@ class ReleaseStep(WorkflowBuilder):
 		"""Validate no server in release group is autoscaled."""
 		self.release_group_doc.check_auto_scales()
 
+	@task
+	def create_deploy_candidate(
+		self,
+		apps: list[dict[str, str]],
+		sites: list[dict[str, Any]],
+		run_will_fail_check: bool = False,
+		create_deploy: bool = False,
+	):
+		"""Create a Deploy Candidate for the release group."""
+		bench_update: BenchUpdate = get_bench_update(
+			self.release_group,
+			apps,
+			sites,
+			is_inplace_update=False,
+		)
+		bench_update.deploy(
+			run_will_fail_check=run_will_fail_check,
+			validate_pre_candidate_checks=False,
+			create_build=create_deploy,
+		)
+
 	@flow
 	def create_release(
 		self,
-		name: str,
 		apps: list[dict[str, str]],
 		sites: list[dict[str, Any]],
-		run_will_fail_checks: bool = False,
-	) -> None:
+		run_will_fail_check: bool = False,
+	):
 		"""Create a release for the release group."""
 		self.validate_app_hashes(apps)
 		self.validate_server_storages()
 		self.validate_auto_scales_on_servers()
-
-		bench_update: BenchUpdate = get_bench_update(name, apps, sites, is_inplace_update=False)
-		bench_update.deploy(
-			run_will_fail_check=run_will_fail_checks,
-			validate_pre_candidate_checks=False,
+		self.create_deploy_candidate(
+			apps=apps,
+			sites=sites,
+			run_will_fail_check=run_will_fail_check,
+			create_deploy=False,
 		)

@@ -44,6 +44,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
+	from press.press.doctype.release_step.release_step import ReleaseStep
 
 
 @frappe.whitelist()
@@ -798,14 +799,21 @@ def deploy_and_update(
 	sites: list | None = None,
 	run_will_fail_check: bool = True,
 ):
-	validate_app_hashes(apps)
-	# Returns name of the Deploy Candidate that is running the build
-	return get_bench_update(
-		name,
-		apps,
-		sites,
-		False,
-	).deploy(run_will_fail_check)
+	# validate_app_hashes(apps)
+	# # Returns name of the Deploy Candidate that is running the build
+	# return get_bench_update(
+	# 	name,
+	# 	apps,
+	# 	sites,
+	# 	False,
+	# ).deploy(run_will_fail_check)
+	release_step: ReleaseStep = frappe.get_doc(
+		{"doctype": "Release Step", "release_group": name, "team": get_current_team()}
+	)
+	release_step.insert()
+	release_step.create_release.run_as_workflow(
+		apps=apps, sites=sites, run_will_fail_check=run_will_fail_check
+	)
 
 
 @frappe.whitelist()
