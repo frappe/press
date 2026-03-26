@@ -1,10 +1,7 @@
 <template>
 	<div class="flex divide-x p-5">
 		<div class="w-1/5">
-			<div class="text-lg text-gray-600 flex">
-				<FeatherIcon name="align-justify" class="mr-2 h-5 w-5 text-gray-600" />
-				Non Conformance List
-			</div>
+			<div class="text-lg text-gray-600 flex">Non Conformance List</div>
 			<template v-for="tab in tabs">
 				<router-link
 					:to="{ name: tab.value, params: { nc: tab.name } }"
@@ -73,7 +70,6 @@ const ncList = createListResource({
 });
 
 const isActiveTab = (tab) => {
-	// console.log(route.params.nc, tab.name);
 	return [tab.name].find((child) => child === route.params.nc);
 };
 
