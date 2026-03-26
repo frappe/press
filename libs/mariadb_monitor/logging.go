@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -75,14 +76,14 @@ func setupLogging(logLevel string) (*truncatingWriter, error) {
 
 	level := slog.LevelWarn
 
-	switch logLevel {
-	case "DEBUG", "debug":
+	switch strings.ToUpper(logLevel) {
+	case "DEBUG":
 		level = slog.LevelDebug
-	case "INFO", "info":
+	case "INFO":
 		level = slog.LevelInfo
-	case "WARN", "warn", "WARNING", "warning":
+	case "WARN", "WARNING":
 		level = slog.LevelWarn
-	case "ERROR", "error":
+	case "ERROR":
 		level = slog.LevelError
 	}
 
