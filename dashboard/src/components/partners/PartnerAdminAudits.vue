@@ -45,6 +45,7 @@ export default {
 						label: 'Status',
 						fieldname: 'status',
 						type: 'Badge',
+						width: 0.5,
 					},
 					{
 						label: 'Requested Date',

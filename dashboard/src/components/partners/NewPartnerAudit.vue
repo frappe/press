@@ -21,6 +21,7 @@
 					class="mt-4"
 				/>
 			</div>
+			<ErrorMessage :message="errorMessage" class="mt-4" />
 			<Button
 				class="mt-4 w-full"
 				variant="solid"
@@ -42,6 +43,7 @@ import { toast } from 'vue-sonner';
 const show = defineModel();
 const audit_date = ref('');
 const audit_type = ref('Online');
+const errorMessage = ref('');
 
 const newAuditRequest = createResource({
 	url: 'press.api.partner.create_audit_request',
@@ -56,7 +58,7 @@ const newAuditRequest = createResource({
 		show.value = false;
 	},
 	onError: (err) => {
-		toast.error(err.messages[0] || 'Failed to create audit request');
+		errorMessage.value = err.messages[0] || 'Failed to create audit request';
 	},
 });
 </script>

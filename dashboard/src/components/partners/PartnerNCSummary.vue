@@ -6,8 +6,12 @@
 					<div class="text-2xl font-medium">
 						{{ ncSummaryDoc?.doc?.nc_statement }}
 					</div>
-					<div class="text-base text-gray-500">
-						{{ ncSummaryDoc?.doc?.name }}
+					<div class="flex items-center gap-2.5 text-base text-gray-500">
+						<div>
+							{{ ncSummaryDoc?.doc?.name }}
+						</div>
+						-
+						<div>{{ ncSummaryDoc?.doc?.department }}</div>
 					</div>
 				</div>
 				<div>
