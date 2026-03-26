@@ -52,11 +52,11 @@
 			<div v-if="!isHistory" class="mb-4 flex items-center justify-between">
 				<div class="flex items-center gap-2">
 					<span class="text-base">Active Incidents</span>
-					<span
-						class="inline-flex size-4 items-center justify-center rounded-sm bg-surface-gray-3 text-xs font-semibold text-ink-gray-7"
-					>
-						{{ incidentCount }}
-					</span>
+					<Badge
+						class="rounded-sm"
+						:label="incidentCount.data"
+						v-if="incidentCount.data"
+					/>
 				</div>
 
 				<Button size="sm" @click="refresh" variant="solid">
@@ -70,17 +70,25 @@
 			<IncidentCard v-for="incident in incidentTrees" :data="incident" />
 		</div>
 
-		<Pagination />
+		<Pagination
+			v-if="Number(incidentCount.data)"
+			:total-pages="incidentCount.data"
+			:limit="4"
+			v-model:page="currentPage"
+			class="w-fit mx-auto"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { Button, FormControl, createResource } from 'frappe-ui';
-import { useRoute, useRouter } from 'vue-router';
+import { Badge, Button, FormControl, createResource } from 'frappe-ui';
+import { useRoute } from 'vue-router';
 import LucideRefreshCw from '~icons/lucide/refresh-cw';
 import IncidentCard from './IncidentCard.vue';
 import Pagination from '@/components/common/Pagination.vue';
+
+const currentPage = ref(1);
 
 defineOptions({ name: 'IncidentHistory' });
 
@@ -92,8 +100,6 @@ const isHistory = computed(() => route.name == 'IncidentHistory');
 const hasNoIncidents = computed(
 	() => !incidents.loading && (!incidents.data || incidents.data.length === 0),
 );
-
-const incidentCount = computed(() => incidents.data?.length || 0);
 
 const filteredData = computed(() => {
 	const data = incidents.data || [];
@@ -185,15 +191,31 @@ const incidentTrees = computed(() =>
 
 const incidents = createResource({
 	url: 'press.api.incident.get_incidents',
-	makeParams() {
-		return isHistory.value ? { resolved: true } : {};
+	makeParams: () => {
+		return { page: currentPage.value, limit: 4, resolved: isHistory.value };
+	},
+
+	auto: true,
+});
+
+const incidentCount = createResource({
+	url: 'frappe.client.get_count',
+	params: {
+		doctype: 'Incident',
+		filters: {
+			priority: isHistory.value ? 'medium' : 'low',
+		},
 	},
 	auto: true,
 });
 
 watch(isHistory, () => {
-	incidents.reload();
+	incidents.fetch();
 	searchQuery.value = '';
+});
+
+watch(currentPage, () => {
+	incidents.fetch();
 });
 
 const refresh = () => incidents.reload();
