@@ -67,6 +67,7 @@ const ncList = createListResource({
 			status: nc.status,
 		}));
 	},
+	orderBy: 'modified desc',
 });
 
 const isActiveTab = (tab) => {
