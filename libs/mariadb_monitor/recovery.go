@@ -6,8 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -27,6 +25,12 @@ func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MyS
 		reason = frozen.reason
 	} else {
 		isFrozen, reason = checkMachineFrozen()
+	}
+
+	if !isFrozen && shouldTakeCoredump(cfg, dbHealth, len(triggers)) {
+		if err := takeCoredump(cfg); err != nil {
+			slog.Warn("coredump failed, continuing with recovery", "error", err)
+		}
 	}
 
 	if isFrozen {
@@ -68,36 +72,16 @@ func stopMariaDB(timeout time.Duration) bool {
 func killMariaDB() {
 	slog.Warn("sending SIGKILL to mariadbd")
 
-	files, err := os.ReadDir("/proc")
-	if err == nil {
-		for _, f := range files {
-			if !f.IsDir() {
-				continue
-			}
-			pid, err := strconv.Atoi(f.Name())
-			if err != nil {
-				continue
-			}
-			
-			data, err := os.ReadFile(fmt.Sprintf("/proc/%d/comm", pid))
-			if err != nil {
-				continue
-			}
-			comm := strings.TrimSpace(string(data))
-			
-			if comm == "mariadbd" || comm == "mysqld" {
-				proc, err := os.FindProcess(pid)
-				if err == nil {
-					if err := proc.Signal(syscall.SIGKILL); err != nil {
-						slog.Warn("failed to SIGKILL process", "pid", pid, "error", err)
-					} else {
-						slog.Info("sent SIGKILL to process", "pid", pid, "comm", comm)
-					}
-				}
-			}
+	for _, pid := range findMariaDBProcessIDs() {
+		proc, err := os.FindProcess(pid)
+		if err != nil {
+			continue
 		}
-	} else {
-		slog.Warn("could not read /proc", "error", err)
+		if err := proc.Signal(syscall.SIGKILL); err != nil {
+			slog.Warn("failed to SIGKILL process", "pid", pid, "error", err)
+		} else {
+			slog.Info("sent SIGKILL to process", "pid", pid)
+		}
 	}
 
 	time.Sleep(2 * time.Second)

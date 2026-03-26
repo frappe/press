@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -41,6 +42,14 @@ type Config struct {
 
 	MaxRecoveriesPerHour int `yaml:"max_recoveries_per_hour"`
 	DropCachesMode       int `yaml:"drop_caches_mode"`
+
+	CoredumpEnabled            bool          `yaml:"coredump_enabled"`
+	CoredumpOutputDir          string        `yaml:"coredump_output_dir"`
+	CoredumpTimeout            time.Duration `yaml:"coredump_timeout"`
+	CoredumpMaxCount           int           `yaml:"coredump_max_count"`
+	CoredumpOnUnhealthy        bool          `yaml:"coredump_on_unhealthy"`
+	CoredumpOnFrequentTriggers bool          `yaml:"coredump_on_frequent_triggers"`
+	CoredumpFrequentThreshold  int           `yaml:"coredump_frequent_threshold"`
 }
 
 type MySQLCredentials struct {
@@ -71,6 +80,14 @@ func DefaultConfig() Config {
 		IOFreezeTimeout:         5 * time.Second,
 		MaxRecoveriesPerHour:    3,
 		DropCachesMode:          1,
+
+		CoredumpEnabled:            false,
+		CoredumpOutputDir:          "/var/lib/mariadb-monitor/coredumps",
+		CoredumpTimeout:            120 * time.Second,
+		CoredumpMaxCount:           3,
+		CoredumpOnUnhealthy:        true,
+		CoredumpOnFrequentTriggers: true,
+		CoredumpFrequentThreshold:  3,
 	}
 }
 
@@ -98,12 +115,60 @@ func LoadConfig() (Config, error) {
 	parseDuration(raw, "cooldown_after_recovery", &cfg.CooldownAfterRecovery)
 	parseDuration(raw, "stop_timeout", &cfg.StopTimeout)
 	parseDuration(raw, "io_freeze_timeout", &cfg.IOFreezeTimeout)
+	parseDuration(raw, "coredump_timeout", &cfg.CoredumpTimeout)
 
 	if err := cfg.Validate(); err != nil {
 		return cfg, fmt.Errorf("config validation: %w", err)
 	}
 
+	appendMissingDefaults(raw)
+
 	return cfg, nil
+}
+
+func appendMissingDefaults(existing map[string]interface{}) {
+	defaultBytes, err := yaml.Marshal(DefaultConfig())
+	if err != nil {
+		return
+	}
+
+	var defaultMap map[string]interface{}
+	if err := yaml.Unmarshal(defaultBytes, &defaultMap); err != nil {
+		return
+	}
+
+	var missing []string
+	for key, val := range defaultMap {
+		if _, found := existing[key]; !found {
+			valBytes, err := yaml.Marshal(val)
+			if err != nil {
+				continue
+			}
+			missing = append(missing, fmt.Sprintf("%s: %s", key, strings.TrimSpace(string(valBytes))))
+		}
+	}
+
+	if len(missing) == 0 {
+		return
+	}
+
+	f, err := os.OpenFile(configFile, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		slog.Warn("failed to open config for appending defaults", "error", err)
+		return
+	}
+	defer f.Close()
+
+	lines := "\n# Auto-appended defaults for new config options\n"
+	for _, line := range missing {
+		lines += line + "\n"
+	}
+
+	if _, err := f.WriteString(lines); err != nil {
+		slog.Warn("failed to append missing defaults to config", "error", err)
+	} else {
+		slog.Info("appended missing config defaults", "keys", len(missing))
+	}
 }
 
 func (c Config) Validate() error {
@@ -121,6 +186,15 @@ func (c Config) Validate() error {
 	}
 	if c.DropCachesMode < 0 || c.DropCachesMode > 3 {
 		return fmt.Errorf("drop_caches_mode must be 0-3, got %d", c.DropCachesMode)
+	}
+	if c.CoredumpEnabled && c.CoredumpOutputDir == "" {
+		return fmt.Errorf("coredump_output_dir must be set when coredump_enabled is true")
+	}
+	if c.CoredumpMaxCount < 0 {
+		return fmt.Errorf("coredump_max_count must be >= 0, got %d", c.CoredumpMaxCount)
+	}
+	if c.CoredumpFrequentThreshold < 1 {
+		return fmt.Errorf("coredump_frequent_threshold must be >= 1, got %d", c.CoredumpFrequentThreshold)
 	}
 	return nil
 }
@@ -249,6 +323,25 @@ drop_caches_mode: %d
 		cfg.IOFreezeTimeout,
 		cfg.MaxRecoveriesPerHour,
 		cfg.DropCachesMode,
+	)
+
+	content += fmt.Sprintf(`
+# Coredump settings (gcore)
+coredump_enabled: %t
+coredump_output_dir: %s
+coredump_timeout: %s
+coredump_max_count: %d
+coredump_on_unhealthy: %t
+coredump_on_frequent_triggers: %t
+coredump_frequent_threshold: %d
+`,
+		cfg.CoredumpEnabled,
+		cfg.CoredumpOutputDir,
+		cfg.CoredumpTimeout,
+		cfg.CoredumpMaxCount,
+		cfg.CoredumpOnUnhealthy,
+		cfg.CoredumpOnFrequentTriggers,
+		cfg.CoredumpFrequentThreshold,
 	)
 
 	return os.WriteFile(configFile, []byte(content), 0644)
