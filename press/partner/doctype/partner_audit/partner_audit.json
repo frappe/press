@@ -15,18 +15,19 @@
   "audit_date",
   "conducted_by",
   "status",
+  "audit_report",
   "implementation_tab",
   "implementation_summary",
   "implementation_finding",
   "implementation_observation",
-  "sales_tab",
-  "sales_summary",
-  "sales_finding",
-  "sales_observation",
   "customer_support_tab",
   "support_summary",
   "support_finding",
   "support_observation",
+  "sales_tab",
+  "sales_summary",
+  "sales_finding",
+  "sales_observation",
   "next_actions_tab",
   "next_actions"
  ],
@@ -34,12 +35,16 @@
   {
    "fieldname": "partner_team",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Partner Team",
    "options": "Team"
   },
   {
    "fieldname": "mode_of_audit",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Mode of Audit",
    "options": "\nOnline\nIn-Person\nHybrid"
   },
@@ -144,13 +149,22 @@
   {
    "fieldname": "audit_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Audit Date"
   },
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Requested\nScheduled\nIn Progress\nCompleted\nOn Hold\nCancelled"
+  },
+  {
+   "fieldname": "audit_report",
+   "fieldtype": "Attach",
+   "label": "Audit Report"
   }
  ],
  "grid_page_length": 50,
@@ -161,7 +175,7 @@
    "link_fieldname": "partner_audit"
   }
  ],
- "modified": "2026-03-16 17:11:16.165613",
+ "modified": "2026-03-24 07:27:12.010435",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Audit",
