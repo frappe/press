@@ -80,7 +80,7 @@
 			<Pagination
 				v-if="Number(incidentCount.data)"
 				:total-pages="incidentCount.data"
-				:limit="4"
+				:limit="limit"
 				v-model:page="currentPage"
 				class="w-fit mx-auto"
 			/>
@@ -98,6 +98,7 @@ import IncidentCard from './IncidentCard.vue';
 import Pagination from '@/components/common/Pagination.vue';
 
 const currentPage = ref(1);
+const limit = 4;
 
 defineOptions({ name: 'IncidentHistory' });
 
@@ -201,7 +202,7 @@ const incidentTrees = computed(() =>
 const incidents = createResource({
 	url: 'press.api.incident.get_incidents',
 	makeParams: () => {
-		return { page: currentPage.value, limit: 4, resolved: isHistory.value };
+		return { page: currentPage.value, limit, resolved: isHistory.value };
 	},
 
 	auto: true,
@@ -212,7 +213,7 @@ const incidentCount = createResource({
 	params: {
 		doctype: 'Incident',
 		filters: {
-			priority: isHistory.value ? 'medium' : 'low',
+			resolved: isHistory.value,
 		},
 	},
 	auto: true,
