@@ -18,6 +18,7 @@ SyslogIdentifier=mariadb-monitor
 
 MemoryMax=64M
 CPUQuota=10%
+OOMScoreAdjust=-900
 
 [Install]
 WantedBy=multi-user.target
