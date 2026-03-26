@@ -1,7 +1,7 @@
 <template>
 	<div class="mx-auto max-w-3xl px-5 py-8 w-full">
 		<!-- Search bar: history only -->
-		<div v-if="isHistory" class="mb-6">
+		<div v-if="isHistory" class="mb-6" :class="{ invisible: hasNoIncidents }">
 			<FormControl
 				type="text"
 				placeholder="Search past incidents..."
@@ -14,7 +14,34 @@
 			</FormControl>
 		</div>
 
-		<div v-if="incidents.loading" class="flex justify-center py-12">
+		<!-- Header: ongoing only -->
+		<div
+			v-else
+			class="mb-4 flex items-center justify-between"
+			:class="{ invisible: hasNoIncidents }"
+		>
+			<div class="flex items-center gap-2">
+				<span class="text-base">Active Incidents</span>
+				<Badge
+					class="rounded-sm"
+					:label="incidentCount.data"
+					v-if="incidentCount.data"
+				/>
+			</div>
+
+			<Button size="sm" @click="refresh" variant="solid">
+				<template #prefix>
+					<LucideRefreshCw class="size-4" />
+				</template>
+				Refresh
+			</Button>
+		</div>
+
+		<div
+			v-if="incidents.loading"
+			class="flex gap-3 justify-center items-center py-12"
+		>
+			<LucideSpinner class="size-4 animate-spin" />
 			Loading...
 		</div>
 
@@ -47,36 +74,17 @@
 			</p>
 		</div>
 
-		<div v-else>
-			<!-- Header: ongoing only -->
-			<div v-if="!isHistory" class="mb-4 flex items-center justify-between">
-				<div class="flex items-center gap-2">
-					<span class="text-base">Active Incidents</span>
-					<Badge
-						class="rounded-sm"
-						:label="incidentCount.data"
-						v-if="incidentCount.data"
-					/>
-				</div>
-
-				<Button size="sm" @click="refresh" variant="solid">
-					<template #prefix>
-						<LucideRefreshCw class="size-4" />
-					</template>
-					Refresh
-				</Button>
-			</div>
-
+		<template v-else>
 			<IncidentCard v-for="incident in incidentTrees" :data="incident" />
-		</div>
 
-		<Pagination
-			v-if="Number(incidentCount.data)"
-			:total-pages="incidentCount.data"
-			:limit="4"
-			v-model:page="currentPage"
-			class="w-fit mx-auto"
-		/>
+			<Pagination
+				v-if="Number(incidentCount.data)"
+				:total-pages="incidentCount.data"
+				:limit="4"
+				v-model:page="currentPage"
+				class="w-fit mx-auto"
+			/>
+		</template>
 	</div>
 </template>
 
@@ -85,6 +93,7 @@ import { ref, computed, watch } from 'vue';
 import { Badge, Button, FormControl, createResource } from 'frappe-ui';
 import { useRoute } from 'vue-router';
 import LucideRefreshCw from '~icons/lucide/refresh-cw';
+import LucideSpinner from '~icons/lucide/loader-circle';
 import IncidentCard from './IncidentCard.vue';
 import Pagination from '@/components/common/Pagination.vue';
 

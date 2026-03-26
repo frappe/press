@@ -36,7 +36,7 @@ withDefaults(defineProps<Props>(), {
 	>
 		<PaginationList
 			v-slot="{ items }"
-			class="flex items-center gap-1 text-ink-gray-6"
+			class="flex items-center gap-2 text-ink-gray-6"
 		>
 			<PaginationFirst
 				class="p-2 hover:bg-surface-gray-1 transition disabled:opacity-50 rounded"
