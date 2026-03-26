@@ -38,22 +38,6 @@
 		<div class="text-xs text-gray-600">Select Payment Gateway</div>
 		<div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
 			<button
-				v-if="$team.doc.currency === 'INR' || $team.doc.razorpay_enabled"
-				@click="paymentGateway = 'Razorpay'"
-				label="Razorpay"
-				class="flex h-10 items-center justify-center rounded border"
-				:class="{
-					'border-gray-300': paymentGateway !== 'Razorpay',
-					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
-				}"
-			>
-				<img
-					class="w-24"
-					:src="`/assets/press/images/razorpay-logo.svg`"
-					alt="Razorpay Logo"
-				/>
-			</button>
-			<button
 				@click="paymentGateway = 'Stripe'"
 				label="Stripe"
 				class="flex h-10 items-center justify-center rounded border"
@@ -67,6 +51,30 @@
 					:src="`/assets/press/images/stripe-logo.svg`"
 					alt="Stripe Logo"
 				/>
+			</button>
+			<button
+				v-if="$team.doc.currency === 'INR' || $team.doc.razorpay_enabled"
+				@click="paymentGateway = 'Razorpay'"
+				label="Razorpay"
+				class="flex h-10 items-center justify-center rounded border"
+				:class="{
+					'border-gray-300': paymentGateway !== 'Razorpay',
+					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
+				}"
+			>
+				<RazorpayLogo class="w-24" />
+			</button>
+			<button
+				v-if="$team.doc.currency === 'USD' && $resources.paypalEnabled.data"
+				@click="paymentGateway = 'Razorpay'"
+				label="PayPal"
+				class="flex h-10 items-center justify-center rounded border"
+				:class="{
+					'border-gray-300': paymentGateway !== 'Razorpay',
+					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
+				}"
+			>
+				<PayPalLogo class="h-7 w-20" />
 			</button>
 		</div>
 	</div>
@@ -83,6 +91,7 @@
 		v-if="paymentGateway === 'Razorpay'"
 		:amount="creditsToBuy"
 		:minimumAmount="minimumAmount"
+		:paypal-enabled="$resources.paypalEnabled.data"
 		:isOnboarding="isOnboarding"
 		@success="onSuccess"
 		@cancel="onCancel"
@@ -91,18 +100,31 @@
 <script>
 import BuyPrepaidCreditsStripe from './BuyPrepaidCreditsStripe.vue';
 import BuyPrepaidCreditsRazorpay from './BuyPrepaidCreditsRazorpay.vue';
+import RazorpayLogo from '../../src/logo/RazorpayLogo.vue';
+import PayPalLogo from '../../src/logo/PayPalLogo.vue';
 
 export default {
 	name: 'BuyPrepaidCreditsForm',
 	components: {
 		BuyPrepaidCreditsStripe,
 		BuyPrepaidCreditsRazorpay,
+		RazorpayLogo,
+		PayPalLogo,
 	},
 	data() {
 		return {
 			paymentGateway: null,
 			creditsToBuy: this.minimumAmount,
 		};
+	},
+	resources: {
+		paypalEnabled() {
+			return {
+				url: 'press.api.billing.is_paypal_enabled',
+				cache: 'paypalEnabled',
+				auto: true,
+			};
+		},
 	},
 	mounted() {
 		if (this.$team.doc.currency === 'USD' && !this.$team.doc.razorpay_enabled) {

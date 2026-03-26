@@ -67,16 +67,16 @@ Additionally, customers lacked full control over their servers—no SSH access, 
 
 ## Setup
 
-To self host or to setup Press locally follow the steps in the [Local Development Environment Setup Guide](https://docs.frappe.io/cloud/local-fc-setup) or [this YouTube video](https://www.youtube.com/watch?v=Xb9QHnUrIEk)
+To self host or to setup Press locally follow the steps in the [Local Development Environment Setup Guide](https://docs.frappe.io/cloud/local-fc-setup).
+
+### Migrate to Frappe Cloud
+
+If you are planning to migrate your site to Frappe Cloud, please refer to [this YouTube video](https://www.youtube.com/watch?v=Xb9QHnUrIEk)
 
 ### Pre-commit
 
-There's a [pre-commit](https://pre-commit.com/) hook included in the repo. You can set it up by doing
+There's a [pre-commit](https://pre-commit.com/) hook included in the repo. You can set it up by running [setup-pre-commit.sh](https://github.com/frappe/press/blob/develop/setup-pre-commit.sh) script.
 
-```bash
-pip install pre-commit
-pre-commit install
-```
 ## Learn and connect
 
 - [Telegram Public Group](https://t.me/frappecloud)

@@ -45,6 +45,7 @@
   "subnet_cidr_block",
   "public_dns_name",
   "private_dns_name",
+  "secondary_private_ip",
   "security_section",
   "security_group_id",
   "column_break_18",
@@ -65,7 +66,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "\nAWS EC2\nOCI\nHetzner",
+   "options": "\nAWS EC2\nOCI\nHetzner\nDigitalOcean\nFrappe Compute",
    "read_only": 1,
    "reqd": 1
   },
@@ -75,16 +76,14 @@
    "fieldtype": "Link",
    "label": "Region",
    "options": "Cloud Region",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fetch_from": "cluster.availability_zone",
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "cluster",
@@ -251,7 +250,7 @@
    "fieldname": "series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "n\nf\nm\nc\np\ne\nr\nt\nnfs\nfs",
+   "options": "n\nf\nm\nc\np\ne\nr\nu\nt\nnfs\nfs\nnat",
    "reqd": 1
   },
   {
@@ -386,6 +385,12 @@
    "fieldtype": "Check",
    "label": "Is Static IP",
    "read_only": 1
+  },
+  {
+   "fieldname": "secondary_private_ip",
+   "fieldtype": "Data",
+   "label": "Secondary Private IP Address",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -411,6 +416,11 @@
    "link_fieldname": "virtual_machine"
   },
   {
+   "group": "Servers",
+   "link_doctype": "NAT Server",
+   "link_fieldname": "virtual_machine"
+  },
+  {
    "group": "Snapshots",
    "link_doctype": "Virtual Disk Snapshot",
    "link_fieldname": "virtual_machine"
@@ -426,7 +436,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2025-10-13 14:56:34.498409",
+ "modified": "2026-03-15 00:12:03.341762",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

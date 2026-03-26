@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "banned",
   "team_title",
   "user",
   "account_request",
@@ -16,6 +17,7 @@
   "is_developer",
   "is_saas_user",
   "is_code_server_user",
+  "is_frappe_compute_internal_user",
   "free_account",
   "via_erpnext",
   "enforce_2fa",
@@ -30,14 +32,18 @@
   "billing_tab",
   "subscription_details_section",
   "stripe_customer_id",
+  "razorpay_customer_id",
   "country",
+  "phone_number",
   "currency",
   "payment_mode",
   "billing_team",
   "default_payment_method",
+  "default_razorpay_mandate",
   "billing_name",
   "billing_address",
   "free_credits_allocated",
+  "upi_autopay_enabled",
   "column_break_12",
   "address_html",
   "section_break_jzok",
@@ -82,12 +88,14 @@
   "ssh_access_enabled",
   "skip_backups",
   "enable_inplace_updates",
+  "relaxed_permissions",
   "column_break_31",
   "database_access_enabled",
   "enable_performance_tuning",
   "razorpay_enabled",
   "servers_enabled",
   "code_servers_enabled",
+  "hybrid_servers_enabled",
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
@@ -135,7 +143,8 @@
    "fieldname": "stripe_customer_id",
    "fieldtype": "Data",
    "label": "Stripe Customer ID",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "country",
@@ -227,7 +236,7 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits\nPaid By Partner"
+   "options": "\nCard\nPrepaid Credits\nPaid By Partner\nUPI Autopay"
   },
   {
    "fieldname": "column_break_9",
@@ -254,7 +263,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "ssh_access_enabled",
    "fieldtype": "Check",
    "label": "SSH Access Enabled"
@@ -637,6 +646,58 @@
    "fieldname": "company_name",
    "fieldtype": "Data",
    "label": "Company Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "hybrid_servers_enabled",
+   "fieldtype": "Check",
+   "label": "Hybrid Servers Enabled"
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Phone",
+   "in_list_view": 1,
+   "label": "Phone Number",
+   "options": "Country"
+  },
+  {
+   "default": "0",
+   "fieldname": "banned",
+   "fieldtype": "Check",
+   "label": "Banned"
+  },
+  {
+   "default": "0",
+   "fieldname": "relaxed_permissions",
+   "fieldtype": "Check",
+   "label": "Relaxed Permissions"
+  },
+  {
+   "default": "0",
+   "description": "If checked, the users can access the internal Frappe Compute cluster.",
+   "fieldname": "is_frappe_compute_internal_user",
+   "fieldtype": "Check",
+   "label": "Is Frappe Compute Internal User"
+  },
+  {
+   "fieldname": "razorpay_customer_id",
+   "fieldtype": "Data",
+   "label": "Razorpay Customer ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "default_razorpay_mandate",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Default Razorpay Mandate",
+   "options": "Razorpay Mandate"
+  },
+  {
+   "default": "0",
+   "fieldname": "upi_autopay_enabled",
+   "fieldtype": "Check",
+   "label": "UPI Autopay Enabled"
   }
  ],
  "grid_page_length": 50,
@@ -702,7 +763,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-11-06 18:07:54.307229",
+ "modified": "2026-03-18 15:58:34.156826",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

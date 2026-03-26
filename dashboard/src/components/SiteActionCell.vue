@@ -55,15 +55,6 @@ function getSiteActionHandler(action) {
 		'Version upgrade': defineAsyncComponent(
 			() => import('./site/SiteVersionUpgradeDialog.vue'),
 		),
-		'Change bench group': defineAsyncComponent(
-			() => import('./site/SiteChangeGroupDialog.vue'),
-		),
-		'Change region': defineAsyncComponent(
-			() => import('./site/SiteChangeRegionDialog.vue'),
-		),
-		'Change server': defineAsyncComponent(
-			() => import('./site/SiteChangeServerDialog.vue'),
-		),
 		'Schedule backup': defineAsyncComponent(
 			() => import('./site/SiteScheduleBackup.vue'),
 		),
@@ -83,6 +74,7 @@ function getSiteActionHandler(action) {
 		'Transfer site': onTransferSite,
 		'Reset site': onSiteReset,
 		'Clear cache': onClearCache,
+		'Schedule backup': onScheduleBackup,
 	};
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
@@ -104,7 +96,7 @@ function onDeactivateSite() {
 		message: `
 			Are you sure you want to deactivate this site?<br><br>
 			<div class="text-bg-base bg-gray-100 p-2 rounded-md">
-			The site will go in an <strong>inactive</strong> state.It won't be accessible and background jobs won't run. 
+			The site will go in an <strong>inactive</strong> state. It won't be accessible and background jobs won't run. 
 			<br><br>
 			<div class="text-red-600">You will still be charged for it.</div>
 			</div>
@@ -139,59 +131,16 @@ function onActivateSite() {
 }
 
 function onDropSite() {
-	return confirmDialog({
-		title: 'Drop Site',
-		message: `
-            Are you sure you want to drop your site? The site will be archived and
-            all of its files and Offsite Backups will be deleted. This action cannot
-            be undone.
-        `,
-		fields: [
-			{
-				label: 'Please type the site name to confirm.',
-				fieldname: 'confirmSiteName',
-			},
-			{
-				label: 'Force drop site',
-				fieldname: 'force',
-				type: 'checkbox',
-			},
-		],
-		primaryAction: {
-			label: 'Drop Site',
-			variant: 'solid',
-			theme: 'red',
-			onClick: async ({ hide, values }) => {
-				if (
-					![site.doc.name, site.doc.host_name].includes(values.confirmSiteName)
-				) {
-					throw new Error('Site name does not match.');
-				}
+	const ArchiveSiteDialog = defineAsyncComponent(
+		() => import('./site/ArchiveSiteDialog.vue'),
+	);
 
-				const val = await isLastSite(site.doc.team);
-				const FeedbackDialog = defineAsyncComponent(
-					() => import('./ChurnFeedbackDialog.vue'),
-				);
-
-				return site.archive.submit({ force: values.force }).then(() => {
-					hide();
-					if (val) {
-						renderDialog(
-							h(FeedbackDialog, {
-								team: site.doc.team,
-								onUpdated() {
-									router.replace({ name: 'Site List' });
-									toast.success('Site dropped successfully');
-								},
-							}),
-						);
-					} else {
-						router.replace({ name: 'Site List' });
-					}
-				});
-			},
-		},
-	});
+	return renderDialog(
+		h(ArchiveSiteDialog, {
+			site: site,
+			modelValue: true,
+		}),
+	);
 }
 
 function onMigrateSite() {
@@ -299,6 +248,13 @@ function onClearCache() {
 				return site.clearSiteCache.submit().then(hide);
 			},
 		},
+	});
+}
+
+function onScheduleBackup() {
+	router.push({
+		name: 'Site Detail Backups',
+		params: { name: site.doc.name },
 	});
 }
 </script>

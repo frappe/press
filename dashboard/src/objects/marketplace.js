@@ -1,5 +1,5 @@
 import { defineAsyncComponent, h } from 'vue';
-import { Button, Badge } from 'frappe-ui';
+import { Button, Badge, Combobox } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDialog.vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
@@ -20,6 +20,8 @@ export default {
 		siteInstalls: 'site_installs',
 		createApprovalRequest: 'create_approval_request',
 		cancelApprovalRequest: 'cancel_approval_request',
+		yankAppRelease: 'yank_app_release',
+		unyankAppRelease: 'unyank_app_release',
 		updateListing: 'update_listing',
 		markAppReadyForReview: 'mark_app_ready_for_review',
 	},
@@ -59,7 +61,7 @@ export default {
 			{
 				label: 'Description',
 				fieldname: 'description',
-				width: 1.0,
+				width: '40rem',
 			},
 		],
 		primaryAction() {
@@ -130,10 +132,6 @@ export default {
 					filters: (app) => {
 						return { parent: app.doc.name, parenttype: 'Marketplace App' };
 					},
-					onRowClick: (row, context) => {
-						const { listResource: versions, documentResource: app } = context;
-						showReleases(row, app);
-					},
 					fields: [
 						'source.repository_owner as repository_owner',
 						'source.repository as repository',
@@ -194,17 +192,19 @@ export default {
 															},
 															{
 																label: 'Branch',
-																type: 'Select',
-																fieldname: 'branch',
-																format: (value, row) => {
-																	row.selectedOption = value[0];
-																	return value.map((v) => ({
-																		label: v,
-																		value: v,
-																		onClick: () => {
-																			row.selectedOption = v;
+																type: 'Component',
+																component({ row }) {
+																	if (!row.selectedOption) {
+																		row.selectedOption = row.branch[0];
+																	}
+																	return h(Combobox, {
+																		modelValue: row.selectedOption,
+																		options: row.branch,
+																		allowCustomValue: true,
+																		'onUpdate:modelValue': (value) => {
+																			row.selectedOption = value;
 																		},
-																	}));
+																	});
 																},
 															},
 															{
@@ -548,15 +548,21 @@ function showReleases(row, app) {
 								{
 									label: 'Commit Message',
 									fieldname: 'message',
-									class: 'w-64',
-									width: 0.5,
+									class: 'truncate',
+									width: 0.4,
+									format: (value) => {
+										return value.length > 50
+											? `${value.slice(0, 50)}...`
+											: value;
+									},
 								},
 								{
 									label: 'Hash',
 									fieldname: 'hash',
 									class: 'w-24',
 									type: 'Badge',
-									width: 0.2,
+									width: 0.15,
+									align: 'center',
 									format: (value) => {
 										return value.slice(0, 7);
 									},
@@ -564,18 +570,21 @@ function showReleases(row, app) {
 								{
 									label: 'Author',
 									fieldname: 'author',
-									width: 0.2,
+									width: 0.15,
+									align: 'center',
 								},
 								{
 									label: 'Status',
 									fieldname: 'status',
 									type: 'Badge',
-									width: 0.3,
+									width: 0.15,
+									align: 'center',
 								},
 								{
 									label: 'Code Screening',
 									type: 'Component',
-									width: 0.2,
+									width: 0.15,
+									align: 'center',
 									component: ({ row, listResource: releases, app }) => {
 										if (
 											(row.status === 'Awaiting Approval' ||
@@ -607,10 +616,20 @@ function showReleases(row, app) {
 										let successMessage = '';
 										let loadingMessage = '';
 
+										if (row.status == 'Approved') {
+											label = 'Yank';
+											successMessage = 'The release has been yanked';
+											loadingMessage = 'Yanking release...';
+										}
+										if (row.status == 'Yanked') {
+											label = 'Unyank';
+											successMessage = 'The release has been unyanked';
+											loadingMessage = 'Unyanking release...';
+										}
 										if (row.status === 'Awaiting Approval') {
 											label = 'Cancel';
 											successMessage = 'The release has been cancelled';
-											loadingMessage = 'Cancelling release...';
+											loadingMessage = 'Cancelling release approval request...';
 										} else if (row.status === 'Draft') {
 											label = 'Submit';
 											loadingMessage = 'Submitting release for approval...';
@@ -619,25 +638,39 @@ function showReleases(row, app) {
 										}
 
 										return {
-											label: label,
+											label,
 											onClick() {
-												toast.promise(
-													row.status === 'Awaiting Approval'
-														? app.cancelApprovalRequest.submit({
-																app_release: row.name,
-															})
-														: app.createApprovalRequest.submit({
-																app_release: row.name,
-															}),
-													{
-														loading: loadingMessage,
-														success: () => {
-															releases.reload();
-															return successMessage;
-														},
-														error: (e) => getToastErrorMessage(e),
+												const actions = {
+													Approved: () =>
+														app.yankAppRelease.submit({
+															app_release: row.name,
+															hash: row.hash,
+														}),
+													AwaitingApproval: () =>
+														app.cancelApprovalRequest.submit({
+															app_release: row.name,
+														}),
+													Draft: () =>
+														app.createApprovalRequest.submit({
+															app_release: row.name,
+														}),
+													Yanked: () =>
+														app.unyankAppRelease.submit({
+															hash: row.hash,
+														}),
+												};
+
+												const action = actions[row.status.replace(' ', '')];
+												if (!action) return;
+
+												toast.promise(action(), {
+													loading: loadingMessage,
+													success: () => {
+														releases.reload();
+														return successMessage;
 													},
-												);
+													error: (e) => getToastErrorMessage(e),
+												});
 											},
 										};
 									},

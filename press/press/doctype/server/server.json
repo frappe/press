@@ -12,6 +12,7 @@
   "domain",
   "self_hosted_server_domain",
   "tls_certificate_renewal_failed",
+  "is_unified_server",
   "column_break_4",
   "cluster",
   "provider",
@@ -21,6 +22,7 @@
   "is_server_setup",
   "is_server_prepared",
   "is_server_renamed",
+  "is_provisioning_press_job_completed",
   "is_self_hosted",
   "keep_files_on_server_in_offsite_backup",
   "public",
@@ -31,6 +33,7 @@
   "stop_deployments",
   "is_for_recovery",
   "is_monitoring_disabled",
+  "enable_on_prem_failover_support",
   "billing_section",
   "team",
   "plan",
@@ -142,7 +145,7 @@
    "default": "0",
    "fieldname": "is_server_setup",
    "fieldtype": "Check",
-   "label": "Server Setup",
+   "label": "Is Server Setup",
    "read_only": 1
   },
   {
@@ -284,7 +287,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean\nFrappe Compute",
    "set_only_once": 1
   },
   {
@@ -332,7 +335,7 @@
    "label": "Staging"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\", \"DigitalOcean\", \"Frappe Compute\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -726,15 +729,38 @@
   {
    "fieldname": "column_break_ywnx",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Checked if database and app are hosted on the server server",
+   "fieldname": "is_unified_server",
+   "fieldtype": "Check",
+   "label": "Is Unified Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_provisioning_press_job_completed",
+   "fieldtype": "Check",
+   "label": "Is Provisioning Job Completed"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_on_prem_failover_support",
+   "fieldtype": "Check",
+   "label": "Enable On-Prem Failover Support"
   }
  ],
  "links": [
   {
    "link_doctype": "Auto Scale Record",
    "link_fieldname": "primary_server"
+  },
+  {
+   "link_doctype": "On-Prem Failover",
+   "link_fieldname": "app_server"
   }
  ],
- "modified": "2025-11-17 11:29:25.581882",
+ "modified": "2026-03-17 17:02:43.407765",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

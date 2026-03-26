@@ -64,7 +64,7 @@ def show_plan(
 
 		plans = session.post(
 			"press.api.server.plans", json=payload, message="[bold green]Fetching available server plans..."
-		)
+		).get("plans", [])
 
 		selected_plan = next((p for p in plans if p.get("name") == plan), None)
 		if not selected_plan:
@@ -173,7 +173,7 @@ def choose_plan(
 		payload = {"name": doctype, "cluster": "Mumbai", "platform": "arm64"}
 		plans = session.post(
 			"press.api.server.plans", json=payload, message="[bold green]Fetching available server plans..."
-		)
+		).get("plans", [])
 
 		selected_plan = next((p for p in plans if p.get("name") == plan), None)
 		if not selected_plan:

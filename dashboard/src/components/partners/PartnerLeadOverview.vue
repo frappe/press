@@ -59,8 +59,19 @@
 									<div class="text-sm text-gray-600">
 										{{ item.label }}
 									</div>
-									<div class="text-lg font-medium py-2">
-										{{ item.value }}
+									<div
+										v-if="item.label === 'Plan Type' && item.value"
+										class="py-1"
+									>
+										<Badge
+											variant="outline"
+											theme="blue"
+											size="lg"
+											label="Starter Pack"
+										/>
+									</div>
+									<div v-else class="text-lg font-medium py-2">
+										{{ item.value || '-' }}
 									</div>
 								</div>
 							</div>
@@ -81,7 +92,7 @@
 										{{ item.label }}
 									</div>
 									<div class="text-lg font-medium py-2">
-										{{ item.value }}
+										{{ item.value || '-' }}
 									</div>
 								</div>
 							</div>
@@ -110,7 +121,7 @@
 										/>
 									</div>
 									<div v-else class="text-lg font-medium py-2">
-										{{ item.value }}
+										{{ item.value || '-' }}
 									</div>
 								</div>
 							</div>
@@ -139,6 +150,7 @@
 				v-if="showUpdateEngagementStageDialog"
 				v-model="showUpdateEngagementStageDialog"
 				:lead_id="lead.name"
+				:status="status"
 				@update="
 					() => {
 						$resources.lead.reload();
@@ -168,12 +180,6 @@
 					}
 				"
 			/>
-			<ChangePartnerDialog
-				v-if="showChangePartnerDialog"
-				v-model="showChangePartnerDialog"
-				:lead_id="lead.name"
-				@update="updatePartner()"
-			/>
 		</div>
 		<div
 			v-else
@@ -192,7 +198,7 @@ import { h } from 'vue';
 import DropdownItem from '../billing/DropdownItem.vue';
 import UpdateEngagementStageDialog from './UpdateEngagementStageDialog.vue';
 import UpdateLostDialog from './UpdateLostDialog.vue';
-import ChangePartnerDialog from './ChangePartnerDialog.vue';
+import { toast } from 'vue-sonner';
 export default {
 	name: 'PartnerLeadOverview',
 	components: {
@@ -202,7 +208,6 @@ export default {
 		DropdownItem,
 		UpdateEngagementStageDialog,
 		UpdateLostDialog,
-		ChangePartnerDialog,
 	},
 	data() {
 		return {
@@ -211,7 +216,8 @@ export default {
 			showUpdateEngagementStageDialog: false,
 			showUpdateWonDialog: false,
 			showUpdateLostDialog: false,
-			showChangePartnerDialog: false,
+			errorMessage: null,
+			status: null,
 		};
 	},
 	emits: ['success'],
@@ -235,6 +241,10 @@ export default {
 				onSuccess: () => {
 					this.$resources.lead.reload();
 				},
+				onError: (e) => {
+					this.errorMessage = e.messages[0] || 'Failed to update status';
+					toast.error(this.errorMessage);
+				},
 			};
 		},
 	},
@@ -244,11 +254,6 @@ export default {
 				{ label: 'Company Name', value: this.lead?.organization_name },
 				{ label: 'Lead Source', value: this.lead?.lead_source },
 				{ label: 'Lead Type', value: this.lead?.lead_type },
-				{
-					label: 'Engagement Stage',
-					value: this.lead?.engagement_stage,
-					condition: this.lead?.status === 'In Process',
-				},
 				{ label: 'Industry', value: this.lead?.domain },
 				{
 					label: 'Conversion Date',
@@ -265,6 +270,21 @@ export default {
 					value: this.lead?.lost_reason_specify,
 					condition:
 						this.lead?.status === 'Lost' && this.lead?.lost_reason === 'Other',
+				},
+				{
+					label: 'Partner',
+					value: this.lead?.company_name,
+					condition: this.$team.doc.is_desk_user,
+				},
+				{
+					label: 'Lead Owner',
+					value: this.lead?.lead_owner,
+					condition: this.$team.doc.is_desk_user,
+				},
+				{
+					label: 'Plan Type',
+					value: this.lead?.is_starter_pack,
+					condition: this.lead?.is_starter_pack !== undefined,
 				},
 			].filter((d) => d.condition ?? true);
 		},
@@ -323,13 +343,68 @@ export default {
 						}),
 				},
 				{
-					label: 'In Process',
-					value: 'In Process',
+					label: 'Qualification',
+					value: 'Qualification',
 					component: () =>
 						h(DropdownItem, {
-							label: 'In Process',
+							label: 'Qualification',
 							onClick: () => {
-								this._updateStatus('In Process');
+								this._updateStatus('Qualification');
+							},
+						}),
+				},
+				{
+					label: 'Demo/Making',
+					value: 'Demo/Making',
+					component: () =>
+						h(DropdownItem, {
+							label: 'Demo/Making',
+							onClick: () => {
+								this._updateStatus('Demo/Making');
+							},
+						}),
+				},
+				{
+					label: 'Follow Up',
+					value: 'Follow Up',
+					component: () =>
+						h(DropdownItem, {
+							label: 'Follow Up',
+							onClick: () => {
+								this._updateStatus('Follow Up');
+							},
+						}),
+				},
+				{
+					label: 'Proposal/Quotation',
+					value: 'Proposal/Quotation',
+					component: () =>
+						h(DropdownItem, {
+							label: 'Proposal/Quotation',
+							onClick: () => {
+								this._updateStatus('Proposal/Quotation');
+							},
+						}),
+				},
+				{
+					label: 'Negotiation',
+					value: 'Negotiation',
+					component: () =>
+						h(DropdownItem, {
+							label: 'Negotiation',
+							onClick: () => {
+								this._updateStatus('Negotiation');
+							},
+						}),
+				},
+				{
+					label: 'Ready to Close',
+					value: 'Ready to Close',
+					component: () =>
+						h(DropdownItem, {
+							label: 'Ready to Close',
+							onClick: () => {
+								this._updateStatus('Ready to Close');
 							},
 						}),
 				},
@@ -367,13 +442,13 @@ export default {
 						}),
 				},
 				{
-					label: 'Passed to Other Partner',
-					value: 'Passed to Other Partner',
+					label: 'Closed',
+					value: 'Closed',
 					component: () =>
 						h(DropdownItem, {
-							label: 'Passed to Other Partner',
+							label: 'Closed',
 							onClick: () => {
-								this._updateStatus('Passed to Other Partner');
+								this._updateStatus('Closed');
 							},
 						}),
 				},
@@ -382,11 +457,16 @@ export default {
 		themeMap() {
 			return {
 				Open: 'blue',
-				'In Process': 'orange',
+				Qualification: 'blue',
+				'Demo/Making': 'orange',
+				'Follow Up': 'blue',
+				'Proposal/Quotation': 'orange',
+				Negotiation: 'orange',
+				'Ready to Close': 'blue',
 				Won: 'green',
 				Lost: 'red',
 				Junk: 'gray',
-				'Passed to Other Partner': 'gray',
+				Closed: 'gray',
 			};
 		},
 		probabilityTheme() {
@@ -400,21 +480,16 @@ export default {
 	methods: {
 		_updateStatus(status) {
 			if (status === this.lead.status && status !== 'In Process') return;
-			if (status === 'In Process') {
+			if (['Ready to Close', 'Proposal/Quotation'].includes(status)) {
+				this.status = status;
 				this.showUpdateEngagementStageDialog = true;
 			} else if (status === 'Won') {
 				this.showUpdateWonDialog = true;
 			} else if (status === 'Lost') {
 				this.showUpdateLostDialog = true;
-			} else if (status === 'Passed to Other Partner') {
-				this.showChangePartnerDialog = true;
 			} else {
 				this.$resources.updateStatus.submit({ status: status });
 			}
-		},
-		updatePartner() {
-			this.showChangePartnerDialog = false;
-			this.$router.push({ name: 'PartnerLeads' });
 		},
 	},
 };

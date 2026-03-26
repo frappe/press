@@ -231,7 +231,9 @@ def details():
 def fetch_invoice_items(invoice):
 	team = get_current_team()
 	if frappe.db.get_value("Invoice", invoice, "team") != team:
-		frappe.throw("Only team owners and members are permitted to download Invoice")
+		frappe.throw(
+			"Only team owners and members are permitted to download Invoice. Please contact your team admin."
+		)
 
 	return frappe.get_all(
 		"Invoice Item",
@@ -248,17 +250,6 @@ def fetch_invoice_items(invoice):
 			"site",
 		],
 	)
-
-
-@frappe.whitelist()
-@role_guard.api("billing")
-def get_customer_details(team):
-	"""This method is called by frappe.io for creating Customer and Address"""
-	team_doc = frappe.db.get_value("Team", team, "*")
-	return {
-		"team": team_doc,
-		"address": frappe.get_doc("Address", team_doc.billing_address),
-	}
 
 
 @frappe.whitelist()
@@ -286,41 +277,15 @@ def create_payment_intent_for_micro_debit():
 
 @frappe.whitelist()
 @role_guard.api("billing")
-def create_payment_intent_for_partnership_fees():
-	team = get_current_team(True)
-	press_settings = frappe.get_cached_doc("Press Settings")
-	metadata = {"payment_for": "partnership_fee"}
-	fee_amount = press_settings.partnership_fee_usd
-
-	if team.currency == "INR":
-		fee_amount = press_settings.partnership_fee_inr
-		gst_amount = fee_amount * press_settings.gst_percentage
-		fee_amount += gst_amount
-		metadata.update({"gst": round(gst_amount, 2)})
-
-	stripe = get_stripe()
-	intent = stripe.PaymentIntent.create(
-		amount=int(fee_amount * 100),
-		currency=team.currency.lower(),
-		customer=team.stripe_customer_id,
-		description="Partnership Fee",
-		metadata=metadata,
-	)
-	return {
-		"client_secret": intent["client_secret"],
-		"publishable_key": get_publishable_key(),
-	}
-
-
-@frappe.whitelist()
-@role_guard.api("billing")
 def create_payment_intent_for_buying_credits(amount):
 	team = get_current_team(True)
 	metadata = {"payment_for": "prepaid_credits"}
 	total_unpaid = total_unpaid_amount()
 
 	if amount < total_unpaid and not team.erpnext_partner:
-		frappe.throw(f"Amount {amount} is less than the total unpaid amount {total_unpaid}.")
+		frappe.throw(
+			f"Amount {amount} is less than the total unpaid amount {total_unpaid}. Please add credits to your payment method and retry again."
+		)
 
 	if team.currency == "INR":
 		gst_amount = amount * frappe.db.get_single_value("Press Settings", "gst_percentage")
@@ -480,7 +445,7 @@ def get_unpaid_invoices():
 @role_guard.api("billing")
 def change_payment_mode(mode):
 	team = get_current_team(get_doc=True)
-
+	team.reload()
 	team.payment_mode = mode
 	if team.partner_email and mode == "Paid By Partner" and not team.billing_team:
 		team.billing_team = frappe.db.get_value(
@@ -624,18 +589,22 @@ def validate_gst(address, method=None):
 		return
 
 	if address.state not in states_with_tin:
-		frappe.throw("Invalid State for India.")
+		frappe.throw("Invalid State for India.")  # nosemgrep
 
 	if not address.gstin:
-		frappe.throw("GSTIN is required for Indian customers.")
+		frappe.throw("GSTIN is required for Indian customers.")  # nosemgrep
 
 	if address.gstin and address.gstin != "Not Applicable":
 		if not GSTIN_FORMAT.match(address.gstin):
-			frappe.throw("Invalid GSTIN. The input you've entered does not match the format of GSTIN.")
+			frappe.throw(
+				"Invalid GSTIN. The input you've entered does not match the format of GSTIN. Please recheck and verify your GSTIN."
+			)
 
 		tin_code = states_with_tin[address.state]
 		if not address.gstin.startswith(tin_code):
-			frappe.throw(f"GSTIN must start with {tin_code} for {address.state}.")
+			frappe.throw(
+				f"GSTIN must start with {tin_code} for {address.state}. Please recheck and verify your GSTIN."
+			)
 
 		validate_gstin_check_digit(address.gstin)
 
@@ -679,11 +648,207 @@ def is_paypal_enabled() -> bool:
 
 @frappe.whitelist()
 @role_guard.api("billing")
+def get_or_create_razorpay_customer() -> str:
+	"""Get existing or create new Razorpay customer for current team"""
+	team = get_current_team(get_doc=True)
+	return team.create_razorpay_customer()
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def create_razorpay_mandate(max_amount: int, auth_type: str = "upi") -> dict:
+	"""
+	Create a Razorpay mandate registration for UPI autopay (or eNACH - this is not setup currently).
+
+	Args:
+		max_amount: Maximum amount in INR for recurring debits
+		auth_type: 'upi' or 'netbanking' (for eNACH)
+
+	Returns:
+		dict with mandate_name, mandate_id, authorization_link, expires_on
+	"""
+	from press.press.doctype.razorpay_mandate.razorpay_mandate import (
+		create_razorpay_mandate as _create_mandate,
+	)
+
+	team = get_current_team()
+	max_amount = int(max_amount)
+	team_doc = frappe.get_doc("Team", team)
+	if not team_doc.upi_autopay_enabled:
+		frappe.throw(_("UPI Autopay is not enabled for your account"))
+	if team_doc.currency != "INR":
+		frappe.throw(_("UPI Autopay is only available for currency INR"))
+	# Check if an active or pending mandate already exists
+	existing_mandate = frappe.db.exists(
+		"Razorpay Mandate", {"team": team, "status": ("in", ["Active", "Pending"])}
+	)
+	if existing_mandate:
+		status = frappe.db.get_value("Razorpay Mandate", existing_mandate, "status")
+		if status == "Active":
+			frappe.throw(
+				_("An active UPI Autopay mandate already exists. Please cancel it before creating a new one.")
+			)
+		else:
+			frappe.throw(
+				_(
+					"A mandate authorization is already in progress. Please complete or cancel it before creating a new one."
+				)
+			)
+
+	if auth_type not in ("upi", "netbanking"):
+		frappe.throw(_("Invalid auth type. Must be 'upi' or 'netbanking'"))
+
+	if max_amount < 500:
+		frappe.throw(_("Minimum amount for setting UPI autopay must be at least ₹500"))
+
+	if max_amount > 100000:
+		frappe.throw(_("Maximum amount for setting UPI autopay is ₹100000"))
+
+	return _create_mandate(team, max_amount, auth_type)
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def get_razorpay_mandates() -> list[dict]:
+	"""Get all Razorpay mandates for the current team"""
+	team = get_current_team()
+
+	return frappe.get_all(
+		"Razorpay Mandate",
+		filters={"team": team},
+		fields=[
+			"name",
+			"mandate_id",
+			"status",
+			"method",
+			"auth_type",
+			"max_amount",
+			"expires_on",
+			"is_default",
+			"upi_vpa",
+			"creation",
+		],
+		order_by="creation desc",
+	)
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def set_razorpay_mandate_as_default(mandate_name: str):
+	"""Set a Razorpay mandate as the default for the team"""
+	team = get_current_team()
+
+	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
+	mandate.set_default()
+
+	return {"success": True}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def cancel_razorpay_mandate(mandate_name: str):
+	"""Cancel a Razorpay mandate"""
+	team = get_current_team()
+
+	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
+	mandate.cancel("Cancelled by user")
+
+	return {"success": True}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def handle_razorpay_mandate_success(
+	razorpay_payment_id: str,
+	razorpay_order_id: str,
+	razorpay_signature: str,
+	mandate_name: str,
+):
+	"""
+	Handle successful Razorpay Checkout for UPI Autopay mandate authorization.
+	Verifies signature, fetches token, and activates the mandate. In case of failure,
+	update the mandate with information
+	"""
+	team = get_current_team()
+	client = get_razorpay_client()
+	# Verify the mandate belongs to this team
+	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
+	if not mandate:
+		frappe.throw(_("Mandate not found"))
+	# Verify signature
+	try:
+		client.utility.verify_payment_signature(
+			{
+				"razorpay_payment_id": razorpay_payment_id,
+				"razorpay_order_id": razorpay_order_id,
+				"razorpay_signature": razorpay_signature,
+			}
+		)
+	except Exception:
+		mandate.mark_failed(
+			error_code="SIGNATURE_VERIFICATION_FAILED",
+			error_description="Payment signature verification failed",
+		)
+		frappe.throw(_("Invalid payment signature"))
+
+	# Fetch payment details to get token_id
+	payment = client.payment.fetch(razorpay_payment_id)
+
+	# Check if payment has error
+	if payment.get("error_code"):
+		mandate.mark_failed(
+			error_code=payment.get("error_code"),
+			error_description=payment.get("error_description"),
+			error_source=payment.get("error_source"),
+			error_step=payment.get("error_step"),
+			error_reason=payment.get("error_reason"),
+		)
+		frappe.throw(_(payment.get("error_description") or "Payment failed"))
+
+	token_id = payment.get("token_id")
+	if not token_id:
+		mandate.mark_failed(
+			error_code="TOKEN_NOT_FOUND",
+			error_description="Token not found in payment response",
+		)
+		frappe.throw(_("Token not found in payment response"))
+
+	# Extract UPI VPA if available
+	upi_vpa = None
+	if payment.get("method") == "upi":
+		upi_vpa = payment.get("vpa")
+
+	# Activate the mandate with all details
+	mandate.activate(
+		token_id=token_id,
+		upi_vpa=upi_vpa,
+		authorization_payment_id=payment.get("id"),
+		contact=payment.get("contact"),
+		rrn=payment.get("acquirer_data", {}).get("rrn"),
+		authorization_fee=payment.get("fee"),
+		authorization_fee_tax=payment.get("tax"),
+		razorpay_signature=razorpay_signature,
+	)
+
+	# Set as default if this is the first mandate for the team
+	existing_active = frappe.db.count(
+		"Razorpay Mandate",
+		{"team": team, "status": "Active", "name": ("!=", mandate.name)},
+	)
+	if existing_active == 0:
+		mandate.reload()
+		mandate.set_default()
+
+	return {"success": True, "token_id": token_id}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
 def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | None:
 	if not transaction_type:
-		frappe.throw(_("Transaction type is not set"))
+		frappe.throw(_("Transaction type is not set. Please set a transaction type and retry"))
 	if not amount or amount <= 0:
-		frappe.throw(_("Amount should be greater than zero"))
+		frappe.throw(_("Amount should be greater than zero"))  # nosemgrep
 
 	team = get_current_team(get_doc=True)
 
@@ -745,35 +910,48 @@ def _validate_prepaid_credits(amount, currency):
 	minimum_amount = 100 if currency == "INR" else 5
 	if amount < minimum_amount:
 		currency_symbol = "₹" if currency == "INR" else "$"
-		frappe.throw(_("Amount should be at least {0}{1}").format(currency_symbol, minimum_amount))
+		frappe.throw(
+			_("Amount should be at least {0}{1}").format(currency_symbol, minimum_amount)
+		)  # nosemgrep
 
 
 def _validate_purchase_plan(amount, doc_name, currency):
-	if not doc_name or not frappe.db.exists("Plan", doc_name):
-		frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))
-
+	exists_result = frappe.db.exists("Site Plan", doc_name)
+	if not doc_name or not exists_result:
+		frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))  # nosemgrep
 	price_field = "price_inr" if currency == "INR" else "price_usd"
-	plan_amount = frappe.db.get_value("Plan", doc_name, price_field)
-
+	plan_amount = frappe.db.get_value("Site Plan", doc_name, price_field)
 	if amount < plan_amount:
 		currency_symbol = "₹" if currency == "INR" else "$"
 		frappe.throw(
-			_("Amount should not be less than plan amount of {0}{1}").format(currency_symbol, plan_amount)
+			_(
+				"Amount should not be less than plan amount of {0}{1}. Please verify your amount and plan amount"
+			).format(currency_symbol, plan_amount)
 		)
 
 
 def _validate_invoice_payment(amount, doc_name, currency):
 	if not doc_name or not frappe.db.exists("Invoice", doc_name):
-		frappe.throw(_("Invoice {0} does not exist").format(doc_name or ""))
+		frappe.throw(_("Invoice {0} does not exist").format(doc_name or ""))  # nosemgrep
 
-	invoice_amount = frappe.db.get_value("Invoice", doc_name, "amount_due_with_tax")
+	invoice_status, invoice_amount = frappe.db.get_value(
+		"Invoice", doc_name, ["status", "amount_due_with_tax"]
+	)
+	if invoice_status == "Invoice Created":
+		# It takes more than 24 hours for the debit to work. So we have to lock the invoice to avoid double processing payment for the invoice
+		frappe.throw(
+			_(
+				"Payment for invoice {0} is already being processed via UPI Autopay."
+				" Please wait for it to complete before making another payment."
+			).format(doc_name)
+		)  # nosemgrep
 	if amount < invoice_amount:
 		currency_symbol = "₹" if currency == "INR" else "$"
 		frappe.throw(
 			_("Amount should not be less than invoice amount of {0}{1}").format(
 				currency_symbol, invoice_amount
 			)
-		)
+		)  # nosemgrep
 
 
 @frappe.whitelist()
@@ -818,15 +996,26 @@ def total_unpaid_amount():
 	balance = team.get_balance()
 	negative_balance = -1 * balance if balance < 0 else 0
 
-	return (
-		frappe.get_all(
-			"Invoice",
-			{"status": "Unpaid", "team": team.name, "type": "Subscription", "docstatus": ("!=", 2)},
-			["sum(amount_due) as total"],
-			pluck="total",
-		)[0]
-		or 0
-	) + negative_balance
+	try:
+		return (
+			frappe.get_all(
+				"Invoice",
+				{"status": "Unpaid", "team": team.name, "type": "Subscription", "docstatus": ("!=", 2)},
+				["sum(`amount_due`) as total"],
+				pluck="total",
+			)[0]
+			or 0
+		) + negative_balance
+	except:  # noqa E722
+		return (
+			frappe.get_all(
+				"Invoice",
+				{"status": "Unpaid", "team": team.name, "type": "Subscription", "docstatus": ("!=", 2)},
+				[{"SUM": "amount_due", "as": "total"}],
+				pluck="total",
+			)[0]
+			or 0
+		) + negative_balance
 
 
 @frappe.whitelist()
@@ -857,7 +1046,9 @@ def generate_stk_push(**kwargs):
 	# Fetch the team document based on the extracted partner value
 	partner = frappe.get_all("Team", filters={"user": partner_value, "erpnext_partner": 1}, pluck="name")
 	if not partner:
-		frappe.throw(_(f"Partner team {partner_value} not found"), title=_("Mpesa Express Error"))
+		frappe.throw(
+			_(f"Partner team {partner_value} not found"), title=_("Mpesa Express Error")
+		)  # nosemgrep
 
 	# Get Mpesa settings for the partner's team
 	mpesa_setup = get_mpesa_setup_for_team(partner[0])
@@ -893,7 +1084,7 @@ def generate_stk_push(**kwargs):
 		frappe.throw(
 			_("Issue detected with Mpesa configuration, check the error logs for more details"),
 			title=_("Mpesa Express Error"),
-		)
+		)  # nosemgrep
 
 
 @frappe.whitelist(allow_guest=True)
@@ -910,12 +1101,12 @@ def parse_transaction_response(kwargs):
 
 	if "Body" not in kwargs or "stkCallback" not in kwargs["Body"]:
 		frappe.log_error(title="Invalid transaction response format", message=kwargs)
-		frappe.throw(_("Invalid transaction response format"))
+		frappe.throw(_("Invalid transaction response format"))  # nosemgrep
 
 	transaction_response = frappe._dict(kwargs["Body"]["stkCallback"])
 	checkout_id = getattr(transaction_response, "CheckoutRequestID", "")
 	if not isinstance(checkout_id, str):
-		frappe.throw(_("Invalid Checkout Request ID"))
+		frappe.throw(_("Invalid Checkout Request ID"))  # nosemgrep
 
 	return transaction_response, checkout_id
 
@@ -992,7 +1183,7 @@ def handle_api_mpesa_response(global_id, request_dict, response):
 	create_mpesa_request_log(request_dict, "Host", "Mpesa Express", req_name, error, output=response)
 
 	if error:
-		frappe.throw(_(response.errorMessage), title=_("Transaction Error"))
+		frappe.throw(_(response.errorMessage), title=_("Transaction Error"))  # nosemgrep
 
 
 def create_mpesa_payment_record(transaction_response):

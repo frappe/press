@@ -58,9 +58,11 @@ class PartnerCertificate(Document):
 				PartnerCertificate.certificate_link,
 				Team.company_name.as_("team"),
 			)
+			.limit(list_args["limit"])
+			.offset(list_args["start"])
 		)
 		if filters:
-			if filters.get("team") and not frappe.local.system_user():
+			if filters.get("team"):
 				query = query.where(PartnerCertificate.team == filters.get("team"))
 			if filters.get("course"):
 				query = query.where(PartnerCertificate.course == filters.get("course"))

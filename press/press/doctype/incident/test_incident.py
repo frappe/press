@@ -3,17 +3,26 @@
 from __future__ import annotations
 
 import math
+import typing
 import zoneinfo
 from contextlib import suppress
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
+import frappe.utils
 from frappe.tests.utils import FrappeTestCase
 from hypothesis import given, settings
 from hypothesis import strategies as st
+from prometheus_api_client import PrometheusConnect
 from twilio.base.exceptions import TwilioRestException
 
+from press.incident_management.doctype.incident_investigator.test_incident_investigator import (
+	get_mock_prometheus_client,
+	make_custom_query_range_side_effect,
+	mock_disk_usage,
+	mock_system_load,
+)
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import (
 	AlertmanagerWebhookLog,
@@ -28,6 +37,7 @@ from press.press.doctype.incident.incident import (
 	MIN_FIRING_INSTANCES,
 	MIN_FIRING_INSTANCES_FRACTION,
 	Incident,
+	get_wait_time_post_investigator_actions,
 	resolve_incidents,
 	validate_incidents,
 )
@@ -38,6 +48,11 @@ from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils.test import foreground_enqueue_doc
+
+if typing.TYPE_CHECKING:
+	from press.incident_management.doctype.incident_investigator.incident_investigator import (
+		IncidentInvestigator,
+	)
 
 
 class MockTwilioCallInstance:
@@ -131,6 +146,7 @@ def get_total_firing_and_resolved_for_resolved_incident(draw) -> tuple[int, int,
 @patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 @patch("tenacity.nap.time", new=Mock())  # no sleep
 @patch.object(Incident, "sites_down", new=[])
+@patch.object(Incident, "down_bench", new=[])
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
@@ -444,6 +460,36 @@ class TestIncident(FrappeTestCase):
 	def test_calls_repeated_for_acknowledged_incidents(self, mock_calls_create):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
+		investigator = frappe.get_last_doc("Incident Investigator")
+
+		incident.db_set("status", "Acknowledged")
+		resolve_incidents()
+		mock_calls_create.assert_not_called()
+		incident.reload()  # datetime conversion
+		incident.db_set(
+			"modified",
+			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
+			update_modified=False,
+		)  # assume night interval is longer
+		investigator.db_set(
+			"status", "Completed"
+		)  # Ensure calling only when investigator has completed status
+		resolve_incidents()
+		mock_calls_create.assert_called_once()
+
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_no_calls_before_investigator_actions(self, mock_calls_create):
+		create_test_alertmanager_webhook_log()
+		incident = frappe.get_last_doc("Incident")
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
 		incident.db_set("status", "Acknowledged")
 		resolve_incidents()
 		mock_calls_create.assert_not_called()
@@ -454,7 +500,61 @@ class TestIncident(FrappeTestCase):
 			update_modified=False,
 		)  # assume night interval is longer
 		resolve_incidents()
-		mock_calls_create.assert_called_once()
+
+		mock_calls_create.assert_not_called()  # No calls since investigator hasn't completed investigation
+		investigator.db_set("status", "Completed")
+		self.assertEqual(investigator.action_steps, [])  # Ensure the steps are empty
+		resolve_incidents()
+
+		mock_calls_create.assert_called_once()  # Now calls should happen since investigator has completed investigation
+
+	@patch.object(PrometheusConnect, "get_current_metric_value", mock_disk_usage(is_high=False))
+	@patch.object(PrometheusConnect, "custom_query_range", make_custom_query_range_side_effect(is_high=True))
+	@patch.object(PrometheusConnect, "get_metric_range_data", mock_system_load(is_high=True))
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.get_prometheus_client",
+		get_mock_prometheus_client,
+	)
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
+	@patch(
+		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_investigation_actions_must_be_completed_before_repeating_calls(self, mock_calls_create):
+		create_test_alertmanager_webhook_log()
+		incident = frappe.get_last_doc("Incident")
+		investigator: IncidentInvestigator = frappe.get_last_doc("Incident Investigator")
+
+		incident.db_set("status", "Acknowledged")
+		resolve_incidents()
+		incident.reload()  # datetime conversion
+		incident.db_set(
+			"modified",
+			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
+			update_modified=False,
+		)  # assume night interval is longer
+		resolve_incidents()
+
+		investigator.db_set("status", "Completed")
+
+		self.assertEqual(
+			len(investigator.action_steps), 6
+		)  # Since `execute_incident_action` is not enabled we won't add pattern detector step
+		resolve_incidents()
+
+		mock_calls_create.assert_not_called()  # Calls should not happen since we haven't waited enough for the action steps to show results
+		investigator.reload()  # datetime conversion
+		investigator.db_set(
+			"modified",
+			investigator.modified - timedelta(minutes=get_wait_time_post_investigator_actions()),
+			update_modified=False,
+		)
+
+		resolve_incidents()
+		mock_calls_create.assert_called_once()  # Now calls should happen since investigation actions have had enough time to show results
 
 	def test_repeat_call_calls_acknowledging_person_first(self):
 		create_test_alertmanager_webhook_log(
@@ -463,6 +563,9 @@ class TestIncident(FrappeTestCase):
 			)
 		)
 		incident = frappe.get_last_doc("Incident")
+		investigator = frappe.get_last_doc("Incident Investigator")
+		investigator.db_set("status", "Completed")
+
 		incident.db_set("status", "Confirmed")
 		incident.db_set(
 			"creation",

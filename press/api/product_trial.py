@@ -11,7 +11,7 @@ from frappe.rate_limiter import rate_limit
 
 from press.api.account import get_account_request_from_key
 from press.press.doctype.team.team import Team
-from press.saas.doctype.product_trial.product_trial import send_verification_mail_for_login
+from press.saas.doctype.product_trial.product_trial import ProductTrial, send_verification_mail_for_login
 from press.utils.telemetry import capture
 
 
@@ -47,10 +47,10 @@ def send_verification_code_for_login(email: str, product: str):
 	if not is_user_exists:
 		frappe.throw("You have no active sites for this product. Please try signing up.")
 	# generate otp and store in redis
-	otp = random.randint(100000, 999999)
+	otp = str(random.randint(100000, 999999))
 	frappe.cache.set_value(
 		f"product_trial_login_verification_code:{email}",
-		frappe.utils.sha256_hash(str(otp)),
+		frappe.utils.sha256_hash(otp),
 		expires_in_sec=300,
 	)
 
@@ -161,59 +161,70 @@ def _get_existing_trial_request(product: str, team: str):
 	)
 
 
-@frappe.whitelist(methods=["POST"])
-def get_request(product: str, account_request: str | None = None) -> dict:
-	from frappe.core.utils import find
+def _get_or_create_site_request(product: str, team_name: str, account_request: str | None):
+	if site := _get_active_site(product, team_name):
+		return frappe.get_doc(
+			"Product Trial Request", {"product_trial": product, "team": team_name, "site": site}
+		)
+	if request := _get_existing_trial_request(product, team_name):
+		return frappe.get_doc("Product Trial Request", request.name)
+	return frappe.new_doc(
+		"Product Trial Request",
+		product_trial=product,
+		team=team_name,
+		account_request=account_request,
+	).insert(ignore_permissions=True)
 
+
+def _get_cluster_for_request(product_trial: ProductTrial, account_request: str | None) -> str | None:
 	from press.utils import get_nearest_cluster
 
-	team = frappe.local.team()
-	cluster = "Default"
+	account_request_data = None
 
-	# validate if there is already a site
-	if site := _get_active_site(product, team.name):
-		site_request = frappe.get_doc(
-			"Product Trial Request", {"product_trial": product, "team": team, "site": site}
-		)
-	elif request := _get_existing_trial_request(product, team.name):
-		site_request = frappe.get_doc("Product Trial Request", request.name)
-	else:
-		site_request = frappe.new_doc(
-			"Product Trial Request",
-			product_trial=product,
-			team=team.name,
-			account_request=account_request,
-		).insert(ignore_permissions=True)
-
-	product_trial = frappe.get_doc("Product Trial", product)
 	if product_trial.enable_hybrid_pooling:
-		cluster = None
-		fields = [rule.field for rule in product_trial.hybrid_pool_rules]
-		acc_req = (
-			frappe.db.get_value(
+		cluster = ""
+		fields = list({"country", *(rule.field for rule in product_trial.hybrid_pool_rules)})
+		if account_request:
+			account_request_data = frappe.db.get_value(
 				"Account Request",
 				account_request,
 				fields,
 				as_dict=True,
 			)
-			if account_request
-			else None
-		)
 
 		for rule in product_trial.hybrid_pool_rules:
-			value = acc_req.get(rule.field) if acc_req else None
+			value = account_request_data.get(rule.field) if account_request_data else None
 			if not value:
 				break
-
 			if rule.value == value:
 				cluster = rule.preferred_cluster
 				break
 
-		if not cluster:
-			cluster = get_nearest_cluster()
-	else:
-		cluster = get_nearest_cluster()
+		if cluster:
+			return cluster
+
+		country = account_request_data.get("country") if account_request_data else None
+		return get_nearest_cluster(country)
+
+	if account_request:
+		account_request_data = frappe.db.get_value(
+			"Account Request", account_request, ["country"], as_dict=True
+		)
+	country = account_request_data.get("country") if account_request_data else None
+	return get_nearest_cluster(country)
+
+
+@frappe.whitelist(methods=["POST"])
+def get_request(product: str, account_request: str | None = None) -> dict:
+	from frappe.core.utils import find
+
+	team = frappe.local.team()
+	site_request = _get_or_create_site_request(product, team.name, account_request)
+
+	product_trial: ProductTrial = frappe.get_doc("Product Trial", product)
+	cluster = _get_cluster_for_request(product_trial, account_request)
 	domain = frappe.db.get_value("Product Trial", product, "domain")
+	prefilled_subdomain = product_trial.get_prefilled_subdomain(account_request)
 	cluster_domains = frappe.db.get_all(
 		"Root Domain", {"name": ("like", f"%.{domain}")}, ["name", "default_cluster as cluster"]
 	)
@@ -229,4 +240,5 @@ def get_request(product: str, account_request: str | None = None) -> dict:
 		"product_trial": site_request.product_trial,
 		"domain": cluster_domain["name"] if cluster_domain else domain,
 		"status": site_request.status,
+		"prefilled_subdomain": prefilled_subdomain,
 	}

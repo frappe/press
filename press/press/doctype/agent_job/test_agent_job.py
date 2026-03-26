@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, TypedDict
 from unittest.mock import Mock, patch
 
 import frappe
@@ -35,11 +35,11 @@ def before_insert(self):
 	return None
 
 
-def fake_agent_job_req(  # noqa: C901
+def fake_agent_job_req(
 	job_type: str | list[str] | dict,
 	status: Literal["Success", "Pending", "Running", "Failure"] | None = None,
 	data: dict | None = None,
-	steps: list[dict] | None = None,
+	steps: list[StepDict] | None = None,
 ) -> Callable:
 	"""
 	Fake successful (or custom status) delivery for one or more job types.
@@ -74,7 +74,7 @@ def fake_agent_job_req(  # noqa: C901
 			"Use job_type['job_type'] = {'status': ..., 'data': ..., 'steps': ...} instead."
 		)
 
-	job_polling_response = dict()
+	job_polling_response: dict[int, dict] = dict()
 
 	def _fake_bulk_polling(request):
 		match = re.search(r"/agent/jobs/([\d,]+)", request.url)
@@ -114,12 +114,16 @@ def fake_agent_job_req(  # noqa: C901
 		# Add timestamps and other fields
 		for step in steps_for_job:
 			step["start"] = "2023-08-20 18:24:28.024885"
-			step["data"] = {}
+			step["data"] = step.get("data", {})
 			if step["status"] in ["Success", "Failure"]:
 				step["duration"] = "00:00:13.464445"
 				step["end"] = "2023-08-20 18:24:41.489330"
 			if step["status"] in ["Success", "Failure", "Running"]:
 				step["start"] = "2023-08-20 18:24:28.024885"
+				step["end"] = None
+				step["duration"] = None
+			if step["status"] in ["Skipped", "Pending"]:
+				step["start"] = None
 				step["end"] = None
 				step["duration"] = None
 
@@ -140,6 +144,7 @@ def fake_agent_job_req(  # noqa: C901
 			"data": spec["data"],
 			# TODO: uncomment lines as needed and make new parameters #
 			"duration": "00:00:13.496281",
+			"output": spec["data"].get("output", ""),
 			"end": "2023-08-20 18:24:41.506067",
 			"id": job_id,
 			"start": "2023-08-20 18:24:28.009786",
@@ -169,12 +174,17 @@ def fake_agent_job_req(  # noqa: C901
 	return before_insert
 
 
+class StepDict(TypedDict):
+	name: str
+	status: Literal["Success", "Pending", "Running", "Failure", "Skipped"]
+
+
 @contextmanager
 def fake_agent_job(
 	job_type: str,
 	status: Literal["Success", "Pending", "Running", "Failure"] = "Success",
 	data: dict | None = None,
-	steps: list[dict] | None = None,
+	steps: list[StepDict] | None = None,
 ):
 	"""Fakes agent job request and response.
 

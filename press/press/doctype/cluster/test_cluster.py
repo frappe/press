@@ -33,7 +33,7 @@ def create_test_cluster(
 
 	if frappe.db.exists("Cluster", name):
 		return frappe.get_doc("Cluster", name)
-	cluster = frappe.get_doc(
+	cluster: Cluster = frappe.get_doc(
 		{
 			"doctype": "Cluster",
 			"name": name,

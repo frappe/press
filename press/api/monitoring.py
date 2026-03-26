@@ -50,31 +50,63 @@ def get_benches():
 
 def get_clusters():
 	servers = {}
-	servers["proxy"] = frappe.get_all("Proxy Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
+	servers["proxy"] = frappe.get_all(
+		"Proxy Server",
+		{"status": ("!=", "Archived")},
+		["name", "cluster", "use_as_proxy_for_agent_and_metrics", "ip"],
+	)
 	servers["app"] = frappe.get_all(
-		"Server", {"status": ("!=", "Archived"), "is_monitoring_disabled": False}, ["name", "cluster"]
+		"Server",
+		{"status": ("!=", "Archived"), "is_monitoring_disabled": False},
+		["name", "cluster", "ip", "private_ip"],
 	)
 	servers["database"] = frappe.get_all(
 		"Database Server",
 		{"status": ("!=", "Archived"), "is_monitoring_disabled": False},
-		["name", "cluster"],
+		["name", "cluster", "ip", "private_ip"],
 	)
-	servers["nfs"] = frappe.get_all("NFS Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
+	servers["nfs"] = frappe.get_all(
+		"NFS Server", {"status": ("!=", "Archived")}, ["name", "cluster", "ip", "private_ip"]
+	)
+	servers["nat"] = frappe.get_all("NAT Server", {"status": ("!=", "Archived")}, ["name", "cluster", "ip"])
 
 	clusters = frappe.get_all("Cluster")
 	job_map = get_job_map()
 	servers_using_alternative_port = servers_using_alternative_port_for_communication()
 	for cluster in clusters:
 		cluster["jobs"] = {}
+		cluster["proxied_jobs"] = {}
 
 		for server_type, server_type_servers in servers.items():
 			for server in server_type_servers:
 				if server.cluster == cluster.name:
 					for job in job_map[server_type]:
-						if server.name in servers_using_alternative_port:
-							cluster["jobs"].setdefault(job, []).append(f"{server.name}:8443")
-						else:
-							cluster["jobs"].setdefault(job, []).append(server.name)
+						_server = (
+							f"{server.name}:8443"
+							if server.name in servers_using_alternative_port
+							else server.name
+						)
+
+						if server.ip:
+							cluster["jobs"].setdefault(job, []).append(_server)
+						elif server.private_ip and (
+							relevant_proxy_server := next(
+								(
+									p
+									for p in servers["proxy"]
+									if p.cluster == cluster.name and p.use_as_proxy_for_agent_and_metrics
+								),
+								None,
+							)
+						):
+							proxy_server = (
+								f"{relevant_proxy_server.name}:8443"
+								if relevant_proxy_server.name in servers_using_alternative_port
+								else relevant_proxy_server.name
+							)
+							cluster["proxied_jobs"].setdefault(job, {}).setdefault(proxy_server, []).append(
+								_server
+							)
 
 	return clusters
 
@@ -97,6 +129,7 @@ def get_tls():
 		"Analytics Server",
 		"Trace Server",
 		"NFS Server",
+		"NAT Server",
 	]
 	for server_type in server_types:
 		filters = {"status": ("!=", "Archived")}
@@ -179,6 +212,7 @@ def get_job_map() -> dict[str, list[str]]:
 		"app": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
 		"nfs": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
 		"database": ["node", "mariadb"],
+		"nat": ["node"],
 	}
 
 	if frappe.local and hasattr(frappe.local, "request_ip"):
@@ -193,6 +227,7 @@ def get_job_map() -> dict[str, list[str]]:
 				"app": ["node"],
 				"nfs": ["node"],
 				"database": ["node"],
+				"nat": ["node"],
 			}
 		return DEFAULT_JOB_MAP
 	return DEFAULT_JOB_MAP

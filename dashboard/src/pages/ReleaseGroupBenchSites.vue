@@ -16,6 +16,19 @@
 				Upgrade Now
 			</Button>
 		</DismissableBanner>
+		<AlertBanner
+			:title="`You have ${$resources.inQueueBenches.data.length} bench(es) in queue. Please wait for them to be provisioned.`"
+			type="info"
+			v-if="$resources.inQueueBenches.data?.length > 0"
+		>
+			<Button
+				class="ml-auto min-w-[7rem]"
+				variant="outline"
+				link="https://docs.frappe.io/cloud/benches/updating_a_bench#bench-provisioning-amp-queueing"
+			>
+				Know More
+			</Button>
+		</AlertBanner>
 		<ObjectList class="mt-3" :options="listOptions" />
 		<Dialog
 			v-model="showAppVersionDialog"
@@ -74,6 +87,21 @@ export default {
 				onSuccess() {
 					this.$resources.sites.fetch();
 				},
+			};
+		},
+		inQueueBenches() {
+			return {
+				type: 'list',
+				doctype: 'New Bench Queue',
+				filters: {
+					group: this.$releaseGroup.name,
+					status: 'Queued',
+					skip_team_filter_for_system_user_and_support_agent: true,
+				},
+				fields: ['status', 'group'],
+				orderBy: 'creation desc',
+				pageLength: 99999,
+				auto: true,
 			};
 		},
 		sites() {
@@ -165,7 +193,12 @@ export default {
 						slots: {
 							prefix: icon('plus', 'w-4 h-4'),
 						},
-						disabled: !this.$releaseGroup.doc?.deploy_information?.last_deploy,
+						disabled:
+							!this.$resources.benches.data?.length ||
+							!this.$resources.benches.data?.some(
+								(bench) => bench.status === 'Active',
+							) ||
+							!this.$releaseGroup.doc?.deploy_information?.last_deploy,
 						route: {
 							name: 'Release Group New Site',
 							params: { bench: this.releaseGroup },
@@ -225,9 +258,11 @@ export default {
 			if (!this.$resources.benches.data) return [];
 			return this.$resources.benches.data.map((bench) => {
 				let sites = (data || []).filter((site) => site.bench === bench.name);
+				const isLargeDataset = this.$resources.benches.data?.length >= 1000;
 				return {
 					...bench,
-					collapsed: false,
+					// To prevent rendering delays for large servers with many benches and sites
+					collapsed: isLargeDataset,
 					group: bench.name,
 					rows: sites,
 				};

@@ -3,9 +3,53 @@
 
 frappe.ui.form.on('Virtual Machine', {
 	refresh: function (frm) {
+		if (frm.doc.status == 'Draft' && frm.doc.cloud_provider == 'AWS EC2') {
+			frm.add_custom_button(
+				__('Provision'),
+				() => {
+					let d = new frappe.ui.Dialog({
+						title: __('Provision AWS Instance'),
+						fields: [
+							{
+								label: __('Assign Public IP?'),
+								fieldname: 'assign_public_ip',
+								fieldtype: 'Check',
+								default: 1,
+							},
+						],
+						primary_action_label: __('Provision'),
+						primary_action(values) {
+							frm
+								.call({
+									doc: frm.doc,
+									method: 'provision',
+									args: {
+										assign_public_ip: values.assign_public_ip,
+									},
+								})
+								.then((r) => {
+									if (r.message) {
+										frappe.msgprint(r.message);
+									} else {
+										frm.refresh();
+									}
+								});
+							d.hide();
+						},
+					}).show();
+				},
+				__('Actions'),
+			);
+		}
+
 		[
 			[__('Sync'), 'sync', false, frm.doc.status != 'Draft'],
-			[__('Provision'), 'provision', true, frm.doc.status == 'Draft'],
+			[
+				__('Provision'),
+				'provision',
+				true,
+				frm.doc.status == 'Draft' && frm.doc.cloud_provider != 'AWS EC2',
+			],
 			[__('Reboot'), 'reboot', true, frm.doc.status == 'Running'],
 			[__('Stop'), 'stop', true, frm.doc.status == 'Running'],
 			[__('Force Stop'), 'force_stop', true, frm.doc.status == 'Running'],
@@ -37,12 +81,17 @@ frappe.ui.form.on('Virtual Machine', {
 				true,
 				frm.doc.status == 'Running',
 			],
-			[__('Create Server'), 'create_server', true, frm.doc.series === 'f'],
+			[
+				__('Create Server'),
+				'create_server',
+				true,
+				frm.doc.series === 'f' || frm.doc.series === 'u',
+			],
 			[
 				__('Create Database Server'),
 				'create_database_server',
 				false,
-				frm.doc.series === 'm',
+				frm.doc.series === 'm' || frm.doc.series === 'u',
 			],
 			[
 				__('Create Proxy Server'),
@@ -69,10 +118,34 @@ frappe.ui.form.on('Virtual Machine', {
 				frm.doc.series === 'e',
 			],
 			[
+				__('Create NAT Server'),
+				'create_nat_server',
+				false,
+				frm.doc.series === 'nat',
+			],
+			[
 				__('Reboot with serial console'),
 				'reboot_with_serial_console',
 				true,
 				frm.doc.status === 'Running' && frm.doc.cloud_provider === 'AWS EC2',
+			],
+			[
+				__('Assign Secondary Private IP'),
+				'assign_secondary_private_ip',
+				true,
+				frm.doc.status === 'Running' &&
+					frm.doc.cloud_provider === 'AWS EC2' &&
+					!!!frm.doc.secondary_private_ip &&
+					frm.doc.series === 'nat',
+			],
+			[
+				__('Disassociate Auto Assigned Public IP'),
+				'disassociate_auto_assigned_public_ip',
+				true,
+				frm.doc.status === 'Running' &&
+					frm.doc.cloud_provider === 'AWS EC2' &&
+					!!frm.doc.public_ip_address &&
+					!frm.doc.is_static_ip,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
@@ -110,24 +183,36 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Resize'),
 				'resize',
 				frm.doc.status == 'Stopped' ||
-					(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
+				(frm.doc.cloud_provider == 'OCI' && frm.doc.status != 'Draft'),
 			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
+				let fields = [
+					{
+						fieldtype: 'Data',
+						label: 'Machine Type',
+						fieldname: 'machine_type',
+						reqd: 1,
+					},
+				];
+				if (frm.doc.cloud_provider == 'Hetzner') {
+					fields.push({
+						fieldtype: 'Check',
+						label: 'Upgrade Disk ?',
+						fieldname: 'upgrade_disk',
+						default: 0,
+					});
+				}
 				frm.add_custom_button(
 					label,
 					() => {
 						frappe.prompt(
-							{
-								fieldtype: 'Data',
-								label: 'Machine Type',
-								fieldname: 'machine_type',
-								reqd: 1,
-							},
-							({ machine_type }) => {
+							fields,
+							({ machine_type, upgrade_disk }) => {
 								frm
 									.call(method, {
 										machine_type,
+										upgrade_disk,
 									})
 									.then((r) => frm.refresh());
 							},
@@ -363,6 +448,10 @@ frappe.ui.form.on('Virtual Machine', {
 });
 
 frappe.ui.form.on('Virtual Machine Volume', {
+	toggle_rightsize(frm, cdt, cdn) {
+		frappe.model.set_value(cdt, cdn, 'skip_rightsize', !frm.selected_doc.skip_rightsize);
+		frm.save();
+	},
 	detach(frm, cdt, cdn) {
 		let row = frm.selected_doc;
 		frappe.confirm(

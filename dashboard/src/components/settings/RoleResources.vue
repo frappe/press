@@ -52,10 +52,7 @@
 						label: 'Submit',
 						variant: 'solid',
 						onClick: () => {
-							const { document_type, document_name } = resourcesToInclude.find(
-								(r) => r.document_name === resourceToInclude,
-							);
-							$emit('include', document_type, document_name);
+							$emit('include', resourcesToIncludeModel);
 							open = false;
 						},
 					},
@@ -64,11 +61,26 @@
 		>
 			<template #body-content>
 				<div class="mb-2 text-base">Include a resource in this role.</div>
-				<Select
-					:options="resourcesToInclude"
-					v-model="resourceToInclude"
-					placeholder="Resource"
-				/>
+				<MultiSelect
+					:options="resourcesToIncludeOptions"
+					:model-value="
+						resourcesToIncludeModel.map((item) => item.document_name)
+					"
+					@update:model-value="
+						resourcesToIncludeModel = resourcesToIncludeOptions.filter(
+							(option) => $event.includes(option.value),
+						)
+					"
+					placeholder="Select resources"
+				>
+					<template #option="{ item }">
+						<FeatherIcon
+							class="size-4 mr-2"
+							:name="icons[item.document_type]"
+						/>
+						{{ item.label }}
+					</template>
+				</MultiSelect>
 			</template>
 		</Dialog>
 	</div>
@@ -76,7 +88,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Button, FeatherIcon, Select, createListResource } from 'frappe-ui';
+import { Button, FeatherIcon, MultiSelect } from 'frappe-ui';
 import { teamResources } from './data';
 
 const props = withDefaults(
@@ -88,8 +100,8 @@ const props = withDefaults(
 	},
 );
 
-defineEmits<{
-	include: [document_type: string, document_name: string];
+const emit = defineEmits<{
+	include: [Array<{ document_type: string; document_name: string }>];
 	remove: [document_type: string, document_name: string];
 }>();
 
@@ -101,8 +113,10 @@ const icons = {
 
 const open = ref(false);
 
-const resourceToInclude = ref<string>('');
-const resourcesToInclude = computed(() => {
+const resourcesToIncludeModel = ref<
+	Array<{ document_type: string; document_name: string }>
+>([]);
+const resourcesToIncludeOptions = computed(() => {
 	return teamResources.value.filter(
 		(resource) =>
 			!props.resources?.some(

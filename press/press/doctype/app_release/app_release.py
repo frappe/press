@@ -61,7 +61,7 @@ class AppRelease(Document):
 		output: DF.Code | None
 		public: DF.Check
 		source: DF.Link
-		status: DF.Literal["Draft", "Approved", "Awaiting Approval", "Rejected"]
+		status: DF.Literal["Draft", "Approved", "Awaiting Approval", "Rejected", "Yanked"]
 		team: DF.Link
 		timestamp: DF.Datetime | None
 	# end: auto-generated types
@@ -105,6 +105,8 @@ class AppRelease(Document):
 			self.set_clone_directory()
 
 	def before_save(self):
+		# We are approving any app with the name raven, could even be a custom app with the name raven or any featured apps
+		# Weird but not hurting anyone right now
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
 		teams = frappe.get_all("Auto Release Team", {"parent": "Marketplace Settings"}, pluck="team")
 		if self.team in teams or self.app in apps:
@@ -196,6 +198,9 @@ class AppRelease(Document):
 	def after_insert(self):
 		self.create_release_differences()
 		frappe.enqueue_doc(self.doctype, self.name, "auto_deploy", enqueue_after_commit=True)
+
+		# create a marketplace app audit for this release
+		self.create_marketplace_app_audit()
 
 	def get_source(self) -> AppSource:
 		"""Return the `App Source` associated with this `App Release`"""
@@ -386,6 +391,34 @@ class AppRelease(Document):
 
 		finally:
 			frappe.set_user(current_user)
+
+	def create_marketplace_app_audit(self):
+		"""
+		Currently, we only audit marketplace app releases. Later we can extend this to custom apps as well.
+		"""
+		# determine whether the release's source is a marketplace app
+		if not frappe.db.exists("Marketplace App", {"app": self.app}):
+			return
+
+		marketplace_app, bypass_automated_audit = frappe.db.get_value(
+			"Marketplace App", {"app": self.app}, ["name", "bypass_automated_audit"]
+		)
+		if bypass_automated_audit:
+			return
+
+		is_registered_source = frappe.db.exists(
+			"Marketplace App Version",
+			{"parent": marketplace_app, "source": self.source},
+		)
+		if not is_registered_source:
+			return
+
+		from press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit import MarketplaceAppAudit
+
+		MarketplaceAppAudit.create_for_release(
+			marketplace_app=marketplace_app,
+			app_release=self.name,
+		)
 
 
 def cleanup_unused_releases():
@@ -594,6 +627,10 @@ def get_python_path(dirpath: str) -> str:
 			if requires_python:
 				version_spec = sv.SimpleSpec(requires_python)
 				if version_spec.match(sv.Version("3.14.0")):
+					# try to resolve python3.14 path
+					python_path = shutil.which("python3.14")
+					if python_path:
+						return python_path
 					return "/usr/bin/python3.14"  # Temporary hardcoding until python 3.14 until we move to build server
 
 	return _get_python_path()

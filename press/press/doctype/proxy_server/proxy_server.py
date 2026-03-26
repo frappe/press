@@ -2,18 +2,15 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import json
 
 import frappe
 from frappe.utils import unique
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.security import fail2ban
 from press.utils import log_error
-
-if TYPE_CHECKING:
-	from press.press.doctype.bench.bench import Bench
-	from press.press.doctype.root_domain.root_domain import RootDomain
 
 
 class ProxyServer(BaseServer):
@@ -24,6 +21,7 @@ class ProxyServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.press.doctype.proxy_server_domain.proxy_server_domain import ProxyServerDomain
 
 		agent_password: DF.Password | None
@@ -36,6 +34,7 @@ class ProxyServer(BaseServer):
 		domain: DF.Link | None
 		domains: DF.Table[ProxyServerDomain]
 		enabled_default_routing: DF.Check
+		exclude_from_auto_selection: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		halt_agent_jobs: DF.Check
@@ -50,13 +49,16 @@ class ProxyServer(BaseServer):
 		is_ssh_proxy_setup: DF.Check
 		is_static_ip: DF.Check
 		is_wireguard_setup: DF.Check
+		mem_limits: DF.Code | None
 		plan: DF.Link | None
 		primary: DF.Link | None
 		private_ip: DF.Data | None
 		private_ip_interface_id: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner"]
+		provider: DF.Literal[
+			"Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean", "Frappe Compute"
+		]
 		proxysql_admin_password: DF.Password | None
 		proxysql_monitor_password: DF.Password | None
 		public: DF.Check
@@ -68,6 +70,7 @@ class ProxyServer(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		team: DF.Link | None
 		tls_certificate_renewal_failed: DF.Check
+		use_as_proxy_for_agent_and_metrics: DF.Check
 		virtual_machine: DF.Link | None
 		wireguard_interface_id: DF.Data | None
 		wireguard_network: DF.Data | None
@@ -82,13 +85,27 @@ class ProxyServer(BaseServer):
 		self.validate_domains()
 		self.validate_proxysql_admin_password()
 
+		if (
+			not frappe.db.get_value(
+				self.doctype,
+				{
+					"status": ["!=", "Archived"],
+					"cluster": self.cluster,
+					"use_as_proxy_for_agent_and_metrics": 1,
+				},
+			)
+			and self.status != "Archived"
+		):
+			self.use_as_proxy_for_agent_and_metrics = 1
+
 	def validate_domains(self):
 		domains_to_validate = unique([self.domain] + [row.domain for row in self.domains])
 		for domain in domains_to_validate:
 			if not frappe.db.exists(
 				"TLS Certificate", {"wildcard": True, "status": "Active", "domain": domain}
 			):
-				frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
+				# frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
+				...
 
 	def validate_proxysql_admin_password(self):
 		if not self.proxysql_admin_password:
@@ -161,6 +178,9 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def setup_ssh_proxy(self):
+		if not self.ssh_certificate_authority:
+			frappe.throw("SSH Certificate Authority is required to setup SSH Proxy")
+
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_ssh_proxy", queue="long", timeout=1200)
 
 	def _setup_ssh_proxy(self):
@@ -194,14 +214,57 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def setup_fail2ban(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_setup_fail2ban",
+			queue="long",
+			timeout=1200,
+		)
 		self.status = "Installing"
 		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200)
 
 	def _setup_fail2ban(self):
 		try:
 			ansible = Ansible(
-				playbook="fail2ban.yml", server=self, user=self._ssh_user(), port=self._ssh_port()
+				playbook="fail2ban.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"ignore_ips": fail2ban.ignore_ips(),
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Fail2ban Setup Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
+	def remove_fail2ban(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_remove_fail2ban",
+			queue="long",
+			timeout=1200,
+		)
+		self.status = "Installing"
+		self.save()
+
+	def _remove_fail2ban(self):
+		try:
+			ansible = Ansible(
+				playbook="fail2ban_remove.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 			)
 			play = ansible.run()
 			self.reload()
@@ -245,6 +308,9 @@ class ProxyServer(BaseServer):
 				self.reload()
 				self.is_proxysql_setup = True
 				self.save()
+				if self.provider == "DigitalOcean":
+					# To adjust docker permissions
+					self.reboot()
 		except Exception:
 			log_error("ProxySQL Setup Exception", server=self.as_dict())
 
@@ -307,117 +373,19 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def trigger_failover(self):
+		# TODO: should also be automatic based on monitoring/some kind of health check mechanism
 		if self.is_primary:
-			return
-		self.status = "Installing"
-		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_trigger_failover", queue="long", timeout=3600)
+			return None
 
-	def stop_primary(self):
-		primary = frappe.get_doc("Proxy Server", self.primary)
-		try:
-			ansible = Ansible(
-				playbook="failover_prepare_primary_proxy.yml",
-				server=primary,
-				user=primary._ssh_user(),
-				port=primary._ssh_port(),
-			)
-			ansible.run()
-		except Exception:
-			pass  # may be unreachable
+		failover = frappe.get_doc(
+			{
+				"doctype": "Proxy Failover",
+				"primary": self.primary,
+				"secondary": self.name,
+			}
+		).insert()
 
-	def forward_jobs_to_secondary(self):
-		frappe.db.set_value(
-			"Agent Job",
-			{"server": self.primary, "status": "Undelivered"},
-			"server",
-			self.name,
-		)
-
-	def move_wildcard_domains_from_primary(self):
-		frappe.db.set_value(
-			"Proxy Server Domain",
-			{"parent": self.primary},
-			"parent",
-			self.name,
-		)
-
-	def remove_primarys_access(self):
-		ansible = Ansible(
-			playbook="failover_remove_primary_access.yml",
-			server=self,
-			user=self._ssh_user(),
-			port=self._ssh_port(),
-			variables={
-				"primary_public_key": frappe.db.get_value("Proxy Server", self.primary, "frappe_public_key")
-			},
-		)
-		ansible.run()
-
-	def up_secondary(self):
-		ansible = Ansible(
-			playbook="failover_up_secondary_proxy.yml",
-			server=self,
-			user=self._ssh_user(),
-			port=self._ssh_port(),
-		)
-		ansible.run()
-
-	def update_dns_records_for_all_sites(self):
-		from itertools import groupby
-
-		servers = frappe.get_all("Server", {"proxy_server": self.primary}, pluck="name")
-		sites_domains = frappe.get_all(
-			"Site",
-			{"status": ("!=", "Archived"), "server": ("in", servers)},
-			["name", "domain"],
-			order_by="domain",
-		)
-		for domain_name, sites in groupby(sites_domains, lambda x: x["domain"]):
-			domain: RootDomain = frappe.get_doc("Root Domain", domain_name)
-			domain.update_dns_records_for_sites([site.name for site in sites], self.name)
-
-	def _trigger_failover(self):
-		try:
-			self.update_dns_records_for_all_sites()
-			self.stop_primary()
-			self.remove_primarys_access()
-			self.forward_jobs_to_secondary()
-			self.up_secondary()
-			self.update_app_servers()
-			self.move_wildcard_domains_from_primary()
-			self.switch_primary()
-			self.add_ssh_users_for_existing_benches()
-		except Exception:
-			self.status = "Broken"
-			log_error("Proxy Server Failover Exception", doc=self)
-		self.save()
-
-	def add_ssh_users_for_existing_benches(self):
-		benches = frappe.qb.DocType("Bench")
-		servers = frappe.qb.DocType("Server")
-		active_benches = (
-			frappe.qb.from_(benches)
-			.join(servers)
-			.on(servers.name == benches.server)
-			.select(benches.name)
-			.where(servers.proxy_server == self.primary)
-			.where(benches.status == "Active")
-			.run(as_dict=True)
-		)
-		for bench_name in active_benches:
-			bench: "Bench" = frappe.get_doc("Bench", bench_name)
-			bench.add_ssh_user()
-
-	def update_app_servers(self):
-		frappe.db.set_value("Server", {"proxy_server": self.primary}, "proxy_server", self.name)
-
-	def switch_primary(self):
-		frappe.db.set_value("Proxy Server", self.primary, "is_primary", False)
-		self.is_primary = True
-		self.is_replication_setup = False
-		self.primary = None
-		self.status = "Active"
+		return f"Failover Reference: {frappe.get_desk_link(failover.doctype, failover.name)}"
 
 	@frappe.whitelist()
 	def setup_proxysql_monitor(self):
@@ -473,7 +441,7 @@ class ProxyServer(BaseServer):
 					"wireguard_network": self.wireguard_network_ip
 					+ "/"
 					+ self.wireguard_network.split("/")[1],
-					"interface_id": self.private_ip_interface_id,
+					"external_interface_id": self.private_ip_interface_id,
 					"wireguard_private_key": False,
 					"wireguard_public_key": False,
 					"peers": "",
@@ -520,7 +488,7 @@ class ProxyServer(BaseServer):
 					"wireguard_network": self.wireguard_network_ip
 					+ "/"
 					+ self.wireguard_network.split("/")[1],
-					"interface_id": self.private_ip_interface_id,
+					"external_interface_id": self.private_ip_interface_id,
 					"wireguard_private_key": self.get_password("wireguard_private_key"),
 					"wireguard_public_key": self.get_password("wireguard_public_key"),
 					"peers": json.dumps(peers),
@@ -529,6 +497,89 @@ class ProxyServer(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Wireguard Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def pre_failover_tasks(self):
+		from press.press.doctype.proxy_failover.proxy_failover import reduce_ttl_of_sites
+
+		primary = frappe.db.get_value("Proxy Server", self.primary, ["cluster", "is_static_ip"], as_dict=True)
+		if self.cluster != primary.cluster:
+			frappe.throw("Failover can only be initiated between Proxy Servers in the same cluster")
+
+		if (not primary.is_static_ip and not self.is_static_ip) or (
+			primary.is_static_ip and self.is_static_ip
+		):
+			frappe.throw("Failover can only be initiated if one of the proxy server has a static ip")
+
+		frappe.get_doc(
+			{
+				"doctype": "Dashboard Banner",
+				"enabled": 1,
+				"type": "Warning",
+				"message": f"There is currently an issue with the proxy server in {self.cluster} region. You may experience some interruptions while accessing your sites in that region. Our team is working to resolve this as quickly as possible.",
+				"is_scheduled": 1,
+				"scheduled_start_time": frappe.utils.now(),
+				"scheduled_end_time": frappe.utils.add_to_date(frappe.utils.now(), hours=6),
+				"is_global": 1,
+			}
+		).insert()
+
+		frappe.enqueue(
+			reduce_ttl_of_sites,
+			primary_proxy_name=self.primary,
+			secondary_proxy_name=self.name,
+			queue="long",
+			timeout=3600,
+			enqueue_after_commit=True,
+			at_front=True,
+		)
+
+		return "Added a dashboard banner and queued reduction of dns record ttl on sites"
+
+	@frappe.whitelist()
+	def get_memory_limits(self):
+		if self.mem_limits:
+			return json.loads(self.mem_limits)
+		return None
+
+	@frappe.whitelist()
+	def set_memory_limits(self, limits: list):
+		already_seen_processes = set()
+		for limit in limits:
+			if limit["process"] in already_seen_processes:
+				frappe.throw(f"Duplicate process {limit['process']} found in memory limits")
+
+			if int(limit["memory_high"]) > int(limit["memory_max"]):
+				frappe.throw(f"MemoryHigh cannot be more than MemoryMax for process {limit['process']}")
+
+			for key in list(limit.keys()):
+				if key not in ("process", "memory_high", "memory_max"):
+					del limit[key]
+
+			already_seen_processes.add(limit["process"])
+
+		self.mem_limits = json.dumps(limits, indent=1)
+		self.save()
+
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_set_memory_limits",
+			enqueue_after_commit=True,
+		)
+
+		return "Queued memory limit update"
+
+	def _set_memory_limits(self):
+		Ansible(
+			playbook="set_proxy_memory_limits.yml",
+			server=self,
+			user=self._ssh_user(),
+			port=self._ssh_port(),
+			variables={
+				"memory_limits": json.loads(self.mem_limits),
+			},
+		).run()
 
 
 def process_update_nginx_job_update(job):

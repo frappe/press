@@ -76,28 +76,27 @@
 	/>
 	<RoleResources
 		v-else-if="tab === 'resources'"
+		:key="role.doc?.resources"
 		:resources="role.doc?.resources"
-		@include="
-			(document_type, document_name) => {
-				role.add_resource.submit({
-					document_type,
-					document_name,
-				});
-			}
-		"
+		@include="role.add_resource.submit($event)"
 		@remove="
 			(document_type, document_name) => {
 				role.remove_resource.submit({
 					document_type,
 					document_name,
 				});
+				role.reload();
 			}
 		"
 	/>
 	<RolePermissions
 		v-else-if="tab === 'permissions'"
 		:admin_access="role.doc?.admin_access"
+		:all_servers="role.doc?.all_servers"
+		:all_sites="role.doc?.all_sites"
+		:all_release_groups="role.doc?.all_release_groups"
 		:allow_bench_creation="role.doc?.allow_bench_creation"
+		:allow_apps="role.doc?.allow_apps"
 		:allow_billing="role.doc?.allow_billing"
 		:allow_partner="role.doc?.allow_partner"
 		:allow_server_creation="role.doc?.allow_server_creation"
@@ -126,7 +125,7 @@ import RolePermissions from './RolePermissions.vue';
 import RoleResources from './RoleResources.vue';
 import { getTeam } from '../../data/team';
 import { getSessionUser } from '../../data/session';
-import { confirmDialog, renderDialog } from '../../utils/components';
+import { confirmDialog } from '../../utils/components';
 
 const props = defineProps<{
 	id: string;

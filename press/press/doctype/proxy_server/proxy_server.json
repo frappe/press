@@ -21,6 +21,7 @@
   "team",
   "public",
   "halt_agent_jobs",
+  "exclude_from_auto_selection",
   "storage_section",
   "auto_add_storage_min",
   "auto_add_storage_max",
@@ -37,6 +38,7 @@
   "agent_password",
   "column_break_mznm",
   "disable_agent_job_auto_retry",
+  "use_as_proxy_for_agent_and_metrics",
   "replica_section",
   "is_primary",
   "primary",
@@ -59,6 +61,8 @@
   "proxysql_admin_password",
   "proxysql_monitor_password",
   "is_proxysql_setup",
+  "memory_limits_section",
+  "mem_limits",
   "vpn_tab",
   "wireguard_network",
   "wireguard_network_ip",
@@ -166,7 +170,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI\nHetzner\nVodacom\nDigitalOcean\nFrappe Compute",
    "set_only_once": 1
   },
   {
@@ -212,7 +216,7 @@
    "options": "Proxy Server Domain"
   },
   {
-   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\"].includes(doc.provider)",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\", \"Hetzner\", \"DigitalOcean\", \"Frappe Compute\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
@@ -295,7 +299,8 @@
    "depends_on": "eval: doc.is_primary != 1",
    "fieldname": "is_replication_setup",
    "fieldtype": "Check",
-   "label": "Is Replication Setup"
+   "label": "Is Replication Setup",
+   "read_only": 1
   },
   {
    "default": "0",
@@ -464,10 +469,36 @@
    "fieldtype": "Link",
    "label": "Plan",
    "options": "Server Plan"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "memory_limits_section",
+   "fieldtype": "Section Break",
+   "label": "Memory Limits"
+  },
+  {
+   "fieldname": "mem_limits",
+   "fieldtype": "Code",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Dont use/consider this proxy when adding a new server",
+   "fieldname": "exclude_from_auto_selection",
+   "fieldtype": "Check",
+   "label": "Exclude from Auto Selection"
+  },
+  {
+   "default": "0",
+   "description": "If checked, this server will be used for passing requests to servers (app and db) without public ip",
+   "fieldname": "use_as_proxy_for_agent_and_metrics",
+   "fieldtype": "Check",
+   "label": "Use as Proxy for Agent and Metrics"
   }
  ],
  "links": [],
- "modified": "2025-11-22 15:47:36.251776",
+ "modified": "2026-03-15 19:01:43.557830",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

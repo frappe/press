@@ -204,7 +204,6 @@ import {
 } from '../../utils/components';
 import { computed, ref, inject, h, defineAsyncComponent } from 'vue';
 import router from '../../router';
-import { switchToTeam } from '../../data/team';
 
 const team = inject('team');
 const {
@@ -301,6 +300,19 @@ const paymentModeOptions = [
 			}),
 	},
 	{
+		label: 'UPI Autopay',
+		value: 'UPI Autopay',
+		condition: () =>
+			team.doc.currency === 'INR' && team.doc.upi_autopay_enabled,
+		description: 'Your UPI will be auto-debited for monthly subscription',
+		component: () =>
+			h(DropdownItem, {
+				label: 'UPI Autopay',
+				active: team.doc.payment_mode === 'UPI Autopay',
+				onClick: () => updatePaymentMode('UPI Autopay'),
+			}),
+	},
+	{
 		component: () =>
 			h('div', [
 				h('div', { class: 'border-t border-gray-200 my-1' }),
@@ -387,6 +399,10 @@ function updatePaymentMode(mode) {
 			() => import('./FinalizeInvoicesDialog.vue'),
 		);
 		renderDialog(h(finalizeInvoicesDialog));
+		return;
+	}
+	if (mode === 'UPI Autopay') {
+		router.push({ name: 'BillingUPIAutopay' });
 		return;
 	}
 	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });

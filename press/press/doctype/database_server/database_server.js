@@ -45,6 +45,7 @@ frappe.ui.form.on('Database Server', {
 				!frm.doc.is_server_prepared,
 			],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[__('Update DNS Record', 'create_dns_record', true)],
 			[
 				__('Setup Rename'),
 				'rename_server',
@@ -193,10 +194,29 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				'Provide Frappe User Mariadb Table Usage Permission',
+				'provide_frappe_user_mariadb_table_usage_permission',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				'Trigger Schema Size Sync',
 				'update_database_schema_sizes',
 				false,
 				frm.doc.is_server_setup,
+			],
+			['Trigger Flush Tables', 'flush_tables', true, frm.doc.is_server_setup],
+			[
+				__('Install NAT iptables'),
+				'install_nat_iptables',
+				true,
+				frm.doc.is_server_setup && frm.doc.nat_server,
+			],
+			[
+				__('Remove NAT iptables'),
+				'remove_nat_iptables',
+				true,
+				frm.doc.is_server_setup && !frm.doc.nat_server,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {

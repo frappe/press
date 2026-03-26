@@ -33,6 +33,24 @@
   ]
  },
  {
+    "disabled_auto_retry": 1,
+    "docstatus": 0,
+    "doctype": "Agent Job Type",
+    "max_retry_count": 3,
+    "modified": "2026-03-24 17:01:01.660132",
+    "name": "Force Remove Zombie Benches",
+    "request_method": "POST",
+    "request_path": "/benches/force-remove",
+    "steps": [
+     {
+      "parent": "Force Remove Zombie Benches",
+      "parentfield": "steps",
+      "parenttype": "Agent Job Type",
+      "step_name": "Force Remove Zombie Benches"
+     }
+    ]
+ },
+ {
   "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
@@ -531,6 +549,12 @@
   "request_method": "DELETE",
   "request_path": "/benches/{bench}/sites/{site}/apps",
   "steps": [
+   {
+    "step_name": "Backup Site"
+   },
+   {
+    "step_name": "Upload Site Backup to S3"
+   },
    {
     "step_name": "Uninstall App from Site"
    }
@@ -1474,6 +1498,12 @@
   "request_path": null,
   "steps": [
    {
+    "step_name": "Backup Site"
+   },
+   {
+    "step_name": "Upload Site Backup to S3"
+   },
+   {
     "step_name": "Archive Site"
    },
    {
@@ -1666,7 +1696,7 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2025-03-17 17:57:23.072792",
+  "modified": "2026-02-25 13:35:52.287640",
   "name": "Physical Restore Database",
   "request_method": "POST",
   "request_path": "/database/physical-restore",
@@ -1687,10 +1717,16 @@
     "step_name": "Warmup InnoDB Files"
    },
    {
+    "step_name": "Collect InnoDB FTS Index Metadata"
+   },
+   {
     "step_name": "Prepare Database for Restoration"
    },
    {
     "step_name": "Create Tables from Table Schema"
+   },
+   {
+    "step_name": "Sync FTS Indexes Prefix Length"
    },
    {
     "step_name": "Discard InnoDB Tablespaces"
@@ -2019,60 +2055,114 @@
   "request_method": "POST",
   "request_path": "/proxy/upstreams/{primary_upstream}/auto-scale-site",
   "steps": [
-    {
-     "step_name": "Add Auto Scale Site to Upstream"
-    },
-    {
-     "step_name": "Reload NGINX"
-    }
-   ]
-},
-{
- "disabled_auto_retry": 1,
- "docstatus": 0,
- "doctype": "Agent Job Type",
- "max_retry_count": 3,
- "modified": "2025-11-28 22:48:21.908330",
- "name": "Remove Auto Scale Site from Upstream",
- "request_method": "POST",
- "request_path": "/proxy/upstreams/{primary_upstream}/remove-auto-scale-site",
- "steps": [
-    {
-     "step_name": "Remove Auto Scale Site from Upstream"
-    },
-    {
-     "step_name": "Reload NGINX"
-    }
-   ]
-},
-{
- "disabled_auto_retry": 1,
- "docstatus": 0,
- "doctype": "Agent Job Type",
- "max_retry_count": 3,
- "modified": "2025-12-09 22:48:21.908330",
- "name": "Push Images to Registry",
- "request_method": "POST",
- "request_path": "/server/push-images",
- "steps": [
    {
-      "step_name": "Push Images to Registry"
-   }
-   ]
-},
-{
- "disabled_auto_retry": 1,
- "docstatus": 0,
- "doctype": "Agent Job Type",
- "max_retry_count": 3,
- "modified": "2025-12-09 22:48:21.908330",
- "name": "Remove Redis Localhost Bind",
- "request_method": "POST",
- "request_path": "/server/remove-localhost-redis-bind",
- "steps": [
+    "step_name": "Add Auto Scale Site to Upstream"
+   },
    {
-      "step_name": "Remove Redis Localhost Bind"
+    "step_name": "Reload NGINX"
    }
-   ]
-}
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-11-28 22:48:21.908330",
+  "name": "Remove Auto Scale Site from Upstream",
+  "request_method": "POST",
+  "request_path": "/proxy/upstreams/{primary_upstream}/remove-auto-scale-site",
+  "steps": [
+   {
+    "step_name": "Remove Auto Scale Site from Upstream"
+   },
+   {
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-12-09 22:48:21.908330",
+  "name": "Push Images to Registry",
+  "request_method": "POST",
+  "request_path": "/server/push-images",
+  "steps": [
+   {
+    "step_name": "Push Images to Registry"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2025-12-09 22:48:21.908330",
+  "name": "Remove Redis Localhost Bind",
+  "request_method": "POST",
+  "request_path": "/server/remove-localhost-redis-bind",
+  "steps": [
+   {
+    "step_name": "Remove Redis Localhost Bind"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2026-01-27 17:06:12.080013",
+  "name": "Update Nginx Access",
+  "request_method": "POST",
+  "request_path": "/server/update-nginx-access",
+  "steps": [
+   {
+    "step_name": "Update config IP access"
+   },
+   {
+    "step_name": "Update Agent Nginx Conf File"
+   },
+   {
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2026-02-17 13:07:40.453365",
+  "name": "Flush Tables",
+  "request_method": "POST",
+  "request_path": "/database/flush-tables",
+  "steps": [
+   {
+    "step_name": "Flush Tables"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2026-03-18 14:56:39.959844",
+  "name": "Refresh Database Usage",
+  "request_method": "POST",
+  "request_path": "/database/refresh-usage",
+  "steps": [
+   {
+    "step_name": "Analyze Tables of Database"
+   },
+   {
+    "step_name": "Update Database Schema Size"
+   }
+  ]
+ }
 ]

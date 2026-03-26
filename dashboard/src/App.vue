@@ -6,9 +6,11 @@
 					v-if="!isSignupFlow && !$isMobile && !isHideSidebar"
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
-					<AppSidebar v-if="$session.user" />
+					<AppSidebar
+						v-if="$session.user && $team?.doc && route.name !== 'Login'"
+					/>
 				</div>
-				<div class="w-full overflow-auto" id="scrollContainer">
+				<div class="w-full overflow-auto z-0" id="scrollContainer">
 					<MobileNav
 						v-if="!isSignupFlow && $isMobile && !isHideSidebar && $session.user"
 					/>
@@ -43,7 +45,7 @@ import { getTeam } from './data/team';
 import { session } from './data/session.js';
 
 const AppSidebar = defineAsyncComponent(
-	() => import('./components/AppSidebar.vue'),
+	() => import('./components/navigation/sidebar/Sidebar.vue'),
 );
 const MobileNav = defineAsyncComponent(
 	() => import('./components/MobileNav.vue'),

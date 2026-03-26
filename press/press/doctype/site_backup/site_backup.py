@@ -19,7 +19,7 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
 if TYPE_CHECKING:
-	from datetime import datetime
+	from datetime import date
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.site_update.site_update import SiteUpdate
@@ -147,10 +147,14 @@ class SiteBackup(Document):
 			frappe.throw("Site deactivation should be used for physical backups only")
 
 	def before_insert(self):
+		if self.flags.get("skip_backup_after_insert"):
+			return
+
 		if getattr(self, "force", False):
 			if self.physical:
 				frappe.throw("Physical backups cannot be forcefully triggered")
 			return
+
 		# For backups, check if there are too many pending backups
 		two_hours_ago = frappe.utils.add_to_date(None, hours=-2)
 		if frappe.db.count(
@@ -163,27 +167,13 @@ class SiteBackup(Document):
 		):
 			frappe.throw("Too many pending backups", SiteTooManyPendingBackups)
 
-		if self.physical:
-			# validate physical backup enabled on database server
-			if not bool(
-				frappe.utils.cint(
-					frappe.get_value("Database Server", self.database_server, "enable_physical_backup")
-				)
-			):
-				frappe.throw(
-					"Physical backup is not enabled for this database server. Please reach out to support."
-				)
-			# Set some default values
-			site = frappe.get_doc("Site", self.site)
-			if not site.database_name:
-				site.sync_info()
-				site.reload()
-			if not site.database_name:
-				frappe.throw("Database name is missing in the site")
-			self.database_name = site.database_name
-			self.snapshot_request_key = frappe.generate_hash(length=32)
+		self.validate_and_setup_physical_backup()
 
 	def after_insert(self):
+		# Skip backup creation if this record was created from 'Archive Site' or 'Unistall App From Site' jobs (backup already performed, just recording it)
+		if self.flags.get("skip_backup_after_insert"):
+			return
+
 		if self.deactivate_site_during_backup:
 			agent = Agent(self.server)
 			agent.deactivate_site(
@@ -191,6 +181,28 @@ class SiteBackup(Document):
 			)
 		else:
 			self.start_backup()
+
+	def validate_and_setup_physical_backup(self):
+		if not self.physical:
+			return
+		# Validate physical backup enabled on database server
+		if not bool(
+			frappe.utils.cint(
+				frappe.get_value("Database Server", self.database_server, "enable_physical_backup")
+			)
+		):
+			frappe.throw(
+				"Physical backup is not enabled for this database server. Please reach out to support."
+			)
+		# Set some default values
+		site = frappe.get_doc("Site", self.site)
+		if not site.database_name:
+			site.sync_info()
+			site.reload()
+		if not site.database_name:
+			frappe.throw("Database name is missing in the site")
+		self.database_name = site.database_name
+		self.snapshot_request_key = frappe.generate_hash(length=32)
 
 	def start_backup(self):
 		if self.physical:
@@ -307,12 +319,7 @@ class SiteBackup(Document):
 		frappe.db.set_value("Site Backup", self.name, "job", job.name)
 
 	def run_ansible_command_in_database_server(self, command: str) -> bool:
-		virtual_machine_ip = frappe.db.get_value(
-			"Virtual Machine",
-			frappe.get_value("Database Server", self.database_server, "virtual_machine"),
-			"public_ip_address",
-		)
-		result = AnsibleAdHoc(sources=f"{virtual_machine_ip},").run(command, self.name)[0]
+		result = AnsibleAdHoc(sources=f"{self.database_server},").run(command, self.name)[0]
 		success = result.get("status") == "Success"
 		if not success:
 			pretty_result = json.dumps(result, indent=2, sort_keys=True, default=str)
@@ -413,11 +420,11 @@ class SiteBackup(Document):
 				)
 
 	@classmethod
-	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
+	def offsite_backup_exists(cls, site: str, day: date) -> bool:
 		return cls.backup_exists(site, day, {"offsite": True})
 
 	@classmethod
-	def backup_exists(cls, site: str, day: datetime.date, filters: dict):
+	def backup_exists(cls, site: str, day: date, filters: dict):
 		base_filters = {
 			"creation": ("between", [day, day]),
 			"site": site,
@@ -426,7 +433,7 @@ class SiteBackup(Document):
 		return frappe.get_all("Site Backup", {**base_filters, **filters})
 
 	@classmethod
-	def file_backup_exists(cls, site: str, day: datetime.date) -> bool:
+	def file_backup_exists(cls, site: str, day: date) -> bool:
 		return cls.backup_exists(site, day, {"with_files": True})
 
 
@@ -577,3 +584,259 @@ def process_deactivate_site_job_update(job: AgentJob):
 
 def on_doctype_update():
 	frappe.db.add_index("Site Backup", ["files_availability", "job"])
+
+
+def _create_site_backup_from_agent_job(job: "AgentJob"):
+	"""
+	Create Site Backup and Remote File records from 'Archive Site' or 'Uninstall App From Site' agent job's response.
+	"""
+	try:
+		from press.press.doctype.site_backup.site_backup import track_offsite_backups
+
+		if (job.job_type not in ["Archive Site", "Uninstall App from Site"]) or not job.data:
+			return
+
+		job_data = json.loads(job.data)
+		backup_data = job_data.get("backups", {})
+		offsite_backup_data = job_data.get("offsite", {})
+
+		if not backup_data or not offsite_backup_data:
+			return
+
+		if not _check_backup_steps_status(job.name):
+			return
+
+		(
+			remote_database,
+			remote_config_file,
+			remote_public,
+			remote_private,
+		) = track_offsite_backups(job.site, backup_data, offsite_backup_data)
+
+		site_server = frappe.db.get_value("Site", job.site, "server")
+		site_backup = frappe.get_doc(
+			{
+				"doctype": "Site Backup",
+				"site": job.site,
+				"server": site_server,
+				"status": "Success",
+				"with_files": True,
+				"offsite": True,
+				"job": job.name,
+				"files_availability": "Available",
+				"database_size": backup_data["database"]["size"],
+				"database_url": backup_data["database"]["url"],
+				"database_file": backup_data["database"]["file"],
+				"remote_database_file": remote_database,
+			}
+		)
+
+		if "site_config" in backup_data:
+			site_backup.config_file_size = backup_data["site_config"]["size"]
+			site_backup.config_file_url = backup_data["site_config"]["url"]
+			site_backup.config_file = backup_data["site_config"]["file"]
+			site_backup.remote_config_file = remote_config_file
+
+		if "private" in backup_data and "public" in backup_data:
+			site_backup.private_size = backup_data["private"]["size"]
+			site_backup.private_url = backup_data["private"]["url"]
+			site_backup.private_file = backup_data["private"]["file"]
+			site_backup.remote_private_file = remote_private
+
+			site_backup.public_size = backup_data["public"]["size"]
+			site_backup.public_url = backup_data["public"]["url"]
+			site_backup.public_file = backup_data["public"]["file"]
+			site_backup.remote_public_file = remote_public
+
+		site_backup.flags.skip_backup_after_insert = True
+		site_backup.insert(ignore_permissions=True)
+	except Exception as e:
+		frappe.log_error(
+			f"Failed to create Site Backup record from {job.job_type} agent job: {e!s}",
+			reference_doctype="Agent Job",
+			reference_name=job.name,
+		)
+
+
+def _check_backup_steps_status(agent_job: str) -> bool:
+	"""
+	Check if Backup Site and Upload Site Backup to S3 steps both succeeded.
+	"""
+	try:
+		steps = frappe.get_all(
+			"Agent Job Step",
+			filters={
+				"agent_job": agent_job,
+				"step_name": ("in", ["Backup Site", "Upload Site Backup to S3"]),
+				"status": "Success",
+			},
+		)
+		return len(steps) == 2
+	except Exception:
+		return False
+
+
+def delete_successful_unavailable_backups_for_archived_sites():
+	"""Clear 'Unavailable' backup records after 3 days of site archival, retain failed backups to know the cause of failure"""
+	cutoff_date = frappe.utils.add_to_date(frappe.utils.now(), days=-3)
+
+	Site = frappe.qb.DocType("Site")
+	SiteBackup = frappe.qb.DocType("Site Backup")
+
+	backups = (
+		frappe.qb.from_(SiteBackup)
+		.join(Site)
+		.on(Site.name == SiteBackup.site)
+		.select(SiteBackup.name, SiteBackup.job)
+		.where(SiteBackup.files_availability == "Unavailable")
+		.where(SiteBackup.status == "Success")
+		.where(Site.status == "Archived")
+		.where(Site.modified < cutoff_date)
+		.limit(2000)
+	).run(as_dict=True)
+
+	if not backups:
+		return
+
+	backup_names = [b.name for b in backups]
+	job_names = [b.job for b in backups if b.job]
+
+	frappe.db.delete("Site Backup", {"name": ("in", backup_names)})
+	frappe.db.delete("Agent Job Step", {"agent_job": ("in", job_names)})
+	frappe.db.delete("Agent Job", {"name": ("in", job_names)})
+	frappe.db.commit()
+
+
+def delete_failed_unavailable_backups_for_archived_sites():
+	"""Clear failed backup records after 90 days of site archival"""
+	cutoff_date = frappe.utils.add_to_date(frappe.utils.now(), days=-90)
+
+	Site = frappe.qb.DocType("Site")
+	SiteBackup = frappe.qb.DocType("Site Backup")
+
+	backups = (
+		frappe.qb.from_(SiteBackup)
+		.join(Site)
+		.on(Site.name == SiteBackup.site)
+		.select(SiteBackup.name, SiteBackup.job)
+		.where(SiteBackup.status == "Failure")
+		.where(Site.status == "Archived")
+		.where(Site.modified < cutoff_date)
+		.limit(2000)
+	).run(as_dict=True)
+
+	if not backups:
+		return
+
+	backup_names = [b.name for b in backups]
+	job_names = [b.job for b in backups if b.job]
+
+	frappe.db.delete("Site Backup", {"name": ("in", backup_names)})
+	frappe.db.delete("Agent Job Step", {"agent_job": ("in", job_names)})
+	frappe.db.delete("Agent Job", {"name": ("in", job_names)})
+	frappe.db.commit()
+
+
+def delete_agent_job_records_for_archived_sites():
+	"""
+	For sites archived > 90 days ago, delete Agent Jobs except 'Archive Site'
+	"""
+	cutoff_date = frappe.utils.add_to_date(frappe.utils.now(), days=-90)
+
+	Site = frappe.qb.DocType("Site")
+	AgentJob = frappe.qb.DocType("Agent Job")
+	jobs = (
+		frappe.qb.from_(AgentJob)
+		.join(Site)
+		.on(Site.name == AgentJob.site)
+		.select(AgentJob.name)
+		.where(Site.status == "Archived")
+		.where(Site.modified < cutoff_date)
+		.where(AgentJob.job_type != "Archive Site")
+		.limit(2000)
+	).run(pluck=True)
+
+	if jobs:
+		frappe.db.delete("Agent Job Step", {"agent_job": ("in", jobs)})
+		frappe.db.delete("Agent Job", {"name": ("in", jobs)})
+		frappe.db.commit()
+
+
+def delete_site_activity_records_for_archived_sites():
+	"""
+	For sites archived > 90 days ago, delete Site Activity records except 'Archive'
+	"""
+	cutoff_date = frappe.utils.add_to_date(frappe.utils.now(), days=-90)
+	Site = frappe.qb.DocType("Site")
+	SiteActivity = frappe.qb.DocType("Site Activity")
+
+	activities = (
+		frappe.qb.from_(SiteActivity)
+		.join(Site)
+		.on(Site.name == SiteActivity.site)
+		.select(SiteActivity.name)
+		.where(Site.status == "Archived")
+		.where(Site.modified < cutoff_date)
+		.where(SiteActivity.action != "Archive")
+		.limit(4000)
+	).run(pluck=True)
+
+	if activities:
+		frappe.db.delete("Site Activity", {"name": ("in", activities)})
+		frappe.db.commit()
+
+
+def delete_backups_for_archived_sites_after_retention():
+	"""
+	Delete all backups of archived sites if 6 months have passed since archival.
+	"""
+	cutoff_date = frappe.utils.add_to_date(frappe.utils.now(), months=-6)
+
+	Site = frappe.qb.DocType("Site")
+	SiteActivity = frappe.qb.DocType("Site Activity")
+	AgentJob = frappe.qb.DocType("Agent Job")
+	SiteBackup = frappe.qb.DocType("Site Backup")
+
+	query = (
+		frappe.qb.from_(Site)
+		.join(SiteActivity)
+		.on(SiteActivity.site == Site.name)
+		.join(AgentJob)
+		.on(AgentJob.name == SiteActivity.job)
+		.join(SiteBackup)
+		.on(SiteBackup.site == Site.name)
+		.select(Site.name)
+		.distinct()
+		.where(Site.status == "Archived")
+		.where(SiteActivity.action == "Archive")
+		.where(SiteActivity.creation < cutoff_date)
+		.where(AgentJob.status == "Success")
+	)
+	site_names = query.run(pluck=True)
+
+	if not site_names:
+		return
+
+	for site_name in site_names:
+		try:
+			site = frappe.get_doc("Site", site_name)
+			site.delete_offsite_backups(keep_latest=False)
+
+			job_names = frappe.get_all(
+				"Agent Job",
+				filters={"site": site_name},
+				pluck="name",
+			)
+			if job_names:
+				frappe.db.delete("Agent Job Step", {"agent_job": ("in", job_names)})
+				frappe.db.delete("Agent Job", {"name": ("in", job_names)})
+
+			frappe.db.delete("Site Activity", {"site": site_name})
+		except Exception as e:
+			frappe.log_error(
+				f"Failed to delete backups for archived site {site_name}: {e}",
+				reference_doctype="Site",
+				reference_name=site_name,
+			)
+
+	frappe.db.commit()

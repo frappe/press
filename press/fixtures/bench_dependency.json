@@ -41,6 +41,10 @@
 			{
 				"supported_frappe_version": "Version 15",
 				"version": "3.11"
+			},
+			{
+				"supported_frappe_version": "Nightly",
+				"version": "3.14"
 			}
 		],
 		"title": "Python Version"
@@ -75,6 +79,10 @@
 			{
 				"supported_frappe_version": "Version 12",
 				"version": "12.19.0"
+			},
+			{
+				"supported_frappe_version": "Nightly",
+				"version": "24.12.0"
 			}
 		],
 		"title": "Node Version"

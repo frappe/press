@@ -36,6 +36,7 @@
   "estimated_closure_date",
   "column_break_jtbg",
   "probability",
+  "is_starter_pack",
   "success_pack_section",
   "erpnext_success_pack_interested_in",
   "need_demo_before_implementation",
@@ -53,6 +54,7 @@
   "column_break_jonl",
   "partner_email",
   "partner_manager",
+  "lead_owner",
   "deal_assistance_section",
   "require_deal_assistance",
   "assistance_type",
@@ -66,8 +68,12 @@
   "feedback_for_frappe",
   "more_info_tab",
   "hosting",
-  "column_break_rdxj",
   "site_url",
+  "site_plan",
+  "column_break_rdxj",
+  "server_name",
+  "team_name",
+  "total_invoice_amount",
   "reference_section",
   "crm_deal",
   "passed_date"
@@ -129,12 +135,13 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Open\nIn Process\nWon\nLost\nJunk\nPass to Other Partner"
+   "options": "Open\nQualification\nDemo/Making\nFollow Up\nProposal/Quotation\nNegotiation\nReady to Close\nWon\nLost\nJunk\nClosed"
   },
   {
    "depends_on": "eval:in_list(['In Process'], doc.status)",
    "fieldname": "engagement_stage",
    "fieldtype": "Select",
+   "hidden": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Engagement Stage",
@@ -426,12 +433,44 @@
   {
    "fieldname": "column_break_psrb",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "server_name",
+   "fieldtype": "Data",
+   "label": "Server Name"
+  },
+  {
+   "fieldname": "team_name",
+   "fieldtype": "Data",
+   "label": "Team Name"
+  },
+  {
+   "fieldname": "lead_owner",
+   "fieldtype": "Link",
+   "label": "Lead Owner",
+   "options": "User"
+  },
+  {
+   "fieldname": "total_invoice_amount",
+   "fieldtype": "Float",
+   "label": "Total Invoice Amount"
+  },
+  {
+   "fieldname": "site_plan",
+   "fieldtype": "Data",
+   "label": "Site Plan"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_starter_pack",
+   "fieldtype": "Check",
+   "label": "Is Starter Pack"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-09 19:21:42.585693",
+ "modified": "2026-03-09 10:26:50.154674",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Lead",

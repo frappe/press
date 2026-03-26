@@ -1,0 +1,11 @@
+---
+- name: Configure Nginx Routing from Primary to Secondary Proxy
+  become: yes
+  hosts: all
+  vars:
+    nginx_conf_path: "/home/frappe/agent/nginx/nginx.conf"
+    proxy_conf_path: "/home/frappe/agent/nginx/proxy.conf"
+    agent_conf_path: "/home/frappe/agent/nginx.conf"
+
+  roles:
+    - role: nginx_conf_changes_for_tcp_streaming

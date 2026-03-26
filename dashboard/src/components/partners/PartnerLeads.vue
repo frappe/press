@@ -61,9 +61,17 @@ export default {
 				auto: true,
 			};
 		},
+		leadOwners() {
+			return {
+				url: 'press.api.partner.get_lead_owners',
+				auto: true,
+				initialData: [],
+			};
+		},
 	},
 	computed: {
 		partnerLeadsList() {
+			let leadOwners = this.$resources.leadOwners.data || [];
 			return {
 				resource() {
 					return {
@@ -88,27 +96,49 @@ export default {
 					{
 						label: 'Lead Name',
 						fieldname: 'lead_name',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
 						label: 'Organization',
 						fieldname: 'organization',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
 						label: 'Lead Source',
 						fieldname: 'lead_source',
+						width: 0.5,
 					},
 					{
 						label: 'Status',
 						fieldname: 'status',
 						type: 'Badge',
+						width: 0.4,
+						align: 'center',
 					},
 					{
 						label: 'Lead ID',
 						fieldname: 'name',
+						width: 0.5,
 					},
 					{
 						label: 'Partner',
 						fieldname: 'partner_team',
+						width: 0.6,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 						condition: () => Boolean(this.$team.doc.is_desk_user),
 					},
 				],
@@ -124,28 +154,18 @@ export default {
 							fieldname: 'status',
 							label: 'Status',
 							options: [
-								'',
+								'All',
 								'Open',
-								'In Process',
+								'Qualification',
+								'Demo/Making',
+								'Proposal/Quotation',
+								'Follow Up',
+								'Negotiation',
+								'Ready to Close',
 								'Won',
 								'Lost',
 								'Junk',
-								'Passed to Other Partner',
-								'Other',
-							],
-						},
-						{
-							type: 'select',
-							fieldname: 'engagement_stage',
-							label: 'Engagement Stage',
-							options: [
-								'',
-								'Demo',
-								'Qualification',
-								'Quotation',
-								'Ready for Closing',
-								'Negotiation',
-								'Learning',
+								'Closed',
 							],
 						},
 						{
@@ -153,10 +173,28 @@ export default {
 							fieldname: 'source',
 							label: 'Lead Source',
 							options: [
+								{ label: 'All', value: 'All' },
 								{ label: 'Partner Owned', value: 'Partner Owned' },
 								{ label: 'Passed to Partner', value: 'Passed to Partner' },
 								{ label: 'Partner Listing', value: 'Partner Listing' },
 							],
+						},
+						{
+							type: 'select',
+							fieldname: 'lead_owner',
+							label: 'Lead Owner',
+							options: [
+								{ label: 'All', value: 'All' },
+								...leadOwners.map((owner) => ({
+									label: owner.label,
+									value: owner.value,
+								})),
+							],
+						},
+						{
+							type: 'checkbox',
+							fieldname: 'is_starter_pack',
+							label: 'Starter Pack',
 						},
 					];
 				},
@@ -182,16 +220,23 @@ export default {
 						},
 					};
 				},
+				orderBy: 'modified desc',
 			};
 		},
 		statusTheme() {
 			return {
 				Open: 'blue',
+				Qualification: 'orange',
+				'Demo/Making': 'orange',
+				'Proposal/Quotation': 'orange',
+				'Follow Up': 'blue',
+				Negotiation: 'orange',
+				'Ready to Close': 'blue',
 				'In Process': 'orange',
 				Won: 'green',
 				Lost: 'red',
 				Junk: 'gray',
-				'Passed to Other Partner': 'gray',
+				Closed: 'gray',
 			};
 		},
 	},

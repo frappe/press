@@ -12,8 +12,6 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter as HF
 from pygments.lexers import PythonLexer as PL
 
-from press.press.doctype.app_release.app_release import AppRelease
-
 
 class AppReleaseApprovalRequest(Document):
 	# begin: auto-generated types
@@ -23,9 +21,11 @@ class AppReleaseApprovalRequest(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+
 		from press.marketplace.doctype.app_release_approval_code_comments.app_release_approval_code_comments import (
 			AppReleaseApprovalCodeComments,
 		)
+		from press.press.doctype.app_release.app_release import AppRelease
 
 		app: DF.Link | None
 		app_release: DF.Link
@@ -44,7 +44,7 @@ class AppReleaseApprovalRequest(Document):
 		team: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = [
+	dashboard_fields = [  # noqa: RUF012
 		"name",
 		"marketplace_app",
 		"screening_status",
@@ -56,9 +56,7 @@ class AppReleaseApprovalRequest(Document):
 
 	def before_save(self):
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
-		teams = frappe.get_all(
-			"Auto Release Team", {"parent": "Marketplace Settings"}, pluck="team"
-		)
+		teams = frappe.get_all("Auto Release Team", {"parent": "Marketplace Settings"}, pluck="team")
 		if self.team in teams or self.marketplace_app in apps:
 			self.status = "Approved"
 
@@ -78,6 +76,11 @@ class AppReleaseApprovalRequest(Document):
 		app = self.marketplace_app
 		series = f"REQ-{app}-.#####"
 		self.name = make_autoname(series)
+
+	def validate(self):
+		# only validate if status is being being changed to Approved
+		if self.status == "Approved":
+			self.validate_audit_for_approval()
 
 	def before_insert(self):
 		self.request_already_exists()
@@ -152,6 +155,44 @@ class AppReleaseApprovalRequest(Document):
 			},
 			template="app_approval_request_update",
 		)
+
+	def validate_audit_for_approval(self):
+		bypass_automated_audit = frappe.db.get_value(
+			"Marketplace App", self.marketplace_app, "bypass_automated_audit"
+		)
+		if bypass_automated_audit:
+			return
+
+		latest_audit = frappe.get_all(
+			"Marketplace App Audit",
+			filters={"app_release": self.app_release},
+			fields=["name", "status", "audit_result", "audit_summary"],
+			order_by="creation desc",
+			limit=1,
+		)
+		if not latest_audit:
+			frappe.throw(
+				"Cannot approve: No audit found for this release. "
+				"An audit must complete successfully before approval."
+			)
+
+		audit = latest_audit[0]
+		if audit.status in ("Queued", "Running"):
+			frappe.throw(
+				f"Cannot approve: Audit {audit.name} is still {audit.status}. Please wait for it to complete."
+			)
+
+		if audit.status == "Failed":
+			frappe.throw(
+				f"Cannot approve: Audit {audit.name} failed. Please investigate and rerun the audit."
+			)
+
+		if audit.audit_result not in ["Pass", "Needs Improvement"]:
+			frappe.throw(
+				f"Cannot approve: Audit {audit.name} completed with result '{audit.audit_result}'. "
+				f"Only 'Pass' or 'Needs Improvement' results allow approval.\n\n"
+				f"Summary: {audit.audit_summary or 'N/A'}"
+			)
 
 	@frappe.whitelist()
 	def start_screening(self):
@@ -262,7 +303,7 @@ def get_context(lines, index, size=2):
 	length = len(lines)
 	start = max(0, index - size)
 	end = min(index + size, length)
-	lines = lines[start : end + 1]  # noqa
+	lines = lines[start : end + 1]
 	return {
 		"line_number": index + 1,
 		"line_range": list(range(start + 1, end + 2)),
@@ -282,7 +323,7 @@ def highlight_context(context):
 	)
 	lexer = PL(stripnl=False, tabsize=4)
 	highlighted = highlight(code, lexer, formatter)
-	return highlighted
+	return highlighted  # noqa: RET504
 
 
 def get_configuration():

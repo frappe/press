@@ -16,6 +16,7 @@ class DashboardBanner(Document):
 		from press.press.doctype.dashboard_banner_dismissal.dashboard_banner_dismissal import (
 			DashboardBannerDismissal,
 		)
+		from press.press.doctype.dashboard_banner_team.dashboard_banner_team import DashboardBannerTeam
 
 		action: DF.Data | None
 		action_label: DF.Data | None
@@ -30,7 +31,7 @@ class DashboardBanner(Document):
 		scheduled_start_time: DF.Datetime | None
 		server: DF.Link | None
 		site: DF.Link | None
-		team: DF.Link | None
+		team: DF.TableMultiSelect[DashboardBannerTeam]
 		title: DF.Data | None
 		type: DF.Literal["Info", "Success", "Error", "Warning"]
 		type_of_scope: DF.Literal["Team", "Server", "Site"]

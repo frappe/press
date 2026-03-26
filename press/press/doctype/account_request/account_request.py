@@ -7,7 +7,7 @@ import json
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import get_url, random_string
+from frappe.utils import get_url, random_string, validate_email_address
 
 from press.guards import settings
 from press.utils import disposable_emails, get_country_info, is_valid_email_address, log_error
@@ -113,10 +113,16 @@ class AccountRequest(Document):
 			self.is_us_eu = False
 
 	def before_validate(self):
-		self.email = self.email.strip()
+		self.sanitize_email()
+
+	def sanitize_email(self):
+		# Validate and get rid of extra emails.
+		# Example: `a@example.com, b@example.com, foobar` -> `a@example.com`.
+		self.email = validate_email_address(self.email).split(",").pop(0)
 
 	def validate(self):
 		self.disallow_disposable_emails()
+		validate_email_address(self.email, throw=True)
 
 	@settings.enabled("disallow_disposable_emails")
 	def disallow_disposable_emails(self):
@@ -124,6 +130,8 @@ class AccountRequest(Document):
 		Disallow temporary email providers for account requests. Throws
 		validation error if a temporary email provider is detected.
 		"""
+		if frappe.conf.developer_mode and frappe.local.dev_server:
+			return
 		if not self.email:
 			return
 		if disposable_emails.is_disposable(self.email):

@@ -1,7 +1,6 @@
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import LucideAppWindow from '~icons/lucide/app-window';
-import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import ServerActions from '../components/server/ServerActions.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
@@ -47,6 +46,7 @@ export default {
 			'plan.price_inr as price_inr',
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title',
+			'is_unified_server',
 		],
 		searchField: 'title',
 		filterControls() {
@@ -98,8 +98,8 @@ export default {
 			{
 				label: 'Database Server Plan',
 				fieldname: 'db_plan',
-				format(value) {
-					if (!value) return '';
+				format(value, row) {
+					if (!value || row.is_unified_server) return '';
 					return planTitle(value);
 				},
 			},
@@ -175,7 +175,9 @@ export default {
 					label: 'Impersonate Server Owner',
 					title: 'Impersonate Server Owner', // for label to pop-up on hover
 					slots: {
-						icon: icon(LucideVenetianMask),
+						icon: defineAsyncComponent(
+							() => import('~icons/lucide/venetian-mask'),
+						),
 					},
 					condition: () =>
 						$team.doc?.is_desk_user && server.doc.team !== $team.name,
@@ -337,7 +339,7 @@ export default {
 							},
 							{
 								type: 'link',
-								label: 'Bench Group',
+								label: 'Benches',
 								fieldname: 'group',
 								options: {
 									doctype: 'Release Group',
@@ -388,7 +390,7 @@ export default {
 							},
 						},
 						{
-							label: 'Bench Group',
+							label: 'Bench',
 							fieldname: 'group_title',
 							width: '15rem',
 						},
@@ -398,10 +400,25 @@ export default {
 							width: 0.5,
 						},
 					],
+					primaryAction({ documentResource: server }) {
+						if (server?.doc?.status !== 'Active') return {};
+						return {
+							label: 'New Site',
+							slots: {
+								prefix: icon('plus'),
+							},
+							onClick() {
+								router.push({
+									name: 'Server New Site',
+									params: { server: server.doc.name },
+								});
+							},
+						};
+					},
 				},
 			},
 			{
-				label: 'Bench Groups',
+				label: 'Benches',
 				icon: icon('package'),
 				condition: (server) => {
 					return server.doc?.status !== 'Archived';
@@ -475,8 +492,9 @@ export default {
 						};
 					},
 					primaryAction({ listResource: benches, documentResource: server }) {
+						if (server?.doc?.status !== 'Active') return {};
 						return {
-							label: 'New Bench Group',
+							label: 'New Bench',
 							slots: {
 								prefix: icon('plus'),
 							},
@@ -937,6 +955,25 @@ export default {
 				props: (server) => {
 					return {
 						server: server.doc.name,
+					};
+				},
+			},
+			{
+				label: 'Firewall',
+				icon: icon('shield'),
+				condition: (server) => {
+					return (
+						server.doc?.status !== 'Archived' && !server.doc?.is_self_hosted
+					);
+				},
+				route: 'firewall',
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../components/server/ServerFirewall.vue'),
+				),
+				props: (server) => {
+					return {
+						id: server.doc.name,
 					};
 				},
 			},

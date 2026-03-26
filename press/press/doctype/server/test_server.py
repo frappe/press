@@ -11,6 +11,7 @@ from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
+from press.agent import Agent
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -265,3 +266,67 @@ class TestServer(FrappeTestCase):
 		group2.reload()
 		# Assert server removed from group2
 		self.assertFalse(any(s.server == server.name for s in group2.servers))
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_release_group_modifications_on_archival(self):
+		server = create_test_server()
+		other_servers = create_test_server()
+		one_more_server = create_test_server()
+		apps = [create_test_app()]
+		group1 = create_test_release_group(apps, public=True, servers=[server.name])
+		group2 = create_test_release_group(apps, public=True, servers=[server.name, other_servers.name])
+		group3 = create_test_release_group(
+			apps, public=True, servers=[server.name, other_servers.name, one_more_server.name]
+		)
+
+		# Test the archival of this server
+		server.archive()
+
+		# Reload groups
+		group1.reload()
+		group2.reload()
+		group3.reload()
+
+		# Test only group with that one server is disbled, others remain enabled
+		self.assertEqual(group1.enabled, 0)
+		self.assertEqual(group2.enabled, 1)
+		self.assertEqual(group3.enabled, 1)
+
+		# Test the server is removed from all groups that had more than one server
+		self.assertListEqual([s.server for s in group2.servers], [other_servers.name])
+		self.assertListEqual([s.server for s in group3.servers], [other_servers.name, one_more_server.name])
+
+	@patch.object(Agent, "get", return_value={"benches": ["bench1", "bench2"]})
+	def test_process_running_benches_on_server(self, mock_get):
+		from press.press.doctype.server.server import _process_running_benches_on_server
+
+		server = create_test_server()
+		bench_1 = create_test_bench(server=server.name)
+		bench_2 = create_test_bench(server=server.name)
+
+		frappe.db.set_value("Bench", bench_1.name, "name", "bench1")
+		frappe.db.set_value("Bench", bench_2.name, "name", "bench2")
+
+		_process_running_benches_on_server(server.name)
+		mock_get.assert_called_once_with("/server/running-benches")
+
+		agent_job_created = frappe.get_all(
+			"Agent Job", {"server": server.name, "job_type": "Force Remove Zombie Benches"}, pluck="name"
+		)
+		self.assertEqual(
+			len(agent_job_created), 0
+		)  # Benches not marked as archived, so no agent job should be created
+
+		frappe.db.set_value("Bench", "bench1", "status", "Archived")
+		frappe.db.set_value("Bench", "bench2", "status", "Archived")
+
+		_process_running_benches_on_server(server.name)
+		mock_get.assert_called_with("/server/running-benches")
+
+		agent_job_created = frappe.get_all(
+			"Agent Job", {"server": server.name, "job_type": "Force Remove Zombie Benches"}, ["name", "data"]
+		)
+		self.assertEqual(
+			len(agent_job_created), 1
+		)  # Benches marked as archived, so agent job should be created to force remove zombie benches

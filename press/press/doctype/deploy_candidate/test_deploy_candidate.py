@@ -430,10 +430,10 @@ def create_cache_test_apps(team: "Team") -> dict[str, "AppInfo"]:
 		name = parts[-1]
 		app = create_test_app(name, title)
 		source = app.add_source(
-			version,
-			url,
-			branch,
-			team.name,
+			frappe_version=version,
+			repository_url=url,
+			branch=branch,
+			team=team.name,
 			repository_owner=parts[-2],
 		)
 

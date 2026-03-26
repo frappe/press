@@ -4,6 +4,7 @@
 
 import frappe
 import frappe.utils
+from frappe import _
 from frappe.model.document import Document
 from frappe.query_builder import Criterion, JoinType
 from frappe.query_builder.functions import Count
@@ -23,7 +24,7 @@ class SupportAccess(Document):
 		from press.press.doctype.support_access_resource.support_access_resource import SupportAccessResource
 
 		access_allowed_till: DF.Datetime | None
-		allowed_for: DF.Literal["3", "6", "12", "24", "72"]
+		allowed_for: DF.Literal["3", "6", "12", "24", "72", "168"]
 		bench_ssh: DF.Check
 		login_as_administrator: DF.Check
 		reason: DF.SmallText | None
@@ -62,6 +63,7 @@ class SupportAccess(Document):
 			.select(Count(AccessResource.name).as_("resource_count"))
 			.groupby(Access.name)
 			.select(AccessResource.document_name.as_("resource_name"))
+			.where(Criterion.any([Access.requested_team == team, Access.target_team == team]))
 		)
 		conditions = []
 		match filters.get("source"):
@@ -208,6 +210,15 @@ class SupportAccess(Document):
 			frappe.throw("Resources must belong to the same team")
 		self.target_team = teams.pop()
 
+	def validate_validity_change(self):
+		is_target_team = get_current_team() == self.target_team
+		if self.has_value_changed("allowed_for") and not is_target_team:
+			message = _("You are not allowed to change the validity period.")
+			frappe.throw(message, frappe.ValidationError)
+		if self.status != "Pending":
+			message = _("Cannot change validity period of a processed request.")
+			frappe.throw(message, frappe.ValidationError)
+
 	def after_insert(self):
 		self.notify_on_request()
 
@@ -292,3 +303,11 @@ class SupportAccess(Document):
 				"team": self.target_team,
 			},
 		)
+
+
+def has_permission(doc, user=None, permission_type=None) -> bool:
+	if doc.is_new():
+		return True
+	if get_current_team() in (doc.requested_team, doc.target_team):
+		return True
+	return False
