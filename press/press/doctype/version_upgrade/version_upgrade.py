@@ -46,7 +46,7 @@ class VersionUpgrade(Document):
 	doctype = "Version Upgrade"
 
 	def validate(self):
-		if self.status == "Failure":
+		if self.status in ["Failure", "Cancelled"]:
 			return
 		self.validate_versions()
 		# Skip server validation if waiting for bench deploy
