@@ -1,6 +1,9 @@
 <template>
 	<div class="space-y-4">
-		<div class="grid grid-cols-3 gap-4 text-base">
+		<div
+			class="grid grid-cols-3 gap-4 text-base"
+			v-if="resources && resources.length > 0"
+		>
 			<RouterLink
 				v-for="resource in resources"
 				:to="toLink(resource)"
@@ -15,9 +18,14 @@
 					</div>
 
 					<div class="py-3 flex flex-col leading-relaxed min-w-0">
-						<span class="truncate font-medium" :title="resource.name">
+						<span
+							v-if="resource.document_type !== 'Site'"
+							class="truncate font-medium"
+							:title="resource.document_title"
+						>
 							{{ resource.document_title }}
 						</span>
+
 						<span>{{ resource.document_name }}</span>
 						<span class="text-ink-gray-5">{{
 							resource.document_type == 'Release Group'
@@ -35,6 +43,13 @@
 					"
 				/>
 			</RouterLink>
+		</div>
+
+		<div
+			v-else
+			class="text-ink-gray-4 text-sm p-20 rounded flex bg-surface-gray-1 justify-center"
+		>
+			No resources to show
 		</div>
 		<div>
 			<Button label="Include" icon-left="globe" @click="open = !open" />
