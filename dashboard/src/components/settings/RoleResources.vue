@@ -15,10 +15,10 @@
 					</div>
 
 					<div class="py-3 flex flex-col leading-relaxed min-w-0">
-						<span class="text-ink-gray-5 truncate" :title="resource.name">
-							{{ resource.name }}
+						<span class="truncate font-medium" :title="resource.name">
+							{{ resource.document_title }}
 						</span>
-						<span class="font-medium">{{ resource.document_name }}</span>
+						<span>{{ resource.document_name }}</span>
 						<span class="text-ink-gray-5">{{
 							resource.document_type == 'Release Group'
 								? 'Bench'
