@@ -210,7 +210,7 @@ class ReleaseGroup(Document, TagHelpers):
 			{
 				"destination_group": self.name,
 				"deploy_private_bench": 1,
-				"status": ("in", ["Pending", "Scheduled"]),
+				"status": ("in", ["Pending", "Scheduled", "Running"]),
 			},
 		)
 
