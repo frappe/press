@@ -14,8 +14,7 @@
         "**.conf",
         "requirements.txt",
         "press/utils/country_timezone.py",
-        ".secrets.baseline",
-        "**go.sum"
+        ".secrets.baseline"
     ],
     "words": [
         "2.4.6",

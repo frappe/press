@@ -705,9 +705,6 @@ export default {
 					query: 'database_uptime',
 					start: this.startTime,
 					end: this.endTime,
-					server_type: this.serverOptions.find(
-						(s) => s.value === this.chosenServer,
-					)?.label,
 				},
 				auto:
 					this.isServerType('Database Server') ||
@@ -723,9 +720,6 @@ export default {
 					query: 'database_commands_count',
 					start: this.startTime,
 					end: this.endTime,
-					server_type: this.serverOptions.find(
-						(s) => s.value === this.chosenServer,
-					)?.label,
 				},
 				auto:
 					this.showAdvancedAnalytics &&
@@ -742,9 +736,6 @@ export default {
 					query: 'database_connections',
 					start: this.startTime,
 					end: this.endTime,
-					server_type: this.serverOptions.find(
-						(s) => s.value === this.chosenServer,
-					)?.label,
 				},
 				auto:
 					this.showAdvancedAnalytics &&
@@ -761,9 +752,6 @@ export default {
 					query: 'innodb_bp_size',
 					start: this.startTime,
 					end: this.endTime,
-					server_type: this.serverOptions.find(
-						(s) => s.value === this.chosenServer,
-					)?.label,
 				},
 				auto:
 					this.showAdvancedAnalytics &&
@@ -780,9 +768,6 @@ export default {
 					query: 'innodb_bp_size_of_total_ram',
 					start: this.startTime,
 					end: this.endTime,
-					server_type: this.serverOptions.find(
-						(s) => s.value === this.chosenServer,
-					)?.label,
 				},
 				auto:
 					this.showAdvancedAnalytics &&
@@ -799,9 +784,6 @@ export default {
 					query: 'innodb_bp_miss_percent',
 					start: this.startTime,
 					end: this.endTime,
-					server_type: this.serverOptions.find(
-						(s) => s.value === this.chosenServer,
-					)?.label,
 				},
 				auto:
 					this.showAdvancedAnalytics &&
@@ -818,9 +800,6 @@ export default {
 					query: 'innodb_avg_row_lock_time',
 					start: this.startTime,
 					end: this.endTime,
-					server_type: this.serverOptions.find(
-						(s) => s.value === this.chosenServer,
-					)?.label,
 				},
 				auto:
 					this.showAdvancedAnalytics &&

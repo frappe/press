@@ -26,17 +26,18 @@
 <script setup>
 import Header from '../components/Header.vue';
 import { Breadcrumbs } from 'frappe-ui';
+import { icon } from '../utils/components';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 
 const tabs = [
 	{
 		label: 'Ongoing Incidents',
-		icon: LucideTriangleAlert,
+		icon: icon('activity'),
 		routeName: 'OngoingIncidents',
 	},
 	{
 		label: 'Incident History',
-		icon: LucideArchive,
+		icon: icon('archive'),
 		routeName: 'IncidentHistory',
 	},
 ];

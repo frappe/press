@@ -1,39 +1,42 @@
 <template>
 	<div class="space-y-4">
 		<div class="grid grid-cols-3 gap-4 text-base">
-			<RouterLink
-				v-for="resource in resources"
-				:to="toLink(resource)"
-				class="text-sm border rounded flex group px-4"
-			>
-				<div class="flex gap-4 rounded transition min-w-0">
+			<RouterLink v-for="resource in resources" :to="toLink(resource)">
+				<div class="group flex h-24 rounded shadow hover:shadow-lg transition">
 					<div
-						class="m-auto size-12 rounded-lg flex items-center justify-center p-3"
-						:class="colorClasses[resource.document_type]"
+						class="size-24 rounded-l shrink-0"
+						:class="{
+							'bg-green-100': resource.document_type === 'Site',
+							'bg-blue-100': resource.document_type === 'Release Group',
+							'bg-yellow-100': resource.document_type === 'Server',
+						}"
 					>
-						<FeatherIcon class="size-6" :name="icons[resource.document_type]" />
+						<div
+							class="size-full flex items-center justify-center rounded-l text-gray-500 font-semibold text-2xl"
+						>
+							<FeatherIcon
+								class="size-6"
+								:name="icons[resource.document_type]"
+							/>
+						</div>
 					</div>
-
-					<div class="py-3 flex flex-col leading-relaxed min-w-0">
-						<span class="text-ink-gray-5 truncate" :title="resource.name">
-							{{ resource.name }}
-						</span>
-						<span class="font-medium">{{ resource.document_name }}</span>
-						<span class="text-ink-gray-5">{{
-							resource.document_type == 'Release Group'
-								? 'Bench'
-								: resource.document_type
-						}}</span>
+					<div class="px-4 py-3 flex flex-col justify-evenly">
+						<div class="font-medium">{{ resource.document_name }}</div>
+						<div>{{ resource.document_type }}</div>
+					</div>
+					<div
+						class="opacity-0 group-hover:opacity-100 transition w-14 flex justify-center items-center ml-auto rounded-r"
+					>
+						<Button
+							icon="trash-2"
+							variant="ghost"
+							class="text-red-600"
+							@click.prevent.stop="
+								$emit('remove', resource.document_type, resource.document_name)
+							"
+						/>
 					</div>
 				</div>
-				<Button
-					icon="trash-2"
-					theme="red"
-					class="opacity-0 group-hover:opacity-100 transition my-auto ml-auto"
-					@click.prevent.stop="
-						$emit('remove', resource.document_type, resource.document_name)
-					"
-				/>
 			</RouterLink>
 		</div>
 		<div>
@@ -96,12 +99,6 @@ const props = withDefaults(
 		resources: () => [],
 	},
 );
-
-const colorClasses = {
-	'Release Group': 'bg-surface-blue-2 text-ink-blue-2',
-	Server: 'bg-surface-amber-1 text-ink-amber-2',
-	Site: 'bg-surface-green-2 text-ink-green-2',
-};
 
 const emit = defineEmits<{
 	include: [Array<{ document_type: string; document_name: string }>];

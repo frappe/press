@@ -9,7 +9,7 @@ const tabs = [
 	{ label: 'Certificates', route: { name: 'CertificateList' } },
 	{ label: 'Leads', route: { name: 'PartnerAdminLeads' } },
 	{ label: 'Resources', route: { name: 'PartnerAdminResources' } },
-  { label: 'Audits', route: { name: 'PartnerAdminAudits' } },
+	{ label: 'Audits', route: { name: 'PartnerAdminAudits' } },
 ];
 </script>
 
