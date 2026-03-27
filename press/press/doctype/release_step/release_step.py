@@ -148,8 +148,14 @@ class ReleaseStep(WorkflowBuilder):
 	def monitor_bench_creation(self, deploy_candidate_build: str):
 		"""Monitor the new bench agent jobs created for this deploy candidate build"""
 		# In this we need to smartly wait for all the agent jobs for the bench to be created
-		number_of_expected_jobs = len(self.release_group_doc.servers)  # One bench server for on build
-		created_bench_docs = frappe.db.count("Bench", {"build": deploy_candidate_build})
+		candidate = frappe.db.get_value("Deploy Candidate Build", deploy_candidate_build, "deploy_candidate")
+		intel_build, arm_build = frappe.db.get_value(
+			"Deploy Candidate", candidate, ["intel_build", "arm_build"]
+		)
+		# This can have intel and arm server both will have different builds
+		number_of_expected_jobs = len(self.release_group_doc.servers)
+		# Total number of bench docs created regardless of the server platforms
+		created_bench_docs = frappe.db.count("Bench", {"build": ("in", [intel_build, arm_build])})
 
 		# We haven't created all the bench docs yet for this build
 		if created_bench_docs != number_of_expected_jobs:
