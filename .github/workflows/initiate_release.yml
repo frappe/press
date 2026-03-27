@@ -33,9 +33,6 @@ jobs:
           git checkout -b ${{ steps.release.outputs.name }}
           git push origin ${{ steps.release.outputs.name }}
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Create PR to master
         uses: peter-evans/create-pull-request@v6
         with:
