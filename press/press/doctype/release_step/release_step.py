@@ -153,12 +153,12 @@ class ReleaseStep(WorkflowBuilder):
 			"Deploy Candidate", candidate, ["intel_build", "arm_build"]
 		)
 		# This can have intel and arm server both will have different builds
-		number_of_expected_jobs = len(self.release_group_doc.servers)
+		number_of_expected_bench_jobs = len(self.release_group_doc.servers)
 		# Total number of bench docs created regardless of the server platforms
-		created_bench_docs = frappe.db.count("Bench", {"build": ("in", [intel_build, arm_build])})
+		created_bench_jobs = frappe.db.count("Bench", {"build": ("in", [intel_build, arm_build])})
 
 		# We haven't created all the bench docs yet for this build
-		if created_bench_docs != number_of_expected_jobs:
+		if created_bench_jobs != number_of_expected_bench_jobs:
 			raise PressWorkflowTaskEnqueued(
 				f"Waiting for bench docs to be created for Deploy Candidate Build {deploy_candidate_build}",
 				self.workflow_name,
