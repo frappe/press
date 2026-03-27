@@ -784,6 +784,12 @@ export default {
 					query: 'innodb_bp_miss_percent',
 					start: this.startTime,
 					end: this.endTime,
+<<<<<<< HEAD
+=======
+					server_type: this.serverOptions.find(
+						(s) => s.value === this.chosenServer,
+					)?.label,
+>>>>>>> bef1e2d39 (fix(server-charts): Fix merge errors)
 				},
 				auto:
 					this.showAdvancedAnalytics &&
