@@ -159,11 +159,14 @@ class PressRole(Document):
 		flat_resources = []
 		for resource in doc["resources"]:
 			dict = resource.as_dict()
-			is_site = dict["document_type"] == "Site"
-			title_field = (is_site and "name") or "title"
-			dict["document_title"] = frappe.get_value(
-				dict["document_type"], dict["document_name"], title_field
-			)
+
+			if dict["document_type"] in ["Release Group", "Server"]:
+				dict["document_title"] = frappe.get_value(
+					dict["document_type"], dict["document_name"], "title"
+				)
+			else:
+				dict["document_title"] = dict["document_name"]
+
 			flat_resources.append(dict)
 
 		doc["resources"] = flat_resources
