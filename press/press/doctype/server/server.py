@@ -917,7 +917,7 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def ping_ansible_unprepared(self):
 		try:
-			if self.provider == "Scaleway" or self.provider in ("AWS EC2", "OCI"):
+			if self.provider in ("AWS EC2", "OCI", "Scaleway"):
 				ansible = Ansible(
 					playbook="ping.yml",
 					server=self,
@@ -980,10 +980,12 @@ class BaseServer(Document, TagHelpers):
 
 		Space is required for playbooks to run, growpart command, etc.
 		"""
+		proxy = frappe.db.get_value("Proxy Server", {"status": "Active", "cluster": self.cluster}, "name")
+
 		try:
 			subprocess.check_output(
 				shlex.split(
-					f"ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@{self.ip} -t rm /root/glass"
+					f"ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -J root@{proxy} root@{self.name} -t rm /root/glass"
 				),
 				stderr=subprocess.STDOUT,
 			)
