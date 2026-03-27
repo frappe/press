@@ -5,7 +5,7 @@ from werkzeug.wrappers import Response
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=1200, seconds=60)
-def confirmed_incident(server_title: str):
+def confirmed_incident(server_title: str) -> Response:
 	response = Response()
 	response.mimetype = "application/xml"
 	response.data = f"""<?xml version="1.0" encoding="UTF-8"?>

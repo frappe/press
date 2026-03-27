@@ -29,7 +29,7 @@ NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
 
 
 @frappe.whitelist()
-def create_dns_record(doc, record_name=None):
+def create_dns_record(doc: object, record_name: str | None = None) -> None:
 	"""Check if site needs dns records and creates one."""
 	domain: RootDomain = frappe.get_doc("Root Domain", doc.domain)
 

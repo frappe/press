@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 
 @frappe.whitelist()
-def get(app):
+def get(app: str) -> dict:
 	record = frappe.get_doc("Marketplace App", app)
 	return {
 		"name": record.name,
@@ -519,7 +519,7 @@ def add_app_screenshot() -> str:
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def remove_app_screenshot(name, file):
+def remove_app_screenshot(name: str, file: str) -> None:
 	app_doc = frappe.get_doc("Marketplace App", name)
 
 	for i, sc in enumerate(app_doc.screenshots):
@@ -576,7 +576,12 @@ def update_app_description(name: str, description: str) -> None:
 
 
 @frappe.whitelist()
-def releases(filters=None, order_by=None, limit_start=None, limit_page_length=None) -> list[dict]:
+def releases(
+	filters: dict | None = None,
+	order_by: str | None = None,
+	limit_start: int | None = None,
+	limit_page_length: int | None = None,
+) -> list[dict]:
 	"""Return list of App Releases for this `app` and `source` in order of creation time"""
 
 	app_releases = frappe.get_all(

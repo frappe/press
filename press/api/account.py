@@ -361,7 +361,7 @@ def has_active_servers(team):
 
 
 @frappe.whitelist()
-def enable_account():
+def enable_account() -> None:
 	team = get_current_team(get_doc=True)
 	if frappe.session.user != team.user:
 		frappe.throw("Only team owner can enable the account")
@@ -369,7 +369,7 @@ def enable_account():
 
 
 @frappe.whitelist()
-def request_team_deletion():
+def request_team_deletion() -> str:
 	team = get_current_team(get_doc=True)
 	doc = frappe.get_doc({"doctype": "Team Deletion Request", "team": team.name}).insert()
 	return doc.name
@@ -935,7 +935,7 @@ def get_site_count(team):
 
 
 @frappe.whitelist()
-def user_prompts():
+def user_prompts() -> dict | None:
 	if frappe.local.dev_server:
 		return None
 
@@ -1005,7 +1005,7 @@ def get_emails():
 
 
 @frappe.whitelist()
-def update_emails(data):
+def update_emails(data: str) -> None:
 	from frappe.utils import validate_email_address
 
 	data = {x["type"]: x["value"] for x in json.loads(data)}
@@ -1159,7 +1159,7 @@ def is_2fa_enabled(user: str) -> bool:
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
-def verify_2fa(user, totp_code):
+def verify_2fa(user: str, totp_code: str) -> bool:
 	user_totp_secret = get_decrypted_password("User 2FA", user, "totp_secret")
 	verified = pyotp.TOTP(user_totp_secret).verify(totp_code)
 

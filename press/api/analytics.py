@@ -1460,14 +1460,14 @@ def mariadb_processlist(site):
 @protected("Site")
 @site.feature("monitor_access")
 def mariadb_slow_queries(
-	site,
-	start_datetime,
-	stop_datetime,
-	max_lines=1000,
-	search_pattern=".*",
-	normalize_queries=True,
-	analyze=False,
-):
+	site: str,
+	start_datetime: str,
+	stop_datetime: str,
+	max_lines: int = 1000,
+	search_pattern: str = ".*",
+	normalize_queries: bool = True,
+	analyze: bool = False,
+) -> dict:
 	meta = frappe._dict(
 		{
 			"site": site,

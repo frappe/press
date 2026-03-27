@@ -85,7 +85,7 @@ def search(query: str, offset: int = 0, limit: int = 20):
 
 
 @frappe.whitelist(allow_guest=True)
-def filter_by_category(category):
+def filter_by_category(category: str) -> list[tuple]:
 	return frappe.db.sql(
 		"""
 		SELECT
