@@ -42,15 +42,9 @@ const columns = computed(() => [
 				return;
 			}
 
-			return h(
-				Tooltip,
-				{
-					text: 'Custom version',
-					placement: 'top',
-					class: 'rounded-full bg-gray-100 p-1',
-				},
-				() => h(icon('alert-circle', 'w-3 h-3'), {}),
-			);
+			return h('div', { title: 'Custom version' }, [
+				h(icon('alert-circle', 'w-3 h-3')),
+			]);
 		},
 		format(_: any, row: any) {
 			return row.version;
