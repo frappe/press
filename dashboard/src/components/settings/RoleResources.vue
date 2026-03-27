@@ -20,6 +20,7 @@
 							/>
 						</div>
 					</div>
+<<<<<<< HEAD
 					<div class="px-4 py-3 flex flex-col justify-evenly">
 						<div class="font-medium">{{ resource.document_name }}</div>
 						<div>{{ resource.document_type }}</div>
@@ -35,6 +36,19 @@
 								$emit('remove', resource.document_type, resource.document_name)
 							"
 						/>
+=======
+
+					<div class="py-3 flex flex-col leading-relaxed min-w-0">
+						<span class="truncate font-medium" :title="resource.name">
+							{{ resource.document_title }}
+						</span>
+						<span>{{ resource.document_name }}</span>
+						<span class="text-ink-gray-5">{{
+							resource.document_type == 'Release Group'
+								? 'Bench'
+								: resource.document_type
+						}}</span>
+>>>>>>> 9310503ae (fix(settings-role-page): update field name of title in cards)
 					</div>
 				</div>
 			</RouterLink>
