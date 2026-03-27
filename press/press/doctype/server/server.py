@@ -102,6 +102,7 @@ class BaseServer(Document, TagHelpers):
 		"auto_add_storage_min",
 		"auto_add_storage_max",
 		"auto_increase_storage",
+		"is_monitoring_disabled",
 		"auto_purge_binlog_based_on_size",
 		"binlog_max_disk_usage_percent",
 		"is_monitoring_disabled",
@@ -747,6 +748,13 @@ class BaseServer(Document, TagHelpers):
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
 		database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
 		database_server_config = database_server._get_config()
+		nat_server_private_ips = (
+			frappe.db.get_value(
+				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+			)
+			if self.nat_server
+			else None
+		)
 
 		self.status = "Installing"
 		database_server.status = "Installing"
@@ -782,7 +790,8 @@ class BaseServer(Document, TagHelpers):
 					"allocator": database_server.memory_allocator.lower(),
 					"mariadb_root_password": database_server_config.mariadb_root_password,
 					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
-					"nat_gateway_ip": self.get_nat_gateway_ip(),
+					"nat_gateway_ip": nat_server_private_ips
+					and (nat_server_private_ips.secondary_private_ip or nat_server_private_ips.private_ip),
 					**self.get_mount_variables(),  # Currently same as database server since no volumes
 				},
 			)
@@ -1048,7 +1057,9 @@ class BaseServer(Document, TagHelpers):
 			log_error("EC2 Volume Extend Exception", server=server.as_dict())
 
 	def enqueue_extend_ec2_volume(self, device, log):
-		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume", device=device, log=log)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "extend_ec2_volume", device=device, log=log, at_front=True, queue="long"
+		)
 
 	@cached_property
 	def time_to_wait_before_updating_volume(self) -> timedelta | int:
@@ -1886,6 +1897,10 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(self.doctype, self.name, "_install_nat_iptables")
 
 	def _install_nat_iptables(self):
+		nat_server_private_ips = frappe.db.get_value(
+			"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+		)
+
 		try:
 			ansible = Ansible(
 				playbook="nat_iptables.yml",
@@ -1893,7 +1908,8 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
-					"nat_gateway_ip": self.get_nat_gateway_ip(),
+					"nat_gateway_ip": nat_server_private_ips.secondary_private_ip
+					or nat_server_private_ips.private_ip
 				},
 			)
 			ansible.run()
@@ -2950,6 +2966,20 @@ class Server(BaseServer):
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
+		nat_server_private_ips = (
+			frappe.db.get_value(
+				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+			)
+			if self.nat_server
+			else None
+		)
+
+		# If database server is set, then define db port under configuration
+		db_port = (
+			frappe.db.get_value("Database Server", self.database_server, "db_port")
+			if self.database_server
+			else None
+		)
 
 		# If database server is set, then define db port under configuration
 		db_port = (
@@ -2983,7 +3013,8 @@ class Server(BaseServer):
 					"db_port": db_port,
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
-					"nat_gateway_ip": self.get_nat_gateway_ip(),
+					"nat_gateway_ip": nat_server_private_ips
+					and (nat_server_private_ips.secondary_private_ip or nat_server_private_ips.private_ip),
 					**self.get_mount_variables(),
 				},
 			)
@@ -3883,6 +3914,29 @@ def cleanup_unused_files():
 			frappe.get_doc("Server", server.name).cleanup_unused_files()
 		except Exception:
 			log_error("Server File Cleanup Error", server=server)
+
+
+def process_running_benches_on_server():
+	"""Trigger cron job to identify and kill zombie benches on active servers."""
+	servers = frappe.get_all("Server", filters={"status": "Active"}, pluck="name")
+	for server in servers:
+		frappe.enqueue(
+			"press.press.doctype.server.server._process_running_benches_on_server",
+			server=server,
+			job_id=f"zombie-benches:{server}",
+			deduplicate=True,
+		)
+
+
+def _process_running_benches_on_server(server: str):
+	"""Identify and kill zombie benches on the specified server."""
+	from press.press.doctype.bench.bench import identify_and_kill_zombie_benches
+
+	try:
+		running_benches = Agent(server).get("/server/running-benches").get("benches", [])
+		identify_and_kill_zombie_benches(server, running_benches)
+	except Exception as e:
+		log_error("Error Processing Running Benches On Server", server=server, exception=e)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Server")

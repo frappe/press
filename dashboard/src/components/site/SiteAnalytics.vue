@@ -266,6 +266,48 @@
 
 			<AnalyticsCard
 				class="sm:col-span-2"
+				title="Save Docs Doctype Durations"
+				v-if="saveDocsDoctypesData"
+			>
+				<template #action>
+					<Tooltip text="Shown only as savedocs calls seem to take time">
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+					</Tooltip>
+				</template>
+				<BarChart
+					:key="saveDocsDoctypesData"
+					:data="saveDocsDoctypesData"
+					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				class="sm:col-span-2"
+				title="Save Docs Action Durations"
+				v-if="saveDocsActionData"
+			>
+				<template #action>
+					<Tooltip text="Shown only as savedocs calls seem to take time">
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+					</Tooltip>
+				</template>
+				<BarChart
+					:key="saveDocsActionData"
+					:data="saveDocsActionData"
+					unit="seconds"
+					:chartTheme="requestChartColors"
+					:loading="$resources.advancedAnalytics.loading"
+					:showCard="false"
+					class="h-[15.55rem] p-2 pb-3"
+				/>
+			</AnalyticsCard>
+
+			<AnalyticsCard
+				class="sm:col-span-2"
 				title="Individual Request Time (Average)"
 				@share-card="shareDashboard"
 			>
@@ -485,6 +527,7 @@ export default {
 				{ label: 'Last 1 hour', value: '1h' },
 				{ label: 'Last 6 hours', value: '6h' },
 				{ label: 'Last day', value: '24h' },
+				{ label: 'Last 3 days', value: '3d' },
 				{ label: 'Last 7 days', value: '7d' },
 				{ label: 'Last 15 days', value: '15d' },
 			],
@@ -647,6 +690,20 @@ export default {
 			if (!runDocMethodMethodnames) return;
 
 			return runDocMethodMethodnames;
+		},
+		saveDocsDoctypesData() {
+			let saveDocDoctypes =
+				this.$resources.advancedAnalytics.data?.save_docs_doctypes;
+			if (!saveDocDoctypes) return;
+
+			return saveDocDoctypes;
+		},
+		saveDocsActionData() {
+			let saveDocActions =
+				this.$resources.advancedAnalytics.data?.save_docs_actions;
+			if (!saveDocActions) return;
+
+			return saveDocActions;
 		},
 		generateReportReportsData() {
 			let generateReportReports =

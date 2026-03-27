@@ -80,7 +80,6 @@ class Cluster(Document):
 		default_db_server_plan_type: DF.Link | None
 		description: DF.Data | None
 		digital_ocean_api_token: DF.Password | None
-		disable_public_ips_for_servers: DF.Check
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
 		flush_table_execution_hour: DF.Int
@@ -89,8 +88,8 @@ class Cluster(Document):
 		frappe_compute_base_url: DF.Data | None
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
-		has_unified_server_support: DF.Check
 		hetzner_api_token: DF.Password | None
+		has_unified_server_support: DF.Check
 		hybrid: DF.Check
 		image: DF.AttachImage | None
 		monitoring_password: DF.Password | None
@@ -1581,13 +1580,10 @@ class Cluster(Document):
 		server.new_worker_allocation = True
 		server.database_server = database_server.name
 		server.proxy_server = self.proxy_server
-		self._add_nat_server_if_supported(server)
 
 		# Database configurations
 		database_server.auto_purge_binlog_based_on_size = True
 		database_server.binlog_max_disk_usage_percent = 75 if auto_increase_storage else 20
-		if getattr(server, "nat_server", None):
-			database_server.nat_server = server.nat_server
 
 		server.save()  # Creating server before database server to use the preset agent password
 		database_server.save()
@@ -1684,7 +1680,6 @@ class Cluster(Document):
 					server.auto_purge_binlog_based_on_size = True
 					server.binlog_max_disk_usage_percent = 20
 
-				self._add_nat_server_if_supported(server)
 			case "Server":
 				server = vm.create_server(is_secondary=is_secondary, primary=primary)
 				server.title = f"{title} - Application" if not is_secondary else title
@@ -1702,8 +1697,6 @@ class Cluster(Document):
 				server.new_worker_allocation = True
 				server.auto_increase_storage = auto_increase_storage
 				server.is_for_recovery = is_for_recovery
-
-				self._add_nat_server_if_supported(server)
 			case "Proxy Server":
 				server = vm.create_proxy_server()
 				server.title = f"{title} - Proxy"
@@ -1804,16 +1797,3 @@ class Cluster(Document):
 
 			return best_plan
 		return None
-
-	def _add_nat_server_if_supported(self, server):
-		if self.disable_public_ips_for_servers and self.cloud_provider == "AWS EC2":
-			nat_server = frappe.db.get_value(
-				"NAT Server",
-				{"status": "Active", "cluster": self.name, "secondary_private_ip": ("is", "set")},
-				"name",
-			)
-			if not nat_server:
-				nat_server = frappe.db.get_value(
-					"NAT Server", {"status": "Active", "cluster": self.name}, "name"
-				)
-			server.nat_server = nat_server

@@ -33,6 +33,24 @@
   ]
  },
  {
+    "disabled_auto_retry": 1,
+    "docstatus": 0,
+    "doctype": "Agent Job Type",
+    "max_retry_count": 3,
+    "modified": "2026-03-24 17:01:01.660132",
+    "name": "Force Remove Zombie Benches",
+    "request_method": "POST",
+    "request_path": "/benches/force-remove",
+    "steps": [
+     {
+      "parent": "Force Remove Zombie Benches",
+      "parentfield": "steps",
+      "parenttype": "Agent Job Type",
+      "step_name": "Force Remove Zombie Benches"
+     }
+    ]
+ },
+ {
   "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",

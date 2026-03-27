@@ -1570,6 +1570,36 @@
    "label": "Disable Binlog Indexer Service"
   },
   {
+   "fieldname": "default_server_plan_type",
+   "fieldtype": "Link",
+   "label": "Default Server Plan Type",
+   "options": "Server Plan Type"
+  },
+  {
+   "fieldname": "frappe_school_authentication_section",
+   "fieldtype": "Section Break",
+   "label": "Frappe School Authentication"
+  },
+  {
+   "fieldname": "school_url",
+   "fieldtype": "Data",
+   "label": "School URL"
+  },
+  {
+   "fieldname": "school_api_key",
+   "fieldtype": "Data",
+   "label": "School API Key"
+  },
+  {
+   "fieldname": "column_break_uxxz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "school_api_secret",
+   "fieldtype": "Password",
+   "label": "School API Secret"
+  },
+  {
    "collapsible": 1,
    "fieldname": "asset_store_section",
    "fieldtype": "Section Break",

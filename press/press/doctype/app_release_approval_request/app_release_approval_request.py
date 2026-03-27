@@ -157,6 +157,12 @@ class AppReleaseApprovalRequest(Document):
 		)
 
 	def validate_audit_for_approval(self):
+		bypass_automated_audit = frappe.db.get_value(
+			"Marketplace App", self.marketplace_app, "bypass_automated_audit"
+		)
+		if bypass_automated_audit:
+			return
+
 		latest_audit = frappe.get_all(
 			"Marketplace App Audit",
 			filters={"app_release": self.app_release},
