@@ -39,6 +39,18 @@ class ReleaseStep(WorkflowBuilder):
 	def release_group_doc(self) -> "ReleaseGroup":
 		return frappe.get_doc("Release Group", self.release_group)
 
+	@cached_property
+	def workflow_name(self) -> str:
+		return frappe.db.get_value(
+			"Press Workflow", {"linked_doctype": "Release Step", "linked_docname": self.name}, "name"
+		)
+
+	def get_task_name(self, func):
+		"""Get task name for the given function"""
+		return frappe.db.get_value(
+			"Press Workflow Task", {"method_name": func.__name__, "workflow": self.workflow_name}, "name"
+		)
+
 	@task
 	def validate_app_hashes(self, apps: list[dict[str, str]]):
 		"""Validate App Hashes"""
@@ -89,18 +101,23 @@ class ReleaseStep(WorkflowBuilder):
 	def start_and_monitor_pre_build_validation(self, deploy_candidate_build: str):
 		"""Monitors the Deploy Candidate Build until the remote build job is created."""
 		job_id = f"deploy_candidate_build:{deploy_candidate_build}"
+		task_name = self.get_task_name(self.start_and_monitor_pre_build_validation)
 
 		try:
 			job = Job.fetch(job_id, connection=get_redis_conn())
 			job_status = job.get_status()
 		except NoSuchJobError:
 			raise PressWorkflowTaskEnqueued(
-				f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build}"
+				f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build}",
+				self.workflow_name,
+				task_name,
 			) from None  # Raise a completely new exception without chaining so that the workflow engine is not confused
 
 		if job_status in ENQUEUED_JOB_TRANSITION_STATES:
 			raise PressWorkflowTaskEnqueued(
-				f"Waiting for build job to complete from Deploy Candidate Build {deploy_candidate_build}"
+				f"Waiting for build job to complete from Deploy Candidate Build {deploy_candidate_build}",
+				self.workflow_name,
+				task_name,
 			)
 
 		if job_status == JobStatus.FINISHED:
@@ -126,7 +143,9 @@ class ReleaseStep(WorkflowBuilder):
 
 		if remote_builder_status in AGENT_JOB_TRANSITION_STATES:
 			raise PressWorkflowTaskEnqueued(
-				f"Waiting for remote builder job to complete for Deploy Candidate Build {self.kv.get('deploy_candidate_build')}"
+				f"Waiting for remote builder job to complete for Deploy Candidate Build {self.kv.get('deploy_candidate_build')}",
+				self.workflow_name,
+				self.get_task_name(self.monitor_remote_build_job),
 			)
 
 		if remote_builder_status == "Failed":
