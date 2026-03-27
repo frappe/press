@@ -801,10 +801,7 @@ export default {
 					end: this.endTime,
 					server_type: this.serverOptions.find(
 						(s) => s.value === this.chosenServer,
-					)?.label,
 				},
-				auto:
-					this.showAdvancedAnalytics &&
 					(this.isServerType('Database Server') ||
 						this.isServerType('Replication Server')),
 			};
