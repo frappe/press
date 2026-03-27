@@ -171,6 +171,16 @@ class PressRole(Document):
 
 		doc["resources"] = flat_resources
 
+		flat_users = []
+		for user in doc.get("users", []):
+			u = user.as_dict()
+
+			u["user_image"] = frappe.get_value("User", u["user"], "user_image")
+
+			flat_users.append(u)
+
+		doc["users"] = flat_users
+
 
 def create_user_resource(document: Document, _):
 	user = frappe.session.user
