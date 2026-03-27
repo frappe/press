@@ -12,9 +12,12 @@ import frappe
 import frappe.utils
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
+from frappe.query_builder.terms import ValueWrapper
 
 from press.agent import Agent
 from press.exceptions import SiteTooManyPendingBackups
+from press.guards import role_guard
+from press.guards.role_guard.document import has_user_permission
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 
@@ -102,20 +105,28 @@ class SiteBackup(Document):
 		"""
 		Remove records with `Success` but files_availability is `Unavailable`
 		"""
-		sb = frappe.qb.DocType("Site Backup")
-		query = query.where(~((sb.files_availability == "Unavailable") & (sb.status == "Success")))
+		Site = frappe.qb.DocType("Site")
+		Backup = frappe.qb.DocType("Site Backup")
+		query = query.where(~((Backup.files_availability == "Unavailable") & (Backup.status == "Success")))
 		if filters.get("backup_date"):
 			with contextlib.suppress(Exception):
 				date = frappe.utils.getdate(filters["backup_date"])
 				query = query.where(
-					sb.creation.between(
+					Backup.creation.between(
 						frappe.utils.add_to_date(date, hours=0, minutes=0, seconds=0),
 						frappe.utils.add_to_date(date, hours=23, minutes=59, seconds=59),
 					)
 				)
 
+		if role_guard.is_restricted() and not has_user_permission("Site"):
+			permitted_sites = role_guard.permitted_documents("Site")
+			if not permitted_sites:
+				query = query.where(ValueWrapper(1) == 0)  # Hack!
+			else:
+				query = query.join(Site).on(Site.name == Backup.site).where(Site.name.isin(permitted_sites))
+
 		if not filters.get("status"):
-			query = query.where(sb.status == "Success")
+			query = query.where(Backup.status == "Success")
 
 		results = [
 			result
