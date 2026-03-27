@@ -278,7 +278,10 @@ def create_razorpay_mandate(
 				"token": {
 					# "auth_type":"netbanking",
 					"max_amount": max_amount * 100,  # Send amount in paisa
+					"frequency": "monthly",
 					"expire_at": expire_by_timestamp,
+					"recurring_value": 28,
+					"recurring_type": "before",
 				},
 			}
 		)

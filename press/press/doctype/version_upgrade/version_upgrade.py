@@ -46,12 +46,12 @@ class VersionUpgrade(Document):
 	doctype = "Version Upgrade"
 
 	def validate(self):
-		if self.status == "Failure":
+		if self.status in ["Failure", "Cancelled"]:
 			return
+
+		self.validate_duplicate()
 		self.validate_versions()
-		# Skip server validation if waiting for bench deploy
-		if not self.deploy_private_bench or self.bench_deploy_successful:
-			self.validate_same_server()
+		self.validate_same_server()
 		self.validate_apps()
 
 	def before_insert(self):
@@ -66,7 +66,22 @@ class VersionUpgrade(Document):
 			self.save()
 			frappe.get_doc("Release Group", self.destination_group).initial_deploy()
 
+	def validate_duplicate(self):
+		if frappe.db.exists(
+			"Version Upgrade",
+			filters={"site": self.site, "status": ["in", ["Scheduled", "Pending", "Running"]]},
+		):
+			frappe.throw(
+				_(
+					"Cannot schedule upgrade: site {0} already has a pending or ongoing version upgrade"
+				).format(self.site)
+			)
+
 	def validate_same_server(self):
+		awaiting_deploy = self.deploy_private_bench and not self.bench_deploy_successful
+		if awaiting_deploy:
+			return
+
 		site_server = frappe.get_doc("Site", self.site).server
 		destination_servers = [
 			server.server for server in frappe.get_doc("Release Group", self.destination_group).servers

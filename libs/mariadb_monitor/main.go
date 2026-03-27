@@ -16,6 +16,8 @@ func main() {
 		})))
 
 		switch os.Args[1] {
+		case "run":
+			// fall through to main monitor loop
 		case "install":
 			if err := install(); err != nil {
 				slog.Error("install failed", "error", err)
@@ -163,6 +165,7 @@ func printHelp() {
 }
 
 func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snapshotCache) bool {
+	frozenCheck := checkMachineFrozen()
 	var triggers []string
 
 	if psiCPU, err := checkPSI("cpu"); err == nil {
@@ -252,6 +255,11 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 	if w.pageRate.IsSustained(cfg.SustainedRatio) {
 		triggers = append(triggers, "sustained_page_rate")
 	}
+	
+	if isFrozen, reason := checkMachineFrozen(); isFrozen {
+		frozenCheck = &frozenState{frozen: true, reason: reason}
+		triggers = append(triggers, fmt.Sprintf("machine_frozen(%s)", reason))
+	}
 
 	if memErr == nil && mem.SwapTotal > 0 {
 		swapFreePercent := float64(mem.SwapFree) / float64(mem.SwapTotal) * 100.0
@@ -268,7 +276,7 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 		return false
 	}
 
-	// sustained_swap_usage alone is not actionable — swap 100% ussage even can be normal
+	// sustained_swap_usage alone is not actionable — swap 100% usage can be normal
 	// So it requires at least one additional trigger to act.
 	if len(triggers) == 1 && triggers[0] == "sustained_swap_usage" {
 		slog.Debug("ignoring sole sustained_swap_usage trigger, requires at least one more trigger to act")
@@ -291,25 +299,31 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 		return false
 	}
 
-	return performRecovery(cfg, triggers, dbHealth)
+	return performRecovery(cfg, triggers, dbHealth, creds, frozenCheck)
+}
+
+type frozenState struct {
+	frozen bool
+	reason string
 }
 
 var recoveryTimestamps []time.Time
 
 func recentRecoveryCount(maxPerHour int) bool {
 	cutoff := time.Now().Add(-1 * time.Hour)
-	count := 0
+	var recent []time.Time
 	for _, t := range recoveryTimestamps {
 		if t.After(cutoff) {
-			count++
+			recent = append(recent, t)
 		}
 	}
-	return count >= maxPerHour
+	recoveryTimestamps = recent
+	return len(recent) >= maxPerHour
 }
 
 func checkMariaDBHealth(creds MySQLCredentials) DBHealth {
-	if !checkReachable(creds.Socket) {
-		slog.Warn("mariadb is unreachable", "socket", creds.Socket)
+	if !checkReachable(creds) {
+		slog.Warn("mariadb is unreachable", "socket", creds.Socket, "host", creds.Host, "port", creds.Port)
 		return DBHealth{Reachable: false}
 	}
 

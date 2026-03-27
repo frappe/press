@@ -93,11 +93,17 @@ ALLOWED_DOCTYPES = [
 	"Account Request",
 	"Server Snapshot",
 	"Server Snapshot Recovery",
+	"Partner Lead",
+	"Partner Lead Type",
+	"Lead Followup",
+	"Partner Consent",
 	"Support Access",
 	"Partner Lead Origin",
 	"Auto Scale Record",
 	"Server Firewall",
 	"New Bench Queue",
+	"Partner Audit",
+	"Partner Non Conformance",
 ]
 
 whitelisted_methods = set()
