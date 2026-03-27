@@ -18,6 +18,7 @@ if typing.TYPE_CHECKING:
 
 
 AGENT_JOB_TRANSITION_STATES = ["Undelivered", "Pending", "Running"]
+BENCH_TRANSITION_STATES = ["Pending", "Installing", "Updating"]
 
 
 class ReleaseStep(WorkflowBuilder):
@@ -129,7 +130,6 @@ class ReleaseStep(WorkflowBuilder):
 		)
 
 		if remote_builder_status in AGENT_JOB_TRANSITION_STATES:
-			print("currently in the queue ", remote_builder_status)
 			raise PressWorkflowTaskEnqueued(
 				f"Waiting for remote builder job to complete for Deploy Candidate Build {deploy_candidate_build}",
 				self.workflow_name,
@@ -142,8 +142,30 @@ class ReleaseStep(WorkflowBuilder):
 			)
 
 		if remote_builder_status == "Success":
-			print("remote builder succeeded!")
 			return  # Remote Build succeeded can mark as success and proceed
+
+	@task
+	def monitor_bench_creation(self, deploy_candidate_build: str):
+		"""Monitor the new bench agent jobs created for this deploy candidate build"""
+		# In this we need to smartly wait for all the agent jobs for the bench to be created
+		number_of_expected_jobs = len(self.release_group_doc.servers)  # One bench server for on build
+		created_bench_docs = frappe.db.count("Bench", {"build": deploy_candidate_build})
+
+		# We haven't created all the bench docs yet for this build
+		if created_bench_docs != number_of_expected_jobs:
+			raise PressWorkflowTaskEnqueued(
+				f"Waiting for bench docs to be created for Deploy Candidate Build {deploy_candidate_build}",
+				self.workflow_name,
+				self.get_task_name(self.monitor_bench_creation),
+			)
+
+		bench_statuses = frappe.get_all("Bench", {"build": deploy_candidate_build}, pluck="status")
+		if any(status in BENCH_TRANSITION_STATES for status in bench_statuses):
+			raise PressWorkflowTaskEnqueued(
+				f"Waiting for bench jobs to complete for Deploy Candidate Build {deploy_candidate_build}",
+				self.workflow_name,
+				self.get_task_name(self.monitor_bench_creation),
+			)
 
 	@flow
 	def create_release(
@@ -165,3 +187,4 @@ class ReleaseStep(WorkflowBuilder):
 		deploy_candidate_build = self.initiate_pre_build_validations(deploy_candidate)
 		self.start_and_monitor_pre_build_validation(deploy_candidate_build)
 		self.monitor_remote_build_job(deploy_candidate_build)
+		self.monitor_bench_creation(deploy_candidate_build)
