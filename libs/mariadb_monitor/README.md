@@ -73,6 +73,7 @@ page_rate_threshold: 100000
 io_freeze_timeout: 5s
 max_recoveries_per_hour: 3
 drop_caches_mode: 1
+coredump_enabled: 0
 ```
 
 ### Configuration Parameters
