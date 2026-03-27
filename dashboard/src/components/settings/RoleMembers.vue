@@ -1,6 +1,9 @@
 <template>
 	<div class="space-y-4">
-		<div class="grid grid-cols-3 gap-4 text-base">
+		<div
+			class="grid grid-cols-3 gap-4 text-base"
+			v-if="users && users.length > 0"
+		>
 			<div
 				v-for="user in users"
 				class="group flex h-24 rounded shadow hover:shadow-lg transition"
@@ -41,6 +44,14 @@
 				</div>
 			</div>
 		</div>
+
+		<div
+			v-else
+			class="text-ink-gray-4 text-sm p-20 rounded flex bg-surface-gray-1 justify-center"
+		>
+			No members to show
+		</div>
+
 		<div>
 			<Button label="Invite" icon-left="user" @click="open = !open" />
 		</div>

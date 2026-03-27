@@ -1,8 +1,21 @@
 <template>
 	<div class="space-y-4">
+<<<<<<< HEAD
 		<div class="grid grid-cols-3 gap-4 text-base">
 			<RouterLink v-for="resource in resources" :to="toLink(resource)">
 				<div class="group flex h-24 rounded shadow hover:shadow-lg transition">
+=======
+		<div
+			class="grid grid-cols-3 gap-4 text-base"
+			v-if="resources && resources.length > 0"
+		>
+			<RouterLink
+				v-for="resource in resources"
+				:to="toLink(resource)"
+				class="text-sm border rounded flex group px-4"
+			>
+				<div class="flex gap-4 rounded transition min-w-0">
+>>>>>>> d6a342a4f (fix(role-page): add no results fallback message)
 					<div
 						class="size-24 rounded-l shrink-0"
 						:class="{
@@ -39,9 +52,14 @@
 =======
 
 					<div class="py-3 flex flex-col leading-relaxed min-w-0">
-						<span class="truncate font-medium" :title="resource.name">
+						<span
+							v-if="resource.document_type !== 'Site'"
+							class="truncate font-medium"
+							:title="resource.document_title"
+						>
 							{{ resource.document_title }}
 						</span>
+
 						<span>{{ resource.document_name }}</span>
 						<span class="text-ink-gray-5">{{
 							resource.document_type == 'Release Group'
@@ -52,6 +70,13 @@
 					</div>
 				</div>
 			</RouterLink>
+		</div>
+
+		<div
+			v-else
+			class="text-ink-gray-4 text-sm p-20 rounded flex bg-surface-gray-1 justify-center"
+		>
+			No resources to show
 		</div>
 		<div>
 			<Button label="Include" icon-left="globe" @click="open = !open" />
