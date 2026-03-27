@@ -105,7 +105,6 @@ class SiteBackup(Document):
 		"""
 		Remove records with `Success` but files_availability is `Unavailable`
 		"""
-		Site = frappe.qb.DocType("Site")
 		Backup = frappe.qb.DocType("Site Backup")
 		query = query.where(~((Backup.files_availability == "Unavailable") & (Backup.status == "Success")))
 		if filters.get("backup_date"):
@@ -123,7 +122,7 @@ class SiteBackup(Document):
 			if not permitted_sites:
 				query = query.where(ValueWrapper(1) == 0)  # Hack!
 			else:
-				query = query.join(Site).on(Site.name == Backup.site).where(Site.name.isin(permitted_sites))
+				query = query.where(Backup.site.isin(permitted_sites))
 
 		if not filters.get("status"):
 			query = query.where(Backup.status == "Success")
