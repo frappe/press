@@ -5,8 +5,6 @@ from functools import cached_property
 from typing import Any
 
 import frappe
-from frappe.utils.background_jobs import get_redis_conn
-from rq.job import Job, JobStatus, NoSuchJobError
 
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
@@ -20,7 +18,6 @@ if typing.TYPE_CHECKING:
 
 
 AGENT_JOB_TRANSITION_STATES = ["Undelivered", "Pending", "Running"]
-ENQUEUED_JOB_TRANSITION_STATES = [JobStatus.QUEUED, JobStatus.SCHEDULED, JobStatus.STARTED]
 
 
 class ReleaseStep(WorkflowBuilder):
@@ -100,33 +97,23 @@ class ReleaseStep(WorkflowBuilder):
 	@task
 	def start_and_monitor_pre_build_validation(self, deploy_candidate_build: str):
 		"""Monitors the Deploy Candidate Build until the remote build job is created."""
-		job_id = f"deploy_candidate_build:{deploy_candidate_build}"
 		task_name = self.get_task_name(self.start_and_monitor_pre_build_validation)
+		status = frappe.db.get_value("Deploy Candidate Build", deploy_candidate_build, "status")
 
-		try:
-			job = Job.fetch(job_id, connection=get_redis_conn())
-			job_status = job.get_status()
-		except NoSuchJobError:
+		if status in ["Pending", "Preparing"]:
 			raise PressWorkflowTaskEnqueued(
 				f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build}",
 				self.workflow_name,
 				task_name,
-			) from None  # Raise a completely new exception without chaining so that the workflow engine is not confused
-
-		if job_status in ENQUEUED_JOB_TRANSITION_STATES:
-			raise PressWorkflowTaskEnqueued(
-				f"Waiting for build job to complete from Deploy Candidate Build {deploy_candidate_build}",
-				self.workflow_name,
-				task_name,
 			)
 
-		if job_status == JobStatus.FINISHED:
-			return
-
-		if job_status == JobStatus.FAILED:
+		if status == "Failure":
 			raise Exception(
 				f"Pre Build Validation failed for Deploy Candidate Build {deploy_candidate_build}. Please check the build logs for more details."
 			)
+
+		if status == "Running":
+			return  # We have enqueued the remote agent job
 
 	@task
 	def monitor_remote_build_job(self, deploy_candidate_build: str):
@@ -143,14 +130,14 @@ class ReleaseStep(WorkflowBuilder):
 
 		if remote_builder_status in AGENT_JOB_TRANSITION_STATES:
 			raise PressWorkflowTaskEnqueued(
-				f"Waiting for remote builder job to complete for Deploy Candidate Build {self.kv.get('deploy_candidate_build')}",
+				f"Waiting for remote builder job to complete for Deploy Candidate Build {deploy_candidate_build}",
 				self.workflow_name,
 				self.get_task_name(self.monitor_remote_build_job),
 			)
 
 		if remote_builder_status == "Failed":
 			raise Exception(
-				f"Remote build failed for Deploy Candidate Build {self.kv.get('deploy_candidate_build')}. Please check the build logs for more details."
+				f"Remote build failed for Deploy Candidate Build {deploy_candidate_build}. Please check the build logs for more details."
 			)
 
 		if remote_builder_status == "Success":
