@@ -129,18 +129,20 @@ class ReleaseStep(WorkflowBuilder):
 		)
 
 		if remote_builder_status in AGENT_JOB_TRANSITION_STATES:
+			print("currently in the queue ", remote_builder_status)
 			raise PressWorkflowTaskEnqueued(
 				f"Waiting for remote builder job to complete for Deploy Candidate Build {deploy_candidate_build}",
 				self.workflow_name,
 				self.get_task_name(self.monitor_remote_build_job),
 			)
 
-		if remote_builder_status == "Failed":
+		if remote_builder_status == "Failure":
 			raise Exception(
 				f"Remote build failed for Deploy Candidate Build {deploy_candidate_build}. Please check the build logs for more details."
 			)
 
 		if remote_builder_status == "Success":
+			print("remote builder succeeded!")
 			return  # Remote Build succeeded can mark as success and proceed
 
 	@flow
