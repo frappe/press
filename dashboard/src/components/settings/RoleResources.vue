@@ -12,17 +12,22 @@
 			<RouterLink
 				v-for="resource in resources"
 				:to="toLink(resource)"
-				class="text-sm border rounded flex group px-4"
+				class="text-sm border rounded flex group py-3 px-3.5"
 			>
 				<div class="flex gap-4 rounded transition min-w-0">
 >>>>>>> d6a342a4f (fix(role-page): add no results fallback message)
 					<div
+<<<<<<< HEAD
 						class="size-24 rounded-l shrink-0"
 						:class="{
 							'bg-green-100': resource.document_type === 'Site',
 							'bg-blue-100': resource.document_type === 'Release Group',
 							'bg-yellow-100': resource.document_type === 'Server',
 						}"
+=======
+						class="m-auto size-14 rounded-lg flex items-center justify-center p-3"
+						:class="colorClasses[resource.document_type]"
+>>>>>>> 4411672e3 (refactor(roles-page): revamp UI of roleMembers/roleResources cards)
 					>
 						<div
 							class="size-full flex items-center justify-center rounded-l text-gray-500 font-semibold text-2xl"
@@ -51,17 +56,19 @@
 						/>
 =======
 
-					<div class="py-3 flex flex-col leading-relaxed min-w-0">
+					<div class="flex flex-col min-w-0">
 						<span
 							v-if="resource.document_type !== 'Site'"
-							class="truncate font-medium"
+							class="truncate font-medium mb-1"
 							:title="resource.document_title"
 						>
 							{{ resource.document_title }}
 						</span>
 
-						<span>{{ resource.document_name }}</span>
-						<span class="text-ink-gray-5">{{
+						<span class="mb-2 text-ink-gray-5">{{
+							resource.document_name
+						}}</span>
+						<span class="text-ink-gray-5 text-xs">{{
 							resource.document_type == 'Release Group'
 								? 'Bench'
 								: resource.document_type
@@ -69,6 +76,17 @@
 >>>>>>> 9310503ae (fix(settings-role-page): update field name of title in cards)
 					</div>
 				</div>
+<<<<<<< HEAD
+=======
+				<Button
+					icon="trash-2"
+					theme="red"
+					class="opacity-0 group-hover:opacity-100 transition mb-auto ml-auto"
+					@click.prevent.stop="
+						$emit('remove', resource.document_type, resource.document_name)
+					"
+				/>
+>>>>>>> 4411672e3 (refactor(roles-page): revamp UI of roleMembers/roleResources cards)
 			</RouterLink>
 		</div>
 
