@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
-AGENT_JOB_TRANSITION_STATES = ["Undelivered", "Pending", "Running"]
+BUILD_TRANSITION_STATES = ["Scheduled", "Pending", "Running"]
 BENCH_TRANSITION_STATES = ["Pending", "Installing", "Updating"]
 
 
@@ -29,6 +29,10 @@ class FailedBenchJobs(TypedDict):
 class BenchInfo(TypedDict):
 	name: str
 	status: str
+
+
+class ReleasePipelineFailure(Exception):
+	pass
 
 
 class ReleasePipeline(WorkflowBuilder):
@@ -44,8 +48,8 @@ class ReleasePipeline(WorkflowBuilder):
 		status: DF.Literal["Pending", "Running", "Partial Success", "Success", "Failure", "Retrying"]
 		team: DF.Link
 
-	def update_release_status(self, status: str):
-		frappe.db.set_value("Release Step", self.name, "status", status)
+	def update_pipeline_status(self, status: str):
+		frappe.db.set_value("Release Pipeline", self.name, "status", status)
 
 	@cached_property
 	def release_group_doc(self) -> "ReleaseGroup":
@@ -54,7 +58,7 @@ class ReleasePipeline(WorkflowBuilder):
 	@cached_property
 	def workflow_name(self) -> str:
 		return frappe.db.get_value(
-			"Press Workflow", {"linked_doctype": "Release Step", "linked_docname": self.name}, "name"
+			"Press Workflow", {"linked_doctype": "Release Pipeline", "linked_docname": self.name}, "name"
 		)
 
 	def get_task_name(self, func):
@@ -123,7 +127,8 @@ class ReleasePipeline(WorkflowBuilder):
 			)
 
 		if status == "Failure":
-			raise Exception(
+			# TODO: Ensure no retries are scheduled before marking as failure
+			raise ReleasePipelineFailure(
 				f"Pre Build Validation failed for Deploy Candidate Build {deploy_candidate_build}. Please check the build logs for more details."
 			)
 
@@ -131,31 +136,25 @@ class ReleasePipeline(WorkflowBuilder):
 			return  # We have enqueued the remote agent job
 
 	@task
-	def monitor_remote_build_job(self, deploy_candidate_build: str):
-		"""Monitor the remote build agent job until terminal state is reached."""
-		remote_builder_status = frappe.db.get_value(
-			"Agent Job",
-			{
-				"job_type": "Run Remote Builder",
-				"reference_doctype": "Deploy Candidate Build",
-				"reference_name": deploy_candidate_build,
-			},
-			"status",
+	def monitor_build_success(self, deploy_candidate_build: str):
+		"""Monitor build till terminal state."""
+		deploy_candidate_build_status = frappe.db.get_value(
+			"Deploy Candidate Build", deploy_candidate_build, "status"
 		)
 
-		if remote_builder_status in AGENT_JOB_TRANSITION_STATES:
+		if deploy_candidate_build_status in BUILD_TRANSITION_STATES:
 			raise PressWorkflowTaskEnqueued(
-				f"Waiting for remote builder job to complete for Deploy Candidate Build {deploy_candidate_build}",
+				f"Waiting for build to complete for Deploy Candidate Build {deploy_candidate_build}",
 				self.workflow_name,
-				self.get_task_name(self.monitor_remote_build_job),
+				self.get_task_name(self.monitor_build_success),
 			)
 
-		if remote_builder_status == "Failure":
-			raise Exception(
+		if deploy_candidate_build_status == "Failure":
+			raise ReleasePipelineFailure(
 				f"Remote build failed for Deploy Candidate Build {deploy_candidate_build}. Please check the build logs for more details."
 			)
 
-		if remote_builder_status == "Success":
+		if deploy_candidate_build_status == "Success":
 			return  # Remote Build succeeded can mark as success and proceed
 
 	def _calculate_bench_doc_requirements(
@@ -168,9 +167,12 @@ class ReleasePipeline(WorkflowBuilder):
 		# This can have intel and arm server both will have different builds
 		number_of_expected_bench_docs = len(self.release_group_doc.servers)
 		# Total number of bench docs created regardless of the server platforms
-		bench_info = frappe.db.get_all(
-			"Bench", {"build": ("in", [intel_build, arm_build])}, ["name", "status"]
-		)
+		builds = [build for build in [intel_build, arm_build] if build]
+
+		if not builds:
+			raise ReleasePipelineFailure(f"No builds found for Deploy Candidate {candidate}.")
+
+		bench_info = frappe.db.get_all("Bench", {"build": ("in", builds)}, ["name", "status"])
 		created_bench_docs = len(bench_info)
 		return number_of_expected_bench_docs, created_bench_docs, bench_info
 
@@ -204,7 +206,7 @@ class ReleasePipeline(WorkflowBuilder):
 		)
 
 		if will_benches_be_retried:
-			self.update_release_status("Retrying")
+			self.update_pipeline_status("Retrying")
 			raise PressWorkflowTaskEnqueued(
 				"Some bench deploys have failed but are scheduled for retry. Waiting for retries to complete.",
 				self.workflow_name,
@@ -223,19 +225,19 @@ class ReleasePipeline(WorkflowBuilder):
 
 		# Case 1: Pure Success
 		if num_failed == 0:
-			return self.update_release_status("Success")
+			return self.update_pipeline_status("Success")
 
 		# Case 2: Total Failure
 		if num_failed == num_total:
 			self.check_for_scheduled_retries(failed_bench_deploys)
-			self.update_release_status("Failure")
-			raise Exception(
+			self.update_pipeline_status("Failure")
+			raise ReleasePipelineFailure(
 				f"All bench deploys failed for Build {deploy_candidate_build}. Check jobs for details."
 			)
 
 		# Case 3: Partial Success
 		print(f"Some bench deploys failed for Build {deploy_candidate_build}. Check jobs for details.")
-		return self.update_release_status("Partial Success")
+		return self.update_pipeline_status("Partial Success")
 
 	@task
 	def monitor_bench_creation(self, deploy_candidate_build: str):
@@ -273,17 +275,21 @@ class ReleasePipeline(WorkflowBuilder):
 		run_will_fail_check: bool = False,
 	):
 		"""Create a release for the release group."""
-		self.update_release_status("Running")
-		self.validate_app_hashes(apps)
-		self.validate_server_storages()
-		self.validate_auto_scales_on_servers()
-		deploy_candidate = self.create_deploy_candidate(
-			apps=apps,
-			sites=sites,
-			run_will_fail_check=run_will_fail_check,
-			create_deploy=False,
-		)
-		deploy_candidate_build = self.initiate_pre_build_validations(deploy_candidate)
-		self.start_and_monitor_pre_build_validation(deploy_candidate_build)
-		self.monitor_remote_build_job(deploy_candidate_build)
-		self.monitor_bench_creation(deploy_candidate_build)
+		self.update_pipeline_status("Running")
+		try:
+			self.validate_app_hashes(apps)
+			self.validate_server_storages()
+			self.validate_auto_scales_on_servers()
+			deploy_candidate = self.create_deploy_candidate(
+				apps=apps,
+				sites=sites,
+				run_will_fail_check=run_will_fail_check,
+				create_deploy=False,
+			)
+			deploy_candidate_build = self.initiate_pre_build_validations(deploy_candidate)
+			self.start_and_monitor_pre_build_validation(deploy_candidate_build)
+			self.monitor_build_success(deploy_candidate_build)
+			self.monitor_bench_creation(deploy_candidate_build)
+		except ReleasePipelineFailure as e:
+			self.update_pipeline_status("Failure")
+			raise ReleasePipelineFailure from e

@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
-	from press.press.doctype.release_step.release_step import ReleaseStep
+	from press.press.doctype.release_pipeline.release_pipeline import ReleasePipeline
 
 
 @frappe.whitelist()
@@ -807,11 +807,11 @@ def deploy_and_update(
 	# 	sites,
 	# 	False,
 	# ).deploy(run_will_fail_check)
-	release_step: ReleaseStep = frappe.get_doc(
-		{"doctype": "Release Step", "release_group": name, "team": get_current_team()}
+	release_pipeline: ReleasePipeline = frappe.get_doc(
+		{"doctype": "Release Pipeline", "release_group": name, "team": get_current_team()}
 	)
-	release_step.insert()
-	release_step.create_release.run_as_workflow(
+	release_pipeline.insert()
+	release_pipeline.create_release.run_as_workflow(
 		apps=apps, sites=sites, run_will_fail_check=run_will_fail_check
 	)
 
