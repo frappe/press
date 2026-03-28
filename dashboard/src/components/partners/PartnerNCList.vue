@@ -24,7 +24,7 @@
 <script setup>
 import { onMounted, defineProps, ref } from 'vue';
 import router from '../../router';
-import { createListResource, FeatherIcon } from 'frappe-ui';
+import { createListResource } from 'frappe-ui';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
