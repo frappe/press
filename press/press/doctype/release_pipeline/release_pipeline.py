@@ -172,7 +172,10 @@ class ReleasePipeline(WorkflowBuilder):
 		if not builds:
 			raise ReleasePipelineFailure(f"No builds found for Deploy Candidate {candidate}.")
 
-		bench_info = frappe.db.get_all("Bench", {"build": ("in", builds)}, ["name", "status"])
+		# Account for previously created failed bench docs
+		bench_info = frappe.db.get_all(
+			"Bench", {"build": ("in", builds), "status": ("!=", "Archived")}, ["name", "status"]
+		)
 		created_bench_docs = len(bench_info)
 		return number_of_expected_bench_docs, created_bench_docs, bench_info
 
@@ -188,7 +191,7 @@ class ReleasePipeline(WorkflowBuilder):
 			["name", "bench"],
 		)
 
-	def _check_for_scheduled_retries(self, failed_bench_deploys: list[FailedBenchJobs]):
+	def _check_for_scheduled_bench_retries(self, failed_bench_deploys: list[FailedBenchJobs]):
 		"""Raise in case any of the failed agent jobs have retires in the pipeline"""
 		if not failed_bench_deploys:
 			return
@@ -213,7 +216,7 @@ class ReleasePipeline(WorkflowBuilder):
 				self.get_task_name(self.monitor_bench_creation),
 			)
 
-	def _finalize_bench_status(
+	def _finalize_pipeline_status(
 		self,
 		failed_bench_deploys: list[FailedBenchJobs],
 		bench_info: list[BenchInfo],
@@ -227,9 +230,13 @@ class ReleasePipeline(WorkflowBuilder):
 		if num_failed == 0:
 			return self.update_pipeline_status("Success")
 
+		if num_failed > 0:
+			# This will raise and enqueue function again in case of scheduled retries
+			# In case there are no scheduled retries it will simply continue to evaluate the failure
+			self._check_for_scheduled_bench_retries(failed_bench_deploys)
+
 		# Case 2: Total Failure
 		if num_failed == num_total:
-			self.check_for_scheduled_retries(failed_bench_deploys)
 			self.update_pipeline_status("Failure")
 			raise ReleasePipelineFailure(
 				f"All bench deploys failed for Build {deploy_candidate_build}. Check jobs for details."
@@ -241,8 +248,7 @@ class ReleasePipeline(WorkflowBuilder):
 
 	@task
 	def monitor_bench_creation(self, deploy_candidate_build: str):
-		"""Monitor the new bench agent jobs created for this deploy candidate build"""
-
+		"""Monitor new bench creation accounting for any failures and retries."""
 		number_of_expected_bench_docs, created_bench_docs, bench_info = (
 			self._calculate_bench_doc_requirements(deploy_candidate_build)
 		)
@@ -265,7 +271,7 @@ class ReleasePipeline(WorkflowBuilder):
 
 		# 3. Evaluate and finalize the outcome
 		failed_bench_deploys = self._get_stray_bench_creation_failures(bench_info)
-		self._finalize_bench_status(failed_bench_deploys, bench_info, deploy_candidate_build)
+		self._finalize_pipeline_status(failed_bench_deploys, bench_info, deploy_candidate_build)
 
 	@flow
 	def create_release(
@@ -290,6 +296,8 @@ class ReleasePipeline(WorkflowBuilder):
 			self.start_and_monitor_pre_build_validation(deploy_candidate_build)
 			self.monitor_build_success(deploy_candidate_build)
 			self.monitor_bench_creation(deploy_candidate_build)
+			frappe.db.commit()
 		except ReleasePipelineFailure as e:
 			self.update_pipeline_status("Failure")
+			frappe.db.commit()
 			raise ReleasePipelineFailure from e
