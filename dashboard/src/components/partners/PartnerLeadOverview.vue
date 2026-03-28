@@ -279,7 +279,6 @@ export default {
 				{
 					label: 'Lead Owner',
 					value: this.lead?.lead_owner,
-					condition: this.$team.doc.is_desk_user,
 				},
 				{
 					label: 'Plan Type',
