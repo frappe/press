@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestReleaseStep(FrappeTestCase):
+class TestReleasePipeline(FrappeTestCase):
 	pass

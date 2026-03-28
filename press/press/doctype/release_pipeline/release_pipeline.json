@@ -6,7 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "team",
-  "release_group"
+  "release_group",
+  "status"
  ],
  "fields": [
   {
@@ -25,15 +26,22 @@
    "options": "Release Group",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nRunning\nPartial Success\nSuccess\nFailure\nRetrying"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-26 15:24:07.523359",
+ "modified": "2026-03-27 23:24:48.320393",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Release Step",
+ "name": "Release Pipeline",
  "owner": "Administrator",
  "permissions": [
   {

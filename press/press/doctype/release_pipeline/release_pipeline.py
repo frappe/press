@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 import typing
 from functools import cached_property
-from typing import Any
+from typing import Any, TypedDict
 
 import frappe
 
@@ -21,7 +21,17 @@ AGENT_JOB_TRANSITION_STATES = ["Undelivered", "Pending", "Running"]
 BENCH_TRANSITION_STATES = ["Pending", "Installing", "Updating"]
 
 
-class ReleaseStep(WorkflowBuilder):
+class FailedBenchJobs(TypedDict):
+	name: str
+	bench: str
+
+
+class BenchInfo(TypedDict):
+	name: str
+	status: str
+
+
+class ReleasePipeline(WorkflowBuilder):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -31,7 +41,11 @@ class ReleaseStep(WorkflowBuilder):
 		from frappe.types import DF
 
 		release_group: DF.Link | None
+		status: DF.Literal["Pending", "Running", "Partial Success", "Success", "Failure", "Retrying"]
 		team: DF.Link
+
+	def update_release_status(self, status: str):
+		frappe.db.set_value("Release Step", self.name, "status", status)
 
 	@cached_property
 	def release_group_doc(self) -> "ReleaseGroup":
@@ -144,34 +158,112 @@ class ReleaseStep(WorkflowBuilder):
 		if remote_builder_status == "Success":
 			return  # Remote Build succeeded can mark as success and proceed
 
-	@task
-	def monitor_bench_creation(self, deploy_candidate_build: str):
-		"""Monitor the new bench agent jobs created for this deploy candidate build"""
-		# In this we need to smartly wait for all the agent jobs for the bench to be created
+	def _calculate_bench_doc_requirements(
+		self, deploy_candidate_build: str
+	) -> tuple[int, int, list[BenchInfo]]:
 		candidate = frappe.db.get_value("Deploy Candidate Build", deploy_candidate_build, "deploy_candidate")
 		intel_build, arm_build = frappe.db.get_value(
 			"Deploy Candidate", candidate, ["intel_build", "arm_build"]
 		)
 		# This can have intel and arm server both will have different builds
-		number_of_expected_bench_jobs = len(self.release_group_doc.servers)
+		number_of_expected_bench_docs = len(self.release_group_doc.servers)
 		# Total number of bench docs created regardless of the server platforms
-		created_bench_jobs = frappe.db.count("Bench", {"build": ("in", [intel_build, arm_build])})
+		bench_info = frappe.db.get_all(
+			"Bench", {"build": ("in", [intel_build, arm_build])}, ["name", "status"]
+		)
+		created_bench_docs = len(bench_info)
+		return number_of_expected_bench_docs, created_bench_docs, bench_info
 
-		# We haven't created all the bench docs yet for this build
-		if created_bench_jobs != number_of_expected_bench_jobs:
+	def _get_stray_bench_creation_failures(self, bench_info: list[BenchInfo]) -> list[FailedBenchJobs]:
+		# This is to catch any bench creation failures that might have happened
+		return frappe.get_all(
+			"Agent Job",
+			{
+				"job_type": "New Bench",
+				"bench": ("in", [info["name"] for info in bench_info]),
+				"status": "Failure",
+			},
+			["name", "bench"],
+		)
+
+	def _check_for_scheduled_retries(self, failed_bench_deploys: list[FailedBenchJobs]):
+		"""Raise in case any of the failed agent jobs have retires in the pipeline"""
+		if not failed_bench_deploys:
+			return
+
+		will_benches_be_retried = frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Archive Bench",
+				"bench": ("in", [deploy["bench"] for deploy in failed_bench_deploys]),
+				"request_data": (
+					"like",
+					'%"retry_new_bench": true%',
+				),  # Should not be too heavy since bench is indexed?
+			},
+		)
+
+		if will_benches_be_retried:
+			self.update_release_status("Retrying")
 			raise PressWorkflowTaskEnqueued(
-				f"Waiting for bench docs to be created for Deploy Candidate Build {deploy_candidate_build}",
+				"Some bench deploys have failed but are scheduled for retry. Waiting for retries to complete.",
 				self.workflow_name,
 				self.get_task_name(self.monitor_bench_creation),
 			)
 
-		bench_statuses = frappe.get_all("Bench", {"build": deploy_candidate_build}, pluck="status")
-		if any(status in BENCH_TRANSITION_STATES for status in bench_statuses):
+	def _finalize_bench_status(
+		self,
+		failed_bench_deploys: list[FailedBenchJobs],
+		bench_info: list[BenchInfo],
+		deploy_candidate_build: str,
+	):
+		"""Evaluates failures and updates the release status accordingly."""
+		num_failed = len(failed_bench_deploys)
+		num_total = len(bench_info)
+
+		# Case 1: Pure Success
+		if num_failed == 0:
+			return self.update_release_status("Success")
+
+		# Case 2: Total Failure
+		if num_failed == num_total:
+			self.check_for_scheduled_retries(failed_bench_deploys)
+			self.update_release_status("Failure")
+			raise Exception(
+				f"All bench deploys failed for Build {deploy_candidate_build}. Check jobs for details."
+			)
+
+		# Case 3: Partial Success
+		print(f"Some bench deploys failed for Build {deploy_candidate_build}. Check jobs for details.")
+		return self.update_release_status("Partial Success")
+
+	@task
+	def monitor_bench_creation(self, deploy_candidate_build: str):
+		"""Monitor the new bench agent jobs created for this deploy candidate build"""
+
+		number_of_expected_bench_docs, created_bench_docs, bench_info = (
+			self._calculate_bench_doc_requirements(deploy_candidate_build)
+		)
+
+		# 1. Ensure docs exist
+		if created_bench_docs != number_of_expected_bench_docs:
 			raise PressWorkflowTaskEnqueued(
-				f"Waiting for bench jobs to complete for Deploy Candidate Build {deploy_candidate_build}",
+				f"Waiting for bench docs to be created for {deploy_candidate_build}",
 				self.workflow_name,
 				self.get_task_name(self.monitor_bench_creation),
 			)
+
+		# 2. Ensure jobs are out of transition states
+		if any(info["status"] in BENCH_TRANSITION_STATES for info in bench_info):
+			raise PressWorkflowTaskEnqueued(
+				f"Waiting for bench jobs to complete for {deploy_candidate_build}",
+				self.workflow_name,
+				self.get_task_name(self.monitor_bench_creation),
+			)
+
+		# 3. Evaluate and finalize the outcome
+		failed_bench_deploys = self._get_stray_bench_creation_failures(bench_info)
+		self._finalize_bench_status(failed_bench_deploys, bench_info, deploy_candidate_build)
 
 	@flow
 	def create_release(
@@ -181,6 +273,7 @@ class ReleaseStep(WorkflowBuilder):
 		run_will_fail_check: bool = False,
 	):
 		"""Create a release for the release group."""
+		self.update_release_status("Running")
 		self.validate_app_hashes(apps)
 		self.validate_server_storages()
 		self.validate_auto_scales_on_servers()

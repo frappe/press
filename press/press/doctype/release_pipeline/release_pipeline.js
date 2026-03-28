@@ -1,7 +1,7 @@
 // Copyright (c) 2026, Frappe and contributors
 // For license information, please see license.txt
 
-// frappe.ui.form.on("Release Step", {
+// frappe.ui.form.on("Release Pipeline", {
 // 	refresh(frm) {
 
 // 	},
