@@ -20,6 +20,8 @@
   "column_break_oygq",
   "private_ip",
   "secondary_private_ip",
+  "agent_section",
+  "agent_password",
   "ssh_section",
   "ssh_port",
   "frappe_public_key",
@@ -148,6 +150,17 @@
    "fieldtype": "Check",
    "label": "TLS Certificate Renewal Failed",
    "read_only": 1
+  },
+  {
+   "fieldname": "agent_section",
+   "fieldtype": "Section Break",
+   "label": "Agent"
+  },
+  {
+   "fieldname": "agent_password",
+   "fieldtype": "Password",
+   "label": "Agent Password",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -159,7 +172,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2026-03-24 02:08:49.583223",
+ "modified": "2026-03-30 18:54:11.260333",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NAT Server",
