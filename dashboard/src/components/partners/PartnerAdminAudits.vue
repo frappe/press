@@ -33,6 +33,12 @@ export default {
 						},
 					},
 					{
+						label: 'Status',
+						fieldname: 'status',
+						type: 'Badge',
+						width: 0.5,
+					},
+					{
 						label: 'Audit Type',
 						fieldname: 'mode_of_audit',
 						width: 0.5,
@@ -40,16 +46,24 @@ export default {
 					{
 						label: 'Conducted By',
 						fieldname: 'conducted_by',
+						width: 0.8,
+						class: 'truncate',
+						format: (value) => {
+							if (!value) return '';
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+						},
 					},
 					{
-						label: 'Status',
-						fieldname: 'status',
+						label: 'NC Count',
+						fieldname: 'non_conformance_count',
+						width: 0.4,
 						type: 'Badge',
-						width: 0.5,
+						align: 'center',
 					},
 					{
 						label: 'Requested Date',
 						fieldname: 'proposed_audit_date',
+						width: 0.8,
 						format(value) {
 							if (!value) return '';
 							return Intl.DateTimeFormat('en-US', {
@@ -62,6 +76,7 @@ export default {
 					{
 						label: 'Audit Date',
 						fieldname: 'audit_date',
+						width: 0.8,
 						format(value) {
 							if (!value) return '';
 							return Intl.DateTimeFormat('en-US', {
@@ -84,6 +99,7 @@ export default {
 							fieldname: 'status',
 							label: 'Status',
 							options: [
+								{ label: 'All', value: 'All' },
 								{ label: 'Requested', value: 'Requested' },
 								{ label: 'Scheduled', value: 'Scheduled' },
 								{ label: 'In Progress', value: 'In Progress' },
@@ -96,6 +112,12 @@ export default {
 							type: 'select',
 							fieldname: 'mode_of_audit',
 							label: 'Audit Type',
+							options: [
+								{ label: 'All', value: 'All' },
+								{ label: 'In-Person', value: 'In-Person' },
+								{ label: 'Online', value: 'Online' },
+								{ label: 'Hybrid', value: 'Hybrid' },
+							],
 						},
 					];
 				},

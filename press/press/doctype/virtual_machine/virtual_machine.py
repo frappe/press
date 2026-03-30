@@ -434,9 +434,9 @@ class VirtualMachine(Document):
 		return
 
 	@frappe.whitelist()
-	def provision(self):
+	def provision(self, assign_public_ip=True):
 		if self.cloud_provider == "AWS EC2":
-			return self._provision_aws()
+			return self._provision_aws(assign_public_ip)
 		if self.cloud_provider == "OCI":
 			return self._provision_oci()
 		if self.cloud_provider == "Hetzner":

@@ -14,7 +14,7 @@ frappe.ui.form.on('Agent Job', {
 			__('Visit Dashboard'),
 		);
 
-		if (!['Success', 'Failure', 'Delivery Failure'].includes(frm.doc.status)) {
+		if (!['Success', 'Delivery Failure'].includes(frm.doc.status)) {
 			frm.add_custom_button(
 				__('Get Status'),
 				() => {

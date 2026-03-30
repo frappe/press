@@ -210,7 +210,7 @@ class ReleaseGroup(Document, TagHelpers):
 			{
 				"destination_group": self.name,
 				"deploy_private_bench": 1,
-				"status": ("in", ["Pending", "Scheduled"]),
+				"status": ("in", ["Pending", "Scheduled", "Running"]),
 			},
 		)
 
@@ -1512,6 +1512,19 @@ class ReleaseGroup(Document, TagHelpers):
 		except frappe.DoesNotExistError:
 			return None
 
+	@frappe.whitelist()
+	def add_server(self, server: str, deploy=False, force_new_build: bool = False) -> str | None:
+		"""
+		Add a server to the release group in case last successful deploy candidate exists
+		create a deploy check if the image has not been pruned from the registry in case of
+		missing image create new build.
+		"""
+		self.append("servers", {"server": server, "default": False})
+		self.save()
+		if deploy:
+			return self.deploy_on_server(server, force_new_build=force_new_build)
+		return None
+
 	def deploy_on_server(self, server: str, force_new_build=False) -> str | None:
 		server_platform = frappe.get_value("Server", server, "platform")
 		last_successful_deploy_candidate_build = self.get_last_successful_candidate_build(
@@ -1540,19 +1553,6 @@ class ReleaseGroup(Document, TagHelpers):
 			).name
 		except ImageNotFoundInRegistry:
 			return self.deploy_on_server(server=server, force_new_build=True)
-
-	@frappe.whitelist()
-	def add_server(self, server: str, deploy=False, force_new_build: bool = False) -> str | None:
-		"""
-		Add a server to the release group in case last successful deploy candidate exists
-		create a deploy check if the image has not been pruned from the registry in case of
-		missing image create new build.
-		"""
-		self.append("servers", {"server": server, "default": False})
-		self.save()
-		if deploy:
-			return self.deploy_on_server(server, force_new_build=force_new_build)
-		return None
 
 	@frappe.whitelist()
 	def redeploy_on_missing_servers(self):

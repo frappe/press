@@ -155,6 +155,32 @@ class PressRole(Document):
 	def on_trash(self) -> None:
 		frappe.db.delete("Account Request Press Role", {"press_role": self.name})
 
+	def get_doc(self, doc):
+		flat_resources = []
+		for resource in doc["resources"]:
+			dict = resource.as_dict()
+
+			if dict["document_type"] in ["Release Group", "Server"]:
+				dict["document_title"] = frappe.get_value(
+					dict["document_type"], dict["document_name"], "title"
+				)
+			else:
+				dict["document_title"] = dict["document_name"]
+
+			flat_resources.append(dict)
+
+		doc["resources"] = flat_resources
+
+		flat_users = []
+		for user in doc.get("users", []):
+			u = user.as_dict()
+
+			u["user_image"] = frappe.get_value("User", u["user"], "user_image")
+
+			flat_users.append(u)
+
+		doc["users"] = flat_users
+
 
 def create_user_resource(document: Document, _):
 	user = frappe.session.user

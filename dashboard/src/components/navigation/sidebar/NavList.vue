@@ -17,7 +17,6 @@ import Globe from '~icons/lucide/globe';
 import Notification from '~icons/lucide/inbox';
 import Code from '~icons/lucide/code';
 import FileSearch from '~icons/lucide/file-search';
-import ActivityIcon from '~icons/lucide/activity';
 import { unreadNotificationsCount } from '@/data/notifications';
 
 import { getTeam } from '@/data/team';
@@ -37,8 +36,8 @@ const navigation = computed(() => {
 	const isSaasUser = $team.doc.is_saas_user;
 	const enforce2FA = Boolean(
 		!$team.doc.is_desk_user &&
-		$team.doc.enforce_2fa &&
-		!$team.doc.user_info?.is_2fa_enabled,
+			$team.doc.enforce_2fa &&
+			!$team.doc.user_info?.is_2fa_enabled,
 	);
 
 	return [
@@ -197,7 +196,7 @@ const navigation = computed(() => {
 		},
 		{
 			name: 'Status',
-			icon: ActivityIcon,
+			icon: () => h(Globe),
 			route: '/status',
 			isActive: routeName === 'Status',
 			disabled: enforce2FA,

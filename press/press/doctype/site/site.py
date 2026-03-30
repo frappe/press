@@ -1487,6 +1487,37 @@ class Site(Document, TagHelpers):
 
 		return job
 
+	def change_region(
+		self, cluster: str, scheduled_time: str | None = None, skip_failing_patches: bool = False
+	):
+		group = frappe.db.get_value("Site", self.name, "group")
+		bench_vals = frappe.db.get_value(
+			"Bench", {"group": group, "cluster": cluster, "status": "Active"}, ["name", "server"]
+		)
+
+		if bench_vals is None:
+			frappe.throw(f"Bench {group} does not have an existing deploy in {cluster}")
+
+		bench, server = bench_vals
+
+		site_migration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": self.name,
+				"destination_group": group,
+				"destination_bench": bench,
+				"destination_server": server,
+				"destination_cluster": cluster,
+				"scheduled_time": scheduled_time,
+				"skip_failing_patches": skip_failing_patches,
+			}
+		).insert()
+
+		if not scheduled_time:
+			site_migration.start()
+
+		return site_migration
+
 	def reset_previous_status(self, fix_broken=False):
 		if self.status == "Archived":
 			return
@@ -3480,13 +3511,6 @@ class Site(Document, TagHelpers):
 				"description": "Upgrade your site to a major version",
 				"button_label": "Upgrade",
 				"doc_method": "upgrade",
-				"condition": self.status in ["Active", "Broken", "Inactive"],
-			},
-			{
-				"action": "Change bench",
-				"description": "Move your site to a different bench",
-				"button_label": "Change",
-				"doc_method": "change_bench",
 				"condition": self.status in ["Active", "Broken", "Inactive"],
 			},
 			{

@@ -1,25 +1,35 @@
 <template>
 	<div class="space-y-4">
-		<div class="grid grid-cols-3 gap-4 text-base">
+		<div
+			class="grid grid-cols-3 gap-4 text-base"
+			v-if="resources && resources.length > 0"
+		>
 			<RouterLink
 				v-for="resource in resources"
 				:to="toLink(resource)"
-				class="text-sm border rounded flex group px-4"
+				class="text-sm border rounded flex group py-3 px-3.5"
 			>
 				<div class="flex gap-4 rounded transition min-w-0">
 					<div
-						class="m-auto size-12 rounded-lg flex items-center justify-center p-3"
+						class="m-auto size-14 rounded-lg flex items-center justify-center p-3"
 						:class="colorClasses[resource.document_type]"
 					>
 						<FeatherIcon class="size-6" :name="icons[resource.document_type]" />
 					</div>
 
-					<div class="py-3 flex flex-col leading-relaxed min-w-0">
-						<span class="text-ink-gray-5 truncate" :title="resource.name">
-							{{ resource.name }}
+					<div class="flex flex-col min-w-0">
+						<span
+							v-if="resource.document_type !== 'Site'"
+							class="truncate font-medium mb-1"
+							:title="resource.document_title"
+						>
+							{{ resource.document_title }}
 						</span>
-						<span class="font-medium">{{ resource.document_name }}</span>
-						<span class="text-ink-gray-5">{{
+
+						<span class="mb-2 text-ink-gray-5">{{
+							resource.document_name
+						}}</span>
+						<span class="text-ink-gray-5 text-xs">{{
 							resource.document_type == 'Release Group'
 								? 'Bench'
 								: resource.document_type
@@ -29,12 +39,19 @@
 				<Button
 					icon="trash-2"
 					theme="red"
-					class="opacity-0 group-hover:opacity-100 transition my-auto ml-auto"
+					class="opacity-0 group-hover:opacity-100 transition mb-auto ml-auto"
 					@click.prevent.stop="
 						$emit('remove', resource.document_type, resource.document_name)
 					"
 				/>
 			</RouterLink>
+		</div>
+
+		<div
+			v-else
+			class="text-ink-gray-4 text-sm p-20 rounded flex bg-surface-gray-1 justify-center"
+		>
+			No resources to show
 		</div>
 		<div>
 			<Button label="Include" icon-left="globe" @click="open = !open" />

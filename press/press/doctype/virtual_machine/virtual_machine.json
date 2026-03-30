@@ -1,483 +1,483 @@
 {
- "actions": [],
- "allow_rename": 1,
- "creation": "2021-09-06 18:18:49.887153",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "cluster",
-  "status",
-  "team",
-  "column_break_3",
-  "cloud_provider",
-  "region",
-  "availability_zone",
-  "naming_section",
-  "domain",
-  "series",
-  "column_break_32",
-  "index",
-  "section_break_5",
-  "machine_type",
-  "instance_id",
-  "platform",
-  "kms_key_id",
-  "ssh_key",
-  "ready_for_conversion",
-  "column_break_hgcr",
-  "disk_size",
-  "root_disk_size",
-  "vcpu",
-  "ram",
-  "column_break_8",
-  "virtual_machine_image",
-  "machine_image",
-  "data_disk_snapshot",
-  "data_disk_snapshot_volume_id",
-  "data_disk_snapshot_attached",
-  "networking_section",
-  "subnet_id",
-  "private_ip_address",
-  "public_ip_address",
-  "assign_public_ip",
-  "is_static_ip",
-  "column_break_15",
-  "subnet_cidr_block",
-  "public_dns_name",
-  "private_dns_name",
-  "secondary_private_ip",
-  "security_section",
-  "security_group_id",
-  "column_break_18",
-  "termination_protection",
-  "volumes_section",
-  "has_data_volume",
-  "volumes",
-  "temporary_volumes",
-  "snapshots_section",
-  "skip_automated_snapshot",
-  "column_break_zozh",
-  "disable_server_snapshot"
- ],
- "fields": [
-  {
-   "fetch_from": "cluster.cloud_provider",
-   "fieldname": "cloud_provider",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Cloud Provider",
-   "options": "\nAWS EC2\nOCI\nHetzner\nDigitalOcean\nFrappe Compute",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fetch_from": "cluster.region",
-   "fieldname": "region",
-   "fieldtype": "Link",
-   "label": "Region",
-   "options": "Cloud Region",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "cluster.availability_zone",
-   "fieldname": "availability_zone",
-   "fieldtype": "Data",
-   "label": "Availability Zone",
-   "read_only": 1
-  },
-  {
-   "fieldname": "cluster",
-   "fieldtype": "Link",
-   "in_standard_filter": 1,
-   "label": "Cluster",
-   "options": "Cluster",
-   "reqd": 1,
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "section_break_5",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_3",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_8",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "virtual_machine_image.image_id",
-   "fetch_if_empty": 1,
-   "fieldname": "machine_image",
-   "fieldtype": "Data",
-   "label": "Machine Image"
-  },
-  {
-   "fieldname": "machine_type",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Machine Type",
-   "reqd": 1
-  },
-  {
-   "fieldname": "networking_section",
-   "fieldtype": "Section Break",
-   "label": "Networking"
-  },
-  {
-   "fetch_from": "cluster.subnet_cidr_block",
-   "fieldname": "subnet_cidr_block",
-   "fieldtype": "Data",
-   "label": "Subnet CIDR Block",
-   "read_only": 1
-  },
-  {
-   "fieldname": "private_ip_address",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Private IP Address"
-  },
-  {
-   "fieldname": "security_section",
-   "fieldtype": "Section Break",
-   "label": "Security"
-  },
-  {
-   "fetch_from": "cluster.ssh_key",
-   "fieldname": "ssh_key",
-   "fieldtype": "Link",
-   "label": "SSH Key",
-   "options": "SSH Key",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_18",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "public_ip_address",
-   "fieldtype": "Data",
-   "label": "Public IP Address",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_15",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "public_dns_name",
-   "fieldtype": "Data",
-   "label": "Public DNS Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "private_dns_name",
-   "fieldtype": "Data",
-   "label": "Private DNS Name",
-   "read_only": 1
-  },
-  {
-   "default": "Draft",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Draft\nPending\nRunning\nStopped\nTerminated",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "default": "8",
-   "fieldname": "disk_size",
-   "fieldtype": "Int",
-   "label": "Disk Size",
-   "reqd": 1
-  },
-  {
-   "fieldname": "volumes_section",
-   "fieldtype": "Section Break",
-   "label": "Volumes"
-  },
-  {
-   "fieldname": "volumes",
-   "fieldtype": "Table",
-   "label": "Volumes",
-   "options": "Virtual Machine Volume",
-   "read_only_depends_on": "eval: doc.volumes.length > 0"
-  },
-  {
-   "fieldname": "virtual_machine_image",
-   "fieldtype": "Link",
-   "label": "Virtual Machine Image",
-   "link_filters": "[[\"Virtual Machine Image\",\"status\",\"=\",\"Available\"]]",
-   "options": "Virtual Machine Image",
-   "read_only_depends_on": "eval: doc.virtual_machine_image"
-  },
-  {
-   "default": "0",
-   "fieldname": "termination_protection",
-   "fieldtype": "Check",
-   "label": "Termination Protection",
-   "read_only": 1
-  },
-  {
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Team"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "naming_section",
-   "fieldtype": "Section Break",
-   "label": "Naming"
-  },
-  {
-   "fieldname": "index",
-   "fieldtype": "Int",
-   "label": "Index",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_32",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "series",
-   "fieldtype": "Select",
-   "label": "Series",
-   "options": "n\nf\nm\nc\np\ne\nr\nu\nt\nnfs\nfs\nnat",
-   "reqd": 1
-  },
-  {
-   "fieldname": "domain",
-   "fieldtype": "Link",
-   "label": "Domain",
-   "options": "Root Domain",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_hgcr",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "ram",
-   "fieldtype": "Int",
-   "label": "RAM (MB)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "vcpu",
-   "fieldtype": "Int",
-   "label": "vCPU",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "cluster.subnet_id",
-   "fieldname": "subnet_id",
-   "fieldtype": "Data",
-   "label": "Subnet ID",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "cluster.security_group_id",
-   "fieldname": "security_group_id",
-   "fieldtype": "Data",
-   "label": "Security Group ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "instance_id",
-   "fieldtype": "Data",
-   "in_standard_filter": 1,
-   "label": "Instance ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "platform",
-   "fieldtype": "Select",
-   "label": "Platform",
-   "options": "x86_64\narm64",
-   "reqd": 1
-  },
-  {
-   "default": "8",
-   "fieldname": "root_disk_size",
-   "fieldtype": "Int",
-   "label": "Root Disk Size",
-   "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "has_data_volume",
-   "fieldtype": "Check",
-   "label": "Has Data Volume"
-  },
-  {
-   "description": "Data volumes that have been temporarily attached for tasks such as Physical Backup Restoration.",
-   "fieldname": "temporary_volumes",
-   "fieldtype": "Table",
-   "label": "Temporary Volumes",
-   "options": "Virtual Machine Temporary Volume"
-  },
-  {
-   "fieldname": "snapshots_section",
-   "fieldtype": "Section Break",
-   "label": "Snapshots"
-  },
-  {
-   "default": "0",
-   "fieldname": "skip_automated_snapshot",
-   "fieldtype": "Check",
-   "label": "Skip Automated Snapshot"
-  },
-  {
-   "default": "0",
-   "fieldname": "ready_for_conversion",
-   "fieldtype": "Check",
-   "label": "Ready For Conversion",
-   "read_only": 1
-  },
-  {
-   "fieldname": "kms_key_id",
-   "fieldtype": "Data",
-   "label": "KMS Key ID"
-  },
-  {
-   "fieldname": "data_disk_snapshot",
-   "fieldtype": "Link",
-   "label": "Data Disk Snapshot",
-   "options": "Virtual Disk Snapshot"
-  },
-  {
-   "depends_on": "eval: doc.data_disk_snapshot",
-   "fieldname": "data_disk_snapshot_volume_id",
-   "fieldtype": "Data",
-   "label": "Data Disk Snapshot Volume ID",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.data_disk_snapshot",
-   "fieldname": "data_disk_snapshot_attached",
-   "fieldtype": "Check",
-   "label": "Data Disk Snapshot Attached",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_zozh",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "description": "If you disable server snapshot, it will just take disk snapshot",
-   "fieldname": "disable_server_snapshot",
-   "fieldtype": "Check",
-   "label": "Disable Server Snapshot"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_static_ip",
-   "fieldtype": "Check",
-   "label": "Is Static IP",
-   "read_only": 1
-  },
-  {
-   "fieldname": "secondary_private_ip",
-   "fieldtype": "Data",
-   "label": "Secondary Private IP Address",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "assign_public_ip",
-   "fieldtype": "Check",
-   "label": "Assign Public IP",
-   "set_only_once": 1
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [
-  {
-   "group": "Servers",
-   "link_doctype": "Server",
-   "link_fieldname": "virtual_machine"
-  },
-  {
-   "group": "Servers",
-   "link_doctype": "Database Server",
-   "link_fieldname": "virtual_machine"
-  },
-  {
-   "group": "Servers",
-   "link_doctype": "Proxy Server",
-   "link_fieldname": "virtual_machine"
-  },
-  {
-   "group": "Servers",
-   "link_doctype": "NFS Server",
-   "link_fieldname": "virtual_machine"
-  },
-  {
-   "group": "Servers",
-   "link_doctype": "NAT Server",
-   "link_fieldname": "virtual_machine"
-  },
-  {
-   "group": "Snapshots",
-   "link_doctype": "Virtual Disk Snapshot",
-   "link_fieldname": "virtual_machine"
-  },
-  {
-   "group": "Snapshots",
-   "link_doctype": "Virtual Machine Image",
-   "link_fieldname": "virtual_machine"
-  },
-  {
-   "group": "Migration",
-   "link_doctype": "Virtual Machine Migration",
-   "link_fieldname": "virtual_machine"
-  }
- ],
- "modified": "2026-03-18 12:04:02.955392",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Virtual Machine",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "read": 1,
-   "role": "Press Admin",
-   "write": 1
-  },
-  {
-   "create": 1,
-   "read": 1,
-   "role": "Press Member",
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2021-09-06 18:18:49.887153",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "cluster",
+    "status",
+    "team",
+    "column_break_3",
+    "cloud_provider",
+    "region",
+    "availability_zone",
+    "naming_section",
+    "domain",
+    "series",
+    "column_break_32",
+    "index",
+    "section_break_5",
+    "machine_type",
+    "instance_id",
+    "platform",
+    "kms_key_id",
+    "ssh_key",
+    "ready_for_conversion",
+    "column_break_hgcr",
+    "disk_size",
+    "root_disk_size",
+    "vcpu",
+    "ram",
+    "column_break_8",
+    "virtual_machine_image",
+    "machine_image",
+    "data_disk_snapshot",
+    "data_disk_snapshot_volume_id",
+    "data_disk_snapshot_attached",
+    "networking_section",
+    "subnet_id",
+    "private_ip_address",
+    "public_ip_address",
+    "assign_public_ip",
+    "is_static_ip",
+    "column_break_15",
+    "subnet_cidr_block",
+    "public_dns_name",
+    "private_dns_name",
+    "secondary_private_ip",
+    "security_section",
+    "security_group_id",
+    "column_break_18",
+    "termination_protection",
+    "volumes_section",
+    "has_data_volume",
+    "volumes",
+    "temporary_volumes",
+    "snapshots_section",
+    "skip_automated_snapshot",
+    "column_break_zozh",
+    "disable_server_snapshot"
+  ],
+  "fields": [
+    {
+      "fetch_from": "cluster.cloud_provider",
+      "fieldname": "cloud_provider",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Cloud Provider",
+      "options": "\nAWS EC2\nOCI\nHetzner\nDigitalOcean\nFrappe Compute",
+      "read_only": 1,
+      "reqd": 1
+    },
+    {
+      "fetch_from": "cluster.region",
+      "fieldname": "region",
+      "fieldtype": "Link",
+      "label": "Region",
+      "options": "Cloud Region",
+      "read_only": 1
+    },
+    {
+      "fetch_from": "cluster.availability_zone",
+      "fieldname": "availability_zone",
+      "fieldtype": "Data",
+      "label": "Availability Zone",
+      "read_only": 1
+    },
+    {
+      "fieldname": "cluster",
+      "fieldtype": "Link",
+      "in_standard_filter": 1,
+      "label": "Cluster",
+      "options": "Cluster",
+      "reqd": 1,
+      "set_only_once": 1
+    },
+    {
+      "fieldname": "section_break_5",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "column_break_3",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "column_break_8",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "virtual_machine_image.image_id",
+      "fetch_if_empty": 1,
+      "fieldname": "machine_image",
+      "fieldtype": "Data",
+      "label": "Machine Image"
+    },
+    {
+      "fieldname": "machine_type",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "label": "Machine Type",
+      "reqd": 1
+    },
+    {
+      "fieldname": "networking_section",
+      "fieldtype": "Section Break",
+      "label": "Networking"
+    },
+    {
+      "fetch_from": "cluster.subnet_cidr_block",
+      "fieldname": "subnet_cidr_block",
+      "fieldtype": "Data",
+      "label": "Subnet CIDR Block",
+      "read_only": 1
+    },
+    {
+      "fieldname": "private_ip_address",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Private IP Address"
+    },
+    {
+      "fieldname": "security_section",
+      "fieldtype": "Section Break",
+      "label": "Security"
+    },
+    {
+      "fetch_from": "cluster.ssh_key",
+      "fieldname": "ssh_key",
+      "fieldtype": "Link",
+      "label": "SSH Key",
+      "options": "SSH Key",
+      "read_only": 1,
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_18",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "public_ip_address",
+      "fieldtype": "Data",
+      "label": "Public IP Address",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_15",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "public_dns_name",
+      "fieldtype": "Data",
+      "label": "Public DNS Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "private_dns_name",
+      "fieldtype": "Data",
+      "label": "Private DNS Name",
+      "read_only": 1
+    },
+    {
+      "default": "Draft",
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "label": "Status",
+      "options": "Draft\nPending\nRunning\nStopped\nTerminated",
+      "read_only": 1,
+      "search_index": 1
+    },
+    {
+      "default": "8",
+      "fieldname": "disk_size",
+      "fieldtype": "Int",
+      "label": "Disk Size",
+      "reqd": 1
+    },
+    {
+      "fieldname": "volumes_section",
+      "fieldtype": "Section Break",
+      "label": "Volumes"
+    },
+    {
+      "fieldname": "volumes",
+      "fieldtype": "Table",
+      "label": "Volumes",
+      "options": "Virtual Machine Volume",
+      "read_only_depends_on": "eval: doc.volumes.length > 0"
+    },
+    {
+      "fieldname": "virtual_machine_image",
+      "fieldtype": "Link",
+      "label": "Virtual Machine Image",
+      "link_filters": "[[\"Virtual Machine Image\",\"status\",\"=\",\"Available\"]]",
+      "options": "Virtual Machine Image",
+      "read_only_depends_on": "eval: doc.virtual_machine_image"
+    },
+    {
+      "default": "0",
+      "fieldname": "termination_protection",
+      "fieldtype": "Check",
+      "label": "Termination Protection",
+      "read_only": 1
+    },
+    {
+      "fieldname": "team",
+      "fieldtype": "Link",
+      "label": "Team",
+      "options": "Team"
+    },
+    {
+      "collapsible": 1,
+      "fieldname": "naming_section",
+      "fieldtype": "Section Break",
+      "label": "Naming"
+    },
+    {
+      "fieldname": "index",
+      "fieldtype": "Int",
+      "label": "Index",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_32",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "series",
+      "fieldtype": "Select",
+      "label": "Series",
+      "options": "n\nf\nm\nc\np\ne\nr\nu\nt\nnfs\nfs\nnat",
+      "reqd": 1
+    },
+    {
+      "fieldname": "domain",
+      "fieldtype": "Link",
+      "label": "Domain",
+      "options": "Root Domain",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_hgcr",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "ram",
+      "fieldtype": "Int",
+      "label": "RAM (MB)",
+      "read_only": 1
+    },
+    {
+      "fieldname": "vcpu",
+      "fieldtype": "Int",
+      "label": "vCPU",
+      "read_only": 1
+    },
+    {
+      "fetch_from": "cluster.subnet_id",
+      "fieldname": "subnet_id",
+      "fieldtype": "Data",
+      "label": "Subnet ID",
+      "read_only": 1
+    },
+    {
+      "fetch_from": "cluster.security_group_id",
+      "fieldname": "security_group_id",
+      "fieldtype": "Data",
+      "label": "Security Group ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "instance_id",
+      "fieldtype": "Data",
+      "in_standard_filter": 1,
+      "label": "Instance ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "platform",
+      "fieldtype": "Select",
+      "label": "Platform",
+      "options": "x86_64\narm64",
+      "reqd": 1
+    },
+    {
+      "default": "8",
+      "fieldname": "root_disk_size",
+      "fieldtype": "Int",
+      "label": "Root Disk Size",
+      "reqd": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "has_data_volume",
+      "fieldtype": "Check",
+      "label": "Has Data Volume"
+    },
+    {
+      "description": "Data volumes that have been temporarily attached for tasks such as Physical Backup Restoration.",
+      "fieldname": "temporary_volumes",
+      "fieldtype": "Table",
+      "label": "Temporary Volumes",
+      "options": "Virtual Machine Temporary Volume"
+    },
+    {
+      "fieldname": "snapshots_section",
+      "fieldtype": "Section Break",
+      "label": "Snapshots"
+    },
+    {
+      "default": "0",
+      "fieldname": "skip_automated_snapshot",
+      "fieldtype": "Check",
+      "label": "Skip Automated Snapshot"
+    },
+    {
+      "default": "0",
+      "fieldname": "ready_for_conversion",
+      "fieldtype": "Check",
+      "label": "Ready For Conversion",
+      "read_only": 1
+    },
+    {
+      "fieldname": "kms_key_id",
+      "fieldtype": "Data",
+      "label": "KMS Key ID"
+    },
+    {
+      "fieldname": "data_disk_snapshot",
+      "fieldtype": "Link",
+      "label": "Data Disk Snapshot",
+      "options": "Virtual Disk Snapshot"
+    },
+    {
+      "depends_on": "eval: doc.data_disk_snapshot",
+      "fieldname": "data_disk_snapshot_volume_id",
+      "fieldtype": "Data",
+      "label": "Data Disk Snapshot Volume ID",
+      "read_only": 1
+    },
+    {
+      "default": "0",
+      "depends_on": "eval: doc.data_disk_snapshot",
+      "fieldname": "data_disk_snapshot_attached",
+      "fieldtype": "Check",
+      "label": "Data Disk Snapshot Attached",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_zozh",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "0",
+      "description": "If you disable server snapshot, it will just take disk snapshot",
+      "fieldname": "disable_server_snapshot",
+      "fieldtype": "Check",
+      "label": "Disable Server Snapshot"
+    },
+    {
+      "default": "0",
+      "fieldname": "is_static_ip",
+      "fieldtype": "Check",
+      "label": "Is Static IP",
+      "read_only": 1
+    },
+    {
+      "fieldname": "secondary_private_ip",
+      "fieldtype": "Data",
+      "label": "Secondary Private IP Address",
+      "read_only": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "assign_public_ip",
+      "fieldtype": "Check",
+      "label": "Assign Public IP",
+      "set_only_once": 1
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [
+    {
+      "group": "Servers",
+      "link_doctype": "Server",
+      "link_fieldname": "virtual_machine"
+    },
+    {
+      "group": "Servers",
+      "link_doctype": "Database Server",
+      "link_fieldname": "virtual_machine"
+    },
+    {
+      "group": "Servers",
+      "link_doctype": "Proxy Server",
+      "link_fieldname": "virtual_machine"
+    },
+    {
+      "group": "Servers",
+      "link_doctype": "NFS Server",
+      "link_fieldname": "virtual_machine"
+    },
+    {
+      "group": "Servers",
+      "link_doctype": "NAT Server",
+      "link_fieldname": "virtual_machine"
+    },
+    {
+      "group": "Snapshots",
+      "link_doctype": "Virtual Disk Snapshot",
+      "link_fieldname": "virtual_machine"
+    },
+    {
+      "group": "Snapshots",
+      "link_doctype": "Virtual Machine Image",
+      "link_fieldname": "virtual_machine"
+    },
+    {
+      "group": "Migration",
+      "link_doctype": "Virtual Machine Migration",
+      "link_fieldname": "virtual_machine"
+    }
+  ],
+  "modified": "2026-03-18 12:04:02.955392",
+  "modified_by": "Administrator",
+  "module": "Press",
+  "name": "Virtual Machine",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "role": "Press Admin",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "role": "Press Member",
+      "write": 1
+    }
+  ],
+  "row_format": "Dynamic",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
 }

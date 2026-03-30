@@ -126,7 +126,7 @@
 						/>
 					</div>
 
-					<!-- New Bench Name (For New) -->
+					<!-- New Bench Group Name (For New) -->
 					<div
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Create A New Bench'"
