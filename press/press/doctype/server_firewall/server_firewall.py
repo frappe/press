@@ -170,8 +170,8 @@ class ServerFirewall(Document):
 		ips = frappe.get_all("Monitor Server", pluck="ip")
 		if proxy_ip := self.server.get_proxy_ip():
 			ips.append(proxy_ip)
-		if nat_ip := self.server.get_nat_ip():
-			ips.append(nat_ip)
+		if nat_ip := self.server.get_nat_gateway_ip():
+			ips.append(str(ipaddress.ip_network(nat_ip + "/24", strict=False)))
 		if self.production_ip:
 			ips.append(self.production_ip)
 		return ips
