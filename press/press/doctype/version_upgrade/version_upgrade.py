@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import now_datetime
 
@@ -69,7 +70,11 @@ class VersionUpgrade(Document):
 	def validate_duplicate(self):
 		if frappe.db.exists(
 			"Version Upgrade",
-			filters={"site": self.site, "status": ["in", ["Scheduled", "Pending", "Running"]]},
+			{
+				"site": self.site,
+				"name": ["!=", self.name],
+				"status": ["in", ["Scheduled", "Pending", "Running"]],
+			},
 		):
 			frappe.throw(
 				_(
