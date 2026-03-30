@@ -1,0 +1,53 @@
+# This action:
+# Creates a release branch from develop and a PR to master with the release branch. The release branch is named in the format release/YYYY-WW (ISO week date). This happens every Monday at 4 AM UTC.
+
+name: Initiate Release
+
+on:
+  schedule:
+    - cron: "0 4 * * 1"  # Monday 04:00 UTC
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release name (ISO week)
+        id: release
+        run: |
+          YEAR=$(date -u +%G)
+          WEEK=$(date -u +%V)
+          RELEASE="release/${YEAR}-W${WEEK}"
+          echo "name=$RELEASE" >> $GITHUB_OUTPUT
+
+      - name: Create release branch
+        run: |
+          git checkout develop
+          git pull origin develop
+          git checkout -b ${{ steps.release.outputs.name }}
+          git push origin ${{ steps.release.outputs.name }}
+
+      # - name: Create PR to master
+      #   uses: peter-evans/create-pull-request@v6
+      #   with:
+      #     branch: ${{ steps.release.outputs.name }}
+      #     base: master
+      #     title: "chore: Release ${{ steps.release.outputs.name }}"
+      #     body: "Weekly release PR"
+
+
+      - name: Create PR to master
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "chore: Release ${{ steps.release.outputs.name }}" \
+            --body "Weekly release PR" \
+            --head "${{ steps.release.outputs.name }}" \
+            --base master

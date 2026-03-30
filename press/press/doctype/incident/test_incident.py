@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
+import frappe.utils
 from frappe.tests.utils import FrappeTestCase
 from hypothesis import given, settings
 from hypothesis import strategies as st

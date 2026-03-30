@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import OrderedDict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import frappe
 import requests
@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+	from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 
 
 @frappe.whitelist()
@@ -935,7 +936,7 @@ def validate_branch(name: str, app: str, branch: str):
 def get_branches_for_marketplace_app(app: str, marketplace_app: str, app_source: AppSource) -> list[dict]:
 	"""Return list of branches allowed for this `marketplace` app"""
 	branch_set = set()
-	marketplace_app = frappe.get_doc("Marketplace App", marketplace_app)
+	marketplace_app: MarketplaceApp = frappe.get_doc("Marketplace App", marketplace_app)
 
 	for marketplace_app_source in marketplace_app.sources:
 		app_source = frappe.get_doc("App Source", marketplace_app_source.source)
@@ -1122,7 +1123,7 @@ def fail_and_redeploy(name: str, dc_name: str):
 
 @frappe.whitelist()
 @protected("Release Group")
-def show_app_versions(name: str, dc_name: str) -> dict[str, str]:
+def show_app_versions(name: str, dc_name: str) -> list[dict[str, Any]]:
 	"""Get app versions from the deploy candidate"""
 	candidate = frappe.db.get_value("Deploy Candidate Build", dc_name, "deploy_candidate")
 	deploy_candidate: "DeployCandidate" = frappe.get_cached_doc("Deploy Candidate", candidate)
@@ -1151,6 +1152,7 @@ def show_app_versions(name: str, dc_name: str) -> dict[str, str]:
 			"repository_url": sources.get(app.source).get("repository_url"),
 		}
 		for app in deploy_candidate.apps
+		if app
 	]
 
 

@@ -6,13 +6,11 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
 
-func performRecovery(cfg Config, triggers []string, dbHealth DBHealth) bool {
+func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MySQLCredentials, frozen *frozenState) bool {
 	slog.Error("recovery triggered",
 		"triggers", triggers,
 		"mariadb_reachable", dbHealth.Reachable,
@@ -20,12 +18,30 @@ func performRecovery(cfg Config, triggers []string, dbHealth DBHealth) bool {
 		"details", dbHealth.Details,
 	)
 
-	if !stopMariaDB(cfg.StopTimeout) {
+	isFrozen := false
+	reason := ""
+	if frozen != nil {
+		isFrozen = frozen.frozen
+		reason = frozen.reason
+	} else {
+		isFrozen, reason = checkMachineFrozen()
+	}
+
+	if !isFrozen && shouldTakeCoredump(cfg, dbHealth, len(triggers)) {
+		if err := takeCoredump(cfg); err != nil {
+			slog.Warn("coredump failed, continuing with recovery", "error", err)
+		}
+	}
+
+	if isFrozen {
+		slog.Warn("machine appears frozen, skipping graceful stop and killing mariadb directly", "reason", reason)
+		killMariaDB()
+	} else if !stopMariaDB(cfg.StopTimeout) {
 		killMariaDB()
 	}
 
 	reclaimMemory(cfg.DropCachesMode)
-	startMariaDB()
+	startMariaDB(creds)
 
 	return true
 }
@@ -56,21 +72,7 @@ func stopMariaDB(timeout time.Duration) bool {
 func killMariaDB() {
 	slog.Warn("sending SIGKILL to mariadbd")
 
-	output, err := exec.Command("pidof", "mariadbd").Output()
-	if err != nil {
-		output, err = exec.Command("pidof", "mysqld").Output()
-		if err != nil {
-			slog.Warn("could not find mariadbd/mysqld pid", "error", err)
-			return
-		}
-	}
-
-	pids := strings.Fields(strings.TrimSpace(string(output)))
-	for _, pidStr := range pids {
-		pid, err := strconv.Atoi(pidStr)
-		if err != nil {
-			continue
-		}
+	for _, pid := range findMariaDBProcessIDs() {
 		proc, err := os.FindProcess(pid)
 		if err != nil {
 			continue
@@ -88,9 +90,8 @@ func killMariaDB() {
 func reclaimMemory(dropMode int) {
 	slog.Info("reclaiming memory", "drop_caches_mode", dropMode)
 
-	if output, err := exec.Command("sync").CombinedOutput(); err != nil {
-		slog.Warn("sync failed", "error", err, "output", string(output))
-	}
+	// Use syscall.Sync to avoid forking during memory pressure
+	syscall.Sync()
 
 	if err := os.WriteFile("/proc/sys/vm/drop_caches", []byte(fmt.Sprintf("%d", dropMode)), 0644); err != nil {
 		slog.Warn("failed to drop caches", "error", err)
@@ -105,7 +106,7 @@ func reclaimMemory(dropMode int) {
 	}
 }
 
-func startMariaDB() {
+func startMariaDB(creds MySQLCredentials) {
 	slog.Info("starting mariadb via systemctl")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -123,11 +124,11 @@ func startMariaDB() {
 
 	for i := 0; i < 5; i++ {
 		time.Sleep(2 * time.Second)
-		if checkReachable("/var/run/mysqld/mysqld.sock") {
+		if checkReachable(creds) {
 			slog.Info("mariadb is reachable after restart")
 			return
 		}
 	}
 
-	slog.Warn("mariadb started but socket not reachable after 10s")
+	slog.Warn("mariadb started but is not reachable (socket/TCP) after 10s")
 }

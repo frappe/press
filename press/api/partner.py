@@ -701,6 +701,33 @@ def get_lead_owners():
 
 @frappe.whitelist()
 @role_guard.api("partner")
+def create_audit_request(audit_date, audit_type="Online"):
+	team = get_current_team(get_doc=True)
+	if not team.erpnext_partner and team.partner_status != "Active":
+		frappe.throw(
+			"Only Active Partner team can create audit request. Please ensure your partner status is renewed and active."
+		)
+
+	if frappe.db.exists("Partner Audit", {"partner_team": team.name, "audit_date": audit_date}):
+		frappe.throw(
+			"An audit request already exists for this date. Please select a different date or check your existing requests."
+		)
+
+	if frappe.utils.getdate(audit_date) <= frappe.utils.getdate():
+		frappe.throw("Audit date must be in the future. Please choose a date later than today's date.")
+
+	try:
+		doc = frappe.new_doc("Partner Audit")
+		doc.partner_team = team.name
+		doc.proposed_audit_date = audit_date
+		doc.mode_of_audit = audit_type
+		doc.insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error("Error creating new Partner audit")
+
+
+@frappe.whitelist()
+@role_guard.api("partner")
 def change_partner(lead_name, partner):
 	doc = frappe.get_doc("Partner Lead", lead_name)
 	if not is_lead_team(lead_name):
@@ -985,37 +1012,31 @@ def update_followup_details(id, lead, followup_details):
 		frappe.throw("You are not allowed to update this followup")
 
 	followup_details = frappe._dict(followup_details)
-	if id:
-		doc = frappe.get_doc("Lead Followup", id)
-		doc.update(
-			{
-				"date": frappe.utils.getdate(followup_details.followup_date),
-				"communication_type": followup_details.communication_type,
-				"followup_by": followup_details.followup_by,
-				"spoke_to": followup_details.spoke_to,
-				"designation": followup_details.designation,
-				"discussion": followup_details.discussion,
-				"no_show": followup_details.no_show,
-			}
-		)
-		doc.save(ignore_permissions=True)
+	doc = frappe.get_doc("Partner Lead", lead)
+	if doc.followup and [row.name for row in doc.followup if row.name == id]:
+		for row in doc.followup:
+			if row.name == id:
+				row.date = frappe.utils.getdate(followup_details.followup_date)
+				row.communication_type = followup_details.communication_type
+				row.followup_by = followup_details.followup_by
+				row.spoke_to = followup_details.spoke_to
+				row.designation = followup_details.designation
+				row.discussion = followup_details.discussion
+
 	else:
-		doc = frappe.new_doc("Lead Followup")
-		doc.update(
+		doc.append(
+			"followup",
 			{
-				"parent": lead,
-				"parenttype": "Partner Lead",
-				"parentfield": "followup",
 				"date": frappe.utils.getdate(followup_details.followup_date),
 				"communication_type": followup_details.communication_type,
 				"followup_by": followup_details.followup_by,
 				"spoke_to": followup_details.spoke_to,
 				"designation": followup_details.designation,
 				"discussion": followup_details.discussion,
-				"no_show": followup_details.no_show,
-			}
+			},
 		)
-		doc.insert(ignore_permissions=True)
+
+	doc.save(ignore_permissions=True)
 	doc.reload()
 
 

@@ -56,7 +56,9 @@ class ProxyServer(BaseServer):
 		private_ip_interface_id: DF.Data | None
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
-		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean"]
+		provider: DF.Literal[
+			"Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean", "Frappe Compute"
+		]
 		proxysql_admin_password: DF.Password | None
 		proxysql_monitor_password: DF.Password | None
 		public: DF.Check
@@ -371,6 +373,7 @@ class ProxyServer(BaseServer):
 
 	@frappe.whitelist()
 	def trigger_failover(self):
+		# TODO: should also be automatic based on monitoring/some kind of health check mechanism
 		if self.is_primary:
 			return None
 
@@ -438,7 +441,7 @@ class ProxyServer(BaseServer):
 					"wireguard_network": self.wireguard_network_ip
 					+ "/"
 					+ self.wireguard_network.split("/")[1],
-					"interface_id": self.private_ip_interface_id,
+					"external_interface_id": self.private_ip_interface_id,
 					"wireguard_private_key": False,
 					"wireguard_public_key": False,
 					"peers": "",
@@ -485,7 +488,7 @@ class ProxyServer(BaseServer):
 					"wireguard_network": self.wireguard_network_ip
 					+ "/"
 					+ self.wireguard_network.split("/")[1],
-					"interface_id": self.private_ip_interface_id,
+					"external_interface_id": self.private_ip_interface_id,
 					"wireguard_private_key": self.get_password("wireguard_private_key"),
 					"wireguard_public_key": self.get_password("wireguard_public_key"),
 					"peers": json.dumps(peers),

@@ -1,210 +1,210 @@
 {
- "actions": [],
- "allow_rename": 1,
- "creation": "2024-07-05 10:54:14.431684",
- "default_view": "List",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "team",
-  "document_type",
-  "reference_doctype",
-  "column_break_brxc",
-  "type",
-  "document_name",
-  "reference_name",
-  "interaction_section",
-  "is_actionable",
-  "read",
-  "column_break_rada",
-  "is_addressed",
-  "message_section",
-  "title",
-  "message",
-  "traceback",
-  "assistance_url",
-  "class"
- ],
- "fields": [
-  {
-   "default": "0",
-   "fieldname": "read",
-   "fieldtype": "Check",
-   "label": "Read"
-  },
-  {
-   "fieldname": "type",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Type",
-   "options": "Site Update\nSite Migrate\nVersion Upgrade\nBench Deploy\nSite Recovery\nAgent Job Failure\nDowntime/Performance\nSupport Access\nAuto Scale",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "message",
-   "fieldtype": "Long Text",
-   "label": "Message",
-   "read_only": 1
-  },
-  {
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "To Team",
-   "options": "Team",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "document_type",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Document Type",
-   "options": "DocType",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "document_name",
-   "fieldtype": "Dynamic Link",
-   "in_list_view": 1,
-   "label": "Document Name",
-   "options": "document_type",
-   "read_only": 1,
-   "reqd": 1,
-   "search_index": 1
-  },
-  {
-   "depends_on": "eval:doc.traceback",
-   "fieldname": "traceback",
-   "fieldtype": "Code",
-   "label": "Traceback",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_brxc",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "interaction_section",
-   "fieldtype": "Section Break",
-   "label": "User Interaction"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.is_actionable",
-   "description": "Actionable notifications can be rectified by the user. For example if a deploy breaks due to incompatible app version.",
-   "fieldname": "is_actionable",
-   "fieldtype": "Check",
-   "label": "Is Actionable",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_rada",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "message_section",
-   "fieldtype": "Section Break",
-   "label": "Message"
-  },
-  {
-   "depends_on": "eval:doc.title",
-   "fieldname": "title",
-   "fieldtype": "Small Text",
-   "label": "Title",
-   "read_only": 1
-  },
-  {
-   "depends_on": "eval:doc.assistance_url",
-   "description": "Meant to be used if the notification is actionable. The URL can point to documentation on how to resolve the issue.",
-   "fieldname": "assistance_url",
-   "fieldtype": "Data",
-   "label": "Assitance URL",
-   "read_only": 1
-  },
-  {
-   "default": "Info",
-   "fieldname": "class",
-   "fieldtype": "Select",
-   "label": "Class",
-   "options": "Info\nSuccess\nWarning\nError",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.is_actionable",
-   "description": "Actionable notifications can be addressed by the user.\n\nUsed to prevent an action until the issue has been addressed. For example preventing further deploy until an incompatible app version has been fixed.",
-   "fieldname": "is_addressed",
-   "fieldtype": "Check",
-   "label": "Is Addressed",
-   "read_only": 1
-  },
-  {
-   "description": "For filtering notifications in the dashboard",
-   "fieldname": "reference_doctype",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Reference DocType",
-   "options": "DocType"
-  },
-  {
-   "description": "For filtering notifications in the dashboard",
-   "fieldname": "reference_name",
-   "fieldtype": "Dynamic Link",
-   "hidden": 1,
-   "label": "Reference Name",
-   "options": "reference_doctype"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-03-03 17:31:40.733508",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Press Notification",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Admin",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Member",
-   "share": 1,
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+    "actions": [],
+    "allow_rename": 1,
+    "creation": "2024-07-05 10:54:14.431684",
+    "default_view": "List",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+        "team",
+        "document_type",
+        "reference_doctype",
+        "column_break_brxc",
+        "type",
+        "document_name",
+        "reference_name",
+        "interaction_section",
+        "is_actionable",
+        "read",
+        "column_break_rada",
+        "is_addressed",
+        "message_section",
+        "title",
+        "message",
+        "traceback",
+        "assistance_url",
+        "class"
+    ],
+    "fields": [
+        {
+            "default": "0",
+            "fieldname": "read",
+            "fieldtype": "Check",
+            "label": "Read"
+        },
+        {
+            "fieldname": "type",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Type",
+            "options": "Site Update\nSite Migrate\nVersion Upgrade\nBench Deploy\nSite Recovery\nAgent Job Failure\nDowntime/Performance\nSupport Access\nAuto Scale",
+            "read_only": 1,
+            "reqd": 1
+        },
+        {
+            "fieldname": "message",
+            "fieldtype": "Long Text",
+            "label": "Message",
+            "read_only": 1
+        },
+        {
+            "fieldname": "team",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "label": "To Team",
+            "options": "Team",
+            "read_only": 1,
+            "reqd": 1
+        },
+        {
+            "fieldname": "document_type",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "label": "Document Type",
+            "options": "DocType",
+            "read_only": 1,
+            "reqd": 1
+        },
+        {
+            "fieldname": "document_name",
+            "fieldtype": "Dynamic Link",
+            "in_list_view": 1,
+            "label": "Document Name",
+            "options": "document_type",
+            "read_only": 1,
+            "reqd": 1,
+            "search_index": 1
+        },
+        {
+            "depends_on": "eval:doc.traceback",
+            "fieldname": "traceback",
+            "fieldtype": "Code",
+            "label": "Traceback",
+            "read_only": 1
+        },
+        {
+            "fieldname": "column_break_brxc",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "interaction_section",
+            "fieldtype": "Section Break",
+            "label": "User Interaction"
+        },
+        {
+            "default": "0",
+            "depends_on": "eval:doc.is_actionable",
+            "description": "Actionable notifications can be rectified by the user. For example if a deploy breaks due to incompatible app version.",
+            "fieldname": "is_actionable",
+            "fieldtype": "Check",
+            "label": "Is Actionable",
+            "read_only": 1
+        },
+        {
+            "fieldname": "column_break_rada",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "message_section",
+            "fieldtype": "Section Break",
+            "label": "Message"
+        },
+        {
+            "depends_on": "eval:doc.title",
+            "fieldname": "title",
+            "fieldtype": "Small Text",
+            "label": "Title",
+            "read_only": 1
+        },
+        {
+            "depends_on": "eval:doc.assistance_url",
+            "description": "Meant to be used if the notification is actionable. The URL can point to documentation on how to resolve the issue.",
+            "fieldname": "assistance_url",
+            "fieldtype": "Data",
+            "label": "Assitance URL",
+            "read_only": 1
+        },
+        {
+            "default": "Info",
+            "fieldname": "class",
+            "fieldtype": "Select",
+            "label": "Class",
+            "options": "Info\nSuccess\nWarning\nError",
+            "read_only": 1
+        },
+        {
+            "default": "0",
+            "depends_on": "eval:doc.is_actionable",
+            "description": "Actionable notifications can be addressed by the user.\n\nUsed to prevent an action until the issue has been addressed. For example preventing further deploy until an incompatible app version has been fixed.",
+            "fieldname": "is_addressed",
+            "fieldtype": "Check",
+            "label": "Is Addressed",
+            "read_only": 1
+        },
+        {
+            "description": "For filtering notifications in the dashboard",
+            "fieldname": "reference_doctype",
+            "fieldtype": "Link",
+            "hidden": 1,
+            "label": "Reference DocType",
+            "options": "DocType"
+        },
+        {
+            "description": "For filtering notifications in the dashboard",
+            "fieldname": "reference_name",
+            "fieldtype": "Dynamic Link",
+            "hidden": 1,
+            "label": "Reference Name",
+            "options": "reference_doctype"
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "links": [],
+    "modified": "2026-03-16 10:12:11.930353",
+    "modified_by": "Administrator",
+    "module": "Press",
+    "name": "Press Notification",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        },
+        {
+            "create": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Press Admin",
+            "share": 1,
+            "write": 1
+        },
+        {
+            "create": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Press Member",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "row_format": "Dynamic",
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "states": []
 }

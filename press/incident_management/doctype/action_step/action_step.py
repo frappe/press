@@ -1,6 +1,7 @@
 # Copyright (c) 2025, Frappe and contributors
 # For license information, please see license.txt
 
+import frappe
 from frappe.model.document import Document
 
 
@@ -26,3 +27,10 @@ class ActionStep(Document):
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		step_name: DF.Data | None
 	# end: auto-generated types
+
+
+def on_doctype_update():
+	"""Add index on parent and idx fields for faster ordered action step lookup
+	https://dev.mysql.com/doc/refman/8.4/en/order-by-optimization.html#order-by-index-use
+	"""
+	frappe.db.add_index("Action Step", ["parent", "idx"])

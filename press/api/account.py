@@ -885,7 +885,7 @@ def update_billing_information(billing_details):
 
 def validate_pincode(billing_details):
 	# Taken from https://github.com/resilient-tech/india-compliance
-	if billing_details.country != "India" or not billing_details.postal_code:
+	if not billing_details or billing_details.country != "India" or not billing_details.postal_code:
 		return
 	PINCODE_FORMAT = re.compile(r"^[1-9][0-9]{5}$")
 	if not PINCODE_FORMAT.match(billing_details.postal_code):
@@ -1029,21 +1029,17 @@ def mark_key_as_default(key_name):
 	key.save()
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def create_api_secret():
 	user = frappe.get_doc("User", frappe.session.user)
-
-	api_key = user.api_key
+	user.api_key = user.api_key or frappe.generate_hash()
 	api_secret = frappe.generate_hash()
-
-	if not api_key:
-		api_key = frappe.generate_hash()
-		user.api_key = api_key
-
 	user.api_secret = api_secret
 	user.save(ignore_permissions=True)
-
-	return {"api_key": api_key, "api_secret": api_secret}
+	return {
+		"api_key": user.api_key,
+		"api_secret": api_secret,
+	}
 
 
 @frappe.whitelist()
@@ -1357,11 +1353,14 @@ def get_user_banners():
 	servers = list(set([pair["server"] for pair in site_server_pairs if pair.get("server")]))
 
 	DashboardBanner = frappe.qb.DocType("Dashboard Banner")
+	DashboardBannerTeam = frappe.qb.DocType("Dashboard Banner Team")
 	now = frappe.utils.now()
 
 	# fetch all enabled banners for this user
 	all_enabled_banners = (
 		frappe.qb.from_(DashboardBanner)
+		.left_join(DashboardBannerTeam)
+		.on(DashboardBannerTeam.parent == DashboardBanner.name)
 		.select("*")
 		.where(
 			((DashboardBanner.enabled == 1) & (DashboardBanner.is_scheduled == 0))
@@ -1376,12 +1375,12 @@ def get_user_banners():
 			(DashboardBanner.is_global == 1)
 			| ((DashboardBanner.type_of_scope == "Site") & (DashboardBanner.site.isin(sites or [""])))
 			| ((DashboardBanner.type_of_scope == "Server") & (DashboardBanner.server.isin(servers or [""])))
-			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBanner.team == team))
+			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBannerTeam.team == team))
 		)
 		.run(as_dict=True)
 	)
 
-	# filter out dismissed banners
+	# filter out dismissed banners)
 	banner_dismissals_by_user = frappe.get_all(
 		"Dashboard Banner Dismissal",
 		filters={"user": frappe.session.user, "parent": ["in", [b["name"] for b in all_enabled_banners]]},
