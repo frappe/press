@@ -10,7 +10,6 @@ from frappe.query_builder.functions import Now
 from telegram.error import NetworkError, RetryAfter
 
 from press.telegram_utils import Telegram
-from press.utils.jobs import has_job_timeout_exceeded
 
 
 class TelegramMessage(Document):
@@ -108,6 +107,7 @@ class TelegramMessage(Document):
 
 def send_telegram_message():
 	"""Send one queued telegram message"""
+	from press.utils.jobs import has_job_timeout_exceeded
 
 	# Go through the queue till either of these things happen
 	# 1. There are no more queued messages
