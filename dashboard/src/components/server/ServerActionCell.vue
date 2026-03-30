@@ -50,7 +50,6 @@ const route = useRoute();
 
 onMounted(() => {
 	const queryAction = route.query['action'];
-	console.log(queryAction, props.actionLabel);
 	if (props.actionLabel === queryAction) {
 		getServerActionHandler(queryAction);
 	}
