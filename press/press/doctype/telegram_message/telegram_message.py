@@ -10,6 +10,7 @@ from frappe.query_builder.functions import Now
 from telegram.error import NetworkError, RetryAfter
 
 from press.telegram_utils import Telegram
+from press.utils.jobs import has_job_timeout_exceeded
 
 
 class TelegramMessage(Document):
@@ -115,6 +116,8 @@ def send_telegram_message():
 	# 4. We encounter an error that is not recoverable by retrying
 	# (attempt 5 retries and remove the message from queue)
 	while message := TelegramMessage.get_one():
+		if has_job_timeout_exceeded():
+			return
 		try:
 			message.send()
 			return
