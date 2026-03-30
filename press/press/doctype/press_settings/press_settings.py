@@ -160,7 +160,6 @@ class PressSettings(Document):
 		servers_using_alternative_http_port_for_communication: DF.SmallText | None
 		set_redis_password: DF.Check
 		shared_directory: DF.Data | None
-		spaces_domain: DF.Link | None
 		spamd_api_key: DF.Data | None
 		spamd_api_secret: DF.Password | None
 		spamd_endpoint: DF.Data | None
