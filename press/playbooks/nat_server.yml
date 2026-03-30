@@ -7,6 +7,10 @@
   roles:
     - role: essentials
     - role: user
+    - role: nginx
+    - role: agent_monitoring_setup
+    - role: configure_secondary_private_ip
     - role: nat
     - role: node_exporter
     - role: clamav
+    - role: auditd

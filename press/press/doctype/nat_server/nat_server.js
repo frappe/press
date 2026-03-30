@@ -8,6 +8,12 @@ frappe.ui.form.on('NAT Server', {
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[__('Archive Server'), 'archive', true, frm.doc.is_server_setup],
 			[__('Get Static IP'), 'get_static_ip', true, !frm.doc.is_static_ip],
+			[
+				__('Configure Monitoring'),
+				'configure_monitoring',
+				true,
+				frm.doc.is_server_setup,
+			], // added temporarily for setting up nginx & monitoring config
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
