@@ -70,7 +70,11 @@ class VersionUpgrade(Document):
 	def validate_duplicate(self):
 		if frappe.db.exists(
 			"Version Upgrade",
-			{"site": self.site, "status": ["in", ["Scheduled", "Pending", "Running"]]},
+			{
+				"site": self.site,
+				"name": ["!=", self.name],
+				"status": ["in", ["Scheduled", "Pending", "Running"]],
+			},
 		):
 			frappe.throw(
 				_(
