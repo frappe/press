@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Popover, Badge, Button, createResource } from 'frappe-ui';
+import { Popover, Badge, Button, createListResource } from 'frappe-ui';
 import LucideInbox from '~icons/lucide/inbox';
 import { dayjsLocal } from '@/utils/dayjs';
 import LucideKey from '~icons/lucide/key';
@@ -49,7 +49,7 @@ const iconBgColors = {
 	'Auto Scale': 'bg-surface-red-1',
 };
 
-const data = createResource({
+const resource = createListResource({
 	doctype: 'Press Notification',
 	url: 'press.api.notifications.get_notifications',
 	auto: true,
@@ -57,6 +57,8 @@ const data = createResource({
 		read: 'Unread',
 	},
 	cache: ['Notifications'],
+	start: 0,
+	pageLength: 10,
 });
 
 const formatHtml = (str: string) => {
@@ -95,7 +97,7 @@ const formatHtml = (str: string) => {
 		<!-- floating drawer  -->
 		<template #body="{ togglePopover }">
 			<div
-				class="text-ink-gray-9 bg-white h-screen ml-2 shadow-sm w-[400px] overflow-auto"
+				class="text-ink-gray-9 bg-white h-screen ml-2 shadow-xl w-[400px] flex flex-col"
 			>
 				<div class="text-base flex items-center py-2 px-4 border-b">
 					<span class="font-medium mr-auto"> Notifications</span>
@@ -113,35 +115,46 @@ const formatHtml = (str: string) => {
 					</Button>
 				</div>
 
-				<div
-					v-for="x in data.data"
-					class="[&_b]:font-semibold border-b px-4 py-3 flex gap-4 items-center"
-				>
+				<section class="overflow-auto">
 					<div
-						class="size-8 flex-shrink-0 flex items-center p-2 rounded"
-						:class="iconBgColors[x.type] || 'bg-surface-gray-1'"
+						v-for="(x, i) in resource.data"
+						class="[&_b]:font-semibold px-4 py-3 flex gap-4 items-center"
+						:class="{ 'border-b': i !== resource.data.length - 1 }"
 					>
-						<component
-							:is="icons[x.type]"
-							class="size-4"
-							:class="iconColors[x.type]"
-						/>
+						<div
+							class="size-8 flex-shrink-0 flex items-center p-2 rounded"
+							:class="iconBgColors[x.type] || 'bg-surface-gray-1'"
+						>
+							<component
+								:is="icons[x.type]"
+								class="size-4"
+								:class="iconColors[x.type]"
+							/>
+						</div>
+
+						<div
+							class="text-sm leading-relaxed flex flex-wrap gap-2 w-full min-w-0"
+						>
+							<p v-html="formatHtml(x.message)" class="w-full truncate" />
+
+							<Badge class="text-xs mr-auto">
+								{{ x.title }}
+							</Badge>
+
+							<span class="text-ink-gray-5 text-xs">
+								{{ dayjsLocal(x.creation).fromNow() }}
+							</span>
+						</div>
 					</div>
+				</section>
 
-					<div
-						class="text-sm leading-relaxed flex flex-wrap gap-2 w-full min-w-0"
-					>
-						<p v-html="formatHtml(x.message)" class="w-full truncate" />
-
-						<Badge class="text-xs mr-auto">
-							{{ x.title }}
-						</Badge>
-
-						<span class="text-ink-gray-5 text-xs">
-							{{ dayjsLocal(x.creation).fromNow() }}
-						</span>
-					</div>
-				</div>
+				<Button
+					@click="resource.next"
+					v-if="resource.hasNextPage"
+					label="Load More"
+					size="sm"
+					class="ml-auto my-3 mr-3"
+				/>
 			</div>
 		</template>
 	</Popover>
