@@ -72,16 +72,16 @@ class NATFailover(Document, StepHandler):
 		primary_vm = frappe.get_doc("Virtual Machine", primary_vm_name)
 		secondary_vm = frappe.get_doc("Virtual Machine", secondary_vm_name)
 		if not primary_vm.is_static_ip or secondary_vm.is_static_ip:
+			step.status = "Skipped"
+			step.save()
 			return
 
 		ip = primary_vm.ip
 		primary_vm.detach_static_ip()
+		secondary_vm.attach_static_ip(ip)
 
-		try:
-			secondary_vm.attach_static_ip(ip)
-		except Exception:
-			# try attaching the static ip back to primary if it fails to attach to secondary
-			primary_vm.attach_static_ip(ip)
+		step.status = "Success"
+		step.save()
 
 	def attach_secondary_private_ip_to_secondary(self, step):
 		primary_vm_name = frappe.db.get_value("NAT Server", self.primary, "virtual_machine")
@@ -91,45 +91,30 @@ class NATFailover(Document, StepHandler):
 		secondary_vm = frappe.get_doc("Virtual Machine", secondary_vm_name)
 
 		secondary_private_ip = primary_vm.secondary_private_ip
+		primary_vm.detach_secondary_private_ip()
+		secondary_vm.attach_secondary_private_ip(secondary_private_ip)
 
-		try:
-			primary_vm.detach_secondary_private_ip()
-		except Exception:
-			# try to attach static ip back to primary (if possible)
-			if secondary_vm.is_static_ip:
-				ip = secondary_vm.ip
-				secondary_vm.detach_static_ip()
-				primary_vm.attach_static_ip(ip)
-			raise
-
-		try:
-			secondary_vm.attach_secondary_private_ip(secondary_private_ip)
-		except Exception:
-			# try attaching the secondary private ip back to primary if it fails to attach to secondary
-			primary_vm.attach_secondary_private_ip(secondary_private_ip)
-			if secondary_vm.is_static_ip:
-				ip = secondary_vm.ip
-				secondary_vm.detach_static_ip()
-				primary_vm.attach_static_ip(ip)
-			raise
+		step.status = "Success"
+		step.save()
 
 	def configure_secondary_private_ip_on_secondary(self, step):
 		secondary_nat_server = frappe.get_doc("NAT Server", self.secondary)
 
 		try:
 			ansible = Ansible(
-				playbook="configure_secondary_ip_in_nat.yml",
+				playbook="configure_secondary_ip.yml",
 				server=secondary_nat_server,
 				user=secondary_nat_server._ssh_user(),
 				port=secondary_nat_server._ssh_port(),
 				variables={
+					"primary_ip": secondary_nat_server.private_ip,
 					"secondary_ip": secondary_nat_server.secondary_private_ip,
 				},
 			)
 			self.handle_ansible_play(step, ansible)
 		except Exception as e:
 			self._fail_ansible_step(step, ansible, e)
-			# we can manually take a look at this
+			raise
 
 	def update_servers(self, step):
 		for dt in ("Server", "Database Server"):
@@ -140,8 +125,29 @@ class NATFailover(Document, StepHandler):
 				self.secondary,
 			)
 
+		step.status = "Success"
+		step.save()
+
 	def test_server_egress(self, step):
-		server = frappe.db.get_value("Server", {"nat_server": self.secondary}, "name")
+		server = frappe.db.get_value("Server", {"status": "Active", "nat_server": self.secondary}, "name")
+		if not server:
+			step.status = "Skipped"
+			step.save()
+			return
+
 		result = AnsibleAdHoc(sources=f"{server},").run("curl ifconfig.me")[0]
 		step.status = "Success" if result.get("status") == "Success" else "Failure"
 		step.save()
+
+	@frappe.whitelist()
+	def force_continue(self):
+		self.error = None
+
+		for step in self.failover_steps:
+			if step.status == "Failure":
+				step.status = "Pending"
+
+		self.save()
+
+		self.execute_failover_steps()
+		frappe.msgprint("Failover steps re-queued.", alert=True)
