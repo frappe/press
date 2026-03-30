@@ -69,7 +69,10 @@ class NATServer(BaseServer):
 
 	def _setup_server(self):
 		try:
-			config = self.get_config() | {"secondary_ip": self.secondary_private_ip}
+			config = self.get_config() | {
+				"primary_ip": self.private_ip,
+				"secondary_ip": self.secondary_private_ip,
+			}
 			ansible = Ansible(
 				playbook="nat_server.yml",
 				server=self,

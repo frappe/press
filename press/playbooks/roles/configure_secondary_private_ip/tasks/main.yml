@@ -9,6 +9,7 @@
           {{ ansible_default_ipv4.interface }}:
             dhcp4: true
             addresses:
+              - {{ primary_ip }}/16
               - {{ secondary_ip }}/16
   when: secondary_ip is defined and secondary_ip
 
