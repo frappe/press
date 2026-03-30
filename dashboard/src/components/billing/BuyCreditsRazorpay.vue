@@ -117,13 +117,23 @@ const handlePaymentFailed = createResource({
 	},
 });
 
+function getRazorpayContact() {
+	if (team.doc?.phone_number) {
+		return team.doc.phone_number;
+	}
+	return team.doc?.country_isd_code || undefined;
+}
+
 function processOrder(data) {
 	const options = {
 		key: data.key_id,
 		order_id: data.order_id,
 		name: 'Frappe Cloud',
 		image: 'https://frappe.io/files/cloud.png',
-		prefill: { email: team.doc?.user },
+		prefill: {
+			email: team.doc?.user,
+			...(getRazorpayContact() && { contact: getRazorpayContact() }),
+		},
 		handler: handlePaymentSuccess,
 		theme: { color: '#171717' },
 		...(paypalEnabled
@@ -150,7 +160,6 @@ function processOrder(data) {
 				}
 			: {}),
 	};
-
 	const rzp = new Razorpay(options);
 
 	// Opens the payment checkout frame
