@@ -54,7 +54,7 @@ withDefaults(defineProps<Props>(), {
 				<PaginationListItem
 					v-if="page.type === 'page'"
 					:key="index"
-					class="size-7 bg-surface-gray-2 rounded data-[selected]:bg-surface-gray-7 data-[selected]:text-ink-gray-1 hover:bg-surface-gray-1 transition"
+					class="size-7 bg-surface-gray-2 rounded data-[selected]:bg-surface-gray-5 data-[selected]:text-ink-gray-1 hover:bg-surface-gray-1 transition"
 					:value="page.value"
 				>
 					{{ page.value }}

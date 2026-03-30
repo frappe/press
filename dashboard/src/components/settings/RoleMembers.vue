@@ -1,46 +1,53 @@
 <template>
 	<div class="space-y-4">
-		<div class="grid grid-cols-3 gap-4 text-base">
+		<div
+			class="grid grid-cols-3 gap-4 text-base"
+			v-if="users && users.length > 0"
+		>
 			<div
 				v-for="user in users"
-				class="group flex h-24 rounded shadow hover:shadow-lg transition"
+				class="group flex gap-3 rounded border transition p-2.5 px-3 cursor-pointer items-center"
 			>
-				<div class="size-24 rounded-l">
-					<img
-						v-if="user.user_image"
-						:src="user.user_image"
-						class="rounded-l object-cover"
-					/>
-					<div
-						v-else
-						class="size-full bg-gray-200 flex items-center justify-center rounded-l text-gray-500 font-semibold text-3xl"
-					>
-						{{
-							user.full_name
-								.split(' ')
-								.map((s: string) => s.charAt(0))
-								.join('')
-								.toUpperCase()
-						}}
-					</div>
-				</div>
-				<div class="px-4 py-2 flex flex-col justify-evenly">
-					<div class="font-medium">{{ user.full_name }}</div>
-					<div class="text-gray-800">{{ user.user }}</div>
-					<div>Joined: {{ dayjsLocal(user.creation).format('LL') }}</div>
-				</div>
+				<img
+					v-if="user.user_image"
+					:src="user.user_image"
+					class="object-cover object-center size-14 m-auto rounded"
+				/>
 				<div
-					class="opacity-0 group-hover:opacity-100 transition w-14 flex justify-center items-center ml-auto rounded-r"
+					v-else
+					class="size-14 bg-gray-200 flex m-auto items-center rounded justify-center text-gray-500 font-semibold text-2xl"
 				>
-					<Button
-						icon="trash-2"
-						variant="ghost"
-						class="text-red-600"
-						@click="$emit('remove', user.user)"
-					/>
+					{{
+						user.full_name
+							.split(' ')
+							.map((s: string) => s.charAt(0))
+							.join('')
+							.toUpperCase()
+					}}
 				</div>
+				<div class="flex flex-col text-sm flex-1">
+					<span class="font-medium mb-1">{{ user.full_name }}</span>
+					<span class="text-ink-gray-5 mb-2">{{ user.user }}</span>
+					<span class="text-ink-gray-5 text-xs"
+						>Added {{ dayjsLocal(user.creation).format('LL') }}</span
+					>
+				</div>
+				<Button
+					icon="trash-2"
+					theme="red"
+					class="opacity-0 group-hover:opacity-100 transition mb-auto"
+					@click="$emit('remove', user.user)"
+				/>
 			</div>
 		</div>
+
+		<div
+			v-else
+			class="text-ink-gray-4 text-sm p-20 rounded flex bg-surface-gray-1 justify-center"
+		>
+			No members to show
+		</div>
+
 		<div>
 			<Button label="Invite" icon-left="user" @click="open = !open" />
 		</div>
