@@ -31,6 +31,9 @@
   "dedicated_server_plan",
   "is_frappe_plan",
   "private_bench_support",
+  "server_plan_validation_for_sites_on_dedicated_servers_section",
+  "restrict_based_on_dedicated_server_plan",
+  "minimum_server_price_usd",
   "allowed_providers_section",
   "cloud_providers",
   "customization_for_bench_section",
@@ -265,12 +268,32 @@
    "fieldname": "private_bench_support",
    "fieldtype": "Check",
    "label": "Private Bench Support"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:!!doc.restrict_based_on_server_plan",
+   "fieldname": "minimum_server_price_usd",
+   "fieldtype": "Currency",
+   "label": "Minimum Server Price (USD)",
+   "mandatory_depends_on": "eval:!!doc.restrict_based_on_server_plan"
+  },
+  {
+   "depends_on": "eval:!!doc.restrict_based_on_dedicated_server_plan",
+   "fieldname": "server_plan_validation_for_sites_on_dedicated_servers_section",
+   "fieldtype": "Section Break",
+   "label": "App Server Plan validation for Sites on Dedicated Servers"
+  },
+  {
+   "default": "0",
+   "fieldname": "restrict_based_on_dedicated_server_plan",
+   "fieldtype": "Check",
+   "label": "Restrict based on Dedicated Server Plan"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-11 20:29:59.240087",
+ "modified": "2026-03-30 13:06:27.590196",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",

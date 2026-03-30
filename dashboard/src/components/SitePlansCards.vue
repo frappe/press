@@ -12,6 +12,7 @@ export default {
 		'modelValue',
 		'isPrivateBenchSite',
 		'isDedicatedServerSite',
+		'serverPlanPrice',
 		'selectedCluster',
 		'selectedApps',
 		'selectedVersion',
@@ -38,7 +39,12 @@ export default {
 				plans = plans.filter((plan) => plan.private_benches);
 			}
 			if (this.isDedicatedServerSite) {
-				plans = plans.filter((plan) => plan.dedicated_server_plan);
+				plans = plans.filter(
+					(plan) =>
+						plan.dedicated_server_plan &&
+						(!plan.restrict_based_on_dedicated_server_plan ||
+							serverPlanPrice > plan.minimum_server_price_usd),
+				);
 			} else {
 				plans = plans.filter((plan) => !plan.dedicated_server_plan);
 			}

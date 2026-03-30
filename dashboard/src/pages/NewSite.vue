@@ -238,6 +238,7 @@
 						v-model="plan"
 						:isPrivateBenchSite="!!bench"
 						:isDedicatedServerSite="isDedicatedServerSite"
+						:serverPlanPrice="serverPriceUsd"
 						:selectedCluster="cluster"
 						:selectedApps="apps"
 						:selectedVersion="version"
@@ -418,6 +419,7 @@ export default {
 			agreedToRegionConsent: false,
 			useDedicatedServer: false,
 			selectedDedicatedServer: null,
+			serverPriceUsd: null,
 		};
 	},
 	watch: {
@@ -498,6 +500,7 @@ export default {
 			if (server) {
 				this.cluster = server.cluster;
 				this.provider = server.provider;
+				this.serverPriceUsd = server.price_usd;
 			}
 		},
 		subdomain: {

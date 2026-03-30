@@ -276,16 +276,37 @@ def get_group_for_new_site_and_set_localisation_app(site, apps):
 def validate_plan(server: str, plan: str) -> None:
 	if not frappe.db.exists("Site Plan", plan):
 		frappe.throw(f"Plan {plan} does not exist", frappe.DoesNotExistError)  # nosemgrep
-	if (
-		frappe.db.get_value("Site Plan", plan, "price_usd") > 0
-		or frappe.db.get_value("Site Plan", plan, "dedicated_server_plan") == 1
-	):
+
+	site_plan = frappe.db.get_value(
+		"Site Plan",
+		plan,
+		[
+			"price_usd",
+			"dedicated_server_plan",
+			"restrict_based_on_dedicated_server_plan",
+			"minimum_server_price_usd",
+		],
+		as_dict=True,
+	)
+
+	if site_plan.get("price_usd", 0) > 0:
 		return
+
 	if (
-		frappe.session.data.user_type == "System User"
-		or frappe.db.get_value("Server", server, "team") == get_current_team()
+		site_plan.get("dedicated_server_plan", 0)
+		and frappe.db.get_value("Server", server, "team") == get_current_team()
 	):
+		if not site_plan.get("restrict_based_on_dedicated_server_plan", 0):
+			return
+		app_server_plan = frappe.db.get_value("Server", server, "plan")
+		min_app_server_price_usd = site_plan.get("minimum_server_price_usd", 0)
+		app_server_price_usd = frappe.db.get_value("Server Plan", app_server_plan, "price_usd")
+		if app_server_price_usd >= min_app_server_price_usd:
+			return
+
+	if frappe.session.data.user_type == "System User":
 		return
+
 	frappe.throw("You are not allowed to use this plan")  # nosemgrep
 
 
@@ -825,7 +846,7 @@ def _get_team_dedicated_server_info(for_server: str | None = None):
 	servers = frappe.db.get_all(
 		"Server",
 		filters=filters,
-		fields=["name", "title", "cluster", "provider"],
+		fields=["name", "title", "cluster", "provider", "plan", "plan.price_usd as price_usd"],
 	)
 
 	if not servers:
@@ -1275,6 +1296,8 @@ def get_site_plans():
 			"is_trial_plan",
 			"allow_downgrading_from_other_plan",
 			"private_bench_support",
+			"restrict_based_on_dedicated_server_plan",
+			"minimum_server_price_usd",
 		],
 		# TODO: Remove later, temporary change because site plan has all document_type plans
 		filters={"document_type": "Site"},

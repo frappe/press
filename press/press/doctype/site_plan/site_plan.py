@@ -19,6 +19,7 @@ class SitePlan(Plan):
 		from frappe.core.doctype.has_role.has_role import HasRole
 		from frappe.types import DF
 
+		from press.press.doctype.cloud_providers.cloud_providers import CloudProviders
 		from press.press.doctype.site_plan_allowed_app.site_plan_allowed_app import SitePlanAllowedApp
 		from press.press.doctype.site_plan_release_group.site_plan_release_group import SitePlanReleaseGroup
 
@@ -40,6 +41,7 @@ class SitePlan(Plan):
 		max_database_usage: DF.Int
 		max_storage_usage: DF.Int
 		memory: DF.Int
+		minimum_server_price_usd: DF.Currency
 		monitor_access: DF.Check
 		offsite_backups: DF.Check
 		plan_title: DF.Data | None
@@ -48,6 +50,7 @@ class SitePlan(Plan):
 		private_bench_support: DF.Check
 		private_benches: DF.Check
 		release_groups: DF.Table[SitePlanReleaseGroup]
+		restrict_based_on_dedicated_server_plan: DF.Check
 		roles: DF.Table[HasRole]
 		support_included: DF.Check
 		vcpu: DF.Int
@@ -69,6 +72,8 @@ class SitePlan(Plan):
 		"private_benches",
 		"monitor_access",
 		"is_trial_plan",
+		"restrict_based_on_dedicated_server_plan",
+		"minimum_server_price_usd",
 	)
 
 	def get_doc(self, doc):
