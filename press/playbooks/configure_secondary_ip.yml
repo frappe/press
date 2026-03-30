@@ -1,5 +1,5 @@
 ---
-- name: Configure Secondary IP in NAT Server
+- name: Configure Secondary IP
   hosts: all
   become: yes
   become_user: root
