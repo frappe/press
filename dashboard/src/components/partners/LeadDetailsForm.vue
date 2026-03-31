@@ -18,6 +18,7 @@
 				/>
 			</div>
 		</div>
+		<ErrorMessage :message="errorMessage" />
 		<div>
 			<Button
 				class="w-full"
@@ -31,12 +32,13 @@
 <script setup>
 import { FormControl, createResource } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { DashboardError } from '../../utils/error';
 import { useRoute } from 'vue-router';
 
 const emit = defineEmits(['success']);
 const route = useRoute();
+const errorMessage = ref('');
 
 const leadInfo = defineModel();
 const props = defineProps({
@@ -59,22 +61,6 @@ const domainList = computed(() => {
 	return _domainList.map((domain) => ({
 		label: domain,
 		value: domain,
-	}));
-});
-
-const _statusList = [
-	'Won',
-	'Open',
-	'Lost',
-	'In Process',
-	'Junk',
-	'Passed to Other Partner',
-];
-
-const statusList = computed(() => {
-	return _statusList.map((status) => ({
-		label: status,
-		value: status,
 	}));
 });
 
@@ -108,6 +94,19 @@ const countryList = computed(() => {
 	}));
 });
 
+const _planList = createResource({
+	url: 'press.api.partner.get_fc_plans',
+	auto: true,
+	cache: 'planList',
+});
+
+const planList = computed(() => {
+	return (_planList.data || []).map((plan) => ({
+		label: plan,
+		value: plan,
+	}));
+});
+
 const updateLeadInfo = createResource({
 	url: 'press.api.partner.update_lead_details',
 	makeParams: () => {
@@ -118,11 +117,17 @@ const updateLeadInfo = createResource({
 	},
 	validate: async () => {
 		let error = await validate();
-		if (error) throw new DashboardError(error);
+		if (error) {
+			errorMessage.value = error;
+			throw new DashboardError(error);
+		}
 	},
 	onSuccess: () => {
 		toast.success('Lead Information updated');
 		emit('success');
+	},
+	onError: (e) => {
+		errorMessage.value = e.messages[0] || 'Failed to update lead information';
 	},
 });
 
@@ -201,26 +206,6 @@ const sections = computed(() => {
 			],
 		},
 		{
-			name: 'Domain and Status',
-			columns: 2,
-			fields: [
-				{
-					fieldtype: 'Select',
-					fieldname: 'domain',
-					label: 'Domain',
-					options: domainList.value,
-					required: true,
-				},
-				{
-					fieldtype: 'Select',
-					fieldname: 'status',
-					label: 'Status',
-					options: statusList.value,
-					required: true,
-				},
-			],
-		},
-		{
 			name: 'Lead Name',
 			columns: 1,
 			fields: [
@@ -271,6 +256,19 @@ const sections = computed(() => {
 			],
 		},
 		{
+			name: 'Domain',
+			columns: 1,
+			fields: [
+				{
+					fieldtype: 'Select',
+					fieldname: 'domain',
+					label: 'Domain',
+					options: domainList.value,
+					required: true,
+				},
+			],
+		},
+		{
 			name: 'Deal details',
 			columns: 2,
 			fields: [
@@ -281,9 +279,10 @@ const sections = computed(() => {
 					options: probability.value,
 				},
 				{
-					fieldtype: 'Data',
+					fieldtype: 'Select',
 					fieldname: 'plan_proposed',
 					label: 'Plan Proposed',
+					options: planList.value,
 				},
 			],
 		},

@@ -1,0 +1,8 @@
+*.o
+io_trace_bpfel.go
+io_trace_bpfeb.go
+mariadb_io_monitor
+*.log
+out
+bpf/vmlinux.h
+vmlinux.h

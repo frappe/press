@@ -3,7 +3,6 @@ import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import LucideAppWindow from '~icons/lucide/app-window';
 import LucideHardDriveDownload from '~icons/lucide/hard-drive-download';
-import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import LucideRocket from '~icons/lucide/rocket';
 import AddAppDialog from '../components/group/AddAppDialog.vue';
 import ChangeAppBranchDialog from '../components/group/ChangeAppBranchDialog.vue';
@@ -42,7 +41,7 @@ export default {
 	},
 	list: {
 		route: '/groups',
-		title: 'Bench Groups',
+		title: 'Benches',
 		fields: [{ apps: ['app'] }],
 		searchField: 'title',
 		filterControls() {
@@ -102,7 +101,7 @@ export default {
 		],
 		primaryAction() {
 			return {
-				label: 'New Bench Group',
+				label: 'New Bench',
 				variant: 'solid',
 				slots: {
 					prefix: icon('plus'),
@@ -115,7 +114,7 @@ export default {
 		banner({ listResource: groups }) {
 			if (!groups.data?.length) {
 				return {
-					title: 'Learn how to create a new private bench group and sites',
+					title: 'Learn how to create a new private bench and sites',
 					button: {
 						label: 'Read docs',
 						variant: 'outline',
@@ -163,7 +162,10 @@ export default {
 					() => import('../pages/ReleaseGroupBenchSites.vue'),
 				),
 				props: (releaseGroup) => {
-					return { releaseGroup: releaseGroup.doc.name };
+					return {
+						releaseGroup: releaseGroup.doc.name,
+						actionsAccess: releaseGroup.doc.actions_access,
+					};
 				},
 			},
 			{
@@ -482,13 +484,6 @@ export default {
 							},
 						},
 						{
-							label: 'Apps',
-							format(value, row) {
-								return (row.apps || []).join(', ');
-							},
-							width: '20rem',
-						},
-						{
 							label: 'Duration',
 							fieldname: 'build_duration',
 							format: duration,
@@ -515,13 +510,12 @@ export default {
 								} else if (group.doc.deploy_information.update_available) {
 									let UpdateReleaseGroupDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/group/UpdateReleaseGroupDialog.vue'
-											),
+											import('../components/group/UpdateReleaseGroupDialog.vue'),
 									);
 									renderDialog(
 										h(UpdateReleaseGroupDialog, {
 											bench: group.name,
+											lastDeploy: true,
 											onSuccess(candidate) {
 												group.doc.deploy_information.deploy_in_progress = true;
 												if (candidate) {
@@ -764,69 +758,15 @@ export default {
 				label: 'Dependencies',
 				icon: icon('box'),
 				route: 'bench-dependencies',
-				type: 'list',
-				list: {
-					doctype: 'Release Group Dependency',
-					filters: (releaseGroup) => {
-						return {
-							parenttype: 'Release Group',
-							parent: releaseGroup.name,
-						};
-					},
-					columns: [
-						{
-							label: 'Dependency',
-							fieldname: 'dependency',
-							format(value, row) {
-								return row.title;
-							},
-						},
-						{
-							label: 'Version',
-							fieldname: 'version',
-							suffix(row) {
-								if (!row.is_custom) {
-									return;
-								}
-
-								return h(
-									Tooltip,
-									{
-										text: 'Custom version',
-										placement: 'top',
-										class: 'rounded-full bg-gray-100 p-1',
-									},
-									() => h(icon('alert-circle', 'w-3 h-3'), {}),
-								);
-							},
-						},
-					],
-					rowActions({
-						row,
-						listResource: dependencies,
-						documentResource: releaseGroup,
-					}) {
-						return [
-							{
-								label: 'Edit',
-								onClick() {
-									let DependencyEditorDialog = defineAsyncComponent(
-										() =>
-											import('../components/group/DependencyEditorDialog.vue'),
-									);
-									renderDialog(
-										h(DependencyEditorDialog, {
-											group: releaseGroup.doc,
-											dependency: row,
-											onSuccess() {
-												dependencies.reload();
-											},
-										}),
-									);
-								},
-							},
-						];
-					},
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('@/components/group/BenchDependencies.vue'),
+				),
+				props: (releaseGroup) => {
+					return {
+						releaseGroup: releaseGroup.doc.name,
+						releaseGroupDocumentResource: releaseGroup,
+					};
 				},
 			},
 			{
@@ -890,9 +830,7 @@ export default {
 								onClick() {
 									let ConfigEditorDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/EnvironmentVariableEditorDialog.vue'
-											),
+											import('../components/EnvironmentVariableEditorDialog.vue'),
 									);
 									renderDialog(
 										h(ConfigEditorDialog, {
@@ -950,7 +888,9 @@ export default {
 					label: 'Impersonate Group Owner',
 					title: 'Impersonate Group Owner', // for label to pop-up on hover
 					slots: {
-						icon: icon(LucideVenetianMask),
+						icon: defineAsyncComponent(
+							() => import('~icons/lucide/venetian-mask'),
+						),
 					},
 					condition: () =>
 						team.doc?.is_desk_user && group.doc.team !== team.name,
@@ -973,44 +913,23 @@ export default {
 						group.doc.deploy_information.update_available &&
 						['Awaiting Deploy', 'Active'].includes(group.doc.status),
 					onClick() {
-						if (group.doc?.deploy_information?.last_deploy) {
-							let UpdateReleaseGroupDialog = defineAsyncComponent(
-								() =>
-									import('../components/group/UpdateReleaseGroupDialog.vue'),
-							);
-							renderDialog(
-								h(UpdateReleaseGroupDialog, {
-									bench: group.name,
-									onSuccess(candidate) {
-										group.doc.deploy_information.deploy_in_progress = true;
-										if (candidate) {
-											group.doc.deploy_information.last_deploy.name = candidate;
-										}
-									},
-								}),
-							);
-						} else {
-							confirmDialog({
-								title: 'Deploy',
-								message: "Let's deploy now?",
-								onSuccess({ hide }) {
-									toast.promise(
-										group.initialDeploy.submit(null, {
-											onSuccess: () => {
-												group.reload();
-												hide();
-											},
-										}),
-										{
-											success: 'Deploy scheduled successfully',
-											error: (e) =>
-												getToastErrorMessage(e, 'Failed to schedule deploy'),
-											loading: 'Scheduling deploy...',
-										},
-									);
+						let UpdateReleaseGroupDialog = defineAsyncComponent(
+							() => import('../components/group/UpdateReleaseGroupDialog.vue'),
+						);
+						renderDialog(
+							h(UpdateReleaseGroupDialog, {
+								bench: group.name,
+								lastDeploy: group.doc?.deploy_information?.last_deploy,
+								onSuccess(candidate) {
+									group.doc.deploy_information.deploy_in_progress = true;
+									if (candidate) {
+										group.doc.deploy_information.last_deploy = {
+											name: candidate,
+										};
+									}
 								},
-							});
-						}
+							}),
+						);
 					},
 				},
 				{

@@ -55,16 +55,6 @@
 			<div class="text-xs text-gray-600">Select Payment Gateway</div>
 			<div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
 				<Button
-					v-if="team.doc.currency === 'INR' || team.doc.razorpay_enabled"
-					size="lg"
-					:class="{
-						'border-[1.5px] border-gray-700': paymentGateway === 'Razorpay',
-					}"
-					@click="paymentGateway = 'Razorpay'"
-				>
-					<RazorpayLogo class="w-24" />
-				</Button>
-				<Button
 					size="lg"
 					:class="{
 						'border-[1.5px] border-gray-700': paymentGateway === 'Stripe',
@@ -72,6 +62,21 @@
 					@click="paymentGateway = 'Stripe'"
 				>
 					<StripeLogo class="h-7 w-24" />
+				</Button>
+				<Button
+					v-if="
+						team.doc.razorpay_enabled ||
+						team.doc.currency === 'INR' ||
+						(team.doc.currency === 'USD' && paypalEnabled.data)
+					"
+					size="lg"
+					:class="{
+						'border-[1.5px] border-gray-700': paymentGateway === 'Razorpay',
+					}"
+					@click="paymentGateway = 'Razorpay'"
+				>
+					<RazorpayLogo v-if="team.doc.currency === 'INR'" class="w-24" />
+					<PayPalLogo v-if="team.doc.currency === 'USD'" class="h-7 w-20" />
 				</Button>
 				<Button
 					v-if="team.doc.country === 'Kenya'"
@@ -103,6 +108,9 @@
 			v-if="paymentGateway === 'Razorpay'"
 			:amount="creditsToBuy"
 			:minimumAmount="minimumAmount"
+			:paypalEnabled="paypalEnabled.data"
+			:type="props.type"
+			:docName="props.docName"
 			@success="() => emit('success')"
 			@cancel="show = false"
 		/>
@@ -122,6 +130,7 @@
 import BuyCreditsStripe from './BuyCreditsStripe.vue';
 import BuyCreditsRazorpay from './BuyCreditsRazorpay.vue';
 import RazorpayLogo from '../../logo/RazorpayLogo.vue';
+import PayPalLogo from '../../logo/PayPalLogo.vue';
 import StripeLogo from '../../logo/StripeLogo.vue';
 import BuyPrepaidCreditsMpesa from './mpesa/BuyPrepaidCreditsMpesa.vue';
 import { FormControl, Button, createResource } from 'frappe-ui';
@@ -131,7 +140,24 @@ const emit = defineEmits(['success']);
 
 const team = inject('team');
 const props = defineProps({
-	minimumAmount: Number,
+	minimumAmount: {
+		type: Number,
+		default: null,
+	},
+	type: {
+		type: String,
+		default: 'Prepaid Credits',
+	},
+	docName: {
+		type: String,
+		default: null,
+	},
+});
+
+const paypalEnabled = createResource({
+	url: 'press.api.billing.is_paypal_enabled',
+	cache: 'paypalEnabled',
+	auto: true,
 });
 
 const totalUnpaidAmount = createResource({
@@ -143,8 +169,14 @@ const totalUnpaidAmount = createResource({
 const minimumAmount = computed(() => {
 	if (props.minimumAmount) return props.minimumAmount;
 	if (!team.doc) return 0;
-	const unpaidAmount = totalUnpaidAmount.data || 0;
+	let unpaidAmount = totalUnpaidAmount.data || 0;
 	const minimumDefault = team.doc?.currency == 'INR' ? 410 : 5;
+
+	if (unpaidAmount > 100000 && team.doc?.currency == 'INR') {
+		unpaidAmount = 100000;
+	} else if (unpaidAmount > 1450 && team.doc?.currency == 'USD') {
+		unpaidAmount = 1450;
+	}
 
 	return Math.ceil(
 		unpaidAmount && unpaidAmount > 0 ? unpaidAmount : minimumDefault,
@@ -154,8 +186,9 @@ const minimumAmount = computed(() => {
 const creditsToBuy = ref(minimumAmount.value);
 const paymentGateway = ref('');
 
-watch(minimumAmount, () => {
-	creditsToBuy.value = minimumAmount.value;
+watch(totalUnpaidAmount, () => {
+	creditsToBuy.value =
+		totalUnpaidAmount.data > 0 ? totalUnpaidAmount.data : minimumAmount.value;
 });
 
 const totalAmount = computed(() => {

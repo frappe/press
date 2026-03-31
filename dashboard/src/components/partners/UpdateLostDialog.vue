@@ -16,6 +16,7 @@
 					type="textarea"
 					name="other_reason"
 				/>
+				<ErrorMessage :message="errorMessage" />
 				<Button variant="solid" @click="() => updateStatus.submit()"
 					>Submit</Button
 				>
@@ -25,6 +26,7 @@
 </template>
 <script setup>
 import { Dialog, FormControl, createResource } from 'frappe-ui';
+import { DashboardError } from '../../utils/error';
 import { ref, defineEmits, computed } from 'vue';
 
 const emit = defineEmits(['update']);
@@ -38,6 +40,7 @@ const props = defineProps({
 
 const reason = ref();
 const other_reason = ref();
+const errorMessage = ref('');
 const updateStatus = createResource({
 	url: 'press.api.partner.update_lead_status',
 	makeParams: () => {
@@ -47,6 +50,20 @@ const updateStatus = createResource({
 			lost_reason: reason.value,
 			other_reason: other_reason.value,
 		};
+	},
+	validate: () => {
+		if (reason.value === undefined) {
+			let error = 'Please select a Lost Reason';
+			errorMessage.value = error;
+			throw new DashboardError(error);
+		} else if (
+			reason.value === 'Other' &&
+			(other_reason.value === undefined || other_reason.value.trim() === '')
+		) {
+			let error = 'Please specify the other Reason';
+			errorMessage.value = error;
+			throw new DashboardError(error);
+		}
 	},
 	onSuccess: () => {
 		emit('update');

@@ -10,6 +10,7 @@ from frappe.core.doctype.user.user import User
 from frappe.handler import is_whitelisted
 from frappe.utils import cint
 
+from press.access.support_access import has_support_access
 from press.runner import constants
 from press.utils import _get_current_team, _system_user
 
@@ -150,6 +151,9 @@ def has_permission(doc, ptype, user):
 	team = get_current_team()
 	child_team_members = [d.name for d in frappe.db.get_all("Team", {"parent_team": team}, ["name"])]
 	if doc.team == team or doc.team in child_team_members:
+		return True
+
+	if has_support_access(doc.doctype, doc.name):
 		return True
 
 	return False

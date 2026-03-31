@@ -1,0 +1,37 @@
+{
+  "message": [
+    {
+      "name": "alpha.ci.fc.frappe.dev",
+      "group_title": "Alpha Release Group",
+      "group_public": 1,
+      "version": "Nightly",
+      "host_name": "alpha.ci.fc.frappe.dev",
+      "status": "Active",
+      "plan": "Starter",
+      "cluster": "India - West",
+      "group": "Bench Group A"
+    },
+    {
+      "name": "beta.ci.fc.frappe.dev",
+      "group_title": "Beta Release Group",
+      "group_public": 0,
+      "version": "v14.23.1",
+      "host_name": "beta.ci.fc.frappe.dev",
+      "status": "Active",
+      "plan": "Pro",
+      "cluster": "US - East",
+      "group": "Bench Group B"
+    },
+    {
+      "name": "gamma.ci.fc.frappe.dev",
+      "group_title": "Gamma Release Group",
+      "group_public": 1,
+      "version": "v15.0.0",
+      "host_name": "gamma.ci.fc.frappe.dev",
+      "status": "Broken",
+      "plan": "Enterprise",
+      "cluster": "Europe - Central",
+      "group": "Bench Group C"
+    }
+  ]
+}

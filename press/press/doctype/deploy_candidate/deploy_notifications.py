@@ -47,6 +47,9 @@ if typing.TYPE_CHECKING:
 		DeployCandidateApp,
 	)
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
+	from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
+		DeployCandidateBuildStep,
+	)
 
 	# TYPE_CHECKING guard for code below cause DeployCandidate
 	# might cause circular import.
@@ -55,6 +58,7 @@ if typing.TYPE_CHECKING:
 			self,
 			details: "Details",
 			dc: "DeployCandidate",
+			dcb: "DeployCandidateBuild",
 			exc: BaseException,
 		) -> bool:  # Return True if is_actionable
 			...
@@ -78,11 +82,16 @@ DOC_URLS = {
 	"required-app-not-found": "https://docs.frappe.io/cloud/common-issues/required-app-not-found",
 	"debugging-app-installs-locally": "https://docs.frappe.io/cloud/common-issues/debugging-app-installs-locally",
 	"vite-not-found": "https://docs.frappe.io/cloud/common-issues/vite-not-found",
+	"invalid-project-structure": "https://docs.frappe.io/framework/user/en/tutorial/create-an-app#app-directory-structure",
+	"frappe-not-found": "https://pip.pypa.io/en/stable/news/#v25-3",
+	"no-python-dependency-file-found": "https://packaging.python.org/en/latest/guides/writing-pyproject-toml/",
 }
 
 
-def handlers() -> "list[UserAddressableHandlerTuple]":
+def handlers():
 	"""
+	Returns list[UserAddressableHandlerTuple]
+
 	Before adding anything here, view the type:
 	`UserAddressableHandlerTuple`
 
@@ -120,6 +129,11 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			"Repository could not be fetched",
 			update_with_app_not_fetchable,
 			None,
+		),
+		(
+			"No python dependency file found",
+			update_with_no_python_dependency_file_error,
+			check_if_app_updated,
 		),
 		(
 			"App has invalid pyproject.toml file",
@@ -160,6 +174,16 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			"Required app not found",
 			update_with_required_app_not_found_prebuild,
 			None,
+		),
+		(
+			"ModuleNotFoundError: No module named 'frappe'",
+			update_with_unsupported_init_file,
+			check_if_app_updated,
+		),
+		(
+			"Could not determine the package name. Checked pyproject.toml, setup.cfg, and setup.py.",
+			update_with_installation_file_not_found,
+			check_if_app_updated,
 		),
 		(
 			"ModuleNotFoundError: No module named",
@@ -226,7 +250,45 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			update_with_yarn_install_failed,
 			check_if_app_updated,
 		),
+		# Catch app install failures in cases of malformed package structure etc, etc.
+		# https://github.com/frappe/bench/pull/1665/files
+		(
+			"Error occurred during app install",
+			update_with_invalid_app_structure,
+			None,
+		),
+		(
+			"`frappe` package is installed from PyPI, which isn't supported",
+			update_with_frappe_installed_from_pypi,
+			None,
+		),
 	]
+
+
+def create_build_warning_notification(
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	title: str,
+	message: str,
+) -> bool:
+	"""Create a warning notification for build"""
+	warning_details = {"title": title, "message": message}
+	doc_dict = {
+		"doctype": "Press Notification",
+		"team": dc.team,
+		"type": "Bench Deploy",
+		"document_type": dcb.doctype,
+		"document_name": dcb.name,
+		"class": "Warning",
+		**warning_details,
+	}
+	doc = frappe.get_doc(doc_dict)
+	doc.insert()
+	frappe.db.commit()
+
+	frappe.publish_realtime("press_notification", doctype="Press Notification", message={"team": dc.team})
+
+	return True
 
 
 def create_build_failed_notification(
@@ -302,6 +364,57 @@ def get_details(
 		details["assistance_url"] = None
 
 	return details
+
+
+def update_with_frappe_installed_from_pypi(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	details["title"] = (
+		"[Action Required] App installation failed due to 'frappe' package being installed from PyPI"
+	)
+
+	message = """
+	<p><strong>Installation Failed:</strong> Your custom app's installation is failing because the <code>frappe</code> package is installed from PyPI.
+	This setup is not supported and is preventing the installation from completing.</p>
+
+	<p>Please remove <code>frappe</code> from your app's <code>requirements.txt</code> or <code>pyproject.toml</code> file to proceed.</p>
+	"""
+
+	details["message"] = fmt(message)
+	return True
+
+
+def update_with_unsupported_init_file(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	details["title"] = "[Action Required] App installation failed due to unsupported code in __init__.py"
+
+	message = """
+    <p><strong>Installation Failed:</strong> Your custom app's <code>__init__.py</code> file contains an import statement for <code>frappe</code>.
+    This behavior is no longer supported and is preventing the installation from completing.</p>
+
+    <p>Please remove any <code>frappe</code> import statements from your <code>__init__.py</code> file to proceed.</p>
+
+    <p><strong>Temporary Workarounds:</strong></p>
+    <ul>
+        <li>Downgrade <strong>pip</strong> to version <strong>25.2</strong> in the <em>Bench Dependencies</em> tab.</li>
+        <li>Upgrade Bench to version <strong>5.26.0</strong> from the same tab.</li>
+    </ul>
+
+    <p>For additional details, you may refer to the
+        <a href="https://pip.pypa.io/en/stable/news/" target="_blank">pip release notes</a>.
+    </p>
+	"""
+
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["frappe-not-found"]
+	return True
 
 
 def update_with_vue_build_failed(
@@ -495,6 +608,27 @@ def update_with_error_on_pip_install(
 	return True
 
 
+def update_with_no_python_dependency_file_error(
+	details: "Details", dc: "DeployCandidate", dcb: "DeployCandidateBuild", exc: BaseException
+):
+	"No python dependency file found"
+	app_name = exc.args[-1]
+
+	details["title"] = "Validation Failed: No python dependency file found"
+	message = f"""
+	<p><b>{app_name}</b> does not have a python dependency file.
+
+	Please add a <code>pyproject.toml</code> file.</p>
+
+	<p>To rectify this issue, please follow the the steps mentioned in <i>Help</i>.</p>
+	"""
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["no-python-dependency-file-found"]
+
+	details["traceback"] = None
+	return True
+
+
 def update_with_invalid_pyproject_error(
 	details: "Details",
 	dc: "DeployCandidate",
@@ -504,7 +638,7 @@ def update_with_invalid_pyproject_error(
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
 		return False
 
-	build_step = get_ct_row(dcb, app, "build_steps", "step_slug")
+	build_step: DeployCandidateBuildStep = get_ct_row(dcb, app, "build_steps", "step_slug")
 	app_name = build_step.step
 
 	details["title"] = "Invalid pyproject.toml file found"
@@ -519,6 +653,33 @@ def update_with_invalid_pyproject_error(
 	return True
 
 
+def update_with_invalid_app_structure(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	if len(exc.args) <= 1 or not (app := exc.args[1]):
+		return False
+
+	build_step: DeployCandidateBuildStep = get_ct_row(dcb, app, "build_steps", "step_slug")
+	app_name = build_step.step
+
+	details["title"] = "App Installation Failed"
+	message = f"""
+	<p>The installation of <b>{app_name}</b> failed because its structure does not
+	conform to the expected Python package format.</p>
+
+	<p>Please ensure that the repository contains a valid <b>setup.py</b> or
+	<b>pyproject.toml</b> file and that all dependencies are correctly defined.</p>
+
+	<p>For further guidance, refer to the <i>Help</i> documentation.</p>
+	"""
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["invalid-project-structure"]
+	return True
+
+
 def update_with_invalid_package_json_error(
 	details: "Details",
 	dc: "DeployCandidate",
@@ -528,7 +689,7 @@ def update_with_invalid_package_json_error(
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
 		return False
 
-	build_step = get_ct_row(dcb, app, "build_steps", "step_slug")
+	build_step: DeployCandidateBuildStep = get_ct_row(dcb, app, "build_steps", "step_slug")
 	app_name = build_step.step
 
 	loc_str = ""
@@ -589,7 +750,7 @@ def update_with_incompatible_node(
 	dc: "DeployCandidate",
 	dcb: "DeployCandidateBuild",
 	exc: BaseException,
-) -> None:
+) -> bool:
 	# Example line:
 	# `#60 5.030 error customization_forms@1.0.0: The engine "node" is incompatible with this module. Expected version ">=18.0.0". Got "16.16.0"`
 	if line := get_build_output_line(dcb, '"node" is incompatible with this module'):
@@ -668,7 +829,7 @@ def update_with_incompatible_node_prebuild(
 	details: "Details",
 	dc: "DeployCandidate",
 	exc: BaseException,
-) -> None:
+) -> bool:
 	if len(exc.args) != 5:
 		return False
 
@@ -700,7 +861,7 @@ def update_with_incompatible_python_prebuild(
 	dc: "DeployCandidate",
 	dcb: "DeployCandidateBuild",
 	exc: BaseException,
-) -> None:
+) -> bool:
 	if len(exc.args) != 4:
 		return False
 
@@ -726,7 +887,7 @@ def update_with_incompatible_app_prebuild(
 	dc: "DeployCandidate",
 	dcb: "DeployCandidateBuild",
 	exc: BaseException,
-) -> None:
+) -> bool:
 	if len(exc.args) != 5:
 		return False
 
@@ -901,6 +1062,29 @@ def update_with_yarn_build_failed(
 	return True
 
 
+def update_with_installation_file_not_found(
+	details: "Details",
+	dc: "DeployCandidate",
+	dcb: "DeployCandidateBuild",
+	exc: BaseException,
+):
+	details["title"] = "Missing or misconfigured package configuration file"
+
+	failed_step = get_failed_step(dcb)
+	if not failed_step or failed_step.stage_slug != "apps":
+		return False
+
+	message = f"""
+                <p><b>{failed_step.step}</b> is missing a valid installation configuration file.</p>
+				<p>Please add or correct a <code>pyproject.toml</code> (or <code>setup.cfg</code> / <code>setup.py</code>) with the required project metadata</p>
+				<p>This issue is caused by the app's configuration and is not related to Frappe Cloud.</p>
+            """
+
+	details["message"] = fmt(message)
+	details["traceback"] = None
+	return True
+
+
 def update_with_file_not_found(
 	details: "Details",
 	dc: "DeployCandidate",
@@ -925,6 +1109,13 @@ def update_with_file_not_found(
 			continue
 		if app_name in line:
 			break
+		# In case of bad directory structure we can catch it using this since install always looks for init
+		if (
+			f"ERROR: [Errno 2] No such file or directory: './apps/{failed_step.step_slug}/{failed_step.step_slug}/__init__.py'"
+			in line
+		):
+			break
+
 	else:
 		return False
 

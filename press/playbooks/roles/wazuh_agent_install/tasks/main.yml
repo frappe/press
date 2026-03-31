@@ -1,0 +1,38 @@
+---
+- name: Install Dependencies
+  apt:
+    name:
+      - gnupg
+      - apt-transport-https
+    state: present
+
+- name: Download Key
+  get_url:
+    url: https://packages.wazuh.com/key/GPG-KEY-WAZUH
+    dest: /usr/share/keyrings/wazuh.gpg
+    mode: '0644'
+
+- name: Add Repository
+  apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main"
+    state: present
+    filename: wazuh
+
+- name: Update Packages
+  apt:
+    update_cache: yes
+
+- name: Install Agent
+  apt:
+    name: wazuh-agent
+    state: present
+    force: yes
+  environment:
+    WAZUH_MANAGER: "{{ wazuh_manager }}"
+    WAZUH_AGENT_NAME: "{{ wazuh_agent_name }}"
+
+- name: Enable and Start Agent
+  service:
+    name: wazuh-agent
+    enabled: yes
+    state: started

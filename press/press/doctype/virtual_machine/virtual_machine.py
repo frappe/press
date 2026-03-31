@@ -10,14 +10,16 @@ import typing
 import boto3
 import botocore
 import frappe
+import pydo
 import rq
 from frappe.core.utils import find
 from frappe.desk.utils import slug
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
+from frappe.utils import cint
 from frappe.utils.password import get_decrypted_password
-from hcloud import APIException, Client
-from hcloud.images import Image
+from hcloud import APIException
+from hcloud import Client as HetznerClient
 from hcloud.servers.domain import ServerCreatePublicNetwork
 from oci import pagination as oci_pagination
 from oci.core import BlockstorageClient, ComputeClient, VirtualNetworkClient
@@ -25,6 +27,7 @@ from oci.core.models import (
 	CreateBootVolumeBackupDetails,
 	CreateVnicDetails,
 	CreateVolumeBackupDetails,
+	GetPublicIpByIpAddressDetails,
 	InstanceOptions,
 	InstanceSourceViaImageDetails,
 	LaunchInstanceDetails,
@@ -37,6 +40,7 @@ from oci.core.models import (
 )
 from oci.exceptions import TransientServiceError
 
+from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server_activity.server_activity import log_server_activity
 from press.utils import log_error
@@ -46,8 +50,14 @@ if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.virtual_machine_migration.virtual_machine_migration import (
 		VirtualMachineMigration,
 	)
+	from press.press.doctype.cluster.cluster import Cluster
+	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.log_server.log_server import LogServer
+	from press.press.doctype.monitor_server.monitor_server import MonitorServer
+	from press.press.doctype.proxy_server.proxy_server import ProxyServer
 	from press.press.doctype.server.server import Server
 	from press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot import VirtualDiskSnapshot
+	from press.press.doctype.virtual_machine_image.virtual_machine_image import VirtualMachineImage
 
 
 server_doctypes = [
@@ -56,7 +66,26 @@ server_doctypes = [
 	"Proxy Server",
 	"Monitor Server",
 	"Log Server",
+	"NFS Server",
+	"NAT Server",
 ]
+
+SERIES_TO_SERVER_TYPE = {
+	"f": "Server",
+	"m": "Database Server",
+	"n": "Proxy Server",
+	"fs": "Server",
+	"u": "Server",
+	"nat": "NAT Server",
+	"nfs": "NFS Server",
+	"p": "Monitor Server",
+	"r": "Registry Server",
+	"e": "Log Server",
+}
+
+HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
+DIGITALOCEAN_ROOT_DISK_ID = "digital-ocean-root-disk"
+HETZNER_ACTION_RETRIES = 60  # retry count; try to keep it lower so that it doesn't surpass than default RQ job timeout of 300 seconds
 
 
 class VirtualMachine(Document):
@@ -73,8 +102,9 @@ class VirtualMachine(Document):
 		)
 		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
-		availability_zone: DF.Data
-		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner"]
+		assign_public_ip: DF.Check
+		availability_zone: DF.Data | None
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI", "Hetzner", "DigitalOcean", "Frappe Compute"]
 		cluster: DF.Link
 		data_disk_snapshot: DF.Link | None
 		data_disk_snapshot_attached: DF.Check
@@ -96,10 +126,11 @@ class VirtualMachine(Document):
 		public_ip_address: DF.Data | None
 		ram: DF.Int
 		ready_for_conversion: DF.Check
-		region: DF.Link
+		region: DF.Link | None
 		root_disk_size: DF.Int
+		secondary_private_ip: DF.Data | None
 		security_group_id: DF.Data | None
-		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "t"]
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs", "nat"]
 		skip_automated_snapshot: DF.Check
 		ssh_key: DF.Link
 		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
@@ -113,6 +144,13 @@ class VirtualMachine(Document):
 		volumes: DF.Table[VirtualMachineVolume]
 	# end: auto-generated types
 
+	@property
+	def is_database_server(self) -> bool:
+		if self.series == "m":
+			return True
+
+		return frappe.db.exists("Database Server", {"virtual_machine": self.name})
+
 	def autoname(self):
 		series = f"{self.series}-{slug(self.cluster)}.#####"
 		self.index = int(make_autoname(series)[-5:])
@@ -120,7 +158,7 @@ class VirtualMachine(Document):
 
 	def after_insert(self):
 		if self.virtual_machine_image:
-			image = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
+			image: VirtualMachineImage = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
 			if image.has_data_volume:
 				# We have two separate volumes for root and data
 				# Copy their sizes correctly
@@ -149,37 +187,50 @@ class VirtualMachine(Document):
 			self.machine_image = self.get_latest_ubuntu_image()
 		self.save()
 
-	def get_private_ip(self):
+	def get_private_ip(self) -> str:
 		ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
 		index = self.index + 356
+
 		if self.series == "n":
 			return str(ip + index)
-		offset = ["f", "m", "c", "p", "e", "r", "t"].index(self.series)
-		return str(ip + 256 * (2 * (index // 256) + offset) + (index % 256))
+
+		window = 2 if self.series == "nat" else 1  # reserve 2 IPs for nat servers
+		additional_offset = int(self.series == "nat" and bool(self.private_ip_address))
+
+		offset = ["n", "f", "m", "c", "p", "e", "r", "u", "t", "nfs", "fs", "nat"].index(self.series)
+		return str(ip + (256 * (2 * (index // 256) + offset) + (index % 256)) * window + additional_offset)
 
 	def validate(self):
-		if not self.private_ip_address:
+		# Digital ocean does not support custom private IPs in a vpc
+		if not self.private_ip_address and self.cloud_provider != "DigitalOcean":
 			self.private_ip_address = self.get_private_ip()
 
 		self.validate_data_disk_snapshot()
+
+		if self.series == "nat" and self.cloud_provider != "AWS EC2":
+			frappe.throw("NAT Servers are only supported on AWS EC2")
 
 	def validate_data_disk_snapshot(self):
 		if not self.is_new() or not self.data_disk_snapshot:
 			return
 
 		if self.cloud_provider != "AWS EC2":
-			frappe.throw("Server Creation with Data Disk Snapshot is only supported on AWS EC2.")
+			frappe.throw(
+				"Frappe Cloud allows Data disk snapshots for servers provided by AWS Only. Any other regions like OCI and Hetzner do not have Data disk snapshots."
+			)
 
 		# Ensure the disk snapshot is Completed
 		snapshot: VirtualDiskSnapshot = frappe.get_doc("Virtual Disk Snapshot", self.data_disk_snapshot)
 		if snapshot.status != "Completed":
-			frappe.throw("Disk Snapshot is not available.")
+			frappe.throw("The disk snapshot is unavailable because it has failed during the completion.")
 
 		if snapshot.region != frappe.get_value("Cluster", self.cluster, "region"):
-			frappe.throw("Disk Snapshot is not available in the same region as the cluster")
+			frappe.throw("Disk Snapshot is not available in the same region as the cluster.")  # nosemgrep
 
 		if not self.virtual_machine_image:
-			frappe.throw("Virtual Machine Image is required to create a VM with Data Disk Snapshot")
+			frappe.throw(
+				"Virtual Machine Image is required to create a VM with Data Disk Snapshot. Please attach a Virtual Machine Image during the Machine creation."
+			)
 
 	def on_trash(self):
 		snapshots = frappe.get_all(
@@ -199,11 +250,11 @@ class VirtualMachine(Document):
 			frappe.delete_doc("Virtual Machine Image", image)
 
 	def on_update(self):
-		if self.has_value_changed("has_data_volume"):
-			server = self.get_server()
-			if server:
-				server.has_data_volume = self.has_data_volume
-				server.save()
+		server = self.get_server()
+
+		if self.has_value_changed("has_data_volume") and server:
+			server.has_data_volume = self.has_data_volume
+			server.save()
 
 		if self.has_value_changed("disk_size") and self.should_bill_addon_storage():
 			self.update_subscription_for_addon_storage()
@@ -316,61 +367,71 @@ class VirtualMachine(Document):
 
 		return False
 
+	def _handle_updated_addon_storage(self, server: Server, increment: int) -> None:
+		if frappe.db.exists(
+			"Subscription",
+			{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
+		):
+			# update the existing subscription
+			frappe.db.set_value(
+				"Subscription",
+				{
+					"document_name": server.name,
+					"team": server.team,
+					"plan_type": "Server Storage Plan",
+				},
+				{
+					"additional_storage": increment,
+					"enabled": 1,
+				},
+			)
+		else:
+			# create a new subscription
+			frappe.get_doc(
+				doctype="Subscription",
+				team=server.team,
+				plan_type="Server Storage Plan",
+				plan="Add-on Storage plan",
+				document_type=server.doctype,
+				document_name=server.name,
+				additional_storage=increment,
+				enabled=1,
+			).insert()
+
+	def _plan_change_addon_storage(self, server: Server) -> None:
+		if frappe.db.exists(
+			"Subscription",
+			{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
+		):
+			frappe.db.set_value(
+				"Subscription",
+				{
+					"document_name": server.name,
+					"team": server.team,
+					"plan_type": "Server Storage Plan",
+				},
+				"enabled",
+				0,
+			)
+
 	def update_subscription_for_addon_storage(self):
+		"""Update subscription record"""
 		server = self.get_server()
-		if not server:
+
+		if not server or server.doctype == "NFS Server":
 			return
+
 		server_plan_size = frappe.db.get_value("Server Plan", server.plan, "disk")
 
 		if server_plan_size and self.disk_size > server_plan_size:
 			# Add on storage was added or updated
 			increment = self.disk_size - server_plan_size
-			if frappe.db.exists(
-				"Subscription",
-				{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
-			):
-				# update the existing subscription
-				frappe.db.set_value(
-					"Subscription",
-					{
-						"document_name": server.name,
-						"team": server.team,
-						"plan_type": "Server Storage Plan",
-					},
-					{
-						"additional_storage": increment,
-						"enabled": 1,
-					},
-				)
-			else:
-				# create a new subscription
-				frappe.get_doc(
-					doctype="Subscription",
-					team=server.team,
-					plan_type="Server Storage Plan",
-					plan="Add-on Storage plan",
-					document_type=server.doctype,
-					document_name=server.name,
-					additional_storage=increment,
-					enabled=1,
-				).insert()
+			self._handle_updated_addon_storage(server, increment)
 		elif self.disk_size == server_plan_size:
 			# Server was upgraded or downgraded from plan change
 			# Remove the existing add-on storage subscription
-			if frappe.db.exists(
-				"Subscription",
-				{"document_name": server.name, "team": server.team, "plan_type": "Server Storage Plan"},
-			):
-				frappe.db.set_value(
-					"Subscription",
-					{
-						"document_name": server.name,
-						"team": server.team,
-						"plan_type": "Server Storage Plan",
-					},
-					"enabled",
-					0,
-				)
+			self._plan_change_addon_storage(server)
+		return
 
 	@frappe.whitelist()
 	def provision(self):
@@ -380,41 +441,140 @@ class VirtualMachine(Document):
 			return self._provision_oci()
 		if self.cloud_provider == "Hetzner":
 			return self._provision_hetzner()
+		if self.cloud_provider == "DigitalOcean":
+			return self._provision_digital_ocean()
+		if self.cloud_provider == "Frappe Compute":
+			return self._provision_frappe_compute()
+
 		return None
 
-	def _provision_hetzner(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		server_type = self.client().server_types.get_by_name(self.machine_type)
-		location = self.client().locations.get_by_name(cluster.region)
-		network = self.client().networks.get_by_id(cluster.vpc_id)
-		public_net = ServerCreatePublicNetwork(enable_ipv4=True, enable_ipv6=False)
-		ssh_key_name = self.ssh_key
-		ssh_key = self.client().ssh_keys.get_by_name(ssh_key_name)
+	def _get_digital_ocean_ssh_key_id(self) -> int:
+		"""Get digital ocean ssh key id"""
+		keys = self.client().ssh_keys.list()
+		keys = keys.get("ssh_keys", [])
+		existing_key = [key for key in keys if key["name"] == self.ssh_key]
+		if not existing_key:
+			frappe.throw(f"No SSH Key found on Digital Ocean with the name {self.ssh_key}")
 
-		self.skip_automated_snapshot = True
+		return existing_key[0]["id"]
+
+	def _provision_frappe_compute(self):
+		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
+		ssh_key = frappe.db.get_value("SSH Key", self.ssh_key, "public_key")
 		if self.virtual_machine_image:
-			vmi = frappe.get_doc("Virtual Machine Image", self.virtual_machine_image)
-			image = self.client().images.get_by_id(vmi.image_id)
+			image_id = frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "image_id")
 		else:
-			image = Image(id=67794396)  # ubuntu-20.04
-
-		server_response = self.client().servers.create(
-			name=f"{self.name}",
-			server_type=server_type,
-			image=image,
-			networks=[network],
-			location=location,
-			public_net=public_net,
-			ssh_keys=[ssh_key],
-			user_data=self.get_cloud_init() if self.virtual_machine_image else "",
+			image_id = self.machine_image
+		instance_id = self.client().provision_virtual_machine(
+			self.name,
+			self.machine_type,
+			image_id,
+			self.disk_size,
+			ssh_key,
+			self.get_cloud_init(),
+			vpc_id,
+			self.private_ip_address,
 		)
-		server = server_response.server
-
-		self.instance_id = server.id
-
-		self.status = self.get_hetzner_status_map()[server.status]
+		self.instance_id = instance_id
+		self.status = "Pending"
 
 		self.save()
+		frappe.db.commit()
+
+	def _provision_digital_ocean(self):
+		"""Provision a Digital Ocean Droplet"""
+		if not self.machine_image:
+			frappe.throw("Machine Image is required to provision Hetzner Virtual Machine.")
+
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+		firewalls = self.client().firewalls.list()
+		firewalls = firewalls.get("firewalls", [])
+		cluster_firewall = next(fw for fw in firewalls if fw["id"] == cluster.security_group_id)
+
+		if cluster_firewall["status"] == "failed":
+			frappe.throw(f"Firewall with id {cluster.security_group_id} failed")
+
+		try:
+			droplet = self.client().droplets.create(
+				{
+					"name": self.name,
+					"region": cluster.region,
+					"size": self.machine_type,
+					"image": self.machine_image,
+					"ssh_keys": [self._get_digital_ocean_ssh_key_id()],
+					"backups": False,
+					"vpc_uuid": cluster.vpc_id,
+					"user_data": self.get_cloud_init() if self.virtual_machine_image else "",
+				}
+			)
+			self.instance_id = droplet["droplet"]["id"]
+		except Exception as e:
+			frappe.throw(f"Failed to provision Digital Ocean Droplet: {e!s}")
+
+		try:
+			for group in self.get_security_groups():
+				self.client().firewalls.assign_droplets(group, {"droplet_ids": [self.instance_id]})
+		except Exception as e:
+			frappe.throw(f"Failed to assign Firewall to Digital Ocean Droplet: {e!s}")
+
+		self.status = self.get_digital_ocean_status_map()[droplet["droplet"]["status"]]
+		self.save()
+		frappe.db.commit()
+
+	def _provision_hetzner(self):
+		from hcloud.firewalls.domain import Firewall
+		from hcloud.images.domain import Image
+		from hcloud.locations.domain import Location
+		from hcloud.networks.domain import Network
+		from hcloud.server_types.domain import ServerType
+		from hcloud.ssh_keys.domain import SSHKey
+
+		if not self.machine_image:
+			frappe.throw("Machine Image is required to provision Hetzner Virtual Machine.")
+
+		cluster = frappe.get_doc("Cluster", self.cluster)
+
+		server = (
+			self.client()
+			.servers.create(
+				name=self.name,
+				server_type=ServerType(name=self.machine_type),
+				image=Image(cint(self.machine_image)),
+				networks=[],  # Don't attach to any network during creation
+				firewalls=[
+					Firewall(id=cint(security_group_id)) for security_group_id in self.get_security_groups()
+				],
+				location=Location(name=cluster.region),
+				public_net=ServerCreatePublicNetwork(
+					enable_ipv4=True,
+					enable_ipv6=False,
+				),
+				ssh_keys=[
+					SSHKey(name=self.ssh_key),
+				],
+				user_data=self.get_cloud_init() if self.virtual_machine_image else "",
+			)
+			.server
+		)
+		self.instance_id = server.id
+		self.save()
+		# To ensure, we don't lose state, because machine has been created at this point
+		frappe.db.commit()
+
+		# Attach Server to Private Network
+		# Because, this allows us to provide the required private IP during network attachment
+		self.client().servers.attach_to_network(
+			server=server,
+			network=Network(id=cint(cluster.vpc_id)),
+			ip=self.private_ip_address,
+		).wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		self.status = self.get_hetzner_status_map()[server.status]
+		self.save()
+
+		# Enqueue enable protection separately to avoid any issue
+		frappe.enqueue_doc(self.doctype, self.name, "enable_termination_protection", sync=False)
 
 	def _provision_aws(self):  # noqa: C901
 		additional_volumes = []
@@ -492,7 +652,7 @@ class VirtualMachine(Document):
 			},
 			"NetworkInterfaces": [
 				{
-					"AssociatePublicIpAddress": True,
+					"AssociatePublicIpAddress": bool(self.assign_public_ip),
 					"DeleteOnTermination": True,
 					"DeviceIndex": 0,
 					"PrivateIpAddress": self.private_ip_address,
@@ -517,6 +677,9 @@ class VirtualMachine(Document):
 		self.instance_id = response["Instances"][0]["InstanceId"]
 		self.status = self.get_aws_status_map()[response["Instances"][0]["State"]["Name"]]
 		self.save()
+
+		if self.series == "nat":
+			self.disable_source_dest_check()
 
 	def _provision_oci(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
@@ -566,6 +729,29 @@ class VirtualMachine(Document):
 		self.status = self.get_oci_status_map()[instance.lifecycle_state]
 		self.save()
 
+	def get_mariadb_context(
+		self, server: Server | DatabaseServer, memory: int
+	) -> dict[str, str | int] | None:
+		if server.doctype == "Database Server":
+			return {
+				"server_id": server.server_id,
+				"private_ip": self.private_ip_address or "__PRIVATE_IP__",
+				"ansible_memtotal_mb": memory,
+				"mariadb_root_password": server.get_password("mariadb_root_password"),
+				"db_port": server.db_port or 3306,
+			}
+		if server.doctype == "Server" and server.is_unified_server:
+			database_server: DatabaseServer = frappe.get_doc("Database Server", server.database_server)
+			return {
+				"server_id": database_server.server_id,
+				"private_ip": self.private_ip_address or "__PRIVATE_IP__",
+				"ansible_memtotal_mb": memory,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"db_port": database_server.db_port or 3306,
+			}
+
+		return None
+
 	def get_cloud_init(self):
 		server = self.get_server()
 		if not server:
@@ -580,7 +766,9 @@ class VirtualMachine(Document):
 			"monitoring_password": server.get_monitoring_password(),
 			"statsd_exporter_service": frappe.render_template(
 				"press/playbooks/roles/statsd_exporter/templates/statsd_exporter.service",
-				{"private_ip": self.private_ip_address},
+				{
+					"private_ip": self.private_ip_address or "__PRIVATE_IP__"
+				},  # Replace inside cloudinit in case of DigitalOcean
 				is_path=True,
 			),
 			"filebeat_config": frappe.render_template(
@@ -593,17 +781,15 @@ class VirtualMachine(Document):
 				},
 				is_path=True,
 			),
+			"is_unified_server": getattr(server, "is_unified_server", False),
+			"nat_gateway_ip": server.get_nat_gateway_ip() if not self.assign_public_ip else None,
 		}
-		if server.doctype == "Database Server":
+		if server.doctype == "Database Server" or getattr(server, "is_unified_server", False):
 			memory = frappe.db.get_value("Server Plan", server.plan, "memory") or 1024
 			if memory < 1024:
 				frappe.throw("MariaDB cannot be installed on a server plan with less than 1GB RAM.")
-			mariadb_context = {
-				"server_id": server.server_id,
-				"private_ip": self.private_ip_address,
-				"ansible_memtotal_mb": memory,
-				"mariadb_root_password": server.get_password("mariadb_root_password"),
-			}
+
+			mariadb_context = self.get_mariadb_context(server, memory)
 
 			context.update(
 				{
@@ -635,7 +821,6 @@ class VirtualMachine(Document):
 					),
 				}
 			)
-
 		return frappe.render_template(cloud_init_template, context, is_path=True)
 
 	def get_server(self):
@@ -644,6 +829,24 @@ class VirtualMachine(Document):
 			if server:
 				return frappe.get_doc(doctype, server)
 		return None
+
+	def get_frappe_compute_status_map(self):
+		return {
+			"Running": "Running",
+			# what better status when the agent is down?
+			"Unavailable": "Pending",
+			"Stopped": "Stopped",
+			"Terminated": "Terminated",
+			"Provisioning": "Pending",
+		}
+
+	def get_digital_ocean_status_map(self):
+		return {
+			"new": "Pending",
+			"active": "Running",
+			"off": "Stopped",
+			"archive": "Terminated",
+		}
 
 	def get_hetzner_status_map(self):
 		# Hetzner has not status for Terminating or Terminated. Just returns a server not found.
@@ -702,10 +905,24 @@ class VirtualMachine(Document):
 				return images[0].id
 		if self.cloud_provider == "Hetzner":
 			images = self.client().images.get_all(
-				name="ubuntu-20.04", architecture="x86", sort="created:desc", type="system"
+				name="ubuntu-22.04",
+				architecture="x86" if self.platform == "x86_64" else "arm",
+				sort="created:desc",
+				type="system",
 			)
-			if images:
+			if images and len(images) > 0:
 				return images[0].id
+
+		if self.cloud_provider == "DigitalOcean":
+			images = self.client().images.list(type="distribution", private=False)
+			images = images["images"]
+			ubuntu_images = [image for image in images if "22.04" in image["name"]]
+
+			if not ubuntu_images:
+				frappe.throw("No image available for Ubuntu 22.04")
+
+			return ubuntu_images[0]["id"]
+
 		return None
 
 	@frappe.whitelist()
@@ -715,15 +932,19 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="RESET")
 		elif self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
-			self.client().servers.reboot(server_instance)
+			self.client().servers.reboot(self.get_hetzner_server_instance(fetch_data=False))
+		elif self.cloud_provider == "DigitalOcean":
+			self.client().droplet_actions.post(self.instance_id, {"type": "reboot"})
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().reboot_virtual_machine(instance_id=self.instance_id)
 
-		log_server_activity(self.series, self.name, action="Reboot")
+		if server := self.get_server():
+			log_server_activity(self.series, server.name, action="Reboot")
 
 		self.sync()
 
 	@frappe.whitelist()
-	def increase_disk_size(self, volume_id=None, increment=50):
+	def increase_disk_size(self, volume_id=None, increment=50):  # noqa: C901
 		if not increment:
 			return
 		if not volume_id:
@@ -735,8 +956,10 @@ class VirtualMachine(Document):
 		self.root_disk_size = self.get_root_volume().size
 		is_root_volume = self.get_root_volume().volume_id == volume.volume_id
 		volume.last_updated_at = frappe.utils.now_datetime()
+
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
+
 		elif self.cloud_provider == "OCI":
 			if ".bootvolume." in volume.volume_id:
 				self.client(BlockstorageClient).update_boot_volume(
@@ -749,17 +972,32 @@ class VirtualMachine(Document):
 					update_volume_details=UpdateVolumeDetails(size_in_gbs=volume.size),
 				)
 		elif self.cloud_provider == "Hetzner":
-			if volume_id == "hetzner-root-disk":
+			if volume_id == HETZNER_ROOT_DISK_ID:
 				frappe.throw("Cannot increase disk size for hetzner root disk.")
-			volume = self.client().volumes.get_by_id(volume_id)
-			self.client().volumes.resize(volume, increment)
 
-		log_server_activity(
-			self.series,
-			self.name,
-			action="Disk Size Change",
-			reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment}",
-		)
+			from hcloud.volumes.domain import Volume
+
+			self.client().volumes.resize(Volume(volume_id), volume.size)
+
+		elif self.cloud_provider == "DigitalOcean":
+			if volume_id == DIGITALOCEAN_ROOT_DISK_ID:
+				frappe.throw("Cannot increase disk size for Digital Ocean root disk.")
+
+			self.client().volumes.resize(
+				volume_id,
+				{
+					"size_gigabytes": volume.size,
+					"region": frappe.get_value("Cluster", self.cluster, "region"),
+				},
+			)
+
+		if server := self.get_server():
+			log_server_activity(
+				self.series,
+				server=server.name,
+				action="Disk Size Change",
+				reason=f"{'Root' if is_root_volume else 'Data'} volume increased by {increment} GB",
+			)
 
 		self.save()
 
@@ -787,21 +1025,59 @@ class VirtualMachine(Document):
 				.data
 			)
 		if self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
+			instance = self.get_hetzner_server_instance(fetch_data=True)
 			volumes = []
-			for volume in server_instance.volumes:
-				volume = self.client().volumes.get_by_id(volume.id)
-				volumes.append(volume)
+			for v in instance.volumes:
+				volumes.append(
+					frappe._dict(
+						{
+							"id": v.id,
+							"device": v.linux_device,
+							"size": v.size,
+						}
+					)
+				)
 
 			# This is a dummy/mock representation to make the code compatible
 			# with root_volume code.
 			volumes.append(
 				frappe._dict(
 					{
-						"id": "hetzner-root-disk",
-						"linux_device": "/dev/sda",
-						"size": server_instance.primary_disk_size,
-						"protection": {"delete": False},
+						"id": HETZNER_ROOT_DISK_ID,
+						"device": "/dev/sda",
+						"size": instance.primary_disk_size,
+					}
+				)
+			)
+
+			return volumes
+
+		if self.cloud_provider == "DigitalOcean":
+			attached_volumes = []
+			instance = self.get_digital_ocean_server_instance()["droplet"]
+			volume_ids = instance["volume_ids"]  # List of attached volume IDs
+			if volume_ids:
+				volumes = self.client().volumes.list()["volumes"]
+				volumes = [v for v in volumes if v["id"] in volume_ids]
+			else:
+				volumes = []
+
+			for v in volumes:
+				attached_volumes.append(
+					frappe._dict(
+						{
+							"id": v.id,
+							"size": v.size_gigabytes,
+						}
+					)
+				)
+
+			volumes.append(
+				frappe._dict(
+					{
+						"id": DIGITALOCEAN_ROOT_DISK_ID,
+						"device": "/dev/sda",
+						"size": instance["disk"],
 					}
 				)
 			)
@@ -834,41 +1110,142 @@ class VirtualMachine(Document):
 			return self._sync_oci(*args, **kwargs)
 		if self.cloud_provider == "Hetzner":
 			return self._sync_hetzner(*args, **kwargs)
+		if self.cloud_provider == "DigitalOcean":
+			return self._sync_digital_ocean(*args, **kwargs)
+		if self.cloud_provider == "Frappe Compute":
+			return self._sync_frappe_compute(*args, **kwargs)
 		return None
 
-	def _sync_hetzner(self, server_instance=None):
-		is_deleted = False
-		if not server_instance:
-			try:
-				server_instance = self.client().servers.get_by_id(self.instance_id)
-			except APIException as e:
-				if "server not found" in str(e):
-					frappe.throw(f"{self.name}: Server not found")
-				is_deleted = True
-		if server_instance and not is_deleted:
-			self.status = self.get_hetzner_status_map()[server_instance.status]
-			self.machine_type = server_instance.server_type.name
-			self.private_ip_address = server_instance.private_net[0].ip
-			self.public_ip_address = server_instance.public_net.ipv4.ip
+	def _update_volume_info_after_sync(self):
+		attached_volumes = []
+		attached_devices = []
 
-			existing_volumes = [(vol.volume_id) for vol in self.volumes]
-			for volume in self.get_volumes():
-				if str(volume.id) in existing_volumes:
-					continue
-				row = frappe._dict()
-				row.volume_id = volume.id
-				row.size = volume.size
-				row.device = volume.linux_device
+		for volume_index, volume in enumerate(self.get_volumes(), start=1):
+			existing_volume = find(self.volumes, lambda v: v.volume_id == volume.id)
+			row = existing_volume if existing_volume else frappe._dict()
+			row.volume_id = volume.id
+			attached_volumes.append(row.volume_id)
+			row.size = volume.size
+			row.device = volume.device
+			attached_devices.append(row.device)
+
+			row.idx = volume_index
+			if not existing_volume:
 				self.append("volumes", row)
 
-			if volume.protection["delete"]:
-				self.termination_protection = volume.protection["delete"]
+		for volume in list(self.volumes):
+			if volume.volume_id not in attached_volumes:
+				self.remove(volume)
 
-			self.vcpu = server_instance.server_type.cores
-			self.ram = server_instance.server_type.memory * 1024
-			self.has_data_volume = 1
-		else:
+		for volume in list(self.temporary_volumes):
+			if volume.device not in attached_devices:
+				self.remove(volume)
+
+		if self.volumes:
+			self.disk_size = self.get_data_volume().size
+			self.root_disk_size = self.get_root_volume().size
+
+	def _sync_digital_ocean(self, *args, **kwargs):
+		server_instance = self.get_digital_ocean_server_instance()
+
+		if server_instance.get("id", None) == "not_found":
 			self.status = "Terminated"
+			self.save()
+			self.update_servers()
+			return
+
+		server_instance = server_instance.get("droplet", {})
+
+		self.status = self.get_digital_ocean_status_map()[server_instance["status"]]
+		self.machine_type = server_instance["size"]["slug"]
+		self.vcpu = server_instance["size"]["vcpus"]
+		self.ram = server_instance["size"]["memory"]
+
+		self.private_ip_address = ""
+		self.public_ip_address = ""
+
+		if len(server_instance["networks"]["v4"]) > 0:
+			private_network = next(
+				(net for net in server_instance["networks"]["v4"] if net["type"] == "private"), None
+			)
+			public_network = next(
+				(net for net in server_instance["networks"]["v4"] if net["type"] == "public"), None
+			)
+
+			if private_network:
+				self.private_ip_address = private_network.get("ip_address", "")
+
+			if public_network:
+				self.public_ip_address = public_network.get("ip_address", "")
+
+		# We don't have volume support yet for digital ocean droplets
+		self.root_disk_size = server_instance["disk"]
+		self.disk_size = server_instance["disk"]
+
+		self._update_volume_info_after_sync()
+
+		self.save()
+		self.update_servers()
+
+	def _sync_hetzner(self, server_instance=None):
+		if not server_instance:
+			try:
+				server_instance = self.get_hetzner_server_instance(fetch_data=True)
+			except APIException as e:
+				if e.code == "not_found":
+					self.status = "Terminated"
+					self.save()
+				else:
+					raise
+
+		if not server_instance:
+			# If server not found, mark it as terminated
+			# Update status at server side as well
+			if self.status == "Terminated":
+				self.update_servers()
+			return
+
+		self.status = self.get_hetzner_status_map()[server_instance.status]
+		self.machine_type = server_instance.server_type.name
+		self.vcpu = server_instance.server_type.cores
+		self.ram = server_instance.server_type.memory * 1024
+
+		self.private_ip_address = server_instance.private_net[0].ip if server_instance.private_net else ""
+		self.public_ip_address = server_instance.public_net.ipv4.ip
+
+		self.termination_protection = server_instance.protection.get("delete", False)
+
+		self._update_volume_info_after_sync()
+
+		self.save()
+		self.update_servers()
+
+	def _sync_frappe_compute(self, instance=None):
+		try:
+			virtual_machine = self.client().sync_virtual_machine(instance_id=self.instance_id)
+		except Exception:
+			self.status = "Terminated"
+			self.save()
+			return
+		virtual_machine = frappe._dict(virtual_machine)
+		self.status = self.get_frappe_compute_status_map()[virtual_machine.status]
+		if self.status not in ["Pending", "Terminated"]:
+			self.ram = virtual_machine.memory * 1024
+			self.vcpu = virtual_machine.number_of_vcpus
+			self.machine_type = virtual_machine.virtual_machine_type
+			self.public_ip_address = virtual_machine.public_ip_address
+
+			self.volumes = []
+
+			for disk in virtual_machine.disks:
+				disk = frappe._dict(disk)
+				self.append(
+					"volumes", {"device": "/dev/" + disk.device, "volume_id": disk.disk, "size": disk.size}
+				)
+
+			self.root_disk_size = self.get_root_volume().size
+			self.disk_size = self.get_data_volume().size
+
 		self.save()
 		self.update_servers()
 
@@ -892,6 +1269,17 @@ class VirtualMachine(Document):
 				try:
 					vnic = self.client(VirtualNetworkClient).get_vnic(vnic_id=vnic_attachment.vnic_id).data
 					self.public_ip_address = vnic.public_ip
+					if self.public_ip_address:
+						# Look up the Public IP details using the IP address string
+						public_ip_details = (
+							self.client(VirtualNetworkClient)
+							.get_public_ip_by_ip_address(
+								GetPublicIpByIpAddressDetails(ip_address=self.public_ip_address)
+							)
+							.data
+						)
+
+						self.is_static_ip = public_ip_details.lifetime == "RESERVED"
 				except Exception:
 					log_error(
 						title="OCI VNIC Fetch Error",
@@ -947,16 +1335,14 @@ class VirtualMachine(Document):
 		self.save()
 		self.update_servers()
 
-	def has_static_ip(self, instance) -> bool:
-		sip = False
-		try:
-			ip_owner_id = instance["NetworkInterfaces"][0]["Association"]["IpOwnerId"]
-			sip = ip_owner_id.lower() != "amazon"
-		except (KeyError, IndexError):
-			pass
-		return sip
-
 	def _sync_aws(self, response=None):  # noqa: C901
+		def _has_static_ip(instance) -> bool:
+			try:
+				ip_owner_id = instance["NetworkInterfaces"][0]["Association"]["IpOwnerId"]
+				return ip_owner_id.lower() != "amazon"
+			except (KeyError, IndexError):
+				return False
+
 		if not response:
 			try:
 				response = self.client().describe_instances(InstanceIds=[self.instance_id])
@@ -971,7 +1357,17 @@ class VirtualMachine(Document):
 
 			self.public_ip_address = instance.get("PublicIpAddress")
 			self.private_ip_address = instance.get("PrivateIpAddress")
-			self.is_static_ip = self.has_static_ip(instance)
+			self.is_static_ip = _has_static_ip(instance)
+
+			if instance.get("NetworkInterfaces"):
+				self.secondary_private_ip = next(
+					(
+						x["PrivateIpAddress"]
+						for x in instance["NetworkInterfaces"][0]["PrivateIpAddresses"]
+						if not x["Primary"]
+					),
+					None,
+				)
 
 			self.public_dns_name = instance.get("PublicDnsName")
 			self.private_dns_name = instance.get("PrivateDnsName")
@@ -1030,6 +1426,8 @@ class VirtualMachine(Document):
 			"AWS EC2": lambda v: v.device == "/dev/sda1",
 			"OCI": lambda v: ".bootvolume." in v.volume_id,
 			"Hetzner": lambda v: v.device == "/dev/sda",
+			"DigitalOcean": lambda v: v.device == "/dev/sda",
+			"Frappe Compute": lambda v: v.device == "/dev/vda",
 		}
 		root_volume_filter = ROOT_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, root_volume_filter)
@@ -1050,6 +1448,7 @@ class VirtualMachine(Document):
 			"AWS EC2": lambda v: v.device != "/dev/sda1" and v.device not in temporary_volume_devices,
 			"OCI": lambda v: ".bootvolume." not in v.volume_id and v.device not in temporary_volume_devices,
 			"Hetzner": lambda v: v.device != "/dev/sda" and v.device not in temporary_volume_devices,
+			"DigitalOcean": lambda v: v.device != "/dev/sda" and v.device not in temporary_volume_devices,
 		}
 		data_volume_filter = DATA_VOLUME_FILTERS.get(self.cloud_provider)
 		volume = find(self.volumes, data_volume_filter)
@@ -1057,7 +1456,7 @@ class VirtualMachine(Document):
 			return volume
 		return frappe._dict({"size": 0})
 
-	def update_servers(self):
+	def update_servers(self):  # noqa: C901
 		status_map = {
 			"Pending": "Pending",
 			"Running": "Active",
@@ -1070,22 +1469,127 @@ class VirtualMachine(Document):
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
 				frappe.db.set_value(doctype, server, "private_ip", self.private_ip_address)
-				if doctype == "Server":
+				if doctype in ["Server", "Proxy Server", "NAT Server"]:
 					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
 				if doctype in ["Server", "Database Server"]:
 					frappe.db.set_value(doctype, server, "ram", self.ram)
-				if self.public_ip_address and self.has_value_changed("public_ip_address"):
+				if doctype in ("NAT Server",):
+					frappe.db.set_value(doctype, server, "secondary_private_ip", self.secondary_private_ip)
+				if self.public_ip_address:
+					if frappe.flags.force_update_dns or self.has_value_changed("public_ip_address"):
+						frappe.get_doc(doctype, server).create_dns_record()
+				elif self.private_ip_address and (
+					frappe.flags.force_update_dns or self.has_value_changed("private_ip_address")
+				):
 					frappe.get_doc(doctype, server).create_dns_record()
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])
 
 	def update_name_tag(self, name):
-		if self.cloud_provider == "AWS EC2":
+		if self.cloud_provider == "AWS EC2" and self.instance_id:
 			self.client().create_tags(
 				Resources=[self.instance_id],
 				Tags=[
 					{"Key": "Name", "Value": name},
 				],
 			)
+
+	@frappe.whitelist()
+	def assign_secondary_private_ip(self):
+		return self.attach_secondary_private_ip()
+
+	def attach_secondary_private_ip(self, secondary_private_ip=None):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw("Secondary IP assignment is currently only supported for AWS EC2 instances")
+
+		if self.series != "nat":
+			frappe.throw("Secondary IP assignment is only supported for NAT servers")
+
+		# this is needed if we do failover and attach the secondary private ip of one instance to another
+		secondary_private_ip = secondary_private_ip or self.get_private_ip()
+		if frappe.db.get_value("Virtual Machine", {"secondary_private_ip": secondary_private_ip}):
+			frappe.throw(f"Private IP {secondary_private_ip} is already assigned to another instance.")
+
+		ec2 = self.client()
+		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
+		ec2.assign_private_ip_addresses(
+			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
+				"NetworkInterfaceId"
+			],
+			PrivateIpAddresses=[secondary_private_ip],
+		)
+		self.sync()
+
+		return f"Assigned {self.secondary_private_ip}"
+
+	def detach_secondary_private_ip(self):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw("Secondary IP detachment is currently only supported for AWS EC2 instances")
+
+		if self.series != "nat":
+			frappe.throw("Secondary IP detachment is only supported for NAT servers")
+
+		if not self.secondary_private_ip:
+			frappe.throw("No secondary private IP assigned to this instance.")
+
+		ec2 = self.client()
+		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
+		ec2.unassign_private_ip_addresses(
+			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
+				"NetworkInterfaceId"
+			],
+			PrivateIpAddresses=[self.secondary_private_ip],
+		)
+		self.sync()
+
+	def disable_source_dest_check(self):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw(
+				"Source/Destination check modification is currently only supported for AWS EC2 instances"
+			)
+
+		ec2 = self.client()
+		ec2.modify_instance_attribute(
+			InstanceId=self.instance_id,
+			SourceDestCheck={"Value": False},
+		)
+
+	def enable_source_dest_check(self):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw(
+				"Source/Destination check modification is currently only supported for AWS EC2 instances"
+			)
+
+		ec2 = self.client()
+		ec2.modify_instance_attribute(
+			InstanceId=self.instance_id,
+			SourceDestCheck={"Value": True},
+		)
+
+	@frappe.whitelist()
+	def disassociate_auto_assigned_public_ip(self):
+		if self.cloud_provider != "AWS EC2":
+			frappe.throw("Public IP disassociation is currently only supported for AWS EC2 instances")
+
+		if not self.public_ip_address:
+			frappe.throw("No public IP associated with this instance.")
+
+		try:
+			frappe.db.get_value(self.doctype, self.name, "status", for_update=True, wait=False)
+		except frappe.QueryTimeoutError:
+			frappe.throw(
+				"Unable to get a lock on the vm at this time. Some other process is probably underway"
+			)
+
+		ec2 = self.client()
+		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
+		ec2.modify_network_interface_attribute(
+			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
+				"NetworkInterfaceId"
+			],
+			AssociatePublicIpAddress=False,
+		)
+		frappe.flags.force_update_dns = True
+		self.sync()
 
 	@frappe.whitelist()
 	def create_image(self, public=True):
@@ -1123,6 +1627,8 @@ class VirtualMachine(Document):
 			)
 		elif self.cloud_provider == "OCI":
 			self._create_snapshots_oci(exclude_boot_volume)
+		elif self.cloud_provider == "Hetzner":
+			self._create_snapshots_hetzner()
 
 	def _create_snapshots_aws(
 		self,
@@ -1211,6 +1717,22 @@ class VirtualMachine(Document):
 			except Exception:
 				log_error(title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot)
 
+	def _create_snapshots_hetzner(self):
+		server = self.get_hetzner_server_instance(fetch_data=True)
+		response = server.create_image(
+			type="snapshot", description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}"
+		)
+
+		doc = frappe.get_doc(
+			{
+				"doctype": "Virtual Disk Snapshot",
+				"virtual_machine": self.name,
+				"snapshot_id": response.image.id,
+				"volume_id": HETZNER_ROOT_DISK_ID,
+			}
+		).insert()
+		self.flags.created_snapshots.append(doc.name)
+
 	def get_temporary_volume_ids(self) -> list[str]:
 		tmp_volume_ids = set()
 		tmp_volumes_devices = [x.device for x in self.temporary_volumes]
@@ -1228,32 +1750,34 @@ class VirtualMachine(Document):
 		return list(tmp_volume_ids)
 
 	@frappe.whitelist()
-	def disable_termination_protection(self):
+	def disable_termination_protection(self, sync: bool | None = None):
+		if sync is None:
+			sync = False
+
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
 			)
 		elif self.cloud_provider == "Hetzner":
-			for volume in self.volumes:
-				volume = self.client().volumes.get_by_id(volume.volume_id)
-				self.termination_protection = self.client().volumes.change_protection(
-					volume=volume, delete=False
-				)
-		self.sync()
+			self.get_hetzner_server_instance().change_protection(delete=False, rebuild=False)
+
+		if sync:
+			self.sync()
 
 	@frappe.whitelist()
-	def enable_termination_protection(self):
+	def enable_termination_protection(self, sync: bool | None = None):
+		if sync is None:
+			sync = False
+
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id, DisableApiTermination={"Value": True}
 			)
 		elif self.cloud_provider == "Hetzner":
-			for volume in self.volumes:
-				volume = self.client().volumes.get_by_id(volume.volume_id)
-				self.termination_protection = self.client().volumes.change_protection(
-					volume=volume, delete=False
-				)
-		self.sync()
+			self.get_hetzner_server_instance().change_protection(delete=True, rebuild=True)
+
+		if sync:
+			self.sync()
 
 	@frappe.whitelist()
 	def start(self):
@@ -1262,8 +1786,13 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="START")
 		elif self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
-			self.client().servers.power_on(server_instance)
+			self.client().servers.power_on(self.get_hetzner_server_instance(fetch_data=False))
+		elif self.cloud_provider == "DigitalOcean":
+			self.client().droplet_actions.post(self.instance_id, {"type": "power_on"})
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().start_virtual_machine(instance_id=self.instance_id)
+
+		# Digital Ocean `start` takes some time therefore this sync is useless for DO.
 		self.sync()
 
 	@frappe.whitelist()
@@ -1273,8 +1802,11 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="STOP")
 		elif self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
-			self.client().servers.shutdown(server_instance)
+			self.client().servers.shutdown(self.get_hetzner_server_instance(fetch_data=False))
+		elif self.cloud_provider == "DigitalOcean":
+			self.client().droplet_actions.post(self.instance_id, {"type": "power_off"})
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().stop_virtual_machine(self.instance_id, force=False)
 		self.sync()
 
 	@frappe.whitelist()
@@ -1292,19 +1824,53 @@ class VirtualMachine(Document):
 			self.client().terminate_instances(InstanceIds=[self.instance_id])
 
 	@frappe.whitelist()
-	def terminate(self):
+	def terminate(self):  # noqa: C901
 		if self.cloud_provider == "AWS EC2":
 			self.client().terminate_instances(InstanceIds=[self.instance_id])
+
 		elif self.cloud_provider == "OCI":
 			self.client().terminate_instance(instance_id=self.instance_id)
-		elif self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
-			self.client().servers.delete(server_instance)
 
-		log_server_activity(self.series, self.name, action="Terminated")
+		elif self.cloud_provider == "Hetzner":
+			for volume in self.volumes:
+				if volume.volume_id == HETZNER_ROOT_DISK_ID:
+					continue
+				self.delete_volume(volume.volume_id, sync=False)
+			self.client().servers.delete(
+				self.get_hetzner_server_instance(fetch_data=False)
+			).wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		elif self.cloud_provider == "DigitalOcean":
+			for volume in self.volumes:
+				if volume.volume_id == DIGITALOCEAN_ROOT_DISK_ID:
+					continue
+				self.delete_volume(volume.volume_id, sync=False)
+
+			self.client().droplets.destroy(self.instance_id)
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().terminate_virtual_machine(instance_id=self.instance_id)
+
+		if server := self.get_server():
+			log_server_activity(self.series, server.name, action="Terminated")
+
+	def _wait_for_digital_ocean_resize_action_completion(self, action_id: int):
+		"""Wait for resize to complete before starting the droplet."""
+		if self.cloud_provider == "DigitalOcean" and action_id:
+			time.sleep(2)  # Wait for some time before checking the action status
+			action = self.client().actions.get(action_id)
+			if action["action"]["status"] == "completed":
+				self.start()
+			else:
+				frappe.enqueue_doc(
+					"Virtual Machine",
+					self.name,
+					"_wait_for_digital_ocean_resize_action_completion",
+					action_id=action_id,
+					queue="long",
+				)
 
 	@frappe.whitelist()
-	def resize(self, machine_type):
+	def resize(self, machine_type, upgrade_disk: bool = False):
 		if self.cloud_provider == "AWS EC2":
 			self.client().modify_instance_attribute(
 				InstanceId=self.instance_id,
@@ -1320,6 +1886,33 @@ class VirtualMachine(Document):
 					)
 				),
 			)
+		elif self.cloud_provider == "Hetzner":
+			from hcloud.server_types.domain import ServerType
+
+			self.client().servers.change_type(
+				self.get_hetzner_server_instance(fetch_data=False),
+				server_type=ServerType(name=machine_type),
+				upgrade_disk=upgrade_disk,
+			)
+
+		elif self.cloud_provider == "DigitalOcean":
+			resize_action = self.client().droplet_actions.post(
+				droplet_id=self.instance_id,
+				body={
+					"type": "resize",
+					"size": machine_type,
+					"disk": upgrade_disk,
+				},
+			)
+			action_id = resize_action["action"]["id"]
+			frappe.enqueue_doc(
+				"Virtual Machine",
+				self.name,
+				"_wait_for_digital_ocean_resize_action_completion",
+				action_id=action_id,
+				queue="long",
+			)
+
 		self.machine_type = machine_type
 		self.save()
 
@@ -1375,17 +1968,103 @@ class VirtualMachine(Document):
 				aws_access_key_id=cluster.aws_access_key_id,
 				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 			)
+
 		if self.cloud_provider == "OCI":
 			return (client_type or ComputeClient)(cluster.get_oci_config())
+
 		if self.cloud_provider == "Hetzner":
-			settings = frappe.get_single("Press Settings")
-			api_token = settings.get_password("hetzner_api_token")
-			return Client(token=api_token)
+			api_token = cluster.get_password("hetzner_api_token")
+			return HetznerClient(token=api_token)
+
+		if self.cloud_provider == "DigitalOcean":
+			api_token = cluster.get_password("digital_ocean_api_token")
+			return pydo.Client(token=api_token)
+
+		if self.cloud_provider == "Frappe Compute":
+			return FrappeComputeClient(
+				url=cluster.frappe_compute_base_url,
+				api_key=cluster.frappe_compute_api_key,
+				api_secret=cluster.get_password("frappe_compute_api_secret"),
+			)
 
 		return None
 
 	@frappe.whitelist()
-	def create_server(self):
+	def create_unified_server(self) -> tuple[Server, DatabaseServer]:
+		"""Virtual machines of series U will create a u series app server and u series database server"""
+
+		if self.series != "u":
+			frappe.throw("Only virtual machines of series 'u' can create unified servers.")
+
+		server_document = {
+			"doctype": "Server",
+			"hostname": f"u{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": self.cloud_provider,
+			"virtual_machine": self.name,
+			"team": self.team,
+			"is_primary": True,
+			"platform": self.platform,
+			"is_unified_server": True,
+		}
+
+		if self.virtual_machine_image:
+			server_document["is_server_prepared"] = True
+			server_document["is_server_setup"] = True
+			server_document["is_server_renamed"] = True
+			server_document["is_upstream_setup"] = True
+
+		else:
+			server_document["is_provisioning_press_job_completed"] = True
+
+		common_agent_password = frappe.generate_hash(length=32)
+
+		server = frappe.get_doc(server_document)
+		server.agent_password = common_agent_password
+		server = server.insert()
+
+		database_server_document = {
+			"doctype": "Database Server",
+			"hostname": f"u{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": self.cloud_provider,
+			"virtual_machine": self.name,
+			"server_id": self.index,
+			"is_primary": True,
+			"team": self.team,
+			"is_unified_server": True,
+		}
+
+		if self.virtual_machine_image:
+			database_server_document["is_server_prepared"] = True
+			database_server_document["is_server_setup"] = True
+			database_server_document["is_server_renamed"] = True
+			if self.data_disk_snapshot:
+				database_server_document["mariadb_root_password"] = get_decrypted_password(
+					"Virtual Disk Snapshot", self.data_disk_snapshot, "mariadb_root_password"
+				)
+			else:
+				database_server_document["mariadb_root_password"] = get_decrypted_password(
+					"Virtual Machine Image", self.virtual_machine_image, "mariadb_root_password"
+				)
+
+			if not database_server_document["mariadb_root_password"]:
+				frappe.throw(
+					f"Virtual Machine Image {self.virtual_machine_image} does not have a MariaDB root password set."
+				)
+		else:
+			database_server_document["is_provisioning_press_job_completed"] = True
+
+		database_server = frappe.get_doc(database_server_document)
+		database_server.agent_password = common_agent_password
+		database_server = database_server.insert()
+
+		return server, database_server
+
+	@frappe.whitelist()
+	def create_server(self, is_secondary: bool = False, primary: str | None = None) -> Server:
 		document = {
 			"doctype": "Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1394,7 +2073,10 @@ class VirtualMachine(Document):
 			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
+			"is_primary": not is_secondary,
+			"is_secondary": is_secondary,
 			"platform": self.platform,
+			"primary": primary,
 		}
 
 		if self.virtual_machine_image:
@@ -1402,11 +2084,15 @@ class VirtualMachine(Document):
 			document["is_server_setup"] = True
 			document["is_server_renamed"] = True
 			document["is_upstream_setup"] = True
+		else:
+			document["is_provisioning_press_job_completed"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	@frappe.whitelist()
-	def create_database_server(self):
+	def create_database_server(self) -> DatabaseServer:
 		document = {
 			"doctype": "Database Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1436,14 +2122,18 @@ class VirtualMachine(Document):
 				frappe.throw(
 					f"Virtual Machine Image {self.virtual_machine_image} does not have a MariaDB root password set."
 				)
+		else:
+			document["is_provisioning_press_job_completed"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	def get_root_domains(self):
 		return frappe.get_all("Root Domain", {"enabled": True}, pluck="name")
 
 	@frappe.whitelist()
-	def create_proxy_server(self):
+	def create_proxy_server(self) -> ProxyServer:
 		document = {
 			"doctype": "Proxy Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1456,11 +2146,14 @@ class VirtualMachine(Document):
 		}
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
+			document["is_primary"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	@frappe.whitelist()
-	def create_monitor_server(self):
+	def create_monitor_server(self) -> MonitorServer:
 		document = {
 			"doctype": "Monitor Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1473,10 +2166,12 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	@frappe.whitelist()
-	def create_log_server(self):
+	def create_log_server(self) -> LogServer:
 		document = {
 			"doctype": "Log Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -1489,7 +2184,9 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	@frappe.whitelist()
 	def create_registry_server(self):
@@ -1505,12 +2202,36 @@ class VirtualMachine(Document):
 		if self.virtual_machine_image:
 			document["is_server_setup"] = True
 
-		return frappe.get_doc(document).insert()
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
+
+	@frappe.whitelist()
+	def create_nat_server(self):
+		if self.series != "nat":
+			frappe.throw("Only virtual machines of series 'nat' can create NAT servers")
+
+		document = {
+			"doctype": "NAT Server",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": "AWS EC2",
+			"virtual_machine": self.name,
+		}
+		if self.virtual_machine_image:
+			document["is_server_setup"] = True
+
+		server = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(server.doctype, server.name))
+		return server
 
 	def get_security_groups(self):
 		groups = [self.security_group_id]
 		if self.series == "n":
 			groups.append(frappe.db.get_value("Cluster", self.cluster, "proxy_security_group_id"))
+		elif self.series == "nat":
+			groups.append(frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id"))
 		return groups
 
 	@frappe.whitelist()
@@ -1535,26 +2256,110 @@ class VirtualMachine(Document):
 		if self.cloud_provider == "AWS EC2":
 			self.get_server().reboot_with_serial_console()
 
-		log_server_activity(
-			self.series,
-			self.name,
-			action="Reboot",
-			reason="Unable to reboot manually, rebooting with serial console",
-		)
+		if server := self.get_server():
+			log_server_activity(
+				self.series,
+				server.name,
+				action="Reboot",
+				reason="Unable to reboot manually, rebooting with serial console",
+			)
 
 		self.sync()
 
+	def attach_to_firewall(self, firewall_id: int):
+		if self.cloud_provider == "AWS EC2":
+			self.client().modify_instance_attribute(
+				InstanceId=self.instance_id,
+				Groups=[*self.get_security_groups(), firewall_id],
+			)
+
+		elif self.cloud_provider == "OCI":
+			from oci.core.models import UpdateVnicDetails
+
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			network_client: VirtualNetworkClient = self.client(VirtualNetworkClient)
+			compute_client: ComputeClient = self.client(ComputeClient)
+
+			attachments = compute_client.list_vnic_attachments(
+				compartment_id=cluster.oci_tenancy, instance_id=self.instance_id
+			).data
+
+			vnic_id = attachments[0].vnic_id
+			network_client.update_vnic(
+				vnic_id,
+				UpdateVnicDetails(network_security_group_ids=[*self.get_security_groups() + firewall_id]),
+			)
+
+		elif self.cloud_provider == "Hetzner":
+			from hcloud.firewalls.domain import FirewallResource
+
+			client = self.client()
+			firewall = client.firewalls.get_by_id(firewall_id)
+			firewall.apply_to_resources(
+				resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
+			)
+
+	def detach_from_firewall(self, firewall_id: int):
+		if self.cloud_provider == "AWS EC2":
+			security_groups = [sg for sg in self.get_security_groups() if sg != firewall_id]
+
+			self.client().modify_instance_attribute(
+				InstanceId=self.instance_id,
+				Groups=security_groups,
+			)
+
+		elif self.cloud_provider == "OCI":
+			from oci.core.models import UpdateVnicDetails
+
+			cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+			network_client: VirtualNetworkClient = self.client(VirtualNetworkClient)
+			compute_client: ComputeClient = self.client(ComputeClient)
+
+			attachments = compute_client.list_vnic_attachments(
+				compartment_id=cluster.oci_tenancy, instance_id=self.instance_id
+			).data
+
+			vnic_id = attachments[0].vnic_id
+
+			nsg_ids = [nsg for nsg in self.get_security_groups() if nsg != firewall_id]
+
+			network_client.update_vnic(vnic_id, UpdateVnicDetails(network_security_group_ids=nsg_ids))
+
+		elif self.cloud_provider == "Hetzner":
+			from hcloud.firewalls.domain import FirewallResource
+
+			client = self.client()
+			firewall = client.firewalls.get_by_id(firewall_id)
+
+			firewall.remove_from_resources(
+				resources=[FirewallResource("server", self.get_hetzner_server_instance(fetch_data=False))]
+			)
+
 	@classmethod
 	def bulk_sync_aws(cls):
-		for cluster in frappe.get_all(
-			"Virtual Machine",
-			["cluster", "cloud_provider", "max(`index`) as max_index"],
-			{
-				"status": ("not in", ("Terminated", "Draft")),
-				"cloud_provider": "AWS EC2",
-			},
-			group_by="cluster",
-		):
+		try:
+			clusters = frappe.get_all(
+				"Virtual Machine",
+				["cluster", "cloud_provider", "max(`index`) as max_index"],
+				{
+					"status": ("not in", ("Terminated", "Draft")),
+					"cloud_provider": "AWS EC2",
+				},
+				group_by="cluster",
+			)
+		except:  # noqa E722
+			clusters = frappe.get_all(
+				"Virtual Machine",
+				["cluster", "cloud_provider", {"MAX": "index", "as": "max_index"}],
+				{
+					"status": ("not in", ("Terminated", "Draft")),
+					"cloud_provider": "AWS EC2",
+				},
+				group_by="cluster",
+			)
+		for cluster in clusters:
 			CHUNK_SIZE = 25  # Each call will pick up ~50 machines (2 x CHUNK_SIZE)
 			# Generate closed bounds for 25 indexes at a time
 			# (1, 25), (26, 50), (51, 75), ...
@@ -1639,11 +2444,11 @@ class VirtualMachine(Document):
 				queue="sync",
 				job_id=f"bulk_sync_oci:{cluster}",
 				deduplicate=True,
-				cluster=cluster,
+				cluster_name=cluster,
 			)
 
-	def bulk_sync_oci_cluster(self, cluster: str):
-		cluster = frappe.get_doc("Cluster", cluster)
+	def bulk_sync_oci_cluster(self, cluster_name: str):
+		cluster: Cluster = frappe.get_doc("Cluster", cluster_name)
 		client: "ComputeClient" = self.client()
 
 		try:
@@ -1682,7 +2487,7 @@ class VirtualMachine(Document):
 			log_error("Virtual Machine OCI Bulk Sync Error", cluster=cluster.name)
 			frappe.db.rollback()
 
-	def bulk_sync_oci_cluster_in_batch(self, instances: list[dict]):
+	def bulk_sync_oci_cluster_in_batch(self, instances: list[frappe._dict]):
 		for instance in instances:
 			machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
 			if has_job_timeout_exceeded():
@@ -1731,7 +2536,7 @@ class VirtualMachine(Document):
 	def convert_to_amd(self, virtual_machine_image, machine_type):
 		return self._create_vmm(virtual_machine_image, machine_type)
 
-	def attach_new_volume_aws_oci(self, size, iops=None, throughput=None):
+	def attach_new_volume_aws_oci(self, size, iops=None, throughput=None, log_activity: bool = True):
 		volume_options = {
 			"AvailabilityZone": self.availability_zone,
 			"Size": size,
@@ -1755,21 +2560,49 @@ class VirtualMachine(Document):
 		self.wait_for_volume_to_be_available(volume_id)
 		self.attach_volume(volume_id)
 
-		log_server_activity(
-			self.series,
-			self.name,
-			action="Volume",
-			reason="Volume attached on server",
-		)
+		if log_activity and (server := self.get_server()):
+			log_server_activity(
+				self.series,
+				server.name,
+				action="Volume",
+				reason="Volume attached on server",
+			)
 
 		return volume_id
 
+	def attach_new_volume_hetzner(self, size, iops=None, throughput=None, log_activity: bool = True):
+		_ = iops
+		_ = throughput
+
+		volume_create_request = self.client().volumes.create(
+			size=size,
+			name=f"{self.name}-vol-{frappe.generate_hash(length=8)}",
+			format="ext4",
+			automount=False,
+			server=self.get_hetzner_server_instance(fetch_data=False),
+		)
+		volume_create_request.action.wait_until_finished(HETZNER_ACTION_RETRIES)
+		for action in volume_create_request.next_actions:
+			action.wait_until_finished(HETZNER_ACTION_RETRIES)
+
+		if log_activity and (server := self.get_server()):
+			log_server_activity(
+				self.series,
+				server.name,
+				action="Volume",
+				reason="Volume attached on server",
+			)
+
+		return volume_create_request.volume.id
+
 	@frappe.whitelist()
-	def attach_new_volume(self, size, iops=None, throughput=None):
+	def attach_new_volume(self, size, iops=None, throughput=None, log_activity: bool = True):
 		if self.cloud_provider in ["AWS EC2", "OCI"]:
-			return self.attach_new_volume_aws_oci(size, iops, throughput)
+			return self.attach_new_volume_aws_oci(size, iops, throughput, log_activity)
+
 		if self.cloud_provider == "Hetzner":
-			return self.attach_volume(size=size)
+			return self.attach_new_volume_hetzner(size=size, log_activity=log_activity)
+
 		return None
 
 	def wait_for_volume_to_be_available(self, volume_id):
@@ -1802,39 +2635,26 @@ class VirtualMachine(Document):
 			if e.response.get("Error", {}).get("Code") == "InvalidVolumeModification.NotFound":
 				return None
 
-	def correct_private_ip(self):
-		"""
-		We don't get to set private ip on instance creation.
-		So, we need to detach and attach the instance to the network with the desired private ip
-		Otherwise, too many config files need to be updated
-		"""
+	def get_digital_ocean_server_instance(self):
+		"""Get digital ocean droplet instance"""
+		if self.cloud_provider != "DigitalOcean":
+			raise NotImplementedError
+
+		return self.client().droplets.get(self.instance_id)
+
+	def get_hetzner_server_instance(self, fetch_data=True):
 		if self.cloud_provider != "Hetzner":
 			raise NotImplementedError
-		vpc_id = frappe.db.get_value("Cluster", self.cluster, "vpc_id")
-		server = self.client().servers.get_by_id(self.instance_id)
-		network = self.client().networks.get_by_id(vpc_id)
-		try:
-			action = server.detach_from_network(network)
-		except APIException as e:  # for retry
-			if "resource not found" in str(e):
-				pass
-			else:
-				raise e
-		else:
-			action.wait_until_finished(30)
-		try:
-			action = server.attach_to_network(network, ip=self.get_private_ip())
-		except APIException as e:
-			if "already attached" in str(e):
-				pass
-			else:
-				raise e
-		else:
-			action.wait_until_finished(30)
-		self.sync()
+
+		if fetch_data:
+			return self.client().servers.get_by_id(self.instance_id)
+
+		from hcloud.servers.domain import Server as HetznerServer
+
+		return HetznerServer(cint(self.instance_id))
 
 	@frappe.whitelist()
-	def attach_volume(self, volume_id=None, is_temporary_volume: bool = False, size: int | None = None):
+	def attach_volume(self, volume_id, is_temporary_volume: bool = False):
 		"""
 		temporary_volumes: If you are attaching a volume to an instance just for temporary use, then set this to True.
 
@@ -1848,29 +2668,29 @@ class VirtualMachine(Document):
 				InstanceId=self.instance_id,
 				VolumeId=volume_id,
 			)
-			if is_temporary_volume:
-				# add the volume to the list of temporary volumes
-				self.append("temporary_volumes", {"device": device_name})
-		elif self.cloud_provider == "OCI":
-			raise NotImplementedError
+
 		elif self.cloud_provider == "Hetzner":
-			server_instance = self.client().servers.get_by_id(self.instance_id)
-			new_volume = self.client().volumes.create(
-				size=size,
-				name=f"{self.name}-vol-{len(self.volumes) + len(self.temporary_volumes) + 1}",
-				format="ext4",
-				automount=False,
-				server=server_instance,
-			)
+			volume = self.client().volumes.get_by_id(int(volume_id))
+
 			"""
 			This is a temporary assignment of linux_device from Hetzner API to
 			device_name. linux_device is actually the mountpoint of the volume.
 			Example: linux_device = /mnt/HC_Volume_103061048
 			"""
-			device_name = new_volume.volume.linux_device
-			new_volume.action.wait_until_finished(30)  # wait until volume is created
-			for action in new_volume.next_actions:
-				action.wait_until_finished(30)  # wait until volume is attached
+			device_name = volume.linux_device
+			for action in volume.get_actions():
+				action.wait_until_finished(HETZNER_ACTION_RETRIES)  # wait for previous actions to finish
+
+			self.client().volumes.attach(
+				volume, self.get_hetzner_server_instance(fetch_data=False), automount=False
+			)
+		else:
+			raise NotImplementedError
+
+		if is_temporary_volume:
+			# add the volume to the list of temporary volumes
+			self.append("temporary_volumes", {"device": device_name})
+
 		self.save()
 		self.sync()
 		return device_name
@@ -1899,18 +2719,21 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			raise NotImplementedError
 		elif self.cloud_provider == "Hetzner":
-			if volume_id == "hetzner-root-disk":
+			from hcloud.volumes.domain import Volume
+
+			if volume_id == HETZNER_ROOT_DISK_ID:
 				frappe.throw("Cannot detach hetzner root disk.")
-			volume = self.client().volumes.get_by_id(volume_id)
-			self.client().volumes.detach(volume)
+
+			self.client().volumes.detach(Volume(id=volume_id)).wait_until_finished(HETZNER_ACTION_RETRIES)
 		if sync:
 			self.sync()
 		return True
 
 	@frappe.whitelist()
-	def delete_volume(self, volume_id, sync: bool | None = None):
+	def delete_volume(self, volume_id, sync: bool | None = None):  # noqa: C901
 		if sync is None:
 			sync = True
+
 		if self.detach(volume_id, sync=sync):
 			if self.cloud_provider == "AWS EC2":
 				self.wait_for_volume_to_be_available(volume_id)
@@ -1919,27 +2742,108 @@ class VirtualMachine(Document):
 			if self.cloud_provider == "OCI":
 				raise NotImplementedError
 			if self.cloud_provider == "Hetzner":
-				if volume_id == "hetzner-root-disk":
+				if volume_id == HETZNER_ROOT_DISK_ID:
 					frappe.throw("Cannot delete hetzner root disk.")
-				vol = self.client().volumes.get_by_id(volume_id)
-				self.client().volumes.delete(vol)
+
+				from hcloud.volumes.domain import Volume
+
+				self.client().volumes.delete(Volume(id=cint(volume_id)))
+
+			if self.cloud_provider == "DigitalOcean":
+				if volume_id == DIGITALOCEAN_ROOT_DISK_ID:
+					frappe.throw("Cannot delete digitalocean root disk.")
+
+				self.client().volumes.delete(volume_id=volume_id)
 
 		if sync:
 			self.sync()
 
+	def detach_static_ip(self):
+		if self.cloud_provider != "AWS EC2" or not self.is_static_ip:
+			return
+
+		client = self.client()
+		response = client.describe_addresses(PublicIps=[self.public_ip_address])
+
+		address_info = response["Addresses"][0]
+		if "AssociationId" not in address_info:
+			return
+
+		client.disassociate_address(AssociationId=address_info["AssociationId"])
+		self.sync()
+
+	def attach_static_ip(self, static_ip):
+		if self.cloud_provider != "AWS EC2":
+			return
+
+		if self.is_static_ip:
+			frappe.throw("Virtual Machine already has a static IP associated.")
+
+		client = self.client()
+		response = client.describe_addresses(PublicIps=[static_ip])
+
+		address_info = response["Addresses"][0]
+		if "AssociationId" in address_info:
+			frappe.throw("Static IP is already associated with another instance.")
+
+		client.associate_address(AllocationId=address_info["AllocationId"], InstanceId=self.instance_id)
+		self.sync()
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
+
+
+def sync_virtual_machines_hetzner():
+	for machine in frappe.get_all(
+		"Virtual Machine",
+		{"status": ("not in", ("Draft", "Terminated")), "cloud_provider": "Hetzner"},
+		pluck="name",
+	):
+		if has_job_timeout_exceeded():
+			return
+		try:
+			VirtualMachine("Virtual Machine", machine).sync()
+			frappe.db.commit()  # release lock
+		except Exception:
+			log_error(title="Virtual Machine Sync Error", virtual_machine=machine)
+			frappe.db.rollback()
 
 
 @frappe.whitelist()
 def sync_virtual_machines():
 	VirtualMachine.bulk_sync_aws()
 	VirtualMachine.bulk_sync_oci()
+	sync_virtual_machines_hetzner()
 
 
 def snapshot_oci_virtual_machines():
 	machines = frappe.get_all(
 		"Virtual Machine", {"status": "Running", "skip_automated_snapshot": 0, "cloud_provider": "OCI"}
+	)
+	for machine in machines:
+		# Skip if a snapshot has already been created today
+		if frappe.get_all(
+			"Virtual Disk Snapshot",
+			{
+				"virtual_machine": machine.name,
+				"physical_backup": 0,
+				"rolling_snapshot": 0,
+				"creation": (">=", frappe.utils.today()),
+			},
+			limit=1,
+		):
+			continue
+		try:
+			frappe.get_doc("Virtual Machine", machine.name).create_snapshots()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)
+
+
+def snapshot_hetzner_virtual_machines():
+	machines = frappe.get_all(
+		"Virtual Machine", {"status": "Running", "skip_automated_snapshot": 0, "cloud_provider": "Hetzner"}
 	)
 	for machine in machines:
 		# Skip if a snapshot has already been created today

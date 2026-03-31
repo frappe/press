@@ -1,9 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
 
 # import frappe
+import typing
+
 from frappe.model.document import Document
 from frappe.utils import cstr
 
@@ -28,7 +29,7 @@ class ReleaseGroupApp(Document):
 		title: DF.Data
 	# end: auto-generated types
 
-	dashboard_fields = ["app"]
+	dashboard_fields: typing.ClassVar = ["app"]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):

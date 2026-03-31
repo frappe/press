@@ -1,0 +1,3 @@
+---
+- name: Restart Agent Workers
+  shell: supervisorctl restart $(supervisorctl status | awk '/agent:worker/{print $1}')

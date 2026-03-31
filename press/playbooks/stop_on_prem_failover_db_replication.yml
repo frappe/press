@@ -1,0 +1,9 @@
+---
+- name: Stop Database Server Replication to On-Premise
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+
+  roles:
+    - role: on_prem_failover_stop_db_replication

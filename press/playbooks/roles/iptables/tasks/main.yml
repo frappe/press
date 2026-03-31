@@ -1,0 +1,21 @@
+---
+- name: Block metadata server from docker containers (AWS)
+  iptables:
+    chain: FORWARD
+    in_interface: docker0
+    protocol: tcp
+    destination: 169.254.169.254
+    destination_port: '80, 443'
+    match: multiport
+    action: insert
+    rule_num: 1
+    jump: DROP
+
+- name: Create directory for iptables rules
+  file:
+    path: /etc/iptables
+    state: directory
+    mode: '0755'
+
+- name: Save iptables rules
+  shell: iptables-save > /etc/iptables/rules.v4

@@ -268,7 +268,7 @@ class TestAPIMarketplace(FrappeTestCase):
 
 	def test_update_app_summary(self):
 		frappe.set_user(self.team.user)
-		summary = frappe.mock("paragraph")
+		summary = frappe.mock("paragraph")[:140]
 		update_app_summary(self.marketplace_app.name, summary)
 		self.marketplace_app.reload()
 		self.assertEqual(self.marketplace_app.description, summary)
@@ -337,6 +337,9 @@ class TestAPIMarketplace(FrappeTestCase):
 		frappe.set_user(self.team.user)
 		self.assertIsNotNone(subscriptions())
 
+	@patch(
+		"press.press.doctype.marketplace_app.marketplace_app.validate_frappe_version_for_branch", new=Mock()
+	)
 	def test_change_branch(self):
 		old_branch = self.app_source.branch
 		change_branch(self.marketplace_app.name, self.app_source.name, "Version 14", "develop")

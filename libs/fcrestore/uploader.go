@@ -171,6 +171,11 @@ func (m *MultipartUpload) UploadParts(s *Session) error {
 			continue
 		}
 
+		// Check if context is already cancelled before starting new upload
+		if m.ctx.Err() != nil {
+			break
+		}
+
 		m.wg.Add(1)
 		sem <- struct{}{}
 
@@ -183,6 +188,10 @@ func (m *MultipartUpload) UploadParts(s *Session) error {
 			etag, err := m.uploadPart(partNum, start, end)
 			if err != nil {
 				errorChan <- fmt.Errorf("part %d: %w", partNum, err)
+				// Cancel context on first error to stop other uploads
+				if m.cancelFn != nil {
+					m.cancelFn()
+				}
 				return
 			}
 
@@ -214,6 +223,11 @@ func (m *MultipartUpload) UploadParts(s *Session) error {
 }
 
 func (m *MultipartUpload) uploadPart(partNumber int, start, end int64) (string, error) {
+	// Check context before starting
+	if m.ctx != nil && m.ctx.Err() != nil {
+		return "", fmt.Errorf("upload cancelled before start: %w", m.ctx.Err())
+	}
+
 	file, err := os.Open(m.Path)
 	if err != nil {
 		return "", fmt.Errorf("file open error: %w", err)
@@ -225,7 +239,7 @@ func (m *MultipartUpload) uploadPart(partNumber int, start, end int64) (string, 
 	}
 
 	pr, pw := io.Pipe()
-	defer pr.Close()
+	copyErrChan := make(chan error, 1)
 
 	go func() {
 		defer pw.Close()
@@ -236,28 +250,47 @@ func (m *MultipartUpload) uploadPart(partNumber int, start, end int64) (string, 
 			Reader: io.LimitReader(file, end-start+1),
 			size:   &m.UploadedSize,
 		}, *bufPtr)
+		copyErrChan <- err
 		if err != nil {
 			pw.CloseWithError(err)
 		}
 	}()
 
-	req, err := http.NewRequestWithContext(m.ctx, "PUT", m.SignedURLs[partNumber-1], pr)
+	ctx := m.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "PUT", m.SignedURLs[partNumber-1], pr)
 	if err != nil {
+		pr.Close()
 		return "", fmt.Errorf("request creation failed: %w", err)
 	}
 	req.ContentLength = end - start + 1
 
 	resp, err := m.client.Do(req)
 	if err != nil {
-		if m.ctx.Err() != nil {
-			return "", fmt.Errorf("upload cancelled")
+		pr.Close()
+		if ctx.Err() != nil {
+			return "", fmt.Errorf("upload cancelled: %w", ctx.Err())
 		}
 		return "", fmt.Errorf("upload failed: %w", err)
 	}
 	defer resp.Body.Close()
 
+	// Check for copy errors
+	select {
+	case copyErr := <-copyErrChan:
+		if copyErr != nil {
+			return "", fmt.Errorf("file read error: %w", copyErr)
+		}
+	default:
+		// Copy still in progress, that's fine
+	}
+
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("status %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	etag := strings.Trim(resp.Header.Get("ETag"), `"`)
@@ -293,10 +326,18 @@ func (m *MultipartUpload) Complete(s *Session) error {
 	if m.IsUploaded() {
 		return nil
 	}
-	// Check if context was cancelled
-	if m.ctx.Err() != nil {
-		return fmt.Errorf("upload cancelled")
+
+	// Get context, or use background if not set
+	ctx := m.ctx
+	if ctx == nil {
+		ctx = context.Background()
 	}
+
+	// Check if context was cancelled
+	if ctx.Err() != nil {
+		return fmt.Errorf("upload cancelled: %w", ctx.Err())
+	}
+
 	parts := make([]map[string]any, 0, len(m.Etags))
 	for i, etag := range m.Etags {
 		if etag != "" {
@@ -312,7 +353,7 @@ func (m *MultipartUpload) Complete(s *Session) error {
 		return fmt.Errorf("failed to marshal parts: %w", err)
 	}
 
-	_, err = s.SendRequest("press.api.site.multipart_exit", map[string]any{
+	_, err = s.SendRequestWithContext(ctx, "press.api.site.multipart_exit", map[string]any{
 		"file":   m.Key,
 		"id":     m.UploadID,
 		"action": "complete",
@@ -322,7 +363,7 @@ func (m *MultipartUpload) Complete(s *Session) error {
 		return fmt.Errorf("completion failed: %w", err)
 	}
 
-	res, err := s.SendRequest("press.api.site.uploaded_backup_info", map[string]any{
+	res, err := s.SendRequestWithContext(ctx, "press.api.site.uploaded_backup_info", map[string]any{
 		"file": m.FileName,
 		"path": m.Key,
 		"type": m.MimeType,
@@ -356,7 +397,12 @@ func (m *MultipartUpload) Abort(s *Session) {
 }
 
 func (m *MultipartUpload) abortPresignedURLs(s *Session) {
-	_, _ = s.SendRequest("press.api.site.complete_multipart_upload", map[string]any{
+	// Use a separate context with timeout for abort operation
+	// We don't want to use the cancelled context from the upload
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	_, _ = s.SendRequestWithContext(ctx, "press.api.site.complete_multipart_upload", map[string]any{
 		"file":   m.Key,
 		"id":     m.UploadID,
 		"action": "abort",

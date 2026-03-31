@@ -1,0 +1,12 @@
+---
+- name: Disable Wazuh Agent Service
+  service:
+    name: wazuh-agent
+    state: stopped
+    enabled: no
+
+- name: Uninstall Wazuh Agent
+  apt:
+    name: wazuh-agent
+    state: absent
+    purge: yes

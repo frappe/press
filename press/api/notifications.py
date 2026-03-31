@@ -1,11 +1,17 @@
 import frappe
 
-from press.press.doctype.press_role.press_role import check_role_permissions
+from press.guards import role_guard
+from press.guards.role_guard.document import has_user_permission
 from press.utils import get_current_team
 
 
 @frappe.whitelist()
-def get_notifications(filters=None, order_by="creation desc", limit_start=None, limit_page_length=None):
+def get_notifications(
+	filters=None,
+	order_by="creation desc",
+	limit_start=None,
+	limit_page_length=None,
+):
 	if not filters:
 		filters = {}
 
@@ -30,20 +36,19 @@ def get_notifications(filters=None, order_by="creation desc", limit_start=None, 
 		.offset(limit_start)
 	)
 
-	if roles := set(check_role_permissions("Site") + check_role_permissions("Release Group")):
-		PressRolePermission = frappe.qb.DocType("Press Role Permission")
-
-		query = (
-			query.join(PressRolePermission)
-			.on(
-				(
-					(PressRolePermission.site == PressNotification.reference_name)
-					| (PressRolePermission.release_group == PressNotification.reference_name)
-				)
-				& PressRolePermission.role.isin(roles)
-			)
-			.distinct()
-		)
+	if role_guard.is_restricted():
+		if not has_user_permission("Site"):
+			pemitted_sites = role_guard.permitted_documents("Site")
+			if not pemitted_sites:
+				query = query.where(PressNotification.document_type != "Site")
+			else:
+				query = query.where(PressNotification.document_name.isin(pemitted_sites))
+		if not has_user_permission("Release Group"):
+			permitted_release_groups = role_guard.permitted_documents("Release Group")
+			if not permitted_release_groups:
+				query = query.where(PressNotification.document_type != "Release Group")
+			else:
+				query = query.where(PressNotification.document_name.isin(permitted_release_groups))
 
 	if filters.get("read") == "Unread":
 		query = query.where(PressNotification.read == 0)
@@ -59,6 +64,8 @@ def get_notifications(filters=None, order_by="creation desc", limit_start=None, 
 			notification.route = (
 				f"sites/{site_name}/insights/jobs/{notification.document_name}" if site_name else None
 			)
+		elif notification.document_type == "Support Access":
+			notification.route = "access-requests"
 		else:
 			notification.route = None
 

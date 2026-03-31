@@ -9,7 +9,10 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
+from moto import mock_aws
 
+from press.agent import Agent
+from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
@@ -17,13 +20,17 @@ from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
+from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
+from press.press.doctype.site.test_site import create_test_bench
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import Server
+	from press.press.doctype.server_plan.server_plan import ServerPlan
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
@@ -38,6 +45,8 @@ def create_test_server(
 	use_for_build: bool = False,
 	is_self_hosted: bool = False,
 	auto_increase_storage: bool = False,
+	provider: str | None = None,
+	has_data_volume: bool = False,
 ) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:
@@ -46,6 +55,9 @@ def create_test_server(
 		database_server = create_test_database_server().name
 	if not team:
 		team = create_test_team().name
+
+	plan_doc: "ServerPlan" | None = frappe.get_doc("Server Plan", plan) if plan else None
+
 	server = frappe.get_doc(
 		{
 			"doctype": "Server",
@@ -62,11 +74,18 @@ def create_test_server(
 			"team": team,
 			"plan": plan,
 			"public": public,
-			"virtual_machine": create_test_virtual_machine().name,
+			"virtual_machine": create_test_virtual_machine(
+				platform=plan_doc.platform if plan_doc else "x86_64",
+				disk_size=plan_doc.disk if plan_doc else 25,
+				has_data_volume=has_data_volume,
+				series="f",
+			).name,
 			"platform": platform,
 			"use_for_build": use_for_build,
 			"is_self_hosted": is_self_hosted,
 			"auto_increase_storage": auto_increase_storage,
+			"provider": provider,
+			"has_data_volume": has_data_volume,
 		}
 	).insert()
 	server.reload()
@@ -122,6 +141,63 @@ class TestServer(FrappeTestCase):
 		self.assertEqual(server.team, server.subscription.team)
 		self.assertEqual(server.plan, server.subscription.plan)
 
+	@mock_aws
+	@patch.object(BaseServer, "enqueue_extend_ec2_volume", new=Mock())
+	@patch("boto3.client")
+	def test_subscription_creation_on_addon_storage(self, _):
+		"""Test subscription creation with a fixed increment"""
+		increment = 10
+		create_test_press_settings()
+		server_plan = create_test_server_plan()
+		server: "Server" = create_test_server(plan=server_plan.name, provider="AWS EC2")
+		plan_disk_size = server_plan.disk
+		actual_disk_size = frappe.db.get_value("Virtual Machine", server.virtual_machine, "disk_size")
+		self.assertEqual(plan_disk_size, actual_disk_size)
+
+		vm: "VirtualMachine" = frappe.get_doc("Virtual Machine", server.virtual_machine)
+		root_volume = vm.volumes[0]
+		self.assertEqual(plan_disk_size, root_volume.size)
+
+		server.increase_disk_size_for_server(server.name, increment=increment)
+		new_actual_disk_size = frappe.db.get_value("Virtual Machine", server.virtual_machine, "disk_size")
+		self.assertEqual(plan_disk_size + increment, new_actual_disk_size)
+
+		subscription_doc = frappe.get_doc(
+			"Subscription",
+			{
+				"team": server.team,
+				"plan_type": "Server Storage Plan",
+				"plan": "Add-on Storage Plan",
+				"document_type": server.doctype,
+				"document_name": server.name,
+			},
+		)
+
+		self.assertEqual(subscription_doc.enabled, 1)
+
+		self.assertEqual(int(subscription_doc.additional_storage), increment)
+
+		# Increase by another 10
+		server.increase_disk_size_for_server(server.name, increment=increment)
+		new_actual_disk_size = frappe.db.get_value("Virtual Machine", server.virtual_machine, "disk_size")
+
+		self.assertEqual(plan_disk_size + increment + increment, new_actual_disk_size)
+
+		subscription_doc = frappe.get_doc(
+			"Subscription",
+			{
+				"team": server.team,
+				"plan_type": "Server Storage Plan",
+				"plan": "Add-on Storage Plan",
+				"document_type": server.doctype,
+				"document_name": server.name,
+			},
+		)
+
+		self.assertEqual(subscription_doc.enabled, 1)
+
+		self.assertEqual(int(subscription_doc.additional_storage), increment + increment)
+
 	def test_subscription_team_update_on_server_team_update(self):
 		create_test_press_settings()
 		server_plan = create_test_server_plan()
@@ -157,5 +233,100 @@ class TestServer(FrappeTestCase):
 		self.assertEqual(server.subscription.team, server.team)
 		self.assertEqual(server.subscription.team, db_server.subscription.team)
 
-	def tearDown(self):
-		frappe.db.rollback()
+	def test_remove_from_public_groups_removes_server_from_release_groups_child_table(self):
+		# Create three public release groups, add server to all
+		server = create_test_server(public=True)
+		apps = [create_test_app()]
+		group1 = create_test_release_group(apps, public=True, servers=[server.name])
+		group2 = create_test_release_group(apps, public=True, servers=[server.name])
+		group3 = create_test_release_group(apps, public=True, servers=[server.name])
+
+		# Add an active bench to group2 on the server
+		bench = create_test_bench(group=group2, server=server.name)
+		frappe.db.set_value("Bench", bench.name, "status", "Active")
+
+		self.assertTrue(any(s.server == server.name for s in group2.servers))
+		self.assertTrue(any(s.server == server.name for s in group3.servers))
+		self.assertTrue(any(s.server == server.name for s in group1.servers))
+
+		server.remove_from_public_groups()
+
+		# Reload groups
+		group1.reload()
+		group2.reload()
+		group3.reload()
+
+		# Assert server removed from groups without active benches
+		self.assertFalse(any(s.server == server.name for s in group1.servers))
+		self.assertFalse(any(s.server == server.name for s in group3.servers))
+		# Assert server still present in group2 (has active bench)
+		self.assertTrue(any(s.server == server.name for s in group2.servers))
+
+		server.remove_from_public_groups(force=True)
+		group2.reload()
+		# Assert server removed from group2
+		self.assertFalse(any(s.server == server.name for s in group2.servers))
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_release_group_modifications_on_archival(self):
+		server = create_test_server()
+		other_servers = create_test_server()
+		one_more_server = create_test_server()
+		apps = [create_test_app()]
+		group1 = create_test_release_group(apps, public=True, servers=[server.name])
+		group2 = create_test_release_group(apps, public=True, servers=[server.name, other_servers.name])
+		group3 = create_test_release_group(
+			apps, public=True, servers=[server.name, other_servers.name, one_more_server.name]
+		)
+
+		# Test the archival of this server
+		server.archive()
+
+		# Reload groups
+		group1.reload()
+		group2.reload()
+		group3.reload()
+
+		# Test only group with that one server is disbled, others remain enabled
+		self.assertEqual(group1.enabled, 0)
+		self.assertEqual(group2.enabled, 1)
+		self.assertEqual(group3.enabled, 1)
+
+		# Test the server is removed from all groups that had more than one server
+		self.assertListEqual([s.server for s in group2.servers], [other_servers.name])
+		self.assertListEqual([s.server for s in group3.servers], [other_servers.name, one_more_server.name])
+
+	@patch.object(Agent, "get", return_value={"benches": ["bench1", "bench2"]})
+	def test_process_running_benches_on_server(self, mock_get):
+		from press.press.doctype.server.server import _process_running_benches_on_server
+
+		server = create_test_server()
+		bench_1 = create_test_bench(server=server.name)
+		bench_2 = create_test_bench(server=server.name)
+
+		frappe.db.set_value("Bench", bench_1.name, "name", "bench1")
+		frappe.db.set_value("Bench", bench_2.name, "name", "bench2")
+
+		_process_running_benches_on_server(server.name)
+		mock_get.assert_called_once_with("/server/running-benches")
+
+		agent_job_created = frappe.get_all(
+			"Agent Job", {"server": server.name, "job_type": "Force Remove Zombie Benches"}, pluck="name"
+		)
+		self.assertEqual(
+			len(agent_job_created), 0
+		)  # Benches not marked as archived, so no agent job should be created
+
+		frappe.db.set_value("Bench", "bench1", "status", "Archived")
+		frappe.db.set_value("Bench", "bench2", "status", "Archived")
+
+		_process_running_benches_on_server(server.name)
+		mock_get.assert_called_with("/server/running-benches")
+
+		agent_job_created = frappe.get_all(
+			"Agent Job", {"server": server.name, "job_type": "Force Remove Zombie Benches"}, ["name", "data"]
+		)
+		self.assertEqual(
+			len(agent_job_created), 1
+		)  # Benches marked as archived, so agent job should be created to force remove zombie benches

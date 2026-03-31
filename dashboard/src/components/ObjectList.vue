@@ -83,7 +83,7 @@
 				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
 		</div>
-		<div class="mt-3 min-h-0 flex-1 overflow-y-auto">
+		<div class="mt-3 min-h-0 flex-1">
 			<ListView
 				:columns="columns"
 				:rows="filteredRows"
@@ -118,7 +118,7 @@
 			</ListView>
 			<div class="px-5" v-if="filteredRows.length === 0">
 				<div
-					class="text-center text-sm leading-10 text-gray-500"
+					class="text-center text-sm leading-10 text-gray-500 pb-[1.75rem]"
 					v-if="isLoading"
 				>
 					Loading...
@@ -126,11 +126,21 @@
 				<div v-else-if="$list?.list?.error" class="py-4 text-center">
 					<ErrorMessage :message="$list.list.error" />
 				</div>
-				<div v-else class="text-center text-sm leading-10 text-gray-500">
+				<div
+					v-else
+					class="text-center text-sm leading-10 text-gray-500 pb-[1.75rem]"
+				>
 					{{ emptyStateMessage }}
 				</div>
 			</div>
-			<div class="px-2 py-2 text-right" v-if="$list">
+			<div
+				class="p-2 text-right"
+				:class="{
+					'border-t bg-white bottom-0 sticky':
+						$list?.next && $list?.hasNextPage,
+				}"
+				v-if="$list"
+			>
 				<Button
 					v-if="$list.next && $list.hasNextPage"
 					@click="$list.next()"
@@ -165,6 +175,7 @@ export default {
 	name: 'ObjectList',
 	props: ['options'],
 	emits: ['update:selections'],
+	expose: ['reloadListView'],
 	components: {
 		AlertBanner,
 		DismissableBanner,
@@ -447,6 +458,9 @@ export default {
 		},
 	},
 	methods: {
+		reloadListView() {
+			this.$resources.list.reload();
+		},
 		filterRow(query, row) {
 			let values = this.options.columns.map((column) => {
 				let value = row[column.fieldname];

@@ -1,4 +1,9 @@
 import json
+import typing
+from collections.abc import Callable
+from dataclasses import dataclass
+from enum import Enum
+from typing import Literal
 
 import frappe
 import wrapt
@@ -13,10 +18,15 @@ from ansible.plugins.action.async_status import ActionModule
 from ansible.plugins.callback import CallbackBase
 from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
+from frappe.model.document import Document
 from frappe.utils import cstr
 from frappe.utils import now_datetime as now
 
 from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 def reconnect_on_failure():
@@ -158,7 +168,7 @@ class Ansible:
 		self.server = server
 		self.playbook = playbook
 		self.playbook_path = frappe.get_app_path("press", "playbooks", self.playbook)
-		self.host = f"{server.ip}:{port}"
+		self.host = server.ip if server.ip else server.private_ip
 		self.variables = variables or {}
 
 		constants.HOST_KEY_CHECKING = False
@@ -180,6 +190,8 @@ class Ansible:
 
 		self.sources = f"{self.host},"
 		self.inventory = InventoryManager(loader=self.loader, sources=self.sources)
+		self.inventory.get_host(self.host).set_variable("ansible_port", port)
+
 		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
 
 		self.callback = AnsibleCallback()
@@ -277,3 +289,188 @@ class Ansible:
 					).insert()
 					self.tasks.setdefault(role.get_name(), {})[task.name] = task_doc.name
 					self.task_list.append(task_doc.name)
+
+
+class Status(str, Enum):
+	Pending = "Pending"
+	Running = "Running"
+	Success = "Success"
+	Skipped = "Skipped"
+	Failure = "Failure"
+
+	def __str__(self):
+		return self.value
+
+
+class GenericStep(Document):
+	attempt: int
+	job_type: Literal["Ansible Play", "Agent Job"]
+	job: str | None
+	status: Status
+	method_name: str
+
+
+@dataclass
+class StepHandler:
+	save: Callable
+	reload: Callable
+	doctype: str
+	name: str
+
+	def handle_vm_status_job(
+		self,
+		step: GenericStep,
+		virtual_machine: str,
+		expected_status: str,
+	) -> None:
+		step.attempt = 1 if not step.attempt else step.attempt + 1
+
+		# Try to sync status in every attempt
+		try:
+			virtual_machine_doc: "VirtualMachine" = frappe.get_doc("Virtual Machine", virtual_machine)
+			virtual_machine_doc.sync()
+		except Exception:
+			pass
+
+		machine_status = frappe.db.get_value("Virtual Machine", virtual_machine, "status")
+		step.status = Status.Running if machine_status != expected_status else Status.Success
+		step.save()
+
+	def handle_agent_job(self, step: GenericStep, job: str, poll: bool = False) -> None:
+		if poll:
+			job_doc: AgentJob = frappe.get_doc("Agent Job", job)
+			job_doc.get_status()
+
+		job_status = frappe.db.get_value("Agent Job", job, "status")
+
+		status_map = {
+			"Delivery Failure": Status.Failure,
+			"Undelivered": Status.Pending,
+		}
+		job_status = status_map.get(job_status, job_status)
+		step.attempt = 1 if not step.attempt else step.attempt + 1
+
+		step.status = job_status
+		step.save()
+
+		if step.status == Status.Failure:
+			raise
+
+	def handle_ansible_play(self, step: GenericStep, ansible: Ansible) -> None:
+		step.job_type = "Ansible Play"
+		step.job = ansible.play
+		step.save()
+		ansible_play = ansible.run()
+		step.status = ansible_play.status
+		step.save()
+
+		if step.status == Status.Failure:
+			raise
+
+	def _fail_ansible_step(
+		self,
+		step: GenericStep,
+		ansible: Ansible,
+		e: Exception | None = None,
+	) -> None:
+		step.job_type = "Ansible Play"
+		step.job = getattr(ansible, "play", None)
+		step.status = Status.Failure
+		step.output = str(e)
+		step.save()
+
+	def _fail_job_step(self, step: GenericStep, e: Exception | None = None) -> None:
+		step.status = Status.Failure
+		step.output = str(e)
+		step.save()
+
+	def fail(self, failure_status: str = Status.Failure):
+		self.status = failure_status
+		self.save()
+		frappe.db.commit()
+
+	def succeed(self, success_status: str = Status.Success):
+		self.status = success_status
+		self.save()
+		frappe.db.commit()
+
+	def handle_step_failure(self):
+		# can be overridden by controllers
+		self.error = frappe.get_traceback(with_context=True)
+		self.save()
+
+	def get_steps(self, methods: list) -> list[dict]:
+		"""Generate a list of steps to be executed for NFS volume attachment."""
+		return [
+			{
+				"step_name": method.__doc__,
+				"method_name": method.__name__,
+				"status": "Pending",
+			}
+			for method in methods
+		]
+
+	def _get_method(self, method_name: str, method_objects: list[object] | None = None):
+		"""Retrieve a method object by name."""
+		method_objects = method_objects or []
+		for method_object in method_objects:
+			if hasattr(method_object, method_name):
+				return getattr(method_object, method_name)
+		return getattr(self, method_name)
+
+	def next_step(self, steps: list[GenericStep]) -> GenericStep | None:
+		for step in steps:
+			if step.status not in (Status.Success, Status.Failure, Status.Skipped):
+				return step
+
+		return None
+
+	def _execute_steps(
+		self,
+		steps: list[GenericStep],
+		commit: bool = False,
+		start_status: str = Status.Running,
+		success_status: str = Status.Success,
+		failure_status: str = Status.Failure,
+		method_objects: list[object] | None = None,
+	):
+		"""It is now required to be with a `enqueue_doc` else the first step executes in the web worker"""
+		self.status = start_status
+		self.save()
+
+		step = self.next_step(steps)
+		if not step:
+			self.succeed(success_status)
+			return
+
+		# Run a single step in this job
+		step = step.reload()
+		method = self._get_method(method_objects=method_objects, method_name=step.method_name)
+
+		try:
+			method(step)
+		except Exception:
+			self.reload()
+			self.fail(failure_status)
+			self.handle_step_failure()
+			return
+
+		if commit:
+			frappe.db.commit()
+
+		# After step completes, queue the next step
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_execute_steps",
+			method_objects=method_objects,
+			steps=steps,
+			commit=commit,
+			start_status=start_status,
+			success_status=success_status,
+			failure_status=failure_status,
+			timeout=18000,
+			at_front=True,
+			queue="long",
+			enqueue_after_commit=True,
+		)

@@ -7,9 +7,12 @@ export function tagTab(doctype) {
 	return {
 		label: 'Tags',
 		icon: icon('tag'),
-		condition: (record) =>
-			doctype != 'Server' ||
-			(doctype == 'Server' && record.doc?.status !== 'Archived'),
+		condition: (record) => {
+			return (
+				doctype != 'Server' ||
+				(doctype == 'Server' && record.doc?.status !== 'Archived')
+			);
+		},
 		route: 'tags',
 		type: 'list',
 		list: {

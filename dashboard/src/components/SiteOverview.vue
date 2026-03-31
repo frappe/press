@@ -9,6 +9,13 @@
 			ctx_type="Site"
 			:ctx_name="$site?.doc?.name"
 		/>
+		<AlertBanner
+			v-if="$site?.doc?.creation_failed"
+			class="col-span-1 lg:col-span-2"
+			type="error"
+			:title="`Site creation failed. You can restore the site from a backup (from another site) or drop this site to create a new one. The site will be automatically dropped after ${$site?.doc?.creation_failure_retention_days} days if not restored.`"
+		>
+		</AlertBanner>
 
 		<AlertBanner
 			v-if="$site?.doc?.status === 'Suspended' && $site?.doc?.suspension_reason"
@@ -66,8 +73,16 @@
 			</Button>
 		</AlertBanner>
 
+		<AlertBanner
+			v-if="$site.doc.is_monitoring_disabled && $site.doc.status !== 'Archived'"
+			class="col-span-1 lg:col-span-2"
+			title="Site monitoring is disabled, which means we won’t be able to notify you of any downtime. Please re-enable monitoring at your earliest convenience."
+			:id="$site.name"
+			type="warning"
+		>
+		</AlertBanner>
 		<DismissableBanner
-			v-if="$site.doc.eol_versions.includes($site.doc.version)"
+			v-else-if="$site.doc.eol_versions.includes($site.doc.version)"
 			class="col-span-1 lg:col-span-2"
 			title="Your site is on an End of Life version. Upgrade to the latest version to get support, latest features and security updates."
 			:id="`${$site.name}-eol`"
@@ -89,7 +104,7 @@
 				$site.doc.status !== 'Archived'
 			"
 			class="col-span-1 lg:col-span-2"
-			title="Your site is currently on a shared bench group. Upgrade plan to enjoy <a href='https://frappecloud.com/shared-hosting#benches' class='underline' target='_blank'>more benefits</a>."
+			title="Your site is currently on a shared bench. Upgrade plan to enjoy <a href='https://frappecloud.com/shared-hosting#benches' class='underline' target='_blank'>more benefits</a>."
 			:id="$site.name"
 			type="gray"
 		>
@@ -97,6 +112,23 @@
 				Upgrade Plan
 			</Button>
 		</DismissableBanner>
+
+		<DismissableBanner
+			v-else-if="
+				$site.doc.current_plan &&
+				$site.doc.current_plan?.private_benches &&
+				$site.doc.group_public &&
+				$site.doc.status !== 'Archived'
+			"
+			class="col-span-1 lg:col-span-2"
+			title="Your site is eligible to move to a private bench with server scripts and custom apps support enabled."
+			:id="$site.name"
+		>
+			<Button class="ml-auto" variant="outline" @click="moveToPrivateBench">
+				Move to Private Bench
+			</Button>
+		</DismissableBanner>
+
 		<div class="col-span-1 rounded-md border lg:col-span-2">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
@@ -161,7 +193,7 @@
 						<div>
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
-									{{ currentUsage.cpu }}
+									{{ currentUsageLoading ? '—' : currentUsage.cpu }}
 									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
 									<template
 										v-if="currentPlan && !$site.doc.is_dedicated_server"
@@ -192,7 +224,11 @@
 						<div>
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
-									{{ formatBytes(currentUsage.storage) }}
+									{{
+										currentUsageLoading
+											? '—'
+											: formatBytes(currentUsage.storage)
+									}}
 									<template
 										v-if="currentPlan && !$site.doc.is_dedicated_server"
 									>
@@ -205,20 +241,28 @@
 				</div>
 				<div class="p-5">
 					<div
-						class="flex min-h-[1.75rem] items-center justify-between text-base text-gray-700"
+						class="min-h-[1.75rem] flex items-center justify-between space-x-2"
 					>
-						<span>Database</span>
-						<Button
-							v-if="
-								(currentPlan
-									? (currentUsage.database / currentPlan.max_database_usage) *
-										100
-									: 0) >= 80
-							"
-							variant="ghost"
-							link="https://docs.frappe.io/cloud/faq/site#what-is-using-up-all-my-database-size"
-							icon="help-circle"
-						/>
+						<span class="text-base text-gray-700">Database</span>
+						<div class="flex items-center space-x-2">
+							<Button
+								v-if="
+									(currentPlan
+										? (currentUsage.database / currentPlan.max_database_usage) *
+											100
+										: 0) >= 80
+								"
+								variant="ghost"
+								link="https://docs.frappe.io/cloud/faq/site#what-is-using-up-all-my-database-size"
+								icon="help-circle"
+							/>
+							<Button
+								variant="ghost"
+								icon="refresh-ccw"
+								@click="refreshDatabaseUsage"
+								:loading="refreshingDatabaseUsage"
+							/>
+						</div>
 					</div>
 					<div class="mt-2">
 						<Progress
@@ -233,7 +277,11 @@
 						<div>
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
-									{{ formatBytes(currentUsage.database) }}
+									{{
+										currentUsageLoading
+											? '—'
+											: formatBytes(currentUsage.database)
+									}}
 									<template
 										v-if="currentPlan && !$site.doc.is_dedicated_server"
 									>
@@ -335,6 +383,7 @@ export default {
 	data() {
 		return {
 			isSetupWizardComplete: true,
+			refreshingDatabaseUsage: false,
 		};
 	},
 	mounted() {
@@ -350,6 +399,27 @@ export default {
 				() => import('../components/ManageSitePlansDialog.vue'),
 			);
 			renderDialog(h(SitePlansDialog, { site: this.site }));
+		},
+		moveToPrivateBench() {
+			let SiteMigrationDialog = defineAsyncComponent(
+				() => import('./site/SiteMigration.vue'),
+			);
+			const defaultBenchName = this.$site?.doc?.group_title
+				? `${this.$site.doc.group_title} - Cloned`
+				: null;
+			renderDialog(
+				h(SiteMigrationDialog, {
+					site: this.site,
+					defaultAction: 'Move Site To Different Server / Bench',
+					defaultNewBenchName: defaultBenchName,
+				}),
+			);
+		},
+		showEnableMonitoringDialog() {
+			let SiteEnableMonitoringDialog = defineAsyncComponent(
+				() => import('./site/SiteEnableMonitoringDialog.vue'),
+			);
+			renderDialog(h(SiteEnableMonitoringDialog, { site: this.site }));
 		},
 		formatBytes(v) {
 			return this.$format.bytes(v, 2, 2);
@@ -387,6 +457,55 @@ export default {
 			renderDialog(h(TagsDialog, { doctype: 'Site', docname: this.site }));
 		},
 		trialDays,
+		refreshDatabaseUsage() {
+			this.refreshingDatabaseUsage = true;
+			this.$resources.refreshDatabaseUsage.submit();
+		},
+	},
+	resources: {
+		currentUsage() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams() {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'get_current_usage',
+					};
+				},
+				auto: true,
+			};
+		},
+		refreshDatabaseUsage() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				makeParams() {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'refresh_database_usage',
+					};
+				},
+				onSuccess: (e) => {
+					let isSynced = e?.message?.synced ?? true;
+					let refreshAfterSeconds = e?.message?.refresh_after_seconds ?? 0;
+					let refreshAfterMinutes = Math.ceil(refreshAfterSeconds / 60);
+					if (isSynced) {
+						this.refreshingDatabaseUsage = false;
+						let message = refreshAfterSeconds
+							? `Database usage refreshed. You can refresh again after ${refreshAfterMinutes} minute(s).`
+							: 'Database usage refreshed.';
+						toast.success(message);
+						this.$resources.currentUsage.reload();
+					} else {
+						setTimeout(() => {
+							this.$resources.refreshDatabaseUsage.reload();
+						}, 3000);
+					}
+				},
+				auto: false,
+			};
+		},
 	},
 	computed: {
 		siteInformation() {
@@ -456,7 +575,16 @@ export default {
 			};
 		},
 		currentUsage() {
-			return this.$site.doc?.current_usage;
+			return (
+				this.$resources?.currentUsage?.data?.message ?? {
+					cpu: 0,
+					storage: 0,
+					database: 0,
+				}
+			);
+		},
+		currentUsageLoading() {
+			return this.$resources?.currentUsage?.loading ?? true;
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);

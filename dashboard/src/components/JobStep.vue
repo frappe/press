@@ -5,7 +5,7 @@
 		:title="step.title"
 		:body="step.output || 'No Output'"
 		:status="step.status"
-		@toggle="step.isOpen = !step.isOpen"
+		@toggle="handleToggle"
 	/>
 </template>
 <script>
@@ -18,7 +18,20 @@ export default {
 			type: Object,
 			required: true,
 		},
+		emitToggleEvent: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	components: { FoldStep },
+	methods: {
+		handleToggle() {
+			if (this.emitToggleEvent) {
+				this.$emit('toggleStep', this.step, !this.step.isOpen);
+			} else {
+				this.step.isOpen = !this.step.isOpen;
+			}
+		},
+	},
 };
 </script>

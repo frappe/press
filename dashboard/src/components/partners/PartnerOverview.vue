@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col gap-5 overflow-y-auto px-60 py-6">
+	<div class="flex flex-col gap-5 overflow-y-auto px-10 lg:px-80 py-6">
 		<div class="flex flex-col">
 			<div class="text-gray-500">Welcome back!</div>
 			<div class="flex items-center gap-3">
@@ -9,7 +9,7 @@
 				<Badge
 					variant="subtle"
 					:label="team.doc.partner_status"
-					:theme="team.doc.partner_status ? 'green' : 'gray'"
+					:theme="team.doc.partner_status == 'Active' ? 'green' : 'gray'"
 				/>
 			</div>
 		</div>
@@ -18,7 +18,7 @@
 			<div class="flex flex-col gap-2.5 p-4">
 				<div class="flex">
 					<div class="flex items-center gap-0.5">
-						<FeatherIcon name="award" class="h-5 text-gray-700" />
+						<FeatherIcon name="award" class="h-5 w-5 text-gray-700" />
 						<h3 class="text-xl font-semibold">
 							{{ partnerDetails.data?.partner_type }} Tier
 						</h3>
@@ -39,13 +39,14 @@
 					</Progress>
 				</div>
 
-				<div class="flex justify-between gap-4">
-					<div class="flex-1">
+				<div class="flex flex-col md:flex-row justify-between gap-4 mt-2">
+					<div class="flex-1 border rounded bg-surface-gray-1 p-4">
 						<div class="flex items-center justify-between">
 							<div class="text-sm text-gray-600">
 								Current Month Contribution
 							</div>
 							<Button
+								class="hover:bg-gray-400"
 								label="Details"
 								@click="showPartnerContributionDialog = true"
 							/>
@@ -60,11 +61,10 @@
 							>
 						</div>
 					</div>
-					<div class="mx-1 w-px border-r" />
-					<div class="flex-1">
+					<div class="flex-1 border rounded bg-surface-gray-1 p-4">
 						<div class="flex items-center justify-between">
 							<div class="text-sm text-gray-600">Certified Members</div>
-							<Button label="View" @click="showPartnerMembersDialog = true" />
+							<Button label="View" @click="routeToCertification()" />
 						</div>
 						<div class="flex items-center">
 							<div class="text-xl font-semibold py-2">
@@ -78,11 +78,11 @@
 			</div>
 		</div>
 
-		<div class="flex justify-between gap-4">
+		<div class="flex flex-col md:flex-row justify-between gap-4">
 			<div class="rounded-lg text-base flex-1 text-gray-900 p-4 border">
-				<div class="flex h-full flex-col justify-between gap-2">
+				<div class="flex h-full flex-col justify-between gap-4">
 					<div class="flex">
-						<h3 class="font-semibold text-lg">Partner Referral Code</h3>
+						<h3 class="font-medium text-normal">Partner Referral Code</h3>
 					</div>
 					<ClickToCopyField :textContent="team.doc?.partner_referral_code" />
 					<span class="text-sm text-gray-600"
@@ -91,15 +91,18 @@
 				</div>
 			</div>
 			<div class="rounded-lg text-base flex-1 text-gray-900 p-4 border">
-				<div class="flex h-full flex-col justify-between">
+				<div class="flex h-full flex-col gap-4">
 					<div class="flex">
-						<h3 class="font-semibold text-lg">Renewal Details</h3>
+						<h3 class="font-medium text-normal">Renewal Details</h3>
 					</div>
 					<div class="flex items-center justify-between">
-						<div class="flex">
-							<span class="text-base font-medium text-gray-700">
+						<div class="flex flex-col gap-1">
+							<span class="text-xl font-semibold text-gray-700">
 								{{ formatDate(partnerDetails.data?.end_date) }}
 							</span>
+							<span class="text-sm text-gray-600"
+								>Renewal in {{ daysUntilRenewal }} days</span
+							>
 						</div>
 						<div v-if="isRenewalPeriod()">
 							<Button
@@ -108,55 +111,6 @@
 								:variant="'solid'"
 								@click="showRenewalConfirmationDialog = true"
 							/>
-						</div>
-					</div>
-					<span class="text-sm text-gray-600"
-						>Renewal in {{ daysUntilRenewal }} days</span
-					>
-				</div>
-			</div>
-		</div>
-
-		<div class="rounded-lg text-base text-gray-900 border">
-			<div class="flex h-full flex-col justify-between p-4 gap-2">
-				<div class="flex justify-between items-center">
-					<h3 class="font-semibold text-lg">Website Info</h3>
-					<Button
-						label="Edit"
-						@click="showUpdateWebsiteInfo = true"
-						:disabled="true"
-					/>
-				</div>
-				<div class="my-1 h-px bg-gray-100" />
-				<div class="flex flex-col">
-					<div class="pb-4">
-						<div class="text-sm text-gray-600">Partner Website</div>
-						<div class="text-base font-medium text-gray-700 py-2">
-							{{ partnerDetails.data?.partner_website }}
-						</div>
-					</div>
-					<div class="flex gap-4">
-						<div class="flex-1">
-							<div class="text-sm text-gray-600 pb-3">Introduction</div>
-							<div class="text-base leading-5 text-gray-700 py-1">
-								<div v-html="partnerDetails.data?.introduction"></div>
-							</div>
-						</div>
-						<div class="mx-1 w-px border-r" />
-						<div class="flex-1">
-							<div class="text-sm text-gray-600 pb-3">Customers</div>
-							<div
-								v-for="customer in customerList.slice(0, 10)"
-								class="text-base text-gray-700 py-1"
-							>
-								<li>{{ customer }}</li>
-							</div>
-							<div
-								v-if="customerList.length > 10"
-								class="text-sm text-gray-600 py-3"
-							>
-								... And many more
-							</div>
 						</div>
 					</div>
 				</div>
@@ -170,50 +124,6 @@
 		>
 			<template #body-content>
 				<PartnerContribution :partnerEmail="team.doc.partner_email" />
-			</template>
-		</Dialog>
-
-		<Dialog
-			:show="showPartnerCreditsDialog"
-			v-model="showPartnerCreditsDialog"
-			:options="{ title: 'Pay Partnership Fee' }"
-		>
-			<template #body-content>
-				<PartnerCreditsForm
-					@success="
-						() => {
-							showPartnerCreditsDialog = false;
-						}
-					"
-				/>
-			</template>
-		</Dialog>
-
-		<Dialog
-			:show="showPartnerMembersDialog"
-			v-model="showPartnerMembersDialog"
-			:options="{ size: '3xl', title: 'Certified Members' }"
-		>
-			<template #body-content>
-				<PartnerMembers :partnerName="partnerDetails.data?.name" />
-			</template>
-		</Dialog>
-
-		<Dialog
-			:show="showUpdateWebsiteInfo"
-			v-model="showUpdateWebsiteInfo"
-			:options="{ title: 'Update Website Info', size: '2xl' }"
-		>
-			<template #body-content>
-				<WebsiteInfoDialog
-					v-model="partnerDetails.data"
-					@success="
-						() => {
-							partnerDetails.reload();
-							showUpdateWebsiteInfo = false;
-						}
-					"
-				/>
 			</template>
 		</Dialog>
 
@@ -238,7 +148,7 @@
 			}"
 		>
 			<template #body-content>
-				<p class="text-base text-gray-700">
+				<p class="text-base leading-6 text-gray-700">
 					By clicking "I Agree", you confirm that you have read and accepted the
 					terms and conditions of the
 					<a
@@ -266,17 +176,12 @@ import {
 } from 'frappe-ui';
 import PartnerContribution from './PartnerContribution.vue';
 import ClickToCopyField from '../ClickToCopyField.vue';
-import PartnerCreditsForm from './PartnerCreditsForm.vue';
-import PartnerMembers from './PartnerMembers.vue';
-import WebsiteInfoDialog from './WebsiteInfoDialog.vue';
 import { toast } from 'vue-sonner';
+import router from '../../router';
 
 const team = inject('team');
 
 const showPartnerContributionDialog = ref(false);
-const showPartnerCreditsDialog = ref(false);
-const showPartnerMembersDialog = ref(false);
-const showUpdateWebsiteInfo = ref(false);
 const showRenewalConfirmationDialog = ref(false);
 
 const partnerDetails = createResource({
@@ -294,19 +199,22 @@ const partnerDetails = createResource({
 const partnerConsent = createListResource({
 	doctype: 'Partner Consent',
 	onSuccess() {
-		showPartnerCreditsDialog.value = true;
 		toast.success('Partner consent recorded successfully');
 	},
 });
 
-const customerList = computed(
-	() => partnerDetails?.data?.customers?.split(',') || [],
-);
+function routeToCertification() {
+	router.push('/partners/certificates');
+}
 
 const daysUntilRenewal = computed(() => {
 	const today = new Date();
 	const renewal = new Date(partnerDetails.data?.end_date);
-	return Math.ceil((renewal - today) / (1000 * 60 * 60 * 24));
+	if (renewal > today) {
+		return Math.ceil((renewal - today) / (1000 * 60 * 60 * 24));
+	} else {
+		return 0;
+	}
 });
 
 function isRenewalPeriod() {
@@ -315,7 +223,7 @@ function isRenewalPeriod() {
 	const today = dayjs();
 	const daysDifference = renewal.diff(today, 'days');
 
-	return Boolean(daysDifference >= -30 && daysDifference <= 30);
+	return Boolean(daysDifference <= 30);
 }
 
 const currentMonthContribution = createResource({

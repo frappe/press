@@ -2,10 +2,40 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Cluster', {
+	setup: function (frm) {
+		frm.set_query('default_app_server_plan', function () {
+			return {
+				filters: {
+					cluster: frm.doc.name,
+					server_type: 'Server',
+					premium: 0,
+					allow_unified_server: frm.doc.by_default_select_unified_mode ? 1 : 0,
+				},
+			};
+		});
+		frm.set_query('default_db_server_plan', function () {
+			return {
+				filters: {
+					cluster: frm.doc.name,
+					server_type: 'Database Server',
+					premium: 0,
+					allow_unified_server: frm.doc.by_default_select_unified_mode ? 1 : 0,
+				},
+			};
+		});
+	},
 	refresh: function (frm) {
 		[
 			[__('Create Servers'), 'create_servers', frm.doc.status === 'Active'],
+			[__('Create Proxy'), 'create_proxy', frm.doc.status === 'Active'],
 			[__('Add Images'), 'add_images', frm.doc.status === 'Active'],
+			[
+				__('Assign NAT Security Group'),
+				'assign_nat_security_group',
+				frm.doc.cloud_provider === 'AWS EC2' &&
+					frm.doc.status === 'Active' &&
+					!frm.doc.nat_security_group_id,
+			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -30,7 +60,11 @@ frappe.ui.form.on('Cluster', {
 				);
 			}
 		}
-		if (frm.doc.cloud_provider === 'AWS EC2' && frm.doc.status === 'Active') {
+		if (
+			(frm.doc.cloud_provider === 'AWS EC2' ||
+				frm.doc.cloud_provider === 'Hetzner') &&
+			frm.doc.status === 'Active'
+		) {
 			// add btn, when clicked creates a prompt and calls check_machine_availability with value input
 			frm.add_custom_button(__('Check Machine Availability'), () => {
 				frappe.prompt(

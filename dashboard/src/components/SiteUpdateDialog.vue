@@ -10,7 +10,10 @@
 			<template v-if="updatableApps.length > 0">
 				<GenericList :options="listOptions" />
 				<div class="mt-4 flex flex-col space-y-4">
-					<DateTimeControl v-model="scheduledTime" label="Schedule Time" />
+					<DateTimeControl
+						v-model="scheduledTime"
+						label="Schedule Time in IST"
+					/>
 					<div class="flex flex-col space-y-2">
 						<FormControl
 							label="Skip failing patches if any"
@@ -18,10 +21,27 @@
 							v-model="skipFailingPatches"
 						/>
 						<FormControl
-							label="Skip taking backup for this update (If the update fails, rollback will not occur)"
+							label="Skip taking backup for this update"
 							type="checkbox"
 							v-model="skipBackups"
+							v-if="!$site.doc.group_public"
 						/>
+						<div
+							class="flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-gray-600"
+							v-if="skipBackups"
+						>
+							<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
+							<div>
+								If the update fails, rollback will not occur as there is no
+								backup. You will have to manually fix the issues over
+								<a
+									href="https://docs.frappe.io/cloud/benches/ssh"
+									target="_blank"
+									class="underline"
+									>ssh</a
+								>.
+							</div>
+						</div>
 					</div>
 				</div>
 			</template>
@@ -42,6 +62,7 @@
 				v-else
 				class="w-full"
 				variant="solid"
+				:theme="skipBackups ? 'red' : 'gray'"
 				:loading="$site.scheduleUpdate.loading"
 				:label="`Update ${
 					scheduledTime ? `at ${scheduledTimeInLocal}` : 'Now'

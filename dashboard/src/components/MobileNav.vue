@@ -21,7 +21,7 @@
 					{
 						label: 'Support & Docs',
 						icon: 'help-circle',
-						onClick: support,
+						onClick: docs,
 					},
 					{
 						label: 'Logout',
@@ -70,7 +70,7 @@
 <script setup>
 import { defineAsyncComponent, ref } from 'vue';
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
-import NavigationItems from './NavigationItems.vue';
+import NavigationItems from './navigation/sidebar/NavList.vue';
 import MobileNavItem from './MobileNavItem.vue';
 import MobileNavItemGroup from './MobileNavItemGroup.vue';
 
@@ -79,7 +79,7 @@ const SwitchTeamDialog2 = defineAsyncComponent(
 );
 const showTeamSwitcher = ref(false);
 
-function support() {
-	window.open('https://frappecloud.com/support', '_blank');
+function docs() {
+	window.open('https://docs.frappe.io/cloud', '_blank');
 }
 </script>

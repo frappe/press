@@ -57,6 +57,10 @@ class InactiveDomains(ValidationError):
 	pass
 
 
+class ActiveDomainsForStandalone(ValidationError):
+	pass
+
+
 class DNSValidationError(ValidationError):
 	pass
 
@@ -82,6 +86,10 @@ class MultipleARecords(DNSValidationError):
 
 
 class MultipleCNAMERecords(DNSValidationError):
+	pass
+
+
+class DomainNoLongerPointed(DNSValidationError):
 	pass
 
 

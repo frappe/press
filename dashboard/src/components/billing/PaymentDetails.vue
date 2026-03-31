@@ -121,6 +121,31 @@
 					</Button>
 				</div>
 			</div>
+			<div class="my-3 h-px bg-gray-100" />
+			<div class="flex items-center justify-between text-base text-gray-900">
+				<div class="flex flex-col gap-1.5">
+					<div class="font-medium">Budget Alerts</div>
+					<div
+						v-if="team.doc.receive_budget_alerts"
+						class="leading-5 text-gray-700"
+					>
+						Alert threshold is set at {{ currency
+						}}{{ team.doc.monthly_alert_threshold }} per month
+					</div>
+					<div v-else class="text-gray-700">
+						Receive an email alert if monthly total exceeds limit set
+					</div>
+				</div>
+				<div class="shrink-0">
+					<Button
+						:label="
+							team.doc.receive_budget_alerts ? 'Edit' : 'Set Budget Alert'
+						"
+						@click="showBudgetAlertDialog = true"
+					>
+					</Button>
+				</div>
+			</div>
 		</div>
 	</div>
 	<BillingDetailsDialog
@@ -128,6 +153,11 @@
 		v-model="showBillingDetailsDialog"
 		:showMessage="showMessage"
 		@success="billingDetails.reload()"
+	/>
+	<BudgetAlertDialog
+		v-if="showBudgetAlertDialog"
+		v-model="showBudgetAlertDialog"
+		@success="team.reload()"
 	/>
 	<AddPrepaidCreditsDialog
 		v-if="showAddPrepaidCreditsDialog"
@@ -162,6 +192,7 @@
 <script setup>
 import DropdownItem from './DropdownItem.vue';
 import BillingDetailsDialog from './BillingDetailsDialog.vue';
+import BudgetAlertDialog from './BudgetAlertDialog.vue';
 import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue';
 import AddCardDialog from './AddCardDialog.vue';
 import ChangeCardDialog from './ChangeCardDialog.vue';
@@ -183,6 +214,7 @@ const {
 } = inject('billing');
 
 const showBillingDetailsDialog = ref(false);
+const showBudgetAlertDialog = ref(false);
 const showAddPrepaidCreditsDialog = ref(false);
 const showAddCardDialog = ref(false);
 const showChangeCardDialog = ref(false);
@@ -268,6 +300,19 @@ const paymentModeOptions = [
 			}),
 	},
 	{
+		label: 'UPI Autopay',
+		value: 'UPI Autopay',
+		condition: () =>
+			team.doc.currency === 'INR' && team.doc.upi_autopay_enabled,
+		description: 'Your UPI will be auto-debited for monthly subscription',
+		component: () =>
+			h(DropdownItem, {
+				label: 'UPI Autopay',
+				active: team.doc.payment_mode === 'UPI Autopay',
+				onClick: () => updatePaymentMode('UPI Autopay'),
+			}),
+	},
+	{
 		component: () =>
 			h('div', [
 				h('div', { class: 'border-t border-gray-200 my-1' }),
@@ -344,17 +389,21 @@ function updatePaymentMode(mode) {
 		mode === 'Paid By Partner' &&
 		Boolean(unpaidInvoices.data.length > 0)
 	) {
-		if (unpaidInvoices.data) {
-			payUnpaidInvoices();
-			return;
-		}
-		if (currentBillingAmount.value) {
-			const finalizeInvoicesDialog = defineAsyncComponent(
-				() => import('./FinalizeInvoicesDialog.vue'),
-			);
-			renderDialog(h(finalizeInvoicesDialog));
-			return;
-		}
+		payUnpaidInvoices();
+		return;
+	} else if (
+		mode === 'Paid By Partner' &&
+		Boolean(currentBillingAmount.value)
+	) {
+		const finalizeInvoicesDialog = defineAsyncComponent(
+			() => import('./FinalizeInvoicesDialog.vue'),
+		);
+		renderDialog(h(finalizeInvoicesDialog));
+		return;
+	}
+	if (mode === 'UPI Autopay') {
+		router.push({ name: 'BillingUPIAutopay' });
+		return;
 	}
 	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
 }

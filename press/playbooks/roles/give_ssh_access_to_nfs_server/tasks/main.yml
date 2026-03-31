@@ -1,0 +1,28 @@
+---
+- name: Ensure .ssh directory exists
+  file:
+    path: "/home/{{ ssh_user }}/.ssh"
+    state: directory
+    mode: '0700'
+    owner: "{{ ssh_user }}"
+    group: "{{ ssh_user }}"
+
+- name: Generate SSH key if not present
+  openssh_keypair:
+    path: "{{ ssh_key_path }}"
+    type: ed25519
+    owner: "{{ ssh_user }}"
+    group: "{{ ssh_user }}"
+    mode: '0600'
+
+- name: Read public key from source host
+  slurp:
+    src: "{{ ssh_key_path }}.pub"
+  register: pubkey_content
+
+- name: Copy public key to destination host authorized_keys
+  authorized_key:
+    user: "{{ ssh_user }}"
+    state: present
+    key: "{{ pubkey_content.content | b64decode }}"
+  delegate_to: "{{ destination_host }}"

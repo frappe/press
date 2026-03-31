@@ -82,6 +82,39 @@ frappe.ui.form.on('Site', {
 			);
 		}
 
+		if (!site.is_monitoring_disabled) {
+			frm.add_custom_button(
+				__('Disable Monitoring'),
+				() => {
+					frappe.prompt(
+						{
+							fieldtype: 'Data',
+							label: 'Reason',
+							fieldname: 'reason',
+							reqd: 1,
+						},
+						({ reason }) => {
+							frm
+								.call('disable_monitoring', {
+									reason,
+								})
+								.then((r) => frm.refresh());
+						},
+						__('Provide Reason'),
+					);
+				},
+				__('Actions'),
+			);
+		} else {
+			frm.add_custom_button(
+				__('Enable Monitoring'),
+				() => {
+					frappe.msgprint('Go to Dashboard to re-enable monitoring.');
+				},
+				__('Actions'),
+			);
+		}
+
 		[
 			[__('Backup'), 'backup'],
 			[__('Physical Backup'), 'physical_backup'],

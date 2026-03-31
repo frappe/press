@@ -1,0 +1,164 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-10-23 10:27:46.053961",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "server_section",
+  "primary_server",
+  "secondary_server",
+  "status",
+  "column_break_nxd6",
+  "action",
+  "start_time",
+  "duration",
+  "scheduled_time",
+  "is_automatically_triggered",
+  "failed_validation",
+  "steps_section",
+  "scale_steps"
+ ],
+ "fields": [
+  {
+   "fieldname": "server_section",
+   "fieldtype": "Section Break",
+   "label": "Metadata"
+  },
+  {
+   "fieldname": "primary_server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Primary Server",
+   "options": "Server",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_nxd6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "secondary_server",
+   "fieldtype": "Link",
+   "label": "Secondary Server",
+   "options": "Server",
+   "read_only": 1
+  },
+  {
+   "fieldname": "steps_section",
+   "fieldtype": "Section Break",
+   "label": "Steps"
+  },
+  {
+   "fieldname": "scale_steps",
+   "fieldtype": "Table",
+   "label": "Scale Steps",
+   "options": "Scale Step"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nFailure\nSuccess\nScheduled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Select",
+   "label": "Action",
+   "options": "Scale Up\nScale Down",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Checked if the auto scale failed due to a validation error.\n\n(Adhere to autoscaling rules)",
+   "fieldname": "failed_validation",
+   "fieldtype": "Check",
+   "label": "Failed Validation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Time"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Time",
+   "label": "Duration"
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Datetime",
+   "label": "Start Time"
+  },
+  {
+   "default": "0",
+   "description": "Check this if triggered from a  auto scale trigger rule.",
+   "fieldname": "is_automatically_triggered",
+   "fieldtype": "Check",
+   "label": "Is automatically triggered",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Press Notification",
+   "link_fieldname": "document_name"
+  }
+ ],
+ "modified": "2026-01-16 12:58:07.817192",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Auto Scale Record",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "primary_server"
+}

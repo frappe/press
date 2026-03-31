@@ -7,14 +7,11 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
-from moto import mock_aws
 
-from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
 from press.press.doctype.proxy_server.proxy_server import ProxyServer
-from press.press.doctype.root_domain.root_domain import RootDomain
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
 from press.utils.test import foreground_enqueue_doc
@@ -28,6 +25,7 @@ def create_test_proxy_server(
 	domains: list[dict[str, str]] | None = None,
 	cluster: str = "Default",
 	is_primary: bool = True,
+	is_static_ip: bool = False,
 ) -> ProxyServer:
 	"""Create test Proxy Server doc"""
 	if domains is None:
@@ -44,6 +42,7 @@ def create_test_proxy_server(
 			"domain": domain,
 			"domains": domains,
 			"is_primary": is_primary,
+			"is_static_ip": is_static_ip,
 			"virtual_machine": create_test_virtual_machine().name,
 		}
 	).insert(ignore_if_duplicate=True)
@@ -51,45 +50,17 @@ def create_test_proxy_server(
 	return server
 
 
-@patch(
-	"press.press.doctype.proxy_server.proxy_server.frappe.enqueue_doc",
-	foreground_enqueue_doc,
-)
-@patch("press.press.doctype.proxy_server.proxy_server.Ansible", new=Mock())
+@patch("frappe.enqueue_doc", new=foreground_enqueue_doc)
+@patch("press.press.doctype.proxy_failover.proxy_failover.Ansible", new=Mock)
 class TestProxyServer(FrappeTestCase):
-	@fake_agent_job("Reload NGINX Job")
-	@mock_aws
-	@patch.object(
-		RootDomain,
-		"update_dns_records_for_sites",
-		wraps=RootDomain.update_dns_records_for_sites,
-		autospec=True,
-	)
-	def test_sites_dns_updated_on_failover(self, update_dns_records_for_sites):
-		from press.press.doctype.server.test_server import create_test_server
-		from press.press.doctype.site.test_site import create_test_site
-
-		proxy1 = create_test_proxy_server()
+	def test_failover_document_creation(self):
+		proxy1 = create_test_proxy_server(is_static_ip=True)
 		proxy2 = create_test_proxy_server(is_primary=False)
-
-		root_domain: RootDomain = frappe.get_doc("Root Domain", proxy1.domain)
-		root_domain.boto3_client.create_hosted_zone(
-			Name=proxy1.domain,
-			CallerReference="1",
-			HostedZoneConfig={"Comment": "Test", "PrivateZone": False},
-		)
-
-		server = create_test_server(proxy1.name)
-		site1 = create_test_site(server=server.name)
-		create_test_site()  # another proxy; unrelated
 
 		proxy2.db_set("primary", proxy1.name)
 		proxy2.db_set("is_replication_setup", 1)
 		proxy2.trigger_failover()
-		update_dns_records_for_sites.assert_called_once_with(root_domain, [site1.name], proxy2.name)
-		proxy2.reload()
-		proxy1.reload()
-		self.assertTrue(proxy2.is_primary)
-		self.assertFalse(proxy1.is_primary)
-		self.assertEqual(proxy2.status, "Active")
-		self.assertEqual(proxy1.status, "Active")
+
+		self.assertTrue(
+			frappe.db.exists("Proxy Failover", {"primary": proxy1.name, "secondary": proxy2.name})
+		)

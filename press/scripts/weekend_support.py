@@ -5,13 +5,17 @@ from itertools import cycle
 import frappe
 
 agents = [
-	"shadrak@erpnext.com",
-	"tanmoy@frappe.io",
-	"alan@iwebnotes.com",
-	"balamurali@erpnext.com",
-	"arun@frappe.io",
+	"jayanta@frappe.io",
 	"saurabh@erpnext.com",
-	"suhail@frappe.io",
+	"mangesh@frappe.io",
+	"bowrna@frappe.io",
+	"shadrak@erpnext.com",
+	"aradhya@frappe.io",
+	"sabu@frappe.io",
+	"tanmoy@frappe.io",
+	"aysha@frappe.io",
+	"ritwik.p@frappe.io",
+	"balamurali@erpnext.com",
 ]
 
 
@@ -40,7 +44,6 @@ def next_weekdays(from_: datetime.date, till: datetime.date):
 
 def main():
 	agent_cycle = cycle(agents)
-	weekday_cycle = cycle(reversed(agents))
 
 	from_ = datetime.date.today()
 	till = datetime.date(2023, 7, 20)
@@ -63,29 +66,6 @@ def main():
 				"subject": f"{contact.first_name} on Weekend Support",
 				"starts_on": weekend[0],
 				"ends_on": weekend[1],
-				"all_day": 1,
-				"event_type": "Public",
-			}
-		).insert()
-
-	for weekday in next_weekdays(from_, till):
-		agent = next(weekday_cycle)
-		contact = frappe.get_last_doc("Contact", {"email_id": agent})
-		if frappe.db.exists(
-			"Event",
-			{
-				"subject": ("like", "%Backup Support"),
-				"starts_on": weekday,
-				"ends_on": datetime.datetime.combine(weekday, datetime.time(23, 59)),
-			},
-		):
-			continue
-		frappe.get_doc(
-			{
-				"doctype": "Event",
-				"subject": f"{contact.first_name} on Backup Support",
-				"starts_on": weekday,
-				"ends_on": datetime.datetime.combine(weekday, datetime.time(23, 59)),
 				"all_day": 1,
 				"event_type": "Public",
 			}

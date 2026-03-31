@@ -13,9 +13,12 @@
   "column_break_3",
   "team",
   "route",
+  "published_on",
   "section_break_7",
+  "column_break_ccyg",
   "frappe_approved",
   "subscription_type",
+  "bypass_automated_audit",
   "column_break_10",
   "categories",
   "published",
@@ -55,9 +58,10 @@
   "run_after_uninstall_script",
   "after_uninstall_script",
   "review_tab",
+  "status",
+  "column_break_bcjk",
   "stop_auto_review",
   "review_stage",
-  "status",
   "dashboard_tab",
   "onboarding_related_section",
   "show_for_site_creation",
@@ -402,6 +406,26 @@
    "fieldname": "collect_feedback",
    "fieldtype": "Check",
    "label": "Collect Feedback"
+  },
+  {
+   "fieldname": "column_break_bcjk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "published_on",
+   "fieldtype": "Date",
+   "label": "Published On"
+  },
+  {
+   "fieldname": "column_break_ccyg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "This bypasses the Marketplace Automated Audit Checks. Only suggested to be checked for Frappe apps.",
+   "fieldname": "bypass_automated_audit",
+   "fieldtype": "Check",
+   "label": "Bypass Automated Audit"
   }
  ],
  "grid_page_length": 50,
@@ -424,9 +448,14 @@
    "group": "App Subscription",
    "link_doctype": "Marketplace App Subscription",
    "link_fieldname": "app"
+  },
+  {
+   "group": "General",
+   "link_doctype": "Marketplace App Audit",
+   "link_fieldname": "marketplace_app"
   }
  ],
- "modified": "2025-08-20 20:07:33.606376",
+ "modified": "2026-03-24 22:23:13.317135",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",

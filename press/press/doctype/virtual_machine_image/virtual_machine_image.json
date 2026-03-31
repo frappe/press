@@ -17,6 +17,7 @@
   "cluster",
   "region",
   "platform",
+  "cloud_provider",
   "series",
   "copied_from",
   "public",
@@ -25,7 +26,9 @@
   "mariadb_root_password",
   "section_break_acrc",
   "has_data_volume",
-  "volumes"
+  "volumes",
+  "digital_ocean_action_section",
+  "action_id"
  ],
  "fields": [
   {
@@ -38,6 +41,8 @@
    "set_only_once": 1
   },
   {
+   "fetch_from": "virtual_machine.platform",
+   "fetch_if_empty": 1,
    "fieldname": "platform",
    "fieldtype": "Data",
    "label": "Platform",
@@ -71,7 +76,7 @@
    "fieldname": "series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "n\nf\nm\nc\np\ne\nr",
+   "options": "n\nf\nm\nc\np\ne\nr\nnfs\nfs\nu",
    "read_only": 1,
    "reqd": 1
   },
@@ -157,6 +162,7 @@
   },
   {
    "default": "0",
+   "fetch_from": "virtual_machine.has_data_volume",
    "fieldname": "has_data_volume",
    "fieldtype": "Check",
    "label": "Has Data Volume",
@@ -166,12 +172,32 @@
    "fieldname": "object_storage_uri",
    "fieldtype": "Small Text",
    "label": "Object Storage URI"
+  },
+  {
+   "fetch_from": "virtual_machine.cloud_provider",
+   "fetch_if_empty": 1,
+   "fieldname": "cloud_provider",
+   "fieldtype": "Data",
+   "label": "Cloud Provider",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval: doc.cloud_provider == \"DigitalOcean\"",
+   "fieldname": "digital_ocean_action_section",
+   "fieldtype": "Section Break",
+   "label": "Digital Ocean Action"
+  },
+  {
+   "fieldname": "action_id",
+   "fieldtype": "Data",
+   "label": "Action Id"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-29 14:04:58.677541",
+ "modified": "2026-01-18 15:54:34.633890",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",
@@ -191,6 +217,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",

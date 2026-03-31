@@ -1,0 +1,14 @@
+---
+- name: Prepare Vodacom Server
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  tasks:
+    - name: Remove Ubuntu User
+      user:
+        name: ubuntu
+        state: absent
+        remove: yes
+        force: yes
+      ignore_errors: yes

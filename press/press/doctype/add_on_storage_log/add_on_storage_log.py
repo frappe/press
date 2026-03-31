@@ -6,6 +6,8 @@ import typing
 import frappe
 from frappe.model.document import Document
 
+from press.press.doctype.communication_info.communication_info import get_communication_info
+
 if typing.TYPE_CHECKING:
 	from press.press.doctype.server.server import BaseServer
 
@@ -36,10 +38,9 @@ class AddOnStorageLog(Document):
 		server: BaseServer = frappe.get_cached_doc(
 			"Server" if self.server else "Database Server", self.server or self.database_server
 		)
-		notify_email = frappe.get_value("Team", server.team, "notify_email")
 
 		frappe.sendmail(
-			recipients=notify_email,
+			recipients=get_communication_info("Email", "Server Activity", server.doctype, server.name),
 			subject=f"Important: Server {server.name} storage space at 90%",
 			template="enabled_auto_disk_expansion" if not self.is_warning else "disabled_auto_disk_expansion",
 			args={
@@ -67,7 +68,7 @@ def insert_addon_storage_log(
 ) -> AddOnStorageLog | None:
 	doctype = "Server" if server else "Database Server"
 	name = server or database_server
-	base_server: BaseServer = frappe.get_cached_doc(doctype, name)
+	base_server: BaseServer = frappe.get_doc(doctype, name)
 
 	if (
 		(base_server.provider not in ("AWS EC2", "OCI"))

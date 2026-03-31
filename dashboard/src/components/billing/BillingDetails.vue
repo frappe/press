@@ -75,7 +75,7 @@ function updateBillingInformation() {
 		return;
 	}
 	const billing_name = billingInformation.billing_name.trim();
-	const billingNameRegex = /^[a-zA-Z0-9\-\'\,\.\s]+$/;
+	const billingNameRegex = /^[a-zA-Z0-9\-\'\,\.\(\)\s]+$/;
 	const billingNameValid = billingNameRegex.test(billing_name);
 	if (!billingNameValid) {
 		errorMessage.value = 'Billing Name contains invalid characters';

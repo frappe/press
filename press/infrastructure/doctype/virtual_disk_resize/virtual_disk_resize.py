@@ -14,6 +14,7 @@ from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.virtual_machine.virtual_machine import SERIES_TO_SERVER_TYPE
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -61,9 +62,18 @@ class VirtualDiskResize(Document):
 		old_volume_size: DF.Int
 		old_volume_status: DF.Literal["Attached", "Deleted"]
 		old_volume_throughput: DF.Int
+		scheduled_time: DF.Datetime | None
 		service: DF.Data | None
 		start: DF.Datetime | None
-		status: DF.Literal["Pending", "Preparing", "Ready", "Running", "Success", "Failure"]
+		status: DF.Literal[
+			"Scheduled",
+			"Pending",
+			"Preparing",
+			"Ready",
+			"Running",
+			"Success",
+			"Failure",
+		]
 		steps: DF.Table[VirtualMachineMigrationStep]
 		virtual_disk_snapshot: DF.Link | None
 		virtual_machine: DF.Link
@@ -77,16 +87,43 @@ class VirtualDiskResize(Document):
 
 	def after_insert(self):
 		"""Enqueue current volume attribute fetch and volume creation"""
-		frappe.enqueue_doc(self.doctype, self.name, "run_prerequisites", queue="long", timeout=2400)
+		if not self.scheduled_time:
+			self.status = Status.Pending
+			self.save()
 
 	def run_prerequisites(self):
-		self.status = Status.Preparing
+		try:
+			self.set_filesystem_attributes()
+			self.set_new_volume_attributes()
+			self.create_new_volume()
+			self.status = Status.Ready
+		except Exception:
+			self.log_error("Virtual Disk Resize Prerequisites Failed")
+			self.status = Status.Failure
 		self.save()
-		self.set_filesystem_attributes()
-		self.set_new_volume_attributes()
-		self.create_new_volume()
-		self.status = Status.Ready
+
+	def get_lock(self):
+		try:
+			frappe.get_value("Virtual Machine", self.virtual_machine, "status", for_update=True)
+			return True
+		except frappe.QueryTimeoutError:
+			frappe.db.rollback()
+			self.add_comment("Could not acquire lock, the virtual machine seems to be busy.")
+			frappe.db.commit()
+			return False
+
+	@frappe.whitelist()
+	def execute(self):
+		if not self.get_lock():
+			return
+
+		self.run_prerequisites()
+		if self.status != Status.Ready:
+			return
+
+		self.start = frappe.utils.now_datetime()
 		self.save()
+		self.next()
 
 	def add_steps(self):
 		for step in self.shrink_steps:
@@ -239,14 +276,13 @@ class VirtualDiskResize(Document):
 
 	def reaffirm_old_filesystem_used(self, mountpoint: str):
 		"""Reaffirm file system usage using du"""
-		output = self.ansible_run(f"du -s {mountpoint}")["output"]
+		output = self.ansible_run(f"du -sx --block-size=1024 {mountpoint}")["output"]
 
 		if not output:
 			frappe.throw("Error occurred while fetching filesystem size")
 
 		size = float(output.split()[0])
-		size *= 512  # du measures size in units of 512-byte blocks
-		return size / 1024**3
+		return size / 1024**2
 
 	def set_old_filesystem_attributes(self, device, filesystem):
 		self.filesystem_mount_point = device["mountpoint"]
@@ -266,8 +302,10 @@ class VirtualDiskResize(Document):
 		root_volume = machine.get_root_volume()
 
 		volumes = find_all(machine.volumes, lambda v: v.volume_id != root_volume.volume_id)
-		if len(volumes) != 1:
-			frappe.throw("Multiple volumes found. Please select the volume to shrink")
+		if len(volumes) == 0:
+			frappe.throw("No additional volumes found. Cannot shrink any volume.")
+		elif len(volumes) > 1:
+			frappe.throw("Multiple volumes found. Please select the volume to shrink.")
 
 		self.old_volume_id = volumes[0].volume_id
 
@@ -299,9 +337,13 @@ class VirtualDiskResize(Document):
 		self.save()
 
 	def create_new_volume(self):
-		# Create new volume
+		# Lock the row to prevent concurrent modifications
+		frappe.get_value("Virtual Machine", self.virtual_machine, "status", for_update=True)
+
 		self.new_volume_id = self.machine.attach_new_volume(
-			self.new_volume_size, iops=self.new_volume_iops, throughput=self.new_volume_throughput
+			self.new_volume_size,
+			iops=self.new_volume_iops,
+			throughput=self.new_volume_throughput,
 		)
 		self.new_volume_status = "Attached"
 		self.save()
@@ -393,7 +435,10 @@ class VirtualDiskResize(Document):
 
 		snapshots = frappe.get_all(
 			"Virtual Disk Snapshot",
-			{"name": ("in", machine.flags.created_snapshots), "volume_id": self.old_volume_id},
+			{
+				"name": ("in", machine.flags.created_snapshots),
+				"volume_id": self.old_volume_id,
+			},
 			pluck="name",
 		)
 		if len(snapshots) == 0:
@@ -408,6 +453,7 @@ class VirtualDiskResize(Document):
 		server.copy_files(
 			source=self.filesystem_mount_point,
 			destination=self.new_filesystem_temporary_mount_point,
+			extra_options="-x",
 		)
 		return StepStatus.Success
 
@@ -545,13 +591,6 @@ class VirtualDiskResize(Document):
 			)
 		return steps
 
-	@frappe.whitelist()
-	def execute(self):
-		self.status = Status.Running
-		self.start = frappe.utils.now_datetime()
-		self.save()
-		self.next()
-
 	def fail(self) -> None:
 		self.status = Status.Failure
 		for step in self.steps:
@@ -652,9 +691,11 @@ class VirtualDiskResize(Document):
 		return None
 
 	def ansible_run(self, command):
-		virtual_machine_ip = frappe.db.get_value("Virtual Machine", self.virtual_machine, "public_ip_address")
-		inventory = f"{virtual_machine_ip},"
-		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+		vm_series = frappe.db.get_value("Virtual Machine", self.virtual_machine, "series")
+		server_type = SERIES_TO_SERVER_TYPE.get(vm_series)
+		server_name = frappe.db.get_value(server_type, {"virtual_machine": self.virtual_machine}, "name")
+		inventory = f"{server_name},"
+		result = AnsibleAdHoc(sources=inventory).run(command, self.name, raw_params=True)[0]
 		self.add_command(command, result)
 		return result
 
@@ -677,6 +718,7 @@ class StepStatus(str, Enum):
 
 
 class Status(str, Enum):
+	Scheduled = "Scheduled"
 	Pending = "Pending"
 	Preparing = "Preparing"
 	Ready = "Ready"
@@ -686,3 +728,21 @@ class Status(str, Enum):
 
 	def __str__(self):
 		return self.value
+
+
+def run_scheduled_resizes():
+	resize_tasks = frappe.get_all(
+		"Virtual Disk Resize",
+		filters={"scheduled_time": ("<=", frappe.utils.now()), "status": Status.Scheduled},
+		fields=["name", "virtual_machine"],
+	)
+	for task in resize_tasks:
+		frappe.enqueue_doc(
+			"Virtual Disk Resize",
+			task.name,
+			"execute",
+			queue="long",
+			timeout=2400,
+			deduplicate=True,
+			job_id=f"resize_job:{task.virtual_machine}",
+		)

@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "banned",
   "team_title",
   "user",
   "account_request",
@@ -16,6 +17,7 @@
   "is_developer",
   "is_saas_user",
   "is_code_server_user",
+  "is_frappe_compute_internal_user",
   "free_account",
   "via_erpnext",
   "enforce_2fa",
@@ -30,29 +32,37 @@
   "billing_tab",
   "subscription_details_section",
   "stripe_customer_id",
+  "razorpay_customer_id",
   "country",
+  "phone_number",
   "currency",
   "payment_mode",
   "billing_team",
   "default_payment_method",
+  "default_razorpay_mandate",
   "billing_name",
   "billing_address",
   "free_credits_allocated",
+  "upi_autopay_enabled",
   "column_break_12",
   "address_html",
+  "section_break_jzok",
+  "receive_budget_alerts",
+  "monthly_alert_threshold",
+  "column_break_hunh",
   "notification_tab",
   "section_break_9",
   "send_notifications",
-  "notify_email",
-  "billing_email",
   "column_break_9",
   "last_used_team",
   "section_break_28",
-  "communication_emails",
+  "communication_infos",
   "partner_tab",
   "partner_details_section",
   "erpnext_partner",
+  "company_name",
   "partner_email",
+  "partner_manager",
   "column_break_ooyo",
   "partner_status",
   "partner_tier",
@@ -62,6 +72,10 @@
   "introduction",
   "column_break_akmx",
   "customers",
+  "partnership_date_section",
+  "start_date",
+  "column_break_egkq",
+  "end_date",
   "partner_section",
   "partner_referral_code",
   "partnership_date",
@@ -74,12 +88,14 @@
   "ssh_access_enabled",
   "skip_backups",
   "enable_inplace_updates",
+  "relaxed_permissions",
   "column_break_31",
   "database_access_enabled",
   "enable_performance_tuning",
   "razorpay_enabled",
   "servers_enabled",
   "code_servers_enabled",
+  "hybrid_servers_enabled",
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
@@ -127,7 +143,8 @@
    "fieldname": "stripe_customer_id",
    "fieldtype": "Data",
    "label": "Stripe Customer ID",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "country",
@@ -219,14 +236,7 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits\nPaid By Partner"
-  },
-  {
-   "fetch_from": "user.email",
-   "fetch_if_empty": 1,
-   "fieldname": "notify_email",
-   "fieldtype": "Data",
-   "label": "Notify Email"
+   "options": "\nCard\nPrepaid Credits\nPaid By Partner\nUPI Autopay"
   },
   {
    "fieldname": "column_break_9",
@@ -249,17 +259,11 @@
    "read_only": 1
   },
   {
-   "fieldname": "communication_emails",
-   "fieldtype": "Table",
-   "label": "Communication Emails",
-   "options": "Communication Email"
-  },
-  {
    "fieldname": "section_break_28",
    "fieldtype": "Section Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "ssh_access_enabled",
    "fieldtype": "Check",
    "label": "SSH Access Enabled"
@@ -451,11 +455,6 @@
    "label": "Enable In Place Updates"
   },
   {
-   "fieldname": "billing_email",
-   "fieldtype": "Data",
-   "label": "Billing Email"
-  },
-  {
    "default": "0",
    "fieldname": "mpesa_enabled",
    "fieldtype": "Check",
@@ -516,8 +515,9 @@
   },
   {
    "fieldname": "partner_tier",
-   "fieldtype": "Data",
-   "label": "Partner Tier"
+   "fieldtype": "Link",
+   "label": "Partner Tier",
+   "options": "Partner Tier"
   },
   {
    "fieldname": "custom_apps_tab",
@@ -588,6 +588,116 @@
    "fieldname": "skip_onboarding",
    "fieldtype": "Check",
    "label": "Skip Onboarding"
+  },
+  {
+   "fieldname": "communication_infos",
+   "fieldtype": "Table",
+   "label": "Communication Infos",
+   "options": "Communication Info"
+  },
+  {
+   "fieldname": "section_break_jzok",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_hunh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "receive_budget_alerts",
+   "fieldtype": "Check",
+   "label": "Receive Budget Alerts"
+  },
+  {
+   "depends_on": "receive_budget_alerts",
+   "description": "Email alert when monthly spend exceeds limit",
+   "fieldname": "monthly_alert_threshold",
+   "fieldtype": "Currency",
+   "label": "Monthly Alert Limit",
+   "mandatory_depends_on": "receive_budget_alerts"
+  },
+  {
+   "fieldname": "partner_manager",
+   "fieldtype": "Link",
+   "label": "Partner Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "partnership_date_section",
+   "fieldtype": "Section Break",
+   "label": "Partnership Date"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "fieldname": "column_break_egkq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "Company Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "hybrid_servers_enabled",
+   "fieldtype": "Check",
+   "label": "Hybrid Servers Enabled"
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Phone",
+   "in_list_view": 1,
+   "label": "Phone Number",
+   "options": "Country"
+  },
+  {
+   "default": "0",
+   "fieldname": "banned",
+   "fieldtype": "Check",
+   "label": "Banned"
+  },
+  {
+   "default": "0",
+   "fieldname": "relaxed_permissions",
+   "fieldtype": "Check",
+   "label": "Relaxed Permissions"
+  },
+  {
+   "default": "0",
+   "description": "If checked, the users can access the internal Frappe Compute cluster.",
+   "fieldname": "is_frappe_compute_internal_user",
+   "fieldtype": "Check",
+   "label": "Is Frappe Compute Internal User"
+  },
+  {
+   "fieldname": "razorpay_customer_id",
+   "fieldtype": "Data",
+   "label": "Razorpay Customer ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "default_razorpay_mandate",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Default Razorpay Mandate",
+   "options": "Razorpay Mandate"
+  },
+  {
+   "default": "0",
+   "fieldname": "upi_autopay_enabled",
+   "fieldtype": "Check",
+   "label": "UPI Autopay Enabled"
   }
  ],
  "grid_page_length": 50,
@@ -653,7 +763,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2025-08-20 20:17:16.581425",
+ "modified": "2026-03-18 15:58:34.156826",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

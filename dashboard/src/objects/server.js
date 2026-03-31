@@ -1,17 +1,16 @@
 import { defineAsyncComponent, h } from 'vue';
+import { toast } from 'vue-sonner';
 import LucideAppWindow from '~icons/lucide/app-window';
-import LucideVenetianMask from '~icons/lucide/venetian-mask';
 import ServerActions from '../components/server/ServerActions.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { isMobile } from '../utils/device';
 import { date, duration, planTitle, userCurrency } from '../utils/format';
+import { getQueryParam, setQueryParam } from '../utils/index';
 import { trialDays } from '../utils/site';
 import { getJobsTab } from './common/jobs';
 import { tagTab } from './common/tags';
-import { getQueryParam, setQueryParam } from '../utils/index';
-import { toast } from 'vue-sonner';
 
 export default {
 	doctype: 'Server',
@@ -29,6 +28,12 @@ export default {
 		deleteSnapshot: 'delete_snapshot',
 		lockSnapshot: 'lock_snapshot',
 		unlockSnapshot: 'unlock_snapshot',
+		setupSecondaryServer: 'setup_secondary_server',
+		teardownSecondaryServer: 'teardown_secondary_server',
+		scaleUp: 'scale_up',
+		scaleDown: 'scale_down',
+		addAutomatedScalingTriggers: 'add_automated_scaling_triggers',
+		removeAutomatedScalingTriggers: 'remove_automated_scaling_triggers',
 	},
 	list: {
 		route: '/servers',
@@ -41,6 +46,7 @@ export default {
 			'plan.price_inr as price_inr',
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title',
+			'is_unified_server',
 		],
 		searchField: 'title',
 		filterControls() {
@@ -92,8 +98,8 @@ export default {
 			{
 				label: 'Database Server Plan',
 				fieldname: 'db_plan',
-				format(value) {
-					if (!value) return '';
+				format(value, row) {
+					if (!value || row.is_unified_server) return '';
 					return planTitle(value);
 				},
 			},
@@ -169,7 +175,9 @@ export default {
 					label: 'Impersonate Server Owner',
 					title: 'Impersonate Server Owner', // for label to pop-up on hover
 					slots: {
-						icon: icon(LucideVenetianMask),
+						icon: defineAsyncComponent(
+							() => import('~icons/lucide/venetian-mask'),
+						),
 					},
 					condition: () =>
 						$team.doc?.is_desk_user && server.doc.team !== $team.name,
@@ -202,6 +210,33 @@ export default {
 							},
 						},
 						{
+							label: 'View DB in Desk',
+							icon: icon('external-link'),
+							condition: () => $team.doc?.is_desk_user,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${
+										window.location.host
+									}/app/database-server/${server.doc.database_server}`,
+									'_blank',
+								);
+							},
+						},
+						{
+							label: 'View Replication DB in Desk',
+							icon: icon('external-link'),
+							condition: () =>
+								$team.doc?.is_desk_user && server.doc.replication_server,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${
+										window.location.host
+									}/app/database-server/${server.doc.replication_server}`,
+									'_blank',
+								);
+							},
+						},
+						{
 							label: 'Visit Server',
 							icon: icon('external-link'),
 							condition: () =>
@@ -218,7 +253,9 @@ export default {
 			{
 				label: 'Overview',
 				icon: icon('home'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				route: 'overview',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -244,7 +281,7 @@ export default {
 				},
 			},
 			{
-				label: 'Bench Group Analytics',
+				label: 'Bench Analytics',
 				icon: icon('bar-chart-2'),
 				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'bench-group-analytics',
@@ -259,7 +296,9 @@ export default {
 			{
 				label: 'Sites',
 				icon: icon(LucideAppWindow),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				route: 'sites',
 				type: 'list',
 				list: {
@@ -300,7 +339,7 @@ export default {
 							},
 							{
 								type: 'link',
-								label: 'Bench Group',
+								label: 'Benches',
 								fieldname: 'group',
 								options: {
 									doctype: 'Release Group',
@@ -351,7 +390,7 @@ export default {
 							},
 						},
 						{
-							label: 'Bench Group',
+							label: 'Bench',
 							fieldname: 'group_title',
 							width: '15rem',
 						},
@@ -361,12 +400,29 @@ export default {
 							width: 0.5,
 						},
 					],
+					primaryAction({ documentResource: server }) {
+						if (server?.doc?.status !== 'Active') return {};
+						return {
+							label: 'New Site',
+							slots: {
+								prefix: icon('plus'),
+							},
+							onClick() {
+								router.push({
+									name: 'Server New Site',
+									params: { server: server.doc.name },
+								});
+							},
+						};
+					},
 				},
 			},
 			{
-				label: 'Bench Groups',
+				label: 'Benches',
 				icon: icon('package'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				route: 'groups',
 				type: 'list',
 				list: {
@@ -436,8 +492,9 @@ export default {
 						};
 					},
 					primaryAction({ listResource: benches, documentResource: server }) {
+						if (server?.doc?.status !== 'Active') return {};
 						return {
-							label: 'New Bench Group',
+							label: 'New Bench',
 							slots: {
 								prefix: icon('plus'),
 							},
@@ -776,7 +833,9 @@ export default {
 			{
 				label: 'Plays',
 				icon: icon('play'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				childrenRoutes: ['Server Play'],
 				route: 'plays',
 				type: 'list',
@@ -855,12 +914,67 @@ export default {
 			{
 				label: 'Actions',
 				icon: icon('sliders'),
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				route: 'actions',
 				type: 'Component',
 				component: ServerActions,
 				props: (server) => {
 					return { server: server.doc.name };
+				},
+			},
+			{
+				label: 'Auto Scale',
+				icon: icon('maximize-2'),
+				route: 'auto-scale',
+				type: 'Component',
+				condition: (server) => {
+					if (!server?.doc) return true;
+					return server?.doc?.secondary_server;
+				},
+				redirectTo: 'Triggered',
+				childrenRoutes: ['Triggered', 'Scheduled'],
+				nestedChildrenRoutes: [
+					{
+						name: 'Triggered',
+						path: 'triggered',
+						component: () =>
+							import('../components/server/AutoScaleTriggered.vue'),
+					},
+					{
+						name: 'Scheduled',
+						path: 'scheduled',
+						component: () =>
+							import('../components/server/AutoScaleScheduled.vue'),
+					},
+				],
+				component: defineAsyncComponent(
+					() => import('../components/server/AutoScaleTabs.vue'),
+				),
+				props: (server) => {
+					return {
+						server: server.doc.name,
+					};
+				},
+			},
+			{
+				label: 'Firewall',
+				icon: icon('shield'),
+				condition: (server) => {
+					return (
+						server.doc?.status !== 'Archived' && !server.doc?.is_self_hosted
+					);
+				},
+				route: 'firewall',
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../components/server/ServerFirewall.vue'),
+				),
+				props: (server) => {
+					return {
+						id: server.doc.name,
+					};
 				},
 			},
 			tagTab('Server'),
@@ -869,7 +983,9 @@ export default {
 				icon: icon('activity'),
 				route: 'activity',
 				type: 'list',
-				condition: (server) => server.doc?.status !== 'Archived',
+				condition: (server) => {
+					return server.doc?.status !== 'Archived';
+				},
 				list: {
 					doctype: 'Server Activity',
 					filters: (server) => {
@@ -939,6 +1055,11 @@ export default {
 			name: 'Server Play',
 			path: 'plays/:id',
 			component: () => import('../pages/PlayPage.vue'),
+		},
+		{
+			name: 'Auto Scale Steps',
+			path: 'auto-scale-steps/:id',
+			component: () => import('../components/server/AutoScaleSteps.vue'),
 		},
 	],
 };

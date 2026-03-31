@@ -33,7 +33,7 @@ class Subscription(Document):
 		document_name: DF.DynamicLink
 		document_type: DF.Link
 		enabled: DF.Check
-		interval: DF.Literal["Daily", "Monthly"]
+		interval: DF.Literal["Hourly", "Daily", "Monthly"]
 		marketplace_app_subscription: DF.Link | None
 		plan: DF.DynamicLink
 		plan_type: DF.Link
@@ -110,6 +110,11 @@ class Subscription(Document):
 		if self.enabled and doc.plan != self.plan:
 			doc.plan = self.plan
 			doc.save()
+
+			if doc.doctype == "Server" and doc.is_unified_server:
+				# Update database server plan for sanity in case of unified servers
+				frappe.db.set_value("Database Server", doc.database_server, "plan", self.plan)
+
 		if not self.enabled and doc.plan:
 			doc.plan = ""
 			doc.save()
@@ -170,6 +175,7 @@ class Subscription(Document):
 			price = plan.price_inr if team.currency == "INR" else plan.price_usd
 			price_per_day = price / plan.period  # no rounding off to avoid discrepancies
 			amount = flt((price_per_day * cint(self.additional_storage)), 2)
+
 		elif self.plan_type == "Server Snapshot Plan":
 			price = plan.price_inr if team.currency == "INR" else plan.price_usd
 			price_per_day = price / plan.period  # no rounding off to avoid discrepancies
@@ -182,6 +188,11 @@ class Subscription(Document):
 			)
 		else:
 			amount = plan.get_price_for_interval(self.interval, team.currency)
+
+		if self.plan_type == "Server Plan" and self.document_type == "Server":
+			is_primary = frappe.db.get_value("Server", self.document_name, "is_primary")
+			if not is_primary:
+				return None  # If the server is a secondary application server don't create a usage record
 
 		usage_record = frappe.get_doc(
 			doctype="Usage Record",

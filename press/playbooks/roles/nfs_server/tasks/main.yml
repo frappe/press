@@ -1,0 +1,51 @@
+---
+- name: Update APT cache
+  apt:
+    update_cache: yes
+  failed_when: false
+
+- name: Install NFS Kernel
+  apt:
+    name: nfs-kernel-server
+    state: present
+
+- name: Enable and start NFS Server
+  service:
+    name: nfs-server
+    enabled: yes
+    state: started
+
+- name: Backup existing exports if not already moved
+  command: mv /etc/exports /home/frappe/exports
+  args:
+    creates: /home/frappe/exports
+
+- name: Remove default exports
+  file:
+    path: /etc/exports
+    state: absent
+
+- name: Create export symlink
+  file:
+    src: /home/frappe/exports
+    dest: /etc/exports
+    state: link
+    owner: root
+    group: root
+
+- name: Ensure ownership of exports
+  file:
+    path: /home/frappe/exports
+    owner: frappe
+    group: frappe
+    mode: '0644'
+
+- name: Allow frappe to run exportfs
+  lineinfile:
+    path: /etc/sudoers.d/frappe
+    line: 'frappe ALL=(root) NOPASSWD: /usr/sbin/exportfs'
+    create: yes
+    mode: '0440'
+    owner: root
+    group: root
+    validate: 'visudo -cf %s'

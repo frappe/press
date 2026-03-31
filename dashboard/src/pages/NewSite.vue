@@ -26,29 +26,6 @@
 				:siteOnPublicBench="!bench"
 				v-model="apps"
 			/>
-			<div v-if="showLocalisationSelector" class="space-y-4">
-				<div class="flex space-x-2">
-					<FormControl
-						label="Install Local Compliance App?"
-						v-model="showLocalisationOption"
-						type="checkbox"
-					/>
-					<Tooltip
-						text="A local compliance app allows creating transactions as per statutory compliance. They're maintained by community partners."
-					>
-						<lucide-info class="h-4 w-4 text-gray-500" />
-					</Tooltip>
-				</div>
-				<FormControl
-					class="w-1/2"
-					variant="outline"
-					:class="{ 'pointer-events-none opacity-50': !showLocalisationOption }"
-					label="Select Country"
-					v-model="selectedLocalisationCountry"
-					type="autocomplete"
-					:options="localisationAppCountries"
-				/>
-			</div>
 			<div v-if="!bench">
 				<div class="flex items-center justify-between">
 					<h2 class="text-base font-medium leading-6 text-gray-900">
@@ -105,9 +82,113 @@
 					</div>
 				</div>
 			</div>
+			<div v-if="showLocalisationSelector" class="space-y-4">
+				<div class="flex space-x-2">
+					<FormControl
+						label="Install Local Compliance App?"
+						v-model="showLocalisationOption"
+						type="checkbox"
+					/>
+					<Tooltip
+						text="A local compliance app allows creating transactions as per statutory compliance. They're maintained by community partners."
+					>
+						<lucide-info class="h-4 w-4 text-gray-500" />
+					</Tooltip>
+				</div>
+				<FormControl
+					class="w-1/2"
+					variant="outline"
+					:class="{ 'pointer-events-none opacity-50': !showLocalisationOption }"
+					label="Select Country"
+					:modelValue="selectedLocalisationCountry?.value"
+					@update:modelValue="
+						selectedLocalisationCountry = localisationAppCountries.find(
+							(option) => option.value === $event,
+						)
+					"
+					type="combobox"
+					:options="localisationAppCountries"
+				/>
+			</div>
+			<div
+				v-if="
+					showDedicatedServerOption ||
+					dedicatedServerConfig?.case === 'dedicated_only_multiple'
+				"
+				class="space-y-4"
+			>
+				<FormControl
+					v-if="dedicatedServerConfig?.case != 'dedicated_only_multiple'"
+					type="checkbox"
+					v-model="useDedicatedServer"
+					label="Host this site on your dedicated server"
+				/>
+				<div v-if="shouldShowDedicatedServerDropdown">
+					<h2 class="text-base font-medium leading-6 text-gray-900 mb-2">
+						Select Dedicated Server
+					</h2>
+					<FormControl
+						required
+						v-model="selectedDedicatedServer"
+						type="select"
+						class="w-1/2"
+						:options="
+							availableDedicatedServers.map((s) => ({
+								label: s.title,
+								value: s.name,
+							}))
+						"
+					/>
+				</div>
+			</div>
+			<div
+				v-if="
+					!this.selectedDedicatedServer &&
+					selectedVersion &&
+					options.providers?.length
+				"
+				class="flex flex-col"
+			>
+				<h2 class="text-base font-medium leading-6 text-gray-900">
+					Select Provider
+				</h2>
+				<div class="mt-2 w-full space-y-2">
+					<div class="grid grid-cols-2 gap-3">
+						<button
+							v-for="p in options.providers"
+							:key="p.name"
+							@click="provider = p.name"
+							:class="[
+								provider === p.name
+									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+									: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+								'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
+							]"
+						>
+							<div class="flex w-full items-center justify-between">
+								<div class="flex w-full items-center space-x-2">
+									<img
+										v-if="p.image"
+										:src="p.image"
+										class="h-5 w-5 rounded-sm"
+									/>
+									<span class="text-sm font-medium">
+										{{ p.title }}
+									</span>
+								</div>
+							</div>
+						</button>
+					</div>
+				</div>
+			</div>
 			<div
 				class="flex flex-col"
-				v-if="selectedVersion?.group?.clusters?.length"
+				v-if="
+					!this.selectedDedicatedServer &&
+					selectedVersion?.group &&
+					filteredClusters.length &&
+					(provider || bench)
+				"
 			>
 				<h2 class="text-base font-medium leading-6 text-gray-900">
 					Select Region
@@ -115,7 +196,7 @@
 				<div class="mt-2 w-full space-y-2">
 					<div class="grid grid-cols-2 gap-3">
 						<button
-							v-for="c in selectedVersion.group.clusters"
+							v-for="c in filteredClusters"
 							:key="c.name"
 							@click="cluster = c.name"
 							:class="[
@@ -156,12 +237,25 @@
 					<SitePlansCards
 						v-model="plan"
 						:isPrivateBenchSite="!!bench"
-						:isDedicatedServerSite="selectedVersion.group.is_dedicated_server"
+						:isDedicatedServerSite="isDedicatedServerSite"
 						:selectedCluster="cluster"
 						:selectedApps="apps"
 						:selectedVersion="version"
+						:selectedProvider="effectiveProvider"
 						:hideRestrictedPlans="selectedLocalisationCountry"
 					/>
+				</div>
+				<div v-if="isPrivateBenchPlan" class="mt-4 text-xs text-gray-700">
+					<div
+						class="flex items-center rounded bg-blue-50 p-2 text-p-base font-medium text-blue-800"
+					>
+						<lucide-info class="h-4 w-8 text-blue-600" />
+						<span class="ml-4">
+							Your site will be created on a
+							<strong>private bench</strong>.<br />You can install custom apps
+							and have full control over the bench.
+						</span>
+					</div>
 				</div>
 				<div class="mt-4 text-xs text-gray-700">
 					<div
@@ -254,7 +348,11 @@
 					:disabled="!agreedToRegionConsent"
 					@click="$resources.newSite.submit()"
 					:loading="$resources.newSite.loading"
-					:loadingText="'Creating site... This may take a while...'"
+					:loadingText="
+						isPrivateBenchPlan
+							? 'Provisioning private bench and creating site...'
+							: 'Creating site... This may take a while...'
+					"
 				>
 					Create site
 				</Button>
@@ -273,6 +371,7 @@ import {
 	debounce,
 	Breadcrumbs,
 	getCachedDocumentResource,
+	Badge,
 } from 'frappe-ui';
 import SitePlansCards from '../components/SitePlansCards.vue';
 import { validateSubdomain } from '../utils/site';
@@ -286,7 +385,7 @@ import { getCountry } from '../utils/country';
 
 export default {
 	name: 'NewSite',
-	props: ['bench'],
+	props: ['bench', 'server'],
 	components: {
 		FBreadcrumbs: Breadcrumbs,
 		NewSiteAppSelector,
@@ -299,12 +398,14 @@ export default {
 		Tooltip,
 		Summary,
 		Header,
+		Badge,
 	},
 	data() {
 		return {
 			version: null,
 			subdomain: '',
 			cluster: null,
+			provider: null,
 			plan: null,
 			apps: [],
 			appPlans: {},
@@ -315,12 +416,16 @@ export default {
 			showAppPlanSelectorDialog: false,
 			shareDetailsConsent: false,
 			agreedToRegionConsent: false,
+			useDedicatedServer: false,
+			selectedDedicatedServer: null,
 		};
 	},
 	watch: {
 		apps() {
-			this.version = this.autoSelectVersion();
-			this.cluster = null;
+			if (!this.selectedDedicatedServer) {
+				this.version = this.autoSelectVersion();
+				this.cluster = null;
+			}
 			this.agreedToRegionConsent = false;
 		},
 		showLocalisationOption() {
@@ -340,13 +445,60 @@ export default {
 			}
 		},
 		version() {
+			if (!this.selectedDedicatedServer) {
+				this.cluster = null;
+				this.provider = null;
+			}
+			this.agreedToRegionConsent = false;
+			// Reset localisation selection when version changes
+			this.selectedLocalisationCountry = null;
+			this.showLocalisationOption = false;
+		},
+		provider() {
+			if (this.bench || this.selectedDedicatedServer) {
+				// provider is inferred from cluster selection, so avoid clearing it
+				return;
+			}
+
 			this.cluster = null;
-			this.cluster = this.closestCluster;
+			this.plan = null;
 			this.agreedToRegionConsent = false;
 		},
 		cluster() {
 			this.plan = null;
 			this.agreedToRegionConsent = false;
+
+			// For bench flow, set provider based on the selected cluster's cloud_provider
+			if ((this.bench || this.selectedDedicatedServer) && this.cluster) {
+				const selectedCluster = this.selectedVersion?.group?.clusters.find(
+					(c) => c.name === this.cluster,
+				);
+				if (selectedCluster?.cloud_provider) {
+					this.provider = selectedCluster.cloud_provider;
+				}
+			}
+		},
+		useDedicatedServer(newVal) {
+			if (newVal && this.availableDedicatedServers.length === 1) {
+				const server = this.availableDedicatedServers[0];
+				this.selectedDedicatedServer = server.name;
+				this.cluster = server.cluster;
+				this.provider = server.provider;
+			} else {
+				this.selectedDedicatedServer = null;
+				this.cluster = null;
+				this.provider = null;
+			}
+		},
+		selectedDedicatedServer(newServer) {
+			if (!newServer) return;
+			const server = this.availableDedicatedServers.find(
+				(s) => s.name === newServer,
+			);
+			if (server) {
+				this.cluster = server.cluster;
+				this.provider = server.provider;
+			}
 		},
 		subdomain: {
 			handler: debounce(function (value) {
@@ -363,13 +515,14 @@ export default {
 			return {
 				url: 'press.api.site.options_for_new',
 				makeParams() {
-					return { for_bench: this.bench };
+					return { for_bench: this.bench, for_server: this.server };
 				},
 				onSuccess() {
 					this.closestCluster = this.options.closest_cluster;
 					if (this.bench && this.options.versions.length > 0) {
 						this.version = this.options.versions[0].name;
 					}
+					this.applyDedicatedServerDefaults();
 				},
 				auto: true,
 			};
@@ -425,10 +578,16 @@ export default {
 								domain: this.domain,
 								subscription_plan: this.plan.name,
 								share_details_consent: this.shareDetailsConsent,
+								server: this.selectedDedicatedServer || null,
 							},
 						};
 					},
 					validate() {
+						if (this.useDedicatedServer && !this.selectedDedicatedServer) {
+							throw new DashboardError(
+								'Please select a dedicated server to deploy your site.',
+							);
+						}
 						if (!this.subdomain) {
 							throw new DashboardError('Please enter a subdomain');
 						}
@@ -465,12 +624,14 @@ export default {
 									? this.selectedLocalisationCountry?.value
 									: null,
 								version: this.selectedVersion.name,
+								provider: this.provider,
 								group: this.selectedVersion.group.name,
 								cluster: this.cluster,
 								plan: this.plan.name,
 								share_details_consent: this.shareDetailsConsent,
 								selected_app_plans: appPlans,
 								domain: this.domain,
+								server: this.selectedDedicatedServer || null,
 								// files: this.selectedFiles,
 								// skip_failing_patches: this.skipFailingPatches,
 							},
@@ -487,11 +648,18 @@ export default {
 							);
 						}
 					},
-					onSuccess: (site) => {
-						router.push({
-							name: 'Site Job',
-							params: { name: site.site, id: site.job },
-						});
+					onSuccess: (response) => {
+						if (response.site_group_deploy) {
+							router.push({
+								name: 'NewSiteProgress',
+								params: { siteGroupDeployName: response.site_group_deploy },
+							});
+						} else {
+							router.push({
+								name: 'Site Job',
+								params: { name: response.site, id: response.job },
+							});
+						}
 					},
 				};
 			}
@@ -503,17 +671,52 @@ export default {
 		},
 		domain() {
 			return (
-				this.options.cluster_specific_root_domains.find(
+				this.options?.cluster_specific_root_domains?.find(
 					(d) => d.cluster === this.cluster,
-				)?.name || this.options.domain
+				)?.name || this.options?.domain
 			);
 		},
 		selectedVersion() {
 			return this.options?.versions.find((v) => v.name === this.version);
 		},
+		dedicatedServerConfig() {
+			if (this.bench) {
+				return this.selectedVersion?.group?.dedicated_server_config || {};
+			} else {
+				return this.options?.dedicated_server_config || {};
+			}
+		},
+		showDedicatedServerOption() {
+			const case_type = this.dedicatedServerConfig?.case || '';
+			return (
+				case_type === 'user_choice_single' ||
+				case_type === 'user_choice_multiple'
+			);
+		},
+		isDedicatedServerSite() {
+			return !!(this.useDedicatedServer && this.selectedDedicatedServer);
+		},
+		availableDedicatedServers() {
+			return this.dedicatedServerConfig?.dedicated_servers || [];
+		},
+		shouldShowDedicatedServerDropdown() {
+			const case_type = this.dedicatedServerConfig?.case;
+			const hasMultipleServers = this.availableDedicatedServers.length > 1;
+			// Only show server selection when:
+			// 1. user_choice_multiple - User has enabled dedicated server checkbox AND there are multiple servers
+			// 2. dedicated_only_multiple - release group has multiple dedicated servers linked to it and none public
+			if (!this.useDedicatedServer || !hasMultipleServers) {
+				return false;
+			}
+
+			return (
+				case_type === 'user_choice_multiple' ||
+				case_type === 'dedicated_only_multiple'
+			);
+		},
 		availableVersions() {
 			if (!this.apps.length || this.bench)
-				return this.options.versions.sort((a, b) =>
+				return (this.options?.versions || []).sort((a, b) =>
 					b.name.localeCompare(a.name),
 				);
 
@@ -522,28 +725,49 @@ export default {
 				return acc.filter((v) => app.sources.map((s) => s.version).includes(v));
 			}, null);
 
-			if (this.selectedLocalisationCountry) {
-				// temporary override since we don't have localisation app ready for v14
-				// TODO: remove this when localisation app is ready for v14
-				commonVersions = ['Version 15'];
-				this.version = 'Version 15';
-			}
-
-			return this.options.versions.map((v) => ({
+			return (this.options?.versions || []).map((v) => ({
 				...v,
 				disabled: !commonVersions.includes(v.name),
 			}));
 		},
 		selectedClusterTitle() {
-			return this.selectedVersion?.group?.clusters?.find(
+			const allClusters = [
+				...(this.selectedVersion?.group?.clusters || []),
+				...(this.options.additional_clusters || []),
+			];
+			return allClusters.find((c) => c.name === this.cluster)?.title;
+		},
+		filteredClusters() {
+			if (!this.selectedVersion?.group?.clusters) return [];
+
+			const versionClusters = this.selectedVersion.group.clusters;
+
+			if (!this.provider) return versionClusters;
+
+			// version clusters with additional private bench clusters
+			const allClusters = [
+				...versionClusters,
+				...(this.options?.additional_clusters || []),
+			];
+
+			return allClusters.filter((c) => c.cloud_provider === this.provider);
+		},
+		selectedClusterProvider() {
+			if (!this.cluster) return null;
+			const versionClusters = this.selectedVersion?.group?.clusters || [];
+			const clusterDetails = versionClusters.find(
 				(c) => c.name === this.cluster,
-			)?.title;
+			);
+			return clusterDetails?.cloud_provider || null;
+		},
+		effectiveProvider() {
+			return this.provider || this.selectedClusterProvider;
 		},
 		selectedVersionApps() {
 			let apps = [];
 
 			if (!this.bench)
-				apps = this.options.app_source_details.sort((a, b) =>
+				apps = (this.options?.app_source_details || []).sort((a, b) =>
 					a.total_installs !== b.total_installs
 						? b.total_installs - a.total_installs
 						: a.app.localeCompare(b.app),
@@ -553,10 +777,11 @@ export default {
 				apps = this.selectedVersion.group.bench_app_sources.map(
 					(app_source) => {
 						let app_source_details =
-							this.options.app_source_details[app_source];
+							this.options?.app_source_details?.[app_source];
 
 						let marketplace_details = app_source_details
-							? this.options.marketplace_details[app_source_details.app]
+							? this.options?.marketplace_details?.[app_source_details.app] ||
+								{}
 							: {};
 
 						return {
@@ -583,13 +808,20 @@ export default {
 				(app) => !this.localisationAppNames.includes(app.app),
 			);
 		},
+		isPrivateBenchPlan() {
+			return !this.bench && Boolean(this.plan?.private_bench_support);
+		},
 		showLocalisationSelector() {
 			if (
 				!this.selectedVersionApps ||
 				!this.localisationAppNames.length ||
-				!this.apps.length
+				!this.apps.length ||
+				!this.version
 			)
 				return false;
+
+			// Check if there are any localisation countries available for the selected version
+			if (!this.localisationAppCountries.length) return false;
 
 			const appsThatNeedLocalisation = this.selectedVersionApps.filter(
 				(app) => app.localisation_apps.length,
@@ -615,14 +847,31 @@ export default {
 				.filter(Boolean);
 		},
 		localisationAppCountries() {
-			if (!this.selectedVersionApps) return [];
+			if (!this.selectedVersionApps || !this.selectedVersion) return [];
+
+			// Get the bench_app_sources for the selected version
+			const versionAppSources =
+				this.selectedVersion?.group?.bench_app_sources || [];
+
+			// Get all localisation app details from selected apps
 			const localisationAppDetails = this.selectedVersionApps.flatMap(
 				(app) => app.localisation_apps,
 			);
-			return localisationAppDetails.map((app) => ({
-				label: app?.country,
-				value: app?.country,
-			}));
+
+			// Filter to only include countries whose localisation app is available in the selected version
+			return localisationAppDetails
+				.filter((app) => {
+					if (!app?.marketplace_app) return false;
+					// Check if this localisation app has a source in the selected version's bench_app_sources
+					return versionAppSources.some((source) =>
+						source.toLowerCase().includes(app.marketplace_app.toLowerCase()),
+					);
+				})
+				.map((app) => ({
+					label: app?.country,
+					value: app?.country,
+				}))
+				.sort((a, b) => a.label.localeCompare(b.label));
 		},
 		selectedPlan() {
 			if (!plans?.data) return;
@@ -650,7 +899,7 @@ export default {
 			if (this.bench) {
 				let group = getCachedDocumentResource('Release Group', this.bench);
 				return [
-					{ label: 'Bench Groups', route: '/groups' },
+					{ label: 'Benches', route: '/groups' },
 					{
 						label: group ? group.doc.title : this.bench,
 						route: {
@@ -759,6 +1008,17 @@ export default {
 			return this.availableVersions
 				.sort((a, b) => b.name.localeCompare(a.name))
 				.find((v) => !v.disabled)?.name;
+		},
+		applyDedicatedServerDefaults() {
+			const config = this.dedicatedServerConfig;
+			if (!config || !config.dedicated_servers) return;
+			if (config.case === 'dedicated_only_single') {
+				this.useDedicatedServer = true;
+				this.selectedDedicatedServer = this.server;
+			} else if (config.case === 'dedicated_only_multiple') {
+				// Multiple servers, none public - user must choose
+				this.useDedicatedServer = true;
+			}
 		},
 	},
 };

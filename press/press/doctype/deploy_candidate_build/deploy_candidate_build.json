@@ -314,7 +314,7 @@
    "link_fieldname": "build"
   }
  ],
- "modified": "2025-07-02 17:15:11.366578",
+ "modified": "2026-03-16 16:23:51.449383",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Build",
@@ -357,6 +357,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

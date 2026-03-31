@@ -13,7 +13,6 @@ def whitelist_saas_api(func):  # noqa: C901
 	def auth_wrapper(*args, **kwargs):
 		headers = frappe.request.headers
 		site_access_token = headers.get("x-site-access-token")
-		site_user = headers.get("x-site-user")
 		site = None
 		site_token = None
 		# check when x-site-access-token is provided
@@ -72,7 +71,7 @@ def whitelist_saas_api(func):  # noqa: C901
 		frappe.local.team_name = site_record.team
 
 		# set team user as current user
-		frappe.set_user(site_user)
+		frappe.set_user(frappe.get_value("Team", site_record.team, "user"))
 
 		# set utility function to get team and site info
 		frappe.local.get_site = lambda: frappe.get_doc("Site", frappe.local.site_name)

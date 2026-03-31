@@ -21,13 +21,15 @@
 </template>
 
 <script setup>
-import { getCachedDocumentResource } from 'frappe-ui';
-import { defineAsyncComponent, h } from 'vue';
+import { debounce, getCachedDocumentResource } from 'frappe-ui';
+import { defineAsyncComponent, h, onMounted } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog } from '../utils/components';
 import { getToastErrorMessage } from '../utils/toast';
 import router from '../router';
 import { isLastSite } from '../data/team';
+import CommunicationInfoDialog from './CommunicationInfoDialog.vue';
+import { useRoute } from 'vue-router';
 
 const props = defineProps({
 	siteName: { type: String, required: true },
@@ -39,6 +41,14 @@ const props = defineProps({
 });
 
 const site = getCachedDocumentResource('Site', props.siteName);
+const route = useRoute();
+
+onMounted(() => {
+	const queryAction = route.query['action'];
+	if (props.actionLabel === queryAction) {
+		getSiteActionHandler(queryAction);
+	}
+});
 
 function getSiteActionHandler(action) {
 	const actionDialogs = {
@@ -54,15 +64,6 @@ function getSiteActionHandler(action) {
 		'Version upgrade': defineAsyncComponent(
 			() => import('./site/SiteVersionUpgradeDialog.vue'),
 		),
-		'Change bench group': defineAsyncComponent(
-			() => import('./site/SiteChangeGroupDialog.vue'),
-		),
-		'Change region': defineAsyncComponent(
-			() => import('./site/SiteChangeRegionDialog.vue'),
-		),
-		'Change server': defineAsyncComponent(
-			() => import('./site/SiteChangeServerDialog.vue'),
-		),
 		'Schedule backup': defineAsyncComponent(
 			() => import('./site/SiteScheduleBackup.vue'),
 		),
@@ -74,6 +75,7 @@ function getSiteActionHandler(action) {
 	}
 
 	const actionHandlers = {
+		'Notification Settings': onNotificationSettings,
 		'Activate site': onActivateSite,
 		'Deactivate site': onDeactivateSite,
 		'Drop site': onDropSite,
@@ -81,10 +83,20 @@ function getSiteActionHandler(action) {
 		'Transfer site': onTransferSite,
 		'Reset site': onSiteReset,
 		'Clear cache': onClearCache,
+		'Schedule backup': onScheduleBackup,
 	};
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
 	}
+}
+
+function onNotificationSettings() {
+	return renderDialog(
+		h(CommunicationInfoDialog, {
+			referenceDoctype: 'Site',
+			referenceName: site.doc.name,
+		}),
+	);
 }
 
 function onDeactivateSite() {
@@ -93,7 +105,7 @@ function onDeactivateSite() {
 		message: `
 			Are you sure you want to deactivate this site?<br><br>
 			<div class="text-bg-base bg-gray-100 p-2 rounded-md">
-			The site will go in an <strong>inactive</strong> state.It won't be accessible and background jobs won't run. 
+			The site will go in an <strong>inactive</strong> state. It won't be accessible and background jobs won't run. 
 			<br><br>
 			<div class="text-red-600">You will still be charged for it.</div>
 			</div>
@@ -128,59 +140,16 @@ function onActivateSite() {
 }
 
 function onDropSite() {
-	return confirmDialog({
-		title: 'Drop Site',
-		message: `
-            Are you sure you want to drop your site? The site will be archived and
-            all of its files and Offsite Backups will be deleted. This action cannot
-            be undone.
-        `,
-		fields: [
-			{
-				label: 'Please type the site name to confirm.',
-				fieldname: 'confirmSiteName',
-			},
-			{
-				label: 'Force drop site',
-				fieldname: 'force',
-				type: 'checkbox',
-			},
-		],
-		primaryAction: {
-			label: 'Drop Site',
-			variant: 'solid',
-			theme: 'red',
-			onClick: async ({ hide, values }) => {
-				if (
-					![site.doc.name, site.doc.host_name].includes(values.confirmSiteName)
-				) {
-					throw new Error('Site name does not match.');
-				}
+	const ArchiveSiteDialog = defineAsyncComponent(
+		() => import('./site/ArchiveSiteDialog.vue'),
+	);
 
-				const val = await isLastSite(site.doc.team);
-				const FeedbackDialog = defineAsyncComponent(
-					() => import('./ChurnFeedbackDialog.vue'),
-				);
-
-				return site.archive.submit({ force: values.force }).then(() => {
-					hide();
-					if (val) {
-						renderDialog(
-							h(FeedbackDialog, {
-								team: site.doc.team,
-								onUpdated() {
-									router.replace({ name: 'Site List' });
-									toast.success('Site dropped successfully');
-								},
-							}),
-						);
-					} else {
-						router.replace({ name: 'Site List' });
-					}
-				});
-			},
-		},
-	});
+	return renderDialog(
+		h(ArchiveSiteDialog, {
+			site: site,
+			modelValue: true,
+		}),
+	);
 }
 
 function onMigrateSite() {
@@ -288,6 +257,13 @@ function onClearCache() {
 				return site.clearSiteCache.submit().then(hide);
 			},
 		},
+	});
+}
+
+function onScheduleBackup() {
+	router.push({
+		name: 'Site Detail Backups',
+		params: { name: site.doc.name },
 	});
 }
 </script>

@@ -23,6 +23,7 @@
   "period_end",
   "due_date",
   "amended_from",
+  "budget_alert_sent",
   "section_break_8",
   "items",
   "discounts_section",
@@ -95,7 +96,6 @@
    "label": "Customer Name"
   },
   {
-   "fetch_from": "team.user",
    "fieldname": "customer_email",
    "fieldtype": "Data",
    "label": "Customer Email",
@@ -179,7 +179,8 @@
    "fieldname": "stripe_invoice_id",
    "fieldtype": "Data",
    "label": "Stripe Invoice ID",
-   "no_copy": 1
+   "no_copy": 1,
+   "search_index": 1
   },
   {
    "allow_on_submit": 1,
@@ -329,7 +330,7 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits\nNEFT\nPartner Credits\nPaid By Partner"
+   "options": "\nCard\nPrepaid Credits\nNEFT\nPartner Credits\nPaid By Partner\nUPI Autopay"
   },
   {
    "fieldname": "frappe_partner_order",
@@ -461,7 +462,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "team.billing_email",
    "fieldname": "billing_email",
    "fieldtype": "Data",
    "label": "Billing Email"
@@ -517,8 +517,16 @@
    "fieldname": "mpesa_invoice_pdf",
    "fieldtype": "Attach",
    "label": "Mpesa Invoice PDF"
+  },
+  {
+   "default": "0",
+   "fieldname": "budget_alert_sent",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Budget Alert Sent"
   }
  ],
+ "grid_page_length": 50,
  "is_submittable": 1,
  "links": [
   {
@@ -542,11 +550,11 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2025-02-02 19:05:05.300386",
+ "modified": "2026-03-09 15:59:12.085407",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -584,6 +592,7 @@
    "role": "Site Manager"
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

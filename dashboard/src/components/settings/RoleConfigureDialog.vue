@@ -18,22 +18,26 @@
 				]"
 				v-model="tabIndex"
 			>
-				<TabList v-slot="{ tab, selected }" class="pl-0">
+				<template #tab-item="{ tab }">
 					<div
-						class="flex cursor-pointer items-center gap-1.5 border-b border-transparent py-3 text-base text-gray-600 duration-300 ease-in-out hover:border-gray-400 hover:text-gray-900 focus:outline-none focus:transition-none [&>div]:pl-0"
-						:class="{ 'text-gray-900': selected }"
+						class="flex cursor-pointer items-center gap-1.5 py-3 text-base text-gray-600 duration-300 ease-in-out hover:border-gray-400 hover:text-gray-900 focus:outline-none focus:transition-none [&>div]:pl-0"
 					>
 						<span>{{ tab.label }}</span>
 					</div>
-				</TabList>
-				<TabPanel v-slot="{ tab }">
+				</template>
+				<template #tab-panel="{ tab }">
 					<div v-if="tab.value === 'members'" class="text-base">
 						<div class="my-4 flex gap-2">
 							<div class="flex-1">
 								<FormControl
-									type="autocomplete"
+									type="combobox"
 									:options="autoCompleteList"
-									v-model="member"
+									:modelValue="member?.value"
+									@update:modelValue="
+										member = autoCompleteList.find(
+											(option) => option.value === $event,
+										)
+									"
 									placeholder="Select a member to add"
 								/>
 							</div>
@@ -108,7 +112,7 @@
 								/>
 								<Switch
 									v-model="allowBenchCreation"
-									label="Allow Bench Group Creation"
+									label="Allow Bench Creation"
 									:disabled="adminAccess"
 								/>
 								<Switch
@@ -122,16 +126,39 @@
 									:disabled="adminAccess"
 								/>
 							</div>
+							<div v-if="allowPartner" class="space-y-1 rounded border p-4">
+								<h2 class="mb-2 ml-2 font-semibold">Partner Permissions</h2>
+								<Switch
+									v-model="allowDashboard"
+									label="Allow Dashboard Access"
+									:disabled="adminAccess"
+								/>
+								<Switch
+									v-model="allowLeads"
+									label="Allow Leads Access"
+									:disabled="adminAccess"
+								/>
+								<Switch
+									v-model="allowCustomer"
+									label="Allow Customer Access"
+									:disabled="adminAccess"
+								/>
+								<Switch
+									v-model="allowContribution"
+									label="Allow Contribution Access"
+									:disabled="adminAccess"
+								/>
+							</div>
 						</div>
 					</div>
-				</TabPanel>
+				</template>
 			</FTabs>
 		</template>
 	</Dialog>
 </template>
 
 <script>
-import { Switch, Tabs, TabList, TabPanel } from 'frappe-ui';
+import { Switch, Tabs } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
 import { getToastErrorMessage } from '../../utils/toast';
@@ -143,8 +170,6 @@ export default {
 	components: {
 		UserWithAvatarCell,
 		FTabs: Tabs,
-		TabPanel,
-		TabList,
 		Switch,
 	},
 	data() {
@@ -281,6 +306,58 @@ export default {
 				this.$resources.role.setValue.submit(
 					{
 						allow_webhook_configuration: value,
+					},
+					{ onSuccess: this.$session.roles.reload },
+				);
+			},
+		},
+		allowDashboard: {
+			get() {
+				return !!this.role?.allow_dashboard;
+			},
+			set(value) {
+				this.$resources.role.setValue.submit(
+					{
+						allow_dashboard: value,
+					},
+					{ onSuccess: this.$session.roles.reload },
+				);
+			},
+		},
+		allowLeads: {
+			get() {
+				return !!this.role?.allow_leads;
+			},
+			set(value) {
+				this.$resources.role.setValue.submit(
+					{
+						allow_leads: value,
+					},
+					{ onSuccess: this.$session.roles.reload },
+				);
+			},
+		},
+		allowCustomer: {
+			get() {
+				return !!this.role?.allow_customer;
+			},
+			set(value) {
+				this.$resources.role.setValue.submit(
+					{
+						allow_customer: value,
+					},
+					{ onSuccess: this.$session.roles.reload },
+				);
+			},
+		},
+		allowContribution: {
+			get() {
+				return !!this.role?.allow_contribution;
+			},
+			set(value) {
+				this.$resources.role.setValue.submit(
+					{
+						allow_contribution: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
 				);

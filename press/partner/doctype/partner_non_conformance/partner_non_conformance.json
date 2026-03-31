@@ -1,0 +1,181 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "PNC-.#####",
+ "creation": "2026-03-16 11:28:50.054713",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "partner_team",
+  "partner_audit",
+  "auditor",
+  "audit_date",
+  "column_break_whtr",
+  "expected_closure",
+  "status",
+  "closed_on",
+  "closed_by",
+  "section_break_lxpi",
+  "department",
+  "nc_statement",
+  "nc_description",
+  "section_break_lczp",
+  "evidence",
+  "measures_to_close_nc"
+ ],
+ "fields": [
+  {
+   "fetch_from": "partner_audit.partner_team",
+   "fieldname": "partner_team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Partner Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "partner_audit",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Partner Audit",
+   "options": "Partner Audit",
+   "search_index": 1
+  },
+  {
+   "fetch_from": "partner_audit.conducted_by",
+   "fieldname": "auditor",
+   "fieldtype": "Link",
+   "label": "Auditor",
+   "options": "User"
+  },
+  {
+   "fetch_from": "partner_audit.audit_date",
+   "fieldname": "audit_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Audit Date"
+  },
+  {
+   "fieldname": "column_break_whtr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expected_closure",
+   "fieldtype": "Date",
+   "label": "Expected Closure"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nWIP\nClosed\nDiscarded\nOn Hold"
+  },
+  {
+   "fieldname": "closed_on",
+   "fieldtype": "Date",
+   "label": "Closed On"
+  },
+  {
+   "fieldname": "closed_by",
+   "fieldtype": "Link",
+   "label": "Closed By",
+   "options": "User"
+  },
+  {
+   "fieldname": "section_break_lxpi",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Select",
+   "label": "Department",
+   "options": "General\nImplementation\nSupport\nSales"
+  },
+  {
+   "fieldname": "nc_statement",
+   "fieldtype": "Data",
+   "label": "NC Statement"
+  },
+  {
+   "fieldname": "nc_description",
+   "fieldtype": "Text",
+   "label": "NC Description"
+  },
+  {
+   "fieldname": "section_break_lczp",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "evidence",
+   "fieldtype": "Attach",
+   "label": "Evidence"
+  },
+  {
+   "fieldname": "measures_to_close_nc",
+   "fieldtype": "Text",
+   "label": "Measures to close NC"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-24 07:30:16.169268",
+ "modified_by": "Administrator",
+ "module": "Partner",
+ "name": "Partner Non Conformance",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Partner",
+   "share": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Partner Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

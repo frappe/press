@@ -1,5 +1,17 @@
 <template>
-	<div v-if="$resources.analytics.data">
+	<!-- loading state -->
+	<div v-if="$resources.analytics.loading" class="flex justify-center py-12">
+		<div class="flex items-center gap-2">
+			<LoadingIndicator class="h-4 w-4" />
+			Loading analytics...
+		</div>
+	</div>
+	<!-- error state -->
+	<div v-else-if="$resources.analytics.error" class="flex justify-center py-12">
+		<ErrorMessage :message="$resources.analytics.error" />
+	</div>
+	<!-- success state -->
+	<div v-else="$resources.analytics.data">
 		<div class="col-span-2 mb-5 rounded-md border">
 			<div class="grid grid-cols-2 lg:grid-cols-5">
 				<div class="border-b border-r p-5 lg:border-b-0">
@@ -9,6 +21,19 @@
 							<div class="leading-4">
 								<span class="text-base text-gray-900">
 									{{ installAnalytics.total_installs }}
+								</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="border-b border-r p-5 lg:border-b-0">
+					<div class="text-base text-gray-700">Weekly Installs</div>
+					<div class="mt-2 flex items-start justify-between">
+						<div>
+							<div class="leading-4">
+								<span class="text-base text-gray-900">
+									{{ installAnalytics.installs_last_week }}
 								</span>
 							</div>
 						</div>
@@ -29,25 +54,12 @@
 				</div>
 
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Active Bench Groups</div>
+					<div class="text-base text-gray-700">Active Benches</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
 								<span class="text-base text-gray-900">
 									{{ installAnalytics.installs_active_benches }}
-								</span>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Weekly Installs</div>
-					<div class="mt-2 flex items-start justify-between">
-						<div>
-							<div class="leading-4">
-								<span class="text-base text-gray-900">
-									{{ installAnalytics.installs_last_week }}
 								</span>
 							</div>
 						</div>
@@ -124,6 +136,7 @@
 <script>
 import { DateTime } from 'luxon';
 import LineChart from '@/components/charts/LineChart.vue';
+import { LoadingIndicator } from 'frappe-ui';
 
 export default {
 	name: 'MarketplaceAppAnalytics',
@@ -132,6 +145,7 @@ export default {
 	},
 	components: {
 		LineChart,
+		LoadingIndicator,
 	},
 	methods: {
 		formatDate(data) {
@@ -193,18 +207,13 @@ export default {
 			return {};
 		},
 		totalEarnings() {
-			if (!this.installAnalytics.total_payout.inr_amount) return 0;
+			const payout = this.installAnalytics?.total_payout;
+			if (!payout) return 0;
 
 			if (this.$team.doc.currency === 'INR') {
-				return (
-					this.installAnalytics.total_payout.inr_amount +
-					this.installAnalytics.total_payout.usd_amount * 82
-				);
+				return payout.converted_total_inr || 0;
 			} else {
-				return (
-					this.installAnalytics.total_payout.inr_amount / 82 +
-					this.installAnalytics.total_payout.usd_amount
-				);
+				return payout.converted_total_usd || 0;
 			}
 		},
 	},

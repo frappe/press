@@ -21,8 +21,9 @@ export function getAppsTab(forSite: boolean) {
 		icon: icon('grid'),
 		route: 'apps',
 		type: 'list',
-		condition: (docResource) =>
-			forSite && docResource.doc?.status !== 'Archived',
+		condition: (docResource) => {
+			return forSite && docResource.doc?.status !== 'Archived'
+		},
 		list: getAppsTabList(forSite),
 	} satisfies Tab as Tab;
 }
@@ -150,7 +151,7 @@ const siteAppListOptions: Partial<TabList> = {
 	},
 	banner({ documentResource: site }) {
 		const bannerTitle =
-			'Your site is currently on a shared bench group. Upgrade plan to install custom apps, enable server scripts and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+			'Your site is currently on a shared bench. Upgrade plan to install custom apps, enable server scripts and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
 
 		return getUpsellBanner(site, bannerTitle);
 	},

@@ -19,10 +19,19 @@
 					</component>
 				</div>
 			</div>
+			<div class="mt-3">
+				<TextInput
+					ref="searchRef"
+					size="sm"
+					placeholder="Search"
+					:debounce="500"
+					v-model="searchQuery"
+				/>
+			</div>
 			<div class="-mb-3 mt-3 divide-y">
 				<div
 					class="flex items-center justify-between py-3"
-					v-for="team in $team.doc.valid_teams"
+					v-for="team in filteredTeams"
 					:key="team.name"
 				>
 					<div class="flex items-center space-x-2">
@@ -34,6 +43,12 @@
 							icon="external-link"
 							:link="`/app/team/${team.name}`"
 							variant="ghost"
+						/>
+						<Badge
+							class="whitespace-nowrap"
+							v-if="team.user === $session.user"
+							label="Your team"
+							theme="blue"
 						/>
 					</div>
 					<Badge
@@ -63,6 +78,7 @@
 	</Dialog>
 </template>
 <script>
+import { TextInput } from 'frappe-ui';
 import { switchToTeam } from '../data/team';
 import LinkControl from './LinkControl.vue';
 
@@ -70,7 +86,7 @@ export default {
 	name: 'SwitchTeamDialog',
 	props: ['modelValue'],
 	emits: ['update:modelValue'],
-	components: { LinkControl },
+	components: { LinkControl, TextInput },
 	computed: {
 		show: {
 			get() {
@@ -80,14 +96,46 @@ export default {
 				this.$emit('update:modelValue', value);
 			},
 		},
+		sortedTeams() {
+			const validTeams = this.$team?.doc?.valid_teams;
+			if (!validTeams) return [];
+
+			const sorted = [...validTeams].sort((a, b) => {
+				return a.user.localeCompare(b.user);
+			});
+
+			return [
+				...sorted.filter((team) => team.user === this.$session.user),
+				...sorted.filter((team) => team.user !== this.$session.user),
+			];
+		},
+		filteredTeams() {
+			if (!this.searchQuery.trim()) {
+				return this.sortedTeams;
+			}
+			const query = this.searchQuery.toLowerCase();
+			return this.sortedTeams.filter(
+				(team) =>
+					team.user.toLowerCase().includes(query) ||
+					team.name.toLowerCase().includes(query),
+			);
+		},
 	},
 	data() {
 		return {
 			selectedTeam: null,
+			searchQuery: '',
 		};
 	},
 	methods: {
 		switchToTeam,
+	},
+	mounted() {
+		setTimeout(() => {
+			const textInput = this.$refs.searchRef?.$el;
+			const inputHtmlElement = textInput?.querySelector('input');
+			inputHtmlElement?.focus();
+		}, 200);
 	},
 };
 </script>

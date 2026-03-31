@@ -9,6 +9,14 @@
 						{ label: lead.doc?.organization_name, route: '#' },
 					]"
 				/>
+				<div>
+					<Button
+						v-if="$session.isSystemUser"
+						:variant="'subtle'"
+						label="View in Desk"
+						@click="openIndDesk()"
+					/>
+				</div>
 			</Header>
 		</div>
 		<TabsWithRouter :tabs="tabs" />
@@ -41,12 +49,19 @@ export default {
 			tabs: [
 				{ label: 'Overview', route: { name: 'LeadOverview' } },
 				{ label: 'Follow-up', route: { name: 'LeadDealDetails' } },
+				{ label: 'Activities', route: { name: 'LeadActivities' } },
 			],
 		};
 	},
 	computed: {
 		lead() {
 			return this.$resources.lead;
+		},
+	},
+	methods: {
+		openIndDesk() {
+			const deskUrl = `${window.location.protocol}//${window.location.host}/app/partner-lead/${this.lead.name}`;
+			window.open(deskUrl, '_blank');
 		},
 	},
 };

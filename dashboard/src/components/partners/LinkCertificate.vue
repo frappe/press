@@ -35,10 +35,17 @@
 					</div>
 				</div>
 
+				<ErrorMessage
+					v-if="certExist === false"
+					class="mt-4"
+					:message="`No certificates found for ${userEmail}.`"
+				/>
+
 				<div class="pt-4">
 					<Button
 						class="w-full"
 						variant="solid"
+						:loading="linkCertificate.loading"
 						label="Link Certificate"
 						@click="linkCertificate.submit()"
 					/>
@@ -51,6 +58,7 @@
 <script setup>
 import { defineEmits, ref } from 'vue';
 import { createResource, frappeRequest, debounce } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 
 const courseTypes = [
 	{ label: 'Framework', value: 'frappe-developer-certification' },
@@ -61,7 +69,7 @@ const show = ref(true);
 const userEmail = ref('');
 const certificateType = ref('');
 const linkCertificate = createResource({
-	url: 'press.api.partner.link_certificate',
+	url: 'press.api.partner.send_link_certificate_request',
 	makeParams: () => {
 		return {
 			user_email: userEmail.value,
@@ -69,13 +77,14 @@ const linkCertificate = createResource({
 		};
 	},
 	validate: () => {
-		if (!userName.value || !certificateType.value) {
+		if (!userEmail.value || !certificateType.value) {
 			throw new Error('Please select a member and certificate type');
 		}
 	},
 	onSuccess: () => {
 		show.value = false;
 		emit('success');
+		toast.success('Email has been sent to the user for linking certificate.');
 	},
 	onError: (error) => {
 		console.error(error);
@@ -83,7 +92,7 @@ const linkCertificate = createResource({
 });
 
 const certCount = ref(0);
-const certExist = ref(false);
+const certExist = ref(null);
 const emailChange = debounce(async () => {
 	if (!userEmail.value) return;
 	let response = await frappeRequest({
@@ -96,6 +105,8 @@ const emailChange = debounce(async () => {
 	if (response > 0) {
 		certCount.value = response;
 		certExist.value = true;
+	} else {
+		certExist.value = false;
 	}
 }, 500);
 

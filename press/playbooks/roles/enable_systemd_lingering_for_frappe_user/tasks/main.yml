@@ -1,0 +1,3 @@
+---
+- name: Enable lingering for frappe user
+  command: loginctl enable-linger frappe

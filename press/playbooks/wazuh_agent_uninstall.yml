@@ -1,0 +1,8 @@
+---
+- name: Uninstall Wazuh Agent
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  roles:
+    - role: wazuh_agent_uninstall

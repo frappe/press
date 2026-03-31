@@ -185,6 +185,7 @@ import { TextEditor } from 'frappe-ui';
 import FileUploader from '@/components/FileUploader.vue';
 import { toast } from 'vue-sonner';
 import { getToastErrorMessage } from '../utils/toast';
+import { confirmDialog } from '../utils/components';
 
 export default {
 	name: 'MarketplaceAppOverview',
@@ -276,24 +277,37 @@ export default {
 				{
 					label: 'Delete',
 					onClick: () => {
-						toast.promise(
-							this.$resources.removeScreenshot.submit({
-								name: this.app.doc.name,
-								file: image,
-							}),
-							{
-								loading: 'Deleting screenshot...',
-								success: () => {
-									this.$resources.listingData.reload();
-									return 'Screenshot deleted successfully';
-								},
-								error: (err) => {
-									return err.messages?.length
-										? err.messages.join('\n')
-										: err.message || 'Failed to delete screenshot';
+						confirmDialog({
+							title: 'Delete Screenshot',
+							message:
+								'Are you sure you want to delete this screenshot? This action cannot be undone.',
+							primaryAction: {
+								label: 'Delete',
+								variant: 'solid',
+								theme: 'red',
+								onClick: ({ hide }) => {
+									return toast.promise(
+										this.$resources.removeScreenshot.submit({
+											name: this.app.doc.name,
+											file: image,
+										}),
+										{
+											loading: 'Deleting screenshot...',
+											success: () => {
+												this.$resources.listingData.reload();
+												hide();
+												return 'Screenshot deleted successfully';
+											},
+											error: (err) => {
+												return err.messages?.length
+													? err.messages.join('\n')
+													: err.message || 'Failed to delete screenshot';
+											},
+										},
+									);
 								},
 							},
-						);
+						});
 					},
 				},
 			];

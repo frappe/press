@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import math
 import time
 
 import boto3
@@ -12,6 +13,9 @@ import pytz
 import rq
 from botocore.exceptions import ClientError
 from frappe.model.document import Document
+from frappe.utils.data import cint
+from hcloud import Client as HetznerClient
+from hcloud.images.domain import Image as HetznerImage
 from oci.core import BlockstorageClient
 
 from press.utils import log_error
@@ -144,6 +148,18 @@ class VirtualDiskSnapshot(Document):
 				snapshot.time_created.astimezone(pytz.timezone(frappe.utils.get_system_timezone())),
 				"yyyy-MM-dd HH:mm:ss",
 			)
+
+		elif cluster.cloud_provider == "Hetzner":
+			try:
+				client: HetznerClient = self.client
+				snapshot = client.images.get_by_id(self.snapshot_id)
+				self.status = self.get_hetzner_status_map(snapshot.status)
+				self.size = math.ceil(snapshot.image_size or 0)
+				self.start_time = frappe.utils.format_datetime(snapshot.created, "yyyy-MM-dd HH:mm:ss")
+				self.progress = 100 if self.status == "Completed" else 0
+			except Exception:
+				self.status = "Unavailable"
+
 		self.save(ignore_version=True)
 		self.sync_server_snapshot()
 
@@ -167,14 +183,17 @@ class VirtualDiskSnapshot(Document):
 				self.client.delete_snapshot(SnapshotId=self.snapshot_id)
 			except ClientError as e:
 				if e.response["Error"]["Code"] == "InvalidSnapshot.InUse":
-					frappe.msgprint("Snapshot is in use", alert=True)
-				else:
-					raise e
+					raise SnapshotInUseError(e.response["Error"]["Message"]) from e
+				if e.response["Error"]["Code"] == "SnapshotLocked":
+					raise SnapshotLockedError(e.response["Error"]["Message"]) from e
+				raise e
 		elif cluster.cloud_provider == "OCI":
 			if ".bootvolumebackup." in self.snapshot_id:
 				self.client.delete_boot_volume_backup(self.snapshot_id)
 			else:
 				self.client.delete_volume_backup(self.snapshot_id)
+		elif cluster.cloud_provider == "Hetzner":
+			self.client.images.delete(HetznerImage(id=cint(self.snapshot_id)))
 		self.sync()
 
 	def get_aws_status_map(self, status):
@@ -196,29 +215,43 @@ class VirtualDiskSnapshot(Document):
 			"REQUEST_RECEIVED": "Pending",
 		}.get(status, "Unavailable")
 
+	def get_hetzner_status_map(self, status):
+		return {
+			"creating": "Pending",
+			"available": "Completed",
+		}.get(status, "Unavailable")
+
+	@frappe.whitelist()
 	def lock(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		if cluster.cloud_provider != "AWS EC2":
-			frappe.throw("Only AWS Provider is supported for now")
+		if cluster.cloud_provider == "AWS EC2":
+			self.client.lock_snapshot(
+				SnapshotId=self.snapshot_id,
+				LockMode="governance",
+				LockDuration=365,  # Lock for 1 year
+				# After this period, the snapshot will be automatically unlocked
+			)
+		elif cluster.cloud_provider == "Hetzner":
+			self.client.images.change_protection(HetznerImage(cint(self.snapshot_id)), delete=True)
+		else:
+			frappe.throw("Only AWS and Hetzner Providers support snapshot locking/unlocking")
 
-		self.client.lock_snapshot(
-			SnapshotId=self.snapshot_id,
-			LockMode="governance",
-			LockDuration=365,  # Lock for 1 year
-			# After this period, the snapshot will be automatically unlocked
-		)
-
+	@frappe.whitelist()
 	def unlock(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		if cluster.cloud_provider != "AWS EC2":
-			frappe.throw("Only AWS Provider is supported for now")
+		if cluster.cloud_provider == "AWS EC2":
+			try:
+				self.client.unlock_snapshot(SnapshotId=self.snapshot_id)
+			except botocore.exceptions.ClientError as e:
+				if e.response.get("Error", {}).get("Code") == "SnapshotLockNotFound":
+					return
+				raise e
 
-		try:
-			self.client.unlock_snapshot(SnapshotId=self.snapshot_id)
-		except botocore.exceptions.ClientError as e:
-			if e.response.get("Error", {}).get("Code") == "SnapshotLockNotFound":
-				return
-			raise e
+		elif cluster.cloud_provider == "Hetzner":
+			self.client.images.change_protection(HetznerImage(cint(self.snapshot_id)), delete=False)
+
+		else:
+			frappe.throw("Only AWS and Hetzner Providers support snapshot locking/unlocking")
 
 	def create_volume(
 		self,
@@ -285,7 +318,19 @@ class VirtualDiskSnapshot(Document):
 			)
 		if cluster.cloud_provider == "OCI":
 			return BlockstorageClient(cluster.get_oci_config())
+
+		if cluster.cloud_provider == "Hetzner":
+			api_token = cluster.get_password("hetzner_api_token")
+			return HetznerClient(token=api_token)
 		return None
+
+
+class SnapshotInUseError(Exception):
+	pass
+
+
+class SnapshotLockedError(Exception):
+	pass
 
 
 def sync_snapshots():
@@ -371,6 +416,8 @@ def delete_old_snapshots():
 		try:
 			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
 			frappe.db.commit()
+		except (SnapshotLockedError, SnapshotInUseError):
+			pass
 		except Exception:
 			log_error("Virtual Disk Snapshot Delete Error", snapshot=snapshot)
 			frappe.db.rollback()
@@ -417,6 +464,8 @@ def delete_expired_snapshots():
 
 			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
 			frappe.db.commit()
+		except (SnapshotLockedError, SnapshotInUseError):
+			pass
 		except Exception:
 			log_error("Virtual Disk Snapshot Delete Error", snapshot=snapshot)
 			frappe.db.rollback()

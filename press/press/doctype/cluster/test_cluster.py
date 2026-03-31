@@ -33,7 +33,7 @@ def create_test_cluster(
 
 	if frappe.db.exists("Cluster", name):
 		return frappe.get_doc("Cluster", name)
-	cluster = frappe.get_doc(
+	cluster: Cluster = frappe.get_doc(
 		{
 			"doctype": "Cluster",
 			"name": name,
@@ -57,7 +57,7 @@ def create_test_cluster(
 
 class TestCluster(FrappeTestCase):
 	@mock_aws
-	def _setup_fake_vmis(self, series: list[str], cluster: Cluster = None):
+	def _setup_fake_vmis(self, series: list[str], cluster: Cluster | None = None):
 		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
 			create_test_virtual_machine_image,
 		)
@@ -138,7 +138,7 @@ class TestPrivateCluster(TestCluster):
 	def test_create_private_cluster_without_aws_access_key_and_secret_creates_user_in_predefined_group_and_adds_servers(
 		self,
 	):
-		self._setup_fake_vmis(["m", "f", "n", "p", "e"])
+		self._setup_fake_vmis(["m", "f", "n", "p", "e", "fs"])
 
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
@@ -212,7 +212,7 @@ class TestPublicCluster(TestCluster):
 	def test_creation_of_public_cluster_with_servers_creates_3(self):
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
-		self._setup_fake_vmis(["m", "f", "n"])
+		self._setup_fake_vmis(["m", "f", "n", "fs"])
 
 		server_count_before = frappe.db.count("Server")
 		database_server_count_before = frappe.db.count("Database Server")

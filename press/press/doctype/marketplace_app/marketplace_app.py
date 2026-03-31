@@ -8,17 +8,19 @@ from typing import TYPE_CHECKING, ClassVar
 
 import frappe
 import requests
-from frappe.query_builder.functions import Cast_
+from frappe import _
+from frappe.query_builder.functions import Cast_, Count
 from frappe.utils.caching import redis_cache
 from frappe.utils.safe_exec import safe_exec
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
 
 from press.api.client import dashboard_whitelist
-from press.api.github import get_access_token
+from press.api.github import app, get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
 )
+from press.press.doctype.app.app import VersioningError, parse_frappe_version
 from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
 	AppReleaseApprovalRequest,
@@ -27,6 +29,7 @@ from press.press.doctype.marketplace_app.utils import get_rating_percentage_dist
 from press.utils import get_current_team, get_last_doc
 
 if TYPE_CHECKING:
+	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.site.site import Site
 
 
@@ -54,6 +57,7 @@ class MarketplaceApp(WebsiteGenerator):
 		after_uninstall_script: DF.Code | None
 		app: DF.Link
 		average_rating: DF.Float
+		bypass_automated_audit: DF.Check
 		categories: DF.Table[MarketplaceAppCategories]
 		collect_feedback: DF.Check
 		custom_verify_template: DF.Check
@@ -69,6 +73,7 @@ class MarketplaceApp(WebsiteGenerator):
 		poll_method: DF.Data | None
 		privacy_policy: DF.Data | None
 		published: DF.Check
+		published_on: DF.Date | None
 		review_stage: DF.Literal[
 			"Not Started",
 			"Description Missing",
@@ -122,6 +127,8 @@ class MarketplaceApp(WebsiteGenerator):
 	def on_trash(self):
 		frappe.db.delete("Marketplace App Plan", {"app": self.name})
 		frappe.db.delete("App Release Approval Request", {"marketplace_app": self.name})
+		# delete all audits for this app
+		frappe.db.delete("Marketplace App Audit", {"marketplace_app": self.name})
 
 	@dashboard_whitelist()
 	def create_approval_request(self, app_release: str):
@@ -141,6 +148,24 @@ class MarketplaceApp(WebsiteGenerator):
 			frappe.throw("No approval request exists for the given app release")
 
 		frappe.get_doc("App Release Approval Request", approval_requests[0]).cancel()
+
+	@dashboard_whitelist()
+	def yank_app_release(self, app_release: str, hash: str):
+		"""Yank app release, this commit hash won't show for any new updates even if in approved state"""
+		team = get_current_team()
+		# We somehow need to let people know that the app release is yanked to everyone on that current release?
+		# For now mark that particular release as yanked atleast?
+		frappe.new_doc(
+			"Yanked App Release",
+			hash=hash,
+			parent_app_release=app_release,
+			team=team,
+		).insert()
+
+	@dashboard_whitelist()
+	def unyank_app_release(self, hash: str):
+		"""Allow support for unyanking app release (https://peps.pythondiscord.com/pep-0592/)"""
+		frappe.get_doc("Yanked App Release", {"hash": hash}).delete()
 
 	def before_insert(self):
 		if not frappe.flags.in_test:
@@ -165,20 +190,30 @@ class MarketplaceApp(WebsiteGenerator):
 
 		if not self.sources:
 			source = app_doc.add_source(
-				self.version,
-				self.repository_url,
-				self.branch,
-				self.team,
-				self.github_installation_id,
+				repository_url=self.repository_url,
+				branch=self.branch,
+				team=self.team,
+				github_installation_id=self.github_installation_id,
+				frappe_version=self.frappe_version,
 				public=True,
 			)
 			self.app = source.app
-			self.append("sources", {"version": self.version, "source": source.name})
+			for version in source.versions:
+				self.append("sources", {"version": version.version, "source": source.name})
 
 	def validate(self):
+		# if status is being changed to Published, then first check if the audit is passing
+		if self.status == "Published":
+			self.validate_has_approved_release_with_passing_audit()
+
 		self.published = self.status == "Published"
 		self.validate_sources()
 		self.validate_number_of_screenshots()
+		self.validate_summary()
+
+	def validate_summary(self):
+		if len(self.description) > 140:
+			frappe.throw("Marketplace App summary cannot be more than 140 characters.")
 
 	def validate_sources(self):
 		for source in self.sources:
@@ -199,7 +234,61 @@ class MarketplaceApp(WebsiteGenerator):
 		if len(self.screenshots) > max_allowed_screenshots:
 			frappe.throw(f"You cannot add more than {max_allowed_screenshots} screenshots for an app.")
 
+	def validate_has_approved_release_with_passing_audit(self):
+		"""
+		We already do a mandatory audit check before marking any app approval request as "Approved".
+		So, we need to check if there is at least one approved release with a passing audit.
+		"""
+		sources = [s.source for s in self.sources]
+		if not sources:
+			frappe.throw(_("Cannot publish: No sources configured"))
+		approved_release = frappe.get_value(
+			"App Release",
+			{"source": ("in", sources), "status": "Approved"},
+			"name",
+			order_by="creation desc",
+		)
+		if not approved_release:
+			frappe.throw(
+				_(
+					"Cannot publish: No App Approval Request found with 'Approved' status. At least one release must be approved."
+				)
+			)
+
+		if self.bypass_automated_audit:
+			return
+
+		audit = frappe.get_all(
+			"Marketplace App Audit",
+			filters={"app_release": approved_release},
+			fields=["name", "status", "audit_result"],
+			order_by="creation desc",
+			limit=1,
+		)
+		if (
+			audit
+			and audit[0].status == "Completed"
+			and audit[0].audit_result not in ["Pass", "Needs Improvement"]
+		):
+			frappe.throw(
+				_("Cannot publish: Audit {name} failed. Please investigate and rerun the audit.").format(
+					name=audit[0].name
+				)
+			)
+
+	def on_update(self):
+		self.set_published_on_date()
+
+	def set_published_on_date(self):
+		if self.published_on:
+			return
+
+		doc_before_save = self.get_doc_before_save()
+		if self.status == "Published" and doc_before_save.status != "Published":
+			self.published_on = frappe.utils.nowdate()
+
 	def change_branch(self, source, version, to_branch):
+		# This is basically upsert
 		existing_source = frappe.db.exists(
 			"App Source",
 			{
@@ -212,22 +301,45 @@ class MarketplaceApp(WebsiteGenerator):
 		)
 		if existing_source:
 			# If source with branch to switch already exists, just add version to child table of source and use the same
-			try:
-				source_doc = frappe.get_doc("App Source", existing_source)
+			source_doc: "AppSource" = frappe.get_doc("App Source", existing_source)
+			validate_frappe_version_for_branch(
+				app_name=self.app,
+				owner=source_doc.repository_owner,
+				repository=source_doc.repository,
+				branch=to_branch,
+				version=version,
+				github_installation_id=source_doc.github_installation_id,
+			)
+			if version not in [version.version for version in source_doc.versions]:
 				source_doc.append("versions", {"version": version})
-				source_doc.save()
-			except Exception:
-				pass
 
-			for source in self.sources:
-				if source.source == source:
-					source.source = existing_source
-					self.save()
+			source_doc.save()
+
 		else:
 			# if a different source with the branch to switch doesn't exists update the existing source
 			source_doc = frappe.get_doc("App Source", source)
+			validate_frappe_version_for_branch(
+				app_name=self.app,
+				owner=source_doc.repository_owner,
+				repository=source_doc.repository,
+				branch=to_branch,
+				version=version,
+				github_installation_id=source_doc.github_installation_id,
+			)
 			source_doc.branch = to_branch
 			source_doc.save()
+
+		for source in self.sources:
+			# In case the version exists then just change the source
+			if source.version == version:
+				source.source = source_doc.name
+				break
+
+		if not any(source.version == version for source in self.sources):
+			# if version doesn't exist then add a new row
+			self.append("sources", {"version": version, "source": source_doc.name})
+
+		self.save()
 
 	@dashboard_whitelist()
 	def add_version(self, version, branch):
@@ -237,13 +349,28 @@ class MarketplaceApp(WebsiteGenerator):
 				["App Source", "app", "=", self.app],
 				["App Source", "team", "=", self.team],
 				["App Source", "branch", "=", branch],
+				["App Source", "enabled", "=", 1],
 			],
+		)
+		source_doc: "AppSource" = (
+			frappe.get_doc("App Source", existing_source)
+			if existing_source
+			else frappe.get_doc("App Source", self.sources[0].source)
+		)
+		validate_frappe_version_for_branch(
+			app_name=self.app,
+			owner=source_doc.repository_owner,
+			repository=source_doc.repository,
+			branch=branch,
+			version=version,
+			github_installation_id=source_doc.github_installation_id,
 		)
 		if existing_source:
 			# If source with branch to switch already exists, just add version to child table of source and use the same
-			source_doc = frappe.get_doc("App Source", existing_source)
 			try:
-				source_doc.append("versions", {"version": version})
+				if version not in [version.version for version in source_doc.versions]:
+					source_doc.append("versions", {"version": version})
+
 				source_doc.public = 1
 				source_doc.save()
 			except Exception:
@@ -474,54 +601,64 @@ class MarketplaceApp(WebsiteGenerator):
 		return frappe.db.count("Site App", filters={"app": self.app})
 
 	def total_active_sites(self):
-		return frappe.db.sql(
-			"""
-			SELECT
-				count(*)
-			FROM
-				tabSite site
-			LEFT JOIN
-				`tabSite App` app
-			ON
-				app.parent = site.name
-			WHERE
-				site.status = "Active" AND app.app = %s
-		""",
-			(self.app,),
-		)[0][0]
+		site = frappe.qb.DocType("Site")
+		site_app = frappe.qb.DocType("Site App")
+
+		query = (
+			frappe.qb.from_(site)
+			.select(Count("*").as_("count"))
+			.left_join(site_app)
+			.on(site_app.parent == site.name)
+			.where(site.status == "Active")
+			.where(site_app.app == self.app)
+		)
+		return query.run(as_dict=True)[0]["count"]
 
 	def total_active_benches(self):
-		return frappe.db.sql(
-			"""
-			SELECT
-				count(*)
-			FROM
-				tabBench bench
-			LEFT JOIN
-				`tabBench App` app
-			ON
-				app.parent = bench.name
-			WHERE
-				bench.status = "Active" AND app.app = %s
-		""",
-			(self.app,),
-		)[0][0]
+		bench = frappe.qb.DocType("Bench")
+		bench_app = frappe.qb.DocType("Bench App")
+
+		query = (
+			frappe.qb.from_(bench)
+			.select(Count("*").as_("count"))
+			.left_join(bench_app)
+			.on(bench_app.parent == bench.name)
+			.where(bench.status == "Active")
+			.where(bench_app.app == self.app)
+		)
+		return query.run(as_dict=True)[0]["count"]
 
 	def get_payout_amount(self, status: str = "", total_for: str = "net_amount"):
 		"""Return the payout amount for this app"""
-		filters = {"team": self.team}
-		if status:
-			filters["status"] = status
-		payout_orders = frappe.get_all("Payout Order", filters=filters, pluck="name")
-		payout = frappe.get_all(
-			"Payout Order Item",
-			filters={"parent": ("in", payout_orders), "document_name": self.name},
-			fields=[
-				f"SUM(CASE WHEN currency = 'USD' THEN {total_for} ELSE 0 END) AS usd_amount",
-				f"SUM(CASE WHEN currency = 'INR' THEN {total_for} ELSE 0 END) AS inr_amount",
-			],
+		from pypika.functions import Coalesce, Sum
+		from pypika.terms import Case
+
+		payout_order = frappe.qb.DocType("Payout Order")
+		payout_order_item = frappe.qb.DocType("Payout Order Item")
+		# Dynamically select the field based on total_for parameter
+		# total_for can be "net_amount", "commission", etc.
+		amount_field = getattr(payout_order_item, total_for)
+		query = (
+			frappe.qb.from_(payout_order)
+			.left_join(payout_order_item)
+			.on(payout_order_item.parent == payout_order.name)
+			.select(
+				Coalesce(Sum(Case().when(payout_order_item.currency == "USD", amount_field).else_(0)), 0).as_(
+					"usd_amount"
+				),
+				Coalesce(Sum(Case().when(payout_order_item.currency == "INR", amount_field).else_(0)), 0).as_(
+					"inr_amount"
+				),
+			)
+			.where(payout_order.team == self.team)
+			.where(payout_order_item.document_name == self.name)
+			.where(payout_order_item.document_type == "Marketplace App")
 		)
-		return payout[0] if payout else {"usd_amount": 0, "inr_amount": 0}
+		# Add status filter if provided
+		if status:
+			query = query.where(payout_order.status == status)
+		result = query.run(as_dict=True)
+		return result[0] if result else {"usd_amount": 0, "inr_amount": 0}
 
 	@dashboard_whitelist()
 	def site_installs(self):
@@ -579,6 +716,21 @@ class MarketplaceApp(WebsiteGenerator):
 		today = frappe.utils.today()
 		last_week = frappe.utils.add_days(today, -7)
 
+		exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate")
+		# exchange rate fallback is set to 82 to match the standard exchange rate used in other places across the codebase
+		# ?Note: Exchange rate can be updated once it is approved by the team
+		exchange_rate = exchange_rate if exchange_rate > 0 else 82
+
+		total_payout = self.get_payout_amount()
+		total_payout["converted_total_usd"] = total_payout.get("usd_amount", 0) + (
+			total_payout.get("inr_amount", 0) / exchange_rate
+		)
+
+		total_payout["converted_total_inr"] = total_payout.get("inr_amount", 0) + (
+			total_payout.get("usd_amount", 0) * exchange_rate
+		)
+		total_payout["exchange_rate"] = exchange_rate
+
 		return {
 			"total_installs": self.total_installs(),
 			"installs_active_sites": self.total_active_sites(),
@@ -591,7 +743,7 @@ class MarketplaceApp(WebsiteGenerator):
 					"creation": (">=", last_week),
 				},
 			),
-			"total_payout": self.get_payout_amount(),
+			"total_payout": total_payout,
 			"paid_payout": self.get_payout_amount(status="Paid"),
 			"pending_payout": self.get_payout_amount(status="Draft"),
 			"commission": self.get_payout_amount(total_for="commission"),
@@ -601,7 +753,35 @@ class MarketplaceApp(WebsiteGenerator):
 		return get_plans_for_app(self.name, frappe_version)
 
 	def can_charge_for_subscription(self, subscription):
+		if subscription.team == self.team:
+			return False
 		return subscription.enabled == 1 and subscription.team and subscription.team != "Administrator"
+
+
+def validate_frappe_version_for_branch(
+	app_name: str,
+	owner: str,
+	repository: str,
+	branch: str,
+	version: str,
+	github_installation_id: str | None = None,
+	ease_versioning_constrains: bool = False,
+):
+	"""Check if the version being added is supported by the branch comparing the frappe versions in pyproject.toml
+	Only check for lower bounds major version compatibility in case `ease_versioning_constrains` is set to True
+	"""
+	app_info = app(
+		owner=owner,
+		repository=repository,
+		branch=branch,
+		installation=github_installation_id
+		if github_installation_id
+		else frappe.get_value("Press Settings", None, "github_access_token"),
+	)
+	frappe_version = app_info.get("frappe_version")
+	frappe_version = parse_frappe_version(frappe_version, app_info.get("title"), ease_versioning_constrains)
+	if version not in frappe_version:
+		frappe.throw(f"{version} is not supported by branch {branch} for app {app_name}", VersioningError)
 
 
 def get_plans_for_app(
@@ -642,9 +822,11 @@ def get_plans_for_app(
 
 def marketplace_app_hook(app=None, site: Site | None = None, op="install"):
 	if app is None:
+		if site is None:
+			return
 		site_apps = frappe.get_all("Site App", filters={"parent": site.name}, pluck="app")
-		for app in site_apps:
-			run_script(app, site, op)
+		for app_name in site_apps:
+			run_script(app_name, site, op)
 	else:
 		run_script(app, site, op)
 
@@ -668,10 +850,53 @@ def run_script(app, site: Site, op):
 
 @redis_cache(ttl=60 * 60 * 24)
 def get_total_installs_by_app():
-	total_installs = frappe.db.get_all(
-		"Site App",
-		fields=["app", "count(*) as count"],
-		group_by="app",
-		order_by=None,
-	)
+	try:
+		total_installs = frappe.db.get_all(
+			"Site App",
+			fields=["app", "count(*) as count"],
+			group_by="app",
+			order_by=None,
+		)
+	except:  # noqa E722
+		total_installs = frappe.db.get_all(
+			"Site App",
+			fields=["app", {"COUNT": "*", "as": "count"}],
+			group_by="app",
+			order_by=None,
+		)
 	return {installs["app"]: installs["count"] for installs in total_installs}
+
+
+@frappe.whitelist(methods=["POST"])
+def run_audit_for_marketplace_app(marketplace_app: str, app_release: str | None = None):
+	from press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit import MarketplaceAppAudit
+
+	# don't allow running audit if the marketplace app has bypass_automated_audit set to True
+	bypass_automated_audit = frappe.db.get_value("Marketplace App", marketplace_app, "bypass_automated_audit")
+	if bypass_automated_audit:
+		frappe.throw(_("Automated audit is disabled for this Marketplace App"))
+
+	if not app_release:
+		# find the latest release for this marketplace app
+		sources = frappe.get_all(
+			"Marketplace App Version",
+			{"parent": marketplace_app},
+			pluck="source",
+		)
+		if not sources:
+			frappe.throw(_("No sources found for this Marketplace App"))
+
+		app_release = frappe.get_value(
+			"App Release",
+			{"source": ("in", sources)},
+			"name",
+			order_by="creation desc",
+		)
+		if not app_release:
+			frappe.throw(_("No releases found for this Marketplace App's sources"))
+
+	return MarketplaceAppAudit.create_for_release(
+		marketplace_app=marketplace_app,
+		app_release=app_release,
+		audit_type="Manual Run",
+	).name

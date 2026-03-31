@@ -1,0 +1,232 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "ADT-.####",
+ "creation": "2026-03-16 08:56:15.064380",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "partner_team",
+  "partner_tier",
+  "mode_of_audit",
+  "requested_on",
+  "proposed_audit_date",
+  "column_break_bdae",
+  "audit_date",
+  "conducted_by",
+  "status",
+  "audit_report",
+  "implementation_tab",
+  "implementation_summary",
+  "implementation_finding",
+  "implementation_observation",
+  "customer_support_tab",
+  "support_summary",
+  "support_finding",
+  "support_observation",
+  "sales_tab",
+  "sales_summary",
+  "sales_finding",
+  "sales_observation",
+  "next_actions_tab",
+  "next_actions"
+ ],
+ "fields": [
+  {
+   "fieldname": "partner_team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Partner Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "mode_of_audit",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Mode of Audit",
+   "options": "\nOnline\nIn-Person\nHybrid"
+  },
+  {
+   "fieldname": "column_break_bdae",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "conducted_by",
+   "fieldtype": "Link",
+   "label": "Conducted By",
+   "options": "User"
+  },
+  {
+   "fieldname": "implementation_tab",
+   "fieldtype": "Tab Break",
+   "label": "Implementation"
+  },
+  {
+   "fieldname": "implementation_summary",
+   "fieldtype": "Text Editor",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "implementation_finding",
+   "fieldtype": "Text Editor",
+   "label": "Finding"
+  },
+  {
+   "fieldname": "implementation_observation",
+   "fieldtype": "Text Editor",
+   "label": "Observation"
+  },
+  {
+   "fieldname": "sales_tab",
+   "fieldtype": "Tab Break",
+   "label": "Sales"
+  },
+  {
+   "fieldname": "sales_summary",
+   "fieldtype": "Text Editor",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "sales_finding",
+   "fieldtype": "Text Editor",
+   "label": "Finding"
+  },
+  {
+   "fieldname": "sales_observation",
+   "fieldtype": "Text Editor",
+   "label": "Observation"
+  },
+  {
+   "fieldname": "customer_support_tab",
+   "fieldtype": "Tab Break",
+   "label": "Customer Support"
+  },
+  {
+   "fieldname": "support_summary",
+   "fieldtype": "Text Editor",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "support_finding",
+   "fieldtype": "Text Editor",
+   "label": "Finding"
+  },
+  {
+   "fieldname": "support_observation",
+   "fieldtype": "Text Editor",
+   "label": "Observation"
+  },
+  {
+   "fieldname": "next_actions_tab",
+   "fieldtype": "Tab Break",
+   "label": "Next Actions"
+  },
+  {
+   "fieldname": "next_actions",
+   "fieldtype": "Text Editor",
+   "label": "Next Actions"
+  },
+  {
+   "fetch_from": "partner_team.partner_tier",
+   "fieldname": "partner_tier",
+   "fieldtype": "Data",
+   "label": "Partner Tier",
+   "read_only": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "requested_on",
+   "fieldtype": "Date",
+   "label": "Requested On"
+  },
+  {
+   "fieldname": "proposed_audit_date",
+   "fieldtype": "Date",
+   "label": "Proposed Audit Date"
+  },
+  {
+   "fieldname": "audit_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Audit Date"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Requested\nScheduled\nIn Progress\nCompleted\nOn Hold\nCancelled"
+  },
+  {
+   "fieldname": "audit_report",
+   "fieldtype": "Attach",
+   "label": "Audit Report"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Partner Non Conformance",
+   "link_fieldname": "partner_audit"
+  }
+ ],
+ "modified": "2026-03-24 07:27:12.010435",
+ "modified_by": "Administrator",
+ "module": "Partner",
+ "name": "Partner Audit",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Partner Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Partner",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

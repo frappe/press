@@ -31,6 +31,7 @@ from press.press.doctype.deploy_candidate.utils import (
 	PackageManagerFiles,
 	is_suspended,
 )
+from press.press.doctype.release_group.release_group import DEFAULT_DEPENDENCIES
 from press.utils import log_error
 
 # build_duration, pending_duration are Time fields, >= 1 day is invalid
@@ -67,6 +68,7 @@ class DeployCandidate(Document):
 
 		apps: DF.Table[DeployCandidateApp]
 		arm_build: DF.Link | None
+		build_token: DF.Data | None
 		compress_app_cache: DF.Check
 		dependencies: DF.Table[DeployCandidateDependency]
 		environment_variables: DF.Table[DeployCandidateVariable]
@@ -167,9 +169,26 @@ class DeployCandidate(Document):
 			{"document_type": self.doctype, "document_name": self.name},
 		)
 
+	@property
+	def release_group(self) -> ReleaseGroup:
+		return frappe.get_doc("Release Group", self.group)
+
+	@property
+	def custom_workers_group(self) -> str:
+		custom_workers = self.custom_workers.keys()
+		if custom_workers:
+			return ",".join(f"frappe-bench-{worker_name}-worker" for worker_name in custom_workers)
+		return ""
+
+	@property
+	def custom_workers(self):
+		if self.release_group.common_site_config:
+			common_site_config = json.loads(self.release_group.common_site_config) or frappe._dict()
+			return common_site_config.get("workers", frappe._dict())
+		return frappe._dict()
+
 	def get_unpublished_marketplace_releases(self) -> list[str]:
-		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		marketplace_app_sources = rg.get_marketplace_app_sources()
+		marketplace_app_sources = self.release_group.get_marketplace_app_sources()
 
 		if not marketplace_app_sources:
 			return []
@@ -189,8 +208,7 @@ class DeployCandidate(Document):
 		)
 
 	def create_build(self, **kwargs) -> DeployCandidateBuild:
-		release_group: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		servers = [server_ref.server for server_ref in release_group.servers]
+		servers = [server_ref.server for server_ref in self.release_group.servers]
 
 		if frappe.get_value("Server", {"name": ("in", servers)}, "stop_deployments"):
 			frappe.throw("Deployments on this server are currently halted!")
@@ -393,7 +411,7 @@ class DeployCandidate(Document):
 	def __prepare_chunks(self, packages: list[str]):
 		"""Chunk packages into groups of 140 characters"""
 		# Start with one empty chunk
-		chunks = [[]]
+		chunks: list[list[str]] = [[]]
 		for package in packages:
 			# Appending the package to the last chunk will keep it under 140
 			# Append package to last chunk
@@ -453,7 +471,11 @@ class DeployCandidate(Document):
 		if dependency.islower():
 			dependency = dependency.upper() + "_VERSION"
 
-		version = find(self.dependencies, lambda x: x.dependency == dependency).version
+		dependency_record = find(self.dependencies, lambda x: x.dependency == dependency)
+		if not dependency_record:
+			version = find(DEFAULT_DEPENDENCIES, lambda x: x["dependency"] == dependency)["version"]
+		else:
+			version = dependency_record.version
 
 		if as_env:
 			return f"{dependency} {version}"
@@ -535,8 +557,7 @@ class DeployCandidate(Document):
 		return pull_update
 
 	def get_duplicate_dc(self) -> "DeployCandidate | None":
-		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		if not (dc := rg.create_deploy_candidate()):
+		if not (dc := self.release_group.create_deploy_candidate()):
 			return None
 
 		# Set new DC apps to pull from the same sources
@@ -590,9 +611,7 @@ class DeployCandidate(Document):
 			},
 		)
 		if site_group_deploy:
-			frappe.get_doc("Site Group Deploy", site_group_deploy).update_site_group_deploy_on_deploy_failure(
-				self,
-			)
+			frappe.db.set_value("Site Group Deploy", site_group_deploy, "status", "Bench Deploy Failed")
 
 
 def can_pull_update(file_paths: list[str]) -> bool:
@@ -706,7 +725,8 @@ def get_build_stage_and_step(
 	stage = STAGE_SLUG_MAP.get(stage_slug, stage_slug)
 	step = step_slug
 	if stage_slug == "clone" or stage_slug == "apps":
-		step = app_titles.get(step_slug, step_slug)
+		if app_titles:
+			step = app_titles.get(step_slug, step_slug)
 	else:
 		step = STEP_SLUG_MAP.get((stage_slug, step_slug), step_slug)
 	return (stage, step)

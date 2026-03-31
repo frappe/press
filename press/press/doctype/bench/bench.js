@@ -14,7 +14,7 @@ frappe.ui.form.on('Bench', {
 
 	refresh: function (frm) {
 		frm.add_web_link(
-			`/dashboard/groups/${frm.doc.group}/versions/${frm.doc.name}`,
+			`/dashboard/benches/${frm.doc.name}`,
 			__('Visit Dashboard'),
 		);
 

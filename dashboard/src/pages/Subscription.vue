@@ -121,6 +121,10 @@ import { Badge, ErrorMessage, TextInput } from 'frappe-ui';
 import LoginBox from '../components/auth/LoginBox.vue';
 import CheckCircleIcon from '@/components/icons/CheckCircleIcon.vue';
 
+const StripeCard = defineAsyncComponent(
+	() => import('@/components/StripeCard.vue'),
+);
+
 export default {
 	name: 'Subscription',
 	props: ['site'],
@@ -129,9 +133,7 @@ export default {
 		Badge,
 		TextInput,
 		CheckCircleIcon,
-		StripeCard: defineAsyncComponent(
-			() => import('@/components/StripeCard.vue'),
-		),
+		StripeCard,
 		ErrorMessage,
 	},
 	data() {

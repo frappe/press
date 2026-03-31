@@ -19,7 +19,7 @@
   become: yes
   become_user: frappe
   unarchive:
-    src: "https://github.com/prometheus/alertmanager/releases/download/v0.27.0/alertmanager-0.27.0.linux-{{ arch }}.tar.gz"
+    src: "https://github.com/prometheus/alertmanager/releases/download/v0.29.0/alertmanager-0.29.0.linux-{{ arch }}.tar.gz"
     dest: /tmp
     remote_src: yes
 
@@ -27,7 +27,7 @@
   become: yes
   become_user: frappe
   copy:
-    src: "/tmp/alertmanager-0.27.0.linux-{{ arch }}/{{ item }}"
+    src: "/tmp/alertmanager-0.29.0.linux-{{ arch }}/{{ item }}"
     dest: "/home/frappe/alertmanager/{{ item }}"
     mode: 0755
     remote_src: yes

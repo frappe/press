@@ -23,12 +23,14 @@ def create_snapshot(name: str, key: str):
 		frappe.set_user("Administrator")
 		site_backup: SiteBackup = frappe.get_doc("Site Backup", name)
 		if not (key and site_backup.snapshot_request_key == key):
-			frappe.throw("Invalid key for snapshot creation")
+			frappe.throw(
+				"The key for snapshot is invalid. Please verify the key and re-attempt the snapshot creation."
+			)
 		site_backup.create_database_snapshot()
 		site_backup.reload()
 		# Re-verify if the snapshot was created and linked to the site backup
 		if not site_backup.database_snapshot:
-			frappe.throw("Failed to create a snapshot for the database server")
+			frappe.throw("Failed to create a snapshot for the database server. Please retry.")
 	except ClientError as e:
 		if e.response["Error"]["Code"] == "SnapshotCreationPerVolumeRateExceeded":
 			# Agent will wait atleast 15s and then will retry

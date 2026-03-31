@@ -3,16 +3,19 @@
 
 from __future__ import annotations
 
+import math
 from contextlib import suppress
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING, ClassVar, Final, TypedDict
 
 import frappe
+import frappe.utils
 import requests
 import sqlparse
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import A, Search
+from frappe import auth
 from frappe.utils import (
 	convert_utc_to_timezone,
 	flt,
@@ -24,11 +27,15 @@ from pytz import timezone as pytz_timezone
 
 from press.agent import Agent
 from press.api.site import protected
+from press.guards import site
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.report.binary_log_browser.binary_log_browser import (
 	get_data as get_binary_log_data,
 )
-from press.press.report.mariadb_slow_queries.mariadb_slow_queries import execute, normalize_query
+from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
+	execute,
+	normalize_query,
+)
 
 if TYPE_CHECKING:
 	from collections.abc import Callable
@@ -76,15 +83,58 @@ class AggType(Enum):
 
 
 TIMESPAN_TIMEGRAIN_MAP: Final[dict[str, tuple[int, int]]] = {
-	"1h": (60 * 60, 60),
+	"1h": (60 * 60, 2 * 60),
 	"6h": (6 * 60 * 60, 5 * 60),
 	"24h": (24 * 60 * 60, 30 * 60),
-	"7d": (7 * 24 * 60 * 60, 3 * 60 * 60),
-	"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
+	"3d": (3 * 24 * 60 * 60, 60 * 60),
+	"7d": (7 * 24 * 60 * 60, 2 * 60 * 60),
+	"15d": (15 * 24 * 60 * 60, 3 * 60 * 60),
 }
 
 MAX_NO_OF_PATHS: Final[int] = 10
+MAX_QUERIES: Final[int] = 25
 MAX_MAX_NO_OF_PATHS: Final[int] = 50
+
+NICE_STEPS = [
+	1,
+	2,
+	5,
+	10,
+	15,
+	30,  # seconds
+	60,
+	90,
+	120,
+	300,
+	600,
+	900,
+	1800,  # minutes: 1m,1.5m,2m,5m,10m,15m,30m
+	3600,
+	7200,
+	14400,
+	28800,
+	43200,  # hours: 1h,2h,4h,8h,12h
+	86400,
+	604800,  # days, week
+]
+
+
+def auto_timespan_timegrain(start: datetime, end: datetime, target_points: int = 60):
+	if end < start:
+		raise ValueError("end must be >= start")
+
+	total_seconds = int((end - start).total_seconds())
+
+	if total_seconds <= 0:
+		return (total_seconds, 0)
+
+	no_of_intervals = max(1, target_points - 1)
+
+	raw_interval = math.ceil(total_seconds / no_of_intervals)
+
+	interval = next((step for step in NICE_STEPS if step >= raw_interval), raw_interval)
+
+	return (total_seconds, interval)
 
 
 class StackedGroupByChart:
@@ -92,13 +142,14 @@ class StackedGroupByChart:
 	to_s_divisor: float = 1e6
 	normalize_slow_logs: bool = False
 	group_by_field: str
-	max_no_of_paths: int = 10
 
 	def __init__(
 		self,
 		name: str,
 		agg_type: AggType,
 		timezone: str,
+		start: datetime,
+		end: datetime,
 		timespan: int,
 		timegrain: int,
 		resource_type: ResourceType,
@@ -116,6 +167,8 @@ class StackedGroupByChart:
 		self.resource_type = resource_type
 		self.timezone = timezone
 		self.timespan = timespan
+		self.start = start
+		self.end = end
 		self.timegrain = timegrain
 		self.max_no_of_paths = min(max_no_of_paths, MAX_MAX_NO_OF_PATHS)
 
@@ -124,9 +177,9 @@ class StackedGroupByChart:
 
 	def setup_search_filters(self):
 		es = Elasticsearch(self.url, basic_auth=("frappe", self.password), request_timeout=120)
-		self.start, self.end = get_rounded_boundaries(
-			self.timespan, self.timegrain, self.timezone
-		)  # we pass timezone to ES query in get_histogram_chart
+		self.start = get_rounded_boundary(self.start, self.timegrain)
+		self.end = get_rounded_boundary(self.end, self.timegrain)
+
 		self.search = (
 			Search(using=es, index="filebeat-*")
 			.filter(
@@ -183,7 +236,7 @@ class StackedGroupByChart:
 			"date_histogram",
 			field="@timestamp",
 			fixed_interval=f"{self.timegrain}s",
-			time_zone=self.timezone,
+			time_zone="UTC",
 			min_doc_count=0,
 		)
 
@@ -240,9 +293,7 @@ class StackedGroupByChart:
 				else (
 					flt(hist_bucket.sum_of_duration.value) / self.to_s_divisor
 					if AggType(self.agg_type) is AggType.DURATION
-					else hist_bucket.doc_count
-					if AggType(self.agg_type) is AggType.COUNT
-					else 0
+					else (hist_bucket.doc_count if AggType(self.agg_type) is AggType.COUNT else 0)
 				)
 			)
 		return path_data
@@ -267,8 +318,12 @@ class StackedGroupByChart:
 		if self.normalize_slow_logs:
 			datasets = normalize_datasets(datasets)
 
-		labels = [label.replace(tzinfo=None) for label in labels]
-		return {"datasets": datasets, "labels": labels, "allow_drill_down": self.allow_drill_down}
+		labels = [convert_utc_to_timezone(label, self.timezone).replace(tzinfo=None) for label in labels]
+		return {
+			"datasets": datasets,
+			"labels": labels,
+			"allow_drill_down": self.allow_drill_down,
+		}
 
 	@property
 	def allow_drill_down(self):
@@ -384,7 +439,8 @@ class NginxRequestGroupByChart(StackedGroupByChart):
 				pluck="domain",
 			)
 			self.search = self.search.query(
-				"bool", should=[{"match_phrase": {"http.request.site": domain}} for domain in domains]
+				"bool",
+				should=[{"match_phrase": {"http.request.site": domain}} for domain in domains],
 			)
 			self.group_by_field = "source.ip"
 		elif ResourceType(self.resource_type) is ResourceType.SERVER:
@@ -484,7 +540,10 @@ def _get_cadvisor_data(promql_query: str, timezone: str, timespan: int, timegrai
 
 	for res in result:
 		datasets.append(
-			{"name": res["metric"]["name"], "values": [float(value[1]) for value in res["values"]]}
+			{
+				"name": res["metric"]["name"],
+				"values": [float(value[1]) for value in res["values"]],
+			}
 		)
 
 	for metric in res["values"]:
@@ -515,7 +574,7 @@ def get_metrics(
 		promql_query = promql_query.format(benches=benches)
 		datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
 		return {response_key: {"datasets": datasets, "labels": labels}}
-	except ValueError:
+	except (ValueError, TypeError):
 		frappe.throw("Unable to fetch metrics")
 
 
@@ -607,12 +666,14 @@ def get_cpu_usage(name: str, timezone: str, duration: str = "24h"):
 
 @frappe.whitelist()
 @protected("Site")
-@redis_cache(ttl=10 * 60)
-def get(name, timezone, duration="7d"):
-	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+@redis_cache(ttl=15 * 60)
+def get(name, timezone, start, end):
+	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+	_, timegrain = auto_timespan_timegrain(start, end)
 
-	request_data = get_usage(name, "request", timezone, timespan, timegrain)
-	uptime_data = get_uptime(name, timezone, timespan, timegrain)
+	request_data = get_usage(name, "request", timezone, start, end, timegrain)
+	uptime_data = get_uptime(name, timezone, start, end, timegrain)
 
 	plan = frappe.get_cached_doc("Site", name).plan
 	plan_limit = get_plan_config(plan).get("rate_limit", {}).get("limit") if plan else 0
@@ -621,24 +682,31 @@ def get(name, timezone, duration="7d"):
 		"usage_counter": [{"value": r.max, "date": r.date} for r in request_data],
 		"request_count": [{"value": r.count, "date": r.date} for r in request_data],
 		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
-		"uptime": (uptime_data + [{}] * 60)[:60],
+		"uptime": uptime_data,
 		"plan_limit": plan_limit,
 	}
 
 
 def add_commonly_slow_path_to_reports(
-	reports: dict, path: str, name: str, timezone, timespan, timegrain, max_no_of_paths
+	reports: dict, path: str, name: str, timezone, start, end, timespan, timegrain, max_no_of_paths
 ):
 	for slow_path in COMMONLY_SLOW_PATHS + COMMONLY_SLOW_JOBS:
 		if slow_path["path"] == path:
 			reports[slow_path["id"]] = slow_path["function"](
-				name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+				name,
+				"duration",
+				timezone,
+				start,
+				end,
+				timespan,
+				timegrain,
+				ResourceType.SITE,
+				max_no_of_paths,
 			)
-			break
 
 
 def get_additional_duration_reports(
-	request_duration_by_path, name: str, timezone, timespan, timegrain, max_no_of_paths
+	request_duration_by_path, name: str, timezone, start, end, timespan, timegrain, max_no_of_paths
 ):
 	"""Get additional reports for the request duration by path"""
 	reports = {}
@@ -648,6 +716,8 @@ def get_additional_duration_reports(
 			path_data["path"],
 			name,
 			timezone,
+			start,
+			end,
 			timespan,
 			timegrain,
 			max_no_of_paths,
@@ -657,37 +727,87 @@ def get_additional_duration_reports(
 
 
 @frappe.whitelist()
-def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO_OF_PATHS):
-	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+def get_advanced_analytics(name, timezone, start, end, max_no_of_paths=MAX_NO_OF_PATHS):
+	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+	timespan, timegrain = auto_timespan_timegrain(start, end)
 
-	job_data = get_usage(name, "job", timezone, timespan, timegrain)
+	job_data = get_usage(name, "job", timezone, start, end, timegrain)
 
 	request_duration_by_path = get_request_by_(
-		name, "duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+		name,
+		"duration",
+		timezone,
+		start,
+		end,
+		timespan,
+		timegrain,
+		ResourceType.SITE,
+		max_no_of_paths,
 	)
 
-	background_job_duration_by_method = get_background_job_by_method(
-		name, "duration", timezone, timespan, timegrain, max_no_of_paths
+	background_job_duration_by_method = get_background_job_by_(
+		name,
+		"duration",
+		timezone,
+		start,
+		end,
+		timespan,
+		timegrain,
+		ResourceType.SITE,
+		max_no_of_paths,
 	)
 
 	return (
 		{
 			"request_count_by_path": get_request_by_(
-				name, "count", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+				name,
+				"count",
+				timezone,
+				start,
+				end,
+				timespan,
+				timegrain,
+				ResourceType.SITE,
+				max_no_of_paths,
 			),
 			"request_duration_by_path": request_duration_by_path,
 			"average_request_duration_by_path": get_request_by_(
-				name, "average_duration", timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+				name,
+				"average_duration",
+				timezone,
+				start,
+				end,
+				timespan,
+				timegrain,
+				ResourceType.SITE,
+				max_no_of_paths,
 			),
 			"request_count_by_ip": get_nginx_request_by_(
-				name, "count", timezone, timespan, timegrain, max_no_of_paths
+				name, "count", timezone, start, end, timespan, timegrain, max_no_of_paths
 			),
-			"background_job_count_by_method": get_background_job_by_method(
-				name, "count", timezone, timespan, timegrain, max_no_of_paths
+			"background_job_count_by_method": get_background_job_by_(
+				name,
+				"count",
+				timezone,
+				start,
+				end,
+				timespan,
+				timegrain,
+				ResourceType.SITE,
+				max_no_of_paths,
 			),
 			"background_job_duration_by_method": background_job_duration_by_method,
-			"average_background_job_duration_by_method": get_background_job_by_method(
-				name, "average_duration", timezone, timespan, timegrain, max_no_of_paths
+			"average_background_job_duration_by_method": get_background_job_by_(
+				name,
+				"average_duration",
+				timezone,
+				start,
+				end,
+				timespan,
+				timegrain,
+				ResourceType.SITE,
+				max_no_of_paths,
 			),
 			"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 			"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
@@ -696,6 +816,8 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 			request_duration_by_path,
 			name,
 			timezone,
+			start,
+			end,
 			timespan,
 			timegrain,
 			max_no_of_paths,
@@ -704,6 +826,8 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 			background_job_duration_by_method,
 			name,
 			timezone,
+			start,
+			end,
 			timespan,
 			timegrain,
 			max_no_of_paths,
@@ -713,11 +837,22 @@ def get_advanced_analytics(name, timezone, duration="7d", max_no_of_paths=MAX_NO
 
 @frappe.whitelist()
 @protected("Site")
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def daily_usage(name, timezone):
 	timespan = 7 * 24 * 60 * 60
 	timegrain = 24 * 60 * 60
-	request_data = get_usage(name, "request", timezone, timespan, timegrain)
+
+	end = datetime.now(pytz_timezone(timezone))
+	start = frappe.utils.add_to_date(end, seconds=-timespan)
+
+	request_data = get_usage(
+		name,
+		"request",
+		timezone,
+		start,
+		end,
+		timegrain,
+	)
 
 	plan = frappe.get_cached_doc("Site", name).plan
 
@@ -740,7 +875,7 @@ def rounded_time(dt: datetime | None = None, round_to=60):
 	return dt + timedelta(0, rounding - seconds, -dt.microsecond)
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC"):
 	"""
 	Round the start and end time to the nearest interval, because Elasticsearch does this
@@ -751,7 +886,28 @@ def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC")
 	return rounded_time(start, timegrain), rounded_time(end, timegrain)
 
 
-def get_uptime(site, timezone, timespan, timegrain):
+@redis_cache(ttl=15 * 60)
+def get_rounded_boundary(dt: datetime, timegrain=60):
+	"""
+	Floor a datetime to the previous interval boundary.
+
+	Args:
+		dt: datetime instance
+		timegrain: timegrain in seconds
+
+	Returns:
+		datetime floored to the timegrain interval boundary
+	"""
+	if timegrain <= 0:
+		raise ValueError("timegrain must be positive")
+
+	ts = dt.timestamp()
+	floored_ts = ts - (ts % timegrain)
+
+	return datetime.fromtimestamp(floored_ts, tz=dt.tzinfo)
+
+
+def get_uptime(site, timezone, start: datetime, end: datetime, timegrain):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
 		return []
@@ -759,8 +915,16 @@ def get_uptime(site, timezone, timespan, timegrain):
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 
-	end = datetime.now(pytz_timezone(timezone))
-	start = frappe.utils.add_to_date(end, seconds=-timespan)
+	# if the difference is more than 30 day, set timegrain to 1 day
+	if (end - start).days >= 30:
+		timegrain = 86400
+		# align to beginning of day of start date
+		start = start.astimezone(pytz_timezone(timezone)).replace(hour=0, minute=0, second=0, microsecond=0)
+		# align to end of day of end date
+		end = end.astimezone(pytz_timezone(timezone)).replace(
+			hour=0, minute=0, second=0, microsecond=0
+		) + timedelta(days=1)
+
 	query = {
 		"query": (
 			f'sum(sum_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s])) by (instance) / sum(count_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s])) by (instance)'
@@ -794,7 +958,8 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 		n_query = normalize_query(data_dict["path"])
 		if n_datasets.get(n_query):
 			n_datasets[n_query]["values"] = [
-				x + y for x, y in zip(n_datasets[n_query]["values"], data_dict["values"], strict=False)
+				x + y if x and y else x or y
+				for x, y in zip(n_datasets[n_query]["values"], data_dict["values"], strict=True)
 			]
 		else:
 			data_dict["path"] = n_query
@@ -802,11 +967,13 @@ def normalize_datasets(datasets: list[Dataset]) -> list[Dataset]:
 	return list(n_datasets.values())
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_request_by_(
 	name,
 	agg_type: AggType,
 	timezone: str,
+	start: datetime,
+	end: datetime,
 	timespan: int,
 	timegrain: int,
 	resource_type=ResourceType.SITE,
@@ -821,23 +988,48 @@ def get_request_by_(
 	:param resource_type: filter by site or server
 	"""
 	return RequestGroupByChart(
-		name, agg_type, timezone, timespan, timegrain, resource_type, max_no_of_paths
+		name, agg_type, timezone, start, end, timespan, timegrain, resource_type, max_no_of_paths
 	).run()
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_nginx_request_by_(
-	name, agg_type: AggType, timezone: str, timespan: int, timegrain: int, max_no_of_paths
+	name,
+	agg_type: AggType,
+	timezone: str,
+	start: datetime,
+	end: datetime,
+	timespan: int,
+	timegrain: int,
+	max_no_of_paths,
 ):
 	return NginxRequestGroupByChart(
-		name, agg_type, timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+		name,
+		agg_type,
+		timezone,
+		start,
+		end,
+		timespan,
+		timegrain,
+		ResourceType.SITE,
+		max_no_of_paths,
 	).run()
 
 
-@redis_cache(ttl=10 * 60)
-def get_background_job_by_method(site, agg_type, timezone, timespan, timegrain, max_no_of_paths):
+@redis_cache(ttl=15 * 60)
+def get_background_job_by_(
+	site,
+	agg_type,
+	timezone,
+	start,
+	end,
+	timespan,
+	timegrain,
+	resource_type=ResourceType.SITE,
+	max_no_of_paths=MAX_NO_OF_PATHS,
+):
 	return BackgroundJobGroupByChart(
-		site, agg_type, timezone, timespan, timegrain, ResourceType.SITE, max_no_of_paths
+		site, agg_type, timezone, start, end, timespan, timegrain, resource_type, max_no_of_paths
 	).run()
 
 
@@ -846,22 +1038,36 @@ def get_slow_logs_by_query(
 	name: str,
 	agg_type: str,
 	timezone: str,
-	duration: str = "24h",
+	start: str | datetime,
+	end: str | datetime,
 	normalize: bool = False,
-	max_no_of_paths: int = MAX_NO_OF_PATHS,
+	max_no_of_paths: int = MAX_QUERIES,
 ):
-	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
+	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+	timespan, timegrain = auto_timespan_timegrain(start, end)
 
 	return get_slow_logs(
-		name, agg_type, timezone, timespan, timegrain, ResourceType.SITE, normalize, max_no_of_paths
+		name,
+		agg_type,
+		timezone,
+		start,
+		end,
+		timespan,
+		timegrain,
+		ResourceType.SITE,
+		normalize,
+		max_no_of_paths,
 	)
 
 
-@redis_cache(ttl=10 * 60)
+@redis_cache(ttl=15 * 60)
 def get_slow_logs(
 	name,
 	agg_type,
 	timezone,
+	start,
+	end,
 	timespan,
 	timegrain,
 	resource_type=ResourceType.SITE,
@@ -869,7 +1075,16 @@ def get_slow_logs(
 	max_no_of_paths=MAX_NO_OF_PATHS,
 ):
 	return SlowLogGroupByChart(
-		normalize, name, agg_type, timezone, timespan, timegrain, resource_type, max_no_of_paths
+		normalize,
+		name,
+		agg_type,
+		timezone,
+		start,
+		end,
+		timespan,
+		timegrain,
+		resource_type,
+		max_no_of_paths,
 	).run()
 
 
@@ -903,7 +1118,8 @@ class QueryReportRunReports(RequestGroupByChart):
 		super().setup_search_filters()
 		self.group_by_field = "json.report"
 		self.search = self.search.filter(
-			"match_phrase", json__request__path="/api/method/frappe.desk.query_report.run"
+			"match_phrase",
+			json__request__path="/api/method/frappe.desk.query_report.run",
 		)
 
 	def exclude_top_k_data(self, datasets: list[Dataset]):
@@ -917,6 +1133,54 @@ class QueryReportRunReports(RequestGroupByChart):
 
 def get_query_report_run_reports(*args, **kwargs):
 	return QueryReportRunReports(*args, **kwargs).run()
+
+
+class SaveDocsDoctypes(RequestGroupByChart):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		self.group_by_field = "json.doctype"
+		self.search = self.search.filter(
+			"match_phrase", json__request__path="/api/method/frappe.desk.form.save.savedocs"
+		)
+
+	def exclude_top_k_data(self, datasets: list[Dataset]):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__doctype=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:  # not used atp
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
+
+
+def get_save_docs_doctypes(*args, **kwargs):
+	return SaveDocsDoctypes(*args, **kwargs).run()
+
+
+class SaveDocsActions(RequestGroupByChart):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def setup_search_filters(self):
+		super().setup_search_filters()
+		self.group_by_field = "json.action"
+		self.search = self.search.filter(
+			"match_phrase", json__request__path="/api/method/frappe.desk.form.save.savedocs"
+		)
+
+	def exclude_top_k_data(self, datasets: list[Dataset]):
+		if ResourceType(self.resource_type) is ResourceType.SITE:
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__action=path)
+		elif ResourceType(self.resource_type) is ResourceType.SERVER:  # not used atp
+			for path in list(map(lambda x: x["path"], datasets)):
+				self.search = self.search.exclude("match_phrase", json__site=path)
+
+
+def get_save_docs_actions(*args, **kwargs):
+	return SaveDocsActions(*args, **kwargs).run()
 
 
 def get_generate_report_reports(*args, **kwargs):
@@ -939,6 +1203,16 @@ COMMONLY_SLOW_PATHS: list[CommonSlowPath] = [
 		"path": "/api/method/frappe.desk.query_report.run",
 		"id": "query_report_run_reports",
 		"function": get_query_report_run_reports,
+	},
+	{
+		"path": "/api/method/frappe.desk.form.save.savedocs",
+		"id": "save_docs_doctypes",
+		"function": get_save_docs_doctypes,
+	},
+	{
+		"path": "/api/method/frappe.desk.form.save.savedocs",
+		"id": "save_docs_actions",
+		"function": get_save_docs_actions,
 	},
 ]
 
@@ -966,7 +1240,8 @@ class GenerateReportReports(BackgroundJobGroupByChart):
 		super().setup_search_filters()
 		self.group_by_field = "json.report"
 		self.search = self.search.query(
-			"bool", should=[{"match_phrase": {"json.job.method": path}} for path in self.paths]
+			"bool",
+			should=[{"match_phrase": {"json.job.method": path}} for path in self.paths],
 		)
 
 	def exclude_top_k_data(self, datasets: list[Dataset]):
@@ -978,7 +1253,7 @@ class GenerateReportReports(BackgroundJobGroupByChart):
 				self.search = self.search.exclude("match_phrase", json__site=path)
 
 
-def get_usage(site, type, timezone, timespan, timegrain):
+def get_usage(site, type, timezone, start, end, timegrain):
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
 		return {"datasets": [], "labels": []}
@@ -1006,7 +1281,14 @@ def get_usage(site, type, timezone, timespan, timegrain):
 				"filter": [
 					{"match_phrase": {"json.transaction_type": type}},
 					{"match_phrase": {"json.site": site}},
-					{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+					{
+						"range": {
+							"@timestamp": {
+								"gte": int(start.timestamp() * 1000),
+								"lte": int(end.timestamp() * 1000),
+							}
+						}
+					},
 				]
 			}
 		},
@@ -1138,26 +1420,34 @@ def get_current_cpu_usage_for_sites_on_server(server):
 
 @frappe.whitelist()
 @protected("Site")
-def request_logs(name, timezone, date, sort=None, start=0):
+@site.feature("monitor_access")
+def request_logs(site, timezone, date, sort=None, start=0):
+	result = []
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
-		return []
+		frappe.log_error("Log server not configured")
+		return result
 
 	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
-	password = get_decrypted_password("Log Server", log_server, "kibana_password")
+	try:
+		password = auth.get_decrypted_password("Log Server", log_server, "kibana_password")
+	except Exception as e:
+		frappe.log_error(f"Failed to get log server password: {e}")
+		return []
 
-	sort_value = {
+	sort_options = {
 		"Time (Ascending)": {"@timestamp": "asc"},
 		"Time (Descending)": {"@timestamp": "desc"},
 		"CPU Time (Descending)": {"json.duration": "desc"},
-	}[sort or "CPU Time (Descending)"]
+	}
+	sort_value = sort_options.get(sort, sort_options["CPU Time (Descending)"])
 
 	query = {
 		"query": {
 			"bool": {
 				"filter": [
 					{"match_phrase": {"json.transaction_type": "request"}},
-					{"match_phrase": {"json.site": name}},
+					{"match_phrase": {"json.site": site}},
 					{"range": {"@timestamp": {"gt": f"{date}||-1d/d", "lte": f"{date}||/d"}}},
 				],
 				"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
@@ -1168,24 +1458,41 @@ def request_logs(name, timezone, date, sort=None, start=0):
 		"size": 10,
 	}
 
-	response = requests.post(url, json=query, auth=("frappe", password)).json()
-	out = []
-	for d in response["hits"]["hits"]:
-		data = d["_source"]["json"]
-		data["timestamp"] = convert_utc_to_timezone(
-			frappe.utils.get_datetime(data["timestamp"]).replace(tzinfo=None), timezone
-		)
-		out.append(data)
+	try:
+		response = requests.post(url, json=query, auth=("frappe", password), timeout=10)
+		response.raise_for_status()
+		data_json = response.json()
+	except requests.RequestException as e:
+		frappe.log_error(f"Log server request failed: {e}")
+		return result
+	except ValueError as e:
+		frappe.log_error(f"Invalid JSON response: {e}")
+		return result
 
-	return out
+	for hit in data_json.get("hits", {}).get("hits", []):
+		data = hit.get("_source", {}).get("json", {})
+		if not data:
+			continue
+		try:
+			data["timestamp"] = convert_utc_to_timezone(
+				frappe.utils.get_datetime(data["timestamp"]).replace(tzinfo=None),
+				timezone,
+			)
+		except Exception as e:
+			frappe.log_error(f"Timestamp conversion failed: {e}")
+			data["timestamp"] = None
+		result.append(data)
+
+	return result
 
 
 @frappe.whitelist()
 @protected("Site")
-def binary_logs(name, start_time, end_time, pattern: str = ".*", max_lines: int = 4000):
+@site.feature("monitor_access")
+def binary_logs(site, start_time, end_time, pattern: str = ".*", max_lines: int = 4000):
 	filters = frappe._dict(
-		site=name,
-		database=frappe.db.get_value("Site", name, "database_name"),
+		site=site,
+		database=frappe.db.get_value("Site", site, "database_name"),
 		start_datetime=start_time,
 		stop_datetime=end_time,
 		pattern=pattern,
@@ -1197,6 +1504,7 @@ def binary_logs(name, start_time, end_time, pattern: str = ".*", max_lines: int 
 
 @frappe.whitelist()
 @protected("Site")
+@site.feature("monitor_access")
 def mariadb_processlist(site):
 	site = frappe.get_doc("Site", site)
 	agent = Agent(site.server)
@@ -1209,8 +1517,9 @@ def mariadb_processlist(site):
 
 @frappe.whitelist()
 @protected("Site")
+@site.feature("monitor_access")
 def mariadb_slow_queries(
-	name,
+	site,
 	start_datetime,
 	stop_datetime,
 	max_lines=1000,
@@ -1220,7 +1529,7 @@ def mariadb_slow_queries(
 ):
 	meta = frappe._dict(
 		{
-			"site": name,
+			"site": site,
 			"start_datetime": start_datetime,
 			"stop_datetime": stop_datetime,
 			"max_lines": max_lines,
@@ -1235,12 +1544,15 @@ def mariadb_slow_queries(
 
 @frappe.whitelist()
 @protected("Site")
-def deadlock_report(name, start_datetime, stop_datetime, max_log_size=500):
-	from press.press.report.mariadb_deadlock_browser.mariadb_deadlock_browser import execute
+@site.feature("monitor_access")
+def deadlock_report(site, start_datetime, stop_datetime, max_log_size=500):
+	from press.press.report.mariadb_deadlock_browser.mariadb_deadlock_browser import (
+		execute,
+	)
 
 	meta = frappe._dict(
 		{
-			"site": name,
+			"site": site,
 			"start_datetime": start_datetime,
 			"stop_datetime": stop_datetime,
 			"max_log_size": max_log_size,

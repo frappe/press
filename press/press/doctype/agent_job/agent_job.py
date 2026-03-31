@@ -21,6 +21,7 @@ from frappe.utils import (
 	now_datetime,
 )
 
+from press.access.support_access import has_support_access
 from press.agent import Agent, AgentCallbackException, AgentRequestSkippedException
 from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
@@ -31,9 +32,13 @@ from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
 )
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error, timer
 
 AGENT_LOG_KEY = "agent-jobs"
+AGENT_JOB_TIMEOUT_HOURS = 4
+
+BYPASS_AGENT_JOB_HALT = ["Change Bench Directory", "Remove Redis Localhost Bind"]
 
 
 class AgentJob(Document):
@@ -95,11 +100,12 @@ class AgentJob(Document):
 		if not (site or group or server or bench):
 			frappe.throw("Not permitted", frappe.PermissionError)
 
-		if site:
+		if site and not has_support_access("Site", site):
 			is_owned_by_team("Site", site, raise_exception=True)
 
 		if group:
-			is_owned_by_team("Release Group", group, raise_exception=True)
+			if not has_support_access("Release Group", group):
+				is_owned_by_team("Release Group", group, raise_exception=True)
 
 			AgentJob = frappe.qb.DocType("Agent Job")
 			Bench = frappe.qb.DocType("Bench")
@@ -161,7 +167,7 @@ class AgentJob(Document):
 	def create_http_request(self):
 		try:
 			agent = Agent(self.server, server_type=self.server_type)
-			if agent.should_skip_requests():
+			if agent.should_skip_requests() and self.job_type not in BYPASS_AGENT_JOB_HALT:
 				self.retry_count = 0
 				self.set_status_and_next_retry_at()
 				return
@@ -341,6 +347,25 @@ class AgentJob(Document):
 				"play": "Update Agent",
 				"server": self.server,
 				"creation": (">", frappe.utils.add_to_date(None, minutes=-15)),
+			},
+		):
+			return True
+		return False
+
+	@property
+	def failed_because_of_incident(self) -> bool:
+		if self.server and frappe.db.exists(
+			"Incident",
+			{
+				"server": self.server,
+				"status": ("in", ["Auto-Resolved", "Resolved", "Press-Resolved"]),
+				"creation": (
+					"between",
+					[
+						frappe.utils.add_to_date(self.creation, minutes=-15),
+						self.creation,
+					],
+				),  # incident didn't happen because of job
 			},
 		):
 			return True
@@ -638,7 +663,7 @@ def fail_old_jobs():
 	update_status(delivery_failed_jobs, "Delivery Failure")
 
 
-def get_pair_jobs() -> tuple[str]:
+def get_pair_jobs():
 	"""Return list of jobs who's callback depend on another"""
 	return (
 		"New Site",
@@ -783,26 +808,28 @@ def retry_undelivered_jobs(server):
 		if delivered_jobs:
 			update_job_ids_for_delivered_jobs(delivered_jobs)
 
-		undelivered_jobs = list(set(server_jobs[server]) - set(delivered_jobs))
+		undelivered_jobs = list(
+			set(server_jobs[server]) - set([job["agent_job_id"] for job in delivered_jobs])
+		)
 
-		for job in undelivered_jobs:
-			job_doc = frappe.get_doc("Agent Job", job)
-			max_retry_count = max_retry_per_job_type[job_doc.job_type] or 0
+		for job_name in undelivered_jobs:
+			job = AgentJob("Agent Job", job_name)
+			max_retry_count = max_retry_per_job_type[job.job_type] or 0
 
-			if not job_doc.next_retry_at and job_doc.name not in queued_jobs():
-				job_doc.set_status_and_next_retry_at()
+			if not job.next_retry_at and job.name not in queued_jobs():
+				job.set_status_and_next_retry_at()
 				continue
 
-			if get_datetime(job_doc.next_retry_at) > nowtime:
+			if get_datetime(job.next_retry_at) > nowtime:
 				continue
 
-			if job_doc.retry_count <= max_retry_count:
-				retry = job_doc.retry_count + 1
-				frappe.db.set_value("Agent Job", job, "retry_count", retry, update_modified=False)
-				job_doc.retry_in_place()
+			if job.retry_count <= max_retry_count:
+				retry = job.retry_count + 1
+				frappe.db.set_value("Agent Job", job_name, "retry_count", retry, update_modified=False)
+				job.retry_in_place()
 			else:
-				update_job_and_step_status(job, "Delivery Failure")
-				process_job_updates(job)
+				update_job_and_step_status(job_name, "Delivery Failure")
+				process_job_updates(job_name)
 
 
 def queued_jobs():
@@ -915,6 +942,12 @@ def update_job_ids_for_delivered_jobs(delivered_jobs):
 		)
 
 
+def is_site_archived(site: str | None) -> bool:
+	if not site:
+		return False
+	return frappe.db.get_value("Site", site, "status") == "Archived"
+
+
 def process_job_updates(job_name: str, response_data: dict | None = None):  # noqa: C901
 	job: "AgentJob" = frappe.get_doc("Agent Job", job_name)
 	start = now_datetime()
@@ -978,6 +1011,7 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_migrate_site_job_update,
 			process_move_site_to_bench_job_update,
 			process_new_site_job_update,
+			process_refresh_database_usage_job_update,
 			process_reinstall_site_job_update,
 			process_rename_site_job_update,
 			process_restore_job_update,
@@ -1001,7 +1035,11 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 
 		site_migration = get_ongoing_migration(job.site)
 		if site_migration:
-			process_site_migration_job_update(job, site_migration)
+			process_site_migration_job_update(
+				job, site_migration
+			)  # has to be at top to prevent regular callbacks from running
+		elif is_site_archived(job.site):
+			return
 		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
 		elif job.job_type == "New Bench":
@@ -1116,6 +1154,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			process_backup_database_from_snapshot_job_callback(job)
 		elif job.job_type == "Backup Files From Snapshot":
 			process_backup_files_from_snapshot_job_callback(job)
+		elif job.job_type == "Refresh Database Usage":
+			process_refresh_database_usage_job_update(job)
 
 		# send failure notification if job failed
 		if job.status == "Failure":
@@ -1242,3 +1282,56 @@ def update_query_result_status_timestamps(results):
 
 		if result.end:
 			result.end = convert_utc_to_system_timezone(result.end).replace(tzinfo=None)
+
+
+def agent_poll_count_stats(from_datetime, to_datetime, min_count, duration):
+	rows = frappe.get_all(
+		"Scheduled Job Log",
+		filters=[
+			["creation", ">=", from_datetime],
+			["creation", "<", to_datetime],
+			["scheduled_job_type", "=", "agent_job.poll_pending_jobs"],
+		],
+		fields=["DATE_FORMAT(creation, '%Y-%m-%d %H:%i:00') as timestamp", "count(*) as count"],
+		order_by="timestamp ASC",
+		group_by="timestamp",
+	)
+	found = {frappe.utils.get_datetime(row["timestamp"]): row["count"] for row in rows}
+	total_count = sum(found.values())
+	average_count = total_count / len(found)
+	filtered_data = {key: value for key, value in found.items() if value < 10}
+	sorted_dict = dict(sorted(filtered_data.items(), key=lambda item: item[1]))
+	top_min_count = dict(list(sorted_dict.items())[:min_count])
+
+	telegram_message = f"""Agent Polling Count {duration} Report
+
+	Average Count: {average_count:.2f}
+
+	Top {min_count} Minimum Values (≤10):
+	"""
+
+	if top_min_count:
+		for i, item in enumerate(top_min_count, 1):
+			timestamp_str = frappe.utils.format_datetime(item, "dd MMM yyyy, HH:mm")
+			telegram_message = telegram_message + f"\n{i}. 🕒 {timestamp_str} → Count: {top_min_count[item]}"
+	else:
+		telegram_message = telegram_message + "\nNo entries found with count ≤ 10"
+
+	telegram_message = telegram_message + f"\n\nFound {len(filtered_data)} entries with count ≤ 10"
+	TelegramMessage.enqueue(message=telegram_message, topic="Signups")
+
+
+def agent_poll_count_stats_hourly():
+	min_count = 3
+	duration = "Hourly"
+	start_time = frappe.utils.add_to_date(None, hours=-1)
+	end_time = frappe.utils.add_to_date(None, minutes=-1)
+	agent_poll_count_stats(start_time, end_time, min_count, duration)
+
+
+def agent_poll_count_stats_daily():
+	min_count = 12
+	duration = "Daily"
+	start_time = frappe.utils.add_to_date(None, hours=-24)
+	end_time = frappe.utils.add_to_date(None, minutes=-1)
+	agent_poll_count_stats(start_time, end_time, min_count, duration)

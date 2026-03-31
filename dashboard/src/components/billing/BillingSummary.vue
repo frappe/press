@@ -9,6 +9,14 @@
 							<span>Next charge date — </span>
 							<span>{{ currentMonthEnd() }}</span>
 						</div>
+						<div
+							v-if="team.doc.payment_mode === 'UPI Autopay'"
+							class="mt-2 rounded-md bg-gray-50 p-3 text-sm leading-5 text-gray-600"
+						>
+							Your UPI will be auto-debited at the end of the billing cycle.
+							Payment may take up to 24 hours to reflect after debit is
+							initiated.
+						</div>
 					</div>
 				</div>
 				<div class="flex items-center justify-between">
@@ -45,7 +53,12 @@
 		<AddPrepaidCreditsDialog
 			v-if="showAddPrepaidCreditsDialog"
 			v-model="showAddPrepaidCreditsDialog"
-			@success="upcomingInvoice.reload()"
+			@success="
+				() => {
+					upcomingInvoice.reload();
+					unpaidAmount.reload();
+				}
+			"
 		/>
 		<UpcomingInvoiceDialog v-model="showInvoiceDialog" />
 	</div>

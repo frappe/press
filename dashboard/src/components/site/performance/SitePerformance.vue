@@ -20,12 +20,6 @@ export default {
 						route: 'Site Performance Request Logs',
 					},
 					{
-						title: 'Binary Log Report',
-						description:
-							'Analyze changes made to the database, including data changes and schema alterations.',
-						route: 'Site Performance Binary Logs',
-					},
-					{
 						title: 'Process List Report',
 						description:
 							'Monitor active database processes, their status, and resource usage.',

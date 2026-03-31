@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -8,6 +9,7 @@ import frappe
 import semantic_version as sv
 
 from press.press.doctype.deploy_candidate.utils import (
+	BuildWarning,
 	PackageManagerFiles,
 	PackageManagers,
 	get_will_fail_checker,
@@ -29,6 +31,7 @@ class PreBuildValidations:
 
 	def validate(self):
 		self._validate_repos()
+		self._validate_python_dependency_files()
 		self._validate_python_requirement()
 		self._validate_node_requirement()
 		self._validate_frappe_dependencies()
@@ -45,6 +48,36 @@ class PreBuildValidations:
 					app.app,
 					app.hash,
 					reason,
+				)
+
+	def _validate_python_dependency_files(self) -> None:
+		"""Check pyproject.toml and requirements.txt for each app."""
+		for app, pm in self.pmf.items():
+			repo_path = Path(pm["repo_path"])
+			has_pyproject = (repo_path / "pyproject.toml").exists()
+			has_requirements = (repo_path / "requirements.txt").exists()
+
+			if not has_pyproject and not has_requirements:
+				raise Exception(
+					"No python dependency file found",
+					app,
+				)
+
+			if has_pyproject and has_requirements:
+				warnings.warn(
+					f"Both pyproject.toml and requirements.txt found for app '{app}'. "
+					"pyproject.toml file will have precedence.",
+					BuildWarning,
+					stacklevel=2,
+					source={"app": app},
+				)
+
+			elif has_requirements and not has_pyproject:
+				warnings.warn(
+					f"App '{app}' uses only requirements.txt. Consider migrating to pyproject.toml.",
+					BuildWarning,
+					stacklevel=2,
+					source={"app": app},
 				)
 
 	def _validate_python_requirement(self):

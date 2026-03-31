@@ -16,14 +16,15 @@ import OpenSSL
 from frappe.model.document import Document
 from frappe.query_builder.functions import Date
 
-from press.api.site import check_dns_cname_a
 from press.exceptions import (
 	DNSValidationError,
 	TLSRetryLimitExceeded,
 )
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.runner import Ansible
 from press.utils import get_current_team, log_error
+from press.utils.dns import check_dns_cname_a
 
 if TYPE_CHECKING:
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
@@ -161,6 +162,7 @@ class TLSCertificate(Document):
 		if self.wildcard:
 			self.trigger_server_tls_setup_callback()
 			self._update_secondary_wildcard_domains()
+			self.setup_standalone_wildcard_hosts()
 
 	def _update_secondary_wildcard_domains(self):
 		"""
@@ -188,6 +190,7 @@ class TLSCertificate(Document):
 			"Registry Server",
 			"Analytics Server",
 			"Trace Server",
+			"NAT Server",
 		]
 
 		for server_doctype in server_doctypes:
@@ -226,6 +229,30 @@ class TLSCertificate(Document):
 	def trigger_self_hosted_server_callback(self):
 		with suppress(Exception):
 			frappe.get_doc("Self Hosted Server", self.name).process_tls_cert_update()
+
+	def setup_standalone_wildcard_hosts(self):
+		standalone_servers = frappe.get_all(
+			"Server",
+			filters={
+				"status": ("not in", ["Archived", "Installing"]),
+				"is_standalone_setup": 1,
+			},
+			pluck="name",
+		)
+		if standalone_servers:
+			servers = frappe.get_all(
+				"Site",
+				filters={
+					"status": ("!=", "Archived"),
+					"domain": self.domain,
+					"server": ("in", standalone_servers),
+				},
+				distinct=True,
+				pluck="server",
+			)
+
+			for server in servers:
+				frappe.get_doc("Server", server).setup_wildcard_hosts()
 
 	def _extract_certificate_details(self):
 		x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, self.certificate)
@@ -380,10 +407,8 @@ def notify_custom_tls_renewal():
 
 	for certificate in pending:
 		if certificate.team:
-			notify_email = frappe.get_value("Team", certificate.team, "notify_email")
-
 			frappe.sendmail(
-				recipients=notify_email,
+				recipients=get_communication_info("Email", "Site Activity", "Team", certificate.team),
 				subject=f"TLS Certificate Renewal Required: {certificate.name}",
 				message=f"TLS Certificate {certificate.name} is due for renewal on {certificate.expires_on}. Please renew the certificate to avoid service disruption.",
 			)
@@ -430,6 +455,7 @@ def retrigger_failed_wildcard_tls_callbacks():
 		"Registry Server",
 		"Analytics Server",
 		"Trace Server",
+		"NAT Server",
 	]
 	for server_doctype in server_doctypes:
 		servers = frappe.get_all(
@@ -468,16 +494,37 @@ class BaseCA:
 		self._obtain()
 		return self._extract()
 
-	def _extract(self):
-		with open(self.certificate_file) as f:
-			certificate = f.read()
-		with open(self.full_chain_file) as f:
-			full_chain = f.read()
-		with open(self.intermediate_chain_file) as f:
-			intermediate_chain = f.read()
-		with open(self.private_key_file) as f:
-			private_key = f.read()
+	def _read_latest_certificate_file(self, file_path):
+		import glob
+		import os
+		import re
 
+		# Split path into directory and filename
+		dir_path = os.path.dirname(file_path)
+		file_name = os.path.basename(file_path)
+		parent_dir = os.path.dirname(dir_path)
+		base_dir_name = os.path.basename(dir_path)
+
+		# Look for indexed directories first (e.g., dir-0000, dir-0001, etc.)
+		indexed_dirs = glob.glob(os.path.join(parent_dir, f"{base_dir_name}-[0-9][0-9][0-9][0-9]"))
+
+		if indexed_dirs:
+			# Find directory with highest index
+			latest_dir = max(indexed_dirs, key=lambda p: int(re.search(r"-(\d+)$", p).group(1)))
+			latest_path = os.path.join(latest_dir, file_name)
+		elif os.path.exists(file_path):
+			latest_path = file_path
+		else:
+			raise FileNotFoundError(f"Certificate file not found: {file_path}")
+
+		with open(latest_path) as f:
+			return f.read()
+
+	def _extract(self):
+		certificate = self._read_latest_certificate_file(self.certificate_file)
+		full_chain = self._read_latest_certificate_file(self.full_chain_file)
+		intermediate_chain = self._read_latest_certificate_file(self.intermediate_chain_file)
+		private_key = self._read_latest_certificate_file(self.private_key_file)
 		return certificate, full_chain, intermediate_chain, private_key
 
 
@@ -509,19 +556,21 @@ class LetsEncrypt(BaseCA):
 
 	def _obtain_wildcard(self):
 		domain = frappe.get_doc("Root Domain", self.domain[2:])
-		environment = os.environ
+		environment = os.environ.copy()
 		environment.update(
 			{
 				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,
 				"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
 			}
 		)
+		if domain.aws_region:
+			environment["AWS_DEFAULT_REGION"] = domain.aws_region
 		self.run(self._certbot_command(), environment=environment)
 
 	def _obtain_naked_with_dns(self):
 		domain = frappe.get_all("Root Domain", pluck="name", limit=1)[0]
 		domain = frappe.get_doc("Root Domain", domain)
-		environment = os.environ
+		environment = os.environ.copy()
 		environment.update(
 			{
 				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,

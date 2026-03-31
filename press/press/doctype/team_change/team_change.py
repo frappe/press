@@ -32,10 +32,8 @@ class TeamChange(Document):
 
 	def on_update(self):
 		if self.document_type == "Site" and self.transfer_completed:
-			notify_email = frappe.get_value("Team", self.to_team, "user")
-			frappe.db.set_value(
-				"Site", self.document_name, {"team": self.to_team, "notify_email": notify_email}
-			)
+			frappe.db.set_value("Site", self.document_name, "team", self.to_team)
+
 			frappe.db.set_value(
 				"Subscription",
 				{"document_name": self.document_name},
@@ -58,3 +56,6 @@ class TeamChange(Document):
 
 		if self.document_type == "Release Group" and self.transfer_completed:
 			frappe.db.set_value("Release Group", self.document_name, "team", self.to_team)
+			# Skip onboarding for receiving team so they can access bench groups immediately
+			# Actual resource usage (servers/sites) will still require billing setup
+			frappe.db.set_value("Team", self.to_team, "skip_onboarding", 1)

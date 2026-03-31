@@ -1,0 +1,16 @@
+---
+- name: Add NAT gateway
+  copy:
+    dest: /etc/netplan/99-custom-gateway.yaml
+    content: |
+      network:
+        ethernets:
+          {{ ansible_default_ipv4.interface }}:
+            routes:
+              - to: default
+                via: {{ nat_gateway_ip }}
+  when: nat_gateway_ip is defined and nat_gateway_ip
+
+- name: Apply Netplan
+  command: netplan apply
+  when: nat_gateway_ip is defined and nat_gateway_ip

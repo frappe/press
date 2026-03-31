@@ -50,8 +50,12 @@ def archive_suspended_trial_sites():
 				site: Site = frappe.get_doc("Site", site.name, for_update=True)
 				site.archive(reason="Archive suspended trial site")
 				archived_now = archived_now + 1
+				frappe.db.commit()
 		except Exception:
 			log_error("Suspended Site Archive Error")
+			# Without the rollback the transaction will be implicitly committed
+			# So we selectively commit and rollback
+			frappe.db.rollback()
 
 
 def delete_offsite_backups_for_archived_sites():

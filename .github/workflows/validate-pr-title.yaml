@@ -19,11 +19,11 @@ jobs:
       - name: Run Commitlint
         id: commitlint
         run: npx commitlint --edit pr-title.txt > commitlint_output.txt 2>&1
-        if: always()
+        if: github.event.pull_request.user.login != 'mergify[bot]'
       - name: Run CSpell
         id: cspell
         run: npx cspell --config .cspell.json pr-title.txt > cspell_output.txt 2>&1
-        if: always()
+        if: github.event.pull_request.user.login != 'mergify[bot]'
       - name: Delete Old Bot Comments
         if: always()
         env:
@@ -37,7 +37,7 @@ jobs:
             gh api repos/${{ github.repository }}/issues/comments/$COMMENT_ID -X DELETE
           done
       - name: Post PR Comment
-        if: always()
+        if: github.event.pull_request.user.login != 'mergify[bot]'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

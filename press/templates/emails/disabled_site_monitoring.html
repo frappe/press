@@ -1,0 +1,27 @@
+{% extends "templates/emails/base.html" %} {% block content %}
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white">
+		<div class="from-markdown">
+			Hey there,
+			<p>
+				Monitoring & alerting mechanism has been disabled for your site
+				<strong>{{site}}</strong>.
+                Reason for disabling monitoring:
+			</p>
+			<blockquote>{{reason}}</blockquote>
+			<p>
+				Please re-enable monitoring from dashboard to receive alerts.<br>
+                Check the documentation
+				<a
+					href="https://docs.frappe.io/cloud/sites/monitoring#monitoring-disabled"
+					target="_blank"
+					>here</a
+				> for the guide. If you need any assistance, please raise a ticket on
+				<a href="https://frappecloud.com/support" target="_blank"
+					>frappecloud.com/support</a
+				>.
+			</p>
+		</div>
+	</div>
+</td>
+{% endblock %}

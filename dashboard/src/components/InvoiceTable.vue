@@ -34,7 +34,7 @@
 							<td class="py-1 pl-2 pr-2">
 								{{ row.document_name }}
 								<span v-if="row.plan" class="text-gray-700">
-									({{ formatPlan(row.plan) }}/mo)
+									({{ formatPlan(row.plan) }})
 								</span>
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right">
@@ -42,15 +42,17 @@
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right">
 								{{ row.quantity }}
+
 								{{
 									[
 										'Site',
-										'Release Group',
 										'Server',
 										'Database Server',
-									].includes(row.document_type)
+										'Marketplace App',
+										'Cluster',
+									].includes(row.document_type) && !row.plan?.includes('hour')
 										? $format.plural(row.quantity, 'day', 'days')
-										: ''
+										: 'hours'
 								}}
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right font-medium">
@@ -131,7 +133,7 @@
 							<td></td>
 							<td class="pr-2 text-right font-medium">Amount Due</td>
 							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
-								{{ formatCurrency(doc.amount_due) }}
+								{{ formatCurrency(doc.amount_due_with_tax) }}
 							</td>
 						</tr>
 					</template>

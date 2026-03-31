@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "field:title",
  "creation": "2025-05-12 16:54:59.138216",
@@ -26,7 +27,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-19 11:32:27.616218",
+ "modified": "2025-11-06 11:13:43.924843",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Lead Type",

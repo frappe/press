@@ -19,6 +19,7 @@
   "ip_address",
   "invited_by_parent_team",
   "press_roles",
+  "agreed_to_terms",
   "saas_sign_up_section",
   "saas",
   "saas_app",
@@ -298,12 +299,18 @@
    "fieldtype": "Datetime",
    "label": "Request Key Expiration Time",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "agreed_to_terms",
+   "fieldtype": "Check",
+   "label": "Agreed to Terms and Conditions"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-27 18:14:39.244905",
+ "modified": "2025-10-29 07:26:37.983114",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

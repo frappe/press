@@ -1,0 +1,24 @@
+[Unit]
+Description=MariaDB Health Monitor
+After=mariadb.service
+Wants=mariadb.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/mariadb-monitor
+Restart=always
+RestartSec=5
+
+User=root
+Group=root
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mariadb-monitor
+
+MemoryMax=64M
+CPUQuota=10%
+OOMScoreAdjust=-900
+
+[Install]
+WantedBy=multi-user.target

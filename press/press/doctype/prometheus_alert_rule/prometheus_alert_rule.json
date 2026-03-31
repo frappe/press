@@ -45,8 +45,7 @@
    "fieldname": "expression",
    "fieldtype": "Code",
    "in_list_view": 1,
-   "label": "Expression",
-   "reqd": 1
+   "label": "Expression"
   },
   {
    "default": "{}",
@@ -197,7 +196,7 @@
    "link_fieldname": "alert"
   }
  ],
- "modified": "2024-05-27 12:08:23.598999",
+ "modified": "2026-01-16 14:24:38.200768",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Prometheus Alert Rule",
@@ -215,8 +214,33 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
   }
  ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

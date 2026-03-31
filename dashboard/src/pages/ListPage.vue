@@ -1,13 +1,11 @@
 <template>
 	<div class="flex h-full flex-col">
-		<div class="sticky top-0 z-10 shrink-0">
-			<Header>
-				<Breadcrumbs
-					:items="[{ label: object.list.title, route: object.list.route }]"
-				/>
-			</Header>
-		</div>
-		<div class="p-5">
+		<Header :sticky="true">
+			<Breadcrumbs
+				:items="[{ label: object.list.title, route: object.list.route }]"
+			/>
+		</Header>
+		<div class="p-5 pb-0">
 			<AlertAddPaymentMode
 				class="mb-5"
 				v-if="$team?.doc && !$team.doc.payment_mode && !$team.doc.parent_team"
@@ -24,7 +22,7 @@
 					$team.doc.payment_mode
 				"
 			/>
-			<CustomAlerts />
+			<CustomAlerts ctx_type="List Page" />
 			<AlertMandateInfo
 				class="mb-5"
 				v-if="
@@ -40,6 +38,12 @@
 					hasUnpaidInvoices > 0 && $team.doc.payment_mode == 'Prepaid Credits'
 				"
 				:amount="hasUnpaidInvoices"
+			/>
+			<AlertBudgetThreshold
+				class="mb-5"
+				v-if="displayBudgetAlert > 0"
+				:amount="displayBudgetAlert"
+				:currency="$team.doc.currency == 'INR' ? '₹' : '$'"
 			/>
 			<ObjectList :options="listOptions" />
 		</div>
@@ -76,6 +80,9 @@ export default {
 		),
 		AlertUnpaidInvoices: defineAsyncComponent(
 			() => import('../components/AlertUnpaidInvoices.vue'),
+		),
+		AlertBudgetThreshold: defineAsyncComponent(
+			() => import('../components/AlertBudgetThreshold.vue'),
 		),
 		CustomAlerts: defineAsyncComponent(
 			() => import('../components/CustomAlerts.vue'),
@@ -126,12 +133,34 @@ export default {
 		hasUnpaidInvoices() {
 			return this.$resources.getAmountDue.data;
 		},
+		displayBudgetAlert() {
+			if (
+				!this.$team.doc.receive_budget_alerts ||
+				!this.$team.doc.monthly_alert_threshold ||
+				this.$team.doc.monthly_alert_threshold <= 0
+			) {
+				return 0;
+			}
+
+			let difference =
+				this.$resources.getCurrentBillingAmount.data -
+				this.$team.doc.monthly_alert_threshold;
+
+			return difference > 0 ? difference.toFixed(2) : 0;
+		},
 	},
 	resources: {
 		getAmountDue() {
 			return {
 				url: 'press.api.billing.total_unpaid_amount',
 				auto: true,
+			};
+		},
+		getCurrentBillingAmount() {
+			return {
+				url: 'press.api.billing.get_current_billing_amount',
+				auto: true,
+				cache: 'Current Billing Amount',
 			};
 		},
 	},

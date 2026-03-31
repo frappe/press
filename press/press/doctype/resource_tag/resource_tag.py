@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
+import typing
+
 from frappe.model.document import Document
 
 
@@ -21,4 +23,4 @@ class ResourceTag(Document):
 		tag_name: DF.Data | None
 	# end: auto-generated types
 
-	dashboard_fields = ["tag", "tag_name"]
+	dashboard_fields: typing.ClassVar = ["tag", "tag_name"]

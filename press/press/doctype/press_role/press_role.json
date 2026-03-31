@@ -13,14 +13,25 @@
   "admin_access",
   "allow_billing",
   "allow_apps",
+  "all_servers",
+  "all_sites",
+  "all_release_groups",
   "allow_partner",
   "column_break_todb",
   "allow_site_creation",
   "allow_bench_creation",
   "allow_server_creation",
   "allow_webhook_configuration",
+  "partner_permissions_section",
+  "allow_dashboard",
+  "allow_leads",
+  "column_break_hocg",
+  "allow_customer",
+  "allow_contribution",
   "section_break_zdiv",
-  "users"
+  "users",
+  "section_break_wcgd",
+  "resources"
  ],
  "fields": [
   {
@@ -39,7 +50,8 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "section_break_zdiv",
@@ -64,31 +76,36 @@
    "default": "0",
    "fieldname": "allow_billing",
    "fieldtype": "Check",
-   "label": "Allow Billing"
+   "label": "Allow Billing",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "allow_apps",
    "fieldtype": "Check",
-   "label": "Allow Apps"
+   "label": "Allow Apps",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "allow_site_creation",
    "fieldtype": "Check",
-   "label": "Allow Site Creation"
+   "label": "Allow Site Creation",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "allow_bench_creation",
    "fieldtype": "Check",
-   "label": "Allow Bench Creation"
+   "label": "Allow Bench Creation",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "allow_server_creation",
    "fieldtype": "Check",
-   "label": "Allow Server Creation"
+   "label": "Allow Server Creation",
+   "search_index": 1
   },
   {
    "default": "0",
@@ -100,19 +117,86 @@
    "default": "0",
    "fieldname": "admin_access",
    "fieldtype": "Check",
-   "label": "Admin Access"
+   "label": "Admin Access",
+   "search_index": 1
   },
   {
    "default": "0",
    "fieldname": "allow_webhook_configuration",
    "fieldtype": "Check",
-   "label": "Allow Webhook Configuration"
+   "label": "Allow Webhook Configuration",
+   "search_index": 1
+  },
+  {
+   "depends_on": "allow_partner",
+   "fieldname": "partner_permissions_section",
+   "fieldtype": "Section Break",
+   "label": "Partner Permissions"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_dashboard",
+   "fieldtype": "Check",
+   "label": "Allow Dashboard"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_leads",
+   "fieldtype": "Check",
+   "label": "Allow Leads"
+  },
+  {
+   "fieldname": "column_break_hocg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_customer",
+   "fieldtype": "Check",
+   "label": "Allow Customer"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_contribution",
+   "fieldtype": "Check",
+   "label": "Allow Contribution"
+  },
+  {
+   "fieldname": "section_break_wcgd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "resources",
+   "fieldtype": "Table",
+   "label": "Resources",
+   "options": "Press Role Resource"
+  },
+  {
+   "default": "0",
+   "fieldname": "all_servers",
+   "fieldtype": "Check",
+   "label": "All Servers",
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "all_sites",
+   "fieldtype": "Check",
+   "label": "All Sites",
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "all_release_groups",
+   "fieldtype": "Check",
+   "label": "All Release Groups",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-28 23:13:02.340747",
- "modified_by": "Administrator",
+ "modified": "2026-02-18 18:52:22.107986",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Press Role",
  "naming_rule": "Random",
@@ -143,13 +227,16 @@
    "write": 1
   },
   {
+   "create": 1,
+   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
    "role": "Press Member",
-   "share": 1
+   "share": 1,
+   "write": 1
   }
  ],
  "row_format": "Dynamic",

@@ -12,10 +12,10 @@ from press.press.doctype.press_settings.test_press_settings import (
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
-from press.telegram_utils import Telegram
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 
-@patch.object(Telegram, "send", new=Mock())
+@patch.object(TelegramMessage, "enqueue", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestBackupRecordCheck(FrappeTestCase):
 	def tearDown(self):
@@ -77,7 +77,7 @@ class TestBackupRecordCheck(FrappeTestCase):
 		self.assertEqual(audit_log.status, "Success")
 
 
-@patch.object(Telegram, "send", new=Mock())
+@patch.object(TelegramMessage, "enqueue", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestOffsiteBackupCheck(FrappeTestCase):
 	def tearDown(self):

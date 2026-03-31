@@ -24,9 +24,9 @@ from press.utils import log_error
 def execute():
 	today = getdate()
 	first_day_of_month = get_first_day(today)
-	nineth_day_of_month = add_days(first_day_of_month, 8)
+	fifteenth_day_of_month = add_days(first_day_of_month, 14)
 
-	if today >= first_day_of_month and today <= nineth_day_of_month:
+	if today >= first_day_of_month and today <= fifteenth_day_of_month:
 		return
 
 	teams_with_unpaid_invoices = get_teams_with_unpaid_invoices()
@@ -70,9 +70,11 @@ def get_teams_with_unpaid_invoices():
 
 	plan = frappe.qb.DocType("Site Plan")
 	query = (
-		frappe.qb.from_(plan).select(plan.name).where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
+		frappe.qb.from_(plan)
+		.select(plan.name)
+		.where((plan.enabled == 1) & ((plan.is_frappe_plan == 1) | (plan.is_trial_plan == 1)))
 	).run(as_dict=True)
-	frappe_plans = [d.name for d in query]
+	ignorable_plans = [d.name for d in query]
 
 	invoice = frappe.qb.DocType("Invoice")
 	team = frappe.qb.DocType("Team")
@@ -93,16 +95,12 @@ def get_teams_with_unpaid_invoices():
 			& (invoice.docstatus < 2)
 			& (invoice.type == "Subscription")
 			& (site.free == 0)
-			& (site.plan).notin(frappe_plans)
 			& (invoice.period_end <= last_day)
 		)
 		.select(invoice.team)
 		.distinct()
 	)
-
-	first_day = get_first_day(today)
-	two_weeks = add_days(first_day, 14)  # 15th day of the month
-	if today < two_weeks:
-		query = query.where(team.erpnext_partner == 0)
+	if ignorable_plans:
+		query = query.where((site.plan).notin(ignorable_plans))
 
 	return query.run(as_dict=True)

@@ -1,3 +1,5 @@
 session.json
 debug.log
 session*.json
+fcrestore
+error.log
