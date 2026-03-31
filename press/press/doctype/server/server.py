@@ -3948,17 +3948,17 @@ def refresh_new_bench_and_site_server_pool() -> None:
 
 	if selected_servers:
 		other_servers = list(set(server_names) - selected_servers)
-
-		frappe.db.set_value(
-			"Server",
-			{"name": ["in", other_servers]},
-			{"use_for_new_benches": 0, "use_for_sites": 0},
-		)
+		if other_servers:
+			frappe.db.set_value(
+				"Server",
+				{"name": ["in", other_servers]},
+				{"use_for_new_benches": 0, "use_for_new_sites": 0},
+			)
 
 		frappe.db.set_value(
 			"Server",
 			{"name": ["in", list(selected_servers)]},
-			{"use_for_new_benches": 1, "use_for_sites": 1},
+			{"use_for_new_benches": 1, "use_for_new_sites": 1},
 		)
 
 
@@ -3976,27 +3976,30 @@ def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[
 
 
 def _get_server_cpu_time_across_sites(server_names: list[str]) -> dict[str, float]:
-	score_map = {server: 0.0 for server in server_names}
+	from pypika.functions import Coalesce, Sum
+
+	score_map: dict[str, float] = {}
 	if not server_names:
 		return score_map
 
-	sites = frappe.get_all(
-		"Site",
-		filters={"server": ["in", server_names], "status": ["not in", ["Archived", "Suspended"]]},
-		fields=["server", "plan"],
-	)
-	plans = {site.plan for site in sites if site.plan}
+	Site = frappe.qb.DocType("Site")
+	SitePlan = frappe.qb.DocType("Site Plan")
 
-	plan_cpu_time_map = {}
-	if plans:
-		plan_cpu_times = frappe.get_all(
-			"Site Plan",
-			filters={"name": ["in", plans]},
-			fields=["name", "cpu_time_per_day"],
+	server_scores = (
+		frappe.qb.from_(Site)
+		.left_join(SitePlan)
+		.on(Site.plan == SitePlan.name)
+		.select(
+			Site.server,
+			Coalesce(Sum(SitePlan.cpu_time_per_day), 0).as_("cpu_time_per_day"),
 		)
-		plan_cpu_time_map = {plan.name: float(plan.cpu_time_per_day or 0.0) for plan in plan_cpu_times}
+		.where(Site.server.isin(server_names))
+		.where(~Site.status.isin(["Archived", "Suspended"]))
+		.groupby(Site.server)
+		.run(as_dict=True)
+	)
 
-	for site in sites:
-		score_map[site.server] += plan_cpu_time_map.get(site.plan, 0.0)
+	for server_score in server_scores:
+		score_map[server_score.server] = float(server_score.cpu_time_per_day or 0.0)
 
 	return score_map
