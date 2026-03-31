@@ -269,7 +269,9 @@ def accept_team_invite(key: str):
 		frappe.throw("You are not invited by any team")
 
 	if frappe.session.user != account_request.email:
-		frappe.throw("This invite is not for your account")
+		frappe.throw(
+			"This invite can't be accepted with the current account. Please sign in with the invited account or request a new invite."
+		)
 
 	team = account_request.team
 	first_name = account_request.first_name
