@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Popover, Badge, Button, createListResource } from 'frappe-ui';
+import { Popover, Badge, Button, Tooltip, createListResource } from 'frappe-ui';
 import LucideInbox from '~icons/lucide/inbox';
 import { dayjsLocal } from '@/utils/dayjs';
 import LucideKey from '~icons/lucide/key';
@@ -7,6 +7,7 @@ import { getDocResource } from '@/utils/resource';
 import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { frappeRequest } from 'frappe-ui';
+import LucideAlert from '~icons/lucide/circle-alert';
 
 import { unreadNotificationsCount } from '@/data/notifications';
 
@@ -190,6 +191,13 @@ const markAllAsRead = (togglePopover) => {
 
 							<Badge class="text-xs mr-auto">
 								{{ x.title }}
+								<Tooltip
+									text="This notification requires your attention"
+									:hoverDelay="0"
+									v-if="x.is_actionable && !x.is_addressed"
+								>
+									<LucideAlert class="size-3" />
+								</Tooltip>
 							</Badge>
 
 							<span class="text-ink-gray-5 text-xs">
