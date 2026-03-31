@@ -128,11 +128,6 @@ class NATServer(BaseServer):
 				reference_doctype="NAT Server",
 				reference_name=secondary,
 			)
-<<<<<<< HEAD
-=======
-			ansible.run()
-		except Exception as e:
-			log_error("Configure Monitoring Failed", server=self.as_dict(), error=str(e))
 
 	@frappe.whitelist()
 	def attach_nat_security_group(self):
@@ -157,4 +152,3 @@ class NATServer(BaseServer):
 		ec2.modify_instance_attribute(InstanceId=vm.instance_id, Groups=sgs)
 
 		return "NAT Security Group attached successfully"
->>>>>>> 5b6920383 (feat(nat-server): add action to add nat security group in nat server)
