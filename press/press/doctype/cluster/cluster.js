@@ -30,8 +30,8 @@ frappe.ui.form.on('Cluster', {
 			[__('Create Proxy'), 'create_proxy', frm.doc.status === 'Active'],
 			[__('Add Images'), 'add_images', frm.doc.status === 'Active'],
 			[
-				__('Create NAT Security Group'),
-				'create_nat_security_group',
+				__('Assign NAT Security Group'),
+				'assign_nat_security_group',
 				frm.doc.cloud_provider === 'AWS EC2' &&
 					frm.doc.status === 'Active' &&
 					!frm.doc.nat_security_group_id,

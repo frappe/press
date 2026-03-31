@@ -4,6 +4,7 @@
 frappe.ui.form.on('Virtual Machine', {
 	refresh: function (frm) {
 		if (frm.is_new()) {
+			// set default value for assign_public_ip based on cluster settings
 			frappe.db
 				.get_value(
 					'Cluster',
@@ -18,7 +19,8 @@ frappe.ui.form.on('Virtual Machine', {
 					}
 				});
 		} else {
-			frm.set_df_property('assign_public_ip', 'hidden', 1);
+			if (frm.doc.status !== 'Draft')
+				frm.set_df_property('assign_public_ip', 'hidden', 1);
 		}
 
 		[
