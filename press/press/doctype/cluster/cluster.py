@@ -867,7 +867,7 @@ class Cluster(Document):
 					"IpRanges": [
 						{"CidrIp": self.subnet_cidr_block, "Description": "POP3 from private network"}
 					],
-					"ToPort": 993,
+					"ToPort": 995,
 				},
 				{
 					"FromPort": 110,
@@ -878,6 +878,10 @@ class Cluster(Document):
 					"ToPort": 110,
 				},
 			],
+		)
+
+		frappe.db.set_value(
+			"Cluster", self.name, "nat_security_group_id", self.nat_security_group_id, update_modified=False
 		)
 
 	def get_oci_public_key_fingerprint(self):
