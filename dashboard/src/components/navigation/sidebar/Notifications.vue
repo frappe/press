@@ -3,6 +3,8 @@ import { Popover, Badge, Button, createListResource } from 'frappe-ui';
 import LucideInbox from '~icons/lucide/inbox';
 import { dayjsLocal } from '@/utils/dayjs';
 import LucideKey from '~icons/lucide/key';
+import { getDocResource } from '@/utils/resource';
+import { useRouter } from 'vue-router';
 
 import { unreadNotificationsCount } from '@/data/notifications';
 
@@ -64,6 +66,32 @@ const resource = createListResource({
 const formatHtml = (str: string) => {
 	return str.replace(/<(?!\/?b\b)[^>]*>/g, '').split('\n')[0];
 };
+
+const router = useRouter();
+
+const markNotificationAsRead = (row, togglePopover) => {
+	const docres = getDocResource({
+		doctype: 'Press Notification',
+		name: row.name,
+		whitelistedMethods: {
+			markNotificationAsRead: 'mark_as_read',
+		},
+	});
+
+	docres.markNotificationAsRead.submit().then(() => {
+		unreadNotificationsCount.setData((data) => data - 1);
+		if (row.route) {
+			togglePopover();
+			router.push('/' + row.route);
+		}
+	});
+
+	resource.setData((data) => {
+		const newData = data.filter((d) => d.name !== row.name);
+		resource.originalData = newData;
+		return newData;
+	});
+};
 </script>
 
 <template>
@@ -115,11 +143,13 @@ const formatHtml = (str: string) => {
 					</Button>
 				</div>
 
+				<!-- notification tiles -->
 				<section class="overflow-auto">
 					<div
 						v-for="(x, i) in resource.data"
-						class="[&_b]:font-semibold px-4 py-3 flex gap-4 items-center"
+						class="[&_b]:font-semibold px-4 py-3 flex gap-4 items-center cursor-pointer"
 						:class="{ 'border-b': i !== resource.data.length - 1 }"
+						@click="() => markNotificationAsRead(x, togglePopover)"
 					>
 						<div
 							class="size-8 flex-shrink-0 flex items-center p-2 rounded"
