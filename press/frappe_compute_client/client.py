@@ -41,6 +41,12 @@ class Client:
 			},
 		)
 
+	def check_machine_availability(self, machine_type, instance_id: str | None = None):
+		return self.client.get_api(
+			"orchestrator.api.utils.check_machine_availability",
+			{"machine_type": machine_type, "instance_id": instance_id},
+		)
+
 	def sync_virtual_machine(self, instance_id: str):
 		return self.client.get_api("orchestrator.api.virtual_machine.sync", {"instance_id": instance_id})
 
