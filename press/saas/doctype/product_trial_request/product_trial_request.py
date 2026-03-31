@@ -157,7 +157,11 @@ class ProductTrialRequest(Document):
 					try:
 						site.create_sync_user_webhook()
 					except Exception:
-						log_error("Sync User Webhook Creation Failed", site=self.site)
+						log_error(
+							title="Sync User Webhook Creation Failed",
+							reference_doctype=self.doctype,
+							reference_name=self.name,
+						)
 
 	@frappe.whitelist()
 	def get_setup_wizard_payload(self):
