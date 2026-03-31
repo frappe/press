@@ -5,6 +5,8 @@ import { dayjsLocal } from '@/utils/dayjs';
 import LucideKey from '~icons/lucide/key';
 import { getDocResource } from '@/utils/resource';
 import { useRouter } from 'vue-router';
+import { toast } from 'vue-sonner';
+import { frappeRequest } from 'frappe-ui';
 
 import { unreadNotificationsCount } from '@/data/notifications';
 
@@ -69,7 +71,7 @@ const formatHtml = (str: string) => {
 
 const router = useRouter();
 
-const markNotificationAsRead = (row, togglePopover) => {
+const markAsRead = (row, togglePopover) => {
 	const docres = getDocResource({
 		doctype: 'Press Notification',
 		name: row.name,
@@ -91,6 +93,25 @@ const markNotificationAsRead = (row, togglePopover) => {
 		resource.originalData = newData;
 		return newData;
 	});
+};
+
+const markAllAsRead = (togglePopover) => {
+	toast.promise(
+		frappeRequest({
+			url: '/api/method/press.api.notifications.mark_all_notifications_as_read',
+		}),
+		{
+			success: () => {
+				resource.reload();
+				togglePopover();
+
+				return 'All notifications marked as read';
+			},
+			loading: 'Marking all notifications as read...',
+			error: (error) =>
+				error.messages?.length ? error.messages.join('\n') : error.message,
+		},
+	);
 };
 </script>
 
@@ -130,7 +151,7 @@ const markNotificationAsRead = (row, togglePopover) => {
 				<div class="text-base flex items-center py-2 px-4 border-b">
 					<span class="font-medium mr-auto"> Notifications</span>
 
-					<Button variant="ghost">
+					<Button variant="ghost" @click="markAllAsRead(togglePopover)">
 						<template #icon>
 							<LucideCheckCheck class="size-4" />
 						</template>
@@ -149,7 +170,7 @@ const markNotificationAsRead = (row, togglePopover) => {
 						v-for="(x, i) in resource.data"
 						class="[&_b]:font-semibold px-4 py-3 flex gap-4 items-center cursor-pointer"
 						:class="{ 'border-b': i !== resource.data.length - 1 }"
-						@click="() => markNotificationAsRead(x, togglePopover)"
+						@click="() => markAsRead(x, togglePopover)"
 					>
 						<div
 							class="size-8 flex-shrink-0 flex items-center p-2 rounded"
