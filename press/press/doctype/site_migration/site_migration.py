@@ -864,10 +864,21 @@ class SiteMigration(Document):
 
 		return steps
 
+	@property
+	def is_destination_unified(self):
+		return bool(frappe.db.get_value("Server", self.destination_server, "is_unified_server"))
 
-def process_required_job_callbacks(job):
+
+def process_required_job_callbacks(job, site_migration: SiteMigration):
 	if job.job_type == "Backup Site":
 		process_backup_site_job_update(job)
+	elif job.job_type == "New Site from Backup" and job.status == "Success":
+		if not site_migration.is_destination_unified:
+			return
+		site = Site("Site", site_migration.site)
+		Agent(site_migration.destination_server).create_database_access_credentials(
+			site=site
+		)  # In case the permissions are missing correct them
 
 
 def job_matches_site_migration(job, site_migration_name: str):
@@ -885,7 +896,7 @@ def process_site_migration_job_update(job, site_migration_name: str):
 		log_error("Extra Job found during Site Migration", job=job.as_dict())
 		return
 
-	process_required_job_callbacks(job)
+	process_required_job_callbacks(job, site_migration)
 	site_migration.update_next_step_status(job.status)
 
 	if site_migration.is_cleanup_done(job):
