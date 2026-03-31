@@ -1,0 +1,10 @@
+---
+- name: Configure Monitoring for NAT
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: nginx
+    - role: agent_monitoring_setup
+    - role: auditd
