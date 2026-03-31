@@ -84,7 +84,7 @@
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Move To Existing Bench'"
 					>
-						<p class="text-sm text-gray-700">Select Bench Group</p>
+						<p class="text-sm text-gray-700">Select Bench</p>
 						<FormControl
 							type="combobox"
 							:options="

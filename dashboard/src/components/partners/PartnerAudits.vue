@@ -25,13 +25,19 @@ const partnerAuditsList = computed(() => {
 				fieldname: 'mode_of_audit',
 			},
 			{
+				label: 'Status',
+				fieldname: 'status',
+				type: 'Badge',
+			},
+			{
 				label: 'Conducted By',
 				fieldname: 'conducted_by',
 			},
 			{
-				label: 'Status',
-				fieldname: 'status',
+				label: 'NC Count',
+				fieldname: 'non_conformance_count',
 				type: 'Badge',
+				align: 'center',
 			},
 			{
 				label: 'Requested Date',
@@ -70,6 +76,7 @@ const partnerAuditsList = computed(() => {
 					fieldname: 'status',
 					label: 'Status',
 					options: [
+						{ label: 'All', value: 'All' },
 						{ label: 'Requested', value: 'Requested' },
 						{ label: 'Scheduled', value: 'Scheduled' },
 						{ label: 'In Progress', value: 'In Progress' },

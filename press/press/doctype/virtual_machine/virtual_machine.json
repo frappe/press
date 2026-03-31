@@ -40,6 +40,7 @@
   "subnet_id",
   "private_ip_address",
   "public_ip_address",
+  "assign_public_ip",
   "is_static_ip",
   "column_break_15",
   "subnet_cidr_block",
@@ -391,6 +392,12 @@
    "fieldtype": "Data",
    "label": "Secondary Private IP Address",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "assign_public_ip",
+   "fieldtype": "Check",
+   "label": "Assign Public IP"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -436,7 +443,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2026-03-15 00:12:03.341762",
+ "modified": "2026-03-31 10:25:00.362005",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

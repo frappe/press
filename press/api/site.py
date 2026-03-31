@@ -1105,17 +1105,19 @@ def get_additional_clusters_for_private_benches(existing_clusters, cloud_provide
 	if not private_bench_site_plans_providers:
 		return []
 
+	filters = {"parent": ("in", private_bench_site_plans_providers)}
+
+	if not get_current_team(get_doc=True).is_frappe_compute_internal_user:
+		filters["name"] = ("!=", "Frappe Compute")
+
 	allowed_providers = frappe.db.get_all(
 		"Cloud Providers",
-		filters={"parent": ("in", private_bench_site_plans_providers)},
+		filters=filters,
 		pluck="cloud_provider",
 	)
 
 	if not allowed_providers:
 		return []
-
-	if not get_current_team(get_doc=True).is_frappe_compute_internal_user:
-		allowed_providers = [i for i in allowed_providers if i != "Frappe Compute"]
 
 	servers_from_allowed_providers = frappe.db.get_all(
 		"Server",

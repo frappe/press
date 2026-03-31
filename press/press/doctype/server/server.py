@@ -102,7 +102,6 @@ class BaseServer(Document, TagHelpers):
 		"auto_add_storage_min",
 		"auto_add_storage_max",
 		"auto_increase_storage",
-		"is_monitoring_disabled",
 		"auto_purge_binlog_based_on_size",
 		"binlog_max_disk_usage_percent",
 		"is_monitoring_disabled",
@@ -748,13 +747,6 @@ class BaseServer(Document, TagHelpers):
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
 		database_server: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
 		database_server_config = database_server._get_config()
-		nat_server_private_ips = (
-			frappe.db.get_value(
-				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
-			)
-			if self.nat_server
-			else None
-		)
 
 		self.status = "Installing"
 		database_server.status = "Installing"
@@ -790,8 +782,7 @@ class BaseServer(Document, TagHelpers):
 					"allocator": database_server.memory_allocator.lower(),
 					"mariadb_root_password": database_server_config.mariadb_root_password,
 					"mariadb_depends_on_mounts": database_server_config.mariadb_depends_on_mounts,
-					"nat_gateway_ip": nat_server_private_ips
-					and (nat_server_private_ips.secondary_private_ip or nat_server_private_ips.private_ip),
+					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					**self.get_mount_variables(),  # Currently same as database server since no volumes
 				},
 			)
@@ -1895,10 +1886,6 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(self.doctype, self.name, "_install_nat_iptables")
 
 	def _install_nat_iptables(self):
-		nat_server_private_ips = frappe.db.get_value(
-			"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
-		)
-
 		try:
 			ansible = Ansible(
 				playbook="nat_iptables.yml",
@@ -1906,8 +1893,7 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 				variables={
-					"nat_gateway_ip": nat_server_private_ips.secondary_private_ip
-					or nat_server_private_ips.private_ip
+					"nat_gateway_ip": self.get_nat_gateway_ip(),
 				},
 			)
 			ansible.run()
@@ -2269,6 +2255,14 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			ansible.run()
 		except Exception:
 			log_error("Prune Docker System Exception", doc=self)
+
+	def get_nat_gateway_ip(self):
+		if hasattr(self, "nat_server") and self.nat_server:
+			nat_private_ips = frappe.db.get_value(
+				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
+			)
+			return nat_private_ips.secondary_private_ip or nat_private_ips.private_ip
+		return None
 
 	@frappe.whitelist()
 	def reload_nginx(self):
@@ -2956,13 +2950,6 @@ class Server(BaseServer):
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
-		nat_server_private_ips = (
-			frappe.db.get_value(
-				"NAT Server", self.nat_server, ("private_ip", "secondary_private_ip"), as_dict=True
-			)
-			if self.nat_server
-			else None
-		)
 
 		# If database server is set, then define db port under configuration
 		db_port = (
@@ -2996,8 +2983,7 @@ class Server(BaseServer):
 					"db_port": db_port,
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
-					"nat_gateway_ip": nat_server_private_ips
-					and (nat_server_private_ips.secondary_private_ip or nat_server_private_ips.private_ip),
+					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					**self.get_mount_variables(),
 				},
 			)

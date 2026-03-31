@@ -162,16 +162,14 @@ export default {
 	},
 	computed: {
 		subtitle() {
-			if (!this.data) return '';
-
 			let total = 0;
 			let i = 0;
-			for (; i < this.data.length; i++) {
+			for (; i < this.filteredData.length; i++) {
 				// there could be empty objects at the end of the array
 				// so we don't have to count them
-				if (typeof this.data[i].value !== 'number') break;
+				if (typeof this.filteredData[i].value !== 'number') break;
 
-				total += this.data[i].value;
+				total += this.filteredData[i].value;
 			}
 			const average = ((total / i) * 100).toFixed(2);
 

@@ -510,9 +510,7 @@ export default {
 								} else if (group.doc.deploy_information.update_available) {
 									let UpdateReleaseGroupDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/group/UpdateReleaseGroupDialog.vue'
-											),
+											import('../components/group/UpdateReleaseGroupDialog.vue'),
 									);
 									renderDialog(
 										h(UpdateReleaseGroupDialog, {
@@ -760,69 +758,15 @@ export default {
 				label: 'Dependencies',
 				icon: icon('box'),
 				route: 'bench-dependencies',
-				type: 'list',
-				list: {
-					doctype: 'Release Group Dependency',
-					filters: (releaseGroup) => {
-						return {
-							parenttype: 'Release Group',
-							parent: releaseGroup.name,
-						};
-					},
-					columns: [
-						{
-							label: 'Dependency',
-							fieldname: 'dependency',
-							format(value, row) {
-								return row.title;
-							},
-						},
-						{
-							label: 'Version',
-							fieldname: 'version',
-							suffix(row) {
-								if (!row.is_custom) {
-									return;
-								}
-
-								return h(
-									Tooltip,
-									{
-										text: 'Custom version',
-										placement: 'top',
-										class: 'rounded-full bg-gray-100 p-1',
-									},
-									() => h(icon('alert-circle', 'w-3 h-3'), {}),
-								);
-							},
-						},
-					],
-					rowActions({
-						row,
-						listResource: dependencies,
-						documentResource: releaseGroup,
-					}) {
-						return [
-							{
-								label: 'Edit',
-								onClick() {
-									let DependencyEditorDialog = defineAsyncComponent(
-										() =>
-											import('../components/group/DependencyEditorDialog.vue'),
-									);
-									renderDialog(
-										h(DependencyEditorDialog, {
-											group: releaseGroup.doc,
-											dependency: row,
-											onSuccess() {
-												dependencies.reload();
-											},
-										}),
-									);
-								},
-							},
-						];
-					},
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('@/components/group/BenchDependencies.vue'),
+				),
+				props: (releaseGroup) => {
+					return {
+						releaseGroup: releaseGroup.doc.name,
+						releaseGroupDocumentResource: releaseGroup,
+					};
 				},
 			},
 			{
@@ -886,9 +830,7 @@ export default {
 								onClick() {
 									let ConfigEditorDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/EnvironmentVariableEditorDialog.vue'
-											),
+											import('../components/EnvironmentVariableEditorDialog.vue'),
 									);
 									renderDialog(
 										h(ConfigEditorDialog, {

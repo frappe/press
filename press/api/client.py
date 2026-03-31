@@ -86,6 +86,10 @@ ALLOWED_DOCTYPES = [
 	"Partner Certificate",
 	"Partner Payment Payout",
 	"Deploy Candidate Build",
+	"Partner Lead",
+	"Partner Lead Type",
+	"Lead Followup",
+	"Partner Consent",
 	"Account Request",
 	"Server Snapshot",
 	"Server Snapshot Recovery",
@@ -179,12 +183,7 @@ def get_list_query(
 	order_by: str | None,
 ):
 	query = frappe.qb.get_query(
-		doctype,
-		filters=valid_filters,
-		fields=valid_fields,
-		offset=start,
-		limit=limit,
-		order_by=order_by,
+		doctype, filters=valid_filters, fields=valid_fields, offset=start, limit=limit, order_by=order_by
 	)
 
 	if meta.istable and frappe.get_meta(filters.get("parenttype")).has_field("team"):

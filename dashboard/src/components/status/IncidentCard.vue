@@ -43,7 +43,7 @@ const props = defineProps<Props>();
 
 <template>
 	<details
-		class="group/card mb-5 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-cards transition-all"
+		class="group/card mb-5 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-cards transition-all fade-in"
 	>
 		<!-- Card header & toggle btn -->
 		<summary
