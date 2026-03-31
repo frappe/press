@@ -14,6 +14,7 @@ frappe.ui.form.on('NAT Server', {
 				true,
 				frm.doc.is_server_setup,
 			], // added temporarily for setting up nginx & monitoring config
+			[__('Attach NAT Security Group'), 'attach_nat_security_group', true],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
