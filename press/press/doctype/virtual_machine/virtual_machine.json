@@ -397,8 +397,7 @@
    "default": "0",
    "fieldname": "assign_public_ip",
    "fieldtype": "Check",
-   "label": "Assign Public IP",
-   "set_only_once": 1
+   "label": "Assign Public IP"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -444,7 +443,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2026-03-18 12:04:02.955392",
+ "modified": "2026-03-31 10:25:00.362005",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

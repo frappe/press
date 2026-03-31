@@ -128,6 +128,7 @@ class VirtualMachineImage(Document):
 				type="snapshot",
 			)
 			self.image_id = response.image.id
+			self.snapshot_id = response.image.id
 
 		elif cluster.cloud_provider == "DigitalOcean":
 			action = self.client.droplet_actions.post(

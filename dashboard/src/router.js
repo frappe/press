@@ -274,12 +274,12 @@ let router = createRouter({
 							component: () =>
 								import('./components/partners/PartnerResources.vue'),
 						},
-            {
-              name: 'PartnerAdminAudits',
-              path: 'admin-audits',
-              component: () =>
-                import('./components/partners/PartnerAdminAudits.vue'),
-            },
+						{
+							name: 'PartnerAdminAudits',
+							path: 'admin-audits',
+							component: () =>
+								import('./components/partners/PartnerAdminAudits.vue'),
+						},
 					],
 				},
 			],

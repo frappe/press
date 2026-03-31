@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col gap-5 overflow-y-auto px-60 py-6">
+	<div class="flex flex-col gap-5 overflow-y-auto px-10 lg:px-80 py-6">
 		<div class="flex flex-col">
 			<div class="text-gray-500">Welcome back!</div>
 			<div class="flex items-center gap-3">
@@ -18,7 +18,7 @@
 			<div class="flex flex-col gap-2.5 p-4">
 				<div class="flex">
 					<div class="flex items-center gap-0.5">
-						<FeatherIcon name="award" class="h-5 text-gray-700" />
+						<FeatherIcon name="award" class="h-5 w-5 text-gray-700" />
 						<h3 class="text-xl font-semibold">
 							{{ partnerDetails.data?.partner_type }} Tier
 						</h3>
@@ -39,13 +39,14 @@
 					</Progress>
 				</div>
 
-				<div class="flex justify-between gap-4">
-					<div class="flex-1">
+				<div class="flex flex-col md:flex-row justify-between gap-4 mt-2">
+					<div class="flex-1 border rounded bg-surface-gray-1 p-4">
 						<div class="flex items-center justify-between">
 							<div class="text-sm text-gray-600">
 								Current Month Contribution
 							</div>
 							<Button
+								class="hover:bg-gray-400"
 								label="Details"
 								@click="showPartnerContributionDialog = true"
 							/>
@@ -60,8 +61,7 @@
 							>
 						</div>
 					</div>
-					<div class="mx-1 w-px border-r" />
-					<div class="flex-1">
+					<div class="flex-1 border rounded bg-surface-gray-1 p-4">
 						<div class="flex items-center justify-between">
 							<div class="text-sm text-gray-600">Certified Members</div>
 							<Button label="View" @click="routeToCertification()" />
@@ -78,11 +78,11 @@
 			</div>
 		</div>
 
-		<div class="flex justify-between gap-4">
+		<div class="flex flex-col md:flex-row justify-between gap-4">
 			<div class="rounded-lg text-base flex-1 text-gray-900 p-4 border">
-				<div class="flex h-full flex-col justify-between gap-2">
+				<div class="flex h-full flex-col justify-between gap-4">
 					<div class="flex">
-						<h3 class="font-semibold text-lg">Partner Referral Code</h3>
+						<h3 class="font-medium text-normal">Partner Referral Code</h3>
 					</div>
 					<ClickToCopyField :textContent="team.doc?.partner_referral_code" />
 					<span class="text-sm text-gray-600"
@@ -91,15 +91,18 @@
 				</div>
 			</div>
 			<div class="rounded-lg text-base flex-1 text-gray-900 p-4 border">
-				<div class="flex h-full flex-col justify-between">
+				<div class="flex h-full flex-col gap-4">
 					<div class="flex">
-						<h3 class="font-semibold text-lg">Renewal Details</h3>
+						<h3 class="font-medium text-normal">Renewal Details</h3>
 					</div>
 					<div class="flex items-center justify-between">
-						<div class="flex">
-							<span class="text-base font-medium text-gray-700">
+						<div class="flex flex-col gap-1">
+							<span class="text-xl font-semibold text-gray-700">
 								{{ formatDate(partnerDetails.data?.end_date) }}
 							</span>
+							<span class="text-sm text-gray-600"
+								>Renewal in {{ daysUntilRenewal }} days</span
+							>
 						</div>
 						<div v-if="isRenewalPeriod()">
 							<Button
@@ -110,9 +113,6 @@
 							/>
 						</div>
 					</div>
-					<span class="text-sm text-gray-600"
-						>Renewal in {{ daysUntilRenewal }} days</span
-					>
 				</div>
 			</div>
 		</div>

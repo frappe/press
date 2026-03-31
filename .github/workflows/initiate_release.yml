@@ -33,10 +33,21 @@ jobs:
           git checkout -b ${{ steps.release.outputs.name }}
           git push origin ${{ steps.release.outputs.name }}
 
+      # - name: Create PR to master
+      #   uses: peter-evans/create-pull-request@v6
+      #   with:
+      #     branch: ${{ steps.release.outputs.name }}
+      #     base: master
+      #     title: "chore: Release ${{ steps.release.outputs.name }}"
+      #     body: "Weekly release PR"
+
+
       - name: Create PR to master
-        uses: peter-evans/create-pull-request@v6
-        with:
-          branch: ${{ steps.release.outputs.name }}
-          base: master
-          title: "chore: Release ${{ steps.release.outputs.name }}"
-          body: "Weekly release PR"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "chore: Release ${{ steps.release.outputs.name }}" \
+            --body "Weekly release PR" \
+            --head "${{ steps.release.outputs.name }}" \
+            --base master

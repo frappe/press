@@ -797,7 +797,6 @@ class Cluster(Document):
 			],
 		)
 
-	@frappe.whitelist()
 	def create_nat_security_group(self):
 		client = self.get_aws_client()
 		response = client.create_security_group(
@@ -867,7 +866,7 @@ class Cluster(Document):
 					"IpRanges": [
 						{"CidrIp": self.subnet_cidr_block, "Description": "POP3 from private network"}
 					],
-					"ToPort": 993,
+					"ToPort": 995,
 				},
 				{
 					"FromPort": 110,
@@ -1151,6 +1150,11 @@ class Cluster(Document):
 			)
 			frappe.db.commit()
 		yield from copies
+
+	@frappe.whitelist()
+	def assign_nat_security_group(self):
+		self.create_nat_security_group()
+		self.save()
 
 	@frappe.whitelist()
 	def create_proxy(self):
