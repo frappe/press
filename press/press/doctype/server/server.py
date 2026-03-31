@@ -3953,12 +3953,14 @@ def refresh_new_bench_and_site_server_pool() -> None:
 				"Server",
 				{"name": ["in", other_servers]},
 				{"use_for_new_benches": 0, "use_for_new_sites": 0},
+				update_modified=False,
 			)
 
 		frappe.db.set_value(
 			"Server",
 			{"name": ["in", list(selected_servers)]},
 			{"use_for_new_benches": 1, "use_for_new_sites": 1},
+			update_modified=False,
 		)
 
 
