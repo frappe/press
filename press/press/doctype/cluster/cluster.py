@@ -797,7 +797,6 @@ class Cluster(Document):
 			],
 		)
 
-	@frappe.whitelist()
 	def create_nat_security_group(self):
 		client = self.get_aws_client()
 		response = client.create_security_group(
@@ -878,10 +877,6 @@ class Cluster(Document):
 					"ToPort": 110,
 				},
 			],
-		)
-
-		frappe.db.set_value(
-			"Cluster", self.name, "nat_security_group_id", self.nat_security_group_id, update_modified=False
 		)
 
 	def get_oci_public_key_fingerprint(self):
@@ -1155,6 +1150,11 @@ class Cluster(Document):
 			)
 			frappe.db.commit()
 		yield from copies
+
+	@frappe.whitelist()
+	def assign_nat_security_group(self):
+		self.create_nat_security_group()
+		self.save()
 
 	@frappe.whitelist()
 	def create_proxy(self):
