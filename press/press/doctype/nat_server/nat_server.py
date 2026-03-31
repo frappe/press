@@ -143,10 +143,14 @@ class NATServer(BaseServer):
 
 		nat_sg = frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id")
 		if not nat_sg:
-			frappe.throw("NAT Security Group not found for the cluster")
+			frappe.throw(
+				"NAT Security Group not found for the cluster. Please set it in the Cluster doctype."
+			)
 
 		if nat_sg in sgs:
-			frappe.throw("NAT Security Group is already attached to the instance")
+			frappe.throw(
+				"NAT Security Group is already attached to the instance. No changes are required to be made."
+			)
 
 		sgs.append(nat_sg)
 		ec2.modify_instance_attribute(InstanceId=vm.instance_id, Groups=sgs)
