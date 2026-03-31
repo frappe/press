@@ -1,10 +1,5 @@
 <template>
 	<div class="space-y-4">
-<<<<<<< HEAD
-		<div class="grid grid-cols-3 gap-4 text-base">
-			<RouterLink v-for="resource in resources" :to="toLink(resource)">
-				<div class="group flex h-24 rounded shadow hover:shadow-lg transition">
-=======
 		<div
 			class="grid grid-cols-3 gap-4 text-base"
 			v-if="resources && resources.length > 0"
@@ -15,19 +10,9 @@
 				class="text-sm border rounded flex group py-3 px-3.5"
 			>
 				<div class="flex gap-4 rounded transition min-w-0">
->>>>>>> d6a342a4f (fix(role-page): add no results fallback message)
 					<div
-<<<<<<< HEAD
-						class="size-24 rounded-l shrink-0"
-						:class="{
-							'bg-green-100': resource.document_type === 'Site',
-							'bg-blue-100': resource.document_type === 'Release Group',
-							'bg-yellow-100': resource.document_type === 'Server',
-						}"
-=======
 						class="m-auto size-14 rounded-lg flex items-center justify-center p-3"
 						:class="colorClasses[resource.document_type]"
->>>>>>> 4411672e3 (refactor(roles-page): revamp UI of roleMembers/roleResources cards)
 					>
 						<div
 							class="size-full flex items-center justify-center rounded-l text-gray-500 font-semibold text-2xl"
@@ -38,24 +23,6 @@
 							/>
 						</div>
 					</div>
-<<<<<<< HEAD
-					<div class="px-4 py-3 flex flex-col justify-evenly">
-						<div class="font-medium">{{ resource.document_name }}</div>
-						<div>{{ resource.document_type }}</div>
-					</div>
-					<div
-						class="opacity-0 group-hover:opacity-100 transition w-14 flex justify-center items-center ml-auto rounded-r"
-					>
-						<Button
-							icon="trash-2"
-							variant="ghost"
-							class="text-red-600"
-							@click.prevent.stop="
-								$emit('remove', resource.document_type, resource.document_name)
-							"
-						/>
-=======
-
 					<div class="flex flex-col min-w-0">
 						<span
 							v-if="resource.document_type !== 'Site'"
@@ -73,11 +40,8 @@
 								? 'Bench'
 								: resource.document_type
 						}}</span>
->>>>>>> 9310503ae (fix(settings-role-page): update field name of title in cards)
 					</div>
 				</div>
-<<<<<<< HEAD
-=======
 				<Button
 					icon="trash-2"
 					theme="red"
@@ -86,7 +50,6 @@
 						$emit('remove', resource.document_type, resource.document_name)
 					"
 				/>
->>>>>>> 4411672e3 (refactor(roles-page): revamp UI of roleMembers/roleResources cards)
 			</RouterLink>
 		</div>
 
