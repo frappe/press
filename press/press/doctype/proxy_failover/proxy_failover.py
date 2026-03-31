@@ -461,10 +461,6 @@ class ProxyFailover(Document, StepHandler):
 			self._fail_ansible_step(step, ansible, e)
 			# not really that big of an issue if we couldn't remove access (if the replication was stopped properly)
 
-	def handle_step_failure(self):
-		self.error = frappe.get_traceback(with_context=True)
-		self.save()
-
 	@frappe.whitelist()
 	def force_continue(self):
 		self.error = None

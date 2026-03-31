@@ -1,6 +1,6 @@
 <div align="center" markdown="1">
 
-<img src="https://frappe.io/files/Group%202%20(1).png" alt="Press logo" width="80"/>
+<img src="https://frappe.io/files/cloud9c3ae6.png" alt="Press logo" width="80"/>
 <h1>Press</h1>
 
 **Full Service Cloud Hosting For The Frappe Stack - Powers Frappe Cloud**
