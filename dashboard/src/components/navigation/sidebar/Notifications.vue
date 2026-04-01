@@ -187,7 +187,7 @@ const markAllAsRead = (togglePopover) => {
 						</div>
 
 						<div
-							class="text-sm leading-relaxed flex flex-wrap gap-2 w-full min-w-0"
+							class="text-base leading-relaxed flex flex-wrap gap-2 w-full min-w-0"
 						>
 							<p v-html="formatHtml(x.message)" class="w-full truncate" />
 
