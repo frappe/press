@@ -156,6 +156,10 @@ class PressWorkflowTask(Document):
 			self.output = output
 			self.exception = exception
 			self.stdout = (self.stdout or "") + buffer.getvalue()
+
+			if frappe.flags.in_test:
+				print(self.stdout)
+
 			self.save()
 
 			if self.status in ["Success", "Failure"]:

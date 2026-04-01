@@ -126,6 +126,10 @@ class PressWorkflow(Document):
 			self.status = status
 			self.output = output
 			self.stdout = (self.stdout or "") + buffer.getvalue()
+
+			if frappe.flags.in_test:
+				print(self.stdout)
+
 			self.exception = exception
 
 			self.update_skipped_steps_status(save=False)

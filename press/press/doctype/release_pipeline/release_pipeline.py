@@ -48,6 +48,8 @@ class ReleasePipeline(WorkflowBuilder):
 		status: DF.Literal["Pending", "Running", "Partial Success", "Success", "Failure", "Retrying"]
 		team: DF.Link
 
+	# end: auto-generated types
+
 	def update_pipeline_status(self, status: str):
 		frappe.db.set_value("Release Pipeline", self.name, "status", status)
 
@@ -70,9 +72,9 @@ class ReleasePipeline(WorkflowBuilder):
 	@task
 	def validate_app_hashes(self, apps: list[dict[str, str]]):
 		"""Validate App Hashes"""
-		from press.api.bench import validate_app_hashes
+		from press.api.bench import validate_app_hashes as app_hash_validation
 
-		validate_app_hashes(apps)
+		app_hash_validation(apps)
 
 	@task
 	def validate_server_storages(self):

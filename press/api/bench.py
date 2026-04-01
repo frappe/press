@@ -799,14 +799,6 @@ def deploy_and_update(
 	sites: list | None = None,
 	run_will_fail_check: bool = True,
 ):
-	# validate_app_hashes(apps)
-	# # Returns name of the Deploy Candidate that is running the build
-	# return get_bench_update(
-	# 	name,
-	# 	apps,
-	# 	sites,
-	# 	False,
-	# ).deploy(run_will_fail_check)
 	release_pipeline: ReleasePipeline = frappe.get_doc(
 		{"doctype": "Release Pipeline", "release_group": name, "team": get_current_team()}
 	)
