@@ -16,6 +16,12 @@ import Globe from '~icons/lucide/globe';
 import Code from '~icons/lucide/code';
 import FileSearch from '~icons/lucide/file-search';
 import NotificationPanel from './Notifications.vue';
+import SearchItem from './SearchItem.vue';
+
+import LucideSearch from '~icons/lucide/search';
+import LucideCommand from '~icons/lucide/command';
+
+import { searchModalOpen } from '@/data/ui';
 
 import { unreadNotificationsCount } from '@/data/notifications';
 
@@ -48,6 +54,11 @@ const navigation = computed(() => {
 			isActive: routeName === 'Welcome',
 			condition: !onboardingComplete,
 		},
+
+		{
+			customComponent: SearchItem,
+		},
+
 		{
 			name: 'Notifications',
 			condition: onboardingComplete && !isSaasUser,

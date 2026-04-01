@@ -33,6 +33,7 @@
 		</div>
 		<Toaster position="top-right" />
 		<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
+		<SearchModal v-if="searchModalOpen" />
 	</div>
 </template>
 
@@ -43,6 +44,8 @@ import { dialogs } from './utils/components';
 import { useRoute } from 'vue-router';
 import { getTeam } from './data/team';
 import { session } from './data/session.js';
+import { searchModalOpen } from '@/data/ui';
+import SearchModal from '@/components/navigation/search/Popup.vue';
 
 const AppSidebar = defineAsyncComponent(
 	() => import('./components/navigation/sidebar/Sidebar.vue'),
