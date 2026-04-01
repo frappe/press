@@ -1336,7 +1336,7 @@ class BaseServer(Document, TagHelpers):
 
 		if not (team.default_payment_method or team.get_balance()):
 			frappe.throw(
-				"Changing plans needs the customer to have a card added to their billing profile. Cannot change for the same reason, please add a card to your account on Frappe Cloud Billing dashboard."
+				"Cannot change plan: please add a card or prepaid credits to your billing account on Frappe Cloud."
 			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
