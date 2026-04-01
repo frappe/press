@@ -1,5 +1,6 @@
 pre-commit
 moto[all]~=5.0
+Werkzeug==3.1.3 # has to be manually kept same as framework since moto has a loose dependency
 ruff==0.14.2
 Faker==23.2.0
 mypy==1.18.2

@@ -13,6 +13,7 @@
         "test_**",
         "**.conf",
         "requirements.txt",
+        "dev-requirements.txt",
         "press/utils/country_timezone.py",
         ".secrets.baseline",
         "**go.sum"
@@ -701,6 +702,7 @@
         "wazuh",
         "weasyprint",
         "webp",
+        "Werkzeug",
         "Winamac",
         "witht",
         "Wiue",
