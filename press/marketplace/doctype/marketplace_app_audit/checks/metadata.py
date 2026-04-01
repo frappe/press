@@ -211,7 +211,11 @@ def check_links(marketplace_app):
 	for link in [website, support, documentation, privacy_policy, terms_of_service]:
 		try:
 			# add timeout to the request to avoid hanging requests(timeout = (connect timeout, read timeout))
-			response = requests.get(link, timeout=(3, 10))
+			# also attach a user agent to the request to avoid being blocked by the server.
+			headers = {
+				"User-Agent": "Mozilla/5.0 (compatible; MarketplaceAuditBot/1.0; +https://cloud.frappe.io)",
+			}
+			response = requests.get(link, timeout=(3, 10), headers=headers)
 			# 0k or redirect is fine.
 			if response.status_code not in [200, 301, 302]:
 				broken_links.append(link)
