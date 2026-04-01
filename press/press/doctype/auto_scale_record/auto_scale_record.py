@@ -250,7 +250,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job, poll=True)
+		self.handle_agent_job(step, job, poll=False)
 
 	def switch_to_secondary(self, step: "ScaleStep"):
 		"""Prepare Agent To Switch To Secondary"""
@@ -304,7 +304,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job, poll=True)
+		self.handle_agent_job(step, job, poll=False)
 
 	def remove_redis_localhost_bind(self, step: "ScaleStep"):
 		"""Expose Redis Of Primary Server"""
@@ -332,7 +332,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job, poll=True)
+		self.handle_agent_job(step, job, poll=False)
 
 	def mark_server_as_auto_scale(self, step: "ScaleStep"):
 		"""Mark Server As Auto Scaled"""
@@ -408,7 +408,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job, poll=True)
+		self.handle_agent_job(step, job, poll=False)
 
 	def switch_to_primary(self, step: "ScaleStep"):
 		"""Prepare Agent To Switch To Primary"""
@@ -445,7 +445,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 			"job",
 		)
 
-		self.handle_agent_job(step, job, poll=True)
+		self.handle_agent_job(step, job, poll=False)
 
 	def _gracefully_stop_benches_on_secondary(self) -> None:
 		secondary_server: "Server" = frappe.get_cached_doc("Server", self.secondary_server)
