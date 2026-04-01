@@ -168,7 +168,9 @@ const markAllAsRead = (togglePopover) => {
 				<!-- notification tiles -->
 				<section class="overflow-auto">
 					<div
+						v-if="resource.data.length > 0"
 						v-for="(x, i) in resource.data"
+						:key="x.name"
 						class="[&_b]:font-semibold px-4 py-3 flex gap-4 items-center cursor-pointer"
 						:class="{ 'border-b': i !== resource.data.length - 1 }"
 						@click="() => markAsRead(x, togglePopover)"
@@ -204,6 +206,10 @@ const markAllAsRead = (togglePopover) => {
 								{{ dayjsLocal(x.creation).fromNow() }}
 							</span>
 						</div>
+					</div>
+
+					<div v-else class="text-center text-ink-gray-6 text-sm py-10">
+						No notifications to show
 					</div>
 				</section>
 
