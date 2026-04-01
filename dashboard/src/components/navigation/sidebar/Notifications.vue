@@ -180,9 +180,9 @@ const markAllAsRead = (togglePopover) => {
 							:class="iconBgColors[x.type] || 'bg-surface-gray-1'"
 						>
 							<component
-								:is="icons[x.type]"
+								:is="icons[x.type] || LucideAlert"
 								class="size-4"
-								:class="iconColors[x.type]"
+								:class="iconColors[x.type] || 'text-ink-gray-6'"
 							/>
 						</div>
 
