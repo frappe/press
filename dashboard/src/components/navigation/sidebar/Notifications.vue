@@ -176,8 +176,8 @@ const markAllAsRead = (togglePopover) => {
 						@click="() => markAsRead(x, togglePopover)"
 					>
 						<div
-							class="size-8 flex-shrink-0 flex items-center p-2 rounded"
-							:class="iconBgColors[x.type] || 'bg-surface-gray-1'"
+							class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1"
+							:class="[iconBgColors[x.type] || 'bg-surface-gray-1']"
 						>
 							<component
 								:is="icons[x.type] || LucideAlert"
@@ -189,7 +189,7 @@ const markAllAsRead = (togglePopover) => {
 						<div
 							class="text-base leading-relaxed flex flex-wrap gap-2 w-full min-w-0"
 						>
-							<p v-html="formatHtml(x.message)" class="w-full truncate" />
+							<p v-html="formatHtml(x.message)" class="w-full" />
 
 							<Badge class="text-xs mr-auto">
 								{{ x.title }}
