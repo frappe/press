@@ -269,7 +269,9 @@ def accept_team_invite(key: str):
 		frappe.throw("You are not invited by any team")
 
 	if frappe.session.user != account_request.email:
-		frappe.throw("This invite is not for your account")
+		frappe.throw(
+			"This invite can't be accepted with the current account. Please sign in with the invited account or request a new invite."
+		)
 
 	team = account_request.team
 	first_name = account_request.first_name
@@ -1029,21 +1031,17 @@ def mark_key_as_default(key_name):
 	key.save()
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def create_api_secret():
 	user = frappe.get_doc("User", frappe.session.user)
-
-	api_key = user.api_key
+	user.api_key = user.api_key or frappe.generate_hash()
 	api_secret = frappe.generate_hash()
-
-	if not api_key:
-		api_key = frappe.generate_hash()
-		user.api_key = api_key
-
 	user.api_secret = api_secret
 	user.save(ignore_permissions=True)
-
-	return {"api_key": api_key, "api_secret": api_secret}
+	return {
+		"api_key": user.api_key,
+		"api_secret": api_secret,
+	}
 
 
 @frappe.whitelist()

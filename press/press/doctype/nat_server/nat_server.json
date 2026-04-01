@@ -8,6 +8,7 @@
   "status",
   "hostname",
   "domain",
+  "tls_certificate_renewal_failed",
   "column_break_vpdt",
   "cluster",
   "provider",
@@ -19,6 +20,8 @@
   "column_break_oygq",
   "private_ip",
   "secondary_private_ip",
+  "agent_section",
+  "agent_password",
   "ssh_section",
   "ssh_port",
   "frappe_public_key",
@@ -32,7 +35,8 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nInstalling\nActive\nBroken\nArchived"
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
+   "read_only": 1
   },
   {
    "fieldname": "hostname",
@@ -61,7 +65,8 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "AWS EC2"
+   "options": "AWS EC2",
+   "set_only_once": 1
   },
   {
    "fieldname": "virtual_machine",
@@ -133,11 +138,29 @@
    "read_only": 1
   },
   {
+   "fetch_from": "virtual_machine.secondary_private_ip",
    "fieldname": "secondary_private_ip",
    "fieldtype": "Data",
    "label": "Secondary Private IP",
-   "read_only": 1,
-   "fetch_from": "virtual_machine.secondary_private_ip"
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "tls_certificate_renewal_failed",
+   "fieldtype": "Check",
+   "label": "TLS Certificate Renewal Failed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "agent_section",
+   "fieldtype": "Section Break",
+   "label": "Agent"
+  },
+  {
+   "fieldname": "agent_password",
+   "fieldtype": "Password",
+   "label": "Agent Password",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -149,7 +172,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2026-01-21 13:17:52.469379",
+ "modified": "2026-03-30 18:54:11.260333",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NAT Server",

@@ -363,7 +363,7 @@ class TestAPIMarketplace(FrappeTestCase):
 	def test_branches(self):
 		frappe.set_user(self.team.user)
 		responses.get(
-			url=f"https://api.github.com/repos/{self.app_source.repository_owner}/{self.app_source.repository}/branches?per_page=100",
+			url=f"https://api.github.com/repos/{self.app_source.repository_owner}/{self.app_source.repository}/branches?per_page=100&page=1",
 			json=PAYLOAD,
 			status=200,
 			headers={},

@@ -797,7 +797,6 @@ class Cluster(Document):
 			],
 		)
 
-	@frappe.whitelist()
 	def create_nat_security_group(self):
 		client = self.get_aws_client()
 		response = client.create_security_group(
@@ -867,7 +866,7 @@ class Cluster(Document):
 					"IpRanges": [
 						{"CidrIp": self.subnet_cidr_block, "Description": "POP3 from private network"}
 					],
-					"ToPort": 993,
+					"ToPort": 995,
 				},
 				{
 					"FromPort": 110,
@@ -1151,6 +1150,11 @@ class Cluster(Document):
 			)
 			frappe.db.commit()
 		yield from copies
+
+	@frappe.whitelist()
+	def assign_nat_security_group(self):
+		self.create_nat_security_group()
+		self.save()
 
 	@frappe.whitelist()
 	def create_proxy(self):
@@ -1495,6 +1499,7 @@ class Cluster(Document):
 		temporary_server: bool = False,
 		kms_key_id: str | None = None,
 		vmi_series: str | None = None,
+		assign_public_ip: bool = True,
 	) -> "VirtualMachine":
 		"""Creates a Virtual Machine for the cluster
 		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
@@ -1515,6 +1520,7 @@ class Cluster(Document):
 				"team": team,
 				"data_disk_snapshot": data_disk_snapshot,
 				"kms_key_id": kms_key_id,
+				"assign_public_ip": assign_public_ip,
 			},
 		).insert()
 
@@ -1566,6 +1572,7 @@ class Cluster(Document):
 			domain=frappe.db.get_single_value("Press Settings", "domain"),
 			series=self.unified_server_series,
 			team=team,
+			assign_public_ip=not (self.disable_public_ips_for_servers and self.cloud_provider == "AWS EC2"),
 		)
 		server, database_server = vm.create_unified_server()
 
@@ -1663,6 +1670,11 @@ class Cluster(Document):
 			temporary_server=temporary_server,
 			kms_key_id=kms_key_id,
 			vmi_series="f" if is_secondary else None,  # Just use `f` series for secondary servers
+			assign_public_ip=not (
+				self.disable_public_ips_for_servers
+				and self.cloud_provider == "AWS EC2"
+				and doctype in ("Server", "Database Server")
+			),
 		)
 		server: BaseServer | MonitorServer | LogServer | None = None
 		match doctype:

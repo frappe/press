@@ -21,14 +21,15 @@
 </template>
 
 <script setup>
-import { getCachedDocumentResource } from 'frappe-ui';
-import { defineAsyncComponent, h } from 'vue';
+import { debounce, getCachedDocumentResource } from 'frappe-ui';
+import { defineAsyncComponent, h, onMounted } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog } from '../utils/components';
 import { getToastErrorMessage } from '../utils/toast';
 import router from '../router';
 import { isLastSite } from '../data/team';
 import CommunicationInfoDialog from './CommunicationInfoDialog.vue';
+import { useRoute } from 'vue-router';
 
 const props = defineProps({
 	siteName: { type: String, required: true },
@@ -40,6 +41,14 @@ const props = defineProps({
 });
 
 const site = getCachedDocumentResource('Site', props.siteName);
+const route = useRoute();
+
+onMounted(() => {
+	const queryAction = route.query['action'];
+	if (props.actionLabel === queryAction) {
+		getSiteActionHandler(queryAction);
+	}
+});
 
 function getSiteActionHandler(action) {
 	const actionDialogs = {

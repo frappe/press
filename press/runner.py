@@ -395,8 +395,9 @@ class StepHandler:
 		frappe.db.commit()
 
 	def handle_step_failure(self):
-		# can be implemented by the controller
-		pass
+		# can be overridden by controllers
+		self.error = frappe.get_traceback(with_context=True)
+		self.save()
 
 	def get_steps(self, methods: list) -> list[dict]:
 		"""Generate a list of steps to be executed for NFS volume attachment."""
