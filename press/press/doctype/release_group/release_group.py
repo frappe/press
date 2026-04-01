@@ -1964,7 +1964,7 @@ def add_public_servers_to_public_groups():
 		filters={
 			"public": 1,
 			"status": "Active",
-			"provider": ["!=", "Hetzner"],
+			"provider": ["not in", ("Hetzner", "Frappe Compute")],
 			"cluster": ["!=", "Dar Es Salaam"],
 		},
 		pluck="name",

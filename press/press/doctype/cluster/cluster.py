@@ -1753,9 +1753,6 @@ class Cluster(Document):
 		# Temporarily here to skip the Frappe Compute cloud provider
 		filters = {"name": ("in", cluster_names), "public": True}
 
-		if not get_current_team(get_doc=True).is_frappe_compute_internal_user:
-			filters["cloud_provider"] = ("!=", "Frappe Compute")
-
 		return frappe.db.get_all(
 			"Cluster",
 			filters={**filters, **extra_filters},

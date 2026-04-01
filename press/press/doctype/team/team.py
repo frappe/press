@@ -1031,23 +1031,14 @@ class Team(Document):
 		allow = (True, "")
 
 		if not self.enabled:
-			why = "You cannot create a new site because your account is disabled"
+			why = "You cannot create a new site as your account is disabled"
 			return (False, why)
 
 		if self.free_account or self.parent_team or self.billing_team:
 			return allow
 
-		if self.is_saas_user and not self.payment_mode:
-			if not frappe.db.get_all("Site", {"team": self.name}, limit=1):
-				return allow
-			why = "You have already created trial site in the past"
-
-		# allow user to create their first site without payment method
-		if not frappe.db.get_all("Site", {"team": self.name}, limit=1):
-			return allow
-
 		if not self.payment_mode:
-			why = "You cannot create a new site because your account doesn't have a valid payment method."
+			why = "You cannot create a new site without setting a valid payment method."
 			return (False, why)
 
 		if self.payment_mode == "Prepaid Credits":
