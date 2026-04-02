@@ -162,10 +162,11 @@ class IPRemovalLog(Document, StepHandler):
 
 	def check_local_dns_propagation(self, step, server_name, private_ip):
 		step.attempt = 0
-		while step.attempt > 59:
+		while step.attempt < 60:
 			try:
 				ip = socket.gethostbyname(server_name)
 				if ip == private_ip:
+					step.save()
 					return True
 			except socket.gaierror:
 				pass
