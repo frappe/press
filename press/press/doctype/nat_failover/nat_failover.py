@@ -31,11 +31,15 @@ class NATFailover(Document, StepHandler):
 
 		primary = frappe.db.get_value("NAT Server", self.primary, ("secondary_private_ip"), as_dict=True)
 		if not primary.secondary_private_ip:
-			frappe.throw("Secondary IP not configured on primary NAT Server")
+			frappe.throw(
+				"Secondary IP not configured on primary NAT Server. Cannot proceed with the failover."
+			)
 
 		secondary = frappe.db.get_value("NAT Server", self.secondary, ("secondary_private_ip"), as_dict=True)
 		if secondary.secondary_private_ip:
-			frappe.throw("Secondary NAT Server already has a secondary IP configured")
+			frappe.throw(
+				"Secondary NAT Server already has a secondary IP configured. Please choose a nat server without a secondary IP configured."
+			)
 
 		for step in self.get_steps(
 			[
