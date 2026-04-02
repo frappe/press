@@ -1,8 +1,8 @@
 ---
-- name: Configure nat iptables
+- name: Configure Secondary IP
   hosts: all
   become: yes
   become_user: root
   gather_facts: yes
   roles:
-    - role: nat_iptables
+    - role: configure_secondary_private_ip
