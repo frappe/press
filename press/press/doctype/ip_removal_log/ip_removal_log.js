@@ -16,6 +16,19 @@ frappe.ui.form.on('IP Removal Log', {
 				},
 				__('Actions'),
 			);
+
+			frm.add_custom_button(
+				__('Reduce DNS record TTL'),
+				() => {
+					frm.call('reduce_dns_ttl').then((r) => {
+						if (!r.exc) {
+							frappe.show_alert('Queued DNS TTL Reduction');
+							frm.refresh();
+						}
+					});
+				},
+				__('Actions'),
+			);
 		}
 	},
 });

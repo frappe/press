@@ -4,6 +4,7 @@
 import socket
 import time
 from contextlib import suppress
+from itertools import groupby
 
 import frappe
 from frappe.model.document import Document
@@ -159,9 +160,9 @@ class IPRemovalLog(Document, StepHandler):
 		step.server_ping = "Success" if result.get("status") == "Success" else "Failure"
 		step.save()
 
-	def check_local_dns_propagation(self, step, server_name, private_ip, counter=30, interval=10):
+	def check_local_dns_propagation(self, step, server_name, private_ip):
 		step.attempt = 0
-		while counter > 0:
+		while step.attempt > 59:
 			try:
 				ip = socket.gethostbyname(server_name)
 				if ip == private_ip:
@@ -170,13 +171,36 @@ class IPRemovalLog(Document, StepHandler):
 				pass
 
 			step.attempt += 1
-			step.save()
+			time.sleep(10)
 
-			counter -= 1
-			time.sleep(interval)
-
+		step.save()
 		return False
 
-	def handle_step_failure(self):
-		self.error = frappe.get_traceback(with_context=True)
-		self.save()
+	@frappe.whitelist()
+	def reduce_dns_ttl(self):
+		servers = [step.server for step in self.removal_steps]
+		server_domains = frappe.get_all(
+			self.server_type,
+			{"name": ("in", servers)},
+			["name", "domain", "ip"],
+			order_by="domain",
+		)
+		for domain_name, servers in groupby(server_domains, lambda x: x["domain"]):
+			changes = []
+			for server in servers:
+				changes.append(
+					{
+						"Action": "UPSERT",
+						"ResourceRecordSet": {
+							"Name": server["name"],
+							"Type": "A",
+							"TTL": 60,
+							"ResourceRecords": [{"Value": server["ip"]}],
+						},
+					}
+				)
+
+			domain = frappe.get_doc("Root Domain", domain_name)
+			domain.boto3_client.change_resource_record_sets(
+				ChangeBatch={"Changes": changes}, HostedZoneId=domain.hosted_zone
+			)
