@@ -68,19 +68,24 @@ watch(searchQuery, () => {
 
 			<!-- results -->
 			<div
-				class="max-h-[55vh] min-h-[55vh] overflow-auto p-4 flex flex-col gap-2 text-sm"
+				class="max-h-[55vh] min-h-[55vh] overflow-auto p-2 flex flex-col text-sm"
 				v-if="Object.keys(list).length > 0"
 			>
 				<template v-for="(v, k, i) in list">
 					<!-- routes have hyphens usually so format -->
-					<span class="text-ink-gray-4 font-mono uppercase mb-2">
+					<span class="text-ink-gray-4 font-mono uppercase p-2">
 						{{ k.split('-').join(' ') }}
 					</span>
 
-					<div class="flex flex-col gap-4 mb-5">
-						<span v-for="item in v" class="">
+					<div class="flex flex-col mb-5">
+						<router-link
+							:to="item.route"
+							@click="close"
+							v-for="item in v"
+							class="hover:bg-surface-gray-2 p-2 rounded"
+						>
 							{{ item.name }}
-						</span>
+						</router-link>
 					</div>
 				</template>
 			</div>
