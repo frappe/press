@@ -45,6 +45,7 @@ import { useRoute } from 'vue-router';
 import { getTeam } from './data/team';
 import { session } from './data/session.js';
 import { searchModalOpen } from '@/data/ui';
+import { useMagicKeys, whenever } from '@vueuse/core';
 import SearchModal from '@/components/navigation/search/Popup.vue';
 
 const AppSidebar = defineAsyncComponent(
@@ -98,6 +99,12 @@ watch(
 
 provide('team', team);
 provide('session', session);
+
+const { meta_k } = useMagicKeys();
+
+whenever(meta_k, (n) => {
+	if (n) searchModalOpen.value = true;
+});
 </script>
 
 <style src="./assets/style.css"></style>
