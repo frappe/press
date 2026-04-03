@@ -179,7 +179,19 @@ class IPRemovalLog(Document, StepHandler):
 
 	@frappe.whitelist()
 	def reduce_dns_ttl(self):
-		servers = [step.server for step in self.removal_steps]
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_reduce_dns_ttl",
+			queue="long",
+			timeout=1800,
+			enqueue_after_commit=True,
+			job_id=f"reduce_dns_ttl_{self.name}",
+			deduplicate=True,
+		)
+
+	def _reduce_dns_ttl(self):
+		servers = [step.server for step in self.removal_steps if step.status == "Pending"]
 		server_domains = frappe.get_all(
 			self.server_type,
 			{"name": ("in", servers)},
