@@ -46,3 +46,25 @@ let tmp = []
 
   return assorted
 }
+
+export const filterLabels = (data, query) => {
+  if (!query) return data
+
+  const q = query.toLowerCase()
+  const result = {}
+
+  for (const [group, items] of Object.entries(data)) {
+    if (group.toLowerCase().includes(q)) {
+      result[group] = items
+      continue
+    }
+
+    const filtered = items.filter(item =>
+      item.name.toLowerCase().includes(q)
+    )
+
+    if (filtered.length) result[group] = filtered
+  }
+
+  return result
+}

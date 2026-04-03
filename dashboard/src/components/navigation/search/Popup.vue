@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { onMounted, useTemplateRef, computed } from 'vue';
+import { onMounted, useTemplateRef, computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import LucideX from '~icons/lucide/x';
 import LucideSearch from '~icons/lucide/search';
 
-import { formatLabels } from './utils';
+import { formatLabels, filterLabels } from './utils';
 
 const emits = defineEmits<{ close: [] }>();
 
+const searchQuery = ref('');
 const inputRef = useTemplateRef<HTMLInputElement>('inputRef');
+
 import { searchModalOpen } from '@/data/ui';
 
 const close = () => (searchModalOpen.value = false);
@@ -20,7 +22,18 @@ onMounted(() => {
 
 const router = useRouter();
 
-const list = computed(() => formatLabels(router.getRoutes()));
+const initialData = router.getRoutes();
+
+const rawList = computed(() => formatLabels(initialData));
+
+const list = computed(() => {
+	return filterLabels(rawList.value, searchQuery.value);
+});
+
+watch(searchQuery, () => {
+	const filtered = filterLabels(list.value, searchQuery.value);
+	list.value = filtered;
+});
 </script>
 
 <template>
@@ -41,6 +54,7 @@ const list = computed(() => formatLabels(router.getRoutes()));
 					placeholder="Search"
 					class="w-full bg-transparent !outline-none !border-0 text-sm p-0 !ring-0"
 					autofocus
+					v-model="searchQuery"
 				/>
 
 				<button
