@@ -22,10 +22,9 @@ onMounted(() => {
 
 const router = useRouter();
 
+// filter
 const initialData = router.getRoutes();
-
 const rawList = computed(() => formatLabels(initialData));
-
 const list = computed(() => {
 	return filterLabels(rawList.value, searchQuery.value);
 });
@@ -33,6 +32,46 @@ const list = computed(() => {
 watch(searchQuery, () => {
 	const filtered = filterLabels(list.value, searchQuery.value);
 	list.value = filtered;
+
+	const optionEls = document
+		.getElementById('search-results')
+		?.querySelectorAll('[role="option"]');
+	if (optionEls) optionEls.value = optionEls;
+
+	navigationIndex.value = 0;
+});
+
+// arrow up/down navigation
+const navigationIndex = ref(0);
+
+const navigateEnter = (close) => {
+	for (const v of Object.entries(list.value)) {
+		const item = v[1][0];
+		if (item.flatindex === navigationIndex.value) {
+			router.push(item.route);
+			break;
+		}
+	}
+
+	close();
+};
+
+const navigateUp = () => {
+	if (navigationIndex.value > 0) {
+		navigationIndex.value--;
+	}
+};
+
+const navigateDown = () => {
+	navigationIndex.value++;
+};
+
+watch(navigationIndex, () => {
+	const els = document
+		.getElementById('search-results')
+		?.querySelectorAll('[role="option"]');
+
+	els?.[navigationIndex.value]?.scrollIntoView({ block: 'center' });
 });
 </script>
 
@@ -44,6 +83,7 @@ watch(searchQuery, () => {
 		<div
 			class="mt-[15vh] w-full max-w-lg overflow-hidden rounded bg-surface-cards shadow-lg modal-enter"
 			@keydown.esc.prevent="close"
+			@keydown.enter.prevent="navigateEnter(close)"
 		>
 			<!-- input -->
 			<div class="flex gap-2 items-center border-b border-outline-gray-2 p-3">
@@ -54,6 +94,8 @@ watch(searchQuery, () => {
 					placeholder="Search"
 					class="w-full bg-transparent !outline-none !border-0 text-sm p-0 !ring-0"
 					autofocus
+					@keydown.up.prevent="navigateUp"
+					@keydown.down.prevent="navigateDown"
 					v-model="searchQuery"
 				/>
 
@@ -69,6 +111,8 @@ watch(searchQuery, () => {
 			<!-- results -->
 			<div
 				class="max-h-[55vh] min-h-[55vh] overflow-auto p-2 flex flex-col text-sm"
+				id="search-results"
+				role="listbox"
 				v-if="Object.keys(list).length > 0"
 			>
 				<template v-for="(v, k, i) in list">
@@ -79,10 +123,14 @@ watch(searchQuery, () => {
 
 					<div class="flex flex-col mb-5">
 						<router-link
+							role="option"
 							:to="item.route"
 							@click="close"
 							v-for="item in v"
 							class="hover:bg-surface-gray-2 p-2 rounded"
+							:class="{
+								'bg-surface-gray-2': navigationIndex === item.flatindex,
+							}"
 						>
 							{{ item.name }}
 						</router-link>

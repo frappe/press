@@ -48,14 +48,15 @@ let tmp = []
 }
 
 export const filterLabels = (data, query) => {
-  if (!query) return data
-
   const q = query.toLowerCase()
   const result = {}
 
+  // used for storing flatindex
+  let index = 0 
+
   for (const [group, items] of Object.entries(data)) {
     if (group.toLowerCase().includes(q)) {
-      result[group] = items
+      result[group] = items.map(item => ({        ...item,        flatindex: index++      }))
       continue
     }
 
@@ -63,7 +64,12 @@ export const filterLabels = (data, query) => {
       item.name.toLowerCase().includes(q)
     )
 
-    if (filtered.length) result[group] = filtered
+    if (filtered.length) {
+      result[group] = filtered.map(item => ({
+        ...item,
+        flatindex: index++
+      }))
+    }
   }
 
   return result
