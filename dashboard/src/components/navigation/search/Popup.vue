@@ -1,18 +1,26 @@
 <script setup lang="ts">
-import { onMounted, useTemplateRef } from 'vue';
+import { onMounted, useTemplateRef, computed } from 'vue';
+import { useRouter } from 'vue-router';
 
 import LucideX from '~icons/lucide/x';
 import LucideSearch from '~icons/lucide/search';
+
+import { formatLabels } from './utils';
 
 const emits = defineEmits<{ close: [] }>();
 
 const inputRef = useTemplateRef<HTMLInputElement>('inputRef');
 import { searchModalOpen } from '@/data/ui';
+
 const close = () => (searchModalOpen.value = false);
 
 onMounted(() => {
 	inputRef.value?.focus();
 });
+
+const router = useRouter();
+
+const list = computed(() => formatLabels(router.getRoutes()));
 </script>
 
 <template>
@@ -45,14 +53,27 @@ onMounted(() => {
 			</div>
 
 			<!-- results -->
-			<ul ref="resultsEl" class="max-h-[55vh] min-h-[55vh] overflow-auto" ``>
-				hii
-			</ul>
+			<div
+				class="max-h-[55vh] min-h-[55vh] overflow-auto p-4 flex flex-col gap-2 text-sm"
+			>
+				<template v-for="(v, k, i) in list">
+					<!-- routes have hyphens usually so format -->
+					<span class="text-ink-gray-4 font-mono uppercase mb-2">
+						{{ k.split('-').join(' ') }}
+					</span>
+
+					<div class="flex flex-col gap-4 mb-5">
+						<span v-for="item in v" class="">
+							{{ item.name }}
+						</span>
+					</div>
+				</template>
+			</div>
 		</div>
 	</div>
 </template>
 
-<style>
+<style scoped>
 @keyframes backdropIn {
 	from {
 		opacity: 0;
