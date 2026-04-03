@@ -69,6 +69,7 @@ watch(searchQuery, () => {
 			<!-- results -->
 			<div
 				class="max-h-[55vh] min-h-[55vh] overflow-auto p-4 flex flex-col gap-2 text-sm"
+				v-if="Object.keys(list).length > 0"
 			>
 				<template v-for="(v, k, i) in list">
 					<!-- routes have hyphens usually so format -->
@@ -82,6 +83,12 @@ watch(searchQuery, () => {
 						</span>
 					</div>
 				</template>
+			</div>
+
+			<div v-else class="flex my-5 p-4 text-ink-gray-5">
+				<span class="flex items-center gap-2 mx-auto">
+					<LucideFrown class="size-4" /> No results found
+				</span>
 			</div>
 		</div>
 	</div>
