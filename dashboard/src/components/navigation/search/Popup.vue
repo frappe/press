@@ -73,6 +73,58 @@ watch(navigationIndex, () => {
 
 	els?.[navigationIndex.value]?.scrollIntoView({ block: 'center' });
 });
+
+const icons = {
+	'/settings/profile': LucideUser,
+	'/settings/team': LucideUsers,
+	'/settings/permissions': LucideLock,
+	'/settings/permissions/roles': LucideLock,
+	'/settings/developer': LucideCode,
+	'/settings/partner-admin': LucideShield,
+
+	'/sites': LucidePanelTopInactive,
+	'/sites/new': LucidePanelTopInactive,
+
+	'/groups': LucideBoxes,
+	'/groups/new': LucideBoxes,
+
+	'/servers': LucideServer,
+	'/servers/new': LucideServer,
+
+	'/billing': LucideWalletCards,
+	'/billing/forecast': LucideWalletCards,
+	'/billing/invoices': LucideWalletCards,
+	'/billing/balances': LucideWalletCards,
+	'/billing/payment-methods': LucideWalletCards,
+	'/billing/payouts': LucideWalletCards,
+	'/billing/mpesa-invoices': LucideWalletCards,
+	'/billing/upi-autopay': LucideWalletCards,
+
+	'/access-requests': LucideKey,
+
+	'/partners': LucideGlobe,
+	'/partners/overview': LucideGlobe,
+	'/partners/website-details': LucideGlobe,
+	'/partners/customers': LucideGlobe,
+	'/partners/partner-leads': LucideGlobe,
+	'/partners/certificates': LucideGlobe,
+	'/partners/resources': LucideGlobe,
+	'/partners/contributions': LucideGlobe,
+	'/partners/audits': LucideGlobe,
+	'/partners/local-payment-setup': LucideGlobe,
+	'/partners/payment-payout': LucideGlobe,
+	'/partners/partner-dashboard': LucideGlobe,
+
+	'/apps': LucideLayoutGrid,
+
+	'/database-analyzer': LucideActivity,
+	'/sql-playground': LucideDatabaseZap,
+	'/binlog-browser': LucideFileSearch,
+
+	'/status': LucideGlobe,
+	'/status/ongoing-incidents': LucideTriangleAlert,
+	'/status/incident-history': LucideArchive,
+};
 </script>
 
 <template>
@@ -127,11 +179,17 @@ watch(navigationIndex, () => {
 							:to="item.route"
 							@click="close"
 							v-for="item in v"
-							class="hover:bg-surface-gray-2 p-2 rounded"
+							class="hover:bg-surface-gray-2 p-2 rounded flex gap-2 items-center"
 							:class="{
 								'bg-surface-gray-2': navigationIndex === item.flatindex,
 							}"
 						>
+							<component
+								v-if="icons[item.route]"
+								:is="icons[item.route] || LucideDot"
+								class="size-4"
+							/>
+
 							{{ item.name }}
 						</router-link>
 					</div>
