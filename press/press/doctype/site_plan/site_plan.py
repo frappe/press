@@ -94,7 +94,7 @@ class SitePlan(Plan):
 	def validate_restrict_based_on_serve_plan(self):
 		if self.restrict_based_on_dedicated_server_plan and not self.dedicated_server_plan:
 			frappe.throw(
-				"Please mark this as a dedicated server plan before enabling restriction by dedicated server plan."
+				"The plan is not marked as a dedicated server plan. Please mark it as a dedicated server plan before enabling restriction by server plan price."
 			)
 
 	def validate_active_subscriptions(self):
