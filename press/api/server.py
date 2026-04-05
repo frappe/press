@@ -822,6 +822,7 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 		fields=[
 			"name",
 			"title",
+			"description",
 			"price_usd",
 			"price_inr",
 			"vcpu",
