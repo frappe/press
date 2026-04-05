@@ -44,6 +44,7 @@
 <script>
 import { FormControl, Button, ErrorMessage } from 'frappe-ui';
 import { toast } from 'vue-sonner';
+import { loadRazorpayScript } from '../../utils/razorpay';
 
 export default {
 	name: 'UPIAutopayForm',
@@ -64,7 +65,7 @@ export default {
 		};
 	},
 	mounted() {
-		this.loadRazorpayScript();
+		loadRazorpayScript();
 		if (this.isBackground) {
 			this.$resources.createRazorpayMandate.submit();
 		}
@@ -108,14 +109,6 @@ export default {
 		},
 	},
 	methods: {
-		loadRazorpayScript() {
-			if (window.Razorpay) return;
-			const script = document.createElement('script');
-			script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-			script.async = true;
-			document.head.appendChild(script);
-		},
-
 		setupAutopay() {
 			if (!this.maxAmount || this.maxAmount < 500) {
 				toast.error('Maximum amount must be at least ₹500');
@@ -129,7 +122,8 @@ export default {
 			// this.$resources.createRazorpayMandate.submit();
 		},
 
-		openRazorpayCheckout(orderData) {
+		async openRazorpayCheckout(orderData) {
+			await loadRazorpayScript();
 			const options = {
 				key: orderData.key_id,
 				order_id: orderData.order_id,

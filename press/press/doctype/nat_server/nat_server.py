@@ -117,3 +117,31 @@ class NATServer(BaseServer):
 			ansible.run()
 		except Exception as e:
 			log_error("Configure Monitoring Failed", server=self.as_dict(), error=str(e))
+
+	@frappe.whitelist()
+	def attach_nat_security_group(self):
+		vm = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		ec2 = vm.client()
+		response = ec2.describe_instances(InstanceIds=[vm.instance_id])
+		sgs = [
+			sg["GroupId"]
+			for reservation in response["Reservations"]
+			for instance in reservation["Instances"]
+			for sg in instance["SecurityGroups"]
+		]
+
+		nat_sg = frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id")
+		if not nat_sg:
+			frappe.throw(
+				"NAT Security Group not found for the cluster. Please set it in the Cluster doctype."
+			)
+
+		if nat_sg in sgs:
+			frappe.throw(
+				"NAT Security Group is already attached to the instance. No changes are required to be made."
+			)
+
+		sgs.append(nat_sg)
+		ec2.modify_instance_attribute(InstanceId=vm.instance_id, Groups=sgs)
+
+		return "NAT Security Group attached successfully"

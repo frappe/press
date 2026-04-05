@@ -188,8 +188,9 @@ export default {
 			const productHelpTexts = this.saasProduct?.help_texts
 				? this.saasProduct.help_texts.map((t) => t.help_text)
 				: [];
-
-			const helpTexts = [...productHelpTexts, ...defaultHelpTexts];
+			const helpTexts = productHelpTexts.length
+				? productHelpTexts
+				: defaultHelpTexts;
 			const helpTextIndex = Math.floor(this.progressCount) % helpTexts.length;
 
 			return helpTexts[helpTextIndex] || defaultHelpTexts[0];

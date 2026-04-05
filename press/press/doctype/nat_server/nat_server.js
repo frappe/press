@@ -6,8 +6,10 @@ frappe.ui.form.on('NAT Server', {
 		[
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[__('Ping Ansible'), 'ping_ansible', true, frm.doc.is_server_setup],
 			[__('Archive Server'), 'archive', true, frm.doc.is_server_setup],
 			[__('Get Static IP'), 'get_static_ip', true, !frm.doc.is_static_ip],
+			[__('Attach NAT Security Group'), 'attach_nat_security_group', true],
 			[
 				__('Configure Monitoring'),
 				'configure_monitoring',

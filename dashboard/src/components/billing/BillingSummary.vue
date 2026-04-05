@@ -123,8 +123,12 @@ function payUnpaidInvoices() {
 			});
 		}
 	} else {
-		let invoice = _unpaidInvoices;
-		if (invoice.stripe_invoice_url && team.doc.payment_mode === 'Card') {
+		let invoice = _unpaidInvoices[0];
+		if (
+			invoice &&
+			invoice.stripe_invoice_url &&
+			team.doc.payment_mode === 'Card'
+		) {
 			window.open(
 				`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
 			);

@@ -85,7 +85,8 @@ SERIES_TO_SERVER_TYPE = {
 
 HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
 DIGITALOCEAN_ROOT_DISK_ID = "digital-ocean-root-disk"
-HETZNER_ACTION_RETRIES = 60  # retry count; try to keep it lower so that it doesn't surpass than default RQ job timeout of 300 seconds
+HETZNER_ACTION_RETRIES = 10  # retry count; try to keep it lower so that it doesn't surpass than default RQ job timeout of 300 seconds
+HETZNER_POLL_INTERVAL = 6  # increased from default of 1 so that we don't hit limit of 3600/hour
 
 
 class VirtualMachine(Document):
@@ -434,9 +435,9 @@ class VirtualMachine(Document):
 		return
 
 	@frappe.whitelist()
-	def provision(self, assign_public_ip=True):
+	def provision(self):
 		if self.cloud_provider == "AWS EC2":
-			return self._provision_aws(assign_public_ip)
+			return self._provision_aws()
 		if self.cloud_provider == "OCI":
 			return self._provision_oci()
 		if self.cloud_provider == "Hetzner":
@@ -1974,7 +1975,7 @@ class VirtualMachine(Document):
 
 		if self.cloud_provider == "Hetzner":
 			api_token = cluster.get_password("hetzner_api_token")
-			return HetznerClient(token=api_token)
+			return HetznerClient(token=api_token, poll_interval=HETZNER_POLL_INTERVAL)
 
 		if self.cloud_provider == "DigitalOcean":
 			api_token = cluster.get_password("digital_ocean_api_token")
