@@ -279,7 +279,7 @@
    "mandatory_depends_on": "eval:!!doc.restrict_based_on_server_plan"
   },
   {
-   "depends_on": "eval:!!doc.restrict_based_on_dedicated_server_plan",
+   "depends_on": "eval:!!doc.dedicated_server_plan",
    "fieldname": "server_plan_validation_for_sites_on_dedicated_servers_section",
    "fieldtype": "Section Break",
    "label": "App Server Plan validation for Sites on Dedicated Servers"
@@ -299,7 +299,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-05 10:09:58.153575",
+ "modified": "2026-04-05 17:11:27.827057",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",
