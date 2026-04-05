@@ -44,6 +44,7 @@ class SitePlan(Plan):
 		minimum_server_price_usd: DF.Currency
 		monitor_access: DF.Check
 		offsite_backups: DF.Check
+		plan_description: DF.Data | None
 		plan_title: DF.Data | None
 		price_inr: DF.Currency
 		price_usd: DF.Currency
@@ -59,6 +60,7 @@ class SitePlan(Plan):
 	dashboard_fields = (
 		"name",
 		"plan_title",
+		"plan_description",
 		"document_type",
 		"document_name",
 		"price_inr",
@@ -86,7 +88,14 @@ class SitePlan(Plan):
 		return frappe.get_all("Site Plan", filters={"offsite_backups": False}, pluck="name")
 
 	def validate(self):
+		self.validate_restrict_based_on_serve_plan()
 		self.validate_active_subscriptions()
+
+	def validate_restrict_based_on_serve_plan(self):
+		if self.restrict_based_on_dedicated_server_plan and not self.dedicated_server_plan:
+			frappe.throw(
+				"Please mark this as a dedicated server plan before enabling restriction by dedicated server plan."
+			)
 
 	def validate_active_subscriptions(self):
 		old_doc = self.get_doc_before_save()

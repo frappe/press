@@ -43,7 +43,7 @@ export default {
 					(plan) =>
 						plan.dedicated_server_plan &&
 						(!plan.restrict_based_on_dedicated_server_plan ||
-							serverPlanPrice > plan.minimum_server_price_usd),
+							this.serverPlanPrice >= plan.minimum_server_price_usd),
 				);
 			} else {
 				plans = plans.filter((plan) => !plan.dedicated_server_plan);
@@ -111,6 +111,7 @@ export default {
 			return plans.map((plan) => {
 				return {
 					...plan,
+					sublabel: plan.plan_description || null,
 					features: [
 						{
 							label: `${this.$format.plural(

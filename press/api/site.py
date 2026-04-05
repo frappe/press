@@ -1282,6 +1282,7 @@ def get_site_plans():
 		fields=[
 			"name",
 			"plan_title",
+			"plan_description",
 			"price_usd",
 			"price_inr",
 			"cpu_time_per_day",

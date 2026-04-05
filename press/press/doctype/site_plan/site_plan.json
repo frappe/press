@@ -11,6 +11,7 @@
   "section_break_2",
   "document_type",
   "plan_title",
+  "plan_description",
   "interval",
   "column_break_5",
   "price_inr",
@@ -288,12 +289,17 @@
    "fieldname": "restrict_based_on_dedicated_server_plan",
    "fieldtype": "Check",
    "label": "Restrict based on Dedicated Server Plan"
+  },
+  {
+   "fieldname": "plan_description",
+   "fieldtype": "Data",
+   "label": "Plan Description"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-30 13:06:27.590196",
+ "modified": "2026-04-05 10:09:58.153575",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan",
