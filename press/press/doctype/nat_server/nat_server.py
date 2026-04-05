@@ -17,6 +17,7 @@ class NATServer(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		agent_password: DF.Password | None
 		cluster: DF.Link | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
@@ -30,11 +31,35 @@ class NATServer(BaseServer):
 		secondary_private_ip: DF.Data | None
 		ssh_port: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
 	def validate(self):
 		self.validate_cluster()
+		self.validate_agent_password()
+
+	def get_config(self):
+		agent_password = self.get_password("agent_password")
+		agent_repository_url = self.get_agent_repository_url()
+		agent_branch = self.get_agent_repository_branch()
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
+		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+
+		return {
+			"certificate_private_key": certificate.private_key,
+			"certificate_full_chain": certificate.full_chain,
+			"certificate_intermediate_chain": certificate.intermediate_chain,
+			"monitoring_password": monitoring_password,
+			"agent_repository_url": agent_repository_url,
+			"agent_password": agent_password,
+			"agent_branch": agent_branch,
+			"workers": 1,
+			"server": self.name,
+		}
 
 	@frappe.whitelist()
 	def setup_server(self):
@@ -44,15 +69,16 @@ class NATServer(BaseServer):
 
 	def _setup_server(self):
 		try:
+			config = self.get_config() | {
+				"primary_ip": self.private_ip,
+				"secondary_ip": self.secondary_private_ip,
+			}
 			ansible = Ansible(
 				playbook="nat_server.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={
-					"primary_ip": self.private_ip,
-					"secondary_ip": self.secondary_private_ip,
-				},
+				variables=config,
 			)
 			play = ansible.run()
 			self.reload()
@@ -68,63 +94,54 @@ class NATServer(BaseServer):
 
 	@frappe.whitelist()
 	def trigger_failover(self, secondary: str):
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_trigger_failover",
-			secondary=secondary,
-			queue="long",
-			timeout=1200,
-			at_front=True,
-		)
-		return "Failover Queued"
+		failover = frappe.get_doc(
+			{
+				"doctype": "NAT Failover",
+				"primary": self.name,
+				"secondary": secondary,
+			}
+		).insert()
 
-	def _trigger_failover(self, secondary: str):
-		if not self.secondary_private_ip:
-			frappe.throw("Secondary IP not configured on current NAT Server")
+		return f"Failover Reference: {frappe.get_desk_link(failover.doctype, failover.name)}"
 
-		secondary_nat_server = frappe.get_doc("NAT Server", secondary)
-		if secondary_nat_server.secondary_private_ip:
-			frappe.throw("Secondary NAT Server already has a secondary IP configured")
-
-		vm = frappe.get_doc("Virtual Machine", self.virtual_machine)
-		secondary_vm = frappe.get_doc("Virtual Machine", secondary_nat_server.virtual_machine)
-		if self.is_static_ip and not secondary_vm.is_static_ip:
-			ip = self.ip
-			vm.detach_static_ip()
-			secondary_vm.attach_static_ip(ip)
-
+	@frappe.whitelist()
+	def configure_monitoring(self):
 		try:
-			secondary_private_ip = self.secondary_private_ip
-			vm.detach_secondary_private_ip()
-			secondary_vm.attach_secondary_private_ip(secondary_private_ip)
-
 			ansible = Ansible(
-				playbook="configure_secondary_ip_in_secondary_nat.yml",
-				server=secondary_nat_server,
-				user=secondary_nat_server._ssh_user(),
-				port=secondary_nat_server._ssh_port(),
-				variables={
-					"primary_ip": secondary_vm.private_ip_address,
-					"secondary_ip": secondary_private_ip,
-				},
+				playbook="configure_monitoring_for_nat.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables=self.get_config(),
 			)
-			play = ansible.run()
-			if play.status != "Success":
-				raise
+			ansible.run()
+		except Exception as e:
+			log_error("Configure Monitoring Failed", server=self.as_dict(), error=str(e))
 
-			for dt in ("Server", "Database Server"):
-				frappe.db.set_value(
-					dt,
-					{"nat_server": self.name},
-					"nat_server",
-					secondary,
-				)
-		except Exception:
-			log_error(
-				"NAT Server Failover Exception",
-				secondary=secondary,
-				primary=self.name,
-				reference_doctype="NAT Server",
-				reference_name=secondary,
+	@frappe.whitelist()
+	def attach_nat_security_group(self):
+		vm = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		ec2 = vm.client()
+		response = ec2.describe_instances(InstanceIds=[vm.instance_id])
+		sgs = [
+			sg["GroupId"]
+			for reservation in response["Reservations"]
+			for instance in reservation["Instances"]
+			for sg in instance["SecurityGroups"]
+		]
+
+		nat_sg = frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id")
+		if not nat_sg:
+			frappe.throw(
+				"NAT Security Group not found for the cluster. Please set it in the Cluster doctype."
 			)
+
+		if nat_sg in sgs:
+			frappe.throw(
+				"NAT Security Group is already attached to the instance. No changes are required to be made."
+			)
+
+		sgs.append(nat_sg)
+		ec2.modify_instance_attribute(InstanceId=vm.instance_id, Groups=sgs)
+
+		return "NAT Security Group attached successfully"

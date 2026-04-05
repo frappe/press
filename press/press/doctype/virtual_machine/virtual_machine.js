@@ -3,23 +3,8 @@
 
 frappe.ui.form.on('Virtual Machine', {
 	refresh: function (frm) {
-		if (frm.is_new()) {
-			frappe.db
-				.get_value(
-					'Cluster',
-					{ name: frm.doc.cluster },
-					'disable_public_ips_for_servers',
-				)
-				.then((r) => {
-					if (r.message && r.message.disable_public_ips_for_servers) {
-						frm.set_value('assign_public_ip', 0);
-					} else {
-						frm.set_value('assign_public_ip', 1);
-					}
-				});
-		} else {
+		if (!frm.is_new() && frm.doc.status !== 'Draft')
 			frm.set_df_property('assign_public_ip', 'hidden', 1);
-		}
 
 		[
 			[__('Sync'), 'sync', false, frm.doc.status != 'Draft'],
@@ -417,6 +402,25 @@ frappe.ui.form.on('Virtual Machine', {
 					__('Visit OCI Dashboard'),
 				);
 			}
+		}
+	},
+
+	cluster(frm) {
+		if (frm.is_new() && frm.doc.cluster) {
+			// set default value for assign_public_ip based on cluster settings
+			frappe.db
+				.get_value(
+					'Cluster',
+					{ name: frm.doc.cluster },
+					'disable_public_ips_for_servers',
+				)
+				.then((r) => {
+					if (r.message && r.message.disable_public_ips_for_servers) {
+						frm.set_value('assign_public_ip', 0);
+					} else {
+						frm.set_value('assign_public_ip', 1);
+					}
+				});
 		}
 	},
 });

@@ -630,17 +630,6 @@ def options():
 		frappe.throw("Servers feature is not yet enabled on your account")
 
 	regions_filter = {"cloud_provider": ("!=", "Generic"), "public": True, "status": "Active"}
-	is_system_user = (
-		(frappe.session and frappe.session.data and frappe.session.data.user_type)
-		or (
-			frappe.session
-			and frappe.session.user
-			and frappe.get_cached_value("User", frappe.session.user, "user_type")
-		)
-	) == "System User"
-
-	if is_system_user:
-		regions_filter.pop("public", None)
 
 	# Temporarily here to skip the Frappe Compute cloud provider
 	if not get_current_team(get_doc=True).is_frappe_compute_internal_user:

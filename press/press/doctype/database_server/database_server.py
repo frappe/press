@@ -284,7 +284,8 @@ class DatabaseServer(BaseServer):
 		else:
 			try:
 				# create new subscription
-				self.create_subscription(self.plan)
+				if self.plan:
+					self.create_subscription(self.plan)
 			except Exception:
 				frappe.log_error("Database Subscription Creation Error")
 
@@ -1863,6 +1864,8 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 		if not no_of_binlogs or not isinstance(no_of_binlogs, int) or no_of_binlogs < 0:
 			frappe.throw("No of Binlogs are invalid")
 
+		proxy = frappe.db.get_value("Proxy Server", {"status": "Active", "cluster": self.cluster}, "name")
+
 		script = f"""
 #!/usr/bin/env bash
 set -e
@@ -1911,7 +1914,9 @@ systemctl restart mariadb
 					"UserKnownHostsFile=/dev/null",
 					"-o",
 					"ConnectTimeout=30",
-					f"root@{self.ip}",
+					"-J",
+					f"root@{proxy}",
+					f"root@{self.name}",
 					"bash",
 					"-s",
 					"--",

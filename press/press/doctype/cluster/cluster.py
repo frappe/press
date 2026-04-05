@@ -797,7 +797,6 @@ class Cluster(Document):
 			],
 		)
 
-	@frappe.whitelist()
 	def create_nat_security_group(self):
 		client = self.get_aws_client()
 		response = client.create_security_group(
@@ -867,7 +866,7 @@ class Cluster(Document):
 					"IpRanges": [
 						{"CidrIp": self.subnet_cidr_block, "Description": "POP3 from private network"}
 					],
-					"ToPort": 993,
+					"ToPort": 995,
 				},
 				{
 					"FromPort": 110,
@@ -1151,6 +1150,11 @@ class Cluster(Document):
 			)
 			frappe.db.commit()
 		yield from copies
+
+	@frappe.whitelist()
+	def assign_nat_security_group(self):
+		self.create_nat_security_group()
+		self.save()
 
 	@frappe.whitelist()
 	def create_proxy(self):
@@ -1495,6 +1499,7 @@ class Cluster(Document):
 		temporary_server: bool = False,
 		kms_key_id: str | None = None,
 		vmi_series: str | None = None,
+		assign_public_ip: bool = True,
 	) -> "VirtualMachine":
 		"""Creates a Virtual Machine for the cluster
 		temporary_server: If you are creating a temporary server for some special purpose, set this to True.
@@ -1515,6 +1520,7 @@ class Cluster(Document):
 				"team": team,
 				"data_disk_snapshot": data_disk_snapshot,
 				"kms_key_id": kms_key_id,
+				"assign_public_ip": assign_public_ip,
 			},
 		).insert()
 
@@ -1558,6 +1564,7 @@ class Cluster(Document):
 		# Accepting only arguments allowed via the API to create a server.
 		# Other arguments can be added laters.
 
+		nat_server = self.get_nat_server_if_supported()
 		team = team or get_current_team()
 		vm = self.create_vm(
 			machine_type=str(plan.instance_type),
@@ -1566,6 +1573,7 @@ class Cluster(Document):
 			domain=frappe.db.get_single_value("Press Settings", "domain"),
 			series=self.unified_server_series,
 			team=team,
+			assign_public_ip=not bool(nat_server),
 		)
 		server, database_server = vm.create_unified_server()
 
@@ -1581,13 +1589,12 @@ class Cluster(Document):
 		server.new_worker_allocation = True
 		server.database_server = database_server.name
 		server.proxy_server = self.proxy_server
-		self._add_nat_server_if_supported(server)
+		server.nat_server = nat_server
 
 		# Database configurations
 		database_server.auto_purge_binlog_based_on_size = True
 		database_server.binlog_max_disk_usage_percent = 75 if auto_increase_storage else 20
-		if getattr(server, "nat_server", None):
-			database_server.nat_server = server.nat_server
+		database_server.nat_server = nat_server
 
 		server.save()  # Creating server before database server to use the preset agent password
 		database_server.save()
@@ -1647,6 +1654,7 @@ class Cluster(Document):
 					frappe.ValidationError,
 				)
 
+		nat_server = self.get_nat_server_if_supported()
 		domain = domain or frappe.db.get_single_value("Press Settings", "domain")
 		server_series = {**self.base_servers, **self.private_servers}
 		team = team or get_current_team()
@@ -1663,6 +1671,7 @@ class Cluster(Document):
 			temporary_server=temporary_server,
 			kms_key_id=kms_key_id,
 			vmi_series="f" if is_secondary else None,  # Just use `f` series for secondary servers
+			assign_public_ip=not (doctype in ("Server", "Database Server") and nat_server),
 		)
 		server: BaseServer | MonitorServer | LogServer | None = None
 		match doctype:
@@ -1684,7 +1693,7 @@ class Cluster(Document):
 					server.auto_purge_binlog_based_on_size = True
 					server.binlog_max_disk_usage_percent = 20
 
-				self._add_nat_server_if_supported(server)
+				server.nat_server = nat_server
 			case "Server":
 				server = vm.create_server(is_secondary=is_secondary, primary=primary)
 				server.title = f"{title} - Application" if not is_secondary else title
@@ -1699,11 +1708,11 @@ class Cluster(Document):
 					)
 				else:
 					server.proxy_server = self.proxy_server
+
 				server.new_worker_allocation = True
 				server.auto_increase_storage = auto_increase_storage
 				server.is_for_recovery = is_for_recovery
-
-				self._add_nat_server_if_supported(server)
+				server.nat_server = nat_server
 			case "Proxy Server":
 				server = vm.create_proxy_server()
 				server.title = f"{title} - Proxy"
@@ -1740,9 +1749,6 @@ class Cluster(Document):
 		cluster_names = unique(frappe.db.get_all("Server", filters={"status": "Active"}, pluck="cluster"))
 		# Temporarily here to skip the Frappe Compute cloud provider
 		filters = {"name": ("in", cluster_names), "public": True}
-
-		if not get_current_team(get_doc=True).is_frappe_compute_internal_user:
-			filters["cloud_provider"] = ("!=", "Frappe Compute")
 
 		return frappe.db.get_all(
 			"Cluster",
@@ -1805,7 +1811,7 @@ class Cluster(Document):
 			return best_plan
 		return None
 
-	def _add_nat_server_if_supported(self, server):
+	def get_nat_server_if_supported(self):
 		if self.disable_public_ips_for_servers and self.cloud_provider == "AWS EC2":
 			nat_server = frappe.db.get_value(
 				"NAT Server",
@@ -1816,4 +1822,5 @@ class Cluster(Document):
 				nat_server = frappe.db.get_value(
 					"NAT Server", {"status": "Active", "cluster": self.name}, "name"
 				)
-			server.nat_server = nat_server
+			return nat_server
+		return None

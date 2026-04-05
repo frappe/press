@@ -15,7 +15,7 @@ from press.utils.telemetry import capture
 
 
 @frappe.whitelist(allow_guest=True)
-def login(product=None):
+def login(product: str | None = None):
 	flow = google_oauth_flow()
 	authorization_url, state = flow.authorization_url()
 	minutes = 5
@@ -27,7 +27,7 @@ def login(product=None):
 
 
 @frappe.whitelist(allow_guest=True)
-def callback(code=None, state=None):  # noqa: C901
+def callback(code: str | None = None, state: str | None = None):  # noqa: C901
 	cached_key = f"google_oauth_flow:{state}"
 	payload = frappe.cache().get_value(cached_key)
 	if not payload:

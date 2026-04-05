@@ -257,32 +257,38 @@ def app(owner, repository, branch, installation=None):
 
 
 @frappe.whitelist()
-def branches(owner, name, installation=None, source: str = ""):
-	if not installation and source:
-		installation = frappe.db.get_value("App Source", source, "github_installation_id")
+def branches(owner, name, installation=None):
+    """
+    Return ALL branches for the repo, following GitHub pagination.
+    """
+    headers = get_auth_headers(installation)
 
-	if installation:
-		token = get_access_token(installation)
-	else:
-		token = frappe.get_value("Press Settings", None, "github_access_token")
+    out = []
+    page = 1
+    while True:
+        resp = requests.get(
+            f"https://api.github.com/repos/{owner}/{name}/branches",
+            params={"per_page": 100, "page": page},
+            headers=headers,
+            timeout=20,
+        )
+        if not resp.ok:
+            frappe.throw("Error fetching branch list from GitHub: " + resp.text)
 
-	if token:
-		headers = {
-			"Authorization": f"token {token}",
-		}
-	else:
-		headers = {}
+        chunk = resp.json() or []
+        out.extend(chunk)
 
-	response = requests.get(
-		f"https://api.github.com/repos/{owner}/{name}/branches",
-		params={"per_page": 100},
-		headers=headers,
-	)
+        # If GitHub says there is a next page, keep going.
+        has_next = "next" in (resp.links or {})
+        if not has_next or len(chunk) == 0:
+            break
+        page += 1
 
-	if response.ok:
-		return response.json()
-	frappe.throw("Error fetching branch list from GitHub: " + response.text)
-	return None
+    # Optional: float `version-*` branches to the top without touching the UI
+    out.sort(key=lambda b: (0 if str(b.get("name", "")).startswith("version-") else 1,
+                            str(b.get("name", ""))))
+    return out
+
 
 
 def get_auth_headers(installation_id: str | None = None) -> "dict[str, str]":
