@@ -105,6 +105,20 @@ class NATServer(BaseServer):
 		return f"Failover Reference: {frappe.get_desk_link(failover.doctype, failover.name)}"
 
 	@frappe.whitelist()
+	def configure_monitoring(self):
+		try:
+			ansible = Ansible(
+				playbook="configure_monitoring_for_nat.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables=self.get_config(),
+			)
+			ansible.run()
+		except Exception as e:
+			log_error("Configure Monitoring Failed", server=self.as_dict(), error=str(e))
+
+	@frappe.whitelist()
 	def attach_nat_security_group(self):
 		vm = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		ec2 = vm.client()

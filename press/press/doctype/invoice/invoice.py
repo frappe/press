@@ -761,10 +761,10 @@ class Invoice(Document):
 			"Auto Scale Record",
 			{
 				"secondary_server": usage_record.document_name,
-				"status": "Success",
 				"action": "Scale Down",
 			},
 			"modified",
+			order_by="creation desc",
 		)
 
 		# Since down scale is always followed
