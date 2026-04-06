@@ -23,12 +23,11 @@ onMounted(() => {
 
 const router = useRouter();
 
-console.log(index);
 // filter
-const list = ref(index);
+const list = ref(index.value);
 
 watch(searchQuery, () => {
-	const filtered = filterLabels(index, searchQuery.value);
+	const filtered = filterLabels(index.value, searchQuery.value);
 	list.value = filtered;
 
 	const optionEls = document
@@ -108,7 +107,7 @@ watch(navigationIndex, () => {
 
 			<!-- results -->
 			<div
-				class="max-h-[49vh] min-h-[49vh] overflow-y-scroll p-2 flex flex-col text-sm"
+				class="max-h-[42vh] min-h-[42vh] overflow-y-scroll p-2 flex flex-col text-sm"
 				id="search-results"
 				role="listbox"
 				v-if="Object.keys(list).length > 0"

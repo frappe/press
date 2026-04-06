@@ -18,11 +18,6 @@ import FileSearch from '~icons/lucide/file-search';
 import NotificationPanel from './Notifications.vue';
 import SearchItem from './SearchItem.vue';
 
-import LucideSearch from '~icons/lucide/search';
-import LucideCommand from '~icons/lucide/command';
-
-import { searchModalOpen } from '@/data/ui';
-
 import { unreadNotificationsCount } from '@/data/notifications';
 
 import { getTeam } from '@/data/team';
