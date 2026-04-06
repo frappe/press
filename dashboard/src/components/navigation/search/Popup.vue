@@ -5,7 +5,8 @@ import { useRouter } from 'vue-router';
 import LucideX from '~icons/lucide/x';
 import LucideSearch from '~icons/lucide/search';
 
-import { formatLabels, filterLabels } from './utils';
+import { filterLabels } from './utils';
+import { index } from './index';
 
 const emits = defineEmits<{ close: [] }>();
 
@@ -22,15 +23,12 @@ onMounted(() => {
 
 const router = useRouter();
 
+console.log(index);
 // filter
-const initialData = router.getRoutes();
-const rawList = computed(() => formatLabels(initialData));
-const list = computed(() => {
-	return filterLabels(rawList.value, searchQuery.value);
-});
+const list = ref(index);
 
 watch(searchQuery, () => {
-	const filtered = filterLabels(list.value, searchQuery.value);
+	const filtered = filterLabels(index, searchQuery.value);
 	list.value = filtered;
 
 	const optionEls = document
@@ -73,58 +71,6 @@ watch(navigationIndex, () => {
 
 	els?.[navigationIndex.value]?.scrollIntoView({ block: 'center' });
 });
-
-const icons = {
-	'/settings/profile': LucideUser,
-	'/settings/team': LucideUsers,
-	'/settings/permissions': LucideLock,
-	'/settings/permissions/roles': LucideLock,
-	'/settings/developer': LucideCode,
-	'/settings/partner-admin': LucideShield,
-
-	'/sites': LucidePanelTopInactive,
-	'/sites/new': LucidePanelTopInactive,
-
-	'/groups': LucideBoxes,
-	'/groups/new': LucideBoxes,
-
-	'/servers': LucideServer,
-	'/servers/new': LucideServer,
-
-	'/billing': LucideWalletCards,
-	'/billing/forecast': LucideWalletCards,
-	'/billing/invoices': LucideWalletCards,
-	'/billing/balances': LucideWalletCards,
-	'/billing/payment-methods': LucideWalletCards,
-	'/billing/payouts': LucideWalletCards,
-	'/billing/mpesa-invoices': LucideWalletCards,
-	'/billing/upi-autopay': LucideWalletCards,
-
-	'/access-requests': LucideKey,
-
-	'/partners': LucideGlobe,
-	'/partners/overview': LucideGlobe,
-	'/partners/website-details': LucideGlobe,
-	'/partners/customers': LucideGlobe,
-	'/partners/partner-leads': LucideGlobe,
-	'/partners/certificates': LucideGlobe,
-	'/partners/resources': LucideGlobe,
-	'/partners/contributions': LucideGlobe,
-	'/partners/audits': LucideGlobe,
-	'/partners/local-payment-setup': LucideGlobe,
-	'/partners/payment-payout': LucideGlobe,
-	'/partners/partner-dashboard': LucideGlobe,
-
-	'/apps': LucideLayoutGrid,
-
-	'/database-analyzer': LucideActivity,
-	'/sql-playground': LucideDatabaseZap,
-	'/binlog-browser': LucideFileSearch,
-
-	'/status': LucideGlobe,
-	'/status/ongoing-incidents': LucideTriangleAlert,
-	'/status/incident-history': LucideArchive,
-};
 </script>
 
 <template>
@@ -162,7 +108,7 @@ const icons = {
 
 			<!-- results -->
 			<div
-				class="max-h-[55vh] min-h-[55vh] overflow-auto p-2 flex flex-col text-sm"
+				class="max-h-[49vh] min-h-[49vh] overflow-y-scroll p-2 flex flex-col text-sm"
 				id="search-results"
 				role="listbox"
 				v-if="Object.keys(list).length > 0"
@@ -173,22 +119,18 @@ const icons = {
 						{{ k.split('-').join(' ') }}
 					</span>
 
-					<div class="flex flex-col mb-5">
+					<div class="flex flex-col mb-3">
 						<router-link
 							role="option"
 							:to="item.route"
 							@click="close"
-							v-for="item in v"
+							v-for="item in v.items"
 							class="hover:bg-surface-gray-2 p-2 rounded flex gap-2 items-center"
 							:class="{
 								'bg-surface-gray-2': navigationIndex === item.flatindex,
 							}"
 						>
-							<component
-								v-if="icons[item.route]"
-								:is="icons[item.route] || LucideDot"
-								class="size-4"
-							/>
+							<component :is="item.icon || LucideDot" class="size-4" />
 
 							{{ item.name }}
 						</router-link>
