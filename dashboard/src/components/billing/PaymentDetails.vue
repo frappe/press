@@ -40,6 +40,31 @@
 			/>
 			<div class="flex items-center justify-between text-base text-gray-900">
 				<div class="flex flex-col gap-1.5">
+					<div class="font-medium">Billing address</div>
+					<div v-if="billingDetailsSummary" class="leading-5 text-gray-700">
+						{{ billingDetailsSummary }}
+					</div>
+					<div v-else class="text-gray-700">No address</div>
+				</div>
+				<div class="shrink-0">
+					<Button
+						:label="billingDetailsSummary ? 'Edit ' : 'Add billing address'"
+						@click="
+							() => {
+								showMessage = false;
+								showBillingDetailsDialog = true;
+							}
+						"
+					>
+						<template v-if="!billingDetailsSummary" #prefix>
+							<FeatherIcon class="h-4" name="plus" />
+						</template>
+					</Button>
+				</div>
+			</div>
+			<div class="my-3 h-px bg-gray-100" />
+			<div class="flex items-center justify-between text-base text-gray-900">
+				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Mode of payment</div>
 					<div
 						v-if="team.doc.payment_mode"
@@ -91,31 +116,6 @@
 						"
 					>
 						<template #prefix>
-							<FeatherIcon class="h-4" name="plus" />
-						</template>
-					</Button>
-				</div>
-			</div>
-			<div class="my-3 h-px bg-gray-100" />
-			<div class="flex items-center justify-between text-base text-gray-900">
-				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">Billing address</div>
-					<div v-if="billingDetailsSummary" class="leading-5 text-gray-700">
-						{{ billingDetailsSummary }}
-					</div>
-					<div v-else class="text-gray-700">No address</div>
-				</div>
-				<div class="shrink-0">
-					<Button
-						:label="billingDetailsSummary ? 'Edit ' : 'Add billing address'"
-						@click="
-							() => {
-								showMessage = false;
-								showBillingDetailsDialog = true;
-							}
-						"
-					>
-						<template v-if="!billingDetailsSummary" #prefix>
 							<FeatherIcon class="h-4" name="plus" />
 						</template>
 					</Button>
