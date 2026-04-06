@@ -201,22 +201,12 @@ class Team(Document):
 			],
 			as_dict=True,
 		)
-		doc.country_isd_code = self.get_country_isd_code()
 		doc.communication_infos = self.get_communication_infos()
 		doc.receive_budget_alerts = self.receive_budget_alerts
 		doc.monthly_alert_threshold = self.monthly_alert_threshold
 		doc.is_binlog_indexer_enabled = not frappe.db.get_single_value(
 			"Press Settings", "disable_binlog_indexer_service", cache=True
 		)
-
-	def get_country_isd_code(self):
-		if not self.country:
-			return None
-		from frappe.geo.country_info import get_all as get_country_data
-
-		country_data = get_country_data()
-		country_info = country_data.get(self.country, {})
-		return country_info.get("isd")
 
 	def onload(self):
 		load_address_and_contact(self)

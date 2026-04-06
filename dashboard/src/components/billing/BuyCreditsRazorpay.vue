@@ -43,7 +43,7 @@
 </template>
 <script setup>
 import { Button, ErrorMessage, FeatherIcon, createResource } from 'frappe-ui';
-import { ref, onMounted, onBeforeUnmount, inject } from 'vue';
+import { ref, onMounted, inject } from 'vue';
 import { toast } from 'vue-sonner';
 import { DashboardError } from '../../utils/error';
 import { loadRazorpayScript } from '../../utils/razorpay';
@@ -118,10 +118,7 @@ const handlePaymentFailed = createResource({
 });
 
 function getRazorpayContact() {
-	if (team.doc?.phone_number) {
-		return team.doc.phone_number;
-	}
-	return team.doc?.country_isd_code || undefined;
+	return team.doc?.phone_number || undefined;
 }
 
 function processOrder(data) {
