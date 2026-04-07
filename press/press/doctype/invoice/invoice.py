@@ -761,10 +761,10 @@ class Invoice(Document):
 			"Auto Scale Record",
 			{
 				"secondary_server": usage_record.document_name,
-				"status": "Success",
 				"action": "Scale Down",
 			},
 			"modified",
+			order_by="creation desc",
 		)
 
 		# Since down scale is always followed
@@ -943,7 +943,8 @@ class Invoice(Document):
 				"allocated_to",
 				{"invoice": self.name, "amount": allocated, "currency": self.currency},
 			)
-			doc.save()
+			# ignore permissions for BT added via Mpesa
+			doc.save(ignore_permissions=True)
 			total_allocated += allocated
 
 		balance_transaction = frappe.get_doc(
@@ -952,7 +953,7 @@ class Invoice(Document):
 			type="Applied To Invoice",
 			amount=total_allocated * -1,
 			invoice=self.name,
-		).insert()
+		).insert(ignore_permissions=True)
 		balance_transaction.submit()
 
 		self.applied_credits = sum(row.amount for row in self.credit_allocations)

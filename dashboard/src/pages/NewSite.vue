@@ -238,6 +238,7 @@
 						v-model="plan"
 						:isPrivateBenchSite="!!bench"
 						:isDedicatedServerSite="isDedicatedServerSite"
+						:serverPlanPrice="serverPriceUsd"
 						:selectedCluster="cluster"
 						:selectedApps="apps"
 						:selectedVersion="version"
@@ -257,7 +258,10 @@
 						</span>
 					</div>
 				</div>
-				<div class="mt-4 text-xs text-gray-700">
+				<div
+					v-if="selectedPlanHasSupportIncluded"
+					class="mt-4 text-xs text-gray-700"
+				>
 					<div
 						class="flex items-center rounded bg-gray-50 p-2 text-p-base font-medium text-gray-800"
 					>
@@ -418,6 +422,7 @@ export default {
 			agreedToRegionConsent: false,
 			useDedicatedServer: false,
 			selectedDedicatedServer: null,
+			serverPriceUsd: null,
 		};
 	},
 	watch: {
@@ -498,6 +503,7 @@ export default {
 			if (server) {
 				this.cluster = server.cluster;
 				this.provider = server.provider;
+				this.serverPriceUsd = server.price_usd;
 			}
 		},
 		subdomain: {
@@ -874,8 +880,12 @@ export default {
 				.sort((a, b) => a.label.localeCompare(b.label));
 		},
 		selectedPlan() {
-			if (!plans?.data) return;
-			return plans.data.find((p) => p.name === this.plan.name);
+			if (!plans?.data?.length) return;
+			return plans.data.find((p) => p.name === this.plan?.name);
+		},
+		selectedPlanHasSupportIncluded() {
+			if (!this.selectedPlan) return;
+			return this.selectedPlan.support_included;
 		},
 		versionAppsMap() {
 			const versions = this.availableVersions.map((v) => v.name);
