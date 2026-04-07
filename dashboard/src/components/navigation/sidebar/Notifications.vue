@@ -15,7 +15,7 @@ import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { frappeRequest } from 'frappe-ui';
 import LucideAlert from '~icons/lucide/circle-alert';
-import { ref, reactive, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 import { unreadNotificationsCount } from '@/data/notifications';
 
@@ -185,7 +185,7 @@ watch(activeTab, (x) => {
 			<div
 				class="text-ink-gray-9 bg-white h-screen ml-2 shadow-xl w-[370px] flex flex-col"
 			>
-				<div class="text-base flex items-center py-2 px-4 borer-b">
+				<div class="text-base flex items-center py-2 px-4 border-b">
 					<span class="font-medium mr-auto"> Notifications</span>
 
 					<Button variant="ghost" @click="markAllAsRead(togglePopover)">
@@ -207,7 +207,15 @@ watch(activeTab, (x) => {
 						v-model="activeTab"
 						class="w-full [&_[role=tab]]:justify-center [&_[role=tab]]:w-full"
 						:tabs
-					/>
+					>
+						<template #tab-item="{ tab }">
+							<button
+								class="flex items-center gap-2 py-2 text-ink-gray-5 aria-selected:text-ink-gray-9"
+							>
+								<span class="text-sm">{{ tab.label }}</span>
+							</button>
+						</template>
+					</Tabs>
 
 					<div
 						v-if="resource.data.length > 0"
