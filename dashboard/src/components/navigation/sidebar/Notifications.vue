@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { Popover, Badge, Button, Tooltip, createListResource } from 'frappe-ui';
+import {
+	Popover,
+	Badge,
+	Button,
+	Tabs,
+	Tooltip,
+	createListResource,
+} from 'frappe-ui';
 import LucideInbox from '~icons/lucide/inbox';
 import { dayjsLocal } from '@/utils/dayjs';
 import LucideKey from '~icons/lucide/key';
@@ -8,6 +15,7 @@ import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { frappeRequest } from 'frappe-ui';
 import LucideAlert from '~icons/lucide/circle-alert';
+import { ref, reactive, watch } from 'vue';
 
 import { unreadNotificationsCount } from '@/data/notifications';
 
@@ -54,13 +62,25 @@ const iconBgColors = {
 	'Auto Scale': 'bg-surface-red-1',
 };
 
+const tabs = [
+	{
+		label: 'All',
+		icon: LucideRows2,
+	},
+	{
+		label: 'Requests',
+		icon: LucideKeySquare,
+	},
+	{
+		label: 'Unread',
+		icon: LucideMessageSquareDot,
+	},
+];
+
 const resource = createListResource({
 	doctype: 'Press Notification',
 	url: 'press.api.notifications.get_notifications',
 	auto: true,
-	filters: {
-		read: 'Unread',
-	},
 	cache: ['Notifications'],
 	start: 0,
 	pageLength: 10,
@@ -114,6 +134,22 @@ const markAllAsRead = (togglePopover) => {
 		},
 	);
 };
+const activeTab = ref(0);
+
+watch(activeTab, (x) => {
+	const filters: any = {};
+	if (x == 0) {
+		//
+	} else if (x == 1) {
+		filters.type = 'Support Access';
+	} else {
+		filters.read = 'unread';
+	}
+
+	resource.update({ filters });
+
+	resource.reload();
+});
 </script>
 
 <template>
@@ -147,9 +183,9 @@ const markAllAsRead = (togglePopover) => {
 		<!-- floating drawer  -->
 		<template #body="{ togglePopover }">
 			<div
-				class="text-ink-gray-9 bg-white h-screen ml-2 shadow-xl w-[400px] flex flex-col"
+				class="text-ink-gray-9 bg-white h-screen ml-2 shadow-xl w-[370px] flex flex-col"
 			>
-				<div class="text-base flex items-center py-2 px-4 border-b">
+				<div class="text-base flex items-center py-2 px-4 borer-b">
 					<span class="font-medium mr-auto"> Notifications</span>
 
 					<Button variant="ghost" @click="markAllAsRead(togglePopover)">
@@ -167,6 +203,12 @@ const markAllAsRead = (togglePopover) => {
 
 				<!-- notification tiles -->
 				<section class="overflow-auto">
+					<Tabs
+						v-model="activeTab"
+						class="w-full [&_[role=tab]]:justify-center [&_[role=tab]]:w-full"
+						:tabs
+					/>
+
 					<div
 						v-if="resource.data.length > 0"
 						v-for="(x, i) in resource.data"
