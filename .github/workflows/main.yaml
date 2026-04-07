@@ -240,6 +240,12 @@ jobs:
         with:
           key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /home/runner/frappe-bench
+        if: |
+          github.ref != 'develop' &&
+          github.ref != 'master' &&
+          !startsWith(github.ref, 'release') &&
+          !startsWith(github.ref, 'hotfix') &&
+          (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'skip-cache'))
 
       - name: Cache mariadb data directory
         id: cache-mariadb-data
@@ -247,6 +253,12 @@ jobs:
         with:
           key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /data/mariadb_data
+        if: |
+          github.ref != 'develop' &&
+          github.ref != 'master' &&
+          !startsWith(github.ref, 'release') &&
+          !startsWith(github.ref, 'hotfix') &&
+          (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'skip-cache'))
 
       - name: Start mariadb service
         run: |
