@@ -135,7 +135,7 @@ class UserSSHCertificate(Document):
 			self.proxy = frappe.db.get_value(
 				"Server", {"database_server": self.access_server}, "proxy_server"
 			)
-		return f"{self.proxy}{self.access_server}"
+		return f"{self.proxy},{self.access_server}"
 
 
 @frappe.whitelist()
