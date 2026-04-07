@@ -716,7 +716,7 @@ export default {
 		},
 		availableVersions() {
 			if (!this.apps.length || this.bench)
-				return (this.options?.versions || []).sort((a, b) =>
+				return [...(this.options?.versions || [])].sort((a, b) =>
 					b.name.localeCompare(a.name),
 				);
 
@@ -767,7 +767,7 @@ export default {
 			let apps = [];
 
 			if (!this.bench)
-				apps = (this.options?.app_source_details || []).sort((a, b) =>
+				apps = [...(this.options?.app_source_details || [])].sort((a, b) =>
 					a.total_installs !== b.total_installs
 						? b.total_installs - a.total_installs
 						: a.app.localeCompare(b.app),
@@ -1005,7 +1005,7 @@ export default {
 		autoSelectVersion() {
 			if (!this.availableVersions) return null;
 
-			return this.availableVersions
+			return [...this.availableVersions]
 				.sort((a, b) => b.name.localeCompare(a.name))
 				.find((v) => !v.disabled)?.name;
 		},
