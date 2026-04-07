@@ -1214,6 +1214,16 @@ class Cluster(Document):
 		api_token = self.get_password("hetzner_api_token")
 		return Client(token=api_token)
 
+	def _check_frappe_compute_machine_availability(
+		self, machine_type: str | list, instance_id: str | None = None
+	):
+		api_secret = self.get_password("frappe_compute_api_secret")
+
+		client = FrappeComputeClient(
+			url=self.frappe_compute_base_url, api_key=self.frappe_compute_api_key, api_secret=api_secret
+		)
+		return client.check_machine_availability(machine_type, instance_id=instance_id)
+
 	def _check_aws_machine_availability(self, machine_type: str | list) -> bool | dict[str, bool]:
 		"""Check if instance offering in the region is present"""
 		client = self.get_aws_client()
@@ -1282,7 +1292,9 @@ class Cluster(Document):
 		return results
 
 	@frappe.whitelist()
-	def check_machine_availability(self, machine_type: str | list) -> bool | dict[str, bool]:
+	def check_machine_availability(
+		self, machine_type: str | list, instance_id: str | None = None
+	) -> bool | dict[str, bool]:
 		"Check availability of machine in the region before allowing provision"
 		if self.cloud_provider == "AWS EC2":
 			return self._check_aws_machine_availability(machine_type)
@@ -1290,6 +1302,8 @@ class Cluster(Document):
 			return self._check_oci_machine_availability(machine_type)
 		if self.cloud_provider == "Hetzner":
 			return self._check_hetzner_machine_availability(machine_type)
+		if self.cloud_provider == "Frappe Compute":
+			return self._check_frappe_compute_machine_availability(machine_type, instance_id)
 
 		return True
 

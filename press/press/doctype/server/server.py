@@ -1340,7 +1340,8 @@ class BaseServer(Document, TagHelpers):
 			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
-		if not cluster.check_machine_availability(new_plan.instance_type):
+		instance_id = frappe.db.get_value("Virtual Machine", self.virtual_machine, "instance_id")
+		if not cluster.check_machine_availability(new_plan.instance_type, instance_id):
 			frappe.throw(
 				f"Cannot change plan right now since the instance type {new_plan.instance_type} is not available. Try again later."
 			)
