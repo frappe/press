@@ -543,6 +543,25 @@ class ProxyServer(BaseServer):
 		return None
 
 	@frappe.whitelist()
+	def setup_user_ssh_certificate(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_user_ssh_certificate", queue="long", timeout=1200)
+
+	def _setup_user_ssh_certificate(self):
+		try:
+			ansible = Ansible(
+				playbook="user_ssh_certificate.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"server": self.name,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("User SSH Certificate Setup Exception", doc=self)
+
+	@frappe.whitelist()
 	def set_memory_limits(self, limits: list):
 		already_seen_processes = set()
 		for limit in limits:
