@@ -230,18 +230,22 @@ jobs:
       - name: Install Bench command
         run: pip install frappe-bench
 
+      - name: Get current week number
+        id: week
+        run: echo "week=$(date +'%Y-%V')" >> $GITHUB_OUTPUT
+
       - name: Cache bench directory
         id: cache-bench-dir
         uses: actions/cache@v5
         with:
-          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ github.run_week }}
+          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /home/runner/frappe-bench
 
       - name: Cache mariadb data directory
         id: cache-mariadb-data
         uses: actions/cache@v5
         with:
-          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ github.run_week }}
+          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /data/mariadb_data
 
       - name: Start mariadb service
@@ -300,13 +304,13 @@ jobs:
       - name: Cache bench directory
         uses: actions/cache/save@v5
         with:
-          key: bench-dir-${{ github.ref }}-${{ github.run_week }}
+          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /home/runner/frappe-bench
 
       - name: Cache mariadb data directory
         uses: actions/cache/save@v5
         with:
-          key: mariadb-data-${{ github.ref }}-${{ github.run_week }}
+          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /data/mariadb_data
 
   ui-tests:
@@ -320,6 +324,10 @@ jobs:
     if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-js-vue == 'true' || needs.changes.outputs.changed-build == 'true'
 
     steps:
+      - name: Get current week number
+        id: week
+        run: echo "week=$(date +'%Y-%V')" >> $GITHUB_OUTPUT
+
       - name: Create mariadb data directory
         run: |
           sudo mkdir -p /data/mariadb_data
@@ -331,7 +339,7 @@ jobs:
       - name: Restore mariadb data directory from cache
         uses: actions/cache/restore@v5
         with:
-          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ github.run_week }}
+          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /data/mariadb_data
 
       - name: Change ownership of mariadb data directory (post cache restore)
@@ -393,7 +401,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: /home/runner/frappe-bench
-          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ github.run_week }}
+          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
 
       - name: Don't run unnecessary services
         working-directory: /home/runner/frappe-bench
@@ -463,6 +471,10 @@ jobs:
     if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-build == 'true'
 
     steps:
+      - name: Get current week number
+        id: week
+        run: echo "week=$(date +'%Y-%V')" >> $GITHUB_OUTPUT
+
       - name: Create mariadb data directory
         run: |
           sudo mkdir -p /data/mariadb_data
@@ -474,7 +486,7 @@ jobs:
       - name: Restore mariadb data directory from cache
         uses: actions/cache/restore@v5
         with:
-          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ github.run_week }}
+          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /data/mariadb_data
 
       - name: Change ownership of mariadb data directory (post cache restore)
@@ -515,7 +527,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: /home/runner/frappe-bench
-          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ github.run_week }}
+          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
 
       - name: Allow tests
         working-directory: /home/runner/frappe-bench
