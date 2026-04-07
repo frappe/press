@@ -359,9 +359,6 @@ jobs:
             --health-retries=3 \
             mariadb:10.6
 
-      - name: Clone
-        uses: actions/checkout@v5
-
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -506,9 +503,6 @@ jobs:
             --health-retries=3 \
             mariadb:10.6
 
-      - name: Clone
-        uses: actions/checkout@v5
-
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -583,9 +577,6 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Clone
-        uses: actions/checkout@v5
-
       - name: Download artifacts
         uses: actions/download-artifact@v4
 
