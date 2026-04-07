@@ -16,6 +16,7 @@ import frappe
 import oci
 import pydo
 from frappe.model.document import Document
+from frappe.utils.caching import redis_cache
 from hcloud import APIException, Client
 from hcloud.firewalls.domain import FirewallRule as HetznerFirewallRule
 from hcloud.networks.domain import NetworkSubnet
@@ -1256,20 +1257,13 @@ class Cluster(Document):
 			return results
 		return True
 
-	def _check_hetzner_machine_availability(self, machine_type: str | list) -> bool | dict[str, bool]:  # noqa: C901
+	@redis_cache(ttl=60 * 60 * 24)
+	def _get_hetzner_server_id_name_map(self) -> dict[str, str]:
+		return {st.name: st.id for st in self.get_hetzner_client().server_types.get_all()}
+
+	def _check_hetzner_machine_availability(self, machine_type: str | list) -> bool | dict[str, bool]:
 		client = self.get_hetzner_client()
-		machine_type_id_map = {}
-		if isinstance(machine_type, list):
-			for m in machine_type:
-				machine = client.server_types.get_by_name(m)
-				if not machine:
-					continue
-				machine_type_id_map[m] = machine.id
-		else:
-			machine = client.server_types.get_by_name(machine_type)
-			if not machine:
-				return False
-			machine_type_id_map[machine_type] = machine.id
+		machine_type_id_map = self._get_hetzner_server_id_name_map()
 
 		datacenters = client.datacenters.get_all()
 		datacenters = [dc for dc in datacenters if dc.location.name == self.region]
