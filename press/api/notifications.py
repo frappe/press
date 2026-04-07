@@ -44,6 +44,9 @@ def get_notifications(
 	if filters.get("read") == "Unread":
 		query = query.where(PressNotification.read == 0)
 
+	if filters.get("type"):
+		query = query.where(PressNotification.type == filters["type"])
+
 	notifications = query.run(as_dict=True)
 
 	for notification in notifications:
