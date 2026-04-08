@@ -26,6 +26,10 @@ const router = useRouter();
 // filter
 const list = ref(index.value);
 
+const flatList = computed(() =>
+	Object.values(list.value).flatMap((v) => v.items),
+);
+
 watch(searchQuery, () => {
 	const filtered = filterLabels(index.value, searchQuery.value);
 	list.value = filtered;
@@ -42,15 +46,11 @@ watch(searchQuery, () => {
 const navigationIndex = ref(0);
 
 const navigateEnter = (close) => {
-	for (const v of Object.entries(list.value)) {
-		const item = v[1][0];
-		if (item.flatindex === navigationIndex.value) {
-			router.push(item.route);
-			break;
-		}
+	const item = flatList.value[navigationIndex.value];
+	if (item) {
+		router.push(item.route);
+		close();
 	}
-
-	close();
 };
 
 const navigateUp = () => {
@@ -60,7 +60,9 @@ const navigateUp = () => {
 };
 
 const navigateDown = () => {
-	navigationIndex.value++;
+	if (navigationIndex.value < flatList.value.length - 1) {
+		navigationIndex.value++;
+	}
 };
 
 watch(navigationIndex, () => {
@@ -126,7 +128,7 @@ watch(navigationIndex, () => {
 							v-for="item in v.items"
 							class="hover:bg-surface-gray-2 p-2 rounded flex gap-2 items-center"
 							:class="{
-								'bg-surface-gray-2': navigationIndex === item.flatindex,
+								'bg-surface-gray-2': navigationIndex === flatList.indexOf(item),
 							}"
 						>
 							<component :is="item.icon || LucideDot" class="size-4" />
