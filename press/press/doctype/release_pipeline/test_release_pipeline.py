@@ -1,6 +1,5 @@
 # Copyright (c) 2026, Frappe and Contributors
 # See license.txt
-import os
 import shutil
 import typing
 from unittest.mock import Mock, patch
@@ -10,17 +9,23 @@ from frappe.database.mariadb.database import MariaDBDatabase
 from frappe.tests.utils import FrappeTestCase
 
 from press.api.bench import deploy_and_update
+from press.press.doctype.agent_job.agent_job import poll_pending_jobs
+from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.test_server import create_test_server
 from press.utils import get_current_team
 from press.utils.test import foreground_enqueue_doc
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.release_pipeline.release_pipeline import ReleasePipeline
+
+
+def get_mock_context_file(*args, **kwargs):
+	return frappe.mock("file_path")
 
 
 @patch.object(MariaDBDatabase, "commit", Mock())
@@ -58,11 +63,7 @@ class TestReleasePipeline(FrappeTestCase):
 		frappe.db.set_single_value("Press Settings", "build_directory", "/tmp/test-build-dir/")
 		frappe.db.set_single_value("Press Settings", "clone_directory", "/tmp/test-clone-dir/")
 
-	@patch(
-		"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.frappe.enqueue_doc",
-		foreground_enqueue_doc,
-	)
-	def test_release_pipeline_creation(self):
+	def create_deploy_and_update(self):
 		deploy_and_update(
 			self.test_release_group.name,
 			apps=[
@@ -79,8 +80,14 @@ class TestReleasePipeline(FrappeTestCase):
 					"hash": self.test_erpnext_release.hash,
 				},
 			],
-			run_will_fail_check=False,
 		)
+
+	@patch(
+		"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.frappe.enqueue_doc",
+		foreground_enqueue_doc,
+	)
+	def test_release_pipeline_creation(self):
+		self.create_deploy_and_update()
 
 		release_pipeline: ReleasePipeline = frappe.get_last_doc("Release Pipeline")
 		self.assertEqual(release_pipeline.release_group, self.test_release_group.name)
@@ -102,35 +109,28 @@ class TestReleasePipeline(FrappeTestCase):
 		"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.frappe.enqueue_doc",
 		foreground_enqueue_doc,
 	)
-	def test_release_pipeline_bench_creation(self):
-		deploy_and_update(
-			self.test_release_group.name,
-			apps=[
-				{
-					"app": "frappe",
-					"source": "SRC-Frappe-001",
-					"release": self.test_frappe_release.name,
-					"hash": self.test_frappe_release.hash,
-				},
-				{
-					"app": "erpnext",
-					"source": "SRC-Erpnext-001",
-					"release": self.test_erpnext_release.name,
-					"hash": self.test_erpnext_release.hash,
-				},
-			],
+	@patch.object(DeployCandidateBuild, "_upload_build_context", get_mock_context_file)
+	def test_release_pipeline_build_creation(self):
+		with fake_agent_job("Remote Build Job", "Success"):
+			self.create_deploy_and_update()
+			poll_pending_jobs()
+
+		deploy_candidate_build: DeployCandidateBuild = frappe.get_last_doc("Deploy Candidate Build")
+
+		self.assertEqual(
+			deploy_candidate_build.status,
+			"Running",
+		)  # Ensure this is created without any error in the workflow task
+
+		job_type = frappe.db.get_value(
+			"Agent Job",
+			{"reference_doctype": "Deploy Candidate Build", "reference_name": deploy_candidate_build.name},
+			["job_type"],
 		)
-		release_pipeline: ReleasePipeline = frappe.get_last_doc("Release Pipeline")
-		build_doc: DeployCandidateBuild = frappe.get_last_doc("Deploy Candidate Build")
-		print(build_doc.status, build_doc.group, release_pipeline.release_group, release_pipeline.status)
+
+		self.assertEqual(job_type, "Run Remote Builder")  # Agent job is created as well
 
 	@classmethod
 	def tearDownClass(cls):
-		build_dir_path = frappe.db.get_single_value("Press Settings", "build_directory")
-		clone_dir_path = frappe.db.get_single_value("Press Settings", "clone_directory")
-
-		if os.path.exists(build_dir_path):
-			shutil.rmtree(build_dir_path)
-
-		if os.path.exists(clone_dir_path):
-			shutil.rmtree(clone_dir_path)
+		shutil.rmtree(frappe.db.get_single_value("Press Settings", "build_directory"), ignore_errors=True)
+		shutil.rmtree(frappe.db.get_single_value("Press Settings", "clone_directory"), ignore_errors=True)
