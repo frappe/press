@@ -114,10 +114,10 @@ watch(navigationIndex, () => {
 				role="listbox"
 				v-if="Object.keys(list).length > 0"
 			>
-				<template v-for="(v, k, i) in list">
-					<!-- routes have hyphens usually so format -->
-					<span class="text-ink-gray-4 font-mono uppercase p-2">
-						{{ k.split('-').join(' ') }}
+				<template v-for="(v, k) in list">
+					<!-- group name -->
+					<span class="text-ink-gray-4 uppercase p-2">
+						{{ k }}
 					</span>
 
 					<div class="flex flex-col mb-3">
@@ -127,7 +127,7 @@ watch(navigationIndex, () => {
 							role="option"
 							:to="item.route"
 							@click="close"
-							class="hover:bg-surface-gray-2 p-2 rounded flex gap-2 items-center text-ink-gray-7"
+							class="hover:bg-surface-gray-2 p-2 rounded flex gap-2 items-center"
 							:class="{
 								'bg-surface-gray-2': navigationIndex === flatList.indexOf(item),
 							}"
