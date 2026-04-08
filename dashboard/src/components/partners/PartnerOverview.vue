@@ -357,6 +357,7 @@ const formatDate = (dateString) => {
 };
 
 const formatCurrency = (amount) => {
+	if (!amount) return 0;
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: team.doc.currency,
