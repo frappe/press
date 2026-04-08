@@ -1258,7 +1258,7 @@ class Cluster(Document):
 		return True
 
 	@redis_cache(ttl=60 * 60 * 24)
-	def _get_hetzner_server_id_name_map(self) -> dict[str, str]:
+	def _get_hetzner_server_id_name_map(self) -> dict[str, int]:
 		return {st.name: st.id for st in self.get_hetzner_client().server_types.get_all()}
 
 	def _check_hetzner_machine_availability(self, machine_type: str | list) -> bool | dict[str, bool]:
@@ -1274,7 +1274,7 @@ class Cluster(Document):
 
 		# For a single machine type, return a boolean to preserve the original behavior.
 		if isinstance(machine_type, str):
-			machine_id = machine_type_id_map[machine_type]
+			machine_id = machine_type_id_map.get(machine_type)
 			return machine_id in available_machine_ids
 
 		# For a list of machine types, return a mapping of name -> availability.

@@ -1002,7 +1002,7 @@ class VirtualMachine(Document):
 
 		self.save()
 
-	def get_volumes(self):
+	def get_volumes(self, hetzner_server_instance=None):  # noqa C901
 		if self.cloud_provider == "AWS EC2":
 			response = self.client().describe_volumes(
 				Filters=[{"Name": "attachment.instance-id", "Values": [self.instance_id]}]
@@ -1026,7 +1026,11 @@ class VirtualMachine(Document):
 				.data
 			)
 		if self.cloud_provider == "Hetzner":
-			instance = self.get_hetzner_server_instance(fetch_data=True)
+			if not hetzner_server_instance:
+				instance = self.get_hetzner_server_instance(fetch_data=True)
+			else:
+				instance = hetzner_server_instance
+
 			volumes = []
 			for v in instance.volumes:
 				volumes.append(
@@ -1117,11 +1121,13 @@ class VirtualMachine(Document):
 			return self._sync_frappe_compute(*args, **kwargs)
 		return None
 
-	def _update_volume_info_after_sync(self):
+	def _update_volume_info_after_sync(self, hetzner_server_instance=None):
 		attached_volumes = []
 		attached_devices = []
 
-		for volume_index, volume in enumerate(self.get_volumes(), start=1):
+		for volume_index, volume in enumerate(
+			self.get_volumes(hetzner_server_instance=hetzner_server_instance), start=1
+		):
 			existing_volume = find(self.volumes, lambda v: v.volume_id == volume.id)
 			row = existing_volume if existing_volume else frappe._dict()
 			row.volume_id = volume.id
@@ -1216,7 +1222,7 @@ class VirtualMachine(Document):
 
 		self.termination_protection = server_instance.protection.get("delete", False)
 
-		self._update_volume_info_after_sync()
+		self._update_volume_info_after_sync(hetzner_server_instance=server_instance)
 
 		self.save()
 		self.update_servers()
