@@ -109,7 +109,7 @@
 								label="Renew"
 								:disabled="false"
 								:variant="'solid'"
-								@click="showRenewalConfirmationDialog = true"
+								@click="partnerMRR.submit()"
 							/>
 						</div>
 					</div>
@@ -125,6 +125,16 @@
 			<template #body-content>
 				<PartnerContribution :partnerEmail="team.doc.partner_email" />
 			</template>
+		</Dialog>
+
+		<Dialog
+			:show="showRenewalErrorDialog"
+			v-model="showRenewalErrorDialog"
+			:options="{
+				title: 'Renewal Eligibility',
+				message: renewalErrorMessage,
+			}"
+		>
 		</Dialog>
 
 		<Dialog
@@ -183,6 +193,7 @@ const team = inject('team');
 
 const showPartnerContributionDialog = ref(false);
 const showRenewalConfirmationDialog = ref(false);
+const showRenewalErrorDialog = ref(false);
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
@@ -202,6 +213,34 @@ const partnerConsent = createListResource({
 		toast.success('Partner consent recorded successfully');
 	},
 });
+
+const renewalErrorMessage = ref('');
+let mrr = ref(0);
+const partnerMRR = createResource({
+	url: 'press.api.partner.get_partner_mrr',
+	cache: 'partnerContribution',
+	params: {
+		partner_email: team.doc.partner_email,
+		prev_month: true,
+	},
+	onSuccess(data) {
+		mrr.value = data[0]?.total_amount;
+		canRenew();
+	},
+});
+
+function canRenew() {
+	// Allow renewal if mrr is greater than $100 or 10000 INR
+	if (
+		(team.doc.currency === 'USD' && mrr.value >= 100) ||
+		(team.doc.currency === 'INR' && mrr.value >= 10000)
+	) {
+		showRenewalConfirmationDialog.value = true;
+	} else {
+		renewalErrorMessage.value = `Your current MRR is ${formatCurrency(mrr.value)}, which does not meet the minimum requirement for renewal. Please reach out to support for assistance.`;
+		showRenewalErrorDialog.value = true;
+	}
+}
 
 function routeToCertification() {
 	router.push('/partners/certificates');

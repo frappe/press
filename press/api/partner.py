@@ -241,7 +241,7 @@ def get_partner_contribution_list(partner_email):
 
 @frappe.whitelist()
 @role_guard.api("partner")
-def get_partner_mrr(partner_email):
+def get_partner_mrr(partner_email, prev_month=False):
 	team = get_current_team(get_doc=True)
 	if team.partner_email != partner_email:
 		return None
@@ -274,6 +274,10 @@ def get_partner_mrr(partner_email):
 		.orderby(Invoice.due_date, order=frappe.qb.desc)
 		.limit(12)
 	)
+	if prev_month:
+		last_month_end = get_last_day(add_months(today(), -1))
+		query = query.where(Invoice.due_date == last_month_end)
+
 	result = query.run(as_dict=True)
 	return [d for d in result]
 
@@ -495,8 +499,10 @@ def get_partner_invoices(due_date=None, status=None):
 @frappe.whitelist()
 @role_guard.api("partner")
 def get_invoice_items(invoice):
-	team = get_current_team()
-	if team != frappe.db.get_value("Invoice", invoice, "team"):
+	team = get_current_team(get_doc=True)
+	if team.name != frappe.db.get_value(
+		"Invoice", invoice, "team"
+	) or team.partner_email != frappe.db.get_value("Invoice", invoice, "partner_email"):
 		return None
 	data = frappe.get_all(
 		"Invoice Item",
