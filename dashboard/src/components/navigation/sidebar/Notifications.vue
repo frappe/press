@@ -122,7 +122,7 @@ const markAllAsRead = (togglePopover) => {
 		<template #target="{ togglePopover }">
 			<button
 				@click="togglePopover"
-				class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-3 w-full"
+				class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition gap-1 hover:bg-surface-gray-3 w-full"
 				:class="[
 					item.disabled ? 'pointer-events-none opacity-50' : '',
 					$attrs.class,
@@ -132,7 +132,7 @@ const markAllAsRead = (togglePopover) => {
 				<span class="text-sm flex-1 text-left">{{ item.name }}</span>
 
 				<span
-					class="px-1.5 py-0.5 text-xs text-gray-600"
+					class="text-xs text-gray-600"
 					v-if="unreadNotificationsCount.data > 0"
 				>
 					{{
