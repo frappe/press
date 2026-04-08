@@ -38,15 +38,22 @@
 </template>
 
 <script setup>
-import { defineAsyncComponent, computed, watch, ref, provide } from 'vue';
+import {
+	defineAsyncComponent,
+	computed,
+	watch,
+	ref,
+	provide,
+	onMounted,
+} from 'vue';
 import { Toaster } from 'vue-sonner';
 import { dialogs } from './utils/components';
 import { useRoute } from 'vue-router';
 import { getTeam } from './data/team';
 import { session } from './data/session.js';
 import { searchModalOpen } from '@/data/ui';
-import { useMagicKeys, whenever } from '@vueuse/core';
 import SearchModal from '@/components/navigation/search/Popup.vue';
+import { useSearch } from '@/components/navigation/search/utils';
 
 const AppSidebar = defineAsyncComponent(
 	() => import('./components/navigation/sidebar/Sidebar.vue'),
@@ -100,10 +107,8 @@ watch(
 provide('team', team);
 provide('session', session);
 
-const { meta_k } = useMagicKeys();
-
-whenever(meta_k, (n) => {
-	if (n) searchModalOpen.value = true;
+onMounted(() => {
+	useSearch();
 });
 </script>
 
