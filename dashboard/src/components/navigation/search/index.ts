@@ -8,7 +8,6 @@ export const index = computed(() => {
 
 	const groups = {
 		Settings: {
-			icon: LucideUser,
 			items: [
 				{ name: 'Profile', route: '/settings/profile', icon: LucideUser },
 				{ name: 'Team', route: '/settings/team', icon: LucideUsers },
@@ -22,7 +21,6 @@ export const index = computed(() => {
 		},
 
 		Status: {
-			icon: LucideGlobe,
 			items: [
 				{
 					name: 'Ongoing Incidents',
@@ -38,7 +36,6 @@ export const index = computed(() => {
 		},
 
 		'Dev Tools': {
-			icon: LucideActivity,
 			condition: team.doc?.onboarding?.complete && !team.doc?.is_saas_user,
 			items: [
 				{
@@ -61,7 +58,6 @@ export const index = computed(() => {
 		},
 
 		Billing: {
-			icon: LucideWalletCards,
 			condition: team.doc?.is_desk_user || session.hasBillingAccess,
 			items: [
 				{ name: 'Overview', route: '/billing', icon: LucideWalletCards },
@@ -103,7 +99,6 @@ export const index = computed(() => {
 		},
 
 		'Partner Admin': {
-			icon: LucideShield,
 			condition: team.doc?.is_desk_user,
 			items: [
 				{
@@ -135,7 +130,6 @@ export const index = computed(() => {
 		},
 
 		Partnership: {
-			icon: LucideGlobe,
 			condition: Boolean(team.doc?.erpnext_partner),
 			items: [
 				{ name: 'Overview', route: '/partners/overview', icon: LucideGlobe },

@@ -8,8 +8,6 @@ import LucideSearch from '~icons/lucide/search';
 import { filterLabels, highlightMatch } from './utils';
 import { index } from './index';
 
-const emits = defineEmits<{ close: [] }>();
-
 const searchQuery = ref('');
 const inputRef = useTemplateRef<HTMLInputElement>('inputRef');
 
