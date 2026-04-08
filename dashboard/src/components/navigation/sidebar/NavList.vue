@@ -3,7 +3,6 @@ import { h, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue';
 
 import DoorOpen from '~icons/lucide/door-open';
 import PanelTopInactive from '~icons/lucide/panel-top-inactive';
-// import Package from '~icons/lucide/package';
 import Boxes from '~icons/lucide/boxes';
 import Server from '~icons/lucide/server';
 import WalletCards from '~icons/lucide/wallet-cards';
@@ -14,9 +13,10 @@ import DatabaseZap from '~icons/lucide/database-zap';
 import Activity from '~icons/lucide/activity';
 import Logs from '~icons/lucide/scroll-text';
 import Globe from '~icons/lucide/globe';
-import Notification from '~icons/lucide/inbox';
 import Code from '~icons/lucide/code';
 import FileSearch from '~icons/lucide/file-search';
+import NotificationPanel from './Notifications.vue';
+
 import { unreadNotificationsCount } from '@/data/notifications';
 
 import { getTeam } from '@/data/team';
@@ -36,8 +36,8 @@ const navigation = computed(() => {
 	const isSaasUser = $team.doc.is_saas_user;
 	const enforce2FA = Boolean(
 		!$team.doc.is_desk_user &&
-			$team.doc.enforce_2fa &&
-			!$team.doc.user_info?.is_2fa_enabled,
+		$team.doc.enforce_2fa &&
+		!$team.doc.user_info?.is_2fa_enabled,
 	);
 
 	return [
@@ -50,24 +50,8 @@ const navigation = computed(() => {
 		},
 		{
 			name: 'Notifications',
-			icon: Notification,
-			route: '/notifications',
-			spacer: true,
-			isActive: routeName === 'Press Notification List',
 			condition: onboardingComplete && !isSaasUser,
-			badge: () => {
-				if (unreadNotificationsCount.data > 0) {
-					return h(
-						'span',
-						{
-							class: '!ml-auto px-1.5 py-0.5 text-xs text-gray-600',
-						},
-						unreadNotificationsCount.data > 99
-							? '99+'
-							: unreadNotificationsCount.data,
-					);
-				}
-			},
+			customComponent: NotificationPanel,
 			disabled: enforce2FA,
 		},
 		{
