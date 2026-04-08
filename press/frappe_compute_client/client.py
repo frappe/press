@@ -58,6 +58,12 @@ class Client:
 	def start_virtual_machine(self, instance_id: str):
 		return self.client.post_api("orchestrator.api.virtual_machine.start", {"instance_id": instance_id})
 
+	def resize_virtual_machine(self, instance_id: str, machine_type: str, upgrade_disk: bool = False):
+		return self.client.post_api(
+			"orchestrator.api.virtual_machine.resize",
+			{"instance_id": instance_id, "machine_type": machine_type, "resize_disk": upgrade_disk},
+		)
+
 	def terminate_virtual_machine(self, instance_id: str):
 		return self.client.post_api(
 			"orchestrator.api.virtual_machine.terminate", {"instance_id": instance_id}
