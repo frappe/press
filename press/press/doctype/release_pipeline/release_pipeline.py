@@ -49,8 +49,19 @@ class ReleasePipeline(WorkflowBuilder):
 
 	# end: auto-generated types
 
-	def update_pipeline_status(self, status: str):
-		frappe.db.set_value("Release Pipeline", self.name, "status", status)
+	def update_pipeline_status(
+		self,
+		status: typing.Literal[
+			"Pending",
+			"Running",
+			"Partial Success",
+			"Success",
+			"Failure",
+			"Retrying",
+		],
+	):
+		self.status = status
+		self.save()
 
 	@cached_property
 	def release_group_doc(self) -> "ReleaseGroup":
