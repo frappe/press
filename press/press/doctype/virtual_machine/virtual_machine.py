@@ -2515,7 +2515,7 @@ class VirtualMachine(Document):
 	@classmethod
 	def bulk_sync_hetzner(cls):
 		clusters: list[str] = frappe.get_all(
-			"Cluster", {"cloud_provider": "Hetzner", "status": "Active"}, pluck="cluster"
+			"Cluster", {"cloud_provider": "Hetzner", "status": "Active"}, pluck="name"
 		)
 		for cluster_name in clusters:
 			# Get a random VM
