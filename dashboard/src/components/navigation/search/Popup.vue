@@ -121,23 +121,21 @@ watch(navigationIndex, () => {
 					</span>
 
 					<div class="flex flex-col mb-3">
-						<template v-for="item in v.items" :key="item.route">
-							<span v-if="item.spacer" class="h-1 border-t mx-1 mt-1" />
-							<router-link
-								role="option"
-								:to="item.route"
-								@click="close"
-								class="hover:bg-surface-gray-2 p-2 rounded flex gap-2 items-center"
-								:class="{
-									'bg-surface-gray-2':
-										navigationIndex === flatList.indexOf(item),
-								}"
-							>
-								<component :is="item.icon || LucideDot" class="size-4" />
+						<router-link
+							v-for="item in v.items"
+							:key="item.route"
+							role="option"
+							:to="item.route"
+							@click="close"
+							class="hover:bg-surface-gray-2 p-2 rounded flex gap-2 items-center"
+							:class="{
+								'bg-surface-gray-2': navigationIndex === flatList.indexOf(item),
+							}"
+						>
+							<component :is="item.icon || LucideDot" class="size-4" />
 
-								{{ item.name }}
-							</router-link>
-						</template>
+							{{ item.name }}
+						</router-link>
 					</div>
 				</template>
 			</div>
