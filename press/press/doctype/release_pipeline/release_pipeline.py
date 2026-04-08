@@ -86,6 +86,8 @@ class ReleasePipeline(WorkflowBuilder):
 
 		app_hash_validation(apps)
 
+		self.update_pipeline_status("Running")  # Mark the pipeline as running!
+
 	@task
 	def validate_server_storages(self):
 		"""Validate server storage for all servers in the release group."""
@@ -243,7 +245,6 @@ class ReleasePipeline(WorkflowBuilder):
 		"""Evaluates failures and updates the release status accordingly."""
 		num_failed = len(failed_bench_deploys)
 		num_total = len(bench_info)
-
 		# Case 1: Pure Success
 		if num_failed == 0:
 			return self.update_pipeline_status("Success")
@@ -299,7 +300,6 @@ class ReleasePipeline(WorkflowBuilder):
 		run_will_fail_check: bool = False,
 	):
 		"""Create a release for the release group."""
-		self.update_pipeline_status("Running")
 		try:
 			self.validate_app_hashes(apps)
 			self.validate_server_storages()
@@ -328,7 +328,9 @@ class ReleasePipeline(WorkflowBuilder):
 					raise PressWorkflowTaskEnqueued(
 						f"Waiting for secondary build to be created for Deploy Candidate {deploy_candidate}",
 						self.workflow_name,
-						self.get_task_name(self.monitor_pre_build_validation),
+						self.get_task_name(
+							self.monitor_build_success
+						),  # Revert to last task since we haven't initiated any new job for the secondary build
 					)
 				self.monitor_pre_build_validation(secondary_build)
 				self.monitor_build_success(secondary_build)
