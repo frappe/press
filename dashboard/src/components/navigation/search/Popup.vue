@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router';
 import LucideX from '~icons/lucide/x';
 import LucideSearch from '~icons/lucide/search';
 
-import { filterLabels } from './utils';
+import { filterLabels, highlightMatch } from './utils';
 import { index } from './index';
 
 const emits = defineEmits<{ close: [] }>();
@@ -127,14 +127,13 @@ watch(navigationIndex, () => {
 							role="option"
 							:to="item.route"
 							@click="close"
-							class="hover:bg-surface-gray-2 p-2 rounded flex gap-2 items-center"
+							class="hover:bg-surface-gray-2 p-2 rounded flex gap-2 items-center text-ink-gray-7"
 							:class="{
 								'bg-surface-gray-2': navigationIndex === flatList.indexOf(item),
 							}"
 						>
 							<component :is="item.icon || LucideDot" class="size-4" />
-
-							{{ item.name }}
+							<span v-html="highlightMatch(item.name, searchQuery)" />
 						</router-link>
 					</div>
 				</template>
@@ -178,5 +177,11 @@ watch(navigationIndex, () => {
 
 .modal-enter {
 	animation: modalIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+:deep(mark) {
+	background: var(--surface-gray-3);
+	color: var(--ink-gray-9);
+	font-weight: 500;
 }
 </style>
