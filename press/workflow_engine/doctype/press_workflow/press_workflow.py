@@ -127,7 +127,7 @@ class PressWorkflow(Document):
 			self.output = output
 			self.stdout = (self.stdout or "") + buffer.getvalue()
 
-			if frappe.flags.in_test:
+			if frappe.flags.in_test and self.stdout:
 				print(self.stdout)
 
 			self.exception = exception
