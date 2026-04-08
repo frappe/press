@@ -264,7 +264,7 @@ def get_partner_mrr(partner_email, prev_month=False):
 
 	query = (
 		frappe.qb.from_(Invoice)
-		.select(Invoice.due_date, case_stmt.as_("total_amount"))
+		.select(Invoice.due_date, Sum(case_stmt).as_("total_amount"))
 		.where(
 			(Invoice.partner_email == partner_email)
 			& (Invoice.type == "Subscription")
