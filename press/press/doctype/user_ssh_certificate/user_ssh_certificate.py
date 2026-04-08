@@ -121,7 +121,10 @@ class UserSSHCertificate(Document):
 			proxy = "<proxy>"
 
 		ssh_port = 22
-		self.ssh_command = f"ssh -J frappe@{proxy} frappe@{server} -p {ssh_port}"
+		if self.server_type == "Proxy Server":
+			self.ssh_command = f"ssh frappe@{server} -p {ssh_port}"
+		else:
+			self.ssh_command = f"ssh -J frappe@{proxy} frappe@{server} -p {ssh_port}"
 
 	def get_principals(self):
 		if self.all_servers:
