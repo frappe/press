@@ -96,6 +96,12 @@ frappe.ui.form.on('Proxy Server', {
 				true,
 				frm.doc.virtual_machine,
 			],
+			[
+				__('Setup User SSH Certificate'),
+				'setup_user_ssh_certificate',
+				true,
+				frm.doc.is_server_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
