@@ -123,12 +123,14 @@ class ReleasePipeline(WorkflowBuilder):
 	def monitor_pre_build_validation(self, deploy_candidate_build: str):
 		"""Monitors the Deploy Candidate Build until the remote build job is created."""
 		task_name = self.get_task_name(self.monitor_pre_build_validation)
-		status = frappe.db.get_value("Deploy Candidate Build", deploy_candidate_build, "status")
+		deploy_candidate_build_status = frappe.db.get_value(
+			"Deploy Candidate Build", deploy_candidate_build, "status"
+		)
 
-		if status == "Running":
+		if deploy_candidate_build_status in ["Running", "Success"]:
 			return  # We have enqueued the remote agent job
 
-		if status == "Failure":
+		if deploy_candidate_build_status == "Failure":
 			# TODO: Ensure no retries are scheduled before marking as failure
 			raise ReleasePipelineFailure(
 				f"Pre Build Validation failed for Deploy Candidate Build {deploy_candidate_build}. "
