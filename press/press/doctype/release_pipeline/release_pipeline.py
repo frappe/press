@@ -17,7 +17,6 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
-BUILD_TRANSITION_STATES = ["Scheduled", "Pending", "Running"]
 BENCH_TRANSITION_STATES = ["Pending", "Installing", "Updating"]
 
 
@@ -126,12 +125,8 @@ class ReleasePipeline(WorkflowBuilder):
 		task_name = self.get_task_name(self.monitor_pre_build_validation)
 		status = frappe.db.get_value("Deploy Candidate Build", deploy_candidate_build, "status")
 
-		if status in BUILD_TRANSITION_STATES:
-			raise PressWorkflowTaskEnqueued(
-				f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build}",
-				self.workflow_name,
-				task_name,
-			)
+		if status == "Running":
+			return  # We have enqueued the remote agent job
 
 		if status == "Failure":
 			# TODO: Ensure no retries are scheduled before marking as failure
@@ -140,8 +135,11 @@ class ReleasePipeline(WorkflowBuilder):
 				"Please check the build logs for more details."
 			)
 
-		if status == "Running":
-			return  # We have enqueued the remote agent job
+		raise PressWorkflowTaskEnqueued(
+			f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build}",
+			self.workflow_name,
+			task_name,
+		)
 
 	@task
 	def monitor_build_success(self, deploy_candidate_build: str):
@@ -150,20 +148,19 @@ class ReleasePipeline(WorkflowBuilder):
 			"Deploy Candidate Build", deploy_candidate_build, "status"
 		)
 
-		if deploy_candidate_build_status in BUILD_TRANSITION_STATES:
-			raise PressWorkflowTaskEnqueued(
-				f"Waiting for build to complete for Deploy Candidate Build {deploy_candidate_build}",
-				self.workflow_name,
-				self.get_task_name(self.monitor_build_success),
-			)
+		if deploy_candidate_build_status == "Success":
+			return  # Remote Build succeeded can mark as success and proceed
 
 		if deploy_candidate_build_status == "Failure":
 			raise ReleasePipelineFailure(
 				f"Remote build failed for Deploy Candidate Build {deploy_candidate_build}. Please check the build logs for more details."
 			)
 
-		if deploy_candidate_build_status == "Success":
-			return  # Remote Build succeeded can mark as success and proceed
+		raise PressWorkflowTaskEnqueued(
+			f"Waiting for build to complete for Deploy Candidate Build {deploy_candidate_build}",
+			self.workflow_name,
+			self.get_task_name(self.monitor_build_success),
+		)
 
 	def _calculate_bench_doc_requirements(
 		self, deploy_candidate_build: str
