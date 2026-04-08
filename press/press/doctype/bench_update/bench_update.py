@@ -179,15 +179,17 @@ def get_bench_update(
 	apps: list,
 	sites: list | None = None,
 	is_inplace_update: bool = False,
+	ignore_permissions_check: bool = False,
 ) -> BenchUpdate:
 	if sites is None:
 		sites = []
 
-	current_team = get_current_team()
-	rg_team = frappe.db.get_value("Release Group", name, "team")
+	if not ignore_permissions_check:
+		current_team = get_current_team()
+		rg_team = frappe.db.get_value("Release Group", name, "team")
 
-	if rg_team != current_team:
-		frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
+		if rg_team != current_team:
+			frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
 
 	bench_update: "BenchUpdate" = frappe.get_doc(
 		{

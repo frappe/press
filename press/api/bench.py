@@ -799,8 +799,15 @@ def deploy_and_update(
 	sites: list | None = None,
 	run_will_fail_check: bool = True,
 ):
+	# We check permissions early on and don't change permissions in the middle of the Workflow
+	current_team = get_current_team()
+	rg_team = frappe.db.get_value("Release Group", name, "team")
+
+	if rg_team != current_team:
+		frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
+
 	release_pipeline: ReleasePipeline = frappe.get_doc(
-		{"doctype": "Release Pipeline", "release_group": name, "team": get_current_team()}
+		{"doctype": "Release Pipeline", "release_group": name, "team": current_team}
 	)
 	release_pipeline.insert()
 	release_pipeline.create_release.run_as_workflow(
