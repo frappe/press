@@ -1336,11 +1336,12 @@ class BaseServer(Document, TagHelpers):
 
 		if not (team.default_payment_method or team.get_balance()):
 			frappe.throw(
-				"Changing plans needs the customer to have a card added to their billing profile. Cannot change for the same reason, please add a card to your account on Frappe Cloud Billing dashboard."
+				"Cannot change plan: please add a card or prepaid credits to your billing account on Frappe Cloud."
 			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
-		if not cluster.check_machine_availability(new_plan.instance_type):
+		instance_id = frappe.db.get_value("Virtual Machine", self.virtual_machine, "instance_id")
+		if not cluster.check_machine_availability(new_plan.instance_type, instance_id):
 			frappe.throw(
 				f"Cannot change plan right now since the instance type {new_plan.instance_type} is not available. Try again later."
 			)
@@ -2777,7 +2778,8 @@ class Server(BaseServer):
 		else:
 			try:
 				# create new subscription
-				self.create_subscription(self.plan)
+				if self.plan:
+					self.create_subscription(self.plan)
 			except Exception:
 				frappe.log_error("Server Subscription Creation Error")
 
@@ -3921,3 +3923,87 @@ def is_dedicated_server(server_name):
 		frappe.throw("Invalid argument")
 	is_public = frappe.db.get_value("Server", server_name, "public")
 	return not is_public
+
+
+def refresh_new_bench_and_site_server_pool() -> None:
+	"""Refresh `use_for_new_benches` and `use_for_new_sites` flags for public clusters
+	1. Consider active, public servers for each cluster
+	2. Compute server score as sum of site plan cpu_time_per_day for sites that aren't archived/suspended
+	3. Mark least-loaded server per cluster as eligible for new benches/sites
+	"""
+	server_names, servers_by_cluster = _get_public_primary_servers_by_cluster()
+	if not server_names:
+		return
+
+	server_score_map = _get_server_cpu_time_across_sites(server_names)
+	selected_servers: set[str] = set()
+
+	for cluster_servers in servers_by_cluster.values():
+		if not cluster_servers:
+			continue
+
+		least_loaded_server = min(
+			cluster_servers,
+			key=lambda name: (server_score_map[name], name),
+		)
+		selected_servers.add(least_loaded_server)
+
+	if selected_servers:
+		other_servers = list(set(server_names) - selected_servers)
+		if other_servers:
+			frappe.db.set_value(
+				"Server",
+				{"name": ["in", other_servers]},
+				{"use_for_new_benches": 0, "use_for_new_sites": 0},
+				update_modified=False,
+			)
+
+		frappe.db.set_value(
+			"Server",
+			{"name": ["in", list(selected_servers)]},
+			{"use_for_new_benches": 1, "use_for_new_sites": 1},
+			update_modified=False,
+		)
+
+
+def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[str]]]:
+	servers = frappe.get_all(
+		"Server",
+		filters={"status": "Active", "is_primary": True, "public": True},
+		fields=["name", "cluster"],
+	)
+	server_names = [server.name for server in servers]
+	servers_by_cluster: dict[str, list[str]] = {}
+	for server in servers:
+		servers_by_cluster.setdefault(server.cluster, []).append(server.name)
+	return server_names, servers_by_cluster
+
+
+def _get_server_cpu_time_across_sites(server_names: list[str]) -> dict[str, float]:
+	from pypika.functions import Coalesce, Sum
+
+	score_map: dict[str, float] = {}
+	if not server_names:
+		return score_map
+
+	Site = frappe.qb.DocType("Site")
+	SitePlan = frappe.qb.DocType("Site Plan")
+
+	server_scores = (
+		frappe.qb.from_(Site)
+		.left_join(SitePlan)
+		.on(Site.plan == SitePlan.name)
+		.select(
+			Site.server,
+			Coalesce(Sum(SitePlan.cpu_time_per_day), 0).as_("cpu_time_per_day"),
+		)
+		.where(Site.server.isin(server_names))
+		.where(~Site.status.isin(["Archived", "Suspended"]))
+		.groupby(Site.server)
+		.run(as_dict=True)
+	)
+
+	for server_score in server_scores:
+		score_map[server_score.server] = float(server_score.cpu_time_per_day or 0.0)
+
+	return score_map

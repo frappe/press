@@ -1913,6 +1913,10 @@ class VirtualMachine(Document):
 				action_id=action_id,
 				queue="long",
 			)
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().resize_virtual_machine(
+				self.instance_id, machine_type=machine_type, upgrade_disk=upgrade_disk
+			)
 
 		self.machine_type = machine_type
 		self.save()
