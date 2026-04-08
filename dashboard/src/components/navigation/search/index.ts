@@ -18,11 +18,6 @@ export const index = computed(() => {
 					route: '/settings/permissions/roles',
 					icon: LucideLock,
 				},
-				{
-					name: 'Role Permissions',
-					route: '/settings/permissions/roles/:id',
-					icon: LucideLock,
-				},
 			],
 		},
 
