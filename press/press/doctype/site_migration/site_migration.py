@@ -876,6 +876,7 @@ def process_required_job_callbacks(job, site_migration: SiteMigration):
 		if not site_migration.is_destination_unified:
 			return
 		site = Site("Site", site_migration.site)
+		site.bench = site_migration.destination_bench
 		Agent(site_migration.destination_server).create_database_access_credentials(
 			site=site
 		)  # In case the permissions are missing correct them

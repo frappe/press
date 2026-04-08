@@ -26,6 +26,7 @@ class ServerPlan(Plan):
 		allow_unified_server: DF.Check
 		cloud_provider: DF.Link | None
 		cluster: DF.Link | None
+		description: DF.Data | None
 		disk: DF.Int
 		enabled: DF.Check
 		ignore_machine_availability_sync: DF.Check
@@ -46,6 +47,7 @@ class ServerPlan(Plan):
 
 	dashboard_fields = (
 		"title",
+		"description",
 		"price_inr",
 		"price_usd",
 		"vcpu",
