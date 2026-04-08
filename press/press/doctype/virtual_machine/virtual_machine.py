@@ -2506,6 +2506,67 @@ class VirtualMachine(Document):
 				log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
 				frappe.db.rollback()
 
+	@classmethod
+	def bulk_sync_hetzner(cls):
+		clusters: list[str] = frappe.get_all(
+			"Cluster", {"cloud_provider": "Hetzner", "status": "Active"}, pluck="cluster"
+		)
+		for cluster_name in clusters:
+			# Get a random VM
+			machines = frappe.get_all(
+				"Virtual Machine",
+				filters={
+					"status": ("not in", ("Terminated", "Draft")),
+					"cloud_provider": "Hetzner",
+					"cluster": cluster_name,
+					"instance_id": ("is", "set"),
+				},
+				pluck="name",
+				limit=1,
+			)
+			if not machines:
+				continue
+			frappe.enqueue_doc(
+				"Virtual Machine",
+				machines[0],
+				method="bulk_sync_hetzner_cluster",
+				queue="sync",
+				job_id=f"bulk_sync_hetzner||{cluster_name}",
+				deduplicate=True,
+				cluster_name=cluster_name,
+			)
+
+	def bulk_sync_hetzner_cluster(self, cluster_name: str):
+		cluster: Cluster = frappe.get_doc("Cluster", cluster_name)
+		client: HetznerClient = self.client()
+		try:
+			servers = client.servers.get_all()
+			instance_ids = frappe.get_all(
+				"Virtual Machine",
+				filters={
+					"status": ("not in", ("Terminated", "Draft")),
+					"cloud_provider": "Hetzner",
+					"cluster": cluster.name,
+					"instance_id": ("is", "set"),
+				},
+				pluck="instance_id",
+			)
+			instance_ids = set(instance_ids)
+			# filter out non-existing instances
+			servers = [server for server in servers if str(server.id) in instance_ids]
+
+			for server in servers:
+				machine: VirtualMachine = frappe.get_doc("Virtual Machine", {"instance_id": str(server.id)})
+				try:
+					machine.sync(server_instance=server)
+					frappe.db.commit()  # release lock
+				except Exception:
+					log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
+					frappe.db.rollback()
+		except Exception:
+			log_error("Virtual Machine Hetzner Bulk Sync Error", cluster=cluster.name)
+			frappe.db.rollback()
+
 	def disable_delete_on_termination_for_all_volumes(self):
 		attached_volumes = self.client().describe_instance_attribute(
 			InstanceId=self.instance_id, Attribute="blockDeviceMapping"
@@ -2798,27 +2859,11 @@ class VirtualMachine(Document):
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Virtual Machine")
 
 
-def sync_virtual_machines_hetzner():
-	for machine in frappe.get_all(
-		"Virtual Machine",
-		{"status": ("not in", ("Draft", "Terminated")), "cloud_provider": "Hetzner"},
-		pluck="name",
-	):
-		if has_job_timeout_exceeded():
-			return
-		try:
-			VirtualMachine("Virtual Machine", machine).sync()
-			frappe.db.commit()  # release lock
-		except Exception:
-			log_error(title="Virtual Machine Sync Error", virtual_machine=machine)
-			frappe.db.rollback()
-
-
 @frappe.whitelist()
 def sync_virtual_machines():
 	VirtualMachine.bulk_sync_aws()
 	VirtualMachine.bulk_sync_oci()
-	sync_virtual_machines_hetzner()
+	VirtualMachine.bulk_sync_hetzner()
 
 
 def snapshot_oci_virtual_machines():
