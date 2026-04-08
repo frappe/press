@@ -502,7 +502,7 @@ def get_invoice_items(invoice):
 	team = get_current_team(get_doc=True)
 	if team.name != frappe.db.get_value(
 		"Invoice", invoice, "team"
-	) or team.partner_email != frappe.db.get_value("Invoice", invoice, "partner_email"):
+	) and team.partner_email != frappe.db.get_value("Invoice", invoice, "partner_email"):
 		return None
 	data = frappe.get_all(
 		"Invoice Item",
