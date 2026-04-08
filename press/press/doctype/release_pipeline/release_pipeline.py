@@ -115,13 +115,21 @@ class ReleasePipeline(WorkflowBuilder):
 		deploy_candidate_build = candidate.schedule_build_and_deploy()
 		return deploy_candidate_build["name"]
 
+	def _get_required_build_count(self, deploy_candidate: str) -> int:
+		"""Get the number of builds required for this deploy, as we can have arm & intel build for the same deploy candidate"""
+		intel_build, arm_build = frappe.db.get_value(
+			"Deploy Candidate", deploy_candidate, ["requires_intel_build", "requires_arm_build"]
+		)
+
+		return len([build for build in [intel_build, arm_build] if build])
+
 	@task
-	def start_and_monitor_pre_build_validation(self, deploy_candidate_build: str):
+	def monitor_pre_build_validation(self, deploy_candidate_build: str):
 		"""Monitors the Deploy Candidate Build until the remote build job is created."""
-		task_name = self.get_task_name(self.start_and_monitor_pre_build_validation)
+		task_name = self.get_task_name(self.monitor_pre_build_validation)
 		status = frappe.db.get_value("Deploy Candidate Build", deploy_candidate_build, "status")
 
-		if status in ["Pending", "Preparing"]:
+		if status in BUILD_TRANSITION_STATES:
 			raise PressWorkflowTaskEnqueued(
 				f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build}",
 				self.workflow_name,
@@ -131,7 +139,8 @@ class ReleasePipeline(WorkflowBuilder):
 		if status == "Failure":
 			# TODO: Ensure no retries are scheduled before marking as failure
 			raise ReleasePipelineFailure(
-				f"Pre Build Validation failed for Deploy Candidate Build {deploy_candidate_build}. Please check the build logs for more details."
+				f"Pre Build Validation failed for Deploy Candidate Build {deploy_candidate_build}. "
+				"Please check the build logs for more details."
 			)
 
 		if status == "Running":
@@ -284,22 +293,37 @@ class ReleasePipeline(WorkflowBuilder):
 	):
 		"""Create a release for the release group."""
 		self.update_pipeline_status("Running")
-		try:
-			self.validate_app_hashes(apps)
-			self.validate_server_storages()
-			self.validate_auto_scales_on_servers()
-			deploy_candidate = self.create_deploy_candidate(
-				apps=apps,
-				sites=sites,
-				run_will_fail_check=run_will_fail_check,
-				create_deploy=False,
+		self.validate_app_hashes(apps)
+		self.validate_server_storages()
+		self.validate_auto_scales_on_servers()
+		deploy_candidate = self.create_deploy_candidate(
+			apps=apps,
+			sites=sites,
+			run_will_fail_check=run_will_fail_check,
+			create_deploy=False,
+		)
+		required_build_count = self._get_required_build_count(deploy_candidate)
+		deploy_candidate_build = self.initiate_pre_build_validations(deploy_candidate)
+		self.monitor_pre_build_validation(deploy_candidate_build)
+		self.monitor_build_success(deploy_candidate_build)
+
+		if required_build_count == 2:
+			# If required build count is 2, we need to monitor both the builds.
+			# We don't need to initiate anything since the secondary build will be automatically triggered after the first one is successful.
+			secondary_build = frappe.db.get_value(
+				"Deploy Candidate Build",
+				{"deploy_candidate": deploy_candidate, "name": ("!=", deploy_candidate_build)},
+				"name",
 			)
-			deploy_candidate_build = self.initiate_pre_build_validations(deploy_candidate)
-			self.start_and_monitor_pre_build_validation(deploy_candidate_build)
-			self.monitor_build_success(deploy_candidate_build)
-			self.monitor_bench_creation(deploy_candidate_build)
-			frappe.db.commit()
-		except ReleasePipelineFailure as e:
-			self.update_pipeline_status("Failure")
-			frappe.db.commit()
-			raise ReleasePipelineFailure from e
+			if not secondary_build:
+				# We are waiting for the job to be processed and the secondary build to be created.
+				raise PressWorkflowTaskEnqueued(
+					f"Waiting for secondary build to be created for Deploy Candidate {deploy_candidate}",
+					self.workflow_name,
+					self.get_task_name(self.monitor_pre_build_validation),
+				)
+			self.monitor_pre_build_validation(secondary_build)
+			self.monitor_build_success(secondary_build)
+
+		# _finalize_pipeline_status will handle terminal status of the release pipeline based on the bench creation outcomes
+		self.monitor_bench_creation(deploy_candidate_build)
