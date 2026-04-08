@@ -132,9 +132,25 @@
 			v-model="showRenewalErrorDialog"
 			:options="{
 				title: 'Renewal Eligibility',
-				message: renewalErrorMessage,
 			}"
 		>
+			<template #body-content>
+				<p
+					class="text-base leading-relaxed text-gray-700 bg-yellow-50 border border-yellow-300 rounded p-4"
+				>
+					Your current MRR is
+					<strong>{{ formatCurrency(mrr) }}</strong
+					>, which does not meet the minimum requirement of
+					<strong>{{
+						formatCurrency(team.doc.currency === 'USD' ? 100 : 10000)
+					}}</strong>
+					for Partnership renewal. Please reach out to
+					<a href="https://support.frappe.io/" target="_blank" class="underline"
+						>support</a
+					>
+					for assistance.
+				</p>
+			</template>
 		</Dialog>
 
 		<Dialog
@@ -214,7 +230,6 @@ const partnerConsent = createListResource({
 	},
 });
 
-const renewalErrorMessage = ref('');
 let mrr = ref(0);
 const partnerMRR = createResource({
 	url: 'press.api.partner.get_partner_mrr',
@@ -237,7 +252,6 @@ function canRenew() {
 	) {
 		showRenewalConfirmationDialog.value = true;
 	} else {
-		renewalErrorMessage.value = `Your current MRR is ${formatCurrency(mrr.value)}, which does not meet the minimum requirement for renewal. Please reach out to support for assistance.`;
 		showRenewalErrorDialog.value = true;
 	}
 }
