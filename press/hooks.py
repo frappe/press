@@ -252,6 +252,7 @@ scheduler_events = {
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
+		"press.press.doctype.server.server.refresh_new_bench_and_site_server_pool",
 		"press.press.doctype.release_group.release_group.add_public_servers_to_public_groups",
 		"press.press.doctype.server.server.scale_workers",
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",

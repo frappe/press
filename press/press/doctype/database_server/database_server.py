@@ -284,7 +284,8 @@ class DatabaseServer(BaseServer):
 		else:
 			try:
 				# create new subscription
-				self.create_subscription(self.plan)
+				if self.plan:
+					self.create_subscription(self.plan)
 			except Exception:
 				frappe.log_error("Database Subscription Creation Error")
 

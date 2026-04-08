@@ -2777,7 +2777,8 @@ class Site(Document, TagHelpers):
 		self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
 		self.deactivate_app_subscriptions()
 
-		if self.standby_for_product:
+		trial_plans = frappe.get_all("Site Plan", {"is_trial_plan": 1, "enabled": 1}, pluck="name")
+		if self.standby_for_product and self.plan in trial_plans:
 			from press.saas.doctype.product_trial.product_trial import send_suspend_mail
 
 			send_suspend_mail(self.name, self.standby_for_product)

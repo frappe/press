@@ -984,6 +984,7 @@ def handle_razorpay_payment_failed(response):
 		for_update=True,
 	)
 
+	payment_record.payment_id = response["error"]["metadata"].get("payment_id")
 	payment_record.status = "Failed"
 	payment_record.failure_reason = response["error"]["description"]
 	payment_record.save(ignore_permissions=True)

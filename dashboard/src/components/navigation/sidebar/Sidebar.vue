@@ -88,6 +88,11 @@ const feedback = () => {
 				<template v-slot="{ navigation }">
 					<template v-for="(item, _) in navigation" :key="item.name">
 						<ItemGroup v-if="item.children" :item="item" />
+						<component
+							v-else-if="item.customComponent"
+							:is="item.customComponent"
+							:item="item"
+						/>
 						<Item class="mt-0.5" v-else :item="item" />
 					</template>
 				</template>

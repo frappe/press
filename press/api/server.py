@@ -632,8 +632,6 @@ def options():
 	regions_filter = {"cloud_provider": ("!=", "Generic"), "public": True, "status": "Active"}
 
 	# Temporarily here to skip the Frappe Compute cloud provider
-	if not get_current_team(get_doc=True).is_frappe_compute_internal_user:
-		regions_filter["cloud_provider"] = ("not in", ["Generic", "Frappe Compute"])
 
 	regions = frappe.get_all(
 		"Cluster",
@@ -822,6 +820,7 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 		fields=[
 			"name",
 			"title",
+			"description",
 			"price_usd",
 			"price_inr",
 			"vcpu",
