@@ -338,9 +338,6 @@ scheduler_events = {
 			"press.press.doctype.virtual_machine.virtual_machine.rolling_snapshot_database_server_virtual_machines",
 			"press.infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.run_scheduled_resizes",
 		],
-		"* * * * */10": [
-			"press_agent_manager.workflow_engine.doctype.press_workflow.press_workflow.retry_workflows",
-		],
 		"*/5 * * * *": [
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
 			"press.press.doctype.site_replication.site_replication.update_from_site",
@@ -369,6 +366,7 @@ scheduler_events = {
 			"press.press.doctype.site.saas_pool.create",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_rolling_snapshots",
 			"press.press.doctype.database_server.database_server.auto_purge_binlogs_by_size_limit",
+			"press_agent_manager.workflow_engine.doctype.press_workflow.press_workflow.retry_workflows",
 		],
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
