@@ -132,11 +132,12 @@ class UserSSHCertificate(Document):
 
 		if self.server_type == "Proxy Server":
 			return self.access_server
+
 		if self.server_type == "Server":
 			self.proxy = frappe.db.get_value("Server", self.access_server, "proxy_server")
 		elif self.server_type == "Database Server":
 			self.proxy = frappe.db.get_value(
-				"Server", {"database_server": self.access_server}, "proxy_server"
+				"Server", {"status": "Active", "database_server": self.access_server}, "proxy_server"
 			)
 		return f"{self.proxy},{self.access_server}"
 
