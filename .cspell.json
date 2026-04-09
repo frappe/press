@@ -776,6 +776,7 @@
         "lsync",
         "lsyncd",
         "awk",
-        "gawk"
+        "gawk",
+        "ruleid"
     ]
 }

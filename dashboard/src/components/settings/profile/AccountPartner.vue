@@ -99,6 +99,13 @@
 						and will be removed as team member from your team.
 					</div>
 				</div>
+				<div
+					v-if="removePartnerError"
+					class="text-sm mt-2 leading-normal text-red-600"
+					role="alert"
+				>
+					{{ removePartnerError }}
+				</div>
 			</template>
 		</Dialog>
 	</Card>
@@ -121,6 +128,7 @@ export default {
 			partnerExists: false,
 			partner: '',
 			errorMessage: '',
+			removePartnerError: '',
 		};
 	},
 	resources: {
@@ -161,8 +169,9 @@ export default {
 					this.showRemovePartnerDialog = false;
 					toast.success('Partner removed successfully');
 				},
-				onError() {
-					throw new DashboardError('Failed to remove Partner');
+				onError(e) {
+					this.removePartnerError =
+						e?.messages[0] || 'Failed to remove Partner. Please try again.';
 				},
 			};
 		},
