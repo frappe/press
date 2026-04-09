@@ -22,6 +22,7 @@ import { renderDialog } from '@/utils/components';
 import { useRouter } from 'vue-router';
 import { getDocResource } from '@/utils/resource';
 
+import Scrollbar from '@/components/common/Scrollbar.vue';
 import SupportAccessDialog from '@/components/SupportAccessDialog.vue';
 
 let props = defineProps({
@@ -148,7 +149,8 @@ watch(activeTab, (x) => {
 		filters.read = 'Unread';
 	}
 
-	resource.update({ filters }).reload();
+	resource.update({ filters });
+	resource.reload();
 });
 
 const tabs = [
@@ -192,7 +194,7 @@ const tabs = [
 				class="text-ink-gray-9 bg-white h-screen ml-2 shadow-xl w-[430px] flex flex-col"
 			>
 				<!-- header -->
-				<div class="text-base flex items-center py-2 px-4 border-b">
+				<div class="text-base flex items-center py-2 pl-4 pr-2 border-b">
 					<span class="font-medium mr-auto"> Notifications</span>
 					<Button variant="ghost" @click="togglePopover">
 						<template #icon>
@@ -201,105 +203,99 @@ const tabs = [
 					</Button>
 				</div>
 
-				<!-- body -->
-				<section class="overflow-auto">
-					<Tabs
-						v-model="activeTab"
-						class="w-full [&_[role=tablist]]:pr-2 [&_[role=tab]]:justify-center [&_role=tab]]:w-full"
-						:tabs
-					>
-						<template #tab-item="{ tab }">
-							<button
-								class="flex items-center gap-2 py-2 text-ink-gray-5 aria-selected:text-ink-gray-9"
-							>
-								<span class="text-sm">{{ tab.label }}</span>
-								<Badge v-if="tab.label != 'All'">{{
-									tab.label == 'Unread'
-										? unreadNotificationsCount.data
-										: unreadSupportNotificationsCount.data
-								}}</Badge>
-							</button>
-
-							<!-- show mark all button at end of tabs-->
-							<Button
-								@click="markAllAsRead(togglePopover)"
-								variant="ghost"
-								class="text-sm ml-auto my-auto"
-								v-if="tab.label == 'Unread'"
-							>
-								<template #prefix>
-									<LucideCheckCheck class="size-3.5" />
-								</template>
-								Mark All
-							</Button>
-						</template>
-					</Tabs>
-
-					<!-- notification tiles -->
-					<section
-						class="cursor-pointer flex flex-col"
-						v-if="resource.data.length > 0"
-						v-for="x in resource.data"
-					>
-						<div
-							class="[&_b]:font-semibold p-4 flex gap-4 items-center relative"
-							@click="markAsRead(x, togglePopover)"
+				<Tabs
+					v-model="activeTab"
+					class="w-full flex-none [&_[role=tablist]]:pr-2 [&_[role=tab]]:justify-center [&_role=tab]]:w-full"
+					:tabs
+				>
+					<template #tab-item="{ tab }">
+						<button
+							class="flex items-center gap-2 py-2 text-ink-gray-5 aria-selected:text-ink-gray-9"
 						>
-							<!-- type icon -->
-							<div
-								class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1 relative"
-								:class="[iconBgColors[x.type] || 'bg-surface-gray-1']"
-							>
-								<span
-									v-if="x.read == 0"
-									class="p-0.5 border ring-outline-gray-2 ring-1 bg-surface-gray-7 absolute rounded top-0 left-0"
-								/>
-								<component
-									:is="icons[x.type] || LucideCircleAlert"
-									class="size-4"
-									:class="iconColors[x.type] || 'text-ink-gray-6'"
-								/>
-							</div>
+							<span class="text-sm">{{ tab.label }}</span>
+							<Badge v-if="tab.label != 'All'">{{
+								tab.label == 'Unread'
+									? unreadNotificationsCount.data
+									: unreadSupportNotificationsCount.data
+							}}</Badge>
+						</button>
 
-							<div
-								class="text-base leading-relaxed flex flex-wrap gap-2 w-full min-w-0"
-							>
-								<div class="flex">
-									<p v-html="formatHtml(x.message)" class="w-full" />
-									<Button
-										v-if="x.type == 'Support Access'"
-										tooltip="Support Access actions"
-										variant="ghost"
-										class="mb-auto"
-										@click="(e) => openSupportAccess(e, x.document_name)"
-										><template #icon>
-											<LucideChevronRight class="size-3.5" /> </template
-									></Button>
-								</div>
+						<!-- show mark all button at end of tabs-->
+						<Button
+							@click="markAllAsRead(togglePopover)"
+							variant="ghost"
+							class="text-sm ml-auto my-auto"
+							v-if="tab.label == 'Unread'"
+						>
+							<template #prefix>
+								<LucideCheckCheck class="size-3.5" />
+							</template>
+							Mark All
+						</Button>
+					</template>
+				</Tabs>
 
-								<Badge class="text-xs mr-auto">
-									{{ x.title }}
-
-									<Tooltip
-										text="This notification requires your attention"
-										:hoverDelay="0"
-										v-if="x.is_actionable && !x.is_addressed"
-									>
-										<LucideCircleAlert class="size-3" />
-									</Tooltip>
-								</Badge>
-
-								<span class="text-ink-gray-5 text-xs">
-									{{ dayjsLocal(x.creation).fromNow() }}
-								</span>
-							</div>
+				<!-- body -->
+				<Scrollbar v-if="resource.data.length > 0">
+					<div
+						v-for="x in resource.data"
+						class="[&_b]:font-semibold p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0"
+						@click="markAsRead(x, togglePopover)"
+					>
+						<!-- type icon -->
+						<div
+							class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1 relative"
+							:class="[iconBgColors[x.type] || 'bg-surface-gray-1']"
+						>
+							<span
+								v-if="x.read == 0"
+								class="p-0.5 border ring-outline-gray-2 ring-1 bg-surface-gray-7 absolute rounded top-0 left-0"
+							/>
+							<component
+								:is="icons[x.type] || LucideCircleAlert"
+								class="size-4"
+								:class="iconColors[x.type] || 'text-ink-gray-6'"
+							/>
 						</div>
-					</section>
 
-					<div v-else class="text-center text-ink-gray-6 text-sm py-10">
-						No notifications to show
+						<div
+							class="text-base leading-relaxed flex flex-wrap gap-2 w-full min-w-0"
+						>
+							<div class="flex">
+								<p v-html="formatHtml(x.message)" class="w-full" />
+								<Button
+									v-if="x.type == 'Support Access'"
+									tooltip="Support Access actions"
+									variant="ghost"
+									class="mb-auto"
+									@click="(e) => openSupportAccess(e, x.document_name)"
+									><template #icon>
+										<LucideChevronRight class="size-3.5" /> </template
+								></Button>
+							</div>
+
+							<Badge class="text-xs mr-auto">
+								{{ x.title }}
+
+								<Tooltip
+									text="This notification requires your attention"
+									:hoverDelay="0"
+									v-if="x.is_actionable && !x.is_addressed"
+								>
+									<LucideCircleAlert class="size-3" />
+								</Tooltip>
+							</Badge>
+
+							<span class="text-ink-gray-5 text-xs">
+								{{ dayjsLocal(x.creation).fromNow() }}
+							</span>
+						</div>
 					</div>
-				</section>
+				</Scrollbar>
+
+				<div v-else class="text-center text-ink-gray-6 text-sm py-10">
+					No notifications to show
+				</div>
 
 				<Button
 					@click="resource.next"
