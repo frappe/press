@@ -429,7 +429,6 @@ jobs:
       - name: Bench build
         run: bench build --app press
         working-directory: /home/runner/frappe-bench
-        if: needs.changes.outputs.changed-js-vue == 'true'
 
       - name: Start Bench
         working-directory: /home/runner/frappe-bench
