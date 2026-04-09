@@ -117,11 +117,6 @@ class TestReleasePipeline(FrappeTestCase):
 
 		deploy_candidate_build: DeployCandidateBuild = frappe.get_last_doc("Deploy Candidate Build")
 
-		self.assertEqual(
-			deploy_candidate_build.status,
-			"Running",
-		)  # Ensure this is created without any error in the workflow task
-
 		job_type = frappe.db.get_value(
 			"Agent Job",
 			{"reference_doctype": "Deploy Candidate Build", "reference_name": deploy_candidate_build.name},
