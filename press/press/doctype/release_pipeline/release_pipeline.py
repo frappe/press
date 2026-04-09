@@ -310,6 +310,21 @@ class ReleasePipeline(WorkflowBuilder):
 		print(f"Some bench deploys failed for Build {deploy_candidate_build}. Check jobs for details.")
 		return self.update_pipeline_status("Partial Success")
 
+	def _get_secondary_build(self, deploy_candidate: str, primary_build: str) -> str | None:
+		"""Finds a build for the same candidate but on a different platform."""
+		primary_platform = frappe.db.get_value("Deploy Candidate Build", primary_build, "platform")
+
+		return frappe.db.get_value(
+			"Deploy Candidate Build",
+			{
+				"deploy_candidate": deploy_candidate,
+				"name": ("!=", primary_build),
+				"group": self.release_group,
+				"platform": ("!=", primary_platform),
+			},
+			"name",
+		)
+
 	@task
 	def monitor_bench_creation(self, deploy_candidate_build: str):
 		"""Monitor new bench creation accounting for any failures and retries."""
@@ -358,21 +373,6 @@ class ReleasePipeline(WorkflowBuilder):
 		)
 		primary_build = self.initiate_pre_build_validations(deploy_candidate)
 		return deploy_candidate, primary_build
-
-	def _get_secondary_build(self, deploy_candidate: str, primary_build: str) -> str | None:
-		"""Finds a build for the same candidate but on a different platform."""
-		primary_platform = frappe.db.get_value("Deploy Candidate Build", primary_build, "platform")
-
-		return frappe.db.get_value(
-			"Deploy Candidate Build",
-			{
-				"deploy_candidate": deploy_candidate,
-				"name": ("!=", primary_build),
-				"group": self.release_group,
-				"platform": ("!=", primary_platform),
-			},
-			"name",
-		)
 
 	def orchestrate_build_monitoring(self, deploy_candidate: str, primary_build: str):
 		"""Monitors primary and, if necessary, secondary builds."""
