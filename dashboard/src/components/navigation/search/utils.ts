@@ -3,12 +3,9 @@ import { useMagicKeys, whenever } from '@vueuse/core';
 import { addIntegrations } from './integrations';
 
 export const highlightMatch = (text: string, query: string): string => {
-  if (!query) return text;
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return text.replace(
-    new RegExp(`(${escaped})`, 'gi'),
-    '<mark>$1</mark>'
-  );
+	if (!query) return text;
+	const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>');
 };
 
 export const filterLabels = (data, query) => {

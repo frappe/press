@@ -27,7 +27,7 @@ export const addIntegrations = () => {
 		pageLength: 10000,
 		onSuccess(data) {
 			const defaultItems = [
-				{ name: 'List', route: '/sites',  icon: LucideCircleDashed },
+				{ name: 'List', route: '/sites', icon: LucideCircleDashed },
 				{ name: 'New', route: '/sites/new', icon: LucideCirclePlus },
 			];
 
@@ -47,11 +47,11 @@ export const addIntegrations = () => {
 		pageLength: 10000,
 		onSuccess(data) {
 			const defaultItems = [
-				{ name: 'New', route: '/groups/new',  icon: LucideCirclePlus},
+				{ name: 'New', route: '/groups/new', icon: LucideCirclePlus },
 			];
 			const tmp = data.map((x) => {
 				const route = `/groups/${x.name}/sites`;
-				return { ...x, route, icon:LucideBoxes };
+				return { ...x, route, icon: LucideBoxes };
 			});
 			integrations.Benches.items = defaultItems.concat(tmp);
 		},
@@ -65,13 +65,13 @@ export const addIntegrations = () => {
 		pageLength: 10000,
 		onSuccess(data) {
 			const defaultItems = [
-					{ name: 'List', route: '/servers', icon: LucideCircleDashed },
-					{ name: 'New', route: '/servers/new', icon: LucideCirclePlus },
-				],
-				tmp = data.map((x) => {
-					const route = `/servers/${x.name}/overview`;
-					return { ...x, route, icon: LucideServer };
-				});
+				{ name: 'List', route: '/servers', icon: LucideCircleDashed },
+				{ name: 'New', route: '/servers/new', icon: LucideCirclePlus },
+			];
+			const tmp = data.map((x) => {
+				const route = `/servers/${x.name}/overview`;
+				return { ...x, route, icon: LucideServer };
+			});
 			integrations.Servers.items = defaultItems.concat(tmp);
 		},
 	});
