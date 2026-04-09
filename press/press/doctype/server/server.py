@@ -1336,11 +1336,12 @@ class BaseServer(Document, TagHelpers):
 
 		if not (team.default_payment_method or team.get_balance()):
 			frappe.throw(
-				"Changing plans needs the customer to have a card added to their billing profile. Cannot change for the same reason, please add a card to your account on Frappe Cloud Billing dashboard."
+				"Cannot change plan: please add a card or prepaid credits to your billing account on Frappe Cloud."
 			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
-		if not cluster.check_machine_availability(new_plan.instance_type):
+		instance_id = frappe.db.get_value("Virtual Machine", self.virtual_machine, "instance_id")
+		if not cluster.check_machine_availability(new_plan.instance_type, instance_id):
 			frappe.throw(
 				f"Cannot change plan right now since the instance type {new_plan.instance_type} is not available. Try again later."
 			)
@@ -2777,7 +2778,8 @@ class Server(BaseServer):
 		else:
 			try:
 				# create new subscription
-				self.create_subscription(self.plan)
+				if self.plan:
+					self.create_subscription(self.plan)
 			except Exception:
 				frappe.log_error("Server Subscription Creation Error")
 
