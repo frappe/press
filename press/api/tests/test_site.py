@@ -125,7 +125,7 @@ class TestAPISite(FrappeTestCase):
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
 
 		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
-		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name)
+		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, public=True)
 
 		group = create_test_release_group(
 			[frappe_app, allowed_app, disallowed_app], public=True, frappe_version="Version 15"
@@ -169,7 +169,7 @@ class TestAPISite(FrappeTestCase):
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
 
 		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
-		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name)
+		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, public=True)
 
 		group = create_test_release_group([frappe_app, another_app], public=True, frappe_version="Version 15")
 		group.append(
@@ -208,9 +208,9 @@ class TestAPISite(FrappeTestCase):
 		frappe_app = create_test_app(name="frappe")
 
 		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
-		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name)
+		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, public=True)
 		n2_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
-		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name)
+		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name, public=True)
 
 		rg1 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
 		rg1.append(
@@ -268,9 +268,9 @@ class TestAPISite(FrappeTestCase):
 		frappe_app = create_test_app(name="frappe")
 
 		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
-		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name)
+		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, public=True)
 		n2_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
-		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name)
+		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name, public=True)
 
 		rg1 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
 		rg1.append(
@@ -678,7 +678,7 @@ insights 0.8.3	    HEAD
 		app2 = create_test_app("erpnext", "ERPNext")
 		group = create_test_release_group([app, app2])
 		plan = create_test_plan("Site")
-		create_test_bench(group=group)
+		create_test_bench(group=group, public_server=True)
 		subdomain = "testsite"
 
 		# frappe.set_user(self.team.user) # can't this due to weird perm error with ignore_perimssions in new site
