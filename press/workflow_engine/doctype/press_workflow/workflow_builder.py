@@ -51,7 +51,7 @@ class WorkflowBuilder(Document):
 	current_task_signature: str | None = None
 
 	@ensure_to_resolve_context
-	def run_task(self, wrapped: Callable[..., object], args: tuple, kwargs: dict) -> Any:
+	def run_task(self, wrapped: Callable[..., object], args: tuple, kwargs: dict) -> Any:  # noqa: C901 best to keep task execution logic in one place
 		assert self.workflow_name is not None, "Workflow name must be set to enqueue task"
 
 		signature = generate_function_signature(wrapped, args, kwargs)

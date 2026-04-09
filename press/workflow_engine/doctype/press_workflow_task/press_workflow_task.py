@@ -70,7 +70,7 @@ class PressWorkflowTask(Document):
 			}.get(self.status, "Pending"),
 		)
 
-	def run(self):
+	def run(self):  # noqa: C901 - Best to keep workflow execution logic in one place
 		assert self.name, "Task must be saved before it can be run"
 		frappe.get_value(self.doctype, self.name, "name", for_update=True)
 

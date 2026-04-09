@@ -55,7 +55,7 @@ def calculate_duration(start: str | datetime, end: str | datetime) -> int:
 	return int((end_dt - start_dt).total_seconds())
 
 
-def _canonicalize(obj: Any, visited: set | None = None) -> Any:
+def _canonicalize(obj: Any, visited: set | None = None) -> Any:  # noqa: C901 - some crazy internal use better to not touch?
 	if visited is None:
 		visited = set()
 

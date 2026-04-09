@@ -1,8 +1,9 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import inspect
-from collections.abc import Callable
+import typing
 from functools import wraps
 from typing import Any, Concatenate, Generic, ParamSpec, Protocol, TypeVar, overload
 
@@ -18,6 +19,10 @@ from press.workflow_engine.utils import (
 	is_func_accept_task_id,
 	method_title,
 )
+
+if typing.TYPE_CHECKING:
+	from collections.abc import Callable
+	from inspect import Signature
 
 
 def _in_workflow_execution(instance: WorkflowBuilder | None) -> bool:
@@ -56,7 +61,7 @@ class _BoundTask(Generic[_P, _R_co]):
 		return self._execute(args, kwargs)  # type: ignore[arg-type]
 
 	def with_task_id(self, task_id: str) -> "_BoundTask[_P, _R_co]":
-		bound = _BoundTask(self._wrapped, self._instance)
+		bound: _BoundTask[_P, _R_co] = _BoundTask(self._wrapped, self._instance)
 		bound._task_id = task_id
 		return bound  # type: ignore[return-value]
 
@@ -100,6 +105,54 @@ class FlowCallable(Protocol[_P, _R_co]):
 	def run_as_workflow(self, *args: _P.args, **kwargs: _P.kwargs) -> str: ...
 
 
+class BoundFlow:
+	def __init__(self, instance: Any, signature_without_self: Signature, wrapped: Callable) -> None:
+		self._instance = instance
+		self._wrapped = wrapped
+		self._signature_without_self = signature_without_self
+
+	def __call__(self, *args: Any, **kwargs: Any) -> Any:
+		return self._wrapped(self._instance, *args, **kwargs)
+
+	def run_as_workflow(self, *args: Any, **kwargs: Any) -> str:
+		self._signature_without_self.bind(*args, **kwargs)
+
+		instance = self._instance
+		if not isinstance(instance, WorkflowBuilder):
+			raise TypeError(
+				"run_as_workflow() can only be called on instances of WorkflowBuilder subclasses."
+			)
+
+		methods = called_methods_in_order(type(instance), self._wrapped)
+
+		seen: set[str] = set()
+		methods = [m for m in methods if not (m[0] in seen or seen.add(m[0]))]  # type: ignore[func-returns-value]
+
+		return (
+			frappe.get_doc(
+				{
+					"doctype": "Press Workflow",
+					"args": PressWorkflowObject.store(args) if args else None,
+					"kwargs": PressWorkflowObject.store(kwargs) if kwargs else None,
+					"linked_doctype": instance.doctype,  # type: ignore
+					"linked_docname": instance.name,  # type: ignore
+					"main_method_name": self._wrapped.__name__,
+					"main_method_title": method_title(self._wrapped),
+					"steps": [
+						{
+							"step_title": title,
+							"step_method": name,
+							"status": "Pending",
+						}
+						for name, title in methods
+					],
+				}
+			)
+			.insert(ignore_permissions=True)
+			.name
+		)
+
+
 @overload
 def flow(wrapped: Callable[Concatenate[_Self, _P], _R_co]) -> FlowCallable[_P, _R_co]: ...
 
@@ -119,51 +172,6 @@ def flow(wrapped: Callable[..., Any]) -> Any:
 	params = list(sig.parameters.values())
 	sig_without_self = sig.replace(parameters=params[1:] if params and params[0].name == "self" else params)
 
-	class BoundFlow:
-		def __init__(self, instance: Any) -> None:
-			self._instance = instance
-
-		def __call__(self, *args: Any, **kwargs: Any) -> Any:
-			return wrapped(self._instance, *args, **kwargs)
-
-		def run_as_workflow(self, *args: Any, **kwargs: Any) -> str:
-			sig_without_self.bind(*args, **kwargs)
-
-			instance = self._instance
-			if not isinstance(instance, WorkflowBuilder):
-				raise TypeError(
-					"run_as_workflow() can only be called on instances of WorkflowBuilder subclasses."
-				)
-
-			methods = called_methods_in_order(type(instance), wrapped)
-
-			seen: set[str] = set()
-			methods = [m for m in methods if not (m[0] in seen or seen.add(m[0]))]
-
-			return (
-				frappe.get_doc(
-					{
-						"doctype": "Press Workflow",
-						"args": PressWorkflowObject.store(args) if args else None,
-						"kwargs": PressWorkflowObject.store(kwargs) if kwargs else None,
-						"linked_doctype": instance.doctype,  # type: ignore
-						"linked_docname": instance.name,  # type: ignore
-						"main_method_name": wrapped.__name__,
-						"main_method_title": method_title(wrapped),
-						"steps": [
-							{
-								"step_title": title,
-								"step_method": name,
-								"status": "Pending",
-							}
-							for name, title in methods
-						],
-					}
-				)
-				.insert(ignore_permissions=True)
-				.name
-			)
-
 	class FlowDescriptor:
 		def __set_name__(self, owner: type, name: str) -> None:
 			if not issubclass(owner, Document):
@@ -175,6 +183,6 @@ def flow(wrapped: Callable[..., Any]) -> Any:
 		def __get__(self, instance: Any, owner: type) -> Any:
 			if instance is None:
 				return self
-			return BoundFlow(instance)
+			return BoundFlow(instance=instance, signature_without_self=sig_without_self, wrapped=wrapped)
 
 	return FlowDescriptor()

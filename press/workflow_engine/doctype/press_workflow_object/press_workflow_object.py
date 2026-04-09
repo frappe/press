@@ -57,7 +57,7 @@ class PressWorkflowObject(Document):
 		Args:
 			obj: The Python object to serialize.
 			throw_on_error: If True, raises `PressWorkflowObjectSerializeError` on failure.
-			                If False, stores a summary of the object and flags it as failed.
+							If False, stores a summary of the object and flags it as failed.
 
 		Returns:
 			str: The name of the created `Press Workflow Object` document.
@@ -120,7 +120,7 @@ class PressWorkflowObject(Document):
 
 		Raises:
 			ObjectPreviousSerializationFailedError: If the object originally failed to serialize.
-			    The object's stored summary is accessible via the exception's `summary` attribute.
+				The object's stored summary is accessible via the exception's `summary` attribute.
 			ObjectDeserializeError: If the document exists but deserialization fails.
 		"""
 		doc: PressWorkflowObject = frappe.get_doc("Press Workflow Object", doc_name)  # type: ignore

@@ -1,6 +1,7 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 import io
 from contextlib import redirect_stdout
@@ -16,13 +17,13 @@ from press.workflow_engine.doctype.press_workflow.exceptions import (
 	PressWorkflowRunningError,
 	PressWorkflowTaskEnqueued,
 )
-from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
 	PressWorkflowObject,
 )
 from press.workflow_engine.utils import calculate_duration
 
 if TYPE_CHECKING:
+	from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 	from press.workflow_engine.doctype.press_workflow_step.press_workflow_step import (
 		PressWorkflowStep,
 	)
@@ -65,7 +66,7 @@ class PressWorkflow(Document):
 	def after_insert(self):
 		enqueue_workflow(self.name)  # type: ignore
 
-	def run(self):
+	def run(self):  # noqa: C901 - best to keep it in one place
 		if not self.linked_doctype or not self.linked_docname:
 			frappe.throw("Cannot run flow without linked_doctype and linked_docname", frappe.ValidationError)
 			return
@@ -135,7 +136,7 @@ class PressWorkflow(Document):
 			self.update_skipped_steps_status(save=False)
 			self.save()
 
-	def update_skipped_steps_status(self, save: bool = True):
+	def update_skipped_steps_status(self, save: bool = True):  # noqa: C901 - best to keep it in one place
 		is_updated = False
 
 		if self.status in ["Success", "Failure"]:
@@ -182,6 +183,8 @@ class PressWorkflow(Document):
 
 		if self.status == "Fatal":
 			raise PressWorkflowFatalError("Workflow encountered a fatal error.", traceback=self.traceback)
+
+		return None
 
 
 def enqueue_workflow(workflow_name: str) -> None:

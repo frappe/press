@@ -4,17 +4,17 @@
 import frappe
 from frappe.tests import IntegrationTestCase
 
-# On IntegrationTestCase, the doctype test records and all
-# link-field test record dependencies are recursively loaded
-# Use these module variables to add/remove to/from that list
-EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
-IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
-
 from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
 	ObjectPreviousSerializationFailedError,
 	ObjectSerializeError,
 	PressWorkflowObject,
 )
+
+# On IntegrationTestCase, the doctype test records and all
+# link-field test record dependencies are recursively loaded
+# Use these module variables to add/remove to/from that list
+EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
+IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
 class MyCustomClass:
@@ -52,13 +52,12 @@ class IntegrationTestPressWorkflowObject(IntegrationTestCase):
 		self.assertEqual(retrieved.value, 42)
 
 	def test_store_serialization_error_throw(self):
-		unpicklable = lambda x: x  # Lambdas cannot be pickled
+		# Lambdas cannot be pickled
 		with self.assertRaises(ObjectSerializeError):
-			PressWorkflowObject.store(unpicklable, throw_on_error=True)
+			PressWorkflowObject.store(lambda x: x, throw_on_error=True)
 
 	def test_store_serialization_error_no_throw(self):
-		unpicklable = lambda x: x
-		doc_name = PressWorkflowObject.store(unpicklable, throw_on_error=False)
+		doc_name = PressWorkflowObject.store(lambda x: x, throw_on_error=False)
 
 		# Should store successfully but flag as failed
 		self.assertTrue(doc_name)
