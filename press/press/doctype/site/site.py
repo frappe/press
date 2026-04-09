@@ -3005,7 +3005,7 @@ class Site(Document, TagHelpers):
 				filters={
 					"parenttype": "Site Plan",
 					"parentfield": "release_groups",
-					"parent": self.get_plan_name(),
+					"parent": plan_name,
 				},
 			)
 
