@@ -109,7 +109,7 @@
 								label="Renew"
 								:disabled="false"
 								:variant="'solid'"
-								@click="showRenewalConfirmationDialog = true"
+								@click="partnerMRR.submit()"
 							/>
 						</div>
 					</div>
@@ -124,6 +124,45 @@
 		>
 			<template #body-content>
 				<PartnerContribution :partnerEmail="team.doc.partner_email" />
+			</template>
+		</Dialog>
+
+		<Dialog
+			:show="showRenewalErrorDialog"
+			v-model="showRenewalErrorDialog"
+			:options="{
+				title: 'Renewal Eligibility',
+			}"
+		>
+			<template #body-content>
+				<p
+					class="text-base leading-relaxed text-red-800 bg-red-50 border border-red-500 rounded p-4"
+				>
+					Your current MRR does not meet the minimum requirement for Partnership
+					renewal.
+				</p>
+				<div class="flex gap-4 my-4">
+					<div class="flex-1 flex-col border-2 rounded bg-surface-gray-1 p-4">
+						<div class="text-base text-gray-600 mb-2">Current MRR</div>
+						<div class="text-xl font-semibold text-red-600">
+							{{ formatCurrency(mrr) }}
+						</div>
+					</div>
+					<div class="flex-1 flex-col border-2 rounded bg-surface-gray-1 p-4">
+						<div class="text-base text-gray-600 mb-2">Required MRR</div>
+						<div class="text-xl font-semibold text-gray-900">
+							{{ formatCurrency(team.doc.currency === 'USD' ? 100 : 10000) }}
+						</div>
+					</div>
+				</div>
+				<Button
+					class="w-full"
+					label="Contact Support"
+					variant="outline"
+					size="md"
+					icon-right="external-link"
+					@click="openSupport"
+				/>
 			</template>
 		</Dialog>
 
@@ -183,6 +222,7 @@ const team = inject('team');
 
 const showPartnerContributionDialog = ref(false);
 const showRenewalConfirmationDialog = ref(false);
+const showRenewalErrorDialog = ref(false);
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
@@ -203,8 +243,38 @@ const partnerConsent = createListResource({
 	},
 });
 
+let mrr = ref(0);
+const partnerMRR = createResource({
+	url: 'press.api.partner.get_partner_mrr',
+	cache: 'partnerContribution',
+	params: {
+		partner_email: team.doc.partner_email,
+		prev_month: true,
+	},
+	onSuccess(data) {
+		mrr.value = data[0]?.total_amount;
+		canRenew();
+	},
+});
+
+function canRenew() {
+	// Allow renewal if mrr is greater than $100 or 10000 INR
+	if (
+		(team.doc.currency === 'USD' && mrr.value >= 100) ||
+		(team.doc.currency === 'INR' && mrr.value >= 10000)
+	) {
+		showRenewalConfirmationDialog.value = true;
+	} else {
+		showRenewalErrorDialog.value = true;
+	}
+}
+
 function routeToCertification() {
 	router.push('/partners/certificates');
+}
+
+function openSupport() {
+	window.open('https://support.frappe.io/', '_blank');
 }
 
 const daysUntilRenewal = computed(() => {
@@ -318,6 +388,9 @@ const formatDate = (dateString) => {
 };
 
 const formatCurrency = (amount) => {
+	if (!amount) {
+		amount = 0;
+	}
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: team.doc.currency,
