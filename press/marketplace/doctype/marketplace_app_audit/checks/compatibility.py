@@ -125,8 +125,7 @@ def check_bench_compatibility(source: str, supported_versions: list[str], frappe
 	}
 
 	message_parts = [
-		f"App declares support for {supported_versions} "
-		f"but is installed on benches with incompatible versions: {affected_versions}.",
+		f"App declares support for {supported_versions} but is installed on benches with incompatible versions: {affected_versions}.",
 	]
 	if public_benches:
 		message_parts.append(f"{len(public_benches)} public bench(es) affected — deployments will fail.")
