@@ -234,9 +234,9 @@ jobs:
         id: week
         run: echo "week=$(date +'%Y-%V')" >> $GITHUB_OUTPUT
 
-      - name: Cache bench directory
+      - name: Cache bench directory (restore)
         id: cache-bench-dir
-        uses: actions/cache@v5
+        uses: actions/cache/restore@v5
         with:
           key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /home/runner/frappe-bench
@@ -253,9 +253,9 @@ jobs:
           path: /home/runner/frappe-bench/apps/press
         if: steps.cache-bench-dir.outputs.cache-hit == 'true'
 
-      - name: Cache mariadb data directory
+      - name: Cache mariadb data directory (restore)
         id: cache-mariadb-data
-        uses: actions/cache@v5
+        uses: actions/cache/restore@v5
         with:
           key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /data/mariadb_data
