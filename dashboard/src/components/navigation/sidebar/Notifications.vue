@@ -9,7 +9,7 @@ import {
 	createListResource,
 } from 'frappe-ui';
 
-import { h, ref, watch } from 'vue';
+import { h, ref, watch, nextTick } from 'vue';
 import { toast } from 'vue-sonner';
 import { dayjsLocal } from '@/utils/dayjs';
 
@@ -36,8 +36,22 @@ const formatHtml = (str: string) => {
 	return str.replace(/<(?!\/?b\b)[^>]*>/g, '').split('\n')[0];
 };
 
+const scrollRef = ref(null);
 const router = useRouter();
 
+const loadMore = async () => {
+	await resource.next();
+	await nextTick();
+
+	const el = scrollRef.value?.$el;
+	if (el) {
+		const scrollable = el.querySelector('[data-reka-scroll-area-viewport]');
+		scrollable.scrollBy({
+			top: 500,
+			behavior: 'smooth',
+		});
+	}
+};
 const resource = createListResource({
 	doctype: 'Press Notification',
 	url: 'press.api.notifications.get_notifications',
@@ -236,7 +250,7 @@ const tabs = [
 				</Tabs>
 
 				<!-- body -->
-				<Scrollbar v-if="resource.data.length > 0">
+				<Scrollbar ref="scrollRef" v-if="resource.data.length > 0">
 					<div
 						v-for="x in resource.data"
 						class="[&_b]:font-semibold p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0"
@@ -298,7 +312,7 @@ const tabs = [
 				</div>
 
 				<Button
-					@click="resource.next"
+					@click="loadMore"
 					v-if="resource.hasNextPage"
 					label="Load More"
 					size="sm"
