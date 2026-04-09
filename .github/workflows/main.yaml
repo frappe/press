@@ -250,7 +250,7 @@ jobs:
 
       - name: Update press repo in bench dir
         run: |
-          rsync -a -I --delete --exclude='.git' ${GITHUB_WORKSPACE}/ /home/runner/frappe-bench/apps/press/
+          rsync -a -c --delete --exclude='.git' ${GITHUB_WORKSPACE}/ /home/runner/frappe-bench/apps/press/
         if: steps.cache-bench-dir.outputs.cache-hit == 'true'
 
       - name: Cache mariadb data directory (restore)
