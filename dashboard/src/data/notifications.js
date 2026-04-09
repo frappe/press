@@ -7,7 +7,7 @@ export const unreadNotificationsCount = createResource({
 });
 
 export const unreadSupportNotificationsCount = createResource({
-	cache: 'Unread Support Notifications Cunt',
+	cache: 'Unread Support Notifications Count',
 	url: 'press.api.notifications.get_unread_count',
 	params: {
 		type: 'Support Access',
