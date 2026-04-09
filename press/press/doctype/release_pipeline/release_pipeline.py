@@ -48,7 +48,6 @@ class ReleasePipeline(WorkflowBuilder):
 		release_group: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Partial Success", "Success", "Failure", "Retrying"]
 		team: DF.Link
-
 	# end: auto-generated types
 
 	def update_pipeline_status(
@@ -159,18 +158,20 @@ class ReleasePipeline(WorkflowBuilder):
 
 	def _get_latest_retried_build(self, deploy_candidate_build: str) -> str:
 		"""In case there are retries for the build, get the latest retried build to monitor."""
-		deploy_candidate, retry_count = frappe.db.get_value(
-			"Deploy Candidate Build", deploy_candidate_build, ["deploy_candidate", "retry_count"]
+		deploy_candidate = frappe.db.get_value(
+			"Deploy Candidate Build", deploy_candidate_build, "deploy_candidate"
 		)
 
+		# Get the latest **retried** build
 		retried_build = frappe.db.get_value(
 			"Deploy Candidate Build",
 			{
 				"group": self.release_group,
 				"deploy_candidate": deploy_candidate,
-				"retry_count": retry_count + 1,
+				"name": ("!=", deploy_candidate_build),
 			},
 			"name",
+			order_by="creation desc",
 		)
 
 		return retried_build or deploy_candidate_build

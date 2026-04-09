@@ -863,6 +863,16 @@ class ReleaseGroup(Document, TagHelpers):
 
 		return sorted_apps
 
+	@property
+	def has_running_release_pipeline(self) -> bool:
+		return bool(
+			frappe.db.exists(
+				"Release Pipeline",
+				{"group": self.name, "status": ("in", ["Pending", "Running", "Retrying"])},
+				"name",
+			)
+		)
+
 	@frappe.whitelist()
 	def deploy_information(self):
 		out = frappe._dict(update_available=False)
@@ -880,6 +890,7 @@ class ReleaseGroup(Document, TagHelpers):
 			or (len(out.removed_apps) > 0)
 			or self.dependency_update_pending
 		)
+		out.update_available = False if self.has_running_release_pipeline else out.update_available
 		out.number_of_apps = len(self.apps)
 
 		out.sites = [
