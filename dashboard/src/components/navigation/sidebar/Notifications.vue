@@ -3,24 +3,26 @@ import {
 	Popover,
 	Badge,
 	Button,
-	Tabs,
 	Tooltip,
+	Tabs,
+	frappeRequest,
 	createListResource,
 } from 'frappe-ui';
-import LucideInbox from '~icons/lucide/inbox';
-import { dayjsLocal } from '@/utils/dayjs';
-import LucideKey from '~icons/lucide/key';
-import { getDocResource } from '@/utils/resource';
-import { useRouter } from 'vue-router';
+
+import { h, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
-import { frappeRequest } from 'frappe-ui';
-import LucideAlert from '~icons/lucide/circle-alert';
-import { ref, watch } from 'vue';
+import { dayjsLocal } from '@/utils/dayjs';
 
 import {
 	unreadNotificationsCount,
 	unreadSupportNotificationsCount,
 } from '@/data/notifications';
+
+import { renderDialog } from '@/utils/components';
+import { useRouter } from 'vue-router';
+import { getDocResource } from '@/utils/resource';
+
+import SupportAccessDialog from '@/components/SupportAccessDialog.vue';
 
 let props = defineProps({
 	item: {
@@ -29,56 +31,11 @@ let props = defineProps({
 	},
 });
 
-const icons = {
-	'Site Update': LucideRefreshCw,
-	'Site Migrate': LucideArrowUpCircle,
-	'Version Upgrade': LucideArrowUpCircle,
-	'Bench Deploy': LucideRocket,
-	'Site Recovery': LucideShieldCheck,
-	'Agent Job Failure': LucideAlertTriangle,
-	'Downtime/Performance': LucideActivity,
-	'Support Access': LucideKey,
-	'Auto Scale': LucideTrendingUp,
+const formatHtml = (str: string) => {
+	return str.replace(/<(?!\/?b\b)[^>]*>/g, '').split('\n')[0];
 };
 
-const iconColors = {
-	'Site Update': 'text-ink-green-2',
-	'Site Migrate': 'text-ink-green-2',
-	'Version Upgrade': 'text-ink-green-2',
-	'Bench Deploy': 'text-ink-green-2',
-	'Site Recovery': 'text-ink-green-2',
-	'Agent Job Failure': 'text-ink-red-4',
-	'Downtime/Performance': 'text-ink-red-4',
-	'Support Access': 'text-ink-amber-3',
-	'Auto Scale': 'text-ink-red-4',
-};
-
-const iconBgColors = {
-	'Site Update': 'bg-surface-green-1',
-	'Site Migrate': 'bg-surface-green-1',
-	'Version Upgrade': 'bg-surface-green-1',
-	'Bench Deploy': 'bg-surface-green-1',
-	'Site Recovery': 'bg-surface-green-1',
-	'Agent Job Failure': 'bg-surface-red-1',
-	'Downtime/Performance': 'bg-surface-red-1',
-	'Support Access': 'bg-surface-amber-1',
-	'Auto Scale': 'bg-surface-red-1',
-};
-
-const tabs = [
-	{
-		label: 'All',
-		icon: LucideRows2,
-	},
-	{
-		label: 'Requests',
-		icon: LucideKeySquare,
-	},
-	{
-		label: 'Unread',
-		icon: LucideMessageSquareDot,
-	},
-];
+const router = useRouter();
 
 const resource = createListResource({
 	doctype: 'Press Notification',
@@ -88,12 +45,6 @@ const resource = createListResource({
 	start: 0,
 	pageLength: 10,
 });
-
-const formatHtml = (str: string) => {
-	return str.replace(/<(?!\/?b\b)[^>]*>/g, '').split('\n')[0];
-};
-
-const router = useRouter();
 
 const markAsRead = (row, togglePopover) => {
 	const docres = getDocResource({
@@ -137,6 +88,54 @@ const markAllAsRead = (togglePopover) => {
 		},
 	);
 };
+
+const openSupportAccess = (e, name) => {
+	e.stopPropagation();
+	renderDialog(
+		h(SupportAccessDialog, {
+			name,
+		}),
+	);
+};
+
+// tile icons & classes
+const icons = {
+	'Site Update': LucideRefreshCw,
+	'Site Migrate': LucideArrowUpCircle,
+	'Version Upgrade': LucideArrowUpCircle,
+	'Bench Deploy': LucideRocket,
+	'Site Recovery': LucideShieldCheck,
+	'Agent Job Failure': LucideAlertTriangle,
+	'Downtime/Performance': LucideActivity,
+	'Support Access': LucideKey,
+	'Auto Scale': LucideTrendingUp,
+};
+
+const iconColors = {
+	'Site Update': 'text-ink-green-2',
+	'Site Migrate': 'text-ink-green-2',
+	'Version Upgrade': 'text-ink-green-2',
+	'Bench Deploy': 'text-ink-green-2',
+	'Site Recovery': 'text-ink-green-2',
+	'Agent Job Failure': 'text-ink-red-4',
+	'Downtime/Performance': 'text-ink-red-4',
+	'Support Access': 'text-ink-amber-3',
+	'Auto Scale': 'text-ink-red-4',
+};
+
+const iconBgColors = {
+	'Site Update': 'bg-surface-green-1',
+	'Site Migrate': 'bg-surface-green-1',
+	'Version Upgrade': 'bg-surface-green-1',
+	'Bench Deploy': 'bg-surface-green-1',
+	'Site Recovery': 'bg-surface-green-1',
+	'Agent Job Failure': 'bg-surface-red-1',
+	'Downtime/Performance': 'bg-surface-red-1',
+	'Support Access': 'bg-surface-amber-1',
+	'Auto Scale': 'bg-surface-red-1',
+};
+
+// Reload resource on tab switch
 const activeTab = ref(0);
 
 watch(activeTab, (x) => {
@@ -149,10 +148,14 @@ watch(activeTab, (x) => {
 		filters.read = 'Unread';
 	}
 
-	resource.update({ filters });
-
-	resource.reload();
+	resource.update({ filters }).reload();
 });
+
+const tabs = [
+	{ label: 'All', icon: LucideRows2 },
+	{ label: 'Requests', icon: LucideKeySquare },
+	{ label: 'Unread', icon: LucideMessageSquareDot },
+];
 </script>
 
 <template>
@@ -171,7 +174,7 @@ watch(activeTab, (x) => {
 				<span class="text-sm flex-1 text-left">{{ item.name }}</span>
 
 				<span
-					class="px-1.5 py-0.5 text-xs text-gray-600"
+					class="text-xs text-ink-gray-6"
 					v-if="unreadNotificationsCount.data > 0"
 				>
 					{{
@@ -188,15 +191,9 @@ watch(activeTab, (x) => {
 			<div
 				class="text-ink-gray-9 bg-white h-screen ml-2 shadow-xl w-[430px] flex flex-col"
 			>
+				<!-- header -->
 				<div class="text-base flex items-center py-2 px-4 border-b">
 					<span class="font-medium mr-auto"> Notifications</span>
-
-					<Button variant="ghost" @click="markAllAsRead(togglePopover)">
-						<template #icon>
-							<LucideCheckCheck class="size-4" />
-						</template>
-					</Button>
-
 					<Button variant="ghost" @click="togglePopover">
 						<template #icon>
 							<LucideX class="size-4" />
@@ -204,18 +201,17 @@ watch(activeTab, (x) => {
 					</Button>
 				</div>
 
-				<!-- notification tiles -->
+				<!-- body -->
 				<section class="overflow-auto">
 					<Tabs
 						v-model="activeTab"
-						class="w-full [&_[role=tab]]:justify-center [&_[role=tab]]:w-full"
+						class="w-full [&_[role=tablist]]:pr-2 [&_[role=tab]]:justify-center [&_role=tab]]:w-full"
 						:tabs
 					>
 						<template #tab-item="{ tab }">
 							<button
 								class="flex items-center gap-2 py-2 text-ink-gray-5 aria-selected:text-ink-gray-9"
 							>
-								<component :is="tab.icon" class="size-3.5" />
 								<span class="text-sm">{{ tab.label }}</span>
 								<Badge v-if="tab.label != 'All'">{{
 									tab.label == 'Unread'
@@ -223,53 +219,82 @@ watch(activeTab, (x) => {
 										: unreadSupportNotificationsCount.data
 								}}</Badge>
 							</button>
+
+							<!-- show mark all button at end of tabs-->
+							<Button
+								@click="markAllAsRead(togglePopover)"
+								variant="ghost"
+								class="text-sm ml-auto my-auto"
+								v-if="tab.label == 'Unread'"
+							>
+								<template #prefix>
+									<LucideCheckCheck class="size-3.5" />
+								</template>
+								Mark All
+							</Button>
 						</template>
 					</Tabs>
 
-					<div
+					<!-- notification tiles -->
+					<section
+						class="cursor-pointer flex flex-col"
 						v-if="resource.data.length > 0"
-						v-for="(x, i) in resource.data"
-						:key="x.name"
-						class="[&_b]:font-semibold p-4 flex gap-4 items-center cursor-pointer"
-						:class="{ 'border-b': i !== resource.data.length - 1 }"
-						@click="() => markAsRead(x, togglePopover)"
+						v-for="x in resource.data"
 					>
 						<div
-							class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1 relative"
-							:class="[iconBgColors[x.type] || 'bg-surface-gray-1']"
+							class="[&_b]:font-semibold p-4 flex gap-4 items-center relative"
+							@click="markAsRead(x, togglePopover)"
 						>
-							<span
-								v-if="x.read == 0"
-								class="p-0.5 border ring-outline-gray-2 ring-1 bg-surface-gray-7 absolute rounded top-0 left-0"
-							/>
-							<component
-								:is="icons[x.type] || LucideAlert"
-								class="size-4"
-								:class="iconColors[x.type] || 'text-ink-gray-6'"
-							/>
+							<!-- type icon -->
+							<div
+								class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1 relative"
+								:class="[iconBgColors[x.type] || 'bg-surface-gray-1']"
+							>
+								<span
+									v-if="x.read == 0"
+									class="p-0.5 border ring-outline-gray-2 ring-1 bg-surface-gray-7 absolute rounded top-0 left-0"
+								/>
+								<component
+									:is="icons[x.type] || LucideCircleAlert"
+									class="size-4"
+									:class="iconColors[x.type] || 'text-ink-gray-6'"
+								/>
+							</div>
+
+							<div
+								class="text-base leading-relaxed flex flex-wrap gap-2 w-full min-w-0"
+							>
+								<div class="flex">
+									<p v-html="formatHtml(x.message)" class="w-full" />
+									<Button
+										v-if="x.type == 'Support Access'"
+										tooltip="Support Access actions"
+										variant="ghost"
+										class="mb-auto"
+										@click="(e) => openSupportAccess(e, x.document_name)"
+										><template #icon>
+											<LucideChevronRight class="size-3.5" /> </template
+									></Button>
+								</div>
+
+								<Badge class="text-xs mr-auto">
+									{{ x.title }}
+
+									<Tooltip
+										text="This notification requires your attention"
+										:hoverDelay="0"
+										v-if="x.is_actionable && !x.is_addressed"
+									>
+										<LucideCircleAlert class="size-3" />
+									</Tooltip>
+								</Badge>
+
+								<span class="text-ink-gray-5 text-xs">
+									{{ dayjsLocal(x.creation).fromNow() }}
+								</span>
+							</div>
 						</div>
-
-						<div
-							class="text-base leading-relaxed flex flex-wrap gap-2 w-full min-w-0"
-						>
-							<p v-html="formatHtml(x.message)" class="w-full" />
-
-							<Badge class="text-xs mr-auto">
-								{{ x.title }}
-								<Tooltip
-									text="This notification requires your attention"
-									:hoverDelay="0"
-									v-if="x.is_actionable && !x.is_addressed"
-								>
-									<LucideAlert class="size-3" />
-								</Tooltip>
-							</Badge>
-
-							<span class="text-ink-gray-5 text-xs">
-								{{ dayjsLocal(x.creation).fromNow() }}
-							</span>
-						</div>
-					</div>
+					</section>
 
 					<div v-else class="text-center text-ink-gray-6 text-sm py-10">
 						No notifications to show
