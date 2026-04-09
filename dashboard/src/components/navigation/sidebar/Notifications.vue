@@ -17,7 +17,10 @@ import { frappeRequest } from 'frappe-ui';
 import LucideAlert from '~icons/lucide/circle-alert';
 import { ref, watch } from 'vue';
 
-import { unreadNotificationsCount } from '@/data/notifications';
+import {
+	unreadNotificationsCount,
+	unreadSupportNotificationsCount,
+} from '@/data/notifications';
 
 let props = defineProps({
 	item: {
@@ -183,7 +186,7 @@ watch(activeTab, (x) => {
 		<!-- floating drawer  -->
 		<template #body="{ togglePopover }">
 			<div
-				class="text-ink-gray-9 bg-white h-screen ml-2 shadow-xl w-[370px] flex flex-col"
+				class="text-ink-gray-9 bg-white h-screen ml-2 shadow-xl w-[430px] flex flex-col"
 			>
 				<div class="text-base flex items-center py-2 px-4 border-b">
 					<span class="font-medium mr-auto"> Notifications</span>
@@ -212,7 +215,13 @@ watch(activeTab, (x) => {
 							<button
 								class="flex items-center gap-2 py-2 text-ink-gray-5 aria-selected:text-ink-gray-9"
 							>
+								<component :is="tab.icon" class="size-3.5" />
 								<span class="text-sm">{{ tab.label }}</span>
+								<Badge v-if="tab.label != 'All'">{{
+									tab.label == 'Unread'
+										? unreadNotificationsCount.data
+										: unreadSupportNotificationsCount.data
+								}}</Badge>
 							</button>
 						</template>
 					</Tabs>
