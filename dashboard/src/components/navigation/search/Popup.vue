@@ -74,7 +74,7 @@ watch(navigationIndex, () => {
 
 <template>
 	<div
-		class="fixed inset-0 z-100 flex items-start justify-center bg-black/50 backdrop-blur-sm backdrop-enter"
+		class="fixed inset-0 z-100 flex items-start justify-center bg-black/70"
 		@click.self="close"
 	>
 		<div
@@ -147,34 +147,17 @@ watch(navigationIndex, () => {
 </template>
 
 <style scoped>
-@keyframes backdropIn {
-	from {
-		opacity: 0;
-	}
-
-	to {
-		opacity: 1;
-	}
-}
-
 @keyframes modalIn {
 	from {
-		opacity: 0;
-		transform: translateY(-18px) scale(0.97);
+		transform: scale(0.97);
 	}
-
 	to {
-		opacity: 1;
-		transform: translateY(0) scale(1);
+		transform: scale(1);
 	}
-}
-
-.backdrop-enter {
-	animation: backdropIn 0.18s ease both;
 }
 
 .modal-enter {
-	animation: modalIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+	animation: modalIn 0.1s ease-in-out both;
 }
 
 :deep(mark) {
