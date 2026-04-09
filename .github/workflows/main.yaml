@@ -324,12 +324,14 @@ jobs:
         with:
           key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /home/runner/frappe-bench
+          fail-on-cache-miss: true
 
       - name: Cache mariadb data directory
         uses: actions/cache/save@v5
         with:
           key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /data/mariadb_data
+          fail-on-cache-miss: true
 
   ui-tests:
     needs: [changes, install]
