@@ -1,0 +1,38 @@
+rules:
+- id: relaxed-permissions
+  patterns:
+  - pattern: |
+      {
+        "role": "All",
+        ...
+      }
+  message: |
+    Avoid using "All" role. It's available to every user, including website user.
+  metadata:
+    marketplace_check_id: security_relaxed_permissions
+    marketplace_check_name: Relaxed Permissions
+    marketplace_category: Security
+    remediation: |
+      Avoid using "All" role. It's available to every user, including website user.
+  languages: [json]
+  severity: WARNING
+
+- id: frappe-setuser
+  patterns:
+  - pattern-either:
+    - pattern: frappe.set_user(...)
+  metadata:
+    marketplace_check_id: security_frappe_setuser
+    marketplace_check_name: Frappe Set User
+    marketplace_category: Security
+    remediation: |
+      Detected the use of functions that can be dangerous if used incorrectly.
+      This code should be manually audited by review/security team.
+  paths:
+    exclude:
+      - "**/test_*.py"
+  message: |
+    Detected the use of functions that can be  dangerous if used incorrectly.
+    This code should be manually audited by review/security team.
+  languages: [python]
+  severity: WARNING
