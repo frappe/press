@@ -160,6 +160,9 @@ class MarketplaceAppAudit(Document):
 		from press.marketplace.doctype.marketplace_app_audit.checks.code_quality import (
 			run_code_quality_checks,
 		)
+		from press.marketplace.doctype.marketplace_app_audit.checks.compatibility import (
+			run_compatibility_checks,
+		)
 		from press.marketplace.doctype.marketplace_app_audit.checks.dependencies import run_dependency_checks
 		from press.marketplace.doctype.marketplace_app_audit.checks.metadata import run_metadata_checks
 		from press.marketplace.doctype.marketplace_app_audit.checks.semgrep_rules import run_semgrep_rules
@@ -169,7 +172,9 @@ class MarketplaceAppAudit(Document):
 		results.extend(run_versioning_checks(clone_dir))
 		results.extend(run_dependency_checks(clone_dir))
 		results.extend(run_code_quality_checks(clone_dir))
+		results.extend(run_compatibility_checks(release.source, clone_dir))
 		results.extend(run_semgrep_rules(clone_dir))
+
 		return results
 
 	def populate_audit_checks(self, results: list[CheckResult]):
@@ -223,7 +228,7 @@ class MarketplaceAppAudit(Document):
 		1. Any Critical Fail   -> "Fail"
 		2. Any Major Fail/Warn -> "Warn"
 		3. Any Minor Fail/Warn -> "Needs Improvement"
-		4. Otherwise            -> "Pass"
+		4. Otherwise           -> "Pass"
 		"""
 		crit = tally["Critical"]
 		major = tally["Major"]
