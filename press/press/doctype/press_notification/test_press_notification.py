@@ -57,3 +57,4 @@ class TestPressNotification(FrappeTestCase):
 		# api test is added here since it's trivial
 		# move to separate file if it gets more complex
 		self.assertEqual(get_unread_count(), 1)
+		self.assertEqual(get_unread_count("Site Update"), 1)
