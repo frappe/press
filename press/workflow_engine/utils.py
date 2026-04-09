@@ -110,19 +110,6 @@ def _canonicalize(obj: Any, visited: set | None = None) -> Any:  # noqa: C901 - 
 				"fields": _canonicalize(dataclasses.asdict(obj), visited),
 			}
 
-		try:
-			import numpy as np
-
-			if isinstance(obj, np.ndarray):
-				return {
-					"__type__": "ndarray",
-					"dtype": str(obj.dtype),
-					"shape": list(obj.shape),
-					"data": obj.flatten().tolist(),
-				}
-		except ImportError:
-			pass
-
 		raise TypeError(
 			f"Cannot canonicalize type {type(obj).__qualname__!r}. "
 			f"Convert to a supported type or extend _canonicalize before calling generate_signature."
