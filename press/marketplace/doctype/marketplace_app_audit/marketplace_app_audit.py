@@ -162,12 +162,14 @@ class MarketplaceAppAudit(Document):
 		)
 		from press.marketplace.doctype.marketplace_app_audit.checks.dependencies import run_dependency_checks
 		from press.marketplace.doctype.marketplace_app_audit.checks.metadata import run_metadata_checks
+		from press.marketplace.doctype.marketplace_app_audit.checks.semgrep_rules import run_semgrep_rules
 		from press.marketplace.doctype.marketplace_app_audit.checks.versioning import run_versioning_checks
 
 		results.extend(run_metadata_checks(marketplace_app))
 		results.extend(run_versioning_checks(clone_dir))
 		results.extend(run_dependency_checks(clone_dir))
 		results.extend(run_code_quality_checks(clone_dir))
+		results.extend(run_semgrep_rules(clone_dir))
 		return results
 
 	def populate_audit_checks(self, results: list[CheckResult]):
