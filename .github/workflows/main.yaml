@@ -247,10 +247,13 @@ jobs:
           !startsWith(github.ref, 'hotfix') &&
           (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'skip-cache'))
 
-      - name: Checkout press repo into bench
+      - name: Checkout press
         uses: actions/checkout@v5
-        with:
-          path: ../../../frappe-bench/apps/press
+        if: steps.cache-bench-dir.outputs.cache-hit == 'true'
+
+      - name: Update press repo in bench dir
+        run: |
+          rsync -a --delete --exclude='.git' ${GITHUB_WORKSPACE}/ /home/runner/frappe-bench/apps/press/
         if: steps.cache-bench-dir.outputs.cache-hit == 'true'
 
       - name: Cache mariadb data directory (restore)
