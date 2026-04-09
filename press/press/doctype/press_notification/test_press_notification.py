@@ -4,7 +4,7 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.api.notifications import get_unread_count
+from press.api.notifications import get_notifications, get_unread_count
 from press.press.doctype.agent_job.agent_job import poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
@@ -58,3 +58,4 @@ class TestPressNotification(FrappeTestCase):
 		# move to separate file if it gets more complex
 		self.assertEqual(get_unread_count(), 1)
 		self.assertEqual(get_unread_count("Site Update"), 1)
+		self.assertEqual(len(get_notifications(filters={"type": "Site Update"})), 1)
