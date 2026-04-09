@@ -1,0 +1,32 @@
+rules:
+  - id: frappe-sql-format-injection
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Detected use of '.format()' or f-string in a Frappe SQL call.
+      This can lead to SQL injection. Use parameterized queries instead.
+    patterns:
+      - pattern-either:
+          - pattern: frappe.db.sql("...".format(...), ...)
+          - pattern: frappe.db.sql(f"...", ...)
+          - pattern: frappe.db.multisql("...".format(...), ...)
+          - pattern: frappe.db.multisql(f"...", ...)
+          # Matches cases where the string is formatted beforehand
+          - pattern: |
+              $QUERY = "...".format(...)
+              ...
+              frappe.db.sql($QUERY, ...)
+          - pattern: |
+              $QUERY = f"..."
+              ...
+              frappe.db.sql($QUERY, ...)
+    metadata:
+      marketplace_check_id: security_sql_format_injection
+      marketplace_check_name: SQL Format Injection
+      marketplace_category: Security
+      remediation: |
+        Detected use of '.format()' or f-string in a Frappe SQL call.
+        This can lead to SQL injection. Use parameterized queries or frappe.qb instead.
+    paths:
+      exclude:
+        - "**/test_*.py"

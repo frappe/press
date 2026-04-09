@@ -1,0 +1,39 @@
+rules:
+- id: frappe-format-string-injection
+  patterns:
+  - pattern-either:
+    - pattern: _("...").format(..., $ERR, ...)
+    - pattern: _("...").format($ERR, ...)
+    - pattern: _("...").format($ERR)
+  - pattern-not: _("...").format(..., str($ERR), ...)
+  - pattern-not: _("...").format(str($ERR), ...)
+  - pattern-not: _("...").format(str($ERR))
+  - pattern-not: _("...").format(..., cstr($ERR), ...)
+  - pattern-not: _("...").format(cstr($ERR), ...)
+  - pattern-not: _("...").format(cstr($ERR))
+  - pattern-not: _("...").format(..., repr($ERR), ...)
+  - pattern-not: _("...").format(repr($ERR), ...)
+  - pattern-not: _("...").format(repr($ERR))
+  - metavariable-pattern:
+      metavariable: $ERR
+      pattern: $ERR
+  - pattern-inside: |
+      try:
+          ...
+      except $ETYPE as $ERR:
+          ...
+  message: |
+    Exception object passed directly to `.format()` on a translated string.
+    Use `str($ERR)` to convert the exception to a plain string first.
+  metadata:
+    marketplace_check_id: security_format_string_injection
+    marketplace_check_name: Format String Injection
+    marketplace_category: Security
+    remediation: |
+      Exception object passed directly to `.format()` on a translated string.
+      Use `str($ERR)` to convert the exception to a plain string first.
+  languages: [python]
+  severity: ERROR
+  paths:
+    exclude:
+      - "**/test_*.py"
