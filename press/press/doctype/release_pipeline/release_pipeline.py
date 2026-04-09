@@ -12,8 +12,10 @@ from press.workflow_engine.doctype.press_workflow.exceptions import PressWorkflo
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.bench_update.bench_update import BenchUpdate
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
@@ -132,6 +134,47 @@ class ReleasePipeline(WorkflowBuilder):
 
 		return len([build for build in [intel_build, arm_build] if build])
 
+	def _check_for_scheduled_build_retries(self, deploy_candidate_build: str):
+		"""Check if there are any scheduled retries for this build"""
+		deploy_candidate_build_doc: DeployCandidateBuild = frappe.get_doc(
+			"Deploy Candidate Build", deploy_candidate_build
+		)
+
+		agent_job: AgentJob = frappe.get_doc(
+			"Agent Job",
+			{
+				"reference_doctype": "Deploy Candidate Build",
+				"reference_name": deploy_candidate_build,
+				"job_type": "Run Remote Builder",
+			},
+		)
+
+		if deploy_candidate_build_doc.should_build_retry(exc=None, job=agent_job):
+			self.update_pipeline_status("Retrying")
+			raise PressWorkflowTaskEnqueued(
+				f"Build {deploy_candidate_build} has scheduled retries. Waiting for retries to complete.",
+				self.workflow_name,
+				self.get_task_name(self.monitor_pre_build_validation),
+			)
+
+	def _get_latest_retried_build(self, deploy_candidate_build: str) -> str:
+		"""In case there are retries for the build, get the latest retried build to monitor."""
+		deploy_candidate, retry_count = frappe.db.get_value(
+			"Deploy Candidate Build", deploy_candidate_build, ["deploy_candidate", "retry_count"]
+		)
+
+		retried_build = frappe.db.get_value(
+			"Deploy Candidate Build",
+			{
+				"group": self.release_group,
+				"deploy_candidate": deploy_candidate,
+				"retry_count": retry_count + 1,
+			},
+			"name",
+		)
+
+		return retried_build or deploy_candidate_build
+
 	@task
 	def monitor_pre_build_validation(self, deploy_candidate_build: str):
 		"""Monitors the Deploy Candidate Build until the remote build job is created."""
@@ -144,7 +187,6 @@ class ReleasePipeline(WorkflowBuilder):
 			return  # We have enqueued the remote agent job
 
 		if deploy_candidate_build_status == "Failure":
-			# TODO: Ensure no retries are scheduled before marking as failure
 			raise ReleasePipelineFailure(
 				f"Pre Build Validation failed for Deploy Candidate Build {deploy_candidate_build}. "
 				"Please check the build logs for more details."
@@ -159,6 +201,7 @@ class ReleasePipeline(WorkflowBuilder):
 	@task
 	def monitor_build_success(self, deploy_candidate_build: str):
 		"""Monitor build till terminal state."""
+		deploy_candidate_build = self._get_latest_retried_build(deploy_candidate_build)
 		deploy_candidate_build_status = frappe.db.get_value(
 			"Deploy Candidate Build", deploy_candidate_build, "status"
 		)
@@ -167,6 +210,8 @@ class ReleasePipeline(WorkflowBuilder):
 			return  # Remote Build succeeded can mark as success and proceed
 
 		if deploy_candidate_build_status == "Failure":
+			# This will raise and enqueue the function again in case there are scheduled retries for the build
+			self._check_for_scheduled_build_retries(deploy_candidate_build)
 			raise ReleasePipelineFailure(
 				f"Remote build failed for Deploy Candidate Build {deploy_candidate_build}. Please check the build logs for more details."
 			)
@@ -268,6 +313,11 @@ class ReleasePipeline(WorkflowBuilder):
 	@task
 	def monitor_bench_creation(self, deploy_candidate_build: str):
 		"""Monitor new bench creation accounting for any failures and retries."""
+		if self.status == "Retrying":
+			self.update_pipeline_status(
+				"Running"
+			)  # Reset status to running when we start monitoring again after retry
+
 		number_of_expected_bench_docs, created_bench_docs, bench_info = (
 			self._calculate_bench_doc_requirements(deploy_candidate_build)
 		)
@@ -292,6 +342,59 @@ class ReleasePipeline(WorkflowBuilder):
 		failed_bench_deploys = self._get_stray_bench_creation_failures(bench_info)
 		self._finalize_pipeline_status(failed_bench_deploys, bench_info, deploy_candidate_build)
 
+	def run_pre_release_checks(self, apps: list[dict[str, str]]):
+		"""Groups all early-exit validation logic."""
+		self.validate_app_hashes(apps)  # This sets status to "Running"
+		self.validate_server_storages()
+		self.validate_auto_scales_on_servers()
+
+	def prepare_deployment(self, apps, sites, run_will_fail_check) -> tuple[str, str]:
+		"""Creates the candidate and returns the primary build name."""
+		deploy_candidate = self.create_deploy_candidate(
+			apps=apps,
+			sites=sites,
+			run_will_fail_check=run_will_fail_check,
+			create_deploy=False,
+		)
+		primary_build = self.initiate_pre_build_validations(deploy_candidate)
+		return deploy_candidate, primary_build
+
+	def _get_secondary_build(self, deploy_candidate: str, primary_build: str) -> str | None:
+		"""Finds a build for the same candidate but on a different platform."""
+		primary_platform = frappe.db.get_value("Deploy Candidate Build", primary_build, "platform")
+
+		return frappe.db.get_value(
+			"Deploy Candidate Build",
+			{
+				"deploy_candidate": deploy_candidate,
+				"name": ("!=", primary_build),
+				"group": self.release_group,
+				"platform": ("!=", primary_platform),
+			},
+			"name",
+		)
+
+	def orchestrate_build_monitoring(self, deploy_candidate: str, primary_build: str):
+		"""Monitors primary and, if necessary, secondary builds."""
+		# Monitor Primary
+		self.monitor_pre_build_validation(primary_build)
+		self.monitor_build_success(primary_build)
+
+		# Check for Secondary Architecture
+		if self._get_required_build_count(deploy_candidate) == 2:
+			secondary_build = self._get_secondary_build(deploy_candidate, primary_build)
+
+			if not secondary_build:
+				# Wait for sometime for the secondary build to be created in case of any delays in build scheduling
+				raise PressWorkflowTaskEnqueued(
+					f"Waiting for secondary build creation for {deploy_candidate}",
+					self.workflow_name,
+					self.get_task_name(self.monitor_build_success),
+				)
+
+			self.monitor_pre_build_validation(secondary_build)
+			self.monitor_build_success(secondary_build)
+
 	@flow
 	def create_release(
 		self,
@@ -299,43 +402,19 @@ class ReleasePipeline(WorkflowBuilder):
 		sites: list[dict[str, Any]],
 		run_will_fail_check: bool = False,
 	):
-		"""Create a release for the release group."""
+		"""Orchestrates the release process from validation to bench creation with recursive monitoring and retry handling"""
 		try:
-			self.validate_app_hashes(apps)
-			self.validate_server_storages()
-			self.validate_auto_scales_on_servers()
-			deploy_candidate = self.create_deploy_candidate(
-				apps=apps,
-				sites=sites,
-				run_will_fail_check=run_will_fail_check,
-				create_deploy=False,
-			)
-			required_build_count = self._get_required_build_count(deploy_candidate)
-			deploy_candidate_build = self.initiate_pre_build_validations(deploy_candidate)
-			self.monitor_pre_build_validation(deploy_candidate_build)
-			self.monitor_build_success(deploy_candidate_build)
+			# 1. Validation Phase
+			self.run_pre_release_checks(apps)
 
-			if required_build_count == 2:
-				# If required build count is 2, we need to monitor both the builds.
-				# We don't need to initiate anything since the secondary build will be automatically triggered after the first one is successful.
-				secondary_build = frappe.db.get_value(
-					"Deploy Candidate Build",
-					{"deploy_candidate": deploy_candidate, "name": ("!=", deploy_candidate_build)},
-					"name",
-				)
-				if not secondary_build:
-					# We are waiting for the job to be processed and the secondary build to be created.
-					raise PressWorkflowTaskEnqueued(
-						f"Waiting for secondary build to be created for Deploy Candidate {deploy_candidate}",
-						self.workflow_name,
-						self.get_task_name(
-							self.monitor_build_success
-						),  # Revert to last task since we haven't initiated any new job for the secondary build
-					)
-				self.monitor_pre_build_validation(secondary_build)
-				self.monitor_build_success(secondary_build)
+			# 2. Initialization Phase
+			deploy_candidate, primary_build = self.prepare_deployment(apps, sites, run_will_fail_check)
 
-			# _finalize_pipeline_status will handle terminal status of the release pipeline based on the bench creation outcomes
-			self.monitor_bench_creation(deploy_candidate_build)
+			# 3. Monitoring Phase (Handles 1 or 2 builds)
+			self.orchestrate_build_monitoring(deploy_candidate, primary_build)
+
+			# 4. Finalization Phase
+			self.monitor_bench_creation(primary_build)
+
 		except ReleasePipelineFailure:
 			self.update_pipeline_status("Failure")
