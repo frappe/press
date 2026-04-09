@@ -460,11 +460,11 @@ export default {
 				{
 					label: 'CPU',
 					type: 'progress',
-					progress_value: currentUsage.vcpu ? currentUsage.vcpu * 100 : 0,
+					progress_value: currentUsage.vcpu
+						? Math.max(0, currentUsage.vcpu * 100)
+						: 0,
 					value: currentPlan
-						? `${((currentUsage.vcpu || 0) * 100).toFixed(
-								2,
-							)}% of ${currentPlan.vcpu} ${this.$format.plural(
+						? `${(Math.max(0, currentUsage.vcpu || 0) * 100).toFixed(2)}% of ${currentPlan.vcpu} ${this.$format.plural(
 								currentPlan.vcpu,
 								'vCPU',
 								'vCPUs',

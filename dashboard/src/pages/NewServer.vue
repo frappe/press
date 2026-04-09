@@ -131,6 +131,11 @@
 							</div>
 						</div>
 					</div>
+					<AlertBanner
+						v-if="serverProvider == 'Frappe Compute'"
+						title="This is a new and highly experimental provider. We do not provide any guarantees with respect to uptime and the safety of data against loss. Please refrain from running production workloads on this."
+						type="warning"
+					/>
 					<!-- Chose Region -->
 					<div
 						class="flex flex-col"
@@ -966,6 +971,7 @@ import LucideServer from '~icons/lucide/server-off';
 import Header from '../components/Header.vue';
 import ServerPlansCards from '../components/server/ServerPlansCards.vue';
 import ClickToCopy from '../components/ClickToCopyField.vue';
+import AlertBanner from '../components/AlertBanner.vue';
 import { DashboardError } from '../utils/error';
 
 export default {
