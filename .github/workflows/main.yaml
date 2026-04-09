@@ -247,6 +247,12 @@ jobs:
           !startsWith(github.ref, 'hotfix') &&
           (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'skip-cache'))
 
+      - name: Checkout press repo into bench
+        uses: actions/checkout@v5
+        with:
+          path: /home/runner/frappe-bench/apps/press
+        if: steps.cache-bench-dir.outputs.cache-hit == 'true'
+
       - name: Cache mariadb data directory
         id: cache-mariadb-data
         uses: actions/cache@v5
