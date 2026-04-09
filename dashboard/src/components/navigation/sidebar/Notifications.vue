@@ -146,7 +146,7 @@ watch(activeTab, (x) => {
 	} else if (x == 1) {
 		filters.type = 'Support Access';
 	} else {
-		filters.read = 'unread';
+		filters.read = 'Unread';
 	}
 
 	resource.update({ filters });
@@ -235,9 +235,13 @@ watch(activeTab, (x) => {
 						@click="() => markAsRead(x, togglePopover)"
 					>
 						<div
-							class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1"
+							class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1 relative"
 							:class="[iconBgColors[x.type] || 'bg-surface-gray-1']"
 						>
+							<span
+								v-if="x.read == 0"
+								class="p-0.5 border ring-outline-gray-2 ring-1 bg-surface-gray-7 absolute rounded top-0 left-0"
+							/>
 							<component
 								:is="icons[x.type] || LucideAlert"
 								class="size-4"
