@@ -136,20 +136,33 @@
 		>
 			<template #body-content>
 				<p
-					class="text-base leading-relaxed text-gray-700 bg-yellow-50 border border-yellow-300 rounded p-4"
+					class="text-base leading-relaxed text-red-800 bg-red-50 border border-red-500 rounded p-4"
 				>
-					Your current MRR is
-					<strong>{{ formatCurrency(mrr) }}</strong
-					>, which does not meet the minimum requirement of
-					<strong>{{
-						formatCurrency(team.doc.currency === 'USD' ? 100 : 10000)
-					}}</strong>
-					for Partnership renewal. Please reach out to
-					<a href="https://support.frappe.io/" target="_blank" class="underline"
-						>support</a
-					>
-					for assistance.
+					Your current MRR does not meet the minimum requirement for Partnership
+					renewal.
 				</p>
+				<div class="flex gap-4 my-4">
+					<div class="flex-1 flex-col border-2 rounded bg-surface-gray-1 p-4">
+						<div class="text-base text-gray-600 mb-2">Current MRR</div>
+						<div class="text-xl font-semibold text-red-600">
+							{{ formatCurrency(mrr) }}
+						</div>
+					</div>
+					<div class="flex-1 flex-col border-2 rounded bg-surface-gray-1 p-4">
+						<div class="text-base text-gray-600 mb-2">Required MRR</div>
+						<div class="text-xl font-semibold text-gray-900">
+							{{ formatCurrency(team.doc.currency === 'USD' ? 100 : 10000) }}
+						</div>
+					</div>
+				</div>
+				<Button
+					class="w-full"
+					label="Contact Support"
+					variant="outline"
+					size="md"
+					icon-right="external-link"
+					@click="openSupport"
+				/>
 			</template>
 		</Dialog>
 
@@ -258,6 +271,10 @@ function canRenew() {
 
 function routeToCertification() {
 	router.push('/partners/certificates');
+}
+
+function openSupport() {
+	window.open('https://support.frappe.io/', '_blank');
 }
 
 const daysUntilRenewal = computed(() => {
@@ -371,7 +388,9 @@ const formatDate = (dateString) => {
 };
 
 const formatCurrency = (amount) => {
-	if (!amount) return 0;
+	if (!amount) {
+		amount = 0;
+	}
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: team.doc.currency,
