@@ -250,7 +250,7 @@ jobs:
 
       - name: Update press repo in bench dir
         run: |
-          rsync -a -c --delete --exclude='.git' ${GITHUB_WORKSPACE}/ /home/runner/frappe-bench/apps/press/
+          rsync -a --delete --exclude='.git' ${GITHUB_WORKSPACE}/ /home/runner/frappe-bench/apps/press/
         if: steps.cache-bench-dir.outputs.cache-hit == 'true'
 
       - name: Cache mariadb data directory (restore)
@@ -322,16 +322,14 @@ jobs:
       - name: Cache bench directory
         uses: actions/cache/save@v5
         with:
-          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
+          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}-post
           path: /home/runner/frappe-bench
-          fail-on-cache-miss: true
 
       - name: Cache mariadb data directory
         uses: actions/cache/save@v5
         with:
-          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
+          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}-post
           path: /data/mariadb_data
-          fail-on-cache-miss: true
 
   ui-tests:
     needs: [changes, install]
@@ -359,7 +357,7 @@ jobs:
       - name: Restore mariadb data directory from cache
         uses: actions/cache/restore@v5
         with:
-          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
+          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}-post
           path: /data/mariadb_data
 
       - name: Change ownership of mariadb data directory (post cache restore)
@@ -418,7 +416,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: /home/runner/frappe-bench
-          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
+          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}-post
 
       - name: Don't run unnecessary services
         working-directory: /home/runner/frappe-bench
@@ -508,7 +506,7 @@ jobs:
       - name: Restore mariadb data directory from cache
         uses: actions/cache/restore@v5
         with:
-          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
+          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}-post
           path: /data/mariadb_data
 
       - name: Change ownership of mariadb data directory (post cache restore)
@@ -546,7 +544,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: /home/runner/frappe-bench
-          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
+          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}-post
 
       - name: Allow tests
         working-directory: /home/runner/frappe-bench
