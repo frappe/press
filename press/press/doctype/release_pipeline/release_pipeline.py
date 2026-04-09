@@ -358,12 +358,14 @@ class ReleasePipeline(WorkflowBuilder):
 		failed_bench_deploys = self._get_stray_bench_creation_failures(bench_info)
 		self._finalize_pipeline_status(failed_bench_deploys, bench_info, deploy_candidate_build)
 
+	@task
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
 		"""Groups all early-exit validation logic."""
 		self.validate_app_hashes(apps)  # This sets status to "Running"
 		self.validate_server_storages()
 		self.validate_auto_scales_on_servers()
 
+	@task
 	def prepare_deployment(self, apps, sites, run_will_fail_check) -> tuple[str, str]:
 		"""Creates the candidate and returns the primary build name."""
 		deploy_candidate = self.create_deploy_candidate(
@@ -375,6 +377,7 @@ class ReleasePipeline(WorkflowBuilder):
 		primary_build = self.initiate_pre_build_validations(deploy_candidate)
 		return deploy_candidate, primary_build
 
+	@task
 	def orchestrate_build_monitoring(self, deploy_candidate: str, primary_build: str):
 		"""Monitors primary and, if necessary, secondary builds."""
 		# Monitor Primary
