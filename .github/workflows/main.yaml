@@ -250,7 +250,7 @@ jobs:
       - name: Checkout press repo into bench
         uses: actions/checkout@v5
         with:
-          path: /home/runner/frappe-bench/apps/press
+          path: ../../../frappe-bench/apps/press
         if: steps.cache-bench-dir.outputs.cache-hit == 'true'
 
       - name: Cache mariadb data directory (restore)
