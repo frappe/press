@@ -93,7 +93,7 @@ const feedback = () => {
 							:is="item.customComponent"
 							:item="item"
 						/>
-						<Item class="mt-0.5" v-else :item="item" />
+						<Item :class="item.class" v-else :item="item" />
 					</template>
 				</template>
 			</NavList>

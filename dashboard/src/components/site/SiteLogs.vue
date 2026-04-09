@@ -92,7 +92,7 @@ export default {
 					actions: () => [
 						{
 							slots: {
-								prefix: () => h(LucideSparkleIcon),
+								prefix: () => h(LucideSparkleIcon, { class: 'size-4' }),
 							},
 							label: 'View in Log Browser',
 							onClick: () => {
@@ -210,7 +210,7 @@ export default {
 					actions: () => [
 						{
 							slots: {
-								prefix: () => h(LucideSparkleIcon),
+								prefix: () => h(LucideSparkleIcon, { class: 'size-4' }),
 							},
 							label: 'View in Log Browser',
 							onClick: () => {

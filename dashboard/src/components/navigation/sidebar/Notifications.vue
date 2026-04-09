@@ -180,7 +180,7 @@ const tabs = [
 		<template #target="{ togglePopover }">
 			<button
 				@click="togglePopover"
-				class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-3 w-full"
+				class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition gap-1 hover:bg-surface-gray-3 w-full"
 				:class="[
 					item.disabled ? 'pointer-events-none opacity-50' : '',
 					$attrs.class,
