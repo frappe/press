@@ -180,7 +180,7 @@ const tabs = [
 		<template #target="{ togglePopover }">
 			<button
 				@click="togglePopover"
-				class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-3 w-full"
+				class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition gap-1 hover:bg-surface-gray-3 w-full"
 				:class="[
 					item.disabled ? 'pointer-events-none opacity-50' : '',
 					$attrs.class,
@@ -210,6 +210,12 @@ const tabs = [
 				<!-- header -->
 				<div class="text-base flex items-center py-2 pl-4 pr-2 border-b">
 					<span class="font-medium mr-auto"> Notifications</span>
+
+					<Button @click="markAllAsRead(togglePopover)" variant="ghost">
+						<template #icon>
+							<LucideCheckCheck class="size-3.5" />
+						</template>
+					</Button>
 					<Button variant="ghost" @click="togglePopover">
 						<template #icon>
 							<LucideX class="size-4" />
@@ -224,7 +230,7 @@ const tabs = [
 				>
 					<template #tab-item="{ tab }">
 						<button
-							class="flex items-center gap-2 py-2 text-ink-gray-5 aria-selected:text-ink-gray-9"
+							class="w-full flex items-center gap-2 py-2 text-ink-gray-5 aria-selected:text-ink-gray-9"
 						>
 							<span class="text-sm">{{ tab.label }}</span>
 							<Badge v-if="tab.label != 'All'">{{
@@ -233,19 +239,6 @@ const tabs = [
 									: unreadSupportNotificationsCount.data
 							}}</Badge>
 						</button>
-
-						<!-- show mark all button at end of tabs-->
-						<Button
-							@click="markAllAsRead(togglePopover)"
-							variant="ghost"
-							class="text-sm ml-auto my-auto"
-							v-if="tab.label == 'Unread'"
-						>
-							<template #prefix>
-								<LucideCheckCheck class="size-3.5" />
-							</template>
-							Mark All
-						</Button>
 					</template>
 				</Tabs>
 
@@ -253,8 +246,9 @@ const tabs = [
 				<Scrollbar ref="scrollRef" v-if="resource.data.length > 0">
 					<div
 						v-for="x in resource.data"
-						class="[&_b]:font-semibold p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0"
+						class="[&_b]:font-semibold p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0 hover:bg-surface-gray-1"
 						@click="markAsRead(x, togglePopover)"
+						title="Click to mark as read"
 					>
 						<!-- type icon -->
 						<div
