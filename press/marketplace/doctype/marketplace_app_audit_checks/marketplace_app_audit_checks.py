@@ -22,6 +22,7 @@ class MarketplaceAppAuditChecks(Document):
 			"Code Quality",
 			"Security",
 			"Compatibility",
+			"Correctness",
 			"Operational",
 		]
 		check_id: DF.Data

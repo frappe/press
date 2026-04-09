@@ -1,11 +1,26 @@
 # Copyright (c) 2026, Frappe and Contributors
 # See license.txt
 
-from unittest.mock import Mock, patch
+import json
+import os
+import tempfile
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.marketplace.doctype.marketplace_app_audit.checks.compatibility import (
+	_safe_load_pyproject,
+	check_bench_compatibility,
+	run_compatibility_checks,
+)
+from press.marketplace.doctype.marketplace_app_audit.checks.semgrep_rules import (
+	SEMGREP_TO_AUDIT_SEVERITY,
+	_build_category_results,
+	_highest_audit_severity,
+	_parse_semgrep_errors,
+	_serialize_finding,
+)
 from press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit import (
 	CheckResult,
 	MarketplaceAppAudit,
@@ -193,3 +208,164 @@ class TestMarketplaceAppAudit(FrappeTestCase):
 		self.marketplace_app.status = "Published"
 		self.marketplace_app.save(ignore_permissions=True)
 		self.assertEqual(self.marketplace_app.status, "Published")
+
+
+class TestSemgrepRulesParsing(FrappeTestCase):
+	"""Tests for semgrep output parsing — no semgrep binary needed."""
+
+	def _make_finding(self, rule_id: str, category: str = "Security", severity: str = "ERROR"):
+		return {
+			"check_id": f"rules.security.{rule_id}",
+			"path": "app/api.py",
+			"start": {"line": 10, "col": 1, "offset": 100},
+			"end": {"line": 10, "col": 30, "offset": 130},
+			"extra": {
+				"severity": severity,
+				"message": f"Found {rule_id} issue.",
+				"metadata": {"marketplace_category": category},
+			},
+		}
+
+	def test_no_findings_produces_pass_for_each_category(self):
+		results = _build_category_results([])
+		self.assertEqual(len(results), 2)  # Correctness + Security
+		self.assertTrue(all(r.result == "Pass" for r in results))
+
+	def test_security_finding_produces_fail(self):
+		findings = [self._make_finding("frappe-codeinjection-eval")]
+		results = _build_category_results(findings)
+		security = next(r for r in results if r.category == "Security")
+		self.assertEqual(security.result, "Fail")
+		self.assertIn("1 issue", security.message)
+
+	def test_multiple_findings_aggregated_per_category(self):
+		findings = [
+			self._make_finding("frappe-codeinjection-eval"),
+			self._make_finding("frappe-sql-format-injection"),
+		]
+		results = _build_category_results(findings)
+		security = next(r for r in results if r.category == "Security")
+		details = json.loads(security.details)
+		self.assertEqual(len(details["occurrences"]), 2)
+
+	def test_highest_severity_is_picked(self):
+		findings = [
+			self._make_finding("low-rule", severity="WARNING"),
+			self._make_finding("high-rule", severity="ERROR"),
+		]
+		self.assertEqual(_highest_audit_severity(findings), "Critical")
+
+	def test_warning_severity_produces_warn_result(self):
+		findings = [self._make_finding("minor-rule", severity="WARNING")]
+		results = _build_category_results(findings)
+		security = next(r for r in results if r.category == "Security")
+		self.assertEqual(security.result, "Warn")
+		self.assertEqual(security.severity, "Minor")
+
+	def test_serialize_finding_extracts_short_rule_id(self):
+		finding = self._make_finding("frappe-codeinjection-eval")
+		serialized = _serialize_finding(finding)
+		self.assertEqual(serialized["rule_id"], "frappe-codeinjection-eval")
+		self.assertEqual(serialized["path"], "app/api.py")
+
+	def test_parse_semgrep_errors(self):
+		errors = [{"message": "Rule parse error"}, {"message": "Timeout on file"}]
+		results = _parse_semgrep_errors(errors)
+		self.assertEqual(len(results), 2)
+		self.assertTrue(all(r.result == "Error" for r in results))
+
+	def test_severity_mapping_covers_all_levels(self):
+		self.assertEqual(SEMGREP_TO_AUDIT_SEVERITY["ERROR"], "Critical")
+		self.assertEqual(SEMGREP_TO_AUDIT_SEVERITY["WARNING"], "Minor")
+		self.assertEqual(SEMGREP_TO_AUDIT_SEVERITY["INFO"], "Info")
+
+	def test_unknown_category_finding_is_ignored(self):
+		findings = [self._make_finding("unknown-rule", category="UnknownCategory")]
+		results = _build_category_results(findings)
+		# Both expected categories should pass since the finding doesn't belong to either
+		self.assertTrue(all(r.result == "Pass" for r in results))
+
+
+class TestCompatibilityChecks(FrappeTestCase):
+	"""Tests for compatibility check logic — uses mocks for DB queries."""
+
+	def test_safe_load_pyproject_returns_none_for_missing_file(self):
+		self.assertIsNone(_safe_load_pyproject("/nonexistent/pyproject.toml"))
+
+	def test_safe_load_pyproject_returns_none_for_invalid_toml(self):
+		with tempfile.NamedTemporaryFile(suffix=".toml", delete=False, mode="w") as f:
+			f.write("this is [[[ not valid toml")
+			f.flush()
+			self.assertIsNone(_safe_load_pyproject(f.name))
+		os.unlink(f.name)
+
+	def test_safe_load_pyproject_parses_valid_toml(self):
+		with tempfile.NamedTemporaryFile(suffix=".toml", delete=False, mode="w") as f:
+			f.write('[tool.bench.frappe-dependencies]\nfrappe = ">=15.0.0,<16.0.0-dev"\n')
+			f.flush()
+			result = _safe_load_pyproject(f.name)
+		os.unlink(f.name)
+		self.assertIsNotNone(result)
+		self.assertEqual(
+			result["tool"]["bench"]["frappe-dependencies"]["frappe"],
+			">=15.0.0,<16.0.0-dev",
+		)
+
+	def test_run_compatibility_checks_skips_when_no_pyproject(self):
+		with tempfile.TemporaryDirectory() as tmpdir:
+			results = run_compatibility_checks("SRC-001", tmpdir)
+		self.assertEqual(results, [])
+
+	def test_run_compatibility_checks_skips_when_no_frappe_dep(self):
+		with tempfile.TemporaryDirectory() as tmpdir:
+			with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+				f.write("[tool.bench]\nname = 'myapp'\n")
+			results = run_compatibility_checks("SRC-001", tmpdir)
+		self.assertEqual(results, [])
+
+	def _patch_qb(self, run_return_value):
+		"""Patch frappe.qb with a plain MagicMock (avoids AsyncMock coroutine issues)."""
+		mock_qb = MagicMock()
+		chain = mock_qb.from_.return_value.join.return_value.on.return_value
+		chain.where.return_value.where.return_value.where.return_value.select.return_value.run.return_value = run_return_value
+		return patch(
+			"press.marketplace.doctype.marketplace_app_audit.checks.compatibility.frappe.qb",
+			mock_qb,
+		)
+
+	def test_check_bench_compatibility_pass_when_all_compatible(self):
+		"""When no incompatible benches exist, result should be Pass."""
+		with self._patch_qb([]):
+			result = check_bench_compatibility("SRC-001", ["Version 15", "Version 16"], ">=15.0.0")
+
+		self.assertEqual(result.result, "Pass")
+		self.assertEqual(result.check_id, "compat_bench_versions")
+		self.assertEqual(result.severity, "Critical")
+
+	def test_check_bench_compatibility_fail_when_incompatible_benches(self):
+		"""When benches on unsupported versions exist, result should be Fail."""
+		incompatible_bench = frappe._dict(name="RG-001", version="Version 14", public=True)
+
+		with self._patch_qb([incompatible_bench]):
+			result = check_bench_compatibility("SRC-001", ["Version 15"], ">=15.0.0,<16.0.0-dev")
+
+		self.assertEqual(result.result, "Fail")
+		self.assertEqual(result.severity, "Critical")
+		details = json.loads(result.details)
+		self.assertIn("Version 14", details["incompatible_versions"])
+		self.assertEqual(details["public_benches_affected"], 1)
+
+	def test_check_bench_compatibility_reports_both_public_and_private(self):
+		incompatible = [
+			frappe._dict(name="RG-PUB", version="Version 14", public=True),
+			frappe._dict(name="RG-PVT", version="Version 14", public=False),
+		]
+
+		with self._patch_qb(incompatible):
+			result = check_bench_compatibility("SRC-001", ["Version 16"], ">=16.0.0")
+
+		details = json.loads(result.details)
+		self.assertEqual(details["public_benches_affected"], 1)
+		self.assertEqual(details["private_benches_affected"], 1)
+		self.assertIn("public bench", result.message)
+		self.assertIn("private bench", result.message)
