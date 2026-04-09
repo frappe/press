@@ -59,11 +59,11 @@ def successful_provision(self: VirtualMachine):
 	self.save()
 
 
-def available_check_machine_availability(self: Cluster, machine_type: str):
+def available_check_machine_availability(self: Cluster, machine_type: str, instance_id: str | None = None):
 	return True
 
 
-def unavailable_check_machine_availability(self: Cluster, machine_type: str):
+def unavailable_check_machine_availability(self: Cluster, machine_type: str, instance_id: str | None = None):
 	return False
 
 
