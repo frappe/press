@@ -454,7 +454,7 @@ class Site(Document, TagHelpers):
 
 	def before_insert(self):
 		if not self.bench and self.group:
-			if self.server and self.team != "Administrator":  # Check to avoid standby sites
+			if self.server and not self.is_standby:
 				self.set_bench_for_server()
 			else:
 				self.set_latest_bench()
@@ -2895,7 +2895,7 @@ class Site(Document, TagHelpers):
 			config["rate_limit"] = {}
 		return config
 
-	def _get_benches_for_(self, proxy_servers, release_group_names=None):
+	def _get_benches_for_(self, proxy_servers, release_group_names=None, host_on_shared_server=False):
 		from pypika.terms import PseudoColumn
 
 		benches = frappe.qb.DocType("Bench")
@@ -2919,6 +2919,9 @@ class Site(Document, TagHelpers):
 			.orderby(benches.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
+		if host_on_shared_server:
+			bench_query = bench_query.where(servers.public == 1)
+
 		if release_group_names:
 			groups = frappe.qb.DocType("Release Group")
 			bench_query = (
@@ -2993,21 +2996,25 @@ class Site(Document, TagHelpers):
 		"""
 
 		release_group_names = []
-		if self.get_plan_name():
+		host_on_shared_server = False
+		plan_name = self.get_plan_name()
+		if plan_name:
 			release_group_names = frappe.db.get_all(
 				"Site Plan Release Group",
 				pluck="release_group",
 				filters={
 					"parenttype": "Site Plan",
 					"parentfield": "release_groups",
-					"parent": self.get_plan_name(),
+					"parent": plan_name,
 				},
 			)
 
-		benches = self._get_benches_for_(
-			proxy_servers,
-			release_group_names,
-		)
+			is_dedicated_server_plan = (
+				frappe.db.get_value("Site Plan", plan_name, "dedicated_server_plan") if plan_name else False
+			)
+			host_on_shared_server = not (self.server and is_dedicated_server_plan)
+
+		benches = self._get_benches_for_(proxy_servers, release_group_names, host_on_shared_server)
 		if len(benches) == 0:
 			frappe.throw(
 				"No bench is available to deploy this site, please deploy a new bench or reach out to us at <a href='https://support.frappe.io'>support.frappe.io</a>"
