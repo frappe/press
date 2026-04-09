@@ -632,9 +632,9 @@ def cancel_approval_request(app_release: str):
 def reason_for_rejection(app_release: str) -> str:
 	"""Return feedback given on a `Rejected` approval request"""
 	approval_request = get_latest_approval_request(app_release)
-	app_release = frappe.get_doc("App Release", app_release)
+	release_doc = frappe.get_doc("App Release", app_release)
 
-	if app_release.status != "Rejected":
+	if release_doc.status != "Rejected":
 		frappe.throw("The request for the given app release was not rejected!")
 
 	return approval_request.reason_for_rejection
@@ -658,7 +658,7 @@ def get_latest_approval_request(app_release: str):
 
 
 @frappe.whitelist()
-def options_for_marketplace_app() -> dict[str, dict]:  # noqa: C901
+def options_for_marketplace_app() -> list[dict]:  # noqa: C901
 	# Get versions (along with apps and associated sources)
 	# which belong to the current team
 	versions = options(only_by_current_team=True)["versions"]
@@ -684,7 +684,7 @@ def options_for_marketplace_app() -> dict[str, dict]:  # noqa: C901
 						source["version"] = version["name"]
 					filtered_apps.append(app)
 
-	aggregated_sources = {}
+	aggregated_sources: dict[str, list] = {}
 
 	for app in filtered_apps:
 		aggregated_sources.setdefault(app["name"], []).extend(app["sources"])
@@ -1019,7 +1019,7 @@ def create_app_plan(marketplace_app: str, plan_data: dict):
 		}
 	)
 
-	feature_list = plan_data.get("features")
+	feature_list: list[str] = plan_data.get("features") or []
 	reset_features_for_plan(app_plan_doc, feature_list)
 	return app_plan_doc.insert(ignore_permissions=True)
 
@@ -1361,26 +1361,3 @@ def get_marketplace_apps():
 		apps = frappe.get_all("Marketplace App", {"status": "Published"}, ["name", "title", "route"])
 		frappe.cache().set_value("marketplace_apps", apps, expires_in_sec=60 * 60 * 24 * 7)
 	return apps
-
-
-@protected("App Source")
-@frappe.whitelist()
-def add_code_review_comment(name, filename, line_number, comment):
-	try:
-		doc = frappe.get_doc("App Release Approval Request", name)
-		# Add a new comment
-		doc.append(
-			"code_comments",
-			{
-				"filename": filename,
-				"line_number": line_number,
-				"comment": comment,
-				"commented_by": frappe.session.user,
-				"time": frappe.utils.now_datetime(),
-			},
-		)
-
-		doc.save()
-		return {"status": "success", "message": "Comment added successfully."}
-	except Exception as e:
-		frappe.throw(f"Unable to add comment. Something went wrong: {e!s}")
