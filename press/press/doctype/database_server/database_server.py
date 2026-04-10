@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import re
 import subprocess
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
@@ -597,6 +598,21 @@ class DatabaseServer(BaseServer):
 		if play.status == "Failure":
 			log_error("MariaDB Downgrade Error", server=self.name)
 		return play
+
+	def get_mariadb_version_via_ssh(self) -> str | None:
+		try:
+			result = self.ansible_run("mariadbd --version")
+			version_info = result.get("output", "")
+			if not version_info:
+				return None
+
+			# Parse mariadbd output format, e.g. `10.6.25-MariaDB-...`.
+			version_match = re.search(r"(\d+\.\d+\.\d+)(?=-MariaDB)", version_info)
+			if version_match:
+				return version_match.group(1)
+		except Exception as e:
+			log_error("Error fetching MariaDB version via SSH", error=str(e), server=self.name)
+		return None
 
 	@frappe.whitelist()
 	def update_mariadb(self):
