@@ -868,7 +868,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return bool(
 			frappe.db.exists(
 				"Release Pipeline",
-				{"group": self.name, "status": ("in", ["Pending", "Running", "Retrying"])},
+				{"release_group": self.name, "status": ("in", ["Pending", "Running", "Retrying"])},
 				"name",
 			)
 		)
@@ -883,6 +883,14 @@ class ReleaseGroup(Document, TagHelpers):
 
 		out.last_deploy = self.last_dc_info
 		out.deploy_in_progress = self.deploy_in_progress
+		out.has_running_release_pipeline = self.has_running_release_pipeline
+		if not out.deploy_in_progress and out.has_running_release_pipeline:
+			# Check if the deploy has finished and bench creation is underway.
+			out.bench_creation_underway = bool(
+				frappe.db.exists("Bench", {"group": self.name, "status": ("in", ("Installing", "Pending"))})
+			)
+		else:
+			out.bench_creation_underway = False
 
 		out.removed_apps = self.get_removed_apps()
 		out.update_available = (
@@ -890,7 +898,7 @@ class ReleaseGroup(Document, TagHelpers):
 			or (len(out.removed_apps) > 0)
 			or self.dependency_update_pending
 		)
-		out.update_available = False if self.has_running_release_pipeline else out.update_available
+		out.update_available = False if out.has_running_release_pipeline else out.update_available
 		out.number_of_apps = len(self.apps)
 
 		out.sites = [
