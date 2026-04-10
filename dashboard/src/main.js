@@ -12,7 +12,10 @@ import { subscribeToJobUpdates } from './utils/agentJob';
 import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
 import { session } from './data/session.js';
-import { unreadNotificationsCount } from './data/notifications.js';
+import {
+	unreadNotificationsCount,
+	unreadSupportNotificationsCount,
+} from './data/notifications.js';
 import registerGlobalComponents from './components/global/register';
 import './vendor/posthog.js';
 
@@ -53,6 +56,7 @@ getInitialData().then(() => {
 		fetchPlans();
 		session.userPermissions.fetch();
 		unreadNotificationsCount.fetch();
+		unreadSupportNotificationsCount.fetch();
 	}
 
 	if (window.press_dashboard_sentry_dsn.includes('https://')) {
