@@ -96,7 +96,9 @@ class PressWorkflow(Document):
 		if not self.start:
 			self.start = start
 		self.save()
-		frappe.db.commit()  # nosemgrep
+
+		if not frappe.flags.in_test:
+			frappe.db.commit()  # nosemgrep
 
 		try:
 			with redirect_stdout(buffer):
@@ -188,6 +190,12 @@ class PressWorkflow(Document):
 
 
 def enqueue_workflow(workflow_name: str) -> None:
+	if frappe.flags.in_test:
+		from press.utils.test import foreground_enqueue_workflow
+
+		foreground_enqueue_workflow(workflow_name)
+		return
+
 	frappe.enqueue_doc(
 		"Press Workflow",
 		workflow_name,

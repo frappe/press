@@ -118,7 +118,8 @@ class PressWorkflowTask(Document):
 
 		self.status = "Running"
 		self.save()
-		frappe.db.commit()  # nosemgrep
+		if not frappe.flags.in_test:
+			frappe.db.commit()  # nosemgrep
 
 		output = None
 		exception = None
@@ -186,6 +187,11 @@ def on_doctype_update():
 
 
 def enqueue_task(task_name: str) -> None:
+	if frappe.flags.in_test:
+		from press.utils.test import foreground_enqueue_task
+
+		foreground_enqueue_task(task_name)
+		return
 	frappe.enqueue_doc(
 		"Press Workflow Task",
 		task_name,
