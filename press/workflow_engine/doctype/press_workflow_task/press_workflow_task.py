@@ -72,7 +72,9 @@ class PressWorkflowTask(Document):
 
 	def run(self):  # noqa: C901 - Best to keep workflow execution logic in one place
 		assert self.name, "Task must be saved before it can be run"
-		frappe.get_value(self.doctype, self.name, "name", for_update=True)
+		frappe.get_value(
+			self.doctype, self.name, "name", for_update=(not frappe.flags.in_test)
+		)  # Lock the document for update to prevent concurrent runs
 
 		workflow_info = frappe.get_value(
 			"Press Workflow",
