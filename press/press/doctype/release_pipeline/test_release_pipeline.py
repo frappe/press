@@ -1,7 +1,6 @@
 # Copyright (c) 2026, Frappe and Contributors
 # See license.txt
 import shutil
-import typing
 from unittest.mock import Mock, patch
 
 import frappe
@@ -16,15 +15,28 @@ from press.press.doctype.app_release.test_app_release import create_test_app_rel
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 from press.press.doctype.release_group.test_release_group import create_test_release_group
+from press.press.doctype.release_pipeline.release_pipeline import ReleasePipeline
 from press.press.doctype.server.test_server import create_test_server
 from press.utils import get_current_team
-
-if typing.TYPE_CHECKING:
-	from press.press.doctype.release_pipeline.release_pipeline import ReleasePipeline
 
 
 def get_mock_context_file(*args, **kwargs):
 	return frappe.mock("file_path")
+
+
+def mock_build_monitoring(*args, **kwargs):
+	"""Simulates monitoring of the build however returns success immediately without raising task enqueued error"""
+	return
+
+
+def mock_pre_build_validation_monitoring(*args, **kwargs):
+	"""Simulates monitoring of the pre-build validation however returns success immediately without raising task enqueued error"""
+	return
+
+
+def mock_bench_monitoring(*args, **kwargs):
+	"""Simulates monitoring of the benches however returns success immediately without raising task enqueued error"""
+	return
 
 
 @patch.object(MariaDBDatabase, "commit", Mock())
@@ -83,6 +95,8 @@ class TestReleasePipeline(FrappeTestCase):
 
 	@patch.object(DeployCandidateBuild, "_upload_build_context", get_mock_context_file)
 	@patch.object(DeployCandidateBuild, "_build", Mock())
+	@patch.object(ReleasePipeline, "monitor_pre_build_validation", mock_pre_build_validation_monitoring)
+	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
 	def test_release_pipeline_creation(self):
 		self.create_deploy_and_update()
 
@@ -103,6 +117,8 @@ class TestReleasePipeline(FrappeTestCase):
 
 	@patch.object(DeployCandidateBuild, "_upload_build_context", get_mock_context_file)
 	@patch.object(DeployCandidateBuild, "_build", Mock())
+	@patch.object(ReleasePipeline, "monitor_pre_build_validation", mock_pre_build_validation_monitoring)
+	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
 	def test_release_pipeline_build_creation(self):
 		with fake_agent_job("Remote Build Job", "Success"):
 			self.create_deploy_and_update()
