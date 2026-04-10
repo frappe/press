@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import math
 from contextlib import suppress
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING, Any, ClassVar, Final, TypedDict, cast
@@ -45,6 +44,7 @@ if TYPE_CHECKING:
 	from elasticsearch_dsl.response.aggs import FieldBucket, FieldBucketData
 
 	from press.press.doctype.press_settings.press_settings import PressSettings
+	from press.press.doctype.site.site import Site
 
 	class Dataset(TypedDict):
 		"""Single element of list of Datasets returned for stacked histogram chart"""
@@ -97,15 +97,10 @@ class UsagePoint(TypedDict):
 
 
 class RequestLogData(TypedDict, total=False):
-	timestamp: datetime | None
+	timestamp: str | datetime | None
 	request: dict[str, Any]
 	state: str
 	query: str
-
-
-@dataclass(frozen=True)
-class SiteAnalyticsDoc:
-	server: str
 
 
 class ResourceType(Enum):
@@ -1571,7 +1566,7 @@ def binary_logs(
 @protected("Site")
 @site.feature("monitor_access")
 def mariadb_processlist(site: str):
-	site_doc = cast("SiteAnalyticsDoc", frappe.get_doc("Site", site))
+	site_doc: Site = frappe.get_doc("Site", site)  # type: ignore
 	agent = Agent(site_doc.server)
 	rows = agent.fetch_database_processes(site_doc)
 	for row in rows:
@@ -1585,8 +1580,8 @@ def mariadb_processlist(site: str):
 @site.feature("monitor_access")
 def mariadb_slow_queries(
 	site: str,
-	start_datetime: datetime,
-	stop_datetime: datetime,
+	start_datetime: str | datetime,
+	stop_datetime: str | datetime,
 	max_lines: int = 1000,
 	search_pattern: str = ".*",
 	normalize_queries: bool = True,
