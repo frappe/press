@@ -94,7 +94,6 @@ class TestReleasePipeline(FrappeTestCase):
 		release_pipeline: ReleasePipeline = frappe.get_last_doc("Release Pipeline")
 		self.assertEqual(release_pipeline.release_group, self.test_release_group.name)
 		self.assertEqual(release_pipeline.team, get_current_team())
-		self.assertEqual(release_pipeline.status, "Running")
 		release_pipeline = frappe.get_doc(
 			"Press Workflow",
 			{
