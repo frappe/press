@@ -16,6 +16,7 @@ import Globe from '~icons/lucide/globe';
 import Code from '~icons/lucide/code';
 import FileSearch from '~icons/lucide/file-search';
 import NotificationPanel from './Notifications.vue';
+import SearchItem from './SearchItem.vue';
 
 import { unreadNotificationsCount } from '@/data/notifications';
 
@@ -48,6 +49,11 @@ const navigation = computed(() => {
 			isActive: routeName === 'Welcome',
 			condition: !onboardingComplete,
 		},
+
+		{
+			customComponent: SearchItem,
+		},
+
 		{
 			name: 'Notifications',
 			condition: onboardingComplete && !isSaasUser,
@@ -58,6 +64,7 @@ const navigation = computed(() => {
 			name: 'Sites',
 			icon: PanelTopInactive,
 			route: '/sites',
+			class: 'mt-2',
 			isActive:
 				['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
 				routeName.startsWith('Site Detail'),
@@ -90,7 +97,7 @@ const navigation = computed(() => {
 		{
 			name: 'Servers',
 			icon: Server,
-			spacer: true,
+			class: 'mt-2',
 			route: onboardingComplete ? '/servers' : '/enable-servers',
 			isActive:
 				['New Server'].includes(routeName) ||
