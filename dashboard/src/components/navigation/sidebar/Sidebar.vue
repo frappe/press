@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { Tooltip } from 'frappe-ui';
+import { Button, Tooltip, Dropdown } from 'frappe-ui';
 import LucideChevronDown from '~icons/lucide/chevron-down';
 import { ref, defineAsyncComponent } from 'vue';
+import LucideSupport from '~icons/lucide/life-buoy';
+import LucideBookText from '~icons/lucide/book-text';
+import LucideMessageSquareCode from '~icons/lucide/message-square-code';
+import LucideAlert from '~icons/lucide/notebook-text';
 
 import Item from './Item.vue';
 import NavList from './NavList.vue';
@@ -26,6 +30,10 @@ const docs = () => {
 const feedback = () => {
 	window.open('https://frappecloud.com/frappe-cloud-feedback/new', '_blank');
 };
+
+const releaseNotes = () => {
+	window.open('https://github.com/frappe/press/releases/', '_blank');
+};
 </script>
 
 <template>
@@ -41,16 +49,7 @@ const feedback = () => {
 						$team?.doc?.valid_teams?.length > 1 || $team?.doc?.is_desk_user,
 					onClick: () => (showTeamSwitcher = true),
 				},
-				{
-					label: 'Support & Docs',
-					icon: 'help-circle',
-					onClick: docs,
-				},
-				{
-					label: 'Share Feedback',
-					icon: 'file-text',
-					onClick: feedback,
-				},
+
 				{
 					label: 'Logout',
 					icon: 'log-out',
@@ -94,6 +93,38 @@ const feedback = () => {
 				</template>
 			</template>
 		</NavList>
+
+		<Dropdown
+			:options="[
+				{
+					label: 'Docs',
+					icon: LucideBookText,
+					onClick: docs,
+				},
+				{
+					label: 'Get Support',
+					icon: LucideSupport,
+					onClick: docs,
+				},
+				{
+					label: 'Share Feedback',
+					icon: LucideMessageSquareCode,
+					onClick: feedback,
+				},
+				{
+					label: 'Release Notes',
+					onClick: releaseNotes,
+					icon: LucideAlert,
+				},
+			]"
+		>
+			<Button variant="ghost" class="mt-auto mr-auto">
+				<template #prefix>
+					<LucideCircleQuestionMark class="size-4" />
+				</template>
+				Help</Button
+			>
+		</Dropdown>
 
 		<!-- TODO: update component name after dashboard-beta merges -->
 		<SwitchTeamDialog2
