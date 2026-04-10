@@ -6,9 +6,11 @@ from typing import Any, TypedDict
 
 import frappe
 
+from press.exceptions import InsufficientSpaceOnServer, ReleasePipelineFailure
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 from press.workflow_engine.doctype.press_workflow.exceptions import PressWorkflowTaskEnqueued
+from press.workflow_engine.doctype.press_workflow.press_workflow import PressWorkflow
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
 if typing.TYPE_CHECKING:
@@ -20,6 +22,8 @@ if typing.TYPE_CHECKING:
 
 
 BENCH_TRANSITION_STATES = ["Pending", "Installing", "Updating"]
+# Keeping this here now, will eventually move all notifications logic here.
+SKIP_NOTIFICATIONS_FOR = ["orchestrate_build_monitoring"]
 
 
 class FailedBenchJobs(TypedDict):
@@ -30,10 +34,6 @@ class FailedBenchJobs(TypedDict):
 class BenchInfo(TypedDict):
 	name: str
 	status: str
-
-
-class ReleasePipelineFailure(Exception):
-	pass
 
 
 class ReleasePipeline(WorkflowBuilder):
@@ -309,21 +309,27 @@ class ReleasePipeline(WorkflowBuilder):
 	@task
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
 		"""Groups all early-exit validation logic."""
-		self.validate_app_hashes(apps)  # This sets status to "Running"
-		self.validate_server_storages()
-		self.validate_auto_scales_on_servers()
+		try:
+			self.validate_app_hashes(apps)  # This sets status to "Running"
+			self.validate_server_storages()
+			self.validate_auto_scales_on_servers()
+		except (frappe.ValidationError, InsufficientSpaceOnServer) as e:
+			raise ReleasePipelineFailure(str(e)) from e
 
 	@task
 	def prepare_deployment(self, apps, sites, run_will_fail_check) -> tuple[str, str]:
 		"""Creates the candidate and returns the primary build name."""
-		deploy_candidate = self.create_deploy_candidate(
-			apps=apps,
-			sites=sites,
-			run_will_fail_check=run_will_fail_check,
-			create_deploy=False,
-		)
-		primary_build = self.initiate_pre_build_validations(deploy_candidate)
-		return deploy_candidate, primary_build
+		try:
+			deploy_candidate = self.create_deploy_candidate(
+				apps=apps,
+				sites=sites,
+				run_will_fail_check=run_will_fail_check,
+				create_deploy=False,
+			)
+			primary_build = self.initiate_pre_build_validations(deploy_candidate)
+			return deploy_candidate, primary_build
+		except frappe.ValidationError as e:
+			raise ReleasePipelineFailure(f"Failed to prepare deployment: {e!s}") from e
 
 	@task
 	def orchestrate_build_monitoring(self, deploy_candidate: str, primary_build: str):
@@ -381,6 +387,56 @@ class ReleasePipeline(WorkflowBuilder):
 			)
 
 		self._finalize_pipeline_status(builds=builds, expected_count=expected)
+
+	def get_failure_summary(self, workflow: PressWorkflow) -> str | None:
+		"""The first failure gets fails everything"""
+		point_of_failure = [step.task for step in workflow.steps if step.status == "Failure"]
+
+		if not point_of_failure:
+			return None
+
+		point_of_failure = point_of_failure[0]
+		workflow_object_name, method_name = frappe.db.get_value(
+			"Press Workflow Task", point_of_failure, ["exception", "method_name"]
+		)
+
+		if method_name in SKIP_NOTIFICATIONS_FOR:
+			# Notifications for build failures are handled separately in the deploy notifications
+			return None
+
+		return frappe.db.get_value("Press Workflow Object", workflow_object_name, "summary")
+
+	def on_update(self):
+		"""A few steps have their notifications handled seperately in (ref deploy_notifications.py) skipping them"""
+		if not self.has_value_changed("status"):
+			return
+
+		if self.status != "Failure":
+			return
+
+		workflow = frappe.get_doc("Press Workflow", self.workflow_name)
+		failure_summary = self.get_failure_summary(workflow)
+
+		if not failure_summary:
+			return  # No failed tasks found, no need to create a notification
+
+		frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"title": "Update Failure",
+				"type": "Bench Deploy",
+				"is_actionable": False,
+				"class": "Error",
+				"team": self.team,
+				"document_type": "Release Pipeline",
+				"document_name": self.name,
+				"message": failure_summary,
+			}
+		).insert()
+
+		frappe.publish_realtime(
+			"press_notification", doctype="Press Notification", message={"team": self.team}
+		)
 
 	@flow
 	def create_release(
