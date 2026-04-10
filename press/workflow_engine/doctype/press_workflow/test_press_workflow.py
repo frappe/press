@@ -1,12 +1,13 @@
 # Copyright (c) 2026, Frappe and Contributors
 # See license.txt
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+
+from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 if TYPE_CHECKING:
 	from press.workflow_engine.doctype.press_workflow.press_workflow import (
@@ -15,42 +16,6 @@ if TYPE_CHECKING:
 	from press.workflow_engine.doctype.press_workflow_test.press_workflow_test import (
 		PressWorkflowTest,
 	)
-
-
-def foreground_enqueue_doc(
-	doctype: str,
-	docname: str,
-	method: str,
-	queue="default",
-	timeout=None,
-	now=False,  # default args unused to avoid them from going to kwargs
-	enqueue_after_commit=False,
-	job_id=None,
-	deduplicate=False,
-	at_front: bool = False,
-	**kwargs,
-):
-	getattr(frappe.get_doc(doctype, docname), method)(**kwargs)
-
-
-def foreground_enqueue(
-	method: str | Callable,
-	queue: str = "default",
-	timeout: int | None = None,
-	event=None,
-	is_async: bool = True,
-	job_name: str | None = None,
-	now: bool = True,
-	enqueue_after_commit: bool = False,
-	*,
-	on_success: Callable | None = None,
-	on_failure: Callable | None = None,
-	at_front: bool = False,
-	job_id: str | None = None,
-	deduplicate: bool = False,
-	**kwargs,
-):
-	return frappe.call(method, **kwargs)
 
 
 @patch("frappe.enqueue_doc", new=foreground_enqueue_doc)

@@ -18,7 +18,7 @@ from press.press.doctype.deploy_candidate_build.deploy_candidate_build import De
 from press.press.doctype.release_group.test_release_group import create_test_release_group
 from press.press.doctype.server.test_server import create_test_server
 from press.utils import get_current_team
-from press.utils.test import foreground_enqueue_doc
+from press.utils.test import foreground_enqueue_task, foreground_enqueue_workflow
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.release_pipeline.release_pipeline import ReleasePipeline
@@ -83,8 +83,16 @@ class TestReleasePipeline(FrappeTestCase):
 		)
 
 	@patch(
-		"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.frappe.enqueue_doc",
-		foreground_enqueue_doc,
+		"press.workflow_engine.doctype.press_workflow.press_workflow.enqueue_workflow",
+		foreground_enqueue_workflow,
+	)
+	@patch(
+		"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.enqueue_workflow",
+		foreground_enqueue_workflow,
+	)
+	@patch(
+		"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.enqueue_task",
+		foreground_enqueue_task,
 	)
 	@patch.object(DeployCandidateBuild, "_upload_build_context", get_mock_context_file)
 	@patch.object(DeployCandidateBuild, "_build", Mock())
@@ -107,8 +115,16 @@ class TestReleasePipeline(FrappeTestCase):
 		)  # To ensure nothing is raised when fetching the workflow created for the release pipeline
 
 	@patch(
-		"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.frappe.enqueue_doc",
-		foreground_enqueue_doc,
+		"press.workflow_engine.doctype.press_workflow.press_workflow.enqueue_workflow",
+		foreground_enqueue_workflow,
+	)
+	@patch(
+		"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.enqueue_workflow",
+		foreground_enqueue_workflow,
+	)
+	@patch(
+		"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.enqueue_task",
+		foreground_enqueue_task,
 	)
 	@patch.object(DeployCandidateBuild, "_upload_build_context", get_mock_context_file)
 	@patch.object(DeployCandidateBuild, "_build", Mock())
