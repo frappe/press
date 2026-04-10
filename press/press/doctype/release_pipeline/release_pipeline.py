@@ -23,7 +23,7 @@ if typing.TYPE_CHECKING:
 
 BENCH_TRANSITION_STATES = ["Pending", "Installing", "Updating"]
 # Keeping this here now, will eventually move all notifications logic here.
-SKIP_NOTIFICATIONS_FOR = ["orchestrate_build_monitoring"]
+SKIP_NOTIFICATIONS_FOR = ["orchestrate_build_monitoring", "monitor_bench_creation"]
 
 
 class FailedBenchJobs(TypedDict):
