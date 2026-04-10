@@ -1,0 +1,514 @@
+# This file specifies rules for correctness according to how frappe doctype data model works.
+
+rules:
+- id: frappe-breaks-multitenancy
+  patterns:
+    - pattern-either:
+      - pattern: $VAR = <... frappe.db.$METHOD(...) ...>
+      - pattern: $VAR = <... frappe.get_all(...) ...>
+      - pattern: $VAR = <... frappe.get_list(...) ...>
+      - pattern: $VAR = <... frappe.get_doc(...) ...>
+      - pattern: $VAR = <... frappe.get_single(...) ...>
+      - pattern: $VAR = <... frappe.get_cached_doc(...) ...>
+      - pattern: $VAR = <... frappe.cache(...) ...>
+      - pattern: $VAR = <... frappe.cache ...>
+      - pattern: $VAR = <... frappe.get_meta(...) ...>
+      - pattern: $VAR = <... frappe.get_hooks(...) ...>
+      - pattern: $VAR = <... frappe.local.$ATTR ...>
+      - pattern: $VAR = <... frappe.conf ...>
+      - pattern: $VAR = <... frappe.flags ...>
+      - pattern: $VAR = <... frappe.lang ...>
+      - pattern: $VAR = <... frappe._(...) ...>
+      - pattern: $VAR = <... flt(...) ...>
+      - pattern: $VAR = <... frappe.qb ...>
+    - pattern-not-inside: |
+        def $FUNCTION(...):
+          ...
+  paths:
+    exclude:
+      - "**/test_*.py"
+  message: |
+    $VAR global variable does not respect database multitenancy, consider wrapping it in function or method call.
+  metadata:
+    marketplace_check_id: correctness_frappe_breaks_multitenancy
+    marketplace_check_name: Breaks Multitenancy
+    marketplace_category: Correctness
+    remediation: |
+      $VAR global variable does not respect database multitenancy, consider wrapping it in function or method call.
+  languages: [python]
+  severity: ERROR
+
+- id: frappe-cache-breaks-multitenancy
+  patterns:
+    - pattern-either:
+      - pattern: frappe.cache().set(...)
+      - pattern: |
+          $VAR = frappe.cache()
+          $VAR.set(...)
+      - pattern: frappe.cache().get(...)
+      - pattern: |
+          $VAR = frappe.cache()
+          $VAR.get(...)
+      - pattern: frappe.cache.set(...)
+      - pattern: frappe.cache.get(...)
+  message: |
+    redis.set and redis.get do not support multitenancy, use set_value/get_value instead.
+  metadata:
+    marketplace_check_id: correctness_frappe_cache_breaks_multitenancy
+    marketplace_check_name: Cache Breaks Multitenancy
+    marketplace_category: Correctness
+    remediation: |
+      redis.set and redis.get do not support multitenancy, use set_value/get_value instead.
+  languages: [python]
+  severity: ERROR
+
+- id: frappe-modifying-but-not-committing
+  patterns:
+    - pattern: |
+        def $METHOD(self, ...):
+          ...
+          self.$ATTR = ...
+    - pattern-not: |
+        def $METHOD(self, ...):
+          ...
+          self.$ATTR = ...
+          ...
+          self.db_set(..., self.$ATTR, ...)
+    - pattern-not: |
+        def $METHOD(self, ...):
+          ...
+          self.$ATTR = $SOME_VAR
+          ...
+          self.db_set(..., $SOME_VAR, ...)
+    - pattern-not: |
+        def $METHOD(self, ...):
+          ...
+          self.$ATTR = $SOME_VAR
+          ...
+          self.save(...)
+    - metavariable-regex:
+        metavariable: '$ATTR'
+        # this is negative look-ahead, add more attrs to ignore like (ignore|ignore_this_too|ignore_me)
+        regex: '^(?!ignore_linked_doctypes|status_updater)(.*)$'
+    - metavariable-regex:
+        metavariable: "$METHOD"
+        regex: "(on_submit|on_cancel|after_insert|on_update|on_update_after_submit)"
+  message: |
+    DocType modified in self.$METHOD. Please check if modification of self.$ATTR is commited to database.
+  metadata:
+    marketplace_check_id: correctness_frappe_modifying_but_not_committing
+    marketplace_check_name: Modifying But Not Committing
+    marketplace_category: Correctness
+    remediation: |
+      DocType modified in self.$METHOD. Please check if modification of self.$ATTR is commited to database.
+  languages: [python]
+  severity: ERROR
+
+- id: frappe-modifying-but-not-committing-other-method
+  patterns:
+  - pattern: |
+      class $DOCTYPE(...):
+        def $METHOD(self, ...):
+          ...
+          self.$ANOTHER_METHOD()
+          ...
+
+        def $ANOTHER_METHOD(self, ...):
+          ...
+          self.$ATTR = ...
+  - pattern-not: |
+      class $DOCTYPE(...):
+        def $METHOD(self, ...):
+          ...
+          self.$ANOTHER_METHOD()
+          ...
+
+        def $ANOTHER_METHOD(self, ...):
+          ...
+          self.$ATTR = ...
+          ...
+          self.db_set(..., self.$ATTR, ...)
+  - pattern-not: |
+      class $DOCTYPE(...):
+        def $METHOD(self, ...):
+          ...
+          self.$ANOTHER_METHOD()
+          ...
+
+        def $ANOTHER_METHOD(self, ...):
+          ...
+          self.$ATTR = $SOME_VAR
+          ...
+          self.db_set(..., $SOME_VAR, ...)
+  - pattern-not: |
+      class $DOCTYPE(...):
+        def $METHOD(self, ...):
+          ...
+          self.$ANOTHER_METHOD()
+          ...
+          self.save(...)
+        def $ANOTHER_METHOD(self, ...):
+          ...
+          self.$ATTR = ...
+  - metavariable-regex:
+      metavariable: "$METHOD"
+      regex: "(on_submit|on_cancel|after_insert|on_update|on_update_after_submit)"
+  message: |
+    self.$ANOTHER_METHOD is called from self.$METHOD, check if changes to self.$ATTR are commited to database.
+  metadata:
+    marketplace_check_id: correctness_frappe_modifying_but_not_committing_other_method
+    marketplace_check_name: Modifying But Not Committing Other Method
+    marketplace_category: Correctness
+    remediation: |
+      self.$ANOTHER_METHOD is called from self.$METHOD, check if changes to self.$ATTR are commited to database.
+  languages: [python]
+  severity: ERROR
+
+- id: frappe-print-function-in-doctypes
+  pattern: print(...)
+  message: |
+      Did you mean to leave this print statement in? Consider using msgprint or logger instead of print statement.
+  metadata:
+    marketplace_check_id: correctness_frappe_print_function_in_doctypes
+    marketplace_check_name: Print Function In Doctypes
+    marketplace_category: Correctness
+    remediation: |
+      Print statement found in doctypes. Consider using msgprint or logger instead of print statement.
+  languages: [python]
+  severity: WARNING
+  paths:
+      include:
+        - "**/doctype/*"
+
+- id: frappe-print-statement-in-init-files
+  pattern: print(...)
+  message: |
+      Print statement found in __init__.py file. Avoid printing statements in __init__.py files.
+  metadata:
+    marketplace_check_id: correctness_frappe_print_statement_in_init_file
+    marketplace_check_name: Print Statement In Init File
+    marketplace_category: Correctness
+    remediation: |
+      Print statement found in __init__.py file. Avoid printing statements in __init__.py files.
+  languages: [python]
+  severity: ERROR
+  paths:
+      include:
+        - "**/__init__.py"
+
+- id: frappe-no-functional-code
+  pattern-either:
+    - pattern: "map(...)"
+    - pattern: "filter(...)"
+  message: |
+      Mixing functional programming usually yields in confusing code and bugs. Use list comprehensions or generators instead.
+  metadata:
+    marketplace_check_id: correctness_frappe_no_functional_code
+    marketplace_check_name: No Functional Code
+    marketplace_category: Correctness
+    remediation: |
+      Mixing functional programming usually yields in confusing code and bugs. Use list comprehensions or generators instead.
+  languages: [python]
+  severity: WARNING
+
+- id: frappe-query-debug-statement
+  pattern-either:
+    - pattern: $FUNC(..., debug=True, ...)
+    - pattern: $FUNC(..., debug=1, ...)
+  message: |
+      Debug statement found in query.
+  metadata:
+    marketplace_check_id: correctness_frappe_query_debug_statement
+    marketplace_check_name: Query Debug Statement
+    marketplace_category: Correctness
+    remediation: |
+      Debug statement found in query.
+  languages: [python]
+  severity: WARNING
+
+
+- id: frappe-modifying-child-tables-while-iterating
+  pattern-either:
+    - pattern: |
+        for $ROW in self.$TABLE:
+            ...
+            self.remove(...)
+    - pattern: |
+        for $ROW in self.$TABLE:
+            ...
+            self.append(...)
+  message: |
+      Child table being modified while iterating on it.
+  metadata:
+    marketplace_check_id: correctness_frappe_modifying_child_tables_while_iterating
+    marketplace_check_name: Modifying Child Tables While Iterating
+    marketplace_category: Correctness
+    remediation: |
+      Child table being modified while iterating on it.
+  languages: [python]
+  severity: ERROR
+  paths:
+      include:
+        - "**/doctype/*"
+
+- id: frappe-same-key-assigned-twice
+  pattern-either:
+    - pattern: |
+        {..., $X: $A, ..., $X: $B, ...}
+    - pattern: |
+        dict(..., ($X, $A), ..., ($X, $B), ...)
+    - pattern: |
+        _dict(..., ($X, $A), ..., ($X, $B), ...)
+  message: |
+      key `$X` is uselessly assigned twice. This could be a potential bug.
+  metadata:
+    marketplace_check_id: correctness_frappe_same_key_assigned_twice
+    marketplace_check_name: Same Key Assigned Twice
+    marketplace_category: Correctness
+    remediation: |
+      Key `$X` is uselessly assigned twice. This could be a potential bug.
+  languages: [python]
+  severity: ERROR
+
+- id: frappe-manual-commit
+  patterns:
+    - pattern: frappe.db.commit()
+    - pattern-not-inside: |
+        try:
+          ...
+        except ...:
+          ...
+  message: |
+    Manually commiting a transaction is highly discouraged. Read about the transaction model implemented by Frappe Framework before adding manual commits: https://frappeframework.com/docs/user/en/api/database#database-transaction-model .
+    If you think manual commit is required then add a comment explaining why and `# nosemgrep` on the same line.
+  metadata:
+    marketplace_check_id: correctness_frappe_manual_commit
+    marketplace_check_name: Manual Commit
+    marketplace_category: Correctness
+    remediation: |
+      Manually commiting a transaction is highly discouraged. Read about the transaction model implemented by Frappe Framework before adding manual commits: https://frappeframework.com/docs/user/en/api/database#database-transaction-model .
+      If you think manual commit is required then add a comment explaining why and `# nosemgrep` on the same line.
+  paths:
+      exclude:
+        - "**/patches/**"
+        - "**/demo/**"
+  languages: [python]
+  severity: WARNING
+
+- id: frappe-redis-flush
+  patterns:
+    - pattern-either:
+      - pattern: frappe.cache.flushall()
+      - pattern: frappe.cache().flushall()
+  message: |
+    flushall flushes all databases on Redis server, use flushdb instead.
+  metadata:
+    marketplace_check_id: correctness_frappe_redis_flush
+    marketplace_check_name: Redis Flush
+    marketplace_category: Correctness
+    remediation: |
+      flushall flushes all databases on Redis server, use flushdb instead.
+  languages: [python]
+  severity: ERROR
+
+- id: frappe-overriding-local-proxies
+  patterns:
+    - pattern: frappe.$ATTR = ...
+    - metavariable-regex:
+        metavariable: $ATTR
+        regex: ^(db|qb|conf|form|form_dict|request|response|session|user|flags|error_log|debug_log|message_log|lang)$
+  message: |
+    frappe.$ATTR is a local proxy, assigning it to another object will remove the proxying and replace it with another object. Use frappe.local.$ATTR instead.
+  metadata:
+    marketplace_check_id: correctness_frappe_overriding_local_proxies
+    marketplace_check_name: Overriding Local Proxies
+    marketplace_category: Correctness
+    remediation: |
+      frappe.$ATTR is a local proxy, assigning it to another object will remove the proxying and replace it with another object. Use frappe.local.$ATTR instead.
+  languages: [python]
+  severity: ERROR
+
+
+- id: frappe-single-value-type-safety
+  patterns:
+    - pattern-either:
+      - pattern: frappe.db.get_value($DOCTYPE, $DOCTYPE, $...AFTER)
+      - pattern: frappe.db.get_value($DOCTYPE, None, $...AFTER)
+    - pattern-not: frappe.db.get_value($DOCTYPE, None, [...])
+    - pattern-not: frappe.db.get_value($DOCTYPE, $DOCTYPE, [...])
+  fix: frappe.db.get_single_value($DOCTYPE, $...AFTER)
+  message: |
+    If $DOCTYPE is a single doctype then using `frappe.db.get_value` is discouraged for fetching value from single doctypes. frappe.db.get_value for single doctype is not type safe, use `frappe.db.get_single_value` instead.
+  metadata:
+    marketplace_check_id: correctness_frappe_single_value_type_safety
+    marketplace_check_name: Single Value Type Safety
+    marketplace_category: Correctness
+    remediation: |
+      If $DOCTYPE is a single doctype then using `frappe.db.get_value` is discouraged for fetching value from single doctypes. frappe.db.get_value for single doctype is not type safe, use `frappe.db.get_single_value` instead.
+  languages: [python]
+  severity: ERROR
+
+- id: frappe-set-value-semantics
+  patterns:
+    - pattern-either:
+      - pattern: frappe.db.set_value($DOCTYPE, None, $...AFTER)
+      - pattern: frappe.db.set_value($DOCTYPE, $DOCTYPE, $...AFTER)
+  fix: frappe.db.set_single_value($DOCTYPE, $...AFTER)
+  message: |
+    If $DOCTYPE is a single doctype then using `frappe.db.set_value` is discouraged for setting values in DB. Use db.set_single_value for single doctype instead.
+  metadata:
+    marketplace_check_id: correctness_frappe_set_value_semantics
+    marketplace_check_name: Set Value Semantics
+    marketplace_category: Correctness
+    remediation: |
+      If $DOCTYPE is a single doctype then using `frappe.db.set_value` is discouraged for setting values in DB. Use db.set_single_value for single doctype instead.
+  languages: [python]
+  severity: ERROR
+
+- id: frappe-after-save-controller-hook
+  pattern: |
+    class $DOCTYPE($SOMEBASECLASS, ...):
+      def after_save(self):
+        ...
+  message: |
+    `after_save` is not a valid DocType controller hook. Please have a look at the hooks available: https://frappeframework.com/docs/v13/user/en/basics/doctypes/controllers#controller-hooks
+  metadata:
+    marketplace_check_id: correctness_frappe_after_save_controller_hook
+    marketplace_check_name: After Save Controller Hook
+    marketplace_category: Correctness
+    remediation: |
+      `after_save` is not a valid DocType controller hook. Please have a look at the hooks available: https://frappeframework.com/docs/v13/user/en/basics/doctypes/controllers#controller-hooks
+  languages: [python]
+  severity: ERROR
+
+- id: frappe-qb-incorrect-order-usage
+  patterns:
+    - pattern-either:
+      - pattern: $QUERY. ... .orderby(..., "asc")
+      - pattern: $QUERY. ... .orderby(..., "desc")
+      - pattern: $QUERY. ... .orderby(..., frappe.qb.desc)
+      - pattern: $QUERY. ... .orderby(..., Order.desc)
+      - pattern: $QUERY. ... .orderby(..., Order.asc)
+    - pattern-not: $QUERY. ... .orderby(..., order=$LASTVAR)
+  message: |
+    `order` in `orderby` has to be a keyword argument like `.orderby("time", order=frappe.qb.desc)`. Re-check the generated query.
+  metadata:
+    marketplace_check_id: correctness_frappe_qb_incorrect_order_usage
+    marketplace_check_name: QB Incorrect Order Usage
+    marketplace_category: Correctness
+    remediation: |
+      `order` in `orderby` has to be a keyword argument like `.orderby("time", order=frappe.qb.desc)`. Re-check the generated query.
+  languages: [python]
+  severity: ERROR
+
+- id: frappe-cur-frm-usage
+  pattern: cur_frm
+  message: |
+    `cur_frm` is deprecated and can introduce buggy behaviour.
+  metadata:
+    marketplace_check_id: correctness_frappe_cur_frm_usage
+    marketplace_check_name: Cur Frm Usage
+    marketplace_category: Correctness
+    remediation: |
+      `cur_frm` is deprecated and can introduce buggy behaviour.
+  languages: [javascript]
+  severity: WARNING
+
+- id: frappe-incorrect-debounce
+  pattern: frappe.utils.debounce(...)(...);
+  message: |
+    `debounce` should be used to create a debounced version of function and should only be called once. If the function is called multiple times then each time a new debounced version of function gets created and you don't actually achieve debounce behaviour.
+  metadata:
+    marketplace_check_id: correctness_frappe_incorrect_debounce
+    marketplace_check_name: Incorrect Debounce
+    marketplace_category: Correctness
+    remediation: |
+      `debounce` should be used to create a debounced version of function and should only be called once. If the function is called multiple times then each time a new debounced version of function gets created and you don't actually achieve debounce behaviour.
+  languages: [javascript]
+  severity: ERROR
+
+- id: frappe-realtime-pick-room
+  patterns:
+    - pattern: frappe.publish_realtime(...)
+    - pattern-not: frappe.publish_realtime(..., doctype=$SOMETHING, ...)
+    - pattern-not: frappe.publish_realtime(..., docname=$SOMETHING, ...)
+    - pattern-not: frappe.publish_realtime(..., room=$SOMETHING, ...)
+    - pattern-not: frappe.publish_realtime(..., user=$SOMETHING, ...)
+  message: |
+    This call will publish message to everyone on site, do you really want that? Specify doctype, docname, room or user.
+  metadata:
+    marketplace_check_id: correctness_frappe_realtime_pick_room
+    marketplace_check_name: Realtime Pick Room
+    marketplace_category: Correctness
+    remediation: |
+      This call will publish message to everyone on site, do you really want that? Specify doctype, docname, room or user.
+  languages: [python]
+  severity: ERROR
+
+- id: frappe-monkey-patching-not-allowed
+  patterns:
+    - pattern-either:
+      - pattern: |
+          from $X import $Y
+          ...
+          $Y.$PROPERTY = ...
+      - pattern: |
+          from $X import $Y
+          ...
+          $Y.$Z.$PROPERTY = ...
+      - pattern: |
+          from $X import $Y
+          ...
+          $Y.$Z.$F.$PROPERTY = ...
+      - pattern: |
+          from $X import $Y
+          ...
+          $Y.$Z.$F.$K.$PROPERTY = ...
+      - pattern: |
+          from $X import $Y
+          ...
+          $Y.$Z.$F.$K.$J.$PROPERTY = ...
+      - pattern: |
+          from $X import $Y
+          ...
+          $Y.$Z.$F.$K.$J.$L.$PROPERTY = ...
+  message: |
+    $PROPERTY being monkey patched by app. Use hooks provided by framework instead of patching behaviour at runtime.
+  metadata:
+    marketplace_check_id: correctness_frappe_monkey_patching_not_allowed
+    marketplace_check_name: Monkey Patching Not Allowed
+    marketplace_category: Correctness
+    remediation: |
+      $PROPERTY being monkey patched by app. Use hooks provided by framework instead of patching behaviour at runtime.
+  paths:
+      exclude:
+        - "**/test_*.py"
+  languages: [python]
+  severity: ERROR
+
+- id: frappe-test-whitelist-missing-protection
+  patterns:
+    - pattern: |
+        @frappe.whitelist(...)
+        def $FUNC(...):
+          ...
+    - pattern-not: |
+        @$ANYTHING.whitelist_for_tests(...)
+        def $FUNC(...):
+          ...
+  paths:
+    include:
+      - "**/test_*.py"
+      - "**/frappe/tests/ui_test_helpers.py"
+  message: |
+    Test endpoints should use @whitelist_for_tests() instead of @frappe.whitelist() to ensure they're only accessible in test mode.
+  metadata:
+    marketplace_check_id: correctness_frappe_test_whitelist_missing_protection
+    marketplace_check_name: Test Whitelist Missing Protection
+    marketplace_category: Correctness
+    remediation: |
+      Test endpoints should use @whitelist_for_tests() instead of @frappe.whitelist() to ensure they're only accessible in test mode.
+  languages: [python]
+  severity: ERROR
+  fix: |
+    @whitelist_for_tests(...)
