@@ -684,6 +684,7 @@ def get(name, timezone, start, end):
 		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
 		"uptime": uptime_data,
 		"plan_limit": plan_limit,
+		"timegrain": timegrain,
 	}
 
 
@@ -926,9 +927,7 @@ def get_uptime(site, timezone, start: datetime, end: datetime, timegrain):
 		) + timedelta(days=1)
 
 	query = {
-		"query": (
-			f'sum(sum_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s])) by (instance) / sum(count_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s])) by (instance)'
-		),
+		"query": (f'avg_over_time(probe_success{{job="site", instance="{site}"}}[60s]) or on() vector(0)'),
 		"start": start.timestamp(),
 		"end": end.timestamp(),
 		"step": f"{timegrain}s",
@@ -939,7 +938,9 @@ def get_uptime(site, timezone, start: datetime, end: datetime, timegrain):
 	buckets = []
 	if not response["data"]["result"]:
 		return []
-	for timestamp, value in response["data"]["result"][0]["values"]:
+	for timestamp, value in sorted(
+		{ts: val for r in response["data"]["result"] for ts, val in r["values"]}.items()
+	):
 		buckets.append(
 			frappe._dict(
 				{

@@ -93,6 +93,7 @@
 
 			<AnalyticsCard title="Uptime" @share-card="shareDashboard">
 				<SiteUptime
+					:timegrain="$resources.analytics?.data?.timegrain"
 					:data="$resources.analytics?.data?.uptime"
 					:loading="$resources.analytics.loading"
 					class="h-[15.55rem] p-2 pb-3"
