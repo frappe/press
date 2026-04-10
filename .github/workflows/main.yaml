@@ -316,13 +316,13 @@ jobs:
       - name: Cache bench directory
         uses: actions/cache/save@v5
         with:
-          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}-post
+          key: post-${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /home/runner/frappe-bench
 
       - name: Cache mariadb data directory
         uses: actions/cache/save@v5
         with:
-          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}-post
+          key: post-${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
           path: /data/mariadb_data
 
   ui-tests:
