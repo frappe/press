@@ -608,3 +608,22 @@ jobs:
           fail_ci_if_error: false
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  tests-pass:
+    name: Tests Pass
+    needs: [server-tests, ui-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check test results
+        run: |
+          if [[ "${{ needs.server-tests.result }}" == "failure" || "${{ needs.server-tests.result }}" == "cancelled" ]]; then
+            echo "server-tests failed or were cancelled"
+            exit 1
+          fi
+          if [[ "${{ needs.ui-tests.result }}" == "failure" || "${{ needs.ui-tests.result }}" == "cancelled" ]]; then
+            echo "ui-tests failed or were cancelled"
+            exit 1
+          fi
+          echo "All tests passed or were skipped"
