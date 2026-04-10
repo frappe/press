@@ -223,92 +223,72 @@ class ReleasePipeline(WorkflowBuilder):
 			self.get_task_name(self.monitor_build_success),
 		)
 
-	def _calculate_bench_doc_requirements(
-		self, deploy_candidate_build: str
-	) -> tuple[int, int, list[BenchInfo]]:
-		candidate = frappe.db.get_value("Deploy Candidate Build", deploy_candidate_build, "deploy_candidate")
-		intel_build, arm_build = frappe.db.get_value(
-			"Deploy Candidate", candidate, ["intel_build", "arm_build"]
+	def _is_active_bench_work_in_progress(self, builds: list[str]) -> bool:
+		"""Checks the entire lifecycle (Queue + Agent Jobs) for active work."""
+		queue_active = frappe.db.exists(
+			"New Bench Queue",
+			{"group": self.release_group, "status": "Queued"},
 		)
-		# This can have intel and arm server both will have different builds
-		number_of_expected_bench_docs = len(self.release_group_doc.servers)
-		# Total number of bench docs created regardless of the server platforms
-		builds = [build for build in [intel_build, arm_build] if build]
+		if queue_active:
+			return True
 
-		if not builds:
-			raise ReleasePipelineFailure(f"No builds found for Deploy Candidate {candidate}.")
-
-		# Account for previously created failed bench docs
-		bench_info = frappe.db.get_all(
-			"Bench", {"build": ("in", builds), "status": ("!=", "Archived")}, ["name", "status"]
-		)
-		created_bench_docs = len(bench_info)
-		return number_of_expected_bench_docs, created_bench_docs, bench_info
-
-	def _get_stray_bench_creation_failures(self, bench_info: list[BenchInfo]) -> list[FailedBenchJobs]:
-		# This is to catch any bench creation failures that might have happened
-		return frappe.get_all(
-			"Agent Job",
-			{
-				"job_type": "New Bench",
-				"bench": ("in", [info["name"] for info in bench_info]),
-				"status": "Failure",
-			},
-			["name", "bench"],
-		)
-
-	def _check_for_scheduled_bench_retries(self, failed_bench_deploys: list[FailedBenchJobs]):
-		"""Raise in case any of the failed agent jobs have retires in the pipeline"""
-		if not failed_bench_deploys:
-			return
+		benches_from_builds = frappe.db.get_all("Bench", {"build": ["in", builds]}, pluck="name")
+		if not benches_from_builds:
+			# No benches created yet and nothing in queue? No work in progress.
+			# Since after insert of bench creates agent job immediately.
+			return False
 
 		will_benches_be_retried = frappe.db.exists(
 			"Agent Job",
 			{
 				"job_type": "Archive Bench",
-				"bench": ("in", [deploy["bench"] for deploy in failed_bench_deploys]),
+				"bench": ("in", benches_from_builds),
 				"request_data": (
 					"like",
-					'%"retry_new_bench": true%',
+					'%"retry_new_bench": true%',  # Since retry is being passed here it will definitely lead to creation of new bench
 				),  # Should not be too heavy since bench is indexed?
+				"status": ["in", ["Undelivered", "Pending", "Running"]],
 			},
 		)
 
 		if will_benches_be_retried:
 			self.update_pipeline_status("Retrying")
-			raise PressWorkflowTaskEnqueued(
-				"Some bench deploys have failed but are scheduled for retry. Waiting for retries to complete.",
-				self.workflow_name,
-				self.get_task_name(self.monitor_bench_creation),
-			)
+			return True
 
-	def _finalize_pipeline_status(
-		self,
-		failed_bench_deploys: list[FailedBenchJobs],
-		bench_info: list[BenchInfo],
-		deploy_candidate_build: str,
-	):
-		"""Evaluates failures and updates the release status accordingly."""
-		num_failed = len(failed_bench_deploys)
-		num_total = len(bench_info)
-		# Case 1: Pure Success
-		if num_failed == 0:
+		# Even if there are no retries scheduled, we want to wait for the current bench jobs to be completed
+		agent_job_active = frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": ["in", ["New Bench", "Archive Bench"]],
+				"status": ["in", ["Undelivered", "Pending", "Running"]],
+				"bench": ["in", benches_from_builds],
+			},
+		)
+
+		return bool(agent_job_active)
+
+	def _calculate_bench_doc_requirements(self, candidate: str, builds: list[str]) -> int:
+		# This can have intel and arm server both will have different builds
+		number_of_expected_bench_docs = len(self.release_group_doc.servers)
+		# Total number of bench docs created regardless of the server platforms
+
+		if not builds:
+			raise ReleasePipelineFailure(f"No builds found for Deploy Candidate {candidate}.")
+
+		return number_of_expected_bench_docs
+
+	def _finalize_pipeline_status(self, builds: list, expected_count: int):
+		"""Finalize the pipeline status based on the number of failed bench deploys vs expected bench deploys."""
+		successful_deploys = frappe.db.count("Bench", {"build": ["in", builds], "status": "Active"})
+
+		if successful_deploys == expected_count:
 			return self.update_pipeline_status("Success")
 
-		if num_failed > 0:
-			# This will raise and enqueue function again in case of scheduled retries
-			# In case there are no scheduled retries it will simply continue to evaluate the failure
-			self._check_for_scheduled_bench_retries(failed_bench_deploys)
-
-		# Case 2: Total Failure
-		if num_failed == num_total:
+		if successful_deploys == 0:
 			self.update_pipeline_status("Failure")
-			raise ReleasePipelineFailure(
-				f"All bench deploys failed for Build {deploy_candidate_build}. Check jobs for details."
-			)
+			raise ReleasePipelineFailure(f"All {expected_count} bench deploy(s) failed.")
 
-		# Case 3: Partial Success
-		print(f"Some bench deploys failed for Build {deploy_candidate_build}. Check jobs for details.")
+		# If some succeeded and others are permanently failed
 		return self.update_pipeline_status("Partial Success")
 
 	def _get_secondary_build(self, deploy_candidate: str, primary_build: str) -> str | None:
@@ -325,38 +305,6 @@ class ReleasePipeline(WorkflowBuilder):
 			},
 			"name",
 		)
-
-	@task
-	def monitor_bench_creation(self, deploy_candidate_build: str):
-		"""Monitor new bench creation accounting for any failures and retries."""
-		if self.status == "Retrying":
-			self.update_pipeline_status(
-				"Running"
-			)  # Reset status to running when we start monitoring again after retry
-
-		number_of_expected_bench_docs, created_bench_docs, bench_info = (
-			self._calculate_bench_doc_requirements(deploy_candidate_build)
-		)
-
-		# 1. Ensure docs exist
-		if created_bench_docs != number_of_expected_bench_docs:
-			raise PressWorkflowTaskEnqueued(
-				f"Waiting for bench docs to be created for {deploy_candidate_build}",
-				self.workflow_name,
-				self.get_task_name(self.monitor_bench_creation),
-			)
-
-		# 2. Ensure jobs are out of transition states
-		if any(info["status"] in BENCH_TRANSITION_STATES for info in bench_info):
-			raise PressWorkflowTaskEnqueued(
-				f"Waiting for bench jobs to complete for {deploy_candidate_build}",
-				self.workflow_name,
-				self.get_task_name(self.monitor_bench_creation),
-			)
-
-		# 3. Evaluate and finalize the outcome
-		failed_bench_deploys = self._get_stray_bench_creation_failures(bench_info)
-		self._finalize_pipeline_status(failed_bench_deploys, bench_info, deploy_candidate_build)
 
 	@task
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
@@ -398,6 +346,41 @@ class ReleasePipeline(WorkflowBuilder):
 
 			self.monitor_pre_build_validation(secondary_build)
 			self.monitor_build_success(secondary_build)
+
+		if self.status == "Retrying":
+			# If we were in retrying status, it means builds have succeeded after retries, we can move back to running status
+			self.update_pipeline_status("Running")
+
+	@task
+	def monitor_bench_creation(self, deploy_candidate_build: str):
+		"""Monitor new bench creation accounting for any failures and retries."""
+		candidate = frappe.db.get_value("Deploy Candidate Build", deploy_candidate_build, "deploy_candidate")
+		intel_build, arm_build = frappe.db.get_value(
+			"Deploy Candidate", candidate, ["intel_build", "arm_build"]
+		)
+		builds = [b for b in [intel_build, arm_build] if b]
+		expected = self._calculate_bench_doc_requirements(candidate=candidate, builds=builds)
+
+		# This should take care of the retries as well.
+		if self._is_active_bench_work_in_progress(builds):
+			raise PressWorkflowTaskEnqueued(
+				"Benches in progress, Waiting...",
+				self.workflow_name,
+				self.get_task_name(self.monitor_bench_creation),
+			)
+
+		# Just another safety lock to ensure no early failures occur
+		statues = frappe.db.get_all("Bench", {"build": ["in", builds]}, pluck="status")
+		in_transition = [status for status in statues if status in BENCH_TRANSITION_STATES]
+
+		if in_transition:
+			raise PressWorkflowTaskEnqueued(
+				"Benches are in transition states...",
+				self.workflow_name,
+				self.get_task_name(self.monitor_bench_creation),
+			)
+
+		self._finalize_pipeline_status(builds=builds, expected_count=expected)
 
 	@flow
 	def create_release(
