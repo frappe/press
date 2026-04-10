@@ -581,6 +581,22 @@ class DatabaseServer(BaseServer):
 		play = ansible.run()
 		if play.status == "Failure":
 			log_error("MariaDB Upgrade Error", server=self.name)
+		return play
+
+	def _downgrade_mariadb_to_10_6(self):
+		ansible = Ansible(
+			playbook="downgrade_mariadb_to_10_6.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Downgrade Error", server=self.name)
+		return play
 
 	@frappe.whitelist()
 	def update_mariadb(self):
