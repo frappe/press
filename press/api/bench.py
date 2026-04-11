@@ -704,7 +704,8 @@ def candidates(filters=None, order_by=None, limit_start=None, limit_page_length=
 
 
 @frappe.whitelist()
-def candidate(name):
+@protected("Deploy Candidate")
+def candidate(name: str) -> dict | None:
 	if not name:
 		return None
 
