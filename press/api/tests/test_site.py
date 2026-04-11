@@ -474,11 +474,12 @@ class TestAPISite(FrappeTestCase):
 	def test_get_backup_link_scopes_backup_to_site(self):
 		from press.api.site import get_backup_link
 
-		frappe.set_user(self.team.user)
-		attacker_site = create_test_site()
+		frappe.set_user("Administrator")
+		attacker_site = create_test_site(team=self.team.name)
 		victim_team = create_test_press_admin_team()
 		victim_site = create_test_site(team=victim_team.name)
 		victim_backup = create_test_site_backup(site=victim_site.name)
+		frappe.set_user(self.team.user)
 
 		def fake_get_doc(doctype, name):
 			self.assertEqual(doctype, "Remote File")
@@ -502,9 +503,10 @@ class TestAPISite(FrappeTestCase):
 	def test_get_backup_link_rejects_invalid_file_type(self):
 		from press.api.site import get_backup_link
 
-		frappe.set_user(self.team.user)
-		site = create_test_site()
+		frappe.set_user("Administrator")
+		site = create_test_site(team=self.team.name)
 		backup = create_test_site_backup(site=site.name)
+		frappe.set_user(self.team.user)
 
 		with self.assertRaisesRegex(frappe.ValidationError, "Invalid file type"):
 			get_backup_link(site.name, backup.name, "logs")
