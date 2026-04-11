@@ -16,7 +16,7 @@
 			variant="solid"
 			icon-left="github"
 			label="Connect To GitHub"
-			:link="options.installation_url + '?state=' + state"
+			:link="installationLink"
 		/>
 	</div>
 	<div v-else class="space-y-4">
@@ -59,7 +59,7 @@
 		<span class="text-sm text-gray-600">
 			Don't see your organization?
 			<Link
-				:href="options.installation_url + '?state=' + state"
+				:href="installationLink"
 				class="font-medium"
 			>
 				Add from GitHub
@@ -173,6 +173,11 @@ export default {
 		options() {
 			return {
 				url: 'press.api.github.options',
+				makeParams() {
+					return {
+						redirect_url: window.location.href,
+					};
+				},
 				auto: true,
 			};
 		},
@@ -184,15 +189,32 @@ export default {
 		clearAccessToken() {
 			return {
 				url: 'press.api.github.clear_token_and_get_installation_url',
-				onSuccess(installation_url) {
-					window.location.href = installation_url + '?state=' + this.state;
+				makeParams() {
+					return {
+						redirect_url: window.location.href,
+					};
+				},
+				onSuccess(installationData) {
+					window.location.href = this.getInstallationLink(installationData);
 				},
 			};
+		},
+	},
+	methods: {
+		getInstallationLink(installationData) {
+			if (!installationData?.installation_url || !installationData?.state) {
+				return null;
+			}
+
+			return `${installationData.installation_url}?state=${installationData.state}`;
 		},
 	},
 	computed: {
 		options() {
 			return this.$resources.options.data;
+		},
+		installationLink() {
+			return this.getInstallationLink(this.options);
 		},
 		appOwner() {
 			return this.selectedGithubUser?.login;
@@ -224,11 +246,6 @@ export default {
 			return this.$resources.options?.error?.messages.some((msg) =>
 				msg.includes('Bad credentials'),
 			);
-		},
-		state() {
-			let location = window.location.href;
-			let state = { team: this.$team.name, url: location };
-			return btoa(JSON.stringify(state));
 		},
 	},
 	created() {
