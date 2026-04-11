@@ -51,9 +51,7 @@ class TestGitHubAuthorization(FrappeTestCase):
 		frappe.set_user("Guest")
 		self._set_form_dict(code="oauth-code", state=state)
 		callback_url = f"/github/authorize?{urlencode({'code': 'oauth-code', 'state': state})}"
-		login_url = frappe.utils.get_url(
-			f"/dashboard/login?{urlencode({'redirect': callback_url})}"
-		)
+		login_url = frappe.utils.get_url(f"/dashboard/login?{urlencode({'redirect': callback_url})}")
 
 		with self.assertRaises(frappe.Redirect):
 			self._get_context()(None)
@@ -229,9 +227,11 @@ class TestGitHubAuthorization(FrappeTestCase):
 
 	def _replace_state_payload(self, state: str, payload: dict[str, str]) -> str:
 		encoded_payload, signature = state.rsplit(".", 1)
-		encoded_payload = urlsafe_b64encode(
-			json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
-		).decode().rstrip("=")
+		encoded_payload = (
+			urlsafe_b64encode(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode())
+			.decode()
+			.rstrip("=")
+		)
 		return f"{encoded_payload}.{signature}"
 
 	def _set_form_dict(self, **kwargs):

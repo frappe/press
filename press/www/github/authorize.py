@@ -22,9 +22,7 @@ def get_context(context):
 		try:
 			decoded_state = decode_github_oauth_state(state)
 			team = decoded_state["team"]
-			valid_teams = {
-				team_doc["name"] for team_doc in get_valid_teams_for_user(frappe.session.user)
-			}
+			valid_teams = {team_doc["name"] for team_doc in get_valid_teams_for_user(frappe.session.user)}
 			if team not in valid_teams:
 				raise frappe.PermissionError("Not permitted to update this team's GitHub access token")
 
@@ -42,9 +40,7 @@ def obtain_access_token(code, team):
 	response = None
 	try:
 		client_id = frappe.db.get_single_value("Press Settings", "github_app_client_id")
-		client_secret = frappe.db.get_single_value(
-			"Press Settings", "github_app_client_secret"
-		)
+		client_secret = frappe.db.get_single_value("Press Settings", "github_app_client_secret")
 		data = {"client_id": client_id, "client_secret": client_secret, "code": code}
 		headers = {"Accept": "application/json"}
 		response = requests.post(

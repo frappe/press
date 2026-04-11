@@ -58,10 +58,7 @@
 		</FormControl>
 		<span class="text-sm text-gray-600">
 			Don't see your organization?
-			<Link
-				:href="installationLink"
-				class="font-medium"
-			>
+			<Link :href="installationLink" class="font-medium">
 				Add from GitHub
 			</Link>
 		</span>
