@@ -149,15 +149,18 @@ watch(navigationIndex, () => {
 <style scoped>
 @keyframes modalIn {
 	from {
-		transform: scale(0.97);
+		transform: translateY(12px) scale(0.96);
+		opacity: 0;
 	}
 	to {
-		transform: scale(1);
+		transform: translateY(0) scale(1);
+		opacity: 1;
 	}
 }
 
 .modal-enter {
-	animation: modalIn 0.1s ease-in-out both;
+	animation: modalIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+	will-change: transform, opacity;
 }
 
 :deep(mark) {
