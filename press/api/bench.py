@@ -44,6 +44,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
+	from press.press.doctype.release_pipeline.release_pipeline import ReleasePipeline
 
 
 @frappe.whitelist()
@@ -390,15 +391,18 @@ def dependencies(name: str):
 @frappe.whitelist()
 @protected("Release Group")
 def update_dependencies(name: str, dependencies: str):
-	dependencies = frappe.parse_json(dependencies)
+	dependencies_dict: list[frappe._dict] = frappe.parse_json(dependencies)
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-	if len(rg.dependencies) != len(dependencies):
+
+	if len(rg.dependencies) != len(dependencies_dict):
 		frappe.throw("Need all required dependencies")
-	if diff := set([d["key"] for d in dependencies]) - set(d.dependency for d in rg.dependencies):
+
+	if diff := set([d["key"] for d in dependencies_dict]) - set(d.dependency for d in rg.dependencies):
 		frappe.throw("Invalid dependencies: " + ", ".join(diff))
+
 	for dep, new in zip(
 		sorted(rg.dependencies, key=lambda x: x.dependency),
-		sorted(dependencies, key=lambda x: x["key"]),
+		sorted(dependencies_dict, key=lambda x: x["key"]),
 		strict=False,
 	):
 		if dep.dependency != new["key"]:
@@ -798,15 +802,20 @@ def deploy_and_update(
 	sites: list | None = None,
 	run_will_fail_check: bool = True,
 ):
-	validate_app_hashes(apps)
+	# We check permissions early on and don't change permissions in the middle of the Workflow
+	current_team = get_current_team()
+	rg_team = frappe.db.get_value("Release Group", name, "team")
 
-	# Returns name of the Deploy Candidate that is running the build
-	return get_bench_update(
-		name,
-		apps,
-		sites,
-		False,
-	).deploy(run_will_fail_check)
+	if rg_team != current_team:
+		frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
+
+	release_pipeline: ReleasePipeline = frappe.get_doc(
+		{"doctype": "Release Pipeline", "release_group": name, "team": current_team}
+	)
+	release_pipeline.insert()
+	release_pipeline.create_release.run_as_workflow(
+		apps=apps, sites=sites, run_will_fail_check=run_will_fail_check
+	)
 
 
 @frappe.whitelist()
@@ -936,9 +945,9 @@ def validate_branch(name: str, app: str, branch: str):
 def get_branches_for_marketplace_app(app: str, marketplace_app: str, app_source: AppSource) -> list[dict]:
 	"""Return list of branches allowed for this `marketplace` app"""
 	branch_set = set()
-	marketplace_app: MarketplaceApp = frappe.get_doc("Marketplace App", marketplace_app)
+	marketplace_app_doc: MarketplaceApp = frappe.get_doc("Marketplace App", marketplace_app)
 
-	for marketplace_app_source in marketplace_app.sources:
+	for marketplace_app_source in marketplace_app_doc.sources:
 		app_source = frappe.get_doc("App Source", marketplace_app_source.source)
 		branch_set.add(app_source.branch)
 
@@ -1146,10 +1155,10 @@ def show_app_versions(name: str, dc_name: str) -> list[dict[str, Any]]:
 		{
 			"name": app.app,
 			"hash": app.hash[:7],
-			"branch": sources.get(app.source).get("branch"),
-			"repository": sources.get(app.source).get("repository"),
-			"repository_owner": sources.get(app.source).get("repository_owner"),
-			"repository_url": sources.get(app.source).get("repository_url"),
+			"branch": sources.get(app.source, {}).get("branch"),
+			"repository": sources.get(app.source, {}).get("repository"),
+			"repository_owner": sources.get(app.source, {}).get("repository_owner"),
+			"repository_url": sources.get(app.source, {}).get("repository_url"),
 		}
 		for app in deploy_candidate.apps
 		if app

@@ -1167,6 +1167,7 @@ class DeployCandidateBuild(Document):
 			queue=queue,
 			timeout=2400,
 			enqueue_after_commit=True,
+			job_id=f"deploy_candidate_build:{self.name}",
 		)
 
 		frappe.set_user(user)

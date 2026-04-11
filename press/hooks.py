@@ -353,6 +353,7 @@ scheduler_events = {
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
+			"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.retry_tasks",
 			"press.press.doctype.deploy_candidate_build.deploy_candidate_build.run_scheduled_builds",
 			"press.press.doctype.agent_request_failure.agent_request_failure.remove_old_failures",
 			"press.saas.doctype.site_access_token.site_access_token.cleanup_expired_access_tokens",
@@ -365,6 +366,7 @@ scheduler_events = {
 			"press.press.doctype.site.saas_pool.create",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_rolling_snapshots",
 			"press.press.doctype.database_server.database_server.auto_purge_binlogs_by_size_limit",
+			"press.workflow_engine.doctype.press_workflow.press_workflow.retry_workflows",
 		],
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
