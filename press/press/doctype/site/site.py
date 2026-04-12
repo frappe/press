@@ -223,6 +223,7 @@ class Site(Document, TagHelpers):
 		]
 		status_before_update: DF.Data | None
 		subdomain: DF.Data
+		suspended_at: DF.Datetime | None
 		tags: DF.Table[ResourceTag]
 		team: DF.Link
 		timezone: DF.Data | None
