@@ -2774,6 +2774,7 @@ class Site(Document, TagHelpers):
 	def suspend(self, reason=None, skip_reload=False):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
+		self.suspended_at = frappe.utils.now_datetime()
 		self.update_site_config({"maintenance_mode": 1})
 		self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
 		self.deactivate_app_subscriptions()
@@ -2813,6 +2814,7 @@ class Site(Document, TagHelpers):
 	def unsuspend(self, reason=None):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
+		self.suspended_at = None
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
