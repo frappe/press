@@ -506,7 +506,7 @@ export default {
 				const data = await this.$resources.branches.fetch({
 					owner: app.repository_owner,
 					name: app.repository,
-					installation: app.github_installation_id || '',
+					app_source: app.source || '',
 				});
 				this.appBranches[app.app] = (data || []).map((branch) => branch.name);
 			} catch (error) {
