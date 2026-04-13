@@ -384,7 +384,7 @@ class ReleasePipeline(WorkflowBuilder):
 		release_group_doc.save()
 
 	@task
-	def add_implicit_dependencies(self, deploy_candidate: str):
+	def add_implicit_app_dependencies(self, deploy_candidate: str):
 		"""Add any implicit dependencies for the apps being deployed."""
 		deploy_candidate_doc: DeployCandidate = frappe.get_doc(
 			"Deploy Candidate", deploy_candidate, for_update=True
@@ -415,7 +415,7 @@ class ReleasePipeline(WorkflowBuilder):
 				run_will_fail_check=run_will_fail_check,
 				create_deploy=False,
 			)
-			self.add_implicit_dependencies(deploy_candidate)
+			self.add_implicit_app_dependencies(deploy_candidate)
 			primary_build = self.initiate_pre_build_validations(deploy_candidate)
 			return deploy_candidate, primary_build
 		except frappe.ValidationError as e:
