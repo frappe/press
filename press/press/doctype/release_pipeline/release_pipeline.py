@@ -358,12 +358,13 @@ class ReleasePipeline(WorkflowBuilder):
 		release_group_doc.save()
 
 	@task
-	def add_implicit_dependencies(self, deploy_candidate: DeployCandidate):
+	def add_implicit_dependencies(self, deploy_candidate: str):
 		"""Add any implicit dependencies for the apps being deployed."""
-		for app in deploy_candidate.apps:
+		deploy_candidate_doc: DeployCandidate = frappe.get_doc("Deploy Candidate", deploy_candidate)
+		for app in deploy_candidate_doc.apps:
 			dependant_app_versions = get_dependant_apps_with_versions(app_source=app.source, commit=app.hash)
 			self._add_app_to_group_and_candidate(
-				deploy_candidate, dependant_app_versions=dependant_app_versions
+				deploy_candidate_doc, dependant_app_versions=dependant_app_versions
 			)
 
 	@task
@@ -521,4 +522,8 @@ class ReleasePipeline(WorkflowBuilder):
 			self.monitor_bench_creation(primary_build)
 
 		except ReleasePipelineFailure:
+			self.update_pipeline_status("Failure")
+
+		# Just for sanity if we missed something
+		if self.status == "Failure":
 			self.update_pipeline_status("Failure")
