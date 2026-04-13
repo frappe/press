@@ -185,13 +185,13 @@ class TestReleasePipeline(FrappeTestCase):
 		with self.assertRaises(ReleasePipelineFailure):
 			_resolve_dependent_app(app, version)
 
-		frappe.get_doc({"doctype": "App", "title": "Telephony", "frappe": 1, "name": "telephony"}).insert()
+		dependency_app = frappe.get_doc(
+			{"doctype": "App", "title": "Telephony", "frappe": 1, "name": "telephony"}
+		).insert()
 
 		# App exists, but no matching app source yet
 		with self.assertRaises(ReleasePipelineFailure):
 			_resolve_dependent_app(app, version)
-
-		dependency_app = create_test_app("telephony", "Telephony App")
 
 		create_test_app_source(
 			app=dependency_app,
