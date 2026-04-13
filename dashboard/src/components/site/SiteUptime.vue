@@ -68,7 +68,7 @@
 								:style="`width: ${barWidth};`"
 								:class="[
 									'hover:brightness-[110%] border-r border-white',
-									d.value === undefined || d.value < 0
+									Date.parse(d.date) < Date.parse(siteCreation || new Date(0))
 										? 'bg-gray-300'
 										: d.value === 1
 											? 'bg-green-500'
@@ -121,12 +121,12 @@
 <script>
 import dayjs from '../../utils/dayjs';
 import { icon } from '../../utils/components';
-import { Tooltip, debounce } from 'frappe-ui';
+import { Tooltip, debounce, getCachedDocumentResource } from 'frappe-ui';
 import { uuid4 } from '@sentry/core';
 
 export default {
 	name: 'SiteUptime',
-	props: ['data', 'loading', 'timegrain'],
+	props: ['data', 'loading', 'timegrain', 'site'],
 	components: {
 		Help: icon('help-circle'),
 		Right: icon('arrow-right'),
@@ -148,10 +148,12 @@ export default {
 			},
 			highlightDates: false,
 			firstRender: true,
+			siteCreation: null,
 		};
 	},
-	mounted() {
-		setTimeout(() => {}, 2000);
+	created() {
+		const site = getCachedDocumentResource('Site', this.site);
+		this.siteCreation = site?.doc?.creation;
 	},
 	beforeUnmount() {
 		const el = this.$refs.scrollContainer;
@@ -233,13 +235,13 @@ export default {
 			const startDate = this.formatDate(new Date(date) - this.timegrain * 1000);
 			const percentValue = value !== -1 ? (value * 100).toFixed(2) : '0.00';
 			const colour =
-				value === 1
-					? 'text-green-500'
-					: value > 0
-						? 'text-yellow-500'
-						: value === 0
-							? 'text-red-500'
-							: '';
+				Date.parse(date) < Date.parse(this.siteCreation)
+					? ''
+					: value === 1
+						? 'text-green-500'
+						: value > 0
+							? 'text-yellow-500'
+							: 'text-red-500';
 
 			this.hoveringOn = {
 				key: date,
