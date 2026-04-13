@@ -1111,15 +1111,7 @@
   dependencies:
     "@tanstack/vue-virtual" "^3.0.0-beta.60"
 
-"@iconify/json@^2.2.123":
-  version "2.2.340"
-  resolved "https://registry.yarnpkg.com/@iconify/json/-/json-2.2.340.tgz#58236107ad50378b6829cc323a13dd7cc7f0942d"
-  integrity sha512-pr5oueoKCYmLce5ukSrKihnLDW0CEuQVPIWtrlw8qgx5RBzSxg/aIsuv6Me35ZXrCkBUKxK8h1XLqCLlMB7L6g==
-  dependencies:
-    "@iconify/types" "*"
-    pathe "^1.1.2"
-
-"@iconify/types@*", "@iconify/types@^2.0.0":
+"@iconify/types@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@iconify/types/-/types-2.0.0.tgz#ab0e9ea681d6c8a1214f30cd741fe3a20cc57f57"
   integrity sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==
@@ -5889,11 +5881,6 @@ path-type@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/path-type/-/path-type-4.0.0.tgz#84ed01c0a7ba380afe09d90a8c180dcd9d03043b"
   integrity sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==
-
-pathe@^1.1.2:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/pathe/-/pathe-1.1.2.tgz#6c4cb47a945692e48a1ddd6e4094d170516437ec"
-  integrity sha512-whLdWMYL2TwI08hn8/ZqAbrVemu0LNaNNJZX73O6qaIdCTfXutsLhMkjdENX0qhsQ9uIimo4/aQOmXkoon2nDQ==
 
 pathe@^2.0.1, pathe@^2.0.2, pathe@^2.0.3:
   version "2.0.3"
