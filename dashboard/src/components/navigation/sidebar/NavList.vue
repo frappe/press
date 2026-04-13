@@ -6,7 +6,6 @@ import PanelTopInactive from '~icons/lucide/panel-top-inactive';
 import Boxes from '~icons/lucide/boxes';
 import Server from '~icons/lucide/server';
 import WalletCards from '~icons/lucide/wallet-cards';
-import Key from '~icons/lucide/key';
 import Settings from '~icons/lucide/settings';
 import App from '~icons/lucide/layout-grid';
 import DatabaseZap from '~icons/lucide/database-zap';
@@ -164,13 +163,6 @@ const navigation = computed(() => {
 			disabled: enforce2FA,
 		},
 		{
-			name: 'Access Requests',
-			icon: Key,
-			route: '/access-requests',
-			isActive: routeName === 'Access Requests',
-			disabled: enforce2FA,
-		},
-		{
 			name: 'Partnership',
 			icon: Globe,
 			route: '/partners',
@@ -187,7 +179,7 @@ const navigation = computed(() => {
 		},
 		{
 			name: 'Status',
-			icon: () => h(Globe),
+			icon: LucideActivity,
 			route: '/status',
 			isActive: routeName === 'Status',
 			disabled: enforce2FA,
