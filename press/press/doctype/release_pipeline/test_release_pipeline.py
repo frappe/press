@@ -73,6 +73,7 @@ class TestReleasePipeline(FrappeTestCase):
 		)
 		frappe.db.set_single_value("Press Settings", "build_directory", "/tmp/test-build-dir/")
 		frappe.db.set_single_value("Press Settings", "clone_directory", "/tmp/test-clone-dir/")
+		frappe.db.set_single_value("Press Settings", "use_new_deploy_flow", 1)
 
 	def create_deploy_and_update(self):
 		deploy_and_update(
