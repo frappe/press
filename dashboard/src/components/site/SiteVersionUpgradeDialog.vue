@@ -533,7 +533,6 @@ export default {
 							app: app.app,
 							branch: this.customAppSources[app.app]?.branch || app.branch,
 							repository_url: app.repository_url,
-							github_installation_id: app.github_installation_id,
 						});
 					}
 				});
