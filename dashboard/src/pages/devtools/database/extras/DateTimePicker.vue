@@ -233,7 +233,6 @@ import {
 	dayjs,
 	dayjsLocal,
 } from 'frappe-ui';
-import { dayjsSystem } from 'frappe-ui/src/utils/dayjs';
 
 import TimePicker from './TimePicker.vue';
 import { months, monthStart, generateWeeks, getDateValue } from './utils.js';
@@ -567,7 +566,7 @@ function emitChange(close = false, togglePopover) {
 	}
 
 	const localDateTime = combinedValue.value;
-	const systemDateTime = dayjsSystem(localDateTime).format(DATE_TIME_FORMAT);
+	const systemDateTime = dayjs(localDateTime).format(DATE_TIME_FORMAT);
 
 	if (systemDateTime !== initialValue.value) {
 		emit('update:modelValue', systemDateTime);

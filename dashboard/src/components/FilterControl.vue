@@ -28,7 +28,6 @@
 </template>
 
 <script setup>
-import { DatePicker, TabButtons, DateTimePicker } from 'frappe-ui';
+import { DatePicker, TabButtons, DateTimePicker, FormControl } from 'frappe-ui';
 import LinkControl from './LinkControl.vue';
-import FormControl from 'frappe-ui/src/components/FormControl/FormControl.vue';
 </script>
