@@ -1071,7 +1071,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50, mountpoint=None, log: str | None = None):
-		if self.provider not in ("AWS EC2", "OCI"):
+		if self.provider not in ("AWS EC2", "OCI", "Frappe Compute"):
 			return
 		if self.provider == "AWS EC2" and self.time_to_wait_before_updating_volume:
 			frappe.throw(
