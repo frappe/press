@@ -19,14 +19,10 @@
 								class="contrast-75 font-bold"
 								:class="hoveringOn.colour || []"
 							>
-								{{
-									(hoveringOn.value * 100).toFixed(
-										hoveringOn.value === 0 || hoveringOn.value === 1 ? 0 : 2,
-									)
-								}}%
+								{{ hoveringOn.percentValue }}%
 							</span>
 							<span class="opacity-30">&#x2022;</span>
-							{{ hoveringOn.prettyDate }}
+							{{ hoveringOn.endDate }}
 						</template>
 					</div>
 					<div class="text-[11px] whitespace-nowrap flex gap-1 items-center">
@@ -72,8 +68,8 @@
 								:style="`width: ${barWidth};`"
 								:class="[
 									'hover:brightness-[110%] border-r border-white',
-									d.value === undefined
-										? 'bg-gray-100'
+									Date.parse(d.date) < Date.parse(siteCreation || new Date(0))
+										? 'bg-gray-300'
 										: d.value === 1
 											? 'bg-green-500'
 											: d.value === 0
@@ -83,9 +79,14 @@
 							>
 								<Tooltip
 									placement="bottom"
-									:text="`${hoveringOn.percentValue}% aggregated for ~${interval} (until ${hoveringOn.prettyDate})`"
+									:text="`${hoveringOn.percentValue}% avg. uptime for ${interval} from ${hoveringOn.startDate} to ${hoveringOn.endDate})`"
 								>
-									<div class="h-full w-full" />
+									<div
+										:data-start-date="hoveringOn.startDate"
+										:data-end-date="hoveringOn.endDate"
+										@click="updateTsFilter"
+										class="h-full w-full"
+									/>
 								</Tooltip>
 							</div>
 						</div>
@@ -125,17 +126,18 @@
 <script>
 import dayjs from '../../utils/dayjs';
 import { icon } from '../../utils/components';
-import { Tooltip, debounce } from 'frappe-ui';
+import { Tooltip, getCachedDocumentResource } from 'frappe-ui';
 import { uuid4 } from '@sentry/core';
 
 export default {
 	name: 'SiteUptime',
-	props: ['data', 'loading'],
+	props: ['data', 'loading', 'timegrain', 'site'],
 	components: {
 		Help: icon('help-circle'),
 		Right: icon('arrow-right'),
 		Left: icon('arrow-left'),
 	},
+	emits: ['datazoom'],
 	data() {
 		return {
 			carouselId: uuid4(),
@@ -146,15 +148,18 @@ export default {
 				key: null, // (== date)
 				value: null,
 				percentValue: null,
-				prettyDate: null,
+				endDate: null,
+				startDate: null,
 				colour: null,
 			},
 			highlightDates: false,
 			firstRender: true,
+			siteCreation: null,
 		};
 	},
-	mounted() {
-		setTimeout(() => {}, 2000);
+	created() {
+		const site = getCachedDocumentResource('Site', this.site);
+		this.siteCreation = site?.doc?.creation;
 	},
 	beforeUnmount() {
 		const el = this.$refs.scrollContainer;
@@ -167,7 +172,11 @@ export default {
 			for (; i < this.filteredData.length; i++) {
 				// there could be empty objects at the end of the array
 				// so we don't have to count them
-				if (typeof this.filteredData[i].value !== 'number') break;
+				if (
+					typeof this.filteredData[i].value !== 'number' ||
+					this.filteredData[i].value === -1
+				)
+					continue;
 
 				total += this.filteredData[i].value;
 			}
@@ -176,18 +185,18 @@ export default {
 			return !isNaN(average) ? `${average}% Overall Uptime` : '';
 		},
 		interval() {
-			if (!this.filteredData || this.filteredData.length < 2) return '';
+			if (
+				!this.filteredData ||
+				typeof this.timegrain != 'number' ||
+				this.filteredData.length < 2
+			)
+				return '';
 
-			const first = dayjs(this.filteredData[0].date);
-			const second = dayjs(this.filteredData[1].date);
-
-			const diffMs = second.diff(first);
-
-			return dayjs.duration(diffMs).humanize();
+			return dayjs.duration(this.timegrain * 1000).humanize();
 		},
 		filteredData() {
 			if (!this.data?.length) return [];
-			const filtered = this.data.filter((obj) => !!obj.value);
+			const filtered = this.data.filter((obj) => typeof obj.value == 'number');
 			this.chunkSize = this.getOptimalChunkSizeFromDataLength(filtered.length);
 			return filtered;
 		},
@@ -224,20 +233,34 @@ export default {
 		},
 	},
 	methods: {
+		updateTsFilter(evt) {
+			const { startDate, endDate } = evt.target.dataset;
+			this.$emit('datazoom', { startDate, endDate });
+		},
 		formatDate(date) {
 			return dayjs(date).format('ddd, D MMM YYYY, hh:mm a');
 		},
 		inspectBar({ date, value }) {
-			const prettyDate = this.formatDate(date);
-			const percentValue = (value * 100).toFixed(2);
+			const endDate = this.formatDate(date);
+			const startDate = this.formatDate(new Date(date) - this.timegrain * 1000);
+			const percentValue = value !== -1 ? (value * 100).toFixed(2) : '0.00';
 			const colour =
-				value === 1
-					? 'text-green-500'
-					: value === 0
-						? 'text-red-500'
-						: 'text-yellow-500';
+				Date.parse(date) < Date.parse(this.siteCreation)
+					? ''
+					: value === 1
+						? 'text-green-500'
+						: value > 0
+							? 'text-yellow-500'
+							: 'text-red-500';
 
-			this.hoveringOn = { key: date, value, percentValue, prettyDate, colour };
+			this.hoveringOn = {
+				key: date,
+				value,
+				percentValue,
+				endDate,
+				startDate,
+				colour,
+			};
 		},
 		getUptimeChunkId(chunkIndex) {
 			return `uptime-${this.carouselId}-${chunkIndex}`;
@@ -246,7 +269,9 @@ export default {
 			this.hoveringOn = {
 				key: null,
 				value: null,
-				prettyDate: null,
+				endDate: null,
+				percentValue: null,
+				startDate: null,
 				colour: null,
 			};
 		},
