@@ -992,6 +992,9 @@ class VirtualMachine(Document):
 				},
 			)
 
+		elif self.cloud_provider == "Frappe Compute":
+			self.client().increase_disk_size(volume_id, volume.size)
+
 		if server := self.get_server():
 			log_server_activity(
 				self.series,
