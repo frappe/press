@@ -81,7 +81,12 @@
 									placement="bottom"
 									:text="`${hoveringOn.percentValue}% avg. uptime for ${interval} from ${hoveringOn.startDate} to ${hoveringOn.endDate})`"
 								>
-									<div class="h-full w-full" />
+									<div
+										:data-start-date="hoveringOn.startDate"
+										:data-end-date="hoveringOn.endDate"
+										@click="updateTsFilter"
+										class="h-full w-full"
+									/>
 								</Tooltip>
 							</div>
 						</div>
@@ -121,7 +126,7 @@
 <script>
 import dayjs from '../../utils/dayjs';
 import { icon } from '../../utils/components';
-import { Tooltip, debounce, getCachedDocumentResource } from 'frappe-ui';
+import { Tooltip, getCachedDocumentResource } from 'frappe-ui';
 import { uuid4 } from '@sentry/core';
 
 export default {
@@ -132,6 +137,7 @@ export default {
 		Right: icon('arrow-right'),
 		Left: icon('arrow-left'),
 	},
+	emits: ['datazoom'],
 	data() {
 		return {
 			carouselId: uuid4(),
@@ -227,6 +233,10 @@ export default {
 		},
 	},
 	methods: {
+		updateTsFilter(evt) {
+			const { startDate, endDate } = evt.target.dataset;
+			this.$emit('datazoom', { startDate, endDate });
+		},
 		formatDate(date) {
 			return dayjs(date).format('ddd, D MMM YYYY, hh:mm a');
 		},
