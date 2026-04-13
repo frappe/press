@@ -1,16 +1,23 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
+
 import typing
 from functools import cached_property
 from typing import Any, TypedDict
 
 import frappe
 
+from press.api.github import get_dependant_apps_with_versions
 from press.exceptions import InsufficientSpaceOnServer, ReleasePipelineFailure
+from press.press.doctype.app.app import (
+	get_app_source_from_supported_versions,
+	get_latest_release_of_app_from_source,
+	parse_frappe_version,
+)
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 from press.workflow_engine.doctype.press_workflow.exceptions import PressWorkflowTaskEnqueued
-from press.workflow_engine.doctype.press_workflow.press_workflow import PressWorkflow
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
 if typing.TYPE_CHECKING:
@@ -19,6 +26,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.release_group.release_group import ReleaseGroup
+	from press.workflow_engine.doctype.press_workflow.press_workflow import PressWorkflow
 
 
 BENCH_TRANSITION_STATES = ["Pending", "Installing", "Updating"]
@@ -306,6 +314,58 @@ class ReleasePipeline(WorkflowBuilder):
 			"name",
 		)
 
+	def _add_app_to_group_and_candidate(
+		self, deploy_candidate: DeployCandidate, dependant_app_versions: dict[str, str]
+	):
+		"""Helper function to add the dependant apps to the release group and deploy candidate."""
+		release_group_doc = self.release_group_doc
+
+		for app, version in dependant_app_versions.items():
+			supported_versions = parse_frappe_version(
+				version_string=version, app_title=app, ease_versioning_constrains=False
+			)
+			if not supported_versions:
+				# We can't do anything here!
+				raise ReleasePipelineFailure(
+					f"Failed to parse supported versions for app {app} with version string {version}. Cannot proceed with release."
+				)
+
+			if not frappe.db.exists("App", app):
+				# If the app itself does not exist we need to create it maybe?
+				return
+
+			app_source = get_app_source_from_supported_versions(
+				app=app, supported_versions=supported_versions
+			)
+
+			if not app_source:
+				# In case this app source is not found we need to create it maybe?
+				return
+
+			app_release = get_latest_release_of_app_from_source(app_source)
+			if not app_release:
+				# In case no release is found we need to create a release for this app source, maybe?
+				return
+
+			deploy_candidate.append(
+				"apps",
+				{"app": app, "source": app_source, "release": app_release.name, "hash": app_release.hash},
+			)
+			release_group_doc.append("apps", {"app": app, "source": app_source.name})
+
+		# Final save
+		deploy_candidate.save()
+		release_group_doc.save()
+
+	@task
+	def add_implicit_dependencies(self, deploy_candidate: DeployCandidate):
+		"""Add any implicit dependencies for the apps being deployed."""
+		for app in deploy_candidate.apps:
+			dependant_app_versions = get_dependant_apps_with_versions(app_source=app.source, commit=app.hash)
+			self._add_app_to_group_and_candidate(
+				deploy_candidate, dependant_app_versions=dependant_app_versions
+			)
+
 	@task
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
 		"""Groups all early-exit validation logic."""
@@ -326,6 +386,7 @@ class ReleasePipeline(WorkflowBuilder):
 				run_will_fail_check=run_will_fail_check,
 				create_deploy=False,
 			)
+			self.add_implicit_dependencies(deploy_candidate)
 			primary_build = self.initiate_pre_build_validations(deploy_candidate)
 			return deploy_candidate, primary_build
 		except frappe.ValidationError as e:
