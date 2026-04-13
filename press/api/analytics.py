@@ -927,7 +927,9 @@ def get_uptime(site, timezone, start: datetime, end: datetime, timegrain):
 		) + timedelta(days=1)
 
 	query = {
-		"query": (f'avg_over_time(probe_success{{job="site", instance="{site}"}}[60s]) or on() vector(0)'),
+		"query": (
+			f'avg_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s]) or on() vector(0)'
+		),
 		"start": start.timestamp(),
 		"end": end.timestamp(),
 		"step": f"{timegrain}s",
