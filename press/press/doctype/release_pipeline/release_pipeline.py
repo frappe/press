@@ -368,7 +368,7 @@ class ReleasePipeline(WorkflowBuilder):
 		if not dependant_app_versions:
 			return
 
-		release_group_doc = frappe.get_doc("Release Group", self.release_group, for_update=True)
+		release_group_doc: ReleaseGroup = frappe.get_doc("Release Group", self.release_group, for_update=True)
 		release_group_apps = {app.app for app in release_group_doc.apps}
 
 		for app, version in dependant_app_versions.items():
