@@ -56,7 +56,8 @@ def _resolve_dependent_app(app: str, version: str) -> tuple[AppSource, AppReleas
 	if not supported_versions:
 		raise ReleasePipelineFailure(
 			f"Failed to parse supported versions for app {app} "
-			f"with version string {version}. Cannot proceed with release."
+			f"with version string {version}. Cannot proceed with release. "
+			"Please follow semantic versioning."
 		)
 
 	if not frappe.db.exists("App", app):
