@@ -177,7 +177,9 @@ class TestReleasePipeline(FrappeTestCase):
 		)
 		root_app_release = create_test_app_release(root_app_source, parent_hash)
 
-		app_dependencies = get_dependant_apps_with_versions(root_app_source.name, root_app_release.hash)
+		app_dependencies = get_dependant_apps_with_versions(root_app_source.name, root_app_release.hash).get(
+			"frappe_dependencies"
+		)
 		self.assertEqual(app_dependencies, {"telephony": ">=15.40.0,<17.0.0"})
 
 		app, version = next(iter(app_dependencies.items()))
