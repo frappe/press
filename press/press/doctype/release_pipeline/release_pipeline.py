@@ -404,11 +404,6 @@ class ReleasePipeline(WorkflowBuilder):
 			)
 
 	@task
-	def auto_update_bench_dependency_versions(self, deploy_candidate: str):
-		"""Auto update the versions of the dependencies depending on app requirements."""
-		...
-
-	@task
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
 		"""Groups all early-exit validation logic."""
 		try:
@@ -429,7 +424,6 @@ class ReleasePipeline(WorkflowBuilder):
 				create_deploy=False,
 			)
 			self.add_implicit_app_dependencies(deploy_candidate)
-			self.auto_update_bench_dependency_versions(deploy_candidate)
 			primary_build = self.initiate_pre_build_validations(deploy_candidate)
 			return deploy_candidate, primary_build
 		except frappe.ValidationError as e:
