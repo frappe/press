@@ -565,7 +565,6 @@ class DatabaseServer(BaseServer):
 	def run_upgrade_mariadb_job(self):
 		self.run_press_job("Upgrade MariaDB")
 
-	@frappe.whitelist()
 	def upgrade_mariadb(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb", timeout=1800)
 

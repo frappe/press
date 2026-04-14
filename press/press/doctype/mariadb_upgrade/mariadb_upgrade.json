@@ -6,14 +6,25 @@
  "engine": "InnoDB",
  "field_order": [
   "database_server",
+  "auto_downgrade_version_in_case_of_failure",
+  "skip_disk_snapshot",
   "column_break_lfue",
-  "team"
+  "team",
+  "section_break_doik",
+  "snapshot",
+  "column_break_oxgo",
+  "status",
+  "section_break_lmdo",
+  "upgrade_play",
+  "column_break_skvh",
+  "downgrade_play"
  ],
  "fields": [
   {
    "fieldname": "database_server",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Database Server",
    "options": "Database Server",
    "reqd": 1,
@@ -30,12 +41,71 @@
    "label": "Team",
    "options": "Team",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_doik",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "snapshot",
+   "fieldtype": "Link",
+   "label": "Snapshot",
+   "options": "Virtual Disk Snapshot"
+  },
+  {
+   "fieldname": "column_break_oxgo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure\nRecovering\nRecovered\nFatal",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_lmdo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "upgrade_play",
+   "fieldtype": "Link",
+   "label": "Upgrade Play",
+   "options": "Ansible Play"
+  },
+  {
+   "fieldname": "column_break_skvh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "downgrade_play",
+   "fieldtype": "Link",
+   "label": "Downgrade Play",
+   "options": "Ansible Play"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_disk_snapshot",
+   "fieldtype": "Check",
+   "label": "Skip Disk Snapshot"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_downgrade_version_in_case_of_failure",
+   "fieldtype": "Check",
+   "label": "Auto Downgrade Version In Case of Failure"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-04-10 18:53:25.665811",
+ "links": [
+  {
+   "link_doctype": "Press Workflow",
+   "link_fieldname": "linked_docname"
+  }
+ ],
+ "modified": "2026-04-14 18:13:32.413787",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Upgrade",

@@ -6,4 +6,4 @@
   gather_facts: true
   roles:
     - role: mariadb_10_4_to_10_6
-    - role: mariadb_10_6_to_10_11
+    - role: mariadb_10_6_to_11_8
