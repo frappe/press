@@ -544,9 +544,8 @@ export default {
 							name: this.bench,
 						},
 					});
-					this.restrictMessage = '';
 					this.show = false;
-					this.$emit('success', candidate);
+					this.$emit('success', null);
 				},
 				onError: this.setErrorMessage.bind(this),
 			};

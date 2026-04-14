@@ -114,7 +114,55 @@
 					Create
 				</Button>
 			</div>
-			<!-- Step 3 - Update Billing Details -->
+			<!-- Step 3 - Complete Billing Setup -->
+			<div
+				class="rounded-md"
+				:class="{
+					'pointer-events-none opacity-50': !$team.doc.onboarding.site_created,
+				}"
+			>
+				<div v-if="!isBillingSetupComplete">
+					<div class="flex items-center space-x-2">
+						<TextInsideCircle>3</TextInsideCircle>
+						<span class="text-base font-medium"> Complete billing setup </span>
+					</div>
+					<div class="pl-7 mt-2" v-if="$team.doc.onboarding.site_created">
+						<p class="text-p-base text-gray-800">
+							Add your billing details and payment method to activate your
+							subscription.You won't be charged until your trial ends on
+							<span class="font-medium">
+								{{ $format.date(trialSite.trial_end_date, 'LL') }}
+							</span>
+						</p>
+						<Button class="mt-3" route="/billing"> Complete setup </Button>
+					</div>
+				</div>
+				<div v-else>
+					<div class="flex items-center justify-between space-x-2">
+						<div class="flex items-center space-x-2">
+							<TextInsideCircle>3</TextInsideCircle>
+							<span class="text-base font-medium">
+								Billing setup complete
+							</span>
+						</div>
+						<div
+							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
+						>
+							<lucide-check class="h-3 w-3 text-white" />
+						</div>
+					</div>
+					<div class="mt-1.5 pl-7 text-p-base text-gray-800">
+						<span v-if="$team.doc.payment_mode === 'Card'">
+							Automatic billing is enabled
+						</span>
+						<span v-else-if="$team.doc.payment_mode === 'Prepaid Credits'">
+							Account balance: {{ $format.userCurrency($team.doc.balance) }}
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Commented out - now using single step with redirect to billing page
 			<div
 				class="rounded-md"
 				:class="{
@@ -146,7 +194,6 @@
 					</div>
 				</div>
 			</div>
-			<!-- Step 4 - Add Payment Method -->
 			<div
 				class="rounded-md"
 				:class="{ 'pointer-events-none opacity-50': !isBillingDetailsSet }"
@@ -158,7 +205,6 @@
 					</div>
 
 					<div class="mt-4 pl-7" v-if="isBillingDetailsSet">
-						<!-- Payment Method Selector -->
 						<div
 							class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
 						>
@@ -183,15 +229,12 @@
 						</div>
 
 						<div class="mt-2 w-full">
-							<!-- Automated Billing Section -->
 							<div v-if="isAutomatedBilling">
-								<!-- Stripe Card -->
 								<CardForm
 									@success="onAddCardSuccess"
 									:disableAddressForm="true"
 								/>
 							</div>
-							<!-- Purchase Prepaid Credit -->
 							<div v-else class="mt-3">
 								<BuyPrepaidCreditsForm
 									:isOnboarding="true"
@@ -202,7 +245,6 @@
 						</div>
 					</div>
 				</div>
-				<!-- Payment Method Added -->
 				<div v-else>
 					<div class="flex items-center justify-between space-x-2">
 						<div class="flex items-center space-x-2">
@@ -234,6 +276,7 @@
 					</div>
 				</div>
 			</div>
+			-->
 		</div>
 	</div>
 </template>
@@ -289,6 +332,9 @@ export default {
 	computed: {
 		isBillingDetailsSet() {
 			return Boolean(this.$team.doc.billing_details?.name);
+		},
+		isBillingSetupComplete() {
+			return this.isBillingDetailsSet && Boolean(this.$team.doc.payment_mode);
 		},
 		minimumAmount() {
 			return this.$team.doc.currency == 'INR' ? 100 : 5;

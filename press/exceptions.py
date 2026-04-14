@@ -103,3 +103,7 @@ class ArchiveBenchError(ValidationError):
 
 class MonitorServerDown(ValidationError):
 	pass
+
+
+class ReleasePipelineFailure(Exception):
+	pass

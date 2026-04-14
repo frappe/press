@@ -1317,27 +1317,23 @@ def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
 	if not has_retryable_error:
 		return False
 
-	job.cancel_job()
-
-	frappe.db.set_value("Agent Job", job.name, "status", "Failure")
-	frappe.db.set_value("Bench", job.bench, "status", "Broken")
-
-	# Trigger immediate archival of bench to allow retry
 	bench: Bench = frappe.get_doc("Bench", job.bench)
-	bench.archive(retry_new_bench=True)
-	return True
-
-
-def retry_new_bench_job_if_possible(bench: Bench):
-	"""Check if there are retries left, if yes then trigger a new bench job immediately."""
 	retry_count = frappe.db.count(
 		"Bench", {"build": bench.build, "server": bench.server, "group": bench.group}
 	)
 
 	if retry_count >= 3:
-		return
+		# We can't retry anymore so accept the fate and proceed with archival with job processing
+		return False
 
-	bench.retry_bench()
+	job.cancel_job()
+
+	frappe.db.set_value("Agent Job", job.name, "status", "Failure")
+	frappe.db.set_value("Bench", job.bench, "status", "Broken")
+
+	bench = bench.reload()
+	bench.archive(retry_new_bench=True)
+	return True
 
 
 def process_new_bench_job_update(job: AgentJob):  # noqa: C901
@@ -1445,7 +1441,7 @@ def process_archive_bench_job_update(job: AgentJob):
 	retry_new_bench = request_data.get("retry_new_bench", False)
 
 	if updated_status == "Archived" and retry_new_bench:
-		retry_new_bench_job_if_possible(bench)
+		bench.retry_bench()  # We know now for sure that the bench can be retired
 
 
 def process_add_ssh_user_job_update(job):

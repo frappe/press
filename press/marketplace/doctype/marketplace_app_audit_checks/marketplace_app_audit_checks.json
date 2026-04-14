@@ -29,7 +29,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Category",
-   "options": "\nMetadata\nVersioning\nDependencies\nCode Quality\nSecurity\nCompatibility\nOperational",
+   "options": "\nMetadata\nVersioning\nDependencies\nCode Quality\nSecurity\nCompatibility\nCorrectness\nOperational",
    "reqd": 1
   },
   {
@@ -80,7 +80,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-12 15:01:53.133351",
+ "modified": "2026-04-01 14:34:34.080353",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Audit Checks",
