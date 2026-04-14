@@ -365,6 +365,9 @@ class ReleasePipeline(WorkflowBuilder):
 		In case we don't find the app or the app source in press we need to raise, and ask users to add
 		the app in the bench group first.
 		"""
+		if not dependant_app_versions:
+			return
+
 		release_group_doc = frappe.get_doc("Release Group", self.release_group, for_update=True)
 
 		for app, version in dependant_app_versions.items():
