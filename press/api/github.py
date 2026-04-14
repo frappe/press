@@ -262,10 +262,13 @@ def app(owner, repository, branch, installation=None):
 
 
 @frappe.whitelist()
-def branches(owner, name, installation=None):
+def branches(owner, name, installation=None, app_source=None):
 	"""
 	Return ALL branches for the repo, following GitHub pagination.
 	"""
+	if not installation and app_source:
+		installation = frappe.db.get_value("App Source", app_source, "github_installation_id")
+
 	headers = get_auth_headers(installation)
 
 	out = []
