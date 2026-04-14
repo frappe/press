@@ -316,22 +316,22 @@ let router = createRouter({
 				import('./components/marketplace/ReplyMarketplaceApp.vue'),
 			props: true,
 		},
-		{
-			path: '/sql-playground',
-			name: 'SQL Playground',
-			component: () =>
-				import('./pages/devtools/database/DatabaseSQLPlayground.vue'),
-		},
+		// {
+		// 	path: '/sql-playground',
+		// 	name: 'SQL Playground',
+		// 	component: () =>
+		// 		import('./pages/devtools/database/DatabaseSQLPlayground.vue'),
+		// },
 		{
 			path: '/database-analyzer',
 			name: 'DB Analyzer',
 			component: () => import('./pages/devtools/database/DatabaseAnalyzer.vue'),
 		},
-		{
-			path: '/binlog-browser',
-			name: 'Binlog Browser',
-			component: () => import('./pages/devtools/database/BinlogBrowser.vue'),
-		},
+		// {
+		// 	path: '/binlog-browser',
+		// 	name: 'Binlog Browser',
+		// 	component: () => import('./pages/devtools/database/BinlogBrowser.vue'),
+		// },
 		{
 			path: '/log-browser/:mode?/:docName?/:logId?',
 			name: 'Log Browser',

@@ -139,12 +139,12 @@ export default {
 							route: '/database-analyzer',
 							isActive: routeName === 'DB Analyzer',
 						},
-						{
-							name: 'SQL Playground',
-							icon: () => h(DatabaseZap),
-							route: '/sql-playground',
-							isActive: routeName === 'SQL Playground',
-						},
+						// {
+						// 	name: 'SQL Playground',
+						// 	icon: () => h(DatabaseZap),
+						// 	route: '/sql-playground',
+						// 	isActive: routeName === 'SQL Playground',
+						// },
 						{
 							name: 'Job Monitor',
 							icon: () => h(Activity),
@@ -161,10 +161,10 @@ export default {
 						*/
 					].filter((item) => item.condition ?? true),
 					isActive: [
-						'SQL Playground',
+						// 'SQL Playground',
 						'DB Analyzer',
 						'Log Browser',
-						'Binlog Browser',
+						// 'Binlog Browser',
 						'Job Monitor',
 					].includes(routeName),
 					disabled: enforce2FA,

@@ -51,7 +51,6 @@ const MobileNav = defineAsyncComponent(
 
 const route = useRoute();
 const team = getTeam();
-console.log('router: ', route.path)
 const isHideSidebar = computed(() => {
 	const alwaysHideSidebarRoutes = [
 		'Site Login',
