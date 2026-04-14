@@ -239,6 +239,7 @@
   "enable_email_pre_verification",
   "execute_incident_action",
   "enable_server_snapshot_recovery",
+  "use_new_deploy_flow",
   "section_break_jstu",
   "enable_app_grouping",
   "default_apps",
@@ -1625,34 +1626,9 @@
    "label": "Asset Store Region"
   },
   {
-   "fieldname": "default_server_plan_type",
-   "fieldtype": "Link",
-   "label": "Default Server Plan Type",
-   "options": "Server Plan Type"
-  },
-  {
    "fieldname": "frappe_school_authentication_section",
    "fieldtype": "Section Break",
    "label": "Frappe School Authentication"
-  },
-  {
-   "fieldname": "school_url",
-   "fieldtype": "Data",
-   "label": "School URL"
-  },
-  {
-   "fieldname": "school_api_key",
-   "fieldtype": "Data",
-   "label": "School API Key"
-  },
-  {
-   "fieldname": "column_break_uxxz",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "school_api_secret",
-   "fieldtype": "Password",
-   "label": "School API Secret"
   },
   {
    "fieldname": "general_section",
@@ -1669,11 +1645,17 @@
    "fieldname": "new_bench_concurrency_limit",
    "fieldtype": "Int",
    "label": "New Bench Concurrency Limit"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_new_deploy_flow",
+   "fieldtype": "Check",
+   "label": "Use New Deploy Flow"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-03-30 17:54:01.627698",
+ "modified": "2026-04-13 18:54:30.323908",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
