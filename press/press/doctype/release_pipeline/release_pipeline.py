@@ -373,7 +373,7 @@ class ReleasePipeline(WorkflowBuilder):
 
 		for app, version in dependant_app_versions.items():
 			if app in release_group_apps:
-				return
+				continue
 
 			app_source, app_release = _resolve_dependent_app(app, version)
 			deploy_candidate.append(
