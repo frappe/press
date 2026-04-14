@@ -1687,42 +1687,42 @@ export default {
 								);
 							},
 						},
-						{
-							label: 'Login As Administrator',
-							icon: 'external-link',
-							condition: () => ['Active', 'Broken'].includes(site.doc.status),
-							onClick: () => {
-								confirmDialog({
-									title: 'Login as Administrator',
-									message: `Are you sure you want to login as administrator on the site <b>${site.doc?.name}</b>?`,
-									fields:
-										$team.name !== site.doc.team || $team.doc.is_desk_user
-											? [
-													{
-														label: 'Reason',
-														type: 'textarea',
-														fieldname: 'reason',
-													},
-												]
-											: [],
-									onSuccess: ({ hide, values }) => {
-										if (
-											!values.reason &&
-											($team.name !== site.doc.team || $team.doc.is_desk_user)
-										) {
-											throw new Error('Reason is required');
-										}
-										return site.loginAsAdmin
-											.submit({ reason: values.reason })
-											.then((result) => {
-												let url = result;
-												window.open(url, '_blank');
-												hide();
-											});
-									},
-								});
-							},
-						},
+						// {
+						// 	label: 'Login As Administrator',
+						// 	icon: 'external-link',
+						// 	condition: () => ['Active', 'Broken'].includes(site.doc.status),
+						// 	onClick: () => {
+						// 		confirmDialog({
+						// 			title: 'Login as Administrator',
+						// 			message: `Are you sure you want to login as administrator on the site <b>${site.doc?.name}</b>?`,
+						// 			fields:
+						// 				$team.name !== site.doc.team || $team.doc.is_desk_user
+						// 					? [
+						// 							{
+						// 								label: 'Reason',
+						// 								type: 'textarea',
+						// 								fieldname: 'reason',
+						// 							},
+						// 						]
+						// 					: [],
+						// 			onSuccess: ({ hide, values }) => {
+						// 				if (
+						// 					!values.reason &&
+						// 					($team.name !== site.doc.team || $team.doc.is_desk_user)
+						// 				) {
+						// 					throw new Error('Reason is required');
+						// 				}
+						// 				return site.loginAsAdmin
+						// 					.submit({ reason: values.reason })
+						// 					.then((result) => {
+						// 						let url = result;
+						// 						window.open(url, '_blank');
+						// 						hide();
+						// 					});
+						// 			},
+						// 		});
+						// 	},
+						// },
 					],
 				},
 			];
