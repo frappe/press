@@ -21,6 +21,7 @@ from press.press.doctype.release_group.test_release_group import create_test_rel
 from press.press.doctype.release_pipeline.release_pipeline import (
 	ReleasePipeline,
 	_resolve_dependent_app,
+	_resolve_python_version_conflicts_and_update_group,
 )
 from press.press.doctype.server.test_server import create_test_server
 from press.utils import get_current_team
@@ -172,7 +173,7 @@ class TestReleasePipeline(FrappeTestCase):
 	@patch.object(DeployCandidateBuild, "_build", Mock())
 	@patch.object(ReleasePipeline, "monitor_pre_build_validation", mock_pre_build_validation_monitoring)
 	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
-	def test_existing_apps_not_added_as_dependencies(self):
+	def test_dynamic_apps_additions(self):
 		parent_hash = frappe.mock("sha1")
 
 		for dep in self.test_release_group.dependencies:
@@ -243,6 +244,11 @@ class TestReleasePipeline(FrappeTestCase):
 				self.assertEqual(
 					dependency.version, "3.14.0"
 				)  # >=3.10 is updated to 3.14.0 since we take the highest possible version that fits
+
+		with self.assertRaises(ReleasePipelineFailure):
+			_resolve_python_version_conflicts_and_update_group(
+				self.test_release_group, {"frappe": ">=3.10", "erpnext": "<3.10"}
+			)
 
 	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
 	def test_implicit_dependency_addition(self):
