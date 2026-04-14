@@ -258,37 +258,37 @@ def app(owner, repository, branch, installation=None):
 
 @frappe.whitelist()
 def branches(owner, name, installation=None):
-    """
-    Return ALL branches for the repo, following GitHub pagination.
-    """
-    headers = get_auth_headers(installation)
+	"""
+	Return ALL branches for the repo, following GitHub pagination.
+	"""
+	headers = get_auth_headers(installation)
 
-    out = []
-    page = 1
-    while True:
-        resp = requests.get(
-            f"https://api.github.com/repos/{owner}/{name}/branches",
-            params={"per_page": 100, "page": page},
-            headers=headers,
-            timeout=20,
-        )
-        if not resp.ok:
-            frappe.throw("Error fetching branch list from GitHub: " + resp.text)
+	out = []
+	page = 1
+	while True:
+		resp = requests.get(
+			f"https://api.github.com/repos/{owner}/{name}/branches",
+			params={"per_page": 100, "page": page},
+			headers=headers,
+			timeout=20,
+		)
+		if not resp.ok:
+			frappe.throw("Error fetching branch list from GitHub: " + resp.text)
 
-        chunk = resp.json() or []
-        out.extend(chunk)
+		chunk = resp.json() or []
+		out.extend(chunk)
 
-        # If GitHub says there is a next page, keep going.
-        has_next = "next" in (resp.links or {})
-        if not has_next or len(chunk) == 0:
-            break
-        page += 1
+		# If GitHub says there is a next page, keep going.
+		has_next = "next" in (resp.links or {})
+		if not has_next or len(chunk) == 0:
+			break
+		page += 1
 
-    # Optional: float `version-*` branches to the top without touching the UI
-    out.sort(key=lambda b: (0 if str(b.get("name", "")).startswith("version-") else 1,
-                            str(b.get("name", ""))))
-    return out
-
+	# Optional: float `version-*` branches to the top without touching the UI
+	out.sort(
+		key=lambda b: (0 if str(b.get("name", "")).startswith("version-") else 1, str(b.get("name", "")))
+	)
+	return out
 
 
 def get_auth_headers(installation_id: str | None = None) -> "dict[str, str]":
@@ -417,3 +417,36 @@ def _construct_tree(tree, children, children_map):
 		else:
 			tree[file.name] = None
 	return tree
+
+
+def _get_pyproject_from_commit(app_source: str, commit: str):
+	repository_owner, repository, installation_id = frappe.db.get_value(
+		"App Source", app_source, ["repository_owner", "repository", "github_installation_id"]
+	)
+	headers = get_auth_headers(installation_id)
+	url = f"https://api.github.com/repos/{repository_owner}/{repository}/contents/pyproject.toml"
+
+	response = requests.get(url, params={"ref": commit}, headers=headers)
+
+	if response.status_code == 400:
+		frappe.throw("Pyproject not found at this commit", frappe.ValidationError)
+
+	if not response.ok:
+		frappe.throw("Error fetching app info from github", frappe.ValidationError)
+
+	content = b64decode(response.json().get("content", "")).decode()
+	try:
+		return tomli.loads(content)
+	except tomli.TOMLDecodeError:
+		frappe.throw("Invalid pyproject.toml file found in the app repository.", frappe.ValidationError)
+
+
+def get_dependant_apps_with_versions(app_source: str, commit: str) -> dict[str, str]:
+	"""Get a list of apps that are required by the given repository and commit."""
+	pyproject = _get_pyproject_from_commit(app_source, commit)
+	frappe_dependencies = pyproject.get("tool", {}).get("bench", {}).get("frappe-dependencies", {})
+	# We can safely remove frappe from the dependencies as it will be added by defult.
+	if "frappe" in frappe_dependencies:
+		del frappe_dependencies["frappe"]
+
+	return frappe_dependencies
