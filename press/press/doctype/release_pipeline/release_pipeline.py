@@ -368,9 +368,13 @@ class ReleasePipeline(WorkflowBuilder):
 		if not dependant_app_versions:
 			return
 
-		release_group_doc = frappe.get_doc("Release Group", self.release_group, for_update=True)
+		release_group_doc: ReleaseGroup = frappe.get_doc("Release Group", self.release_group, for_update=True)
+		release_group_apps = {app.app for app in release_group_doc.apps}
 
 		for app, version in dependant_app_versions.items():
+			if app in release_group_apps:
+				return
+
 			app_source, app_release = _resolve_dependent_app(app, version)
 			deploy_candidate.append(
 				"apps",
@@ -400,6 +404,11 @@ class ReleasePipeline(WorkflowBuilder):
 			)
 
 	@task
+	def auto_update_bench_dependency_versions(self, deploy_candidate: str):
+		"""Auto update the versions of the dependencies depending on app requirements."""
+		...
+
+	@task
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
 		"""Groups all early-exit validation logic."""
 		try:
@@ -420,6 +429,7 @@ class ReleasePipeline(WorkflowBuilder):
 				create_deploy=False,
 			)
 			self.add_implicit_app_dependencies(deploy_candidate)
+			self.auto_update_bench_dependency_versions(deploy_candidate)
 			primary_build = self.initiate_pre_build_validations(deploy_candidate)
 			return deploy_candidate, primary_build
 		except frappe.ValidationError as e:
