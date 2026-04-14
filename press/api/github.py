@@ -257,38 +257,41 @@ def app(owner, repository, branch, installation=None):
 
 
 @frappe.whitelist()
-def branches(owner, name, installation=None):
-    """
-    Return ALL branches for the repo, following GitHub pagination.
-    """
-    headers = get_auth_headers(installation)
+def branches(owner, name, installation=None, app_source=None):
+	"""
+	Return ALL branches for the repo, following GitHub pagination.
+	"""
+	if not installation and app_source:
+		installation = frappe.db.get_value("App Source", app_source, "github_installation_id")
 
-    out = []
-    page = 1
-    while True:
-        resp = requests.get(
-            f"https://api.github.com/repos/{owner}/{name}/branches",
-            params={"per_page": 100, "page": page},
-            headers=headers,
-            timeout=20,
-        )
-        if not resp.ok:
-            frappe.throw("Error fetching branch list from GitHub: " + resp.text)
+	headers = get_auth_headers(installation)
 
-        chunk = resp.json() or []
-        out.extend(chunk)
+	out = []
+	page = 1
+	while True:
+		resp = requests.get(
+			f"https://api.github.com/repos/{owner}/{name}/branches",
+			params={"per_page": 100, "page": page},
+			headers=headers,
+			timeout=20,
+		)
+		if not resp.ok:
+			frappe.throw("Error fetching branch list from GitHub: " + resp.text)
 
-        # If GitHub says there is a next page, keep going.
-        has_next = "next" in (resp.links or {})
-        if not has_next or len(chunk) == 0:
-            break
-        page += 1
+		chunk = resp.json() or []
+		out.extend(chunk)
 
-    # Optional: float `version-*` branches to the top without touching the UI
-    out.sort(key=lambda b: (0 if str(b.get("name", "")).startswith("version-") else 1,
-                            str(b.get("name", ""))))
-    return out
+		# If GitHub says there is a next page, keep going.
+		has_next = "next" in (resp.links or {})
+		if not has_next or len(chunk) == 0:
+			break
+		page += 1
 
+	# Optional: float `version-*` branches to the top without touching the UI
+	out.sort(
+		key=lambda b: (0 if str(b.get("name", "")).startswith("version-") else 1, str(b.get("name", "")))
+	)
+	return out
 
 
 def get_auth_headers(installation_id: str | None = None) -> "dict[str, str]":

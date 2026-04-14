@@ -349,7 +349,6 @@ scheduler_events = {
 			"press.press.doctype.app.app.poll_new_releases",
 			"press.utils.jobs.alert_on_zombie_rq_jobs",
 			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
-			"press.press.doctype.server_plan.server_plan.sync_machine_availability_status_of_plans",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
@@ -367,6 +366,7 @@ scheduler_events = {
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_rolling_snapshots",
 			"press.press.doctype.database_server.database_server.auto_purge_binlogs_by_size_limit",
 			"press.workflow_engine.doctype.press_workflow.press_workflow.retry_workflows",
+			"press.press.doctype.server_plan.server_plan.sync_machine_availability_status_of_plans",
 		],
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
