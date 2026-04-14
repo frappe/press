@@ -1052,6 +1052,42 @@ class BaseServer(Document, TagHelpers):
 			self.doctype, self.name, "extend_ec2_volume", device=device, log=log, at_front=True, queue="long"
 		)
 
+	@frappe.whitelist()
+	def extend_frappe_compute_volume(self, device=None, log: str | None = None):
+		# Copied over from extend_ec2_volume
+		# Restart MariaDB if MariaDB disk is full
+		mountpoint = "/"  # Root only for now
+		restart_mariadb = self.doctype == "Database Server" and self.is_disk_full(
+			mountpoint
+		)  # check before breaking glass to ensure state of mariadb
+		self.break_glass()
+
+		try:
+			ansible = Ansible(
+				playbook="extend_frappe_compute_volume.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={"restart_mariadb": restart_mariadb, "device": device},
+			)
+			play = ansible.run()
+			if log:
+				frappe.db.set_value("Add On Storage Log", log, "extend_frappe_compute_play", play.name)
+				frappe.db.commit()
+		except Exception:
+			log_error("EC2 Volume Extend Exception", server=self.as_dict())
+
+	def enqueue_extend_frappe_compute_volume(self, device, log):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"extend_frappe_compute_volume",
+			device=device,
+			log=log,
+			at_front=True,
+			queue="long",
+		)
+
 	@cached_property
 	def time_to_wait_before_updating_volume(self) -> timedelta | int:
 		if self.provider != "AWS EC2":
@@ -1096,6 +1132,9 @@ class BaseServer(Document, TagHelpers):
 			# Non-boot volumes might not need resize
 			self.break_glass()
 			self.reboot()
+		elif self.provider == "Frappe Compute":
+			device = "/dev/vda"
+			self.enqueue_extend_frappe_compute_volume(device, log)
 
 	def guess_data_disk_mountpoint(self) -> str:
 		if not hasattr(self, "has_data_volume") or not self.has_data_volume:
@@ -1118,6 +1157,10 @@ class BaseServer(Document, TagHelpers):
 			return None
 
 		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
+
+		# root volume of Frappe Compute
+		if self.provider == "Frappe Compute":
+			return find(machine.volumes, lambda v: v.device == "/dev/vda")
 
 		if volume_id:
 			# Return the volume doc immediately
