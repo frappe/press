@@ -98,7 +98,6 @@ def _resolve_python_version_conflicts_and_update_group(
 	"""Resolve any python version conflicts and update the release group with the final python version requirements.
 	Eg, python_versions - {"app1": "~3.10", "app2": ">=3.11", "app3": ">=3.10"}
 	"""
-
 	combined_spec = SpecifierSet()
 
 	for app_name, spec_string in python_versions.items():
