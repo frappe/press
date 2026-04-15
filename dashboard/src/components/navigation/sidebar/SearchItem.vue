@@ -6,7 +6,7 @@ import { searchModalOpen } from '@/data/ui';
 
 <template>
 	<button
-		class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition gap-1 text-sm w-full"
+		class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition gap-1 text-sm w-full mt-1"
 		@click="() => (searchModalOpen = true)"
 	>
 		<span class="grid h-5 w-6 place-items-center">
