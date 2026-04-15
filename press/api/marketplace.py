@@ -562,7 +562,9 @@ def validate_uploaded_image(file_content: bytes, file_name: str) -> None:
 	try:
 		Image.open(BytesIO(file_content)).verify()
 	except (UnidentifiedImageError, Exception):
-		frappe.throw("Uploaded file is not a valid image")
+		frappe.throw(
+			"Uploaded file is not a valid image. Please upload image in PNG, JPG, JPEG or WebP format."
+		)
 
 
 def validate_app_image_dimensions(file_content):
