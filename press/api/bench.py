@@ -63,7 +63,6 @@ def new(bench):
 	):
 		frappe.throw("You can only create benches on your servers")
 
-	print(bench)
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(
 		bench["title"],
