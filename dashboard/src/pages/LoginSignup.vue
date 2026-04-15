@@ -822,9 +822,11 @@ export default {
 		},
 		afterLogin(res) {
 			let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
-			// if query param redirect is present, redirect to that route
-			if (this.$route.query.redirect) {
-				loginRoute = this.$route.query.redirect;
+			// If `redirect` is present in query, redirect to that.
+			// Restrict redirect to relative paths.
+			const redirect = this.$route.query.redirect;
+			if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+				loginRoute = redirect;
 			}
 			localStorage.setItem('login_email', this.email);
 			window.location.href = loginRoute;

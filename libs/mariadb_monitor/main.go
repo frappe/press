@@ -165,7 +165,7 @@ func printHelp() {
 }
 
 func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snapshotCache) bool {
-	frozenCheck := checkMachineFrozen()
+	var frozenCheck *frozenState
 	var triggers []string
 
 	if psiCPU, err := checkPSI("cpu"); err == nil {
