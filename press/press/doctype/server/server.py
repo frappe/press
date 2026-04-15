@@ -1062,6 +1062,13 @@ class BaseServer(Document, TagHelpers):
 		)  # check before breaking glass to ensure state of mariadb
 		self.break_glass()
 
+		if not device:
+			# Try the best guess. Try extending the data volume
+			volume = self.find_mountpoint_volume(mountpoint)
+			assert volume is not None, "Volume not found"
+			assert volume.volume_id is not None, "Volume ID not found"
+			device = volume.device
+
 		try:
 			ansible = Ansible(
 				playbook="extend_frappe_compute_volume.yml",
@@ -1133,7 +1140,7 @@ class BaseServer(Document, TagHelpers):
 			self.break_glass()
 			self.reboot()
 		elif self.provider == "Frappe Compute":
-			device = "/dev/vda"
+			device = self.get_device_from_volume_id(volume.volume_id)
 			self.enqueue_extend_frappe_compute_volume(device, log)
 
 	def guess_data_disk_mountpoint(self) -> str:
@@ -1157,10 +1164,6 @@ class BaseServer(Document, TagHelpers):
 			return None
 
 		machine: "VirtualMachine" = frappe.get_doc("Virtual Machine", self.virtual_machine)
-
-		# root volume of Frappe Compute
-		if self.provider == "Frappe Compute":
-			return find(machine.volumes, lambda v: v.device == "/dev/vda")
 
 		if volume_id:
 			# Return the volume doc immediately
@@ -1807,6 +1810,12 @@ class BaseServer(Document, TagHelpers):
 	def get_device_from_volume_id(self, volume_id):
 		if self.provider == "Hetzner":
 			return f"/dev/disk/by-id/scsi-0HC_Volume_{volume_id}"
+
+		if self.provider == "Frappe Compute":
+			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+			volume = find(virtual_machine.volumes, lambda i: i.volume_id == volume_id)
+			return volume.device
+
 		stripped_id = volume_id.replace("-", "")
 		return f"/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_{stripped_id}"
 
