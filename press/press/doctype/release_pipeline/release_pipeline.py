@@ -7,6 +7,8 @@ from functools import cached_property
 from typing import Any, TypedDict
 
 import frappe
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
+from packaging.version import Version
 
 from press.api.github import get_dependant_apps_with_versions
 from press.exceptions import InsufficientSpaceOnServer, ReleasePipelineFailure
@@ -34,6 +36,8 @@ if typing.TYPE_CHECKING:
 BENCH_TRANSITION_STATES = ["Pending", "Installing", "Updating"]
 # Keeping this here now, will eventually move all notifications logic here.
 SKIP_NOTIFICATIONS_FOR = ["orchestrate_build_monitoring", "monitor_bench_creation"]
+
+KNOWN_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
 
 class FailedBenchJobs(TypedDict):
@@ -86,6 +90,45 @@ def _resolve_dependent_app(app: str, version: str) -> tuple[AppSource, AppReleas
 		)
 
 	return app_source, app_release
+
+
+def _resolve_python_version_conflicts_and_update_group(
+	release_group_name: str, python_versions: dict[str, str | None]
+) -> None:
+	"""Resolve any python version conflicts and update the release group with the final python version requirements.
+	Eg, python_versions - {"app1": "~3.10", "app2": ">=3.11", "app3": ">=3.10"}
+	"""
+	combined_spec = SpecifierSet()
+
+	for app_name, spec_string in python_versions.items():
+		if not spec_string:
+			# App didn't specify any python version requirements.
+			continue
+
+		try:
+			# Combine all the python versions
+			current_app_spec = SpecifierSet(spec_string)
+			combined_spec &= current_app_spec
+		except InvalidSpecifier:
+			raise ReleasePipelineFailure(
+				f"Invalid Python version format for {app_name}: {spec_string}"
+			) from None
+
+	compatible_versions = [Version(v) for v in KNOWN_PYTHON_VERSIONS if Version(v) in combined_spec]
+
+	if not compatible_versions:
+		raise ReleasePipelineFailure(
+			"Python version conflict detected between apps please resolve the python version conflict and retry"
+		)
+
+	highest_compatible_python_version = max(compatible_versions)
+	release_group_doc: ReleaseGroup = frappe.get_doc("Release Group", release_group_name, for_update=True)
+
+	for dependency in release_group_doc.dependencies:
+		if dependency.dependency == "PYTHON_VERSION":
+			dependency.version = str(highest_compatible_python_version)
+			dependency.is_custom = True
+			dependency.save()
 
 
 class ReleasePipeline(WorkflowBuilder):
@@ -392,18 +435,6 @@ class ReleasePipeline(WorkflowBuilder):
 		release_group_doc.save()
 
 	@task
-	def add_implicit_app_dependencies(self, deploy_candidate: str):
-		"""Add any implicit dependencies for the apps being deployed."""
-		deploy_candidate_doc: DeployCandidate = frappe.get_doc(
-			"Deploy Candidate", deploy_candidate, for_update=True
-		)
-		for app in deploy_candidate_doc.apps:
-			dependant_app_versions = get_dependant_apps_with_versions(app_source=app.source, commit=app.hash)
-			self._add_app_to_group_and_candidate(
-				deploy_candidate_doc, dependant_app_versions=dependant_app_versions
-			)
-
-	@task
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
 		"""Groups all early-exit validation logic."""
 		try:
@@ -412,6 +443,42 @@ class ReleasePipeline(WorkflowBuilder):
 			self.validate_auto_scales_on_servers()
 		except (frappe.ValidationError, InsufficientSpaceOnServer) as e:
 			raise ReleasePipelineFailure(str(e)) from e
+
+	@task
+	def add_implicit_app_dependencies(self, deploy_candidate: str):
+		"""Add any implicit dependencies for the apps being deployed."""
+		deploy_candidate_doc: DeployCandidate = frappe.get_doc(
+			"Deploy Candidate", deploy_candidate, for_update=True
+		)
+		for app in deploy_candidate_doc.apps:
+			dependant_app_versions = get_dependant_apps_with_versions(
+				app_source=app.source, commit=app.hash, cache=True
+			)
+			self._add_app_to_group_and_candidate(
+				deploy_candidate_doc,
+				dependant_app_versions=dependant_app_versions["frappe_dependencies"],
+			)
+
+	@task
+	def auto_update_bench_dependency_versions(self, deploy_candidate: str):
+		"""Auto update the versions of the dependencies depending on app requirements.
+		Currently only supports python version upgrades
+		"""
+		deploy_candidate_doc: DeployCandidate = frappe.get_doc(
+			"Deploy Candidate", deploy_candidate, for_update=True
+		)
+		required_python_versions = {}
+
+		for app in deploy_candidate_doc.apps:
+			# Should use the cache from the previous task
+			dependant_app_versions = get_dependant_apps_with_versions(
+				app_source=app.source, commit=app.hash, cache=True
+			)
+			required_python_versions[app.app] = dependant_app_versions["python_version"]
+
+		_resolve_python_version_conflicts_and_update_group(
+			self.release_group_doc.name, required_python_versions
+		)
 
 	@task
 	def prepare_deployment(self, apps, sites, run_will_fail_check) -> tuple[str, str]:
@@ -424,6 +491,7 @@ class ReleasePipeline(WorkflowBuilder):
 				create_deploy=False,
 			)
 			self.add_implicit_app_dependencies(deploy_candidate)
+			self.auto_update_bench_dependency_versions(deploy_candidate)
 			primary_build = self.initiate_pre_build_validations(deploy_candidate)
 			return deploy_candidate, primary_build
 		except frappe.ValidationError as e:
@@ -560,6 +628,6 @@ class ReleasePipeline(WorkflowBuilder):
 		except ReleasePipelineFailure:
 			self.update_pipeline_status("Failure")
 
-		# Just for sanity if we missed something
-		if self.status == "Failure":
+		workflow_status = frappe.db.get_value("Press Workflow", self.workflow_name, "status")
+		if workflow_status == "Failure":
 			self.update_pipeline_status("Failure")
