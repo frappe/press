@@ -313,7 +313,6 @@ import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
 import DateTimePicker from 'frappe-ui/src/components/DatePicker/DateTimePicker.vue';
 import dayjs from '../../utils/dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
 
 const PICKER_DATETIME_FORMAT = 'YYYY-MM-DD h:mm a';
 const IST_TIMEZONE = 'Asia/Calcutta';
