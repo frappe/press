@@ -438,16 +438,22 @@ def profile_image_url(app: str) -> str:
 @frappe.whitelist()
 def update_app_image() -> str:
 	"""Handles App Image Upload"""
-	file_content = frappe.local.uploaded_file
+	current_team = get_current_team()
+	app_name = frappe.form_dict.docname
+	app_team = frappe.db.get_value("Marketplace App", app_name, "team")
+	if app_team != current_team:
+		frappe.throw("Not Permitted to update app image", frappe.PermissionError)
 
+	file_content = frappe.local.uploaded_file
+	file_name = frappe.local.uploaded_filename
+
+	validate_uploaded_image(file_content, file_name)
 	validate_app_image_dimensions(file_content)
 
-	file_name = frappe.local.uploaded_filename
-	if file_name.split(".")[-1] in ["png", "jpg", "jpeg"]:
+	if file_name.rsplit(".", 1)[-1].lower() in ("png", "jpg", "jpeg"):
 		file_content = convert_to_webp(file_content)
-		file_name = f"{'.'.join(file_name.split('.')[:-1])}.webp"
+		file_name = f"{file_name.rsplit('.', 1)[0]}.webp"
 
-	app_name = frappe.form_dict.docname
 	_file = frappe.get_doc(
 		{
 			"doctype": "File",
@@ -483,15 +489,23 @@ def convert_to_webp(file_content: bytes) -> bytes:
 
 @frappe.whitelist()
 def add_app_screenshot() -> str:
-	"""Handles App Image Upload"""
-	file_content = frappe.local.uploaded_file
+	"""Handles App Screenshot Upload"""
+	current_team = get_current_team()
 	app_name = frappe.form_dict.docname
+	app_team = frappe.db.get_value("Marketplace App", app_name, "team")
+	if app_team != current_team:
+		frappe.throw("Not Permitted to add app screenshot", frappe.PermissionError)
+
+	file_content = frappe.local.uploaded_file
+	file_name = frappe.local.uploaded_filename
+
+	validate_uploaded_image(file_content, file_name)
+
 	app_doc = frappe.get_doc("Marketplace App", app_name)
 
-	file_name = frappe.local.uploaded_filename
-	if file_name.split(".")[-1] in ["png", "jpg", "jpeg"]:
+	if file_name.rsplit(".", 1)[-1].lower() in ("png", "jpg", "jpeg"):
 		file_content = convert_to_webp(file_content)
-		file_name = f"{'.'.join(file_name.split('.')[:-1])}.webp"
+		file_name = f"{file_name.rsplit('.', 1)[0]}.webp"
 
 	_file = frappe.get_doc(
 		{
@@ -529,6 +543,28 @@ def remove_app_screenshot(name, file):
 	app_doc.save(ignore_permissions=True)
 
 
+ALLOWED_IMAGE_EXTENSIONS = frozenset({"png", "jpg", "jpeg", "webp"})
+
+
+def validate_uploaded_image(file_content: bytes, file_name: str) -> None:
+	"""Validate that the upload is a safe image.
+	1. Rejecting file extensions that browsers execute (svg, html, xml, etc.)
+	2. PIL-decoding the bytes to confirm it's a genuine image
+	"""
+	ext = file_name.rsplit(".", 1)[-1].lower() if "." in file_name else ""
+	if ext not in ALLOWED_IMAGE_EXTENSIONS:
+		frappe.throw(f"Only {', '.join(sorted(ALLOWED_IMAGE_EXTENSIONS))} images are allowed")
+
+	from io import BytesIO
+
+	from PIL import Image, UnidentifiedImageError
+
+	try:
+		Image.open(BytesIO(file_content)).verify()
+	except (UnidentifiedImageError, Exception):
+		frappe.throw("Uploaded file is not a valid image")
+
+
 def validate_app_image_dimensions(file_content):
 	"""Throws if image is not a square image, atleast 300x300px in size"""
 	from io import BytesIO
@@ -539,40 +575,6 @@ def validate_app_image_dimensions(file_content):
 	im_width, im_height = im.size
 	if im_width != im_height or im_height < 300:
 		frappe.throw("Logo must be a square image atleast 300x300px in size")
-
-
-@frappe.whitelist()
-def update_app_title(name: str, title: str) -> MarketplaceApp:
-	"""Update `title` and `category`"""
-	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
-	app.title = title
-	app.save(ignore_permissions=True)
-
-	return app
-
-
-@frappe.whitelist()
-def update_app_links(name: str, links: dict) -> None:
-	"""Update links related to app"""
-	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
-	app.update(links)
-	app.save(ignore_permissions=True)
-
-
-@frappe.whitelist()
-def update_app_summary(name: str, summary: str) -> None:
-	"""Update the `description` of Marketplace App `name`"""
-	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
-	app.description = summary
-	app.save(ignore_permissions=True)
-
-
-@frappe.whitelist()
-def update_app_description(name: str, description: str) -> None:
-	"""Update the `long_description` of Marketplace App `name`"""
-	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
-	app.long_description = description
-	app.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
@@ -632,9 +634,9 @@ def cancel_approval_request(app_release: str):
 def reason_for_rejection(app_release: str) -> str:
 	"""Return feedback given on a `Rejected` approval request"""
 	approval_request = get_latest_approval_request(app_release)
-	app_release = frappe.get_doc("App Release", app_release)
+	release_doc = frappe.get_doc("App Release", app_release)
 
-	if app_release.status != "Rejected":
+	if release_doc.status != "Rejected":
 		frappe.throw("The request for the given app release was not rejected!")
 
 	return approval_request.reason_for_rejection
@@ -658,7 +660,7 @@ def get_latest_approval_request(app_release: str):
 
 
 @frappe.whitelist()
-def options_for_marketplace_app() -> dict[str, dict]:  # noqa: C901
+def options_for_marketplace_app() -> list[dict]:  # noqa: C901
 	# Get versions (along with apps and associated sources)
 	# which belong to the current team
 	versions = options(only_by_current_team=True)["versions"]
@@ -684,7 +686,7 @@ def options_for_marketplace_app() -> dict[str, dict]:  # noqa: C901
 						source["version"] = version["name"]
 					filtered_apps.append(app)
 
-	aggregated_sources = {}
+	aggregated_sources: dict[str, list] = {}
 
 	for app in filtered_apps:
 		aggregated_sources.setdefault(app["name"], []).extend(app["sources"])
@@ -1019,7 +1021,7 @@ def create_app_plan(marketplace_app: str, plan_data: dict):
 		}
 	)
 
-	feature_list = plan_data.get("features")
+	feature_list: list[str] = plan_data.get("features") or []
 	reset_features_for_plan(app_plan_doc, feature_list)
 	return app_plan_doc.insert(ignore_permissions=True)
 
