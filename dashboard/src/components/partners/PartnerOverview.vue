@@ -135,7 +135,10 @@
 			}"
 		>
 			<template #body-content>
-				<p class="text-base leading-relaxed tracking-wide text-gray-700">
+				<p
+					class="text-base leading-relaxed align-center tracking-wide text-gray-700"
+				>
+					<LucideAlertTriangle class="inline h-4 w-4 text-red-500" />
 					You do not meet the Partnership renewal criteria.
 				</p>
 				<div class="flex my-4 gap-4">
