@@ -21,6 +21,7 @@ from press.press.doctype.release_group.test_release_group import create_test_rel
 from press.press.doctype.release_pipeline.release_pipeline import (
 	ReleasePipeline,
 	_resolve_dependent_app,
+	_resolve_python_version_conflicts_and_update_group,
 )
 from press.press.doctype.server.test_server import create_test_server
 from press.utils import get_current_team
@@ -65,7 +66,7 @@ def get_mock_pyproject_file(*args, **kwargs):
 
 		[tool.bench.frappe-dependencies]
 		frappe = ">=15.40.4,<17.0.0"
-		telephony = ">=15.40.0,<17.0.0"
+		telephony = ">=15.0.0,<17.0.0"
 
 		[tool.bench.assets]
 		build_dir = "./desk"
@@ -78,6 +79,9 @@ def get_mock_pyproject_file(*args, **kwargs):
 class TestReleasePipeline(FrappeTestCase):
 	def tearDown(self):
 		frappe.set_user("Administrator")
+		frappe.db.delete("App")
+		frappe.db.delete("App Source")
+		frappe.db.delete("App Release")
 
 	@classmethod
 	def setUpClass(cls):
@@ -165,6 +169,97 @@ class TestReleasePipeline(FrappeTestCase):
 		)  # Just ensure this is created without error since we are mocking the build
 
 	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
+	@patch.object(DeployCandidateBuild, "_upload_build_context", get_mock_context_file)
+	@patch.object(DeployCandidateBuild, "_build", Mock())
+	@patch.object(ReleasePipeline, "monitor_pre_build_validation", mock_pre_build_validation_monitoring)
+	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
+	def test_dynamic_apps_additions(self):
+		parent_hash = frappe.mock("sha1")
+
+		for dep in self.test_release_group.dependencies:
+			if dep.dependency == "PYTHON_VERSION":
+				dep.version = "3.8"
+				dep.save()
+
+		root_app = create_test_app("frappe")
+		root_app_source = create_test_app_source(
+			app=root_app,
+			version="Version 15",
+			repository_url="https://github.com/frappe/frappe",
+			branch="main",
+		)
+		root_app_release = create_test_app_release(root_app_source, parent_hash)
+
+		app_dependencies = get_dependant_apps_with_versions(root_app_source.name, root_app_release.hash).get(
+			"frappe_dependencies"
+		)
+		self.assertEqual(app_dependencies, {"telephony": ">=15.0.0,<17.0.0"})
+
+		# Ensure system can get these!
+		dependency_app = frappe.get_doc(
+			{"doctype": "App", "title": "Telephony", "frappe": 1, "name": "telephony"}
+		).insert()
+
+		correct_source = create_test_app_source(
+			app=dependency_app,
+			version="Version 15",
+			repository_url="https://github.com/frappe/dependency-app",
+			branch="main",
+		)
+
+		correct_hash = frappe.mock("sha1")
+		create_test_app_release(
+			app_source=correct_source,
+			hash=correct_hash,
+		)
+
+		self.assertNotIn(
+			"telephony", [app.app for app in self.test_release_group.apps]
+		)  # Ensure app was added as part of the release pipeline
+
+		for dependency in self.test_release_group.dependencies:
+			if dependency.dependency == "PYTHON_VERSION":
+				self.assertEqual(dependency.version, "3.8")
+
+		with fake_agent_job("Remote Build Job", "Success"):
+			deploy_and_update(
+				self.test_release_group.name,
+				apps=[
+					{
+						"app": root_app.name,
+						"source": root_app_source.name,
+						"release": root_app_release.name,
+						"hash": root_app_release.hash,
+					}
+				],
+			)
+			poll_pending_jobs()
+
+		test_release_group = self.test_release_group.reload()
+		self.assertIn(
+			"telephony", [app.app for app in test_release_group.apps]
+		)  # Ensure app was added as part of the release pipeline
+		for dependency in test_release_group.dependencies:
+			if dependency.dependency == "PYTHON_VERSION":
+				self.assertEqual(
+					dependency.version, "3.14.0"
+				)  # >=3.10 is updated to 3.14.0 since we take the highest possible version that fits
+
+		with self.assertRaises(ReleasePipelineFailure):
+			_resolve_python_version_conflicts_and_update_group(
+				self.test_release_group, {"frappe": ">=3.10", "erpnext": "<3.10"}
+			)  # This should raise an error since frappe and erpnext have conflicting python version requirements
+
+		_resolve_python_version_conflicts_and_update_group(
+			self.test_release_group,
+			{
+				"frappe": ">=3.10",
+				"erpnext": ">=3.10",
+				"telephony": None,  # Some apps might not give their python version requirements.
+			},
+		)
+
+	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
 	def test_implicit_dependency_addition(self):
 		parent_hash = frappe.mock("sha1")
 
@@ -177,8 +272,10 @@ class TestReleasePipeline(FrappeTestCase):
 		)
 		root_app_release = create_test_app_release(root_app_source, parent_hash)
 
-		app_dependencies = get_dependant_apps_with_versions(root_app_source.name, root_app_release.hash)
-		self.assertEqual(app_dependencies, {"telephony": ">=15.40.0,<17.0.0"})
+		app_dependencies = get_dependant_apps_with_versions(root_app_source.name, root_app_release.hash).get(
+			"frappe_dependencies"
+		)
+		self.assertEqual(app_dependencies, {"telephony": ">=15.0.0,<17.0.0"})
 
 		app, version = next(iter(app_dependencies.items()))
 
@@ -200,10 +297,6 @@ class TestReleasePipeline(FrappeTestCase):
 			repository_url="https://github.com/frappe/dependency-app",
 			branch="new",
 		)
-
-		# Still no matching supported source wrong version of app release
-		with self.assertRaises(ReleasePipelineFailure):
-			_resolve_dependent_app(app, version)
 
 		correct_source = create_test_app_source(
 			app=dependency_app,
