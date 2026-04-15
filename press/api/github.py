@@ -8,7 +8,7 @@ import re
 from base64 import b64decode
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import frappe
 import jwt
@@ -19,6 +19,11 @@ from press.utils import get_current_team, log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
+
+
+class AppDependencyFetch(TypedDict):
+	frappe_dependencies: dict[str, str]
+	python_version: str | None
 
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
@@ -444,12 +449,26 @@ def _get_pyproject_from_commit(app_source: str, commit: str):
 		frappe.throw("Invalid pyproject.toml file found in the app repository.", frappe.ValidationError)
 
 
-def get_dependant_apps_with_versions(app_source: str, commit: str) -> dict[str, str]:
+def get_dependant_apps_with_versions(app_source: str, commit: str, cache: bool = True) -> AppDependencyFetch:
 	"""Get a list of apps that are required by the given repository and commit."""
+	cache_key = f"app_deps:{app_source}:{commit}"
+
+	if cache:
+		cached_deps = frappe.cache().get_value(cache_key)
+		if cached_deps is not None:
+			return cached_deps
+
 	pyproject = _get_pyproject_from_commit(app_source, commit)
 	frappe_dependencies = pyproject.get("tool", {}).get("bench", {}).get("frappe-dependencies", {})
 	# We can safely remove frappe from the dependencies as it will be added by defult.
-	if "frappe" in frappe_dependencies:
-		del frappe_dependencies["frappe"]
+	frappe_dependencies.pop("frappe", None)
+	python_version = pyproject.get("project", {}).get("requires-python")
 
-	return frappe_dependencies
+	dependency_data = AppDependencyFetch(
+		frappe_dependencies=frappe_dependencies,
+		python_version=python_version,
+	)
+
+	frappe.cache().set_value(cache_key, dependency_data, expires_in_sec=60 * 60)
+
+	return dependency_data
