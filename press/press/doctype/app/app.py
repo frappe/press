@@ -72,12 +72,25 @@ class App(Document):
 			source: AppSource = frappe.get_doc("App Source", existing_source[0].name)
 			versions = set(version.version for version in source.versions)
 			new_versions = supported_frappe_versions - versions
-			for new_version in new_versions:
-				source.add_version(new_version)
+			# The hacks below are to ensure that we don't call save on the `App Source` document
+			# Triggering validations and other logic might fail app addition
+			# This is temporary until we merge all app sources!
+			for idx, new_version in enumerate(new_versions, start=0):
+				frappe.get_doc(
+					{
+						"doctype": "App Source Version",
+						"parenttype": "App Source",
+						"parentfield": "versions",
+						"parent": source.name,
+						"version": new_version,
+						"idx": len(source.versions) + idx + 1,
+					}
+				).insert()
 
 			if github_installation_id and source.github_installation_id != github_installation_id:
-				source.github_installation_id = github_installation_id
-				source.save()
+				frappe.db.set_value(
+					"App Source", source.name, "github_installation_id", github_installation_id
+				)
 		else:
 			# Add new App Source
 			if not supported_frappe_versions:

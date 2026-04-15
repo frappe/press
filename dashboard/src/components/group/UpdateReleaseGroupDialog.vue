@@ -537,13 +537,15 @@ export default {
 					}
 				},
 				onSuccess(candidate) {
-					this.$router.push({
-						name: 'Deploy Candidate',
-						params: {
-							id: candidate,
-							name: this.bench,
-						},
-					});
+					if (candidate) {
+						this.$router.push({
+							name: 'Deploy Candidate',
+							params: {
+								id: candidate,
+								name: this.bench,
+							},
+						});
+					}
 					this.show = false;
 					this.$emit('success', null);
 				},
