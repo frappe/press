@@ -1077,12 +1077,9 @@ class BaseServer(Document, TagHelpers):
 				port=self._ssh_port(),
 				variables={"restart_mariadb": restart_mariadb, "device": device},
 			)
-			play = ansible.run()
-			if log:
-				frappe.db.set_value("Add On Storage Log", log, "extend_frappe_compute_play", play.name)
-				frappe.db.commit()
+			ansible.run()
 		except Exception:
-			log_error("EC2 Volume Extend Exception", server=self.as_dict())
+			log_error("Frappe Compute Volume Extend Exception", server=self.as_dict())
 
 	def enqueue_extend_frappe_compute_volume(self, device, log):
 		frappe.enqueue_doc(
