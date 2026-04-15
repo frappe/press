@@ -247,11 +247,11 @@ class TestReleasePipeline(FrappeTestCase):
 
 		with self.assertRaises(ReleasePipelineFailure):
 			_resolve_python_version_conflicts_and_update_group(
-				self.test_release_group, {"frappe": ">=3.10", "erpnext": "<3.10"}
+				self.test_release_group.name, {"frappe": ">=3.10", "erpnext": "<3.10"}
 			)  # This should raise an error since frappe and erpnext have conflicting python version requirements
 
 		_resolve_python_version_conflicts_and_update_group(
-			self.test_release_group,
+			self.test_release_group.name,
 			{
 				"frappe": ">=3.10",
 				"erpnext": ">=3.10",
