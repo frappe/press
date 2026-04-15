@@ -7,6 +7,7 @@ import PartnerBenefits from '@/onboarding/modal/PartnerBenefits.vue';
 import Eligibility from '@/onboarding/modal/Eligibility.vue';
 import PartnerPlans from '@/onboarding/modal/PartnerPlans.vue';
 import PartnerRegistration from '@/onboarding/modal/PartnerRegistration.vue';
+import PostRegistrationMessage from '@/onboarding/modal/PostRegistrationMessage.vue';
 import SidebarItem from '@/onboarding/modal/SidebarItem.vue';
 
 const open = ref(false);
@@ -109,15 +110,18 @@ const onRegistered = () => {
 					</div>
 
 					<!-- Step content -->
-					<!-- center  -->
 					<div
 						class="-m-1 flex-1 overflow-y-auto p-1"
 						:class="registered ? 'flex justify-center items-center' : ''"
 					>
+						<PostRegistrationMessage
+							v-if="registered"
+							@continue="open = false"
+						/>
 						<component
+							v-else
 							:is="currentStep.component"
 							@registered="onRegistered"
-							@continue="open = false"
 						/>
 					</div>
 
