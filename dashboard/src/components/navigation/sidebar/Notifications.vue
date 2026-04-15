@@ -186,23 +186,23 @@ const tabs = [
 </script>
 
 <template>
-	<Popover placement="right-start">
+	<Popover :placement="$isMobile ? 'top-start' : 'right-start'">
 		<!-- sidebar item -->
 		<template #target="{ togglePopover }">
 			<button
 				aria-label="Notifications btn"
 				@click="togglePopover"
-				class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition gap-1 hover:bg-surface-gray-3 w-full"
+				class="flex items-center rounded px-3 py-2 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-3 w-full"
 				:class="[
 					item.disabled ? 'pointer-events-none opacity-50' : '',
 					$attrs.class,
 				]"
 			>
 				<span class="flex relative">
-					<LucideBell class="m-1 size-4 text-ink-gray-6" />
+					<LucideBell class="size-4 text-ink-gray-6" />
 					<span
 						v-if="unreadNotificationsCount.data > 0"
-						class="size-1 bg-surface-blue-3 rounded-full absolute right-0.5 top-0.5"
+						class="size-1 bg-surface-blue-3 rounded-full absolute right-0 -top-0.5"
 					/>
 				</span>
 

@@ -1,6 +1,6 @@
 <template>
 	<Disclosure as="div" v-slot="{ open }">
-		<div class="flex h-12 items-center border-b px-5">
+		<div class="flex h-12 items-center border-b px-3">
 			<span class="font-semibold">
 				<router-link :to="{ name: 'Site List' }">
 					<img
@@ -49,7 +49,7 @@
 				</Button>
 			</DisclosureButton>
 		</div>
-		<DisclosurePanel class="border-b bg-gray-100 px-5 py-2">
+		<DisclosurePanel class="border-b bg-gray-100 p-2">
 			<NavigationItems>
 				<template v-slot="{ navigation }">
 					<template v-for="(item, i) in navigation">
@@ -57,6 +57,11 @@
 							:key="item.name"
 							:item="item"
 							v-if="item.children"
+						/>
+						<component
+							v-else-if="item.customComponent"
+							:is="item.customComponent"
+							:item="item"
 						/>
 						<MobileNavItem :key="item.name" :item="item" v-else />
 					</template>
