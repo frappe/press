@@ -420,17 +420,20 @@ class BaseServer(Document, TagHelpers):
 				"doc_method": "cleanup_unused_files",
 				"group": f"{server_type.title()} Actions",
 			},
-			{
-				"action": "Enable Autoscale",
-				"description": "Setup a secondary application server to autoscale to during high loads",
-				"button_label": "Enable",
-				"condition": self.status == "Active"
-				and self.doctype == "Server"
-				and not self.secondary_server
-				and not getattr(self, "is_unified_server", False)
-				and self.cluster in self._get_clusters_with_autoscale_support(),
-				"group": "Application Server Actions",
-			},
+			# Disabling autoscale temporarily as we are working on improving the stability of this system.
+			# Also will rewrite the implementation using the new workflow engine.
+			# Some file locking mechanism is broken as well, due to recent lock strategy switches.
+			# {
+			# 	"action": "Enable Autoscale",
+			# 	"description": "Setup a secondary application server to autoscale to during high loads",
+			# 	"button_label": "Enable",
+			# 	"condition": self.status == "Active"
+			# 	and self.doctype == "Server"
+			# 	and not self.secondary_server
+			# 	and not getattr(self, "is_unified_server", False)
+			# 	and self.cluster in self._get_clusters_with_autoscale_support(),
+			# 	"group": "Application Server Actions",
+			# },
 			{
 				"action": "Disable Autoscale",
 				"description": "Turn off autoscaling and remove the secondary application server.",
