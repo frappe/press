@@ -202,7 +202,7 @@ const tabs = [
 					<LucideBell class="m-1 size-4 text-ink-gray-6" />
 					<span
 						v-if="unreadNotificationsCount.data > 0"
-						class="size-1.5 bg-blue-400 rounded-full absolute right-0 top-0"
+						class="size-1 bg-surface-blue-3 rounded-full absolute right-0.5 top-0.5"
 					/>
 				</span>
 
