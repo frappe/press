@@ -11,6 +11,7 @@ from press.workflow_engine.doctype.press_workflow.workflow_builder import Workfl
 
 if TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot import VirtualDiskSnapshot
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
@@ -26,6 +27,7 @@ class MariaDBUpgrade(WorkflowBuilder):
 		auto_downgrade_version_in_case_of_failure: DF.Check
 		database_server: DF.Link
 		downgrade_play: DF.Link | None
+		is_snapshot_deleted: DF.Check
 		skip_disk_snapshot: DF.Check
 		snapshot: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure", "Recovering", "Recovered", "Fatal"]
@@ -38,7 +40,7 @@ class MariaDBUpgrade(WorkflowBuilder):
 		return frappe.get_doc("Database Server", self.database_server)
 
 	def before_insert(self):
-		if self.auto_downgrade_version_in_case_of_failure and not self.skip_disk_snapshot:
+		if self.auto_downgrade_version_in_case_of_failure and self.skip_disk_snapshot:
 			frappe.throw(
 				"Auto downgrade in case of failure is enabled. Please uncheck it or enable skip disk snapshot to proceed without creating a disk snapshot.<br>Please contact support if you need any help.",
 			)
@@ -126,3 +128,11 @@ class MariaDBUpgrade(WorkflowBuilder):
 		else:
 			self.status = "Recovered"
 		self.save()
+
+	@frappe.whitelist()
+	def delete_snapshot(self):
+		if self.snapshot:
+			snapshot_doc: VirtualDiskSnapshot = frappe.get_doc("Virtual Disk Snapshot", self.snapshot)
+			snapshot_doc.delete_snapshot()
+			self.is_snapshot_deleted = True
+			self.save()

@@ -12,6 +12,7 @@
   "team",
   "section_break_doik",
   "snapshot",
+  "is_snapshot_deleted",
   "column_break_oxgo",
   "status",
   "section_break_lmdo",
@@ -60,6 +61,8 @@
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nFailure\nRecovering\nRecovered\nFatal",
    "reqd": 1
@@ -95,6 +98,12 @@
    "fieldname": "auto_downgrade_version_in_case_of_failure",
    "fieldtype": "Check",
    "label": "Auto Downgrade Version In Case of Failure"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_snapshot_deleted",
+   "fieldtype": "Check",
+   "label": "Is Snapshot Deleted"
   }
  ],
  "grid_page_length": 50,
@@ -105,7 +114,7 @@
    "link_fieldname": "linked_docname"
   }
  ],
- "modified": "2026-04-14 18:13:32.413787",
+ "modified": "2026-04-15 11:20:42.975898",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Upgrade",
