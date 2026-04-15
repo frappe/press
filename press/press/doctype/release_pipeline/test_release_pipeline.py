@@ -248,7 +248,16 @@ class TestReleasePipeline(FrappeTestCase):
 		with self.assertRaises(ReleasePipelineFailure):
 			_resolve_python_version_conflicts_and_update_group(
 				self.test_release_group, {"frappe": ">=3.10", "erpnext": "<3.10"}
-			)
+			)  # This should raise an error since frappe and erpnext have conflicting python version requirements
+
+		_resolve_python_version_conflicts_and_update_group(
+			self.test_release_group,
+			{
+				"frappe": ">=3.10",
+				"erpnext": ">=3.10",
+				"telephony": None,  # Some apps might not give their python version requirements.
+			},
+		)
 
 	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
 	def test_implicit_dependency_addition(self):
