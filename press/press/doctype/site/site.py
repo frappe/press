@@ -1035,9 +1035,13 @@ class Site(Document, TagHelpers):
 
 	def check_space_on_server_for_restore(self):
 		app: Server = frappe.get_doc("Server", self.server)
-		self.check_and_increase_disk(app, self.restore_space_required_on_app)
+		required_space = self.restore_space_required_on_app
+		if app.is_unified_server:
+			required_space += self.restore_space_required_on_db
 
-		if app.database_server:
+		self.check_and_increase_disk(app, required_space)
+
+		if app.database_server and not app.is_unified_server:
 			db: DatabaseServer = frappe.get_doc("Database Server", app.database_server)
 			space_required = self.restore_space_required_on_db
 			if db.ip == app.ip:
