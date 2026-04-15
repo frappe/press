@@ -71,17 +71,27 @@ const markAsRead = (row, togglePopover) => {
 	});
 
 	docres.markNotificationAsRead.submit().then(() => {
-		unreadNotificationsCount.setData((data) => data - 1);
-		if (row.route) {
+		// requests tab needs to show both read/unread
+		// so dont set local state!!!
+		if (row.type !== 'Support Access') {
+			unreadNotificationsCount.setData((data) => data - 1);
+
+			resource.setData((data) => {
+				const newData = data.filter((d) => d.name !== row.name);
+				resource.originalData = newData;
+				return newData;
+			});
+		}
+
+		if (row.type === 'Support Access') {
+			unreadSupportNotificationsCount.setData((data) => data - 1);
+			openSupportAccess(null, row.document_name);
+		}
+
+		if (row.route && row.type !== 'Support Access') {
 			togglePopover();
 			router.push('/' + row.route);
 		}
-	});
-
-	resource.setData((data) => {
-		const newData = data.filter((d) => d.name !== row.name);
-		resource.originalData = newData;
-		return newData;
 	});
 };
 
@@ -105,7 +115,7 @@ const markAllAsRead = (togglePopover) => {
 };
 
 const openSupportAccess = (e, name) => {
-	e.stopPropagation();
+	e?.stopPropagation();
 	renderDialog(
 		h(SupportAccessDialog, {
 			name,
@@ -159,6 +169,7 @@ watch(activeTab, (x) => {
 		//
 	} else if (x == 1) {
 		filters.type = 'Support Access';
+		delete filters.read;
 	} else {
 		filters.read = 'Unread';
 	}
