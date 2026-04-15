@@ -190,6 +190,7 @@ const tabs = [
 		<!-- sidebar item -->
 		<template #target="{ togglePopover }">
 			<button
+				aria-label="Notifications btn"
 				@click="togglePopover"
 				class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition gap-1 hover:bg-surface-gray-3 w-full"
 				:class="[
