@@ -11,7 +11,7 @@ import re
 from base64 import b64decode, urlsafe_b64decode, urlsafe_b64encode
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 from urllib.parse import urlencode, urlparse
 
 import frappe
@@ -32,6 +32,11 @@ GITHUB_OAUTH_STATE_MAX_AGE = timedelta(minutes=10)
 
 class InvalidGitHubOAuthState(frappe.ValidationError):
 	pass
+
+
+class AppDependencyFetch(TypedDict):
+	frappe_dependencies: dict[str, str]
+	python_version: str | None
 
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
@@ -376,10 +381,13 @@ def app(owner, repository, branch, installation=None):
 
 
 @frappe.whitelist()
-def branches(owner, name, installation=None):
+def branches(owner, name, installation=None, app_source=None):
 	"""
 	Return ALL branches for the repo, following GitHub pagination.
 	"""
+	if not installation and app_source:
+		installation = frappe.db.get_value("App Source", app_source, "github_installation_id")
+
 	headers = get_auth_headers(installation)
 
 	out = []
@@ -536,3 +544,50 @@ def _construct_tree(tree, children, children_map):
 		else:
 			tree[file.name] = None
 	return tree
+
+
+def _get_pyproject_from_commit(app_source: str, commit: str):
+	repository_owner, repository, installation_id = frappe.db.get_value(
+		"App Source", app_source, ["repository_owner", "repository", "github_installation_id"]
+	)
+	headers = get_auth_headers(installation_id)
+	url = f"https://api.github.com/repos/{repository_owner}/{repository}/contents/pyproject.toml"
+
+	response = requests.get(url, params={"ref": commit}, headers=headers)
+
+	if response.status_code == 400:
+		frappe.throw("Pyproject not found at this commit", frappe.ValidationError)
+
+	if not response.ok:
+		frappe.throw("Error fetching app info from github", frappe.ValidationError)
+
+	content = b64decode(response.json().get("content", "")).decode()
+	try:
+		return tomli.loads(content)
+	except tomli.TOMLDecodeError:
+		frappe.throw("Invalid pyproject.toml file found in the app repository.", frappe.ValidationError)
+
+
+def get_dependant_apps_with_versions(app_source: str, commit: str, cache: bool = True) -> AppDependencyFetch:
+	"""Get a list of apps that are required by the given repository and commit."""
+	cache_key = f"app_deps:{app_source}:{commit}"
+
+	if cache:
+		cached_deps = frappe.cache().get_value(cache_key)
+		if cached_deps is not None:
+			return cached_deps
+
+	pyproject = _get_pyproject_from_commit(app_source, commit)
+	frappe_dependencies = pyproject.get("tool", {}).get("bench", {}).get("frappe-dependencies", {})
+	# We can safely remove frappe from the dependencies as it will be added by defult.
+	frappe_dependencies.pop("frappe", None)
+	python_version = pyproject.get("project", {}).get("requires-python")
+
+	dependency_data = AppDependencyFetch(
+		frappe_dependencies=frappe_dependencies,
+		python_version=python_version,
+	)
+
+	frappe.cache().set_value(cache_key, dependency_data, expires_in_sec=60 * 60)
+
+	return dependency_data

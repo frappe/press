@@ -1,85 +1,106 @@
-- name: Remove MariaDB Repository File
-  file:
-    path: /etc/apt/sources.list.d/mariadb.list
-    state: absent
-
-- name: Add MariaDB Repository Key
-  apt_key:
-    url: https://mariadb.org/mariadb_release_signing_key.pgp
-    state: present
-
-# This seems to be breaking on some database servers
-# TODO: Move to container deployments
-- name: Add NGINX Repository Key
-  apt_key:
-    url: https://nginx.org/keys/nginx_signing.key
-    state: present
-
-- name: Add MariaDB Repository
-  apt_repository:
-    repo: deb https://mirror.rackspace.com/mariadb/repo/10.6/ubuntu {{ ansible_distribution_release }} main
-    state: present
-    update_cache: true
-
-- name: Update APT Cache
-  apt:
-    update_cache: yes
-
-- name: Use Debian Unattended Package Installation Mode
-  shell: export DEBIAN_FRONTEND=noninteractive
+- name: Get installed MariaDB version
+  command: mariadbd --version
+  register: mariadb_10_4_to_10_6_version_cmd
   changed_when: false
+  failed_when: false
 
-- name: Stop MariaDB Service
-  systemd:
-    name: mariadb
-    state: stopped
+- name: Parse installed MariaDB version
+  set_fact:
+    mariadb_10_4_to_10_6_current_version: >-
+      {{ '0.0.0' if mariadb_10_4_to_10_6_version_cmd.rc != 0 else
+         (mariadb_10_4_to_10_6_version_cmd.stdout
+          | regex_search('[0-9]+\.[0-9]+\.[0-9]+(?=-MariaDB)')
+          | default('0.0.0', true)) }}
 
-- name: Install MariaDB
-  apt:
-    pkg:
-      - mariadb-server
-      - mariadb-client
-      - libmariadbclient18
-    state: latest
-  register: result
-  until: result.failed == false
-  retries: 5
-  delay: 120
+- name: Upgrade MariaDB from 10.4 to 10.6 only when needed
+  when: mariadb_10_4_to_10_6_current_version is version('10.6.0', '<')
+  block:
+    - name: Remove MariaDB Repository File
+      file:
+        path: /etc/apt/sources.list.d/mariadb.list
+        state: absent
 
-# In Mariadb 10.6, /etc/mysql/mariadb.conf.d/ superseds /etc/mysql/conf.d/. The way to fix it to add !includedir /etc/mysql/conf.d/ to the end of /etc/mysql/my.cnf
-# /etc/mysql/conf.d/ is in the second last line of /etc/mysql/my.cnf. Swapping is the way to go.
-- name: Remove /etc/mysql/conf.d/ from the file
-  lineinfile:
-    path: /etc/mysql/my.cnf
-    regexp: '^(!includedir /etc/mysql/conf.d/)$'
-    state: absent
+    - name: Add MariaDB Repository Key
+      apt_key:
+        url: https://mariadb.org/mariadb_release_signing_key.pgp
+        state: present
 
-- name: Add /etc/mysql/conf.d/ to the end of the file
-  lineinfile:
-    path: /etc/mysql/my.cnf
-    line: '!includedir /etc/mysql/conf.d/'
+    # This seems to be breaking on some database servers
+    # TODO: Move to container deployments
+    - name: Add NGINX Repository Key
+      apt_key:
+        url: https://nginx.org/keys/nginx_signing.key
+        state: present
 
-- name: Set Open Files Count Limit for MariaDB
-  lineinfile:
-    dest: /lib/systemd/system/mariadb.service
-    regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
-    line: 'LimitNOFILE = infinity'
-    insertafter: '\[Service\]'
-    state: present
+    - name: Add MariaDB Repository
+      apt_repository:
+        repo: deb https://mirror.rackspace.com/mariadb/repo/10.6/ubuntu {{ ansible_distribution_release }} main
+        state: present
+        update_cache: true
 
-- name: Start MariaDB Service
-  systemd:
-    daemon_reload: true
-    name: mariadb
-    state: started
-    enabled: yes
+    - name: Update APT Cache
+      apt:
+        update_cache: yes
 
-- name: Run MariaDB Upgrade
-  command: mariadb-upgrade
+    - name: Use Debian Unattended Package Installation Mode
+      shell: export DEBIAN_FRONTEND=noninteractive
+      changed_when: false
 
-- name: Restart MariaDB Service
-  systemd:
-    daemon_reload: true
-    name: mariadb
-    state: restarted
-    enabled: yes
+    - name: Stop MariaDB Service
+      systemd:
+        name: mariadb
+        state: stopped
+
+    - name: Install MariaDB
+      apt:
+        pkg:
+          - mariadb-server
+          - mariadb-client
+          - libmariadbclient18
+        state: latest
+      register: result
+      until: result.failed == false
+      retries: 5
+      delay: 120
+
+    # In Mariadb 10.6, /etc/mysql/mariadb.conf.d/ superseds /etc/mysql/conf.d/. The way to fix it to add !includedir /etc/mysql/conf.d/ to the end of /etc/mysql/my.cnf
+    # /etc/mysql/conf.d/ is in the second last line of /etc/mysql/my.cnf. Swapping is the way to go.
+    - name: Remove /etc/mysql/conf.d/ from the file
+      lineinfile:
+        path: /etc/mysql/my.cnf
+        regexp: '^(!includedir /etc/mysql/conf.d/)$'
+        state: absent
+
+    - name: Add /etc/mysql/conf.d/ to the end of the file
+      lineinfile:
+        path: /etc/mysql/my.cnf
+        line: '!includedir /etc/mysql/conf.d/'
+
+    - name: Set Open Files Count Limit for MariaDB
+      lineinfile:
+        dest: /lib/systemd/system/mariadb.service
+        regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
+        line: 'LimitNOFILE = infinity'
+        insertafter: '\[Service\]'
+        state: present
+
+    - name: Start MariaDB Service
+      systemd:
+        daemon_reload: true
+        name: mariadb
+        state: started
+        enabled: yes
+
+    - name: Run MariaDB Upgrade
+      command: mariadb-upgrade
+
+    - name: Restart MariaDB Service
+      systemd:
+        daemon_reload: true
+        name: mariadb
+        state: restarted
+        enabled: yes
+- name: Skip MariaDB 10.4 to 10.6 role when already upgraded
+  debug:
+    msg: "Skipping mariadb_10_4_to_10_6 role because installed version is {{ mariadb_10_4_to_10_6_current_version }}"
+  when: mariadb_10_4_to_10_6_current_version is version('10.6.0', '>=')
