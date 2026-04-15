@@ -48,6 +48,7 @@ from press.guards import role_guard
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
+from press.press.doctype.app.app import get_app_from_policies
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.root_domain.root_domain import get_matching_domain
 from press.press.doctype.server.server import Server
@@ -899,8 +900,42 @@ class Site(Document, TagHelpers):
 			}
 		).insert(ignore_if_duplicate=True)
 
+	def _get_apps_in_bench(self):
+		"""Get a list of all apps added to the bench (might be quicker than a get_doc)"""
+		Bench = frappe.qb.DocType("Bench")
+		BenchApp = frappe.qb.DocType("Bench App")
+		return (
+			frappe.qb.from_(BenchApp)
+			.join(Bench)
+			.on(BenchApp.parent == Bench.name)
+			.where(Bench.name == self.bench)
+			.select(BenchApp.app)
+			.run(pluck=True)
+		)
+
+	def add_mandatory_apps(self):
+		"""Add mandatory apps to the site based on policies and version."""
+		version = frappe.db.get_value("Release Group", self.group, "version")
+		# Only manadatory apps present in the release group can be added to the site.
+		apps_in_bench = set(self._get_apps_in_bench())
+		mandatory_apps = {app.app for app in get_app_from_policies(version, for_installation=True)}
+		mandatory_apps = mandatory_apps.intersection(apps_in_bench)
+
+		if not mandatory_apps:
+			return
+
+		# Add apps that are not already in the site's app list
+		existing_apps = {app.app for app in self.apps}
+		new_apps = mandatory_apps - existing_apps
+
+		for app in new_apps:
+			self.append("apps", {"app": app})
+
+		self.save()
+
 	def after_insert(self):
 		self.capture_signup_event("created_first_site")
+		self.add_mandatory_apps()
 
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
 			# create subscription

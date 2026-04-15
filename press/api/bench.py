@@ -15,6 +15,7 @@ from frappe.utils import flt, sbool
 from press.api.github import branches, get_access_token
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
+from press.press.doctype.app.app import get_app_from_policies
 from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.cluster.cluster import Cluster
@@ -62,6 +63,7 @@ def new(bench):
 	):
 		frappe.throw("You can only create benches on your servers")
 
+	print(bench)
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(
 		bench["title"],
@@ -200,19 +202,9 @@ def exists(title):
 
 
 @frappe.whitelist()
-def get_default_apps():
-	press_settings = frappe.get_single("Press Settings")
-	default_apps = press_settings.get_default_apps()
-
-	versions, rows = get_app_versions_list()
-
-	version_based_default_apps = {v.version: [] for v in versions}
-
-	for app in default_apps:
-		for row in filter(lambda x: x.app == app, rows):
-			version_based_default_apps[row.version].append(row)
-
-	return version_based_default_apps
+def get_release_group_policy(version: str):
+	"""Get the release group policy for a given version"""
+	return {"policies": get_app_from_policies(version, for_creation=True)}
 
 
 def get_app_versions_list(only_frappe=False):
