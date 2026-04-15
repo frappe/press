@@ -536,14 +536,16 @@ export default {
 						throw new DashboardError('Please select an app to proceed');
 					}
 				},
-				onSuccess() {
-					this.$router.push({
-						name: 'Deploy Candidate',
-						params: {
-							id: candidate,
-							name: this.bench,
-						},
-					});
+				onSuccess(candidate) {
+					if (candidate) {
+						this.$router.push({
+							name: 'Deploy Candidate',
+							params: {
+								id: candidate,
+								name: this.bench,
+							},
+						});
+					}
 					this.show = false;
 					this.$emit('success', null);
 				},

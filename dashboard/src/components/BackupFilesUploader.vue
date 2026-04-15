@@ -145,7 +145,7 @@ export default {
 
 			if (file.size > 5 * 1024 * 1024 * 1024) {
 				throw new Error(
-					'File size exceeds the limit of 5 GiB. Please try the <a href="https://docs.frappe.io/cloud/sites/migrate-an-existing-site#migrate-using-python-script" class=underline>migrate</a> script.',
+					'File size exceeds the limit of 5 GiB. Please try the <a href="https://docs.frappe.io/cloud/sites/migrate-an-existing-site#migrate-using-fc-restore-cli" class=underline>CLI tool</a>.',
 				);
 			}
 
