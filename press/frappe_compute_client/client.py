@@ -81,3 +81,8 @@ class Client:
 		return _dict(
 			self.client.get_api("orchestrator.api.virtual_machine_image.sync", {"image_id": image_id})
 		)
+
+	def increase_disk_size(self, volume_id: str, size: int):
+		return self.client.post_api(
+			"orchestrator.api.disk.increase_disk_size", {"volume_id": volume_id, "size": size}
+		)
