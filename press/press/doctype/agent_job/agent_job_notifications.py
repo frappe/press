@@ -285,9 +285,7 @@ def update_with_cant_connect_to_mysql_err(details: Details, job: AgentJob):
 def update_with_lost_conn_to_mysql_err(details: Details, job: AgentJob):
 	details["title"] = "Lost connection to MySQL server during query"
 
-	suggestion = (
-		"If the issue persists, please follow the steps mentioned in <i>Help</i> to rectify this issue"
-	)
+	suggestion = "If the issue persists, please consider upgrading the Database server for more memory. Please follow the steps mentioned in <i>Help</i> for instructions on how to upgrade the database server."
 	if job.on_public_server:
 		suggestion = "Please raise a support ticket if the issue persists."
 
