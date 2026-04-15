@@ -463,7 +463,11 @@ def get_dependant_apps_with_versions(app_source: str, commit: str, cache: bool =
 	# We can safely remove frappe from the dependencies as it will be added by defult.
 	frappe_dependencies.pop("frappe", None)
 	python_version = pyproject.get("project", {}).get("requires-python")
-	dependency_data = {"frappe_dependencies": frappe_dependencies, "python_version": python_version}
+
+	dependency_data = AppDependencyFetch(
+		frappe_dependencies=frappe_dependencies,
+		python_version=python_version,
+	)
 
 	frappe.cache().set_value(cache_key, dependency_data, expires_in_sec=60 * 60)
 
