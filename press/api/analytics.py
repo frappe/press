@@ -724,6 +724,7 @@ def get(name: str, timezone: str, start: str, end: str):
 		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
 		"uptime": uptime_data,
 		"plan_limit": plan_limit,
+		"timegrain": timegrain,
 	}
 
 
@@ -785,9 +786,9 @@ def get_additional_duration_reports(
 def get_advanced_analytics(
 	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
 ):
-	start_dt = parse_iso_datetime(start)
-	end_dt = parse_iso_datetime(end)
-	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+	timespan, timegrain = auto_timespan_timegrain(start, end)
 
 	job_data = get_usage(name, "job", timezone, start_dt, end_dt, timegrain)
 
@@ -984,7 +985,7 @@ def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegra
 
 	query: dict[str, str | float] = {
 		"query": (
-			f'sum(sum_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s])) by (instance) / sum(count_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s])) by (instance)'
+			f'avg_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s]) or on() vector(0)'
 		),
 		"start": start.timestamp(),
 		"end": end.timestamp(),
@@ -996,7 +997,9 @@ def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegra
 	buckets = []
 	if not response["data"]["result"]:
 		return []
-	for timestamp, value in response["data"]["result"][0]["values"]:
+	for timestamp, value in sorted(
+		{ts: val for r in response["data"]["result"] for ts, val in r["values"]}.items()
+	):
 		buckets.append(
 			frappe._dict(
 				{
@@ -1091,6 +1094,7 @@ def get_background_job_by_(
 
 
 @frappe.whitelist()
+@protected("Site")
 def get_slow_logs_by_query(
 	name: str,
 	agg_type: str,

@@ -537,16 +537,17 @@ export default {
 					}
 				},
 				onSuccess(candidate) {
-					this.$router.push({
-						name: 'Deploy Candidate',
-						params: {
-							id: candidate,
-							name: this.bench,
-						},
-					});
-					this.restrictMessage = '';
+					if (candidate) {
+						this.$router.push({
+							name: 'Deploy Candidate',
+							params: {
+								id: candidate,
+								name: this.bench,
+							},
+						});
+					}
 					this.show = false;
-					this.$emit('success', candidate);
+					this.$emit('success', null);
 				},
 				onError: this.setErrorMessage.bind(this),
 			};

@@ -174,7 +174,6 @@
         "emaill",
         "emandate",
         "Ensenada",
-        "env",
         "EPERM",
         "equivs",
         "erikgeiser",
@@ -499,8 +498,8 @@
         "probability",
         "proces",
         "procs",
-        "promql",
         "proot",
+        "promql",
         "protoc",
         "psync",
         "ptype",
@@ -777,7 +776,9 @@
         "lsyncd",
         "awk",
         "gawk",
-        "ruleid",
-        "dsl"
+        "picklable",
+        "ndarray",
+        "mult",
+        "ruleid"
     ]
 }

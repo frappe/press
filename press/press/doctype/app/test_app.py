@@ -99,6 +99,7 @@ class TestApp(FrappeTestCase):
 		)
 
 		self.assertEqual(source_1.name, source_2.name)
+		source_2 = source_2.reload()
 		self.assertEqual(len(source_2.versions), 2)
 		self.assertEqual(source_2.versions[0].version, "Version 12")
 		self.assertEqual(source_2.versions[1].version, "Version 13")
