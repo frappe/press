@@ -89,7 +89,6 @@ class ServerSnapshot(Document):
 						frappe.utils.add_to_date(date, hours=23, minutes=59, seconds=59),
 					)
 				)
-
 		return query.run(as_dict=1)
 
 	def get_doc(self, doc: "ServerSnapshot"):
@@ -398,7 +397,7 @@ class ServerSnapshot(Document):
 
 	@dashboard_whitelist()
 	def delete_snapshots(self):
-		if self.status in ["Unavailable", "Failure"]:
+		if self.status == "Unavailable":
 			# If snapshot is already marked as failure or unavailable, no need to delete
 			return
 
@@ -722,3 +721,60 @@ def sync_ongoing_server_snapshots():
 			snapshot: ServerSnapshot = frappe.get_doc("Server Snapshot", record.get("name"), for_update=True)
 			snapshot.sync(now=True, trigger_snapshot_sync=False)
 			frappe.db.commit()
+
+
+def delete_dedicated_snapshots_with_failure_status():
+	Snapshot = frappe.qb.DocType("Server Snapshot")
+	VirtualDiskSnapshot = frappe.qb.DocType("Virtual Disk Snapshot")
+
+	unavailable_vds = (
+		frappe.qb.from_(VirtualDiskSnapshot)
+		.select(VirtualDiskSnapshot.name)
+		.where(VirtualDiskSnapshot.status == "Unavailable")
+	)
+
+	base_conditions = (
+		(Snapshot.status == "Failure")
+		& (Snapshot.locked == 0)
+		& (Snapshot.modified < frappe.utils.add_to_date(frappe.utils.now_datetime(), minutes=-5))
+	)
+
+	failed_snapshots_with_active_app_server_snapshot = (
+		frappe.qb.from_(Snapshot)
+		.select(Snapshot.name)
+		.where(
+			base_conditions
+			& Snapshot.app_server_snapshot.isnotnull()
+			& Snapshot.app_server_snapshot.notin(unavailable_vds)
+		)
+		.limit(500)
+		.run(as_dict=True)
+	)
+
+	failed_snapshots_with_active_db_server_snapshot = (
+		frappe.qb.from_(Snapshot)
+		.select(Snapshot.name)
+		.where(
+			base_conditions
+			& Snapshot.database_server_snapshot.isnotnull()
+			& Snapshot.database_server_snapshot.notin(unavailable_vds)
+		)
+		.limit(500)
+		.run(as_dict=True)
+	)
+
+	records = {
+		record.get("name")
+		for record in failed_snapshots_with_active_app_server_snapshot
+		+ failed_snapshots_with_active_db_server_snapshot
+	}
+
+	for record in records:
+		if has_job_timeout_exceeded():
+			return
+		try:
+			snapshot = frappe.get_doc("Server Snapshot", record)
+			snapshot.delete_snapshots()
+			frappe.db.commit()
+		except Exception:
+			frappe.log_error("Server Snapshot Delete Error")

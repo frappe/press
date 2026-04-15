@@ -397,13 +397,15 @@ class Team(Document):
 
 	@staticmethod
 	def create_user(first_name=None, last_name=None, email=None, password=None, role=None):
+		# These roles are basic and necessary for every user.
+		basic_roles = ("Press Admin", "Press Member")
 		user = frappe.new_doc("User")
 		user.first_name = first_name
 		user.last_name = last_name
 		user.email = email
 		user.owner = email
 		user.new_password = password
-		user.append_roles(role)
+		user.append_roles(role, *basic_roles)
 		user.flags.no_welcome_mail = True
 		user.save(ignore_permissions=True)
 		return user

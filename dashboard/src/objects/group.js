@@ -926,7 +926,8 @@ export default {
 								bench: group.name,
 								lastDeploy: group.doc?.deploy_information?.last_deploy,
 								onSuccess(candidate) {
-									group.doc.deploy_information.has_running_release_pipeline = true;
+									// group.doc.deploy_information.has_running_release_pipeline = true;
+									group.doc.deploy_information.deploy_in_progress = true;
 									group.doc.deploy_information.update_available = false;
 									if (candidate) {
 										group.doc.deploy_information.last_deploy = {

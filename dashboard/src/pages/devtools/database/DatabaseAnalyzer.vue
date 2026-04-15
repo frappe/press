@@ -197,6 +197,54 @@
 				</template>
 			</ToggleContent>
 
+			<!-- Database Locks -->
+			<ToggleContent
+				class="mt-3"
+				label="Database Locks"
+				subLabel="Analyze the lock waits of the database"
+			>
+				<template #actions>
+					<div class="flex flex-row items-center gap-4">
+						<div
+							class="flex flex-row items-center gap-2"
+							@click.stop="() => {}"
+						>
+							<Switch v-model="autoRefreshDatabaseLocks" />
+							<p class="text-base text-gray-700">Auto Refresh</p>
+						</div>
+						<Button
+							:loading="this.$resources.databaseLocks.loading"
+							loading-text="Refreshing"
+							icon-left="rotate-ccw"
+							@click.stop="this.$resources.databaseLocks.submit()"
+							>Refresh</Button
+						>
+					</div>
+				</template>
+				<template #default>
+					<div
+						v-if="
+							this.$resources.databaseLocks.loading &&
+							!databaseLocks?.data?.length
+						"
+						class="flex h-60 w-full items-center justify-center gap-2 text-base text-gray-700"
+					>
+						<Spinner class="w-4" /> Loading Database Locks
+					</div>
+					<ResultTable
+						v-else
+						class="mt-2"
+						:columns="databaseLocks.columns"
+						:data="databaseLocks.data"
+						:alignColumns="alignColumns"
+						:cellFormatters="cellFormatters"
+						:fullViewFormatters="fullViewFormatters"
+						:enableCSVExport="false"
+						:borderLess="true"
+					/>
+				</template>
+			</ToggleContent>
+
 			<!-- Queries Information -->
 			<ToggleContent
 				class="mt-3"
@@ -346,7 +394,7 @@
 </template>
 <script>
 import Header from '../../../components/Header.vue';
-import { Tabs, Breadcrumbs } from 'frappe-ui';
+import { Tabs, Breadcrumbs, Switch } from 'frappe-ui';
 import LinkControl from '../../../components/LinkControl.vue';
 import ObjectList from '../../../components/ObjectList.vue';
 import { h, markRaw } from 'vue';
@@ -360,6 +408,7 @@ import DatabaseTableSchemaSizeDetailsDialog from '../../../components/devtools/d
 import DatabaseAddIndexButton from '../../../components/devtools/database/DatabaseAddIndexButton.vue';
 import DatabasePerformanceSchemaDisabledNotice from '../../../components/devtools/database/DatabasePerformanceSchemaDisabledNotice.vue';
 import { confirmDialog } from '../../../utils/components';
+import { set } from '@vueuse/core';
 
 export default {
 	name: 'DatabaseAnalyzer',
@@ -375,6 +424,7 @@ export default {
 		DatabaseTableSchemaSizeDetailsDialog,
 		DatabaseProcessKillButton,
 		DatabasePerformanceSchemaDisabledNotice,
+		Switch,
 	},
 	data() {
 		return {
@@ -383,6 +433,7 @@ export default {
 			isIndexSuggestionTriggered: false,
 			queryTabIndex: 0,
 			dbIndexTabIndex: 0,
+			autoRefreshDatabaseLocks: false,
 			showTableSchemaSizeDetailsDialog: false,
 			preSelectedSchemaForSchemaDialog: null,
 			showTableSchemasDialog: false,
@@ -399,6 +450,7 @@ export default {
 		if (site_name) {
 			this.site = site_name;
 		}
+		this.autoRefreshDatabaseLocksInBackground();
 	},
 	watch: {
 		site(site_name) {
@@ -424,6 +476,11 @@ export default {
 				dt: 'Site',
 				dn: site_name,
 				method: 'fetch_database_processes',
+			});
+			this.$resources.databaseLocks.submit({
+				dt: 'Site',
+				dn: site_name,
+				method: 'fetch_database_locks',
 			});
 		},
 	},
@@ -533,6 +590,20 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'fetch_database_processes',
+					};
+				},
+				auto: false,
+			};
+		},
+		databaseLocks() {
+			return {
+				url: 'press.api.client.run_doc_method',
+				initialData: {},
+				makeParams: () => {
+					return {
+						dt: 'Site',
+						dn: this.site,
+						method: 'fetch_database_locks',
 					};
 				},
 				auto: false,
@@ -799,6 +870,40 @@ export default {
 				}),
 			};
 		},
+		databaseLocks() {
+			if (!this.isRequiredInformationReceived) return null;
+			// 		fields = ["lock_id", "trx_id", "trx_query", "lock_mode", "lock_type", "lock_table", "lock_index", "trx_state", "trx_operation_state", "trx_started", "trx_rows_locked", "trx_rows_modified"]
+
+			const result = this.$resources.databaseLocks.data?.message ?? [];
+			return {
+				columns: [
+					'ID',
+					'Type',
+					'Mode',
+					'Table',
+					'Index',
+					'State',
+					'Started',
+					'Query',
+					'Rows Locked',
+					'Rows Modified',
+				],
+				data: result.map((e) => {
+					return [
+						e['trx_id'],
+						e['lock_type'],
+						e['lock_mode'],
+						e['lock_table'],
+						e['lock_index'],
+						e['trx_state'],
+						this.formatTrxStarted(e['trx_started']),
+						e['trx_query'],
+						e['trx_rows_locked'],
+						e['trx_rows_modified'],
+					];
+				}),
+			};
+		},
 		cellFormatters() {
 			return {
 				'Rows Examined': (v) => formatValue(v, 'commaSeperatedNumber'),
@@ -884,6 +989,22 @@ export default {
 		refreshDatabaseUsage() {
 			this.refreshingDatabaseUsage = true;
 			this.$resources.refreshDatabaseUsage.submit();
+		},
+		autoRefreshDatabaseLocksInBackground() {
+			setInterval(() => {
+				if (this.autoRefreshDatabaseLocks && this.site) {
+					this.$resources.databaseLocks.submit();
+				}
+			}, 5000);
+		},
+		formatTrxStarted(value) {
+			if (!value) return '';
+			try {
+				const diff = parseInt((new Date() - new Date(value)) / 1000);
+				return this.$format.formatSeconds(diff) + ' ago';
+			} catch (error) {
+				return value;
+			}
 		},
 	},
 };
