@@ -1,6 +1,4 @@
 name: Press Tests
-env:
-  CI: yes
 
 on:
   push:
@@ -28,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Get changed python files
         id: changed-python-files
@@ -75,7 +73,7 @@ jobs:
 
       - name: Cache pip
         if: steps.changed-python-files.outputs.any_changed == 'true'
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
@@ -98,7 +96,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -106,7 +104,7 @@ jobs:
           python-version: '3.10.20'
 
       - name: Cache pip
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
@@ -145,7 +143,7 @@ jobs:
     name: Semgrep Rules
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v6
         with:
           python-version: '3.10.20'
@@ -161,17 +159,20 @@ jobs:
     needs: changes
     if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-js-vue == 'true' || needs.changes.outputs.changed-build == 'true'
 
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+        volumes:
+          - /data/mariadb_data:/var/lib/mysql
+
     steps:
-      - name: Create mariadb data directory
-        run: |
-          sudo mkdir -p /data/mariadb_data
-
-      - name: Change ownership of mariadb data directory (for cache restore)
-        run: |
-          sudo chown -R runner:runner /data/mariadb_data
-
       - name: Clone
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -192,7 +193,7 @@ jobs:
 
       - name: Cache wkhtmltopdf
         id: cache-wkhtmltopdf
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: /usr/local/bin/wkhtmltopdf
           key: ${{ runner.os }}-wkhtmltopdf-0.12.3
@@ -206,8 +207,7 @@ jobs:
           sudo chmod o+x /usr/local/bin/wkhtmltopdf
 
       - name: Cache pip
-        id: cache-pip
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*dev-requirements.txt, **/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
@@ -220,109 +220,35 @@ jobs:
         run: 'echo "::set-output name=dir::$(yarn cache dir)"'
 
       - name: Cache yarn
-        uses: actions/cache@v5
-        id: cache-yarn
+        uses: actions/cache@v4
+        id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - name: Install Bench command
-        run: pip install frappe-bench
-
-      - name: Get current week number
-        id: week
-        run: echo "week=$(date +'%Y-%V')" >> $GITHUB_OUTPUT
-
-      - name: Cache bench directory (restore)
-        id: cache-bench-dir
-        uses: actions/cache@v5
-        with:
-          key: ${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
-          path: /home/runner/frappe-bench
-        if: |
-          github.ref != 'develop' &&
-          github.ref != 'master' &&
-          !startsWith(github.ref, 'release') &&
-          !startsWith(github.ref, 'hotfix') &&
-          (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'skip-cache'))
-
-      - name: Update press repo in bench dir
-        run: |
-          rsync -a --delete --exclude='.git' ${GITHUB_WORKSPACE}/ /home/runner/frappe-bench/apps/press/
-        if: steps.cache-bench-dir.outputs.cache-hit == 'true'
-
-      - name: Cache mariadb data directory (restore)
-        id: cache-mariadb-data
-        uses: actions/cache@v5
-        with:
-          key: ${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
-          path: /data/mariadb_data
-        if: |
-          github.ref != 'develop' &&
-          github.ref != 'master' &&
-          !startsWith(github.ref, 'release') &&
-          !startsWith(github.ref, 'hotfix') &&
-          (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'skip-cache'))
-
-      - name: Start mariadb service
-        run: |
-          docker run -d \
-            --name mariadb \
-            -e MYSQL_ROOT_PASSWORD=root \
-            -p 3306:3306 \
-            -v /data/mariadb_data:/var/lib/mysql \
-            --health-cmd="mysqladmin ping" \
-            --health-interval=5s \
-            --health-timeout=2s \
-            --health-retries=3 \
-            mariadb:10.6
-
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
-        if: steps.cache-bench-dir.outputs.cache-hit != 'true' || steps.cache-mariadb-data.outputs.cache-hit != 'true'
 
-      - name: Setup python requirements if needed
-        working-directory: /home/runner/frappe-bench
-        run: |
-          bench setup requirements --python
-        if: steps.cache-pip.outputs.cache-hit != 'true' && steps.cache-bench-dir.outputs.cache-hit == 'true'
-
-      - name: Bench start if cached
-        working-directory: /home/runner/frappe-bench
-        run: |
-          bench start &> bench_start_logs.txt &
-        if: steps.cache-bench-dir.outputs.cache-hit == 'true' && steps.cache-mariadb-data.outputs.cache-hit == 'true'
-
-      - name: Bench migrate if cached
-        working-directory: /home/runner/frappe-bench
-        run: |
-          bench --site test_site migrate
-        if: steps.cache-bench-dir.outputs.cache-hit == 'true' && steps.cache-mariadb-data.outputs.cache-hit == 'true'
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ failure() && contains( github.event.pull_request.labels.*.name, 'debug-gha') }}
+      - name: Cache bench directory
+        uses: actions/cache/save@v4
+        with:
+          key: bench-dir-${{ github.run_id }}
+          path: /home/runner/frappe-bench
 
       - name: Stop mariadb service
         run: |
-          docker stop mariadb
+          docker stop ${{ job.services.mariadb.id }}
 
       - name: Change ownership of mariadb data directory (for caching)
         run: |
           sudo chown -R runner:runner /data/mariadb_data
 
-      - name: Cache bench directory
-        uses: actions/cache/save@v5
-        with:
-          key: post-${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
-          path: /home/runner/frappe-bench
-
       - name: Cache mariadb data directory
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v4
         with:
-          key: post-${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
+          key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
 
   ui-tests:
@@ -336,10 +262,6 @@ jobs:
     if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-js-vue == 'true' || needs.changes.outputs.changed-build == 'true'
 
     steps:
-      - name: Get current week number
-        id: week
-        run: echo "week=$(date +'%Y-%V')" >> $GITHUB_OUTPUT
-
       - name: Create mariadb data directory
         run: |
           sudo mkdir -p /data/mariadb_data
@@ -349,9 +271,9 @@ jobs:
           sudo chown -R runner:runner /data/mariadb_data
 
       - name: Restore mariadb data directory from cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v4
         with:
-          key: post-${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
+          key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
 
       - name: Change ownership of mariadb data directory (post cache restore)
@@ -371,6 +293,9 @@ jobs:
             --health-retries=3 \
             mariadb:10.6
 
+      - name: Clone
+        uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -379,7 +304,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 18
           check-latest: true
 
       - name: Cache apt
@@ -390,7 +315,7 @@ jobs:
 
       - name: Cache wkhtmltopdf
         id: cache-wkhtmltopdf
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: /usr/local/bin/wkhtmltopdf
           key: ${{ runner.os }}-wkhtmltopdf-0.12.3
@@ -403,14 +328,14 @@ jobs:
           sudo mv /tmp/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
           sudo chmod o+x /usr/local/bin/wkhtmltopdf
 
-      - name: Install Bench command
-        run: pip install frappe-bench
-
       - name: Restore bench directory from cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v4
         with:
           path: /home/runner/frappe-bench
-          key: post-${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
+          key: bench-dir-${{ github.run_id }}
+
+      - name: Install Bench command
+        run: pip install frappe-bench
 
       - name: Don't run unnecessary services
         working-directory: /home/runner/frappe-bench
@@ -419,16 +344,6 @@ jobs:
           sed -i 's/schedule:/# schedule:/g' Procfile
           sed -i 's/socketio:/# socketio:/g' Procfile
           sed -i 's/redis_socketio:/# redis_socketio:/g' Procfile
-
-      - name: Setup node modules if needed
-        working-directory: /home/runner/frappe-bench
-        run: |
-          bench setup requirements --node
-        if: steps.cache-yarn.outputs.cache-hit != 'true'
-
-      - name: Bench build
-        run: bench build --app press
-        working-directory: /home/runner/frappe-bench
 
       - name: Start Bench
         working-directory: /home/runner/frappe-bench
@@ -486,14 +401,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: [1, 2, 3, 4, 5]
+        container: [1, 2, 3]
     if: needs.changes.outputs.changed-python == 'true' || needs.changes.outputs.changed-json == 'true' || needs.changes.outputs.changed-build == 'true'
 
     steps:
-      - name: Get current week number
-        id: week
-        run: echo "week=$(date +'%Y-%V')" >> $GITHUB_OUTPUT
-
       - name: Create mariadb data directory
         run: |
           sudo mkdir -p /data/mariadb_data
@@ -503,9 +414,9 @@ jobs:
           sudo chown -R runner:runner /data/mariadb_data
 
       - name: Restore mariadb data directory from cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v4
         with:
-          key: post-${{ runner.os }}-mariadb-data-${{ github.ref }}-${{ steps.week.outputs.week }}
+          key: mariadb-data-${{ github.run_id }}
           path: /data/mariadb_data
 
       - name: Change ownership of mariadb data directory (post cache restore)
@@ -525,6 +436,9 @@ jobs:
             --health-retries=3 \
             mariadb:10.6
 
+      - name: Clone
+        uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -536,19 +450,14 @@ jobs:
           packages: redis-server libcups2-dev
           version: 1.0 # Arbitrary version to bust cache when needed
 
-      - name: Install Bench command
-        run: pip install frappe-bench
-
       - name: Restore bench directory from cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v4
         with:
           path: /home/runner/frappe-bench
-          key: post-${{ runner.os }}-bench-dir-${{ github.ref }}-${{ steps.week.outputs.week }}
+          key: bench-dir-${{ github.run_id }}
 
-      - name: Allow tests
-        working-directory: /home/runner/frappe-bench
-        run: |
-          bench --site test_site set-config allow_tests true
+      - name: Install Bench command
+        run: pip install frappe-bench
 
       - name: Start Bench
         working-directory: /home/runner/frappe-bench
@@ -570,14 +479,11 @@ jobs:
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |
-          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 5 --build-number ${{ matrix.container }}
+          bench --site test_site set-config allow_tests true
+          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 3 --build-number ${{ matrix.container }}
         env:
           TYPE: server
           COVERAGE_RCFILE: /home/runner/frappe-bench/apps/press/.coveragerc
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ failure() && contains( github.event.pull_request.labels.*.name, 'debug-gha') }}
 
       - name: Upload coverage reports to Codecov
         uses: actions/upload-artifact@v4
@@ -599,6 +505,9 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
+      - name: Clone
+        uses: actions/checkout@v4
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
 
@@ -608,22 +517,3 @@ jobs:
           fail_ci_if_error: false
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
-
-  tests-pass:
-    name: Tests Pass
-    needs: [server-tests, ui-tests]
-    if: always()
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Check test results
-        run: |
-          if [[ "${{ needs.server-tests.result }}" == "failure" || "${{ needs.server-tests.result }}" == "cancelled" ]]; then
-            echo "server-tests failed or were cancelled"
-            exit 1
-          fi
-          if [[ "${{ needs.ui-tests.result }}" == "failure" || "${{ needs.ui-tests.result }}" == "cancelled" ]]; then
-            echo "ui-tests failed or were cancelled"
-            exit 1
-          fi
-          echo "All tests passed or were skipped"
