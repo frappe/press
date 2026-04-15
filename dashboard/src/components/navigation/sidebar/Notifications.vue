@@ -197,7 +197,14 @@ const tabs = [
 					$attrs.class,
 				]"
 			>
-				<LucideInbox class="m-1 h-4 w-4 text-ink-gray-6" />
+				<span class="flex relative">
+					<LucideBell class="m-1 size-4 text-ink-gray-6" />
+					<span
+						v-if="unreadNotificationsCount.data > 0"
+						class="size-1.5 bg-blue-400 rounded-full absolute right-0 top-0"
+					/>
+				</span>
+
 				<span class="text-sm flex-1 text-left">{{ item.name }}</span>
 
 				<span
