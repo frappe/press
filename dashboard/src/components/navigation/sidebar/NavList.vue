@@ -13,6 +13,7 @@ import Activity from '~icons/lucide/activity';
 import Logs from '~icons/lucide/scroll-text';
 import Globe from '~icons/lucide/globe';
 import Code from '~icons/lucide/code';
+import Partner from '~icons/lucide/user-plus';
 import FileSearch from '~icons/lucide/file-search';
 import NotificationPanel from './Notifications.vue';
 import SearchItem from './SearchItem.vue';
@@ -167,7 +168,7 @@ const navigation = computed(() => {
 			icon: Globe,
 			route: '/partners',
 			isActive: routeName === 'Partnership',
-			condition: Boolean($team.doc.erpnext_partner),
+			// condition: Boolean($team.doc.erpnext_partner),
 			disabled: enforce2FA,
 		},
 		{
@@ -182,6 +183,14 @@ const navigation = computed(() => {
 			icon: LucideActivity,
 			route: '/status',
 			isActive: routeName === 'Status',
+			disabled: enforce2FA,
+		},
+		// TODO: remove this once the partner onboarding is complete -adding for easy navigation
+		{
+			name: 'Partner Onboarding',
+			icon: Partner,
+			route: '/partner-onboarding',
+			isActive: routeName === 'Partner Onboarding',
 			disabled: enforce2FA,
 		},
 	].filter((item) => item.condition ?? true);

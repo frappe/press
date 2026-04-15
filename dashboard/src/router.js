@@ -385,6 +385,11 @@ let router = createRouter({
 			],
 		},
 		{
+			name: 'Partner Onboarding',
+			path: '/partner-onboarding',
+			component: () => import('@/onboarding/PartnerOnboarding.vue'),
+		},
+		{
 			name: 'Signup Create Site',
 			path: '/create-site',
 			redirect: { name: 'Home' },
