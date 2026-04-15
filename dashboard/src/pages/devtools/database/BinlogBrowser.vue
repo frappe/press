@@ -250,7 +250,7 @@
 			class="z-1000 bg-white-overlay-800 absolute inset-0 flex justify-center items-center"
 			v-if="binlog_index_state_loaded && this.$resources?.timeline?.loading"
 		>
-			<div class="flex gap-2 text-base text-gray-800">
+			<div class="flex gap-2 text-base text-gray-800 items-center">
 				<Spinner class="w-4" />
 				Building timeline...
 			</div>
