@@ -242,8 +242,8 @@ class TestReleasePipeline(FrappeTestCase):
 		for dependency in test_release_group.dependencies:
 			if dependency.dependency == "PYTHON_VERSION":
 				self.assertEqual(
-					dependency.version, "3.14.0"
-				)  # >=3.10 is updated to 3.14.0 since we take the highest possible version that fits
+					dependency.version, "3.14"
+				)  # >=3.10 is updated to 3.14 since we take the highest possible version that fits
 
 		with self.assertRaises(ReleasePipelineFailure):
 			_resolve_python_version_conflicts_and_update_group(
