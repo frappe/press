@@ -1440,6 +1440,16 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			},
 		)
 
+	def fetch_database_locks(self, site):
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.server)
+		return self.post(
+			"database/locks",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+		)
+
 	def kill_database_process(self, site, id):
 		return self.post(
 			f"benches/{site.bench}/sites/{site.name}/database/kill-process/{id}",
