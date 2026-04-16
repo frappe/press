@@ -119,7 +119,7 @@ class SiteAction(Document):
 		elif not self.get_argument("new_release_group_name"):
 			# No destination group and no new name provided - auto-generate
 			if current_release_group.public:
-				self.set_argument("new_release_group_name", current_release_group.title + _(" - Clone"))
+				self.set_argument("new_release_group_name", current_release_group.title + " - Clone")
 			else:
 				# Private group - add the destination server to the current group if needed
 				if not any(s.server == destination_server for s in current_release_group.servers):
