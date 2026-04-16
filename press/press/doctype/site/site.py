@@ -5057,14 +5057,6 @@ def create_site_status_update_webhook_event(site: str):
 	create_webhook_event("Site Status Update", record, record.team)
 
 
-class SiteToArchive(frappe._dict):
-	name: str
-	plan: str
-	team: str
-	bench: str
-	offsite_backups: DF.Check
-
-
 def get_suspended_time(site: str):
 	return frappe.get_all(
 		"Site Activity",
@@ -5079,20 +5071,16 @@ def archive_suspended_sites():
 	archive_at_once = 6
 	archive_threshold = frappe.utils.add_to_date(frappe.utils.now(), days=-ARCHIVE_AFTER_SUSPEND_DAYS)
 
-	sites = frappe.qb.DocType("Site")
-	site_plans = frappe.qb.DocType("Site Plan")
+	Site = frappe.qb.DocType("Site")
 
 	sites_to_drop = (
-		frappe.qb.from_(sites)
-		.join(site_plans)
-		.on(sites.plan == site_plans.name)
+		frappe.qb.from_(Site)
 		.where(
-			(sites.status == "Suspended")
-			& (sites.suspended_at.isnotnull())
-			& (sites.suspended_at <= archive_threshold)
+			(Site.status == "Suspended")
+			& (Site.suspended_at.isnotnull())
+			& (Site.suspended_at <= archive_threshold)
 		)
-		.select(sites.name, sites.team, sites.plan, sites.bench, site_plans.offsite_backups)
-		.orderby(sites.suspended_at, order=frappe.qb.asc)
+		.select(Site.name, Site.bench)
 		.limit(archive_at_once)
 		.run(as_dict=True)
 	)
@@ -5109,6 +5097,29 @@ def archive_suspended_sites():
 		except Exception:
 			frappe.log_error(title="Suspended Site Archive Error")
 			frappe.db.rollback()
+
+
+def notify_sites_before_archival():
+	notify_threshold = frappe.utils.add_to_date(
+		frappe.utils.now(), days=-(ARCHIVE_AFTER_SUSPEND_DAYS - NOTIFY_BEFORE_ARCHIVAL_DAYS)
+	)
+	archive_threshold = frappe.utils.add_to_date(frappe.utils.now(), days=-ARCHIVE_AFTER_SUSPEND_DAYS)
+
+	Site = frappe.qb.DocType("Site")
+	sites_to_notify = (
+		frappe.qb.from_(Site)
+		.where(
+			(Site.status == "Suspended")
+			& (Site.suspended_at.isnotnull())
+			& (Site.suspended_at <= notify_threshold)
+			& (Site.suspended_at > archive_threshold)
+		)
+		.select(Site.name)
+		.run(as_dict=True)
+	)
+
+	for site_dict in sites_to_notify:
+		notify_site_scheduled_for_archival(site_dict.name)
 
 
 def notify_site_scheduled_for_archival(site_name: str):
