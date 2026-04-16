@@ -23,6 +23,9 @@ const SwitchTeamDialog2 = defineAsyncComponent(
 	() => import('../../SwitchTeamDialog.vue'),
 );
 
+const support = () => {
+	window.open('https://support.frappe.io/helpdesk/my-tickets/new', '_blank');
+};
 const docs = () => {
 	window.open('https://docs.frappe.io/cloud', '_blank');
 };
@@ -104,7 +107,7 @@ const releaseNotes = () => {
 				{
 					label: 'Get Support',
 					icon: LucideSupport,
-					onClick: docs,
+					onClick: support,
 				},
 				{
 					label: 'Share Feedback',
