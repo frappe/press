@@ -5071,16 +5071,16 @@ def archive_suspended_sites():
 	archive_at_once = 6
 	archive_threshold = frappe.utils.add_to_date(frappe.utils.now(), days=-ARCHIVE_AFTER_SUSPEND_DAYS)
 
-	Site = frappe.qb.DocType("Site")
+	SiteTable = frappe.qb.DocType("Site")
 
 	sites_to_drop = (
-		frappe.qb.from_(Site)
+		frappe.qb.from_(SiteTable)
 		.where(
-			(Site.status == "Suspended")
-			& (Site.suspended_at.isnotnull())
-			& (Site.suspended_at <= archive_threshold)
+			(SiteTable.status == "Suspended")
+			& (SiteTable.suspended_at.isnotnull())
+			& (SiteTable.suspended_at <= archive_threshold)
 		)
-		.select(Site.name, Site.bench)
+		.select(SiteTable.name, SiteTable.bench)
 		.limit(archive_at_once)
 		.run(as_dict=True)
 	)
@@ -5105,16 +5105,16 @@ def notify_sites_before_archival():
 	)
 	archive_threshold = frappe.utils.add_to_date(frappe.utils.now(), days=-ARCHIVE_AFTER_SUSPEND_DAYS)
 
-	Site = frappe.qb.DocType("Site")
+	SiteTable = frappe.qb.DocType("Site")
 	sites_to_notify = (
-		frappe.qb.from_(Site)
+		frappe.qb.from_(SiteTable)
 		.where(
-			(Site.status == "Suspended")
-			& (Site.suspended_at.isnotnull())
-			& (Site.suspended_at <= notify_threshold)
-			& (Site.suspended_at > archive_threshold)
+			(SiteTable.status == "Suspended")
+			& (SiteTable.suspended_at.isnotnull())
+			& (SiteTable.suspended_at <= notify_threshold)
+			& (SiteTable.suspended_at > archive_threshold)
 		)
-		.select(Site.name)
+		.select(SiteTable.name)
 		.run(as_dict=True)
 	)
 
