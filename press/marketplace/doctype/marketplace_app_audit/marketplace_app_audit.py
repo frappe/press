@@ -1,6 +1,7 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 from dataclasses import asdict, dataclass
 
 import frappe
@@ -130,6 +131,7 @@ class MarketplaceAppAudit(Document):
 		finally:
 			self.finished_at = frappe.utils.now_datetime()
 			self.save()
+			self._handle_audit_outcome()
 
 	@frappe.whitelist()
 	def rerun_audit(self):
@@ -266,3 +268,95 @@ class MarketplaceAppAudit(Document):
 				lines.append(f"  {severity}: {s['Fail']} failed, {s['Warn']} warnings")
 
 		return "\n".join(lines)
+
+	def _handle_audit_outcome(self):
+		"""
+		This method will ensure that some action is taken on the audit outcome.
+		"""
+		# first check if enable audit action is enabled in Marketplace settings
+		if not frappe.db.get_single_value("Marketplace Settings", "enable_audit_actions"):
+			return
+
+		if self.audit_result == "Fail":
+			self._yank_release()
+			self._auto_reject_approval_requests()
+
+	def _yank_release(self) -> None:
+		"""
+		Yanks the release to prevent deployment on benches.
+		Creating a yanked app release record will automatically mark the release as yanked in it's after insert hook.
+		"""
+		release = frappe.get_doc("App Release", self.app_release)
+		if release.status in ("Draft", "Approved"):
+			frappe.get_doc(
+				doctype="Yanked App Release",
+				hash=release.hash,
+				parent_app_release=release.name,
+				team=release.team,
+			).insert()
+
+	def _auto_reject_approval_requests(self) -> None:
+		"""
+		Auto rejects all open approval requests for the release.
+		"""
+		open_approval_requests = frappe.get_all(
+			"App Release Approval Request",
+			filters={"app_release": self.app_release, "status": "Open"},
+			pluck="name",
+		)
+		if not open_approval_requests:
+			return
+
+		for approval_request in open_approval_requests:
+			request = frappe.get_doc("App Release Approval Request", approval_request)
+			request.status = "Rejected"
+			request.reason_for_rejection = (
+				f"Automated audit failed.\n\n"
+				f"Result: {str(self.audit_result).strip()}\n"
+				f"Summary: {str(self.audit_summary).strip()}\n\n"
+				f"Please review the audit results and fix the issues pointed."
+			)
+			request.save()
+
+	@frappe.whitelist()
+	def send_report_to_publisher(self):
+		"""Email the app publisher a structured audit report with all failing checks."""
+		marketplace_app_team, marketplace_app_title = frappe.db.get_value(
+			"Marketplace App", self.marketplace_app, ["team", "title"]
+		)
+		publisher_email = frappe.db.get_value("Team", marketplace_app_team, "user")
+
+		failing_checks = []
+		for check in self.audit_checks:
+			if check.result in ("Fail", "Warn"):
+				details_parsed = None
+				if check.details:
+					try:
+						details_parsed = json.loads(check.details)
+					except (json.JSONDecodeError, TypeError):
+						details_parsed = None
+
+				failing_checks.append(
+					{
+						"severity": check.severity,
+						"check_name": check.check_name,
+						"category": check.category,
+						"result": check.result,
+						"message": check.message,
+						"details": details_parsed,
+						"remediation": check.remediation,
+					}
+				)
+
+		frappe.sendmail(
+			recipients=[publisher_email],
+			subject=f"Marketplace Audit Report: {marketplace_app_title}",
+			args={
+				"app_title": marketplace_app_title,
+				"audit_result": self.audit_result,
+				"audit_summary": self.audit_summary,
+				"failing_checks": failing_checks,
+			},
+			template="marketplace_audit_report",
+		)
+		frappe.msgprint(f"Audit report sent to {publisher_email}")
