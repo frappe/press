@@ -231,6 +231,7 @@ scheduler_events = {
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",
 		"press.press.doctype.site_backup.site_backup.delete_backups_for_archived_sites_after_retention",
+		"press.press.doctype.site.site.notify_sites_before_archival",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -242,7 +243,6 @@ scheduler_events = {
 		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
 		"press.overrides.cleanup_ansible_tmp_files",
 		"press.press.doctype.site.site.archive_suspended_sites",
-		"press.press.doctype.site.site.notify_sites_before_archival",
 		"press.press.doctype.site.site.send_warning_mail_regarding_sites_exceeding_disk_usage",
 		"press.press.doctype.add_on_storage_log.add_on_storage_log.send_disk_extention_notification",
 		"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.expire_backups",
@@ -280,7 +280,6 @@ scheduler_events = {
 	"all": [
 		"press.auth.flush",
 		"press.press.doctype.site.sync.sync_setup_wizard_status",
-		"press.press.doctype.site.archive.archive_suspended_trial_sites",
 		"press.press.doctype.agent_job.agent_job.flush",
 	],
 	"cron": {
