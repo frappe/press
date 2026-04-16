@@ -15,8 +15,9 @@
   "section_break_7",
   "server_type",
   "server",
+  "virtual_machine",
   "column_break_fhyz",
-  "virtual_machine"
+  "arguments"
  ],
  "fields": [
   {
@@ -100,6 +101,14 @@
   {
    "fieldname": "column_break_fhyz",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "{}",
+   "fieldname": "arguments",
+   "fieldtype": "Small Text",
+   "label": "Arguments",
+   "reqd": 1,
+   "set_only_once": 1
   }
  ],
  "grid_page_length": 50,
@@ -114,7 +123,7 @@
    "link_fieldname": "linked_docname"
   }
  ],
- "modified": "2026-04-16 22:33:03.958588",
+ "modified": "2026-04-16 23:16:27.885432",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job",

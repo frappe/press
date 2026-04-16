@@ -189,3 +189,17 @@ class WorkflowBuilder(Document):
 			if self.kv_store_type != "in_memory":
 				self.kv_store_type = "in_memory"
 				self.kv_store_reference = None
+
+	def defer_current_task(self, message: str = "User has requested to defer the task later.") -> None:
+		if not self.flags.in_press_workflow_execution:
+			return
+
+		assert self.workflow_name is not None, "Workflow name must be set to defer current task"
+
+		raise PressWorkflowTaskEnqueued(
+			"User has requested to retry the task later.",
+			self.workflow_name,
+			self.flags.current_press_workflow_task
+			if hasattr(self.flags, "current_press_workflow_task")
+			else None,
+		)

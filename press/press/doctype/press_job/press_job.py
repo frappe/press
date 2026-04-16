@@ -1,7 +1,9 @@
-from __future__ import annotations
-
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
+
+import json
+from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
@@ -23,10 +25,60 @@ def _init_jobs_registry() -> None:
 	if _JOBS_REGISTRY:
 		return
 
+	from press.press.doctype.press_job.jobs.archive_server import ArchiveServerJob
+	from press.press.doctype.press_job.jobs.attach_volume import AttachVolumeJob
+	from press.press.doctype.press_job.jobs.auto_scale_application_server import (
+		AutoScaleApplicationServerJob,
+	)
+	from press.press.doctype.press_job.jobs.auto_scale_down_application_server import (
+		AutoScaleDownApplicationServerJob,
+	)
+	from press.press.doctype.press_job.jobs.auto_scale_up_application_server import (
+		AutoScaleUpApplicationServerJob,
+	)
+	from press.press.doctype.press_job.jobs.create_server import CreateServerJob
+	from press.press.doctype.press_job.jobs.create_server_snapshot import CreateServerSnapshotJob
+	from press.press.doctype.press_job.jobs.increase_disk_size import IncreaseDiskSizeJob
+	from press.press.doctype.press_job.jobs.increase_swap import IncreaseSwapJob
+	from press.press.doctype.press_job.jobs.prune_docker_system import PruneDockerSystemJob
+	from press.press.doctype.press_job.jobs.prune_mirror_registry import PruneMirrorRegistryJob
+	from press.press.doctype.press_job.jobs.remove_on_prem_failover import RemoveOnPremFailoverJob
 	from press.press.doctype.press_job.jobs.reset_swap_on_server import ResetSwapOnServerJob
+	from press.press.doctype.press_job.jobs.resize_server import ResizeServerJob
+	from press.press.doctype.press_job.jobs.resume_services_after_snapshot import (
+		ResumeServicesAfterSnapshotJob,
+	)
+	from press.press.doctype.press_job.jobs.setup_on_prem_failover import SetupOnPremFailoverJob
+	from press.press.doctype.press_job.jobs.snapshot_disk import SnapshotDiskJob
+	from press.press.doctype.press_job.jobs.stop_and_start_server import StopAndStartServerJob
+	from press.press.doctype.press_job.jobs.trigger_build_server_cleanup import (
+		TriggerBuildServerCleanupJob,
+	)
+	from press.press.doctype.press_job.jobs.upgrade_mariadb import UpgradeMariaDBJob
+	from press.press.doctype.press_job.jobs.warn_disk import WarnDiskJob
 
 	_JOBS_REGISTRY = {
+		"Archive Server": ArchiveServerJob,
+		"Attach Volume": AttachVolumeJob,
+		"Auto Scale Application Server": AutoScaleApplicationServerJob,
+		"Auto Scale Down Application Server": AutoScaleDownApplicationServerJob,
+		"Auto Scale Up Application Server": AutoScaleUpApplicationServerJob,
+		"Create Server": CreateServerJob,
+		"Create Server Snapshot": CreateServerSnapshotJob,
+		"Increase Disk Size": IncreaseDiskSizeJob,
+		"Increase Swap": IncreaseSwapJob,
+		"Prune Docker system": PruneDockerSystemJob,
+		"Prune Mirror Registry": PruneMirrorRegistryJob,
+		"Remove On-Prem Failover": RemoveOnPremFailoverJob,
 		"Reset Swap": ResetSwapOnServerJob,
+		"Resize Server": ResizeServerJob,
+		"Resume Services After Snapshot": ResumeServicesAfterSnapshotJob,
+		"Setup On-Prem Failover": SetupOnPremFailoverJob,
+		"Snapshot Disk": SnapshotDiskJob,
+		"Stop and Start Server": StopAndStartServerJob,
+		"Trigger Build Server Cleanup": TriggerBuildServerCleanupJob,
+		"Upgrade MariaDB": UpgradeMariaDBJob,
+		"Warn disk at 80%": WarnDiskJob,
 	}
 
 
@@ -39,6 +91,7 @@ class PressJob(WorkflowBuilder):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		arguments: DF.SmallText
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		job_type: DF.Link
@@ -49,6 +102,10 @@ class PressJob(WorkflowBuilder):
 		status: DF.Literal["Pending", "Running", "Skipped", "Success", "Failure"]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
+
+	@cached_property
+	def arguments_dict(self) -> "frappe._dict":
+		return frappe._dict(json.loads(self.get("arguments") or "{}"))
 
 	@property
 	def server_doc(self) -> "Server | DatabaseServer":
@@ -110,8 +167,13 @@ class PressJob(WorkflowBuilder):
 			self.__class__ = _JOBS_REGISTRY[self.job_type]
 
 	def start_workflow(self) -> str:
+		if self.status != "Pending":
+			frappe.throw("Only jobs with Pending status can be started")
+
 		if not hasattr(self, "execute"):
 			raise NotImplementedError("Press Job implementation must have an execute method")
+		self.start = now_datetime()
+		self.status = "Running"
 		return self.execute.run_as_workflow()
 
 	def on_workflow_success(self, workflow: "PressWorkflow"):
