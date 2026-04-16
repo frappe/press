@@ -664,8 +664,15 @@ def backups(name):
 @frappe.whitelist()
 @protected("Site")
 def get_backup_link(name, backup, file):
+	if file not in ["database", "public", "private", "config"]:
+		frappe.throw("Invalid file type")  # nosemgrep
+
 	try:
-		remote_file = frappe.db.get_value("Site Backup", backup, f"remote_{file}_file")
+		remote_file = frappe.db.get_value(
+			"Site Backup",
+			{"name": backup, "site": name},
+			f"remote_{file}_file",
+		)
 		return frappe.get_doc("Remote File", remote_file).download_link
 	except ClientError:
 		log_error(title="Offsite Backup Response Exception")

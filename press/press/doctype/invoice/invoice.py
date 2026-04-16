@@ -309,14 +309,16 @@ class Invoice(Document):
 				# or issue a refund if succeeded
 				self.save()  # status is already Paid, so no need to set again
 			else:
-				self.change_stripe_invoice_status("Void")
+				# check if invoice is already void earlier
+				if invoice.status != "void":
+					self.change_stripe_invoice_status("Void")
 				self.add_comment(
 					text=(
 						f"Stripe Invoice {self.stripe_invoice_id} voided because payment is done via credits."
 					)
 				)
 
-		self.save()
+		self.save(ignore_permissions=True)
 
 		if self.amount_due > 0:
 			if self.payment_mode == "Prepaid Credits":

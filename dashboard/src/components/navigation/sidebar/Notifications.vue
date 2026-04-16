@@ -197,7 +197,7 @@ const tabs = [
 			<button
 				aria-label="Notifications btn"
 				@click="togglePopover"
-				class="flex items-center rounded px-2.5 py-1.5 md:px-3 md:py-2 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-3 w-full"
+				class="flex items-center rounded px-2 py-1.5 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-2 w-full"
 				:class="[
 					item.disabled ? 'pointer-events-none opacity-50' : '',
 					$attrs.class,

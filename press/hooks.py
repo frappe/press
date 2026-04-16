@@ -231,6 +231,7 @@ scheduler_events = {
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",
 		"press.press.doctype.site_backup.site_backup.delete_backups_for_archived_sites_after_retention",
+		"press.press.doctype.site.site.notify_sites_before_archival",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -278,7 +279,6 @@ scheduler_events = {
 	"all": [
 		"press.auth.flush",
 		"press.press.doctype.site.sync.sync_setup_wizard_status",
-		"press.press.doctype.site.archive.archive_suspended_trial_sites",
 		"press.press.doctype.agent_job.agent_job.flush",
 	],
 	"cron": {
