@@ -22,11 +22,10 @@
  "fields": [
   {
    "fieldname": "job_type",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Job Type",
-   "options": "Press Job Type",
    "reqd": 1,
    "search_index": 1,
    "set_only_once": 1
@@ -123,7 +122,7 @@
    "link_fieldname": "linked_docname"
   }
  ],
- "modified": "2026-04-16 23:16:27.885432",
+ "modified": "2026-04-17 02:56:56.915694",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job",

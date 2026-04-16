@@ -94,7 +94,7 @@ class PressJob(WorkflowBuilder):
 		arguments: DF.SmallText
 		duration: DF.Duration | None
 		end: DF.Datetime | None
-		job_type: DF.Link
+		job_type: DF.Data
 		name: DF.Int | None
 		server: DF.DynamicLink | None
 		server_type: DF.Link | None

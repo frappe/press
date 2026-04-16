@@ -7,37 +7,21 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "steps",
-  "callback_script",
-  "callback_max_retry"
+  "disclaimer"
  ],
  "fields": [
   {
-   "fieldname": "steps",
-   "fieldtype": "Table",
-   "label": "Steps",
-   "options": "Press Job Type Step",
-   "reqd": 1
-  },
-  {
-   "description": "The callback function will be called once Press Job reaches the terminating state [Success, Failure].",
-   "fieldname": "callback_script",
-   "fieldtype": "Code",
-   "label": "Callback Script",
-   "options": "Python"
-  },
-  {
    "default": "1",
-   "fieldname": "callback_max_retry",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Callback Max Retry"
+   "fieldname": "disclaimer",
+   "fieldtype": "HTML",
+   "label": "Disclaimer",
+   "options": "<strong>The steps and callback script for press job has been deprecated and moved to code.</strong><br>\n<p>Please check press/press/doctype/press_job/jobs folder for more info</p>"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-31 13:52:28.892322",
+ "modified": "2026-04-17 02:55:16.274403",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job Type",
