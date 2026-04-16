@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 
 @frappe.whitelist()
-def get(app):
+def get(app: str) -> dict:
 	record = frappe.get_doc("Marketplace App", app)
 	return {
 		"name": record.name,
@@ -533,7 +533,7 @@ def add_app_screenshot() -> str:
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def remove_app_screenshot(name, file):
+def remove_app_screenshot(name: str, file: str):
 	app_doc = frappe.get_doc("Marketplace App", name)
 
 	for i, sc in enumerate(app_doc.screenshots):
@@ -580,7 +580,12 @@ def validate_app_image_dimensions(file_content):
 
 
 @frappe.whitelist()
-def releases(filters=None, order_by=None, limit_start=None, limit_page_length=None) -> list[dict]:
+def releases(
+	filters: dict | None = None,
+	order_by: str | None = None,
+	limit_start: int | None = None,
+	limit_page_length: int | None = None,
+) -> list[dict]:
 	"""Return list of App Releases for this `app` and `source` in order of creation time"""
 
 	app_releases = frappe.get_all(
@@ -621,7 +626,7 @@ def latest_approved_release(source: None | str) -> AppRelease:
 
 @frappe.whitelist()
 @protected("Marketplace App")
-def create_approval_request(name, app_release: str):
+def create_approval_request(name: str, app_release: str):
 	"""Create a new Approval Request for given `app_release`"""
 	frappe.get_doc("Marketplace App", name).create_approval_request(app_release)
 
@@ -854,7 +859,7 @@ def get_marketplace_subscriptions_for_site(site: str):
 
 
 @frappe.whitelist()
-def get_app_plans(app: str, include_disabled=True):
+def get_app_plans(app: str, include_disabled: bool = True):
 	return get_plans_for_app(app, include_disabled=include_disabled)
 
 
@@ -864,7 +869,7 @@ def get_app_info(app: str):
 
 
 @frappe.whitelist()
-def get_apps_with_plans(apps, release_group: str):
+def get_apps_with_plans(apps: list[str], release_group: str):
 	if isinstance(apps, str):
 		apps = json.loads(apps)
 
@@ -894,7 +899,7 @@ def get_apps_with_plans(apps, release_group: str):
 
 
 @frappe.whitelist()
-def change_app_plan(subscription, new_plan):
+def change_app_plan(subscription: str, new_plan: str):
 	is_free = frappe.db.get_value("Marketplace App Plan", new_plan, "price_usd") <= 0
 	if not is_free:
 		team = get_current_team(get_doc=True)
@@ -903,10 +908,10 @@ def change_app_plan(subscription, new_plan):
 				"You cannot upgrade to paid plan on Free Credits. Please buy credits before trying to upgrade plan."
 			)
 
-	subscription = frappe.get_doc("Subscription", subscription)
-	subscription.enabled = 1
-	subscription.plan = new_plan
-	subscription.save(ignore_permissions=True)
+	subscription_doc = frappe.get_doc("Subscription", subscription)
+	subscription_doc.enabled = 1
+	subscription_doc.plan = new_plan
+	subscription_doc.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
@@ -927,7 +932,7 @@ def get_publisher_profile_info():
 
 
 @frappe.whitelist()
-def update_publisher_profile(profile_data=None):
+def update_publisher_profile(profile_data: dict | None = None):
 	"""Update if exists, otherwise create"""
 	team = get_current_team()
 
@@ -945,7 +950,7 @@ def update_publisher_profile(profile_data=None):
 
 
 @frappe.whitelist()
-def submit_user_review(title, rating, app, review):
+def submit_user_review(title: str, rating: float, app: str, review: str):
 	return frappe.get_doc(
 		{
 			"doctype": "App User Review",
@@ -959,7 +964,7 @@ def submit_user_review(title, rating, app, review):
 
 
 @frappe.whitelist()
-def submit_developer_reply(review, reply):
+def submit_developer_reply(review: str, reply: str):
 	return frappe.get_doc(
 		{
 			"doctype": "Developer Review Reply",
@@ -1217,7 +1222,7 @@ def subscriptions():
 
 @protected("App Source")
 @frappe.whitelist()
-def branches(name):
+def branches(name: str):
 	from press.api.github import branches as git_branches
 
 	app_source = frappe.db.get_value(
@@ -1235,14 +1240,14 @@ def branches(name):
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def change_branch(name, source, version, to_branch):
+def change_branch(name: str, source: str, version: str, to_branch: str):
 	app = frappe.get_doc("Marketplace App", name)
 	app.change_branch(source, version, to_branch)
 
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def options_for_version(name):
+def options_for_version(name: str):
 	frappe_version = frappe.get_all("Frappe Version", {"public": True}, pluck="name")
 	added_versions = frappe.get_all("Marketplace App Version", {"parent": name}, pluck="version")
 	app = frappe.db.get_value("Marketplace App", name, "app")
@@ -1256,21 +1261,21 @@ def options_for_version(name):
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def add_version(name, branch, version):
+def add_version(name: str, branch: str, version: str):
 	app = frappe.get_doc("Marketplace App", name)
 	app.add_version(version, branch)
 
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def remove_version(name, version):
+def remove_version(name: str, version: str):
 	app = frappe.get_doc("Marketplace App", name)
 	app.remove_version(version)
 
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def review_steps(name):
+def review_steps(name: str):
 	app = frappe.get_doc("Marketplace App", name)
 	return [
 		{"step": "Add a logo for your app", "completed": bool(app.image)},
@@ -1304,14 +1309,14 @@ def review_steps(name):
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def mark_app_ready_for_review(name):
+def mark_app_ready_for_review(name: str):
 	app = frappe.get_doc("Marketplace App", name)
 	app.mark_app_ready_for_review()
 
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def communication(name):
+def communication(name: str):
 	comm = frappe.qb.DocType("Communication")
 	user = frappe.qb.DocType("User")
 	query = (
@@ -1328,7 +1333,7 @@ def communication(name):
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def add_reply(name, message):
+def add_reply(name: str, message: str):
 	doctype = "Marketplace App"
 	app = frappe.get_doc(doctype, name)
 	recipients = ", ".join(list(app.get_assigned_users()) or [])
@@ -1352,14 +1357,14 @@ def add_reply(name, message):
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def fetch_readme(name):
+def fetch_readme(name: str):
 	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	app.long_description = app.fetch_readme()
 	app.save()
 
 
 @frappe.whitelist(allow_guest=True)
-def get_marketplace_apps():
+def get_marketplace_apps() -> list[dict]:
 	apps = frappe.cache().get_value("marketplace_apps")
 	if not apps:
 		apps = frappe.get_all("Marketplace App", {"status": "Published"}, ["name", "title", "route"])
@@ -1369,7 +1374,7 @@ def get_marketplace_apps():
 
 @protected("App Source")
 @frappe.whitelist()
-def add_code_review_comment(name, filename, line_number, comment):
+def add_code_review_comment(name: str, filename: str, line_number: int, comment: str):
 	try:
 		doc = frappe.get_doc("App Release Approval Request", name)
 		# Add a new comment
