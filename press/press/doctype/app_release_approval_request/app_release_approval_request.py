@@ -62,6 +62,7 @@ class AppReleaseApprovalRequest(Document):
 	def before_insert(self):
 		self.request_already_exists()
 		self.another_request_awaiting_approval()
+		self.check_release_not_yanked()
 		self.update_release_status()
 
 	def request_already_exists(self):
@@ -169,4 +170,14 @@ class AppReleaseApprovalRequest(Document):
 				f"Cannot approve: Audit {audit.name} completed with result '{audit.audit_result}'. "
 				f"Only 'Pass' or 'Needs Improvement' results allow approval.\n\n"
 				f"Summary: {audit.audit_summary or 'N/A'}"
+			)
+
+	def check_release_not_yanked(self):
+		"""
+		Prevent approval requests for releases that failed audit and were yanked.
+		"""
+		release_status = frappe.db.get_value("App Release", self.app_release, "status")
+		if release_status == "Yanked":
+			frappe.throw(
+				"Cannot create a approval request for a yanked release. This release was yanked due to audit failure. Please fix the issues and publish a new release."
 			)
