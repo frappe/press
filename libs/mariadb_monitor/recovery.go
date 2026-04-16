@@ -72,7 +72,13 @@ func stopMariaDB(timeout time.Duration) bool {
 func killMariaDB() {
 	slog.Warn("sending SIGKILL to mariadbd")
 
-	for _, pid := range findMariaDBProcessIDs() {
+	pids := findMariaDBProcessIDs()
+	if len(pids) == 0 {
+		slog.Error("cannot find mariadbd/mysqld process to kill")
+		return
+	}
+
+	for _, pid := range pids {
 		proc, err := os.FindProcess(pid)
 		if err != nil {
 			continue
