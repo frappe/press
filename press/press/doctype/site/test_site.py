@@ -166,6 +166,7 @@ def create_test_site(
 			}
 		)
 		site.update(kwargs)
+		frappe.clear_document_cache("Site", site.name)
 		site.insert()
 		site.db_set("creation", creation)
 		site.reload()
