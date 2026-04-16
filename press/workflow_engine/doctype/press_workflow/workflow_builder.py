@@ -51,7 +51,14 @@ class WorkflowBuilder(Document):
 	current_task_signature: str | None = None
 
 	@ensure_to_resolve_context
-	def run_task(self, wrapped: Callable[..., object], args: tuple, kwargs: dict) -> Any:  # noqa: C901 best to keep task execution logic in one place
+	def run_task(  # noqa: C901
+		self,
+		wrapped: Callable[..., object],
+		args: tuple,
+		kwargs: dict,
+		queue: str | None = None,
+		timeout: int | None = None,
+	) -> Any:
 		assert self.workflow_name is not None, "Workflow name must be set to enqueue task"
 
 		signature = generate_function_signature(wrapped, args, kwargs)
@@ -81,6 +88,8 @@ class WorkflowBuilder(Document):
 			task_doc.args = PressWorkflowObject.store(args) if args else None  # type: ignore
 			task_doc.kwargs = PressWorkflowObject.store(kwargs) if kwargs else None  # type: ignore
 			task_doc.status = "Queued"  # type: ignore
+			task_doc.queue = queue  # type: ignore
+			task_doc.timeout = timeout or 0  # type: ignore
 
 			# If we are currently inside a running task, record it as the parent
 			# so the new task can re-enqueue it when it completes.

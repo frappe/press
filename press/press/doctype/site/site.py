@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 from collections import defaultdict
 from contextlib import suppress
@@ -3675,6 +3676,54 @@ class Site(Document, TagHelpers):
 		if agent.should_skip_requests():
 			return None
 		return agent.fetch_database_processes(self)
+
+	@dashboard_whitelist()
+	def fetch_database_locks(self):
+		agent = Agent(self.database_server_name, "Database Server")
+		# if agent.should_skip_requests():
+		# 	return []
+		results = agent.fetch_database_locks(self)
+		# Filter out results by database name
+		if not self.database_name:
+			with contextlib.suppress(Exception):
+				self.sync_info()
+			return []
+
+		results = [
+			lock for lock in results if str(lock.get("lock_table", "")).startswith(f"`{self.database_name}`.")
+		]
+		fields = [
+			"lock_id",
+			"trx_id",
+			"trx_query",
+			"lock_mode",
+			"lock_type",
+			"lock_table",
+			"lock_index",
+			"trx_state",
+			"trx_operation_state",
+			"trx_started",
+			"trx_rows_locked",
+			"trx_rows_modified",
+		]
+		filtered_results = []
+		for lock in results:
+			filtered_lock = {field: lock.get(field) for field in fields}
+			# Sanitize the lock_table
+			if filtered_lock.get("lock_table"):
+				filtered_lock["lock_table"] = (
+					filtered_lock["lock_table"].replace(f"`{self.database_name}`.", "").replace("`", "")
+				)
+			if filtered_lock.get("lock_mode"):
+				filtered_lock["lock_mode"] = {
+					"X": "Exclusive",
+					"S": "Shared",
+					"IS": "Intention Shared",
+					"IX": "Intention Exclusive",
+					"SIX": "Shared Intention Exclusive",
+				}.get(filtered_lock["lock_mode"], filtered_lock["lock_mode"])
+			filtered_results.append(filtered_lock)
+		return filtered_results
 
 	@dashboard_whitelist()
 	def kill_database_process(self, id):

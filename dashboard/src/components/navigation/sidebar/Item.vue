@@ -12,7 +12,7 @@ let props = defineProps({
 		:to="item.route"
 		class="flex items-center rounded px-3 py-2 text-ink-gray-6 transition gap-2"
 		:class="[
-			item.isActive ? 'bg-white shadow-sm' : 'hover:bg-gray-100',
+			item.isActive ? 'bg-white shadow-sm' : 'hover:bg-surface-gray-3',
 			item.disabled ? 'pointer-events-none opacity-50' : '',
 			$attrs.class,
 		]"

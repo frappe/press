@@ -242,16 +242,16 @@ class TestReleasePipeline(FrappeTestCase):
 		for dependency in test_release_group.dependencies:
 			if dependency.dependency == "PYTHON_VERSION":
 				self.assertEqual(
-					dependency.version, "3.14.0"
-				)  # >=3.10 is updated to 3.14.0 since we take the highest possible version that fits
+					dependency.version, "3.14"
+				)  # >=3.10 is updated to 3.14 since we take the highest possible version that fits
 
 		with self.assertRaises(ReleasePipelineFailure):
 			_resolve_python_version_conflicts_and_update_group(
-				self.test_release_group, {"frappe": ">=3.10", "erpnext": "<3.10"}
+				self.test_release_group.name, {"frappe": ">=3.10", "erpnext": "<3.10"}
 			)  # This should raise an error since frappe and erpnext have conflicting python version requirements
 
 		_resolve_python_version_conflicts_and_update_group(
-			self.test_release_group,
+			self.test_release_group.name,
 			{
 				"frappe": ">=3.10",
 				"erpnext": ">=3.10",
