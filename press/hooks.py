@@ -231,6 +231,7 @@ scheduler_events = {
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",
 		"press.press.doctype.site_backup.site_backup.delete_backups_for_archived_sites_after_retention",
+		"press.press.doctype.site.site.notify_sites_before_archival",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -274,11 +275,11 @@ scheduler_events = {
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_hourly_stats",
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_hourly",
 		"press.press.doctype.database_server.database_server.database_flush_tables_of_public_servers",
+		"press.press.doctype.server_snapshot.server_snapshot.delete_dedicated_snapshots_with_failure_status",
 	],
 	"all": [
 		"press.auth.flush",
 		"press.press.doctype.site.sync.sync_setup_wizard_status",
-		"press.press.doctype.site.archive.archive_suspended_trial_sites",
 		"press.press.doctype.agent_job.agent_job.flush",
 	],
 	"cron": {
@@ -349,7 +350,6 @@ scheduler_events = {
 			"press.press.doctype.app.app.poll_new_releases",
 			"press.utils.jobs.alert_on_zombie_rq_jobs",
 			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
-			"press.press.doctype.server_plan.server_plan.sync_machine_availability_status_of_plans",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
@@ -367,6 +367,7 @@ scheduler_events = {
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_rolling_snapshots",
 			"press.press.doctype.database_server.database_server.auto_purge_binlogs_by_size_limit",
 			"press.workflow_engine.doctype.press_workflow.press_workflow.retry_workflows",
+			"press.press.doctype.server_plan.server_plan.sync_machine_availability_status_of_plans",
 		],
 		"*/30 * * * *": [
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",

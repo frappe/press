@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 from collections import defaultdict
 from contextlib import suppress
@@ -223,6 +224,7 @@ class Site(Document, TagHelpers):
 		]
 		status_before_update: DF.Data | None
 		subdomain: DF.Data
+		suspended_at: DF.Datetime | None
 		tags: DF.Table[ResourceTag]
 		team: DF.Link
 		timezone: DF.Data | None
@@ -2773,6 +2775,7 @@ class Site(Document, TagHelpers):
 	def suspend(self, reason=None, skip_reload=False):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
+		self.suspended_at = frappe.utils.now_datetime()
 		self.update_site_config({"maintenance_mode": 1})
 		self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
 		self.deactivate_app_subscriptions()
@@ -2812,6 +2815,7 @@ class Site(Document, TagHelpers):
 	def unsuspend(self, reason=None):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
+		self.suspended_at = None
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
@@ -3676,6 +3680,54 @@ class Site(Document, TagHelpers):
 		if agent.should_skip_requests():
 			return None
 		return agent.fetch_database_processes(self)
+
+	@dashboard_whitelist()
+	def fetch_database_locks(self):
+		agent = Agent(self.database_server_name, "Database Server")
+		# if agent.should_skip_requests():
+		# 	return []
+		results = agent.fetch_database_locks(self)
+		# Filter out results by database name
+		if not self.database_name:
+			with contextlib.suppress(Exception):
+				self.sync_info()
+			return []
+
+		results = [
+			lock for lock in results if str(lock.get("lock_table", "")).startswith(f"`{self.database_name}`.")
+		]
+		fields = [
+			"lock_id",
+			"trx_id",
+			"trx_query",
+			"lock_mode",
+			"lock_type",
+			"lock_table",
+			"lock_index",
+			"trx_state",
+			"trx_operation_state",
+			"trx_started",
+			"trx_rows_locked",
+			"trx_rows_modified",
+		]
+		filtered_results = []
+		for lock in results:
+			filtered_lock = {field: lock.get(field) for field in fields}
+			# Sanitize the lock_table
+			if filtered_lock.get("lock_table"):
+				filtered_lock["lock_table"] = (
+					filtered_lock["lock_table"].replace(f"`{self.database_name}`.", "").replace("`", "")
+				)
+			if filtered_lock.get("lock_mode"):
+				filtered_lock["lock_mode"] = {
+					"X": "Exclusive",
+					"S": "Shared",
+					"IS": "Intention Shared",
+					"IX": "Intention Exclusive",
+					"SIX": "Shared Intention Exclusive",
+				}.get(filtered_lock["lock_mode"], filtered_lock["lock_mode"])
+			filtered_results.append(filtered_lock)
+		return filtered_results
 
 	@dashboard_whitelist()
 	def kill_database_process(self, id):
@@ -5054,14 +5106,6 @@ def create_site_status_update_webhook_event(site: str):
 	create_webhook_event("Site Status Update", record, record.team)
 
 
-class SiteToArchive(frappe._dict):
-	name: str
-	plan: str
-	team: str
-	bench: str
-	offsite_backups: DF.Check
-
-
 def get_suspended_time(site: str):
 	return frappe.get_all(
 		"Site Activity",
@@ -5072,50 +5116,62 @@ def get_suspended_time(site: str):
 	)[0].creation
 
 
-def archive_suspended_site(site_dict: SiteToArchive):
-	archive_after_days = ARCHIVE_AFTER_SUSPEND_DAYS
-	suspended_days = frappe.utils.date_diff(frappe.utils.today(), get_suspended_time(site_dict.name))
-
-	if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
-		return
-
-	if suspended_days <= archive_after_days:
-		if suspended_days == archive_after_days - NOTIFY_BEFORE_ARCHIVAL_DAYS:
-			notify_site_scheduled_for_archival(site_dict.name)
-		return
-
-	site = Site("Site", site_dict.name)
-	site.archive(reason="Archive suspended site")
-
-
 def archive_suspended_sites():
-	archive_at_once = 5
+	archive_at_once = 6
+	archive_threshold = frappe.utils.add_to_date(frappe.utils.now(), days=-ARCHIVE_AFTER_SUSPEND_DAYS)
 
-	sites = frappe.qb.DocType("Site")
-	site_plans = frappe.qb.DocType("Site Plan")
+	SiteTable = frappe.qb.DocType("Site")
 
 	sites_to_drop = (
-		frappe.qb.from_(sites)
-		.join(site_plans)
-		.on(sites.plan == site_plans.name)
+		frappe.qb.from_(SiteTable)
 		.where(
-			(sites.status == "Suspended") & (sites.trial_end_date.isnull()) & (site_plans.is_trial_plan == 0)
+			(SiteTable.status == "Suspended")
+			& (SiteTable.suspended_at.isnotnull())
+			& (SiteTable.suspended_at <= archive_threshold)
 		)
-		.select(sites.name, sites.team, sites.plan, sites.bench, site_plans.offsite_backups)
-		.orderby(sites.creation, order=frappe.qb.asc)
+		.select(SiteTable.name, SiteTable.bench)
 		.limit(archive_at_once)
 		.run(as_dict=True)
 	)
 
 	for site_dict in sites_to_drop:
 		try:
-			archive_suspended_site(site_dict)
+			if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
+				continue
+
+			site = Site("Site", site_dict.name)
+			site.archive(reason="Archive suspended site")
 			frappe.db.commit()
 		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
 			frappe.db.rollback()
 		except Exception:
-			frappe.log_error(title="Suspended Site Archive Error")
+			frappe.log_error(title="Suspended Site Archival Error")
 			frappe.db.rollback()
+
+
+def notify_sites_before_archival():
+	notify_threshold = frappe.utils.add_to_date(
+		frappe.utils.now(), days=-(ARCHIVE_AFTER_SUSPEND_DAYS - NOTIFY_BEFORE_ARCHIVAL_DAYS)
+	)
+	archive_threshold = frappe.utils.add_to_date(frappe.utils.now(), days=-ARCHIVE_AFTER_SUSPEND_DAYS)
+
+	SiteTable = frappe.qb.DocType("Site")
+	sites_to_notify = (
+		frappe.qb.from_(SiteTable)
+		.where(
+			(SiteTable.status == "Suspended")
+			& (SiteTable.suspended_at.isnotnull())
+			& (SiteTable.suspended_at <= notify_threshold)
+			& (SiteTable.suspended_at > archive_threshold)
+		)
+		.select(SiteTable.name, SiteTable.bench)
+		.run(as_dict=True)
+	)
+
+	for site_dict in sites_to_notify:
+		if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
+			continue
+		notify_site_scheduled_for_archival(site_dict.name)
 
 
 def notify_site_scheduled_for_archival(site_name: str):

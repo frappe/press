@@ -51,7 +51,7 @@ def update(name: str, endpoint: str, secret: str, events: list[str]):
 @role_guard.document(document_type=lambda _: "Press Webhook Log")
 def attempts(webhook: str):
 	doc = frappe.get_doc("Press Webhook", webhook)
-	doc.has_permission("read")
+	doc.check_permission("read")
 
 	PressWebhookAttempt = frappe.qb.DocType("Press Webhook Attempt")
 	PressWebhookLog = frappe.qb.DocType("Press Webhook Log")
@@ -77,7 +77,7 @@ def attempts(webhook: str):
 @role_guard.document(document_type=lambda _: "Press Webhook Attempt")
 def attempt(name: str):
 	doc = frappe.get_doc("Press Webhook Attempt", name)
-	doc.has_permission("read")
+	doc.check_permission("read")
 	data = doc.as_dict()
 	data.request_payload = json.loads(frappe.get_value("Press Webhook Log", doc.parent, "request_payload"))
 	return data

@@ -23,6 +23,9 @@ const SwitchTeamDialog2 = defineAsyncComponent(
 	() => import('../../SwitchTeamDialog.vue'),
 );
 
+const support = () => {
+	window.open('https://support.frappe.io/helpdesk/my-tickets/new', '_blank');
+};
 const docs = () => {
 	window.open('https://docs.frappe.io/cloud', '_blank');
 };
@@ -38,7 +41,7 @@ const releaseNotes = () => {
 
 <template>
 	<div
-		class="relative flex min-h-screen w-[220px] flex-col border-r bg-gray-50 p-2"
+		class="relative flex min-h-screen w-[220px] flex-col gap-1 border-r bg-gray-50 p-2"
 	>
 		<Dropdown
 			:options="[
@@ -59,7 +62,7 @@ const releaseNotes = () => {
 		>
 			<template v-slot="{ open }">
 				<button
-					class="flex w-[204px] items-center rounded-md p-2 text-left"
+					class="flex w-[204px] items-center rounded-md p-1 text-left"
 					:class="open ? 'bg-white shadow-sm' : 'hover:bg-gray-200'"
 				>
 					<FCLogo class="mb-1 h-8 w-8 shrink-0 rounded" />
@@ -104,7 +107,7 @@ const releaseNotes = () => {
 				{
 					label: 'Get Support',
 					icon: LucideSupport,
-					onClick: docs,
+					onClick: support,
 				},
 				{
 					label: 'Share Feedback',

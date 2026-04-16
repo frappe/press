@@ -46,7 +46,9 @@ const navigationIndex = ref(0);
 const navigateEnter = (close) => {
 	const item = flatList.value[navigationIndex.value];
 	if (item) {
-		router.push(item.route);
+		if (item.route) router.push(item.route);
+		if (item.click) item?.click();
+
 		close();
 	}
 };

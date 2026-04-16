@@ -506,7 +506,7 @@ export default {
 				const data = await this.$resources.branches.fetch({
 					owner: app.repository_owner,
 					name: app.repository,
-					source: app.source || '',
+					app_source: app.source || '',
 				});
 				this.appBranches[app.app] = (data || []).map((branch) => branch.name);
 			} catch (error) {
@@ -533,7 +533,6 @@ export default {
 							app: app.app,
 							branch: this.customAppSources[app.app]?.branch || app.branch,
 							repository_url: app.repository_url,
-							github_installation_id: app.github_installation_id,
 						});
 					}
 				});
