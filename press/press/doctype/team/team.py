@@ -289,7 +289,7 @@ class Team(Document):
 	def reject_reenabling_team_for_banned_team(self):
 		if self.has_value_changed("enabled") and self.enabled == 1 and self.banned:
 			frappe.throw(
-				_(f"{self.user} is banned. Please signup with a different email or contact support.")
+				_("{0} is banned. Please signup with a different email or contact support.").format(self.user)
 			)
 
 	def delete(self, force=False, workflow=False):

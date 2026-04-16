@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe import _
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
@@ -38,7 +37,7 @@ def create_test_proxy_server(
 			"status": "Active",
 			"ip": frappe.mock("ipv4"),
 			"private_ip": frappe.mock("ipv4_private"),
-			"hostname": make_autoname(hostname + _(".######")),
+			"hostname": make_autoname(hostname + ".######"),
 			"cluster": cluster,
 			"domain": domain,
 			"domains": domains,
