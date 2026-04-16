@@ -63,7 +63,7 @@ const navigation = computed(() => {
 			name: 'Sites',
 			icon: PanelTopInactive,
 			route: '/sites',
-			class: 'mt-2',
+			class: 'mt-1.5',
 			isActive:
 				['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
 				routeName.startsWith('Site Detail'),
