@@ -167,6 +167,7 @@ func printHelp() {
 func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snapshotCache) bool {
 	var frozenCheck *frozenState
 	var triggers []string
+	var hasIOFreeze bool
 
 	if psiCPU, err := checkPSI("cpu"); err == nil {
 		w.psiCPU.Push(psiCPU, cfg.PSICPUThreshold)
@@ -230,6 +231,7 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 
 	if iowaitErr == nil && iowaitVal >= cfg.IOWaitThreshold {
 		if checkIOFreeze(cfg.IOFreezeTimeout) {
+			hasIOFreeze = true
 			triggers = append(triggers, "io_freeze")
 		}
 	}
@@ -285,10 +287,23 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 
 	slog.Warn("pressure detected", "triggers", triggers)
 
-	dbHealth := checkMariaDBHealth(creds)
-	if dbHealth.Reachable && !dbHealth.IsStuck {
-		slog.Warn("pressure detected but mariadb is healthy, skipping recovery", "triggers", triggers)
-		return false
+	// When the machine or I/O is frozen, DB health checks are unreliable (a TCP
+	// handshake may still succeed) and can block for minutes. Skip the gate.
+	machineFrozen := frozenCheck != nil && frozenCheck.frozen
+	var dbHealth DBHealth
+	if machineFrozen || hasIOFreeze {
+		if machineFrozen {
+			slog.Warn("machine is frozen, skipping DB health check", "reason", frozenCheck.reason)
+		} else {
+			slog.Warn("I/O is frozen, skipping DB health check")
+		}
+		dbHealth = DBHealth{Reachable: false}
+	} else {
+		dbHealth = checkMariaDBHealth(creds)
+		if dbHealth.Reachable && !dbHealth.IsStuck {
+			slog.Warn("pressure detected but mariadb is healthy, skipping recovery", "triggers", triggers)
+			return false
+		}
 	}
 
 	if cfg.MaxRecoveriesPerHour > 0 && recentRecoveryCount(cfg.MaxRecoveriesPerHour) {
