@@ -1529,7 +1529,7 @@ class BaseServer(Document, TagHelpers):
 			self._increase_swap(swap_size)
 
 	@frappe.whitelist()
-	def reset_swap(self, swap_size=1):
+	def reset_swap(self, swap_size=1, now: bool = False):
 		"""
 		Replace existing swap files with new swap file of given size
 		"""
@@ -1540,6 +1540,7 @@ class BaseServer(Document, TagHelpers):
 			queue="long",
 			timeout=1200,
 			**{"swap_size": swap_size},
+			now=now,
 		)
 
 	def reset_swap_locked(self, swap_size=1):
