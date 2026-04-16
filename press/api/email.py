@@ -79,7 +79,7 @@ def setup(site):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_analytics(month: str, status: str, site: str, key: str):
+def get_analytics(month: int, status: str, site: str, key: str):
 	"""
 	send data for a specific month
 	"""
