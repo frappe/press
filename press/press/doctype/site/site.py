@@ -5088,14 +5088,15 @@ def archive_suspended_sites():
 	for site_dict in sites_to_drop:
 		try:
 			if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
-				return
+				continue
 
 			site = Site("Site", site_dict.name)
 			site.archive(reason="Archive suspended site")
+			frappe.db.commit()
 		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
 			frappe.db.rollback()
 		except Exception:
-			frappe.log_error(title="Suspended Site Archive Error")
+			frappe.log_error(title="Suspended Site Archival Error")
 			frappe.db.rollback()
 
 
@@ -5114,11 +5115,13 @@ def notify_sites_before_archival():
 			& (SiteTable.suspended_at <= notify_threshold)
 			& (SiteTable.suspended_at > archive_threshold)
 		)
-		.select(SiteTable.name)
+		.select(SiteTable.name, SiteTable.bench)
 		.run(as_dict=True)
 	)
 
 	for site_dict in sites_to_notify:
+		if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
+			continue
 		notify_site_scheduled_for_archival(site_dict.name)
 
 
