@@ -31,7 +31,10 @@
 				</div>
 			</div>
 		</div>
-		<Toaster position="top-right" />
+		<Toaster
+			position="top-right"
+			:toastOptions="{ class: 'text-sm prose-sm' }"
+		/>
 		<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
 		<SearchModal v-if="searchModalOpen" />
 	</div>
