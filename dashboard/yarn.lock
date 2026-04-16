@@ -4212,9 +4212,10 @@ frappe-charts@2.0.0-rc22:
   resolved "https://registry.yarnpkg.com/frappe-charts/-/frappe-charts-2.0.0-rc22.tgz#9a5a747febdc381a1d4d7af96e89cf519dfba8c0"
   integrity sha512-N7f/8979wJCKjusOinaUYfMxB80YnfuVLrSkjpj4LtyqS0BGS6SuJxUnb7Jl4RWUFEIs7zEhideIKnyLeFZF4Q==
 
-"frappe-ui@github:frappe/frappe-ui#improvements":
-  version "0.1.275"
-  resolved "https://codeload.github.com/frappe/frappe-ui/tar.gz/22a310ce4b492bbc3e3fa37a25c6a08a246e3094"
+frappe-ui@0.1.277:
+  version "0.1.277"
+  resolved "https://registry.yarnpkg.com/frappe-ui/-/frappe-ui-0.1.277.tgz#84b9804e60b8a815b79ef64fafe2cfa228474363"
+  integrity sha512-Lqh0WX9BkKlOxLBVr557xhGsyyKlysxsxbxqsMMRoOgKAEI48MWTSXtO9CcIdUZjR+Y3jQzLDdcr/GmCBmXjew==
   dependencies:
     "@floating-ui/dom" "^1.7.4"
     "@floating-ui/vue" "^1.1.6"
