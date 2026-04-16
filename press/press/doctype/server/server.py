@@ -1055,6 +1055,46 @@ class BaseServer(Document, TagHelpers):
 			self.doctype, self.name, "extend_ec2_volume", device=device, log=log, at_front=True, queue="long"
 		)
 
+	@frappe.whitelist()
+	def extend_frappe_compute_volume(self, device=None, log: str | None = None):
+		# Copied over from extend_ec2_volume
+		# Restart MariaDB if MariaDB disk is full
+		mountpoint = "/"  # Root only for now
+		restart_mariadb = self.doctype == "Database Server" and self.is_disk_full(
+			mountpoint
+		)  # check before breaking glass to ensure state of mariadb
+		self.break_glass()
+
+		if not device:
+			# Try the best guess. Try extending the data volume
+			volume = self.find_mountpoint_volume(mountpoint)
+			assert volume is not None, "Volume not found"
+			assert volume.volume_id is not None, "Volume ID not found"
+			device = volume.device
+
+		try:
+			ansible = Ansible(
+				playbook="extend_frappe_compute_volume.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={"restart_mariadb": restart_mariadb, "device": device},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Frappe Compute Volume Extend Exception", server=self.as_dict())
+
+	def enqueue_extend_frappe_compute_volume(self, device, log):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"extend_frappe_compute_volume",
+			device=device,
+			log=log,
+			at_front=True,
+			queue="long",
+		)
+
 	@cached_property
 	def time_to_wait_before_updating_volume(self) -> timedelta | int:
 		if self.provider != "AWS EC2":
@@ -1074,7 +1114,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50, mountpoint=None, log: str | None = None):
-		if self.provider not in ("AWS EC2", "OCI"):
+		if self.provider not in ("AWS EC2", "OCI", "Frappe Compute"):
 			return
 		if self.provider == "AWS EC2" and self.time_to_wait_before_updating_volume:
 			frappe.throw(
@@ -1099,6 +1139,9 @@ class BaseServer(Document, TagHelpers):
 			# Non-boot volumes might not need resize
 			self.break_glass()
 			self.reboot()
+		elif self.provider == "Frappe Compute":
+			device = self.get_device_from_volume_id(volume.volume_id)
+			self.enqueue_extend_frappe_compute_volume(device, log)
 
 	def guess_data_disk_mountpoint(self) -> str:
 		if not hasattr(self, "has_data_volume") or not self.has_data_volume:
@@ -1767,6 +1810,12 @@ class BaseServer(Document, TagHelpers):
 	def get_device_from_volume_id(self, volume_id):
 		if self.provider == "Hetzner":
 			return f"/dev/disk/by-id/scsi-0HC_Volume_{volume_id}"
+
+		if self.provider == "Frappe Compute":
+			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+			volume = find(virtual_machine.volumes, lambda i: i.volume_id == volume_id)
+			return volume.device
+
 		stripped_id = volume_id.replace("-", "")
 		return f"/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_{stripped_id}"
 

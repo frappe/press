@@ -136,22 +136,43 @@
 		>
 			<template #body-content>
 				<p
-					class="text-base leading-relaxed text-red-800 bg-red-50 border border-red-500 rounded p-4"
+					class="text-base leading-relaxed align-center tracking-wide text-gray-700"
 				>
-					Your current MRR does not meet the minimum requirement for Partnership
-					renewal.
+					<LucideAlertTriangle class="inline h-4 w-4 text-red-500" />
+					You do not meet the Partnership renewal criteria.
 				</p>
-				<div class="flex gap-4 my-4">
-					<div class="flex-1 flex-col border-2 rounded bg-surface-gray-1 p-4">
-						<div class="text-base text-gray-600 mb-2">Current MRR</div>
-						<div class="text-xl font-semibold text-red-600">
-							{{ formatCurrency(mrr) }}
+				<div class="flex my-4 gap-4">
+					<div
+						class="flex-1 justify-center text-left p-5 rounded-md bg-gray-50"
+					>
+						<div class="flex flex-col gap-2">
+							<p>
+								<span class="font-semibold text-3xl">{{
+									formatCurrency(mrr)
+								}}</span
+								><span class="text-base text-gray-600">
+									/
+									{{
+										formatCurrency(team.doc.currency === 'USD' ? 100 : 10000)
+									}}</span
+								>
+							</p>
+							<div class="font-normal text-gray-700 tracking-wide">MRR</div>
 						</div>
 					</div>
-					<div class="flex-1 flex-col border-2 rounded bg-surface-gray-1 p-4">
-						<div class="text-base text-gray-600 mb-2">Required MRR</div>
-						<div class="text-xl font-semibold text-gray-900">
-							{{ formatCurrency(team.doc.currency === 'USD' ? 100 : 10000) }}
+					<div
+						class="flex-1 justify-center text-left p-5 rounded-md bg-gray-50"
+					>
+						<div class="flex flex-col gap-2">
+							<p>
+								<span class="font-semibold text-3xl">{{
+									partnerDetails.data?.custom_number_of_certified_members || 0
+								}}</span
+								><span class="text-base text-gray-600"> / 2</span>
+							</p>
+							<div class="font-normal text-gray-700 tracking-wide">
+								Certifications
+							</div>
 						</div>
 					</div>
 				</div>
@@ -260,8 +281,9 @@ const partnerMRR = createResource({
 function canRenew() {
 	// Allow renewal if mrr is greater than $100 or 10000 INR
 	if (
-		(team.doc.currency === 'USD' && mrr.value >= 100) ||
-		(team.doc.currency === 'INR' && mrr.value >= 10000)
+		((team.doc.currency === 'USD' && mrr.value >= 100) ||
+			(team.doc.currency === 'INR' && mrr.value >= 10000)) &&
+		partnerDetails.data?.custom_number_of_certified_members >= 2
 	) {
 		showRenewalConfirmationDialog.value = true;
 	} else {
@@ -394,7 +416,7 @@ const formatCurrency = (amount) => {
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: team.doc.currency,
-		maximumFractionDigits: 2,
+		maximumFractionDigits: 1,
 	}).format(amount);
 };
 
