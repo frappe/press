@@ -728,6 +728,7 @@ def get_additional_duration_reports(
 
 
 @frappe.whitelist()
+@protected("Site")
 def get_advanced_analytics(name, timezone, start, end, max_no_of_paths=MAX_NO_OF_PATHS):
 	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
 	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
@@ -1037,6 +1038,7 @@ def get_background_job_by_(
 
 
 @frappe.whitelist()
+@protected("Site")
 def get_slow_logs_by_query(
 	name: str,
 	agg_type: str,
