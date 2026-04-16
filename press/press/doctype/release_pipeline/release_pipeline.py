@@ -19,7 +19,6 @@ from press.press.doctype.app.app import (
 )
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
-from press.workflow_engine.doctype.press_workflow.exceptions import PressWorkflowTaskEnqueued
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
 if typing.TYPE_CHECKING:
@@ -169,12 +168,6 @@ class ReleasePipeline(WorkflowBuilder):
 			"Press Workflow", {"linked_doctype": "Release Pipeline", "linked_docname": self.name}, "name"
 		)
 
-	def get_task_name(self, func):
-		"""Get task name for the given function"""
-		return frappe.db.get_value(
-			"Press Workflow Task", {"method_name": func.__name__, "workflow": self.workflow_name}, "name"
-		)
-
 	@task
 	def validate_app_hashes(self, apps: list[dict[str, str]]):
 		"""Validate App Hashes"""
@@ -245,10 +238,8 @@ class ReleasePipeline(WorkflowBuilder):
 
 		if deploy_candidate_build_doc.should_build_retry(exc=None, job=agent_job):
 			self.update_pipeline_status("Retrying")
-			raise PressWorkflowTaskEnqueued(
-				f"Build {deploy_candidate_build} has scheduled retries. Waiting for retries to complete.",
-				self.workflow_name,
-				self.get_task_name(self.monitor_pre_build_validation),
+			self.defer_current_task(
+				f"Build {deploy_candidate_build} has scheduled retries. Waiting for retries to complete."
 			)
 
 	def _get_latest_retried_build(self, deploy_candidate_build: str) -> str:
@@ -274,7 +265,6 @@ class ReleasePipeline(WorkflowBuilder):
 	@task
 	def monitor_pre_build_validation(self, deploy_candidate_build: str):
 		"""Monitors the Deploy Candidate Build until the remote build job is created."""
-		task_name = self.get_task_name(self.monitor_pre_build_validation)
 		deploy_candidate_build_status = frappe.db.get_value(
 			"Deploy Candidate Build", deploy_candidate_build, "status"
 		)
@@ -288,10 +278,8 @@ class ReleasePipeline(WorkflowBuilder):
 				"Please check the build logs for more details."
 			)
 
-		raise PressWorkflowTaskEnqueued(
-			f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build}",
-			self.workflow_name,
-			task_name,
+		self.defer_current_task(
+			f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build}"
 		)
 
 	@task
@@ -312,10 +300,8 @@ class ReleasePipeline(WorkflowBuilder):
 				f"Remote build failed for Deploy Candidate Build {deploy_candidate_build}. Please check the build logs for more details."
 			)
 
-		raise PressWorkflowTaskEnqueued(
-			f"Waiting for build to complete for Deploy Candidate Build {deploy_candidate_build}",
-			self.workflow_name,
-			self.get_task_name(self.monitor_build_success),
+		self.defer_current_task(
+			f"Waiting for build to complete for Deploy Candidate Build {deploy_candidate_build}"
 		)
 
 	def _is_active_bench_work_in_progress(self, builds: list[str]) -> bool:
@@ -510,11 +496,7 @@ class ReleasePipeline(WorkflowBuilder):
 
 			if not secondary_build:
 				# Wait for sometime for the secondary build to be created in case of any delays in build scheduling
-				raise PressWorkflowTaskEnqueued(
-					f"Waiting for secondary build creation for {deploy_candidate}",
-					self.workflow_name,
-					self.get_task_name(self.monitor_build_success),
-				)
+				self.defer_current_task(f"Waiting for secondary build to be created for {deploy_candidate}")
 
 			self.monitor_pre_build_validation(secondary_build)
 			self.monitor_build_success(secondary_build)
@@ -535,22 +517,14 @@ class ReleasePipeline(WorkflowBuilder):
 
 		# This should take care of the retries as well.
 		if self._is_active_bench_work_in_progress(builds):
-			raise PressWorkflowTaskEnqueued(
-				"Benches in progress, Waiting...",
-				self.workflow_name,
-				self.get_task_name(self.monitor_bench_creation),
-			)
+			self.defer_current_task("Benches in progress, Waiting...")
 
 		# Just another safety lock to ensure no early failures occur
 		statues = frappe.db.get_all("Bench", {"build": ["in", builds]}, pluck="status")
 		in_transition = [status for status in statues if status in BENCH_TRANSITION_STATES]
 
 		if in_transition:
-			raise PressWorkflowTaskEnqueued(
-				"Benches are in transition states...",
-				self.workflow_name,
-				self.get_task_name(self.monitor_bench_creation),
-			)
+			self.defer_current_task("Benches are in transition states...")
 
 		self._finalize_pipeline_status(builds=builds, expected_count=expected)
 
