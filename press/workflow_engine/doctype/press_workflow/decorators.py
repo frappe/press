@@ -176,7 +176,7 @@ class BoundFlow:
 					"args": PressWorkflowObject.store(args) if args else None,
 					"kwargs": PressWorkflowObject.store(kwargs) if kwargs else None,
 					"linked_doctype": instance.doctype,  # type: ignore
-					"linked_docname": instance.name,  # type: ignore
+					"linked_docname": str(instance.name),  # type: ignore
 					"main_method_name": self._wrapped.__name__,
 					"main_method_title": method_title(self._wrapped),
 					"steps": [
