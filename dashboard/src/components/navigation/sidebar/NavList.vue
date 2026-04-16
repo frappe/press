@@ -96,7 +96,6 @@ const navigation = computed(() => {
 		{
 			name: 'Servers',
 			icon: Server,
-			class: 'mt-2',
 			route: onboardingComplete ? '/servers' : '/enable-servers',
 			isActive:
 				['New Server'].includes(routeName) ||
