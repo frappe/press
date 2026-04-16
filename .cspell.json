@@ -776,6 +776,9 @@
         "lsyncd",
         "awk",
         "gawk",
+        "picklable",
+        "ndarray",
+        "mult",
         "ruleid"
     ]
 }

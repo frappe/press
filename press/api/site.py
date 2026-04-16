@@ -3021,6 +3021,7 @@ def _get_custom_app_upgrade_source(
 		frappe.throw(f"Branch not provided for {app_name}")  # nosemgrep
 	if not repository_url:
 		frappe.throw(f"Repository URL not provided for {app_name}")  # nosemgrep
+
 	validate_frappe_version_for_branch(
 		app_name=app_name,
 		owner=app_source.repository_owner,
