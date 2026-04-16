@@ -71,17 +71,27 @@ const markAsRead = (row, togglePopover) => {
 	});
 
 	docres.markNotificationAsRead.submit().then(() => {
-		unreadNotificationsCount.setData((data) => data - 1);
-		if (row.route) {
+		// requests tab needs to show both read/unread
+		// so dont set local state!!!
+		if (row.type !== 'Support Access') {
+			unreadNotificationsCount.setData((data) => data - 1);
+
+			resource.setData((data) => {
+				const newData = data.filter((d) => d.name !== row.name);
+				resource.originalData = newData;
+				return newData;
+			});
+		}
+
+		if (row.type === 'Support Access') {
+			unreadSupportNotificationsCount.setData((data) => data - 1);
+			openSupportAccess(null, row.document_name);
+		}
+
+		if (row.route && row.type !== 'Support Access') {
 			togglePopover();
 			router.push('/' + row.route);
 		}
-	});
-
-	resource.setData((data) => {
-		const newData = data.filter((d) => d.name !== row.name);
-		resource.originalData = newData;
-		return newData;
 	});
 };
 
@@ -105,7 +115,7 @@ const markAllAsRead = (togglePopover) => {
 };
 
 const openSupportAccess = (e, name) => {
-	e.stopPropagation();
+	e?.stopPropagation();
 	renderDialog(
 		h(SupportAccessDialog, {
 			name,
@@ -159,6 +169,7 @@ watch(activeTab, (x) => {
 		//
 	} else if (x == 1) {
 		filters.type = 'Support Access';
+		delete filters.read;
 	} else {
 		filters.read = 'Unread';
 	}
@@ -175,18 +186,29 @@ const tabs = [
 </script>
 
 <template>
-	<Popover placement="right-start">
+	<Popover
+		:placement="$isMobile ? 'top-start' : 'right-start'"
+		popover-class="fixed -mt-[16%]"
+	>
 		<!-- sidebar item -->
 		<template #target="{ togglePopover }">
 			<button
+				aria-label="Notifications btn"
 				@click="togglePopover"
-				class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition gap-1 hover:bg-surface-gray-3 w-full"
+				class="flex items-center rounded px-2.5 py-1.5 md:px-3 md:py-2 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-3 w-full"
 				:class="[
 					item.disabled ? 'pointer-events-none opacity-50' : '',
 					$attrs.class,
 				]"
 			>
-				<LucideInbox class="m-1 h-4 w-4 text-ink-gray-6" />
+				<span class="flex relative">
+					<LucideBell class="size-4 text-ink-gray-6" />
+					<span
+						v-if="unreadNotificationsCount.data > 0"
+						class="size-1 bg-surface-blue-3 rounded-full absolute right-0 -top-0.5"
+					/>
+				</span>
+
 				<span class="text-sm flex-1 text-left">{{ item.name }}</span>
 
 				<span
@@ -205,7 +227,7 @@ const tabs = [
 		<!-- floating drawer  -->
 		<template #body="{ togglePopover }">
 			<div
-				class="text-ink-gray-9 bg-white h-screen ml-2 shadow-xl w-[430px] flex flex-col"
+				class="text-ink-gray-9 bg-white h-screen w-screen md:ml-2 shadow-xl md:w-[430px] flex flex-col"
 			>
 				<!-- header -->
 				<div class="text-base flex items-center py-2 pl-4 pr-2 border-b">

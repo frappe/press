@@ -6,12 +6,10 @@ import { searchModalOpen } from '@/data/ui';
 
 <template>
 	<button
-		class="flex items-center rounded px-2 py-1 text-ink-gray-6 transition gap-1 text-sm w-full"
+		class="flex items-center rounded px-2.5 py-1.5 md:px-3 md:py-2 text-ink-gray-6 transition gap-2 text-sm w-full mt-1 hover:bg-surface-gray-3"
 		@click="() => (searchModalOpen = true)"
 	>
-		<span class="grid h-5 w-6 place-items-center">
-			<LucideSearch class="size-4 text-ink-gray-6" />
-		</span>
+		<LucideSearch class="size-4 text-ink-gray-6" />
 		<span class="text-left mr-auto"> Search</span>
 
 		<LucideCommand class="size-3.5 text-ink-gray-6" />
