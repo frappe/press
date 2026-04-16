@@ -8,6 +8,7 @@ from typing import Any
 
 import frappe
 import frappe.utils
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils.data import get_url
 
@@ -65,7 +66,7 @@ class ProductTrial(Document):
 
 	def get_doc(self, doc):
 		if not self.published:
-			frappe.throw("Not permitted")
+			frappe.throw(_("Not permitted"))
 
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
@@ -73,12 +74,12 @@ class ProductTrial(Document):
 	def validate(self):
 		plan = frappe.get_doc("Site Plan", self.trial_plan)
 		if plan.document_type != "Site":
-			frappe.throw("Selected plan is not for site")
+			frappe.throw(_("Selected plan is not for site"))
 		if not plan.is_trial_plan:
-			frappe.throw("Selected plan is not a trial plan")
+			frappe.throw(_("Selected plan is not a trial plan"))
 
 		if not self.redirect_to_after_login.startswith("/"):
-			frappe.throw("Redirection route after login should start with /")
+			frappe.throw(_("Redirection route after login should start with /"))
 
 		self.validate_hybrid_rules()
 
@@ -101,7 +102,7 @@ class ProductTrial(Document):
 		from press.press.doctype.site.site import Site, get_plan_config
 
 		if Site.exists(subdomain, domain):
-			frappe.throw("Site with this subdomain already exists")
+			frappe.throw(_("Site with this subdomain already exists"))
 
 		site_domain = f"{subdomain}.{domain}"
 

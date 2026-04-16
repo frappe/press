@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import frappe
 import frappe.utils
 from elasticsearch import Elasticsearch
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 
@@ -72,7 +73,7 @@ class SiteDatabaseUser(Document):
 			self.permissions.clear()
 
 		if not self.is_new() and self.has_value_changed("max_connections"):
-			frappe.throw("You can't update the max database connections. Archive it and create a new one.")
+			frappe.throw(_("You can't update the max database connections. Archive it and create a new one."))
 
 		if not self.max_connections:
 			frappe.throw(
@@ -82,9 +83,9 @@ class SiteDatabaseUser(Document):
 	def before_insert(self):
 		site: Site = frappe.get_doc("Site", self.site)
 		if not site.has_permission():
-			frappe.throw("You don't have permission to create database user")
+			frappe.throw(_("You don't have permission to create database user"))
 		if not frappe.db.get_value("Site Plan", site.plan, "database_access"):
-			frappe.throw(f"Database Access is not available on {site.plan} plan")
+			frappe.throw(_("Database Access is not available on {0} plan").format(site.plan))
 
 		# validate connection limit
 		exists_db_users_connection_limit = frappe.db.get_all(
@@ -112,7 +113,7 @@ class SiteDatabaseUser(Document):
 				},
 			)
 			if not replica_exists:
-				frappe.throw("Replica server is not available for this site")
+				frappe.throw(_("Replica server is not available for this site"))
 
 		self.status = "Pending"
 		if not self.username:
@@ -143,19 +144,21 @@ class SiteDatabaseUser(Document):
 
 	def _raise_error_if_archived(self):
 		if self.status == "Archived":
-			frappe.throw("user has been deleted and no further changes can be made")
+			frappe.throw(_("user has been deleted and no further changes can be made"))
 
 	def _get_database_name(self):
 		site = frappe.get_doc("Site", self.site)
 		db_name = site.fetch_info().get("config", {}).get("db_name")
 		if not db_name:
-			frappe.throw("Failed to fetch database name of site")
+			frappe.throw(_("Failed to fetch database name of site"))
 		return db_name
 
 	@dashboard_whitelist()
 	def save_and_apply_changes(self, label: str, mode: str, permissions: list):  # noqa: C901
 		if self.status == "Pending" or self.status == "Archived":
-			frappe.throw(f"You can't modify information in {self.status} state. Please try again later")
+			frappe.throw(
+				_("You can't modify information in {0} state. Please try again later").format(self.status)
+			)
 
 		self.label = label
 		is_db_user_configuration_changed = self.mode != mode or self._is_permissions_changed(permissions)
@@ -412,7 +415,7 @@ class SiteDatabaseUser(Document):
 				)  # Convert to seconds
 			return hits
 		except Exception:
-			frappe.throw("Failed to fetch logs from log server. Please try again later.")
+			frappe.throw(_("Failed to fetch logs from log server. Please try again later."))
 
 	@staticmethod
 	def process_job_update(job):  # noqa: C901

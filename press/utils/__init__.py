@@ -25,6 +25,7 @@ from babel.dates import format_timedelta  # type: ignore[import-not-found]
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import ExtensionOID
+from frappe import _
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import redis_cache, site_cache
 
@@ -104,7 +105,7 @@ def get_current_team(get_doc: Literal[False] = False) -> str: ...
 
 def get_current_team(get_doc=False) -> Team | str:
 	if frappe.session.user == "Guest":
-		frappe.throw("Not Permitted", frappe.AuthenticationError)
+		frappe.throw(_("Not Permitted"), frappe.AuthenticationError)
 
 	if not hasattr(frappe.local, "request"):
 		# if this is not a request, send the current user as default team
@@ -152,7 +153,7 @@ def get_current_team(get_doc=False) -> Team | str:
 		)
 
 	if not system_user and not frappe.db.exists("Team", {"name": team, "enabled": 1}):
-		frappe.throw("Invalid Team", frappe.AuthenticationError)
+		frappe.throw(_("Invalid Team"), frappe.AuthenticationError)
 
 	if get_doc:
 		return frappe.get_doc("Team", team)
@@ -354,7 +355,7 @@ class RemoteFrappeSite:
 		res = requests.get(f"{self.user_site}/api/method/frappe.ping", timeout=(5, 10))
 
 		if not res.ok:
-			frappe.throw("Invalid Frappe Site")
+			frappe.throw(_("Invalid Frappe Site"))
 
 		if res.json().get("message") == "pong":
 			# Get final redirect URL
@@ -370,7 +371,7 @@ class RemoteFrappeSite:
 		)
 		if not response.ok:
 			if response.status_code == 401:
-				frappe.throw("Invalid Credentials")
+				frappe.throw(_("Invalid Credentials"))
 			else:
 				response.raise_for_status()
 
@@ -383,14 +384,14 @@ class RemoteFrappeSite:
 			remote_site=self.site,
 		)
 		if response.status_code == 403:
-			error_msg = "Insufficient Permissions"
+			frappe.throw(_("Insufficient Permissions"))
 		else:
 			side = "Client" if 400 <= response.status_code < 500 else "Server"
-			error_msg = (
-				f"{side} Error occurred: {response.status_code} {response.raw.reason}"
-				f" received from {self.site}"
+			frappe.throw(
+				_("{0} Error occurred: {1} {2} received from {3}").format(
+					side, response.status_code, response.raw.reason, self.site
+				)
 			)
-		frappe.throw(error_msg)
 
 	def get_backups(self):
 		self._create_fetch_backups_request()
@@ -420,10 +421,11 @@ class RemoteFrappeSite:
 
 		if missing_files:
 			missing_config = "site config and " if not self.backup_links.get("config") else ""
-			missing_backups = (
-				f"Missing {missing_config}backup files: {', '.join([x.title() for x in missing_files])}"
+			frappe.throw(
+				_("Missing {0}backup files: {1}").format(
+					missing_config, ", ".join([x.title() for x in missing_files])
+				)
 			)
-			frappe.throw(missing_backups)
 
 	def __process_frappe_url(self, path):
 		if not path:
@@ -463,7 +465,7 @@ def sanitize_config(config: dict) -> dict:
 
 def developer_mode_only():
 	if not frappe.conf.developer_mode:
-		frappe.throw("You don't know what you're doing. Go away!", frappe.ValidationError)
+		frappe.throw(_("You don't know what you're doing. Go away!"), frappe.ValidationError)
 
 
 def human_readable(num: int | float) -> str:
@@ -944,13 +946,15 @@ def timer(f):
 def validate_subdomain(subdomain: str):
 	site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
 	if not subdomain:
-		frappe.throw("Subdomain is required to create a site.")
+		frappe.throw(_("Subdomain is required to create a site."))
 	if not re.match(site_regex, subdomain):
-		frappe.throw("Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens")
+		frappe.throw(
+			_("Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens")
+		)
 	if len(subdomain) > 32:
-		frappe.throw("Subdomain too long. Use 32 or less characters")
+		frappe.throw(_("Subdomain too long. Use 32 or less characters"))
 	if len(subdomain) < 5:
-		frappe.throw("Subdomain too short. Use 5 or more characters")
+		frappe.throw(_("Subdomain too short. Use 5 or more characters"))
 
 
 @site_cache(ttl=120)

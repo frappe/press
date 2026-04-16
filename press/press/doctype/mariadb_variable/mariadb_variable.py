@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 if TYPE_CHECKING:
@@ -32,7 +33,7 @@ class MariaDBVariable(Document):
 
 	def get_default_value(self):
 		if not (value := self.default_value):
-			frappe.throw("Default Value is required")
+			frappe.throw(_("Default Value is required"))
 		match self.datatype:
 			case "Int":
 				return int(value)

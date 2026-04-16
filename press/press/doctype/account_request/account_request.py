@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_url, random_string, validate_email_address
 
@@ -79,7 +80,7 @@ class AccountRequest(Document):
 			and not self.oauth_signup
 			and not is_valid_email_address(self.email)
 		):
-			frappe.throw(f"{self.email} is not a valid email address")
+			frappe.throw(_("{0} is not a valid email address").format(self.email))
 
 		if not self.team:
 			self.team = self.email

@@ -9,6 +9,7 @@ import traceback
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.monitor import add_data_to_monitor
@@ -98,7 +99,7 @@ class AgentJob(Document):
 		bench = cstr(filters.get("bench", ""))
 
 		if not (site or group or server or bench):
-			frappe.throw("Not permitted", frappe.PermissionError)
+			frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 		if site and not has_support_access("Site", site):
 			is_owned_by_team("Site", site, raise_exception=True)

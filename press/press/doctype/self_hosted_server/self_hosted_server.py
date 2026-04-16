@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 
@@ -341,7 +342,7 @@ class SelfHostedServer(Document):
 	def create_database_server(self):
 		try:
 			if not self.mariadb_ip:
-				frappe.throw("Public IP for MariaDB not found")
+				frappe.throw(_("Public IP for MariaDB not found"))
 
 			db_server = frappe.new_doc(
 				"Database Server",
@@ -377,7 +378,7 @@ class SelfHostedServer(Document):
 
 			frappe.msgprint(f"Database server record {db_server.name} created")
 		except Exception:
-			frappe.throw("Adding Server to Database Server Doctype failed")
+			frappe.throw(_("Adding Server to Database Server Doctype failed"))
 			self.status = "Broken"
 			self.save()
 			log_error("Inserting a new DB server failed")
@@ -406,7 +407,7 @@ class SelfHostedServer(Document):
 			self.status = "Active"
 		except Exception as e:
 			self.status = "Broken"
-			frappe.throw("Fetching sites configs from Existing Bench failed", exc=e)
+			frappe.throw(_("Fetching sites configs from Existing Bench failed"), exc=e)
 		self.save()
 
 	@frappe.whitelist()
@@ -451,7 +452,7 @@ class SelfHostedServer(Document):
 
 		except Exception as e:
 			self.status = "Broken"
-			frappe.throw("Server Creation Error", exc=e)
+			frappe.throw(_("Server Creation Error"), exc=e)
 
 		self.save()
 
@@ -480,7 +481,7 @@ class SelfHostedServer(Document):
 							"Bench", {"group": self.release_group, "server": self.name}
 						).name
 					except Exception as e:
-						frappe.throw("Site Creation Failed", exc=e)
+						frappe.throw(_("Site Creation Failed"), exc=e)
 					new_site.team = self.team
 					new_site.server = self.name
 					for app in _site.apps.split(","):
@@ -577,7 +578,7 @@ class SelfHostedServer(Document):
 			self.proxy_created = True
 		except Exception as e:
 			self.status = "Broken"
-			frappe.throw("Self Hosted Proxy Server Creation Error", exc=e)
+			frappe.throw(_("Self Hosted Proxy Server Creation Error"), exc=e)
 		self.save()
 
 		frappe.msgprint(f"Proxy server record {proxy_server.name} created")
@@ -718,7 +719,9 @@ class SelfHostedServer(Document):
 			public_ip = self.mariadb_ip
 
 		if private_ip not in all_ipv4_addresses:
-			frappe.throw(f"Private IP {private_ip} is not associated with server having IP {public_ip} ")
+			frappe.throw(
+				_("Private IP {0} is not associated with server having IP {1} ").format(private_ip, public_ip)
+			)
 
 	@frappe.whitelist()
 	def fetch_private_ip(self, play_id=None, server_type="app"):
@@ -788,7 +791,9 @@ class SelfHostedServer(Document):
 		"""
 
 		if round(int(self.ram), -3) < 4000:  # Round to nearest thousand
-			frappe.throw(f"Minimum RAM requirement not met, Minimum is 4GB and available is {self.ram} MB")
+			frappe.throw(
+				_("Minimum RAM requirement not met, Minimum is 4GB and available is {0} MB").format(self.ram)
+			)
 		if int(self.vcpus) < 2:
 			frappe.throw(
 				f"Minimum vCPU requirement not met, Minimum is 2 Cores and available is {self.vcpus}"

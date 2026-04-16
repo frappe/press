@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 import frappe.utils
+from frappe import _
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 from frappe.query_builder.terms import ValueWrapper
@@ -149,12 +150,12 @@ class SiteBackup(Document):
 
 	def validate(self):
 		if self.physical and self.with_files:
-			frappe.throw("Physical backups cannot be taken with files")
+			frappe.throw(_("Physical backups cannot be taken with files"))
 		if self.physical and self.offsite:
-			frappe.throw("Physical and offsite logical backups cannot be taken together")
+			frappe.throw(_("Physical and offsite logical backups cannot be taken together"))
 
 		if self.deactivate_site_during_backup and not self.physical:
-			frappe.throw("Site deactivation should be used for physical backups only")
+			frappe.throw(_("Site deactivation should be used for physical backups only"))
 
 	def before_insert(self):
 		if self.flags.get("skip_backup_after_insert"):
@@ -162,7 +163,7 @@ class SiteBackup(Document):
 
 		if getattr(self, "force", False):
 			if self.physical:
-				frappe.throw("Physical backups cannot be forcefully triggered")
+				frappe.throw(_("Physical backups cannot be forcefully triggered"))
 			return
 
 		# For backups, check if there are too many pending backups
@@ -175,7 +176,7 @@ class SiteBackup(Document):
 				"creation": (">", two_hours_ago),
 			},
 		):
-			frappe.throw("Too many pending backups", SiteTooManyPendingBackups)
+			frappe.throw(_("Too many pending backups"), SiteTooManyPendingBackups)
 
 		self.validate_and_setup_physical_backup()
 
@@ -210,7 +211,7 @@ class SiteBackup(Document):
 			site.sync_info()
 			site.reload()
 		if not site.database_name:
-			frappe.throw("Database name is missing in the site")
+			frappe.throw(_("Database name is missing in the site"))
 		self.database_name = site.database_name
 		self.snapshot_request_key = frappe.generate_hash(length=32)
 
@@ -375,7 +376,7 @@ class SiteBackup(Document):
 
 		virtual_machine.create_snapshots(exclude_boot_volume=True, physical_backup=True)
 		if len(virtual_machine.flags.created_snapshots) == 0:
-			frappe.throw("Failed to create a snapshot for the database server")
+			frappe.throw(_("Failed to create a snapshot for the database server"))
 		frappe.db.set_value(
 			"Site Backup", self.name, "database_snapshot", virtual_machine.flags.created_snapshots[0]
 		)

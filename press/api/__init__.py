@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 from press.api.client import dashboard_whitelist
 from press.utils import get_full_chain_cert_of_domain, get_minified_script, get_minified_script_2, log_error
@@ -30,10 +31,10 @@ def download_ssl_cert(domain: str):
 		not (domain.endswith("frappe.cloud") or domain.endswith("frappecloud.com"))
 		and not frappe.conf.developer_mode
 	):
-		frappe.throw("Invalid domain provided")
+		frappe.throw(_("Invalid domain provided"))
 
 	try:
 		return get_full_chain_cert_of_domain(domain)
 	except Exception as e:
 		log_error("Error downloading SSL certificate", data=e)
-		frappe.throw("Failed to download SSL certificate. Please try again later.")
+		frappe.throw(_("Failed to download SSL certificate. Please try again later."))

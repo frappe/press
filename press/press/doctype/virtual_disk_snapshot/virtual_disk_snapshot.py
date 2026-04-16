@@ -12,6 +12,7 @@ import frappe.utils
 import pytz
 import rq
 from botocore.exceptions import ClientError
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils.data import cint
 from hcloud import Client as HetznerClient
@@ -234,7 +235,7 @@ class VirtualDiskSnapshot(Document):
 		elif cluster.cloud_provider == "Hetzner":
 			self.client.images.change_protection(HetznerImage(cint(self.snapshot_id)), delete=True)
 		else:
-			frappe.throw("Only AWS and Hetzner Providers support snapshot locking/unlocking")
+			frappe.throw(_("Only AWS and Hetzner Providers support snapshot locking/unlocking"))
 
 	@frappe.whitelist()
 	def unlock(self):
@@ -251,7 +252,7 @@ class VirtualDiskSnapshot(Document):
 			self.client.images.change_protection(HetznerImage(cint(self.snapshot_id)), delete=False)
 
 		else:
-			frappe.throw("Only AWS and Hetzner Providers support snapshot locking/unlocking")
+			frappe.throw(_("Only AWS and Hetzner Providers support snapshot locking/unlocking"))
 
 	def create_volume(
 		self,

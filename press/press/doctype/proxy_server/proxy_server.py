@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from frappe import _
 from frappe.utils import unique
 
 from press.press.doctype.server.server import BaseServer
@@ -104,7 +105,7 @@ class ProxyServer(BaseServer):
 			if not frappe.db.exists(
 				"TLS Certificate", {"wildcard": True, "status": "Active", "domain": domain}
 			):
-				# frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
+				# frappe.throw(_("Valid wildcard TLS Certificate not found for {0}").format(domain))
 				...
 
 	def validate_proxysql_admin_password(self):
@@ -179,7 +180,7 @@ class ProxyServer(BaseServer):
 	@frappe.whitelist()
 	def setup_ssh_proxy(self):
 		if not self.ssh_certificate_authority:
-			frappe.throw("SSH Certificate Authority is required to setup SSH Proxy")
+			frappe.throw(_("SSH Certificate Authority is required to setup SSH Proxy"))
 
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_ssh_proxy", queue="long", timeout=1200)
 
@@ -504,12 +505,12 @@ class ProxyServer(BaseServer):
 
 		primary = frappe.db.get_value("Proxy Server", self.primary, ["cluster", "is_static_ip"], as_dict=True)
 		if self.cluster != primary.cluster:
-			frappe.throw("Failover can only be initiated between Proxy Servers in the same cluster")
+			frappe.throw(_("Failover can only be initiated between Proxy Servers in the same cluster"))
 
 		if (not primary.is_static_ip and not self.is_static_ip) or (
 			primary.is_static_ip and self.is_static_ip
 		):
-			frappe.throw("Failover can only be initiated if one of the proxy server has a static ip")
+			frappe.throw(_("Failover can only be initiated if one of the proxy server has a static ip"))
 
 		frappe.get_doc(
 			{
@@ -566,10 +567,12 @@ class ProxyServer(BaseServer):
 		already_seen_processes = set()
 		for limit in limits:
 			if limit["process"] in already_seen_processes:
-				frappe.throw(f"Duplicate process {limit['process']} found in memory limits")
+				frappe.throw(_("Duplicate process {0} found in memory limits").format(limit["process"]))
 
 			if int(limit["memory_high"]) > int(limit["memory_max"]):
-				frappe.throw(f"MemoryHigh cannot be more than MemoryMax for process {limit['process']}")
+				frappe.throw(
+					_("MemoryHigh cannot be more than MemoryMax for process {0}").format(limit["process"])
+				)
 
 			for key in list(limit.keys()):
 				if key not in ("process", "memory_high", "memory_max"):

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_url
 
@@ -73,7 +74,7 @@ class PartnerApprovalRequest(Document):
 		email = frappe.db.get_value("Team", self.partner, "partner_email")
 		partner_manager = client.get_value("Partner", "success_manager", {"email": email})
 		if not partner_manager:
-			frappe.throw("Failed to create approval request. Please contact support.")
+			frappe.throw(_("Failed to create approval request. Please contact support."))
 		customer = frappe.db.get_value("Team", self.requested_by, "user")
 
 		link = get_url(f"/api/method/press.api.partner.approve_partner_request?key={self.key}")

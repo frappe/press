@@ -7,6 +7,7 @@ from datetime import timezone
 
 import frappe
 import requests
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils.data import format_duration, get_datetime
 
@@ -64,10 +65,10 @@ class SilencedAlert(Document):
 			"Monitor Server", "monitor.athul.fc.frappe.dev"
 		)  # frappe.db.get_single_value("Press Settings","monitor_server"))
 		auth_token = base64.b64encode(
-			f"frappe:{monitor_server.get_password('grafana_password')}".encode("utf-8")
+			f"frappe:{monitor_server.get_password('grafana_password')}".encode()
 		).decode("utf-8")
 		# keyword = f'{self.get_keyword_based_on_instance_type()}%3D%22{self.instance.replace(" ","%20")}%22'
-		keyword = f'{self.get_keyword_based_on_instance_type()}="{"erpdb.innoterra.co.in" or self.instance}"'
+		keyword = f'{self.get_keyword_based_on_instance_type()}="{self.instance or "erpdb.innoterra.co.in"}"'
 		print(keyword)
 		res = requests.get(
 			f"https://monitor.frappe.cloud/alertmanager/api/v2/alerts/groups?filter={keyword}&silenced=false&active=true",
@@ -79,7 +80,7 @@ class SilencedAlert(Document):
 			self.alert_previews = json.dumps(alerts, indent=2)
 			self.save()
 		else:
-			frappe.throw("Unable to fetch alerts from Alertmanager")
+			frappe.throw(_("Unable to fetch alerts from Alertmanager"))
 
 	@frappe.whitelist()
 	def create_new_silence(self):
@@ -87,7 +88,7 @@ class SilencedAlert(Document):
 			"Monitor Server", "monitor.athul.fc.frappe.dev"
 		)  # frappe.db.get_single_value("Press Settings","monitor_server"))
 		auth_token = base64.b64encode(
-			f"frappe:{monitor_server.get_password('grafana_password')}".encode("utf-8")
+			f"frappe:{monitor_server.get_password('grafana_password')}".encode()
 		).decode("utf-8")
 		data = {
 			"matchers": [
@@ -115,7 +116,7 @@ class SilencedAlert(Document):
 			self.silence_id = alerts["silenceID"]
 			self.save()
 		else:
-			frappe.throw("Unable to fetch alerts from Alertmanager")
+			frappe.throw(_("Unable to fetch alerts from Alertmanager"))
 
 
 def check_silenced_alerts():
@@ -123,14 +124,12 @@ def check_silenced_alerts():
 	Checks for silenced alerts in Alertmanager and updates the status of the silenced alert in Press
 	Runs every hour
 	"""
-	silences = frappe.get_all(
-		"Silenced Alert", fields=["silence_id"], filters={"status": "Active"}
-	)
+	silences = frappe.get_all("Silenced Alert", fields=["silence_id"], filters={"status": "Active"})
 	monitor_server = frappe.get_doc(
 		"Monitor Server", "monitor.athul.fc.frappe.dev"
 	)  # frappe.db.get_single_value("Press Settings","monitor_server"))
 	auth_token = base64.b64encode(
-		f"frappe:{monitor_server.get_password('grafana_password')}".encode("utf-8")
+		f"frappe:{monitor_server.get_password('grafana_password')}".encode()
 	).decode("utf-8")
 	req = requests.get(
 		"https://monitor.frappe.cloud/alertmanager/api/v2/silences?silenced=false&inhibited=false&active=true",
@@ -140,10 +139,8 @@ def check_silenced_alerts():
 		silences_from_alertmanager = req.json()
 		s_ids = [x["silence_id"] for x in silences]
 		for silence in silences_from_alertmanager:
-			if not silence["status"]["state"] == "active" and silence["id"] in s_ids:
-				frappe.db.set_value(
-					"Silenced Alert", {"silence_id": silence["id"]}, "status", "Expired"
-				)
+			if silence["status"]["state"] != "active" and silence["id"] in s_ids:
+				frappe.db.set_value("Silenced Alert", {"silence_id": silence["id"]}, "status", "Expired")
 		frappe.db.commit()
 	else:
 		log_error("Failed to fetch silences from Alertmanager")

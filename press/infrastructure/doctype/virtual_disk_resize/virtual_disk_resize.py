@@ -10,6 +10,7 @@ from enum import Enum
 
 import botocore
 import frappe
+from frappe import _
 from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 
@@ -132,7 +133,7 @@ class VirtualDiskResize(Document):
 
 	def validate_aws_only(self):
 		if self.machine.cloud_provider != "AWS EC2":
-			frappe.throw("This feature is only available for AWS EC2")
+			frappe.throw(_("This feature is only available for AWS EC2"))
 
 	def validate_existing_migration(self):
 		if existing := frappe.get_all(
@@ -145,12 +146,12 @@ class VirtualDiskResize(Document):
 			pluck="status",
 			limit=1,
 		):
-			frappe.throw(f"An existing shrink document is already {existing[0].lower()}.")
+			frappe.throw(_("An existing shrink document is already {0}.").format(existing[0].lower()))
 
 	def set_filesystem_attributes(self):
 		devices = self.fetch_devices()
 		if len(devices) != 1:
-			frappe.throw("Multiple filesystems found on volume. Can't shrink")
+			frappe.throw(_("Multiple filesystems found on volume. Can't shrink"))
 
 		self.old_filesystem_device = f"/dev/{devices[0]['name']}"
 
@@ -272,14 +273,14 @@ class VirtualDiskResize(Document):
 
 	def verify_mount_point(self, device, filesystem):
 		if device["mountpoint"] != filesystem["mount_point"]:
-			frappe.throw("Device and Filesystem mount point don't match. Can't shrink")
+			frappe.throw(_("Device and Filesystem mount point don't match. Can't shrink"))
 
 	def reaffirm_old_filesystem_used(self, mountpoint: str):
 		"""Reaffirm file system usage using du"""
 		output = self.ansible_run(f"du -sx --block-size=1024 {mountpoint}")["output"]
 
 		if not output:
-			frappe.throw("Error occurred while fetching filesystem size")
+			frappe.throw(_("Error occurred while fetching filesystem size"))
 
 		size = float(output.split()[0])
 		return size / 1024**2
@@ -303,9 +304,9 @@ class VirtualDiskResize(Document):
 
 		volumes = find_all(machine.volumes, lambda v: v.volume_id != root_volume.volume_id)
 		if len(volumes) == 0:
-			frappe.throw("No additional volumes found. Cannot shrink any volume.")
+			frappe.throw(_("No additional volumes found. Cannot shrink any volume."))
 		elif len(volumes) > 1:
-			frappe.throw("Multiple volumes found. Please select the volume to shrink.")
+			frappe.throw(_("Multiple volumes found. Please select the volume to shrink."))
 
 		self.old_volume_id = volumes[0].volume_id
 
@@ -442,7 +443,7 @@ class VirtualDiskResize(Document):
 			pluck="name",
 		)
 		if len(snapshots) == 0:
-			frappe.throw("Failed to create a snapshot")
+			frappe.throw(_("Failed to create a snapshot"))
 
 		self.virtual_disk_snapshot = snapshots[0]
 		return StepStatus.Success

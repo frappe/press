@@ -6,6 +6,7 @@ import os
 from functools import partial
 
 import frappe
+from frappe import _
 from frappe.core.doctype.user.user import User
 from frappe.handler import is_whitelisted
 from frappe.utils import cint
@@ -85,7 +86,7 @@ def on_login(login_manager):
 		not has_2fa.get("last_verified_at")
 		or has_2fa.get("last_verified_at") < frappe.utils.add_to_date(None, seconds=-10)
 	):
-		frappe.throw("Please re-login to verify your identity.")
+		frappe.throw(_("Please re-login to verify your identity."))
 
 	if not frappe.db.exists("Team", {"user": frappe.session.user, "enabled": 1}) and frappe.db.exists(
 		"Team", {"user": frappe.session.user, "enabled": 0}

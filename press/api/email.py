@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 import requests
+from frappe import _
 from frappe.exceptions import OutgoingEmailError, TooManyRequestsError, ValidationError
 from frappe.utils import validate_email_address
 from frappe.utils.password import get_decrypted_password
@@ -92,7 +93,7 @@ def get_analytics(**data):
 
 	for value in (site, subscription_key):
 		if not value or not isinstance(value, str):
-			frappe.throw("Invalid Request")
+			frappe.throw(_("Invalid Request"))
 
 	return frappe.get_all(
 		"Mail Log",
@@ -233,7 +234,7 @@ def send_mime_mail(**data):
 		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
 	if resp.status_code == 400:
 		err_msg: str = resp.json().get("message", "Invalid request")
-		frappe.throw(f"Something went wrong with sending emails: {err_msg}", InvalidEmail)
+		frappe.throw(_("Something went wrong with sending emails: {0}").format(err_msg), InvalidEmail)
 	log_error("Email Delivery Service: Sending error", response=resp.text, data=data, message=message)
 	frappe.throw(
 		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",

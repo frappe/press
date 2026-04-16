@@ -4,6 +4,7 @@
 import json
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from press.agent import Agent
@@ -38,7 +39,7 @@ class BuildCacheShell(Document):
 
 	def _run_command(self):
 		if not self.build_server:
-			frappe.throw("Please select a <b>Build Server</b>.")
+			frappe.throw(_("Please select a <b>Build Server</b>."))
 
 		return Agent(self.build_server).run_command_in_docker_cache(
 			self.command,

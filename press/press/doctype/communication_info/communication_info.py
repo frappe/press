@@ -4,6 +4,7 @@
 from typing import Literal
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import validate_email_address, validate_phone_number
 from frappe.utils.caching import redis_cache
@@ -37,13 +38,13 @@ class CommunicationInfo(Document):
 
 	def validate(self):
 		if not self.parenttype or not self.parent:
-			frappe.throw("parenttype and parent are required")
+			frappe.throw(_("parenttype and parent are required"))
 
 		if self.parenttype not in ("Team", "Site", "Server"):
-			frappe.throw("parenttype must be one of 'Team', 'Site', 'Server'")
+			frappe.throw(_("parenttype must be one of 'Team', 'Site', 'Server'"))
 
 		if self.channel == "Phone Call" and self.type != "Incident":
-			frappe.throw("Phone Call is available only for 'Incident'")
+			frappe.throw(_("Phone Call is available only for 'Incident'"))
 
 		if self.channel == "Email":
 			validate_email_address(self.value, throw=True)
@@ -56,10 +57,12 @@ class CommunicationInfo(Document):
 		# For Team, all types are allowed
 
 		if self.parenttype == "Server" and self.type not in ("General", "Server Activity", "Incident"):
-			frappe.throw(f"Communication type '{self.type}' is not allowed for '{self.parenttype}'")
+			frappe.throw(
+				_("Communication type '{0}' is not allowed for '{1}'").format(self.type, self.parenttype)
+			)
 
 		if self.parenttype == "Site" and self.type not in ("General", "Site Activity"):
-			frappe.throw(f"Communication type '{self.type}' is not allowed for 'Site'")
+			frappe.throw(_("Communication type '{0}' is not allowed for 'Site'").format(self.type))
 
 
 @redis_cache(ttl=10 * 60)
@@ -136,7 +139,7 @@ def update_communication_infos(  # noqa: C901
 	"""
 
 	if resource_type not in ("Team", "Site", "Server"):
-		frappe.throw("resource_type must be one of 'Team', 'Site', 'Server'")
+		frappe.throw(_("resource_type must be one of 'Team', 'Site', 'Server'"))
 
 	# Remove values with empty value
 	values = [value for value in values if value.get("value")]
@@ -192,7 +195,7 @@ def update_communication_infos(  # noqa: C901
 	if resource_type == "Team":
 		billing_count = sum(1 for value in values if value.get("type") == "Billing")
 		if billing_count > 1:
-			frappe.throw("For Billing, only one email can be configured")
+			frappe.throw(_("For Billing, only one email can be configured"))
 
 	# Delete unwanted
 	if to_delete:

@@ -10,6 +10,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Literal
 
 import frappe
+from frappe import _
 from frappe.core.utils import find
 from frappe.model.document import Document
 
@@ -254,7 +255,7 @@ class VirtualMachineMigration(Document):
 
 	def validate_aws_only(self):
 		if self.machine.cloud_provider != "AWS EC2":
-			frappe.throw("This feature is only available for AWS EC2")
+			frappe.throw(_("This feature is only available for AWS EC2"))
 
 	def validate_existing_migration(self):
 		if existing := frappe.get_all(
@@ -267,7 +268,7 @@ class VirtualMachineMigration(Document):
 			pluck="status",
 			limit=1,
 		):
-			frappe.throw(f"An existing migration is already {existing[0].lower()}.")
+			frappe.throw(_("An existing migration is already {0}.").format(existing[0].lower()))
 
 	@property
 	def machine(self) -> VirtualMachine:

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 import frappe
 import requests
+from frappe import _
 from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
@@ -203,7 +204,7 @@ def get_reclaimable_size(name):
 def new_unified(server: UnifiedServerDetails):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+		frappe.throw(_("You cannot create a new server because your account is disabled"))
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
@@ -240,11 +241,11 @@ def new(server):
 	auto_increase_storage = server.get("auto_increase_storage", False)
 
 	if server_plan_platform == "arm64" and not cluster_has_arm_support:
-		frappe.throw(f"ARM Instances are currently unavailable in the {server['cluster']} region")
+		frappe.throw(_("ARM Instances are currently unavailable in the {0} region").format(server["cluster"]))
 
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+		frappe.throw(_("You cannot create a new server because your account is disabled"))
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
@@ -596,7 +597,7 @@ def prometheus_query(
 	try:
 		response = requests.get(url, params=query, auth=("frappe", str(password))).json()
 	except requests.exceptions.RequestException:
-		frappe.throw("Unable to connect to monitor server", MonitorServerDown)
+		frappe.throw(_("Unable to connect to monitor server"), MonitorServerDown)
 
 	datasets: list[dict] = []
 	labels: list[float] = []
@@ -627,7 +628,7 @@ def prometheus_query(
 @frappe.whitelist()
 def options():
 	if not get_current_team(get_doc=True).servers_enabled:
-		frappe.throw("Servers feature is not yet enabled on your account")
+		frappe.throw(_("Servers feature is not yet enabled on your account"))
 
 	regions_filter = {"cloud_provider": ("!=", "Generic"), "public": True, "status": "Active"}
 
@@ -1027,7 +1028,7 @@ def schedule_auto_scale(
 	)
 
 	if (formatted_scheduled_scale_down_time - formatted_scheduled_scale_up_time).total_seconds() / 60 < 60:
-		frappe.throw("Scheduled scales must be an hour apart", frappe.ValidationError)
+		frappe.throw(_("Scheduled scales must be an hour apart"), frappe.ValidationError)
 
 	validate_scaling_schedule(
 		name,

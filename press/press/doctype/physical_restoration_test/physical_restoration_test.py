@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 if TYPE_CHECKING:
@@ -103,7 +104,7 @@ class PhysicalRestorationTest(Document):
 		else:
 			self.completed = True
 			self.save()
-			frappe.throw("No pending restoration found")
+			frappe.throw(_("No pending restoration found"))
 
 	@frappe.whitelist()
 	def sync(self):

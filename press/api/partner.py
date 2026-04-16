@@ -1,6 +1,7 @@
 import json
 
 import frappe
+from frappe import _
 from frappe.core.utils import find
 from frappe.desk.form.load import get_docinfo
 from frappe.query_builder import Case
@@ -107,7 +108,7 @@ def get_partner_details(partner_email):
 	)
 	if data:
 		return data[0]
-	frappe.throw("Partner Details not found")
+	frappe.throw(_("Partner Details not found"))
 	return None
 
 
@@ -117,7 +118,7 @@ def send_link_certificate_request(user_email, certificate_type):
 	if not frappe.db.exists(
 		"Partner Certificate", {"partner_member_email": user_email, "course": certificate_type}
 	):
-		frappe.throw(f"No certificate found for the {user_email} with given course")
+		frappe.throw(_("No certificate found for the {0} with given course").format(user_email))
 
 	team = get_current_team(get_doc=True)
 
@@ -170,7 +171,7 @@ def transfer_credits(amount, customer):
 
 	partner = get_current_team(get_doc=True)
 	if not partner.erpnext_partner and partner.partner_status != "Active":
-		frappe.throw("Only Partner team can transfer credits.")
+		frappe.throw(_("Only Partner team can transfer credits."))
 
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)
@@ -179,7 +180,7 @@ def transfer_credits(amount, customer):
 	discount_percent = DISCOUNT_MAP.get(partner_level[0]) if partner_level else 0
 
 	if credits_available < amt:
-		frappe.throw(f"Insufficient Credits to transfer. Credits Available: {credits_available}")
+		frappe.throw(_("Insufficient Credits to transfer. Credits Available: {0}").format(credits_available))
 
 	customer_doc = frappe.get_doc("Team", customer)
 	credits_to_transfer = amt
@@ -202,7 +203,7 @@ def transfer_credits(amount, customer):
 		frappe.db.commit()
 		return amt
 	except Exception:
-		frappe.throw("Error in transferring credits")
+		frappe.throw(_("Error in transferring credits"))
 		frappe.db.rollback()
 
 
@@ -720,7 +721,7 @@ def create_audit_request(audit_date, audit_type="Online"):
 		)
 
 	if frappe.utils.getdate(audit_date) <= frappe.utils.getdate():
-		frappe.throw("Audit date must be in the future. Please choose a date later than today's date.")
+		frappe.throw(_("Audit date must be in the future. Please choose a date later than today's date."))
 
 	try:
 		doc = frappe.new_doc("Partner Audit")
@@ -737,7 +738,7 @@ def create_audit_request(audit_date, audit_type="Online"):
 def change_partner(lead_name, partner):
 	doc = frappe.get_doc("Partner Lead", lead_name)
 	if not is_lead_team(lead_name):
-		frappe.throw("You are not allowed to change the partner for this lead")
+		frappe.throw(_("You are not allowed to change the partner for this lead"))
 
 	doc.partner_team = partner
 	doc.status = "Open"
@@ -768,12 +769,12 @@ def remove_partner():
 def apply_for_certificate(member_name, certificate_type):
 	team = get_current_team(get_doc=True)
 	if not team.erpnext_partner and team.partner_status != "Active":
-		frappe.throw("Only Active Partner team can apply for certificates.")
+		frappe.throw(_("Only Active Partner team can apply for certificates."))
 
 	if frappe.db.exists(
 		"Partner Certificate Request", {"partner_member_email": member_name, "course": certificate_type}
 	):
-		frappe.throw("A certificate request already exists for this team member and course.")
+		frappe.throw(_("A certificate request already exists for this team member and course."))
 
 	doc = frappe.new_doc("Partner Certificate Request")
 	doc.update(
@@ -790,7 +791,7 @@ def apply_for_certificate(member_name, certificate_type):
 @role_guard.api("partner")
 def get_partner_teams(company=None, email=None, country=None, tier=None, active_only=False):
 	if not is_system_user(frappe.session.user):
-		frappe.throw("Only system users can access partner teams.")
+		frappe.throw(_("Only system users can access partner teams."))
 
 	filters = {"enabled": 1, "erpnext_partner": 1}
 	if company:
@@ -836,7 +837,7 @@ def update_lead_details(lead_name, lead_details):
 	lead_details = frappe._dict(lead_details)
 	doc = frappe.get_doc("Partner Lead", lead_name)
 	if not is_lead_team(lead_name):
-		frappe.throw("You are not allowed to update this lead")
+		frappe.throw(_("You are not allowed to update this lead"))
 	doc.update(
 		{
 			"organization_name": lead_details.organization_name,
@@ -859,7 +860,7 @@ def update_lead_details(lead_name, lead_details):
 @role_guard.api("partner")
 def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 	if not is_lead_team(lead_name):
-		frappe.throw("You are not allowed to update this lead")
+		frappe.throw(_("You are not allowed to update this lead"))
 
 	doc = frappe.get_doc("Partner Lead", lead_name)
 	status_dict = {"status": status}
@@ -888,14 +889,14 @@ def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 			)
 			result = query.run(as_dict=True)
 			if not result:
-				frappe.throw("Server not found in Frappe Cloud")
+				frappe.throw(_("Server not found in Frappe Cloud"))
 
 			amount = calculate_total_amount(result[0].name)
 
 		elif team:
 			team_id = frappe.db.exists("Team", {"user": team, "enabled": 1})
 			if not team_id:
-				frappe.throw("Team not found in Frappe Cloud")
+				frappe.throw(_("Team not found in Frappe Cloud"))
 			else:
 				amount = calculate_total_team_amount(team_id)
 
@@ -908,7 +909,7 @@ def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 			)
 			result = query.run(as_dict=True)
 			if not result:
-				frappe.throw("Site not found in Frappe Cloud")
+				frappe.throw(_("Site not found in Frappe Cloud"))
 
 			SitePlan = frappe.qb.DocType("Site Plan")
 			paid_plans = (
@@ -919,7 +920,7 @@ def update_lead_status(lead_name, status, **kwargs):  # noqa: C901
 			)
 			site_plan = result[0].plan
 			if site_plan not in paid_plans:
-				frappe.throw("The site is not on a paid plan, please select the correct hosting")
+				frappe.throw(_("The site is not on a paid plan, please select the correct hosting"))
 
 		status_dict.update(
 			{
@@ -1015,7 +1016,7 @@ def get_fc_plans():
 @role_guard.api("partner")
 def update_followup_details(id, lead, followup_details):
 	if not is_lead_team(lead):
-		frappe.throw("You are not allowed to update this followup")
+		frappe.throw(_("You are not allowed to update this followup"))
 
 	followup_details = frappe._dict(followup_details)
 	doc = frappe.get_doc("Partner Lead", lead)
@@ -1052,7 +1053,7 @@ def add_new_lead(lead_details):
 	lead_details = frappe._dict(lead_details)
 	team = get_current_team(get_doc=True)
 	if not team.erpnext_partner and team.partner_status != "Active":
-		frappe.throw("Only Active Partner team can add new leads.")
+		frappe.throw(_("Only Active Partner team can add new leads."))
 
 	doc = frappe.new_doc("Partner Lead")
 	doc.update(

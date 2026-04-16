@@ -16,6 +16,7 @@ from typing import Literal
 
 import frappe
 import semantic_version
+from frappe import _
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
@@ -211,7 +212,7 @@ class DeployCandidate(Document):
 		servers = [server_ref.server for server_ref in self.release_group.servers]
 
 		if frappe.get_value("Server", {"name": ("in", servers)}, "stop_deployments"):
-			frappe.throw("Deployments on this server are currently halted!")
+			frappe.throw(_("Deployments on this server are currently halted!"))
 
 		kwargs.update(
 			{"doctype": "Deploy Candidate Build", "deploy_candidate": self.name},

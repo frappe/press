@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from press.runner import Ansible
@@ -85,19 +86,25 @@ class DatabaseServerMariaDBVariable(Document):
 
 	def validate_only_one_value_is_set(self):
 		if sum([bool(self.get(f)) for f in self.value_fields]) > 1:
-			frappe.throw("Only one value can be set for MariaDB system variable")
+			frappe.throw(_("Only one value can be set for MariaDB system variable"))
 
 	def validate_datatype_of_field_is_correct(self):
 		if type(self.value).__name__ != self.datatype.lower():
-			frappe.throw(f"Value for {self.mariadb_variable} must be {self.datatype}")
+			frappe.throw(_("Value for {0} must be {1}").format(self.mariadb_variable, self.datatype))
 
 	def validate_value_field_set_is_correct(self):
 		if self.value_field != f"value_{self.datatype.lower()}":
-			frappe.throw(f"Value field for {self.mariadb_variable} must be value_{self.datatype.lower()}")
+			frappe.throw(
+				_("Value field for {0} must be value_{1}").format(
+					self.mariadb_variable, self.datatype.lower()
+				)
+			)
 
 	def validate_skipped_should_be_skippable(self):
 		if self.skip and not self.skippable:
-			frappe.throw(f"Only skippable variables can be skipped. {self.mariadb_variable} is not skippable")
+			frappe.throw(
+				_(f"Only skippable variables can be skipped. {self.mariadb_variable} is not skippable")
+			)
 
 	def set_default_value_if_no_value(self):
 		if self.value:
@@ -108,7 +115,7 @@ class DatabaseServerMariaDBVariable(Document):
 
 	def validate_empty_only_if_skippable(self):
 		if not self.value and not self.skippable:
-			frappe.throw(f"Value for {self.mariadb_variable} cannot be empty")
+			frappe.throw(_("Value for {0} cannot be empty").format(self.mariadb_variable))
 
 	def set_persist_and_unset_dynamic_if_skipped(self):
 		if self.skip:

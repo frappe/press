@@ -3,6 +3,7 @@
 
 
 import frappe
+from frappe import _
 
 from press.utils import get_default_team_for_user, get_valid_teams_for_user
 
@@ -26,7 +27,7 @@ def _get_context():
 @frappe.whitelist(methods=["POST"], allow_guest=True)
 def get_context_for_dev():
 	if not frappe.conf.developer_mode:
-		frappe.throw("This method is only meant for developer mode")
+		frappe.throw(_("This method is only meant for developer mode"))
 	return get_boot()
 
 

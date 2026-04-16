@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 import requests
+from frappe import _
 from frappe.types.DF import Phone
 from frappe.utils import cint
 from frappe.utils.background_jobs import enqueue_doc
@@ -410,7 +411,7 @@ class Incident(WebsiteGenerator):
 	def monitor_server(self) -> MonitorServer:
 		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
 		if not (monitor_url := press_settings.monitor_server):
-			frappe.throw("Monitor Server not set in Press Settings")
+			frappe.throw(_("Monitor Server not set in Press Settings"))
 		return frappe.get_cached_doc("Monitor Server", monitor_url)
 
 	def get_grafana_auth_header(self):
@@ -437,7 +438,7 @@ class Incident(WebsiteGenerator):
 	def reboot_database_server(self):
 		db_server_name = frappe.db.get_value("Server", self.server, "database_server")
 		if not db_server_name:
-			frappe.throw("No database server found for this server")
+			frappe.throw(_("No database server found for this server"))
 		db_server = DatabaseServer("Database Server", db_server_name)
 		try:
 			db_server.reboot_with_serial_console()
@@ -485,7 +486,7 @@ class Incident(WebsiteGenerator):
 		"""
 		down_benches = self.monitor_server.get_benches_down_for_server(str(self.server))
 		if not down_benches:
-			frappe.throw("No down benches found for this server")
+			frappe.throw(_("No down benches found for this server"))
 			return
 		for bench_name in down_benches:
 			bench: Bench = Bench("Bench", bench_name)

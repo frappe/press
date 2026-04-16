@@ -6,6 +6,7 @@ import json
 import re
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from pygments import highlight
@@ -94,7 +95,7 @@ class AppReleaseApprovalRequest(Document):
 		)
 
 		if len(requests) > 0:
-			frappe.throw("An active request for this app release already exists!")
+			frappe.throw(_("An active request for this app release already exists!"))
 
 	def another_request_awaiting_approval(self):
 		request_source = frappe.db.get_value("App Release", self.app_release, "source")
@@ -110,7 +111,7 @@ class AppReleaseApprovalRequest(Document):
 
 		# A request for this source is already open
 		if request_source in sources_awaiting_approval:
-			frappe.throw("A previous release is already awaiting approval!")
+			frappe.throw(_("A previous release is already awaiting approval!"))
 
 	def update_release_status(self):
 		release: AppRelease = frappe.get_doc("App Release", self.app_release)

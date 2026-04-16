@@ -10,7 +10,7 @@ import shlex
 import subprocess
 
 import frappe
-from frappe import safe_decode
+from frappe import _, safe_decode
 from frappe.model.document import Document
 
 from press.utils import log_error
@@ -43,13 +43,13 @@ class UserSSHCertificate(Document):
 
 	def validate(self):
 		if not self.ssh_public_key:
-			frappe.throw("Please make sure that a valid public key has been added in team doc.")
+			frappe.throw(_("Please make sure that a valid public key has been added in team doc."))
 
 		# check if the ssh key is valid
 		try:
 			base64.b64decode(self.ssh_public_key.strip().split()[1])
 		except binascii.Error:
-			frappe.throw("Please ensure that the attached text is a valid public key")
+			frappe.throw(_("Please ensure that the attached text is a valid public key"))
 
 	def before_insert(self):
 		if frappe.get_all(
@@ -62,7 +62,7 @@ class UserSSHCertificate(Document):
 				"docstatus": 1,
 			},
 		):
-			frappe.throw("A valid certificate already exists.")
+			frappe.throw(_("A valid certificate already exists."))
 
 	def before_save(self):
 		# decode the ssh key and generate a fingerprint
@@ -76,7 +76,7 @@ class UserSSHCertificate(Document):
 		# extract key_type (eg: rsa, ecdsa, ed25519.) for naming convention
 		self.key_type = self.ssh_public_key.strip().split()[0].split("-")[1]
 		if not self.key_type:
-			frappe.throw("Could not guess the key type. Please check your public key.")
+			frappe.throw(_("Could not guess the key type. Please check your public key."))
 
 	def before_submit(self):
 		self._set_key_type()
@@ -95,7 +95,7 @@ class UserSSHCertificate(Document):
 			subprocess.check_output(shlex.split(command), cwd="/etc/ssh")
 		except subprocess.CalledProcessError as e:
 			log_error("SSH Certificate Generation Error", exception=e)
-			frappe.throw("Failed to generate a certificate for the specified key. Please try again.")
+			frappe.throw(_("Failed to generate a certificate for the specified key. Please try again."))
 		process = subprocess.Popen(
 			shlex.split(f"ssh-keygen -Lf {tmp_pub_file_prefix}-cert.pub"),
 			stdout=subprocess.PIPE,

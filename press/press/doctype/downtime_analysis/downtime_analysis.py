@@ -4,6 +4,7 @@
 import json
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils.background_jobs import get_job_status
 from frappe.utils.password import get_decrypted_password
@@ -39,9 +40,9 @@ class DowntimeAnalysis(Document):
 	def fetch_report(self):
 		frappe.only_for("Desk User")
 		if not (self.start_date and self.end_date):
-			frappe.throw("Start Date and End Date are required to fetch the report.")
+			frappe.throw(_("Start Date and End Date are required to fetch the report."))
 		if self.start_date > self.end_date:
-			frappe.throw("Start Date cannot be greater than End Date.")
+			frappe.throw(_("Start Date cannot be greater than End Date."))
 
 		if is_report_available(str(self.start_date), str(self.end_date)):
 			self.status = "Report Available"

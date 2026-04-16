@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 
 class InvalidSecretKeyError(Exception):
@@ -6,4 +7,4 @@ class InvalidSecretKeyError(Exception):
 
 
 def raise_invalid_key_error():
-	frappe.throw("Please provide a valid secret key.", InvalidSecretKeyError)
+	frappe.throw(_("Please provide a valid secret key."), InvalidSecretKeyError)

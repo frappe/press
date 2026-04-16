@@ -11,11 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, TypedDict, cast
 
 import frappe
 import frappe.utils
-import requests
-import sqlparse
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import A, Search
-from frappe import auth
+from frappe import _, auth
 from frappe.utils import (
 	convert_utc_to_timezone,
 	flt,
@@ -234,7 +230,7 @@ class StackedGroupByChart:
 
 	def setup_search_aggs(self):
 		if not self.group_by_field:
-			frappe.throw("Group by field not set")
+			frappe.throw(_("Group by field not set"))
 		if AggType(self.agg_type) is AggType.COUNT:
 			self.search.aggs.bucket(
 				"method_path",
@@ -465,7 +461,7 @@ class NginxRequestGroupByChart(StackedGroupByChart):
 				)
 			)
 		):
-			frappe.throw("Monitor server not set in Press Settings")
+			frappe.throw(_("Monitor server not set in Press Settings"))
 		self.search = self.search.exclude("match_phrase", source__ip=monitor_ip)
 		if ResourceType(self.resource_type) is ResourceType.SITE:
 			server = frappe.db.get_value("Site", self.name, "server")
@@ -600,12 +596,12 @@ def get_metrics(
 	duration: str = "24h",
 ):
 	if not name:
-		frappe.throw("No release group found!")
+		frappe.throw(_("No release group found!"))
 
 	benches = frappe.get_all("Bench", {"status": "Active", "group": name}, pluck="name")
 
 	if not benches:
-		frappe.throw("No active benches found!")
+		frappe.throw(_("No active benches found!"))
 
 	benches = "|".join(benches)
 	timespan, timegrain = TIMESPAN_TIMEGRAIN_MAP[duration]
@@ -615,7 +611,7 @@ def get_metrics(
 		datasets, labels = _get_cadvisor_data(promql_query, timezone, timespan, timegrain)
 		return {response_key: {"datasets": datasets, "labels": labels}}
 	except (ValueError, TypeError):
-		frappe.throw("Unable to fetch metrics")
+		frappe.throw(_("Unable to fetch metrics"))
 
 
 @frappe.whitelist()
@@ -1691,7 +1687,7 @@ def mariadb_add_suggested_index(name: str, table: str, column: str):
 		},
 	)
 	if record_exists:
-		frappe.throw("There is already a pending job for Add Database Index. Please wait until finished.")
+		frappe.throw(_("There is already a pending job for Add Database Index. Please wait until finished."))
 	doctype = get_doctype_name(table)
 	site = frappe.get_cached_doc("Site", name)
 	agent = Agent(site.server)

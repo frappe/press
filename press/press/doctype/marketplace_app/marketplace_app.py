@@ -117,10 +117,10 @@ class MarketplaceApp(WebsiteGenerator):
 	@dashboard_whitelist()
 	def delete(self):
 		if self.status != "Draft":
-			frappe.throw("You can only delete an app in Draft status")
+			frappe.throw(_("You can only delete an app in Draft status"))
 
 		if get_current_team() != self.team:
-			frappe.throw("You are not authorized to delete this app")
+			frappe.throw(_("You are not authorized to delete this app"))
 
 		super().delete()
 
@@ -145,7 +145,7 @@ class MarketplaceApp(WebsiteGenerator):
 		)
 
 		if len(approval_requests) == 0:
-			frappe.throw("No approval request exists for the given app release")
+			frappe.throw(_("No approval request exists for the given app release"))
 
 		frappe.get_doc("App Release Approval Request", approval_requests[0]).cancel()
 
@@ -180,7 +180,7 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def check_if_duplicate(self):
 		if frappe.db.exists("Marketplace App", self.name):
-			frappe.throw(f"App {self.name} already exists. Please contact support.")
+			frappe.throw(_("App {0} already exists. Please contact support.").format(self.name))
 
 	def create_app_and_source_if_needed(self):
 		if frappe.db.exists("App", self.app or self.name):
@@ -213,14 +213,16 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def validate_summary(self):
 		if len(self.description) > 140:
-			frappe.throw("Marketplace App summary cannot be more than 140 characters.")
+			frappe.throw(_("Marketplace App summary cannot be more than 140 characters."))
 
 	def validate_sources(self):
 		for source in self.sources:
 			app_source = frappe.get_doc("App Source", source.source)
 
 			if app_source.app != self.app:
-				frappe.throw(f"App Source {frappe.bold(source.source)} does not belong to this app!")
+				frappe.throw(
+					_("App Source {0} does not belong to this app!").format(frappe.bold(source.source))
+				)
 
 			app_source_versions = [v.version for v in app_source.versions]
 			if source.version not in app_source_versions:
@@ -232,7 +234,9 @@ class MarketplaceApp(WebsiteGenerator):
 	def validate_number_of_screenshots(self):
 		max_allowed_screenshots = frappe.db.get_single_value("Press Settings", "max_allowed_screenshots")
 		if len(self.screenshots) > max_allowed_screenshots:
-			frappe.throw(f"You cannot add more than {max_allowed_screenshots} screenshots for an app.")
+			frappe.throw(
+				_("You cannot add more than {0} screenshots for an app.").format(max_allowed_screenshots)
+			)
 
 	def validate_has_approved_release_with_passing_audit(self):
 		"""
@@ -398,7 +402,7 @@ class MarketplaceApp(WebsiteGenerator):
 	@dashboard_whitelist()
 	def remove_version(self, version: str):
 		if self.status == "Published" and len(self.sources) == 1:
-			frappe.throw("Failed to remove. Need at least 1 version for a published app")
+			frappe.throw(_("Failed to remove. Need at least 1 version for a published app"))
 
 		for i, source in enumerate(self.sources):
 			if source.version == version:
@@ -781,7 +785,10 @@ def validate_frappe_version_for_branch(
 	frappe_version = app_info.get("frappe_version")
 	frappe_version = parse_frappe_version(frappe_version, app_info.get("title"), ease_versioning_constrains)
 	if version not in frappe_version:
-		frappe.throw(f"{version} is not supported by branch {branch} for app {app_name}", VersioningError)
+		frappe.throw(
+			frappe._("{0} is not supported by branch {1} for app {2}").format(version, branch, app_name),
+			VersioningError,
+		)
 
 
 def get_plans_for_app(

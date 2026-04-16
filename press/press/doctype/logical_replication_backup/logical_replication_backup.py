@@ -7,6 +7,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Literal
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
@@ -254,7 +255,7 @@ class LogicalReplicationBackup(Document):
 			return self.post_migrate_stage_status
 		if self.execution_stage == "Failover":
 			return self.failover_stage_status
-		frappe.throw("Invalid execution stage for getting stage status")
+		frappe.throw(_("Invalid execution stage for getting stage status"))
 		return None
 
 	@stage_status.setter
@@ -266,7 +267,7 @@ class LogicalReplicationBackup(Document):
 		elif self.execution_stage == "Failover":
 			self.failover_stage_status = value
 		else:
-			frappe.throw("Invalid execution stage for setting stage status.")
+			frappe.throw(_("Invalid execution stage for setting stage status."))
 
 	@property
 	def site_doc(self) -> "Site":
@@ -333,14 +334,14 @@ class LogicalReplicationBackup(Document):
 		try:
 			return json.loads(self.site_replication_config or "{}")
 		except json.JSONDecodeError:
-			frappe.throw("Invalid site replication config JSON format.")
+			frappe.throw(_("Invalid site replication config JSON format."))
 
 	@property
 	def bench_replication_config_dict(self) -> dict:  # type: ignore[return-value]
 		try:
 			return json.loads(self.bench_replication_config or "{}")
 		except json.JSONDecodeError:
-			frappe.throw("Invalid bench replication config JSON format.")
+			frappe.throw(_("Invalid bench replication config JSON format."))
 
 	def after_insert(self):
 		self.populate_server_infos()
@@ -400,7 +401,7 @@ class LogicalReplicationBackup(Document):
 			self.save()
 			return StepStatus.Success
 		except Exception as e:
-			frappe.throw(f"Failed to create consistent server snapshot: {e}")
+			frappe.throw(_("Failed to create consistent server snapshot: {0}").format(e))
 			return StepStatus.Failure
 
 	def pre__wait_for_servers_to_be_online(self):
@@ -700,7 +701,7 @@ class LogicalReplicationBackup(Document):
 			.get("gtid_current_pos", "")
 		)
 		if not self.initial_binlog_position_of_new_primary_db:
-			frappe.throw("Failed to gather initial binlog position from new master database server")
+			frappe.throw(_("Failed to gather initial binlog position from new master database server"))
 		self.save()
 		return StepStatus.Success
 
@@ -1085,7 +1086,7 @@ class LogicalReplicationBackup(Document):
 		if self.execution_stage == "Failover":
 			return self.failover_steps
 
-		frappe.throw(f"Invalid execution stage: {self.execution_stage}")
+		frappe.throw(_("Invalid execution stage: {0}").format(self.execution_stage))
 		return None  # type: ignore[return-value]
 
 	@property

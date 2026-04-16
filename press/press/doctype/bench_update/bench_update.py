@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from press.utils import get_current_team
@@ -54,7 +55,7 @@ class BenchUpdate(Document):
 
 	def validate_pending_updates(self):
 		if frappe.get_doc("Release Group", self.group).deploy_in_progress:
-			frappe.throw("A deploy for this bench is already in progress", frappe.ValidationError)
+			frappe.throw(_("A deploy for this bench is already in progress"), frappe.ValidationError)
 
 	def validate_pending_site_updates(self):
 		for site in self.sites:
@@ -62,7 +63,7 @@ class BenchUpdate(Document):
 				"Site Update",
 				{"site": site.site, "status": ("in", ("Pending", "Running"))},
 			):
-				frappe.throw("An update is already pending for this site", frappe.ValidationError)
+				frappe.throw(_("An update is already pending for this site"), frappe.ValidationError)
 
 	def validate_inplace_update(self):
 		sites = [s.site for s in self.sites if s.site]
@@ -189,7 +190,7 @@ def get_bench_update(
 		rg_team = frappe.db.get_value("Release Group", name, "team")
 
 		if rg_team != current_team:
-			frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
+			frappe.throw(_("Bench can only be deployed by the bench owner"), exc=frappe.PermissionError)
 
 	bench_update: "BenchUpdate" = frappe.get_doc(
 		{

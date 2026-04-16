@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_to_date
 
@@ -63,7 +64,7 @@ class SaasAppSubscription(Document):
 		app = frappe.db.get_value("Saas App Plan", self.saas_app_plan, "app")
 
 		if app != self.app:
-			frappe.throw(f"Plan {self.saas_app_plan} is not for app {frappe.bold(self.app)}!")
+			frappe.throw(_("Plan {0} is not for app {1}!").format(self.saas_app_plan, frappe.bold(self.app)))
 
 	def set_plan(self):
 		self.plan, self.site_plan = frappe.db.get_value(

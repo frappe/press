@@ -2,6 +2,7 @@ import json
 import os
 
 import frappe
+from frappe import _
 from frappe.core.utils import find
 from frappe.utils import get_url
 from frappe.utils.oauth import get_oauth2_authorize_url
@@ -44,9 +45,7 @@ def google_login(saas_app=None):
 	flow = google_oauth_flow()
 	authorization_url, state = flow.authorization_url()
 	minutes = 5
-	frappe.cache().set_value(
-		f"fc_oauth_state:{state}", saas_app or state, expires_in_sec=minutes * 60
-	)
+	frappe.cache().set_value(f"fc_oauth_state:{state}", saas_app or state, expires_in_sec=minutes * 60)
 	return authorization_url
 
 
@@ -84,13 +83,9 @@ def callback(code=None, state=None):
 	# phone (this may return nothing if info doesn't exists)
 	number = ""
 	if flow.credentials.refresh_token:  # returns only for the first authorization
-		credentials = Credentials.from_authorized_user_info(
-			json.loads(flow.credentials.to_json())
-		)
+		credentials = Credentials.from_authorized_user_info(json.loads(flow.credentials.to_json()))
 		service = build("people", "v1", credentials=credentials)
-		person = (
-			service.people().get(resourceName="people/me", personFields="phoneNumbers").execute()
-		)
+		person = service.people().get(resourceName="people/me", personFields="phoneNumbers").execute()
 		if person:
 			phone = person.get("phoneNumbers")
 			if phone:
@@ -120,9 +115,7 @@ def callback(code=None, state=None):
 				phone_number=number,
 			)
 			frappe.local.response.type = "redirect"
-			frappe.local.response.location = (
-				f"/dashboard/setup-account/{account_request.request_key}"
-			)
+			frappe.local.response.location = f"/dashboard/setup-account/{account_request.request_key}"
 		# login
 		else:
 			frappe.local.login_manager.login_as(email)
@@ -152,12 +145,12 @@ def create_account_request(email, first_name, last_name, phone_number=""):
 @frappe.whitelist(allow_guest=True)
 def saas_setup(key, app, country, subdomain):
 	if not check_subdomain_availability(subdomain, app):
-		frappe.throw(f"Subdomain {subdomain} is already taken")
+		frappe.throw(_("Subdomain {0} is already taken").format(subdomain))
 
 	all_countries = frappe.db.get_all("Country", pluck="name")
 	country = find(all_countries, lambda x: x.lower() == country.lower())
 	if not country:
-		frappe.throw("Country filed should be a valid country name")
+		frappe.throw(_("Country filed should be a valid country name"))
 
 	# create team and user
 	account_request = get_account_request_from_key(key)

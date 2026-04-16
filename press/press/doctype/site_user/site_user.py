@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 
@@ -22,7 +23,7 @@ class SiteUser(Document):
 	def login_to_site(self):
 		"""Login to the site."""
 		if not self.enabled:
-			frappe.throw("User is disabled")
+			frappe.throw(_("User is disabled"))
 
 		site = frappe.get_doc("Site", self.site)
 		return site.login_as_user(self.user)

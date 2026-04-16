@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 
@@ -36,18 +37,18 @@ class CodeServer(Document):
 
 	def validate(self):
 		if not frappe.get_value("Bench", self.bench, "is_code_server_enabled"):
-			frappe.throw(f"Code Server not enabled for the selected Bench {self.bench}")
+			frappe.throw(_("Code Server not enabled for the selected Bench {0}").format(self.bench))
 
 		if self.has_value_changed("subdomain"):
 			if frappe.db.exists("Code Server", self.name):
 				frappe.throw(
-					f"Code Server {self.name} already exists please choose a different name"
+					frappe._("Code Server {0} already exists please choose a different name").format(
+						self.name
+					)
 				)
-			if frappe.db.exists(
-				"Code Server", {"bench": self.bench, "status": ("!=", "Archived")}
-			):
+			if frappe.db.exists("Code Server", {"bench": self.bench, "status": ("!=", "Archived")}):
 				frappe.throw(
-					"Code Server already exists for selected bench choose a different bench"
+					frappe._("Code Server already exists for selected bench choose a different bench")
 				)
 		if not self.proxy_server and self.has_value_changed("server"):
 			self.proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")

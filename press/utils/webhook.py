@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from frappe import _
 from frappe.model import default_fields
 from frappe.model.document import Document
 
@@ -36,7 +37,7 @@ def create_webhook_event(event: str, payload: dict | Document, team: str) -> boo
 			elif isinstance(payload, Document):
 				data = _process_document_payload(payload)
 			else:
-				frappe.throw("Invalid data type")
+				frappe.throw(_("Invalid data type"))
 
 			request_payload = json.dumps(
 				{

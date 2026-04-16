@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 
@@ -42,4 +43,4 @@ class MpesaRequestLog(Document):
 			pluck="name",
 		)
 		if request_logs:
-			frappe.throw(f"Request log already processed with this request id: {self.request_id}")
+			frappe.throw(_("Request log already processed with this request id: {0}").format(self.request_id))

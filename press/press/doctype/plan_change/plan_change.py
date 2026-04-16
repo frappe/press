@@ -55,7 +55,7 @@ class PlanChange(Document):
 		document = frappe.get_doc(self.document_type, self.document_name)
 		subscription = document.subscription
 		if not subscription:
-			frappe.throw(f"No subscription for {self.document_type} {self.document_name}")
+			frappe.throw(_("No subscription for {0} {1}").format(self.document_type, self.document_name))
 
 		if self.from_plan and self.from_plan != subscription.plan:
 			frappe.throw(

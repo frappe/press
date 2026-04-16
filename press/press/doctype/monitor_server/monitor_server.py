@@ -8,6 +8,7 @@ from typing import TypedDict
 
 import frappe
 import requests
+from frappe import _
 from frappe.utils.caching import redis_cache
 from frappe.utils.data import cint
 from requests.auth import HTTPBasicAuth
@@ -253,7 +254,7 @@ class MonitorServer(BaseServer):
 		ret.raise_for_status()
 		data = ret.json()
 		if data["status"] != "success":
-			frappe.throw("Error fetching sites down")
+			frappe.throw(_("Error fetching sites down"))
 		return data["data"]["groups"][0]["rules"]
 
 	@property

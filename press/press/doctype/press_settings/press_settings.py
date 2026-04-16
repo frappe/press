@@ -5,6 +5,7 @@ from __future__ import annotations
 import boto3
 import frappe
 from boto3.session import Session
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_url, validate_email_address
 from twilio.rest import Client
@@ -207,7 +208,7 @@ class PressSettings(Document):
 
 	def validate(self):
 		if self.max_concurrent_physical_restorations > 5:
-			frappe.throw("Max Concurrent Physical Restorations should be less than 5")
+			frappe.throw(_("Max Concurrent Physical Restorations should be less than 5"))
 
 		if self.send_email_notifications:
 			if self.email_recipients:
@@ -215,12 +216,12 @@ class PressSettings(Document):
 				email_list = [email.strip() for email in self.email_recipients.split(",")]
 				for email in email_list:
 					if not validate_email_address(email):
-						frappe.throw(f"Invalid email address: {email}")
+						frappe.throw(_("Invalid email address: {0}").format(email))
 			else:
-				frappe.throw("Email Recipients List can not be empty")
+				frappe.throw(_("Email Recipients List can not be empty"))
 
 		if self.minimum_rebuild_memory < 2:
-			frappe.throw("Minimum rebuild memory needs to be 2 GB or more.")
+			frappe.throw(_("Minimum rebuild memory needs to be 2 GB or more."))
 
 	@frappe.whitelist()
 	def create_stripe_webhook(self):

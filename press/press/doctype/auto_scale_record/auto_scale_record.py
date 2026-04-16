@@ -9,6 +9,7 @@ import typing
 from typing import Literal
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from requests.exceptions import ConnectionError, HTTPError, JSONDecodeError
 
@@ -130,7 +131,7 @@ class AutoScaleRecord(Document, AutoScaleStepFailureHandler, StepHandler):
 
 		self.secondary_server = frappe.db.get_value("Server", self.primary_server, "secondary_server")
 		if not self.secondary_server:
-			frappe.throw("Primary server must have a secondary server to auto scale")
+			frappe.throw(_("Primary server must have a secondary server to auto scale"))
 
 	def get_doc(self, doc):
 		doc.steps = self.get_steps_for_dashboard()
@@ -757,7 +758,7 @@ def validate_scaling_schedule(
 	)
 
 	if existing_scheduled_scales:
-		frappe.throw("Scale is already scheduled for this time", frappe.ValidationError)
+		frappe.throw(_("Scale is already scheduled for this time"), frappe.ValidationError)
 
 	_is_scale_up_colliding_with_a_existing_scaling_window(name, scale_up_time)
 	_is_scale_down_colliding_with_a_existing_scaling_window(name, scale_down_time)

@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import cstr
 
@@ -54,7 +54,7 @@ class AnsiblePlay(Document):
 		server = cstr(filters.get("server", ""))
 
 		if not server:
-			frappe.throw("Not permitted", frappe.PermissionError)
+			frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 		if server.startswith("["):
 			servers = frappe.parse_json(server.replace("'", '"'))[1]

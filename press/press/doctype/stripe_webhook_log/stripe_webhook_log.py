@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 import press.utils
@@ -186,7 +187,7 @@ def parse_payload(payload, signature):
 		return stripe.Webhook.construct_event(payload, signature, secret)
 	except ValueError:
 		# Invalid payload
-		frappe.throw("Invalid Payload", InvalidStripeWebhookEvent)
+		frappe.throw(_("Invalid Payload"), InvalidStripeWebhookEvent)
 	except stripe.error.SignatureVerificationError:
 		# Invalid signature
-		frappe.throw("Invalid Signature", InvalidStripeWebhookEvent)
+		frappe.throw(_("Invalid Signature"), InvalidStripeWebhookEvent)

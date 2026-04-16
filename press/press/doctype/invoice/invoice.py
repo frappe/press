@@ -242,7 +242,7 @@ class Invoice(Document):
 
 	def before_submit(self):
 		if self.total > 0 and self.status != "Paid":
-			frappe.throw("Invoice must be Paid to be submitted")
+			frappe.throw(_("Invoice must be Paid to be submitted"))
 
 	def calculate_values(self):
 		if self.status == "Paid" and self.docstatus == 1:
@@ -669,7 +669,9 @@ class Invoice(Document):
 			},
 		)
 		if self.type == "Prepaid Credits" and self.stripe_payment_intent_id and invoice_exists:
-			frappe.throw("Invoice with same Stripe payment intent exists", frappe.DuplicateEntryError)
+			frappe.throw(
+				frappe._("Invoice with same Stripe payment intent exists"), frappe.DuplicateEntryError
+			)
 
 		if self.type == "Subscription" and self.period_start and self.period_end and self.is_new():
 			query = (
@@ -701,7 +703,7 @@ class Invoice(Document):
 		if not self.payment_mode:
 			self.payment_mode = team.payment_mode
 		if not self.currency:
-			frappe.throw(f"Cannot create Invoice because Currency is not set in Team {self.team}")
+			frappe.throw(_("Cannot create Invoice because Currency is not set in Team {0}").format(self.team))
 
 	def validate_dates(self):
 		if not self.period_start:
@@ -1198,7 +1200,7 @@ class Invoice(Document):
 			charge = payment_intent["charges"]["data"][0]["id"]
 
 		if not charge:
-			frappe.throw("Cannot refund payment because Stripe Charge not found for this invoice")
+			frappe.throw(_("Cannot refund payment because Stripe Charge not found for this invoice"))
 
 		stripe.Refund.create(charge=charge)
 		self.status = "Refunded"

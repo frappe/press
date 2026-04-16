@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 
 from press.press.doctype.site_plan.plan import Plan
 
@@ -25,4 +26,4 @@ class ServerStoragePlan(Plan):
 		if self.enabled and frappe.db.exists(
 			"Server Storage Plan", {"enabled": 1, "name": ("!=", self.name)}
 		):
-			frappe.throw("Only one storage add-on plan can be enabled at a time")
+			frappe.throw(_("Only one storage add-on plan can be enabled at a time"))

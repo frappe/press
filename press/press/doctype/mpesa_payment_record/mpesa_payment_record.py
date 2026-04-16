@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 
@@ -56,7 +57,9 @@ class MpesaPaymentRecord(Document):
 			"Mpesa Payment Record",
 			{"transaction_id": self.transaction_id, "docstatus": 1},
 		):
-			frappe.throw(f"Mpesa Payment Record for transaction {self.transaction_id} already exists")
+			frappe.throw(
+				_("Mpesa Payment Record for transaction {0} already exists").format(self.transaction_id)
+			)
 
 
 def on_doctype_update():

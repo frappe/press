@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.core.utils import find
 from frappe.utils.verified_command import get_signed_params
 from frappe.website.doctype.personal_data_deletion_request.personal_data_deletion_request import (
@@ -86,11 +87,16 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		if self.team_doc.user == frappe.session.user or "System Manager" in frappe.get_roles():
 			return
 
-		frappe.throw("You need to be a Team owner to request account deletion", exc=frappe.PermissionError)
+		frappe.throw(
+			frappe._("You need to be a Team owner to request account deletion"), exc=frappe.PermissionError
+		)
 
 	def validate_duplicate_request(self):
 		if frappe.db.exists(self.doctype, {"team": self.team}):
-			frappe.throw(f"{self.doctype} for {self.team} already exists!", exc=frappe.DuplicateEntryError)
+			frappe.throw(
+				frappe._("{0} for {1} already exists!").format(self.doctype, self.team),
+				exc=frappe.DuplicateEntryError,
+			)
 
 	def delete_team_data(self):
 		self.db_set("status", "Processing Deletion")
@@ -263,7 +269,7 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 
 	def validate_outstanding_invoices(self):
 		if self.team_doc.is_defaulter():
-			frappe.throw("You have Unpaid Invoices. Clear them to delete your account")
+			frappe.throw(_("You have Unpaid Invoices. Clear them to delete your account"))
 
 
 def process_team_deletion_requests():

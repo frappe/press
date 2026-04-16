@@ -589,10 +589,10 @@ def validate_gst(address, method=None):
 		return
 
 	if address.state not in states_with_tin:
-		frappe.throw("Invalid State for India.")  # nosemgrep
+		frappe.throw(_("Invalid State for India."))  # nosemgrep
 
 	if not address.gstin:
-		frappe.throw("GSTIN is required for Indian customers.")  # nosemgrep
+		frappe.throw(_("GSTIN is required for Indian customers."))  # nosemgrep
 
 	if address.gstin and address.gstin != "Not Applicable":
 		if not GSTIN_FORMAT.match(address.gstin):

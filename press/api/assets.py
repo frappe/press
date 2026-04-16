@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, TypedDict
 import boto3
 import botocore.exceptions
 import frappe
+from frappe import _
 
 if TYPE_CHECKING:
 	from apps.press.press.press.doctype.press_settings.press_settings import PressSettings
@@ -96,14 +97,14 @@ def upload_asset():
 	files = frappe.request.files
 
 	if not files or "asset_file" not in files:
-		frappe.throw("No asset file uploaded")
+		frappe.throw(_("No asset file uploaded"))
 
 	asset_file = files["asset_file"]
 	credentials = _get_asset_store_credentials()
 
 	has_existing_asset = check_existing_asset_in_s3(credentials, asset_file.filename)
 	if has_existing_asset:
-		frappe.throw(f"Asset with name {asset_file.filename} already exists in the asset store")
+		frappe.throw(_("Asset with name {0} already exists in the asset store").format(asset_file.filename))
 
 	upload_assets_to_store(credentials, asset_file.stream, asset_file.filename)
 
@@ -113,17 +114,19 @@ def get_credentials() -> AssetStoreCredentials:
 	"""Get asset store credentials if it is requested from a build server"""
 	build_token = frappe.request.headers.get("build-token")
 	if not build_token:
-		frappe.throw("Build token is required to access asset store credentials", frappe.PermissionError)
+		frappe.throw(
+			frappe._("Build token is required to access asset store credentials"), frappe.PermissionError
+		)
 
 	deploy_candidate = frappe.db.get_value("Deploy Candidate", {"build_token": build_token})
 	if not deploy_candidate:
-		frappe.throw("Invalid build token used", frappe.PermissionError)
+		frappe.throw(_("Invalid build token used"), frappe.PermissionError)
 
 	running_build = frappe.db.get_value(
 		"Deploy Candidate Build", {"deploy_candidate": deploy_candidate, "status": "Running"}
 	)
 
 	if not running_build:
-		frappe.throw("Expired token used", frappe.PermissionError)
+		frappe.throw(_("Expired token used"), frappe.PermissionError)
 
 	return _get_asset_store_credentials()

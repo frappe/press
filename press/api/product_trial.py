@@ -7,6 +7,7 @@ import random
 
 import frappe
 import frappe.utils
+from frappe import _
 from frappe.rate_limiter import rate_limit
 
 from press.api.account import get_account_request_from_key
@@ -45,7 +46,7 @@ def send_verification_code_for_login(email: str, product: str):
 		product, frappe.db.get_value("Team", {"user": email}, "name")
 	)
 	if not is_user_exists:
-		frappe.throw("You have no active sites for this product. Please try signing up.")
+		frappe.throw(_("You have no active sites for this product. Please try signing up."))
 	# generate otp and store in redis
 	otp = str(random.randint(100000, 999999))
 	frappe.cache.set_value(
@@ -63,21 +64,21 @@ def login_using_code(email: str, product: str, code: str):
 	team_exists = frappe.db.exists("Team", {"user": email})
 	site = _get_active_site(product, frappe.db.get_value("Team", {"user": email}, "name"))
 	if not team_exists:
-		frappe.throw("You have no active sites for this product. Please try signing up.")
+		frappe.throw(_("You have no active sites for this product. Please try signing up."))
 
 	# check if team has 2fa enabled and active
 	team = frappe.get_value("Team", {"user": email}, ["name", "enforce_2fa", "enabled"], as_dict=True)
 	if not team.enabled:
-		frappe.throw("Your account is disabled. Please contact support.")
+		frappe.throw(_("Your account is disabled. Please contact support."))
 	if team.enforce_2fa:
-		frappe.throw("Your account has 2FA enabled. Please go to frappecloud.com to login.")
+		frappe.throw(_("Your account has 2FA enabled. Please go to frappecloud.com to login."))
 
 	# validate code
 	code_hash_from_cache = frappe.cache.get_value(f"product_trial_login_verification_code:{email}")
 	if not code_hash_from_cache:
-		frappe.throw("OTP has expired. Please try again.")
+		frappe.throw(_("OTP has expired. Please try again."))
 	if frappe.utils.sha256_hash(str(code)) != code_hash_from_cache:
-		frappe.throw("Invalid OTP. Please try again.")
+		frappe.throw(_("Invalid OTP. Please try again."))
 
 	# remove code from cache
 	frappe.cache.delete_value(f"product_trial_login_verification_code:{email}")
@@ -104,16 +105,16 @@ def get_account_request_for_product_signup():
 def setup_account(key: str, country: str | None = None):
 	ar = get_account_request_from_key(key)
 	if not ar:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw(_("Invalid or Expired Key"))
 	if not ar.product_trial:
-		frappe.throw("Invalid Product Trial")
+		frappe.throw(_("Invalid Product Trial"))
 
 	if country:
 		ar.country = country
 		ar.save(ignore_permissions=True)
 
 	if not ar.country:
-		frappe.throw("Please provide a valid country name")
+		frappe.throw(_("Please provide a valid country name"))
 
 	frappe.set_user("Administrator")
 	# check if team already exists

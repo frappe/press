@@ -9,6 +9,7 @@ from contextlib import suppress
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils.caching import redis_cache
 from frappe.utils.data import add_to_date, now_datetime
@@ -210,12 +211,12 @@ class ProductTrialRequest(Document):
 				reference_doctype=self.doctype,
 				reference_name=self.name,
 			)
-			frappe.throw(f"Failed to generate payload for Setup Wizard: {e}")
+			frappe.throw(_("Failed to generate payload for Setup Wizard: {0}").format(e))
 
 	def validate_subdomain_and_domain(self, subdomain: str, domain: str):
 		validate_subdomain(subdomain)
 		if domain not in get_domains():
-			frappe.throw("Invalid domain")
+			frappe.throw(_("Invalid domain"))
 
 	@dashboard_whitelist()
 	def create_site(self, subdomain: str, domain: str):

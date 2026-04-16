@@ -15,6 +15,7 @@ import boto3
 import frappe
 import oci
 import pydo
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils.caching import redis_cache
 from hcloud import APIException, Client
@@ -179,14 +180,14 @@ class Cluster(Document):
 			servers = client.servers.get_all()
 
 			if servers is None:
-				frappe.throw("API token does not have read access to the Hetzner Cloud.")
+				frappe.throw(_("API token does not have read access to the Hetzner Cloud."))
 
 		except APIException as e:
 			# Handle specific API exceptions like unauthorized access
 			if e.code == "unauthorized":
-				frappe.throw("API token is invalid or does not have the correct permissions.")
+				frappe.throw(_("API token is invalid or does not have the correct permissions."))
 			else:
-				frappe.throw(f"An error occurred while validating the API token: {e}")
+				frappe.throw(_("An error occurred while validating the API token: {0}").format(e))
 
 	def validate_aws_credentials(self):
 		settings: "PressSettings" = frappe.get_single("Press Settings")
@@ -221,7 +222,7 @@ class Cluster(Document):
 				"Flush Table Execution Hour is required when Enable Periodic Flush Table is checked."
 			)
 		if not (0 <= self.flush_table_execution_hour <= 23):
-			frappe.throw("Flush Table Execution Hour must be between 0 and 23.")
+			frappe.throw(_("Flush Table Execution Hour must be between 0 and 23."))
 
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":
@@ -273,7 +274,7 @@ class Cluster(Document):
 			)
 			self.vpc_id = network["vpc"]["id"]
 		except Exception as e:
-			frappe.throw(f"Failed to provision VPC on Digital Ocean: {e!s}")
+			frappe.throw(_("Failed to provision VPC on Digital Ocean: {0}").format(e))
 
 	def _add_digital_ocean_ssh_keys(self, client):
 		"""Adds the SSH key to Digital Ocean if it doesn't already exist"""
@@ -287,7 +288,7 @@ class Cluster(Document):
 		except Exception as e:
 			if "SSH Key is already in use" in str(e):
 				return
-			frappe.throw(f"Failed to create SSH Key on Digital Ocean: {e!s}")
+			frappe.throw(_("Failed to create SSH Key on Digital Ocean: {0}").format(e))
 
 	def _add_digital_ocean_proxy_firewall(self, client):
 		"""Adds the proxy firewall to Digital Ocean if it doesn't already exist"""
@@ -319,7 +320,7 @@ class Cluster(Document):
 			)
 			self.proxy_security_group_id = firewall["firewall"]["id"]
 		except Exception as e:
-			frappe.throw(f"Failed to create Proxy Firewall on Digital Ocean: {e!s}")
+			frappe.throw(_("Failed to create Proxy Firewall on Digital Ocean: {0}").format(e))
 
 	def _add_digital_ocean_firewall(self, client):
 		"""Adds the firewall to Digital Ocean if it doesn't already exist"""
@@ -373,11 +374,11 @@ class Cluster(Document):
 			)
 
 			if "id" not in firewall.get("firewall", {}):
-				frappe.throw("Failed to create Firewall on Digital Ocean.")
+				frappe.throw(_("Failed to create Firewall on Digital Ocean."))
 
 			self.security_group_id = firewall["firewall"]["id"]
 		except Exception as e:
-			frappe.throw(f"Failed to create Firewall on Digital Ocean: {e!s}")
+			frappe.throw(_("Failed to create Firewall on Digital Ocean: {0}").format(e))
 
 		frappe.msgprint(
 			"To add this cluster to monitoring, go to the Monitor Server and trigger the 'Reconfigure Monitor Server' action from the Actions menu."
@@ -406,7 +407,7 @@ class Cluster(Document):
 			self.vpc_id = network.id
 			self.save()
 		except APIException as e:
-			frappe.throw(f"Failed to provision network on Hetzner: {e!s}")
+			frappe.throw(_("Failed to provision network on Hetzner: {0}").format(e))
 
 		# Create the SSH Key on Hetzner
 		try:
@@ -418,7 +419,9 @@ class Cluster(Document):
 			# If the SSH key already exists, retrieve it
 			existing_keys = client.ssh_keys.get_all(name=self.ssh_key)
 			if len(existing_keys) == 0:
-				frappe.throw(f"SSH Key creation failed and '{self.ssh_key}' not found on Hetzner Cloud.")
+				frappe.throw(
+					_("SSH Key creation failed and '{0}' not found on Hetzner Cloud.").format(self.ssh_key)
+				)
 
 		try:
 			# Create Server Firewall
@@ -486,7 +489,7 @@ class Cluster(Document):
 			self.security_group_id = server_firewall.firewall.id
 			self.save()
 		except APIException as e:
-			frappe.throw(f"Failed to provision server firewall on Hetzner: {e!s}")
+			frappe.throw(_("Failed to provision server firewall on Hetzner: {0}").format(e))
 
 		try:
 			# Create Proxy Server Firewall
@@ -512,7 +515,7 @@ class Cluster(Document):
 			self.proxy_security_group_id = proxy_firewall.firewall.id
 			self.save()
 		except APIException as e:
-			frappe.throw(f"Failed to provision proxy server firewall on Hetzner: {e!s}")
+			frappe.throw(_("Failed to provision proxy server firewall on Hetzner: {0}").format(e))
 
 	def on_trash(self):
 		machines = frappe.get_all(
@@ -526,7 +529,7 @@ class Cluster(Document):
 	@frappe.whitelist()
 	def add_images(self):
 		if self.images_available == 1:
-			frappe.throw("Images are already available", frappe.ValidationError)
+			frappe.throw(_("Images are already available"), frappe.ValidationError)
 		if not set(self.get_other_region_vmis(get_series=True)) - set(
 			self.get_same_region_vmis(get_series=True)
 		):
@@ -560,7 +563,7 @@ class Cluster(Document):
 					self.subnet_cidr_block = cidr_block
 					break
 		if not self.cidr_block:
-			frappe.throw("No CIDR block available", frappe.ValidationError)
+			frappe.throw(_("No CIDR block available"), frappe.ValidationError)
 
 	def validate_monitoring_password(self):
 		if not self.monitoring_password:
@@ -1166,7 +1169,7 @@ class Cluster(Document):
 				frappe.ValidationError,
 			)
 		if self.status != "Active":
-			frappe.throw("Cluster is not active", frappe.ValidationError)
+			frappe.throw(_("Cluster is not active"), frappe.ValidationError)
 
 		self.create_server("Proxy Server", DEFAULT_SERVER_TITLE)
 
@@ -1179,11 +1182,11 @@ class Cluster(Document):
 				frappe.ValidationError,
 			)
 		if self.status != "Active":
-			frappe.throw("Cluster is not active", frappe.ValidationError)
+			frappe.throw(_("Cluster is not active"), frappe.ValidationError)
 
-		for doctype, _ in self.base_servers.items():
+		for doctype, _server_doctype in self.base_servers.items():
 			# TODO: remove Test title #
-			server, _ = self.create_server(
+			server, _result = self.create_server(
 				doctype,
 				DEFAULT_SERVER_TITLE,
 			)
@@ -1194,7 +1197,7 @@ class Cluster(Document):
 					self.proxy_server = server.name
 		if self.public:
 			return
-		for doctype, _ in self.private_servers.items():
+		for doctype, _srv in self.private_servers.items():
 			self.create_server(
 				doctype,
 				DEFAULT_SERVER_TITLE,
@@ -1477,14 +1480,14 @@ class Cluster(Document):
 			normalized_rules.append((port, self._normalize_firewall_protocol(protocol)))
 
 		if not normalized_rules:
-			frappe.throw("At least one firewall rule is required")
+			frappe.throw(_("At least one firewall rule is required"))
 
 		return normalized_rules
 
 	def _normalize_firewall_protocol(self, protocol: str) -> str:
 		protocol = (protocol or "tcp").lower().strip()
 		if protocol not in {"tcp", "udp"}:
-			frappe.throw("Firewall protocol must be one of: tcp, udp")
+			frappe.throw(_("Firewall protocol must be one of: tcp, udp"))
 		return protocol
 
 	def _parse_port_range(self, port: str | int) -> tuple[int, int]:

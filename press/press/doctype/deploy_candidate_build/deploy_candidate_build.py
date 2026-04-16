@@ -22,6 +22,7 @@ from urllib.parse import quote
 import frappe
 import requests
 import semantic_version
+from frappe import _
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import now_datetime as now
@@ -1229,7 +1230,7 @@ class DeployCandidateBuild(Document):
 
 	def _create_deploy(self, servers: list[str], check_image_exists: bool = False):
 		if check_image_exists and not self.check_image_in_registry():
-			frappe.throw("Image not found in registry create a new build", ImageNotFoundInRegistry)
+			frappe.throw(_("Image not found in registry create a new build"), ImageNotFoundInRegistry)
 
 		return frappe.get_doc(
 			{

@@ -1,6 +1,7 @@
 from functools import wraps
 
 import frappe
+from frappe import _
 
 
 def disabled(fn):
@@ -11,6 +12,6 @@ def disabled(fn):
 
 	@wraps(fn)
 	def wrapper(*args, **kwargs):
-		frappe.throw("This method is disabled", frappe.PermissionError)
+		frappe.throw(_("This method is disabled"), frappe.PermissionError)
 
 	return wrapper

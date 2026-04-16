@@ -34,7 +34,7 @@ class SitePlanChange(Document):
 			self.type = "Initial Plan"
 
 		if self.from_plan and self.to_plan and self.from_plan == self.to_plan:
-			frappe.throw("From Plan and To Plan cannot be the same")
+			frappe.throw(_("From Plan and To Plan cannot be the same"))
 
 		if self.from_plan and not self.type:
 			from_plan_value = frappe.db.get_value("Site Plan", self.from_plan, "price_usd")
@@ -69,7 +69,7 @@ class SitePlanChange(Document):
 		# 	)
 		# 	# check if last site plan change was made before 48 hours
 		# 	if last_plan_change.creation > frappe.utils.add_days(None, -2):
-		# 		frappe.throw("Cannot downgrade plan within 48 hours")
+		# 		frappe.throw(_("Cannot downgrade plan within 48 hours"))
 
 		self.change_subscription_plan()
 
@@ -87,7 +87,7 @@ class SitePlanChange(Document):
 		site = frappe.get_doc("Site", self.site)
 		subscription = site.subscription
 		if not subscription:
-			frappe.throw(f"No subscription for site {site.name}")
+			frappe.throw(_("No subscription for site {0}").format(site.name))
 
 		if self.from_plan and self.from_plan != subscription.plan:
 			frappe.throw(

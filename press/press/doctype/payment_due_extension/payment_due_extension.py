@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 
@@ -23,18 +24,18 @@ class PaymentDueExtension(Document):
 
 	def validate(self):
 		if self.extension_date < frappe.utils.today():
-			frappe.throw("Extension date cannot be in the past")
+			frappe.throw(_("Extension date cannot be in the past"))
 
 	def before_insert(self):
 		if frappe.db.exists(
 			"Payment Due Extension",
 			{"team": self.team, "docstatus": 1, "extension_date": (">=", frappe.utils.today())},
 		):
-			frappe.throw("An active Payment due extension record already exists for this team")
+			frappe.throw(_("An active Payment due extension record already exists for this team"))
 
 	def on_submit(self):
 		frappe.db.set_value("Team", self.team, "extend_payment_due_suspension", 1)
-	
+
 	def on_cancel(self):
 		frappe.db.set_value("Team", self.team, "extend_payment_due_suspension", 0)
 

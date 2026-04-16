@@ -3,6 +3,7 @@ import re
 import frappe
 import razorpay
 import stripe
+from frappe import _
 from frappe.utils import fmt_money
 
 from press.exceptions import CentralServerNotSet, FrappeioServerNotSet
@@ -62,7 +63,7 @@ def get_erpnext_com_connection():
 	erpnext_api_secret = press_settings.get_password("erpnext_api_secret", raise_exception=False)
 
 	if not (press_settings.erpnext_api_key and press_settings.erpnext_url and erpnext_api_secret):
-		frappe.throw("ERPNext.com URL not set up in Press Settings", exc=CentralServerNotSet)
+		frappe.throw(_("ERPNext.com URL not set up in Press Settings"), exc=CentralServerNotSet)
 
 	return FrappeClient(
 		press_settings.erpnext_url,
@@ -82,7 +83,7 @@ def get_frappe_io_connection():
 	frappe_api_secret = press_settings.get_password("frappeio_api_secret", raise_exception=False)
 
 	if not (frappe_api_key and frappe_api_secret and press_settings.frappe_url):
-		frappe.throw("Frappe.io URL not set up in Press Settings", exc=FrappeioServerNotSet)
+		frappe.throw(_("Frappe.io URL not set up in Press Settings"), exc=FrappeioServerNotSet)
 
 	frappe.local.press_frappeio_conn = FrappeClient(
 		press_settings.frappe_url, api_key=frappe_api_key, api_secret=frappe_api_secret
@@ -166,7 +167,7 @@ def get_stripe():
 		)
 
 		if not secret_key:
-			frappe.throw("Setup stripe via Press Settings before using press.api.billing.get_stripe")
+			frappe.throw(_("Setup stripe via Press Settings before using press.api.billing.get_stripe"))
 
 		stripe.api_key = secret_key
 		# Set the maximum number of retries for network requests
@@ -259,7 +260,7 @@ def get_partner_external_connection(mpesa_setup):
 		fields=["name", "url", "api_key", "api_secret"],
 	)
 	if not payment_gateway:
-		frappe.throw("Mpesa Setup not set up in Payment Gateway")
+		frappe.throw(_("Mpesa Setup not set up in Payment Gateway"))
 	# Fetch API key and secret
 	pg = frappe.get_doc("Payment Gateway", payment_gateway[0].name)
 	api_key = pg.api_key

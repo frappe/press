@@ -513,11 +513,13 @@ class Site(Document, TagHelpers):
 				)
 
 		if self.apps[0].app != "frappe":
-			frappe.throw("First app to be installed on site must be frappe.")  # nosemgrep
+			frappe.throw(_("First app to be installed on site must be frappe."))  # nosemgrep
 
 		site_apps = [app.app for app in self.apps]
 		if len(site_apps) != len(set(site_apps)):
-			frappe.throw("App {app.app} is already on installed on the bench. Cannot add the same app twice")
+			frappe.throw(
+				_("App {app.app} is already on installed on the bench. Cannot add the same app twice")
+			)
 
 		# Install apps in the same order as bench
 		if self.is_new():
@@ -553,7 +555,7 @@ class Site(Document, TagHelpers):
 	def validate_auto_update_fields(self):
 		# Validate day of month
 		if not (1 <= self.update_on_day_of_month <= 31):
-			frappe.throw("Day of the month must be between 1 and 31 (included)!")  # nosemgrep
+			frappe.throw(_("Day of the month must be between 1 and 31 (included)!"))  # nosemgrep
 		# If site is on public bench, don't allow to disable auto updates
 		if self.skip_auto_updates and self.is_group_public:
 			frappe.throw(
@@ -618,7 +620,7 @@ class Site(Document, TagHelpers):
 					plan.dedicated_server_plan or plan.is_trial_plan
 				)
 				if is_plan_free:
-					frappe.throw("You can't select a free plan!")  # nosemgrep
+					frappe.throw(_("You can't select a free plan!"))  # nosemgrep
 
 			# If site is on public server, don't allow unlimited plans
 			if is_site_on_public_server and plan.dedicated_server_plan:
@@ -742,14 +744,16 @@ class Site(Document, TagHelpers):
 		if self.name != self._get_site_name(self.subdomain):
 			self.rename(self._get_site_name(self.subdomain))
 		else:
-			frappe.throw("Please choose a different subdomain")  # nosemgrep
+			frappe.throw(_("Please choose a different subdomain"))  # nosemgrep
 
 	@frappe.whitelist()
 	def retry_archive(self):
 		"""Retry archive with subdomain+domain name of site"""
 		site_name = self.subdomain + "." + self.domain
 		if frappe.db.exists("Site", {"name": site_name, "bench": self.bench}):
-			frappe.throw(f"Another site already exists in {self.bench} with name: {site_name}.")  # nosemgrep
+			frappe.throw(
+				_(f"Another site already exists in {self.bench} with name: {site_name}.")
+			)  # nosemgrep
 		self.archive(site_name=site_name, reason="Retry Archive")
 
 	def check_duplicate_site(self):
@@ -1243,7 +1247,7 @@ class Site(Document, TagHelpers):
 			)
 			> 3
 		):
-			frappe.throw("You cannot take more than 3 backups after site suspension")  # nosemgrep
+			frappe.throw(_("You cannot take more than 3 backups after site suspension"))  # nosemgrep
 
 		return frappe.get_doc(
 			{
@@ -1263,7 +1267,7 @@ class Site(Document, TagHelpers):
 		from botocore.exceptions import ClientError
 
 		if file not in ["database", "public", "private", "config"]:
-			frappe.throw("Invalid file type")  # nosemgrep
+			frappe.throw(_("Invalid file type"))  # nosemgrep
 
 		try:
 			remote_file = frappe.db.get_value(
@@ -1287,9 +1291,9 @@ class Site(Document, TagHelpers):
 
 	def check_move_scheduled(self):
 		if time := self.site_migration_scheduled():
-			frappe.throw(f"Site Migration is scheduled for {self.name} at {time}")  # nosemgrep
+			frappe.throw(_("Site Migration is scheduled for {0} at {1}").format(self.name, time))  # nosemgrep
 		if time := self.site_update_scheduled():
-			frappe.throw(f"Site Update is scheduled for {self.name} at {time}")  # nosemgrep
+			frappe.throw(_("Site Update is scheduled for {0} at {1}").format(self.name, time))  # nosemgrep
 
 	def ready_for_move(self):
 		if self.status in TRANSITORY_STATES:
@@ -1298,7 +1302,7 @@ class Site(Document, TagHelpers):
 				SiteUnderMaintenance,
 			)
 		elif self.status == "Archived":
-			frappe.throw("The site has already been archived. Cannot move this site.", SiteAlreadyArchived)
+			frappe.throw(_("The site has already been archived. Cannot move this site."), SiteAlreadyArchived)
 		self.check_move_scheduled()
 
 		self.status_before_update = self.status
@@ -1363,7 +1367,9 @@ class Site(Document, TagHelpers):
 				)
 
 		except (frappe.QueryTimeoutError, frappe.QueryDeadlockError):
-			frappe.throw("The update is probably underway. Please reload/refresh to get the latest status.")
+			frappe.throw(
+				_("The update is probably underway. Please reload/refresh to get the latest status.")
+			)
 
 		# used document api for applying doc permissions
 		doc = frappe.get_doc("Site Update", site_update)
@@ -1393,7 +1399,9 @@ class Site(Document, TagHelpers):
 				)
 
 			if scheduled_time and scheduled_time < get_datetime():
-				frappe.throw("Scheduled time must be in the future. Please provide a valid scheduled time.")
+				frappe.throw(
+					_("Scheduled time must be in the future. Please provide a valid scheduled time.")
+				)
 
 		doc = None
 		if type == "Move Site To Different Server / Bench":
@@ -1497,7 +1505,7 @@ class Site(Document, TagHelpers):
 		)
 
 		if bench_vals is None:
-			frappe.throw(f"Bench {group} does not have an existing deploy in {cluster}")
+			frappe.throw(_("Bench {0} does not have an existing deploy in {1}").format(group, cluster))
 
 		bench, server = bench_vals
 
@@ -1634,7 +1642,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active"])
 	def remove_domain(self, domain):
 		if domain == self.name:
-			frappe.throw("Cannot delete default site_domain")  # nosemgrep
+			frappe.throw(_("Cannot delete default site_domain"))  # nosemgrep
 		site_domain = frappe.get_all("Site Domain", filters={"site": self.name, "domain": domain})[0]
 		frappe.delete_doc("Site Domain", site_domain.name)
 
@@ -1831,12 +1839,12 @@ class Site(Document, TagHelpers):
 			)
 
 		if not frappe.db.exists("Team", {"user": team_mail_id, "enabled": 1}):
-			frappe.throw("No Active Team record found.")  # nosemgrep
+			frappe.throw(_("No Active Team record found."))  # nosemgrep
 
 		old_team = frappe.db.get_value("Team", self.team, "user")
 
 		if old_team == team_mail_id:
-			frappe.throw(f"Site is already owned by the team {team_mail_id}")  # nosemgrep
+			frappe.throw(_("Site is already owned by the team {0}").format(team_mail_id))  # nosemgrep
 
 		key = frappe.generate_hash("Site Transfer Link", 20)
 		frappe.get_doc(
@@ -1891,7 +1899,7 @@ class Site(Document, TagHelpers):
 				redirect_route = "/app"
 			return f"https://{self.host_name or self.name}{redirect_route}?sid={sid}"
 
-		frappe.throw("No additional system user created for this site.")  # nosemgrep
+		frappe.throw(_("No additional system user created for this site."))  # nosemgrep
 		return None
 
 	@site_action(["Active"])
@@ -1944,7 +1952,9 @@ class Site(Document, TagHelpers):
 					frappe.ValidationError,
 				)
 			elif f"User {user} does not exist" in str(e):
-				frappe.throw(f"User {user} does not exist in the site", frappe.ValidationError)  # nosemgrep
+				frappe.throw(
+					frappe._("User {0} does not exist in the site").format(user), frappe.ValidationError
+				)  # nosemgrep
 			elif "certificate has expired" in str(e):
 				frappe.throw(
 					"SSL certificate for the {self.name} has expired. Please reach out to us at <a href='https://support.frappe.io/'>support.frappe.io</a> if it is not automatically generated in a few minutes.",
@@ -1988,7 +1998,7 @@ class Site(Document, TagHelpers):
 		if not sid or sid == "Guest":
 			sid = self.get_sid_from_agent(user)
 		if not sid or sid == "Guest":
-			frappe.throw(f"Could not login as {user}", frappe.ValidationError)  # nosemgrep
+			frappe.throw(_("Could not login as {0}").format(user), frappe.ValidationError)  # nosemgrep
 		return sid
 
 	def fetch_info(self):
@@ -2503,7 +2513,7 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	def enable_monitoring(self):  # noqa: C901
 		if not self.is_monitoring_disabled:
-			frappe.throw("Monitoring is already enabled")  # nosemgrep
+			frappe.throw(_("Monitoring is already enabled"))  # nosemgrep
 
 		if self.status != "Active":
 			frappe.throw(
@@ -2885,7 +2895,7 @@ class Site(Document, TagHelpers):
 		if not plan:
 			plan = self.subscription_plan if hasattr(self, "subscription_plan") else self.plan
 		if plan and not isinstance(plan, str):
-			frappe.throw("Site.subscription_plan must be a string")  # nosemgrep
+			frappe.throw(_("Site.subscription_plan must be a string"))  # nosemgrep
 		return plan
 
 	def get_plan_config(self, plan=None):
@@ -2953,10 +2963,10 @@ class Site(Document, TagHelpers):
 		server_details = frappe.db.get_value("Server", self.server, ["public", "team"], as_dict=True)
 
 		if not server_details:
-			frappe.throw(f"Server {self.server} not found")  # nosemgrep
+			frappe.throw(_("Server {0} not found").format(self.server))  # nosemgrep
 
 		if server_details.team != get_current_team():
-			frappe.throw("You don't have permission to deploy on this server")  # nosemgrep
+			frappe.throw(_("You don't have permission to deploy on this server"))  # nosemgrep
 
 		bench = frappe.db.get_value(
 			"Bench",
@@ -2972,11 +2982,13 @@ class Site(Document, TagHelpers):
 
 		self.bench = bench.name
 		if self.cluster != bench.cluster:
-			frappe.throw(f"Site cannot be deployed on {self.cluster} yet. Please contact support.")
+			frappe.throw(
+				_("Site cannot be deployed on {0} yet. Please contact support.").format(self.cluster)
+			)
 
 	def set_latest_bench(self):
 		if not (self.domain and self.cluster and self.group):
-			frappe.throw("Domain, cluster and group are mandatory to create a site.")  # nosemgrep
+			frappe.throw(_("Domain, cluster and group are mandatory to create a site."))  # nosemgrep
 
 		proxy_servers_names = frappe.db.get_all(
 			"Proxy Server Domain", {"domain": self.domain}, pluck="parent"
@@ -3027,7 +3039,9 @@ class Site(Document, TagHelpers):
 		if release_group_names:
 			self.group = benches[0].group
 		if self.cluster != benches[0].cluster:
-			frappe.throw(f"Site cannot be deployed on {self.cluster} yet. Please contact support.")
+			frappe.throw(
+				_("Site cannot be deployed on {0} yet. Please contact support.").format(self.cluster)
+			)
 
 	def _create_initial_site_plan_change(self, plan):
 		frappe.get_doc(
@@ -3051,7 +3065,9 @@ class Site(Document, TagHelpers):
 			},
 			for_update=True,
 		):
-			frappe.throw("Database Access is already being enabled on this site. Please check after a while.")
+			frappe.throw(
+				_("Database Access is already being enabled on this site. Please check after a while.")
+			)
 
 	def get_auto_update_info(self):
 		fields = [
@@ -3889,7 +3905,7 @@ class Site(Document, TagHelpers):
 		if not self.database_name:
 			synced = self._sync_config_info()
 			if not synced:
-				frappe.throw("Unable to fetch database name. Please try again.")  # nosemgrep
+				frappe.throw(_("Unable to fetch database name. Please try again."))  # nosemgrep
 			self.save()
 		return self.database_name
 
@@ -3948,7 +3964,7 @@ class Site(Document, TagHelpers):
 			)
 
 		if start >= end:
-			frappe.throw("Invalid time range. Start time must be less than end time.")
+			frappe.throw(_("Invalid time range. Start time must be less than end time."))
 
 		data = self.database_server_agent.get_binlogs_timeline(
 			start=start,
@@ -4024,13 +4040,15 @@ class Site(Document, TagHelpers):
 		event_size: int | None = None,
 	):
 		if (not self.is_binlog_indexing_enabled()) or (self.is_binlog_indexer_running()):
-			frappe.throw("Binlog indexing service is not enabled or in maintenance. Please try again later")
+			frappe.throw(
+				_("Binlog indexing service is not enabled or in maintenance. Please try again later")
+			)
 
 		if start >= end:
-			frappe.throw("Invalid time range. Start time must be less than end time.")
+			frappe.throw(_("Invalid time range. Start time must be less than end time."))
 
 		if (end - start) > 60 * 60 * 6:
-			frappe.throw("Binlog search is limited to 6 hours. Please select a smaller time range.")
+			frappe.throw(_("Binlog search is limited to 6 hours. Please select a smaller time range."))
 
 		if not table:
 			table = None
@@ -4053,7 +4071,7 @@ class Site(Document, TagHelpers):
 		# Don't allow to fetch more than 100 rows at a time
 		total_row_ids = sum(len(v) for v in row_ids.values())
 		if total_row_ids > 100:
-			frappe.throw("Cannot fetch more than 100 rows at a time from binlog.")  # nosemgrep
+			frappe.throw(_("Cannot fetch more than 100 rows at a time from binlog."))  # nosemgrep
 
 		return self.database_server_agent.get_binlog_queries(
 			row_ids=row_ids, database=self.fetch_database_name()

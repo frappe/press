@@ -2,6 +2,7 @@ import time
 
 import frappe
 from dns.resolver import Resolver
+from frappe import _
 from frappe.utils import strip
 
 from press.api.server import plans
@@ -50,10 +51,10 @@ def create_self_hosted_server(server_details, team, proxy_server):
 
 def validate_team(team):
 	if not team:
-		frappe.throw("You must be part of a team to create a new server")
+		frappe.throw(_("You must be part of a team to create a new server"))
 
 	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
+		frappe.throw(_("You cannot create a new server because your account is disabled"))
 
 	if not team.self_hosted_servers_enabled:
 		frappe.throw(
@@ -165,5 +166,5 @@ def create_and_verify_selfhosted(server):
 		setup(self_hosted_server_name)
 		return frappe.get_value("Self Hosted Server", self_hosted_server_name, "server")
 
-	frappe.throw("Server verification failed. Please check the server details and try again.")
+	frappe.throw(_("Server verification failed. Please check the server details and try again."))
 	return None

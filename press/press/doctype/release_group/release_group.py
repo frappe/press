@@ -378,7 +378,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 		for key, value in config.items():
 			if key in get_client_blacklisted_keys():
-				frappe.throw(_(f"The key <b>{key}</b> is blacklisted or is internal and cannot be updated"))
+				frappe.throw(
+					_("The key <b>{0}</b> is blacklisted or is internal and cannot be updated").format(key)
+				)
 
 			config_type = get_config_type(value)
 
@@ -452,7 +454,9 @@ class ReleaseGroup(Document, TagHelpers):
 			for env_var in self.environment_variables:
 				if env_var.key == key:
 					if env_var.internal:
-						frappe.throw(f"Environment variable {env_var.key} is internal and cannot be updated")
+						frappe.throw(
+							_(f"Environment variable {env_var.key} is internal and cannot be updated")
+						)
 					else:
 						env_var.value = value
 						is_updated = True
@@ -487,14 +491,16 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def validate_frappe_app(self):
 		if self.apps[0].app != "frappe":
-			frappe.throw("First app must be Frappe", frappe.ValidationError)
+			frappe.throw(_("First app must be Frappe"), frappe.ValidationError)
 
 	def validate_duplicate_app(self):
 		apps = set()
 		for app in self.apps:
 			app_name = app.app
 			if app_name in apps:
-				frappe.throw(f"App {app.app} can be added only once", frappe.ValidationError)
+				frappe.throw(
+					frappe._("App {0} can be added only once").format(app.app), frappe.ValidationError
+				)
 			apps.add(app_name)
 
 	def validate_app_versions(self):
@@ -519,7 +525,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if self.servers:
 			servers = set(server.server for server in self.servers)
 			if len(servers) != len(self.servers):
-				frappe.throw("Servers can be added only once", frappe.ValidationError)
+				frappe.throw(_("Servers can be added only once"), frappe.ValidationError)
 		elif self.is_new():
 			server_for_new_bench = Server.get_prod_for_new_bench()
 			if server_for_new_bench:
@@ -570,7 +576,7 @@ class ReleaseGroup(Document, TagHelpers):
 		try:
 			sv.Version(version)
 		except ValueError as e:
-			frappe.throw(f"{dependency}: {e}")
+			frappe.throw(_("{0}: {1}").format(dependency, e))
 
 	def _validate_supported_wkhtmltopdf_version(self, version):
 		if version not in SUPPORTED_WKHTMLTOPDF_VERSIONS:
@@ -1025,12 +1031,12 @@ class ReleaseGroup(Document, TagHelpers):
 			)
 
 		if not frappe.db.exists("Team", {"user": team_mail_id, "enabled": 1}):
-			frappe.throw("No Active Team record found.")
+			frappe.throw(_("No Active Team record found."))
 
 		old_team = frappe.db.get_value("Team", self.team, "user")
 
 		if old_team == team_mail_id:
-			frappe.throw(f"Bench is already owned by the team {team_mail_id}")
+			frappe.throw(_("Bench is already owned by the team {0}").format(team_mail_id))
 
 		key = frappe.generate_hash("Release Group Transfer Link", 20)
 		frappe.get_doc(
@@ -1430,7 +1436,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 		# Already on that branch
 		if current_app_source.branch == to_branch:
-			frappe.throw(f"App already on branch {to_branch}!")
+			frappe.throw(_("App already on branch {0}!").format(to_branch))
 
 		required_app_source = frappe.get_all(
 			"App Source",
@@ -1469,7 +1475,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if source:
 			source = source[0]
 		else:
-			frappe.throw("Release group app does not exist!")
+			frappe.throw(_("Release group app does not exist!"))
 
 		return frappe.get_doc("App Source", source)
 
@@ -1499,7 +1505,7 @@ class ReleaseGroup(Document, TagHelpers):
 		"""
 
 		if len(self.get_clusters()) >= MAX_REGION_LIMIT:
-			frappe.throw(f"More than {MAX_REGION_LIMIT} for bench not allowed")
+			frappe.throw(_("More than {0} for bench not allowed").format(MAX_REGION_LIMIT))
 		self.add_cluster(region)
 
 	def add_cluster(self, cluster: str):
@@ -1510,7 +1516,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 		if not server:
 			log_error("No suitable server for new bench")
-			frappe.throw(f"No suitable server for new bench in {cluster}")
+			frappe.throw(_("No suitable server for new bench in {0}").format(cluster))
 
 		self.add_server(server, deploy=True)
 
@@ -1556,7 +1562,7 @@ class ReleaseGroup(Document, TagHelpers):
 			)  # Checking for any platform build
 
 			if not last_candidate_build:
-				frappe.throw("No build present for this release group", frappe.ValidationError)
+				frappe.throw(_("No build present for this release group"), frappe.ValidationError)
 
 			return create_platform_build_and_deploy(
 				deploy_candidate=last_candidate_build.candidate.name,  # type: ignore
@@ -1628,7 +1634,7 @@ class ReleaseGroup(Document, TagHelpers):
 		path_parts = parsed_url.path.strip("/").split("/")
 
 		if len(path_parts) < 2:
-			frappe.throw("Invalid repository URL for app!")
+			frappe.throw(_("Invalid repository URL for app!"))
 
 		with suppress(frappe.ValidationError):
 			validate_frappe_version_for_branch(
@@ -1817,7 +1823,7 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 			)
 
 			if not servers:
-				frappe.throw("No servers found for new benches!")
+				frappe.throw(_("No servers found for new benches!"))
 			else:
 				server = servers[0]
 

@@ -10,6 +10,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_to_date, now_datetime
 from rq.timeouts import JobTimeoutException
@@ -106,7 +107,7 @@ class SiteAction(Document):
 
 		server: Server = frappe.get_doc("Server", destination_server)
 		if not server.public and not server.has_permission("write"):
-			frappe.throw(f"You don't have permission to deploy on server {server.name}")
+			frappe.throw(_("You don't have permission to deploy on server {0}").format(server.name))
 
 		if self.get_argument("destination_release_group"):
 			# Existing bench chosen - validate the release group
@@ -118,7 +119,7 @@ class SiteAction(Document):
 		elif not self.get_argument("new_release_group_name"):
 			# No destination group and no new name provided - auto-generate
 			if current_release_group.public:
-				self.set_argument("new_release_group_name", current_release_group.title + " - Clone")
+				self.set_argument("new_release_group_name", current_release_group.title + _(" - Clone"))
 			else:
 				# Private group - add the destination server to the current group if needed
 				if not any(s.server == destination_server for s in current_release_group.servers):
@@ -380,7 +381,7 @@ class SiteAction(Document):
 		target_cluster = self.get_argument("cluster")
 		current_cluster = frappe.db.get_value("Server", self.site_doc.server, "cluster")
 		if target_cluster == current_cluster:
-			frappe.throw("Target cluster must be different from current cluster.")
+			frappe.throw(_("Target cluster must be different from current cluster."))
 
 		# create the `Site Migration`
 		current_group = frappe.db.get_value("Site", self.site, "group")
@@ -391,7 +392,9 @@ class SiteAction(Document):
 		)
 
 		if bench_vals is None:
-			frappe.throw(f"Bench {current_group} does not have an existing deploy in {target_cluster}")
+			frappe.throw(
+				_("Bench {0} does not have an existing deploy in {1}").format(current_group, target_cluster)
+			)
 
 		bench, server = bench_vals
 
@@ -534,7 +537,7 @@ class SiteAction(Document):
 
 	def validate(self):
 		if self.action_type == "Move From Private To Shared Bench":
-			frappe.throw("Move From Private To Shared Bench action is not available currently.")
+			frappe.throw(_("Move From Private To Shared Bench action is not available currently."))
 
 	def on_update(self):
 		save_doc = False
@@ -620,7 +623,7 @@ class SiteAction(Document):
 	@dashboard_whitelist()
 	def cancel_action(self):
 		if self.status != "Scheduled":
-			frappe.throw("Only Scheduled actions can be cancelled.")
+			frappe.throw(_("Only Scheduled actions can be cancelled."))
 			return
 
 		self.status = "Cancelled"

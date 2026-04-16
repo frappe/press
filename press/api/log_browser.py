@@ -3,6 +3,7 @@ import re
 from enum import Enum
 
 import frappe
+from frappe import _
 
 from press.api.site import protected
 
@@ -343,7 +344,7 @@ def get_raw_log(log_type: LOG_TYPE, doc_name: str, log_name: str) -> list:
 		return frappe.get_doc("Bench", doc_name).get_server_log(log_name)
 	if log_type == LOG_TYPE.SITE:
 		return frappe.get_doc("Site", doc_name).get_server_log(log_name)
-	return frappe.throw("Invalid log type")  # nosemgrep
+	return frappe.throw(_("Invalid log type"))  # nosemgrep
 
 
 def format_log(log_name: str, log_entries: list) -> list:

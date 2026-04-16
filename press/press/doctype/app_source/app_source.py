@@ -135,7 +135,9 @@ class AppSource(Document):
 		versions = set()
 		for row in self.versions:
 			if row.version in versions:
-				frappe.throw(f"Version {row.version} can be added only once", frappe.ValidationError)
+				frappe.throw(
+					frappe._("Version {0} can be added only once").format(row.version), frappe.ValidationError
+				)
 			versions.add(row.version)
 
 	def before_save(self):

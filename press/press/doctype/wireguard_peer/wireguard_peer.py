@@ -6,6 +6,7 @@ import json
 import subprocess
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from press.runner import Ansible
@@ -65,7 +66,7 @@ class WireguardPeer(Document):
 				self.peer_ip = str(next_ip_addr)
 		except Exception:
 			log_error("Wireguard Peer IP Exception", server=self.as_dict())
-			frappe.throw("Invalid Wireguard Network")
+			frappe.throw(_("Invalid Wireguard Network"))
 
 	@frappe.whitelist()
 	def setup_wireguard(self):

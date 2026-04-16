@@ -7,6 +7,7 @@ import inspect
 import typing
 
 import frappe
+from frappe import _
 from frappe.client import set_value as _set_value
 from frappe.handler import run_doc_method as _run_doc_method
 from frappe.model import child_table_fields, default_fields
@@ -133,7 +134,7 @@ def get_list(
 
 	meta = frappe.get_meta(doctype)
 	if meta.istable and not (filters.get("parenttype") and filters.get("parent")):
-		frappe.throw("parenttype and parent are required to get child records")
+		frappe.throw(_("parenttype and parent are required to get child records"))
 
 	apply_team_filter = not (
 		filters.get("skip_team_filter_for_system_user_and_support_agent")
@@ -249,14 +250,14 @@ def get(doctype, name):
 @frappe.whitelist(methods=["POST", "PUT"])
 def insert(doc=None):
 	if not doc or not doc.get("doctype"):
-		frappe.throw(frappe._("doc.doctype is required"))
+		frappe.throw(_("doc.doctype is required"))
 
 	check_permissions(doc.get("doctype"))
 
 	doc = frappe._dict(doc)
 	if frappe.is_table(doc.doctype):
 		if not (doc.parenttype and doc.parent and doc.parentfield):
-			frappe.throw(frappe._("Parenttype, Parent and Parentfield are required to insert a child record"))
+			frappe.throw(_("Parenttype, Parent and Parentfield are required to insert a child record"))
 
 		# inserting a child record
 		parent = frappe.get_doc(doc.parenttype, doc.parent)
@@ -516,7 +517,7 @@ def is_owned_by_team(doctype, docname, raise_exception=True):
 
 
 def raise_not_permitted():
-	frappe.throw("Not permitted", frappe.PermissionError)
+	frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 
 def dashboard_whitelist(allow_guest=False, xss_safe=False, methods=None):

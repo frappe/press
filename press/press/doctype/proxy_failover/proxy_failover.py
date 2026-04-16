@@ -5,6 +5,7 @@ from contextlib import suppress
 from itertools import groupby
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from oci.core import VirtualNetworkClient
 from oci.core.models import (
@@ -48,7 +49,7 @@ class ProxyFailover(Document, StepHandler):
 		)
 
 		if secondary.cluster != primary.cluster:
-			frappe.throw("Failover can only be initiated between Proxy Servers in the same cluster")
+			frappe.throw(_("Failover can only be initiated between Proxy Servers in the same cluster"))
 
 		if (not primary.is_static_ip and not secondary.is_static_ip) or (
 			primary.is_static_ip and secondary.is_static_ip

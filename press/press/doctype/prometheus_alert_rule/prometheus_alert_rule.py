@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 import yaml
+from frappe import _
 from frappe.core.utils import find
 from frappe.model.document import Document
 
@@ -52,7 +53,7 @@ class PrometheusAlertRule(Document):
 		self.alert_preview = yaml.dump(self.get_rule())
 		self.route_preview = yaml.dump(self.get_route())
 		if self.enabled and not self.expression:
-			frappe.throw("Enabled alert rules require an expression")
+			frappe.throw(_("Enabled alert rules require an expression"))
 
 	def get_rule(self):
 		labels = json.loads(self.labels)

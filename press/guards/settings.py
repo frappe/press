@@ -1,6 +1,7 @@
 import functools
 
 import frappe
+from frappe import _
 
 SETTINGS_DOCTYPE = "Press Settings"
 
@@ -23,7 +24,7 @@ def enabled(key: str, default_value=None, raise_error: bool = False):
 			if frappe.db.get_single_value(SETTINGS_DOCTYPE, key, cache=True):
 				return func(*args, **kwargs)
 			if raise_error:
-				frappe.throw("This feature is disabled", frappe.ValidationError)
+				frappe.throw(_("This feature is disabled"), frappe.ValidationError)
 			return default_value
 
 		return inner

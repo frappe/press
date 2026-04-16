@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 
@@ -74,11 +75,11 @@ class SiteGroupDeploy(Document):
 		from press.press.doctype.site.site import Site
 
 		if frappe.db.exists("Release Group", {"title": self.subdomain}):
-			frappe.throw(f"Release Group with title {self.subdomain} already exists")
+			frappe.throw(_("Release Group with title {0} already exists").format(self.subdomain))
 
 		domain = frappe.db.get_single_value("Press Settings", "domain")
 		if Site.exists(self.subdomain, domain):
-			frappe.throw(f"Site with subdomain {self.subdomain} already exists")
+			frappe.throw(_("Site with subdomain {0} already exists").format(self.subdomain))
 
 	def get_optimal_server_for_private_bench(self):
 		servers = frappe.get_all(

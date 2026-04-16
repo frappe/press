@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 
@@ -34,4 +35,4 @@ class PhysicalBackupRestorationStep(Document):
 
 	def validate(self):
 		if self.is_async and self.wait_for_completion:
-			frappe.throw("Cannot wait for completion on async kind of step")
+			frappe.throw(_("Cannot wait for completion on async kind of step"))

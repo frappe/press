@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.core.utils import find
 
 from press.api.bench import options
@@ -170,7 +171,7 @@ def create_site_on_public_bench(
 		):
 			group = group[0].name
 		else:
-			frappe.throw("No release group found for the selected apps")
+			frappe.throw(_("No release group found for the selected apps"))
 
 	site = frappe.get_doc(
 		{
@@ -216,7 +217,7 @@ def create_site_on_private_bench(
 	)
 
 	if not all_latest_stable_version_supported:
-		frappe.throw("No stable version found for the selected app(s)")
+		frappe.throw(_("No stable version found for the selected app(s)"))
 
 	latest_stable_version_supported = sorted(all_latest_stable_version_supported, reverse=True)[0]
 
@@ -253,7 +254,7 @@ def create_site_on_private_bench(
 	for app in apps:
 		app_source = find(frappe_app_source + app_sources, lambda x: x.app == app["app"])
 		if not app_source:
-			frappe.throw(f"Source not found for app {app['app']}")
+			frappe.throw(_("Source not found for app {0}").format(app["app"]))
 
 		apps_with_sources.append(
 			{
@@ -442,7 +443,7 @@ def update_app_image() -> str:
 	app_name = frappe.form_dict.docname
 	app_team = frappe.db.get_value("Marketplace App", app_name, "team")
 	if app_team != current_team:
-		frappe.throw("Not Permitted to update app image", frappe.PermissionError)
+		frappe.throw(_("Not Permitted to update app image"), frappe.PermissionError)
 
 	file_content = frappe.local.uploaded_file
 	file_name = frappe.local.uploaded_filename
@@ -494,7 +495,7 @@ def add_app_screenshot() -> str:
 	app_name = frappe.form_dict.docname
 	app_team = frappe.db.get_value("Marketplace App", app_name, "team")
 	if app_team != current_team:
-		frappe.throw("Not Permitted to add app screenshot", frappe.PermissionError)
+		frappe.throw(_("Not Permitted to add app screenshot"), frappe.PermissionError)
 
 	file_content = frappe.local.uploaded_file
 	file_name = frappe.local.uploaded_filename
@@ -553,7 +554,7 @@ def validate_uploaded_image(file_content: bytes, file_name: str) -> None:
 	"""
 	ext = file_name.rsplit(".", 1)[-1].lower() if "." in file_name else ""
 	if ext not in ALLOWED_IMAGE_EXTENSIONS:
-		frappe.throw(f"Only {', '.join(sorted(ALLOWED_IMAGE_EXTENSIONS))} images are allowed")
+		frappe.throw(_("Only {0} images are allowed").format(", ".join(sorted(ALLOWED_IMAGE_EXTENSIONS))))
 
 	from io import BytesIO
 
@@ -576,7 +577,7 @@ def validate_app_image_dimensions(file_content):
 	im = Image.open(BytesIO(file_content))
 	im_width, im_height = im.size
 	if im_width != im_height or im_height < 300:
-		frappe.throw("Logo must be a square image atleast 300x300px in size")
+		frappe.throw(_("Logo must be a square image atleast 300x300px in size"))
 
 
 @frappe.whitelist()
@@ -644,7 +645,7 @@ def reason_for_rejection(app_release: str) -> str:
 	release_doc = frappe.get_doc("App Release", app_release)
 
 	if release_doc.status != "Rejected":
-		frappe.throw("The request for the given app release was not rejected!")
+		frappe.throw(_("The request for the given app release was not rejected!"))
 
 	return approval_request.reason_for_rejection
 
@@ -659,7 +660,7 @@ def get_latest_approval_request(app_release: str):
 	)
 
 	if len(approval_requests) == 0:
-		frappe.throw("No approval request exists for the given app release")
+		frappe.throw(_("No approval request exists for the given app release"))
 
 	approval_request = frappe.get_doc("App Release Approval Request", approval_requests[0])
 
@@ -771,7 +772,9 @@ def add_app(source: str, app: str):
 		marketplace_app = frappe.get_doc("Marketplace App", app)
 
 		if marketplace_app.team != get_current_team():
-			frappe.throw(f"The app {marketplace_app.name} already exists and is owned by some other team.")
+			frappe.throw(
+				_("The app {0} already exists and is owned by some other team.").format(marketplace_app.name)
+			)
 
 		# Versions on marketplace
 		versions = [v.version for v in marketplace_app.sources]
@@ -787,7 +790,7 @@ def add_app(source: str, app: str):
 				marketplace_app.append("sources", {"source": source, "version": version})
 				marketplace_app.save(ignore_permissions=True)
 		else:
-			frappe.throw("A marketplace app already exists with the given versions!")
+			frappe.throw(_("A marketplace app already exists with the given versions!"))
 
 	return marketplace_app.name
 
@@ -1036,7 +1039,7 @@ def create_app_plan(marketplace_app: str, plan_data: dict):
 @frappe.whitelist()
 def update_app_plan(app_plan_name: str, updated_plan_data: dict):
 	if not updated_plan_data.get("title"):
-		frappe.throw("Plan title is required")
+		frappe.throw(_("Plan title is required"))
 
 	app_plan_doc = frappe.get_doc("Marketplace App Plan", app_plan_name)
 
@@ -1057,7 +1060,7 @@ def update_app_plan(app_plan_name: str, updated_plan_data: dict):
 		# Someone is on this plan, don't change price for the plan,
 		# instead create and link a new plan
 		# TODO: Later we have to figure out a way for plan changes
-		frappe.throw("Plan is already in use, cannot update the plan. Please contact support to proceed.")
+		frappe.throw(_("Plan is already in use, cannot update the plan. Please contact support to proceed."))
 
 	app_plan_doc.update(
 		{
@@ -1079,7 +1082,7 @@ def reset_features_for_plan(app_plan_doc: MarketplaceAppPlan, feature_list: list
 	app_plan_doc.features = []
 	for feature in feature_list:
 		if not feature:
-			frappe.throw("Feature cannot be empty string")
+			frappe.throw(_("Feature cannot be empty string"))
 		app_plan_doc.append("features", {"description": feature})
 
 	if save:
@@ -1171,7 +1174,7 @@ def get_discount_percent(plan, discount=0.0):
 @frappe.whitelist(allow_guest=True)
 def login_via_token(token: str, team: str, site: str):
 	if not token or not isinstance(token, str):
-		frappe.throw("Invalid Token")
+		frappe.throw(_("Invalid Token"))
 
 	team = team.replace(" ", "+")
 	token_exists = frappe.db.exists(
@@ -1392,4 +1395,4 @@ def add_code_review_comment(name: str, filename: str, line_number: int, comment:
 		doc.save()
 		return {"status": "success", "message": "Comment added successfully."}
 	except Exception as e:
-		frappe.throw(f"Unable to add comment. Something went wrong: {e!s}")
+		frappe.throw(_("Unable to add comment. Something went wrong: {0}").format(e))

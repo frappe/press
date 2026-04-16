@@ -166,7 +166,7 @@ class Team(Document):
 			and self.user != frappe.session.user
 			and frappe.session.user not in self.get_user_list()
 		):
-			frappe.throw("You are not allowed to access this document")  # nosemgrep
+			frappe.throw(_("You are not allowed to access this document"))  # nosemgrep
 
 		user = frappe.db.get_value(
 			"User",
@@ -288,7 +288,9 @@ class Team(Document):
 
 	def reject_reenabling_team_for_banned_team(self):
 		if self.has_value_changed("enabled") and self.enabled == 1 and self.banned:
-			frappe.throw(f"{self.user} is banned. Please signup with a different email or contact support.")
+			frappe.throw(
+				_(f"{self.user} is banned. Please signup with a different email or contact support.")
+			)
 
 	def delete(self, force=False, workflow=False):
 		if not (force or workflow):
@@ -373,7 +375,7 @@ class Team(Document):
 			user.save(ignore_permissions=True)
 
 		if frappe.db.exists("Team", {"user": user.name}):
-			frappe.throw("You have already an account with same email. Please login using the same email.")
+			frappe.throw(_("You have already an account with same email. Please login using the same email."))
 
 		team.team_title = "Parent Team"
 		team.insert(ignore_permissions=True, ignore_links=True)
@@ -453,7 +455,7 @@ class Team(Document):
 			for role in roles:
 				frappe.get_doc("Press Role", role).remove_user(member)
 		else:
-			frappe.throw(f"Team member {frappe.bold(member)} does not exists")
+			frappe.throw(_("Team member {0} does not exists").format(frappe.bold(member)))
 
 		self.save(ignore_permissions=True)
 
@@ -516,7 +518,7 @@ class Team(Document):
 				self.payment_mode == "Card"
 				and frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0
 			):
-				frappe.throw("No card added. Please add a card to your account.")
+				frappe.throw(_("No card added. Please add a card to your account."))
 			# This check to verify recent pending payment is added to avoid validation issue when updating team doctype with payment mode as credits without balance as transaction is on going
 			if (
 				self.payment_mode == "Prepaid Credits"
@@ -642,7 +644,7 @@ class Team(Document):
 		client = get_frappe_io_connection()
 		data = client.get_value("Partner", "start_date", {"email": self.partner_email})
 		if not data:
-			frappe.throw("Partner not found on frappe.io")  # nosemgrep
+			frappe.throw(_("Partner not found on frappe.io"))  # nosemgrep
 		return frappe.utils.getdate(data.get("start_date"))
 
 	def create_referral_bonus(self, referrer_id):
@@ -721,7 +723,7 @@ class Team(Document):
 			if (address_doc.country != billing_details.country) and (
 				address_doc.country == "India" or billing_details.country == "India"
 			):
-				frappe.throw("Cannot change country of billing address")
+				frappe.throw(_("Cannot change country of billing address"))
 		else:
 			if self.account_request:
 				ar: "AccountRequest" = frappe.get_doc("Account Request", self.account_request)
@@ -997,7 +999,7 @@ class Team(Document):
 				"request_key": ("is", "set"),
 			},
 		):
-			frappe.throw("User has already been invited recently. Please try again later.")
+			frappe.throw(_("User has already been invited recently. Please try again later."))
 
 		account_request = frappe.get_doc(
 			{

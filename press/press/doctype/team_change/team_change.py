@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 
@@ -28,7 +29,7 @@ class TeamChange(Document):
 	def validate(self):
 		team = frappe.get_doc(self.document_type, self.document_name).team
 		if team != self.from_team:
-			frappe.throw(f"The owner of {self.document_type} is not {self.from_team}")
+			frappe.throw(_("The owner of {0} is not {1}").format(self.document_type, self.from_team))
 
 	def on_update(self):
 		if self.document_type == "Site" and self.transfer_completed:

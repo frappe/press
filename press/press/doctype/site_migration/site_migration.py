@@ -8,6 +8,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import convert_utc_to_system_timezone
@@ -82,7 +83,9 @@ class SiteMigration(Document):
 
 	def before_insert(self):
 		if get_ongoing_migration(self.site, scheduled=True):
-			frappe.throw(f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists.")
+			frappe.throw(
+				_("Ongoing/Scheduled Site Migration for the site {0} exists.").format(frappe.bold(self.site))
+			)
 		site: Site = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
 		site.check_fatal_site_update()
@@ -108,7 +111,7 @@ class SiteMigration(Document):
 
 	def validate_bench(self):
 		if frappe.db.get_value("Bench", self.destination_bench, "status", for_update=True) != "Active":
-			frappe.throw("Destination bench does not exist")
+			frappe.throw(_("Destination bench does not exist"))
 
 	@cached_property
 	def last_backup(self) -> SiteBackup | None:
@@ -219,7 +222,7 @@ class SiteMigration(Document):
 				"creation": (">", frappe.utils.add_to_date(None, hours=-24)),
 			},
 		):
-			frappe.throw("Ongoing Agent Job for site exists", OngoingAgentJob)
+			frappe.throw(_("Ongoing Agent Job for site exists"), OngoingAgentJob)
 
 	def set_migration_type(self):
 		if self.source_cluster != self.destination_cluster:

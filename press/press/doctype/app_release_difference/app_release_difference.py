@@ -7,6 +7,7 @@ import re
 import typing
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from github import Github
 
@@ -37,7 +38,9 @@ class AppReleaseDifference(Document):
 
 	def validate(self):
 		if self.source_release == self.destination_release:
-			frappe.throw("Destination Release must be different from Source Release", frappe.ValidationError)
+			frappe.throw(
+				frappe._("Destination Release must be different from Source Release"), frappe.ValidationError
+			)
 
 	def _get_branch_from_app_source(self, release: str) -> str | None:
 		AppRelease = frappe.qb.DocType("App Release")
@@ -76,7 +79,7 @@ class AppReleaseDifference(Document):
 			try:
 				github_access_token = get_access_token(source.github_installation_id)
 			except KeyError:
-				frappe.throw(f"Could not get access token for app source {source.name}")
+				frappe.throw(_("Could not get access token for app source {0}").format(source.name))
 		else:
 			github_access_token = frappe.get_value("Press Settings", None, "github_access_token")
 

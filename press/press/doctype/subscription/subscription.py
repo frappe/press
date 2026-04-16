@@ -270,7 +270,9 @@ class Subscription(Document):
 		)
 		if results:
 			link = frappe.utils.get_link_to_form("Subscription", results[0])
-			frappe.throw(f"A Subscription already exists: {link}", frappe.DuplicateEntryError)
+			frappe.throw(
+				frappe._("A Subscription already exists: {0}").format(link), frappe.DuplicateEntryError
+			)
 
 	def get_subscribed_document(self):
 		if not hasattr(self, "_subscribed_document"):

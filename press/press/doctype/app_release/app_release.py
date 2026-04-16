@@ -13,6 +13,7 @@ from typing import Optional, TypedDict
 import frappe
 import semantic_version as sv
 import tomli
+from frappe import _
 from frappe.model.document import Document
 
 from press.api.github import get_access_token
@@ -598,7 +599,7 @@ def get_release_by_source_and_hash(source: str, hash: str) -> AppReleaseDict:
 	)
 
 	if not releases:
-		frappe.throw(f"App Release not found with source: {source} and hash: {hash}")
+		frappe.throw(_("App Release not found with source: {0} and hash: {1}").format(source, hash))
 
 	return releases[0]
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 
 import frappe
+from frappe import _
 from frappe.frappeclient import FrappeClient
 
 from press.press.doctype.server.server import BaseServer
@@ -208,7 +209,7 @@ class RegistryServer(BaseServer):
 	def rewrite_config(self):
 		"""Rewrite mirror's config"""
 		if not self.is_mirror:
-			frappe.throw("Config can not be update for the hub registry")
+			frappe.throw(_("Config can not be update for the hub registry"))
 
 		frappe.enqueue_doc(self.doctype, self.name, "_rewrite_config")
 

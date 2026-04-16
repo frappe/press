@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 import frappe
 import requests
+from frappe import _
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import flt, sbool
@@ -51,16 +52,16 @@ if TYPE_CHECKING:
 def new(bench):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
-		frappe.throw("You cannot create a new bench because your account is disabled")
+		frappe.throw(_("You cannot create a new bench because your account is disabled"))
 
 	if exists(bench["title"]):
-		frappe.throw("A bench exists with the same name")
+		frappe.throw(_("A bench exists with the same name"))
 
 	if bench["server"] and not (
 		frappe.session.data.user_type == "System User"
 		or frappe.db.get_value("Server", bench["server"], "team") == team.name
 	):
-		frappe.throw("You can only create benches on your servers")
+		frappe.throw(_("You can only create benches on your servers"))
 
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(
@@ -285,7 +286,7 @@ def options():
 	clusters = Cluster.get_all_for_new_bench()
 
 	if not versions:
-		frappe.throw("Only enabled and public app sources will reflect here!")
+		frappe.throw(_("Only enabled and public app sources will reflect here!"))
 
 	return {"versions": versions, "clusters": clusters}
 
@@ -395,10 +396,10 @@ def update_dependencies(name: str, dependencies: str):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
 	if len(rg.dependencies) != len(dependencies_dict):
-		frappe.throw("Need all required dependencies")
+		frappe.throw(_("Need all required dependencies"))
 
 	if diff := set([d["key"] for d in dependencies_dict]) - set(d.dependency for d in rg.dependencies):
-		frappe.throw("Invalid dependencies: " + ", ".join(diff))
+		frappe.throw(_("Invalid dependencies: ") + ", ".join(diff))
 
 	for dep, new in zip(
 		sorted(rg.dependencies, key=lambda x: x.dependency),
@@ -406,9 +407,9 @@ def update_dependencies(name: str, dependencies: str):
 		strict=False,
 	):
 		if dep.dependency != new["key"]:
-			frappe.throw(f"Invalid dependency: {new['key']}")
+			frappe.throw(_("Invalid dependency: {0}").format(new["key"]))
 		if not re.match(r"^\d+\.\d+\.*\d*$", new["value"]):
-			frappe.throw(f"Invalid version for {new['key']}")
+			frappe.throw(_("Invalid version for {0}").format(new["key"]))
 		dep.version = new["value"]
 	rg.save()
 
@@ -757,10 +758,10 @@ def deploy(name, apps):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
 	if rg.team != team.name:
-		frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
+		frappe.throw(_("Bench can only be deployed by the bench owner"), exc=frappe.PermissionError)
 
 	if rg.deploy_in_progress:
-		frappe.throw("A deploy for this bench is already in progress")
+		frappe.throw(_("A deploy for this bench is already in progress"))
 
 	candidate = rg.create_deploy_candidate(apps)
 	deploy_candidate_build = candidate.schedule_build_and_deploy()
@@ -776,7 +777,7 @@ def validate_app_hashes(apps: list[dict[str, str]]):
 	hashes = []
 	for app in apps:
 		if not app.get("release") or not app.get("hash"):
-			frappe.throw("Each app must have a release and hash to run deploy and update!")
+			frappe.throw(_("Each app must have a release and hash to run deploy and update!"))
 		else:
 			hashes.append(app.get("hash"))
 
@@ -821,7 +822,7 @@ def deploy_and_update(
 	rg_team = frappe.db.get_value("Release Group", name, "team")
 
 	if rg_team != current_team:
-		frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
+		frappe.throw(_("Bench can only be deployed by the bench owner"), exc=frappe.PermissionError)
 
 	release_pipeline: ReleasePipeline = frappe.get_doc(
 		{"doctype": "Release Pipeline", "release_group": name, "team": current_team}
@@ -953,7 +954,7 @@ def validate_branch(name: str, app: str, branch: str):
 
 	if response.ok:
 		return response.json()
-	frappe.throw("Error validating branch from GitHub: " + response.text)
+	frappe.throw(_("Error validating branch from GitHub: ") + response.text)
 	return None
 
 
@@ -1077,7 +1078,7 @@ def logs(name, bench):
 @protected("Release Group")
 def log(name, bench, log):
 	if frappe.db.get_value("Bench", bench, "group") != name:
-		frappe.throw(f"Release Group name {name} does not match Bench Release Group")
+		frappe.throw(_("Release Group name {0} does not match Bench Release Group").format(name))
 	return frappe.get_doc("Bench", bench).get_server_log(log)
 
 
@@ -1129,7 +1130,7 @@ def fail_build(dn: str):
 	failed = fail_remote_job(dn)
 
 	if not failed:
-		frappe.throw("No running job found!")
+		frappe.throw(_("No running job found!"))
 
 
 @frappe.whitelist()
@@ -1186,7 +1187,7 @@ def redeploy(name: str, dc_name: str) -> str:
 	response = redeploy_candidate(dc_name)
 
 	if response["error"]:
-		frappe.throw("Unable to redeploy this build!", frappe.ValidationError)
+		frappe.throw(_("Unable to redeploy this build!"), frappe.ValidationError)
 
 	return response["message"]
 

@@ -4,6 +4,7 @@
 import os
 
 import frappe
+from frappe import _
 
 from press.api import account as account_api
 from press.api import billing as billing_api
@@ -128,7 +129,7 @@ def download_invoice(name: str):
 	invoice = frappe.get_doc("Invoice", name)
 	invoice.check_permission("read")
 	if not invoice.invoice_pdf:
-		frappe.throw("Invoice PDF not found")
+		frappe.throw(_("Invoice PDF not found"))
 	file_name = os.path.basename(invoice.invoice_pdf)
 	file = frappe.get_doc("File", {"file_name": file_name})
 	frappe.local.response.filename = file.file_name
@@ -144,7 +145,7 @@ def get_stripe_payment_url_for_invoice(name: str) -> str | None:
 			return invoice.stripe_invoice_url
 		return invoice.get_stripe_payment_url()
 	except frappe.DoesNotExistError:
-		frappe.throw("Invoice not found")
+		frappe.throw(_("Invoice not found"))
 
 
 # Payment Method Related APIs

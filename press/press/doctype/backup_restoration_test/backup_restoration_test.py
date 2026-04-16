@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from press.api.site import _new
@@ -49,7 +50,7 @@ class BackupRestorationTest(Document):
 			pluck="name",
 		)
 		if backups:
-			frappe.throw(f"Backup Restoration Test for {self.site} is already running.")
+			frappe.throw(_("Backup Restoration Test for {0} is already running.").format(self.site))
 
 	def check_duplicate_active_site(self):
 		# check if any active backup restoration test site is active
@@ -59,7 +60,9 @@ class BackupRestorationTest(Document):
 			pluck="name",
 		)
 		if sites:
-			frappe.throw(f"Site {self.test_site} is already active. Please archive the site first.")
+			frappe.throw(
+				_("Site {0} is already active. Please archive the site first.").format(self.test_site)
+			)
 
 	def create_brt_site(self) -> None:
 		site_dict = prepare_site(str(self.site))

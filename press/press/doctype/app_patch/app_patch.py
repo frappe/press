@@ -9,6 +9,7 @@ from typing import Any, TypedDict
 
 import frappe
 import requests
+from frappe import _
 from frappe.model.document import Document
 
 from press.agent import Agent
@@ -77,7 +78,7 @@ class AppPatch(Document):
 	def validate_bench(self):
 		if frappe.get_value("Bench", self.bench, "status") == "Active":
 			return
-		frappe.throw(f"Bench {self.bench} is not Active, patch cannot be applied")
+		frappe.throw(_("Bench {0} is not Active, patch cannot be applied").format(self.bench))
 
 	def before_insert(self):
 		patches = frappe.get_all(
@@ -89,7 +90,7 @@ class AppPatch(Document):
 			return
 
 		filename = patches[0].get("filename")
-		frappe.throw(f"Patch already exists for {self.bench} by the filename {filename}")
+		frappe.throw(_("Patch already exists for {0} by the filename {1}").format(self.bench, filename))
 
 	def after_insert(self):
 		self.apply_patch()

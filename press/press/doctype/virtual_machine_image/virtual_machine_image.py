@@ -7,6 +7,7 @@ import math
 import boto3
 import frappe
 import pydo
+from frappe import _
 from frappe.core.utils import find
 from frappe.model.document import Document
 from hcloud import APIException, Client
@@ -64,7 +65,7 @@ class VirtualMachineImage(Document):
 		if (
 			self.cloud_provider == "Hetzner" or self.cloud_provider == "DigitalOcean"
 		) and self.has_data_volume:
-			frappe.throw("Hetzner Virtual Machine Images cannot have data volumes.")
+			frappe.throw(_("Hetzner Virtual Machine Images cannot have data volumes."))
 
 		if self.cloud_provider == "DigitalOcean":
 			snapshots = self.client.droplets.list_snapshots(self.instance_id)

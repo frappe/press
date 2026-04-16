@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.geo.country_info import get_country_timezone_info
 
 from press.api.account import get_account_request_from_key
@@ -11,7 +12,7 @@ from press.api.account import get_account_request_from_key
 def options_for_regional_data(key: str):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw(_("Invalid or Expired Key"))
 
 	data = {
 		"languages": frappe.db.get_all("Language", ["language_name", "language_code"]),

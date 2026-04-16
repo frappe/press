@@ -10,6 +10,7 @@ from typing import Any
 
 import frappe
 import frappe.utils
+from frappe import _
 
 COLUMNS = [
 	{
@@ -216,7 +217,7 @@ class EndpointAuditor:
 					yield from self.analyze_file(file_path)
 		except OSError as e:
 			logging.error(f"Error walking directory {self.root_directory}: {e}")
-			frappe.throw(f"Failed to access directory: {e}")
+			frappe.throw(_("Failed to access directory: {0}").format(e))
 
 
 def execute(filters) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:

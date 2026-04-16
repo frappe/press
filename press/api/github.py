@@ -18,6 +18,7 @@ import frappe
 import jwt
 import requests
 import tomli
+from frappe import _
 from frappe.utils.verified_command import get_secret
 
 from press.utils import get_current_team, log_error
@@ -246,7 +247,11 @@ def fetch_installations(token):
 		)
 		data = response.json()
 		if not response.ok:
-			frappe.throw("Error fetching installations from GitHub: " + data.get("message", "Unknown error"))
+			frappe.throw(
+				frappe._("Error fetching installations from GitHub")
+				+ ": "
+				+ data.get("message", "Unknown error")
+			)
 		if len(data.get("installations", [])) < 100:
 			is_last_page = True
 		installations.extend(response.json().get("installations", []))
@@ -345,7 +350,9 @@ def app(owner, repository, branch, installation=None):
 	)
 
 	if not response.ok:
-		frappe.throw(f"Could not fetch branch ({branch}) info for repo {owner}/{repository}")
+		frappe.throw(
+			frappe._("Could not fetch branch ({0}) info for repo {1}/{2}").format(branch, owner, repository)
+		)
 
 	branch_info = response.json()
 	sha = branch_info["commit"]["commit"]["tree"]["sha"]
@@ -360,7 +367,7 @@ def app(owner, repository, branch, installation=None):
 	# Force pyproject.toml as a setup file
 	if "pyproject.toml" not in tree:
 		reason = "pyproject.toml does not exist in app directory."
-		frappe.throw(f"Not a valid Frappe App! {reason}")
+		frappe.throw(_("Not a valid Frappe App! {0}").format(reason))
 
 	app_name, title = _get_app_name_and_title_from_hooks(
 		owner,
@@ -400,7 +407,7 @@ def branches(owner, name, installation=None, app_source=None):
 			timeout=20,
 		)
 		if not resp.ok:
-			frappe.throw("Error fetching branch list from GitHub: " + resp.text)
+			frappe.throw(_("Error fetching branch list from GitHub") + ": " + resp.text)
 
 		chunk = resp.json() or []
 		out.extend(chunk)
@@ -436,7 +443,7 @@ def _get_compatible_frappe_version_from_pyproject(
 	).json()
 
 	if "content" not in pyproject:
-		frappe.throw("Could not fetch pyproject.toml file.")
+		frappe.throw(_("Could not fetch pyproject.toml file."))
 
 	pyproject = b64decode(pyproject["content"]).decode()
 
@@ -447,7 +454,7 @@ def _get_compatible_frappe_version_from_pyproject(
 		out.append("Invalid pyproject.toml file found")
 
 		if not hasattr(e, "doc") or not hasattr(e, "lineno"):
-			frappe.throw("\n".join(out))
+			frappe.throw(_("\n".join(out)))
 
 		lines = e.doc.splitlines()
 
@@ -523,7 +530,7 @@ def _get_app_name_and_title_from_hooks(
 		)
 		break
 
-	frappe.throw(f"Not a valid Frappe App! {reason_for_invalidation}")
+	frappe.throw(_("Not a valid Frappe App! {0}").format(reason_for_invalidation))
 	return None
 
 
@@ -556,16 +563,18 @@ def _get_pyproject_from_commit(app_source: str, commit: str):
 	response = requests.get(url, params={"ref": commit}, headers=headers)
 
 	if response.status_code == 400:
-		frappe.throw("Pyproject not found at this commit", frappe.ValidationError)
+		frappe.throw(_("Pyproject not found at this commit"), frappe.ValidationError)
 
 	if not response.ok:
-		frappe.throw("Error fetching app info from github", frappe.ValidationError)
+		frappe.throw(_("Error fetching app info from github"), frappe.ValidationError)
 
 	content = b64decode(response.json().get("content", "")).decode()
 	try:
 		return tomli.loads(content)
 	except tomli.TOMLDecodeError:
-		frappe.throw("Invalid pyproject.toml file found in the app repository.", frappe.ValidationError)
+		frappe.throw(
+			frappe._("Invalid pyproject.toml file found in the app repository."), frappe.ValidationError
+		)
 
 
 def get_dependant_apps_with_versions(app_source: str, commit: str, cache: bool = True) -> AppDependencyFetch:

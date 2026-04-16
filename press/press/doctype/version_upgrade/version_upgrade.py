@@ -137,7 +137,7 @@ class VersionUpgrade(Document):
 			)
 
 		if site.status in TRANSITORY_STATES:
-			frappe.throw("Site is under maintenance. Cannot Update")
+			frappe.throw(_("Site is under maintenance. Cannot Update"))
 		try:
 			self.site_update = site.move_to_group(
 				self.destination_group, self.skip_failing_patches, self.skip_backups

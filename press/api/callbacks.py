@@ -5,6 +5,7 @@ from __future__ import annotations
 import ipaddress
 
 import frappe
+from frappe import _
 from frappe.rate_limiter import rate_limit
 
 from press.agent import Agent
@@ -111,10 +112,10 @@ def callback(job_id: str | None = None):
 
 	# Request origin not authorized to update job status.
 	if not server:
-		frappe.throw("Not permitted", frappe.ValidationError)
+		frappe.throw(_("Not permitted"), frappe.ValidationError)
 
 	job = verify_job_id(server, job_id)
 	if not job:
-		frappe.throw("Invalid Job Id", frappe.ValidationError)
+		frappe.throw(_("Invalid Job Id"), frappe.ValidationError)
 
 	frappe.enqueue(handle_job_updates, server=server, job_identifier=job_id)

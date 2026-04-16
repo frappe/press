@@ -313,8 +313,8 @@ def _create_test_ansible_play_and_task(
 					"play": play.name,
 					"role": play.playbook.split(".")[0],
 					"task": kwargs.get("task_" + str(i + 1)),
-					"output": kwargs.get("task_" + str(i + 1) + "_output"),
-					"result": kwargs.get("task_" + str(i + 1) + "_result"),
+					"output": kwargs.get("task_" + str(i + 1) + _("_output")),
+					"result": kwargs.get("task_" + str(i + 1) + _("_result")),
 				}
 			)
 			task.insert()

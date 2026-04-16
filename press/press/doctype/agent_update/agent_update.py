@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 import frappe
 import frappe.utils
 import requests
+from frappe import _
 from frappe.model.document import Document
 
 from press.agent import Agent
@@ -136,10 +137,10 @@ class AgentUpdate(Document):
 		self.status = "Draft"
 
 		if not (self.app_server or self.database_server or self.proxy_server):
-			frappe.throw("Please select at least one server type")
+			frappe.throw(_("Please select at least one server type"))
 
 		if not self.restart_web_workers and not self.restart_rq_workers and not self.restart_redis:
-			frappe.throw("At minimum, you need to restart web workers during update")
+			frappe.throw(_("At minimum, you need to restart web workers during update"))
 
 		if self.restart_redis:  # noqa: SIM102
 			if not self.restart_rq_workers or not self.restart_web_workers:
@@ -159,14 +160,14 @@ class AgentUpdate(Document):
 			self.branch = press_settings.branch or "master"
 
 		if self.repo.startswith("http://") or self.repo.startswith("https://"):
-			frappe.throw("Please don't append http/https to the repo url")
+			frappe.throw(_("Please don't append http/https to the repo url"))
 
 		# Set commit hash
 		if not self.commit_hash:
 			self.commit_hash = self.fetch_commit_hash(self.branch)
 		else:
 			if self.fetch_commit_hash(self.branch) != self.commit_hash:
-				frappe.throw("Commit hash looks in valid. Please recheck")
+				frappe.throw(_("Commit hash looks in valid. Please recheck"))
 
 		# Set commit message
 		if not self.commit_message:
@@ -175,10 +176,12 @@ class AgentUpdate(Document):
 		# Verify rollback commit hash
 		if self.auto_rollback_changes and self.rollback_to_specific_commit:
 			if not self.default_rollback_commit:
-				frappe.throw("Rollback commit hash is required when rollback to specific commit is enabled")
+				frappe.throw(
+					_("Rollback commit hash is required when rollback to specific commit is enabled")
+				)
 
 			if self.fetch_commit_date(self.default_rollback_commit) is None:
-				frappe.throw("Rollback commit hash is not valid")
+				frappe.throw(_("Rollback commit hash is not valid"))
 
 		# Add servers
 		self.add_server_entries()
@@ -223,18 +226,20 @@ class AgentUpdate(Document):
 		frappe.db.get_value(self.doctype, self.name, "name", for_update=True)
 
 		if self.status != "Pending":
-			frappe.throw("You can only split updates when the status is Pending")
+			frappe.throw(_("You can only split updates when the status is Pending"))
 
 		if not self.servers:
-			frappe.throw("No servers found to split updates")
+			frappe.throw(_("No servers found to split updates"))
 
 		if len(self.servers) < no_of_batches:
 			frappe.throw(
-				f"You have only {len(self.servers)} servers, can't split into {no_of_batches} groups"
+				_("You have only {0} servers, can't split into {1} groups").format(
+					len(self.servers), no_of_batches
+				)
 			)
 
 		if no_of_batches <= 1:
-			frappe.throw("You need to split into at least 2 groups")
+			frappe.throw(_("You need to split into at least 2 groups"))
 
 		"""
 		For splitting updates, we need to create a duplicate Agent Update document for N groups
@@ -243,7 +248,7 @@ class AgentUpdate(Document):
 
 		# Create N new Agent Update documents
 		new_agent_updates = [self.name]
-		for _ in range(no_of_batches - 1):
+		for _i in range(no_of_batches - 1):
 			doc = frappe.get_doc(
 				{
 					"doctype": "Agent Update",
@@ -383,7 +388,7 @@ class AgentUpdate(Document):
 	@frappe.whitelist()
 	def force_continue(self):
 		if self.status not in ["Failure", "Partial Success"]:
-			frappe.throw("You can only force continue when the status is Failure or Partial Success")
+			frappe.throw(_("You can only force continue when the status is Failure or Partial Success"))
 
 		# Reset failed updates
 		for failed_update in self.servers:
@@ -406,14 +411,14 @@ class AgentUpdate(Document):
 	@frappe.whitelist()
 	def pause(self):
 		if self.status not in ["Running"]:
-			frappe.throw("You can only pause when the update is Running")
+			frappe.throw(_("You can only pause when the update is Running"))
 		self.status = "Paused"
 		self.save(ignore_version=True)
 
 	@frappe.whitelist()
 	def execute(self):
 		if self.status not in ["Pending", "Running"]:
-			frappe.throw("You can only call execute when the status is Pending or Running")
+			frappe.throw(_("You can only call execute when the status is Pending or Running"))
 
 		if self._process_next_step():
 			frappe.enqueue_doc(

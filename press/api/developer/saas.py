@@ -2,6 +2,7 @@ import json
 
 import frappe
 import frappe.utils
+from frappe import _
 from frappe.rate_limiter import rate_limit
 
 from press.api.developer import raise_invalid_key_error
@@ -129,7 +130,7 @@ def send_verification_code(domain: str, route: str = ""):
 
 	domain_info = frappe.get_value("Site Domain", domain, ["site", "status"], as_dict=True)
 	if not domain_info or domain_info.get("status") != "Active":
-		frappe.throw("The domain is not active currently. Please try again.")
+		frappe.throw(_("The domain is not active currently. Please try again."))
 
 	site_info = frappe.get_value(
 		"Site", domain_info.get("site"), ["name", "team", "standby_for", "standby_for_product"], as_dict=True
@@ -137,7 +138,7 @@ def send_verification_code(domain: str, route: str = ""):
 	team_name = site_info.get("team")
 	team_info = frappe.get_value("Team", team_name, ["name", "enabled", "user", "enforce_2fa"], as_dict=True)
 	if not team_info or not team_info.get("enabled"):
-		frappe.throw("Your Frappe Cloud team is disabled currently.")
+		frappe.throw(_("Your Frappe Cloud team is disabled currently."))
 
 	check_if_user_can_login(team_info, site_info)
 
@@ -170,7 +171,7 @@ def send_verification_code(domain: str, route: str = ""):
 def verify_verification_code(domain: str, verification_code: str, route: str = "dashboard"):
 	otp_hash = frappe.cache.get_value(f"otp_hash_for_fc_login_via_saas_flow:{domain}", expires=True)
 	if not otp_hash or otp_hash != frappe.utils.sha256_hash(str(verification_code)):
-		frappe.throw("Invalid Code. Please try again.")
+		frappe.throw(_("Invalid Code. Please try again."))
 
 	site = frappe.get_value("Site Domain", domain, "site")
 	team = frappe.get_value("Site", site, "team")
@@ -228,11 +229,11 @@ def check_if_user_can_login(team_info, site_info):
 		team_info.get("user") == "Administrator"
 		or frappe.db.get_value("User", team_info.get("user"), "user_type") != "Website User"
 	):
-		frappe.throw("Sorry, you cannot login with this method. Please contact support for more details.")
+		frappe.throw(_("Sorry, you cannot login with this method. Please contact support for more details."))
 
 	# restrict to SaaS Site
 	if not (site_info.get("standby_for") or site_info.get("standby_for_product")):
-		frappe.throw("Only SaaS sites are allowed to login to Frappe Cloud via current method.")
+		frappe.throw(_("Only SaaS sites are allowed to login to Frappe Cloud via current method."))
 
 
 def send_email_with_verification_code(email, otp):

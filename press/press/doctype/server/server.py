@@ -231,7 +231,7 @@ class BaseServer(Document, TagHelpers):
 	@dashboard_whitelist()
 	def update_communication_infos(self, values: list[dict]):
 		if self.doctype != "Server":
-			frappe.throw("Setting up communication info is only allowed for App Server")
+			frappe.throw(_("Setting up communication info is only allowed for App Server"))
 			return
 
 		from press.press.doctype.communication_info.communication_info import (
@@ -246,7 +246,7 @@ class BaseServer(Document, TagHelpers):
 		try:
 			return self.agent.get("/server/storage-breakdown")
 		except Exception:
-			frappe.throw("Failed to fetch storage usage. Try again later.")
+			frappe.throw(_("Failed to fetch storage usage. Try again later."))
 
 	@dashboard_whitelist()
 	def increase_disk_size_for_server(
@@ -600,7 +600,7 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def enable_for_new_benches_and_sites(self):
 		if not self.public:
-			frappe.throw("Action only allowed for public servers")
+			frappe.throw(_("Action only allowed for public servers"))
 
 		server = self.get_server_enabled_for_new_benches_and_sites()
 		self.add_to_public_groups()
@@ -659,7 +659,7 @@ class BaseServer(Document, TagHelpers):
 		if not self.cluster:
 			self.cluster = frappe.db.get_value("Root Domain", self.domain, "default_cluster")
 		if not self.cluster:
-			frappe.throw("Default Cluster not found", frappe.ValidationError)
+			frappe.throw(_("Default Cluster not found"), frappe.ValidationError)
 
 	def validate_agent_password(self):
 		# In case of unified servers the agent password is set during creation of the virtual machine
@@ -941,7 +941,7 @@ class BaseServer(Document, TagHelpers):
 				"Agent Job", {"server": self.name, "job_type": "Cleanup Unused Files"}
 			)
 			if cleanup_job.status in ["Running", "Pending"]:
-				frappe.throw("Cleanup job is already running")
+				frappe.throw(_("Cleanup job is already running"))
 
 		self._cleanup_unused_files(force=force)
 
@@ -1933,10 +1933,10 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def install_nat_iptables(self):
 		if self.ip:
-			frappe.throw("NAT Iptables can only be installed on servers without public IP")
+			frappe.throw(_("NAT Iptables can only be installed on servers without public IP"))
 
 		if not getattr(self, "nat_server", None):
-			frappe.throw("NAT Iptables requires a NAT server to be set")
+			frappe.throw(_("NAT Iptables requires a NAT server to be set"))
 
 		frappe.enqueue_doc(self.doctype, self.name, "_install_nat_iptables")
 
@@ -2348,7 +2348,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		play = ansible.run()
 		if play.status == "Success":
 			return frappe.db.get_value(self.doctype, self.primary, "frappe_public_key")
-		frappe.throw(f"Failed to fetch {primary.name}'s Frappe public key")  # nosemgrep
+		frappe.throw(_("Failed to fetch {0}'s Frappe public key").format(primary.name))  # nosemgrep
 		return None
 
 	def copy_files(self, source, destination, extra_options=None):
@@ -2542,7 +2542,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		if self.provider == "OCI":
 			return self.get_oci_static_ip()
 
-		frappe.throw(f"Not implemented for {self.provider} provider")
+		frappe.throw(_("Not implemented for {0} provider").format(self.provider))
 		return None
 
 	def get_aws_static_ip(self):
@@ -2593,7 +2593,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		).data
 
 		if not vnic_attachments:
-			frappe.throw("No VNIC found for this OCI instance.")  # nosemgrep
+			frappe.throw(_("No VNIC found for this OCI instance."))  # nosemgrep
 
 		vnic_id = vnic_attachments[0].vnic_id
 
@@ -2602,7 +2602,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		primary_private_ip = next((ip for ip in private_ips if ip.is_primary), None)
 
 		if not primary_private_ip:
-			frappe.throw("Primary Private IP not found.")  # nosemgrep
+			frappe.throw(_("Primary Private IP not found."))  # nosemgrep
 
 		# 3. Check for existing Public IP and remove it if it exists
 		existing_public_ip = network_client.get_public_ip_by_private_ip_id(
@@ -3352,7 +3352,7 @@ class Server(BaseServer):
 	@dashboard_whitelist()
 	def generate_on_prem_failover_config(self):
 		if not self.enable_on_prem_failover_support:
-			frappe.throw("On-Prem Failover support is not enabled for this server.")  # nosemgrep
+			frappe.throw(_("On-Prem Failover support is not enabled for this server."))  # nosemgrep
 			return None
 
 		existsing_on_prem_failover = self.get_existing_on_prem_failover()
@@ -3418,7 +3418,7 @@ class Server(BaseServer):
 	def start_on_prem_server_replication(self):
 		existsing_on_prem_failover = self.get_existing_on_prem_failover()
 		if not existsing_on_prem_failover:
-			frappe.throw("On-Prem Failover is not configured for this server.")  # nosemgrep
+			frappe.throw(_("On-Prem Failover is not configured for this server."))  # nosemgrep
 			return
 
 		current_user = frappe.session.user
@@ -3434,7 +3434,7 @@ class Server(BaseServer):
 	def stop_on_prem_server_replication(self):
 		existsing_on_prem_failover = self.get_existing_on_prem_failover()
 		if not existsing_on_prem_failover:
-			frappe.throw("On-Prem Failover is not configured for this server.")  # nosemgrep
+			frappe.throw(_("On-Prem Failover is not configured for this server."))  # nosemgrep
 			return
 
 		current_user = frappe.session.user
@@ -3579,7 +3579,7 @@ class Server(BaseServer):
 	def install_wazuh_agent(self):
 		wazuh_server = frappe.get_value("Press Settings", "Press Settings", "wazuh_server")
 		if not wazuh_server:
-			frappe.throw("Please configure Wazuh Server in Press Settings")
+			frappe.throw(_("Please configure Wazuh Server in Press Settings"))
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -3654,21 +3654,21 @@ class Server(BaseServer):
 	def delete_snapshot(self, snapshot_name: str) -> None:
 		doc = frappe.get_doc("Server Snapshot", snapshot_name)
 		if doc.app_server != self.name:
-			frappe.throw("Snapshot does not belong to this server")  # nosemgrep
+			frappe.throw(_("Snapshot does not belong to this server"))  # nosemgrep
 		doc.delete_snapshots()
 
 	@dashboard_whitelist()
 	def lock_snapshot(self, snapshot_name: str) -> None:
 		doc = frappe.get_doc("Server Snapshot", snapshot_name)
 		if doc.app_server != self.name:
-			frappe.throw("Snapshot does not belong to this server")  # nosemgrep
+			frappe.throw(_("Snapshot does not belong to this server"))  # nosemgrep
 		doc.lock()
 
 	@dashboard_whitelist()
 	def unlock_snapshot(self, snapshot_name: str) -> None:
 		doc = frappe.get_doc("Server Snapshot", snapshot_name)
 		if doc.app_server != self.name:
-			frappe.throw("Snapshot does not belong to this server")  # nosemgrep
+			frappe.throw(_("Snapshot does not belong to this server"))  # nosemgrep
 		doc.unlock()
 
 	def validate_bench_status_before_scaling(self) -> bool:
@@ -3690,7 +3690,7 @@ class Server(BaseServer):
 			- Check if there are active deployments on primary server
 		"""
 		if not self.can_scale:
-			frappe.throw("Server is not configured for auto scaling", frappe.ValidationError)
+			frappe.throw(_("Server is not configured for auto scaling"), frappe.ValidationError)
 
 		if self.validate_bench_status_before_scaling():
 			frappe.throw(
@@ -3712,7 +3712,7 @@ class Server(BaseServer):
 		)
 
 		if running_auto_scale:
-			frappe.throw("Auto scale is already running", frappe.ValidationError)  # nosemgrep
+			frappe.throw(_("Auto scale is already running"), frappe.ValidationError)  # nosemgrep
 
 		if time_diff < timedelta(seconds=cool_off_period or 300):
 			frappe.throw(
@@ -3728,7 +3728,7 @@ class Server(BaseServer):
 		)
 
 		if not active_sites_on_primary and not active_sites_on_secondary:
-			frappe.throw("There are no active sites on this server!", frappe.ValidationError)
+			frappe.throw(_("There are no active sites on this server!"), frappe.ValidationError)
 
 		active_deployments = frappe.db.get_value(
 			"Bench", {"server": self.name, "status": ("in", ["Installing", "Pending"])}
@@ -3796,7 +3796,7 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def scale_up(self, is_automatically_triggered: bool = False):
 		if self.scaled_up:
-			frappe.throw("Server is already scaled up", frappe.ValidationError)
+			frappe.throw(_("Server is already scaled up"), frappe.ValidationError)
 
 		self.validate_scale()
 
@@ -3808,7 +3808,7 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def scale_down(self, is_automatically_triggered: bool = False):
 		if not self.scaled_up:
-			frappe.throw("Server is already scaled down", frappe.ValidationError)
+			frappe.throw(_("Server is already scaled down"), frappe.ValidationError)
 
 		self.validate_scale()
 
@@ -3858,7 +3858,7 @@ class Server(BaseServer):
 		if not found we will relax the memory requirement to find a plan with higher CPU and higher memory.
 		"""
 		if not requires_cpu and not requires_memory:
-			frappe.throw("Specify CPU and/or memory requirements", frappe.ValidationError)
+			frappe.throw(_("Specify CPU and/or memory requirements"), frappe.ValidationError)
 
 		current_plan: frappe._dict = frappe.db.get_value(
 			"Server Plan", self.plan, ["vcpu", "memory", "enabled", "legacy_plan"], as_dict=True
@@ -3972,7 +3972,7 @@ def get_hostname_abbreviation(hostname):
 
 def is_dedicated_server(server_name):
 	if not isinstance(server_name, str):
-		frappe.throw("Invalid argument")
+		frappe.throw(_("Invalid argument"))
 	is_public = frappe.db.get_value("Server", server_name, "public")
 	return not is_public
 

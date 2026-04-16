@@ -8,6 +8,7 @@ import typing
 
 import frappe
 import requests
+from frappe import _
 from frappe.model.document import Document
 
 if typing.TYPE_CHECKING:
@@ -30,7 +31,7 @@ class ProcessSnapshot(Document):
 
 	def check_bench_on_server(self):
 		if not frappe.get_value("Bench", {"name": self.bench, "server": self.server}):
-			frappe.throw(f"{self.bench} does not exist on server {self.server}")
+			frappe.throw(_("{0} does not exist on server {1}").format(self.bench, self.server))
 
 	def validate(self):
 		self.check_bench_on_server()

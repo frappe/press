@@ -9,6 +9,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 if TYPE_CHECKING:
@@ -67,7 +68,7 @@ class VirtualMachineReplacement(Document):
 
 	def validate_aws_only(self):
 		if self.machine.cloud_provider != "AWS EC2":
-			frappe.throw("This feature is only available for AWS EC2")
+			frappe.throw(_("This feature is only available for AWS EC2"))
 
 	def validate_existing_replacement(self):
 		if existing := frappe.get_all(
@@ -80,7 +81,7 @@ class VirtualMachineReplacement(Document):
 			pluck="status",
 			limit=1,
 		):
-			frappe.throw(f"An existing replacement is already {existing[0].lower()}.")
+			frappe.throw(_("An existing replacement is already {0}.").format(existing[0].lower()))
 
 	@property
 	def machine(self):

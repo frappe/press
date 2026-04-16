@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 import frappe
 import rq
+from frappe import _
 from frappe.model.document import Document
 
 from press.agent import Agent
@@ -68,7 +69,9 @@ class SiteDomain(Document):
 			.run(as_dict=True)
 		)
 		if site:
-			frappe.throw(f"Domain {self.domain} is already taken. Please choose a different domain.")
+			frappe.throw(
+				_("Domain {0} is already taken. Please choose a different domain.").format(self.domain)
+			)
 
 	@property
 	def agent(self):
@@ -118,7 +121,9 @@ class SiteDomain(Document):
 		site: Site = frappe.get_doc("Site", self.site)
 		target = site.host_name
 		if target == self.name:
-			frappe.throw("Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError)
+			frappe.throw(
+				frappe._("Primary domain can't be redirected."), exc=frappe.exceptions.ValidationError
+			)
 		site.set_redirects_in_proxy([self.name])
 
 	def remove_redirect_in_proxy(self):

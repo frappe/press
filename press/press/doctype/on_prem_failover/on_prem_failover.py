@@ -8,6 +8,7 @@ import random
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_to_date
 
@@ -398,7 +399,7 @@ PersistentKeepalive = 25
 		play = ansible.run()
 
 		if play.status != "Success":
-			frappe.throw("Failed to perform the final database sync.")
+			frappe.throw(_("Failed to perform the final database sync."))
 
 	def setup_and_configure_database_replica(self):
 		frappe.enqueue_doc(
@@ -421,7 +422,7 @@ PersistentKeepalive = 25
 		play = ansible.run()
 
 		if play.status != "Success":
-			frappe.throw("Failed to setup replica on the on-premise server.")
+			frappe.throw(_("Failed to setup replica on the on-premise server."))
 
 	def setup_app_server_replica(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_app_server_replica", timeout=3600, queue="long")
@@ -438,7 +439,7 @@ PersistentKeepalive = 25
 		play = ansible.run()
 
 		if play.status != "Success":
-			frappe.throw("Failed to setup App Server replica synchronization on the on-premise server.")
+			frappe.throw(_("Failed to setup App Server replica synchronization on the on-premise server."))
 
 	def stop_replication_from_app_server(self):
 		frappe.enqueue_doc(
@@ -453,7 +454,7 @@ PersistentKeepalive = 25
 		)
 		play = ansible.run()
 		if play.status != "Success":
-			frappe.throw("Failed to stop replication on the App Server.")
+			frappe.throw(_("Failed to stop replication on the App Server."))
 
 	def stop_replication_from_db_server(self):
 		frappe.enqueue_doc(
@@ -468,7 +469,7 @@ PersistentKeepalive = 25
 		)
 		play = ansible.run()
 		if play.status != "Success":
-			frappe.throw("Failed to stop replication on the Database Server.")
+			frappe.throw(_("Failed to stop replication on the Database Server."))
 
 	# Internal methods
 

@@ -12,6 +12,7 @@ import frappe
 import frappe.query_builder
 import frappe.query_builder.functions
 import requests
+from frappe import _
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
@@ -47,13 +48,13 @@ class PressWebhook(Document):
 	def validate(self):
 		# maximum 5 webhooks per team
 		if self.is_new() and frappe.db.count("Press Webhook", {"team": self.team}) > 5:
-			frappe.throw("You have reached the maximum number of webhooks per team")
+			frappe.throw(_("You have reached the maximum number of webhooks per team"))
 
 		if self.has_value_changed("endpoint"):
 			self.enabled = 0
 		# should have atleast one event selected
 		if not self.events:
-			frappe.throw("At least one event should be selected")
+			frappe.throw(_("At least one event should be selected"))
 		# validate endpoint url format
 		self.validate_endpoint_url_format()
 		# check for duplicate webhooks
@@ -63,20 +64,20 @@ class PressWebhook(Document):
 			pluck="name",
 		)
 		if len(webhooks) != 0:
-			frappe.throw("You have already added webhook for this endpoint")
+			frappe.throw(_("You have already added webhook for this endpoint"))
 
 	def validate_endpoint_url_format(self):
 		url = urlparse(self.endpoint)
 		if not url.netloc:
-			frappe.throw("Endpoint should be a valid url")
+			frappe.throw(_("Endpoint should be a valid url"))
 
 		# protocol should be http or https
 		if url.scheme not in ["http", "https"]:
-			frappe.throw("Endpoint should start with http:// or https://")
+			frappe.throw(_("Endpoint should start with http:// or https://"))
 
 		# dont allow query params
 		if url.query:
-			frappe.throw("Endpoint should not have query params")
+			frappe.throw(_("Endpoint should not have query params"))
 
 		isIPAddress = False
 		# If endpoint target is ip address, it should be a public ip address
@@ -84,16 +85,16 @@ class PressWebhook(Document):
 			ip = ipaddress.ip_address(url.hostname)
 			isIPAddress = True
 			if not ip.is_global:
-				frappe.throw("Endpoint address should be a public ip or domain")
+				frappe.throw(_("Endpoint address should be a public ip or domain"))
 
 		if not isIPAddress:
 			# domain should be a fqdn
 			if not is_valid_hostname(url.hostname):
-				frappe.throw("Endpoint address should be a valid domain")
+				frappe.throw(_("Endpoint address should be a valid domain"))
 
 			# Endpoint can't be any local domain
 			if not frappe.conf.developer_mode and ("localhost" in url.hostname or ".local" in url.hostname):
-				frappe.throw("Endpoint can't be localhost or local domain")
+				frappe.throw(_("Endpoint can't be localhost or local domain"))
 
 	@dashboard_whitelist()
 	def validate_endpoint(self) -> dict:

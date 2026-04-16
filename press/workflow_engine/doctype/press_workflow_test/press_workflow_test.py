@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
@@ -26,7 +27,7 @@ class PressWorkflowTest(WorkflowBuilder):
 
 	def validate(self):
 		if not frappe.in_test:
-			frappe.throw("PressWorkflowTest doctype can be used only in Unit Tests")
+			frappe.throw(_("PressWorkflowTest doctype can be used only in Unit Tests"))
 
 	@flow
 	def main_success(self):

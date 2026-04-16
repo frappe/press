@@ -5,6 +5,7 @@ import json
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_to_date
 
@@ -104,7 +105,9 @@ class ServerSnapshotRecovery(Document):
 			self.snapshot,
 		)
 		if snapshot.status != "Completed":
-			frappe.throw(f"Cannot recover from snapshot {snapshot.name} with status {snapshot.status}")
+			frappe.throw(
+				_("Cannot recover from snapshot {0} with status {1}").format(snapshot.name, snapshot.status)
+			)
 
 	def fill_site_list(self):
 		sites_json = json.loads(
@@ -128,10 +131,10 @@ class ServerSnapshotRecovery(Document):
 		else:
 			for site in self.sites:
 				if site.site not in sites_json:
-					frappe.throw(f"Site {site.site} not available in snapshot {self.snapshot}")
+					frappe.throw(_("Site {0} not available in snapshot {1}").format(site.site, self.snapshot))
 
 		if len(self.sites) == 0:
-			frappe.throw("Please choose at least one site to recover.")
+			frappe.throw(_("Please choose at least one site to recover."))
 
 	def on_update(self):
 		if (
@@ -204,7 +207,7 @@ class ServerSnapshotRecovery(Document):
 	@frappe.whitelist()
 	def archive_servers(self):
 		if not self.app_server or not self.database_server:
-			frappe.throw("Servers are not provisioned yet.")
+			frappe.throw(_("Servers are not provisioned yet."))
 
 		app_server_doc = frappe.get_doc("Server", self.app_server)
 		if app_server_doc.status != "Archived":
@@ -296,7 +299,7 @@ class ServerSnapshotRecovery(Document):
 				break
 
 		if not site_record:
-			frappe.throw(f"Site {site} not found in recovery sites.")
+			frappe.throw(_("Site {0} not found in recovery sites.").format(site))
 
 		if job.status == "Failure":
 			site_record.status = "Failure"
@@ -331,7 +334,7 @@ class ServerSnapshotRecovery(Document):
 				site_record = s
 				break
 		if not site_record:
-			frappe.throw(f"Site {site} not found in recovery sites.")
+			frappe.throw(_("Site {0} not found in recovery sites.").format(site))
 
 		if job.status == "Failure":
 			site_record.status = "Failure"
@@ -381,7 +384,7 @@ class ServerSnapshotRecovery(Document):
 				break
 
 		if not site_record:
-			frappe.throw(f"Site {site} not found in recovery sites.")
+			frappe.throw(_("Site {0} not found in recovery sites.").format(site))
 
 		if (
 			(file_type == "public" and not site_record.public_remote_file)
@@ -389,7 +392,7 @@ class ServerSnapshotRecovery(Document):
 			or (file_type == "database" and not site_record.database_remote_file)
 			or (file_type == "encryption_key" and not site_record.encryption_key)
 		):
-			frappe.throw(f"{file_type.capitalize()} backup not available for site {site}.")
+			frappe.throw(_("{0} backup not available for site {1}.").format(file_type.capitalize(), site))
 
 		try:
 			remote_file_name = ""
@@ -404,7 +407,11 @@ class ServerSnapshotRecovery(Document):
 
 			return frappe.get_doc("Remote File", remote_file_name).download_link
 		except Exception:
-			frappe.throw(f"Error downloading {file_type} backup for site {site}. Please try again later.")
+			frappe.throw(
+				_("Error downloading {0} backup for site {1}. Please try again later.").format(
+					file_type, site
+				)
+			)
 
 	@frappe.whitelist()
 	def expire_backups(self):

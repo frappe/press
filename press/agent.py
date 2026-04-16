@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import frappe
 import frappe.utils
 import requests
+from frappe import _
 from frappe.utils.password import get_decrypted_password
 from requests.exceptions import HTTPError
 
@@ -1807,7 +1808,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw("Offsite Backups aren't setup yet")
+			frappe.throw(_("Offsite Backups aren't setup yet"))
 
 		return self.create_agent_job(
 			"Backup Database From Snapshot",
@@ -1836,7 +1837,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		if offsite_config:
 			data.update({"offsite": offsite_config})
 		else:
-			frappe.throw("Offsite Backups aren't setup yet")
+			frappe.throw(_("Offsite Backups aren't setup yet"))
 
 		return self.create_agent_job(
 			"Backup Files From Snapshot",

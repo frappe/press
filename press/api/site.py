@@ -10,6 +10,7 @@ import requests
 import wrapt
 from boto3 import client
 from botocore.exceptions import ClientError
+from frappe import _
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.query_builder import Case
@@ -79,7 +80,7 @@ def protected(doctypes):
 
 		# Get the name of the document being accessed.
 		if not (docname := get_protected_doctype_name(args, kwargs, doctypes)):
-			frappe.throw("Name not found, API access not permitted", frappe.PermissionError)  # nosemgrep
+			frappe.throw(_("Name not found, API access not permitted"), frappe.PermissionError)  # nosemgrep
 
 		current_team = get_current_team()
 		for doctype in doctypes:
@@ -87,7 +88,7 @@ def protected(doctypes):
 			if document_team == current_team or has_support_access(doctype, docname):
 				return wrapped(*args, **kwargs)
 
-		frappe.throw("Not Permitted", frappe.PermissionError)  # nosemgrep
+		frappe.throw(_("Not Permitted"), frappe.PermissionError)  # nosemgrep
 		return None
 
 	return wrapper
@@ -275,7 +276,7 @@ def get_group_for_new_site_and_set_localisation_app(site, apps):
 @validate_argument_types
 def validate_plan(server: str, plan: str) -> None:
 	if not frappe.db.exists("Site Plan", plan):
-		frappe.throw(f"Plan {plan} does not exist", frappe.DoesNotExistError)  # nosemgrep
+		frappe.throw(_("Plan {0} does not exist").format(plan), frappe.DoesNotExistError)  # nosemgrep
 
 	site_plan = frappe.db.get_value(
 		"Site Plan",
@@ -307,7 +308,7 @@ def validate_plan(server: str, plan: str) -> None:
 	if frappe.session.data.user_type == "System User":
 		return
 
-	frappe.throw("You are not allowed to use this plan")  # nosemgrep
+	frappe.throw(_("You are not allowed to use this plan"))  # nosemgrep
 
 
 @frappe.whitelist()
@@ -507,7 +508,7 @@ def create_site_on_private_bench(
 	sources = {x.app: x.source for x in frappe_app_source + app_sources}
 	for app in apps:
 		if app not in sources:
-			frappe.throw(f"Source not found for app {app}. Please verify for a valid app source.")
+			frappe.throw(_("Source not found for app {0}. Please verify for a valid app source.").format(app))
 
 		apps_with_sources.append({"app": app, "source": sources[app]})
 
@@ -851,7 +852,7 @@ def _get_team_dedicated_server_info(for_server: str | None = None):
 
 	if not servers:
 		if for_server:
-			frappe.throw(f"Server {for_server} not found")  # nosemgrep
+			frappe.throw(_("Server {0} not found").format(for_server))  # nosemgrep
 		return {
 			"case": "no_dedicated_server",
 			"dedicated_servers": [],
@@ -2297,7 +2298,7 @@ def get_backup_links(url, email, password):
 	try:
 		files = get_frappe_backups(url, email, password)
 	except requests.RequestException as e:
-		frappe.throw(f"Could not fetch backups from {url}. Error: {e}")  # nosemgrep
+		frappe.throw(_("Could not fetch backups from {0}. Error: {1}").format(url, e))  # nosemgrep
 	remote_files = []
 	for file_type, file_url in files.items():
 		file_name = file_url.split("backups/")[1].split("?sid=")[0]
@@ -2647,7 +2648,7 @@ def check_app_compatibility_for_upgrade(name, version):
 	for app in site_app_names:
 		source = source_map.get(app)
 		if not source or not source.enabled:
-			frappe.throw(f"Could not find a valid source for app {app}.")  # nosemgrep
+			frappe.throw(_("Could not find a valid source for app {0}.").format(app))  # nosemgrep
 		# Treat frappe-owned apps as public apps requiring compatibility checks
 		if source.public or source.repository_owner == "frappe":
 			public_apps.append(app)
@@ -2801,7 +2802,7 @@ def create_private_bench_for_site_upgrade(
 		version_upgrade.insert()
 		return release_group_doc.name
 	except Exception as e:
-		frappe.throw(f"Failed to create and deploy bench: {e!s}")  # nosemgrep
+		frappe.throw(_("Failed to create and deploy bench: {0}").format(e))  # nosemgrep
 
 
 @frappe.whitelist()
@@ -2909,7 +2910,7 @@ def fetch_sites_data_for_export():
 def get_next_version(version):
 	version_number = frappe.db.get_value("Frappe Version", version, "number")
 	if not version_number:
-		frappe.throw(f"Invalid Frappe version: {version}")  # nosemgrep
+		frappe.throw(_("Invalid Frappe version: {0}").format(version))  # nosemgrep
 
 	next_version = frappe.db.get_value(
 		"Frappe Version",
@@ -2921,7 +2922,7 @@ def get_next_version(version):
 		"name",
 	)
 	if not next_version:
-		frappe.throw(f"Next version not found for {version}")  # nosemgrep
+		frappe.throw(_("Next version not found for {0}").format(version))  # nosemgrep
 
 	return next_version
 
@@ -2963,7 +2964,7 @@ def _get_apps_for_version_upgrade(  # noqa: C901
 		if not source or not source.enabled:
 			if not is_site_app:
 				continue
-			frappe.throw(f"Invalid source for {app_name}")
+			frappe.throw(_("Invalid source for {0}").format(app_name))
 
 		# Public / Frappe app
 		if source.public or source.repository_owner == "frappe":
@@ -2989,7 +2990,7 @@ def _get_apps_for_version_upgrade(  # noqa: C901
 		if not custom_source:
 			if not is_site_app:
 				continue
-			frappe.throw(f"Custom app source not provided for {app_name}")
+			frappe.throw(_("Custom app source not provided for {0}").format(app_name))
 
 		custom_source_name = _get_custom_app_upgrade_source(
 			app_name=app_name,
@@ -3018,9 +3019,9 @@ def _get_custom_app_upgrade_source(
 	repository_url = app_source.repository_url
 	github_installation_id = app_source.github_installation_id
 	if not branch:
-		frappe.throw(f"Branch not provided for {app_name}")  # nosemgrep
+		frappe.throw(_("Branch not provided for {0}").format(app_name))  # nosemgrep
 	if not repository_url:
-		frappe.throw(f"Repository URL not provided for {app_name}")  # nosemgrep
+		frappe.throw(_("Repository URL not provided for {0}").format(app_name))  # nosemgrep
 
 	validate_frappe_version_for_branch(
 		app_name=app_name,

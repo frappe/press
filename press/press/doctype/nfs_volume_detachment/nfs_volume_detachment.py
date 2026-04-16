@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from press.agent import Agent
@@ -330,7 +331,7 @@ class NFSVolumeDetachment(Document, AutoScaleStepFailureHandler, StepHandler):
 	def validate(self):
 		is_server_auto_scaled = frappe.db.get_value("Server", self.primary_server, "scaled_up")
 		if is_server_auto_scaled:
-			frappe.throw("Benches are currently running on the secondary server!")
+			frappe.throw(_("Benches are currently running on the secondary server!"))
 
 		has_triggers = frappe.db.get_value(
 			"Prometheus Alert Rule",
@@ -348,7 +349,7 @@ class NFSVolumeDetachment(Document, AutoScaleStepFailureHandler, StepHandler):
 		)
 
 		if has_triggers:
-			frappe.throw("Please remove all auto scale triggers before dropping the secondary server")
+			frappe.throw(_("Please remove all auto scale triggers before dropping the secondary server"))
 
 	@frappe.whitelist()
 	def force_continue(self):

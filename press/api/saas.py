@@ -2,6 +2,7 @@ import json
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.core.utils import find
 
 from press.api.account import get_account_request_from_key
@@ -43,16 +44,20 @@ def account_request(
 	frappe.utils.validate_email_address(email, True)
 
 	if not check_subdomain_availability(subdomain, app):
-		frappe.throw(f"Subdomain {subdomain} is already taken. Please try with some other subdomain.")
+		frappe.throw(
+			_("Subdomain {0} is already taken. Please try with some other subdomain.").format(subdomain)
+		)
 
 	all_countries = frappe.db.get_all("Country", pluck="name")
 	country = find(all_countries, lambda x: x.lower() == country.lower())
 	if not country:
-		frappe.throw("{country} is not a valid country. Please choose the correct country value.")
+		frappe.throw(_("{country} is not a valid country. Please choose the correct country value."))
 
 	team = frappe.db.get_value("Team", {"user": email})
 	if team and frappe.db.exists("Invoice", {"team": team, "status": "Unpaid", "type": "Subscription"}):
-		frappe.throw(f"Account {email} already exists with unpaid invoices. Please clear the previous dues.")
+		frappe.throw(
+			_(f"Account {email} already exists with unpaid invoices. Please clear the previous dues.")
+		)
 
 	current_user = frappe.session.user
 	try:
@@ -209,7 +214,7 @@ def setup_account(key, business_data=None):
 	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")  # nosemgrep
+		frappe.throw(_("Invalid or Expired Key"))  # nosemgrep
 
 	capture(
 		"init_server_setup_account",
@@ -254,7 +259,7 @@ def headless_setup_account(key):
 	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")  # nosemgrep
+		frappe.throw(_("Invalid or Expired Key"))  # nosemgrep
 
 	capture(
 		"init_server_setup_account",
@@ -338,7 +343,7 @@ def get_site_status(key, app=None):
 	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")  # nosemgrep
+		frappe.throw(_("Invalid or Expired Key"))  # nosemgrep
 
 	domain = get_saas_domain(app) if app else get_erpnext_domain()
 
@@ -361,7 +366,7 @@ def get_site_url_and_sid(key, app=None):
 	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")  # nosemgrep
+		frappe.throw(_("Invalid or Expired Key"))  # nosemgrep
 
 	domain = get_saas_domain(app) if app else get_erpnext_domain()
 

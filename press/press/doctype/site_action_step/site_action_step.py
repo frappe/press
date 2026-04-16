@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 
@@ -33,7 +34,7 @@ class SiteActionStep(Document):
 
 	def validate(self):
 		if self.is_async_step and self.wait_for_completion:
-			frappe.throw("Cannot wait for completion on async kind of step")
+			frappe.throw(_("Cannot wait for completion on async kind of step"))
 
 	def get_steps(self):
 		if self.reference_doctype and self.reference_name:

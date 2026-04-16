@@ -6,6 +6,7 @@ import os
 import traceback
 
 import frappe
+from frappe import _
 
 PRESS_AUTH_KEY = "press-auth-logs"
 PRESS_AUTH_MAX_ENTRIES = 1000000
@@ -85,7 +86,7 @@ def hook():  # noqa: C901
 
 	if path in DENIED_PATHS:
 		log(path, user_type)
-		frappe.throw("Access not allowed for this URL", frappe.AuthenticationError)
+		frappe.throw(_("Access not allowed for this URL"), frappe.AuthenticationError)
 
 	for denied in DENIED_WILDCARD_PATHS:
 		if path.startswith(denied):
@@ -96,7 +97,7 @@ def hook():  # noqa: C901
 				return
 
 			log(path, user_type)
-			frappe.throw("Access not allowed for this URL", frappe.AuthenticationError)
+		frappe.throw(_("Access not allowed for this URL"), frappe.AuthenticationError)
 
 	return
 

@@ -7,6 +7,7 @@ import typing
 from typing import TYPE_CHECKING, Literal
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
@@ -173,7 +174,7 @@ class ServerSnapshot(Document):
 
 	def validate(self):
 		if self.provider != "AWS EC2":
-			frappe.throw("Only AWS Provider is supported for now")
+			frappe.throw(_("Only AWS Provider is supported for now"))
 
 	def before_insert(self):
 		# Ensure both the server and database server isn't archived
@@ -402,7 +403,7 @@ class ServerSnapshot(Document):
 			return
 
 		if self.locked:
-			frappe.throw("Snapshot is locked. Unlock the snapshot before deleting.")
+			frappe.throw(_("Snapshot is locked. Unlock the snapshot before deleting."))
 
 		for s in self.snapshots:
 			frappe.enqueue_doc(
@@ -422,7 +423,7 @@ class ServerSnapshot(Document):
 			return
 
 		if self.free:
-			frappe.throw("Non-chargeable snapshots cannot be locked")
+			frappe.throw(_("Non-chargeable snapshots cannot be locked"))
 
 		if now is None:
 			now = False
@@ -463,7 +464,7 @@ class ServerSnapshot(Document):
 			sites = []
 
 		if not frappe.db.get_single_value("Press Settings", "enable_server_snapshot_recovery"):
-			frappe.throw("Server Snapshot Recovery is currently disabled. Please try again later.")
+			frappe.throw(_("Server Snapshot Recovery is currently disabled. Please try again later."))
 
 		recover_record = frappe.get_doc(
 			{
@@ -496,7 +497,7 @@ class ServerSnapshot(Document):
 		press_job_arguments: dict[str, typing.Any] | None = None,
 	) -> str:
 		if server_type not in ["Server", "Database Server"]:
-			frappe.throw("Invalid server type. Must be 'Server' or 'Database Server'.")
+			frappe.throw(_("Invalid server type. Must be 'Server' or 'Database Server'."))
 
 		if create_subscription is None:
 			create_subscription = False
@@ -511,13 +512,13 @@ class ServerSnapshot(Document):
 			press_job_arguments = {}
 
 		if server_type != "Database Server" and provision_db_replica:
-			frappe.throw("Provisioning a database replica is only applicable for Database Servers.")
+			frappe.throw(_("Provisioning a database replica is only applicable for Database Servers."))
 
 		if provision_db_replica and not master_db_server:
-			frappe.throw("Master Database Server is required for provisioning a database replica.")
+			frappe.throw(_("Master Database Server is required for provisioning a database replica."))
 
 		if temporary_server and provision_db_replica:
-			frappe.throw("Temporary server cannot be used for provisioning a database replica.")
+			frappe.throw(_("Temporary server cannot be used for provisioning a database replica."))
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 		if not plan:
@@ -542,7 +543,7 @@ class ServerSnapshot(Document):
 		if database_server:
 			cluster.database_server = database_server
 
-		server, _ = cluster.create_server(
+		server, _result = cluster.create_server(
 			doctype=server_type,
 			title=title or self.name,
 			team=team,
@@ -579,14 +580,14 @@ class ServerSnapshot(Document):
 		use `create_server` method instead.
 		"""
 		if not self.database_server:
-			frappe.throw("Snapshot does not have a database server.")
+			frappe.throw(_("Snapshot does not have a database server."))
 
 		if self.status != "Completed":
-			frappe.throw("Please wait for the snapshot to be completed.")
+			frappe.throw(_("Please wait for the snapshot to be completed."))
 
 		database_server = frappe.get_doc("Database Server", self.database_server)
 		if database_server.status != "Active":
-			frappe.throw("Master Database Server must be active to create a replica.")
+			frappe.throw(_("Master Database Server must be active to create a replica."))
 
 		return self.create_server(
 			server_type="Database Server",
@@ -608,7 +609,7 @@ class ServerSnapshot(Document):
 
 		plan = frappe.get_value("Server Snapshot Plan", {"provider": self.provider, "enabled": 1}, "name")
 		if not plan:
-			frappe.throw(f"No active Server Snapshot Plan found for provider {self.provider}.")
+			frappe.throw(_("No active Server Snapshot Plan found for provider {0}.").format(self.provider))
 
 		if frappe.db.exists("Subscription", {"document_type": "Server Snapshot", "document_name": self.name}):
 			return

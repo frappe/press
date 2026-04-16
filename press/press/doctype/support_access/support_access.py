@@ -191,15 +191,15 @@ class SupportAccess(Document):
 		status_before = doc_before.status
 		status_after = self.status
 		if not self.is_valid_status_transition(status_before, status_after):
-			frappe.throw(f"Cannot change status from {status_before} to {status_after}")
+			frappe.throw(_("Cannot change status from {0} to {1}").format(status_before, status_after))
 		if status_after not in self.target_statuses:
-			frappe.throw("You are not allowed to set this status")
+			frappe.throw(_("You are not allowed to set this status"))
 
 	def validate_expiry(self):
 		if self.access_expired:
-			frappe.throw("Access expiry must be in the future")
+			frappe.throw(_("Access expiry must be in the future"))
 		if self.status == "Pending" and self.access_allowed_till:
-			frappe.throw("Pending requests cannot have access expiry")
+			frappe.throw(_("Pending requests cannot have access expiry"))
 
 	def validate_target_team(self):
 		teams = set()
@@ -207,7 +207,7 @@ class SupportAccess(Document):
 			team = frappe.get_value(resource.document_type, resource.document_name, "team")
 			teams.add(team)
 		if len(teams) != 1:
-			frappe.throw("Resources must belong to the same team")
+			frappe.throw(_("Resources must belong to the same team"))
 		self.target_team = teams.pop()
 
 	def validate_validity_change(self):

@@ -68,7 +68,9 @@ class PressWorkflow(Document):
 
 	def run(self):  # noqa: C901 - best to keep it in one place
 		if not self.linked_doctype or not self.linked_docname:
-			frappe.throw("Cannot run flow without linked_doctype and linked_docname", frappe.ValidationError)
+			frappe.throw(
+				frappe._("Cannot run flow without linked_doctype and linked_docname"), frappe.ValidationError
+			)
 			return
 
 		try:

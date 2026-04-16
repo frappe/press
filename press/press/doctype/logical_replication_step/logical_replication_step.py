@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 
@@ -31,4 +32,4 @@ class LogicalReplicationStep(Document):
 
 	def validate(self):
 		if self.is_async and self.wait_for_completion:
-			frappe.throw("Cannot wait for completion on async kind of step")
+			frappe.throw(_("Cannot wait for completion on async kind of step"))

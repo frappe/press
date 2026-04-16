@@ -1,9 +1,9 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-from typing import List
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from press.press.doctype.invoice.invoice import calculate_gst
@@ -19,7 +19,7 @@ class SaasAppPlan(Document):
 		dt = frappe.db.get_value("Site Plan", self.plan, "document_type")
 
 		if dt != "Saas App":
-			frappe.throw("The plan must be a Saas App plan.")
+			frappe.throw(_("The plan must be a Saas App plan."))
 
 	def get_total_amount(self, payment_option):
 		"""
@@ -34,9 +34,7 @@ class SaasAppPlan(Document):
 			amount = amount + calculate_gst(amount)
 
 		if payment_option == "Annual" and self.annual_discount:
-			amount -= (
-				self.annual_discount_inr if team.country == "India" else self.annual_discount_usd
-			)
+			amount -= self.annual_discount_inr if team.country == "India" else self.annual_discount_usd
 
 		return amount
 
@@ -46,10 +44,8 @@ class SaasAppPlan(Document):
 
 		site_plan = frappe.db.get_value("Site Plan", self.site_plan, "price_usd")
 		saas_plan = frappe.db.get_value("Site Plan", self.plan, "price_usd")
-		self.payout_percentage = 100 - float("{:.2f}".format((site_plan / saas_plan) * 100))
+		self.payout_percentage = 100 - float(f"{(site_plan / saas_plan) * 100:.2f}")
 
 
-def get_app_plan_features(app_plan: str) -> List[str]:
-	return frappe.get_all(
-		"Plan Feature", filters={"parent": app_plan}, pluck="description", order_by="idx"
-	)
+def get_app_plan_features(app_plan: str) -> list[str]:
+	return frappe.get_all("Plan Feature", filters={"parent": app_plan}, pluck="description", order_by="idx")

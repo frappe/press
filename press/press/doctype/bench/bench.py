@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
 import pytz
+from frappe import _
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
@@ -323,7 +324,7 @@ class Bench(Document):
 		self.update_config_with_rg_config(config)
 
 		if not (server_private_ip := frappe.db.get_value("Server", self.server, "private_ip")):
-			frappe.throw("Server must have a private IP to create Bench")  # nosemgrep
+			frappe.throw(_("Server must have a private IP to create Bench"))  # nosemgrep
 
 		bench_config = {
 			"docker_image": self.docker_image,
@@ -372,13 +373,13 @@ class Bench(Document):
 
 		if any([self.memory_high, self.memory_max, self.memory_swap]):
 			if not all([self.memory_high, self.memory_max, self.memory_swap]):
-				frappe.throw("All memory limits are required. Please set the memory limits for the bench.")
+				frappe.throw(_("All memory limits are required. Please set the memory limits for the bench."))
 
 			if self.memory_swap != -1 and (self.memory_max > self.memory_swap):
-				frappe.throw("Memory Swap needs to be greater than Memory Max")  # nosemgrep
+				frappe.throw(_("Memory Swap needs to be greater than Memory Max"))  # nosemgrep
 
 			if self.memory_high > self.memory_max:
-				frappe.throw("Memory Max needs to be greater than Memory High")  # nosemgrep
+				frappe.throw(_("Memory Max needs to be greater than Memory High"))  # nosemgrep
 
 		bench_config.update(self.get_limits())
 
@@ -725,7 +726,7 @@ class Bench(Document):
 	@frappe.whitelist()
 	def retry_bench(self):
 		if frappe.get_value("Deploy Candidate Build", self.build, "status") != "Success":
-			frappe.throw(f"Deploy Candidate Build {self.build} is not Active")  # nosemgrep
+			frappe.throw(_("Deploy Candidate Build {0} is not Active").format(self.build))  # nosemgrep
 
 		deploy_candidate_build: "DeployCandidateBuild" = frappe.get_doc("Deploy Candidate Build", self.build)
 		deploy_candidate_build._create_deploy([self.server])
@@ -1080,7 +1081,7 @@ class Bench(Document):
 			ignore_ifnull=True,
 			order_by="job_type",
 		):
-			frappe.throw("Bench is already archived", ArchiveBenchError)  # nosemgrep
+			frappe.throw(_("Bench is already archived"), ArchiveBenchError)  # nosemgrep
 
 	def check_ongoing_jobs(self):
 		frappe.db.commit()
@@ -1252,7 +1253,7 @@ class StagingSite(Site):
 	def __init__(self, bench: Bench):
 		plan = frappe.db.get_value("Press Settings", None, "staging_plan")
 		if not plan:
-			frappe.throw("Staging plan not set in settings")  # nosemgrep
+			frappe.throw(_("Staging plan not set in settings"))  # nosemgrep
 			log_error(title="Staging plan not set in settings")
 		super().__init__(
 			{

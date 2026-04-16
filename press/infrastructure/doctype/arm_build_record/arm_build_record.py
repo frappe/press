@@ -7,6 +7,7 @@ import json
 import typing
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from press.agent import Agent
@@ -117,7 +118,7 @@ class ARMBuildRecord(Document):
 
 		for image in self.arm_images:
 			if image.status != Status.SUCCESS.value:
-				frappe.throw("Some builds failed skipping image pull!", frappe.ValidationError)
+				frappe.throw(_("Some builds failed skipping image pull!"), frappe.ValidationError)
 			builds.append(image.build)
 
 		image_tags = frappe.db.get_all(

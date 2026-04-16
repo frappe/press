@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, ClassVar
 import frappe
 import frappe.utils
 import pytz
+from frappe import _
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import convert_utc_to_system_timezone
@@ -140,7 +141,7 @@ class SiteUpdate(Document):
 				filters={"group": self.group, "source": self.source_candidate},
 			)
 			if not differences:
-				frappe.throw("Could not find suitable Destination Bench", frappe.ValidationError)
+				frappe.throw(_("Could not find suitable Destination Bench"), frappe.ValidationError)
 
 			self.validate_destination_bench(differences)
 			self.validate_deploy_candidate_difference(differences)
@@ -174,7 +175,7 @@ class SiteUpdate(Document):
 				self.destination_bench = destination_bench.name
 				self.destination_candidate = destination_bench.candidate
 			except Exception:
-				frappe.throw("Could not find suitable Destination Bench", frappe.ValidationError)
+				frappe.throw(_("Could not find suitable Destination Bench"), frappe.ValidationError)
 
 	def validate_deploy_candidate_difference(self, differences):
 		try:
@@ -197,7 +198,7 @@ class SiteUpdate(Document):
 
 	def validate_pending_updates(self):
 		if self.has_pending_updates():
-			frappe.throw("An update is already pending for this site", frappe.ValidationError)
+			frappe.throw(_("An update is already pending for this site"), frappe.ValidationError)
 
 	@property
 	def triggered_by_user(self):
@@ -581,7 +582,7 @@ class SiteUpdate(Document):
 					return
 				if physical_backup_restoration_status != "Success":
 					# just to be safe
-					frappe.throw("Physical Backup Restoration is still in progress")
+					frappe.throw(_("Physical Backup Restoration is still in progress"))
 
 			# Attempt to move site to source bench
 
@@ -748,7 +749,7 @@ class SiteUpdate(Document):
 				if (
 					_status := frappe.db.get_value("Site Update", name, "status", for_update=True, wait=False)
 				) != "Scheduled":
-					frappe.throw(f"Cannot cancel a Site Update with status {_status}")
+					frappe.throw(_("Cannot cancel a Site Update with status {0}").format(_status))
 
 			except (frappe.QueryTimeoutError, frappe.QueryDeadlockError):
 				frappe.throw(

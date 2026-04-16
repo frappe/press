@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 import OpenSSL
+from frappe import _
 from frappe.model.document import Document
 from frappe.query_builder.functions import Date
 
@@ -71,7 +72,7 @@ class TLSCertificate(Document):
 	def validate(self):
 		if self.provider == "Other":
 			if not self.team:
-				frappe.throw("Team is mandatory for custom TLS certificates.")
+				frappe.throw(_("Team is mandatory for custom TLS certificates."))
 
 			self.configure_full_chain()
 			self.validate_key_length()
@@ -91,7 +92,9 @@ class TLSCertificate(Document):
 			return
 
 		if self.retry_count >= MANUAL_RETRY_LIMIT:
-			frappe.throw("Retry limit exceeded. Please check the error and try again.", TLSRetryLimitExceeded)
+			frappe.throw(
+				_("Retry limit exceeded. Please check the error and try again."), TLSRetryLimitExceeded
+			)
 		(
 			user,
 			session_data,
@@ -301,7 +304,7 @@ class TLSCertificate(Document):
 		except OpenSSL.SSL.Error as e:
 			self.error = repr(e)
 			log_error("TLS Key Certificate Association Exception", certificate=self.name)
-			frappe.throw("Private Key and Certificate do not match")
+			frappe.throw(_("Private Key and Certificate do not match"))
 		finally:
 			if self.error:
 				self.status = "Failure"
