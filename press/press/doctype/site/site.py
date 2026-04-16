@@ -5124,24 +5124,9 @@ def get_suspended_time(site: str):
 	)[0].creation
 
 
-def archive_suspended_site(site_dict: SiteToArchive):
-	archive_after_days = ARCHIVE_AFTER_SUSPEND_DAYS
-	suspended_days = frappe.utils.date_diff(frappe.utils.today(), get_suspended_time(site_dict.name))
-
-	if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
-		return
-
-	if suspended_days <= archive_after_days:
-		if suspended_days == archive_after_days - NOTIFY_BEFORE_ARCHIVAL_DAYS:
-			notify_site_scheduled_for_archival(site_dict.name)
-		return
-
-	site = Site("Site", site_dict.name)
-	site.archive(reason="Archive suspended site")
-
-
 def archive_suspended_sites():
-	archive_at_once = 5
+	archive_at_once = 6
+	archive_threshold = frappe.utils.add_to_date(frappe.utils.now(), days=-ARCHIVE_AFTER_SUSPEND_DAYS)
 
 	sites = frappe.qb.DocType("Site")
 	site_plans = frappe.qb.DocType("Site Plan")
@@ -5151,18 +5136,23 @@ def archive_suspended_sites():
 		.join(site_plans)
 		.on(sites.plan == site_plans.name)
 		.where(
-			(sites.status == "Suspended") & (sites.trial_end_date.isnull()) & (site_plans.is_trial_plan == 0)
+			(sites.status == "Suspended")
+			& (sites.suspended_at.isnotnull())
+			& (sites.suspended_at <= archive_threshold)
 		)
 		.select(sites.name, sites.team, sites.plan, sites.bench, site_plans.offsite_backups)
-		.orderby(sites.creation, order=frappe.qb.asc)
+		.orderby(sites.suspended_at, order=frappe.qb.asc)
 		.limit(archive_at_once)
 		.run(as_dict=True)
 	)
 
 	for site_dict in sites_to_drop:
 		try:
-			archive_suspended_site(site_dict)
-			frappe.db.commit()
+			if frappe.db.get_value("Bench", site_dict.bench, "managed_database_service"):
+				return
+
+			site = Site("Site", site_dict.name)
+			site.archive(reason="Archive suspended site")
 		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
 			frappe.db.rollback()
 		except Exception:
