@@ -168,7 +168,9 @@ class PressJob(WorkflowBuilder):
 
 	def start_workflow(self) -> str:
 		if self.status != "Pending":
-			frappe.throw("Only jobs with Pending status can be started")
+			frappe.throw(
+				"Only jobs with Pending status can be started.<br>Please wait and retry after some time."
+			)
 
 		if not hasattr(self, "execute"):
 			raise NotImplementedError("Press Job implementation must have an execute method")

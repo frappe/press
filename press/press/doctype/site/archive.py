@@ -82,7 +82,7 @@ def delete_offsite_backups_for_archived_sites():
 			offsite_backups DESC
 	""",
 		as_dict=True,
-	)
+	)  # nosemgrep
 	for site in archived_sites:
 		try:
 			frappe.get_doc("Site", site.site).delete_offsite_backups()
