@@ -74,7 +74,7 @@ const markAsRead = (row, togglePopover) => {
 		// requests tab needs to show both read/unread
 		// so dont set local state!!!
 		if (row.type !== 'Support Access') {
-			unreadNotificationsCount.setData((data) => data - 1);
+			if (row.read === 0) unreadNotificationsCount.setData((data) => data - 1);
 
 			resource.setData((data) => {
 				const newData = data.filter((d) => d.name !== row.name);
@@ -84,7 +84,9 @@ const markAsRead = (row, togglePopover) => {
 		}
 
 		if (row.type === 'Support Access') {
-			unreadSupportNotificationsCount.setData((data) => data - 1);
+			if (row.read === 0)
+				unreadSupportNotificationsCount.setData((data) => data - 1);
+
 			openSupportAccess(null, row.document_name);
 		}
 
