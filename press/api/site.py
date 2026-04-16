@@ -888,7 +888,12 @@ def get_release_group_policies_for_site(version: str | None = None, for_bench: s
 	if for_bench:
 		apps_in_bench = set(get_apps_in_bench(for_bench))
 
-	mandatory_apps = {app.app for app in get_app_from_policies(version, for_installation=True)}
+	assert version, "Version must be specified or derived from bench"
+
+	mandatory_apps = {
+		app["app"]
+		for app in get_app_from_policies(scope="Frappe Version", target=version, for_installation=True)
+	}
 	mandatory_apps = mandatory_apps.intersection(apps_in_bench)
 
 	return {"policies": list(mandatory_apps)}

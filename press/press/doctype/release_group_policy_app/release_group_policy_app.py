@@ -16,6 +16,7 @@ class ReleaseGroupPolicyApp(Document):
 
 		add_on_creation: DF.Check
 		app: DF.Link
+		for_updates: DF.Check
 		install_on_site_creation: DF.Check
 		parent: DF.Data
 		parentfield: DF.Data

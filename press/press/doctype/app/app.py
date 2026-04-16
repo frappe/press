@@ -321,7 +321,11 @@ def get_latest_release_of_app_from_source(app_source: AppSource) -> AppRelease |
 
 
 def get_app_from_policies(
-	version: str, for_creation: bool = False, for_installation: bool = False
+	scope: typing.Literal["Frappe Version", "Source", "App Release"],
+	target: str,
+	for_creation: bool = False,
+	for_installation: bool = False,
+	for_updates: bool = False,
 ) -> list[AppPolicyResult]:
 	"""Get all apps based on the policy results for a given version string"""
 	ReleaseGroupPolicy = frappe.qb.DocType("Release Group Policy")
@@ -331,7 +335,8 @@ def get_app_from_policies(
 		frappe.qb.from_(ReleaseGroupPolicy)
 		.join(ReleaseGroupPolicyApp)
 		.on(ReleaseGroupPolicyApp.parent == ReleaseGroupPolicy.name)
-		.where(ReleaseGroupPolicy.version == version)
+		.where(ReleaseGroupPolicy.scope == scope)
+		.where(ReleaseGroupPolicy.target == target)
 		.where(ReleaseGroupPolicy.status == "Active")
 		.select(ReleaseGroupPolicyApp.app, ReleaseGroupPolicyApp.source)
 	)
@@ -345,5 +350,8 @@ def get_app_from_policies(
 		policy_result = policy_result.where(
 			ReleaseGroupPolicyApp.install_on_site_creation == 1,
 		)
+
+	if for_updates:
+		policy_result = policy_result.where(ReleaseGroupPolicyApp.for_updates == 1)
 
 	return policy_result.run(as_dict=True)

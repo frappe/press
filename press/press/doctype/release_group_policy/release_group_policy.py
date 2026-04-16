@@ -20,7 +20,8 @@ class ReleaseGroupPolicy(Document):
 
 		policies: DF.Table[ReleaseGroupPolicyApp]
 		policy_name: DF.Data
+		scope: DF.Link
 		status: DF.Literal["Active", "Disabled"]
-		version: DF.Link
+		target: DF.DynamicLink | None
 	# end: auto-generated types
 	pass

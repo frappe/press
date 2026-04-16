@@ -6,8 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "policy_name",
+  "scope",
   "status",
-  "version",
+  "target",
   "policies"
  ],
  "fields": [
@@ -17,15 +18,6 @@
    "in_list_view": 1,
    "label": "Status",
    "options": "Active\nDisabled",
-   "reqd": 1
-  },
-  {
-   "description": "Release group versions to target",
-   "fieldname": "version",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Version",
-   "options": "Frappe Version",
    "reqd": 1
   },
   {
@@ -40,12 +32,27 @@
    "in_list_view": 1,
    "label": "Policy Name",
    "reqd": 1
+  },
+  {
+   "fieldname": "scope",
+   "fieldtype": "Link",
+   "label": "Scope",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "description": "Release group versions to target",
+   "fieldname": "target",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Target",
+   "options": "scope"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-15 20:10:17.494220",
+ "modified": "2026-04-16 13:55:11.029372",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group Policy",

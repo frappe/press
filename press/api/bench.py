@@ -203,7 +203,7 @@ def exists(title):
 @frappe.whitelist()
 def get_release_group_policy_for_bench(version: str):
 	"""Get the release group policy for a given version"""
-	return {"policies": get_app_from_policies(version, for_creation=True)}
+	return {"policies": get_app_from_policies(scope="Frappe Version", target=version, for_creation=True)}
 
 
 def get_app_versions_list(only_frappe=False):
