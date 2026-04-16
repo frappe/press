@@ -1856,4 +1856,18 @@ def identify_and_kill_zombie_benches(server: str, running_benches: list[str]):
 		frappe.log_error("Failed To Kill Zombie Benches", str(e))
 
 
+def get_apps_in_bench(bench_name: str):
+	"""Get a list of all apps added to the bench (might be quicker than a get_doc)"""
+	Bench = frappe.qb.DocType("Bench")
+	BenchApp = frappe.qb.DocType("Bench App")
+	return (
+		frappe.qb.from_(BenchApp)
+		.join(Bench)
+		.on(BenchApp.parent == Bench.name)
+		.where(Bench.name == bench_name)
+		.select(BenchApp.app)
+		.run(pluck=True)
+	)
+
+
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")

@@ -183,7 +183,7 @@ export default {
 	resources: {
 		releaseGroupPolicyApps() {
 			return {
-				url: 'press.api.bench.get_release_group_policy',
+				url: 'press.api.bench.get_release_group_policy_for_bench',
 				makeParams() {
 					return {
 						version: this.benchVersion,
@@ -242,7 +242,6 @@ export default {
 			// add policy apps
 			apps.push(
 				...this.releaseGroupPolicyApps.map((app) => {
-					console.log('here app ', app);
 					return {
 						name: app.app,
 						source: app.source,
