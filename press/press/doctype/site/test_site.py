@@ -31,16 +31,16 @@ from press.press.doctype.remote_file.test_remote_file import (
 from press.press.doctype.server.server import BaseServer, Server
 from press.press.doctype.site.site import (
 	ARCHIVE_AFTER_SUSPEND_DAYS,
+	NOTIFY_BEFORE_ARCHIVAL_DAYS,
 	Site,
 	archive_suspended_sites,
+	notify_sites_before_archival,
 	process_rename_site_job_update,
 	suspend_sites_exceeding_disk_usage_for_last_14_days,
 )
-from press.press.doctype.site_activity.test_site_activity import create_test_site_activity
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
-from press.saas.doctype.saas_settings.test_saas_settings import create_test_saas_settings
 from press.utils import get_current_team
 
 if typing.TYPE_CHECKING:
@@ -528,33 +528,41 @@ class TestSite(FrappeTestCase):
 
 	@patch("press.press.doctype.site.site.frappe.db.commit", new=Mock())
 	@patch("press.press.doctype.site.site.frappe.db.rollback", new=Mock())
-	def test_archive_suspended_sites_archives_only_sites_with_backup_suspended_longer_than_days(self):
-		offsite_backup_plan = create_test_plan(
-			"Site", price_usd=5.0, price_inr=375.0, plan_name="Offsite Backup plan", offsite_backups=True
+	@patch("frappe.sendmail", new=Mock())
+	def test_archive_suspended_sites_and_notify_before_archival(self):
+		site_to_notify_and_archive = create_test_site()
+		site_to_notify_and_archive.db_set("status", "Suspended")
+		site_to_notify_and_archive.db_set(
+			"suspended_at",
+			frappe.utils.add_days(
+				frappe.utils.now_datetime(),
+				-(ARCHIVE_AFTER_SUSPEND_DAYS - NOTIFY_BEFORE_ARCHIVAL_DAYS),
+			),
 		)
-		site = create_test_site(plan=offsite_backup_plan.name)
-		site.db_set("status", "Suspended")
-		site_activity = create_test_site_activity(site.name, "Suspend Site")
-		site_activity.db_set(
-			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS - 1)
-		)
-		site2 = create_test_site(plan=offsite_backup_plan.name)
-		site2.db_set("status", "Suspended")
-		site2_activity = create_test_site_activity(site2.name, "Suspend Site")
-		site2_activity.db_set(
-			"creation", frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS + 1)
-		)  # site2 suspended recently
-		site3 = create_test_site(plan=offsite_backup_plan.name)  # active site should not be archived
 
-		create_test_saas_settings(None, [create_test_app(), create_test_app("erpnext", "ERPNext")])
+		notify_sites_before_archival()
+		self.assertTrue(
+			frappe.db.exists(
+				"Site Activity",
+				{"site": site_to_notify_and_archive.name, "action": "Archive Notification"},
+			)
+		)
+
+		site_to_notify_and_archive.db_set(
+			"suspended_at",
+			frappe.utils.add_days(frappe.utils.now_datetime(), -ARCHIVE_AFTER_SUSPEND_DAYS - 1),
+		)
+
+		site_recent = create_test_site()
+		site_recent.db_set("status", "Suspended")
+		site_recent.db_set("suspended_at", frappe.utils.add_days(frappe.utils.now_datetime(), -3))
 
 		archive_suspended_sites()
-		site.reload()
-		site2.reload()
-		site3.reload()
-		self.assertEqual(site.status, "Pending")  # to be archived
-		self.assertEqual(site2.status, "Suspended")
-		self.assertEqual(site3.status, "Active")
+
+		site_to_notify_and_archive.reload()
+		site_recent.reload()
+		self.assertEqual(site_to_notify_and_archive.status, "Pending")  # site is being archived
+		self.assertEqual(site_recent.status, "Suspended")  # Do not archive recently suspended site
 
 	def test_site_usage_exceed_tracking(self):
 		team = create_test_team()
