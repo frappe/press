@@ -204,12 +204,12 @@ def check_recipients(recipients: str | list[str]):
 
 
 @frappe.whitelist(allow_guest=True)
-def send_mime_mail(data: dict[str, str]):
+def send_mime_mail(data: str):
 	"""
 	send api request to mailgun
 	"""
 	files = frappe._dict(frappe.request.files)
-	data_dict = json.loads(data["data"])
+	data_dict = json.loads(data)
 
 	validate_plan(data_dict["sk_mail"])
 
