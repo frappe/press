@@ -51,7 +51,7 @@ class SiteReplication(Document):
 		sites = frappe.get_all("Site", dict(status=["!=", "Archived"], name=new_sitename), pluck="name")
 
 		if sites:
-			frappe.throw(f"Site {self.new_site} already exists. Please choose another subdomain.")
+			frappe.throw(_("Site {0} already exists. Please choose another subdomain.").format(self.new_site))
 
 	def after_insert(self):
 		self.status = "Running"
