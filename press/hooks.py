@@ -242,6 +242,7 @@ scheduler_events = {
 		"press.saas.doctype.product_trial_request.product_trial_request.expire_long_pending_trial_requests",
 		"press.overrides.cleanup_ansible_tmp_files",
 		"press.press.doctype.site.site.archive_suspended_sites",
+		"press.press.doctype.site.site.notify_sites_before_archival",
 		"press.press.doctype.site.site.send_warning_mail_regarding_sites_exceeding_disk_usage",
 		"press.press.doctype.add_on_storage_log.add_on_storage_log.send_disk_extention_notification",
 		"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.expire_backups",
