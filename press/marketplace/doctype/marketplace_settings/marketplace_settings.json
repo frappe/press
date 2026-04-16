@@ -6,6 +6,8 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "general_section",
+  "enable_audit_actions",
   "featured_apps_section",
   "featured_apps",
   "release_auto_approval_section",
@@ -40,12 +42,24 @@
    "fieldtype": "Table",
    "label": "Auto Release Teams",
    "options": "Auto Release Team"
+  },
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "Audit Settings"
+  },
+  {
+   "default": "0",
+   "description": "Feature flag which gives power to the Marketplace Auditor to take actions based on audit results.",
+   "fieldname": "enable_audit_actions",
+   "fieldtype": "Check",
+   "label": "Enable Audit Actions"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-20 20:10:09.572230",
+ "modified": "2026-04-16 12:59:00.476717",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace Settings",
