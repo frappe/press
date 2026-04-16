@@ -74,3 +74,9 @@ def set_redirect(site_name: str, domain: str):
 @validate_secret_key
 def unset_redirect(site_name: str, domain: str):
 	frappe.get_doc("Site", site_name).unset_redirect(domain)
+
+
+@frappe.whitelist(allow_guest=True)
+@validate_secret_key
+def get_inbound_ip(site_name: str, domain: str):
+	return frappe.get_cached_doc("Site", site_name).inbound_ip
