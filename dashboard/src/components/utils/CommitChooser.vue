@@ -96,8 +96,7 @@
 </template>
 
 <script>
-import { Popover, Button, debounce } from 'frappe-ui';
-import FormControl from 'frappe-ui/src/components/FormControl/FormControl.vue';
+import { Popover, Button, debounce, FormControl } from 'frappe-ui';
 import { nextTick } from 'vue';
 
 export default {

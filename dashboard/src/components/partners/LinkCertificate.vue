@@ -99,7 +99,7 @@ const emailChange = debounce(async () => {
 		url: 'press.api.partner.check_certificate_exists',
 		params: {
 			email: userEmail.value,
-			type: certificateType.value,
+			certificate_type: certificateType.value,
 		},
 	});
 	if (response > 0) {
