@@ -71,6 +71,14 @@ class LastDeployInfo(TypedDict):
 	creation: datetime
 
 
+class MandatoryAppUpgradeInfo(TypedDict):
+	source: str
+	release: str
+
+
+MandatoryAppUpgrade = dict[str, MandatoryAppUpgradeInfo]
+
+
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -1248,6 +1256,37 @@ class ReleaseGroup(Document, TagHelpers):
 			)
 		return apps
 
+	def mandatory_app_upgrades(self) -> MandatoryAppUpgrade:
+		"""Returns a map of { app_name: { source, release, hash } } for enforced upgrades."""
+		app_sources = [app.source for app in self.apps]
+
+		# We query the child table directly to find any mandatory rules
+		# linked to 'Active' policies that match our current app sources.
+		# Adjust table names/fields as per your schema.
+		ReleaseGroupPolicy = frappe.qb.DocType("Release Group Policy")
+		ReleaseGroupPolicyApp = frappe.qb.DocType("Release Group Policy App")
+
+		policies = (
+			frappe.qb.from_(ReleaseGroupPolicy)
+			.join(ReleaseGroupPolicyApp)
+			.on(ReleaseGroupPolicyApp.parent == ReleaseGroupPolicy.name)
+			.where(ReleaseGroupPolicy.status == "Active")
+			.where(ReleaseGroupPolicy.scope == "App Source")
+			.where(ReleaseGroupPolicy.target.isin(app_sources))
+			.where(
+				ReleaseGroupPolicyApp.source.notin(app_sources)
+			)  # Only consider policies that target sources different from current ones
+			.select(
+				ReleaseGroupPolicyApp.app,
+				ReleaseGroupPolicyApp.source,
+				ReleaseGroupPolicyApp.release,
+			)
+			.run(as_dict=True)
+		)
+
+		# { 'frappe': {'source': '...', 'release': '...'} }
+		return {p["app"]: {"source": p["source"], "release": p["release"]} for p in policies}
+
 	def get_next_apps(self, current_apps) -> list[frappe._dict[str, str | datetime]]:  # noqa: C901
 		marketplace_app_sources = self.get_marketplace_app_sources()
 		current_team = get_current_team(True)
@@ -1310,7 +1349,34 @@ class ReleaseGroup(Document, TagHelpers):
 			pluck="source",
 		)
 
+		mandatory_upgrades = self.mandatory_app_upgrades()
+
 		for app in self.apps:
+			if app.app in mandatory_upgrades:
+				rule = mandatory_upgrades[app.app]
+				release = frappe.db.get_value(
+					"App Release",
+					rule["release"],
+					["name", "source", "public", "status", "hash", "message", "creation"],
+					as_dict=True,
+				)
+				release["is_yanked"] = False  # Mandatory releases cannot be yanked
+				release["is_mandatory"] = True  # For UI
+				next_apps.append(
+					frappe._dict(
+						{
+							"app": app.app,
+							"source": rule["source"],
+							"release": rule["release"],
+							"hash": release.hash,
+							"title": app.title,
+							"releases": [release],  # ONLY the mandatory release is shown
+							"is_mandatory": True,
+						}
+					)
+				)
+				continue
+
 			latest_app_release = None
 			latest_app_releases = find_all(latest_releases, lambda x: x.source == app.source)
 
