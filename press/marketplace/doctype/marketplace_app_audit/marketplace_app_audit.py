@@ -326,6 +326,11 @@ class MarketplaceAppAudit(Document):
 		)
 		publisher_email = frappe.db.get_value("Team", marketplace_app_team, "user")
 
+		cc = []
+		if frappe.db.get_single_value("Marketplace Settings", "send_report_to_reviewer"):
+			reviewer_email = frappe.db.get_value("User", frappe.session.user, "email")
+			cc = [reviewer_email]
+
 		failing_checks = []
 		for check in self.audit_checks:
 			if check.result in ("Fail", "Warn"):
@@ -350,6 +355,7 @@ class MarketplaceAppAudit(Document):
 
 		frappe.sendmail(
 			recipients=[publisher_email],
+			cc=cc,
 			subject=f"Marketplace Audit Report: {marketplace_app_title}",
 			args={
 				"app_title": marketplace_app_title,

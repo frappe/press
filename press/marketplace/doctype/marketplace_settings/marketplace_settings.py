@@ -21,6 +21,7 @@ class MarketplaceSettings(Document):
 		auto_release_teams: DF.Table[AutoReleaseTeam]
 		enable_audit_actions: DF.Check
 		featured_apps: DF.Table[FeaturedApp]
+		send_report_to_reviewer: DF.Check
 	# end: auto-generated types
 
 	pass
