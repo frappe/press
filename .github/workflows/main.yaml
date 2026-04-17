@@ -357,6 +357,10 @@ jobs:
       - name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@v3
 
+      - name: Build Dashboard
+        working-directory: /home/runner/frappe-bench/apps/press/dashboard
+        run: yarn && yarn build
+
       - name: Install Playwright browsers
         working-directory: /home/runner/frappe-bench/apps/press/dashboard
         run: npx playwright install chromium
