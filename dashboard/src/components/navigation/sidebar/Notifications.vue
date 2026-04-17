@@ -74,7 +74,7 @@ const markAsRead = (row, togglePopover) => {
 		// requests tab needs to show both read/unread
 		// so dont set local state!!!
 		if (row.type !== 'Support Access') {
-			unreadNotificationsCount.setData((data) => data - 1);
+			if (row.read === 0) unreadNotificationsCount.setData((data) => data - 1);
 
 			resource.setData((data) => {
 				const newData = data.filter((d) => d.name !== row.name);
@@ -84,7 +84,9 @@ const markAsRead = (row, togglePopover) => {
 		}
 
 		if (row.type === 'Support Access') {
-			unreadSupportNotificationsCount.setData((data) => data - 1);
+			if (row.read === 0)
+				unreadSupportNotificationsCount.setData((data) => data - 1);
+
 			openSupportAccess(null, row.document_name);
 		}
 
@@ -195,7 +197,7 @@ const tabs = [
 			<button
 				aria-label="Notifications btn"
 				@click="togglePopover"
-				class="flex items-center rounded px-2.5 py-1.5 md:px-3 md:py-2 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-3 w-full"
+				class="flex items-center rounded px-2 py-1.5 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-2 w-full"
 				:class="[
 					item.disabled ? 'pointer-events-none opacity-50' : '',
 					$attrs.class,
