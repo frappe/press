@@ -13,9 +13,8 @@ const onMac = isMac();
 	>
 		<LucideSearch class="size-4 text-ink-gray-6 mr-1" />
 		<span class="text-left mr-auto">Search</span>
-		<div class="flex items-center">
-			<span v-if="onMac" class="text-xs">⌘+K</span>
-			<span v-else class="text-xs">Ctrl+K</span>
-		</div>
+
+		<span v-if="onMac" class="text-xs">⌘ K</span>
+		<span v-else class="text-xs">Ctrl+K</span>
 	</button>
 </template>
