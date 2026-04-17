@@ -11,6 +11,6 @@ import { isMac } from '@/utils/device';
 	>
 		<LucideSearch class="size-4 text-ink-gray-6 mr-1" />
 		<span class="text-left mr-auto">Search</span>
-		<span class="text-xs"> {{ isMac() ? '⌘ K' : 'Ctrl+k' }}</span>
+		<span class="text-xs"> {{ isMac() ? '⌘ K' : 'Ctrl+K' }}</span>
 	</button>
 </template>
