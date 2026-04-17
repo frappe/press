@@ -186,7 +186,7 @@ export default {
 
 			appData.forEach((app) => {
 				if (!app.releases?.length) {
-					app.__disabled = true;
+					app.disabled = true;
 				}
 			});
 
