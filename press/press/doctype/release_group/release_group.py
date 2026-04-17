@@ -1368,7 +1368,7 @@ class ReleaseGroup(Document, TagHelpers):
 							"app": app.app,
 							"source": rule["source"],
 							"release": rule["release"],
-							"hash": release.hash,
+							"hash": release["hash"],
 							"title": app.title,
 							"releases": [release],  # ONLY the mandatory release is shown
 							"is_mandatory": True,
