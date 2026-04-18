@@ -26,6 +26,7 @@ from press.workflow_engine.utils import (
 )
 
 if TYPE_CHECKING:
+	from press.workflow_engine.doctype.press_workflow.press_workflow import PressWorkflow
 	from press.workflow_engine.doctype.press_workflow_task.press_workflow_task import (
 		PressWorkflowTask,
 	)
@@ -180,7 +181,7 @@ class WorkflowBuilder(Document):
 		current_workflow = getattr(frappe.flags, "current_press_workflow", None)
 		if current_workflow:
 			self.workflow_name = str(current_workflow)
-			self.workflow_doc = frappe.get_doc("Press Workflow", self.workflow_name)  # type: ignore
+			self.workflow_doc: PressWorkflow = frappe.get_doc("Press Workflow", self.workflow_name)  # type: ignore
 			if self.kv_store_type != "workflow_store":
 				# Store type is changing — discard any cached in-memory store.
 				self.kv_store_type = "workflow_store"

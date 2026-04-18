@@ -124,6 +124,21 @@ class PressJob(WorkflowBuilder):
 		self._virtual_machine_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return self._virtual_machine_doc  # type: ignore
 
+	@property
+	def steps(self) -> list[dict[str, str]]:
+		try:
+			workflow = frappe.get_last_doc("Press Workflow", {"linked_docname": self.name})
+			return [
+				{
+					"method": step.step_method,
+					"title": step.step_title,
+					"status": step.status,
+				}
+				for step in workflow.steps
+			]
+		except frappe.DoesNotExistError:
+			return []
+
 	def before_insert(self):
 		frappe.db.get_value(self.server_type, self.server, "status", for_update=True)
 		if existing_jobs := frappe.db.get_all(

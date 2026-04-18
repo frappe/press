@@ -146,7 +146,10 @@ class PressWorkflow(Document):
 			self.update_skipped_steps_status(save=False)
 			self.save()
 
-		self.execute_callback_in_background()
+		if frappe.flags.in_test:
+			self.execute_callback()
+		else:
+			self.execute_callback_in_background()
 
 	def execute_callback_in_background(self):
 		frappe.enqueue_doc(
