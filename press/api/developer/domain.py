@@ -1,7 +1,7 @@
 from functools import wraps
 
 import frappe
-from frappe.utils import find
+from frappe.core.utils import find
 
 from press.api.developer.marketplace import DeveloperApiHandler
 from press.utils.dns import check_dns_cname_a
