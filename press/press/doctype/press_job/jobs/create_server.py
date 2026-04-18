@@ -63,6 +63,8 @@ class CreateServerJob(PressJob):
 	@task
 	def provision_server(self):
 		machine = self.virtual_machine_doc
+		if machine.status != "Draft":
+			return
 		machine.provision()
 
 	@task

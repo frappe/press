@@ -206,3 +206,14 @@ class PressJob(WorkflowBuilder):
 
 		if hasattr(self, "on_press_job_failure"):
 			self.on_press_job_failure(workflow)
+
+	@frappe.whitelist()
+	def retry(self):
+		if self.status != "Failure":
+			frappe.throw("Only workflows in Failure state can be retried.")  # nosemgrep
+			return
+
+		self.status = "Pending"
+		self.save()
+		self.start_workflow()
+		frappe.db.commit()  # nosemgrep
