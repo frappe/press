@@ -162,12 +162,6 @@ class ReleasePipeline(WorkflowBuilder):
 	def release_group_doc(self) -> "ReleaseGroup":
 		return frappe.get_doc("Release Group", self.release_group)
 
-	@cached_property
-	def workflow_name(self) -> str:
-		return frappe.db.get_value(
-			"Press Workflow", {"linked_doctype": "Release Pipeline", "linked_docname": self.name}, "name"
-		)
-
 	@task
 	def validate_app_hashes(self, apps: list[dict[str, str]]):
 		"""Validate App Hashes"""
@@ -498,6 +492,7 @@ class ReleasePipeline(WorkflowBuilder):
 				# Wait for sometime for the secondary build to be created in case of any delays in build scheduling
 				self.defer_current_task(f"Waiting for secondary build to be created for {deploy_candidate}")
 
+			assert secondary_build, "Secondary build should be present for candidates requiring 2 builds"
 			self.monitor_pre_build_validation(secondary_build)
 			self.monitor_build_success(secondary_build)
 
