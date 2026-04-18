@@ -173,7 +173,7 @@ class TestReleasePipeline(FrappeTestCase):
 	@patch.object(DeployCandidateBuild, "_build", Mock())
 	@patch.object(ReleasePipeline, "monitor_pre_build_validation", mock_pre_build_validation_monitoring)
 	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
-	def test_dynamic_apps_additions(self):
+	def test_dynamic_apps_additions_and_bench_dependencies_upgrade(self):
 		parent_hash = frappe.mock("sha1")
 
 		for dep in self.test_release_group.dependencies:
@@ -260,7 +260,7 @@ class TestReleasePipeline(FrappeTestCase):
 		)
 
 	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
-	def test_implicit_dependency_addition(self):
+	def test_implicit_dependency_source_addition(self):
 		parent_hash = frappe.mock("sha1")
 
 		root_app = create_test_app("someapp")
