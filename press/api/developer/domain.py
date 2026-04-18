@@ -1,5 +1,3 @@
-from functools import wraps
-
 import frappe
 from frappe.core.utils import find
 
@@ -7,20 +5,13 @@ from press.api.developer.marketplace import DeveloperApiHandler
 from press.utils.dns import check_dns_cname_a
 
 
-def validate_secret_key(func):
-	"""Validate secret_key and inject site_name into the wrapped function."""
-
-	@wraps(func)
-	def wrapper(secret_key: str, **kwargs):
-		site_name = DeveloperApiHandler(secret_key).app_subscription_doc.site
-		return func(site_name=site_name, **kwargs)
-
-	return wrapper
+def get_site(secret_key: str) -> str:
+	return DeveloperApiHandler(secret_key).app_subscription_doc.site
 
 
 @frappe.whitelist(allow_guest=True)
-@validate_secret_key
-def get_domains(site_name: str) -> list:
+def get_domains(secret_key: str) -> list:
+	site_name = get_site(secret_key)
 	domains = frappe.get_all(
 		"Site Domain",
 		fields=["name", "domain", "status", "retry_count", "redirect_to_primary"],
@@ -35,48 +26,40 @@ def get_domains(site_name: str) -> list:
 
 
 @frappe.whitelist(allow_guest=True)
-@validate_secret_key
-def check_dns(site_name: str, domain: str) -> dict:
-	return check_dns_cname_a(site_name, domain)
+def check_dns(secret_key: str, domain: str) -> dict:
+	return check_dns_cname_a(get_site(secret_key), domain)
 
 
 @frappe.whitelist(allow_guest=True)
-@validate_secret_key
-def add_domain(site_name: str, domain: str):
-	frappe.get_doc("Site", site_name).add_domain(domain)
+def add_domain(secret_key: str, domain: str):
+	frappe.get_doc("Site", get_site(secret_key)).add_domain(domain)
 
 
 @frappe.whitelist(allow_guest=True)
-@validate_secret_key
-def remove_domain(site_name: str, domain: str):
-	frappe.get_doc("Site", site_name).remove_domain(domain)
+def remove_domain(secret_key: str, domain: str):
+	frappe.get_doc("Site", get_site(secret_key)).remove_domain(domain)
 
 
 @frappe.whitelist(allow_guest=True)
-@validate_secret_key
-def retry_add_domain(site_name: str, domain: str):
-	frappe.get_doc("Site", site_name).retry_add_domain(domain)
+def retry_add_domain(secret_key: str, domain: str):
+	frappe.get_doc("Site", get_site(secret_key)).retry_add_domain(domain)
 
 
 @frappe.whitelist(allow_guest=True)
-@validate_secret_key
-def set_host_name(site_name: str, domain: str):
-	frappe.get_doc("Site", site_name).set_host_name(domain)
+def set_host_name(secret_key: str, domain: str):
+	frappe.get_doc("Site", get_site(secret_key)).set_host_name(domain)
 
 
 @frappe.whitelist(allow_guest=True)
-@validate_secret_key
-def set_redirect(site_name: str, domain: str):
-	frappe.get_doc("Site", site_name).set_redirect(domain)
+def set_redirect(secret_key: str, domain: str):
+	frappe.get_doc("Site", get_site(secret_key)).set_redirect(domain)
 
 
 @frappe.whitelist(allow_guest=True)
-@validate_secret_key
-def unset_redirect(site_name: str, domain: str):
-	frappe.get_doc("Site", site_name).unset_redirect(domain)
+def unset_redirect(secret_key: str, domain: str):
+	frappe.get_doc("Site", get_site(secret_key)).unset_redirect(domain)
 
 
 @frappe.whitelist(allow_guest=True)
-@validate_secret_key
-def get_inbound_ip(site_name: str, domain: str):
-	return frappe.get_cached_doc("Site", site_name).inbound_ip
+def get_inbound_ip(secret_key: str) -> str:
+	return frappe.get_cached_doc("Site", get_site(secret_key)).inbound_ip
