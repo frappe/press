@@ -1,21 +1,17 @@
 <template>
 	<div
-		:class="`flex items-center justify-between rounded-md border border-${color}-200 bg-${color}-100 px-3.5 py-2.5`"
+		:class="`flex items-center justify-between rounded-md border border-${color}-300 bg-${color}-100 p-2`"
 	>
-		<div class="flex items-center">
+		<div class="flex items-center gap-2.5">
 			<lucide-alert-triangle
 				v-if="showIcon && (type === 'error' || type === 'warning')"
-				:class="`h-4 w-8 text-${color}-600`"
+				:class="`ml-1 size-4 text-${color}-600`"
 			/>
 			<lucide-info
 				v-if="showIcon && type === 'info'"
-				:class="`h-4 w-8 text-${color}-600`"
+				:class="`ml-1 size-4 text-${color}-600`"
 			/>
-			<div
-				:class="{ 'ml-3': showIcon }"
-				class="text-p-base font-medium text-gray-800"
-				v-html="title"
-			/>
+			<div class="prose-sm font-medium text-gray-800" v-html="title" />
 		</div>
 
 		<div class="flex items-center">
