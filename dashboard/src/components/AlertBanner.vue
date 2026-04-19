@@ -5,11 +5,11 @@
 		<div class="flex items-center gap-2.5">
 			<lucide-alert-triangle
 				v-if="showIcon && (type === 'error' || type === 'warning')"
-				:class="`ml-1 size-4 text-${color}-600`"
+				:class="`ml-1 size-4 text-${color}-600 shrink-0`"
 			/>
 			<lucide-info
 				v-if="showIcon && type === 'info'"
-				:class="`ml-1 size-4 text-${color}-600`"
+				:class="`ml-1 size-4 text-${color}-600 shrink-0`"
 			/>
 			<div class="prose-sm font-medium text-gray-800" v-html="title" />
 		</div>
