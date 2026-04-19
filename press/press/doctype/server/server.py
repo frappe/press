@@ -538,20 +538,11 @@ class BaseServer(Document, TagHelpers):
 	def _set_hostname_abbreviation(self):
 		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
 
-	def update_vm_if_present(self):
-		if not self.virtual_machine:
-			frappe.logger().debug(
-				f"Skipping VM update for {self.doctype} {self.name}: virtual_machine not set"
-			)
-			return
-
-		self.update_virtual_machine_name()
-
 	def after_insert(self):
 		if self.ip:
 			if self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted:
 				self.create_dns_record()
-				self.update_vm_if_present()
+				self.update_virtual_machine_name()
 
 		elif (
 			self.private_ip
@@ -560,7 +551,7 @@ class BaseServer(Document, TagHelpers):
 			and not frappe.flags.in_test
 		):
 			self.create_dns_record()
-			self.update_vm_if_present()
+			self.update_virtual_machine_name()
 
 	@frappe.whitelist()
 	def create_dns_record(self):
@@ -1193,6 +1184,8 @@ class BaseServer(Document, TagHelpers):
 		return find(machine.volumes, lambda v: v.device == "/dev/sda1")
 
 	def update_virtual_machine_name(self):
+		if not self.virtual_machine:
+			return
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
 
