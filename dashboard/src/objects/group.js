@@ -111,18 +111,6 @@ export default {
 				},
 			};
 		},
-		banner({ listResource: groups }) {
-			if (!groups.data?.length) {
-				return {
-					title: 'Learn how to create a new private bench and sites',
-					button: {
-						label: 'Read docs',
-						variant: 'outline',
-						link: 'https://docs.frappe.io/cloud/benches/create-new',
-					},
-				};
-			}
-		},
 	},
 	detail: {
 		titleField: 'title',
@@ -510,9 +498,7 @@ export default {
 								} else if (group.doc.deploy_information.update_available) {
 									let UpdateReleaseGroupDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/group/UpdateReleaseGroupDialog.vue'
-											),
+											import('../components/group/UpdateReleaseGroupDialog.vue'),
 									);
 									renderDialog(
 										h(UpdateReleaseGroupDialog, {
@@ -833,9 +819,7 @@ export default {
 								onClick() {
 									let ConfigEditorDialog = defineAsyncComponent(
 										() =>
-											import(
-												'../components/EnvironmentVariableEditorDialog.vue'
-											),
+											import('../components/EnvironmentVariableEditorDialog.vue'),
 									);
 									renderDialog(
 										h(ConfigEditorDialog, {
