@@ -1185,7 +1185,7 @@ class BaseServer(Document, TagHelpers):
 
 	def update_virtual_machine_name(self):
 		if not self.virtual_machine:
-			return
+			return None
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
 
