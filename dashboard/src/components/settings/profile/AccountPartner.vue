@@ -101,7 +101,7 @@
 				<div class="text-p-base pb-2">
 					This will remove the Partner associated with your account. Are you
 					sure you want to remove the Partner? <br /><br />
-					<div class="text-gray-800 bg-gray-200 p-2 rounded-md">
+					<div class="text-gray-800 bg-gray-200 p-3 rounded-md">
 						Your partner will no longer have access to your sites and servers
 						and will be removed as team member from your team.
 					</div>
