@@ -1234,8 +1234,8 @@ def branches(name: str):
 	installation_id = app_source.github_installation_id
 	repo_owner = app_source.repository_owner
 	repo_name = app_source.repository
-
-	return git_branches(repo_owner, repo_name, installation_id)
+	branches = git_branches(repo_owner, repo_name, installation_id)
+	return [f"{repo_owner}/{repo_name}/{branch['name']}" for branch in branches]
 
 
 @protected("Marketplace App")
@@ -1251,19 +1251,23 @@ def options_for_version(name: str):
 	frappe_version = frappe.get_all("Frappe Version", {"public": True}, pluck="name")
 	added_versions = frappe.get_all("Marketplace App Version", {"parent": name}, pluck="version")
 	app = frappe.db.get_value("Marketplace App", name, "app")
-	source = frappe.get_value("App Source", {"app": app, "team": get_current_team()})
-	branches_list = branches(source)
+	sources = frappe.get_all("App Source", {"app": app, "team": get_current_team()})
+
+	branches_list = []
+	for source in sources:
+		branches_list.append(branches(source))
+	branches_list = list(set(branches_list))
+
 	versions = list(set(frappe_version).difference(set(added_versions)))
-	branches_list = [branch["name"] for branch in branches_list]
 
 	return [{"version": version, "branch": branches_list} for version in versions]
 
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def add_version(name: str, branch: str, version: str):
+def add_version(name: str, repo_owner: str, repo_name: str, branch: str, version: str):
 	app = frappe.get_doc("Marketplace App", name)
-	app.add_version(version, branch)
+	app.add_version(version, repo_owner, repo_name, branch)
 
 
 @protected("Marketplace App")
