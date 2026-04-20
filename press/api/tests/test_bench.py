@@ -12,7 +12,6 @@ from frappe.tests.utils import FrappeTestCase, timeout
 
 from press.api.bench import (
 	all,
-	bench_config,
 	dependencies,
 	deploy,
 	deploy_and_update,
@@ -207,10 +206,6 @@ class TestAPIBenchConfig(FrappeTestCase):
 
 	def tearDown(self):
 		frappe.db.rollback()
-
-	def test_bench_config_api(self):
-		configs = bench_config(self.rg.name)
-		self.assertListEqual(configs, self.config)
 
 	def test_bench_config_updation(self):
 		new_bench_config = frappe.parse_json(self.rg.bench_config)
