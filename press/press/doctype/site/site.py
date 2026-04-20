@@ -2921,6 +2921,7 @@ class Site(Document, TagHelpers):
 			.orderby(benches.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
+
 		if host_on_shared_server:
 			bench_query = bench_query.where(servers.public == 1)
 			bench_query = bench_query.where(servers.use_for_new_sites == 1)
@@ -2944,8 +2945,10 @@ class Site(Document, TagHelpers):
 					f"Site can't be deployed on this release group {self.group} due to restrictions. Please try again later or choose a different release group."
 				)
 			bench_query = bench_query.where(benches.group == self.group)
+
 		if self.server:
 			bench_query = bench_query.where(servers.name == self.server)
+
 		return bench_query.run(as_dict=True)
 
 	def set_bench_for_server(self):
