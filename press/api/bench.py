@@ -2,18 +2,15 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
 
 import frappe
 import requests
 from frappe.core.utils import find, find_all
-from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import flt, sbool
 
 from press.api.github import branches, get_access_token
 from press.api.site import protected
-from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app.app import AppPolicyResult, get_app_from_policies
 from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.bench_update.bench_update import get_bench_update
@@ -32,7 +29,7 @@ from press.press.doctype.release_group.release_group import (
 )
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import (
-	get_app_tag,
+	SupervisorProcess,
 	get_current_team,
 	unique,
 )
@@ -41,7 +38,6 @@ if TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.bench.bench import Bench
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
-	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 	from press.press.doctype.release_pipeline.release_pipeline import ReleasePipeline
 
@@ -105,6 +101,25 @@ class VersionOptionsType(TypedDict):
 	status: str
 	default: int
 	apps: list[AppOptionsType]
+
+
+class AppSourceItem(TypedDict):
+	name: str
+	branch: str
+	repository: str
+	repository_owner: str
+	app: str
+	version: str
+
+
+class MarketplaceAppItem(TypedDict):
+	name: str
+	title: str
+	image: str
+	app: str
+	sources: list[AppSourceItem]
+	repo: str | None
+	total_installs: int
 
 
 @frappe.whitelist()
@@ -363,83 +378,7 @@ def format_config_value(group: str, c: frappe._dict):
 
 @frappe.whitelist()
 @protected("Release Group")
-def apps(name):
-	group = frappe.get_doc("Release Group", name)
-	apps = []
-	deployed_apps = frappe.db.get_all(
-		"Bench",
-		filters={"group": group.name, "status": ("!=", "Archived")},
-		fields=["`tabBench App`.app"],
-		pluck="app",
-	)
-	deployed_apps = unique(deployed_apps)
-	updates = deploy_information(name)
-
-	latest_bench = frappe.get_all(
-		"Bench",
-		filters={"group": group.name, "status": "Active"},
-		order_by="creation desc",
-		limit=1,
-		pluck="name",
-	)
-	if latest_bench:
-		latest_bench = latest_bench[0]
-	else:
-		latest_bench = None
-
-	latest_deployed_apps = frappe.get_all(
-		"Bench",
-		filters={"name": latest_bench},
-		fields=["`tabBench App`.app", "`tabBench App`.hash"],
-	)
-
-	for app in group.apps:
-		source = frappe.get_doc("App Source", app.source)
-		app = frappe.get_doc("App", app.app)
-		update_available = updates["update_available"] and find(
-			updates.apps, lambda x: x["app"] == app.name and x["update_available"]
-		)
-
-		latest_deployed_app = find(latest_deployed_apps, lambda x: x.app == app.name)
-		hash = latest_deployed_app.hash if latest_deployed_app else None
-		tag = get_app_tag(source.repository, source.repository_owner, hash)
-
-		marketplace_app_title = frappe.db.get_value("Marketplace App", app.name, "title")
-		app_title = marketplace_app_title or app.title
-
-		apps.append(
-			{
-				"name": app.name,
-				"frappe": app.frappe,
-				"title": app_title,
-				"branch": source.branch,
-				"repository_url": source.repository_url,
-				"repository": source.repository,
-				"repository_owner": source.repository_owner,
-				"tag": tag,
-				"hash": hash,
-				"deployed": app.name in deployed_apps,
-				"update_available": bool(update_available),
-				"last_github_poll_failed": source.last_github_poll_failed,
-			}
-		)
-	return apps
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def installable_apps(name):
-	release_group = frappe.get_doc("Release Group", name)
-	installed_apps = [app.app for app in release_group.apps]
-	versions = options()["versions"]
-	version = find(versions, lambda x: x["name"] == release_group.version)
-	apps = version["apps"] if version else []
-	return [app for app in apps if app["name"] not in installed_apps]
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def all_apps(name):
+def all_apps(name) -> list[MarketplaceAppItem]:
 	"""Return all apps in the marketplace that are not installed in the release group for adding new apps"""
 
 	release_group = frappe.get_doc("Release Group", name)
@@ -491,19 +430,13 @@ def all_apps(name):
 
 @frappe.whitelist()
 @protected("Release Group")
-def fetch_latest_app_update(name, app):
-	frappe.get_doc("Release Group", name).fetch_latest_app_update(app)
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def add_app(name, source, app):
+def add_app(name: str, source: str, app: str):
 	add_apps(name, [{"app": app, "source": source}])
 
 
 @frappe.whitelist()
 @protected("Release Group")
-def add_apps(name, apps):
+def add_apps(name: str, apps: list[dict[str, str]]):
 	release_group: "ReleaseGroup" = frappe.get_doc("Release Group", name)
 	for app in apps:
 		app_name, source = app.values()
@@ -511,112 +444,8 @@ def add_apps(name, apps):
 
 
 @frappe.whitelist()
-@protected("Release Group")
-def remove_app(name, app):
-	return frappe.get_doc("Release Group", name).remove_app(app)
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def versions(name):
-	Bench = frappe.qb.DocType("Bench")
-	Server = frappe.qb.DocType("Server")
-	deployed_versions = (
-		frappe.qb.from_(Bench)
-		.left_join(Server)
-		.on(Server.name == Bench.server)
-		.where((Bench.group == name) & (Bench.status != "Archived"))
-		.groupby(Bench.name)
-		.select(Bench.name, Bench.status, Bench.is_ssh_proxy_setup, Server.proxy_server)
-		.orderby(Bench.creation, order=frappe.qb.desc)
-		.run(as_dict=True)
-	)
-
-	rg_version = frappe.db.get_value("Release Group", name, "version")
-
-	sites_in_group_details = frappe.db.get_all(
-		"Site",
-		filters={
-			"group": name,
-			"status": ("not in", ("Archived", "Suspended")),
-			"is_standby": 0,
-		},
-		fields=["name", "status", "cluster", "plan", "creation", "bench"],
-	)
-
-	if sites_in_group_details:
-		Cluster = frappe.qb.DocType("Cluster")
-		cluster_data = (
-			frappe.qb.from_(Cluster)
-			.select(Cluster.name, Cluster.title, Cluster.image)
-			.where(Cluster.name.isin([site.cluster for site in sites_in_group_details]))
-			.run(as_dict=True)
-		)
-
-		Plan = frappe.qb.DocType("Site Plan")
-		plan_data = (
-			frappe.qb.from_(Plan)
-			.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
-			.where(Plan.name.isin([site.plan for site in sites_in_group_details]))
-			.run(as_dict=True)
-		)
-
-		ResourceTag = frappe.qb.DocType("Resource Tag")
-		tag_data = (
-			frappe.qb.from_(ResourceTag)
-			.select(ResourceTag.tag_name, ResourceTag.parent)
-			.where(ResourceTag.parent.isin([site.name for site in sites_in_group_details]))
-			.run(as_dict=True)
-		)
-	else:
-		cluster_data = plan_data = tag_data = {}
-
-	for version in deployed_versions:
-		version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
-		version.version = rg_version
-		for site in version.sites:
-			site.version = rg_version
-			site.server_region_info = find(cluster_data, lambda x: x.name == site.cluster)
-			site.plan = find(plan_data, lambda x: x.name == site.plan)
-			tags = find_all(tag_data, lambda x: x.parent == site.name)
-			site.tags = [tag.tag_name for tag in tags]
-
-		version.deployed_on = frappe.db.get_value(
-			"Agent Job",
-			{"bench": version.name, "job_type": "New Bench", "status": "Success"},
-			"end",
-		)
-
-	return deployed_versions
-
-
-@frappe.whitelist()
 @protected("Bench")
-def get_installed_apps_in_version(name):
-	apps = frappe.db.get_all(
-		"Bench App",
-		{"parent": name},
-		["name", "app", "hash", "source"],
-		order_by="idx",
-	)
-	for app in apps:
-		app.update(
-			frappe.db.get_value(
-				"App Source",
-				app.source,
-				("branch", "repository", "repository_owner", "repository_url"),
-				as_dict=1,
-				cache=True,
-			)
-		)
-		app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
-
-	return apps
-
-
-@frappe.whitelist()
-@protected("Bench")
-def get_processes(name):
+def get_processes(name: str) -> list[SupervisorProcess] | list:
 	bench: "Bench" = frappe.get_doc("Bench", name)
 	if bench.status != "Active" and bench.status != "Broken":
 		return []
@@ -626,81 +455,7 @@ def get_processes(name):
 
 @frappe.whitelist()
 @protected("Release Group")
-def candidates(filters=None, order_by=None, limit_start=None, limit_page_length=None):
-	# TODO: Status is redundant here.
-	result = frappe.get_all(
-		"Deploy Candidate",
-		["name", "creation", "status"],
-		{"group": filters["group"], "status": ("!=", "Draft")},
-		order_by=order_by or "creation desc",
-		start=limit_start,
-		limit=limit_page_length,
-	)
-	candidates = OrderedDict()
-	for d in result:
-		candidates.setdefault(d.name, {})
-		candidates[d.name].update(d)
-		dc_apps = frappe.get_all(
-			"Deploy Candidate App",
-			filters={"parent": d.name},
-			pluck="app",
-			order_by="creation desc",
-		)
-		candidates[d.name]["apps"] = dc_apps
-
-	return candidates.values()
-
-
-@frappe.whitelist()
-@protected("Deploy Candidate")
-def candidate(name: str) -> dict | None:
-	if not name:
-		return None
-
-	candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", name)
-	jobs = []
-	deploys = frappe.get_all("Deploy", {"candidate": name}, limit=1)
-	if deploys:
-		deploy = frappe.get_doc("Deploy", deploys[0].name)
-		for bench in deploy.benches:
-			if not bench.bench:
-				continue
-			job = frappe.get_all(
-				"Agent Job",
-				["name", "status", "end", "duration", "bench"],
-				{"bench": bench.bench, "job_type": "New Bench"},
-				limit=1,
-			) or [{}]
-			jobs.append(job[0])
-
-	# Taking the latest Build for that Candidate
-	build_name = frappe.get_value("Deploy Candidate Build", {"deploy_candidate": name})
-	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", build_name)
-
-	return {
-		"name": candidate.name,
-		"status": build.status,
-		"creation": build.creation,
-		"deployed": False,
-		"build_steps": build.build_steps,
-		"build_start": build.build_start,
-		"build_end": build.build_end,
-		"build_duration": build.build_duration,
-		"apps": build.candidate.apps,
-		"jobs": jobs,
-	}
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def deploy_information(name):
-	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-	return rg.deploy_information()
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def deploy(name, apps):
+def deploy(name: str, apps: list[dict[str, str]]) -> str:
 	team = get_current_team(True)
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
@@ -710,7 +465,7 @@ def deploy(name, apps):
 	if rg.deploy_in_progress:
 		frappe.throw("A deploy for this bench is already in progress")
 
-	candidate = rg.create_deploy_candidate(apps)
+	candidate = rg.create_deploy_candidate(apps_to_update=apps)
 	deploy_candidate_build = candidate.schedule_build_and_deploy()
 
 	return deploy_candidate_build["name"]
@@ -750,7 +505,7 @@ def deploy_and_update(
 	apps: list,
 	sites: list | None = None,
 	run_will_fail_check: bool = True,
-):
+) -> str | None:
 	use_new_deploy_flow = frappe.db.get_single_value("Press Settings", "use_new_deploy_flow") or 0
 
 	if not use_new_deploy_flow:
@@ -787,7 +542,7 @@ def update_inplace(
 	name: str,
 	apps: list,
 	sites: list,
-):
+) -> str:
 	validate_app_hashes(apps)
 	# Returns name of the Agent Job name that runs the inplace update
 	return get_bench_update(
@@ -796,58 +551,6 @@ def update_inplace(
 		sites,
 		True,
 	).update_inplace()
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def create_deploy_candidate(name, apps_to_ignore=None):
-	apps_to_ignore = [] if apps_to_ignore is None else apps_to_ignore
-	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-	return rg.create_deploy_candidate(apps_to_ignore)
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
-	benches = frappe.get_all("Bench", {"group": filters["name"]}, pluck="name")
-	if benches:
-		jobs = frappe.get_all(
-			"Agent Job",
-			fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
-			filters={"bench": ("in", benches)},
-			order_by=order_by or "creation desc",
-			start=limit_start,
-			limit=limit_page_length,
-			ignore_ifnull=True,
-		)
-		for job in jobs:
-			job["status"] = "Pending" if job["status"] == "Undelivered" else job["status"]
-	else:
-		jobs = []
-	return jobs
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def running_jobs(name):
-	benches = frappe.get_all("Bench", {"group": name}, pluck="name")
-	jobs = frappe.get_all(
-		"Agent Job",
-		filters={"status": ("in", ("Pending", "Running")), "bench": ("in", benches)},
-	)
-	return [job_detail(job.name) for job in jobs]
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def recent_deploys(name):
-	return frappe.get_all(
-		"Deploy Candidate",
-		["name", "creation"],
-		{"group": name, "status": ("!=", "Draft")},
-		order_by="creation desc",
-		limit=3,
-	)
 
 
 @frappe.whitelist()
@@ -879,7 +582,7 @@ def branch_list(name: str, app: str) -> list[dict]:
 
 @frappe.whitelist()
 @protected("Release Group")
-def validate_branch(name: str, app: str, branch: str):
+def validate_branch(name: str, app: str, branch: str) -> dict | None:
 	"""Validates whether a branch is available for the `app`"""
 	release_group = frappe.get_doc("Release Group", name)
 	app_source = release_group.get_app_source(app)
@@ -944,17 +647,7 @@ def belongs_to_current_team(app: str) -> bool:
 
 @frappe.whitelist()
 @protected("Release Group")
-def regions(name):
-	rg = frappe.get_doc("Release Group", name)
-	cluster_names = rg.get_clusters()
-	return frappe.get_all(
-		"Cluster", fields=["name", "title", "image"], filters={"name": ("in", cluster_names)}
-	)
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def available_regions(name):
+def available_regions(name: str) -> list[dict[str, str]]:
 	rg = frappe.get_doc("Release Group", name)
 	cluster_names = rg.get_clusters()
 	return Cluster.get_all_for_new_bench({"name": ("not in", cluster_names)})
@@ -962,54 +655,7 @@ def available_regions(name):
 
 @frappe.whitelist()
 @protected("Release Group")
-def add_region(name, region):
-	frappe.get_doc("Release Group", name).add_region(region)
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def archive(name):
-	benches = frappe.get_all("Bench", filters={"group": name, "status": "Active"}, pluck="name")
-
-	for bench in benches:
-		frappe.get_doc("Bench", bench).archive()
-
-	group = frappe.get_doc("Release Group", name)
-	new_name = f"{group.title}.archived"
-	group.title = append_number_if_name_exists("Release Group", new_name, "title", separator=".")
-	group.enabled = 0
-	group.save()
-
-
-@frappe.whitelist()
-@protected("Bench")
-def restart(name):
-	frappe.get_doc("Bench", name).restart()
-
-
-@frappe.whitelist()
-@protected("Bench")
-def rebuild(name):
-	frappe.get_doc("Bench", name).rebuild()
-
-
-@frappe.whitelist()
-@protected("Bench")
-def update(name):
-	frappe.get_doc("Bench", name).update_all_sites()
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def update_all_sites(name):
-	benches = frappe.get_all("Bench", {"group": name, "status": "Active"})
-	for bench in benches:
-		frappe.get_cached_doc("Bench", bench).update_all_sites()
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def logs(name, bench):
+def logs(name: str, bench: str) -> list[dict[str, str | float]] | None:
 	from press.agent import AgentRequestSkippedException
 
 	if frappe.db.get_value("Bench", bench, "group") != name:
@@ -1023,39 +669,10 @@ def logs(name, bench):
 
 @frappe.whitelist()
 @protected("Release Group")
-def log(name, bench, log):
+def log(name: str, bench: str, log: str) -> dict[str, str]:
 	if frappe.db.get_value("Bench", bench, "group") != name:
 		frappe.throw(f"Release Group name {name} does not match Bench Release Group")
 	return frappe.get_doc("Bench", bench).get_server_log(log)
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def certificate(name):
-	return frappe.get_doc("Release Group", name).get_certificate()
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def generate_certificate(name):
-	return frappe.get_doc("Release Group", name).generate_certificate()
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def get_title_and_creation(name):
-	result = frappe.db.get_value("Release Group", name, ["title", "creation"], as_dict=True)
-	server = frappe.get_all(
-		"Release Group Server", {"parent": name}, pluck="server", order_by="idx asc", limit=1
-	)[0]
-	result["team"] = frappe.db.get_value("Server", server, "team")
-	return result
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def rename(name, title):
-	return frappe.db.set_value("Release Group", name, "title", title)
 
 
 @frappe.whitelist()
@@ -1082,7 +699,7 @@ def fail_build(dn: str):
 
 @frappe.whitelist()
 @protected("Release Group")
-def fail_and_redeploy(name: str, dc_name: str):
+def fail_and_redeploy(name: str, dc_name: str) -> str | None:
 	res = fail_and_redeploy_build(dc_name)
 
 	# If failed error is True
@@ -1198,7 +815,7 @@ def search_releases(
 	query: str | None = None,
 	limit: int = 10,
 	current_release: str | None = None,
-):
+) -> list[dict[str, str]]:
 	if not query:
 		return []
 
