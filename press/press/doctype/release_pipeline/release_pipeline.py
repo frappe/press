@@ -442,11 +442,6 @@ class ReleasePipeline(WorkflowBuilder):
 			self.validate_server_storages()
 			self.validate_auto_scales_on_servers()
 		except (frappe.ValidationError, InsufficientSpaceOnServer) as e:
-			frappe.publish_realtime(
-				"release_pipeline_update",
-				doctype="Release Pipeline",
-				message={"status": "failure", "group": self.release_group},
-			)
 			raise ReleasePipelineFailure(str(e)) from e
 
 	@task
@@ -642,6 +637,12 @@ class ReleasePipeline(WorkflowBuilder):
 			self.monitor_bench_creation(primary_build)
 
 		except ReleasePipelineFailure:
+			# Just in case, make sure that we mark the pipeline as failed and notify the frontend to stop listening for deploy updates
+			frappe.publish_realtime(
+				"release_pipeline_update",
+				doctype="Release Pipeline",
+				message={"status": "failure", "group": self.release_group},
+			)
 			self.update_pipeline_status("Failure")
 
 		workflow_status = frappe.db.get_value("Press Workflow", self.workflow_name, "status")
