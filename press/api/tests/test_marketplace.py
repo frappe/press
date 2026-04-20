@@ -310,13 +310,15 @@ class TestAPIMarketplace(FrappeTestCase):
 
 	def test_add_version(self):
 		old_versions = len(self.marketplace_app.sources)
-		add_version(self.marketplace_app.name, "develop", "Nightly")
+		repo_owner, repo_name = self.app_source.repository_url.rstrip("/").split("/")[-2:]
+		add_version(self.marketplace_app.name, repo_owner, repo_name, "develop", "Nightly")
 		self.marketplace_app.reload()
 		self.assertEqual(old_versions + 1, len(self.marketplace_app.sources))
 
 	def test_remove_version(self):
 		old_versions = len(self.marketplace_app.sources)
-		add_version(self.marketplace_app.name, "develop", "Nightly")
+		repo_owner, repo_name = self.app_source.repository_url.rstrip("/").split("/")[-2:]
+		add_version(self.marketplace_app.name, repo_owner, repo_name, "develop", "Nightly")
 		remove_version(self.marketplace_app.name, "Nightly")
 		self.marketplace_app.reload()
 		self.assertEqual(old_versions, len(self.marketplace_app.sources))
