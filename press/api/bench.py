@@ -28,12 +28,7 @@ from press.press.doctype.release_group.release_group import (
 	new_release_group,
 )
 from press.press.doctype.team.team import get_child_team_members
-from press.utils import (
-	SupervisorProcess,
-	get_app_tag,
-	get_current_team,
-	unique,
-)
+from press.utils import SupervisorProcess, get_app_tag, get_client_blacklisted_keys, get_current_team, unique
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
@@ -849,6 +844,32 @@ def search_releases(
 def deploy_information(name):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	return rg.deploy_information()
+
+
+def update_config(name, config):
+	sanitized_common_site_config, sanitized_bench_config = [], []
+	bench_config_keys = ["http_timeout"]
+
+	config = frappe.parse_json(config)
+	config = [frappe._dict(c) for c in config]
+
+	for c in config:
+		if c.key in get_client_blacklisted_keys():
+			continue
+
+		if frappe.db.exists("Site Config Key", c.key):
+			c.type = frappe.db.get_value("Site Config Key", c.key, "type")
+		format_config_value(name, c)
+
+		if c.key in bench_config_keys:
+			sanitized_bench_config.append(c)
+		else:
+			sanitized_common_site_config.append(c)
+
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	rg.update_config_in_release_group(sanitized_common_site_config, sanitized_bench_config)
+	rg.update_benches_config()
+	return list(filter(lambda x: not x.internal, rg.common_site_config_table))
 
 
 def apps(name):
