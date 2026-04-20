@@ -81,6 +81,7 @@ func main() {
 
 	windows := newMetricWindows(cfg.WindowSize)
 	cache := &snapshotCache{}
+	coredumpState := &coredumpTracker{}
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -112,8 +113,9 @@ func main() {
 				}
 			}
 
-			if runCheck(cfg, creds, windows, cache) {
+			if runCheck(cfg, creds, windows, cache, coredumpState) {
 				recoveryTimestamps = append(recoveryTimestamps, time.Now())
+				coredumpState.consecutiveWarnings = 0
 				cooldownUntil = time.Now().Add(cfg.CooldownAfterRecovery)
 				slog.Info("entering cooldown", "until", cooldownUntil.Format(time.RFC3339))
 			}
@@ -164,9 +166,10 @@ func printHelp() {
 	fmt.Println("When run without arguments, the monitor runs in the foreground.")
 }
 
-func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snapshotCache) bool {
+func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snapshotCache, cdState *coredumpTracker) bool {
 	var frozenCheck *frozenState
 	var triggers []string
+	var hasIOFreeze bool
 
 	if psiCPU, err := checkPSI("cpu"); err == nil {
 		w.psiCPU.Push(psiCPU, cfg.PSICPUThreshold)
@@ -230,6 +233,7 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 
 	if iowaitErr == nil && iowaitVal >= cfg.IOWaitThreshold {
 		if checkIOFreeze(cfg.IOFreezeTimeout) {
+			hasIOFreeze = true
 			triggers = append(triggers, "io_freeze")
 		}
 	}
@@ -273,6 +277,7 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 	logSpikes(cfg, w)
 
 	if len(triggers) == 0 {
+		cdState.consecutiveWarnings = 0
 		return false
 	}
 
@@ -285,10 +290,58 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 
 	slog.Warn("pressure detected", "triggers", triggers)
 
-	dbHealth := checkMariaDBHealth(creds)
-	if dbHealth.Reachable && !dbHealth.IsStuck {
-		slog.Warn("pressure detected but mariadb is healthy, skipping recovery", "triggers", triggers)
-		return false
+	// When the machine or I/O is frozen, DB health checks are unreliable (a TCP
+	// handshake may still succeed) and can block for minutes. Skip the gate.
+	machineFrozen := frozenCheck != nil && frozenCheck.frozen
+	var dbHealth DBHealth
+	if machineFrozen || hasIOFreeze {
+		if machineFrozen {
+			slog.Warn("machine is frozen, skipping DB health check", "reason", frozenCheck.reason)
+		} else {
+			slog.Warn("I/O is frozen, skipping DB health check")
+		}
+		dbHealth = DBHealth{Reachable: false}
+	} else {
+		dbHealth = checkMariaDBHealth(creds)
+		if dbHealth.Reachable && !dbHealth.IsStuck {
+			now := time.Now()
+			// Reset the warning bucket if the window has elapsed.
+			if cdState.consecutiveWarnings > 0 && now.Sub(cdState.firstWarning) >= cfg.CoredumpPreemptiveWindow {
+				slog.Debug("preemptive coredump window expired, resetting counter",
+					"elapsed", now.Sub(cdState.firstWarning).Round(time.Second),
+					"window", cfg.CoredumpPreemptiveWindow,
+				)
+				cdState.consecutiveWarnings = 0
+			}
+			if cdState.consecutiveWarnings == 0 {
+				cdState.firstWarning = now
+			}
+			cdState.consecutiveWarnings++
+			slog.Warn("pressure detected but mariadb is healthy, skipping recovery",
+				"triggers", triggers,
+				"consecutive_warnings", cdState.consecutiveWarnings,
+			)
+
+			// Preemptive coredump: DB is still healthy, gcore will work.
+			// Take a dump now before the machine degrades further.
+			// Require at least 3 triggers to avoid dumping on minor pressure.
+			if cfg.CoredumpEnabled && cfg.CoredumpPreemptive &&
+				len(triggers) >= 3 &&
+				cdState.consecutiveWarnings >= cfg.CoredumpPreemptiveAfter &&
+				time.Since(cdState.lastCoredump) >= cfg.CoredumpCooldown {
+				slog.Warn("taking preemptive coredump, sustained pressure with healthy DB",
+					"consecutive_warnings", cdState.consecutiveWarnings,
+					"threshold", cfg.CoredumpPreemptiveAfter,
+				)
+				if err := takeCoredump(cfg); err != nil {
+					slog.Warn("preemptive coredump failed", "error", err)
+				} else {
+					cdState.lastCoredump = time.Now()
+				}
+			}
+
+			return false
+		}
 	}
 
 	if cfg.MaxRecoveriesPerHour > 0 && recentRecoveryCount(cfg.MaxRecoveriesPerHour) {
@@ -300,6 +353,12 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 	}
 
 	return performRecovery(cfg, triggers, dbHealth, creds, frozenCheck)
+}
+
+type coredumpTracker struct {
+	consecutiveWarnings int
+	firstWarning        time.Time
+	lastCoredump        time.Time
 }
 
 type frozenState struct {
