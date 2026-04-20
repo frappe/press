@@ -37,7 +37,7 @@ BENCH_TRANSITION_STATES = ["Pending", "Installing", "Updating"]
 # Keeping this here now, will eventually move all notifications logic here.
 SKIP_NOTIFICATIONS_FOR = ["orchestrate_build_monitoring", "monitor_bench_creation"]
 
-KNOWN_PYTHON_VERSIONS = ["3.8.0", "3.9.0", "3.10.0", "3.11.0", "3.12.0", "3.13.0", "3.14.0"]
+KNOWN_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
 
 class FailedBenchJobs(TypedDict):

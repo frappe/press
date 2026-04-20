@@ -12,10 +12,21 @@ const test = base.extend({
     
     const coverage = await page.coverage.stopJSCoverage();
 
-    const pathToSource = path.join(
+    const assetsDir = path.join(
       process.cwd(),
-      "../../../sites/assets/press/dashboard/assets/index-",
+      "../../../sites/assets/press/dashboard/assets",
     );
+
+    // Dynamically find the entry file
+    const entryFile = fs
+      .readdirSync(assetsDir)
+      .find((f) => f.startsWith("index-") && f.endsWith(".js"));
+
+    if (!entryFile) {
+      throw new Error(`Cant find entry JS file in ${assetsDir}`);
+    }
+
+    const pathToSource = path.join(assetsDir, entryFile);
 
     for (const entry of coverage) {
       const converter = v8ToIstanbul(

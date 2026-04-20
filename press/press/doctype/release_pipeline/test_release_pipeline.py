@@ -173,7 +173,7 @@ class TestReleasePipeline(FrappeTestCase):
 	@patch.object(DeployCandidateBuild, "_build", Mock())
 	@patch.object(ReleasePipeline, "monitor_pre_build_validation", mock_pre_build_validation_monitoring)
 	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
-	def test_dynamic_apps_additions(self):
+	def test_dynamic_apps_additions_and_bench_dependencies_upgrade(self):
 		parent_hash = frappe.mock("sha1")
 
 		for dep in self.test_release_group.dependencies:
@@ -242,16 +242,16 @@ class TestReleasePipeline(FrappeTestCase):
 		for dependency in test_release_group.dependencies:
 			if dependency.dependency == "PYTHON_VERSION":
 				self.assertEqual(
-					dependency.version, "3.14.0"
-				)  # >=3.10 is updated to 3.14.0 since we take the highest possible version that fits
+					dependency.version, "3.14"
+				)  # >=3.10 is updated to 3.14 since we take the highest possible version that fits
 
 		with self.assertRaises(ReleasePipelineFailure):
 			_resolve_python_version_conflicts_and_update_group(
-				self.test_release_group, {"frappe": ">=3.10", "erpnext": "<3.10"}
+				self.test_release_group.name, {"frappe": ">=3.10", "erpnext": "<3.10"}
 			)  # This should raise an error since frappe and erpnext have conflicting python version requirements
 
 		_resolve_python_version_conflicts_and_update_group(
-			self.test_release_group,
+			self.test_release_group.name,
 			{
 				"frappe": ">=3.10",
 				"erpnext": ">=3.10",
@@ -260,7 +260,7 @@ class TestReleasePipeline(FrappeTestCase):
 		)
 
 	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
-	def test_implicit_dependency_addition(self):
+	def test_implicit_dependency_source_addition(self):
 		parent_hash = frappe.mock("sha1")
 
 		root_app = create_test_app("someapp")

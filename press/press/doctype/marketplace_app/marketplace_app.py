@@ -398,7 +398,7 @@ class MarketplaceApp(WebsiteGenerator):
 		self.save()
 
 	@dashboard_whitelist()
-	def remove_version(self, version):
+	def remove_version(self, version: str):
 		if self.status == "Published" and len(self.sources) == 1:
 			frappe.throw("Failed to remove. Need at least 1 version for a published app")
 
