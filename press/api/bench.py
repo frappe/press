@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
 import frappe
 import requests
@@ -15,7 +15,7 @@ from frappe.utils import flt, sbool
 from press.api.github import branches, get_access_token
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
-from press.press.doctype.app.app import get_app_from_policies
+from press.press.doctype.app.app import AppPolicyResult, get_app_from_policies
 from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.cluster.cluster import Cluster
@@ -48,8 +48,47 @@ if TYPE_CHECKING:
 	from press.press.doctype.release_pipeline.release_pipeline import ReleasePipeline
 
 
+class BenchAppType(TypedDict):
+	name: str
+	source: str
+
+
+class BenchType(TypedDict):
+	title: str
+	server: str | None
+	version: Literal["Version 13", "Version 14", "Version 15", "Version 16", "Nightly"]
+	cluster: str
+	saas_app: str | None
+	apps: list[BenchAppType]
+
+
+class ReleaseGroupResult(TypedDict, total=False):
+	name: str
+	title: str
+	version: str
+	creation: str
+	number_of_sites: int
+	tags: list[str]
+	number_of_apps: int
+	status: str
+
+
+class AppVersionRow(TypedDict):
+	version: str
+	status: str
+	default: int
+	source: str
+	app: str
+	repository_url: str
+	repository: str
+	repository_owner: str
+	branch: str
+	title: str
+	frappe: int
+
+
 @frappe.whitelist()
-def new(bench):
+def new(bench: BenchType) -> str:
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new bench because your account is disabled")
@@ -78,7 +117,7 @@ def new(bench):
 
 @frappe.whitelist()
 @protected("Release Group")
-def get(name):
+def get(name: str) -> dict[str, Any]:
 	group = frappe.get_doc("Release Group", name)
 	return {
 		"name": group.name,
@@ -98,7 +137,7 @@ def get(name):
 	}
 
 
-def get_group_status(name):
+def get_group_status(name: str) -> str:
 	active_benches = frappe.get_all(
 		"Bench", {"group": name, "status": "Active"}, limit=1, order_by="creation desc"
 	)
@@ -107,7 +146,7 @@ def get_group_status(name):
 
 
 @frappe.whitelist()
-def all(server=None, bench_filter=None):
+def all(server: str | None = None, bench_filter: dict[str, str] | None = None) -> list[ReleaseGroupResult]:
 	if bench_filter is None:
 		bench_filter = {"status": "", "tag": ""}
 
@@ -168,12 +207,12 @@ def all(server=None, bench_filter=None):
 
 
 @frappe.whitelist()
-def bench_tags():
+def bench_tags() -> list[str]:
 	team = get_current_team()
 	return frappe.get_all("Press Tag", {"team": team, "doctype_name": "Release Group"}, pluck="tag")
 
 
-def get_app_counts_for_groups(rg_names):
+def get_app_counts_for_groups(rg_names: list[str]) -> dict[str, int]:
 	rg_app = frappe.qb.DocType("Release Group App")
 
 	app_counts = (
@@ -195,18 +234,18 @@ def get_app_counts_for_groups(rg_names):
 
 
 @frappe.whitelist()
-def exists(title):
+def exists(title: str) -> bool:
 	team = get_current_team()
 	return bool(frappe.db.exists("Release Group", {"title": title, "team": team, "enabled": True}))
 
 
 @frappe.whitelist()
-def get_release_group_policy_for_bench(version: str):
+def get_release_group_policy_for_bench(version: str) -> dict[str, list[AppPolicyResult]]:
 	"""Get the release group policy for a given version"""
 	return {"policies": get_app_from_policies(scope="Frappe Version", target=version, for_creation=True)}
 
 
-def get_app_versions_list(only_frappe=False):
+def get_app_versions_list(only_frappe: bool = False) -> tuple[list, list[AppVersionRow]]:
 	AppSource = frappe.qb.DocType("App Source")
 	FrappeVersion = frappe.qb.DocType("Frappe Version")
 	AppSourceVersion = frappe.qb.DocType("App Source Version")
