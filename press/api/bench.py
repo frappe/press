@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
 
 import frappe
 import requests
@@ -85,6 +85,28 @@ class AppVersionRow(TypedDict):
 	branch: str
 	title: str
 	frappe: int
+
+
+class SourceOptionsType(TypedDict):
+	name: str
+	repository_url: str
+	repository: str
+	repository_owner: str
+	branch: str
+
+
+class AppOptionsType(TypedDict):
+	name: str
+	title: str
+	sources: list[SourceOptionsType]
+	source: SourceOptionsType
+
+
+class VersionOptionsType(TypedDict):
+	name: str
+	status: str
+	default: int
+	apps: list[AppOptionsType]
 
 
 @frappe.whitelist()
@@ -245,7 +267,7 @@ def get_release_group_policy_for_bench(version: str) -> dict[str, list[AppPolicy
 	return {"policies": get_app_from_policies(scope="Frappe Version", target=version, for_creation=True)}
 
 
-def get_app_versions_list(only_frappe: bool = False) -> tuple[list, list[AppVersionRow]]:
+def get_app_versions_list(only_frappe: bool = False) -> tuple[list[AppVersionRow], list[AppVersionRow]]:
 	AppSource = frappe.qb.DocType("App Source")
 	FrappeVersion = frappe.qb.DocType("Frappe Version")
 	AppSourceVersion = frappe.qb.DocType("App Source Version")
@@ -283,23 +305,33 @@ def get_app_versions_list(only_frappe: bool = False) -> tuple[list, list[AppVers
 
 
 @frappe.whitelist()
-def options():
+def options() -> dict[str, list[VersionOptionsType] | list[dict[str, str]]]:
 	version_list, rows = get_app_versions_list(only_frappe=True)
 	approved_apps = frappe.get_all("Marketplace App", filters={"frappe_approved": 1}, pluck="app")
 
 	versions = []
 	for d in version_list:
-		version_dict = {"name": d.version, "status": d.status, "default": d.default}
-		version_rows = find_all(rows, lambda x: x.version == d.version)
+		version_dict: VersionOptionsType = {
+			"name": d["version"],
+			"status": d["status"],
+			"default": d["default"],
+			"apps": [],
+		}
+		version_rows = find_all(rows, lambda x: x.version == d["version"])
 		app_list = frappe.utils.unique([row.app for row in version_rows])
 		app_list = sorted(app_list, key=lambda x: x not in approved_apps)
 
 		for app in app_list:
 			app_rows = find_all(version_rows, lambda x: x.app == app)
-			app_dict = {"name": app, "title": app_rows[0].title}
+			app_dict: AppOptionsType = {
+				"name": app,
+				"title": app_rows[0].title,
+				"sources": [],
+				"source": cast("SourceOptionsType", {}),
+			}
 
 			for source in app_rows:
-				source_dict = {
+				source_dict: SourceOptionsType = {
 					"name": source.source,
 					"repository_url": source.repository_url,
 					"branch": source.branch,
