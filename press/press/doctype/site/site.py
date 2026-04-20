@@ -2918,12 +2918,12 @@ class Site(Document, TagHelpers):
 			.where(servers.proxy_server.isin(proxy_servers))
 			.where(benches.status == "Active")
 			.orderby(PseudoColumn("in_primary_cluster"), order=frappe.qb.desc)
-			.orderby(servers.use_for_new_sites, order=frappe.qb.desc)
 			.orderby(benches.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
 		if host_on_shared_server:
 			bench_query = bench_query.where(servers.public == 1)
+			bench_query = bench_query.where(servers.use_for_new_sites == 1)
 
 		if release_group_names:
 			groups = frappe.qb.DocType("Release Group")
