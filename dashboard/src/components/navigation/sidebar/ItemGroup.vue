@@ -28,7 +28,7 @@ watch(
 <template>
 	<div
 		@click="toggle"
-		class="flex cursor-pointer select-none items-center rounded px-2.5 py-1.5 text-ink-gray-6 transition hover:bg-surface-gray-2"
+		class="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-ink-gray-6 transition hover:bg-surface-gray-2"
 		:class="[
 			item.disabled ? 'pointer-events-none opacity-50' : '',
 			$attrs.class,
