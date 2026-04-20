@@ -24,6 +24,7 @@ from press.utils.billing import (
 	get_razorpay_client,
 	is_frappe_auth_disabled,
 )
+from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.usage_record.usage_record import UsageRecord
@@ -1316,9 +1317,11 @@ def finalize_razorpay_mandate_invoices():
 		},
 		fields=["name", "razorpay_payment_id"],
 	)
+	client = get_razorpay_client()
 	for inv in invoices:
+		if has_job_timeout_exceeded():
+			return
 		try:
-			client = get_razorpay_client()
 			payment = client.payment.fetch(inv.razorpay_payment_id)
 			payment_status = payment.get("status")
 
