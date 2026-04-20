@@ -3983,7 +3983,7 @@ def is_dedicated_server(server_name):
 def refresh_new_bench_and_site_server_pool() -> None:
 	"""Refresh `use_for_new_benches` and `use_for_new_sites` flags for public clusters
 	1. Consider active, public servers for each cluster
-	2. Compute server score as (sum of site plan cpu_time_per_day across all sites) / server vcpu capacity
+	2. Compute server score as (sum of site plan cpu_time_per_day across all sites excluding archived or suspended) / server vcpu capacity
 	3. Mark least-loaded server per cluster as eligible for new benches/sites
 	"""
 	server_names, servers_by_cluster = _get_public_primary_servers_by_cluster()
@@ -4037,47 +4037,30 @@ def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[
 def _get_server_cpu_time_across_sites(server_names: list[str]) -> dict[str, float]:
 	from pypika.functions import Coalesce, Sum
 
-	score_map: dict[str, float] = {}
 	if not server_names:
-		return score_map
+		return {}
 
 	Server = frappe.qb.DocType("Server")
 	ServerPlan = frappe.qb.DocType("Server Plan")
 	Site = frappe.qb.DocType("Site")
 	SitePlan = frappe.qb.DocType("Site Plan")
 
-	# vCPU capacity per server (fallback to 1)
-	server_vcpu_rows = (
+	rows = (
 		frappe.qb.from_(Server)
 		.left_join(ServerPlan)
 		.on(Server.plan == ServerPlan.name)
-		.select(Server.name, Coalesce(ServerPlan.vcpu, 1).as_("vcpu"))
-		.where(Server.name.isin(server_names))
-		.run(as_dict=True)
-	)
-
-	vcpu_map: dict[str, float] = {row.name: max(float(row.vcpu or 1.0), 1.0) for row in server_vcpu_rows}
-
-	server_scores = (
-		frappe.qb.from_(Site)
+		.left_join(Site)
+		.on(Server.name == Site.server)
 		.left_join(SitePlan)
 		.on(Site.plan == SitePlan.name)
 		.select(
-			Site.server,
-			Coalesce(Sum(SitePlan.cpu_time_per_day), 0).as_("cpu_time_per_day"),
+			Server.name.as_("server"),
+			(Coalesce(Sum(SitePlan.cpu_time_per_day), 0) / Coalesce(ServerPlan.vcpu, 1)).as_("score"),
 		)
-		.where(Site.server.isin(server_names))
-		.where(~Site.status.isin(["Archived", "Suspended"]))
-		.groupby(Site.server)
+		.where(Server.name.isin(server_names))
+		.where((Site.status.isnull()) | (~Site.status.isin(["Archived", "Suspended"])))
+		.groupby(Server.name, ServerPlan.vcpu)
 		.run(as_dict=True)
 	)
 
-	cpu_time_map: dict[str, float] = {name: 0.0 for name in server_names}
-	for server_score in server_scores:
-		cpu_time_map[server_score.server] = float(server_score.cpu_time_per_day or 0.0)
-
-	for server_name in server_names:
-		vcpu_capacity = vcpu_map.get(server_name, 1.0)
-		score_map[server_name] = cpu_time_map.get(server_name, 0.0) / vcpu_capacity
-
-	return score_map
+	return {row.server: float(row.score or 0.0) for row in rows}
