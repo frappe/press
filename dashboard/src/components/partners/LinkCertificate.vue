@@ -61,8 +61,8 @@ import { createResource, frappeRequest, debounce } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 
 const courseTypes = [
-	{ label: 'Framework', value: 'frappe-developer-certification' },
-	{ label: 'ERPNext', value: 'erpnext-distribution' },
+	{ label: 'Framework', value: 'frappe' },
+	{ label: 'ERPNext', value: 'erpnext' },
 ];
 const show = ref(true);
 
