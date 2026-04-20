@@ -1213,7 +1213,7 @@ def subscriptions():
 
 @protected("App Source")
 @frappe.whitelist()
-def branches(name):
+def branches(name: str):
 	from press.api.github import branches as git_branches
 
 	app_source = frappe.db.get_value(
@@ -1256,7 +1256,7 @@ def options_for_version(name):
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def add_version(name, repo_owner, repo_name, branch, version):
+def add_version(name: str, repo_owner: str, repo_name: str, branch: str, version: str):
 	app = frappe.get_doc("Marketplace App", name)
 	app.add_version(version, repo_owner, repo_name, branch)
 
