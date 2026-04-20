@@ -101,6 +101,7 @@ class PressRole(Document):
 	@team_guard.only_member(
 		user=lambda _, args: str(args.get("user")),
 		error_message=_("User is not a member of the team"),
+		skip=lambda _, args: args.get("skip_validations", False),
 	)
 	def add_user(self, user, skip_validations=False):
 		user_dict = {"user": user}
