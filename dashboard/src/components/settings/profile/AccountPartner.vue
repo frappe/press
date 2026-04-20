@@ -2,7 +2,7 @@
 	<Card
 		v-if="!$team.doc?.erpnext_partner"
 		title="Frappe Partner"
-		subtitle="Frappe Partner associated with your account"
+		subtitle="Share access to your account for better collaboration"
 		class="mx-auto max-w-3xl"
 	>
 		<template #actions>
@@ -21,19 +21,16 @@
 				Unlink Partner
 			</Button>
 		</template>
-		<div class="py-4">
-			<span
-				class="text-base font-medium text-gray-700"
-				v-if="!$team.doc?.partner_email"
-			>
-				Have a Frappe Partner Referral Code? Click on
-				<strong>Add Partner Code</strong> to link with your Partner team.
-			</span>
-			<ListItem
-				v-else
-				:title="partner_billing_name"
-				:subtitle="$team.doc?.partner_email"
-			/>
+		<span
+			class="text-base font-medium text-gray-700"
+			v-if="!$team.doc?.partner_email"
+		>
+			Have a Frappe Partner Referral Code? Click on
+			<strong>Add Partner Code</strong> to link with your Partner team.
+		</span>
+		<div class="prose-sm flex flex-col" v-else>
+			<span v-if="partner_billing_name"> {{ partner_billing_name }}</span>
+			<span class="text-ink-gray-5"> {{ $team.doc?.partner_email }}</span>
 		</div>
 		<Dialog
 			:options="{
