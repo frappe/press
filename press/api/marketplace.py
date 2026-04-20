@@ -1370,26 +1370,3 @@ def get_marketplace_apps() -> list[dict]:
 		apps = frappe.get_all("Marketplace App", {"status": "Published"}, ["name", "title", "route"])
 		frappe.cache().set_value("marketplace_apps", apps, expires_in_sec=60 * 60 * 24 * 7)
 	return apps
-
-
-@protected("App Source")
-@frappe.whitelist()
-def add_code_review_comment(name: str, filename: str, line_number: int, comment: str):
-	try:
-		doc = frappe.get_doc("App Release Approval Request", name)
-		# Add a new comment
-		doc.append(
-			"code_comments",
-			{
-				"filename": filename,
-				"line_number": line_number,
-				"comment": comment,
-				"commented_by": frappe.session.user,
-				"time": frappe.utils.now_datetime(),
-			},
-		)
-
-		doc.save()
-		return {"status": "success", "message": "Comment added successfully."}
-	except Exception as e:
-		frappe.throw(f"Unable to add comment. Something went wrong: {e!s}")
