@@ -30,6 +30,7 @@ from press.press.doctype.release_group.release_group import (
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import (
 	SupervisorProcess,
+	get_app_tag,
 	get_current_team,
 	unique,
 )
@@ -843,3 +844,71 @@ def search_releases(
 	)
 
 	return q.run(as_dict=1)
+
+
+def deploy_information(name):
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	return rg.deploy_information()
+
+
+def apps(name):
+	group = frappe.get_doc("Release Group", name)
+	apps = []
+	deployed_apps = frappe.db.get_all(
+		"Bench",
+		filters={"group": group.name, "status": ("!=", "Archived")},
+		fields=["`tabBench App`.app"],
+		pluck="app",
+	)
+	deployed_apps = unique(deployed_apps)
+	updates = deploy_information(name)
+
+	latest_bench = frappe.get_all(
+		"Bench",
+		filters={"group": group.name, "status": "Active"},
+		order_by="creation desc",
+		limit=1,
+		pluck="name",
+	)
+	if latest_bench:
+		latest_bench = latest_bench[0]
+	else:
+		latest_bench = None
+
+	latest_deployed_apps = frappe.get_all(
+		"Bench",
+		filters={"name": latest_bench},
+		fields=["`tabBench App`.app", "`tabBench App`.hash"],
+	)
+
+	for app in group.apps:
+		source = frappe.get_doc("App Source", app.source)
+		app = frappe.get_doc("App", app.app)
+		update_available = updates["update_available"] and find(
+			updates.apps, lambda x: x["app"] == app.name and x["update_available"]
+		)
+
+		latest_deployed_app = find(latest_deployed_apps, lambda x: x.app == app.name)
+		hash = latest_deployed_app.hash if latest_deployed_app else None
+		tag = get_app_tag(source.repository, source.repository_owner, hash)
+
+		marketplace_app_title = frappe.db.get_value("Marketplace App", app.name, "title")
+		app_title = marketplace_app_title or app.title
+
+		apps.append(
+			{
+				"name": app.name,
+				"frappe": app.frappe,
+				"title": app_title,
+				"branch": source.branch,
+				"repository_url": source.repository_url,
+				"repository": source.repository,
+				"repository_owner": source.repository_owner,
+				"tag": tag,
+				"hash": hash,
+				"deployed": app.name in deployed_apps,
+				"update_available": bool(update_available),
+				"last_github_poll_failed": source.last_github_poll_failed,
+			}
+		)
+	return apps
