@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-import re
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
 
@@ -360,56 +359,6 @@ def format_config_value(group: str, c: frappe._dict):
 		c.value = frappe.parse_json(c.value)
 	elif c.type == "Password" and c.value == "*******":
 		c.value = frappe.get_value("Site Config", {"key": c.key, "parent": group}, "value")
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def dependencies(name: str):
-	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-	active_dependencies = [{"key": d.dependency, "value": d.version} for d in rg.dependencies]
-	supported_dependencies = frappe.db.get_all(
-		"Bench Dependency Version",
-		{"supported_frappe_version": rg.version},
-		["parent as `key`", "version as `value`"],
-	)
-
-	bench_dependencies = frappe.get_all("Bench Dependency", ["name", "title", "internal"])
-
-	return {
-		"active_dependencies": active_dependencies,
-		"supported_dependencies": list(
-			# deduplicate dependencies
-			{d["value"]: d for d in supported_dependencies + active_dependencies}.values()
-		),
-		"dependency_title": {d["name"]: d["title"] for d in bench_dependencies},
-		"internal_dependencies": [d["name"] for d in bench_dependencies if d["internal"]],
-		"update_available": rg.dependency_update_pending,
-	}
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def update_dependencies(name: str, dependencies: str):
-	dependencies_dict: list[frappe._dict] = frappe.parse_json(dependencies)
-	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-
-	if len(rg.dependencies) != len(dependencies_dict):
-		frappe.throw("Need all required dependencies")
-
-	if diff := set([d["key"] for d in dependencies_dict]) - set(d.dependency for d in rg.dependencies):
-		frappe.throw("Invalid dependencies: " + ", ".join(diff))
-
-	for dep, new in zip(
-		sorted(rg.dependencies, key=lambda x: x.dependency),
-		sorted(dependencies_dict, key=lambda x: x["key"]),
-		strict=False,
-	):
-		if dep.dependency != new["key"]:
-			frappe.throw(f"Invalid dependency: {new['key']}")
-		if not re.match(r"^\d+\.\d+\.*\d*$", new["value"]):
-			frappe.throw(f"Invalid version for {new['key']}")
-		dep.version = new["value"]
-	rg.save()
 
 
 @frappe.whitelist()
