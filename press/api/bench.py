@@ -34,7 +34,6 @@ from press.press.doctype.release_group.release_group import (
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import (
 	get_app_tag,
-	get_client_blacklisted_keys,
 	get_current_team,
 	unique,
 )
@@ -350,68 +349,6 @@ def options() -> dict[str, list[VersionOptionsType] | list[dict[str, str]]]:
 		frappe.throw("Only enabled and public app sources will reflect here!")
 
 	return {"versions": versions, "clusters": clusters}
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def bench_config(name):
-	rg = frappe.get_doc("Release Group", name)
-
-	common_site_config = [
-		{"key": config.key, "value": config.value, "type": config.type}
-		for config in rg.common_site_config_table
-		if not config.internal
-	]
-
-	bench_config = frappe.parse_json(rg.bench_config)
-	if bench_config.get("http_timeout"):
-		bench_config = [
-			frappe._dict(
-				key="http_timeout",
-				value=bench_config.get("http_timeout"),
-				type="Number",
-				internal=False,
-			)
-		]
-	else:
-		bench_config = []
-
-	config = common_site_config + bench_config
-
-	secret_keys = frappe.get_all("Site Config Key", filters={"type": "Password"}, pluck="key")
-	for c in config:
-		if c["key"] in secret_keys:
-			c["value"] = "*******"
-			c["type"] = "Password"
-	return config
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def update_config(name, config):
-	sanitized_common_site_config, sanitized_bench_config = [], []
-	bench_config_keys = ["http_timeout"]
-
-	config = frappe.parse_json(config)
-	config = [frappe._dict(c) for c in config]
-
-	for c in config:
-		if c.key in get_client_blacklisted_keys():
-			continue
-
-		if frappe.db.exists("Site Config Key", c.key):
-			c.type = frappe.db.get_value("Site Config Key", c.key, "type")
-		format_config_value(name, c)
-
-		if c.key in bench_config_keys:
-			sanitized_bench_config.append(c)
-		else:
-			sanitized_common_site_config.append(c)
-
-	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-	rg.update_config_in_release_group(sanitized_common_site_config, sanitized_bench_config)
-	rg.update_benches_config()
-	return list(filter(lambda x: not x.internal, rg.common_site_config_table))
 
 
 def format_config_value(group: str, c: frappe._dict):
