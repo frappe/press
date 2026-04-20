@@ -442,6 +442,11 @@ class ReleasePipeline(WorkflowBuilder):
 			self.validate_server_storages()
 			self.validate_auto_scales_on_servers()
 		except (frappe.ValidationError, InsufficientSpaceOnServer) as e:
+			frappe.publish_realtime(
+				"release_pipeline_update",
+				doctype="Release Pipeline",
+				message={"status": "failure", "group": self.release_group},
+			)
 			raise ReleasePipelineFailure(str(e)) from e
 
 	@task
@@ -493,6 +498,17 @@ class ReleasePipeline(WorkflowBuilder):
 			self.add_implicit_app_dependencies(deploy_candidate)
 			self.auto_update_bench_dependency_versions(deploy_candidate)
 			primary_build = self.initiate_pre_build_validations(deploy_candidate)
+
+			frappe.publish_realtime(
+				"release_pipeline_update",
+				doctype="Release Pipeline",
+				message={
+					"status": "deploy-in-progress",
+					"group": self.release_group,
+					"deploy_candidate_build": primary_build,
+				},
+			)
+
 			return deploy_candidate, primary_build
 		except frappe.ValidationError as e:
 			raise ReleasePipelineFailure(f"Failed to prepare deployment: {e!s}") from e

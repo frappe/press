@@ -498,7 +498,9 @@ export default {
 								} else if (group.doc.deploy_information.update_available) {
 									let UpdateReleaseGroupDialog = defineAsyncComponent(
 										() =>
-											import('../components/group/UpdateReleaseGroupDialog.vue'),
+											import(
+												'../components/group/UpdateReleaseGroupDialog.vue'
+											),
 									);
 									renderDialog(
 										h(UpdateReleaseGroupDialog, {
@@ -819,7 +821,9 @@ export default {
 								onClick() {
 									let ConfigEditorDialog = defineAsyncComponent(
 										() =>
-											import('../components/EnvironmentVariableEditorDialog.vue'),
+											import(
+												'../components/EnvironmentVariableEditorDialog.vue'
+											),
 									);
 									renderDialog(
 										h(ConfigEditorDialog, {
@@ -910,14 +914,43 @@ export default {
 								bench: group.name,
 								lastDeploy: group.doc?.deploy_information?.last_deploy,
 								onSuccess(candidate) {
-									// group.doc.deploy_information.has_running_release_pipeline = true;
-									group.doc.deploy_information.deploy_in_progress = true;
+									group.doc.deploy_information.has_running_release_pipeline = true;
 									group.doc.deploy_information.update_available = false;
+
 									if (candidate) {
 										group.doc.deploy_information.last_deploy = {
 											name: candidate,
 										};
 									}
+									// Listen for the background task to signal deploy is actually running
+									function handleUpdate({
+										status,
+										group: benchGroup,
+										deploy_candidate_build: candidate,
+									}) {
+										console.log(
+											'Received update for bench',
+											benchGroup,
+											'with status',
+											status,
+											'and candidate',
+											candidate,
+										);
+										if (benchGroup !== group.name) return;
+
+										if (status === 'deploy-in-progress') {
+											group.doc.deploy_information.deploy_in_progress = true;
+											group.doc.deploy_information.last_deploy = {
+												name: candidate,
+											};
+										} else if (status === 'failure') {
+											group.doc.deploy_information.deploy_in_progress = false;
+										}
+
+										$socket.off('release_pipeline_update', handleUpdate);
+									}
+
+									$socket.on('release_pipeline_update', handleUpdate);
 								},
 							}),
 						);
