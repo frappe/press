@@ -14,6 +14,7 @@ from functools import cached_property
 
 import boto3
 import frappe
+import requests
 import semantic_version
 from frappe import _
 from frappe.core.utils import find, find_all
@@ -3982,41 +3983,57 @@ def is_dedicated_server(server_name):
 
 def refresh_new_bench_and_site_server_pool() -> None:
 	"""Refresh `use_for_new_benches` and `use_for_new_sites` flags for public clusters
-	1. Consider active, public servers for each cluster
-	2. Compute server score as (sum of site plan cpu_time_per_day across all sites excluding archived or suspended) / server vcpu capacity
-	3. Mark least-loaded server per cluster as eligible for new benches/sites
+	1. Consider active, public primary servers for each cluster
+	2. Fetch available memory and available vCPU for all servers in bulk from Prometheus
+	3. Mark the server with most memory for new benches and the one with most vCPU for new sites
 	"""
 	server_names, servers_by_cluster = _get_public_primary_servers_by_cluster()
 	if not server_names:
 		return
 
-	server_score_map = _get_server_cpu_time_across_sites(server_names)
-	selected_servers: set[str] = set()
+	memory_map, vcpu_map = _get_public_server_available_resources(server_names)
+	if not memory_map and not vcpu_map:
+		return
 
-	for cluster_servers in servers_by_cluster.values():
-		if not cluster_servers:
-			continue
-
-		least_loaded_server = min(
-			cluster_servers,
-			key=lambda name: (server_score_map[name], name),
-		)
-		selected_servers.add(least_loaded_server)
-
-	if selected_servers:
-		other_servers = list(set(server_names) - selected_servers)
+	if memory_map:
+		selected_bench_servers = {
+			_get_server_with_most_resource(cluster_servers, memory_map)
+			for cluster_servers in servers_by_cluster.values()
+			if cluster_servers
+		}
+		other_servers = list(set(server_names) - selected_bench_servers)
 		if other_servers:
 			frappe.db.set_value(
 				"Server",
 				{"name": ["in", other_servers]},
-				{"use_for_new_benches": 0, "use_for_new_sites": 0},
+				{"use_for_new_benches": 0},
 				update_modified=False,
 			)
-
 		frappe.db.set_value(
 			"Server",
-			{"name": ["in", list(selected_servers)]},
-			{"use_for_new_benches": 1, "use_for_new_sites": 1},
+			{"name": ["in", list(selected_bench_servers)]},
+			{"use_for_new_benches": 1},
+			update_modified=False,
+		)
+
+	if vcpu_map:
+		selected_site_servers = {
+			_get_server_with_most_resource(cluster_servers, vcpu_map)
+			for cluster_servers in servers_by_cluster.values()
+			if cluster_servers
+		}
+		other_servers = list(set(server_names) - selected_site_servers)
+		if other_servers:
+			frappe.db.set_value(
+				"Server",
+				{"name": ["in", other_servers]},
+				{"use_for_new_sites": 0},
+				update_modified=False,
+			)
+		frappe.db.set_value(
+			"Server",
+			{"name": ["in", list(selected_site_servers)]},
+			{"use_for_new_sites": 1},
 			update_modified=False,
 		)
 
@@ -4034,33 +4051,57 @@ def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[
 	return server_names, servers_by_cluster
 
 
-def _get_server_cpu_time_across_sites(server_names: list[str]) -> dict[str, float]:
-	from pypika.functions import Coalesce, Sum
-
-	if not server_names:
-		return {}
-
-	Server = frappe.qb.DocType("Server")
-	ServerPlan = frappe.qb.DocType("Server Plan")
-	Site = frappe.qb.DocType("Site")
-	SitePlan = frappe.qb.DocType("Site Plan")
-
-	rows = (
-		frappe.qb.from_(Server)
-		.left_join(ServerPlan)
-		.on(Server.plan == ServerPlan.name)
-		.left_join(Site)
-		.on(Server.name == Site.server)
-		.left_join(SitePlan)
-		.on(Site.plan == SitePlan.name)
-		.select(
-			Server.name.as_("server"),
-			(Coalesce(Sum(SitePlan.cpu_time_per_day), 0) / Coalesce(ServerPlan.vcpu, 1)).as_("score"),
-		)
-		.where(Server.name.isin(server_names))
-		.where((Site.status.isnull()) | (~Site.status.isin(["Archived", "Suspended"])))
-		.groupby(Server.name, ServerPlan.vcpu)
-		.run(as_dict=True)
+def _get_server_with_most_resource(server_names: list[str], resource_map: dict[str, float]) -> str:
+	return max(
+		sorted(server_names),
+		key=lambda name: resource_map.get(name, 0.0),
 	)
 
-	return {row.server: float(row.score or 0.0) for row in rows}
+
+def _get_public_server_available_resources(
+	server_names: list[str],
+) -> tuple[dict[str, float] | None, dict[str, float] | None]:
+	"""Fetch available memory and vCPU for servers from Prometheus"""
+	if not server_names:
+		return None, None
+
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	if not monitor_server:
+		return None, None
+
+	url = f"https://{monitor_server}/prometheus/api/v1/query"
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+	auth = ("frappe", str(password))
+
+	instance_matcher = "|".join(name.replace(".", "[.]") for name in server_names)
+
+	memory_query = f'avg_over_time(node_memory_MemAvailable_bytes{{instance=~"^({instance_matcher})$", job="node"}}[10m])'
+	vcpu_query = f'sum by (instance) (rate(node_cpu_seconds_total{{instance=~"^({instance_matcher})$", job="node", mode="idle"}}[10m]))'
+
+	memory_results = _query_prometheus_vector(memory_query, url, auth)
+	vcpu_results = _query_prometheus_vector(vcpu_query, url, auth)
+
+	def _build_server_map(results: list[dict] | None) -> dict[str, float] | None:
+		if results is None:
+			return None
+		map: dict[str, float] = {}
+		for result in results:
+			instance = result.get("metric", {}).get("instance")
+			map[instance] = float(result["value"][1])
+		return map
+
+	return _build_server_map(memory_results), _build_server_map(vcpu_results)
+
+
+def _query_prometheus_vector(query: str, url: str, auth: tuple[str, str]) -> list[dict] | None:
+	try:
+		response = requests.get(url, params={"query": query}, auth=auth).json()
+	except requests.exceptions.RequestException as exc:
+		log_error("Public Server Pool Prometheus Query Failed", query=query, exception=exc)
+		return None
+
+	if response.get("status") != "success":
+		log_error("Public Server Pool Prometheus Query Failed", query=query, response=response)
+		return None
+
+	return response.get("data", {}).get("result")
