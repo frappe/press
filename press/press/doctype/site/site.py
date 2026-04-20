@@ -1732,8 +1732,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken", "Inactive", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, create_offsite_backup=True):
 		agent = Agent(self.server)
-		self.status = "Pending"
-		self.save()
+		self.ready_for_move()
 		job = agent.archive_site(self, site_name, force, create_offsite_backup)
 		log_site_activity(self.name, "Archive", reason, job.name)
 
