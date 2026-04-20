@@ -278,6 +278,8 @@ class MarketplaceAppAudit(Document):
 			return
 
 		if self.audit_result == "Fail":
+			# mark "attention required" status in marketplace app
+			frappe.db.set_value("Marketplace App", self.marketplace_app, "status", "Attention Required")
 			self._yank_release()
 			self._auto_reject_approval_requests()
 
