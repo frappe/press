@@ -1269,3 +1269,25 @@ def search_releases(
 	)
 
 	return q.run(as_dict=1)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def is_deploy_validating(name: str) -> bool:
+	"""Check if there is a deploy in validating state for the release group. A deploy is validating if the build doc is not created yet"""
+	release_pipeline = frappe.db.get_value(
+		"Release Pipeline", {"release_group": name, "status": ("in", ["Running", "Pending"])}
+	)
+
+	if not release_pipeline:
+		return False
+
+	newly_created_build = frappe.db.get_value(
+		"Deploy Candidate Build",
+		{"group": name, "status": ("in", ["Pending", "Running", "Scheduled", "Preparing"])},
+	)
+
+	if newly_created_build:
+		return False
+
+	return True

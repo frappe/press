@@ -1,4 +1,4 @@
-import { LoadingIndicator, Tooltip } from 'frappe-ui';
+import { LoadingIndicator, Tooltip, frappeRequest } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import LucideAppWindow from '~icons/lucide/app-window';
@@ -15,6 +15,49 @@ import { getToastErrorMessage } from '../utils/toast';
 import { getJobsTab } from './common/jobs';
 import { getPatchesTab } from './common/patches';
 import { tagTab } from './common/tags';
+
+const pollingGroups = new Set();
+
+function pollReleasePipelineValidationStatus(group) {
+	if (pollingGroups.has(group.doc.name)) return; // already polling
+	if (!group.doc.deploy_information.has_running_release_pipeline) return;
+	if (group.doc.deploy_information.deploy_in_progress) return;
+
+	pollingGroups.add(group.doc.name);
+
+	console.log(
+		'POLLING FOR VALIDATION STATUS!',
+		group.doc.deploy_information.has_running_release_pipeline,
+		group.doc.deploy_information.deploy_in_progress,
+	);
+
+	function poll() {
+		frappeRequest({
+			url: 'press.api.bench.is_deploy_validating',
+			params: { name: group.name },
+		})
+			.then((result) => {
+				console.log(result);
+				if (!group.doc.deploy_information.has_running_release_pipeline) {
+					pollingGroups.delete(group.doc.name);
+					return;
+				}
+
+				if (result) {
+					setTimeout(poll, 2000);
+				} else {
+					group.doc.deploy_information.has_running_release_pipeline = false;
+					group.doc.deploy_information.deploy_in_progress = true;
+					pollingGroups.delete(group.doc.name);
+				}
+			})
+			.catch(() => {
+				pollingGroups.delete(group.doc.name);
+			});
+	}
+
+	poll();
+}
 
 export default {
 	doctype: 'Release Group',
@@ -876,6 +919,11 @@ export default {
 			let { documentResource: group } = context;
 			let team = getTeam();
 
+			if (group.doc?.deploy_information?.has_running_release_pipeline) {
+				console.log('coming from here');
+				pollReleasePipelineValidationStatus(group);
+			}
+
 			return [
 				{
 					label: 'Impersonate Group Owner',
@@ -922,27 +970,7 @@ export default {
 											name: candidate,
 										};
 									}
-									// Listen for the background task to signal deploy is actually running
-									function handleUpdate({
-										status,
-										group: benchGroup,
-										deploy_candidate_build: candidate,
-									}) {
-										if (benchGroup !== group.name) return;
-
-										if (status === 'deploy-in-progress') {
-											group.doc.deploy_information.deploy_in_progress = true;
-											group.doc.deploy_information.last_deploy = {
-												name: candidate,
-											};
-										} else if (status === 'failure') {
-											group.doc.deploy_information.deploy_in_progress = false;
-										}
-
-										$socket.off('release_pipeline_update', handleUpdate);
-									}
-
-									$socket.on('release_pipeline_update', handleUpdate);
+									pollReleasePipelineValidationStatus(group);
 								},
 							}),
 						);

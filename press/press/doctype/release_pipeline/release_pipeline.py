@@ -494,16 +494,6 @@ class ReleasePipeline(WorkflowBuilder):
 			self.auto_update_bench_dependency_versions(deploy_candidate)
 			primary_build = self.initiate_pre_build_validations(deploy_candidate)
 
-			frappe.publish_realtime(
-				"release_pipeline_update",
-				doctype="Release Pipeline",
-				message={
-					"status": "deploy-in-progress",
-					"group": self.release_group,
-					"deploy_candidate_build": primary_build,
-				},
-			)
-
 			return deploy_candidate, primary_build
 		except frappe.ValidationError as e:
 			raise ReleasePipelineFailure(f"Failed to prepare deployment: {e!s}") from e
@@ -638,11 +628,6 @@ class ReleasePipeline(WorkflowBuilder):
 
 		except ReleasePipelineFailure:
 			# Just in case, make sure that we mark the pipeline as failed and notify the frontend to stop listening for deploy updates
-			frappe.publish_realtime(
-				"release_pipeline_update",
-				doctype="Release Pipeline",
-				message={"status": "failure", "group": self.release_group},
-			)
 			self.update_pipeline_status("Failure")
 
 		workflow_status = frappe.db.get_value("Press Workflow", self.workflow_name, "status")
