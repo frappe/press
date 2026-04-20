@@ -928,14 +928,6 @@ export default {
 										group: benchGroup,
 										deploy_candidate_build: candidate,
 									}) {
-										console.log(
-											'Received update for bench',
-											benchGroup,
-											'with status',
-											status,
-											'and candidate',
-											candidate,
-										);
 										if (benchGroup !== group.name) return;
 
 										if (status === 'deploy-in-progress') {
