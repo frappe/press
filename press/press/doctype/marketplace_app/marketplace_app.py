@@ -331,7 +331,7 @@ class MarketplaceApp(WebsiteGenerator):
 		self.save()
 
 	@dashboard_whitelist()
-	def add_version(self, version: str, branch: str):
+	def add_version(self, version: str, repo_owner: str, repo_name: str, branch: str):
 		existing_source = frappe.db.exists(
 			"App Source",
 			[
@@ -339,6 +339,8 @@ class MarketplaceApp(WebsiteGenerator):
 				["App Source", "team", "=", self.team],
 				["App Source", "branch", "=", branch],
 				["App Source", "enabled", "=", 1],
+				["App Source", "repository", "=", repo_name],
+				["App Source", "repository_owner", "=", repo_owner],
 			],
 		)
 		source_doc: "AppSource" = (

@@ -217,10 +217,28 @@ export default {
 																		label: 'Add',
 																		onClick() {
 																			if (app.addVersion.loading) return;
+
+																			const getAddVersionArgsFromOption = (
+																				option,
+																			) => {
+																				const [
+																					repo_owner,
+																					repo_name,
+																					...branch
+																				] = option.trim().split('/');
+																				return {
+																					repo_owner,
+																					repo_name,
+																					branch: branch.join('/'),
+																				};
+																			};
+
 																			toast.promise(
 																				app.addVersion.submit({
 																					version: row.version,
-																					branch: row.selectedOption,
+																					...getAddVersionArgsFromOption(
+																						row.selectedOption,
+																					),
 																				}),
 																				{
 																					loading: 'Adding new version...',
