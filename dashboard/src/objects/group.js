@@ -558,6 +558,7 @@ export default {
 													group.doc.deploy_information.last_deploy.name =
 														candidate;
 												}
+												pollReleasePipelineValidationStatus(group);
 											},
 										}),
 									);
