@@ -780,6 +780,7 @@
         "ndarray",
         "mult",
         "ruleid",
+        "chatwoot"
         "ssti"
     ]
 }

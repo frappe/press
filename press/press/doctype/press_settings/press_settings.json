@@ -178,6 +178,11 @@
   "column_break_xhfy",
   "spamd_api_key",
   "spamd_api_secret",
+  "chatwoot_section",
+  "enable_chat",
+  "chat_base_url",
+  "column_break_srse",
+  "chat_website_token",
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
@@ -1651,11 +1656,36 @@
    "fieldname": "use_new_deploy_flow",
    "fieldtype": "Check",
    "label": "Use New Deploy Flow"
+  },
+  {
+   "fieldname": "chatwoot_section",
+   "fieldtype": "Section Break",
+   "label": "Chat Support"
+  },
+  {
+   "fieldname": "column_break_srse",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_chat",
+   "fieldtype": "Check",
+   "label": "Enable Chat"
+  },
+  {
+   "fieldname": "chat_base_url",
+   "fieldtype": "Data",
+   "label": "Chat Base URL"
+  },
+  {
+   "fieldname": "chat_website_token",
+   "fieldtype": "Data",
+   "label": "Chat Website Token"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-04-13 18:54:30.323908",
+ "modified": "2026-04-20 15:25:27.276549",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
