@@ -1,7 +1,13 @@
 <template>
 	<div class="flex items-center justify-center flex-grow">
 		<div
-			v-if="!data || data[0].date === undefined"
+			v-if="loading && !showCard"
+			class="flex h-full items-center justify-center"
+		>
+			<LoadingText />
+		</div>
+		<div
+			v-else-if="!data || data[0].date === undefined"
 			class="flex h-5/6 items-center justify-center"
 		>
 			<div class="text-base text-gray-700">No data</div>
