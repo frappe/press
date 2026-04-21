@@ -2,7 +2,7 @@
 	<Card
 		v-if="!$team.doc?.erpnext_partner"
 		title="Frappe Partner"
-		subtitle="Share access to your account for better collaboration"
+		subtitle="Manage partner access to your account"
 		class="mx-auto max-w-3xl"
 	>
 		<template #actions>
