@@ -10,8 +10,8 @@ import PatchAppDialog from '../components/group/PatchAppDialog.vue';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { getToastErrorMessage } from '../utils/toast';
 import { date, duration } from '../utils/format';
+import { getToastErrorMessage } from '../utils/toast';
 import { getJobsTab } from './common/jobs';
 import { getPatchesTab } from './common/patches';
 import { tagTab } from './common/tags';
@@ -110,18 +110,6 @@ export default {
 					router.push({ name: 'New Release Group' });
 				},
 			};
-		},
-		banner({ listResource: groups }) {
-			if (!groups.data?.length) {
-				return {
-					title: 'Learn how to create a new private bench and sites',
-					button: {
-						label: 'Read docs',
-						variant: 'outline',
-						link: 'https://docs.frappe.io/cloud/benches/create-new',
-					},
-				};
-			}
 		},
 	},
 	detail: {
@@ -517,7 +505,8 @@ export default {
 											bench: group.name,
 											lastDeploy: true,
 											onSuccess(candidate) {
-												group.doc.deploy_information.deploy_in_progress = true;
+												group.doc.deploy_information.has_running_release_pipeline = true;
+												group.doc.deploy_information.update_available = false;
 												if (candidate) {
 													group.doc.deploy_information.last_deploy.name =
 														candidate;
@@ -921,7 +910,9 @@ export default {
 								bench: group.name,
 								lastDeploy: group.doc?.deploy_information?.last_deploy,
 								onSuccess(candidate) {
+									// group.doc.deploy_information.has_running_release_pipeline = true;
 									group.doc.deploy_information.deploy_in_progress = true;
+									group.doc.deploy_information.update_available = false;
 									if (candidate) {
 										group.doc.deploy_information.last_deploy = {
 											name: candidate,
@@ -931,6 +922,17 @@ export default {
 							}),
 						);
 					},
+				},
+				{
+					label: 'Validating Deploy',
+					slots: {
+						prefix: () => h(LoadingIndicator, { class: 'w-4 h-4' }),
+					},
+					theme: 'green',
+					condition: () =>
+						!group.doc.deploy_information.deploy_in_progress &&
+						!group.doc.deploy_information.bench_creation_underway &&
+						group.doc.deploy_information.has_running_release_pipeline,
 				},
 				{
 					label: 'Deploy in progress',

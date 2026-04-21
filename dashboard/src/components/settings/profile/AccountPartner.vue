@@ -49,27 +49,34 @@
 			v-model="showAddPartnerCodeDialog"
 		>
 			<template v-slot:body-content>
-				<p class="pb-2 text-p-base">
+				<p class="mb-4 text-p-base">
 					Enter the partner code provided by your Partner
 				</p>
-				<div class="rounded border border-gray-200 bg-gray-100 p-2 mb-4">
-					<span class="text-sm leading-[1.5] text-gray-700">
+
+				<div
+					class="rounded bg-gray-100 p-4 mb-4 pb-2 prose prose-sm text-gray-700"
+				>
+					<p>
 						<strong>Note</strong>: After linking with Partner, following details
 						shall be shared with your partner team:
-						<br />
+					</p>
+
+					<ul class="list-disc pl-5">
 						<li>Billing name</li>
 						<li>Monthly billing amount</li>
-					</span>
+					</ul>
 				</div>
 				<FormControl
 					placeholder="e.g. rGjw3hJ81b"
 					v-model="code"
 					@input="referralCodeChange"
 				/>
-				<div class="mt-1">
-					<div v-if="partnerExists" class="text-sm text-green-600" role="alert">
-						Referral Code {{ code }} belongs to {{ partner }}
-					</div>
+				<div
+					v-if="partnerExists"
+					class="mt-3 text-sm text-green-600"
+					role="alert"
+				>
+					Referral Code {{ code }} belongs to {{ partner }}
 				</div>
 			</template>
 		</Dialog>
@@ -94,10 +101,17 @@
 				<div class="text-p-base pb-2">
 					This will remove the Partner associated with your account. Are you
 					sure you want to remove the Partner? <br /><br />
-					<div class="text-gray-800 bg-gray-200 p-2 rounded-md">
+					<div class="text-gray-800 bg-gray-200 p-3 rounded-md">
 						Your partner will no longer have access to your sites and servers
 						and will be removed as team member from your team.
 					</div>
+				</div>
+				<div
+					v-if="removePartnerError"
+					class="text-sm mt-2 leading-normal text-red-600"
+					role="alert"
+				>
+					{{ removePartnerError }}
 				</div>
 			</template>
 		</Dialog>
@@ -121,6 +135,7 @@ export default {
 			partnerExists: false,
 			partner: '',
 			errorMessage: '',
+			removePartnerError: '',
 		};
 	},
 	resources: {
@@ -161,8 +176,9 @@ export default {
 					this.showRemovePartnerDialog = false;
 					toast.success('Partner removed successfully');
 				},
-				onError() {
-					throw new DashboardError('Failed to remove Partner');
+				onError(e) {
+					this.removePartnerError =
+						e?.messages[0] || 'Failed to remove Partner. Please try again.';
 				},
 			};
 		},

@@ -23,6 +23,7 @@ from frappe.utils.user import is_system_user
 from press.access.support_access import has_support_access
 from press.guards import role_guard
 from press.press.doctype.agent_job.agent_job import job_detail
+from press.press.doctype.app.app import get_app_from_policies
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
@@ -664,8 +665,15 @@ def backups(name):
 @frappe.whitelist()
 @protected("Site")
 def get_backup_link(name, backup, file):
+	if file not in ["database", "public", "private", "config"]:
+		frappe.throw("Invalid file type")  # nosemgrep
+
 	try:
-		remote_file = frappe.db.get_value("Site Backup", backup, f"remote_{file}_file")
+		remote_file = frappe.db.get_value(
+			"Site Backup",
+			{"name": backup, "site": name},
+			f"remote_{file}_file",
+		)
 		return frappe.get_doc("Remote File", remote_file).download_link
 	except ClientError:
 		log_error(title="Offsite Backup Response Exception")
@@ -867,6 +875,35 @@ def _get_team_dedicated_server_info(for_server: str | None = None):
 		"case": "user_choice_multiple",
 		"dedicated_servers": servers,
 	}
+
+
+@frappe.whitelist()
+def get_release_group_policies_for_site(version: str | None = None, for_bench: str | None = None):
+	"""Get mandatory apps from polices for a given version
+	If a bench is specified we can get the version from there otherwise we will use the version passed as argument
+	"""
+	from press.press.doctype.bench.bench import get_apps_in_bench
+
+	apps_in_bench = set()
+
+	if not version and not for_bench:
+		frappe.throw("Version or bench must be specified", frappe.ValidationError)
+
+	if not version and for_bench:
+		version = frappe.db.get_value("Release Group", for_bench, "version")
+
+	if for_bench:
+		apps_in_bench = set(get_apps_in_bench(for_bench))
+
+	assert version, "Version must be specified or derived from bench"
+
+	mandatory_apps = {
+		app["app"]
+		for app in get_app_from_policies(scope="Frappe Version", target=version, for_installation=True)
+	}
+	mandatory_apps = mandatory_apps.intersection(apps_in_bench)
+
+	return {"policies": list(mandatory_apps)}
 
 
 @frappe.whitelist()
@@ -3021,6 +3058,7 @@ def _get_custom_app_upgrade_source(
 		frappe.throw(f"Branch not provided for {app_name}")  # nosemgrep
 	if not repository_url:
 		frappe.throw(f"Repository URL not provided for {app_name}")  # nosemgrep
+
 	validate_frappe_version_for_branch(
 		app_name=app_name,
 		owner=app_source.repository_owner,

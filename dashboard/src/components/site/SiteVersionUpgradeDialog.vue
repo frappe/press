@@ -311,7 +311,7 @@
 import { getCachedDocumentResource, LoadingIndicator } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
-import DateTimePicker from 'frappe-ui/src/components/DatePicker/DateTimePicker.vue';
+import { DateTimePicker } from 'frappe-ui';
 
 export default {
 	name: 'SiteVersionUpgradeDialog',
@@ -506,7 +506,7 @@ export default {
 				const data = await this.$resources.branches.fetch({
 					owner: app.repository_owner,
 					name: app.repository,
-					source: app.source || '',
+					app_source: app.source || '',
 				});
 				this.appBranches[app.app] = (data || []).map((branch) => branch.name);
 			} catch (error) {
@@ -533,7 +533,6 @@ export default {
 							app: app.app,
 							branch: this.customAppSources[app.app]?.branch || app.branch,
 							repository_url: app.repository_url,
-							github_installation_id: app.github_installation_id,
 						});
 					}
 				});

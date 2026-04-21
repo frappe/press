@@ -109,7 +109,7 @@
 								label="Renew"
 								:disabled="false"
 								:variant="'solid'"
-								@click="showRenewalConfirmationDialog = true"
+								@click="partnerMRR.submit()"
 							/>
 						</div>
 					</div>
@@ -124,6 +124,66 @@
 		>
 			<template #body-content>
 				<PartnerContribution :partnerEmail="team.doc.partner_email" />
+			</template>
+		</Dialog>
+
+		<Dialog
+			:show="showRenewalErrorDialog"
+			v-model="showRenewalErrorDialog"
+			:options="{
+				title: 'Renewal Eligibility',
+			}"
+		>
+			<template #body-content>
+				<p
+					class="text-base leading-relaxed align-center tracking-wide text-gray-700"
+				>
+					<LucideAlertTriangle class="inline h-4 w-4 text-red-500" />
+					You do not meet the Partnership renewal criteria.
+				</p>
+				<div class="flex my-4 gap-4">
+					<div
+						class="flex-1 justify-center text-left p-5 rounded-md bg-gray-50"
+					>
+						<div class="flex flex-col gap-2">
+							<p>
+								<span class="font-semibold text-3xl">{{
+									formatCurrency(mrr)
+								}}</span
+								><span class="text-base text-gray-600">
+									/
+									{{
+										formatCurrency(team.doc.currency === 'USD' ? 100 : 10000)
+									}}</span
+								>
+							</p>
+							<div class="font-normal text-gray-700 tracking-wide">MRR</div>
+						</div>
+					</div>
+					<div
+						class="flex-1 justify-center text-left p-5 rounded-md bg-gray-50"
+					>
+						<div class="flex flex-col gap-2">
+							<p>
+								<span class="font-semibold text-3xl">{{
+									partnerDetails.data?.custom_number_of_certified_members || 0
+								}}</span
+								><span class="text-base text-gray-600"> / 2</span>
+							</p>
+							<div class="font-normal text-gray-700 tracking-wide">
+								Certifications
+							</div>
+						</div>
+					</div>
+				</div>
+				<Button
+					class="w-full"
+					label="Contact Support"
+					variant="outline"
+					size="md"
+					icon-right="external-link"
+					@click="openSupport"
+				/>
 			</template>
 		</Dialog>
 
@@ -183,6 +243,7 @@ const team = inject('team');
 
 const showPartnerContributionDialog = ref(false);
 const showRenewalConfirmationDialog = ref(false);
+const showRenewalErrorDialog = ref(false);
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
@@ -203,8 +264,39 @@ const partnerConsent = createListResource({
 	},
 });
 
+let mrr = ref(0);
+const partnerMRR = createResource({
+	url: 'press.api.partner.get_partner_mrr',
+	cache: 'partnerContribution',
+	params: {
+		partner_email: team.doc.partner_email,
+		prev_month: true,
+	},
+	onSuccess(data) {
+		mrr.value = data[0]?.total_amount;
+		canRenew();
+	},
+});
+
+function canRenew() {
+	// Allow renewal if mrr is greater than $100 or 10000 INR
+	if (
+		((team.doc.currency === 'USD' && mrr.value >= 100) ||
+			(team.doc.currency === 'INR' && mrr.value >= 10000)) &&
+		partnerDetails.data?.custom_number_of_certified_members >= 2
+	) {
+		showRenewalConfirmationDialog.value = true;
+	} else {
+		showRenewalErrorDialog.value = true;
+	}
+}
+
 function routeToCertification() {
 	router.push('/partners/certificates');
+}
+
+function openSupport() {
+	window.open('https://support.frappe.io/', '_blank');
 }
 
 const daysUntilRenewal = computed(() => {
@@ -318,10 +410,13 @@ const formatDate = (dateString) => {
 };
 
 const formatCurrency = (amount) => {
+	if (!amount) {
+		amount = 0;
+	}
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: team.doc.currency,
-		maximumFractionDigits: 2,
+		maximumFractionDigits: 1,
 	}).format(amount);
 };
 

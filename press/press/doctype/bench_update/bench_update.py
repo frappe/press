@@ -84,10 +84,19 @@ class BenchUpdate(Document):
 				frappe.ValidationError,
 			)
 
-	def deploy(self, run_will_fail_check=False) -> str:
+	def deploy(
+		self,
+		run_will_fail_check=False,
+		validate_pre_candidate_checks: bool = True,
+		create_build: bool = True,
+	) -> str:
+		"""Creates and returns candidate name or build name depending on the point of invocation."""
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		candidate = rg.create_deploy_candidate(self.apps, run_will_fail_check)
-		deploy = candidate.schedule_build_and_deploy()
+		candidate = rg.create_deploy_candidate(
+			apps_to_update=self.apps,
+			run_will_fail_check=run_will_fail_check,
+			validate_pre_candidate_checks=validate_pre_candidate_checks,
+		)
 
 		self.candidate = candidate.name
 		self.save()
@@ -96,6 +105,12 @@ class BenchUpdate(Document):
 			raise Exception(
 				f"Invalid name found for deploy candidate '{candidate.name}' of type {type(candidate.name)}"
 			)
+
+		if not create_build:
+			# In case we are not scheduling build from here (eg. new build flow) return candidate name here
+			return candidate.name
+
+		deploy = candidate.schedule_build_and_deploy()
 
 		return deploy["name"]
 
@@ -164,15 +179,17 @@ def get_bench_update(
 	apps: list,
 	sites: list | None = None,
 	is_inplace_update: bool = False,
+	ignore_permissions_check: bool = False,
 ) -> BenchUpdate:
 	if sites is None:
 		sites = []
 
-	current_team = get_current_team()
-	rg_team = frappe.db.get_value("Release Group", name, "team")
+	if not ignore_permissions_check:
+		current_team = get_current_team()
+		rg_team = frappe.db.get_value("Release Group", name, "team")
 
-	if rg_team != current_team:
-		frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
+		if rg_team != current_team:
+			frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
 
 	bench_update: "BenchUpdate" = frappe.get_doc(
 		{
@@ -192,4 +209,5 @@ def get_bench_update(
 			"is_inplace_update": is_inplace_update,
 		}
 	).insert(ignore_permissions=True)
+
 	return bench_update

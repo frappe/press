@@ -44,6 +44,9 @@ def get_notifications(
 	if filters.get("read") == "Unread":
 		query = query.where(PressNotification.read == 0)
 
+	if filters.get("type"):
+		query = query.where(PressNotification.type == filters["type"])
+
 	notifications = query.run(as_dict=True)
 
 	for notification in notifications:
@@ -53,8 +56,8 @@ def get_notifications(
 
 
 def assign_notification_route(notification):
-	if notification.document_type == "Deploy Candidate":
-		rg_name = frappe.db.get_value("Deploy Candidate", notification.document_name, "group")
+	if notification.document_type == "Deploy Candidate Build":
+		rg_name = frappe.db.get_value("Deploy Candidate Build", notification.document_name, "group")
 		notification.route = f"groups/{rg_name}/deploys/{notification.document_name}"
 	elif notification.document_type == "Agent Job":
 		site_name = frappe.db.get_value("Agent Job", notification.document_name, "site")
@@ -82,5 +85,10 @@ def mark_all_notifications_as_read():
 
 
 @frappe.whitelist()
-def get_unread_count():
-	return frappe.db.count("Press Notification", {"read": False, "team": get_current_team()})
+def get_unread_count(type: str | None = None):
+	filters = {"read": False, "team": get_current_team()}
+
+	if type:
+		filters["type"] = type
+
+	return frappe.db.count("Press Notification", filters)

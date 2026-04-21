@@ -71,6 +71,14 @@ class LastDeployInfo(TypedDict):
 	creation: datetime
 
 
+class MandatoryAppUpgradeInfo(TypedDict):
+	source: str
+	release: str
+
+
+MandatoryAppUpgrade = dict[str, MandatoryAppUpgradeInfo]
+
+
 if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -725,15 +733,14 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def create_deploy_candidate(
-		self,
-		apps_to_update=None,
-		run_will_fail_check=False,
+		self, apps_to_update=None, run_will_fail_check=False, validate_pre_candidate_checks: bool = True
 	) -> "DeployCandidate | None":
 		if not self.enabled:
 			return None
 
-		self.check_app_server_storage()
-		self.check_auto_scales()
+		if validate_pre_candidate_checks:
+			self.check_app_server_storage()
+			self.check_auto_scales()
 
 		apps = self.get_apps_to_update(apps_to_update)
 		if apps_to_update is None:
@@ -864,6 +871,16 @@ class ReleaseGroup(Document, TagHelpers):
 
 		return sorted_apps
 
+	@property
+	def has_running_release_pipeline(self) -> bool:
+		return bool(
+			frappe.db.exists(
+				"Release Pipeline",
+				{"release_group": self.name, "status": ("in", ["Pending", "Running", "Retrying"])},
+				"name",
+			)
+		)
+
 	@frappe.whitelist()
 	def deploy_information(self):
 		out = frappe._dict(update_available=False)
@@ -874,6 +891,14 @@ class ReleaseGroup(Document, TagHelpers):
 
 		out.last_deploy = self.last_dc_info
 		out.deploy_in_progress = self.deploy_in_progress
+		out.has_running_release_pipeline = self.has_running_release_pipeline
+		if not out.deploy_in_progress and out.has_running_release_pipeline:
+			# Check if the deploy has finished and bench creation is underway.
+			out.bench_creation_underway = bool(
+				frappe.db.exists("Bench", {"group": self.name, "status": ("in", ("Installing", "Pending"))})
+			)
+		else:
+			out.bench_creation_underway = False
 
 		out.removed_apps = self.get_removed_apps()
 		out.update_available = (
@@ -881,6 +906,7 @@ class ReleaseGroup(Document, TagHelpers):
 			or (len(out.removed_apps) > 0)
 			or self.dependency_update_pending
 		)
+		out.update_available = False if out.has_running_release_pipeline else out.update_available
 		out.number_of_apps = len(self.apps)
 
 		out.sites = [
@@ -1230,6 +1256,37 @@ class ReleaseGroup(Document, TagHelpers):
 			)
 		return apps
 
+	def mandatory_app_upgrades(self) -> MandatoryAppUpgrade:
+		"""Returns a map of { app_name: { source, release, hash } } for enforced upgrades."""
+		app_sources = [app.source for app in self.apps]
+
+		# We query the child table directly to find any mandatory rules
+		# linked to 'Active' policies that match our current app sources.
+		# Adjust table names/fields as per your schema.
+		ReleaseGroupPolicy = frappe.qb.DocType("Release Group Policy")
+		ReleaseGroupPolicyApp = frappe.qb.DocType("Release Group Policy App")
+
+		policies = (
+			frappe.qb.from_(ReleaseGroupPolicy)
+			.join(ReleaseGroupPolicyApp)
+			.on(ReleaseGroupPolicyApp.parent == ReleaseGroupPolicy.name)
+			.where(ReleaseGroupPolicy.status == "Active")
+			.where(ReleaseGroupPolicy.scope == "App Source")
+			.where(ReleaseGroupPolicy.target.isin(app_sources))
+			.where(
+				ReleaseGroupPolicyApp.source.notin(app_sources)
+			)  # Only consider policies that target sources different from current ones
+			.select(
+				ReleaseGroupPolicyApp.app,
+				ReleaseGroupPolicyApp.source,
+				ReleaseGroupPolicyApp.release,
+			)
+			.run(as_dict=True)
+		)
+
+		# { 'frappe': {'source': '...', 'release': '...'} }
+		return {p["app"]: {"source": p["source"], "release": p["release"]} for p in policies}
+
 	def get_next_apps(self, current_apps) -> list[frappe._dict[str, str | datetime]]:  # noqa: C901
 		marketplace_app_sources = self.get_marketplace_app_sources()
 		current_team = get_current_team(True)
@@ -1292,7 +1349,34 @@ class ReleaseGroup(Document, TagHelpers):
 			pluck="source",
 		)
 
+		mandatory_upgrades = self.mandatory_app_upgrades()
+
 		for app in self.apps:
+			if app.app in mandatory_upgrades:
+				rule = mandatory_upgrades[app.app]
+				release = frappe.db.get_value(
+					"App Release",
+					rule["release"],
+					["name", "source", "public", "status", "hash", "message", "creation"],
+					as_dict=True,
+				)
+				release["is_yanked"] = False  # Mandatory releases cannot be yanked
+				release["is_mandatory"] = True  # For UI
+				next_apps.append(
+					frappe._dict(
+						{
+							"app": app.app,
+							"source": rule["source"],
+							"release": rule["release"],
+							"hash": release["hash"],
+							"title": app.title,
+							"releases": [release],  # ONLY the mandatory release is shown
+							"is_mandatory": True,
+						}
+					)
+				)
+				continue
+
 			latest_app_release = None
 			latest_app_releases = find_all(latest_releases, lambda x: x.source == app.source)
 

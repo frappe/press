@@ -1,0 +1,80 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-03-11 22:18:10.652168",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "input_a",
+  "input_c",
+  "input_e",
+  "column_break_sdtq",
+  "input_b",
+  "input_d",
+  "input_f"
+ ],
+ "fields": [
+  {
+   "fieldname": "input_a",
+   "fieldtype": "Int",
+   "label": "Input A"
+  },
+  {
+   "fieldname": "input_c",
+   "fieldtype": "Int",
+   "label": "Input C"
+  },
+  {
+   "fieldname": "input_e",
+   "fieldtype": "Int",
+   "label": "Input E"
+  },
+  {
+   "fieldname": "column_break_sdtq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "input_b",
+   "fieldtype": "Int",
+   "label": "Input B"
+  },
+  {
+   "fieldname": "input_d",
+   "fieldtype": "Int",
+   "label": "Input D"
+  },
+  {
+   "fieldname": "input_f",
+   "fieldtype": "Int",
+   "label": "Input F"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-11 22:19:13.824971",
+ "modified_by": "Administrator",
+ "module": "Workflow Engine",
+ "name": "Press Workflow Test",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

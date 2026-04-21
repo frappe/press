@@ -1317,27 +1317,23 @@ def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
 	if not has_retryable_error:
 		return False
 
-	job.cancel_job()
-
-	frappe.db.set_value("Agent Job", job.name, "status", "Failure")
-	frappe.db.set_value("Bench", job.bench, "status", "Broken")
-
-	# Trigger immediate archival of bench to allow retry
 	bench: Bench = frappe.get_doc("Bench", job.bench)
-	bench.archive(retry_new_bench=True)
-	return True
-
-
-def retry_new_bench_job_if_possible(bench: Bench):
-	"""Check if there are retries left, if yes then trigger a new bench job immediately."""
 	retry_count = frappe.db.count(
 		"Bench", {"build": bench.build, "server": bench.server, "group": bench.group}
 	)
 
 	if retry_count >= 3:
-		return
+		# We can't retry anymore so accept the fate and proceed with archival with job processing
+		return False
 
-	bench.retry_bench()
+	job.cancel_job()
+
+	frappe.db.set_value("Agent Job", job.name, "status", "Failure")
+	frappe.db.set_value("Bench", job.bench, "status", "Broken")
+
+	bench = bench.reload()
+	bench.archive(retry_new_bench=True)
+	return True
 
 
 def process_new_bench_job_update(job: AgentJob):  # noqa: C901
@@ -1445,7 +1441,7 @@ def process_archive_bench_job_update(job: AgentJob):
 	retry_new_bench = request_data.get("retry_new_bench", False)
 
 	if updated_status == "Archived" and retry_new_bench:
-		retry_new_bench_job_if_possible(bench)
+		bench.retry_bench()  # We know now for sure that the bench can be retired
 
 
 def process_add_ssh_user_job_update(job):
@@ -1858,6 +1854,20 @@ def identify_and_kill_zombie_benches(server: str, running_benches: list[str]):
 
 	except Exception as e:
 		frappe.log_error("Failed To Kill Zombie Benches", str(e))
+
+
+def get_apps_in_bench(bench_name: str):
+	"""Get a list of all apps added to the bench (might be quicker than a get_doc)"""
+	Bench = frappe.qb.DocType("Bench")
+	BenchApp = frappe.qb.DocType("Bench App")
+	return (
+		frappe.qb.from_(BenchApp)
+		.join(Bench)
+		.on(BenchApp.parent == Bench.name)
+		.where(Bench.name == bench_name)
+		.select(BenchApp.app)
+		.run(pluck=True)
+	)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")

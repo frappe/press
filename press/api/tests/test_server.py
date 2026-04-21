@@ -60,7 +60,6 @@ def successful_provision(self: VirtualMachine):
 
 
 def available_check_machine_availability(self: Cluster, machine_type: str, instance_id: str | None = None):
-	print(self.cloud_provider, machine_type, instance_id)
 	return True
 
 

@@ -1,5 +1,5 @@
 <template>
-	<ObjectList class="p-5" :options="logsOptions" />
+	<ObjectList class="p-3" :options="logsOptions" />
 </template>
 
 <script>
@@ -92,7 +92,7 @@ export default {
 					actions: () => [
 						{
 							slots: {
-								prefix: () => h(LucideSparkleIcon),
+								prefix: () => h(LucideSparkleIcon, { class: 'size-4' }),
 							},
 							label: 'View in Log Browser',
 							onClick: () => {
@@ -210,7 +210,7 @@ export default {
 					actions: () => [
 						{
 							slots: {
-								prefix: () => h(LucideSparkleIcon),
+								prefix: () => h(LucideSparkleIcon, { class: 'size-4' }),
 							},
 							label: 'View in Log Browser',
 							onClick: () => {

@@ -16,6 +16,19 @@ frappe.ui.form.on('Marketplace App Audit', {
 			frappe.show_alert({ message: __('Audit re-queued'), indicator: 'blue' });
 			frm.reload_doc();
 		});
+
+		if (
+			frm.doc.status === 'Completed' &&
+			['Fail', 'Warn', 'Needs Improvement'].includes(frm.doc.audit_result)
+		) {
+			frm.add_custom_button(__('Send Report to Publisher'), async () => {
+				await frm.call('send_report_to_publisher');
+				frappe.show_alert({
+					message: __('Report sent to publisher'),
+					indicator: 'green',
+				});
+			});
+		}
 	},
 });
 

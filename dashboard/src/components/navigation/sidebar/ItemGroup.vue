@@ -28,16 +28,15 @@ watch(
 <template>
 	<div
 		@click="toggle"
-		class="mt-0.5 flex cursor-pointer select-none items-center rounded px-2 py-1 text-ink-gray-6 transition hover:bg-gray-100"
+		class="flex cursor-pointer select-none items-center rounded px-2.5 py-1.5 text-ink-gray-6 transition hover:bg-surface-gray-2"
 		:class="[
 			item.disabled ? 'pointer-events-none opacity-50' : '',
 			$attrs.class,
 		]"
 	>
 		<div class="flex w-full items-center space-x-2">
-			<span class="grid h-5 w-6 place-items-center">
-				<component :is="item.icon" class="h-4 w-4 text-ink-gray-6" />
-			</span>
+			<component :is="item.icon" class="size-4 text-ink-gray-6" />
+
 			<span class="text-sm">{{ item.name }}</span>
 			<component :is="item.badge" />
 			<span class="!ml-auto">
@@ -50,7 +49,7 @@ watch(
 	</div>
 	<CollapseTransition>
 		<div v-if="isOpened">
-			<div class="ml-5 py-1">
+			<div class="ml-5 flex flex-col gap-1">
 				<Item
 					v-for="(subItem, i) in item.children"
 					:class="{ 'mt-0.5': i !== 0 }"

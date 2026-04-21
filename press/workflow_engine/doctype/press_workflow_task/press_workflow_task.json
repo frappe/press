@@ -1,0 +1,207 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-02-28 18:31:49.055987",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "workflow",
+  "status",
+  "parent_task",
+  "queue",
+  "timeout",
+  "column_break_frrn",
+  "method_name",
+  "method_title",
+  "args",
+  "kwargs",
+  "column_break_fiyw",
+  "output",
+  "exception",
+  "signature",
+  "section_break_jvoo",
+  "start",
+  "column_break_fyrh",
+  "end",
+  "column_break_azky",
+  "duration",
+  "section_break_stdout",
+  "stdout"
+ ],
+ "fields": [
+  {
+   "fieldname": "workflow",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Workflow",
+   "options": "Press Workflow",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "parent_task",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Parent Task",
+   "options": "Press Workflow Task",
+   "read_only": 1
+  },
+  {
+   "fieldname": "method_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Method Name",
+   "length": 512,
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "method_title",
+   "fieldtype": "Data",
+   "label": "Method Title",
+   "length": 512,
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "signature",
+   "fieldtype": "Data",
+   "label": "Signature",
+   "length": 256,
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_jvoo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_fyrh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_azky",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Duration",
+   "label": "Duration",
+   "read_only": 1
+  },
+  {
+   "default": "Queued",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Queued\nRunning\nSuccess\nFailure",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "exception",
+   "fieldtype": "Link",
+   "label": "Exception",
+   "options": "Press Workflow Object",
+   "read_only": 1
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Link",
+   "label": "Output",
+   "options": "Press Workflow Object",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_frrn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_fiyw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "args",
+   "fieldtype": "Link",
+   "label": "Args",
+   "options": "Press Workflow Object",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "kwargs",
+   "fieldtype": "Link",
+   "label": "Kwargs",
+   "options": "Press Workflow Object",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_stdout",
+   "fieldtype": "Section Break",
+   "label": "Output"
+  },
+  {
+   "fieldname": "stdout",
+   "fieldtype": "Long Text",
+   "label": "Stdout",
+   "read_only": 1
+  },
+  {
+   "fieldname": "queue",
+   "fieldtype": "Data",
+   "label": "Queue",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "timeout",
+   "fieldtype": "Int",
+   "label": "Timeout"
+  }
+ ],
+ "grid_page_length": 50,
+ "links": [],
+ "modified": "2026-04-14 16:25:01.842528",
+ "modified_by": "Administrator",
+ "module": "Workflow Engine",
+ "name": "Press Workflow Task",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

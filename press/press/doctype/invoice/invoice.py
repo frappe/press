@@ -24,6 +24,7 @@ from press.utils.billing import (
 	get_razorpay_client,
 	is_frappe_auth_disabled,
 )
+from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.usage_record.usage_record import UsageRecord
@@ -309,14 +310,16 @@ class Invoice(Document):
 				# or issue a refund if succeeded
 				self.save()  # status is already Paid, so no need to set again
 			else:
-				self.change_stripe_invoice_status("Void")
+				# check if invoice is already void earlier
+				if invoice.status != "void":
+					self.change_stripe_invoice_status("Void")
 				self.add_comment(
 					text=(
 						f"Stripe Invoice {self.stripe_invoice_id} voided because payment is done via credits."
 					)
 				)
 
-		self.save()
+		self.save(ignore_permissions=True)
 
 		if self.amount_due > 0:
 			if self.payment_mode == "Prepaid Credits":
@@ -696,7 +699,7 @@ class Invoice(Document):
 		else:
 			self.billing_email = self.customer_email
 		self.currency = team.currency
-		if not self.payment_mode:
+		if not self.payment_mode or self.status == "Draft":
 			self.payment_mode = team.payment_mode
 		if not self.currency:
 			frappe.throw(f"Cannot create Invoice because Currency is not set in Team {self.team}")
@@ -1314,9 +1317,11 @@ def finalize_razorpay_mandate_invoices():
 		},
 		fields=["name", "razorpay_payment_id"],
 	)
+	client = get_razorpay_client()
 	for inv in invoices:
+		if has_job_timeout_exceeded():
+			return
 		try:
-			client = get_razorpay_client()
 			payment = client.payment.fetch(inv.razorpay_payment_id)
 			payment_status = payment.get("status")
 

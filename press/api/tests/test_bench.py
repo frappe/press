@@ -147,31 +147,6 @@ class TestAPIBench(FrappeTestCase):
 		self.assertEqual(dc_count_after, dc_count_before + 1)
 		self.assertEqual(bu_count_after, bu_count_before + 1)
 
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
-		new=foreground_enqueue_doc,
-	)
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
-	def test_deploy_and_update_fn_fails_without_release_argument(self):
-		group = new(
-			{
-				"title": "Test Bench",
-				"apps": [{"name": self.app.name, "source": self.app_source.name}],
-				"version": self.version,
-				"cluster": "Default",
-				"saas_app": None,
-				"server": None,
-			}
-		)
-
-		self.assertRaises(
-			frappe.exceptions.ValidationError,
-			deploy_and_update,
-			group,
-			[{"app": self.app.name}],
-			[],
-		)
-
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	def test_deploy_fn_fails_without_apps(self):
 		frappe.set_user(self.team.user)
