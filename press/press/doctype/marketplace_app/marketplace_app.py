@@ -74,15 +74,6 @@ class MarketplaceApp(WebsiteGenerator):
 		privacy_policy: DF.Data | None
 		published: DF.Check
 		published_on: DF.Date | None
-		review_stage: DF.Literal[
-			"Not Started",
-			"Description Missing",
-			"Logo Missing",
-			"App Release Not Reviewed",
-			"Ready for Review",
-			"Ready to Publish",
-			"Rejected",
-		]
 		route: DF.Data | None
 		run_after_install_script: DF.Check
 		run_after_uninstall_script: DF.Check
@@ -92,7 +83,6 @@ class MarketplaceApp(WebsiteGenerator):
 		site_config: DF.JSON | None
 		sources: DF.Table[MarketplaceAppVersion]
 		status: DF.Literal["Draft", "Published", "In Review", "Attention Required", "Rejected", "Disabled"]
-		stop_auto_review: DF.Check
 		subject: DF.Data | None
 		subscription_type: DF.Literal["Free", "Paid", "Freemium"]
 		subscription_update_hook: DF.Data | None
@@ -108,7 +98,6 @@ class MarketplaceApp(WebsiteGenerator):
 		"title",
 		"status",
 		"description",
-		"review_stage",
 	]
 
 	def autoname(self):
@@ -696,7 +685,7 @@ class MarketplaceApp(WebsiteGenerator):
 	@dashboard_whitelist()
 	def mark_app_ready_for_review(self):
 		# TODO: Start security check and auto deploy process here
-		self.review_stage = "Ready for Review"
+		self.status = "In Review"
 		self.save()
 
 	@dashboard_whitelist()

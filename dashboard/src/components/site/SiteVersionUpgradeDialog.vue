@@ -364,13 +364,21 @@ export default {
 			}
 			return '';
 		},
-		datetimeInIST() {
+		parsedTargetDateTime() {
 			if (!this.targetDateTime) return null;
-			const datetimeInIST = this.$dayjs(this.targetDateTime).format(
-				'YYYY-MM-DDTHH:mm',
-			);
 
-			return datetimeInIST;
+			const localTimezone = dayjs.tz.guess();
+			return dayjs.tz(
+				this.targetDateTime,
+				PICKER_DATETIME_FORMAT,
+				localTimezone,
+			);
+		},
+		datetimeInIST() {
+			if (!this.parsedTargetDateTime) return null;
+			return this.parsedTargetDateTime
+				.tz(IST_TIMEZONE)
+				.format('YYYY-MM-DDTHH:mm');
 		},
 		errorMessage() {
 			return (
@@ -396,22 +404,24 @@ export default {
 		isScheduleTimeValid() {
 			// Atleast 30 mins from now for deploying bench
 			if (!this.targetDateTime) return true;
+
 			if (!this.existingBenchGroup) {
-				const scheduledTime = this.targetDateTime.$d
-					? this.$dayjs(this.targetDateTime.$d)
-					: this.$dayjs(this.targetDateTime);
-				const minimumTime = this.$dayjs().add(30, 'minute');
-				return scheduledTime.isAfter(minimumTime);
+				const localTimezone = dayjs.tz.guess();
+				const minimumTime = dayjs().tz(localTimezone).add(30, 'minute');
+				return this.parsedTargetDateTime.isAfter(minimumTime);
 			}
+
 			return true;
 		},
+
 		disableButton() {
 			if (!this.newReleaseGroupTitle || !this.hasValidCustomAppSources) {
 				return true;
 			}
-			if (this.targetDateTime && !this.isScheduleTimeValid) {
-				return true;
+			if (!this.targetDateTime) {
+				return false;
 			}
+			return !this.isScheduleTimeValid;
 		},
 	},
 	resources: {

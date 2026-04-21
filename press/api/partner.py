@@ -621,6 +621,8 @@ def calculate_partner_tier(contribution: float, currency: str) -> dict | None:
 @role_guard.api("partner")
 def add_partner(referral_code: str) -> str | None:
 	team = get_current_team(get_doc=True)
+	year_ago = frappe.utils.add_to_date(years=-1)
+	is_old_team = bool(team.creation > year_ago)
 	partner = frappe.get_doc("Team", {"partner_referral_code": referral_code}).name
 	if frappe.db.exists(
 		"Partner Approval Request",
@@ -634,6 +636,7 @@ def add_partner(referral_code: str) -> str | None:
 			"partner": partner,
 			"requested_by": team.name,
 			"status": "Pending",
+			"approved_by_frappe": 1 if is_old_team else 0,
 			"send_mail": True,
 		}
 	)
@@ -1014,7 +1017,12 @@ def fetch_followup_details(id: str, lead: str) -> list[dict] | None:
 @frappe.whitelist()
 @role_guard.api("partner")
 def check_certificate_exists(email: str, certificate_type: str) -> int:
-	return frappe.db.count("Partner Certificate", {"partner_member_email": email, "course": certificate_type})
+	cert_options = ["frappe-developer-certification", "app-development-with-frappe-framework"]
+	if certificate_type == "erpnext":
+		cert_options = ["erpnext-distribution", "erpnext-training"]
+	return frappe.db.count(
+		"Partner Certificate", {"partner_member_email": email, "course": ("in", cert_options)}
+	)
 
 
 @frappe.whitelist()

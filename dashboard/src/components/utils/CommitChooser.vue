@@ -76,6 +76,12 @@
 								{{ option.label }}
 							</span>
 							<span
+								v-if="option.is_mandatory"
+								class="text-xs text-blue-500 font-medium"
+							>
+								Mandatory
+							</span>
+							<span
 								v-if="option.is_yanked"
 								class="text-xs text-red-500 font-medium"
 							>
