@@ -19,6 +19,7 @@ from press.press.doctype.app.app import get_app_from_policies
 from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.cluster.cluster import Cluster
+from press.press.doctype.deploy_candidate.deploy_candidate import RESTING_STATES, TRANSITORY_STATES
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
 	fail_and_redeploy as fail_and_redeploy_build,
 )
@@ -1269,3 +1270,60 @@ def search_releases(
 	)
 
 	return q.run(as_dict=1)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def deploy_status(name: str) -> dict[str, bool | str | None]:
+	"""
+	Determine deployment state for a Release Group.
+
+	States:
+	- validating: pipeline exists, but no deploy candidate yet
+	- deploying: candidate exists and is in progress
+	- idle: no active pipeline or deployment finished
+	"""
+
+	ACTIVE_PIPELINE_STATUSES = ("Running", "Pending")
+
+	def response(is_validating=False, is_deploy_in_progress=False, candidate=None):
+		return {
+			"is_validating": is_validating,
+			"is_deploy_in_progress": is_deploy_in_progress,
+			"candidate": candidate,
+		}
+
+	pipeline_creation = frappe.db.get_value(
+		"Release Pipeline",
+		{
+			"release_group": name,
+			"status": ["in", ACTIVE_PIPELINE_STATUSES],
+		},
+		"creation",
+	)
+
+	if not pipeline_creation:
+		return response()
+
+	dc = frappe.db.get_value(
+		"Deploy Candidate Build",
+		{
+			"group": name,
+			"creation": (">", pipeline_creation),
+		},
+		["name", "status"],
+	)
+
+	if not dc:
+		return response(is_validating=True)
+
+	candidate, status = dc
+
+	# 3. Map status → UI state
+	if status in TRANSITORY_STATES:
+		return response(is_deploy_in_progress=True, candidate=candidate)
+
+	if status in RESTING_STATES:
+		return response()
+
+	return response(is_validating=True)

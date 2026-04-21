@@ -319,7 +319,7 @@ class Invoice(Document):
 					)
 				)
 
-		self.save(ignore_permissions=True)
+		self.save()
 
 		if self.amount_due > 0:
 			if self.payment_mode == "Prepaid Credits":
@@ -947,7 +947,7 @@ class Invoice(Document):
 				{"invoice": self.name, "amount": allocated, "currency": self.currency},
 			)
 			# ignore permissions for BT added via Mpesa
-			doc.save(ignore_permissions=True)
+			doc.save()
 			total_allocated += allocated
 
 		balance_transaction = frappe.get_doc(
@@ -956,7 +956,7 @@ class Invoice(Document):
 			type="Applied To Invoice",
 			amount=total_allocated * -1,
 			invoice=self.name,
-		).insert(ignore_permissions=True)
+		).insert()
 		balance_transaction.submit()
 
 		self.applied_credits = sum(row.amount for row in self.credit_allocations)
