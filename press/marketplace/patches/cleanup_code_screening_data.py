@@ -32,5 +32,5 @@ def execute():
 		marketplace_app.review_stage.isnotnull()
 	).run()
 
-	app_release_approval_code_comments = frappe.qb.DocType("App Release Approval Code Comments")
-	frappe.qb.delete(app_release_approval_code_comments).run()
+	if frappe.db.table_exists("tabApp Release Approval Code Comments"):
+		frappe.db.sql("DELETE FROM `tabApp Release Approval Code Comments`")  # nosemgrep
