@@ -983,6 +983,20 @@ def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegra
 			hour=0, minute=0, second=0, microsecond=0
 		) + timedelta(days=1)
 
+	# if the difference is less than an hour, set timegrain to 1 min
+	elif (end - start).seconds < 60 * 60:
+		timegrain = 60
+		local_end = end.astimezone(pytz_timezone(timezone))
+		# round up to next 15-minute interval
+		minutes = (local_end.minute // 15 + 1) * 15
+		if minutes == 60:
+			local_end = local_end.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+		else:
+			local_end = local_end.replace(minute=minutes, second=0, microsecond=0)
+		end = local_end
+		# align start to 60 minutes before this
+		start = end - timedelta(minutes=60)
+
 	query: dict[str, str | float] = {
 		"query": (
 			f'avg_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s]) or on() vector(0)'
