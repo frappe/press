@@ -786,9 +786,9 @@ def get_additional_duration_reports(
 def get_advanced_analytics(
 	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
 ):
-	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
-	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
-	timespan, timegrain = auto_timespan_timegrain(start, end)
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
 
 	job_data = get_usage(name, "job", timezone, start_dt, end_dt, timegrain)
 
