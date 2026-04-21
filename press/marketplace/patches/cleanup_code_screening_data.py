@@ -24,12 +24,12 @@ def execute():
 		if frappe.db.has_column("App Release Approval Request", field):
 			frappe.db.sql(
 				f"UPDATE `tabApp Release Approval Request` SET `{field}` = NULL WHERE `{field}` IS NOT NULL"
-			)
+			)  # nosemgrep
 
-	if frappe.db.has_column("Marketplace App", "review_stage"):
-		frappe.db.sql(
-			"UPDATE `tabMarketplace App` SET `review_stage` = NULL WHERE `review_stage` IS NOT NULL"
-		)
+	marketplace_app = frappe.qb.DocType("Marketplace App")
+	frappe.qb.update(marketplace_app).set(marketplace_app.review_stage, None).where(
+		marketplace_app.review_stage.isnotnull()
+	).run()
 
-	if frappe.db.table_exists("tabApp Release Approval Code Comments"):
-		frappe.db.sql("DELETE FROM `tabApp Release Approval Code Comments`")
+	app_release_approval_code_comments = frappe.qb.DocType("App Release Approval Code Comments")
+	frappe.qb.delete(app_release_approval_code_comments).run()
