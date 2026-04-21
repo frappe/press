@@ -205,9 +205,8 @@ def get_default_team_for_user(user):
 
 
 def chat_enabled():
-	if not frappe.get_single_value("Press Settings", "enable_chat"):
+	if not frappe.db.get_single_value("Press Settings", "enable_chat"):
 		return False
-	return True
 
 	current_team_doc = get_current_team(get_doc=True)
 
