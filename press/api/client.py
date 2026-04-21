@@ -11,6 +11,7 @@ from frappe.client import set_value as _set_value
 from frappe.handler import run_doc_method as _run_doc_method
 from frappe.model import child_table_fields, default_fields
 from frappe.model.base_document import get_controller
+from frappe.monitor import add_data_to_monitor
 from frappe.query_builder.terms import ValueWrapper
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
@@ -127,7 +128,20 @@ def get_list(
 	if doctype in ["Team", "User SSH Key"]:
 		return []
 
+	add_data_to_monitor(
+		press_api_client_method="get_list",
+		press_api_client_payload={
+			"doctype": doctype,
+			"fields": fields,
+			"filters": filters,
+			"order_by": order_by,
+			"start": start,
+			"limit": limit,
+			"parent": parent,
+		},
+	)
 	check_permissions(doctype)
+
 	valid_fields = validate_fields(doctype, fields)
 	valid_filters = validate_filters(doctype, filters)
 
@@ -213,7 +227,16 @@ def get_list_query(
 	document_type=lambda args: str(args.get("doctype")),
 	document_name=lambda args: str(args.get("name")),
 )
-def get(doctype, name):
+def get(doctype, name):  # noqa: C901
+	if frappe.request and frappe.request.path and frappe.request.path == "/api/method/press.api.client.get":
+		add_data_to_monitor(
+			press_api_client_method="get_doc",
+			press_api_client_payload={
+				"doctype": doctype,
+				"docname": name,
+			},
+		)
+
 	check_permissions(doctype)
 	try:
 		doc = frappe.get_doc(doctype, name)
@@ -251,6 +274,16 @@ def insert(doc=None):
 	if not doc or not doc.get("doctype"):
 		frappe.throw(frappe._("doc.doctype is required"))
 
+	add_data_to_monitor(
+		press_api_client_method="insert_doc",
+		press_api_client_payload={
+			"doctype": doc.get("doctype"),
+			"parent": doc.get("parent"),
+			"parenttype": doc.get("parenttype"),
+			"parentfield": doc.get("parentfield"),
+		},
+	)
+
 	check_permissions(doc.get("doctype"))
 
 	doc = frappe._dict(doc)
@@ -283,6 +316,14 @@ def insert(doc=None):
 
 @frappe.whitelist(methods=["POST", "PUT"])
 def set_value(doctype: str, name: str, fieldname: dict | str, value: str | None = None):
+	add_data_to_monitor(
+		press_api_client_method="set_value",
+		press_api_client_payload={
+			"doctype": doctype,
+			"docname": name,
+			"fieldname": fieldname,
+		},
+	)
 	check_permissions(doctype)
 	check_document_access(doctype, name)
 
@@ -309,6 +350,16 @@ def delete(doctype: str, name: str):
 
 @frappe.whitelist()
 def run_doc_method(dt: str, dn: str, method: str, args: dict | None = None):
+	add_data_to_monitor(
+		press_api_client_method="run_doc_method",
+		press_api_client_payload={
+			"doctype": dt,
+			"docname": dn,
+			"method": method,
+			"args": args,
+		},
+	)
+
 	check_permissions(dt)
 	check_document_access(dt, dn)
 	check_dashboard_actions(dt, dn, method)
@@ -331,6 +382,16 @@ def search_link(
 	order_by: str | None = None,
 	page_length: int | None = None,
 ):
+	add_data_to_monitor(
+		press_api_client_method="search_link",
+		press_api_client_payload={
+			"doctype": doctype,
+			"query": query,
+			"filters": filters,
+			"order_by": order_by,
+			"page_length": page_length,
+		},
+	)
 	check_permissions(doctype)
 	if doctype == "Team" and not frappe.local.system_user():
 		raise_not_permitted()
