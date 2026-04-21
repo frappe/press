@@ -1293,7 +1293,6 @@ def deploy_status(name: str) -> dict[str, bool | str | None]:
 			"candidate": candidate,
 		}
 
-	# 1. Get active pipeline (latest one implicitly via creation filter)
 	pipeline_creation = frappe.db.get_value(
 		"Release Pipeline",
 		{
@@ -1301,13 +1300,11 @@ def deploy_status(name: str) -> dict[str, bool | str | None]:
 			"status": ["in", ACTIVE_PIPELINE_STATUSES],
 		},
 		"creation",
-		order_by="creation desc",
 	)
 
 	if not pipeline_creation:
 		return response()
 
-	# 2. Get latest deploy candidate AFTER pipeline start
 	dc = frappe.db.get_value(
 		"Deploy Candidate Build",
 		{
@@ -1315,7 +1312,6 @@ def deploy_status(name: str) -> dict[str, bool | str | None]:
 			"creation": (">", pipeline_creation),
 		},
 		["name", "status"],
-		order_by="creation desc",
 	)
 
 	if not dc:
