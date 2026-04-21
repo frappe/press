@@ -32,6 +32,7 @@ from press.press.doctype.remote_file.test_remote_file import create_test_remote_
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
@@ -469,6 +470,46 @@ class TestAPISite(FrappeTestCase):
 		self.assertEqual(len(out), 1)
 		self.assertEqual(out[0]["name"], group.apps[1].source)
 		self.assertEqual(out[0]["app"], group.apps[1].app)
+
+	def test_get_backup_link_scopes_backup_to_site(self):
+		from press.api.site import get_backup_link
+
+		frappe.set_user("Administrator")
+		attacker_site = create_test_site(team=self.team.name)
+		victim_team = create_test_press_admin_team()
+		victim_site = create_test_site(team=victim_team.name)
+		victim_backup = create_test_site_backup(site=victim_site.name)
+		frappe.set_user(self.team.user)
+
+		def fake_get_doc(doctype, name):
+			self.assertEqual(doctype, "Remote File")
+			if not name:
+				raise frappe.DoesNotExistError
+			return Mock(download_link="http://test.com")
+
+		with (
+			self.assertRaises(frappe.DoesNotExistError),
+			patch("press.api.site.frappe.get_doc", side_effect=fake_get_doc),
+			patch("press.api.site.frappe.db.get_value", wraps=frappe.db.get_value) as mock_get_value,
+		):
+			get_backup_link(attacker_site.name, victim_backup.name, "database")
+
+		mock_get_value.assert_any_call(
+			"Site Backup",
+			{"name": victim_backup.name, "site": attacker_site.name},
+			"remote_database_file",
+		)
+
+	def test_get_backup_link_rejects_invalid_file_type(self):
+		from press.api.site import get_backup_link
+
+		frappe.set_user("Administrator")
+		site = create_test_site(team=self.team.name)
+		backup = create_test_site_backup(site=site.name)
+		frappe.set_user(self.team.user)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Invalid file type"):
+			get_backup_link(site.name, backup.name, "logs")
 
 	def test_check_dns_(self):
 		pass

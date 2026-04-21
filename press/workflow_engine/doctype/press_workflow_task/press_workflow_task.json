@@ -8,6 +8,8 @@
   "workflow",
   "status",
   "parent_task",
+  "queue",
+  "timeout",
   "column_break_frrn",
   "method_name",
   "method_title",
@@ -162,11 +164,22 @@
    "fieldtype": "Long Text",
    "label": "Stdout",
    "read_only": 1
+  },
+  {
+   "fieldname": "queue",
+   "fieldtype": "Data",
+   "label": "Queue",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "timeout",
+   "fieldtype": "Int",
+   "label": "Timeout"
   }
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2026-03-11 02:26:44.473928",
+ "modified": "2026-04-14 16:25:01.842528",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow Task",

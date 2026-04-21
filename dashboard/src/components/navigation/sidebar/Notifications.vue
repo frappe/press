@@ -190,14 +190,14 @@ const tabs = [
 <template>
 	<Popover
 		:placement="$isMobile ? 'top-start' : 'right-start'"
-		popover-class="fixed -mt-[16%]"
+		popover-class="-mt-[16%] md:-mt-2"
 	>
 		<!-- sidebar item -->
 		<template #target="{ togglePopover }">
 			<button
 				aria-label="Notifications btn"
 				@click="togglePopover"
-				class="flex items-center rounded px-2.5 py-1.5 md:px-3 md:py-2 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-3 w-full"
+				class="flex items-center rounded px-2 py-1.5 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-2 w-full"
 				:class="[
 					item.disabled ? 'pointer-events-none opacity-50' : '',
 					$attrs.class,
@@ -229,7 +229,7 @@ const tabs = [
 		<!-- floating drawer  -->
 		<template #body="{ togglePopover }">
 			<div
-				class="text-ink-gray-9 bg-white h-screen w-screen md:ml-2 shadow-xl md:w-[430px] flex flex-col"
+				class="text-ink-gray-9 bg-white h-screen -ml-2.5 w-screen md:ml-2 shadow-xl md:w-[430px] flex flex-col"
 			>
 				<!-- header -->
 				<div class="text-base flex items-center py-2 pl-4 pr-2 border-b">
