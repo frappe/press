@@ -112,6 +112,7 @@ export default {
 				};
 			} else {
 				return {
+					route: (row) => row.route,
 					data: () => [
 						{
 							title: 'Scheduler Logs',
@@ -189,22 +190,6 @@ export default {
 							label: 'Title',
 							fieldname: 'title',
 							width: 0.3,
-						},
-						{
-							label: '',
-							fieldname: 'action',
-							type: 'Button',
-							align: 'right',
-							Button: ({ row }) => {
-								return {
-									label: 'View',
-									type: 'primary',
-									iconRight: 'arrow-right',
-									onClick: () => {
-										this.$router.push(row.route);
-									},
-								};
-							},
 						},
 					],
 					actions: () => [
