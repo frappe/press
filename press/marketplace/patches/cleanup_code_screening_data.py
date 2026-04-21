@@ -25,7 +25,7 @@ def execute():
 		if frappe.db.has_column("App Release Approval Request", field):
 			frappe.db.sql(  # nosemgrep
 				f"UPDATE `tabApp Release Approval Request` SET `{field}` = NULL WHERE `{field}` IS NOT NULL"
-			)  # nosemgrep
+			)
 
 	marketplace_app = frappe.qb.DocType("Marketplace App")
 	frappe.qb.update(marketplace_app).set(marketplace_app.review_stage, None).where(
