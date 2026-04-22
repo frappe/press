@@ -779,12 +779,8 @@
         "picklable",
         "ndarray",
         "mult",
-<<<<<<< HEAD
-        "ruleid"
-=======
         "ruleid",
         "chatwoot",
         "ssti"
->>>>>>> c1918dfa6 (fix(release-pipeline): Fetch latest retried build with same platform)
     ]
 }
