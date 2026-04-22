@@ -984,7 +984,7 @@ def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegra
 		) + timedelta(days=1)
 
 	# if the difference is less than an hour, set timegrain to 1 min
-	elif (end - start).seconds < 60 * 60:
+	elif int((end - start).total_seconds()) < 60 * 60:
 		timegrain = 60
 		local_end = end.astimezone(pytz_timezone(timezone))
 		# round up to next 15-minute interval
