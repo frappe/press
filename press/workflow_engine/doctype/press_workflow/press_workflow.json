@@ -217,7 +217,7 @@
    "link_fieldname": "workflow"
   }
  ],
- "modified": "2026-03-11 00:51:08.486677",
+ "modified": "2026-04-22 00:01:07.425649",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow",
@@ -233,6 +233,28 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
    "share": 1,
    "write": 1
   }
