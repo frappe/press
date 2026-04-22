@@ -752,7 +752,7 @@ class Site(Document, TagHelpers):
 		site_name = self.subdomain + "." + self.domain
 		if frappe.db.exists("Site", {"name": site_name, "bench": self.bench}):
 			frappe.throw(
-				_(f"Another site already exists in {self.bench} with name: {site_name}.")
+				_("Another site already exists in {0} with name: {1}.").format(self.bench, site_name)
 			)  # nosemgrep
 		self.archive(site_name=site_name, reason="Retry Archive")
 
