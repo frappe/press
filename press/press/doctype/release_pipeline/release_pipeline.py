@@ -252,10 +252,15 @@ class ReleasePipeline(WorkflowBuilder):
 			)
 
 	def _get_latest_retried_build(self, deploy_candidate_build: str) -> str:
-		"""In case there are retries for the build, get the latest retried build to monitor."""
-		deploy_candidate = frappe.db.get_value(
-			"Deploy Candidate Build", deploy_candidate_build, "deploy_candidate"
+		"""In case there are retries for the build, get the latest retried build with same platform to monitor."""
+		deploy_info = frappe.db.get_value(
+			"Deploy Candidate Build", deploy_candidate_build, ["deploy_candidate", "platform"]
 		)
+
+		if deploy_info is None:
+			raise ReleasePipelineFailure(f"Deploy Candidate Build {deploy_candidate_build} not found.")
+
+		deploy_candidate, platform = deploy_info
 
 		# Get the latest **retried** build
 		retried_build = frappe.db.get_value(
@@ -264,6 +269,7 @@ class ReleasePipeline(WorkflowBuilder):
 				"group": self.release_group,
 				"deploy_candidate": deploy_candidate,
 				"name": ("!=", deploy_candidate_build),
+				"platform": platform,
 			},
 			"name",
 			order_by="creation desc",
