@@ -168,7 +168,12 @@ class ReleasePipeline(WorkflowBuilder):
 			"Press Workflow", {"linked_doctype": "Release Pipeline", "linked_docname": self.name}, "name"
 		)
 
-	@task
+	@staticmethod
+	def _get_task_execution_queue() -> str:
+		"""Determine the appropriate queue for task execution based on the release group."""
+		return "default" if frappe.conf.developer_mode else "build"
+
+	@task(queue=_get_task_execution_queue())
 	def validate_app_hashes(self, apps: list[dict[str, str]]):
 		"""Validate App Hashes"""
 		from press.api.bench import validate_app_hashes as app_hash_validation
@@ -177,17 +182,17 @@ class ReleasePipeline(WorkflowBuilder):
 
 		self.update_pipeline_status("Running")  # Mark the pipeline as running!
 
-	@task
+	@task(queue=_get_task_execution_queue())
 	def validate_server_storages(self):
 		"""Validate server storage for all servers in the release group."""
 		self.release_group_doc.check_app_server_storage()
 
-	@task
+	@task(queue=_get_task_execution_queue())
 	def validate_auto_scales_on_servers(self):
 		"""Validate no server in release group is autoscaled."""
 		self.release_group_doc.check_auto_scales()
 
-	@task
+	@task(queue=_get_task_execution_queue())
 	def create_deploy_candidate(
 		self,
 		apps: list[dict[str, str]],
@@ -206,7 +211,7 @@ class ReleasePipeline(WorkflowBuilder):
 			create_build=create_deploy,
 		)
 
-	@task
+	@task(queue=_get_task_execution_queue())
 	def initiate_pre_build_validations(self, deploy_candidate: str) -> str:
 		"""Start the deploy candidate build process which will run the pre-build validations."""
 		candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", deploy_candidate)
@@ -268,7 +273,7 @@ class ReleasePipeline(WorkflowBuilder):
 
 		return retried_build or deploy_candidate_build
 
-	@task
+	@task(queue=_get_task_execution_queue())
 	def monitor_pre_build_validation(self, deploy_candidate_build: str):
 		"""Monitors the Deploy Candidate Build until the remote build job is created."""
 		deploy_candidate_build_status = frappe.db.get_value(
@@ -288,7 +293,7 @@ class ReleasePipeline(WorkflowBuilder):
 			message=f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build}",
 		)
 
-	@task
+	@task(queue=_get_task_execution_queue())
 	def monitor_build_success(self, deploy_candidate_build: str):
 		"""Monitor build till terminal state."""
 		deploy_candidate_build = self._get_latest_retried_build(deploy_candidate_build)
@@ -426,7 +431,7 @@ class ReleasePipeline(WorkflowBuilder):
 		deploy_candidate.save()
 		release_group_doc.save()
 
-	@task
+	@task(queue=_get_task_execution_queue())
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
 		"""Groups all early-exit validation logic."""
 		try:
@@ -436,7 +441,7 @@ class ReleasePipeline(WorkflowBuilder):
 		except (frappe.ValidationError, InsufficientSpaceOnServer) as e:
 			raise ReleasePipelineFailure(str(e)) from e
 
-	@task
+	@task(queue=_get_task_execution_queue())
 	def add_implicit_app_dependencies(self, deploy_candidate: str):
 		"""Add any implicit dependencies for the apps being deployed."""
 		deploy_candidate_doc: DeployCandidate = frappe.get_doc(
@@ -451,7 +456,7 @@ class ReleasePipeline(WorkflowBuilder):
 				dependant_app_versions=dependant_app_versions["frappe_dependencies"],
 			)
 
-	@task
+	@task(queue=_get_task_execution_queue())
 	def auto_update_bench_dependency_versions(self, deploy_candidate: str):
 		"""Auto update the versions of the dependencies depending on app requirements.
 		Currently only supports python version upgrades
@@ -472,7 +477,7 @@ class ReleasePipeline(WorkflowBuilder):
 			self.release_group_doc.name, required_python_versions
 		)
 
-	@task
+	@task(queue=_get_task_execution_queue())
 	def prepare_deployment(self, apps, sites, run_will_fail_check) -> tuple[str, str]:
 		"""Creates the candidate and returns the primary build name."""
 		try:
@@ -490,7 +495,7 @@ class ReleasePipeline(WorkflowBuilder):
 		except frappe.ValidationError as e:
 			raise ReleasePipelineFailure(f"Failed to prepare deployment: {e!s}") from e
 
-	@task
+	@task(queue=_get_task_execution_queue())
 	def orchestrate_build_monitoring(self, deploy_candidate: str, primary_build: str):
 		"""Monitors primary and, if necessary, secondary builds."""
 		# Monitor Primary
@@ -514,7 +519,7 @@ class ReleasePipeline(WorkflowBuilder):
 			# If we were in retrying status, it means builds have succeeded after retries, we can move back to running status
 			self.update_pipeline_status("Running")
 
-	@task
+	@task(queue=_get_task_execution_queue())
 	def monitor_bench_creation(self, deploy_candidate_build: str):
 		"""Monitor new bench creation accounting for any failures and retries."""
 		candidate = frappe.db.get_value("Deploy Candidate Build", deploy_candidate_build, "deploy_candidate")
