@@ -97,11 +97,11 @@ export default {
 			setTimeout(() => (this.copied = false), 4000);
 		},
 		async done() {
-			if (this.doc.assistance_url && !this.helpViewed) {
-				this.error =
-					'Please follow the steps mentioned in <i>Help</i> before clicking Done';
-				return;
-			}
+			// if (this.doc.assistance_url && !this.helpViewed) {
+			// 	this.error =
+			// 		'Please follow the steps mentioned in <i>Help</i> before clicking Done';
+			// 	return;
+			// }
 
 			await this.$resources.notification.markAsAddressed.submit();
 			this.show = false;

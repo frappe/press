@@ -1,0 +1,112 @@
+- name: Get installed MariaDB version
+  ansible.builtin.command: mariadbd --version
+  register: mariadb_10_6_to_11_8_version_cmd
+  changed_when: false
+  failed_when: false
+
+- name: Parse installed MariaDB version
+  ansible.builtin.set_fact:
+    mariadb_10_6_to_11_8_current_version: >-
+      {{ '0.0.0' if mariadb_10_6_to_11_8_version_cmd.rc != 0 else
+         (mariadb_10_6_to_11_8_version_cmd.stdout
+          | regex_search('[0-9]+\.[0-9]+\.[0-9]+(?=-MariaDB)')
+          | default('0.0.0', true)) }}
+
+- name: Show detected MariaDB version
+  ansible.builtin.debug:
+    msg: "Detected MariaDB version: {{ mariadb_10_6_to_11_8_current_version }} (will upgrade if < 11.8.0)"
+
+- name: Remove all old MariaDB Repository Files from 10.6 and earlier
+  ansible.builtin.shell: rm -f /etc/apt/sources.list.d/*mariadb*.list
+  changed_when: false
+  failed_when: false
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+
+- name: Add MariaDB Repository Key
+  ansible.builtin.apt_key:
+    url: https://mariadb.org/mariadb_release_signing_key.pgp
+    state: present
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+
+# This seems to be breaking on some database servers
+# TODO: Move to container deployments
+- name: Add NGINX Repository Key
+  ansible.builtin.apt_key:
+    url: https://nginx.org/keys/nginx_signing.key
+    state: present
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+
+- name: Add MariaDB Repository
+  ansible.builtin.apt_repository:
+    repo: deb https://mirror.rackspace.com/mariadb/repo/11.8/ubuntu {{ ansible_distribution_release }} main
+    state: present
+    update_cache: true
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+
+- name: Update APT Cache
+  ansible.builtin.apt:
+    update_cache: true
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+
+- name: Ensure clean InnoDB shutdown mode before major upgrade
+  ansible.builtin.command: mariadb -NBe "SET GLOBAL innodb_fast_shutdown=0;"
+  changed_when: false
+  failed_when: false
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+
+- name: Stop MariaDB Service
+  ansible.builtin.systemd:
+    name: mariadb
+    state: stopped
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+
+- name: Install MariaDB
+  ansible.builtin.apt:
+    pkg:
+      - mariadb-server
+      - mariadb-client
+    state: latest
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  register: mariadb_10_6_to_11_8_install_result
+  until: mariadb_10_6_to_11_8_install_result.failed == false
+  retries: 5
+  delay: 120
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+
+- name: Set Open Files Count Limit for MariaDB
+  ansible.builtin.lineinfile:
+    dest: /lib/systemd/system/mariadb.service
+    regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
+    line: 'LimitNOFILE = infinity'
+    insertafter: '\[Service\]'
+    state: present
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+
+- name: Start MariaDB Service
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: mariadb
+    state: started
+    enabled: true
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+
+- name: Run MariaDB Upgrade
+  ansible.builtin.command: mariadb-upgrade
+  changed_when: false
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+
+- name: Restart MariaDB Service
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: mariadb
+    state: restarted
+    enabled: true
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '<')
+
+- name: Skip MariaDB 10.6 to 11.8 role when already upgraded
+  ansible.builtin.debug:
+    msg: "Skipping mariadb_10_6_to_11_8 role because installed version is {{ mariadb_10_6_to_11_8_current_version }}"
+  when: mariadb_10_6_to_11_8_current_version is version('11.8.0', '>=')

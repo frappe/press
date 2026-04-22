@@ -311,11 +311,7 @@
 import { getCachedDocumentResource, LoadingIndicator } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
-import DateTimePicker from 'frappe-ui/src/components/DatePicker/DateTimePicker.vue';
-import dayjs from '../../utils/dayjs';
-
-const PICKER_DATETIME_FORMAT = 'YYYY-MM-DD h:mm a';
-const IST_TIMEZONE = 'Asia/Calcutta';
+import { DateTimePicker } from 'frappe-ui';
 
 export default {
 	name: 'SiteVersionUpgradeDialog',

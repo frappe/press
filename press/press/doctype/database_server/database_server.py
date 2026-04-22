@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import re
 import subprocess
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
@@ -564,7 +565,6 @@ class DatabaseServer(BaseServer):
 	def run_upgrade_mariadb_job(self):
 		self.run_press_job("Upgrade MariaDB")
 
-	@frappe.whitelist()
 	def upgrade_mariadb(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb", timeout=1800)
 
@@ -581,6 +581,37 @@ class DatabaseServer(BaseServer):
 		play = ansible.run()
 		if play.status == "Failure":
 			log_error("MariaDB Upgrade Error", server=self.name)
+		return play
+
+	def _downgrade_mariadb_to_10_6(self):
+		ansible = Ansible(
+			playbook="downgrade_mariadb_to_10_6.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Downgrade Error", server=self.name)
+		return play
+
+	def get_mariadb_version_via_ssh(self) -> str | None:
+		try:
+			result = self.ansible_run("mariadbd --version")
+			version_info = result.get("output", "")
+			if not version_info:
+				return None
+
+			# Parse mariadbd output format, e.g. `10.6.25-MariaDB-...`.
+			version_match = re.search(r"(\d+\.\d+\.\d+)(?=-MariaDB)", version_info)
+			if version_match:
+				return version_match.group(1)
+		except Exception as e:
+			log_error("Error fetching MariaDB version via SSH", error=str(e), server=self.name)
+		return None
 
 	@frappe.whitelist()
 	def update_mariadb(self):
