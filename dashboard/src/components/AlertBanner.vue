@@ -1,6 +1,6 @@
 <template>
 	<div
-		:class="`flex items-center justify-between rounded-md border border-${color}-300 bg-${color}-100 p-2`"
+		:class="`flex items-center justify-between rounded-md bg-${color}-100 p-2`"
 	>
 		<div class="flex items-center gap-2.5">
 			<lucide-alert-triangle

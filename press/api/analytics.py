@@ -786,9 +786,9 @@ def get_additional_duration_reports(
 def get_advanced_analytics(
 	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
 ):
-	start = datetime.fromisoformat(start.replace("Z", "+00:00"))
-	end = datetime.fromisoformat(end.replace("Z", "+00:00"))
-	timespan, timegrain = auto_timespan_timegrain(start, end)
+	start_dt = parse_iso_datetime(start)
+	end_dt = parse_iso_datetime(end)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
 
 	job_data = get_usage(name, "job", timezone, start_dt, end_dt, timegrain)
 
@@ -982,6 +982,20 @@ def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegra
 		end = end.astimezone(pytz_timezone(timezone)).replace(
 			hour=0, minute=0, second=0, microsecond=0
 		) + timedelta(days=1)
+
+	# if the difference is less than an hour, set timegrain to 1 min
+	elif (end - start).seconds < 60 * 60:
+		timegrain = 60
+		local_end = end.astimezone(pytz_timezone(timezone))
+		# round up to next 15-minute interval
+		minutes = (local_end.minute // 15 + 1) * 15
+		if minutes == 60:
+			local_end = local_end.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+		else:
+			local_end = local_end.replace(minute=minutes, second=0, microsecond=0)
+		end = local_end
+		# align start to 60 minutes before this
+		start = end - timedelta(minutes=60)
 
 	query: dict[str, str | float] = {
 		"query": (
