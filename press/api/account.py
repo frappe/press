@@ -902,7 +902,9 @@ def validate_pincode(billing_details):
 			return
 
 	frappe.throw(
-		_(f"Postal Code {billing_details.postal_code} is not associated with {billing_details.state}")
+		_("Postal Code {0} is not associated with {1}").format(
+			billing_details.postal_code, billing_details.state
+		)
 	)
 
 
