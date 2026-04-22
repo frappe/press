@@ -984,18 +984,21 @@ def get_uptime(site: str, timezone: str, start: datetime, end: datetime, timegra
 		) + timedelta(days=1)
 
 	# if the difference is less than an hour, set timegrain to 1 min
-	elif (end - start).seconds < 60 * 60:
+	elif int((end - start).total_seconds()) < 60 * 60:
 		timegrain = 60
 		local_end = end.astimezone(pytz_timezone(timezone))
-		# round up to next 15-minute interval
+		# align end to next 15-minute interval if not already aligned
 		minutes = (local_end.minute // 15 + 1) * 15
 		if minutes == 60:
 			local_end = local_end.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
 		else:
 			local_end = local_end.replace(minute=minutes, second=0, microsecond=0)
 		end = local_end
-		# align start to 60 minutes before this
-		start = end - timedelta(minutes=60)
+		# align start to previous 15-minute interval if not already aligned
+		local_start = start.astimezone(pytz_timezone(timezone))
+		minutes = (local_start.minute // 15 - (1 if local_end.minute % 15 != 0 else 0)) * 15
+		local_start = local_end.replace(minute=minutes, second=0, microsecond=0)
+		start = local_start
 
 	query: dict[str, str | float] = {
 		"query": (

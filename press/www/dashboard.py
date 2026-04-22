@@ -53,7 +53,14 @@ def get_boot():
 			frappe.db.get_values(
 				"Press Settings",
 				"Press Settings",
-				["free_credits_inr", "free_credits_usd", "chat_base_url", "chat_website_token"],
+				[
+					"free_credits_inr",
+					"free_credits_usd",
+					"chat_base_url",
+					"chat_website_token",
+					"chat_support_start_time",
+					"chat_support_end_time",
+				],
 				as_dict=True,
 			)[0]
 		),
