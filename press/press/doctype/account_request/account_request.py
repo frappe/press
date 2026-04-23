@@ -321,6 +321,13 @@ class AccountRequest(Document):
 			"otp": self.otp,
 		}
 
+		if not args.get("image_path"):
+			args.update(
+				{
+					"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94"
+				}
+			)
+
 		frappe.sendmail(
 			recipients=self.email,
 			subject=subject,
