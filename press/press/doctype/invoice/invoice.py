@@ -24,6 +24,7 @@ from press.utils.billing import (
 	get_razorpay_client,
 	is_frappe_auth_disabled,
 )
+from press.utils.jobs import has_job_timeout_exceeded
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.usage_record.usage_record import UsageRecord
@@ -318,7 +319,7 @@ class Invoice(Document):
 					)
 				)
 
-		self.save(ignore_permissions=True)
+		self.save()
 
 		if self.amount_due > 0:
 			if self.payment_mode == "Prepaid Credits":
@@ -698,7 +699,7 @@ class Invoice(Document):
 		else:
 			self.billing_email = self.customer_email
 		self.currency = team.currency
-		if not self.payment_mode:
+		if not self.payment_mode or self.status == "Draft":
 			self.payment_mode = team.payment_mode
 		if not self.currency:
 			frappe.throw(f"Cannot create Invoice because Currency is not set in Team {self.team}")
@@ -946,7 +947,7 @@ class Invoice(Document):
 				{"invoice": self.name, "amount": allocated, "currency": self.currency},
 			)
 			# ignore permissions for BT added via Mpesa
-			doc.save(ignore_permissions=True)
+			doc.save()
 			total_allocated += allocated
 
 		balance_transaction = frappe.get_doc(
@@ -955,7 +956,7 @@ class Invoice(Document):
 			type="Applied To Invoice",
 			amount=total_allocated * -1,
 			invoice=self.name,
-		).insert(ignore_permissions=True)
+		).insert()
 		balance_transaction.submit()
 
 		self.applied_credits = sum(row.amount for row in self.credit_allocations)
@@ -1316,9 +1317,11 @@ def finalize_razorpay_mandate_invoices():
 		},
 		fields=["name", "razorpay_payment_id"],
 	)
+	client = get_razorpay_client()
 	for inv in invoices:
+		if has_job_timeout_exceeded():
+			return
 		try:
-			client = get_razorpay_client()
 			payment = client.payment.fetch(inv.razorpay_payment_id)
 			payment_status = payment.get("status")
 
