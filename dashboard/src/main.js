@@ -190,7 +190,13 @@ function workingHours() {
 	const istTime = new Date(
 		currentTime.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
 	);
-	return istTime.getHours() >= 11 && istTime.getHours() <= 18;
+	const support_start_time = parseInt(window.chat_support_start_time);
+	const support_end_time = parseInt(window.chat_support_end_time);
+
+	return (
+		istTime.getHours() >= support_start_time &&
+		istTime.getHours() <= support_end_time
+	);
 }
 
 function addChatBubble() {

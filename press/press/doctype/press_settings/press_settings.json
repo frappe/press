@@ -181,8 +181,10 @@
   "chatwoot_section",
   "enable_chat",
   "chat_base_url",
-  "column_break_srse",
   "chat_website_token",
+  "column_break_srse",
+  "chat_support_start_time",
+  "chat_support_end_time",
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
@@ -1681,11 +1683,25 @@
    "fieldname": "chat_website_token",
    "fieldtype": "Data",
    "label": "Chat Website Token"
+  },
+  {
+   "default": "10",
+   "fieldname": "chat_support_start_time",
+   "fieldtype": "Select",
+   "label": "Chat Support Start Time",
+   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23"
+  },
+  {
+   "default": "18",
+   "fieldname": "chat_support_end_time",
+   "fieldtype": "Select",
+   "label": "Chat Support End Time",
+   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-04-20 15:25:27.276549",
+ "modified": "2026-04-22 11:42:52.313148",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

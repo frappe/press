@@ -22,14 +22,13 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
           persist-credentials: false
-      - name: Setup dependencies
-        run: |
-          npm install @semantic-release/git @semantic-release/exec --no-save
+
       - name: Create Release
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
@@ -38,4 +37,12 @@ jobs:
           GIT_AUTHOR_EMAIL: "developers@frappe.io"
           GIT_COMMITTER_NAME: "Frappe PR Bot"
           GIT_COMMITTER_EMAIL: "developers@frappe.io"
-        run: npx semantic-release
+        run: |
+          npx \
+            -p semantic-release \
+            -p @semantic-release/commit-analyzer@13.0.1 \
+            -p @semantic-release/release-notes-generator@14.1.0 \
+            -p @semantic-release/github@12.0.6 \
+            -p @semantic-release/exec@7.1.0 \
+            -p @semantic-release/git \
+            semantic-release
