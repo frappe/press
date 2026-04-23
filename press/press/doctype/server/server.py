@@ -2689,6 +2689,7 @@ class Server(BaseServer):
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
+		nat_server: DF.Link | None
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
 		platform: DF.Literal["x86_64", "arm64"]
@@ -2764,6 +2765,9 @@ class Server(BaseServer):
 			self.update_db_server()
 
 		self.set_bench_memory_limits_if_needed(save=False)
+
+		self.validate_public_server_exists_for_site_or_bench_placement()
+
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
@@ -2905,6 +2909,47 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Logrotate Setup Exception", server=self.as_dict())
+
+	def validate_public_server_exists_for_site_or_bench_placement(self) -> None:
+		"""Ensure at least one public server is available in the cluster for:
+		1. New site placement (use_for_new_sites)
+		2. New bench deployment (use_for_new_benches)
+		These flags are maintained by refresh_new_bench_and_site_server_pool background job.
+		This validation prevents failures for newly created clusters before the job runs.
+		"""
+
+		if not (self.has_value_changed("public") and self.team == "team@erpnext.com" and self.public):
+			return
+
+		servers = frappe.get_all(
+			"Server",
+			filters={"cluster": self.cluster, "public": 1},
+			fields=["use_for_new_sites", "use_for_new_benches"],
+		)
+
+		has_site_server = any(s.use_for_new_sites for s in servers)
+		has_bench_server = any(s.use_for_new_benches for s in servers)
+
+		if has_site_server and has_bench_server:
+			return
+
+		messages = []
+
+		if not has_site_server:
+			messages.append(
+				"There are no public servers in this cluster with <b>Use For New Sites</b> enabled."
+			)
+
+		if not has_bench_server:
+			messages.append(
+				"There are no public servers in this cluster with <b>Use For New Benches</b> enabled."
+			)
+
+		if messages:
+			frappe.throw(
+				" ".join(messages)
+				+ " Enable these flags to allow site creation and bench deployment on shared servers in this cluster."
+			)
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
