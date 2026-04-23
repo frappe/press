@@ -47,7 +47,7 @@ def mock_bench_monitoring(*args, **kwargs):
 
 
 def get_failure_pyproject_file(*args, **kwargs):
-	frappe.throw("No pyroject found or something went wrong with github", frappe.ValidationError)
+	frappe.throw("No pyproject found or something went wrong with github", frappe.ValidationError)
 
 
 def get_mock_pyproject_file(*args, **kwargs):
@@ -274,7 +274,7 @@ class TestReleasePipeline(FrappeTestCase):
 			patch("press.api.github._get_pyproject_from_commit", get_failure_pyproject_file),
 			self.assertRaises(frappe.ValidationError),
 		):
-			get_dependant_apps_with_versions("some_source", "some_commit", raises=True)
+			get_dependant_apps_with_versions("some_source", "some_commit", raises=True, cache=False)
 
 	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
 	def test_implicit_dependency_source_addition(self):

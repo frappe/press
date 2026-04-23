@@ -596,6 +596,6 @@ def get_dependant_apps_with_versions(
 			python_version=pyproject.get("project", {}).get("requires-python"),
 		)
 
-	# In case of failrues as well we want to cache the result to avoid hitting GitHub
+	# In case of failures as well we want to cache the result to avoid hitting GitHub
 	frappe.cache().set_value(cache_key, dependency_data, expires_in_sec=60 * 60)
 	return dependency_data
