@@ -38,12 +38,8 @@ class PressWorkflow(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.workflow_engine.doctype.press_workflow_kv.press_workflow_kv import (
-			PressWorkflowKV,
-		)
-		from press.workflow_engine.doctype.press_workflow_step.press_workflow_step import (
-			PressWorkflowStep,
-		)
+		from press.workflow_engine.doctype.press_workflow_kv.press_workflow_kv import PressWorkflowKV
+		from press.workflow_engine.doctype.press_workflow_step.press_workflow_step import PressWorkflowStep
 
 		args: DF.Link | None
 		duration: DF.Duration | None
@@ -61,6 +57,7 @@ class PressWorkflow(Document):
 		stdout: DF.LongText | None
 		steps: DF.Table[PressWorkflowStep]
 		traceback: DF.LongText | None
+		workflow_traceback: DF.LongText | None
 	# end: auto-generated types
 
 	def after_insert(self):
@@ -86,6 +83,7 @@ class PressWorkflow(Document):
 
 		output = None
 		exception = None
+		workflow_exception_traceback = None
 		status = "Running"
 		buffer = io.StringIO()
 		start = now_datetime()
@@ -114,6 +112,7 @@ class PressWorkflow(Document):
 		except Exception as e:
 			exception = PressWorkflowObject.store(e, throw_on_error=False)
 			status = "Failure"
+			workflow_exception_traceback = frappe.get_traceback()
 		finally:
 			self.reload()
 
@@ -134,7 +133,7 @@ class PressWorkflow(Document):
 				print(self.stdout)
 
 			self.exception = exception
-
+			self.workflow_traceback = workflow_exception_traceback or self.workflow_traceback
 			self.update_skipped_steps_status(save=False)
 			self.save()
 
