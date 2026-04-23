@@ -449,7 +449,7 @@ class ReleasePipeline(WorkflowBuilder):
 		)
 		for app in deploy_candidate_doc.apps:
 			dependant_app_versions = get_dependant_apps_with_versions(
-				app_source=app.source, commit=app.hash, cache=True
+				app_source=app.source, commit=app.hash, cache=True, raises=False
 			)
 			self._add_app_to_group_and_candidate(
 				deploy_candidate_doc,
@@ -469,7 +469,7 @@ class ReleasePipeline(WorkflowBuilder):
 		for app in deploy_candidate_doc.apps:
 			# Should use the cache from the previous task
 			dependant_app_versions = get_dependant_apps_with_versions(
-				app_source=app.source, commit=app.hash, cache=True
+				app_source=app.source, commit=app.hash, cache=True, raises=False
 			)
 			required_python_versions[app.app] = dependant_app_versions["python_version"]
 
