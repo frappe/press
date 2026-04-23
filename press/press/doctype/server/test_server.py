@@ -74,6 +74,8 @@ def create_test_server(
 			"team": team,
 			"plan": plan,
 			"public": public,
+			"use_for_new_sites": 1 if public else 0,
+			"user_new_benches": 1 if public else 0,
 			"virtual_machine": create_test_virtual_machine(
 				platform=plan_doc.platform if plan_doc else "x86_64",
 				disk_size=plan_doc.disk if plan_doc else 25,
