@@ -4075,8 +4075,8 @@ def _get_public_server_available_resources(
 
 	instance_matcher = "|".join(name.replace(".", "[.]") for name in server_names)
 
-	memory_query = f'avg_over_time(node_memory_MemAvailable_bytes{{instance=~"^({instance_matcher})$", job="node"}}[10m])'
-	vcpu_query = f'sum by (instance) (rate(node_cpu_seconds_total{{instance=~"^({instance_matcher})$", job="node", mode="idle"}}[10m]))'
+	memory_query = f'avg_over_time(node_memory_MemAvailable_bytes{{instance=~"^({instance_matcher})$", job="node"}}[60m])'
+	vcpu_query = f'sum by (instance) (rate(node_cpu_seconds_total{{instance=~"^({instance_matcher})$", job="node", mode="idle"}}[60m]))'
 
 	memory_results = _query_prometheus_vector(memory_query, url, auth)
 	vcpu_results = _query_prometheus_vector(vcpu_query, url, auth)
