@@ -11,9 +11,9 @@ before deploying to production.
 
 Apart from bench environment, there are some external dependencies that we need
 
-certbot==2.6.0
-certbot-dns-route53==2.6.0
-|-urllib3>=1.25.4,<1.27
+certbot==5.5.0
+certbot-dns-route53==2.11.0
+|-urllib3==1.26.20
 
 ## Updating Press on Production
 
