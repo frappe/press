@@ -46,6 +46,10 @@ def mock_bench_monitoring(*args, **kwargs):
 	return
 
 
+def get_failure_pyproject_file(*args, **kwargs):
+	frappe.throw("No pyroject found or something went wrong with github", frappe.ValidationError)
+
+
 def get_mock_pyproject_file(*args, **kwargs):
 	return tomli.loads("""[project]
 		name = "helpdesk"
@@ -258,6 +262,19 @@ class TestReleasePipeline(FrappeTestCase):
 				"telephony": None,  # Some apps might not give their python version requirements.
 			},
 		)
+
+	def test_no_failure_on_fetching_non_existent_pyproject_file(self):
+		# This can happen when fetching pyproject for apps that are not part of the release but are dependencies of apps in the release
+		with patch("press.api.github._get_pyproject_from_commit", get_failure_pyproject_file):
+			dependent_apps = get_dependant_apps_with_versions("some_source", "some_commit", raises=False)
+			self.assertEqual(dependent_apps["frappe_dependencies"], {})
+			self.assertEqual(dependent_apps["python_version"], None)
+
+		with (
+			patch("press.api.github._get_pyproject_from_commit", get_failure_pyproject_file),
+			self.assertRaises(frappe.ValidationError),
+		):
+			get_dependant_apps_with_versions("some_source", "some_commit", raises=True)
 
 	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
 	def test_implicit_dependency_source_addition(self):
