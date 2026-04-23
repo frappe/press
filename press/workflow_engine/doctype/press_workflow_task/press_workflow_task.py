@@ -1,8 +1,10 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 import io
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, suppress
 from typing import TYPE_CHECKING
 
 import frappe
@@ -72,6 +74,13 @@ class PressWorkflowTask(Document):
 				"Failure": "Failure",
 			}.get(self.status, "Pending"),
 		)
+
+	def _mark_reference_doc_as_failed(self, reference_doc: WorkflowBuilder):
+		"""In case the link document has a status field try and mark it as failure to reflect the workflow failure."""
+		with suppress(Exception):  # Try your best but don't fail
+			if hasattr(reference_doc, "status"):
+				reference_doc.status = "Failure"
+				reference_doc.save(ignore_permissions=True)
 
 	def run(self):  # noqa: C901 - Best to keep workflow execution logic in one place
 		assert self.name, "Task must be saved before it can be run"
@@ -164,7 +173,10 @@ class PressWorkflowTask(Document):
 			self.output = output
 			self.exception = exception
 			self.stdout = (self.stdout or "") + buffer.getvalue()
-			self.traceback = exception_traceback or self.traceback
+			self.traceback = exception_traceback or getattr(self, "traceback", None)
+
+			if self.status == "Failure":
+				self._mark_reference_doc_as_failed(reference_doc)
 
 			if frappe.flags.in_test and self.stdout:
 				print(self.stdout)
