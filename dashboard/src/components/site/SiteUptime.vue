@@ -1,7 +1,13 @@
 <template>
 	<div class="flex items-center justify-center flex-grow">
 		<div
-			v-if="!data || data[0].date === undefined"
+			v-if="loading && !showCard"
+			class="flex h-full items-center justify-center"
+		>
+			<LoadingText />
+		</div>
+		<div
+			v-else-if="!data || data[0].date === undefined"
 			class="flex h-5/6 items-center justify-center"
 		>
 			<div class="text-base text-gray-700">No data</div>
@@ -79,7 +85,7 @@
 							>
 								<Tooltip
 									placement="bottom"
-									:text="`${hoveringOn.percentValue}% avg. uptime for ${interval} from ${hoveringOn.startDate} to ${hoveringOn.endDate})`"
+									:text="`${hoveringOn.percentValue}% - ${hoveringOn.startDate} to ${hoveringOn.sameDayEndDate ?? hoveringOn.endDate}`"
 								>
 									<div
 										:data-start-date="hoveringOn.startDate"
@@ -151,6 +157,7 @@ export default {
 				endDate: null,
 				startDate: null,
 				colour: null,
+				sameDayEndDate: null,
 			},
 			highlightDates: false,
 			firstRender: true,
@@ -241,8 +248,13 @@ export default {
 			return dayjs(date).format('ddd, D MMM YYYY, hh:mm a');
 		},
 		inspectBar({ date, value }) {
-			const endDate = this.formatDate(date);
-			const startDate = this.formatDate(new Date(date) - this.timegrain * 1000);
+			let endDate = date;
+			let startDate = new Date(date) - this.timegrain * 1000;
+			const sameDayEndDate = dayjs(endDate).isSame(dayjs(startDate), 'day')
+				? dayjs(endDate).format('hh:mm a')
+				: null;
+			endDate = this.formatDate(endDate);
+			startDate = this.formatDate(startDate);
 			const percentValue = value !== -1 ? (value * 100).toFixed(2) : '0.00';
 			const colour =
 				Date.parse(date) < Date.parse(this.siteCreation)
@@ -260,6 +272,7 @@ export default {
 				endDate,
 				startDate,
 				colour,
+				sameDayEndDate,
 			};
 		},
 		getUptimeChunkId(chunkIndex) {

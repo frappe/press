@@ -779,6 +779,8 @@
         "picklable",
         "ndarray",
         "mult",
-        "ruleid"
+        "ruleid",
+        "chatwoot",
+        "ssti"
     ]
 }

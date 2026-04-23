@@ -46,6 +46,10 @@ def mock_bench_monitoring(*args, **kwargs):
 	return
 
 
+def get_failure_pyproject_file(*args, **kwargs):
+	frappe.throw("No pyproject found or something went wrong with github", frappe.ValidationError)
+
+
 def get_mock_pyproject_file(*args, **kwargs):
 	return tomli.loads("""[project]
 		name = "helpdesk"
@@ -173,7 +177,7 @@ class TestReleasePipeline(FrappeTestCase):
 	@patch.object(DeployCandidateBuild, "_build", Mock())
 	@patch.object(ReleasePipeline, "monitor_pre_build_validation", mock_pre_build_validation_monitoring)
 	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
-	def test_dynamic_apps_additions(self):
+	def test_dynamic_apps_additions_and_bench_dependencies_upgrade(self):
 		parent_hash = frappe.mock("sha1")
 
 		for dep in self.test_release_group.dependencies:
@@ -259,8 +263,21 @@ class TestReleasePipeline(FrappeTestCase):
 			},
 		)
 
+	def test_no_failure_on_fetching_non_existent_pyproject_file(self):
+		# This can happen when fetching pyproject for apps that are not part of the release but are dependencies of apps in the release
+		with patch("press.api.github._get_pyproject_from_commit", get_failure_pyproject_file):
+			dependent_apps = get_dependant_apps_with_versions("some_source", "some_commit", raises=False)
+			self.assertEqual(dependent_apps["frappe_dependencies"], {})
+			self.assertEqual(dependent_apps["python_version"], None)
+
+		with (
+			patch("press.api.github._get_pyproject_from_commit", get_failure_pyproject_file),
+			self.assertRaises(frappe.ValidationError),
+		):
+			get_dependant_apps_with_versions("some_source", "some_commit", raises=True, cache=False)
+
 	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
-	def test_implicit_dependency_addition(self):
+	def test_implicit_dependency_source_addition(self):
 		parent_hash = frappe.mock("sha1")
 
 		root_app = create_test_app("someapp")

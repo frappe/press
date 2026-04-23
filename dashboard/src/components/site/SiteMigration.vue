@@ -255,10 +255,14 @@
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource, Select, Checkbox } from 'frappe-ui';
+import {
+	getCachedDocumentResource,
+	Select,
+	Checkbox,
+	FormControl,
+} from 'frappe-ui';
 import AlertBanner from '../AlertBanner.vue';
 import GenericList from '../GenericList.vue';
-import FormControl from 'frappe-ui/src/components/FormControl/FormControl.vue';
 import { dayjsIST } from '../../utils/dayjs';
 
 export default {

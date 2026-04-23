@@ -340,8 +340,8 @@ import {
 	FeatherIcon,
 	Spinner,
 	TextInput,
+	DateTimePicker,
 } from 'frappe-ui';
-import DateTimePicker from './extras/DateTimePicker.vue';
 import { formatValue } from '../../../utils/format';
 import LinkControl from '../../../components/LinkControl.vue';
 import BinlogResultTable from '../../../components/devtools/database/BinlogResultTable.vue';
