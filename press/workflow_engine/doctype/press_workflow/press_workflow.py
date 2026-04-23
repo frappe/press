@@ -133,7 +133,9 @@ class PressWorkflow(Document):
 				print(self.stdout)
 
 			self.exception = exception
-			self.workflow_traceback = workflow_exception_traceback or self.workflow_traceback
+			self.workflow_traceback = workflow_exception_traceback or getattr(
+				self, "workflow_traceback", None
+			)
 			self.update_skipped_steps_status(save=False)
 			self.save()
 
