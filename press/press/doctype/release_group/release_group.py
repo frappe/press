@@ -1350,6 +1350,7 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 
 		mandatory_upgrades = self.mandatory_app_upgrades()
+		is_first_deploy = self.last_dc_info is None
 
 		for app in self.apps:
 			if app.app in mandatory_upgrades:
@@ -1395,8 +1396,18 @@ class ReleaseGroup(Document, TagHelpers):
 				len(yanked_releases) == len(latest_app_releases)
 				or app.source in erroneous_marketplace_app_sources
 			):
-				# If all releases are yanked, we don't want to show them, or if they are of an erroneous marketplace app
-				latest_app_releases = []
+				# if all releases are yanked, then we need to throw an error saying please remove the app from the bench
+				if len(yanked_releases) == len(latest_app_releases):
+					frappe.throw(
+						_(
+							"All releases of app {0} are yanked. Please remove this app from the bench."
+						).format(app.app)
+					)
+				else:
+					# if the app source is erroneous, then we need to show the last stable release
+					# if it is not the first deploy, then we need to show last stable release and show no releases if it is the first deploy
+					last_stable_release = find(latest_app_releases, lambda x: x.status == "Stable")
+					latest_app_releases = [last_stable_release] if not is_first_deploy else []
 
 			# No release exists for this source
 			if not latest_app_release:
