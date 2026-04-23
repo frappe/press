@@ -250,6 +250,7 @@ scheduler_events = {
 		"press.saas.doctype.product_trial.product_trial.sync_product_site_users",
 		"press.press.doctype.database_server.database_server.sync_binlogs_info",
 		"press.press.doctype.team.team.auto_enable_ssh_access_for_7_days_older_teams",
+		# "press.press.doctype.team.team.auto_trust_teams_with_consecutive_paid_invoices",
 	],
 	"hourly_long": [
 		"press.press.doctype.release_group.release_group.prune_servers_without_sites",
