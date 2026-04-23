@@ -26,7 +26,8 @@
   "column_break_azky",
   "duration",
   "section_break_stdout",
-  "stdout"
+  "stdout",
+  "traceback"
  ],
  "fields": [
   {
@@ -175,11 +176,21 @@
    "fieldname": "timeout",
    "fieldtype": "Int",
    "label": "Timeout"
+  },
+  {
+   "fieldname": "traceback",
+   "fieldtype": "Long Text",
+   "label": "Traceback",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "links": [],
+<<<<<<< HEAD
  "modified": "2026-04-22 00:01:50.295095",
+=======
+ "modified": "2026-04-23 19:21:35.153779",
+>>>>>>> 84f2fb843 (feat(workflow-engine): Log traceback)
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow Task",
@@ -203,6 +214,7 @@
    "email": 1,
    "export": 1,
    "print": 1,
+<<<<<<< HEAD
    "read": 1,
    "report": 1,
    "role": "Press Member",
@@ -215,10 +227,25 @@
    "export": 1,
    "print": 1,
    "read": 1,
+=======
+>>>>>>> 84f2fb843 (feat(workflow-engine): Log traceback)
    "report": 1,
    "role": "Press Admin",
    "share": 1,
    "write": 1
+<<<<<<< HEAD
+=======
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+>>>>>>> 84f2fb843 (feat(workflow-engine): Log traceback)
   }
  ],
  "row_format": "Dynamic",
