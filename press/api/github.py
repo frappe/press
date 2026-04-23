@@ -586,10 +586,7 @@ def get_dependant_apps_with_versions(
 		if raises:
 			raise frappe.ValidationError from exc
 
-		dependency_data = AppDependencyFetch(
-			frappe_dependencies={},
-			python_version=None,
-		)
+		dependency_data = AppDependencyFetch(frappe_dependencies={}, python_version=None)
 	else:
 		frappe_dependencies = pyproject.get("tool", {}).get("bench", {}).get("frappe-dependencies", {}).copy()
 		frappe_dependencies.pop("frappe", None)  # Get rid of this
