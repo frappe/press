@@ -568,26 +568,37 @@ def _get_pyproject_from_commit(app_source: str, commit: str):
 		frappe.throw("Invalid pyproject.toml file found in the app repository.", frappe.ValidationError)
 
 
-def get_dependant_apps_with_versions(app_source: str, commit: str, cache: bool = True) -> AppDependencyFetch:
-	"""Get a list of apps that are required by the given repository and commit."""
+def get_dependant_apps_with_versions(
+	app_source: str,
+	commit: str,
+	cache: bool = True,
+	raises: bool = True,
+) -> AppDependencyFetch:
+	"""Return app dependencies and Python version for a repository at a given commit."""
 	cache_key = f"app_deps:{app_source}:{commit}"
 
-	if cache:
-		cached_deps = frappe.cache().get_value(cache_key)
-		if cached_deps is not None:
-			return cached_deps
+	if cache and (cached := frappe.cache().get_value(cache_key)) is not None:
+		return cached
 
-	pyproject = _get_pyproject_from_commit(app_source, commit)
-	frappe_dependencies = pyproject.get("tool", {}).get("bench", {}).get("frappe-dependencies", {})
-	# We can safely remove frappe from the dependencies as it will be added by defult.
-	frappe_dependencies.pop("frappe", None)
-	python_version = pyproject.get("project", {}).get("requires-python")
+	try:
+		pyproject = _get_pyproject_from_commit(app_source, commit)
+	except frappe.ValidationError as exc:
+		if raises:
+			raise frappe.ValidationError from exc
 
-	dependency_data = AppDependencyFetch(
-		frappe_dependencies=frappe_dependencies,
-		python_version=python_version,
-	)
+		dependency_data = AppDependencyFetch(
+			frappe_dependencies={},
+			python_version=None,
+		)
+	else:
+		frappe_dependencies = pyproject.get("tool", {}).get("bench", {}).get("frappe-dependencies", {}).copy()
+		frappe_dependencies.pop("frappe", None)  # Get rid of this
 
+		dependency_data = AppDependencyFetch(
+			frappe_dependencies=frappe_dependencies,
+			python_version=pyproject.get("project", {}).get("requires-python"),
+		)
+
+	# In case of failrues as well we want to cache the result to avoid hitting GitHub
 	frappe.cache().set_value(cache_key, dependency_data, expires_in_sec=60 * 60)
-
 	return dependency_data
