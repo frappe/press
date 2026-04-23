@@ -164,7 +164,7 @@ class PressWorkflowTask(Document):
 			self.output = output
 			self.exception = exception
 			self.stdout = (self.stdout or "") + buffer.getvalue()
-			self.traceback = exception_traceback or self.traceback
+			self.traceback = exception_traceback or getattr(self, "traceback", None)
 
 			if frappe.flags.in_test and self.stdout:
 				print(self.stdout)
