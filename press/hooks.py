@@ -445,9 +445,14 @@ on_session_creation = "press.overrides.on_session_creation"
 # on_logout = "press.overrides.on_logout"
 on_login = "press.overrides.on_login"
 
-before_request = "press.overrides.before_request"
+before_request = [
+	"press.overrides.before_request",
+	"press.telemetry.monitor.add_user_context",
+	"press.telemetry.sentry.add_user_context",
+]
 before_job = "press.overrides.before_job"
 # after_job = "press.overrides.after_job"
+
 
 # Data Deletion Privacy Docs
 
