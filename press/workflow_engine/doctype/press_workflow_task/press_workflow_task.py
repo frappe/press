@@ -44,6 +44,7 @@ class PressWorkflowTask(Document):
 		status: DF.Literal["Queued", "Running", "Success", "Failure"]
 		stdout: DF.LongText | None
 		timeout: DF.Int
+		traceback: DF.LongText | None
 		workflow: DF.Link
 	# end: auto-generated types
 
@@ -125,6 +126,7 @@ class PressWorkflowTask(Document):
 
 		output = None
 		exception = None
+		exception_traceback = None
 		status = "Running"
 		buffer = io.StringIO()
 
@@ -146,6 +148,7 @@ class PressWorkflowTask(Document):
 		except Exception as e:
 			exception = PressWorkflowObject.store(e, throw_on_error=False)
 			status = "Failure"
+			exception_traceback = frappe.get_traceback()
 
 		finally:
 			reference_doc.current_task_signature = existing_task_signature
@@ -161,6 +164,7 @@ class PressWorkflowTask(Document):
 			self.output = output
 			self.exception = exception
 			self.stdout = (self.stdout or "") + buffer.getvalue()
+			self.traceback = exception_traceback or self.traceback
 
 			if frappe.flags.in_test and self.stdout:
 				print(self.stdout)
