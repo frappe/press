@@ -584,7 +584,7 @@ def get_dependant_apps_with_versions(
 		pyproject = _get_pyproject_from_commit(app_source, commit)
 	except frappe.ValidationError as exc:
 		if raises:
-			raise frappe.ValidationError from exc
+			raise exc
 
 		dependency_data = AppDependencyFetch(frappe_dependencies={}, python_version=None)
 	else:
