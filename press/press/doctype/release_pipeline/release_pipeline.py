@@ -127,7 +127,7 @@ def _resolve_python_version_conflicts_and_update_group(
 		if dependency.dependency == "PYTHON_VERSION":
 			dependency.version = str(highest_compatible_python_version)
 			dependency.is_custom = True
-			dependency.save()
+			dependency.save(ignore_permissions=True)
 
 
 class ReleasePipeline(WorkflowBuilder):
@@ -428,8 +428,8 @@ class ReleasePipeline(WorkflowBuilder):
 			release_group_doc.append("apps", {"app": app, "source": app_source.name})
 
 		# Final save
-		deploy_candidate.save()
-		release_group_doc.save()
+		deploy_candidate.save(ignore_permissions=True)
+		release_group_doc.save(ignore_permissions=True)
 
 	@task(queue=_get_task_execution_queue())
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
