@@ -147,17 +147,14 @@ class TestReleasePipeline(FrappeTestCase):
 		release_pipeline: ReleasePipeline = frappe.get_last_doc("Release Pipeline")
 		self.assertEqual(release_pipeline.release_group, self.test_release_group.name)
 		self.assertEqual(release_pipeline.team, get_current_team())
-		release_pipeline = frappe.get_doc(
+		workflow_doc = frappe.get_doc(
 			"Press Workflow",
 			{
 				"linked_doctype": "Release Pipeline",
 				"linked_docname": release_pipeline.name,
 			},
 		)
-
-		frappe.get_last_doc(
-			"Press Workflow"
-		)  # To ensure nothing is raised when fetching the workflow created for the release pipeline
+		self.assertEqual(release_pipeline.workflow, workflow_doc.name)
 
 	@patch.object(DeployCandidateBuild, "_upload_build_context", get_mock_context_file)
 	@patch.object(DeployCandidateBuild, "_build", Mock())
