@@ -205,6 +205,9 @@ def get_default_team_for_user(user):
 
 
 def chat_enabled():
+	if frappe.session.user == "Guest":
+		return False
+
 	if not frappe.db.get_single_value("Press Settings", "enable_chat"):
 		return False
 

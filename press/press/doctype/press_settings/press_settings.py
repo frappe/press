@@ -52,6 +52,57 @@ class PressSettings(Document):
 		central_migration_server: DF.Link | None
 		certbot_directory: DF.Data
 		chat_base_url: DF.Data | None
+		chat_support_end_time: DF.Literal[
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10",
+			"11",
+			"12",
+			"13",
+			"14",
+			"15",
+			"16",
+			"17",
+			"18",
+			"19",
+			"20",
+			"21",
+			"22",
+			"23",
+			"24",
+		]
+		chat_support_start_time: DF.Literal[
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10",
+			"11",
+			"12",
+			"13",
+			"14",
+			"15",
+			"16",
+			"17",
+			"18",
+			"19",
+			"20",
+			"21",
+			"22",
+			"23",
+		]
 		chat_website_token: DF.Data | None
 		clone_directory: DF.Data | None
 		cluster: DF.Link | None
