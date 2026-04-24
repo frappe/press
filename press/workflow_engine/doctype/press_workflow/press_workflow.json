@@ -263,7 +263,8 @@
   {
    "fieldname": "callback_traceback",
    "fieldtype": "Long Text",
-   "label": "Callback Traceback"
+   "label": "Callback Traceback",
+   "read_only": 1
   },
   {
    "default": "Pending",
@@ -282,7 +283,8 @@
   {
    "fieldname": "workflow_traceback",
    "fieldtype": "Long Text",
-   "label": "Workflow Traceback"
+   "label": "Workflow Traceback",
+   "read_only": 1
   },
   {
    "default": "0",
@@ -319,7 +321,7 @@
    "link_fieldname": "workflow"
   }
  ],
- "modified": "2026-04-24 13:36:34.775783",
+ "modified": "2026-04-24 18:53:20.041521",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow",

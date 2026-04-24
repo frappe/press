@@ -190,25 +190,28 @@
    "fieldname": "args_type",
    "fieldtype": "Select",
    "label": "Args Type",
-   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject"
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "read_only": 1
   },
   {
    "fieldname": "kwargs_type",
    "fieldtype": "Data",
    "label": "Kwargs Type",
-   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject"
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "read_only": 1
   },
   {
    "fieldname": "output_type",
    "fieldtype": "Select",
    "label": "Output Type",
    "length": 1000,
-   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject"
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2026-04-24 14:46:19.016442",
+ "modified": "2026-04-24 18:52:37.880235",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow Task",
