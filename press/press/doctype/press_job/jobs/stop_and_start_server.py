@@ -17,6 +17,12 @@ class StopAndStartServerJob(PressJob):
 
 	@task
 	def stop_virtual_machine(self):
+		with suppress(Exception):
+			self.virtual_machine_doc.sync()
+
+			if self.virtual_machine_doc.status == "Stopped":
+				return
+
 		self.virtual_machine_doc.stop()
 
 	@task
@@ -31,6 +37,12 @@ class StopAndStartServerJob(PressJob):
 
 	@task
 	def start_virtual_machine(self):
+		with suppress(Exception):
+			self.virtual_machine_doc.sync()
+
+			if self.virtual_machine_doc.status == "Running":
+				return
+
 		self.virtual_machine_doc.start()
 
 	@task

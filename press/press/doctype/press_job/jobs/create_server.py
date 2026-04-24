@@ -1,4 +1,4 @@
-import time
+import contextlib
 from typing import TYPE_CHECKING
 
 import frappe
@@ -113,6 +113,10 @@ class CreateServerJob(PressJob):
 		if not self.virtual_machine_doc.data_disk_snapshot:
 			return
 
+		if self.virtual_machine_doc.data_disk_snapshot_volume_id:
+			# Volume has already been created from the snapshot, proceed to attach it
+			return
+
 		max_retries = self.arguments_dict.get("max_volume_creation_retries", 6)
 		if self.kv.get("volume_creation_attempts", 0) >= max_retries:
 			raise Exception(f"Failed to create volume from snapshot after {max_retries} retries")
@@ -126,38 +130,41 @@ class CreateServerJob(PressJob):
 
 	@task
 	def attach_snapshotted_volume(self):
-		vm = frappe.get_doc("Virtual Machine", self.virtual_machine)
-		if not vm.data_disk_snapshot:
+		if not self.virtual_machine_doc.data_disk_snapshot:
 			return
 
-		while True:
-			is_attached = vm.check_and_attach_data_disk_snapshot_volume()
-			if is_attached:
-				return
-			time.sleep(10)
-			vm = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		if self.virtual_machine_doc.data_disk_snapshot_attached:
+			# Volume has already been attached, proceed to sync it
+			return
+
+		try:
+			self.virtual_machine_doc.check_and_attach_data_disk_snapshot_volume()
+		except (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.TimestampMismatchError):
+			self.defer_current_task()
 
 	@task
 	def sync_attached_volumes(self):
-		server = self.server_doc
-		if server.provider != "AWS EC2" or not frappe.db.get_value(
-			"Virtual Machine", server.virtual_machine, "data_disk_snapshot"
-		):
+		if not self.virtual_machine_doc.data_disk_snapshot:
 			return
 
-		while True:
-			time.sleep(10)
-			try:
-				vm = frappe.get_doc("Virtual Machine", server.virtual_machine)
-				vm.sync()
-				if len(vm.volumes) == 0 or (vm.data_disk_snapshot_attached and len(vm.volumes) == 1):
-					continue
-				server.reload()
-				server.validate_mounts()
-				server.save()
-				break
-			except (frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.TimestampMismatchError):
-				continue
+		with contextlib.suppress(
+			frappe.QueryDeadlockError, frappe.QueryTimeoutError, frappe.TimestampMismatchError
+		):
+			self.virtual_machine_doc.sync()
+			if (
+				self.virtual_machine_doc.data_disk_snapshot_attached
+				and len(self.virtual_machine_doc.volumes) == 1
+			) or (
+				not self.virtual_machine_doc.data_disk_snapshot_attached
+				and len(self.virtual_machine_doc.volumes) == 0
+			):
+				self.defer_current_task()
+				return
+
+			server = self.server_doc
+			server.reload()
+			server.validate_mounts()
+			server.save()
 
 	@task(queue="long", timeout=7200)
 	def mount_snapshotted_volume(self):

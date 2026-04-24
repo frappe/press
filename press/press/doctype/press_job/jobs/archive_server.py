@@ -15,10 +15,22 @@ class ArchiveServerJob(PressJob):
 
 	@task
 	def disable_termination_protection(self):
+		with suppress(Exception):
+			self.virtual_machine_doc.sync()
+
+		if self.virtual_machine_doc.status == "Terminated":
+			return
+
 		self.virtual_machine_doc.disable_termination_protection()
 
 	@task(queue="long", timeout=600)
 	def terminate_virtual_machine(self):
+		with suppress(Exception):
+			self.virtual_machine_doc.sync()
+
+		if self.virtual_machine_doc.status == "Terminated":
+			return
+
 		self.virtual_machine_doc.terminate()
 
 	@task

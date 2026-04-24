@@ -23,6 +23,12 @@ class CreateServerSnapshotJob(PressJob):
 	@task
 	def stop_virtual_machine(self):
 		machine = self.virtual_machine_doc
+		with suppress(Exception):
+			machine.sync()
+
+			if machine.status == "Stopped":
+				return
+
 		machine.stop()
 
 	@task
@@ -42,6 +48,12 @@ class CreateServerSnapshotJob(PressJob):
 
 	@task
 	def start_virtual_machine(self):
+		with suppress(Exception):
+			self.virtual_machine_doc.sync()
+
+			if self.virtual_machine_doc.status == "Running":
+				return
+
 		try:
 			self.virtual_machine_doc.start()
 		except Exception:

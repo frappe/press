@@ -30,6 +30,12 @@ class ResizeServerJob(PressJob):
 
 	@task
 	def stop_virtual_machine(self):
+		with suppress(Exception):
+			self.virtual_machine_doc.sync()
+
+		if self.virtual_machine_doc.status == "Stopped":
+			return
+
 		self.virtual_machine_doc.stop()
 
 	@task
@@ -44,15 +50,29 @@ class ResizeServerJob(PressJob):
 
 	@task
 	def resize_virtual_machine(self):
+		with suppress(Exception):
+			self.virtual_machine_doc.sync()
+
+		if (
+			self.arguments_dict.get("upgrade_disk", False)
+			and self.virtual_machine_doc.machine_type == self.arguments_dict.machine_type
+		):
+			return
+
 		self.virtual_machine_doc.resize(
 			self.arguments_dict.machine_type, self.arguments_dict.get("upgrade_disk", False)
 		)
 
 	@task
 	def start_virtual_machine(self):
+		with suppress(Exception):
+			self.virtual_machine_doc.sync()
+
+			if self.virtual_machine_doc.status == "Running":
+				return
+
 		try:
-			if self.virtual_machine_doc.status != "Running":
-				self.virtual_machine_doc.start()
+			self.virtual_machine_doc.start()
 		except Exception:
 			self.defer_current_task()
 
