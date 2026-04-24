@@ -23,7 +23,8 @@
    "fieldname": "value",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Value"
+   "label": "Value",
+   "length": 1000
   },
   {
    "default": "object",
@@ -39,7 +40,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-24 12:02:00.810732",
+ "modified": "2026-04-24 13:24:11.790831",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow KV",

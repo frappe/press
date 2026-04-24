@@ -13,10 +13,12 @@
   "linked_docname",
   "section_break_bicj",
   "main_method_name",
-  "main_method_title",
-  "column_break_ccie",
   "args",
+  "args_type",
+  "column_break_ccie",
+  "main_method_title",
   "kwargs",
+  "kwargs_type",
   "kv_storage_section",
   "key_value_store",
   "section_break_zpgq",
@@ -29,6 +31,7 @@
   "steps",
   "section_break_pfpj",
   "output",
+  "output_type",
   "column_break_lhnh",
   "exception",
   "callback_section",
@@ -96,9 +99,9 @@
   },
   {
    "fieldname": "output",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Output",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "read_only": 1
   },
   {
@@ -184,16 +187,16 @@
   },
   {
    "fieldname": "args",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Args",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "set_only_once": 1
   },
   {
    "fieldname": "kwargs",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Kwargs",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "set_only_once": 1
   },
   {
@@ -286,6 +289,26 @@
    "fieldname": "is_force_failure_requested",
    "fieldtype": "Check",
    "label": "Force Failure Requested"
+  },
+  {
+   "fieldname": "args_type",
+   "fieldtype": "Select",
+   "label": "Args Type",
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "kwargs_type",
+   "fieldtype": "Select",
+   "label": "Kwargs Type",
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "output_type",
+   "fieldtype": "Select",
+   "label": "Output Type",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -296,7 +319,7 @@
    "link_fieldname": "workflow"
   }
  ],
- "modified": "2026-04-24 11:33:09.864201",
+ "modified": "2026-04-24 13:36:34.775783",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow",

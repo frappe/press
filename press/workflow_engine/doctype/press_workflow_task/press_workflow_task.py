@@ -16,7 +16,7 @@ from press.workflow_engine.doctype.press_workflow.press_workflow import enqueue_
 from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
 	PressWorkflowObject,
 )
-from press.workflow_engine.utils import calculate_duration
+from press.workflow_engine.utils import calculate_duration, deserialize_value, serialize_and_store_value
 
 if TYPE_CHECKING:
 	from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
@@ -32,13 +32,16 @@ class PressWorkflowTask(Document):
 		from frappe.types import DF
 
 		args: DF.Link | None
+		args_type: DF.Literal["int", "float", "string", "tuple", "list", "dict", "object"]
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		exception: DF.Link | None
 		kwargs: DF.Link | None
+		kwargs_type: DF.Data | None
 		method_name: DF.Data
 		method_title: DF.Data
 		output: DF.Link | None
+		output_type: DF.Literal["int", "float", "string", "tuple", "list", "dict", "object"]
 		parent_task: DF.Link | None
 		queue: DF.Data | None
 		signature: DF.Data
@@ -103,8 +106,8 @@ class PressWorkflowTask(Document):
 		reference_doc.flags.current_press_workflow_task = self.name
 
 		try:
-			args = PressWorkflowObject.get_object(self.args) if self.args else ()
-			kwargs = PressWorkflowObject.get_object(self.kwargs) if self.kwargs else {}
+			args = deserialize_value(self.args) if self.args else ()
+			kwargs = deserialize_value(self.kwargs) if self.kwargs else {}
 		except Exception as e:
 			self.exception = PressWorkflowObject.store(e, throw_on_error=False)
 			self.status = "Failure"
@@ -133,7 +136,8 @@ class PressWorkflowTask(Document):
 		if not frappe.flags.in_test:
 			frappe.db.commit()  # nosemgrep
 
-		output = None
+		output_value = None
+		output_type = None
 		exception = None
 		exception_traceback = None
 		status = "Running"
@@ -150,7 +154,7 @@ class PressWorkflowTask(Document):
 				result = getattr(reference_doc, self.method_name)(*args, **kwargs)
 
 			if result is not None:
-				output = PressWorkflowObject.store(result)
+				output_type, output_value = serialize_and_store_value(result)
 
 			status = "Success"
 		except PressWorkflowTaskEnqueued:
@@ -174,7 +178,8 @@ class PressWorkflowTask(Document):
 				self.duration = calculate_duration(self.start, self.end)
 
 			self.status = status
-			self.output = output
+			self.output = output_value
+			self.output_type = output_type
 			self.exception = exception
 			self.stdout = (self.stdout or "") + buffer.getvalue()
 			self.traceback = exception_traceback or getattr(self, "traceback", None)

@@ -23,6 +23,7 @@ from press.workflow_engine.utils import (
 	generate_function_signature,
 	is_func_accept_task_id,
 	method_title,
+	serialize_and_store_value,
 )
 
 if TYPE_CHECKING:
@@ -86,8 +87,12 @@ class WorkflowBuilder(Document):
 			task_doc.method_title = method_title(wrapped)  # type: ignore
 
 			task_doc.signature = signature  # type: ignore
-			task_doc.args = PressWorkflowObject.store(args) if args else None  # type: ignore
-			task_doc.kwargs = PressWorkflowObject.store(kwargs) if kwargs else None  # type: ignore
+			args_type, args_value = serialize_and_store_value(args)
+			kwargs_type, kwargs_value = serialize_and_store_value(kwargs)
+			task_doc.args = args_value
+			task_doc.args_type = args_type
+			task_doc.kwargs = kwargs_value
+			task_doc.kwargs_type = kwargs_type
 			task_doc.status = "Queued"  # type: ignore
 			task_doc.queue = queue  # type: ignore
 			task_doc.timeout = timeout or 0  # type: ignore

@@ -20,7 +20,7 @@ from press.workflow_engine.doctype.press_workflow.exceptions import (
 from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
 	PressWorkflowObject,
 )
-from press.workflow_engine.utils import calculate_duration
+from press.workflow_engine.utils import calculate_duration, serialize_and_store_value
 
 if TYPE_CHECKING:
 	from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
@@ -41,7 +41,8 @@ class PressWorkflow(Document):
 		from press.workflow_engine.doctype.press_workflow_kv.press_workflow_kv import PressWorkflowKV
 		from press.workflow_engine.doctype.press_workflow_step.press_workflow_step import PressWorkflowStep
 
-		args: DF.Link | None
+		args: DF.Data | None
+		args_type: DF.Literal["int", "float", "string", "tuple", "list", "dict", "object"]
 		callback_next_retry_at: DF.Datetime | None
 		callback_status: DF.Literal["Pending", "Success", "Failure", "Fatal"]
 		callback_traceback: DF.LongText | None
@@ -50,14 +51,16 @@ class PressWorkflow(Document):
 		exception: DF.Link | None
 		is_force_failure_requested: DF.Check
 		key_value_store: DF.Table[PressWorkflowKV]
-		kwargs: DF.Link | None
+		kwargs: DF.Data | None
+		kwargs_type: DF.Literal["int", "float", "string", "tuple", "list", "dict", "object"]
 		linked_docname: DF.DynamicLink
 		linked_doctype: DF.Link
 		main_method_name: DF.Data
 		main_method_title: DF.Data
 		max_no_of_callback_attempts: DF.Int
 		no_of_callback_attempts: DF.Int
-		output: DF.Link | None
+		output: DF.Data | None
+		output_type: DF.Literal[None]
 		start: DF.Datetime | None
 		status: DF.Literal["Queued", "Running", "Success", "Failure", "Fatal"]
 		stdout: DF.LongText | None
@@ -102,7 +105,8 @@ class PressWorkflow(Document):
 			self.save()
 			return
 
-		output = None
+		output_value = None
+		output_type = None
 		exception = None
 		workflow_exception_traceback = None
 		status = "Running"
@@ -127,7 +131,7 @@ class PressWorkflow(Document):
 				result = getattr(reference_doc, self.main_method_name)(*args, **kwargs)
 
 			if result is not None:
-				output = PressWorkflowObject.store(result)  # type: ignore
+				output_type, output_value = serialize_and_store_value(result)
 			status = "Success"
 		except PressWorkflowTaskEnqueued:
 			# This is expected when a task is enqueued.
@@ -150,7 +154,8 @@ class PressWorkflow(Document):
 				self.duration = calculate_duration(self.start, self.end)
 
 			self.status = status
-			self.output = output
+			self.output = output_value
+			self.output_type = output_type
 			self.stdout = (self.stdout or "") + buffer.getvalue()
 
 			if frappe.flags.in_test and self.stdout:
