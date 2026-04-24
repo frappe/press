@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
+  "is_force_failure_requested",
   "column_break_lkci",
   "linked_doctype",
   "column_break_xuyw",
@@ -41,7 +42,7 @@
   "section_break_xglm",
   "stdout",
   "traceback",
-  "callback_traceback"
+  "callback_traceback",
   "workflow_traceback"
  ],
  "fields": [
@@ -274,9 +275,17 @@
   {
    "fieldname": "column_break_gteb",
    "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "workflow_traceback",
    "fieldtype": "Long Text",
    "label": "Workflow Traceback"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_force_failure_requested",
+   "fieldtype": "Check",
+   "label": "Force Failure Requested"
   }
  ],
  "grid_page_length": 50,
@@ -287,7 +296,7 @@
    "link_fieldname": "workflow"
   }
  ],
- "modified": "2026-04-23 19:16:29.284785",
+ "modified": "2026-04-24 11:33:09.864201",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow",

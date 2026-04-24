@@ -48,6 +48,7 @@ class PressWorkflow(Document):
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		exception: DF.Link | None
+		is_force_failure_requested: DF.Check
 		key_value_store: DF.Table[PressWorkflowKV]
 		kwargs: DF.Link | None
 		linked_docname: DF.DynamicLink
@@ -74,6 +75,14 @@ class PressWorkflow(Document):
 
 	def on_trash(self):
 		frappe.db.delete("Press Workflow Task", {"workflow": self.name})
+
+	@frappe.whitelist()
+	def force_fail(self):
+		if self.status in ["Success", "Failure", "Fatal"]:
+			frappe.throw("Cannot force fail a workflow that has already completed.")
+			return
+
+		frappe.db.set_value(self.doctype, self.name, "is_force_failure_requested", True)
 
 	def run(self):  # noqa: C901 - best to keep it in one place
 		if not self.linked_doctype or not self.linked_docname:
@@ -111,6 +120,9 @@ class PressWorkflow(Document):
 			frappe.db.commit()  # nosemgrep
 
 		try:
+			if self.is_force_failure_requested:
+				raise Exception("Workflow was forcefully failed based on user request.")
+
 			with redirect_stdout(buffer):
 				result = getattr(reference_doc, self.main_method_name)(*args, **kwargs)
 

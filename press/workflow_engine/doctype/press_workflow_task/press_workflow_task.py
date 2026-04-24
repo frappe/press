@@ -91,7 +91,7 @@ class PressWorkflowTask(Document):
 		workflow_info = frappe.get_value(
 			"Press Workflow",
 			self.workflow,
-			["name", "status", "linked_docname", "linked_doctype"],
+			["name", "status", "linked_docname", "linked_doctype", "is_force_failure_requested"],
 			as_dict=True,
 		)
 
@@ -142,6 +142,10 @@ class PressWorkflowTask(Document):
 		existing_task_signature = reference_doc.current_task_signature
 		try:
 			reference_doc.current_task_signature = self.signature
+
+			if workflow_info.is_force_failure_requested:
+				raise Exception("Workflow was forcefully failed based on user request.")
+
 			with redirect_stdout(buffer):
 				result = getattr(reference_doc, self.method_name)(*args, **kwargs)
 
