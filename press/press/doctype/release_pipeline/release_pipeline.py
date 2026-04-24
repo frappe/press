@@ -290,20 +290,17 @@ class ReleasePipeline(WorkflowBuilder):
 
 		deploy_candidate, platform = deploy_info
 
-		# Get the latest **retried** build
-		retried_build = frappe.db.get_value(
+		# Get the latest build
+		return frappe.db.get_value(
 			"Deploy Candidate Build",
 			{
 				"group": self.release_group,
 				"deploy_candidate": deploy_candidate,
-				"name": ("!=", deploy_candidate_build),
 				"platform": platform,
 			},
 			"name",
 			order_by="creation desc",
 		)
-
-		return retried_build or deploy_candidate_build
 
 	@task(queue=_get_task_execution_queue())
 	def monitor_pre_build_validation(self, deploy_candidate_build: str):
@@ -409,7 +406,6 @@ class ReleasePipeline(WorkflowBuilder):
 			return self.update_pipeline_status("Success")
 
 		if successful_deploys == 0:
-			self.update_pipeline_status("Failure")
 			raise ReleasePipelineFailure(f"All {expected_count} bench deploy(s) failed.")
 
 		# If some succeeded and others are permanently failed
@@ -604,8 +600,9 @@ class ReleasePipeline(WorkflowBuilder):
 		run_will_fail_check: bool = False,
 	):
 		"""Orchestrates the release process from validation to bench creation with recursive monitoring and retry handling"""
-		self.workflow = self.current_workflow
-		self.save()
+		if not self.workflow:
+			self.workflow = self.current_workflow
+			self.save()
 
 		try:
 			# 1. Validation Phase
