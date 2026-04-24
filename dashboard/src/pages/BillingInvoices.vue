@@ -73,6 +73,7 @@ export default {
 					'period_end',
 					'mpesa_invoice',
 					'mpesa_invoice_pdf',
+					'amount_due',
 				],
 				filterControls: () => {
 					return [

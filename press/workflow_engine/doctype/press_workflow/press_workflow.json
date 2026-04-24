@@ -42,6 +42,7 @@
   "stdout",
   "traceback",
   "callback_traceback"
+  "workflow_traceback"
  ],
  "fields": [
   {
@@ -273,6 +274,9 @@
   {
    "fieldname": "column_break_gteb",
    "fieldtype": "Column Break"
+   "fieldname": "workflow_traceback",
+   "fieldtype": "Long Text",
+   "label": "Workflow Traceback"
   }
  ],
  "grid_page_length": 50,
@@ -283,7 +287,7 @@
    "link_fieldname": "workflow"
   }
  ],
- "modified": "2026-04-17 02:44:53.455627",
+ "modified": "2026-04-23 19:16:29.284785",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow",

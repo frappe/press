@@ -46,6 +46,10 @@ def mock_bench_monitoring(*args, **kwargs):
 	return
 
 
+def get_failure_pyproject_file(*args, **kwargs):
+	frappe.throw("No pyproject found or something went wrong with github", frappe.ValidationError)
+
+
 def get_mock_pyproject_file(*args, **kwargs):
 	return tomli.loads("""[project]
 		name = "helpdesk"
@@ -143,17 +147,14 @@ class TestReleasePipeline(FrappeTestCase):
 		release_pipeline: ReleasePipeline = frappe.get_last_doc("Release Pipeline")
 		self.assertEqual(release_pipeline.release_group, self.test_release_group.name)
 		self.assertEqual(release_pipeline.team, get_current_team())
-		release_pipeline = frappe.get_doc(
+		workflow_doc = frappe.get_doc(
 			"Press Workflow",
 			{
 				"linked_doctype": "Release Pipeline",
 				"linked_docname": release_pipeline.name,
 			},
 		)
-
-		frappe.get_last_doc(
-			"Press Workflow"
-		)  # To ensure nothing is raised when fetching the workflow created for the release pipeline
+		self.assertEqual(release_pipeline.workflow, workflow_doc.name)
 
 	@patch.object(DeployCandidateBuild, "_upload_build_context", get_mock_context_file)
 	@patch.object(DeployCandidateBuild, "_build", Mock())
@@ -258,6 +259,19 @@ class TestReleasePipeline(FrappeTestCase):
 				"telephony": None,  # Some apps might not give their python version requirements.
 			},
 		)
+
+	def test_no_failure_on_fetching_non_existent_pyproject_file(self):
+		# This can happen when fetching pyproject for apps that are not part of the release but are dependencies of apps in the release
+		with patch("press.api.github._get_pyproject_from_commit", get_failure_pyproject_file):
+			dependent_apps = get_dependant_apps_with_versions("some_source", "some_commit", raises=False)
+			self.assertEqual(dependent_apps["frappe_dependencies"], {})
+			self.assertEqual(dependent_apps["python_version"], None)
+
+		with (
+			patch("press.api.github._get_pyproject_from_commit", get_failure_pyproject_file),
+			self.assertRaises(frappe.ValidationError),
+		):
+			get_dependant_apps_with_versions("some_source", "some_commit", raises=True, cache=False)
 
 	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
 	def test_implicit_dependency_source_addition(self):

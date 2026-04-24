@@ -198,7 +198,7 @@ class WorkflowBuilder(Document):
 		assert self.workflow_name is not None, "Workflow name must be set to defer current task"
 
 		raise PressWorkflowTaskEnqueued(
-			"User has requested to retry the task later.",
+			message,
 			self.workflow_name,
 			self.flags.current_press_workflow_task
 			if hasattr(self.flags, "current_press_workflow_task")

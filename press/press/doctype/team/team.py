@@ -27,6 +27,7 @@ from press.utils.billing import (
 	is_frappe_auth_disabled,
 	process_micro_debit_test_charge,
 )
+from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
 
 if TYPE_CHECKING:
@@ -83,6 +84,7 @@ class Team(Document):
 		is_developer: DF.Check
 		is_frappe_compute_internal_user: DF.Check
 		is_saas_user: DF.Check
+		is_trusted_team: DF.Check
 		is_us_eu: DF.Check
 		last_used_team: DF.Link | None
 		monthly_alert_threshold: DF.Currency
@@ -1788,6 +1790,49 @@ def send_budget_alert_email(team_info, invoice):
 	except Exception as e:
 		frappe.log_error(f"Failed to send budget alert email: {team_info['user']}", {e})
 		return False
+
+
+def auto_trust_teams_with_consecutive_paid_invoices():
+	"""Mark teams as trusted if their last 3 subscription invoices are all Paid."""
+	Invoice = frappe.qb.DocType("Invoice")
+	Team = frappe.qb.DocType("Team")
+
+	# Only consider non-trusted teams with at least 3 paid subscription invoices
+	teams_with_paid_invoices = (
+		frappe.qb.from_(Invoice)
+		.join(Team)
+		.on(Invoice.team == Team.name)
+		.select(Invoice.team)
+		.where(Invoice.type == "Subscription")
+		.where(Invoice.status == "Paid")
+		.where(Team.is_trusted_team == 0)
+		.where(Team.enabled == 1)
+		.groupby(Invoice.team)
+		.having(Count("*") >= 3)
+	).run(as_dict=True)
+
+	team_names = [t.team for t in teams_with_paid_invoices]
+	if not team_names:
+		return
+
+	trusted_teams = []
+	for team_name in team_names:
+		if has_job_timeout_exceeded():
+			return
+
+		# Fetch last 3 subscription invoices ordered by period_end desc
+		last_3 = frappe.db.get_all(
+			"Invoice",
+			filters={"team": team_name, "type": "Subscription"},
+			fields=["status"],
+			order_by="period_end desc",
+			limit=3,
+		)
+		if len(last_3) == 3 and all(inv.status == "Paid" for inv in last_3):
+			trusted_teams.append(team_name)
+
+	if trusted_teams:
+		frappe.db.set_value("Team", {"name": ("in", trusted_teams)}, "is_trusted_team", 1)
 
 
 def auto_enable_ssh_access_for_7_days_older_teams():

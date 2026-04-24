@@ -543,6 +543,7 @@ class BaseServer(Document, TagHelpers):
 			if self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted:
 				self.create_dns_record()
 				self.update_virtual_machine_name()
+
 		elif (
 			self.private_ip
 			and self.doctype in ["Server", "Database Server"]
@@ -1188,6 +1189,8 @@ class BaseServer(Document, TagHelpers):
 		return find(machine.volumes, lambda v: v.device == "/dev/sda1")
 
 	def update_virtual_machine_name(self):
+		if not self.virtual_machine:
+			return None
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
 
