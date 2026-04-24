@@ -173,13 +173,14 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 		.where(Bench.status == "Active")
 		.where(Bench.group == site["group"])
 		.orderby(Case().when(Bench.cluster == cluster, 1).else_(0), order=frappe.qb.desc)
-		.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
 		.orderby(Bench.creation, order=frappe.qb.desc)
 		.limit(1)
 	)
 
 	if server:
 		bench_query = bench_query.where(Server.name == server)
+	else:
+		bench_query.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
 
 	bench = bench_query.run(as_dict=True).pop()
 
