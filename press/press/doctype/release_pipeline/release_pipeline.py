@@ -180,9 +180,10 @@ class ReleasePipeline(WorkflowBuilder):
 			"Failure",
 			"Retrying",
 		],
+		ignore_permissions: bool = False,
 	):
 		self.status = status
-		self.save()
+		self.save(ignore_permissions=ignore_permissions)
 
 		if self.status == "Failure":
 			self.send_failure_notification()
@@ -625,3 +626,6 @@ class ReleasePipeline(WorkflowBuilder):
 		workflow_status = frappe.db.get_value("Press Workflow", self.workflow, "status")
 		if workflow_status == "Failure":
 			self.update_pipeline_status("Failure")
+
+	def on_workflow_failure(self):
+		self.update_pipeline_status("Failure", ignore_permissions=True)
