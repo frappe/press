@@ -10,9 +10,11 @@ from press.workflow_engine.utils import (
 	_canonicalize,
 	calculate_duration,
 	called_methods_in_order,
+	deserialize_value,
 	generate_function_signature,
 	is_func_accept_task_id,
 	method_title,
+	serialize_and_store_value,
 )
 
 
@@ -144,3 +146,33 @@ class TestWorkflowEngineUtils(FrappeTestCase):
 		sig4 = generate_function_signature(my_func, args=(1,), kwargs={"task_id": "123"})
 		# In this implementation, the payload structure incorporates task_id so the digest will be different.
 		self.assertNotEqual(sig1, sig4)
+
+	def test_serialize_deserialize_json_types(self):
+		cases = [
+			(True, "bool"),
+			(7, "int"),
+			(1.5, "float"),
+			("value", "string"),
+			((1, "a"), "tuple"),
+			([1, "a"], "list"),
+			({"a": 1}, "dict"),
+		]
+
+		for original, expected_type in cases:
+			with self.subTest(value=original, value_type=expected_type):
+				value_type, serialized_value = serialize_and_store_value(original)
+				self.assertEqual(value_type, expected_type)
+				deserialized_value = deserialize_value(value_type, serialized_value)
+				self.assertEqual(type(deserialized_value), type(original))
+				self.assertEqual(deserialized_value, original)
+
+	def test_serialize_deserialize_exception_as_object(self):
+		original = ValueError("something went wrong")
+		value_type, serialized_value = serialize_and_store_value(original)
+
+		self.assertEqual(value_type, "object")
+		self.assertIsNotNone(serialized_value)
+
+		deserialized = deserialize_value(value_type, serialized_value)
+		self.assertIsInstance(deserialized, ValueError)
+		self.assertEqual(str(deserialized), str(original))

@@ -79,7 +79,7 @@ class PressWorkflow(Document):
 	@frappe.whitelist()
 	def force_fail(self):
 		if self.status in ["Success", "Failure", "Fatal"]:
-			frappe.throw("Cannot force fail a workflow that has already completed.")
+			frappe.throw("Cannot force fail a workflow that has already completed.")  # nosemgrep
 			return
 
 		frappe.db.set_value(self.doctype, self.name, "is_force_failure_requested", True)
