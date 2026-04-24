@@ -181,10 +181,11 @@ class ReleasePipeline(WorkflowBuilder):
 			"Retrying",
 		],
 	):
-		self.status = status
-		self.save()
+		# If the workflow doc touches this for any reason
+		# Document native methods would raise a `TimeStampMismatch` error
+		self.db_set("status", status)
 
-		if self.status == "Failure":
+		if status == "Failure":
 			self.send_failure_notification()
 
 	@cached_property
@@ -232,19 +233,22 @@ class ReleasePipeline(WorkflowBuilder):
 		"""Create a Deploy Candidate for the release group."""
 		assert isinstance(self.release_group, str)
 		bench_update: BenchUpdate = get_bench_update(
-			self.release_group, apps, sites, is_inplace_update=False, ignore_permissions_check=True
+			self.release_group, apps, sites, is_inplace_update=False, ignore_permissions=True
 		)
 		return bench_update.deploy(
 			run_will_fail_check=run_will_fail_check,
 			validate_pre_candidate_checks=False,
 			create_build=create_deploy,
+			ignore_permissions=True,
 		)
 
 	@task(queue=_get_task_execution_queue())
 	def initiate_pre_build_validations(self, deploy_candidate: str) -> str:
 		"""Start the deploy candidate build process which will run the pre-build validations."""
 		candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", deploy_candidate)
-		deploy_candidate_build = candidate.schedule_build_and_deploy()
+		deploy_candidate_build = candidate.schedule_build_and_deploy(
+			ignore_permissions=True,
+		)
 		return deploy_candidate_build["name"]
 
 	def _get_required_build_count(self, deploy_candidate: str) -> int:
@@ -287,20 +291,17 @@ class ReleasePipeline(WorkflowBuilder):
 
 		deploy_candidate, platform = deploy_info
 
-		# Get the latest **retried** build
-		retried_build = frappe.db.get_value(
+		# Get the latest build
+		return frappe.db.get_value(
 			"Deploy Candidate Build",
 			{
 				"group": self.release_group,
 				"deploy_candidate": deploy_candidate,
-				"name": ("!=", deploy_candidate_build),
 				"platform": platform,
 			},
 			"name",
 			order_by="creation desc",
 		)
-
-		return retried_build or deploy_candidate_build
 
 	@task(queue=_get_task_execution_queue())
 	def monitor_pre_build_validation(self, deploy_candidate_build: str):
@@ -406,7 +407,6 @@ class ReleasePipeline(WorkflowBuilder):
 			return self.update_pipeline_status("Success")
 
 		if successful_deploys == 0:
-			self.update_pipeline_status("Failure")
 			raise ReleasePipelineFailure(f"All {expected_count} bench deploy(s) failed.")
 
 		# If some succeeded and others are permanently failed
@@ -601,8 +601,9 @@ class ReleasePipeline(WorkflowBuilder):
 		run_will_fail_check: bool = False,
 	):
 		"""Orchestrates the release process from validation to bench creation with recursive monitoring and retry handling"""
-		self.workflow = self.current_workflow
-		self.save()
+		if not self.workflow:
+			self.workflow = self.current_workflow
+			self.save()
 
 		try:
 			# 1. Validation Phase
