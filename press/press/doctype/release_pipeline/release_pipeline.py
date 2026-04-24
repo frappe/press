@@ -182,7 +182,7 @@ class ReleasePipeline(WorkflowBuilder):
 		],
 	):
 		self.status = status
-		self.save()
+		self.save(ignore_permissions=True)
 
 		if self.status == "Failure":
 			self.send_failure_notification()
@@ -232,20 +232,22 @@ class ReleasePipeline(WorkflowBuilder):
 		"""Create a Deploy Candidate for the release group."""
 		assert isinstance(self.release_group, str)
 		bench_update: BenchUpdate = get_bench_update(
-			self.release_group, apps, sites, is_inplace_update=False, ignore_permissions_check=True
+			self.release_group, apps, sites, is_inplace_update=False, ignore_permissions=True
 		)
 		return bench_update.deploy(
 			run_will_fail_check=run_will_fail_check,
 			validate_pre_candidate_checks=False,
 			create_build=create_deploy,
-			ignore_permissions_check=True,
+			ignore_permissions=True,
 		)
 
 	@task(queue=_get_task_execution_queue())
 	def initiate_pre_build_validations(self, deploy_candidate: str) -> str:
 		"""Start the deploy candidate build process which will run the pre-build validations."""
 		candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", deploy_candidate)
-		deploy_candidate_build = candidate.schedule_build_and_deploy()
+		deploy_candidate_build = candidate.schedule_build_and_deploy(
+			ignore_permissions=True,
+		)
 		return deploy_candidate_build["name"]
 
 	def _get_required_build_count(self, deploy_candidate: str) -> int:

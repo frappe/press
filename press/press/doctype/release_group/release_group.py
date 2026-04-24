@@ -737,7 +737,7 @@ class ReleaseGroup(Document, TagHelpers):
 		apps_to_update=None,
 		run_will_fail_check=False,
 		validate_pre_candidate_checks: bool = True,
-		ignore_permissions_check: bool = False,
+		ignore_permissions: bool = False,
 	) -> "DeployCandidate | None":
 		if not self.enabled:
 			return None
@@ -786,7 +786,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 			check_if_update_will_fail(self, new_dc)
 
-		new_dc.insert(ignore_permissions=ignore_permissions_check)
+		new_dc.insert(ignore_permissions=ignore_permissions)
 		return new_dc
 
 	def validate_dc_apps_against_rg(self, dc_apps) -> None:
