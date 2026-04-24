@@ -32,7 +32,8 @@
   "exception",
   "section_break_xglm",
   "stdout",
-  "traceback"
+  "traceback",
+  "workflow_traceback"
  ],
  "fields": [
   {
@@ -98,6 +99,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval: doc.key_value_store.length > 0",
    "fieldname": "kv_storage_section",
    "fieldtype": "Section Break",
    "label": "KV Storage"
@@ -207,6 +209,11 @@
    "label": "Steps",
    "options": "Press Workflow Step",
    "read_only": 1
+  },
+  {
+   "fieldname": "workflow_traceback",
+   "fieldtype": "Long Text",
+   "label": "Workflow Traceback"
   }
  ],
  "grid_page_length": 50,
@@ -217,7 +224,7 @@
    "link_fieldname": "workflow"
   }
  ],
- "modified": "2026-04-22 00:01:07.425649",
+ "modified": "2026-04-23 19:16:29.284785",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow",
@@ -237,24 +244,20 @@
    "write": 1
   },
   {
-   "create": 1,
    "email": 1,
    "export": 1,
    "print": 1,
-   "read": 1,
    "report": 1,
-   "role": "Press Member",
+   "role": "Press Admin",
    "share": 1,
    "write": 1
   },
   {
-   "create": 1,
    "email": 1,
    "export": 1,
    "print": 1,
-   "read": 1,
    "report": 1,
-   "role": "Press Admin",
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }

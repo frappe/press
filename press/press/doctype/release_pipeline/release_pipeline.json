@@ -7,7 +7,8 @@
  "field_order": [
   "team",
   "release_group",
-  "status"
+  "status",
+  "workflow"
  ],
  "fields": [
   {
@@ -35,12 +36,18 @@
    "in_list_view": 1,
    "label": "Status",
    "options": "Pending\nRunning\nPartial Success\nSuccess\nFailure\nRetrying"
+  },
+  {
+   "fieldname": "workflow",
+   "fieldtype": "Link",
+   "label": "Workflow",
+   "options": "Press Workflow"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-22 15:25:16.828078",
+ "modified": "2026-04-23 23:29:23.698727",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Pipeline",

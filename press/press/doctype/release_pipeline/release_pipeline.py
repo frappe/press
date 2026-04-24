@@ -127,7 +127,7 @@ def _resolve_python_version_conflicts_and_update_group(
 		if dependency.dependency == "PYTHON_VERSION":
 			dependency.version = str(highest_compatible_python_version)
 			dependency.is_custom = True
-			dependency.save()
+			dependency.save(ignore_permissions=True)
 
 
 class ReleasePipeline(WorkflowBuilder):
@@ -142,7 +142,33 @@ class ReleasePipeline(WorkflowBuilder):
 		release_group: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Partial Success", "Success", "Failure", "Retrying"]
 		team: DF.Link
+		workflow: DF.Link | None
 	# end: auto-generated types
+
+	def send_failure_notification(self):
+		workflow = frappe.get_doc("Press Workflow", self.workflow)
+		failure_summary = self.get_failure_summary(workflow)
+
+		if not failure_summary:
+			return  # No failed tasks found, no need to create a notification
+
+		frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"title": "Update Failure",
+				"type": "Bench Deploy",
+				"is_actionable": False,
+				"class": "Error",
+				"team": self.team,
+				"document_type": "Release Pipeline",
+				"document_name": self.name,
+				"message": failure_summary,
+			}
+		).insert()
+
+		frappe.publish_realtime(
+			"press_notification", doctype="Press Notification", message={"team": self.team}
+		)
 
 	def update_pipeline_status(
 		self,
@@ -157,6 +183,9 @@ class ReleasePipeline(WorkflowBuilder):
 	):
 		self.status = status
 		self.save()
+
+		if self.status == "Failure":
+			self.send_failure_notification()
 
 	@cached_property
 	def release_group_doc(self) -> "ReleaseGroup":
@@ -428,8 +457,8 @@ class ReleasePipeline(WorkflowBuilder):
 			release_group_doc.append("apps", {"app": app, "source": app_source.name})
 
 		# Final save
-		deploy_candidate.save()
-		release_group_doc.save()
+		deploy_candidate.save(ignore_permissions=True)
+		release_group_doc.save(ignore_permissions=True)
 
 	@task(queue=_get_task_execution_queue())
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
@@ -564,38 +593,6 @@ class ReleasePipeline(WorkflowBuilder):
 
 		return frappe.db.get_value("Press Workflow Object", workflow_object_name, "summary")
 
-	def on_update(self):
-		"""A few steps have their notifications handled seperately in (ref deploy_notifications.py) skipping them"""
-		if not self.has_value_changed("status"):
-			return
-
-		if self.status != "Failure":
-			return
-
-		workflow = frappe.get_doc("Press Workflow", self.current_workflow)
-		failure_summary = self.get_failure_summary(workflow)
-
-		if not failure_summary:
-			return  # No failed tasks found, no need to create a notification
-
-		frappe.get_doc(
-			{
-				"doctype": "Press Notification",
-				"title": "Update Failure",
-				"type": "Bench Deploy",
-				"is_actionable": False,
-				"class": "Error",
-				"team": self.team,
-				"document_type": "Release Pipeline",
-				"document_name": self.name,
-				"message": failure_summary,
-			}
-		).insert()
-
-		frappe.publish_realtime(
-			"press_notification", doctype="Press Notification", message={"team": self.team}
-		)
-
 	@flow
 	def create_release(
 		self,
@@ -604,6 +601,9 @@ class ReleasePipeline(WorkflowBuilder):
 		run_will_fail_check: bool = False,
 	):
 		"""Orchestrates the release process from validation to bench creation with recursive monitoring and retry handling"""
+		self.workflow = self.current_workflow
+		self.save()
+
 		try:
 			# 1. Validation Phase
 			self.run_pre_release_checks(apps)
@@ -621,6 +621,6 @@ class ReleasePipeline(WorkflowBuilder):
 			# Just in case, make sure that we mark the pipeline as failed and notify the frontend to stop listening for deploy updates
 			self.update_pipeline_status("Failure")
 
-		workflow_status = frappe.db.get_value("Press Workflow", self.current_workflow, "status")
+		workflow_status = frappe.db.get_value("Press Workflow", self.workflow, "status")
 		if workflow_status == "Failure":
 			self.update_pipeline_status("Failure")
