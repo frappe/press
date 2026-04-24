@@ -1294,7 +1294,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def get_next_apps(self, current_apps) -> list[frappe._dict[str, str | datetime]]:  # noqa: C901
 		marketplace_app_sources = self.get_marketplace_app_sources()
-		# Only users with access to the team can reach this stage therefore we can trust `self.team``
+		# Only users with access to the team can reach this stage therefore we can trust `self.team`
 		current_team: Team = frappe.get_doc("Team", self.team)
 		app_publishers_team = [current_team.name]
 
