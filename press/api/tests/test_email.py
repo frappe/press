@@ -16,11 +16,15 @@ class TestSendMimeMail(FrappeAPITestCase):
 
 	ENDPOINT = "/api/method/press.api.email.send_mime_mail"
 
-	def _post_mime_mail(self, data: dict, mime_content: bytes = b"MIME-Version: 1.0\r\nContent-Type: text/plain\r\n\r\nTest email body"):
+	def _post_mime_mail(
+		self,
+		data: dict,
+		mime_content: bytes = b"MIME-Version: 1.0\r\nContent-Type: text/plain\r\n\r\nTest email body",
+	):
 		"""Send a multipart form request with a MIME file, matching email_delivery_service.
 
 		The email_delivery_service app sends:
-		  requests.post(url, data={"data": json.dumps(data)}, files={"mime": msg})
+		requests.post(url, data={"data": json.dumps(data)}, files={"mime": msg})
 		"""
 		return make_request(
 			target=self.TEST_CLIENT.post,
@@ -72,7 +76,9 @@ class TestSendMimeMail(FrappeAPITestCase):
 	@patch("press.api.email.validate_plan")
 	@patch("press.api.email.check_spam")
 	@patch("press.api.email.requests.post")
-	def test_send_mime_mail_parses_json_string_data(self, mock_mailgun_post, mock_check_spam, mock_validate_plan):
+	def test_send_mime_mail_parses_json_string_data(
+		self, mock_mailgun_post, mock_check_spam, mock_validate_plan
+	):
 		"""Verify the data parameter is correctly parsed as a JSON string (not a dict)."""
 		mock_mailgun_response = Mock()
 		mock_mailgun_response.status_code = 200
