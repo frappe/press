@@ -238,6 +238,7 @@ class ReleasePipeline(WorkflowBuilder):
 			run_will_fail_check=run_will_fail_check,
 			validate_pre_candidate_checks=False,
 			create_build=create_deploy,
+			ignore_permissions_check=True,
 		)
 
 	@task(queue=_get_task_execution_queue())

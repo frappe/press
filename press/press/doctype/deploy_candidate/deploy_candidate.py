@@ -242,6 +242,7 @@ class DeployCandidate(Document):
 		run_now: bool = True,
 		scheduled_time: datetime | None = None,
 		retry_count: int = 0,
+		ignore_permissions_check: bool = False,
 	):
 		if run_now and not is_suspended():
 			return {"error": False, "name": self.build_and_deploy()}
@@ -253,7 +254,7 @@ class DeployCandidate(Document):
 			scheduled_time=scheduled_time or now(),
 			retry_count=retry_count,
 		)
-		deploy_candidate_build.insert()
+		deploy_candidate_build.insert(ignore_permissions=ignore_permissions_check)
 		return {"error": False, "name": deploy_candidate_build.name}
 
 	def build_and_deploy(self, no_cache: bool = False) -> str:
