@@ -271,6 +271,11 @@ def create_payment_intent_for_micro_debit():
 		metadata={
 			"payment_for": "micro_debit_test_charge",
 		},
+		payment_method_options={
+			"card": {
+				"request_three_d_secure": "any" if team.is_trusted_team else "automatic",
+			}
+		},
 	)
 	return {"client_secret": intent["client_secret"]}
 
@@ -300,6 +305,11 @@ def create_payment_intent_for_buying_credits(amount):
 		customer=team.stripe_customer_id,
 		description="Prepaid Credits",
 		metadata=metadata,
+		payment_method_options={
+			"card": {
+				"request_three_d_secure": "any" if team.is_trusted_team else "automatic",
+			}
+		},
 	)
 	return {
 		"client_secret": intent["client_secret"],
