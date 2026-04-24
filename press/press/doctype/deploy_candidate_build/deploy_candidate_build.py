@@ -1164,7 +1164,7 @@ class DeployCandidateBuild(Document):
 			self.get_team_for_build(),
 		)
 
-		frappe.set_user(frappe.get_value("Team", team.name, "user"))
+		frappe.set_user(frappe.get_value("Team", team if isinstance(team, str) else team.name, "user"))
 		queue = "default" if frappe.conf.developer_mode else "build"
 
 		frappe.enqueue_doc(
