@@ -51,7 +51,11 @@ from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import 
 )
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.root_domain.root_domain import get_matching_domain
-from press.press.doctype.server.server import Server
+from press.press.doctype.server.server import Server, is_dedicated_server
+from press.press.doctype.site.site_plan_utils import (
+	get_available_warranty_quota_for_server,
+	get_next_allowed_dedicated_product_warranty_change_date,
+)
 from press.saas.doctype.product_trial.product_trial import create_free_app_subscription
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
@@ -77,7 +81,6 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	marketplace_app_hook,
 )
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
-from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.press.doctype.site_plan.site_plan import UNLIMITED_PLANS, get_plan_config
@@ -264,6 +267,7 @@ class Site(Document, TagHelpers):
 		"allow_physical_backup_by_user",
 		"site_usage_exceeded",
 		"is_monitoring_disabled",
+		"is_dedicated_server",
 		"reason_for_disabling_monitoring",
 		"creation_failed",
 		"fatal_site_update",
@@ -378,6 +382,13 @@ class Site(Document, TagHelpers):
 		doc.server_provider = server.provider
 		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
+
+		if doc.is_dedicated_server:
+			doc.next_allowed_dedicated_product_warranty_change_date = (
+				get_next_allowed_dedicated_product_warranty_change_date(self.name)
+			)
+			doc.dedicated_server_warranty_limit = get_available_warranty_quota_for_server(self.server)
+
 		doc.suspension_reason = (
 			frappe.db.get_value("Site Activity", {"site": self.name, "action": "Suspend Site"}, "reason")
 			if self.status == "Suspended"
@@ -2660,10 +2671,10 @@ class Site(Document, TagHelpers):
 
 	# TODO: rename to change_plan and remove the need for ignore_card_setup param
 	@dashboard_whitelist()
-	def set_plan(self, plan):
+	def set_plan(self, plan: None | str = None):
 		from press.api.site import validate_plan
 
-		validate_plan(self.server, plan)
+		validate_plan(self.server, self.name, plan)
 		self.change_plan(plan)
 
 	def change_plan(self, plan, ignore_card_setup=False):
@@ -3532,11 +3543,26 @@ class Site(Document, TagHelpers):
 				"doc_method": "clear_site_cache",
 			},
 			{
+				"action": "Manage Product Warranty",
+				"description": "Enable or disable warranty for this site",
+				"button_label": "Manage",
+				"doc_method": "dummy",
+				"condition": is_dedicated_server(self.server),
+			},
+			{
 				"action": "Deactivate site",
 				"description": "Deactivating will put the site in maintenance mode and make it inaccessible",
 				"button_label": "Deactivate",
 				"condition": self.status == "Active",
 				"doc_method": "deactivate",
+			},
+			{
+				"action": "Configure compute allocation",
+				"description": "Adjust compute power to be allotted to this site",
+				"button_label": "Manage",
+				"doc_method": "dummy",
+				"condition": is_dedicated_server(self.server),
+				"group": "Dangerous Actions",
 			},
 			{
 				"action": "Restore with files",

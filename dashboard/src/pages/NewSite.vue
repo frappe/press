@@ -219,7 +219,12 @@
 					</div>
 				</div>
 			</div>
-			<div v-if="selectedVersion && cluster">
+
+			<!-- Hide this block because dedicated server's site plan will be auto-selected internally -->
+			<div
+				v-if="selectedVersion && cluster"
+				:class="isDedicatedServerSite ? 'hidden' : ''"
+			>
 				<div class="flex items-center justify-between">
 					<h2 class="text-base font-medium leading-6 text-gray-900">
 						Select Plan
@@ -239,6 +244,7 @@
 						:isPrivateBenchSite="!!bench"
 						:isDedicatedServerSite="isDedicatedServerSite"
 						:serverPlanPrice="serverPriceUsd"
+						:serverserverSupportQuotaAvailable="serverSupportQuotaAvailable"
 						:selectedCluster="cluster"
 						:selectedApps="apps"
 						:selectedVersion="version"
@@ -423,6 +429,7 @@ export default {
 			useDedicatedServer: false,
 			selectedDedicatedServer: null,
 			serverPriceUsd: null,
+			serverSupportQuotaAvailable: null,
 		};
 	},
 	watch: {
@@ -504,6 +511,8 @@ export default {
 				this.cluster = server.cluster;
 				this.provider = server.provider;
 				this.serverPriceUsd = server.price_usd;
+				this.serverSupportQuotaAvailable =
+					server.product_warranty?.total > server.product_warranty?.consumed;
 			}
 		},
 		subdomain: {
