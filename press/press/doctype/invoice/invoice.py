@@ -547,13 +547,23 @@ class Invoice(Document):
 			return None
 
 		if self.amount_due_with_tax > mandate.max_amount:
-			self.add_comment(
+			already_notified = frappe.db.exists(
 				"Comment",
-				f"Invoice amount (₹{self.amount_due_with_tax}) exceeds mandate limit (₹{mandate.max_amount}).",
+				{
+					"reference_doctype": "Invoice",
+					"reference_name": self.name,
+					"comment_type": "Comment",
+					"content": ("like", "%exceeds mandate limit%"),
+				},
 			)
-			frappe.get_doc("Team", self.team).send_email_for_failed_upi_payment(
-				self, error_reason="MAX_PAYMENT_AMOUNT_EXCEEDED", upi_vpa=mandate.upi_vpa
-			)
+			if not already_notified:
+				self.add_comment(
+					"Comment",
+					f"Invoice amount (₹{self.amount_due_with_tax}) exceeds mandate limit (₹{mandate.max_amount}).",
+				)
+				frappe.get_doc("Team", self.team).send_email_for_failed_upi_payment(
+					self, error_reason="MAX_PAYMENT_AMOUNT_EXCEEDED", upi_vpa=mandate.upi_vpa
+				)
 			return None
 
 		return mandate
