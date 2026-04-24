@@ -106,6 +106,7 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 		("BrokenPipeError", update_with_broken_pipe_err),
 		("ERROR 2002 (HY000)", update_with_cant_connect_to_mysql_err),
 		("Lost connection to server during query", update_with_lost_conn_to_mysql_err),
+		("Lost connection to MySQL server during query", update_with_lost_conn_to_mysql_err),
 		("gzip: stdin: unexpected end of file", update_with_gzip_tar_err),
 		("tar: Unexpected EOF in archive", update_with_gzip_tar_err),
 		("Unknown command '\\-'.", update_with_unknown_command_hyphen_err),
@@ -284,9 +285,7 @@ def update_with_cant_connect_to_mysql_err(details: Details, job: AgentJob):
 def update_with_lost_conn_to_mysql_err(details: Details, job: AgentJob):
 	details["title"] = "Lost connection to MySQL server during query"
 
-	suggestion = (
-		"If the issue persists, please follow the steps mentioned in <i>Help</i> to rectify this issue"
-	)
+	suggestion = "If the issue persists, please consider upgrading the Database server for more memory. Please follow the steps mentioned in <i>Help</i> for instructions on how to upgrade the database server."
 	if job.on_public_server:
 		suggestion = "Please raise a support ticket if the issue persists."
 

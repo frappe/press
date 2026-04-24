@@ -28,7 +28,7 @@ watch(
 <template>
 	<div
 		@click="toggle"
-		class="mt-0.5 flex cursor-pointer select-none items-center rounded px-3 py-2 text-ink-gray-6 transition hover:bg-gray-100"
+		class="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-ink-gray-6 transition hover:bg-surface-gray-2"
 		:class="[
 			item.disabled ? 'pointer-events-none opacity-50' : '',
 			$attrs.class,
@@ -49,7 +49,7 @@ watch(
 	</div>
 	<CollapseTransition>
 		<div v-if="isOpened">
-			<div class="ml-5 py-1">
+			<div class="ml-5 flex flex-col gap-1">
 				<Item
 					v-for="(subItem, i) in item.children"
 					:class="{ 'mt-0.5': i !== 0 }"

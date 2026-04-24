@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 import frappe
 from frappe.utils import get_url
 
@@ -36,7 +34,7 @@ class DeveloperApiHandler:
 	def get_subscription_status(self) -> str:
 		return self.app_subscription_doc.status
 
-	def get_subscription_info(self) -> Dict:
+	def get_subscription_info(self) -> dict:
 		"""Important rule for security: Send info back carefully"""
 		app_subscription_dict = self.app_subscription_doc.as_dict()
 		fields_to_send = [
@@ -46,18 +44,12 @@ class DeveloperApiHandler:
 			"site",
 		]
 
-		filtered_dict = {
-			x: app_subscription_dict[x] for x in app_subscription_dict if x in fields_to_send
-		}
+		return {x: app_subscription_dict[x] for x in app_subscription_dict if x in fields_to_send}
 
-		return filtered_dict
-
-	def get_subscription(self) -> Dict:
+	def get_subscription(self) -> dict:
 		team = self.app_subscription_doc.team
 		with SessionManager(team) as _:
-			currency, address = frappe.db.get_value(
-				"Team", team, ["currency", "billing_address"]
-			)
+			currency, address = frappe.db.get_value("Team", team, ["currency", "billing_address"])
 			team_doc = frappe.get_doc("Team", team)
 			response = {
 				"currency": currency,
@@ -73,9 +65,7 @@ class DeveloperApiHandler:
 				"countries": frappe.db.get_all("Country", pluck="name"),
 				"plans": get_site_plans(),
 				"has_billing_info": (
-					team_doc.default_payment_method
-					or team_doc.get_balance() > 0
-					or team_doc.free_account
+					team_doc.default_payment_method or team_doc.get_balance() > 0 or team_doc.free_account
 				),
 				"current_plan": frappe.db.get_value("Site", self.app_subscription_doc.site, "plan"),
 			}
@@ -83,7 +73,7 @@ class DeveloperApiHandler:
 			capture("attempted", "fc_subscribe", team)
 			return response
 
-	def update_billing_info(self, data: Dict) -> str:
+	def update_billing_info(self, data: dict) -> str:
 		team = self.app_subscription_doc.team
 		with SessionManager(team) as _:
 			team_doc = frappe.get_doc("Team", team)
@@ -186,26 +176,19 @@ def get_subscription_status(secret_key: str) -> str:
 
 
 @frappe.whitelist(allow_guest=True)
-def get_subscription_info(secret_key: str) -> Dict:
+def get_subscription_info(secret_key: str) -> dict:
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.get_subscription_info()
 
 
 @frappe.whitelist(allow_guest=True)
-def get_subscription(secret_key: str) -> str:
+def get_subscription(secret_key: str) -> dict:
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.get_subscription()
 
 
 @frappe.whitelist(allow_guest=True)
-def get_plans(secret_key: str, subscription: str) -> List:
-	api_handler = DeveloperApiHandler(secret_key)
-	return api_handler.get_plans(subscription)
-
-
-@frappe.whitelist(allow_guest=True)
-def update_billing_info(secret_key: str, data) -> str:
-	data = frappe.parse_json(data)
+def update_billing_info(secret_key: str, data: dict) -> str:
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.update_billing_info(data)
 
@@ -217,7 +200,7 @@ def get_publishable_key_and_setup_intent(secret_key: str) -> str:
 
 
 @frappe.whitelist(allow_guest=True)
-def setup_intent_success(secret_key: str, setup_intent) -> str:
+def setup_intent_success(secret_key: str, setup_intent: dict) -> str:
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.setup_intent_success(setup_intent)
 

@@ -9,7 +9,8 @@
 		/>
 		<NewAddressForm
 			ref="addressFormRef"
-			v-model="billingInformation"
+			:model-value="billingInformation"
+			@update:model-value="Object.assign(billingInformation, $event)"
 			@success="() => emit('success')"
 		/>
 		<ErrorMessage class="mt-2" :message="errorMessage" />

@@ -121,7 +121,7 @@ class UserSSHCertificate(Document):
 			proxy = "<proxy>"
 
 		ssh_port = 22
-		if self.server_type == "Proxy Server":
+		if self.server_type == "Proxy Server" or not proxy:
 			self.ssh_command = f"ssh frappe@{server} -p {ssh_port}"
 		else:
 			self.ssh_command = f"ssh -J frappe@{proxy} frappe@{server} -p {ssh_port}"
@@ -139,7 +139,8 @@ class UserSSHCertificate(Document):
 			self.proxy = frappe.db.get_value(
 				"Server", {"status": "Active", "database_server": self.access_server}, "proxy_server"
 			)
-		return f"{self.proxy},{self.access_server}"
+
+		return f"{self.proxy},{self.access_server}" if self.proxy else self.access_server
 
 
 @frappe.whitelist()

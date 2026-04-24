@@ -1,4 +1,4 @@
-import { LoadingIndicator, Tooltip } from 'frappe-ui';
+import { LoadingIndicator, Tooltip, frappeRequest } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import LucideAppWindow from '~icons/lucide/app-window';
@@ -15,6 +15,51 @@ import { getToastErrorMessage } from '../utils/toast';
 import { getJobsTab } from './common/jobs';
 import { getPatchesTab } from './common/patches';
 import { tagTab } from './common/tags';
+
+const pollingGroups = new Set();
+
+function pollReleasePipelineValidationStatus(group) {
+	if (pollingGroups.has(group.doc.name)) return; // already polling
+	if (!group.doc.deploy_information.has_running_release_pipeline) return;
+
+	pollingGroups.add(group.doc.name);
+
+	function poll() {
+		frappeRequest({
+			url: 'press.api.bench.deploy_status',
+			params: { name: group.name },
+		})
+			.then(({ is_validating, is_deploy_in_progress, candidate }) => {
+				if (!group.doc.deploy_information.has_running_release_pipeline) {
+					pollingGroups.delete(group.doc.name);
+					return;
+				}
+
+				group.doc.deploy_information.deploy_in_progress = Boolean(
+					is_deploy_in_progress,
+				);
+
+				if (candidate) {
+					group.doc.deploy_information.last_deploy = {
+						name: candidate,
+					};
+				}
+
+				if (is_validating) {
+					setTimeout(poll, 2000); // still validating, keep polling
+				} else {
+					// Validation done
+					group.doc.deploy_information.has_running_release_pipeline = false;
+					pollingGroups.delete(group.doc.name);
+				}
+			})
+			.catch(() => {
+				pollingGroups.delete(group.doc.name);
+			});
+	}
+
+	poll();
+}
 
 export default {
 	doctype: 'Release Group',
@@ -110,18 +155,6 @@ export default {
 					router.push({ name: 'New Release Group' });
 				},
 			};
-		},
-		banner({ listResource: groups }) {
-			if (!groups.data?.length) {
-				return {
-					title: 'Learn how to create a new private bench and sites',
-					button: {
-						label: 'Read docs',
-						variant: 'outline',
-						link: 'https://docs.frappe.io/cloud/benches/create-new',
-					},
-				};
-			}
 		},
 	},
 	detail: {
@@ -525,6 +558,7 @@ export default {
 													group.doc.deploy_information.last_deploy.name =
 														candidate;
 												}
+												pollReleasePipelineValidationStatus(group);
 											},
 										}),
 									);
@@ -888,6 +922,13 @@ export default {
 			let { documentResource: group } = context;
 			let team = getTeam();
 
+			if (
+				group.doc?.deploy_information?.has_running_release_pipeline &&
+				!group.doc?.deploy_information?.deploy_in_progress
+			) {
+				pollReleasePipelineValidationStatus(group);
+			}
+
 			return [
 				{
 					label: 'Impersonate Group Owner',
@@ -926,14 +967,15 @@ export default {
 								bench: group.name,
 								lastDeploy: group.doc?.deploy_information?.last_deploy,
 								onSuccess(candidate) {
-									// group.doc.deploy_information.has_running_release_pipeline = true;
-									group.doc.deploy_information.deploy_in_progress = true;
+									group.doc.deploy_information.has_running_release_pipeline = true;
 									group.doc.deploy_information.update_available = false;
+
 									if (candidate) {
 										group.doc.deploy_information.last_deploy = {
 											name: candidate,
 										};
 									}
+									pollReleasePipelineValidationStatus(group);
 								},
 							}),
 						);

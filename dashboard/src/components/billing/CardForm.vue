@@ -27,7 +27,8 @@
 				<NewAddressForm
 					ref="addressFormRef"
 					class="mt-5"
-					v-model="billingInformation"
+					:model-value="billingInformation"
+					@update:model-value="Object.assign(billingInformation, $event)"
 					:disable-form="props.disableAddressForm"
 					@success="console.log('Address form submitted')"
 				/>

@@ -38,12 +38,8 @@ class PressWorkflow(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.workflow_engine.doctype.press_workflow_kv.press_workflow_kv import (
-			PressWorkflowKV,
-		)
-		from press.workflow_engine.doctype.press_workflow_step.press_workflow_step import (
-			PressWorkflowStep,
-		)
+		from press.workflow_engine.doctype.press_workflow_kv.press_workflow_kv import PressWorkflowKV
+		from press.workflow_engine.doctype.press_workflow_step.press_workflow_step import PressWorkflowStep
 
 		args: DF.Link | None
 		duration: DF.Duration | None

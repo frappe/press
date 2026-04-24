@@ -4,7 +4,6 @@ import { toast } from 'vue-sonner';
 import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDialog.vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import PlansDialog from '../components/marketplace/PlansDialog.vue';
-import CodeReview from '../components/marketplace/CodeReview.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
 import { userCurrency, currency } from '../utils/format';
@@ -218,10 +217,28 @@ export default {
 																		label: 'Add',
 																		onClick() {
 																			if (app.addVersion.loading) return;
+
+																			const getAddVersionArgsFromOption = (
+																				option,
+																			) => {
+																				const [
+																					repo_owner,
+																					repo_name,
+																					...branch
+																				] = option.trim().split('/');
+																				return {
+																					repo_owner,
+																					repo_name,
+																					branch: branch.join('/'),
+																				};
+																			};
+
 																			toast.promise(
 																				app.addVersion.submit({
 																					version: row.version,
-																					branch: row.selectedOption,
+																					...getAddVersionArgsFromOption(
+																						row.selectedOption,
+																					),
 																				}),
 																				{
 																					loading: 'Adding new version...',
@@ -581,27 +598,21 @@ function showReleases(row, app) {
 									align: 'center',
 								},
 								{
-									label: 'Code Screening',
+									label: 'Audit',
 									type: 'Component',
 									width: 0.15,
 									align: 'center',
-									component: ({ row, listResource: releases, app }) => {
-										if (
-											(row.status === 'Awaiting Approval' ||
-												row.status === 'Rejected') &&
-											row.screening_status === 'Complete'
-										) {
-											return h(Button, {
-												label: 'Code Review',
-												variant: 'subtle',
-												theme: 'blue',
-												size: 'sm',
-												onClick: () =>
-													codeReview(row, app, window.is_system_user),
-											});
-										}
+									component: ({ row }) => {
+										const theme = {
+											Pass: 'green',
+											'Needs Improvement': 'orange',
+											Warn: 'orange',
+											Fail: 'red',
+											Inconclusive: 'gray',
+										};
 										return h(Badge, {
-											label: row.screening_status || 'Not Started',
+											label: row.audit_result || 'Pending',
+											theme: theme[row.audit_result] || 'gray',
 										});
 									},
 								},
@@ -680,15 +691,5 @@ function showReleases(row, app) {
 					}),
 			},
 		),
-	);
-}
-
-function codeReview(row, app, isSystemUser) {
-	renderDialog(
-		h(CodeReview, {
-			row: row,
-			app: app,
-			isSystemUser: isSystemUser,
-		}),
 	);
 }

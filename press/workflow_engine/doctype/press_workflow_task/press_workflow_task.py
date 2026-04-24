@@ -38,10 +38,12 @@ class PressWorkflowTask(Document):
 		method_title: DF.Data
 		output: DF.Link | None
 		parent_task: DF.Link | None
+		queue: DF.Data | None
 		signature: DF.Data
 		start: DF.Datetime | None
 		status: DF.Literal["Queued", "Running", "Success", "Failure"]
 		stdout: DF.LongText | None
+		timeout: DF.Int
 		workflow: DF.Link
 	# end: auto-generated types
 
@@ -192,12 +194,16 @@ def enqueue_task(task_name: str) -> None:
 
 		foreground_enqueue_task(task_name)
 		return
+	queue = frappe.db.get_value("Press Workflow Task", task_name, "queue") or frappe.conf.get(
+		"press_workflow_task_queue", "default"
+	)
+	timeout = frappe.db.get_value("Press Workflow Task", task_name, "timeout") or 300
 	frappe.enqueue_doc(
 		"Press Workflow Task",
 		task_name,
 		method="run",
-		queue=frappe.conf.get("press_workflow_task_queue", "default"),
-		timeout=3600,
+		queue=queue,
+		timeout=timeout,
 		deduplicate=True,
 		enqueue_after_commit=True,
 		job_id=f"press_workflow_task||{task_name}||run",

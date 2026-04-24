@@ -17,3 +17,7 @@ export function getPlatform(): Platform {
 export function isMobile(): boolean {
 	return window.innerWidth < 640;
 }
+
+export function isMac(): boolean {
+	return getPlatform() === 'mac';
+}

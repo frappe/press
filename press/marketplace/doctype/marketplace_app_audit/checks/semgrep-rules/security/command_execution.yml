@@ -1,0 +1,107 @@
+rules:
+- id: frappe-os-command-exec
+  patterns:
+  - pattern-either:
+    - pattern: os.system(...)
+    - pattern: os.popen(...)
+    - pattern: os.execl(...)
+    - pattern: os.execle(...)
+    - pattern: os.execv(...)
+    - pattern: os.execve(...)
+    - pattern: os.execvp(...)
+    - pattern: os.execvpe(...)
+  message: |
+    `os.system` / `os.popen` invoke the shell, and os.exec* replace the current process with the command you interpolate. These are classic
+    command-injection sinks. Ensure that arguments are not user-controlled to prevent command injection. This code should be manually audited by review/security team.
+  metadata:
+    marketplace_check_id: security_os_command_exec
+    marketplace_check_name: OS Command Execution
+    marketplace_category: Security
+    remediation: |
+      Replace with `subprocess.run([...], shell=False)` using an argument list, and
+      validate any user-controlled values. This code should be manually audited by review/security team.
+  languages: [python]
+  severity: ERROR
+  paths:
+    exclude:
+      - "**/test_*.py"
+      - "**/tests/**"
+
+- id: frappe-subprocess-shell-true
+  patterns:
+  - pattern-either:
+    - pattern: subprocess.run(..., shell=True, ...)
+    - pattern: subprocess.Popen(..., shell=True, ...)
+    - pattern: subprocess.call(..., shell=True, ...)
+    - pattern: subprocess.check_call(..., shell=True, ...)
+    - pattern: subprocess.check_output(..., shell=True, ...)
+  message: |
+    `subprocess` called with `shell=True`. Any interpolated value becomes a shell
+    injection sink. This code should be manually audited by review/security team.
+  metadata:
+    marketplace_check_id: security_subprocess_shell_true
+    marketplace_check_name: Subprocess With shell=True
+    marketplace_category: Security
+    remediation: |
+      Pass the command as an argument list with `shell=False` (the default):
+      `subprocess.run(["cmd", arg1, arg2])`. If a shell is truly unavoidable, wrap
+      every substituted value with `shlex.quote`.
+  languages: [python]
+  severity: ERROR
+  paths:
+    exclude:
+      - "**/test_*.py"
+      - "**/tests/**"
+
+- id: frappe-subprocess-exec
+  patterns:
+  - pattern-either:
+    - pattern: subprocess.run(...)
+    - pattern: subprocess.Popen(...)
+    - pattern: subprocess.call(...)
+    - pattern: subprocess.check_call(...)
+    - pattern: subprocess.check_output(...)
+  - pattern-not: subprocess.run(..., shell=True, ...)
+  - pattern-not: subprocess.Popen(..., shell=True, ...)
+  - pattern-not: subprocess.call(..., shell=True, ...)
+  - pattern-not: subprocess.check_call(..., shell=True, ...)
+  - pattern-not: subprocess.check_output(..., shell=True, ...)
+  message: |
+    `subprocess` call spawns an external process. Needs to be reviewed by review/security team to confirm
+    arguments are a static list and any interpolated values are validated.
+  metadata:
+    marketplace_check_id: security_subprocess_exec
+    marketplace_check_name: Subprocess Execution
+    marketplace_category: Security
+    remediation: |
+      Needs to be reviewed by review/security team. Keep arguments as a literal list (not a concatenated
+      string) and validate any user-controlled values before interpolation.
+  languages: [python]
+  severity: WARNING
+  paths:
+    exclude:
+      - "**/test_*.py"
+      - "**/tests/**"
+
+- id: frappe-execute-in-shell
+  patterns:
+  - pattern-either:
+    - pattern: frappe.utils.execute_in_shell(...)
+    - pattern: frappe.execute_in_shell(...)
+    - pattern: execute_in_shell(...)
+  message: |
+    `frappe.utils.execute_in_shell` runs the command through `/bin/sh`. Any
+    interpolated value becomes command injection. This code should be manually audited by review/security team.
+  metadata:
+    marketplace_check_id: security_frappe_execute_in_shell
+    marketplace_check_name: Frappe execute_in_shell
+    marketplace_category: Security
+    remediation: |
+      Replace with `subprocess.run([...], shell=False)` using an argument list, and
+      validate any user-controlled values. This code should be manually audited by review/security team.
+  languages: [python]
+  severity: ERROR
+  paths:
+    exclude:
+      - "**/test_*.py"
+      - "**/tests/**"

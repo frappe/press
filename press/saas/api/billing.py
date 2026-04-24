@@ -117,7 +117,7 @@ def total_unpaid_amount():
 @whitelist_saas_api
 def get_invoice(name: str):
 	invoice = frappe.get_doc("Invoice", name)
-	invoice.has_permission("read")
+	invoice.check_permission("read")
 	data = invoice.as_dict()
 	invoice.get_doc(data)
 	return data
@@ -126,7 +126,7 @@ def get_invoice(name: str):
 @whitelist_saas_api
 def download_invoice(name: str):
 	invoice = frappe.get_doc("Invoice", name)
-	invoice.has_permission("read")
+	invoice.check_permission("read")
 	if not invoice.invoice_pdf:
 		frappe.throw("Invoice PDF not found")
 	file_name = os.path.basename(invoice.invoice_pdf)

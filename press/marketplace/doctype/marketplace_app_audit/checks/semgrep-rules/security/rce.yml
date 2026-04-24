@@ -6,6 +6,10 @@ rules:
     - pattern: exec(...)
     - pattern: safe_exec(...)
     - pattern: safe_eval(...)
+    - pattern: compile(...)
+    - pattern: codeop.compile_command(...)
+    - pattern: codeop.Compile(...)
+    - pattern: codeop.CommandCompiler(...)
   message: |
     Detected the use of functions that can be  dangerous if used to evaluate
     dynamic content. This code should be manually audited by review/security team.
@@ -21,12 +25,14 @@ rules:
   paths:
     exclude:
       - "**/test_*.py"
+      - "**/tests/**"
 
 - id: frappe-ssti
   patterns:
   - pattern-either:
     - pattern: render_template($ARG, ...)
     - pattern: frappe.render_template($ARG, ...)
+    - pattern: frappe.utils.jinja.render_template($ARG, ...)
   message: |
     Detected the use of render_template, make sure $ARG comes from trusted
     source. This code should be audited by review/security team.
@@ -35,10 +41,42 @@ rules:
     marketplace_check_name: SSTI
     marketplace_category: Security
     remediation: |
-      Detected the use of render_template, make sure $ARG comes from trusted
-      source. This code should be audited by review/security team.
+      Ensure `$ARG` is a hard-coded template path/string defined in the app, not a
+      value from request, DB, or filesystem. If dynamic templates are unavoidable,
+      restrict the source to a trusted directory and reject template names containing
+      `..` or absolute paths.
   languages: [python]
   severity: ERROR
   paths:
     exclude:
       - "**/test_*.py"
+      - "**/tests/**"
+
+- id: frappe-direct-jinja-construction
+  patterns:
+  - pattern-either:
+    - pattern: jinja2.Environment(...)
+    - pattern: jinja2.Template(...)
+    - pattern: jinja.Environment(...)
+    - pattern: jinja.Template(...)
+    - pattern: Environment(autoescape=False, ...)
+    - pattern: Template(...)
+  message: |
+    Direct construction of a Jinja `Environment`/`Template`. Without `autoescape=True`
+    and a constrained loader, user-controlled templates can execute arbitrary Python
+    via template injection.
+  metadata:
+    marketplace_check_id: security_direct_jinja_construction
+    marketplace_check_name: Direct Jinja Construction
+    marketplace_category: Security
+    remediation: |
+      Prefer `frappe.render_template` with a trusted template path. If a custom
+      environment is required, pass `autoescape=True` and a loader restricted to a
+      specific directory (e.g. `FileSystemLoader(trusted_dir)`). Never instantiate
+      `Template(user_input)`.
+  languages: [python]
+  severity: ERROR
+  paths:
+    exclude:
+      - "**/test_*.py"
+      - "**/tests/**"

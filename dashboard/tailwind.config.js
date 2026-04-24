@@ -1,5 +1,5 @@
 import plugin from 'tailwindcss/plugin';
-import frappeUIPreset from 'frappe-ui/src/tailwind/preset';
+import frappeUIPreset from 'frappe-ui/tailwind';
 import containerQueries from '@tailwindcss/container-queries';
 
 export default {

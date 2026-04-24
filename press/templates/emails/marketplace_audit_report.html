@@ -1,0 +1,165 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% set tone = {
+    "Critical":          {"bg": "#FEF2F2", "fg": "#B91C1C", "dot": "#DC2626"},
+    "Major":             {"bg": "#FFF7ED", "fg": "#C2410C", "dot": "#EA580C"},
+    "Minor":             {"bg": "#FEFCE8", "fg": "#A16207", "dot": "#CA8A04"},
+    "Info":              {"bg": "#EFF6FF", "fg": "#1D4ED8", "dot": "#2563EB"},
+    "Fail":              {"bg": "#FEF2F2", "fg": "#B91C1C", "dot": "#DC2626"},
+    "Warn":              {"bg": "#FFF7ED", "fg": "#C2410C", "dot": "#EA580C"},
+    "Needs Improvement": {"bg": "#EFF6FF", "fg": "#1D4ED8", "dot": "#2563EB"},
+    "Pass":              {"bg": "#F0FDF4", "fg": "#15803D", "dot": "#16A34A"},
+    "Inconclusive":      {"bg": "#F9FAFB", "fg": "#4B5563", "dot": "#9CA3AF"}
+} %}
+{% set neutral = {"bg": "#F3F4F6", "fg": "#4B5563", "dot": "#9CA3AF"} %}
+
+{% set result_heading = {
+    "Pass":              "Audit Passed",
+    "Needs Improvement": "Needs Improvement",
+    "Warn":              "Audit Passed with Warnings",
+    "Fail":              "Audit Failed",
+    "Inconclusive":      "Audit Inconclusive"
+} %}
+
+{% set font_stack = "-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" %}
+{% set mono_stack = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" %}
+
+{% set header_tone = tone.get(audit_result, neutral) %}
+{% set issue_count = failing_checks | length %}
+
+{% macro pill(label, scheme) -%}
+    <span style="display: inline-block; padding: 2px 8px; border-radius: 4px;
+                 font-size: 11px; font-weight: 500; letter-spacing: 0.01em;
+                 background: {{ scheme.bg }}; color: {{ scheme.fg }};">{{ label }}</span>
+{%- endmacro %}
+
+{% block content %}
+<td style="font-family: {{ font_stack }}; color: #1F2937;">
+<div style="padding: 32px 8px;">
+
+    <p style="margin: 0 0 6px; font-size: 22px; font-weight: 600; line-height: 1.25;
+              color: {{ header_tone.fg }};">
+        {{ result_heading.get(audit_result, audit_result) }}
+    </p>
+    <p style="margin: 0 0 24px; font-size: 14px; line-height: 1.5; color: #6B7280;">
+        {% if issue_count > 0 -%}
+            {{ issue_count }} issue{{ 's' if issue_count != 1 else '' }} found in
+        {%- else -%}
+            For
+        {%- endif %}
+        <span style="color: #111827; font-weight: 500;">{{ app_title }}</span>
+    </p>
+
+    {% if audit_summary %}
+    <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.65; color: #374151;">
+        {{ audit_summary }}
+    </p>
+    {% endif %}
+
+    {% if issue_count > 0 %}
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+           style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 6px; margin-bottom: 28px;">
+        <tr>
+            <td style="padding: 14px 16px; font-size: 13px; line-height: 1.65; color: #374151;">
+                Please review and fix the issues listed below, then publish a new release and
+                resubmit for approval. A fresh audit will run automatically on the new release.
+            </td>
+        </tr>
+    </table>
+    {% endif %}
+
+    {# ── Checks ── #}
+    {% for check in failing_checks %}
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+           style="border: 1px solid #E5E7EB; border-radius: 6px; margin-bottom: 12px;
+                  border-collapse: separate;">
+        <tr>
+            <td style="padding: 16px 18px;">
+
+                {# Check name + severity/category/result pills #}
+                <p style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #111827; line-height: 1.4;">
+                    {{ check.check_name }}
+                </p>
+                <div style="margin-bottom: 12px;">
+                    {{ pill(check.severity, tone.get(check.severity, neutral)) }}
+                    {{ pill(check.result, tone.get(check.result, neutral)) }}
+                </div>
+
+                {% if check.message %}
+                <p style="margin: 0 0 12px; font-size: 13px; line-height: 1.65; color: #374151;">
+                    {{ check.message }}
+                </p>
+                {% endif %}
+
+                {# ── Semgrep occurrences — rule-id primary, location secondary ── #}
+                {% if check.details and check.details.occurrences %}
+                <div style="margin-bottom: 14px;">
+                {% for occ in check.details.occurrences %}
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                           style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 4px;
+                                  margin-bottom: 6px;">
+                        <tr>
+                            <td style="padding: 10px 12px;">
+                                {# Primary: rule identifier #}
+                                {% if occ.rule_id %}
+                                <p style="margin: 0 0 2px; font-size: 12px; font-weight: 600; color: #111827;
+                                          font-family: {{ mono_stack }}; line-height: 1.5;">
+                                    {{ occ.rule_id }}
+                                </p>
+                                {% endif %}
+                                {# Secondary: file path and line #}
+                                <p style="margin: 0 0 8px; font-size: 11px; color: #6B7280;
+                                          font-family: {{ mono_stack }}; line-height: 1.5; word-break: break-all;">
+                                    {{ occ.path or '–' }}{% if occ.start and occ.start.line %}<span style="color: #9CA3AF;">&nbsp;&middot;&nbsp;</span>line {{ occ.start.line }}{% endif %}
+                                </p>
+                                {# Body: the actual finding message #}
+                                {% if occ.message %}
+                                <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #374151;">
+                                    {{ occ.message }}
+                                </p>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if check.remediation %}
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                       style="border-collapse: collapse;">
+                    <tr>
+                        <td width="3" style="background: #16A34A; border-radius: 2px;"></td>
+                        <td width="12"></td>
+                        <td style="padding: 2px 0;">
+                            <p style="margin: 0 0 3px; font-size: 10px; font-weight: 600;
+                                      color: #16A34A; text-transform: uppercase; letter-spacing: 0.06em;">
+                                How to fix
+                            </p>
+                            <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #374151;">
+                                {{ check.remediation }}
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                {% endif %}
+
+            </td>
+        </tr>
+    </table>
+    {% endfor %}
+
+    {{ utils.separator() }}
+
+    <p style="margin: 0 0 16px; font-size: 12px; line-height: 1.65; color: #6B7280;">
+        This is an automated report from the Frappe Cloud Marketplace Auditor (beta).
+        If you believe this report is incorrect or need help interpreting it, reach out to
+        {{ utils.link('support.frappe.io', 'https://support.frappe.io') }}.
+    </p>
+
+    {{ utils.signature() }}
+
+</div>
+</td>
+{% endblock %}

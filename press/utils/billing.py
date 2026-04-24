@@ -126,9 +126,10 @@ def get_setup_intent(team):
 
 	intent = frappe.cache().hget("setup_intent", team)
 	if not intent:
-		data = frappe.db.get_value("Team", team, ["stripe_customer_id", "currency"])
+		data = frappe.db.get_value("Team", team, ["stripe_customer_id", "currency", "is_trusted_team"])
 		customer_id = data[0]
 		currency = data[1]
+		is_trusted_team = data[2]
 		stripe = get_stripe()
 		hash = random_string(10)
 		intent = stripe.SetupIntent.create(
@@ -136,7 +137,7 @@ def get_setup_intent(team):
 			payment_method_types=["card"],
 			payment_method_options={
 				"card": {
-					"request_three_d_secure": "automatic",
+					"request_three_d_secure": "any" if is_trusted_team else "automatic",
 					"mandate_options": {
 						"reference": f"Mandate-team:{team}-{hash}",
 						"amount_type": "maximum",

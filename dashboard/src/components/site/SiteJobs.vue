@@ -1,5 +1,5 @@
 <template>
-	<ObjectList class="p-5" :options="logsOptions" />
+	<ObjectList class="p-3" :options="logsOptions" />
 </template>
 
 <script>

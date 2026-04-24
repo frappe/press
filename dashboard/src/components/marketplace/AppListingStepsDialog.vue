@@ -7,7 +7,7 @@
 		}"
 	>
 		<template #body-content>
-			<div v-if="appDoc.doc.review_stage === 'Ready for Review'">
+			<div v-if="appDoc.doc.status === 'In Review'">
 				<p class="text-p-base text-gray-700">
 					Your app is sent for review to our team. Please wait for the review to
 					be completed.
@@ -15,7 +15,7 @@
 			</div>
 			<ObjectList v-else :options="listOptions" />
 		</template>
-		<template #actions v-if="appDoc.doc.review_stage !== 'Ready for Review'">
+		<template #actions v-if="appDoc.doc.status !== 'In Review'">
 			<Button
 				class="w-full"
 				variant="solid"

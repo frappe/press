@@ -11,7 +11,6 @@ def auto_review_for_missing_steps():
 		"Marketplace App",
 		{
 			"status": ("in", ["Draft", "Attention Required", "In Review"]),
-			"stop_auto_review": False,
 		},
 		pluck="name",
 	):

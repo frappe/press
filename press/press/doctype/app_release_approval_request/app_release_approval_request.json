@@ -13,20 +13,7 @@
   "app",
   "reviewed_by",
   "section_break_8",
-  "reason_for_rejection",
-  "code_screening_tab",
-  "screening_status",
-  "baseline_result_section",
-  "baseline_request",
-  "baseline_result",
-  "baseline_requirements",
-  "result_section",
-  "result",
-  "result_html",
-  "result_html_rendered",
-  "requirements",
-  "comments_tab",
-  "code_comments"
+  "reason_for_rejection"
  ],
  "fields": [
   {
@@ -93,83 +80,11 @@
    "fieldtype": "Link",
    "label": "Reviewed By",
    "options": "User"
-  },
-  {
-   "fieldname": "result",
-   "fieldtype": "Code",
-   "label": "Result",
-   "read_only": 1
-  },
-  {
-   "fieldname": "result_html",
-   "fieldtype": "Code",
-   "label": "Result Html",
-   "read_only": 1
-  },
-  {
-   "fieldname": "code_screening_tab",
-   "fieldtype": "Tab Break",
-   "label": "Code Screening"
-  },
-  {
-   "fieldname": "baseline_result_section",
-   "fieldtype": "Section Break",
-   "label": "Baseline Result"
-  },
-  {
-   "fieldname": "baseline_result",
-   "fieldtype": "Code",
-   "label": "Baseline Result",
-   "read_only": 1
-  },
-  {
-   "fieldname": "baseline_requirements",
-   "fieldtype": "Code",
-   "label": "Baseline Requirements",
-   "read_only": 1
-  },
-  {
-   "fieldname": "result_section",
-   "fieldtype": "Section Break",
-   "label": "Result"
-  },
-  {
-   "fieldname": "result_html_rendered",
-   "fieldtype": "HTML",
-   "label": "Result HTML Rendered"
-  },
-  {
-   "fieldname": "requirements",
-   "fieldtype": "Code",
-   "label": "Requirements"
-  },
-  {
-   "fieldname": "baseline_request",
-   "fieldtype": "Data",
-   "label": "Baseline Request"
-  },
-  {
-   "default": "Not Started",
-   "fieldname": "screening_status",
-   "fieldtype": "Select",
-   "label": "Screening Status",
-   "options": "Not Started\nScreening\nComplete"
-  },
-  {
-   "fieldname": "comments_tab",
-   "fieldtype": "Tab Break",
-   "label": "Comments"
-  },
-  {
-   "fieldname": "code_comments",
-   "fieldtype": "Table",
-   "label": "Code Comments",
-   "options": "App Release Approval Code Comments"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-22 22:42:15.984891",
+ "modified": "2026-04-09 17:39:08.003050",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release Approval Request",

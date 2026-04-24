@@ -1,0 +1,8 @@
+---
+- name: Extend Frappe Compute Volume
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: extend_frappe_compute_volume

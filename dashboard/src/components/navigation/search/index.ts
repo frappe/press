@@ -169,6 +169,25 @@ export const index = computed(() => {
 				},
 			],
 		},
+		Actions: {
+			items: [
+				{
+					name: 'Access Request',
+					icon: LucideKey,
+					click: () => {
+						document
+							.querySelector('button[aria-label="Notifications btn"]')
+							.click();
+						setTimeout(() => {
+							const tab = document.querySelectorAll(
+								'.PopoverContent [role="tab"]',
+							)[1];
+							tab.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+						}, 0);
+					},
+				},
+			],
+		},
 	};
 
 	for (const [key, value] of Object.entries(integrations)) {

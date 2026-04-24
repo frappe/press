@@ -61,8 +61,8 @@ import { createResource, frappeRequest, debounce } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 
 const courseTypes = [
-	{ label: 'Framework', value: 'frappe-developer-certification' },
-	{ label: 'ERPNext', value: 'erpnext-distribution' },
+	{ label: 'Framework', value: 'frappe' },
+	{ label: 'ERPNext', value: 'erpnext' },
 ];
 const show = ref(true);
 
@@ -99,7 +99,7 @@ const emailChange = debounce(async () => {
 		url: 'press.api.partner.check_certificate_exists',
 		params: {
 			email: userEmail.value,
-			type: certificateType.value,
+			certificate_type: certificateType.value,
 		},
 	});
 	if (response > 0) {
