@@ -72,6 +72,19 @@ def _get_supported_frappe_versions(frappe_spec_str: str) -> list[str] | None:
 		if spec.match(sv.Version(f"{version['number']}.0.0")):
 			matched.append(str(version["name"]))
 
+	# Keep behavior in sync with app.map_frappe_version:
+	# if a range can match beyond the highest stable version,
+	# it implicitly supports Nightly as well.
+	stable_numbers = [version["number"] for version in frappe_versions if version["status"] == "Stable"]
+	if stable_numbers:
+		highest_stable = sv.Version(f"{max(stable_numbers)}.0.0")
+		if (
+			spec.match(highest_stable.next_patch())
+			or spec.match(highest_stable.next_minor())
+			or spec.match(highest_stable.next_major())
+		) and "Nightly" not in matched:
+			matched.append("Nightly")
+
 	return matched or None
 
 

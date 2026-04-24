@@ -7,9 +7,10 @@ import tempfile
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 
 from press.marketplace.doctype.marketplace_app_audit.checks.compatibility import (
+	_get_supported_frappe_versions,
 	_safe_load_pyproject,
 	check_bench_compatibility,
 	run_compatibility_checks,
@@ -35,7 +36,7 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 @patch.object(MarketplaceAppAudit, "trigger_audit", new=Mock())
-class TestMarketplaceAppAudit(FrappeTestCase):
+class TestMarketplaceAppAudit(UnitTestCase):
 	"""Basic flow: audit creation from release, run_audit, overall result, approval & publish gates."""
 
 	def setUp(self):
@@ -210,7 +211,7 @@ class TestMarketplaceAppAudit(FrappeTestCase):
 		self.assertEqual(self.marketplace_app.status, "Published")
 
 
-class TestSemgrepRulesParsing(FrappeTestCase):
+class TestSemgrepRulesParsing(UnitTestCase):
 	"""Tests for semgrep output parsing — no semgrep binary needed."""
 
 	def _make_finding(self, rule_id: str, category: str = "Security", severity: str = "ERROR"):
@@ -286,7 +287,7 @@ class TestSemgrepRulesParsing(FrappeTestCase):
 		self.assertTrue(all(r.result == "Pass" for r in results))
 
 
-class TestCompatibilityChecks(FrappeTestCase):
+class TestCompatibilityChecks(UnitTestCase):
 	"""Tests for compatibility check logic — uses mocks for DB queries."""
 
 	def test_safe_load_pyproject_returns_none_for_missing_file(self):
@@ -322,6 +323,34 @@ class TestCompatibilityChecks(FrappeTestCase):
 				f.write("[tool.bench]\nname = 'myapp'\n")
 			results = run_compatibility_checks("SRC-001", tmpdir)
 		self.assertEqual(results, [])
+
+	def test_get_supported_frappe_versions_includes_nightly_for_future_upper_bound(self):
+		frappe_versions = [
+			{"name": "Version 15", "number": 15, "status": "Stable"},
+			{"name": "Version 16", "number": 16, "status": "Stable"},
+			{"name": "Nightly", "number": 17, "status": "Nightly"},
+		]
+		with patch(
+			"press.marketplace.doctype.marketplace_app_audit.checks.compatibility.frappe.get_all",
+			return_value=frappe_versions,
+		):
+			supported = _get_supported_frappe_versions(">=16.0.0-dev,<=17.0.0-dev")
+
+		self.assertEqual(set(supported or []), {"Version 16", "Nightly"})
+
+	def test_get_supported_frappe_versions_excludes_nightly_for_closed_stable_range(self):
+		frappe_versions = [
+			{"name": "Version 15", "number": 15, "status": "Stable"},
+			{"name": "Version 16", "number": 16, "status": "Stable"},
+			{"name": "Nightly", "number": 17, "status": "Nightly"},
+		]
+		with patch(
+			"press.marketplace.doctype.marketplace_app_audit.checks.compatibility.frappe.get_all",
+			return_value=frappe_versions,
+		):
+			supported = _get_supported_frappe_versions(">=15.0.0,<16.0.0")
+
+		self.assertEqual(set(supported or []), {"Version 15"})
 
 	def _patch_qb(self, run_return_value):
 		"""Patch frappe.qb with a plain MagicMock (avoids AsyncMock coroutine issues)."""
