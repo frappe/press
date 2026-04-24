@@ -2924,7 +2924,7 @@ class Site(Document, TagHelpers):
 
 		if host_on_shared_server:
 			bench_query = bench_query.where(servers.public == 1)
-			bench_query = bench_query.where(servers.use_for_new_sites == 1)
+			bench_query = bench_query.orderby(servers.use_for_new_sites, order=frappe.qb.desc)
 
 		if release_group_names:
 			groups = frappe.qb.DocType("Release Group")

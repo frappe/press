@@ -180,7 +180,7 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 	if server:
 		bench_query = bench_query.where(Server.name == server)
 	else:
-		bench_query = bench_query.where(Server.use_for_new_sites == 1)
+		bench_query.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
 
 	bench = bench_query.run(as_dict=True).pop()
 
