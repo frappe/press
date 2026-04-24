@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import datetime
 import ipaddress
 import json
@@ -3451,12 +3452,9 @@ class Server(BaseServer):
 		running_press_job = next((job for job in press_jobs if job.status in ("Pending", "Running")), None)
 		if press_jobs:
 			for press_job in press_jobs:
-				press_job["steps"] = frappe.get_all(
-					"Press Job Step",
-					filters={"job": press_job.name},
-					fields=["name", "step_name", "status", "result", "traceback", "start", "end", "duration"],
-					order_by="creation asc",
-				)
+				press_job["steps"] = []
+				with contextlib.suppress(frappe.DoesNotExistError):
+					press_job["steps"] = frappe.get_doc("Press Job", press_job.name).steps
 
 		return {
 			"running_press_job_type": running_press_job.job_type if running_press_job else None,

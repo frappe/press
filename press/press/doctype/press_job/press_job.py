@@ -127,12 +127,34 @@ class PressJob(WorkflowBuilder):
 	@property
 	def steps(self) -> list[dict[str, str]]:
 		try:
-			workflow = frappe.get_last_doc("Press Workflow", {"linked_docname": self.name})
+			workflow: PressWorkflow = frappe.get_last_doc("Press Workflow", {"linked_docname": self.name})
+			tasks = frappe.get_all(
+				"Press Workflow Task",
+				filters={"workflow": workflow.name},
+				fields=[
+					"name",
+					"method_title",
+					"status",
+					"stdout",
+					"creation",
+					"start",
+					"end",
+					"duration",
+				],
+			)
+			# Convert to a dict with task name as key for easy lookup
+			task_dict = {task.name: task for task in tasks}
 			return [
 				{
-					"method": step.step_method,
-					"title": step.step_title,
+					"name": step.name,
+					"step_name": step.step_title,  # backward compatibility
+					"step_title": step.step_title,
 					"status": step.status,
+					"result": task_dict.get(step.task, {}).get("stdout", ""),
+					"traceback": task_dict.get(step.task, {}).get("traceback", ""),
+					"start": task_dict.get(step.task, {}).get("start"),
+					"end": task_dict.get(step.task, {}).get("end"),
+					"duration": task_dict.get(step.task, {}).get("duration"),
 				}
 				for step in workflow.steps
 			]
