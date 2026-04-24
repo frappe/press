@@ -733,7 +733,11 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def create_deploy_candidate(
-		self, apps_to_update=None, run_will_fail_check=False, validate_pre_candidate_checks: bool = True
+		self,
+		apps_to_update=None,
+		run_will_fail_check=False,
+		validate_pre_candidate_checks: bool = True,
+		ignore_permissions: bool = False,
 	) -> "DeployCandidate | None":
 		if not self.enabled:
 			return None
@@ -782,7 +786,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 			check_if_update_will_fail(self, new_dc)
 
-		new_dc.insert()
+		new_dc.insert(ignore_permissions=ignore_permissions)
 		return new_dc
 
 	def validate_dc_apps_against_rg(self, dc_apps) -> None:
