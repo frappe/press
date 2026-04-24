@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 	from datetime import datetime
 	from typing import Any
 
+	from press.press.doctype.team.team import Team
 	from press.press.doctype.user_ssh_key.user_ssh_key import UserSSHKey
 
 DEFAULT_DEPENDENCIES = [
@@ -1293,7 +1294,8 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def get_next_apps(self, current_apps) -> list[frappe._dict[str, str | datetime]]:  # noqa: C901
 		marketplace_app_sources = self.get_marketplace_app_sources()
-		current_team = get_current_team(True)
+		# Only users with access to the team can reach this stage therefore we can trust `self.team`
+		current_team: Team = frappe.get_doc("Team", self.team)
 		app_publishers_team = [current_team.name]
 
 		if current_team.parent_team:
