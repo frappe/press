@@ -47,10 +47,20 @@ def ensure_to_resolve_context(fn: F1) -> F1:
 
 class WorkflowBuilder(Document):
 	workflow_name: str | None = None
-	workflow_doc = None
+	_workflow_doc_cache: "PressWorkflow | None" = None
 	kv_store_type: Literal["in_memory", "workflow_store"] = "in_memory"
 	kv_store_reference: KVStoreInterface | None = None
 	current_task_signature: str | None = None
+
+	@property
+	def workflow_doc(self) -> "PressWorkflow | None":
+		if self._workflow_doc_cache is None and self.workflow_name:
+			self._workflow_doc_cache = frappe.get_doc("Press Workflow", self.workflow_name)  # type: ignore
+		return self._workflow_doc_cache
+
+	@workflow_doc.setter
+	def workflow_doc(self, value: "PressWorkflow | None") -> None:
+		self._workflow_doc_cache = value
 
 	@ensure_to_resolve_context
 	def run_task(  # noqa: C901
@@ -184,7 +194,7 @@ class WorkflowBuilder(Document):
 		current_workflow = getattr(frappe.flags, "current_press_workflow", None)
 		if current_workflow:
 			self.workflow_name = str(current_workflow)
-			self.workflow_doc: PressWorkflow = frappe.get_doc("Press Workflow", self.workflow_name)  # type: ignore
+			# workflow_doc will be loaded lazily on first access
 			if self.kv_store_type != "workflow_store":
 				# Store type is changing — discard any cached in-memory store.
 				self.kv_store_type = "workflow_store"
