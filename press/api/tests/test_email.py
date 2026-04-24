@@ -74,11 +74,9 @@ class TestSendMimeMail(FrappeAPITestCase):
 		self.assertEqual(call_kwargs.kwargs["data"]["v:sk_mail"], "test-secret-key")
 
 	@patch("press.api.email.validate_plan")
-	@patch("press.api.email.check_spam")
+	@patch("press.api.email.check_spam", new=Mock())
 	@patch("press.api.email.requests.post")
-	def test_send_mime_mail_parses_json_string_data(
-		self, mock_mailgun_post, mock_check_spam, mock_validate_plan
-	):
+	def test_send_mime_mail_parses_json_string_data(self, mock_mailgun_post, mock_validate_plan):
 		"""Verify the data parameter is correctly parsed as a JSON string (not a dict)."""
 		mock_mailgun_response = Mock()
 		mock_mailgun_response.status_code = 200
@@ -100,15 +98,10 @@ class TestSendMimeMail(FrappeAPITestCase):
 		# Verify validate_plan received the correct sk_mail from the parsed JSON
 		mock_validate_plan.assert_called_once_with("sk-12345")
 
-	@patch("press.api.email.validate_plan")
-	@patch("press.api.email.check_spam")
-	@patch("press.api.email.requests.post")
-	def test_send_mime_mail_mailgun_400_error(self, mock_mailgun_post, mock_check_spam, mock_validate_plan):
+	@patch("press.api.email.validate_plan", new=Mock())
+	@patch("press.api.email.check_spam", new=Mock())
+	def test_send_mime_mail_mailgun_400_error(self):
 		"""Test that a 400 response from mailgun raises InvalidEmail."""
-		mock_mailgun_response = Mock()
-		mock_mailgun_response.status_code = 400
-		mock_mailgun_response.json.return_value = {"message": "to parameter is not a valid address"}
-		mock_mailgun_post.return_value = mock_mailgun_response
 
 		frappe.db.set_single_value("Press Settings", "mailgun_api_key", "test-key")
 		frappe.db.set_single_value("Press Settings", "root_domain", "example.com")
