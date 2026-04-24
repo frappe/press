@@ -17,9 +17,9 @@ from press.workflow_engine.doctype.press_workflow_kv.press_workflow_kv import (
 from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
 	ObjectDeserializeError,
 	ObjectPreviousSerializationFailedError,
-	PressWorkflowObject,
 )
 from press.workflow_engine.utils import (
+	deserialize_value,
 	generate_function_signature,
 	is_func_accept_task_id,
 	method_title,
@@ -106,19 +106,17 @@ class WorkflowBuilder(Document):
 			# Store the reference of the task in workflow doctype
 			# If it's a nested task, ignore it
 			if not task_doc.parent_task and (
-				tracked_step := str(
-					frappe.db.exists(
-						"Press Workflow Step",
-						{
-							"parenttype": "Press Workflow",
-							"parent": self.workflow_name,
-							"step_method": wrapped.__name__,
-							"task": ("is", "not set"),
-						},
-					)
+				tracked_step := frappe.db.exists(
+					"Press Workflow Step",
+					{
+						"parenttype": "Press Workflow",
+						"parent": self.workflow_name,
+						"step_method": wrapped.__name__,
+						"task": ("is", "not set"),
+					},
 				)
 			):
-				frappe.db.set_value("Press Workflow Step", tracked_step, "task", task_doc.name)
+				frappe.db.set_value("Press Workflow Step", str(tracked_step), "task", task_doc.name)
 
 			task_name = task_doc.name
 			assert task_name, "Task must be saved successfully before it can be run"
@@ -133,12 +131,12 @@ class WorkflowBuilder(Document):
 
 		task_doc: PressWorkflowTask = frappe.get_doc("Press Workflow Task", task_name)  # type: ignore
 		if task_doc.status == "Success":
-			return PressWorkflowObject.get_object(task_doc.output) if task_doc.output else None
+			return deserialize_value(task_doc.output_type, task_doc.output)
 
 		if task_doc.status == "Failure":
 			if task_doc.exception:
 				try:
-					exc = PressWorkflowObject.get_object(task_doc.exception)
+					exc = deserialize_value("object", task_doc.exception)
 				except ObjectPreviousSerializationFailedError as e:
 					raise RuntimeError(
 						f"Task '{task_doc.method_title}' failed. Original exception could not be "

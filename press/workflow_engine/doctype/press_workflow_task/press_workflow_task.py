@@ -31,16 +31,16 @@ class PressWorkflowTask(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		args: DF.Link | None
+		args: DF.Data | None
 		args_type: DF.Literal["int", "float", "string", "tuple", "list", "dict", "object"]
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		exception: DF.Link | None
-		kwargs: DF.Link | None
+		kwargs: DF.Data | None
 		kwargs_type: DF.Data | None
 		method_name: DF.Data
 		method_title: DF.Data
-		output: DF.Link | None
+		output: DF.Data | None
 		output_type: DF.Literal["int", "float", "string", "tuple", "list", "dict", "object"]
 		parent_task: DF.Link | None
 		queue: DF.Data | None
@@ -63,20 +63,39 @@ class PressWorkflowTask(Document):
 		if self.is_new():
 			return
 
+		if self.flags.in_insert:
+			# Called from run_post_save_methods() after insert, where the in-memory status
+			# is still the original "Queued" but the task may have already run synchronously
+			return
+
 		if not self.has_value_changed("status"):
 			return
 
-		frappe.db.set_value(
-			"Press Workflow Step",
-			{"task": self.name},
-			"status",
-			{
-				"Queued": "Pending",
-				"Running": "Running",
-				"Success": "Success",
-				"Failure": "Failure",
-			}.get(self.status, "Pending"),
-		)
+		new_status = {
+			"Queued": "Pending",
+			"Running": "Running",
+			"Success": "Success",
+			"Failure": "Failure",
+		}.get(self.status, "Pending")
+
+		# Primary lookup: find the step already linked to this task.
+		step_name = frappe.db.get_value("Press Workflow Step", {"task": self.name}, "name")
+
+		if not step_name:
+			# Fallback: the step may not yet be linked (e.g. in synchronous test execution
+			# where after_insert runs the task before run_task sets the step.task reference).
+			step_name = frappe.db.get_value(
+				"Press Workflow Step",
+				{
+					"parenttype": "Press Workflow",
+					"parent": self.workflow,
+					"step_method": self.method_name,
+				},
+				"name",
+			)
+
+		if step_name:
+			frappe.db.set_value("Press Workflow Step", step_name, "status", new_status)
 
 	def run(self):  # noqa: C901 - Best to keep workflow execution logic in one place
 		assert self.name, "Task must be saved before it can be run"

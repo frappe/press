@@ -131,9 +131,9 @@
   },
   {
    "fieldname": "output",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Output",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "read_only": 1
   },
   {
@@ -146,16 +146,16 @@
   },
   {
    "fieldname": "args",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Args",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "set_only_once": 1
   },
   {
    "fieldname": "kwargs",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Kwargs",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "set_only_once": 1
   },
   {
@@ -208,7 +208,7 @@
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2026-04-24 13:38:30.338341",
+ "modified": "2026-04-24 14:46:19.016442",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow Task",

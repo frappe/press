@@ -20,7 +20,11 @@ from press.workflow_engine.doctype.press_workflow.exceptions import (
 from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
 	PressWorkflowObject,
 )
-from press.workflow_engine.utils import calculate_duration, serialize_and_store_value
+from press.workflow_engine.utils import (
+	calculate_duration,
+	deserialize_value,
+	serialize_and_store_value,
+)
 
 if TYPE_CHECKING:
 	from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
@@ -97,8 +101,8 @@ class PressWorkflow(Document):
 			reference_doc.workflow_name = self.name
 			reference_doc.flags.in_press_workflow_execution = True
 
-			args = PressWorkflowObject.get_object(self.args) if self.args else ()
-			kwargs = PressWorkflowObject.get_object(self.kwargs) if self.kwargs else {}
+			args = deserialize_value(self.args_type, self.args) or ()
+			kwargs = deserialize_value(self.kwargs_type, self.kwargs) or {}
 		except Exception:
 			self.status = "Fatal"
 			self.traceback = frappe.get_traceback()
@@ -227,8 +231,8 @@ class PressWorkflow(Document):
 				self.callback_traceback = frappe.get_traceback()
 			else:
 				self.callback_status = "Failure"
-				self.callback_next_retry_at = frappe.utils.add_minutes(
-					now_datetime(), 2**self.no_of_callback_attempts
+				self.callback_next_retry_at = frappe.utils.add_to_date(
+					minutes=2**self.no_of_callback_attempts
 				)
 
 			self.save()
@@ -274,7 +278,7 @@ class PressWorkflow(Document):
 
 		if self.status == "Success":
 			if self.output:
-				return PressWorkflowObject.get_object(self.output)
+				return deserialize_value(self.output_type, self.output)
 			return None
 
 		if self.status == "Failure":
