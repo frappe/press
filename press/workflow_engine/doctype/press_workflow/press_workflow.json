@@ -290,7 +290,8 @@
    "default": "0",
    "fieldname": "is_force_failure_requested",
    "fieldtype": "Check",
-   "label": "Force Failure Requested"
+   "label": "Force Failure Requested",
+   "read_only": 1
   },
   {
    "fieldname": "args_type",
@@ -321,7 +322,7 @@
    "link_fieldname": "workflow"
   }
  ],
- "modified": "2026-04-24 18:53:20.041521",
+ "modified": "2026-04-24 19:15:31.340535",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow",
