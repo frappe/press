@@ -1405,8 +1405,9 @@ class ReleaseGroup(Document, TagHelpers):
 					)
 				else:
 					# if the app source is erroneous, then we need to show the last stable release
-					# if it is not the first deploy, then we need to show last stable release and show no releases if it is the first deploy
-					last_stable_release = find(latest_app_releases, lambda x: x.status == "Stable")
+					last_stable_release = find(
+						latest_app_releases, lambda x: not x.is_yanked and can_use_release(x)
+					)
 					if last_stable_release:
 						latest_app_releases = [last_stable_release] if not is_first_deploy else []
 					else:
