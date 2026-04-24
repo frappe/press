@@ -4041,24 +4041,10 @@ def refresh_new_bench_and_site_server_pool() -> None:
 		return
 
 	if memory_map:
-		selected_bench_servers = {
-			_get_server_with_most_resource(cluster_servers, memory_map)
-			for cluster_servers in servers_by_cluster.values()
-			if cluster_servers
-		}
-		other_servers = list(set(server_names) - selected_bench_servers)
-		if other_servers:
-			frappe.db.set_value(
-				"Server",
-				{"name": ["in", other_servers]},
-				{"use_for_new_benches": 0},
-				update_modified=False,
-			)
-		frappe.db.set_value(
-			"Server",
-			{"name": ["in", list(selected_bench_servers)]},
-			{"use_for_new_benches": 1},
-			update_modified=False,
+		_refresh_bench_pool_and_raise_capacity_incidents(
+			server_names=server_names,
+			servers_by_cluster=servers_by_cluster,
+			memory_map=memory_map,
 		)
 
 	if vcpu_map:
@@ -4081,6 +4067,44 @@ def refresh_new_bench_and_site_server_pool() -> None:
 			{"use_for_new_sites": 1},
 			update_modified=False,
 		)
+
+
+def _refresh_bench_pool_and_raise_capacity_incidents(
+	server_names: list[str],
+	servers_by_cluster: dict[str, list[str]],
+	memory_map: dict[str, float],
+) -> None:
+	minimum_bench_memory_bytes = 300 * 1024 * 1024
+	selected_bench_server_by_cluster = {
+		cluster: _get_server_with_most_resource(cluster_servers, memory_map)
+		for cluster, cluster_servers in servers_by_cluster.items()
+		if cluster_servers
+	}
+	selected_bench_servers = set(selected_bench_server_by_cluster.values())
+	other_servers = list(set(server_names) - selected_bench_servers)
+	if other_servers:
+		frappe.db.set_value(
+			"Server",
+			{"name": ["in", other_servers]},
+			{"use_for_new_benches": 0},
+			update_modified=False,
+		)
+	frappe.db.set_value(
+		"Server",
+		{"name": ["in", list(selected_bench_servers)]},
+		{"use_for_new_benches": 1},
+		update_modified=False,
+	)
+
+	for cluster, selected_server in selected_bench_server_by_cluster.items():
+		available_memory = memory_map.get(selected_server, 0.0)
+		if available_memory < minimum_bench_memory_bytes:
+			_create_capacity_incident_for_cluster(
+				cluster=cluster,
+				server=selected_server,
+				available_memory_bytes=available_memory,
+				minimum_required_memory_bytes=minimum_bench_memory_bytes,
+			)
 
 
 def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[str]]]:
@@ -4129,11 +4153,14 @@ def _get_public_server_available_resources(
 	def _build_server_map(results: list[dict] | None) -> dict[str, float] | None:
 		if results is None:
 			return None
-		map: dict[str, float] = {}
+		server_map: dict[str, float] = {name: 0.0 for name in server_names}
 		for result in results:
 			instance = result.get("metric", {}).get("instance")
-			map[instance] = float(result["value"][1])
-		return map
+			if not instance or instance not in server_map:
+				continue
+			with suppress(KeyError, TypeError, ValueError):
+				server_map[instance] = float(result["value"][1])
+		return server_map
 
 	return _build_server_map(memory_results), _build_server_map(vcpu_results)
 
@@ -4150,3 +4177,57 @@ def _query_prometheus_vector(query: str, url: str, auth: tuple[str, str]) -> lis
 		return None
 
 	return response.get("data", {}).get("result")
+
+
+def _create_capacity_incident_for_cluster(
+	cluster: str,
+	server: str,
+	available_memory_bytes: float,
+	minimum_required_memory_bytes: int,
+) -> None:
+	"""Create an incident when selected bench server has insufficient memory capacity"""
+
+	subject = f"Insufficient bench capacity in cluster {cluster}"
+
+	open_incident_exists = frappe.db.exists(
+		"Incident",
+		{
+			"cluster": cluster,
+			"server": server,
+			"subject": subject,
+			"status": ["not in", ["Resolved", "Auto-Resolved", "Press-Resolved"]],
+		},
+	)
+	if open_incident_exists:
+		return
+
+	available_memory_mb = round(available_memory_bytes / 1024 / 1024, 2)
+	minimum_required_memory_mb = round(minimum_required_memory_bytes / 1024 / 1024, 2)
+
+	description = (
+		"Public server pool capacity check detected insufficient memory for new bench placement. "
+		f"Selected server: {server}. "
+		f"Available memory: {available_memory_mb} MiB. "
+		f"Minimum required per bench: {minimum_required_memory_mb} MiB. "
+		"Action required: provision a new server in this cluster or increase capacity of existing servers."
+	)
+
+	try:
+		incident = frappe.get_doc(
+			{
+				"doctype": "Incident",
+				"server": server,
+				"cluster": cluster,
+				"type": "Server Down",
+				"subject": subject,
+				"description": description,
+			}
+		)
+		incident.insert(ignore_permissions=True)
+	except Exception as exc:
+		log_error(
+			"Failed to create cluster bench capacity incident",
+			cluster=cluster,
+			server=server,
+			exception=exc,
+		)
