@@ -10,6 +10,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.api.marketplace import (
 	add_app,
+	add_app_screenshot,
 	add_version,
 	become_publisher,
 	branches,
@@ -30,11 +31,8 @@ from press.api.marketplace import (
 	remove_version,
 	reset_features_for_plan,
 	subscriptions,
-	update_app_description,
-	update_app_links,
+	update_app_image,
 	update_app_plan,
-	update_app_summary,
-	update_app_title,
 	update_publisher_profile,
 )
 from press.marketplace.doctype.marketplace_app_plan.test_marketplace_app_plan import (
@@ -244,42 +242,6 @@ class TestAPIMarketplace(FrappeTestCase):
 		app = get_app(self.app.name)
 		self.assertEqual(app.name, self.app.name)
 
-	def test_update_app_title(self):
-		frappe.set_user(self.team.user)
-		update_app_title(self.marketplace_app.name, "New Title")
-		self.marketplace_app.reload()
-		self.assertEqual(self.marketplace_app.title, "New Title")
-
-	def test_update_app_links(self):
-		frappe.set_user(self.team.user)
-		update_app_links(
-			self.marketplace_app.name,
-			{
-				"website": "https://github.com",
-				"support": "https://github.com",
-				"documentation": "https://github.com",
-				"privacy_policy": "https://github.com",
-				"terms_of_service": "https://github.com",
-			},
-		)
-		self.marketplace_app.reload()
-		self.assertEqual(self.marketplace_app.website, "https://github.com")
-		self.assertEqual(self.marketplace_app.support, "https://github.com")
-
-	def test_update_app_summary(self):
-		frappe.set_user(self.team.user)
-		summary = frappe.mock("paragraph")[:140]
-		update_app_summary(self.marketplace_app.name, summary)
-		self.marketplace_app.reload()
-		self.assertEqual(self.marketplace_app.description, summary)
-
-	def test_update_app_description(self):
-		frappe.set_user(self.team.user)
-		desc = frappe.mock("paragraph")
-		update_app_description(self.marketplace_app.name, desc)
-		self.marketplace_app.reload()
-		self.assertEqual(self.marketplace_app.long_description, desc)
-
 	def test_releases(self):
 		frappe.set_user(self.team.user)
 		r = releases({"app": self.marketplace_app.name, "source": self.app_source.name})
@@ -348,13 +310,15 @@ class TestAPIMarketplace(FrappeTestCase):
 
 	def test_add_version(self):
 		old_versions = len(self.marketplace_app.sources)
-		add_version(self.marketplace_app.name, "develop", "Nightly")
+		repo_owner, repo_name = self.app_source.repository_url.rstrip("/").split("/")[-2:]
+		add_version(self.marketplace_app.name, repo_owner, repo_name, "develop", "Nightly")
 		self.marketplace_app.reload()
 		self.assertEqual(old_versions + 1, len(self.marketplace_app.sources))
 
 	def test_remove_version(self):
 		old_versions = len(self.marketplace_app.sources)
-		add_version(self.marketplace_app.name, "develop", "Nightly")
+		repo_owner, repo_name = self.app_source.repository_url.rstrip("/").split("/")[-2:]
+		add_version(self.marketplace_app.name, repo_owner, repo_name, "develop", "Nightly")
 		remove_version(self.marketplace_app.name, "Nightly")
 		self.marketplace_app.reload()
 		self.assertEqual(old_versions, len(self.marketplace_app.sources))
@@ -370,3 +334,108 @@ class TestAPIMarketplace(FrappeTestCase):
 		)
 		results = branches(self.app_source.name)
 		self.assertEqual(len(results), 2)
+
+	def test_update_app_image_by_owner(self):
+		frappe.set_user(self.team.user)
+		_setup_fake_upload(self.marketplace_app.name)
+
+		file_url = update_app_image()
+
+		self.marketplace_app.reload()
+		self.assertTrue(file_url)
+		self.assertEqual(self.marketplace_app.image, file_url)
+
+	def test_update_app_image_blocked_for_non_owner(self):
+		other_team = create_test_press_admin_team()
+		frappe.set_user(other_team.user)
+		_setup_fake_upload(self.marketplace_app.name)
+
+		with self.assertRaises(frappe.PermissionError):
+			update_app_image()
+
+		self.marketplace_app.reload()
+		self.assertFalse(self.marketplace_app.image)
+
+	def test_add_app_screenshot_by_owner(self):
+		frappe.set_user(self.team.user)
+		_setup_fake_upload(self.marketplace_app.name)
+
+		file_url = add_app_screenshot()
+
+		self.marketplace_app.reload()
+		self.assertTrue(file_url)
+		self.assertEqual(len(self.marketplace_app.screenshots), 1)
+		self.assertEqual(self.marketplace_app.screenshots[0].image, file_url)
+
+	def test_add_app_screenshot_blocked_for_non_owner(self):
+		other_team = create_test_press_admin_team()
+		frappe.set_user(other_team.user)
+		_setup_fake_upload(self.marketplace_app.name)
+
+		with self.assertRaises(frappe.PermissionError):
+			add_app_screenshot()
+
+		self.marketplace_app.reload()
+		self.assertEqual(len(self.marketplace_app.screenshots), 0)
+
+	def test_update_app_image_rejects_svg(self):
+		"""SVG files can contain inline <script> tags — reject to prevent stored XSS."""
+		frappe.set_user(self.team.user)
+		_setup_fake_upload(
+			self.marketplace_app.name,
+			content=b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+			filename="evil.svg",
+		)
+
+		with self.assertRaises(frappe.ValidationError):
+			update_app_image()
+
+		self.marketplace_app.reload()
+		self.assertFalse(self.marketplace_app.image)
+
+	def test_add_app_screenshot_rejects_svg(self):
+		"""SVG files can contain inline <script> tags — reject to prevent stored XSS."""
+		frappe.set_user(self.team.user)
+		_setup_fake_upload(
+			self.marketplace_app.name,
+			content=b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+			filename="evil.svg",
+		)
+
+		with self.assertRaises(frappe.ValidationError):
+			add_app_screenshot()
+
+		self.marketplace_app.reload()
+		self.assertEqual(len(self.marketplace_app.screenshots), 0)
+
+	def test_add_app_screenshot_rejects_html(self):
+		"""HTML uploads are equally dangerous — reject any non-image extension."""
+		frappe.set_user(self.team.user)
+		_setup_fake_upload(
+			self.marketplace_app.name,
+			content=b"<html><body><script>alert(1)</script></body></html>",
+			filename="page.html",
+		)
+
+		with self.assertRaises(frappe.ValidationError):
+			add_app_screenshot()
+
+		self.marketplace_app.reload()
+		self.assertEqual(len(self.marketplace_app.screenshots), 0)
+
+
+def _make_test_image(size=300):
+	from io import BytesIO
+
+	from PIL import Image
+
+	buf = BytesIO()
+	Image.new("RGB", (size, size), color="red").save(buf, format="PNG")
+	return buf.getvalue()
+
+
+def _setup_fake_upload(app_name, content=None, filename=None):
+	"""Set frappe.local/form_dict fields to simulate a file upload."""
+	frappe.local.uploaded_file = content or _make_test_image()
+	frappe.local.uploaded_filename = filename or "test_image.png"
+	frappe.form_dict.docname = app_name

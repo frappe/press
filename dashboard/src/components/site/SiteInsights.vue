@@ -59,7 +59,7 @@ onMounted(() => {
 				<router-link
 					:to="{ name: tab.value }"
 					class="py-2 pr-15 flex cursor-pointer text-base text-ink-gray-5 rounded hover:bg-surface-gray-1 px-3.5"
-					active-class="bg-surface-gray-2 text-ink-gray-9"
+					active-class="bg-surface-gray-1 text-ink-gray-9"
 				>
 					{{ tab.label }}
 				</router-link>

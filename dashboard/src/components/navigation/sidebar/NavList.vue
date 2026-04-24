@@ -63,7 +63,7 @@ const navigation = computed(() => {
 			name: 'Sites',
 			icon: PanelTopInactive,
 			route: '/sites',
-			class: 'mt-2',
+			class: 'mt-1.5',
 			isActive:
 				['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
 				routeName.startsWith('Site Detail'),
@@ -96,7 +96,6 @@ const navigation = computed(() => {
 		{
 			name: 'Servers',
 			icon: Server,
-			class: 'mt-2',
 			route: onboardingComplete ? '/servers' : '/enable-servers',
 			isActive:
 				['New Server'].includes(routeName) ||

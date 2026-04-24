@@ -23,6 +23,16 @@
 				title="A few commits have been yanked, <a href='https://docs.frappe.io/cloud/benches/updating_a_bench#yanked-app-releases' target='_blank' style='font-weight: bold;'>click here</a> to know more."
 				type="info"
 			/>
+			<AlertBanner
+				v-if="
+					benchDocResource.doc.deploy_information.apps.some((app) =>
+						app.releases.some((release) => release.is_mandatory),
+					)
+				"
+				class="mb-4"
+				title="A mandatory update is available. Please select the update to proceed."
+				type="info"
+			/>
 			<!-- Update Steps -->
 			<div class="space-y-4">
 				<!-- Select Apps Step -->
@@ -186,7 +196,7 @@ export default {
 
 			appData.forEach((app) => {
 				if (!app.releases?.length) {
-					app.__disabled = true;
+					app.disabled = true;
 				}
 			});
 
@@ -246,6 +256,7 @@ export default {
 										value: release.name,
 										timestamp: release.timestamp,
 										is_yanked: release.is_yanked,
+										is_mandatory: release.is_mandatory,
 									};
 								});
 							}
@@ -537,6 +548,7 @@ export default {
 					}
 				},
 				onSuccess(candidate) {
+					// Backward compatibility in case we switch to the older deploy flow which returns a candidate
 					if (candidate) {
 						this.$router.push({
 							name: 'Deploy Candidate',

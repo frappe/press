@@ -7,7 +7,8 @@
  "field_order": [
   "team",
   "release_group",
-  "status"
+  "status",
+  "workflow"
  ],
  "fields": [
   {
@@ -22,6 +23,7 @@
   {
    "fieldname": "release_group",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Release Group",
    "options": "Release Group",
    "read_only": 1,
@@ -31,14 +33,21 @@
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
    "options": "Pending\nRunning\nPartial Success\nSuccess\nFailure\nRetrying"
+  },
+  {
+   "fieldname": "workflow",
+   "fieldtype": "Link",
+   "label": "Workflow",
+   "options": "Press Workflow"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-09 15:10:24.783344",
+ "modified": "2026-04-23 23:29:23.698727",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Pipeline",

@@ -224,15 +224,21 @@ def check_for_ip_match(site_name: str, site_ip: str | None, domain_ip: str | Non
 	if domain_ip == site_ip:
 		return True
 	if site_ip:
-		# We can issue certificates even if the domain points to the secondary proxies
-		server = frappe.db.get_value("Site", site_name, "server")
+		# We can issue certificates even if the domain points to the secondary or failed over proxies
+		server, cluster = frappe.db.get_value("Site", site_name, ["server", "cluster"])
 		proxy = frappe.db.get_value("Server", server, "proxy_server")
+		proxy_ip = frappe.db.get_value("Proxy Server", proxy, "ip")
 		secondary_ips = frappe.get_all(
 			"Proxy Server",
 			{"status": "Active", "primary": proxy, "is_replication_setup": True},
 			pluck="ip",
 		)
-		if domain_ip in secondary_ips:
+		failed_over_ips = frappe.get_all(
+			"Proxy Server",
+			{"status": "Active", "cluster": cluster, "is_primary": True, "exclude_from_auto_selection": True},
+			pluck="ip",
+		)
+		if (domain_ip in secondary_ips) or (site_ip == proxy_ip and domain_ip in failed_over_ips):
 			return True
 	return False
 

@@ -60,6 +60,7 @@
 				</template>
 			</ListItem>
 			<ListItem
+				class="border-t"
 				:title="user.is_2fa_enabled ? 'Disable 2FA' : 'Enable 2FA'"
 				:subtitle="
 					user.is_2fa_enabled
