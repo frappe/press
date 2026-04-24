@@ -489,7 +489,7 @@ class VirtualMachine(Document):
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 
-		droplet_tag = f"Frappe-Cloud-Production-{cluster.name.replace(' ', '-')}"
+		droplet_tag = f"Frappe-Cloud-Production-{cluster.name.replace(' ', '-')}-{self.series}"
 		firewalls = self.client().firewalls.list()
 		firewalls = firewalls.get("firewalls", [])
 		cluster_firewall = next(fw for fw in firewalls if fw["id"] == cluster.security_group_id)
