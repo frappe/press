@@ -2705,12 +2705,14 @@ class Server(BaseServer):
 		self_hosted_mariadb_server: DF.Data | None
 		self_hosted_server_domain: DF.Data | None
 		set_bench_memory_limits: DF.Check
+		site_warranty_change_cooldown: DF.Int
 		skip_scheduled_backups: DF.Check
 		ssh_port: DF.Int
 		ssh_user: DF.Data | None
 		staging: DF.Check
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		stop_deployments: DF.Check
+		site_warranty_quota: DF.Int
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None
@@ -2773,6 +2775,9 @@ class Server(BaseServer):
 			frappe.throw(
 				"Cannot enable logical replication during site update if multiple sites are present on the server. Please drop the sites in order to enable logical replication."
 			)
+
+		if self.is_new() and is_dedicated_server(self.name):
+			self.set_dedicated_server_site_warranty_quota_and_cooldown()
 
 	def update_db_server(self):
 		if not self.database_server:
@@ -2859,6 +2864,14 @@ class Server(BaseServer):
 				frappe.db.set_value(
 					"Subscription", add_on_storage_subscription.name, {"team": self.team, "enabled": 1}
 				)
+
+	def set_dedicated_server_site_warranty_quota_and_cooldown(self):
+		self.site_warranty_quota = frappe.get_value(
+			"Press Settings", None, "default_dedicated_server_site_warranty_quota"
+		)
+		self.site_warranty_change_cooldown = frappe.get_value(
+			"Press Settings", None, "default_dedicated_server_site_warranty_change_cooldown"
+		)
 
 	def create_secondary_server(self, plan_name: str) -> None:
 		"""Create a secondary server for this server"""

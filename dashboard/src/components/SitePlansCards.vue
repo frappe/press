@@ -13,6 +13,7 @@ export default {
 		'isPrivateBenchSite',
 		'isDedicatedServerSite',
 		'serverPlanPrice',
+		'serverSupportQuotaAvailable',
 		'selectedCluster',
 		'selectedApps',
 		'selectedVersion',
@@ -152,6 +153,41 @@ export default {
 					].filter((feature) => feature.condition ?? true),
 				};
 			});
+		},
+	},
+	watch: {
+		plans: {
+			immediate: true,
+			handler: function (plans) {
+				if (!this.isDedicatedServerSite) return;
+
+				if (!plans.length) return;
+
+				const bestPlan = this.getBestDedicatedSitePlan();
+
+				if (bestPlan) {
+					this.currentPlan = bestPlan;
+				}
+			},
+		},
+	},
+	methods: {
+		// Currently best plan is determined based on warranty and CPU time only (may change later)
+		getBestDedicatedSitePlan() {
+			let filteredPlans = this.plans;
+
+			if (this.serverSupportQuotaAvailable) {
+				filteredPlans = filteredPlans.filter((plan) => plan.support_included);
+			}
+
+			const bestPlan = filteredPlans.reduce((best, curr) => {
+				return parseFloat(curr.cpu_time_per_day) >
+					parseFloat(best.cpu_time_per_day)
+					? curr
+					: best;
+			});
+
+			return bestPlan;
 		},
 	},
 };
