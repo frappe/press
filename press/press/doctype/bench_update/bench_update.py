@@ -89,6 +89,7 @@ class BenchUpdate(Document):
 		run_will_fail_check=False,
 		validate_pre_candidate_checks: bool = True,
 		create_build: bool = True,
+		ignore_permissions_check: bool = False,
 	) -> str:
 		"""Creates and returns candidate name or build name depending on the point of invocation."""
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
@@ -96,6 +97,7 @@ class BenchUpdate(Document):
 			apps_to_update=self.apps,
 			run_will_fail_check=run_will_fail_check,
 			validate_pre_candidate_checks=validate_pre_candidate_checks,
+			ignore_permissions_check=ignore_permissions_check,
 		)
 
 		self.candidate = candidate.name
@@ -110,7 +112,7 @@ class BenchUpdate(Document):
 			# In case we are not scheduling build from here (eg. new build flow) return candidate name here
 			return candidate.name
 
-		deploy = candidate.schedule_build_and_deploy()
+		deploy = candidate.schedule_build_and_deploy(ignore_permissions_check=ignore_permissions_check)
 
 		return deploy["name"]
 
