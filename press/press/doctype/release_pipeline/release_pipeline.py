@@ -181,10 +181,11 @@ class ReleasePipeline(WorkflowBuilder):
 			"Retrying",
 		],
 	):
-		self.status = status
-		self.save(ignore_permissions=True)
+		# If the workflow doc touches this for any reason
+		# Document native methods would raise a `TimeStampMismatch` error
+		self.db_set("status", status)
 
-		if self.status == "Failure":
+		if status == "Failure":
 			self.send_failure_notification()
 
 	@cached_property
