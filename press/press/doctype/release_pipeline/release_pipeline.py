@@ -180,7 +180,6 @@ class ReleasePipeline(WorkflowBuilder):
 			"Failure",
 			"Retrying",
 		],
-		ignore_permissions: bool = False,
 	):
 		# If the workflow doc touches this for any reason
 		# Document native methods would raise a `TimeStampMismatch` error
@@ -624,9 +623,5 @@ class ReleasePipeline(WorkflowBuilder):
 			# Just in case, make sure that we mark the pipeline as failed and notify the frontend to stop listening for deploy updates
 			self.update_pipeline_status("Failure")
 
-		workflow_status = frappe.db.get_value("Press Workflow", self.workflow, "status")
-		if workflow_status == "Failure":
-			self.update_pipeline_status("Failure")
-
-	def on_workflow_failure(self):
-		self.update_pipeline_status("Failure", ignore_permissions=True)
+	def on_workflow_failure(self, *args, **kwargs):
+		self.update_pipeline_status("Failure")
