@@ -1,5 +1,5 @@
 <template>
-	<ObjectList class="px-5 pt-5" :options="options" />
+	<ObjectList class="px-3" :options="options" />
 </template>
 <script>
 import ObjectList from '../../ObjectList.vue';
@@ -12,6 +12,12 @@ export default {
 	computed: {
 		options() {
 			return {
+				route(row) {
+					return {
+						name: row.route,
+						params: { name: this.name },
+					};
+				},
 				data: () => [
 					{
 						title: 'Request Log Report',
@@ -47,23 +53,6 @@ export default {
 						label: 'Description',
 						fieldname: 'description',
 						class: 'text-gray-700',
-					},
-					{
-						label: '',
-						fieldname: 'action',
-						type: 'Button',
-						align: 'right',
-						width: 0.1,
-						Button: ({ row }) => {
-							return {
-								label: 'View',
-								type: 'primary',
-								iconRight: 'arrow-right',
-								onClick: () => {
-									this.$router.push({ name: row.route });
-								},
-							};
-						},
 					},
 				],
 			};
