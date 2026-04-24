@@ -99,8 +99,8 @@ class PressWorkflowTask(Document):
 		reference_doc.flags.current_press_workflow_task = self.name
 
 		try:
-			args = deserialize_value(self.args) if self.args else ()
-			kwargs = deserialize_value(self.kwargs) if self.kwargs else {}
+			args = deserialize_value(self.args_type, self.args) if self.args else ()
+			kwargs = deserialize_value(self.kwargs_type, self.kwargs) if self.kwargs else {}
 		except Exception as e:
 			self.exception = PressWorkflowObject.store(e, throw_on_error=False)
 			self.status = "Failure"

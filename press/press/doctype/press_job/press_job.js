@@ -3,7 +3,7 @@
 
 frappe.ui.form.on('Press Job', {
 	refresh: function (frm) {
-		[[__('Retry'), 'retry', frm.doc.status === 'Failed']].forEach(
+		[[__('Retry'), 'retry', frm.doc.status === 'Failure']].forEach(
 			([label, method, condition]) => {
 				if (condition) {
 					frm.add_custom_button(
