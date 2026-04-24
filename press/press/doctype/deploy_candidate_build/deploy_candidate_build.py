@@ -1133,7 +1133,7 @@ class DeployCandidateBuild(Document):
 
 	def get_team_for_build(self):
 		"""Default to group team in case of new flow"""
-		new_flow = frappe.get_single_value("Press Settings", "use_new_deploy_flow")
+		new_flow = frappe.db.get_single_value("Press Settings", "use_new_deploy_flow")
 		return (
 			frappe.db.get_value("Release Group", self.group, "team") if new_flow else get_current_team(True)
 		)
