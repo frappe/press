@@ -541,6 +541,7 @@ class ReleasePipeline(WorkflowBuilder):
 					message=f"Waiting for secondary build creation for Deploy Candidate {deploy_candidate}",
 				)
 
+			assert secondary_build, "Secondary build should be present for candidates requiring 2 builds"
 			self.monitor_pre_build_validation(secondary_build)
 			self.monitor_build_success(secondary_build)
 
@@ -622,6 +623,5 @@ class ReleasePipeline(WorkflowBuilder):
 			# Just in case, make sure that we mark the pipeline as failed and notify the frontend to stop listening for deploy updates
 			self.update_pipeline_status("Failure")
 
-		workflow_status = frappe.db.get_value("Press Workflow", self.workflow, "status")
-		if workflow_status == "Failure":
-			self.update_pipeline_status("Failure")
+	def on_workflow_failure(self, *args, **kwargs):
+		self.update_pipeline_status("Failure")

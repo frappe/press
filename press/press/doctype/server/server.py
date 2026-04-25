@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import datetime
 import ipaddress
 import json
@@ -873,7 +874,7 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(self.doctype, self.name, "_install_exporters", queue="long", timeout=1200)
 
 	@frappe.whitelist()
-	def ping_ansible(self):
+	def ping_ansible(self) -> AnsiblePlay | None:
 		try:
 			ansible = Ansible(
 				playbook="ping.yml",
@@ -881,15 +882,16 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
+			return None
 
 	@frappe.whitelist()
 	def update_agent_ansible(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible")
 
-	def _update_agent_ansible(self):
+	def _update_agent_ansible(self, throw_on_failure: bool = False):
 		try:
 			agent_branch = frappe.get_value("Press Settings", "Press Settings", "branch")
 			if not agent_branch:
@@ -907,8 +909,12 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
-		except Exception:
+			play = ansible.run()
+			if throw_on_failure and play.status != "Success":
+				raise Exception("Failed to update agent")
+		except Exception as e:
+			if throw_on_failure:
+				raise e
 			log_error("Agent Update Exception", server=self.as_dict())
 
 	@frappe.whitelist()
@@ -1506,7 +1512,7 @@ class BaseServer(Document, TagHelpers):
 			**{"swap_size": swap_size},
 		)
 
-	def _increase_swap(self, swap_size=4):
+	def _increase_swap(self, swap_size=4, throw_on_failure: bool = False):
 		"""Increase swap by size defined"""
 		from press.api.server import calculate_swap
 
@@ -1524,16 +1530,22 @@ class BaseServer(Document, TagHelpers):
 					"swap_file": swap_file_name,
 				},
 			)
-			ansible.run()
+			play = ansible.run()
+			if play.status != "Success" and throw_on_failure:
+				raise Exception("Failed to increase swap")
+			return play
 		except Exception:
+			if throw_on_failure:
+				raise
 			log_error("Increase swap exception", doc=self)
+			return None
 
-	def increase_swap_locked(self, swap_size=4):
+	def increase_swap_locked(self, swap_size=4, throw_on_failure: bool = False):
 		with filelock(f"{self.name}-swap-update"):
-			self._increase_swap(swap_size)
+			self._increase_swap(swap_size, throw_on_failure=throw_on_failure)
 
 	@frappe.whitelist()
-	def reset_swap(self, swap_size=1):
+	def reset_swap(self, swap_size=1, now: bool = False):
 		"""
 		Replace existing swap files with new swap file of given size
 		"""
@@ -1544,6 +1556,7 @@ class BaseServer(Document, TagHelpers):
 			queue="long",
 			timeout=1200,
 			**{"swap_size": swap_size},
+			now=now,
 		)
 
 	def reset_swap_locked(self, swap_size=1):
@@ -1634,7 +1647,7 @@ class BaseServer(Document, TagHelpers):
 			log_error("Swappiness Setup Exception", doc=self)
 
 	@frappe.whitelist()
-	def update_tls_certificate(self):
+	def update_tls_certificate(self, throw_on_failure: bool = False):
 		from press.press.doctype.tls_certificate.tls_certificate import (
 			update_server_tls_certifcate,
 		)
@@ -1651,7 +1664,7 @@ class BaseServer(Document, TagHelpers):
 
 		certificate = frappe.get_last_doc("TLS Certificate", filters)
 
-		update_server_tls_certifcate(self, certificate)
+		update_server_tls_certifcate(self, certificate, throw_on_failure=throw_on_failure)
 
 	@frappe.whitelist()
 	def show_agent_version(self) -> str:
@@ -2303,7 +2316,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			timeout=8000,
 		)
 
-	def _prune_docker_system(self):
+	def _prune_docker_system(self, throw_on_failure: bool = False):
 		try:
 			ansible = Ansible(
 				playbook="docker_system_prune.yml",
@@ -2311,9 +2324,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
+			play = ansible.run()
+			if play.status != "Success" and throw_on_failure:
+				frappe.throw("Failed to prune docker system")  # nosemgrep
+			return play
 		except Exception:
 			log_error("Prune Docker System Exception", doc=self)
+			if throw_on_failure:
+				frappe.throw("Failed to prune docker system")  # nosemgrep
+			return None
 
 	def get_nat_gateway_ip(self):
 		if hasattr(self, "nat_server") and self.nat_server:
@@ -3433,12 +3452,9 @@ class Server(BaseServer):
 		running_press_job = next((job for job in press_jobs if job.status in ("Pending", "Running")), None)
 		if press_jobs:
 			for press_job in press_jobs:
-				press_job["steps"] = frappe.get_all(
-					"Press Job Step",
-					filters={"job": press_job.name},
-					fields=["name", "step_name", "status", "result", "traceback", "start", "end", "duration"],
-					order_by="creation asc",
-				)
+				press_job["steps"] = []
+				with contextlib.suppress(frappe.DoesNotExistError):
+					press_job["steps"] = frappe.get_doc("Press Job", press_job.name).steps
 
 		return {
 			"running_press_job_type": running_press_job.job_type if running_press_job else None,
