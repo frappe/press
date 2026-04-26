@@ -7,6 +7,8 @@ Guaranteed + Weighted Bonus
 Guaranteed: Every bench gets a guaranteed number of workers, based on their site plans.
 """
 
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass
 from typing import TypedDict
@@ -43,6 +45,7 @@ PLAN_CONFIG: dict = {
 	"USD 5": {"web": {"min": 1, "max": 2}, "bg": {"min": 1, "max": 1}, "weight": 1},
 	"USD 10": {"web": {"min": 2, "max": 4}, "bg": {"min": 1, "max": 2}, "weight": 2},
 	"USD 25": {"web": {"min": 4, "max": 8}, "bg": {"min": 2, "max": 4}, "weight": 5},
+	"Frappe Team": {"web": {"min": 6, "max": 10}, "bg": {"min": 3, "max": 5}, "weight": 8},
 	"USD 50": {"web": {"min": 8, "max": 12}, "bg": {"min": 4, "max": 6}, "weight": 12},
 }
 
@@ -57,7 +60,6 @@ class WorkerScheduler:
 		"""Returns the guaranteed web & background workers for a bench based on its site plan."""
 		plan = PLAN_CONFIG.get(site_info["plan"])
 		if not plan:
-			print("Plan not found for site:", site_info["name"], "with plan:", site_info["plan"])
 			return 1, 1  # Default to min workers plan might be None/Trial etc
 
 		return plan["web"]["min"], plan["bg"]["min"]
