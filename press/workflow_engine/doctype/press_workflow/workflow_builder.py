@@ -17,15 +17,17 @@ from press.workflow_engine.doctype.press_workflow_kv.press_workflow_kv import (
 from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
 	ObjectDeserializeError,
 	ObjectPreviousSerializationFailedError,
-	PressWorkflowObject,
 )
 from press.workflow_engine.utils import (
+	deserialize_value,
 	generate_function_signature,
 	is_func_accept_task_id,
 	method_title,
+	serialize_and_store_value,
 )
 
 if TYPE_CHECKING:
+	from press.workflow_engine.doctype.press_workflow.press_workflow import PressWorkflow
 	from press.workflow_engine.doctype.press_workflow_task.press_workflow_task import (
 		PressWorkflowTask,
 	)
@@ -45,10 +47,20 @@ def ensure_to_resolve_context(fn: F1) -> F1:
 
 class WorkflowBuilder(Document):
 	workflow_name: str | None = None
-	workflow_doc = None
+	_workflow_doc_cache: "PressWorkflow | None" = None
 	kv_store_type: Literal["in_memory", "workflow_store"] = "in_memory"
 	kv_store_reference: KVStoreInterface | None = None
 	current_task_signature: str | None = None
+
+	@property
+	def workflow_doc(self) -> "PressWorkflow | None":
+		if self._workflow_doc_cache is None and self.workflow_name:
+			self._workflow_doc_cache = frappe.get_doc("Press Workflow", self.workflow_name)  # type: ignore
+		return self._workflow_doc_cache
+
+	@workflow_doc.setter
+	def workflow_doc(self, value: "PressWorkflow | None") -> None:
+		self._workflow_doc_cache = value
 
 	@ensure_to_resolve_context
 	def run_task(  # noqa: C901
@@ -85,8 +97,12 @@ class WorkflowBuilder(Document):
 			task_doc.method_title = method_title(wrapped)  # type: ignore
 
 			task_doc.signature = signature  # type: ignore
-			task_doc.args = PressWorkflowObject.store(args) if args else None  # type: ignore
-			task_doc.kwargs = PressWorkflowObject.store(kwargs) if kwargs else None  # type: ignore
+			args_type, args_value = serialize_and_store_value(args)
+			kwargs_type, kwargs_value = serialize_and_store_value(kwargs)
+			task_doc.args = args_value
+			task_doc.args_type = args_type
+			task_doc.kwargs = kwargs_value
+			task_doc.kwargs_type = kwargs_type
 			task_doc.status = "Queued"  # type: ignore
 			task_doc.queue = queue  # type: ignore
 			task_doc.timeout = timeout or 0  # type: ignore
@@ -100,19 +116,17 @@ class WorkflowBuilder(Document):
 			# Store the reference of the task in workflow doctype
 			# If it's a nested task, ignore it
 			if not task_doc.parent_task and (
-				tracked_step := str(
-					frappe.db.exists(
-						"Press Workflow Step",
-						{
-							"parenttype": "Press Workflow",
-							"parent": self.workflow_name,
-							"step_method": wrapped.__name__,
-							"task": ("is", "not set"),
-						},
-					)
+				tracked_step := frappe.db.exists(
+					"Press Workflow Step",
+					{
+						"parenttype": "Press Workflow",
+						"parent": self.workflow_name,
+						"step_method": wrapped.__name__,
+						"task": ("is", "not set"),
+					},
 				)
 			):
-				frappe.db.set_value("Press Workflow Step", tracked_step, "task", task_doc.name)
+				frappe.db.set_value("Press Workflow Step", str(tracked_step), "task", task_doc.name)
 
 			task_name = task_doc.name
 			assert task_name, "Task must be saved successfully before it can be run"
@@ -127,12 +141,12 @@ class WorkflowBuilder(Document):
 
 		task_doc: PressWorkflowTask = frappe.get_doc("Press Workflow Task", task_name)  # type: ignore
 		if task_doc.status == "Success":
-			return PressWorkflowObject.get_object(task_doc.output) if task_doc.output else None
+			return deserialize_value(task_doc.output_type, task_doc.output)
 
 		if task_doc.status == "Failure":
 			if task_doc.exception:
 				try:
-					exc = PressWorkflowObject.get_object(task_doc.exception)
+					exc = deserialize_value("object", task_doc.exception)
 				except ObjectPreviousSerializationFailedError as e:
 					raise RuntimeError(
 						f"Task '{task_doc.method_title}' failed. Original exception could not be "
@@ -180,7 +194,7 @@ class WorkflowBuilder(Document):
 		current_workflow = getattr(frappe.flags, "current_press_workflow", None)
 		if current_workflow:
 			self.workflow_name = str(current_workflow)
-			self.workflow_doc = frappe.get_doc("Press Workflow", self.workflow_name)  # type: ignore
+			# workflow_doc will be loaded lazily on first access
 			if self.kv_store_type != "workflow_store":
 				# Store type is changing — discard any cached in-memory store.
 				self.kv_store_type = "workflow_store"
