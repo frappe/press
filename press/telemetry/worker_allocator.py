@@ -29,6 +29,7 @@ class WorkerAllocation(TypedDict):
 
 # Plan configuration: (Min, Weight, Max)
 # Arbitrary for now but seems fair enough considering the resources on public servers and the number of benches we have.
+# Todo: Move this to fixtures with more plans [Large, Unlimited etc] and more accurate worker limits based on the plan.
 PLAN_CONFIG: dict = {
 	"USD 5": {"web": {"min": 1, "max": 2}, "bg": {"min": 1, "max": 1}, "weight": 1},
 	"USD 10": {"web": {"min": 2, "max": 4}, "bg": {"min": 1, "max": 2}, "weight": 2},
@@ -52,21 +53,6 @@ class WorkerScheduler:
 
 		return plan["web"]["min"], plan["bg"]["min"]
 
-	def get_total_guaranteed_workers(self) -> tuple[float, float]:
-		"""Returns the total guaranteed web + background workers for all benches."""
-		total_guaranteed_web_workers = 0.0
-		total_guaranteed_bg_workers = 0.0
-
-		for bench in self.benches:
-			for site_info in bench["site_info"]:
-				guaranteed_web_workers, guaranteed_bg_workers = self.get_guaranteed_web_and_bg_workers(
-					site_info
-				)
-				total_guaranteed_web_workers += guaranteed_web_workers
-				total_guaranteed_bg_workers += guaranteed_bg_workers
-
-		return total_guaranteed_web_workers, total_guaranteed_bg_workers
-
 	def can_server_accommodate_guaranteed_workers(
 		self, total_guaranteed_web_workers: float, total_guaranteed_bg_workers: float
 	) -> bool:
@@ -88,6 +74,24 @@ class WorkerScheduler:
 			site_info_list,
 			key=lambda site_info: PLAN_CONFIG.get(site_info["plan"], {}).get(worker_type, {}).get("max", 0),
 		)
+
+	def get_total_guaranteed_workers(self) -> tuple[float, float]:
+		"""Returns the total guaranteed web + background workers for all benches."""
+		total_guaranteed_web_workers = 0.0
+		total_guaranteed_bg_workers = 0.0
+
+		for bench in self.benches:
+			site_with_highest_web_workers = self.get_site_with_highest_max_workers(bench["site_info"], "web")
+			site_with_highest_bg_workers = self.get_site_with_highest_max_workers(bench["site_info"], "bg")
+
+			total_guaranteed_web_workers += (
+				PLAN_CONFIG.get(site_with_highest_web_workers["plan"], {}).get("web", {}).get("min", 0)
+			)
+			total_guaranteed_bg_workers += (
+				PLAN_CONFIG.get(site_with_highest_bg_workers["plan"], {}).get("bg", {}).get("min", 0)
+			)
+
+		return total_guaranteed_web_workers, total_guaranteed_bg_workers
 
 	def allocate_workers(self) -> list[dict[str, WorkerAllocation]] | None:
 		"""
