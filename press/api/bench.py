@@ -483,7 +483,7 @@ def installable_apps(name):
 
 @frappe.whitelist()
 @protected("Release Group")
-def all_apps(name):
+def all_apps(name: str):
 	"""Return all apps in the marketplace that are not installed in the release group for adding new apps"""
 
 	release_group = frappe.get_doc("Release Group", name)
@@ -521,13 +521,22 @@ def all_apps(name):
 	total_installs_by_app = get_total_installs_by_app()
 
 	for app in marketplace_apps:
-		app["sources"] = find_all(
-			list(filter(lambda x: x.version == release_group.version, marketplace_app_sources)),
-			lambda x: x.app == app.app,
-		)
+		public_app_sources = list(filter(lambda source: source.app == app.app, marketplace_app_sources))
+
+		if not public_app_sources:
+			app["no_public_releases"] = True
+
+		app["sources"] = list(
+			filter(lambda source: source.version == release_group.version, public_app_sources)
+		)  # will be empty if there are no public releases
+
 		# for fetching repo details for incompatible apps
-		app_source = find(marketplace_app_sources, lambda x: x.app == app.app)
-		app["repo"] = f"{app_source.repository_owner}/{app_source.repository}" if app_source else None
+		app["repo"] = (
+			f"{public_app_sources[0].repository_owner}/{public_app_sources[0].repository}"
+			if app["sources"]
+			else None
+		)
+
 		app["total_installs"] = total_installs_by_app.get(app["name"], 0)
 
 	return marketplace_apps
