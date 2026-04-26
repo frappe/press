@@ -194,12 +194,11 @@ class ReleasePipeline(WorkflowBuilder):
 
 	def add_build_to_pipeline(self, build: str):
 		"""Attach a build to the pipeline if not present"""
-		existing_builds = [build.build for build in self.pipeline_builds]
+		existing_builds = [pb.build for pb in self.pipeline_builds]
 
 		if build not in existing_builds:
 			self.append("pipeline_builds", {"build": build})
-
-		self.save()
+			self.save()
 
 	@cached_property
 	def release_group_doc(self) -> "ReleaseGroup":
