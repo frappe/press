@@ -210,7 +210,9 @@
 							@click.stop="() => {}"
 						>
 							<Switch v-model="autoRefreshDatabaseLocks" />
-							<p class="text-base text-gray-700">Auto Refresh</p>
+							<p class="text-base text-gray-700">
+								Auto Refresh Until Lock Found
+							</p>
 						</div>
 						<Button
 							:loading="this.$resources.databaseLocks.loading"
@@ -433,7 +435,7 @@ export default {
 			isIndexSuggestionTriggered: false,
 			queryTabIndex: 0,
 			dbIndexTabIndex: 0,
-			autoRefreshDatabaseLocks: false,
+			autoRefreshDatabaseLocks: true,
 			showTableSchemaSizeDetailsDialog: false,
 			preSelectedSchemaForSchemaDialog: null,
 			showTableSchemasDialog: false,
@@ -450,9 +452,14 @@ export default {
 		if (site_name) {
 			this.site = site_name;
 		}
-		this.autoRefreshDatabaseLocksInBackground();
 	},
 	watch: {
+		autoRefreshDatabaseLocks(val) {
+			if (val && this.site) {
+				this.$resources.databaseLocks.data = null;
+				this.$resources.databaseLocks.submit();
+			}
+		},
 		site(site_name) {
 			if (!site_name) return;
 			// set site to query param ?site=site_name
@@ -605,6 +612,20 @@ export default {
 						dn: this.site,
 						method: 'fetch_database_locks',
 					};
+				},
+				onSuccess: (data) => {
+					const locks = data?.message ?? [];
+					if (locks.length > 0) {
+						// Locks found - stop auto refresh
+						this.autoRefreshDatabaseLocks = false;
+					} else if (this.autoRefreshDatabaseLocks) {
+						// No locks yet - keep polling
+						setTimeout(() => {
+							if (this.autoRefreshDatabaseLocks && this.site) {
+								this.$resources.databaseLocks.submit();
+							}
+						}, 5000);
+					}
 				},
 				auto: false,
 			};
@@ -989,13 +1010,6 @@ export default {
 		refreshDatabaseUsage() {
 			this.refreshingDatabaseUsage = true;
 			this.$resources.refreshDatabaseUsage.submit();
-		},
-		autoRefreshDatabaseLocksInBackground() {
-			setInterval(() => {
-				if (this.autoRefreshDatabaseLocks && this.site) {
-					this.$resources.databaseLocks.submit();
-				}
-			}, 5000);
 		},
 		formatTrxStarted(value) {
 			if (!value) return '';
