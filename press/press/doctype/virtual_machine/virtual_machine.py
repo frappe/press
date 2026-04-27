@@ -1579,7 +1579,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
-		if self.cloud_provider != "AWS EC2":
+		if self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
 			frappe.throw("Public IP disassociation is currently only supported for AWS EC2 instances")
 
 		if not self.public_ip_address:
@@ -1592,14 +1592,19 @@ class VirtualMachine(Document):
 				"Unable to get a lock on the vm at this time. Some other process is probably underway"
 			)
 
-		ec2 = self.client()
-		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
-		ec2.modify_network_interface_attribute(
-			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
-				"NetworkInterfaceId"
-			],
-			AssociatePublicIpAddress=False,
-		)
+		if self.cloud_provider == "AWS EC2":
+			ec2 = self.client()
+			instance = ec2.describe_instances(InstanceIds=[self.instance_id])
+			ec2.modify_network_interface_attribute(
+				NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
+					"NetworkInterfaceId"
+				],
+				AssociatePublicIpAddress=False,
+			)
+		elif self.cloud_provider == "Frappe Compute":
+			client = self.client()
+			client.remove_public_ip_from_virtual_machine(self.instance_id)
+
 		frappe.flags.force_update_dns = True
 		self.sync()
 
