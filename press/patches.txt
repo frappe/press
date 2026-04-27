@@ -162,3 +162,4 @@ press.partner.doctype.partner_lead.patches.merge_engagement_stage_to_status
 press.patches.v0_0_1.add_job_status_index_press_job_step
 press.patches.v0_8_0.set_suspended_at_for_suspended_sites
 press.marketplace.patches.cleanup_code_screening_data
+press.patches.v0_8_0.merge_ff_roles_to_one
