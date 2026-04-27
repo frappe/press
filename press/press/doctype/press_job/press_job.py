@@ -213,6 +213,7 @@ class PressJob(WorkflowBuilder):
 			raise NotImplementedError("Press Job implementation must have an execute method")
 		self.start = now_datetime()
 		self.status = "Running"
+		self.save(ignore_permissions=True)
 		return self.execute.run_as_workflow()
 
 	def on_workflow_success(self, workflow: "PressWorkflow"):
