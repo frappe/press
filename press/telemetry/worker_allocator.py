@@ -29,7 +29,7 @@ class BenchType:
 	name: str
 	site_info: list[SiteInfo]
 	# Config coming from release group, this can reduce the number of workers by a factor
-	thread_per_worker: int = 0
+	threads_per_worker: int = 0
 	# Config coming from release group
 	# This needs to be respected as well if not set to 0
 	minimum_web_workers: int = 0
@@ -154,7 +154,7 @@ class WorkerAllocator:
 		total_guaranteed_bg_workers = 0.0
 
 		for bench in self.benches:
-			threads = bench.thread_per_worker
+			threads = bench.threads_per_worker
 
 			for site in bench.site_info:
 				guaranteed_web, guaranteed_bg = self.get_guaranteed_web_and_bg_worker_share(site, threads)
@@ -162,6 +162,36 @@ class WorkerAllocator:
 				total_guaranteed_bg_workers += guaranteed_bg
 
 		return total_guaranteed_web_workers, total_guaranteed_bg_workers
+
+	def account_for_shootoff(
+		self,
+		bench_allocations: list[BenchAllocation],
+		worker_type: str,
+		total_allocated_workers: float,
+		total_available_slots: float,
+		total_server_weight: float,
+	) -> None:
+		"""Trim the allocated workers from the least weighted benches first,
+		in case we still aren't under the limit we can raise a resource warning server under-provisioned
+		"""
+		over = total_allocated_workers - math.floor(total_available_slots)
+		if over > 0:
+			for b in sorted(bench_allocations, key=lambda x: x.weight):
+				if over <= 0:
+					break
+
+				allocated_workers = getattr(b, worker_type)
+				# In case one worker is allocated don't reduce anything
+				# In case this is a heavier bench we can reduce proportional number of workers from it
+				proportional_trim = math.ceil((b.weight / total_server_weight) * over)
+				reduction = min(proportional_trim, allocated_workers - 1)
+				setattr(b, worker_type, allocated_workers - reduction)
+				over -= reduction
+
+			if over > 0:
+				raise ResourceWarning(
+					f"Unable to account for shootoff for {worker_type}. Over allocated workers: {over}"
+				)
 
 	def calculate_surplus_weight_distribution(
 		self,
@@ -183,6 +213,22 @@ class WorkerAllocator:
 				# Also ensure we are giving at least one worker to the bench regardless of the calculations.
 				bench_allocation.web_workers = max(min(bench_allocation.max_web, math.floor(raw_web)), 1)
 				bench_allocation.bg_workers = max(min(bench_allocation.max_bg, math.floor(raw_bg)), 1)
+
+		total_allocated_web_workers = sum(b.web_workers for b in bench_allocations)
+		total_allocated_bg_workers = sum(b.bg_workers for b in bench_allocations)
+
+		for worker_type in ["web_workers", "bg_workers"]:
+			self.account_for_shootoff(
+				bench_allocations=bench_allocations,
+				worker_type=worker_type,
+				total_allocated_workers=total_allocated_web_workers
+				if worker_type == "web_workers"
+				else total_allocated_bg_workers,
+				total_available_slots=self.total_web_worker_slots
+				if worker_type == "web_workers"
+				else self.total_bg_worker_slots,
+				total_server_weight=total_server_weight,
+			)
 
 	def allocate_workers(self) -> list[dict[str, AllocationResult]]:
 		"""
@@ -212,7 +258,7 @@ class WorkerAllocator:
 			bench_bg_workers = 0.0
 			max_web = 0
 			max_bg = 0
-			threads = bench.thread_per_worker
+			threads = bench.threads_per_worker
 
 			for site in bench.site_info:
 				plan_config = get_plan_config(site["plan"])
@@ -276,7 +322,7 @@ if __name__ == "__main__":
 					SiteInfo(name="Site B", plan="USD 10"),
 					SiteInfo(name="Site Z", plan="USD 50"),
 				],
-				thread_per_worker=10,
+				threads_per_worker=10,
 			),
 		],
 		total_web_worker_slots=25,
