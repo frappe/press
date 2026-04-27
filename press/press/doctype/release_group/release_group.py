@@ -1804,8 +1804,11 @@ class ReleaseGroup(Document, TagHelpers):
 		if self.version == "Version 14":
 			flags = basic_config
 
-		if self.is_this_version_or_above(15):
+		elif self.is_this_version_or_above(15):
 			flags = {**basic_config, **higher_version_config}
+
+		else:
+			flags = {}
 
 		for key, value in flags.items():
 			setattr(self, key, value)
