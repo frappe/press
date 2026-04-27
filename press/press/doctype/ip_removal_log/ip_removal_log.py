@@ -115,6 +115,7 @@ class IPRemovalLog(Document, StepHandler):
 		doc.save()
 
 		try:
+			cluster = frappe.get_doc("Cluster", self.cluster)
 			ansible = Ansible(
 				playbook="nat_iptables.yml",
 				server=doc,
@@ -122,6 +123,7 @@ class IPRemovalLog(Document, StepHandler):
 				port=doc._ssh_port(),
 				variables={
 					"nat_gateway_ip": frappe.cache.get_value(f"{self.name}:{self.nat_server}"),
+					"is_frappe_compute": cluster.cloud_provider == "Frappe Compute",
 				},
 			)
 			self.handle_ansible_play(step, ansible)
