@@ -50,11 +50,11 @@ PLAN_CONFIG: dict = {
 	"USD 25": {"web": {"share": 0.75, "max": 8}, "bg": {"share": 0.5, "max": 4}, "weight": 8},
 	"USD 37.5": {"web": {"share": 0.75, "max": 10}, "bg": {"share": 0.5, "max": 5}, "weight": 10},
 	"USD 50": {"web": {"share": 1.0, "max": 12}, "bg": {"share": 0.75, "max": 6}, "weight": 14},
-	"USD 75": {"web": {"share": 1.0, "max": 14}, "bg": {"share": 0.75, "max": 7}, "weight": 20},
-	"USD 100": {"web": {"share": 1.0, "max": 16}, "bg": {"share": 1.0, "max": 8}, "weight": 26},
-	"USD 200": {"web": {"share": 1.0, "max": 20}, "bg": {"share": 1.0, "max": 10}, "weight": 32},
-	"Frappe Team": {"web": {"share": 1.0, "max": 16}, "bg": {"share": 1.0, "max": 8}, "weight": 26},
-	"Frappe Team High": {"web": {"share": 1.0, "max": 20}, "bg": {"share": 1.0, "max": 10}, "weight": 32},
+	"USD 75": {"web": {"share": 1.0, "max": 12}, "bg": {"share": 0.75, "max": 7}, "weight": 20},
+	"USD 100": {"web": {"share": 1.0, "max": 1612}, "bg": {"share": 1.0, "max": 8}, "weight": 26},
+	"USD 200": {"web": {"share": 1.0, "max": 12}, "bg": {"share": 1.0, "max": 10}, "weight": 32},
+	"Frappe Team": {"web": {"share": 1.0, "max": 12}, "bg": {"share": 1.0, "max": 8}, "weight": 26},
+	"Frappe Team High": {"web": {"share": 1.0, "max": 12}, "bg": {"share": 1.0, "max": 10}, "weight": 32},
 }
 
 
