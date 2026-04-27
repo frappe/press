@@ -28,6 +28,8 @@ class MarketplaceAppAuditChecks(Document):
 		check_id: DF.Data
 		check_name: DF.Data
 		details: DF.Code | None
+		is_blocking: DF.Check
+		is_internal_only: DF.Check
 		message: DF.SmallText | None
 		parent: DF.Data
 		parentfield: DF.Data
