@@ -1,17 +1,20 @@
 // @ts-check
-import { defineConfig } from "astro/config";
-import { urlToVidTag } from "./src/utils";
+import { defineConfig } from 'astro/config';
+import { urlToVidTag } from './src/utils';
 
-import tailwindcss from "@tailwindcss/vite";
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  site: "https://example.com",
+	site: 'https://cloud.frappe.io',
+	base: '/changelog',
 
-  markdown: {
-    remarkPlugins: [urlToVidTag],
-  },
+	markdown: {
+		remarkPlugins: [urlToVidTag],
+	},
 
-  vite: {
-    plugins: [tailwindcss()],
-  },
+	vite: {
+		plugins: [tailwindcss()],
+	},
+
+	outDir: '../press/www/changelog',
 });

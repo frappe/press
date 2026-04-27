@@ -6,6 +6,7 @@ import Layout from '../layouts/IndexLayout.astro';
 let posts = await getCollection('releases');
 posts.sort((a, b) => +b.data.date - +a.data.date);
 
+const baseurl = import.meta.env.BASE_URL
 
 
 ---
@@ -40,7 +41,7 @@ posts.sort((a, b) => +b.data.date - +a.data.date);
 
     {
       posts.map((post) => (
-        <a href={`/releases/${post.id}`} class='justify-between flex'>
+        <a href={`${baseurl}/releases/${post.id}`} class='justify-between flex'>
           <span>           Version {post.data.versionNumber}
             </span>
 

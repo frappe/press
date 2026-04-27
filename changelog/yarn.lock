@@ -1145,9 +1145,9 @@ entities@^6.0.0:
   integrity sha512-aN97NXWF6AWBTahfVOIrB/NShkzi5H7F9r1s9mD3cDj4Ko5f2qhhVoYMibXF7GlLveb/D2ioWay8lxI97Ven3g==
 
 es-module-lexer@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/es-module-lexer/-/es-module-lexer-2.0.0.tgz#f657cd7a9448dcdda9c070a3cb75e5dc1e85f5b1"
-  integrity sha512-5POEcUuZybH7IdmGsD8wlf0AI55wMecM9rVBTI/qEAy2c1kTOm3DjFYjrBdI2K3BaJjJYfYFeRtM0t9ssnRuxw==
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/es-module-lexer/-/es-module-lexer-2.1.0.tgz#1dfcbb5ea3bbfb63f28e1fc3676c3676d1c9624c"
+  integrity sha512-n27zTYMjYu1aj4MjCWzSP7G9r75utsaoc8m61weK+W8JMBGGQybd43GstCXZ3WNmSFtGT9wi59qQTW6mhTR5LQ==
 
 esbuild@^0.27.0, esbuild@^0.27.3:
   version "0.27.7"
@@ -1191,7 +1191,7 @@ estree-walker@^2.0.2:
   resolved "https://registry.yarnpkg.com/estree-walker/-/estree-walker-2.0.2.tgz#52f010178c2a4c117a7757cfe942adb7d2da4cac"
   integrity sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==
 
-eventemitter3@^5.0.1:
+eventemitter3@^5.0.4:
   version "5.0.4"
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-5.0.4.tgz#a86d66170433712dde814707ac52b5271ceb1feb"
   integrity sha512-mlsTRyGaPBjPedk6Bvw+aqbsXDtoAyAzm5MO7JgU+yVRyMQ5O8bD4Kcci7BS85f93veegeCPkL8R4GLClnjLFw==
@@ -2077,11 +2077,11 @@ p-limit@^7.3.0:
     yocto-queue "^1.2.1"
 
 p-queue@^9.1.0:
-  version "9.1.2"
-  resolved "https://registry.yarnpkg.com/p-queue/-/p-queue-9.1.2.tgz#584a48619ac61ff0f9b3661eae9ca60018512f31"
-  integrity sha512-ktsDOALzTYTWWF1PbkNVg2rOt+HaOaMWJMUnt7T3qf5tvZ1L8dBW3tObzprBcXNMKkwj+yFSLqHso0x+UFcJXw==
+  version "9.2.0"
+  resolved "https://registry.yarnpkg.com/p-queue/-/p-queue-9.2.0.tgz#eec653e2318e8d8b401368474161e21c83432799"
+  integrity sha512-dWgLE8AH0HjQ9fe74pUkKkvzzYT18Inp4zra3lKHnnwqGvcfcUBrvF2EAVX+envufDNBOzpPq/IBUONDbI7+3g==
   dependencies:
-    eventemitter3 "^5.0.1"
+    eventemitter3 "^5.0.4"
     p-timeout "^7.0.0"
 
 p-timeout@^7.0.0:
@@ -2142,9 +2142,9 @@ postcss-selector-parser@6.0.10:
     util-deprecate "^1.0.2"
 
 postcss@^8.5.6:
-  version "8.5.10"
-  resolved "https://registry.yarnpkg.com/postcss/-/postcss-8.5.10.tgz#8992d8c30acf3f12169e7c09514a12fed7e48356"
-  integrity sha512-pMMHxBOZKFU6HgAZ4eyGnwXF/EvPGGqUr0MnZ5+99485wwW41kW91A4LOGxSHhgugZmSChL5AlElNdwlNgcnLQ==
+  version "8.5.12"
+  resolved "https://registry.yarnpkg.com/postcss/-/postcss-8.5.12.tgz#cd0c0f667f7cb0521e2313234ea6e707a9ec1ddb"
+  integrity sha512-W62t/Se6rA0Az3DfCL0AqJwXuKwBeYg6nOaIgzP+xZ7N5BFCI7DYi1qs6ygUYT6rvfi6t9k65UMLJC+PHZpDAA==
   dependencies:
     nanoid "^3.3.11"
     picocolors "^1.1.1"
