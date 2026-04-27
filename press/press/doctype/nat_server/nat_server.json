@@ -65,7 +65,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "AWS EC2",
+   "options": "AWS EC2\nFrappe Compute",
    "set_only_once": 1
   },
   {
@@ -172,7 +172,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2026-03-30 18:54:11.260333",
+ "modified": "2026-04-27 11:32:03.470171",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "NAT Server",
