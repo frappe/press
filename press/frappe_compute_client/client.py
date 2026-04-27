@@ -72,6 +72,11 @@ class Client:
 	def reboot_virtual_machine(self, instance_id: str):
 		return self.client.post_api("orchestrator.api.virtual_machine.reboot", {"instance_id": instance_id})
 
+	def remove_public_ip_from_virtual_machine(self, instance_id: str):
+		return self.client.post_api(
+			"orchestrator.api.virtual_machine.remove_public_ip", {"instance_id": instance_id}
+		)
+
 	def create_virtual_machine_image(self, instance_id: str):
 		return self.client.post_api(
 			"orchestrator.api.virtual_machine_image.new", {"instance_id": instance_id}
