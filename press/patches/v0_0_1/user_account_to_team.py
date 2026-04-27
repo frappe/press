@@ -11,7 +11,12 @@ def execute():
 	frappe.reload_doc("press", "doctype", "team")
 	frappe.reload_doc("press", "doctype", "team_member")
 
-	user_accounts = frappe.db.sql("SELECT user, account_key, creation FROM `tabUser Account`", as_dict=1)
+	UserAccout = frappe.qb.DocType("User Account")
+	user_accounts = (
+		frappe.qb.from_(UserAccout)
+		.select(UserAccout.user, UserAccout.account_key, UserAccout.creation)
+		.run(as_dict=True)
+	)
 	enabled_users = [d.name for d in frappe.db.get_all("User", {"enabled": 1}, ["name"])]
 
 	users = [d.user for d in user_accounts]
