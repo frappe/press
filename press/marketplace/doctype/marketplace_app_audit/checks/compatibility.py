@@ -120,6 +120,7 @@ def check_bench_compatibility(source: str, supported_versions: list[str], frappe
 			result="Pass",
 			severity="Critical",
 			message=f"App supports {supported_versions} — all installed benches are compatible",
+			is_internal_only=True,
 		)
 
 	public_benches = [b for b in incompatible if b.public]
@@ -158,4 +159,6 @@ def check_bench_compatibility(source: str, supported_versions: list[str], frappe
 			"Either widen the version range to include these versions, or coordinate removing "
 			"the app from incompatible benches before releasing."
 		),
+		is_internal_only=True,
+		is_blocking=True,
 	)

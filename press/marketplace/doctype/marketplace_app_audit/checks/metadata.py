@@ -307,6 +307,8 @@ def check_categories(marketplace_app):
 			result="Warn",
 			message="No categories are present for the app. Please add relevant categories for the app",
 			remediation="Please add relevant categories for the app.",
+			# categories are currently not added by the publisher, so we only need to check this internally to flag the reviewer
+			is_internal_only=True,
 		)
 
 	return CheckResult(

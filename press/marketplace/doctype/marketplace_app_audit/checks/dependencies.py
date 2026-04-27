@@ -53,6 +53,7 @@ def check_hooks_exists(hooks_path: str | None) -> CheckResult:
 			result="Fail",
 			message="hooks.py not found in the app",
 			remediation="Add a hooks.py file in the app's root package directory.",
+			is_blocking=True,
 		)
 
 	return CheckResult(
@@ -79,6 +80,7 @@ def check_hooks_syntax(hooks_path: str) -> CheckResult:
 			message="hooks.py has invalid Python syntax",
 			details=json.dumps({"line": e.lineno, "error": str(e.msg)}),
 			remediation="Fix the syntax error and verify locally with: python -c \"import ast; ast.parse(open('hooks.py').read())\"",
+			is_blocking=True,
 		)
 
 	return CheckResult(
@@ -109,6 +111,7 @@ def check_no_symlinks(clone_dir: str) -> CheckResult:
 			message=f"Found {len(symlinks)} symlink(s) in the app — symlinks cause build errors",
 			details=json.dumps({"symlinks": symlinks[:20]}),
 			remediation="Replace symlinks with actual files or proper Python/JS imports.",
+			is_blocking=True,
 		)
 
 	return CheckResult(
@@ -162,6 +165,7 @@ def check_init_no_side_effects(clone_dir: str) -> CheckResult:  # noqa: C901
 			details=json.dumps({"violations": violations[:20]}),
 			remediation="Remove print statements and other bare function calls from __init__.py. "
 			"These run on every bench command and can break CLI output.",
+			is_blocking=True,
 		)
 
 	return CheckResult(

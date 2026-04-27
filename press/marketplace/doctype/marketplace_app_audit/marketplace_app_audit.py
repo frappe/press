@@ -19,6 +19,8 @@ class CheckResult:
 	message: str = ""
 	details: str = ""
 	remediation: str = ""
+	is_internal_only: bool = False
+	is_blocking: bool = False
 
 
 class MarketplaceAppAudit(Document):
