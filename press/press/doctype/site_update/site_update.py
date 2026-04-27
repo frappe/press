@@ -237,7 +237,7 @@ class SiteUpdate(Document):
 
 	def before_insert(self):
 		self.backup_type = "Logical"
-		site: "Site" = frappe.get_cached_doc("Site", self.site)
+		site: "Site" = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
 		site.check_fatal_site_update()
 
