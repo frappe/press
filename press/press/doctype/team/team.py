@@ -1806,6 +1806,7 @@ def auto_trust_teams_with_consecutive_paid_invoices():
 		.where(Invoice.type == "Subscription")
 		.where(Invoice.status == "Paid")
 		.where(Team.is_trusted_team == 0)
+		.where(Team.enabled == 1)
 		.groupby(Invoice.team)
 		.having(Count("*") >= 3)
 	).run(as_dict=True)
