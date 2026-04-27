@@ -231,6 +231,7 @@ scheduler_events = {
 		"press.saas.doctype.product_trial_request.product_trial_request.gather_daily_stats",
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",
 		"press.press.doctype.site_backup.site_backup.delete_backups_for_archived_sites_after_retention",
+		"press.press.doctype.site.site.notify_sites_before_archival",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -337,7 +338,6 @@ scheduler_events = {
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",
 			"press.press.doctype.virtual_machine.virtual_machine.rolling_snapshot_database_server_virtual_machines",
 			"press.infrastructure.doctype.virtual_disk_resize.virtual_disk_resize.run_scheduled_resizes",
-			"press.press.doctype.site.site.notify_sites_before_archival",
 			"press.press.doctype.site.site.archive_suspended_sites",
 		],
 		"*/5 * * * *": [
