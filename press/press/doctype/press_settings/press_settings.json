@@ -113,6 +113,7 @@
   "remote_files_section",
   "remote_uploads_bucket",
   "remote_link_expiry",
+  "region_name",
   "column_break_51",
   "remote_access_key_id",
   "remote_secret_access_key",
@@ -1697,11 +1698,16 @@
    "fieldtype": "Select",
    "label": "Chat Support End Time",
    "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24"
-  }
+  },
+  {
+   "fieldname": "region_name",
+   "fieldtype": "Data",
+   "label": "Region Name"
+ }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-04-22 11:42:52.313148",
+ "modified": "2026-04-22 12:11:56.360055",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
