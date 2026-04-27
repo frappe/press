@@ -701,18 +701,28 @@ class Site(Document, TagHelpers):
 		if self.has_value_changed("status"):
 			create_site_status_update_webhook_event(self.name)
 
+		if self.has_value_changed("status") and self.status == "Active":
+			self.generate_saas_communication_secret(create_agent_job=True)
+
 	def generate_saas_communication_secret(self, create_agent_job=False, save=True):
-		if not self.standby_for and not self.standby_for_product:
+		if self.saas_communication_secret:
 			return
-		if not self.saas_communication_secret:
-			self.saas_communication_secret = frappe.generate_hash(length=32)
-			config = {
-				"fc_communication_secret": self.saas_communication_secret,
-			}
-			if create_agent_job:
-				self.update_site_config(config)
-			else:
-				self._update_configuration(config=config, save=save)
+
+		# Ensure site isn't owned by Administrator
+		if not self.team:
+			return
+
+		if self.team and frappe.get_value("Team", self.team, "user") == "Administrator":
+			return
+
+		self.saas_communication_secret = frappe.generate_hash(length=32)
+		config = {
+			"fc_communication_secret": self.saas_communication_secret,
+		}
+		if create_agent_job:
+			self.update_site_config(config)
+		else:
+			self._update_configuration(config=config, save=save)
 
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
