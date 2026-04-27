@@ -720,7 +720,6 @@ def update_profile_picture():
 
 @frappe.whitelist()
 def update_feature_flags(values=None):
-	frappe.only_for("Press User")
 	team = get_current_team(get_doc=True)
 	values = frappe.parse_json(values)
 	fields = [
