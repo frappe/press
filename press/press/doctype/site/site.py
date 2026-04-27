@@ -1309,7 +1309,7 @@ class Site(Document, TagHelpers):
 	def check_fatal_site_update(self):
 		if self.fatal_site_update:
 			frappe.throw(
-				"Site has encountered a fatal error during last update. Please open a ticket on our <a href='https://support.frappe.io'> support portal </a> with the error details to resolve the issue.",
+				"Site has encountered a fatal error during last update. Please open a ticket on our <a href='https://support.frappe.io' class='underline'> support portal </a> with the error details to resolve the issue.",
 			)
 
 	@dashboard_whitelist()

@@ -145,7 +145,7 @@ def accessible_link_substr(provider: str):
 	except requests.RequestException:
 		return None
 	else:
-		return f'<a class=underline href="http://{provider}" target="_blank">{provider}</a>'
+		return f'<a class="underline" href="http://{provider}" target="_blank">{provider}</a>'
 
 
 @redis_cache()

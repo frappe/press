@@ -159,7 +159,7 @@ MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS = 60
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=get_targets_method_rate_limit, seconds=MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS)
-def targets(token=None):
+def targets(token: str | None = None):
 	if not token:
 		frappe.throw_permission_error()
 	monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token", cache=True)
