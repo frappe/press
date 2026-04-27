@@ -27,7 +27,7 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 def google_oauth_flow():
 	config = frappe.conf.get("google_oauth_config")
 	redirect_uri = config["web"].get("redirect_uris")[0]
-	flow = Flow.from_client_config(
+	return Flow.from_client_config(
 		client_config=config,
 		scopes=[
 			"https://www.googleapis.com/auth/userinfo.profile",
@@ -36,7 +36,6 @@ def google_oauth_flow():
 		],
 		redirect_uri=redirect_uri,
 	)
-	return flow
 
 
 @frappe.whitelist(allow_guest=True)
@@ -120,6 +119,8 @@ def callback(code=None, state=None):
 			frappe.local.login_manager.login_as(email)
 			frappe.local.response.type = "redirect"
 			frappe.response.location = "/dashboard"
+
+	return None
 
 
 def create_account_request(email, first_name, last_name, phone_number=""):
