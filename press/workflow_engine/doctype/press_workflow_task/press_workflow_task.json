@@ -14,9 +14,12 @@
   "method_name",
   "method_title",
   "args",
+  "args_type",
   "kwargs",
+  "kwargs_type",
   "column_break_fiyw",
   "output",
+  "output_type",
   "exception",
   "signature",
   "section_break_jvoo",
@@ -26,7 +29,8 @@
   "column_break_azky",
   "duration",
   "section_break_stdout",
-  "stdout"
+  "stdout",
+  "traceback"
  ],
  "fields": [
   {
@@ -127,9 +131,9 @@
   },
   {
    "fieldname": "output",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Output",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "read_only": 1
   },
   {
@@ -142,16 +146,16 @@
   },
   {
    "fieldname": "args",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Args",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "set_only_once": 1
   },
   {
    "fieldname": "kwargs",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Kwargs",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "set_only_once": 1
   },
   {
@@ -175,11 +179,39 @@
    "fieldname": "timeout",
    "fieldtype": "Int",
    "label": "Timeout"
+  },
+  {
+   "fieldname": "traceback",
+   "fieldtype": "Long Text",
+   "label": "Traceback",
+   "read_only": 1
+  },
+  {
+   "fieldname": "args_type",
+   "fieldtype": "Select",
+   "label": "Args Type",
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kwargs_type",
+   "fieldtype": "Data",
+   "label": "Kwargs Type",
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "read_only": 1
+  },
+  {
+   "fieldname": "output_type",
+   "fieldtype": "Select",
+   "label": "Output Type",
+   "length": 1000,
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2026-04-22 00:01:50.295095",
+ "modified": "2026-04-24 18:52:37.880235",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow Task",
@@ -203,9 +235,8 @@
    "email": 1,
    "export": 1,
    "print": 1,
-   "read": 1,
    "report": 1,
-   "role": "Press Member",
+   "role": "Press Admin",
    "share": 1,
    "write": 1
   },
@@ -214,9 +245,8 @@
    "email": 1,
    "export": 1,
    "print": 1,
-   "read": 1,
    "report": 1,
-   "role": "Press Admin",
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }
