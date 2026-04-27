@@ -89,11 +89,11 @@
   },
   {
    "create": 1,
-   "role": "Press Admin"
+   "role": "Press User"
   },
   {
    "create": 1,
-   "role": "Press Member"
+   "role": "Press User"
   }
  ],
  "quick_entry": 1,

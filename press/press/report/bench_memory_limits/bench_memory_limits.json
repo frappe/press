@@ -32,13 +32,13 @@
  "report_type": "Script Report",
  "roles": [
   {
-   "role": "Press Admin"
+   "role": "Press User"
   },
   {
    "role": "System Manager"
   },
   {
-   "role": "Press Member"
+   "role": "Press User"
   },
   {
    "role": "Site Manager"

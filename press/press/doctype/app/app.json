@@ -147,12 +147,12 @@
   {
    "create": 1,
    "read": 1,
-   "role": "Press Admin"
+   "role": "Press User"
   },
   {
    "create": 1,
    "read": 1,
-   "role": "Press Member"
+   "role": "Press User"
   },
   {
    "create": 1,

@@ -399,8 +399,8 @@ class Team(Document):
 
 	@staticmethod
 	def create_user(first_name=None, last_name=None, email=None, password=None, role=None):
-		# These roles are basic and necessary for every user.
-		basic_roles = ("Press Admin", "Press Member")
+		# This role is basic and necessary for every user.
+		basic_roles = ("Press User",)
 		user = frappe.new_doc("User")
 		user.first_name = first_name
 		user.last_name = last_name
@@ -1006,7 +1006,7 @@ class Team(Document):
 				"doctype": "Account Request",
 				"team": self.name,
 				"email": email,
-				"role": "Press Member",
+				"role": "Press User",
 				"invited_by": self.user,
 				"send_email": True,
 			}

@@ -82,18 +82,18 @@ class PressRole(Document):
 			message = _("Role with title {0} already exists in this team").format(self.title)
 			frappe.throw(message, frappe.DuplicateEntryError)
 
-	def add_press_admin_role(self, user):
+	def add_press_user_role(self, user):
 		user = frappe.get_doc("User", user)
-		user.append_roles("Press Admin")
+		user.append_roles("Press User")
 		user.save(ignore_permissions=True)
 
-	def remove_press_admin_role(self, user):
+	def remove_press_user_role(self, user):
 		if frappe.db.exists("Team", {"enabled": 1, "user": user}):
 			return
 		user = frappe.get_doc("User", user)
 		existing_roles = {d.role: d for d in user.get("roles")}
-		if "Press Admin" in existing_roles:
-			user.get("roles").remove(existing_roles["Press Admin"])
+		if "Press User" in existing_roles:
+			user.get("roles").remove(existing_roles["Press User"])
 			user.save(ignore_permissions=True)
 
 	@dashboard_whitelist()
@@ -111,7 +111,7 @@ class PressRole(Document):
 		self.append("users", user_dict)
 		self.save()
 		if self.admin_access or self.allow_billing:
-			self.add_press_admin_role(user)
+			self.add_press_user_role(user)
 
 	@dashboard_whitelist()
 	@team_guard.only_admin()
@@ -123,7 +123,7 @@ class PressRole(Document):
 		self.remove(users.pop())
 		self.save()
 		if self.admin_access or self.allow_billing:
-			self.remove_press_admin_role(user)
+			self.remove_press_user_role(user)
 
 	@dashboard_whitelist()
 	@team_guard.only_admin()

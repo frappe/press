@@ -23,7 +23,7 @@ def create_test_press_admin_team(
 	create_test_user(email)
 	user = frappe.get_doc("User", {"email": email})
 	user.remove_roles(*frappe.get_all("Role", pluck="name"))
-	user.add_roles("Press Admin")
+	user.add_roles("Press User")
 	return create_test_team(email, skip_onboarding=skip_onboarding, free_account=free_account)
 
 

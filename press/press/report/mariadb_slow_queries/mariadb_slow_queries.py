@@ -15,7 +15,7 @@ from frappe.utils.password import get_decrypted_password
 
 
 def execute(filters=None):
-	frappe.only_for(["System Manager", "Site Manager", "Press Admin", "Press Member"])
+	frappe.only_for(["System Manager", "Site Manager", "Press User"])
 	filters.database = frappe.db.get_value("Site", filters.site, "database_name")
 
 	make_access_log(

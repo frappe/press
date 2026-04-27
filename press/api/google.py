@@ -101,7 +101,7 @@ def callback(code: str | None = None, state: str | None = None):  # noqa: C901
 		email=email,
 		first_name=id_info.get("given_name"),
 		last_name=id_info.get("family_name"),
-		role="Press Admin",
+		role="Press User",
 		oauth_signup=True,
 		product_trial=product_trial.name if product_trial else None,
 	)

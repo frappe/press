@@ -66,7 +66,7 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 			{
 				"doctype": "Account Request",
 				"email": email,
-				"role": "Press Admin",
+				"role": "Press User",
 				"referrer_id": referrer,
 				"send_email": True,
 				"product_trial": product,
@@ -662,7 +662,7 @@ def new_team(email, current_team):
 		{
 			"doctype": "Account Request",
 			"email": email,
-			"role": "Press Member",
+			"role": "Press User",
 			"send_email": True,
 			"team": email,
 			"invited_by": current_team,
@@ -720,7 +720,7 @@ def update_profile_picture():
 
 @frappe.whitelist()
 def update_feature_flags(values=None):
-	frappe.only_for("Press Admin")
+	frappe.only_for("Press User")
 	team = get_current_team(get_doc=True)
 	values = frappe.parse_json(values)
 	fields = [

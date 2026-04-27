@@ -48,11 +48,11 @@
   },
   {
    "create": 1,
-   "role": "Press Admin"
+   "role": "Press User"
   },
   {
    "create": 1,
-   "role": "Press Member"
+   "role": "Press User"
   }
  ],
  "sort_field": "modified",

@@ -246,7 +246,7 @@ class AccountRequest(Document):
 					sender = frappe.get_value("Email Account", email_account, "email_id")
 		else:
 			template = "verify_account"
-			if self.invited_by and self.role != "Press Admin":
+			if self.invited_by and self.role != "Press User":
 				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
 				template = "invite_team_member"
 
