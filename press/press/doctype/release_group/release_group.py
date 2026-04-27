@@ -1813,9 +1813,6 @@ class ReleaseGroup(Document, TagHelpers):
 		for key, value in flags.items():
 			setattr(self, key, value)
 
-		for key, value in flags.items():
-			setattr(self, key, value)
-
 	@dashboard_whitelist()
 	def clone_group(self, title: str | None):
 		if not title:
