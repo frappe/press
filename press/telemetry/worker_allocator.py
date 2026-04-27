@@ -41,28 +41,36 @@ class AllocationResult(TypedDict):
 # Plan configuration: (Min, Weight, Max)
 # Arbitrary for now but seems fair enough considering the resources on public servers and the number of benches we have.
 # Todo: Move this to fixtures with more plans [Large, Unlimited etc] and more accurate worker limits based on the plan.
+# We are now not concidering floor of guaranteed workers, we are concidering the pool share that we guarantee to each plan
 PLAN_CONFIG: dict = {
-	"USD 5": {"web": {"min": 1, "max": 2}, "bg": {"min": 1, "max": 1}, "weight": 1},
-	"USD 10": {"web": {"min": 2, "max": 4}, "bg": {"min": 1, "max": 2}, "weight": 2},
-	"USD 25": {"web": {"min": 4, "max": 8}, "bg": {"min": 2, "max": 4}, "weight": 5},
-	"Frappe Team": {"web": {"min": 6, "max": 10}, "bg": {"min": 3, "max": 5}, "weight": 8},
-	"USD 50": {"web": {"min": 8, "max": 12}, "bg": {"min": 4, "max": 6}, "weight": 12},
+	"SaaS Trial": {"web": {"share": 0.1, "max": 1}, "bg": {"share": 0.05, "max": 1}, "weight": 1},
+	"Trial": {"web": {"share": 0.1, "max": 1}, "bg": {"share": 0.05, "max": 1}, "weight": 1},
+	"USD 5": {"web": {"share": 0.25, "max": 2}, "bg": {"share": 0.1, "max": 1}, "weight": 2},
+	"USD 10": {"web": {"share": 0.5, "max": 4}, "bg": {"share": 0.25, "max": 2}, "weight": 4},
+	"USD 25": {"web": {"share": 0.75, "max": 8}, "bg": {"share": 0.5, "max": 4}, "weight": 8},
+	"USD 37.5": {"web": {"share": 0.75, "max": 10}, "bg": {"share": 0.5, "max": 5}, "weight": 10},
+	"USD 50": {"web": {"share": 1.0, "max": 12}, "bg": {"share": 0.75, "max": 6}, "weight": 14},
+	"USD 75": {"web": {"share": 1.0, "max": 14}, "bg": {"share": 0.75, "max": 7}, "weight": 20},
+	"USD 100": {"web": {"share": 1.0, "max": 16}, "bg": {"share": 1.0, "max": 8}, "weight": 26},
+	"USD 200": {"web": {"share": 1.0, "max": 20}, "bg": {"share": 1.0, "max": 10}, "weight": 32},
+	"Frappe Team": {"web": {"share": 1.0, "max": 16}, "bg": {"share": 1.0, "max": 8}, "weight": 26},
+	"Frappe Team High": {"web": {"share": 1.0, "max": 20}, "bg": {"share": 1.0, "max": 10}, "weight": 32},
 }
 
 
 @dataclass
-class WorkerScheduler:
+class WorkerAllocator:
 	benches: list[BenchType]
 	total_web_worker_slots: float
 	total_bg_worker_slots: float
 
-	def get_guaranteed_web_and_bg_workers(self, site_info: SiteInfo) -> tuple[float, float]:
+	def get_guaranteed_web_and_bg_worker_share(self, site_info: SiteInfo) -> tuple[float, float]:
 		"""Returns the guaranteed web & background workers for a bench based on its site plan."""
 		plan = PLAN_CONFIG.get(site_info["plan"])
 		if not plan:
-			return 1, 1  # Default to min workers plan might be None/Trial etc
+			return 0.1, 0.1  # Default to min workers plan might be None/Trial etc
 
-		return plan["web"]["min"], plan["bg"]["min"]
+		return plan["web"]["share"], plan["bg"]["share"]
 
 	def can_server_accommodate_guaranteed_workers(
 		self, total_guaranteed_web_workers: float, total_guaranteed_bg_workers: float
@@ -73,7 +81,7 @@ class WorkerScheduler:
 			and self.total_bg_worker_slots >= total_guaranteed_bg_workers
 		)
 
-	def get_total_guaranteed_workers(self) -> tuple[float, float]:
+	def get_total_guaranteed_worker_share(self) -> tuple[float, float]:
 		"""
 		Returns the total guaranteed web + background workers for all benches.
 		This calculation is done per site, assuming cases like
@@ -85,17 +93,37 @@ class WorkerScheduler:
 
 		for bench in self.benches:
 			for site in bench["site_info"]:
-				guaranteed_web, guaranteed_bg = self.get_guaranteed_web_and_bg_workers(site)
+				guaranteed_web, guaranteed_bg = self.get_guaranteed_web_and_bg_worker_share(site)
 				total_guaranteed_web_workers += guaranteed_web
 				total_guaranteed_bg_workers += guaranteed_bg
 
 		return total_guaranteed_web_workers, total_guaranteed_bg_workers
 
+	def calculate_surplus_weight_distribution(
+		self,
+		total_server_weight: float,
+		surplus_web_workers: float,
+		surplus_bg_workers: float,
+		bench_allocations: list[BenchAllocation],
+	):
+		"""In place update the bench allocations with the bonus workers based on the surplus."""
+		for bench_allocation in bench_allocations:
+			if total_server_weight > 0:
+				# Raw calculations to get the bonus workers before applying the max limits
+				web_bonus = (bench_allocation["weight"] / total_server_weight) * surplus_web_workers
+				bg_bonus = (bench_allocation["weight"] / total_server_weight) * surplus_bg_workers
+				raw_web = bench_allocation["web_workers"] + web_bonus
+				raw_bg = bench_allocation["bg_workers"] + bg_bonus
+
+				# Ensure we didn't exceed the max limits for the bench based on individual site plan maximums
+				bench_allocation["web_workers"] = min(bench_allocation["max_web"], math.floor(raw_web))
+				bench_allocation["bg_workers"] = min(bench_allocation["max_bg"], math.floor(raw_bg))
+
 	def allocate_workers(self) -> list[dict[str, AllocationResult]]:
 		"""
 		Allocate workers to benches based on guaranteed limits and surplus distribution.
 		"""
-		total_guaranteed_web_workers, total_guaranteed_bg_workers = self.get_total_guaranteed_workers()
+		total_guaranteed_web_workers, total_guaranteed_bg_workers = self.get_total_guaranteed_worker_share()
 
 		if not self.can_server_accommodate_guaranteed_workers(
 			total_guaranteed_web_workers, total_guaranteed_bg_workers
@@ -121,7 +149,7 @@ class WorkerScheduler:
 			max_bg = 0
 
 			for site in bench["site_info"]:
-				guaranteed_web, guaranteed_bg = self.get_guaranteed_web_and_bg_workers(site)
+				guaranteed_web, guaranteed_bg = self.get_guaranteed_web_and_bg_worker_share(site)
 				bench_web_workers += guaranteed_web
 				bench_bg_workers += guaranteed_bg
 				bench_weight += PLAN_CONFIG.get(site["plan"], {}).get("weight", 1)
@@ -140,18 +168,9 @@ class WorkerScheduler:
 			)
 			total_server_weight += bench_weight
 
-		for b in bench_allocations:
-			if total_server_weight > 0:
-				# Raw calculations to get the bonus workers before applying the max limits
-				web_bonus = (b["weight"] / total_server_weight) * surplus_web_workers
-				bg_bonus = (b["weight"] / total_server_weight) * surplus_bg_workers
-
-				raw_web = b["web_workers"] + web_bonus
-				raw_bg = b["bg_workers"] + bg_bonus
-
-				# Ensure we didn't exceed the max limits for the bench based on individual site plan maximums
-				b["web_workers"] = min(b["max_web"], math.floor(raw_web))
-				b["bg_workers"] = min(b["max_bg"], math.floor(raw_bg))
+		self.calculate_surplus_weight_distribution(
+			total_server_weight, surplus_web_workers, surplus_bg_workers, bench_allocations
+		)
 
 		return [
 			{b["bench"]: {"web_workers": int(b["web_workers"]), "bg_workers": int(b["bg_workers"])}}
@@ -160,28 +179,43 @@ class WorkerScheduler:
 
 
 if __name__ == "__main__":
-	scheduler = WorkerScheduler(
+	scheduler = WorkerAllocator(
 		benches=[
 			BenchType(
 				{
 					"name": "Bench 1",
 					"site_info": [
-						# SiteInfo(name="Site A", plan="USD 5"),
-						SiteInfo(name="Site B", plan="random"),
+						SiteInfo(name="Site A", plan="USD 5"),
+						SiteInfo(name="Site B", plan="USD 10"),
 					],
 				}
 			),
 			BenchType(
 				{
-					"name": "Bench 1",
+					"name": "Bench 2",
 					"site_info": [
-						SiteInfo(name="Site C", plan="USD 25"),
+						SiteInfo(name="Site C", plan="USD 10"),
+						SiteInfo(name="Site C", plan="USD 10"),
 						SiteInfo(name="Site D", plan="USD 50"),
 					],
 				}
 			),
+			BenchType(
+				{
+					"name": "Bench 3",
+					"site_info": [
+						SiteInfo(name="Site A", plan="USD 5"),
+						SiteInfo(name="Site B", plan="USD 5"),
+						SiteInfo(name="Site B", plan="USD 5"),
+						SiteInfo(name="Site B", plan="USD 5"),
+						SiteInfo(name="Site B", plan="USD 5"),
+						SiteInfo(name="Site Z", plan="USD 50"),
+					],
+				}
+			),
 		],
-		total_web_worker_slots=20,
-		total_bg_worker_slots=10,
+		total_web_worker_slots=200,
+		total_bg_worker_slots=180,
 	)
+	print("Guaranteed Worker Share:", scheduler.get_total_guaranteed_worker_share())
 	print(scheduler.allocate_workers())
