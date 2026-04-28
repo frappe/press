@@ -139,6 +139,10 @@ class ReleasePipeline(WorkflowBuilder):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.release_pipeline_build.release_pipeline_build import ReleasePipelineBuild
+
+		is_user_addressable_failure: DF.Check
+		pipeline_builds: DF.Table[ReleasePipelineBuild]
 		release_group: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Partial Success", "Success", "Failure", "Retrying"]
 		team: DF.Link
@@ -181,11 +185,20 @@ class ReleasePipeline(WorkflowBuilder):
 			"Retrying",
 		],
 	):
-		self.status = status
-		self.save()
+		# If the workflow doc touches this for any reason
+		# Document native methods would raise a `TimeStampMismatch` error
+		self.db_set("status", status)
 
-		if self.status == "Failure":
+		if status == "Failure":
 			self.send_failure_notification()
+
+	def add_build_to_pipeline(self, build: str):
+		"""Attach a build to the pipeline if not present"""
+		existing_builds = [pb.build for pb in self.pipeline_builds]
+
+		if build not in existing_builds:
+			self.append("pipeline_builds", {"build": build})
+			self.save()
 
 	@cached_property
 	def release_group_doc(self) -> "ReleaseGroup":
@@ -232,19 +245,22 @@ class ReleasePipeline(WorkflowBuilder):
 		"""Create a Deploy Candidate for the release group."""
 		assert isinstance(self.release_group, str)
 		bench_update: BenchUpdate = get_bench_update(
-			self.release_group, apps, sites, is_inplace_update=False, ignore_permissions_check=True
+			self.release_group, apps, sites, is_inplace_update=False, ignore_permissions=True
 		)
 		return bench_update.deploy(
 			run_will_fail_check=run_will_fail_check,
 			validate_pre_candidate_checks=False,
 			create_build=create_deploy,
+			ignore_permissions=True,
 		)
 
 	@task(queue=_get_task_execution_queue())
 	def initiate_pre_build_validations(self, deploy_candidate: str) -> str:
 		"""Start the deploy candidate build process which will run the pre-build validations."""
 		candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", deploy_candidate)
-		deploy_candidate_build = candidate.schedule_build_and_deploy()
+		deploy_candidate_build = candidate.schedule_build_and_deploy(
+			ignore_permissions=True,
+		)
 		return deploy_candidate_build["name"]
 
 	def _get_required_build_count(self, deploy_candidate: str) -> int:
@@ -276,6 +292,11 @@ class ReleasePipeline(WorkflowBuilder):
 				message=f"Build {deploy_candidate_build} has scheduled retries. Waiting for retries to complete."
 			)
 
+		# Propagate the user addressable failure flag to the pipeline in case of build failures, since idempotent only set when required
+		if deploy_candidate_build_doc.user_addressable_failure or deploy_candidate_build_doc.manually_failed:
+			self.is_user_addressable_failure = True
+			self.save()
+
 	def _get_latest_retried_build(self, deploy_candidate_build: str) -> str:
 		"""In case there are retries for the build, get the latest retried build with same platform to monitor."""
 		deploy_info = frappe.db.get_value(
@@ -287,20 +308,17 @@ class ReleasePipeline(WorkflowBuilder):
 
 		deploy_candidate, platform = deploy_info
 
-		# Get the latest **retried** build
-		retried_build = frappe.db.get_value(
+		# Get the latest build
+		return frappe.db.get_value(
 			"Deploy Candidate Build",
 			{
 				"group": self.release_group,
 				"deploy_candidate": deploy_candidate,
-				"name": ("!=", deploy_candidate_build),
 				"platform": platform,
 			},
 			"name",
 			order_by="creation desc",
 		)
-
-		return retried_build or deploy_candidate_build
 
 	@task(queue=_get_task_execution_queue())
 	def monitor_pre_build_validation(self, deploy_candidate_build: str):
@@ -406,7 +424,6 @@ class ReleasePipeline(WorkflowBuilder):
 			return self.update_pipeline_status("Success")
 
 		if successful_deploys == 0:
-			self.update_pipeline_status("Failure")
 			raise ReleasePipelineFailure(f"All {expected_count} bench deploy(s) failed.")
 
 		# If some succeeded and others are permanently failed
@@ -528,6 +545,7 @@ class ReleasePipeline(WorkflowBuilder):
 	def orchestrate_build_monitoring(self, deploy_candidate: str, primary_build: str):
 		"""Monitors primary and, if necessary, secondary builds."""
 		# Monitor Primary
+		self.add_build_to_pipeline(primary_build)
 		self.monitor_pre_build_validation(primary_build)
 		self.monitor_build_success(primary_build)
 
@@ -541,6 +559,8 @@ class ReleasePipeline(WorkflowBuilder):
 					message=f"Waiting for secondary build creation for Deploy Candidate {deploy_candidate}",
 				)
 
+			assert secondary_build, "Secondary build should be present for candidates requiring 2 builds"
+			self.add_build_to_pipeline(secondary_build)
 			self.monitor_pre_build_validation(secondary_build)
 			self.monitor_build_success(secondary_build)
 
@@ -601,8 +621,9 @@ class ReleasePipeline(WorkflowBuilder):
 		run_will_fail_check: bool = False,
 	):
 		"""Orchestrates the release process from validation to bench creation with recursive monitoring and retry handling"""
-		self.workflow = self.current_workflow
-		self.save()
+		if not self.workflow:
+			self.workflow = self.current_workflow
+			self.save()
 
 		try:
 			# 1. Validation Phase
@@ -621,6 +642,5 @@ class ReleasePipeline(WorkflowBuilder):
 			# Just in case, make sure that we mark the pipeline as failed and notify the frontend to stop listening for deploy updates
 			self.update_pipeline_status("Failure")
 
-		workflow_status = frappe.db.get_value("Press Workflow", self.workflow, "status")
-		if workflow_status == "Failure":
-			self.update_pipeline_status("Failure")
+	def on_workflow_failure(self, *args, **kwargs):
+		self.update_pipeline_status("Failure")
