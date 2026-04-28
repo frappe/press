@@ -160,6 +160,7 @@ class Team(Document):
 		"hybrid_servers_enabled",
 		"relaxed_permissions",
 		"upi_autopay_enabled",
+		"phone_number",
 	)
 
 	def get_doc(self, doc):

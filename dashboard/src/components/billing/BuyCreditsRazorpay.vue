@@ -43,7 +43,7 @@
 </template>
 <script setup>
 import { Button, ErrorMessage, FeatherIcon, createResource } from 'frappe-ui';
-import { ref, onMounted, onBeforeUnmount, inject } from 'vue';
+import { ref, onMounted, inject } from 'vue';
 import { toast } from 'vue-sonner';
 import { DashboardError } from '../../utils/error';
 import { loadRazorpayScript } from '../../utils/razorpay';
@@ -117,13 +117,20 @@ const handlePaymentFailed = createResource({
 	},
 });
 
+function getRazorpayContact() {
+	return team.doc?.phone_number || undefined;
+}
+
 function processOrder(data) {
 	const options = {
 		key: data.key_id,
 		order_id: data.order_id,
 		name: 'Frappe Cloud',
 		image: 'https://frappe.io/files/cloud.png',
-		prefill: { email: team.doc?.user },
+		prefill: {
+			email: team.doc?.user,
+			...(getRazorpayContact() && { contact: getRazorpayContact() }),
+		},
 		handler: handlePaymentSuccess,
 		theme: { color: '#171717' },
 		...(paypalEnabled
@@ -150,7 +157,6 @@ function processOrder(data) {
 				}
 			: {}),
 	};
-
 	const rzp = new Razorpay(options);
 
 	// Opens the payment checkout frame
