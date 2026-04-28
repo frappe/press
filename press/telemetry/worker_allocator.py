@@ -32,8 +32,8 @@ class BenchType:
 	threads_per_worker: int = 0
 	# Config coming from release group
 	# This needs to be respected as well if not set to 0
-	minimum_web_workers: int = 0
-	minimum_bg_workers: int = 0
+	min_web_workers: int = 0
+	min_bg_workers: int = 0
 	max_web_workers: int = 0
 	max_bg_workers: int = 0
 
@@ -46,6 +46,10 @@ class BenchAllocation:
 	max_bg: int
 	web_workers: float
 	bg_workers: float
+	release_group_web_worker_min_limit: float = 0
+	release_group_web_worker_max_limit: float = 0
+	release_group_bg_worker_max_limit: float = 0
+	release_group_bg_worker_min_limit: float = 0
 
 
 @dataclass
@@ -119,21 +123,6 @@ def get_plan_config(plan_name: str) -> PlanConfig:
 	)
 
 
-def get_decay_factor(idx: int) -> float:
-	"""Get the decay factor based on the index of the site in the bench to ensure
-	benches with large number of sites (standby) are not eating most of the workers."""
-	if idx < 10:
-		decay_factor = 1.0
-
-	elif idx < 50:
-		decay_factor = 0.75
-
-	else:
-		decay_factor = 0.5
-
-	return decay_factor
-
-
 @dataclass
 class WorkerAllocator:
 	benches: list[BenchType]
@@ -159,6 +148,25 @@ class WorkerAllocator:
 			and self.total_bg_worker_slots >= total_guaranteed_bg_workers
 		)
 
+	def get_sorted_sites(self, bench: BenchType) -> list[SiteInfo]:
+		"""Sort sites based on plan"""
+		return sorted(bench.site_info, key=lambda x: get_plan_config(x["plan"]).weight, reverse=True)
+
+	@staticmethod
+	def get_decay_factor(idx: int) -> float:
+		"""Get the decay factor based on the index of the site in the bench to ensure
+		benches with large number of sites (standby) are not eating most of the workers."""
+		if idx < 10:
+			decay_factor = 1.0
+
+		elif idx < 50:
+			decay_factor = 0.75
+
+		else:
+			decay_factor = 0.5
+
+		return decay_factor
+
 	def get_total_guaranteed_worker_share(self) -> tuple[float, float]:
 		"""
 		Returns the total guaranteed web + background workers for all benches.
@@ -168,92 +176,163 @@ class WorkerAllocator:
 		We also account for public benches with standby sites to ensure they aren't eating most of
 		the workers
 		"""
-		total_guaranteed_web_workers = 0.0
-		total_guaranteed_bg_workers = 0.0
+		total_web = 0.0
+		total_bg = 0.0
 
 		for bench in self.benches:
-			sorted_sites = sorted(
-				bench.site_info, key=lambda x: get_plan_config(x["plan"]).weight, reverse=True
-			)
+			bench_web = 0.0
+			bench_bg = 0.0
+			sorted_sites = self.get_sorted_sites(bench)
 
 			for idx, site in enumerate(sorted_sites):
 				guaranteed_web, guaranteed_bg = self.get_guaranteed_web_and_bg_worker_share(
 					site, bench.threads_per_worker
 				)
-				# Ensure benches with large number of sites (standby) are not eating most of the workers.
-				decay_factor = get_decay_factor(idx)
+				decay_factor = self.get_decay_factor(idx)
+				bench_web += guaranteed_web * decay_factor
+				bench_bg += guaranteed_bg * decay_factor
 
-				total_guaranteed_web_workers += guaranteed_web * decay_factor
-				total_guaranteed_bg_workers += guaranteed_bg * decay_factor
+			# Respect release group minimums in the guarantee check
+			total_web += max(bench_web, bench.min_web_workers)
+			total_bg += max(bench_bg, bench.min_bg_workers)
 
-		return total_guaranteed_web_workers, total_guaranteed_bg_workers
+		return total_web, total_bg
 
-	def account_for_shootoff(
+	def apply_release_group_limits(self, bench_allocation: BenchAllocation) -> None:
+		"""Apply release group level limits on bench after the allocation is done"""
+		if bench_allocation.release_group_web_worker_max_limit:
+			bench_allocation.web_workers = min(
+				bench_allocation.web_workers, bench_allocation.release_group_web_worker_max_limit
+			)
+		if bench_allocation.release_group_bg_worker_max_limit:
+			bench_allocation.bg_workers = min(
+				bench_allocation.bg_workers, bench_allocation.release_group_bg_worker_max_limit
+			)
+
+		if bench_allocation.web_workers < bench_allocation.release_group_web_worker_min_limit:
+			bench_allocation.web_workers = bench_allocation.release_group_web_worker_min_limit
+
+		if bench_allocation.bg_workers < bench_allocation.release_group_bg_worker_min_limit:
+			bench_allocation.bg_workers = bench_allocation.release_group_bg_worker_min_limit
+
+	def account_for_web_worker_shootoff(
 		self,
 		bench_allocations: list[BenchAllocation],
-		worker_type: str,
 		total_allocated_workers: float,
-		total_available_slots: float,
 		total_server_weight: float,
 	) -> None:
-		"""Trim the allocated workers from the least weighted benches first,
-		in case we still aren't under the limit we can raise a resource warning server under-provisioned
-		"""
-		over = total_allocated_workers - math.floor(total_available_slots)
+		"""Trim web workers respecting the release group minimum limits also ensuring at least one worker"""
+		over = total_allocated_workers - math.floor(self.total_web_worker_slots)
+		if over <= 0:
+			return
+
+		for b in sorted(bench_allocations, key=lambda x: x.weight):
+			if over <= 0:
+				break
+
+			# Floor is the higher of 1 or the release group minimum
+			floor = max(1, b.release_group_web_worker_min_limit)
+			headroom = b.web_workers - floor
+			if headroom <= 0:
+				continue
+
+			proportional_trim = math.ceil((b.weight / total_server_weight) * over)
+			reduction = min(proportional_trim, headroom)  # never below floor
+			b.web_workers -= reduction
+			over -= reduction
+
+		if over > 0:
+			raise ResourceWarning(f"Unable to account for web worker shootoff. Over allocated by: {over}")
+
+	def account_for_bg_worker_shootoff(  # noqa: C901
+		self,
+		bench_allocations: list[BenchAllocation],
+		total_allocated_workers: float,
+		total_server_weight: float,
+	) -> None:
+		"""Trim bg workers respecting the release group minimum limits also ensuring at least one worker"""
+		over = total_allocated_workers - math.floor(self.total_bg_worker_slots)
+		if over <= 0:
+			return
+
+		# trim benches with no release group minimum set
+		for b in sorted(bench_allocations, key=lambda x: x.weight):
+			if over <= 0:
+				break
+			if b.release_group_bg_worker_min_limit:
+				continue
+
+			headroom = b.bg_workers - 1
+			if headroom <= 0:
+				continue
+
+			proportional_trim = math.ceil((b.weight / total_server_weight) * over)
+			reduction = min(proportional_trim, headroom)
+			b.bg_workers -= reduction
+			over -= reduction
+
 		if over > 0:
 			for b in sorted(bench_allocations, key=lambda x: x.weight):
 				if over <= 0:
 					break
+				if not b.release_group_bg_worker_min_limit:
+					continue  # Previous case
 
-				allocated_workers = getattr(b, worker_type)
-				# In case one worker is allocated don't reduce anything
-				# In case this is a heavier bench we can reduce proportional number of workers from it
+				floor = max(1, b.release_group_bg_worker_min_limit)
+				headroom = b.bg_workers - floor
+				if headroom <= 0:
+					continue
+
 				proportional_trim = math.ceil((b.weight / total_server_weight) * over)
-				reduction = min(proportional_trim, allocated_workers - 1)
-				setattr(b, worker_type, allocated_workers - reduction)
+				reduction = min(proportional_trim, headroom)
+				b.bg_workers -= reduction
 				over -= reduction
 
-			if over > 0:
-				raise ResourceWarning(
-					f"Unable to account for shootoff for {worker_type}. Over allocated workers: {over}"
-				)
+		if over > 0:
+			raise ResourceWarning(f"Unable to account for bg worker shootoff. Over allocated by: {over}")
 
-	def calculate_surplus_weight_distribution(
+	def calculate_weight_distribution(
 		self,
 		total_server_weight: float,
 		surplus_web_workers: float,
 		surplus_bg_workers: float,
 		bench_allocations: list[BenchAllocation],
 	) -> None:
-		"""In place update the bench allocations with the bonus workers based on the surplus."""
+		"""In place update the bench allocations with the bonus workers based on the surplus.
+		This also accounts for release group level limits set on the workers
+		"""
 		for bench_allocation in bench_allocations:
 			if total_server_weight > 0:
 				# Raw calculations to get the bonus workers before applying the max limits
-				web_bonus = (bench_allocation.weight / total_server_weight) * surplus_web_workers
-				bg_bonus = (bench_allocation.weight / total_server_weight) * surplus_bg_workers
-				raw_web = bench_allocation.web_workers + web_bonus
-				raw_bg = bench_allocation.bg_workers + bg_bonus
+				if self.allow_surplus:
+					web_bonus = (bench_allocation.weight / total_server_weight) * surplus_web_workers
+					bg_bonus = (bench_allocation.weight / total_server_weight) * surplus_bg_workers
+					raw_web = bench_allocation.web_workers + web_bonus
+					raw_bg = bench_allocation.bg_workers + bg_bonus
 
-				# Ensure we didn't exceed the max limits for the bench based on individual site plan maximums
-				# Also ensure we are giving at least one worker to the bench regardless of the calculations.
-				bench_allocation.web_workers = max(min(bench_allocation.max_web, math.floor(raw_web)), 1)
-				bench_allocation.bg_workers = max(min(bench_allocation.max_bg, math.floor(raw_bg)), 1)
+					# Ensure we didn't exceed the max limits for the bench based on individual site plan maximums
+					# Also ensure we are giving at least one worker to the bench regardless of the calculations.
+					bench_allocation.web_workers = max(min(bench_allocation.max_web, math.floor(raw_web)), 1)
+					bench_allocation.bg_workers = max(min(bench_allocation.max_bg, math.floor(raw_bg)), 1)
+				else:
+					bench_allocation.web_workers = max(
+						min(bench_allocation.max_web, math.floor(bench_allocation.web_workers)), 1
+					)
+					bench_allocation.bg_workers = max(
+						min(bench_allocation.max_bg, math.floor(bench_allocation.bg_workers)), 1
+					)
+
+			self.apply_release_group_limits(bench_allocation)
 
 		total_allocated_web_workers = sum(b.web_workers for b in bench_allocations)
 		total_allocated_bg_workers = sum(b.bg_workers for b in bench_allocations)
 
-		for worker_type in ["web_workers", "bg_workers"]:
-			self.account_for_shootoff(
-				bench_allocations=bench_allocations,
-				worker_type=worker_type,
-				total_allocated_workers=total_allocated_web_workers
-				if worker_type == "web_workers"
-				else total_allocated_bg_workers,
-				total_available_slots=self.total_web_worker_slots
-				if worker_type == "web_workers"
-				else self.total_bg_worker_slots,
-				total_server_weight=total_server_weight,
-			)
+		self.account_for_web_worker_shootoff(
+			bench_allocations, total_allocated_web_workers, total_server_weight
+		)
+		self.account_for_bg_worker_shootoff(
+			bench_allocations, total_allocated_bg_workers, total_server_weight
+		)
 
 	def allocate_workers(self) -> list[dict[str, AllocationResult]]:
 		"""
@@ -285,9 +364,7 @@ class WorkerAllocator:
 			max_bg = 0
 			threads = bench.threads_per_worker
 
-			sorted_sites = sorted(
-				bench.site_info, key=lambda x: get_plan_config(x["plan"]).weight, reverse=True
-			)
+			sorted_sites = self.get_sorted_sites(bench)
 
 			for idx, site in enumerate(sorted_sites):
 				plan_config = get_plan_config(site["plan"])
@@ -296,7 +373,7 @@ class WorkerAllocator:
 					threads,
 				)
 
-				decay_factor = get_decay_factor(idx)
+				decay_factor = self.get_decay_factor(idx)
 
 				bench_web_workers += guaranteed_web * decay_factor
 				bench_bg_workers += guaranteed_bg * decay_factor
@@ -308,23 +385,23 @@ class WorkerAllocator:
 				BenchAllocation(
 					bench=bench.name,
 					weight=bench_weight,
+					# Plan level cap calculations
 					max_web=max_web,
 					max_bg=max_bg,
 					web_workers=bench_web_workers,
 					bg_workers=bench_bg_workers,
+					# Included the release group caps
+					release_group_web_worker_max_limit=bench.max_web_workers,
+					release_group_bg_worker_max_limit=bench.max_bg_workers,
+					release_group_web_worker_min_limit=bench.min_web_workers,
+					release_group_bg_worker_min_limit=bench.min_bg_workers,
 				)
 			)
 			total_server_weight += bench_weight
 
-		if self.allow_surplus:
-			self.calculate_surplus_weight_distribution(
-				total_server_weight, surplus_web_workers, surplus_bg_workers, bench_allocations
-			)
-		else:
-			for bench_allocation in bench_allocations:
-				# Also ensure we are giving at least one worker to the bench now since we don't have surplus
-				bench_allocation.web_workers = max(bench_allocation.web_workers, 1)
-				bench_allocation.bg_workers = max(bench_allocation.bg_workers, 1)
+		self.calculate_weight_distribution(
+			total_server_weight, surplus_web_workers, surplus_bg_workers, bench_allocations
+		)
 
 		return [
 			{b.bench: {"web_workers": int(b.web_workers), "bg_workers": int(b.bg_workers)}}
@@ -365,7 +442,6 @@ if __name__ == "__main__":
 		],
 		total_web_worker_slots=25,
 		total_bg_worker_slots=8,
-		allow_surplus=False,
 	)
 	print("Guaranteed Worker Share:", scheduler.get_total_guaranteed_worker_share())
 	print(scheduler.allocate_workers())
