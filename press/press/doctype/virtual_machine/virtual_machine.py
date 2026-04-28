@@ -208,8 +208,8 @@ class VirtualMachine(Document):
 
 		self.validate_data_disk_snapshot()
 
-		if self.series == "nat" and self.cloud_provider != "AWS EC2":
-			frappe.throw("NAT Servers are only supported on AWS EC2")
+		if self.series == "nat" and self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
+			frappe.throw("NAT Servers are only supported on AWS EC2 and Frappe Compute")
 
 	def validate_data_disk_snapshot(self):
 		if not self.is_new() or not self.data_disk_snapshot:
@@ -1580,7 +1580,9 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
 		if self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
-			frappe.throw("Public IP disassociation is currently only supported for AWS EC2 instances")
+			frappe.throw(
+				"Public IP disassociation is currently only supported for AWS EC2 and Frappe Compute instances"
+			)
 
 		if not self.public_ip_address:
 			frappe.throw("No public IP associated with this instance.")
@@ -2237,7 +2239,7 @@ class VirtualMachine(Document):
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
-			"provider": "AWS EC2",
+			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 		}
 		if self.virtual_machine_image:
