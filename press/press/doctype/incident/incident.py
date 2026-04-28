@@ -103,7 +103,6 @@ class Incident(WebsiteGenerator):
 		phone_call: DF.Check
 		preventive_suggestions: DF.Table[IncidentSuggestion]
 		resolved_at: DF.Datetime | None
-		resolved_by: DF.Link | None
 		resource: DF.DynamicLink | None
 		resource_type: DF.Link | None
 		route: DF.Data | None
@@ -126,7 +125,7 @@ class Incident(WebsiteGenerator):
 	# end: auto-generated types
 
 	def validate(self):
-		if not hasattr(self, "phone_call") and self.global_phone_call_enabled:
+		if not self.phone_call and self.global_phone_call_enabled:
 			self.phone_call = True
 
 	@property
@@ -309,13 +308,13 @@ class Incident(WebsiteGenerator):
 
 	def update_user_db_issue(self):
 		self.subtype = "High CPU: user"
-		self.likely_causes = "Likely slow queries or many queries."
+		self.likely_cause = "Likely slow queries or many queries."
 		self.add_corrective_suggestion("Kill long running queries")
 		self.add_preventive_suggestion("Contact user to reduce queries")
 
 	def update_high_io_db_issue(self):
 		self.subtype = "High CPU: iowait"
-		self.likely_causes = "Not enough memory"
+		self.likely_cause = "Not enough memory"
 		self.add_corrective_suggestion("Reboot Server")
 		self.add_preventive_suggestion("Upgrade database server for more memory")
 
@@ -607,7 +606,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		"""
 		if (
 			ignore_since := frappe.db.get_value("Server", self.server, "ignore_incidents_till")
-		) and ignore_since < frappe.utils.now_datetime():
+		) and ignore_since > frappe.utils.now_datetime():
 			return
 		domain = frappe.db.get_value("Press Settings", None, "domain")
 		incident_link = f"https://{domain}{self.get_url()}"
@@ -941,6 +940,7 @@ def notify_ignored_servers():
 		.select(servers.name, servers.ignore_incidents_till)
 		.where(servers.status == "Active")
 		.where(servers.ignore_incidents_till.isnotnull())
+		.where(servers.ignore_incidents_till >= frappe.utils.now_datetime())
 		.run(as_dict=True)
 	):
 		return
