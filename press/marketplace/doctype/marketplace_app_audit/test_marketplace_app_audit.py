@@ -4,14 +4,16 @@
 import json
 import os
 import tempfile
+from typing import ClassVar
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.tests import UnitTestCase
 
 from press.marketplace.doctype.marketplace_app_audit.checks.compatibility import (
-	_get_supported_frappe_versions,
+	_frappe_versions_for_spec,
 	_safe_load_pyproject,
+	check_app_source_compatibility,
 	check_bench_compatibility,
 	run_compatibility_checks,
 )
@@ -288,7 +290,18 @@ class TestSemgrepRulesParsing(UnitTestCase):
 
 
 class TestCompatibilityChecks(UnitTestCase):
-	"""Tests for compatibility check logic — uses mocks for DB queries."""
+	"""Compatibility helpers: pyproject load, semver→ Frappe Version names, bench query, registration row."""
+
+	_PATCH_GET_ALL = "press.marketplace.doctype.marketplace_app_audit.checks.compatibility.frappe.get_all"
+	V15_V16_NIGHTLY: ClassVar = [
+		{"name": "Version 15", "number": 15, "status": "Stable", "id": "Version 15"},
+		{"name": "Version 16", "number": 16, "status": "Stable"},
+		{"name": "Nightly", "number": 17, "status": "Nightly"},
+	]
+
+	def _with_frappe_version_rows(self, rows):
+		"""map_frappe_version loads versions via frappe.get_all from this module."""
+		return patch(self._PATCH_GET_ALL, return_value=rows)
 
 	def test_safe_load_pyproject_returns_none_for_missing_file(self):
 		self.assertIsNone(_safe_load_pyproject("/nonexistent/pyproject.toml"))
@@ -312,45 +325,37 @@ class TestCompatibilityChecks(UnitTestCase):
 			">=15.0.0,<16.0.0-dev",
 		)
 
-	def test_run_compatibility_checks_skips_when_no_pyproject(self):
+	def test_run_compatibility_checks_returns_empty_without_pyproject(self):
 		with tempfile.TemporaryDirectory() as tmpdir:
-			results = run_compatibility_checks("SRC-001", tmpdir)
-		self.assertEqual(results, [])
+			self.assertEqual(run_compatibility_checks("MAP-001", "SRC-001", tmpdir), [])
 
-	def test_run_compatibility_checks_skips_when_no_frappe_dep(self):
+	def test_run_compatibility_checks_returns_empty_without_frappe_dependency_key(self):
 		with tempfile.TemporaryDirectory() as tmpdir:
 			with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
 				f.write("[tool.bench]\nname = 'myapp'\n")
-			results = run_compatibility_checks("SRC-001", tmpdir)
-		self.assertEqual(results, [])
+			self.assertEqual(run_compatibility_checks("MAP-001", "SRC-001", tmpdir), [])
 
-	def test_get_supported_frappe_versions_includes_nightly_for_future_upper_bound(self):
-		frappe_versions = [
-			{"name": "Version 15", "number": 15, "status": "Stable"},
-			{"name": "Version 16", "number": 16, "status": "Stable"},
-			{"name": "Nightly", "number": 17, "status": "Nightly"},
-		]
-		with patch(
-			"press.marketplace.doctype.marketplace_app_audit.checks.compatibility.frappe.get_all",
-			return_value=frappe_versions,
-		):
-			supported = _get_supported_frappe_versions(">=16.0.0-dev,<=17.0.0-dev")
+	# --- map_frappe_version via _frappe_versions_for_spec (strict = ease False, audit = ease True) ---
 
-		self.assertEqual(set(supported or []), {"Version 16", "Nightly"})
+	def test_strict_spec_open_upper_bound_includes_nightly(self):
+		with self._with_frappe_version_rows(self.V15_V16_NIGHTLY):
+			out = _frappe_versions_for_spec(">=16.0.0-dev,<=17.0.0-dev", ease_versioning_constrains=False)
+		self.assertEqual(set(out or []), {"Version 16", "Nightly"})
 
-	def test_get_supported_frappe_versions_excludes_nightly_for_closed_stable_range(self):
-		frappe_versions = [
-			{"name": "Version 15", "number": 15, "status": "Stable"},
-			{"name": "Version 16", "number": 16, "status": "Stable"},
-			{"name": "Nightly", "number": 17, "status": "Nightly"},
-		]
-		with patch(
-			"press.marketplace.doctype.marketplace_app_audit.checks.compatibility.frappe.get_all",
-			return_value=frappe_versions,
-		):
-			supported = _get_supported_frappe_versions(">=15.0.0,<16.0.0")
+	def test_strict_spec_closed_upper_bound_is_only_listed_stables(self):
+		with self._with_frappe_version_rows(self.V15_V16_NIGHTLY):
+			out = _frappe_versions_for_spec(">=15.0.0,<16.0.0", ease_versioning_constrains=False)
+		self.assertEqual(set(out or []), {"Version 15"})
 
-		self.assertEqual(set(supported or []), {"Version 15"})
+	def test_eased_spec_counts_lower_bound_major_even_if_above_x_zero_zero(self):
+		"""Audit / add_version: >=16.15.0,<17 must still match Version 16 (strict 16.0.0 does not)."""
+		only_v16 = [{"name": "Version 16", "number": 16, "status": "Stable"}]
+		spec = ">=16.15.0,<17.0.0-dev"
+		with self._with_frappe_version_rows(only_v16):
+			strict = _frappe_versions_for_spec(spec, ease_versioning_constrains=False)
+			eased = _frappe_versions_for_spec(spec, ease_versioning_constrains=True)
+		self.assertEqual(strict, [])
+		self.assertEqual(eased, ["Version 16"])
 
 	def _patch_qb(self, run_return_value):
 		"""Patch frappe.qb with a plain MagicMock (avoids AsyncMock coroutine issues)."""
@@ -398,3 +403,19 @@ class TestCompatibilityChecks(UnitTestCase):
 		self.assertEqual(details["private_benches_affected"], 1)
 		self.assertIn("public bench", result.message)
 		self.assertIn("private bench", result.message)
+
+	def test_registration_skipped_when_marketplace_app_has_no_row_for_this_source(self):
+		with patch("frappe.db.get_value", return_value=None):
+			out = check_app_source_compatibility("MAP-1", "SRC-1", ">=16.0.0,<17.0.0-dev", ["Version 16"])
+		self.assertIsNone(out)
+
+	def test_registration_passes_when_registered_version_is_in_supported_list(self):
+		with patch("frappe.db.get_value", return_value="Version 16"):
+			out = check_app_source_compatibility("MAP-1", "SRC-1", ">=16.15.0,<17.0.0-dev", ["Version 16"])
+		self.assertEqual(out.result, "Pass")
+
+	def test_registration_fails_when_registered_version_not_in_supported_list(self):
+		with patch("frappe.db.get_value", return_value="Version 15"):
+			out = check_app_source_compatibility("MAP-1", "SRC-1", ">=16.0.0,<17.0.0-dev", ["Version 16"])
+		self.assertEqual(out.result, "Fail")
+		self.assertTrue(out.is_blocking)

@@ -176,7 +176,7 @@ class MarketplaceAppAudit(Document):
 		results.extend(run_versioning_checks(clone_dir))
 		results.extend(run_dependency_checks(clone_dir))
 		results.extend(run_code_quality_checks(clone_dir))
-		results.extend(run_compatibility_checks(release.source, clone_dir))
+		results.extend(run_compatibility_checks(self.marketplace_app, release.source, clone_dir))
 		results.extend(run_semgrep_rules(clone_dir))
 
 		return results
