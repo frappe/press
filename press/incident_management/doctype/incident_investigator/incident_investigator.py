@@ -822,6 +822,7 @@ class IncidentInvestigator(Document, StepHandler):
 		execute_action_steps = frappe.db.get_single_value(
 			"Press Settings", "execute_incident_action", cache=True
 		)
+		stop_incident_actions = frappe.db.get_value("Server", self.server, "stop_incident_actions")
 
 		stop_incident_actions = frappe.db.get_value("Server", self.server, "stop_incident_actions")
 
