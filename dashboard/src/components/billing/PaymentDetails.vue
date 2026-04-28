@@ -302,8 +302,7 @@ const paymentModeOptions = [
 	{
 		label: 'UPI Autopay',
 		value: 'UPI Autopay',
-		condition: () =>
-			team.doc.currency === 'INR' && team.doc.upi_autopay_enabled,
+		condition: () => team.doc.currency === 'INR',
 		description: 'Your UPI will be auto-debited for monthly subscription',
 		component: () =>
 			h(DropdownItem, {
