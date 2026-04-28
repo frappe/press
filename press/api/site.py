@@ -15,7 +15,7 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.query_builder import Case
 from frappe.query_builder.terms import ValueWrapper
 from frappe.rate_limiter import rate_limit
-from frappe.utils import flt, sbool, time_diff_in_hours
+from frappe.utils import cint, flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.typing_validations import validate_argument_types
 from frappe.utils.user import is_system_user
@@ -2252,7 +2252,7 @@ def get_upload_link(file, parts=1):
 	)[0]
 
 	bucket_name = upload_bucket_details.remote_uploads_bucket
-	expiration = upload_bucket_details.remote_link_expiry or 3600
+	expiration = cint(upload_bucket_details.remote_link_expiry) or 3600
 	object_name = get_remote_key(file)
 	parts = int(parts)
 
