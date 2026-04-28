@@ -348,20 +348,13 @@ class MarketplaceAppAudit(Document):
 			if check.result in ("Fail", "Warn"):
 				details_parsed = None
 				if check.details:
-					try:
-						details_parsed = json.loads(check.details)
-
-						occurrences = details_parsed.get("occurrences", [])
-						# filter out non internal only occurrences
+					details_parsed = json.loads(check.details)
+					occurrences = details_parsed.get("occurrences")
+					if isinstance(occurrences, list):
 						public_occurrences = [occ for occ in occurrences if not occ.get("is_internal_only")]
 						if not public_occurrences:
 							continue
-
 						details_parsed = {**details_parsed, "occurrences": public_occurrences}
-
-					except (json.JSONDecodeError, TypeError):
-						details_parsed = None
-
 				failing_checks.append(
 					{
 						"severity": check.severity,
@@ -389,17 +382,17 @@ class MarketplaceAppAudit(Document):
 		frappe.msgprint(f"Audit report sent to {publisher_email}")
 
 	def has_blocking_failures(self) -> bool:
-		"""
-		Checks if the audit has any blocking failures, including any blocking findings in the semgrep rules.
-		"""
+		"""True if any child row is blocking, or any Semgrep occurrence is marked blocking."""
 		for check in self.audit_checks:
 			if check.is_blocking:
 				return True
 
 			# although we are rolling up the semgrep ruleset's blocking findings to the overall audit check result, we should still check for blocking findings in the semgrep ruleset specifically.
 			# if check name starts with "Semgrep" we need to check if it has any blocking findings
-			if check.check_name.startswith("Semgrep") and any(
-				occurrence.get("is_blocking") for occurrence in check.details.get("occurrences", [])
-			):
+			if not check.check_name.startswith("Semgrep") or not check.details:
+				continue
+			payload = json.loads(check.details)
+			occurrences = payload.get("occurrences") or []
+			if any(occ.get("is_blocking") for occ in occurrences if isinstance(occ, dict)):
 				return True
 		return False

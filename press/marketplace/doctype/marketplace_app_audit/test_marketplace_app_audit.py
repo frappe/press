@@ -216,7 +216,20 @@ class TestMarketplaceAppAudit(UnitTestCase):
 class TestSemgrepRulesParsing(UnitTestCase):
 	"""Tests for semgrep output parsing — no semgrep binary needed."""
 
-	def _make_finding(self, rule_id: str, category: str = "Security", severity: str = "ERROR"):
+	def _make_finding(
+		self,
+		rule_id: str,
+		category: str = "Security",
+		severity: str = "ERROR",
+		*,
+		is_blocking: bool | None = None,
+		is_internal_only: bool | None = None,
+	):
+		metadata: dict = {"marketplace_category": category}
+		if is_blocking is True:
+			metadata["is_blocking"] = True
+		if is_internal_only is True:
+			metadata["is_internal_only"] = True
 		return {
 			"check_id": f"rules.security.{rule_id}",
 			"path": "app/api.py",
@@ -225,7 +238,7 @@ class TestSemgrepRulesParsing(UnitTestCase):
 			"extra": {
 				"severity": severity,
 				"message": f"Found {rule_id} issue.",
-				"metadata": {"marketplace_category": category},
+				"metadata": metadata,
 			},
 		}
 
@@ -265,11 +278,24 @@ class TestSemgrepRulesParsing(UnitTestCase):
 		self.assertEqual(security.result, "Warn")
 		self.assertEqual(security.severity, "Minor")
 
+	def test_warning_severity_with_blocking_metadata_produces_fail(self):
+		findings = [self._make_finding("blocking-minor", severity="WARNING", is_blocking=True)]
+		results = _build_category_results(findings)
+		security = next(r for r in results if r.category == "Security")
+		self.assertEqual(security.result, "Fail")
+		self.assertTrue(security.is_blocking)
+
 	def test_serialize_finding_extracts_short_rule_id(self):
 		finding = self._make_finding("frappe-codeinjection-eval")
 		serialized = _serialize_finding(finding)
 		self.assertEqual(serialized["rule_id"], "frappe-codeinjection-eval")
 		self.assertEqual(serialized["path"], "app/api.py")
+
+	def test_serialize_finding_includes_blocking_and_internal_flags(self):
+		finding = self._make_finding("x", is_blocking=True, is_internal_only=True)
+		serialized = _serialize_finding(finding)
+		self.assertTrue(serialized["is_blocking"])
+		self.assertTrue(serialized["is_internal_only"])
 
 	def test_parse_semgrep_errors(self):
 		errors = [{"message": "Rule parse error"}, {"message": "Timeout on file"}]
@@ -419,3 +445,216 @@ class TestCompatibilityChecks(UnitTestCase):
 			out = check_app_source_compatibility("MAP-1", "SRC-1", ">=16.0.0,<17.0.0-dev", ["Version 16"])
 		self.assertEqual(out.result, "Fail")
 		self.assertTrue(out.is_blocking)
+
+	def test_bench_compat_pass_is_internal_only(self):
+		with self._patch_qb([]):
+			result = check_bench_compatibility("SRC-001", ["Version 15"], ">=15.0.0")
+		self.assertTrue(result.is_internal_only)
+
+
+@patch.object(MarketplaceAppAudit, "trigger_audit", new=Mock())
+class TestAuditBlockingAndPublisherReport(UnitTestCase):
+	"""has_blocking_failures, yank gating, and publisher email filtering."""
+
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_team()
+		self.app = create_test_app("audit_gate_app", "Audit Gate App")
+		with patch.object(AppSource, "create_release", return_value=None):
+			self.source = self.app.add_source(
+				repository_url="https://github.com/frappe/erpnext",
+				branch="master",
+				frappe_version="Version 15",
+				team=self.team.name,
+			)
+		self.marketplace_app = create_test_marketplace_app(
+			self.app.name,
+			self.team.name,
+			sources=[{"version": "Version 15", "source": self.source.name}],
+		)
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def _release(self):
+		return frappe.get_doc(
+			{
+				"doctype": "App Release",
+				"app": self.source.app,
+				"source": self.source.name,
+				"team": self.source.team,
+				"hash": frappe.generate_hash(length=40),
+				"message": "Test",
+				"author": "Test",
+				"status": "Draft",
+			}
+		).insert()
+
+	def _audit(self, release_name: str):
+		return frappe.get_doc(
+			{
+				"doctype": "Marketplace App Audit",
+				"marketplace_app": self.marketplace_app.name,
+				"app_release": release_name,
+				"audit_type": "Manual Run",
+				"status": "Completed",
+				"audit_result": "Fail",
+				"audit_summary": "summary",
+				"team": self.team.name,
+			}
+		).insert()
+
+	def test_has_blocking_true_when_row_is_blocking(self):
+		release = self._release()
+		audit = self._audit(release.name)
+		audit.append(
+			"audit_checks",
+			{
+				"check_id": "b1",
+				"check_name": "Hooks",
+				"category": "Dependencies",
+				"result": "Fail",
+				"severity": "Critical",
+				"message": "m",
+				"is_blocking": 1,
+			},
+		)
+		audit.save(ignore_permissions=True)
+		audit.reload()
+		self.assertTrue(audit.has_blocking_failures())
+
+	def test_has_blocking_true_when_semgrep_details_has_blocking_occurrence(self):
+		release = self._release()
+		audit = self._audit(release.name)
+		details = json.dumps(
+			{
+				"occurrences": [
+					{"rule_id": "r1", "path": "a.py", "is_blocking": True, "is_internal_only": False},
+				]
+			}
+		)
+		audit.append(
+			"audit_checks",
+			{
+				"check_id": "semgrep_security",
+				"check_name": "Semgrep Security",
+				"category": "Security",
+				"result": "Fail",
+				"severity": "Minor",
+				"message": "issues",
+				"details": details,
+			},
+		)
+		audit.save(ignore_permissions=True)
+		audit.reload()
+		self.assertTrue(audit.has_blocking_failures())
+
+	def test_has_blocking_false_for_non_semgrep_json_occurrences(self):
+		release = self._release()
+		audit = self._audit(release.name)
+		audit.append(
+			"audit_checks",
+			{
+				"check_id": "meta",
+				"check_name": "Long description",
+				"category": "Metadata",
+				"result": "Fail",
+				"severity": "Major",
+				"message": "bad",
+				"details": json.dumps({"occurrences": [{"is_blocking": True}]}),
+				"is_blocking": 0,
+			},
+		)
+		audit.save(ignore_permissions=True)
+		audit.reload()
+		self.assertFalse(audit.has_blocking_failures())
+
+	def test_yank_release_called_only_when_blocking(self):
+		release = self._release()
+		audit = frappe.get_doc(
+			{
+				"doctype": "Marketplace App Audit",
+				"marketplace_app": self.marketplace_app.name,
+				"app_release": release.name,
+				"audit_type": "Manual Run",
+				"status": "Queued",
+				"audit_result": "Inconclusive",
+				"team": self.team.name,
+			}
+		).insert()
+
+		results_fail_soft = [
+			CheckResult(
+				check_id="soft",
+				check_name="Soft fail",
+				category="Dependencies",
+				result="Fail",
+				severity="Critical",
+				message="gate",
+				is_blocking=False,
+			),
+		]
+		with (
+			patch.object(MarketplaceAppAudit, "execute_audit_checks", return_value=results_fail_soft),
+			patch(
+				"press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit.frappe.db.get_single_value",
+				return_value=1,
+			),
+			patch.object(MarketplaceAppAudit, "_yank_release") as yank,
+		):
+			audit.run_audit()
+		yank.assert_not_called()
+
+		audit2 = frappe.get_doc(
+			{
+				"doctype": "Marketplace App Audit",
+				"marketplace_app": self.marketplace_app.name,
+				"app_release": release.name,
+				"audit_type": "Manual Run",
+				"status": "Queued",
+				"audit_result": "Inconclusive",
+				"team": self.team.name,
+			}
+		).insert()
+		results_fail_hard = [
+			CheckResult(
+				check_id="hard",
+				check_name="Hard fail",
+				category="Dependencies",
+				result="Fail",
+				severity="Critical",
+				message="gate",
+				is_blocking=True,
+			),
+		]
+		with (
+			patch.object(MarketplaceAppAudit, "execute_audit_checks", return_value=results_fail_hard),
+			patch(
+				"press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit.frappe.db.get_single_value",
+				return_value=1,
+			),
+			patch.object(MarketplaceAppAudit, "_yank_release") as yank2,
+		):
+			audit2.run_audit()
+		yank2.assert_called_once()
+
+	def test_send_report_skips_internal_only_checks(self):
+		release = self._release()
+		audit = self._audit(release.name)
+		audit.append(
+			"audit_checks",
+			{
+				"check_id": "int",
+				"check_name": "Internal only",
+				"category": "Security",
+				"result": "Fail",
+				"severity": "Critical",
+				"message": "secret",
+				"is_internal_only": 1,
+			},
+		)
+		audit.save(ignore_permissions=True)
+		with patch("frappe.sendmail") as sendmail, patch("frappe.msgprint"):
+			audit.send_report_to_publisher()
+		args = sendmail.call_args.kwargs["args"]
+		self.assertEqual(args["failing_checks"], [])
