@@ -244,9 +244,11 @@ def get(doctype, name):  # noqa: C901
 
 	check_permissions(doctype)
 	is_support = has_support_access(doctype, name)
+	is_system_user = frappe.local.system_user()
+	check_permission = not (is_system_user or is_support)
 
 	try:
-		doc = frappe.get_doc(doctype, name, check_permission=not is_support)
+		doc = frappe.get_doc(doctype, name, check_permission=check_permission)
 	except frappe.DoesNotExistError:
 		controller = get_controller(doctype)
 		if hasattr(controller, "on_not_found"):
@@ -254,7 +256,7 @@ def get(doctype, name):  # noqa: C901
 		raise
 
 	if (
-		not (frappe.local.system_user() or is_support)
+		not (is_system_user or is_support)
 		and frappe.get_meta(doctype).has_field("team")
 		and doc.team != frappe.local.team().name
 	):
