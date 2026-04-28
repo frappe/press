@@ -302,7 +302,7 @@ def repositories(installation, token):
 
 
 @frappe.whitelist()
-def repository(owner, name, installation=None):
+def repository(owner: str, name: str, installation: str | None = None):
 	token = ""
 	if not installation:
 		token = frappe.db.get_value("Press Settings", "github_access_token")
@@ -337,7 +337,7 @@ def repository(owner, name, installation=None):
 
 
 @frappe.whitelist()
-def app(owner, repository, branch, installation=None):
+def app(owner: str, repository: str, branch: str, installation: str | None = None):
 	headers = get_auth_headers(installation)
 	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/branches/{branch}",
@@ -381,7 +381,7 @@ def app(owner, repository, branch, installation=None):
 
 
 @frappe.whitelist()
-def branches(owner, name, installation=None, app_source=None):
+def branches(owner: str, name: str, installation: str | None = None, app_source: str | None = None):
 	"""
 	Return ALL branches for the repo, following GitHub pagination.
 	"""
@@ -390,7 +390,7 @@ def branches(owner, name, installation=None, app_source=None):
 
 	headers = get_auth_headers(installation)
 
-	out = []
+	out: list[dict] = []
 	page = 1
 	while True:
 		resp = requests.get(
@@ -487,7 +487,7 @@ def _get_app_name_and_title_from_hooks(
 	branch_info,
 	headers,
 	tree,
-) -> tuple[str, str] | None:
+) -> tuple[str, str]:
 	reason_for_invalidation = f"Files {frappe.bold('hooks.py or patches.txt')} not found."
 	for directory, files in tree.items():
 		if not files:
@@ -524,7 +524,7 @@ def _get_app_name_and_title_from_hooks(
 		break
 
 	frappe.throw(f"Not a valid Frappe App! {reason_for_invalidation}")
-	return None
+	raise  # for mypy: NoReturn
 
 
 def _generate_files_tree(files):

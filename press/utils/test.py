@@ -1,11 +1,14 @@
 """Utility methods for writing tests"""
 
+import os
 import sys
 from collections.abc import Callable
 from urllib.parse import urlparse, urlunparse
 
 import frappe
 import requests
+
+_workflow_log_buffer: list[str] = []
 
 
 def foreground_enqueue_doc_with_user(run_as_user: str):
@@ -47,7 +50,7 @@ def foreground_enqueue_doc(
 	getattr(frappe.get_doc(doctype, docname), method)(**kwargs)
 
 
-def _foreground_run_workflow_doc(doctype: str, docname: str, job_id: str) -> None:
+def _foreground_run_workflow_doc(doctype: str, docname: str, job_id: str, max_retries: int = 50) -> None:  # noqa: C901
 	"""
 	Tracks in-flight job IDs to prevent direct recursion. When the same job_id
 	is re-enqueued while it is already on the call-stack the request is deferred;
@@ -63,17 +66,21 @@ def _foreground_run_workflow_doc(doctype: str, docname: str, job_id: str) -> Non
 	in_flight: set = frappe.local._fg_wf_in_flight
 	pending: dict = frappe.local._fg_wf_pending
 
+	log_immediate = os.environ.get("PRESS_LOG_WORKFLOW_DEBUG_INFO") in ("1", "true", "True")
+
+	def _log(msg: str) -> None:
+		_workflow_log_buffer.append(msg)
+		if log_immediate:
+			print(msg, file=sys.stderr, flush=True)
+
 	if job_id in in_flight:
 		# Already executing this job - defer until the outermost call drains it.
-		print(
-			f"[FG] DEFER  {job_id} (in-flight: {sorted(in_flight)})",
-			file=sys.stderr,
-			flush=True,
-		)
+		_log(f"[WORKFLOW] DEFER  {job_id} (in-flight: {sorted(in_flight)})")
 		pending[job_id] = (doctype, docname)
 		return
 
-	print(f"[FG] START  {job_id}", file=sys.stderr, flush=True)
+	_log(f"[WORKFLOW] START  {job_id}")
+
 	in_flight.add(job_id)
 	method_title = "unknown_method"
 	try:
@@ -83,46 +90,38 @@ def _foreground_run_workflow_doc(doctype: str, docname: str, job_id: str) -> Non
 			if hasattr(doc, "main_method_title")
 			else (doc.method_title if hasattr(doc, "method_title") else "unknown_method")
 		)
-		print(
-			f"[FG] RUN    {job_id} {method_title} | status={getattr(doc, 'status', '?')}",
-			file=sys.stderr,
-			flush=True,
-		)
+		_log(f"[WORKFLOW] RUN    {job_id} {method_title} | status={getattr(doc, 'status', '?')}")
 		doc.run()
-		print(
-			f"[FG] DONE   {job_id} {method_title} | status={getattr(frappe.get_doc(doctype, docname), 'status', '?')}",
-			file=sys.stderr,
-			flush=True,
+		_log(
+			f"[WORKFLOW] DONE   {job_id} {method_title} | status={getattr(frappe.get_doc(doctype, docname), 'status', '?')}"
 		)
 		# Drain any re-enqueue requests that arrived while this job was running.
 		retry = 0
 		while job_id in pending:
 			retry += 1
+			if retry > max_retries:
+				_log(
+					f"[WORKFLOW] MAX RETRIES EXCEEDED for {job_id} {method_title} | pending={list(pending.keys())}"
+				)
+				break
 			pending.pop(job_id)
-			print(f"[FG] RETRY  {job_id} {method_title} (#{retry})", file=sys.stderr, flush=True)
+			_log(f"[WORKFLOW] RETRY  {job_id} {method_title} (#{retry})")
 			doc = frappe.get_doc(doctype, docname)
-			print(
-				f"[FG] RUN    {job_id} {method_title} | status={getattr(doc, 'status', '?')} (retry #{retry})",
-				file=sys.stderr,
-				flush=True,
+			_log(
+				f"[WORKFLOW] RUN    {job_id} {method_title} | status={getattr(doc, 'status', '?')} (retry #{retry})"
 			)
 			doc.run()
-			print(
-				f"[FG] DONE   {job_id} {method_title} | status={getattr(frappe.get_doc(doctype, docname), 'status', '?')} (retry #{retry})",
-				file=sys.stderr,
-				flush=True,
+			_log(
+				f"[WORKFLOW] DONE   {job_id} {method_title} | status={getattr(frappe.get_doc(doctype, docname), 'status', '?')} (retry #{retry})"
 			)
+	except Exception:
+		raise
 	finally:
-		print(
-			f"[FG] FINISH {job_id} {method_title} | pending={list(pending.keys())}",
-			file=sys.stderr,
-			flush=True,
-		)
+		_log(f"[WORKFLOW] FINISH {job_id} {method_title} | pending={list(pending.keys())}")
 		in_flight.discard(job_id)
 
 
 def foreground_enqueue_task(task_name: str) -> None:
-	print(f"[FG] enqueue_task({task_name})", file=sys.stderr, flush=True)
 	_foreground_run_workflow_doc(
 		"Press Workflow Task",
 		task_name,
@@ -131,12 +130,18 @@ def foreground_enqueue_task(task_name: str) -> None:
 
 
 def foreground_enqueue_workflow(workflow_name: str) -> None:
-	print(f"[FG] enqueue_workflow({workflow_name})", file=sys.stderr, flush=True)
+	log_immediate = os.environ.get("PRESS_LOG_WORKFLOW_DEBUG_INFO") in ("1", "true", "True")
+	_workflow_log_buffer.clear()
 	_foreground_run_workflow_doc(
 		"Press Workflow",
 		workflow_name,
 		f"press_workflow||{workflow_name}||run",
 	)
+	if not log_immediate:
+		doc = frappe.get_doc("Press Workflow", workflow_name)
+		if getattr(doc, "status", None) == "Failure":
+			for msg in _workflow_log_buffer:
+				print(msg, file=sys.stderr, flush=True)
 
 
 def foreground_enqueue(

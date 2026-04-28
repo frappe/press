@@ -20,7 +20,11 @@ from press.workflow_engine.doctype.press_workflow.exceptions import (
 from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
 	PressWorkflowObject,
 )
-from press.workflow_engine.utils import calculate_duration
+from press.workflow_engine.utils import (
+	calculate_duration,
+	deserialize_value,
+	serialize_and_store_value,
+)
 
 if TYPE_CHECKING:
 	from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
@@ -41,17 +45,26 @@ class PressWorkflow(Document):
 		from press.workflow_engine.doctype.press_workflow_kv.press_workflow_kv import PressWorkflowKV
 		from press.workflow_engine.doctype.press_workflow_step.press_workflow_step import PressWorkflowStep
 
-		args: DF.Link | None
+		args: DF.Data | None
+		args_type: DF.Literal["int", "float", "string", "tuple", "list", "dict", "object"]
+		callback_next_retry_at: DF.Datetime | None
+		callback_status: DF.Literal["Pending", "Success", "Failure", "Fatal"]
+		callback_traceback: DF.LongText | None
 		duration: DF.Duration | None
 		end: DF.Datetime | None
 		exception: DF.Link | None
+		is_force_failure_requested: DF.Check
 		key_value_store: DF.Table[PressWorkflowKV]
-		kwargs: DF.Link | None
+		kwargs: DF.Data | None
+		kwargs_type: DF.Literal["int", "float", "string", "tuple", "list", "dict", "object"]
 		linked_docname: DF.DynamicLink
 		linked_doctype: DF.Link
 		main_method_name: DF.Data
 		main_method_title: DF.Data
-		output: DF.Link | None
+		max_no_of_callback_attempts: DF.Int
+		no_of_callback_attempts: DF.Int
+		output: DF.Data | None
+		output_type: DF.Literal[None]
 		start: DF.Datetime | None
 		status: DF.Literal["Queued", "Running", "Success", "Failure", "Fatal"]
 		stdout: DF.LongText | None
@@ -60,8 +73,23 @@ class PressWorkflow(Document):
 		workflow_traceback: DF.LongText | None
 	# end: auto-generated types
 
+	def before_save(self):
+		if self.linked_docname:
+			self.linked_docname = str(self.linked_docname)
+
 	def after_insert(self):
 		enqueue_workflow(self.name)  # type: ignore
+
+	def on_trash(self):
+		frappe.db.delete("Press Workflow Task", {"workflow": self.name})
+
+	@frappe.whitelist()
+	def force_fail(self):
+		if self.status in ["Success", "Failure", "Fatal"]:
+			frappe.throw("Cannot force fail a workflow that has already completed.")  # nosemgrep
+			return
+
+		frappe.db.set_value(self.doctype, self.name, "is_force_failure_requested", True)
 
 	def run(self):  # noqa: C901 - best to keep it in one place
 		if not self.linked_doctype or not self.linked_docname:
@@ -73,15 +101,16 @@ class PressWorkflow(Document):
 			reference_doc.workflow_name = self.name
 			reference_doc.flags.in_press_workflow_execution = True
 
-			args = PressWorkflowObject.get_object(self.args) if self.args else ()
-			kwargs = PressWorkflowObject.get_object(self.kwargs) if self.kwargs else {}
+			args = deserialize_value(self.args_type, self.args) or ()
+			kwargs = deserialize_value(self.kwargs_type, self.kwargs) or {}
 		except Exception:
 			self.status = "Fatal"
 			self.traceback = frappe.get_traceback()
 			self.save()
 			return
 
-		output = None
+		output_value = None
+		output_type = None
 		exception = None
 		workflow_exception_traceback = None
 		status = "Running"
@@ -99,11 +128,14 @@ class PressWorkflow(Document):
 			frappe.db.commit()  # nosemgrep
 
 		try:
+			if self.is_force_failure_requested:
+				raise Exception("Workflow was forcefully failed based on user request.")
+
 			with redirect_stdout(buffer):
 				result = getattr(reference_doc, self.main_method_name)(*args, **kwargs)
 
 			if result is not None:
-				output = PressWorkflowObject.store(result)  # type: ignore
+				output_type, output_value = serialize_and_store_value(result)
 			status = "Success"
 		except PressWorkflowTaskEnqueued:
 			# This is expected when a task is enqueued.
@@ -126,7 +158,8 @@ class PressWorkflow(Document):
 				self.duration = calculate_duration(self.start, self.end)
 
 			self.status = status
-			self.output = output
+			self.output = output_value
+			self.output_type = output_type
 			self.stdout = (self.stdout or "") + buffer.getvalue()
 
 			if frappe.flags.in_test and self.stdout:
@@ -138,6 +171,78 @@ class PressWorkflow(Document):
 			)
 			self.update_skipped_steps_status(save=False)
 			self.save()
+
+		if frappe.flags.in_test:
+			self.execute_callback()
+		else:
+			self.execute_callback_in_background()
+
+	def execute_callback_in_background(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			method="execute_callback",
+			queue="default",
+			timeout=300,
+			deduplicate=True,
+			enqueue_after_commit=True,
+			job_id=f"press_workflow||{self.name}||execute_callback",
+		)
+
+	def execute_callback(self):
+		"""
+		If the workflow reached it's termination state, execute callback
+		- on_workflow_success(doc:PressWorkflow) if status is Success
+		- on_workflow_failure(doc:PressWorkflow) if status is Failure
+		"""
+
+		if self.status not in ["Success", "Failure"]:
+			return
+
+		if not frappe.db.exists(self.linked_doctype, self.linked_docname):
+			return
+
+		reference_doc: WorkflowBuilder = frappe.get_doc(self.linked_doctype, self.linked_docname)  # type: ignore
+		callback_method = {
+			"Success": "on_workflow_success",
+			"Failure": "on_workflow_failure",
+		}[self.status]
+
+		if not hasattr(reference_doc, callback_method):
+			self.callback_status = "Success"
+			self.save()
+			return
+
+		try:
+			getattr(reference_doc, callback_method)(self)
+			self.callback_status = "Success"
+			self.save()
+		except Exception as e:
+			frappe.log_error(
+				f"Error executing workflow callback {callback_method}",
+				message=str(e),
+				reference_doctype=self.linked_doctype,
+				reference_name=self.linked_docname,
+			)
+
+			self.no_of_callback_attempts += 1
+			if self.no_of_callback_attempts >= self.max_no_of_callback_attempts:
+				self.callback_status = "Fatal"
+				self.callback_traceback = frappe.get_traceback()
+			else:
+				self.callback_status = "Failure"
+				self.callback_next_retry_at = frappe.utils.add_to_date(
+					minutes=2**self.no_of_callback_attempts
+				)
+
+			self.save()
+
+			if self.callback_status == "Fatal":
+				frappe.log_error(
+					f"Workflow {self.name} has reached max callback retry attempts and is marked as Fatal",
+					reference_doctype="Press Workflow",
+					reference_name=self.name,
+				)
 
 	def update_skipped_steps_status(self, save: bool = True):  # noqa: C901 - best to keep it in one place
 		is_updated = False
@@ -173,7 +278,7 @@ class PressWorkflow(Document):
 
 		if self.status == "Success":
 			if self.output:
-				return PressWorkflowObject.get_object(self.output)
+				return deserialize_value(self.output_type, self.output)
 			return None
 
 		if self.status == "Failure":
@@ -222,6 +327,42 @@ def retry_workflows():
 		except Exception as e:
 			frappe.log_error(
 				"Error Processing workflow",
+				message=str(e),
+				reference_doctype="Press Workflow",
+				reference_name=workflow_name,
+			)
+
+
+def retry_workflow_callbacks():
+	workflows = frappe.get_all(
+		"Press Workflow",
+		filters={
+			"callback_status": "Failure",
+			"callback_next_retry_at": ("<=", now_datetime()),
+		},
+		pluck="name",
+		order_by="modified asc",
+	)
+
+	# Include workflows with no callback_next_retry_at_set
+	# and in Pending or Failure state
+	workflows += frappe.get_all(
+		"Press Workflow",
+		filters={
+			"callback_status": ("in", ["Pending", "Failure"]),
+			"callback_next_retry_at": None,
+		},
+		pluck="name",
+		order_by="modified asc",
+	)
+
+	for workflow_name in workflows:
+		try:
+			workflow: PressWorkflow = frappe.get_doc("Press Workflow", workflow_name)
+			workflow.execute_callback_in_background()
+		except Exception as e:
+			frappe.log_error(
+				"Error retrying workflow callback",
 				message=str(e),
 				reference_doctype="Press Workflow",
 				reference_name=workflow_name,
