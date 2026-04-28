@@ -1,7 +1,7 @@
 ---
-import { getCollection, render } from 'astro:content';
-import FormattedDate from '../components/FormattedDate.astro';
-import Layout from '../layouts/IndexLayout.astro';
+// import { render } from 'astro:content';
+import { getCollection } from 'astro:content';
+import Layout from '@/layouts/IndexLayout.astro';
 
 let posts = await getCollection('releases');
 posts.sort((a, b) => +b.data.date - +a.data.date);

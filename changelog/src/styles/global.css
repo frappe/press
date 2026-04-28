@@ -580,13 +580,6 @@
   .prose-sm ul > li > p:last-child, .prose-sm ol > li > p:last-child { margin-bottom: 0.5rem; }
 }
 
-/* ============================================================
-   COMPONENTS
-   ============================================================ */
-
-
-
-
 body {
   font-family: "Inter", sans-serif;
   font-optical-sizing: auto;

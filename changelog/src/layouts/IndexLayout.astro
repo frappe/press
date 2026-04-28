@@ -1,7 +1,7 @@
 ---
 import "../styles/global.css"
-import BaseHead, { type Props as HeadProps } from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
+import BaseHead, { type Props as HeadProps } from '@/components/BaseHead.astro';
+import Header from '@/components/Header.astro';
 
 type Props = HeadProps;
 
@@ -13,6 +13,7 @@ const { ...head } = Astro.props;
 	<head>
 		<BaseHead {...head} />
 	</head>
+
 	<body>
 		<Header />
     <br/>
