@@ -253,14 +253,14 @@ def get(doctype, name):  # noqa: C901
 
 	meta = frappe.get_meta(doctype)
 	current_team = frappe.local.team()
+	is_support = has_support_access(doctype, name)
 
 	if meta.has_field("team"):
-		if doc.team != current_team.name:
+		if doc.team != current_team.name and not is_support:
 			raise_not_permitted()
-	elif doctype in ("Agent Job", "Ansible Play"):
-		if not frappe.local.system_user():
-			raise_not_permitted()
-	else:
+	elif is_support:
+		pass
+	elif not frappe.local.system_user():
 		raise_not_permitted()
 
 	fields = tuple(default_fields)
