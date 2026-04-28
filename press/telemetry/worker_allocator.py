@@ -119,11 +119,26 @@ def get_plan_config(plan_name: str) -> PlanConfig:
 	)
 
 
+def get_decay_factor(idx: int) -> float:
+	"""Get the decay factor based on the index of the site in the bench, this is to ensure benches with large number of sites (standby) are not eating most of the workers."""
+	if idx < 10:
+		decay_factor = 1.0
+
+	elif idx < 50:
+		decay_factor = 0.75
+
+	else:
+		decay_factor = 0.5
+
+	return decay_factor
+
+
 @dataclass
 class WorkerAllocator:
 	benches: list[BenchType]
 	total_web_worker_slots: float
 	total_bg_worker_slots: float
+	allow_surplus: bool = True
 
 	def get_guaranteed_web_and_bg_worker_share(
 		self, site_info: SiteInfo, threads: int = 0
@@ -149,17 +164,26 @@ class WorkerAllocator:
 		This calculation is done per site, assuming cases like
 		Bench A [10 x 5USD + 1 x 50USD]; Bench B [1 x 50USD]
 		Bench A should get more workers compared to Bench B
+		We also account for public benches with standby sites to ensure they aren't eating most of
+		the workers
 		"""
 		total_guaranteed_web_workers = 0.0
 		total_guaranteed_bg_workers = 0.0
 
 		for bench in self.benches:
-			threads = bench.threads_per_worker
+			sorted_sites = sorted(
+				bench.site_info, key=lambda x: get_plan_config(x["plan"]).weight, reverse=True
+			)
 
-			for site in bench.site_info:
-				guaranteed_web, guaranteed_bg = self.get_guaranteed_web_and_bg_worker_share(site, threads)
-				total_guaranteed_web_workers += guaranteed_web
-				total_guaranteed_bg_workers += guaranteed_bg
+			for idx, site in enumerate(sorted_sites):
+				guaranteed_web, guaranteed_bg = self.get_guaranteed_web_and_bg_worker_share(
+					site, bench.threads_per_worker
+				)
+				# Ensure benches with large number of sites (standby) are not eating most of the workers.
+				decay_factor = get_decay_factor(idx)
+
+				total_guaranteed_web_workers += guaranteed_web * decay_factor
+				total_guaranteed_bg_workers += guaranteed_bg * decay_factor
 
 		return total_guaranteed_web_workers, total_guaranteed_bg_workers
 
@@ -260,14 +284,21 @@ class WorkerAllocator:
 			max_bg = 0
 			threads = bench.threads_per_worker
 
-			for site in bench.site_info:
+			sorted_sites = sorted(
+				bench.site_info, key=lambda x: get_plan_config(x["plan"]).weight, reverse=True
+			)
+
+			for idx, site in enumerate(sorted_sites):
 				plan_config = get_plan_config(site["plan"])
 				guaranteed_web, guaranteed_bg = self.get_guaranteed_web_and_bg_worker_share(
 					site,
 					threads,
 				)
-				bench_web_workers += guaranteed_web
-				bench_bg_workers += guaranteed_bg
+
+				decay_factor = get_decay_factor(idx)
+
+				bench_web_workers += guaranteed_web * decay_factor
+				bench_bg_workers += guaranteed_bg * decay_factor
 				bench_weight += plan_config.weight
 				max_web += plan_config.get_web_max(threads)
 				max_bg += plan_config.get_bg_max()
@@ -284,9 +315,15 @@ class WorkerAllocator:
 			)
 			total_server_weight += bench_weight
 
-		self.calculate_surplus_weight_distribution(
-			total_server_weight, surplus_web_workers, surplus_bg_workers, bench_allocations
-		)
+		if self.allow_surplus:
+			self.calculate_surplus_weight_distribution(
+				total_server_weight, surplus_web_workers, surplus_bg_workers, bench_allocations
+			)
+		else:
+			for bench_allocation in bench_allocations:
+				# Also ensure we are giving at least one worker to the bench now since we don't have surplus
+				bench_allocation.web_workers = max(bench_allocation.web_workers, 1)
+				bench_allocation.bg_workers = max(bench_allocation.bg_workers, 1)
 
 		return [
 			{b.bench: {"web_workers": int(b.web_workers), "bg_workers": int(b.bg_workers)}}
@@ -300,7 +337,7 @@ if __name__ == "__main__":
 			BenchType(
 				name="Bench 1",
 				site_info=[
-					SiteInfo(name="Site A", plan="USD 5"),
+					# SiteInfo(name="Site A", plan="USD 5"),
 					SiteInfo(name="Site B", plan="USD 10"),
 				],
 			),
@@ -322,11 +359,12 @@ if __name__ == "__main__":
 					SiteInfo(name="Site B", plan="USD 10"),
 					SiteInfo(name="Site Z", plan="USD 50"),
 				],
-				threads_per_worker=10,
+				threads_per_worker=4,  # lesser workers since it has threads
 			),
 		],
 		total_web_worker_slots=25,
 		total_bg_worker_slots=8,
+		allow_surplus=False,
 	)
 	print("Guaranteed Worker Share:", scheduler.get_total_guaranteed_worker_share())
 	print(scheduler.allocate_workers())
