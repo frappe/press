@@ -1042,7 +1042,7 @@ class Site(Document, TagHelpers):
 		if app.database_server:
 			db: DatabaseServer = frappe.get_doc("Database Server", app.database_server)
 			space_required = self.restore_space_required_on_db
-			if db.ip == app.ip:
+			if db.private_ip == app.private_ip:
 				space_required += self.restore_space_required_on_app
 			self.check_and_increase_disk(db, space_required)
 
@@ -1309,7 +1309,7 @@ class Site(Document, TagHelpers):
 	def check_fatal_site_update(self):
 		if self.fatal_site_update:
 			frappe.throw(
-				"Site has encountered a fatal error during last update. Please open a ticket on our <a href='https://support.frappe.io'> support portal </a> with the error details to resolve the issue.",
+				"Site has encountered a fatal error during last update. Please open a ticket on our <a href='https://support.frappe.io' class='underline'> support portal </a> with the error details to resolve the issue.",
 			)
 
 	@dashboard_whitelist()
