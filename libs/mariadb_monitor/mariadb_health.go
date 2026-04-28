@@ -54,7 +54,12 @@ func checkReachable(creds MySQLCredentials) bool {
 func checkProcesslist(creds MySQLCredentials) DBHealth {
 	health := DBHealth{Reachable: true}
 
-	dsn := fmt.Sprintf("%s:%s@unix(%s)/?timeout=5s&readTimeout=5s&writeTimeout=5s", creds.User, creds.Password, creds.Socket)
+	var dsn string
+	if creds.Host != "" && creds.Port > 0 {
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/?timeout=5s&readTimeout=5s&writeTimeout=5s", creds.User, creds.Password, creds.Host, creds.Port)
+	} else {
+		dsn = fmt.Sprintf("%s:%s@unix(%s)/?timeout=5s&readTimeout=5s&writeTimeout=5s", creds.User, creds.Password, creds.Socket)
+	}
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		health.Reachable = false
@@ -138,6 +143,13 @@ func checkProcesslist(creds MySQLCredentials) DBHealth {
 			}
 		case "Killed":
 			// If a killed process is stuck for > 5 mins
+			if timeSec >= 300 {
+				isStuck = true
+				reason = fmt.Sprintf("state=%q time=%ds", state, timeSec)
+			}
+		case "Waiting for table flush", "Waiting for global read lock":
+			// These states cascade — one blocked DDL/flush/lock can freeze all
+			// queries on the affected table(s), exhausting the connection pool.
 			if timeSec >= 300 {
 				isStuck = true
 				reason = fmt.Sprintf("state=%q time=%ds", state, timeSec)
