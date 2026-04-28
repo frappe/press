@@ -219,8 +219,10 @@ def setup_account(  # noqa: C901
 	press_roles = account_request.press_roles
 
 	if is_invitation:
-		# if this is a request from an invitation
-		# then Team already exists and will be added to that team
+		if frappe.session.user != account_request.email:
+			frappe.throw(
+				"This invite can't be accepted with the current account. Please sign in with the invited account or request a new invite."
+			)
 		doc = frappe.get_doc("Team", team)
 		doc.create_user_for_member(
 			first_name,

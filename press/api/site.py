@@ -585,8 +585,25 @@ def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 
 @frappe.whitelist()
 def job(job):
-	job = frappe.get_doc("Agent Job", job)
-	job = job.as_dict()
+	job_doc = frappe.get_doc("Agent Job", job)
+	job_team = None
+
+	if job_doc.site:
+		job_team = frappe.db.get_value("Site", job_doc.site, "team")
+	elif job_doc.bench:
+		job_team = frappe.db.get_value("Bench", job_doc.bench, "team")
+	elif job_doc.server:
+		server_type = frappe.db.get_value("Agent Job", job, "server_type")
+		if server_type == "Server":
+			job_team = frappe.db.get_value("Server", job_doc.server, "team")
+		elif server_type == "Database Server":
+			job_team = frappe.db.get_value("Database Server", job_doc.server, "team")
+
+	current_team = get_current_team()
+	if job_team and job_team != current_team:
+		frappe.throw("Not permitted to access this job", frappe.PermissionError)
+
+	job = job_doc.as_dict()
 	whitelisted_fields = [
 		"name",
 		"job_type",
