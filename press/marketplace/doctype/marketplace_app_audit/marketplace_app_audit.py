@@ -282,8 +282,12 @@ class MarketplaceAppAudit(Document):
 		if self.audit_result == "Fail":
 			# mark "attention required" status in marketplace app
 			frappe.db.set_value("Marketplace App", self.marketplace_app, "status", "Attention Required")
-			self._yank_release()
 			self._auto_reject_approval_requests()
+
+			# only yank the release if the audit had any hard blocking failures.
+			# else the audit fails but we don't want to yank the release
+			if self.has_blocking_failures():
+				self._yank_release()
 
 	def _yank_release(self) -> None:
 		"""
@@ -337,11 +341,24 @@ class MarketplaceAppAudit(Document):
 
 		failing_checks = []
 		for check in self.audit_checks:
+			# internal only checks are not shown to the publisher in the audit report
+			if check.is_internal_only:
+				continue
+
 			if check.result in ("Fail", "Warn"):
 				details_parsed = None
 				if check.details:
 					try:
 						details_parsed = json.loads(check.details)
+
+						occurrences = details_parsed.get("occurrences", [])
+						# filter out non internal only occurrences
+						public_occurrences = [occ for occ in occurrences if not occ.get("is_internal_only")]
+						if not public_occurrences:
+							continue
+
+						details_parsed = {**details_parsed, "occurrences": public_occurrences}
+
 					except (json.JSONDecodeError, TypeError):
 						details_parsed = None
 
@@ -370,3 +387,19 @@ class MarketplaceAppAudit(Document):
 			template="marketplace_audit_report",
 		)
 		frappe.msgprint(f"Audit report sent to {publisher_email}")
+
+	def has_blocking_failures(self) -> bool:
+		"""
+		Checks if the audit has any blocking failures, including any blocking findings in the semgrep rules.
+		"""
+		for check in self.audit_checks:
+			if check.is_blocking:
+				return True
+
+			# although we are rolling up the semgrep ruleset's blocking findings to the overall audit check result, we should still check for blocking findings in the semgrep ruleset specifically.
+			# if check name starts with "Semgrep" we need to check if it has any blocking findings
+			if check.check_name.startswith("Semgrep") and any(
+				occurrence.get("is_blocking") for occurrence in check.details.get("occurrences", [])
+			):
+				return True
+		return False

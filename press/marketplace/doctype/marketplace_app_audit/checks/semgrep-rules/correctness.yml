@@ -33,6 +33,7 @@ rules:
     marketplace_check_id: correctness_frappe_breaks_multitenancy
     marketplace_check_name: Breaks Multitenancy
     marketplace_category: Correctness
+    is_blocking: true
     remediation: |
       $VAR global variable does not respect database multitenancy, consider wrapping it in function or method call.
   languages: [python]
@@ -57,6 +58,7 @@ rules:
     marketplace_check_id: correctness_frappe_cache_breaks_multitenancy
     marketplace_check_name: Cache Breaks Multitenancy
     marketplace_category: Correctness
+    is_blocking: true
     remediation: |
       redis.set and redis.get do not support multitenancy, use set_value/get_value instead.
   languages: [python]
@@ -99,6 +101,7 @@ rules:
     marketplace_check_id: correctness_frappe_modifying_but_not_committing
     marketplace_check_name: Modifying But Not Committing
     marketplace_category: Correctness
+    is_blocking: true
     remediation: |
       DocType modified in self.$METHOD. Please check if modification of self.$ATTR is commited to database.
   languages: [python]
@@ -159,6 +162,7 @@ rules:
     marketplace_check_id: correctness_frappe_modifying_but_not_committing_other_method
     marketplace_check_name: Modifying But Not Committing Other Method
     marketplace_category: Correctness
+    is_blocking: true
     remediation: |
       self.$ANOTHER_METHOD is called from self.$METHOD, check if changes to self.$ATTR are commited to database.
   languages: [python]
@@ -292,6 +296,8 @@ rules:
       exclude:
         - "**/patches/**"
         - "**/demo/**"
+        - "**/tests/**"
+        - "**/test_*.py"
   languages: [python]
   severity: WARNING
 
@@ -478,6 +484,7 @@ rules:
     marketplace_check_id: correctness_frappe_monkey_patching_not_allowed
     marketplace_check_name: Monkey Patching Not Allowed
     marketplace_category: Correctness
+    is_blocking: true
     remediation: |
       $PROPERTY being monkey patched by app. Use hooks provided by framework instead of patching behaviour at runtime.
   paths:

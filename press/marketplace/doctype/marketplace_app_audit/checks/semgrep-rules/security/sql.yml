@@ -1,7 +1,7 @@
 rules:
   - id: frappe-sql-format-injection
     languages: [python]
-    severity: ERROR
+    severity: HIGH
     message: >-
       Detected use of '.format()' or f-string in a Frappe SQL call.
       This can lead to SQL injection. Use parameterized queries instead.

@@ -114,6 +114,7 @@ def run_semgrep_rules(clone_dir: str) -> list[CheckResult]:
 	# write the payload to a file for debugging
 	with open("semgrep_payload.json", "w") as f:
 		json.dump(payload, f, indent=2)
+
 	results.extend(_parse_semgrep_errors(payload.get("errors", [])))
 	results.extend(_build_category_results(payload.get("results", [])))
 
@@ -186,6 +187,10 @@ def _build_category_results(findings: list[dict]) -> list[CheckResult]:
 			)
 			continue
 
+		# blocking findings are those which have is_blocking set to true in the metadata in the semgrep rule: these are hard fail checks
+		is_any_blocking_finding = any(_is_blocking_finding(finding) for finding in category_findings)
+		# no need to check for internal only findings here: as they will be used when showing the results to the publisher(in mail/dashboard)
+
 		# if there are findings for a category, return a fail result with the highest severity
 		highest_severity = _highest_audit_severity(category_findings)
 
@@ -196,7 +201,9 @@ def _build_category_results(findings: list[dict]) -> list[CheckResult]:
 				check_name=f"Semgrep {category}",
 				category=category,
 				severity=highest_severity,
-				result="Fail" if highest_severity in {"Critical", "Major"} else "Warn",
+				result="Fail"
+				if highest_severity in {"Critical", "Major"} or is_any_blocking_finding
+				else "Warn",
 				message=f"Semgrep {category} checks found {len(category_findings)} issue(s).",
 				details=json.dumps(
 					{
@@ -204,6 +211,11 @@ def _build_category_results(findings: list[dict]) -> list[CheckResult]:
 					}
 				),
 				remediation="We observed some issues with the codebase. Please review the occurrences list and fix the issues.",
+				is_blocking=is_any_blocking_finding,
+				# is internal only should be false for semgrep ruleset, as none of the semgrep ruleset are just for internal purpose
+				# a few rules are internal only, but we should not roll them up to declare the entire ruleset as internal only
+				# is_internal_only condition will be handled when showing the results to the publisher(in mail/dashboard)
+				is_internal_only=False,
 			)
 		)
 
@@ -247,9 +259,24 @@ def _serialize_finding(finding: dict) -> dict:
 		"end": finding.get("end"),
 		"message": message,
 		"severity": extra.get("severity"),
+		"is_internal_only": _is_internal_only_finding(finding),
+		"is_blocking": _is_blocking_finding(finding),
 	}
 
 
 def _make_category_check_id(category: str) -> str:
 	raw = f"semgrep_{category.lower()}"
 	return re.sub(r"[^a-zA-Z0-9_]+", "_", raw).strip("_")
+
+
+def _metadata(finding: dict) -> dict:
+	return (finding.get("extra") or {}).get("metadata") or {}
+
+
+def _is_internal_only_finding(finding: dict) -> bool:
+	return bool(_metadata(finding).get("is_internal_only"))
+
+
+def _is_blocking_finding(finding: dict) -> bool:
+	# Only explicit true is blocking
+	return _metadata(finding).get("is_blocking") is True
