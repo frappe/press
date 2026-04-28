@@ -366,13 +366,9 @@ class Team(Document):
 		)
 
 		if not user_exists:
-			user = team.create_user(
-				first_name, last_name, account_request.email, password, account_request.role
-			)
+			user = team.create_user(first_name, last_name, account_request.email, password)
 		else:
 			user = frappe.get_doc("User", account_request.email)
-			user.append_roles(account_request.role)
-			user.save(ignore_permissions=True)
 
 		if frappe.db.exists("Team", {"user": user.name}):
 			frappe.throw("You have already an account with same email. Please login using the same email.")
@@ -398,8 +394,8 @@ class Team(Document):
 		return team
 
 	@staticmethod
-	def create_user(first_name=None, last_name=None, email=None, password=None, role=None):
-		# This role is basic and necessary for every user.
+	def create_user(first_name=None, last_name=None, email=None, password=None):
+		# These roles are basic and necessary for every user.
 		basic_roles = ("Press User",)
 		user = frappe.new_doc("User")
 		user.first_name = first_name
@@ -407,7 +403,7 @@ class Team(Document):
 		user.email = email
 		user.owner = email
 		user.new_password = password
-		user.append_roles(role, *basic_roles)
+		user.append_roles(*basic_roles)
 		user.flags.no_welcome_mail = True
 		user.save(ignore_permissions=True)
 		return user
@@ -418,13 +414,12 @@ class Team(Document):
 		last_name=None,
 		email=None,
 		password=None,
-		role=None,
 		press_roles=None,
 		skip_validations=False,
 	):
 		user = frappe.db.get_value("User", email, ["name"], as_dict=True)
 		if not user:
-			user = self.create_user(first_name, last_name, email, password, role)
+			user = self.create_user(first_name, last_name, email, password)
 
 		self.append("team_members", {"user": user.name})
 		self.save(ignore_permissions=True)
