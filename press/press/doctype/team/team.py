@@ -1344,6 +1344,23 @@ class Team(Document):
 		if isinstance(invoice, str):
 			invoice = frappe.get_doc("Invoice", invoice)
 
+		duplicate_marker = (
+			f"upi_payment_failed_email_sent:{error_reason}:attempt:{invoice.payment_attempt_count}"
+		)
+		already_notified = frappe.db.exists(
+			"Comment",
+			{
+				"reference_doctype": "Invoice",
+				"reference_name": invoice.name,
+				"comment_type": "Comment",
+				"content": ("like", f"%{duplicate_marker}%"),
+			},
+		)
+		if already_notified:
+			return
+
+		invoice.add_comment("Comment", duplicate_marker)
+
 		email = get_communication_info("Email", "Billing", "Team", self.name) or [self.user]
 		subject = "UPI Autopay Payment Failed for Frappe Cloud Subscription"
 
