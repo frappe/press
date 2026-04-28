@@ -1,6 +1,7 @@
 ---
 import { render, getCollection } from 'astro:content';
 import Layout from '@/layouts/IndexLayout.astro';
+import { getFileFromRoute } from "@/utils"
 
 let posts = await getCollection('releases');
 posts.sort((a, b) => +b.data.date - +a.data.date);
@@ -13,8 +14,8 @@ const baseurl = import.meta.env.BASE_URL
     <ul class="mx-auto max-w-3xl my-5">
       {posts.map((post) => (
         <li class="pb-20 grid grid-cols-[150px_1fr] gap-5">
-          <a href={`${baseurl}/releases/${post.id}`} class="sticky top-8 self-start">
-            <div class="bg-surface-gray-6 text-white p-2 w-fit rounded text-xs">v{post.data.versionNumber}</div>
+          <a href={`${baseurl}/version/${post.id}`} class="sticky top-8 self-start">
+            <div class="bg-surface-gray-6 text-white p-2 w-fit rounded text-xs">v{getFileFromRoute(post.filePath)}</div>
             <span class="text-sm text-surface-gray-5 flex items-center gap-2 mt-3">
               {post.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
             </span>

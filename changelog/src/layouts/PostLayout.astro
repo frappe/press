@@ -3,6 +3,7 @@ import "@/styles/global.css"
 
 import Header from "@/components/Header.astro";
 import BaseHead from "@/components/BaseHead.astro";
+import { getFileFromRoute } from "@/utils"
 import type { CollectionEntry } from "astro:content";
 
 type Props = {
@@ -27,7 +28,7 @@ const formatDate = (x:string) => new Date(x).toLocaleDateString('en-US', { year:
 		<div class='max-w-3xl mx-auto pb-20'>
 			<div class='flex items-center justify-between my-5'>
           <span class='text-ink-gray-6'>{formatDate(release.data.date)} </span>
-        <span class='bg-surface-gray-6 text-white p-2 rounded text-sm'>v{release.data.versionNumber}</span>
+        <span class='bg-surface-gray-6 text-white p-2 rounded text-sm'>v{getFileFromRoute(release.filePath)}</span>
 			</div>
       <br/>
 

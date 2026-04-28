@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
 	site: 'https://cloud.frappe.io',
-	base: '/changelog',
+	base: '/releases',
 
 	markdown: {
 		remarkPlugins: [urlToVidTag],
@@ -15,7 +15,7 @@ export default defineConfig({
 		plugins: [tailwindcss()],
 	},
 
-	outDir: '../press/www/changelog',
+	outDir: '../press/www/releases',
 
 	image: {
 		domains: ['github.com'],
