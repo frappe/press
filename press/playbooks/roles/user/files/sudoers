@@ -1,9 +1,14 @@
 frappe ALL = (root) /bin/systemctl
-frappe ALL = (root) NOPASSWD: /bin/systemctl * nginx
+frappe ALL = (root) NOPASSWD: /bin/systemctl reload nginx
+frappe ALL = (root) NOPASSWD: /bin/systemctl restart nginx
+frappe ALL = (root) NOPASSWD: /bin/systemctl stop nginx
+frappe ALL = (root) NOPASSWD: /bin/systemctl status nginx
 frappe ALL = (root) NOPASSWD: /bin/systemctl * supervisord
 frappe ALL = (root) NOPASSWD: /bin/systemctl * prometheus
 frappe ALL = (root) NOPASSWD: /bin/systemctl * alertmanager
 frappe ALL = (root) NOPASSWD: /usr/bin/supervisorctl
-frappe ALL = (root) NOPASSWD: /usr/sbin/nginx
 frappe ALL = (root) NOPASSWD: /usr/local/bin/bench
+frappe ALL = (root) NOPASSWD: /usr/sbin/nginx -s reload
+frappe ALL = (root) NOPASSWD: /usr/sbin/nginx -s stop
+frappe ALL = (root) NOPASSWD: /usr/sbin/nginx -t
 frappe ALL = (root) NOPASSWD: /usr/bin/du
