@@ -684,8 +684,6 @@ def create_razorpay_mandate(max_amount: int, auth_type: str = "upi") -> dict:
 	team = get_current_team()
 	max_amount = int(max_amount)
 	team_doc = frappe.get_doc("Team", team)
-	if not team_doc.upi_autopay_enabled:
-		frappe.throw(_("UPI Autopay is not enabled for your account"))
 	if team_doc.currency != "INR":
 		frappe.throw(_("UPI Autopay is only available for currency INR"))
 	# Check if an active or pending mandate already exists
