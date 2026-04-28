@@ -1,58 +1,29 @@
 ---
-// import { render } from 'astro:content';
-import { getCollection } from 'astro:content';
+import { render, getCollection } from 'astro:content';
 import Layout from '@/layouts/IndexLayout.astro';
 
 let posts = await getCollection('releases');
 posts.sort((a, b) => +b.data.date - +a.data.date);
 
 const baseurl = import.meta.env.BASE_URL
-
-
 ---
 
 <Layout>
-	<main class='flex flex-col'>
-		<!-- ul class="posts mx-auto" transition:name="post">
-			{
-				posts.map((post) => (
-					<li class="post">
-						<div class="version_wrapper bg-surface-gray-6 text-ink-gray-1 p-2 w-fit p-">
-							<div class="version_info">
-								<a href={`/releases/${post.id}`}>
-									<div class="version_number">{post.data.versionNumber}</div>
-									<FormattedDate class="date" date={post.data.date} />
-								</a>
-							</div>
-						</div>
-						<div class="content prose">
-							{render(post).then(({ Content }) => (
-								<Content />
-							))}
-						</div>
-					</li>
-				))
-			}
-		</ul -->
-
-    <!-- just links --> 
-
-    <div class='flex flex-col gap-5 max-w-xl  mx-auto w-full py-10'>
-
-    {
-      posts.map((post) => (
-        <a href={`${baseurl}/releases/${post.id}`} class='justify-between flex'>
-          <span>           Version {post.data.versionNumber}
-            </span>
-
-            <span class='text-ink-gray-5'>
-           { new Date(post.data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }
+  <main class="flex flex-col">
+    <ul class="mx-auto max-w-3xl my-5">
+      {posts.map((post) => (
+        <li class="pb-20 grid grid-cols-[150px_1fr] gap-5">
+          <a href={`${baseurl}/releases/${post.id}`} class="sticky top-8 self-start">
+            <div class="bg-surface-gray-6 text-white p-2 w-fit rounded text-xs">v{post.data.versionNumber}</div>
+            <span class="text-sm text-surface-gray-5 flex items-center gap-2 mt-3">
+              {post.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
             </span>
           </a>
-        ))
-    }
-
-    </div>
-
-	</main>
+          <div class="prose">
+            {render(post).then(({ Content }) => <Content />)}
+          </div>
+        </li>
+      ))}
+    </ul>
+  </main>
 </Layout>
