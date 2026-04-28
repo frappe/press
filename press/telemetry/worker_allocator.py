@@ -120,7 +120,8 @@ def get_plan_config(plan_name: str) -> PlanConfig:
 
 
 def get_decay_factor(idx: int) -> float:
-	"""Get the decay factor based on the index of the site in the bench, this is to ensure benches with large number of sites (standby) are not eating most of the workers."""
+	"""Get the decay factor based on the index of the site in the bench to ensure
+	benches with large number of sites (standby) are not eating most of the workers."""
 	if idx < 10:
 		decay_factor = 1.0
 
