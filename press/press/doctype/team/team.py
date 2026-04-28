@@ -160,6 +160,7 @@ class Team(Document):
 		"hybrid_servers_enabled",
 		"relaxed_permissions",
 		"upi_autopay_enabled",
+		"default_razorpay_mandate",
 	)
 
 	def get_doc(self, doc):
