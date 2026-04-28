@@ -77,9 +77,7 @@ class TestTeam(FrappeTestCase):
 		self.assertEqual(team.billing_name, "first name last name")
 
 	def test_create_user_for_member_adds_team_member(self):
-		# create system manager to pass mandatory site requirement
-		Team.create_user("sys_mgr", email="testuser1@gmail.com", role="System Manager")
-
+		Team.create_user("sys_mgr", email="testuser1@gmail.com")
 		team = create_test_team()
 		email = "testuser@frappe.cloud"
 		team.create_user_for_member("test", "user", "testuser@frappe.cloud")
