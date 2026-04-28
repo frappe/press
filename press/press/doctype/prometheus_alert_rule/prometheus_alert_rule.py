@@ -14,6 +14,7 @@ from frappe.model.document import Document
 from press.agent import Agent
 
 if TYPE_CHECKING:
+	from press.press.doctype.press_job.press_job import PressJob
 	from press.press.doctype.server.server import Server
 
 
@@ -81,13 +82,13 @@ class PrometheusAlertRule(Document):
 			"matchers": [f'alertname="{self.name}"'],
 		}
 
-	def react(self, instance_type: str, instance: str, labels: dict | None = None):
+	def react(self, instance_type: str, instance: str, labels: dict | None = None) -> PressJob | None:
 		assert self.press_job_type is not None
 		return self.run_press_job(self.press_job_type, instance_type, instance, labels)
 
 	def run_press_job(
 		self, job_name: str, server_type: str, server_name: str, labels: dict | None = None, arguments=None
-	):
+	) -> PressJob | None:
 		server: "Server" = frappe.get_doc(server_type, server_name)
 		if self.only_on_shared and not server.public:
 			return None
