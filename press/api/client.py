@@ -251,16 +251,11 @@ def get(doctype, name):  # noqa: C901
 			return controller.on_not_found(name)
 		raise
 
-	meta = frappe.get_meta(doctype)
-	current_team = frappe.local.team()
-	is_support = has_support_access(doctype, name)
-
-	if meta.has_field("team"):
-		if doc.team != current_team.name and not is_support:
-			raise_not_permitted()
-	elif is_support:
-		pass
-	elif not frappe.local.system_user():
+	if (
+		not (frappe.local.system_user() or has_support_access(doctype, name))
+		and frappe.get_meta(doctype).has_field("team")
+		and doc.team != frappe.local.team().name
+	):
 		raise_not_permitted()
 
 	fields = tuple(default_fields)
