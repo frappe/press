@@ -586,6 +586,10 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def impersonate(self, member, reason):
+		frappe.only_for("System Manager")
+		member_team = frappe.db.get_value("Team Member", member, "parent")
+		if member_team != self.name:
+			frappe.throw("Member does not belong to this team", frappe.PermissionError)
 		user = frappe.db.get_value("Team Member", member, "user")
 		impersonation = frappe.get_doc(
 			{
