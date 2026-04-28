@@ -34,6 +34,7 @@
   "is_for_recovery",
   "is_monitoring_disabled",
   "enable_on_prem_failover_support",
+  "stop_incident_actions",
   "billing_section",
   "team",
   "plan",
@@ -753,6 +754,12 @@
    "fieldname": "enable_on_prem_failover_support",
    "fieldtype": "Check",
    "label": "Enable On-Prem Failover Support"
+  },
+  {
+   "default": "0",
+   "fieldname": "stop_incident_actions",
+   "fieldtype": "Check",
+   "label": "Stop Incident Actions"
   }
  ],
  "links": [
@@ -765,7 +772,7 @@
    "link_fieldname": "app_server"
   }
  ],
- "modified": "2026-04-23 12:34:18.205971",
+ "modified": "2026-04-28 18:08:02.595325",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
