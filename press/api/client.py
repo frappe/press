@@ -244,7 +244,7 @@ def get(doctype, name):  # noqa: C901
 
 	check_permissions(doctype)
 	try:
-		doc = frappe.get_doc(doctype, name)
+		doc = frappe.get_doc(doctype, name, check_permission=True)
 	except frappe.DoesNotExistError:
 		controller = get_controller(doctype)
 		if hasattr(controller, "on_not_found"):
