@@ -130,7 +130,7 @@
 		</DismissableBanner>
 
 		<div class="col-span-1 rounded-md border lg:col-span-2">
-			<div class="grid grid-cols-2 lg:grid-cols-4">
+			<div class="grid grid-cols-2 lg:flex lg:*:flex-grow">
 				<div class="border-b border-r p-5 lg:border-b-0">
 					<div class="flex h-full items-center justify-between">
 						<div>
@@ -139,7 +139,10 @@
 								<div>
 									<div class="leading-4">
 										<span class="flex items-center text-base text-gray-900">
-											<template v-if="$site.doc.trial_end_date">
+											<template v-if="$site.doc.is_dedicated_server">
+												Dedicated Server Site
+											</template>
+											<template v-else-if="$site.doc.trial_end_date">
 												{{ trialDays($site.doc.trial_end_date) }}
 											</template>
 											<template v-else-if="currentPlan">
@@ -169,12 +172,24 @@
 								</div>
 							</div>
 						</div>
-						<Button @click="showPlanChangeDialog">
-							{{ currentPlan?.is_trial_plan ? 'Upgrade' : 'Change' }}
-						</Button>
+						<template v-if="!$site.doc.is_dedicated_server">
+							<Button @click="showPlanChangeDialog">
+								{{ currentPlan?.is_trial_plan ? 'Upgrade' : 'Change' }}
+							</Button>
+						</template>
+						<template v-else>
+							<Tooltip
+								text="No individual plans needed for sites on dedicated servers"
+							>
+								<LucideHelpCircle class="size-4" />
+							</Tooltip>
+						</template>
 					</div>
 				</div>
-				<div class="border-b p-5 lg:border-b-0 lg:border-r">
+				<div
+					v-if="$site.doc.is_dedicated_server"
+					class="border-b p-5 lg:border-b-0 lg:border-r"
+				>
 					<div
 						class="flex items-center justify-between text-base text-gray-700"
 					>
@@ -209,8 +224,17 @@
 					<div
 						class="flex items-center justify-between text-base text-gray-700"
 					>
-						<span>Storage</span>
-						<div class="h-7"></div>
+						<div class="flex w-full">
+							<div class="flex-grow">Object Storage</div>
+
+							<Tooltip
+								text="Includes private and public file uploads and backups"
+							>
+								<LucideHelpCircle class="inline size-4 ml-2" />
+							</Tooltip>
+
+							<div class="h-7"></div>
+						</div>
 					</div>
 					<div class="mt-2">
 						<Progress
