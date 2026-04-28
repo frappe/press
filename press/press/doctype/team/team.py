@@ -1345,7 +1345,7 @@ class Team(Document):
 		message = f"Failed Invoice Payment [{invoice}]({invoice_url}) of Partner: [{self.name}]({team_url})"
 		TelegramMessage.enqueue(message=message)
 
-	def send_email_for_failed_upi_payment(self, invoice, error_reason=None, upi_vpa=None):
+	def send_email_for_failed_upi_payment(self, invoice=None, error_reason=None, upi_vpa=None):
 		if isinstance(invoice, str):
 			invoice = frappe.get_doc("Invoice", invoice)
 
@@ -1358,7 +1358,7 @@ class Team(Document):
 			template="payment_failed_upi_autopay",
 			args={
 				"subject": subject,
-				"amount": invoice.get_formatted("amount_due_with_tax"),
+				"amount": invoice.get_formatted("amount_due_with_tax") if invoice else None,
 				"upi_vpa": upi_vpa,
 				"error_reason": error_reason,
 				"upi_autopay_link": frappe.utils.get_url("/dashboard/billing/upi-autopay"),
