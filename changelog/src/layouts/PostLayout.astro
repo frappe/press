@@ -25,9 +25,9 @@ const formatDate = (x:string) => new Date(x).toLocaleDateString('en-US', { year:
 	</head><body>
     <Header/>
 		<div class='max-w-3xl mx-auto pb-20'>
-			<div class="rounded flex justify-between gap-1 my-10 bg-surface-gray-6 text-ink-gray-1 p-3 px-5">
-        <div>Version {release.data.versionNumber}</div>
-          <span>{formatDate(release.data.date)} </span>
+			<div class='flex items-center justify-between my-5'>
+          <span class='text-ink-gray-6'>{formatDate(release.data.date)} </span>
+        <span class='bg-surface-gray-6 text-white p-2 rounded text-sm'>v{release.data.versionNumber}</span>
 			</div>
       <br/>
 
