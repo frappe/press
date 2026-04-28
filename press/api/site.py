@@ -3074,6 +3074,7 @@ def _get_custom_app_upgrade_source(
 		branch=branch,
 		version=next_version,
 		github_installation_id=github_installation_id,
+		ease_versioning_constrains=True,
 	)
 
 	existing_source = frappe.db.get_value(
