@@ -1,13 +1,14 @@
 ---
-const baseurl = import.meta.env.BASE_URL
+const baseurl = import.meta.env.BASE_URL;
 ---
 
 <header>
-  <nav class='flex p-3 gap-3 items-center border-b border-gray-200'>
+  <div class='border-b border-surface-gray-2'>
+  <nav class='max-w-3xl flex mx-auto py-4 gap-3 items-center border-b border-gray-200'>
 			<a href={baseurl + '/'} class='flex items-center gap-2'>
         <img src={baseurl + '/logo.svg'} alt="logo" class="size-6" />
-        Changelog
+        Releases
 			</a>
-			<a href="https://github.com/frappe/press/releases" target="_blank" class='ml-auto'>Release Notes</a>
 	</nav>
+  </div>
 </header>
