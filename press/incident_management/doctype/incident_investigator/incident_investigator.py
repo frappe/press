@@ -824,8 +824,6 @@ class IncidentInvestigator(Document, StepHandler):
 		)
 		stop_incident_actions = frappe.db.get_value("Server", self.server, "stop_incident_actions")
 
-		stop_incident_actions = frappe.db.get_value("Server", self.server, "stop_incident_actions")
-
 		pattern_detector = IncidentPatternDetector(self)
 
 		if self.action_steps and execute_action_steps and not stop_incident_actions:
