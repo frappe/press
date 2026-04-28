@@ -76,6 +76,12 @@
 								{{ option.label }}
 							</span>
 							<span
+								v-if="option.is_mandatory"
+								class="text-xs text-blue-500 font-medium"
+							>
+								Mandatory
+							</span>
+							<span
 								v-if="option.is_yanked"
 								class="text-xs text-red-500 font-medium"
 							>
@@ -96,8 +102,7 @@
 </template>
 
 <script>
-import { Popover, Button, debounce } from 'frappe-ui';
-import FormControl from 'frappe-ui/src/components/FormControl/FormControl.vue';
+import { Popover, Button, debounce, FormControl } from 'frappe-ui';
 import { nextTick } from 'vue';
 
 export default {

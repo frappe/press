@@ -47,6 +47,7 @@
   "ip",
   "is_static_ip",
   "ipv6",
+  "nat_server",
   "column_break_3",
   "private_ip",
   "private_mac_address",
@@ -224,8 +225,7 @@
    "default": "0",
    "fieldname": "use_for_new_benches",
    "fieldtype": "Check",
-   "label": "Use For New Benches",
-   "read_only": 1
+   "label": "Use For New Benches"
   },
   {
    "fieldname": "hostname",
@@ -246,8 +246,7 @@
    "default": "0",
    "fieldname": "use_for_new_sites",
    "fieldtype": "Check",
-   "label": "Use For New Sites",
-   "read_only": 1
+   "label": "Use For New Sites"
   },
   {
    "fieldname": "cluster",
@@ -744,6 +743,12 @@
    "fieldname": "is_provisioning_press_job_completed",
    "fieldtype": "Check",
    "label": "Is Provisioning Job Completed"
+  },
+  {
+   "fieldname": "nat_server",
+   "fieldtype": "Link",
+   "label": "NAT Server",
+   "options": "NAT Server"
   },
   {
    "default": "0",

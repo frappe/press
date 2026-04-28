@@ -16,28 +16,19 @@
   "server_type",
   "server",
   "virtual_machine",
-  "column_break_11",
-  "arguments",
-  "callback_section",
-  "callback_executed",
-  "callback_failed",
-  "callback_retry_limit_reached",
-  "callback_failure_issue_resolved",
-  "column_break_zynz",
-  "callback_failure_count",
-  "next_callback_retry_at"
+  "column_break_fhyz",
+  "arguments"
  ],
  "fields": [
   {
    "fieldname": "job_type",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Job Type",
-   "options": "Press Job Type",
-   "read_only": 1,
    "reqd": 1,
-   "search_index": 1
+   "search_index": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "status",
@@ -49,14 +40,6 @@
    "read_only": 1,
    "reqd": 1,
    "search_index": 1
-  },
-  {
-   "default": "{}",
-   "fieldname": "arguments",
-   "fieldtype": "Code",
-   "label": "Arguments",
-   "read_only": 1,
-   "reqd": 1
   },
   {
    "fieldname": "column_break_3",
@@ -91,8 +74,8 @@
    "fieldtype": "Link",
    "label": "Server Type",
    "options": "DocType",
-   "read_only": 1,
-   "search_index": 1
+   "search_index": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "server",
@@ -101,8 +84,8 @@
    "in_standard_filter": 1,
    "label": "Server",
    "options": "server_type",
-   "read_only": 1,
-   "search_index": 1
+   "search_index": 1,
+   "set_only_once": 1
   },
   {
    "fetch_if_empty": 1,
@@ -112,74 +95,34 @@
    "in_standard_filter": 1,
    "label": "Virtual Machine",
    "options": "Virtual Machine",
-   "read_only": 1
+   "set_only_once": 1
   },
   {
-   "fieldname": "column_break_11",
+   "fieldname": "column_break_fhyz",
    "fieldtype": "Column Break"
   },
   {
-   "default": "0",
-   "fieldname": "callback_failure_count",
-   "fieldtype": "Int",
-   "label": "Callback Failure Count",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "callback_failed",
-   "fieldtype": "Check",
-   "label": "Callback Failed",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "callback_retry_limit_reached",
-   "fieldtype": "Check",
-   "label": "Callback Retry Limit Reached",
-   "read_only": 1
-  },
-  {
-   "fieldname": "next_callback_retry_at",
-   "fieldtype": "Datetime",
-   "label": "Next Callback Retry At",
-   "read_only": 1
-  },
-  {
-   "fieldname": "callback_section",
-   "fieldtype": "Section Break",
-   "label": "Callback"
-  },
-  {
-   "default": "0",
-   "fieldname": "callback_failure_issue_resolved",
-   "fieldtype": "Check",
-   "label": "Callback Failure Issue Resolved",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_zynz",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "callback_executed",
-   "fieldtype": "Check",
-   "label": "Callback Executed",
-   "read_only": 1
+   "default": "{}",
+   "fieldname": "arguments",
+   "fieldtype": "Small Text",
+   "label": "Arguments",
+   "reqd": 1,
+   "set_only_once": 1
   }
  ],
  "grid_page_length": 50,
- "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [
   {
    "link_doctype": "Press Job Step",
    "link_fieldname": "job"
+  },
+  {
+   "link_doctype": "Press Workflow",
+   "link_fieldname": "linked_docname"
   }
  ],
- "modified": "2026-03-17 19:26:46.940966",
+ "modified": "2026-04-17 02:56:56.915694",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job",

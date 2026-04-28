@@ -302,7 +302,7 @@ def repositories(installation, token):
 
 
 @frappe.whitelist()
-def repository(owner, name, installation=None):
+def repository(owner: str, name: str, installation: str | None = None):
 	token = ""
 	if not installation:
 		token = frappe.db.get_value("Press Settings", "github_access_token")
@@ -337,7 +337,7 @@ def repository(owner, name, installation=None):
 
 
 @frappe.whitelist()
-def app(owner, repository, branch, installation=None):
+def app(owner: str, repository: str, branch: str, installation: str | None = None):
 	headers = get_auth_headers(installation)
 	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/branches/{branch}",
@@ -381,7 +381,7 @@ def app(owner, repository, branch, installation=None):
 
 
 @frappe.whitelist()
-def branches(owner, name, installation=None, app_source=None):
+def branches(owner: str, name: str, installation: str | None = None, app_source: str | None = None):
 	"""
 	Return ALL branches for the repo, following GitHub pagination.
 	"""
@@ -390,7 +390,7 @@ def branches(owner, name, installation=None, app_source=None):
 
 	headers = get_auth_headers(installation)
 
-	out = []
+	out: list[dict] = []
 	page = 1
 	while True:
 		resp = requests.get(
@@ -487,7 +487,7 @@ def _get_app_name_and_title_from_hooks(
 	branch_info,
 	headers,
 	tree,
-) -> tuple[str, str] | None:
+) -> tuple[str, str]:
 	reason_for_invalidation = f"Files {frappe.bold('hooks.py or patches.txt')} not found."
 	for directory, files in tree.items():
 		if not files:
@@ -524,7 +524,7 @@ def _get_app_name_and_title_from_hooks(
 		break
 
 	frappe.throw(f"Not a valid Frappe App! {reason_for_invalidation}")
-	return None
+	raise  # for mypy: NoReturn
 
 
 def _generate_files_tree(files):
@@ -568,26 +568,34 @@ def _get_pyproject_from_commit(app_source: str, commit: str):
 		frappe.throw("Invalid pyproject.toml file found in the app repository.", frappe.ValidationError)
 
 
-def get_dependant_apps_with_versions(app_source: str, commit: str, cache: bool = True) -> AppDependencyFetch:
-	"""Get a list of apps that are required by the given repository and commit."""
+def get_dependant_apps_with_versions(
+	app_source: str,
+	commit: str,
+	cache: bool = True,
+	raises: bool = True,
+) -> AppDependencyFetch:
+	"""Return app dependencies and Python version for a repository at a given commit."""
 	cache_key = f"app_deps:{app_source}:{commit}"
 
-	if cache:
-		cached_deps = frappe.cache().get_value(cache_key)
-		if cached_deps is not None:
-			return cached_deps
+	if cache and (cached := frappe.cache().get_value(cache_key)) is not None:
+		return cached
 
-	pyproject = _get_pyproject_from_commit(app_source, commit)
-	frappe_dependencies = pyproject.get("tool", {}).get("bench", {}).get("frappe-dependencies", {})
-	# We can safely remove frappe from the dependencies as it will be added by defult.
-	frappe_dependencies.pop("frappe", None)
-	python_version = pyproject.get("project", {}).get("requires-python")
+	try:
+		pyproject = _get_pyproject_from_commit(app_source, commit)
+	except frappe.ValidationError as exc:
+		if raises:
+			raise exc
 
-	dependency_data = AppDependencyFetch(
-		frappe_dependencies=frappe_dependencies,
-		python_version=python_version,
-	)
+		dependency_data = AppDependencyFetch(frappe_dependencies={}, python_version=None)
+	else:
+		frappe_dependencies = pyproject.get("tool", {}).get("bench", {}).get("frappe-dependencies", {}).copy()
+		frappe_dependencies.pop("frappe", None)  # Get rid of this
 
+		dependency_data = AppDependencyFetch(
+			frappe_dependencies=frappe_dependencies,
+			python_version=pyproject.get("project", {}).get("requires-python"),
+		)
+
+	# In case of failures as well we want to cache the result to avoid hitting GitHub
 	frappe.cache().set_value(cache_key, dependency_data, expires_in_sec=60 * 60)
-
 	return dependency_data

@@ -17,7 +17,8 @@
 		<Switch
 			v-model="relaxedPermissions"
 			label="Relaxed Permissions"
-			description="Users without a role can access resources without restrictions if this feature is enabled. Use with caution. This will be deprecated in the future and removed eventually. Please prefer creating roles and assigning users to them for better access control."
+			description="Users without a role can access resources without restrictions if this feature is enabled.
+      Use with caution. This will be deprecated in the future and removed eventually. Please prefer creating roles and assigning users to them for better access control."
 			class="border rounded px-5 py-4 bg-yellow-50"
 		/>
 		<div class="grid grid-cols-3 gap-4 text-base">
@@ -31,7 +32,7 @@
 				}"
 			>
 				<div
-					class="px-5 py-4 space-y-3 rounded shadow cursor-pointer hover:shadow-lg transition"
+					class="p-4 space-y-3 rounded shadow cursor-pointer hover:shadow-lg transition"
 				>
 					<div class="font-medium h-6">{{ role.title }}</div>
 					<div class="h-6 flex flex-wrap gap-1">

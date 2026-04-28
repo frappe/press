@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import LucideSearch from '~icons/lucide/search';
-import LucideCommand from '~icons/lucide/command';
 import { searchModalOpen } from '@/data/ui';
+import { isMac } from '@/utils/device';
 </script>
 
 <template>
@@ -10,9 +10,7 @@ import { searchModalOpen } from '@/data/ui';
 		@click="() => (searchModalOpen = true)"
 	>
 		<LucideSearch class="size-4 text-ink-gray-6 mr-1" />
-		<span class="text-left mr-auto"> Search</span>
-
-		<LucideCommand class="size-3.5 text-ink-gray-6" />
-		<span class="text-xs">K</span>
+		<span class="text-left mr-auto">Search</span>
+		<span class="text-xs"> {{ isMac() ? '⌘ K' : 'Ctrl+K' }}</span>
 	</button>
 </template>
