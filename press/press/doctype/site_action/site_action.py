@@ -17,6 +17,7 @@ from rq.timeouts import JobTimeoutException
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import create_platform_build_and_deploy
+from press.press.doctype.site_migration.site_migration import get_ongoing_migration
 from press.utils.jobs import has_job_timeout_exceeded
 
 if TYPE_CHECKING:
@@ -506,7 +507,7 @@ class SiteAction(Document):
 			)
 
 	def before_insert(self):
-		# Check if no other site action is running for the same site
+		# Check if no other site action/migration is running for the same site
 		if frappe.db.exists(
 			"Site Action",
 			{
@@ -516,6 +517,11 @@ class SiteAction(Document):
 		):
 			frappe.throw(
 				"Another site action is already scheduled / running for this site. Please wait for it to complete before starting a new one."
+			)
+
+		if get_ongoing_migration(self.site, scheduled=True):
+			frappe.throw(
+				f"Ongoing/Scheduled Site Migration for the site {frappe.bold(self.site)} exists, retry once it is completed"
 			)
 
 		# If any key is blank string or None, remove it from arguments
