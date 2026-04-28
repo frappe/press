@@ -1,14 +1,14 @@
 ---
-const baseurl = import.meta.env.BASE_URL;
+import Logo from './Logo.astro';
 ---
 
 <header>
   <div class='border-b border-surface-gray-2'>
   <nav class='max-w-3xl flex mx-auto py-4 gap-3 items-center border-b border-gray-200'>
-			<a href={baseurl + '/'} class='flex items-center gap-2'>
-        <img src={baseurl + '/logo.svg'} alt="logo" class="size-6" />
+    <div class='flex items-center gap-2'>
+        <div class='size-6'><Logo/></div>
         Releases
-			</a>
+    </div>
 	</nav>
   </div>
 </header>
