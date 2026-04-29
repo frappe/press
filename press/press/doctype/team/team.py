@@ -30,6 +30,8 @@ from press.utils.billing import (
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
 
+from .team_members import get_members
+
 if TYPE_CHECKING:
 	from press.press.doctype.account_request.account_request import AccountRequest
 
@@ -968,6 +970,10 @@ class Team(Document):
 	@dashboard_whitelist()
 	def get_team_members(self):
 		return get_team_members(self.name)
+
+	@dashboard_whitelist()
+	def get_members(self):
+		return get_members(str(self.name))
 
 	@dashboard_whitelist()
 	@rate_limit(limit=10, seconds=60 * 60)

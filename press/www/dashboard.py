@@ -3,6 +3,7 @@
 
 
 import frappe
+from frappe.utils.caching import redis_cache
 
 from press.utils import (
 	chat_enabled,
@@ -64,8 +65,19 @@ def get_boot():
 				as_dict=True,
 			)[0]
 		),
-		user_details={
-			"email": frappe.session.user,
-			"name": frappe.db.get_value("User", frappe.session.user, "first_name", cache=True) or "",
-		},
+		user=get_user(),
 	)
+
+
+@redis_cache(user=True, ttl=60 * 5)
+def get_user():
+	user = frappe.session.user
+	full_name, email, user_type = frappe.get_value("User", user, ["full_name", "email", "user_type"])
+	return {
+		"id": frappe.session.user,
+		"name": full_name,
+		"email": email,
+		"is_system_manager": bool(frappe.db.exists("Has Role", {"parent": user, "role": "System Manager"})),
+		"is_desk_user": user_type == "System User",
+		"is_beta_tester": user_type == "System User",
+	}
