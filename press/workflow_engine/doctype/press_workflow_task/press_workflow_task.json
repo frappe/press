@@ -14,9 +14,12 @@
   "method_name",
   "method_title",
   "args",
+  "args_type",
   "kwargs",
+  "kwargs_type",
   "column_break_fiyw",
   "output",
+  "output_type",
   "exception",
   "signature",
   "section_break_jvoo",
@@ -128,9 +131,9 @@
   },
   {
    "fieldname": "output",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Output",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "read_only": 1
   },
   {
@@ -143,16 +146,16 @@
   },
   {
    "fieldname": "args",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Args",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "set_only_once": 1
   },
   {
    "fieldname": "kwargs",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Kwargs",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "set_only_once": 1
   },
   {
@@ -182,11 +185,33 @@
    "fieldtype": "Long Text",
    "label": "Traceback",
    "read_only": 1
+  },
+  {
+   "fieldname": "args_type",
+   "fieldtype": "Select",
+   "label": "Args Type",
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kwargs_type",
+   "fieldtype": "Data",
+   "label": "Kwargs Type",
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "read_only": 1
+  },
+  {
+   "fieldname": "output_type",
+   "fieldtype": "Select",
+   "label": "Output Type",
+   "length": 1000,
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2026-04-23 19:21:35.153779",
+ "modified": "2026-04-24 18:52:37.880235",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow Task",

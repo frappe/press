@@ -18,6 +18,7 @@ class PaymentDueExtension(Document):
 		amended_from: DF.Link | None
 		extension_date: DF.Date
 		reason: DF.SmallText
+		status: DF.Literal["Draft", "Active", "Expired"]
 		team: DF.Link
 	# end: auto-generated types
 
@@ -33,18 +34,19 @@ class PaymentDueExtension(Document):
 			frappe.throw("An active Payment due extension record already exists for this team")
 
 	def on_submit(self):
+		self.status = "Active"
 		frappe.db.set_value("Team", self.team, "extend_payment_due_suspension", 1)
-	
-	def on_cancel(self):
+
+	def expire(self):
+		frappe.db.set_value("Payment Due Extension", self.name, "status", "Expired")
 		frappe.db.set_value("Team", self.team, "extend_payment_due_suspension", 0)
 
 
 def remove_payment_due_extension():
 	extensions = frappe.get_all(
 		"Payment Due Extension",
-		{"docstatus": 1, "extension_date": ("<", frappe.utils.today())},
-		pluck="team",
+		{"docstatus": 1, "extension_date": ("<", frappe.utils.today()), "status": "Active"},
+		pluck="name",
 	)
-	for team in extensions:
-		frappe.db.set_value("Team", team, "extend_payment_due_suspension", 0)
-		frappe.db.commit()
+	for name in extensions:
+		frappe.get_doc("Payment Due Extension", name).expire()

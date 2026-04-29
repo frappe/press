@@ -1309,7 +1309,7 @@ class Site(Document, TagHelpers):
 	def check_fatal_site_update(self):
 		if self.fatal_site_update:
 			frappe.throw(
-				"Site has encountered a fatal error during last update. Please open a ticket on our <a href='https://support.frappe.io'> support portal </a> with the error details to resolve the issue.",
+				"Site has encountered a fatal error during last update. Please open a ticket on our <a href='https://support.frappe.io' class='underline'> support portal </a> with the error details to resolve the issue.",
 			)
 
 	@dashboard_whitelist()
@@ -2918,12 +2918,13 @@ class Site(Document, TagHelpers):
 			.where(servers.proxy_server.isin(proxy_servers))
 			.where(benches.status == "Active")
 			.orderby(PseudoColumn("in_primary_cluster"), order=frappe.qb.desc)
-			.orderby(servers.use_for_new_sites, order=frappe.qb.desc)
 			.orderby(benches.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
+
 		if host_on_shared_server:
 			bench_query = bench_query.where(servers.public == 1)
+			bench_query = bench_query.orderby(servers.use_for_new_sites, order=frappe.qb.desc)
 
 		if release_group_names:
 			groups = frappe.qb.DocType("Release Group")
@@ -2944,8 +2945,10 @@ class Site(Document, TagHelpers):
 					f"Site can't be deployed on this release group {self.group} due to restrictions. Please try again later or choose a different release group."
 				)
 			bench_query = bench_query.where(benches.group == self.group)
+
 		if self.server:
 			bench_query = bench_query.where(servers.name == self.server)
+
 		return bench_query.run(as_dict=True)
 
 	def set_bench_for_server(self):

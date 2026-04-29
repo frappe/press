@@ -1125,9 +1125,11 @@ def handle_transaction_result(transaction_response, integration_request):
 
 	result_code = transaction_response.get("ResultCode")
 	status = None
+	current_user = frappe.session.user
 
 	if result_code == 0:
 		try:
+			frappe.set_user("Administrator")  # To create BT and Invoice
 			status = "Completed"
 			create_mpesa_request_log(
 				transaction_response, "Host", "Mpesa Express", integration_request, None, status
@@ -1135,6 +1137,7 @@ def handle_transaction_result(transaction_response, integration_request):
 
 			create_mpesa_payment_record(transaction_response)
 		except Exception as e:
+			frappe.set_user(current_user)  # reset to current user
 			frappe.log_error(f"Mpesa: Transaction failed with error {e}")
 
 	elif result_code == 1037:  # User unreachable (Phone off or timeout)

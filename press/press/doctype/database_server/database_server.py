@@ -547,7 +547,7 @@ class DatabaseServer(BaseServer):
 	def stop_mariadb(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_stop_mariadb", timeout=1800)
 
-	def _stop_mariadb(self):
+	def _stop_mariadb(self, throw_on_failure: bool = False):
 		ansible = Ansible(
 			playbook="stop_mariadb.yml",
 			server=self,
@@ -558,8 +558,12 @@ class DatabaseServer(BaseServer):
 			},
 		)
 		play = ansible.run()
-		if play.status == "Failure":
+		if play.status != "Success":
 			log_error("MariaDB Stop Error", server=self.name)
+			if throw_on_failure:
+				frappe.throw(f"Failed to stop MariaDB on server: {self.name}")
+
+		return play
 
 	@frappe.whitelist()
 	def run_upgrade_mariadb_job(self):
@@ -568,7 +572,7 @@ class DatabaseServer(BaseServer):
 	def upgrade_mariadb(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb", timeout=1800)
 
-	def _upgrade_mariadb(self):
+	def _upgrade_mariadb(self, throw_on_failure: bool = False):
 		ansible = Ansible(
 			playbook="upgrade_mariadb.yml",
 			server=self,
@@ -579,8 +583,10 @@ class DatabaseServer(BaseServer):
 			},
 		)
 		play = ansible.run()
-		if play.status == "Failure":
+		if play.status != "Success":
 			log_error("MariaDB Upgrade Error", server=self.name)
+			if throw_on_failure:
+				frappe.throw(f"Failed to upgrade MariaDB on server: {self.name}")
 		return play
 
 	def _downgrade_mariadb_to_10_6(self):
@@ -1252,7 +1258,7 @@ class DatabaseServer(BaseServer):
 			self.doctype, self.name, "_prepare_mariadb_replica", queue="long", timeout=1200, at_front=True
 		)
 
-	def _prepare_mariadb_replica(self):
+	def _prepare_mariadb_replica(self, throw_on_failure: bool = False):
 		if self.is_primary:
 			return
 
@@ -1271,8 +1277,13 @@ class DatabaseServer(BaseServer):
 					"mariadb_server_id": self.server_id,
 				},
 			)
-			ansible.run()
+			play = ansible.run()
+			if play.status != "Success":
+				raise Exception("Failed to prepare MariaDB replica")
 		except Exception:
+			if throw_on_failure:
+				raise
+
 			log_error("MariaDB Prepare Replica Exception", server=self.as_dict())
 
 	def configure_replication(self, gtid_slave_pos: str | None = None):

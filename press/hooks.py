@@ -261,7 +261,6 @@ scheduler_events = {
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
 		"press.press.doctype.invoice.invoice.finalize_razorpay_mandate_invoices",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
-		"press.press.doctype.press_job.press_job.fail_stuck_press_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.cleanup_build_directories",
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.check_builds_status",
@@ -310,7 +309,6 @@ scheduler_events = {
 			"press.press.doctype.press_webhook_log.press_webhook_log.process",
 			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
 			"press.press.doctype.agent_update.agent_update.process_bulk_agent_update",
-			"press.press.doctype.press_job.press_job.process_failed_callbacks",
 			"press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.resume_warmed_up_restorations",
 			"press.press.doctype.server_snapshot.server_snapshot.move_pending_snapshots_to_processing",
 			"press.press.doctype.bench.bench.process_bench_queue",
@@ -351,6 +349,7 @@ scheduler_events = {
 			"press.press.doctype.app.app.poll_new_releases",
 			"press.utils.jobs.alert_on_zombie_rq_jobs",
 			"press.saas.doctype.product_trial.product_trial.replenish_standby_sites",
+			"press.workflow_engine.doctype.press_workflow.press_workflow.retry_workflow_callbacks",
 		],
 		"* * * * *": [
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",

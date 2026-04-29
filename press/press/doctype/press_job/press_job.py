@@ -1,16 +1,88 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
+from functools import cached_property
+from typing import TYPE_CHECKING
 
 import frappe
-from frappe.model.document import Document
-from frappe.utils import add_days, add_to_date
+from frappe.utils import now_datetime
 
-from press.press.doctype.press_job_step.press_job_step import safe_exec
+from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
+
+if TYPE_CHECKING:
+	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.server.server import Server
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+	from press.workflow_engine.doctype.press_workflow.press_workflow import PressWorkflow
+
+_JOBS_REGISTRY: dict[str, type] = {}
 
 
-class PressJob(Document):
+def _init_jobs_registry() -> None:
+	global _JOBS_REGISTRY
+	if _JOBS_REGISTRY:
+		return
+
+	from press.press.doctype.press_job.jobs.archive_server import ArchiveServerJob
+	from press.press.doctype.press_job.jobs.attach_volume import AttachVolumeJob
+	from press.press.doctype.press_job.jobs.auto_scale_application_server import (
+		AutoScaleApplicationServerJob,
+	)
+	from press.press.doctype.press_job.jobs.auto_scale_down_application_server import (
+		AutoScaleDownApplicationServerJob,
+	)
+	from press.press.doctype.press_job.jobs.auto_scale_up_application_server import (
+		AutoScaleUpApplicationServerJob,
+	)
+	from press.press.doctype.press_job.jobs.create_server import CreateServerJob
+	from press.press.doctype.press_job.jobs.create_server_snapshot import CreateServerSnapshotJob
+	from press.press.doctype.press_job.jobs.increase_disk_size import IncreaseDiskSizeJob
+	from press.press.doctype.press_job.jobs.increase_swap import IncreaseSwapJob
+	from press.press.doctype.press_job.jobs.prune_docker_system import PruneDockerSystemJob
+	from press.press.doctype.press_job.jobs.prune_mirror_registry import PruneMirrorRegistryJob
+	from press.press.doctype.press_job.jobs.remove_on_prem_failover import RemoveOnPremFailoverJob
+	from press.press.doctype.press_job.jobs.reset_swap_on_server import ResetSwapOnServerJob
+	from press.press.doctype.press_job.jobs.resize_server import ResizeServerJob
+	from press.press.doctype.press_job.jobs.resume_services_after_snapshot import (
+		ResumeServicesAfterSnapshotJob,
+	)
+	from press.press.doctype.press_job.jobs.setup_on_prem_failover import SetupOnPremFailoverJob
+	from press.press.doctype.press_job.jobs.snapshot_disk import SnapshotDiskJob
+	from press.press.doctype.press_job.jobs.stop_and_start_server import StopAndStartServerJob
+	from press.press.doctype.press_job.jobs.trigger_build_server_cleanup import (
+		TriggerBuildServerCleanupJob,
+	)
+	from press.press.doctype.press_job.jobs.upgrade_mariadb import UpgradeMariaDBJob
+	from press.press.doctype.press_job.jobs.warn_disk import WarnDiskJob
+
+	_JOBS_REGISTRY = {
+		"Archive Server": ArchiveServerJob,
+		"Attach Volume": AttachVolumeJob,
+		"Auto Scale Application Server": AutoScaleApplicationServerJob,
+		"Auto Scale Down Application Server": AutoScaleDownApplicationServerJob,
+		"Auto Scale Up Application Server": AutoScaleUpApplicationServerJob,
+		"Create Server": CreateServerJob,
+		"Create Server Snapshot": CreateServerSnapshotJob,
+		"Increase Disk Size": IncreaseDiskSizeJob,
+		"Increase Swap": IncreaseSwapJob,
+		"Prune Docker system": PruneDockerSystemJob,
+		"Prune Mirror Registry": PruneMirrorRegistryJob,
+		"Remove On-Prem Failover": RemoveOnPremFailoverJob,
+		"Reset Swap": ResetSwapOnServerJob,
+		"Resize Server": ResizeServerJob,
+		"Resume Services After Snapshot": ResumeServicesAfterSnapshotJob,
+		"Setup On-Prem Failover": SetupOnPremFailoverJob,
+		"Snapshot Disk": SnapshotDiskJob,
+		"Stop and Start Server": StopAndStartServerJob,
+		"Trigger Build Server Cleanup": TriggerBuildServerCleanupJob,
+		"Upgrade MariaDB": UpgradeMariaDBJob,
+		"Warn disk at 80%": WarnDiskJob,
+	}
+
+
+class PressJob(WorkflowBuilder):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -19,23 +91,75 @@ class PressJob(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		arguments: DF.Code
-		callback_executed: DF.Check
-		callback_failed: DF.Check
-		callback_failure_count: DF.Int
-		callback_failure_issue_resolved: DF.Check
-		callback_retry_limit_reached: DF.Check
+		arguments: DF.SmallText
 		duration: DF.Duration | None
 		end: DF.Datetime | None
-		job_type: DF.Link
+		job_type: DF.Data
 		name: DF.Int | None
-		next_callback_retry_at: DF.Datetime | None
 		server: DF.DynamicLink | None
 		server_type: DF.Link | None
 		start: DF.Datetime | None
 		status: DF.Literal["Pending", "Running", "Skipped", "Success", "Failure"]
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
+
+	@cached_property
+	def arguments_dict(self) -> "frappe._dict":
+		return frappe._dict(json.loads(self.get("arguments") or "{}"))
+
+	@property
+	def server_doc(self) -> "Server | DatabaseServer":
+		if hasattr(self, "_server_doc") and self._server_doc:  # type: ignore
+			return self._server_doc  # type: ignore
+		self._server_doc = frappe.get_doc(self.server_type, self.server)
+		return self._server_doc
+
+	@property
+	def virtual_machine_doc(self) -> VirtualMachine | None:
+		if not self.virtual_machine:
+			return None
+
+		if hasattr(self, "_virtual_machine_doc") and self._virtual_machine_doc:  # type: ignore
+			return self._virtual_machine_doc  # type: ignore
+		self._virtual_machine_doc = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		return self._virtual_machine_doc  # type: ignore
+
+	@property
+	def steps(self) -> list[dict[str, str]]:
+		try:
+			workflow: PressWorkflow = frappe.get_last_doc("Press Workflow", {"linked_docname": self.name})
+			tasks = frappe.get_all(
+				"Press Workflow Task",
+				filters={"workflow": workflow.name},
+				fields=[
+					"name",
+					"method_title",
+					"status",
+					"stdout",
+					"creation",
+					"start",
+					"end",
+					"duration",
+				],
+			)
+			# Convert to a dict with task name as key for easy lookup
+			task_dict = {task.name: task for task in tasks}
+			return [
+				{
+					"name": step.name,
+					"step_name": step.step_title,  # backward compatibility
+					"step_title": step.step_title,
+					"status": step.status,
+					"result": task_dict.get(step.task, {}).get("stdout", ""),
+					"traceback": task_dict.get(step.task, {}).get("traceback", ""),
+					"start": task_dict.get(step.task, {}).get("start"),
+					"end": task_dict.get(step.task, {}).get("end"),
+					"duration": task_dict.get(step.task, {}).get("duration"),
+				}
+				for step in workflow.steps
+			]
+		except frappe.DoesNotExistError:
+			return []
 
 	def before_insert(self):
 		frappe.db.get_value(self.server_type, self.server, "status", for_update=True)
@@ -53,212 +177,66 @@ class PressJob(Document):
 			)
 
 	def after_insert(self):
-		self.create_press_job_steps()
-		self.execute()
+		self.start_workflow()
 
 	def on_update(self):
 		if self.has_value_changed("status"):
-			self.process_callback(save=True)
+			save = False
+			if self.status == "Running" and not self.start:
+				self.start = now_datetime()
+				save = True
 
-	def on_change(self):
-		self.publish_update()
+			if self.status in ["Success", "Failure"]:
+				if not self.start:
+					self.start = now_datetime()
+				if not self.end:
+					self.end = now_datetime()
+				save = True
 
-	def create_press_job_steps(self):
-		job_type = frappe.get_doc("Press Job Type", self.job_type)
-		for step in job_type.steps:
-			doc = frappe.get_doc(
-				{
-					"doctype": "Press Job Step",
-					"job": self.name,
-					"status": "Pending",
-					"job_type": self.job_type,
-					"step_name": step.step_name,
-					"wait_until_true": step.wait_until_true,
-				}
+			if save:
+				self.save()
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.workflow_name = self.job_type
+		_init_jobs_registry()
+		if self.job_type in _JOBS_REGISTRY:
+			self.__class__ = _JOBS_REGISTRY[self.job_type]
+
+	def start_workflow(self) -> str:
+		if self.status != "Pending":
+			frappe.throw(
+				"Only jobs with Pending status can be started.<br>Please wait and retry after some time."
 			)
-			doc.insert()
 
-	def execute(self):
+		if not hasattr(self, "execute"):
+			raise NotImplementedError("Press Job implementation must have an execute method")
+		self.start = now_datetime()
 		self.status = "Running"
-		self.start = frappe.utils.now_datetime()
-		self.save()
-		self.next()
+		self.save(ignore_permissions=True)
+		return self.execute.run_as_workflow()
 
-	def fail(self, arguments=None):
-		self.status = "Failure"
-		pending_steps = frappe.get_all("Press Job Step", {"job": self.name, "status": "Pending"})
-		for step in pending_steps:
-			frappe.db.set_value("Press Job Step", step.name, "status", "Skipped")
-		self.end = frappe.utils.now_datetime()
-		self.duration = (self.end - self.start).total_seconds()
-		self.save()
-
-	def succeed(self):
+	def on_workflow_success(self, workflow: "PressWorkflow"):
 		self.status = "Success"
-		self.end = frappe.utils.now_datetime()
-		self.duration = (self.end - self.start).total_seconds()
 		self.save()
 
-	@frappe.whitelist()
-	def next(self, arguments=None):
-		if arguments:
-			old_arguments = json.loads(self.arguments)
-			old_arguments.update(arguments)
-			self.arguments = json.dumps(old_arguments, indent=2)
-		self.status = "Running"
-		self.save()
-		next_step = self.next_step
+		if hasattr(self, "on_press_job_success"):
+			self.on_press_job_success(workflow)
 
-		if not next_step:
-			self.succeed()
-			return
-
-		frappe.enqueue_doc("Press Job Step", next_step, "execute", enqueue_after_commit=True)
-
-	@frappe.whitelist()
-	def force_continue(self):
-		for step in frappe.get_all(
-			"Press Job Step",
-			{"job": self.name, "status": ("in", ("Failure", "Skipped"))},
-			pluck="name",
-		):
-			frappe.db.set_value("Press Job Step", step, "status", "Pending")
-		self.next()
-
-	@frappe.whitelist()
-	def force_fail(self):
-		for step in frappe.get_all(
-			"Press Job Step",
-			{"job": self.name, "status": "Pending"},
-			pluck="name",
-		):
-			frappe.db.set_value("Press Job Step", step, "status", "Failure")
-		frappe.db.set_value("Press Job", self.name, "status", "Failure")
-
-	@property
-	def next_step(self):
-		return frappe.db.get_value(
-			"Press Job Step",
-			{"job": self.name, "status": "Pending"},
-			"name",
-			order_by="name asc",
-			as_dict=True,
-		)
-
-	def detail(self):
-		steps = frappe.get_all(
-			"Press Job Step",
-			filters={"job": self.name},
-			fields=["name", "step_name", "status", "start", "end", "duration"],
-			order_by="name asc",
-		)
-
-		for index, step in enumerate(steps):
-			if step.status == "Pending" and index and steps[index - 1].status == "Success":
-				step.status = "Running"
-
-		return {
-			"name": self.name,
-			"job_type": self.job_type,
-			"server": self.server,
-			"server_type": self.server_type,
-			"virtual_machine": self.virtual_machine,
-			"status": self.status,
-			"steps": steps,
-		}
-
-	def publish_update(self):
-		frappe.publish_realtime(
-			"press_job_update", doctype=self.doctype, docname=self.name, message=self.detail()
-		)
-
-	@frappe.whitelist()
-	def mark_callback_failure_issue_resolved(self):
-		self.callback_failure_issue_resolved = True
+	def on_workflow_failure(self, workflow: "PressWorkflow"):
+		self.status = "Failure"
 		self.save()
 
-	def process_callback(self, save: bool = False):  # noqa: C901
-		if self.status not in ["Success", "Failure"]:
+		if hasattr(self, "on_press_job_failure"):
+			self.on_press_job_failure(workflow)
+
+	@frappe.whitelist()
+	def retry(self):
+		if self.status != "Failure":
+			frappe.throw("Only workflows in Failure state can be retried.")  # nosemgrep
 			return
 
-		if self.callback_executed or self.callback_failure_issue_resolved:
-			return
-
-		job_type = frappe.db.get_value(
-			"Press Job Type", self.job_type, ["callback_script", "callback_max_retry"], as_dict=True
-		)
-		if not job_type.callback_script:
-			self.callback_executed = True
-			if save:
-				self.save()
-			# No callback script defined, so just mark as executed
-			return
-
-		if self.callback_failed and self.callback_failure_count >= (job_type.callback_max_retry or 0):
-			self.callback_retry_limit_reached = True
-			self.next_callback_retry_at = None
-			if save:
-				self.save()
-			return
-
-		local = {"arguments": frappe._dict(json.loads(self.arguments)), "doc": self}
-		current_user = frappe.session.user
-		try:
-			frappe.set_user("Administrator")
-			safe_exec(job_type.callback_script, _locals=local)
-			self.callback_failed = False
-			self.callback_executed = True
-			self.next_callback_retry_at = None
-			self.callback_failure_issue_resolved = False
-		except Exception:
-			frappe.log_error(f"Error executing callback script for {self.name}")
-			self.callback_failed = True
-			self.callback_failure_count += 1
-			self.next_callback_retry_at = add_to_date(None, minutes=5)
-		finally:
-			frappe.set_user(current_user)
-
-		if save:
-			self.save()
-
-	def on_trash(self):
-		frappe.db.delete("Press Job Step", {"job": self.name})
-
-
-def fail_stuck_press_jobs():
-	jobs = frappe.get_all(
-		"Press Job",
-		filters={
-			"status": ("in", ["Running", "Pending"]),
-			"creation": ("<", add_days(None, -1)),
-		},
-		pluck="name",
-		limit=100,
-	)
-	for job_name in jobs:
-		job = PressJob("Press Job", job_name)
-		job.force_fail()
-		frappe.db.commit()
-
-
-def process_failed_callbacks():
-	jobs = frappe.get_all(
-		"Press Job",
-		filters={
-			"status": ("in", ["Success", "Failure"]),
-			"callback_failed": True,
-			"callback_executed": False,
-			"callback_failure_issue_resolved": False,
-			"callback_retry_limit_reached": False,
-			"next_callback_retry_at": ("<", frappe.utils.now_datetime()),
-		},
-		pluck="name",
-	)
-	for job_name in jobs:
-		frappe.enqueue_doc(
-			"Press Job",
-			job_name,
-			"process_callback",
-			enqueue_after_commit=True,
-			save=True,
-		)
+		self.status = "Pending"
+		self.save()
+		self.start_workflow()
+		frappe.db.commit()  # nosemgrep
