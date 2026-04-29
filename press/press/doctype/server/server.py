@@ -42,6 +42,7 @@ from press.press.doctype.auto_scale_record.auto_scale_record import (
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
+from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log_if_applicable
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
 from press.utils import fmt_timedelta, log_error
@@ -2559,6 +2560,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return None
 
 	@frappe.whitelist()
+	@create_static_ip_log_if_applicable
 	def get_static_ip(self):
 		if self.provider == "AWS EC2":
 			return self.get_aws_static_ip()
