@@ -175,3 +175,6 @@ docs/.vitepress/dist
 
 # Tmp
 on_prem_dr
+
+# changelog dist
+press/www/changelog

@@ -200,6 +200,7 @@ class PressSettings(Document):
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		redis_cache_size: DF.Int
+		region_name: DF.Data | None
 		remote_access_key_id: DF.Data | None
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None

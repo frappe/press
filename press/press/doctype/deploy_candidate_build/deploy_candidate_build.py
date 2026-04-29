@@ -1131,6 +1131,13 @@ class DeployCandidateBuild(Document):
 		)
 		return False
 
+	def get_team_for_build(self):
+		"""Default to group team in case of new flow"""
+		new_flow = frappe.db.get_single_value("Press Settings", "use_new_deploy_flow")
+		return (
+			frappe.db.get_value("Release Group", self.group, "team") if new_flow else get_current_team(True)
+		)
+
 	def pre_build(self, **kwargs):
 		self.reset_build_state()
 		self.add_pre_build_steps()
@@ -1154,10 +1161,10 @@ class DeployCandidateBuild(Document):
 		) = (
 			frappe.session.user,
 			frappe.session.data,
-			get_current_team(True),
+			self.get_team_for_build(),
 		)
 
-		frappe.set_user(frappe.get_value("Team", team.name, "user"))
+		frappe.set_user(frappe.get_value("Team", team if isinstance(team, str) else team.name, "user"))
 		queue = "default" if frappe.conf.developer_mode else "build"
 
 		frappe.enqueue_doc(

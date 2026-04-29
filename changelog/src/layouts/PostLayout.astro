@@ -1,0 +1,39 @@
+---
+import "@/styles/global.css"
+
+import Header from "@/components/Header.astro";
+import BaseHead from "@/components/BaseHead.astro";
+import type { CollectionEntry } from "astro:content";
+
+type Props = {
+  release: CollectionEntry<"releases">;
+};
+
+const { release } = Astro.props;
+
+const formatDate = (x:string) => new Date(x).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead
+			title={release.data.title}
+			description={release.data.description}
+			image={release.data.image}
+		/>
+	</head><body>
+    <Header/>
+		<div class='max-w-2xl mx-auto pb-20'>
+			<div class="rounded flex justify-between gap-1 my-10 bg-surface-gray-6 text-ink-gray-1 p-3 px-5">
+        <div>Version {release.data.versionNumber}</div>
+          <span>{formatDate(release.data.date)} </span>
+			</div>
+      <br/>
+
+			<div class="content  prose  max-w-none">
+				<slot />
+			</div>
+		</div>
+	</body>
+</html>

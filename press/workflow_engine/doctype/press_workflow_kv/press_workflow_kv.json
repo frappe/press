@@ -6,7 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "key",
-  "value"
+  "value",
+  "type"
  ],
  "fields": [
   {
@@ -18,11 +19,20 @@
    "search_index": 1
   },
   {
+   "description": "Actual value or link to the object",
    "fieldname": "value",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Value",
-   "options": "Press Workflow Object",
+   "length": 1000
+  },
+  {
+   "default": "object",
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
    "reqd": 1
   }
  ],
@@ -30,7 +40,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-03 21:15:51.697093",
+ "modified": "2026-04-24 13:24:11.790831",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow KV",

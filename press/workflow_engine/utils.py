@@ -10,7 +10,7 @@ import math
 import textwrap
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from frappe.model.document import Document
 from frappe.utils import get_datetime
@@ -150,3 +150,129 @@ def generate_function_signature(func: Callable, args: tuple, kwargs: dict) -> st
 
 	blob = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 	return hashlib.sha256(blob).hexdigest()
+
+
+def _is_serializable_value(value: Any) -> bool:
+	"""Return True if value can round-trip through JSON without loss."""
+	if value is None or isinstance(value, bool | str):
+		return True
+	if isinstance(value, int):  # after bool: bool subclasses int
+		return True
+	if isinstance(value, float):
+		return math.isfinite(value)
+	if isinstance(value, list | tuple):
+		return all(_is_serializable_value(v) for v in value)
+	if isinstance(value, dict):
+		return all(isinstance(k, str) for k in value) and all(
+			_is_serializable_value(v) for v in value.values()
+		)
+	return False
+
+
+ValueType = Literal["bool", "int", "float", "string", "tuple", "list", "dict", "object"]
+
+
+def get_type_of_value(
+	value: Any,
+) -> ValueType | None:
+	if value is None:
+		return None
+
+	value_type = type(value)
+	primitive_types: dict[type[Any], ValueType] = {
+		bool: "bool",
+		int: "int",
+		str: "string",
+	}
+	primitive_type = primitive_types.get(value_type)
+	if primitive_type:
+		return primitive_type
+
+	if value_type is float:
+		return "float" if math.isfinite(value) else "object"
+
+	container_types: dict[type[Any], ValueType] = {
+		tuple: "tuple",
+		list: "list",
+		dict: "dict",
+	}
+	container_type = container_types.get(value_type)
+	if container_type:
+		return container_type if _is_serializable_value(value) else "object"
+
+	return "object"
+
+
+def serialize_and_store_value(
+	value: Any,
+	throw_on_error: bool = True,
+) -> tuple[ValueType | None, str | None]:
+	"""
+	Serialize a value to a string for storage, along with its type.
+	If the value is not JSON-serializable, it will be stored as a PressWorkflowObject and the type will be "object".
+	"""
+
+	from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import PressWorkflowObject
+
+	value_type = get_type_of_value(value)
+	if value_type is None:
+		return None, None
+
+	if value_type == "object":
+		return value_type, PressWorkflowObject.store(value, throw_on_error=throw_on_error)
+
+	try:
+		serialized_value = json.dumps(value, sort_keys=True, separators=(",", ":"))
+		return value_type, serialized_value
+	except (TypeError, ValueError):
+		# Fallback to pickling for non-JSON-serializable objects
+		return "object", PressWorkflowObject.store(value)
+
+
+def deserialize_value(
+	value_type: ValueType | None,
+	serialized_value: str | None,
+) -> Any:
+	"""
+	Deserialize a value from its serialized form based on its type.
+
+	Args:
+		value_type: The type of the value.
+		serialized_value: The serialized representation of the value.
+
+	Returns:
+		The deserialized value.
+	"""
+	if value_type is None:
+		return None
+
+	if value_type == "object":
+		assert serialized_value is not None
+		from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
+			PressWorkflowObject,
+		)
+
+		return PressWorkflowObject.get_object(serialized_value)
+
+	try:
+		value = json.loads(serialized_value) if serialized_value is not None else None
+	except (TypeError, ValueError) as e:
+		raise ValueError(f"Cannot deserialize value of type {value_type!r}") from e
+
+	if value is None:
+		return None
+
+	value_casters: dict[str, Callable[[Any], Any]] = {
+		"bool": bool,
+		"int": int,
+		"float": float,
+		"string": str,
+		"tuple": tuple,
+		"list": list,
+		"dict": dict,
+	}
+
+	try:
+		return value_casters[value_type](value)
+	except (KeyError, TypeError, ValueError) as e:
+		raise ValueError(f"Cannot deserialize value of type {value_type!r}") from e

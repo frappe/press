@@ -489,6 +489,7 @@ class VirtualMachine(Document):
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 
+		droplet_tag = f"Frappe-Cloud-Production-{cluster.name.replace(' ', '-')}-{self.series}"
 		firewalls = self.client().firewalls.list()
 		firewalls = firewalls.get("firewalls", [])
 		cluster_firewall = next(fw for fw in firewalls if fw["id"] == cluster.security_group_id)
@@ -506,6 +507,7 @@ class VirtualMachine(Document):
 					"ssh_keys": [self._get_digital_ocean_ssh_key_id()],
 					"backups": False,
 					"vpc_uuid": cluster.vpc_id,
+					"tags": [droplet_tag],
 					"user_data": self.get_cloud_init() if self.virtual_machine_image else "",
 				}
 			)
@@ -515,7 +517,7 @@ class VirtualMachine(Document):
 
 		try:
 			for group in self.get_security_groups():
-				self.client().firewalls.assign_droplets(group, {"droplet_ids": [self.instance_id]})
+				self.client().firewalls.add_tags(group, {"tags": [droplet_tag]})
 		except Exception as e:
 			frappe.throw(f"Failed to assign Firewall to Digital Ocean Droplet: {e!s}")
 

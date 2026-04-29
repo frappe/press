@@ -90,7 +90,7 @@ class TestReleasePipeline(FrappeTestCase):
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()
-		server = create_test_server(use_for_build=True)
+		cls.server = create_test_server(use_for_build=True)
 		cls.test_frappe_app = create_test_app("frappe")
 		cls.test_erpnext_app = create_test_app("erpnext", "Erpnext App")
 		cls.test_frappe_release = create_test_app_release(
@@ -112,15 +112,15 @@ class TestReleasePipeline(FrappeTestCase):
 		cls.test_release_group = create_test_release_group(
 			apps=[cls.test_frappe_app, cls.test_erpnext_app],
 			frappe_version="Version 15",
-			servers=[server.name],
+			servers=[cls.server.name],
 		)
 		frappe.db.set_single_value("Press Settings", "build_directory", "/tmp/test-build-dir/")
 		frappe.db.set_single_value("Press Settings", "clone_directory", "/tmp/test-clone-dir/")
 		frappe.db.set_single_value("Press Settings", "use_new_deploy_flow", 1)
 
-	def create_deploy_and_update(self):
+	def create_deploy_and_update(self, release_group_name=None):
 		deploy_and_update(
-			self.test_release_group.name,
+			release_group_name or self.test_release_group.name,
 			apps=[
 				{
 					"app": "frappe",
@@ -147,17 +147,14 @@ class TestReleasePipeline(FrappeTestCase):
 		release_pipeline: ReleasePipeline = frappe.get_last_doc("Release Pipeline")
 		self.assertEqual(release_pipeline.release_group, self.test_release_group.name)
 		self.assertEqual(release_pipeline.team, get_current_team())
-		release_pipeline = frappe.get_doc(
+		workflow_doc = frappe.get_doc(
 			"Press Workflow",
 			{
 				"linked_doctype": "Release Pipeline",
 				"linked_docname": release_pipeline.name,
 			},
 		)
-
-		frappe.get_last_doc(
-			"Press Workflow"
-		)  # To ensure nothing is raised when fetching the workflow created for the release pipeline
+		self.assertEqual(release_pipeline.workflow, workflow_doc.name)
 
 	@patch.object(DeployCandidateBuild, "_upload_build_context", get_mock_context_file)
 	@patch.object(DeployCandidateBuild, "_build", Mock())

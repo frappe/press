@@ -6,16 +6,19 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
+  "is_force_failure_requested",
   "column_break_lkci",
   "linked_doctype",
   "column_break_xuyw",
   "linked_docname",
   "section_break_bicj",
   "main_method_name",
-  "main_method_title",
-  "column_break_ccie",
   "args",
+  "args_type",
+  "column_break_ccie",
+  "main_method_title",
   "kwargs",
+  "kwargs_type",
   "kv_storage_section",
   "key_value_store",
   "section_break_zpgq",
@@ -28,11 +31,22 @@
   "steps",
   "section_break_pfpj",
   "output",
+  "output_type",
   "column_break_lhnh",
   "exception",
+  "callback_section",
+  "max_no_of_callback_attempts",
+  "column_break_amxx",
+  "callback_status",
+  "column_break_gvim",
+  "no_of_callback_attempts",
+  "column_break_gteb",
+  "callback_next_retry_at",
   "section_break_xglm",
   "stdout",
-  "traceback"
+  "traceback",
+  "callback_traceback",
+  "workflow_traceback"
  ],
  "fields": [
   {
@@ -85,9 +99,9 @@
   },
   {
    "fieldname": "output",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Output",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "read_only": 1
   },
   {
@@ -98,6 +112,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval: doc.key_value_store.length > 0",
    "fieldname": "kv_storage_section",
    "fieldtype": "Section Break",
    "label": "KV Storage"
@@ -172,16 +187,16 @@
   },
   {
    "fieldname": "args",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Args",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "set_only_once": 1
   },
   {
    "fieldname": "kwargs",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Kwargs",
-   "options": "Press Workflow Object",
+   "length": 1000,
    "set_only_once": 1
   },
   {
@@ -207,6 +222,96 @@
    "label": "Steps",
    "options": "Press Workflow Step",
    "read_only": 1
+  },
+  {
+   "fieldname": "callback_section",
+   "fieldtype": "Section Break",
+   "label": "Callback"
+  },
+  {
+   "default": "5",
+   "fieldname": "max_no_of_callback_attempts",
+   "fieldtype": "Int",
+   "label": "Maximum Attempts",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_amxx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "no_of_callback_attempts",
+   "fieldtype": "Int",
+   "label": "Attempts",
+   "non_negative": 1,
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_gvim",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "callback_next_retry_at",
+   "fieldtype": "Datetime",
+   "label": "Next Retry At",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "callback_traceback",
+   "fieldtype": "Long Text",
+   "label": "Callback Traceback",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "callback_status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nSuccess\nFailure\nFatal",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_gteb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "workflow_traceback",
+   "fieldtype": "Long Text",
+   "label": "Workflow Traceback",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_force_failure_requested",
+   "fieldtype": "Check",
+   "label": "Force Failure Requested",
+   "read_only": 1
+  },
+  {
+   "fieldname": "args_type",
+   "fieldtype": "Select",
+   "label": "Args Type",
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "kwargs_type",
+   "fieldtype": "Select",
+   "label": "Kwargs Type",
+   "options": "int\nfloat\nstring\ntuple\nlist\ndict\nobject",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "output_type",
+   "fieldtype": "Select",
+   "label": "Output Type",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -217,7 +322,7 @@
    "link_fieldname": "workflow"
   }
  ],
- "modified": "2026-04-22 00:01:07.425649",
+ "modified": "2026-04-24 19:15:31.340535",
  "modified_by": "Administrator",
  "module": "Workflow Engine",
  "name": "Press Workflow",
@@ -237,24 +342,20 @@
    "write": 1
   },
   {
-   "create": 1,
    "email": 1,
    "export": 1,
    "print": 1,
-   "read": 1,
    "report": 1,
-   "role": "Press Member",
+   "role": "Press Admin",
    "share": 1,
    "write": 1
   },
   {
-   "create": 1,
    "email": 1,
    "export": 1,
    "print": 1,
-   "read": 1,
    "report": 1,
-   "role": "Press Admin",
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }

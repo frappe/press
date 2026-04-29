@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 	from datetime import datetime
 	from typing import Any
 
+	from press.press.doctype.team.team import Team
 	from press.press.doctype.user_ssh_key.user_ssh_key import UserSSHKey
 
 DEFAULT_DEPENDENCIES = [
@@ -733,7 +734,11 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def create_deploy_candidate(
-		self, apps_to_update=None, run_will_fail_check=False, validate_pre_candidate_checks: bool = True
+		self,
+		apps_to_update=None,
+		run_will_fail_check=False,
+		validate_pre_candidate_checks: bool = True,
+		ignore_permissions: bool = False,
 	) -> "DeployCandidate | None":
 		if not self.enabled:
 			return None
@@ -782,7 +787,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 			check_if_update_will_fail(self, new_dc)
 
-		new_dc.insert()
+		new_dc.insert(ignore_permissions=ignore_permissions)
 		return new_dc
 
 	def validate_dc_apps_against_rg(self, dc_apps) -> None:
@@ -1289,7 +1294,8 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def get_next_apps(self, current_apps) -> list[frappe._dict[str, str | datetime]]:  # noqa: C901
 		marketplace_app_sources = self.get_marketplace_app_sources()
-		current_team = get_current_team(True)
+		# Only users with access to the team can reach this stage therefore we can trust `self.team`
+		current_team: Team = frappe.get_doc("Team", self.team)
 		app_publishers_team = [current_team.name]
 
 		if current_team.parent_team:
@@ -1801,20 +1807,24 @@ class ReleaseGroup(Document, TagHelpers):
 		return frappe.get_cached_value("Frappe Version", self.version, "number") >= version
 
 	def setup_default_feature_flags(self):
-		DEFAULT_FEATURE_FLAGS = {
-			"Version 14": {"merge_default_and_short_rq_queues": True},
-			"Version 15": {
-				"gunicorn_threads_per_worker": "4",
-				"merge_default_and_short_rq_queues": True,
-				"use_rq_workerpool": True,
-			},
-			"Nightly": {
-				"gunicorn_threads_per_worker": "4",
-				"merge_default_and_short_rq_queues": True,
-				"use_rq_workerpool": True,
-			},
+		basic_config = {
+			"merge_default_and_short_rq_queues": True,
 		}
-		flags = DEFAULT_FEATURE_FLAGS.get(self.version, {})
+
+		higher_version_config = {
+			"gunicorn_threads_per_worker": "4",
+			"use_rq_workerpool": True,
+		}
+
+		if self.version == "Version 14":
+			flags = basic_config
+
+		elif self.is_this_version_or_above(15):
+			flags = {**basic_config, **higher_version_config}
+
+		else:
+			flags = {}
+
 		for key, value in flags.items():
 			setattr(self, key, value)
 

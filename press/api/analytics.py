@@ -783,6 +783,7 @@ def get_additional_duration_reports(
 
 
 @frappe.whitelist()
+@protected("Site")
 def get_advanced_analytics(
 	name: str, timezone: str, start: str, end: str, max_no_of_paths: int = MAX_NO_OF_PATHS
 ):
