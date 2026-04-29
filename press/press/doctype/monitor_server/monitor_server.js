@@ -18,6 +18,12 @@ frappe.ui.form.on('Monitor Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Update Alert Rules'),
+				'update_alert_rules',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Fetch Keys'),
 				'fetch_keys',
 				false,

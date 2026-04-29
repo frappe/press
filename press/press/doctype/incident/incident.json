@@ -8,39 +8,38 @@
  "engine": "InnoDB",
  "field_order": [
   "alerts_tab",
-  "phone_call",
   "alert",
   "status",
   "type",
   "subtype",
-  "acknowledged_by",
   "column_break_smnd",
   "server",
   "resource_type",
   "resource",
   "cluster",
-  "resolved_by",
   "investigation",
-  "resolved_at",
+  "section_break_lazo",
+  "acknowledged_by",
+  "column_break_ukex",
   "confirmed_at",
+  "column_break_kwec",
+  "resolved_at",
   "section_break_kjey",
-  "subject",
   "description",
   "preliminary_investigation_section",
   "likely_cause",
-  "column_break_jrzi",
-  "corrective_suggestions",
-  "preventive_suggestions",
   "section_break_bjjy",
   "updates",
-  "called_customer",
   "updates_tab",
-  "alerts",
   "section_break_aevb",
   "column_break_rbwa",
-  "route",
+  "phone_call",
+  "column_break_xvko",
   "sms_sent",
-  "show_in_website"
+  "column_break_zzcp",
+  "called_customer",
+  "section_break_pahe",
+  "alerts"
  ],
  "fields": [
   {
@@ -122,36 +121,14 @@
    "options": "Incident Updates"
   },
   {
-   "fieldname": "route",
-   "fieldtype": "Data",
-   "label": "Route"
-  },
-  {
-   "default": "0",
-   "fieldname": "show_in_website",
-   "fieldtype": "Check",
-   "label": "Show in Website"
-  },
-  {
    "fieldname": "section_break_kjey",
    "fieldtype": "Section Break",
    "label": "Details"
   },
   {
-   "fieldname": "subject",
-   "fieldtype": "Data",
-   "label": "Subject"
-  },
-  {
    "fieldname": "description",
    "fieldtype": "Text Editor",
    "label": "Description"
-  },
-  {
-   "fieldname": "resolved_by",
-   "fieldtype": "Link",
-   "label": "Resolved By",
-   "options": "User"
   },
   {
    "default": "1",
@@ -194,22 +171,6 @@
    "label": "Likely Causes"
   },
   {
-   "fieldname": "column_break_jrzi",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "preventive_suggestions",
-   "fieldtype": "Table",
-   "label": "Preventive Suggestions",
-   "options": "Incident Suggestion"
-  },
-  {
-   "fieldname": "corrective_suggestions",
-   "fieldtype": "Table",
-   "label": "Corrective Suggestions",
-   "options": "Incident Suggestion"
-  },
-  {
    "fieldname": "investigation",
    "fieldtype": "Link",
    "label": "Investigation",
@@ -231,13 +192,34 @@
    "fieldname": "confirmed_at",
    "fieldtype": "Datetime",
    "label": "Confirmed At"
+  },
+  {
+   "fieldname": "section_break_lazo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_ukex",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_kwec",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_xvko",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_zzcp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_pahe",
+   "fieldtype": "Section Break"
   }
  ],
- "has_web_view": 1,
- "index_web_pages_for_search": 1,
- "is_published_field": "show_in_website",
  "links": [],
- "modified": "2026-03-13 13:38:20.041662",
+ "modified": "2026-04-28 18:02:05.525045",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",
@@ -274,7 +256,6 @@
    "share": 1
   }
  ],
- "route": "incidents",
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",

@@ -13,8 +13,9 @@
   "description",
   "section_break_4",
   "expression",
-  "column_break_6",
+  "section_break_qwoe",
   "labels",
+  "column_break_cibe",
   "annotations",
   "routing_section",
   "group_wait",
@@ -49,8 +50,9 @@
   },
   {
    "default": "{}",
+   "description": "Un-indexed Key-Value Pair. Used for storing any arbitrary data.",
    "fieldname": "annotations",
-   "fieldtype": "Code",
+   "fieldtype": "JSON",
    "label": "Annotations",
    "reqd": 1
   },
@@ -75,13 +77,10 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "column_break_6",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "{}",
+   "description": "Indexed Key-Value Pair. Useful for filtering.",
    "fieldname": "labels",
-   "fieldtype": "Code",
+   "fieldtype": "JSON",
    "label": "Labels",
    "reqd": 1
   },
@@ -187,6 +186,14 @@
    "fieldname": "silent",
    "fieldtype": "Check",
    "label": "Silent"
+  },
+  {
+   "fieldname": "section_break_qwoe",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_cibe",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -196,7 +203,7 @@
    "link_fieldname": "alert"
   }
  ],
- "modified": "2026-01-16 14:24:38.200768",
+ "modified": "2026-04-27 23:31:54.567156",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Prometheus Alert Rule",

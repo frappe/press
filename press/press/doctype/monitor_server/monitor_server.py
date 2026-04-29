@@ -236,6 +236,12 @@ class MonitorServer(BaseServer):
 			log_error("Monitoring Server Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def update_alert_rules(self):
+		from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import PrometheusAlertRule
+
+		PrometheusAlertRule.update_alert_rules_on_monitor(self.name)
+
+	@frappe.whitelist()
 	def show_grafana_password(self):
 		return self.get_password("grafana_password")
 

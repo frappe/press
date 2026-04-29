@@ -10,19 +10,22 @@
   "users",
   "self_hosted_users",
   "section_break_rnxb",
-  "enable_incident_detection",
-  "phone_call_alerts",
-  "email_alerts",
-  "grafana_screenshots",
-  "column_break_ehby",
+  "column_break_nowz",
   "confirmation_threshold_day",
-  "call_threshold_day",
-  "call_repeat_interval_day",
-  "wait_time_post_investigator_actions",
-  "column_break_voyg",
   "confirmation_threshold_night",
+  "column_break_ehby",
+  "call_threshold_day",
   "call_threshold_night",
-  "call_repeat_interval_night"
+  "column_break_voyg",
+  "wait_time_post_investigator_actions",
+  "minimum_firing_instances",
+  "minimum_firing_instances_in_percent",
+  "section_break_tjym",
+  "enable_incident_detection",
+  "grafana_screenshots",
+  "column_break_rikb",
+  "phone_call_alerts",
+  "email_alerts"
  ],
  "fields": [
   {
@@ -58,42 +61,43 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "300",
    "fieldname": "confirmation_threshold_day",
    "fieldtype": "Duration",
    "hide_days": 1,
-   "label": "Confirmation Threshold Day"
+   "in_list_view": 1,
+   "label": "Confirmation Threshold Day",
+   "reqd": 1
   },
   {
+   "default": "600",
    "fieldname": "confirmation_threshold_night",
    "fieldtype": "Duration",
    "hide_days": 1,
-   "label": "Confirmation Threshold Night"
+   "in_list_view": 1,
+   "label": "Confirmation Threshold Night",
+   "reqd": 1
   },
   {
+   "default": "0",
    "fieldname": "call_threshold_day",
    "fieldtype": "Duration",
    "hide_days": 1,
-   "label": "Call Threshold Day"
+   "in_list_view": 1,
+   "label": "Call Threshold Day",
+   "reqd": 1
   },
   {
+   "default": "0",
    "fieldname": "call_threshold_night",
    "fieldtype": "Duration",
    "hide_days": 1,
-   "label": "Call Threshold Night"
+   "in_list_view": 1,
+   "label": "Call Threshold Night",
+   "reqd": 1
   },
   {
-   "fieldname": "call_repeat_interval_day",
-   "fieldtype": "Duration",
-   "hide_days": 1,
-   "label": "Call Repeat Interval Day"
-  },
-  {
-   "fieldname": "call_repeat_interval_night",
-   "fieldtype": "Duration",
-   "hide_days": 1,
-   "label": "Call Repeat Interval Night"
-  },
-  {
+   "description": "After this specific time, system will send call calls to engineers for confirmed incidents",
    "fieldname": "column_break_ehby",
    "fieldtype": "Column Break"
   },
@@ -114,12 +118,39 @@
    "fieldtype": "Duration",
    "hide_days": 1,
    "label": "Wait Time Post Investigator Actions"
+  },
+  {
+   "description": "After this specific time, Incident with Validating status can be moved to Confirmed state",
+   "fieldname": "column_break_nowz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_tjym",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_rikb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "15",
+   "fieldname": "minimum_firing_instances",
+   "fieldtype": "Int",
+   "label": "Minimum Firing Instances",
+   "reqd": 1
+  },
+  {
+   "default": "40",
+   "fieldname": "minimum_firing_instances_in_percent",
+   "fieldtype": "Percent",
+   "label": "Minimum Firing Instances In Percent",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-02-18 11:05:28.583816",
+ "modified": "2026-04-29 23:41:18.990820",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident Settings",
