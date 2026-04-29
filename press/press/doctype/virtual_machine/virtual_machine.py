@@ -153,7 +153,7 @@ class VirtualMachine(Document):
 		return frappe.db.exists("Database Server", {"virtual_machine": self.name})
 
 	def autoname(self):
-		series = f"{self.series}-{slug(self.cluster)}.#####"
+		series = f"{self.series if self.series != 'u' else 'f'}-{slug(self.cluster)}.#####"
 		self.index = int(make_autoname(series)[-5:])
 		self.name = f"{self.series}{self.index}-{slug(self.cluster)}.{self.domain}"
 
