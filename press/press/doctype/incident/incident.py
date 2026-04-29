@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 import frappe
 import requests
 from frappe.model.document import Document
-from frappe.utils import cint
+from frappe.utils.data import cint
 from frappe.utils.synchronization import filelock
 from playwright.sync_api import Page, sync_playwright
 
@@ -47,23 +47,6 @@ INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere 
 INCIDENT_SCOPE = (
 	"server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
 )
-
-MIN_FIRING_INSTANCES = 15  # minimum instances that should have fired for an incident to be valid
-MIN_FIRING_INSTANCES_FRACTION = (
-	0.4  # 40%; minimum percentage of instances that should have fired for an incident to be valid
-)
-
-DAY_HOURS = range(9, 18)
-CONFIRMATION_THRESHOLD_SECONDS_DAY = 5 * 60  # 5 minutes;time after which humans are called
-CONFIRMATION_THRESHOLD_SECONDS_NIGHT = (
-	10 * 60  # 10 minutes; time after which humans are called
-)
-CALL_THRESHOLD_SECONDS_DAY = 0  # 0 minutes;time after which humans are called
-CALL_THRESHOLD_SECONDS_NIGHT = (
-	15 * 60  # 15 minutes; time after confirmation after which humans are called
-)
-CALL_REPEAT_INTERVAL_DAY = 15 * 60
-CALL_REPEAT_INTERVAL_NIGHT = 20 * 60
 
 
 class Incident(Document):
@@ -107,9 +90,18 @@ class Incident(Document):
 		updates: DF.Table[IncidentUpdates]
 	# end: auto-generated types
 
-	def validate(self):
-		if not self.phone_call and self.settings.phone_call_alerts:
-			self.phone_call = True
+	@cached_property
+	def database_server(self):
+		return str(frappe.db.get_value("Server", self.server, "database_server"))
+
+	@cached_property
+	def proxy_server(self):
+		return str(frappe.db.get_value("Server", self.server, "proxy_server"))
+
+	@cached_property
+	def is_ignore_incident_for_server(self) -> bool:
+		ignore_till = frappe.db.get_value("Server", self.server, "ignore_incidents_till")
+		return ignore_till and ignore_till > frappe.utils.now_datetime()
 
 	@cached_property
 	def settings(self) -> IncidentSettings:
@@ -120,6 +112,10 @@ class Incident(Document):
 		from press.press.doctype.incident.incident_communication import IncidentCommunication
 
 		return IncidentCommunication(self)
+
+	def validate(self):
+		if not self.phone_call and self.settings.phone_call_alerts:
+			self.phone_call = True
 
 	def after_insert(self):
 		"""
@@ -151,27 +147,8 @@ class Incident(Document):
 				self.db_set("confirmed_at", current_datetime)
 				self.communication.call_customers()
 
-	def vcpu(self, server_type, server_name):
-		vm_name = str(frappe.db.get_value(server_type, server_name, "virtual_machine"))
-		return int(
-			frappe.db.get_value("Virtual Machine", vm_name, "vcpu") or 16  # type: ignore
-		)  # 16 as DO and Scaleway servers have high CPU; Add a CPU field everywhere later
-
-	@cached_property
-	def database_server(self):
-		return str(frappe.db.get_value("Server", self.server, "database_server"))
-
-	@cached_property
-	def proxy_server(self):
-		return str(frappe.db.get_value("Server", self.server, "proxy_server"))
-
-	@cached_property
-	def is_ignore_incident_for_server(self) -> bool:
-		ignore_till = frappe.db.get_value("Server", self.server, "ignore_incidents_till")
-		return ignore_till and ignore_till > frappe.utils.now_datetime()
-
 	def get_load(self, name) -> float:
-		timespan = get_confirmation_threshold_duration()
+		timespan = self.settings.confirmation_threshold_seconds
 		load = prometheus_query(
 			f"""avg_over_time(node_load5{{instance="{name}", job="node"}}[{timespan}s])""",
 			lambda x: x,
@@ -190,19 +167,20 @@ class Incident(Document):
 		load = self.get_load(resource)
 		if load < 0:  # no response, likely down
 			return resource_type, resource
-		if load > 3 * self.vcpu(resource_type, resource):
+
+		vm_name = str(frappe.db.get_value(resource_type, resource, "virtual_machine"))
+		vcpu = int(frappe.db.get_value("Virtual Machine", vm_name, "vcpu") or 16)
+
+		if load > 3 * vcpu:
 			return resource_type, resource
 		return False, False
-
-	def get_sites_down_list(self):
-		return "\n".join(self.sites_down)
 
 	def identify_affected_resource(self):
 		"""
 		Identify the affected resource and set the resource field
 		"""
 		self.add_description(f"{len(self.sites_down)} / {self.total_instances} sites down:")
-		self.add_description(self.get_sites_down_list())
+		self.add_description("\n".join(self.sites_down))
 
 		for resource_type, resource in [
 			("Database Server", self.database_server),
@@ -255,7 +233,7 @@ class Incident(Document):
 		"""
 		Returns the prominent CPU state and its percentage
 		"""
-		timespan = get_confirmation_threshold_duration()
+		timespan = self.settings.confirmation_threshold_seconds
 		cpu_info = prometheus_query(
 			f"""avg by (mode)(rate(node_cpu_seconds_total{{instance="{resource}", job="node"}}[{timespan}s])) * 100""",
 			lambda x: x["mode"],
@@ -583,7 +561,6 @@ class Incident(Document):
 	def waited_enough_for_investigator_reactions(self) -> bool:
 		"""Check if the investigator has taken any action"""
 		investigator: IncidentInvestigator = frappe.get_doc("Incident Investigator", {"incident": self.name})
-		wait_time = get_wait_time_post_investigator_actions()
 		if investigator.status != "Completed":
 			return False
 
@@ -591,7 +568,11 @@ class Incident(Document):
 		if (
 			investigator.status == "Completed"
 			and investigator.action_steps
-			and (investigator.modified > frappe.utils.now_datetime() - timedelta(minutes=wait_time))
+			and (
+				investigator.modified
+				> frappe.utils.now_datetime()
+				- timedelta(seconds=cint(self.settings.wait_time_post_investigator_actions))
+			)
 		):
 			return False
 
@@ -600,13 +581,13 @@ class Incident(Document):
 	@property
 	def time_to_call_for_help(self) -> bool:
 		return self.status == "Confirmed" and frappe.utils.now_datetime() - self.creation > timedelta(
-			seconds=get_confirmation_threshold_duration() + get_call_threshold_duration()
+			seconds=self.settings.confirmation_threshold_seconds + self.settings.call_threshold_seconds
 		)
 
 	@property
 	def time_to_call_for_help_again(self) -> bool:
 		return self.status == "Acknowledged" and frappe.utils.now_datetime() - self.modified > timedelta(
-			seconds=get_call_repeat_interval()
+			seconds=self.settings.call_repeat_interval_seconds
 		)
 
 	@cached_property
@@ -618,47 +599,8 @@ class Incident(Document):
 		return self.sites_down[0] if self.sites_down else None
 
 
-def get_confirmation_threshold_duration():
-	if frappe.utils.now_datetime().hour in DAY_HOURS:
-		return (
-			cint(frappe.db.get_value("Incident Settings", None, "confirmation_threshold_day"))
-			or CONFIRMATION_THRESHOLD_SECONDS_DAY
-		)
-	return (
-		cint(frappe.db.get_value("Incident Settings", None, "confirmation_threshold_night"))
-		or CONFIRMATION_THRESHOLD_SECONDS_NIGHT
-	)
-
-
-def get_wait_time_post_investigator_actions() -> int:
-	return cint(frappe.db.get_single_value("Incident Settings", "wait_time_post_investigator_actions") or 5)
-
-
-def get_call_threshold_duration():
-	if frappe.utils.now_datetime().hour in DAY_HOURS:
-		return (
-			cint(frappe.db.get_value("Incident Settings", None, "call_threshold_day"))
-			or CALL_THRESHOLD_SECONDS_DAY
-		)
-	return (
-		cint(frappe.db.get_value("Incident Settings", None, "call_threshold_night"))
-		or CALL_THRESHOLD_SECONDS_NIGHT
-	)
-
-
-def get_call_repeat_interval():
-	if frappe.utils.now_datetime().hour in DAY_HOURS:
-		return (
-			cint(frappe.db.get_value("Incident Settings", None, "call_repeat_interval_day"))
-			or CALL_REPEAT_INTERVAL_DAY
-		)
-	return (
-		cint(frappe.db.get_value("Incident Settings", None, "call_repeat_interval_night"))
-		or CALL_REPEAT_INTERVAL_NIGHT
-	)
-
-
 def validate_incidents():
+	settings: IncidentSettings = frappe.get_cached_doc("Incident Settings")
 	validating_incidents = frappe.get_all(
 		"Incident",
 		filters={
@@ -668,7 +610,7 @@ def validate_incidents():
 	)
 	for incident_dict in validating_incidents:
 		if frappe.utils.now_datetime() - incident_dict.creation > timedelta(
-			seconds=get_confirmation_threshold_duration()
+			seconds=settings.confirmation_threshold_seconds
 		):
 			incident = Incident("Incident", incident_dict.name)
 			incident.confirm()
