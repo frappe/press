@@ -18,6 +18,7 @@ rules:
     marketplace_check_id: security_codeinjection_eval
     marketplace_check_name: Code Injection Eval
     marketplace_category: Security
+    is_blocking: true
     remediation: |
       Detected the use of functions that can be dangerous if used to evaluate
       dynamic content. This code should be manually audited by review/security team.
@@ -40,6 +41,7 @@ rules:
     marketplace_check_id: security_ssti
     marketplace_check_name: SSTI
     marketplace_category: Security
+    is_blocking: true
     remediation: |
       Ensure `$ARG` is a hard-coded template path/string defined in the app, not a
       value from request, DB, or filesystem. If dynamic templates are unavoidable,
@@ -69,6 +71,7 @@ rules:
     marketplace_check_id: security_direct_jinja_construction
     marketplace_check_name: Direct Jinja Construction
     marketplace_category: Security
+    is_blocking: true
     remediation: |
       Prefer `frappe.render_template` with a trusted template path. If a custom
       environment is required, pass `autoescape=True` and a loader restricted to a

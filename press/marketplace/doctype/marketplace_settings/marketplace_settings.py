@@ -17,6 +17,7 @@ class MarketplaceSettings(Document):
 		from press.marketplace.doctype.auto_release_team.auto_release_team import AutoReleaseTeam
 		from press.marketplace.doctype.featured_app.featured_app import FeaturedApp
 
+		audit_bench_path: DF.Data | None
 		auto_release_apps: DF.Table[FeaturedApp]
 		auto_release_teams: DF.Table[AutoReleaseTeam]
 		enable_audit_actions: DF.Check
