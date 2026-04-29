@@ -3,6 +3,7 @@
 # We currently don't take build steps into account.
 from __future__ import annotations
 
+import base64
 import contextlib
 import glob
 import json
@@ -12,7 +13,6 @@ import shutil
 import tarfile
 import tempfile
 import typing
-import warnings
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import cached_property
@@ -39,7 +39,6 @@ from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	UploadStepUpdater,
 )
 from press.press.doctype.deploy_candidate.utils import (
-	BuildWarning,
 	get_arm_build_server_with_least_active_builds,
 	get_build_server,
 	get_intel_build_server_with_least_active_builds,
@@ -59,6 +58,7 @@ if typing.TYPE_CHECKING:
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
+	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
 		DeployCandidateApp,
@@ -325,36 +325,32 @@ class DeployCandidateBuild(Document):
 		python_version = self._parse_python_version(version)
 		return python_version in GET_PIP_VERSION_MODIFIED_URL
 
-	def _generate_dockerfile(self):
-		dockerfile = os.path.join(self.build_directory, "Dockerfile")
-		with open(dockerfile, "w") as f:
-			dockerfile_template = "press/docker/Dockerfile"
-			is_distutils_supported = True
-			requires_version_based_get_pip = False
+	def _generate_dockerfile(self) -> str:
+		dockerfile_template = "press/docker/Dockerfile"
+		is_distutils_supported = True
+		requires_version_based_get_pip = False
 
-			for d in self.candidate.dependencies:
-				if d.dependency == "PYTHON_VERSION":
-					is_distutils_supported = self.check_distutils_support(d.version)
-					requires_version_based_get_pip = self.check_get_pip_url_support(d.version)
+		for d in self.candidate.dependencies:
+			if d.dependency == "PYTHON_VERSION":
+				is_distutils_supported = self.check_distutils_support(d.version)
+				requires_version_based_get_pip = self.check_get_pip_url_support(d.version)
 
-				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
-					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
+			if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
+				dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
 
-			content = frappe.render_template(
-				dockerfile_template,
-				{
-					"doc": self.candidate,
-					"remove_distutils": not is_distutils_supported,
-					"requires_version_based_get_pip": requires_version_based_get_pip,
-					"is_arm_build": self.platform == "arm64",
-					"use_asset_store": False,
-					"upload_assets": False,
-					"site_url": frappe.utils.get_url(),
-				},
-				is_path=True,
-			)
-			f.write(content)
-			return content
+		return frappe.render_template(
+			dockerfile_template,
+			{
+				"doc": self.candidate,
+				"remove_distutils": not is_distutils_supported,
+				"requires_version_based_get_pip": requires_version_based_get_pip,
+				"is_arm_build": self.platform == "arm64",
+				"use_asset_store": False,
+				"upload_assets": False,
+				"site_url": frappe.utils.get_url(),
+			},
+			is_path=True,
+		)
 
 	def _generate_config_from_template(self, template: ConfigFileTemplate):
 		_, template_conf_name = os.path.split(template.value)
@@ -832,6 +828,7 @@ class DeployCandidateBuild(Document):
 		existing.
 		"""
 		self._set_output_parsers()
+
 		if output := get_remote_step_output(
 			"build",
 			output_data,
@@ -891,6 +888,7 @@ class DeployCandidateBuild(Document):
 		self.add_build_steps(dockerfile)
 		self.add_post_build_steps()
 
+		# TODO: Need to move to build server
 		self._copy_config_files()
 		for config_template in [
 			ConfigFileTemplate.REDIS_CACHE,
@@ -1039,6 +1037,85 @@ class DeployCandidateBuild(Document):
 		self._update_docker_image_metadata()
 		self._run_agent_jobs()
 
+	def encode_dockerfile(self, dockerfile):
+		"""Encode dockerfile content to base64 to be sent to agent"""
+		dockerfile_bytes = dockerfile.encode("utf-8")
+		return base64.b64encode(dockerfile_bytes).decode("utf-8")
+
+	def send_build_instructions(self):
+		"""
+		Prepare build instructions and mark ready to upload
+
+		HOW IT WORKS:
+		-------------
+		1. Get all the app sources part of the deploy candidate.
+		2. Get all app releases part of the deploy candidate.
+		3. Get the required repo urls (with token for private repos) of the app releases.
+		4. Generate the dockerfile
+		"""
+		self._prepare_build_directory()
+		clone_instructions = {}
+
+		for app in self.candidate.apps:
+			app_source = app.source
+			app_release = app.release
+
+			hash = frappe.db.get_value("App Release", app_release, "hash")
+			source: "AppSource" = frappe.get_doc("App Source", app_source)
+			url = source.get_repo_url()
+
+			clone_instructions[app.app] = {
+				"url": url,
+				"release": app_release,
+				"source": app_source,
+				"hash": hash,
+				"branch": source.branch,
+			}
+
+		dockerfile = self._generate_dockerfile()
+		encoded_dockerfile = self.encode_dockerfile(dockerfile)
+		settings = self._fetch_registry_settings()
+
+		build_parameters = {
+			# "filename": context_filename,
+			"image_repository": self.docker_image_repository,
+			"image_tag": self.docker_image_tag,
+			"registry": {
+				"url": settings.docker_registry_url,
+				"username": settings.docker_registry_username,
+				"password": settings.docker_registry_password,
+			},
+			"no_cache": self.no_cache,
+			"no_push": self.no_push,
+			"build_token": self.candidate.build_token,
+			# Next few values are not used by agent but are
+			# read in `process_run_build`
+			"deploy_candidate_build": self.name,
+			"deploy_after_build": self.deploy_after_build,
+			"deploy_on_server": self.deploy_on_server,
+			# Used by agent to prepare build context
+			"dockerfile": encoded_dockerfile,
+			"clone_instructions": clone_instructions,
+			"build_name": self.name,
+			"group": self.group,
+			"deploy_candidate_params": {
+				"redis_cache_size": self.candidate.redis_cache_size,
+				"is_redisearch_enabled": self.candidate.is_redisearch_enabled,
+				"environment_variables": self.candidate.environment_variables,
+				"use_rq_workerpool": self.candidate.use_rq_workerpool,
+				"merge_all_rq_queues": self.candidate.merge_all_rq_queues,
+				"merge_default_and_short_rq_queues": self.candidate.merge_default_and_short_rq_queues,
+				"custom_workers": self.candidate.custom_workers,
+				"custom_workers_group": self.candidate.custom_workers_group,
+				"is_code_server_enabled": False,  # We no longer seem to use this since code server runs on press
+				"is_ssh_enabled": False,  # Set by bench when creating container
+			},
+		}
+		if self.platform == "arm64":
+			build_parameters.update({"platform": self.platform})
+
+		Agent(self.build_server).run_build(build_parameters)
+
 	def _build(self):
 		self._set_pending_duration()
 		self.set_status(
@@ -1047,27 +1124,28 @@ class DeployCandidateBuild(Document):
 			commit=True,
 		)
 		self._set_output_parsers()
+		self.send_build_instructions()
 
-		# https://docs.python.org/3/library/warnings.html#testing-warnings
-		with warnings.catch_warnings(record=True) as caught_warnings:
-			warnings.simplefilter("always", BuildWarning)  # capture everything
+		# # https://docs.python.org/3/library/warnings.html#testing-warnings
+		# with warnings.catch_warnings(record=True) as caught_warnings:
+		# 	warnings.simplefilter("always", BuildWarning)  # capture everything
 
-			try:
-				self._prepare_build()
-			except Exception as exc:
-				self.handle_build_failure(exc)
-				return
+		# 	try:
+		# 		self._prepare_build()
+		# 	except Exception as exc:
+		# 		self.handle_build_failure(exc)
+		# 		return
 
-			for warning in caught_warnings:
-				self.handle_build_warning(
-					title="Pre Build Validation Warning",
-					warning=warning,
-				)
+		# 	for warning in caught_warnings:
+		# 		self.handle_build_warning(
+		# 			title="Pre Build Validation Warning",
+		# 			warning=warning,
+		# 		)
 
-		try:
-			self._start_build()
-		except Exception as exc:
-			self.handle_build_failure(exc)
+		# try:
+		# 	self._start_build()
+		# except Exception as exc:
+		# 	self.handle_build_failure(exc)
 
 	def reset_build_state(self):
 		self.cleanup_build_directory()
@@ -1167,15 +1245,17 @@ class DeployCandidateBuild(Document):
 		frappe.set_user(frappe.get_value("Team", team if isinstance(team, str) else team.name, "user"))
 		queue = "default" if frappe.conf.developer_mode else "build"
 
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_build",
-			queue=queue,
-			timeout=2400,
-			enqueue_after_commit=True,
-			job_id=f"deploy_candidate_build:{self.name}",
-		)
+		self._build()
+
+		# frappe.enqueue_doc(
+		# 	self.doctype,
+		# 	self.name,
+		# 	"_build",
+		# 	queue=queue,
+		# 	timeout=2400,
+		# 	enqueue_after_commit=True,
+		# 	job_id=f"deploy_candidate_build:{self.name}",
+		# )
 
 		frappe.set_user(user)
 		frappe.session.data = session_data
