@@ -2047,7 +2047,7 @@ class VirtualMachine(Document):
 			"cluster": self.cluster,
 			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
-			"server_id": self.index,
+			"server_id": 10_00_000 + self.index,
 			"is_primary": True,
 			"team": self.team,
 			"is_unified_server": True,
