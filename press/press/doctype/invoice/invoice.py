@@ -1411,6 +1411,19 @@ def calculate_gst(amount):
 	return amount * 0.18
 
 
+def sync_paid_invoices_to_frappeio():
+	"""Syncs paid invoices to frappe.io for teams that have not yet had an invoice created on frappe.io"""
+	invs = frappe.get_all(
+		"Invoice",
+		filters={"status": "Paid", "transaction_amount": (">", 0.0), "frappe_invoice": ("is", "not set")},
+		fields=["name", "team"],
+	)
+
+	for inv in invs:
+		if frappe.db.get_value("Team", inv.team, "enabled") == 1:
+			frappe.get_doc("Invoice", inv.name).create_invoice_on_frappeio()
+
+
 def get_permission_query_conditions(user):
 	from press.utils import get_current_team
 

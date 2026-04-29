@@ -232,6 +232,7 @@ scheduler_events = {
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",
 		"press.press.doctype.site_backup.site_backup.delete_backups_for_archived_sites_after_retention",
 		"press.press.doctype.site.site.notify_sites_before_archival",
+		"press.press.doctype.invoice.invoice.sync_paid_invoices_to_frappeio",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
