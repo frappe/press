@@ -233,6 +233,33 @@ class Invoice(Document):
 			url = self.stripe_invoice_url
 		return url
 
+	def before_validate(self):
+		self.apply_partner_discounts()
+
+	def apply_partner_discounts(self):
+		partner_discounts = {"Entry": 10, "Emerging": 10, "Bronze": 15, "Silver": 20, "Gold": 25}
+		team = frappe.get_doc("Team", self.team)
+		if team.erpnext_partner and team.partner_status == "Active" and team.partner_email:
+			result = team.get_partner_level()
+			if result:
+				partner_level = result[0]
+				certificates = result[1]
+			else:
+				partner_level = "Entry"
+				certificates = 0
+
+			discount_percent = partner_discounts.get(partner_level, 0)
+			if certificates is None:
+				certificates = 0
+			if partner_level == "Entry" and certificates < 2:
+				discount_percent = 0
+
+			for item in self.items:
+				if item.document_type in ("Site", "Server", "Database Server", "Cluster"):
+					item.discount_percentage = discount_percent
+
+			self.discount_note = "New Partner Discount"
+
 	def validate(self):
 		self.validate_team()
 		self.validate_dates()
