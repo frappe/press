@@ -1424,6 +1424,37 @@ def sync_paid_invoices_to_frappeio():
 			frappe.get_doc("Invoice", inv.name).create_invoice_on_frappeio()
 
 
+def finalize_unpaid_card_invoices():
+	today = frappe.utils.now()
+	Team = frappe.qb.DocType("Team")
+	Invoice = frappe.qb.DocType("Invoice")
+	invs = (
+		frappe.qb.from_(Invoice)
+		.inner_join(Team)
+		.on(Invoice.team == Team.name)
+		.select(Invoice.name)
+		.where(
+			(Invoice.status == "Unpaid")
+			& (Invoice.type == "Subscription")
+			& (Invoice.period_end < today)
+			& (Invoice.payment_mode == "Card")
+			& (Invoice.stripe_invoice_id.isnull())
+			& (Invoice.amount_due > 0)
+			& (Team.enabled == 1)
+		)
+		.run(as_dict=True)
+	)
+
+	for inv in invs:
+		invoice = frappe.get_doc("Invoice", inv.name)
+		try:
+			invoice.finalize_invoice()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			frappe.log_error(f"Failed to finalize unpaid card invoice: {invoice.name}")
+
+
 def get_permission_query_conditions(user):
 	from press.utils import get_current_team
 
