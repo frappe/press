@@ -836,7 +836,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		if (
 			investigator.status == "Completed"
 			and investigator.action_steps
-			and (investigator.modified > frappe.utils.now_datetime() - timedelta(minutes=wait_time))
+			and (investigator.modified > frappe.utils.now_datetime() - timedelta(seconds=wait_time))
 		):
 			return False
 
