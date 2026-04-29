@@ -567,7 +567,7 @@ class Team(Document):
 		):
 			self.update_billing_details_on_frappeio()
 
-		if self.has_value_changed("is_trusted_team") and self.is_trusted_team:
+		if self.has_value_changed("is_trusted_team"):
 			frappe.cache().hdel("setup_intent", self.name)
 
 	def update_draft_invoice_payment_mode(self):
