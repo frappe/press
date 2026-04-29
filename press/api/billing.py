@@ -742,18 +742,6 @@ def get_razorpay_mandates() -> list[dict]:
 
 @frappe.whitelist()
 @role_guard.api("billing")
-def set_razorpay_mandate_as_default(mandate_name: str):
-	"""Set a Razorpay mandate as the default for the team"""
-	team = get_current_team()
-
-	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
-	mandate.set_default()
-
-	return {"success": True}
-
-
-@frappe.whitelist()
-@role_guard.api("billing")
 def cancel_razorpay_mandate(mandate_name: str):
 	"""Cancel a Razorpay mandate"""
 	team = get_current_team()
