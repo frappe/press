@@ -72,8 +72,7 @@ def run_semgrep_rules(clone_dir: str) -> list[CheckResult]:
 				message="Semgrep is not available (no bench env binary and not on PATH).",
 				details=json.dumps({"rules_dir": str(RULES_DIR)}),
 				remediation=(
-					"Set Marketplace Settings → Marketplace audit bench path to a bench with "
-					"`env/bin/semgrep` or `pip install semgrep` in that env, or install semgrep on PATH."
+					"Set Marketplace Settings → Marketplace audit bench path to a bench with `env/bin/semgrep` or `pip install semgrep` in that env, or install semgrep on PATH."
 				),
 			)
 		]
