@@ -140,10 +140,6 @@ def run_semgrep_rules(clone_dir: str) -> list[CheckResult]:
 		]
 
 	results = []
-	temp_path = os.path.join(clone_dir, "semgrep_payload.json")
-	with open(temp_path, "w") as f:
-		json.dump(payload, f, indent=2)
-
 	results.extend(_parse_semgrep_errors(payload.get("errors", [])))
 	results.extend(_build_category_results(payload.get("results", [])))
 

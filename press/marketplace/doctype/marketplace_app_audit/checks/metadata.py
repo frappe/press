@@ -29,9 +29,7 @@ INSTALL_INSTRUCTION_PATTERNS = [
 ARCHITECTURE_PATTERNS = [
 	r"architecture",
 	r"deployment",
-	r"setup",
 	r"installation",
-	r"configuration",
 ]
 
 
@@ -115,7 +113,6 @@ def check_long_description(marketplace_app):
 		)
 
 	# Check 3: Check if there are any Architecture/Deployment related information in the long description.
-	found_patterns = []
 	found_patterns = check_architecture_deployment_information(plain_text)
 
 	if found_patterns:
