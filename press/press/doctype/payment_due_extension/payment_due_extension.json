@@ -8,7 +8,8 @@
   "team",
   "extension_date",
   "reason",
-  "amended_from"
+  "amended_from",
+  "status"
  ],
  "fields": [
   {
@@ -18,7 +19,8 @@
    "in_list_view": 1,
    "label": "Team",
    "options": "Team",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "extension_date",
@@ -42,12 +44,20 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nActive\nExpired"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-04-14 11:55:56.662380",
+ "modified": "2026-04-21 12:56:37.114551",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment Due Extension",
@@ -66,6 +76,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

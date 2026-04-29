@@ -113,6 +113,7 @@
   "remote_files_section",
   "remote_uploads_bucket",
   "remote_link_expiry",
+  "region_name",
   "column_break_51",
   "remote_access_key_id",
   "remote_secret_access_key",
@@ -178,6 +179,13 @@
   "column_break_xhfy",
   "spamd_api_key",
   "spamd_api_secret",
+  "chatwoot_section",
+  "enable_chat",
+  "chat_base_url",
+  "chat_website_token",
+  "column_break_srse",
+  "chat_support_start_time",
+  "chat_support_end_time",
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
@@ -1651,11 +1659,55 @@
    "fieldname": "use_new_deploy_flow",
    "fieldtype": "Check",
    "label": "Use New Deploy Flow"
-  }
+  },
+  {
+   "fieldname": "chatwoot_section",
+   "fieldtype": "Section Break",
+   "label": "Chat Support"
+  },
+  {
+   "fieldname": "column_break_srse",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_chat",
+   "fieldtype": "Check",
+   "label": "Enable Chat"
+  },
+  {
+   "fieldname": "chat_base_url",
+   "fieldtype": "Data",
+   "label": "Chat Base URL"
+  },
+  {
+   "fieldname": "chat_website_token",
+   "fieldtype": "Data",
+   "label": "Chat Website Token"
+  },
+  {
+   "default": "10",
+   "fieldname": "chat_support_start_time",
+   "fieldtype": "Select",
+   "label": "Chat Support Start Time",
+   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23"
+  },
+  {
+   "default": "18",
+   "fieldname": "chat_support_end_time",
+   "fieldtype": "Select",
+   "label": "Chat Support End Time",
+   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24"
+  },
+  {
+   "fieldname": "region_name",
+   "fieldtype": "Data",
+   "label": "Region Name"
+ }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-04-13 18:54:30.323908",
+ "modified": "2026-04-22 12:11:56.360055",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

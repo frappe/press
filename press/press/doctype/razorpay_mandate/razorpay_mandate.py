@@ -197,10 +197,7 @@ class RazorpayMandate(Document):
 		# Update team's default razorpay mandate and payment mode
 		frappe.db.set_value("Team", self.team, "default_razorpay_mandate", self.name)
 
-		# Set payment mode if not already set
-		current_payment_mode = frappe.db.get_value("Team", self.team, "payment_mode")
-		if not current_payment_mode or current_payment_mode == "Prepaid Credits":
-			frappe.db.set_value("Team", self.team, "payment_mode", "UPI Autopay")
+		frappe.db.set_value("Team", self.team, "payment_mode", "UPI Autopay")
 
 	@dashboard_whitelist()
 	def check_mandate_status(self):
