@@ -475,6 +475,7 @@ class VirtualMachine(Document):
 			self.get_cloud_init(),
 			vpc_id,
 			self.private_ip_address,
+			assign_public_ip=self.assign_public_ip,
 		)
 		self.instance_id = instance_id
 		self.status = "Pending"

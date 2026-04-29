@@ -26,6 +26,7 @@ class Client:
 		cloud_init: str,
 		vpc_id: str,
 		private_ip_address: str,
+		assign_public_ip: bool,
 	):
 		return self.client.post_api(
 			"orchestrator.api.virtual_machine.new",
@@ -38,6 +39,7 @@ class Client:
 				"cloud_init": cloud_init,
 				"private_network": vpc_id,
 				"private_ip_address": private_ip_address,
+				"assign_public_ip": assign_public_ip,
 			},
 		)
 
