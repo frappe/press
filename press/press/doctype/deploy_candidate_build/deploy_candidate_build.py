@@ -35,6 +35,7 @@ from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_warning_notification,
 )
 from press.press.doctype.deploy_candidate.docker_output_parsers import (
+	CloneOutputParser,
 	DockerBuildOutputParser,
 	UploadStepUpdater,
 )
@@ -107,8 +108,6 @@ STAGE_SLUG_MAP = {
 	"validate": "Run Validations",
 	"pull": "Pull Updates",
 	"mounts": "Setup Mounts",
-	"package": "Package",
-	"upload": "Upload",
 }
 
 # Key: (stage_slug, step_slug)
@@ -128,8 +127,6 @@ STEP_SLUG_MAP = {
 	("validate", "dependencies"): "Validate Dependencies",
 	("mounts", "create"): "Prepare Mounts",
 	("upload", "image"): "Docker Image",
-	("package", "context"): "Build Context",
-	("upload", "context"): "Build Context",
 }
 
 
@@ -516,9 +513,9 @@ class DeployCandidateBuild(Document):
 			[
 				# Pre-build validation slug
 				("validate", "pre-build"),
-				# Build slugs
-				("package", "context"),
-				("upload", "context"),
+				# # Build slugs
+				# ("package", "context"),
+				# ("upload", "context"),
 			]
 		)
 
@@ -576,6 +573,7 @@ class DeployCandidateBuild(Document):
 			self.upload_step_updater.flush_output(commit)
 
 	def _set_output_parsers(self):
+		self.clone_output_parser = CloneOutputParser(self)
 		self.build_output_parser = DockerBuildOutputParser(self)
 		self.upload_step_updater = UploadStepUpdater(self)
 
@@ -811,6 +809,19 @@ class DeployCandidateBuild(Document):
 				deploy_after_build=request_data.get("deploy_after_build")
 			)
 
+	def get_all_pending_clone_steps(self) -> list["DeployCandidateBuildStep"]:
+		"""Return all the pending clone steps"""
+		return [
+			step
+			for step in self.build_steps
+			if step.stage_slug == "clone" and step.status not in ["Success", "Failure"]
+		]
+
+	def has_failed_clone_steps(self) -> bool:
+		return any(
+			[step for step in self.build_steps if step.stage_slug == "clone" and step.status == "Failure"]
+		)
+
 	def _process_run_build(
 		self,
 		job: "AgentJob",
@@ -818,8 +829,8 @@ class DeployCandidateBuild(Document):
 		response_data: dict | None,
 	):
 		job_data = json.loads(job.data or "{}")
-		output_data = json.loads(job_data.get("output", "{}"))
-
+		job_data_output = job_data.get("output", "{}")
+		output_data = json.loads(job_data_output) if isinstance(job_data_output, str) else job_data_output
 		"""
 		Due to how agent - press communication takes place, every time an
 		output is published all of it has to be re-parsed from the start.
@@ -828,21 +839,23 @@ class DeployCandidateBuild(Document):
 		existing.
 		"""
 		self._set_output_parsers()
+		clone_failed = self.clone_output_parser.parse_clone_output_and_update_step(job)
 
-		if output := get_remote_step_output(
-			"build",
-			output_data,
-			response_data,
-		):
-			self.build_output_parser.parse_and_update(output)
+		if not clone_failed:
+			if output := get_remote_step_output(
+				"build",
+				output_data,
+				response_data,
+			):
+				self.build_output_parser.parse_and_update(output)
 
-		if output := get_remote_step_output(
-			"push",
-			output_data,
-			response_data,
-		):
-			self.upload_step_updater.start()
-			self.upload_step_updater.process(output)
+			if output := get_remote_step_output(
+				"push",
+				output_data,
+				response_data,
+			):
+				self.upload_step_updater.start()
+				self.upload_step_updater.process(output)
 
 		if self.has_remote_build_failed(job, job_data):
 			self.handle_build_failure(exc=None, job=job)
@@ -1054,7 +1067,7 @@ class DeployCandidateBuild(Document):
 		4. Generate the dockerfile
 		"""
 		self._prepare_build_directory()
-		clone_instructions = {}
+		clone_instructions = []
 
 		for app in self.candidate.apps:
 			app_source = app.source
@@ -1063,14 +1076,16 @@ class DeployCandidateBuild(Document):
 			hash = frappe.db.get_value("App Release", app_release, "hash")
 			source: "AppSource" = frappe.get_doc("App Source", app_source)
 			url = source.get_repo_url()
-
-			clone_instructions[app.app] = {
-				"url": url,
-				"release": app_release,
-				"source": app_source,
-				"hash": hash,
-				"branch": source.branch,
-			}
+			clone_instructions.append(
+				{
+					"app": app.app,
+					"url": url,
+					"release": app_release,
+					"source": app_source,
+					"hash": hash,
+					"branch": source.branch,
+				}
+			)
 
 		dockerfile = self._generate_dockerfile()
 		encoded_dockerfile = self.encode_dockerfile(dockerfile)
