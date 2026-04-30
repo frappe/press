@@ -792,7 +792,7 @@
   {
    "create": 1,
    "read": 1,
-   "role": "Press Admin",
+   "role": "Press User",
    "write": 1
   },
   {
