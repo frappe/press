@@ -56,9 +56,11 @@ class Incident(Document):
 		acknowledged_at: DF.Datetime | None
 		acknowledged_by: DF.Link | None
 		alert: DF.Link | None
+		app_server_stats: DF.AttachImage | None
 		called_customer: DF.Check
 		cluster: DF.Link | None
 		confirmed_at: DF.Datetime | None
+		db_server_stats: DF.AttachImage | None
 		description: DF.TextEditor | None
 		findings: DF.Table[IncidentFinding]
 		investigation: DF.Link | None

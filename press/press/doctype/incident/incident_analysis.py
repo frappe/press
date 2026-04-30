@@ -3,12 +3,12 @@
 
 from __future__ import annotations
 
-from base64 import b64encode
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import frappe
 import requests
+from frappe.utils.file_manager import save_file
 from frappe.utils.synchronization import filelock
 from playwright.sync_api import Page, sync_playwright
 
@@ -192,29 +192,44 @@ class IncidentAnalysis:
 			page = browser.new_page(locale="en-IN", timezone_id="Asia/Kolkata")
 			page.set_extra_http_headers({"Authorization": self.monitor_server.get_grafana_auth_header()})
 
-			self._capture_node_exporter_dashboard(page, self.incident.resource or self.incident.server)
-			self._capture_node_exporter_dashboard(page, self._paired_resource())
+			self._capture_node_exporter_dashboard(page, "Server")
+			self._capture_node_exporter_dashboard(page, "Database Server")
 
 		self.incident.save()
 
-	def _capture_node_exporter_dashboard(self, page: Page, instance: str | None):
+	def _capture_node_exporter_dashboard(
+		self, page: Page, server_type: Literal["Server", "Database Server"]
+	) -> str | None:
+		instance = self.incident.server if server_type == "Server" else self.incident.database_server
 		if not instance:
-			return
+			return None
+
+		# Set fixed viewport before navigation for consistency
+		page.set_viewport_size({"width": 1280, "height": 900})
 
 		page.goto(
 			f"https://{self.monitor_server.name}{self.monitor_server.node_exporter_dashboard_path}"
 			f"&refresh=5m&var-DS_PROMETHEUS=Prometheus&var-job=node&var-node={instance}"
 			"&from=now-1h&to=now"
+			"&theme=light"
 		)
 		page.wait_for_load_state("networkidle")
 
-		image = b64encode(page.screenshot()).decode("ascii")
-		self.incident._add_description(f'<img src="data:image/png;base64,{image}" alt="grafana-image">')
+		# wait 2 more seconds to settle animations
+		page.wait_for_timeout(2000)
 
-	def _paired_resource(self) -> str | None:
-		incident = self.incident
-		if incident.resource_type == "Database Server":
-			return str(incident.server)
-		if incident.resource_type == "Server":
-			return str(frappe.db.get_value("Server", incident.resource, "database_server"))
-		return None
+		# capture scrollbar-view area
+		image_bytes = page.locator("#pageContent").screenshot()
+
+		file = save_file(
+			fname=f"{self.incident.name}_{server_type.lower().replace(' ', '_')}.png",
+			content=image_bytes,
+			dt=self.incident.doctype,
+			dn=self.incident.name,
+			is_private=1,
+		)
+
+		if server_type == "Server":
+			self.incident.app_server_stats = file.file_url
+		else:
+			self.incident.db_server_stats = file.file_url

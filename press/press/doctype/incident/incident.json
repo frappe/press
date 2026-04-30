@@ -31,6 +31,12 @@
   "preliminary_investigation_section",
   "likely_cause",
   "findings",
+  "findings_tab",
+  "grafana_dashboard_section",
+  "app_server_stats",
+  "db_server_stats",
+  "app_server_stats_html",
+  "db_server_stats_html",
   "updates_tab",
   "section_break_aevb",
   "column_break_rbwa",
@@ -228,10 +234,43 @@
    "fieldtype": "Table",
    "label": "Findings",
    "options": "Incident Finding"
+  },
+  {
+   "fieldname": "findings_tab",
+   "fieldtype": "Tab Break",
+   "label": "Findings"
+  },
+  {
+   "fieldname": "app_server_stats",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "App Server Stats"
+  },
+  {
+   "fieldname": "db_server_stats",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "DB Server Stats"
+  },
+  {
+   "fieldname": "app_server_stats_html",
+   "fieldtype": "HTML",
+   "label": "App Server Stats"
+  },
+  {
+   "fieldname": "db_server_stats_html",
+   "fieldtype": "HTML",
+   "label": "DB Server Stats",
+   "max_height": "512px",
+   "width": "512px"
+  },
+  {
+   "fieldname": "grafana_dashboard_section",
+   "fieldtype": "Section Break"
   }
  ],
  "links": [],
- "modified": "2026-04-30 22:43:33.904956",
+ "modified": "2026-05-01 00:12:54.832316",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",
