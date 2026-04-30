@@ -36,6 +36,7 @@ class PressSettings(Document):
 		asset_store_region: DF.Data | None
 		asset_store_secret_access_key: DF.Password | None
 		auto_update_queue_size: DF.Int
+		auto_upgrade_dependencies: DF.Check
 		autoscale_discount: DF.Float
 		aws_access_key_id: DF.Data | None
 		aws_s3_bucket: DF.Data | None
