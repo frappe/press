@@ -2881,6 +2881,10 @@ class Site(Document, TagHelpers):
 			and self.team != "Administrator"
 			and not self.free
 			and (today > get_datetime(self.trial_end_date).date() if self.trial_end_date else True)
+			and not (
+				self.creation_failed
+				and not frappe.db.exists("Usage Record", {"document_name": self.name, "docstatus": 1})
+			)
 		)
 
 	def get_plan_name(self, plan=None):
