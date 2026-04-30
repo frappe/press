@@ -499,6 +499,7 @@ class TestIncident(FrappeTestCase):
 			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
 			update_modified=False,
 		)  # assume night interval is longer
+		mock_calls_create.reset_mock()  # reset mock to ensure we are only checking for calls after this point
 		resolve_incidents()
 
 		mock_calls_create.assert_not_called()  # No calls since investigator hasn't completed investigation
