@@ -152,6 +152,10 @@ const props = defineProps({
 		type: String,
 		default: null,
 	},
+	unpaidAmount: {
+		type: Number,
+		default: null,
+	},
 });
 
 const paypalEnabled = createResource({
@@ -163,13 +167,13 @@ const paypalEnabled = createResource({
 const totalUnpaidAmount = createResource({
 	url: 'press.api.billing.total_unpaid_amount',
 	cache: 'totalUnpaidAmount',
-	auto: true,
+	auto: props.unpaidAmount == null,
 });
 
 const minimumAmount = computed(() => {
 	if (props.minimumAmount) return props.minimumAmount;
 	if (!team.doc) return 0;
-	let unpaidAmount = totalUnpaidAmount.data || 0;
+	let unpaidAmount = props.unpaidAmount ?? totalUnpaidAmount.data ?? 0;
 	const minimumDefault = team.doc?.currency == 'INR' ? 410 : 5;
 
 	if (unpaidAmount > 100000 && team.doc?.currency == 'INR') {
@@ -183,7 +187,9 @@ const minimumAmount = computed(() => {
 	);
 });
 
-const creditsToBuy = ref(minimumAmount.value);
+const creditsToBuy = ref(
+	props.unpaidAmount > 0 ? props.unpaidAmount : minimumAmount.value,
+);
 const paymentGateway = ref('');
 
 watch(totalUnpaidAmount, () => {
