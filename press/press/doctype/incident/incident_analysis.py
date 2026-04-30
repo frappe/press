@@ -166,6 +166,7 @@ class IncidentAnalysis:
 		return max_mode, max_cpu
 
 	def ping_sample_site(self):
+		return 504
 		site = self.incident.get_down_site()
 		if not site:
 			return None

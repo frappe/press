@@ -124,25 +124,9 @@ class AlertmanagerWebhookLog(Document):
 	def alert_rule(self) -> "PrometheusAlertRule":
 		return frappe.get_doc("Prometheus Alert Rule", self.alert)
 
-	@property
-	def is_enough_firing(self):
-		if self.status == "Resolved":
-			firing_instances = len(
-				self.past_alert_instances("Firing") - self.past_alert_instances("Resolved")
-			)
-		else:
-			firing_instances = len(self.past_alert_instances("Firing"))
-
-		total_instances = frappe.db.count("Site", {"status": "Active", INCIDENT_SCOPE: self.incident_scope})
-
-		settings: IncidentSettings = frappe.get_cached_doc("Incident Settings")
-		min_absolute = int(settings.minimum_firing_instances or 0)
-		min_fraction = float(settings.minimum_firing_instances_in_percent or 0) / 100
-
-		return firing_instances > min(math.floor(min_fraction * total_instances), min_absolute)
-
 	def after_insert(self):
 		self.create_incident_if_necessary()
+		self.check_incident_resolution_if_necessary()
 		self.trigger_reaction()
 		self.send_notifications()
 
@@ -156,10 +140,43 @@ class AlertmanagerWebhookLog(Document):
 		if find(self.alert_rule.ignore_on_clusters, lambda x: x.cluster == self.cluster):
 			return
 
-		if not self.is_enough_firing:
+		firing_instances = len(self.past_alert_instances("Firing"))
+		total_instances = frappe.db.count("Site", {"status": "Active", INCIDENT_SCOPE: self.incident_scope})
+		settings: IncidentSettings = frappe.get_cached_doc("Incident Settings")
+		if not firing_instances > min(
+			math.floor((float(settings.minimum_firing_instances_in_percent) / 100) * total_instances),
+			settings.minimum_firing_instances,
+		):
 			return
 
 		frappe.enqueue_doc(self.doctype, self.name, "create_incident", enqueue_after_commit=True)
+
+	def check_incident_resolution_if_necessary(self):
+		"""On a Resolved webhook, find the ongoing incident for this scope and ask it to
+		re-evaluate against live Prometheus state."""
+		if not (self.alert == INCIDENT_ALERT and self.status == "Resolved"):
+			return
+
+		incident_name = frappe.db.get_value(
+			"Incident",
+			{
+				"alert": self.alert,
+				INCIDENT_SCOPE: self.incident_scope,
+				"status": ("in", ["Validating", "Confirmed", "Acknowledged"]),
+			},
+			"name",
+		)
+		if not incident_name:
+			return
+
+		frappe.enqueue_doc(
+			"Incident",
+			incident_name,
+			"check_resolved",
+			enqueue_after_commit=True,
+			job_id=f"incident||check_resolved||{incident_name}",
+			deduplicate=True,
+		)
 
 	def trigger_reaction(self):
 		if self.status != "Firing":

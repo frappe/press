@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 	from press.incident_management.doctype.incident_investigator.incident_investigator import (
 		IncidentInvestigator,
 	)
-	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.incident.incident_action import IncidentAction
 	from press.press.doctype.incident.incident_analysis import IncidentAnalysis
@@ -188,21 +187,19 @@ class Incident(Document):
 		if save:
 			self.save()
 
-	def check_resolved(self):
+	@frappe.whitelist()
+	def check_if_resolved(self):
+		"""
+		Resolve this incident if no sites are currently down for its server
+		"""
 		try:
-			last_resolved: AlertmanagerWebhookLog = frappe.get_last_doc(
-				"Alertmanager Webhook Log",
-				{
-					"status": "Resolved",
-					"group_key": ("like", f"%{self.incident_scope}%"),
-					"alert": self.alert,
-				},
-			)
-		except frappe.DoesNotExistError:
+			if self.sites_down:
+				return
+		except Exception:
+			# Prometheus / monitor server unreachable; don't resolve on transient errors.
 			return
 
-		if not last_resolved.is_enough_firing:
-			self.resolve()
+		self.resolve()
 
 	def escalate_to_on_call_engineers_if_needed(self):
 		"""Escalate the incident by paging on-call engineers if escalation thresholds are met."""
@@ -420,7 +417,7 @@ def resolve_incidents():
 	for incident_name in ongoing_incidents:
 		try:
 			incident = Incident("Incident", incident_name)
-			incident.check_resolved()
+			incident.check_if_resolved()
 			incident.escalate_to_on_call_engineers_if_needed()
 		except Exception as e:
 			frappe.log_error(f"Error resolving/escalating incident {incident_name}: {e!s}")
