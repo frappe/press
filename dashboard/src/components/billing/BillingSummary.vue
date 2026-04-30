@@ -34,7 +34,7 @@
 					</div>
 				</div>
 			</div>
-			<div
+			<!--div
 				v-if="unpaidAmount.data"
 				class="m-1.5 flex items-center justify-between rounded-lg bg-gray-50 px-2.5 py-2"
 			>
@@ -48,7 +48,23 @@
 				<div>
 					<Button variant="solid" label="Pay now" @click="payNow" />
 				</div>
-			</div>
+			</div> -->
+			<Alert
+				v-if="unpaidAmount.data"
+				class="m-1.5"
+				title="You have an unpaid invoice"
+				:description="`Unpaid amount is ${currency} ${unpaidAmount.data?.toFixed(2)}. Failure to pay would result in your sites being suspended. Try again or try a different payment method.`"
+				theme="red"
+				:dismissable="false"
+			>
+				<template #icon>
+					<lucide-receipt class="h-4 w-4" />
+				</template>
+
+				<template #footer>
+					<Button variant="solid" label="Pay now" @click="payNow" />
+				</template>
+			</Alert>
 		</div>
 		<AddPrepaidCreditsDialog
 			v-if="showAddPrepaidCreditsDialog"
@@ -66,7 +82,7 @@
 <script setup>
 import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue';
 import UpcomingInvoiceDialog from './UpcomingInvoiceDialog.vue';
-import { Button, createResource } from 'frappe-ui';
+import { Alert, Button, createResource } from 'frappe-ui';
 import { ref, computed, inject } from 'vue';
 import { confirmDialog } from '../../utils/components';
 import router from '../../router';
