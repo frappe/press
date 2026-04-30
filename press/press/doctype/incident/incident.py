@@ -50,14 +50,12 @@ class Incident(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.incident_alerts.incident_alerts import IncidentAlerts
 		from press.press.doctype.incident_finding.incident_finding import IncidentFinding
 		from press.press.doctype.incident_updates.incident_updates import IncidentUpdates
 
 		acknowledged_at: DF.Datetime | None
 		acknowledged_by: DF.Link | None
 		alert: DF.Link | None
-		alerts: DF.Table[IncidentAlerts]
 		called_customer: DF.Check
 		cluster: DF.Link | None
 		confirmed_at: DF.Datetime | None

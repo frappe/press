@@ -40,8 +40,7 @@
   "column_break_zzcp",
   "called_customer",
   "section_break_pahe",
-  "updates",
-  "alerts"
+  "updates"
  ],
  "fields": [
   {
@@ -78,12 +77,6 @@
    "fieldtype": "Select",
    "label": "Type",
    "options": "Database Down\nServer Down\nProxy Down"
-  },
-  {
-   "fieldname": "alerts",
-   "fieldtype": "Table",
-   "label": "Alerts",
-   "options": "Incident Alerts"
   },
   {
    "default": "0",
@@ -238,7 +231,7 @@
   }
  ],
  "links": [],
- "modified": "2026-04-30 17:33:26.321207",
+ "modified": "2026-04-30 22:43:33.904956",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",
