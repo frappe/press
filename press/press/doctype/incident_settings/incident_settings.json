@@ -20,6 +20,8 @@
   "wait_time_post_investigator_actions",
   "minimum_firing_instances",
   "minimum_firing_instances_in_percent",
+  "column_break_euxq",
+  "custom_queue",
   "section_break_tjym",
   "enable_incident_detection",
   "grafana_screenshots",
@@ -144,12 +146,23 @@
    "fieldtype": "Percent",
    "label": "Minimum Firing Instances In Percent",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_euxq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "default",
+   "fieldname": "custom_queue",
+   "fieldtype": "Data",
+   "label": "Custom Queue",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-30 00:10:49.062568",
+ "modified": "2026-04-30 17:53:40.141430",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident Settings",

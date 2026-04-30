@@ -28,6 +28,7 @@ class IncidentSettings(Document):
 		call_threshold_night: DF.Duration
 		confirmation_threshold_day: DF.Duration
 		confirmation_threshold_night: DF.Duration
+		custom_queue: DF.Data
 		email_alerts: DF.Check
 		enable_incident_detection: DF.Check
 		grafana_screenshots: DF.Check
