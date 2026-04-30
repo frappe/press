@@ -288,6 +288,7 @@ async function submit() {
 					},
 				},
 			},
+			return_url: `${window.location.origin}/dashboard/billing/payment-methods`,
 		},
 	);
 	if (error) {
@@ -305,9 +306,20 @@ async function submit() {
 		} else if (_errorMessage != 'Your card number is incomplete.') {
 			errorMessage.value = _errorMessage;
 		}
-	} else {
-		if (setupIntent?.status === 'succeeded') {
+	} else if (setupIntent) {
+		if (setupIntent.status === 'requires_action') {
+			// 3DS authentication is required - Stripe.js automatically handles the redirect
+			// The user will be redirected to their bank's authentication page
+			// After authentication, they'll return to your return_url
+			// You need to handle the return and check the SetupIntent status again
+			console.log('3DS authentication required - redirecting...');
+		} else if (setupIntent.status === 'succeeded') {
 			setupIntentSuccess.submit({ setupIntent });
+		} else {
+			// Handle other statuses like 'processing' or 'requires_payment_method'
+			errorMessage.value =
+				'Unable to set up the payment method. Please try again.';
+			addingCard.value = false;
 		}
 	}
 }
