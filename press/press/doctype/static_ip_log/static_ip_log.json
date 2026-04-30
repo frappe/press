@@ -1,0 +1,80 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-04-29 10:33:01.279667",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "server_type",
+  "server",
+  "column_break_htts",
+  "static_ip",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Server Type",
+   "options": "DocType",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Server",
+   "options": "server_type",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_htts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Attached\nDetached",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "static_ip",
+   "fieldtype": "Data",
+   "label": "Static IP",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-29 11:31:19.181232",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Static IP Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

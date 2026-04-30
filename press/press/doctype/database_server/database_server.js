@@ -211,6 +211,7 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.is_server_setup && frm.doc.nat_server,
 			],
+			[__('Get Static IP'), 'get_static_ip', false],
 			[
 				__('Remove NAT iptables'),
 				'remove_nat_iptables',
