@@ -281,7 +281,7 @@ const tabs = [
 						>
 							<span
 								v-if="x.read == 0"
-								class="p-0.5 border ring-outline-gray-2 ring-1 bg-surface-gray-7 absolute rounded top-0 left-0"
+								class="p-0.5 ring-outline-gray-2 ring-2 bg-surface-gray-7 absolute rounded top-0 left-0"
 							/>
 							<component
 								:is="icons[x.type] || LucideCircleAlert"
