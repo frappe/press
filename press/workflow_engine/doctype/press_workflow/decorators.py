@@ -11,13 +11,11 @@ import frappe
 from frappe.model.document import Document
 
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
-from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
-	PressWorkflowObject,
-)
 from press.workflow_engine.utils import (
 	called_methods_in_order,
 	is_func_accept_task_id,
 	method_title,
+	serialize_and_store_value,
 )
 
 if typing.TYPE_CHECKING:
@@ -169,14 +167,19 @@ class BoundFlow:
 		seen: set[str] = set()
 		methods = [m for m in methods if not (m[0] in seen or seen.add(m[0]))]  # type: ignore[func-returns-value]
 
+		args_type, args_value = serialize_and_store_value(args)
+		kwargs_type, kwargs_value = serialize_and_store_value(kwargs)
+
 		return (
 			frappe.get_doc(
 				{
 					"doctype": "Press Workflow",
-					"args": PressWorkflowObject.store(args) if args else None,
-					"kwargs": PressWorkflowObject.store(kwargs) if kwargs else None,
+					"args": args_value,
+					"args_type": args_type,
+					"kwargs": kwargs_value,
+					"kwargs_type": kwargs_type,
 					"linked_doctype": instance.doctype,  # type: ignore
-					"linked_docname": instance.name,  # type: ignore
+					"linked_docname": str(instance.name),  # type: ignore
 					"main_method_name": self._wrapped.__name__,
 					"main_method_title": method_title(self._wrapped),
 					"steps": [

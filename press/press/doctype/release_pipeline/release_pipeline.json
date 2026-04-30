@@ -8,7 +8,9 @@
   "team",
   "release_group",
   "status",
-  "workflow"
+  "workflow",
+  "pipeline_builds",
+  "is_user_addressable_failure"
  ],
  "fields": [
   {
@@ -42,12 +44,25 @@
    "fieldtype": "Link",
    "label": "Workflow",
    "options": "Press Workflow"
+  },
+  {
+   "fieldname": "pipeline_builds",
+   "fieldtype": "Table",
+   "label": "Pipeline Builds",
+   "options": "Release Pipeline Build"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_user_addressable_failure",
+   "fieldtype": "Check",
+   "label": "Is User Addressable Failure",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-23 23:29:23.698727",
+ "modified": "2026-04-26 11:25:35.392526",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Pipeline",

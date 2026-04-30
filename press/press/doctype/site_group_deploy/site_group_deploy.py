@@ -81,33 +81,20 @@ class SiteGroupDeploy(Document):
 			frappe.throw(f"Site with subdomain {self.subdomain} already exists")
 
 	def get_optimal_server_for_private_bench(self):
-		servers = frappe.get_all(
-			"Server",
-			filters={
-				"status": "Active",
-				"cluster": self.cluster,
-				"provider": self.provider,
-				"public": True,
-			},
-			fields=["name", "ram"],
-		)
-
-		if not servers:
-			return None
-
-		server_stats = []
-		for server in servers:
-			bench_count = frappe.db.count("Bench", {"server": server.name, "status": "Active"})
-			resource_ratio = server.ram / (bench_count + 1)
-			server_stats.append(
-				{
-					"name": server.name,
-					"resource_ratio": resource_ratio,
-				}
+		Server = frappe.qb.doctype("Server")
+		server = (
+			frappe.qb.from_(Server)
+			.select(Server.name)
+			.where(
+				(Server.status == "Active")
+				& (Server.cluster == self.cluster)
+				& (Server.provider == self.provider)
+				& (Server.public == 1)
 			)
+			.orderby(Server.use_for_new_benches, order=frappe.qb.desc)
+		).run(pluck=True)
 
-		server_stats.sort(key=lambda x: -x["resource_ratio"])
-		return server_stats[0]["name"] if server_stats else None
+		return server[0] if server else None
 
 	def create_release_group(self):
 		from press.press.doctype.release_group.release_group import (

@@ -51,6 +51,59 @@ class PressSettings(Document):
 		build_server: DF.Link | None
 		central_migration_server: DF.Link | None
 		certbot_directory: DF.Data
+		chat_base_url: DF.Data | None
+		chat_support_end_time: DF.Literal[
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10",
+			"11",
+			"12",
+			"13",
+			"14",
+			"15",
+			"16",
+			"17",
+			"18",
+			"19",
+			"20",
+			"21",
+			"22",
+			"23",
+			"24",
+		]
+		chat_support_start_time: DF.Literal[
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10",
+			"11",
+			"12",
+			"13",
+			"14",
+			"15",
+			"16",
+			"17",
+			"18",
+			"19",
+			"20",
+			"21",
+			"22",
+			"23",
+		]
+		chat_website_token: DF.Data | None
 		clone_directory: DF.Data | None
 		cluster: DF.Link | None
 		code_server: DF.Data | None
@@ -81,6 +134,7 @@ class PressSettings(Document):
 		eff_registration_email: DF.Data
 		email_recipients: DF.SmallText | None
 		enable_app_grouping: DF.Check
+		enable_chat: DF.Check
 		enable_email_pre_verification: DF.Check
 		enable_google_oauth: DF.Check
 		enable_server_snapshot_recovery: DF.Check
@@ -146,6 +200,7 @@ class PressSettings(Document):
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		redis_cache_size: DF.Int
+		region_name: DF.Data | None
 		remote_access_key_id: DF.Data | None
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None

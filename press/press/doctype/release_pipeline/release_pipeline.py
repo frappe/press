@@ -139,6 +139,10 @@ class ReleasePipeline(WorkflowBuilder):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.release_pipeline_build.release_pipeline_build import ReleasePipelineBuild
+
+		is_user_addressable_failure: DF.Check
+		pipeline_builds: DF.Table[ReleasePipelineBuild]
 		release_group: DF.Link | None
 		status: DF.Literal["Pending", "Running", "Partial Success", "Success", "Failure", "Retrying"]
 		team: DF.Link
@@ -187,6 +191,14 @@ class ReleasePipeline(WorkflowBuilder):
 
 		if status == "Failure":
 			self.send_failure_notification()
+
+	def add_build_to_pipeline(self, build: str):
+		"""Attach a build to the pipeline if not present"""
+		existing_builds = [pb.build for pb in self.pipeline_builds]
+
+		if build not in existing_builds:
+			self.append("pipeline_builds", {"build": build})
+			self.save()
 
 	@cached_property
 	def release_group_doc(self) -> "ReleaseGroup":
@@ -259,6 +271,15 @@ class ReleasePipeline(WorkflowBuilder):
 
 		return len([build for build in [intel_build, arm_build] if build])
 
+	def _mark_if_user_failure(self, deploy_candidate_build: str):
+		user_addressable_failure, manually_failed = frappe.db.get_value(
+			"Deploy Candidate Build", deploy_candidate_build, ["user_addressable_failure", "manually_failed"]
+		)
+
+		if user_addressable_failure or manually_failed:
+			self.is_user_addressable_failure = True
+			self.save()
+
 	def _check_for_scheduled_build_retries(self, deploy_candidate_build: str):
 		"""Check if there are any scheduled retries for this build"""
 		deploy_candidate_build_doc: DeployCandidateBuild = frappe.get_doc(
@@ -279,6 +300,8 @@ class ReleasePipeline(WorkflowBuilder):
 			self.defer_current_task(
 				message=f"Build {deploy_candidate_build} has scheduled retries. Waiting for retries to complete."
 			)
+
+		self._mark_if_user_failure(deploy_candidate_build_doc.name)
 
 	def _get_latest_retried_build(self, deploy_candidate_build: str) -> str:
 		"""In case there are retries for the build, get the latest retried build with same platform to monitor."""
@@ -314,6 +337,7 @@ class ReleasePipeline(WorkflowBuilder):
 			return  # We have enqueued the remote agent job
 
 		if deploy_candidate_build_status == "Failure":
+			self._mark_if_user_failure(deploy_candidate_build)
 			raise ReleasePipelineFailure(
 				f"Pre Build Validation failed for Deploy Candidate Build {deploy_candidate_build}. "
 				"Please check the build logs for more details."
@@ -528,6 +552,7 @@ class ReleasePipeline(WorkflowBuilder):
 	def orchestrate_build_monitoring(self, deploy_candidate: str, primary_build: str):
 		"""Monitors primary and, if necessary, secondary builds."""
 		# Monitor Primary
+		self.add_build_to_pipeline(primary_build)
 		self.monitor_pre_build_validation(primary_build)
 		self.monitor_build_success(primary_build)
 
@@ -541,6 +566,8 @@ class ReleasePipeline(WorkflowBuilder):
 					message=f"Waiting for secondary build creation for Deploy Candidate {deploy_candidate}",
 				)
 
+			assert secondary_build, "Secondary build should be present for candidates requiring 2 builds"
+			self.add_build_to_pipeline(secondary_build)
 			self.monitor_pre_build_validation(secondary_build)
 			self.monitor_build_success(secondary_build)
 
@@ -622,6 +649,5 @@ class ReleasePipeline(WorkflowBuilder):
 			# Just in case, make sure that we mark the pipeline as failed and notify the frontend to stop listening for deploy updates
 			self.update_pipeline_status("Failure")
 
-		workflow_status = frappe.db.get_value("Press Workflow", self.workflow, "status")
-		if workflow_status == "Failure":
-			self.update_pipeline_status("Failure")
+	def on_workflow_failure(self, *args, **kwargs):
+		self.update_pipeline_status("Failure")

@@ -15,7 +15,7 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.query_builder import Case
 from frappe.query_builder.terms import ValueWrapper
 from frappe.rate_limiter import rate_limit
-from frappe.utils import flt, sbool, time_diff_in_hours
+from frappe.utils import cint, flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.typing_validations import validate_argument_types
 from frappe.utils.user import is_system_user
@@ -173,13 +173,14 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 		.where(Bench.status == "Active")
 		.where(Bench.group == site["group"])
 		.orderby(Case().when(Bench.cluster == cluster, 1).else_(0), order=frappe.qb.desc)
-		.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
 		.orderby(Bench.creation, order=frappe.qb.desc)
 		.limit(1)
 	)
 
 	if server:
 		bench_query = bench_query.where(Server.name == server)
+	else:
+		bench_query.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
 
 	bench = bench_query.run(as_dict=True).pop()
 
@@ -2243,18 +2244,25 @@ def get_trial_plan():
 
 @frappe.whitelist()
 def get_upload_link(file, parts=1):
-	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
-	expiration = frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
+	upload_bucket_details = frappe.db.get_values(
+		"Press Settings",
+		"Press Settings",
+		["remote_uploads_bucket", "region_name", "remote_access_key_id", "remote_link_expiry"],
+		as_dict=True,
+	)[0]
+
+	bucket_name = upload_bucket_details.remote_uploads_bucket
+	expiration = cint(upload_bucket_details.remote_link_expiry) or 3600
 	object_name = get_remote_key(file)
 	parts = int(parts)
 
 	s3_client = client(
 		"s3",
-		aws_access_key_id=frappe.db.get_single_value("Press Settings", "remote_access_key_id"),
+		aws_access_key_id=upload_bucket_details.remote_access_key_id,
 		aws_secret_access_key=get_decrypted_password(
 			"Press Settings", "Press Settings", "remote_secret_access_key"
 		),
-		region_name="ap-south-1",
+		region_name=upload_bucket_details.region_name or "ap-south-1",
 	)
 	try:
 		# The response contains the presigned URL and required fields

@@ -204,6 +204,31 @@ def get_default_team_for_user(user):
 	return None
 
 
+def chat_enabled():
+	if frappe.session.user == "Guest":
+		return False
+
+	if not frappe.db.get_single_value("Press Settings", "enable_chat"):
+		return False
+
+	current_team_doc = get_current_team(get_doc=True)
+
+	if not current_team_doc:
+		return False
+
+	date_diff = frappe.utils.data.get_datetime() - current_team_doc.creation
+
+	if date_diff < timedelta(days=90):
+		return True
+	return False
+
+
+def get_chat_bubble_config():
+	press_settings = frappe.get_doc("Press Settings")
+
+	return {"base_url": press_settings.chat_base_url, "website_token": press_settings.chat_website_token}
+
+
 def get_valid_teams_for_user(user):
 	teams = frappe.db.get_all("Team Member", filters={"user": user}, pluck="parent")
 	return frappe.db.get_all("Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"])

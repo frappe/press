@@ -11,6 +11,24 @@
                 via: {{ nat_gateway_ip }}
   when: nat_gateway_ip is defined and nat_gateway_ip
 
+- name: Configure private interface (Frappe Compute specific)
+  copy:
+    dest: /etc/netplan/51-private-interface.yaml
+    content: |
+      network:
+        ethernets:
+          {{ ansible_default_ipv4.interface }}:
+            dhcp4: true
+            nameservers:
+              addresses:
+                - 8.8.8.8
+                - 4.4.4.4
+  when: is_frappe_compute is defined and is_frappe_compute
+
+- name: Move original netplan (Frappe Compute specific)
+  command: mv /etc/netplan/50-cloud-init.yaml /etc/netplan/50-cloud-init.yaml.bkp
+  when: is_frappe_compute is defined and is_frappe_compute
+
 - name: Apply Netplan
   command: netplan apply
   when: nat_gateway_ip is defined and nat_gateway_ip
