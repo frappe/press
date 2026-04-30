@@ -781,6 +781,8 @@
         "mult",
         "ruleid",
         "chatwoot",
-        "ssti"
+        "ssti",
+        "gthread",
+        "ciel"
     ]
 }
