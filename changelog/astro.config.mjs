@@ -1,6 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import { urlToVidTag } from './src/utils';
+import { urlToVidTag, rehypeFirstH1Link } from './src/utils';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
@@ -9,6 +9,7 @@ export default defineConfig({
 
 	markdown: {
 		remarkPlugins: [urlToVidTag],
+		rehypePlugins: [rehypeFirstH1Link],
 	},
 
 	vite: {
