@@ -533,6 +533,11 @@ class ReleasePipeline(WorkflowBuilder):
 	@task(queue=_get_task_execution_queue())
 	def prepare_deployment(self, apps, sites, run_will_fail_check) -> tuple[str, str]:
 		"""Creates the candidate and returns the primary build name."""
+		auto_upgrade_dependencies = frappe.db.get_single_value(
+			"Press Settings",
+			"auto_upgrade_dependencies",
+		)
+
 		try:
 			deploy_candidate = self.create_deploy_candidate(
 				apps=apps,
@@ -541,7 +546,10 @@ class ReleasePipeline(WorkflowBuilder):
 				create_deploy=False,
 			)
 			self.add_implicit_app_dependencies(deploy_candidate)
-			self.auto_update_bench_dependency_versions(deploy_candidate)
+
+			if auto_upgrade_dependencies:
+				self.auto_update_bench_dependency_versions(deploy_candidate)
+
 			primary_build = self.initiate_pre_build_validations(deploy_candidate)
 
 			return deploy_candidate, primary_build
