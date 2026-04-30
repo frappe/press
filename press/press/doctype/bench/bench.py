@@ -799,6 +799,11 @@ class Bench(Document):
 					"min_background_workers",
 				),
 			)[0]
+			is_public = frappe.get_cached_value("Server", self.server, "public")
+			if not is_public:
+				bench_config = json.loads(self.bench_config or "{}")
+				min_gn = bench_config.get("min_gunicorn_workers") or min_gn
+				min_bg = bench_config.get("min_background_workers") or min_bg
 			self.gunicorn_workers = min(
 				max_gn or MAX_GUNICORN_WORKERS,
 				max(
