@@ -789,12 +789,13 @@ Likely due to insufficient balance or incorrect credentials""",
 					"status": "Resolved",
 					"group_key": ("like", f"%{self.incident_scope}%"),
 					"alert": self.alert,
+					"creation": (">", self.creation),
 				},
 			)
 		except frappe.DoesNotExistError:
 			return
 		else:
-			if not last_resolved.is_enough_firing:
+			if not last_resolved.is_enough_firing(since=self.creation):
 				self.create_log_for_server(is_resolved=True)
 				self.resolve()
 

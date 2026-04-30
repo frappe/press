@@ -169,20 +169,27 @@ class AlertmanagerWebhookLog(Document):
 			return alert["labels"]
 		return {}
 
-	def past_alert_instances(self, status: DF.Literal["Firing", "Resolved"]) -> set[str]:
+	def past_alert_instances(
+		self,
+		status: DF.Literal["Firing", "Resolved"],
+		since: str | None = None,
+	) -> set[str]:
+		filters = {
+			"alert": self.alert,
+			"severity": self.severity,
+			"status": status,
+			"group_key": ("like", f"%{self.incident_scope}%"),
+			"modified": [
+				">",
+				add_to_date(frappe.utils.now(), hours=-self.get_repeat_interval()),
+			],
+		}
+		if since:
+			filters["creation"] = [">", since]
 		past_alerts = frappe.get_all(
 			self.doctype,
 			fields=["payload"],
-			filters={
-				"alert": self.alert,
-				"severity": self.severity,
-				"status": status,
-				"group_key": ("like", f"%{self.incident_scope}%"),
-				"modified": [
-					">",
-					add_to_date(frappe.utils.now(), hours=-self.get_repeat_interval()),
-				],
-			},
+			filters=filters,
 			group_by="group_key",
 			ignore_ifnull=True,
 		)  # get site down alerts grouped by benches
@@ -199,14 +206,14 @@ class AlertmanagerWebhookLog(Document):
 			{"status": "Active", INCIDENT_SCOPE: self.incident_scope},
 		)
 
-	@property
-	def is_enough_firing(self):
+	def is_enough_firing(self, since: str | None = None):
 		if self.status == "Resolved":
 			firing_instances = len(
-				self.past_alert_instances("Firing") - self.past_alert_instances("Resolved")
+				self.past_alert_instances("Firing", since=since)
+				- self.past_alert_instances("Resolved", since=since)
 			)
 		else:
-			firing_instances = len(self.past_alert_instances("Firing"))
+			firing_instances = len(self.past_alert_instances("Firing", since=since))
 
 		return firing_instances > min(
 			math.floor(MIN_FIRING_INSTANCES_FRACTION * self.total_instances), MIN_FIRING_INSTANCES
@@ -221,7 +228,7 @@ class AlertmanagerWebhookLog(Document):
 		rule: PrometheusAlertRule = frappe.get_doc("Prometheus Alert Rule", self.alert)
 		if find(rule.ignore_on_clusters, lambda x: x.cluster == cluster):
 			return
-		if self.is_enough_firing:
+		if self.is_enough_firing():
 			self.create_incident()
 
 	def get_repeat_interval(self):
