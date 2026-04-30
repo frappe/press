@@ -19,14 +19,13 @@ from press.exceptions import AlertRuleNotEnabled
 from press.press.doctype.incident.incident import (
 	INCIDENT_ALERT,
 	INCIDENT_SCOPE,
-	MIN_FIRING_INSTANCES,
-	MIN_FIRING_INSTANCES_FRACTION,
 	Incident,
 )
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
 
 if TYPE_CHECKING:
+	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 		PrometheusAlertRule,
 	)
@@ -97,9 +96,7 @@ class AlertmanagerWebhookLog(Document):
 		self.truncated_alerts = self.parsed["truncatedAlerts"]
 		self.combined_alerts = len(self.parsed["alerts"])
 		self.common_labels = json.dumps(self.parsed["commonLabels"], indent=2, sort_keys=True)
-		self.common_annotations = json.dumps(self.parsed["commonAnnotations"], indent=2, sort_keys=True)
 		self.group_labels = json.dumps(self.parsed["groupLabels"], indent=2, sort_keys=True)
-		self.common_labels = json.dumps(self.parsed["commonLabels"], indent=2, sort_keys=True)
 
 		self.payload = json.dumps(self.parsed, indent=2, sort_keys=True)
 
@@ -138,9 +135,11 @@ class AlertmanagerWebhookLog(Document):
 
 		total_instances = frappe.db.count("Site", {"status": "Active", INCIDENT_SCOPE: self.incident_scope})
 
-		return firing_instances > min(
-			math.floor(MIN_FIRING_INSTANCES_FRACTION * total_instances), MIN_FIRING_INSTANCES
-		)
+		settings: IncidentSettings = frappe.get_cached_doc("Incident Settings")
+		min_absolute = int(settings.minimum_firing_instances or 0)
+		min_fraction = float(settings.minimum_firing_instances_in_percent or 0) / 100
+
+		return firing_instances > min(math.floor(min_fraction * total_instances), min_absolute)
 
 	def after_insert(self):
 		self.create_incident_if_necessary()
@@ -289,9 +288,12 @@ class AlertmanagerWebhookLog(Document):
 		TelegramMessage.enqueue(message=message, topic=self.severity)
 
 	def send_email_notification(self):
+		recipient_emails = frappe.db.get_single_value("Press Settings", "email_recipients") or ""
+		email_list = [email.strip() for email in recipient_emails.split(",") if email.strip()]
+		if not email_list:
+			return
+
 		message = self._generate_telegram_message()
-		recipient_emails = frappe.db.get_single_value("Press Settings", "email_recipients")
-		email_list = [email.strip() for email in recipient_emails.split(",")]
 		frappe.sendmail(
 			recipients=email_list,
 			subject=self.alert,

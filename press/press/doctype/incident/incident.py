@@ -3,24 +3,16 @@
 
 from __future__ import annotations
 
-from base64 import b64encode
 from contextlib import suppress
 from datetime import timedelta
 from functools import cached_property
 from typing import TYPE_CHECKING
 
 import frappe
-import requests
 from frappe.model.document import Document
-from frappe.utils import cint
-from frappe.utils.synchronization import filelock
-from playwright.sync_api import Page, sync_playwright
+from frappe.utils.data import cint
 
-from press.api.server import prometheus_query
-from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.bench.bench import Bench
-from press.press.doctype.database_server.database_server import DatabaseServer
-from press.press.doctype.server.server import MARIADB_DATA_MNT_POINT
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 if TYPE_CHECKING:
@@ -30,6 +22,9 @@ if TYPE_CHECKING:
 		IncidentInvestigator,
 	)
 	from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import AlertmanagerWebhookLog
+	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.incident.incident_action import IncidentAction
+	from press.press.doctype.incident.incident_analysis import IncidentAnalysis
 	from press.press.doctype.incident.incident_communication import IncidentCommunication
 	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
@@ -38,32 +33,12 @@ if TYPE_CHECKING:
 	from press.press.doctype.incident_settings_user.incident_settings_user import (
 		IncidentSettingsUser,
 	)
-	from press.press.doctype.monitor_server.monitor_server import MonitorServer
-	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.server.server import Server
 
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
-INCIDENT_SCOPE = (
-	"server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
-)
-
-MIN_FIRING_INSTANCES = 15  # minimum instances that should have fired for an incident to be valid
-MIN_FIRING_INSTANCES_FRACTION = (
-	0.4  # 40%; minimum percentage of instances that should have fired for an incident to be valid
-)
-
-DAY_HOURS = range(9, 18)
-CONFIRMATION_THRESHOLD_SECONDS_DAY = 5 * 60  # 5 minutes;time after which humans are called
-CONFIRMATION_THRESHOLD_SECONDS_NIGHT = (
-	10 * 60  # 10 minutes; time after which humans are called
-)
-CALL_THRESHOLD_SECONDS_DAY = 0  # 0 minutes;time after which humans are called
-CALL_THRESHOLD_SECONDS_NIGHT = (
-	15 * 60  # 15 minutes; time after confirmation after which humans are called
-)
-CALL_REPEAT_INTERVAL_DAY = 15 * 60
-CALL_REPEAT_INTERVAL_NIGHT = 20 * 60
+# Scope at which an incident is grouped. Can be bench/cluster/server. Not site.
+INCIDENT_SCOPE = "server"
 
 
 class Incident(Document):
@@ -76,8 +51,10 @@ class Incident(Document):
 		from frappe.types import DF
 
 		from press.press.doctype.incident_alerts.incident_alerts import IncidentAlerts
+		from press.press.doctype.incident_finding.incident_finding import IncidentFinding
 		from press.press.doctype.incident_updates.incident_updates import IncidentUpdates
 
+		acknowledged_at: DF.Datetime | None
 		acknowledged_by: DF.Link | None
 		alert: DF.Link | None
 		alerts: DF.Table[IncidentAlerts]
@@ -85,6 +62,7 @@ class Incident(Document):
 		cluster: DF.Link | None
 		confirmed_at: DF.Datetime | None
 		description: DF.TextEditor | None
+		findings: DF.Table[IncidentFinding]
 		investigation: DF.Link | None
 		likely_cause: DF.Text | None
 		phone_call: DF.Check
@@ -107,10 +85,6 @@ class Incident(Document):
 		updates: DF.Table[IncidentUpdates]
 	# end: auto-generated types
 
-	def validate(self):
-		if not self.phone_call and self.settings.phone_call_alerts:
-			self.phone_call = True
-
 	@cached_property
 	def settings(self) -> IncidentSettings:
 		return frappe.get_cached_doc("Incident Settings")
@@ -121,348 +95,190 @@ class Incident(Document):
 
 		return IncidentCommunication(self)
 
-	def after_insert(self):
-		"""
-		Start investigating the incident since we have already waited 5m before creating it
-		send sms and email notifications, also add a dashboard banner in case of insert taking users to the status page
-		"""
-		self.create_investigation_if_possible()
-		self.communication.send_sms_to_on_call_engineers()
-		self.communication.send_email_notification()
-		self.identify_affected_resource()
+	@cached_property
+	def analysis(self) -> IncidentAnalysis:
+		from press.press.doctype.incident.incident_analysis import IncidentAnalysis
 
-	def create_investigation_if_possible(self):
-		"""Investigations have a cool off period of 5m therefore consecutive incidents on the same server might not trigger investigations"""
-		with suppress(frappe.ValidationError):
-			incident_investigator = frappe.get_doc(
-				{"doctype": "Incident Investigator", "incident": self.name, "server": self.server}
-			)
-			incident_investigator.insert(ignore_permissions=True)
-			self.investigation = incident_investigator.name
-			self.save()
-
-	def on_update(self):
-		if self.has_value_changed("status"):
-			current_datetime = frappe.utils.now_datetime()
-			self.communication.send_email_notification()
-			if self.status == "Resolved" or self.status == "Auto-Resolved":
-				self.db_set("resolved_at", current_datetime)
-			elif self.status == "Confirmed" and not self.confirmed_at:
-				self.db_set("confirmed_at", current_datetime)
-				self.communication.call_customers()
-
-	def vcpu(self, server_type, server_name):
-		vm_name = str(frappe.db.get_value(server_type, server_name, "virtual_machine"))
-		return int(
-			frappe.db.get_value("Virtual Machine", vm_name, "vcpu") or 16  # type: ignore
-		)  # 16 as DO and Scaleway servers have high CPU; Add a CPU field everywhere later
+		return IncidentAnalysis(self)
 
 	@cached_property
-	def database_server(self):
+	def action(self) -> IncidentAction:
+		from press.press.doctype.incident.incident_action import IncidentAction
+
+		return IncidentAction(self)
+
+	@property
+	def monitor_server(self):
+		# Proxied through the analysis helper, which owns the Grafana / Prometheus client.
+		return self.analysis.monitor_server
+
+	@cached_property
+	def database_server(self) -> str:
 		return str(frappe.db.get_value("Server", self.server, "database_server"))
 
 	@cached_property
-	def proxy_server(self):
+	def proxy_server(self) -> str:
 		return str(frappe.db.get_value("Server", self.server, "proxy_server"))
 
-	@cached_property
-	def is_ignore_incident_for_server(self) -> bool:
-		ignore_till = frappe.db.get_value("Server", self.server, "ignore_incidents_till")
-		return ignore_till and ignore_till > frappe.utils.now_datetime()
-
-	def get_load(self, name) -> float:
-		timespan = get_confirmation_threshold_duration()
-		load = prometheus_query(
-			f"""avg_over_time(node_load5{{instance="{name}", job="node"}}[{timespan}s])""",
-			lambda x: x,
-			"Asia/Kolkata",
-			timespan,
-			timespan + 1,
-		)["datasets"]
-		if load:
-			ret = load[0]["values"][-1]
-		else:
-			ret = -1  # no response
-		self.add_description(f"{name} load avg(5m): {ret if ret != -1 else 'No data'}")
-		return ret
-
-	def check_high_load(self, resource_type: str, resource: str):
-		load = self.get_load(resource)
-		if load < 0:  # no response, likely down
-			return resource_type, resource
-		if load > 3 * self.vcpu(resource_type, resource):
-			return resource_type, resource
-		return False, False
-
-	def get_sites_down_list(self):
-		return "\n".join(self.sites_down)
-
-	def identify_affected_resource(self):
-		"""
-		Identify the affected resource and set the resource field
-		"""
-		self.add_description(f"{len(self.sites_down)} / {self.total_instances} sites down:")
-		self.add_description(self.get_sites_down_list())
-
-		for resource_type, resource in [
-			("Database Server", self.database_server),
-			("Server", self.server),
-			("Proxy Server", self.proxy_server),
-		]:
-			if self.check_high_load(resource_type, resource) != (False, False):
-				self.resource_type = resource_type
-				self.resource = resource
-				return
-
-	def confirm(self):
-		self.status = "Confirmed"
-		self.identify_affected_resource()  # assume 1 resource; Occam's razor
-		self.identify_problem()
-		self.take_grafana_screenshots()
-		if self.down_bench:
-			self.comment_bench_web_err_log(self.down_bench)
-		self.save()
-
-	def get_last_n_lines_of_log(self, log: str, n: int = 100) -> str:
-		# get last n lines of log
-		lines = log.splitlines()
-		return "\n".join(lines[-n:]) if len(lines) > n else log
-
-	def comment_bench_web_err_log(self, bench_name: str):
-		# get last 100 lines of web.error.log from the bench
-		bench: Bench = Bench("Bench", bench_name)
-		try:
-			log = bench.get_server_log("web.error.log")["web.error.log"]
-		except Exception as e:
-			log = f"Error fetching web.error.log: {e!s}"
-
-		self.add_comment(
-			"Comment",
-			f"""Last 100 lines of web.error.log for bench {bench_name}:<br/><br/>
-<pre class="ql-code-block-container">
-{self.get_last_n_lines_of_log(log)}
-</pre>
-""",
-		)
-
-	@frappe.whitelist()
-	def regather_info_and_screenshots(self):
-		self.identify_affected_resource()
-		self.identify_problem()
-		self.take_grafana_screenshots()
-
-	def get_cpu_state(self, resource: str) -> tuple[str, float]:
-		"""
-		Returns the prominent CPU state and its percentage
-		"""
-		timespan = get_confirmation_threshold_duration()
-		cpu_info = prometheus_query(
-			f"""avg by (mode)(rate(node_cpu_seconds_total{{instance="{resource}", job="node"}}[{timespan}s])) * 100""",
-			lambda x: x["mode"],
-			"Asia/Kolkata",
-			timespan,
-			timespan + 1,
-		)["datasets"]
-		mode_cpus: dict[str, int] = {x["name"]: x["values"][-1] for x in cpu_info} or {
-			"user": -1,
-			"idle": -1,
-			"softirq": -1,
-			"iowait": -1,
-		}  # no info;
-		max_mode: str = max(mode_cpus, key=lambda k: mode_cpus[k])
-		max_cpu = mode_cpus[max_mode]
-		self.add_description(f"CPU Usage: {max_mode} {max_cpu if max_cpu > 0 else 'No data'}")
-		return max_mode, mode_cpus[max_mode]
-
-	def add_description(self, description: str):
-		if not self.description:
-			self.description = ""
-		self.description += "<p>" + description + "</p>"
-
-	def add_corrective_suggestion(self, suggestion):
-		self.append(
-			"corrective_suggestions",
-			{
-				"suggestion": suggestion,
-			},
-		)
-
-	def add_preventive_suggestion(self, suggestion):
-		self.append(
-			"preventive_suggestions",
-			{
-				"suggestion": suggestion,
-			},
-		)
-
-	def categorize_db_cpu_issues(self, cpu_state):
-		self.type = "Database Down"
-
-		if cpu_state == "user":
-			self.subtype = "High CPU: user"
-		elif cpu_state == "iowait":
-			self.subtype = "High CPU: iowait"
-
-	def categorize_server_cpu_issues(self, cpu_state):
-		self.type = "Server Down"
-		if cpu_state == "user":
-			self.update_user_server_issue()
-		elif cpu_state == "iowait":
-			self.update_high_io_server_issue()
-
-	def ping_sample_site(self):
-		if not (site := self.get_down_site()):
-			return None
-		try:
-			ret = requests.get(f"https://{site}/api/method/ping", timeout=10)
-		except requests.RequestException as e:
-			self.add_description(f"Error pinging sample site {site}: {e!s}")
-			return None
-		else:
-			self.add_description(f"Ping response for sample site {site}: {ret.status_code} {ret.reason}")
-			return ret.status_code
-
-	def categorize_disk_full_issue(self):
-		self.likely_cause = "Disk is full"
-		self.add_corrective_suggestion("Add more storage")
-		self.add_preventive_suggestion("Enable automatic addition of storage")
-
-	def identify_problem(self):
-		pong = self.ping_sample_site()
-		if not self.resource and pong and pong == 500:
-			db: DatabaseServer = frappe.get_doc("Database Server", self.database_server)
-			if db.is_disk_full(MARIADB_DATA_MNT_POINT):
-				self.resource_type = "Database Server"
-				self.resource = self.database_server
-				self.type = "Database Down"
-				self.subtype = "Disk full"
-				self.categorize_disk_full_issue()
-				self.communication.send_disk_full_mail()
-				return
-			# TODO: Try more random shit if resource isn't identified
-			# Eg: Check mysql up/ docker up/ container up
-			# Ping site for error code to guess more accurately
-			# 500 would mean mysql down or bug in app/config
-			# 502 would mean server/bench down
-			# 504 overloaded workers
-
-		state, percent = self.get_cpu_state(self.resource)
-		if state == "idle" or percent < 70:
-			return
-
-		if self.resource_type == "Database Server":
-			self.categorize_db_cpu_issues(state)
-		elif self.resource_type == "Server":
-			self.categorize_server_cpu_issues(state)
-
-		# TODO: categorize proxy issues #
+	@property
+	def incident_scope(self):
+		return getattr(self, INCIDENT_SCOPE)
 
 	@property
-	def other_resource(self):
-		if self.resource_type == "Database Server":
-			return str(self.server)
-		if self.resource_type == "Server":
-			return str(frappe.db.get_value("Server", self.resource, "database_server"))
-		return None
-
-	def add_node_exporter_screenshot(self, page: Page, instance: str | None):
-		if not instance:
-			return
-
-		page.goto(
-			f"https://{self.monitor_server.name}{self.monitor_server.node_exporter_dashboard_path}&refresh=5m&var-DS_PROMETHEUS=Prometheus&var-job=node&var-node={instance}&from=now-1h&to=now"
+	def total_instances(self) -> int:
+		return frappe.db.count(
+			"Site",
+			{"status": "Active", INCIDENT_SCOPE: self.incident_scope},
 		)
-		page.wait_for_load_state("networkidle")
-
-		image = b64encode(page.screenshot()).decode("ascii")
-		self.add_description(f'<img src="data:image/png;base64,{image}" alt="grafana-image">')
 
 	@cached_property
-	def monitor_server(self) -> MonitorServer:
-		press_settings: PressSettings = frappe.get_cached_doc("Press Settings")
-		if not (monitor_url := press_settings.monitor_server):
-			frappe.throw("Monitor Server not set in Press Settings")
-		return frappe.get_cached_doc("Monitor Server", monitor_url)
-
-	def get_grafana_auth_header(self):
-		username = str(self.monitor_server.grafana_username)
-		password = str(self.monitor_server.get_password("grafana_password"))
-		token = b64encode(f"{username}:{password}".encode()).decode("ascii")
-		return f"Basic {token}"
-
-	@filelock("grafana_screenshots")  # prevent 100 chromes from opening
-	def take_grafana_screenshots(self):
-		if not frappe.db.get_single_value("Incident Settings", "grafana_screenshots"):
-			return
-		with sync_playwright() as p:
-			browser = p.chromium.launch(headless=True, channel="chromium")
-			page = browser.new_page(locale="en-IN", timezone_id="Asia/Kolkata")
-			page.set_extra_http_headers({"Authorization": self.get_grafana_auth_header()})
-
-			self.add_node_exporter_screenshot(page, self.resource or self.server)
-			self.add_node_exporter_screenshot(page, self.other_resource)
-
-		self.save()
-
-	@frappe.whitelist()
-	def reboot_database_server(self):
-		db_server_name = frappe.db.get_value("Server", self.server, "database_server")
-		if not db_server_name:
-			frappe.throw("No database server found for this server")
-		db_server = DatabaseServer("Database Server", db_server_name)
-		try:
-			db_server.reboot_with_serial_console()
-		except NotImplementedError:
-			db_server.reboot()
-		self.add_likely_cause("Rebooted database server.")
-		self.save()
-
-	@frappe.whitelist()
-	def cancel_stuck_jobs(self):
-		"""
-		During db reboot/upgrade some jobs tend to get stuck. This is a hack to cancel those jobs
-		"""
-		stuck_jobs = frappe.get_all(
-			"Agent Job",
-			{
-				"status": "Running",
-				INCIDENT_SCOPE: self.incident_scope,
-				"job_type": (
-					"in",
-					["Fetch Database Table Schema", "Backup Site", "Restore Site"],
-				),  # to be safe
-			},
-			["name", "job_type"],
-			limit=2,
-		)  # only 2 workers
-		for stuck_job in stuck_jobs:
-			job = AgentJob("Agent Job", stuck_job.name)
-			job.cancel_job()
-			self.add_likely_cause(f"Cancelled stuck {stuck_job.job_type} job {stuck_job.name}")
-		self.save()
-
-	def add_likely_cause(self, cause: str):
-		self.likely_cause = self.likely_cause + cause + "\n" if self.likely_cause else cause + "\n"
+	def sites_down(self) -> list[str]:
+		return self.monitor_server.get_sites_down_for_server(str(self.server))
 
 	@cached_property
 	def down_bench(self):
 		down_benches = self.monitor_server.get_benches_down_for_server(str(self.server))
 		return down_benches[0] if down_benches else None
 
+	@cached_property
+	def is_ignore_incident_for_server(self) -> bool:
+		ignore_till = frappe.db.get_value("Server", self.server, "ignore_incidents_till")
+		return bool(ignore_till and ignore_till > frappe.utils.now_datetime())
+
+	def validate(self):
+		if not self.phone_call and self.settings.phone_call_alerts:
+			self.phone_call = True
+
+	def after_insert(self):
+		self._create_investigation_if_possible()
+		self.communication.send_sms_to_on_call_engineers()
+		self.communication.send_email_notification()
+
+	def on_update(self):
+		if not self.has_value_changed("status"):
+			return
+
+		current_datetime = frappe.utils.now_datetime()
+		self.communication.send_email_notification()
+
+		if self.status in ("Resolved", "Auto-Resolved"):
+			self.db_set("resolved_at", current_datetime)
+		elif self.status == "Confirmed" and not self.confirmed_at:
+			self.db_set("confirmed_at", current_datetime)
+			self.call_customers()
+
+	def confirm(self, save: bool = True):
+		self.status = "Confirmed"
+		self.analysis.identify_affected_resource()  # assume 1 resource; Occam's razor
+		self.analysis.categorize_problem()
+		self.analysis.capture_grafana_dashboards()
+		if save:
+			self.save()
+
+	def acknowledge(self, user: str, save: bool = True):
+		self.acknowledged_by = user
+		self.acknowledged_at = frappe.utils.now_datetime()
+		self.status = "Acknowledged"
+		if save:
+			self.save()
+
+	def resolve(self, save: bool = True):
+		self.status = "Auto-Resolved" if self.status == "Validating" else "Resolved"
+		self.create_log_for_server(is_resolved=True)
+		if save:
+			self.save()
+
+	def check_resolved(self):
+		try:
+			last_resolved: AlertmanagerWebhookLog = frappe.get_last_doc(
+				"Alertmanager Webhook Log",
+				{
+					"status": "Resolved",
+					"group_key": ("like", f"%{self.incident_scope}%"),
+					"alert": self.alert,
+				},
+			)
+		except frappe.DoesNotExistError:
+			return
+
+		if not last_resolved.is_enough_firing:
+			self.resolve()
+
+	def escalate_to_on_call_engineers_if_needed(self):
+		"""Escalate the incident by paging on-call engineers if escalation thresholds are met."""
+		now = frappe.utils.now_datetime()
+
+		call_threshold = timedelta(seconds=self.settings.call_threshold_seconds)
+		recall_threshold = timedelta(seconds=self.settings.call_repeat_interval_seconds)
+
+		time_to_call = self.status == "Confirmed" and now - self.confirmed_at > call_threshold
+		time_to_call_again = self.status == "Acknowledged" and now - self.acknowledged_at > recall_threshold
+
+		if not (time_to_call or time_to_call_again):
+			return
+
+		if self.investigation and frappe.get_single_value("Press Settings", "execute_incident_action"):
+			# It's worthy to wait for investigator if incident action execution is enabled
+			# Else, let it run in background and do the necessary actions without blocking escalation
+
+			investigator: IncidentInvestigator = frappe.get_doc("Incident Investigator", self.investigation)
+			if investigator.status != "Completed" and investigator.modified > now - timedelta(
+				seconds=self.settings.deadline_for_investigator_actions_seconds
+			):
+				# If investigation is still ongoing, then don't escalate yet
+				# But, there will be a deadline, within that if investigation is not completed
+				# then we will escalate anyway because we don't want incidents to be stuck
+				return
+
+			# Investigation is complete; wait a bit longer if any actions were just taken.
+			wait_window = timedelta(seconds=cint(self.settings.wait_time_post_investigator_actions))
+			if investigator.action_steps and investigator.modified > now - wait_window:
+				return
+
+		self.create_log_for_server()
+		self.call_on_call_engineers()
+
+	def create_log_for_server(self, is_resolved: bool = False):
+		"""Create an incident log on the server activity for confirmed incidents and their resolution."""
+		try:
+			incidence_server: Server | DatabaseServer = frappe.get_cached_doc(
+				self.resource_type, self.resource
+			)
+		except Exception:
+			if not self.server:
+				return
+			incidence_server = frappe.get_cached_doc("Server", self.server)
+
+		incidence_server.create_log(
+			"Incident",
+			f"{self.alert} resolved" if is_resolved else f"{self.alert} reported",
+		)
+
+	# ==================================================================
+	# Actions
+	# ==================================================================
+
+	@frappe.whitelist()
+	def regather_info_and_screenshots(self):
+		self.analysis.identify_affected_resource()
+		self.analysis.categorize_problem()
+		self.analysis.capture_grafana_dashboards()
+
+	@frappe.whitelist()
+	def get_down_site(self):
+		return self.sites_down[0] if self.sites_down else None
+
+	@frappe.whitelist()
+	def reboot_database_server(self):
+		self.action.reboot_database_server()
+
+	@frappe.whitelist()
+	def cancel_stuck_jobs(self):
+		self.action.cancel_stuck_jobs()
+
 	@frappe.whitelist()
 	def restart_down_benches(self):
-		"""
-		Restart all benches on the server that are down
-		"""
-		down_benches = self.monitor_server.get_benches_down_for_server(str(self.server))
-		if not down_benches:
-			frappe.throw("No down benches found for this server")
-			return
-		for bench_name in down_benches:
-			bench: Bench = Bench("Bench", bench_name)
-			bench.restart()
-			self.add_likely_cause(f"Restarted bench {bench_name}")
-		self.save()
+		self.action.restart_down_benches()
 
 	def call_on_call_engineers(self, run_in_background: bool = True):
 		if run_in_background:
@@ -497,7 +313,7 @@ class Incident(Document):
 			)
 			return
 
-		self.communication.call_customers(enqueue_in_background=False)
+		self.communication.call_customers()
 
 	def add_acknowledgment_update(
 		self,
@@ -505,14 +321,10 @@ class Incident(Document):
 		call_status: str | None = None,
 		acknowledged=False,
 	):
-		"""
-		Adds a new update to the Incident Document
-		"""
+		"""Adds a new update to the Incident Document."""
 		if acknowledged:
 			update_note = f"Acknowledged by {human.user}"
-			# Set acknowledged user and status
-			self.status = "Acknowledged"
-			self.acknowledged_by = human.user
+			self.acknowledge(human.user, save=False)
 		else:
 			update_note = f"Acknowledgement failed for {human.user}"
 
@@ -528,186 +340,109 @@ class Incident(Document):
 		)
 		self.save()
 
-	@property
-	def incident_scope(self):
-		return getattr(self, INCIDENT_SCOPE)
+	# ==================================================================
+	# Helpers
+	# ==================================================================
 
-	@property
-	def total_instances(self) -> int:
-		return frappe.db.count(
-			"Site",
-			{"status": "Active", INCIDENT_SCOPE: self.incident_scope},
-		)
+	def _add_description(self, description: str):
+		if not self.description:
+			self.description = ""
+		self.description += "<p>" + description + "</p>"
 
-	def check_resolved(self):
-		try:
-			last_resolved: AlertmanagerWebhookLog = frappe.get_last_doc(
-				"Alertmanager Webhook Log",
-				{
-					"status": "Resolved",
-					"group_key": ("like", f"%{self.incident_scope}%"),
-					"alert": self.alert,
-				},
+	def _add_finding(self, label: str, value):
+		"""Record a key-value finding on the incident's `findings` child table."""
+		self.append("findings", {"label": label, "value": str(value)})
+
+	def _add_likely_cause(self, cause: str):
+		self.likely_cause = (self.likely_cause or "") + cause + "\n"
+
+	def _create_investigation_if_possible(self):
+		"""Investigations have a cool off period of 5m, so consecutive incidents on the
+		same server might not trigger investigations."""
+		with suppress(frappe.ValidationError):
+			incident_investigator = frappe.get_doc(
+				{"doctype": "Incident Investigator", "incident": self.name, "server": self.server}
 			)
-		except frappe.DoesNotExistError:
-			return
-		else:
-			if not last_resolved.is_enough_firing:
-				self.create_log_for_server(is_resolved=True)
-				self.resolve()
+			incident_investigator.insert(ignore_permissions=True)
+			self.investigation = incident_investigator.name
+			self.save()
 
-	def resolve(self):
-		if self.status == "Validating":
-			self.status = "Auto-Resolved"
-		else:
-			self.status = "Resolved"
-		self.save()
-
-	def create_log_for_server(self, is_resolved: bool = False):
-		"""We will create a incident log on the server activity for confirmed incidents and their resolution"""
+	def _comment_bench_web_err_log(self, bench_name: str):
+		"""Add the last 100 lines of `web.error.log` from the bench as a comment."""
 		try:
-			incidence_server: Server | DatabaseServer = frappe.get_cached_doc(
-				self.resource_type, self.resource
-			)
-		except Exception:
-			if not self.server:
-				return
-			incidence_server = frappe.get_cached_doc("Server", self.server)
+			log = Bench("Bench", bench_name).get_server_log("web.error.log")["web.error.log"]
+		except Exception as e:
+			log = f"Error fetching web.error.log: {e!s}"
 
-		incidence_server.create_log(
-			"Incident",
-			f"{self.alert} resolved" if is_resolved else f"{self.alert} reported",
+		last_lines = "\n".join(log.splitlines()[-100:])
+		self.add_comment(
+			"Comment",
+			f"""Last 100 lines of web.error.log for bench {bench_name}:<br/><br/>
+<pre class="ql-code-block-container">
+{last_lines}
+</pre>
+""",
 		)
 
-	@property
-	def waited_enough_for_investigator_reactions(self) -> bool:
-		"""Check if the investigator has taken any action"""
-		investigator: IncidentInvestigator = frappe.get_doc("Incident Investigator", {"incident": self.name})
-		wait_time = get_wait_time_post_investigator_actions()
-		if investigator.status != "Completed":
-			return False
 
-		# Investigation is completed and actions are taken wait before calling
-		if (
-			investigator.status == "Completed"
-			and investigator.action_steps
-			and (investigator.modified > frappe.utils.now_datetime() - timedelta(minutes=wait_time))
-		):
-			return False
-
-		return True
-
-	@property
-	def time_to_call_for_help(self) -> bool:
-		return self.status == "Confirmed" and frappe.utils.now_datetime() - self.creation > timedelta(
-			seconds=get_confirmation_threshold_duration() + get_call_threshold_duration()
-		)
-
-	@property
-	def time_to_call_for_help_again(self) -> bool:
-		return self.status == "Acknowledged" and frappe.utils.now_datetime() - self.modified > timedelta(
-			seconds=get_call_repeat_interval()
-		)
-
-	@cached_property
-	def sites_down(self) -> list[str]:
-		return self.monitor_server.get_sites_down_for_server(str(self.server))
-
-	@frappe.whitelist()
-	def get_down_site(self):
-		return self.sites_down[0] if self.sites_down else None
-
-
-def get_confirmation_threshold_duration():
-	if frappe.utils.now_datetime().hour in DAY_HOURS:
-		return (
-			cint(frappe.db.get_value("Incident Settings", None, "confirmation_threshold_day"))
-			or CONFIRMATION_THRESHOLD_SECONDS_DAY
-		)
-	return (
-		cint(frappe.db.get_value("Incident Settings", None, "confirmation_threshold_night"))
-		or CONFIRMATION_THRESHOLD_SECONDS_NIGHT
-	)
-
-
-def get_wait_time_post_investigator_actions() -> int:
-	return cint(frappe.db.get_single_value("Incident Settings", "wait_time_post_investigator_actions") or 5)
-
-
-def get_call_threshold_duration():
-	if frappe.utils.now_datetime().hour in DAY_HOURS:
-		return (
-			cint(frappe.db.get_value("Incident Settings", None, "call_threshold_day"))
-			or CALL_THRESHOLD_SECONDS_DAY
-		)
-	return (
-		cint(frappe.db.get_value("Incident Settings", None, "call_threshold_night"))
-		or CALL_THRESHOLD_SECONDS_NIGHT
-	)
-
-
-def get_call_repeat_interval():
-	if frappe.utils.now_datetime().hour in DAY_HOURS:
-		return (
-			cint(frappe.db.get_value("Incident Settings", None, "call_repeat_interval_day"))
-			or CALL_REPEAT_INTERVAL_DAY
-		)
-	return (
-		cint(frappe.db.get_value("Incident Settings", None, "call_repeat_interval_night"))
-		or CALL_REPEAT_INTERVAL_NIGHT
-	)
+# ---------------------------------------------------------------------------
+# Scheduled Jobs
+# ---------------------------------------------------------------------------
 
 
 def validate_incidents():
+	settings: IncidentSettings = frappe.get_cached_doc("Incident Settings")
 	validating_incidents = frappe.get_all(
 		"Incident",
 		filters={
 			"status": "Validating",
+			"creation": (
+				"<",
+				frappe.utils.now_datetime() - timedelta(seconds=settings.confirmation_threshold_seconds),
+			),
 		},
 		fields=["name", "creation"],
 	)
-	for incident_dict in validating_incidents:
-		if frappe.utils.now_datetime() - incident_dict.creation > timedelta(
-			seconds=get_confirmation_threshold_duration()
-		):
-			incident = Incident("Incident", incident_dict.name)
+	for i in validating_incidents:
+		try:
+			incident = Incident("Incident", i.name)
 			incident.confirm()
+		except Exception as e:
+			frappe.log_error(f"Error confirming incident {i.name}: {e!s}")
 
 
 def resolve_incidents():
 	ongoing_incidents = frappe.get_all(
 		"Incident",
-		filters={
-			"status": ("in", ["Validating", "Confirmed", "Acknowledged"]),
-		},
+		filters={"status": ("in", ["Validating", "Confirmed", "Acknowledged"])},
 		pluck="name",
 	)
 	for incident_name in ongoing_incidents:
-		incident = Incident("Incident", incident_name)
-		incident.check_resolved()
-		if (
-			incident.time_to_call_for_help or incident.time_to_call_for_help_again
-		) and incident.waited_enough_for_investigator_reactions:
-			incident.create_log_for_server()
-			incident.call_on_call_engineers()
+		try:
+			incident = Incident("Incident", incident_name)
+			incident.check_resolved()
+			incident.escalate_to_on_call_engineers_if_needed()
+		except Exception as e:
+			frappe.log_error(f"Error resolving/escalating incident {incident_name}: {e!s}")
 
 
 def notify_ignored_servers():
 	servers = frappe.qb.DocType("Server")
-	if not (
-		ignored_servers := frappe.qb.from_(servers)
+	ignored_servers = (
+		frappe.qb.from_(servers)
 		.select(servers.name, servers.ignore_incidents_till)
 		.where(servers.status == "Active")
 		.where(servers.ignore_incidents_till.isnotnull())
 		.where(servers.ignore_incidents_till >= frappe.utils.now_datetime())
 		.run(as_dict=True)
-	):
+	)
+	if not ignored_servers:
 		return
 
 	message = "The following servers are being ignored for incidents:\n\n"
 	for server in ignored_servers:
 		message += f"{server.name} till {frappe.utils.pretty_date(server.ignore_incidents_till)}\n"
-	message += "\n@adityahase @balamurali27 @saurabh6790\n"
+	message += "\n@adityahase @balamurali27 @saurabh6790 @tanmoysrt\n"
 	TelegramMessage.enqueue(message)
 
 

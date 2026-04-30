@@ -31,13 +31,7 @@ from press.press.doctype.alertmanager_webhook_log.test_alertmanager_webhook_log 
 	create_test_alertmanager_webhook_log,
 )
 from press.press.doctype.incident.incident import (
-	CALL_REPEAT_INTERVAL_NIGHT,
-	CALL_THRESHOLD_SECONDS_NIGHT,
-	CONFIRMATION_THRESHOLD_SECONDS_NIGHT,
-	MIN_FIRING_INSTANCES,
-	MIN_FIRING_INSTANCES_FRACTION,
 	Incident,
-	get_wait_time_post_investigator_actions,
 	resolve_incidents,
 	validate_incidents,
 )
@@ -48,6 +42,22 @@ from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils.test import foreground_enqueue_doc
+
+# Defaults from Incident Settings doctype JSON. Test fixtures rely on these defaults
+# being applied to the freshly-created Incident Settings singleton in setUp.
+MIN_FIRING_INSTANCES = 15
+MIN_FIRING_INSTANCES_FRACTION = 0.40
+CONFIRMATION_THRESHOLD_SECONDS_NIGHT = 600
+CALL_THRESHOLD_SECONDS_NIGHT = 0
+CALL_REPEAT_INTERVAL_NIGHT = 15 * 60  # IncidentSettings.call_repeat_interval_seconds
+
+
+def get_wait_time_post_investigator_actions() -> int:
+	"""Return the configured wait time post investigator actions, in seconds."""
+	return frappe.utils.cint(
+		frappe.db.get_single_value("Incident Settings", "wait_time_post_investigator_actions")
+	)
+
 
 if typing.TYPE_CHECKING:
 	from press.incident_management.doctype.incident_investigator.incident_investigator import (
@@ -549,7 +559,7 @@ class TestIncident(FrappeTestCase):
 		investigator.reload()  # datetime conversion
 		investigator.db_set(
 			"modified",
-			investigator.modified - timedelta(minutes=get_wait_time_post_investigator_actions()),
+			investigator.modified - timedelta(seconds=get_wait_time_post_investigator_actions() + 10),
 			update_modified=False,
 		)
 

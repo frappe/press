@@ -1724,7 +1724,12 @@ class BaseServer(Document, TagHelpers):
 	def reboot(self):
 		if self.provider not in ("AWS EC2", "OCI", "DigitalOcean", "Hetzner", "Frappe Compute"):
 			raise NotImplementedError
-		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+
+		if self.provider == "AWS EC2":
+			self.reboot_with_serial_console()
+			return
+
+		virtual_machine: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
 
 	@dashboard_whitelist()

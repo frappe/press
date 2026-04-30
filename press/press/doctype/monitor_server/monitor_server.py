@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+from base64 import b64encode
 from typing import TypedDict
 
 import frappe
@@ -245,11 +246,14 @@ class MonitorServer(BaseServer):
 	def show_grafana_password(self):
 		return self.get_password("grafana_password")
 
+	def get_grafana_auth_header(self):
+		username = str(self.grafana_username)
+		password = str(self.get_password("grafana_password"))
+		token = b64encode(f"{username}:{password}".encode()).decode("ascii")
+		return f"Basic {token}"
+
 	@property
 	def alerts(self):
-		print(
-			f"https://{self.name}/prometheus/api/v1/rules",
-		)
 		ret = requests.get(
 			f"https://{self.name}/prometheus/api/v1/rules",
 			auth=HTTPBasicAuth(self.prometheus_username, self.get_password("grafana_password")),

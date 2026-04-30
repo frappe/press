@@ -19,17 +19,18 @@
   "cluster",
   "investigation",
   "section_break_lazo",
-  "acknowledged_by",
-  "column_break_ukex",
   "confirmed_at",
+  "column_break_ukex",
+  "acknowledged_by",
   "column_break_kwec",
+  "acknowledged_at",
+  "column_break_hryl",
   "resolved_at",
   "section_break_kjey",
   "description",
   "preliminary_investigation_section",
   "likely_cause",
-  "section_break_bjjy",
-  "updates",
+  "findings",
   "updates_tab",
   "section_break_aevb",
   "column_break_rbwa",
@@ -39,12 +40,15 @@
   "column_break_zzcp",
   "called_customer",
   "section_break_pahe",
+  "updates",
   "alerts"
  ],
  "fields": [
   {
    "fieldname": "server",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Server",
    "options": "Server"
   },
@@ -63,6 +67,8 @@
    "default": "Validating",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Validating\nConfirmed\nAcknowledged\nInvestigating\nResolved\nAuto-Resolved\nPress-Resolved"
   },
@@ -72,10 +78,6 @@
    "fieldtype": "Select",
    "label": "Type",
    "options": "Database Down\nServer Down\nProxy Down"
-  },
-  {
-   "fieldname": "section_break_bjjy",
-   "fieldtype": "Section Break"
   },
   {
    "fieldname": "alerts",
@@ -97,7 +99,7 @@
   {
    "fieldname": "updates_tab",
    "fieldtype": "Tab Break",
-   "label": "Alerts"
+   "label": "Updates"
   },
   {
    "fieldname": "acknowledged_by",
@@ -122,8 +124,7 @@
   },
   {
    "fieldname": "section_break_kjey",
-   "fieldtype": "Section Break",
-   "label": "Details"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "description",
@@ -139,6 +140,8 @@
   {
    "fieldname": "alert",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Alert",
    "options": "Prometheus Alert Rule"
   },
@@ -151,6 +154,8 @@
   {
    "fieldname": "resource",
    "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Resource",
    "options": "resource_type"
   },
@@ -162,8 +167,7 @@
   },
   {
    "fieldname": "preliminary_investigation_section",
-   "fieldtype": "Section Break",
-   "label": "Preliminary Investigation"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "likely_cause",
@@ -216,10 +220,25 @@
   {
    "fieldname": "section_break_pahe",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "acknowledged_at",
+   "fieldtype": "Datetime",
+   "label": "Acknowledged At"
+  },
+  {
+   "fieldname": "column_break_hryl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "findings",
+   "fieldtype": "Table",
+   "label": "Findings",
+   "options": "Incident Finding"
   }
  ],
  "links": [],
- "modified": "2026-04-28 18:02:05.525045",
+ "modified": "2026-04-30 17:33:26.321207",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",

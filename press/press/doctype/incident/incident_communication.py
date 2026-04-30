@@ -85,14 +85,14 @@ class IncidentCommunication:
 
 	def call_on_call_engineers(self):
 		if (
-			self.is_ignore_incident_for_server
+			self.incident.is_ignore_incident_for_server
 			or not self.incident.phone_call
 			or not self.incident.settings.phone_call_alerts
 		):
 			return
 
 		for human in self.get_on_call_engineers():
-			status, _ = self._call_human(human, wait_for_pickup=True)
+			status, _ = self._call_human(human.phone, wait_for_pickup=True)
 			if not status:
 				return  # Twillio unavailable
 
@@ -106,22 +106,8 @@ class IncidentCommunication:
 	# Phone calls : customer alerts                                        #
 	# ------------------------------------------------------------------ #
 
-	def call_customers(self, enqueue_in_background: bool = True):
+	def call_customers(self):
 		if not self.incident.settings.phone_call_alerts or self.incident.called_customer:
-			return
-
-		if enqueue_in_background:
-			frappe.enqueue_doc(
-				self.incident.doctype,
-				self.incident.name,
-				"call_customers",
-				queue="default",
-				enqueue_after_commit=True,
-				at_front=True,
-				job_id=f"incident||call_customers||{self.incident.name}",
-				deduplicate=True,
-				enqueue_in_background=False,
-			)
 			return
 
 		phone_nos = get_communication_info("Phone Call", "Incident", "Server", self.incident.server)
@@ -184,7 +170,7 @@ class IncidentCommunication:
 		}
 
 		self._send_mail(
-			f"Incident on {server_name} - {self.incident.alert}", status_messages[incident.status]
+			f"Incident on {server_name} - {self.incident.alert}", status_messages[self.incident.status]
 		)
 
 	def send_disk_full_mail(self):
@@ -280,7 +266,11 @@ class IncidentCommunication:
 		except RetryError:
 			return "timeout", call  # not a Twilio status; call was never answered
 		except TwilioRestException:
-			self._notify_twilio_unreachable()
+			TelegramMessage.enqueue(
+				f"Unable to reach Twilio for Incident in {self.incident.server}\n\n"
+				"Likely due to insufficient balance or incorrect credentials",
+				reraise=True,
+			)
 			return None, None
 
 	@retry(
@@ -290,10 +280,3 @@ class IncidentCommunication:
 	)
 	def _wait_for_call_pickup(self, call: CallInstance):
 		return call.fetch().status
-
-	def _notify_twilio_unreachable(self):
-		TelegramMessage.enqueue(
-			f"Unable to reach Twilio for Incident in {self.incident.server}\n\n"
-			"Likely due to insufficient balance or incorrect credentials",
-			reraise=True,
-		)
