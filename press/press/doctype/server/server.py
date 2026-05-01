@@ -3191,7 +3191,7 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def setup_agent_auth(self):
-		frappe.enqueue(self.doctype, self.name, "_setup_agent_auth", queue="long")
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_auth", queue="long", timeout=1200)
 
 	def _generate_and_activate_key(self, regenerate: bool = False) -> str | None:
 		from cryptography.hazmat.primitives import serialization

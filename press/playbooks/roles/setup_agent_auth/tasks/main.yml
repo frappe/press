@@ -1,0 +1,6 @@
+---
+- name: Write private key
+  copy:
+    content: "{{ private_key }}"
+    dest: "/home/frappe/agent/private.key"
+    mode: '0600'
