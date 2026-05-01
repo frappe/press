@@ -16,7 +16,6 @@
 						</p>
 						<ClickToCopyField
 							textContent="$PSDefaultParameterValues['*: Encoding'] = 'utf8'"
-							:breakLines="false"
 						/>
 					</div>
 				</div>
@@ -31,10 +30,7 @@
 							Execute the following shell command to store the SSH certificate
 							locally.
 						</p>
-						<ClickToCopyField
-							:textContent="certificateCommand"
-							:breakLines="false"
-						/>
+						<ClickToCopyField :textContent="certificateCommand" />
 					</div>
 				</div>
 
