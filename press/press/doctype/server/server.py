@@ -3189,6 +3189,13 @@ class Server(BaseServer):
 			log_error("Agent Sentry Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def setup_agent_auth(self):
+		frappe.enqueue(self.doctype, self.name, "_setup_agent_auth", queue="long")
+
+	def _setup_agent_auth(self):
+		pass
+
+	@frappe.whitelist()
 	def whitelist_ipaddress(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_whitelist_ip", queue="short", timeout=1200)
 

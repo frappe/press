@@ -168,6 +168,12 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Setup Agent Auth'),
+				'setup_agent_auth',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Start Active Benches'),
 				'start_active_benches',
 				true,
