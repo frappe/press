@@ -110,7 +110,11 @@
 					<div class="text-base font-medium">Create your first site</div>
 				</div>
 
-				<Button class="ml-7 mt-4" :route="{ name: 'SignupAppSelector' }">
+				<Button
+					class="ml-7 mt-4"
+					:route="{ name: 'SignupAppSelector' }"
+					variant="solid"
+				>
 					Create
 				</Button>
 			</div>
