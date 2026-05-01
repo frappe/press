@@ -1,58 +1,37 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+import { toast } from 'vue-sonner';
+
+interface Props {
+	textContent: string;
+	breakLines?: boolean;
+	class?: string;
+}
+
+const props = defineProps<Props>();
+const copied = ref(false);
+
+const copyTextContentToClipboard = () => {
+	const clipboard = window.navigator.clipboard;
+	clipboard.writeText(props.textContent).then(() => {
+		copied.value = true;
+		setTimeout(() => {
+			copied.value = false;
+		}, 4000);
+		toast.success('Copied to clipboard!');
+	});
+};
+</script>
+
 <template>
-	<div class="relative rounded-lg border-2 border-gray-200 bg-gray-100 p-3">
-		<div class="select-all break-all text-xs text-gray-800">
-			<pre
-				:class="{
-					'whitespace-pre-wrap': breakLines,
-					'overflow-x-auto': !breakLines,
-				}"
-				:style="
-					!breakLines
-						? 'scrollbar-width: none; -ms-overflow-style: none; -webkit-scrollbar: none;'
-						: ''
-				"
-				>{{ textContent }}</pre
-			>
-		</div>
+	<div class="flex items-center justify-between rounded bg-surface-gray-2 p-3">
+		<pre class="truncate text-xs">{{ textContent }}</pre>
 		<button
-			class="absolute right-2 top-2 rounded-sm p-1 text-xs text-gray-600"
+			class="ml-2 shrink-0 rounded-sm text-xs text-ink-gray-6 hover:text-ink-gray-9"
 			@click="copyTextContentToClipboard"
 		>
-			{{ copied ? 'copied' : 'copy' }}
+    <lucide-clipboard v-if='!copied' class='size-3.5'/>
+    <lucide-clipboard-check v-else class='size-3.5'/>
 		</button>
 	</div>
 </template>
-
-<script>
-import { toast } from 'vue-sonner';
-
-export default {
-	props: {
-		textContent: {
-			type: String,
-			required: true,
-		},
-		breakLines: {
-			type: Boolean,
-			default: true,
-		},
-	},
-	data() {
-		return {
-			copied: false,
-		};
-	},
-	methods: {
-		copyTextContentToClipboard() {
-			const clipboard = window.navigator.clipboard;
-			clipboard.writeText(this.textContent).then(() => {
-				this.copied = true;
-				setTimeout(() => {
-					this.copied = false;
-				}, 4000);
-				toast.success('Copied to clipboard!');
-			});
-		},
-	},
-};
-</script>
