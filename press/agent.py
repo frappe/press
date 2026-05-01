@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import _io  # type: ignore
+import base64
 import json
 import os
 import re
+import time
 from contextlib import suppress
 from datetime import date
 from typing import TYPE_CHECKING, Any, Literal
@@ -13,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import frappe
 import frappe.utils
 import requests
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from frappe.utils.password import get_decrypted_password
 from requests.exceptions import HTTPError
 
@@ -949,6 +952,81 @@ class Agent:
 			return requests.request(method, url, headers=headers, files=file_objects, verify=verify)
 		return requests.request(method, url, headers=headers, json=data, verify=verify, timeout=(10, 30))
 
+	def verify_response_token(self, token: dict, payload, method: str, path: str):
+		try:
+			timestamp = int(token["timestamp"])
+			nonce = token["nonce"]
+			signature_b64 = token["signature"]
+		except KeyError as err:
+			raise ValueError("Invalid token structure") from err
+
+		# timestamp validation
+		now = int(time.time())
+		WINDOW = 30
+
+		if timestamp > now + 5:
+			raise ValueError("Token from future")
+
+		if now - timestamp > WINDOW:
+			raise ValueError("Token expired")
+
+		# fetch public key
+		agent = frappe.get_doc("Server", self.server)
+
+		if not agent.public_key:
+			raise ValueError("No public key registered")
+
+		public_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(agent.public_key.split()[1]))
+
+		# reconstruct signed message
+		message = json.dumps(
+			{
+				"method": method,
+				"path": path,
+				"timestamp": timestamp,
+				"nonce": nonce,
+				"payload": payload,
+			},
+			separators=(",", ":"),
+			sort_keys=True,
+		).encode()
+
+		signature = base64.b64decode(signature_b64)
+
+		# verify signature
+		try:
+			public_key.verify(signature, message)
+		except Exception as err:
+			raise ValueError("Invalid signature") from err
+
+		# replay protection
+		cache_key = f"nonce:{self.server}:{nonce}"
+
+		if frappe.cache().get_value(cache_key):
+			raise ValueError("Replay attack detected")
+
+		frappe.cache().set_value(cache_key, 1, expires_in_sec=60)
+
+		return True
+
+	def _extract_and_verify_token(self, response, json_response, method, path):
+		token_str = response.headers.get("X-Agent-Token")
+
+		if not token_str:
+			raise ValueError("Unsigned response from agent")
+
+		try:
+			token = json.loads(base64.b64decode(token_str))
+		except Exception as err:
+			raise ValueError("Invalid token encoding") from err
+
+		self.verify_response_token(
+			token=token,
+			payload=json_response,
+			method=method,
+			path=path,
+		)
+
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
 		self.raise_if_past_requests_have_failed()
 		response = json_response = None
@@ -956,6 +1034,9 @@ class Agent:
 			agent_job_id = agent_job.name if agent_job else None
 			response = self._make_req(method, path, data, files, agent_job_id)
 			json_response = response.json()
+
+			self._extract_and_verify_token(response, json_response, method, path)
+
 			if raises and response.status_code >= 400:
 				output = "\n\n".join([json_response.get("output", ""), json_response.get("traceback", "")])
 				if output == "\n\n":
