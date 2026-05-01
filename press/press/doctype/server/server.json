@@ -34,7 +34,6 @@
   "is_for_recovery",
   "is_monitoring_disabled",
   "enable_on_prem_failover_support",
-  "stop_incident_actions",
   "billing_section",
   "team",
   "plan",
@@ -53,8 +52,10 @@
   "private_vlan_id",
   "agent_section",
   "agent_password",
+  "public_key",
   "column_break_pdbx",
   "disable_agent_job_auto_retry",
+  "is_agent_auth_setup",
   "reverse_proxy_section",
   "proxy_server",
   "column_break_12",
@@ -224,7 +225,8 @@
    "default": "0",
    "fieldname": "use_for_new_benches",
    "fieldtype": "Check",
-   "label": "Use For New Benches"
+   "label": "Use For New Benches",
+   "read_only": 1
   },
   {
    "fieldname": "hostname",
@@ -245,7 +247,8 @@
    "default": "0",
    "fieldname": "use_for_new_sites",
    "fieldtype": "Check",
-   "label": "Use For New Sites"
+   "label": "Use For New Sites",
+   "read_only": 1
   },
   {
    "fieldname": "cluster",
@@ -756,10 +759,17 @@
    "label": "Enable On-Prem Failover Support"
   },
   {
+   "fieldname": "public_key",
+   "fieldtype": "Data",
+   "label": "Public Key",
+   "read_only": 1
+  },
+  {
    "default": "0",
-   "fieldname": "stop_incident_actions",
+   "fieldname": "is_agent_auth_setup",
    "fieldtype": "Check",
-   "label": "Stop Incident Actions"
+   "label": "Is Agent Auth Setup",
+   "read_only": 1
   }
  ],
  "links": [
@@ -772,7 +782,7 @@
    "link_fieldname": "app_server"
   }
  ],
- "modified": "2026-04-28 18:08:02.595325",
+ "modified": "2026-05-01 16:36:38.933131",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
@@ -804,7 +814,6 @@
   }
  ],
  "row_format": "Dynamic",
- "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

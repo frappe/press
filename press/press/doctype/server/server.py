@@ -2688,6 +2688,7 @@ class Server(BaseServer):
 		ignore_incidents_till: DF.Datetime | None
 		ip: DF.Data | None
 		ipv6: DF.Data | None
+		is_agent_auth_setup: DF.Check
 		is_for_recovery: DF.Check
 		is_managed_database: DF.Check
 		is_monitoring_disabled: DF.Check
@@ -2721,6 +2722,7 @@ class Server(BaseServer):
 		]
 		proxy_server: DF.Link | None
 		public: DF.Check
+		public_key: DF.Data | None
 		ram: DF.Float
 		root_public_key: DF.Code | None
 		scaled_up: DF.Check
@@ -2735,7 +2737,6 @@ class Server(BaseServer):
 		staging: DF.Check
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		stop_deployments: DF.Check
-		stop_incident_actions: DF.Check
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None
@@ -3192,8 +3193,46 @@ class Server(BaseServer):
 	def setup_agent_auth(self):
 		frappe.enqueue(self.doctype, self.name, "_setup_agent_auth", queue="long")
 
+	def _generate_and_activate_key(self, regenerate: bool = False) -> str | None:
+		from cryptography.hazmat.primitives import serialization
+		from cryptography.hazmat.primitives.asymmetric import ed25519
+
+		if self.public_key and self.is_agent_auth_setup and not regenerate:
+			return None
+
+		key = ed25519.Ed25519PrivateKey.generate()
+
+		private_key_str = key.private_bytes(
+			encoding=serialization.Encoding.PEM,
+			format=serialization.PrivateFormat.OpenSSH,
+			encryption_algorithm=serialization.NoEncryption(),
+		).decode()
+
+		self.public_key = (
+			key.public_key()
+			.public_bytes(encoding=serialization.Encoding.OpenSSH, format=serialization.PublicFormat.OpenSSH)
+			.decode()
+		)
+		self.save()
+
+		return private_key_str
+
 	def _setup_agent_auth(self):
-		pass
+		try:
+			private_key = self._generate_and_activate_key()
+
+			ansible = Ansible(
+				playbook="setup_agent_auth.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={"private_key": private_key},
+			)
+			ansible.run()
+			self.is_agent_auth_setup = 1
+		except Exception:
+			log_error("Agent Auth Setup Exception", server=self.as_dict())
+		self.save()
 
 	@frappe.whitelist()
 	def whitelist_ipaddress(self):
