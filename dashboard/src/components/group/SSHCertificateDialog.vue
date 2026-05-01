@@ -7,10 +7,10 @@
 		v-model="show"
 	>
 		<template #body-content v-if="$bench.doc">
-			<div v-if="certificate" class="space-y-4">
+			<div v-if="certificate" class="space-y-4 text-ink-gray-6">
 				<div class="space-y-2" v-if="isWindows">
 					<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
-					<div class="space-y-2">
+					<div class="space-y-5">
 						<p class="text-base">
 							Execute the following shell command to set the encoding to UTF-8.
 						</p>
@@ -20,11 +20,13 @@
 						/>
 					</div>
 				</div>
+
 				<div class="space-y-2">
 					<h4 class="text-base font-semibold text-gray-700">
 						Step {{ isWindows ? '2' : '1' }}
 					</h4>
-					<div class="space-y-2">
+
+					<div class="space-y-3">
 						<p class="text-base">
 							Execute the following shell command to store the SSH certificate
 							locally.
@@ -35,20 +37,21 @@
 						/>
 					</div>
 				</div>
+
 				<div class="space-y-2">
 					<h4 class="text-base font-semibold text-gray-700">
 						Step {{ isWindows ? '3' : '2' }}
 					</h4>
-					<div class="space-y-1">
+					<div class="space-y-2">
 						<p class="text-base">
 							Execute the following shell command to SSH into your bench
 						</p>
 						<ClickToCopyField :textContent="sshCommand" />
 					</div>
 				</div>
-				<div class="flex items-center gap-2 rounded bg-gray-100 p-3">
-					<FeatherIcon name="alert-triangle" class="h-4 w-4" />
-					<div class="space-y-1 text-base">
+				<div class="flex items-center gap-2.5 rounded bg-gray-100 p-3">
+					<FeatherIcon name="alert-triangle" class="h-4 w-4 mb-auto mt-0.5" />
+					<div class="text-sm leading-relaxed">
 						<p>
 							Use wisely and only for
 							<a
@@ -59,7 +62,7 @@
 							>
 							purposes.
 						</p>
-						<p>
+						<p class="text-ink-gray-5">
 							The changes(app/files) made during the SSH session are not
 							guaranteed to persist after the session ends.
 						</p>
