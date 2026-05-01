@@ -11,7 +11,7 @@
 			<div class="flex items-center">
 				<h3 class="text-lg font-medium text-gray-900">{{ title }}</h3>
 				<div class="pl-2">
-					<Tooltip text="Share Link to this Card">
+					<Tooltip text="Copy Dashboard Link">
 						<CopyIcon
 							class="h-4 text-gray-600 outline-none duration-200 hover:text-current cursor-pointer"
 							@click="shareCard"
