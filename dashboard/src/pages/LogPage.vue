@@ -44,8 +44,10 @@
 		<div class="mt-3">
 			<div class="mt-8 space-y-4">
 				<div
-					class="overflow-auto rounded border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-gray-200"
+					class="overflow-auto relative rounded border border-gray-100 bg-surface-gray-7 p-5 px-5.5 text-sm text-gray-200"
 				>
+					<CopyBtn :text="log" class="absolute right-3 top-3" />
+
 					<pre>{{
 						$resources.log.loading ? 'Loading...' : log || 'No output'
 					}}</pre>
@@ -59,6 +61,7 @@
 import { FeatherIcon } from 'frappe-ui';
 import { getObject } from '../objects';
 import { unreachable } from '../objects/common';
+import CopyBtn from '@/components/utils/CopyBtn.vue';
 
 export default {
 	name: 'LogPage',
