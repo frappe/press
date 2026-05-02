@@ -10,7 +10,6 @@ const releases = defineCollection({
 		z.object({
 			title: z.string(),
 			description: z.string(),
-			versionNumber: z.string(),
 			image: z.object({
 				src: image(),
 				alt: z.string(),

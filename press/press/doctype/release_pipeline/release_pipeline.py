@@ -271,6 +271,15 @@ class ReleasePipeline(WorkflowBuilder):
 
 		return len([build for build in [intel_build, arm_build] if build])
 
+	def _mark_if_user_failure(self, deploy_candidate_build: str):
+		user_addressable_failure, manually_failed = frappe.db.get_value(
+			"Deploy Candidate Build", deploy_candidate_build, ["user_addressable_failure", "manually_failed"]
+		)
+
+		if user_addressable_failure or manually_failed:
+			self.is_user_addressable_failure = True
+			self.save()
+
 	def _check_for_scheduled_build_retries(self, deploy_candidate_build: str):
 		"""Check if there are any scheduled retries for this build"""
 		deploy_candidate_build_doc: DeployCandidateBuild = frappe.get_doc(
@@ -292,10 +301,7 @@ class ReleasePipeline(WorkflowBuilder):
 				message=f"Build {deploy_candidate_build} has scheduled retries. Waiting for retries to complete."
 			)
 
-		# Propagate the user addressable failure flag to the pipeline in case of build failures, since idempotent only set when required
-		if deploy_candidate_build_doc.user_addressable_failure or deploy_candidate_build_doc.manually_failed:
-			self.is_user_addressable_failure = True
-			self.save()
+		self._mark_if_user_failure(deploy_candidate_build_doc.name)
 
 	def _get_latest_retried_build(self, deploy_candidate_build: str) -> str:
 		"""In case there are retries for the build, get the latest retried build with same platform to monitor."""
@@ -331,6 +337,7 @@ class ReleasePipeline(WorkflowBuilder):
 			return  # We have enqueued the remote agent job
 
 		if deploy_candidate_build_status == "Failure":
+			self._mark_if_user_failure(deploy_candidate_build)
 			raise ReleasePipelineFailure(
 				f"Pre Build Validation failed for Deploy Candidate Build {deploy_candidate_build}. "
 				"Please check the build logs for more details."
@@ -526,6 +533,11 @@ class ReleasePipeline(WorkflowBuilder):
 	@task(queue=_get_task_execution_queue())
 	def prepare_deployment(self, apps, sites, run_will_fail_check) -> tuple[str, str]:
 		"""Creates the candidate and returns the primary build name."""
+		auto_upgrade_dependencies = frappe.db.get_single_value(
+			"Press Settings",
+			"auto_upgrade_dependencies",
+		)
+
 		try:
 			deploy_candidate = self.create_deploy_candidate(
 				apps=apps,
@@ -534,7 +546,10 @@ class ReleasePipeline(WorkflowBuilder):
 				create_deploy=False,
 			)
 			self.add_implicit_app_dependencies(deploy_candidate)
-			self.auto_update_bench_dependency_versions(deploy_candidate)
+
+			if auto_upgrade_dependencies:
+				self.auto_update_bench_dependency_versions(deploy_candidate)
+
 			primary_build = self.initiate_pre_build_validations(deploy_candidate)
 
 			return deploy_candidate, primary_build
