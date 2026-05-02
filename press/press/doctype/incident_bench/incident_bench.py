@@ -16,6 +16,7 @@ class IncidentBench(Document):
 
 		bench: DF.Data
 		current_sites_down: DF.Int
+		last_seen_seconds_ago: DF.Duration | None
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data

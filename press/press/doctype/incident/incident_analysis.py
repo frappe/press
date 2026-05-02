@@ -298,8 +298,41 @@ or on(instance)
 				},
 			)
 
+		# Set last_seen_seconds_ago to 0 for benches with no site down
+		for record in self.incident.down_benches:
+			if record.current_sites_down == 0:
+				record.last_seen_seconds_ago = 0
+
+		# Fetch container last_seen
+		container_last_seen_mapping = self._fetch_container_last_seen(down_benches)
+
+		for record in self.incident.down_benches:
+			if record.current_sites_down == 0:
+				continue  # skip benches with no site down
+			record.last_seen_seconds_ago = container_last_seen_mapping.get(record.bench, -1)
+
 		if save:
 			self.incident.save()
+
+	def _fetch_container_last_seen(self, benches: set[str], batch_size: int = 50) -> dict[str, int]:
+		"""Fetch container_last_seen from Prometheus in batches and return a {bench: seconds} mapping."""
+		if not benches:
+			return {}
+
+		result: dict[str, int] = {}
+		bench_list = list(benches)
+
+		for i in range(0, len(bench_list), batch_size):
+			batch = bench_list[i : i + batch_size]
+			data = self.monitor_server.run_promql(
+				f'container_last_seen{{instance="{self.incident.server}", name=~"{"|".join(batch)}"}}'
+			)
+			for item in data:
+				name = item["metric"].get("name")
+				if name:
+					result[name] = cint(item["value"][1])
+
+		return result
 
 	# endregion
 

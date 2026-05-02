@@ -18,7 +18,7 @@ class IncidentSite(Document):
 		current_status: DF.Literal[
 			"Online",
 			"Timeout",
-			"TLS Expired",
+			"TLS Issue",
 			"Unauthorized",
 			"Down Bench",
 			"Internal Error",
@@ -35,10 +35,11 @@ class IncidentSite(Document):
 		reported_status: DF.Literal[
 			"Online",
 			"Timeout",
-			"TLS Expired",
+			"TLS Issue",
 			"Unauthorized",
 			"Down Bench",
 			"Internal Error",
+			"Site Suspended",
 			"Site Not Found",
 			"Unreachable",
 		]

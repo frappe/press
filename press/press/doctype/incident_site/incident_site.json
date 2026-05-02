@@ -27,7 +27,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Current Status",
-   "options": "Online\nTimeout\nTLS Expired\nUnauthorized\nDown Bench\nInternal Error\nSuspended\nSite Not Found\nUnreachable\nEvaluating",
+   "options": "Online\nTimeout\nTLS Issue\nUnauthorized\nDown Bench\nInternal Error\nSuspended\nSite Not Found\nUnreachable\nEvaluating",
    "read_only": 1,
    "reqd": 1
   },
@@ -49,7 +49,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Reported Status",
-   "options": "Online\nTimeout\nTLS Expired\nUnauthorized\nDown Bench\nInternal Error\nSite Not Found\nUnreachable",
+   "options": "Online\nTimeout\nTLS Issue\nUnauthorized\nDown Bench\nInternal Error\nSite Suspended\nSite Not Found\nUnreachable",
    "read_only": 1
   },
   {
@@ -64,7 +64,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-05-01 23:22:01.017812",
+ "modified": "2026-05-02 13:25:02.013811",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident Site",
