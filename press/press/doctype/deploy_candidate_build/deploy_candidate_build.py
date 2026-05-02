@@ -839,7 +839,9 @@ class DeployCandidateBuild(Document):
 		existing.
 		"""
 		self._set_output_parsers()
-		clone_failed = self.clone_output_parser.parse_clone_output_and_update_step(job)
+		clone_failed = self.clone_output_parser.parse_clone_output_and_update_step(
+			job,
+		)
 
 		if not clone_failed:
 			if output := get_remote_step_output(

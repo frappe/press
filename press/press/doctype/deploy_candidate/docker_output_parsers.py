@@ -229,21 +229,23 @@ def get_command(name: str) -> str:
 
 class CloneOutputParser:
 	"""
-	Parses `git clone` output and updates Deploy Candidate.
+	Parses `git clone` output and updates Deploy Candidate Clone Steps.
+
+	Two categories of failures:
+	1. Early failures - job failed before producing any clone output (traceback only)
+	2. Output-based failures - job produced output but a specific app clone failed
 	"""
 
 	def __init__(self, dcb: "DeployCandidateBuild") -> None:
 		self.dcb = dcb
 
-	def get_clone_output(self, job: AgentJob) -> str | None:
-		"""Fetch the clone output from the corresponding clone step."""
-		return frappe.db.get_value(
-			"Agent Job Step",
-			{"agent_job": job.name, "step_name": "Clone Repositories"},
-			"data",
-		)
-
-	def _parse_app_output_from_cache(self, clone_output: list) -> dict[str, str]:
+	def _parse_app_output_map(self, clone_output: list) -> dict[str, str]:
+		"""
+		Parse a list of output entries into a map of {app_name: output}.
+		Each entry is either:
+		- "git clone <app>\n..." (normal or cached)
+		- "Failed to clone repository for <app> - ..." (output-based failure)
+		"""
 		output_map = {}
 		for entry in clone_output:
 			first_line = entry.splitlines()[0] if entry else ""
@@ -251,82 +253,85 @@ class CloneOutputParser:
 				app_name = first_line.replace("git clone ", "").replace(" CACHED", "").strip()
 				output_map[app_name] = entry
 			elif first_line.startswith("Failed to clone repository for "):
-				# "Failed to clone repository for frappe - Git command failed: ..."
 				app_name = first_line.replace("Failed to clone repository for ", "").split(" - ")[0].strip()
 				output_map[app_name] = entry
 		return output_map
 
-	def _update_with_failed_message(self, job: AgentJob) -> None | dict[str, str]:
-		status = job.status
-
-		if status != "Failure":
-			# No failure and no output
-			return None
-
-		traceback = job.traceback
-		if not traceback:
-			# Failure but no traceback or output
-			return None
-
-		return self._parse_app_output_from_cache(traceback.splitlines())
-
-	def check_realtime_clone_updates(self, job: AgentJob) -> None | dict[str, str]:
-		"""Check if there are realtime updates for the clone step and update the step output.
-		Realtime updates come as json get their pre-build output
+	def _parse_failed_output(self, job: AgentJob) -> dict[str, str] | None:
 		"""
+		Handle early failures where the job failed before producing clone output.
+		Extracts app name from the job traceback.
+		"""
+		if job.status != "Failure" or not job.traceback:
+			return None
+		return self._parse_app_output_map([job.traceback])
+
+	def _get_clone_step(self, job: AgentJob) -> str | None:
+		"""Gets the name of the clone step for the given job, if it exists."""
 		step = frappe.db.get_value(
-			"Agent Job Step", filters={"agent_job": job.name, "step_name": "Clone Repositories"}
+			"Agent Job Step",
+			filters={"agent_job": job.name, "step_name": "Clone Repositories"},
 		)
-		# Clone step not found
 		if not step:
 			return None
 
-		output = frappe.cache.hget("agent_job_step_output", step)
+		return step
 
-		# No cache output either
-		if not output:
-			return self._update_with_failed_message(job)
+	def _get_output_from_cache(self, job: AgentJob) -> dict[str, str] | None:
+		"""
+		Fetch live output from cache during an ongoing clone job.
+		Falls back to early failure parsing if no cache output found.
+		"""
+		clone_step = self._get_clone_step(job)
+		if not clone_step:
+			return None
 
-		# Messy cache output
+		cached = frappe.cache.hget("agent_job_step_output", clone_step)
+		if not cached:
+			return None
+
 		try:
-			output = json.loads(output)
+			output = json.loads(cached)
 		except json.JSONDecodeError:
 			return None
 
-		pre_build_steps = output.get("pre-build", [])
-		if not pre_build_steps:
+		# Refer to agent/builder.py for output structure, [pre-build]
+		pre_build = output.get("pre-build", [])
+		if not pre_build:
 			return None
 
-		return self._parse_app_output_from_cache(pre_build_steps)
+		return self._parse_app_output_map(pre_build)
 
-	def parse_clone_output_and_update_step(self, job: AgentJob) -> bool:
-		"""Parse the clone output and update the corresponding clone step."""
-		has_any_existing_failed_steps = self.dcb.has_failed_clone_steps()
+	def _get_output_from_db(self, job: AgentJob) -> dict[str, str] | None:
+		"""Get job output from DB for terminal clone steps"""
+		clone_step = self._get_clone_step(job)
+		if not clone_step:
+			return None
 
-		if has_any_existing_failed_steps:
-			return True
+		stored_output = frappe.db.get_value("Agent Job Step", clone_step, "data")
+		if not stored_output:
+			return None
 
-		non_terminal_clone_steps = self.dcb.get_all_pending_clone_steps()
+		try:
+			output = json.loads(stored_output)
+		except json.JSONDecodeError:
+			return None
+
+		return self._parse_app_output_map(output)
+
+	def _update_clone_steps(
+		self, non_terminal_clone_steps: list[DeployCandidateBuildStep], app_output_map: dict[str, str]
+	) -> bool:
+		"""Update clone steps with parsed output. Returns True if any step failed."""
 		clone_failed = False
-
-		# Early exist in case this there are no more clone steps
-		if not non_terminal_clone_steps:
-			return False
-
-		app_output_map = self.check_realtime_clone_updates(job)
-
-		if not app_output_map:
-			return False
-
 		for step in non_terminal_clone_steps:
-			app_name = step.step_slug
-			entry = app_output_map.get(app_name)
+			entry = app_output_map.get(step.step_slug)
 			if not entry:
 				continue
 
 			first_line = entry.splitlines()[0] if entry else ""
 			step.cached = "CACHED" in first_line
-			step.status = "Success" if "Failed to clone repository" not in entry else "Failure"
+			step.status = "Failure" if "Failed to clone repository" in entry else "Success"
 			step.output = entry
 			step.save()
 
@@ -334,6 +339,42 @@ class CloneOutputParser:
 				clone_failed = True
 
 		return clone_failed
+
+	def _get_app_output_map(self, job: AgentJob, non_terminal_clone_steps: list) -> dict[str, str]:
+		"""
+		Fetch app output from failure, cache then DB in that order.
+		Cache is preferred unless this is the last step, since the last step
+		may not have published to cache before the job completed.
+		"""
+		output = self._parse_failed_output(job)
+		if output:
+			return output
+
+		is_last_step = len(non_terminal_clone_steps) == 1
+		if not is_last_step:
+			app_output_map = self._get_output_from_cache(job)
+			if app_output_map:
+				return app_output_map
+
+		return self._get_output_from_db(job) or {}
+
+	def parse_clone_output_and_update_step(self, job: AgentJob) -> bool:
+		"""
+		Parse clone output and update corresponding clone steps.
+		Returns True if any clone step failed.
+		"""
+		if self.dcb.has_failed_clone_steps():
+			return True
+
+		non_terminal_clone_steps = self.dcb.get_all_pending_clone_steps()
+		if not non_terminal_clone_steps:
+			return False
+
+		app_output_map = self._get_app_output_map(job, non_terminal_clone_steps)
+		if not app_output_map:
+			return False
+
+		return self._update_clone_steps(non_terminal_clone_steps, app_output_map)
 
 
 class UploadStepUpdater:
