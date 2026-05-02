@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import base64
 import contextlib
 import datetime
 import ipaddress
@@ -3204,15 +3205,18 @@ class Server(BaseServer):
 
 		private_key_str = key.private_bytes(
 			encoding=serialization.Encoding.PEM,
-			format=serialization.PrivateFormat.OpenSSH,
+			format=serialization.PrivateFormat.PKCS8,
 			encryption_algorithm=serialization.NoEncryption(),
 		).decode()
 
-		self.public_key = (
-			key.public_key()
-			.public_bytes(encoding=serialization.Encoding.OpenSSH, format=serialization.PublicFormat.OpenSSH)
-			.decode()
+		public_key_bytes = key.public_key().public_bytes(
+			encoding=serialization.Encoding.Raw,
+			format=serialization.PublicFormat.Raw,
 		)
+
+		public_key_b64 = base64.b64encode(public_key_bytes).decode()
+
+		self.public_key = public_key_b64
 		self.save()
 
 		return private_key_str
