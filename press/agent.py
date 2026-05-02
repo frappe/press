@@ -952,7 +952,7 @@ class Agent:
 			return requests.request(method, url, headers=headers, files=file_objects, verify=verify)
 		return requests.request(method, url, headers=headers, json=data, verify=verify, timeout=(10, 30))
 
-	def verify_response_token(self, token: dict, payload, method: str, path: str):
+	def _verify_response_token(self, token: dict, payload, method: str, path: str):
 		try:
 			timestamp = int(token["timestamp"])
 			nonce = token["nonce"]
@@ -976,7 +976,9 @@ class Agent:
 		if not agent.public_key:
 			raise ValueError("No public key registered")
 
-		public_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(agent.public_key.split()[1]))
+		public_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(agent.public_key))
+
+		path = f"/{path.lstrip('/')}"
 
 		# reconstruct signed message
 		message = json.dumps(
@@ -1009,7 +1011,7 @@ class Agent:
 
 		return True
 
-	def _extract_and_verify_token(self, response, json_response, method, path):
+	def extract_and_verify_token(self, response, json_response, method, path):
 		token_str = response.headers.get("X-Agent-Token")
 
 		if not token_str:
@@ -1020,7 +1022,7 @@ class Agent:
 		except Exception as err:
 			raise ValueError("Invalid token encoding") from err
 
-		self.verify_response_token(
+		self._verify_response_token(
 			token=token,
 			payload=json_response,
 			method=method,
@@ -1035,7 +1037,7 @@ class Agent:
 			response = self._make_req(method, path, data, files, agent_job_id)
 			json_response = response.json()
 
-			self._extract_and_verify_token(response, json_response, method, path)
+			self.extract_and_verify_token(response, json_response, method, path)
 
 			if raises and response.status_code >= 400:
 				output = "\n\n".join([json_response.get("output", ""), json_response.get("traceback", "")])
@@ -1107,6 +1109,9 @@ class Agent:
 		timeout = timeout or (10, 30)
 		response = requests.request(method, url, headers=headers, json=data, timeout=timeout)
 		json_response = response.json()
+
+		self.extract_and_verify_token(response, json_response, method, path)
+
 		if raises:
 			response.raise_for_status()
 		return json_response
