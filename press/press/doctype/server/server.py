@@ -93,6 +93,9 @@ BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 
 
 class BaseServer(Document, TagHelpers):
+	public_key: str | None
+	is_agent_auth_setup: int | None
+
 	dashboard_fields = (
 		"title",
 		"plan",
@@ -1897,6 +1900,50 @@ class BaseServer(Document, TagHelpers):
 			"version",
 		)
 
+	def _generate_and_activate_key(self, regenerate: bool = False) -> str | None:
+		from cryptography.hazmat.primitives import serialization
+		from cryptography.hazmat.primitives.asymmetric import ed25519
+
+		if self.public_key and self.is_agent_auth_setup and not regenerate:
+			return None
+
+		key = ed25519.Ed25519PrivateKey.generate()
+
+		private_key_str = key.private_bytes(
+			encoding=serialization.Encoding.PEM,
+			format=serialization.PrivateFormat.PKCS8,
+			encryption_algorithm=serialization.NoEncryption(),
+		).decode()
+
+		public_key_bytes = key.public_key().public_bytes(
+			encoding=serialization.Encoding.Raw,
+			format=serialization.PublicFormat.Raw,
+		)
+
+		public_key_b64 = base64.b64encode(public_key_bytes).decode()
+
+		self.public_key = public_key_b64
+		self.save()
+
+		return private_key_str
+
+	def _setup_agent_auth(self):
+		try:
+			private_key = self._generate_and_activate_key()
+
+			ansible = Ansible(
+				playbook="setup_agent_auth.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={"private_key": private_key},
+			)
+			ansible.run()
+			self.is_agent_auth_setup = 1
+		except Exception:
+			log_error("Agent Auth Setup Exception", server=self.as_dict())
+		self.save()
+
 	@frappe.whitelist()
 	def collect_arm_images(self) -> str:
 		"""Collect arm build images of all active benches on VM"""
@@ -3193,50 +3240,6 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def setup_agent_auth(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_auth", queue="long", timeout=1200)
-
-	def _generate_and_activate_key(self, regenerate: bool = False) -> str | None:
-		from cryptography.hazmat.primitives import serialization
-		from cryptography.hazmat.primitives.asymmetric import ed25519
-
-		if self.public_key and self.is_agent_auth_setup and not regenerate:
-			return None
-
-		key = ed25519.Ed25519PrivateKey.generate()
-
-		private_key_str = key.private_bytes(
-			encoding=serialization.Encoding.PEM,
-			format=serialization.PrivateFormat.PKCS8,
-			encryption_algorithm=serialization.NoEncryption(),
-		).decode()
-
-		public_key_bytes = key.public_key().public_bytes(
-			encoding=serialization.Encoding.Raw,
-			format=serialization.PublicFormat.Raw,
-		)
-
-		public_key_b64 = base64.b64encode(public_key_bytes).decode()
-
-		self.public_key = public_key_b64
-		self.save()
-
-		return private_key_str
-
-	def _setup_agent_auth(self):
-		try:
-			private_key = self._generate_and_activate_key()
-
-			ansible = Ansible(
-				playbook="setup_agent_auth.yml",
-				server=self,
-				user=self._ssh_user(),
-				port=self._ssh_port(),
-				variables={"private_key": private_key},
-			)
-			ansible.run()
-			self.is_agent_auth_setup = 1
-		except Exception:
-			log_error("Agent Auth Setup Exception", server=self.as_dict())
-		self.save()
 
 	@frappe.whitelist()
 	def whitelist_ipaddress(self):
