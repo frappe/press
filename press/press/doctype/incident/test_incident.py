@@ -32,8 +32,8 @@ from press.press.doctype.alertmanager_webhook_log.test_alertmanager_webhook_log 
 )
 from press.press.doctype.incident.incident import (
 	Incident,
+	confirm_incidents,
 	resolve_incidents,
-	validate_incidents,
 )
 from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import (
 	create_test_prometheus_alert_rule,
@@ -448,18 +448,18 @@ class TestIncident(FrappeTestCase):
 		create_test_alertmanager_webhook_log()
 		incident = frappe.get_last_doc("Incident")
 		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-1))
-		validate_incidents()
+		confirm_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")  # default min threshold is 5 mins
 		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-17))
-		validate_incidents()
+		confirm_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Confirmed")
 		incident.db_set("status", "Validating")
 		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-19))
 		frappe.db.set_single_value("Incident Settings", "confirmation_threshold_day", str(21 * 60))
 		frappe.db.set_single_value("Incident Settings", "confirmation_threshold_night", str(21 * 60))
-		validate_incidents()
+		confirm_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
 

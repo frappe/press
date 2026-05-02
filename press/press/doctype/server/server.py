@@ -687,7 +687,15 @@ class BaseServer(Document, TagHelpers):
 	def ping_mariadb(self) -> bool:
 		try:
 			agent = Agent(self.name, self.doctype)
-			return agent.ping_database(self).get("reachable")
+			database = None
+			if self.doctype == "Server" and self.database_server:
+				database = frappe.get_doc("Database Server", self.database_server)
+			elif self.doctype == "Database Server":
+				database = self
+			else:
+				frappe.throw("Invalid doctype for pinging database")
+
+			return agent.ping_database(database).get("reachable")
 		except Exception:
 			return False
 

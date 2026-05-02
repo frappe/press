@@ -43,13 +43,12 @@ class IncidentAction:
 
 	def cancel_stuck_jobs(self):
 		"""Cancel up to `MAX_STUCK_JOBS_TO_CANCEL` of the most likely-stuck jobs."""
-		from press.press.doctype.incident.incident import INCIDENT_SCOPE
 
 		stuck_jobs = frappe.get_all(
 			"Agent Job",
 			{
 				"status": "Running",
-				INCIDENT_SCOPE: self.incident.incident_scope,
+				"server": self.incident.server,
 				"job_type": ("in", STUCK_JOB_TYPES),
 			},
 			["name", "job_type"],
@@ -62,11 +61,10 @@ class IncidentAction:
 
 	def restart_down_benches(self):
 		"""Restart all benches on the server that are down."""
-		down_benches = self.incident.monitor_server.get_benches_down_for_server(str(self.incident.server))
-		if not down_benches:
-			frappe.throw("No down benches found for this server")
+		for bench in self.incident.down_benches:
+			if bench.current_sites_down == 0:
+				continue  # skip if bench is not down
+			Bench("Bench", bench.bench_name).restart()
+			self.incident._add_likely_cause(f"Restarted bench {bench.bench}")
 
-		for bench_name in down_benches:
-			Bench("Bench", bench_name).restart()
-			self.incident._add_likely_cause(f"Restarted bench {bench_name}")
 		self.incident.save()

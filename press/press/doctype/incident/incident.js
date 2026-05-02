@@ -4,10 +4,14 @@
 frappe.ui.form.on('Incident', {
 	refresh(frm) {
 		[
+			[
+				__('Check if Resolved'),
+				'check_if_resolved',
+				frm.doc.status !== 'Resolved',
+			],
 			[__('Reboot Database Server'), 'reboot_database_server'],
 			[__('Restart Down Benches'), 'restart_down_benches'],
 			[__('Cancel Stuck Jobs'), 'cancel_stuck_jobs'],
-			[__('Take Grafana screenshots'), 'regather_info_and_screenshots'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -23,10 +27,11 @@ frappe.ui.form.on('Incident', {
 			}
 		});
 
-		frm.call('get_down_site').then((r) => {
-			if (!r.message) return;
-			frm.add_web_link(`https://${r.message}`, __('Visit Down Site'));
-		});
+		frm.dashboard.clear_headline();
+		frm.dashboard.set_headline(
+			`<div class="flex justify-between">${frm.doc.no_of_down_sites} Sites Down</div>`,
+			frm.doc.no_of_down_sites > 0 ? 'red' : 'green',
+		);
 
 		render_stats_image(frm, 'app');
 		render_stats_image(frm, 'db');

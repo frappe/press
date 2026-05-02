@@ -5,32 +5,30 @@ from __future__ import annotations
 import contextlib
 import json
 from base64 import b64encode
-from typing import TypedDict
+from urllib.parse import urljoin
 
 import frappe
 import requests
 from frappe.utils.caching import redis_cache
 from frappe.utils.data import cint
+from prometheus_api_client import PrometheusConnect
 from requests.auth import HTTPBasicAuth
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
 
 
-class SitesDownAlertLabels(TypedDict):
-	alertname: str
-	bench: str
-	cluster: str
-	group: str
-	instance: str
-	job: str
-	server: str
-	severity: str
+class _BaseUrlSession(requests.Session):
+	"""`requests.Session` that prepends a base URL to relative routes."""
 
+	def __init__(self, base_url: str):
+		super().__init__()
+		self.base_url = base_url.rstrip("/") + "/"
 
-class SitesDownAlert(TypedDict):
-	labels: SitesDownAlertLabels
+	def request(self, method, url, *args, **kwargs):
+		return super().request(method, urljoin(self.base_url, url.lstrip("/")), *args, **kwargs)
 
 
 class MonitorServer(BaseServer):
@@ -252,55 +250,41 @@ class MonitorServer(BaseServer):
 		token = b64encode(f"{username}:{password}".encode()).decode("ascii")
 		return f"Basic {token}"
 
-	@property
-	def alerts(self):
-		ret = requests.get(
-			f"https://{self.name}/prometheus/api/v1/rules",
-			auth=HTTPBasicAuth(self.prometheus_username, self.get_password("grafana_password")),
-			params={"type": "alert"},
-		)
+	def prometheus_session(self) -> _BaseUrlSession:
+		"""
+		Return a `requests.Session` pre-configured with the Prometheus base URL and auth.
+		"""
+		session = _BaseUrlSession(f"https://{self.name}/prometheus/")
+		session.auth = HTTPBasicAuth(self.prometheus_username, self.get_password("grafana_password"))  # type: ignore
+		return session
 
-		ret.raise_for_status()
-		data = ret.json()
-		if data["status"] != "success":
-			frappe.throw("Error fetching sites down")
-		return data["data"]["groups"][0]["rules"]
+	@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+	def run_promql(self, query: str) -> list:
+		"""Run an instant PromQL query and return the result list."""
+		return PrometheusConnect(
+			url=f"https://{self.name}/prometheus",
+			auth=(self.prometheus_username, self.get_password("grafana_password")),
+		).custom_query(query=query)
 
-	@property
-	def sites_down_alerts(self) -> list[SitesDownAlert]:
-		for alert in self.alerts:
-			if not (alert["name"] == "Sites Down" and alert["state"] == "firing"):
-				continue
-			return alert["alerts"]
-		return []
+	def run_promql_scalar(self, query: str, val_type: type = float) -> float | int | None:
+		"""Run an instant PromQL query and return the first scalar value cast to *type*.
 
-	@property
-	def sites_down(self):
-		sites = []
-		for alert in self.sites_down_alerts:
-			sites.append(alert["labels"]["instance"])
-		return sites
-
-	def get_sites_down_for_server(self, server: str) -> list[str]:
-		sites = []
-		for alert in self.sites_down_alerts:
-			if alert["labels"]["server"] == server:
-				sites.append(alert["labels"]["instance"])
-		return sites
-
-	@property
-	def benches_down(self):
-		benches = []
-		for alert in self.sites_down_alerts:
-			benches.append(alert["labels"]["bench"])
-		return set(benches)
-
-	def get_benches_down_for_server(self, server: str) -> set[str]:
-		benches = []
-		for alert in self.sites_down_alerts:
-			if alert["labels"]["server"] == server:
-				benches.append(alert["labels"]["bench"])
-		return set(benches)
+		For `int` results the value is clamped to `max(0, value)`.
+		For `float` results the value is rounded to 2 decimal places.
+		Returns -1 if the query yields no data or raises an exception.
+		"""
+		try:
+			result = self.run_promql(query)
+			if result:
+				value = float(result[0]["value"][1])
+				if val_type is int:
+					return max(0, int(round(value, 0)))
+				if val_type is float:
+					return round(value, 2)
+				return value
+		except Exception:
+			pass
+		return -1
 
 
 @redis_cache(ttl=3600)

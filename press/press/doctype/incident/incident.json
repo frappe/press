@@ -8,16 +8,15 @@
  "engine": "InnoDB",
  "field_order": [
   "alerts_tab",
-  "alert",
   "status",
-  "type",
-  "subtype",
-  "column_break_smnd",
   "server",
-  "resource_type",
-  "resource",
   "cluster",
   "investigation",
+  "column_break_smnd",
+  "resource_type",
+  "resource",
+  "type",
+  "subtype",
   "section_break_lazo",
   "confirmed_at",
   "column_break_ukex",
@@ -26,12 +25,37 @@
   "acknowledged_at",
   "column_break_hryl",
   "resolved_at",
-  "section_break_kjey",
-  "description",
-  "preliminary_investigation_section",
+  "section_break_heda",
   "likely_cause",
-  "findings",
-  "findings_tab",
+  "preliminary_investigation_section",
+  "description",
+  "analysis_tab",
+  "no_of_down_sites",
+  "no_of_down_benches",
+  "column_break_vxrf",
+  "no_of_total_sites",
+  "no_of_total_benches",
+  "section_break_qefz",
+  "down_sites",
+  "down_benches",
+  "server_health_tab",
+  "last_1_hour_overview_section",
+  "app_server_column",
+  "server_status",
+  "server_load15",
+  "server_free_space_gb",
+  "server_disk_iops",
+  "server_disk_throughput_mbps",
+  "server_runnable_state",
+  "server_oom_kills",
+  "column_break_iqfx",
+  "db_server_status",
+  "db_server_load15",
+  "db_free_space_gb",
+  "db_server_disk_iops",
+  "db_server_disk_throughput_mbps",
+  "db_server_free_memory_mb",
+  "db_server_disk_queue",
   "grafana_dashboard_section",
   "app_server_stats",
   "db_server_stats",
@@ -122,12 +146,9 @@
    "options": "Incident Updates"
   },
   {
-   "fieldname": "section_break_kjey",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "description",
    "fieldtype": "Text Editor",
+   "hidden": 1,
    "label": "Description"
   },
   {
@@ -135,14 +156,6 @@
    "fieldname": "phone_call",
    "fieldtype": "Check",
    "label": "Phone Call"
-  },
-  {
-   "fieldname": "alert",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Alert",
-   "options": "Prometheus Alert Rule"
   },
   {
    "fieldname": "resource_type",
@@ -165,12 +178,15 @@
    "options": "High CPU: user\nHigh CPU: iowait\nDisk full"
   },
   {
+   "collapsible": 1,
    "fieldname": "preliminary_investigation_section",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Deprecated Fields"
   },
   {
+   "description": "Log the findings and actions taken",
    "fieldname": "likely_cause",
-   "fieldtype": "Text",
+   "fieldtype": "Markdown Editor",
    "label": "Likely Causes"
   },
   {
@@ -230,17 +246,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "findings",
-   "fieldtype": "Table",
-   "label": "Findings",
-   "options": "Incident Finding"
-  },
-  {
-   "fieldname": "findings_tab",
-   "fieldtype": "Tab Break",
-   "label": "Findings"
-  },
-  {
    "fieldname": "app_server_stats",
    "fieldtype": "Attach Image",
    "hidden": 1,
@@ -265,12 +270,173 @@
    "width": "512px"
   },
   {
+   "collapsible_depends_on": "eval: false",
    "fieldname": "grafana_dashboard_section",
+   "fieldtype": "Section Break",
+   "label": "Grafana Snapshot"
+  },
+  {
+   "fieldname": "last_1_hour_overview_section",
+   "fieldtype": "Section Break",
+   "label": "Last 1 Hour P95 Overview"
+  },
+  {
+   "fieldname": "server_oom_kills",
+   "fieldtype": "Int",
+   "label": "OOM Kills",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_iqfx",
+   "fieldtype": "Column Break",
+   "label": "DB Server"
+  },
+  {
+   "fieldname": "db_server_free_memory_mb",
+   "fieldtype": "Int",
+   "label": "Free Memory (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_health_tab",
+   "fieldtype": "Tab Break",
+   "label": "Server Health"
+  },
+  {
+   "fieldname": "app_server_column",
+   "fieldtype": "Column Break",
+   "label": "App Server"
+  },
+  {
+   "fieldname": "db_server_disk_queue",
+   "fieldtype": "Int",
+   "label": "Disk Queue",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nReachable\nUnreachable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "db_server_status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nReachable\nUnreachable\nReachable - DB Healthy\nReachable - DB Unhealthy",
+   "read_only": 1
+  },
+  {
+   "fieldname": "analysis_tab",
+   "fieldtype": "Tab Break",
+   "label": "Down Resources"
+  },
+  {
+   "fieldname": "down_sites",
+   "fieldtype": "Table",
+   "label": "Down Sites (Random 15)",
+   "options": "Incident Site"
+  },
+  {
+   "fieldname": "down_benches",
+   "fieldtype": "Table",
+   "label": "Down Benches",
+   "options": "Incident Bench"
+  },
+  {
+   "fieldname": "section_break_qefz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "no_of_total_sites",
+   "fieldtype": "Int",
+   "label": "Total Sites",
+   "read_only": 1
+  },
+  {
+   "fieldname": "no_of_total_benches",
+   "fieldtype": "Int",
+   "label": "Total Benches",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_vxrf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "no_of_down_sites",
+   "fieldtype": "Int",
+   "label": "Down Sites",
+   "read_only": 1
+  },
+  {
+   "fieldname": "no_of_down_benches",
+   "fieldtype": "Int",
+   "label": "Down Benches",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_free_space_gb",
+   "fieldtype": "Float",
+   "label": "Free Space (GB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "db_free_space_gb",
+   "fieldtype": "Float",
+   "label": "Free Space (GB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_load15",
+   "fieldtype": "Float",
+   "label": "Load 15",
+   "read_only": 1
+  },
+  {
+   "fieldname": "db_server_load15",
+   "fieldtype": "Float",
+   "label": "Load 15",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_runnable_state",
+   "fieldtype": "Int",
+   "label": "Runnable State",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_disk_iops",
+   "fieldtype": "Int",
+   "label": "Disk IOPS",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_disk_throughput_mbps",
+   "fieldtype": "Int",
+   "label": "Disk Throughput (MB/s)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "db_server_disk_iops",
+   "fieldtype": "Int",
+   "label": "Disk IOPS",
+   "read_only": 1
+  },
+  {
+   "fieldname": "db_server_disk_throughput_mbps",
+   "fieldtype": "Int",
+   "label": "Disk Throughput (MB/s)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_heda",
    "fieldtype": "Section Break"
   }
  ],
  "links": [],
- "modified": "2026-05-01 00:12:54.832316",
+ "modified": "2026-05-02 04:25:52.771728",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",

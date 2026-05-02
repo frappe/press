@@ -16,15 +16,11 @@ from frappe.utils.data import add_to_date
 from frappe.utils.synchronization import filelock
 
 from press.exceptions import AlertRuleNotEnabled
-from press.press.doctype.incident.incident import (
-	INCIDENT_ALERT,
-	INCIDENT_SCOPE,
-	Incident,
-)
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
 
 if TYPE_CHECKING:
+	from press.press.doctype.incident.incident import Incident
 	from press.press.doctype.incident_settings.incident_settings import IncidentSettings
 	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
 		PrometheusAlertRule,
@@ -101,10 +97,6 @@ class AlertmanagerWebhookLog(Document):
 		self.payload = json.dumps(self.parsed, indent=2, sort_keys=True)
 
 	@property
-	def incident_scope(self) -> str | None:
-		return self.parsed_group_labels.get(INCIDENT_SCOPE)
-
-	@property
 	def bench(self) -> str | None:
 		return self.parsed_group_labels.get("bench")
 
@@ -131,7 +123,12 @@ class AlertmanagerWebhookLog(Document):
 		self.send_notifications()
 
 	def create_incident_if_necessary(self):
-		if not (self.alert == INCIDENT_ALERT and self.severity == "Critical" and self.status == "Firing"):
+		if not (
+			self.alert == "Sites Down"
+			and self.parsed_group_labels.get("server")
+			and self.severity == "Critical"
+			and self.status == "Firing"
+		):
 			return
 
 		if not frappe.db.get_single_value("Incident Settings", "enable_incident_detection"):
@@ -141,7 +138,14 @@ class AlertmanagerWebhookLog(Document):
 			return
 
 		firing_instances = len(self.past_alert_instances("Firing"))
-		total_instances = frappe.db.count("Site", {"status": "Active", INCIDENT_SCOPE: self.incident_scope})
+		total_instances = frappe.db.count(
+			"Site",
+			{
+				"status": "Active",
+				"server": self.parsed_group_labels.get("server"),
+				"is_monitoring_disabled": 0,
+			},
+		)
 		settings: IncidentSettings = frappe.get_cached_doc("Incident Settings")
 		if not firing_instances > min(
 			math.floor((float(settings.minimum_firing_instances_in_percent) / 100) * total_instances),
@@ -151,17 +155,43 @@ class AlertmanagerWebhookLog(Document):
 
 		frappe.enqueue_doc(self.doctype, self.name, "create_incident", enqueue_after_commit=True)
 
+	def create_incident(self):
+		try:
+			with filelock(f"incident_creation_{self.server}"):
+				is_ongoing_incident_exist = bool(
+					frappe.db.get_value(
+						"Incident",
+						{
+							"server": self.parsed_group_labels.get("server"),
+							"status": ("in", ["Validating", "Confirmed", "Acknowledged"]),
+						},
+						"status",
+						for_update=True,  # To get latest incidents already committed; required because 2 jobs can start at the same time
+					)
+				)
+				if is_ongoing_incident_exist:
+					frappe.db.commit()  # commit the lock to avoid any lock
+					return
+
+				incident: Incident = frappe.new_doc("Incident")
+				incident.server = self.server
+				incident.cluster = self.cluster
+				incident.save()
+				frappe.db.commit()  # commit inside filelock to avoid deadlock when inserting in gap
+		except Exception:
+			log_error("Incident creation failed")
+
 	def check_incident_resolution_if_necessary(self):
 		"""On a Resolved webhook, find the ongoing incident for this scope and ask it to
 		re-evaluate against live Prometheus state."""
-		if not (self.alert == INCIDENT_ALERT and self.status == "Resolved"):
+		if not (self.alert == "Sites Down" and self.status == "Resolved"):
 			return
 
 		incident_name = frappe.db.get_value(
 			"Incident",
 			{
 				"alert": self.alert,
-				INCIDENT_SCOPE: self.incident_scope,
+				"server": self.parsed_group_labels.get("server"),
 				"status": ("in", ["Validating", "Confirmed", "Acknowledged"]),
 			},
 			"name",
@@ -225,34 +255,6 @@ class AlertmanagerWebhookLog(Document):
 			)
 
 		self.save()
-
-	def create_incident(self):
-		try:
-			with filelock(f"incident_creation_{self.server}"):
-				is_ongoing_incident_exist = bool(
-					frappe.db.get_value(
-						"Incident",
-						{
-							"alert": self.alert,
-							INCIDENT_SCOPE: self.incident_scope,
-							"status": ("in", ["Validating", "Confirmed", "Acknowledged"]),
-						},
-						"status",
-						for_update=True,  # To get latest incidents already committed; required because 2 jobs can start at the same time
-					)
-				)
-				if is_ongoing_incident_exist:
-					frappe.db.commit()  # commit the lock to avoid any lock
-					return
-
-				incident: Incident = frappe.new_doc("Incident")
-				incident.alert = self.alert
-				incident.server = self.server
-				incident.cluster = self.cluster
-				incident.save()
-				frappe.db.commit()  # commit inside filelock to avoid deadlock when inserting in gap
-		except Exception:
-			log_error("Incident creation failed")
 
 	# Helper methods
 	def get_instances_from_alerts_payload(self, payload: str) -> set[str]:

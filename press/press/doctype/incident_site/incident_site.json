@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-05-01 18:19:15.611698",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "current_status",
+  "current_http_status",
+  "reported_status",
+  "reported_http_status",
+  "current_status_updated_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Site",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "Evaluating",
+   "fieldname": "current_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Current Status",
+   "options": "Online\nTimeout\nTLS Expired\nUnauthorized\nDown Bench\nInternal Error\nSuspended\nSite Not Found\nUnreachable\nEvaluating",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "current_http_status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Current HTTP Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_status_updated_on",
+   "fieldtype": "Datetime",
+   "label": "Current Status Updated On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reported_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Reported Status",
+   "options": "Online\nTimeout\nTLS Expired\nUnauthorized\nDown Bench\nInternal Error\nSite Not Found\nUnreachable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reported_http_status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Reported HTTP Status",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-01 23:22:01.017812",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Incident Site",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

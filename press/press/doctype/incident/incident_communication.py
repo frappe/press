@@ -97,7 +97,7 @@ class IncidentCommunication:
 				return  # Twillio unavailable
 
 			acknowledged = status in CALL_PICKUP_STATUSES
-			self.incident.add_acknowledgment_update(human, acknowledged=acknowledged, call_status=status)
+			self._add_acknowledgment_update(human, acknowledged=acknowledged, call_status=status)
 
 			if acknowledged:
 				break
@@ -280,3 +280,31 @@ class IncidentCommunication:
 	)
 	def _wait_for_call_pickup(self, call: CallInstance):
 		return call.fetch().status
+
+	def _add_acknowledgment_update(
+		self,
+		human: IncidentSettingsUser | IncidentSettingsSelfHostedUser,
+		call_status: str | None = None,
+		acknowledged=False,
+		save: bool = True,
+	):
+		"""Adds a new update to the Incident Document."""
+		if acknowledged:
+			update_note = f"Acknowledged by {human.user}"
+			self.incident.acknowledge(human.user, save=False)
+		else:
+			update_note = f"Acknowledgement failed for {human.user}"
+
+		if call_status:
+			update_note += f" with call status {call_status}"
+
+		self.incident.append(
+			"updates",
+			{
+				"update_note": update_note,
+				"update_time": frappe.utils.now(),
+			},
+		)
+
+		if save:
+			self.incident.save()
