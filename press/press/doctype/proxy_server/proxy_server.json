@@ -36,9 +36,11 @@
     "private_vlan_id",
     "agent_section",
     "agent_password",
+    "public_key",
     "column_break_mznm",
     "disable_agent_job_auto_retry",
     "use_as_proxy_for_agent_and_metrics",
+    "is_agent_auth_setup",
     "replica_section",
     "is_primary",
     "primary",
@@ -495,10 +497,23 @@
       "fieldname": "use_as_proxy_for_agent_and_metrics",
       "fieldtype": "Check",
       "label": "Use as Proxy for Agent and Metrics"
+    },
+    {
+      "fieldname": "public_key",
+      "fieldtype": "Data",
+      "label": "Public Key",
+      "read_only": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "is_agent_auth_setup",
+      "fieldtype": "Check",
+      "label": "Is Agent Auth Setup",
+      "read_only": 1
     }
   ],
   "links": [],
-  "modified": "2026-03-15 19:01:43.557830",
+  "modified": "2026-05-02 18:34:57.231059",
   "modified_by": "Administrator",
   "module": "Press",
   "name": "Proxy Server",

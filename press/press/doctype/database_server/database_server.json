@@ -47,6 +47,9 @@
       "private_vlan_id",
       "agent_section",
       "agent_password",
+      "public_key",
+      "column_break_zpnv",
+      "is_agent_auth_setup",
       "mariadb_section",
       "self_hosted_mariadb_server",
       "mariadb_root_password",
@@ -787,6 +790,23 @@
          "fieldtype": "Link",
          "label": "NAT Server",
          "options": "NAT Server"
+      },
+      {
+         "fieldname": "column_break_zpnv",
+         "fieldtype": "Column Break"
+      },
+      {
+         "default": "0",
+         "fieldname": "is_agent_auth_setup",
+         "fieldtype": "Check",
+         "label": "Is Agent Auth Setup",
+         "read_only": 1
+      },
+      {
+         "fieldname": "public_key",
+         "fieldtype": "Data",
+         "label": "Public Key",
+         "read_only": 1
       }
    ],
    "grid_page_length": 50,
@@ -803,7 +823,7 @@
          "link_fieldname": "database_server"
       }
    ],
-   "modified": "2026-03-18 03:08:29.199702",
+   "modified": "2026-05-02 20:52:27.931597",
    "modified_by": "Administrator",
    "module": "Press",
    "name": "Database Server",

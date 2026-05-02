@@ -41,6 +41,7 @@ class ProxyServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_agent_auth_setup: DF.Check
 		is_primary: DF.Check
 		is_proxysql_setup: DF.Check
 		is_replication_setup: DF.Check
@@ -62,6 +63,7 @@ class ProxyServer(BaseServer):
 		proxysql_admin_password: DF.Password | None
 		proxysql_monitor_password: DF.Password | None
 		public: DF.Check
+		public_key: DF.Data | None
 		root_public_key: DF.Code | None
 		self_hosted_server_domain: DF.Data | None
 		ssh_certificate_authority: DF.Link | None
@@ -175,6 +177,10 @@ class ProxyServer(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Exporters Install Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def setup_agent_auth(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_auth", queue="long", timeout=1200)
 
 	@frappe.whitelist()
 	def setup_ssh_proxy(self):
