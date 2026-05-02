@@ -52,18 +52,57 @@
     </p>
 
     {% if audit_summary %}
-    <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.65; color: #374151;">
-        {{ audit_summary }}
-    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+        style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 6px; margin-bottom: 16px;">
+        <tr>
+            <td style="padding: 14px 16px;">
+                <p style="margin: 0 0 8px; font-size: 11px; font-weight: 600; color: #6B7280;
+                              text-transform: uppercase; letter-spacing: 0.06em;">Summary</p>
+                <p style="margin: 0; font-size: 13px; line-height: 1.65; color: #374151;">
+                    {{ audit_summary | e | replace("\r\n", "\n") | replace("\n", "<br>") | safe }}
+                </p>
+            </td>
+            </tr>
+            </table>
     {% endif %}
 
     {% if issue_count > 0 %}
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-           style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 6px; margin-bottom: 28px;">
+           style="background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 6px; margin-bottom: 28px;">
         <tr>
             <td style="padding: 14px 16px; font-size: 13px; line-height: 1.65; color: #374151;">
-                Please review and fix the issues listed below, then publish a new release and
-                resubmit for approval. A fresh audit will run automatically on the new release.
+                <p style="margin: 0 0 10px; font-size: 11px; font-weight: 600; color: #111827;
+                                                                          text-transform: uppercase; letter-spacing: 0.06em;">What to
+                    do next</p>
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 12px;">
+                    <tr>
+                        <td style="width: 22px; vertical-align: top; font-size: 13px; color: #111827; font-weight: 600;">1.</td>
+                        <td style="font-size: 13px; line-height: 1.65; color: #374151;">Review the failing checks below.</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="height: 8px; font-size: 0; line-height: 0;">&nbsp;</td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: top; font-size: 13px; color: #111827; font-weight: 600;">2.</td>
+                        <td style="font-size: 13px; line-height: 1.65; color: #374151;">Fix all the issues, publish a new release(push to
+                            your source branch).</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="height: 8px; font-size: 0; line-height: 0;">&nbsp;</td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: top; font-size: 13px; color: #111827; font-weight: 600;">3.</td>
+                        <td style="font-size: 13px; line-height: 1.65; color: #374151;">A fresh audit runs automatically on the new
+                            release.</td>
+                    </tr>
+                </table>
+                <!-- TODO: add a link to the dashboard app listing/audit page -->
+                {% if publisher_app_url %}
+                <p style="margin: 0; font-size: 13px; line-height: 1.65;">
+                    <a href="{{ publisher_app_url }}" style="color: #2563EB; font-weight: 500; text-decoration: none;">Check audit in
+                        dashboard &rarr;</a>
+                </p>
+                {% endif %}
             </td>
         </tr>
     </table>

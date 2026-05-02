@@ -248,6 +248,7 @@
   "execute_incident_action",
   "enable_server_snapshot_recovery",
   "use_new_deploy_flow",
+  "auto_upgrade_dependencies",
   "section_break_jstu",
   "enable_app_grouping",
   "default_apps",
@@ -1703,11 +1704,17 @@
    "fieldname": "region_name",
    "fieldtype": "Data",
    "label": "Region Name"
- }
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_upgrade_dependencies",
+   "fieldtype": "Check",
+   "label": "Auto Upgrade Dependencies"
+  }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-04-22 12:11:56.360055",
+ "modified": "2026-04-30 18:44:43.851468",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

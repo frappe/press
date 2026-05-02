@@ -1,0 +1,15 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@/layouts/IndexLayout.astro";
+import PostList from "@/components/PostList.astro";
+import { pagelimit } from "@/consts";
+
+let posts = await getCollection("releases");
+posts.sort((a, b) => +b.data.date - +a.data.date);
+
+const pagePosts = posts.slice(0, pagelimit);
+const totalPages = Math.ceil(posts.length / pagelimit);
+---
+<Layout>
+  <PostList posts={pagePosts} currentPage={1} totalPages={totalPages} />
+</Layout>

@@ -102,7 +102,7 @@ frappe.ui.form.on('Virtual Machine', {
 				'disassociate_auto_assigned_public_ip',
 				true,
 				frm.doc.status === 'Running' &&
-					frm.doc.cloud_provider === 'AWS EC2' &&
+					['AWS EC2', 'Frappe Compute'].includes(frm.doc.cloud_provider) &&
 					!!frm.doc.public_ip_address &&
 					!frm.doc.is_static_ip,
 			],

@@ -15,7 +15,7 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.query_builder import Case
 from frappe.query_builder.terms import ValueWrapper
 from frappe.rate_limiter import rate_limit
-from frappe.utils import flt, sbool, time_diff_in_hours
+from frappe.utils import cint, flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.typing_validations import validate_argument_types
 from frappe.utils.user import is_system_user
@@ -583,22 +583,31 @@ def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 	return jobs
 
 
+def _get_job_team(job_doc) -> str | None:
+	if job_doc.site:
+		return frappe.db.get_value("Site", job_doc.site, "team")
+	if job_doc.bench:
+		return frappe.db.get_value("Bench", job_doc.bench, "team")
+	if job_doc.server:
+		server_type = frappe.db.get_value("Agent Job", job_doc.name, "server_type")
+		if server_type == "Server":
+			return frappe.db.get_value("Server", job_doc.server, "team")
+		if server_type == "Database Server":
+			return frappe.db.get_value("Database Server", job_doc.server, "team")
+	return None
+
+
 @frappe.whitelist()
 def job(job):
-	job = frappe.get_doc("Agent Job", job)
-	job = job.as_dict()
-	whitelisted_fields = [
-		"name",
-		"job_type",
-		"creation",
-		"status",
-		"start",
-		"end",
-		"duration",
-	]
-	for key in list(job.keys()):
-		if key not in whitelisted_fields:
-			job.pop(key, None)
+	job_doc = frappe.get_doc("Agent Job", job)
+
+	job_team = _get_job_team(job_doc)
+	current_team = get_current_team()
+	if job_team and job_team != current_team:
+		frappe.throw("Not permitted to access this job", frappe.PermissionError)
+
+	whitelisted_fields = {"name", "job_type", "creation", "status", "start", "end", "duration"}
+	job = frappe._dict({k: v for k, v in job_doc.as_dict().items() if k in whitelisted_fields})
 
 	if job.status == "Undelivered":
 		job.status = "Pending"
@@ -2252,7 +2261,7 @@ def get_upload_link(file, parts=1):
 	)[0]
 
 	bucket_name = upload_bucket_details.remote_uploads_bucket
-	expiration = upload_bucket_details.remote_link_expiry or 3600
+	expiration = cint(upload_bucket_details.remote_link_expiry) or 3600
 	object_name = get_remote_key(file)
 	parts = int(parts)
 
@@ -3074,6 +3083,7 @@ def _get_custom_app_upgrade_source(
 		branch=branch,
 		version=next_version,
 		github_installation_id=github_installation_id,
+		ease_versioning_constrains=True,
 	)
 
 	existing_source = frappe.db.get_value(

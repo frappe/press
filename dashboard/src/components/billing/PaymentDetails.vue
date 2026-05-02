@@ -302,8 +302,7 @@ const paymentModeOptions = [
 	{
 		label: 'UPI Autopay',
 		value: 'UPI Autopay',
-		condition: () =>
-			team.doc.currency === 'INR' && team.doc.upi_autopay_enabled,
+		condition: () => team.doc.currency === 'INR',
 		description: 'Your UPI will be auto-debited for monthly subscription',
 		component: () =>
 			h(DropdownItem, {
@@ -402,7 +401,11 @@ function updatePaymentMode(mode) {
 		return;
 	}
 	if (mode === 'UPI Autopay') {
-		router.push({ name: 'BillingUPIAutopay' });
+		if (team.doc.default_razorpay_mandate) {
+			if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
+		} else {
+			router.push({ name: 'BillingUPIAutopay' });
+		}
 		return;
 	}
 	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });

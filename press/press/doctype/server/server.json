@@ -34,6 +34,7 @@
   "is_for_recovery",
   "is_monitoring_disabled",
   "enable_on_prem_failover_support",
+  "stop_incident_actions",
   "billing_section",
   "team",
   "plan",
@@ -759,6 +760,12 @@
    "fieldname": "db_healthcheck_token",
    "fieldtype": "Password",
    "label": "DB Healthcheck Token"
+  },
+  {
+   "default": "0",
+   "fieldname": "stop_incident_actions",
+   "fieldtype": "Check",
+   "label": "Stop Incident Actions"
   }
  ],
  "links": [

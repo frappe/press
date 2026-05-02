@@ -68,8 +68,7 @@ def check_override_doctype_class(assignments: dict[str, ast.expr]) -> CheckResul
 			result="Warn",
 			message="The app overrides the following doctypes: " + ", ".join(overridden_doctypes),
 			details=json.dumps({"overridden_doctypes": overridden_doctypes}),
-			remediation="""
-				Use extend_doctype_class (Frappe v16+) or doc_events hooks instead if possible.
+			remediation="""Use extend_doctype_class (Frappe v16+) or doc_events hooks instead if possible.
 				Full class overrides miss upstream bug fixes and conflict with other apps
 				Go through the docs to understand the difference between the two approaches - https://docs.frappe.io/framework/user/en/python-api/hooks#override-doctype-class
 			""",

@@ -106,7 +106,6 @@ export default {
 					'auth_type',
 					'max_amount',
 					'expires_on',
-					'is_default',
 					'upi_vpa',
 					'creation',
 				],
@@ -142,16 +141,6 @@ export default {
 					},
 					{
 						label: '',
-						fieldname: 'is_default',
-						type: 'Component',
-						component({ row }) {
-							if (row.is_default) {
-								return h(Badge, { theme: 'blue' }, () => 'Default');
-							}
-						},
-					},
-					{
-						label: '',
 						fieldname: 'creation',
 						type: 'Timestamp',
 						align: 'right',
@@ -159,26 +148,6 @@ export default {
 				],
 				rowActions: ({ listResource, row }) => {
 					return [
-						{
-							label: 'Set as default',
-							onClick: () => {
-								toast.promise(
-									listResource.runDocMethod.submit({
-										method: 'set_default',
-										name: row.name,
-									}),
-									{
-										loading: 'Setting as default...',
-										success: () => {
-											this.$team.reload();
-											return 'Default mandate set';
-										},
-										error: 'Could not set default mandate',
-									},
-								);
-							},
-							condition: () => !row.is_default && row.status === 'Active',
-						},
 						{
 							label: 'Cancel',
 							onClick: () => {

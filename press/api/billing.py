@@ -684,8 +684,6 @@ def create_razorpay_mandate(max_amount: int, auth_type: str = "upi") -> dict:
 	team = get_current_team()
 	max_amount = int(max_amount)
 	team_doc = frappe.get_doc("Team", team)
-	if not team_doc.upi_autopay_enabled:
-		frappe.throw(_("UPI Autopay is not enabled for your account"))
 	if team_doc.currency != "INR":
 		frappe.throw(_("UPI Autopay is only available for currency INR"))
 	# Check if an active or pending mandate already exists
@@ -740,18 +738,6 @@ def get_razorpay_mandates() -> list[dict]:
 		],
 		order_by="creation desc",
 	)
-
-
-@frappe.whitelist()
-@role_guard.api("billing")
-def set_razorpay_mandate_as_default(mandate_name: str):
-	"""Set a Razorpay mandate as the default for the team"""
-	team = get_current_team()
-
-	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
-	mandate.set_default()
-
-	return {"success": True}
 
 
 @frappe.whitelist()
