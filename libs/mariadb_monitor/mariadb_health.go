@@ -1,15 +1,85 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"strconv"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
+
+// externalHealthResponse mirrors the JSON returned by the press API endpoint.
+type externalHealthResponse struct {
+	Message struct {
+		AppServerHealthy bool `json:"app_server_healthy"`
+		DBServerHealthy  bool `json:"db_server_healthy"`
+	} `json:"message"`
+}
+
+const externalHealthCheckTimeout = 90 * time.Second
+
+// checkExternalDBHealth queries an external API for a second opinion on db
+// health. It returns (dbUnhealthy, ok). ok is false when the result should be
+// ignored (disabled, missing config, transport error/timeout, non-200 response,
+// malformed body, or app server reported unhealthy). The default http.Client
+// follows 301/302/303/307/308 redirects automatically.
+func checkExternalDBHealth(cfg Config) (dbUnhealthy bool, ok bool) {
+	if !cfg.ExternalHealthCheckEnabled {
+		return false, false
+	}
+	if cfg.ExternalHealthCheckURL == "" || cfg.ServerName == "" || cfg.ExternalHealthCheckToken == "" {
+		return false, false
+	}
+
+	body, err := json.Marshal(map[string]string{
+		"name":  cfg.ServerName,
+		"token": cfg.ExternalHealthCheckToken,
+	})
+	if err != nil {
+		return false, false
+	}
+
+	req, err := http.NewRequest(http.MethodPost, cfg.ExternalHealthCheckURL, bytes.NewReader(body))
+	if err != nil {
+		slog.Warn("external healthcheck: building request failed", "error", err)
+		return false, false
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{Timeout: externalHealthCheckTimeout}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		slog.Warn("external healthcheck: request failed", "error", err)
+		return false, false
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		slog.Warn("external healthcheck: non-200 response, ignoring", "status", resp.StatusCode)
+		return false, false
+	}
+
+	var out externalHealthResponse
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		slog.Warn("external healthcheck: decode failed", "error", err)
+		return false, false
+	}
+
+	if !out.Message.AppServerHealthy {
+		slog.Info("external healthcheck: app server unhealthy, ignoring db verdict")
+		return false, false
+	}
+
+	return !out.Message.DBServerHealthy, true
+}
 
 type DBHealth struct {
 	Reachable    bool

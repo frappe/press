@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	configDir  = "/etc/mariadb-monitor"
 	configFile = "/etc/mariadb-monitor/config.yaml"
 	myCnfPath  = "/root/.my.cnf"
 )
@@ -50,10 +49,18 @@ type Config struct {
 	CoredumpOnUnhealthy        bool          `yaml:"coredump_on_unhealthy"`
 	CoredumpOnFrequentTriggers bool          `yaml:"coredump_on_frequent_triggers"`
 	CoredumpFrequentThreshold  int           `yaml:"coredump_frequent_threshold"`
+<<<<<<< HEAD
 	CoredumpPreemptive         bool          `yaml:"coredump_preemptive"`
 	CoredumpPreemptiveAfter    int           `yaml:"coredump_preemptive_after"`
 	CoredumpPreemptiveWindow   time.Duration `yaml:"coredump_preemptive_window"`
 	CoredumpCooldown           time.Duration `yaml:"coredump_cooldown"`
+=======
+
+	ExternalHealthCheckEnabled bool   `yaml:"external_healthcheck_enabled"`
+	ServerName                 string `yaml:"server_name"`
+	ExternalHealthCheckURL     string `yaml:"external_health_check_url"`
+	ExternalHealthCheckToken   string `yaml:"external_health_check_token"`
+>>>>>>> 73ddc0842 (feat(mariadb-monitor): Ask press to check db health via app server)
 }
 
 type MySQLCredentials struct {
@@ -92,10 +99,18 @@ func DefaultConfig() Config {
 		CoredumpOnUnhealthy:        true,
 		CoredumpOnFrequentTriggers: true,
 		CoredumpFrequentThreshold:  3,
+<<<<<<< HEAD
 		CoredumpPreemptive:         true,
 		CoredumpPreemptiveAfter:    6,
 		CoredumpPreemptiveWindow:   5 * time.Minute,
 		CoredumpCooldown:           5 * time.Minute,
+=======
+
+		ExternalHealthCheckEnabled: false,
+		ServerName:                 "",
+		ExternalHealthCheckURL:     "",
+		ExternalHealthCheckToken:   "",
+>>>>>>> 73ddc0842 (feat(mariadb-monitor): Ask press to check db health via app server)
 	}
 }
 
@@ -363,6 +378,22 @@ coredump_cooldown: %s
 		cfg.CoredumpPreemptiveAfter,
 		cfg.CoredumpPreemptiveWindow,
 		cfg.CoredumpCooldown,
+	)
+
+	content += fmt.Sprintf(`
+# External health check (optional, disabled by default). When local check
+# passes, this endpoint is queried for a second opinion. If the external API
+# reports the app server as healthy but the db server as unhealthy, recovery
+# proceeds. Any non-200 response, transport error, or timeout is ignored.
+external_healthcheck_enabled: %t
+server_name: %q
+external_health_check_url: %q
+external_health_check_token: %q
+`,
+		cfg.ExternalHealthCheckEnabled,
+		cfg.ServerName,
+		cfg.ExternalHealthCheckURL,
+		cfg.ExternalHealthCheckToken,
 	)
 
 	return os.WriteFile(configFile, []byte(content), 0644)
