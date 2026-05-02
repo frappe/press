@@ -2688,6 +2688,7 @@ class Server(BaseServer):
 		cluster: DF.Link | None
 		communication_infos: DF.Table[CommunicationInfo]
 		database_server: DF.Link | None
+		db_healthcheck_token: DF.Password | None
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
@@ -2765,7 +2766,12 @@ class Server(BaseServer):
 	@role_guard.action()
 	def validate(self):
 		super().validate()
+		self.set_db_healthcheck_token()
 		self.validate_managed_database_service()
+
+	def set_db_healthcheck_token(self):
+		if not self.db_healthcheck_token:
+			self.db_healthcheck_token = frappe.generate_hash(length=64)
 
 	def validate_managed_database_service(self):
 		if getattr(self, "is_managed_database", 0):

@@ -66,6 +66,7 @@
   "column_break_jdiy",
   "self_hosted_mariadb_root_password",
   "managed_database_service",
+  "db_healthcheck_token",
   "replication",
   "is_primary",
   "is_replication_setup",
@@ -753,6 +754,11 @@
    "fieldname": "enable_on_prem_failover_support",
    "fieldtype": "Check",
    "label": "Enable On-Prem Failover Support"
+  },
+  {
+   "fieldname": "db_healthcheck_token",
+   "fieldtype": "Password",
+   "label": "DB Healthcheck Token"
   }
  ],
  "links": [
@@ -765,7 +771,7 @@
    "link_fieldname": "app_server"
   }
  ],
- "modified": "2026-04-23 12:34:18.205971",
+ "modified": "2026-05-02 14:54:47.079941",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
