@@ -15,6 +15,12 @@ frappe.ui.form.on('Proxy Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Setup Agent Auth'),
+				'setup_agent_auth',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Install Filebeat'),
 				'install_filebeat',
 				true,
