@@ -4,18 +4,28 @@
 			v-for="banner in localBanners"
 			:key="banner.name"
 			:class="disableLastChildBottomMargin ? `mb-5 last:mb-0` : `mb-5`"
-			:title="`<b>${banner.title}:</b> ${banner.message}`"
+			:title="getAlertTitle(banner.title, banner.message)"
 			:type="banner.type.toLowerCase()"
 			:isDismissible="banner.is_dismissible"
 			@dismissBanner="closeBanner(banner.name)"
 		>
-			<template v-if="!!banner.help_url">
+			<template
+				v-if="
+					!!banner.help_url ||
+					(banner.has_action && banner.action_label && banner.action_script)
+				"
+			>
 				<Button
-					class="ml-auto flex flex-row items-center gap-1"
-					@click="openHelp(banner.help_url)"
+					size="sm"
+					class="ml-auto flex flex-row items-center gap-x-1"
+					@click="
+						banner.has_action
+							? exec(banner.action_script)
+							: openHelp(banner.help_url)
+					"
 					variant="outline"
 				>
-					Open help
+					{{ banner.has_action ? banner.action_label : 'Open help' }}
 					<lucide-external-link class="inline h-4 w-3 pb-0.5" />
 				</Button>
 			</template>
@@ -71,6 +81,12 @@ export default {
 		},
 	},
 	methods: {
+		getAlertTitle(bannerTitle, bannerMessage) {
+			let str = '';
+			if (bannerTitle) str = str.concat(`<b>${bannerTitle}</b>: `);
+			if (bannerMessage) str = str.concat(bannerMessage);
+			return str;
+		},
 		closeBanner(bannerName) {
 			const banner = this.localBanners.find((b) => b.name === bannerName);
 			if (!banner) return;
@@ -93,6 +109,13 @@ export default {
 		},
 		openHelp(url) {
 			window.open(url, '_blank');
+		},
+		exec(action_script) {
+			const actionFn = new Function(
+				'_this',
+				action_script + '\nonClickAction(_this)',
+			);
+			actionFn(this);
 		},
 		trimOldDismissedBanners() {
 			// Remove dismissed banners older than 60 days from local storage

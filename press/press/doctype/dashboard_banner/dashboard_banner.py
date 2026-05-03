@@ -23,8 +23,8 @@ class DashboardBanner(Document):
 		from press.press.doctype.dashboard_banner_site.dashboard_banner_site import DashboardBannerSite
 		from press.press.doctype.dashboard_banner_team.dashboard_banner_team import DashboardBannerTeam
 
-		action: DF.Data | None
 		action_label: DF.Data | None
+		action_script: DF.Code | None
 		cluster: DF.TableMultiSelect[DashboardBannerCluster]
 		enabled: DF.Check
 		has_action: DF.Check

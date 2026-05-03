@@ -1429,13 +1429,19 @@ def get_user_banners():
 		if name not in banners:
 			banners[name] = {
 				"name": name,
-				"title": row.get("title"),
 				"type": row.get("type"),
+				"title": row.get("title"),
+				"message": row.get("message"),
+				"help_url": row.get("help_url"),
+				"has_action": row.get("has_action"),
+				"action_label": row.get("action_label"),
+				"action_script": row.get("action_script"),
 				"type_of_scope": row.get("type_of_scope"),
+				"is_dismissible": row.get("is_dismissible"),
 				"is_global": row.get("is_global"),
+				"cluster": [],
 				"server": [],
 				"site": [],
-				"cluster": [],
 			}
 
 		if row.get("server") and row["server"] not in banners[name]["server"]:

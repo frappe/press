@@ -20,7 +20,7 @@
   "column_break_onof",
   "has_action",
   "action_label",
-  "action",
+  "action_script",
   "column_break_adad",
   "is_dismissible",
   "scope_section",
@@ -112,16 +112,10 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:!doc.has_action",
    "fieldname": "help_url",
    "fieldtype": "Data",
    "label": "Help URL"
-  },
-  {
-   "depends_on": "eval:!!doc.has_action",
-   "fieldname": "action",
-   "fieldtype": "Data",
-   "label": "Action Endpoint",
-   "mandatory_depends_on": "eval:!!doc.has_action"
   },
   {
    "default": "0",
@@ -219,11 +213,20 @@
    "label": "Cluster",
    "mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Cluster\"",
    "options": "Dashboard Banner Cluster"
+  },
+  {
+   "default": "function onClickAction(_this) {\n  // _this = { $getDoc, $getDocumentResource, $getListResource, $getResource, $refetchResource }\n  window.open(\"https://docs.frappe.io\", '_blank');\n}",
+   "depends_on": "eval:!!doc.has_action",
+   "fieldname": "action_script",
+   "fieldtype": "Code",
+   "label": "Action Script",
+   "mandatory_depends_on": "eval:!!doc.has_action",
+   "options": "JS"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-03 23:22:04.256855",
+ "modified": "2026-05-04 02:58:17.388108",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Dashboard Banner",
