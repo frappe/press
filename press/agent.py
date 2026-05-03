@@ -1037,8 +1037,6 @@ class Agent:
 			response = self._make_req(method, path, data, files, agent_job_id)
 			json_response = response.json()
 
-			self.extract_and_verify_token(response, json_response, method, path)
-
 			if raises and response.status_code >= 400:
 				output = "\n\n".join([json_response.get("output", ""), json_response.get("traceback", "")])
 				if output == "\n\n":
@@ -1109,8 +1107,6 @@ class Agent:
 		timeout = timeout or (10, 30)
 		response = requests.request(method, url, headers=headers, json=data, timeout=timeout)
 		json_response = response.json()
-
-		self.extract_and_verify_token(response, json_response, method, path)
 
 		if raises:
 			response.raise_for_status()
