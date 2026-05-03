@@ -2,6 +2,7 @@
 	<div v-if="localBanners.length > 0" :class="containerClass ?? ``">
 		<AlertBanner
 			v-for="banner in localBanners"
+			v-if="banner.title || banner.message"
 			:key="banner.name"
 			:class="disableLastChildBottomMargin ? `mb-5 last:mb-0` : `mb-5`"
 			:title="getAlertTitle(banner.title, banner.message)"
@@ -83,7 +84,8 @@ export default {
 	methods: {
 		getAlertTitle(bannerTitle, bannerMessage) {
 			let str = '';
-			if (bannerTitle) str = str.concat(`<b>${bannerTitle}</b>: `);
+			if (bannerTitle) str = str.concat(`<b>${bannerTitle}</b>`);
+			if (!!bannerTitle && !!bannerMessage) str = str.concat(': ');
 			if (bannerMessage) str = str.concat(bannerMessage);
 			return str;
 		},
