@@ -319,6 +319,20 @@ class CloneOutputParser:
 
 		return self._parse_app_output_map(output)
 
+	def _ensure_previous_steps_are_updated(
+		self, non_terminal_clone_steps: list[DeployCandidateBuildStep], failed_step: DeployCandidateBuildStep
+	):
+		"""In case a step fails and we haven't update previous steps states.
+		Due to cache publish issues ensure we mark them as success before marking the failed step as failure.
+		"""
+		failed_index = non_terminal_clone_steps.index(failed_step)
+		for step in non_terminal_clone_steps[:failed_index]:
+			# We know for sure these steps succeeded since the job continued
+			# However since they were quick there is a chance cache output does not exist yet.
+			if step.status != "Success":
+				step.status = "Success"
+				step.save()
+
 	def _update_clone_steps(
 		self, non_terminal_clone_steps: list[DeployCandidateBuildStep], app_output_map: dict[str, str]
 	) -> bool:
@@ -336,6 +350,7 @@ class CloneOutputParser:
 			step.save()
 
 			if step.status == "Failure":
+				self._ensure_previous_steps_are_updated(non_terminal_clone_steps, failed_step=step)
 				clone_failed = True
 
 		return clone_failed
