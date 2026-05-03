@@ -13,6 +13,7 @@
     - role: mariadb_memory_allocator
     - role: nginx
     - role: agent
+    - role: setup_agent_auth
     - role: node_exporter
     - role: mysqld_exporter
     - role: deadlock_logger

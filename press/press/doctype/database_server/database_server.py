@@ -528,10 +528,6 @@ class DatabaseServer(BaseServer):
 			self._restart_mariadb()
 
 	@frappe.whitelist()
-	def setup_agent_auth(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_auth", queue="long", timeout=1200)
-
-	@frappe.whitelist()
 	def restart_mariadb(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_restart_mariadb")
 
@@ -829,6 +825,7 @@ class DatabaseServer(BaseServer):
 					"monitoring_password": config.monitoring_password,
 					"log_server": config.log_server,
 					"kibana_password": config.kibana_password,
+					"private_key": config.private_key,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
 					"allocator": self.memory_allocator.lower(),
@@ -848,6 +845,7 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.is_agent_auth_setup = 1
 				self.process_hybrid_server_setup()
 				if self.provider == "DigitalOcean":
 					# Adjusting docker permissions
@@ -883,6 +881,7 @@ class DatabaseServer(BaseServer):
 				),
 				log_server=log_server,
 				kibana_password=kibana_password,
+				private_key=self._generate_and_activate_key(),
 			)
 		)
 

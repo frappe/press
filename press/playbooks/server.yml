@@ -10,6 +10,7 @@
     - role: user
     - role: nginx
     - role: agent
+    - role: setup_agent_auth
     - role: mount
     - role: bench
     - role: docker

@@ -128,6 +128,8 @@ class ProxyServer(BaseServer):
 		else:
 			kibana_password = None
 
+		private_key = self._generate_and_activate_key()
+
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_proxy.yml" if getattr(self, "is_self_hosted", False) else "proxy.yml",
@@ -147,6 +149,7 @@ class ProxyServer(BaseServer):
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"press_url": frappe.utils.get_url(),
+					"private_key": private_key,
 				},
 			)
 			play = ansible.run()
@@ -154,6 +157,7 @@ class ProxyServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.is_agent_auth_setup = 1
 			else:
 				self.status = "Broken"
 		except Exception:
@@ -177,10 +181,6 @@ class ProxyServer(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Exporters Install Exception", server=self.as_dict())
-
-	@frappe.whitelist()
-	def setup_agent_auth(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_auth", queue="long", timeout=1200)
 
 	@frappe.whitelist()
 	def setup_ssh_proxy(self):

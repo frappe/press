@@ -3128,6 +3128,7 @@ class Server(BaseServer):
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
+		private_key = self._generate_and_activate_key()
 
 		# If database server is set, then define db port under configuration
 		db_port = (
@@ -3151,6 +3152,7 @@ class Server(BaseServer):
 					"agent_repository_url": agent_repository_url,
 					"agent_branch": agent_branch,
 					"agent_sentry_dsn": agent_sentry_dsn,
+					"private_key": private_key,
 					"monitoring_password": self.get_monitoring_password(),
 					"log_server": log_server,
 					"kibana_password": kibana_password,
@@ -3171,6 +3173,7 @@ class Server(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.is_agent_auth_setup = 1
 				if self.provider == "DigitalOcean":
 					# To adjust docker permissions
 					self.reboot()
