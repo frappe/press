@@ -1927,6 +1927,10 @@ class BaseServer(Document, TagHelpers):
 
 		return private_key_str
 
+	@frappe.whitelist()
+	def setup_agent_auth(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_auth", queue="long", timeout=1200)
+
 	def _setup_agent_auth(self):
 		try:
 			private_key = self._generate_and_activate_key()
@@ -3236,10 +3240,6 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Agent Sentry Setup Exception", server=self.as_dict())
-
-	@frappe.whitelist()
-	def setup_agent_auth(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_auth", queue="long", timeout=1200)
 
 	@frappe.whitelist()
 	def whitelist_ipaddress(self):
