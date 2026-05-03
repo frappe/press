@@ -38,6 +38,7 @@ from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	CloneOutputParser,
 	DockerBuildOutputParser,
 	UploadStepUpdater,
+	ValidationOutputParser,
 )
 from press.press.doctype.deploy_candidate.utils import (
 	get_arm_build_server_with_least_active_builds,
@@ -574,6 +575,7 @@ class DeployCandidateBuild(Document):
 
 	def _set_output_parsers(self):
 		self.clone_output_parser = CloneOutputParser(self)
+		self.validation_output_parser = ValidationOutputParser(self)
 		self.build_output_parser = DockerBuildOutputParser(self)
 		self.upload_step_updater = UploadStepUpdater(self)
 
@@ -844,6 +846,15 @@ class DeployCandidateBuild(Document):
 		)
 
 		if not clone_failed:
+			try:
+				self.validation_output_parser.parse_validation_output_and_update_step(
+					job,
+				)
+			except Exception as e:
+				self.handle_build_failure(exc=e, job=job)
+				return  # Handle this just like we handled when working on press directly
+
+		if not clone_failed:
 			if output := get_remote_step_output(
 				"build",
 				output_data,
@@ -1092,6 +1103,7 @@ class DeployCandidateBuild(Document):
 		dockerfile = self._generate_dockerfile()
 		encoded_dockerfile = self.encode_dockerfile(dockerfile)
 		settings = self._fetch_registry_settings()
+		dependencies = {d.dependency: d.version for d in self.candidate.dependencies}
 
 		build_parameters = {
 			# "filename": context_filename,
@@ -1126,6 +1138,7 @@ class DeployCandidateBuild(Document):
 				"custom_workers_group": self.candidate.custom_workers_group,
 				"is_code_server_enabled": False,  # We no longer seem to use this since code server runs on press
 				"is_ssh_enabled": False,  # Set by bench when creating container
+				"dependencies": dependencies,
 			},
 		}
 		if self.platform == "arm64":
