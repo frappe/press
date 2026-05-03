@@ -36,10 +36,13 @@ export default {
 			validator: (value) => !value || ['Site', 'Server'].includes(value),
 		},
 		ctx_name: {
-			type: String,
 			required: false,
 			validator: (value) =>
-				!value || (typeof value === 'string' && value.length > 0),
+				!value ||
+				(typeof value === 'string' && value.length > 0) ||
+				(Array.isArray(value) &&
+					value.every((el) => typeof el === 'string') &&
+					value.length > 0),
 		},
 		containerClass: {
 			type: String,
@@ -58,6 +61,15 @@ export default {
 			localDismissedBanners: {},
 		};
 	},
+	computed: {
+		ctxNames() {
+			return Array.isArray(this.ctx_name)
+				? this.ctx_name
+				: this.ctx_name
+					? [this.ctx_name]
+					: [];
+		},
+	},
 	methods: {
 		closeBanner(bannerName) {
 			const banner = this.localBanners.find((b) => b.name === bannerName);
@@ -67,7 +79,7 @@ export default {
 				(b) => b.name !== bannerName,
 			);
 
-			if (banner.is_global) {
+			if (banner.is_global || banner.type_of_scope == 'Cluster') {
 				// Persist dismissal to local storage
 				this.localDismissedBanners[bannerName] = Date.now();
 				localStorage.setItem(
@@ -83,15 +95,15 @@ export default {
 			window.open(url, '_blank');
 		},
 		trimOldDismissedBanners() {
-			// Remove dismissed banners older than 30 days from local storage
-			const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+			// Remove dismissed banners older than 60 days from local storage
+			const SIXTY_DAYS_IN_MS = 60 * 24 * 60 * 60 * 1000;
 			const now = Date.now();
 			let diff = false;
 
 			for (const [bannerName, timestamp] of Object.entries(
 				this.localDismissedBanners,
 			)) {
-				if (now - timestamp > THIRTY_DAYS) {
+				if (now - timestamp > SIXTY_DAYS_IN_MS) {
 					delete this.localDismissedBanners[bannerName];
 					diff = true;
 				}
@@ -102,6 +114,34 @@ export default {
 					'dismissed_banners',
 					JSON.stringify(this.localDismissedBanners),
 				);
+			}
+		},
+		isRelevantBanner(banner) {
+			if (banner.is_global) return true;
+
+			const ctxMatches = (list) =>
+				Array.isArray(list) &&
+				list.some((item) => this.ctxNames.includes(item));
+
+			switch (this.ctx_type) {
+				case 'Server':
+					return (
+						(banner.type_of_scope === 'Server' && ctxMatches(banner.server)) ||
+						(banner.type_of_scope === 'Cluster' && ctxMatches(banner.cluster))
+					);
+
+				case 'Site':
+					return (
+						(banner.type_of_scope === 'Site' && ctxMatches(banner.site)) ||
+						(banner.type_of_scope === 'Server' && ctxMatches(banner.server)) ||
+						(banner.type_of_scope === 'Cluster' && ctxMatches(banner.cluster))
+					);
+
+				case 'List Page':
+					return ['Team', 'Cluster', 'Server'].includes(banner.type_of_scope);
+
+				default:
+					return true;
 			}
 		},
 	},
@@ -126,24 +166,9 @@ export default {
 
 					this.trimOldDismissedBanners();
 
-					this.localBanners = (
-						this.ctx_type === 'Server'
-							? data.filter(
-									(banner) =>
-										banner.server === this.ctx_name || banner.is_global,
-								)
-							: this.ctx_type === 'Site'
-								? data.filter(
-										(banner) =>
-											banner.site === this.ctx_name || banner.is_global,
-									)
-								: this.ctx_type === 'List Page'
-									? data.filter(
-											(banner) =>
-												banner.type_of_scope === 'Team' || banner.is_global,
-										)
-									: data
-					).filter((banner) => !(banner.name in this.localDismissedBanners));
+					this.localBanners = data
+						.filter(this.isRelevantBanner)
+						.filter((banner) => !(banner.name in this.localDismissedBanners));
 				},
 			};
 		},

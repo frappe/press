@@ -31,6 +31,7 @@
   "team",
   "server",
   "site",
+  "cluster",
   "dismissals_section",
   "user_dismissals"
  ],
@@ -90,21 +91,21 @@
   },
   {
    "depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Server\"",
-   "description": "Recipients are users with Sites on this Server",
+   "description": "Recipients are users with Sites on this Server(s)",
    "fieldname": "server",
-   "fieldtype": "Link",
+   "fieldtype": "Table MultiSelect",
    "label": "Server",
    "mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Server\"",
-   "options": "Server"
+   "options": "Dashboard Banner Server"
   },
   {
    "depends_on": "eval:!doc.is_global & doc.type_of_scope == \"Site\"",
-   "description": "Recipients are users with this Site",
+   "description": "Recipients are users with this Site(s)",
    "fieldname": "site",
-   "fieldtype": "Link",
+   "fieldtype": "Table MultiSelect",
    "label": "Site",
    "mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Site\"",
-   "options": "Site"
+   "options": "Dashboard Banner Site"
   },
   {
    "fieldname": "column_break_fits",
@@ -175,7 +176,7 @@
    "in_standard_filter": 1,
    "label": "Type of scope",
    "mandatory_depends_on": "eval:!doc.is_global",
-   "options": "Team\nServer\nSite"
+   "options": "Team\nServer\nSite\nCluster"
   },
   {
    "fieldname": "column_break_udzz",
@@ -209,11 +210,20 @@
    "label": "Scheduled End Time",
    "mandatory_depends_on": "eval:!!doc.is_scheduled",
    "search_index": 1
+  },
+  {
+   "depends_on": "eval:!doc.is_global & doc.type_of_scope == \"Cluster\"",
+   "description": "Recipients are users with resources in this Cluster(s)",
+   "fieldname": "cluster",
+   "fieldtype": "Table MultiSelect",
+   "label": "Cluster",
+   "mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Cluster\"",
+   "options": "Dashboard Banner Cluster"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-14 13:20:40.242637",
+ "modified": "2026-05-03 23:22:04.256855",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Dashboard Banner",
