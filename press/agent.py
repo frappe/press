@@ -952,10 +952,10 @@ class Agent:
 			return requests.request(method, url, headers=headers, files=file_objects, verify=verify)
 		return requests.request(method, url, headers=headers, json=data, verify=verify, timeout=(10, 30))
 
-	def _verify_response_token(self, token: dict, payload, method: str, path: str):
+	def _verify_request_token(self, token: dict, payload, method: str, path: str):
 		try:
 			timestamp = int(token["timestamp"])
-			nonce = token["nonce"]
+			nonce = str(token["nonce"])
 			signature_b64 = token["signature"]
 		except KeyError as err:
 			raise ValueError("Invalid token structure") from err
@@ -977,8 +977,6 @@ class Agent:
 			raise ValueError("No public key registered")
 
 		public_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(agent.public_key))
-
-		path = f"/{path.lstrip('/')}"
 
 		# reconstruct signed message
 		message = json.dumps(
@@ -1011,18 +1009,16 @@ class Agent:
 
 		return True
 
-	def extract_and_verify_token(self, response, json_response, method, path):
-		token_str = response.headers.get("X-Agent-Token")
-
-		if not token_str:
-			raise ValueError("Unsigned response from agent")
+	def extract_and_verify_token(self, token, json_response, method, path):
+		if not token:
+			raise ValueError("Unsigned request from agent")
 
 		try:
-			token = json.loads(base64.b64decode(token_str))
+			token = json.loads(base64.b64decode(token))
 		except Exception as err:
 			raise ValueError("Invalid token encoding") from err
 
-		self._verify_response_token(
+		self._verify_request_token(
 			token=token,
 			payload=json_response,
 			method=method,

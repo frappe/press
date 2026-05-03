@@ -8,6 +8,7 @@ import frappe
 from frappe.rate_limiter import rate_limit
 
 from press.agent import Agent
+from press.api.agent_auth import verify_agent
 from press.press.doctype.agent_job.agent_job import handle_polled_job
 from press.utils import log_error
 
@@ -112,6 +113,8 @@ def callback(job_id: str | None = None):
 	# Request origin not authorized to update job status.
 	if not server:
 		frappe.throw("Not permitted", frappe.ValidationError)
+
+	verify_agent(server)
 
 	job = verify_job_id(server, job_id)
 	if not job:

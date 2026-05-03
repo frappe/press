@@ -13,6 +13,7 @@ from frappe.utils import convert_utc_to_timezone, flt
 from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
+from press.api.agent_auth import verify_agent
 from press.api.analytics import auto_timespan_timegrain, get_rounded_boundaries, get_rounded_boundary
 from press.api.bench import all as all_benches
 from press.api.site import protected
@@ -974,20 +975,16 @@ def rename(name, title):
 
 
 @frappe.whitelist(allow_guest=True)
-def benches_are_idle(server: str, access_token: str) -> None:
+def benches_are_idle(server: str) -> None:
 	"""Shut down the secondary server if all benches are idle.
 
 	This function is only triggered by secondary servers:
 	https://github.com/frappe/agent/pull/346/files#diff-7355d9c50cadfa3f4c74fc77a4ad8ab08e4da8f6c3326bbf9b0de0f00a0aa0daR87-R93
 	"""
-	from passlib.hash import pbkdf2_sha256 as pbkdf2
 
-	server_doc = frappe.get_cached_doc("Server", server)
-	agent_password = server_doc.get_password("agent_password")
 	current_user = frappe.session.user
 
-	if not pbkdf2.verify(agent_password, access_token):
-		return
+	verify_agent(server)
 
 	primary_server, is_server_scaled_up = frappe.db.get_value(
 		"Server", {"secondary_server": server}, ["name", "scaled_up"]
