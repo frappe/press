@@ -227,7 +227,52 @@ def get_command(name: str) -> str:
 	return "\n".join([p for p in splits if len(p)])
 
 
-class CloneOutputParser:
+class StepMixin:
+	def _get_agent_step(
+		self,
+		job: AgentJob,
+		step_name: str,
+		field: list[str] | str | None = None,
+	) -> str | None:
+		"""Gets the name of the clone step for the given job, if it exists."""
+		step = frappe.db.get_value(
+			"Agent Job Step",
+			filters={"agent_job": job.name, "step_name": step_name},
+			fieldname=field or "name",
+		)
+		if not step:
+			return None
+
+		return step
+
+
+class ValidationOutputParser(StepMixin):
+	"""
+	Parses the validation output generally going to be used for pre-build validation failure parsing
+	"""
+
+	def __init__(self, dcb: "DeployCandidateBuild") -> None:
+		self.dcb = dcb
+
+	def parse_validation_output_and_update_step(self, job: AgentJob) -> bool:
+		"""Only updates the output since validation is already a step and handles it's state via agent job"""
+		if job.status != "Failure":  # Still running or succeeded, no validation failure
+			return False
+
+		pre_build_step = self.dcb.get_step("validate", "pre-build")
+		exception_info = self._get_agent_step(job, "Run Validations", "data")
+		if not exception_info:
+			return False
+
+		# Mimic the exception raising logic for deploy notifications to gracefully take over and handle
+		# The output communication and parsing of the build failure.
+		exception_info = json.loads(exception_info)
+		exc = Exception(*list(exception_info.values()))
+		pre_build_step.output = str(exc)
+		raise exc
+
+
+class CloneOutputParser(StepMixin):
 	"""
 	Parses `git clone` output and updates Deploy Candidate Clone Steps.
 
@@ -266,23 +311,12 @@ class CloneOutputParser:
 			return None
 		return self._parse_app_output_map([job.traceback])
 
-	def _get_clone_step(self, job: AgentJob) -> str | None:
-		"""Gets the name of the clone step for the given job, if it exists."""
-		step = frappe.db.get_value(
-			"Agent Job Step",
-			filters={"agent_job": job.name, "step_name": "Clone Repositories"},
-		)
-		if not step:
-			return None
-
-		return step
-
 	def _get_output_from_cache(self, job: AgentJob) -> dict[str, str] | None:
 		"""
 		Fetch live output from cache during an ongoing clone job.
 		Falls back to early failure parsing if no cache output found.
 		"""
-		clone_step = self._get_clone_step(job)
+		clone_step = self._get_agent_step(job, "Clone Repositories")
 		if not clone_step:
 			return None
 
@@ -304,7 +338,7 @@ class CloneOutputParser:
 
 	def _get_output_from_db(self, job: AgentJob) -> dict[str, str] | None:
 		"""Get job output from DB for terminal clone steps"""
-		clone_step = self._get_clone_step(job)
+		clone_step = self._get_agent_step(job, "Clone Repositories")
 		if not clone_step:
 			return None
 
@@ -333,6 +367,20 @@ class CloneOutputParser:
 				step.status = "Success"
 				step.save()
 
+	def _mark_next_step_as_running(self, step: DeployCandidateBuildStep):
+		"""Mark the next step as running since this step has completed successfully."""
+		# Need some manual intervention here since agent runs all clone steps in one go
+		next_step_index = self.dcb.build_steps.index(step) + 1
+		if next_step_index >= len(self.dcb.build_steps):
+			return
+
+		next_step = self.dcb.build_steps[next_step_index]
+		if next_step.status != "Pending":
+			return
+
+		next_step.status = "Running"
+		next_step.save()
+
 	def _update_clone_steps(
 		self, non_terminal_clone_steps: list[DeployCandidateBuildStep], app_output_map: dict[str, str]
 	) -> bool:
@@ -352,6 +400,9 @@ class CloneOutputParser:
 			if step.status == "Failure":
 				self._ensure_previous_steps_are_updated(non_terminal_clone_steps, failed_step=step)
 				clone_failed = True
+
+			if not clone_failed and step.status == "Success":
+				self._mark_next_step_as_running(step)
 
 		return clone_failed
 
