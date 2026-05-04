@@ -51,6 +51,7 @@ const navigation = computed(() => {
 
 		{
 			customComponent: SearchItem,
+			condition: onboardingComplete,
 		},
 
 		{
