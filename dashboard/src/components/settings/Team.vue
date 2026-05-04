@@ -10,6 +10,7 @@ import ObjectList from '../ObjectList.vue';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
 import { getToastErrorMessage } from '../../utils/toast';
 import TeamInviteDialog from './TeamInviteDialog.vue';
+import session from '@/data/session';
 import { useUserStore } from '@/stores/user';
 
 const team = getTeam();
@@ -174,6 +175,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 					},
 				],
 				rowActions: ({ row }) => {
+					if (!session.isTeamAdmin) return [];
 					if (row.email === user.email) return [];
 					return [
 						{
