@@ -7,7 +7,7 @@
 			:disable-last-child-bottom-margin="true"
 			container-class="col-span-1 lg:col-span-2"
 			ctx_type="Site"
-			:ctx_name="$site?.doc?.name"
+			:ctx_name="[$site?.doc?.name, $site?.doc.server, $site?.doc?.cluster]"
 		/>
 		<AlertBanner
 			v-if="$site?.doc?.creation_failed"

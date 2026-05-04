@@ -1,5 +1,6 @@
 ---
 import type { ImageMetadata } from 'astro';
+const baseurl = import.meta.env.BASE_URL;
 
 type Image = {
 	src: string | ImageMetadata;
@@ -66,8 +67,10 @@ function normalizeImageUrl(image: string | ImageMetadata) {
 ---
 
 <!-- Page Metadata -->
+<title>{title}</title>
 <link rel="canonical" href={canonicalURL} />
 <meta name="description" content={description} />
+<link rel="icon" href={`${baseurl}/favicon.ico`} />
 
 <!-- Open Graph Tags -->
 <meta property="og:title" content={og.title} />

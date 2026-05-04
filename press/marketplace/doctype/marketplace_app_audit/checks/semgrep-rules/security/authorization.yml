@@ -25,6 +25,7 @@ rules:
     marketplace_check_id: security_frappe_setuser
     marketplace_check_name: Frappe Set User
     marketplace_category: Security
+    is_internal_only: true
     remediation: |
       Detected the use of functions that can be dangerous if used incorrectly.
       This code should be manually audited by review/security team.

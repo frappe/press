@@ -33,7 +33,7 @@ rules:
       Exception object passed directly to `.format()` on a translated string.
       Use `str($ERR)` to convert the exception to a plain string first.
   languages: [python]
-  severity: ERROR
+  severity: HIGH
   paths:
     exclude:
       - "**/test_*.py"
