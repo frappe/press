@@ -13,7 +13,7 @@ const email = ref('');
 	<Dialog
 		v-model="open"
 		:options="{
-			title: 'Invite team members',
+			title: 'Invite users',
 			actions: [
 				{
 					label: 'Invite',

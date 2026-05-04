@@ -178,7 +178,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 							condition: () => row.status === 'Pending',
 							onClick: () => {
 								confirmDialog({
-									title: 'Resend Invitation',
+									title: 'Resend invitation',
 									message: `Are you sure you want to resend the invitation to <b>${row.email}</b>?`,
 									onSuccess: ({ hide }) => {
 										progress(
@@ -198,7 +198,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 							condition: () => row.status === 'Pending',
 							onClick: () => {
 								confirmDialog({
-									title: 'Cancel Invitation',
+									title: 'Cancel invitation',
 									message: `Are you sure you want to cancel the invitation for <b>${row.email}</b>?`,
 									onSuccess: ({ hide }) => {
 										progress(
@@ -213,12 +213,12 @@ const progress = (promise, msgLoading, msgSuccess) => {
 							},
 						},
 						{
-							label: 'Remove User',
+							label: 'Remove Member',
 							icon: 'user-minus',
 							condition: () => row.status === 'Active',
 							onClick() {
 								confirmDialog({
-									title: 'Remove User',
+									title: 'Remove member',
 									message: `Are you sure you want to remove <b>${row.full_name}</b> from the team?`,
 									onSuccess: ({ hide }) => {
 										progress(
@@ -237,7 +237,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 				actions() {
 					return [
 						{
-							label: 'Invite User',
+							label: 'Invite Users',
 							variant: 'subtle',
 							iconLeft: 'user-plus',
 							onClick: () => (isInviteOpen = true),
