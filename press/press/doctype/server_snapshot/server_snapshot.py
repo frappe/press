@@ -387,7 +387,7 @@ class ServerSnapshot(Document):
 
 				total_size += snapshot_info["size"]
 
-			if completed:
+			if updated_status != "Unavailable" and completed:
 				updated_status = "Completed"
 
 		if self.status != updated_status or self.total_size_gb != total_size:
@@ -681,7 +681,7 @@ def expire_snapshots():
 			& (Snapshot.locked == 0)
 			& (Snapshot.free == 1)
 		)
-		.limit(50)
+		.limit(100)
 		.run(as_dict=True)
 	)
 

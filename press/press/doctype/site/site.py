@@ -5119,7 +5119,7 @@ def get_suspended_time(site: str):
 
 
 def archive_suspended_sites():
-	archive_at_once = 6
+	archive_at_once = 15
 	archive_threshold = frappe.utils.add_to_date(frappe.utils.now(), days=-ARCHIVE_AFTER_SUSPEND_DAYS)
 
 	SiteTable = frappe.qb.DocType("Site")

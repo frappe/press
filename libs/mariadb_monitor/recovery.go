@@ -33,15 +33,29 @@ func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MyS
 		}
 	}
 
+	killed := false
 	if isFrozen {
 		slog.Warn("machine appears frozen, skipping graceful stop and killing mariadb directly", "reason", reason)
-		killMariaDB()
+		killed = killMariaDB()
 	} else if !stopMariaDB(cfg.StopTimeout) {
-		killMariaDB()
+		killed = killMariaDB()
+	} else {
+		killed = true // graceful stop succeeded
+	}
+
+	if !killed {
+		slog.Error("failed to stop/kill mariadb, rebooting machine")
+		rebootMachine()
+		return true
 	}
 
 	reclaimMemory(cfg.DropCachesMode)
-	startMariaDB(creds)
+
+	if !startMariaDB(creds) {
+		slog.Error("failed to start mariadb after recovery, rebooting machine")
+		rebootMachine()
+		return true
+	}
 
 	return true
 }
@@ -69,10 +83,34 @@ func stopMariaDB(timeout time.Duration) bool {
 	return true
 }
 
-func killMariaDB() {
+func killMariaDB() bool {
 	slog.Warn("sending SIGKILL to mariadbd")
 
-	for _, pid := range findMariaDBProcessIDs() {
+	// Use a channel+goroutine so PID lookup doesn't block forever on a frozen machine.
+	type pidResult struct {
+		pids []int
+	}
+	ch := make(chan pidResult, 1)
+	go func() {
+		ch <- pidResult{pids: findMariaDBProcessIDs()}
+	}()
+
+	var pids []int
+	select {
+	case r := <-ch:
+		pids = r.pids
+	case <-time.After(5 * time.Second):
+		slog.Error("findMariaDBProcessIDs timed out (I/O freeze?)")
+		return false
+	}
+
+	if len(pids) == 0 {
+		slog.Error("cannot find mariadbd/mysqld process to kill")
+		return false
+	}
+
+	allFailed := true
+	for _, pid := range pids {
 		proc, err := os.FindProcess(pid)
 		if err != nil {
 			continue
@@ -81,10 +119,17 @@ func killMariaDB() {
 			slog.Warn("failed to SIGKILL process", "pid", pid, "error", err)
 		} else {
 			slog.Info("sent SIGKILL to process", "pid", pid)
+			allFailed = false
 		}
 	}
 
+	if allFailed {
+		slog.Error("failed to SIGKILL any mariadb process")
+		return false
+	}
+
 	time.Sleep(2 * time.Second)
+	return true
 }
 
 func reclaimMemory(dropMode int) {
@@ -106,7 +151,7 @@ func reclaimMemory(dropMode int) {
 	}
 }
 
-func startMariaDB(creds MySQLCredentials) {
+func startMariaDB(creds MySQLCredentials) bool {
 	slog.Info("starting mariadb via systemctl")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -117,7 +162,7 @@ func startMariaDB(creds MySQLCredentials) {
 
 	if err != nil {
 		slog.Error("failed to start mariadb", "error", err, "output", string(output))
-		return
+		return false
 	}
 
 	slog.Info("mariadb started, verifying health")
@@ -126,9 +171,15 @@ func startMariaDB(creds MySQLCredentials) {
 		time.Sleep(2 * time.Second)
 		if checkReachable(creds) {
 			slog.Info("mariadb is reachable after restart")
-			return
+			return true
 		}
 	}
 
 	slog.Warn("mariadb started but is not reachable (socket/TCP) after 10s")
+	return false
+}
+
+func rebootMachine() {
+	slog.Error("initiating machine reboot via syscall")
+	syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART)
 }

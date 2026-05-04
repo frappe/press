@@ -50,6 +50,10 @@ type Config struct {
 	CoredumpOnUnhealthy        bool          `yaml:"coredump_on_unhealthy"`
 	CoredumpOnFrequentTriggers bool          `yaml:"coredump_on_frequent_triggers"`
 	CoredumpFrequentThreshold  int           `yaml:"coredump_frequent_threshold"`
+	CoredumpPreemptive         bool          `yaml:"coredump_preemptive"`
+	CoredumpPreemptiveAfter    int           `yaml:"coredump_preemptive_after"`
+	CoredumpPreemptiveWindow   time.Duration `yaml:"coredump_preemptive_window"`
+	CoredumpCooldown           time.Duration `yaml:"coredump_cooldown"`
 }
 
 type MySQLCredentials struct {
@@ -88,6 +92,10 @@ func DefaultConfig() Config {
 		CoredumpOnUnhealthy:        true,
 		CoredumpOnFrequentTriggers: true,
 		CoredumpFrequentThreshold:  3,
+		CoredumpPreemptive:         true,
+		CoredumpPreemptiveAfter:    6,
+		CoredumpPreemptiveWindow:   5 * time.Minute,
+		CoredumpCooldown:           5 * time.Minute,
 	}
 }
 
@@ -116,6 +124,8 @@ func LoadConfig() (Config, error) {
 	parseDuration(raw, "stop_timeout", &cfg.StopTimeout)
 	parseDuration(raw, "io_freeze_timeout", &cfg.IOFreezeTimeout)
 	parseDuration(raw, "coredump_timeout", &cfg.CoredumpTimeout)
+	parseDuration(raw, "coredump_cooldown", &cfg.CoredumpCooldown)
+	parseDuration(raw, "coredump_preemptive_window", &cfg.CoredumpPreemptiveWindow)
 
 	if err := cfg.Validate(); err != nil {
 		return cfg, fmt.Errorf("config validation: %w", err)
@@ -195,6 +205,9 @@ func (c Config) Validate() error {
 	}
 	if c.CoredumpFrequentThreshold < 1 {
 		return fmt.Errorf("coredump_frequent_threshold must be >= 1, got %d", c.CoredumpFrequentThreshold)
+	}
+	if c.CoredumpPreemptiveAfter < 1 {
+		return fmt.Errorf("coredump_preemptive_after must be >= 1, got %d", c.CoredumpPreemptiveAfter)
 	}
 	return nil
 }
@@ -334,6 +347,10 @@ coredump_max_count: %d
 coredump_on_unhealthy: %t
 coredump_on_frequent_triggers: %t
 coredump_frequent_threshold: %d
+coredump_preemptive: %t
+coredump_preemptive_after: %d
+coredump_preemptive_window: %s
+coredump_cooldown: %s
 `,
 		cfg.CoredumpEnabled,
 		cfg.CoredumpOutputDir,
@@ -342,6 +359,10 @@ coredump_frequent_threshold: %d
 		cfg.CoredumpOnUnhealthy,
 		cfg.CoredumpOnFrequentTriggers,
 		cfg.CoredumpFrequentThreshold,
+		cfg.CoredumpPreemptive,
+		cfg.CoredumpPreemptiveAfter,
+		cfg.CoredumpPreemptiveWindow,
+		cfg.CoredumpCooldown,
 	)
 
 	return os.WriteFile(configFile, []byte(content), 0644)
