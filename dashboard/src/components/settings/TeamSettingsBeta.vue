@@ -22,6 +22,17 @@ const members = createResource({
 	},
 	transform: (d) => d.message,
 });
+
+const roles = createResource({
+	url: 'run_doc_method',
+	auto: true,
+	params: {
+		method: 'get_roles',
+		dt: 'Team',
+		dn: team.doc.name,
+	},
+	transform: (d) => d.message,
+});
 </script>
 
 <template>
@@ -41,7 +52,7 @@ const members = createResource({
 						component: ({ row }) => {
 							return h(UserWithAvatarCell, {
 								avatarImage: row.user_image,
-								fullName: row.full_name,
+								fullName: row.full_name || row.email,
 							});
 						},
 					},
@@ -52,21 +63,26 @@ const members = createResource({
 					{
 						label: 'Role',
 						fieldname: 'role',
-						width: '120px',
 						type: 'Component',
 						component: ({ row }) => {
+							if (row.status === 'Pending') {
+								return h(
+									Badge,
+									{
+										label: 'Pending',
+										theme: 'gray',
+										variant: 'subtle',
+									},
+									row.role,
+								);
+							}
 							return h(
 								Select,
 								{
 									class: 'w-min relative -left-2',
 									variant: 'ghost',
 									modelValue: row.role,
-									options: [
-										{ label: 'Admin', value: 'Admin' },
-										{ label: 'Member', value: 'Member' },
-										{ label: 'Developer', value: 'Developer' },
-										{ label: 'Viewer', value: 'Viewer' },
-									],
+									options: roles.data,
 								},
 								row.role,
 							);
@@ -75,7 +91,6 @@ const members = createResource({
 					{
 						label: 'Status',
 						fieldname: 'status',
-						width: '120px',
 						type: 'Component',
 						component: ({ row }) => {
 							return h(
@@ -83,7 +98,7 @@ const members = createResource({
 								{
 									label: row.status,
 									theme: row.status === 'Active' ? 'green' : 'gray',
-									variant: 'outline',
+									variant: 'subtle',
 								},
 								row.status,
 							);
@@ -91,13 +106,12 @@ const members = createResource({
 					},
 					{
 						label: 'Joined',
-						fieldname: 'joined',
-						format: (v) => dayjs(v).format('LL'),
-					},
-					{
-						label: 'Resources',
-						fieldname: 'joined',
-						format: () => '2 Servers, 3 Benches, 5 Sites',
+						fieldname: 'date',
+						format: (v, r) => {
+							if (r.status === 'Pending')
+								return 'Expires on ' + dayjs(v).format('LL');
+							return dayjs(v).format('LL');
+						},
 					},
 				],
 				rowActions({ row }) {
@@ -107,11 +121,28 @@ const members = createResource({
 						row.name === team.doc.user_info?.name
 					)
 						return [];
+
 					return [
+						{
+							label: 'Cancel Invite',
+							icon: 'user-minus',
+							condition: () => row.status === 'Pending',
+							onClick: () => {
+								debugger;
+							},
+						},
+						{
+							label: 'Resend Invite',
+							icon: 'send',
+							condition: () => row.status === 'Pending',
+							onClick: () => {
+								debugger;
+							},
+						},
 						{
 							label: 'Remove User',
 							icon: 'user-minus',
-							condition: () => row.name !== team.doc.user,
+							condition: () => row.status === 'Active',
 							onClick() {
 								if (team.removeTeamMember.loading) return;
 								confirmDialog({
