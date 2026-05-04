@@ -10,8 +10,10 @@ import ObjectList from '../ObjectList.vue';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
 import { getToastErrorMessage } from '../../utils/toast';
 import TeamInviteDialog from './TeamInviteDialog.vue';
+import { useUserStore } from '@/stores/user';
 
 const team = getTeam();
+const user = useUserStore();
 
 const isInviteOpen = ref(false);
 
@@ -109,6 +111,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 							return h(UserWithAvatarCell, {
 								avatarImage: row.user_image,
 								fullName: row.full_name || row.email,
+								isCurrentUser: row.email === user.email,
 							});
 						},
 					},
@@ -171,6 +174,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 					},
 				],
 				rowActions: ({ row }) => {
+					if (row.email === user.email) return [];
 					return [
 						{
 							label: 'Resend Invitation',
