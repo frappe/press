@@ -131,7 +131,9 @@ def send_link_certificate_request(user_email: str, certificate_type: str) -> Non
 			"partner_team": team.name,
 			"user_email": user_email,
 			"course": frappe.db.get_value(
-				"Partner Certificate", {"partner_member_email": user_email}, "course"
+				"Partner Certificate",
+				{"partner_member_email": user_email, "course": ("in", cert_options)},
+				"course"
 			),
 		}
 	).insert()
