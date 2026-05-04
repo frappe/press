@@ -70,7 +70,7 @@ def remove_member(team: str, member: str):
 	the user.
 	"""
 	d = frappe.get_doc("Team", team)
-	for m in d.team_members:
+	for m in d.team_members.copy():
 		if m.name == member:
 			d.team_members.remove(m)
 	d.save()
