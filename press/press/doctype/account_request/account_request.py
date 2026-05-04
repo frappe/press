@@ -364,3 +364,10 @@ def expire_request_key():
 		},
 		update_modified=False,
 	)
+
+
+def has_permission(doc, ptype, user):
+	user = user or frappe.session.user
+	if doc.is_new():
+		return True
+	return frappe.has_permission(doctype="Team", doc=doc.team, ptype=ptype, user=user)

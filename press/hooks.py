@@ -131,6 +131,7 @@ permission_query_conditions = {
 	"Server Snapshot Recovery": "press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.get_permission_query_conditions",
 }
 has_permission = {
+	"Account Request": "press.press.doctype.account_request.account_request.has_permission",
 	"Site": "press.overrides.has_permission",
 	"Site Action": "press.overrides.has_permission",
 	"Site Backup": "press.overrides.has_permission",
