@@ -165,7 +165,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 						fieldname: 'date',
 						format: (v, r) => {
 							if (r.status === 'Pending')
-								return 'Expires on ' + dayjs(v).format('LL');
+								return 'Expires at ' + dayjs(v).format('LT');
 							return dayjs(v).format('LL');
 						},
 					},
