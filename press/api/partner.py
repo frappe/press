@@ -115,8 +115,11 @@ def get_partner_details(partner_email: str) -> dict | None:
 @frappe.whitelist()
 @role_guard.api("partner")
 def send_link_certificate_request(user_email: str, certificate_type: str) -> None:
+	cert_options = ["frappe-developer-certification", "app-development-with-frappe-framework"]
+	if certificate_type == "erpnext":
+		cert_options = ["erpnext-distribution", "erpnext-training"]
 	if not frappe.db.exists(
-		"Partner Certificate", {"partner_member_email": user_email, "course": certificate_type}
+		"Partner Certificate", {"partner_member_email": user_email, "course": ("in", cert_options)}
 	):
 		frappe.throw(f"No certificate found for the {user_email} with given course")
 
@@ -127,7 +130,9 @@ def send_link_certificate_request(user_email: str, certificate_type: str) -> Non
 			"doctype": "Certificate Link Request",
 			"partner_team": team.name,
 			"user_email": user_email,
-			"course": certificate_type,
+			"course": frappe.db.get_value(
+				"Partner Certificate", {"partner_member_email": user_email}, "course"
+			),
 		}
 	).insert()
 
