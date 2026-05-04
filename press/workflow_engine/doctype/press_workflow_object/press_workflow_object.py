@@ -8,7 +8,6 @@ from typing import Any
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import strip_html_tags
 
 
 class ObjectSerializeError(frappe.ValidationError):
@@ -78,16 +77,8 @@ class PressWorkflowObject(Document):
 		except Exception:
 			summary = repr(type(obj))
 
-		# FW strips < and > from Data fields (treating them as HTML tags).
-		# If the entire summary looks like an HTML tag (e.g. <class.Name object at 0x...>),
-		# it will be stripped to an empty string.
-		# to prevent this, strip the brackets first, or provide a fallback.
-		summary_stripped = strip_html_tags(summary).strip()
-		if not summary_stripped:
+		if not summary:
 			summary = f"Instance of {type_qualname}"
-		else:
-			# If it didn't strip to empty, we can just replace the brackets to be safe
-			summary = summary.replace("<", "[").replace(">", "]")
 
 		if len(summary) > 512:
 			summary = summary[:500] + "..."
