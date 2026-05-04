@@ -10,6 +10,7 @@ from press.utils import (
 	get_default_team_for_user,
 	get_valid_teams_for_user,
 )
+from press.utils.user import is_beta_tester, is_desk_user, is_system_manager
 
 base_template_path = "templates/www/dashboard.html"
 no_cache = 1
@@ -72,12 +73,12 @@ def get_boot():
 @redis_cache(user=True, ttl=60 * 5)
 def get_user():
 	user = frappe.session.user
-	full_name, email, user_type = frappe.get_value("User", user, ["full_name", "email", "user_type"])
+	full_name, email = frappe.get_value("User", user, ["full_name", "email"])
 	return {
 		"id": frappe.session.user,
 		"name": full_name,
 		"email": email,
-		"is_system_manager": bool(frappe.db.exists("Has Role", {"parent": user, "role": "System Manager"})),
-		"is_desk_user": user_type == "System User",
-		"is_beta_tester": user_type == "System User",
+		"is_system_manager": is_system_manager(user),
+		"is_desk_user": is_desk_user(user),
+		"is_beta_tester": is_beta_tester(),
 	}

@@ -18,7 +18,7 @@ from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_for
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
-from press.guards import team_guard
+from press.guards import feature_preview, team_guard
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -975,10 +975,12 @@ class Team(Document):
 		return get_team_members(self.name)
 
 	@dashboard_whitelist()
+	@feature_preview.beta_testing()
 	def get_members(self):
 		return get_invitations(str(self.name)) + get_members(str(self.name))
 
 	@dashboard_whitelist()
+	@feature_preview.beta_testing()
 	@team_guard.only_admin()
 	def send_invitation(self, names: str):
 		"""
@@ -1015,6 +1017,7 @@ class Team(Document):
 		return self.get_members()
 
 	@dashboard_whitelist()
+	@feature_preview.beta_testing()
 	@team_guard.only_admin()
 	def cancel_invitation(self, account_request: str):
 		"""
@@ -1030,6 +1033,7 @@ class Team(Document):
 		return self.get_members()
 
 	@dashboard_whitelist()
+	@feature_preview.beta_testing()
 	@team_guard.only_admin()
 	def remove_member(self, member: str):
 		"""
@@ -1040,6 +1044,7 @@ class Team(Document):
 		return self.get_members()
 
 	@dashboard_whitelist()
+	@feature_preview.beta_testing()
 	def get_roles(self):
 		return get_roles(str(self.name))
 
