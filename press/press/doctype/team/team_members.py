@@ -64,7 +64,7 @@ def get_roles(team: str):
 	]
 
 
-def remove_user(team: str, member: str):
+def remove_member(team: str, member: str):
 	"""
 	Remove a member from the team. This will delete the Team Member record for
 	the user.
