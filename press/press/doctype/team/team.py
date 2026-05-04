@@ -17,6 +17,8 @@ from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_for
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
+from press.guards import team_guard
+from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import get_valid_teams_for_user, has_role, log_error
@@ -974,6 +976,33 @@ class Team(Document):
 	@dashboard_whitelist()
 	def get_members(self):
 		return get_invitations(str(self.name)) + get_members(str(self.name))
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def send_invitation(self, account_request: str):
+		"""
+		Account request is created when a user is invited or when a user signs
+		up. This is different from a team/organization. Ideally, this should be
+		handled inside team doctype itself. Account request should focus on
+		handling user management, unrelated to team.
+		"""
+		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
+		d.send_verification_email()
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def cancel_invitation(self, account_request: str):
+		"""
+		Cancel invitation by clearing request key and expiration time so that
+		the link becomes invalid. This is not ideal. We should have a separate
+		doctype to handle invitations instead of overloading Account Request
+		doctype which is also used during signup.
+		"""
+		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
+		d.request_key = None
+		d.request_key_expiration_time = None
+		d.save()
+		return self.get_members()
 
 	@dashboard_whitelist()
 	def get_roles(self):

@@ -33,6 +33,35 @@ const roles = createResource({
 	},
 	transform: (d) => d.message,
 });
+
+const sendInvitation = createResource({
+	url: 'run_doc_method',
+	makeParams: (args) => ({
+		method: 'send_invitation',
+		dt: 'Team',
+		dn: team.doc.name,
+		args,
+	}),
+});
+
+const cancelInvitation = createResource({
+	url: 'run_doc_method',
+	makeParams: (args) => ({
+		method: 'cancel_invitation',
+		dt: 'Team',
+		dn: team.doc.name,
+		args,
+	}),
+	onSuccess: (data) => members.setData(data),
+});
+
+const progress = (promise, msgLoading, msgSuccess) => {
+	toast.promise(promise, {
+		loading: msgLoading,
+		success: msgSuccess,
+		error: (e) => getToastErrorMessage(e),
+	});
+};
 </script>
 
 <template>
@@ -124,20 +153,26 @@ const roles = createResource({
 
 					return [
 						{
-							label: 'Cancel Invite',
-							icon: 'user-minus',
-							condition: () => row.status === 'Pending',
-							onClick: () => {
-								debugger;
-							},
-						},
-						{
-							label: 'Resend Invite',
+							label: 'Send Invitation',
 							icon: 'send',
 							condition: () => row.status === 'Pending',
-							onClick: () => {
-								debugger;
-							},
+							onClick: () =>
+								progress(
+									sendInvitation.submit({ account_request: row.name }),
+									'Sending Invitation...',
+									'Invitation Sent',
+								),
+						},
+						{
+							label: 'Cancel Invitation',
+							icon: 'user-minus',
+							condition: () => row.status === 'Pending',
+							onClick: () =>
+								progress(
+									cancelInvitation.submit({ account_request: row.name }),
+									'Cancelling Invitation...',
+									'Invitation Cancelled',
+								),
 						},
 						{
 							label: 'Remove User',
