@@ -233,12 +233,14 @@ class StepMixin:
 		job: AgentJob,
 		step_name: str,
 		field: list[str] | str | None = None,
-	) -> str | None:
+		as_dict=False,
+	) -> dict[str, str] | str | None:
 		"""Gets the name of the clone step for the given job, if it exists."""
 		step = frappe.db.get_value(
 			"Agent Job Step",
 			filters={"agent_job": job.name, "step_name": step_name},
 			fieldname=field or "name",
+			as_dict=as_dict,
 		)
 		if not step:
 			return None
@@ -254,9 +256,19 @@ class ValidationOutputParser(StepMixin):
 	def __init__(self, dcb: "DeployCandidateBuild") -> None:
 		self.dcb = dcb
 
+	def _succeed_step_if_finished(self, job: AgentJob):
+		"""In case the status is successful and we haven't update the pre-build step update it"""
+		validation_step_status = self._get_agent_step(job, "Run Validations", "status")
+		pre_build_step = self.dcb.get_step("validate", "pre-build")
+
+		if validation_step_status == "Success" and pre_build_step.status != "Success":
+			pre_build_step.status = "Success"
+			pre_build_step.save()
+
 	def parse_validation_output_and_update_step(self, job: AgentJob) -> bool:
 		"""Only updates the output since validation is already a step and handles it's state via agent job"""
 		if job.status != "Failure":  # Still running or succeeded, no validation failure
+			self._succeed_step_if_finished(job)
 			return False
 
 		pre_build_step = self.dcb.get_step("validate", "pre-build")
@@ -266,6 +278,7 @@ class ValidationOutputParser(StepMixin):
 
 		# Mimic the exception raising logic for deploy notifications to gracefully take over and handle
 		# The output communication and parsing of the build failure.
+		assert isinstance(exception_info, str)
 		exception_info = json.loads(exception_info)
 		exc = Exception(*list(exception_info.values()))
 		pre_build_step.output = str(exc)
@@ -316,11 +329,22 @@ class CloneOutputParser(StepMixin):
 		Fetch live output from cache during an ongoing clone job.
 		Falls back to early failure parsing if no cache output found.
 		"""
-		clone_step = self._get_agent_step(job, "Clone Repositories")
-		if not clone_step:
+		clone_step = self._get_agent_step(
+			job,
+			"Clone Repositories",
+			["name", "status"],
+			as_dict=True,
+		)
+		# We will only trust the cache if the step is still running
+		# Otherwise we fall back to the database for the output
+		# Ref: https://github.com/frappe/press/blob/0cd06504aa1b4907e45e53aba17b4f468c5a3358/press/press/doctype/agent_job/agent_job.py#L556-L560
+		if clone_step:
+			assert isinstance(clone_step, dict)
+
+		if not clone_step or clone_step["status"] != "Running":
 			return None
 
-		cached = frappe.cache.hget("agent_job_step_output", clone_step)
+		cached = frappe.cache.hget("agent_job_step_output", clone_step["name"])
 		if not cached:
 			return None
 
