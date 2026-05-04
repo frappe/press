@@ -1111,6 +1111,7 @@ class DeployCandidateBuild(Document):
 		encoded_dockerfile = self.encode_dockerfile(dockerfile)
 		settings = self._fetch_registry_settings()
 		dependencies = {d.dependency: d.version for d in self.candidate.dependencies}
+		self._update_docker_image_metadata()
 
 		build_parameters = {
 			# "filename": context_filename,
@@ -1153,7 +1154,7 @@ class DeployCandidateBuild(Document):
 
 		Agent(self.build_server).run_build(build_parameters)
 
-	def _build(self):
+	def build(self):
 		self._set_pending_duration()
 		self.set_status(
 			Status.PREPARING,
@@ -1281,19 +1282,8 @@ class DeployCandidateBuild(Document):
 		)
 
 		frappe.set_user(frappe.get_value("Team", team if isinstance(team, str) else team.name, "user"))
-		queue = "default" if frappe.conf.developer_mode else "build"
 
-		self._build()
-
-		# frappe.enqueue_doc(
-		# 	self.doctype,
-		# 	self.name,
-		# 	"_build",
-		# 	queue=queue,
-		# 	timeout=2400,
-		# 	enqueue_after_commit=True,
-		# 	job_id=f"deploy_candidate_build:{self.name}",
-		# )
+		self.build()
 
 		frappe.set_user(user)
 		frappe.session.data = session_data
