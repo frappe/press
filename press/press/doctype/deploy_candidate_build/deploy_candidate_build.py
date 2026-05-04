@@ -109,6 +109,7 @@ STAGE_SLUG_MAP = {
 	"validate": "Run Validations",
 	"pull": "Pull Updates",
 	"mounts": "Setup Mounts",
+	"upload": "Upload",
 }
 
 # Key: (stage_slug, step_slug)
@@ -503,6 +504,8 @@ class DeployCandidateBuild(Document):
 				step=step,
 			)
 			self.append("build_steps", step)
+
+		self.save()
 
 	def add_pre_build_steps(self):
 		app_titles = {a.app: a.title for a in self.candidate.apps}
@@ -1068,9 +1071,9 @@ class DeployCandidateBuild(Document):
 		dockerfile_bytes = dockerfile.encode("utf-8")
 		return base64.b64encode(dockerfile_bytes).decode("utf-8")
 
-	def send_build_instructions(self):
+	def send_build_instructions_and_add_build_steps(self):
 		"""
-		Prepare build instructions and mark ready to upload
+		Prepare build instructions and mark ready to upload also adds the build and post build steps
 
 		HOW IT WORKS:
 		-------------
@@ -1101,6 +1104,10 @@ class DeployCandidateBuild(Document):
 			)
 
 		dockerfile = self._generate_dockerfile()
+		# Add build steps based on dockerfile checkpoints before starting the build
+		self.add_build_steps(dockerfile)
+		self.add_post_build_steps()
+
 		encoded_dockerfile = self.encode_dockerfile(dockerfile)
 		settings = self._fetch_registry_settings()
 		dependencies = {d.dependency: d.version for d in self.candidate.dependencies}
@@ -1154,7 +1161,8 @@ class DeployCandidateBuild(Document):
 			commit=True,
 		)
 		self._set_output_parsers()
-		self.send_build_instructions()
+		self.send_build_instructions_and_add_build_steps()
+		self.set_status(Status.RUNNING, commit=True)
 
 		# # https://docs.python.org/3/library/warnings.html#testing-warnings
 		# with warnings.catch_warnings(record=True) as caught_warnings:
