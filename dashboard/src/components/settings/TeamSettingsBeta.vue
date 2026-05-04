@@ -180,11 +180,11 @@ const progress = (promise, msgLoading, msgSuccess) => {
 							label: 'Cancel Invitation',
 							icon: 'user-minus',
 							condition: () => row.status === 'Pending',
-							onClick: ({ hide }) => {
+							onClick: () => {
 								confirmDialog({
 									title: 'Cancel Invitation',
 									message: `Are you sure you want to cancel the invitation for <b>${row.email}</b>?`,
-									onSuccess: () => {
+									onSuccess: ({ hide }) => {
 										progress(
 											cancelInvitation
 												.submit({ account_request: row.name })
