@@ -223,7 +223,7 @@ let router = createRouter({
 				{
 					name: 'SettingsTeamBeta',
 					path: 'team-beta',
-					component: () => import('./components/settings/TeamSettingsBeta.vue'),
+					component: () => import('./components/settings/Team.vue'),
 				},
 				{
 					name: 'SettingsDeveloper',

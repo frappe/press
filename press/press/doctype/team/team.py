@@ -7,6 +7,7 @@ from hashlib import blake2b
 from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
 from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
@@ -979,15 +980,39 @@ class Team(Document):
 
 	@dashboard_whitelist()
 	@team_guard.only_admin()
-	def send_invitation(self, account_request: str):
+	def send_invitation(self, names: str):
 		"""
 		Account request is created when a user is invited or when a user signs
 		up. This is different from a team/organization. Ideally, this should be
 		handled inside team doctype itself. Account request should focus on
 		handling user management, unrelated to team.
 		"""
-		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
-		d.send_verification_email()
+		for n in names.split(","):
+			n = n.strip()
+			if frappe.db.exists("Account Request", n):
+				d: AccountRequest = frappe.get_doc("Account Request", n, check_permission=True)
+				d.send_verification_email()
+				continue
+			if account_request := frappe.db.exists(
+				"Account Request",
+				{
+					"email": n,
+					"team": self.name,
+					"invited_by": ("is", "set"),
+					"request_key": ("is", "set"),
+				},
+			):
+				d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
+				d.send_verification_email()
+				continue
+			frappe.utils.validate_email_address(n, throw=True)
+			d: AccountRequest = frappe.new_doc("Account Request")
+			d.team = self.name
+			d.email = n
+			d.invited_by = frappe.session.user
+			d.save()
+			d.send_email = True
+		return self.get_members()
 
 	@dashboard_whitelist()
 	@team_guard.only_admin()

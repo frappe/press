@@ -1,16 +1,19 @@
 <script setup>
-import { defineAsyncComponent, h } from 'vue';
+import { h, ref } from 'vue';
 import { Badge, createResource, Select } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import dayjs from '../../utils/dayjs';
 import { getTeam } from '../../data/team';
-import { confirmDialog, renderDialog } from '../../utils/components';
+import { confirmDialog } from '../../utils/components';
 import AlertBanner from '../../components/AlertBanner.vue';
 import ObjectList from '../ObjectList.vue';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
 import { getToastErrorMessage } from '../../utils/toast';
+import TeamInviteDialog from './TeamInviteDialog.vue';
 
 const team = getTeam();
+
+const isInviteOpen = ref(false);
 
 const members = createResource({
 	url: 'run_doc_method',
@@ -53,6 +56,7 @@ const sendInvitation = createResource({
 		dn: team.doc.name,
 		args,
 	}),
+	onSuccess: (data) => members.setData(data),
 });
 
 const cancelInvitation = createResource({
@@ -76,6 +80,18 @@ const progress = (promise, msgLoading, msgSuccess) => {
 </script>
 
 <template>
+	<TeamInviteDialog
+		v-model="isInviteOpen"
+		@success="
+			(v) => {
+				progress(
+					sendInvitation.submit({ names: v }),
+					'Sending Invitation...',
+					'Invitation Sent',
+				);
+			}
+		"
+	/>
 	<div class="p-5">
 		<AlertBanner
 			title="This page is a work in progress. It is visible to beta testers only."
@@ -167,7 +183,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 									onSuccess: ({ hide }) => {
 										progress(
 											sendInvitation
-												.submit({ account_request: row.name })
+												.submit({ names: row.name })
 												.then(() => hide()),
 											'Sending Invitation...',
 											'Invitation Sent',
@@ -224,12 +240,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 							label: 'Invite User',
 							variant: 'subtle',
 							iconLeft: 'user-plus',
-							onClick() {
-								const InviteTeamMemberDialog = defineAsyncComponent(
-									() => import('./InviteTeamMemberDialog.vue'),
-								);
-								renderDialog(h(InviteTeamMemberDialog));
-							},
+							onClick: () => (isInviteOpen = true),
 						},
 					];
 				},
