@@ -10,7 +10,6 @@ import json
 import os
 import re
 import shutil
-import tarfile
 import tempfile
 import typing
 from datetime import datetime, timedelta
@@ -44,11 +43,8 @@ from press.press.doctype.deploy_candidate.utils import (
 	get_arm_build_server_with_least_active_builds,
 	get_build_server,
 	get_intel_build_server_with_least_active_builds,
-	get_package_manager_files,
 	is_suspended,
-	load_pyproject,
 )
-from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.utils import get_current_team, log_error
 from press.utils.jobs import get_background_jobs, stop_background_job
 from press.utils.webhook import create_webhook_event
@@ -59,12 +55,8 @@ if typing.TYPE_CHECKING:
 	from rq.job import Job
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
-	from press.press.doctype.app_release.app_release import AppRelease
 	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
-	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
-		DeployCandidateApp,
-	)
 	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.release_group_server.release_group_server import ReleaseGroupServer
 
@@ -91,12 +83,6 @@ class Status(Enum):
 	@classmethod
 	def intermediate(cls):
 		return [cls.PENDING.value, cls.RUNNING.value, cls.PREPARING.value]
-
-
-class ConfigFileTemplate(Enum):
-	REDIS_CACHE = "press/docker/config/redis-cache.conf"
-	REDIS_QUEUE = "press/docker/config/redis-queue.conf"
-	SUPERVISOR = "press/docker/config/supervisor.conf"
 
 
 STAGE_SLUG_MAP = {
@@ -351,143 +337,6 @@ class DeployCandidateBuild(Document):
 			is_path=True,
 		)
 
-	def _generate_config_from_template(self, template: ConfigFileTemplate):
-		_, template_conf_name = os.path.split(template.value)
-		assert self.build_directory, "Build directory must be set before generating config files"
-		conf_file: str = os.path.join(self.build_directory, "config", template_conf_name)
-
-		with open(conf_file, "w") as f:
-			content = frappe.render_template(
-				template.value, {"doc": self.candidate, "platform": self.platform}, is_path=True
-			)
-			f.write(content)
-
-	def _generate_apps_txt(self):
-		apps_txt = os.path.join(self.build_directory, "apps.txt")
-		with open(apps_txt, "w") as f:
-			content = "\n".join([app.app_name for app in self.candidate.apps])
-			f.write(content)
-
-	def _copy_config_files(self):
-		for target in ["common_site_config.json", "supervisord.conf", ".vimrc", "get_cached_app.py"]:
-			shutil.copy(os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory)
-
-		for target in ["config", "redis"]:
-			shutil.copytree(
-				os.path.join(frappe.get_app_path("press", "docker"), target),
-				os.path.join(self.build_directory, target),
-				symlinks=True,
-			)
-
-	def _get_app_name(self, app):
-		"""Retrieves `name` attribute of app - equivalent to distribution name
-		of python package. Fetches from pyproject.toml, setup.cfg or setup.py
-		whichever defines it in that order.
-		"""
-		app_name = None
-		apps_path = os.path.join(self.build_directory, "apps")
-
-		config_py_path = os.path.join(apps_path, app, "setup.cfg")
-		setup_py_path = os.path.join(apps_path, app, "setup.py")
-
-		app_name = self._get_app_pyproject(app).get("project", {}).get("name")
-
-		if not app_name and os.path.exists(config_py_path):
-			from setuptools.config import read_configuration
-
-			config = read_configuration(config_py_path)
-			app_name = config.get("metadata", {}).get("name")
-
-		if not app_name and os.path.exists(setup_py_path):
-			# retrieve app name from setup.py as fallback
-			with open(setup_py_path, "rb") as f:
-				contents = f.read().decode("utf-8")
-				search = re.search(r'name\s*=\s*[\'"](.*)[\'"]', contents)
-
-			if search:
-				app_name = search[1]
-
-		if app_name and app != app_name:
-			return app_name
-
-		return app
-
-	def _get_app_pyproject(self, app):
-		apps_path = os.path.join(self.build_directory, "apps")
-		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
-		if not os.path.exists(pyproject_path):
-			return {}
-
-		return load_pyproject(app, pyproject_path)
-
-	def _clone_release_and_update_step(self, release, step):
-		step.cached = False
-		step.status = "Running"
-		start_time = now()
-		self.save(ignore_version=True)
-
-		release: AppRelease = frappe.get_doc("App Release", release, for_update=True)
-		release._clone(force=True)
-
-		frappe.db.commit()  # Release lock taken for app clone
-
-		step.duration = get_duration(start_time)
-		step.output = release.output
-		step.status = "Success"
-		return release.clone_directory
-
-	def _clone_app(self, app: DeployCandidateApp):
-		step = self.get_step("clone", app.app)
-		assert step is not None, f"Step not found for cloning app {app.app}"
-		source, cloned = frappe.get_value("App Release", app.release, ["clone_directory", "cloned"])
-
-		step.command = f"git clone {app.app}"
-
-		if cloned and os.path.exists(source):
-			step.cached = True
-			step.status = "Success"
-		else:
-			source = self._clone_release_and_update_step(app.release, step)
-
-		assert self.build_directory, "Build directory must be set before cloning apps"
-		target = os.path.join(self.build_directory, "apps", app.app)
-		shutil.copytree(source, target, symlinks=True)
-
-		if app.pullable_release:
-			source = frappe.get_value("App Release", app.pullable_release, "clone_directory")
-			target = os.path.join(self.build_directory, "app_updates", app.app)
-			# don't know why
-			shutil.copytree(source, target, symlinks=True)
-
-		return target
-
-	def _clone_repositories(self):
-		repo_path_map = {}
-
-		for app in self.candidate.apps:
-			repo_path_map[app.app] = self._clone_app(app)
-			app.app_name = self._get_app_name(app.app)
-
-		return repo_path_map
-
-	def _run_pre_build_validation(self, pmf):
-		step = self.get_step("validate", "pre-build")
-		step.status = "Running"
-		start_time = now()
-		self.save(ignore_version=True)
-
-		try:
-			PreBuildValidations(self.candidate, pmf).validate()
-		except Exception as e:
-			step.output = str(e)
-			# We need to raise to get traceback in `deploy notifications`
-			raise e
-
-		step.duration = get_duration(start_time)
-		step.output = "Pre-Build validations passed"
-		step.status = "Success"
-		self.save(ignore_version=True)
-
 	def add_post_build_steps(self):
 		slugs = []
 
@@ -513,15 +362,7 @@ class DeployCandidateBuild(Document):
 		# Clone app slugs
 		slugs: list[tuple[str, str]] = [("clone", app.app) for app in self.candidate.apps]
 
-		slugs.extend(
-			[
-				# Pre-build validation slug
-				("validate", "pre-build"),
-				# # Build slugs
-				# ("package", "context"),
-				# ("upload", "context"),
-			]
-		)
+		slugs.extend([("validate", "pre-build")])
 
 		for stage_slug, step_slug in slugs:
 			stage, step = get_build_stage_and_step(
@@ -896,136 +737,11 @@ class DeployCandidateBuild(Document):
 
 		os.mkdir(self.build_directory)
 
-	def _prepare_build_context(self):
-		repo_path_map = self._clone_repositories()
-		pmf = get_package_manager_files(repo_path_map)
-		self._run_pre_build_validation(pmf)
-
-		"""
-		Due to dependencies mentioned in an apps pyproject.toml
-		file, _update_packages() needs to run after the repos
-		have been cloned.
-		"""
-		self.candidate._update_packages(pmf)
-
-		# Set props used when generating the Dockerfile
-		self.candidate._set_additional_packages()
-		self.candidate._set_container_mounts()
-
-		# Dockerfile generation
-		dockerfile = self._generate_dockerfile()
-		self.add_build_steps(dockerfile)
-		self.add_post_build_steps()
-
-		# TODO: Need to move to build server
-		self._copy_config_files()
-		for config_template in [
-			ConfigFileTemplate.REDIS_CACHE,
-			ConfigFileTemplate.REDIS_QUEUE,
-			ConfigFileTemplate.SUPERVISOR,
-		]:
-			self._generate_config_from_template(config_template)
-
-		self._generate_apps_txt()
-		self.candidate.generate_ssh_keys(self.build_directory)
-
-	def _prepare_build(self):
-		if not self.no_cache:
-			self.candidate._update_app_releases()
-
-		if not self.no_cache:
-			self.candidate._set_app_cached_flags()
-
-		self._prepare_build_directory()
-		self._prepare_build_context()
-
 	def get_step(self, stage_slug: str, step_slug: str) -> "DeployCandidateBuildStep | None":
 		return find(
 			self.build_steps,
 			lambda x: x.stage_slug == stage_slug and x.step_slug == step_slug,
 		)
-
-	def _upload_build_context(self, context_filepath: str, build_server: str):
-		step = self.get_step("upload", "context") or frappe._dict()
-		step.status = "Running"
-		start_time = now()
-		self.save(ignore_version=True)
-
-		try:
-			upload_filename = self.upload_build_context_for_docker_build(
-				context_filepath,
-				build_server,
-			)
-		except Exception:
-			step.status = "Failure"
-			raise
-
-		step.status = "Success"
-		step.duration = get_duration(start_time)
-		self.save(ignore_version=True)
-		return upload_filename
-
-	def _package_build_context(self):
-		step = self.get_step("package", "context") or frappe._dict()
-		step.status = "Running"
-		start_time = now()
-		self.save(ignore_version=True)
-
-		def fix_content_permission(tarinfo):
-			tarinfo.uid = 1000
-			tarinfo.gid = 1000
-			return tarinfo
-
-		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
-		with tarfile.open(tmp_file_path, "w:gz", compresslevel=5) as tar:
-			if frappe.conf.developer_mode:
-				tar.add(self.build_directory, arcname=".", filter=fix_content_permission)
-			else:
-				tar.add(self.build_directory, arcname=".")
-
-		step.status = "Success"
-		step.duration = get_duration(start_time)
-		self.save(ignore_version=True)
-
-		return tmp_file_path
-
-	def _package_and_upload_context(self):
-		context_filepath = self._package_build_context()
-		context_filename = self._upload_build_context(
-			context_filepath,
-			self.build_server,
-		)
-		os.remove(context_filepath)
-		return context_filename
-
-	def _run_agent_jobs(self):
-		context_filename = self._package_and_upload_context()
-		settings = self._fetch_registry_settings()
-
-		build_parameters = {
-			"filename": context_filename,
-			"image_repository": self.docker_image_repository,
-			"image_tag": self.docker_image_tag,
-			"registry": {
-				"url": settings.docker_registry_url,
-				"username": settings.docker_registry_username,
-				"password": settings.docker_registry_password,
-			},
-			"no_cache": self.no_cache,
-			"no_push": self.no_push,
-			"build_token": self.candidate.build_token,
-			# Next few values are not used by agent but are
-			# read in `process_run_build`
-			"deploy_candidate_build": self.name,
-			"deploy_after_build": self.deploy_after_build,
-			"deploy_on_server": self.deploy_on_server,
-		}
-		if self.platform == "arm64":
-			build_parameters.update({"platform": self.platform})
-
-		Agent(self.build_server).run_build(build_parameters)
-
-		self.set_status(Status.RUNNING)
 
 	def _fetch_registry_settings(self):
 		return frappe.db.get_value(
@@ -1061,10 +777,6 @@ class DeployCandidateBuild(Document):
 			return True
 
 		return is_image_in_registry(self.name, self.group, settings)
-
-	def _start_build(self):
-		self._update_docker_image_metadata()
-		self._run_agent_jobs()
 
 	def encode_dockerfile(self, dockerfile):
 		"""Encode dockerfile content to base64 to be sent to agent"""
@@ -1164,27 +876,6 @@ class DeployCandidateBuild(Document):
 		self._set_output_parsers()
 		self.send_build_instructions_and_add_build_steps()
 		self.set_status(Status.RUNNING, commit=True)
-
-		# # https://docs.python.org/3/library/warnings.html#testing-warnings
-		# with warnings.catch_warnings(record=True) as caught_warnings:
-		# 	warnings.simplefilter("always", BuildWarning)  # capture everything
-
-		# 	try:
-		# 		self._prepare_build()
-		# 	except Exception as exc:
-		# 		self.handle_build_failure(exc)
-		# 		return
-
-		# 	for warning in caught_warnings:
-		# 		self.handle_build_warning(
-		# 			title="Pre Build Validation Warning",
-		# 			warning=warning,
-		# 		)
-
-		# try:
-		# 	self._start_build()
-		# except Exception as exc:
-		# 	self.handle_build_failure(exc)
 
 	def reset_build_state(self):
 		self.cleanup_build_directory()
