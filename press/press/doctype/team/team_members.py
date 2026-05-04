@@ -62,3 +62,15 @@ def get_roles(team: str):
 		{"label": "Developer", "value": "Developer"},
 		{"label": "Viewer", "value": "Viewer"},
 	]
+
+
+def remove_user(team: str, member: str):
+	"""
+	Remove a member from the team. This will delete the Team Member record for
+	the user.
+	"""
+	d = frappe.get_doc("Team", team)
+	for m in d.team_members:
+		if m.name == member:
+			d.team_members.remove(m)
+	d.save()

@@ -23,6 +23,17 @@ const members = createResource({
 	transform: (d) => d.message,
 });
 
+const removeUser = createResource({
+	url: 'run_doc_method',
+	makeParams: (args) => ({
+		method: 'remove_user',
+		dt: 'Team',
+		dn: team.doc.name,
+		args,
+	}),
+	onSuccess: (data) => members.setData(data),
+});
+
 const roles = createResource({
 	url: 'run_doc_method',
 	auto: true,
@@ -143,59 +154,63 @@ const progress = (promise, msgLoading, msgSuccess) => {
 						},
 					},
 				],
-				rowActions({ row }) {
-					let team = getTeam();
-					if (
-						row.name === team.doc.user ||
-						row.name === team.doc.user_info?.name
-					)
-						return [];
-
+				rowActions: ({ row }) => {
 					return [
 						{
-							label: 'Send Invitation',
+							label: 'Resend Invitation',
 							icon: 'send',
 							condition: () => row.status === 'Pending',
-							onClick: () =>
-								progress(
-									sendInvitation.submit({ account_request: row.name }),
-									'Sending Invitation...',
-									'Invitation Sent',
-								),
+							onClick: () => {
+								confirmDialog({
+									title: 'Resend Invitation',
+									message: `Are you sure you want to resend the invitation to <b>${row.email}</b>?`,
+									onSuccess: ({ hide }) => {
+										progress(
+											sendInvitation
+												.submit({ account_request: row.name })
+												.then(() => hide()),
+											'Sending Invitation...',
+											'Invitation Sent',
+										);
+									},
+								});
+							},
 						},
 						{
 							label: 'Cancel Invitation',
 							icon: 'user-minus',
 							condition: () => row.status === 'Pending',
-							onClick: () =>
-								progress(
-									cancelInvitation.submit({ account_request: row.name }),
-									'Cancelling Invitation...',
-									'Invitation Cancelled',
-								),
+							onClick: ({ hide }) => {
+								confirmDialog({
+									title: 'Cancel Invitation',
+									message: `Are you sure you want to cancel the invitation for <b>${row.email}</b>?`,
+									onSuccess: () => {
+										progress(
+											cancelInvitation
+												.submit({ account_request: row.name })
+												.then(() => hide()),
+											'Cancelling Invitation...',
+											'Invitation Cancelled',
+										);
+									},
+								});
+							},
 						},
 						{
 							label: 'Remove User',
 							icon: 'user-minus',
 							condition: () => row.status === 'Active',
 							onClick() {
-								if (team.removeTeamMember.loading) return;
 								confirmDialog({
 									title: 'Remove User',
-									message: `Are you sure you want to remove <b>${row.full_name}</b> from this team?`,
-									onSuccess({ hide }) {
-										if (team.removeTeamMember.loading) return;
-										toast.promise(
-											team.removeTeamMember.submit({ member: row.name }),
-											{
-												loading: 'Removing Member...',
-												success: () => {
-													team.getTeamMembers.submit();
-													hide();
-													return 'Member Removed';
-												},
-												error: (e) => getToastErrorMessage(e),
-											},
+									message: `Are you sure you want to remove <b>${row.full_name}</b> from the team?`,
+									onSuccess: ({ hide }) => {
+										progress(
+											removeUser
+												.submit({ member: row.name })
+												.then(() => hide()),
+											'Removing User...',
+											'User Removed',
 										);
 									},
 								});

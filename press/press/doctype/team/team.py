@@ -32,7 +32,7 @@ from press.utils.billing import (
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
 
-from .team_members import get_invitations, get_members, get_roles
+from .team_members import get_invitations, get_members, get_roles, remove_user
 
 if TYPE_CHECKING:
 	from press.press.doctype.account_request.account_request import AccountRequest
@@ -1002,6 +1002,16 @@ class Team(Document):
 		d.request_key = None
 		d.request_key_expiration_time = None
 		d.save()
+		return self.get_members()
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def remove_user(self, member: str):
+		"""
+		Remove member from the team. This will remove the member from the child
+		table. This does not deal with account request.
+		"""
+		remove_user(str(self.name), member)
 		return self.get_members()
 
 	@dashboard_whitelist()
