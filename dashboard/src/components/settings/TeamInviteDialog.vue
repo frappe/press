@@ -14,6 +14,7 @@ const email = ref('');
 		v-model="open"
 		:options="{
 			title: 'Invite users',
+			icon: 'user-plus',
 			actions: [
 				{
 					label: 'Invite',
