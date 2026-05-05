@@ -781,6 +781,15 @@
         "mult",
         "ruleid",
         "chatwoot",
-        "ssti"
+        "ssti",
+        "tcmalloc",
+        "libncurses",
+        "libncursesw",
+        "DWITHOUT",
+        "wextra",
+        "SONAME",
+        "decommitted",
+        "libgnutls",
+        "UDF"
     ]
 }
