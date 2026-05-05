@@ -447,7 +447,7 @@ def publish_update(job):
 
 
 @timer
-def poll_random_jobs(agent, pending_ids):
+def poll_random_jobs(agent: Agent, pending_ids):
 	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
 	return agent.get_jobs_status(random_pending_ids)
 
