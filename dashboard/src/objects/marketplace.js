@@ -320,6 +320,18 @@ export default {
 				},
 			},
 			{
+				label: 'Audit Report',
+				icon: icon('clipboard'),
+				route: 'audit-report',
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../components/marketplace/AppAuditReport.vue'),
+				),
+				props: (app) => {
+					return { app: app.doc.name };
+				},
+			},
+			{
 				label: 'Pricing',
 				icon: icon('dollar-sign'),
 				route: 'pricing',
