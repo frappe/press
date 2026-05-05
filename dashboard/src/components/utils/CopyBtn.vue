@@ -28,7 +28,7 @@ const copy = () => {
 			class="size-3.5"
 			:class="{ 'fade-in': !copied }"
 		/>
-		<lucide-circle-check v-else class="size-3.5 animate-in fade-in" />
+		<lucide-check v-else class="size-3.5 animate-in fade-in" />
 	</button>
 </template>
 
