@@ -722,21 +722,6 @@ class DeployCandidateBuild(Document):
 		# Fallback case cause upload step can be left hanging
 		self.correct_upload_step_status()
 
-	def _prepare_build_directory(self):
-		build_directory = frappe.get_value("Press Settings", None, "build_directory")
-		if not os.path.exists(build_directory):
-			os.mkdir(build_directory)
-
-		group_directory = os.path.join(build_directory, self.group)
-		if not os.path.exists(group_directory):
-			os.mkdir(group_directory)
-
-		self.build_directory = os.path.join(build_directory, self.group, self.name)
-		if os.path.exists(self.build_directory):
-			shutil.rmtree(self.build_directory)
-
-		os.mkdir(self.build_directory)
-
 	def get_step(self, stage_slug: str, step_slug: str) -> "DeployCandidateBuildStep | None":
 		return find(
 			self.build_steps,
@@ -794,7 +779,6 @@ class DeployCandidateBuild(Document):
 		3. Get the required repo urls (with token for private repos) of the app releases.
 		4. Generate the dockerfile
 		"""
-		self._prepare_build_directory()
 		clone_instructions = []
 
 		for app in self.candidate.apps:
