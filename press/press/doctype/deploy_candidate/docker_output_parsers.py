@@ -265,6 +265,23 @@ class ValidationOutputParser(StepMixin):
 			pre_build_step.status = "Success"
 			pre_build_step.save()
 
+	def _mark_invalid_releases(self, invalid_releases: list[dict[str, str]]):
+		"""Agent sends all the invalid releases in a dict
+		Eg.
+		exception_info = {
+			"invalid_releases": [
+				{"app": "frappe", "invalid_release": "release-1", "reason": "hash mismatch"},
+				{"app": "erpnext", "invalid_release": "release-2", "reason": "missing release"}
+			]
+		}
+		"""
+		for info in invalid_releases:
+			frappe.db.set_value(
+				"App Release",
+				info["invalid_release"],
+				{"invalid_release": True, "invalidation_reason": info["reason"]},
+			)
+
 	def parse_validation_output_and_update_step(self, job: AgentJob) -> bool:
 		"""Only updates the output since validation is already a step and handles it's state via agent job"""
 		if job.status != "Failure":  # Still running or succeeded, no validation failure
@@ -280,7 +297,19 @@ class ValidationOutputParser(StepMixin):
 		# The output communication and parsing of the build failure.
 		assert isinstance(exception_info, str)
 		exception_info = json.loads(exception_info)
-		exc = Exception(*list(exception_info.values()))
+		# Invalid release handling is done in bulk however the first one is raised.
+		invalid_releases = exception_info.get("invalid_releases", [])
+		if invalid_releases:
+			self._mark_invalid_releases(invalid_releases)
+			first_invalid_release = invalid_releases[0]
+			exc = Exception(
+				"Invalid release found",
+				first_invalid_release["app"],
+				first_invalid_release["invalid_release"],
+				first_invalid_release["reason"],
+			)
+		else:
+			exc = Exception(*list(exception_info.values()))
 		pre_build_step.output = str(exc)
 		raise exc
 

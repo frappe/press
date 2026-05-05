@@ -225,6 +225,23 @@ class ReleasePipeline(WorkflowBuilder):
 		self.update_pipeline_status("Running")  # Mark the pipeline as running!
 
 	@task(queue=_get_task_execution_queue())
+	def validate_invalid_releases(self, apps: list[dict[str, str]]):
+		"""Validate that none of the apps being deployed have invalid releases."""
+		for app in apps:
+			if not app.get("release"):
+				continue
+
+			app_info = frappe.db.get_value(
+				"App Release", app["release"], ["invalid_release", "invalidation_reason"], as_dict=True
+			)
+			if not app_info["invalid_release"]:
+				continue
+
+			raise ReleasePipelineFailure(
+				f"Invalid release found for app {app['app']} with hash {app['hash']}. Reason: {app_info['invalidation_reason']}"
+			)
+
+	@task(queue=_get_task_execution_queue())
 	def validate_server_storages(self):
 		"""Validate server storage for all servers in the release group."""
 		self.release_group_doc.check_app_server_storage()
@@ -468,6 +485,9 @@ class ReleasePipeline(WorkflowBuilder):
 		"""Groups all early-exit validation logic."""
 		try:
 			self.validate_app_hashes(apps)  # This sets status to "Running"
+			# Let this be here for when we have a invalid release already this will ensure we
+			# Don't start the deploy with a invalid release
+			self.validate_invalid_releases(apps)
 			self.validate_server_storages()
 			self.validate_auto_scales_on_servers()
 		except (frappe.ValidationError, InsufficientSpaceOnServer) as e:
