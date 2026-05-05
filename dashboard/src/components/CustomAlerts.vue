@@ -126,6 +126,7 @@ export default {
 
 					this.trimOldDismissedBanners();
 
+<<<<<<< HEAD
 					this.localBanners = (
 						this.ctx_type === 'Server'
 							? data.filter(
@@ -144,6 +145,12 @@ export default {
 										)
 									: data
 					).filter((banner) => !(banner.name in this.localDismissedBanners));
+=======
+					this.localBanners = data
+						.filter(this.isRelevantBanner)
+						.filter((banner) => banner.title || banner.message)
+						.filter((banner) => !(banner.name in this.localDismissedBanners));
+>>>>>>> e17eac218 (fix(dashboard-banners): Remove invalid banner var)
 				},
 			};
 		},
