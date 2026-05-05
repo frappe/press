@@ -48,9 +48,10 @@
 				>
 					<CopyBtn :text="log" class="absolute right-3 top-3" />
 
-					<pre>{{
-						$resources.log.loading ? 'Loading...' : log || 'No output'
-					}}</pre>
+					<span v-if="$resources.log.loading" class="flex items-center gap-2">
+						<Spinner /> Loading...</span
+					>
+					<pre v-else>{{ log || 'No output' }}</pre>
 				</div>
 			</div>
 		</div>
@@ -58,7 +59,7 @@
 </template>
 
 <script>
-import { FeatherIcon } from 'frappe-ui';
+import { FeatherIcon, Spinner } from 'frappe-ui';
 import { getObject } from '../objects';
 import { unreachable } from '../objects/common';
 import CopyBtn from '@/components/utils/CopyBtn.vue';
