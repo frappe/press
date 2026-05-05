@@ -7,6 +7,7 @@ from hashlib import blake2b
 from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
 from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
@@ -17,6 +18,8 @@ from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_for
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
+from press.guards import feature_preview, team_guard
+from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import get_valid_teams_for_user, has_role, log_error
@@ -29,6 +32,8 @@ from press.utils.billing import (
 )
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
+
+from .team_members import get_invitations, get_members, get_roles, remove_member
 
 if TYPE_CHECKING:
 	from press.press.doctype.account_request.account_request import AccountRequest
@@ -972,6 +977,80 @@ class Team(Document):
 	@dashboard_whitelist()
 	def get_team_members(self):
 		return get_team_members(self.name)
+
+	@dashboard_whitelist()
+	@feature_preview.beta_testing()
+	def get_members(self):
+		return get_invitations(str(self.name)) + get_members(str(self.name))
+
+	@dashboard_whitelist()
+	@feature_preview.beta_testing()
+	@team_guard.only_admin()
+	def send_invitation(self, names: str):
+		"""
+		Account request is created when a user is invited or when a user signs
+		up. This is different from a team/organization. Ideally, this should be
+		handled inside team doctype itself. Account request should focus on
+		handling user management, unrelated to team.
+		"""
+		for n in names.split(","):
+			n = n.strip()
+			if frappe.db.exists("Account Request", n):
+				d: AccountRequest = frappe.get_doc("Account Request", n, check_permission=True)
+				d.send_verification_email()
+				continue
+			if account_request := frappe.db.exists(
+				"Account Request",
+				{
+					"email": n,
+					"team": self.name,
+					"invited_by": ("is", "set"),
+					"request_key": ("is", "set"),
+				},
+			):
+				d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
+				d.send_verification_email()
+				continue
+			frappe.utils.validate_email_address(n, throw=True)
+			d: AccountRequest = frappe.new_doc("Account Request")
+			d.team = self.name
+			d.email = n
+			d.invited_by = frappe.session.user
+			d.save()
+			d.send_email = True
+		return self.get_members()
+
+	@dashboard_whitelist()
+	@feature_preview.beta_testing()
+	@team_guard.only_admin()
+	def cancel_invitation(self, account_request: str):
+		"""
+		Cancel invitation by clearing request key and expiration time so that
+		the link becomes invalid. This is not ideal. We should have a separate
+		doctype to handle invitations instead of overloading Account Request
+		doctype which is also used during signup.
+		"""
+		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
+		d.request_key = None
+		d.request_key_expiration_time = None
+		d.save()
+		return self.get_members()
+
+	@dashboard_whitelist()
+	@feature_preview.beta_testing()
+	@team_guard.only_admin()
+	def remove_member(self, member: str):
+		"""
+		Remove member from the team. This will remove the member from the child
+		table. This does not deal with account request.
+		"""
+		remove_member(str(self.name), member)
+		return self.get_members()
+
+	@dashboard_whitelist()
+	@feature_preview.beta_testing()
+	def get_roles(self):
+		return get_roles(str(self.name))
 
 	@dashboard_whitelist()
 	@rate_limit(limit=10, seconds=60 * 60)

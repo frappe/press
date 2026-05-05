@@ -36,8 +36,11 @@
 		</div>
 	</div>
 </template>
-<script>
-const colors = {
+
+<script setup lang="ts">
+import { computed } from 'vue';
+
+const colors: Record<string, string> = {
 	info: 'blue',
 	success: 'green',
 	error: 'red',
@@ -45,27 +48,18 @@ const colors = {
 	general: 'gray',
 };
 
-export default {
-	name: 'AlertBanner',
-	props: {
-		title: String,
-		type: {
-			type: String,
-			default: 'info',
-		},
-		showIcon: {
-			type: Boolean,
-			default: true,
-		},
-		isDismissible: {
-			type: Number,
-			default: 0,
-		},
-	},
-	computed: {
-		color() {
-			return colors[this.type] ?? 'gray';
-		},
-	},
-};
+const props = defineProps<{
+	title?: string;
+	type?: string;
+	showIcon?: boolean;
+	isDismissible?: number;
+}>();
+
+const emit = defineEmits<{
+	(e: 'dismissBanner'): void;
+}>();
+
+const color = computed(() => {
+	return colors[props.type ?? 'info'] ?? 'gray';
+});
 </script>
