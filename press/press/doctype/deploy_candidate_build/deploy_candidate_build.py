@@ -46,7 +46,6 @@ from press.press.doctype.deploy_candidate.utils import (
 	is_suspended,
 )
 from press.utils import get_current_team, log_error
-from press.utils.jobs import get_background_jobs, stop_background_job
 from press.utils.webhook import create_webhook_event
 
 if typing.TYPE_CHECKING:
@@ -991,13 +990,9 @@ class DeployCandidateBuild(Document):
 			self.pre_build()
 
 	def _stop_and_fail(self):
-		self.manually_failed = True
-		for job in get_background_jobs(self.doctype, self.name, status="started"):
-			if is_build_job(job):
-				stop_background_job(job)
-
-		self.set_status(Status.FAILURE)
-		self._set_build_duration()
+		"""Since we are relying on remote builder completely, we can just mark the build as
+		manually failed and the remote builder will stop the build when it checks the status"""
+		fail_remote_job(self.name)
 
 	def create_deploy(self, check_image_exists: bool = False):
 		"""Create a new deploy for the servers of matching platform present on the release group"""
@@ -1119,11 +1114,18 @@ def fail_remote_job(dn: str) -> bool:
 	agent_job.get_status()
 	agent_job = agent_job.reload()
 
-	if agent_job.status != "Running":
+	if agent_job.status in ["Success", "Failure"]:
+		# We can't do anything here since the job is already in a terminal state
 		return False
 
-	# Cancel build and set status with for_update and commit to avoid timestamp errors
-	agent_job.cancel_job()
+	if agent_job.status in ["Pending", "Undelivered"]:
+		# Return true since the job is now failed and will not be retried by agent
+		agent_job.fail_and_process_job_updates()
+
+	if agent_job.status == "Running":
+		# Cancel build and set status with for_update and commit to avoid timestamp errors
+		agent_job.cancel_job()
+
 	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn, for_update=True)
 	build.manually_failed = True
 	build.set_status(Status.FAILURE)
@@ -1292,8 +1294,9 @@ def fail_or_retry_stuck_builds(
 
 	for (name,) in result:
 		dcb: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", name)
-		dcb.manually_failed = True
 		dcb._stop_and_fail()
+		dcb = dcb.reload()  # Stop and fail makes modifications to the build
+
 		if can_retry_build(dcb.name, dcb.group, dcb.build_start):
 			dcb.schedule_build_retry()
 
