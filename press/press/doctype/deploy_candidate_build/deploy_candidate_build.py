@@ -51,8 +51,6 @@ from press.utils.webhook import create_webhook_event
 if typing.TYPE_CHECKING:
 	from warnings import WarningMessage
 
-	from rq.job import Job
-
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -1105,7 +1103,7 @@ def redeploy(dn: str) -> dict[str, str | bool]:
 	return deploy_candidate_build.redeploy()
 
 
-def _fail_build_without_agent_job(dn: str) -> bool:
+def _mark_build_as_failed(dn: str) -> bool:
 	"""
 	Mark a Deploy Candidate Build as failed when no associated Agent Job exists.
 	Always True as the build is successfully marked as failed.
@@ -1116,24 +1114,7 @@ def _fail_build_without_agent_job(dn: str) -> bool:
 	if not build.build_duration:
 		build._set_build_duration()
 
-	build.set_status(Status.FAILURE)
-	frappe.db.commit()
-	return True
-
-
-def _fail_build_with_agent_job(dn: str) -> bool:
-	"""
-	Mark a Deploy Candidate Build as failed when an associated Agent Job exists.
-	Always True as the build is successfully marked as failed.
-	"""
-	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn, for_update=True)
-	build.manually_failed = True
-
-	if not build.build_duration:
-		build._set_build_duration()
-
-	build.set_status(Status.FAILURE)
-	frappe.db.commit()
+	build.set_status(Status.FAILURE, commit=True)
 	return True
 
 
@@ -1149,7 +1130,7 @@ def fail_remote_job(dn: str) -> bool:
 
 	if not agent_job_name:
 		# If the job has not been created yet, mark the build as manually failed
-		return _fail_build_without_agent_job(dn)
+		return _mark_build_as_failed(dn)
 
 	agent_job_doc: AgentJob = frappe.get_doc("Agent Job", agent_job_name)
 	agent_job_doc.get_status()
@@ -1165,12 +1146,7 @@ def fail_remote_job(dn: str) -> bool:
 	elif agent_job_doc.status == "Running":
 		agent_job_doc.cancel_job()
 
-	return _fail_build_with_agent_job(dn)
-
-
-def is_build_job(job: Job) -> bool:
-	doc_method: str = job.kwargs.get("kwargs", {}).get("doc_method", "")
-	return doc_method.startswith("_build")
+	return _mark_build_as_failed(dn)
 
 
 def should_build_retry_build_output(build_output: str):
