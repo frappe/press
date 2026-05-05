@@ -665,7 +665,7 @@ class DeployCandidateBuild(Document):
 
 	def has_failed_clone_steps(self) -> bool:
 		return any(
-			[step for step in self.build_steps if step.stage_slug == "clone" and step.status == "Failure"]
+			step for step in self.build_steps if step.stage_slug == "clone" and step.status == "Failure"
 		)
 
 	def _process_run_build(
@@ -810,7 +810,6 @@ class DeployCandidateBuild(Document):
 		self._update_docker_image_metadata()
 
 		build_parameters = {
-			# "filename": context_filename,
 			"image_repository": self.docker_image_repository,
 			"image_tag": self.docker_image_tag,
 			"registry": {
