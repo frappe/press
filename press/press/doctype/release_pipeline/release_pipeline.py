@@ -327,27 +327,6 @@ class ReleasePipeline(WorkflowBuilder):
 		)
 
 	@task(queue=_get_task_execution_queue())
-	def monitor_pre_build_validation(self, deploy_candidate_build: str):
-		"""Monitors the Deploy Candidate Build until the remote build job is created."""
-		deploy_candidate_build_status = frappe.db.get_value(
-			"Deploy Candidate Build", deploy_candidate_build, "status"
-		)
-
-		if deploy_candidate_build_status in ["Running", "Success"]:
-			return  # We have enqueued the remote agent job
-
-		if deploy_candidate_build_status == "Failure":
-			self._mark_if_user_failure(deploy_candidate_build)
-			raise ReleasePipelineFailure(
-				f"Pre Build Validation failed for Deploy Candidate Build {deploy_candidate_build}. "
-				"Please check the build logs for more details."
-			)
-
-		self.defer_current_task(
-			message=f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build}",
-		)
-
-	@task(queue=_get_task_execution_queue())
 	def monitor_build_success(self, deploy_candidate_build: str):
 		"""Monitor build till terminal state."""
 		deploy_candidate_build = self._get_latest_retried_build(deploy_candidate_build)
@@ -561,7 +540,6 @@ class ReleasePipeline(WorkflowBuilder):
 		"""Monitors primary and, if necessary, secondary builds."""
 		# Monitor Primary
 		self.add_build_to_pipeline(primary_build)
-		self.monitor_pre_build_validation(primary_build)
 		self.monitor_build_success(primary_build)
 
 		# Check for Secondary Architecture
@@ -576,7 +554,6 @@ class ReleasePipeline(WorkflowBuilder):
 
 			assert secondary_build, "Secondary build should be present for candidates requiring 2 builds"
 			self.add_build_to_pipeline(secondary_build)
-			self.monitor_pre_build_validation(secondary_build)
 			self.monitor_build_success(secondary_build)
 
 		if self.status == "Retrying":

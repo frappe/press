@@ -137,9 +137,7 @@ class TestReleasePipeline(FrappeTestCase):
 			],
 		)
 
-	@patch.object(DeployCandidateBuild, "_upload_build_context", get_mock_context_file)
-	@patch.object(DeployCandidateBuild, "_build", Mock())
-	@patch.object(ReleasePipeline, "monitor_pre_build_validation", mock_pre_build_validation_monitoring)
+	@patch.object(DeployCandidateBuild, "build", Mock())
 	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
 	def test_release_pipeline_creation(self):
 		self.create_deploy_and_update()
@@ -156,9 +154,7 @@ class TestReleasePipeline(FrappeTestCase):
 		)
 		self.assertEqual(release_pipeline.workflow, workflow_doc.name)
 
-	@patch.object(DeployCandidateBuild, "_upload_build_context", get_mock_context_file)
-	@patch.object(DeployCandidateBuild, "_build", Mock())
-	@patch.object(ReleasePipeline, "monitor_pre_build_validation", mock_pre_build_validation_monitoring)
+	@patch.object(DeployCandidateBuild, "build", Mock())
 	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
 	def test_release_pipeline_build_creation(self):
 		with fake_agent_job("Remote Build Job", "Success"):
@@ -170,12 +166,11 @@ class TestReleasePipeline(FrappeTestCase):
 		)  # Just ensure this is created without error since we are mocking the build
 
 	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
-	@patch.object(DeployCandidateBuild, "_upload_build_context", get_mock_context_file)
-	@patch.object(DeployCandidateBuild, "_build", Mock())
-	@patch.object(ReleasePipeline, "monitor_pre_build_validation", mock_pre_build_validation_monitoring)
+	@patch.object(DeployCandidateBuild, "build", Mock())
 	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
 	def test_dynamic_apps_additions_and_bench_dependencies_upgrade(self):
 		parent_hash = frappe.mock("sha1")
+		frappe.db.set_single_value("Press Settings", "auto_upgrade_dependencies", 1)
 
 		for dep in self.test_release_group.dependencies:
 			if dep.dependency == "PYTHON_VERSION":
