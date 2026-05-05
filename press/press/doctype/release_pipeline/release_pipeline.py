@@ -235,9 +235,7 @@ class ReleasePipeline(WorkflowBuilder):
 			app_info = frappe.db.get_value(
 				"App Release", app["release"], ["invalid_release", "invalidation_reason"], as_dict=True
 			)
-			assert app_info is not None
-
-			if not app_info["invalid_release"]:
+			if not app_info or not app_info["invalid_release"]:
 				continue
 
 			raise ReleasePipelineFailure(
