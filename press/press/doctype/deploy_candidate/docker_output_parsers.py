@@ -311,6 +311,7 @@ class ValidationOutputParser(StepMixin):
 		else:
 			exc = Exception(*list(exception_info.values()))
 		pre_build_step.output = str(exc)
+		pre_build_step.save()
 		raise exc
 
 

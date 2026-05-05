@@ -231,9 +231,12 @@ class ReleasePipeline(WorkflowBuilder):
 			if not app.get("release"):
 				continue
 
+			# App release will always be present otherwise we won't be able to proceed.
 			app_info = frappe.db.get_value(
 				"App Release", app["release"], ["invalid_release", "invalidation_reason"], as_dict=True
 			)
+			assert app_info is not None
+
 			if not app_info["invalid_release"]:
 				continue
 
