@@ -1,4 +1,4 @@
-import dayjs from 'dayjs';
+import dayjs from '@/utils/dayjs';
 import type { AuditOccurrence } from './auditReportTypes';
 
 export type BadgeTheme = 'gray' | 'blue' | 'green' | 'orange' | 'red';
