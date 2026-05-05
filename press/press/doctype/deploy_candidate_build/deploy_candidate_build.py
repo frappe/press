@@ -673,9 +673,6 @@ class DeployCandidateBuild(Document):
 		request_data: dict,
 		response_data: dict | None,
 	):
-		job_data = json.loads(job.data or "{}")
-		job_data_output = job_data.get("output", "{}")
-		output_data = json.loads(job_data_output) if isinstance(job_data_output, str) else job_data_output
 		"""
 		Due to how agent - press communication takes place, every time an
 		output is published all of it has to be re-parsed from the start.
@@ -683,6 +680,9 @@ class DeployCandidateBuild(Document):
 		This is due to a method of streaming agent output to press not
 		existing.
 		"""
+		job_data = json.loads(job.data or "{}")
+		job_data_output = job_data.get("output", "{}")
+		output_data = json.loads(job_data_output) if isinstance(job_data_output, str) else job_data_output
 		self._set_output_parsers()
 		clone_failed = self.clone_output_parser.parse_clone_output_and_update_step(
 			job,
@@ -1105,33 +1105,67 @@ def redeploy(dn: str) -> dict[str, str | bool]:
 	return deploy_candidate_build.redeploy()
 
 
+def _fail_build_without_agent_job(dn: str) -> bool:
+	"""
+	Mark a Deploy Candidate Build as failed when no associated Agent Job exists.
+	Always True as the build is successfully marked as failed.
+	"""
+	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn, for_update=True)
+	build.manually_failed = True
+
+	if not build.build_duration:
+		build._set_build_duration()
+
+	build.set_status(Status.FAILURE)
+	frappe.db.commit()
+	return True
+
+
+def _fail_build_with_agent_job(dn: str) -> bool:
+	"""
+	Mark a Deploy Candidate Build as failed when an associated Agent Job exists.
+	Always True as the build is successfully marked as failed.
+	"""
+	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn, for_update=True)
+	build.manually_failed = True
+
+	if not build.build_duration:
+		build._set_build_duration()
+
+	build.set_status(Status.FAILURE)
+	frappe.db.commit()
+	return True
+
+
 @frappe.whitelist()
 def fail_remote_job(dn: str) -> bool:
-	agent_job: "AgentJob" = frappe.get_doc(
+	"""
+	Fail a remote job associated with a Deploy Candidate Build.
+	True if the job was successfully marked as failed, False otherwise.
+	"""
+	agent_job_name = frappe.db.get_value(
 		"Agent Job", {"reference_doctype": "Deploy Candidate Build", "reference_name": dn}
 	)
 
-	agent_job.get_status()
-	agent_job = agent_job.reload()
+	if not agent_job_name:
+		# If the job has not been created yet, mark the build as manually failed
+		return _fail_build_without_agent_job(dn)
 
-	if agent_job.status in ["Success", "Failure"]:
-		# We can't do anything here since the job is already in a terminal state
+	agent_job_doc: AgentJob = frappe.get_doc("Agent Job", agent_job_name)
+	agent_job_doc.get_status()
+	agent_job_doc = agent_job_doc.reload()
+
+	if agent_job_doc.status in ["Success", "Failure"]:
+		# Job is already in a terminal state, nothing we can do here
 		return False
 
-	if agent_job.status in ["Pending", "Undelivered"]:
-		# Return true since the job is now failed and will not be retried by agent
-		agent_job.fail_and_process_job_updates()
+	if agent_job_doc.status in ["Pending", "Undelivered"]:
+		agent_job_doc.fail_and_process_job_updates()
 
-	if agent_job.status == "Running":
-		# Cancel build and set status with for_update and commit to avoid timestamp errors
-		agent_job.cancel_job()
+	elif agent_job_doc.status == "Running":
+		agent_job_doc.cancel_job()
 
-	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn, for_update=True)
-	build.manually_failed = True
-	build.set_status(Status.FAILURE)
-	frappe.db.commit()
-
-	return True
+	return _fail_build_with_agent_job(dn)
 
 
 def is_build_job(job: Job) -> bool:
