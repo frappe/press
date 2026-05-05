@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.core.utils import find
 
 from press.api.bench import options
@@ -20,7 +21,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
 )
-from press.utils import get_app_tag, get_current_team, get_last_doc, unique
+from press.utils import get_app_tag, get_current_team, get_last_doc, is_user_part_of_team, unique
 from press.utils.billing import get_frappe_io_connection
 
 if TYPE_CHECKING:
@@ -441,8 +442,9 @@ def update_app_image() -> str:
 	current_team = get_current_team()
 	app_name = frappe.form_dict.docname
 	app_team = frappe.db.get_value("Marketplace App", app_name, "team")
-	if app_team != current_team:
-		frappe.throw("Not Permitted to update app image", frappe.PermissionError)
+	# not permitted to update the app image if user is not a member of the current team
+	if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
+		frappe.throw(_("You are not permitted to update the app image"), frappe.PermissionError)
 
 	file_content = frappe.local.uploaded_file
 	file_name = frappe.local.uploaded_filename
@@ -466,7 +468,7 @@ def update_app_image() -> str:
 			"content": file_content,
 		}
 	)
-	_file.save(ignore_permissions=True)
+	_file.save()
 	file_url = _file.file_url
 	frappe.db.set_value("Marketplace App", app_name, "image", file_url)
 
@@ -493,9 +495,8 @@ def add_app_screenshot() -> str:
 	current_team = get_current_team()
 	app_name = frappe.form_dict.docname
 	app_team = frappe.db.get_value("Marketplace App", app_name, "team")
-	if app_team != current_team:
-		frappe.throw("Not Permitted to add app screenshot", frappe.PermissionError)
-
+	if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
+		frappe.throw(_("You are not permitted to add app screenshots for this app"), frappe.PermissionError)
 	file_content = frappe.local.uploaded_file
 	file_name = frappe.local.uploaded_filename
 
@@ -517,7 +518,7 @@ def add_app_screenshot() -> str:
 			"content": file_content,
 		}
 	)
-	_file.save(ignore_permissions=True)
+	_file.save()
 	file_url = _file.file_url
 
 	app_doc.append(
@@ -526,7 +527,7 @@ def add_app_screenshot() -> str:
 			"image": file_url,
 		},
 	)
-	app_doc.save(ignore_permissions=True)
+	app_doc.save()
 
 	return file_url
 
@@ -540,7 +541,7 @@ def remove_app_screenshot(name: str, file: str):
 		if sc.image == file:
 			frappe.delete_doc("File", file)
 			app_doc.screenshots.pop(i)
-	app_doc.save(ignore_permissions=True)
+	app_doc.save()
 
 
 ALLOWED_IMAGE_EXTENSIONS = frozenset({"png", "jpg", "jpeg", "webp"})
@@ -1374,3 +1375,29 @@ def get_marketplace_apps() -> list[dict]:
 		apps = frappe.get_all("Marketplace App", {"status": "Published"}, ["name", "title", "route"])
 		frappe.cache().set_value("marketplace_apps", apps, expires_in_sec=60 * 60 * 24 * 7)
 	return apps
+
+
+@frappe.whitelist(methods=["GET"])
+@protected(["Marketplace App", "Marketplace App Audit"])
+def get_app_audit(app: str):
+	"""
+	Fetches the latest audit report for the given marketplace app.
+	By latest, it can be the latest release change audit or the latest submission gate audit.
+	If there is no audit report, it will return None.
+	"""
+	current_team = get_current_team()
+	app_team = frappe.db.get_value("Marketplace App", app, "team")
+	# not permitted to get the audit report if user is not a member of the team of the marketplace app
+	if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
+		frappe.throw(_("You are not permitted to get the audit report for this app"), frappe.PermissionError)
+
+	# get_all, limit 1, order by creation desc
+	audit_name = frappe.get_all(
+		"Marketplace App Audit", {"marketplace_app": app}, order_by="creation desc", limit=1, pluck="name"
+	)
+	if not audit_name:
+		return None
+
+	app_audit = frappe.get_doc("Marketplace App Audit", audit_name[0])
+
+	return app_audit.as_dict()

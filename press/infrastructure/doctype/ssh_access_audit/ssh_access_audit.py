@@ -102,7 +102,7 @@ class SSHAccessAudit(Document):
 			if meta.has_field("is_self_hosted"):
 				filters["is_self_hosted"] = False
 
-			servers = frappe.get_all(server_type, filters=filters, pluck="name")
+			servers = frappe.get_all(server_type, filters=filters, pluck="name", order_by="creation asc")
 			all_servers.extend(servers)
 
 		all_servers.extend(self.get_self_inventory())

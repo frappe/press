@@ -25,6 +25,13 @@ INSTALL_INSTRUCTION_PATTERNS = [
 	r"bench\s+migrate",
 ]
 
+# Patterns that indicate the publisher used architecture/deployment related information which are not relevant on FC Listing.
+ARCHITECTURE_PATTERNS = [
+	r"architecture",
+	r"deployment",
+	r"installation",
+]
+
 
 def run_metadata_checks(marketplace_app) -> list[CheckResult]:
 	"""
@@ -76,7 +83,7 @@ def check_long_description(marketplace_app):
 			severity=severity,
 			result="Fail",
 			message="Long description is missing. Please add a long description for the marketplace app.",
-			details="The long description is missing for the marketplace app.",
+			# details="The long description is missing for the marketplace app.",
 			remediation="Please add a long description for the marketplace app.",
 		)
 
@@ -105,7 +112,24 @@ def check_long_description(marketplace_app):
 			remediation="Please remove any installation instructions from the description.",
 		)
 
-	# TODO: Check 3: Check if there are any Architecture/Deployment related information in the long description.
+	# Check 3: Check if there are any Architecture/Deployment related information in the long description.
+	found_patterns = check_architecture_deployment_information(plain_text)
+
+	if found_patterns:
+		return CheckResult(
+			check_id,
+			check_name="Long Description Contains Architecture/Deployment Information",
+			category=CATEGORY,
+			severity=severity,
+			result="Warn",
+			message="Long description contains architecture/deployment information. Please don't add any architecture/deployment information in the description.",
+			details=json.dumps(
+				{
+					"found_patterns": found_patterns,
+				}
+			),
+			remediation="Please remove any architecture/deployment information from the description.",
+		)
 
 	# Check 4: Check that there are not any other links in the long description. All links are anyhow provided in the Support Links section.
 	if re.search(r"https?://\S+", plain_text):
@@ -129,6 +153,17 @@ def check_long_description(marketplace_app):
 		message="Long description checks passed.",
 		# no need to provide any details or remediation as all the checks passed.
 	)
+
+
+def check_architecture_deployment_information(plain_text):
+	"""
+	Check if the long description contains any of the architecture/deployment related information.
+	"""
+	found_patterns = []
+	for pattern in ARCHITECTURE_PATTERNS:
+		if re.search(pattern, plain_text):
+			found_patterns.append(pattern)
+	return found_patterns
 
 
 def check_screenshots(marketplace_app):
@@ -215,7 +250,7 @@ def check_links(marketplace_app):
 			headers = {
 				"User-Agent": "Mozilla/5.0 (compatible; MarketplaceAuditBot/1.0; +https://cloud.frappe.io)",
 			}
-			response = requests.get(link, timeout=(3, 10), headers=headers)
+			response = requests.get(link, timeout=(3, 15), headers=headers)
 			# 0k or redirect is fine.
 			if response.status_code not in [200, 301, 302]:
 				broken_links.append(link)
@@ -228,7 +263,7 @@ def check_links(marketplace_app):
 			check_name="Broken Links",
 			category=CATEGORY,
 			severity=severity,
-			result="Fail",
+			result="Warn",
 			message="This app has some broken links. Please fix the broken links for the app to be published on FC.",
 			details=json.dumps(
 				{
@@ -269,6 +304,8 @@ def check_categories(marketplace_app):
 			result="Warn",
 			message="No categories are present for the app. Please add relevant categories for the app",
 			remediation="Please add relevant categories for the app.",
+			# categories are currently not added by the publisher, so we only need to check this internally to flag the reviewer
+			is_internal_only=True,
 		)
 
 	return CheckResult(

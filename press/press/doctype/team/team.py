@@ -160,6 +160,7 @@ class Team(Document):
 		"hybrid_servers_enabled",
 		"relaxed_permissions",
 		"upi_autopay_enabled",
+		"default_razorpay_mandate",
 	)
 
 	def get_doc(self, doc):
@@ -566,6 +567,9 @@ class Team(Document):
 		):
 			self.update_billing_details_on_frappeio()
 
+		if self.has_value_changed("is_trusted_team"):
+			frappe.cache().hdel("setup_intent", self.name)
+
 	def update_draft_invoice_payment_mode(self):
 		if self.has_value_changed("payment_mode"):
 			draft_invoices = frappe.get_all(
@@ -586,6 +590,10 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def impersonate(self, member, reason):
+		frappe.only_for("System Manager")
+		member_team = frappe.db.get_value("Team Member", member, "parent")
+		if member_team != self.name:
+			frappe.throw("Member does not belong to this team", frappe.PermissionError)
 		user = frappe.db.get_value("Team Member", member, "user")
 		impersonation = frappe.get_doc(
 			{
@@ -1340,7 +1348,7 @@ class Team(Document):
 		message = f"Failed Invoice Payment [{invoice}]({invoice_url}) of Partner: [{self.name}]({team_url})"
 		TelegramMessage.enqueue(message=message)
 
-	def send_email_for_failed_upi_payment(self, invoice, error_reason=None, upi_vpa=None):
+	def send_email_for_failed_upi_payment(self, invoice=None, error_reason=None, upi_vpa=None):
 		if isinstance(invoice, str):
 			invoice = frappe.get_doc("Invoice", invoice)
 
@@ -1353,7 +1361,7 @@ class Team(Document):
 			template="payment_failed_upi_autopay",
 			args={
 				"subject": subject,
-				"amount": invoice.get_formatted("amount_due_with_tax"),
+				"amount": invoice.get_formatted("amount_due_with_tax") if invoice else None,
 				"upi_vpa": upi_vpa,
 				"error_reason": error_reason,
 				"upi_autopay_link": frappe.utils.get_url("/dashboard/billing/upi-autopay"),

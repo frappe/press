@@ -159,6 +159,13 @@ class RazorpayMandate(Document):
 		if reason:
 			self.failure_reason = reason
 		self.save(ignore_permissions=True)
+		if self.is_default:
+			frappe.db.set_value("Team", self.team, "default_razorpay_mandate", None)
+			if frappe.db.get_value("Team", self.team, "payment_mode") == "UPI Autopay":
+				frappe.db.set_value("Team", self.team, "payment_mode", "")
+				frappe.get_doc("Team", self.team).send_email_for_failed_upi_payment(
+					error_reason="MANDATE_CANCELLED", upi_vpa=self.upi_vpa
+				)
 
 	def pause(self):
 		"""Pause the mandate"""

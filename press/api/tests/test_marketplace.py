@@ -54,6 +54,16 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
+
+def _ensure_primary_user_in_team_members(team_name: str, user: str) -> None:
+	"""create_test_team sets Team.user only; is_user_part_of_team reads Team Member."""
+	if frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team_name, "user": user}):
+		return
+	team = frappe.get_doc("Team", team_name)
+	team.append("team_members", {"user": user})
+	team.save(ignore_permissions=True)
+
+
 PAYLOAD = [
 	{
 		"name": "develop",
@@ -89,6 +99,7 @@ class TestAPIMarketplace(FrappeTestCase):
 			team=self.team.name,
 			sources=[{"version": self.version, "source": self.app_source.name}],
 		)
+		_ensure_primary_user_in_team_members(self.team.name, self.team.user)
 		self.plan_data = {
 			"price_inr": 820,
 			"price_usd": 10,
@@ -308,6 +319,9 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.app_source.reload()
 		self.assertNotEqual(old_branch, self.app_source.branch)
 
+	@patch(
+		"press.press.doctype.marketplace_app.marketplace_app.validate_frappe_version_for_branch", new=Mock()
+	)
 	def test_add_version(self):
 		old_versions = len(self.marketplace_app.sources)
 		repo_owner, repo_name = self.app_source.repository_url.rstrip("/").split("/")[-2:]
@@ -315,6 +329,9 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.marketplace_app.reload()
 		self.assertEqual(old_versions + 1, len(self.marketplace_app.sources))
 
+	@patch(
+		"press.press.doctype.marketplace_app.marketplace_app.validate_frappe_version_for_branch", new=Mock()
+	)
 	def test_remove_version(self):
 		old_versions = len(self.marketplace_app.sources)
 		repo_owner, repo_name = self.app_source.repository_url.rstrip("/").split("/")[-2:]
@@ -356,20 +373,39 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.marketplace_app.reload()
 		self.assertFalse(self.marketplace_app.image)
 
-	def test_add_app_screenshot_by_owner(self):
+	@patch("press.api.marketplace.is_user_part_of_team", return_value=False)
+	@patch("press.api.marketplace.get_current_team")
+	def test_update_app_image_blocked_for_non_member_of_owner_team(
+		self, mock_get_current_team, _mock_is_member
+	):
 		frappe.set_user(self.team.user)
+		mock_get_current_team.return_value = self.team.name
 		_setup_fake_upload(self.marketplace_app.name)
 
-		file_url = add_app_screenshot()
+		with self.assertRaises(frappe.PermissionError):
+			update_app_image()
 
 		self.marketplace_app.reload()
-		self.assertTrue(file_url)
-		self.assertEqual(len(self.marketplace_app.screenshots), 1)
-		self.assertEqual(self.marketplace_app.screenshots[0].image, file_url)
+		self.assertFalse(self.marketplace_app.image)
 
 	def test_add_app_screenshot_blocked_for_non_owner(self):
 		other_team = create_test_press_admin_team()
 		frappe.set_user(other_team.user)
+		_setup_fake_upload(self.marketplace_app.name)
+
+		with self.assertRaises(frappe.PermissionError):
+			add_app_screenshot()
+
+		self.marketplace_app.reload()
+		self.assertEqual(len(self.marketplace_app.screenshots), 0)
+
+	@patch("press.api.marketplace.is_user_part_of_team", return_value=False)
+	@patch("press.api.marketplace.get_current_team")
+	def test_add_app_screenshot_blocked_for_non_member_of_owner_team(
+		self, mock_get_current_team, _mock_is_member
+	):
+		frappe.set_user(self.team.user)
+		mock_get_current_team.return_value = self.team.name
 		_setup_fake_upload(self.marketplace_app.name)
 
 		with self.assertRaises(frappe.PermissionError):

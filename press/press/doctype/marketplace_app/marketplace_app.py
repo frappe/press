@@ -298,6 +298,7 @@ class MarketplaceApp(WebsiteGenerator):
 				branch=to_branch,
 				version=version,
 				github_installation_id=source_doc.github_installation_id,
+				ease_versioning_constrains=True,
 			)
 			if version not in [version.version for version in source_doc.versions]:
 				source_doc.append("versions", {"version": version})
@@ -314,6 +315,7 @@ class MarketplaceApp(WebsiteGenerator):
 				branch=to_branch,
 				version=version,
 				github_installation_id=source_doc.github_installation_id,
+				ease_versioning_constrains=True,
 			)
 			source_doc.branch = to_branch
 			source_doc.save()
@@ -355,6 +357,7 @@ class MarketplaceApp(WebsiteGenerator):
 			branch=branch,
 			version=version,
 			github_installation_id=source_doc.github_installation_id,
+			ease_versioning_constrains=True,
 		)
 		if existing_source:
 			# If source with branch to switch already exists, just add version to child table of source and use the same

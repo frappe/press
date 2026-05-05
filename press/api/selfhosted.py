@@ -79,6 +79,10 @@ def sshkey():
 @frappe.whitelist()
 def verify(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
+	current_team = get_current_team()
+
+	if server_doc.team != current_team:
+		frappe.throw("Not permitted to access this server", frappe.PermissionError)
 
 	app_server_verified = verify_server("app", server_doc)
 	db_server_verified = verify_server("db", server_doc)
@@ -128,6 +132,11 @@ def verify_server(server_type, server_doc):
 @frappe.whitelist()
 def setup(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
+	current_team = get_current_team()
+
+	if server_doc.team != current_team:
+		frappe.throw("Not permitted to access this server", frappe.PermissionError)
+
 	server_doc.start_setup = True
 	server_doc.save()
 	server_doc.setup_server()

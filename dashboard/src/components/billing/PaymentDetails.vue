@@ -401,7 +401,11 @@ function updatePaymentMode(mode) {
 		return;
 	}
 	if (mode === 'UPI Autopay') {
-		router.push({ name: 'BillingUPIAutopay' });
+		if (team.doc.default_razorpay_mandate) {
+			if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
+		} else {
+			router.push({ name: 'BillingUPIAutopay' });
+		}
 		return;
 	}
 	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });

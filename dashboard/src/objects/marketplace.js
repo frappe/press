@@ -9,6 +9,7 @@ import ObjectList from '../components/ObjectList.vue';
 import { userCurrency, currency } from '../utils/format';
 import { getToastErrorMessage } from '../utils/toast';
 import { isMobile } from '../utils/device';
+import { RouterLink } from 'vue-router';
 import router from '../router';
 
 export default {
@@ -320,6 +321,18 @@ export default {
 				},
 			},
 			{
+				label: 'Audit Report',
+				icon: icon('clipboard'),
+				route: 'audit-report',
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../components/marketplace/AppAuditReport.vue'),
+				),
+				props: (app) => {
+					return { app: app.doc.name };
+				},
+			},
+			{
 				label: 'Pricing',
 				icon: icon('dollar-sign'),
 				route: 'pricing',
@@ -610,10 +623,22 @@ function showReleases(row, app) {
 											Fail: 'red',
 											Inconclusive: 'gray',
 										};
-										return h(Badge, {
-											label: row.audit_result || 'Pending',
-											theme: theme[row.audit_result] || 'gray',
-										});
+										return h(
+											RouterLink,
+											{
+												to: {
+													name: 'Marketplace App Detail Audit Report',
+													params: { name: app.doc.name },
+												},
+												class:
+													'inline-flex cursor-pointer rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400',
+											},
+											() =>
+												h(Badge, {
+													label: row.audit_result || 'Pending',
+													theme: theme[row.audit_result] || 'gray',
+												}),
+										);
 									},
 								},
 								{

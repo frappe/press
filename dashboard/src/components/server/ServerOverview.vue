@@ -1,6 +1,9 @@
 <template>
 	<div class="w-100" v-if="$appServer?.doc">
-		<CustomAlerts ctx_type="Server" :ctx_name="$appServer?.doc?.name" />
+		<CustomAlerts
+			ctx_type="Server"
+			:ctx_name="[$appServer?.doc?.name, $appServer?.doc?.cluster]"
+		/>
 		<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
 			<div
 				v-for="server in $appServer?.doc?.secondary_server

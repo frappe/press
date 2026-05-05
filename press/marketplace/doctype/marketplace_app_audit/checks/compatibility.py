@@ -2,22 +2,22 @@ import json
 import os
 
 import frappe
-import semantic_version as sv
 
 from press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit import CheckResult
+from press.press.doctype.app.app import map_frappe_version
 
 CATEGORY = "Compatibility"
 
 
-def run_compatibility_checks(source: str, clone_dir: str) -> list[CheckResult]:
+def run_compatibility_checks(marketplace_app: str, source: str, clone_dir: str) -> list[CheckResult]:
 	"""
-	Checks whether the app's declared Frappe version support (in pyproject.toml)
-	is still compatible with all Release Groups where this source is installed.
-	Example:
-	- App Source was already installed on public/private benches for v15,v16.
-	- but the app's pyproject.toml now declares support only for >=16.0.0,<17.0.0-dev
-	- App is still installed on v15 benches. This is incompatible.
-	- We need to flag this as a Critical issue.
+	Runs when pyproject has a bounded frappe spec.
+
+	1. Bench check: release groups with this source must use a Frappe version in the resolved list.
+	2. Registration check: Marketplace App Version (parent + source) must be in that same list.
+
+	Both use ease_versioning_constrains=True so behaviour matches Marketplace add_version / change_branch.
+	If the source is not listed on the marketplace app, (2) is skipped.
 	"""
 	results: list[CheckResult] = []
 
@@ -29,11 +29,16 @@ def run_compatibility_checks(source: str, clone_dir: str) -> list[CheckResult]:
 	if not frappe_spec_str:
 		return results
 
-	supported_versions = _get_supported_frappe_versions(frappe_spec_str)
+	# Align with Marketplace App add_version / change_branch: allow lower bounds like
+	# >=16.15.0,<17 to count as supporting "Version 16" (lower-bound major match).
+	supported_versions = _frappe_versions_for_spec(frappe_spec_str, ease_versioning_constrains=True)
 	if not supported_versions:
 		return results
 
 	results.append(check_bench_compatibility(source, supported_versions, frappe_spec_str))
+	reg = check_app_source_compatibility(marketplace_app, source, frappe_spec_str, supported_versions)
+	if reg is not None:
+		results.append(reg)
 	return results
 
 
@@ -47,32 +52,25 @@ def _safe_load_pyproject(pyproject_path: str) -> dict | None:
 		return None
 
 
-def _get_supported_frappe_versions(frappe_spec_str: str) -> list[str] | None:
+def _frappe_versions_for_spec(frappe_spec_str: str, *, ease_versioning_constrains: bool) -> list[str] | None:
 	"""
-	Resolve a semver specifier like ">=15.0.0-dev,<=16.0.0-dev" into
-	Frappe Version names like ["Version 15", "Version 16"].
-
-	Uses the same NpmSpec logic as map_frappe_version in app.py,
-	but without frappe.throw — returns None on invalid input so
-	versioning checks can report the error instead.
+	Resolve pyproject frappe NPM spec to Frappe Version names using the same logic as
+	validate_frappe_version_for_branch / map_frappe_version.
 	"""
 	try:
-		spec = sv.NpmSpec(frappe_spec_str.replace(" ", "").replace(",", " "))
-	except ValueError:
+		frappe_versions = frappe.get_all(
+			"Frappe Version",
+			{"public": True},
+			["name", "number", "status"],
+		)
+		return map_frappe_version(
+			frappe_spec_str,
+			frappe_versions,
+			"Marketplace audit",
+			ease_versioning_constrains,
+		)
+	except Exception:
 		return None
-
-	frappe_versions = frappe.get_all(
-		"Frappe Version",
-		{"public": True},
-		["name", "number", "status"],
-	)
-
-	matched = []
-	for version in frappe_versions:
-		if spec.match(sv.Version(f"{version['number']}.0.0")):
-			matched.append(str(version["name"]))
-
-	return matched or None
 
 
 def check_bench_compatibility(source: str, supported_versions: list[str], frappe_spec: str) -> CheckResult:
@@ -107,6 +105,7 @@ def check_bench_compatibility(source: str, supported_versions: list[str], frappe
 			result="Pass",
 			severity="Critical",
 			message=f"App supports {supported_versions} — all installed benches are compatible",
+			is_internal_only=True,
 		)
 
 	public_benches = [b for b in incompatible if b.public]
@@ -145,4 +144,67 @@ def check_bench_compatibility(source: str, supported_versions: list[str], frappe
 			"Either widen the version range to include these versions, or coordinate removing "
 			"the app from incompatible benches before releasing."
 		),
+		is_internal_only=True,
+		is_blocking=True,
+	)
+
+
+def check_app_source_compatibility(
+	marketplace_app: str,
+	source: str,
+	frappe_spec: str,
+	supported_versions: list[str],
+) -> CheckResult | None:
+	"""
+	Ensure the Frappe Version this source is registered under on the marketplace app
+	is among the versions supported by this clone's pyproject.toml.
+
+	Uses the same eased mapping as add_version / change_branch so specs like
+	>=16.15.0,<17.0.0 still count as supporting Version 16.
+	"""
+	registered = frappe.db.get_value(
+		"Marketplace App Version",
+		{"parent": marketplace_app, "source": source},
+		"version",
+	)
+	if not registered:
+		return None
+
+	if registered in supported_versions:
+		return CheckResult(
+			check_id="compat_registered_source_version",
+			check_name="Registered source vs pyproject Frappe version",
+			category=CATEGORY,
+			result="Pass",
+			severity="Critical",
+			message=(
+				f"pyproject.toml is compatible with marketplace registration for {registered} on this source."
+			),
+			is_internal_only=False,
+			is_blocking=False,
+		)
+
+	details = {
+		"registered_frappe_version": registered,
+		"supported_versions_from_spec": supported_versions,
+		"frappe_specifier": frappe_spec,
+	}
+	return CheckResult(
+		check_id="compat_registered_source_version",
+		check_name="Registered source vs pyproject Frappe version",
+		category=CATEGORY,
+		result="Fail",
+		severity="Critical",
+		message=(
+			f"This source is registered for {registered}, but "
+			f'pyproject.toml frappe = "{frappe_spec}" '
+			f"does not include that version (resolved: {supported_versions})."
+		),
+		details=json.dumps(details),
+		remediation=(
+			f"Update [tool.bench.frappe-dependencies].frappe to cover {registered}, "
+			"or change which Frappe version this App Source is linked to on the marketplace app."
+		),
+		is_internal_only=False,
+		is_blocking=True,
 	)
