@@ -47,7 +47,7 @@ def check_hooks_exists(hooks_path: str | None) -> CheckResult:
 	if hooks_path is None:
 		return CheckResult(
 			check_id="dep_hooks_exists",
-			check_name="hooks.py Exists",
+			check_name="Check whether hooks.py exists",
 			category=CATEGORY,
 			severity="Critical",
 			result="Fail",
@@ -58,7 +58,7 @@ def check_hooks_exists(hooks_path: str | None) -> CheckResult:
 
 	return CheckResult(
 		check_id="dep_hooks_exists",
-		check_name="hooks.py Exists",
+		check_name="Check whether hooks.py exists",
 		category=CATEGORY,
 		severity="Critical",
 		result="Pass",
@@ -73,7 +73,7 @@ def check_hooks_syntax(hooks_path: str) -> CheckResult:
 	except SyntaxError as e:
 		return CheckResult(
 			check_id="dep_hooks_syntax",
-			check_name="hooks.py Valid Syntax",
+			check_name="Check whether hooks.py has valid syntax",
 			category=CATEGORY,
 			severity="Critical",
 			result="Fail",
@@ -85,7 +85,7 @@ def check_hooks_syntax(hooks_path: str) -> CheckResult:
 
 	return CheckResult(
 		check_id="dep_hooks_syntax",
-		check_name="hooks.py Valid Syntax",
+		check_name="Check whether hooks.py has valid syntax",
 		category=CATEGORY,
 		severity="Critical",
 		result="Pass",
@@ -104,7 +104,7 @@ def check_no_symlinks(clone_dir: str) -> CheckResult:
 	if symlinks:
 		return CheckResult(
 			check_id="dep_no_symlinks",
-			check_name="No Symlinks",
+			check_name="Check for symlinks in the app",
 			category=CATEGORY,
 			severity="Critical",
 			result="Fail",
@@ -116,7 +116,7 @@ def check_no_symlinks(clone_dir: str) -> CheckResult:
 
 	return CheckResult(
 		check_id="dep_no_symlinks",
-		check_name="No Symlinks",
+		check_name="Check for symlinks in the app",
 		category=CATEGORY,
 		severity="Critical",
 		result="Pass",
@@ -157,7 +157,7 @@ def check_init_no_side_effects(clone_dir: str) -> CheckResult:  # noqa: C901
 	if violations:
 		return CheckResult(
 			check_id="dep_init_side_effects",
-			check_name="No Side-Effects in __init__.py",
+			check_name="Check for side-effects in __init__.py",
 			category=CATEGORY,
 			severity="Major",
 			result="Fail",
@@ -170,7 +170,7 @@ def check_init_no_side_effects(clone_dir: str) -> CheckResult:  # noqa: C901
 
 	return CheckResult(
 		check_id="dep_init_side_effects",
-		check_name="No Side-Effects in __init__.py",
+		check_name="Check for side-effects in __init__.py",
 		category=CATEGORY,
 		severity="Major",
 		result="Pass",
@@ -188,7 +188,7 @@ def check_app_name_consistency(clone_dir: str, hooks_path: str) -> CheckResult:
 	if hooks_app_name is None:
 		return CheckResult(
 			check_id="dep_app_name_consistency",
-			check_name="app_name Consistency",
+			check_name="app_name consistency",
 			category=CATEGORY,
 			severity="Major",
 			result="Fail",
@@ -202,7 +202,7 @@ def check_app_name_consistency(clone_dir: str, hooks_path: str) -> CheckResult:
 	if hooks_app_name != package_dir:
 		return CheckResult(
 			check_id="dep_app_name_consistency",
-			check_name="app_name Consistency",
+			check_name="app_name consistency",
 			category=CATEGORY,
 			severity="Major",
 			result="Fail",
@@ -213,7 +213,7 @@ def check_app_name_consistency(clone_dir: str, hooks_path: str) -> CheckResult:
 
 	return CheckResult(
 		check_id="dep_app_name_consistency",
-		check_name="app_name Consistency",
+		check_name="app_name consistency",
 		category=CATEGORY,
 		severity="Major",
 		result="Pass",
@@ -233,7 +233,7 @@ def check_required_apps(hooks_path: str) -> CheckResult:
 	except Exception:
 		return CheckResult(
 			check_id="dep_required_apps",
-			check_name="required_apps Valid",
+			check_name="Check whether required_apps is well-formed",
 			category=CATEGORY,
 			severity="Major",
 			result="Fail",
@@ -244,7 +244,7 @@ def check_required_apps(hooks_path: str) -> CheckResult:
 	if not required_apps:
 		return CheckResult(
 			check_id="dep_required_apps",
-			check_name="required_apps Valid",
+			check_name="Check whether required_apps is well-formed",
 			category=CATEGORY,
 			severity="Major",
 			result="Pass",
@@ -267,7 +267,7 @@ def check_required_apps(hooks_path: str) -> CheckResult:
 	if issues:
 		return CheckResult(
 			check_id="dep_required_apps",
-			check_name="required_apps Valid",
+			check_name="Check whether required_apps is well-formed",
 			category=CATEGORY,
 			severity="Major",
 			result="Warn",
@@ -278,7 +278,7 @@ def check_required_apps(hooks_path: str) -> CheckResult:
 
 	return CheckResult(
 		check_id="dep_required_apps",
-		check_name="required_apps Valid",
+		check_name="Check whether required_apps is well-formed",
 		category=CATEGORY,
 		severity="Major",
 		result="Pass",
