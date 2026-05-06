@@ -477,11 +477,14 @@ class ReleasePipeline(WorkflowBuilder):
 		release_group_doc: ReleaseGroup = frappe.get_doc("Release Group", self.release_group, for_update=True)
 		release_group_apps = {app.app for app in release_group_doc.apps}
 
-		parsed_supported_frappe_version = parse_frappe_version(
-			version_string=supported_frappe_version,
-			app_title="frappe",
-			ease_versioning_constrains=False,
-		)
+		try:
+			parsed_supported_frappe_version = parse_frappe_version(
+				version_string=supported_frappe_version,
+				app_title="frappe",
+				ease_versioning_constrains=False,
+			)
+		except frappe.ValidationError:
+			return
 
 		for app in dependent_apps:
 			if app in release_group_apps:
@@ -509,6 +512,12 @@ class ReleasePipeline(WorkflowBuilder):
 	@task(queue=_get_task_execution_queue())
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
 		"""Groups all early-exit validation logic."""
+		is_enabled = frappe.db.get_value("Release Group", self.release_group, "enabled")
+		if not is_enabled:
+			self.is_user_addressable_failure = True
+			self.save()
+			raise ReleasePipelineFailure("Release Group is disabled. Updates can not be initiated.")
+
 		try:
 			self.validate_app_hashes(apps)  # This sets status to "Running"
 			# Let this be here for when we have a invalid release already this will ensure we
