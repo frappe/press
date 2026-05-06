@@ -1256,7 +1256,7 @@ def options_for_version(name: str):
 
 	branches_list = []
 	for source in sources:
-		branches_list.append(branches(source))
+		branches_list += branches(source)
 	branches_list = list(set(branches_list))
 
 	versions = list(set(frappe_version).difference(set(added_versions)))

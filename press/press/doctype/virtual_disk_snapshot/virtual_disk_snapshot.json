@@ -209,7 +209,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "Press Admin",
+   "role": "Press User",
    "share": 1,
    "write": 1
   },
@@ -219,7 +219,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "Press Member",
+   "role": "Press User",
    "share": 1
   }
  ],
