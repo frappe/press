@@ -1165,8 +1165,10 @@ class Team(Document):
 		return None
 
 	def is_payment_mode_set(self):
-		if self.payment_mode in ("Prepaid Credits", "Paid By Partner") or (
-			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
+		if (
+			self.payment_mode in ("Prepaid Credits", "Paid By Partner")
+			or (self.payment_mode == "Card" and self.default_payment_method and self.billing_address)
+			or (self.payment_mode == "UPI Autopay" and self.default_razorpay_mandate)
 		):
 			return True
 		return False
