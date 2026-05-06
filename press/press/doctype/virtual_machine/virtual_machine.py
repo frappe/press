@@ -1651,6 +1651,8 @@ class VirtualMachine(Document):
 			self._create_snapshots_oci(exclude_boot_volume)
 		elif self.cloud_provider == "Hetzner":
 			self._create_snapshots_hetzner()
+		elif self.cloud_provider == "Frappe Compute":
+			self._create_snapshots_frappe_compute()
 
 	def _create_snapshots_aws(
 		self,
@@ -1751,6 +1753,18 @@ class VirtualMachine(Document):
 				"virtual_machine": self.name,
 				"snapshot_id": response.image.id,
 				"volume_id": HETZNER_ROOT_DISK_ID,
+			}
+		).insert()
+		self.flags.created_snapshots.append(doc.name)
+
+	def _create_snapshots_frappe_compute(self):
+		client = self.client()
+		snapshot_id = client.create_snapshot(self.instance_id)
+		doc = frappe.get_doc(
+			{
+				"doctype": "Virtual Disk Snapshot",
+				"virtual_machine": self.name,
+				"snapshot_id": snapshot_id,
 			}
 		).insert()
 		self.flags.created_snapshots.append(doc.name)
