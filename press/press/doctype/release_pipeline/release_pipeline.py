@@ -480,11 +480,14 @@ class ReleasePipeline(WorkflowBuilder):
 		release_group_doc: ReleaseGroup = frappe.get_doc("Release Group", self.release_group, for_update=True)
 		release_group_apps = {app.app for app in release_group_doc.apps}
 
-		parsed_supported_frappe_version = parse_frappe_version(
-			version_string=supported_frappe_version,
-			app_title="frappe",
-			ease_versioning_constrains=False,
-		)
+		try:
+			parsed_supported_frappe_version = parse_frappe_version(
+				version_string=supported_frappe_version,
+				app_title="frappe",
+				ease_versioning_constrains=False,
+			)
+		except frappe.ValidationError:
+			return
 
 		for app in dependent_apps:
 			if app in release_group_apps:
