@@ -374,17 +374,13 @@ class ReleasePipeline(WorkflowBuilder):
 		"""Fail the bench job if it's creation time is older than 10 mins"""
 		for job in pending_agent_jobs:
 			assert isinstance(job["creation"], datetime), "Expected 'creation' to be a datetime object"
-			if job["creation"] <= frappe.utils.now_datetime() - timedelta(minutes=10):
-				if job["status"] == "Undelivered":
-					# In case of undelivered jobs we can directly mark them as failure
-					# And mark the bench as broken since they were never picked up by agent
-					frappe.db.set_value("Agent Job", job["name"], "status", "Failure")
-					frappe.db.set_value("Bench", job["bench"], "status", "Broken")
-				else:
-					# In case of pending jobs, we need to cancel the job first and then mark it as failure.
-					agent_job_doc: AgentJob = frappe.get_doc("Agent Job", job["name"])
-					agent_job_doc.cancel_job()
-					agent_job_doc.fail_and_process_job_updates()
+			if (job["creation"] <= frappe.utils.now_datetime() - timedelta(minutes=10)) and (
+				job["status"] == "Undelivered"
+			):
+				# In case of undelivered jobs we can directly mark them as failure
+				# And mark the bench as broken since they were never picked up by agent
+				frappe.db.set_value("Agent Job", job["name"], "status", "Failure")
+				frappe.db.set_value("Bench", job["bench"], "status", "Broken")
 
 	def _is_active_bench_work_in_progress(self, builds: list[str]) -> bool:
 		"""Checks the entire lifecycle (Queue + Agent Jobs) for active work."""
