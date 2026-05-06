@@ -519,9 +519,7 @@ class ReleasePipeline(WorkflowBuilder):
 		if not is_enabled:
 			self.is_user_addressable_failure = True
 			self.save()
-			raise ReleasePipelineFailure(
-				"Release Group is disabled. Please enable to proceed with the release."
-			)
+			raise ReleasePipelineFailure("Release Group is disabled. Updates can not be initiated.")
 
 		try:
 			self.validate_app_hashes(apps)  # This sets status to "Running"
