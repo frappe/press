@@ -515,6 +515,14 @@ class ReleasePipeline(WorkflowBuilder):
 	@task(queue=_get_task_execution_queue())
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
 		"""Groups all early-exit validation logic."""
+		is_enabled = frappe.db.get_value("Release Group", self.release_group, "enabled")
+		if not is_enabled:
+			self.is_user_addressable_failure = True
+			self.save()
+			raise ReleasePipelineFailure(
+				"Release Group is disabled. Please enable to proceed with the release."
+			)
+
 		try:
 			self.validate_app_hashes(apps)  # This sets status to "Running"
 			self.validate_server_storages()

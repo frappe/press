@@ -912,6 +912,7 @@ class ReleaseGroup(Document, TagHelpers):
 			or self.dependency_update_pending
 		)
 		out.update_available = False if out.has_running_release_pipeline else out.update_available
+		out.update_available = out.update_available if self.enabled else False
 		out.number_of_apps = len(self.apps)
 
 		out.sites = [
