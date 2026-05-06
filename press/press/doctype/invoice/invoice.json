@@ -578,13 +578,13 @@
    "create": 1,
    "print": 1,
    "read": 1,
-   "role": "Press Admin",
+   "role": "Press User",
    "submit": 1,
    "write": 1
   },
   {
    "read": 1,
-   "role": "Press Member"
+   "role": "Press User"
   },
   {
    "read": 1,

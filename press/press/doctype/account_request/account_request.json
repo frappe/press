@@ -14,7 +14,6 @@
   "otp",
   "otp_generated_at",
   "column_break_4",
-  "role",
   "invited_by",
   "ip_address",
   "invited_by_parent_team",
@@ -68,11 +67,6 @@
    "fieldname": "team",
    "fieldtype": "Data",
    "label": "Team"
-  },
-  {
-   "fieldname": "role",
-   "fieldtype": "Data",
-   "label": "Role"
   },
   {
    "fieldname": "invited_by",
@@ -310,8 +304,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-29 07:26:37.983114",
- "modified_by": "Administrator",
+ "modified": "2026-04-28 23:09:05.614019",
+ "modified_by": "hello@ssiyad.com",
  "module": "Press",
  "name": "Account Request",
  "owner": "Administrator",
@@ -330,11 +324,11 @@
   },
   {
    "create": 1,
-   "role": "Press Admin"
+   "role": "Press User"
   },
   {
    "create": 1,
-   "role": "Press Member"
+   "role": "Press User"
   }
  ],
  "row_format": "Dynamic",

@@ -130,8 +130,8 @@ def get_current_team(get_doc=False) -> Team | str:
 	# `team_name` getting injected by press.saas.api.whitelist_saas_api decorator
 	team = x_press_team if x_press_team else getattr(frappe.local, "team_name", "")
 
-	if not team and has_role("Press Admin") and frappe.db.exists("Team", {"user": frappe.session.user}):
-		# if user has_role of Press Admin then just return current user as default team
+	if not team and has_role("Press User") and frappe.db.exists("Team", {"user": frappe.session.user}):
+		# if user has_role of Press User then just return current user as default team
 		return (
 			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})
 			if get_doc
@@ -565,16 +565,15 @@ def group_children_in_result(result, child_field_map):
 	result =
 	[
 	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'System Manager'},
-	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'Press Admin'},
-	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press Admin'},
-	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press Member'},
+	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'Press User'},
+	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press User'},
 	]
 
 	out = group_children_in_result(result, {'role': 'roles'})
 	print(out)
 	[
-	{'name': 'test1', 'full_name': 'Faris Ansari', roles: ['System Manager', 'Press Admin']},
-	{'name': 'test2', 'full_name': 'Aditya Hase', roles: ['Press Admin', 'Press Member']},
+	{'name': 'test1', 'full_name': 'Faris Ansari', roles: ['System Manager', 'Press User']},
+	{'name': 'test2', 'full_name': 'Aditya Hase', roles: ['Press User']},
 	]
 	"""
 	out = {}
