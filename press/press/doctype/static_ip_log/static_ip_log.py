@@ -28,10 +28,55 @@ class StaticIPLog(Document):
 		if self.status == "Attached":
 			# create subscription
 			# also check if any other server has the same static IP and if so, end subscription for that server and create new one for this server
-			pass
+			self._create_subscription()
+
 		elif self.status == "Detached":
 			# end subscription
-			pass
+			self._disable_subscription()
+		else:
+			frappe.throw("Invalid status. Status must be either 'Attached' or 'Detached'.")
+
+	def _create_subscription(self):
+		plan = frappe.get_value("Static IP Plan", {"provider": self.provider, "enabled": 1}, "name")
+		if not plan:
+			frappe.throw(f"No active Static IP Plan found for provider {self.provider}")
+
+		if frappe.db.exists(
+			"Subscription",
+			{
+				"enabled": 1,
+				"document_type": self.server_type,
+				"document_name": self.server,
+				"plan": "Static IP Plan",
+			},
+		):
+			return
+
+		frappe.get_doc(
+			{
+				"doctype": "Subscription",
+				"enabled": 1,
+				"team": frappe.db.get_value(self.server_type, self.server, "team"),
+				"document_type": self.server_type,
+				"document_name": self.server,
+				"plan_type": "Static IP Plan",
+				"plan": plan,
+				"interval": "Hourly",
+			}
+		).insert(ignore_permissions=True)
+
+	def _disable_subscription(self):
+		frappe.db.set_value(
+			"Subscription",
+			{
+				"enabled": 1,
+				"document_type": self.server_type,
+				"document_name": self.server,
+				"plan": "Static IP Plan",
+			},
+			"enabled",
+			0,
+		)
 
 
 def create_static_ip_log(server: str, server_type: str, static_ip: str, status: str = "Attached"):
@@ -52,6 +97,8 @@ def create_static_ip_log_if_applicable(fn):
 			static_ip = self.get("ip") or self.get("public_ip_address")
 
 		result = fn(self)
+
+		# TODO: upon termination, create a detached log
 
 		if self.cloud_provider == "AWS EC2":
 			create_static_ip_log(
