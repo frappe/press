@@ -18,6 +18,7 @@ from hcloud import Client as HetznerClient
 from hcloud.images.domain import Image as HetznerImage
 from oci.core import BlockstorageClient
 
+from press.frappe_compute_client.client import Client as FrappeComputeClient
 from press.utils import log_error
 from press.utils.jobs import has_job_timeout_exceeded
 
@@ -322,6 +323,13 @@ class VirtualDiskSnapshot(Document):
 		if cluster.cloud_provider == "Hetzner":
 			api_token = cluster.get_password("hetzner_api_token")
 			return HetznerClient(token=api_token)
+
+		if cluster.cloud_provider == "Frappe Compute":
+			return FrappeComputeClient(
+				url=cluster.frappe_compute_base_url,
+				api_key=cluster.frappe_compute_api_key,
+				api_secret=cluster.get_password("frappe_compute_api_secret"),
+			)
 		return None
 
 
