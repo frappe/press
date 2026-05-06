@@ -217,6 +217,12 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.is_server_setup && !frm.doc.nat_server,
 			],
+			[
+				__('Migrate to Cgroup V2'),
+				'migrate_to_cgroup_v2',
+				true,
+				frm.doc.is_server_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -303,19 +309,27 @@ frappe.ui.form.on('Database Server', {
 				__('Actions'),
 			);
 			frm.add_custom_button(
-				__('Update Memory Allocator'),
+				__('Update Memory Allocator Settings'),
 				() => {
 					const dialog = new frappe.ui.Dialog({
-						title: __('Update Memory Allocator'),
+						title: __('Update Memory Allocator Settings'),
 						fields: [
 							{
 								fieldtype: 'Select',
 								label: __('Memory Allocator'),
-								options: ['System', 'jemalloc', 'TCMalloc']
-									.filter((option) => option !== frm.doc.memory_allocator)
-									.join('\n'),
+								options: ['System', 'jemalloc', 'TCMalloc'].join('\n'),
+								default: frm.doc.memory_allocator || 'System',
 								fieldname: 'memory_allocator',
 								reqd: 1,
+							},
+							{
+								fieldtype: 'Int',
+								label: __('tcmalloc Release Rate'),
+								description: __(
+									'Applicable only if memory allocator is set to tcmalloc. Value must be between 1 and 10. Default is 1. Higher value means more aggressive release of memory to the OS, which can reduce memory usage but may impact performance.',
+								),
+								default: frm.doc.tcmalloc_release_rate || 1,
+								fieldname: 'tcmalloc_release_rate',
 							},
 						],
 					});

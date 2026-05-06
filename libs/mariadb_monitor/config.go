@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	configDir  = "/etc/mariadb-monitor"
 	configFile = "/etc/mariadb-monitor/config.yaml"
 	myCnfPath  = "/root/.my.cnf"
 )
@@ -50,6 +49,11 @@ type Config struct {
 	CoredumpOnUnhealthy        bool          `yaml:"coredump_on_unhealthy"`
 	CoredumpOnFrequentTriggers bool          `yaml:"coredump_on_frequent_triggers"`
 	CoredumpFrequentThreshold  int           `yaml:"coredump_frequent_threshold"`
+
+	ExternalHealthCheckEnabled bool   `yaml:"external_healthcheck_enabled"`
+	ServerName                 string `yaml:"server_name"`
+	ExternalHealthCheckURL     string `yaml:"external_health_check_url"`
+	ExternalHealthCheckToken   string `yaml:"external_health_check_token"`
 }
 
 type MySQLCredentials struct {
@@ -88,6 +92,11 @@ func DefaultConfig() Config {
 		CoredumpOnUnhealthy:        true,
 		CoredumpOnFrequentTriggers: true,
 		CoredumpFrequentThreshold:  3,
+
+		ExternalHealthCheckEnabled: false,
+		ServerName:                 "",
+		ExternalHealthCheckURL:     "",
+		ExternalHealthCheckToken:   "",
 	}
 }
 
@@ -342,6 +351,22 @@ coredump_frequent_threshold: %d
 		cfg.CoredumpOnUnhealthy,
 		cfg.CoredumpOnFrequentTriggers,
 		cfg.CoredumpFrequentThreshold,
+	)
+
+	content += fmt.Sprintf(`
+# External health check (optional, disabled by default). When local check
+# passes, this endpoint is queried for a second opinion. If the external API
+# reports the app server as healthy but the db server as unhealthy, recovery
+# proceeds. Any non-200 response, transport error, or timeout is ignored.
+external_healthcheck_enabled: %t
+server_name: %q
+external_health_check_url: %q
+external_health_check_token: %q
+`,
+		cfg.ExternalHealthCheckEnabled,
+		cfg.ServerName,
+		cfg.ExternalHealthCheckURL,
+		cfg.ExternalHealthCheckToken,
 	)
 
 	return os.WriteFile(configFile, []byte(content), 0644)
