@@ -1165,6 +1165,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@property
 	def status(self):
+		if not self.enabled:
+			return "Disabled"
+
 		active_benches = frappe.db.get_all(
 			"Bench", {"group": self.name, "status": "Active"}, limit=1, order_by="creation desc"
 		)
