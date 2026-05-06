@@ -51,6 +51,12 @@ runcmd:
 - sed -i 's/^-A INPUT -j REJECT --reject-with icmp-host-prohibited$/#-A INPUT -j REJECT --reject-with icmp-host-prohibited/g' /etc/iptables/rules.v4
 {% endif %}
 
+# CVE-2026-31431: https://copy.fail/
+- |
+    echo "install algif_aead /bin/false" >> /etc/modprobe.d/disable-algif_aead.conf
+    rmmod algif_aead 2>/dev/null || true
+    rmmod algif_aead 2>/dev/null || true
+
 {% if server.provider == 'DigitalOcean' %}
 - |
     for i in {1..20}; do

@@ -176,6 +176,7 @@ class TestReleasePipeline(FrappeTestCase):
 	@patch.object(ReleasePipeline, "monitor_build_success", mock_build_monitoring)
 	def test_dynamic_apps_additions_and_bench_dependencies_upgrade(self):
 		parent_hash = frappe.mock("sha1")
+		frappe.db.set_single_value("Press Settings", "auto_upgrade_dependencies", 1)
 
 		for dep in self.test_release_group.dependencies:
 			if dep.dependency == "PYTHON_VERSION":
