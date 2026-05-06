@@ -164,7 +164,7 @@ class RazorpayMandate(Document):
 			if frappe.db.get_value("Team", self.team, "payment_mode") == "UPI Autopay":
 				team = frappe.get_doc("Team", self.team)
 				team.payment_mode = ""
-				team.save(ignore_permissions=True)
+				team.save()
 				team.send_email_for_failed_upi_payment(error_reason="MANDATE_CANCELLED", upi_vpa=self.upi_vpa)
 
 	def pause(self):
