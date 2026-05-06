@@ -281,6 +281,12 @@ frappe.ui.form.on('Server', {
 				true,
 				frm.doc.is_server_setup && !frm.doc.nat_server,
 			],
+			[
+				__('Migrate to Cgroup V2'),
+				'migrate_to_cgroup_v2',
+				true,
+				frm.doc.is_server_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

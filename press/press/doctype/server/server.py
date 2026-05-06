@@ -2650,6 +2650,22 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		vm_doc.sync()
 		return f"Static IP {reserved_ip_response.ip_address} allotted to the VM (OCID: {reserved_ip_response.id})"
 
+	@frappe.whitelist()
+	def migrate_to_cgroup_v2(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_migrate_to_cgroup_v2")
+
+	def _migrate_to_cgroup_v2(self):
+		try:
+			ansible = Ansible(
+				playbook="migrate_to_cgroup_v2.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Cgroup v2 Migration Exception", server=self.as_dict())
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
