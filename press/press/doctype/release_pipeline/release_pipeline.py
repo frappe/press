@@ -374,7 +374,7 @@ class ReleasePipeline(WorkflowBuilder):
 		"""Fail the bench job if it's creation time is older than 10 mins"""
 		for job in pending_agent_jobs:
 			assert isinstance(job["creation"], datetime), "Expected 'creation' to be a datetime object"
-			if job["creation"] <= datetime.now() - timedelta(minutes=10):
+			if job["creation"] <= frappe.utils.now_datetime() - timedelta(minutes=10):
 				if job["status"] == "Undelivered":
 					# In case of undelivered jobs we can directly mark them as failure
 					# And mark the bench as broken since they were never picked up by agent
