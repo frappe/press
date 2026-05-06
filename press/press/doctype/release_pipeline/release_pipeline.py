@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import typing
+from datetime import datetime, timedelta
 from functools import cached_property
 from typing import Any, TypedDict
 
@@ -369,6 +370,22 @@ class ReleasePipeline(WorkflowBuilder):
 			message=f"Waiting for build to complete for Deploy Candidate Build {deploy_candidate_build}",
 		)
 
+	def _fail_bench_job_if_obsolete(self, pending_agent_jobs: list[dict[str, str | datetime]]):
+		"""Fail the bench job if it's creation time is older than 10 mins"""
+		for job in pending_agent_jobs:
+			assert isinstance(job["creation"], datetime), "Expected 'creation' to be a datetime object"
+			if job["creation"] <= datetime.now() - timedelta(minutes=10):
+				if job["status"] == "Undelivered":
+					# In case of undelivered jobs we can directly mark them as failure
+					# And mark the bench as broken since they were never picked up by agent
+					frappe.db.set_value("Agent Job", job["name"], "status", "Failure")
+					frappe.db.set_value("Bench", job["bench"], "status", "Broken")
+				else:
+					# In case of pending jobs, we need to cancel the job first and then mark it as failure.
+					agent_job_doc: AgentJob = frappe.get_doc("Agent Job", job["name"])
+					agent_job_doc.cancel_job()
+					agent_job_doc.fail_and_process_job_updates()
+
 	def _is_active_bench_work_in_progress(self, builds: list[str]) -> bool:
 		"""Checks the entire lifecycle (Queue + Agent Jobs) for active work."""
 		queue_active = frappe.db.exists(
@@ -401,12 +418,24 @@ class ReleasePipeline(WorkflowBuilder):
 			self.update_pipeline_status("Retrying")
 			return True
 
+		pending_agent_jobs = frappe.db.get_all(
+			"Agent Job",
+			{
+				"job_type": ["in", ["New Bench", "Archive Bench"]],
+				"status": ["in", ["Undelivered", "Pending"]],
+				"bench": ["in", benches_from_builds],
+			},
+			["name", "bench", "status", "creation"],
+		)
+		self._fail_bench_job_if_obsolete(pending_agent_jobs)
 		# Even if there are no retries scheduled, we want to wait for the current bench jobs to be completed
+		# This is after the obsolete jobs are marked as failed and their benches are marked as broken, so we only wait for
+		# valid jobs to be completed and not the obsolete ones.
 		agent_job_active = frappe.db.exists(
 			"Agent Job",
 			{
 				"job_type": ["in", ["New Bench", "Archive Bench"]],
-				"status": ["in", ["Undelivered", "Pending", "Running"]],
+				"status": ["in", ["Running", "Pending", "Undelivered"]],
 				"bench": ["in", benches_from_builds],
 			},
 		)
