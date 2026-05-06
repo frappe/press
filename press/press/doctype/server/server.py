@@ -3184,6 +3184,12 @@ class Server(BaseServer):
 			log_error("Standalone Server Setup Exception", server=self.as_dict())
 		self.save()
 
+	def get_db_healthcheck_token(self):
+		if not self.db_healthcheck_token:
+			self.set_db_healthcheck_token()
+			self.save()
+		return self.get_password("db_healthcheck_token")
+
 	@frappe.whitelist()
 	def update_benches_nginx(self):
 		"""Update benches config for all benches in the server"""

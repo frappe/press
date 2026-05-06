@@ -1,0 +1,8 @@
+---
+- name: Uninstall MariaDB Monitor
+  hosts: all
+  become: true
+  become_user: root
+  gather_facts: false
+  roles:
+    - role: uninstall_mariadb_monitor

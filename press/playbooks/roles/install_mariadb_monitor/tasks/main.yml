@@ -1,0 +1,83 @@
+---
+- name: Check System Architecture
+  ansible.builtin.set_fact:
+    mariadb_monitor_download_url: >-
+      {{ 'https://raw.githubusercontent.com/frappe/fc-scripts/refs/heads/develop/mariadb_monitor/dist/mariadb_monitor-linux-amd64'
+         if ansible_architecture == 'x86_64'
+         else 'https://raw.githubusercontent.com/frappe/fc-scripts/refs/heads/develop/mariadb_monitor/dist/mariadb_monitor-linux-arm64' }}
+
+- name: Fail on Unsupported Architecture
+  ansible.builtin.fail:
+    msg: "Unsupported architecture: {{ ansible_architecture }}"
+  when: ansible_architecture not in ['x86_64', 'aarch64']
+
+- name: Stop mariadb-monitor Service if Running
+  ansible.builtin.systemd:
+    name: mariadb-monitor
+    state: stopped
+  failed_when: false
+  changed_when: false
+
+- name: Download mariadb-monitor Binary
+  ansible.builtin.get_url:
+    url: "{{ mariadb_monitor_download_url }}"
+    dest: /usr/local/bin/mariadb_monitor
+    mode: "0755"
+    force: true
+  register: mariadb_monitor_install_download
+
+- name: Install mariadb-monitor
+  ansible.builtin.command: /usr/local/bin/mariadb_monitor install
+  register: mariadb_monitor_install_result
+  changed_when: true
+
+- name: Wait for Config File to Be Generated
+  ansible.builtin.wait_for:
+    path: /etc/mariadb-monitor/config.yaml
+    state: present
+    timeout: 30
+
+- name: Set external_healthcheck_enabled
+  ansible.builtin.lineinfile:
+    path: /etc/mariadb-monitor/config.yaml
+    regexp: '^external_healthcheck_enabled:'
+    line: "external_healthcheck_enabled: {{ enable_external_healthcheck | bool | lower }}"
+    state: present
+
+- name: Set server_name
+  ansible.builtin.lineinfile:
+    path: /etc/mariadb-monitor/config.yaml
+    regexp: '^server_name:'
+    line: "server_name: {{ server_name | quote }}"
+    state: present
+  when: enable_external_healthcheck | bool
+
+- name: Set external_health_check_url
+  ansible.builtin.lineinfile:
+    path: /etc/mariadb-monitor/config.yaml
+    regexp: '^external_health_check_url:'
+    line: "external_health_check_url: {{ external_health_check_url | quote }}"
+    state: present
+  when: enable_external_healthcheck | bool
+
+- name: Set external_health_check_token
+  ansible.builtin.lineinfile:
+    path: /etc/mariadb-monitor/config.yaml
+    regexp: '^external_health_check_token:'
+    line: "external_health_check_token: {{ external_health_check_token | quote }}"
+    state: present
+  when: enable_external_healthcheck | bool
+
+- name: Set coredump_enabled
+  ansible.builtin.lineinfile:
+    path: /etc/mariadb-monitor/config.yaml
+    regexp: '^coredump_enabled:'
+    line: "coredump_enabled: {{ enable_coredump | bool | lower }}"
+    state: present
+
+- name: Restart mariadb-monitor Service
+  ansible.builtin.systemd:
+    name: mariadb-monitor
+    state: restarted
+    enabled: true
+    daemon_reload: true

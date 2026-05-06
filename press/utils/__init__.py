@@ -348,6 +348,13 @@ def is_allowed_access_performance_tuning():
 	return team.enable_performance_tuning
 
 
+def get_press_base_url():
+	press_url = frappe.conf.get("press_base_url") or frappe.utils.get_url()
+	if not press_url.startswith("http://") and not press_url.startswith("https://"):
+		press_url = "https://" + press_url
+	return press_url.rstrip("/")
+
+
 class RemoteFrappeSite:
 	def __init__(self, url, usr, pwd):
 		if not url.startswith("http"):
