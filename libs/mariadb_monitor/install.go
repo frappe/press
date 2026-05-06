@@ -23,7 +23,7 @@ func install() error {
 	}
 
 	if _, err := os.Stat(myCnfPath); os.IsNotExist(err) {
-		return fmt.Errorf("%s not found — create it with [client] section containing user, password, and socket", myCnfPath)
+		return fmt.Errorf("%s not found - create it with [client] section containing user, password, and socket", myCnfPath)
 	}
 
 	self, err := os.Executable()

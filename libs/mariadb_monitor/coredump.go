@@ -67,36 +67,6 @@ func takeCoredump(cfg Config) error {
 	return nil
 }
 
-func findMariaDBProcessIDs() []int {
-	files, err := os.ReadDir("/proc")
-	if err != nil {
-		return nil
-	}
-
-	var pids []int
-	for _, f := range files {
-		if !f.IsDir() {
-			continue
-		}
-		pid, err := strconv.Atoi(f.Name())
-		if err != nil {
-			continue
-		}
-
-		data, err := os.ReadFile(fmt.Sprintf("/proc/%d/comm", pid))
-		if err != nil {
-			continue
-		}
-		comm := strings.TrimSpace(string(data))
-
-		if comm == "mariadbd" || comm == "mysqld" {
-			pids = append(pids, pid)
-		}
-	}
-
-	return pids
-}
-
 func cleanupOldCoredumps(dir string, maxCount int) {
 	if maxCount <= 0 {
 		return
