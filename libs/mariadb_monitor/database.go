@@ -18,11 +18,14 @@ type QueryOptions struct {
 }
 
 type Database struct {
-	creds MySQLCredentials
+	creds    MySQLCredentials
+	Tcmalloc *Tcmalloc
 }
 
 func NewDatabase(creds MySQLCredentials) *Database {
-	return &Database{creds: creds}
+	db := &Database{creds: creds}
+	db.Tcmalloc = &Tcmalloc{db: db}
+	return db
 }
 
 func NewDatabaseFromMyCnf() (*Database, error) {
@@ -30,10 +33,22 @@ func NewDatabaseFromMyCnf() (*Database, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Database{creds: creds}, nil
+	return NewDatabase(creds), nil
 }
 
 func (d *Database) QueryWithOptions(opts QueryOptions, query string, fn func(*sql.Rows) error) error {
+	return d.queryWithOptionsAndArgs(opts, query, nil, fn)
+}
+
+func (d *Database) QueryWithArgs(query string, args []any, fn func(*sql.Rows) error) error {
+	return d.queryWithOptionsAndArgs(QueryOptions{}, query, args, fn)
+}
+
+func (d *Database) QueryWithOptionsAndArgs(opts QueryOptions, query string, args []any, fn func(*sql.Rows) error) error {
+	return d.queryWithOptionsAndArgs(opts, query, args, fn)
+}
+
+func (d *Database) queryWithOptionsAndArgs(opts QueryOptions, query string, args []any, fn func(*sql.Rows) error) error {
 	timeout := opts.Timeout
 	if timeout <= 0 {
 		timeout = defaultQueryTimeout
@@ -80,7 +95,7 @@ func (d *Database) QueryWithOptions(opts QueryOptions, query string, fn func(*sq
 	db.SetMaxOpenConns(1)
 	db.SetConnMaxLifetime(timeout)
 
-	rows, err := db.Query(query)
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return err
 	}
