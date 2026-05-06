@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import TYPE_CHECKING
 
 import frappe
@@ -99,7 +100,7 @@ class Subscription(Document):
 		self.validate_duplicate()
 
 	def on_update(self):
-		if self.plan_type in ["Server Storage Plan", "Server Snapshot Plan"]:
+		if self.plan_type in ["Server Storage Plan", "Server Snapshot Plan", "Static IP Plan"]:
 			return
 
 		doc = self.get_subscribed_document()
@@ -240,11 +241,23 @@ class Subscription(Document):
 			date = date or frappe.utils.today()
 			filters.update({"date": date})
 
-		if self.interval == "Monthly":
+		elif self.interval == "Monthly":
 			date = frappe.utils.getdate()
 			first_day = frappe.utils.get_first_day(date)
 			last_day = frappe.utils.get_last_day(date)
 			filters.update({"date": ("between", (first_day, last_day))})
+
+		elif self.interval == "Hourly":
+			last_usage_record = frappe.db.get_value(
+				"Usage Record", filters, ["date", "time"], order_by="creation desc", as_dict=True
+			)
+			if not last_usage_record:
+				return False
+
+			last_datetime = datetime.datetime.combine(
+				last_usage_record.date, frappe.utils.get_time(last_usage_record.time)
+			)
+			return (frappe.utils.now_datetime() - last_datetime).total_seconds() < 3600
 
 		result = frappe.db.get_all("Usage Record", filters=filters, limit=1)
 		return bool(result)
@@ -343,6 +356,7 @@ def paid_plans():
 		"Server Plan",
 		"Server Storage Plan",
 		"Cluster Plan",
+		"Static IP Plan",
 	]
 
 	for name in doctypes:
