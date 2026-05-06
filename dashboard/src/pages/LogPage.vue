@@ -41,19 +41,16 @@
 			</div>
 		</div>
 
-		<div class="mt-3">
-			<div class="mt-8 space-y-4">
-				<div
-					class="overflow-auto relative rounded border border-gray-100 bg-surface-gray-7 p-5 px-5.5 text-sm text-gray-200"
-				>
-					<CopyBtn :text="log" class="absolute right-3 top-3" />
+		<div class="mt-5 flex rounded bg-surface-gray-7 p-4 text-sm text-gray-200">
+			<span v-if="$resources.log.loading" class="flex items-center gap-2">
+				<Spinner /> Loading...
+			</span>
 
-					<span v-if="$resources.log.loading" class="flex items-center gap-2">
-						<Spinner /> Loading...</span
-					>
-					<pre v-else>{{ log || 'No output' }}</pre>
-				</div>
-			</div>
+			<pre v-else class="flex-1 min-w-0 overflow-auto">{{
+				log || 'No output'
+			}}</pre>
+
+			<CopyBtn :text="log" class="pl-1 ml-auto mb-auto shrink-0 -mr-1 -mt-1" />
 		</div>
 	</div>
 </template>
