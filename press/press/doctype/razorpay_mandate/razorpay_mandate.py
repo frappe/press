@@ -201,10 +201,8 @@ class RazorpayMandate(Document):
 		self.is_default = 1
 		self.save()
 
-		# Update team's default razorpay mandate and payment mode
+		# Update team's default razorpay mandate
 		frappe.db.set_value("Team", self.team, "default_razorpay_mandate", self.name)
-
-		frappe.db.set_value("Team", self.team, "payment_mode", "UPI Autopay")
 
 	@dashboard_whitelist()
 	def check_mandate_status(self):

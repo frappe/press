@@ -834,6 +834,7 @@ def handle_razorpay_mandate_success(
 	if existing_active == 0:
 		mandate.reload()
 		mandate.set_default()
+		change_payment_mode("UPI Autopay")
 
 	return {"success": True, "token_id": token_id}
 
