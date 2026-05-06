@@ -204,6 +204,8 @@ class VirtualDiskSnapshot(Document):
 				self.client.delete_volume_backup(self.snapshot_id)
 		elif cluster.cloud_provider == "Hetzner":
 			self.client.images.delete(HetznerImage(id=cint(self.snapshot_id)))
+		elif cluster.cloud_provider == "Frappe Compute":
+			self.client.delete_snapshot(self.snapshot_id)
 		self.sync()
 
 	def get_aws_status_map(self, status):
