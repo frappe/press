@@ -10,11 +10,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
-// externalHealthResponse mirrors the JSON returned by the press API endpoint.
 type externalHealthResponse struct {
 	Message struct {
 		AppServerHealthy bool `json:"app_server_healthy"`
@@ -24,11 +21,6 @@ type externalHealthResponse struct {
 
 const externalHealthCheckTimeout = 90 * time.Second
 
-// checkExternalDBHealth queries an external API for a second opinion on db
-// health. It returns (dbUnhealthy, ok). ok is false when the result should be
-// ignored (disabled, missing config, transport error/timeout, non-200 response,
-// malformed body, or app server reported unhealthy). The default http.Client
-// follows 301/302/303/307/308 redirects automatically.
 func checkExternalDBHealth(cfg Config) (dbUnhealthy bool, ok bool) {
 	if !cfg.ExternalHealthCheckEnabled {
 		return false, false
@@ -92,7 +84,6 @@ func checkReachable(creds MySQLCredentials) bool {
 	checked := false
 	reachable := false
 
-	// Prefer TCP if host and port are configured.
 	if creds.Host != "" && creds.Port > 0 {
 		checked = true
 		tcpAddr := net.JoinHostPort(creds.Host, strconv.Itoa(creds.Port))
@@ -103,7 +94,6 @@ func checkReachable(creds MySQLCredentials) bool {
 		}
 	}
 
-	// Fall back to Unix socket only if TCP is not configured or failed.
 	if !reachable && creds.Socket != "" {
 		checked = true
 		conn, err := net.DialTimeout("unix", creds.Socket, 3*time.Second)
@@ -121,8 +111,31 @@ func checkReachable(creds MySQLCredentials) bool {
 	return reachable
 }
 
+func checkMariaDBHealth(cfg Config, creds MySQLCredentials) DBHealth {
+	if !checkReachable(creds) {
+		slog.Warn("mariadb is unreachable", "socket", creds.Socket, "host", creds.Host, "port", creds.Port)
+		return DBHealth{Reachable: false}
+	}
+
+	health := checkProcesslist(creds)
+	if health.IsStuck {
+		slog.Warn("mariadb has stuck queries", "stuck_count", health.StuckQueries, "details", health.Details)
+		return health
+	}
+
+	slog.Debug("mariadb processlist is healthy")
+
+	if dbUnhealthy, ok := checkExternalDBHealth(cfg); ok && dbUnhealthy {
+		slog.Warn("external healthcheck reports db unhealthy, overriding local healthy verdict")
+		health.IsStuck = true
+		health.Details = append(health.Details, "external healthcheck: db_server_healthy=false")
+	}
+	return health
+}
+
 func checkProcesslist(creds MySQLCredentials) DBHealth {
 	health := DBHealth{Reachable: true}
+<<<<<<< HEAD:libs/mariadb_monitor/mariadb_health.go
 
 	var dsn string
 	if creds.Host != "" && creds.Port > 0 {
@@ -139,83 +152,43 @@ func checkProcesslist(creds MySQLCredentials) DBHealth {
 
 	db.SetConnMaxLifetime(5 * time.Second)
 	db.SetMaxOpenConns(1)
+=======
+	db := NewDatabase(creds)
+>>>>>>> d7adb7091 (chore(mariadb-monitor): Cleanup and structure the code):libs/mariadb_monitor/health.go
 
 	var uptime int
-	var varName, varValue string
-	if err = db.QueryRow("SHOW GLOBAL STATUS LIKE 'Uptime'").Scan(&varName, &varValue); err != nil {
+	err := db.Query("SHOW GLOBAL STATUS LIKE 'Uptime'", func(rows *sql.Rows) error {
+		if rows.Next() {
+			var name, value string
+			if err := rows.Scan(&name, &value); err != nil {
+				return err
+			}
+			if v, err := strconv.Atoi(value); err == nil {
+				uptime = v
+			}
+		}
+		return nil
+	})
+	if err != nil {
 		slog.Warn("failed to query mariadb uptime, defaulting to 3600", "error", err)
 		uptime = 3600
-	} else if parsedUptime, convErr := strconv.Atoi(varValue); convErr == nil {
-		uptime = parsedUptime
-	} else {
-		slog.Warn("failed to parse mariadb uptime value, defaulting to 3600", "value", varValue)
-		uptime = 3600
 	}
 
-	rows, err := db.Query("SHOW PROCESSLIST")
-	if err != nil {
-		health.Reachable = false
-		return health
-	}
-	defer rows.Close()
-
-	columns, err := rows.Columns()
-	if err != nil {
-		health.Reachable = false
-		return health
-	}
-
-	var stateIdx, infoIdx, timeIdx int = -1, -1, -1
-	for i, col := range columns {
-		switch col {
-		case "State":
-			stateIdx = i
-		case "Info":
-			infoIdx = i
-		case "Time":
-			timeIdx = i
-		}
-	}
-
-	for rows.Next() {
-		values := make([]sql.NullString, len(columns))
-		ptrs := make([]interface{}, len(columns))
-		for i := range values {
-			ptrs[i] = &values[i]
+	err = db.Query("SHOW PROCESSLIST", func(rows *sql.Rows) error {
+		columns, err := rows.Columns()
+		if err != nil {
+			return err
 		}
 
-		if err := rows.Scan(ptrs...); err != nil {
-			continue
-		}
-
-		// Only flag processes that are explicitly in a known-stuck state.
-		// We only act on states where MariaDB itself is blocked/stuck.
-		if stateIdx < 0 || !values[stateIdx].Valid {
-			continue
-		}
-
-		state := values[stateIdx].String
-		isStuck := false
-		reason := ""
-
-		var timeSec int
-		if timeIdx >= 0 && values[timeIdx].Valid {
-			timeSec, _ = strconv.Atoi(values[timeIdx].String)
-		}
-
-		switch state {
-		case "Opening tables":
-			// If MariaDB recently started (e.g., uptime < 10 mins), Opening tables is normal.
-			// Otherwise, if it has been opening for > 5 minutes, consider it stuck.
-			if uptime > 600 && timeSec >= 300 {
-				isStuck = true
-				reason = fmt.Sprintf("state=%q time=%ds", state, timeSec)
-			}
-		case "Killed":
-			// If a killed process is stuck for > 5 mins
-			if timeSec >= 300 {
-				isStuck = true
-				reason = fmt.Sprintf("state=%q time=%ds", state, timeSec)
+		var stateIdx, infoIdx, timeIdx int = -1, -1, -1
+		for i, col := range columns {
+			switch col {
+			case "State":
+				stateIdx = i
+			case "Info":
+				infoIdx = i
+			case "Time":
+				timeIdx = i
 			}
 		case "Waiting for table flush", "Waiting for global read lock":
 			// These states cascade — one blocked DDL/flush/lock can freeze all
@@ -226,17 +199,59 @@ func checkProcesslist(creds MySQLCredentials) DBHealth {
 			}
 		}
 
-		if isStuck {
-			health.StuckQueries++
-			info := ""
-			if infoIdx >= 0 && values[infoIdx].Valid {
-				info = values[infoIdx].String
-				if len(info) > 100 {
-					info = info[:100] + "..."
+		for rows.Next() {
+			values := make([]sql.NullString, len(columns))
+			ptrs := make([]interface{}, len(columns))
+			for i := range values {
+				ptrs[i] = &values[i]
+			}
+			if err := rows.Scan(ptrs...); err != nil {
+				continue
+			}
+
+			if stateIdx < 0 || !values[stateIdx].Valid {
+				continue
+			}
+
+			state := values[stateIdx].String
+			isStuck := false
+			reason := ""
+
+			var timeSec int
+			if timeIdx >= 0 && values[timeIdx].Valid {
+				timeSec, _ = strconv.Atoi(values[timeIdx].String)
+			}
+
+			switch state {
+			case "Opening tables":
+				if uptime > 600 && timeSec >= 300 {
+					isStuck = true
+					reason = fmt.Sprintf("state=%q time=%ds", state, timeSec)
+				}
+			case "Killed":
+				if timeSec >= 300 {
+					isStuck = true
+					reason = fmt.Sprintf("state=%q time=%ds", state, timeSec)
 				}
 			}
-			health.Details = append(health.Details, fmt.Sprintf("%s query=%q", reason, info))
+
+			if isStuck {
+				health.StuckQueries++
+				info := ""
+				if infoIdx >= 0 && values[infoIdx].Valid {
+					info = values[infoIdx].String
+					if len(info) > 100 {
+						info = info[:100] + "..."
+					}
+				}
+				health.Details = append(health.Details, fmt.Sprintf("%s query=%q", reason, info))
+			}
 		}
+		return nil
+	})
+	if err != nil {
+		health.Reachable = false
+		return health
 	}
 
 	health.IsStuck = health.StuckQueries > 0

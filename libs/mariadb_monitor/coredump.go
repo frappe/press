@@ -67,6 +67,7 @@ func takeCoredump(cfg Config) error {
 	return nil
 }
 
+<<<<<<< HEAD
 // Common PID file locations for MariaDB/MySQL.
 var mariadbPidFiles = []string{
 	"/var/run/mysqld/mysqld.pid",
@@ -150,6 +151,8 @@ func findPIDsFromProc() []int {
 	return pids
 }
 
+=======
+>>>>>>> d7adb7091 (chore(mariadb-monitor): Cleanup and structure the code)
 func cleanupOldCoredumps(dir string, maxCount int) {
 	if maxCount <= 0 {
 		return

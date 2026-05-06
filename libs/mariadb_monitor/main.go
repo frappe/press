@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 func main() {
@@ -17,7 +16,6 @@ func main() {
 
 		switch os.Args[1] {
 		case "run":
-			// fall through to main monitor loop
 		case "install":
 			if err := install(); err != nil {
 				slog.Error("install failed", "error", err)
@@ -79,13 +77,18 @@ func main() {
 		"drop_caches_mode", cfg.DropCachesMode,
 	)
 
+<<<<<<< HEAD
 	windows := newMetricWindows(cfg.WindowSize)
 	cache := &snapshotCache{}
 	coredumpState := &coredumpTracker{}
+=======
+	mon := newMonitor(cfg, creds)
+>>>>>>> d7adb7091 (chore(mariadb-monitor): Cleanup and structure the code)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
+<<<<<<< HEAD
 	ticker := time.NewTicker(cfg.CheckInterval)
 	defer ticker.Stop()
 
@@ -149,6 +152,9 @@ func newMetricWindows(size int) *metricWindows {
 		memCached:    NewMetricWindow(size),
 		swapFree:     NewMetricWindow(size),
 	}
+=======
+	mon.run(sigCh)
+>>>>>>> d7adb7091 (chore(mariadb-monitor): Cleanup and structure the code)
 }
 
 func printHelp() {
@@ -165,6 +171,7 @@ func printHelp() {
 	fmt.Println("")
 	fmt.Println("When run without arguments, the monitor runs in the foreground.")
 }
+<<<<<<< HEAD
 
 func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snapshotCache, cdState *coredumpTracker) bool {
 	var frozenCheck *frozenState
@@ -436,3 +443,5 @@ func logSpikes(cfg Config, w *metricWindows) {
 		}
 	}
 }
+=======
+>>>>>>> d7adb7091 (chore(mariadb-monitor): Cleanup and structure the code)
