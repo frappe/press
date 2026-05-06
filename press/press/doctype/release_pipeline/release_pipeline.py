@@ -50,20 +50,8 @@ class BenchInfo(TypedDict):
 	status: str
 
 
-def _resolve_dependent_app(app: str, version: str) -> tuple[AppSource, AppRelease]:
+def _resolve_dependent_app(app: str, supported_frappe_version: set[str]) -> tuple[AppSource, AppRelease]:
 	"""Resolve app source and latest release for a dependent app."""
-	supported_versions = parse_frappe_version(
-		version_string=version,
-		app_title=app,
-		ease_versioning_constrains=False,
-	)
-	if not supported_versions:
-		raise ReleasePipelineFailure(
-			f"Failed to parse supported versions for app {app} "
-			f"with version string {version}. Cannot proceed with release. "
-			"Please follow semantic versioning."
-		)
-
 	if not frappe.db.exists("App", app):
 		raise ReleasePipelineFailure(
 			f"Dependent app {app} does not exist in the system. "
@@ -72,12 +60,12 @@ def _resolve_dependent_app(app: str, version: str) -> tuple[AppSource, AppReleas
 
 	app_source = get_app_source_from_supported_versions(
 		app=app,
-		supported_versions=supported_versions,
+		supported_versions=supported_frappe_version,
 	)
 	if not app_source:
 		raise ReleasePipelineFailure(
 			f"Unable to find an app source for dependent app {app} "
-			f"with supported versions {supported_versions}. "
+			f"with supported versions {supported_frappe_version}. "
 			"Please add this app to your bench group."
 		)
 
@@ -474,23 +462,35 @@ class ReleasePipeline(WorkflowBuilder):
 		)
 
 	def _add_app_to_group_and_candidate(
-		self, deploy_candidate: DeployCandidate, dependant_app_versions: dict[str, str]
+		self,
+		deploy_candidate: DeployCandidate,
+		supported_frappe_version: str | None,
+		dependent_apps: set[str],
 	):
 		"""Helper function to add the dependant apps to the release group and deploy candidate automatically.
 		In case we don't find the app or the app source in press we need to raise, and ask users to add
 		the app in the bench group first.
 		"""
-		if not dependant_app_versions:
+		if not supported_frappe_version or not dependent_apps:
 			return
 
 		release_group_doc: ReleaseGroup = frappe.get_doc("Release Group", self.release_group, for_update=True)
 		release_group_apps = {app.app for app in release_group_doc.apps}
 
-		for app, version in dependant_app_versions.items():
+		parsed_supported_frappe_version = parse_frappe_version(
+			version_string=supported_frappe_version,
+			app_title="frappe",
+			ease_versioning_constrains=False,
+		)
+
+		for app in dependent_apps:
 			if app in release_group_apps:
 				continue
 
-			app_source, app_release = _resolve_dependent_app(app, version)
+			app_source, app_release = _resolve_dependent_app(
+				app,
+				parsed_supported_frappe_version,
+			)
 			deploy_candidate.append(
 				"apps",
 				{
@@ -529,9 +529,15 @@ class ReleasePipeline(WorkflowBuilder):
 			dependant_app_versions = get_dependant_apps_with_versions(
 				app_source=app.source, commit=app.hash, cache=True, raises=False
 			)
+			supported_frappe_version = dependant_app_versions["frappe_dependencies"].get("frappe")
+			dependent_apps = dependant_app_versions["frappe_dependencies"].keys() - {"frappe"}
+
+			# Here we don't care about the version of the dependent apps, since we
+			# will just be fetching the app source that complies with the supported frappe version
 			self._add_app_to_group_and_candidate(
 				deploy_candidate_doc,
-				dependant_app_versions=dependant_app_versions["frappe_dependencies"],
+				supported_frappe_version=supported_frappe_version,
+				dependent_apps=dependent_apps,
 			)
 
 	@task(queue=_get_task_execution_queue())

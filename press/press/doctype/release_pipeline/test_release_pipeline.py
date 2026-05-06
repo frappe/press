@@ -13,6 +13,7 @@ from press.api.github import get_dependant_apps_with_versions
 from press.exceptions import ReleasePipelineFailure
 from press.press.doctype.agent_job.agent_job import poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
+from press.press.doctype.app.app import parse_frappe_version
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
@@ -69,8 +70,8 @@ def get_mock_pyproject_file(*args, **kwargs):
 		build-backend = "flit_core.buildapi"
 
 		[tool.bench.frappe-dependencies]
-		frappe = ">=15.40.4,<17.0.0"
-		telephony = ">=15.0.0,<17.0.0"
+		frappe = ">=14.0.0,<17.0.0"
+		telephony = ">=0.0.1,<1.0.0"
 
 		[tool.bench.assets]
 		build_dir = "./desk"
@@ -189,7 +190,7 @@ class TestReleasePipeline(FrappeTestCase):
 		app_dependencies = get_dependant_apps_with_versions(root_app_source.name, root_app_release.hash).get(
 			"frappe_dependencies"
 		)
-		self.assertEqual(app_dependencies, {"telephony": ">=15.0.0,<17.0.0"})
+		self.assertEqual(app_dependencies, {"frappe": ">=14.0.0,<17.0.0", "telephony": ">=0.0.1,<1.0.0"})
 
 		# Ensure system can get these!
 		dependency_app = frappe.get_doc(
@@ -284,13 +285,18 @@ class TestReleasePipeline(FrappeTestCase):
 		app_dependencies = get_dependant_apps_with_versions(root_app_source.name, root_app_release.hash).get(
 			"frappe_dependencies"
 		)
-		self.assertEqual(app_dependencies, {"telephony": ">=15.0.0,<17.0.0"})
-
-		app, version = next(iter(app_dependencies.items()))
+		self.assertEqual(app_dependencies, {"frappe": ">=14.0.0,<17.0.0", "telephony": ">=0.0.1,<1.0.0"})
+		supported_frappe_version = app_dependencies.pop("frappe")
+		parsed_frappe_version = parse_frappe_version(
+			version_string=supported_frappe_version,
+			app_title="frappe",
+			ease_versioning_constrains=False,
+		)
+		app, _ = next(iter(app_dependencies.items()))
 
 		# No App doc yet
 		with self.assertRaises(ReleasePipelineFailure):
-			_resolve_dependent_app(app, version)
+			_resolve_dependent_app(app, parsed_frappe_version)
 
 		dependency_app = frappe.get_doc(
 			{"doctype": "App", "title": "Telephony", "frappe": 1, "name": "telephony"}
@@ -298,7 +304,7 @@ class TestReleasePipeline(FrappeTestCase):
 
 		# App exists, but no matching app source yet
 		with self.assertRaises(ReleasePipelineFailure):
-			_resolve_dependent_app(app, version)
+			_resolve_dependent_app(app, parsed_frappe_version)
 
 		create_test_app_source(
 			app=dependency_app,
@@ -320,7 +326,7 @@ class TestReleasePipeline(FrappeTestCase):
 			hash=correct_hash,
 		)
 
-		resolved_source, resolved_release = _resolve_dependent_app(app, version)
+		resolved_source, resolved_release = _resolve_dependent_app(app, parsed_frappe_version)
 
 		self.assertEqual(resolved_source.name, correct_source.name)
 		self.assertEqual(resolved_source.app, "telephony")
