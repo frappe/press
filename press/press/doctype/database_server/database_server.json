@@ -78,6 +78,7 @@
       "column_break_eiyu",
       "memory_allocator",
       "memory_allocator_version",
+      "tcmalloc_release_rate",
       "section_break_ladc",
       "is_performance_schema_enabled",
       "mariadb_system_variables",
@@ -787,6 +788,14 @@
          "fieldtype": "Link",
          "label": "NAT Server",
          "options": "NAT Server"
+      },
+      {
+         "default": "1",
+         "depends_on": "eval: doc.memory_allocator == \"TCMalloc\"",
+         "fieldname": "tcmalloc_release_rate",
+         "fieldtype": "Int",
+         "label": "TCMalloc Release Rate",
+         "read_only": 1
       }
    ],
    "grid_page_length": 50,
@@ -803,7 +812,7 @@
          "link_fieldname": "database_server"
       }
    ],
-   "modified": "2026-03-18 03:08:29.199702",
+   "modified": "2026-05-06 13:30:28.864946",
    "modified_by": "Administrator",
    "module": "Press",
    "name": "Database Server",

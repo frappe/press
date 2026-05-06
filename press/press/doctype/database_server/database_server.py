@@ -125,6 +125,7 @@ class DatabaseServer(BaseServer):
 		stalk_variable: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		tags: DF.Table[ResourceTag]
+		tcmalloc_release_rate: DF.Int
 		team: DF.Link | None
 		title: DF.Data | None
 		tls_certificate_renewal_failed: DF.Check
@@ -1750,16 +1751,27 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server MariaDB Exporter Reconfigure Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def update_memory_allocator(self, memory_allocator):
+	def update_memory_allocator(self, memory_allocator: str, tcmalloc_release_rate: int | None = None):
+		if memory_allocator == "tcmalloc":
+			tcmalloc_release_rate = tcmalloc_release_rate or 1
+
+		if (
+			memory_allocator == "tcmalloc"
+			and tcmalloc_release_rate
+			and (tcmalloc_release_rate > 10 or tcmalloc_release_rate < 1)
+		):
+			frappe.throw("tcmalloc_release_rate must be between 1 and 10")  # nosemgrep
+
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"_update_memory_allocator",
 			memory_allocator=memory_allocator,
+			tcmalloc_release_rate=tcmalloc_release_rate,
 			enqueue_after_commit=True,
 		)
 
-	def _update_memory_allocator(self, memory_allocator):
+	def _update_memory_allocator(self, memory_allocator: str, tcmalloc_release_rate: int | None = None):
 		ansible = Ansible(
 			playbook="mariadb_memory_allocator.yml",
 			server=self,
@@ -1768,6 +1780,7 @@ class DatabaseServer(BaseServer):
 			variables={
 				"server": self.name,
 				"allocator": memory_allocator.lower(),
+				"tcmalloc_release_rate": tcmalloc_release_rate or 1,
 				"mariadb_root_password": self.get_password("mariadb_root_password"),
 			},
 		)
@@ -1789,7 +1802,9 @@ class DatabaseServer(BaseServer):
 				self.reload()
 				self.memory_allocator = memory_allocator
 				self.memory_allocator_version = query_result[0][0]["Value"]
-				self.save()
+
+			self.tcmalloc_release_rate = tcmalloc_release_rate
+			self.save()
 
 	@dashboard_whitelist()
 	def get_mariadb_variables(self):
