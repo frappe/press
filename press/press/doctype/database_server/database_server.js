@@ -223,6 +223,18 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.is_server_setup,
 			],
+			[
+				__('Setup MariaDB Monitor'),
+				'setup_mariadb_monitor',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Uninstall MariaDB Monitor'),
+				'uninstall_mariadb_monitor',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_mariadb_monitor_installed,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
