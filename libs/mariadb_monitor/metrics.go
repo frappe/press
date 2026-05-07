@@ -338,7 +338,6 @@ type metricWindows struct {
 	psiIO        MetricWindow
 	iowait       MetricWindow
 	memUsage     MetricWindow
-	swapUsage    MetricWindow
 	pageRate     MetricWindow
 	memAvailable MetricWindow
 	memCached    MetricWindow
@@ -352,7 +351,6 @@ func newMetricWindows(size int) *metricWindows {
 		psiIO:        NewMetricWindow(size),
 		iowait:       NewMetricWindow(size),
 		memUsage:     NewMetricWindow(size),
-		swapUsage:    NewMetricWindow(size),
 		pageRate:     NewMetricWindow(size),
 		memAvailable: NewMetricWindow(size),
 		memCached:    NewMetricWindow(size),
@@ -367,112 +365,175 @@ type frozenState struct {
 
 func (m *Monitor) collectTriggers() ([]string, *frozenState) {
 	var triggers []string
-	var frozen *frozenState
 
-	if val, err := checkPSI("cpu"); err == nil {
-		m.windows.psiCPU.Push(val, m.cfg.PSICPUThreshold)
-		slog.Debug("psi_cpu", "avg10", val)
-	} else {
-		slog.Warn("failed to check psi cpu", "error", err)
+	m.collectPSIMetrics()
+	iowaitVal, iowaitErr := m.collectIOWait()
+	mem, memErr := m.collectMemory()
+	pageRateVal, _ := m.collectPageRate()
+
+	triggers = append(triggers, m.evaluateThresholds(mem, memErr, iowaitVal, iowaitErr, pageRateVal)...)
+	triggers = append(triggers, m.evaluatePredictiveTriggers(mem, memErr)...)
+
+	frozen := m.checkMachineFrozen()
+	if frozen != nil {
+		triggers = append(triggers, fmt.Sprintf("machine_frozen(%s)", frozen.reason))
 	}
 
-	if val, err := checkPSI("memory"); err == nil {
-		m.windows.psiMemory.Push(val, m.cfg.PSIMemoryThreshold)
-		slog.Debug("psi_memory", "avg10", val)
-	} else {
-		slog.Warn("failed to check psi memory", "error", err)
-	}
+	m.updateCgroupPressureEvents()
+	logSpikes(m.cfg, m.windows)
 
-	if val, err := checkPSI("io"); err == nil {
-		m.windows.psiIO.Push(val, m.cfg.PSIIOThreshold)
-		slog.Debug("psi_io", "avg10", val)
-	} else {
-		slog.Warn("failed to check psi io", "error", err)
-	}
+	return triggers, frozen
+}
 
-	iowaitVal, iowaitErr := checkIOWait(m.cache)
-	if iowaitErr == nil {
-		m.windows.iowait.Push(iowaitVal, m.cfg.IOWaitThreshold)
-		slog.Debug("iowait", "percent", fmt.Sprintf("%.1f", iowaitVal))
-	} else {
-		slog.Warn("failed to check iowait", "error", iowaitErr)
+// collectPSIMetrics reads PSI cpu/memory/io and pushes them into windows.
+func (m *Monitor) collectPSIMetrics() {
+	for _, entry := range []struct {
+		resource  string
+		window    *MetricWindow
+		threshold float64
+	}{
+		{"cpu", &m.windows.psiCPU, m.cfg.Thresholds.PSICPUThreshold},
+		{"memory", &m.windows.psiMemory, m.cfg.Thresholds.PSIMemoryThreshold},
+		{"io", &m.windows.psiIO, m.cfg.Thresholds.PSIIOThreshold},
+	} {
+		if val, err := checkPSI(entry.resource); err == nil {
+			entry.window.Push(val, entry.threshold)
+			slog.Debug(fmt.Sprintf("psi_%s", entry.resource), "avg10", val)
+		} else {
+			slog.Warn(fmt.Sprintf("failed to check psi %s", entry.resource), "error", err)
+		}
 	}
+}
 
-	mem, memErr := checkMemory()
-	if memErr == nil {
-		m.windows.memUsage.Push(mem.UsagePercent, m.cfg.MemoryUsageThreshold)
-		m.windows.swapUsage.Push(mem.SwapPercent, m.cfg.SwapUsageThreshold)
+// collectIOWait computes iowait and pushes it into its window.
+// Returns the value and any error so callers can reuse the result.
+func (m *Monitor) collectIOWait() (float64, error) {
+	val, err := checkIOWait(m.cache)
+	if err == nil {
+		m.windows.iowait.Push(val, m.cfg.Thresholds.IOWaitThreshold)
+		slog.Debug("iowait", "percent", fmt.Sprintf("%.1f", val))
+	} else {
+		slog.Warn("failed to check iowait", "error", err)
+	}
+	return val, err
+}
+
+// collectMemory reads /proc/meminfo and pushes values into windows.
+// Returns the reading and any error so callers can reuse the result.
+func (m *Monitor) collectMemory() (MemoryStatus, error) {
+	mem, err := checkMemory()
+	if err == nil {
+		m.windows.memUsage.Push(mem.UsagePercent, m.cfg.Thresholds.MemoryUsageThreshold)
 		m.windows.memAvailable.Push(float64(mem.MemAvailable), 0)
 		m.windows.memCached.Push(float64(mem.Cached), 0)
 		m.windows.swapFree.Push(float64(mem.SwapFree), 0)
-
 		slog.Debug("memory",
 			"usage_percent", fmt.Sprintf("%.1f", mem.UsagePercent),
-			"swap_percent", fmt.Sprintf("%.1f", mem.SwapPercent),
 			"mem_available_kb", mem.MemAvailable,
 			"cached_kb", mem.Cached,
 			"swap_free_kb", mem.SwapFree,
 		)
 	} else {
-		slog.Warn("failed to check memory", "error", memErr)
+		slog.Warn("failed to check memory", "error", err)
 	}
+	return mem, err
+}
 
-	pageRateVal, pageRateErr := checkPageRate(m.cache, m.cfg.CheckInterval)
-	if pageRateErr == nil {
-		m.windows.pageRate.Push(pageRateVal, m.cfg.PageRateThreshold)
-		slog.Debug("page_rate", "pages_per_sec", pageRateVal)
+// collectPageRate reads vmstat page rates and pushes into its window.
+func (m *Monitor) collectPageRate() (float64, error) {
+	val, err := checkPageRate(m.cache, m.cfg.CheckInterval)
+	if err == nil {
+		m.windows.pageRate.Push(val, m.cfg.Thresholds.PageRateThreshold)
+		slog.Debug("page_rate", "pages_per_sec", val)
 	} else {
-		slog.Warn("failed to check page rate", "error", pageRateErr)
+		slog.Warn("failed to check page rate", "error", err)
 	}
+	return val, err
+}
 
-	if memErr == nil && mem.UsagePercent >= m.cfg.CriticalMemoryThreshold {
+// evaluateThresholds checks all sustained and instantaneous thresholds.
+func (m *Monitor) evaluateThresholds(mem MemoryStatus, memErr error, iowaitVal float64, iowaitErr error, pageRateVal float64) []string {
+	var triggers []string
+
+	if memErr == nil && mem.UsagePercent >= m.cfg.Thresholds.CriticalMemoryThreshold {
 		triggers = append(triggers, fmt.Sprintf("critical_memory=%.1f%%", mem.UsagePercent))
 	}
 
-	if iowaitErr == nil && iowaitVal >= m.cfg.IOWaitThreshold {
-		if checkIOFreeze(m.cfg.IOFreezeTimeout) {
+	if iowaitErr == nil && iowaitVal >= m.cfg.Thresholds.IOWaitThreshold {
+		if checkIOFreeze(m.cfg.Thresholds.IOFreezeTimeout) {
 			triggers = append(triggers, "io_freeze")
 		}
 	}
 
-	if m.windows.psiCPU.IsSustained(m.cfg.SustainedRatio) {
+	if m.windows.psiCPU.IsSustained(m.cfg.Monitor.SustainedRatio) {
 		triggers = append(triggers, "sustained_psi_cpu")
 	}
-	if m.windows.psiMemory.IsSustained(m.cfg.SustainedRatio) {
+	if m.windows.psiMemory.IsSustained(m.cfg.Monitor.SustainedRatio) {
 		triggers = append(triggers, "sustained_psi_memory")
 	}
-	if m.windows.psiIO.IsSustained(m.cfg.SustainedRatio) {
+	if m.windows.psiIO.IsSustained(m.cfg.Monitor.SustainedRatio) {
 		triggers = append(triggers, "sustained_psi_io")
 	}
-	if m.windows.iowait.IsSustained(m.cfg.SustainedRatio) {
+	if m.windows.iowait.IsSustained(m.cfg.Monitor.SustainedRatio) {
 		triggers = append(triggers, "sustained_iowait")
 	}
-	if m.windows.memUsage.IsSustained(m.cfg.SustainedRatio) {
+	if m.windows.memUsage.IsSustained(m.cfg.Monitor.SustainedRatio) {
 		triggers = append(triggers, "sustained_memory_usage")
 	}
-	if m.windows.swapUsage.IsSustained(m.cfg.SustainedRatio) {
-		triggers = append(triggers, "sustained_swap_usage")
+
+	cgSwap := readCgroupMemory()
+	swapThresholdBytes := m.cfg.Thresholds.MariaDBSwapThresholdMB * 1024 * 1024
+	if swapThresholdBytes > 0 && cgSwap.SwapUsage >= swapThresholdBytes {
+		triggers = append(triggers, fmt.Sprintf("mariadb_swap_usage=%dMB", cgSwap.SwapUsage/1024/1024))
+		slog.Debug("mariadb cgroup swap", "swap_mb", cgSwap.SwapUsage/1024/1024, "threshold_mb", m.cfg.Thresholds.MariaDBSwapThresholdMB)
 	}
-	if m.windows.pageRate.IsSustained(m.cfg.SustainedRatio) {
+
+	if m.windows.pageRate.IsSustained(m.cfg.Monitor.SustainedRatio) {
 		triggers = append(triggers, "sustained_page_rate")
 	}
 
+	return triggers
+}
+
+// evaluatePredictiveTriggers adds triggers based on trend analysis.
+func (m *Monitor) evaluatePredictiveTriggers(mem MemoryStatus, memErr error) []string {
+	var triggers []string
+	if memErr != nil || mem.SwapTotal == 0 {
+		return triggers
+	}
+
+	swapFreePercent := float64(mem.SwapFree) / float64(mem.SwapTotal) * 100.0
+	if m.windows.memAvailable.Trend() == "falling" &&
+		m.windows.memCached.Trend() == "falling" &&
+		swapFreePercent < m.cfg.Thresholds.SwapHeadroom {
+		triggers = append(triggers, fmt.Sprintf("predictive_memory_exhaustion(swap_free=%.1f%%)", swapFreePercent))
+	}
+	return triggers
+}
+
+// checkMachineFrozen runs the machine-frozen probe if needed.
+func (m *Monitor) checkMachineFrozen() *frozenState {
 	if isFrozen, reason := checkMachineFrozen(); isFrozen {
-		frozen = &frozenState{frozen: true, reason: reason}
-		triggers = append(triggers, fmt.Sprintf("machine_frozen(%s)", reason))
+		return &frozenState{frozen: true, reason: reason}
 	}
+	return nil
+}
 
-	if memErr == nil && mem.SwapTotal > 0 {
-		swapFreePercent := float64(mem.SwapFree) / float64(mem.SwapTotal) * 100.0
-		if m.windows.memAvailable.Trend() == "falling" &&
-			m.windows.memCached.Trend() == "falling" &&
-			swapFreePercent < m.cfg.SwapHeadroom {
-			triggers = append(triggers, fmt.Sprintf("predictive_memory_exhaustion(swap_free=%.1f%%)", swapFreePercent))
-		}
+// updateCgroupPressureEvents tracks cgroup memory.high / memory.max deltas.
+func (m *Monitor) updateCgroupPressureEvents() {
+	cgMem := readCgroupMemory()
+	if cgMem.HighEvents > m.lastCgroupHighEvents || cgMem.MaxEvents > m.lastCgroupMaxEvents {
+		m.memHighHitsConsecutive++
+		slog.Debug("cgroup memory pressure events",
+			"new_high_events", cgMem.HighEvents-m.lastCgroupHighEvents,
+			"new_max_events", cgMem.MaxEvents-m.lastCgroupMaxEvents,
+			"consecutive_ticks", m.memHighHitsConsecutive,
+		)
+	} else {
+		m.memHighHitsConsecutive = 0
 	}
-
-	logSpikes(m.cfg, m.windows)
-	return triggers, frozen
+	m.lastCgroupHighEvents = cgMem.HighEvents
+	m.lastCgroupMaxEvents = cgMem.MaxEvents
 }
 
 func logSpikes(cfg Config, w *metricWindows) {
@@ -486,11 +547,10 @@ func logSpikes(cfg Config, w *metricWindows) {
 		{"psi_io", &w.psiIO},
 		{"iowait", &w.iowait},
 		{"memory_usage", &w.memUsage},
-		{"swap_usage", &w.swapUsage},
 		{"page_rate", &w.pageRate},
 	}
 	for _, s := range spikes {
-		if s.window.IsSpike(cfg.SustainedRatio) {
+		if s.window.IsSpike(cfg.Monitor.SustainedRatio) {
 			latest := s.window.buf.Latest()
 			slog.Info("spike detected",
 				"metric", s.name,

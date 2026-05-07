@@ -13,22 +13,8 @@ import (
 	"time"
 )
 
-func shouldTakeCoredump(cfg Config, dbHealth DBHealth, triggerCount int) bool {
-	if !cfg.CoredumpEnabled {
-		return false
-	}
-
-	if cfg.CoredumpOnUnhealthy && (!dbHealth.Reachable || dbHealth.IsStuck) {
-		slog.Info("coredump: DB is unhealthy, coredump warranted")
-		return true
-	}
-
-	if cfg.CoredumpOnFrequentTriggers && triggerCount >= cfg.CoredumpFrequentThreshold {
-		slog.Info("coredump: frequent triggers detected", "trigger_count", triggerCount, "threshold", cfg.CoredumpFrequentThreshold)
-		return true
-	}
-
-	return false
+func shouldTakeCoredump(cfg Config) bool {
+	return cfg.Coredump.Enabled
 }
 
 func takeCoredump(cfg Config) error {
@@ -38,23 +24,23 @@ func takeCoredump(cfg Config) error {
 	}
 	pid := pids[0]
 
-	if err := os.MkdirAll(cfg.CoredumpOutputDir, 0755); err != nil {
+	if err := os.MkdirAll(cfg.Coredump.OutputDir, 0755); err != nil {
 		return fmt.Errorf("create coredump dir: %w", err)
 	}
 
 	timestamp := time.Now().Format("20060102_150405")
-	outputPrefix := filepath.Join(cfg.CoredumpOutputDir, fmt.Sprintf("mariadb_%s", timestamp))
+	outputPrefix := filepath.Join(cfg.Coredump.OutputDir, fmt.Sprintf("mariadb_%s", timestamp))
 
 	slog.Info("taking coredump via gcore", "pid", pid, "output", outputPrefix)
 
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.CoredumpTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Coredump.Timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "gcore", "-o", outputPrefix, strconv.Itoa(pid))
 	output, err := cmd.CombinedOutput()
 
 	if ctx.Err() == context.DeadlineExceeded {
-		return fmt.Errorf("gcore timed out after %s", cfg.CoredumpTimeout)
+		return fmt.Errorf("gcore timed out after %s", cfg.Coredump.Timeout)
 	}
 
 	if err != nil {
@@ -63,7 +49,7 @@ func takeCoredump(cfg Config) error {
 
 	slog.Info("coredump captured successfully", "output", outputPrefix)
 
-	cleanupOldCoredumps(cfg.CoredumpOutputDir, cfg.CoredumpMaxCount)
+	cleanupOldCoredumps(cfg.Coredump.OutputDir, cfg.Coredump.MaxCount)
 	return nil
 }
 

@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+// resolveFrozenState returns the frozen flag and reason, querying the machine
+// directly only when a pre-computed frozen state was not provided.
+func resolveFrozenState(frozen *frozenState) (bool, string) {
+	if frozen != nil {
+		return frozen.frozen, frozen.reason
+	}
+	return checkMachineFrozen()
+}
+
 func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MySQLCredentials, frozen *frozenState) bool {
 	slog.Error("recovery triggered",
 		"triggers", triggers,
@@ -18,16 +27,9 @@ func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MyS
 		"details", dbHealth.Details,
 	)
 
-	isFrozen := false
-	reason := ""
-	if frozen != nil {
-		isFrozen = frozen.frozen
-		reason = frozen.reason
-	} else {
-		isFrozen, reason = checkMachineFrozen()
-	}
+	isFrozen, reason := resolveFrozenState(frozen)
 
-	if !isFrozen && shouldTakeCoredump(cfg, dbHealth, len(triggers)) {
+	if !isFrozen && shouldTakeCoredump(cfg) {
 		if err := takeCoredump(cfg); err != nil {
 			slog.Warn("coredump failed, continuing with recovery", "error", err)
 		}
@@ -36,11 +38,11 @@ func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MyS
 	if isFrozen {
 		slog.Warn("machine appears frozen, skipping graceful stop and killing mariadb directly", "reason", reason)
 		killMariaDB()
-	} else if !stopMariaDB(cfg.StopTimeout) {
+	} else if !stopMariaDB(cfg.Monitor.StopTimeout) {
 		killMariaDB()
 	}
 
-	reclaimMemory(cfg.DropCachesMode)
+	reclaimMemory(cfg.Monitor.DropCachesMode)
 	startMariaDB(creds)
 
 	return true

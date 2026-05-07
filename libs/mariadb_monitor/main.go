@@ -67,14 +67,14 @@ func main() {
 
 	slog.Info("mariadb monitor starting",
 		"check_interval", cfg.CheckInterval,
-		"window_size", cfg.WindowSize,
-		"sustained_ratio", cfg.SustainedRatio,
+		"window_size", cfg.Monitor.WindowSize,
+		"sustained_ratio", cfg.Monitor.SustainedRatio,
 		"mariadb_socket", creds.Socket,
 		"mariadb_user", creds.User,
 		"log_level", cfg.LogLevel,
 		"log_file", logFile,
-		"max_recoveries_per_hour", cfg.MaxRecoveriesPerHour,
-		"drop_caches_mode", cfg.DropCachesMode,
+		"max_recoveries_per_hour", cfg.Monitor.MaxRecoveriesPerHour,
+		"drop_caches_mode", cfg.Monitor.DropCachesMode,
 	)
 
 	mon := newMonitor(cfg, creds)
