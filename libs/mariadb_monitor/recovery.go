@@ -6,9 +6,37 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
+
+// systemdKillWhoFlag is set once at init to the correct flag name for the
+// running systemd version. "--kill-whom" was introduced in systemd 252;
+// older releases (e.g. Ubuntu 22.04 ships 249) require "--kill-who".
+var systemdKillWhoFlag string
+
+func init() {
+	systemdKillWhoFlag = detectKillWhoFlag()
+	slog.Info("systemd kill flag detected", "flag", systemdKillWhoFlag)
+}
+
+func detectKillWhoFlag() string {
+	out, err := exec.Command("systemctl", "--version").Output()
+	if err != nil {
+		return "--kill-who=all" // safe default for older systemd
+	}
+	// First line is like: "systemd 249 (249.11-...)" or "systemd 254"
+	line := strings.SplitN(string(out), "\n", 2)[0]
+	fields := strings.Fields(line)
+	if len(fields) >= 2 {
+		if ver, err := strconv.Atoi(fields[1]); err == nil && ver >= 252 {
+			return "--kill-whom=all"
+		}
+	}
+	return "--kill-who=all"
+}
 
 const (
 	// Always drop the page cache after a recovery. Modes 2 and 3 also drop
@@ -120,7 +148,7 @@ func killMariaDB() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "systemctl", "kill", "--signal=SIGKILL", "--kill-whom=all", "mariadb")
+	cmd := exec.CommandContext(ctx, "systemctl", "kill", "--signal=SIGKILL", systemdKillWhoFlag, "mariadb")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		slog.Warn("systemctl kill failed, falling back to direct SIGKILL",
 			"error", err, "output", string(out))
