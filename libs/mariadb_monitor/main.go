@@ -255,7 +255,7 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 	if w.pageRate.IsSustained(cfg.SustainedRatio) {
 		triggers = append(triggers, "sustained_page_rate")
 	}
-	
+
 	if isFrozen, reason := checkMachineFrozen(); isFrozen {
 		frozenCheck = &frozenState{frozen: true, reason: reason}
 		triggers = append(triggers, fmt.Sprintf("machine_frozen(%s)", reason))
@@ -285,7 +285,7 @@ func runCheck(cfg Config, creds MySQLCredentials, w *metricWindows, cache *snaps
 
 	slog.Warn("pressure detected", "triggers", triggers)
 
-	dbHealth := checkMariaDBHealth(creds)
+	dbHealth := checkMariaDBHealth(cfg, creds)
 	if dbHealth.Reachable && !dbHealth.IsStuck {
 		slog.Warn("pressure detected but mariadb is healthy, skipping recovery", "triggers", triggers)
 		return false
@@ -321,7 +321,7 @@ func recentRecoveryCount(maxPerHour int) bool {
 	return len(recent) >= maxPerHour
 }
 
-func checkMariaDBHealth(creds MySQLCredentials) DBHealth {
+func checkMariaDBHealth(cfg Config, creds MySQLCredentials) DBHealth {
 	if !checkReachable(creds) {
 		slog.Warn("mariadb is unreachable", "socket", creds.Socket, "host", creds.Host, "port", creds.Port)
 		return DBHealth{Reachable: false}
@@ -330,8 +330,17 @@ func checkMariaDBHealth(creds MySQLCredentials) DBHealth {
 	health := checkProcesslist(creds)
 	if health.IsStuck {
 		slog.Warn("mariadb has stuck queries", "stuck_count", health.StuckQueries, "details", health.Details)
-	} else {
-		slog.Debug("mariadb processlist is healthy")
+		return health
+	}
+
+	slog.Debug("mariadb processlist is healthy")
+
+	// Local check passed; the local probe can miss many real issues, so consult
+	// the external healthcheck for a second opinion when configured.
+	if dbUnhealthy, ok := checkExternalDBHealth(cfg); ok && dbUnhealthy {
+		slog.Warn("external healthcheck reports db unhealthy, overriding local healthy verdict")
+		health.IsStuck = true
+		health.Details = append(health.Details, "external healthcheck: db_server_healthy=false")
 	}
 	return health
 }

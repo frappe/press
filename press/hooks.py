@@ -288,7 +288,7 @@ scheduler_events = {
 	],
 	"cron": {
 		"1-59/2 * * * *": [
-			"press.press.doctype.incident.incident.validate_incidents",
+			"press.press.doctype.incident.incident.confirm_incidents",
 		],
 		"*/2 * * * *": [
 			"press.press.doctype.incident.incident.resolve_incidents",

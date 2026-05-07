@@ -1,11 +1,11 @@
-# Copyright (c) 2023, Frappe and contributors
+# Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
 # import frappe
 from frappe.model.document import Document
 
 
-class IncidentAlerts(Document):
+class IncidentBench(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -14,12 +14,13 @@ class IncidentAlerts(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		alert: DF.Link | None
-		alert_type: DF.Data | None
-		combined_alerts: DF.Data | None
+		bench: DF.Data
+		current_sites_down: DF.Int
+		last_seen_seconds_ago: DF.Duration | None
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		reported_sites_down: DF.Int
 	# end: auto-generated types
 
 	pass

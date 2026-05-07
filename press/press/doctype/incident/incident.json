@@ -8,44 +8,76 @@
  "engine": "InnoDB",
  "field_order": [
   "alerts_tab",
-  "phone_call",
-  "alert",
   "status",
-  "type",
-  "subtype",
-  "acknowledged_by",
-  "column_break_smnd",
   "server",
+  "cluster",
+  "investigation",
+  "column_break_smnd",
   "resource_type",
   "resource",
-  "cluster",
-  "resolved_by",
-  "investigation",
-  "resolved_at",
+  "type",
+  "subtype",
+  "section_break_lazo",
   "confirmed_at",
-  "section_break_kjey",
-  "subject",
-  "description",
-  "preliminary_investigation_section",
+  "column_break_ukex",
+  "acknowledged_by",
+  "column_break_kwec",
+  "acknowledged_at",
+  "column_break_hryl",
+  "resolved_at",
+  "section_break_heda",
   "likely_cause",
-  "column_break_jrzi",
-  "corrective_suggestions",
-  "preventive_suggestions",
-  "section_break_bjjy",
-  "updates",
-  "called_customer",
+  "preliminary_investigation_section",
+  "description",
+  "analysis_tab",
+  "no_of_down_sites",
+  "no_of_down_benches",
+  "column_break_vxrf",
+  "no_of_total_sites",
+  "no_of_total_benches",
+  "section_break_qefz",
+  "down_sites",
+  "down_benches",
+  "server_health_tab",
+  "last_1_hour_overview_section",
+  "app_server_column",
+  "server_status",
+  "server_load15",
+  "server_free_space_gb",
+  "server_disk_iops",
+  "server_disk_throughput_mbps",
+  "server_runnable_state",
+  "server_oom_kills",
+  "column_break_iqfx",
+  "db_server_status",
+  "db_server_load15",
+  "db_free_space_gb",
+  "db_server_disk_iops",
+  "db_server_disk_throughput_mbps",
+  "db_server_free_memory_mb",
+  "db_server_disk_queue",
+  "grafana_dashboard_section",
+  "app_server_stats",
+  "db_server_stats",
+  "app_server_stats_html",
+  "db_server_stats_html",
   "updates_tab",
-  "alerts",
   "section_break_aevb",
   "column_break_rbwa",
-  "route",
+  "phone_call",
+  "column_break_xvko",
   "sms_sent",
-  "show_in_website"
+  "column_break_zzcp",
+  "called_customer",
+  "section_break_pahe",
+  "updates"
  ],
  "fields": [
   {
    "fieldname": "server",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Server",
    "options": "Server"
   },
@@ -64,6 +96,8 @@
    "default": "Validating",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Validating\nConfirmed\nAcknowledged\nInvestigating\nResolved\nAuto-Resolved\nPress-Resolved"
   },
@@ -73,16 +107,6 @@
    "fieldtype": "Select",
    "label": "Type",
    "options": "Database Down\nServer Down\nProxy Down"
-  },
-  {
-   "fieldname": "section_break_bjjy",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "alerts",
-   "fieldtype": "Table",
-   "label": "Alerts",
-   "options": "Incident Alerts"
   },
   {
    "default": "0",
@@ -98,7 +122,7 @@
   {
    "fieldname": "updates_tab",
    "fieldtype": "Tab Break",
-   "label": "Alerts"
+   "label": "Updates"
   },
   {
    "fieldname": "acknowledged_by",
@@ -122,48 +146,16 @@
    "options": "Incident Updates"
   },
   {
-   "fieldname": "route",
-   "fieldtype": "Data",
-   "label": "Route"
-  },
-  {
-   "default": "0",
-   "fieldname": "show_in_website",
-   "fieldtype": "Check",
-   "label": "Show in Website"
-  },
-  {
-   "fieldname": "section_break_kjey",
-   "fieldtype": "Section Break",
-   "label": "Details"
-  },
-  {
-   "fieldname": "subject",
-   "fieldtype": "Data",
-   "label": "Subject"
-  },
-  {
    "fieldname": "description",
    "fieldtype": "Text Editor",
+   "hidden": 1,
    "label": "Description"
-  },
-  {
-   "fieldname": "resolved_by",
-   "fieldtype": "Link",
-   "label": "Resolved By",
-   "options": "User"
   },
   {
    "default": "1",
    "fieldname": "phone_call",
    "fieldtype": "Check",
    "label": "Phone Call"
-  },
-  {
-   "fieldname": "alert",
-   "fieldtype": "Link",
-   "label": "Alert",
-   "options": "Prometheus Alert Rule"
   },
   {
    "fieldname": "resource_type",
@@ -174,6 +166,8 @@
   {
    "fieldname": "resource",
    "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Resource",
    "options": "resource_type"
   },
@@ -184,30 +178,16 @@
    "options": "High CPU: user\nHigh CPU: iowait\nDisk full"
   },
   {
+   "collapsible": 1,
    "fieldname": "preliminary_investigation_section",
    "fieldtype": "Section Break",
-   "label": "Preliminary Investigation"
+   "label": "Deprecated Fields"
   },
   {
+   "description": "Log the findings and actions taken",
    "fieldname": "likely_cause",
-   "fieldtype": "Text",
+   "fieldtype": "Markdown Editor",
    "label": "Likely Causes"
-  },
-  {
-   "fieldname": "column_break_jrzi",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "preventive_suggestions",
-   "fieldtype": "Table",
-   "label": "Preventive Suggestions",
-   "options": "Incident Suggestion"
-  },
-  {
-   "fieldname": "corrective_suggestions",
-   "fieldtype": "Table",
-   "label": "Corrective Suggestions",
-   "options": "Incident Suggestion"
   },
   {
    "fieldname": "investigation",
@@ -231,13 +211,232 @@
    "fieldname": "confirmed_at",
    "fieldtype": "Datetime",
    "label": "Confirmed At"
+  },
+  {
+   "fieldname": "section_break_lazo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_ukex",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_kwec",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_xvko",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_zzcp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_pahe",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "acknowledged_at",
+   "fieldtype": "Datetime",
+   "label": "Acknowledged At"
+  },
+  {
+   "fieldname": "column_break_hryl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "app_server_stats",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "App Server Stats"
+  },
+  {
+   "fieldname": "db_server_stats",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "DB Server Stats"
+  },
+  {
+   "fieldname": "app_server_stats_html",
+   "fieldtype": "HTML",
+   "label": "App Server Stats"
+  },
+  {
+   "fieldname": "db_server_stats_html",
+   "fieldtype": "HTML",
+   "label": "DB Server Stats",
+   "max_height": "512px",
+   "width": "512px"
+  },
+  {
+   "collapsible_depends_on": "eval: false",
+   "fieldname": "grafana_dashboard_section",
+   "fieldtype": "Section Break",
+   "label": "Grafana Snapshot"
+  },
+  {
+   "fieldname": "last_1_hour_overview_section",
+   "fieldtype": "Section Break",
+   "label": "Last 1 Hour P95 Overview"
+  },
+  {
+   "fieldname": "server_oom_kills",
+   "fieldtype": "Int",
+   "label": "OOM Kills",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_iqfx",
+   "fieldtype": "Column Break",
+   "label": "DB Server"
+  },
+  {
+   "fieldname": "db_server_free_memory_mb",
+   "fieldtype": "Int",
+   "label": "Free Memory (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_health_tab",
+   "fieldtype": "Tab Break",
+   "label": "Server Health"
+  },
+  {
+   "fieldname": "app_server_column",
+   "fieldtype": "Column Break",
+   "label": "App Server"
+  },
+  {
+   "fieldname": "db_server_disk_queue",
+   "fieldtype": "Int",
+   "label": "Disk Queue",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nReachable\nUnreachable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "db_server_status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nReachable\nUnreachable\nReachable - DB Healthy\nReachable - DB Unhealthy",
+   "read_only": 1
+  },
+  {
+   "fieldname": "analysis_tab",
+   "fieldtype": "Tab Break",
+   "label": "Down Resources"
+  },
+  {
+   "fieldname": "down_sites",
+   "fieldtype": "Table",
+   "label": "Down Sites (Random 15)",
+   "options": "Incident Site"
+  },
+  {
+   "fieldname": "down_benches",
+   "fieldtype": "Table",
+   "label": "Down Benches",
+   "options": "Incident Bench"
+  },
+  {
+   "fieldname": "section_break_qefz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "no_of_total_sites",
+   "fieldtype": "Int",
+   "label": "Total Sites",
+   "read_only": 1
+  },
+  {
+   "fieldname": "no_of_total_benches",
+   "fieldtype": "Int",
+   "label": "Total Benches",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_vxrf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "no_of_down_sites",
+   "fieldtype": "Int",
+   "label": "Down Sites",
+   "read_only": 1
+  },
+  {
+   "fieldname": "no_of_down_benches",
+   "fieldtype": "Int",
+   "label": "Down Benches",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_free_space_gb",
+   "fieldtype": "Float",
+   "label": "Free Space (GB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "db_free_space_gb",
+   "fieldtype": "Float",
+   "label": "Free Space (GB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_load15",
+   "fieldtype": "Float",
+   "label": "Load 15",
+   "read_only": 1
+  },
+  {
+   "fieldname": "db_server_load15",
+   "fieldtype": "Float",
+   "label": "Load 15",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_runnable_state",
+   "fieldtype": "Int",
+   "label": "Runnable State",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_disk_iops",
+   "fieldtype": "Int",
+   "label": "Disk IOPS",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server_disk_throughput_mbps",
+   "fieldtype": "Int",
+   "label": "Disk Throughput (MB/s)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "db_server_disk_iops",
+   "fieldtype": "Int",
+   "label": "Disk IOPS",
+   "read_only": 1
+  },
+  {
+   "fieldname": "db_server_disk_throughput_mbps",
+   "fieldtype": "Int",
+   "label": "Disk Throughput (MB/s)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_heda",
+   "fieldtype": "Section Break"
   }
  ],
- "has_web_view": 1,
- "index_web_pages_for_search": 1,
- "is_published_field": "show_in_website",
  "links": [],
- "modified": "2026-03-13 13:38:20.041662",
+ "modified": "2026-05-02 04:25:52.771728",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",
@@ -274,7 +473,6 @@
    "share": 1
   }
  ],
- "route": "incidents",
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",

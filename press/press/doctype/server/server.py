@@ -687,7 +687,15 @@ class BaseServer(Document, TagHelpers):
 	def ping_mariadb(self) -> bool:
 		try:
 			agent = Agent(self.name, self.doctype)
-			return agent.ping_database(self).get("reachable")
+			database = None
+			if self.doctype == "Server" and self.database_server:
+				database = frappe.get_doc("Database Server", self.database_server)
+			elif self.doctype == "Database Server":
+				database = self
+			else:
+				frappe.throw("Invalid doctype for pinging database")
+
+			return agent.ping_database(database).get("reachable")
 		except Exception:
 			return False
 
@@ -1724,7 +1732,12 @@ class BaseServer(Document, TagHelpers):
 	def reboot(self):
 		if self.provider not in ("AWS EC2", "OCI", "DigitalOcean", "Hetzner", "Frappe Compute"):
 			raise NotImplementedError
-		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+
+		if self.provider == "AWS EC2":
+			self.reboot_with_serial_console()
+			return
+
+		virtual_machine: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.reboot()
 
 	@dashboard_whitelist()
@@ -2675,6 +2688,7 @@ class Server(BaseServer):
 		cluster: DF.Link | None
 		communication_infos: DF.Table[CommunicationInfo]
 		database_server: DF.Link | None
+		db_healthcheck_token: DF.Password | None
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
@@ -2753,7 +2767,12 @@ class Server(BaseServer):
 	@role_guard.action()
 	def validate(self):
 		super().validate()
+		self.set_db_healthcheck_token()
 		self.validate_managed_database_service()
+
+	def set_db_healthcheck_token(self):
+		if not self.db_healthcheck_token:
+			self.db_healthcheck_token = frappe.generate_hash(length=64)
 
 	def validate_managed_database_service(self):
 		if getattr(self, "is_managed_database", 0):
