@@ -7,48 +7,29 @@
 		v-model="show"
 	>
 		<template #body-content v-if="$bench.doc">
-			<div v-if="certificate" class="space-y-4">
-				<div class="space-y-2" v-if="isWindows">
-					<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
-					<div class="space-y-2">
-						<p class="text-base">
-							Execute the following shell command to set the encoding to UTF-8.
-						</p>
-						<ClickToCopyField
-							textContent="$PSDefaultParameterValues['*: Encoding'] = 'utf8'"
-							:breakLines="false"
-						/>
-					</div>
-				</div>
-				<div class="space-y-2">
-					<h4 class="text-base font-semibold text-gray-700">
-						Step {{ isWindows ? '2' : '1' }}
-					</h4>
-					<div class="space-y-2">
-						<p class="text-base">
-							Execute the following shell command to store the SSH certificate
-							locally.
-						</p>
-						<ClickToCopyField
-							:textContent="certificateCommand"
-							:breakLines="false"
-						/>
-					</div>
-				</div>
-				<div class="space-y-2">
-					<h4 class="text-base font-semibold text-gray-700">
-						Step {{ isWindows ? '3' : '2' }}
-					</h4>
-					<div class="space-y-1">
-						<p class="text-base">
-							Execute the following shell command to SSH into your bench
-						</p>
-						<ClickToCopyField :textContent="sshCommand" />
-					</div>
-				</div>
-				<div class="flex items-center gap-2 rounded bg-gray-100 p-3">
-					<FeatherIcon name="alert-triangle" class="h-4 w-4" />
-					<div class="space-y-1 text-base">
+			<div v-if="certificate" class="space-y-3 [&_pre]:text-ink-gray-6 -mt-3">
+				<template v-if="isWindows">
+					<p class="text-base">Step 1: Set the encoding to UTF-8</p>
+					<ClickToCopyField
+						textContent="$PSDefaultParameterValues['*: Encoding'] = 'utf8'"
+					/>
+				</template>
+
+				<p class="text-base pt-2">
+					Step {{ isWindows ? '2' : '1' }}: Store the SSH certificate locally
+				</p>
+
+				<ClickToCopyField :textContent="certificateCommand" />
+
+				<p class="text-base pt-2">
+					Step {{ isWindows ? '3' : '2' }}: SSH into your bench
+				</p>
+
+				<ClickToCopyField :textContent="sshCommand" />
+
+				<div class="flex items-center gap-2.5 rounded bg-gray-100 p-3">
+					<lucide-alert-triangle class="size-4 shrink-0 mb-auto mt-0.5" />
+					<div class="text-sm leading-relaxed">
 						<p>
 							Use wisely and only for
 							<a
@@ -59,34 +40,40 @@
 							>
 							purposes.
 						</p>
-						<p>
+						<p class="text-ink-gray-5">
 							The changes(app/files) made during the SSH session are not
 							guaranteed to persist after the session ends.
 						</p>
 					</div>
 				</div>
 			</div>
-			<div class="space-y-2 text-p-base text-gray-700" v-else>
-				<p v-if="!$bench.doc.user_ssh_key">
-					It looks like you haven't added your SSH public key. Go to
-					<router-link
-						:to="{ name: 'SettingsDeveloper' }"
-						class="underline"
-						@click="show = false"
-					>
-						Developer Settings</router-link
-					>
-					to add your SSH public key.
+
+			<div class="space-y-2 text-base text-ink-gray-7 leading-relaxed" v-else>
+				<p>
+					<template v-if="!$bench.doc.user_ssh_key">
+						It looks like you haven't added your SSH public key. Go to
+						<router-link
+							:to="{ name: 'SettingsDeveloper' }"
+							class="underline"
+							@click="show = false"
+						>
+							Developer Settings</router-link
+						>
+						to add your SSH public key.
+					</template>
+
+					<template v-else-if="!$bench.doc.is_ssh_proxy_setup">
+						SSH access is not enabled for this bench. Please contact support to
+						enable access.
+					</template>
+
+					<template v-else>
+						You will need an SSH certificate to get SSH access to your bench.
+						This certificate will work only with your public-private key pair
+						and will be valid for 6 hours.
+					</template>
 				</p>
-				<p v-else-if="!$bench.doc.is_ssh_proxy_setup">
-					SSH access is not enabled for this bench. Please contact support to
-					enable access.
-				</p>
-				<p v-else>
-					You will need an SSH certificate to get SSH access to your bench. This
-					certificate will work only with your public-private key pair and will
-					be valid for 6 hours.
-				</p>
+
 				<p>
 					Please refer to the
 					<a href="/docs/benches/ssh" class="underline" target="_blank"
@@ -94,12 +81,14 @@
 					>
 					for more details.
 				</p>
+
 				<ErrorMessage
 					class="mt-3"
 					:message="$releaseGroup.generateCertificate.error"
 				/>
 			</div>
 		</template>
+
 		<template
 			#actions
 			v-if="
