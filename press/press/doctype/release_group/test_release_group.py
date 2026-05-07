@@ -18,6 +18,10 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.deploy_candidate.deploy_candidate import (
+	can_pull_update,
+	pull_update_file_filter,
+)
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
@@ -559,3 +563,223 @@ class TestReleaseGroup(FrappeTestCase):
 		create_test_bench(group=test_release_group)
 
 		test_release_group.check_app_server_storage()
+
+
+class TestPullUpdateFileFilter(FrappeTestCase):
+	"""pull_update_file_filter decides whether a changed file requires a full Docker
+	rebuild or whether a git pull + gunicorn/bench restart is sufficient.
+
+	A "pull-only update" means: no DB schema changes, no new Python/Node packages,
+	no data patches — just application code (.py, static /www/ files) that takes
+	effect after a service restart or browser refresh.
+
+	A wrong classification causes one of two silent failures:
+	- requirements.txt / package.json not flagged: pull update skips pip/yarn, missing packages crash at runtime
+	- .py flagged as requiring rebuild: every commit triggers a slow Docker build instead of a 10-second git pull
+	"""
+
+	# --- changes that require a full rebuild (pip/yarn/build step needed) ---
+
+	def test_requirements_txt_requires_rebuild(self):
+		self.assertFalse(pull_update_file_filter("apps/frappe/requirements.txt"))
+
+	def test_pyproject_toml_requires_rebuild(self):
+		self.assertFalse(pull_update_file_filter("apps/frappe/pyproject.toml"))
+
+	def test_setup_py_requires_rebuild(self):
+		self.assertFalse(pull_update_file_filter("apps/frappe/setup.py"))
+
+	def test_package_json_requires_rebuild(self):
+		self.assertFalse(pull_update_file_filter("apps/frappe/package.json"))
+
+	def test_vue_file_requires_rebuild(self):
+		self.assertFalse(pull_update_file_filter("apps/frappe/frappe/public/js/App.vue"))
+
+	def test_ts_file_requires_rebuild(self):
+		self.assertFalse(pull_update_file_filter("apps/frappe/frappe/public/js/main.ts"))
+
+	def test_tsx_file_requires_rebuild(self):
+		self.assertFalse(pull_update_file_filter("apps/frappe/frappe/public/js/App.tsx"))
+
+	def test_jsx_file_requires_rebuild(self):
+		self.assertFalse(pull_update_file_filter("apps/frappe/frappe/public/js/App.jsx"))
+
+	def test_scss_file_requires_rebuild(self):
+		self.assertFalse(pull_update_file_filter("apps/frappe/frappe/public/scss/app.scss"))
+
+	def test_js_outside_www_requires_rebuild(self):
+		# bundled JS needs yarn build; only /www/ JS is served as-is
+		self.assertFalse(pull_update_file_filter("apps/frappe/frappe/public/js/frappe.js"))
+
+	def test_html_outside_www_requires_rebuild(self):
+		self.assertFalse(pull_update_file_filter("apps/frappe/frappe/templates/includes/footer.html"))
+
+	def test_css_outside_www_requires_rebuild(self):
+		self.assertFalse(pull_update_file_filter("apps/frappe/frappe/public/css/app.css"))
+
+	# --- changes handled by git pull + gunicorn/bench restart ---
+
+	def test_python_file_allows_pull_only_update(self):
+		self.assertTrue(pull_update_file_filter("apps/frappe/frappe/core/doctype/user/user.py"))
+
+	def test_markdown_file_allows_pull_only_update(self):
+		self.assertTrue(pull_update_file_filter("apps/frappe/CHANGELOG.md"))
+
+	def test_js_in_www_allows_pull_only_update(self):
+		# /www/ files are served statically — no build step required
+		self.assertTrue(pull_update_file_filter("apps/frappe/frappe/www/home.js"))
+
+	def test_html_in_www_allows_pull_only_update(self):
+		self.assertTrue(pull_update_file_filter("apps/frappe/frappe/www/about.html"))
+
+	def test_css_in_www_allows_pull_only_update(self):
+		self.assertTrue(pull_update_file_filter("apps/frappe/frappe/www/home.css"))
+
+	# --- can_pull_update aggregate ---
+
+	def test_all_pull_only_files_allows_pull_update(self):
+		files = [
+			"apps/frappe/frappe/core/doctype/user/user.py",
+			"apps/frappe/frappe/www/home.html",
+		]
+		self.assertTrue(can_pull_update(files))
+
+	def test_one_rebuild_required_file_blocks_pull_update(self):
+		files = [
+			"apps/frappe/frappe/core/doctype/user/user.py",
+			"apps/frappe/requirements.txt",
+		]
+		self.assertFalse(can_pull_update(files))
+
+	def test_empty_file_list_allows_pull_update(self):
+		# all() on empty iterable is True — no files changed, pull is trivially safe
+		self.assertTrue(can_pull_update([]))
+
+
+class TestUpdateConfigBlacklistPreservation(FrappeTestCase):
+	"""update_config_in_release_group must preserve internally-managed config keys.
+
+	The method resets the entire common_site_config_table and re-adds from the
+	dashboard payload.  Without the blacklist-preservation step, any internal
+	key (e.g. a Marketplace app secret key) would be silently deleted the next
+	time a user saves bench config — breaking the app at runtime with no error.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_team().name
+		self.rg = create_test_release_group([create_test_app()])
+
+		# Register an internal key so get_client_blacklisted_keys() returns it
+		self.internal_key = frappe.get_doc(
+			doctype="Site Config Key", key="my_internal_secret", internal=1
+		).insert(ignore_if_duplicate=True)
+
+		# Seed the RG config table with that internal key
+		self.rg.append(
+			"common_site_config_table",
+			{"key": "my_internal_secret", "value": "hunter2", "type": "String"},
+		)
+		self.rg.save()
+		self.rg.reload()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_internal_key_survives_config_update(self):
+		# Dashboard user changes an unrelated key
+		self.rg.update_config_in_release_group(
+			common_site_config=[{"key": "user_key", "value": "hello", "type": "String"}],
+			bench_config=[],
+		)
+		self.rg.reload()
+
+		keys = {row.key: row.value for row in self.rg.common_site_config_table}
+		self.assertIn("my_internal_secret", keys)
+		self.assertEqual(keys["my_internal_secret"], "hunter2")
+
+	def test_user_key_is_written_alongside_internal_key(self):
+		self.rg.update_config_in_release_group(
+			common_site_config=[{"key": "user_key", "value": "hello", "type": "String"}],
+			bench_config=[],
+		)
+		self.rg.reload()
+
+		keys = {row.key for row in self.rg.common_site_config_table}
+		self.assertIn("user_key", keys)
+
+	def test_http_timeout_stored_in_bench_config(self):
+		self.rg.update_config_in_release_group(
+			common_site_config=[],
+			bench_config=[{"key": "http_timeout", "value": "120"}],
+		)
+		self.rg.reload()
+
+		import json as _json
+
+		bench_cfg = _json.loads(self.rg.bench_config or "{}")
+		self.assertEqual(bench_cfg.get("http_timeout"), 120)
+
+	def test_empty_bench_config_clears_it(self):
+		# First set something
+		self.rg.update_config_in_release_group(
+			common_site_config=[],
+			bench_config=[{"key": "http_timeout", "value": "60"}],
+		)
+		# Then clear
+		self.rg.update_config_in_release_group(common_site_config=[], bench_config=[])
+		self.rg.reload()
+
+		import json as _json
+
+		bench_cfg = _json.loads(self.rg.bench_config or "{}")
+		self.assertEqual(bench_cfg, {})
+
+
+class TestValidateDcAppsAgainstRg(FrappeTestCase):
+	"""validate_dc_apps_against_rg ensures every app in the Release Group has a
+	matching entry in the Deploy Candidate's app list.
+
+	If this check is skipped or broken, a DC can be created with fewer apps than
+	the RG defines — likely because an App Release was not approved yet.  The
+	resulting bench would be missing apps, causing import errors at site startup.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_team().name
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_all_apps_present_does_not_raise(self):
+		app = create_test_app()
+		rg = create_test_release_group([app])
+
+		dc_apps = [{"app": app.name}]
+		try:
+			rg.validate_dc_apps_against_rg(dc_apps)
+		except frappe.ValidationError:
+			self.fail("validate_dc_apps_against_rg raised unexpectedly when all apps are present")
+
+	def test_missing_app_raises_validation_error(self):
+		app1 = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		rg = create_test_release_group([app1, app2])
+
+		# DC only has app1 — app2 release was never approved
+		dc_apps = [{"app": app1.name}]
+		with self.assertRaises(frappe.ValidationError):
+			rg.validate_dc_apps_against_rg(dc_apps)
+
+	def test_error_message_names_missing_app(self):
+		app1 = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		rg = create_test_release_group([app1, app2])
+
+		dc_apps = [{"app": app1.name}]
+		try:
+			rg.validate_dc_apps_against_rg(dc_apps)
+			self.fail("Expected ValidationError")
+		except frappe.ValidationError as e:
+			self.assertIn(app2.name, str(e))
