@@ -28,6 +28,12 @@ func takeCoredump(cfg Config) error {
 		return fmt.Errorf("create coredump dir: %w", err)
 	}
 
+	// Free storage before dumping if existing coredumps exceed the limit.
+	if cfg.Coredump.MaxStorageGB > 0 {
+		maxBytes := int64(cfg.Coredump.MaxStorageGB * 1024 * 1024 * 1024)
+		freeCoredumpStorageIfNeeded(cfg.Coredump.OutputDir, maxBytes)
+	}
+
 	timestamp := time.Now().Format("20060102_150405")
 	outputPrefix := filepath.Join(cfg.Coredump.OutputDir, fmt.Sprintf("mariadb_%s", timestamp))
 
@@ -53,6 +59,7 @@ func takeCoredump(cfg Config) error {
 	return nil
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 // Common PID file locations for MariaDB/MySQL.
 var mariadbPidFiles = []string{
@@ -139,6 +146,63 @@ func findPIDsFromProc() []int {
 
 =======
 >>>>>>> d7adb7091 (chore(mariadb-monitor): Cleanup and structure the code)
+=======
+// freeCoredumpStorageIfNeeded removes the oldest coredump files until the
+// total size of all coredumps in dir is below maxBytes.
+func freeCoredumpStorageIfNeeded(dir string, maxBytes int64) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		slog.Warn("coredump storage check: failed to read dir", "dir", dir, "error", err)
+		return
+	}
+
+	type coreFile struct {
+		entry os.DirEntry
+		size  int64
+	}
+	var files []coreFile
+	var totalSize int64
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasPrefix(e.Name(), "mariadb_") {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		files = append(files, coreFile{entry: e, size: info.Size()})
+		totalSize += info.Size()
+	}
+
+	if totalSize <= maxBytes {
+		return
+	}
+
+	// Sort oldest-first by name (names are timestamp-based).
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].entry.Name() < files[j].entry.Name()
+	})
+
+	slog.Info("coredump storage limit exceeded, removing old coredumps",
+		"total_gb", float64(totalSize)/1024/1024/1024,
+		"limit_gb", float64(maxBytes)/1024/1024/1024,
+	)
+
+	for _, f := range files {
+		if totalSize <= maxBytes {
+			break
+		}
+		path := filepath.Join(dir, f.entry.Name())
+		if err := os.Remove(path); err != nil {
+			slog.Warn("coredump storage cleanup: failed to remove", "path", path, "error", err)
+			continue
+		}
+		slog.Info("coredump storage cleanup: removed old coredump", "path", path, "size_mb", f.size/1024/1024)
+		totalSize -= f.size
+	}
+}
+
+>>>>>>> d704c03a6 (feat(mariadb-monitor): Add storage limit for coredump)
 func cleanupOldCoredumps(dir string, maxCount int) {
 	if maxCount <= 0 {
 		return
