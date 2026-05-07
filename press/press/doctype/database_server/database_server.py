@@ -1787,9 +1787,16 @@ class DatabaseServer(BaseServer):
 			query_result = result.get("query_result")
 			if query_result:
 				self.reload()
-				self.memory_allocator = memory_allocator
+				self.memory_allocator = self._get_memory_allocator_display_name(query_result[0][0]["Value"])
 				self.memory_allocator_version = query_result[0][0]["Value"]
 				self.save()
+
+	def _get_memory_allocator_display_name(self, allocator_version):
+		if "jemalloc" in allocator_version.lower():
+			return "jemalloc"
+		if "tcmalloc" in allocator_version.lower():
+			return "TCMalloc"
+		return "System"
 
 	@dashboard_whitelist()
 	def get_mariadb_variables(self):
