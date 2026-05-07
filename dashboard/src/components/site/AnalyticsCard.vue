@@ -7,19 +7,15 @@
 			shouldHighlight && 'ring-1',
 		]"
 	>
-		<div class="flex h-12 items-center justify-between border-b px-5 gap-2">
-			<div class="flex items-center">
-				<h3 class="text-lg font-medium text-gray-900">{{ title }}</h3>
-				<div class="pl-2">
-					<Tooltip text="Copy Dashboard Link">
-						<CopyIcon
-							class="h-4 text-gray-600 outline-none duration-200 hover:text-current cursor-pointer"
-							@click="shareCard"
-						/>
-					</Tooltip>
-				</div>
-			</div>
+		<div class="flex items-center border-b p-3 gap-3">
+			<h3 class="text-base font-medium text-gray-900">{{ title }}</h3>
 			<slot name="action"></slot>
+
+			<button @click="shareCard" class="flex items-center gap-1.5 ml-auto">
+				<LucideLink
+					class="size-3 outline-none duration-200 hover:text-current cursor-pointer"
+				/>
+			</button>
 		</div>
 
 		<slot></slot>
@@ -28,7 +24,6 @@
 
 <script>
 import { Tooltip } from 'frappe-ui';
-import { icon } from '../../utils/components';
 
 export default {
 	name: 'AnalyticsCard',
@@ -36,7 +31,6 @@ export default {
 	emits: ['share-card'],
 	components: {
 		Tooltip,
-		CopyIcon: icon('link'),
 	},
 
 	data() {
