@@ -2101,6 +2101,25 @@ class VirtualMachine(Document):
 
 		return server, database_server
 
+	def create_cluster_registry(self):
+		"""Create a cluster registry entry for this virtual machine."""
+		document = {
+			"doctype": "Cluster Registry",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": self.cloud_provider,
+			"virtual_machine": self.name,
+			"team": self.team,
+			"is_primary": True,
+			"is_secondary": False,
+			"platform": self.platform,
+		}
+
+		cluster_registry = frappe.get_doc(document).insert()
+		frappe.msgprint(frappe.get_desk_link(cluster_registry.doctype, cluster_registry.name))
+		return cluster_registry
+
 	@frappe.whitelist()
 	def create_server(self, is_secondary: bool = False, primary: str | None = None) -> Server:
 		document = {

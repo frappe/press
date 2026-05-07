@@ -60,6 +60,31 @@ frappe.ui.form.on('Cluster', {
 				);
 			}
 		}
+		frm.add_custom_button(__('Provision Cluster Registry'), () => {
+			frappe.prompt(
+				[
+					{
+						fieldtype: 'Link',
+						fieldname: 'plan',
+						label: 'Server Plan',
+						options: 'Server Plan',
+						reqd: 1,
+					},
+				],
+				(values) => {
+					frm.call('create_cluster_registry', values).then((r) => {
+						if (r.message) {
+							frappe.show_alert({
+								message: __('Cluster Registry provisioned successfully'),
+								indicator: 'green',
+							});
+						}
+					});
+				},
+				__('Provision Cluster Registry'),
+				__('Provision'),
+			);
+		});
 		if (
 			(frm.doc.cloud_provider === 'AWS EC2' ||
 				frm.doc.cloud_provider === 'Hetzner') &&
