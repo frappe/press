@@ -7,6 +7,7 @@
 			shouldHighlight && 'ring-1',
 		]"
 	>
+<<<<<<< HEAD
 		<div class="flex h-12 items-center justify-between border-b px-5 gap-2">
 			<div class="flex items-center">
 				<h3 class="text-lg font-medium text-gray-900">{{ title }}</h3>
@@ -20,6 +21,17 @@
 				</div>
 			</div>
 			<slot name="action"></slot>
+=======
+		<div class="flex items-center border-b p-3 gap-2">
+			<h3 class="text-base font-medium text-gray-900">{{ title }}</h3>
+			<slot name="action"></slot>
+
+			<button @click="shareCard" class="flex items-center gap-1.5 ml-auto" aria-label="Copy">
+				<LucideLink
+					class="size-3 outline-none duration-200 hover:text-current cursor-pointer"
+				/>
+			</button>
+>>>>>>> cf6ae9eca (fix(ui): analytic cards action btn alignments in site analytics)
 		</div>
 
 		<slot></slot>
