@@ -25,8 +25,7 @@ const copy = () => {
 	<button @click="copy">
 		<lucide-clipboard
 			v-if="!copied"
-			class="size-3.5"
-			:class="{ 'fade-in': !copied }"
+			class="size-3.5 fade-in"
 		/>
 		<lucide-check v-else class="size-3.5 animate-in fade-in" />
 	</button>
