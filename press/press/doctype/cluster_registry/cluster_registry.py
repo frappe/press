@@ -71,6 +71,7 @@ class ClusterRegistry(BaseServer):
 			self.save()
 
 	def setup_server(self):
+		self.create_dns_record()
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
@@ -78,6 +79,3 @@ class ClusterRegistry(BaseServer):
 			queue="long",
 			timeout=3600,
 		)
-
-	def after_insert(self):
-		super().after_insert()
