@@ -16,7 +16,14 @@
   "hostname",
   "status",
   "virtual_machine",
-  "is_setup"
+  "is_setup",
+  "harbor_configurations_section",
+  "project",
+  "data_directory",
+  "admin_password",
+  "column_break_irpf",
+  "user",
+  "secret"
  ],
  "fields": [
   {
@@ -87,12 +94,47 @@
    "fieldtype": "Link",
    "label": "Virtual Machine",
    "options": "Virtual Machine"
+  },
+  {
+   "fieldname": "harbor_configurations_section",
+   "fieldtype": "Section Break",
+   "label": "Harbor Configurations"
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Data",
+   "label": "Project"
+  },
+  {
+   "default": "/data",
+   "fieldname": "data_directory",
+   "fieldtype": "Data",
+   "label": "Data Directory"
+  },
+  {
+   "fieldname": "admin_password",
+   "fieldtype": "Password",
+   "label": "Admin Password"
+  },
+  {
+   "fieldname": "column_break_irpf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Data",
+   "label": "User"
+  },
+  {
+   "fieldname": "secret",
+   "fieldtype": "Password",
+   "label": "Secret"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-07 16:37:07.440813",
+ "modified": "2026-05-07 23:15:49.329219",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster Registry",

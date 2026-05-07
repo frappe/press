@@ -2,8 +2,7 @@
 # For license information, please see license.txt
 
 # Cluster registries are utilizing harbor and therefore require
-# A seperate controller model for them to address the configs along with
-# Cleanup related API calls to Harbor
+# A seperate controller model for them to address the configs
 import typing
 
 import frappe
@@ -25,15 +24,20 @@ class ClusterRegistry(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		admin_password: DF.Password | None
 		build_server: DF.Link | None
 		cluster: DF.Link | None
+		data_directory: DF.Data | None
 		domain: DF.Link | None
 		hostname: DF.Data | None
 		ip: DF.Data | None
 		is_setup: DF.Check
 		private_ip: DF.Data | None
+		project: DF.Data | None
 		provider: DF.Data | None
+		secret: DF.Password | None
 		status: DF.Literal["GC", "Active", "Broken", "Pending"]
+		user: DF.Data | None
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
@@ -55,6 +59,8 @@ class ClusterRegistry(BaseServer):
 					"harbor_hostname": self.name,
 					"fullchain": tls_certificate.full_chain,
 					"private_key": tls_certificate.private_key,
+					"data_directory": self.data_directory,
+					"admin_password": self.admin_password,
 				},
 			)
 			play = ansible.run()

@@ -147,6 +147,20 @@
     regexp: '^hostname:.*'
     replace: 'hostname: {{ harbor_hostname }}'
 
+- name: Set Harbor admin password
+  become: yes
+  replace:
+    path: /home/frappe/harbor/harbor.yml
+    regexp: '^harbor_admin_password:.*'
+    replace: 'harbor_admin_password: {{ admin_password }}'
+
+- name: Set Harbor data directory
+  become: yes
+  replace:
+    path: /home/frappe/harbor/harbor.yml
+    regexp: '^data_volume:.*'
+    replace: 'data_volume: {{ data_directory }}'
+
 - name: Set Harbor certificate path
   become: yes
   replace:
