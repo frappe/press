@@ -561,47 +561,42 @@
 						/>
 					</div>
 				</div>
+
 				<div class="flex flex-col space-y-3" v-if="showAutoAddStorageOption">
-					<h2 class="text-base font-semibold leading-6 text-gray-900">
-						Auto Add-on Storage
-					</h2>
-					<div class="my-4 rounded-md border bg-gray-50 p-2 prose-sm prose">
-						This feature will automatically increases the storage as it reaches
-						over <b>90%</b> of its capacity.
+					<h2 class="text-base font-semibold">Auto Add-on Storage</h2>
 
-						<br /><br />
-						With this feature disabled, disk capacity
-						<strong>will not increase automatically</strong> in the event your
-						server approaches or reaches its storage limit.
+					<FormControl
+						type="checkbox"
+						v-model="enableAutoAddStorage"
+						label="Enable for Application and Database Server"
+						class="mb-2"
+					/>
 
-						<br /><br />
-						<strong>Note :</strong>
+					<div class="my-4 rounded-md border bg-gray-50 p-3 prose-sm prose">
+						<p>
+							This feature will automatically increases the storage as it
+							reaches over <b>90%</b> of its capacity.
+						</p>
+
+						<p class="py-1">
+							With this feature disabled, disk capacity
+							<strong>will not increase automatically</strong> in the event your
+							server approaches or reaches its storage limit.
+						</p>
+
+						<strong>Note</strong>
 
 						<ul>
 							<li v-if="this.storagePlanRate">
-								• You will be charged at the rate of
+								You will be charged at the rate of
 								<b>{{ this.$format.userCurrency(this.storagePlanRate) }}/mo</b>
 								for each additional GB of storage.
 							</li>
-
+							<li>We will notify you about the increase via email.</li>
 							<li>
-								• Disabling this feature may result in
-								<strong>service degradation or downtime</strong> if storage is
-								exhausted.
-							</li>
-
-							<li>
-								• Storage can auto increase only once in
-								<strong>6 hours</strong>.
+								It will be added to your invoice separately for your reference.
 							</li>
 						</ul>
-					</div>
-					<div>
-						<FormControl
-							type="checkbox"
-							v-model="enableAutoAddStorage"
-							label="Enable Auto Add-on Storage for Application and Database Server"
-						/>
 					</div>
 				</div>
 
