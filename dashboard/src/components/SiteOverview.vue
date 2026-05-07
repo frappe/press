@@ -48,32 +48,6 @@
 		</AlertBanner>
 
 		<AlertBanner
-			v-if="!isSetupWizardComplete"
-			class="col-span-1 lg:col-span-2"
-			title="Please login and complete the setup wizard on your site. Analytics will be
-			collected only after setup is complete."
-		>
-			<Button
-				class="ml-auto"
-				variant="outline"
-				@click="loginAsTeam"
-				:loading="$site.loginAsAdmin.loading"
-			>
-				Login
-			</Button>
-		</AlertBanner>
-
-		<AlertBanner
-			v-if="$site.doc.current_plan?.is_trial_plan"
-			class="col-span-1 lg:col-span-2"
-			title="Upgrade to a paid plan to continue using your site after the trial period."
-		>
-			<Button class="ml-auto" variant="outline" @click="showPlanChangeDialog">
-				Upgrade
-			</Button>
-		</AlertBanner>
-
-		<AlertBanner
 			v-if="$site.doc.is_monitoring_disabled && $site.doc.status !== 'Archived'"
 			class="col-span-1 lg:col-span-2"
 			title="Site monitoring is disabled, which means we won’t be able to notify you of any downtime. Please re-enable monitoring at your earliest convenience."

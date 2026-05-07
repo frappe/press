@@ -1,58 +1,16 @@
+<script setup lang="ts">
+import CopyBtn from '@/components/utils/CopyBtn.vue';
+
+interface Props {
+	textContent: string;
+}
+
+const props = defineProps<Props>();
+</script>
+
 <template>
-	<div class="relative rounded-lg border-2 border-gray-200 bg-gray-100 p-3">
-		<div class="select-all break-all text-xs text-gray-800">
-			<pre
-				:class="{
-					'whitespace-pre-wrap': breakLines,
-					'overflow-x-auto': !breakLines,
-				}"
-				:style="
-					!breakLines
-						? 'scrollbar-width: none; -ms-overflow-style: none; -webkit-scrollbar: none;'
-						: ''
-				"
-				>{{ textContent }}</pre
-			>
-		</div>
-		<button
-			class="absolute right-2 top-2 rounded-sm p-1 text-xs text-gray-600"
-			@click="copyTextContentToClipboard"
-		>
-			{{ copied ? 'copied' : 'copy' }}
-		</button>
+	<div class="flex items-center justify-between rounded bg-surface-gray-2 p-3">
+		<pre class="truncate text-xs">{{ textContent }}</pre>
+		<CopyBtn :text="textContent" class="ml-2 shrink-0 text-ink-gray-6" />
 	</div>
 </template>
-
-<script>
-import { toast } from 'vue-sonner';
-
-export default {
-	props: {
-		textContent: {
-			type: String,
-			required: true,
-		},
-		breakLines: {
-			type: Boolean,
-			default: true,
-		},
-	},
-	data() {
-		return {
-			copied: false,
-		};
-	},
-	methods: {
-		copyTextContentToClipboard() {
-			const clipboard = window.navigator.clipboard;
-			clipboard.writeText(this.textContent).then(() => {
-				this.copied = true;
-				setTimeout(() => {
-					this.copied = false;
-				}, 4000);
-				toast.success('Copied to clipboard!');
-			});
-		},
-	},
-};
-</script>
