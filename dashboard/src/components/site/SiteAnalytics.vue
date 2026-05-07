@@ -116,10 +116,11 @@
 				/>
 				<template #action>
 					<router-link
-						class="text-base text-gray-600 hover:text-gray-700"
+						class="text-sm text-ink-gray-7 hover:text-gray-700 flex items-center gap-1"
 						:to="{ name: 'Site Performance Request Logs' }"
 					>
-						Request Log Report →
+						Log Report
+						<LucideChevronRight class="size-4" />
 					</router-link>
 				</template>
 			</AnalyticsCard>
@@ -794,7 +795,7 @@ export default {
 			};
 		},
 		shareDashboardActionPrefix() {
-			return () => h(ShareIcon, { class: 'w-4 h-4' });
+			return () => h(LucideLink, { class: 'size-3.5' });
 		},
 	},
 	methods: {

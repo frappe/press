@@ -20,7 +20,7 @@
 			class="flex h-full items-center justify-center"
 		>
 			<ErrorMessage v-if="error" :message="error" />
-			<span v-else class="text-base text-gray-700">No data</span>
+			<NoDataMsg v-else />
 		</div>
 		<VChart
 			ref="chartRef"
@@ -53,6 +53,7 @@ import Card from '../global/Card.vue';
 import { theme } from '../../utils/theme';
 import { bytes, getUnit } from '../../utils/format';
 import dayjs from '../../utils/dayjs';
+import NoDataMsg from '@/components/common/NoDataMsg.vue';
 
 const props = defineProps({
 	showCard: {

@@ -8,9 +8,9 @@
 		</div>
 		<div
 			v-else-if="!data || data[0].date === undefined"
-			class="flex h-5/6 items-center justify-center"
+			class="flex h-5/6 items-center justify-center w-full"
 		>
-			<div class="text-base text-gray-700">No data</div>
+			<NoDataMsg />
 		</div>
 		<template v-else-if="filteredData?.length > 0">
 			<div
@@ -134,6 +134,7 @@ import dayjs from '../../utils/dayjs';
 import { icon } from '../../utils/components';
 import { Tooltip, getCachedDocumentResource } from 'frappe-ui';
 import { uuid4 } from '@sentry/core';
+import NoDataMsg from '@/components/common/NoDataMsg.vue';
 
 export default {
 	name: 'SiteUptime',
