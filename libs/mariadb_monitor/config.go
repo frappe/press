@@ -95,7 +95,11 @@ type MemoryReleaseConfig struct {
 	MemHighThreshold    int           `yaml:"mem_high_threshold"`
 	PSIMemoryThreshold  float64       `yaml:"psi_memory_threshold"`
 	InnoDBBufferMinMB   uint64        `yaml:"innodb_buffer_min_mb"`
+<<<<<<< HEAD
 >>>>>>> d97e09880 (feat(mariadb-monitor): Add auto-trim memory usage)
+=======
+	SwapMinMB           uint64        `yaml:"swap_min_mb"`
+>>>>>>> e4c5b14e7 (feat(mariadb-monitor): Dont take action if db using less than 50MB swap)
 }
 
 type MySQLCredentials struct {
@@ -177,6 +181,7 @@ func DefaultConfig() Config {
 			MemHighThreshold:    3,
 			PSIMemoryThreshold:  20.0,
 			InnoDBBufferMinMB:   256,
+			SwapMinMB:           50,
 		},
 >>>>>>> d97e09880 (feat(mariadb-monitor): Add auto-trim memory usage)
 	}
