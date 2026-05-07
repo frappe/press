@@ -73,7 +73,6 @@ func main() {
 		"mariadb_user", creds.User,
 		"log_level", cfg.LogLevel,
 		"log_file", logFile,
-		"max_recoveries_per_hour", cfg.Monitor.MaxRecoveriesPerHour,
 		"stuck_query_threshold", cfg.Monitor.StuckQueryThreshold,
 	)
 

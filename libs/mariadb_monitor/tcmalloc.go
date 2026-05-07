@@ -9,7 +9,6 @@ import (
 type TcmallocStats struct {
 	AllocatedBytes int64
 	HeapSize       int64
-	FreeBytes      int64
 }
 
 type Tcmalloc struct {
@@ -52,7 +51,6 @@ func (t *Tcmalloc) Stats() (TcmallocStats, error) {
 	}{
 		{"SELECT tcmalloc_allocated_bytes()", &s.AllocatedBytes},
 		{"SELECT tcmalloc_heap_size()", &s.HeapSize},
-		{"SELECT tcmalloc_free_bytes()", &s.FreeBytes},
 	}
 	for _, q := range queries {
 		if err := t.db.Query(q.query, func(rows *sql.Rows) error {
@@ -65,26 +63,6 @@ func (t *Tcmalloc) Stats() (TcmallocStats, error) {
 		}
 	}
 	return s, nil
-}
-
-// Property reads a single numeric tcmalloc property by name.
-// Returns 0, false if the property is unknown.
-func (t *Tcmalloc) Property(name string) (int64, bool, error) {
-	if err := t.ensureAvailable(); err != nil {
-		return 0, false, err
-	}
-
-	var val sql.NullInt64
-	err := t.db.QueryWithArgs("SELECT tcmalloc_property(?)", []any{name}, func(rows *sql.Rows) error {
-		if rows.Next() {
-			return rows.Scan(&val)
-		}
-		return nil
-	})
-	if err != nil {
-		return 0, false, err
-	}
-	return val.Int64, val.Valid, nil
 }
 
 // ReleaseMemory releases free pages to the OS and returns bytes released.
@@ -103,17 +81,34 @@ func (t *Tcmalloc) ReleaseMemory() (int64, error) {
 	return released, err
 }
 
-func (t *Tcmalloc) StatsText() (string, error) {
+// FreeBytes returns bytes held free inside tcmalloc (pageheap + caches)
+// that have not been returned to the OS and are not in use by the app.
+func (t *Tcmalloc) FreeBytes() (int64, error) {
 	if err := t.ensureAvailable(); err != nil {
-		return "", err
+		return 0, err
 	}
-
-	var text string
-	err := t.db.Query("SELECT tcmalloc_stats()", func(rows *sql.Rows) error {
+	var v int64
+	err := t.db.Query("SELECT tcmalloc_free_bytes()", func(rows *sql.Rows) error {
 		if rows.Next() {
-			return rows.Scan(&text)
+			return rows.Scan(&v)
 		}
 		return nil
 	})
-	return text, err
+	return v, err
+}
+
+// ReleaseBytes asks tcmalloc to return n bytes of free pages to the OS.
+// Returns the number of bytes actually decommitted.
+func (t *Tcmalloc) ReleaseBytes(n int64) (int64, error) {
+	if err := t.ensureAvailable(); err != nil {
+		return 0, err
+	}
+	var released int64
+	err := t.db.Query(fmt.Sprintf("SELECT tcmalloc_release_bytes(%d)", n), func(rows *sql.Rows) error {
+		if rows.Next() {
+			return rows.Scan(&released)
+		}
+		return nil
+	})
+	return released, err
 }

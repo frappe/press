@@ -43,12 +43,9 @@ Path: `/etc/mariadb-monitor/config.yaml`
 |---|---|---|
 | `window_size` | `12` | Samples kept (12 * 5s = 1 min) |
 | `sustained_ratio` | `0.7` | Fraction of samples over threshold to trigger |
-| `max_recoveries_per_hour` | `3` | Max restarts per rolling hour |
-| `cooldown_after_recovery` | `2m` | Pause after restart |
 | `stuck_query_threshold` | `30` | Stuck queries (`Opening tables` / `Killed`) to trigger |
 
 Recovery: SIGKILL mariadbd, poll until dead, clear failed state, start. Drops page cache before restart. If SIGKILL fails or DB never becomes reachable, hard-reboots via sysrq.
-
 ### Thresholds
 
 | Key | Default | Description |
@@ -77,8 +74,16 @@ Recovery: SIGKILL mariadbd, poll until dead, clear failed state, start. Drops pa
 | `innodb_buffer_min_mb` | `256` | Min InnoDB buffer pool size |
 | `swap_reclaim_min_mb` | `150` | Min mariadb swap to trigger swap reclaim; `0` disables |
 | `swap_reclaim_free_ram_ratio` | `1.5` | Free RAM must be >= this * total swap to reclaim |
+| `killable_processes` | `[]` | Process names (matches `/proc/<pid>/comm`) that may be SIGKILLed under critical memory before touching mariadb. Protected names (`mariadbd`, `mysqld`, `systemd`, `init`, `sshd`, `mariadb-monitor`, `kthreadd`) are rejected. |
 
 Swap reclaim guards: swap > `swap_reclaim_min_mb`, free RAM >= `swap_reclaim_free_ram_ratio` * swap, PSI memory < `psi_memory_threshold`.
+
+### Critical memory escalation
+
+1. Try SIGKILLing every process listed in `killable_processes`. If memory drops below `critical_memory`, stop here. mariadb is not touched.
+2. Otherwise: kill + restart mariadb (the normal recovery path).
+3. After restart, recheck memory. If still >= `critical_memory`, kill `killable_processes` once more.
+4. If memory is still critical, hard-reboot via sysrq.
 
 ### Coredump (default: off)
 
@@ -87,6 +92,7 @@ Swap reclaim guards: swap > `swap_reclaim_min_mb`, free RAM >= `swap_reclaim_fre
 | `enabled` | `false` | `gcore` before restart |
 | `output_dir` | `/var/lib/mariadb-monitor/coredumps` | |
 | `timeout` | `120s` | |
+| `cooldown` | `1h` | Min time between coredumps |
 | `max_count` | `3` | |
 | `max_storage_gb` | `15` | |
 

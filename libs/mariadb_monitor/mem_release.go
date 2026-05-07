@@ -8,25 +8,16 @@ import (
 )
 
 // swapReclaimTimeout is the hard cap on how long we let swapoff/swapon run.
-// On a healthy system with plenty of free RAM the kernel will finish in a
-// second or two; if it takes longer than this something is wrong then stop
+// On a healthy system this finishes in a second or two.
 const swapReclaimTimeout = 30 * time.Second
 
 // tryRelieveMemoryPressure performs soft, non-restart memory recovery:
-//
-//  1. ask tcmalloc to release free pages back to the OS,
-//  2. shrink the InnoDB buffer pool when free RAM is below the target,
-//  3. force swap reclaim, but only when the system clearly has the headroom
-//     to absorb it without falling over.
-//
-// Returns true if any stage took action and the original InnoDB buffer pool
-// size if it was reduced (0 otherwise).
-func tryRelieveMemoryPressure(cfg Config, creds MySQLCredentials) (bool, uint64) {
+// tcmalloc release, InnoDB buffer pool shrink, and swap reclaim.
+// Returns true if any stage took action and the original buffer pool size.
+func tryRelieveMemoryPressure(cfg Config, db *Database) (bool, uint64) {
 	slog.Info("attempting soft memory pressure relief")
 	relieved := false
 	var originalBufferSize uint64
-
-	db := NewDatabase(creds)
 
 	if releaseTcmalloc(cfg, db) {
 		relieved = true
@@ -36,14 +27,14 @@ func tryRelieveMemoryPressure(cfg Config, creds MySQLCredentials) (bool, uint64)
 	if memErr != nil {
 		slog.Warn("memory release: failed to read /proc/meminfo", "error", memErr)
 	} else {
-		if origSize, did := shrinkInnoDBBuffer(cfg, db, mem); did {
+		cg := readCgroupMemory()
+		if origSize, did := shrinkInnoDBBuffer(cfg, db, mem, cg); did {
 			originalBufferSize = origSize
 			relieved = true
 		}
 	}
 
-	// Re-read memory after the previous stages may have freed RAM, then
-	// consider forcing swap reclaim.
+	// Re-read memory after previous stages may have freed RAM.
 	if mem2, err := checkMemory(); err == nil {
 		if reclaimSwapIfSafe(cfg, mem2) {
 			relieved = true
@@ -84,7 +75,13 @@ func releaseTcmalloc(cfg Config, db *Database) bool {
 		slog.Warn("tcmalloc release failed", "error", err)
 		return false
 	}
-	slog.Info("tcmalloc released memory to OS",
+	if released <= 0 {
+		slog.Debug("tcmalloc release returned no bytes",
+			"was_free_bytes", freeInTcmalloc,
+		)
+		return false
+	}
+	slog.Warn("tcmalloc released memory to OS",
 		"released_bytes", released,
 		"was_free_bytes", freeInTcmalloc,
 	)
@@ -92,10 +89,29 @@ func releaseTcmalloc(cfg Config, db *Database) bool {
 }
 
 // shrinkInnoDBBuffer reduces innodb_buffer_pool_size when free RAM is below
-// the configured target. Returns the previous size (so the caller can restore
-// it later) and whether anything was changed.
-func shrinkInnoDBBuffer(cfg Config, db *Database, mem MemoryStatus) (uint64, bool) {
+// the configured target. cg is the current MariaDB cgroup snapshot; when the
+// cgroup ceiling is set and its headroom is tighter than system MemAvailable,
+// we use that as the effective available memory so cgroup-local pressure is
+// acted on even when the host has plenty of RAM.
+// Returns the previous size and whether anything changed.
+func shrinkInnoDBBuffer(cfg Config, db *Database, mem MemoryStatus, cg CgroupMemory) (uint64, bool) {
 	availableBytes := mem.MemAvailable * 1024
+
+	// Use cgroup headroom when it is more constraining than system MemAvailable.
+	cgCeiling := cg.MemoryHigh
+	if cgCeiling == 0 {
+		cgCeiling = cg.MemoryMax
+	}
+	if cgCeiling > 0 && cg.CurrentUsage > 0 {
+		var cgAvail uint64
+		if cg.CurrentUsage < cgCeiling {
+			cgAvail = cgCeiling - cg.CurrentUsage
+		}
+		if cgAvail < availableBytes {
+			availableBytes = cgAvail
+		}
+	}
+
 	minFreeBytes := cfg.Release.MinFreeMB * 1024 * 1024
 
 	if availableBytes >= minFreeBytes {
@@ -119,9 +135,20 @@ func shrinkInnoDBBuffer(cfg Config, db *Database, mem MemoryStatus) (uint64, boo
 		return 0, false
 	}
 
+	chunkSize := bpCfg.ChunkSize
+	if chunkSize == 0 {
+		chunkSize = 128 << 20
+	}
+	instances := bpCfg.Instances
+	if instances == 0 {
+		instances = 1
+	}
+	unit := chunkSize * instances
+
 	minBufBytes := cfg.Release.InnoDBBufferMinMB * 1024 * 1024
+	minBufBytes = ((minBufBytes + unit - 1) / unit) * unit
 	currentSize := bpCfg.Size
-	headroom := minFreeBytes / 4 // avoid re-entering the deficit immediately
+	headroom := minFreeBytes / 4
 
 	var targetSize uint64
 	if deficit+headroom >= currentSize {
@@ -150,7 +177,7 @@ func shrinkInnoDBBuffer(cfg Config, db *Database, mem MemoryStatus) (uint64, boo
 		)
 		return 0, false
 	}
-	slog.Info("memory release: reduced InnoDB buffer pool",
+	slog.Warn("memory release: reduced InnoDB buffer pool",
 		"from_mb", currentSize/1024/1024,
 		"to_mb", actual/1024/1024,
 		"freed_approx_mb", (currentSize-actual)/1024/1024,
@@ -158,9 +185,8 @@ func shrinkInnoDBBuffer(cfg Config, db *Database, mem MemoryStatus) (uint64, boo
 	return currentSize, true
 }
 
-// reclaimSwapIfSafe runs swapoff -a / swapon -a, but only when every guard
-// passes. swapoff under pressure is a known cause of multi-minute kernel
-// stalls; the guards below exist to make sure we never trigger one.
+// reclaimSwapIfSafe runs swapoff -a / swapon -a when every guard passes.
+// Swapoff under pressure is a known cause of multi-minute kernel stalls.
 func reclaimSwapIfSafe(cfg Config, mem MemoryStatus) bool {
 	if cfg.Release.SwapReclaimMinMB == 0 {
 		return false // disabled

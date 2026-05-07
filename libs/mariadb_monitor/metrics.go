@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -233,10 +234,22 @@ func checkMemory() (MemoryStatus, error) {
 	return ms, nil
 }
 
+// ioFreezeInFlight ensures we never run more than one freeze probe at a time.
+// On a frozen filesystem the test-write goroutine can be stuck for minutes;
+// without this guard every tick leaks a goroutine, fd, and tmpfile.
+var ioFreezeInFlight atomic.Bool
+
 func checkIOFreeze(timeout time.Duration) bool {
+	// If a previous probe is still stuck, treat the disk as frozen rather
+	// than spawning another goroutine to also get stuck on it.
+	if !ioFreezeInFlight.CompareAndSwap(false, true) {
+		return true
+	}
+
 	done := make(chan bool, 1)
 
 	go func() {
+		defer ioFreezeInFlight.Store(false)
 		f, err := os.CreateTemp("", "mariadb_monitor_io_test_*")
 		if err != nil {
 			done <- false
@@ -368,9 +381,8 @@ type frozenState struct {
 	reason string
 }
 
-// frozenProbeIntervalTicks is how often we run the (relatively expensive)
-// machine-frozen probe when nothing else looks wrong. With a 5s check_interval
-// this is once a minute. When any other trigger fires we run it immediately.
+// frozenProbeIntervalTicks is how often we run the machine-frozen probe when
+// nothing else looks wrong. With a 5s check_interval this is once a minute.
 const frozenProbeIntervalTicks = 12
 
 func (m *Monitor) collectTriggers() ([]string, *frozenState) {
@@ -384,10 +396,8 @@ func (m *Monitor) collectTriggers() ([]string, *frozenState) {
 	triggers = append(triggers, m.evaluateThresholds(mem, memErr, iowaitVal, iowaitErr, pageRateVal)...)
 	triggers = append(triggers, m.evaluatePredictiveTriggers(mem, memErr)...)
 
-	// The frozen probe forks a process, opens an fd pair, and binds a TCP
-	// socket. On a healthy node that work is wasted, so only run it when
-	// something else already looks wrong, or once per minute as a sanity
-	// check.
+	// The frozen probe is relatively expensive; run it only when something
+	// else looks wrong, or once per minute as a sanity check.
 	var frozen *frozenState
 	if len(triggers) > 0 || m.checkCount%frozenProbeIntervalTicks == 0 {
 		frozen = m.checkMachineFrozen()
@@ -423,7 +433,6 @@ func (m *Monitor) collectPSIMetrics() {
 }
 
 // collectIOWait computes iowait and pushes it into its window.
-// Returns the value and any error so callers can reuse the result.
 func (m *Monitor) collectIOWait() (float64, error) {
 	val, err := checkIOWait(m.cache)
 	if err == nil {
@@ -436,7 +445,6 @@ func (m *Monitor) collectIOWait() (float64, error) {
 }
 
 // collectMemory reads /proc/meminfo and pushes values into windows.
-// Returns the reading and any error so callers can reuse the result.
 func (m *Monitor) collectMemory() (MemoryStatus, error) {
 	mem, err := checkMemory()
 	if err == nil {
@@ -528,7 +536,7 @@ func (m *Monitor) evaluatePredictiveTriggers(mem MemoryStatus, memErr error) []s
 	return triggers
 }
 
-// checkMachineFrozen runs the machine-frozen probe if needed.
+// checkMachineFrozen runs the machine-frozen probe.
 func (m *Monitor) checkMachineFrozen() *frozenState {
 	if isFrozen, reason := checkMachineFrozen(); isFrozen {
 		return &frozenState{frozen: true, reason: reason}

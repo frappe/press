@@ -61,6 +61,7 @@ func takeCoredump(cfg Config) error {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Common PID file locations for MariaDB/MySQL.
 var mariadbPidFiles = []string{
 	"/var/run/mysqld/mysqld.pid",
@@ -149,6 +150,10 @@ func findPIDsFromProc() []int {
 =======
 // freeCoredumpStorageIfNeeded removes the oldest coredump files until the
 // total size of all coredumps in dir is below maxBytes.
+=======
+// freeCoredumpStorageIfNeeded removes the oldest coredumps until total
+// size is below maxBytes.
+>>>>>>> 0fb344429 (feat(mariadb-monitor): Tune auto-release memory and recovery of buffer)
 func freeCoredumpStorageIfNeeded(dir string, maxBytes int64) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -178,7 +183,7 @@ func freeCoredumpStorageIfNeeded(dir string, maxBytes int64) {
 		return
 	}
 
-	// Sort oldest-first by name (names are timestamp-based).
+	// Sort oldest-first by name (timestamp-based).
 	sort.Slice(files, func(i, j int) bool {
 		return files[i].entry.Name() < files[j].entry.Name()
 	})
