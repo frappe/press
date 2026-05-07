@@ -162,9 +162,9 @@ class TestReleasePipeline(FrappeTestCase):
 			self.create_deploy_and_update()
 			poll_pending_jobs()
 
-		frappe.get_last_doc(
-			"Deploy Candidate Build"
-		)  # Just ensure this is created without error since we are mocking the build
+		dcb = frappe.get_last_doc("Deploy Candidate Build")
+		self.assertEqual(dcb.group, self.test_release_group.name)
+		self.assertIsNotNone(dcb.deploy_candidate)
 
 	@patch("press.api.github._get_pyproject_from_commit", get_mock_pyproject_file)
 	@patch.object(DeployCandidateBuild, "build", Mock())

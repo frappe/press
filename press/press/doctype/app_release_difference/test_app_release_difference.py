@@ -124,3 +124,49 @@ class TestAppReleaseDifferenceValidate(FrappeTestCase):
 			}
 		).insert(ignore_permissions=True)
 		self.assertIsNotNone(doc.name)
+
+
+class TestHasBranchChanged(FrappeTestCase):
+	"""AppReleaseDifference.has_branch_changed detects source-to-destination branch switches.
+
+	When two releases come from different branches, a full migrate is forced because
+	a branch switch may skip commits containing patches or schema changes.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		frappe.set_user("Administrator")
+		from press.press.doctype.app_source.test_app_source import create_test_app_source
+
+		self.team = create_test_team()
+		self.app = create_test_app()
+		self.source_main = create_test_app_source("Version 14", self.app, team=self.team.name, branch="main")
+		self.source_develop = create_test_app_source(
+			"Version 14", self.app, team=self.team.name, branch="develop"
+		)
+		self.release_main = create_test_app_release(self.source_main)
+		self.release_develop = create_test_app_release(self.source_develop)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def _diff(self, source_release, destination_release):
+		return frappe.get_doc(
+			{
+				"doctype": "App Release Difference",
+				"app": self.app.name,
+				"source": self.source_main.name,
+				"source_release": source_release,
+				"destination_release": destination_release,
+			}
+		).insert(ignore_permissions=True)
+
+	def test_different_branches_returns_true(self):
+		diff = self._diff(self.release_main.name, self.release_develop.name)
+		self.assertTrue(diff.has_branch_changed())
+
+	def test_same_branch_returns_false(self):
+		release2 = create_test_app_release(self.source_main)
+		diff = self._diff(self.release_main.name, release2.name)
+		self.assertFalse(diff.has_branch_changed())

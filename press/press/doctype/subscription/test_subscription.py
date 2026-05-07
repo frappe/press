@@ -68,19 +68,12 @@ class TestSubscription(FrappeTestCase):
 			plan=plan.name,
 		).insert()
 
-		today = frappe.utils.getdate()
+		# Pin to the 15th of the current month — always mid-month, never end-of-month.
+		# This eliminates the real-date dependency that previously required an
+		# is_last_day_of_month workaround when "tomorrow" crossed into the next month.
+		today = frappe.utils.getdate().replace(day=15)
 		tomorrow = frappe.utils.add_days(today, 1)
 		desired_value = plan.get_price_per_day("INR") * 2
-
-		is_last_day_of_month = frappe.utils.data.get_last_day(today) == today
-		yesterday = frappe.utils.add_days(today, -1)
-
-		# Consider yesterday's and today's record instead of today and tomorrow
-		# Became flaky if it was last day of month because
-		# tomorrow went outside of this month's invoice's period
-		if is_last_day_of_month:
-			tomorrow = today
-			today = yesterday
 
 		with patch.object(frappe.utils, "today", return_value=today):
 			subscription.create_usage_record()
@@ -429,16 +422,64 @@ class TestSecondaryServerNotCharged(FrappeTestCase):
 
 
 class TestGetSitesWithoutOffsiteBackups(FrappeTestCase):
+	"""get_sites_without_offsite_backups identifies sites whose plan has no offsite backup.
+
+	This drives the backup-upgrade nudge shown in the dashboard. If the filter is wrong,
+	we either show the nudge to users who already have offsite backups (noise) or miss
+	users whose sites are silently unprotected (data loss risk).
+	"""
+
 	def setUp(self):
 		super().setUp()
+		frappe.set_user("Administrator")
 		self.team = create_test_team()
 
 	def tearDown(self):
+		frappe.set_user("Administrator")
 		frappe.db.rollback()
 
-	def test_returns_sites_on_plans_without_offsite_backups(self):
-		from press.press.doctype.site_plan.site_plan import SitePlan
+	def test_site_on_plan_without_offsite_backup_is_returned(self):
+		site = create_test_site(team=self.team.name)
+		plan = frappe.get_doc(
+			doctype="Site Plan",
+			name="NoBackup-Plan",
+			document_type="Site",
+			interval="Daily",
+			price_usd=5,
+			price_inr=5,
+			offsite_backups=0,
+		).insert()
+		frappe.get_doc(
+			doctype="Subscription",
+			team=self.team.name,
+			document_type="Site",
+			document_name=site.name,
+			plan_type="Site Plan",
+			plan=plan.name,
+		).insert()
 
-		with patch.object(SitePlan, "get_ones_without_offsite_backups", return_value=[]):
-			sites = Subscription.get_sites_without_offsite_backups()
-			self.assertEqual(sites, [])
+		result = Subscription.get_sites_without_offsite_backups()
+		self.assertIn(site.name, result)
+
+	def test_site_on_plan_with_offsite_backup_is_not_returned(self):
+		site = create_test_site(team=self.team.name)
+		plan = frappe.get_doc(
+			doctype="Site Plan",
+			name="WithBackup-Plan",
+			document_type="Site",
+			interval="Daily",
+			price_usd=10,
+			price_inr=10,
+			offsite_backups=1,
+		).insert()
+		frappe.get_doc(
+			doctype="Subscription",
+			team=self.team.name,
+			document_type="Site",
+			document_name=site.name,
+			plan_type="Site Plan",
+			plan=plan.name,
+		).insert()
+
+		result = Subscription.get_sites_without_offsite_backups()
+		self.assertNotIn(site.name, result)
