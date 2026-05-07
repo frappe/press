@@ -26,6 +26,9 @@ type Monitor struct {
 	lastCgroupMaxEvents    uint64
 	memHighHitsConsecutive int
 	lastReleaseAt          time.Time
+
+	innoDBBufferPreReduction uint64
+	preReductionRSS          uint64
 }
 
 func newMonitor(cfg Config, creds MySQLCredentials) *Monitor {
@@ -102,13 +105,19 @@ func (m *Monitor) shouldAttemptMemoryRelease() bool {
 }
 
 func (m *Monitor) runCheck() CheckOutcome {
+	m.tryRestoreInnoDBBuffer()
+
 	triggers, frozen := m.collectTriggers()
 
 	// Try soft relief before considering a restart.
 	if m.shouldAttemptMemoryRelease() {
-		tryRelieveMemoryPressure(m.cfg, m.creds)
+		_, originalSize := tryRelieveMemoryPressure(m.cfg, m.creds)
 		m.lastReleaseAt = time.Now()
 		m.memHighHitsConsecutive = 0
+		if originalSize > 0 {
+			m.innoDBBufferPreReduction = originalSize
+			m.preReductionRSS = readCgroupMemory().CurrentUsage
+		}
 	}
 
 	if len(triggers) == 0 {
@@ -135,6 +144,39 @@ func (m *Monitor) runCheck() CheckOutcome {
 		return OutcomeRecovered
 	}
 	return OutcomeNoAction
+}
+
+// tryRestoreInnoDBBuffer restores the InnoDB buffer pool to its pre-reduction
+// size once the process RSS (cgroup memory.current) has fallen below the
+// level it was at when the reduction was made.
+func (m *Monitor) tryRestoreInnoDBBuffer() {
+	if m.innoDBBufferPreReduction == 0 {
+		return
+	}
+	cg := readCgroupMemory()
+	if cg.CurrentUsage >= m.preReductionRSS {
+		slog.Debug("waiting for RSS to drop before restoring InnoDB buffer pool",
+			"rss_now_mb", cg.CurrentUsage/1024/1024,
+			"rss_at_reduction_mb", m.preReductionRSS/1024/1024,
+		)
+		return
+	}
+	db := NewDatabase(m.creds)
+	actual, err := db.ResizeInnoDBBufferPool(m.innoDBBufferPreReduction)
+	if err != nil {
+		slog.Warn("failed to restore InnoDB buffer pool after RSS drop",
+			"error", err,
+			"target_mb", m.innoDBBufferPreReduction/1024/1024,
+		)
+		return
+	}
+	slog.Info("restored InnoDB buffer pool after RSS went down",
+		"to_mb", actual/1024/1024,
+		"rss_previous_mb", m.preReductionRSS/1024/1024,
+		"rss_now_mb", cg.CurrentUsage/1024/1024,
+	)
+	m.innoDBBufferPreReduction = 0
+	m.preReductionRSS = 0
 }
 
 // isRecoveryRateLimited returns true if the number of recent recoveries has

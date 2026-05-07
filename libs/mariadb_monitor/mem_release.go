@@ -9,10 +9,12 @@ import (
 
 // tryRelieveMemoryPressure performs soft, non-restart memory recovery in three
 // stages: tcmalloc release, InnoDB buffer pool reduction, and forced swap
-// reclaim. Returns true if any stage took action.
-func tryRelieveMemoryPressure(cfg Config, creds MySQLCredentials) bool {
+// reclaim. Returns true if any stage took action and the original InnoDB buffer
+// pool size if it was reduced (0 otherwise).
+func tryRelieveMemoryPressure(cfg Config, creds MySQLCredentials) (bool, uint64) {
 	slog.Info("attempting soft memory pressure relief")
 	relieved := false
+	var originalBufferSize uint64
 
 	db := NewDatabase(creds)
 
@@ -93,6 +95,7 @@ func tryRelieveMemoryPressure(cfg Config, creds MySQLCredentials) bool {
 							"to_mb", actual/1024/1024,
 							"freed_approx_mb", (currentSize-actual)/1024/1024,
 						)
+						originalBufferSize = currentSize
 						relieved = true
 					}
 				} else {
@@ -142,7 +145,7 @@ func tryRelieveMemoryPressure(cfg Config, creds MySQLCredentials) bool {
 		slog.Info("soft memory pressure relief: no actions were necessary")
 	}
 
-	return relieved
+	return relieved, originalBufferSize
 }
 
 // forceSwapReclaim runs swapoff -a then swapon -a to force the kernel to page
