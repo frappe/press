@@ -418,7 +418,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
-				class="sm:col-span-2"
+				class='sm:col-span-2 [&_[aria-label="Copy"]]:m-0'
 				title="Frequent Slow Queries"
 				@share-card="shareDashboard"
 			>
@@ -449,7 +449,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
-				class="sm:col-span-2"
+				class='sm:col-span-2 [&_[aria-label="Copy"]]:m-0'
 				title="Top Slow Queries"
 				@share-card="shareDashboard"
 			>
