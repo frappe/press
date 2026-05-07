@@ -34,8 +34,7 @@ type MonitorConfig struct {
 	SustainedRatio        float64       `yaml:"sustained_ratio"`
 	MaxRecoveriesPerHour  int           `yaml:"max_recoveries_per_hour"`
 	CooldownAfterRecovery time.Duration `yaml:"cooldown_after_recovery"`
-	StopTimeout           time.Duration `yaml:"stop_timeout"`
-	DropCachesMode        int           `yaml:"drop_caches_mode"`
+	StuckQueryThreshold   int           `yaml:"stuck_query_threshold"`
 }
 
 type ThresholdConfig struct {
@@ -67,14 +66,15 @@ type ExternalConfig struct {
 }
 
 type MemoryReleaseConfig struct {
-	Enabled             bool          `yaml:"enabled"`
-	MinFreeMB           uint64        `yaml:"min_free_mb"`
-	Cooldown            time.Duration `yaml:"cooldown"`
-	TcmallocThresholdMB int64         `yaml:"tcmalloc_threshold_mb"`
-	MemHighThreshold    int           `yaml:"mem_high_threshold"`
-	PSIMemoryThreshold  float64       `yaml:"psi_memory_threshold"`
-	InnoDBBufferMinMB   uint64        `yaml:"innodb_buffer_min_mb"`
-	SwapMinMB           uint64        `yaml:"swap_min_mb"`
+	Enabled                 bool          `yaml:"enabled"`
+	MinFreeMB               uint64        `yaml:"min_free_mb"`
+	Cooldown                time.Duration `yaml:"cooldown"`
+	TcmallocThresholdMB     int64         `yaml:"tcmalloc_threshold_mb"`
+	MemHighThreshold        int           `yaml:"mem_high_threshold"`
+	PSIMemoryThreshold      float64       `yaml:"psi_memory_threshold"`
+	InnoDBBufferMinMB       uint64        `yaml:"innodb_buffer_min_mb"`
+	SwapReclaimMinMB        uint64        `yaml:"swap_reclaim_min_mb"`
+	SwapReclaimFreeRAMRatio float64       `yaml:"swap_reclaim_free_ram_ratio"`
 }
 
 type MySQLCredentials struct {
@@ -95,8 +95,7 @@ func DefaultConfig() Config {
 			SustainedRatio:        0.7,
 			MaxRecoveriesPerHour:  3,
 			CooldownAfterRecovery: 120 * time.Second,
-			StopTimeout:           30 * time.Second,
-			DropCachesMode:        1,
+			StuckQueryThreshold:   30,
 		},
 
 		Thresholds: ThresholdConfig{
@@ -128,14 +127,15 @@ func DefaultConfig() Config {
 		},
 
 		Release: MemoryReleaseConfig{
-			Enabled:             true,
-			MinFreeMB:           512,
-			Cooldown:            5 * time.Minute,
-			TcmallocThresholdMB: 2048,
-			MemHighThreshold:    3,
-			PSIMemoryThreshold:  20.0,
-			InnoDBBufferMinMB:   256,
-			SwapMinMB:           50,
+			Enabled:                 true,
+			MinFreeMB:               512,
+			Cooldown:                5 * time.Minute,
+			TcmallocThresholdMB:     2048,
+			MemHighThreshold:        3,
+			PSIMemoryThreshold:      20.0,
+			InnoDBBufferMinMB:       256,
+			SwapReclaimMinMB:        150,
+			SwapReclaimFreeRAMRatio: 1.5,
 		},
 	}
 }
@@ -162,7 +162,6 @@ func LoadConfig() (Config, error) {
 
 	parseDurationAt(raw, &cfg.CheckInterval, "check_interval")
 	parseDurationAt(raw, &cfg.Monitor.CooldownAfterRecovery, "monitor", "cooldown_after_recovery")
-	parseDurationAt(raw, &cfg.Monitor.StopTimeout, "monitor", "stop_timeout")
 	parseDurationAt(raw, &cfg.Thresholds.IOFreezeTimeout, "thresholds", "io_freeze_timeout")
 	parseDurationAt(raw, &cfg.Coredump.Timeout, "coredump", "timeout")
 	parseDurationAt(raw, &cfg.Release.Cooldown, "memory_release", "cooldown")
@@ -234,8 +233,8 @@ func (c Config) Validate() error {
 	if c.Monitor.MaxRecoveriesPerHour < 0 {
 		return fmt.Errorf("monitor.max_recoveries_per_hour must be >= 0, got %d", c.Monitor.MaxRecoveriesPerHour)
 	}
-	if c.Monitor.DropCachesMode < 0 || c.Monitor.DropCachesMode > 3 {
-		return fmt.Errorf("monitor.drop_caches_mode must be 0-3, got %d", c.Monitor.DropCachesMode)
+	if c.Monitor.StuckQueryThreshold < 1 {
+		return fmt.Errorf("monitor.stuck_query_threshold must be >= 1, got %d", c.Monitor.StuckQueryThreshold)
 	}
 	if c.Coredump.Enabled && c.Coredump.OutputDir == "" {
 		return fmt.Errorf("coredump.output_dir must be set when coredump.enabled is true")

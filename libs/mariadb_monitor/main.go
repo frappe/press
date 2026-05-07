@@ -74,7 +74,7 @@ func main() {
 		"log_level", cfg.LogLevel,
 		"log_file", logFile,
 		"max_recoveries_per_hour", cfg.Monitor.MaxRecoveriesPerHour,
-		"drop_caches_mode", cfg.Monitor.DropCachesMode,
+		"stuck_query_threshold", cfg.Monitor.StuckQueryThreshold,
 	)
 
 	mon := newMonitor(cfg, creds)

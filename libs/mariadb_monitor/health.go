@@ -117,9 +117,13 @@ func checkMariaDBHealth(cfg Config, creds MySQLCredentials) DBHealth {
 		return DBHealth{Reachable: false}
 	}
 
-	health := checkProcesslist(creds)
+	health := checkProcesslist(creds, cfg.Monitor.StuckQueryThreshold)
 	if health.IsStuck {
-		slog.Warn("mariadb has stuck queries", "stuck_count", health.StuckQueries, "details", health.Details)
+		slog.Warn("mariadb has stuck queries",
+			"stuck_count", health.StuckQueries,
+			"threshold", cfg.Monitor.StuckQueryThreshold,
+			"details", health.Details,
+		)
 		return health
 	}
 
@@ -133,7 +137,7 @@ func checkMariaDBHealth(cfg Config, creds MySQLCredentials) DBHealth {
 	return health
 }
 
-func checkProcesslist(creds MySQLCredentials) DBHealth {
+func checkProcesslist(creds MySQLCredentials, stuckThreshold int) DBHealth {
 	health := DBHealth{Reachable: true}
 	db := NewDatabase(creds)
 
@@ -228,6 +232,12 @@ func checkProcesslist(creds MySQLCredentials) DBHealth {
 		return health
 	}
 
-	health.IsStuck = health.StuckQueries > 0
+	// Require a sustained pile-up before flagging the DB as stuck. One or two
+	// queries waiting on a lock is normal; dozens of them stuck for minutes
+	// is a real metadata-lock storm.
+	if stuckThreshold < 1 {
+		stuckThreshold = 1
+	}
+	health.IsStuck = health.StuckQueries >= stuckThreshold
 	return health
 }
