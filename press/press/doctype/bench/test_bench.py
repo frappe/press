@@ -287,6 +287,29 @@ class TestBench(FrappeTestCase):
 		self.assertEqual(bench.gunicorn_workers, 10)
 		self.assertEqual(bench.background_workers, 5)
 
+	def test_auto_scale_uses_release_groups_max_and_min_workers_when_set_at_bench_config(self):
+		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)
+		self.assertEqual(bench.gunicorn_workers, 2)
+		self.assertEqual(bench.background_workers, 1)
+		group = frappe.get_doc("Release Group", bench.group)
+		group.db_set("max_gunicorn_workers", 10)
+		group.db_set("max_background_workers", 5)
+		bench.bench_config = json.dumps({"max_gunicorn_workers": 20, "max_background_workers": 10})  # bench config should not override max workers
+		scale_workers()
+		bench.reload()
+		self.assertEqual(bench.gunicorn_workers, 10)
+		self.assertEqual(bench.background_workers, 5)
+		frappe.db.set_value("Server", bench.server, "ram", 1600)
+		scale_workers()
+		bench.reload()
+		self.assertEqual(bench.gunicorn_workers, 5)  # autoscaled for for such low ram
+		self.assertEqual(bench.background_workers, 2)
+		bench.bench_config = json.dumps({"min_gunicorn_workers": 8, "min_background_workers": 4})
+		scale_workers()
+		bench.reload()
+		self.assertEqual(bench.gunicorn_workers, 8)
+		self.assertEqual(bench.background_workers, 4)
+
 	def test_set_bench_memory_limits_on_server_adds_memory_limit_on_bench_on_auto_scale(
 		self,
 	):
