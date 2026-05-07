@@ -22,22 +22,22 @@ type externalHealthResponse struct {
 const externalHealthCheckTimeout = 90 * time.Second
 
 func checkExternalDBHealth(cfg Config) (dbUnhealthy bool, ok bool) {
-	if !cfg.ExternalHealthCheckEnabled {
+	if !cfg.External.Enabled {
 		return false, false
 	}
-	if cfg.ExternalHealthCheckURL == "" || cfg.ServerName == "" || cfg.ExternalHealthCheckToken == "" {
+	if cfg.External.URL == "" || cfg.External.ServerName == "" || cfg.External.Token == "" {
 		return false, false
 	}
 
 	body, err := json.Marshal(map[string]string{
-		"name":  cfg.ServerName,
-		"token": cfg.ExternalHealthCheckToken,
+		"name":  cfg.External.ServerName,
+		"token": cfg.External.Token,
 	})
 	if err != nil {
 		return false, false
 	}
 
-	req, err := http.NewRequest(http.MethodPost, cfg.ExternalHealthCheckURL, bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, cfg.External.URL, bytes.NewReader(body))
 	if err != nil {
 		slog.Warn("external healthcheck: building request failed", "error", err)
 		return false, false

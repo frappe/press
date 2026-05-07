@@ -19,29 +19,46 @@ const (
 )
 
 type Config struct {
-	LogLevel              string        `yaml:"log_level"`
-	CheckInterval         time.Duration `yaml:"check_interval"`
+	LogLevel      string        `yaml:"log_level"`
+	CheckInterval time.Duration `yaml:"check_interval"`
+
+	Monitor    MonitorConfig       `yaml:"monitor"`
+	Thresholds ThresholdConfig     `yaml:"thresholds"`
+	Coredump   CoredumpConfig      `yaml:"coredump"`
+	External   ExternalConfig      `yaml:"external_healthcheck"`
+	Release    MemoryReleaseConfig `yaml:"memory_release"`
+}
+
+type MonitorConfig struct {
+	WindowSize            int           `yaml:"window_size"`
+	SustainedRatio        float64       `yaml:"sustained_ratio"`
+	MaxRecoveriesPerHour  int           `yaml:"max_recoveries_per_hour"`
 	CooldownAfterRecovery time.Duration `yaml:"cooldown_after_recovery"`
 	StopTimeout           time.Duration `yaml:"stop_timeout"`
+	DropCachesMode        int           `yaml:"drop_caches_mode"`
+}
 
-	WindowSize     int     `yaml:"window_size"`
-	SustainedRatio float64 `yaml:"sustained_ratio"`
-
-	PSICPUThreshold    float64 `yaml:"psi_cpu_threshold"`
-	PSIMemoryThreshold float64 `yaml:"psi_memory_threshold"`
-	PSIIOThreshold     float64 `yaml:"psi_io_threshold"`
-
-	IOWaitThreshold         float64       `yaml:"iowait_threshold"`
-	MemoryUsageThreshold    float64       `yaml:"memory_usage_threshold"`
-	CriticalMemoryThreshold float64       `yaml:"critical_memory_threshold"`
-	SwapUsageThreshold      float64       `yaml:"swap_usage_threshold"`
+type ThresholdConfig struct {
+	PSICPUThreshold         float64       `yaml:"psi_cpu"`
+	PSIMemoryThreshold      float64       `yaml:"psi_memory"`
+	PSIIOThreshold          float64       `yaml:"psi_io"`
+	IOWaitThreshold         float64       `yaml:"iowait"`
+	MemoryUsageThreshold    float64       `yaml:"memory_usage"`
+	CriticalMemoryThreshold float64       `yaml:"critical_memory"`
+	MariaDBSwapThresholdMB  uint64        `yaml:"mariadb_swap_mb"`
 	SwapHeadroom            float64       `yaml:"swap_headroom"`
-	PageRateThreshold       float64       `yaml:"page_rate_threshold"`
+	PageRateThreshold       float64       `yaml:"page_rate"`
 	IOFreezeTimeout         time.Duration `yaml:"io_freeze_timeout"`
+}
 
-	MaxRecoveriesPerHour int `yaml:"max_recoveries_per_hour"`
-	DropCachesMode       int `yaml:"drop_caches_mode"`
+type CoredumpConfig struct {
+	Enabled   bool          `yaml:"enabled"`
+	OutputDir string        `yaml:"output_dir"`
+	Timeout   time.Duration `yaml:"timeout"`
+	MaxCount  int           `yaml:"max_count"`
+}
 
+<<<<<<< HEAD
 	CoredumpEnabled            bool          `yaml:"coredump_enabled"`
 	CoredumpOutputDir          string        `yaml:"coredump_output_dir"`
 	CoredumpTimeout            time.Duration `yaml:"coredump_timeout"`
@@ -61,6 +78,23 @@ type Config struct {
 	ExternalHealthCheckURL     string `yaml:"external_health_check_url"`
 	ExternalHealthCheckToken   string `yaml:"external_health_check_token"`
 >>>>>>> 73ddc0842 (feat(mariadb-monitor): Ask press to check db health via app server)
+=======
+type ExternalConfig struct {
+	Enabled    bool   `yaml:"enabled"`
+	ServerName string `yaml:"server_name"`
+	URL        string `yaml:"url"`
+	Token      string `yaml:"token"`
+}
+
+type MemoryReleaseConfig struct {
+	Enabled             bool          `yaml:"enabled"`
+	MinFreeMB           uint64        `yaml:"min_free_mb"`
+	Cooldown            time.Duration `yaml:"cooldown"`
+	TcmallocThresholdMB int64         `yaml:"tcmalloc_threshold_mb"`
+	MemHighThreshold    int           `yaml:"mem_high_threshold"`
+	PSIMemoryThreshold  float64       `yaml:"psi_memory_threshold"`
+	InnoDBBufferMinMB   uint64        `yaml:"innodb_buffer_min_mb"`
+>>>>>>> d97e09880 (feat(mariadb-monitor): Add auto-trim memory usage)
 }
 
 type MySQLCredentials struct {
@@ -73,25 +107,10 @@ type MySQLCredentials struct {
 
 func DefaultConfig() Config {
 	return Config{
-		LogLevel:                "WARN",
-		CheckInterval:           5 * time.Second,
-		CooldownAfterRecovery:   120 * time.Second,
-		StopTimeout:             30 * time.Second,
-		WindowSize:              12,
-		SustainedRatio:          0.7,
-		PSICPUThreshold:         80.0,
-		PSIMemoryThreshold:      60.0,
-		PSIIOThreshold:          60.0,
-		IOWaitThreshold:         50.0,
-		MemoryUsageThreshold:    95.0,
-		CriticalMemoryThreshold: 98.0,
-		SwapUsageThreshold:      80.0,
-		SwapHeadroom:            10.0,
-		PageRateThreshold:       100000,
-		IOFreezeTimeout:         5 * time.Second,
-		MaxRecoveriesPerHour:    3,
-		DropCachesMode:          1,
+		LogLevel:      "WARN",
+		CheckInterval: 5 * time.Second,
 
+<<<<<<< HEAD
 		CoredumpEnabled:            false,
 		CoredumpOutputDir:          "/var/lib/mariadb-monitor/coredumps",
 		CoredumpTimeout:            120 * time.Second,
@@ -111,6 +130,53 @@ func DefaultConfig() Config {
 		ExternalHealthCheckURL:     "",
 		ExternalHealthCheckToken:   "",
 >>>>>>> 73ddc0842 (feat(mariadb-monitor): Ask press to check db health via app server)
+=======
+		Monitor: MonitorConfig{
+			WindowSize:            12,
+			SustainedRatio:        0.7,
+			MaxRecoveriesPerHour:  3,
+			CooldownAfterRecovery: 120 * time.Second,
+			StopTimeout:           30 * time.Second,
+			DropCachesMode:        1,
+		},
+
+		Thresholds: ThresholdConfig{
+			PSICPUThreshold:         80.0,
+			PSIMemoryThreshold:      60.0,
+			PSIIOThreshold:          60.0,
+			IOWaitThreshold:         50.0,
+			MemoryUsageThreshold:    95.0,
+			CriticalMemoryThreshold: 98.0,
+			MariaDBSwapThresholdMB:  100,
+			SwapHeadroom:            10.0,
+			PageRateThreshold:       100000,
+			IOFreezeTimeout:         5 * time.Second,
+		},
+
+		Coredump: CoredumpConfig{
+			Enabled:   false,
+			OutputDir: "/var/lib/mariadb-monitor/coredumps",
+			Timeout:   120 * time.Second,
+			MaxCount:  3,
+		},
+
+		External: ExternalConfig{
+			Enabled:    false,
+			ServerName: "",
+			URL:        "",
+			Token:      "",
+		},
+
+		Release: MemoryReleaseConfig{
+			Enabled:             true,
+			MinFreeMB:           512,
+			Cooldown:            5 * time.Minute,
+			TcmallocThresholdMB: 2048,
+			MemHighThreshold:    3,
+			PSIMemoryThreshold:  20.0,
+			InnoDBBufferMinMB:   256,
+		},
+>>>>>>> d97e09880 (feat(mariadb-monitor): Add auto-trim memory usage)
 	}
 }
 
@@ -134,6 +200,7 @@ func LoadConfig() (Config, error) {
 		return cfg, err
 	}
 
+<<<<<<< HEAD
 	parseDuration(raw, "check_interval", &cfg.CheckInterval)
 	parseDuration(raw, "cooldown_after_recovery", &cfg.CooldownAfterRecovery)
 	parseDuration(raw, "stop_timeout", &cfg.StopTimeout)
@@ -141,6 +208,14 @@ func LoadConfig() (Config, error) {
 	parseDuration(raw, "coredump_timeout", &cfg.CoredumpTimeout)
 	parseDuration(raw, "coredump_cooldown", &cfg.CoredumpCooldown)
 	parseDuration(raw, "coredump_preemptive_window", &cfg.CoredumpPreemptiveWindow)
+=======
+	parseDurationAt(raw, &cfg.CheckInterval, "check_interval")
+	parseDurationAt(raw, &cfg.Monitor.CooldownAfterRecovery, "monitor", "cooldown_after_recovery")
+	parseDurationAt(raw, &cfg.Monitor.StopTimeout, "monitor", "stop_timeout")
+	parseDurationAt(raw, &cfg.Thresholds.IOFreezeTimeout, "thresholds", "io_freeze_timeout")
+	parseDurationAt(raw, &cfg.Coredump.Timeout, "coredump", "timeout")
+	parseDurationAt(raw, &cfg.Release.Cooldown, "memory_release", "cooldown")
+>>>>>>> d97e09880 (feat(mariadb-monitor): Add auto-trim memory usage)
 
 	if err := cfg.Validate(); err != nil {
 		return cfg, fmt.Errorf("config validation: %w", err)
@@ -197,29 +272,35 @@ func appendMissingDefaults(existing map[string]interface{}) {
 }
 
 func (c Config) Validate() error {
-	if c.WindowSize <= 0 {
-		return fmt.Errorf("window_size must be > 0, got %d", c.WindowSize)
+	if c.Monitor.WindowSize <= 0 {
+		return fmt.Errorf("monitor.window_size must be > 0, got %d", c.Monitor.WindowSize)
 	}
-	if c.SustainedRatio < 0 || c.SustainedRatio > 1 {
-		return fmt.Errorf("sustained_ratio must be between 0 and 1, got %.2f", c.SustainedRatio)
+	if c.Monitor.SustainedRatio < 0 || c.Monitor.SustainedRatio > 1 {
+		return fmt.Errorf("monitor.sustained_ratio must be between 0 and 1, got %.2f", c.Monitor.SustainedRatio)
 	}
 	if c.CheckInterval <= 0 {
 		return fmt.Errorf("check_interval must be > 0")
 	}
-	if c.MaxRecoveriesPerHour < 0 {
-		return fmt.Errorf("max_recoveries_per_hour must be >= 0, got %d", c.MaxRecoveriesPerHour)
+	if c.Monitor.MaxRecoveriesPerHour < 0 {
+		return fmt.Errorf("monitor.max_recoveries_per_hour must be >= 0, got %d", c.Monitor.MaxRecoveriesPerHour)
 	}
-	if c.DropCachesMode < 0 || c.DropCachesMode > 3 {
-		return fmt.Errorf("drop_caches_mode must be 0-3, got %d", c.DropCachesMode)
+	if c.Monitor.DropCachesMode < 0 || c.Monitor.DropCachesMode > 3 {
+		return fmt.Errorf("monitor.drop_caches_mode must be 0-3, got %d", c.Monitor.DropCachesMode)
 	}
-	if c.CoredumpEnabled && c.CoredumpOutputDir == "" {
-		return fmt.Errorf("coredump_output_dir must be set when coredump_enabled is true")
+	if c.Coredump.Enabled && c.Coredump.OutputDir == "" {
+		return fmt.Errorf("coredump.output_dir must be set when coredump.enabled is true")
 	}
-	if c.CoredumpMaxCount < 0 {
-		return fmt.Errorf("coredump_max_count must be >= 0, got %d", c.CoredumpMaxCount)
+	if c.Coredump.MaxCount < 0 {
+		return fmt.Errorf("coredump.max_count must be >= 0, got %d", c.Coredump.MaxCount)
 	}
-	if c.CoredumpFrequentThreshold < 1 {
-		return fmt.Errorf("coredump_frequent_threshold must be >= 1, got %d", c.CoredumpFrequentThreshold)
+	if c.Release.MemHighThreshold < 1 {
+		return fmt.Errorf("memory_release.mem_high_threshold must be >= 1, got %d", c.Release.MemHighThreshold)
+	}
+	if c.Release.MinFreeMB == 0 {
+		return fmt.Errorf("memory_release.min_free_mb must be > 0")
+	}
+	if c.Release.InnoDBBufferMinMB == 0 {
+		return fmt.Errorf("memory_release.innodb_buffer_min_mb must be > 0")
 	}
 	if c.CoredumpPreemptiveAfter < 1 {
 		return fmt.Errorf("coredump_preemptive_after must be >= 1, got %d", c.CoredumpPreemptiveAfter)
@@ -296,12 +377,26 @@ func parseINILine(line string) (key, value string, ok bool) {
 	return key, value, true
 }
 
-func parseDuration(raw map[string]interface{}, key string, target *time.Duration) {
-	if v, ok := raw[key]; ok {
-		if s, ok := v.(string); ok {
-			if d, err := time.ParseDuration(s); err == nil {
-				*target = d
-			}
+func parseDurationAt(raw map[string]interface{}, target *time.Duration, keys ...string) {
+	m := raw
+	for _, key := range keys[:len(keys)-1] {
+		sub, ok := m[key]
+		if !ok {
+			return
+		}
+		nested, ok := sub.(map[string]interface{})
+		if !ok {
+			return
+		}
+		m = nested
+	}
+	v, ok := m[keys[len(keys)-1]]
+	if !ok {
+		return
+	}
+	if s, ok := v.(string); ok {
+		if d, err := time.ParseDuration(s); err == nil {
+			*target = d
 		}
 	}
 }
@@ -312,6 +407,7 @@ func GenerateDefaultConfig() error {
 	}
 
 	cfg := DefaultConfig()
+<<<<<<< HEAD
 	content := fmt.Sprintf(`# MariaDB Monitor Configuration
 
 log_level: %s
@@ -395,6 +491,13 @@ external_health_check_token: %q
 		cfg.ExternalHealthCheckURL,
 		cfg.ExternalHealthCheckToken,
 	)
+=======
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("marshal default config: %w", err)
+	}
+>>>>>>> d97e09880 (feat(mariadb-monitor): Add auto-trim memory usage)
 
+	content := "# MariaDB Monitor Configuration\n\n" + string(data)
 	return os.WriteFile(configFile, []byte(content), 0644)
 }
