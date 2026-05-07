@@ -113,11 +113,13 @@ func tryRelieveMemoryPressure(cfg Config, creds MySQLCredentials) (bool, uint64)
 		}
 	}
 
-	// Force swap reclaim if MariaDB is using swap and the system can absorb it.
+	// Force swap reclaim if MariaDB is using enough swap and the system can absorb it.
 	cgMem := readCgroupMemory()
-	if cgMem.SwapUsage > 0 {
-		slog.Info("mariadb cgroup is using swap, checking if safe to force swap reclaim",
+	swapMinBytes := cfg.Release.SwapMinMB * 1024 * 1024
+	if cgMem.SwapUsage > swapMinBytes {
+		slog.Info("mariadb cgroup swap exceeds threshold, checking if safe to force swap reclaim",
 			"mariadb_swap_mb", cgMem.SwapUsage/1024/1024,
+			"threshold_mb", cfg.Release.SwapMinMB,
 		)
 
 		// Re-read memory after upstream actions may have freed RAM.

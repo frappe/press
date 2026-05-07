@@ -74,6 +74,7 @@ type MemoryReleaseConfig struct {
 	MemHighThreshold    int           `yaml:"mem_high_threshold"`
 	PSIMemoryThreshold  float64       `yaml:"psi_memory_threshold"`
 	InnoDBBufferMinMB   uint64        `yaml:"innodb_buffer_min_mb"`
+	SwapMinMB           uint64        `yaml:"swap_min_mb"`
 }
 
 type MySQLCredentials struct {
@@ -134,6 +135,7 @@ func DefaultConfig() Config {
 			MemHighThreshold:    3,
 			PSIMemoryThreshold:  20.0,
 			InnoDBBufferMinMB:   256,
+			SwapMinMB:           50,
 		},
 	}
 }
