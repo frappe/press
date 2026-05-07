@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import typing
+from datetime import datetime, timedelta
 from functools import cached_property
 from typing import Any, TypedDict
 
@@ -49,20 +50,8 @@ class BenchInfo(TypedDict):
 	status: str
 
 
-def _resolve_dependent_app(app: str, version: str) -> tuple[AppSource, AppRelease]:
+def _resolve_dependent_app(app: str, supported_frappe_version: set[str]) -> tuple[AppSource, AppRelease]:
 	"""Resolve app source and latest release for a dependent app."""
-	supported_versions = parse_frappe_version(
-		version_string=version,
-		app_title=app,
-		ease_versioning_constrains=False,
-	)
-	if not supported_versions:
-		raise ReleasePipelineFailure(
-			f"Failed to parse supported versions for app {app} "
-			f"with version string {version}. Cannot proceed with release. "
-			"Please follow semantic versioning."
-		)
-
 	if not frappe.db.exists("App", app):
 		raise ReleasePipelineFailure(
 			f"Dependent app {app} does not exist in the system. "
@@ -71,12 +60,12 @@ def _resolve_dependent_app(app: str, version: str) -> tuple[AppSource, AppReleas
 
 	app_source = get_app_source_from_supported_versions(
 		app=app,
-		supported_versions=supported_versions,
+		supported_versions=supported_frappe_version,
 	)
 	if not app_source:
 		raise ReleasePipelineFailure(
 			f"Unable to find an app source for dependent app {app} "
-			f"with supported versions {supported_versions}. "
+			f"with supported versions {supported_frappe_version}. "
 			"Please add this app to your bench group."
 		)
 
@@ -225,6 +214,24 @@ class ReleasePipeline(WorkflowBuilder):
 		self.update_pipeline_status("Running")  # Mark the pipeline as running!
 
 	@task(queue=_get_task_execution_queue())
+	def validate_invalid_releases(self, apps: list[dict[str, str]]):
+		"""Validate that none of the apps being deployed have invalid releases."""
+		for app in apps:
+			if not app.get("release"):
+				continue
+
+			# App release will always be present otherwise we won't be able to proceed.
+			app_info = frappe.db.get_value(
+				"App Release", app["release"], ["invalid_release", "invalidation_reason"], as_dict=True
+			)
+			if not app_info or not app_info["invalid_release"]:
+				continue
+
+			raise ReleasePipelineFailure(
+				f"Invalid release found for app {app['app']} with hash {app['hash']}. Reason: {app_info['invalidation_reason']}"
+			)
+
+	@task(queue=_get_task_execution_queue())
 	def validate_server_storages(self):
 		"""Validate server storage for all servers in the release group."""
 		self.release_group_doc.check_app_server_storage()
@@ -271,6 +278,15 @@ class ReleasePipeline(WorkflowBuilder):
 
 		return len([build for build in [intel_build, arm_build] if build])
 
+	def _mark_if_user_failure(self, deploy_candidate_build: str):
+		user_addressable_failure, manually_failed = frappe.db.get_value(
+			"Deploy Candidate Build", deploy_candidate_build, ["user_addressable_failure", "manually_failed"]
+		)
+
+		if user_addressable_failure or manually_failed:
+			self.is_user_addressable_failure = True
+			self.save()
+
 	def _check_for_scheduled_build_retries(self, deploy_candidate_build: str):
 		"""Check if there are any scheduled retries for this build"""
 		deploy_candidate_build_doc: DeployCandidateBuild = frappe.get_doc(
@@ -292,10 +308,7 @@ class ReleasePipeline(WorkflowBuilder):
 				message=f"Build {deploy_candidate_build} has scheduled retries. Waiting for retries to complete."
 			)
 
-		# Propagate the user addressable failure flag to the pipeline in case of build failures, since idempotent only set when required
-		if deploy_candidate_build_doc.user_addressable_failure or deploy_candidate_build_doc.manually_failed:
-			self.is_user_addressable_failure = True
-			self.save()
+		self._mark_if_user_failure(deploy_candidate_build_doc.name)
 
 	def _get_latest_retried_build(self, deploy_candidate_build: str) -> str:
 		"""In case there are retries for the build, get the latest retried build with same platform to monitor."""
@@ -321,26 +334,6 @@ class ReleasePipeline(WorkflowBuilder):
 		)
 
 	@task(queue=_get_task_execution_queue())
-	def monitor_pre_build_validation(self, deploy_candidate_build: str):
-		"""Monitors the Deploy Candidate Build until the remote build job is created."""
-		deploy_candidate_build_status = frappe.db.get_value(
-			"Deploy Candidate Build", deploy_candidate_build, "status"
-		)
-
-		if deploy_candidate_build_status in ["Running", "Success"]:
-			return  # We have enqueued the remote agent job
-
-		if deploy_candidate_build_status == "Failure":
-			raise ReleasePipelineFailure(
-				f"Pre Build Validation failed for Deploy Candidate Build {deploy_candidate_build}. "
-				"Please check the build logs for more details."
-			)
-
-		self.defer_current_task(
-			message=f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build}",
-		)
-
-	@task(queue=_get_task_execution_queue())
 	def monitor_build_success(self, deploy_candidate_build: str):
 		"""Monitor build till terminal state."""
 		deploy_candidate_build = self._get_latest_retried_build(deploy_candidate_build)
@@ -361,6 +354,18 @@ class ReleasePipeline(WorkflowBuilder):
 		self.defer_current_task(
 			message=f"Waiting for build to complete for Deploy Candidate Build {deploy_candidate_build}",
 		)
+
+	def _fail_bench_job_if_obsolete(self, pending_agent_jobs: list[dict[str, str | datetime]]):
+		"""Fail the bench job if it's creation time is older than 10 mins"""
+		for job in pending_agent_jobs:
+			assert isinstance(job["creation"], datetime), "Expected 'creation' to be a datetime object"
+			if (job["creation"] <= frappe.utils.now_datetime() - timedelta(minutes=10)) and (
+				job["status"] == "Undelivered"
+			):
+				# In case of undelivered jobs we can directly mark them as failure
+				# And mark the bench as broken since they were never picked up by agent
+				frappe.db.set_value("Agent Job", job["name"], "status", "Failure")
+				frappe.db.set_value("Bench", job["bench"], "status", "Broken")
 
 	def _is_active_bench_work_in_progress(self, builds: list[str]) -> bool:
 		"""Checks the entire lifecycle (Queue + Agent Jobs) for active work."""
@@ -394,12 +399,24 @@ class ReleasePipeline(WorkflowBuilder):
 			self.update_pipeline_status("Retrying")
 			return True
 
+		pending_agent_jobs = frappe.db.get_all(
+			"Agent Job",
+			{
+				"job_type": ["in", ["New Bench", "Archive Bench"]],
+				"status": ["in", ["Undelivered", "Pending"]],
+				"bench": ["in", benches_from_builds],
+			},
+			["name", "bench", "status", "creation"],
+		)
+		self._fail_bench_job_if_obsolete(pending_agent_jobs)
 		# Even if there are no retries scheduled, we want to wait for the current bench jobs to be completed
+		# This is after the obsolete jobs are marked as failed and their benches are marked as broken, so we only wait for
+		# valid jobs to be completed and not the obsolete ones.
 		agent_job_active = frappe.db.exists(
 			"Agent Job",
 			{
 				"job_type": ["in", ["New Bench", "Archive Bench"]],
-				"status": ["in", ["Undelivered", "Pending", "Running"]],
+				"status": ["in", ["Running", "Pending", "Undelivered"]],
 				"bench": ["in", benches_from_builds],
 			},
 		)
@@ -445,23 +462,38 @@ class ReleasePipeline(WorkflowBuilder):
 		)
 
 	def _add_app_to_group_and_candidate(
-		self, deploy_candidate: DeployCandidate, dependant_app_versions: dict[str, str]
+		self,
+		deploy_candidate: DeployCandidate,
+		supported_frappe_version: str | None,
+		dependent_apps: set[str],
 	):
 		"""Helper function to add the dependant apps to the release group and deploy candidate automatically.
 		In case we don't find the app or the app source in press we need to raise, and ask users to add
 		the app in the bench group first.
 		"""
-		if not dependant_app_versions:
+		if not supported_frappe_version or not dependent_apps:
 			return
 
 		release_group_doc: ReleaseGroup = frappe.get_doc("Release Group", self.release_group, for_update=True)
 		release_group_apps = {app.app for app in release_group_doc.apps}
 
-		for app, version in dependant_app_versions.items():
+		try:
+			parsed_supported_frappe_version = parse_frappe_version(
+				version_string=supported_frappe_version,
+				app_title="frappe",
+				ease_versioning_constrains=False,
+			)
+		except frappe.ValidationError:
+			return
+
+		for app in dependent_apps:
 			if app in release_group_apps:
 				continue
 
-			app_source, app_release = _resolve_dependent_app(app, version)
+			app_source, app_release = _resolve_dependent_app(
+				app,
+				parsed_supported_frappe_version,
+			)
 			deploy_candidate.append(
 				"apps",
 				{
@@ -480,8 +512,17 @@ class ReleasePipeline(WorkflowBuilder):
 	@task(queue=_get_task_execution_queue())
 	def run_pre_release_checks(self, apps: list[dict[str, str]]):
 		"""Groups all early-exit validation logic."""
+		is_enabled = frappe.db.get_value("Release Group", self.release_group, "enabled")
+		if not is_enabled:
+			self.is_user_addressable_failure = True
+			self.save()
+			raise ReleasePipelineFailure("Release Group is disabled. Updates can not be initiated.")
+
 		try:
 			self.validate_app_hashes(apps)  # This sets status to "Running"
+			# Let this be here for when we have a invalid release already this will ensure we
+			# Don't start the deploy with a invalid release
+			self.validate_invalid_releases(apps)
 			self.validate_server_storages()
 			self.validate_auto_scales_on_servers()
 		except (frappe.ValidationError, InsufficientSpaceOnServer) as e:
@@ -497,9 +538,15 @@ class ReleasePipeline(WorkflowBuilder):
 			dependant_app_versions = get_dependant_apps_with_versions(
 				app_source=app.source, commit=app.hash, cache=True, raises=False
 			)
+			supported_frappe_version = dependant_app_versions["frappe_dependencies"].get("frappe")
+			dependent_apps = dependant_app_versions["frappe_dependencies"].keys() - {"frappe"}
+
+			# Here we don't care about the version of the dependent apps, since we
+			# will just be fetching the app source that complies with the supported frappe version
 			self._add_app_to_group_and_candidate(
 				deploy_candidate_doc,
-				dependant_app_versions=dependant_app_versions["frappe_dependencies"],
+				supported_frappe_version=supported_frappe_version,
+				dependent_apps=dependent_apps,
 			)
 
 	@task(queue=_get_task_execution_queue())
@@ -526,6 +573,11 @@ class ReleasePipeline(WorkflowBuilder):
 	@task(queue=_get_task_execution_queue())
 	def prepare_deployment(self, apps, sites, run_will_fail_check) -> tuple[str, str]:
 		"""Creates the candidate and returns the primary build name."""
+		auto_upgrade_dependencies = frappe.db.get_single_value(
+			"Press Settings",
+			"auto_upgrade_dependencies",
+		)
+
 		try:
 			deploy_candidate = self.create_deploy_candidate(
 				apps=apps,
@@ -534,7 +586,10 @@ class ReleasePipeline(WorkflowBuilder):
 				create_deploy=False,
 			)
 			self.add_implicit_app_dependencies(deploy_candidate)
-			self.auto_update_bench_dependency_versions(deploy_candidate)
+
+			if auto_upgrade_dependencies:
+				self.auto_update_bench_dependency_versions(deploy_candidate)
+
 			primary_build = self.initiate_pre_build_validations(deploy_candidate)
 
 			return deploy_candidate, primary_build
@@ -546,7 +601,6 @@ class ReleasePipeline(WorkflowBuilder):
 		"""Monitors primary and, if necessary, secondary builds."""
 		# Monitor Primary
 		self.add_build_to_pipeline(primary_build)
-		self.monitor_pre_build_validation(primary_build)
 		self.monitor_build_success(primary_build)
 
 		# Check for Secondary Architecture
@@ -561,7 +615,6 @@ class ReleasePipeline(WorkflowBuilder):
 
 			assert secondary_build, "Secondary build should be present for candidates requiring 2 builds"
 			self.add_build_to_pipeline(secondary_build)
-			self.monitor_pre_build_validation(secondary_build)
 			self.monitor_build_success(secondary_build)
 
 		if self.status == "Retrying":

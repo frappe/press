@@ -1256,7 +1256,7 @@ def options_for_version(name: str):
 
 	branches_list = []
 	for source in sources:
-		branches_list.append(branches(source))
+		branches_list += branches(source)
 	branches_list = list(set(branches_list))
 
 	versions = list(set(frappe_version).difference(set(added_versions)))
@@ -1375,3 +1375,45 @@ def get_marketplace_apps() -> list[dict]:
 		apps = frappe.get_all("Marketplace App", {"status": "Published"}, ["name", "title", "route"])
 		frappe.cache().set_value("marketplace_apps", apps, expires_in_sec=60 * 60 * 24 * 7)
 	return apps
+
+
+def is_desk_user(user: str | None = None) -> bool:
+	"""
+	Checks if the given user is a system user.
+
+	:param user: User to check. If None, uses the current session user.
+	:return: True if the user is a system user, False otherwise.
+	"""
+	user = user or frappe.session.user
+	user_doc = frappe.get_cached_doc("User", user)
+	return user_doc.user_type == "System User"
+
+
+@frappe.whitelist(methods=["GET"])
+@protected(["Marketplace App", "Marketplace App Audit"])
+def get_app_audit(app: str):
+	"""
+	Fetches the latest audit report for the given marketplace app.
+	By latest, it can be the latest release change audit or the latest submission gate audit.
+	If there is no audit report, it will return None.
+	"""
+	current_team = get_current_team()
+	app_team = frappe.db.get_value("Marketplace App", app, "team")
+	# for impersonation, the session user needs to have system user role, in that case we allow seeing other audit reports.
+	if not is_desk_user(frappe.session.user):  # noqa: SIM102 - nested if makes the logic more readable.
+		# not permitted to get the audit report if user is not a member of the team of the marketplace app
+		if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
+			frappe.throw(
+				_("You are not permitted to get the audit report for this app"), frappe.PermissionError
+			)
+
+	# get_all, limit 1, order by creation desc
+	audit_name = frappe.get_all(
+		"Marketplace App Audit", {"marketplace_app": app}, order_by="creation desc", limit=1, pluck="name"
+	)
+	if not audit_name:
+		return None
+
+	app_audit = frappe.get_doc("Marketplace App Audit", audit_name[0])
+
+	return app_audit.as_dict()

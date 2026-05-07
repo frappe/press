@@ -7,6 +7,7 @@ from hashlib import blake2b
 from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
 from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.core.utils import find
@@ -17,6 +18,8 @@ from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_for
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
+from press.guards import feature_preview, team_guard
+from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import get_valid_teams_for_user, has_role, log_error
@@ -29,6 +32,8 @@ from press.utils.billing import (
 )
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
+
+from .team_members import get_invitations, get_members, get_roles, remove_member
 
 if TYPE_CHECKING:
 	from press.press.doctype.account_request.account_request import AccountRequest
@@ -367,13 +372,9 @@ class Team(Document):
 		)
 
 		if not user_exists:
-			user = team.create_user(
-				first_name, last_name, account_request.email, password, account_request.role
-			)
+			user = team.create_user(first_name, last_name, account_request.email, password)
 		else:
 			user = frappe.get_doc("User", account_request.email)
-			user.append_roles(account_request.role)
-			user.save(ignore_permissions=True)
 
 		if frappe.db.exists("Team", {"user": user.name}):
 			frappe.throw("You have already an account with same email. Please login using the same email.")
@@ -399,16 +400,16 @@ class Team(Document):
 		return team
 
 	@staticmethod
-	def create_user(first_name=None, last_name=None, email=None, password=None, role=None):
+	def create_user(first_name=None, last_name=None, email=None, password=None):
 		# These roles are basic and necessary for every user.
-		basic_roles = ("Press Admin", "Press Member")
+		basic_roles = ("Press User",)
 		user = frappe.new_doc("User")
 		user.first_name = first_name
 		user.last_name = last_name
 		user.email = email
 		user.owner = email
 		user.new_password = password
-		user.append_roles(role, *basic_roles)
+		user.append_roles(*basic_roles)
 		user.flags.no_welcome_mail = True
 		user.save(ignore_permissions=True)
 		return user
@@ -419,13 +420,12 @@ class Team(Document):
 		last_name=None,
 		email=None,
 		password=None,
-		role=None,
 		press_roles=None,
 		skip_validations=False,
 	):
 		user = frappe.db.get_value("User", email, ["name"], as_dict=True)
 		if not user:
-			user = self.create_user(first_name, last_name, email, password, role)
+			user = self.create_user(first_name, last_name, email, password)
 
 		self.append("team_members", {"user": user.name})
 		self.save(ignore_permissions=True)
@@ -974,6 +974,80 @@ class Team(Document):
 		return get_team_members(self.name)
 
 	@dashboard_whitelist()
+	@feature_preview.beta_testing()
+	def get_members(self):
+		return get_invitations(str(self.name)) + get_members(str(self.name))
+
+	@dashboard_whitelist()
+	@feature_preview.beta_testing()
+	@team_guard.only_admin()
+	def send_invitation(self, names: str):
+		"""
+		Account request is created when a user is invited or when a user signs
+		up. This is different from a team/organization. Ideally, this should be
+		handled inside team doctype itself. Account request should focus on
+		handling user management, unrelated to team.
+		"""
+		for n in names.split(","):
+			n = n.strip()
+			if frappe.db.exists("Account Request", n):
+				d: AccountRequest = frappe.get_doc("Account Request", n, check_permission=True)
+				d.send_verification_email()
+				continue
+			if account_request := frappe.db.exists(
+				"Account Request",
+				{
+					"email": n,
+					"team": self.name,
+					"invited_by": ("is", "set"),
+					"request_key": ("is", "set"),
+				},
+			):
+				d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
+				d.send_verification_email()
+				continue
+			frappe.utils.validate_email_address(n, throw=True)
+			d: AccountRequest = frappe.new_doc("Account Request")
+			d.team = self.name
+			d.email = n
+			d.invited_by = frappe.session.user
+			d.save()
+			d.send_email = True
+		return self.get_members()
+
+	@dashboard_whitelist()
+	@feature_preview.beta_testing()
+	@team_guard.only_admin()
+	def cancel_invitation(self, account_request: str):
+		"""
+		Cancel invitation by clearing request key and expiration time so that
+		the link becomes invalid. This is not ideal. We should have a separate
+		doctype to handle invitations instead of overloading Account Request
+		doctype which is also used during signup.
+		"""
+		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
+		d.request_key = None
+		d.request_key_expiration_time = None
+		d.save()
+		return self.get_members()
+
+	@dashboard_whitelist()
+	@feature_preview.beta_testing()
+	@team_guard.only_admin()
+	def remove_member(self, member: str):
+		"""
+		Remove member from the team. This will remove the member from the child
+		table. This does not deal with account request.
+		"""
+		remove_member(str(self.name), member)
+		return self.get_members()
+
+	@dashboard_whitelist()
+	@feature_preview.beta_testing()
+	def get_roles(self):
+		return get_roles(str(self.name))
+
+	@dashboard_whitelist()
 	@rate_limit(limit=10, seconds=60 * 60)
 	def invite_team_member(self, email, roles=None):
 		from frappe.utils.user import is_system_user
@@ -1014,7 +1088,7 @@ class Team(Document):
 				"doctype": "Account Request",
 				"team": self.name,
 				"email": email,
-				"role": "Press Member",
+				"role": "Press User",
 				"invited_by": self.user,
 				"send_email": True,
 			}
@@ -1165,8 +1239,10 @@ class Team(Document):
 		return None
 
 	def is_payment_mode_set(self):
-		if self.payment_mode in ("Prepaid Credits", "Paid By Partner") or (
-			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
+		if (
+			self.payment_mode in ("Prepaid Credits", "Paid By Partner")
+			or (self.payment_mode == "Card" and self.default_payment_method and self.billing_address)
+			or (self.payment_mode == "UPI Autopay" and self.default_razorpay_mandate)
 		):
 			return True
 		return False

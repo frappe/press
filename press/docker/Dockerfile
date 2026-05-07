@@ -259,10 +259,6 @@ COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
 COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
-# Pass control of get-app to a python file
-COPY get_cached_app.py /usr/local/bin/get_cached_app.py
-RUN chmod +x /usr/local/bin/get_cached_app.py
-
 # Install other apps
 {% for app in doc.apps %}
 {% if app.app != "frappe"%}

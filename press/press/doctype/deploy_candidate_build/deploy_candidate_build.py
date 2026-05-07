@@ -3,16 +3,15 @@
 # We currently don't take build steps into account.
 from __future__ import annotations
 
+import base64
 import contextlib
 import glob
 import json
 import os
 import re
 import shutil
-import tarfile
 import tempfile
 import typing
-import warnings
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import cached_property
@@ -35,34 +34,26 @@ from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_warning_notification,
 )
 from press.press.doctype.deploy_candidate.docker_output_parsers import (
+	CloneOutputParser,
 	DockerBuildOutputParser,
 	UploadStepUpdater,
+	ValidationOutputParser,
 )
 from press.press.doctype.deploy_candidate.utils import (
-	BuildWarning,
 	get_arm_build_server_with_least_active_builds,
 	get_build_server,
 	get_intel_build_server_with_least_active_builds,
-	get_package_manager_files,
 	is_suspended,
-	load_pyproject,
 )
-from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.utils import get_current_team, log_error
-from press.utils.jobs import get_background_jobs, stop_background_job
 from press.utils.webhook import create_webhook_event
 
 if typing.TYPE_CHECKING:
 	from warnings import WarningMessage
 
-	from rq.job import Job
-
 	from press.press.doctype.agent_job.agent_job import AgentJob
-	from press.press.doctype.app_release.app_release import AppRelease
+	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
-	from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
-		DeployCandidateApp,
-	)
 	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.release_group_server.release_group_server import ReleaseGroupServer
 
@@ -91,12 +82,6 @@ class Status(Enum):
 		return [cls.PENDING.value, cls.RUNNING.value, cls.PREPARING.value]
 
 
-class ConfigFileTemplate(Enum):
-	REDIS_CACHE = "press/docker/config/redis-cache.conf"
-	REDIS_QUEUE = "press/docker/config/redis-queue.conf"
-	SUPERVISOR = "press/docker/config/supervisor.conf"
-
-
 STAGE_SLUG_MAP = {
 	"clone": "Clone Repositories",
 	"pre_before": "Run Before Prerequisite Script",
@@ -107,7 +92,6 @@ STAGE_SLUG_MAP = {
 	"validate": "Run Validations",
 	"pull": "Pull Updates",
 	"mounts": "Setup Mounts",
-	"package": "Package",
 	"upload": "Upload",
 }
 
@@ -128,8 +112,6 @@ STEP_SLUG_MAP = {
 	("validate", "dependencies"): "Validate Dependencies",
 	("mounts", "create"): "Prepare Mounts",
 	("upload", "image"): "Docker Image",
-	("package", "context"): "Build Context",
-	("upload", "context"): "Build Context",
 }
 
 
@@ -325,173 +307,32 @@ class DeployCandidateBuild(Document):
 		python_version = self._parse_python_version(version)
 		return python_version in GET_PIP_VERSION_MODIFIED_URL
 
-	def _generate_dockerfile(self):
-		dockerfile = os.path.join(self.build_directory, "Dockerfile")
-		with open(dockerfile, "w") as f:
-			dockerfile_template = "press/docker/Dockerfile"
-			is_distutils_supported = True
-			requires_version_based_get_pip = False
+	def _generate_dockerfile(self) -> str:
+		dockerfile_template = "press/docker/Dockerfile"
+		is_distutils_supported = True
+		requires_version_based_get_pip = False
 
-			for d in self.candidate.dependencies:
-				if d.dependency == "PYTHON_VERSION":
-					is_distutils_supported = self.check_distutils_support(d.version)
-					requires_version_based_get_pip = self.check_get_pip_url_support(d.version)
+		for d in self.candidate.dependencies:
+			if d.dependency == "PYTHON_VERSION":
+				is_distutils_supported = self.check_distutils_support(d.version)
+				requires_version_based_get_pip = self.check_get_pip_url_support(d.version)
 
-				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
-					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
+			if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
+				dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
 
-			content = frappe.render_template(
-				dockerfile_template,
-				{
-					"doc": self.candidate,
-					"remove_distutils": not is_distutils_supported,
-					"requires_version_based_get_pip": requires_version_based_get_pip,
-					"is_arm_build": self.platform == "arm64",
-					"use_asset_store": False,
-					"upload_assets": False,
-					"site_url": frappe.utils.get_url(),
-				},
-				is_path=True,
-			)
-			f.write(content)
-			return content
-
-	def _generate_config_from_template(self, template: ConfigFileTemplate):
-		_, template_conf_name = os.path.split(template.value)
-		assert self.build_directory, "Build directory must be set before generating config files"
-		conf_file: str = os.path.join(self.build_directory, "config", template_conf_name)
-
-		with open(conf_file, "w") as f:
-			content = frappe.render_template(
-				template.value, {"doc": self.candidate, "platform": self.platform}, is_path=True
-			)
-			f.write(content)
-
-	def _generate_apps_txt(self):
-		apps_txt = os.path.join(self.build_directory, "apps.txt")
-		with open(apps_txt, "w") as f:
-			content = "\n".join([app.app_name for app in self.candidate.apps])
-			f.write(content)
-
-	def _copy_config_files(self):
-		for target in ["common_site_config.json", "supervisord.conf", ".vimrc", "get_cached_app.py"]:
-			shutil.copy(os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory)
-
-		for target in ["config", "redis"]:
-			shutil.copytree(
-				os.path.join(frappe.get_app_path("press", "docker"), target),
-				os.path.join(self.build_directory, target),
-				symlinks=True,
-			)
-
-	def _get_app_name(self, app):
-		"""Retrieves `name` attribute of app - equivalent to distribution name
-		of python package. Fetches from pyproject.toml, setup.cfg or setup.py
-		whichever defines it in that order.
-		"""
-		app_name = None
-		apps_path = os.path.join(self.build_directory, "apps")
-
-		config_py_path = os.path.join(apps_path, app, "setup.cfg")
-		setup_py_path = os.path.join(apps_path, app, "setup.py")
-
-		app_name = self._get_app_pyproject(app).get("project", {}).get("name")
-
-		if not app_name and os.path.exists(config_py_path):
-			from setuptools.config import read_configuration
-
-			config = read_configuration(config_py_path)
-			app_name = config.get("metadata", {}).get("name")
-
-		if not app_name and os.path.exists(setup_py_path):
-			# retrieve app name from setup.py as fallback
-			with open(setup_py_path, "rb") as f:
-				contents = f.read().decode("utf-8")
-				search = re.search(r'name\s*=\s*[\'"](.*)[\'"]', contents)
-
-			if search:
-				app_name = search[1]
-
-		if app_name and app != app_name:
-			return app_name
-
-		return app
-
-	def _get_app_pyproject(self, app):
-		apps_path = os.path.join(self.build_directory, "apps")
-		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
-		if not os.path.exists(pyproject_path):
-			return {}
-
-		return load_pyproject(app, pyproject_path)
-
-	def _clone_release_and_update_step(self, release, step):
-		step.cached = False
-		step.status = "Running"
-		start_time = now()
-		self.save(ignore_version=True)
-
-		release: AppRelease = frappe.get_doc("App Release", release, for_update=True)
-		release._clone(force=True)
-
-		frappe.db.commit()  # Release lock taken for app clone
-
-		step.duration = get_duration(start_time)
-		step.output = release.output
-		step.status = "Success"
-		return release.clone_directory
-
-	def _clone_app(self, app: DeployCandidateApp):
-		step = self.get_step("clone", app.app)
-		assert step is not None, f"Step not found for cloning app {app.app}"
-		source, cloned = frappe.get_value("App Release", app.release, ["clone_directory", "cloned"])
-
-		step.command = f"git clone {app.app}"
-
-		if cloned and os.path.exists(source):
-			step.cached = True
-			step.status = "Success"
-		else:
-			source = self._clone_release_and_update_step(app.release, step)
-
-		assert self.build_directory, "Build directory must be set before cloning apps"
-		target = os.path.join(self.build_directory, "apps", app.app)
-		shutil.copytree(source, target, symlinks=True)
-
-		if app.pullable_release:
-			source = frappe.get_value("App Release", app.pullable_release, "clone_directory")
-			target = os.path.join(self.build_directory, "app_updates", app.app)
-			# don't know why
-			shutil.copytree(source, target, symlinks=True)
-
-		return target
-
-	def _clone_repositories(self):
-		repo_path_map = {}
-
-		for app in self.candidate.apps:
-			repo_path_map[app.app] = self._clone_app(app)
-			app.app_name = self._get_app_name(app.app)
-
-		return repo_path_map
-
-	def _run_pre_build_validation(self, pmf):
-		step = self.get_step("validate", "pre-build")
-		step.status = "Running"
-		start_time = now()
-		self.save(ignore_version=True)
-
-		try:
-			PreBuildValidations(self.candidate, pmf).validate()
-		except Exception as e:
-			step.output = str(e)
-			# We need to raise to get traceback in `deploy notifications`
-			raise e
-
-		step.duration = get_duration(start_time)
-		step.output = "Pre-Build validations passed"
-		step.status = "Success"
-		self.save(ignore_version=True)
+		return frappe.render_template(
+			dockerfile_template,
+			{
+				"doc": self.candidate,
+				"remove_distutils": not is_distutils_supported,
+				"requires_version_based_get_pip": requires_version_based_get_pip,
+				"is_arm_build": self.platform == "arm64",
+				"use_asset_store": False,
+				"upload_assets": False,
+				"site_url": frappe.utils.get_url(),
+			},
+			is_path=True,
+		)
 
 	def add_post_build_steps(self):
 		slugs = []
@@ -510,21 +351,15 @@ class DeployCandidateBuild(Document):
 			)
 			self.append("build_steps", step)
 
+		self.save()
+
 	def add_pre_build_steps(self):
 		app_titles = {a.app: a.title for a in self.candidate.apps}
 
 		# Clone app slugs
 		slugs: list[tuple[str, str]] = [("clone", app.app) for app in self.candidate.apps]
 
-		slugs.extend(
-			[
-				# Pre-build validation slug
-				("validate", "pre-build"),
-				# Build slugs
-				("package", "context"),
-				("upload", "context"),
-			]
-		)
+		slugs.extend([("validate", "pre-build")])
 
 		for stage_slug, step_slug in slugs:
 			stage, step = get_build_stage_and_step(
@@ -580,6 +415,8 @@ class DeployCandidateBuild(Document):
 			self.upload_step_updater.flush_output(commit)
 
 	def _set_output_parsers(self):
+		self.clone_output_parser = CloneOutputParser(self)
+		self.validation_output_parser = ValidationOutputParser(self)
 		self.build_output_parser = DockerBuildOutputParser(self)
 		self.upload_step_updater = UploadStepUpdater(self)
 
@@ -815,15 +652,25 @@ class DeployCandidateBuild(Document):
 				deploy_after_build=request_data.get("deploy_after_build")
 			)
 
+	def get_all_pending_clone_steps(self) -> list["DeployCandidateBuildStep"]:
+		"""Return all the pending clone steps"""
+		return [
+			step
+			for step in self.build_steps
+			if step.stage_slug == "clone" and step.status not in ["Success", "Failure"]
+		]
+
+	def has_failed_clone_steps(self) -> bool:
+		return any(
+			step for step in self.build_steps if step.stage_slug == "clone" and step.status == "Failure"
+		)
+
 	def _process_run_build(
 		self,
 		job: "AgentJob",
 		request_data: dict,
 		response_data: dict | None,
 	):
-		job_data = json.loads(job.data or "{}")
-		output_data = json.loads(job_data.get("output", "{}"))
-
 		"""
 		Due to how agent - press communication takes place, every time an
 		output is published all of it has to be re-parsed from the start.
@@ -831,21 +678,38 @@ class DeployCandidateBuild(Document):
 		This is due to a method of streaming agent output to press not
 		existing.
 		"""
+		job_data = json.loads(job.data or "{}")
+		job_data_output = job_data.get("output", "{}")
+		output_data = json.loads(job_data_output) if isinstance(job_data_output, str) else job_data_output
 		self._set_output_parsers()
-		if output := get_remote_step_output(
-			"build",
-			output_data,
-			response_data,
-		):
-			self.build_output_parser.parse_and_update(output)
+		clone_failed = self.clone_output_parser.parse_clone_output_and_update_step(
+			job,
+		)
 
-		if output := get_remote_step_output(
-			"push",
-			output_data,
-			response_data,
-		):
-			self.upload_step_updater.start()
-			self.upload_step_updater.process(output)
+		if not clone_failed:
+			try:
+				self.validation_output_parser.parse_validation_output_and_update_step(
+					job,
+				)
+			except Exception as e:
+				self.handle_build_failure(exc=e, job=job)
+				return  # Handle this just like we handled when working on press directly
+
+		if not clone_failed:
+			if output := get_remote_step_output(
+				"build",
+				output_data,
+				response_data,
+			):
+				self.build_output_parser.parse_and_update(output)
+
+			if output := get_remote_step_output(
+				"push",
+				output_data,
+				response_data,
+			):
+				self.upload_step_updater.start()
+				self.upload_step_updater.process(output)
 
 		if self.has_remote_build_failed(job, job_data):
 			self.handle_build_failure(exc=None, job=job)
@@ -855,150 +719,11 @@ class DeployCandidateBuild(Document):
 		# Fallback case cause upload step can be left hanging
 		self.correct_upload_step_status()
 
-	def _prepare_build_directory(self):
-		build_directory = frappe.get_value("Press Settings", None, "build_directory")
-		if not os.path.exists(build_directory):
-			os.mkdir(build_directory)
-
-		group_directory = os.path.join(build_directory, self.group)
-		if not os.path.exists(group_directory):
-			os.mkdir(group_directory)
-
-		self.build_directory = os.path.join(build_directory, self.group, self.name)
-		if os.path.exists(self.build_directory):
-			shutil.rmtree(self.build_directory)
-
-		os.mkdir(self.build_directory)
-
-	def _prepare_build_context(self):
-		repo_path_map = self._clone_repositories()
-		pmf = get_package_manager_files(repo_path_map)
-		self._run_pre_build_validation(pmf)
-
-		"""
-		Due to dependencies mentioned in an apps pyproject.toml
-		file, _update_packages() needs to run after the repos
-		have been cloned.
-		"""
-		self.candidate._update_packages(pmf)
-
-		# Set props used when generating the Dockerfile
-		self.candidate._set_additional_packages()
-		self.candidate._set_container_mounts()
-
-		# Dockerfile generation
-		dockerfile = self._generate_dockerfile()
-		self.add_build_steps(dockerfile)
-		self.add_post_build_steps()
-
-		self._copy_config_files()
-		for config_template in [
-			ConfigFileTemplate.REDIS_CACHE,
-			ConfigFileTemplate.REDIS_QUEUE,
-			ConfigFileTemplate.SUPERVISOR,
-		]:
-			self._generate_config_from_template(config_template)
-
-		self._generate_apps_txt()
-		self.candidate.generate_ssh_keys(self.build_directory)
-
-	def _prepare_build(self):
-		if not self.no_cache:
-			self.candidate._update_app_releases()
-
-		if not self.no_cache:
-			self.candidate._set_app_cached_flags()
-
-		self._prepare_build_directory()
-		self._prepare_build_context()
-
 	def get_step(self, stage_slug: str, step_slug: str) -> "DeployCandidateBuildStep | None":
 		return find(
 			self.build_steps,
 			lambda x: x.stage_slug == stage_slug and x.step_slug == step_slug,
 		)
-
-	def _upload_build_context(self, context_filepath: str, build_server: str):
-		step = self.get_step("upload", "context") or frappe._dict()
-		step.status = "Running"
-		start_time = now()
-		self.save(ignore_version=True)
-
-		try:
-			upload_filename = self.upload_build_context_for_docker_build(
-				context_filepath,
-				build_server,
-			)
-		except Exception:
-			step.status = "Failure"
-			raise
-
-		step.status = "Success"
-		step.duration = get_duration(start_time)
-		self.save(ignore_version=True)
-		return upload_filename
-
-	def _package_build_context(self):
-		step = self.get_step("package", "context") or frappe._dict()
-		step.status = "Running"
-		start_time = now()
-		self.save(ignore_version=True)
-
-		def fix_content_permission(tarinfo):
-			tarinfo.uid = 1000
-			tarinfo.gid = 1000
-			return tarinfo
-
-		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
-		with tarfile.open(tmp_file_path, "w:gz", compresslevel=5) as tar:
-			if frappe.conf.developer_mode:
-				tar.add(self.build_directory, arcname=".", filter=fix_content_permission)
-			else:
-				tar.add(self.build_directory, arcname=".")
-
-		step.status = "Success"
-		step.duration = get_duration(start_time)
-		self.save(ignore_version=True)
-
-		return tmp_file_path
-
-	def _package_and_upload_context(self):
-		context_filepath = self._package_build_context()
-		context_filename = self._upload_build_context(
-			context_filepath,
-			self.build_server,
-		)
-		os.remove(context_filepath)
-		return context_filename
-
-	def _run_agent_jobs(self):
-		context_filename = self._package_and_upload_context()
-		settings = self._fetch_registry_settings()
-
-		build_parameters = {
-			"filename": context_filename,
-			"image_repository": self.docker_image_repository,
-			"image_tag": self.docker_image_tag,
-			"registry": {
-				"url": settings.docker_registry_url,
-				"username": settings.docker_registry_username,
-				"password": settings.docker_registry_password,
-			},
-			"no_cache": self.no_cache,
-			"no_push": self.no_push,
-			"build_token": self.candidate.build_token,
-			# Next few values are not used by agent but are
-			# read in `process_run_build`
-			"deploy_candidate_build": self.name,
-			"deploy_after_build": self.deploy_after_build,
-			"deploy_on_server": self.deploy_on_server,
-		}
-		if self.platform == "arm64":
-			build_parameters.update({"platform": self.platform})
-
-		Agent(self.build_server).run_build(build_parameters)
-
-		self.set_status(Status.RUNNING)
 
 	def _fetch_registry_settings(self):
 		return frappe.db.get_value(
@@ -1035,11 +760,93 @@ class DeployCandidateBuild(Document):
 
 		return is_image_in_registry(self.name, self.group, settings)
 
-	def _start_build(self):
-		self._update_docker_image_metadata()
-		self._run_agent_jobs()
+	def encode_dockerfile(self, dockerfile):
+		"""Encode dockerfile content to base64 to be sent to agent"""
+		dockerfile_bytes = dockerfile.encode("utf-8")
+		return base64.b64encode(dockerfile_bytes).decode("utf-8")
 
-	def _build(self):
+	def send_build_instructions_and_add_build_steps(self):
+		"""
+		Prepare build instructions and mark ready to upload also adds the build and post build steps
+
+		HOW IT WORKS:
+		-------------
+		1. Get all the app sources part of the deploy candidate.
+		2. Get all app releases part of the deploy candidate.
+		3. Get the required repo urls (with token for private repos) of the app releases.
+		4. Generate the dockerfile
+		"""
+		clone_instructions = []
+
+		for app in self.candidate.apps:
+			app_source = app.source
+			app_release = app.release
+
+			hash = frappe.db.get_value("App Release", app_release, "hash")
+			source: "AppSource" = frappe.get_doc("App Source", app_source)
+			url = source.get_repo_url()
+			clone_instructions.append(
+				{
+					"app": app.app,
+					"url": url,
+					"release": app_release,
+					"source": app_source,
+					"hash": hash,
+					"branch": source.branch,
+				}
+			)
+
+		dockerfile = self._generate_dockerfile()
+		# Add build steps based on dockerfile checkpoints before starting the build
+		self.add_build_steps(dockerfile)
+		self.add_post_build_steps()
+
+		encoded_dockerfile = self.encode_dockerfile(dockerfile)
+		settings = self._fetch_registry_settings()
+		dependencies = {d.dependency: d.version for d in self.candidate.dependencies}
+		self._update_docker_image_metadata()
+
+		build_parameters = {
+			"image_repository": self.docker_image_repository,
+			"image_tag": self.docker_image_tag,
+			"registry": {
+				"url": settings.docker_registry_url,
+				"username": settings.docker_registry_username,
+				"password": settings.docker_registry_password,
+			},
+			"no_cache": self.no_cache,
+			"no_push": self.no_push,
+			"build_token": self.candidate.build_token,
+			# Next few values are not used by agent but are
+			# read in `process_run_build`
+			"deploy_candidate_build": self.name,
+			"deploy_after_build": self.deploy_after_build,
+			"deploy_on_server": self.deploy_on_server,
+			# Used by agent to prepare build context
+			"dockerfile": encoded_dockerfile,
+			"clone_instructions": clone_instructions,
+			"build_name": self.name,
+			"group": self.group,
+			"deploy_candidate_params": {
+				"redis_cache_size": self.candidate.redis_cache_size,
+				"is_redisearch_enabled": self.candidate.is_redisearch_enabled,
+				"environment_variables": self.candidate.environment_variables,
+				"use_rq_workerpool": self.candidate.use_rq_workerpool,
+				"merge_all_rq_queues": self.candidate.merge_all_rq_queues,
+				"merge_default_and_short_rq_queues": self.candidate.merge_default_and_short_rq_queues,
+				"custom_workers": self.candidate.custom_workers,
+				"custom_workers_group": self.candidate.custom_workers_group,
+				"is_code_server_enabled": False,  # We no longer seem to use this since code server runs on press
+				"is_ssh_enabled": False,  # Set by bench when creating container
+				"dependencies": dependencies,
+			},
+		}
+		if self.platform == "arm64":
+			build_parameters.update({"platform": self.platform})
+
+		Agent(self.build_server).run_build(build_parameters)
+
+	def build(self):
 		self._set_pending_duration()
 		self.set_status(
 			Status.PREPARING,
@@ -1047,27 +854,8 @@ class DeployCandidateBuild(Document):
 			commit=True,
 		)
 		self._set_output_parsers()
-
-		# https://docs.python.org/3/library/warnings.html#testing-warnings
-		with warnings.catch_warnings(record=True) as caught_warnings:
-			warnings.simplefilter("always", BuildWarning)  # capture everything
-
-			try:
-				self._prepare_build()
-			except Exception as exc:
-				self.handle_build_failure(exc)
-				return
-
-			for warning in caught_warnings:
-				self.handle_build_warning(
-					title="Pre Build Validation Warning",
-					warning=warning,
-				)
-
-		try:
-			self._start_build()
-		except Exception as exc:
-			self.handle_build_failure(exc)
+		self.send_build_instructions_and_add_build_steps()
+		self.set_status(Status.RUNNING, commit=True)
 
 	def reset_build_state(self):
 		self.cleanup_build_directory()
@@ -1165,17 +953,8 @@ class DeployCandidateBuild(Document):
 		)
 
 		frappe.set_user(frappe.get_value("Team", team if isinstance(team, str) else team.name, "user"))
-		queue = "default" if frappe.conf.developer_mode else "build"
 
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_build",
-			queue=queue,
-			timeout=2400,
-			enqueue_after_commit=True,
-			job_id=f"deploy_candidate_build:{self.name}",
-		)
+		self.build()
 
 		frappe.set_user(user)
 		frappe.session.data = session_data
@@ -1209,13 +988,9 @@ class DeployCandidateBuild(Document):
 			self.pre_build()
 
 	def _stop_and_fail(self):
-		self.manually_failed = True
-		for job in get_background_jobs(self.doctype, self.name, status="started"):
-			if is_build_job(job):
-				stop_background_job(job)
-
-		self.set_status(Status.FAILURE)
-		self._set_build_duration()
+		"""Since we are relying on remote builder completely, we can just mark the build as
+		manually failed and the remote builder will stop the build when it checks the status"""
+		fail_remote_job(self.name)
 
 	def create_deploy(self, check_image_exists: bool = False):
 		"""Create a new deploy for the servers of matching platform present on the release group"""
@@ -1328,31 +1103,50 @@ def redeploy(dn: str) -> dict[str, str | bool]:
 	return deploy_candidate_build.redeploy()
 
 
-@frappe.whitelist()
-def fail_remote_job(dn: str) -> bool:
-	agent_job: "AgentJob" = frappe.get_doc(
-		"Agent Job", {"reference_doctype": "Deploy Candidate Build", "reference_name": dn}
-	)
-
-	agent_job.get_status()
-	agent_job = agent_job.reload()
-
-	if agent_job.status != "Running":
-		return False
-
-	# Cancel build and set status with for_update and commit to avoid timestamp errors
-	agent_job.cancel_job()
+def _mark_build_as_failed(dn: str) -> bool:
+	"""
+	Mark a Deploy Candidate Build as failed when no associated Agent Job exists.
+	Always True as the build is successfully marked as failed.
+	"""
 	build: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", dn, for_update=True)
 	build.manually_failed = True
-	build.set_status(Status.FAILURE)
-	frappe.db.commit()
 
+	if not build.build_duration:
+		build._set_build_duration()
+
+	build.set_status(Status.FAILURE, commit=True)
 	return True
 
 
-def is_build_job(job: Job) -> bool:
-	doc_method: str = job.kwargs.get("kwargs", {}).get("doc_method", "")
-	return doc_method.startswith("_build")
+@frappe.whitelist()
+def fail_remote_job(dn: str) -> bool:
+	"""
+	Fail a remote job associated with a Deploy Candidate Build.
+	True if the job was successfully marked as failed, False otherwise.
+	"""
+	agent_job_name = frappe.db.get_value(
+		"Agent Job", {"reference_doctype": "Deploy Candidate Build", "reference_name": dn}
+	)
+
+	if not agent_job_name:
+		# If the job has not been created yet, mark the build as manually failed
+		return _mark_build_as_failed(dn)
+
+	agent_job_doc: AgentJob = frappe.get_doc("Agent Job", agent_job_name)
+	agent_job_doc.get_status()
+	agent_job_doc = agent_job_doc.reload()
+
+	if agent_job_doc.status in ["Success", "Failure"]:
+		# Job is already in a terminal state, nothing we can do here
+		return False
+
+	if agent_job_doc.status in ["Pending", "Undelivered"]:
+		agent_job_doc.fail_and_process_job_updates()
+
+	elif agent_job_doc.status == "Running":
+		agent_job_doc.cancel_job()
+
+	return _mark_build_as_failed(dn)
 
 
 def should_build_retry_build_output(build_output: str):
@@ -1510,8 +1304,9 @@ def fail_or_retry_stuck_builds(
 
 	for (name,) in result:
 		dcb: DeployCandidateBuild = frappe.get_doc("Deploy Candidate Build", name)
-		dcb.manually_failed = True
 		dcb._stop_and_fail()
+		dcb = dcb.reload()  # Stop and fail makes modifications to the build
+
 		if can_retry_build(dcb.name, dcb.group, dcb.build_start):
 			dcb.schedule_build_retry()
 

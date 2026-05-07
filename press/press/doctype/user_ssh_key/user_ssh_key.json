@@ -82,7 +82,7 @@
    "delete": 1,
    "if_owner": 1,
    "read": 1,
-   "role": "Press Admin",
+   "role": "Press User",
    "write": 1
   },
   {
@@ -90,7 +90,7 @@
    "delete": 1,
    "if_owner": 1,
    "read": 1,
-   "role": "Press Member",
+   "role": "Press User",
    "write": 1
   }
  ],

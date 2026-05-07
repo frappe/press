@@ -176,7 +176,7 @@ watch(activeTab, (x) => {
 		filters.read = 'Unread';
 	}
 
-	resource.update({ filters });
+	resource.update({ filters, start: 0, pageLength: 10 });
 	resource.reload();
 });
 

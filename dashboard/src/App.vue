@@ -110,9 +110,13 @@ watch(
 provide('team', team);
 provide('session', session);
 
-onMounted(() => {
-	useSearch();
-});
+watch(
+  () => team.doc?.onboarding?.complete,
+  (x) => {
+    if(x) useSearch();
+  },
+  { once: true }
+);
 </script>
 
 <style src="./assets/style.css"></style>
