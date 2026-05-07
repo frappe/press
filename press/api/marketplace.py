@@ -23,7 +23,6 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 )
 from press.utils import get_app_tag, get_current_team, get_last_doc, is_user_part_of_team, unique
 from press.utils.billing import get_frappe_io_connection
-from press.utils.user import is_desk_user
 
 if TYPE_CHECKING:
 	from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import MarketplaceAppPlan
@@ -1376,6 +1375,18 @@ def get_marketplace_apps() -> list[dict]:
 		apps = frappe.get_all("Marketplace App", {"status": "Published"}, ["name", "title", "route"])
 		frappe.cache().set_value("marketplace_apps", apps, expires_in_sec=60 * 60 * 24 * 7)
 	return apps
+
+
+def is_desk_user(user: str | None = None) -> bool:
+	"""
+	Checks if the given user is a system user.
+
+	:param user: User to check. If None, uses the current session user.
+	:return: True if the user is a system user, False otherwise.
+	"""
+	user = user or frappe.session.user
+	user_doc = frappe.get_cached_doc("User", user)
+	return user_doc.user_type == "System User"
 
 
 @frappe.whitelist(methods=["GET"])
