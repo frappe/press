@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -21,12 +24,15 @@ type QueryOptions struct {
 type Database struct {
 	creds    MySQLCredentials
 	Tcmalloc *Tcmalloc
+
+	mu    sync.Mutex
+	pools map[string]*sql.DB // keyed by transport
 }
 
 func NewDatabase(creds MySQLCredentials) *Database {
-	db := &Database{creds: creds}
-	db.Tcmalloc = &Tcmalloc{db: db}
-	return db
+	d := &Database{creds: creds, pools: map[string]*sql.DB{}}
+	d.Tcmalloc = &Tcmalloc{db: d}
+	return d
 }
 
 func NewDatabaseFromMyCnf() (*Database, error) {
@@ -35,6 +41,16 @@ func NewDatabaseFromMyCnf() (*Database, error) {
 		return nil, err
 	}
 	return NewDatabase(creds), nil
+}
+
+// Close releases any cached pools. Safe to call multiple times.
+func (d *Database) Close() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	for k, p := range d.pools {
+		_ = p.Close()
+		delete(d.pools, k)
+	}
 }
 
 func (d *Database) QueryWithOptions(opts QueryOptions, query string, fn func(*sql.Rows) error) error {
@@ -50,22 +66,27 @@ func (d *Database) QueryWithOptionsAndArgs(opts QueryOptions, query string, args
 }
 
 func (d *Database) queryWithOptionsAndArgs(opts QueryOptions, query string, args []any, fn func(*sql.Rows) error) error {
-	db, err := d.open(opts)
-	if err != nil {
-		return err
+	transport := d.resolveTransport(opts.Transport)
+	timeout := opts.Timeout
+	if timeout <= 0 {
+		timeout = defaultQueryTimeout
 	}
-	defer db.Close()
 
-	rows, err := db.Query(query, args...)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
+	return d.withRetry(transport, timeout, func(db *sql.DB) error {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
 
-	if err := fn(rows); err != nil {
-		return err
-	}
-	return rows.Err()
+		rows, err := db.QueryContext(ctx, query, args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		if err := fn(rows); err != nil {
+			return err
+		}
+		return rows.Err()
+	})
 }
 
 func (d *Database) Query(query string, fn func(*sql.Rows) error) error {
@@ -85,30 +106,58 @@ func (d *Database) execSocket(query string) error {
 }
 
 func (d *Database) execWithOptions(opts QueryOptions, query string) error {
-	db, err := d.open(opts)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	_, err = db.Exec(query)
-	return err
-}
-
-// open builds a mysql connection from credentials and options.
-func (d *Database) open(opts QueryOptions) (*sql.DB, error) {
+	transport := d.resolveTransport(opts.Transport)
 	timeout := opts.Timeout
 	if timeout <= 0 {
 		timeout = defaultQueryTimeout
 	}
 
-	transport := opts.Transport
-	if transport == "" {
-		if d.creds.Socket != "" {
-			transport = "unix"
-		} else {
-			transport = "tcp"
+	return d.withRetry(transport, timeout, func(db *sql.DB) error {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		_, err := db.ExecContext(ctx, query)
+		return err
+	})
+}
+
+// withRetry runs fn against the cached pool for transport. On a connection-
+// level failure (timeout, broken pipe, server gone) it discards the cached
+// pool and retries up to 5 times with a fresh one. Any further failure is returned.
+func (d *Database) withRetry(transport string, timeout time.Duration, fn func(*sql.DB) error) error {
+	for attempt := 0; attempt < 5; attempt++ {
+		db, err := d.pool(transport, timeout)
+		if err != nil {
+			return err
 		}
+		err = fn(db)
+		if err == nil {
+			return nil
+		}
+		if attempt == 0 && isRetryableConnError(err) {
+			d.dropPool(transport)
+			continue
+		}
+		return err
+	}
+	return nil
+}
+
+func (d *Database) resolveTransport(t string) string {
+	if t != "" {
+		return t
+	}
+	if d.creds.Socket != "" {
+		return "unix"
+	}
+	return "tcp"
+}
+
+func (d *Database) pool(transport string, timeout time.Duration) (*sql.DB, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if p, ok := d.pools[transport]; ok {
+		return p, nil
 	}
 
 	cfg := mysql.NewConfig()
@@ -139,9 +188,51 @@ func (d *Database) open(opts QueryOptions) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	// One connection is plenty for a monitor and keeps the footprint small.
 	db.SetMaxOpenConns(1)
-	db.SetConnMaxLifetime(timeout)
+	db.SetMaxIdleConns(1)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetConnMaxIdleTime(2 * time.Minute)
+
+	d.pools[transport] = db
 	return db, nil
+}
+
+func (d *Database) dropPool(transport string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if p, ok := d.pools[transport]; ok {
+		_ = p.Close()
+		delete(d.pools, transport)
+	}
+}
+
+// isRetryableConnError reports whether err looks like a connection-level
+// failure where a fresh connection might succeed.
+func isRetryableConnError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, mysql.ErrInvalidConn) || errors.Is(err, sql.ErrConnDone) {
+		return true
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return true
+	}
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "broken pipe"),
+		strings.Contains(msg, "connection reset"),
+		strings.Contains(msg, "EOF"),
+		strings.Contains(msg, "bad connection"),
+		strings.Contains(msg, "server has gone away"):
+		return true
+	}
+	return false
 }
 
 // queryKVStr executes a two-column (name, value) query and returns a map of
