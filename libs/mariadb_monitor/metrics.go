@@ -49,24 +49,29 @@ func checkPSI(resource string) (float64, error) {
 	}
 	defer f.Close()
 
+	wantPrefix := "full "
+	if resource == "cpu" {
+		wantPrefix = "some "
+	}
+
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if !strings.HasPrefix(line, "some ") {
+		if !strings.HasPrefix(line, wantPrefix) {
 			continue
 		}
 		fields := strings.Fields(line)
 		for _, field := range fields {
-			if strings.HasPrefix(field, "avg10=") {
-				val, err := strconv.ParseFloat(strings.TrimPrefix(field, "avg10="), 64)
+			if strings.HasPrefix(field, "avg60=") {
+				val, err := strconv.ParseFloat(strings.TrimPrefix(field, "avg60="), 64)
 				if err != nil {
-					return 0, fmt.Errorf("parse avg10 from %s: %w", path, err)
+					return 0, fmt.Errorf("parse avg60 from %s: %w", path, err)
 				}
 				return val, nil
 			}
 		}
 	}
-	return 0, fmt.Errorf("no 'some' line found in %s", path)
+	return 0, fmt.Errorf("no %q line found in %s", strings.TrimSpace(wantPrefix), path)
 }
 
 func readCPUTimes() (cpuTimes, error) {
@@ -363,6 +368,11 @@ type frozenState struct {
 	reason string
 }
 
+// frozenProbeIntervalTicks is how often we run the (relatively expensive)
+// machine-frozen probe when nothing else looks wrong. With a 5s check_interval
+// this is once a minute. When any other trigger fires we run it immediately.
+const frozenProbeIntervalTicks = 12
+
 func (m *Monitor) collectTriggers() ([]string, *frozenState) {
 	var triggers []string
 
@@ -374,9 +384,16 @@ func (m *Monitor) collectTriggers() ([]string, *frozenState) {
 	triggers = append(triggers, m.evaluateThresholds(mem, memErr, iowaitVal, iowaitErr, pageRateVal)...)
 	triggers = append(triggers, m.evaluatePredictiveTriggers(mem, memErr)...)
 
-	frozen := m.checkMachineFrozen()
-	if frozen != nil {
-		triggers = append(triggers, fmt.Sprintf("machine_frozen(%s)", frozen.reason))
+	// The frozen probe forks a process, opens an fd pair, and binds a TCP
+	// socket. On a healthy node that work is wasted, so only run it when
+	// something else already looks wrong, or once per minute as a sanity
+	// check.
+	var frozen *frozenState
+	if len(triggers) > 0 || m.checkCount%frozenProbeIntervalTicks == 0 {
+		frozen = m.checkMachineFrozen()
+		if frozen != nil {
+			triggers = append(triggers, fmt.Sprintf("machine_frozen(%s)", frozen.reason))
+		}
 	}
 
 	m.updateCgroupPressureEvents()
@@ -398,7 +415,7 @@ func (m *Monitor) collectPSIMetrics() {
 	} {
 		if val, err := checkPSI(entry.resource); err == nil {
 			entry.window.Push(val, entry.threshold)
-			slog.Debug(fmt.Sprintf("psi_%s", entry.resource), "avg10", val)
+			slog.Debug(fmt.Sprintf("psi_%s", entry.resource), "avg60", val)
 		} else {
 			slog.Warn(fmt.Sprintf("failed to check psi %s", entry.resource), "error", err)
 		}
