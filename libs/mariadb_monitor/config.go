@@ -52,10 +52,11 @@ type ThresholdConfig struct {
 }
 
 type CoredumpConfig struct {
-	Enabled   bool          `yaml:"enabled"`
-	OutputDir string        `yaml:"output_dir"`
-	Timeout   time.Duration `yaml:"timeout"`
-	MaxCount  int           `yaml:"max_count"`
+	Enabled      bool          `yaml:"enabled"`
+	OutputDir    string        `yaml:"output_dir"`
+	Timeout      time.Duration `yaml:"timeout"`
+	MaxCount     int           `yaml:"max_count"`
+	MaxStorageGB float64       `yaml:"max_storage_gb"`
 }
 
 type ExternalConfig struct {
@@ -111,10 +112,11 @@ func DefaultConfig() Config {
 		},
 
 		Coredump: CoredumpConfig{
-			Enabled:   false,
-			OutputDir: "/var/lib/mariadb-monitor/coredumps",
-			Timeout:   120 * time.Second,
-			MaxCount:  3,
+			Enabled:      false,
+			OutputDir:    "/var/lib/mariadb-monitor/coredumps",
+			Timeout:      120 * time.Second,
+			MaxCount:     3,
+			MaxStorageGB: 15.0,
 		},
 
 		External: ExternalConfig{
