@@ -271,6 +271,7 @@ def create_payment_intent_for_micro_debit():
 		metadata={
 			"payment_for": "micro_debit_test_charge",
 		},
+		setup_future_usage="off_session",
 		payment_method_options={
 			"card": {
 				"request_three_d_secure": "any" if team.is_trusted_team else "automatic",
@@ -578,6 +579,36 @@ def setup_intent_success(setup_intent, address=None):
 		setup_intent.payment_method,
 		setup_intent.id,
 		setup_intent.mandate,
+		mandate_reference,
+		set_default=True,
+		verified_with_micro_charge=True,
+	)
+	if address:
+		address = frappe._dict(address)
+		team.update_billing_details(address)
+
+	return {"payment_method_name": payment_method.name}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def payment_intent_success(payment_intent, address=None):
+	payment_intent = frappe._dict(payment_intent)
+
+	# Re-fetch from Stripe to get authoritative payment_method and mandate details
+	stripe = get_stripe()
+	payment_intent = stripe.PaymentIntent.retrieve(payment_intent.id)
+
+	team = get_current_team(True)
+	clear_setup_intent()
+	mandate_options = (
+		(payment_intent.get("payment_method_options") or {}).get("card", {}).get("mandate_options")
+	)
+	mandate_reference = mandate_options.get("reference") if mandate_options else None
+	payment_method = team.create_payment_method(
+		payment_intent.payment_method,
+		payment_intent.id,
+		payment_intent.get("mandate"),
 		mandate_reference,
 		set_default=True,
 		verified_with_micro_charge=True,
