@@ -12,9 +12,8 @@ import (
 	"time"
 )
 
-// systemdKillWhoFlag is set once at init to the correct flag name for the
-// running systemd version. "--kill-whom" was introduced in systemd 252;
-// older releases (e.g. Ubuntu 22.04 ships 249) require "--kill-who".
+// systemdKillWhoFlag: "--kill-whom" was introduced in systemd 252;
+// older releases require "--kill-who".
 var systemdKillWhoFlag string
 
 func init() {
@@ -39,25 +38,22 @@ func detectKillWhoFlag() string {
 }
 
 const (
-	// Always drop the page cache after a recovery. Modes 2 and 3 also drop
-	// dentries/inodes which is rarely useful and can stall the system.
+	// Always drop the page cache after a recovery.
 	dropCachesMode = 1
 
-	// How long to wait for mariadbd processes to actually disappear after we
-	// asked systemd to kill them. SIGKILL is immediate but the kernel still
-	// needs to reap, flush dirty pages, release locks, etc.
+	// How long to wait for mariadbd processes to disappear after SIGKILL.
 	processDeathTimeout = 30 * time.Second
 
 	// Poll interval while waiting for mariadbd to disappear.
 	processDeathPoll = 200 * time.Millisecond
 
 	// How long to wait for mariadb to become reachable after start.
-	mariadbReachableTimeout = 3 * time.Minute
+	// InnoDB crash recovery on a large buffer pool can take several minutes.
+	mariadbReachableTimeout = 10 * time.Minute
 	mariadbReachablePoll    = 5 * time.Second
 )
 
-// resolveFrozenState returns the frozen flag and reason, querying the machine
-// directly only when a pre-computed frozen state was not provided.
+// resolveFrozenState returns the frozen flag and reason.
 func resolveFrozenState(frozen *frozenState) (bool, string) {
 	if frozen != nil {
 		return frozen.frozen, frozen.reason
@@ -65,7 +61,7 @@ func resolveFrozenState(frozen *frozenState) (bool, string) {
 	return checkMachineFrozen()
 }
 
-func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MySQLCredentials, frozen *frozenState) bool {
+func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MySQLCredentials, frozen *frozenState, wantCoredump bool) bool {
 	slog.Error("recovery triggered",
 		"triggers", triggers,
 		"mariadb_reachable", dbHealth.Reachable,
@@ -76,15 +72,14 @@ func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MyS
 	isFrozen, reason := resolveFrozenState(frozen)
 	if isFrozen {
 		slog.Warn("machine appears frozen, skipping coredump", "reason", reason)
-	} else if shouldTakeCoredump(cfg) {
+	} else if wantCoredump {
 		if err := takeCoredump(cfg); err != nil {
 			slog.Warn("coredump failed, continuing with recovery", "error", err)
 		}
 	}
 
-	// Force-kill the unit through systemd. This is faster and more reliable
-	// than trying a graceful TERM first: if mariadbd is healthy enough to
-	// shut down gracefully, the monitor would not be in this code path.
+	// Force-kill via systemd. If mariadbd were healthy enough to shut down
+	// gracefully, the monitor would not be in this code path.
 	killMariaDB()
 
 	if !waitForProcessDeath(processDeathTimeout) {
@@ -105,7 +100,6 @@ func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MyS
 }
 
 // killMariaDB asks systemd to SIGKILL every process in the mariadb unit.
-// Falls back to direct SIGKILL on the pids if systemctl itself fails.
 func killMariaDB() {
 	slog.Warn("force killing mariadb unit via systemctl kill --signal=SIGKILL")
 
@@ -134,8 +128,8 @@ func killMariaDBProcessesDirect() {
 	}
 }
 
-// waitForProcessDeath polls until no mariadbd/mysqld processes remain or the
-// deadline elapses. Returns true if all processes are gone.
+// waitForProcessDeath polls until no mariadbd/mysqld processes remain or
+// the deadline elapses.
 func waitForProcessDeath(timeout time.Duration) bool {
 	deadline := time.Now().Add(timeout)
 	for {
@@ -166,8 +160,7 @@ func reclaimMemory() {
 }
 
 // startMariaDB clears any failed state and starts mariadb via systemd.
-// Returns true only if the unit started AND the daemon is reachable within
-// mariadbReachableTimeout.
+// Returns true only if the unit started AND the daemon is reachable.
 func startMariaDB(creds MySQLCredentials) bool {
 	// Clear any failed state so systemd's start rate limiter does not refuse
 	// the start after several recoveries in a row.
@@ -207,41 +200,35 @@ func startMariaDB(creds MySQLCredentials) bool {
 	return false
 }
 
-// forceSystemReboot triggers an immediate, no-delay reboot of the machine.
-// this is the last resort.
-// it is called only when normal recovery (kill + start) has failed.
+// forceSystemReboot triggers an immediate, no-delay reboot via sysrq,
+// systemctl, and finally the reboot syscall as fallbacks.
 func forceSystemReboot(reason string) {
 	slog.Error("HARD REBOOT", "reason", reason)
 
 	syscall.Sync()
 
-	// Make sure sysrq is enabled. Value 1 means "all functions allowed".
+	// Make sure sysrq is enabled.
 	if err := os.WriteFile("/proc/sys/kernel/sysrq", []byte("1"), 0644); err != nil {
 		slog.Warn("failed to enable sysrq", "error", err)
 	}
 
-	// 'b' = immediate reboot without syncing or unmounting. We already
-	// synced above; the kernel will not unmount anything.
+	// 'b' = immediate reboot without syncing or unmounting.
 	if err := os.WriteFile("/proc/sysrq-trigger", []byte("b"), 0200); err != nil {
 		slog.Warn("sysrq reboot trigger failed, falling back to systemctl",
 			"error", err)
 	} else {
-		// On a healthy kernel this line is never reached.
 		time.Sleep(2 * time.Second)
 	}
 
-	// Fallback 1: systemctl reboot --force --force
-	// This skips shutdown scripts and unmounts
+	// Fallback 1: systemctl reboot --force --force (skips shutdown scripts).
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if out, err := exec.CommandContext(ctx, "systemctl", "reboot", "--force", "--force").CombinedOutput(); err != nil {
 		slog.Warn("systemctl reboot --force --force failed",
 			"error", err, "output", string(out))
-	} else {
-		time.Sleep(2 * time.Second)
 	}
 
-	// Fallback 2: the reboot(2) syscall directly.
+	// Fallback 2: the reboot(2) syscall.
 	if err := syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART); err != nil {
 		slog.Error("reboot(2) syscall failed, giving up", "error", err)
 	}

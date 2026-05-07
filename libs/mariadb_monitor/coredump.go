@@ -59,8 +59,8 @@ func takeCoredump(cfg Config) error {
 	return nil
 }
 
-// freeCoredumpStorageIfNeeded removes the oldest coredump files until the
-// total size of all coredumps in dir is below maxBytes.
+// freeCoredumpStorageIfNeeded removes the oldest coredumps until total
+// size is below maxBytes.
 func freeCoredumpStorageIfNeeded(dir string, maxBytes int64) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -90,7 +90,7 @@ func freeCoredumpStorageIfNeeded(dir string, maxBytes int64) {
 		return
 	}
 
-	// Sort oldest-first by name (names are timestamp-based).
+	// Sort oldest-first by name (timestamp-based).
 	sort.Slice(files, func(i, j int) bool {
 		return files[i].entry.Name() < files[j].entry.Name()
 	})

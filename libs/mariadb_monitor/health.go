@@ -19,7 +19,7 @@ type externalHealthResponse struct {
 	} `json:"message"`
 }
 
-const externalHealthCheckTimeout = 90 * time.Second
+const externalHealthCheckTimeout = 15 * time.Second
 
 func checkExternalDBHealth(cfg Config) (dbUnhealthy bool, ok bool) {
 	if !cfg.External.Enabled {
@@ -74,10 +74,11 @@ func checkExternalDBHealth(cfg Config) (dbUnhealthy bool, ok bool) {
 }
 
 type DBHealth struct {
-	Reachable    bool
-	StuckQueries int
-	IsStuck      bool
-	Details      []string
+	Reachable           bool
+	StuckQueries        int
+	IsStuck             bool
+	ExternallyUnhealthy bool
+	Details             []string
 }
 
 func checkReachable(creds MySQLCredentials) bool {
@@ -111,13 +112,13 @@ func checkReachable(creds MySQLCredentials) bool {
 	return reachable
 }
 
-func checkMariaDBHealth(cfg Config, creds MySQLCredentials) DBHealth {
+func checkMariaDBHealth(cfg Config, creds MySQLCredentials, db *Database) DBHealth {
 	if !checkReachable(creds) {
 		slog.Warn("mariadb is unreachable", "socket", creds.Socket, "host", creds.Host, "port", creds.Port)
 		return DBHealth{Reachable: false}
 	}
 
-	health := checkProcesslist(creds, cfg.Monitor.StuckQueryThreshold)
+	health := checkProcesslist(db, cfg.Monitor.StuckQueryThreshold)
 	if health.IsStuck {
 		slog.Warn("mariadb has stuck queries",
 			"stuck_count", health.StuckQueries,
@@ -132,14 +133,14 @@ func checkMariaDBHealth(cfg Config, creds MySQLCredentials) DBHealth {
 	if dbUnhealthy, ok := checkExternalDBHealth(cfg); ok && dbUnhealthy {
 		slog.Warn("external healthcheck reports db unhealthy, overriding local healthy verdict")
 		health.IsStuck = true
+		health.ExternallyUnhealthy = true
 		health.Details = append(health.Details, "external healthcheck: db_server_healthy=false")
 	}
 	return health
 }
 
-func checkProcesslist(creds MySQLCredentials, stuckThreshold int) DBHealth {
+func checkProcesslist(db *Database, stuckThreshold int) DBHealth {
 	health := DBHealth{Reachable: true}
-	db := NewDatabase(creds)
 
 	var uptime int
 	err := db.Query("SHOW GLOBAL STATUS LIKE 'Uptime'", func(rows *sql.Rows) error {
@@ -232,9 +233,7 @@ func checkProcesslist(creds MySQLCredentials, stuckThreshold int) DBHealth {
 		return health
 	}
 
-	// Require a sustained pile-up before flagging the DB as stuck. One or two
-	// queries waiting on a lock is normal; dozens of them stuck for minutes
-	// is a real metadata-lock storm.
+	// Require a sustained pile-up before flagging the DB as stuck.
 	if stuckThreshold < 1 {
 		stuckThreshold = 1
 	}

@@ -1,17 +1,82 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 )
 
+// ReadConfiguredBufferPoolSize scans *.cnf files under /etc/mysql/conf.d and
+// /etc/mysql/mariadb.conf.d for innodb_buffer_pool_size (last value wins).
+// Supports K/M/G suffixes. Returns 0 if the key is absent.
+func ReadConfiguredBufferPoolSize() uint64 {
+	dirs := []string{"/etc/mysql/conf.d", "/etc/mysql/mariadb.conf.d"}
+	var result uint64
+	for _, dir := range dirs {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".cnf") {
+				continue
+			}
+			f, err := os.Open(dir + "/" + e.Name())
+			if err != nil {
+				continue
+			}
+			inSection := false
+			scanner := bufio.NewScanner(f)
+			for scanner.Scan() {
+				line := strings.TrimSpace(scanner.Text())
+				if line == "" || line[0] == '#' || line[0] == ';' {
+					continue
+				}
+				if line[0] == '[' {
+					sec := strings.ToLower(strings.Trim(line, "[]"))
+					inSection = sec == "mysqld" || sec == "mariadb" || sec == "server"
+					continue
+				}
+				if !inSection {
+					continue
+				}
+				eq := strings.IndexByte(line, '=')
+				if eq < 0 {
+					continue
+				}
+				k := strings.ReplaceAll(strings.TrimSpace(line[:eq]), "-", "_")
+				if !strings.EqualFold(k, "innodb_buffer_pool_size") {
+					continue
+				}
+				v := strings.TrimSpace(line[eq+1:])
+				mul := uint64(1)
+				switch strings.ToUpper(string(v[len(v)-1])) {
+				case "K":
+					mul, v = 1024, v[:len(v)-1]
+				case "M":
+					mul, v = 1024*1024, v[:len(v)-1]
+				case "G":
+					mul, v = 1024*1024*1024, v[:len(v)-1]
+				}
+				if n, err := strconv.ParseUint(strings.TrimSpace(v), 10, 64); err == nil {
+					result = n * mul
+				}
+			}
+			f.Close()
+		}
+	}
+	return result
+}
+
 // InnoDBBufferPoolConfig holds static InnoDB buffer pool configuration.
 type InnoDBBufferPoolConfig struct {
-	Size         uint64
-	ChunkSize    uint64
-	Instances    uint64
-	ResizeStatus string
+	Size          uint64
+	ChunkSize     uint64
+	Instances     uint64
+	ResizeStatus  string
+	ResizePending bool
 }
 
 // GetInnoDBBufferPoolConfig returns static InnoDB buffer pool configuration.
@@ -30,30 +95,45 @@ func (d *Database) GetInnoDBBufferPoolConfig() (InnoDBBufferPoolConfig, error) {
 		return n
 	}
 
+	v := status["innodb_buffer_pool_resize_status"]
 	return InnoDBBufferPoolConfig{
-		Size:         parseU(vars["innodb_buffer_pool_size"]),
-		ChunkSize:    parseU(vars["innodb_buffer_pool_chunk_size"]),
-		Instances:    parseU(vars["innodb_buffer_pool_instances"]),
-		ResizeStatus: status["innodb_buffer_pool_resize_status"],
+		Size:          parseU(vars["innodb_buffer_pool_size"]),
+		ChunkSize:     parseU(vars["innodb_buffer_pool_chunk_size"]),
+		Instances:     parseU(vars["innodb_buffer_pool_instances"]),
+		ResizeStatus:  v,
+		ResizePending: isPendingResizeStatus(v),
 	}, nil
 }
 
-// IsBufferPoolResizePending reports whether a previous resize is still in flight.
+// isPendingResizeStatus returns true when the Innodb_buffer_pool_resize_status
+// string indicates a resize is currently in flight.
+func isPendingResizeStatus(v string) bool {
+	for _, p := range []string{
+		"Resizing buffer pool",
+		"Withdrawing blocks",
+		"Latching whole",
+		"buffer pool",
+		"Resizing",
+	} {
+		if strings.HasPrefix(v, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsBufferPoolResizePending reports whether a resize is still in flight.
+// Only known in-flight phase strings are treated as pending.
 func (d *Database) IsBufferPoolResizePending() (bool, error) {
 	status, err := d.queryKVStr("SHOW GLOBAL STATUS")
 	if err != nil {
 		return false, fmt.Errorf("SHOW GLOBAL STATUS: %w", err)
 	}
-	v := status["innodb_buffer_pool_resize_status"]
-	if v == "" || strings.HasPrefix(v, "Completed") {
-		return false, nil
-	}
-	return true, nil
+	return isPendingResizeStatus(status["innodb_buffer_pool_resize_status"]), nil
 }
 
 // ResizeInnoDBBufferPool sets innodb_buffer_pool_size to the largest
-// chunk_size*instances multiple <= requestedBytes and returns the actual size.
-// Errors if a resize is already in progress.
+// chunk_size*instances multiple <= requestedBytes. Errors if busy.
 func (d *Database) ResizeInnoDBBufferPool(requestedBytes uint64) (uint64, error) {
 	pending, err := d.IsBufferPoolResizePending()
 	if err != nil {
@@ -70,7 +150,7 @@ func (d *Database) ResizeInnoDBBufferPool(requestedBytes uint64) (uint64, error)
 
 	chunkSize := cfg.ChunkSize
 	if chunkSize == 0 {
-		chunkSize = 128 << 20 // 128 MiB default
+		chunkSize = 128 << 20
 	}
 	instances := cfg.Instances
 	if instances == 0 {

@@ -334,3 +334,55 @@ long long tcmalloc_available(UDF_INIT *initid __attribute__((unused)),
 }
 
 void tcmalloc_available_deinit(UDF_INIT *initid __attribute__((unused))) {}
+
+/* =========================================================================
+ * tcmalloc_release_bytes(n BIGINT) -> BIGINT
+ * Calls MallocExtension_ReleaseToSystem(n) to hint that n bytes of free
+ * pages may be returned to the OS.  The allocator may release more or less
+ * than requested.
+ *
+ * Returns the number of bytes actually decommitted (pageheap_free_bytes
+ * before minus pageheap_free_bytes after the call).
+ * ========================================================================= */
+
+my_bool tcmalloc_release_bytes_init(UDF_INIT *initid, UDF_ARGS *args,
+                                    char *message)
+{
+    ensure_resolved();
+    if (args->arg_count != 1 || args->arg_type[0] != INT_RESULT) {
+        strncpy(message,
+                "tcmalloc_release_bytes(n BIGINT) requires one integer argument",
+                80);
+        return 1;
+    }
+    REQUIRE_LD_SYMBOL(message, tc_rel_bytes);
+    initid->maybe_null = 0;
+    initid->const_item = 0;
+    return 0;
+}
+
+long long tcmalloc_release_bytes(UDF_INIT *initid __attribute__((unused)),
+                                 UDF_ARGS *args,
+                                 char *is_null __attribute__((unused)),
+                                 char *error)
+{
+    if (!tc_rel_bytes) { *error = 1; return 0; }
+
+    long long n = *((long long *)args->args[0]);
+    if (n <= 0) return 0;
+
+    size_t free_before = 0, free_after = 0;
+    if (tc_get_num_prop)
+        tc_get_num_prop("tcmalloc.pageheap_free_bytes", &free_before);
+
+    tc_rel_bytes((size_t)n);
+
+    if (tc_get_num_prop)
+        tc_get_num_prop("tcmalloc.pageheap_free_bytes", &free_after);
+
+    size_t released = free_before > free_after ? free_before - free_after : 0;
+    return (long long)released;
+}
+
+void tcmalloc_release_bytes_deinit(UDF_INIT *initid __attribute__((unused))) {}
+

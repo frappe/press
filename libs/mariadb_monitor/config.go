@@ -30,11 +30,9 @@ type Config struct {
 }
 
 type MonitorConfig struct {
-	WindowSize            int           `yaml:"window_size"`
-	SustainedRatio        float64       `yaml:"sustained_ratio"`
-	MaxRecoveriesPerHour  int           `yaml:"max_recoveries_per_hour"`
-	CooldownAfterRecovery time.Duration `yaml:"cooldown_after_recovery"`
-	StuckQueryThreshold   int           `yaml:"stuck_query_threshold"`
+	WindowSize          int     `yaml:"window_size"`
+	SustainedRatio      float64 `yaml:"sustained_ratio"`
+	StuckQueryThreshold int     `yaml:"stuck_query_threshold"`
 }
 
 type ThresholdConfig struct {
@@ -54,6 +52,7 @@ type CoredumpConfig struct {
 	Enabled      bool          `yaml:"enabled"`
 	OutputDir    string        `yaml:"output_dir"`
 	Timeout      time.Duration `yaml:"timeout"`
+	Cooldown     time.Duration `yaml:"cooldown"`
 	MaxCount     int           `yaml:"max_count"`
 	MaxStorageGB float64       `yaml:"max_storage_gb"`
 }
@@ -75,6 +74,11 @@ type MemoryReleaseConfig struct {
 	InnoDBBufferMinMB       uint64        `yaml:"innodb_buffer_min_mb"`
 	SwapReclaimMinMB        uint64        `yaml:"swap_reclaim_min_mb"`
 	SwapReclaimFreeRAMRatio float64       `yaml:"swap_reclaim_free_ram_ratio"`
+
+	// KillableProcesses is a list of process names that may be SIGKILLed
+	// under urgent memory pressure. Use for non-essential workloads only.
+	// mariadbd/mysqld are always excluded.
+	KillableProcesses []string `yaml:"killable_processes"`
 }
 
 type MySQLCredentials struct {
@@ -91,20 +95,20 @@ func DefaultConfig() Config {
 		CheckInterval: 5 * time.Second,
 
 		Monitor: MonitorConfig{
-			WindowSize:            12,
-			SustainedRatio:        0.7,
-			MaxRecoveriesPerHour:  3,
-			CooldownAfterRecovery: 120 * time.Second,
-			StuckQueryThreshold:   30,
+			WindowSize:          12,
+			SustainedRatio:      0.7,
+			StuckQueryThreshold: 30,
 		},
 
 		Thresholds: ThresholdConfig{
-			PSICPUThreshold:         80.0,
-			PSIMemoryThreshold:      60.0,
-			PSIIOThreshold:          60.0,
-			IOWaitThreshold:         50.0,
-			MemoryUsageThreshold:    95.0,
-			CriticalMemoryThreshold: 98.0,
+			PSICPUThreshold:      80.0,
+			PSIMemoryThreshold:   60.0,
+			PSIIOThreshold:       60.0,
+			IOWaitThreshold:      50.0,
+			MemoryUsageThreshold: 95.0,
+			// 99.0: on hosts with a cgroup memory.max limit the kernel
+			// throttles well before user-space reaches 99.7%.
+			CriticalMemoryThreshold: 99.0,
 			MariaDBSwapThresholdMB:  100,
 			SwapHeadroom:            10.0,
 			PageRateThreshold:       100000,
@@ -115,6 +119,7 @@ func DefaultConfig() Config {
 			Enabled:      false,
 			OutputDir:    "/var/lib/mariadb-monitor/coredumps",
 			Timeout:      120 * time.Second,
+			Cooldown:     1 * time.Hour,
 			MaxCount:     3,
 			MaxStorageGB: 15.0,
 		},
@@ -127,15 +132,19 @@ func DefaultConfig() Config {
 		},
 
 		Release: MemoryReleaseConfig{
-			Enabled:                 true,
-			MinFreeMB:               512,
-			Cooldown:                5 * time.Minute,
-			TcmallocThresholdMB:     2048,
-			MemHighThreshold:        3,
+			Enabled: true,
+			// ~20% of a typical 8 GiB host.
+			MinFreeMB: 1536,
+			// Must be > minBufferRestoreGracePeriod to avoid thrashing.
+			Cooldown:            3 * time.Minute,
+			TcmallocThresholdMB: 256,
+			// 6 ticks × 5s = 30s of sustained cgroup pressure before acting.
+			MemHighThreshold:        6,
 			PSIMemoryThreshold:      20.0,
 			InnoDBBufferMinMB:       256,
 			SwapReclaimMinMB:        150,
 			SwapReclaimFreeRAMRatio: 1.5,
+			KillableProcesses:       []string{},
 		},
 	}
 }
@@ -161,9 +170,9 @@ func LoadConfig() (Config, error) {
 	}
 
 	parseDurationAt(raw, &cfg.CheckInterval, "check_interval")
-	parseDurationAt(raw, &cfg.Monitor.CooldownAfterRecovery, "monitor", "cooldown_after_recovery")
 	parseDurationAt(raw, &cfg.Thresholds.IOFreezeTimeout, "thresholds", "io_freeze_timeout")
 	parseDurationAt(raw, &cfg.Coredump.Timeout, "coredump", "timeout")
+	parseDurationAt(raw, &cfg.Coredump.Cooldown, "coredump", "cooldown")
 	parseDurationAt(raw, &cfg.Release.Cooldown, "memory_release", "cooldown")
 
 	if err := cfg.Validate(); err != nil {
@@ -230,9 +239,6 @@ func (c Config) Validate() error {
 	if c.CheckInterval <= 0 {
 		return fmt.Errorf("check_interval must be > 0")
 	}
-	if c.Monitor.MaxRecoveriesPerHour < 0 {
-		return fmt.Errorf("monitor.max_recoveries_per_hour must be >= 0, got %d", c.Monitor.MaxRecoveriesPerHour)
-	}
 	if c.Monitor.StuckQueryThreshold < 1 {
 		return fmt.Errorf("monitor.stuck_query_threshold must be >= 1, got %d", c.Monitor.StuckQueryThreshold)
 	}
@@ -251,7 +257,30 @@ func (c Config) Validate() error {
 	if c.Release.InnoDBBufferMinMB == 0 {
 		return fmt.Errorf("memory_release.innodb_buffer_min_mb must be > 0")
 	}
+	if c.Release.SwapReclaimFreeRAMRatio <= 0 {
+		return fmt.Errorf("memory_release.swap_reclaim_free_ram_ratio must be > 0, got %.2f", c.Release.SwapReclaimFreeRAMRatio)
+	}
+	if c.Release.Cooldown < minBufferRestoreGracePeriod {
+		return fmt.Errorf("memory_release.cooldown (%s) must be >= %s to avoid shrink-restore-shrink thrashing",
+			c.Release.Cooldown, minBufferRestoreGracePeriod)
+	}
+	for _, name := range c.Release.KillableProcesses {
+		if isProtectedProcessName(name) {
+			return fmt.Errorf("memory_release.killable_processes must not include %q (protected)", name)
+		}
+	}
 	return nil
+}
+
+// isProtectedProcessName returns true for names that must never be killable
+// via the killable_processes list.
+func isProtectedProcessName(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "", "mariadbd", "mysqld", "init", "systemd", "kthreadd",
+		"sshd", "mariadb-monitor":
+		return true
+	}
+	return false
 }
 
 func LoadMySQLCredentials() (MySQLCredentials, error) {
