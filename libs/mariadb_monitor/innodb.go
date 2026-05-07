@@ -78,12 +78,11 @@ func (d *Database) ResizeInnoDBBufferPool(requestedBytes uint64) (uint64, error)
 	}
 
 	unit := chunkSize * instances
-	if requestedBytes < unit {
-		return 0, fmt.Errorf("requested size %d is less than minimum unit %d (chunk_size %d * instances %d)",
-			requestedBytes, unit, chunkSize, instances)
-	}
 
 	aligned := (requestedBytes / unit) * unit
+	if aligned < unit {
+		aligned = unit
+	}
 
 	err = d.execSocket("SET GLOBAL innodb_buffer_pool_size = " + strconv.FormatUint(aligned, 10))
 	if err != nil {
