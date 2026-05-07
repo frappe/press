@@ -23,6 +23,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 )
 from press.utils import get_app_tag, get_current_team, get_last_doc, is_user_part_of_team, unique
 from press.utils.billing import get_frappe_io_connection
+from press.utils.user import is_desk_user
 
 if TYPE_CHECKING:
 	from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import MarketplaceAppPlan
@@ -1387,9 +1388,13 @@ def get_app_audit(app: str):
 	"""
 	current_team = get_current_team()
 	app_team = frappe.db.get_value("Marketplace App", app, "team")
-	# not permitted to get the audit report if user is not a member of the team of the marketplace app
-	if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
-		frappe.throw(_("You are not permitted to get the audit report for this app"), frappe.PermissionError)
+	# for impersonation, the session user needs to have system user role, in that case we allow seeing other audit reports.
+	if not is_desk_user(frappe.session.user):  # noqa: SIM102 - nested if makes the logic more readable.
+		# not permitted to get the audit report if user is not a member of the team of the marketplace app
+		if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
+			frappe.throw(
+				_("You are not permitted to get the audit report for this app"), frappe.PermissionError
+			)
 
 	# get_all, limit 1, order by creation desc
 	audit_name = frappe.get_all(
