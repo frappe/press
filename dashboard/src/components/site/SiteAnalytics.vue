@@ -491,7 +491,6 @@ import BarChart from '@/components/charts/BarChart.vue';
 import SiteUptime from './SiteUptime.vue';
 import AlertBanner from '../AlertBanner.vue';
 import AnalyticsCard from './AnalyticsCard.vue';
-import ShareIcon from '../icons/ShareIcon.vue';
 import ActionButton from '../ActionButton.vue';
 import { h } from 'vue';
 
