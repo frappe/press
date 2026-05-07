@@ -1377,6 +1377,18 @@ def get_marketplace_apps() -> list[dict]:
 	return apps
 
 
+def is_desk_user(user: str | None = None) -> bool:
+	"""
+	Checks if the given user is a system user.
+
+	:param user: User to check. If None, uses the current session user.
+	:return: True if the user is a system user, False otherwise.
+	"""
+	user = user or frappe.session.user
+	user_doc = frappe.get_cached_doc("User", user)
+	return user_doc.user_type == "System User"
+
+
 @frappe.whitelist(methods=["GET"])
 @protected(["Marketplace App", "Marketplace App Audit"])
 def get_app_audit(app: str):
@@ -1387,9 +1399,13 @@ def get_app_audit(app: str):
 	"""
 	current_team = get_current_team()
 	app_team = frappe.db.get_value("Marketplace App", app, "team")
-	# not permitted to get the audit report if user is not a member of the team of the marketplace app
-	if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
-		frappe.throw(_("You are not permitted to get the audit report for this app"), frappe.PermissionError)
+	# for impersonation, the session user needs to have system user role, in that case we allow seeing other audit reports.
+	if not is_desk_user(frappe.session.user):  # noqa: SIM102 - nested if makes the logic more readable.
+		# not permitted to get the audit report if user is not a member of the team of the marketplace app
+		if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
+			frappe.throw(
+				_("You are not permitted to get the audit report for this app"), frappe.PermissionError
+			)
 
 	# get_all, limit 1, order by creation desc
 	audit_name = frappe.get_all(
