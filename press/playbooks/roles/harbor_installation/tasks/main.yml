@@ -1,0 +1,198 @@
+---
+- name: Remove Old Docker Packages
+  apt:
+    state: absent
+    force: yes
+    pkg:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+
+- name: Install Docker Dependencies
+  apt:
+    state: present
+    force: yes
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+
+- name: Add Docker Repository Key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker Repository
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu focal stable
+    state: present
+    update_cache: true
+
+- name: Install Docker
+  apt:
+    name: docker-ce
+    state: present
+
+- name: Add Frappe User to docker Group
+  user:
+    name: frappe
+    groups:
+      - docker
+    append: true
+
+- name: Setup Docker Metrics
+  template:
+    src: daemon.json
+    dest: /etc/docker/daemon.json
+
+- name: Create Docker SystemD drop-in directory
+  file:
+    dest: /etc/systemd/system/docker.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0644
+    recurse: true
+
+- name: Set Docker to depend on Mounts
+  template:
+    src: mounts.conf
+    dest: /etc/systemd/system/docker.service.d/mounts.conf
+    owner: root
+    group: root
+    mode: 0644
+  when: docker_depends_on_mounts | default(false) | bool
+
+- name: Restart Docker Daemon
+  systemd:
+    daemon_reload: true
+    name: docker
+    state: restarted
+
+- name: Get Docker Info
+  command: docker info
+
+# Harbor Installation
+- name: Create Harbor directory
+  become: yes
+  file:
+    path: /home/frappe/harbor
+    state: directory
+    mode: '0755'
+    owner: frappe
+    group: frappe
+
+- name: Download Harbor installer
+  become: yes
+  get_url:
+    url: https://github.com/goharbor/harbor/releases/download/v2.15.1/harbor-online-installer-v2.15.1.tgz
+    dest: /tmp/harbor-online-installer-v2.15.1.tgz
+
+- name: Extract Harbor installer
+  become: yes
+  unarchive:
+    src: /tmp/harbor-online-installer-v2.15.1.tgz
+    dest: /home/frappe
+    remote_src: yes
+
+- name: Copy Harbor config
+  become: yes
+  copy:
+    src: /home/frappe/harbor/harbor.yml.tmpl
+    dest: /home/frappe/harbor/harbor.yml
+    mode: '0640'
+    owner: frappe
+    group: frappe
+    remote_src: yes
+
+# Setup Harbor TLS Certificates
+- name: Create Harbor certs directory
+  become: yes
+  file:
+    path: /home/frappe/harbor/certs
+    state: directory
+    mode: '0755'
+    owner: frappe
+    group: frappe
+
+- name: Write Harbor fullchain certificate
+  become: yes
+  copy:
+    content: "{{ fullchain }}"
+    dest: /home/frappe/harbor/certs/fullchain.pem
+    mode: '0644'
+    owner: frappe
+    group: frappe
+    remote_src: yes
+
+- name: Write Harbor private key
+  become: yes
+  copy:
+    content: "{{ private_key }}"
+    dest: /home/frappe/harbor/certs/privkey.pem
+    mode: '0600'
+    owner: frappe
+    group: frappe
+    remote_src: yes
+
+
+# Setup harbor configurations
+- name: Set Harbor hostname
+  become: yes
+  replace:
+    path: /home/frappe/harbor/harbor.yml
+    regexp: '^hostname:.*'
+    replace: 'hostname: {{ harbor_hostname }}'
+
+- name: Set Harbor certificate path
+  become: yes
+  replace:
+    path: /home/frappe/harbor/harbor.yml
+    regexp: '^\s+certificate:.*'
+    replace: '  certificate: /home/frappe/harbor/certs/fullchain.pem'
+
+- name: Set Harbor private key path
+  become: yes
+  replace:
+    path: /home/frappe/harbor/harbor.yml
+    regexp: '^\s+private_key:.*'
+    replace: '  private_key: /home/frappe/harbor/certs/privkey.pem'
+
+# Prepare Harbor for installation
+- name: Run Harbor prepare script
+  become: yes
+  command: ./prepare
+  args:
+    chdir: /home/frappe/harbor
+
+# IPv6 loopback issue
+- name: Fix syslog address in docker-compose.yml
+  become: yes
+  replace:
+    path: /home/frappe/harbor/docker-compose.yml
+    regexp: 'syslog-address: "tcp://localhost:1514"'
+    replace: 'syslog-address: "tcp://127.0.0.1:1514"'
+
+# Bring the log container up
+- name: Start harbor-log container first
+  become: yes
+  command: docker compose up -d log
+  args:
+    chdir: /home/frappe/harbor
+
+- name: Wait for harbor-log to be ready
+  become: yes
+  wait_for:
+    host: 127.0.0.1
+    port: 1514
+    delay: 3
+    timeout: 30
+
+- name: Start all Harbor containers
+  become: yes
+  command: docker compose up -d
+  args:
+    chdir: /home/frappe/harbor
