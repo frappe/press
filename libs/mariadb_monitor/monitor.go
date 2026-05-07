@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -93,7 +94,7 @@ func (m *Monitor) shouldAttemptMemoryRelease() bool {
 	// PSI memory rising above the relief threshold.
 	psiLatest := m.windows.psiMemory.buf.Latest()
 	if m.windows.psiMemory.Trend() == "rising" && psiLatest.value >= m.cfg.Release.PSIMemoryThreshold {
-		slog.Info("memory release trigger: PSI memory rising", "avg10", psiLatest.value)
+		slog.Info("memory release trigger: PSI memory rising", "avg60", psiLatest.value)
 		return true
 	}
 	// Sustained cgroup memory.high or memory.max events.
@@ -120,13 +121,20 @@ func (m *Monitor) runCheck() CheckOutcome {
 		}
 	}
 
+	// Always probe DB health, even when system metrics look fine. A metadata
+	// lock storm or a pile-up in "Opening tables" can hang the DB without
+	// moving PSI/iowait at all, and clients see a frozen database.
+	dbHealth := checkMariaDBHealth(m.cfg, m.creds)
+	if dbHealth.IsStuck {
+		triggers = append(triggers, fmt.Sprintf("stuck_queries=%d", dbHealth.StuckQueries))
+	}
+
 	if len(triggers) == 0 {
 		return OutcomeNoAction
 	}
 
 	slog.Warn("pressure detected", "triggers", triggers)
 
-	dbHealth := checkMariaDBHealth(m.cfg, m.creds)
 	if dbHealth.Reachable && !dbHealth.IsStuck {
 		slog.Warn("pressure detected but mariadb is healthy, skipping recovery", "triggers", triggers)
 		return OutcomeNoAction

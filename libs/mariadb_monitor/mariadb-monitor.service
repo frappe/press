@@ -12,13 +12,21 @@ RestartSec=5
 User=root
 Group=root
 
+# Keep the daemon's footprint small. The Go runtime is told to stay under
+# this limit via GOMEMLIMIT; the cgroup limit is the hard backstop.
+Environment=GOMEMLIMIT=48MiB
+Environment=GOGC=50
+Environment=GOMAXPROCS=2
+
+MemoryMax=64M
+MemorySwapMax=0
+TasksMax=64
+CPUQuota=10%
+OOMScoreAdjust=-900
+
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=mariadb-monitor
-
-MemoryMax=64M
-CPUQuota=10%
-OOMScoreAdjust=-900
 
 [Install]
 WantedBy=multi-user.target
