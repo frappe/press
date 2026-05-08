@@ -81,7 +81,9 @@ class Cluster(Document):
 		default_db_server_plan: DF.Link | None
 		default_db_server_plan_type: DF.Link | None
 		description: DF.Data | None
+		digital_ocean_access_key_id: DF.Data | None
 		digital_ocean_api_token: DF.Password | None
+		digital_ocean_secret_access_key: DF.Password | None
 		disable_public_ips_for_servers: DF.Check
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
@@ -92,7 +94,9 @@ class Cluster(Document):
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
 		has_unified_server_support: DF.Check
+		hetzner_access_key_id: DF.Data | None
 		hetzner_api_token: DF.Password | None
+		hetzner_secret_access_key: DF.Password | None
 		hybrid: DF.Check
 		image: DF.AttachImage | None
 		monitoring_password: DF.Password | None
