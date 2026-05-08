@@ -262,7 +262,7 @@
 		>
 			<div class="flex flex-col items-center gap-3 text-center px-6 max-w-lg">
 				<lucide-construction class="h-8 w-8 text-gray-800 mb-1" />
-				<h2 class="text-xl font-semibold text-gray-900">
+				<h2 class="text-xl font-semibold text-ink-gray-9">
 					Binlog Browser Temporarily Unavailable
 				</h2>
 				<p class="text-gray-600">
@@ -281,14 +281,14 @@
 			<div class="flex flex-col items-center gap-3 text-center px-6 max-w-lg">
 				<lucide-construction class="h-8 w-8 text-gray-800 mb-1" />
 				<h2
-					class="text-xl font-semibold text-gray-900"
+					class="text-xl font-semibold text-ink-gray-9"
 					v-if="
 						site_hosted_on_shared_server || database_server_memory < 8 * 1024
 					"
 				>
 					Binlog Browser Not Available
 				</h2>
-				<h2 class="text-xl font-semibold text-gray-900" v-else>
+				<h2 class="text-xl font-semibold text-ink-gray-9" v-else>
 					Binlog Indexing Disabled
 				</h2>
 				<p class="text-gray-600" v-if="site_hosted_on_shared_server">

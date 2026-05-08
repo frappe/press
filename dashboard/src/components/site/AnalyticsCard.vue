@@ -8,7 +8,7 @@
 		]"
 	>
 		<div class="flex items-center border-b p-3 gap-2">
-			<h3 class="text-base font-medium text-gray-900">{{ title }}</h3>
+			<h3 class="text-base font-medium text-ink-gray-9">{{ title }}</h3>
 			<slot name="action"></slot>
 
 			<button @click="shareCard" class="flex items-center gap-1.5 ml-auto" aria-label="Copy">

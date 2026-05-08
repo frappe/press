@@ -14,7 +14,7 @@
 			</div>
 		</div>
 
-		<div class="rounded-lg text-base text-gray-900 border">
+		<div class="rounded-lg text-base text-ink-gray-9 border">
 			<div class="flex flex-col gap-2.5 p-4">
 				<div class="flex">
 					<div class="flex items-center gap-0.5">
@@ -79,7 +79,7 @@
 		</div>
 
 		<div class="flex flex-col md:flex-row justify-between gap-4">
-			<div class="rounded-lg text-base flex-1 text-gray-900 p-4 border">
+			<div class="rounded-lg text-base flex-1 text-ink-gray-9 p-4 border">
 				<div class="flex h-full flex-col justify-between gap-4">
 					<div class="flex">
 						<h3 class="font-medium text-normal">Partner Referral Code</h3>
@@ -90,7 +90,7 @@
 					>
 				</div>
 			</div>
-			<div class="rounded-lg text-base flex-1 text-gray-900 p-4 border">
+			<div class="rounded-lg text-base flex-1 text-ink-gray-9 p-4 border">
 				<div class="flex h-full flex-col gap-4">
 					<div class="flex">
 						<h3 class="font-medium text-normal">Renewal Details</h3>

@@ -1,6 +1,6 @@
 <template>
 	<div class="flex flex-col gap-5 overflow-y-auto px-60 py-6 max-h-screen">
-		<div class="rounded-lg text-base text-gray-900 border">
+		<div class="rounded-lg text-base text-ink-gray-9 border">
 			<div class="flex h-full flex-col justify-between p-4 gap-2">
 				<div class="flex justify-between items-center">
 					<h3 class="font-semibold text-lg">Website Info</h3>
