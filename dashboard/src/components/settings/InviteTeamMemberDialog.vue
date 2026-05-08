@@ -41,7 +41,7 @@
 				</div>
 				<div
 					v-if="selectedRoles.length > 0"
-					class="divide-y rounded border border-gray-300 px-1.5"
+					class="divide-y rounded border border-outline-gray-2 px-1.5"
 				>
 					<div
 						class="flex w-full items-center space-x-2 py-1.5"

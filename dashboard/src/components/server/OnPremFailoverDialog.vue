@@ -40,7 +40,7 @@
 						Stop Replication
 					</Button>
 				</div>
-				<div class="overflow-hidden rounded-md border border-gray-300 mt-2">
+				<div class="overflow-hidden rounded-md border border-outline-gray-2 mt-2">
 					<table class="min-w-full">
 						<thead class="bg-surface-gray-2">
 							<tr>

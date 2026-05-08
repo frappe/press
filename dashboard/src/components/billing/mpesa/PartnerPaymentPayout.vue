@@ -57,19 +57,19 @@
 
 			<!-- Results Table -->
 			<div v-if="payments.length > 0" class="mt-5">
-				<table class="w-full border-collapse border border-gray-300">
+				<table class="w-full border-collapse border border-outline-gray-2">
 					<thead>
 						<tr>
-							<th class="border border-gray-300 p-2">Transaction ID</th>
-							<th class="border border-gray-300 p-2">Amount</th>
-							<th class="border border-gray-300 p-2">Posting Date</th>
+							<th class="border border-outline-gray-2 p-2">Transaction ID</th>
+							<th class="border border-outline-gray-2 p-2">Amount</th>
+							<th class="border border-outline-gray-2 p-2">Posting Date</th>
 						</tr>
 					</thead>
 					<tbody>
 						<tr v-for="payment in payments" :key="payment.name">
-							<td class="border border-gray-300 p-2">{{ payment.name }}</td>
-							<td class="border border-gray-300 p-2">{{ payment.amount }}</td>
-							<td class="border border-gray-300 p-2">
+							<td class="border border-outline-gray-2 p-2">{{ payment.name }}</td>
+							<td class="border border-outline-gray-2 p-2">{{ payment.amount }}</td>
+							<td class="border border-outline-gray-2 p-2">
 								{{ payment.posting_date }}
 							</td>
 						</tr>

@@ -36,7 +36,7 @@
 					</div>
 				</div>
 				<!-- Server -->
-				<div class="overflow-hidden rounded-md border border-gray-300">
+				<div class="overflow-hidden rounded-md border border-outline-gray-2">
 					<table class="min-w-full">
 						<thead class="bg-surface-gray-2">
 							<tr>
