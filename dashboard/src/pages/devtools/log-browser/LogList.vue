@@ -27,7 +27,7 @@
 				<div
 					class="cursor-pointer rounded border border-outline-gray-1 p-3 hover:bg-surface-gray-1"
 					:class="{
-						'border-gray-800': logId === log.name,
+						'border-outline-gray-5': logId === log.name,
 					}"
 					@click="
 						() => {
