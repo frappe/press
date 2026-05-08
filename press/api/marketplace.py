@@ -1390,7 +1390,6 @@ def is_desk_user(user: str | None = None) -> bool:
 
 
 @frappe.whitelist(methods=["GET"])
-@protected(["Marketplace App", "Marketplace App Audit"])
 def get_app_audit(app: str):
 	"""
 	Fetches the latest audit report for the given marketplace app.
