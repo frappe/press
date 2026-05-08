@@ -229,7 +229,7 @@ const tabs = [
 		<!-- floating drawer  -->
 		<template #body="{ togglePopover }">
 			<div
-				class="text-ink-gray-9 bg-surface-white h-screen -ml-2.5 w-screen md:ml-2 shadow-xl md:w-[430px] flex flex-col"
+				class="text-ink-gray-9 bg-surface-white h-screen -ml-2.5 w-screen md:ml-2 shadow-xl md:w-[430px] flex flex-col dark:border-x"
 			>
 				<!-- header -->
 				<div class="text-base flex items-center py-2 pl-4 pr-2 border-b">
