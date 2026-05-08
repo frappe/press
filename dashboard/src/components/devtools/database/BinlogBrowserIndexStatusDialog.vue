@@ -36,10 +36,10 @@
 								100&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 							</option>
 						</select>
-						<p class="text-sm text-gray-600">Per Page</p>
+						<p class="text-sm text-ink-gray-6">Per Page</p>
 					</div>
 					<div class="flex flex-shrink-0 items-center gap-2">
-						<p class="tnum text-sm text-gray-600">
+						<p class="tnum text-sm text-ink-gray-6">
 							{{ pageStart }} - {{ pageEnd }} of {{ totalBinlogs }} binlogs
 						</p>
 						<div class="flex gap-2">
@@ -180,7 +180,7 @@ export default {
 					{
 						label: 'Size',
 						fieldname: 'size_mb',
-						class: 'text-gray-600',
+						class: 'text-ink-gray-6',
 						format(value) {
 							return value ? `${value} MB` : '';
 						},

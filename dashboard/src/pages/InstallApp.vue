@@ -13,7 +13,7 @@
 		<div class="m-12 mx-auto max-w-2xl px-5">
 			<div
 				v-if="$resources.installAppOptions.loading"
-				class="py-4 text-base text-gray-600"
+				class="py-4 text-base text-ink-gray-6"
 			>
 				Loading...
 			</div>
@@ -26,7 +26,7 @@
 					/>
 					<div class="my-1 ml-4 flex flex-col justify-between">
 						<h1 class="text-lg font-semibold">{{ appDoc.title }}</h1>
-						<p class="text-sm text-gray-600">{{ appDoc.description }}</p>
+						<p class="text-sm text-ink-gray-6">{{ appDoc.description }}</p>
 					</div>
 				</div>
 
@@ -46,7 +46,7 @@
 						<div v-if="options.private_groups.length">
 							<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 								Select Bench
-								<span class="text-sm text-gray-500"> (Optional) </span>
+								<span class="text-sm text-ink-gray-5"> (Optional) </span>
 							</h2>
 							<div class="mt-2 w-full space-y-2">
 								<FormControl
@@ -122,7 +122,7 @@
 							<ErrorMessage :message="$resources.subdomainExists.error" />
 							<div
 								v-if="$resources.subdomainExists.loading"
-								class="text-sm text-gray-600"
+								class="text-sm text-ink-gray-6"
 							>
 								Checking...
 							</div>
@@ -168,7 +168,7 @@
 					</div>
 				</div>
 				<div class="flex space-x-1">
-					<div class="text-sm text-gray-600">
+					<div class="text-sm text-ink-gray-6">
 						Want to install <b>{{ appDoc.title }}</b> on an existing Site or
 						Bench?
 					</div>

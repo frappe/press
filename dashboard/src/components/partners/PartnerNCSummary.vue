@@ -6,7 +6,7 @@
 					<div class="text-2xl font-medium">
 						{{ ncSummaryDoc?.doc?.nc_statement }}
 					</div>
-					<div class="flex items-center gap-2.5 text-base text-gray-500">
+					<div class="flex items-center gap-2.5 text-base text-ink-gray-5">
 						<div>
 							{{ ncSummaryDoc?.doc?.name }}
 						</div>
@@ -28,13 +28,13 @@
 				<div class="flex font-semibold gap-2.5 text-lg">Audit Information</div>
 				<div class="grid grid-cols-2">
 					<div class="flex flex-col gap-1">
-						<div class="text-base text-gray-600">Conducted By</div>
+						<div class="text-base text-ink-gray-6">Conducted By</div>
 						<div class="text-base text-ink-gray-8">
 							{{ ncSummaryDoc?.doc?.auditor }}
 						</div>
 					</div>
 					<div class="flex flex-col gap-1">
-						<div class="text-base text-gray-600">Conducted On</div>
+						<div class="text-base text-ink-gray-6">Conducted On</div>
 						<div class="text-base text-ink-gray-8">
 							{{ formatDate(ncSummaryDoc?.doc?.audit_date) }}
 						</div>
@@ -49,13 +49,13 @@
 				</div>
 				<div class="grid grid-cols-2">
 					<div class="flex flex-col gap-1">
-						<div class="text-base text-gray-600">Closed By</div>
+						<div class="text-base text-ink-gray-6">Closed By</div>
 						<div class="text-base text-ink-gray-8">
 							{{ ncSummaryDoc?.doc?.closed_by }}
 						</div>
 					</div>
 					<div class="flex flex-col gap-1">
-						<div class="text-base text-gray-600">Closed On</div>
+						<div class="text-base text-ink-gray-6">Closed On</div>
 						<div class="text-base text-ink-gray-8">
 							{{ formatDate(ncSummaryDoc?.doc?.closed_on) }}
 						</div>
@@ -87,8 +87,8 @@
 		<div
 			class="flex flex-col gap-6 items-center justify-center h-96 border-[1px] rounded p-5 ml-5"
 		>
-			<FeatherIcon name="file-text" class="mr-2 h-10 w-10 text-gray-500" />
-			<div class="text-lg text-gray-600">
+			<FeatherIcon name="file-text" class="mr-2 h-10 w-10 text-ink-gray-5" />
+			<div class="text-lg text-ink-gray-6">
 				Select a Non Conformance to view details
 			</div>
 		</div>

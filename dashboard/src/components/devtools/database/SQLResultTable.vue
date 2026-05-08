@@ -284,7 +284,7 @@ const downloadCSV = async () => {
 			>
 				<div class="flex flex-shrink-0 items-center justify-end gap-3">
 					<div class="flex flex-shrink-0 items-center gap-2 border-r-2 pr-3">
-						<p class="text-sm text-gray-600">Per Page</p>
+						<p class="text-sm text-ink-gray-6">Per Page</p>
 						<select
 							class="form-select block !py-0.5 text-sm"
 							v-model="pageSize"
@@ -299,7 +299,7 @@ const downloadCSV = async () => {
 							</option>
 						</select>
 					</div>
-					<p class="tnum text-sm text-gray-600">
+					<p class="tnum text-sm text-ink-gray-6">
 						{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
 					</p>
 					<div class="flex gap-2">

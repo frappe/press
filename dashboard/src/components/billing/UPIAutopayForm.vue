@@ -14,10 +14,10 @@
 			:max="100000"
 			placeholder="50000"
 		/>
-		<div class="mt-2 text-p-sm text-gray-600">
+		<div class="mt-2 text-p-sm text-ink-gray-6">
 			<div class="font-medium">Range: ₹500 - ₹1,00,000</div>
 
-			<div class="mt-2 text-gray-500 italic">
+			<div class="mt-2 text-ink-gray-5 italic">
 				<strong>Important:</strong> If an invoice exceeds this limit, the
 				auto-debit will fail. Set this slightly higher than your typical bill to
 				ensure uninterrupted service.

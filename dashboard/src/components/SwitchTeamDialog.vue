@@ -28,7 +28,7 @@
 					v-model="searchQuery"
 				>
 					<template #suffix>
-						<lucide-search class="h-4 w-4 text-gray-500" />
+						<lucide-search class="h-4 w-4 text-ink-gray-5" />
 					</template>
 				</TextInput>
 			</div>

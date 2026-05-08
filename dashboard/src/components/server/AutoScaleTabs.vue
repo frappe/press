@@ -12,7 +12,7 @@
 					class="flex cursor-pointer text-base hover:bg-surface-gray-1"
 					:class="{
 						'bg-gray-50 text-ink-gray-8': isActiveTab(tab),
-						'text-gray-600': !isActiveTab(tab),
+						'text-ink-gray-6': !isActiveTab(tab),
 						'border-b': !$isMobile,
 					}"
 				>

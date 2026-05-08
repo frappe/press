@@ -42,7 +42,7 @@
 							/>
 							<div class="space-y-1">
 								<p class="text-lg font-medium">{{ app.title }}</p>
-								<p class="line-clamp-1 text-sm text-gray-600">
+								<p class="line-clamp-1 text-sm text-ink-gray-6">
 									{{ app.description }}
 								</p>
 							</div>
@@ -58,7 +58,7 @@
 				/>
 			</div>
 			<template #footer>
-				<span class="ml-4 text-base font-normal text-gray-600">
+				<span class="ml-4 text-base font-normal text-ink-gray-6">
 					{{ 'Skip creating a site? ' }}
 				</span>
 				<router-link

@@ -20,6 +20,6 @@ defineProps({
 		</div>
 
 		<!-- Dangerous HTML rendering -->
-		<div v-if="html" class="text-gray-600" v-html="html" />
+		<div v-if="html" class="text-ink-gray-6" v-html="html" />
 	</div>
 </template>

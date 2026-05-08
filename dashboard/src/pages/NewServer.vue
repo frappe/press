@@ -12,7 +12,7 @@
 
 	<div
 		v-if="!$team.doc?.is_desk_user && !$session.hasServerCreationAccess"
-		class="mx-auto mt-60 w-fit rounded-md border border-dashed px-12 py-8 text-center text-gray-600"
+		class="mx-auto mt-60 w-fit rounded-md border border-dashed px-12 py-8 text-center text-ink-gray-6"
 	>
 		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 		<ErrorMessage message="You aren't permitted to create new servers" />
@@ -50,7 +50,7 @@
 										{{ c.title }}
 									</span>
 									<Tooltip :text="c.description">
-										<lucide-info class="h-4 w-4 text-gray-500" />
+										<lucide-info class="h-4 w-4 text-ink-gray-5" />
 									</Tooltip>
 								</div>
 							</button>
@@ -172,7 +172,7 @@
 					<!-- Add a check if unified server plan is available here -->
 					<div
 						v-if="showUnifiedServerOption"
-						class="flex flex-col space-y-2 text-sm text-gray-600 w-full"
+						class="flex flex-col space-y-2 text-sm text-ink-gray-6 w-full"
 					>
 						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 							Deployment Mode
@@ -211,7 +211,7 @@
 											{{ c.name }}
 										</span>
 										<Tooltip :text="c.description">
-											<lucide-info class="h-4 w-4 text-gray-500" />
+											<lucide-info class="h-4 w-4 text-ink-gray-5" />
 										</Tooltip>
 									</div>
 								</button>
@@ -270,7 +270,7 @@
 											{{ c.name }}
 										</span>
 										<Tooltip :text="c.description">
-											<lucide-info class="h-4 w-4 text-gray-500" />
+											<lucide-info class="h-4 w-4 text-ink-gray-5" />
 										</Tooltip>
 									</div>
 								</button>
@@ -364,7 +364,7 @@
 													</div>
 												</div>
 												<div
-													class="mt-1 text-base text-gray-600"
+													class="mt-1 text-base text-ink-gray-6"
 													v-if="planType.description"
 												>
 													{{ planType.description }}
@@ -386,7 +386,7 @@
 										machines are available.
 									</p>
 
-									<p class="text-base text-gray-600">
+									<p class="text-base text-ink-gray-6">
 										{{ availableAppPlanTypes[0].description }}
 									</p>
 								</div>
@@ -470,7 +470,7 @@
 													</div>
 												</div>
 												<div
-													class="mt-1 text-base text-gray-600"
+													class="mt-1 text-base text-ink-gray-6"
 													v-if="planType.description"
 												>
 													{{ planType.description }}
@@ -492,7 +492,7 @@
 										machines are available.
 									</p>
 
-									<p class="text-base text-gray-600">
+									<p class="text-base text-ink-gray-6">
 										{{ availableDbPlanTypes[0].description }}
 									</p>
 								</div>
@@ -551,7 +551,7 @@
 						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
 							Add SSH Key
 						</h2>
-						<span class="text-xs text-gray-600">
+						<span class="text-xs text-ink-gray-6">
 							Add this SSH Key to
 							<span class="font-mono">~/.ssh/authorized_keys</span>
 							file on Application and Database server</span
@@ -938,7 +938,7 @@
 	</div>
 	<div
 		v-else
-		class="mx-auto mt-60 w-fit rounded-md border-2 border-dashed px-12 py-8 text-center text-gray-600"
+		class="mx-auto mt-60 w-fit rounded-md border-2 border-dashed px-12 py-8 text-center text-ink-gray-6"
 	>
 		<LucideServer class="mx-auto mb-4 h-8 w-8" />
 		<p>Server feature isn't enabled for your account.</p>

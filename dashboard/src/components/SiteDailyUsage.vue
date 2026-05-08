@@ -3,7 +3,7 @@
 		<div class="flex h-12 items-center justify-between border-b px-5">
 			<h2 class="text-lg font-medium text-ink-gray-9">Daily Usage</h2>
 			<router-link
-				class="text-base text-gray-600 hover:text-ink-gray-7"
+				class="text-base text-ink-gray-6 hover:text-ink-gray-7"
 				:to="{ name: 'Site Analytics' }"
 			>
 				All analytics →

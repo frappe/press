@@ -13,7 +13,7 @@
 									? '₹' + plan.price_inr
 									: '$' + plan.price_usd
 							}}
-							<span class="text-base font-normal text-gray-600">
+							<span class="text-base font-normal text-ink-gray-6">
 								{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
 							</span>
 						</span>

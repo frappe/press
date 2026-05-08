@@ -10,7 +10,7 @@
 				class="flex items-center justify-center py-8"
 			>
 				<LoadingIndicator class="w-5 h-5 mr-2" />
-				<span class="text-base text-gray-600"
+				<span class="text-base text-ink-gray-6"
 					>Checking upgrade compatibility...</span
 				>
 			</div>
@@ -83,7 +83,7 @@
 								<div class="text-sm font-medium text-ink-gray-7 mb-2">
 									Select Branch for Custom Apps
 								</div>
-								<div class="text-xs text-gray-600 mb-3">
+								<div class="text-xs text-ink-gray-6 mb-3">
 									These apps are installed on your site, select a branch
 									compatible with {{ nextVersion }}
 								</div>
@@ -98,7 +98,7 @@
 													{{ app.title }}
 												</div>
 												<div
-													class="text-xs text-gray-600 truncate mt-1"
+													class="text-xs text-ink-gray-6 truncate mt-1"
 													:title="app.repository_url"
 												>
 													{{ app.repository_url }}
@@ -153,7 +153,7 @@
 													{{ app.title }}
 												</div>
 												<div
-													class="text-xs text-gray-600 truncate mt-1"
+													class="text-xs text-ink-gray-6 truncate mt-1"
 													:title="app.repository_url"
 												>
 													{{ app.repository_url }}

@@ -296,7 +296,7 @@
 							v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
 						>
 							<div v-if="$route.name === 'Signup'">
-								<span class="text-base font-normal text-gray-600">
+								<span class="text-base font-normal text-ink-gray-6">
 									{{ 'By signing up, you agree to our ' }}
 								</span>
 								<a
@@ -307,7 +307,7 @@
 								</a>
 							</div>
 							<div v-if="!(otpRequested || resetPasswordEmailSent)">
-								<span class="text-base font-normal text-gray-600">
+								<span class="text-base font-normal text-ink-gray-6">
 									{{
 										$route.name == 'Login'
 											? 'New member? '
@@ -379,7 +379,7 @@
 						</form>
 						<div class="mt-4 space-y-2">
 							<div v-if="$route.name === 'Signup'">
-								<span class="text-base font-normal text-gray-600">
+								<span class="text-base font-normal text-ink-gray-6">
 									{{ 'By signing up, you agree to our ' }}
 								</span>
 								<a
@@ -390,7 +390,7 @@
 								</a>
 							</div>
 							<div>
-								<span class="text-base font-normal text-gray-600">
+								<span class="text-base font-normal text-ink-gray-6">
 									{{
 										$route.name == 'Login'
 											? 'New member? '

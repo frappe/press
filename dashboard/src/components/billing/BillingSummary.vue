@@ -11,7 +11,7 @@
 						</div>
 						<div
 							v-if="team.doc.payment_mode === 'UPI Autopay'"
-							class="mt-2 rounded-md bg-gray-50 p-3 text-sm leading-5 text-gray-600"
+							class="mt-2 rounded-md bg-gray-50 p-3 text-sm leading-5 text-ink-gray-6"
 						>
 							Your UPI will be auto-debited at the end of the billing cycle.
 							Payment may take up to 24 hours to reflect after debit is

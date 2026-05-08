@@ -9,7 +9,7 @@
 			</div>
 			<div class="mt-1" v-if="secondaryText || $slots.subtitle">
 				<template v-if="secondaryText">
-					<span class="text-base text-gray-600" v-html="secondaryText" />
+					<span class="text-base text-ink-gray-6" v-html="secondaryText" />
 				</template>
 				<slot v-if="$slots.subtitle" name="subtitle" />
 			</div>

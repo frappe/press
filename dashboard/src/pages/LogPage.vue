@@ -41,7 +41,7 @@
 			</div>
 		</div>
 
-		<div class="mt-5 flex rounded bg-surface-gray-7 p-4 text-sm text-gray-200">
+		<div class="mt-5 flex rounded bg-surface-gray-7 p-4 text-sm text-ink-gray-2">
 			<span v-if="$resources.log.loading" class="flex items-center gap-2">
 				<Spinner /> Loading...
 			</span>

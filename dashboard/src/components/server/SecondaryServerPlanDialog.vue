@@ -42,7 +42,7 @@
 								{{ c.name }}
 							</span>
 							<Tooltip :text="c.description">
-								<lucide-info class="h-4 w-4 text-gray-500" />
+								<lucide-info class="h-4 w-4 text-ink-gray-5" />
 							</Tooltip>
 						</div>
 					</button>

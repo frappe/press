@@ -127,7 +127,7 @@
 											</template>
 											<template v-else> No plan set </template>
 											<div
-												class="ml-2 text-sm leading-3 text-gray-600"
+												class="ml-2 text-sm leading-3 text-ink-gray-6"
 												v-if="
 													currentPlan &&
 													currentPlan.support_included &&
@@ -166,7 +166,7 @@
 						/>
 						<div>
 							<div class="mt-2 flex justify-between">
-								<div class="text-sm text-gray-600">
+								<div class="text-sm text-ink-gray-6">
 									{{ currentUsageLoading ? '—' : currentUsage.cpu }}
 									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
 									<template
@@ -197,7 +197,7 @@
 						/>
 						<div>
 							<div class="mt-2 flex justify-between">
-								<div class="text-sm text-gray-600">
+								<div class="text-sm text-ink-gray-6">
 									{{
 										currentUsageLoading
 											? '—'
@@ -250,7 +250,7 @@
 						/>
 						<div>
 							<div class="mt-2 flex justify-between">
-								<div class="text-sm text-gray-600">
+								<div class="text-sm text-ink-gray-6">
 									{{
 										currentUsageLoading
 											? '—'
@@ -279,7 +279,7 @@
 					:key="d.label"
 					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
 				>
-					<div class="w-1/3 text-base text-gray-600">{{ d.label }}</div>
+					<div class="w-1/3 text-base text-ink-gray-6">{{ d.label }}</div>
 					<div
 						class="flex w-2/3 items-center space-x-2 text-base text-ink-gray-9"
 					>
@@ -515,7 +515,7 @@ export default {
 						{
 							text: 'Use this for adding A records for your site',
 						},
-						() => h(InfoIcon, { class: 'h-4 w-4 text-gray-500' }),
+						() => h(InfoIcon, { class: 'h-4 w-4 text-ink-gray-5' }),
 					),
 				},
 				{
@@ -526,7 +526,7 @@ export default {
 						{
 							text: 'Use this for whitelisting our server on a 3rd party service',
 						},
-						() => h(InfoIcon, { class: 'h-4 w-4 text-gray-500' }),
+						() => h(InfoIcon, { class: 'h-4 w-4 text-ink-gray-5' }),
 					),
 				},
 			];

@@ -183,7 +183,7 @@
 			<template v-slot:footer>
 				<div class="flex w-full flex-col px-4 justify-center pb-8">
 					<div v-if="sites.fetched">
-						<span class="text-base font-normal text-gray-600">
+						<span class="text-base font-normal text-ink-gray-6">
 							Switch to a different account?
 						</span>
 						<span
@@ -194,7 +194,7 @@
 						</span>
 					</div>
 					<div>
-						<span class="text-base font-normal text-gray-600">
+						<span class="text-base font-normal text-ink-gray-6">
 							Manage your sites?
 						</span>
 						<router-link

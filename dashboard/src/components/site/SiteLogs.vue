@@ -76,7 +76,7 @@ export default {
 						{
 							label: 'Size',
 							fieldname: 'size',
-							class: 'text-gray-600',
+							class: 'text-ink-gray-6',
 							format(value) {
 								return `${value} kB`;
 							},
