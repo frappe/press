@@ -5,7 +5,7 @@
 			<template v-for="tab in tabs">
 				<router-link
 					:to="{ name: tab.value, params: { nc: tab.name } }"
-					class="flex p-4 my-4 mr-4 justify-between border gap-6 rounded cursor-pointer text-base text-gray-600 hover:bg-gray-100"
+					class="flex p-4 my-4 mr-4 justify-between border gap-6 rounded cursor-pointer text-base text-gray-600 hover:bg-surface-gray-1"
 					:class="{
 						'text-gray-800 bg-gray-50': isActiveTab(tab),
 						'text-gray-400': !isActiveTab(tab),

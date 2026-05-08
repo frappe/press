@@ -27,7 +27,7 @@
 							v-if="!$site.doc.group_public"
 						/>
 						<div
-							class="flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-gray-600"
+							class="flex items-center rounded border border-gray-200 bg-surface-gray-1 p-4 text-sm text-gray-600"
 							v-if="skipBackups"
 						>
 							<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />

@@ -51,7 +51,7 @@
 							<button
 								:class="[
 									version === v.name
-										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-1'
 										: 'bg-surface-white text-gray-900  hover:bg-gray-50',
 									v.disabled && 'opacity-50 hover:cursor-default',
 									'flex w-full cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none',
@@ -160,7 +160,7 @@
 							@click="provider = p.name"
 							:class="[
 								provider === p.name
-									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-1'
 									: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-gray-50',
 								'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
 							]"
@@ -201,7 +201,7 @@
 							@click="cluster = c.name"
 							:class="[
 								cluster === c.name
-									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-1'
 									: 'bg-surface-white text-gray-900  hover:bg-gray-50',
 								'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
 							]"
@@ -293,7 +293,7 @@
 							placeholder="Subdomain"
 							v-model="subdomain"
 						/>
-						<div class="flex items-center rounded-r bg-gray-100 px-4 text-base">
+						<div class="flex items-center rounded-r bg-surface-gray-1 px-4 text-base">
 							.{{ domain }}
 						</div>
 					</div>

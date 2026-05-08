@@ -51,7 +51,7 @@
 				</p>
 
 				<div
-					class="rounded bg-gray-100 p-4 mb-4 pb-2 prose prose-sm text-gray-700"
+					class="rounded bg-surface-gray-1 p-4 mb-4 pb-2 prose prose-sm text-gray-700"
 				>
 					<p>
 						<strong>Note</strong>: After linking with Partner, following details

@@ -9,7 +9,7 @@
 			<template v-for="tab in tabs" :key="tab.value">
 				<router-link
 					:to="{ name: tab.value }"
-					class="flex cursor-pointer text-base hover:bg-gray-100"
+					class="flex cursor-pointer text-base hover:bg-surface-gray-1"
 					:class="{
 						'bg-gray-50 text-gray-800': isActiveTab(tab),
 						'text-gray-600': !isActiveTab(tab),
