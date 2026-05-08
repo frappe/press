@@ -109,7 +109,7 @@ watch(navigationIndex, () => {
 
 			<!-- results -->
 			<div
-				class="max-h-[42vh] min-h-[42vh] overflow-y-scroll p-2 flex flex-col text-sm"
+				class="max-h-[42vh] min-h-[42vh] scrollbar overflow-y-scroll p-2 flex flex-col text-sm"
 				id="search-results"
 				role="listbox"
 				v-if="Object.keys(list).length > 0"
