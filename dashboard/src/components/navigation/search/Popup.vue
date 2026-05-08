@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 
 import LucideX from '~icons/lucide/x';
 import LucideSearch from '~icons/lucide/search';
+import Scrollbar from '@/components/common/Scrollbar.vue';
 
 import { filterLabels, highlightMatch } from './utils';
 import { index } from './index';
@@ -108,37 +109,39 @@ watch(navigationIndex, () => {
 			</div>
 
 			<!-- results -->
-			<div
-				class="max-h-[42vh] min-h-[42vh] scrollbar overflow-y-scroll p-2 flex flex-col text-sm"
-				id="search-results"
-				role="listbox"
-				v-if="Object.keys(list).length > 0"
-			>
-				<template v-for="(v, k) in list">
-					<!-- group name -->
-					<span class="text-ink-gray-4 uppercase p-2">
-						{{ k }}
-					</span>
+			<Scrollbar v-if="Object.keys(list).length > 0">
+				<div
+					class="max-h-[42vh] min-h-[42vh] p-2 flex flex-col text-sm"
+					id="search-results"
+					role="listbox"
+				>
+					<template v-for="(v, k) in list">
+						<!-- group name -->
+						<span class="text-ink-gray-4 uppercase p-2">
+							{{ k }}
+						</span>
 
-					<div class="flex flex-col mb-3">
-						<router-link
-							v-for="item in v.items"
-							:key="item.route"
-							role="option"
-							:to="item.route"
-							@click="close"
-							class="hover:bg-surface-gray-2 p-2 rounded flex gap-2 items-center"
-							:class="{
-								'bg-surface-gray-2': navigationIndex === flatList.indexOf(item),
-							}"
-						>
-							<component :is="item.icon || LucideDot" class="size-4" />
-							<span v-html="highlightMatch(item.name, searchQuery)" />
-              <component v-if='item.suffix' :is='item.suffix' />
-						</router-link>
-					</div>
-				</template>
-			</div>
+						<div class="flex flex-col mb-3">
+							<router-link
+								v-for="item in v.items"
+								:key="item.route"
+								role="option"
+								:to="item.route"
+								@click="close"
+								class="hover:bg-surface-gray-2 dark:text-ink-gray-7 p-2 rounded flex gap-2 items-center mr-2"
+								:class="{
+									'bg-surface-gray-2':
+										navigationIndex === flatList.indexOf(item),
+								}"
+							>
+								<component :is="item.icon || LucideDot" class="size-4" />
+								<span v-html="highlightMatch(item.name, searchQuery)" />
+								<component v-if="item.suffix" :is="item.suffix" />
+							</router-link>
+						</div>
+					</template>
+				</div>
+			</Scrollbar>
 
 			<div v-else class="flex my-5 p-4 text-ink-gray-5">
 				<span class="flex items-center gap-2 mx-auto">
