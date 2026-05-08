@@ -99,7 +99,7 @@ export default defineComponent({
 				case 'Running':
 					return 'bg-transparent';
 				default:
-					return 'bg-gray-400';
+					return 'bg-surface-gray-4';
 			}
 		},
 	},
