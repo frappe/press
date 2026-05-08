@@ -7,6 +7,7 @@ import LucideBookText from '~icons/lucide/book-text';
 import LucideMessageSquareCode from '~icons/lucide/message-square-code';
 import LucideAlert from '~icons/lucide/notebook-text';
 import LucideMoon from '~icons/lucide/moon';
+import DarkModeLabel from './DarkModeLabel.vue';
 
 import Item from './Item.vue';
 import NavList from './NavList.vue';
@@ -64,12 +65,10 @@ const releaseNotes = () => {
 							icon: 'sun',
 							onClick: () => setTheme('light'),
 						},
-						{
-							tooltip: 'This feature is in beta',
-							label: 'Dark Mode (beta)',
-							icon: 'moon',
-							onClick: () => setTheme('dark'),
-						},
+
+            // dropdown component as per this frappe-ui version doesnt support suffix slot
+            // so make the icon itself icon+label+beta badge
+						{ icon: DarkModeLabel , onClick: () => setTheme('dark') },
 					],
 				},
 
@@ -83,7 +82,9 @@ const releaseNotes = () => {
 			<template v-slot="{ open }">
 				<button
 					class="flex items-center rounded-md p-1 text-left md:mb-1 hover:bg-surface-gray-3"
-					:class="open ? 'bg-surface-white dark:bg-surface-gray-2 shadow-sm' : ''"
+					:class="
+						open ? 'bg-surface-white dark:bg-surface-gray-2 shadow-sm' : ''
+					"
 				>
 					<FCLogo class="mb-1 h-8 w-8 shrink-0 rounded" />
 
