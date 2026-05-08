@@ -44,7 +44,7 @@ from press.press.doctype.communication_info.communication_info import (
 )
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server_activity.server_activity import log_server_activity
-from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log_if_applicable
+from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.runner import Ansible
 from press.utils import fmt_timedelta, log_error
@@ -2652,7 +2652,6 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		return None
 
 	@frappe.whitelist()
-	@create_static_ip_log_if_applicable
 	def get_static_ip(self):
 		if self.provider == "AWS EC2":
 			return self.get_aws_static_ip()
@@ -2881,11 +2880,9 @@ class Server(BaseServer):
 		else:
 			self.managed_database_service = ""
 
-	def on_update(self):
+	def on_update(self):  # noqa: C901
 		# If Database Server is changed for the server then change it for all the benches
-		if not self.is_new() and (
-			self.has_value_changed("database_server") or self.has_value_changed("managed_database_service")
-		):
+		if self.has_value_changed("database_server") or self.has_value_changed("managed_database_service"):
 			benches = frappe.get_all("Bench", {"server": self.name, "status": ("!=", "Archived")})
 			for bench in benches:
 				bench = frappe.get_doc("Bench", bench)
@@ -2898,9 +2895,15 @@ class Server(BaseServer):
 			if database_server_public != self.public:
 				frappe.db.set_value("Database Server", self.database_server, "public", self.public)
 
-		if not self.is_new() and self.has_value_changed("team"):
+		if self.has_value_changed("team"):
 			self.update_subscription()
 			self.update_db_server()
+
+		if (previous := self.get_doc_before_save()) and self.has_value_changed("is_static_ip"):
+			if self.is_static_ip:
+				create_static_ip_log(self.name, self.doctype, self.ip)
+			else:
+				create_static_ip_log(self.name, self.doctype, previous.ip, "Detached")
 
 		self.set_bench_memory_limits_if_needed(save=False)
 
@@ -2910,8 +2913,7 @@ class Server(BaseServer):
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
 		if (
-			not self.is_new()
-			and self.has_value_changed("enable_logical_replication_during_site_update")
+			self.has_value_changed("enable_logical_replication_during_site_update")
 			and self.enable_logical_replication_during_site_update
 			and frappe.db.count("Site", {"server": self.name, "status": ("!=", "Archived")}) > 1
 		):

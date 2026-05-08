@@ -33,8 +33,8 @@ class StaticIPLog(Document):
 		elif self.status == "Detached":
 			# end subscription
 			self._disable_subscription()
-		else:
-			frappe.throw("Invalid status. Status must be either 'Attached' or 'Detached'.")
+
+		frappe.throw("Invalid status. Status must be either 'Attached' or 'Detached'.")
 
 	def _create_subscription(self):
 		plan = frappe.get_value("Static IP Plan", {"provider": self.provider, "enabled": 1}, "name")
@@ -89,25 +89,3 @@ def create_static_ip_log(server: str, server_type: str, static_ip: str, status: 
 			"status": status,
 		}
 	).insert(ignore_permissions=True)
-
-
-def create_static_ip_log_if_applicable(fn):
-	def wrapper(self):
-		if self.get("is_static_ip"):
-			static_ip = self.get("ip") or self.get("public_ip_address")
-
-		result = fn(self)
-
-		# TODO: upon termination, create a detached log
-
-		if self.cloud_provider == "AWS EC2":
-			create_static_ip_log(
-				server=self.name,
-				server_type=self.doctype,
-				static_ip=self.static_ip or static_ip,
-				status="Attached" if self.static_ip else "Detached",
-			)
-
-		return result
-
-	return wrapper
