@@ -24,6 +24,12 @@ frappe.ui.form.on('Log Server', {
 				false,
 				frm.doc.is_server_setup,
 			],
+			[
+				__('Setup Agent Auth'),
+				'setup_agent_auth',
+				false,
+				frm.doc.is_server_setup,
+			],
 			[__('Update TLS Certificate'), 'update_tls_certificate', true],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {

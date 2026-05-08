@@ -29,6 +29,7 @@ from press.utils import (
 if TYPE_CHECKING:
 	from io import BufferedReader
 
+	from press.press.doctype.agent_auth.agent_auth import AgentAuth
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
 	from press.press.doctype.bench.bench import Bench
@@ -952,64 +953,39 @@ class Agent:
 			return requests.request(method, url, headers=headers, files=file_objects, verify=verify)
 		return requests.request(method, url, headers=headers, json=data, verify=verify, timeout=(10, 30))
 
-	def _verify_request_token(self, token: dict, payload, method: str, path: str):
-		try:
-			timestamp = int(token["timestamp"])
-			nonce = str(token["nonce"])
-			signature_b64 = token["signature"]
-		except KeyError as err:
-			raise ValueError("Invalid token structure") from err
+	def get_agent_public_key(self):
+		key = f"{self.server}_agent_public_key"
 
-		# timestamp validation
-		now = int(time.time())
-		WINDOW = 30
+		public_key = frappe.cache().get_value(key)
 
-		if timestamp > now + 5:
-			raise ValueError("Token from future")
+		if not public_key:
+			agent_auth: AgentAuth = frappe.get_doc("Agent Auth", self.server)
+			public_key = agent_auth.public_key
+			frappe.cache().set_value(key, public_key, expires_in_sec=3600)
 
-		if now - timestamp > WINDOW:
+		return public_key
+
+	def _verify_request_token(self, token: str):
+		payload_b64, signature_b64 = token.split(".")
+
+		payload_bytes = base64.urlsafe_b64decode(payload_b64 + "==")
+		signature = base64.urlsafe_b64decode(signature_b64 + "==")
+
+		public_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(self.get_agent_public_key()))
+
+		public_key.verify(signature, payload_bytes)
+
+		payload = json.loads(payload_bytes)
+
+		if payload["exp"] < time.time():
 			raise ValueError("Token expired")
 
-		# fetch public key
-		agent = frappe.get_doc("Server", self.server)
-
-		if not agent.public_key:
-			raise ValueError("No public key registered")
-
-		public_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(agent.public_key))
-
-		# reconstruct signed message
-		message = json.dumps(
-			{
-				"method": method,
-				"path": path,
-				"timestamp": timestamp,
-				"nonce": nonce,
-				"payload": payload,
-			},
-			separators=(",", ":"),
-			sort_keys=True,
-		).encode()
-
-		signature = base64.b64decode(signature_b64)
-
-		# verify signature
-		try:
-			public_key.verify(signature, message)
-		except Exception as err:
-			raise ValueError("Invalid signature") from err
-
-		# replay protection
-		cache_key = f"nonce:{self.server}:{nonce}"
-
-		if frappe.cache().get_value(cache_key):
-			raise ValueError("Replay attack detected")
-
-		frappe.cache().set_value(cache_key, 1, expires_in_sec=60)
+		if payload["server"] != self.server:
+			raise ValueError("Invalid server")
 
 		return True
 
-	def extract_and_verify_token(self, token, json_response, method, path):
+	def extract_and_verify_token(self, token):
 		if not token:
 			raise ValueError("Unsigned request from agent")
 
@@ -1020,9 +996,6 @@ class Agent:
 
 		self._verify_request_token(
 			token=token,
-			payload=json_response,
-			method=method,
-			path=path,
 		)
 
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):

@@ -1,6 +1,6 @@
 ---
-- name: Write private key
+- name: Write agent token
   copy:
-    content: "{{ private_key }}"
-    dest: "/home/frappe/agent/private.key"
+    content: "{{ agent_token }}"
+    dest: "/home/frappe/agent/agent.token"
     mode: '0600'

@@ -16,6 +16,12 @@ frappe.ui.form.on('NAT Server', {
 				true,
 				frm.doc.is_server_setup,
 			], // added temporarily for setting up nginx & monitoring config
+			[
+				__('Setup Agent Auth'),
+				'setup_agent_auth',
+				false,
+				frm.doc.is_server_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

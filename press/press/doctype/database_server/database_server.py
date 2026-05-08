@@ -77,7 +77,6 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
-		is_agent_auth_setup: DF.Check
 		is_binlog_indexer_running: DF.Check
 		is_for_recovery: DF.Check
 		is_monitoring_disabled: DF.Check
@@ -109,7 +108,6 @@ class DatabaseServer(BaseServer):
 			"Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean", "Frappe Compute"
 		]
 		public: DF.Check
-		public_key: DF.Data | None
 		ram: DF.Float
 		root_public_key: DF.Code | None
 		self_hosted_mariadb_server: DF.Data | None

@@ -30,6 +30,12 @@ frappe.ui.form.on('Trace Server', {
 				false,
 				frm.doc.is_server_setup,
 			],
+			[
+				__('Setup Agent Auth'),
+				'setup_agent_auth',
+				false,
+				frm.doc.is_server_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

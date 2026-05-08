@@ -18,6 +18,7 @@ import boto3
 import frappe
 import requests
 import semantic_version
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from frappe import _
 from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
@@ -49,6 +50,7 @@ from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
+	from press.press.doctype.agent_auth.agent_auth import AgentAuth
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
@@ -1216,6 +1218,27 @@ class BaseServer(Document, TagHelpers):
 			}
 		).insert(ignore_permissions=True)
 
+	@cached_property
+	def agent_auth(self) -> AgentAuth:
+		name = frappe.db.get_value(
+			"Agent Auth",
+			{
+				"server": self.name,
+				"server_type": self.doctype,
+			},
+		)
+
+		if name:
+			return frappe.get_doc("Agent Auth", name)
+
+		return frappe.get_doc(
+			{
+				"doctype": "Agent Auth",
+				"server": self.name,
+				"server_type": self.doctype,
+			}
+		).insert(ignore_permissions=True)
+
 	@property
 	def subscription(self):
 		name = frappe.db.get_value(
@@ -1240,6 +1263,10 @@ class BaseServer(Document, TagHelpers):
 			},
 		)
 		return frappe.get_doc("Subscription", name) if name else None
+
+	@frappe.whitelist()
+	def setup_agent_auth(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_auth", queue="long", timeout=1200)
 
 	@frappe.whitelist()
 	def rename_server(self):
@@ -1900,20 +1927,60 @@ class BaseServer(Document, TagHelpers):
 			"version",
 		)
 
-	def _generate_and_activate_key(self, regenerate: bool = False) -> str | None:
+	def sign_agent_token(self, private_key: str):
+		if not private_key:
+			return None
+
+		auth = self.agent_auth
+
+		expires_in = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=90)).replace(
+			tzinfo=None
+		)
+
+		payload = {
+			"server": self.name,
+			"exp": int(expires_in.timestamp()),  # 3 month
+		}
+
+		payload_bytes = json.dumps(
+			payload,
+			separators=(",", ":"),
+			sort_keys=True,
+		).encode()
+
+		private_key_obj = Ed25519PrivateKey.from_private_bytes(base64.b64decode(private_key))
+
+		signature = private_key_obj.sign(payload_bytes)
+
+		token = (
+			base64.urlsafe_b64encode(payload_bytes).decode().rstrip("=")
+			+ "."
+			+ base64.urlsafe_b64encode(signature).decode().rstrip("=")
+		)
+
+		auth.agent_token = token
+		auth.expires_in = expires_in
+
+		return token
+
+	def _generate_and_activate_key(self) -> str | None:
 		from cryptography.hazmat.primitives import serialization
 		from cryptography.hazmat.primitives.asymmetric import ed25519
 
-		if self.public_key and self.is_agent_auth_setup and not regenerate:
+		auth = self.agent_auth
+
+		if auth.public_key and auth.is_agent_auth_setup:
 			return None
 
 		key = ed25519.Ed25519PrivateKey.generate()
 
-		private_key_str = key.private_bytes(
-			encoding=serialization.Encoding.PEM,
-			format=serialization.PrivateFormat.PKCS8,
+		private_key_bytes = key.private_bytes(
+			encoding=serialization.Encoding.Raw,
+			format=serialization.PrivateFormat.Raw,
 			encryption_algorithm=serialization.NoEncryption(),
-		).decode()
+		)
+
+		private_key_str = base64.b64encode(private_key_bytes).decode()
 
 		public_key_bytes = key.public_key().public_bytes(
 			encoding=serialization.Encoding.Raw,
@@ -1922,28 +1989,28 @@ class BaseServer(Document, TagHelpers):
 
 		public_key_b64 = base64.b64encode(public_key_bytes).decode()
 
-		self.public_key = public_key_b64
-		self.save()
+		auth.public_key = public_key_b64
 
 		return private_key_str
 
-	@frappe.whitelist()
-	def setup_agent_auth(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_auth", queue="long", timeout=1200)
-
 	def _setup_agent_auth(self):
 		try:
+			auth = self.agent_auth
+
 			private_key = self._generate_and_activate_key()
+			agent_token = self.sign_agent_token(private_key)
 
 			ansible = Ansible(
 				playbook="setup_agent_auth.yml",
 				server=self,
 				user=self._ssh_user(),
 				port=self._ssh_port(),
-				variables={"private_key": private_key},
+				variables={"agent_token": agent_token},
 			)
 			ansible.run()
-			self.is_agent_auth_setup = 1
+			auth.is_agent_auth_setup = 1
+
+			auth.save(ignore_permissions=True)
 		except Exception:
 			log_error("Agent Auth Setup Exception", server=self.as_dict())
 		self.save()
@@ -2740,7 +2807,6 @@ class Server(BaseServer):
 		ignore_incidents_till: DF.Datetime | None
 		ip: DF.Data | None
 		ipv6: DF.Data | None
-		is_agent_auth_setup: DF.Check
 		is_for_recovery: DF.Check
 		is_managed_database: DF.Check
 		is_monitoring_disabled: DF.Check
@@ -2774,7 +2840,6 @@ class Server(BaseServer):
 		]
 		proxy_server: DF.Link | None
 		public: DF.Check
-		public_key: DF.Data | None
 		ram: DF.Float
 		root_public_key: DF.Code | None
 		scaled_up: DF.Check

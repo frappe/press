@@ -1,0 +1,94 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:server",
+ "creation": "2026-05-08 20:05:51.848511",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_loa1",
+  "server",
+  "server_type",
+  "public_key",
+  "regenerate_public_key",
+  "is_agent_auth_setup",
+  "column_break_dlmn",
+  "expires_in"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_loa1",
+   "fieldtype": "Section Break",
+   "label": "Agent Auth"
+  },
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Data",
+   "label": "Server Type",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_agent_auth_setup",
+   "fieldtype": "Check",
+   "label": "Is Agent Auth Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expires_in",
+   "fieldtype": "Datetime",
+   "label": "Expires In",
+   "read_only": 1
+  },
+  {
+   "fieldname": "public_key",
+   "fieldtype": "Data",
+   "label": "Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dlmn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Data",
+   "label": "Server",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "regenerate_public_key",
+   "fieldtype": "Data",
+   "label": "Regenerate Public Key",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-08 23:59:06.513841",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Agent Auth",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
