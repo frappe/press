@@ -3,7 +3,7 @@
 		<div
 			v-for="group in actions"
 			:key="group.group"
-			class="divide-y rounded border border-gray-200 p-5"
+			class="divide-y rounded border border-outline-gray-1 p-5"
 		>
 			<div class="pb-3 text-lg font-semibold">{{ group.group }}</div>
 			<AlertBanner

@@ -23,7 +23,7 @@
 						</li>
 					</ul>
 				</div>
-				<div class="border border-gray-200 rounded-lg p-4 mt-4 space-y-6">
+				<div class="border border-outline-gray-1 rounded-lg p-4 mt-4 space-y-6">
 					<div class="flex flex-col space-y-2">
 						<label class="font-medium">Scale Up Start Time</label>
 						<DateTimePicker
@@ -53,7 +53,7 @@
 			</div>
 			<div
 				v-else
-				class="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-surface-gray-1 p-6 text-center space-y-3"
+				class="flex flex-col items-center justify-center rounded-lg border border-outline-gray-1 bg-surface-gray-1 p-6 text-center space-y-3"
 			>
 				<p class="text-ink-gray-9">Autoscale scheduling is unavailable</p>
 

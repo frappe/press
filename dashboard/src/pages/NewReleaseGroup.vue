@@ -115,7 +115,7 @@
 				v-if="benchVersion && (benchRegion || server) && benchTitle"
 			>
 				<div
-					class="flex items-center rounded border border-gray-200 bg-surface-gray-2 p-4 text-sm text-ink-gray-6"
+					class="flex items-center rounded border border-outline-gray-1 bg-surface-gray-2 p-4 text-sm text-ink-gray-6"
 				>
 					<lucide-info class="mr-4 inline-block h-6 w-6" />
 					<div>

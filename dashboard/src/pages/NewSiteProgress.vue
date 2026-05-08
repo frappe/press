@@ -50,7 +50,7 @@
 					<div
 						v-for="step in steps"
 						:key="step.id"
-						class="flex items-center border-gray-200 px-1 py-3"
+						class="flex items-center border-outline-gray-1 px-1 py-3"
 					>
 						<div class="flex items-center space-x-4">
 							<LoadingIndicator

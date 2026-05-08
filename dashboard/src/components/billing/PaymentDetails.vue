@@ -314,7 +314,7 @@ const paymentModeOptions = [
 	{
 		component: () =>
 			h('div', [
-				h('div', { class: 'border-t border-gray-200 my-1' }),
+				h('div', { class: 'border-t border-outline-gray-1 my-1' }),
 				h(DropdownItem, null, {
 					default: () =>
 						h('div', { class: 'flex gap-2' }, [
