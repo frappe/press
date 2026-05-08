@@ -57,27 +57,6 @@ type CoredumpConfig struct {
 	MaxStorageGB float64       `yaml:"max_storage_gb"`
 }
 
-<<<<<<< HEAD
-	CoredumpEnabled            bool          `yaml:"coredump_enabled"`
-	CoredumpOutputDir          string        `yaml:"coredump_output_dir"`
-	CoredumpTimeout            time.Duration `yaml:"coredump_timeout"`
-	CoredumpMaxCount           int           `yaml:"coredump_max_count"`
-	CoredumpOnUnhealthy        bool          `yaml:"coredump_on_unhealthy"`
-	CoredumpOnFrequentTriggers bool          `yaml:"coredump_on_frequent_triggers"`
-	CoredumpFrequentThreshold  int           `yaml:"coredump_frequent_threshold"`
-<<<<<<< HEAD
-	CoredumpPreemptive         bool          `yaml:"coredump_preemptive"`
-	CoredumpPreemptiveAfter    int           `yaml:"coredump_preemptive_after"`
-	CoredumpPreemptiveWindow   time.Duration `yaml:"coredump_preemptive_window"`
-	CoredumpCooldown           time.Duration `yaml:"coredump_cooldown"`
-=======
-
-	ExternalHealthCheckEnabled bool   `yaml:"external_healthcheck_enabled"`
-	ServerName                 string `yaml:"server_name"`
-	ExternalHealthCheckURL     string `yaml:"external_health_check_url"`
-	ExternalHealthCheckToken   string `yaml:"external_health_check_token"`
->>>>>>> 73ddc0842 (feat(mariadb-monitor): Ask press to check db health via app server)
-=======
 type ExternalConfig struct {
 	Enabled    bool   `yaml:"enabled"`
 	ServerName string `yaml:"server_name"`
@@ -86,20 +65,6 @@ type ExternalConfig struct {
 }
 
 type MemoryReleaseConfig struct {
-<<<<<<< HEAD
-	Enabled             bool          `yaml:"enabled"`
-	MinFreeMB           uint64        `yaml:"min_free_mb"`
-	Cooldown            time.Duration `yaml:"cooldown"`
-	TcmallocThresholdMB int64         `yaml:"tcmalloc_threshold_mb"`
-	MemHighThreshold    int           `yaml:"mem_high_threshold"`
-	PSIMemoryThreshold  float64       `yaml:"psi_memory_threshold"`
-	InnoDBBufferMinMB   uint64        `yaml:"innodb_buffer_min_mb"`
-<<<<<<< HEAD
->>>>>>> d97e09880 (feat(mariadb-monitor): Add auto-trim memory usage)
-=======
-	SwapMinMB           uint64        `yaml:"swap_min_mb"`
->>>>>>> e4c5b14e7 (feat(mariadb-monitor): Dont take action if db using less than 50MB swap)
-=======
 	Enabled                 bool          `yaml:"enabled"`
 	MinFreeMB               uint64        `yaml:"min_free_mb"`
 	Cooldown                time.Duration `yaml:"cooldown"`
@@ -109,15 +74,11 @@ type MemoryReleaseConfig struct {
 	InnoDBBufferMinMB       uint64        `yaml:"innodb_buffer_min_mb"`
 	SwapReclaimMinMB        uint64        `yaml:"swap_reclaim_min_mb"`
 	SwapReclaimFreeRAMRatio float64       `yaml:"swap_reclaim_free_ram_ratio"`
-<<<<<<< HEAD
->>>>>>> 43fb17b91 (feat(mariadb-monitor): If stuck queries piled up, assume db unhealthy)
-=======
 
 	// KillableProcesses is a list of process names that may be SIGKILLed
 	// under urgent memory pressure. Use for non-essential workloads only.
 	// mariadbd/mysqld are always excluded.
 	KillableProcesses []string `yaml:"killable_processes"`
->>>>>>> 0fb344429 (feat(mariadb-monitor): Tune auto-release memory and recovery of buffer)
 }
 
 type MySQLCredentials struct {
@@ -133,27 +94,6 @@ func DefaultConfig() Config {
 		LogLevel:      "WARN",
 		CheckInterval: 5 * time.Second,
 
-<<<<<<< HEAD
-		CoredumpEnabled:            false,
-		CoredumpOutputDir:          "/var/lib/mariadb-monitor/coredumps",
-		CoredumpTimeout:            120 * time.Second,
-		CoredumpMaxCount:           3,
-		CoredumpOnUnhealthy:        true,
-		CoredumpOnFrequentTriggers: true,
-		CoredumpFrequentThreshold:  3,
-<<<<<<< HEAD
-		CoredumpPreemptive:         true,
-		CoredumpPreemptiveAfter:    6,
-		CoredumpPreemptiveWindow:   5 * time.Minute,
-		CoredumpCooldown:           5 * time.Minute,
-=======
-
-		ExternalHealthCheckEnabled: false,
-		ServerName:                 "",
-		ExternalHealthCheckURL:     "",
-		ExternalHealthCheckToken:   "",
->>>>>>> 73ddc0842 (feat(mariadb-monitor): Ask press to check db health via app server)
-=======
 		Monitor: MonitorConfig{
 			WindowSize:          12,
 			SustainedRatio:      0.7,
@@ -206,7 +146,6 @@ func DefaultConfig() Config {
 			SwapReclaimFreeRAMRatio: 1.5,
 			KillableProcesses:       []string{},
 		},
->>>>>>> d97e09880 (feat(mariadb-monitor): Add auto-trim memory usage)
 	}
 }
 
@@ -230,21 +169,11 @@ func LoadConfig() (Config, error) {
 		return cfg, err
 	}
 
-<<<<<<< HEAD
-	parseDuration(raw, "check_interval", &cfg.CheckInterval)
-	parseDuration(raw, "cooldown_after_recovery", &cfg.CooldownAfterRecovery)
-	parseDuration(raw, "stop_timeout", &cfg.StopTimeout)
-	parseDuration(raw, "io_freeze_timeout", &cfg.IOFreezeTimeout)
-	parseDuration(raw, "coredump_timeout", &cfg.CoredumpTimeout)
-	parseDuration(raw, "coredump_cooldown", &cfg.CoredumpCooldown)
-	parseDuration(raw, "coredump_preemptive_window", &cfg.CoredumpPreemptiveWindow)
-=======
 	parseDurationAt(raw, &cfg.CheckInterval, "check_interval")
 	parseDurationAt(raw, &cfg.Thresholds.IOFreezeTimeout, "thresholds", "io_freeze_timeout")
 	parseDurationAt(raw, &cfg.Coredump.Timeout, "coredump", "timeout")
 	parseDurationAt(raw, &cfg.Coredump.Cooldown, "coredump", "cooldown")
 	parseDurationAt(raw, &cfg.Release.Cooldown, "memory_release", "cooldown")
->>>>>>> d97e09880 (feat(mariadb-monitor): Add auto-trim memory usage)
 
 	if err := cfg.Validate(); err != nil {
 		return cfg, fmt.Errorf("config validation: %w", err)
@@ -328,10 +257,6 @@ func (c Config) Validate() error {
 	if c.Release.InnoDBBufferMinMB == 0 {
 		return fmt.Errorf("memory_release.innodb_buffer_min_mb must be > 0")
 	}
-<<<<<<< HEAD
-	if c.CoredumpPreemptiveAfter < 1 {
-		return fmt.Errorf("coredump_preemptive_after must be >= 1, got %d", c.CoredumpPreemptiveAfter)
-=======
 	if c.Release.SwapReclaimFreeRAMRatio <= 0 {
 		return fmt.Errorf("memory_release.swap_reclaim_free_ram_ratio must be > 0, got %.2f", c.Release.SwapReclaimFreeRAMRatio)
 	}
@@ -343,7 +268,6 @@ func (c Config) Validate() error {
 		if isProtectedProcessName(name) {
 			return fmt.Errorf("memory_release.killable_processes must not include %q (protected)", name)
 		}
->>>>>>> 0fb344429 (feat(mariadb-monitor): Tune auto-release memory and recovery of buffer)
 	}
 	return nil
 }
@@ -458,96 +382,10 @@ func GenerateDefaultConfig() error {
 	}
 
 	cfg := DefaultConfig()
-<<<<<<< HEAD
-	content := fmt.Sprintf(`# MariaDB Monitor Configuration
-
-log_level: %s
-check_interval: %s
-cooldown_after_recovery: %s
-stop_timeout: %s
-window_size: %d
-sustained_ratio: %.1f
-psi_cpu_threshold: %.0f
-psi_memory_threshold: %.0f
-psi_io_threshold: %.0f
-iowait_threshold: %.0f
-memory_usage_threshold: %.0f
-critical_memory_threshold: %.0f
-swap_usage_threshold: %.0f
-swap_headroom: %.0f
-page_rate_threshold: %.0f
-io_freeze_timeout: %s
-max_recoveries_per_hour: %d
-drop_caches_mode: %d
-`,
-		cfg.LogLevel,
-		cfg.CheckInterval,
-		cfg.CooldownAfterRecovery,
-		cfg.StopTimeout,
-		cfg.WindowSize,
-		cfg.SustainedRatio,
-		cfg.PSICPUThreshold,
-		cfg.PSIMemoryThreshold,
-		cfg.PSIIOThreshold,
-		cfg.IOWaitThreshold,
-		cfg.MemoryUsageThreshold,
-		cfg.CriticalMemoryThreshold,
-		cfg.SwapUsageThreshold,
-		cfg.SwapHeadroom,
-		cfg.PageRateThreshold,
-		cfg.IOFreezeTimeout,
-		cfg.MaxRecoveriesPerHour,
-		cfg.DropCachesMode,
-	)
-
-	content += fmt.Sprintf(`
-# Coredump settings (gcore)
-coredump_enabled: %t
-coredump_output_dir: %s
-coredump_timeout: %s
-coredump_max_count: %d
-coredump_on_unhealthy: %t
-coredump_on_frequent_triggers: %t
-coredump_frequent_threshold: %d
-coredump_preemptive: %t
-coredump_preemptive_after: %d
-coredump_preemptive_window: %s
-coredump_cooldown: %s
-`,
-		cfg.CoredumpEnabled,
-		cfg.CoredumpOutputDir,
-		cfg.CoredumpTimeout,
-		cfg.CoredumpMaxCount,
-		cfg.CoredumpOnUnhealthy,
-		cfg.CoredumpOnFrequentTriggers,
-		cfg.CoredumpFrequentThreshold,
-		cfg.CoredumpPreemptive,
-		cfg.CoredumpPreemptiveAfter,
-		cfg.CoredumpPreemptiveWindow,
-		cfg.CoredumpCooldown,
-	)
-
-	content += fmt.Sprintf(`
-# External health check (optional, disabled by default). When local check
-# passes, this endpoint is queried for a second opinion. If the external API
-# reports the app server as healthy but the db server as unhealthy, recovery
-# proceeds. Any non-200 response, transport error, or timeout is ignored.
-external_healthcheck_enabled: %t
-server_name: %q
-external_health_check_url: %q
-external_health_check_token: %q
-`,
-		cfg.ExternalHealthCheckEnabled,
-		cfg.ServerName,
-		cfg.ExternalHealthCheckURL,
-		cfg.ExternalHealthCheckToken,
-	)
-=======
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("marshal default config: %w", err)
 	}
->>>>>>> d97e09880 (feat(mariadb-monitor): Add auto-trim memory usage)
 
 	content := "# MariaDB Monitor Configuration\n\n" + string(data)
 	return os.WriteFile(configFile, []byte(content), 0644)

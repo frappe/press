@@ -141,29 +141,6 @@ func checkMariaDBHealth(cfg Config, creds MySQLCredentials, db *Database) DBHeal
 
 func checkProcesslist(db *Database, stuckThreshold int) DBHealth {
 	health := DBHealth{Reachable: true}
-<<<<<<< HEAD
-<<<<<<< HEAD:libs/mariadb_monitor/mariadb_health.go
-
-	var dsn string
-	if creds.Host != "" && creds.Port > 0 {
-		dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/?timeout=5s&readTimeout=5s&writeTimeout=5s", creds.User, creds.Password, creds.Host, creds.Port)
-	} else {
-		dsn = fmt.Sprintf("%s:%s@unix(%s)/?timeout=5s&readTimeout=5s&writeTimeout=5s", creds.User, creds.Password, creds.Socket)
-	}
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		health.Reachable = false
-		return health
-	}
-	defer db.Close()
-
-	db.SetConnMaxLifetime(5 * time.Second)
-	db.SetMaxOpenConns(1)
-=======
-	db := NewDatabase(creds)
->>>>>>> d7adb7091 (chore(mariadb-monitor): Cleanup and structure the code):libs/mariadb_monitor/health.go
-=======
->>>>>>> 0fb344429 (feat(mariadb-monitor): Tune auto-release memory and recovery of buffer)
 
 	var uptime int
 	err := db.Query("SHOW GLOBAL STATUS LIKE 'Uptime'", func(rows *sql.Rows) error {
@@ -198,13 +175,6 @@ func checkProcesslist(db *Database, stuckThreshold int) DBHealth {
 				infoIdx = i
 			case "Time":
 				timeIdx = i
-			}
-		case "Waiting for table flush", "Waiting for global read lock":
-			// These states cascade — one blocked DDL/flush/lock can freeze all
-			// queries on the affected table(s), exhausting the connection pool.
-			if timeSec >= 300 {
-				isStuck = true
-				reason = fmt.Sprintf("state=%q time=%ds", state, timeSec)
 			}
 		}
 

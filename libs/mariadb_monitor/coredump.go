@@ -59,101 +59,8 @@ func takeCoredump(cfg Config) error {
 	return nil
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-// Common PID file locations for MariaDB/MySQL.
-var mariadbPidFiles = []string{
-	"/var/run/mysqld/mysqld.pid",
-	"/var/run/mariadb/mariadb.pid",
-	"/var/lib/mysql/*.pid",
-}
-
-func findMariaDBProcessIDs() []int {
-	// Fast path: read PID file directly — a single read, reliable on frozen machines
-	// where scanning all of /proc would hang.
-	if pids := findPIDsFromPidFiles(); len(pids) > 0 {
-		return pids
-	}
-
-	// Slow path: scan /proc. Can be very slow under memory pressure / IO freeze.
-	slog.Debug("PID file lookup failed, falling back to /proc scan")
-	return findPIDsFromProc()
-}
-
-func findPIDsFromPidFiles() []int {
-	for _, pattern := range mariadbPidFiles {
-		matches, err := filepath.Glob(pattern)
-		if err != nil {
-			continue
-		}
-		for _, pidFile := range matches {
-			data, err := os.ReadFile(pidFile)
-			if err != nil {
-				continue
-			}
-			pidStr := strings.TrimSpace(string(data))
-			pid, err := strconv.Atoi(pidStr)
-			if err != nil || pid <= 0 {
-				continue
-			}
-			// Verify the process is actually mariadbd/mysqld.
-			comm, err := os.ReadFile(fmt.Sprintf("/proc/%d/comm", pid))
-			if err != nil {
-				// Process might be gone, but on a frozen machine /proc reads
-				// for a single known PID are far more likely to succeed than
-				// scanning all of /proc. Trust the PID file.
-				slog.Debug("cannot verify PID from pidfile, trusting it", "pid", pid, "file", pidFile)
-				return []int{pid}
-			}
-			name := strings.TrimSpace(string(comm))
-			if name == "mariadbd" || name == "mysqld" {
-				return []int{pid}
-			}
-		}
-	}
-	return nil
-}
-
-func findPIDsFromProc() []int {
-	files, err := os.ReadDir("/proc")
-	if err != nil {
-		return nil
-	}
-
-	var pids []int
-	for _, f := range files {
-		if !f.IsDir() {
-			continue
-		}
-		pid, err := strconv.Atoi(f.Name())
-		if err != nil {
-			continue
-		}
-
-		data, err := os.ReadFile(fmt.Sprintf("/proc/%d/comm", pid))
-		if err != nil {
-			continue
-		}
-		comm := strings.TrimSpace(string(data))
-
-		if comm == "mariadbd" || comm == "mysqld" {
-			pids = append(pids, pid)
-		}
-	}
-
-	return pids
-}
-
-=======
->>>>>>> d7adb7091 (chore(mariadb-monitor): Cleanup and structure the code)
-=======
-// freeCoredumpStorageIfNeeded removes the oldest coredump files until the
-// total size of all coredumps in dir is below maxBytes.
-=======
 // freeCoredumpStorageIfNeeded removes the oldest coredumps until total
 // size is below maxBytes.
->>>>>>> 0fb344429 (feat(mariadb-monitor): Tune auto-release memory and recovery of buffer)
 func freeCoredumpStorageIfNeeded(dir string, maxBytes int64) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -207,7 +114,6 @@ func freeCoredumpStorageIfNeeded(dir string, maxBytes int64) {
 	}
 }
 
->>>>>>> d704c03a6 (feat(mariadb-monitor): Add storage limit for coredump)
 func cleanupOldCoredumps(dir string, maxCount int) {
 	if maxCount <= 0 {
 		return

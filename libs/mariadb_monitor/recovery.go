@@ -78,49 +78,8 @@ func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MyS
 		}
 	}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-	killed := false
-	if isFrozen {
-		slog.Warn("machine appears frozen, skipping graceful stop and killing mariadb directly", "reason", reason)
-<<<<<<< HEAD
-		killed = killMariaDB()
-	} else if !stopMariaDB(cfg.StopTimeout) {
-		killed = killMariaDB()
-	} else {
-		killed = true // graceful stop succeeded
-	}
-
-	if !killed {
-		slog.Error("failed to stop/kill mariadb, rebooting machine")
-		rebootMachine()
-		return true
-	}
-
-	reclaimMemory(cfg.DropCachesMode)
-
-	if !startMariaDB(creds) {
-		slog.Error("failed to start mariadb after recovery, rebooting machine")
-		rebootMachine()
-		return true
-	}
-=======
-		killMariaDB()
-	} else if !stopMariaDB(cfg.Monitor.StopTimeout) {
-		killMariaDB()
-	}
-
-	reclaimMemory(cfg.Monitor.DropCachesMode)
-	startMariaDB(creds)
->>>>>>> d97e09880 (feat(mariadb-monitor): Add auto-trim memory usage)
-=======
-	// Force-kill the unit through systemd. This is faster and more reliable
-	// than trying a graceful TERM first: if mariadbd is healthy enough to
-	// shut down gracefully, the monitor would not be in this code path.
-=======
 	// Force-kill via systemd. If mariadbd were healthy enough to shut down
 	// gracefully, the monitor would not be in this code path.
->>>>>>> 0fb344429 (feat(mariadb-monitor): Tune auto-release memory and recovery of buffer)
 	killMariaDB()
 
 	if !waitForProcessDeath(processDeathTimeout) {
@@ -136,7 +95,6 @@ func performRecovery(cfg Config, triggers []string, dbHealth DBHealth, creds MyS
 		forceSystemReboot("mariadb_start_failed")
 		return true
 	}
->>>>>>> 1fc1aa4db (feat(mariadb-monitor): Force reboot if db cant be stopped due to stall)
 
 	return true
 }
@@ -156,39 +114,8 @@ func killMariaDB() {
 	}
 }
 
-<<<<<<< HEAD
-func killMariaDB() bool {
-	slog.Warn("sending SIGKILL to mariadbd")
-
-	// Use a channel+goroutine so PID lookup doesn't block forever on a frozen machine.
-	type pidResult struct {
-		pids []int
-	}
-	ch := make(chan pidResult, 1)
-	go func() {
-		ch <- pidResult{pids: findMariaDBProcessIDs()}
-	}()
-
-	var pids []int
-	select {
-	case r := <-ch:
-		pids = r.pids
-	case <-time.After(5 * time.Second):
-		slog.Error("findMariaDBProcessIDs timed out (I/O freeze?)")
-		return false
-	}
-
-	if len(pids) == 0 {
-		slog.Error("cannot find mariadbd/mysqld process to kill")
-		return false
-	}
-
-	allFailed := true
-	for _, pid := range pids {
-=======
 func killMariaDBProcessesDirect() {
 	for _, pid := range findMariaDBProcessIDs() {
->>>>>>> 1fc1aa4db (feat(mariadb-monitor): Force reboot if db cant be stopped due to stall)
 		proc, err := os.FindProcess(pid)
 		if err != nil {
 			continue
@@ -197,20 +124,8 @@ func killMariaDBProcessesDirect() {
 			slog.Warn("failed to SIGKILL process", "pid", pid, "error", err)
 		} else {
 			slog.Info("sent SIGKILL to process", "pid", pid)
-			allFailed = false
 		}
 	}
-<<<<<<< HEAD
-
-	if allFailed {
-		slog.Error("failed to SIGKILL any mariadb process")
-		return false
-	}
-
-	time.Sleep(2 * time.Second)
-	return true
-=======
->>>>>>> 1fc1aa4db (feat(mariadb-monitor): Force reboot if db cant be stopped due to stall)
 }
 
 // waitForProcessDeath polls until no mariadbd/mysqld processes remain or
@@ -244,9 +159,6 @@ func reclaimMemory() {
 	}
 }
 
-<<<<<<< HEAD
-func startMariaDB(creds MySQLCredentials) bool {
-=======
 // startMariaDB clears any failed state and starts mariadb via systemd.
 // Returns true only if the unit started AND the daemon is reachable.
 func startMariaDB(creds MySQLCredentials) bool {
@@ -261,7 +173,6 @@ func startMariaDB(creds MySQLCredentials) bool {
 		slog.Info("cleared mariadb failed state")
 	}
 
->>>>>>> 1fc1aa4db (feat(mariadb-monitor): Force reboot if db cant be stopped due to stall)
 	slog.Info("starting mariadb via systemctl")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -285,15 +196,6 @@ func startMariaDB(creds MySQLCredentials) bool {
 		time.Sleep(mariadbReachablePoll)
 	}
 
-<<<<<<< HEAD
-	slog.Warn("mariadb started but is not reachable (socket/TCP) after 10s")
-	return false
-}
-
-func rebootMachine() {
-	slog.Error("initiating machine reboot via syscall")
-	syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART)
-=======
 	slog.Error("mariadb started but is not reachable", "timeout", mariadbReachableTimeout)
 	return false
 }
@@ -330,5 +232,4 @@ func forceSystemReboot(reason string) {
 	if err := syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART); err != nil {
 		slog.Error("reboot(2) syscall failed, giving up", "error", err)
 	}
->>>>>>> 1fc1aa4db (feat(mariadb-monitor): Force reboot if db cant be stopped due to stall)
 }
