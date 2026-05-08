@@ -2,7 +2,7 @@
 	<div>
 		<span
 			v-if="team.doc.currency === 'INR' || paypalEnabled"
-			class="mt-2.5 inline-flex gap-2 text-base text-gray-700"
+			class="mt-2.5 inline-flex gap-2 text-base text-ink-gray-7"
 		>
 			<FeatherIcon name="info" class="my-1 h-4" />
 			<span class="leading-5" v-if="team.doc.currency === 'INR'">

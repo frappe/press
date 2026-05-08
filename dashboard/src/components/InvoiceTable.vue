@@ -33,7 +33,7 @@
 						<tr v-for="(row, i) in items" :key="row.idx">
 							<td class="py-1 pl-2 pr-2">
 								{{ row.document_name }}
-								<span v-if="row.plan" class="text-gray-700">
+								<span v-if="row.plan" class="text-ink-gray-7">
 									({{ formatPlan(row.plan) }})
 								</span>
 							</td>

@@ -5,7 +5,7 @@
 		:target="column.link ? '_blank' : undefined"
 		class="flex items-center"
 		:class="{
-			'text-ink-gray-9 outline-gray-400 hover:text-gray-700': column.link,
+			'text-ink-gray-9 outline-gray-400 hover:text-ink-gray-7': column.link,
 			'justify-end': column.align === 'right',
 			'justify-center': column.align === 'center',
 		}"

@@ -174,7 +174,7 @@
 				<template #default>
 					<div
 						v-if="this.$resources.databaseProcesses.loading"
-						class="flex h-60 w-full items-center justify-center gap-2 text-base text-gray-700"
+						class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 					>
 						<Spinner class="w-4" /> Loading Database Processes
 					</div>
@@ -210,9 +210,13 @@
 							@click.stop="() => {}"
 						>
 							<Switch v-model="autoRefreshDatabaseLocks" />
+<<<<<<< HEAD
 							<p class="text-base text-gray-700">
 								Auto Refresh Until Lock Found
 							</p>
+=======
+							<p class="text-base text-ink-gray-7">Auto Refresh</p>
+>>>>>>> 6a008c8e6 (feat(dark-theme): rename class text-gray-700 -> text-ink-gray-7)
 						</div>
 						<Button
 							:loading="this.$resources.databaseLocks.loading"
@@ -229,7 +233,7 @@
 							this.$resources.databaseLocks.loading &&
 							!databaseLocks?.data?.length
 						"
-						class="flex h-60 w-full items-center justify-center gap-2 text-base text-gray-700"
+						class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 					>
 						<Spinner class="w-4" /> Loading Database Locks
 					</div>
@@ -326,7 +330,7 @@
 										"
 										>Suggest Indexes</Button
 									>
-									<p class="text-base text-gray-700">
+									<p class="text-base text-ink-gray-7">
 										This may take a while to analyze
 									</p>
 								</div>
@@ -382,12 +386,12 @@
 		</div>
 		<div
 			v-else-if="!site"
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 		>
 			Select a site to get started
 		</div>
 		<div
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 			v-else
 		>
 			<Spinner class="w-4" /> Loading Table Schemas

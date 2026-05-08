@@ -12,14 +12,14 @@
 		<div class="h-[81.5vh] space-y-2 overflow-auto pr-4">
 			<div
 				v-if="$resources.benchLogs?.loading || $resources.siteLogs?.loading"
-				class="mt-20 flex justify-center space-x-2 text-sm text-gray-700"
+				class="mt-20 flex justify-center space-x-2 text-sm text-ink-gray-7"
 			>
 				<Spinner class="w-4" />
 				<span> Fetching logs... </span>
 			</div>
 			<div
 				v-else-if="logs.length === 0"
-				class="mt-20 flex justify-center text-sm text-gray-700"
+				class="mt-20 flex justify-center text-sm text-ink-gray-7"
 			>
 				No logs found
 			</div>
@@ -45,7 +45,7 @@
 				>
 					<div class="flex items-center justify-between">
 						<div class="space-y-1">
-							<p class="text-base text-gray-700">{{ log.name }}</p>
+							<p class="text-base text-ink-gray-7">{{ log.name }}</p>
 							<p class="text-xs text-gray-500">
 								{{ $format.date(log.modified, 'YYYY-MM-DD HH:mm') }}
 							</p>

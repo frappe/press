@@ -15,7 +15,7 @@
 		<div class="col-span-2 mb-5 rounded-md border">
 			<div class="grid grid-cols-2 lg:grid-cols-5">
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Total Installs</div>
+					<div class="text-base text-ink-gray-7">Total Installs</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
@@ -28,7 +28,7 @@
 				</div>
 
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Weekly Installs</div>
+					<div class="text-base text-ink-gray-7">Weekly Installs</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
@@ -41,7 +41,7 @@
 				</div>
 
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Active Sites</div>
+					<div class="text-base text-ink-gray-7">Active Sites</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
@@ -54,7 +54,7 @@
 				</div>
 
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Active Benches</div>
+					<div class="text-base text-ink-gray-7">Active Benches</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
@@ -67,7 +67,7 @@
 				</div>
 
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Total Earnings</div>
+					<div class="text-base text-ink-gray-7">Total Earnings</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">

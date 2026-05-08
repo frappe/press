@@ -25,7 +25,7 @@
 							/>
 						</template>
 					</FormControl>
-					<p class="mt-2 text-sm text-gray-700">
+					<p class="mt-2 text-sm text-ink-gray-7">
 						<strong>Note:</strong> Secret is optional. Check
 						<a
 							href="https://docs.frappe.io/cloud/webhook-introduction"

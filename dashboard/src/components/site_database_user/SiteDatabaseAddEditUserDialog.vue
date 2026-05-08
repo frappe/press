@@ -65,7 +65,7 @@
 				<div v-if="mode == 'granular'">
 					<div
 						v-if="isLoadingTableSchemas"
-						class="flex w-full flex-col items-center justify-center gap-2 text-base text-gray-700"
+						class="flex w-full flex-col items-center justify-center gap-2 text-base text-ink-gray-7"
 					>
 						<span class="flex flex-row gap-2 py-20">
 							<Spinner class="w-4" /> Fetching table schemas

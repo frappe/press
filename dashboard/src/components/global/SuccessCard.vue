@@ -6,7 +6,7 @@
 				{{ title }}
 			</h2>
 		</div>
-		<p class="mt-3 text-p-base text-gray-700">
+		<p class="mt-3 text-p-base text-ink-gray-7">
 			<slot></slot>
 		</p>
 	</div>
