@@ -2,7 +2,7 @@
 	<div v-if="apps" class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
 		<div
 			v-for="app in apps"
-			class="flex cursor-pointer flex-col gap-2.5 rounded-md border border-outline-gray-2 p-4 transition duration-300 hover:border-gray-400"
+			class="flex cursor-pointer flex-col gap-2.5 rounded-md border border-outline-gray-2 p-4 transition duration-300 hover:border-outline-gray-3"
 			@click.capture="() => openInstallAppPage(app)"
 		>
 			<img :src="app.image" class="h-6 w-6" />
