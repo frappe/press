@@ -47,7 +47,8 @@ class StaticIPLog(Document):
 				"enabled": 1,
 				"document_type": self.server_type,
 				"document_name": self.server,
-				"plan": "Static IP Plan",
+				"plan_type": "Static IP Plan",
+				"plan": plan
 			},
 		):
 			return
