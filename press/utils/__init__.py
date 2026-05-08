@@ -235,8 +235,10 @@ def get_valid_teams_for_user(user):
 
 
 def is_user_part_of_team(user, team):
-	"""Returns True if user is part of the team"""
-	return frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user})
+	"""Returns True if user is the team owner or an explicit member of the team"""
+	if frappe.db.get_value("Team", team, "user") == user:
+		return True
+	return bool(frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user}))
 
 
 def get_country_info():
