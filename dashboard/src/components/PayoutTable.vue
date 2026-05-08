@@ -4,7 +4,7 @@
 			<table
 				class="text w-full border-separate border-spacing-y-2 text-base font-normal text-gray-900"
 			>
-				<thead class="bg-gray-100">
+				<thead class="bg-surface-gray-1">
 					<tr class="text-gray-600">
 						<th class="rounded-l p-2 text-left font-normal">App</th>
 						<th class="rounded-l p-2 text-left font-normal">Site</th>

@@ -104,7 +104,7 @@ function onDeactivateSite() {
 		title: 'Deactivate Site',
 		message: `
 			Are you sure you want to deactivate this site?<br><br>
-			<div class="text-bg-base bg-gray-100 p-2 rounded-md">
+			<div class="text-bg-base bg-surface-gray-1 p-2 rounded-md">
 			The site will go in an <strong>inactive</strong> state. It won't be accessible and background jobs won't run. 
 			<br><br>
 			<div class="text-red-600">You will still be charged for it.</div>
@@ -156,7 +156,7 @@ function onMigrateSite() {
 	return confirmDialog({
 		title: 'Migrate Site',
 		message: `
-            <span class="rounded-sm bg-gray-100 p-0.5 font-mono text-sm font-semibold">bench migrate</span>
+            <span class="rounded-sm bg-surface-gray-1 p-0.5 font-mono text-sm font-semibold">bench migrate</span>
             command will be executed on your site. Are you sure you want to run this
             command? We recommend that you take a database backup before continuing.
         `,
@@ -247,8 +247,8 @@ function onTransferSite() {
 function onClearCache() {
 	return confirmDialog({
 		title: 'Clear Cache',
-		message: `<span class="rounded-sm bg-gray-100 p-0.5 font-mono text-sm font-semibold">bench clear-cache</span> and
-            <span class="rounded-sm bg-gray-100 p-0.5 font-mono text-sm font-semibold">bench clear-website-cache</span> commands
+		message: `<span class="rounded-sm bg-surface-gray-1 p-0.5 font-mono text-sm font-semibold">bench clear-cache</span> and
+            <span class="rounded-sm bg-surface-gray-1 p-0.5 font-mono text-sm font-semibold">bench clear-website-cache</span> commands
             will be executed on your site. Are you sure you want to run these commands?`,
 		primaryAction: {
 			label: 'Clear Cache',

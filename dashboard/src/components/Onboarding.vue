@@ -215,7 +215,7 @@
 							<div
 								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 								:class="{
-									'bg-gray-100': isAutomatedBilling,
+									'bg-surface-gray-1': isAutomatedBilling,
 								}"
 								@click="isAutomatedBilling = true"
 							>
@@ -224,7 +224,7 @@
 							<div
 								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 								:class="{
-									'bg-gray-100': !isAutomatedBilling,
+									'bg-surface-gray-1': !isAutomatedBilling,
 								}"
 								@click="isAutomatedBilling = false"
 							>

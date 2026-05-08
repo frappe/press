@@ -2,7 +2,7 @@
 	<Dialog v-model="show" :options="{ title: 'Create Snapshot', size: 'xl' }">
 		<template #body-content>
 			<div
-				class="prose prose-sm rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border"
+				class="prose prose-sm rounded mt-4 p-2 text-sm text-gray-700 bg-surface-gray-1 border"
 			>
 				This feature creates a snapshot of both the <b>App Server</b> and
 				<b>Database Server</b>.<br /><br />
