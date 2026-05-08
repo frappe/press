@@ -133,8 +133,8 @@
 					</div>
 					<AlertBanner
 						v-if="serverProvider == 'Frappe Compute'"
-						title="This is a new and highly experimental provider. We do not provide any guarantees with respect to uptime and the safety of data against loss. Please refrain from running production workloads on this."
 						type="warning"
+						title="Frappe Compute is currently experimental. <a href='https://docs.frappe.io/cloud/frappe-compute/what-is-this-new-frappe-provider' target='_blank' style='font-weight: bold; text-decoration: underline;'>Learn more</a> about what this means."
 					/>
 					<!-- Chose Region -->
 					<div
