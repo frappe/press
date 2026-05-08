@@ -48,12 +48,16 @@ const colors: Record<string, string> = {
 	general: 'gray',
 };
 
-const props = defineProps<{
+interface Props {
 	title?: string;
 	type?: string;
 	showIcon?: boolean;
 	isDismissible?: number;
-}>();
+}
+
+const props = withDefaults(defineProps<Props>(), {
+	showIcon: true,
+});
 
 const emit = defineEmits<{
 	(e: 'dismissBanner'): void;
