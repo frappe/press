@@ -33,7 +33,7 @@
 						:class="[
 							planType === c.name
 								? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-1'
-								: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-gray-50',
+								: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 							'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 						]"
 					>

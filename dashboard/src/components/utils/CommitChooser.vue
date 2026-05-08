@@ -45,7 +45,7 @@
 						v-for="option in displayedOptions"
 						:key="option.value"
 						@click="!option.is_yanked && selectOption(option, togglePopover)"
-						class="flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-base hover:bg-gray-50"
+						class="flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-base hover:bg-surface-gray-1"
 						:class="{
 							'bg-surface-gray-3': isSelected(option),
 							'opacity-50 cursor-not-allowed': option.is_yanked,

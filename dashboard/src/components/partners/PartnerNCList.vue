@@ -7,7 +7,7 @@
 					:to="{ name: tab.value, params: { nc: tab.name } }"
 					class="flex p-4 my-4 mr-4 justify-between border gap-6 rounded cursor-pointer text-base text-ink-gray-6 hover:bg-surface-gray-2"
 					:class="{
-						'text-ink-gray-8 bg-gray-50': isActiveTab(tab),
+						'text-ink-gray-8 bg-surface-gray-1': isActiveTab(tab),
 						'text-ink-gray-4': !isActiveTab(tab),
 					}"
 				>

@@ -36,7 +36,7 @@ export default {
 	computed: {
 		classes() {
 			return {
-				warning: 'text-ink-gray-7 bg-gray-50'
+				warning: 'text-ink-gray-7 bg-surface-gray-1'
 			}[this.type];
 		}
 	}
