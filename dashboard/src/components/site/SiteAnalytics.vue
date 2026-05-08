@@ -1,9 +1,9 @@
 <template>
 	<div
-		class="flex flex-col justify-end items-center sticky top-0 z-20 p-3 w-full bg-surface-white border-b justify-self-center space-y-2"
+		class="flex flex-col justify-end items-center sticky top-0 z-20 p-2 md:p-3 w-full bg-surface-white border-b justify-self-center space-y-2"
 	>
 		<!-- Group all content items so spacing is consistent -->
-		<div class="flex space-x-2 w-full overflow-auto">
+		<div class="flex gap-2 w-full overflow-auto">
 			<!-- Start date group -->
 			<label class="text-base text-ink-gray-6 self-center whitespace-nowrap">
 				Absolute <span class="pl-1 text-ink-gray-9">from</span>
