@@ -228,7 +228,7 @@ export default {
 									'div',
 									{
 										class:
-											'w-6 h-6 rounded bg-gray-300 text-ink-gray-6 flex items-center justify-center',
+											'w-6 h-6 rounded bg-surface-gray-4 text-ink-gray-6 flex items-center justify-center',
 									},
 									row.title[0].toUpperCase(),
 								);

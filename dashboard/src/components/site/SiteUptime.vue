@@ -75,7 +75,7 @@
 								:class="[
 									'hover:brightness-[110%] border-r border-white',
 									Date.parse(d.date) < Date.parse(siteCreation || new Date(0))
-										? 'bg-gray-300'
+										? 'bg-surface-gray-4'
 										: d.value === 1
 											? 'bg-green-500'
 											: d.value === 0
