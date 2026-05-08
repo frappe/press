@@ -15,7 +15,7 @@
 					class="flex flex-col overflow-hidden rounded-md border text-left hover:bg-surface-gray-1"
 					:class="[
 						modelValue?.name === plan?.name
-							? 'border-gray-900 ring-1 ring-gray-900'
+							? 'border-outline-gray-5 ring-1 ring-gray-900'
 							: 'border-outline-gray-2',
 						{
 							'pointer-events-none opacity-50': plan?.disabled,
@@ -29,7 +29,7 @@
 					<div
 						class="h-16 w-full border-b p-3"
 						:class="[
-							modelValue === plan ? 'border-gray-900 ring-1 ring-gray-900' : '',
+							modelValue === plan ? 'border-outline-gray-5 ring-1 ring-gray-900' : '',
 						]"
 					>
 						<div class="flex items-center justify-between">
