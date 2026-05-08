@@ -129,7 +129,7 @@ const createPaymentIntent = createResource({
 			style: style,
 			classes: {
 				complete: '',
-				focus: 'bg-surface-gray-1',
+				focus: 'bg-surface-gray-2',
 			},
 		});
 
