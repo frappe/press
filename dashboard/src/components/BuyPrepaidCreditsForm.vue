@@ -43,7 +43,7 @@
 				class="flex h-10 items-center justify-center rounded border"
 				:class="{
 					'border-outline-gray-2': paymentGateway !== 'Stripe',
-					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Stripe',
+					'border-outline-gray-5 ring-1 ring-gray-900': paymentGateway === 'Stripe',
 				}"
 			>
 				<img
@@ -59,7 +59,7 @@
 				class="flex h-10 items-center justify-center rounded border"
 				:class="{
 					'border-outline-gray-2': paymentGateway !== 'Razorpay',
-					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
+					'border-outline-gray-5 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
 				}"
 			>
 				<RazorpayLogo class="w-24" />
@@ -71,7 +71,7 @@
 				class="flex h-10 items-center justify-center rounded border"
 				:class="{
 					'border-outline-gray-2': paymentGateway !== 'Razorpay',
-					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
+					'border-outline-gray-5 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
 				}"
 			>
 				<PayPalLogo class="h-7 w-20" />

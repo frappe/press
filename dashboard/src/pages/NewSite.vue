@@ -51,7 +51,7 @@
 							<button
 								:class="[
 									version === v.name
-										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+										? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 										: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
 									v.disabled && 'opacity-50 hover:cursor-default',
 									'flex w-full cursor-pointer items-center justify-between rounded border border-outline-gray-3 p-3 text-sm focus:outline-none',
@@ -160,7 +160,7 @@
 							@click="provider = p.name"
 							:class="[
 								provider === p.name
-									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+									? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 									: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 								'flex w-full items-center rounded-md border p-2 text-left text-base text-ink-gray-9',
 							]"
@@ -201,7 +201,7 @@
 							@click="cluster = c.name"
 							:class="[
 								cluster === c.name
-									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+									? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 									: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
 								'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 							]"

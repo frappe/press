@@ -80,7 +80,7 @@
 									@click="cluster = c.name"
 									:class="[
 										cluster === c.name
-											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+											? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 											: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
 										'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 									]"

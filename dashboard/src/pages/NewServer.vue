@@ -40,7 +40,7 @@
 								@click="serverType = c.name"
 								:class="[
 									serverType === c.name
-										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+										? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 										: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 									'flex w-full items-center rounded-md border p-3 text-left text-base text-ink-gray-9',
 								]"
@@ -66,7 +66,7 @@
 						<FormControl
 							v-model="serverTitle"
 							type="text"
-							class="block rounded-md border-outline-gray-2 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
+							class="block rounded-md border-outline-gray-2 shadow-sm focus:border-outline-gray-5 focus:ring-gray-900 sm:text-sm"
 						/>
 					</div>
 				</div>
@@ -99,7 +99,7 @@
 									@click="serverProvider = provider.name"
 									:class="[
 										serverProvider === provider.name
-											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+											? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 											: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 										'flex w-full items-center rounded-md border p-2 text-left text-base text-ink-gray-9',
 									]"
@@ -152,7 +152,7 @@
 									@click="serverRegion = r.name"
 									:class="[
 										serverRegion === r.name
-											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+											? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 											: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 										'flex w-full items-center rounded-md border p-2 text-left text-base text-ink-gray-9',
 									]"
@@ -199,7 +199,7 @@
 									@click="unifiedServer = c.unifiedServer"
 									:class="[
 										unifiedServer == c.unifiedServer
-											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+											? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 											: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-ink-gray-9',
 									]"
@@ -258,7 +258,7 @@
 									@click="serviceType = c.name"
 									:class="[
 										serviceType === c.name
-											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+											? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 											: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-ink-gray-9',
 									]"
@@ -343,7 +343,7 @@
 											@click="appServerPlanType = planType.name"
 											:class="[
 												appServerPlanType === planType.name
-													? 'border-gray-900 ring-1 ring-gray-900 z-10'
+													? 'border-outline-gray-5 ring-1 ring-gray-900 z-10'
 													: 'border-outline-gray-2 z-0',
 												index === 0
 													? 'rounded-t-md sm:rounded-l-md sm:rounded-tr-none'
@@ -449,7 +449,7 @@
 											@click="dbServerPlanType = planType.name"
 											:class="[
 												dbServerPlanType === planType.name
-													? 'border-gray-900 ring-1 ring-gray-900 z-10'
+													? 'border-outline-gray-5 ring-1 ring-gray-900 z-10'
 													: 'border-outline-gray-2 z-0',
 												index === 0
 													? 'rounded-t-md sm:rounded-l-md sm:rounded-tr-none'
