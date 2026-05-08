@@ -52,7 +52,7 @@
 								:class="[
 									version === v.name
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-										: 'bg-surface-white text-ink-gray-9  hover:bg-gray-50',
+										: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
 									v.disabled && 'opacity-50 hover:cursor-default',
 									'flex w-full cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none',
 								]"
@@ -161,7 +161,7 @@
 							:class="[
 								provider === p.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-									: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-gray-50',
+									: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 								'flex w-full items-center rounded-md border p-2 text-left text-base text-ink-gray-9',
 							]"
 						>
@@ -202,7 +202,7 @@
 							:class="[
 								cluster === c.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-									: 'bg-surface-white text-ink-gray-9  hover:bg-gray-50',
+									: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
 								'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 							]"
 						>
@@ -263,7 +263,7 @@
 					class="mt-4 text-xs text-ink-gray-7"
 				>
 					<div
-						class="flex items-center rounded bg-gray-50 p-2 text-p-base font-medium text-ink-gray-8"
+						class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base font-medium text-ink-gray-8"
 					>
 						<lucide-badge-check class="h-4 w-8 text-ink-gray-6" />
 						<span class="ml-4">

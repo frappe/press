@@ -32,7 +32,7 @@
 					</p>
 				</div>
 				<div class="rounded-sm border divide-y">
-					<div class="grid grid-cols-5 font-medium bg-gray-50 divide-x">
+					<div class="grid grid-cols-5 font-medium bg-surface-gray-1 divide-x">
 						<div class="col-span-2 py-2 px-3">Permission</div>
 						<div class="col-span-1 py-2 px-3">Granted</div>
 						<div class="col-span-2 py-2 px-3">Expiry</div>

@@ -156,7 +156,7 @@ const columns = computed(() => [
 		</div>
 
 		<div
-			class="text-ink-gray-5 select-none text-xs flex items-center w-full p-2 mb-3 rounded-md bg-gray-50"
+			class="text-ink-gray-5 select-none text-xs flex items-center w-full p-2 mb-3 rounded-md bg-surface-gray-1"
 		>
 			<FeatherIcon name="info" class="size-4 inline-block mx-2" />
 			<span>

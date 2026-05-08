@@ -45,7 +45,7 @@
 						.
 					</p>
 				</div>
-				<div class="divide-y rounded-lg bg-gray-50 px-4">
+				<div class="divide-y rounded-lg bg-surface-gray-1 px-4">
 					<div
 						v-for="step in steps"
 						:key="step.id"
@@ -64,7 +64,7 @@
 								:class="{
 									'bg-green-500': step.icon() === 'check',
 									'bg-red-500': step.icon() === 'x',
-									'bg-gray-500': step.icon() === 'clock',
+									'bg-surface-gray-10': step.icon() === 'clock',
 								}"
 							/>
 							<div class="flex flex-col space-y-1">

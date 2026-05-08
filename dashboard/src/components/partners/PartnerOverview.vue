@@ -143,7 +143,7 @@
 				</p>
 				<div class="flex my-4 gap-4">
 					<div
-						class="flex-1 justify-center text-left p-5 rounded-md bg-gray-50"
+						class="flex-1 justify-center text-left p-5 rounded-md bg-surface-gray-1"
 					>
 						<div class="flex flex-col gap-2">
 							<p>
@@ -161,7 +161,7 @@
 						</div>
 					</div>
 					<div
-						class="flex-1 justify-center text-left p-5 rounded-md bg-gray-50"
+						class="flex-1 justify-center text-left p-5 rounded-md bg-surface-gray-1"
 					>
 						<div class="flex flex-col gap-2">
 							<p>

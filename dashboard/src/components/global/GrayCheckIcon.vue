@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="grid h-4 w-4 shrink-0 place-items-center rounded-full border border-gray-500 bg-gray-500"
+		class="grid h-4 w-4 shrink-0 place-items-center rounded-full border border-gray-500 bg-surface-gray-10"
 	>
 		<svg
 			width="10"

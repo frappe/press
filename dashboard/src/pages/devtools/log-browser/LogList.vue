@@ -25,7 +25,7 @@
 			</div>
 			<template v-else v-for="log in logs">
 				<div
-					class="cursor-pointer rounded border border-gray-200 p-3 hover:bg-gray-50"
+					class="cursor-pointer rounded border border-gray-200 p-3 hover:bg-surface-gray-1"
 					:class="{
 						'border-gray-800': logId === log.name,
 					}"

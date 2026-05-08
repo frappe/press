@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<button
-			class="flex w-full items-center justify-between rounded bg-gray-50 px-2.5 py-2 text-left text-base"
+			class="flex w-full items-center justify-between rounded bg-surface-gray-1 px-2.5 py-2 text-left text-base"
 			@click="$emit('toggle')"
 			:class="open ? 'rounded-b-none' : ''"
 		>
