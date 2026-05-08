@@ -38,7 +38,7 @@
 			</div>
 		</button>
 		<div
-			class="overflow-auto py-2 px-2.5 text-sm bg-gray-200 rounded-b border border-gray-100"
+			class="overflow-auto py-2 px-2.5 text-sm bg-surface-gray-3 rounded-b border border-gray-100"
 			v-show="open || status == 'Running'"
 			ref="output"
 		>
