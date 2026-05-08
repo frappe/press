@@ -29,13 +29,13 @@
 				<div class="grid grid-cols-2">
 					<div class="flex flex-col gap-1">
 						<div class="text-base text-gray-600">Conducted By</div>
-						<div class="text-base text-gray-800">
+						<div class="text-base text-ink-gray-8">
 							{{ ncSummaryDoc?.doc?.auditor }}
 						</div>
 					</div>
 					<div class="flex flex-col gap-1">
 						<div class="text-base text-gray-600">Conducted On</div>
-						<div class="text-base text-gray-800">
+						<div class="text-base text-ink-gray-8">
 							{{ formatDate(ncSummaryDoc?.doc?.audit_date) }}
 						</div>
 					</div>
@@ -50,13 +50,13 @@
 				<div class="grid grid-cols-2">
 					<div class="flex flex-col gap-1">
 						<div class="text-base text-gray-600">Closed By</div>
-						<div class="text-base text-gray-800">
+						<div class="text-base text-ink-gray-8">
 							{{ ncSummaryDoc?.doc?.closed_by }}
 						</div>
 					</div>
 					<div class="flex flex-col gap-1">
 						<div class="text-base text-gray-600">Closed On</div>
-						<div class="text-base text-gray-800">
+						<div class="text-base text-ink-gray-8">
 							{{ formatDate(ncSummaryDoc?.doc?.closed_on) }}
 						</div>
 					</div>
@@ -68,7 +68,7 @@
 			class="p-4 my-4 flex flex-col gap-2.5 rounded border-[1.5px]"
 		>
 			<div class="text-lg font-semibold pb-1">Description</div>
-			<div class="text-base text-gray-800 whitespace-pre-line leading-relaxed">
+			<div class="text-base text-ink-gray-8 whitespace-pre-line leading-relaxed">
 				{{ ncSummaryDoc?.doc?.nc_description }}
 			</div>
 		</div>
@@ -77,7 +77,7 @@
 			class="p-4 my-4 flex flex-col gap-2.5 rounded border-[1.5px]"
 		>
 			<div class="text-lg font-semibold pb-1">Measures to be taken</div>
-			<div class="text-base text-gray-800 whitespace-pre-line leading-relaxed">
+			<div class="text-base text-ink-gray-8 whitespace-pre-line leading-relaxed">
 				{{ ncSummaryDoc?.doc?.measures_to_close_nc }}
 			</div>
 		</div>

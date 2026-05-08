@@ -193,13 +193,13 @@ watch(
 		<div class="relative flex flex-1 flex-col overflow-auto text-base">
 			<div
 				v-if="loadingData"
-				class="absolute bottom-0 left-0 right-0 top-0 flex w-full items-center justify-center gap-2 bg-surface-white text-base text-gray-800 min-h-80"
+				class="absolute bottom-0 left-0 right-0 top-0 flex w-full items-center justify-center gap-2 bg-surface-white text-base text-ink-gray-8 min-h-80"
 			>
 				<Spinner class="w-4" /> Crunching data...
 			</div>
 			<div
 				v-if="props.data?.length == 0"
-				class="flex flex-col h-80 items-center justify-center text-gray-800 text-base gap-1"
+				class="flex flex-col h-80 items-center justify-center text-ink-gray-8 text-base gap-1"
 			>
 				<p>No results to display</p>
 				<br />
@@ -221,7 +221,7 @@ watch(
 							v-for="header in headerGroup.headers"
 							:key="header.id"
 							:colSpan="header.colSpan"
-							class="border-b border-r text-gray-800"
+							class="border-b border-r text-ink-gray-8"
 							:width="
 								header.column.columnDef.id === '__index' ? '6rem' : 'auto'
 							"
@@ -235,7 +235,7 @@ watch(
 							</div>
 						</td>
 						<td
-							class="w-[10rem] border-b border-r text-center text-gray-800"
+							class="w-[10rem] border-b border-r text-center text-ink-gray-8"
 							v-if="actionHeaderLabel"
 						>
 							{{ actionHeaderLabel }}
@@ -267,7 +267,7 @@ watch(
 							/>
 						</td>
 						<td
-							class="w-[6rem] border-b border-r text-center text-gray-800"
+							class="w-[6rem] border-b border-r text-center text-ink-gray-8"
 							v-if="actionComponent"
 						>
 							<component

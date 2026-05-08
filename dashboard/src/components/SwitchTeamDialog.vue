@@ -39,7 +39,7 @@
 					:key="team.name"
 				>
 					<div class="flex items-center space-x-2 px-0.5">
-						<span class="text-base text-gray-800">
+						<span class="text-base text-ink-gray-8">
 							{{ team.user }}
 						</span>
 						<Button

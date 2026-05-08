@@ -34,7 +34,7 @@
 						class="h-2 w-2 rounded-full"
 						:style="{ backgroundColor: colorPalette[idx] }"
 					></div>
-					<span class="text-sm text-gray-800">
+					<span class="text-sm text-ink-gray-8">
 						<component
 							v-if="keyFormatter && typeof keyFormatter(key) === 'object'"
 							:is="keyFormatter(key)"
@@ -43,7 +43,7 @@
 							{{ keyFormatter ? keyFormatter(key) : key }}
 						</template>
 					</span>
-					<span class="ml-auto text-sm text-gray-800">
+					<span class="ml-auto text-sm text-ink-gray-8">
 						{{ valueFormatter ? valueFormatter(key, data[key]) : data[key] }}
 					</span>
 				</div>
