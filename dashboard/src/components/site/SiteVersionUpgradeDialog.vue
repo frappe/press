@@ -80,7 +80,7 @@
 							class="space-y-6 mt-4"
 						>
 							<div v-if="appCompatibility.site_custom_apps?.length > 0">
-								<div class="text-sm font-medium text-gray-700 mb-2">
+								<div class="text-sm font-medium text-ink-gray-7 mb-2">
 									Select Branch for Custom Apps
 								</div>
 								<div class="text-xs text-gray-600 mb-3">
@@ -139,7 +139,7 @@
 							</div>
 
 							<div v-if="appCompatibility.other_custom_apps_on_rg?.length > 0">
-								<div class="text-sm font-medium text-gray-700 mb-2">
+								<div class="text-sm font-medium text-ink-gray-7 mb-2">
 									Other Custom Apps on Bench Group (Optional)
 								</div>
 								<table class="w-full table-fixed">
@@ -235,7 +235,7 @@
 					any failure rollback will not be possible."
 					type="warning"
 				></AlertBanner>
-				<p v-if="message && !errorMessage" class="text-sm text-gray-700">
+				<p v-if="message && !errorMessage" class="text-sm text-ink-gray-7">
 					{{ message }}
 				</p>
 				<ErrorMessage :message="errorMessage" />

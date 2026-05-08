@@ -48,7 +48,7 @@
 				</div>
 				<div
 					v-if="$resources.getCommunicationInfos.loading"
-					class="flex w-full items-center justify-center gap-2 py-20 text-gray-700"
+					class="flex w-full items-center justify-center gap-2 py-20 text-ink-gray-7"
 				>
 					<Spinner class="w-4" /> Loading data...
 				</div>

@@ -17,7 +17,7 @@
 				class="w-full h-full flex flex-col justify-center items-center px-5 py-3"
 			>
 				<div
-					class="flex justify-between mb-1 w-full text-[11px] text-gray-700 font-normal mt-1"
+					class="flex justify-between mb-1 w-full text-[11px] text-ink-gray-7 font-normal mt-1"
 				>
 					<div>
 						<template v-if="hoveringOn.key">
@@ -108,7 +108,7 @@
 					</Button>
 				</div>
 				<div
-					class="flex justify-between w-full text-[11px] text-gray-700 font-normal mt-1"
+					class="flex justify-between w-full text-[11px] text-ink-gray-7 font-normal mt-1"
 				>
 					<div
 						class="flex-shrink transition-all duration-300 bg-gray-200"

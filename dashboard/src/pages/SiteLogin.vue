@@ -145,7 +145,7 @@
 					</div>
 					<div v-else class="mt-10">
 						<div v-if="sites.data.length === 0">
-							<div class="text-center text-base leading-6 text-gray-700">
+							<div class="text-center text-base leading-6 text-ink-gray-7">
 								<div>No sites found for {{ email }}</div>
 								<Link :to="{ name: 'Signup' }">Sign up</Link> to create a new
 								site
@@ -187,7 +187,7 @@
 							Switch to a different account?
 						</span>
 						<span
-							class="text-base font-normal text-ink-gray-9 underline hover:text-gray-700 cursor-pointer"
+							class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7 cursor-pointer"
 							@click="goBack"
 						>
 							Logout
@@ -198,7 +198,7 @@
 							Manage your sites?
 						</span>
 						<router-link
-							class="text-base font-normal text-ink-gray-9 underline hover:text-gray-700"
+							class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 							:to="{
 								name: 'Login',
 							}"

@@ -33,7 +33,7 @@
 				<template v-slot="{ open }">
 					<Button class="ml-auto">
 						<template #suffix>
-							<lucide-chevron-down class="h-3.5 w-3.5 text-gray-700" />
+							<lucide-chevron-down class="h-3.5 w-3.5 text-ink-gray-7" />
 						</template>
 						{{ $team?.get.loading ? 'Loading...' : $team?.doc?.user }}
 					</Button>
@@ -43,8 +43,8 @@
 			<DisclosureButton as="template">
 				<Button class="ml-2">
 					<template #icon>
-						<lucide-x v-if="open" class="h-4 w-4 text-gray-700" />
-						<lucide-menu v-else class="h-4 w-4 text-gray-700" />
+						<lucide-x v-if="open" class="h-4 w-4 text-ink-gray-7" />
+						<lucide-menu v-else class="h-4 w-4 text-ink-gray-7" />
 					</template>
 				</Button>
 			</DisclosureButton>

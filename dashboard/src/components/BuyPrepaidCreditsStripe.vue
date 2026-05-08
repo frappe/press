@@ -7,7 +7,7 @@
 				'mt-4': step == 'Add Card Details',
 			}"
 		>
-			<span class="text-sm leading-4 text-gray-700">
+			<span class="text-sm leading-4 text-ink-gray-7">
 				Credit or Debit Card
 			</span>
 			<div class="form-input mt-2 block w-full pl-3" ref="card-element"></div>

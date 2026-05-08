@@ -23,7 +23,7 @@
 						{{ title }}
 					</p>
 					<p
-						class="break-words text-base font-normal leading-[21px] text-gray-700"
+						class="break-words text-base font-normal leading-[21px] text-ink-gray-7"
 						v-if="subtitle"
 					>
 						<template

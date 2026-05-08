@@ -128,7 +128,7 @@
 						{{ 'By signing up, you agree to our ' }}
 					</span>
 					<a
-						class="text-base font-normal text-ink-gray-9 underline hover:text-gray-700"
+						class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 						href="https://frappecloud.com/policies"
 					>
 						Terms & Policies

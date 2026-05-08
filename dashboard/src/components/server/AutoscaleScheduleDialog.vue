@@ -67,7 +67,7 @@
 					<a
 						href="https://docs.frappe.io/cloud/application-server-horizontal-scaling"
 						target="_blank"
-						class="text-ink-gray-9 underline hover:text-gray-700"
+						class="text-ink-gray-9 underline hover:text-ink-gray-7"
 					>
 						documentation
 					</a>

@@ -18,7 +18,7 @@
 			<div class="flex flex-col gap-2.5 p-4">
 				<div class="flex">
 					<div class="flex items-center gap-0.5">
-						<FeatherIcon name="award" class="h-5 w-5 text-gray-700" />
+						<FeatherIcon name="award" class="h-5 w-5 text-ink-gray-7" />
 						<h3 class="text-xl font-semibold">
 							{{ partnerDetails.data?.partner_type }} Tier
 						</h3>
@@ -97,7 +97,7 @@
 					</div>
 					<div class="flex items-center justify-between">
 						<div class="flex flex-col gap-1">
-							<span class="text-xl font-semibold text-gray-700">
+							<span class="text-xl font-semibold text-ink-gray-7">
 								{{ formatDate(partnerDetails.data?.end_date) }}
 							</span>
 							<span class="text-sm text-gray-600"
@@ -136,7 +136,7 @@
 		>
 			<template #body-content>
 				<p
-					class="text-base leading-relaxed align-center tracking-wide text-gray-700"
+					class="text-base leading-relaxed align-center tracking-wide text-ink-gray-7"
 				>
 					<LucideAlertTriangle class="inline h-4 w-4 text-red-500" />
 					You do not meet the Partnership renewal criteria.
@@ -157,7 +157,7 @@
 									}}</span
 								>
 							</p>
-							<div class="font-normal text-gray-700 tracking-wide">MRR</div>
+							<div class="font-normal text-ink-gray-7 tracking-wide">MRR</div>
 						</div>
 					</div>
 					<div
@@ -170,7 +170,7 @@
 								}}</span
 								><span class="text-base text-gray-600"> / 2</span>
 							</p>
-							<div class="font-normal text-gray-700 tracking-wide">
+							<div class="font-normal text-ink-gray-7 tracking-wide">
 								Certifications
 							</div>
 						</div>
@@ -208,7 +208,7 @@
 			}"
 		>
 			<template #body-content>
-				<p class="text-base leading-6 text-gray-700">
+				<p class="text-base leading-6 text-ink-gray-7">
 					By clicking "I Agree", you confirm that you have read and accepted the
 					terms and conditions of the
 					<a

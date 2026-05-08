@@ -1,6 +1,6 @@
 <template>
 	<div class="upi-autopay-form">
-		<p class="mb-6 text-p-base text-gray-700">
+		<p class="mb-6 text-p-base text-ink-gray-7">
 			Simplify your billing by authorizing
 			<strong>recurring monthly payments</strong> for your Frappe Cloud invoices
 			via Razorpay. Once set up, we’ll handle your future invoices

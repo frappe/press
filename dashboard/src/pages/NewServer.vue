@@ -84,7 +84,7 @@
 									size="sm"
 								>
 									<template #prefix>
-										<lucide-help-circle class="h-4 w-4 text-gray-700" />
+										<lucide-help-circle class="h-4 w-4 text-ink-gray-7" />
 									</template>
 									<span class="hidden sm:inline">Compare Features</span>
 									<span class="sm:hidden">Compare</span>
@@ -234,7 +234,7 @@
 									variant="ghost"
 								>
 									<template #prefix>
-										<lucide-help-circle class="h-4 w-4 text-gray-700" />
+										<lucide-help-circle class="h-4 w-4 text-ink-gray-7" />
 									</template>
 									<span class="hidden sm:inline">Know More</span>
 									<span class="sm:hidden">More</span>
@@ -306,7 +306,7 @@
 											size="sm"
 										>
 											<template #prefix>
-												<lucide-help-circle class="h-4 w-4 text-gray-700" />
+												<lucide-help-circle class="h-4 w-4 text-ink-gray-7" />
 											</template>
 											<span class="hidden sm:inline"
 												>Learn About Instance Types</span
@@ -321,7 +321,7 @@
 											size="sm"
 										>
 											<template #prefix>
-												<lucide-help-circle class="h-4 w-4 text-gray-700" />
+												<lucide-help-circle class="h-4 w-4 text-ink-gray-7" />
 											</template>
 											<span class="hidden sm:inline"
 												>Learn About Unified Server</span
@@ -427,7 +427,7 @@
 											size="sm"
 										>
 											<template #prefix>
-												<lucide-help-circle class="h-4 w-4 text-gray-700" />
+												<lucide-help-circle class="h-4 w-4 text-ink-gray-7" />
 											</template>
 											<span class="hidden sm:inline"
 												>Learn About Instance Types</span
@@ -609,7 +609,7 @@
 
 					<!-- Server Name -->
 					<div class="flex flex-col space-y-1" v-if="serverTitle">
-						<div class="text-base text-gray-700">Server Name</div>
+						<div class="text-base text-ink-gray-7">Server Name</div>
 						<div class="text-base font-medium">{{ serverTitle }}</div>
 					</div>
 
@@ -618,7 +618,7 @@
 						class="flex flex-col space-y-1"
 						v-if="serverType === 'dedicated' && serverProvider"
 					>
-						<div class="text-base text-gray-700">Server Provider</div>
+						<div class="text-base text-ink-gray-7">Server Provider</div>
 						<div class="text-base font-medium">{{ selectedProviderTitle }}</div>
 					</div>
 
@@ -627,7 +627,7 @@
 						class="flex flex-col space-y-1"
 						v-if="serverType === 'dedicated' && serverRegion"
 					>
-						<div class="text-base text-gray-700">Server Region</div>
+						<div class="text-base text-ink-gray-7">Server Region</div>
 						<div class="text-base font-medium">{{ serverRegion }}</div>
 					</div>
 
@@ -636,7 +636,7 @@
 						class="flex flex-col space-y-1"
 						v-if="serverType === 'dedicated' && appServerPlan"
 					>
-						<div class="text-base text-gray-700">
+						<div class="text-base text-ink-gray-7">
 							{{
 								unifiedServer
 									? 'Unified Server Plan'
@@ -647,7 +647,7 @@
 							{{ $format.planTitle(appServerPlan) }}/mo -
 							{{ getPlanTypeTitle(appServerPlan) }}
 						</div>
-						<div class="text-xs text-gray-700">
+						<div class="text-xs text-ink-gray-7">
 							{{ appServerPlan.vcpu }} vCPUs •
 							{{ $format.bytes(appServerPlan.memory, 0, 2) }} Memory •
 							{{ appServerPlan.disk }} GB Disk •
@@ -660,12 +660,12 @@
 						class="flex flex-col space-y-1"
 						v-if="serverType === 'dedicated' && !unifiedServer && dbServerPlan"
 					>
-						<div class="text-base text-gray-700">Database Server Plan</div>
+						<div class="text-base text-ink-gray-7">Database Server Plan</div>
 						<div class="text-base font-medium">
 							{{ $format.planTitle(dbServerPlan) }}/mo -
 							{{ getPlanTypeTitle(dbServerPlan) }}
 						</div>
-						<div class="text-xs text-gray-700">
+						<div class="text-xs text-ink-gray-7">
 							{{ dbServerPlan.vcpu }} vCPUs •
 							{{ $format.bytes(dbServerPlan.memory, 0, 2) }} Memory •
 							{{ dbServerPlan.disk }} GB Disk • {{ dbServerPlan.instance_type }}
@@ -677,7 +677,7 @@
 						class="flex flex-col space-y-1"
 						v-if="serverType === 'hybrid' && appPublicIP && appPrivateIP"
 					>
-						<div class="text-base text-gray-700">App Server IPs</div>
+						<div class="text-base text-ink-gray-7">App Server IPs</div>
 						<div class="text-base font-medium">
 							{{ appPublicIP }} / {{ appPrivateIP }}
 						</div>
@@ -687,7 +687,7 @@
 						class="flex flex-col space-y-1"
 						v-if="serverType === 'hybrid' && dbPublicIP && dbPrivateIP"
 					>
-						<div class="text-base text-gray-700">DB Server IPs</div>
+						<div class="text-base text-ink-gray-7">DB Server IPs</div>
 						<div class="text-base font-medium">
 							{{ dbPublicIP }} / {{ dbPrivateIP }}
 						</div>
@@ -701,7 +701,7 @@
 							$resources.hybridOptions?.data?.plans?.[0]
 						"
 					>
-						<div class="text-base text-gray-700">Plan</div>
+						<div class="text-base text-ink-gray-7">Plan</div>
 						<div class="text-base font-medium">
 							{{ $format.planTitle($resources.hybridOptions.data.plans[0]) }}/mo
 						</div>
@@ -709,7 +709,7 @@
 
 					<!-- Auto Add-on Storage -->
 					<div class="flex flex-col space-y-1" v-if="showAutoAddStorageOption">
-						<div class="text-base text-gray-700">Auto Add-on Storage</div>
+						<div class="text-base text-ink-gray-7">Auto Add-on Storage</div>
 						<div class="text-base font-medium text-green-900">
 							{{ enableAutoAddStorage ? 'Enabled' : 'Disabled' }}
 						</div>
@@ -719,12 +719,12 @@
 
 					<!-- Total Cost -->
 					<div class="flex flex-col space-y-2" v-if="_totalPerMonth">
-						<div class="text-base text-gray-700">Total Cost</div>
+						<div class="text-base text-ink-gray-7">Total Cost</div>
 						<div class="flex flex-col space-y-1">
 							<div class="text-lg font-semibold">
 								{{ totalPerMonth }} / month
 							</div>
-							<div class="text-base font-medium text-gray-700">
+							<div class="text-base font-medium text-ink-gray-7">
 								{{ totalPerDay }} per day
 							</div>
 						</div>
@@ -775,7 +775,7 @@
 
 				<!-- Server Name -->
 				<div class="flex flex-col space-y-1" v-if="serverTitle">
-					<div class="text-base text-gray-700">Server Name</div>
+					<div class="text-base text-ink-gray-7">Server Name</div>
 					<div class="text-base font-medium">{{ serverTitle }}</div>
 				</div>
 
@@ -784,7 +784,7 @@
 					class="flex flex-col space-y-1"
 					v-if="serverType === 'dedicated' && serverProvider"
 				>
-					<div class="text-base text-gray-700">Server Provider</div>
+					<div class="text-base text-ink-gray-7">Server Provider</div>
 					<div class="text-base font-medium">{{ selectedProviderTitle }}</div>
 				</div>
 
@@ -793,7 +793,7 @@
 					class="flex flex-col space-y-1"
 					v-if="serverType === 'dedicated' && serverRegion"
 				>
-					<div class="text-base text-gray-700">Server Region</div>
+					<div class="text-base text-ink-gray-7">Server Region</div>
 					<div class="text-base font-medium">{{ serverRegion }}</div>
 				</div>
 
@@ -802,7 +802,7 @@
 					class="flex flex-col space-y-1"
 					v-if="serverType === 'dedicated' && appServerPlan"
 				>
-					<div class="text-base text-gray-700">
+					<div class="text-base text-ink-gray-7">
 						{{
 							unifiedServer ? 'Unified Server Plan' : 'Application Server Plan'
 						}}
@@ -811,7 +811,7 @@
 						{{ $format.planTitle(appServerPlan) }}/mo -
 						{{ getPlanTypeTitle(appServerPlan) }}
 					</div>
-					<div class="text-sm text-gray-700">
+					<div class="text-sm text-ink-gray-7">
 						{{ appServerPlan.vcpu }} vCPUs •
 						{{ $format.bytes(appServerPlan.memory, 0, 2) }} Memory •
 						{{ appServerPlan.disk }} GB Disk • {{ appServerPlan.instance_type }}
@@ -823,12 +823,12 @@
 					class="flex flex-col space-y-1"
 					v-if="serverType === 'dedicated' && !unifiedServer && dbServerPlan"
 				>
-					<div class="text-base text-gray-700">Database Server Plan</div>
+					<div class="text-base text-ink-gray-7">Database Server Plan</div>
 					<div class="text-base font-medium">
 						{{ $format.planTitle(dbServerPlan) }}/mo -
 						{{ getPlanTypeTitle(dbServerPlan) }}
 					</div>
-					<div class="text-sm text-gray-700">
+					<div class="text-sm text-ink-gray-7">
 						{{ dbServerPlan.vcpu }} vCPUs •
 						{{ $format.bytes(dbServerPlan.memory, 0, 2) }} Memory •
 						{{ dbServerPlan.disk }} GB Disk • {{ dbServerPlan.instance_type }}
@@ -840,7 +840,7 @@
 					class="flex flex-col space-y-1"
 					v-if="serverType === 'hybrid' && appPublicIP && appPrivateIP"
 				>
-					<div class="text-base text-gray-700">App Server IPs</div>
+					<div class="text-base text-ink-gray-7">App Server IPs</div>
 					<div class="text-base font-medium">
 						{{ appPublicIP }} / {{ appPrivateIP }}
 					</div>
@@ -850,7 +850,7 @@
 					class="flex flex-col space-y-1"
 					v-if="serverType === 'hybrid' && dbPublicIP && dbPrivateIP"
 				>
-					<div class="text-base text-gray-700">DB Server IPs</div>
+					<div class="text-base text-ink-gray-7">DB Server IPs</div>
 					<div class="text-base font-medium">
 						{{ dbPublicIP }} / {{ dbPrivateIP }}
 					</div>
@@ -864,7 +864,7 @@
 						$resources.hybridOptions?.data?.plans?.[0]
 					"
 				>
-					<div class="text-base text-gray-700">Plan</div>
+					<div class="text-base text-ink-gray-7">Plan</div>
 					<div class="text-base font-medium">
 						{{ $format.planTitle($resources.hybridOptions.data.plans[0]) }}/mo
 					</div>
@@ -872,7 +872,7 @@
 
 				<!-- Auto Add-on Storage -->
 				<div class="flex flex-col space-y-1" v-if="showAutoAddStorageOption">
-					<div class="text-base text-gray-700">Auto Add-on Storage</div>
+					<div class="text-base text-ink-gray-7">Auto Add-on Storage</div>
 					<div class="text-base font-medium text-ink-gray-9">
 						{{ enableAutoAddStorage ? 'Enabled' : 'Disabled' }}
 					</div>
@@ -882,10 +882,10 @@
 
 				<!-- Total Cost -->
 				<div class="flex flex-col space-y-2" v-if="_totalPerMonth">
-					<div class="text-base text-gray-700">Total Cost</div>
+					<div class="text-base text-ink-gray-7">Total Cost</div>
 					<div class="flex flex-col space-y-1">
 						<div class="text-lg font-semibold">{{ totalPerMonth }} / month</div>
-						<div class="text-base font-medium text-gray-700">
+						<div class="text-base font-medium text-ink-gray-7">
 							{{ totalPerDay }} per day
 						</div>
 					</div>

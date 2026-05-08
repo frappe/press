@@ -13,7 +13,7 @@
 					this.$resources?.onPremFailoverConfig?.loading && !initialDataFetched
 				"
 			>
-				<div class="flex flex-row items-center gap-2 text-gray-700">
+				<div class="flex flex-row items-center gap-2 text-ink-gray-7">
 					<Spinner class="w-4" />
 					Loading configuration...
 				</div>
@@ -45,15 +45,15 @@
 						<thead class="bg-surface-gray-2">
 							<tr>
 								<th
-									class="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b"
+									class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
 								></th>
 								<th
-									class="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b"
+									class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
 								>
 									App Server
 								</th>
 								<th
-									class="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b"
+									class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
 								>
 									Database Server
 								</th>
@@ -138,7 +138,7 @@
 							@click="toggleSetupGuide"
 						></Button>
 						<p
-							class="cursor-pointer text-gray-700 font-medium"
+							class="cursor-pointer text-ink-gray-7 font-medium"
 							@click="toggleSetupGuide"
 						>
 							On-Prem Server Setup Guide
@@ -150,7 +150,7 @@
 					>
 						<!-- Add SSH Key -->
 						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">1. Add SSH Keys</div>
+							<div class="font-medium text-ink-gray-7">1. Add SSH Keys</div>
 							<div class="text-gray-600">
 								&nbsp;&nbsp;&nbsp;Add the following authorized keys to your
 								on-prem server's
@@ -161,7 +161,7 @@
 						</div>
 						<!-- Install necessary tools -->
 						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">
+							<div class="font-medium text-ink-gray-7">
 								2. Install Necessary Tools
 							</div>
 							<ClickToCopyField
@@ -173,7 +173,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 						</div>
 						<!-- Configure Wireguard -->
 						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">
+							<div class="font-medium text-ink-gray-7">
 								3. Update Wireguard Configuration
 							</div>
 							<div class="text-gray-600">
@@ -184,7 +184,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 						</div>
 						<!-- Start Wireguard Service -->
 						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">
+							<div class="font-medium text-ink-gray-7">
 								4. Start Wireguard Service
 							</div>
 							<ClickToCopyField
@@ -193,7 +193,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 						</div>
 						<!-- Install Failover Management Service -->
 						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">
+							<div class="font-medium text-ink-gray-7">
 								5. Setup Failover Management Service
 							</div>
 							<ClickToCopyField
@@ -202,7 +202,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 						</div>
 						<!-- Trigger Replication Setup -->
 						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">
+							<div class="font-medium text-ink-gray-7">
 								6. Trigger Replication Setup
 							</div>
 							<div class="text-gray-600">
@@ -265,7 +265,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 									"
 								></Button>
 								<p
-									class="cursor-pointer text-gray-700 font-medium"
+									class="cursor-pointer text-ink-gray-7 font-medium"
 									@click="
 										openedJobSection =
 											openedJobSection === job.name ? null : job.name
@@ -319,7 +319,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 </template>
 <style scoped>
 td {
-	@apply px-4 py-2 border-b text-sm text-gray-700;
+	@apply px-4 py-2 border-b text-sm text-ink-gray-7;
 }
 
 tbody tr:last-child td {
@@ -327,7 +327,7 @@ tbody tr:last-child td {
 }
 
 .output-container {
-	@apply rounded border px-2 py-2 text-base text-gray-700;
+	@apply rounded border px-2 py-2 text-base text-ink-gray-7;
 }
 </style>
 <script>

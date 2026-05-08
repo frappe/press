@@ -100,7 +100,7 @@
 				class="w-full"
 			>
 				<p
-					class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+					class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 				>
 					Select a {{ mode }} to view logs
 				</p>
@@ -110,7 +110,7 @@
 				<div class="m-4 flex h-full w-3/4 flex-col">
 					<div
 						v-if="$resources.log.loading"
-						class="flex h-full min-h-[90vh] w-full items-center justify-center gap-2 text-gray-700"
+						class="flex h-full min-h-[90vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 					>
 						<Spinner class="h-4 w-4" />
 						<span> Fetching the log... </span>
@@ -122,7 +122,7 @@
 					<LogViewer v-else-if="logId" :log="log" />
 					<div
 						v-else
-						class="flex h-full min-h-[90vh] w-full items-center justify-center gap-2 text-gray-700"
+						class="flex h-full min-h-[90vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 					>
 						Select a log to view
 					</div>

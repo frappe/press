@@ -9,7 +9,7 @@
 		<template #body-content>
 			<div
 				v-if="$resources.binlogs.loading"
-				class="flex w-full items-center justify-center gap-2 py-32 text-gray-700"
+				class="flex w-full items-center justify-center gap-2 py-32 text-ink-gray-7"
 			>
 				<Spinner class="w-4" /> Loading
 			</div>

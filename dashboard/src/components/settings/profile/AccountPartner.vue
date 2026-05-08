@@ -22,7 +22,7 @@
 			</Button>
 		</template>
 		<span
-			class="text-base font-medium text-gray-700"
+			class="text-base font-medium text-ink-gray-7"
 			v-if="!$team.doc?.partner_email"
 		>
 			Have a Frappe Partner Referral Code? Click on
@@ -51,7 +51,7 @@
 				</p>
 
 				<div
-					class="rounded bg-surface-gray-1 p-4 mb-4 pb-2 prose prose-sm text-gray-700"
+					class="rounded bg-surface-gray-1 p-4 mb-4 pb-2 prose prose-sm text-ink-gray-7"
 				>
 					<p>
 						<strong>Note</strong>: After linking with Partner, following details

@@ -16,14 +16,14 @@
 			<div class="space-y-4">
 				<div>
 					<FormControl label="Endpoint" v-model="endpoint" />
-					<p class="mt-1.5 text-sm text-gray-700">
+					<p class="mt-1.5 text-sm text-ink-gray-7">
 						If you change the endpoint, make sure to activate the webhook again.
 					</p>
 				</div>
 				<div v-if="!updateSecret">
 					<p class="block text-xs text-gray-600">Secret</p>
 					<div
-						class="mt-1 flex items-center justify-between text-base text-gray-700"
+						class="mt-1 flex items-center justify-between text-base text-ink-gray-7"
 					>
 						<p>Want to change the secret?</p>
 						<Button @click="updateSecret = true">Edit Secret</Button>
@@ -39,7 +39,7 @@
 							/>
 						</template>
 					</FormControl>
-					<p class="mt-1.5 text-sm text-gray-700">
+					<p class="mt-1.5 text-sm text-ink-gray-7">
 						<secret>Note:</secret> Secret is optional. Check
 						<a
 							href="https://docs.frappe.io/cloud/webhook-introduction"

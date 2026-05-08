@@ -23,13 +23,13 @@
 				</div>
 				<div class="mt-3">
 					<p class="text-sm text-gray-600">Timestamp</p>
-					<p class="mt-1.5 text-sm text-gray-700">
+					<p class="mt-1.5 text-sm text-ink-gray-7">
 						{{ new Date(selectedRow.creation).toLocaleString() }}
 					</p>
 				</div>
 				<div class="mt-3">
 					<p class="text-sm text-gray-600">Committed in DB</p>
-					<p class="mt-1.5 text-sm text-gray-700">
+					<p class="mt-1.5 text-sm text-ink-gray-7">
 						{{ selectedRow.committed ? 'Yes' : 'No' }}
 					</p>
 				</div>
