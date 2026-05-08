@@ -19,7 +19,7 @@
 				</template>
 				<template v-slot:default>
 					<div class="flex h-40 flex-col justify-center">
-						<div class="text-base leading-5 text-gray-800">
+						<div class="text-base leading-5 text-ink-gray-8">
 							<p>It looks like something went wrong!</p>
 							<p class="">
 								Contact

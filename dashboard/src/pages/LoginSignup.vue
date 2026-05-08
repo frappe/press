@@ -491,7 +491,7 @@ export default {
 						h(CustomToast, {
 							html: `
 							You are not part of an active team<br/>
-							<span class="text-sm text-gray-800">
+							<span class="text-sm text-ink-gray-8">
 								If the issue persists, please contact 
 								<a href="https://support.frappe.io" class="font-medium underline" target="_blank" rel="noopener noreferrer">
 									support.

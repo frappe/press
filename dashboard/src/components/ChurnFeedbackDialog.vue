@@ -18,7 +18,7 @@
 		v-model="show"
 	>
 		<template v-slot:body-content>
-			<p class="mb-5 text-sm text-gray-800">
+			<p class="mb-5 text-sm text-ink-gray-8">
 				Help us improve your experience by sharing your thoughts.
 			</p>
 			<div class="mt-3">

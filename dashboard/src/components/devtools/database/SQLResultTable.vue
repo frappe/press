@@ -194,7 +194,7 @@ const downloadCSV = async () => {
 							v-for="header in headerGroup.headers"
 							:key="header.id"
 							:colSpan="header.colSpan"
-							class="border-b text-gray-800"
+							class="border-b text-ink-gray-8"
 							:class="{
 								'border-r': header.column.columnDef.id !== lastColumn,
 							}"
@@ -211,7 +211,7 @@ const downloadCSV = async () => {
 							</div>
 						</td>
 						<td
-							class="w-[10rem] border-b border-r text-center text-gray-800"
+							class="w-[10rem] border-b border-r text-center text-ink-gray-8"
 							v-if="actionHeaderLabel"
 						>
 							{{ actionHeaderLabel }}
@@ -244,7 +244,7 @@ const downloadCSV = async () => {
 							/>
 						</td>
 						<td
-							class="w-[6rem] border-b border-r text-center text-gray-800"
+							class="w-[6rem] border-b border-r text-center text-ink-gray-8"
 							v-if="actionComponent"
 						>
 							<component

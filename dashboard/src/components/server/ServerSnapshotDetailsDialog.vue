@@ -118,7 +118,7 @@
 						</Button>
 
 						<div class="flex flex-row items-center gap-1">
-							<p class="text-sm font-medium text-gray-800">
+							<p class="text-sm font-medium text-ink-gray-8">
 								{{ sites.length }} Site{{ sites.length > 1 ? 's' : '' }}
 								Recoverable
 							</p>
@@ -128,7 +128,7 @@
 					<div class="flex flex-col mt-2 px-2 gap-1.5" v-if="showSiteList">
 						<span
 							v-for="site in snapshot?.site_list_json ?? []"
-							class="text-sm text-gray-800"
+							class="text-sm text-ink-gray-8"
 						>
 							-> {{ site }}
 						</span>
@@ -198,7 +198,7 @@ export default {
 
 <style scoped>
 td {
-	@apply px-4 py-2 border-b text-sm text-gray-800;
+	@apply px-4 py-2 border-b text-sm text-ink-gray-8;
 }
 
 tbody tr:last-child td {

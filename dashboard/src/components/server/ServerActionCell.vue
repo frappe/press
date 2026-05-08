@@ -11,7 +11,7 @@
 		>
 			<p
 				:class="
-					group === 'Dangerous Actions' ? 'text-red-600' : 'text-gray-800'
+					group === 'Dangerous Actions' ? 'text-red-600' : 'text-ink-gray-8'
 				"
 			>
 				{{ props.buttonLabel }}

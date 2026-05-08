@@ -21,7 +21,7 @@
 			<div v-else>
 				<!-- Status -->
 				<div class="flex flex-row justify-between items-center">
-					<div class="text-base font-medium text-gray-800">Current Status</div>
+					<div class="text-base font-medium text-ink-gray-8">Current Status</div>
 					<Button
 						variant="subtle"
 						theme="red"
@@ -239,7 +239,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 
 				<!-- Jobs -->
 				<div
-					class="text-base font-medium text-gray-800 mt-4"
+					class="text-base font-medium text-ink-gray-8 mt-4"
 					v-if="jobs && jobs.length"
 				>
 					Recent Jobs

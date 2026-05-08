@@ -11,7 +11,7 @@
 					:to="{ name: tab.value }"
 					class="flex cursor-pointer text-base hover:bg-surface-gray-1"
 					:class="{
-						'bg-gray-50 text-gray-800': isActiveTab(tab),
+						'bg-gray-50 text-ink-gray-8': isActiveTab(tab),
 						'text-gray-600': !isActiveTab(tab),
 						'border-b': !$isMobile,
 					}"

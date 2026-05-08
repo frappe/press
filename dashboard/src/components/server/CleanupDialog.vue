@@ -20,7 +20,7 @@
 			>
 				Failed to fetch cleanup data.
 			</div>
-			<div v-else-if="parsedData" class="flex flex-col gap-4 text-gray-800">
+			<div v-else-if="parsedData" class="flex flex-col gap-4 text-ink-gray-8">
 				<AlertBanner
 					title="Force cleanup is only allowed if the total reclaimable space is more than or equal to 500MB."
 					type="info"

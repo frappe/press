@@ -8,7 +8,7 @@
 			}"
 		>
 			<div>
-				<p class="font-medium text-gray-800">
+				<p class="font-medium text-ink-gray-8">
 					{{ label }}
 				</p>
 				<p class="mt-2 text-sm text-gray-700" v-if="subLabel">
