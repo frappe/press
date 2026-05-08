@@ -30,7 +30,7 @@
 
 				<div
 					v-if="failure"
-					class="flex items-center space-x-2 rounded border border-gray-200 bg-surface-gray-2 p-4 text-base text-ink-gray-7"
+					class="flex items-center space-x-2 rounded border border-outline-gray-1 bg-surface-gray-2 p-4 text-base text-ink-gray-7"
 				>
 					<lucide-alert-circle class="inline-block h-5 w-5" />
 					<p>
@@ -49,7 +49,7 @@
 					<div
 						v-for="step in steps"
 						:key="step.id"
-						class="flex items-center border-gray-200 px-1 py-3"
+						class="flex items-center border-outline-gray-1 px-1 py-3"
 					>
 						<div class="flex items-center space-x-4">
 							<LoadingIndicator
