@@ -9,9 +9,17 @@ const getSystemTheme = (): "light" | "dark" => {
 };
 
 export const setTheme = (name: Theme) => {
+  document.documentElement.classList.add('no-transition');
+
   let themeType = name == "system" ? getSystemTheme() : name;
   document.documentElement.setAttribute("data-theme", themeType);
   localStorage.setItem("theme", name);
+
+    requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.documentElement.classList.remove('no-transition');
+    });
+  });
 };
 
 export const initTheme = () => {
