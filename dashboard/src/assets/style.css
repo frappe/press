@@ -1,5 +1,10 @@
 @import 'frappe-ui/style.css';
 
+	body {
+  background-color: var(--surface-white);
+  color: var(--ink-gray-9);
+	}
+
 @layer components {
 	/* Works on Firefox */
 	* {

@@ -6,11 +6,13 @@ import LucideSupport from '~icons/lucide/life-buoy';
 import LucideBookText from '~icons/lucide/book-text';
 import LucideMessageSquareCode from '~icons/lucide/message-square-code';
 import LucideAlert from '~icons/lucide/notebook-text';
+import LucideMoon from '~icons/lucide/moon';
 
 import Item from './Item.vue';
 import NavList from './NavList.vue';
 import ItemGroup from './ItemGroup.vue';
 
+import { setTheme } from '@/utils/useTheme';
 import { getTeam } from '@/data/team';
 import { session } from '@/data/session';
 
@@ -53,6 +55,25 @@ const releaseNotes = () => {
 					onClick: () => (showTeamSwitcher = true),
 				},
 
+        	{
+						label: 'Theme',
+						icon: LucideMoon,
+						submenu: [
+							{
+								label: 'Light Mode',
+								icon: 'sun',
+								onClick: () => setTheme('light'),
+							},
+							{
+                tooltip:'This feature is in beta',
+								label: 'Dark Mode (beta)',
+								icon: 'moon',
+								onClick: () => setTheme('dark'),
+							},
+						],
+					},
+
+
 				{
 					label: 'Logout',
 					icon: 'log-out',
@@ -66,6 +87,7 @@ const releaseNotes = () => {
 					:class="open ? 'bg-white shadow-sm' : 'hover:bg-gray-200'"
 				>
 					<FCLogo class="mb-1 h-8 w-8 shrink-0 rounded" />
+
 					<div class="ml-2 flex flex-1 flex-col overflow-hidden">
 						<div class="text-base font-medium leading-none text-gray-900">
 							Frappe Cloud
