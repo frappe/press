@@ -36,7 +36,7 @@
 			</div>
 			<div
 				v-if="team.doc.payment_mode == 'Card'"
-				class="my-3 h-px bg-surface-gray-1"
+				class="my-3 h-px bg-surface-gray-2"
 			/>
 			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
@@ -62,7 +62,7 @@
 					</Button>
 				</div>
 			</div>
-			<div class="my-3 h-px bg-surface-gray-1" />
+			<div class="my-3 h-px bg-surface-gray-2" />
 			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Mode of payment</div>
@@ -92,7 +92,7 @@
 					</Dropdown>
 				</div>
 			</div>
-			<div class="my-3 h-px bg-surface-gray-1" />
+			<div class="my-3 h-px bg-surface-gray-2" />
 			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Credit balance</div>
@@ -121,7 +121,7 @@
 					</Button>
 				</div>
 			</div>
-			<div class="my-3 h-px bg-surface-gray-1" />
+			<div class="my-3 h-px bg-surface-gray-2" />
 			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Budget Alerts</div>

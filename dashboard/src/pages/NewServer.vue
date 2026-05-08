@@ -40,7 +40,7 @@
 								@click="serverType = c.name"
 								:class="[
 									serverType === c.name
-										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-1'
+										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 										: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-gray-50',
 									'flex w-full items-center rounded-md border p-3 text-left text-base text-ink-gray-9',
 								]"
@@ -99,7 +99,7 @@
 									@click="serverProvider = provider.name"
 									:class="[
 										serverProvider === provider.name
-											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-1'
+											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 											: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-gray-50',
 										'flex w-full items-center rounded-md border p-2 text-left text-base text-ink-gray-9',
 									]"
@@ -152,7 +152,7 @@
 									@click="serverRegion = r.name"
 									:class="[
 										serverRegion === r.name
-											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-1'
+											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 											: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-gray-50',
 										'flex w-full items-center rounded-md border p-2 text-left text-base text-ink-gray-9',
 									]"
@@ -199,7 +199,7 @@
 									@click="unifiedServer = c.unifiedServer"
 									:class="[
 										unifiedServer == c.unifiedServer
-											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-1'
+											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 											: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-gray-50',
 										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-ink-gray-9',
 									]"
@@ -258,7 +258,7 @@
 									@click="serviceType = c.name"
 									:class="[
 										serviceType === c.name
-											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-1'
+											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-surface-gray-2'
 											: 'border-gray-400 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-gray-50',
 										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-ink-gray-9',
 									]"
