@@ -2496,6 +2496,8 @@ systemctl restart mariadb
 						get_press_base_url() + "/api/method/press.api.service_health.check_db_health"
 					),
 					"enable_coredump": self.is_auto_coredump_enabled,
+					"mariadb_root_password": self.get_password("mariadb_root_password"),
+					"mariadb_private_ip": self.private_ip,
 				},
 			)
 			play = ansible.run()
