@@ -45,6 +45,7 @@ const colors = {
 	general: 'gray',
 };
 
+<<<<<<< HEAD
 export default {
 	name: 'AlertBanner',
 	props: {
@@ -68,4 +69,24 @@ export default {
 		},
 	},
 };
+=======
+interface Props {
+	title?: string;
+	type?: string;
+	showIcon?: boolean;
+	isDismissible?: number;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+	showIcon: true,
+});
+
+const emit = defineEmits<{
+	(e: 'dismissBanner'): void;
+}>();
+
+const color = computed(() => {
+	return colors[props.type ?? 'info'] ?? 'gray';
+});
+>>>>>>> e339a6094 (fix(AlertBanner): Set showIcon prop as true by default)
 </script>
