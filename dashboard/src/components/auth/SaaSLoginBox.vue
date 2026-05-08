@@ -15,7 +15,7 @@
 			</div>
 			<!-- card -->
 			<div
-				class="mx-auto w-full bg-white px-4 py-8 sm:mt-6 sm:w-112 sm:rounded-2xl sm:px-6 sm:py-6 sm:shadow-2xl"
+				class="mx-auto w-full bg-surface-white px-4 py-8 sm:mt-6 sm:w-112 sm:rounded-2xl sm:px-6 sm:py-6 sm:shadow-2xl"
 			>
 				<!-- title -->
 				<div class="mb-7.5 text-center">

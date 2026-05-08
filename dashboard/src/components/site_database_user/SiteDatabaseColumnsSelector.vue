@@ -12,7 +12,7 @@
 		<template #body="{ isOpen, togglePopover }" class="w-full">
 			<div
 				v-show="isOpen"
-				class="bg-surface-white bg absolute right-0 z-[999] mt-1.5 flex max-h-[15rem] w-full list-none flex-col gap-2 overflow-y-auto overflow-x-hidden rounded-lg bg-white p-2 shadow-2xl"
+				class="bg-surface-white bg absolute right-0 z-[999] mt-1.5 flex max-h-[15rem] w-full list-none flex-col gap-2 overflow-y-auto overflow-x-hidden rounded-lg bg-surface-white p-2 shadow-2xl"
 			>
 				<FormControl
 					theme="outline"

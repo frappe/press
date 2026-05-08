@@ -141,7 +141,7 @@ const columns = computed(() => [
 		<div
 			class="p-2 text-right"
 			:class="{
-				'bg-white bottom-0 sticky':
+				'bg-surface-white bottom-0 sticky':
 					dependencyListResource?.next && dependencyListResource?.hasNextPage,
 			}"
 			v-if="dependencyListResource"
