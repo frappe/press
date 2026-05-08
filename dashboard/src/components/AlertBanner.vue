@@ -11,7 +11,9 @@
 				v-if="showIcon && type === 'info'"
 				:class="`ml-1 size-4 text-${color}-600 shrink-0`"
 			/>
-			<div class="prose-sm font-medium text-gray-800" v-html="title" />
+			<div class="prose-sm font-medium text-gray-800">
+				{{ title }}
+			</div>
 		</div>
 
 		<div class="flex items-center">

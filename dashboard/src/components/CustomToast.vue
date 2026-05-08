@@ -19,7 +19,8 @@ defineProps({
 			{{ title }}
 		</div>
 
-		<!-- Dangerous HTML rendering -->
-		<div v-if="html" class="text-gray-600" v-html="html" />
+		<div v-if="html" class="text-gray-600">
+			{{ html }}
+		</div>
 	</div>
 </template>
