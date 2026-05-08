@@ -134,6 +134,7 @@ watch(navigationIndex, () => {
 						>
 							<component :is="item.icon || LucideDot" class="size-4" />
 							<span v-html="highlightMatch(item.name, searchQuery)" />
+              <component v-if='item.suffix' :is='item.suffix' />
 						</router-link>
 					</div>
 				</template>
