@@ -64,7 +64,7 @@
 				type="tel"
 				v-model="phoneNumber"
 				:placeholder="selectedCountry?.example || placeholder"
-				class="h-7 w-full rounded-r border border-outline-gray-1 bg-surface-gray-2 px-2 text-base text-ink-gray-8 placeholder-gray-500 focus:border-gray-500 focus:bg-surface-white focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
+				class="h-7 w-full rounded-r border border-outline-gray-1 bg-surface-gray-2 px-2 text-base text-ink-gray-8 placeholder-gray-500 focus:border-outline-gray-4 focus:bg-surface-white focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 				@input="emitValue"
 			/>
 		</div>
