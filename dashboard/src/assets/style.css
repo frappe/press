@@ -76,3 +76,5 @@ body {
 .scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: var(--scrollbar-thumb-hover);
 }
+
+.no-transition * { transition: none !important; }
