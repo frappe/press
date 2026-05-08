@@ -65,7 +65,7 @@ def execute():
 
 	# Remove old roles from all users.
 	frappe.qb.from_(HasRole).where(HasRole.role.isin(old_roles)).where(
-		HasRole.parentype == "User"
+		HasRole.parenttype == "User"
 	).delete().run()
 
 	# Change all remaining "Press Admin" and "Press Member" roles to "Press User".
