@@ -41,7 +41,7 @@
 								:class="[
 									serverType === c.name
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+										: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-gray-50',
 									'flex w-full items-center rounded-md border p-3 text-left text-base text-gray-900',
 								]"
 							>
@@ -100,7 +100,7 @@
 									:class="[
 										serverProvider === provider.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+											: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-gray-50',
 										'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
 									]"
 								>
@@ -153,7 +153,7 @@
 									:class="[
 										serverRegion === r.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+											: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-gray-50',
 										'flex w-full items-center rounded-md border p-2 text-left text-base text-gray-900',
 									]"
 								>
@@ -200,7 +200,7 @@
 									:class="[
 										unifiedServer == c.unifiedServer
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+											: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-gray-50',
 										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-gray-900',
 									]"
 								>
@@ -259,7 +259,7 @@
 									:class="[
 										serviceType === c.name
 											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+											: 'border-gray-400 bg-surface-white text-gray-900 ring-gray-200 hover:bg-gray-50',
 										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-gray-900',
 									]"
 								>
@@ -602,7 +602,7 @@
 
 				<!-- Mobile only Summary -->
 				<div
-					class="lg:hidden rounded border-gray-400 bg-white text-gray-900 ring-gray-200 border p-6 space-y-4"
+					class="lg:hidden rounded border-gray-400 bg-surface-white text-gray-900 ring-gray-200 border p-6 space-y-4"
 					v-if="showSummary"
 				>
 					<h2 class="text-md font-semibold">Summary</h2>
@@ -768,7 +768,7 @@
 
 			<!-- Desktop only Summary -->
 			<div
-				class="hidden lg:block sticky top-[4.5rem] rounded border-gray-400 bg-white text-gray-900 ring-gray-200 border p-6 h-fit w-[25rem] space-y-4"
+				class="hidden lg:block sticky top-[4.5rem] rounded border-gray-400 bg-surface-white text-gray-900 ring-gray-200 border p-6 h-fit w-[25rem] space-y-4"
 				v-if="showSummary"
 			>
 				<h2 class="text-md font-semibold">Summary</h2>

@@ -83,7 +83,7 @@ const releaseNotes = () => {
 			<template v-slot="{ open }">
 				<button
 					class="flex items-center rounded-md p-1 text-left md:mb-1 hover:bg-surface-gray-3"
-					:class="open ? 'bg-white dark:bg-surface-gray-2 shadow-sm' : ''"
+					:class="open ? 'bg-surface-white dark:bg-surface-gray-2 shadow-sm' : ''"
 				>
 					<FCLogo class="mb-1 h-8 w-8 shrink-0 rounded" />
 
