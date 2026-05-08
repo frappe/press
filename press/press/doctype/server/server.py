@@ -1958,7 +1958,6 @@ class BaseServer(Document, TagHelpers):
 			+ base64.urlsafe_b64encode(signature).decode().rstrip("=")
 		)
 
-		auth.agent_token = token
 		auth.expires_in = expires_in
 
 		return token

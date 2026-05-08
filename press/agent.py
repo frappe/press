@@ -959,25 +959,74 @@ class Agent:
 		public_key = frappe.cache().get_value(key)
 
 		if not public_key:
-			agent_auth: AgentAuth = frappe.get_doc("Agent Auth", self.server)
+			agent_auth: AgentAuth = frappe.get_doc(
+				"Agent Auth",
+				self.server,
+			)
+
 			public_key = agent_auth.public_key
-			frappe.cache().set_value(key, public_key, expires_in_sec=3600)
+
+			frappe.cache().set_value(
+				key,
+				public_key,
+				expires_in_sec=3600,
+			)
 
 		return public_key
 
+	def get_regenerate_public_key(self):
+		key = f"{self.server}_regenerate_public_key"
+
+		regenerate_key = frappe.cache().get_value(key)
+		if not regenerate_key:
+			agent_auth: AgentAuth = frappe.get_doc(
+				"Agent Auth",
+				self.server,
+			)
+
+			if agent_auth.regenerate_public_key:
+				agent_auth.regenerate_public_key = None
+				agent_auth.save(ignore_permissions=True)
+
+			return None
+
+		return regenerate_key
+
 	def _verify_request_token(self, token: str):
+		from cryptography.exceptions import InvalidSignature
+
 		payload_b64, signature_b64 = token.split(".")
 
 		payload_bytes = base64.urlsafe_b64decode(payload_b64 + "==")
 		signature = base64.urlsafe_b64decode(signature_b64 + "==")
 
-		public_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(self.get_agent_public_key()))
+		public_keys = [self.get_agent_public_key()]
 
-		public_key.verify(signature, payload_bytes)
+		regenerate_key = self.get_regenerate_public_key()
+
+		if regenerate_key:
+			public_keys.append(regenerate_key)
+
+		verified = False
+
+		for key in public_keys:
+			try:
+				public_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(key))
+
+				public_key.verify(signature, payload_bytes)
+
+				verified = True
+				break
+
+			except InvalidSignature:
+				pass
+
+		if not verified:
+			raise ValueError("Invalid token signature")
 
 		payload = json.loads(payload_bytes)
 
-		if payload["exp"] < time.time():
+		if payload["exp"] < (time.time() - 60):
 			raise ValueError("Token expired")
 
 		if payload["server"] != self.server:
