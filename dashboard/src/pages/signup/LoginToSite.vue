@@ -56,7 +56,7 @@
 							:label="currentBuildStep"
 						/>
 						<div
-							class="flex w-full items-center space-x-2 pt-4 text-sm text-gray-600"
+							class="flex w-full items-center space-x-2 pt-4 text-sm text-ink-gray-6"
 						>
 							<lucide-info class="h-4 w-4" />
 							<span>{{ currentHelpText }}</span>

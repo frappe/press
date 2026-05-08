@@ -16,10 +16,10 @@
 						v-model="searchQuery"
 					>
 						<template #prefix>
-							<lucide-search class="h-4 w-4 text-gray-500" />
+							<lucide-search class="h-4 w-4 text-ink-gray-5" />
 						</template>
 						<template #suffix>
-							<span class="text-sm text-gray-500" v-if="searchQuery">
+							<span class="text-sm text-ink-gray-5" v-if="searchQuery">
 								{{
 									filteredRows.length === 0
 										? 'No results'
@@ -114,12 +114,12 @@
 				</ListView>
 				<div class="px-5" v-if="filteredRows.length === 0">
 					<div
-						class="text-center text-sm leading-10 text-gray-500"
+						class="text-center text-sm leading-10 text-ink-gray-5"
 						v-if="isLoading"
 					>
 						Loading...
 					</div>
-					<div v-else class="text-center text-sm leading-10 text-gray-500">
+					<div v-else class="text-center text-sm leading-10 text-ink-gray-5">
 						No apps available to add
 					</div>
 				</div>
@@ -228,7 +228,7 @@ export default {
 									'div',
 									{
 										class:
-											'w-6 h-6 rounded bg-gray-300 text-gray-600 flex items-center justify-center',
+											'w-6 h-6 rounded bg-gray-300 text-ink-gray-6 flex items-center justify-center',
 									},
 									row.title[0].toUpperCase(),
 								);
@@ -237,7 +237,7 @@ export default {
 				{
 					label: 'Repository',
 					key: 'repo',
-					class: 'text-gray-600',
+					class: 'text-ink-gray-6',
 					width: '15rem',
 					format(value, row) {
 						if (!row.sources.length) return value;

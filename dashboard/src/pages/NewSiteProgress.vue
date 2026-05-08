@@ -11,13 +11,13 @@
 		</Header>
 
 		<div class="m-12 mx-auto max-w-2xl px-5">
-			<div v-if="!siteGroupDeployName" class="py-4 text-base text-gray-600">
+			<div v-if="!siteGroupDeployName" class="py-4 text-base text-ink-gray-6">
 				<p>Missing deployment information.</p>
 				<router-link to="/sites/new" class="mt-2 text-blue-600 underline">
 					Go back to site creation
 				</router-link>
 			</div>
-			<div v-else-if="isLoading" class="py-4 text-base text-gray-600">
+			<div v-else-if="isLoading" class="py-4 text-base text-ink-gray-6">
 				Loading...
 			</div>
 			<div v-else class="space-y-6">
@@ -70,7 +70,7 @@
 							/>
 							<div class="flex flex-col space-y-1">
 								<h5 class="text-base">{{ step.title }}</h5>
-								<p class="text-sm text-gray-600">{{ step.message }}</p>
+								<p class="text-sm text-ink-gray-6">{{ step.message }}</p>
 							</div>
 						</div>
 					</div>

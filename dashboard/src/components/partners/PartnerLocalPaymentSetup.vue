@@ -11,7 +11,7 @@
 					<Button @click="showAddMpesaDialog = true">Edit</Button>
 				</div>
 				<div class="overflow-hidden text-ellipsis text-base font-medium">
-					<span class="font-normal text-gray-600">{{
+					<span class="font-normal text-ink-gray-6">{{
 						mpesaSetupId || 'Not Set'
 					}}</span>
 				</div>
@@ -34,7 +34,7 @@
 					>
 				</div>
 				<div class="overflow-hidden text-ellipsis text-base font-medium">
-					<span class="font-normal text-gray-600">{{
+					<span class="font-normal text-ink-gray-6">{{
 						paymentGatewayID || 'Not set'
 					}}</span>
 				</div>
@@ -53,7 +53,7 @@
 					<Button @click="showPartnerPaymentPayout = true">Edit</Button>
 				</div>
 				<div class="overflow-hidden text-ellipsis text-base font-medium">
-					<span class="font-normal text-gray-600">Not set</span>
+					<span class="font-normal text-ink-gray-6">Not set</span>
 				</div>
 			</div>
 			<!--End of payment transaction-->

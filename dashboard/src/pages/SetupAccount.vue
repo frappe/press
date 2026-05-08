@@ -94,7 +94,7 @@
 							class="mt-4"
 							:message="$resources.setupAccount.error"
 						/>
-						<div v-if="showLeadsConsentCheckbox" class="mt-4 text-gray-600">
+						<div v-if="showLeadsConsentCheckbox" class="mt-4 text-ink-gray-6">
 							<input
 								id="share-details-consent"
 								type="checkbox"
@@ -124,7 +124,7 @@
 					</template>
 				</form>
 				<div class="mt-4" v-if="!is2FA && !isInvitation">
-					<span class="text-base font-normal text-gray-600">
+					<span class="text-base font-normal text-ink-gray-6">
 						{{ 'By signing up, you agree to our ' }}
 					</span>
 					<a

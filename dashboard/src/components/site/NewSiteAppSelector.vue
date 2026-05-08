@@ -122,7 +122,7 @@ export default {
 							return h(
 								'div',
 								{
-									class: 'flex items-center text-sm text-gray-600',
+									class: 'flex items-center text-sm text-ink-gray-6',
 								},
 								[
 									h(DownloadIcon, {

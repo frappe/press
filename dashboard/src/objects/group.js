@@ -140,7 +140,7 @@ export default {
 			{
 				label: 'Sites',
 				fieldname: 'site_count',
-				class: 'text-gray-600',
+				class: 'text-ink-gray-6',
 				width: 0.25,
 			},
 		],
@@ -520,7 +520,7 @@ export default {
 							label: 'Duration',
 							fieldname: 'build_duration',
 							format: duration,
-							class: 'text-gray-600',
+							class: 'text-ink-gray-6',
 							width: 1,
 						},
 						{

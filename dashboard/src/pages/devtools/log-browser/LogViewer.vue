@@ -38,7 +38,7 @@
 							v-model="searchLogQuery"
 						>
 							<template #prefix>
-								<lucide-search class="h-4 w-4 text-gray-500" />
+								<lucide-search class="h-4 w-4 text-ink-gray-5" />
 							</template>
 						</FormControl>
 					</div>
@@ -130,7 +130,7 @@
 												class="truncate font-mono text-sm"
 												:class="{
 													'font-mono ': cell.column.columnDef.id === 'time',
-													'font-mono text-gray-600':
+													'font-mono text-ink-gray-6':
 														cell.column.columnDef.id === 'description',
 												}"
 											>
@@ -145,7 +145,7 @@
 										<td
 											v-if="row.getIsExpanded()"
 											:colspan="row.getAllCells().length"
-											class="max-w-[39.75rem] whitespace-pre-wrap break-words border-b bg-gray-900 px-3 py-4 font-mono text-sm text-gray-200"
+											class="max-w-[39.75rem] whitespace-pre-wrap break-words border-b bg-gray-900 px-3 py-4 font-mono text-sm text-ink-gray-2"
 										>
 											{{ row.original.description }}
 										</td>
@@ -156,7 +156,7 @@
 						</table>
 
 						<div v-if="table.getRowModel().rows.length === 0" class="p-8">
-							<p class="text-center text-sm text-gray-500">
+							<p class="text-center text-sm text-ink-gray-5">
 								No log entries found
 							</p>
 						</div>
@@ -165,7 +165,7 @@
 					<div class="flex justify-between rounded rounded-t-none border-t p-1">
 						<div></div>
 						<div class="flex flex-shrink-0 items-center justify-end gap-3">
-							<p class="tnum text-sm text-gray-600">
+							<p class="tnum text-sm text-ink-gray-6">
 								{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
 							</p>
 							<div class="flex gap-2">

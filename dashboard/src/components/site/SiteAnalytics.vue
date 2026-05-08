@@ -7,7 +7,7 @@
 			<div class="flex space-x-4 w-full">
 				<!-- Start date group -->
 				<div class="flex space-x-2">
-					<label class="text-base text-gray-600 self-center whitespace-nowrap">
+					<label class="text-base text-ink-gray-6 self-center whitespace-nowrap">
 						Absolute <span class="text-black">from</span>
 					</label>
 					<DateTimePicker
@@ -38,7 +38,7 @@
 
 				<!-- Duration group -->
 				<div class="flex space-x-2">
-					<label class="text-base self-center text-gray-600">Relative</label>
+					<label class="text-base self-center text-ink-gray-6">Relative</label>
 					<FormControl
 						type="select"
 						class="w-36"
@@ -55,7 +55,7 @@
 					<ActionButton
 						variant="subtle"
 						label="Share"
-						class="text-gray-300 hover:text-black duration-200"
+						class="text-ink-gray-3 hover:text-black duration-200"
 						@click="(e) => shareDashboard(e, `global`)"
 						:slots="{
 							prefix: shareDashboardActionPrefix,
@@ -146,7 +146,7 @@
 		>
 			<h2 class="text-lg font-semibold">Advanced Analytics</h2>
 			<FeatherIcon
-				class="h-5 w-5 text-gray-500 hover:text-ink-gray-7"
+				class="h-5 w-5 text-ink-gray-5 hover:text-ink-gray-7"
 				:name="showAdvancedAnalytics ? 'chevron-down' : 'chevron-right'"
 			/>
 		</div>
@@ -230,7 +230,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as reports seem to take time">
-						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-ink-gray-5" />
 					</Tooltip>
 				</template>
 				<BarChart
@@ -253,7 +253,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as run_doc_method calls seem to take time">
-						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-ink-gray-5" />
 					</Tooltip>
 				</template>
 				<BarChart
@@ -275,7 +275,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as savedocs calls seem to take time">
-						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-ink-gray-5" />
 					</Tooltip>
 				</template>
 				<BarChart
@@ -296,7 +296,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as savedocs calls seem to take time">
-						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-ink-gray-5" />
 					</Tooltip>
 				</template>
 				<BarChart
@@ -385,7 +385,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as reports seem to take time">
-						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-ink-gray-5" />
 					</Tooltip>
 				</template>
 				<BarChart
@@ -425,7 +425,7 @@
 				<template #action>
 					<Tooltip text="Show Detailed Reports">
 						<router-link
-							class="mr-auto text-base text-gray-600 hover:text-ink-gray-7"
+							class="mr-auto text-base text-ink-gray-6 hover:text-ink-gray-7"
 							:to="{ name: 'Site Performance Slow Queries' }"
 						>
 							→
@@ -456,7 +456,7 @@
 				<template #action>
 					<Tooltip text="Show Detailed Reports">
 						<router-link
-							class="mr-auto text-base text-gray-600 hover:text-ink-gray-7"
+							class="mr-auto text-base text-ink-gray-6 hover:text-ink-gray-7"
 							:to="{ name: 'Site Performance Slow Queries' }"
 						>
 							→

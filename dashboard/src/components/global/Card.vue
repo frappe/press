@@ -7,7 +7,7 @@
 				</div>
 				<div>
 					<h2 class="text-xl font-semibold">{{ title }}</h2>
-					<p class="mt-1.5 text-base text-gray-600" v-if="subtitle">
+					<p class="mt-1.5 text-base text-ink-gray-6" v-if="subtitle">
 						{{ subtitle }}
 					</p>
 				</div>

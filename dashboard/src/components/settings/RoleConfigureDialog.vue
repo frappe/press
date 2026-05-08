@@ -20,7 +20,7 @@
 			>
 				<template #tab-item="{ tab }">
 					<div
-						class="flex cursor-pointer items-center gap-1.5 py-3 text-base text-gray-600 duration-300 ease-in-out hover:border-gray-400 hover:text-ink-gray-9 focus:outline-none focus:transition-none [&>div]:pl-0"
+						class="flex cursor-pointer items-center gap-1.5 py-3 text-base text-ink-gray-6 duration-300 ease-in-out hover:border-gray-400 hover:text-ink-gray-9 focus:outline-none focus:transition-none [&>div]:pl-0"
 					>
 						<span>{{ tab.label }}</span>
 					</div>
@@ -50,10 +50,10 @@
 							/>
 						</div>
 						<div class="rounded border px-3">
-							<div class="mt-2 text-gray-600">Members</div>
+							<div class="mt-2 text-ink-gray-6">Members</div>
 							<div
 								v-if="roleUsers.length === 0"
-								class="p-6 text-center text-gray-500"
+								class="p-6 text-center text-ink-gray-5"
 							>
 								<span>No members added to this role.</span>
 							</div>
@@ -70,7 +70,7 @@
 									/>
 									<Button variant="ghost" @click="() => removeUser(user.user)">
 										<template #icon>
-											<lucide-x class="h-4 w-4 text-gray-600" />
+											<lucide-x class="h-4 w-4 text-ink-gray-6" />
 										</template>
 									</Button>
 								</div>

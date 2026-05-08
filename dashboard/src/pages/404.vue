@@ -1,7 +1,7 @@
 <template>
 	<div class="flex h-screen flex-col items-center justify-center p-5">
 		<div class="text-[4rem] text-ink-gray-9">404</div>
-		<div class="text-base text-gray-600">Page not found</div>
+		<div class="text-base text-ink-gray-6">Page not found</div>
 		<Button class="mt-4" route="/sites" variant="outline">
 			Go to Site list
 		</Button>

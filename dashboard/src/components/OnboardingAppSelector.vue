@@ -16,7 +16,7 @@
 					{{ app.description }}
 				</p>
 			</div>
-			<div class="mt-auto flex w-fit flex-row gap-1 text-gray-600">
+			<div class="mt-auto flex w-fit flex-row gap-1 text-ink-gray-6">
 				<DownloadIcon class="h-3 w-3" />
 				<span class="ml-0.5 text-[12px] leading-3">
 					{{ this.$format.numberK(app.total_installs || '0') }} installs

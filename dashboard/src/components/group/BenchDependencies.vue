@@ -119,7 +119,7 @@ const columns = computed(() => [
 
 		<div class="px-5" v-if="!dependencyListResource.data?.length">
 			<div
-				class="text-center text-sm leading-10 text-gray-500 pb-[1.75rem]"
+				class="text-center text-sm leading-10 text-ink-gray-5 pb-[1.75rem]"
 				v-if="dependencyListResource.list?.loading"
 			>
 				Loading...
@@ -132,7 +132,7 @@ const columns = computed(() => [
 			</div>
 			<div
 				v-else
-				class="text-center text-sm leading-10 text-gray-500 pb-[1.75rem]"
+				class="text-center text-sm leading-10 text-ink-gray-5 pb-[1.75rem]"
 			>
 				No dependencies to show
 			</div>

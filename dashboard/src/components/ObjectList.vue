@@ -21,10 +21,10 @@
 						v-model="searchQuery"
 					>
 						<template #prefix>
-							<lucide-search class="h-4 w-4 text-gray-500" />
+							<lucide-search class="h-4 w-4 text-ink-gray-5" />
 						</template>
 						<template #suffix>
-							<span class="text-sm text-gray-500" v-if="searchQuery">
+							<span class="text-sm text-ink-gray-5" v-if="searchQuery">
 								{{ searchQuerySummary }}
 							</span>
 						</template>
@@ -118,7 +118,7 @@
 			</ListView>
 			<div class="px-5" v-if="filteredRows.length === 0">
 				<div
-					class="text-center text-sm leading-10 text-gray-500 pb-[1.75rem]"
+					class="text-center text-sm leading-10 text-ink-gray-5 pb-[1.75rem]"
 					v-if="isLoading"
 				>
 					Loading...
@@ -128,7 +128,7 @@
 				</div>
 				<div
 					v-else
-					class="text-center text-sm leading-10 text-gray-500 pb-[1.75rem]"
+					class="text-center text-sm leading-10 text-ink-gray-5 pb-[1.75rem]"
 				>
 					{{ emptyStateMessage }}
 				</div>

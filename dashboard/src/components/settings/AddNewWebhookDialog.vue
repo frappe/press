@@ -40,7 +40,7 @@
 					Select the webhook events
 				</p>
 				<div
-					class="text-center text-sm leading-10 text-gray-500"
+					class="text-center text-sm leading-10 text-ink-gray-5"
 					v-if="$resources.events.loading"
 				>
 					Loading...
