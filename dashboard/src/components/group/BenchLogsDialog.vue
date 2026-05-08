@@ -32,7 +32,7 @@
 				</div>
 				<div class="mt-4">
 					<div
-						class="h-[34rem] overflow-scroll rounded border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-ink-gray-2"
+						class="h-[34rem] overflow-scroll rounded border border-outline-gray-1 bg-gray-900 px-2.5 py-2 text-sm text-ink-gray-2"
 					>
 						<pre>{{
 							log.loading ? 'Loading...' : log?.data[logName] || 'No output'

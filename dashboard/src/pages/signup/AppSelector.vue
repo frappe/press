@@ -27,10 +27,10 @@
 						class="w-full"
 					>
 						<div
-							class="flex cursor-pointer items-center rounded border border-gray-100 p-2"
+							class="flex cursor-pointer items-center rounded border border-outline-gray-1 p-2"
 							:class="{
 								'bg-surface-gray-2': selectedApp?.name === app.name,
-								'border-gray-100 hover:bg-surface-gray-1':
+								'border-outline-gray-1 hover:bg-surface-gray-1':
 									selectedApp?.name !== app.name,
 							}"
 							@click="selectedApp = app"

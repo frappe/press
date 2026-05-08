@@ -87,7 +87,7 @@
 									These apps are installed on your site, select a branch
 									compatible with {{ nextVersion }}
 								</div>
-								<table class="w-full table-fixed pb-4 border-b border-gray-100">
+								<table class="w-full table-fixed pb-4 border-b border-outline-gray-1">
 									<tbody>
 										<tr
 											v-for="app in appCompatibility.site_custom_apps"

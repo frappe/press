@@ -9,7 +9,7 @@
 					<button
 						type="button"
 						@click="togglePopover"
-						class="flex h-7 items-center gap-1 rounded-l border border-r-0 border-gray-100 bg-surface-gray-2 px-2 text-sm text-ink-gray-8 hover:bg-surface-gray-3 focus:outline-none focus:ring-2 focus:ring-gray-400"
+						class="flex h-7 items-center gap-1 rounded-l border border-r-0 border-outline-gray-1 bg-surface-gray-2 px-2 text-sm text-ink-gray-8 hover:bg-surface-gray-3 focus:outline-none focus:ring-2 focus:ring-gray-400"
 					>
 						<span v-if="selectedCountry" class="flex items-center gap-1">
 							<img
@@ -64,7 +64,7 @@
 				type="tel"
 				v-model="phoneNumber"
 				:placeholder="selectedCountry?.example || placeholder"
-				class="h-7 w-full rounded-r border border-gray-100 bg-surface-gray-2 px-2 text-base text-ink-gray-8 placeholder-gray-500 focus:border-gray-500 focus:bg-surface-white focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
+				class="h-7 w-full rounded-r border border-outline-gray-1 bg-surface-gray-2 px-2 text-base text-ink-gray-8 placeholder-gray-500 focus:border-gray-500 focus:bg-surface-white focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 				@input="emitValue"
 			/>
 		</div>

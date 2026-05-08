@@ -2,7 +2,7 @@
 	<div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
 		<div
 			v-for="plan in subscription.plans"
-			class="m-2 flex flex-col justify-between rounded-2xl border border-gray-100 p-4 shadow"
+			class="m-2 flex flex-col justify-between rounded-2xl border border-outline-gray-1 p-4 shadow"
 		>
 			<div>
 				<h4 class="flex justify-between text-xl font-semibold text-ink-gray-9">
