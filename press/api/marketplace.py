@@ -21,7 +21,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
 )
-from press.utils import get_app_tag, get_current_team, get_last_doc, is_user_part_of_team, unique
+from press.utils import get_app_tag, get_current_team, get_last_doc, unique
 from press.utils.billing import get_frappe_io_connection
 
 if TYPE_CHECKING:
@@ -443,7 +443,7 @@ def update_app_image() -> str:
 	app_name = frappe.form_dict.docname
 	app_team = frappe.db.get_value("Marketplace App", app_name, "team")
 	# not permitted to update the app image if user is not a member of the current team
-	if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
+	if app_team != current_team:
 		frappe.throw(_("You are not permitted to update the app image"), frappe.PermissionError)
 
 	file_content = frappe.local.uploaded_file
@@ -495,7 +495,7 @@ def add_app_screenshot() -> str:
 	current_team = get_current_team()
 	app_name = frappe.form_dict.docname
 	app_team = frappe.db.get_value("Marketplace App", app_name, "team")
-	if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
+	if app_team != current_team:
 		frappe.throw(_("You are not permitted to add app screenshots for this app"), frappe.PermissionError)
 	file_content = frappe.local.uploaded_file
 	file_name = frappe.local.uploaded_filename
@@ -527,7 +527,7 @@ def add_app_screenshot() -> str:
 			"image": file_url,
 		},
 	)
-	app_doc.save()
+	app_doc.save(ignore_permissions=True)
 
 	return file_url
 
@@ -1256,7 +1256,7 @@ def options_for_version(name: str):
 
 	branches_list = []
 	for source in sources:
-		branches_list.append(branches(source))
+		branches_list += branches(source)
 	branches_list = list(set(branches_list))
 
 	versions = list(set(frappe_version).difference(set(added_versions)))
@@ -1377,6 +1377,18 @@ def get_marketplace_apps() -> list[dict]:
 	return apps
 
 
+def is_desk_user(user: str | None = None) -> bool:
+	"""
+	Checks if the given user is a system user.
+
+	:param user: User to check. If None, uses the current session user.
+	:return: True if the user is a system user, False otherwise.
+	"""
+	user = user or frappe.session.user
+	user_doc = frappe.get_cached_doc("User", user)
+	return user_doc.user_type == "System User"
+
+
 @frappe.whitelist(methods=["GET"])
 @protected(["Marketplace App", "Marketplace App Audit"])
 def get_app_audit(app: str):
@@ -1387,9 +1399,13 @@ def get_app_audit(app: str):
 	"""
 	current_team = get_current_team()
 	app_team = frappe.db.get_value("Marketplace App", app, "team")
-	# not permitted to get the audit report if user is not a member of the team of the marketplace app
-	if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
-		frappe.throw(_("You are not permitted to get the audit report for this app"), frappe.PermissionError)
+	# for impersonation, the session user needs to have system user role, in that case we allow seeing other audit reports.
+	if not is_desk_user(frappe.session.user):  # noqa: SIM102 - nested if makes the logic more readable.
+		# not permitted to get the audit report if user is not a member of the team of the marketplace app
+		if app_team != current_team:
+			frappe.throw(
+				_("You are not permitted to get the audit report for this app"), frappe.PermissionError
+			)
 
 	# get_all, limit 1, order by creation desc
 	audit_name = frappe.get_all(

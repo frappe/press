@@ -50,7 +50,7 @@ onMounted(() => {
 		}"
 	>
 		<aside
-			class="p-2"
+			class="p-2 gap-1 flex flex-col"
 			:class="{
 				'ml-5 mt-5 w-60 divide-y rounded-sm border': isMobile(),
 			}"
@@ -58,7 +58,7 @@ onMounted(() => {
 			<template v-for="tab in tabs">
 				<router-link
 					:to="{ name: tab.value }"
-					class="py-2 pr-15 flex cursor-pointer text-base text-ink-gray-5 rounded hover:bg-surface-gray-1 px-3.5"
+					class="px-2 py-1.5 pr-15 flex cursor-pointer text-base text-ink-gray-5 rounded hover:bg-surface-gray-1"
 					active-class="bg-surface-gray-1 text-ink-gray-9"
 				>
 					{{ tab.label }}

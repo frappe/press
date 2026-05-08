@@ -65,7 +65,7 @@ def account_request(
 				"erpnext": False,
 				"subdomain": subdomain,
 				"email": email,
-				"role": "Press Admin",
+				"role": "Press User",
 				"first_name": clean_html(first_name),
 				"last_name": clean_html(last_name),
 				"country": country,

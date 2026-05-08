@@ -66,7 +66,7 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 			{
 				"doctype": "Account Request",
 				"email": email,
-				"role": "Press Admin",
+				"role": "Press User",
 				"referrer_id": referrer,
 				"send_email": True,
 				"product_trial": product,
@@ -103,7 +103,7 @@ def verify_otp(account_request: str, otp: str) -> str:
 	if account_request_doc.product_trial:
 		capture("otp_verified", "fc_product_trial", account_request_doc.name)
 
-	return account_request_doc.request_key
+	return str(account_request_doc.request_key)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -215,7 +215,6 @@ def setup_account(  # noqa: C901
 
 	team = account_request.team
 	email = account_request.email
-	role = account_request.role
 	press_roles = account_request.press_roles
 
 	if is_invitation:
@@ -227,7 +226,6 @@ def setup_account(  # noqa: C901
 			last_name,
 			email,
 			password,
-			role,
 			press_roles,
 			skip_validations=True,
 		)
@@ -278,12 +276,11 @@ def accept_team_invite(key: str):
 	last_name = account_request.last_name
 	email = account_request.email
 	password = None
-	role = account_request.role
 	press_roles = account_request.press_roles
 
 	team_doc = frappe.get_doc("Team", team, ignore_permissions=True)
 	team_doc.create_user_for_member(
-		first_name, last_name, email, password, role, press_roles, skip_validations=True
+		first_name, last_name, email, password, press_roles, skip_validations=True
 	)
 
 
@@ -662,7 +659,7 @@ def new_team(email, current_team):
 		{
 			"doctype": "Account Request",
 			"email": email,
-			"role": "Press Member",
+			"role": "Press User",
 			"send_email": True,
 			"team": email,
 			"invited_by": current_team,
@@ -720,7 +717,6 @@ def update_profile_picture():
 
 @frappe.whitelist()
 def update_feature_flags(values=None):
-	frappe.only_for("Press Admin")
 	team = get_current_team(get_doc=True)
 	values = frappe.parse_json(values)
 	fields = [

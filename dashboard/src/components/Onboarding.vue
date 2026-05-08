@@ -110,7 +110,11 @@
 					<div class="text-base font-medium">Create your first site</div>
 				</div>
 
-				<Button class="ml-7 mt-4" :route="{ name: 'SignupAppSelector' }">
+				<Button
+					class="ml-7 mt-4"
+					:route="{ name: 'SignupAppSelector' }"
+					variant="solid"
+				>
 					Create
 				</Button>
 			</div>
@@ -126,7 +130,7 @@
 						<TextInsideCircle>3</TextInsideCircle>
 						<span class="text-base font-medium"> Complete billing setup </span>
 					</div>
-					<div class="pl-7 mt-2" v-if="$team.doc.onboarding.site_created">
+					<div class="pl-7 mt-2" v-if="$team.doc.onboarding.site_created && trialSite">
 						<p class="text-p-base text-gray-800">
 							Add your billing details and payment method to activate your
 							subscription.You won't be charged until your trial ends on

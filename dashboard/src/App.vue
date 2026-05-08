@@ -111,7 +111,7 @@ provide('team', team);
 provide('session', session);
 
 watch(
-  () => team.doc?.onboarding?.complete,
+  () => team?.doc?.onboarding?.complete,
   (x) => {
     if(x) useSearch();
   },

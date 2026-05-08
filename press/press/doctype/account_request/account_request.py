@@ -58,7 +58,6 @@ class AccountRequest(Document):
 		referrer_id: DF.Data | None
 		request_key: DF.Data | None
 		request_key_expiration_time: DF.Datetime | None
-		role: DF.Data | None
 		saas: DF.Check
 		saas_app: DF.Link | None
 		send_email: DF.Check
@@ -246,7 +245,7 @@ class AccountRequest(Document):
 					sender = frappe.get_value("Email Account", email_account, "email_id")
 		else:
 			template = "verify_account"
-			if self.invited_by and self.role != "Press Admin":
+			if self.invited_by:
 				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
 				template = "invite_team_member"
 

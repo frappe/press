@@ -2,7 +2,6 @@
 	<div v-if="localBanners.length > 0" :class="containerClass ?? ``">
 		<AlertBanner
 			v-for="banner in localBanners"
-			v-if="banner.title || banner.message"
 			:key="banner.name"
 			:class="disableLastChildBottomMargin ? `mb-5 last:mb-0` : `mb-5`"
 			:title="getAlertTitle(banner.title, banner.message)"
@@ -193,6 +192,7 @@ export default {
 
 					this.localBanners = data
 						.filter(this.isRelevantBanner)
+						.filter((banner) => banner.title || banner.message)
 						.filter((banner) => !(banner.name in this.localDismissedBanners));
 				},
 			};
