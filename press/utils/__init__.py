@@ -235,8 +235,10 @@ def get_valid_teams_for_user(user):
 
 
 def is_user_part_of_team(user, team):
-	"""Returns True if user is part of the team"""
-	return frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user})
+	"""Returns True if user is the team owner or an explicit member of the team"""
+	if frappe.db.get_value("Team", team, "user") == user:
+		return True
+	return bool(frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user}))
 
 
 def get_country_info():
@@ -346,6 +348,13 @@ def get_frappe_backups(url, email, password):
 def is_allowed_access_performance_tuning():
 	team = get_current_team(get_doc=True)
 	return team.enable_performance_tuning
+
+
+def get_press_base_url():
+	press_url = frappe.conf.get("press_base_url") or frappe.utils.get_url()
+	if not press_url.startswith("http://") and not press_url.startswith("https://"):
+		press_url = "https://" + press_url
+	return press_url.rstrip("/")
 
 
 class RemoteFrappeSite:
