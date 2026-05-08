@@ -443,7 +443,7 @@ def update_app_image() -> str:
 	app_name = frappe.form_dict.docname
 	app_team = frappe.db.get_value("Marketplace App", app_name, "team")
 	# not permitted to update the app image if user is not a member of the current team
-	if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
+	if app_team != current_team and not is_user_part_of_team(frappe.session.user, app_team):
 		frappe.throw(_("You are not permitted to update the app image"), frappe.PermissionError)
 
 	file_content = frappe.local.uploaded_file
@@ -495,7 +495,7 @@ def add_app_screenshot() -> str:
 	current_team = get_current_team()
 	app_name = frappe.form_dict.docname
 	app_team = frappe.db.get_value("Marketplace App", app_name, "team")
-	if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
+	if app_team != current_team and not is_user_part_of_team(frappe.session.user, app_team):
 		frappe.throw(_("You are not permitted to add app screenshots for this app"), frappe.PermissionError)
 	file_content = frappe.local.uploaded_file
 	file_name = frappe.local.uploaded_filename
@@ -1402,7 +1402,7 @@ def get_app_audit(app: str):
 	# for impersonation, the session user needs to have system user role, in that case we allow seeing other audit reports.
 	if not is_desk_user(frappe.session.user):  # noqa: SIM102 - nested if makes the logic more readable.
 		# not permitted to get the audit report if user is not a member of the team of the marketplace app
-		if app_team != current_team or not is_user_part_of_team(frappe.session.user, app_team):
+		if app_team != current_team and not is_user_part_of_team(frappe.session.user, app_team):
 			frappe.throw(
 				_("You are not permitted to get the audit report for this app"), frappe.PermissionError
 			)
