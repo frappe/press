@@ -177,6 +177,7 @@
           regionendpoint: {{ s3_region_endpoint }}
           secure: true
           rootdirectory: /registry
+          v4auth: true
         redirect:
           disable: false
 
