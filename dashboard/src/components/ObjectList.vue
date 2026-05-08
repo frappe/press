@@ -108,7 +108,7 @@
 				<template #cell="{ item, row, column }">
 					<ObjectListCell
 						:class="[
-							column == columns[0] ? ' text-gray-900' : ' text-gray-700',
+							column == columns[0] ? ' text-ink-gray-9' : ' text-gray-700',
 						]"
 						:row="row"
 						:column="column"

@@ -1,7 +1,7 @@
 <template>
 	<div class="rounded-md border">
 		<div class="flex h-12 items-center justify-between border-b px-5">
-			<h2 class="text-lg font-medium text-gray-900">Load Average</h2>
+			<h2 class="text-lg font-medium text-ink-gray-9">Load Average</h2>
 			<div class="flex items-center space-x-2">
 				<Button
 					icon="help-circle"

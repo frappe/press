@@ -39,7 +39,7 @@
 					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 					v-model="skipFailingPatches"
 				/>
-				<label for="skip-failing" class="ml-2 text-sm text-gray-900">
+				<label for="skip-failing" class="ml-2 text-sm text-ink-gray-9">
 					Skip failing patches (if any patch fails)
 				</label>
 			</div>

@@ -1,7 +1,7 @@
 <template>
 	<div class="rounded-md border">
 		<div class="flex h-12 items-center justify-between border-b px-5">
-			<h2 class="text-lg font-medium text-gray-900">Daily Usage</h2>
+			<h2 class="text-lg font-medium text-ink-gray-9">Daily Usage</h2>
 			<router-link
 				class="text-base text-gray-600 hover:text-gray-700"
 				:to="{ name: 'Site Analytics' }"

@@ -55,7 +55,7 @@
 						<div class="flex items-center space-x-4">
 							<LoadingIndicator
 								v-if="step.icon === 'loading'"
-								class="h-4 w-4 text-gray-900"
+								class="h-4 w-4 text-ink-gray-9"
 							/>
 							<FeatherIcon
 								v-else

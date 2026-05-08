@@ -19,7 +19,7 @@
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
-								<span class="text-base text-gray-900">
+								<span class="text-base text-ink-gray-9">
 									{{ installAnalytics.total_installs }}
 								</span>
 							</div>
@@ -32,7 +32,7 @@
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
-								<span class="text-base text-gray-900">
+								<span class="text-base text-ink-gray-9">
 									{{ installAnalytics.installs_last_week }}
 								</span>
 							</div>
@@ -45,7 +45,7 @@
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
-								<span class="text-base text-gray-900">
+								<span class="text-base text-ink-gray-9">
 									{{ installAnalytics.installs_active_sites }}
 								</span>
 							</div>
@@ -58,7 +58,7 @@
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
-								<span class="text-base text-gray-900">
+								<span class="text-base text-ink-gray-9">
 									{{ installAnalytics.installs_active_benches }}
 								</span>
 							</div>
@@ -71,7 +71,7 @@
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
-								<span class="text-base text-gray-900">
+								<span class="text-base text-ink-gray-9">
 									{{ $format.userCurrency(totalEarnings) }}
 								</span>
 							</div>

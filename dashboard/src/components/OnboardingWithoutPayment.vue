@@ -15,7 +15,7 @@
 				<!-- title -->
 				<div class="mb-7.5 text-center">
 					<p
-						class="text-center text-lg font-medium leading-5 tracking-tight text-gray-900"
+						class="text-center text-lg font-medium leading-5 tracking-tight text-ink-gray-9"
 					>
 						Choose an app below to create your first site.
 					</p>

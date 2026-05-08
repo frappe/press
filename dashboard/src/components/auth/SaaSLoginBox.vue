@@ -19,7 +19,7 @@
 			>
 				<!-- title -->
 				<div class="mb-7.5 text-center">
-					<p class="mb-2 text-2xl font-semibold leading-6 text-gray-900">
+					<p class="mb-2 text-2xl font-semibold leading-6 text-ink-gray-9">
 						{{ title }}
 					</p>
 					<p

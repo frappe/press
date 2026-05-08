@@ -34,7 +34,7 @@
 					>
 						<div class="flex items-center justify-between">
 							<div class="flex w-full items-center text-lg">
-								<span class="truncate font-medium text-gray-900">
+								<span class="truncate font-medium text-ink-gray-9">
 									<!-- Needed for app plan selector -->
 									<template v-if="plan.label">{{ plan.label }}</template>
 									<template v-if="hourlyPricing">
@@ -79,7 +79,7 @@
 								<component
 									v-if="feature.icon"
 									:is="
-										_icon(feature.icon, 'mt-1 h-3 w-4 shrink-0 text-gray-900')
+										_icon(feature.icon, 'mt-1 h-3 w-4 shrink-0 text-ink-gray-9')
 									"
 								/>
 								<span>{{ feature.value }} </span>

@@ -2,11 +2,11 @@
 	<Dialog :options="{ title: 'Switch Team' }" v-model="show">
 		<template #body-content v-if="$team?.doc">
 			<div class="rounded bg-surface-gray-1 px-3 py-2.5">
-				<div class="text-base text-gray-900">
+				<div class="text-base text-ink-gray-9">
 					Signed in as
 					<span class="font-medium">{{ $session.user }}</span>
 				</div>
-				<div class="mt-1.5 text-base text-gray-900">
+				<div class="mt-1.5 text-base text-ink-gray-9">
 					Viewing dashboard for the team
 					<component
 						:is="$team.doc.is_desk_user ? 'a' : 'span'"

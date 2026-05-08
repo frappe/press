@@ -9,7 +9,7 @@
 						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						v-model="currentEditingPlan.enabled"
 					/>
-					<label for="enabled-checkbox" class="ml-1 text-sm text-gray-900">
+					<label for="enabled-checkbox" class="ml-1 text-sm text-ink-gray-9">
 						Enabled
 					</label>
 				</div>

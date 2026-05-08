@@ -300,7 +300,7 @@
 									{{ 'By signing up, you agree to our ' }}
 								</span>
 								<a
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-base font-normal text-ink-gray-9 underline hover:text-gray-700"
 									href="https://frappecloud.com/policies"
 								>
 									Terms & Policies
@@ -315,7 +315,7 @@
 									}}
 								</span>
 								<router-link
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-base font-normal text-ink-gray-9 underline hover:text-gray-700"
 									:to="{
 										name: $route.name == 'Login' ? 'Signup' : 'Login',
 										query: { ...$route.query, forgot: undefined },
@@ -383,7 +383,7 @@
 									{{ 'By signing up, you agree to our ' }}
 								</span>
 								<a
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-base font-normal text-ink-gray-9 underline hover:text-gray-700"
 									href="https://frappecloud.com/policies"
 								>
 									Terms & Policies
@@ -398,7 +398,7 @@
 									}}
 								</span>
 								<router-link
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-base font-normal text-ink-gray-9 underline hover:text-gray-700"
 									:to="{
 										name: $route.name == 'Login' ? 'Signup' : 'Login',
 										query: { ...$route.query, forgot: undefined },
