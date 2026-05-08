@@ -111,7 +111,7 @@
 							:class="[
 								serverPlanType === planType.name
 									? 'border-gray-900 ring-1 ring-gray-900'
-									: 'border-gray-300',
+									: 'border-outline-gray-2',
 								'flex w-full flex-col overflow-hidden rounded border text-left hover:bg-surface-gray-1',
 							]"
 						>
@@ -137,7 +137,7 @@
 				<!-- Single Plan Type Message -->
 				<div
 					v-else-if="Object.keys(serverPlanTypes).length === 1"
-					class="flex flex-col rounded border border-gray-300 p-3 gap-2 mb-4"
+					class="flex flex-col rounded border border-outline-gray-2 p-3 gap-2 mb-4"
 				>
 					<p class="text-base text-ink-gray-9">
 						<span class="font-medium">{{

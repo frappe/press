@@ -16,7 +16,7 @@
 					:class="[
 						modelValue?.name === plan?.name
 							? 'border-gray-900 ring-1 ring-gray-900'
-							: 'border-gray-300',
+							: 'border-outline-gray-2',
 						{
 							'pointer-events-none opacity-50': plan?.disabled,
 							'opacity-50': plan?.machine_unavailable,

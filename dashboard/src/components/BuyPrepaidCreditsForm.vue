@@ -42,7 +42,7 @@
 				label="Stripe"
 				class="flex h-10 items-center justify-center rounded border"
 				:class="{
-					'border-gray-300': paymentGateway !== 'Stripe',
+					'border-outline-gray-2': paymentGateway !== 'Stripe',
 					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Stripe',
 				}"
 			>
@@ -58,7 +58,7 @@
 				label="Razorpay"
 				class="flex h-10 items-center justify-center rounded border"
 				:class="{
-					'border-gray-300': paymentGateway !== 'Razorpay',
+					'border-outline-gray-2': paymentGateway !== 'Razorpay',
 					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
 				}"
 			>
@@ -70,7 +70,7 @@
 				label="PayPal"
 				class="flex h-10 items-center justify-center rounded border"
 				:class="{
-					'border-gray-300': paymentGateway !== 'Razorpay',
+					'border-outline-gray-2': paymentGateway !== 'Razorpay',
 					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
 				}"
 			>

@@ -66,7 +66,7 @@
 						<FormControl
 							v-model="serverTitle"
 							type="text"
-							class="block rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
+							class="block rounded-md border-outline-gray-2 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
 						/>
 					</div>
 				</div>
@@ -344,7 +344,7 @@
 											:class="[
 												appServerPlanType === planType.name
 													? 'border-gray-900 ring-1 ring-gray-900 z-10'
-													: 'border-gray-300 z-0',
+													: 'border-outline-gray-2 z-0',
 												index === 0
 													? 'rounded-t-md sm:rounded-l-md sm:rounded-tr-none'
 													: index === availableAppPlanTypes.length - 1
@@ -377,7 +377,7 @@
 								<!-- Single Plan Type Message -->
 								<div
 									v-else-if="availableAppPlanTypes.length === 1"
-									class="flex flex-col rounded-md border border-gray-300 p-3 gap-2"
+									class="flex flex-col rounded-md border border-outline-gray-2 p-3 gap-2"
 								>
 									<p class="text-base text-ink-gray-9">
 										<span class="font-medium">{{
@@ -450,7 +450,7 @@
 											:class="[
 												dbServerPlanType === planType.name
 													? 'border-gray-900 ring-1 ring-gray-900 z-10'
-													: 'border-gray-300 z-0',
+													: 'border-outline-gray-2 z-0',
 												index === 0
 													? 'rounded-t-md sm:rounded-l-md sm:rounded-tr-none'
 													: index === availableDbPlanTypes.length - 1
@@ -483,7 +483,7 @@
 								<!-- Single Plan Type Message -->
 								<div
 									v-else-if="availableDbPlanTypes.length === 1"
-									class="flex flex-col rounded-md border border-gray-300 p-3 gap-2"
+									class="flex flex-col rounded-md border border-outline-gray-2 p-3 gap-2"
 								>
 									<p class="text-base text-ink-gray-9">
 										<span class="font-medium">{{
