@@ -1,74 +1,69 @@
 <template>
 	<div
-		class="flex flex-col justify-end items-center sticky top-0 z-20 p-3 px-5 w-full bg-surface-white border-b justify-self-center space-y-2"
+		class="flex flex-col justify-end items-center sticky top-0 z-20 p-3 w-full bg-surface-white border-b justify-self-center space-y-2"
 	>
-		<div class="flex space-x-4 w-full">
-			<!-- Group all content items so spacing is consistent -->
-			<div class="flex space-x-4 w-full">
-				<!-- Start date group -->
-				<div class="flex space-x-2">
-					<label class="text-base text-ink-gray-6 self-center whitespace-nowrap">
-						Absolute <span class="text-black">from</span>
-					</label>
-					<DateTimePicker
-						:modelValue="inputStartDate"
-						variant="subtle"
-						label="Start date"
-						:disabled="false"
-						format="D MMM YYYY, hh:mm a"
-						@update:modelValue="updateStartDate"
-					/>
-				</div>
+		<!-- Group all content items so spacing is consistent -->
+		<div class="flex space-x-2 w-full overflow-auto">
+			<!-- Start date group -->
+			<label class="text-base text-ink-gray-6 self-center whitespace-nowrap">
+				Absolute <span class="pl-1 text-ink-gray-9">from</span>
+			</label>
+			<DateTimePicker
+				:modelValue="inputStartDate"
+				variant="subtle"
+				label="Start date"
+				:disabled="false"
+				format="D MMM YYYY, hh:mm a"
+				class="min-w-fit"
+				@update:modelValue="updateStartDate"
+			/>
 
-				<!-- End date group -->
-				<div class="flex space-x-2">
-					<label class="text-base self-center">to</label>
-					<DateTimePicker
-						:modelValue="inputEndDate"
-						variant="subtle"
-						label="End date"
-						:disabled="false"
-						format="D MMM YYYY, hh:mm a"
-						@update:modelValue="updateEndDate"
-					/>
-				</div>
+			<!-- End date group -->
+			<label class="text-base self-center">to</label>
+			<DateTimePicker
+				:modelValue="inputEndDate"
+				variant="subtle"
+				label="End date"
+				:disabled="false"
+				format="D MMM YYYY, hh:mm a"
+				class="min-w-fit"
+				@update:modelValue="updateEndDate"
+			/>
 
-				<!-- Divider -->
-				<div class="w-px bg-surface-gray-3" />
+			<!-- Duration group -->
+			<label
+				class="text-base self-center text-ink-gray-6 border-l ml-1 pl-3 py-1"
+				>Relative</label
+			>
+			<FormControl
+				type="select"
+				class="w-36"
+				:options="durationOptions"
+				v-model="duration"
+			/>
 
-				<!-- Duration group -->
-				<div class="flex space-x-2">
-					<label class="text-base self-center text-ink-gray-6">Relative</label>
-					<FormControl
-						type="select"
-						class="w-36"
-						:options="durationOptions"
-						v-model="duration"
-					/>
-				</div>
+			<!-- Grow -->
+			<div class="flex-grow" />
 
-				<!-- Grow -->
-				<div class="flex-grow" />
-
-				<Tooltip text="Copy a shareable link to this Dashboard">
-					<!-- Share button -->
-					<ActionButton
-						variant="subtle"
-						label="Share"
-						class="text-ink-gray-3 hover:text-black duration-200"
-						@click="(e) => shareDashboard(e, `global`)"
-						:slots="{
-							prefix: shareDashboardActionPrefix,
-						}"
-					/>
-				</Tooltip>
-			</div>
+			<Tooltip text="Copy a shareable link to this Dashboard">
+				<!-- Share button -->
+				<ActionButton
+					variant="subtle"
+					label="Share"
+					class="text-ink-gray-3 hover:text-ink-gray-8 duration-200"
+					@click="(e) => shareDashboard(e, `global`)"
+					:slots="{
+						prefix: shareDashboardActionPrefix,
+					}"
+				/>
+			</Tooltip>
 		</div>
 
 		<div v-if="!!dateRangeError" class="text-red-500 text-sm">
 			{{ dateRangeError }}
 		</div>
 	</div>
+
 	<div class="space-y-4 p-5">
 		<ErrorMessage
 			:message="
@@ -418,7 +413,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
-				class='sm:col-span-2 [&_[aria-label="Copy"]]:m-0'
+				class="sm:col-span-2 [&_[aria-label='Copy']]:m-0"
 				title="Frequent Slow Queries"
 				@share-card="shareDashboard"
 			>
@@ -449,7 +444,7 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
-				class='sm:col-span-2 [&_[aria-label="Copy"]]:m-0'
+				class="sm:col-span-2 [&_[aria-label='Copy']]:m-0"
 				title="Top Slow Queries"
 				@share-card="shareDashboard"
 			>
