@@ -18,6 +18,23 @@
 						icon: 'command',
 						onClick: () => (showTeamSwitcher = true),
 					},
+          
+				{
+					label: 'Theme',
+					icon: LucideMoon,
+					submenu: [
+						{
+							label: 'Light Mode',
+							icon: 'sun',
+							onClick: () => setTheme('light'),
+						},
+
+            // dropdown component as per this frappe-ui version doesnt support suffix slot
+            // so make the icon itself icon+label+beta badge
+						{ icon: DarkModeLabel , onClick: () => setTheme('dark') },
+					],
+				},
+
 					{
 						label: 'Support & Docs',
 						icon: 'help-circle',
@@ -78,6 +95,10 @@ import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
 import NavigationItems from './navigation/sidebar/NavList.vue';
 import MobileNavItem from './MobileNavItem.vue';
 import MobileNavItemGroup from './MobileNavItemGroup.vue';
+
+import LucideMoon from '~icons/lucide/moon';
+import { setTheme } from '@/utils/useTheme'
+import DarkModeLabel from '@/components/navigation/sidebar/DarkModeLabel.vue'
 
 const SwitchTeamDialog2 = defineAsyncComponent(
 	() => import('./SwitchTeamDialog.vue'),
