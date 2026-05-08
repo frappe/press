@@ -46,7 +46,7 @@
 								Current Month Contribution
 							</div>
 							<Button
-								class="hover:bg-gray-400"
+								class="hover:bg-surface-gray-4"
 								label="Details"
 								@click="showPartnerContributionDialog = true"
 							/>
