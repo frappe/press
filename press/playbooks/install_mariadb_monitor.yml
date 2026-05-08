@@ -4,4 +4,5 @@
   become: yes
   become_user: root
   roles:
+    - role: install_tcmalloc_udf
     - role: install_mariadb_monitor
