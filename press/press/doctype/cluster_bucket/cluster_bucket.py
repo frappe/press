@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-import hashlib
 import typing
 
 import boto3
@@ -30,13 +29,6 @@ class ClusterBucket(Document):
 		namespace: DF.Data | None
 		region: DF.Data | None
 	# end: auto-generated types
-
-	def before_insert(self):
-		provider = frappe.db.get_value("Cluster", self.cluster, "cloud_provider")
-		if provider == "Hetzner":
-			self.bucket_name = (
-				f"{self.bucket_name}-{hashlib.sha256(self.bucket_name.encode()).hexdigest()[:8]}"
-			)
 
 	def after_insert(self):
 		self.provision()

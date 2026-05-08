@@ -7,8 +7,8 @@
  "field_order": [
   "metadata_section",
   "cluster",
-  "build_server",
   "provider",
+  "storage_bucket",
   "column_break_bcdd",
   "ip",
   "private_ip",
@@ -19,11 +19,16 @@
   "is_setup",
   "harbor_configurations_section",
   "project",
-  "data_directory",
   "admin_password",
   "column_break_irpf",
   "user",
-  "secret"
+  "secret",
+  "garbage_collection_section",
+  "retention_policy",
+  "number_of_days",
+  "is_retention_policy_set",
+  "column_break_azro",
+  "retention_execution_cron"
  ],
  "fields": [
   {
@@ -36,12 +41,6 @@
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster"
-  },
-  {
-   "fieldname": "build_server",
-   "fieldtype": "Link",
-   "label": "Build Server",
-   "options": "Server"
   },
   {
    "fieldname": "column_break_bcdd",
@@ -106,12 +105,6 @@
    "label": "Project"
   },
   {
-   "default": "/data",
-   "fieldname": "data_directory",
-   "fieldtype": "Data",
-   "label": "Data Directory"
-  },
-  {
    "fieldname": "admin_password",
    "fieldtype": "Password",
    "label": "Admin Password"
@@ -129,12 +122,52 @@
    "fieldname": "secret",
    "fieldtype": "Password",
    "label": "Secret"
+  },
+  {
+   "fieldname": "garbage_collection_section",
+   "fieldtype": "Section Break",
+   "label": "Garbage Collection"
+  },
+  {
+   "default": "Push",
+   "description": "If Push, image pushed in the Last Number of Days will be marked for GC, else image pulled.",
+   "fieldname": "retention_policy",
+   "fieldtype": "Select",
+   "label": "Retention Policy",
+   "options": "Push\nPull"
+  },
+  {
+   "default": "5",
+   "fieldname": "number_of_days",
+   "fieldtype": "Int",
+   "label": "Number of Days"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_retention_policy_set",
+   "fieldtype": "Check",
+   "label": "Is Retention Policy Set"
+  },
+  {
+   "fieldname": "column_break_azro",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "retention_execution_cron",
+   "fieldtype": "Data",
+   "label": "Retention Execution Cron"
+  },
+  {
+   "fieldname": "storage_bucket",
+   "fieldtype": "Link",
+   "label": "Storage Bucket",
+   "options": "Cluster Bucket"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-07 23:15:49.329219",
+ "modified": "2026-05-08 18:24:19.130752",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster Registry",

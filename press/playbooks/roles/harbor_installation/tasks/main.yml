@@ -154,12 +154,31 @@
     regexp: '^harbor_admin_password:.*'
     replace: 'harbor_admin_password: {{ admin_password }}'
 
-- name: Set Harbor data directory
+- name: Keep data_volume for non-image data
   become: yes
-  replace:
+  lineinfile:
     path: /home/frappe/harbor/harbor.yml
-    regexp: '^data_volume:.*'
-    replace: 'data_volume: {{ data_directory }}'
+    regexp: '^data_volume:'
+    line: 'data_volume: /data'
+
+- name: Configure Harbor S3 storage service
+  become: yes
+  blockinfile:
+    path: /home/frappe/harbor/harbor.yml
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - S3 STORAGE"
+    insertafter: '^data_volume:.*'
+    block: |
+      storage_service:
+        s3:
+          region: {{ s3_region }}
+          bucket: {{ s3_bucket }}
+          accesskey: {{ s3_access_key }}
+          secretkey: {{ s3_secret_key }}
+          regionendpoint: {{ s3_region_endpoint }}
+          secure: true
+          rootdirectory: /registry
+        redirect:
+          disable: false
 
 - name: Set Harbor certificate path
   become: yes
