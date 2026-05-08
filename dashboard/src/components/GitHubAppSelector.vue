@@ -56,7 +56,7 @@
 				<FeatherIcon v-else name="user" class="mr-2 h-4 w-4" />
 			</template>
 		</FormControl>
-		<span class="text-sm text-gray-600">
+		<span class="text-sm text-ink-gray-6">
 			Don't see your organization?
 			<Link :href="installationLink" class="font-medium">
 				Add from GitHub
@@ -92,7 +92,7 @@
 			</template>
 		</FormControl>
 
-		<p v-if="selectedGithubUserData" class="!mt-2 text-sm text-gray-600">
+		<p v-if="selectedGithubUserData" class="!mt-2 text-sm text-ink-gray-6">
 			Don't see your repository here?
 			<Link :href="selectedGithubUserData.url" class="font-medium">
 				Add from GitHub

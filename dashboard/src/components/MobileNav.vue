@@ -18,6 +18,23 @@
 						icon: 'command',
 						onClick: () => (showTeamSwitcher = true),
 					},
+          
+				{
+					label: 'Theme',
+					icon: LucideMoon,
+					submenu: [
+						{
+							label: 'Light Mode',
+							icon: 'sun',
+							onClick: () => setTheme('light'),
+						},
+
+            // dropdown component as per this frappe-ui version doesnt support suffix slot
+            // so make the icon itself icon+label+beta badge
+						{ icon: DarkModeLabel , onClick: () => setTheme('dark') },
+					],
+				},
+
 					{
 						label: 'Support & Docs',
 						icon: 'help-circle',
@@ -33,7 +50,7 @@
 				<template v-slot="{ open }">
 					<Button class="ml-auto">
 						<template #suffix>
-							<lucide-chevron-down class="h-3.5 w-3.5 text-gray-700" />
+							<lucide-chevron-down class="h-3.5 w-3.5 text-ink-gray-7" />
 						</template>
 						{{ $team?.get.loading ? 'Loading...' : $team?.doc?.user }}
 					</Button>
@@ -43,13 +60,13 @@
 			<DisclosureButton as="template">
 				<Button class="ml-2">
 					<template #icon>
-						<lucide-x v-if="open" class="h-4 w-4 text-gray-700" />
-						<lucide-menu v-else class="h-4 w-4 text-gray-700" />
+						<lucide-x v-if="open" class="h-4 w-4 text-ink-gray-7" />
+						<lucide-menu v-else class="h-4 w-4 text-ink-gray-7" />
 					</template>
 				</Button>
 			</DisclosureButton>
 		</div>
-		<DisclosurePanel class="border-b bg-gray-100 px-1 py-2">
+		<DisclosurePanel class="border-b bg-surface-gray-2 px-1 py-2">
 			<NavigationItems>
 				<template v-slot="{ navigation }">
 					<template v-for="(item, i) in navigation">
@@ -78,6 +95,10 @@ import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
 import NavigationItems from './navigation/sidebar/NavList.vue';
 import MobileNavItem from './MobileNavItem.vue';
 import MobileNavItemGroup from './MobileNavItemGroup.vue';
+
+import LucideMoon from '~icons/lucide/moon';
+import { setTheme } from '@/utils/useTheme'
+import DarkModeLabel from '@/components/navigation/sidebar/DarkModeLabel.vue'
 
 const SwitchTeamDialog2 = defineAsyncComponent(
 	() => import('./SwitchTeamDialog.vue'),

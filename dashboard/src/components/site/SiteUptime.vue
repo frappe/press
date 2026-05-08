@@ -17,7 +17,7 @@
 				class="w-full h-full flex flex-col justify-center items-center px-5 py-3"
 			>
 				<div
-					class="flex justify-between mb-1 w-full text-[11px] text-gray-700 font-normal mt-1"
+					class="flex justify-between mb-1 w-full text-[11px] text-ink-gray-7 font-normal mt-1"
 				>
 					<div>
 						<template v-if="hoveringOn.key">
@@ -75,7 +75,7 @@
 								:class="[
 									'hover:brightness-[110%] border-r border-white',
 									Date.parse(d.date) < Date.parse(siteCreation || new Date(0))
-										? 'bg-gray-300'
+										? 'bg-surface-gray-4'
 										: d.value === 1
 											? 'bg-green-500'
 											: d.value === 0
@@ -108,17 +108,17 @@
 					</Button>
 				</div>
 				<div
-					class="flex justify-between w-full text-[11px] text-gray-700 font-normal mt-1"
+					class="flex justify-between w-full text-[11px] text-ink-gray-7 font-normal mt-1"
 				>
 					<div
-						class="flex-shrink transition-all duration-300 bg-gray-200"
+						class="flex-shrink transition-all duration-300 bg-surface-gray-3"
 						:class="highlightDates ? 'bg-opacity-100' : 'bg-opacity-0'"
 					>
 						{{ firstDateTime }}
 					</div>
 
 					<div
-						class="w-fit flex-shrink transition-all duration-300 bg-gray-200"
+						class="w-fit flex-shrink transition-all duration-300 bg-surface-gray-3"
 						:class="highlightDates ? 'bg-opacity-100' : 'bg-opacity-0'"
 					>
 						{{ lastDateTime }}
