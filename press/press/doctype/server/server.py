@@ -685,6 +685,11 @@ class BaseServer(Document, TagHelpers):
 		return settings.branch or "master"
 
 	@frappe.whitelist()
+	def regenerate_token(self):
+		agent_auth: AgentAuth = frappe.get_doc("Agent Auth", self.name)
+		agent_auth._regenerate_token()
+
+	@frappe.whitelist()
 	def ping_agent(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.ping()
@@ -1988,6 +1993,7 @@ class BaseServer(Document, TagHelpers):
 
 		public_key_b64 = base64.b64encode(public_key_bytes).decode()
 
+		frappe.cache.delete_key(f"{auth.server}_agent_public_key")
 		auth.public_key = public_key_b64
 
 		return private_key_str

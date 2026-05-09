@@ -43,13 +43,17 @@ class AgentAuth(Document):
 			# preserve current public key temporarily
 			self.regenerate_public_key = self.public_key
 
+			# Clear out current data
+			self.is_agent_auth_setup = 0
+			self.expires_in = None
+
 			self.save(ignore_permissions=True)
 
 			# cache old key for dual verification window
 			frappe.cache().set_value(
 				f"{self.server}_regenerate_public_key",
 				self.regenerate_public_key,
-				expires_in_sec=300,  # 5 min
+				expires_in_sec=60,  # 1 min
 			)
 
 			server: BaseServer = frappe.get_doc(

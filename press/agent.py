@@ -966,11 +966,13 @@ class Agent:
 
 			public_key = agent_auth.public_key
 
-			frappe.cache().set_value(
-				key,
-				public_key,
-				expires_in_sec=3600,
-			)
+			if not frappe.cache().get_value(f"{self.server}_regenerate_public_key"):
+				# Don't set cache while regenerating. Old public key may get cached again.
+				frappe.cache().set_value(
+					key,
+					public_key,
+					expires_in_sec=3600,
+				)
 
 		return public_key
 
@@ -1037,11 +1039,6 @@ class Agent:
 	def extract_and_verify_token(self, token):
 		if not token:
 			raise ValueError("Unsigned request from agent")
-
-		try:
-			token = json.loads(base64.b64decode(token))
-		except Exception as err:
-			raise ValueError("Invalid token encoding") from err
 
 		self._verify_request_token(
 			token=token,
