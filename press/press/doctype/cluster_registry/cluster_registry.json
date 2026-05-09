@@ -74,7 +74,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "GC\nActive\nBroken\nPending"
+   "options": "GC\nActive\nBroken\nPending\nTerminated"
   },
   {
    "fetch_from": "cluster.cloud_provider",
@@ -167,7 +167,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-08 18:24:19.130752",
+ "modified": "2026-05-09 12:43:29.968556",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster Registry",

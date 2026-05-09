@@ -44,7 +44,7 @@ class ClusterRegistry(BaseServer):
 		retention_execution_cron: DF.Data | None
 		retention_policy: DF.Literal["Push", "Pull"]
 		secret: DF.Password | None
-		status: DF.Literal["GC", "Active", "Broken", "Pending"]
+		status: DF.Literal["GC", "Active", "Broken", "Pending", "Terminated"]
 		storage_bucket: DF.Link | None
 		user: DF.Data | None
 		virtual_machine: DF.Link | None
@@ -120,6 +120,7 @@ class ClusterRegistry(BaseServer):
 		return cluster_bucket
 
 	def _setup_cluster_registry(self):
+		self._prepare_server()
 		tls_certificate: TLSCertificate = frappe.get_doc(
 			"TLS Certificate", {"wildcard": True, "status": "Active", "domain": self.domain}
 		)

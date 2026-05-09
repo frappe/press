@@ -2114,6 +2114,7 @@ class VirtualMachine(Document):
 			"is_primary": True,
 			"is_secondary": False,
 			"platform": self.platform,
+			"admin_password": frappe.generate_hash(length=15),
 		}
 
 		cluster_registry = frappe.get_doc(document).insert()
