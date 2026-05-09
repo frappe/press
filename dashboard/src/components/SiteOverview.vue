@@ -108,11 +108,11 @@
 				<div class="border-b border-r p-5 lg:border-b-0">
 					<div class="flex h-full items-center justify-between">
 						<div>
-							<div class="text-base text-gray-700">Current Plan</div>
+							<div class="text-base text-ink-gray-7">Current Plan</div>
 							<div class="mt-2 flex justify-between">
 								<div>
 									<div class="leading-4">
-										<span class="flex items-center text-base text-gray-900">
+										<span class="flex items-center text-base text-ink-gray-9">
 											<template v-if="$site.doc.trial_end_date">
 												{{ trialDays($site.doc.trial_end_date) }}
 											</template>
@@ -127,7 +127,7 @@
 											</template>
 											<template v-else> No plan set </template>
 											<div
-												class="ml-2 text-sm leading-3 text-gray-600"
+												class="ml-2 text-sm leading-3 text-ink-gray-6"
 												v-if="
 													currentPlan &&
 													currentPlan.support_included &&
@@ -150,7 +150,7 @@
 				</div>
 				<div class="border-b p-5 lg:border-b-0 lg:border-r">
 					<div
-						class="flex items-center justify-between text-base text-gray-700"
+						class="flex items-center justify-between text-base text-ink-gray-7"
 					>
 						<span>Compute</span>
 						<div class="h-7"></div>
@@ -166,7 +166,7 @@
 						/>
 						<div>
 							<div class="mt-2 flex justify-between">
-								<div class="text-sm text-gray-600">
+								<div class="text-sm text-ink-gray-6">
 									{{ currentUsageLoading ? '—' : currentUsage.cpu }}
 									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
 									<template
@@ -181,7 +181,7 @@
 				</div>
 				<div class="border-r p-5">
 					<div
-						class="flex items-center justify-between text-base text-gray-700"
+						class="flex items-center justify-between text-base text-ink-gray-7"
 					>
 						<span>Storage</span>
 						<div class="h-7"></div>
@@ -197,7 +197,7 @@
 						/>
 						<div>
 							<div class="mt-2 flex justify-between">
-								<div class="text-sm text-gray-600">
+								<div class="text-sm text-ink-gray-6">
 									{{
 										currentUsageLoading
 											? '—'
@@ -217,7 +217,7 @@
 					<div
 						class="min-h-[1.75rem] flex items-center justify-between space-x-2"
 					>
-						<span class="text-base text-gray-700">Database</span>
+						<span class="text-base text-ink-gray-7">Database</span>
 						<div class="flex items-center space-x-2">
 							<Button
 								v-if="
@@ -250,7 +250,7 @@
 						/>
 						<div>
 							<div class="mt-2 flex justify-between">
-								<div class="text-sm text-gray-600">
+								<div class="text-sm text-ink-gray-6">
 									{{
 										currentUsageLoading
 											? '—'
@@ -271,17 +271,17 @@
 		</div>
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
-				<h2 class="text-lg font-medium text-gray-900">Site Information</h2>
+				<h2 class="text-lg font-medium text-ink-gray-9">Site Information</h2>
 			</div>
 			<div>
 				<div
 					v-for="d in siteInformation"
 					:key="d.label"
-					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
+					class="flex items-center px-5 py-3 last:pb-5 even:bg-surface-gray-1"
 				>
-					<div class="w-1/3 text-base text-gray-600">{{ d.label }}</div>
+					<div class="w-1/3 text-base text-ink-gray-6">{{ d.label }}</div>
 					<div
-						class="flex w-2/3 items-center space-x-2 text-base text-gray-900"
+						class="flex w-2/3 items-center space-x-2 text-base text-ink-gray-9"
 					>
 						<div v-if="d.prefix">
 							<component :is="d.prefix" />
@@ -515,7 +515,7 @@ export default {
 						{
 							text: 'Use this for adding A records for your site',
 						},
-						() => h(InfoIcon, { class: 'h-4 w-4 text-gray-500' }),
+						() => h(InfoIcon, { class: 'h-4 w-4 text-ink-gray-5' }),
 					),
 				},
 				{
@@ -526,7 +526,7 @@ export default {
 						{
 							text: 'Use this for whitelisting our server on a 3rd party service',
 						},
-						() => h(InfoIcon, { class: 'h-4 w-4 text-gray-500' }),
+						() => h(InfoIcon, { class: 'h-4 w-4 text-ink-gray-5' }),
 					),
 				},
 			];

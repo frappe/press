@@ -1,12 +1,12 @@
 <template>
 	<Dialog :options="{ title: 'Switch Team' }" v-model="show">
 		<template #body-content v-if="$team?.doc">
-			<div class="rounded bg-gray-100 px-3 py-2.5">
-				<div class="text-base text-gray-900">
+			<div class="rounded bg-surface-gray-2 px-3 py-2.5">
+				<div class="text-base text-ink-gray-9">
 					Signed in as
 					<span class="font-medium">{{ $session.user }}</span>
 				</div>
-				<div class="mt-1.5 text-base text-gray-900">
+				<div class="mt-1.5 text-base text-ink-gray-9">
 					Viewing dashboard for the team
 					<component
 						:is="$team.doc.is_desk_user ? 'a' : 'span'"
@@ -28,7 +28,7 @@
 					v-model="searchQuery"
 				>
 					<template #suffix>
-						<lucide-search class="h-4 w-4 text-gray-500" />
+						<lucide-search class="h-4 w-4 text-ink-gray-5" />
 					</template>
 				</TextInput>
 			</div>
@@ -39,7 +39,7 @@
 					:key="team.name"
 				>
 					<div class="flex items-center space-x-2 px-0.5">
-						<span class="text-base text-gray-800">
+						<span class="text-base text-ink-gray-8">
 							{{ team.user }}
 						</span>
 						<Button

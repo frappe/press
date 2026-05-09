@@ -1,14 +1,14 @@
 <template>
 	<div class="flex divide-x p-5">
 		<div class="w-1/5">
-			<div class="text-lg text-gray-600 flex">Non Conformance List</div>
+			<div class="text-lg text-ink-gray-6 flex">Non Conformance List</div>
 			<template v-for="tab in tabs">
 				<router-link
 					:to="{ name: tab.value, params: { nc: tab.name } }"
-					class="flex p-4 my-4 mr-4 justify-between border gap-6 rounded cursor-pointer text-base text-gray-600 hover:bg-gray-100"
+					class="flex p-4 my-4 mr-4 justify-between border gap-6 rounded cursor-pointer text-base text-ink-gray-6 hover:bg-surface-gray-2"
 					:class="{
-						'text-gray-800 bg-gray-50': isActiveTab(tab),
-						'text-gray-400': !isActiveTab(tab),
+						'text-ink-gray-8 bg-surface-gray-1': isActiveTab(tab),
+						'text-ink-gray-4': !isActiveTab(tab),
 					}"
 				>
 					<div>{{ tab.label }}</div>

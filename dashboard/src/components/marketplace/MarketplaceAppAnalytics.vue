@@ -15,11 +15,11 @@
 		<div class="col-span-2 mb-5 rounded-md border">
 			<div class="grid grid-cols-2 lg:grid-cols-5">
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Total Installs</div>
+					<div class="text-base text-ink-gray-7">Total Installs</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
-								<span class="text-base text-gray-900">
+								<span class="text-base text-ink-gray-9">
 									{{ installAnalytics.total_installs }}
 								</span>
 							</div>
@@ -28,11 +28,11 @@
 				</div>
 
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Weekly Installs</div>
+					<div class="text-base text-ink-gray-7">Weekly Installs</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
-								<span class="text-base text-gray-900">
+								<span class="text-base text-ink-gray-9">
 									{{ installAnalytics.installs_last_week }}
 								</span>
 							</div>
@@ -41,11 +41,11 @@
 				</div>
 
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Active Sites</div>
+					<div class="text-base text-ink-gray-7">Active Sites</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
-								<span class="text-base text-gray-900">
+								<span class="text-base text-ink-gray-9">
 									{{ installAnalytics.installs_active_sites }}
 								</span>
 							</div>
@@ -54,11 +54,11 @@
 				</div>
 
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Active Benches</div>
+					<div class="text-base text-ink-gray-7">Active Benches</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
-								<span class="text-base text-gray-900">
+								<span class="text-base text-ink-gray-9">
 									{{ installAnalytics.installs_active_benches }}
 								</span>
 							</div>
@@ -67,11 +67,11 @@
 				</div>
 
 				<div class="border-b border-r p-5 lg:border-b-0">
-					<div class="text-base text-gray-700">Total Earnings</div>
+					<div class="text-base text-ink-gray-7">Total Earnings</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
-								<span class="text-base text-gray-900">
+								<span class="text-base text-ink-gray-9">
 									{{ $format.userCurrency(totalEarnings) }}
 								</span>
 							</div>

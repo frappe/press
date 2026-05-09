@@ -140,7 +140,7 @@ export default {
 			{
 				label: 'Sites',
 				fieldname: 'site_count',
-				class: 'text-gray-600',
+				class: 'text-ink-gray-6',
 				width: 0.25,
 			},
 		],
@@ -260,7 +260,7 @@ export default {
 									{
 										text: "What's this?",
 										placement: 'top',
-										class: 'rounded-full bg-gray-100 p-1',
+										class: 'rounded-full bg-surface-gray-2 p-1',
 									},
 									() => [
 										h(
@@ -510,7 +510,7 @@ export default {
 									{
 										text: 'Attention required!',
 										placement: 'top',
-										class: 'rounded-full bg-gray-100 p-1',
+										class: 'rounded-full bg-surface-gray-2 p-1',
 									},
 									() => h(icon('alert-circle', 'w-3 h-3'), {}),
 								);
@@ -520,7 +520,7 @@ export default {
 							label: 'Duration',
 							fieldname: 'build_duration',
 							format: duration,
-							class: 'text-gray-600',
+							class: 'text-ink-gray-6',
 							width: 1,
 						},
 						{

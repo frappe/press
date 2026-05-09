@@ -12,7 +12,7 @@
 				<template v-if="showInvoice">
 					<div
 						v-if="showInvoice.status === 'Empty'"
-						class="text-base text-gray-600"
+						class="text-base text-ink-gray-6"
 					>
 						Nothing to show
 					</div>
@@ -64,7 +64,7 @@
 					{{ formatCurrency(amount) }} credits have been transferred to
 					<strong>{{ customerTeam.billing_name }}</strong>
 				</p>
-				<span class="text-base font-medium text-gray-700"
+				<span class="text-base font-medium text-ink-gray-7"
 					>Credits available: {{ creditBalance() }}</span
 				>
 			</template>

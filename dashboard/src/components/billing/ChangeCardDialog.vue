@@ -10,7 +10,7 @@
 					<div
 						v-for="card in cards.data"
 						:key="card.name"
-						class="flex justify-between gap-2 rounded p-2.5 text-base text-gray-900 hover:bg-gray-100"
+						class="flex justify-between gap-2 rounded p-2.5 text-base text-ink-gray-9 hover:bg-surface-gray-2"
 					>
 						<div class="flex gap-2">
 							<component :is="cardBrandIcon(card.brand)" class="my-auto" />
@@ -18,7 +18,7 @@
 								<div class="flex h-7 items-center gap-1 font-medium">
 									<div>{{ card.name_on_card }}</div>
 									<div>&middot;</div>
-									<div class="flex gap-1 text-gray-700">
+									<div class="flex gap-1 text-ink-gray-7">
 										<div>Card ending in ••••</div>
 										<div>{{ card.last_4 }}</div>
 									</div>
@@ -30,7 +30,7 @@
 										theme="green"
 									/>
 								</div>
-								<div class="text-gray-600">
+								<div class="text-ink-gray-6">
 									Expiry
 									{{
 										card.expiry_month < 10

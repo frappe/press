@@ -3,8 +3,8 @@
 		<div>
 			<div class="flex justify-between border-b pb-4">
 				<div>
-					<h2 class="text-lg font-medium text-gray-900">App Profile</h2>
-					<p class="mt-1 text-sm leading-6 text-gray-600">
+					<h2 class="text-lg font-medium text-ink-gray-9">App Profile</h2>
+					<p class="mt-1 text-sm leading-6 text-ink-gray-6">
 						This information will be displayed publicly on the marketplace. Make
 						sure you enter correct information without any broken links and
 						images.
@@ -163,9 +163,9 @@
 					v-model="marketplaceApp.description"
 				/>
 				<div class="mt-4">
-					<span class="text-xs text-gray-600">Description</span>
+					<span class="text-xs text-ink-gray-6">Description</span>
 					<TextEditor
-						class="mt-1 block w-full rounded border border-gray-100 bg-gray-100 px-2 py-1.5 text-base text-gray-800 placeholder-gray-500 transition-colors hover:border-gray-200 hover:bg-gray-200 focus:border-gray-500 focus:bg-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
+						class="mt-1 block w-full rounded border border-outline-gray-1 bg-surface-gray-2 px-2 py-1.5 text-base text-ink-gray-8 placeholder-gray-500 transition-colors hover:border-outline-gray-1 hover:bg-surface-gray-3 focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 						ref="textEditor"
 						editor-class="rounded-b-lg max-w-[unset] prose-sm pb-[10vh]"
 						:content="marketplaceApp.long_description"

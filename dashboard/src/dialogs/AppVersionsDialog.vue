@@ -9,7 +9,7 @@
 		<template #body-content>
 			<div
 				v-if="$resources?.showAppVersions?.loading"
-				class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
+				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 			>
 				<Spinner class="w-4" /> Fetching app versions ...
 			</div>

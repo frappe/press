@@ -3,16 +3,16 @@
 		<a
 			:href="href"
 			@click="navigate"
-			class="flex items-center rounded px-2 py-1.5 text-gray-800 transition"
+			class="flex items-center rounded px-2 py-1.5 text-ink-gray-8 transition"
 			:class="[
-				item.isActive ? 'bg-white shadow-sm' : 'hover:bg-gray-100',
+				item.isActive ? 'bg-surface-white shadow-sm' : 'hover:bg-surface-gray-2',
 				item.disabled ? 'pointer-events-none opacity-50' : '',
 				$attrs.class,
 			]"
 		>
 			<div class="flex w-full items-center space-x-2">
 				<span class="grid h-5 w-5 place-items-center">
-					<component :is="item.icon" class="h-4 w-4 text-gray-500" />
+					<component :is="item.icon" class="h-4 w-4 text-ink-gray-5" />
 				</span>
 				<span class="text-base">{{ item.name }}</span>
 			</div>

@@ -47,7 +47,6 @@ import {
 	watch,
 	ref,
 	provide,
-	onMounted,
 } from 'vue';
 import { Toaster } from 'vue-sonner';
 import { dialogs } from './utils/components';
@@ -57,6 +56,7 @@ import { session } from './data/session.js';
 import { searchModalOpen } from '@/data/ui';
 import SearchModal from '@/components/navigation/search/Popup.vue';
 import { useSearch } from '@/components/navigation/search/utils';
+import { initTheme } from '@/utils/useTheme';
 
 const AppSidebar = defineAsyncComponent(
 	() => import('./components/navigation/sidebar/Sidebar.vue'),
@@ -117,6 +117,8 @@ watch(
   },
   { once: true }
 );
+
+initTheme()
 </script>
 
 <style src="./assets/style.css"></style>

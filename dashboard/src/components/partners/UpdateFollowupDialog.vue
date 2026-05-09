@@ -11,7 +11,7 @@
 					<div v-for="field in section.fields" :key="field.name">
 						<div
 							v-if="field.fieldtype === 'Date'"
-							class="text-gray-600 h-1.5 text-xs"
+							class="text-ink-gray-6 h-1.5 text-xs"
 						>
 							{{ field.label }}
 							<DatePicker

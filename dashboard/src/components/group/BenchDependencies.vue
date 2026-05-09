@@ -107,7 +107,7 @@ const columns = computed(() => [
 		>
 			<template #cell="{ item, row, column }">
 				<ObjectListCell
-					:class="[column == columns[0] ? ' text-gray-900' : ' text-gray-700']"
+					:class="[column == columns[0] ? ' text-ink-gray-9' : ' text-ink-gray-7']"
 					:row="row"
 					:column="column"
 					:context="{
@@ -119,7 +119,7 @@ const columns = computed(() => [
 
 		<div class="px-5" v-if="!dependencyListResource.data?.length">
 			<div
-				class="text-center text-sm leading-10 text-gray-500 pb-[1.75rem]"
+				class="text-center text-sm leading-10 text-ink-gray-5 pb-[1.75rem]"
 				v-if="dependencyListResource.list?.loading"
 			>
 				Loading...
@@ -132,7 +132,7 @@ const columns = computed(() => [
 			</div>
 			<div
 				v-else
-				class="text-center text-sm leading-10 text-gray-500 pb-[1.75rem]"
+				class="text-center text-sm leading-10 text-ink-gray-5 pb-[1.75rem]"
 			>
 				No dependencies to show
 			</div>
@@ -141,7 +141,7 @@ const columns = computed(() => [
 		<div
 			class="p-2 text-right"
 			:class="{
-				'bg-white bottom-0 sticky':
+				'bg-surface-white bottom-0 sticky':
 					dependencyListResource?.next && dependencyListResource?.hasNextPage,
 			}"
 			v-if="dependencyListResource"
@@ -156,7 +156,7 @@ const columns = computed(() => [
 		</div>
 
 		<div
-			class="text-ink-gray-5 select-none text-xs flex items-center w-full p-2 mb-3 rounded-md bg-gray-50"
+			class="text-ink-gray-5 select-none text-xs flex items-center w-full p-2 mb-3 rounded-md bg-surface-gray-1"
 		>
 			<FeatherIcon name="info" class="size-4 inline-block mx-2" />
 			<span>

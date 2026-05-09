@@ -28,11 +28,11 @@
 					:isDedicatedServerSite="$site.doc.is_dedicated_server"
 					:selectedProvider="$site.doc.server_provider"
 				/>
-				<div class="mt-4 text-xs text-gray-700">
+				<div class="mt-4 text-xs text-ink-gray-7">
 					<div
-						class="flex items-center rounded bg-gray-50 p-2 text-p-base font-medium text-gray-800"
+						class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base font-medium text-ink-gray-8"
 					>
-						<lucide-badge-check class="mr-2 h-5 w-12 text-gray-600" />
+						<lucide-badge-check class="mr-2 h-5 w-12 text-ink-gray-6" />
 						<span>
 							<strong>Support</strong> covers only issues of Frappe apps and not
 							functional queries. You can raise a support ticket for Frappe
@@ -52,7 +52,7 @@
 					:intervals="true"
 					:value="65"
 				/>
-				<div class="mb-5 inline-flex gap-1.5 text-base text-gray-700">
+				<div class="mb-5 inline-flex gap-1.5 text-base text-ink-gray-7">
 					<FeatherIcon class="h-4" name="info" />
 					<span> Add billing details to your account before proceeding.</span>
 				</div>
@@ -73,12 +73,12 @@
 					:value="99"
 				/>
 				<div
-					class="mb-5 flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
+					class="mb-5 flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
 				>
 					<div
 						class="w-1/2 cursor-pointer rounded-[7px] py-1.5 text-center transition-all"
 						:class="{
-							'bg-gray-100': isAutomatedBilling,
+							'bg-surface-gray-2': isAutomatedBilling,
 						}"
 						@click="isAutomatedBilling = true"
 					>
@@ -87,7 +87,7 @@
 					<div
 						class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 						:class="{
-							'bg-gray-100': !isAutomatedBilling,
+							'bg-surface-gray-2': !isAutomatedBilling,
 						}"
 						@click="isAutomatedBilling = false"
 					>
@@ -98,7 +98,7 @@
 				<div>
 					<div
 						v-if="isAutomatedBilling"
-						class="mb-5 flex items-center gap-2 text-sm text-gray-700"
+						class="mb-5 flex items-center gap-2 text-sm text-ink-gray-7"
 					>
 						<FeatherIcon class="h-4" name="info" />
 						<span>
@@ -108,7 +108,7 @@
 					</div>
 					<div
 						v-else
-						class="mb-5 flex items-center gap-2 text-sm text-gray-700"
+						class="mb-5 flex items-center gap-2 text-sm text-ink-gray-7"
 					>
 						<FeatherIcon class="h-4" name="info" />
 						<span>

@@ -6,11 +6,14 @@ import LucideSupport from '~icons/lucide/life-buoy';
 import LucideBookText from '~icons/lucide/book-text';
 import LucideMessageSquareCode from '~icons/lucide/message-square-code';
 import LucideAlert from '~icons/lucide/notebook-text';
+import LucideMoon from '~icons/lucide/moon';
+import DarkModeLabel from './DarkModeLabel.vue';
 
 import Item from './Item.vue';
 import NavList from './NavList.vue';
 import ItemGroup from './ItemGroup.vue';
 
+import { setTheme } from '@/utils/useTheme';
 import { getTeam } from '@/data/team';
 import { session } from '@/data/session';
 
@@ -41,7 +44,7 @@ const releaseNotes = () => {
 
 <template>
 	<div
-		class="relative flex min-h-screen w-[220px] flex-col gap-1 border-r bg-gray-50 p-2"
+		class="relative flex min-h-screen w-[220px] flex-col gap-1 border-r bg-surface-gray-1 dark:bg-transparent p-2"
 	>
 		<Dropdown
 			:options="[
@@ -54,6 +57,22 @@ const releaseNotes = () => {
 				},
 
 				{
+					label: 'Theme',
+					icon: LucideMoon,
+					submenu: [
+						{
+							label: 'Light Mode',
+							icon: 'sun',
+							onClick: () => setTheme('light'),
+						},
+
+            // dropdown component as per this frappe-ui version doesnt support suffix slot
+            // so make the icon itself icon+label+beta badge
+						{ icon: DarkModeLabel , onClick: () => setTheme('dark') },
+					],
+				},
+
+				{
 					label: 'Logout',
 					icon: 'log-out',
 					onClick: $session.logout.submit,
@@ -62,17 +81,20 @@ const releaseNotes = () => {
 		>
 			<template v-slot="{ open }">
 				<button
-					class="flex items-center rounded-md p-1 text-left md:mb-1"
-					:class="open ? 'bg-white shadow-sm' : 'hover:bg-gray-200'"
+					class="flex items-center rounded-md p-1 text-left md:mb-1 hover:bg-surface-gray-3"
+					:class="
+						open ? 'bg-surface-white dark:bg-surface-gray-2 shadow-sm' : ''
+					"
 				>
 					<FCLogo class="mb-1 h-8 w-8 shrink-0 rounded" />
+
 					<div class="ml-2 flex flex-1 flex-col overflow-hidden">
-						<div class="text-base font-medium leading-none text-gray-900">
+						<div class="text-base font-medium leading-none text-ink-gray-9">
 							Frappe Cloud
 						</div>
 						<Tooltip :text="$team?.doc?.user || null">
 							<div
-								class="mt-1 hidden overflow-hidden text-ellipsis whitespace-nowrap pb-1 text-sm leading-none text-gray-700 sm:inline"
+								class="mt-1 hidden overflow-hidden text-ellipsis whitespace-nowrap pb-1 text-sm leading-none text-ink-gray-7 sm:inline"
 							>
 								{{ $team?.get.loading ? 'Loading...' : $team?.doc?.user }}
 							</div>
