@@ -24,7 +24,14 @@ body {
   --scrollbar-thumb-hover: var(--surface-gray-3);
 }
 
-.no-transition * { transition: none !important; }
+/* needed as theme switcher dynamically adds this class 
+ * since many frappe-ui components use transitions
+ * fixes flash bang during theme switching */
+.no-transition *,
+.no-transition *::before,
+.no-transition *::after {
+  transition: none !important;
+}
 
 * {
   scrollbar-width: thin;
