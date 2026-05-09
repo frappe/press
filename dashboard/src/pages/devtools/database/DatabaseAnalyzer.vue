@@ -210,13 +210,7 @@
 							@click.stop="() => {}"
 						>
 							<Switch v-model="autoRefreshDatabaseLocks" />
-<<<<<<< HEAD
-							<p class="text-base text-gray-700">
-								Auto Refresh Until Lock Found
-							</p>
-=======
 							<p class="text-base text-ink-gray-7">Auto Refresh</p>
->>>>>>> 6a008c8e6 (feat(dark-theme): rename class text-gray-700 -> text-ink-gray-7)
 						</div>
 						<Button
 							:loading="this.$resources.databaseLocks.loading"
