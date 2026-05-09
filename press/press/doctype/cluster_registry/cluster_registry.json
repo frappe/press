@@ -24,11 +24,9 @@
   "user",
   "secret",
   "garbage_collection_section",
-  "retention_policy",
-  "number_of_days",
-  "is_retention_policy_set",
+  "is_garbage_collection_configured",
   "column_break_azro",
-  "retention_execution_cron"
+  "garbage_collection_cron"
  ],
  "fields": [
   {
@@ -129,45 +127,31 @@
    "label": "Garbage Collection"
   },
   {
-   "default": "Push",
-   "description": "If Push, image pushed in the Last Number of Days will be marked for GC, else image pulled.",
-   "fieldname": "retention_policy",
-   "fieldtype": "Select",
-   "label": "Retention Policy",
-   "options": "Push\nPull"
-  },
-  {
-   "default": "5",
-   "fieldname": "number_of_days",
-   "fieldtype": "Int",
-   "label": "Number of Days"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_retention_policy_set",
-   "fieldtype": "Check",
-   "label": "Is Retention Policy Set"
-  },
-  {
    "fieldname": "column_break_azro",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "retention_execution_cron",
-   "fieldtype": "Data",
-   "label": "Retention Execution Cron"
   },
   {
    "fieldname": "storage_bucket",
    "fieldtype": "Link",
    "label": "Storage Bucket",
    "options": "Cluster Bucket"
+  },
+  {
+   "fieldname": "garbage_collection_cron",
+   "fieldtype": "Data",
+   "label": "Garbage Collection Cron"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_garbage_collection_configured",
+   "fieldtype": "Check",
+   "label": "Is Garbage Collection Configured"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-09 12:43:29.968556",
+ "modified": "2026-05-09 18:28:10.902059",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster Registry",

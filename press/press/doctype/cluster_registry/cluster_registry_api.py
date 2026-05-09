@@ -95,6 +95,14 @@ class ClusterRegistryAPI:
 		payload = {"project_name": project_name, "public": False, "storage_limit": storage_limit}
 		self._request("POST", "projects", json=payload)
 
+	def create_garbage_collection_rule(self, schedule_cron: str):
+		"""Creates a GC rule that runs on the specified cron schedule cleaning up untagged images"""
+		payload = {
+			"schedule": {"type": "Custom", "cron": schedule_cron},
+			"parameters": {"delete_untagged": True},
+		}
+		self._request("POST", "system/gc/schedule", json=payload)
+
 	def create_retention_rule(
 		self,
 		project_name: str,

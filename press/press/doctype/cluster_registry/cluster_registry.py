@@ -33,16 +33,14 @@ class ClusterRegistry(BaseServer):
 		admin_password: DF.Password | None
 		cluster: DF.Link | None
 		domain: DF.Link | None
+		garbage_collection_cron: DF.Data | None
 		hostname: DF.Data | None
 		ip: DF.Data | None
-		is_retention_policy_set: DF.Check
+		is_garbage_collection_configured: DF.Check
 		is_setup: DF.Check
-		number_of_days: DF.Int
 		private_ip: DF.Data | None
 		project: DF.Data | None
 		provider: DF.Data | None
-		retention_execution_cron: DF.Data | None
-		retention_policy: DF.Literal["Push", "Pull"]
 		secret: DF.Password | None
 		status: DF.Literal["GC", "Active", "Broken", "Pending", "Terminated"]
 		storage_bucket: DF.Link | None
@@ -52,6 +50,13 @@ class ClusterRegistry(BaseServer):
 
 	def validate(self):
 		self.validate_cluster()
+
+	def on_update(self):
+		if self.status != "Active":
+			return
+
+		if self.has_value_changed("garbage_collection_cron") and self.garbage_collection_cron:
+			self.create_garbage_collection_schedule()
 
 	def client(self) -> ClusterRegistryAPI:
 		if self.status != "Active":
@@ -159,6 +164,9 @@ class ClusterRegistry(BaseServer):
 		finally:
 			self.save()
 
+		if self.status == "Active":
+			self.setup_project()
+
 	def setup_server(self):
 		self.create_dns_record()
 		frappe.enqueue_doc(
@@ -182,14 +190,6 @@ class ClusterRegistry(BaseServer):
 		self.project = project_name
 		self.save()
 
-	def create_storage_quota(self):
-		"""Set storage quota for this cluster registry project based on the disk size"""
-		disk_size = frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
-		try:
-			self.client().create_project_quota(self.project, int(disk_size))
-		except Exception as e:
-			print(f"Error while setting storage quota for cluster registry {e}")
-
 	def create_project_robot(self):
 		"""Create a robot account for this cluster registry"""
 		try:
@@ -204,35 +204,20 @@ class ClusterRegistry(BaseServer):
 		except Exception as e:
 			print(f"Error while creating project robot for cluster registry {e}")
 
-	def create_retention_policy(self):
-		"""Create a retention policy for this cluster registry"""
+	def create_garbage_collection_schedule(self):
+		"""Create a garbage collection schedule for this cluster registry"""
 		try:
-			self.client().create_retention_rule(
-				self.project,
-				older_than_days=self.number_of_days,
-				pushed_based_retention=self.retention_policy == "Push",
+			self.client().create_garbage_collection_rule(
+				schedule_cron=self.garbage_collection_cron or "0 0 3 * * *"
 			)
-			self.is_retention_policy_set = True
+			self.is_garbage_collection_configured = True
 			self.save()
 		except Exception as e:
-			print(f"Error while creating retention policy for cluster registry {e}")
+			print(f"Error while creating garbage collection schedule for cluster registry {e}")
 
 	@frappe.whitelist()
 	def setup_project(self):
 		"""Create a project for this cluster registry"""
 		self.create_project()
-		self.create_storage_quota()
 		self.create_project_robot()
-		# This is questionable (Maybe we need to pass this logic to `archive_benchmark`)
-		self.create_retention_policy()
-
-	@frappe.whitelist()
-	def trigger_retention_policy(self):
-		"""Manually trigger a retention policy execution for this cluster registry"""
-		if not self.is_retention_policy_set:
-			frappe.throw("Project is not setup yet")
-
-		try:
-			self.client().trigger_retention_execution(self.project)
-		except Exception as e:
-			log_error(f"Error while triggering retention policy for cluster registry {e}")
+		self.create_garbage_collection_schedule()
