@@ -81,7 +81,7 @@
 						"
 					/>
 					<Tooltip text="This is an experimental feature">
-						<div class="rounded-md bg-purple-100 p-1.5">
+						<div class="rounded-md bg-surface-pink-1 p-1.5">
 							<lucide-flask-conical class="h-4 w-4 text-purple-500" />
 						</div>
 					</Tooltip>
