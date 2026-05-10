@@ -78,7 +78,7 @@ const helpDropdownOptions = [
 
 <template>
   <aside
-    class="relative flex md:min-h-screen w-full md:w-[220px] p-2 gap-1 flex-col border-r bg-surface-white  md:bg-surface-gray-1 dark:bg-transparent">
+    class="relative flex md:min-h-screen w-full md:w-auto md:min-w-[220px] p-2 gap-1 flex-col border-r bg-surface-white  md:bg-surface-gray-1 dark:bg-transparent">
 
     <div class='flex gap-2 items-center border-b md:border-0 p-2 md:p-0 -m-2 md:m-0 h-[44px]'>
       <FCLogo class="size-6 md:hidden mr-auto" />

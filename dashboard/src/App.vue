@@ -1,42 +1,28 @@
 <template>
-	<div class="relative flex h-full flex-col">
-		<div class="h-full flex-1">
-			<div class="flex flex-col md:flex-row h-full">
-				<div
-					v-if="!isSignupFlow && !isHideSidebar"
-					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
-				>
-					<AppSidebar
-						v-if="$session.user && $team?.doc && route.name !== 'Login'"
-					/>
-				</div>
+  <div class="flex flex-col md:flex-row h-full">
+    <AppSidebar v-if="!isSignupFlow && !isHideSidebar && $session.user && $team?.doc && route.name !== 'Login'" />
 
-				<div class="w-full overflow-auto z-0" id="scrollContainer">
-					<div
-						v-if="
-							!isSignupFlow &&
-							!isSiteLogin &&
-							!$session.user &&
-							!$route.meta.isLoginPage
-						"
-						class="border bg-red-200 px-5 py-3 text-base text-red-900"
-					>
-						You are not logged in.
-						<router-link to="/login" class="underline">Login</router-link> to
-						access dashboard.
-					</div>
-					<router-view />
-				</div>
-			</div>
-		</div>
+    <div class="w-full overflow-auto z-0" id="scrollContainer">
+      <div
+        class="border bg-surface-red-2 px-5 py-3 text-base text-ink-red-4"
+        v-if="
+        !isSignupFlow &&
+        !isSiteLogin &&
+        !$session.user &&
+        !$route.meta.isLoginPage
+      " >
+        You are not logged in.
+        <router-link to="/login" class="underline">Login</router-link> to
+        access dashboard.
+      </div>
 
-		<Toaster
-			position="top-right"
-			:toastOptions="{ class: 'text-sm prose-sm' }"
-		/>
-		<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
-		<SearchModal v-if="searchModalOpen" />
-	</div>
+      <router-view />
+    </div>
+  </div>
+
+  <Toaster position="top-right" :toastOptions="{ class: 'text-sm prose-sm' }" />
+  <component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
+  <SearchModal v-if="searchModalOpen" />
 </template>
 
 <script setup>
