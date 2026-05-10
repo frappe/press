@@ -1,19 +1,17 @@
 <template>
 	<div class="relative flex h-full flex-col">
 		<div class="h-full flex-1">
-			<div class="flex h-full">
+			<div class="flex flex-col md:flex-row h-full">
 				<div
-					v-if="!isSignupFlow && !$isMobile && !isHideSidebar"
+					v-if="!isSignupFlow && !isHideSidebar"
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
 					<AppSidebar
 						v-if="$session.user && $team?.doc && route.name !== 'Login'"
 					/>
 				</div>
+
 				<div class="w-full overflow-auto z-0" id="scrollContainer">
-					<MobileNav
-						v-if="!isSignupFlow && $isMobile && !isHideSidebar && $session.user"
-					/>
 					<div
 						v-if="
 							!isSignupFlow &&
@@ -31,6 +29,7 @@
 				</div>
 			</div>
 		</div>
+
 		<Toaster
 			position="top-right"
 			:toastOptions="{ class: 'text-sm prose-sm' }"
@@ -41,28 +40,19 @@
 </template>
 
 <script setup>
-import {
-	defineAsyncComponent,
-	computed,
-	watch,
-	ref,
-	provide,
-} from 'vue';
-import { Toaster } from 'vue-sonner';
-import { dialogs } from './utils/components';
-import { useRoute } from 'vue-router';
-import { getTeam } from './data/team';
-import { session } from './data/session.js';
-import { searchModalOpen } from '@/data/ui';
-import SearchModal from '@/components/navigation/search/Popup.vue';
-import { useSearch } from '@/components/navigation/search/utils';
-import { initTheme } from '@/utils/useTheme';
+import { computed, defineAsyncComponent, provide, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import { Toaster } from "vue-sonner";
+import SearchModal from "@/components/navigation/search/Popup.vue";
+import { useSearch } from "@/components/navigation/search/utils";
+import { searchModalOpen } from "@/data/ui";
+import { initTheme } from "@/utils/useTheme";
+import { session } from "./data/session.js";
+import { getTeam } from "./data/team";
+import { dialogs } from "./utils/components";
 
 const AppSidebar = defineAsyncComponent(
-	() => import('./components/navigation/sidebar/Sidebar.vue'),
-);
-const MobileNav = defineAsyncComponent(
-	() => import('./components/MobileNav.vue'),
+	() => import("./components/navigation/sidebar/Sidebar.vue"),
 );
 
 const route = useRoute();
@@ -70,11 +60,11 @@ const team = getTeam();
 
 const isHideSidebar = computed(() => {
 	const alwaysHideSidebarRoutes = [
-		'Site Login',
-		'SignupLoginToSite',
-		'SignupSetup',
+		"Site Login",
+		"SignupLoginToSite",
+		"SignupSetup",
 	];
-	const alwaysHideSidebarPaths = ['/dashboard/site-login'];
+	const alwaysHideSidebarPaths = ["/dashboard/site-login"];
 
 	if (!session.user) return false;
 	if (
@@ -89,36 +79,36 @@ const isHideSidebar = computed(() => {
 });
 
 const isSignupFlow = ref(
-	window.location.pathname.startsWith('/dashboard/create-site') ||
-		window.location.pathname.startsWith('/dashboard/setup-account') ||
-		window.location.pathname.startsWith('/dashboard/site-login') ||
-		window.location.pathname.startsWith('/dashboard/signup'),
+	window.location.pathname.startsWith("/dashboard/create-site") ||
+		window.location.pathname.startsWith("/dashboard/setup-account") ||
+		window.location.pathname.startsWith("/dashboard/site-login") ||
+		window.location.pathname.startsWith("/dashboard/signup"),
 );
-const isSiteLogin = ref(window.location.pathname.endsWith('/site-login'));
+const isSiteLogin = ref(window.location.pathname.endsWith("/site-login"));
 
 watch(
 	() => route.name,
 	() => {
 		isSignupFlow.value =
-			window.location.pathname.startsWith('/dashboard/create-site') ||
-			window.location.pathname.startsWith('/dashboard/setup-account') ||
-			window.location.pathname.startsWith('/dashboard/site-login') ||
-			window.location.pathname.startsWith('/dashboard/signup');
+			window.location.pathname.startsWith("/dashboard/create-site") ||
+			window.location.pathname.startsWith("/dashboard/setup-account") ||
+			window.location.pathname.startsWith("/dashboard/site-login") ||
+			window.location.pathname.startsWith("/dashboard/signup");
 	},
 );
 
-provide('team', team);
-provide('session', session);
+provide("team", team);
+provide("session", session);
 
 watch(
-  () => team?.doc?.onboarding?.complete,
-  (x) => {
-    if(x) useSearch();
-  },
-  { once: true }
+	() => team?.doc?.onboarding?.complete,
+	(x) => {
+		if (x) useSearch();
+	},
+	{ once: true },
 );
 
-initTheme()
+initTheme();
 </script>
 
 <style src="./assets/style.css"></style>
