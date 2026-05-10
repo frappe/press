@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import Item from './Item.vue';
-import LucideChevronRight from '~icons/lucide/chevron-right';
-import CollapseTransition from '@/components/utils/CollapseTransition.vue';
+import { ref, watch } from "vue";
+import CollapseTransition from "@/components/utils/CollapseTransition.vue";
+import LucideChevronRight from "~icons/lucide/chevron-right";
+import Item from "./Item.vue";
 
 let props = defineProps({
 	item: {
@@ -48,15 +48,13 @@ watch(
 		</div>
 	</div>
 	<CollapseTransition>
-		<div v-if="isOpened">
-			<div class="ml-5 flex flex-col gap-1">
+			<div v-show="isOpened" class="ml-5 flex flex-col gap-1">
 				<Item
 					v-for="(subItem, i) in item.children"
 					:class="{ 'mt-0.5': i !== 0 }"
 					:key="subItem.name"
 					:item="subItem"
 				/>
-			</div>
 		</div>
 	</CollapseTransition>
 </template>
