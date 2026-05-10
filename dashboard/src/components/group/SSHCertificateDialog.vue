@@ -27,7 +27,7 @@
 
 				<ClickToCopyField :textContent="sshCommand" />
 
-				<div class="flex items-center gap-2.5 rounded bg-gray-100 p-3">
+				<div class="flex items-center gap-2.5 rounded bg-surface-gray-2 p-3">
 					<lucide-alert-triangle class="size-4 shrink-0 mb-auto mt-0.5" />
 					<div class="text-sm leading-relaxed">
 						<p>

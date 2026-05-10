@@ -88,7 +88,7 @@ function getAppsTabColumns(forSite: boolean) {
 					'div',
 					{
 						title: 'App has been patched',
-						class: 'rounded-full bg-gray-100 p-1',
+						class: 'rounded-full bg-surface-gray-2 p-1',
 					},
 					h(icon('hash', 'w-3 h-3'))
 				);
@@ -98,7 +98,7 @@ function getAppsTabColumns(forSite: boolean) {
 		{
 			label: 'Plan',
 			width: 0.75,
-			class: 'text-gray-600 text-sm',
+			class: 'text-ink-gray-6 text-sm',
 			format(_, row) {
 				const planText = planTitle(row.plan_info);
 				if (planText) return `${planText}/mo`;

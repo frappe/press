@@ -1,5 +1,5 @@
 <template>
-	<Header class="sticky top-0 z-10 bg-white">
+	<Header class="sticky top-0 z-10 bg-surface-white">
 		<div
 			class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
 		>
@@ -43,7 +43,7 @@
 			<!-- Database Size Analyzer -->
 			<div>
 				<div class="flex flex-row items-center justify-between">
-					<p class="text-base font-medium text-gray-800">
+					<p class="text-base font-medium text-ink-gray-8">
 						Database Size Breakup
 					</p>
 					<div class="flex flex-row gap-2">
@@ -61,7 +61,7 @@
 
 				<!-- Slider -->
 				<div
-					class="mb-4 mt-4 flex h-7 w-full cursor-pointer items-start justify-start overflow-clip rounded border bg-gray-50 pl-0"
+					class="mb-4 mt-4 flex h-7 w-full cursor-pointer items-start justify-start overflow-clip rounded border bg-surface-gray-1 pl-0"
 					@click="showTableSchemaSizeDetailsDialog = true"
 				>
 					<div
@@ -95,8 +95,8 @@
 							class="h-2 w-2 rounded-full"
 							style="background-color: #e86c13"
 						></div>
-						<span class="text-sm text-gray-800">Data Size</span
-						><span class="ml-auto text-sm text-gray-800">{{
+						<span class="text-sm text-ink-gray-8">Data Size</span
+						><span class="ml-auto text-sm text-ink-gray-8">{{
 							formatSizeInMB(this.databaseSizeBreakup.data_size)
 						}}</span>
 					</div>
@@ -107,8 +107,8 @@
 							class="h-2 w-2 rounded-full"
 							style="background-color: #34bae3"
 						></div>
-						<span class="text-sm text-gray-800">Index Size</span
-						><span class="ml-auto text-sm text-gray-800"
+						<span class="text-sm text-ink-gray-8">Index Size</span
+						><span class="ml-auto text-sm text-ink-gray-8"
 							>{{ formatSizeInMB(this.databaseSizeBreakup.index_size) }}
 						</span>
 					</div>
@@ -119,8 +119,8 @@
 							class="h-2 w-2 rounded-full"
 							style="background-color: #ffbf00"
 						></div>
-						<span class="text-sm text-gray-800">Claimable Space</span
-						><span class="ml-auto text-sm text-gray-800"
+						<span class="text-sm text-ink-gray-8">Claimable Space</span
+						><span class="ml-auto text-sm text-ink-gray-8"
 							>{{ formatSizeInMB(this.databaseSizeBreakup.claimable_size) }}
 						</span>
 					</div>
@@ -131,8 +131,8 @@
 							class="h-2 w-2 rounded-full"
 							style="background-color: #e2e2e2"
 						></div>
-						<span class="text-sm text-gray-800">Free Space</span
-						><span class="ml-auto text-sm text-gray-800"
+						<span class="text-sm text-ink-gray-8">Free Space</span
+						><span class="ml-auto text-sm text-ink-gray-8"
 							>{{ formatSizeInMB(this.databaseSizeBreakup.free_size) }}
 						</span>
 					</div>
@@ -174,7 +174,7 @@
 				<template #default>
 					<div
 						v-if="this.$resources.databaseProcesses.loading"
-						class="flex h-60 w-full items-center justify-center gap-2 text-base text-gray-700"
+						class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 					>
 						<Spinner class="w-4" /> Loading Database Processes
 					</div>
@@ -210,7 +210,7 @@
 							@click.stop="() => {}"
 						>
 							<Switch v-model="autoRefreshDatabaseLocks" />
-							<p class="text-base text-gray-700">Auto Refresh</p>
+							<p class="text-base text-ink-gray-7">Auto Refresh</p>
 						</div>
 						<Button
 							:loading="this.$resources.databaseLocks.loading"
@@ -227,7 +227,7 @@
 							this.$resources.databaseLocks.loading &&
 							!databaseLocks?.data?.length
 						"
-						class="flex h-60 w-full items-center justify-center gap-2 text-base text-gray-700"
+						class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 					>
 						<Spinner class="w-4" /> Loading Database Locks
 					</div>
@@ -324,7 +324,7 @@
 										"
 										>Suggest Indexes</Button
 									>
-									<p class="text-base text-gray-700">
+									<p class="text-base text-ink-gray-7">
 										This may take a while to analyze
 									</p>
 								</div>
@@ -380,12 +380,12 @@
 		</div>
 		<div
 			v-else-if="!site"
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 		>
 			Select a site to get started
 		</div>
 		<div
-			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 			v-else
 		>
 			<Spinner class="w-4" /> Loading Table Schemas

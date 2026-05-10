@@ -1,7 +1,7 @@
 <template>
 	<div
 		@click="toggle"
-		class="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-gray-800 transition hover:bg-gray-100"
+		class="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-ink-gray-8 transition hover:bg-surface-gray-2"
 		:class="[
 			item.disabled ? 'pointer-events-none opacity-50' : '',
 			$attrs.class,
@@ -9,12 +9,12 @@
 	>
 		<div class="flex w-full items-center space-x-2">
 			<span class="grid h-5 w-5 place-items-center">
-				<component :is="item.icon" class="h-4 w-4 text-gray-500" />
+				<component :is="item.icon" class="h-4 w-4 text-ink-gray-5" />
 			</span>
 			<span class="text-base">{{ item.name }}</span>
 			<span class="!ml-auto">
-				<lucide-chevron-down v-if="isOpened" class="h-4 w-4 text-gray-500" />
-				<lucide-chevron-right v-else class="h-4 w-4 text-gray-500" />
+				<lucide-chevron-down v-if="isOpened" class="h-4 w-4 text-ink-gray-5" />
+				<lucide-chevron-right v-else class="h-4 w-4 text-ink-gray-5" />
 			</span>
 		</div>
 	</div>

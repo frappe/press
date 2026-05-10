@@ -13,7 +13,7 @@
 					this.$resources?.onPremFailoverConfig?.loading && !initialDataFetched
 				"
 			>
-				<div class="flex flex-row items-center gap-2 text-gray-700">
+				<div class="flex flex-row items-center gap-2 text-ink-gray-7">
 					<Spinner class="w-4" />
 					Loading configuration...
 				</div>
@@ -21,7 +21,7 @@
 			<div v-else>
 				<!-- Status -->
 				<div class="flex flex-row justify-between items-center">
-					<div class="text-base font-medium text-gray-800">Current Status</div>
+					<div class="text-base font-medium text-ink-gray-8">Current Status</div>
 					<Button
 						variant="subtle"
 						theme="red"
@@ -40,20 +40,20 @@
 						Stop Replication
 					</Button>
 				</div>
-				<div class="overflow-hidden rounded-md border border-gray-300 mt-2">
+				<div class="overflow-hidden rounded-md border border-outline-gray-2 mt-2">
 					<table class="min-w-full">
 						<thead class="bg-surface-gray-2">
 							<tr>
 								<th
-									class="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b"
+									class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
 								></th>
 								<th
-									class="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b"
+									class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
 								>
 									App Server
 								</th>
 								<th
-									class="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b"
+									class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
 								>
 									Database Server
 								</th>
@@ -138,7 +138,7 @@
 							@click="toggleSetupGuide"
 						></Button>
 						<p
-							class="cursor-pointer text-gray-700 font-medium"
+							class="cursor-pointer text-ink-gray-7 font-medium"
 							@click="toggleSetupGuide"
 						>
 							On-Prem Server Setup Guide
@@ -150,8 +150,8 @@
 					>
 						<!-- Add SSH Key -->
 						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">1. Add SSH Keys</div>
-							<div class="text-gray-600">
+							<div class="font-medium text-ink-gray-7">1. Add SSH Keys</div>
+							<div class="text-ink-gray-6">
 								&nbsp;&nbsp;&nbsp;Add the following authorized keys to your
 								on-prem server's
 								<b>/root/.ssh/authorized_keys</b>
@@ -161,7 +161,7 @@
 						</div>
 						<!-- Install necessary tools -->
 						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">
+							<div class="font-medium text-ink-gray-7">
 								2. Install Necessary Tools
 							</div>
 							<ClickToCopyField
@@ -173,10 +173,10 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 						</div>
 						<!-- Configure Wireguard -->
 						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">
+							<div class="font-medium text-ink-gray-7">
 								3. Update Wireguard Configuration
 							</div>
-							<div class="text-gray-600">
+							<div class="text-ink-gray-6">
 								&nbsp;&nbsp;&nbsp;Copy and paste the following config at
 								<b>/etc/wireguard/wg0.conf</b>
 							</div>
@@ -184,7 +184,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 						</div>
 						<!-- Start Wireguard Service -->
 						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">
+							<div class="font-medium text-ink-gray-7">
 								4. Start Wireguard Service
 							</div>
 							<ClickToCopyField
@@ -193,7 +193,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 						</div>
 						<!-- Install Failover Management Service -->
 						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">
+							<div class="font-medium text-ink-gray-7">
 								5. Setup Failover Management Service
 							</div>
 							<ClickToCopyField
@@ -202,10 +202,10 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 						</div>
 						<!-- Trigger Replication Setup -->
 						<div class="flex flex-col gap-2">
-							<div class="font-medium text-gray-700">
+							<div class="font-medium text-ink-gray-7">
 								6. Trigger Replication Setup
 							</div>
-							<div class="text-gray-600">
+							<div class="text-ink-gray-6">
 								&nbsp;&nbsp;&nbsp;Once the above steps are completed, click the
 								button to start the setup.
 							</div>
@@ -239,7 +239,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 
 				<!-- Jobs -->
 				<div
-					class="text-base font-medium text-gray-800 mt-4"
+					class="text-base font-medium text-ink-gray-8 mt-4"
 					v-if="jobs && jobs.length"
 				>
 					Recent Jobs
@@ -265,7 +265,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 									"
 								></Button>
 								<p
-									class="cursor-pointer text-gray-700 font-medium"
+									class="cursor-pointer text-ink-gray-7 font-medium"
 									@click="
 										openedJobSection =
 											openedJobSection === job.name ? null : job.name
@@ -282,20 +282,20 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 						>
 							<div class="mt-1 mb-1 flex flex-row justify-between w-full px-2">
 								<div>
-									<div class="text-sm font-medium text-gray-500">Start</div>
-									<div class="mt-2 text-sm text-gray-900">
+									<div class="text-sm font-medium text-ink-gray-5">Start</div>
+									<div class="mt-2 text-sm text-ink-gray-9">
 										{{ job.start ? $format.date(job.start, 'lll') : '-' }}
 									</div>
 								</div>
 								<div>
-									<div class="text-sm font-medium text-gray-500">End</div>
-									<div class="mt-2 text-sm text-gray-900">
+									<div class="text-sm font-medium text-ink-gray-5">End</div>
+									<div class="mt-2 text-sm text-ink-gray-9">
 										{{ job.end ? $format.date(job.end, 'lll') : '-' }}
 									</div>
 								</div>
 								<div>
-									<div class="text-sm font-medium text-gray-500">Duration</div>
-									<div class="mt-2 text-sm text-gray-900">
+									<div class="text-sm font-medium text-ink-gray-5">Duration</div>
+									<div class="mt-2 text-sm text-ink-gray-9">
 										{{ job.duration ? humanizeDuration(job.duration) : '-' }}
 									</div>
 								</div>
@@ -319,7 +319,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 </template>
 <style scoped>
 td {
-	@apply px-4 py-2 border-b text-sm text-gray-700;
+	@apply px-4 py-2 border-b text-sm text-ink-gray-7;
 }
 
 tbody tr:last-child td {
@@ -327,7 +327,7 @@ tbody tr:last-child td {
 }
 
 .output-container {
-	@apply rounded border px-2 py-2 text-base text-gray-700;
+	@apply rounded border px-2 py-2 text-base text-ink-gray-7;
 }
 </style>
 <script>

@@ -12,7 +12,7 @@
 					$resources?.databaseServerStorageBreakdown?.loading ||
 					$resources?.applicationServerStorageBreakdown?.loading
 				"
-				class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
+				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 			>
 				<Spinner class="w-4" /> Analyzing ...
 			</div>
@@ -21,7 +21,7 @@
 					$resources?.databaseServerStorageBreakdown?.error ||
 					$resources?.applicationServerStorageBreakdown?.error
 				"
-				class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
+				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 			>
 				<ErrorMessage
 					:message="
@@ -51,7 +51,7 @@
 						class="my-3 flex flex-row items-center justify-between px-1.5"
 					>
 						<div class="flex flex-row items-center gap-1">
-							<p class="text-base font-semibold text-gray-800">
+							<p class="text-base font-semibold text-ink-gray-8">
 								Usage of
 								{{
 									noOfDatabases > topNDatabases && !showAllDatabases
