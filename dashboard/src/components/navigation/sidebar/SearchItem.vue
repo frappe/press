@@ -11,7 +11,7 @@ import { isMac } from '@/utils/device';
 	>
 		<LucideSearch class="size-4 text-ink-gray-6" />
 		<span class="text-left mr-auto">Search</span>
-		<span v-if="isMac()" class="inline-flex items-center text-sm">
+		<span v-if="isMac()" class="inline-flex items-center text-sm gap-1">
 			<!-- using a container to align ⌘ and K and setting font-medium to optically correct the alignment -->
 			<span class="text-sm font-medium">⌘</span>
 			<span class="text-sm">K</span>
