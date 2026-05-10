@@ -200,8 +200,7 @@ const tabs = [
 </script>
 
 <template>
-  <Popover :placement="isMobile() ? 'top-start' : 'right-start'" popover-class="-mt-[15%] md:-mt-2">
-
+  <Popover :placement="isMobile() ? 'top-start' : 'right-start'" popover-class="-mt-[15%] md:-mt-2.5">
     <!-- sidebar item -->
     <template #target="{ togglePopover }">
       <button aria-label="Notifications btn" @click="togglePopover"
@@ -264,9 +263,11 @@ const tabs = [
         </Tabs>
 
         <!-- body -->
-        <Scrollbar ref="scrollRef" v-if="resource.data.length > 0">
+        <Scrollbar ref="scrollRef" v-if="resource.data.length > 0" class='max-h-[67%] md:max-h-full'>
+
+          <!-- notif tiles = icon + info -->
           <div v-for="x in resource.data"
-            class="[&_b]:font-semibold p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0 hover:bg-surface-gray-1"
+            class="[&_b]:font-semibold p-2 md:p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0 hover:bg-surface-gray-1"
             @click="markAsRead(x, togglePopover)" title="Click to mark as read">
             <!-- type icon -->
             <div class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1 relative
@@ -277,14 +278,10 @@ const tabs = [
                 :class="iconCss[x.type].txt || 'text-ink-gray-6'" />
             </div>
 
+
+            <!-- info -->
             <div class="text-base leading-relaxed flex flex-wrap gap-2 w-full min-w-0">
-              <div class="flex">
-                <p v-html="formatHtml(x.message)" class="w-full" />
-                <Button v-if="x.type == 'Support Access'" tooltip="Support Access actions" variant="ghost"
-                  class="mb-auto" @click="(e) => openSupportAccess(e, x.document_name)"><template #icon>
-                    <LucideChevronRight class="size-3.5" />
-                  </template></Button>
-              </div>
+              <p v-html="formatHtml(x.message)" class="w-full" />
 
               <Badge class="text-xs mr-auto">
                 {{ x.title }}
