@@ -10,10 +10,10 @@ let props = defineProps({
 <template>
 	<router-link
 		:to="item.route"
-		class="flex items-center rounded px-2 py-1.5 text-ink-gray-6 transition gap-2"
+		class="flex items-center rounded px-2 py-1.5 text-ink-gray-7 transition gap-2"
 		:class="[
 			item.isActive
-				? 'bg-surface-white dark:bg-surface-gray-2 text-ink-gray-8 shadow-sm'
+				? 'bg-surface-gray-2 md:bg-surface-white dark:bg-surface-gray-2 text-ink-gray-8 md:shadow-sm'
 				: 'hover:bg-surface-gray-2',
 			item.disabled ? 'pointer-events-none opacity-50' : '',
 			$attrs.class,
