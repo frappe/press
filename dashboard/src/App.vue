@@ -3,14 +3,12 @@
     <AppSidebar v-if="!isSignupFlow && !isHideSidebar && $session.user && $team?.doc && route.name !== 'Login'" />
 
     <div class="w-full overflow-auto z-0" id="scrollContainer">
-      <div
-        class="border bg-surface-red-2 px-5 py-3 text-base text-ink-red-4"
-        v-if="
+      <div class="border bg-surface-red-2 px-5 py-3 text-base text-ink-red-4" v-if="
         !isSignupFlow &&
         !isSiteLogin &&
         !$session.user &&
         !$route.meta.isLoginPage
-      " >
+      ">
         You are not logged in.
         <router-link to="/login" class="underline">Login</router-link> to
         access dashboard.
@@ -20,7 +18,8 @@
     </div>
   </div>
 
-  <Toaster position="top-right" :toastOptions="{ class: 'text-sm prose-sm' }" />
+  <Toaster position="top-right"
+    :toastOptions="{ class: 'text-sm prose-sm dark:bg-surface-cards dark:border-outline-gray-2 text-ink-gray-9' }" />
   <component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
   <SearchModal v-if="searchModalOpen" />
 </template>
