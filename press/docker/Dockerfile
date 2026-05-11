@@ -243,11 +243,6 @@ RUN `#stage-bench-env`
 ENV {{v.key}} {{ v.value }}
 {% endfor %}
 
-# Install Boto and Requests for Asset store access
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
-  python${PYTHON_VERSION} -m pip install boto3 botocore requests \
-  `#stage-pre-Configure Asset Store`
-
 # Install Frappe app
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench init --python /usr/bin/python${PYTHON_VERSION} --no-backups --frappe-path file:///home/frappe/context/apps/frappe frappe-bench `#stage-apps-frappe`
 WORKDIR /home/frappe/frappe-bench
