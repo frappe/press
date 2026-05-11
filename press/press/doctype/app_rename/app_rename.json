@@ -24,10 +24,7 @@
 			"label": "Old name",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_ccmj",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ccmj", "fieldtype": "Column Break" },
 		{
 			"fieldname": "new_name",
 			"fieldtype": "Link",
@@ -35,10 +32,7 @@
 			"options": "App",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_pgse",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_pgse", "fieldtype": "Section Break" },
 		{
 			"fieldname": "rollback_script",
 			"fieldtype": "Code",
@@ -59,10 +53,7 @@
 			"fieldtype": "Check",
 			"label": "Enabled"
 		},
-		{
-			"fieldname": "section_break_kiiw",
-			"fieldtype": "Section Break"
-		}
+		{ "fieldname": "section_break_kiiw", "fieldtype": "Section Break" }
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,

@@ -62,10 +62,7 @@
 			"label": "Duration",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_hvst",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_hvst", "fieldtype": "Section Break" },
 		{
 			"fieldname": "alert_comment",
 			"fieldtype": "Small Text",

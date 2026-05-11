@@ -62,14 +62,8 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_6",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_6", "fieldtype": "Section Break" },
 		{
 			"default": "2048",
 			"fieldname": "rsa_key_size",
@@ -85,10 +79,7 @@
 			"label": "Issued On",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_8",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_8", "fieldtype": "Column Break" },
 		{
 			"fieldname": "expires_on",
 			"fieldtype": "Datetime",
@@ -141,10 +132,7 @@
 			"options": "Team",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_cvcg",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_cvcg", "fieldtype": "Section Break" },
 		{
 			"fieldname": "error",
 			"fieldtype": "Code",
@@ -189,20 +177,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"delete": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"delete": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "delete": 1, "read": 1, "role": "Press User", "write": 1 }
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

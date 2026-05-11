@@ -42,10 +42,7 @@
 			"label": "Method",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_dwne",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_dwne", "fieldtype": "Column Break" },
 		{
 			"fieldname": "start",
 			"fieldtype": "Datetime",
@@ -64,10 +61,7 @@
 			"label": "Duration",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_wkvt",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_wkvt", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "is_async",
@@ -88,15 +82,8 @@
 			"label": "Attempts",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_fgrq",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "traceback",
-			"fieldtype": "Code",
-			"label": "Traceback"
-		}
+		{ "fieldname": "section_break_fgrq", "fieldtype": "Section Break" },
+		{ "fieldname": "traceback", "fieldtype": "Code", "label": "Traceback" }
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,

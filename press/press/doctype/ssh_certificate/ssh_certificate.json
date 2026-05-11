@@ -27,10 +27,7 @@
 		"serial_number"
 	],
 	"fields": [
-		{
-			"fieldname": "section_break_2",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_2", "fieldtype": "Section Break" },
 		{
 			"depends_on": "eval:doc.certificate_type == \"User\"",
 			"fieldname": "user",
@@ -60,10 +57,7 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"fieldname": "valid_until",
 			"fieldtype": "Datetime",
@@ -78,10 +72,7 @@
 			"label": "SSH Fingerprint",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_8",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_8", "fieldtype": "Section Break" },
 		{
 			"fetch_from": "user_ssh_key.ssh_public_key",
 			"fieldname": "ssh_public_key",
@@ -121,10 +112,7 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_2",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_2", "fieldtype": "Column Break" },
 		{
 			"fieldname": "ssh_certificate_authority",
 			"fieldtype": "Link",
@@ -132,10 +120,7 @@
 			"options": "SSH Certificate Authority",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "section_break_15",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_15", "fieldtype": "Section Break" },
 		{
 			"fieldname": "serial_number",
 			"fieldtype": "Int",
@@ -177,20 +162,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"if_owner": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"if_owner": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "if_owner": 1, "read": 1, "role": "Press User", "write": 1 }
 	],
 	"sort_field": "modified",
 	"sort_order": "DESC",

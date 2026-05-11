@@ -156,11 +156,7 @@
 			"options": "Root Domain",
 			"read_only": 1
 		},
-		{
-			"fieldname": "title",
-			"fieldtype": "Data",
-			"label": "Title"
-		},
+		{ "fieldname": "title", "fieldtype": "Data", "label": "Title" },
 		{
 			"default": "0",
 			"fieldname": "tls_certificate_renewal_failed",
@@ -168,10 +164,7 @@
 			"label": "TLS Certificate Renewal Failed",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"fieldname": "cluster",
 			"fieldtype": "Link",
@@ -203,10 +196,7 @@
 			"fieldtype": "Data",
 			"label": "Self Hosted Server Domain"
 		},
-		{
-			"fieldname": "section_break_qury",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_qury", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"fieldname": "public",
@@ -232,10 +222,7 @@
 			"fieldtype": "Check",
 			"label": "Halt Agent Jobs"
 		},
-		{
-			"fieldname": "column_break_qsqm",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_qsqm", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "is_server_setup",
@@ -281,10 +268,7 @@
 			"label": "Team",
 			"options": "Team"
 		},
-		{
-			"fieldname": "column_break_11",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_11", "fieldtype": "Column Break" },
 		{
 			"fieldname": "plan",
 			"fieldtype": "Link",
@@ -326,10 +310,7 @@
 			"in_list_view": 1,
 			"label": "IP"
 		},
-		{
-			"fieldname": "column_break_10",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_10", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "virtual_machine.private_ip_address",
 			"fieldname": "private_ip",
@@ -387,10 +368,7 @@
 			"label": "MariaDB Root Password",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_12",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_12", "fieldtype": "Column Break" },
 		{
 			"fieldname": "server_id",
 			"fieldtype": "Int",
@@ -414,15 +392,8 @@
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_18",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "ssh_user",
-			"fieldtype": "Data",
-			"label": "SSH User"
-		},
+		{ "fieldname": "column_break_18", "fieldtype": "Column Break" },
+		{ "fieldname": "ssh_user", "fieldtype": "Data", "label": "SSH User" },
 		{
 			"fieldname": "bastion_server",
 			"fieldtype": "Link",
@@ -441,19 +412,9 @@
 			"label": "Root Public Key",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_cees",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "ram",
-			"fieldtype": "Float",
-			"label": "RAM (MB)"
-		},
-		{
-			"fieldname": "column_break_apox",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "section_break_cees", "fieldtype": "Section Break" },
+		{ "fieldname": "ram", "fieldtype": "Float", "label": "RAM (MB)" },
+		{ "fieldname": "column_break_apox", "fieldtype": "Column Break" },
 		{
 			"fieldname": "tags_section",
 			"fieldtype": "Section Break",
@@ -524,10 +485,7 @@
 			"label": "Memory Swap Max (GB)",
 			"non_negative": 1
 		},
-		{
-			"fieldname": "column_break_eiyu",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_eiyu", "fieldtype": "Column Break" },
 		{
 			"default": "TCMalloc",
 			"fieldname": "memory_allocator",
@@ -550,10 +508,7 @@
 			"label": "TCMalloc Release Rate",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_ladc",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_ladc", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"fieldname": "is_performance_schema_enabled",
@@ -592,10 +547,7 @@
 			"fieldtype": "Check",
 			"label": "Stalk strace Collector"
 		},
-		{
-			"fieldname": "column_break_qrkk",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_qrkk", "fieldtype": "Column Break" },
 		{
 			"default": "status",
 			"fieldname": "stalk_function",
@@ -614,10 +566,7 @@
 			"fieldtype": "Int",
 			"label": "Stalk Threshold"
 		},
-		{
-			"fieldname": "column_break_objb",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_objb", "fieldtype": "Column Break" },
 		{
 			"default": "1",
 			"fieldname": "stalk_interval",
@@ -636,10 +585,7 @@
 			"fieldtype": "Int",
 			"label": "Stalk Sleep"
 		},
-		{
-			"fieldname": "section_break_imng",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_imng", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"fieldname": "auto_purge_binlog_based_on_size",
@@ -653,10 +599,7 @@
 			"label": "Binlog Max Disk Usage Percent (%)",
 			"non_negative": 1
 		},
-		{
-			"fieldname": "column_break_hrsi",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_hrsi", "fieldtype": "Column Break" },
 		{
 			"fieldname": "replication_tab",
 			"fieldtype": "Tab Break",
@@ -670,10 +613,7 @@
 			"in_standard_filter": 1,
 			"label": "Is Primary"
 		},
-		{
-			"fieldname": "column_break_vajj",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_vajj", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"depends_on": "eval: !doc.is_primary",
@@ -693,30 +633,21 @@
 			"mandatory_depends_on": "eval: !doc.is_primary",
 			"options": "Database Server"
 		},
-		{
-			"fieldname": "section_break_qrcb",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_qrcb", "fieldtype": "Section Break" },
 		{
 			"fieldname": "gtid_binlog_pos",
 			"fieldtype": "Data",
 			"label": "GTID Binlog Pos",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_clus",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_clus", "fieldtype": "Column Break" },
 		{
 			"fieldname": "gtid_current_pos",
 			"fieldtype": "Data",
 			"label": "GTID Current Pos",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_gasc",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_gasc", "fieldtype": "Column Break" },
 		{
 			"fieldname": "gtid_slave_pos",
 			"fieldtype": "Data",
@@ -747,10 +678,7 @@
 			"hidden": 1,
 			"label": "Binlogs Removed"
 		},
-		{
-			"fieldname": "column_break_coih",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_coih", "fieldtype": "Column Break" },
 		{
 			"default": "14",
 			"fieldname": "binlog_retention_days",
@@ -763,10 +691,7 @@
 			"fieldtype": "Int",
 			"label": "Binlog Index Retention (days)"
 		},
-		{
-			"fieldname": "column_break_blnf",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_blnf", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "enable_binlog_upload_to_s3",
@@ -815,20 +740,14 @@
 			"label": "Is MariaDB Monitor Installed",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_uzkb",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_uzkb", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"fieldname": "is_external_healthcheck_enabled",
 			"fieldtype": "Check",
 			"label": "Is External Healthcheck Enabled"
 		},
-		{
-			"fieldname": "column_break_umtu",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_umtu", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "is_auto_coredump_enabled",
@@ -868,18 +787,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 }
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

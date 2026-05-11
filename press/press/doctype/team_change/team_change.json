@@ -57,17 +57,8 @@
 			"in_standard_filter": 1,
 			"label": "Transfer Completed"
 		},
-		{
-			"fieldname": "reason",
-			"fieldtype": "Long Text",
-			"label": "Reason"
-		},
-		{
-			"fieldname": "key",
-			"fieldtype": "Data",
-			"label": "Key",
-			"read_only": 1
-		}
+		{ "fieldname": "reason", "fieldtype": "Long Text", "label": "Reason" },
+		{ "fieldname": "key", "fieldtype": "Data", "label": "Key", "read_only": 1 }
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
@@ -86,17 +77,6 @@
 			"read": 1,
 			"report": 1,
 			"role": "System Manager",
-			"share": 1,
-			"write": 1
-		},
-		{
-			"create": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
 			"share": 1,
 			"write": 1
 		},

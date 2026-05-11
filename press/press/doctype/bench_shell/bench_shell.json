@@ -55,10 +55,7 @@
 			"fieldtype": "Check",
 			"label": "Save Output"
 		},
-		{
-			"fieldname": "section_break_vhzg",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_vhzg", "fieldtype": "Section Break" },
 		{
 			"description": "Command is run in the bench root directory. To change the directory use Subdir for example: <i>apps</i>, <i>sites</i>, etc",
 			"fieldname": "subdir",
@@ -111,18 +108,9 @@
 			"label": "Directory",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_gvty",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_grqb",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_lqmy",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_gvty", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_grqb", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_lqmy", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "as_root",

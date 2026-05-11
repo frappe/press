@@ -67,10 +67,7 @@
 			"options": "Pending\nAvailable\nUnavailable",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_5",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_5", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "virtual_machine.series",
 			"fieldname": "series",
@@ -188,11 +185,7 @@
 			"fieldtype": "Section Break",
 			"label": "Digital Ocean Action"
 		},
-		{
-			"fieldname": "action_id",
-			"fieldtype": "Data",
-			"label": "Action Id"
-		}
+		{ "fieldname": "action_id", "fieldtype": "Data", "label": "Action Id" }
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,

@@ -28,10 +28,7 @@
 			"label": "Secret",
 			"not_nullable": 1
 		},
-		{
-			"fieldname": "section_break_xbfh",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_xbfh", "fieldtype": "Section Break" },
 		{
 			"fieldname": "events",
 			"fieldtype": "Table",

@@ -73,25 +73,15 @@
 			"label": "Net Amount",
 			"options": "currency"
 		},
-		{
-			"fieldname": "column_break_5",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_5", "fieldtype": "Column Break" },
 		{
 			"fieldname": "commission",
 			"fieldtype": "Currency",
 			"label": "Commission",
 			"options": "currency"
 		},
-		{
-			"fieldname": "section_break_10",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "plan",
-			"fieldtype": "Data",
-			"label": "Plan"
-		},
+		{ "fieldname": "section_break_10", "fieldtype": "Section Break" },
+		{ "fieldname": "plan", "fieldtype": "Data", "label": "Plan" },
 		{
 			"fieldname": "rate",
 			"fieldtype": "Currency",
@@ -104,10 +94,7 @@
 			"label": "Currency",
 			"options": "USD\nINR"
 		},
-		{
-			"fieldname": "column_break_13",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_13", "fieldtype": "Column Break" },
 		{
 			"fieldname": "site",
 			"fieldtype": "Link",
@@ -116,11 +103,7 @@
 			"options": "Site",
 			"search_index": 1
 		},
-		{
-			"fieldname": "quantity",
-			"fieldtype": "Float",
-			"label": "quantity"
-		},
+		{ "fieldname": "quantity", "fieldtype": "Float", "label": "quantity" },
 		{
 			"fieldname": "invoice_item",
 			"fieldtype": "Link",

@@ -22,11 +22,7 @@
 			"in_list_view": 1,
 			"label": "Name"
 		},
-		{
-			"fieldname": "method_name",
-			"fieldtype": "Data",
-			"label": "Method"
-		},
+		{ "fieldname": "method_name", "fieldtype": "Data", "label": "Method" },
 		{
 			"fieldname": "status",
 			"fieldtype": "Select",
@@ -47,22 +43,14 @@
 			"label": "Job",
 			"options": "job_type"
 		},
-		{
-			"fieldname": "attempt",
-			"fieldtype": "Int",
-			"label": "Attempt"
-		},
+		{ "fieldname": "attempt", "fieldtype": "Int", "label": "Attempt" },
 		{
 			"default": "0",
 			"fieldname": "is_waiting",
 			"fieldtype": "Check",
 			"label": "Is Waiting"
 		},
-		{
-			"fieldname": "output",
-			"fieldtype": "Long Text",
-			"label": "Output"
-		}
+		{ "fieldname": "output", "fieldtype": "Long Text", "label": "Output" }
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,

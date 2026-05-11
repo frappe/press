@@ -41,10 +41,7 @@
 			"reqd": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
 		{
 			"fieldname": "start",
 			"fieldtype": "Datetime",
@@ -65,10 +62,7 @@
 			"label": "Duration",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_7",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_7", "fieldtype": "Section Break" },
 		{
 			"fieldname": "server_type",
 			"fieldtype": "Link",
@@ -97,10 +91,7 @@
 			"options": "Virtual Machine",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_fhyz",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_fhyz", "fieldtype": "Column Break" },
 		{
 			"default": "{}",
 			"fieldname": "arguments",
@@ -113,14 +104,8 @@
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [
-		{
-			"link_doctype": "Press Job Step",
-			"link_fieldname": "job"
-		},
-		{
-			"link_doctype": "Press Workflow",
-			"link_fieldname": "linked_docname"
-		}
+		{ "link_doctype": "Press Job Step", "link_fieldname": "job" },
+		{ "link_doctype": "Press Workflow", "link_fieldname": "linked_docname" }
 	],
 	"modified": "2026-04-17 02:56:56.915694",
 	"modified_by": "Administrator",
@@ -141,16 +126,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "role": "Press User", "write": 1 }
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

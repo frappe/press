@@ -44,10 +44,7 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
 		{
 			"fieldname": "source",
 			"fieldtype": "Link",
@@ -83,10 +80,7 @@
 			"options": "App Release",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_azgf",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_azgf", "fieldtype": "Column Break" },
 		{
 			"fieldname": "pullable_hash",
 			"fieldtype": "Data",

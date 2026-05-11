@@ -78,10 +78,7 @@
 			"fieldtype": "Data",
 			"label": "Business Shortcode"
 		},
-		{
-			"fieldname": "column_break_qzeb",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_qzeb", "fieldtype": "Column Break" },
 		{
 			"fieldname": "pass_key",
 			"fieldtype": "Password",

@@ -34,10 +34,7 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_nxd6",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_nxd6", "fieldtype": "Column Break" },
 		{
 			"fieldname": "secondary_server",
 			"fieldtype": "Link",
@@ -86,11 +83,7 @@
 			"fieldtype": "Datetime",
 			"label": "Scheduled Time"
 		},
-		{
-			"fieldname": "duration",
-			"fieldtype": "Time",
-			"label": "Duration"
-		},
+		{ "fieldname": "duration", "fieldtype": "Time", "label": "Duration" },
 		{
 			"fieldname": "start_time",
 			"fieldtype": "Datetime",
@@ -108,10 +101,7 @@
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [
-		{
-			"link_doctype": "Press Notification",
-			"link_fieldname": "document_name"
-		}
+		{ "link_doctype": "Press Notification", "link_fieldname": "document_name" }
 	],
 	"modified": "2026-01-16 12:58:07.817192",
 	"modified_by": "Administrator",
@@ -133,18 +123,6 @@
 		},
 		{
 			"create": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
-			"share": 1,
-			"write": 1
-		},
-		{
-			"create": 1,
-			"delete": 1,
 			"email": 1,
 			"export": 1,
 			"print": 1,

@@ -20,10 +20,7 @@
 			"options": "Social Login Key",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_bfdt",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_bfdt", "fieldtype": "Column Break" },
 		{
 			"description": "Emails matching this domain will get custom oauth login",
 			"fieldname": "email_domain",

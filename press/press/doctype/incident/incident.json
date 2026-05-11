@@ -74,10 +74,7 @@
 			"label": "Type",
 			"options": "Database Down\nServer Down\nProxy Down"
 		},
-		{
-			"fieldname": "section_break_bjjy",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_bjjy", "fieldtype": "Section Break" },
 		{
 			"fieldname": "alerts",
 			"fieldtype": "Table",
@@ -95,11 +92,7 @@
 			"fieldtype": "Tab Break",
 			"label": "Overview"
 		},
-		{
-			"fieldname": "updates_tab",
-			"fieldtype": "Tab Break",
-			"label": "Alerts"
-		},
+		{ "fieldname": "updates_tab", "fieldtype": "Tab Break", "label": "Alerts" },
 		{
 			"fieldname": "acknowledged_by",
 			"fieldtype": "Link",
@@ -107,25 +100,15 @@
 			"mandatory_depends_on": "eval: doc.status==\"Acknowledged\";",
 			"options": "User"
 		},
-		{
-			"fieldname": "column_break_rbwa",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_aevb",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_rbwa", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_aevb", "fieldtype": "Section Break" },
 		{
 			"fieldname": "updates",
 			"fieldtype": "Table",
 			"label": "Updates",
 			"options": "Incident Updates"
 		},
-		{
-			"fieldname": "route",
-			"fieldtype": "Data",
-			"label": "Route"
-		},
+		{ "fieldname": "route", "fieldtype": "Data", "label": "Route" },
 		{
 			"default": "0",
 			"fieldname": "show_in_website",
@@ -137,11 +120,7 @@
 			"fieldtype": "Section Break",
 			"label": "Details"
 		},
-		{
-			"fieldname": "subject",
-			"fieldtype": "Data",
-			"label": "Subject"
-		},
+		{ "fieldname": "subject", "fieldtype": "Data", "label": "Subject" },
 		{
 			"fieldname": "description",
 			"fieldtype": "Text Editor",
@@ -193,10 +172,7 @@
 			"fieldtype": "Text",
 			"label": "Likely Causes"
 		},
-		{
-			"fieldname": "column_break_jrzi",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_jrzi", "fieldtype": "Column Break" },
 		{
 			"fieldname": "preventive_suggestions",
 			"fieldtype": "Table",
@@ -254,15 +230,6 @@
 			"role": "System Manager",
 			"share": 1,
 			"write": 1
-		},
-		{
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
-			"share": 1
 		},
 		{
 			"email": 1,

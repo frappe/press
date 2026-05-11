@@ -53,10 +53,7 @@
 			"label": "Repo",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_zkly",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_zkly", "fieldtype": "Column Break" },
 		{
 			"fieldname": "branch",
 			"fieldtype": "Data",
@@ -84,10 +81,7 @@
 			"label": "Auto Rollback Changes",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_xsdu",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_xsdu", "fieldtype": "Column Break" },
 		{
 			"default": "1",
 			"fieldname": "restart_web_workers",
@@ -113,20 +107,14 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_ubnu",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ubnu", "fieldtype": "Column Break" },
 		{
 			"fieldname": "start",
 			"fieldtype": "Datetime",
 			"label": "Start",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_uvpj",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_uvpj", "fieldtype": "Column Break" },
 		{
 			"fieldname": "end",
 			"fieldtype": "Datetime",
@@ -154,10 +142,7 @@
 			"label": "Proxy Server",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_ylpr",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ylpr", "fieldtype": "Column Break" },
 		{
 			"default": "1",
 			"fieldname": "exclude_self_hosted_servers",
@@ -165,10 +150,7 @@
 			"label": "Exclude Self Hosted Servers",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "section_break_whdl",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_whdl", "fieldtype": "Section Break" },
 		{
 			"fieldname": "servers",
 			"fieldtype": "Table",
@@ -231,10 +213,7 @@
 			"fieldtype": "Section Break",
 			"label": "Test Mode"
 		},
-		{
-			"fieldname": "column_break_dlmn",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_dlmn", "fieldtype": "Column Break" },
 		{
 			"depends_on": "eval: doc.run_on_fewer_servers_and_pause",
 			"fieldname": "no_of_servers_to_update_initially",

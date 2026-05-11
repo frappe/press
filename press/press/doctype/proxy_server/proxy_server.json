@@ -112,10 +112,7 @@
 			"label": "Server Setup",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
 		{
 			"fieldname": "agent_section",
 			"fieldtype": "Section Break",
@@ -138,10 +135,7 @@
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_10",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_10", "fieldtype": "Column Break" },
 		{
 			"fieldname": "cluster",
 			"fieldtype": "Link",
@@ -194,10 +188,7 @@
 			"mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_18",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_18", "fieldtype": "Column Break" },
 		{
 			"fieldname": "frappe_user_password",
 			"fieldtype": "Password",
@@ -234,10 +225,7 @@
 			"label": "SSH Certificate Authority",
 			"options": "SSH Certificate Authority"
 		},
-		{
-			"fieldname": "column_break_26",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_26", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "is_ssh_proxy_setup",
@@ -329,11 +317,7 @@
 			"fieldtype": "Data",
 			"label": "Self Hosted Server Domain"
 		},
-		{
-			"fieldname": "vpn_tab",
-			"fieldtype": "Tab Break",
-			"label": "VPN"
-		},
+		{ "fieldname": "vpn_tab", "fieldtype": "Tab Break", "label": "VPN" },
 		{
 			"default": "51820",
 			"fieldname": "wireguard_port",
@@ -377,10 +361,7 @@
 			"fieldtype": "Data",
 			"label": "Wireguard Network IP"
 		},
-		{
-			"fieldname": "column_break_dapz",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_dapz", "fieldtype": "Column Break" },
 		{
 			"fieldname": "hostname_abbreviation",
 			"fieldtype": "Data",
@@ -394,10 +375,7 @@
 			"label": "Enabled Default Routing",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_mznm",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_mznm", "fieldtype": "Column Break" },
 		{
 			"default": "1",
 			"fieldname": "disable_agent_job_auto_retry",

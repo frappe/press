@@ -27,10 +27,7 @@
 			"options": "AWS Route 53\nGeneric",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"depends_on": "eval:doc.dns_provider=='AWS Route 53'",
 			"fieldname": "aws_access_key_id",

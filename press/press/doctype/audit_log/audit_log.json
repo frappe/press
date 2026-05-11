@@ -27,12 +27,7 @@
 			"options": "Bench Field Check\nBackup Record Check\nOffsite Backup Check\nRestore Offsite Backup of Site\nApp Server Replica Dirs Check\nUnbilled Subscription Check\nBilling Audit\nServer Plan Sanity Check\nPartner Billing Audit",
 			"read_only": 1
 		},
-		{
-			"fieldname": "log",
-			"fieldtype": "Code",
-			"label": "Log",
-			"read_only": 1
-		},
+		{ "fieldname": "log", "fieldtype": "Code", "label": "Log", "read_only": 1 },
 		{
 			"fieldname": "telegram_group",
 			"fieldtype": "Link",

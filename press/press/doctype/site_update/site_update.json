@@ -276,14 +276,8 @@
 			"read_only": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "section_break_luvm",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_rcyp",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "section_break_luvm", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_rcyp", "fieldtype": "Column Break" },
 		{
 			"fieldname": "physical_backup_restoration",
 			"fieldtype": "Link",
@@ -292,40 +286,28 @@
 			"read_only": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "section_break_tpap",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_tpap", "fieldtype": "Section Break" },
 		{
 			"fieldname": "touched_tables",
 			"fieldtype": "Code",
 			"label": "Touched Tables",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_gmrz",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_gmrz", "fieldtype": "Section Break" },
 		{
 			"fieldname": "update_start",
 			"fieldtype": "Datetime",
 			"label": "Update Start",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_jtqs",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_jtqs", "fieldtype": "Column Break" },
 		{
 			"fieldname": "update_end",
 			"fieldtype": "Datetime",
 			"label": "Update End",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_ellx",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ellx", "fieldtype": "Column Break" },
 		{
 			"fieldname": "update_duration",
 			"fieldtype": "Duration",
@@ -360,16 +342,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "role": "Press User", "write": 1 }
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

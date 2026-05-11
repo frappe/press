@@ -31,10 +31,7 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_lfue",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_lfue", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "database_server.team",
 			"fieldname": "team",
@@ -43,20 +40,14 @@
 			"options": "Team",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "section_break_doik",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_doik", "fieldtype": "Section Break" },
 		{
 			"fieldname": "snapshot",
 			"fieldtype": "Link",
 			"label": "Snapshot",
 			"options": "Virtual Disk Snapshot"
 		},
-		{
-			"fieldname": "column_break_oxgo",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_oxgo", "fieldtype": "Column Break" },
 		{
 			"default": "Pending",
 			"fieldname": "status",
@@ -67,20 +58,14 @@
 			"options": "Pending\nRunning\nSuccess\nFailure\nRecovering\nRecovered\nFatal",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_lmdo",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_lmdo", "fieldtype": "Section Break" },
 		{
 			"fieldname": "upgrade_play",
 			"fieldtype": "Link",
 			"label": "Upgrade Play",
 			"options": "Ansible Play"
 		},
-		{
-			"fieldname": "column_break_skvh",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_skvh", "fieldtype": "Column Break" },
 		{
 			"fieldname": "downgrade_play",
 			"fieldtype": "Link",
@@ -109,10 +94,7 @@
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [
-		{
-			"link_doctype": "Press Workflow",
-			"link_fieldname": "linked_docname"
-		}
+		{ "link_doctype": "Press Workflow", "link_fieldname": "linked_docname" }
 	],
 	"modified": "2026-04-15 11:20:42.975898",
 	"modified_by": "Administrator",

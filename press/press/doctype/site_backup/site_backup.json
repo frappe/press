@@ -147,10 +147,7 @@
 			"fieldname": "data_12",
 			"fieldtype": "Section Break"
 		},
-		{
-			"fieldname": "column_break_16",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_16", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"depends_on": "eval: doc.physical != 1",
@@ -203,10 +200,7 @@
 			"options": "\nAvailable\nUnavailable",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_wiuq",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_wiuq", "fieldtype": "Column Break" },
 		{
 			"fieldname": "config_file",
 			"fieldtype": "Data",
@@ -256,10 +250,7 @@
 			"fieldtype": "Section Break",
 			"label": "Physical Backup"
 		},
-		{
-			"fieldname": "column_break_hksx",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_hksx", "fieldtype": "Column Break" },
 		{
 			"fieldname": "snapshot_request_key",
 			"fieldtype": "Data",
@@ -282,10 +273,7 @@
 			"label": "Database Name",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_obsx",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_obsx", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"depends_on": "eval: doc.physical == 1",
@@ -302,10 +290,7 @@
 		}
 	],
 	"links": [
-		{
-			"link_doctype": "Agent Job",
-			"link_fieldname": "reference_name"
-		}
+		{ "link_doctype": "Agent Job", "link_fieldname": "reference_name" }
 	],
 	"modified": "2025-04-17 10:57:09.359685",
 	"modified_by": "Administrator",
@@ -325,14 +310,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"role": "Press User"
-		},
-		{
-			"create": 1,
-			"role": "Press User"
-		}
+		{ "create": 1, "role": "Press User" }
 	],
 	"sort_field": "modified",
 	"sort_order": "DESC",

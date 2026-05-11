@@ -24,10 +24,7 @@
 			"label": "No of Sites",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_bbil",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_bbil", "fieldtype": "Column Break" },
 		{
 			"fieldname": "successful_backups",
 			"fieldtype": "Int",
@@ -35,10 +32,7 @@
 			"label": "Successful Backups",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_vwuc",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_vwuc", "fieldtype": "Column Break" },
 		{
 			"fieldname": "available_backups",
 			"fieldtype": "Int",
@@ -46,10 +40,7 @@
 			"label": "Available Backups",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_ikwc",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ikwc", "fieldtype": "Column Break" },
 		{
 			"fieldname": "unavailable_backups",
 			"fieldtype": "Int",
@@ -57,10 +48,7 @@
 			"label": "Unavailable Backups",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_bvmf",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_bvmf", "fieldtype": "Section Break" },
 		{
 			"fieldname": "site_backups",
 			"fieldtype": "Table",

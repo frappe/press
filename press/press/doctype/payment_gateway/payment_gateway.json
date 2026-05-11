@@ -36,10 +36,7 @@
 			"label": "Team",
 			"options": "Team"
 		},
-		{
-			"fieldname": "column_break_kvnc",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_kvnc", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "team.team_title",
 			"fieldname": "team_name",
@@ -47,10 +44,7 @@
 			"label": "Team Name",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_pwgv",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_pwgv", "fieldtype": "Column Break" },
 		{
 			"fieldname": "currency",
 			"fieldtype": "Link",
@@ -73,20 +67,14 @@
 			"fieldtype": "Attach Image",
 			"label": "Integration Logo"
 		},
-		{
-			"fieldname": "column_break_jcag",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_jcag", "fieldtype": "Column Break" },
 		{
 			"fieldname": "gateway_settings",
 			"fieldtype": "Link",
 			"label": "Gateway Settings",
 			"options": "DocType"
 		},
-		{
-			"fieldname": "column_break_noki",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_noki", "fieldtype": "Column Break" },
 		{
 			"fieldname": "gateway_controller",
 			"fieldtype": "Dynamic Link",
@@ -99,24 +87,10 @@
 			"fieldtype": "Section Break",
 			"label": "Partner Integration"
 		},
-		{
-			"fieldname": "url",
-			"fieldtype": "Data",
-			"label": "URL"
-		},
-		{
-			"fieldname": "column_break_oefu",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "api_key",
-			"fieldtype": "Data",
-			"label": "API Key"
-		},
-		{
-			"fieldname": "column_break_slwm",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "url", "fieldtype": "Data", "label": "URL" },
+		{ "fieldname": "column_break_oefu", "fieldtype": "Column Break" },
+		{ "fieldname": "api_key", "fieldtype": "Data", "label": "API Key" },
+		{ "fieldname": "column_break_slwm", "fieldtype": "Column Break" },
 		{
 			"fieldname": "api_secret",
 			"fieldtype": "Password",

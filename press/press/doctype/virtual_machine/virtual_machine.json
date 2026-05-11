@@ -95,18 +95,9 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "section_break_5",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_8",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "section_break_5", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_8", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "virtual_machine_image.image_id",
 			"fetch_if_empty": 1,
@@ -154,20 +145,14 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_18",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_18", "fieldtype": "Column Break" },
 		{
 			"fieldname": "public_ip_address",
 			"fieldtype": "Data",
 			"label": "Public IP Address",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_15",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_15", "fieldtype": "Column Break" },
 		{
 			"fieldname": "public_dns_name",
 			"fieldtype": "Data",
@@ -243,10 +228,7 @@
 			"label": "Index",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_32",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_32", "fieldtype": "Column Break" },
 		{
 			"fieldname": "series",
 			"fieldtype": "Select",
@@ -261,10 +243,7 @@
 			"options": "Root Domain",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_hgcr",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_hgcr", "fieldtype": "Column Break" },
 		{
 			"fieldname": "ram",
 			"fieldtype": "Int",
@@ -343,11 +322,7 @@
 			"label": "Ready For Conversion",
 			"read_only": 1
 		},
-		{
-			"fieldname": "kms_key_id",
-			"fieldtype": "Data",
-			"label": "KMS Key ID"
-		},
+		{ "fieldname": "kms_key_id", "fieldtype": "Data", "label": "KMS Key ID" },
 		{
 			"fieldname": "data_disk_snapshot",
 			"fieldtype": "Link",
@@ -369,10 +344,7 @@
 			"label": "Data Disk Snapshot Attached",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_zozh",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_zozh", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"description": "If you disable server snapshot, it will just take disk snapshot",
@@ -461,18 +433,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 }
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

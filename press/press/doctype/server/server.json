@@ -169,14 +169,8 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_12",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_12", "fieldtype": "Column Break" },
 		{
 			"collapsible": 1,
 			"fieldname": "reverse_proxy_section",
@@ -213,14 +207,8 @@
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_20",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_22",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_20", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_22", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"fieldname": "use_for_new_benches",
@@ -257,10 +245,7 @@
 			"options": "Cluster",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"collapsible": 1,
 			"fieldname": "networking_section",
@@ -309,10 +294,7 @@
 			"fieldtype": "Check",
 			"label": "Is Primary"
 		},
-		{
-			"fieldname": "column_break_24",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_24", "fieldtype": "Column Break" },
 		{
 			"depends_on": "eval: !doc.is_primary",
 			"fieldname": "primary",
@@ -349,11 +331,7 @@
 			"fieldtype": "Check",
 			"label": "New Worker Allocation"
 		},
-		{
-			"fieldname": "ram",
-			"fieldtype": "Float",
-			"label": "RAM"
-		},
+		{ "fieldname": "ram", "fieldtype": "Float", "label": "RAM" },
 		{
 			"fieldname": "team",
 			"fieldtype": "Link",
@@ -365,10 +343,7 @@
 			"fieldtype": "Section Break",
 			"label": "Billing"
 		},
-		{
-			"fieldname": "column_break_11",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_11", "fieldtype": "Column Break" },
 		{
 			"fieldname": "plan",
 			"fieldtype": "Link",
@@ -389,11 +364,7 @@
 			"label": "Is Server Renamed",
 			"read_only": 1
 		},
-		{
-			"fieldname": "title",
-			"fieldtype": "Data",
-			"label": "Title"
-		},
+		{ "fieldname": "title", "fieldtype": "Data", "label": "Title" },
 		{
 			"default": "0",
 			"fieldname": "is_self_hosted",
@@ -447,10 +418,7 @@
 			"fieldtype": "Check",
 			"label": "Is Standalone"
 		},
-		{
-			"fieldname": "column_break_edyf",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_edyf", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "is_standalone_setup",
@@ -469,10 +437,7 @@
 			"label": "Tags",
 			"options": "Resource Tag"
 		},
-		{
-			"fieldname": "column_break_ktkv",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ktkv", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "set_bench_memory_limits",
@@ -496,10 +461,7 @@
 			"fieldtype": "Check",
 			"label": "Skip Scheduled Backups"
 		},
-		{
-			"fieldname": "column_break_pdbx",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_pdbx", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "disable_agent_job_auto_retry",
@@ -569,11 +531,7 @@
 			"label": "Has Data Volume",
 			"read_only": 1
 		},
-		{
-			"fieldname": "ipv6",
-			"fieldtype": "Data",
-			"label": "IPv6"
-		},
+		{ "fieldname": "ipv6", "fieldtype": "Data", "label": "IPv6" },
 		{
 			"default": "0",
 			"fieldname": "use_agent_job_callbacks",
@@ -587,14 +545,8 @@
 			"label": "Is PySpy Setup",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_mequ",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_laiq",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "section_break_mequ", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_laiq", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"description": "Stop polling and queuing agent jobs",
@@ -727,10 +679,7 @@
 			"label": "Scaled Up",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_ywnx",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ywnx", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"description": "Checked if database and app are hosted on the server server",
@@ -769,14 +718,8 @@
 		}
 	],
 	"links": [
-		{
-			"link_doctype": "Auto Scale Record",
-			"link_fieldname": "primary_server"
-		},
-		{
-			"link_doctype": "On-Prem Failover",
-			"link_fieldname": "app_server"
-		}
+		{ "link_doctype": "Auto Scale Record", "link_fieldname": "primary_server" },
+		{ "link_doctype": "On-Prem Failover", "link_fieldname": "app_server" }
 	],
 	"modified": "2026-05-02 14:54:47.079941",
 	"modified_by": "Administrator",
@@ -796,18 +739,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 }
 	],
 	"row_format": "Dynamic",
 	"rows_threshold_for_grid_search": 20,

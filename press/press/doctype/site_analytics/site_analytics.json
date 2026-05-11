@@ -50,10 +50,7 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_2",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_2", "fieldtype": "Column Break" },
 		{
 			"fieldname": "frappe_section",
 			"fieldtype": "Section Break",
@@ -82,10 +79,7 @@
 			"label": "Time Zone",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_8",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_8", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "scheduler_enabled",
@@ -130,10 +124,7 @@
 			"label": "Files Size",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_17",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_17", "fieldtype": "Section Break" },
 		{
 			"fieldname": "users",
 			"fieldtype": "Table",
@@ -180,10 +171,7 @@
 			"label": "Domain",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_26",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_26", "fieldtype": "Column Break" },
 		{
 			"fieldname": "last_active",
 			"fieldtype": "Table",

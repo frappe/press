@@ -108,38 +108,14 @@
 			"label": "Status Check Started On",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_izwt",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_gxvc",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_nzqv",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_hzkc",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_eicd",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_vnbw",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_gdfn",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_iiiw",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_izwt", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_gxvc", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_nzqv", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_hzkc", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_eicd", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_vnbw", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_gdfn", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_iiiw", "fieldtype": "Section Break" },
 		{
 			"depends_on": "eval: doc.status == \"Fatal\"",
 			"fieldname": "reason_of_fatal_status",

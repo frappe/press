@@ -102,10 +102,7 @@
 			"fieldtype": "Data",
 			"label": "SSH User"
 		},
-		{
-			"fieldname": "column_break_3eap",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_3eap", "fieldtype": "Column Break" },
 		{
 			"collapsible": 1,
 			"collapsible_depends_on": "eval:doc.different_database_server",
@@ -125,10 +122,7 @@
 			"fieldtype": "Data",
 			"label": "MariaDB Public IP"
 		},
-		{
-			"fieldname": "column_break_qvmo",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_qvmo", "fieldtype": "Column Break" },
 		{
 			"depends_on": "eval:!doc.is_managed_database",
 			"description": "This will be the MariaDB Root password if you're setting up a new server. If you're server already has a MariaDB root password, please put in the same password",
@@ -167,10 +161,7 @@
 			"label": "Apps",
 			"options": "Site Analytics App"
 		},
-		{
-			"fieldname": "section_break_33uh",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_33uh", "fieldtype": "Section Break" },
 		{
 			"fieldname": "sites",
 			"fieldtype": "Table",
@@ -183,11 +174,7 @@
 			"fieldtype": "Tab Break",
 			"label": "Existing Bench"
 		},
-		{
-			"fieldname": "title",
-			"fieldtype": "Data",
-			"label": "Title"
-		},
+		{ "fieldname": "title", "fieldtype": "Data", "label": "Title" },
 		{
 			"default": "0",
 			"fieldname": "existing_bench_present",
@@ -199,10 +186,7 @@
 			"fieldtype": "Section Break",
 			"label": "Server"
 		},
-		{
-			"fieldname": "column_break_yb8y",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_yb8y", "fieldtype": "Column Break" },
 		{
 			"fieldname": "hostname",
 			"fieldtype": "Data",
@@ -215,10 +199,7 @@
 			"label": "Domain",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_smwr",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_smwr", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "server_created",
@@ -283,10 +264,7 @@
 			"options": "Proxy Server",
 			"search_index": 1
 		},
-		{
-			"fieldname": "column_break_bcsw",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_bcsw", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "proxy_created",
@@ -307,11 +285,7 @@
 			"label": "Cluster",
 			"options": "Cluster"
 		},
-		{
-			"fieldname": "server_url",
-			"fieldtype": "Data",
-			"label": "Server URL"
-		},
+		{ "fieldname": "server_url", "fieldtype": "Data", "label": "Server URL" },
 		{
 			"fieldname": "plan",
 			"fieldtype": "Link",
@@ -324,35 +298,20 @@
 			"fieldtype": "Check",
 			"label": "Different Database Server"
 		},
-		{
-			"fieldname": "ram",
-			"fieldtype": "Data",
-			"label": "RAM"
-		},
+		{ "fieldname": "ram", "fieldtype": "Data", "label": "RAM" },
 		{
 			"fieldname": "system_information_tab",
 			"fieldtype": "Tab Break",
 			"label": "System Information"
 		},
-		{
-			"fieldname": "vcpus",
-			"fieldtype": "Data",
-			"label": "vCPUs"
-		},
+		{ "fieldname": "vcpus", "fieldtype": "Data", "label": "vCPUs" },
 		{
 			"fieldname": "total_storage",
 			"fieldtype": "Data",
 			"label": "Total Storage"
 		},
-		{
-			"fieldname": "swap_total",
-			"fieldtype": "Data",
-			"label": "Swap Total"
-		},
-		{
-			"fieldname": "column_break_ep4j",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "swap_total", "fieldtype": "Data", "label": "Swap Total" },
+		{ "fieldname": "column_break_ep4j", "fieldtype": "Column Break" },
 		{
 			"fieldname": "instance_type",
 			"fieldtype": "Data",
@@ -363,21 +322,13 @@
 			"fieldtype": "Data",
 			"label": "Architecture"
 		},
-		{
-			"fieldname": "processor",
-			"fieldtype": "Data",
-			"label": "Processor"
-		},
+		{ "fieldname": "processor", "fieldtype": "Data", "label": "Processor" },
 		{
 			"fieldname": "distribution",
 			"fieldtype": "Data",
 			"label": "Distribution"
 		},
-		{
-			"fieldname": "vendor",
-			"fieldtype": "Data",
-			"label": "Vendor"
-		},
+		{ "fieldname": "vendor", "fieldtype": "Data", "label": "Vendor" },
 		{
 			"fieldname": "proxy_public_ip",
 			"fieldtype": "Data",
@@ -416,25 +367,14 @@
 			"fieldtype": "Section Break",
 			"label": "Database Server"
 		},
-		{
-			"fieldname": "db_vcpus",
-			"fieldtype": "Data",
-			"label": "vCPUs"
-		},
+		{ "fieldname": "db_vcpus", "fieldtype": "Data", "label": "vCPUs" },
 		{
 			"fieldname": "db_total_storage",
 			"fieldtype": "Data",
 			"label": "Total Storage"
 		},
-		{
-			"fieldname": "column_break_krqz",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "db_ram",
-			"fieldtype": "Data",
-			"label": "RAM"
-		},
+		{ "fieldname": "column_break_krqz", "fieldtype": "Column Break" },
+		{ "fieldname": "db_ram", "fieldtype": "Data", "label": "RAM" },
 		{
 			"default": "0",
 			"fieldname": "is_managed_database",
@@ -469,18 +409,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 }
 	],
 	"sort_field": "modified",
 	"sort_order": "DESC",

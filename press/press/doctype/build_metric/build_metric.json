@@ -13,16 +13,8 @@
 			"label": "Metric Dump",
 			"read_only": 1
 		},
-		{
-			"fieldname": "to",
-			"fieldtype": "Datetime",
-			"label": "To"
-		},
-		{
-			"fieldname": "start_from",
-			"fieldtype": "Datetime",
-			"label": "From"
-		}
+		{ "fieldname": "to", "fieldtype": "Datetime", "label": "To" },
+		{ "fieldname": "start_from", "fieldtype": "Datetime", "label": "From" }
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,

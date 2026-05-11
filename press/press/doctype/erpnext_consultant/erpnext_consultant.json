@@ -14,10 +14,7 @@
 			"fieldtype": "Check",
 			"label": "Active"
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"fieldname": "territories",
 			"fieldtype": "Table MultiSelect",

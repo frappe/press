@@ -35,10 +35,7 @@
 			"label": "Key Fingerprint",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_4",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_4", "fieldtype": "Section Break" },
 		{
 			"fieldname": "docker_image",
 			"fieldtype": "Data",

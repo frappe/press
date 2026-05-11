@@ -32,10 +32,7 @@
 			"mandatory_depends_on": "eval: doc.mount_type === \"Volume\"",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_ygbk",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ygbk", "fieldtype": "Column Break" },
 		{
 			"default": "ext4",
 			"fieldname": "filesystem",
@@ -106,14 +103,8 @@
 			"label": "Mount Point Owner",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_kwsz",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_uvrc",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_kwsz", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_uvrc", "fieldtype": "Column Break" },
 		{
 			"default": "0755",
 			"fieldname": "mount_point_mode",

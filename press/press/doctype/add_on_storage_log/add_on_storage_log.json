@@ -34,10 +34,7 @@
 			"options": "Database Server",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_dlfs",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_dlfs", "fieldtype": "Column Break" },
 		{
 			"fieldname": "mountpoint",
 			"fieldtype": "Data",
@@ -65,10 +62,7 @@
 			"fieldtype": "Section Break",
 			"label": "Annotations"
 		},
-		{
-			"fieldname": "storage_settings_section",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "storage_settings_section", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"fieldname": "notification_sent",

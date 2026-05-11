@@ -67,10 +67,7 @@
 			"label": "Version",
 			"options": "Frappe Version"
 		},
-		{
-			"fieldname": "apps_column",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "apps_column", "fieldtype": "Column Break" },
 		{
 			"fieldname": "apps",
 			"fieldtype": "Table",
@@ -93,10 +90,7 @@
 			"label": "Status",
 			"options": "Pending\nDeploying Bench\nBench Deployed\nBench Deploy Failed\nCreating Site\nSite Created\nSite Creation Failed"
 		},
-		{
-			"fieldname": "column_break_smfr",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_smfr", "fieldtype": "Column Break" },
 		{
 			"fieldname": "bench",
 			"fieldtype": "Link",
@@ -133,10 +127,7 @@
 			"label": "Provider",
 			"options": "Cloud Provider"
 		},
-		{
-			"fieldname": "column_break_ydwn",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ydwn", "fieldtype": "Column Break" },
 		{
 			"fieldname": "server",
 			"fieldtype": "Link",
@@ -162,18 +153,6 @@
 			"read": 1,
 			"report": 1,
 			"role": "System Manager",
-			"share": 1,
-			"write": 1
-		},
-		{
-			"create": 1,
-			"delete": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
 			"share": 1,
 			"write": 1
 		},

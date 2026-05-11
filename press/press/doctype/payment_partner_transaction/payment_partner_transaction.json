@@ -46,10 +46,7 @@
 			"fieldtype": "Date",
 			"label": "Posting Date"
 		},
-		{
-			"fieldname": "column_break_manc",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_manc", "fieldtype": "Column Break" },
 		{
 			"fieldname": "payment_gateway",
 			"fieldtype": "Link",
@@ -58,10 +55,7 @@
 			"label": "Payment Gateway",
 			"options": "Payment Gateway"
 		},
-		{
-			"fieldname": "column_break_ejza",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ejza", "fieldtype": "Column Break" },
 		{
 			"fieldname": "team",
 			"fieldtype": "Link",
@@ -87,10 +81,7 @@
 			"label": "Actual Amount",
 			"options": "actual_currency"
 		},
-		{
-			"fieldname": "column_break_xqsh",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_xqsh", "fieldtype": "Column Break" },
 		{
 			"default": "USD",
 			"fieldname": "currency",
@@ -105,10 +96,7 @@
 			"label": "Actual Currency",
 			"options": "Currency"
 		},
-		{
-			"fieldname": "column_break_jyxx",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_jyxx", "fieldtype": "Column Break" },
 		{
 			"fieldname": "exchange_rate",
 			"fieldtype": "Float",
@@ -120,10 +108,7 @@
 			"fieldtype": "Check",
 			"label": "Submitted To Frappe"
 		},
-		{
-			"fieldname": "section_break_yhqq",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_yhqq", "fieldtype": "Section Break" },
 		{
 			"fieldname": "payment_transaction_details",
 			"fieldtype": "Code",
@@ -131,10 +116,7 @@
 			"options": "JSON",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_7oh3",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_7oh3", "fieldtype": "Section Break" },
 		{
 			"fieldname": "amended_from",
 			"fieldtype": "Link",

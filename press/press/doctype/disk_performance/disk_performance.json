@@ -29,10 +29,7 @@
 			"options": "Server\nDatabase Server",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_dwvk",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_dwvk", "fieldtype": "Column Break" },
 		{
 			"fieldname": "server",
 			"fieldtype": "Dynamic Link",
@@ -43,10 +40,7 @@
 			"reqd": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "section_break_cgxv",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_cgxv", "fieldtype": "Section Break" },
 		{
 			"fieldname": "write_latency_ms",
 			"fieldtype": "Int",
@@ -54,10 +48,7 @@
 			"label": "Write Latency (ms)",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_kpzg",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_kpzg", "fieldtype": "Column Break" },
 		{
 			"fieldname": "read_latency_ms",
 			"fieldtype": "Int",

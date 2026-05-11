@@ -33,10 +33,7 @@
 			"label": "Sites",
 			"options": "Bench Site Update"
 		},
-		{
-			"fieldname": "column_break_wff5",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_wff5", "fieldtype": "Column Break" },
 		{
 			"fieldname": "candidate",
 			"fieldtype": "Link",
@@ -45,10 +42,7 @@
 			"read_only": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "section_break_nfd1",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_nfd1", "fieldtype": "Section Break" },
 		{
 			"fieldname": "apps",
 			"fieldtype": "Table",
@@ -68,10 +62,7 @@
 			"fieldtype": "Check",
 			"label": "Is In Place Update"
 		},
-		{
-			"fieldname": "column_break_bdov",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_bdov", "fieldtype": "Column Break" },
 		{
 			"depends_on": "eval: doc.bench",
 			"description": "Bench that will be updated in place.",

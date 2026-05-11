@@ -95,20 +95,14 @@
 			"label": "Root Public Key",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_20",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_20", "fieldtype": "Column Break" },
 		{
 			"fieldname": "frappe_public_key",
 			"fieldtype": "Code",
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"default": "Generic",
 			"fieldname": "provider",
@@ -128,10 +122,7 @@
 			"fieldtype": "Section Break",
 			"label": "Networking"
 		},
-		{
-			"fieldname": "column_break_9",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_9", "fieldtype": "Column Break" },
 		{
 			"depends_on": "eval: doc.provider === \"Scaleway\"",
 			"fieldname": "private_mac_address",
@@ -177,11 +168,7 @@
 			"mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
 			"options": "Virtual Machine"
 		},
-		{
-			"fieldname": "ssh_user",
-			"fieldtype": "Data",
-			"label": "SSH User"
-		},
+		{ "fieldname": "ssh_user", "fieldtype": "Data", "label": "SSH User" },
 		{
 			"default": "22",
 			"fieldname": "ssh_port",
@@ -209,22 +196,10 @@
 		}
 	],
 	"links": [
-		{
-			"link_doctype": "Ansible Play",
-			"link_fieldname": "server"
-		},
-		{
-			"link_doctype": "Agent Job",
-			"link_fieldname": "server"
-		},
-		{
-			"link_doctype": "NFS Volume Attachment",
-			"link_fieldname": "nfs_server"
-		},
-		{
-			"link_doctype": "NFS Volume Detachment",
-			"link_fieldname": "nfs_server"
-		}
+		{ "link_doctype": "Ansible Play", "link_fieldname": "server" },
+		{ "link_doctype": "Agent Job", "link_fieldname": "server" },
+		{ "link_doctype": "NFS Volume Attachment", "link_fieldname": "nfs_server" },
+		{ "link_doctype": "NFS Volume Detachment", "link_fieldname": "nfs_server" }
 	],
 	"modified": "2025-10-15 23:20:56.419708",
 	"modified_by": "Administrator",

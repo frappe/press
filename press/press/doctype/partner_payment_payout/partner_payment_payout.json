@@ -62,10 +62,7 @@
 			"options": "Payment Gateway",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_plbi",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_plbi", "fieldtype": "Column Break" },
 		{
 			"default": "Today",
 			"fieldname": "to_date",
@@ -79,10 +76,7 @@
 			"label": "Partner Commission",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_tvae",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_tvae", "fieldtype": "Section Break" },
 		{
 			"fieldname": "transfer_items",
 			"fieldtype": "Table",
@@ -90,29 +84,20 @@
 			"options": "Partner Payment Payout Item",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_qxag",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_qxag", "fieldtype": "Section Break" },
 		{
 			"fieldname": "total_amount",
 			"fieldtype": "Currency",
 			"label": "Total Amount",
 			"non_negative": 1
 		},
-		{
-			"fieldname": "column_break_lgdh",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_lgdh", "fieldtype": "Column Break" },
 		{
 			"fieldname": "commission",
 			"fieldtype": "Currency",
 			"label": "Commission"
 		},
-		{
-			"fieldname": "column_break_jfqp",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_jfqp", "fieldtype": "Column Break" },
 		{
 			"fieldname": "net_amount",
 			"fieldtype": "Currency",

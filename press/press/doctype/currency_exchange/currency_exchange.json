@@ -27,10 +27,7 @@
 			"label": "Exchange Rate",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_iqor",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_iqor", "fieldtype": "Column Break" },
 		{
 			"fieldname": "from_currency",
 			"fieldtype": "Link",

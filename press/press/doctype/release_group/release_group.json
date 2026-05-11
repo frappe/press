@@ -105,16 +105,8 @@
 			"options": "Frappe Version",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_7",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "title",
-			"fieldtype": "Data",
-			"label": "Title",
-			"reqd": 1
-		},
+		{ "fieldname": "section_break_7", "fieldtype": "Section Break" },
+		{ "fieldname": "title", "fieldtype": "Data", "label": "Title", "reqd": 1 },
 		{
 			"fieldname": "servers",
 			"fieldtype": "Table",
@@ -158,10 +150,7 @@
 			"label": "Dependencies",
 			"options": "Release Group Dependency"
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "is_redisearch_enabled",
@@ -198,30 +187,15 @@
 			"fieldtype": "Check",
 			"label": "Push To Deploy"
 		},
-		{
-			"fieldname": "config_tab",
-			"fieldtype": "Tab Break",
-			"label": "Config"
-		},
+		{ "fieldname": "config_tab", "fieldtype": "Tab Break", "label": "Config" },
 		{
 			"fieldname": "dependencies_tab",
 			"fieldtype": "Tab Break",
 			"label": "Dependencies"
 		},
-		{
-			"fieldname": "saas_tab",
-			"fieldtype": "Tab Break",
-			"label": "SaaS"
-		},
-		{
-			"fieldname": "column_break_26",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "apps_tab",
-			"fieldtype": "Tab Break",
-			"label": "Apps"
-		},
+		{ "fieldname": "saas_tab", "fieldtype": "Tab Break", "label": "SaaS" },
+		{ "fieldname": "column_break_26", "fieldtype": "Column Break" },
+		{ "fieldname": "apps_tab", "fieldtype": "Tab Break", "label": "Apps" },
 		{
 			"fieldname": "packages",
 			"fieldtype": "Table",
@@ -308,10 +282,7 @@
 			"label": "Min Background Workers",
 			"non_negative": 1
 		},
-		{
-			"fieldname": "column_break_njfg",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_njfg", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"description": "Setting this to non-zero value will set Gunicorn worker class to gthread.",
@@ -355,10 +326,7 @@
 			"fieldtype": "Check",
 			"label": "Compress App Cache"
 		},
-		{
-			"fieldname": "section_break_keov",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_keov", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"description": "Quickens builds by fetching app changes without rebuilding app if app rebuild is not required.",
@@ -411,18 +379,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 }
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

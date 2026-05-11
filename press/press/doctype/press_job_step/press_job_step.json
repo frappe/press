@@ -52,10 +52,7 @@
 			"reqd": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"fieldname": "start",
 			"fieldtype": "Datetime",
@@ -76,10 +73,7 @@
 			"label": "Duration",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_8",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_8", "fieldtype": "Section Break" },
 		{
 			"fieldname": "result",
 			"fieldtype": "Code",
@@ -138,16 +132,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "role": "Press User", "write": 1 }
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

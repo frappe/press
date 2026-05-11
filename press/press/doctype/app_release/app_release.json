@@ -49,10 +49,7 @@
 			"label": "Author",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
 		{
 			"fieldname": "code_server_url",
 			"fieldtype": "Text",
@@ -65,10 +62,7 @@
 			"label": "Output",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_26",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_26", "fieldtype": "Section Break" },
 		{
 			"fieldname": "source",
 			"fieldtype": "Link",
@@ -80,10 +74,7 @@
 			"reqd": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "column_break_9",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_9", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "cloned",
@@ -216,18 +207,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 },
 		{
 			"create": 1,
 			"email": 1,

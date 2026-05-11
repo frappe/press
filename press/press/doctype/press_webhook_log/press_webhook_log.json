@@ -35,10 +35,7 @@
 			"options": "Press Webhook Event",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_qqjj",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_qqjj", "fieldtype": "Column Break" },
 		{
 			"fieldname": "team",
 			"fieldtype": "Link",
@@ -47,28 +44,16 @@
 			"options": "Team",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_bkbk",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "section_break_wqvc",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "section_break_vyzs",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_bkbk", "fieldtype": "Section Break" },
+		{ "fieldname": "section_break_wqvc", "fieldtype": "Section Break" },
+		{ "fieldname": "section_break_vyzs", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"fieldname": "retries",
 			"fieldtype": "Int",
 			"label": "Retries"
 		},
-		{
-			"fieldname": "column_break_btzb",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_btzb", "fieldtype": "Column Break" },
 		{
 			"fieldname": "next_retry_at",
 			"fieldtype": "Datetime",

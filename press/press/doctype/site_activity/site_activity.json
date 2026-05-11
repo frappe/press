@@ -28,11 +28,7 @@
 			"reqd": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "reason",
-			"fieldtype": "Small Text",
-			"label": "Reason"
-		},
+		{ "fieldname": "reason", "fieldtype": "Small Text", "label": "Reason" },
 		{
 			"fetch_from": "site.team",
 			"fieldname": "team",
@@ -69,14 +65,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"role": "Press User"
-		},
-		{
-			"create": 1,
-			"role": "Press User"
-		}
+		{ "create": 1, "role": "Press User" }
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

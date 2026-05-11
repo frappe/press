@@ -27,10 +27,7 @@
 			"options": "Python",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_2",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_2", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "wait_until_true",
@@ -38,10 +35,7 @@
 			"in_list_view": 1,
 			"label": "Wait Until True"
 		},
-		{
-			"fieldname": "section_break_4",
-			"fieldtype": "Section Break"
-		}
+		{ "fieldname": "section_break_4", "fieldtype": "Section Break" }
 	],
 	"index_web_pages_for_search": 1,
 	"istable": 1,

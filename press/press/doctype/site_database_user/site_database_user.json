@@ -42,10 +42,7 @@
 			"options": "read_only\nread_write\ngranular",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_udtx",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_udtx", "fieldtype": "Column Break" },
 		{
 			"fieldname": "username",
 			"fieldtype": "Data",
@@ -62,10 +59,7 @@
 			"read_only": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "section_break_cpbg",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_cpbg", "fieldtype": "Section Break" },
 		{
 			"depends_on": "eval: doc.mode == \"granular\"",
 			"fieldname": "permissions",

@@ -79,18 +79,9 @@
 			"fieldtype": "Data",
 			"label": "GitHub Installation ID"
 		},
-		{
-			"fieldname": "data_3",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_8",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_11",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "data_3", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_8", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_11", "fieldtype": "Column Break" },
 		{
 			"fieldname": "versions",
 			"fieldtype": "Table",
@@ -98,10 +89,7 @@
 			"options": "App Source Version",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_12",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_12", "fieldtype": "Section Break" },
 		{
 			"fieldname": "app",
 			"fieldtype": "Link",
@@ -171,17 +159,11 @@
 			"options": "Required Apps",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_8n2m",
-			"fieldtype": "Section Break"
-		}
+		{ "fieldname": "section_break_8n2m", "fieldtype": "Section Break" }
 	],
 	"index_web_pages_for_search": 1,
 	"links": [
-		{
-			"link_doctype": "Error Log",
-			"link_fieldname": "reference_name"
-		}
+		{ "link_doctype": "Error Log", "link_fieldname": "reference_name" }
 	],
 	"modified": "2025-08-20 20:18:42.547327",
 	"modified_by": "Administrator",
@@ -201,18 +183,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 },
 		{
 			"create": 1,
 			"email": 1,

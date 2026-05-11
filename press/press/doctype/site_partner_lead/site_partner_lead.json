@@ -37,11 +37,7 @@
 			"label": "Site",
 			"options": "Site"
 		},
-		{
-			"fieldname": "frappe_lead",
-			"fieldtype": "Data",
-			"label": "Frappe Lead"
-		},
+		{ "fieldname": "frappe_lead", "fieldtype": "Data", "label": "Frappe Lead" },
 		{
 			"fieldname": "site_details_section",
 			"fieldtype": "Section Break",
@@ -71,35 +67,12 @@
 			"in_list_view": 1,
 			"label": "Users"
 		},
-		{
-			"fieldname": "column_break_wmtd",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "first_name",
-			"fieldtype": "Data",
-			"label": "First Name"
-		},
-		{
-			"fieldname": "last_name",
-			"fieldtype": "Data",
-			"label": "Last Name"
-		},
-		{
-			"fieldname": "email",
-			"fieldtype": "Data",
-			"label": "Email"
-		},
-		{
-			"fieldname": "domain",
-			"fieldtype": "Data",
-			"label": "Domain"
-		},
-		{
-			"fieldname": "created_on",
-			"fieldtype": "Date",
-			"label": "Created On"
-		}
+		{ "fieldname": "column_break_wmtd", "fieldtype": "Column Break" },
+		{ "fieldname": "first_name", "fieldtype": "Data", "label": "First Name" },
+		{ "fieldname": "last_name", "fieldtype": "Data", "label": "Last Name" },
+		{ "fieldname": "email", "fieldtype": "Data", "label": "Email" },
+		{ "fieldname": "domain", "fieldtype": "Data", "label": "Domain" },
+		{ "fieldname": "created_on", "fieldtype": "Date", "label": "Created On" }
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,

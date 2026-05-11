@@ -67,10 +67,7 @@
 			"search_index": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_dcyz",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_dcyz", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "app_server.database_server",
 			"fetch_if_empty": 1,
@@ -120,14 +117,8 @@
 			"read_only": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "section_break_zgjz",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_unjj",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "section_break_zgjz", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_unjj", "fieldtype": "Column Break" },
 		{
 			"default": "AWS EC2",
 			"fetch_from": "app_server.provider",
@@ -140,10 +131,7 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "section_break_yuac",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_yuac", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"description": "The services on the server will be stopped during snapshotting",
@@ -153,10 +141,7 @@
 			"label": "Consistent",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_gviv",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_gviv", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"description": "Locked snapshots can't be deleted by any user",
@@ -165,10 +150,7 @@
 			"label": "Locked",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_hgps",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_hgps", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "app_server.cluster",
 			"fetch_if_empty": 1,
@@ -223,20 +205,14 @@
 			"label": "DB Server Services Started",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_ihux",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_ihux", "fieldtype": "Section Break" },
 		{
 			"fieldname": "site_list",
 			"fieldtype": "JSON",
 			"label": "Site List",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_mwve",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_mwve", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "total_size_gb",
@@ -251,50 +227,35 @@
 			"fieldtype": "Text",
 			"label": "Traceback"
 		},
-		{
-			"fieldname": "section_break_ibcr",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_ibcr", "fieldtype": "Section Break" },
 		{
 			"fieldname": "app_server_vcpu",
 			"fieldtype": "Int",
 			"label": "App Server vCPU",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_hvxs",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_hvxs", "fieldtype": "Column Break" },
 		{
 			"fieldname": "app_server_ram",
 			"fieldtype": "Int",
 			"label": "App Server RAM",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_xeyh",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_xeyh", "fieldtype": "Column Break" },
 		{
 			"fieldname": "database_server_vcpu",
 			"fieldtype": "Int",
 			"label": "DB Server vCPU",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_nyhu",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_nyhu", "fieldtype": "Column Break" },
 		{
 			"fieldname": "database_server_ram",
 			"fieldtype": "Int",
 			"label": "DB Server RAM",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_pswb",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_pswb", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"description": "If free, user will not be charged for the snapshot",
@@ -302,23 +263,13 @@
 			"fieldtype": "Check",
 			"label": "Free"
 		},
-		{
-			"fieldname": "column_break_jszb",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "expire_at",
-			"fieldtype": "Datetime",
-			"label": "Expire At"
-		}
+		{ "fieldname": "column_break_jszb", "fieldtype": "Column Break" },
+		{ "fieldname": "expire_at", "fieldtype": "Datetime", "label": "Expire At" }
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [
-		{
-			"link_doctype": "Server Snapshot Recovery",
-			"link_fieldname": "snapshot"
-		}
+		{ "link_doctype": "Server Snapshot Recovery", "link_fieldname": "snapshot" }
 	],
 	"modified": "2025-09-17 10:45:57.691000",
 	"modified_by": "Administrator",
@@ -349,15 +300,6 @@
 			"role": "Press User",
 			"share": 1,
 			"write": 1
-		},
-		{
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
-			"share": 1
 		}
 	],
 	"row_format": "Dynamic",

@@ -67,11 +67,7 @@
 			"label": "Subdomain",
 			"reqd": 1
 		},
-		{
-			"fieldname": "password",
-			"fieldtype": "Password",
-			"label": "Password"
-		},
+		{ "fieldname": "password", "fieldtype": "Password", "label": "Password" },
 		{
 			"fetch_from": "bench.team",
 			"fieldname": "team",
@@ -95,12 +91,7 @@
 		}
 	],
 	"index_web_pages_for_search": 1,
-	"links": [
-		{
-			"link_doctype": "Agent Job",
-			"link_fieldname": "code_server"
-		}
-	],
+	"links": [{ "link_doctype": "Agent Job", "link_fieldname": "code_server" }],
 	"modified": "2023-07-28 15:51:07.083218",
 	"modified_by": "Administrator",
 	"module": "Press",

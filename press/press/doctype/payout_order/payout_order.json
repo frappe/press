@@ -67,39 +67,23 @@
 			"label": "Status",
 			"options": "Draft\nPaid\nCommissioned"
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"fieldname": "items",
 			"fieldtype": "Table",
 			"label": "Items",
 			"options": "Payout Order Item"
 		},
-		{
-			"fieldname": "section_break_8",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_8", "fieldtype": "Section Break" },
 		{
 			"fieldname": "type",
 			"fieldtype": "Select",
 			"label": "Type",
 			"options": "Marketplace\nSaaS"
 		},
-		{
-			"fieldname": "column_break_10",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "notes",
-			"fieldtype": "Small Text",
-			"label": "Notes"
-		},
-		{
-			"fieldname": "section_break_12",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_10", "fieldtype": "Column Break" },
+		{ "fieldname": "notes", "fieldtype": "Small Text", "label": "Notes" },
+		{ "fieldname": "section_break_12", "fieldtype": "Section Break" },
 		{
 			"fieldname": "net_total_inr",
 			"fieldtype": "Currency",
@@ -114,34 +98,21 @@
 			"options": "currency_usd",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_15",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_14",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_15", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_14", "fieldtype": "Section Break" },
 		{
 			"fieldname": "period_start",
 			"fieldtype": "Date",
 			"label": "Period Start"
 		},
-		{
-			"fieldname": "period_end",
-			"fieldtype": "Date",
-			"label": "Period End"
-		},
+		{ "fieldname": "period_end", "fieldtype": "Date", "label": "Period End" },
 		{
 			"fetch_from": "team.currency",
 			"fieldname": "recipient_currency",
 			"fieldtype": "Data",
 			"label": "Currency"
 		},
-		{
-			"fieldname": "section_break_21",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_21", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"fieldname": "ignore_commission",
@@ -205,14 +176,8 @@
 	"sort_field": "modified",
 	"sort_order": "DESC",
 	"states": [
-		{
-			"color": "Green",
-			"title": "Paid"
-		},
-		{
-			"color": "Gray",
-			"title": "Draft"
-		}
+		{ "color": "Green", "title": "Paid" },
+		{ "color": "Gray", "title": "Draft" }
 	],
 	"track_changes": 1
 }

@@ -33,10 +33,7 @@
 			"reqd": 1,
 			"unique": 1
 		},
-		{
-			"fieldname": "column_break_dboe",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_dboe", "fieldtype": "Column Break" },
 		{
 			"default": "3306",
 			"fieldname": "port",

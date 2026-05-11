@@ -18,11 +18,7 @@
 		"output"
 	],
 	"fields": [
-		{
-			"fieldname": "method_name",
-			"fieldtype": "Data",
-			"label": "Method Name"
-		},
+		{ "fieldname": "method_name", "fieldtype": "Data", "label": "Method Name" },
 		{
 			"fieldname": "status",
 			"fieldtype": "Select",
@@ -42,15 +38,8 @@
 			"in_list_view": 1,
 			"label": "Server"
 		},
-		{
-			"fieldname": "column_break_cawj",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "output",
-			"fieldtype": "Small Text",
-			"label": "Output"
-		},
+		{ "fieldname": "column_break_cawj", "fieldtype": "Column Break" },
+		{ "fieldname": "output", "fieldtype": "Small Text", "label": "Output" },
 		{
 			"fieldname": "job",
 			"fieldtype": "Dynamic Link",

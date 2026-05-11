@@ -103,10 +103,7 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [
-		{
-			"link_doctype": "Usage Record",
-			"link_fieldname": "subscription"
-		}
+		{ "link_doctype": "Usage Record", "link_fieldname": "subscription" }
 	],
 	"modified": "2025-12-02 14:15:27.501756",
 	"modified_by": "Administrator",
@@ -127,18 +124,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 }
 	],
 	"quick_entry": 1,
 	"row_format": "Dynamic",

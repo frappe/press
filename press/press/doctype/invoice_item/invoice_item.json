@@ -18,11 +18,7 @@
 		"has_marketplace_payout_completed"
 	],
 	"fields": [
-		{
-			"fieldname": "description",
-			"fieldtype": "Data",
-			"label": "Description"
-		},
+		{ "fieldname": "description", "fieldtype": "Data", "label": "Description" },
 		{
 			"columns": 1,
 			"default": "1",

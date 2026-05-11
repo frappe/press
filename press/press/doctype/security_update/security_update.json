@@ -37,19 +37,9 @@
 			"label": "Server",
 			"options": "server_type"
 		},
-		{
-			"fieldname": "datetime",
-			"fieldtype": "Datetime",
-			"label": "Datetime"
-		},
-		{
-			"fieldname": "column_break_4pwt",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_gadl",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "datetime", "fieldtype": "Datetime", "label": "Datetime" },
+		{ "fieldname": "column_break_4pwt", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_gadl", "fieldtype": "Section Break" },
 		{
 			"fieldname": "package",
 			"fieldtype": "Data",
@@ -64,10 +54,7 @@
 			"label": "Priority",
 			"options": "High\nMedium\nLow"
 		},
-		{
-			"fieldname": "column_break_8rko",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_8rko", "fieldtype": "Column Break" },
 		{
 			"fieldname": "job_status",
 			"fieldtype": "Select",
@@ -88,11 +75,7 @@
 			"label": "Security Update Status",
 			"options": "Pending\nImplemented"
 		},
-		{
-			"fieldname": "change_log",
-			"fieldtype": "Code",
-			"label": "Change Log"
-		},
+		{ "fieldname": "change_log", "fieldtype": "Code", "label": "Change Log" },
 		{
 			"fieldname": "change_log_tab",
 			"fieldtype": "Tab Break",

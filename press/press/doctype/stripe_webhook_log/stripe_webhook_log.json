@@ -55,10 +55,7 @@
 			"options": "Team",
 			"search_index": 1
 		},
-		{
-			"fieldname": "column_break_hywj",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_hywj", "fieldtype": "Column Break" },
 		{
 			"description": "This is only shown when a payment intent fails",
 			"fieldname": "stripe_payment_method",
@@ -67,10 +64,7 @@
 			"options": "Stripe Payment Method",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_ecbt",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_ecbt", "fieldtype": "Section Break" },
 		{
 			"fieldname": "stripe_payment_intent_id",
 			"fieldtype": "Data",

@@ -68,10 +68,7 @@
 			"label": "Exchange Rate",
 			"precision": "9"
 		},
-		{
-			"fieldname": "column_break_14",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_14", "fieldtype": "Column Break" },
 		{
 			"fieldname": "payment_partner",
 			"fieldtype": "Link",

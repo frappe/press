@@ -30,10 +30,7 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
 		{
 			"default": "Pending",
 			"fieldname": "status",
@@ -62,10 +59,7 @@
 			"label": "Duration",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_7",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_7", "fieldtype": "Section Break" },
 		{
 			"fieldname": "command",
 			"fieldtype": "Code",

@@ -50,15 +50,8 @@
 			"label": "Allowed for",
 			"options": "3\n6\n12\n24\n72\n168"
 		},
-		{
-			"fieldname": "reason",
-			"fieldtype": "Small Text",
-			"label": "Reason"
-		},
-		{
-			"fieldname": "column_break_vrkb",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "reason", "fieldtype": "Small Text", "label": "Reason" },
+		{ "fieldname": "column_break_vrkb", "fieldtype": "Column Break" },
 		{
 			"fieldname": "access_allowed_till",
 			"fieldtype": "Datetime",
@@ -74,10 +67,7 @@
 			"label": "Status",
 			"options": "Pending\nAccepted\nRejected\nForfeited\nRevoked"
 		},
-		{
-			"fieldname": "section_break_lwpm",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_lwpm", "fieldtype": "Section Break" },
 		{
 			"fieldname": "resources",
 			"fieldtype": "Table",
@@ -180,33 +170,14 @@
 			"role": "Press User",
 			"share": 1,
 			"write": 1
-		},
-		{
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
-			"share": 1,
-			"write": 1
 		}
 	],
 	"row_format": "Dynamic",
 	"sort_field": "creation",
 	"sort_order": "DESC",
 	"states": [
-		{
-			"color": "Gray",
-			"title": "Pending"
-		},
-		{
-			"color": "Green",
-			"title": "Accepted"
-		},
-		{
-			"color": "Red",
-			"title": "Rejected"
-		}
+		{ "color": "Gray", "title": "Pending" },
+		{ "color": "Green", "title": "Accepted" },
+		{ "color": "Red", "title": "Rejected" }
 	]
 }

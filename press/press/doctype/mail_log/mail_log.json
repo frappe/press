@@ -93,18 +93,9 @@
 			"label": "Message",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_drnq",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_erbe",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_uslz",
-			"fieldtype": "Section Break"
-		}
+		{ "fieldname": "column_break_drnq", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_erbe", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_uslz", "fieldtype": "Section Break" }
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,

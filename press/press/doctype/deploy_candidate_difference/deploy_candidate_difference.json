@@ -56,14 +56,8 @@
 			"options": "Pull\nMigrate",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_6",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_6", "fieldtype": "Section Break" },
 		{
 			"fieldname": "apps",
 			"fieldtype": "Table",
@@ -100,18 +94,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 }
 	],
 	"sort_field": "modified",
 	"sort_order": "DESC",

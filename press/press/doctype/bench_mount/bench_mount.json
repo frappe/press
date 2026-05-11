@@ -19,10 +19,7 @@
 			"label": "Source (Host)",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_qdzk",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_qdzk", "fieldtype": "Column Break" },
 		{
 			"fieldname": "destination",
 			"fieldtype": "Data",
@@ -36,10 +33,7 @@
 			"fieldtype": "Check",
 			"label": "Is Absolute Path"
 		},
-		{
-			"fieldname": "section_break_nuqc",
-			"fieldtype": "Section Break"
-		}
+		{ "fieldname": "section_break_nuqc", "fieldtype": "Section Break" }
 	],
 	"index_web_pages_for_search": 1,
 	"istable": 1,

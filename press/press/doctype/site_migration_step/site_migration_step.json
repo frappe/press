@@ -41,11 +41,7 @@
 			"label": "Step Job",
 			"options": "Agent Job"
 		},
-		{
-			"fieldname": "method_arg",
-			"fieldtype": "Data",
-			"label": "Method Arg"
-		}
+		{ "fieldname": "method_arg", "fieldtype": "Data", "label": "Method Arg" }
 	],
 	"index_web_pages_for_search": 1,
 	"istable": 1,

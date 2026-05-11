@@ -16,11 +16,7 @@
 		"output"
 	],
 	"fields": [
-		{
-			"fieldname": "step_name",
-			"fieldtype": "Data",
-			"label": "Name"
-		},
+		{ "fieldname": "step_name", "fieldtype": "Data", "label": "Name" },
 		{
 			"fieldname": "method_name",
 			"fieldtype": "Data",
@@ -34,15 +30,8 @@
 			"label": "Status",
 			"options": "Pending\nRunning\nSuccess\nSkipped\nFailure"
 		},
-		{
-			"fieldname": "attempt",
-			"fieldtype": "Int",
-			"label": "Attempt"
-		},
-		{
-			"fieldname": "column_break_jrwk",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "attempt", "fieldtype": "Int", "label": "Attempt" },
+		{ "fieldname": "column_break_jrwk", "fieldtype": "Column Break" },
 		{
 			"fieldname": "job",
 			"fieldtype": "Dynamic Link",
@@ -50,11 +39,7 @@
 			"label": "Job",
 			"options": "job_type"
 		},
-		{
-			"fieldname": "output",
-			"fieldtype": "Text",
-			"label": "Output/Comment"
-		},
+		{ "fieldname": "output", "fieldtype": "Text", "label": "Output/Comment" },
 		{
 			"fieldname": "job_type",
 			"fieldtype": "Link",

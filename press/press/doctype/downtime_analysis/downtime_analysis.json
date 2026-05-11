@@ -29,10 +29,7 @@
 			"label": "Start Date",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_yldd",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_yldd", "fieldtype": "Column Break" },
 		{
 			"fieldname": "end_date",
 			"fieldtype": "Date",
@@ -93,10 +90,7 @@
 			"label": "Problematic Sites",
 			"options": "<div id=\"problematic_sites_report\"></div>"
 		},
-		{
-			"fieldname": "section_break_lmfs",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_lmfs", "fieldtype": "Section Break" },
 		{
 			"fieldname": "raw_data",
 			"fieldtype": "Long Text",

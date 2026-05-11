@@ -13,10 +13,7 @@
 		"reason"
 	],
 	"fields": [
-		{
-			"fieldname": "column_break_ceix",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ceix", "fieldtype": "Column Break" },
 		{
 			"fieldname": "team",
 			"fieldtype": "Link",
@@ -30,11 +27,7 @@
 			"options": "Created\nReboot\nVolume\nDisk Size Change\nTerminated\nIncident",
 			"reqd": 1
 		},
-		{
-			"fieldname": "reason",
-			"fieldtype": "Small Text",
-			"label": "Reason"
-		},
+		{ "fieldname": "reason", "fieldtype": "Small Text", "label": "Reason" },
 		{
 			"fieldname": "document_type",
 			"fieldtype": "Link",
@@ -71,15 +64,6 @@
 			"role": "System Manager",
 			"share": 1,
 			"write": 1
-		},
-		{
-			"create": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"report": 1,
-			"role": "Press User",
-			"share": 1
 		},
 		{
 			"create": 1,

@@ -76,10 +76,7 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "ssh_section",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "ssh_section", "fieldtype": "Section Break" },
 		{
 			"fieldname": "user_public_key",
 			"fieldtype": "Code",
@@ -117,10 +114,7 @@
 			"options": "Deploy Candidate Package",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_tkdd",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_tkdd", "fieldtype": "Column Break" },
 		{
 			"fieldname": "environment_variables",
 			"fieldtype": "Table",
@@ -177,11 +171,7 @@
 			"fieldtype": "Tab Break",
 			"label": "Apps & Deps"
 		},
-		{
-			"fieldname": "ssh_tab",
-			"fieldtype": "Tab Break",
-			"label": "SSH"
-		},
+		{ "fieldname": "ssh_tab", "fieldtype": "Tab Break", "label": "SSH" },
 		{
 			"default": "512",
 			"fetch_from": "group.redis_cache_size",
@@ -189,10 +179,7 @@
 			"fieldtype": "Int",
 			"label": "Redis Cache Size (MB)"
 		},
-		{
-			"fieldname": "column_break_uyow",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_uyow", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "requires_arm_build",
@@ -221,21 +208,11 @@
 			"options": "Deploy Candidate Build",
 			"read_only": 1
 		},
-		{
-			"fieldname": "build_token",
-			"fieldtype": "Data",
-			"label": "Build Token"
-		}
+		{ "fieldname": "build_token", "fieldtype": "Data", "label": "Build Token" }
 	],
 	"links": [
-		{
-			"link_doctype": "Error Log",
-			"link_fieldname": "reference_name"
-		},
-		{
-			"link_doctype": "Press Notification",
-			"link_fieldname": "document_name"
-		},
+		{ "link_doctype": "Error Log", "link_fieldname": "reference_name" },
+		{ "link_doctype": "Press Notification", "link_fieldname": "document_name" },
 		{
 			"link_doctype": "Deploy Candidate Build",
 			"link_fieldname": "deploy_candidate"
@@ -259,18 +236,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 }
 	],
 	"row_format": "Dynamic",
 	"rows_threshold_for_grid_search": 20,

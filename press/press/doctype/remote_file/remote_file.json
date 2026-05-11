@@ -28,10 +28,7 @@
 			"oldfieldtype": "Data",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_5",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_5", "fieldtype": "Section Break" },
 		{
 			"fieldname": "file_size",
 			"fieldtype": "Data",
@@ -69,12 +66,7 @@
 			"label": "Location",
 			"read_only": 1
 		},
-		{
-			"fieldname": "url",
-			"fieldtype": "Code",
-			"label": "URL",
-			"read_only": 1
-		},
+		{ "fieldname": "url", "fieldtype": "Code", "label": "URL", "read_only": 1 },
 		{
 			"fieldname": "site",
 			"fieldtype": "Link",
@@ -85,14 +77,8 @@
 			"read_only": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "column_break_uzdq",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_scaf",
-			"fieldtype": "Column Break"
-		}
+		{ "fieldname": "column_break_uzdq", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_scaf", "fieldtype": "Column Break" }
 	],
 	"icon": "fa fa-file",
 	"links": [],

@@ -101,11 +101,7 @@
 			"label": "Customer Email",
 			"options": "Email"
 		},
-		{
-			"fieldname": "due_date",
-			"fieldtype": "Date",
-			"label": "Due Date"
-		},
+		{ "fieldname": "due_date", "fieldtype": "Date", "label": "Due Date" },
 		{
 			"fieldname": "items",
 			"fieldtype": "Table",
@@ -152,14 +148,8 @@
 			"print_hide": 1,
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_8",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_8", "fieldtype": "Section Break" },
 		{
 			"fieldname": "section_break_10",
 			"fieldtype": "Section Break",
@@ -198,20 +188,13 @@
 			"label": "Currency",
 			"options": "Currency"
 		},
-		{
-			"fieldname": "column_break_15",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_15", "fieldtype": "Column Break" },
 		{
 			"fieldname": "period_start",
 			"fieldtype": "Date",
 			"label": "Period Start"
 		},
-		{
-			"fieldname": "period_end",
-			"fieldtype": "Date",
-			"label": "Period End"
-		},
+		{ "fieldname": "period_end", "fieldtype": "Date", "label": "Period End" },
 		{
 			"allow_on_submit": 1,
 			"fieldname": "payment_date",
@@ -263,10 +246,7 @@
 			"label": "Invoice PDF",
 			"no_copy": 1
 		},
-		{
-			"fieldname": "column_break_32",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_32", "fieldtype": "Column Break" },
 		{
 			"allow_on_submit": 1,
 			"fieldname": "transaction_amount",
@@ -347,10 +327,7 @@
 			"fieldtype": "Data",
 			"label": "Razorpay Order ID"
 		},
-		{
-			"fieldname": "column_break_44",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_44", "fieldtype": "Column Break" },
 		{
 			"fieldname": "razorpay_payment_record",
 			"fieldtype": "Link",
@@ -457,10 +434,7 @@
 			"fieldtype": "Data",
 			"label": "Discount Note"
 		},
-		{
-			"fieldname": "column_break_mqqa",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_mqqa", "fieldtype": "Column Break" },
 		{
 			"fieldname": "billing_email",
 			"fieldtype": "Data",
@@ -498,10 +472,7 @@
 			"fieldtype": "Data",
 			"label": "Mpesa Receipt Number"
 		},
-		{
-			"fieldname": "column_break_ouox",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ouox", "fieldtype": "Column Break" },
 		{
 			"fieldname": "mpesa_merchant_id",
 			"fieldtype": "Data",
@@ -582,15 +553,7 @@
 			"submit": 1,
 			"write": 1
 		},
-		{
-			"read": 1,
-			"role": "Press User"
-		},
-		{
-			"read": 1,
-			"report": 1,
-			"role": "Site Manager"
-		}
+		{ "read": 1, "report": 1, "role": "Site Manager" }
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

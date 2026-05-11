@@ -35,10 +35,7 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_nwvz",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_nwvz", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "limit",
@@ -46,19 +43,13 @@
 			"label": "Limit",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "section_break_ndsx",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_ndsx", "fieldtype": "Section Break" },
 		{
 			"fieldname": "removal_steps",
 			"fieldtype": "Table",
 			"options": "IP Removal Log Steps"
 		},
-		{
-			"fieldname": "section_break_oiwu",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_oiwu", "fieldtype": "Section Break" },
 		{
 			"fieldname": "error",
 			"fieldtype": "Text",

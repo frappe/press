@@ -21,10 +21,7 @@
 			"options": "Pull\nMigrate",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
 		{
 			"fieldname": "source_release",
 			"fieldtype": "Link",

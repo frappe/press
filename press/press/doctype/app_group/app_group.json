@@ -15,10 +15,7 @@
 			"options": "App",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_jvou",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_jvou", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "app.title",
 			"fieldname": "app_title",

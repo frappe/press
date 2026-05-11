@@ -57,11 +57,7 @@
 			"fieldtype": "Check",
 			"label": "Via Items"
 		},
-		{
-			"fieldname": "note",
-			"fieldtype": "Data",
-			"label": "Note"
-		}
+		{ "fieldname": "note", "fieldtype": "Data", "label": "Note" }
 	],
 	"index_web_pages_for_search": 1,
 	"istable": 1,

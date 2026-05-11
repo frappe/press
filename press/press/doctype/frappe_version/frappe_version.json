@@ -49,10 +49,7 @@
 			"options": "Develop\nBeta\nStable\nEnd of Life",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_ramy",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ramy", "fieldtype": "Column Break" },
 		{
 			"fieldname": "dependency_table_section",
 			"fieldtype": "Section Break",
@@ -66,12 +63,7 @@
 		}
 	],
 	"index_web_pages_for_search": 1,
-	"links": [
-		{
-			"link_doctype": "Release Group",
-			"link_fieldname": "version"
-		}
-	],
+	"links": [{ "link_doctype": "Release Group", "link_fieldname": "version" }],
 	"modified": "2025-08-20 20:19:03.766199",
 	"modified_by": "Administrator",
 	"module": "Press",

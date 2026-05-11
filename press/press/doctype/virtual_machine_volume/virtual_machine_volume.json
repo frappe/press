@@ -72,14 +72,8 @@
 			"label": "Last updated at",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_ygbk",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_frlu",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_ygbk", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_frlu", "fieldtype": "Section Break" },
 		{
 			"columns": 2,
 			"fieldname": "device",
@@ -88,15 +82,8 @@
 			"label": "Device",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_buwy",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "detach",
-			"fieldtype": "Button",
-			"label": "Detach"
-		},
+		{ "fieldname": "column_break_buwy", "fieldtype": "Column Break" },
+		{ "fieldname": "detach", "fieldtype": "Button", "label": "Detach" },
 		{
 			"fieldname": "increase_disk_size",
 			"fieldtype": "Button",

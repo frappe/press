@@ -55,10 +55,7 @@
 			"fieldtype": "Check",
 			"label": "Enabled"
 		},
-		{
-			"fieldname": "column_break_swdr",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_swdr", "fieldtype": "Column Break" },
 		{
 			"fieldname": "wireguard_network",
 			"fieldtype": "Data",
@@ -85,10 +82,7 @@
 			"length": 128,
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_dxat",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_dxat", "fieldtype": "Column Break" },
 		{
 			"fieldname": "app_server_wireguard_public_key",
 			"fieldtype": "Data",
@@ -123,10 +117,7 @@
 			"label": "WG Private IP",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_ifhw",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ifhw", "fieldtype": "Column Break" },
 		{
 			"fieldname": "database_server_wireguard_public_key",
 			"fieldtype": "Data",
@@ -158,10 +149,7 @@
 			"label": "Database Base Directory",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_hilm",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_hilm", "fieldtype": "Column Break" },
 		{
 			"fieldname": "on_prem_server_wireguard_private_ip",
 			"fieldtype": "Data",
@@ -180,21 +168,14 @@
 			"label": "WG Private Key",
 			"read_only": 1
 		},
-		{
-			"fieldname": "status_tab",
-			"fieldtype": "Tab Break",
-			"label": "State"
-		},
+		{ "fieldname": "status_tab", "fieldtype": "Tab Break", "label": "State" },
 		{
 			"default": "0",
 			"fieldname": "is_app_server_failover_setup",
 			"fieldtype": "Check",
 			"label": "Is App Server Failover Setup"
 		},
-		{
-			"fieldname": "column_break_gywf",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_gywf", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "is_db_server_failover_setup",
@@ -248,19 +229,13 @@
 			"fieldtype": "Check",
 			"label": "Lsyncd Running"
 		},
-		{
-			"fieldname": "column_break_rvzx",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_rvzx", "fieldtype": "Column Break" },
 		{
 			"fieldname": "db_lsyncd_started_on",
 			"fieldtype": "Datetime",
 			"label": "Lsyncd Started On"
 		},
-		{
-			"fieldname": "column_break_vkjf",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_vkjf", "fieldtype": "Column Break" },
 		{
 			"fieldname": "db_lsyncd_stop_at",
 			"fieldtype": "Datetime",

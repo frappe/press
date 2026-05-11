@@ -41,10 +41,7 @@
 			"label": "Title",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_qnnn",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_qnnn", "fieldtype": "Column Break" },
 		{
 			"fieldname": "team",
 			"fieldtype": "Link",
@@ -53,10 +50,7 @@
 			"reqd": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "section_break_zdiv",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_zdiv", "fieldtype": "Section Break" },
 		{
 			"fieldname": "users",
 			"fieldtype": "Table",
@@ -68,10 +62,7 @@
 			"fieldtype": "Section Break",
 			"label": "Additional Permissions"
 		},
-		{
-			"fieldname": "column_break_todb",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_todb", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "allow_billing",
@@ -145,10 +136,7 @@
 			"fieldtype": "Check",
 			"label": "Allow Leads"
 		},
-		{
-			"fieldname": "column_break_hocg",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_hocg", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "allow_customer",
@@ -161,10 +149,7 @@
 			"fieldtype": "Check",
 			"label": "Allow Contribution"
 		},
-		{
-			"fieldname": "section_break_wcgd",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_wcgd", "fieldtype": "Section Break" },
 		{
 			"fieldname": "resources",
 			"fieldtype": "Table",
@@ -211,18 +196,6 @@
 			"read": 1,
 			"report": 1,
 			"role": "System Manager",
-			"share": 1,
-			"write": 1
-		},
-		{
-			"create": 1,
-			"delete": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
 			"share": 1,
 			"write": 1
 		},

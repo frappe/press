@@ -51,10 +51,7 @@
 			"label": "Attempt",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_ccnn",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ccnn", "fieldtype": "Column Break" },
 		{
 			"fieldname": "output",
 			"fieldtype": "Small Text",

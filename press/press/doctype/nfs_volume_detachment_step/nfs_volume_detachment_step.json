@@ -42,22 +42,14 @@
 			"label": "Job",
 			"options": "job_type"
 		},
-		{
-			"fieldname": "output",
-			"fieldtype": "Long Text",
-			"label": "Output"
-		},
+		{ "fieldname": "output", "fieldtype": "Long Text", "label": "Output" },
 		{
 			"fieldname": "method_name",
 			"fieldtype": "Data",
 			"in_list_view": 1,
 			"label": "Method"
 		},
-		{
-			"fieldname": "attempt",
-			"fieldtype": "Int",
-			"label": "Attempt"
-		},
+		{ "fieldname": "attempt", "fieldtype": "Int", "label": "Attempt" },
 		{
 			"default": "0",
 			"fieldname": "is_waiting",

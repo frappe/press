@@ -70,14 +70,8 @@
 			"label": "Description",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_4",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_6",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "section_break_4", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_6", "fieldtype": "Column Break" },
 		{
 			"default": "{}",
 			"fieldname": "labels",
@@ -85,10 +79,7 @@
 			"label": "Labels",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_2",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_2", "fieldtype": "Column Break" },
 		{
 			"fieldname": "routing_section",
 			"fieldtype": "Section Break",
@@ -115,10 +106,7 @@
 			"label": "Repeat Interval",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_19",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_19", "fieldtype": "Column Break" },
 		{
 			"default": "[\"alertname\"]",
 			"fieldname": "group_by",
@@ -137,10 +125,7 @@
 			"label": "Alert Preview",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_21",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_21", "fieldtype": "Column Break" },
 		{
 			"fieldname": "route_preview",
 			"fieldtype": "Code",
@@ -165,10 +150,7 @@
 			"label": "Press Job Type",
 			"options": "Press Job Type"
 		},
-		{
-			"fieldname": "column_break_oetk",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_oetk", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "only_on_shared",
@@ -191,10 +173,7 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [
-		{
-			"link_doctype": "Alertmanager Webhook Log",
-			"link_fieldname": "alert"
-		}
+		{ "link_doctype": "Alertmanager Webhook Log", "link_fieldname": "alert" }
 	],
 	"modified": "2026-01-16 14:24:38.200768",
 	"modified_by": "Administrator",
@@ -218,17 +197,6 @@
 		{
 			"create": 1,
 			"delete": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
-			"share": 1,
-			"write": 1
-		},
-		{
-			"create": 1,
 			"email": 1,
 			"export": 1,
 			"print": 1,
