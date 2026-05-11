@@ -12,12 +12,27 @@ export const index = computed(() => {
 		Settings: {
 			items: [
 				{ name: 'Profile', route: '/settings/profile', icon: LucideUser },
-				{ name: 'Team', route: '/settings/team', icon: LucideUsers },
+        
+				{
+					name: "Team",
+					route: "/settings/team",
+					icon: LucideUsers,
+					condition: 
+						team.doc?.user === session.user ||
+						session.isTeamAdmin ||
+						session.isSystemUser,
+				},
+
 				{ name: 'Developer', route: '/settings/developer', icon: LucideCode },
+
 				{
 					name: 'Roles',
 					route: '/settings/permissions/roles',
 					icon: LucideLock,
+         	condition: 
+						team.doc?.user === session.user ||
+						session.isTeamAdmin ||
+						session.isSystemUser,
 				},
 			],
 		},
