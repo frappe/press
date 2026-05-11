@@ -36,6 +36,7 @@ def _init_jobs_registry() -> None:
 	from press.press.doctype.press_job.jobs.auto_scale_up_application_server import (
 		AutoScaleUpApplicationServerJob,
 	)
+	from press.press.doctype.press_job.jobs.create_cluster_registry import CreateClusterRegistryJob
 	from press.press.doctype.press_job.jobs.create_server import CreateServerJob
 	from press.press.doctype.press_job.jobs.create_server_snapshot import CreateServerSnapshotJob
 	from press.press.doctype.press_job.jobs.increase_disk_size import IncreaseDiskSizeJob
@@ -79,6 +80,7 @@ def _init_jobs_registry() -> None:
 		"Trigger Build Server Cleanup": TriggerBuildServerCleanupJob,
 		"Upgrade MariaDB": UpgradeMariaDBJob,
 		"Warn disk at 80%": WarnDiskJob,
+		"Create Cluster Registry": CreateClusterRegistryJob,
 	}
 
 

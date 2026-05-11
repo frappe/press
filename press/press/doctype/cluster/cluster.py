@@ -46,6 +46,7 @@ from press.utils import get_current_team, unique
 if typing.TYPE_CHECKING:
 	from collections.abc import Generator
 
+	from press.press.doctype.cluster_registry.cluster_registry import ClusterRegistry
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.log_server.log_server import LogServer
 	from press.press.doctype.monitor_server.monitor_server import MonitorServer
@@ -80,7 +81,9 @@ class Cluster(Document):
 		default_db_server_plan: DF.Link | None
 		default_db_server_plan_type: DF.Link | None
 		description: DF.Data | None
+		digital_ocean_access_key_id: DF.Data | None
 		digital_ocean_api_token: DF.Password | None
+		digital_ocean_secret_access_key: DF.Password | None
 		disable_public_ips_for_servers: DF.Check
 		enable_autoscaling: DF.Check
 		enable_periodic_flush_table: DF.Check
@@ -91,7 +94,9 @@ class Cluster(Document):
 		has_add_on_storage_support: DF.Check
 		has_arm_support: DF.Check
 		has_unified_server_support: DF.Check
+		hetzner_access_key_id: DF.Data | None
 		hetzner_api_token: DF.Password | None
+		hetzner_secret_access_key: DF.Password | None
 		hybrid: DF.Check
 		image: DF.AttachImage | None
 		monitoring_password: DF.Password | None
@@ -565,6 +570,28 @@ class Cluster(Document):
 	def validate_monitoring_password(self):
 		if not self.monitoring_password:
 			self.monitoring_password = frappe.generate_hash()
+
+	@frappe.whitelist()
+	def create_cluster_registry(self, plan: str):
+		"""Provision a registry server for the cluster
+		- Creates a VM with the given specs.
+		- Once provisioned (generally without vmi)
+		"""
+		current_team = get_current_team()
+		machine_type, platform, disk = frappe.db.get_value(
+			"Server Plan", plan, ["instance_type", "platform", "disk"]
+		)
+		domain = frappe.db.get_single_value("Press Settings", "domain")
+		vm = self.create_vm(
+			machine_type,
+			platform,
+			disk,
+			domain,
+			"r",
+			current_team,
+		)
+		cluster_registry: ClusterRegistry = vm.create_cluster_registry()
+		cluster_registry.run_press_job("Create Cluster Registry")
 
 	def provision_on_aws_ec2(self):
 		client = self.get_aws_client()
