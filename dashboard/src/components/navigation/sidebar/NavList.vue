@@ -204,7 +204,7 @@ onUnmounted(() => {
 <template>
   <template v-for="(item, _) in navigation" :key="item.name">
     <ItemGroup v-if="item.children" v-bind="item" />
-    <component v-else-if="item.customComponent" :is="item.customComponent" v-bind="item" />
-    <Item :class="item.class" v-else v-bind="item" />
+    <component v-else-if="item.customComponent" :is="item.customComponent" :disabled="item.disabled" />
+    <Item v-else v-bind="item" />
   </template>
 </template>
