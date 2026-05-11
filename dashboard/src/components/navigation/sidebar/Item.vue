@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { NavItemProps } from "./types";
 
-const props = defineProps<NavItemProps>();
+const props = withDefaults(defineProps<NavItemProps>(), {
+	is: "router-link",
+});
 </script>
 
 <template>
-  <component :to="route" :is="route ? 'router-link' : ($attrs.is)" v-bind="{ ...$attrs, is: undefined }"
+  <component :to="route" :is
     class="flex text-left items-center rounded px-2 py-1.5 text-ink-gray-7 transition gap-2 w-full" :class="[
       isActive
         ? 'bg-surface-gray-2 md:bg-surface-white dark:bg-surface-gray-2 text-ink-gray-8 md:shadow-sm'
