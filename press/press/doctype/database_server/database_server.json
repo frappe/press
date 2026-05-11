@@ -543,6 +543,17 @@
 			"read_only": 1
 		},
 		{
+<<<<<<< HEAD
+=======
+			"default": "1",
+			"depends_on": "eval: doc.memory_allocator == \"TCMalloc\"",
+			"fieldname": "tcmalloc_release_rate",
+			"fieldtype": "Int",
+			"label": "TCMalloc Release Rate",
+			"read_only": 1
+		},
+		{
+>>>>>>> 4ff510ca9 (chore(backend): Biome check doctype json files)
 			"fieldname": "section_break_ladc",
 			"fieldtype": "Section Break"
 		},
@@ -796,6 +807,7 @@
 			"options": "NAT Server"
 		},
 		{
+<<<<<<< HEAD
 			"default": "1",
 			"depends_on": "eval: doc.memory_allocator == \"TCMalloc\"",
 			"fieldname": "tcmalloc_release_rate",
@@ -804,6 +816,8 @@
 			"read_only": 1
 		},
 		{
+=======
+>>>>>>> 4ff510ca9 (chore(backend): Biome check doctype json files)
 			"fieldname": "monitor_tab",
 			"fieldtype": "Tab Break",
 			"label": "Monitor"
@@ -873,6 +887,15 @@
 			"read": 1,
 			"role": "Press User",
 			"write": 1
+<<<<<<< HEAD
+=======
+		},
+		{
+			"create": 1,
+			"read": 1,
+			"role": "Press User",
+			"write": 1
+>>>>>>> 4ff510ca9 (chore(backend): Biome check doctype json files)
 		}
 	],
 	"row_format": "Dynamic",

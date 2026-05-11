@@ -1,214 +1,214 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "prompt",
- "creation": "2024-02-05 22:21:47.560972",
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "title",
-  "description",
-  "plan_type",
-  "column_break_ppap",
-  "enabled",
-  "legacy_plan",
-  "allow_unified_server",
-  "machine_unavailable",
-  "ignore_machine_availability_sync",
-  "pricing_section",
-  "price_inr",
-  "column_break_sjmg",
-  "price_usd",
-  "section_break_nifk",
-  "premium",
-  "server_type",
-  "cluster",
-  "instance_type",
-  "platform",
-  "cloud_provider",
-  "column_break_ypkt",
-  "vcpu",
-  "memory",
-  "disk",
-  "allowed_roles_section",
-  "roles"
- ],
- "fields": [
-  {
-   "default": "0",
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Enabled"
-  },
-  {
-   "fieldname": "server_type",
-   "fieldtype": "Select",
-   "label": "Server Type",
-   "options": "Server\nDatabase Server\nProxy Server\nSelf Hosted Server"
-  },
-  {
-   "fieldname": "section_break_nifk",
-   "fieldtype": "Section Break",
-   "label": "Details"
-  },
-  {
-   "fieldname": "cluster",
-   "fieldtype": "Link",
-   "label": "Cluster",
-   "options": "Cluster"
-  },
-  {
-   "fieldname": "instance_type",
-   "fieldtype": "Data",
-   "label": "Instance Type"
-  },
-  {
-   "fieldname": "column_break_ypkt",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "vcpu",
-   "fieldtype": "Int",
-   "label": "vCPU"
-  },
-  {
-   "fieldname": "memory",
-   "fieldtype": "Int",
-   "label": "Memory"
-  },
-  {
-   "fieldname": "disk",
-   "fieldtype": "Int",
-   "label": "Disk"
-  },
-  {
-   "fieldname": "pricing_section",
-   "fieldtype": "Section Break",
-   "label": "Pricing"
-  },
-  {
-   "fieldname": "price_inr",
-   "fieldtype": "Currency",
-   "in_list_view": 1,
-   "label": "Price (INR)",
-   "options": "INR",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_sjmg",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "price_usd",
-   "fieldtype": "Currency",
-   "in_list_view": 1,
-   "label": "Price (USD)",
-   "options": "INR",
-   "reqd": 1
-  },
-  {
-   "fieldname": "title",
-   "fieldtype": "Data",
-   "label": "Title"
-  },
-  {
-   "fieldname": "allowed_roles_section",
-   "fieldtype": "Section Break",
-   "label": "Allowed Roles"
-  },
-  {
-   "fieldname": "roles",
-   "fieldtype": "Table",
-   "label": "Roles",
-   "options": "Has Role"
-  },
-  {
-   "default": "0",
-   "fieldname": "premium",
-   "fieldtype": "Check",
-   "label": "Premium"
-  },
-  {
-   "default": "x86_64",
-   "fieldname": "platform",
-   "fieldtype": "Select",
-   "label": "Platform",
-   "options": "x86_64\narm64\namd64",
-   "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "legacy_plan",
-   "fieldtype": "Check",
-   "label": "Legacy Plan"
-  },
-  {
-   "fieldname": "plan_type",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Plan Type",
-   "options": "Server Plan Type"
-  },
-  {
-   "fieldname": "column_break_ppap",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "allow_unified_server",
-   "fieldtype": "Check",
-   "label": "Allow Unified Server"
-  },
-  {
-   "default": "0",
-   "fieldname": "machine_unavailable",
-   "fieldtype": "Check",
-   "label": "Machine Unavailable"
-  },
-  {
-   "default": "0",
-   "fieldname": "ignore_machine_availability_sync",
-   "fieldtype": "Check",
-   "label": "Ignore Machine Availability Sync"
-  },
-  {
-   "fetch_from": "cluster.cloud_provider",
-   "fieldname": "cloud_provider",
-   "fieldtype": "Link",
-   "label": "Cloud Provider",
-   "options": "Cloud Provider"
-  },
-  {
-   "fieldname": "description",
-   "fieldtype": "Data",
-   "label": "Description"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-04-03 15:00:53.879594",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Server Plan",
- "naming_rule": "Set by user",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "prompt",
+	"creation": "2024-02-05 22:21:47.560972",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"title",
+		"description",
+		"plan_type",
+		"column_break_ppap",
+		"enabled",
+		"legacy_plan",
+		"allow_unified_server",
+		"machine_unavailable",
+		"ignore_machine_availability_sync",
+		"pricing_section",
+		"price_inr",
+		"column_break_sjmg",
+		"price_usd",
+		"section_break_nifk",
+		"premium",
+		"server_type",
+		"cluster",
+		"instance_type",
+		"platform",
+		"cloud_provider",
+		"column_break_ypkt",
+		"vcpu",
+		"memory",
+		"disk",
+		"allowed_roles_section",
+		"roles"
+	],
+	"fields": [
+		{
+			"default": "0",
+			"fieldname": "enabled",
+			"fieldtype": "Check",
+			"label": "Enabled"
+		},
+		{
+			"fieldname": "server_type",
+			"fieldtype": "Select",
+			"label": "Server Type",
+			"options": "Server\nDatabase Server\nProxy Server\nSelf Hosted Server"
+		},
+		{
+			"fieldname": "section_break_nifk",
+			"fieldtype": "Section Break",
+			"label": "Details"
+		},
+		{
+			"fieldname": "cluster",
+			"fieldtype": "Link",
+			"label": "Cluster",
+			"options": "Cluster"
+		},
+		{
+			"fieldname": "instance_type",
+			"fieldtype": "Data",
+			"label": "Instance Type"
+		},
+		{
+			"fieldname": "column_break_ypkt",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "vcpu",
+			"fieldtype": "Int",
+			"label": "vCPU"
+		},
+		{
+			"fieldname": "memory",
+			"fieldtype": "Int",
+			"label": "Memory"
+		},
+		{
+			"fieldname": "disk",
+			"fieldtype": "Int",
+			"label": "Disk"
+		},
+		{
+			"fieldname": "pricing_section",
+			"fieldtype": "Section Break",
+			"label": "Pricing"
+		},
+		{
+			"fieldname": "price_inr",
+			"fieldtype": "Currency",
+			"in_list_view": 1,
+			"label": "Price (INR)",
+			"options": "INR",
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_sjmg",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "price_usd",
+			"fieldtype": "Currency",
+			"in_list_view": 1,
+			"label": "Price (USD)",
+			"options": "INR",
+			"reqd": 1
+		},
+		{
+			"fieldname": "title",
+			"fieldtype": "Data",
+			"label": "Title"
+		},
+		{
+			"fieldname": "allowed_roles_section",
+			"fieldtype": "Section Break",
+			"label": "Allowed Roles"
+		},
+		{
+			"fieldname": "roles",
+			"fieldtype": "Table",
+			"label": "Roles",
+			"options": "Has Role"
+		},
+		{
+			"default": "0",
+			"fieldname": "premium",
+			"fieldtype": "Check",
+			"label": "Premium"
+		},
+		{
+			"default": "x86_64",
+			"fieldname": "platform",
+			"fieldtype": "Select",
+			"label": "Platform",
+			"options": "x86_64\narm64\namd64",
+			"reqd": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "legacy_plan",
+			"fieldtype": "Check",
+			"label": "Legacy Plan"
+		},
+		{
+			"fieldname": "plan_type",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Plan Type",
+			"options": "Server Plan Type"
+		},
+		{
+			"fieldname": "column_break_ppap",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0",
+			"fieldname": "allow_unified_server",
+			"fieldtype": "Check",
+			"label": "Allow Unified Server"
+		},
+		{
+			"default": "0",
+			"fieldname": "machine_unavailable",
+			"fieldtype": "Check",
+			"label": "Machine Unavailable"
+		},
+		{
+			"default": "0",
+			"fieldname": "ignore_machine_availability_sync",
+			"fieldtype": "Check",
+			"label": "Ignore Machine Availability Sync"
+		},
+		{
+			"fetch_from": "cluster.cloud_provider",
+			"fieldname": "cloud_provider",
+			"fieldtype": "Link",
+			"label": "Cloud Provider",
+			"options": "Cloud Provider"
+		},
+		{
+			"fieldname": "description",
+			"fieldtype": "Data",
+			"label": "Description"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-04-03 15:00:53.879594",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Server Plan",
+	"naming_rule": "Set by user",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
 }

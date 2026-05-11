@@ -1,341 +1,341 @@
 {
- "actions": [],
- "creation": "2023-06-06 19:43:02.419970",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "status",
-  "site",
-  "database_name",
-  "team",
-  "column_break_obsx",
-  "job",
-  "files_availability",
-  "physical",
-  "for_site_update",
-  "with_files",
-  "offsite",
-  "deactivate_site_during_backup",
-  "data_7",
-  "database_file",
-  "database_url",
-  "remote_database_file",
-  "database_size",
-  "column_break_wiuq",
-  "config_file",
-  "config_file_url",
-  "remote_config_file",
-  "config_file_size",
-  "data_12",
-  "public_file",
-  "public_url",
-  "remote_public_file",
-  "public_size",
-  "column_break_16",
-  "private_file",
-  "private_url",
-  "remote_private_file",
-  "private_size",
-  "section_break_21",
-  "offsite_backup",
-  "section_break_hiaw",
-  "database_snapshot",
-  "column_break_hksx",
-  "snapshot_request_key"
- ],
- "fields": [
-  {
-   "fieldname": "site",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Site",
-   "options": "Site",
-   "reqd": 1,
-   "set_only_once": 1
-  },
-  {
-   "default": "Pending",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "job",
-   "fieldtype": "Link",
-   "label": "Job",
-   "options": "Agent Job",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.physical != 1",
-   "fieldname": "with_files",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "With Files",
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "database_file",
-   "fieldtype": "Data",
-   "label": "Database File",
-   "read_only": 1
-  },
-  {
-   "fieldname": "database_size",
-   "fieldtype": "Data",
-   "label": "Database Size",
-   "read_only": 1
-  },
-  {
-   "fieldname": "database_url",
-   "fieldtype": "Text",
-   "label": "Database URL",
-   "read_only": 1
-  },
-  {
-   "fieldname": "public_file",
-   "fieldtype": "Data",
-   "label": "Public File",
-   "read_only": 1
-  },
-  {
-   "fieldname": "public_size",
-   "fieldtype": "Data",
-   "label": "Public Size",
-   "read_only": 1
-  },
-  {
-   "fieldname": "public_url",
-   "fieldtype": "Text",
-   "label": "Public URL",
-   "read_only": 1
-  },
-  {
-   "fieldname": "private_file",
-   "fieldtype": "Data",
-   "label": "Private File",
-   "read_only": 1
-  },
-  {
-   "fieldname": "private_size",
-   "fieldtype": "Data",
-   "label": "Private Size",
-   "read_only": 1
-  },
-  {
-   "fieldname": "private_url",
-   "fieldtype": "Text",
-   "label": "Private URL",
-   "read_only": 1
-  },
-  {
-   "depends_on": "eval: doc.physical != 1",
-   "fieldname": "data_7",
-   "fieldtype": "Section Break"
-  },
-  {
-   "depends_on": "eval: doc.physical != 1",
-   "fieldname": "data_12",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_16",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.physical != 1",
-   "fieldname": "offsite",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Offsite",
-   "set_only_once": 1
-  },
-  {
-   "depends_on": "eval: doc.physical != 1 && doc.offsite == 1",
-   "fieldname": "section_break_21",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "offsite_backup",
-   "fieldtype": "Code",
-   "label": "Offsite Backup",
-   "read_only": 1
-  },
-  {
-   "fieldname": "remote_database_file",
-   "fieldtype": "Link",
-   "label": "Remote File",
-   "options": "Remote File",
-   "read_only": 1
-  },
-  {
-   "fieldname": "remote_public_file",
-   "fieldtype": "Link",
-   "label": "Remote File",
-   "options": "Remote File",
-   "read_only": 1
-  },
-  {
-   "fieldname": "remote_private_file",
-   "fieldtype": "Link",
-   "label": "Remote File",
-   "options": "Remote File",
-   "read_only": 1
-  },
-  {
-   "fieldname": "files_availability",
-   "fieldtype": "Select",
-   "in_filter": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Files Availability",
-   "options": "\nAvailable\nUnavailable",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_wiuq",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "config_file",
-   "fieldtype": "Data",
-   "label": "Config File",
-   "read_only": 1
-  },
-  {
-   "fieldname": "config_file_url",
-   "fieldtype": "Text",
-   "label": "Config File URL",
-   "read_only": 1
-  },
-  {
-   "fieldname": "config_file_size",
-   "fieldtype": "Data",
-   "label": "Config File Size",
-   "read_only": 1
-  },
-  {
-   "fieldname": "remote_config_file",
-   "fieldtype": "Link",
-   "label": "Remote File",
-   "options": "Remote File",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "site.team",
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Team",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "physical",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Physical",
-   "set_only_once": 1
-  },
-  {
-   "collapsible_depends_on": "1",
-   "depends_on": "eval: doc.physical == 1",
-   "fieldname": "section_break_hiaw",
-   "fieldtype": "Section Break",
-   "label": "Physical Backup"
-  },
-  {
-   "fieldname": "column_break_hksx",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "snapshot_request_key",
-   "fieldtype": "Data",
-   "label": "Snapshot Request Key",
-   "read_only": 1
-  },
-  {
-   "depends_on": "eval: doc.physical",
-   "fieldname": "database_snapshot",
-   "fieldtype": "Link",
-   "label": "Database Snapshot",
-   "options": "Virtual Disk Snapshot",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "depends_on": "eval: doc.database_name",
-   "fieldname": "database_name",
-   "fieldtype": "Data",
-   "label": "Database Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_obsx",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.physical == 1",
-   "fieldname": "for_site_update",
-   "fieldtype": "Check",
-   "label": "For Site Update"
-  },
-  {
-   "default": "0",
-   "fieldname": "deactivate_site_during_backup",
-   "fieldtype": "Check",
-   "label": "Deactivate Site During Backup",
-   "set_only_once": 1
-  }
- ],
- "links": [
-  {
-   "link_doctype": "Agent Job",
-   "link_fieldname": "reference_name"
-  }
- ],
- "modified": "2025-04-17 10:57:09.359685",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Site Backup",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "role": "Press User"
-  },
-  {
-   "create": 1,
-   "role": "Press User"
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+	"actions": [],
+	"creation": "2023-06-06 19:43:02.419970",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"status",
+		"site",
+		"database_name",
+		"team",
+		"column_break_obsx",
+		"job",
+		"files_availability",
+		"physical",
+		"for_site_update",
+		"with_files",
+		"offsite",
+		"deactivate_site_during_backup",
+		"data_7",
+		"database_file",
+		"database_url",
+		"remote_database_file",
+		"database_size",
+		"column_break_wiuq",
+		"config_file",
+		"config_file_url",
+		"remote_config_file",
+		"config_file_size",
+		"data_12",
+		"public_file",
+		"public_url",
+		"remote_public_file",
+		"public_size",
+		"column_break_16",
+		"private_file",
+		"private_url",
+		"remote_private_file",
+		"private_size",
+		"section_break_21",
+		"offsite_backup",
+		"section_break_hiaw",
+		"database_snapshot",
+		"column_break_hksx",
+		"snapshot_request_key"
+	],
+	"fields": [
+		{
+			"fieldname": "site",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Site",
+			"options": "Site",
+			"reqd": 1,
+			"set_only_once": 1
+		},
+		{
+			"default": "Pending",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Status",
+			"options": "Pending\nRunning\nSuccess\nFailure",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "job",
+			"fieldtype": "Link",
+			"label": "Job",
+			"options": "Agent Job",
+			"read_only": 1,
+			"search_index": 1
+		},
+		{
+			"default": "0",
+			"depends_on": "eval: doc.physical != 1",
+			"fieldname": "with_files",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "With Files",
+			"set_only_once": 1
+		},
+		{
+			"fieldname": "database_file",
+			"fieldtype": "Data",
+			"label": "Database File",
+			"read_only": 1
+		},
+		{
+			"fieldname": "database_size",
+			"fieldtype": "Data",
+			"label": "Database Size",
+			"read_only": 1
+		},
+		{
+			"fieldname": "database_url",
+			"fieldtype": "Text",
+			"label": "Database URL",
+			"read_only": 1
+		},
+		{
+			"fieldname": "public_file",
+			"fieldtype": "Data",
+			"label": "Public File",
+			"read_only": 1
+		},
+		{
+			"fieldname": "public_size",
+			"fieldtype": "Data",
+			"label": "Public Size",
+			"read_only": 1
+		},
+		{
+			"fieldname": "public_url",
+			"fieldtype": "Text",
+			"label": "Public URL",
+			"read_only": 1
+		},
+		{
+			"fieldname": "private_file",
+			"fieldtype": "Data",
+			"label": "Private File",
+			"read_only": 1
+		},
+		{
+			"fieldname": "private_size",
+			"fieldtype": "Data",
+			"label": "Private Size",
+			"read_only": 1
+		},
+		{
+			"fieldname": "private_url",
+			"fieldtype": "Text",
+			"label": "Private URL",
+			"read_only": 1
+		},
+		{
+			"depends_on": "eval: doc.physical != 1",
+			"fieldname": "data_7",
+			"fieldtype": "Section Break"
+		},
+		{
+			"depends_on": "eval: doc.physical != 1",
+			"fieldname": "data_12",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "column_break_16",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0",
+			"depends_on": "eval: doc.physical != 1",
+			"fieldname": "offsite",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Offsite",
+			"set_only_once": 1
+		},
+		{
+			"depends_on": "eval: doc.physical != 1 && doc.offsite == 1",
+			"fieldname": "section_break_21",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "offsite_backup",
+			"fieldtype": "Code",
+			"label": "Offsite Backup",
+			"read_only": 1
+		},
+		{
+			"fieldname": "remote_database_file",
+			"fieldtype": "Link",
+			"label": "Remote File",
+			"options": "Remote File",
+			"read_only": 1
+		},
+		{
+			"fieldname": "remote_public_file",
+			"fieldtype": "Link",
+			"label": "Remote File",
+			"options": "Remote File",
+			"read_only": 1
+		},
+		{
+			"fieldname": "remote_private_file",
+			"fieldtype": "Link",
+			"label": "Remote File",
+			"options": "Remote File",
+			"read_only": 1
+		},
+		{
+			"fieldname": "files_availability",
+			"fieldtype": "Select",
+			"in_filter": 1,
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Files Availability",
+			"options": "\nAvailable\nUnavailable",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_wiuq",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "config_file",
+			"fieldtype": "Data",
+			"label": "Config File",
+			"read_only": 1
+		},
+		{
+			"fieldname": "config_file_url",
+			"fieldtype": "Text",
+			"label": "Config File URL",
+			"read_only": 1
+		},
+		{
+			"fieldname": "config_file_size",
+			"fieldtype": "Data",
+			"label": "Config File Size",
+			"read_only": 1
+		},
+		{
+			"fieldname": "remote_config_file",
+			"fieldtype": "Link",
+			"label": "Remote File",
+			"options": "Remote File",
+			"read_only": 1
+		},
+		{
+			"fetch_from": "site.team",
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"label": "Team",
+			"options": "Team",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "physical",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Physical",
+			"set_only_once": 1
+		},
+		{
+			"collapsible_depends_on": "1",
+			"depends_on": "eval: doc.physical == 1",
+			"fieldname": "section_break_hiaw",
+			"fieldtype": "Section Break",
+			"label": "Physical Backup"
+		},
+		{
+			"fieldname": "column_break_hksx",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "snapshot_request_key",
+			"fieldtype": "Data",
+			"label": "Snapshot Request Key",
+			"read_only": 1
+		},
+		{
+			"depends_on": "eval: doc.physical",
+			"fieldname": "database_snapshot",
+			"fieldtype": "Link",
+			"label": "Database Snapshot",
+			"options": "Virtual Disk Snapshot",
+			"read_only": 1,
+			"search_index": 1
+		},
+		{
+			"depends_on": "eval: doc.database_name",
+			"fieldname": "database_name",
+			"fieldtype": "Data",
+			"label": "Database Name",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_obsx",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0",
+			"depends_on": "eval: doc.physical == 1",
+			"fieldname": "for_site_update",
+			"fieldtype": "Check",
+			"label": "For Site Update"
+		},
+		{
+			"default": "0",
+			"fieldname": "deactivate_site_during_backup",
+			"fieldtype": "Check",
+			"label": "Deactivate Site During Backup",
+			"set_only_once": 1
+		}
+	],
+	"links": [
+		{
+			"link_doctype": "Agent Job",
+			"link_fieldname": "reference_name"
+		}
+	],
+	"modified": "2025-04-17 10:57:09.359685",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Site Backup",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"role": "Press User"
+		},
+		{
+			"create": 1,
+			"role": "Press User"
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
 }
