@@ -1,108 +1,108 @@
 {
- "actions": [],
- "creation": "2020-04-06 12:08:13.396131",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "group",
-  "team",
-  "staging",
-  "column_break_2",
-  "candidate",
-  "section_break_5",
-  "benches"
- ],
- "fields": [
-  {
-   "fetch_from": "candidate.group",
-   "fieldname": "group",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Release Group",
-   "options": "Release Group",
-   "reqd": 1,
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "candidate",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Deploy Candidate",
-   "options": "Deploy Candidate",
-   "reqd": 1,
-   "search_index": 1,
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "benches",
-   "fieldtype": "Table",
-   "label": "Deploy Benches",
-   "options": "Deploy Bench",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_5",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fetch_from": "group.team",
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Team",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "staging",
-   "fieldtype": "Check",
-   "in_standard_filter": 1,
-   "label": "Staging"
-  }
- ],
- "links": [],
- "modified": "2025-05-28 11:45:25.237521",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Deploy",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "read": 1,
-   "role": "Press User",
-   "write": 1
-  },
-  {
-   "create": 1,
-   "read": 1,
-   "role": "Press User",
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+	"actions": [],
+	"creation": "2020-04-06 12:08:13.396131",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"group",
+		"team",
+		"staging",
+		"column_break_2",
+		"candidate",
+		"section_break_5",
+		"benches"
+	],
+	"fields": [
+		{
+			"fetch_from": "candidate.group",
+			"fieldname": "group",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Release Group",
+			"options": "Release Group",
+			"reqd": 1,
+			"set_only_once": 1
+		},
+		{
+			"fieldname": "candidate",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Deploy Candidate",
+			"options": "Deploy Candidate",
+			"reqd": 1,
+			"search_index": 1,
+			"set_only_once": 1
+		},
+		{
+			"fieldname": "benches",
+			"fieldtype": "Table",
+			"label": "Deploy Benches",
+			"options": "Deploy Bench",
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_2",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "section_break_5",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fetch_from": "group.team",
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"label": "Team",
+			"options": "Team",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "staging",
+			"fieldtype": "Check",
+			"in_standard_filter": 1,
+			"label": "Staging"
+		}
+	],
+	"links": [],
+	"modified": "2025-05-28 11:45:25.237521",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Deploy",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"read": 1,
+			"role": "Press User",
+			"write": 1
+		},
+		{
+			"create": 1,
+			"read": 1,
+			"role": "Press User",
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
 }
