@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
  "actions": [],
  "allow_rename": 1,
  "autoname": "format:PO-{YYYY}-{#####}",
@@ -216,3 +217,187 @@
  ],
  "track_changes": 1
 }
+=======
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "format:PO-{YYYY}-{#####}",
+	"creation": "2022-07-05 23:04:55.997511",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"team",
+		"recipient_currency",
+		"period_start",
+		"due_date",
+		"status",
+		"column_break_4",
+		"mode_of_payment",
+		"period_end",
+		"frappe_purchase_order",
+		"amended_from",
+		"section_break_8",
+		"type",
+		"column_break_10",
+		"notes",
+		"section_break_12",
+		"items",
+		"section_break_14",
+		"net_total_inr",
+		"currency_inr",
+		"total_amount",
+		"column_break_15",
+		"net_total_usd",
+		"currency_usd",
+		"section_break_21",
+		"ignore_commission"
+	],
+	"fields": [
+		{
+			"fieldname": "due_date",
+			"fieldtype": "Date",
+			"hidden": 1,
+			"label": "Due Date"
+		},
+		{
+			"fieldname": "frappe_purchase_order",
+			"fieldtype": "Data",
+			"label": "Frappe Purchase Order"
+		},
+		{
+			"fieldname": "amended_from",
+			"fieldtype": "Link",
+			"label": "Amended From",
+			"no_copy": 1,
+			"options": "Payout Order",
+			"print_hide": 1,
+			"read_only": 1
+		},
+		{
+			"fieldname": "mode_of_payment",
+			"fieldtype": "Select",
+			"label": "Mode Of Payment",
+			"options": "Cash\nCredits\nInternal"
+		},
+		{
+			"default": "Draft",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"label": "Status",
+			"options": "Draft\nPaid\nCommissioned"
+		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
+		{
+			"fieldname": "items",
+			"fieldtype": "Table",
+			"label": "Items",
+			"options": "Payout Order Item"
+		},
+		{ "fieldname": "section_break_8", "fieldtype": "Section Break" },
+		{
+			"fieldname": "type",
+			"fieldtype": "Select",
+			"label": "Type",
+			"options": "Marketplace\nSaaS"
+		},
+		{ "fieldname": "column_break_10", "fieldtype": "Column Break" },
+		{ "fieldname": "notes", "fieldtype": "Small Text", "label": "Notes" },
+		{ "fieldname": "section_break_12", "fieldtype": "Section Break" },
+		{
+			"fieldname": "net_total_inr",
+			"fieldtype": "Currency",
+			"label": "Net Total INR",
+			"options": "currency_inr",
+			"read_only": 1
+		},
+		{
+			"fieldname": "net_total_usd",
+			"fieldtype": "Currency",
+			"label": "Net Total USD",
+			"options": "currency_usd",
+			"read_only": 1
+		},
+		{ "fieldname": "column_break_15", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_14", "fieldtype": "Section Break" },
+		{
+			"fieldname": "period_start",
+			"fieldtype": "Date",
+			"label": "Period Start"
+		},
+		{ "fieldname": "period_end", "fieldtype": "Date", "label": "Period End" },
+		{
+			"fetch_from": "team.currency",
+			"fieldname": "recipient_currency",
+			"fieldtype": "Data",
+			"label": "Currency"
+		},
+		{ "fieldname": "section_break_21", "fieldtype": "Section Break" },
+		{
+			"default": "0",
+			"fieldname": "ignore_commission",
+			"fieldtype": "Check",
+			"label": "Ignore Commission",
+			"options": "0"
+		},
+		{
+			"default": "INR",
+			"fieldname": "currency_inr",
+			"fieldtype": "Data",
+			"hidden": 1,
+			"label": "Currency INR"
+		},
+		{
+			"default": "USD",
+			"fieldname": "currency_usd",
+			"fieldtype": "Data",
+			"hidden": 1,
+			"label": "Currency USD"
+		},
+		{
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Team",
+			"options": "Team",
+			"reqd": 1
+		},
+		{
+			"fieldname": "total_amount",
+			"fieldtype": "Currency",
+			"label": "Total Amount",
+			"options": "recipient_currency",
+			"read_only": 1
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"is_submittable": 1,
+	"links": [],
+	"modified": "2025-03-20 10:23:23.836067",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Payout Order",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [
+		{ "color": "Green", "title": "Paid" },
+		{ "color": "Gray", "title": "Draft" }
+	],
+	"track_changes": 1
+}
+>>>>>>> a1d9ca95e (fix(backend): Remove duplicate `Press User` role)

@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
  "actions": [],
  "allow_rename": 1,
  "creation": "2023-11-30 14:26:12.167431",
@@ -84,3 +85,79 @@
  "sort_order": "DESC",
  "states": []
 }
+=======
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2023-11-30 14:26:12.167431",
+	"default_view": "List",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"dispute_id",
+		"event_type",
+		"payment_intent",
+		"column_break_crci",
+		"email",
+		"reason",
+		"status"
+	],
+	"fields": [
+		{
+			"fieldname": "payment_intent",
+			"fieldtype": "Data",
+			"label": "Payment Intent",
+			"read_only": 1
+		},
+		{
+			"fieldname": "email",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"in_preview": 1,
+			"label": "Email",
+			"read_only": 1
+		},
+		{
+			"fieldname": "dispute_id",
+			"fieldtype": "Data",
+			"label": "Dispute Id",
+			"read_only": 1
+		},
+		{
+			"fieldname": "event_type",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"in_preview": 1,
+			"label": "Event Type",
+			"read_only": 1
+		},
+		{ "fieldname": "column_break_crci", "fieldtype": "Column Break" },
+		{ "fieldname": "reason", "fieldtype": "Data", "label": "Reason" },
+		{ "fieldname": "status", "fieldtype": "Data", "label": "Status" }
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2024-09-23 12:27:14.065913",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Payment Dispute",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}
+>>>>>>> a1d9ca95e (fix(backend): Remove duplicate `Press User` role)

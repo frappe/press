@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
  "actions": [],
  "allow_rename": 1,
  "creation": "2022-08-30 12:16:32.761458",
@@ -224,3 +225,223 @@
  "states": [],
  "title_field": "virtual_machine"
 }
+=======
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2022-08-30 12:16:32.761458",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"virtual_machine",
+		"instance_id",
+		"image_id",
+		"snapshot_id",
+		"status",
+		"size",
+		"root_size",
+		"column_break_5",
+		"cluster",
+		"region",
+		"platform",
+		"cloud_provider",
+		"series",
+		"copied_from",
+		"public",
+		"object_storage_uri",
+		"credentials_section",
+		"mariadb_root_password",
+		"section_break_acrc",
+		"has_data_volume",
+		"volumes",
+		"digital_ocean_action_section",
+		"action_id"
+	],
+	"fields": [
+		{
+			"fieldname": "virtual_machine",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Virtual Machine",
+			"options": "Virtual Machine",
+			"reqd": 1,
+			"set_only_once": 1
+		},
+		{
+			"fetch_from": "virtual_machine.platform",
+			"fetch_if_empty": 1,
+			"fieldname": "platform",
+			"fieldtype": "Data",
+			"label": "Platform",
+			"reqd": 1,
+			"set_only_once": 1
+		},
+		{
+			"fetch_from": "cluster.region",
+			"fieldname": "region",
+			"fieldtype": "Link",
+			"label": "Region",
+			"options": "Cloud Region",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Status",
+			"options": "Pending\nAvailable\nUnavailable",
+			"read_only": 1
+		},
+		{ "fieldname": "column_break_5", "fieldtype": "Column Break" },
+		{
+			"fetch_from": "virtual_machine.series",
+			"fieldname": "series",
+			"fieldtype": "Select",
+			"label": "Series",
+			"options": "n\nf\nm\nc\np\ne\nr\nnfs\nfs\nu",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "size",
+			"fieldtype": "Int",
+			"label": "Size",
+			"read_only": 1
+		},
+		{
+			"fieldname": "credentials_section",
+			"fieldtype": "Section Break",
+			"label": "Credentials"
+		},
+		{
+			"fieldname": "mariadb_root_password",
+			"fieldtype": "Password",
+			"label": "MariaDB Root Password",
+			"read_only": 1
+		},
+		{
+			"fieldname": "copied_from",
+			"fieldtype": "Link",
+			"label": "Copied From",
+			"options": "Virtual Machine Image",
+			"read_only": 1
+		},
+		{
+			"fetch_from": "virtual_machine.cluster",
+			"fetch_if_empty": 1,
+			"fieldname": "cluster",
+			"fieldtype": "Link",
+			"in_standard_filter": 1,
+			"label": "Cluster",
+			"options": "Cluster",
+			"reqd": 1
+		},
+		{
+			"fetch_from": "virtual_machine.instance_id",
+			"fieldname": "instance_id",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Instance ID",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "image_id",
+			"fieldtype": "Data",
+			"in_standard_filter": 1,
+			"label": "Image ID",
+			"read_only": 1
+		},
+		{
+			"fieldname": "snapshot_id",
+			"fieldtype": "Data",
+			"label": "Snapshot ID",
+			"read_only": 1
+		},
+		{
+			"default": "1",
+			"fieldname": "public",
+			"fieldtype": "Check",
+			"label": "Public"
+		},
+		{
+			"fieldname": "section_break_acrc",
+			"fieldtype": "Section Break",
+			"label": "Volumes"
+		},
+		{
+			"fieldname": "volumes",
+			"fieldtype": "Table",
+			"label": "Volumes",
+			"options": "Virtual Machine Image Volume",
+			"read_only": 1
+		},
+		{
+			"fieldname": "root_size",
+			"fieldtype": "Int",
+			"label": "Root Size",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fetch_from": "virtual_machine.has_data_volume",
+			"fieldname": "has_data_volume",
+			"fieldtype": "Check",
+			"label": "Has Data Volume",
+			"read_only": 1
+		},
+		{
+			"fieldname": "object_storage_uri",
+			"fieldtype": "Small Text",
+			"label": "Object Storage URI"
+		},
+		{
+			"fetch_from": "virtual_machine.cloud_provider",
+			"fetch_if_empty": 1,
+			"fieldname": "cloud_provider",
+			"fieldtype": "Data",
+			"label": "Cloud Provider",
+			"reqd": 1
+		},
+		{
+			"collapsible": 1,
+			"depends_on": "eval: doc.cloud_provider == \"DigitalOcean\"",
+			"fieldname": "digital_ocean_action_section",
+			"fieldtype": "Section Break",
+			"label": "Digital Ocean Action"
+		},
+		{ "fieldname": "action_id", "fieldtype": "Data", "label": "Action Id" }
+	],
+	"grid_page_length": 50,
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-01-18 15:54:34.633890",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Virtual Machine Image",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"rows_threshold_for_grid_search": 20,
+	"show_title_field_in_link": 1,
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "virtual_machine"
+}
+>>>>>>> a1d9ca95e (fix(backend): Remove duplicate `Press User` role)

@@ -50,10 +50,14 @@
 						"id": "ch_1HtDyjGjnxV0XKmrM13MbJf2",
 						"invoice": null,
 						"livemode": false,
+<<<<<<< HEAD
 					  "metadata": {
 						  "gst": "144.36",
 						  "payment_for": "prepaid_credits"
 					  },
+=======
+						"metadata": { "gst": "144.36", "payment_for": "prepaid_credits" },
+>>>>>>> a1d9ca95e (fix(backend): Remove duplicate `Press User` role)
 						"object": "charge",
 						"on_behalf_of": null,
 						"order": null,
@@ -126,10 +130,7 @@
 			"invoice": null,
 			"last_payment_error": null,
 			"livemode": false,
-			"metadata": {
-				"gst": "144.36",
-				"payment_for": "prepaid_credits"
-			},
+			"metadata": { "gst": "144.36", "payment_for": "prepaid_credits" },
 			"next_action": null,
 			"object": "payment_intent",
 			"on_behalf_of": null,
@@ -158,9 +159,6 @@
 	"livemode": false,
 	"object": "event",
 	"pending_webhooks": 2,
-	"request": {
-		"id": "req_Vw5ippANYMNBSZ",
-		"idempotency_key": null
-	},
+	"request": { "id": "req_Vw5ippANYMNBSZ", "idempotency_key": null },
 	"type": "payment_intent.succeeded"
 }
