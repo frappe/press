@@ -158,12 +158,7 @@ class ClusterRegistryAPI:
 		payload = {"hard": {"storage": storage_limit * (1024**3)}}
 		self._request("PUT", f"quotas/{quota_id}", json=payload)
 
-	def trigger_retention_execution(self, project_name: str):
-		"""Manually trigger a retention policy execution for a project."""
-		retention_id = self.get_retention_id(project_name)
-		self._request("POST", f"retentions/{retention_id}/executions", json={"dry_run": False})
-
-	def trigger_gc(self):
+	def trigger_garbage_collection(self):
 		"""Manually trigger a Garbage Collection job."""
 		payload = {"schedule": {"type": "Manual"}, "parameters": {"delete_untagged": True}}
 		return self._request("POST", "system/gc/schedule", json=payload)

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import typing
+from dataclasses import dataclass
 
 import frappe
 
@@ -215,9 +216,92 @@ class ClusterRegistry(BaseServer):
 		except Exception as e:
 			print(f"Error while creating garbage collection schedule for cluster registry {e}")
 
+	def get_registry_configurations(self):
+		"""Get the configurations required to push images to this registry"""
+		return {
+			"registry_url": f"https://{self.name}/{self.project}",
+			"username": self.user,
+			"password": self.get_password("secret"),
+		}
+
+	@frappe.whitelist()
+	def show_admin_password(self):
+		"""Show the admin password in desk"""
+		return self.get_password("admin_password")
+
+	@frappe.whitelist()
+	def trigger_garbage_collection(self):
+		"""Trigger garbage collection for this cluster registry"""
+		try:
+			self.client().trigger_garbage_collection()
+		except Exception as e:
+			print(f"Error while triggering garbage collection for cluster registry {e}")
+
 	@frappe.whitelist()
 	def setup_project(self):
 		"""Create a project for this cluster registry"""
 		self.create_project()
 		self.create_project_robot()
 		self.create_garbage_collection_schedule()
+
+
+@dataclass
+class RegistrySettings:
+	registry_url: str
+	username: str
+	password: str
+
+
+class DecideDeployRegistry:
+	def __init__(self, build: str):
+		self.build = build
+		self.group = frappe.get_doc(
+			"Release Group", frappe.db.get_value("Deploy Candidate Build", build, "group")
+		)
+
+	@property
+	def is_multi_cluster_deployment(self) -> bool:
+		"""Check if multiple clusters are involved in the deployment"""
+		clusters = set(
+			frappe.db.get_all(
+				"Server", {"name": ("in", [s.server for s in self.group.servers])}, pluck="cluster"
+			)
+		)
+		return len(clusters) > 1
+
+	def get_central_registry_for_multi_cluster_deployment(self) -> RegistrySettings:
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			[
+				"domain",
+				"docker_registry_url",
+				"docker_registry_namespace",
+				"docker_registry_username",
+				"docker_registry_password",
+			],
+			as_dict=True,
+		)
+		if settings.docker_registry_namespace:
+			namespace = f"{settings.docker_registry_namespace}/{settings.domain}"
+		else:
+			namespace = f"{settings.domain}"
+
+		return RegistrySettings(
+			registry_url=f"{settings.docker_registry_url}/{namespace}/{self.group}:{self.build}",
+			username=settings.docker_registry_username,
+			password=settings.docker_registry_password,
+		)
+
+	def decide(self) -> RegistrySettings:
+		"""Decide which cluster registry to use for the deploy based on the release group"""
+		if self.is_multi_cluster_deployment:
+			# For multi-cluster deployments, we use the central deployment registry
+			return self.get_central_registry_for_multi_cluster_deployment()
+
+		# For single cluster deployments, we can directly fetch the registry for that cluster
+		cluster = frappe.get_doc(
+			"Cluster", frappe.db.get_value("Server", self.group.servers[0].server, "cluster")
+		)
+		registry_name = frappe.db.get_value("Cluster", cluster.name, "registry")
+		return frappe.get_doc("Cluster Registry", registry_name)
