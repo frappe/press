@@ -8,7 +8,7 @@ from press.api.account import get_account_request_from_key
 
 
 @frappe.whitelist(allow_guest=True)
-def options_for_regional_data(key):
+def options_for_regional_data(key: str):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")

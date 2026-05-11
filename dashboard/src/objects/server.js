@@ -130,18 +130,6 @@ export default {
 				},
 			};
 		},
-		banner({ listResource: servers }) {
-			if (!servers.data?.length) {
-				return {
-					title: 'Learn how to create a new dedicated server',
-					button: {
-						label: 'Read docs',
-						variant: 'outline',
-						link: 'https://docs.frappe.io/cloud/servers/new',
-					},
-				};
-			}
-		},
 	},
 	detail: {
 		titleField: 'name',
@@ -291,25 +279,6 @@ export default {
 				),
 				props: (server) => {
 					return { serverName: server.doc.name };
-				},
-			},
-			{
-				label: 'Firewall',
-				icon: icon('shield'),
-				condition: (server) => {
-					return (
-						server.doc?.status !== 'Archived' && !server.doc?.is_self_hosted
-					);
-				},
-				route: 'firewall',
-				type: 'Component',
-				component: defineAsyncComponent(
-					() => import('../components/server/ServerFirewall.vue'),
-				),
-				props: (server) => {
-					return {
-						id: server.doc.name,
-					};
 				},
 			},
 			{
@@ -971,6 +940,25 @@ export default {
 					};
 				},
 			},
+			{
+				label: 'Firewall',
+				icon: icon('shield'),
+				condition: (server) => {
+					return (
+						server.doc?.status !== 'Archived' && !server.doc?.is_self_hosted
+					);
+				},
+				route: 'firewall',
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../components/server/ServerFirewall.vue'),
+				),
+				props: (server) => {
+					return {
+						id: server.doc.name,
+					};
+				},
+			},
 			tagTab('Server'),
 			{
 				label: 'Activity',
@@ -1007,7 +995,7 @@ export default {
 						{
 							label: 'Description',
 							fieldname: 'reason',
-							class: 'text-gray-600',
+							class: 'text-ink-gray-6',
 						},
 						{
 							label: '',

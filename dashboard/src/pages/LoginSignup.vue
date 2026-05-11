@@ -296,18 +296,18 @@
 							v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
 						>
 							<div v-if="$route.name === 'Signup'">
-								<span class="text-base font-normal text-gray-600">
+								<span class="text-base font-normal text-ink-gray-6">
 									{{ 'By signing up, you agree to our ' }}
 								</span>
 								<a
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 									href="https://frappecloud.com/policies"
 								>
 									Terms & Policies
 								</a>
 							</div>
 							<div v-if="!(otpRequested || resetPasswordEmailSent)">
-								<span class="text-base font-normal text-gray-600">
+								<span class="text-base font-normal text-ink-gray-6">
 									{{
 										$route.name == 'Login'
 											? 'New member? '
@@ -315,7 +315,7 @@
 									}}
 								</span>
 								<router-link
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 									:to="{
 										name: $route.name == 'Login' ? 'Signup' : 'Login',
 										query: { ...$route.query, forgot: undefined },
@@ -379,18 +379,18 @@
 						</form>
 						<div class="mt-4 space-y-2">
 							<div v-if="$route.name === 'Signup'">
-								<span class="text-base font-normal text-gray-600">
+								<span class="text-base font-normal text-ink-gray-6">
 									{{ 'By signing up, you agree to our ' }}
 								</span>
 								<a
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 									href="https://frappecloud.com/policies"
 								>
 									Terms & Policies
 								</a>
 							</div>
 							<div>
-								<span class="text-base font-normal text-gray-600">
+								<span class="text-base font-normal text-ink-gray-6">
 									{{
 										$route.name == 'Login'
 											? 'New member? '
@@ -398,7 +398,7 @@
 									}}
 								</span>
 								<router-link
-									class="text-base font-normal text-gray-900 underline hover:text-gray-700"
+									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 									:to="{
 										name: $route.name == 'Login' ? 'Signup' : 'Login',
 										query: { ...$route.query, forgot: undefined },
@@ -412,7 +412,7 @@
 						</div>
 					</div>
 					<div
-						class="text-p-base text-gray-700"
+						class="text-p-base text-ink-gray-7"
 						v-else-if="resetPasswordEmailSent"
 					>
 						<p>
@@ -491,7 +491,7 @@ export default {
 						h(CustomToast, {
 							html: `
 							You are not part of an active team<br/>
-							<span class="text-sm text-gray-800">
+							<span class="text-sm text-ink-gray-8">
 								If the issue persists, please contact 
 								<a href="https://support.frappe.io" class="font-medium underline" target="_blank" rel="noopener noreferrer">
 									support.
@@ -822,9 +822,11 @@ export default {
 		},
 		afterLogin(res) {
 			let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
-			// if query param redirect is present, redirect to that route
-			if (this.$route.query.redirect) {
-				loginRoute = this.$route.query.redirect;
+			// If `redirect` is present in query, redirect to that.
+			// Restrict redirect to relative paths.
+			const redirect = this.$route.query.redirect;
+			if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+				loginRoute = redirect;
 			}
 			localStorage.setItem('login_email', this.email);
 			window.location.href = loginRoute;

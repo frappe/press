@@ -3,8 +3,8 @@
 		<div>
 			<div class="flex justify-between border-b pb-4">
 				<div>
-					<h2 class="text-lg font-medium text-gray-900">App Profile</h2>
-					<p class="mt-1 text-sm leading-6 text-gray-600">
+					<h2 class="text-lg font-medium text-ink-gray-9">App Profile</h2>
+					<p class="mt-1 text-sm leading-6 text-ink-gray-6">
 						This information will be displayed publicly on the marketplace. Make
 						sure you enter correct information without any broken links and
 						images.
@@ -163,9 +163,9 @@
 					v-model="marketplaceApp.description"
 				/>
 				<div class="mt-4">
-					<span class="text-xs text-gray-600">Description</span>
+					<span class="text-xs text-ink-gray-6">Description</span>
 					<TextEditor
-						class="mt-1 block w-full rounded border border-gray-100 bg-gray-100 px-2 py-1.5 text-base text-gray-800 placeholder-gray-500 transition-colors hover:border-gray-200 hover:bg-gray-200 focus:border-gray-500 focus:bg-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
+						class="mt-1 block w-full rounded border border-outline-gray-1 bg-surface-gray-2 px-2 py-1.5 text-base text-ink-gray-8 placeholder-gray-500 transition-colors hover:border-outline-gray-1 hover:bg-surface-gray-3 focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 						ref="textEditor"
 						editor-class="rounded-b-lg max-w-[unset] prose-sm pb-[10vh]"
 						:content="marketplaceApp.long_description"
@@ -185,6 +185,7 @@ import { TextEditor } from 'frappe-ui';
 import FileUploader from '@/components/FileUploader.vue';
 import { toast } from 'vue-sonner';
 import { getToastErrorMessage } from '../utils/toast';
+import { confirmDialog } from '../utils/components';
 
 export default {
 	name: 'MarketplaceAppOverview',
@@ -276,24 +277,37 @@ export default {
 				{
 					label: 'Delete',
 					onClick: () => {
-						toast.promise(
-							this.$resources.removeScreenshot.submit({
-								name: this.app.doc.name,
-								file: image,
-							}),
-							{
-								loading: 'Deleting screenshot...',
-								success: () => {
-									this.$resources.listingData.reload();
-									return 'Screenshot deleted successfully';
-								},
-								error: (err) => {
-									return err.messages?.length
-										? err.messages.join('\n')
-										: err.message || 'Failed to delete screenshot';
+						confirmDialog({
+							title: 'Delete Screenshot',
+							message:
+								'Are you sure you want to delete this screenshot? This action cannot be undone.',
+							primaryAction: {
+								label: 'Delete',
+								variant: 'solid',
+								theme: 'red',
+								onClick: ({ hide }) => {
+									return toast.promise(
+										this.$resources.removeScreenshot.submit({
+											name: this.app.doc.name,
+											file: image,
+										}),
+										{
+											loading: 'Deleting screenshot...',
+											success: () => {
+												this.$resources.listingData.reload();
+												hide();
+												return 'Screenshot deleted successfully';
+											},
+											error: (err) => {
+												return err.messages?.length
+													? err.messages.join('\n')
+													: err.message || 'Failed to delete screenshot';
+											},
+										},
+									);
 								},
 							},
-						);
+						});
 					},
 				},
 			];

@@ -1,20 +1,8 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'Add Conversion Date' }">
+	<Dialog v-model="show" :options="{ title: 'Add Won Details' }">
 		<template #body-content>
 			<div class="flex flex-col gap-5">
 				<FormControl
-					v-model="hosting_type"
-					label="Hosting Type"
-					type="select"
-					name="hosting_type"
-					:options="[
-						{ label: 'Self-Hosted', value: 'Self-Hosted' },
-						{ label: 'Frappe Cloud', value: 'Frappe Cloud' },
-					]"
-					:required="true"
-				/>
-				<FormControl
-					v-if="hosting_type == 'Frappe Cloud'"
 					v-model="resource_type"
 					label="Resource Type"
 					type="select"
@@ -27,12 +15,13 @@
 					:required="true"
 				/>
 				<FormControl
-					v-if="resource_type == 'Site' || hosting_type == 'Self-Hosted'"
+					v-if="resource_type == 'Site'"
 					v-model="site_url"
 					label="Site URL"
 					type="data"
 					name="site_url"
 					:required="true"
+					placeholder="e.g. example.m.frappe.cloud"
 				/>
 				<FormControl
 					v-if="resource_type == 'Server'"
@@ -74,7 +63,6 @@ const props = defineProps({
 	},
 });
 
-const hosting_type = ref();
 const site_url = ref();
 const server_name = ref();
 const team_name = ref();
@@ -86,24 +74,16 @@ const updateStatus = createResource({
 		return {
 			lead_name: props.lead_id,
 			status: 'Won',
-			hosting: hosting_type.value,
 			site_url: site_url.value,
 			server_name: server_name.value,
 			team_name: team_name.value,
 		};
 	},
 	validate: () => {
-		if (hosting_type.value === 'Self-Hosted' && site_url.value === undefined) {
-			let error = 'Please fill all the required fields';
-			errorMessage.value = error;
-			throw new DashboardError(error);
-		}
-
 		if (
-			hosting_type.value === undefined &&
-			(site_url.value === undefined ||
-				server_name.value === undefined ||
-				team_name.value === undefined)
+			site_url.value === undefined ||
+			server_name.value === undefined ||
+			team_name.value === undefined
 		) {
 			let error = 'Please fill all the required fields';
 			errorMessage.value = error;
@@ -114,8 +94,8 @@ const updateStatus = createResource({
 		emit('update');
 		show.value = false;
 	},
-	onError: () => {
-		errorMessage.value = 'Failed to update lead as won';
+	onError: (e) => {
+		errorMessage.value = e.messages[0] || 'Failed to update lead as won';
 	},
 });
 

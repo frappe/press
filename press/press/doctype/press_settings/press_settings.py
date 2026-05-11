@@ -36,6 +36,7 @@ class PressSettings(Document):
 		asset_store_region: DF.Data | None
 		asset_store_secret_access_key: DF.Password | None
 		auto_update_queue_size: DF.Int
+		auto_upgrade_dependencies: DF.Check
 		autoscale_discount: DF.Float
 		aws_access_key_id: DF.Data | None
 		aws_s3_bucket: DF.Data | None
@@ -51,6 +52,59 @@ class PressSettings(Document):
 		build_server: DF.Link | None
 		central_migration_server: DF.Link | None
 		certbot_directory: DF.Data
+		chat_base_url: DF.Data | None
+		chat_support_end_time: DF.Literal[
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10",
+			"11",
+			"12",
+			"13",
+			"14",
+			"15",
+			"16",
+			"17",
+			"18",
+			"19",
+			"20",
+			"21",
+			"22",
+			"23",
+			"24",
+		]
+		chat_support_start_time: DF.Literal[
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10",
+			"11",
+			"12",
+			"13",
+			"14",
+			"15",
+			"16",
+			"17",
+			"18",
+			"19",
+			"20",
+			"21",
+			"22",
+			"23",
+		]
+		chat_website_token: DF.Data | None
 		clone_directory: DF.Data | None
 		cluster: DF.Link | None
 		code_server: DF.Data | None
@@ -81,6 +135,7 @@ class PressSettings(Document):
 		eff_registration_email: DF.Data
 		email_recipients: DF.SmallText | None
 		enable_app_grouping: DF.Check
+		enable_chat: DF.Check
 		enable_email_pre_verification: DF.Check
 		enable_google_oauth: DF.Check
 		enable_server_snapshot_recovery: DF.Check
@@ -123,6 +178,7 @@ class PressSettings(Document):
 		minimum_rebuild_memory: DF.Int
 		monitor_server: DF.Link | None
 		monitor_token: DF.Data | None
+		new_bench_concurrency_limit: DF.Int
 		ngrok_auth_token: DF.Data | None
 		npo_discount: DF.Float
 		offsite_backups_access_key_id: DF.Data | None
@@ -138,12 +194,14 @@ class PressSettings(Document):
 		press_monitoring_password: DF.Password | None
 		press_trial_plan: DF.Link | None
 		print_format: DF.Data | None
+		production_server_ip: DF.Data | None
 		publish_docs: DF.Check
 		razorpay_key_id: DF.Data | None
 		razorpay_key_secret: DF.Password | None
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		redis_cache_size: DF.Int
+		region_name: DF.Data | None
 		remote_access_key_id: DF.Data | None
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None
@@ -158,7 +216,6 @@ class PressSettings(Document):
 		servers_using_alternative_http_port_for_communication: DF.SmallText | None
 		set_redis_password: DF.Check
 		shared_directory: DF.Data | None
-		spaces_domain: DF.Link | None
 		spamd_api_key: DF.Data | None
 		spamd_api_secret: DF.Password | None
 		spamd_endpoint: DF.Data | None
@@ -192,6 +249,7 @@ class PressSettings(Document):
 		use_app_cache: DF.Check
 		use_asset_store: DF.Check
 		use_delta_builds: DF.Check
+		use_new_deploy_flow: DF.Check
 		use_staging_ca: DF.Check
 		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
 		wazuh_server: DF.Data | None
@@ -235,6 +293,7 @@ class PressSettings(Document):
 				"payment_method.attached",
 				"invoice.payment_action_required",
 				"invoice.payment_succeeded",
+				"invoice.paid",
 				"invoice.payment_failed",
 				"invoice.finalized",
 				"mandate.updated",

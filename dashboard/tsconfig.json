@@ -13,7 +13,10 @@
 		"esModuleInterop": true,
 		"lib": ["ESNext", "DOM"],
 		"skipLibCheck": true,
-		"types": ["unplugin-icons/types/vue"]
+		"types": ["unplugin-icons/types/vue"],
+		"paths": {
+			"@/*": ["./src/*"]
+		}
 	},
 	"include": ["**/*.ts", "**/*.d.ts"]
 }

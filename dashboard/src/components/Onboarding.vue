@@ -9,9 +9,9 @@
 				more.
 			</p>
 		</div>
-		<p class="mt-6 text-base text-gray-800">
-			Complete the steps below to unlock sites, benches, dedicated servers
-			and more.
+		<p class="mt-6 text-base text-ink-gray-8">
+			Complete the steps below to unlock sites, benches, dedicated servers and
+			more.
 		</p>
 		<div class="mt-6 space-y-6">
 			<div class="rounded-md">
@@ -47,13 +47,13 @@
 					</div>
 				</div>
 				<div class="mt-2 pl-7" v-if="pendingSiteRequest.status == 'Error'">
-					<p class="mt-2 text-p-base text-gray-800">
+					<p class="mt-2 text-p-base text-ink-gray-8">
 						Please contact Frappe Cloud support by clicking on the button below.
 					</p>
 					<Button class="mt-2" link="/support"> Contact Support </Button>
 				</div>
 				<div class="mt-2 pl-7" v-else>
-					<p class="mt-2 text-p-base text-gray-800">
+					<p class="mt-2 text-p-base text-ink-gray-8">
 						You can try out the {{ pendingSiteRequest.title }} app for free by
 						clicking on the button below.
 					</p>
@@ -93,10 +93,10 @@
 							target="_blank"
 						>
 							https://{{ trialSite.host_name || trialSite.name }}
-							<lucide-external-link class="ml-1 h-3.5 w-3.5 text-gray-800" />
+							<lucide-external-link class="ml-1 h-3.5 w-3.5 text-ink-gray-8" />
 						</a>
 					</div>
-					<p class="mt-2 text-p-base text-gray-800">
+					<p class="mt-2 text-p-base text-ink-gray-8">
 						Your trial is set to expire on
 						<span class="font-medium">
 							{{ $format.date(trialSite.trial_end_date, 'LL') }} </span
@@ -110,11 +110,63 @@
 					<div class="text-base font-medium">Create your first site</div>
 				</div>
 
-				<Button class="ml-7 mt-4" :route="{ name: 'SignupAppSelector' }">
+				<Button
+					class="ml-7 mt-4"
+					:route="{ name: 'SignupAppSelector' }"
+					variant="solid"
+				>
 					Create
 				</Button>
 			</div>
-			<!-- Step 3 - Update Billing Details -->
+			<!-- Step 3 - Complete Billing Setup -->
+			<div
+				class="rounded-md"
+				:class="{
+					'pointer-events-none opacity-50': !$team.doc.onboarding.site_created,
+				}"
+			>
+				<div v-if="!isBillingSetupComplete">
+					<div class="flex items-center space-x-2">
+						<TextInsideCircle>3</TextInsideCircle>
+						<span class="text-base font-medium"> Complete billing setup </span>
+					</div>
+					<div class="pl-7 mt-2" v-if="$team.doc.onboarding.site_created && trialSite">
+						<p class="text-p-base text-ink-gray-8">
+							Add your billing details and payment method to activate your
+							subscription.You won't be charged until your trial ends on
+							<span class="font-medium">
+								{{ $format.date(trialSite.trial_end_date, 'LL') }}
+							</span>
+						</p>
+						<Button class="mt-3" route="/billing"> Complete setup </Button>
+					</div>
+				</div>
+				<div v-else>
+					<div class="flex items-center justify-between space-x-2">
+						<div class="flex items-center space-x-2">
+							<TextInsideCircle>3</TextInsideCircle>
+							<span class="text-base font-medium">
+								Billing setup complete
+							</span>
+						</div>
+						<div
+							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
+						>
+							<lucide-check class="h-3 w-3 text-white" />
+						</div>
+					</div>
+					<div class="mt-1.5 pl-7 text-p-base text-ink-gray-8">
+						<span v-if="$team.doc.payment_mode === 'Card'">
+							Automatic billing is enabled
+						</span>
+						<span v-else-if="$team.doc.payment_mode === 'Prepaid Credits'">
+							Account balance: {{ $format.userCurrency($team.doc.balance) }}
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Commented out - now using single step with redirect to billing page
 			<div
 				class="rounded-md"
 				:class="{
@@ -146,7 +198,6 @@
 					</div>
 				</div>
 			</div>
-			<!-- Step 4 - Add Payment Method -->
 			<div
 				class="rounded-md"
 				:class="{ 'pointer-events-none opacity-50': !isBillingDetailsSet }"
@@ -158,14 +209,13 @@
 					</div>
 
 					<div class="mt-4 pl-7" v-if="isBillingDetailsSet">
-						<!-- Payment Method Selector -->
 						<div
-							class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
+							class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
 						>
 							<div
 								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 								:class="{
-									'bg-gray-100': isAutomatedBilling,
+									'bg-surface-gray-2': isAutomatedBilling,
 								}"
 								@click="isAutomatedBilling = true"
 							>
@@ -174,7 +224,7 @@
 							<div
 								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 								:class="{
-									'bg-gray-100': !isAutomatedBilling,
+									'bg-surface-gray-2': !isAutomatedBilling,
 								}"
 								@click="isAutomatedBilling = false"
 							>
@@ -183,15 +233,12 @@
 						</div>
 
 						<div class="mt-2 w-full">
-							<!-- Automated Billing Section -->
 							<div v-if="isAutomatedBilling">
-								<!-- Stripe Card -->
 								<CardForm
 									@success="onAddCardSuccess"
 									:disableAddressForm="true"
 								/>
 							</div>
-							<!-- Purchase Prepaid Credit -->
 							<div v-else class="mt-3">
 								<BuyPrepaidCreditsForm
 									:isOnboarding="true"
@@ -202,7 +249,6 @@
 						</div>
 					</div>
 				</div>
-				<!-- Payment Method Added -->
 				<div v-else>
 					<div class="flex items-center justify-between space-x-2">
 						<div class="flex items-center space-x-2">
@@ -227,13 +273,14 @@
 						</div>
 					</div>
 					<div
-						class="mt-1.5 pl-7 text-p-base text-gray-800"
+						class="mt-1.5 pl-7 text-p-base text-ink-gray-8"
 						v-if="$team.doc.payment_mode === 'Prepaid Credits'"
 					>
 						Account balance: {{ $format.userCurrency($team.doc.balance) }}
 					</div>
 				</div>
 			</div>
+			-->
 		</div>
 	</div>
 </template>
@@ -289,6 +336,9 @@ export default {
 	computed: {
 		isBillingDetailsSet() {
 			return Boolean(this.$team.doc.billing_details?.name);
+		},
+		isBillingSetupComplete() {
+			return this.isBillingDetailsSet && Boolean(this.$team.doc.payment_mode);
 		},
 		minimumAmount() {
 			return this.$team.doc.currency == 'INR' ? 100 : 5;

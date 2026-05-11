@@ -1,5 +1,5 @@
 <template>
-	<Header class="sticky top-0 z-10 bg-white">
+	<Header class="sticky top-0 z-10 bg-surface-white">
 		<div class="flex items-center space-x-2">
 			<Breadcrumbs :items="[{ label: 'Settings', route: '/settings' }]" />
 		</div>
@@ -30,19 +30,21 @@ import { icon } from '../utils/components';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 import { getTeam } from '../data/team';
 import { session } from '../data/session';
+import { useUserStore } from '../stores/user';
 
+const user = useUserStore();
 let $team = getTeam();
 let $session = session || {};
 
 const tabs = [
 	{
 		label: 'Profile',
-		icon: icon('user'),
+		icon: LucideUser,
 		routeName: 'SettingsProfile',
 	},
 	{
 		label: 'Team',
-		icon: icon('users'),
+		icon: LucideUsers,
 		routeName: 'SettingsTeam',
 		condition: () =>
 			$team.doc?.user === $session.user ||
@@ -50,8 +52,14 @@ const tabs = [
 			$session.isSystemUser,
 	},
 	{
+		label: 'Team (Beta)',
+		icon: LucideUsers,
+		routeName: 'SettingsTeamBeta',
+		condition: () => user.isBetaTester,
+	},
+	{
 		label: 'Roles',
-		icon: icon('lock'),
+		icon: LucideLock,
 		routeName: 'SettingsPermission',
 		childrenRoutes: [
 			'SettingsPermissionRoles',
@@ -64,8 +72,21 @@ const tabs = [
 	},
 	{
 		label: 'Developer',
-		icon: icon('code'),
+		icon: LucideCode,
 		routeName: 'SettingsDeveloper',
+	},
+
+	{
+		label: 'Partner Admin',
+		icon: LucideShield,
+		routeName: 'SettingsPartnerAdmin',
+		condition: () => Boolean($team.doc.is_desk_user),
+		childrenRoutes: [
+			'PartnerList',
+			'CertificateList',
+			'PartnerAdminLeads',
+			'PartnerAdminResources',
+		],
 	},
 ];
 </script>

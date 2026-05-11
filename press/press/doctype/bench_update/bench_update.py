@@ -26,7 +26,6 @@ class BenchUpdate(Document):
 
 		from press.press.doctype.bench_site_update.bench_site_update import BenchSiteUpdate
 		from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
-		from press.press.doctype.release_group.release_group import ReleaseGroup
 
 		apps: DF.Table[BenchUpdateApp]
 		bench: DF.Link | None
@@ -85,10 +84,21 @@ class BenchUpdate(Document):
 				frappe.ValidationError,
 			)
 
-	def deploy(self, run_will_fail_check=False) -> str:
+	def deploy(
+		self,
+		run_will_fail_check=False,
+		validate_pre_candidate_checks: bool = True,
+		create_build: bool = True,
+		ignore_permissions: bool = False,
+	) -> str:
+		"""Creates and returns candidate name or build name depending on the point of invocation."""
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		candidate = rg.create_deploy_candidate(self.apps, run_will_fail_check)
-		deploy = candidate.schedule_build_and_deploy()
+		candidate = rg.create_deploy_candidate(
+			apps_to_update=self.apps,
+			run_will_fail_check=run_will_fail_check,
+			validate_pre_candidate_checks=validate_pre_candidate_checks,
+			ignore_permissions=ignore_permissions,
+		)
 
 		self.candidate = candidate.name
 		self.save()
@@ -97,6 +107,12 @@ class BenchUpdate(Document):
 			raise Exception(
 				f"Invalid name found for deploy candidate '{candidate.name}' of type {type(candidate.name)}"
 			)
+
+		if not create_build:
+			# In case we are not scheduling build from here (eg. new build flow) return candidate name here
+			return candidate.name
+
+		deploy = candidate.schedule_build_and_deploy(ignore_permissions=ignore_permissions)
 
 		return deploy["name"]
 
@@ -109,7 +125,7 @@ class BenchUpdate(Document):
 
 		return bench.update_inplace(self.apps, sites)
 
-	def update_sites_on_server(self, bench, server):
+	def update_sites_on_server(self, bench, server):  # noqa: C901
 		# This method gets called multiple times concurrently when a new candidate is deployed
 		# Avoid saving the doc to avoid TimestampMismatchError
 		if frappe.get_value("Bench", bench, "status") != "Active":
@@ -137,6 +153,12 @@ class BenchUpdate(Document):
 						limit=1,
 					):
 						continue
+
+					if frappe.db.get_value("Site", row.site, "fatal_site_update"):
+						frappe.db.set_value("Bench Site Update", row.name, "status", "Failure")
+						frappe.db.commit()
+						continue
+
 					site_update = frappe.get_doc("Site", row.site).schedule_update(
 						skip_failing_patches=row.skip_failing_patches, skip_backups=row.skip_backups
 					)
@@ -157,17 +179,19 @@ class BenchUpdate(Document):
 def get_bench_update(
 	name: str,
 	apps: list,
-	sites: str | list[str] | None = None,
+	sites: list | None = None,
 	is_inplace_update: bool = False,
+	ignore_permissions: bool = False,
 ) -> BenchUpdate:
 	if sites is None:
 		sites = []
 
-	current_team = get_current_team()
-	rg_team = frappe.db.get_value("Release Group", name, "team")
+	if not ignore_permissions:
+		current_team = get_current_team()
+		rg_team = frappe.db.get_value("Release Group", name, "team")
 
-	if rg_team != current_team:
-		frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
+		if rg_team != current_team:
+			frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
 
 	bench_update: "BenchUpdate" = frappe.get_doc(
 		{
@@ -187,4 +211,5 @@ def get_bench_update(
 			"is_inplace_update": is_inplace_update,
 		}
 	).insert(ignore_permissions=True)
+
 	return bench_update

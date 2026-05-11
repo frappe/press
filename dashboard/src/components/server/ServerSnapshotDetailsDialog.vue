@@ -5,30 +5,30 @@
 				<!-- Meta -->
 				<div class="flex flex-row justify-between">
 					<div>
-						<p class="text-xs text-gray-600">Status</p>
-						<p class="mt-2 text-sm text-gray-700">
+						<p class="text-xs text-ink-gray-6">Status</p>
+						<p class="mt-2 text-sm text-ink-gray-7">
 							{{ snapshot?.status }}
 						</p>
 					</div>
 					<div>
-						<p class="text-xs text-gray-600">Progress</p>
-						<p class="mt-2 text-sm text-gray-700">{{ snapshot?.progress }}%</p>
+						<p class="text-xs text-ink-gray-6">Progress</p>
+						<p class="mt-2 text-sm text-ink-gray-7">{{ snapshot?.progress }}%</p>
 					</div>
 					<div>
-						<p class="text-xs text-gray-600">Mode</p>
-						<p class="mt-2 text-sm text-gray-700">
+						<p class="text-xs text-ink-gray-6">Mode</p>
+						<p class="mt-2 text-sm text-ink-gray-7">
 							{{ snapshot.consistent ? 'Consistent' : 'Inconsistent' }}
 						</p>
 					</div>
 					<div>
-						<p class="text-xs text-gray-600">Cost</p>
-						<p class="mt-2 text-sm text-gray-700">
+						<p class="text-xs text-ink-gray-6">Cost</p>
+						<p class="mt-2 text-sm text-ink-gray-7">
 							{{ snapshot?.free ? 'Free' : 'Chargable' }}
 						</p>
 					</div>
 					<div>
-						<p class="text-xs text-gray-600">Size</p>
-						<p class="mt-2 text-sm text-gray-700">
+						<p class="text-xs text-ink-gray-6">Size</p>
+						<p class="mt-2 text-sm text-ink-gray-7">
 							{{
 								snapshot?.total_size_gb ? `${snapshot.total_size_gb} GB` : '--'
 							}}
@@ -36,20 +36,20 @@
 					</div>
 				</div>
 				<!-- Server -->
-				<div class="overflow-hidden rounded-md border border-gray-300">
+				<div class="overflow-hidden rounded-md border border-outline-gray-2">
 					<table class="min-w-full">
 						<thead class="bg-surface-gray-2">
 							<tr>
 								<th
-									class="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b"
+									class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
 								></th>
 								<th
-									class="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b"
+									class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
 								>
 									App Server
 								</th>
 								<th
-									class="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b"
+									class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
 								>
 									Database Server
 								</th>
@@ -118,7 +118,7 @@
 						</Button>
 
 						<div class="flex flex-row items-center gap-1">
-							<p class="text-sm font-medium text-gray-800">
+							<p class="text-sm font-medium text-ink-gray-8">
 								{{ sites.length }} Site{{ sites.length > 1 ? 's' : '' }}
 								Recoverable
 							</p>
@@ -128,7 +128,7 @@
 					<div class="flex flex-col mt-2 px-2 gap-1.5" v-if="showSiteList">
 						<span
 							v-for="site in snapshot?.site_list_json ?? []"
-							class="text-sm text-gray-800"
+							class="text-sm text-ink-gray-8"
 						>
 							-> {{ site }}
 						</span>
@@ -198,7 +198,7 @@ export default {
 
 <style scoped>
 td {
-	@apply px-4 py-2 border-b text-sm text-gray-800;
+	@apply px-4 py-2 border-b text-sm text-ink-gray-8;
 }
 
 tbody tr:last-child td {

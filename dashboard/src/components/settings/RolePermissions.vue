@@ -54,7 +54,10 @@
 				</div>
 			</div>
 		</div>
-		<div class="space-y-2">
+		<div
+			v-if="team?.doc?.erpnext_partner || team?.doc?.is_desk_user"
+			class="space-y-2"
+		>
 			<div class="font-medium">Partner</div>
 			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsPartner">
@@ -77,6 +80,8 @@
 
 <script setup lang="ts">
 import { Switch } from 'frappe-ui';
+import { inject } from 'vue';
+const team = inject('team');
 
 const props = withDefaults(
 	defineProps<{

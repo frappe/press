@@ -14,13 +14,13 @@
 				</p>
 			</div>
 			<div class="space-y-3">
-				<h2 class="text-sm font-semibold tracking-wide text-gray-700">
+				<h2 class="text-sm font-semibold tracking-wide text-ink-gray-7">
 					Features
 				</h2>
 				<ul class="space-y-2">
 					<li v-for="f in features" :key="f" class="flex items-center gap-2">
 						<GreenCheckIcon class="h-4 w-4 shrink-0" />
-						<span class="text-sm text-gray-700">{{ f }}</span>
+						<span class="text-sm text-ink-gray-7">{{ f }}</span>
 					</li>
 				</ul>
 				<div>
@@ -32,7 +32,7 @@
 					>
 				</div>
 				<div v-if="!onboardingComplete" class="pt-2">
-					<p class="text-sm text-gray-700">
+					<p class="text-sm text-ink-gray-7">
 						Finish onboarding to start using Servers.
 					</p>
 					<Button

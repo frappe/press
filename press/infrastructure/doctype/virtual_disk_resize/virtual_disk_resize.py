@@ -14,6 +14,7 @@ from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.virtual_machine.virtual_machine import SERIES_TO_SERVER_TYPE
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -690,8 +691,10 @@ class VirtualDiskResize(Document):
 		return None
 
 	def ansible_run(self, command):
-		virtual_machine_ip = frappe.db.get_value("Virtual Machine", self.virtual_machine, "public_ip_address")
-		inventory = f"{virtual_machine_ip},"
+		vm_series = frappe.db.get_value("Virtual Machine", self.virtual_machine, "series")
+		server_type = SERIES_TO_SERVER_TYPE.get(vm_series)
+		server_name = frappe.db.get_value(server_type, {"virtual_machine": self.virtual_machine}, "name")
+		inventory = f"{server_name},"
 		result = AnsibleAdHoc(sources=inventory).run(command, self.name, raw_params=True)[0]
 		self.add_command(command, result)
 		return result

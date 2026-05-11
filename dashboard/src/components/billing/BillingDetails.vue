@@ -9,14 +9,15 @@
 		/>
 		<NewAddressForm
 			ref="addressFormRef"
-			v-model="billingInformation"
+			:model-value="billingInformation"
+			@update:model-value="Object.assign(billingInformation, $event)"
 			@success="() => emit('success')"
 		/>
 		<ErrorMessage class="mt-2" :message="errorMessage" />
 	</div>
-	<div v-if="addressFormRef" class="mt-6 flex justify-between gap-2">
-		<Button @click="$emit('back')">Back</Button>
+	<div v-if="addressFormRef" class="mt-6">
 		<Button
+			class="w-full"
 			variant="solid"
 			label="Update billing details"
 			:loading="addressFormRef.updateBillingInformation.loading"
@@ -29,7 +30,7 @@ import NewAddressForm from './NewAddressForm.vue';
 import { FormControl, ErrorMessage, Button, createResource } from 'frappe-ui';
 import { reactive, ref, inject } from 'vue';
 
-const emit = defineEmits(['success', 'back']);
+const emit = defineEmits(['success']);
 
 const team = inject('team');
 

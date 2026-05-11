@@ -67,7 +67,7 @@ type Team struct {
 }
 
 func GetSession() Session {
-	defaultServer := "frappecloud.com"
+	defaultServer := "cloud.frappe.io"
 
 	// Check if session file exists
 	if fileExists(sessionFile) {

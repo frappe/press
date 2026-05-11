@@ -453,7 +453,7 @@ export default {
 													default: () => {
 														return h('pre', {
 															class:
-																'whitespace-pre-wrap text-sm rounded border-2 p-3 border-gray-200 bg-gray-100',
+																'whitespace-pre-wrap text-sm rounded border-2 p-3 border-outline-gray-1 bg-surface-gray-2',
 															innerHTML: site.doc.broken_domain_error,
 														});
 													},
@@ -781,7 +781,7 @@ export default {
 									site.doc?.host_name || site.doc?.name
 								}</b> that was created on ${date(backup.creation, 'llll')}.${
 									!backup.offsite
-										? '<br><br><div class="p-2 bg-gray-100 rounded border-gray-200">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
+										? '<br><br><div class="p-2 bg-surface-gray-2 rounded border-outline-gray-1">You have to be logged in as a <b>System Manager</b> <em>in your site</em> to download the backup.<div>'
 										: ''
 								}`,
 								onSuccess({ hide }) {
@@ -1215,6 +1215,8 @@ export default {
 				},
 				childrenRoutes: ['Site Migration'],
 				list: {
+					documentation:
+						'https://docs.frappe.io/cloud/site/site-migrations/introduction-to-site-migration',
 					doctype: 'Site Action',
 					filters: (site) => {
 						return { site: site.doc?.name };
@@ -1614,7 +1616,7 @@ export default {
 						{
 							label: 'Description',
 							fieldname: 'reason',
-							class: 'text-gray-600',
+							class: 'text-ink-gray-6',
 						},
 						{
 							label: '',
@@ -1739,9 +1741,14 @@ export default {
 					label: 'Impersonate Site Owner',
 					title: 'Impersonate Site Owner', // for label to pop-up on hover
 					slots: {
-						icon: defineAsyncComponent(
-							() => import('~icons/lucide/venetian-mask'),
-						),
+						icon: defineAsyncComponent(async () => {
+							const mod = await import('~icons/lucide/venetian-mask');
+							return {
+								render() {
+									return h(mod.default, { class: 'w-5 h-5' });
+								},
+							};
+						}),
 					},
 					condition: () =>
 						$team.doc?.is_desk_user && site.doc.team !== $team.name,

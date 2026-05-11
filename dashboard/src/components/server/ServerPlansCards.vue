@@ -33,6 +33,7 @@ export default {
 			return this.plans.map((plan) => {
 				return {
 					...plan,
+					sublabel: plan.description || null,
 					features: [
 						{
 							label: 'vCPUs',

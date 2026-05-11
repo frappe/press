@@ -671,7 +671,12 @@ def send_suspend_mail(site_name: str, product_name: str) -> None:
 		"product": product,
 	}
 	message = frappe.render_template(product.suspension_email_content, context)
-	args.update({"message": message})
+	args.update(
+		{
+			"message": message,
+			"preview_text": f"Your {product.title} site has expired. Please update your billing to activate your site.",
+		}
+	)
 	frappe.sendmail(
 		sender=sender,
 		recipients=recipient,

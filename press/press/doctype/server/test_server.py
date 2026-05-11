@@ -11,6 +11,7 @@ from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 from moto import mock_aws
 
+from press.agent import Agent
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
@@ -73,6 +74,8 @@ def create_test_server(
 			"team": team,
 			"plan": plan,
 			"public": public,
+			"use_for_new_sites": 1 if public else 0,
+			"user_new_benches": 1 if public else 0,
 			"virtual_machine": create_test_virtual_machine(
 				platform=plan_doc.platform if plan_doc else "x86_64",
 				disk_size=plan_doc.disk if plan_doc else 25,
@@ -265,3 +268,118 @@ class TestServer(FrappeTestCase):
 		group2.reload()
 		# Assert server removed from group2
 		self.assertFalse(any(s.server == server.name for s in group2.servers))
+
+	@patch.object(BaseServer, "_archive", new=Mock())
+	@patch.object(BaseServer, "disable_subscription", new=Mock())
+	def test_release_group_modifications_on_archival(self):
+		server = create_test_server()
+		other_servers = create_test_server()
+		one_more_server = create_test_server()
+		apps = [create_test_app()]
+		group1 = create_test_release_group(apps, public=True, servers=[server.name])
+		group2 = create_test_release_group(apps, public=True, servers=[server.name, other_servers.name])
+		group3 = create_test_release_group(
+			apps, public=True, servers=[server.name, other_servers.name, one_more_server.name]
+		)
+
+		# Test the archival of this server
+		server.archive()
+
+		# Reload groups
+		group1.reload()
+		group2.reload()
+		group3.reload()
+
+		# Test only group with that one server is disbled, others remain enabled
+		self.assertEqual(group1.enabled, 0)
+		self.assertEqual(group2.enabled, 1)
+		self.assertEqual(group3.enabled, 1)
+
+		# Test the server is removed from all groups that had more than one server
+		self.assertListEqual([s.server for s in group2.servers], [other_servers.name])
+		self.assertListEqual([s.server for s in group3.servers], [other_servers.name, one_more_server.name])
+
+	@patch.object(Agent, "get", return_value={"benches": ["bench1", "bench2"]})
+	def test_process_running_benches_on_server(self, mock_get):
+		from press.press.doctype.server.server import _process_running_benches_on_server
+
+		server = create_test_server()
+		bench_1 = create_test_bench(server=server.name)
+		bench_2 = create_test_bench(server=server.name)
+
+		frappe.db.set_value("Bench", bench_1.name, "name", "bench1")
+		frappe.db.set_value("Bench", bench_2.name, "name", "bench2")
+
+		_process_running_benches_on_server(server.name)
+		mock_get.assert_called_once_with("/server/running-benches")
+
+		agent_job_created = frappe.get_all(
+			"Agent Job", {"server": server.name, "job_type": "Force Remove Zombie Benches"}, pluck="name"
+		)
+		self.assertEqual(
+			len(agent_job_created), 0
+		)  # Benches not marked as archived, so no agent job should be created
+
+		frappe.db.set_value("Bench", "bench1", "status", "Archived")
+		frappe.db.set_value("Bench", "bench2", "status", "Archived")
+
+		_process_running_benches_on_server(server.name)
+		mock_get.assert_called_with("/server/running-benches")
+
+		agent_job_created = frappe.get_all(
+			"Agent Job", {"server": server.name, "job_type": "Force Remove Zombie Benches"}, ["name", "data"]
+		)
+		self.assertEqual(
+			len(agent_job_created), 1
+		)  # Benches marked as archived, so agent job should be created to force remove zombie benches
+
+	def test_server_with_more_memory_is_shortlisted_for_new_benches_and_incident_created_against_shortlisted_server_with_insufficient_memory(
+		self,
+	):
+		"""The server with higher available memory must be selected (use_for_new_benches=1)."""
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.incident.incident import Incident
+		from press.press.doctype.server.server import _refresh_bench_pool_and_raise_capacity_incidents
+
+		self.cluster = create_test_cluster("Default", public=True)
+		# Two servers in the same cluster with different memory levels
+		self.low_mem_server = create_test_server(cluster=self.cluster.name, public=True)
+		self.high_mem_server = create_test_server(cluster=self.cluster.name, public=True)
+
+		memory_map = {
+			self.low_mem_server.name: 200 * 1024 * 1024,  # 200 MiB
+			self.high_mem_server.name: 500 * 1024 * 1024,  # 500 MiB
+		}
+
+		_refresh_bench_pool_and_raise_capacity_incidents(
+			server_names=[self.low_mem_server.name, self.high_mem_server.name],
+			servers_by_cluster={self.cluster.name: [self.low_mem_server.name, self.high_mem_server.name]},
+			memory_map=memory_map,
+		)
+
+		self.assertEqual(frappe.db.get_value("Server", self.high_mem_server.name, "use_for_new_benches"), 1)
+		self.assertEqual(frappe.db.get_value("Server", self.low_mem_server.name, "use_for_new_benches"), 0)
+
+		# Set both servers below threshold; high_mem_server is still the best candidate
+		memory_map = {
+			self.low_mem_server.name: 50 * 1024 * 1024,  # 50 MiB
+			self.high_mem_server.name: 100 * 1024 * 1024,  # 100 MiB — best, but still < 300 MiB
+		}
+
+		with patch.object(Incident, "after_insert", new=Mock()):
+			_refresh_bench_pool_and_raise_capacity_incidents(
+				server_names=[self.low_mem_server.name, self.high_mem_server.name],
+				servers_by_cluster={self.cluster.name: [self.low_mem_server.name, self.high_mem_server.name]},
+				memory_map=memory_map,
+			)
+
+		incidents = frappe.get_all(
+			"Incident",
+			{
+				"cluster": self.cluster.name,
+				"subject": f"Insufficient bench capacity in cluster {self.cluster.name}",
+			},
+			["name", "server"],
+		)
+		self.assertEqual(len(incidents), 1)
+		self.assertEqual(incidents[0].server, self.high_mem_server.name)

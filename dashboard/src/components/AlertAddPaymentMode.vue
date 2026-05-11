@@ -1,8 +1,7 @@
 <template>
 	<AlertBanner
 		:title="
-			title ??
-			'Add a payment mode to start creating sites, benches, and more.'
+			title ?? 'Add a payment mode to start creating sites, benches, and more.'
 		"
 		:type="type ?? 'warning'"
 	>
@@ -26,7 +25,7 @@ export default {
 			this.$team.reload();
 
 			this.$router.push({
-				name: 'Welcome',
+				name: 'BillingOverview',
 			});
 		},
 	},

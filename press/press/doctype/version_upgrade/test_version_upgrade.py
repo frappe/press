@@ -81,6 +81,30 @@ class TestVersionUpgrade(FrappeTestCase):
 		site_updates_after = frappe.db.count("Site Update", {"site": site.name})
 		self.assertEqual(site_updates_before + 1, site_updates_after)
 
+	def test_version_upgrade_creation_throws_when_destination_is_not_on_site_server(self):
+		server1 = create_test_server()
+		server2 = create_test_server()
+		app1 = create_test_app()  # frappe
+
+		group1 = create_test_release_group([app1])
+		group2 = create_test_release_group([app1])
+
+		source_bench = create_test_bench(group=group1, server=server1.name)
+		create_test_bench(group=group2, server=server2.name)
+
+		site = create_test_site(bench=source_bench.name)
+
+		group2.append("servers", {"server": server2.name})
+		group2.save()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			f"Destination Group {group2.name} is not deployed on the site server {server1.name}.",
+			create_test_version_upgrade,
+			site.name,
+			group2.name,
+		)
+
 	def test_run_scheduled_upgrades_cancels_upgrade_when_site_is_archived(self):
 		"""Test that scheduled upgrades are cancelled when site is archived and start() is not called."""
 		server = create_test_server()

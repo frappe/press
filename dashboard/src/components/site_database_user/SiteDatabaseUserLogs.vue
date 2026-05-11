@@ -64,7 +64,7 @@
 				<div class="mt-5">
 					<div
 						v-if="this.$resources.logs.loading"
-						class="flex h-[14.5rem] w-full items-center justify-center gap-2 py-20 text-base text-gray-700"
+						class="flex h-[14.5rem] w-full items-center justify-center gap-2 py-20 text-base text-ink-gray-7"
 					>
 						<Spinner class="w-4" /> Fetching logs...
 					</div>
@@ -76,7 +76,7 @@
 							:isTruncateText="true"
 							:truncateLength="70"
 						/>
-						<p class="mt-2 text-sm text-gray-700">
+						<p class="mt-2 text-sm text-ink-gray-7">
 							<span class="font-semibold">NOTE :</span> Search result will show
 							max 500 logs.
 						</p>

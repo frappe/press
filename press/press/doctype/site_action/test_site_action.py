@@ -70,13 +70,13 @@ class TestSiteAction(FrappeTestCase):
 		source_site: Site = create_test_site(bench=source_bench.name)
 
 		action_name = source_site.create_migration_plan(
-			type="Move From Shared To Private Bench",
+			type="Move Site To Different Server / Bench",
 			new_group_name="Test Private Group",
 		)
 
 		action: SiteAction = frappe.get_doc("Site Action", action_name)
 
-		self.assertEqual(action.action_type, "Move From Shared To Private Bench")
+		self.assertEqual(action.action_type, "Move Site To Different Server / Bench")
 		self.assertEqual(action.site, source_site.name)
 		self.assertEqual(action.status, "Scheduled")
 		self.assertTrue(len(action.steps) > 0)
@@ -90,7 +90,7 @@ class TestSiteAction(FrappeTestCase):
 		source_site: Site = create_test_site(bench=source_bench.name)
 
 		action_name = source_site.create_migration_plan(
-			type="Move From Shared To Private Bench",
+			type="Move Site To Different Server / Bench",
 			new_group_name="Test Private Group",
 		)
 
@@ -146,7 +146,7 @@ class TestSiteAction(FrappeTestCase):
 			{
 				"doctype": "Site Action",
 				"site": source_site.name,
-				"action_type": "Move Site To Different Server",
+				"action_type": "Move Site To Different Server / Bench",
 				"team": source_site.team,
 				"arguments": frappe.as_json(
 					{
@@ -179,7 +179,7 @@ class TestSiteAction(FrappeTestCase):
 		source_site: Site = create_test_site(bench=source_bench.name)
 
 		action_name = source_site.create_migration_plan(
-			type="Move From Shared To Private Bench",
+			type="Move Site To Different Server / Bench",
 			new_group_name="Test Failed Group",
 		)
 
@@ -240,7 +240,7 @@ class TestSiteAction(FrappeTestCase):
 			{
 				"doctype": "Site Action",
 				"site": source_site.name,
-				"action_type": "Move Site To Different Server",
+				"action_type": "Move Site To Different Server / Bench",
 				"team": source_site.team,
 				"arguments": frappe.as_json({"destination_server": destination_server.name}),
 			}
@@ -255,7 +255,7 @@ class TestSiteAction(FrappeTestCase):
 		source_site: Site = create_test_site(bench=source_bench.name)
 
 		action_name = source_site.create_migration_plan(
-			type="Move From Shared To Private Bench",
+			type="Move Site To Different Server / Bench",
 			new_group_name="Test Group",
 		)
 
@@ -273,7 +273,7 @@ class TestSiteAction(FrappeTestCase):
 		source_site: Site = create_test_site(bench=source_bench.name)
 
 		action_name = source_site.create_migration_plan(
-			type="Move From Shared To Private Bench",
+			type="Move Site To Different Server / Bench",
 			new_group_name="Test Group",
 		)
 
@@ -331,7 +331,7 @@ class TestSiteAction(FrappeTestCase):
 				{
 					"doctype": "Site Action",
 					"site": source_site.name,
-					"action_type": "Move Site To Different Server",
+					"action_type": "Move Site To Different Server / Bench",
 					"team": source_site.team,
 					"arguments": frappe.as_json(
 						{
@@ -371,7 +371,7 @@ class TestSiteAction(FrappeTestCase):
 		source_site: Site = create_test_site(bench=source_bench.name)
 
 		action_name = source_site.create_migration_plan(
-			type="Move From Shared To Private Bench",
+			type="Move Site To Different Server / Bench",
 			new_group_name="Test Group",
 		)
 

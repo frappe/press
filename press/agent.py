@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_backup.site_backup import SiteBackup
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 APPS_LIST_REGEX = re.compile(r"\[.*\]")
@@ -51,7 +52,8 @@ class Agent:
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
 		self.server = server
-		self.port = 443 if self.server not in servers_using_alternative_port_for_communication() else 8443
+		self.__servers_using_alt_ports = servers_using_alternative_port_for_communication()
+		self.port = 443 if self.server not in self.__servers_using_alt_ports else 8443
 
 	def new_bench(self, bench: "Bench"):
 		settings = frappe.db.get_value(
@@ -92,6 +94,11 @@ class Agent:
 			f"benches/{bench.name}/archive",
 			bench=bench.name,
 			data={"retry_new_bench": retry_new_bench},
+		)
+
+	def force_remove_zombie_benches(self, bench_names: list[str]):
+		return self.create_agent_job(
+			"Force Remove Zombie Benches", "benches/force-remove", data={"benches": bench_names}
 		)
 
 	def restart_bench(self, bench, web_only=False):
@@ -539,9 +546,9 @@ class Agent:
 			"private_ip": frappe.get_value(
 				"Database Server", frappe.db.get_value("Server", site.server, "database_server"), "private_ip"
 			),
-			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),
+			"backup_db_base_directory": os.path.join(backup_restoration.mount_point, "var/lib/mysql"),  # type: ignore[arg-type]
 			"restore_specific_tables": backup_restoration.restore_specific_tables,
-			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),
+			"tables_to_restore": json.loads(backup_restoration.tables_to_restore),  # type: ignore[arg-type]
 		}
 		return self.create_agent_job(
 			"Physical Restore Database",
@@ -918,15 +925,19 @@ class Agent:
 		return self.request("DELETE", path, data, raises=raises)
 
 	def _make_req(self, method, path, data, files, agent_job_id):
+		url = self._get_request_url(path)
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
-		url = f"https://{self.server}:{self.port}/agent/{path}"
-		intermediate_ca = frappe.db.get_value("Press Settings", "Press Settings", "backbone_intermediate_ca")
-		if frappe.conf.developer_mode and intermediate_ca:
+
+		verify = True
+		if frappe.conf.developer_mode and (
+			intermediate_ca := frappe.db.get_value(
+				"Press Settings", "Press Settings", "backbone_intermediate_ca"
+			)
+		):
 			root_ca = frappe.db.get_value("Certificate Authority", intermediate_ca, "parent_authority")
 			verify = frappe.get_doc("Certificate Authority", root_ca).certificate_file
-		else:
-			verify = True
+
 		if files:
 			file_objects = {
 				key: value
@@ -1009,7 +1020,7 @@ class Agent:
 			frappe.new_doc("Agent Request Failure", **fields).insert(ignore_permissions=True)
 
 	def raw_request(self, method, path, data=None, raises=True, timeout=None):
-		url = f"https://{self.server}:{self.port}/agent/{path}"
+		url = self._get_request_url(path)
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}"}
 		timeout = timeout or (10, 30)
@@ -1018,6 +1029,28 @@ class Agent:
 		if raises:
 			response.raise_for_status()
 		return json_response
+
+	def _get_request_url(self, path):
+		if self.server_type in ("Server", "Database Server"):
+			proxy = None
+			server_ip, server_private_ip, server_cluster = frappe.db.get_value(
+				self.server_type, self.server, ("ip", "private_ip", "cluster")
+			)
+			if not server_ip and server_private_ip and not frappe.flags.in_test:
+				proxy = frappe.db.get_value(
+					"Proxy Server",
+					{
+						"status": "Active",
+						"cluster": server_cluster,
+						"use_as_proxy_for_agent_and_metrics": 1,
+					},
+				)
+
+			if proxy:
+				proxy_port = 443 if proxy not in self.__servers_using_alt_ports else 8443
+				return f"https://{proxy}:{proxy_port}/{self.server}:{self.port}/agent/{path}"
+
+		return f"https://{self.server}:{self.port}/agent/{path}"
 
 	def should_skip_requests(self):
 		if self.server_type in ("Server", "Database Server", "Proxy Server") and frappe.db.get_value(
@@ -1206,7 +1239,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		return status
 
 	def get_jobs_id(self, agent_job_ids):
-		return self.get(f"agent-jobs/{agent_job_ids}")
+		ids = ",".join(agent_job_ids) if isinstance(agent_job_ids, (list, tuple)) else agent_job_ids
+		return self.get(f"agent-jobs/{ids}")
 
 	def get_version(self):
 		return self.raw_request("GET", "version", raises=True, timeout=(2, 10))
@@ -1406,6 +1440,16 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			},
 		)
 
+	def fetch_database_locks(self, site):
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.server)
+		return self.post(
+			"database/locks",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": get_mariadb_root_password(site),
+			},
+		)
+
 	def kill_database_process(self, site, id):
 		return self.post(
 			f"benches/{site.bench}/sites/{site.name}/database/kill-process/{id}",
@@ -1414,14 +1458,64 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			},
 		)
 
+	def refresh_database_schema_size(self, site: Site):
+		if self.server_type != "Database Server":
+			return NotImplementedError("This method is only supported for Database Server")
+
+		database_server: DatabaseServer = frappe.get_doc("Database Server", self.server)
+		data_disk_volume = None
+		if database_server.virtual_machine:
+			data_disk_volume = database_server.find_mountpoint_volume(
+				database_server.guess_data_disk_mountpoint()
+			)
+
+		iops = None
+
+		if database_server.provider in ["AWS EC2", "OCI"] and data_disk_volume and data_disk_volume.volume_id:
+			vm: VirtualMachine = frappe.get_doc("Virtual Machine", database_server.virtual_machine)
+			for disk in vm.volumes:
+				if disk.volume_id == data_disk_volume.volume_id:
+					iops = disk.iops
+					break
+
+		if not site.database_name:
+			site.sync_info()
+			site.reload()
+			if not site.database_name:
+				return ValueError("Failed to fetch site's database name. Please try again later.")
+
+		return self.create_agent_job(
+			"Refresh Database Usage",
+			"database/refresh-usage",
+			data={
+				"private_ip": database_server.private_ip,
+				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+				"io_ops_limit": max(int(iops * 0.2), 300) if iops else 300,
+				"concurrency": 50,
+				"database": site.database_name,
+			},
+			site=site.name,
+		)
+
 	def update_database_schema_sizes(self):
 		if self.server_type != "Database Server":
 			return NotImplementedError("This method is only supported for Database Server")
 
 		database_server: DatabaseServer = frappe.get_doc("Database Server", self.server)
-		data_disk_volume = database_server.find_mountpoint_volume(
-			database_server.guess_data_disk_mountpoint()
-		)
+		data_disk_volume = None
+		if database_server.virtual_machine:
+			data_disk_volume = database_server.find_mountpoint_volume(
+				database_server.guess_data_disk_mountpoint()
+			)
+
+		iops = None
+
+		if database_server.provider in ["AWS EC2", "OCI"] and data_disk_volume and data_disk_volume.volume_id:
+			vm: VirtualMachine = frappe.get_doc("Virtual Machine", database_server.virtual_machine)
+			for disk in vm.volumes:
+				if disk.volume_id == data_disk_volume.volume_id:
+					iops = disk.iops
+					break
 
 		return self.create_agent_job(
 			"Update Database Schema Sizes",
@@ -1429,7 +1523,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			data={
 				"private_ip": database_server.private_ip,
 				"mariadb_root_password": database_server.get_password("mariadb_root_password"),
-				"io_ops_limit": min(int(data_disk_volume.iops * 0.2), 300) if data_disk_volume else 300,
+				"io_ops_limit": max(int(iops * 0.2), 300) if iops else 300,
 				"concurrency": 50,
 			},
 			reference_doctype=self.server_type,
@@ -1868,7 +1962,7 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			"Update Nginx Access",
 			"/server/update-nginx-access",
 			data={
-				"ip_access": ip_accept,
+				"ip_accept": ip_accept,
 				"ip_drop": ip_drop,
 			},
 		)

@@ -2,6 +2,7 @@
 	<div class="flex items-center space-x-1">
 		<FormControl
 			class="flex-[4]"
+			:class="label ? 'mt-5' : ''"
 			:label="hideLabel ? '' : label ? label : 'Date'"
 			type="select"
 			variant="outline"

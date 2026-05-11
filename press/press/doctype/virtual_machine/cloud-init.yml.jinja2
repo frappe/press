@@ -14,8 +14,25 @@ users:
   - {{ ssh_key }}
 
 runcmd:
+
+{% if nat_gateway_ip %}
+- |
+    IFACE=$(ip route show default | awk '{for(i=1;i<=NF;i++) if ($i=="dev") print $(i+1)}' | head -n 1)
+
+    cat <<EOF > /etc/netplan/99-custom-gateway.yaml
+    network:
+      ethernets:
+        $IFACE:
+          routes:
+            - to: default
+              via: {{ nat_gateway_ip }}
+    EOF
+
+    netplan apply
+{% endif %}
+
 - mkdir /etc/ssh/auth_principals
-- curl https://frappecloud.com/files/ca.pub > /etc/ssh/ca.pub && chmod 644 /etc/ssh/ca.pub
+- curl https://cloud.frappe.io/files/ca.pub > /etc/ssh/ca.pub && chmod 644 /etc/ssh/ca.pub
 - su - frappe -c "cd /home/frappe/agent && env/bin/agent setup config --name {{ server.name }} --workers 2"
 - su - frappe -c "cd /home/frappe/agent && env/bin/agent setup authentication --password {{ agent_password }}"
 - su - frappe -c "htpasswd -Bbc /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password }}"
@@ -26,13 +43,19 @@ runcmd:
 - systemctl restart mariadb
 - systemctl restart mysqld_exporter
 - systemctl restart deadlock_logger
-{% elif server.doctype == 'Server' and server.provider != 'Hetzner' and server.provider != 'DigitalOcean' %}
+{% elif server.doctype == 'Server' and server.provider != 'Hetzner' and server.provider != 'DigitalOcean' and server.provider != 'Frappe Compute' %}
 - resize2fs $(findmnt /opt/volumes/benches --noheadings --output SOURCE)
 {% endif %}
 {% if server.provider == 'OCI' %}
 - iptables -D INPUT -j REJECT --reject-with icmp-host-prohibited
 - sed -i 's/^-A INPUT -j REJECT --reject-with icmp-host-prohibited$/#-A INPUT -j REJECT --reject-with icmp-host-prohibited/g' /etc/iptables/rules.v4
 {% endif %}
+
+# CVE-2026-31431: https://copy.fail/
+- |
+    echo "install algif_aead /bin/false" >> /etc/modprobe.d/disable-algif_aead.conf
+    rmmod algif_aead 2>/dev/null || true
+    rmmod algif_aead 2>/dev/null || true
 
 {% if server.provider == 'DigitalOcean' %}
 - |

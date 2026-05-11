@@ -92,12 +92,12 @@ ENV {{ doc.get_dependency_version("python", True) }}
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
-    python${PYTHON_VERSION} \
-    python${PYTHON_VERSION}-dev \
-    {% if not remove_distutils -%}
-    python${PYTHON_VERSION}-distutils \
-    {%- endif %}
-    python${PYTHON_VERSION}-venv \
+  python${PYTHON_VERSION} \
+  python${PYTHON_VERSION}-dev \
+  {% if not remove_distutils -%}
+python${PYTHON_VERSION}-distutils \
+  {%- endif %}
+python${PYTHON_VERSION}-venv \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-python`
 
@@ -106,33 +106,33 @@ ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
 
 
 {% if is_arm_build %}
-  # ARM setup (0.12.5) & (0.12.6)
-  {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.5' %}
-  RUN wget https://github.com/Aradhya-Tripathi/wkhtmltopdf/releases/download/0.12.5-arm/wkhtmltox_0.12.5-1.jammy_arm64.deb \
-    && dpkg -i wkhtmltox_0.12.5-1.jammy_arm64.deb \
-    && rm wkhtmltox_0.12.5-1.jammy_arm64.deb \
-    `#stage-pre-wkhtmltopdf`
-  {% endif %}
+# ARM setup (0.12.5) & (0.12.6)
+{% if doc.get_dependency_version("wkhtmltopdf") == '0.12.5' %}
+RUN wget https://github.com/Aradhya-Tripathi/wkhtmltopdf/releases/download/0.12.5-arm/wkhtmltox_0.12.5-1.jammy_arm64.deb \
+  && dpkg -i wkhtmltox_0.12.5-1.jammy_arm64.deb \
+  && rm wkhtmltox_0.12.5-1.jammy_arm64.deb \
+  `#stage-pre-wkhtmltopdf`
+{% endif %}
 
-  {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
-  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_arm64.deb  \
-    && dpkg -i wkhtmltox_0.12.6.1-2.jammy_arm64 \
-    && rm wkhtmltox_0.12.6.1-2.jammy_arm64 \
-    `#stage-pre-wkhtmltopdf`
-  {% endif %}
+{% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
+RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_arm64.deb  \
+  && dpkg -i wkhtmltox_0.12.6.1-2.jammy_arm64.deb \
+  && rm wkhtmltox_0.12.6.1-2.jammy_arm64.deb \
+  `#stage-pre-wkhtmltopdf`
+{% endif %}
 {% else %}
-  # Intel setup
-  {% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
-  RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb  \
-    && dpkg -i wkhtmltox_0.12.6.1-2.jammy_amd64.deb \
-    && rm wkhtmltox_0.12.6.1-2.jammy_amd64.deb \
-    `#stage-pre-wkhtmltopdf`
-  {% elif doc.get_dependency_version("wkhtmltopdf") == '0.12.5' %}
-  RUN wget https://github.com/Aradhya-Tripathi/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.jammy_amd64.deb  \
-    && dpkg -i wkhtmltox_0.12.5-1.jammy_amd64.deb \
-    && rm wkhtmltox_0.12.5-1.jammy_amd64.deb \
-    `#stage-pre-wkhtmltopdf`
-  {% endif %}
+# Intel setup
+{% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
+RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb  \
+  && dpkg -i wkhtmltox_0.12.6.1-2.jammy_amd64.deb \
+  && rm wkhtmltox_0.12.6.1-2.jammy_amd64.deb \
+  `#stage-pre-wkhtmltopdf`
+{% elif doc.get_dependency_version("wkhtmltopdf") == '0.12.5' %}
+RUN wget https://github.com/Aradhya-Tripathi/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.jammy_amd64.deb  \
+  && dpkg -i wkhtmltox_0.12.5-1.jammy_amd64.deb \
+  && rm wkhtmltox_0.12.5-1.jammy_amd64.deb \
+  `#stage-pre-wkhtmltopdf`
+{% endif %}
 {% endif %}
 
 {% if doc.is_code_server_enabled %}
@@ -259,10 +259,6 @@ COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
 COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
-# Pass control of get-app to a python file
-COPY get_cached_app.py /usr/local/bin/get_cached_app.py
-RUN chmod +x /usr/local/bin/get_cached_app.py
-
 # Install other apps
 {% for app in doc.apps %}
 {% if app.app != "frappe"%}
@@ -270,19 +266,19 @@ RUN chmod +x /usr/local/bin/get_cached_app.py
 
 {% if app.use_cached and use_asset_store %}
 RUN --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-    --mount=type=secret,id=build_token,mode=0444 \
-    BUILD_TOKEN="$(cat /run/secrets/build_token)" && python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
-        {{ app.app }} \
-        {{ app.hash }} \
-        "$BUILD_TOKEN" \
-        {{ site_url }} \
-        {{ upload_assets }} \
-        `#stage-apps-{{ app.app }}`
+  --mount=type=secret,id=build_token,mode=0444 \
+  BUILD_TOKEN="$(cat /run/secrets/build_token)" && python${PYTHON_VERSION} /usr/local/bin/get_cached_app.py \
+  {{ app.app }} \
+  {{ app.hash }} \
+  "$BUILD_TOKEN" \
+  {{ site_url }} \
+  {{ upload_assets }} \
+  `#stage-apps-{{ app.app }}`
 {% else %}
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 \
-    --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-    bench get-app file:///home/frappe/context/apps/{{ app.app }} \
-    `#stage-apps-{{ app.app }}`
+  --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+  bench get-app file:///home/frappe/context/apps/{{ app.app }} \
+  `#stage-apps-{{ app.app }}`
 {% endif %}
 
 

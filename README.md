@@ -1,6 +1,6 @@
 <div align="center" markdown="1">
 
-<img src="https://frappe.io/files/Group%202%20(1).png" alt="Press logo" width="80"/>
+<img src="https://frappe.io/files/cloud9c3ae6.png" alt="Press logo" width="80"/>
 <h1>Press</h1>
 
 **Full Service Cloud Hosting For The Frappe Stack - Powers Frappe Cloud**
@@ -75,12 +75,8 @@ If you are planning to migrate your site to Frappe Cloud, please refer to [this 
 
 ### Pre-commit
 
-There's a [pre-commit](https://pre-commit.com/) hook included in the repo. You can set it up by doing
+There's a [pre-commit](https://pre-commit.com/) hook included in the repo. You can set it up by running [setup-pre-commit.sh](https://github.com/frappe/press/blob/develop/setup-pre-commit.sh) script.
 
-```bash
-pip install pre-commit
-pre-commit install
-```
 ## Learn and connect
 
 - [Telegram Public Group](https://t.me/frappecloud)

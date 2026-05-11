@@ -24,9 +24,9 @@ from press.utils import log_error
 def execute():
 	today = getdate()
 	first_day_of_month = get_first_day(today)
-	nineth_day_of_month = add_days(first_day_of_month, 8)
+	fifteenth_day_of_month = add_days(first_day_of_month, 14)
 
-	if today >= first_day_of_month and today <= nineth_day_of_month:
+	if today >= first_day_of_month and today <= fifteenth_day_of_month:
 		return
 
 	teams_with_unpaid_invoices = get_teams_with_unpaid_invoices()
@@ -102,9 +102,5 @@ def get_teams_with_unpaid_invoices():
 	)
 	if ignorable_plans:
 		query = query.where((site.plan).notin(ignorable_plans))
-	first_day = get_first_day(today)
-	two_weeks = add_days(first_day, 14)  # 15th day of the month
-	if today < two_weeks:
-		query = query.where(team.erpnext_partner == 0)
 
 	return query.run(as_dict=True)

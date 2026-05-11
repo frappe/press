@@ -3,36 +3,17 @@
 		<Tooltip text="All Roles">
 			<Button :route="{ name: 'SettingsPermissionRoles' }">
 				<template #icon>
-					<lucide-arrow-left class="h-4 w-4 text-gray-700" />
+					<lucide-arrow-left class="h-4 w-4 text-ink-gray-7" />
 				</template>
 			</Button>
 		</Tooltip>
-		<h3 class="text-lg font-medium text-gray-900">
+		<h3 class="text-lg font-medium text-ink-gray-9 mr-auto">
 			{{ role.doc?.title }}
 		</h3>
 		<Tooltip text="Admin Role" v-if="role.doc?.admin_access">
-			<FeatherIcon name="shield" class="h-5 w-5 text-gray-700" />
+			<FeatherIcon name="shield" class="h-5 w-5 text-ink-gray-7" />
 		</Tooltip>
-	</div>
-	<div class="flex items-center justify-between mb-5">
-		<TabButtons
-			class="w-max"
-			v-model="tab"
-			:buttons="[
-				{
-					label: 'Members',
-					value: 'members',
-				},
-				{
-					label: 'Resources',
-					value: 'resources',
-				},
-				{
-					label: 'Permissions',
-					value: 'permissions',
-				},
-			]"
-		/>
+
 		<Button
 			label="Delete"
 			icon-left="trash-2"
@@ -54,6 +35,26 @@
 					},
 				})
 			"
+		/>
+	</div>
+	<div class="flex items-center justify-between mb-5">
+		<TabButtons
+			class="w-max"
+			v-model="tab"
+			:buttons="[
+				{
+					label: 'Members',
+					value: 'members',
+				},
+				{
+					label: 'Resources',
+					value: 'resources',
+				},
+				{
+					label: 'Permissions',
+					value: 'permissions',
+				},
+			]"
 		/>
 	</div>
 	<RoleMembers

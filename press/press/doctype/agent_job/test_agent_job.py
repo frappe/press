@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, TypedDict
 from unittest.mock import Mock, patch
 
 import frappe
@@ -35,11 +35,11 @@ def before_insert(self):
 	return None
 
 
-def fake_agent_job_req(  # noqa: C901
+def fake_agent_job_req(
 	job_type: str | list[str] | dict,
 	status: Literal["Success", "Pending", "Running", "Failure"] | None = None,
 	data: dict | None = None,
-	steps: list[dict] | None = None,
+	steps: list[StepDict] | None = None,
 ) -> Callable:
 	"""
 	Fake successful (or custom status) delivery for one or more job types.
@@ -122,6 +122,10 @@ def fake_agent_job_req(  # noqa: C901
 				step["start"] = "2023-08-20 18:24:28.024885"
 				step["end"] = None
 				step["duration"] = None
+			if step["status"] in ["Skipped", "Pending"]:
+				step["start"] = None
+				step["end"] = None
+				step["duration"] = None
 
 		# Fake POST and DELETE
 		responses.post(
@@ -170,12 +174,17 @@ def fake_agent_job_req(  # noqa: C901
 	return before_insert
 
 
+class StepDict(TypedDict):
+	name: str
+	status: Literal["Success", "Pending", "Running", "Failure", "Skipped"]
+
+
 @contextmanager
 def fake_agent_job(
 	job_type: str,
 	status: Literal["Success", "Pending", "Running", "Failure"] = "Success",
 	data: dict | None = None,
-	steps: list[dict] | None = None,
+	steps: list[StepDict] | None = None,
 ):
 	"""Fakes agent job request and response.
 

@@ -1,4 +1,4 @@
-import { LoadingIndicator, Tooltip } from 'frappe-ui';
+import { LoadingIndicator, Tooltip, frappeRequest } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import LucideAppWindow from '~icons/lucide/app-window';
@@ -10,11 +10,56 @@ import PatchAppDialog from '../components/group/PatchAppDialog.vue';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { getToastErrorMessage } from '../utils/toast';
 import { date, duration } from '../utils/format';
+import { getToastErrorMessage } from '../utils/toast';
 import { getJobsTab } from './common/jobs';
 import { getPatchesTab } from './common/patches';
 import { tagTab } from './common/tags';
+
+const pollingGroups = new Set();
+
+function pollReleasePipelineValidationStatus(group) {
+	if (pollingGroups.has(group.doc.name)) return; // already polling
+	if (!group.doc.deploy_information.has_running_release_pipeline) return;
+
+	pollingGroups.add(group.doc.name);
+
+	function poll() {
+		frappeRequest({
+			url: 'press.api.bench.deploy_status',
+			params: { name: group.name },
+		})
+			.then(({ is_validating, is_deploy_in_progress, candidate }) => {
+				if (!group.doc.deploy_information.has_running_release_pipeline) {
+					pollingGroups.delete(group.doc.name);
+					return;
+				}
+
+				group.doc.deploy_information.deploy_in_progress = Boolean(
+					is_deploy_in_progress,
+				);
+
+				if (candidate) {
+					group.doc.deploy_information.last_deploy = {
+						name: candidate,
+					};
+				}
+
+				if (is_validating) {
+					setTimeout(poll, 2000); // still validating, keep polling
+				} else {
+					// Validation done
+					group.doc.deploy_information.has_running_release_pipeline = false;
+					pollingGroups.delete(group.doc.name);
+				}
+			})
+			.catch(() => {
+				pollingGroups.delete(group.doc.name);
+			});
+	}
+
+	poll();
+}
 
 export default {
 	doctype: 'Release Group',
@@ -95,7 +140,7 @@ export default {
 			{
 				label: 'Sites',
 				fieldname: 'site_count',
-				class: 'text-gray-600',
+				class: 'text-ink-gray-6',
 				width: 0.25,
 			},
 		],
@@ -110,18 +155,6 @@ export default {
 					router.push({ name: 'New Release Group' });
 				},
 			};
-		},
-		banner({ listResource: groups }) {
-			if (!groups.data?.length) {
-				return {
-					title: 'Learn how to create a new private bench and sites',
-					button: {
-						label: 'Read docs',
-						variant: 'outline',
-						link: 'https://docs.frappe.io/cloud/benches/create-new',
-					},
-				};
-			}
 		},
 	},
 	detail: {
@@ -227,7 +260,7 @@ export default {
 									{
 										text: "What's this?",
 										placement: 'top',
-										class: 'rounded-full bg-gray-100 p-1',
+										class: 'rounded-full bg-surface-gray-2 p-1',
 									},
 									() => [
 										h(
@@ -477,24 +510,17 @@ export default {
 									{
 										text: 'Attention required!',
 										placement: 'top',
-										class: 'rounded-full bg-gray-100 p-1',
+										class: 'rounded-full bg-surface-gray-2 p-1',
 									},
 									() => h(icon('alert-circle', 'w-3 h-3'), {}),
 								);
 							},
 						},
 						{
-							label: 'Apps',
-							format(value, row) {
-								return (row.apps || []).join(', ');
-							},
-							width: '20rem',
-						},
-						{
 							label: 'Duration',
 							fieldname: 'build_duration',
 							format: duration,
-							class: 'text-gray-600',
+							class: 'text-ink-gray-6',
 							width: 1,
 						},
 						{
@@ -526,11 +552,13 @@ export default {
 											bench: group.name,
 											lastDeploy: true,
 											onSuccess(candidate) {
-												group.doc.deploy_information.deploy_in_progress = true;
+												group.doc.deploy_information.has_running_release_pipeline = true;
+												group.doc.deploy_information.update_available = false;
 												if (candidate) {
 													group.doc.deploy_information.last_deploy.name =
 														candidate;
 												}
+												pollReleasePipelineValidationStatus(group);
 											},
 										}),
 									);
@@ -767,69 +795,15 @@ export default {
 				label: 'Dependencies',
 				icon: icon('box'),
 				route: 'bench-dependencies',
-				type: 'list',
-				list: {
-					doctype: 'Release Group Dependency',
-					filters: (releaseGroup) => {
-						return {
-							parenttype: 'Release Group',
-							parent: releaseGroup.name,
-						};
-					},
-					columns: [
-						{
-							label: 'Dependency',
-							fieldname: 'dependency',
-							format(value, row) {
-								return row.title;
-							},
-						},
-						{
-							label: 'Version',
-							fieldname: 'version',
-							suffix(row) {
-								if (!row.is_custom) {
-									return;
-								}
-
-								return h(
-									Tooltip,
-									{
-										text: 'Custom version',
-										placement: 'top',
-										class: 'rounded-full bg-gray-100 p-1',
-									},
-									() => h(icon('alert-circle', 'w-3 h-3'), {}),
-								);
-							},
-						},
-					],
-					rowActions({
-						row,
-						listResource: dependencies,
-						documentResource: releaseGroup,
-					}) {
-						return [
-							{
-								label: 'Edit',
-								onClick() {
-									let DependencyEditorDialog = defineAsyncComponent(
-										() =>
-											import('../components/group/DependencyEditorDialog.vue'),
-									);
-									renderDialog(
-										h(DependencyEditorDialog, {
-											group: releaseGroup.doc,
-											dependency: row,
-											onSuccess() {
-												dependencies.reload();
-											},
-										}),
-									);
-								},
-							},
-						];
-					},
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('@/components/group/BenchDependencies.vue'),
+				),
+				props: (releaseGroup) => {
+					return {
+						releaseGroup: releaseGroup.doc.name,
+						releaseGroupDocumentResource: releaseGroup,
+					};
 				},
 			},
 			{
@@ -948,6 +922,13 @@ export default {
 			let { documentResource: group } = context;
 			let team = getTeam();
 
+			if (
+				group.doc?.deploy_information?.has_running_release_pipeline &&
+				!group.doc?.deploy_information?.deploy_in_progress
+			) {
+				pollReleasePipelineValidationStatus(group);
+			}
+
 			return [
 				{
 					label: 'Impersonate Group Owner',
@@ -986,16 +967,30 @@ export default {
 								bench: group.name,
 								lastDeploy: group.doc?.deploy_information?.last_deploy,
 								onSuccess(candidate) {
-									group.doc.deploy_information.deploy_in_progress = true;
+									group.doc.deploy_information.has_running_release_pipeline = true;
+									group.doc.deploy_information.update_available = false;
+
 									if (candidate) {
 										group.doc.deploy_information.last_deploy = {
 											name: candidate,
 										};
 									}
+									pollReleasePipelineValidationStatus(group);
 								},
 							}),
 						);
 					},
+				},
+				{
+					label: 'Validating Deploy',
+					slots: {
+						prefix: () => h(LoadingIndicator, { class: 'w-4 h-4' }),
+					},
+					theme: 'green',
+					condition: () =>
+						!group.doc.deploy_information.deploy_in_progress &&
+						!group.doc.deploy_information.bench_creation_underway &&
+						group.doc.deploy_information.has_running_release_pipeline,
 				},
 				{
 					label: 'Deploy in progress',

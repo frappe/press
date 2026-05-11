@@ -23,6 +23,16 @@
 				title="A few commits have been yanked, <a href='https://docs.frappe.io/cloud/benches/updating_a_bench#yanked-app-releases' target='_blank' style='font-weight: bold;'>click here</a> to know more."
 				type="info"
 			/>
+			<AlertBanner
+				v-if="
+					benchDocResource.doc.deploy_information.apps.some((app) =>
+						app.releases.some((release) => release.is_mandatory),
+					)
+				"
+				class="mb-4"
+				title="A mandatory update is available. Please select the update to proceed."
+				type="info"
+			/>
 			<!-- Update Steps -->
 			<div class="space-y-4">
 				<!-- Select Apps Step -->
@@ -36,7 +46,7 @@
 						:options="updatableAppOptions"
 						@update:selections="handleAppSelection"
 					/>
-					<p v-else class="text-center text-base text-gray-600">
+					<p v-else class="text-center text-base text-ink-gray-6">
 						No apps to update
 					</p>
 				</div>
@@ -57,7 +67,7 @@
 						@update:selections="handleSiteSelection"
 					/>
 					<p
-						class="text-center text-base font-medium text-gray-600"
+						class="text-center text-base font-medium text-ink-gray-6"
 						v-else-if="!benchDocResource.doc.deploy_information.sites.length"
 					>
 						No active sites to update
@@ -74,13 +84,13 @@
 						<a
 							href="https://docs.frappe.io/cloud/common-issues/build-might-fail"
 							target="_blank"
-							class="cursor-pointer rounded-full border border-gray-200 bg-gray-100 p-0.5 text-base text-gray-700"
+							class="cursor-pointer rounded-full border border-outline-gray-1 bg-surface-gray-2 p-0.5 text-base text-ink-gray-7"
 						>
 							<lucide-help-circle :class="`h-4 w-4 text-red-600`" />
 						</a>
 					</div>
 					<p
-						class="text-base font-medium text-gray-800"
+						class="text-base font-medium text-ink-gray-8"
 						v-html="restrictMessage"
 					></p>
 					<div class="mt-4">
@@ -103,7 +113,7 @@
 							href="https://docs.frappe.io/cloud/in-place-updates"
 							target="_blank"
 						>
-							<lucide-help-circle :class="`h-4 w-4 text-gray-600`" />
+							<lucide-help-circle :class="`h-4 w-4 text-ink-gray-6`" />
 						</a>
 					</Tooltip>
 				</div>
@@ -186,7 +196,7 @@ export default {
 
 			appData.forEach((app) => {
 				if (!app.releases?.length) {
-					app.__disabled = true;
+					app.disabled = true;
 				}
 			});
 
@@ -246,6 +256,7 @@ export default {
 										value: release.name,
 										timestamp: release.timestamp,
 										is_yanked: release.is_yanked,
+										is_mandatory: release.is_mandatory,
 									};
 								});
 							}
@@ -537,16 +548,18 @@ export default {
 					}
 				},
 				onSuccess(candidate) {
-					this.$router.push({
-						name: 'Deploy Candidate',
-						params: {
-							id: candidate,
-							name: this.bench,
-						},
-					});
-					this.restrictMessage = '';
+					// Backward compatibility in case we switch to the older deploy flow which returns a candidate
+					if (candidate) {
+						this.$router.push({
+							name: 'Deploy Candidate',
+							params: {
+								id: candidate,
+								name: this.bench,
+							},
+						});
+					}
 					this.show = false;
-					this.$emit('success', candidate);
+					this.$emit('success', null);
 				},
 				onError: this.setErrorMessage.bind(this),
 			};
@@ -631,14 +644,16 @@ export default {
 					return {
 						app: app.name,
 						source: app.source,
-						release: app.releases.find(
-							(release) =>
-								release.name === app.next_release && !release.is_yanked,
-						)?.name,
-						hash: app.releases.find(
-							(release) =>
-								release.name === app.next_release && !release.is_yanked,
-						)?.hash,
+						release:
+							app.releases.find(
+								(release) =>
+									release.name === app.next_release && !release.is_yanked,
+							)?.name ?? app.next_release,
+						hash:
+							app.releases.find(
+								(release) =>
+									release.name === app.next_release && !release.is_yanked,
+							)?.hash ?? app.next_release_hash,
 					};
 				});
 		},

@@ -1,15 +1,12 @@
 <template>
 	<Button v-if="$isMobile" @click="showDialog = true">
 		<template #icon>
-			<lucide-filter class="h-4 w-4 text-gray-600" />
+			<lucide-filter class="h-4 w-4 text-ink-gray-6" />
 		</template>
 	</Button>
 	<component :is="$isMobile ? 'DialogWrapper' : 'div'" v-bind="wrapperProps">
 		<div
-			:class="[
-				'flex',
-				$isMobile ? 'flex-col gap-y-4' : 'items-center gap-4 pl-2',
-			]"
+			:class="['flex', $isMobile ? 'flex-col gap-y-4' : 'items-center gap-4']"
 		>
 			<template v-for="control in filterControls" :key="control.fieldname">
 				<component

@@ -82,25 +82,12 @@ class PressRole(Document):
 			message = _("Role with title {0} already exists in this team").format(self.title)
 			frappe.throw(message, frappe.DuplicateEntryError)
 
-	def add_press_admin_role(self, user):
-		user = frappe.get_doc("User", user)
-		user.append_roles("Press Admin")
-		user.save(ignore_permissions=True)
-
-	def remove_press_admin_role(self, user):
-		if frappe.db.exists("Team", {"enabled": 1, "user": user}):
-			return
-		user = frappe.get_doc("User", user)
-		existing_roles = {d.role: d for d in user.get("roles")}
-		if "Press Admin" in existing_roles:
-			user.get("roles").remove(existing_roles["Press Admin"])
-			user.save(ignore_permissions=True)
-
 	@dashboard_whitelist()
 	@team_guard.only_admin(skip=lambda _, args: args.get("skip_validations", False))
 	@team_guard.only_member(
 		user=lambda _, args: str(args.get("user")),
 		error_message=_("User is not a member of the team"),
+		skip=lambda _, args: args.get("skip_validations", False),
 	)
 	def add_user(self, user, skip_validations=False):
 		user_dict = {"user": user}
@@ -109,8 +96,6 @@ class PressRole(Document):
 			frappe.throw(message, frappe.ValidationError)
 		self.append("users", user_dict)
 		self.save()
-		if self.admin_access or self.allow_billing:
-			self.add_press_admin_role(user)
 
 	@dashboard_whitelist()
 	@team_guard.only_admin()
@@ -121,8 +106,6 @@ class PressRole(Document):
 			frappe.throw(message, frappe.ValidationError)
 		self.remove(users.pop())
 		self.save()
-		if self.admin_access or self.allow_billing:
-			self.remove_press_admin_role(user)
 
 	@dashboard_whitelist()
 	@team_guard.only_admin()
@@ -154,6 +137,32 @@ class PressRole(Document):
 
 	def on_trash(self) -> None:
 		frappe.db.delete("Account Request Press Role", {"press_role": self.name})
+
+	def get_doc(self, doc):
+		flat_resources = []
+		for resource in doc["resources"]:
+			dict = resource.as_dict()
+
+			if dict["document_type"] in ["Release Group", "Server"]:
+				dict["document_title"] = frappe.get_value(
+					dict["document_type"], dict["document_name"], "title"
+				)
+			else:
+				dict["document_title"] = dict["document_name"]
+
+			flat_resources.append(dict)
+
+		doc["resources"] = flat_resources
+
+		flat_users = []
+		for user in doc.get("users", []):
+			u = user.as_dict()
+
+			u["user_image"] = frappe.get_value("User", u["user"], "user_image")
+
+			flat_users.append(u)
+
+		doc["users"] = flat_users
 
 
 def create_user_resource(document: Document, _):

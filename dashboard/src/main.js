@@ -11,8 +11,12 @@ import { initSocket } from './socket';
 import { subscribeToJobUpdates } from './utils/agentJob';
 import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
+import { createPinia } from 'pinia';
 import { session } from './data/session.js';
-import { unreadNotificationsCount } from './data/notifications.js';
+import {
+	unreadNotificationsCount,
+	unreadSupportNotificationsCount,
+} from './data/notifications.js';
 import registerGlobalComponents from './components/global/register';
 import './vendor/posthog.js';
 
@@ -35,10 +39,13 @@ setConfig('defaultDocUpdateUrl', 'press.api.client.set_value');
 setConfig('defaultDocDeleteUrl', 'press.api.client.delete');
 
 let app;
+let pinia;
 let socket;
 
 getInitialData().then(() => {
+	pinia = createPinia();
 	app = createApp(App);
+	app.use(pinia);
 	app.use(router);
 	app.use(resourcesPlugin);
 	app.use(pageMetaPlugin);
@@ -53,6 +60,7 @@ getInitialData().then(() => {
 		fetchPlans();
 		session.userPermissions.fetch();
 		unreadNotificationsCount.fetch();
+		unreadSupportNotificationsCount.fetch();
 	}
 
 	if (window.press_dashboard_sentry_dsn.includes('https://')) {
@@ -159,6 +167,10 @@ getInitialData().then(() => {
 	importGlobals().then(() => {
 		app.mount('#app');
 	});
+
+	if (workingHours()) {
+		addChatBubble();
+	}
 });
 
 function getInitialData() {
@@ -176,3 +188,64 @@ function importGlobals() {
 		app.use(globals.default);
 	});
 }
+
+function workingHours() {
+	let currentTime = new Date();
+	const istTime = new Date(
+		currentTime.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
+	);
+	const support_start_time = parseInt(window.chat_support_start_time);
+	const support_end_time = parseInt(window.chat_support_end_time);
+
+	return (
+		istTime.getHours() >= support_start_time &&
+		istTime.getHours() <= support_end_time
+	);
+}
+
+function addChatBubble() {
+	if (!window.chat_enabled) {
+		return;
+	}
+	let chat_banner = document.createElement('script');
+	chat_banner.innerHTML = `
+	window.chatwootSettings = { "position": "right", "type": "bubble_only" };
+	(function (d, t) {
+		var BASE_URL = '${window.chat_base_url}';
+		var g = d.createElement(t), s = d.getElementsByTagName(t)[0];
+		g.src = BASE_URL + "/packs/js/sdk.js";
+		g.async = true;
+		s.parentNode.insertBefore(g, s);
+		g.onload = function () {
+			window.chatwootSDK.run({
+				websiteToken: '${window.chat_website_token}',
+				baseUrl: BASE_URL
+			})
+		}
+	})(document, "script");`;
+	document.body.append(chat_banner);
+	const root = document.documentElement;
+	root.style.setProperty('--s-700', 'var(--gray-50)');
+}
+
+window.addEventListener('chatwoot:ready', function () {
+	const pathname = window.location.pathname;
+	const user_email = window.user.email || 'Guest';
+
+	if (window.$chatwoot) {
+		window.$chatwoot.setUser(user_email, {
+			name: window.user.name,
+			email: user_email,
+		});
+		window.$chatwoot.setCustomAttributes({
+			url_path: pathname,
+			current_team: localStorage.getItem('current_team') || window.default_team,
+			default_team: window.default_team,
+		});
+		window.$chatwoot.setConversationCustomAttributes({
+			url_path: pathname,
+			current_team: localStorage.getItem('current_team') || window.default_team,
+			default_team: window.default_team,
+		});
+	}
+});

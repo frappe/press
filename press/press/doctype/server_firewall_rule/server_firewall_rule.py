@@ -14,11 +14,11 @@ class ServerFirewallRule(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		action: DF.Literal["Allow", "Block"]
-		destination: DF.Data | None
+		action: DF.Literal["Allow", "Deny"]
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		port: DF.Int
 		protocol: DF.Literal["TCP", "UDP"]
 		source: DF.Data | None
 	# end: auto-generated types

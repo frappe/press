@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
+import frappe.utils
 from frappe.tests.utils import FrappeTestCase
 from hypothesis import given, settings
 from hypothesis import strategies as st
@@ -538,7 +539,10 @@ class TestIncident(FrappeTestCase):
 		resolve_incidents()
 
 		investigator.db_set("status", "Completed")
-		self.assertEqual(len(investigator.action_steps), 5)
+
+		self.assertEqual(
+			len(investigator.action_steps), 6
+		)  # Since `execute_incident_action` is not enabled we won't add pattern detector step
 		resolve_incidents()
 
 		mock_calls_create.assert_not_called()  # Calls should not happen since we haven't waited enough for the action steps to show results

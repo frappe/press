@@ -30,7 +30,7 @@
 				<h3 class="text-base font-semibold">
 					{{ user.first_name }} {{ user.last_name }}
 				</h3>
-				<p class="mt-1 text-base text-gray-600">{{ user.email }}</p>
+				<p class="mt-1 text-base text-ink-gray-6">{{ user.email }}</p>
 			</div>
 			<div class="ml-auto">
 				<Button icon-left="edit" @click="showProfileEditDialog = true">
@@ -60,6 +60,7 @@
 				</template>
 			</ListItem>
 			<ListItem
+				class="border-t"
 				:title="user.is_2fa_enabled ? 'Disable 2FA' : 'Enable 2FA'"
 				:subtitle="
 					user.is_2fa_enabled

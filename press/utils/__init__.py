@@ -21,12 +21,12 @@ import frappe.utils
 import pytz
 import requests
 import wrapt
-from babel.dates import format_timedelta
+from babel.dates import format_timedelta  # type: ignore[import-not-found]
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import ExtensionOID
 from frappe.utils import get_datetime, get_system_timezone
-from frappe.utils.caching import site_cache
+from frappe.utils.caching import redis_cache, site_cache
 
 from press.utils.email_validator import validate_email
 
@@ -130,8 +130,8 @@ def get_current_team(get_doc=False) -> Team | str:
 	# `team_name` getting injected by press.saas.api.whitelist_saas_api decorator
 	team = x_press_team if x_press_team else getattr(frappe.local, "team_name", "")
 
-	if not team and has_role("Press Admin") and frappe.db.exists("Team", {"user": frappe.session.user}):
-		# if user has_role of Press Admin then just return current user as default team
+	if not team and has_role("Press User") and frappe.db.exists("Team", {"user": frappe.session.user}):
+		# if user has_role of Press User then just return current user as default team
 		return (
 			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})
 			if get_doc
@@ -204,14 +204,41 @@ def get_default_team_for_user(user):
 	return None
 
 
+def chat_enabled():
+	if frappe.session.user == "Guest":
+		return False
+
+	if not frappe.db.get_single_value("Press Settings", "enable_chat"):
+		return False
+
+	current_team_doc = get_current_team(get_doc=True)
+
+	if not current_team_doc:
+		return False
+
+	date_diff = frappe.utils.data.get_datetime() - current_team_doc.creation
+
+	if date_diff < timedelta(days=90):
+		return True
+	return False
+
+
+def get_chat_bubble_config():
+	press_settings = frappe.get_doc("Press Settings")
+
+	return {"base_url": press_settings.chat_base_url, "website_token": press_settings.chat_website_token}
+
+
 def get_valid_teams_for_user(user):
 	teams = frappe.db.get_all("Team Member", filters={"user": user}, pluck="parent")
 	return frappe.db.get_all("Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"])
 
 
 def is_user_part_of_team(user, team):
-	"""Returns True if user is part of the team"""
-	return frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user})
+	"""Returns True if user is the team owner or an explicit member of the team"""
+	if frappe.db.get_value("Team", team, "user") == user:
+		return True
+	return bool(frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user}))
 
 
 def get_country_info():
@@ -321,6 +348,13 @@ def get_frappe_backups(url, email, password):
 def is_allowed_access_performance_tuning():
 	team = get_current_team(get_doc=True)
 	return team.enable_performance_tuning
+
+
+def get_press_base_url():
+	press_url = frappe.conf.get("press_base_url") or frappe.utils.get_url()
+	if not press_url.startswith("http://") and not press_url.startswith("https://"):
+		press_url = "https://" + press_url
+	return press_url.rstrip("/")
 
 
 class RemoteFrappeSite:
@@ -540,16 +574,15 @@ def group_children_in_result(result, child_field_map):
 	result =
 	[
 	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'System Manager'},
-	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'Press Admin'},
-	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press Admin'},
-	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press Member'},
+	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'Press User'},
+	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press User'},
 	]
 
 	out = group_children_in_result(result, {'role': 'roles'})
 	print(out)
 	[
-	{'name': 'test1', 'full_name': 'Faris Ansari', roles: ['System Manager', 'Press Admin']},
-	{'name': 'test2', 'full_name': 'Aditya Hase', roles: ['Press Admin', 'Press Member']},
+	{'name': 'test1', 'full_name': 'Faris Ansari', roles: ['System Manager', 'Press User']},
+	{'name': 'test2', 'full_name': 'Aditya Hase', roles: ['Press User']},
 	]
 	"""
 	out = {}
@@ -921,8 +954,8 @@ def get_full_chain_cert_of_domain(domain: str) -> str:
 			break
 
 	cert_chain_str = ""
-	for cert in cert_chain:
-		cert_chain_str += cert + "\n"
+	for cert_pem in cert_chain:
+		cert_chain_str += cert_pem + "\n"
 	return cert_chain_str
 
 
@@ -964,7 +997,138 @@ def servers_using_alternative_port_for_communication() -> list:
 	return [x.strip() for x in sl if x.strip()]
 
 
-def get_nearest_cluster():
+def _get_timezone_offset_seconds(timezone_name: str, now_utc: datetime) -> float | None:
+	"""
+	Returns the timezone offset in seconds for a given timezone name and current UTC time
+	eg: for Asia/Kolkata, it will return 19800 (5 hours 30 minutes in seconds)
+	"""
+	from zoneinfo import ZoneInfo
+
+	try:
+		tz_offset = now_utc.astimezone(ZoneInfo(timezone_name)).utcoffset()
+	except Exception:
+		return None
+
+	if tz_offset is None:
+		return None
+
+	return tz_offset.total_seconds()
+
+
+def _get_country_offsets(timezones: list[str], now_utc: datetime) -> list[float]:
+	"""
+	Returns list of timezone offsets in seconds for a given list of timezone names and current UTC time
+	eg: for ["Asia/Kolkata", "Asia/Delhi"], it will return [19800, 19800]
+	"""
+	offsets: list[float] = []
+	for timezone_name in timezones:
+		offset_seconds = _get_timezone_offset_seconds(timezone_name, now_utc)
+		if offset_seconds is not None:
+			offsets.append(offset_seconds)
+	return offsets
+
+
+@redis_cache(ttl=60 * 60 * 24)
+def get_cluster_timezone_map() -> dict[str, str]:
+	"""
+	Builds and returns a map of cluster name to its timezone
+	based on the country it is in
+	"""
+	from frappe.geo.country_info import get_country_info as get_frappe_country_info
+
+	clusters = frappe.get_all(
+		"Cluster",
+		filters={
+			"status": "Active",
+			"public": 1,
+			"country": ("is", "set"),
+		},
+		fields=["name", "country"],
+		order_by="name desc",
+	)
+
+	cluster_timezone_map: dict[str, str] = {}
+	for cluster in clusters:
+		country_info = get_frappe_country_info(cluster.country) or {}
+		timezones = country_info.get("timezones") or []
+		if timezones:
+			cluster_timezone_map[cluster.name] = timezones[0]
+
+	return cluster_timezone_map
+
+
+def _get_closest_cluster_by_offsets(country_offsets: list[float], now_utc: datetime) -> str | None:
+	"""
+	Returns the closest cluster for a given list of country timezone offsets and current UTC time
+	"""
+	closest_cluster = None
+	closest_diff = float("inf")
+
+	for cluster_name, cluster_timezone in get_cluster_timezone_map().items():
+		cluster_seconds = _get_timezone_offset_seconds(cluster_timezone, now_utc)
+		if cluster_seconds is None:
+			continue
+
+		diff = min(abs(cluster_seconds - country_seconds) for country_seconds in country_offsets)
+		if diff < closest_diff:
+			closest_diff = diff
+			closest_cluster = cluster_name
+
+	return closest_cluster
+
+
+@redis_cache(ttl=60 * 60 * 24)
+def get_cluster_country_map() -> dict[str, str]:
+	clusters = frappe.get_all(
+		"Cluster",
+		filters={
+			"status": "Active",
+			"public": 1,
+			"country": ("is", "set"),
+		},
+		fields=["name", "country"],
+		order_by="name desc",
+	)
+
+	country_map: dict[str, str] = {}
+	for cluster in clusters:
+		if cluster.country and cluster.country not in country_map:
+			country_map[cluster.country] = cluster.name
+
+	return country_map
+
+
+def _get_mapped_cluster_for_country(country: str) -> str | None:
+	return get_cluster_country_map().get(country)
+
+
+def get_nearest_cluster_for_country(country: str | None) -> str | None:
+	"""
+	Returns the nearest cluster for a given country based on timezone information.
+	If country has multiple timezones, it considers all of them and returns the cluster with the closest timezone offset to any of the country's timezones.
+	"""
+	from frappe.geo.country_info import get_country_info as get_frappe_country_info
+
+	if not country:
+		return None
+
+	if preferred_cluster := _get_mapped_cluster_for_country(country):
+		return preferred_cluster
+
+	country_info = get_frappe_country_info(country) or {}
+	timezones = country_info.get("timezones") or []
+	if not timezones:
+		return None
+
+	now_utc = datetime.now(pytz.utc)
+	country_offsets = _get_country_offsets(timezones, now_utc)
+	if not country_offsets:
+		return None
+
+	return _get_closest_cluster_by_offsets(country_offsets, now_utc)
+
+
+def get_nearest_cluster_for_ip() -> str | None:
 	import math
 
 	cluster_locations = {
@@ -1022,3 +1186,10 @@ def get_nearest_cluster():
 			nearest_cluster = cluster_name
 
 	return nearest_cluster
+
+
+def get_nearest_cluster(country: str | None = None) -> str | None:
+	if country and (nearest_cluster_for_country := get_nearest_cluster_for_country(country)):
+		return nearest_cluster_for_country
+
+	return get_nearest_cluster_for_ip()

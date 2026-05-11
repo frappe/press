@@ -26,6 +26,7 @@ class ServerPlan(Plan):
 		allow_unified_server: DF.Check
 		cloud_provider: DF.Link | None
 		cluster: DF.Link | None
+		description: DF.Data | None
 		disk: DF.Int
 		enabled: DF.Check
 		ignore_machine_availability_sync: DF.Check
@@ -46,6 +47,7 @@ class ServerPlan(Plan):
 
 	dashboard_fields = (
 		"title",
+		"description",
 		"price_inr",
 		"price_usd",
 		"vcpu",
@@ -91,6 +93,15 @@ def _sync_machine_availability_status_of_plans():  # noqa
 		filters={"ignore_machine_availability_sync": 0, "enabled": 1},
 		fields=["name", "cluster", "machine_unavailable", "instance_type"],
 	)
+
+	# Sync also disabled but legacy_plan
+	legacy_plans = frappe.get_all(
+		"Server Plan",
+		filters={"legacy_plan": 1, "ignore_machine_availability_sync": 0, "enabled": 0},
+		fields=["name", "cluster", "machine_unavailable", "instance_type"],
+	)
+	plans.extend(legacy_plans)
+
 	cluster_doc_map: dict[str, Cluster] = {}
 	cluster_plans: dict[str, list[dict]] = {}
 

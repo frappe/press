@@ -196,6 +196,11 @@ let router = createRouter({
 					path: 'mpesa-invoices',
 					component: () => import('./pages/BillingMpesaInvoices.vue'),
 				},
+				{
+					name: 'BillingUPIAutopay',
+					path: 'upi-autopay',
+					component: () => import('./pages/BillingUPIAutopay.vue'),
+				},
 			],
 		},
 		{
@@ -214,6 +219,11 @@ let router = createRouter({
 					name: 'SettingsTeam',
 					path: 'team',
 					component: () => import('./components/settings/TeamSettings.vue'),
+				},
+				{
+					name: 'SettingsTeamBeta',
+					path: 'team-beta',
+					component: () => import('./components/settings/Team.vue'),
 				},
 				{
 					name: 'SettingsDeveloper',
@@ -240,6 +250,60 @@ let router = createRouter({
 							props: true,
 						},
 					],
+				},
+
+				{
+					name: 'SettingsPartnerAdmin',
+					path: 'partner-admin',
+					redirect: { name: 'PartnerList' },
+					component: () => import('./pages/PartnerAdmin.vue'),
+					children: [
+						{
+							name: 'PartnerList',
+							path: 'partner-list',
+							component: () => import('./pages/PartnerList.vue'),
+						},
+						{
+							name: 'CertificateList',
+							path: 'certificate-list',
+							component: () => import('./pages/PartnerAdminCertificates.vue'),
+						},
+						{
+							name: 'PartnerAdminLeads',
+							path: 'partner-admin-lead-list',
+							component: () => import('./pages/PartnerAdminLeads.vue'),
+						},
+						{
+							name: 'PartnerAdminResources',
+							path: 'admin-resources',
+							component: () =>
+								import('./components/partners/PartnerResources.vue'),
+						},
+						{
+							name: 'PartnerAdminAudits',
+							path: 'admin-audits',
+							component: () =>
+								import('./components/partners/PartnerAdminAudits.vue'),
+						},
+					],
+				},
+			],
+		},
+		{
+			name: 'Status Page',
+			path: '/status',
+			component: () => import('./pages/PrivateStatusPage.vue'),
+			redirect: { name: 'OngoingIncidents' },
+			children: [
+				{
+					name: 'OngoingIncidents',
+					path: 'ongoing-incidents',
+					component: () => import('./components/status/PrivateIncident.vue'),
+				},
+				{
+					name: 'IncidentHistory',
+					path: 'incident-history',
+					component: () => import('./components/status/PrivateIncident.vue'),
 				},
 			],
 		},
@@ -288,6 +352,26 @@ let router = createRouter({
 						import('./components/partners/PartnerContributionList.vue'),
 				},
 				{
+					name: 'PartnerAudits',
+					path: 'audits',
+					component: () => import('./components/partners/PartnerAudits.vue'),
+				},
+				{
+					name: 'PartnerNCList',
+					path: 'audit/:partner_audit?',
+					component: () => import('./components/partners/PartnerNCList.vue'),
+					props: true,
+					children: [
+						{
+							name: 'PartnerNCSummary',
+							path: 'nc-summary/:nc?',
+							props: true,
+							component: () =>
+								import('./components/partners/PartnerNCSummary.vue'),
+						},
+					],
+				},
+				{
 					name: 'LocalPaymentSetup',
 					path: 'local-payment-setup',
 					component: () =>
@@ -302,34 +386,6 @@ let router = createRouter({
 					name: 'PartnerDashboard',
 					path: 'partner-dashboard',
 					component: () => import('./components/partners/PartnerDashboard.vue'),
-				},
-			],
-		},
-		{
-			name: 'Partner Admin',
-			path: '/partner-admin',
-			redirect: { name: 'PartnerList' },
-			component: () => import('./pages/PartnerAdmin.vue'),
-			children: [
-				{
-					name: 'PartnerList',
-					path: 'partner-list',
-					component: () => import('./pages/PartnerList.vue'),
-				},
-				{
-					name: 'CertificateList',
-					path: 'certificate-list',
-					component: () => import('./pages/PartnerAdminCertificates.vue'),
-				},
-				{
-					name: 'PartnerAdminLeads',
-					path: 'partner-admin-lead-list',
-					component: () => import('./pages/PartnerAdminLeads.vue'),
-				},
-				{
-					name: 'PartnerAdminResources',
-					path: 'admin-resources',
-					component: () => import('./components/partners/PartnerResources.vue'),
 				},
 			],
 		},
@@ -421,18 +477,6 @@ let router = createRouter({
 			path: '/log-browser/:mode?/:docName?/:logId?',
 			name: 'Log Browser',
 			component: () => import('./pages/devtools/log-browser/LogBrowser.vue'),
-			props: true,
-		},
-		{
-			path: '/backups/sites',
-			name: 'Site Backups',
-			component: () => import('./pages/backups/SiteBackups.vue'),
-			props: true,
-		},
-		{
-			path: '/backups/snapshots',
-			name: 'Snapshots',
-			component: () => import('./pages/backups/ServerSnapshots.vue'),
 			props: true,
 		},
 		...generateRoutes(),

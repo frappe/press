@@ -1,21 +1,46 @@
+<script setup lang="ts">
+interface Props {
+	title?: string;
+	type?: string;
+	showIcon?: boolean;
+	isDismissible?: number;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+	showIcon: true,
+	type: 'info',
+});
+
+const emit = defineEmits<{
+	(e: 'dismissBanner'): void;
+}>();
+
+const colors = {
+	info: { bg: 'bg-surface-blue-2', text: 'text-ink-blue-3' },
+	success: { bg: 'bg-surface-green-2', text: 'text-ink-green-3' },
+	error: { bg: 'bg-surface-red-2', text: 'text-ink-red-3' },
+	warning: { bg: 'bg-surface-amber-2', text: 'text-ink-amber-3' },
+	general: { bg: 'bg-surface-gray-2', text: 'text-ink-gray-3' },
+};
+</script>
+
 <template>
 	<div
-		:class="`flex items-center justify-between rounded-md border border-${color}-200 bg-${color}-100 px-3.5 py-2.5`"
+		class="flex items-center justify-between rounded-md p-2"
+		:class="colors[type].bg"
 	>
-		<div class="flex items-center">
+		<div class="flex items-center gap-2.5">
 			<lucide-alert-triangle
 				v-if="showIcon && (type === 'error' || type === 'warning')"
-				:class="`h-4 w-8 text-${color}-600`"
+				class="ml-1 size-4 shrink-0"
+				:class="colors[type].text"
 			/>
 			<lucide-info
 				v-if="showIcon && type === 'info'"
-				:class="`h-4 w-8 text-${color}-600`"
+				class="ml-1 size-4 shrink-0"
+				:class="colors[type].text"
 			/>
-			<div
-				:class="{ 'ml-3': showIcon }"
-				class="text-p-base font-medium text-gray-800"
-				v-html="title"
-			/>
+			<div class="prose-sm font-medium text-ink-gray-8" v-html="title" />
 		</div>
 
 		<div class="flex items-center">
@@ -27,49 +52,15 @@
 				v-if="isDismissible"
 			>
 				<Button
-					class="ml-1 transition-colors focus:outline-none text-ink-gray-8 bg-gray-700 bg-opacity-0 hover:bg-opacity-[4%] active:bg-opacity-[8%] h-7 w-7 rounded"
+					class="ml-1 transition-colors focus:outline-none text-ink-gray-8 bg-surface-gray-7 bg-opacity-0 hover:bg-opacity-[4%] active:bg-opacity-[8%] h-7 w-7 rounded"
 					variant="ghost"
-					theme="colors"
 					@click="$emit('dismissBanner')"
 				>
 					<template #icon>
-						<lucide-x class="h-4 w-4" />
+						<lucide-x class="size-4" />
 					</template>
 				</Button>
 			</div>
 		</div>
 	</div>
 </template>
-<script>
-const colors = {
-	info: 'blue',
-	success: 'green',
-	error: 'red',
-	warning: 'amber',
-	general: 'gray',
-};
-
-export default {
-	name: 'AlertBanner',
-	props: {
-		title: String,
-		type: {
-			type: String,
-			default: 'info',
-		},
-		showIcon: {
-			type: Boolean,
-			default: true,
-		},
-		isDismissible: {
-			type: Number,
-			default: 0,
-		},
-	},
-	computed: {
-		color() {
-			return colors[this.type] ?? 'gray';
-		},
-	},
-};
-</script>

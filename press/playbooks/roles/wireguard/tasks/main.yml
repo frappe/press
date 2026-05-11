@@ -35,6 +35,11 @@
     group: root
     mode: 0600
 
+- name: Wireguard Quick down
+  shell: |
+    wg-quick down wg0
+  ignore_errors: yes
+
 - name: Wireguard Quick up
   shell: |
     wg-quick up wg0
@@ -42,9 +47,15 @@
 - name: Wireguard Quick down
   shell: |
     wg-quick down wg0
+  ignore_errors: yes
 
 - name: Enable Wireguard
   systemd:
     name: wg-quick@wg0
     state: started
     enabled: yes
+
+- name: Start Wireguard
+  shell: |
+    wg-quick up wg0
+  ignore_errors: yes

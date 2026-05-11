@@ -19,6 +19,7 @@
 			<FormControl
 				v-if="selectedTag?.value !== '__new__'"
 				label="Select tag"
+				v-model="selectedTag"
 				type="combobox"
 				:options="tagOptions"
 				:modelValue="selectedTag?.value"

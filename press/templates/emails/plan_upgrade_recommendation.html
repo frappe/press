@@ -1,0 +1,32 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p>Hello,</p>
+        <p>
+            We have noticed frequent incidents with your current plan and recommend upgrading your
+            <strong>{{ upgrade_target }}</strong> to a more suitable plan to better meet your needs.
+        </p>
+        <p>
+            Here are the details of the recommended plan:
+        </p>
+        <ul>
+            <li><strong>Instance Type:</strong> {{ instance_type }}</li>
+            <li><strong>vCPU:</strong> {{ vcpu }}</li>
+            <li><strong>Memory:</strong> {{ memory }} GB</li>
+        </ul>
+        <p>
+            Upgrading to this plan can help reduce incidents and improve your overall experience. If you have any questions or need further assistance, feel free to reach out to our support team.
+        </p>
+        <p>
+            <a href="https://cloud.frappe.io/dashboard/servers/{{ server_name }}/overview" class="text-blue-600 underline">Click here to upgrade your plan</a>
+        </p>
+        {{ utils.signature() }}
+    </div>
+</td>
+
+{% endblock %}
+

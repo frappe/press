@@ -20,6 +20,8 @@ from oci.core.models.image_source_via_object_storage_uri_details import (
 from tenacity import retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_result
 
+from press.frappe_compute_client.client import Client as FrappeComputeClient
+
 
 class VirtualMachineImage(Document):
 	# begin: auto-generated types
@@ -126,6 +128,7 @@ class VirtualMachineImage(Document):
 				type="snapshot",
 			)
 			self.image_id = response.image.id
+			self.snapshot_id = response.image.id
 
 		elif cluster.cloud_provider == "DigitalOcean":
 			action = self.client.droplet_actions.post(
@@ -134,6 +137,9 @@ class VirtualMachineImage(Document):
 			)
 			action = action["action"]
 			self.action_id = action["id"]
+
+		elif cluster.cloud_provider == "Frappe Compute":
+			self.image_id = self.client.create_virtual_machine_image(self.instance_id)
 
 		self.sync()
 
@@ -265,6 +271,11 @@ class VirtualMachineImage(Document):
 				self.size = image["min_disk_size"]
 				self.root_size = image["min_disk_size"]
 
+		elif cluster.cloud_provider == "Frappe Compute":
+			image = self.client.sync_virtual_machine_image(self.image_id)
+			self.root_size = image.size
+			self.size = image.size
+			self.status = image.status
 		self.save()
 		return self.status
 
@@ -360,6 +371,12 @@ class VirtualMachineImage(Document):
 			return Client(token=api_token)
 		if cluster.cloud_provider == "DigitalOcean":
 			return pydo.Client(token=cluster.get_password("digital_ocean_api_token"))
+		if cluster.cloud_provider == "Frappe Compute":
+			return FrappeComputeClient(
+				url=cluster.frappe_compute_base_url,
+				api_key=cluster.frappe_compute_api_key,
+				api_secret=cluster.get_password("frappe_compute_api_secret"),
+			)
 		return None
 
 	@classmethod

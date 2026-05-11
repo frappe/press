@@ -14,6 +14,7 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.virtual_machine.virtual_machine import SERIES_TO_SERVER_TYPE
 
 if TYPE_CHECKING:
 	from press.infrastructure.doctype.virtual_machine_migration_step.virtual_machine_migration_step import (
@@ -362,7 +363,7 @@ class VirtualMachineMigration(Document):
 		# Remove these labels from the old volume
 		# So the new machine doesn't mount these as root or efi partitions
 		# Important: Update fstab so we can still boot the old machine
-		parsed_devices = json.loads(self.parsed_devices)
+		parsed_devices = json.loads(self.parsed_devices)  # type: ignore[arg-type]
 		for device in parsed_devices:
 			old_label = device["label"]
 			if not old_label:
@@ -677,8 +678,10 @@ class VirtualMachineMigration(Document):
 		return None
 
 	def ansible_run(self, command):
-		virtual_machine_ip = frappe.db.get_value("Virtual Machine", self.virtual_machine, "public_ip_address")
-		inventory = f"{virtual_machine_ip},"
+		vm_series = frappe.db.get_value("Virtual Machine", self.virtual_machine, "series")
+		server_type = SERIES_TO_SERVER_TYPE.get(vm_series)
+		server_name = frappe.db.get_value(server_type, {"virtual_machine": self.virtual_machine}, "name")
+		inventory = f"{server_name},"
 		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
 		self.add_command(command, result)
 		return result

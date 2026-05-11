@@ -231,13 +231,13 @@ class SiteUpdate(Document):
 
 		if diff := set(site_apps) - set(bench_apps):
 			frappe.throw(
-				f"Destination Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
+				f"Destination Bench <b>{self.destination_bench}</b> doesn't have some of the apps installed on the site: {', '.join(diff)}. Please uninstall them from the site or add them back to the bench (and update the same) before proceeding.",
 				frappe.ValidationError,
 			)
 
 	def before_insert(self):
 		self.backup_type = "Logical"
-		site: "Site" = frappe.get_cached_doc("Site", self.site)
+		site: "Site" = frappe.get_doc("Site", self.site)
 		site.check_move_scheduled()
 		site.check_fatal_site_update()
 
@@ -846,6 +846,7 @@ def sites_with_available_update(server=None):
 			"bench": ("in", benches),
 			"only_update_at_specified_time": False,  # will be taken care of by another scheduled job
 			"skip_auto_updates": False,
+			"fatal_site_update": ("is", "not set"),
 		},
 		fields=["name", "timezone", "bench", "server", "status"],
 	)
@@ -913,7 +914,7 @@ def schedule_updates_server(server):
 			frappe.db.rollback()
 
 
-def should_try_update(site):
+def should_try_update(site: Site):
 	source = frappe.db.get_value("Bench", site.bench, "candidate")
 	candidates = frappe.get_all(
 		"Deploy Candidate Difference", filters={"source": source}, pluck="destination"
@@ -941,6 +942,10 @@ def should_try_update(site):
 	dest_apps = [app.app for app in destination_bench.apps]
 
 	if set(source_apps) - set(dest_apps):
+		return False
+
+	# If site has fatal update which is not resolved, then don't trigger update
+	if site.fatal_site_update:
 		return False
 
 	return not frappe.db.exists(
