@@ -12,3 +12,6 @@ a965b98b90fadf438c5f0a22c5778896743a94e7
 
 # Merge master to develop
 113f4332b80b26bbc21fd7b54e14746649b4bc4b
+
+# Format doctype JSONs with Biome
+4ff510ca9fd48c978024178ec3932545735dbe9b
