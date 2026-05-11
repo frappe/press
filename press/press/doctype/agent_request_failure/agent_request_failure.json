@@ -37,14 +37,8 @@
 			"reqd": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "column_break_bxet",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_xror",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_bxet", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_xror", "fieldtype": "Section Break" },
 		{
 			"fieldname": "error",
 			"fieldtype": "Code",

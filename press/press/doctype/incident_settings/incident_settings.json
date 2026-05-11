@@ -49,14 +49,8 @@
 			"label": "Self Hosted Users",
 			"options": "Incident Settings Self Hosted User"
 		},
-		{
-			"fieldname": "section_break_rnxb",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_voyg",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "section_break_rnxb", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_voyg", "fieldtype": "Column Break" },
 		{
 			"fieldname": "confirmation_threshold_day",
 			"fieldtype": "Duration",
@@ -93,10 +87,7 @@
 			"hide_days": 1,
 			"label": "Call Repeat Interval Night"
 		},
-		{
-			"fieldname": "column_break_ehby",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ehby", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "email_alerts",

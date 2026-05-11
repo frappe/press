@@ -57,11 +57,7 @@
 			"label": "Amount",
 			"options": "currency"
 		},
-		{
-			"fieldname": "remark",
-			"fieldtype": "Small Text",
-			"label": "Remark"
-		},
+		{ "fieldname": "remark", "fieldtype": "Small Text", "label": "Remark" },
 		{
 			"fieldname": "team",
 			"fieldtype": "Link",
@@ -75,40 +71,23 @@
 			"label": "Invoice",
 			"options": "Invoice"
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_7",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_7", "fieldtype": "Section Break" },
 		{
 			"fieldname": "date",
 			"fieldtype": "Date",
 			"label": "Date",
 			"search_index": 1
 		},
-		{
-			"fieldname": "time",
-			"fieldtype": "Time",
-			"label": "Time"
-		},
+		{ "fieldname": "time", "fieldtype": "Time", "label": "Time" },
 		{
 			"fieldname": "subscription",
 			"fieldtype": "Link",
 			"label": "Subscription",
 			"options": "Subscription"
 		},
-		{
-			"fieldname": "column_break_13",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "interval",
-			"fieldtype": "Data",
-			"label": "Interval"
-		},
+		{ "fieldname": "column_break_13", "fieldtype": "Column Break" },
+		{ "fieldname": "interval", "fieldtype": "Data", "label": "Interval" },
 		{
 			"fieldname": "amended_from",
 			"fieldtype": "Link",

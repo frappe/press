@@ -25,14 +25,8 @@
 			"options": "Press Webhook",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_uhnt",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_aqtt",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_uhnt", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_aqtt", "fieldtype": "Column Break" },
 		{
 			"fieldname": "status",
 			"fieldtype": "Select",
@@ -41,10 +35,7 @@
 			"options": "Sent\nFailed",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_nnsg",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_nnsg", "fieldtype": "Section Break" },
 		{
 			"fieldname": "response_status_code",
 			"fieldtype": "Data",
@@ -64,14 +55,8 @@
 			"label": "Endpoint",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_kvpa",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_wpgi",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "section_break_kvpa", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_wpgi", "fieldtype": "Column Break" },
 		{
 			"fieldname": "timestamp",
 			"fieldtype": "Datetime",

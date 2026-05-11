@@ -31,25 +31,10 @@
 			"label": "Message",
 			"reqd": 1
 		},
-		{
-			"fieldname": "route",
-			"fieldtype": "Data",
-			"label": "Route"
-		},
-		{
-			"fieldname": "column_break_vcbh",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "note",
-			"fieldtype": "Small Text",
-			"label": "Note"
-		},
-		{
-			"fieldname": "rating",
-			"fieldtype": "Rating",
-			"label": "Rating"
-		},
+		{ "fieldname": "route", "fieldtype": "Data", "label": "Route" },
+		{ "fieldname": "column_break_vcbh", "fieldtype": "Column Break" },
+		{ "fieldname": "note", "fieldtype": "Small Text", "label": "Note" },
+		{ "fieldname": "rating", "fieldtype": "Rating", "label": "Rating" },
 		{
 			"fieldname": "team_created_on",
 			"fieldtype": "Date",
@@ -87,14 +72,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"role": "Press User"
-		},
-		{
-			"create": 1,
-			"role": "Press User"
-		}
+		{ "create": 1, "role": "Press User" }
 	],
 	"quick_entry": 1,
 	"sort_field": "modified",

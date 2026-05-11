@@ -38,10 +38,7 @@
 			"label": "Status",
 			"options": "Draft\nCreating Servers\nGathering Site Data\nWarming Up\nRestoring\nRestored\nFailure\nUnavailable"
 		},
-		{
-			"fieldname": "column_break_msoo",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_msoo", "fieldtype": "Column Break" },
 		{
 			"fieldname": "snapshot",
 			"fieldtype": "Link",
@@ -52,20 +49,14 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "section_break_ilwd",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_ilwd", "fieldtype": "Section Break" },
 		{
 			"fieldname": "sites",
 			"fieldtype": "Table",
 			"label": "Sites",
 			"options": "Server Snapshot Site Recovery"
 		},
-		{
-			"fieldname": "section_break_ipfw",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_ipfw", "fieldtype": "Section Break" },
 		{
 			"fieldname": "app_server",
 			"fieldtype": "Link",
@@ -74,10 +65,7 @@
 			"read_only": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "column_break_qsfq",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_qsfq", "fieldtype": "Column Break" },
 		{
 			"fieldname": "database_server",
 			"fieldtype": "Link",
@@ -114,10 +102,7 @@
 			"label": "Database Server Archived",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_mqrc",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_mqrc", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "snapshot.cluster",
 			"fieldname": "cluster",
@@ -133,10 +118,7 @@
 			"label": "Warm Up End Time",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_cvnn",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_cvnn", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "snapshot.team",
 			"fieldname": "team",
@@ -145,24 +127,15 @@
 			"options": "Team",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_nhfa",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_eawo",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "section_break_nhfa", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_eawo", "fieldtype": "Column Break" },
 		{
 			"fieldname": "restored_on",
 			"fieldtype": "Datetime",
 			"label": "Restored On",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_rdjy",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_rdjy", "fieldtype": "Column Break" },
 		{
 			"fieldname": "expire_backup_on",
 			"fieldtype": "Datetime",
@@ -201,15 +174,6 @@
 			"role": "Press User",
 			"share": 1,
 			"write": 1
-		},
-		{
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
-			"share": 1
 		}
 	],
 	"row_format": "Dynamic",

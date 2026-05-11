@@ -23,10 +23,7 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_djlt",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_djlt", "fieldtype": "Column Break" },
 		{
 			"fieldname": "secondary",
 			"fieldtype": "Link",
@@ -44,10 +41,7 @@
 			"label": "Status",
 			"options": "Pending\nRunning\nSuccess\nFailure"
 		},
-		{
-			"fieldname": "section_break_gajn",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_gajn", "fieldtype": "Section Break" },
 		{
 			"fieldname": "failover_steps",
 			"fieldtype": "Table",
@@ -55,10 +49,7 @@
 			"options": "Proxy Failover Steps",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_wkly",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_wkly", "fieldtype": "Section Break" },
 		{
 			"fieldname": "error",
 			"fieldtype": "Text",

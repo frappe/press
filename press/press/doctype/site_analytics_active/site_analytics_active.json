@@ -51,16 +51,8 @@
 			"fieldtype": "Check",
 			"label": "Is System Manager"
 		},
-		{
-			"fieldname": "language",
-			"fieldtype": "Data",
-			"label": "Language"
-		},
-		{
-			"fieldname": "time_zone",
-			"fieldtype": "Data",
-			"label": "Time Zone"
-		}
+		{ "fieldname": "language", "fieldtype": "Data", "label": "Language" },
+		{ "fieldname": "time_zone", "fieldtype": "Data", "label": "Time Zone" }
 	],
 	"index_web_pages_for_search": 1,
 	"istable": 1,

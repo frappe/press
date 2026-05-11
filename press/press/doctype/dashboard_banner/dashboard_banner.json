@@ -42,11 +42,7 @@
 			"fieldtype": "Check",
 			"label": "Enabled"
 		},
-		{
-			"fieldname": "message",
-			"fieldtype": "Long Text",
-			"label": "Message"
-		},
+		{ "fieldname": "message", "fieldtype": "Long Text", "label": "Message" },
 		{
 			"fieldname": "type",
 			"fieldtype": "Select",
@@ -107,10 +103,7 @@
 			"mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Site\"",
 			"options": "Dashboard Banner Site"
 		},
-		{
-			"fieldname": "column_break_fits",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_fits", "fieldtype": "Column Break" },
 		{
 			"depends_on": "eval:!doc.has_action",
 			"fieldname": "help_url",
@@ -144,18 +137,9 @@
 			"label": "Action Label",
 			"mandatory_depends_on": "eval:!!doc.has_action"
 		},
-		{
-			"fieldname": "column_break_onof",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_mycc",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_adad",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_onof", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_mycc", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_adad", "fieldtype": "Column Break" },
 		{
 			"fieldname": "user_dismissals",
 			"fieldtype": "Table",
@@ -172,10 +156,7 @@
 			"mandatory_depends_on": "eval:!doc.is_global",
 			"options": "Team\nServer\nSite\nCluster"
 		},
-		{
-			"fieldname": "column_break_udzz",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_udzz", "fieldtype": "Column Break" },
 		{
 			"fieldname": "dismissals_section",
 			"fieldtype": "Section Break",

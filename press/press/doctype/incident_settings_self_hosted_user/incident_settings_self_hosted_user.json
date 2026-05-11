@@ -24,10 +24,7 @@
 			"label": "Phone",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_ggho",
-			"fieldtype": "Column Break"
-		}
+		{ "fieldname": "column_break_ggho", "fieldtype": "Column Break" }
 	],
 	"index_web_pages_for_search": 1,
 	"istable": 1,

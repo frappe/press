@@ -131,10 +131,7 @@
 			"fieldtype": "Check",
 			"label": "Enabled"
 		},
-		{
-			"fieldname": "section_break_6",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_6", "fieldtype": "Section Break" },
 		{
 			"fieldname": "subscription_details_section",
 			"fieldtype": "Section Break",
@@ -182,10 +179,7 @@
 			"fieldtype": "HTML",
 			"label": "Address HTML"
 		},
-		{
-			"fieldname": "column_break_12",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_12", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "free_credits_allocated",
@@ -208,10 +202,7 @@
 			"fieldtype": "Section Break",
 			"label": "Feature Flags"
 		},
-		{
-			"fieldname": "custom_apps_section",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "custom_apps_section", "fieldtype": "Section Break" },
 		{
 			"fieldname": "billing_name",
 			"fieldtype": "Data",
@@ -239,14 +230,8 @@
 			"label": "Payment Mode",
 			"options": "\nCard\nPrepaid Credits\nPaid By Partner\nUPI Autopay"
 		},
-		{
-			"fieldname": "column_break_9",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_9",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_9", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_9", "fieldtype": "Section Break" },
 		{
 			"default": "1",
 			"fieldname": "send_notifications",
@@ -259,10 +244,7 @@
 			"label": "Referrer ID",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_28",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_28", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"fieldname": "ssh_access_enabled",
@@ -293,10 +275,7 @@
 			"fieldtype": "Data",
 			"label": "Partner Email"
 		},
-		{
-			"fieldname": "column_break_31",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_31", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "razorpay_enabled",
@@ -335,10 +314,7 @@
 			"options": "Team",
 			"search_index": 1
 		},
-		{
-			"fieldname": "section_break_tdm9",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_tdm9", "fieldtype": "Section Break" },
 		{
 			"fieldname": "child_team_members",
 			"fieldtype": "Table",
@@ -402,20 +378,14 @@
 			"label": "Partner Referral Code",
 			"read_only": 1
 		},
-		{
-			"fieldname": "partner_section",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "partner_section", "fieldtype": "Section Break" },
 		{
 			"depends_on": "eval:!doc.erpnext_partner && doc.partner_email",
 			"fieldname": "partnership_date",
 			"fieldtype": "Date",
 			"label": "Customer Partnership Date"
 		},
-		{
-			"fieldname": "column_break_ppov",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ppov", "fieldtype": "Column Break" },
 		{
 			"depends_on": "eval:doc.erpnext_partner",
 			"description": "Fetched from frappe.io",
@@ -431,10 +401,7 @@
 			"fieldtype": "Check",
 			"label": "Is Code Server User"
 		},
-		{
-			"fieldname": "column_break_wejg",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_wejg", "fieldtype": "Column Break" },
 		{
 			"default": "false",
 			"fieldname": "enable_performance_tuning",
@@ -461,10 +428,7 @@
 			"fieldtype": "Check",
 			"label": "Mpesa Enabled"
 		},
-		{
-			"fieldname": "column_break_uyxo",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_uyxo", "fieldtype": "Column Break" },
 		{
 			"fieldname": "mpesa_tax_id",
 			"fieldtype": "Data",
@@ -510,10 +474,7 @@
 			"fieldtype": "Section Break",
 			"label": "Partner Details"
 		},
-		{
-			"fieldname": "column_break_ooyo",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ooyo", "fieldtype": "Column Break" },
 		{
 			"fieldname": "partner_tier",
 			"fieldtype": "Link",
@@ -554,10 +515,7 @@
 			"fieldtype": "Small Text",
 			"label": "Introduction"
 		},
-		{
-			"fieldname": "column_break_akmx",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_akmx", "fieldtype": "Column Break" },
 		{
 			"fieldname": "customers",
 			"fieldtype": "Small Text",
@@ -596,14 +554,8 @@
 			"label": "Communication Infos",
 			"options": "Communication Info"
 		},
-		{
-			"fieldname": "section_break_jzok",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_hunh",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "section_break_jzok", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_hunh", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "receive_budget_alerts",
@@ -629,20 +581,9 @@
 			"fieldtype": "Section Break",
 			"label": "Partnership Date"
 		},
-		{
-			"fieldname": "start_date",
-			"fieldtype": "Date",
-			"label": "Start Date"
-		},
-		{
-			"fieldname": "column_break_egkq",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "end_date",
-			"fieldtype": "Date",
-			"label": "End Date"
-		},
+		{ "fieldname": "start_date", "fieldtype": "Date", "label": "Start Date" },
+		{ "fieldname": "column_break_egkq", "fieldtype": "Column Break" },
+		{ "fieldname": "end_date", "fieldtype": "Date", "label": "End Date" },
 		{
 			"fieldname": "company_name",
 			"fieldtype": "Data",
@@ -714,21 +655,9 @@
 			"link_doctype": "Release Group",
 			"link_fieldname": "team"
 		},
-		{
-			"group": "General",
-			"link_doctype": "Site",
-			"link_fieldname": "team"
-		},
-		{
-			"group": "General",
-			"link_doctype": "App",
-			"link_fieldname": "team"
-		},
-		{
-			"group": "Billing",
-			"link_doctype": "Invoice",
-			"link_fieldname": "team"
-		},
+		{ "group": "General", "link_doctype": "Site", "link_fieldname": "team" },
+		{ "group": "General", "link_doctype": "App", "link_fieldname": "team" },
+		{ "group": "Billing", "link_doctype": "Invoice", "link_fieldname": "team" },
 		{
 			"group": "Billing",
 			"link_doctype": "Usage Record",
@@ -789,12 +718,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 },
 		{
 			"email": 1,
 			"export": 1,

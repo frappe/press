@@ -58,18 +58,9 @@
 			"options": "currency",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_ykwh",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_ammq",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_ntqu",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ykwh", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_ammq", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_ntqu", "fieldtype": "Column Break" },
 		{
 			"fieldname": "term",
 			"fieldtype": "Data",
@@ -136,10 +127,7 @@
 			"options": "currency",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_aklc",
-			"fieldtype": "Column Break"
-		}
+		{ "fieldname": "column_break_aklc", "fieldtype": "Column Break" }
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],

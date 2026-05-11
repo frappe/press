@@ -16,11 +16,7 @@
 			"reqd": 1,
 			"unique": 1
 		},
-		{
-			"fieldname": "reason",
-			"fieldtype": "Small Text",
-			"label": "Reason"
-		}
+		{ "fieldname": "reason", "fieldtype": "Small Text", "label": "Reason" }
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],

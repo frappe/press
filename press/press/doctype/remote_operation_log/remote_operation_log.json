@@ -43,14 +43,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"role": "Press User"
-		},
-		{
-			"create": 1,
-			"role": "Press User"
-		}
+		{ "create": 1, "role": "Press User" }
 	],
 	"sort_field": "modified",
 	"sort_order": "DESC"

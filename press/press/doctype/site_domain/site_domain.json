@@ -91,10 +91,7 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_faqy",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_faqy", "fieldtype": "Column Break" },
 		{
 			"fieldname": "dns_section",
 			"fieldtype": "Section Break",
@@ -127,20 +124,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"delete": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"delete": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "delete": 1, "read": 1, "role": "Press User", "write": 1 }
 	],
 	"sort_field": "modified",
 	"sort_order": "DESC",

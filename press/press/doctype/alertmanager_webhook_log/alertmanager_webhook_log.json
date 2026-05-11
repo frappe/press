@@ -47,10 +47,7 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
 		{
 			"fieldname": "external_url",
 			"fieldtype": "Data",
@@ -65,10 +62,7 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_6",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_6", "fieldtype": "Section Break" },
 		{
 			"fieldname": "group_labels",
 			"fieldtype": "Code",
@@ -76,10 +70,7 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_8",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_8", "fieldtype": "Column Break" },
 		{
 			"fieldname": "common_labels",
 			"fieldtype": "Code",
@@ -87,10 +78,7 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_10",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_10", "fieldtype": "Section Break" },
 		{
 			"fieldname": "combined_alerts",
 			"fieldtype": "Int",

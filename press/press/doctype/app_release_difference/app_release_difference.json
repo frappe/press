@@ -20,10 +20,7 @@
 		"files"
 	],
 	"fields": [
-		{
-			"fieldname": "column_break_2",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_2", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "source_release.source",
 			"fieldname": "source",
@@ -36,10 +33,7 @@
 			"search_index": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "section_break_4",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_4", "fieldtype": "Section Break" },
 		{
 			"fieldname": "source_release",
 			"fieldtype": "Link",
@@ -57,10 +51,7 @@
 			"label": "Source Hash",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_7",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_7", "fieldtype": "Column Break" },
 		{
 			"fieldname": "destination_release",
 			"fieldtype": "Link",
@@ -78,10 +69,7 @@
 			"label": "Destination Hash",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_10",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_10", "fieldtype": "Section Break" },
 		{
 			"fieldname": "github_diff_url",
 			"fieldtype": "Code",
@@ -137,14 +125,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"role": "Press User"
-		},
-		{
-			"create": 1,
-			"role": "Press User"
-		}
+		{ "create": 1, "role": "Press User" }
 	],
 	"sort_field": "modified",
 	"sort_order": "DESC",

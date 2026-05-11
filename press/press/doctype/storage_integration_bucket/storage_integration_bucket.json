@@ -8,16 +8,8 @@
 	"engine": "InnoDB",
 	"field_order": ["minio_server_on", "minio_host_ip", "bucket_name", "region"],
 	"fields": [
-		{
-			"fieldname": "bucket_name",
-			"fieldtype": "Data",
-			"label": "Bucket name"
-		},
-		{
-			"fieldname": "region",
-			"fieldtype": "Data",
-			"label": "Region"
-		},
+		{ "fieldname": "bucket_name", "fieldtype": "Data", "label": "Bucket name" },
+		{ "fieldname": "region", "fieldtype": "Data", "label": "Region" },
 		{
 			"fieldname": "minio_server_on",
 			"fieldtype": "Link",

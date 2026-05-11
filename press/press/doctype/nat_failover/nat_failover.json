@@ -24,10 +24,7 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_lzsi",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_lzsi", "fieldtype": "Column Break" },
 		{
 			"fieldname": "secondary",
 			"fieldtype": "Link",
@@ -37,10 +34,7 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "section_break_mtuz",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_mtuz", "fieldtype": "Section Break" },
 		{
 			"fieldname": "failover_steps",
 			"fieldtype": "Table",
@@ -53,10 +47,7 @@
 			"label": "Error",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_kjoa",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_kjoa", "fieldtype": "Section Break" },
 		{
 			"fieldname": "status",
 			"fieldtype": "Select",

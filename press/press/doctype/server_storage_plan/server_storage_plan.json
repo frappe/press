@@ -20,11 +20,7 @@
 			"fieldtype": "Check",
 			"label": "Enabled"
 		},
-		{
-			"fieldname": "title",
-			"fieldtype": "Data",
-			"label": "Title"
-		},
+		{ "fieldname": "title", "fieldtype": "Data", "label": "Title" },
 		{
 			"fieldname": "pricing_section",
 			"fieldtype": "Section Break",
@@ -35,10 +31,7 @@
 			"fieldtype": "Currency",
 			"label": "Price per GB (INR)"
 		},
-		{
-			"fieldname": "column_break_xauk",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_xauk", "fieldtype": "Column Break" },
 		{
 			"fieldname": "price_usd",
 			"fieldtype": "Currency",

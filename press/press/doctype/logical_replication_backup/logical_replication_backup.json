@@ -47,10 +47,7 @@
 			"options": "Pending\nRunning\nSuccess\nFailure",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_retn",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_retn", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "site.server",
 			"fetch_if_empty": 1,
@@ -78,10 +75,7 @@
 			"options": "Server Snapshot",
 			"search_index": 1
 		},
-		{
-			"fieldname": "section_break_eagz",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_eagz", "fieldtype": "Section Break" },
 		{
 			"fieldname": "failover_steps",
 			"fieldtype": "Table",
@@ -100,20 +94,14 @@
 			"label": "Post Migrate Steps",
 			"options": "Logical Replication Step"
 		},
-		{
-			"fieldname": "section_break_jnca",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_jnca", "fieldtype": "Section Break" },
 		{
 			"fieldname": "site_replication_config",
 			"fieldtype": "Small Text",
 			"label": "Site Replication Config",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_aawe",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_aawe", "fieldtype": "Column Break" },
 		{
 			"fieldname": "bench_replication_config",
 			"fieldtype": "Small Text",
@@ -141,30 +129,21 @@
 			"options": "Pre-Migrate\nPost-Migrate\nFailover",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_aftx",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_aftx", "fieldtype": "Section Break" },
 		{
 			"fieldname": "start",
 			"fieldtype": "Datetime",
 			"label": "Start",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_vsbg",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_vsbg", "fieldtype": "Column Break" },
 		{
 			"fieldname": "end",
 			"fieldtype": "Datetime",
 			"label": "End",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_ojhl",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ojhl", "fieldtype": "Column Break" },
 		{
 			"fieldname": "duration",
 			"fieldtype": "Duration",
@@ -178,10 +157,7 @@
 			"label": "Initial Binlog Position of New Primary DB",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_zzat",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_zzat", "fieldtype": "Section Break" },
 		{
 			"default": "Pending",
 			"fieldname": "pre_migrate_stage_status",
@@ -190,10 +166,7 @@
 			"options": "Pending\nRunning\nSuccess\nFailure",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_olbe",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_olbe", "fieldtype": "Column Break" },
 		{
 			"default": "Pending",
 			"fieldname": "post_migrate_stage_status",
@@ -202,10 +175,7 @@
 			"options": "Pending\nRunning\nSuccess\nFailure",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_ookj",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ookj", "fieldtype": "Column Break" },
 		{
 			"default": "Pending",
 			"fieldname": "failover_stage_status",
@@ -214,14 +184,8 @@
 			"options": "Pending\nRunning\nSuccess\nFailure",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_orav",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_ifmh",
-			"fieldtype": "Column Break"
-		}
+		{ "fieldname": "section_break_orav", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_ifmh", "fieldtype": "Column Break" }
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,

@@ -33,10 +33,7 @@
 			"fieldtype": "Datetime",
 			"label": "Last Active"
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "enabled",
@@ -51,16 +48,8 @@
 			"in_list_view": 1,
 			"label": "Is System Manager"
 		},
-		{
-			"fieldname": "language",
-			"fieldtype": "Data",
-			"label": "Language"
-		},
-		{
-			"fieldname": "time_zone",
-			"fieldtype": "Data",
-			"label": "Time Zone"
-		},
+		{ "fieldname": "language", "fieldtype": "Data", "label": "Language" },
+		{ "fieldname": "time_zone", "fieldtype": "Data", "label": "Time Zone" },
 		{
 			"fieldname": "last_login",
 			"fieldtype": "Datetime",

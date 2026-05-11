@@ -55,10 +55,7 @@
 			"options": "server\nreplication-and-binary-log\ninnodb",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_yrfg",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_yrfg", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "set_on_new_servers",
@@ -71,10 +68,7 @@
 			"fieldtype": "Check",
 			"label": "Configurable By User"
 		},
-		{
-			"fieldname": "section_break_mhww",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_mhww", "fieldtype": "Section Break" },
 		{
 			"depends_on": "eval: doc.configurable_by_user",
 			"fieldname": "title",

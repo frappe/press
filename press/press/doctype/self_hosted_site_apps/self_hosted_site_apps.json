@@ -7,16 +7,8 @@
 	"engine": "InnoDB",
 	"field_order": ["site_name", "apps", "site_config", "site"],
 	"fields": [
-		{
-			"fieldname": "site_name",
-			"fieldtype": "Data",
-			"label": "Site Name"
-		},
-		{
-			"fieldname": "apps",
-			"fieldtype": "Data",
-			"label": "Apps"
-		},
+		{ "fieldname": "site_name", "fieldtype": "Data", "label": "Site Name" },
+		{ "fieldname": "apps", "fieldtype": "Data", "label": "Apps" },
 		{
 			"fieldname": "site_config",
 			"fieldtype": "Code",

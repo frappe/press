@@ -72,11 +72,7 @@
 			"label": "Ending Balance",
 			"options": "currency"
 		},
-		{
-			"fieldname": "invoice",
-			"fieldtype": "Data",
-			"label": "Invoice"
-		},
+		{ "fieldname": "invoice", "fieldtype": "Data", "label": "Invoice" },
 		{
 			"fieldname": "source",
 			"fieldtype": "Select",

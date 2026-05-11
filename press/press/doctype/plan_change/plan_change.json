@@ -55,10 +55,7 @@
 			"options": "Server Plan",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_6",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_6", "fieldtype": "Column Break" },
 		{
 			"fieldname": "type",
 			"fieldtype": "Select",
@@ -92,14 +89,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"role": "Press User"
-		},
-		{
-			"create": 1,
-			"role": "Press User"
-		}
+		{ "create": 1, "role": "Press User" }
 	],
 	"quick_entry": 1,
 	"sort_field": "modified",

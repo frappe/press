@@ -76,20 +76,13 @@
 			"label": "Auth Type",
 			"options": "upi\nnetbanking\ndebitcard"
 		},
-		{
-			"fieldname": "column_break_9",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_9", "fieldtype": "Column Break" },
 		{
 			"fieldname": "max_amount",
 			"fieldtype": "Currency",
 			"label": "Max Amount"
 		},
-		{
-			"fieldname": "expires_on",
-			"fieldtype": "Date",
-			"label": "Expires On"
-		},
+		{ "fieldname": "expires_on", "fieldtype": "Date", "label": "Expires On" },
 		{
 			"default": "0",
 			"fieldname": "is_default",
@@ -126,12 +119,7 @@
 			"label": "Error Code",
 			"read_only": 1
 		},
-		{
-			"fieldname": "rrn",
-			"fieldtype": "Data",
-			"label": "RRN",
-			"read_only": 1
-		},
+		{ "fieldname": "rrn", "fieldtype": "Data", "label": "RRN", "read_only": 1 },
 		{
 			"fieldname": "razorpay_signature",
 			"fieldtype": "Small Text",
@@ -184,15 +172,6 @@
 			"role": "Press User",
 			"share": 1,
 			"write": 1
-		},
-		{
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
-			"share": 1
 		}
 	],
 	"quick_entry": 1,

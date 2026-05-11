@@ -43,10 +43,7 @@
 			"in_standard_filter": 1,
 			"label": "Amount(USD)"
 		},
-		{
-			"fieldname": "column_break_ayfd",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ayfd", "fieldtype": "Column Break" },
 		{
 			"fieldname": "commission_amount",
 			"fieldtype": "Currency",

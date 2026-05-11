@@ -50,10 +50,7 @@
 			"options": "Team",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "marketplace_app.app",
 			"fieldname": "app",
@@ -71,10 +68,7 @@
 			"label": "Reason For Rejection",
 			"mandatory_depends_on": "eval:doc.status==\"Rejected\""
 		},
-		{
-			"fieldname": "section_break_8",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_8", "fieldtype": "Section Break" },
 		{
 			"fieldname": "reviewed_by",
 			"fieldtype": "Link",

@@ -57,10 +57,7 @@
 			"fieldtype": "Check",
 			"label": "Enabled"
 		},
-		{
-			"fieldname": "section_break_2",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_2", "fieldtype": "Section Break" },
 		{
 			"fieldname": "document_type",
 			"fieldtype": "Link",
@@ -68,21 +65,14 @@
 			"options": "DocType",
 			"reqd": 1
 		},
-		{
-			"fieldname": "plan_title",
-			"fieldtype": "Data",
-			"label": "Plan Title"
-		},
+		{ "fieldname": "plan_title", "fieldtype": "Data", "label": "Plan Title" },
 		{
 			"fieldname": "interval",
 			"fieldtype": "Select",
 			"label": "Interval",
 			"options": "Daily\nMonthly\nAnnually"
 		},
-		{
-			"fieldname": "column_break_5",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_5", "fieldtype": "Column Break" },
 		{
 			"fieldname": "price_inr",
 			"fieldtype": "Currency",
@@ -121,10 +111,7 @@
 			"fieldtype": "Int",
 			"label": "Max Storage Usage (MiB)"
 		},
-		{
-			"fieldname": "column_break_13",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_13", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "is_trial_plan",
@@ -191,25 +178,10 @@
 			"fieldtype": "Data",
 			"label": "Instance Type"
 		},
-		{
-			"fieldname": "column_break_21",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "vcpu",
-			"fieldtype": "Int",
-			"label": "vCPU"
-		},
-		{
-			"fieldname": "memory",
-			"fieldtype": "Int",
-			"label": "Memory"
-		},
-		{
-			"fieldname": "disk",
-			"fieldtype": "Int",
-			"label": "Disk"
-		},
+		{ "fieldname": "column_break_21", "fieldtype": "Column Break" },
+		{ "fieldname": "vcpu", "fieldtype": "Int", "label": "vCPU" },
+		{ "fieldname": "memory", "fieldtype": "Int", "label": "Memory" },
+		{ "fieldname": "disk", "fieldtype": "Int", "label": "Disk" },
 		{
 			"fieldname": "roles_section",
 			"fieldtype": "Section Break",
@@ -318,15 +290,6 @@
 			"role": "System Manager",
 			"share": 1,
 			"write": 1
-		},
-		{
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press User",
-			"share": 1
 		},
 		{
 			"email": 1,

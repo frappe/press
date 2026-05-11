@@ -65,14 +65,8 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_5",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "section_break_5", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
 		{
 			"fieldname": "play",
 			"fieldtype": "Data",
@@ -100,10 +94,7 @@
 			"label": "Unreachable",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_14",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_14", "fieldtype": "Column Break" },
 		{
 			"fieldname": "skipped",
 			"fieldtype": "Int",
@@ -122,12 +113,7 @@
 			"label": "Ignored",
 			"read_only": 1
 		},
-		{
-			"fieldname": "ok",
-			"fieldtype": "Int",
-			"label": "OK",
-			"read_only": 1
-		},
+		{ "fieldname": "ok", "fieldtype": "Int", "label": "OK", "read_only": 1 },
 		{
 			"fieldname": "failures",
 			"fieldtype": "Int",
@@ -146,10 +132,7 @@
 			"reqd": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "section_break_7",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_7", "fieldtype": "Section Break" },
 		{
 			"fieldname": "start",
 			"fieldtype": "Datetime",
@@ -162,10 +145,7 @@
 			"label": "End",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_10",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_10", "fieldtype": "Column Break" },
 		{
 			"fieldname": "duration",
 			"fieldtype": "Time",
@@ -195,16 +175,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "role": "Press User", "write": 1 }
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

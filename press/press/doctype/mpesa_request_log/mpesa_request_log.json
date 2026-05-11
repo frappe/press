@@ -40,10 +40,7 @@
 			"label": "Is Remote Request?",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_5",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_5", "fieldtype": "Column Break" },
 		{
 			"fieldname": "request_description",
 			"fieldtype": "Data",
@@ -60,10 +57,7 @@
 			"options": "\nQueued\nAuthorized\nCompleted\nCancelled\nFailed",
 			"read_only": 1
 		},
-		{
-			"fieldname": "section_break_8",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_8", "fieldtype": "Section Break" },
 		{
 			"fieldname": "url",
 			"fieldtype": "Small Text",

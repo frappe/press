@@ -31,10 +31,7 @@
 			"options": "Bench",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"default": "Not Started",
 			"fieldname": "status",
@@ -67,11 +64,7 @@
 			"options": "Site",
 			"read_only": 1
 		},
-		{
-			"fieldname": "subdomain",
-			"fieldtype": "Data",
-			"label": "New Subdomain"
-		}
+		{ "fieldname": "subdomain", "fieldtype": "Data", "label": "New Subdomain" }
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],

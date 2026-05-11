@@ -21,10 +21,7 @@
 			"reqd": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "column_break_2",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_2", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "source.app",
 			"fieldname": "app",

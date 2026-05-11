@@ -72,10 +72,7 @@
 			"fieldtype": "Check",
 			"label": "Is Default"
 		},
-		{
-			"fieldname": "column_break_9",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_9", "fieldtype": "Column Break" },
 		{
 			"fieldname": "address_html",
 			"fieldtype": "HTML",
@@ -89,11 +86,7 @@
 			"label": "Verified with Micro Charge",
 			"read_only": 1
 		},
-		{
-			"fieldname": "brand",
-			"fieldtype": "Data",
-			"label": "Card Brand"
-		},
+		{ "fieldname": "brand", "fieldtype": "Data", "label": "Card Brand" },
 		{
 			"fieldname": "stripe_mandate_id",
 			"fieldtype": "Data",
@@ -131,13 +124,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"delete": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		}
+		{ "create": 1, "delete": 1, "read": 1, "role": "Press User", "write": 1 }
 	],
 	"quick_entry": 1,
 	"search_fields": "team, name_on_card, last_4, expiry_month, expiry_year",

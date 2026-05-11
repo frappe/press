@@ -51,10 +51,7 @@
 			"label": "Error",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_2",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_2", "fieldtype": "Column Break" },
 		{
 			"fieldname": "was_scheduled_for_time",
 			"fieldtype": "Time",

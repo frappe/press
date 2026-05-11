@@ -29,10 +29,7 @@
 			"label": "Package",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_jhn9",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_jhn9", "fieldtype": "Column Break" },
 		{
 			"fieldname": "package_prerequisites",
 			"fieldtype": "Text",

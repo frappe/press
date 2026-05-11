@@ -26,11 +26,7 @@
 			"label": "site",
 			"options": "Site"
 		},
-		{
-			"fieldname": "limit",
-			"fieldtype": "Data",
-			"label": "Limit"
-		},
+		{ "fieldname": "limit", "fieldtype": "Data", "label": "Limit" },
 		{
 			"fieldname": "access_key",
 			"fieldtype": "Data",

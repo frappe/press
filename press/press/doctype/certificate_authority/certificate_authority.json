@@ -99,10 +99,7 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "section_break_9",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_9", "fieldtype": "Section Break" },
 		{
 			"depends_on": "eval: !doc.is_root_ca",
 			"fieldname": "parent_authority",
@@ -113,18 +110,9 @@
 			"read_only_depends_on": "eval: doc.is_root_ca",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_11",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_13",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_11", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_13", "fieldtype": "Column Break" },
 		{
 			"fieldname": "section_break_15",
 			"fieldtype": "Section Break",

@@ -7,10 +7,7 @@
 	"engine": "InnoDB",
 	"field_order": ["section_break_zl5a"],
 	"fields": [
-		{
-			"fieldname": "section_break_zl5a",
-			"fieldtype": "Section Break"
-		}
+		{ "fieldname": "section_break_zl5a", "fieldtype": "Section Break" }
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,

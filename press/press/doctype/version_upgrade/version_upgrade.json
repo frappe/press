@@ -64,14 +64,8 @@
 			"label": "Last Traceback",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_8",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_8", "fieldtype": "Section Break" },
 		{
 			"fieldname": "last_output",
 			"fieldtype": "Code",
@@ -102,10 +96,7 @@
 			"fieldtype": "Check",
 			"label": "Skip Backups"
 		},
-		{
-			"fieldname": "section_break_jyaj",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_jyaj", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"fieldname": "deploy_private_bench",
@@ -113,10 +104,7 @@
 			"label": "Deploy Private Bench",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_iqgs",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_iqgs", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "bench_deploy_successful",
@@ -142,16 +130,6 @@
 			"read": 1,
 			"report": 1,
 			"role": "System Manager",
-			"share": 1,
-			"write": 1
-		},
-		{
-			"create": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"report": 1,
-			"role": "Press User",
 			"share": 1,
 			"write": 1
 		},

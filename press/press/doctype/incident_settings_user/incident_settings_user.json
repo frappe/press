@@ -16,10 +16,7 @@
 			"options": "User",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_fmmd",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_fmmd", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "user.phone",
 			"fetch_if_empty": 1,

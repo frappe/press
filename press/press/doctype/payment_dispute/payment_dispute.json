@@ -44,20 +44,9 @@
 			"label": "Event Type",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_crci",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "reason",
-			"fieldtype": "Data",
-			"label": "Reason"
-		},
-		{
-			"fieldname": "status",
-			"fieldtype": "Data",
-			"label": "Status"
-		}
+		{ "fieldname": "column_break_crci", "fieldtype": "Column Break" },
+		{ "fieldname": "reason", "fieldtype": "Data", "label": "Reason" },
+		{ "fieldname": "status", "fieldtype": "Data", "label": "Status" }
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],

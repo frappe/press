@@ -16,10 +16,7 @@
 		"results"
 	],
 	"fields": [
-		{
-			"fieldname": "column_break_ctsy",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ctsy", "fieldtype": "Column Break" },
 		{
 			"fieldname": "test_site",
 			"fieldtype": "Link",
@@ -27,10 +24,7 @@
 			"options": "Site",
 			"reqd": 1
 		},
-		{
-			"fieldname": "section_break_nipr",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_nipr", "fieldtype": "Section Break" },
 		{
 			"fieldname": "results",
 			"fieldtype": "Table",

@@ -23,10 +23,7 @@
 			"reqd": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "column_break_nyqx",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_nyqx", "fieldtype": "Column Break" },
 		{
 			"fieldname": "section_break_epfa",
 			"fieldtype": "Section Break",

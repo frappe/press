@@ -67,10 +67,7 @@
 			"label": "Space (in GB)",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_6",
-			"fieldtype": "Column Break"
-		}
+		{ "fieldname": "column_break_6", "fieldtype": "Column Break" }
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],

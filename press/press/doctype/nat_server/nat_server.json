@@ -38,21 +38,14 @@
 			"options": "Pending\nInstalling\nActive\nBroken\nArchived",
 			"read_only": 1
 		},
-		{
-			"fieldname": "hostname",
-			"fieldtype": "Data",
-			"label": "Hostname"
-		},
+		{ "fieldname": "hostname", "fieldtype": "Data", "label": "Hostname" },
 		{
 			"fieldname": "domain",
 			"fieldtype": "Link",
 			"label": "Domain",
 			"options": "Root Domain"
 		},
-		{
-			"fieldname": "column_break_vpdt",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_vpdt", "fieldtype": "Column Break" },
 		{
 			"fieldname": "cluster",
 			"fieldtype": "Link",
@@ -93,10 +86,7 @@
 			"fieldtype": "Check",
 			"label": "Is Static Ip"
 		},
-		{
-			"fieldname": "column_break_oygq",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_oygq", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "virtual_machine.private_ip_address",
 			"fieldname": "private_ip",
@@ -120,10 +110,7 @@
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_cpxp",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_cpxp", "fieldtype": "Column Break" },
 		{
 			"fieldname": "root_public_key",
 			"fieldtype": "Code",

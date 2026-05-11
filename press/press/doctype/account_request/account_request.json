@@ -58,51 +58,19 @@
 			"label": "Email",
 			"search_index": 1
 		},
-		{
-			"fieldname": "request_key",
-			"fieldtype": "Data",
-			"label": "Request Key"
-		},
-		{
-			"fieldname": "team",
-			"fieldtype": "Data",
-			"label": "Team"
-		},
-		{
-			"fieldname": "invited_by",
-			"fieldtype": "Data",
-			"label": "Invited By"
-		},
-		{
-			"fieldname": "ip_address",
-			"fieldtype": "Data",
-			"label": "IP Address"
-		},
-		{
-			"fieldname": "country",
-			"fieldtype": "Data",
-			"label": "Country"
-		},
-		{
-			"fieldname": "first_name",
-			"fieldtype": "Data",
-			"label": "First Name"
-		},
-		{
-			"fieldname": "last_name",
-			"fieldtype": "Data",
-			"label": "Last Name"
-		},
+		{ "fieldname": "request_key", "fieldtype": "Data", "label": "Request Key" },
+		{ "fieldname": "team", "fieldtype": "Data", "label": "Team" },
+		{ "fieldname": "invited_by", "fieldtype": "Data", "label": "Invited By" },
+		{ "fieldname": "ip_address", "fieldtype": "Data", "label": "IP Address" },
+		{ "fieldname": "country", "fieldtype": "Data", "label": "Country" },
+		{ "fieldname": "first_name", "fieldtype": "Data", "label": "First Name" },
+		{ "fieldname": "last_name", "fieldtype": "Data", "label": "Last Name" },
 		{
 			"fieldname": "phone_number",
 			"fieldtype": "Data",
 			"label": "Phone Number"
 		},
-		{
-			"fieldname": "subdomain",
-			"fieldtype": "Data",
-			"label": "Subdomain"
-		},
+		{ "fieldname": "subdomain", "fieldtype": "Data", "label": "Subdomain" },
 		{
 			"default": "0",
 			"fieldname": "erpnext",
@@ -110,16 +78,8 @@
 			"hidden": 1,
 			"label": "ERPNext"
 		},
-		{
-			"fieldname": "company",
-			"fieldtype": "Data",
-			"label": "Company"
-		},
-		{
-			"fieldname": "designation",
-			"fieldtype": "Data",
-			"label": "Designation"
-		},
+		{ "fieldname": "company", "fieldtype": "Data", "label": "Company" },
+		{ "fieldname": "designation", "fieldtype": "Data", "label": "Designation" },
 		{
 			"fieldname": "referral_source",
 			"fieldtype": "Data",
@@ -136,14 +96,8 @@
 			"fieldtype": "Section Break",
 			"label": "ERPNext Sign Up"
 		},
-		{
-			"fieldname": "column_break_14",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_14", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"collapsible": 1,
 			"fieldname": "referrer_data",
@@ -156,11 +110,7 @@
 			"label": "Plan",
 			"options": "Site Plan"
 		},
-		{
-			"fieldname": "industry",
-			"fieldtype": "Data",
-			"label": "Industry"
-		},
+		{ "fieldname": "industry", "fieldtype": "Data", "label": "Industry" },
 		{
 			"fieldname": "no_of_users",
 			"fieldtype": "Int",
@@ -180,11 +130,7 @@
 			"label": "Agreed to Partner Consent",
 			"read_only": 1
 		},
-		{
-			"fieldname": "referrer_id",
-			"fieldtype": "Data",
-			"label": "Referrer ID"
-		},
+		{ "fieldname": "referrer_id", "fieldtype": "Data", "label": "Referrer ID" },
 		{
 			"default": "0",
 			"fieldname": "saas",
@@ -209,11 +155,7 @@
 			"label": "Geo Location",
 			"read_only": 1
 		},
-		{
-			"fieldname": "state",
-			"fieldtype": "Data",
-			"label": "State"
-		},
+		{ "fieldname": "state", "fieldtype": "Data", "label": "State" },
 		{
 			"default": "0",
 			"fieldname": "send_email",
@@ -256,15 +198,8 @@
 			"label": "Press Roles",
 			"options": "Account Request Press Role"
 		},
-		{
-			"fieldname": "otp",
-			"fieldtype": "Data",
-			"label": "OTP"
-		},
-		{
-			"fieldname": "column_break_eaxp",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "otp", "fieldtype": "Data", "label": "OTP" },
+		{ "fieldname": "column_break_eaxp", "fieldtype": "Column Break" },
 		{
 			"fieldname": "otp_generated_at",
 			"fieldtype": "Datetime",
@@ -282,11 +217,7 @@
 			"fieldtype": "Check",
 			"label": "Is Mobile"
 		},
-		{
-			"fieldname": "continent",
-			"fieldtype": "Data",
-			"label": "Continent"
-		},
+		{ "fieldname": "continent", "fieldtype": "Data", "label": "Continent" },
 		{
 			"depends_on": "eval: doc.request_key",
 			"fieldname": "request_key_expiration_time",
@@ -322,14 +253,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"role": "Press User"
-		},
-		{
-			"create": 1,
-			"role": "Press User"
-		}
+		{ "create": 1, "role": "Press User" }
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

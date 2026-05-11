@@ -52,14 +52,8 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_oypq",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_vvrg",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_oypq", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_vvrg", "fieldtype": "Section Break" },
 		{
 			"fieldname": "output",
 			"fieldtype": "Code",

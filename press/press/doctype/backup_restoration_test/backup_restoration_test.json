@@ -26,10 +26,7 @@
 			"options": "Pending\nRunning\nSuccess\nFailure\nUndelivered\nArchive Successful\nArchive Failed",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_3",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
 		{
 			"fieldname": "site",
 			"fieldtype": "Link",

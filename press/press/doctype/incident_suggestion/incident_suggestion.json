@@ -19,11 +19,7 @@
 			"in_list_view": 1,
 			"label": "Apply"
 		},
-		{
-			"fieldname": "method_name",
-			"fieldtype": "Data",
-			"label": "Method Name"
-		}
+		{ "fieldname": "method_name", "fieldtype": "Data", "label": "Method Name" }
 	],
 	"index_web_pages_for_search": 1,
 	"istable": 1,

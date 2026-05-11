@@ -45,10 +45,7 @@
 			"options": "Site Plan",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_5",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_5", "fieldtype": "Column Break" },
 		{
 			"fieldname": "type",
 			"fieldtype": "Select",
@@ -82,14 +79,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"role": "Press User"
-		},
-		{
-			"create": 1,
-			"role": "Press User"
-		},
+		{ "create": 1, "role": "Press User" },
 		{
 			"create": 1,
 			"email": 1,

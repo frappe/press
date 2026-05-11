@@ -28,10 +28,7 @@
 			"label": "Size",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_ygbk",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_ygbk", "fieldtype": "Column Break" },
 		{
 			"fieldname": "device",
 			"fieldtype": "Data",

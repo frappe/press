@@ -23,22 +23,14 @@
 			"label": "Status",
 			"options": "Pending\nRunning\nSuccess\nFailure"
 		},
-		{
-			"fieldname": "output",
-			"fieldtype": "Text",
-			"label": "Output"
-		},
+		{ "fieldname": "output", "fieldtype": "Text", "label": "Output" },
 		{
 			"fieldname": "step_name",
 			"fieldtype": "Data",
 			"in_list_view": 1,
 			"label": "Name"
 		},
-		{
-			"fieldname": "method_name",
-			"fieldtype": "Data",
-			"label": "Method"
-		},
+		{ "fieldname": "method_name", "fieldtype": "Data", "label": "Method" },
 		{
 			"fieldname": "job_type",
 			"fieldtype": "Link",
@@ -52,11 +44,7 @@
 			"label": "Job",
 			"options": "job_type"
 		},
-		{
-			"fieldname": "attempt",
-			"fieldtype": "Int",
-			"label": "Attempt"
-		},
+		{ "fieldname": "attempt", "fieldtype": "Int", "label": "Attempt" },
 		{
 			"default": "0",
 			"fieldname": "is_waiting",

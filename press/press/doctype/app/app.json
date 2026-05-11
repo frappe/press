@@ -87,14 +87,8 @@
 			"hidden": 1,
 			"label": "Repository"
 		},
-		{
-			"fieldname": "column_break_5",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "section_break_9",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "column_break_5", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_9", "fieldtype": "Section Break" },
 		{
 			"default": "0",
 			"fieldname": "enable_auto_deploy",
@@ -144,16 +138,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User"
-		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User"
-		},
+		{ "create": 1, "read": 1, "role": "Press User" },
 		{
 			"create": 1,
 			"email": 1,

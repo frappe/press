@@ -79,10 +79,7 @@
 			"label": "Image Tag",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_zdbf",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_zdbf", "fieldtype": "Column Break" },
 		{
 			"depends_on": "eval:doc.output",
 			"fieldname": "returncode",

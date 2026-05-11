@@ -23,10 +23,7 @@
 			"read_only": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "column_break_apst",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_apst", "fieldtype": "Column Break" },
 		{
 			"fieldname": "timestamp",
 			"fieldtype": "Datetime",
@@ -36,10 +33,7 @@
 			"read_only": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "section_break_bqjv",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "section_break_bqjv", "fieldtype": "Section Break" },
 		{
 			"fieldname": "diagnostics",
 			"fieldtype": "Table",

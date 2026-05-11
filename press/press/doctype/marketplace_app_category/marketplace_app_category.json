@@ -13,11 +13,7 @@
 			"fieldtype": "Small Text",
 			"label": "Description"
 		},
-		{
-			"fieldname": "slug",
-			"fieldtype": "Data",
-			"label": "Slug"
-		}
+		{ "fieldname": "slug", "fieldtype": "Data", "label": "Slug" }
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],

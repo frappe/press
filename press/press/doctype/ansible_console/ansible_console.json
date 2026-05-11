@@ -26,10 +26,7 @@
 		"error"
 	],
 	"fields": [
-		{
-			"fieldname": "inventory_section",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "inventory_section", "fieldtype": "Section Break" },
 		{
 			"fieldname": "inventory",
 			"fieldtype": "Code",

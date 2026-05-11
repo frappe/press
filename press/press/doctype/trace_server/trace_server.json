@@ -69,10 +69,7 @@
 			"read_only": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_4",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
 		{
 			"default": "Generic",
 			"fieldname": "provider",
@@ -110,10 +107,7 @@
 			"reqd": 1,
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_10",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_10", "fieldtype": "Column Break" },
 		{
 			"fetch_from": "virtual_machine.private_ip_address",
 			"fieldname": "private_ip",
@@ -166,10 +160,7 @@
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_19",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_19", "fieldtype": "Column Break" },
 		{
 			"fieldname": "root_public_key",
 			"fieldtype": "Code",
@@ -204,10 +195,7 @@
 			"label": "Sentry Admin Password",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_27",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_27", "fieldtype": "Column Break" },
 		{
 			"fieldname": "sentry_mail_server",
 			"fieldtype": "Data",
@@ -257,10 +245,7 @@
 			"label": "Sentry OAuth Client Secret",
 			"set_only_once": 1
 		},
-		{
-			"fieldname": "column_break_33",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_33", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "tls_certificate_renewal_failed",
@@ -270,12 +255,7 @@
 		}
 	],
 	"grid_page_length": 50,
-	"links": [
-		{
-			"link_doctype": "Ansible Play",
-			"link_fieldname": "server"
-		}
-	],
+	"links": [{ "link_doctype": "Ansible Play", "link_fieldname": "server" }],
 	"modified": "2025-09-02 16:44:01.317526",
 	"modified_by": "Administrator",
 	"module": "Press",

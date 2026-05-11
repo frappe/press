@@ -230,11 +230,7 @@
 			"hide_seconds": 1,
 			"label": "Free Site"
 		},
-		{
-			"fieldname": "host_name",
-			"fieldtype": "Data",
-			"label": "Host Name"
-		},
+		{ "fieldname": "host_name", "fieldtype": "Data", "label": "Host Name" },
 		{
 			"fieldname": "status_before_update",
 			"fieldtype": "Data",
@@ -299,21 +295,9 @@
 			"hidden": 1,
 			"label": "Site Usage"
 		},
-		{
-			"fieldname": "current_cpu_usage",
-			"fieldtype": "Int",
-			"hidden": 1
-		},
-		{
-			"fieldname": "current_database_usage",
-			"fieldtype": "Int",
-			"hidden": 1
-		},
-		{
-			"fieldname": "current_disk_usage",
-			"fieldtype": "Int",
-			"hidden": 1
-		},
+		{ "fieldname": "current_cpu_usage", "fieldtype": "Int", "hidden": 1 },
+		{ "fieldname": "current_database_usage", "fieldtype": "Int", "hidden": 1 },
+		{ "fieldname": "current_disk_usage", "fieldtype": "Int", "hidden": 1 },
 		{
 			"fetch_from": "bench.cluster",
 			"fieldname": "cluster",
@@ -333,18 +317,9 @@
 			"reqd": 1,
 			"search_index": 1
 		},
-		{
-			"fieldname": "column_break_29",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_34",
-			"fieldtype": "Column Break"
-		},
-		{
-			"fieldname": "column_break_15",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_29", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_34", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_15", "fieldtype": "Column Break" },
 		{
 			"fieldname": "trial_end_date",
 			"fieldtype": "Date",
@@ -455,10 +430,7 @@
 			"fieldtype": "Time",
 			"label": "Update Trigger Time"
 		},
-		{
-			"fieldname": "column_break_12",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_12", "fieldtype": "Column Break" },
 		{
 			"fieldname": "database_name",
 			"fieldtype": "Data",
@@ -477,20 +449,14 @@
 			"label": "Standby For",
 			"options": "Marketplace App"
 		},
-		{
-			"fieldname": "column_break_57",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_57", "fieldtype": "Column Break" },
 		{
 			"collapsible": 1,
 			"fieldname": "saas_section",
 			"fieldtype": "Section Break",
 			"label": "SaaS / Signup"
 		},
-		{
-			"fieldname": "column_break_63",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_63", "fieldtype": "Column Break" },
 		{
 			"fieldname": "hybrid_saas_pool",
 			"fieldtype": "Link",
@@ -502,11 +468,7 @@
 			"fieldtype": "Tab Break",
 			"label": "Billing"
 		},
-		{
-			"fieldname": "config_tab",
-			"fieldtype": "Tab Break",
-			"label": "Config"
-		},
+		{ "fieldname": "config_tab", "fieldtype": "Tab Break", "label": "Config" },
 		{
 			"fieldname": "remote_files_tab",
 			"fieldtype": "Tab Break",
@@ -517,15 +479,8 @@
 			"fieldtype": "Tab Break",
 			"label": "Miscellaneous"
 		},
-		{
-			"fieldname": "apps_tab",
-			"fieldtype": "Tab Break",
-			"label": "Apps"
-		},
-		{
-			"fieldname": "column_break_53",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "apps_tab", "fieldtype": "Tab Break", "label": "Apps" },
+		{ "fieldname": "column_break_53", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "archive_failed",
@@ -583,10 +538,7 @@
 			"fieldtype": "Section Break",
 			"label": "Setup Wizard Status"
 		},
-		{
-			"fieldname": "column_break_vbgj",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_vbgj", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "setup_wizard_status_check_retries",
@@ -609,11 +561,7 @@
 			"fieldtype": "Datetime",
 			"label": "Signup Time"
 		},
-		{
-			"fieldname": "backup_tab",
-			"fieldtype": "Tab Break",
-			"label": "Backup"
-		},
+		{ "fieldname": "backup_tab", "fieldtype": "Tab Break", "label": "Backup" },
 		{
 			"default": "0",
 			"fieldname": "allow_physical_backup_by_user",
@@ -690,10 +638,7 @@
 			"fieldtype": "Datetime",
 			"label": "Site Usage Exceeded On"
 		},
-		{
-			"fieldname": "column_break_vngj",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_vngj", "fieldtype": "Column Break" },
 		{
 			"default": "0",
 			"fieldname": "site_usage_exceeded",
@@ -760,14 +705,8 @@
 			"label": "Fatal Site Update",
 			"options": "Site Update"
 		},
-		{
-			"fieldname": "section_break_aokd",
-			"fieldtype": "Section Break"
-		},
-		{
-			"fieldname": "column_break_tfvn",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "section_break_aokd", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_tfvn", "fieldtype": "Column Break" },
 		{
 			"fieldname": "suspended_at",
 			"fieldtype": "Datetime",
@@ -806,11 +745,7 @@
 			"link_doctype": "Subscription",
 			"link_fieldname": "document_name"
 		},
-		{
-			"group": "Logs",
-			"link_doctype": "Agent Job",
-			"link_fieldname": "site"
-		},
+		{ "group": "Logs", "link_doctype": "Agent Job", "link_fieldname": "site" },
 		{
 			"group": "Logs",
 			"link_doctype": "Site Backup",
@@ -875,18 +810,7 @@
 			"share": 1,
 			"write": 1
 		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
-		{
-			"create": 1,
-			"read": 1,
-			"role": "Press User",
-			"write": 1
-		},
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 },
 		{
 			"email": 1,
 			"export": 1,

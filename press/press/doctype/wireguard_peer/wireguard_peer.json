@@ -49,20 +49,13 @@
 			"read_only": 1,
 			"unique": 1
 		},
-		{
-			"fieldname": "column_break_bsvs",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_bsvs", "fieldtype": "Column Break" },
 		{
 			"fieldname": "private_key",
 			"fieldtype": "Password",
 			"label": "Private Key"
 		},
-		{
-			"fieldname": "public_key",
-			"fieldtype": "Data",
-			"label": "Public Key"
-		},
+		{ "fieldname": "public_key", "fieldtype": "Data", "label": "Public Key" },
 		{
 			"description": "Comma Seperated CIDR blocks. EG: 10.122.0.0/20,10.7.0.1/32",
 			"fieldname": "allowed_ips",
@@ -90,11 +83,7 @@
 			"fieldtype": "Check",
 			"label": "Is Wireguard Setup"
 		},
-		{
-			"fieldname": "private_ip",
-			"fieldtype": "Data",
-			"label": "Private IP"
-		},
+		{ "fieldname": "private_ip", "fieldtype": "Data", "label": "Private IP" },
 		{
 			"fetch_from": "upstream_proxy.wireguard_network",
 			"fieldname": "wireguard_network",
@@ -102,16 +91,8 @@
 			"label": "Wireguard Network",
 			"read_only": 1
 		},
-		{
-			"fieldname": "ip",
-			"fieldtype": "Data",
-			"label": "Public IP"
-		},
-		{
-			"fieldname": "config_tab",
-			"fieldtype": "Tab Break",
-			"label": "Config"
-		},
+		{ "fieldname": "ip", "fieldtype": "Data", "label": "Public IP" },
+		{ "fieldname": "config_tab", "fieldtype": "Tab Break", "label": "Config" },
 		{
 			"fieldname": "peer_config",
 			"fieldtype": "Code",
@@ -144,10 +125,7 @@
 			"fieldtype": "Section Break",
 			"label": "Wireguard"
 		},
-		{
-			"fieldname": "column_break_aqot",
-			"fieldtype": "Column Break"
-		}
+		{ "fieldname": "column_break_aqot", "fieldtype": "Column Break" }
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],

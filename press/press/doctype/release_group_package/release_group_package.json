@@ -29,10 +29,7 @@
 			"label": "Package",
 			"reqd": 1
 		},
-		{
-			"fieldname": "column_break_r6rj",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_r6rj", "fieldtype": "Column Break" },
 		{
 			"description": "Use &amp;&amp; for multiline prerequisites\n<br><br>\nUse jinja syntax to define dependancy variables <br>\neg: python{{ PYTHON_VERSION }} ",
 			"fieldname": "package_prerequisites",

@@ -6,21 +6,9 @@
 	"engine": "InnoDB",
 	"field_order": ["user", "session_id", "otp", "verified", "otp_generated_at"],
 	"fields": [
-		{
-			"fieldname": "user",
-			"fieldtype": "Data",
-			"label": "User"
-		},
-		{
-			"fieldname": "otp",
-			"fieldtype": "Data",
-			"label": "OTP"
-		},
-		{
-			"fieldname": "session_id",
-			"fieldtype": "Data",
-			"label": "Session ID"
-		},
+		{ "fieldname": "user", "fieldtype": "Data", "label": "User" },
+		{ "fieldname": "otp", "fieldtype": "Data", "label": "OTP" },
+		{ "fieldname": "session_id", "fieldtype": "Data", "label": "Session ID" },
 		{
 			"default": "0",
 			"fieldname": "verified",
