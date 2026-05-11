@@ -6,26 +6,10 @@
 		/>
 		<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
 			<div
-				v-for="server in $appServer?.doc?.secondary_server
-					? $dbReplicaServer?.doc
-						? [
-								'Server',
-								'App Secondary Server',
-								'Database Server',
-								'Replication Server',
-							]
-						: ['Server', 'App Secondary Server', 'Database Server']
-					: $dbReplicaServer?.doc
-						? ['Server', 'Database Server', 'Replication Server']
-						: ['Server', 'Database Server']"
+				v-for="server in servers" 
 				class="col-span-1 rounded-md border lg:col-span-2"
 			>
 				<div
-					v-if="
-						!(
-							server === 'Database Server' && $appServer?.doc?.is_unified_server
-						)
-					"
 					class="grid grid-cols-2 lg:grid-cols-4"
 					:class="{
 						'opacity-70 pointer-events-none':
@@ -716,6 +700,21 @@ export default {
 		},
 	},
 	computed: {
+    servers() {
+      const list = ["Server"];
+
+      if (this.$appServer?.doc?.secondary_server) 
+        list.push("App Secondary Server");
+
+      if (!this.$appServer?.doc?.is_unified_server) 
+        list.push("Database Server");
+
+      if (this.$dbReplicaServer?.doc) 
+        list.push("Replication Server");
+
+      return list;
+    },
+
 		serverInformation() {
 			return [
 				{
