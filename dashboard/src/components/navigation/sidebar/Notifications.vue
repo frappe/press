@@ -25,12 +25,7 @@ import { getDocResource } from "@/utils/resource";
 import { renderDialog } from "@/utils/components";
 import { isMobile } from "@/utils/device";
 
-let props = defineProps({
-  item: {
-    type: Object,
-    required: true,
-  },
-});
+import Item from "./Item.vue";
 
 const formatHtml = (str: string) => {
   return str.replace(/<(?!\/?b\b)[^>]*>/g, "").split("\n")[0];
@@ -203,29 +198,26 @@ const tabs = [
   <Popover :placement="isMobile() ? 'top-start' : 'right-start'" popover-class="-mt-[15%] md:-mt-2.5">
     <!-- sidebar item -->
     <template #target="{ togglePopover }">
-      <button aria-label="Notifications btn" @click="togglePopover"
-        class="flex items-center rounded px-2 py-1.5 text-ink-gray-6 transition gap-2 hover:bg-surface-gray-2 w-full"
-        :class="[
-          item.disabled ? 'pointer-events-none opacity-50' : '',
-          $attrs.class,
-        ]">
+      <Item is='BUTTON' v-bind='$attrs' aria-label="Notifications btn" name='Notifications' @click="togglePopover">
+        <template #prefix>
 
-        <span class="flex relative">
-          <LucideBell class="size-4 text-ink-gray-6" />
-          <span v-if="unreadNotificationsCount.data > 0"
-            class="size-1 bg-surface-blue-3 rounded-full absolute right-0 -top-0.5" />
-        </span>
+          <span class="flex relative">
+            <LucideBell class="size-4 text-ink-gray-6" />
+            <span v-if="unreadNotificationsCount.data > 0"
+              class="size-1 bg-surface-blue-3 rounded-full absolute right-0 -top-0.5" />
+          </span>
+        </template>
 
-        <span class="text-sm flex-1 text-left">{{ item.name }}</span>
-
-        <span class="text-xs text-ink-gray-6" v-if="unreadNotificationsCount.data > 0">
-          {{
-            unreadNotificationsCount.data > 99
-              ? '99+'
-              : unreadNotificationsCount.data
-          }}
-        </span>
-      </button>
+        <template #suffix>
+          <span class="text-xs text-ink-gray-6" v-if="unreadNotificationsCount.data > 0">
+            {{
+              unreadNotificationsCount.data > 99
+                ? '99+'
+                : unreadNotificationsCount.data
+            }}
+          </span>
+        </template>
+      </Item>
     </template>
 
     <!-- floating drawer  -->

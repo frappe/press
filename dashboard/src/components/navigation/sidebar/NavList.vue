@@ -148,6 +148,7 @@ const navigation = computed(() => {
 			icon: App,
 			route: "/apps",
 			isActive: routeName.startsWith("Marketplace"),
+			class: "-mt-1",
 			condition:
 				$team.doc?.is_desk_user ||
 				(!!$team.doc.is_developer && $session.hasAppsAccess),
@@ -202,8 +203,8 @@ onUnmounted(() => {
 
 <template>
   <template v-for="(item, _) in navigation" :key="item.name">
-    <ItemGroup v-if="item.children" :item="item" />
-    <component v-else-if="item.customComponent" :is="item.customComponent" :item="item" />
-    <Item :class="item.class" v-else :item="item" />
+    <ItemGroup v-if="item.children" v-bind="item" />
+    <component v-else-if="item.customComponent" :is="item.customComponent" v-bind="item" />
+    <Item :class="item.class" v-else v-bind="item" />
   </template>
 </template>
