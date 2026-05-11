@@ -1,105 +1,105 @@
 {
- "actions": [],
- "autoname": "Prompt",
- "creation": "2020-03-30 15:42:28.497505",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "event_type",
-  "invoice",
-  "team",
-  "column_break_hywj",
-  "customer_id",
-  "invoice_id",
-  "stripe_payment_method",
-  "stripe_payment_intent_id",
-  "section_break_ecbt",
-  "payload"
- ],
- "fields": [
-  {
-   "fieldname": "event_type",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Event Type",
-   "read_only": 1
-  },
-  {
-   "fieldname": "payload",
-   "fieldtype": "Code",
-   "label": "Payload",
-   "read_only": 1
-  },
-  {
-   "fieldname": "customer_id",
-   "fieldtype": "Data",
-   "label": "Stripe Customer ID"
-  },
-  {
-   "fieldname": "invoice",
-   "fieldtype": "Link",
-   "label": "Invoice",
-   "options": "Invoice",
-   "search_index": 1
-  },
-  {
-   "fieldname": "invoice_id",
-   "fieldtype": "Data",
-   "label": "Stripe Invoice ID"
-  },
-  {
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Team",
-   "search_index": 1
-  },
-  {
-   "fieldname": "column_break_hywj",
-   "fieldtype": "Column Break"
-  },
-  {
-   "description": "This is only shown when a payment intent fails",
-   "fieldname": "stripe_payment_method",
-   "fieldtype": "Link",
-   "label": "Stripe Payment Method",
-   "options": "Stripe Payment Method",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_ecbt",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "stripe_payment_intent_id",
-   "fieldtype": "Data",
-   "label": "Stripe Payment Intent ID"
-  }
- ],
- "links": [],
- "modified": "2024-11-29 10:44:55.011202",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Stripe Webhook Log",
- "naming_rule": "Set by user",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+	"actions": [],
+	"autoname": "Prompt",
+	"creation": "2020-03-30 15:42:28.497505",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"event_type",
+		"invoice",
+		"team",
+		"column_break_hywj",
+		"customer_id",
+		"invoice_id",
+		"stripe_payment_method",
+		"stripe_payment_intent_id",
+		"section_break_ecbt",
+		"payload"
+	],
+	"fields": [
+		{
+			"fieldname": "event_type",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Event Type",
+			"read_only": 1
+		},
+		{
+			"fieldname": "payload",
+			"fieldtype": "Code",
+			"label": "Payload",
+			"read_only": 1
+		},
+		{
+			"fieldname": "customer_id",
+			"fieldtype": "Data",
+			"label": "Stripe Customer ID"
+		},
+		{
+			"fieldname": "invoice",
+			"fieldtype": "Link",
+			"label": "Invoice",
+			"options": "Invoice",
+			"search_index": 1
+		},
+		{
+			"fieldname": "invoice_id",
+			"fieldtype": "Data",
+			"label": "Stripe Invoice ID"
+		},
+		{
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"label": "Team",
+			"options": "Team",
+			"search_index": 1
+		},
+		{
+			"fieldname": "column_break_hywj",
+			"fieldtype": "Column Break"
+		},
+		{
+			"description": "This is only shown when a payment intent fails",
+			"fieldname": "stripe_payment_method",
+			"fieldtype": "Link",
+			"label": "Stripe Payment Method",
+			"options": "Stripe Payment Method",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_ecbt",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "stripe_payment_intent_id",
+			"fieldtype": "Data",
+			"label": "Stripe Payment Intent ID"
+		}
+	],
+	"links": [],
+	"modified": "2024-11-29 10:44:55.011202",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Stripe Webhook Log",
+	"naming_rule": "Set by user",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
 }
