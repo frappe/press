@@ -209,7 +209,7 @@ const tabs = [
         </template>
 
         <template #suffix>
-          <span class="text-xs text-ink-gray-6" v-if="unreadNotificationsCount.data > 0">
+          <span class="text-xs text-ink-gray-6 collapsed" v-if="unreadNotificationsCount.data > 0">
             {{
               unreadNotificationsCount.data > 99
                 ? '99+'
