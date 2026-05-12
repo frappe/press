@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ipaddress
+import json
 
 import frappe
 from frappe.rate_limiter import rate_limit
@@ -121,3 +122,29 @@ def callback(job_id: str | None = None):
 		frappe.throw("Invalid Job Id", frappe.ValidationError)
 
 	frappe.enqueue(handle_job_updates, server=server, job_identifier=job_id)
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=10, seconds=60)
+def update_job(job, server):
+	if not job:
+		return
+
+	verify_agent(server)
+
+	job = json.loads(job)
+
+	job_doc = frappe.get_value(
+		"Agent Job",
+		fieldname=[
+			"name",
+			"job_id",
+			"status",
+			"callback_failure_count",
+			"job_type",
+		],
+		filters={"job_id": job["id"]},
+		as_dict=True,
+	)
+
+	handle_polled_job(polled_job=job, job=job_doc)

@@ -425,6 +425,10 @@ def publish_update(job):
 	message = job_detail(job)
 	frappe.publish_realtime(event="agent_job_update", doctype="Agent Job", docname=job, message=message)
 
+	frappe.publish_realtime(
+		event="doc_update", doctype="Agent Job", docname=job, message={"doctype": "Agent Job", "name": job}
+	)
+
 	# publish event for agent job list to update in dashboard
 	# we are doing this since process agent job doesn't emit list_update for job due to set_value
 	frappe.publish_realtime(event="list_update", message={"doctype": "Agent Job", "name": job})
