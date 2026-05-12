@@ -36,15 +36,9 @@ class Telegram:
 			text = message[: MessageLimit.MAX_TEXT_LENGTH]
 			parse_mode = self._get_parse_mode(html)
 			return asyncio.run(
-				self.bot.send_message(
-					chat_id=self.chat_id,
+				self._send_message(
 					text=text,
 					parse_mode=parse_mode,
-					message_thread_id=self.topic_id,
-					read_timeout=3,
-					write_timeout=3,
-					connect_timeout=3,
-					pool_timeout=3,
 				)
 			)
 		except Exception:
@@ -62,6 +56,28 @@ class Telegram:
 		if html:
 			return ParseMode.HTML
 		return ParseMode.MARKDOWN
+
+	async def _send_message(self, text, parse_mode):
+		bot = self.bot
+		async with bot:
+			return await bot.send_message(
+				chat_id=self.chat_id,
+				text=text,
+				parse_mode=parse_mode,
+				message_thread_id=self.topic_id,
+				read_timeout=3,
+				write_timeout=3,
+				connect_timeout=3,
+				pool_timeout=3,
+			)
+
+	def _get_bot_username(self):
+		return asyncio.run(self._get_bot_username_async())
+
+	async def _get_bot_username_async(self):
+		bot = self.bot
+		async with bot:
+			return bot.username
 
 	@property
 	def bot(self):
@@ -90,7 +106,7 @@ class Telegram:
 
 		mention = text[begin:end]
 		# Only respond to messages mentioning the bot
-		if mention != f"@{self.bot.username}":
+		if mention != f"@{self._get_bot_username()}":
 			return
 
 		command = text.replace(mention, "")

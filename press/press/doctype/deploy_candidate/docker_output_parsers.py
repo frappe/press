@@ -241,7 +241,7 @@ def _get_run_command(line: str) -> str:
 
 	for i, part in enumerate(parts):
 		if not part.startswith("--"):
-			return " ".join(parts[i:])
+			return shlex.join(parts[i:])
 
 	return ""
 

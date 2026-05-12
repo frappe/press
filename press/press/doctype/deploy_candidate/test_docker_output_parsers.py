@@ -21,3 +21,8 @@ class TestDockerOutputParsers(TestCase):
 		name = 'RUN ["python", "-m", "compileall", "apps"] `#stage-compile-assets`'
 
 		self.assertEqual(get_command(name), '["python", "-m", "compileall", "apps"]')
+
+	def test_get_command_preserves_quoted_arguments(self):
+		name = 'RUN echo "hello world" `#stage-print-message`'
+
+		self.assertEqual(get_command(name), 'echo "hello world"')
