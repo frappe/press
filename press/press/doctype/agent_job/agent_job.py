@@ -423,23 +423,18 @@ def job_detail(job):
 
 def publish_update(job):
 	message = job_detail(job)
+
+	# Update the custom frontend listener
 	frappe.publish_realtime(event="agent_job_update", doctype="Agent Job", docname=job, message=message)
 
+	# Force the Agent Job form and list to auto-update
 	frappe.publish_realtime(
-		event="doc_update",
-		doctype="Agent Job",
-		docname=job,
-		message={"doctype": "Agent Job", "name": job},
-		after_commit=True,
+		event="doc_update", doctype="Agent Job", docname=job, message={"doctype": "Agent Job", "name": job}
 	)
-
-	# publish event for agent job list to update in dashboard
-	# we are doing this since process agent job doesn't emit list_update for job due to set_value
 	frappe.publish_realtime(event="list_update", message={"doctype": "Agent Job", "name": job})
 
-	# publish event for site to show job running on dashboard and update site
-	# we are doing this since process agent job doesn't emit doc_update for site due to set_value
-	if message["site"]:
+	# Force the Site form to auto-update
+	if message.get("site"):
 		frappe.publish_realtime(
 			event="doc_update",
 			doctype="Site",
@@ -452,6 +447,18 @@ def publish_update(job):
 				"site": message["site"],
 			},
 		)
+
+	# Force all individual Agent Job Steps to auto-update
+	step_docnames = frappe.get_all("Agent Job Step", filters={"agent_job": job}, pluck="name")
+
+	for step_name in step_docnames:
+		frappe.publish_realtime(
+			event="doc_update",
+			doctype="Agent Job Step",
+			docname=step_name,
+			message={"doctype": "Agent Job Step", "name": step_name},
+		)
+		frappe.publish_realtime(event="list_update", message={"doctype": "Agent Job Step", "name": step_name})
 
 
 @timer
@@ -781,19 +788,6 @@ def update_step(step_name, step):
 			"output": output,
 			"traceback": traceback,
 		},
-	)
-
-	frappe.publish_realtime(
-		event="doc_update",
-		doctype="Agent Job Step",
-		docname=step_name,
-		message={"doctype": "Agent Job Step", "name": step_name},
-		after_commit=True,
-	)
-
-	# Force the Agent Job Step list view to refresh
-	frappe.publish_realtime(
-		event="list_update", message={"doctype": "Agent Job Step", "name": step_name}, after_commit=True
 	)
 
 
