@@ -4,7 +4,7 @@
 			<div class="font-medium">Important</div>
 			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsImportant">
-					<div class="border rounded">
+					<div class="border rounded px-2">
 						<Switch
 							size="sm"
 							:disabled="disabled"
@@ -22,7 +22,7 @@
 			<div class="font-medium">General</div>
 			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsGeneral">
-					<div class="border rounded">
+					<div class="border rounded px-2">
 						<Switch
 							size="sm"
 							:disabled="disabled"
@@ -40,7 +40,7 @@
 			<div class="font-medium">Resources</div>
 			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsResources">
-					<div class="border rounded">
+					<div class="border rounded px-2">
 						<Switch
 							size="sm"
 							:disabled="disabled"
@@ -61,7 +61,7 @@
 			<div class="font-medium">Partner</div>
 			<div class="grid grid-cols-5 gap-2 text-base">
 				<div v-for="permission in permissionsPartner">
-					<div class="border rounded">
+					<div class="border rounded px-2">
 						<Switch
 							size="sm"
 							:disabled="disabled || !$props.allow_partner"
@@ -79,9 +79,10 @@
 </template>
 
 <script setup lang="ts">
-import { Switch } from 'frappe-ui';
-import { inject } from 'vue';
-const team = inject('team');
+import { Switch } from "frappe-ui";
+import { inject } from "vue";
+
+const team = inject("team");
 
 const props = withDefaults(
 	defineProps<{
@@ -122,81 +123,79 @@ const props = withDefaults(
 	},
 );
 
-console.log('props', props);
-
 defineEmits<{
 	update: [key: string, value: boolean];
 }>();
 
 const permissionsImportant = [
 	{
-		key: 'admin_access',
-		label: 'Administrator',
+		key: "admin_access",
+		label: "Administrator",
 	},
 ];
 
 const permissionsGeneral = [
 	{
-		key: 'allow_server_creation',
-		label: 'Create Servers',
+		key: "allow_server_creation",
+		label: "Create Servers",
 	},
 	{
-		key: 'allow_site_creation',
-		label: 'Create Sites',
+		key: "allow_site_creation",
+		label: "Create Sites",
 	},
 	{
-		key: 'allow_bench_creation',
-		label: 'Create Release Groups',
+		key: "allow_bench_creation",
+		label: "Create Release Groups",
 	},
 	{
-		key: 'allow_apps',
-		label: 'Marketplace',
+		key: "allow_apps",
+		label: "Marketplace",
 	},
 	{
-		key: 'allow_webhook_configuration',
-		label: 'Webhooks',
+		key: "allow_webhook_configuration",
+		label: "Webhooks",
 	},
 	{
-		key: 'allow_billing',
-		label: 'Billing',
+		key: "allow_billing",
+		label: "Billing",
 	},
 	{
-		key: 'allow_partner',
-		label: 'Partner Management',
+		key: "allow_partner",
+		label: "Partner Management",
 	},
 ];
 
 const permissionsResources = [
 	{
-		key: 'all_servers',
-		label: 'All Servers',
+		key: "all_servers",
+		label: "All Servers",
 	},
 	{
-		key: 'all_sites',
-		label: 'All Sites',
+		key: "all_sites",
+		label: "All Sites",
 	},
 	{
-		key: 'all_release_groups',
-		label: 'All Release Groups',
+		key: "all_release_groups",
+		label: "All Release Groups",
 	},
 ];
 
 const permissionsPartner = [
 	{
-		key: 'allow_dashboard',
-		label: 'Dashboard',
+		key: "allow_dashboard",
+		label: "Dashboard",
 	},
 	{
-		key: 'allow_customer',
-		label: 'Customer',
+		key: "allow_customer",
+		label: "Customer",
 	},
 	{
-		key: 'allow_leads',
-		label: 'Leads',
+		key: "allow_leads",
+		label: "Leads",
 	},
 	{
-		key: 'allow_contribution',
-		label: 'Contribution',
+		key: "allow_contribution",
+		label: "Contribution",
 	},
 ];
 </script>
