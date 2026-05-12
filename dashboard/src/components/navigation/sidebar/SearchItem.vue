@@ -8,7 +8,7 @@ import Item from "./Item.vue";
 <template>
   <Item is='BUTTON' name='Search' :icon='LucideSearch' @click="() => (searchModalOpen = true)">
     <template #suffix>
-      <span class="inline-flex items-center text-sm gap-1">
+      <span class="inline-flex items-center text-sm gap-1 collapsed">
         {{ isMac() ? '⌘ K' : 'Ctrl+k' }}
       </span>
     </template>

@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<NavItemProps>(), {
       <component :is="icon" class="size-4 text-ink-gray-6" :class="isActive ? 'text-ink-gray-8' : ''" />
     </slot>
 
-    <span class="text-sm flex-1 w-full">{{ name }}</span>
+    <span class="text-sm flex-1 collapsed">{{ name }}</span>
     <slot name="suffix" />
   </component>
 </template>

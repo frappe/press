@@ -17,8 +17,6 @@ import Logs from "~icons/lucide/scroll-text";
 import Server from "~icons/lucide/server";
 import Settings from "~icons/lucide/settings";
 import WalletCards from "~icons/lucide/wallet-cards";
-import Item from "./Item.vue";
-import ItemGroup from "./ItemGroup.vue";
 import NotificationPanel from "./Notifications.vue";
 import SearchItem from "./SearchItem.vue";
 
@@ -28,7 +26,7 @@ const $route = useRoute();
 const $team = getTeam();
 const $session = session;
 
-const navigation = computed(() => {
+const list = computed(() => {
 	if (!$team?.doc) return [];
 
 	const routeName = String($route?.name || "");
@@ -197,9 +195,5 @@ useRealtimeNotifs((data) => {
 </script>
 
 <template>
-  <template v-for="(item, _) in navigation" :key="item.name">
-    <ItemGroup v-if="item.children" v-bind="item" />
-    <component v-else-if="item.customComponent" :is="item.customComponent" :disabled="item.disabled" />
-    <Item v-else v-bind="item" />
-  </template>
+  <slot :list />
 </template>
