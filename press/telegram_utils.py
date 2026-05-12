@@ -2,8 +2,11 @@
 # For license information, please see license.txt
 
 
+import asyncio
+
 import frappe
 import telegram
+from telegram.constants import MessageLimit, ParseMode
 
 from press.utils import log_error
 
@@ -30,14 +33,19 @@ class Telegram:
 		if not message:
 			return None
 		try:
-			text = message[: telegram.MAX_MESSAGE_LENGTH]
+			text = message[: MessageLimit.MAX_TEXT_LENGTH]
 			parse_mode = self._get_parse_mode(html)
-			return self.bot.send_message(
-				chat_id=self.chat_id,
-				text=text,
-				parse_mode=parse_mode,
-				message_thread_id=self.topic_id,
-				timeout=3,
+			return asyncio.run(
+				self.bot.send_message(
+					chat_id=self.chat_id,
+					text=text,
+					parse_mode=parse_mode,
+					message_thread_id=self.topic_id,
+					read_timeout=3,
+					write_timeout=3,
+					connect_timeout=3,
+					pool_timeout=3,
+				)
 			)
 		except Exception:
 			if reraise:
@@ -52,8 +60,8 @@ class Telegram:
 
 	def _get_parse_mode(self, html):
 		if html:
-			return telegram.ParseMode.HTML
-		return telegram.ParseMode.MARKDOWN
+			return ParseMode.HTML
+		return ParseMode.MARKDOWN
 
 	@property
 	def bot(self):

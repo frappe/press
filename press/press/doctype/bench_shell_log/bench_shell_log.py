@@ -7,20 +7,17 @@ from typing import Optional, TypedDict
 import frappe
 from frappe.model.document import Document
 
-ExecuteResult = TypedDict(
-	"ExecuteResult",
-	{
-		"command": str,
-		"status": str,
-		"start": str,
-		"end": str,
-		"duration": float,
-		"output": str,
-		"directory": Optional[str],
-		"traceback": Optional[str],
-		"returncode": Optional[int],
-	},
-)
+
+class ExecuteResult(TypedDict):
+	command: str
+	status: str
+	start: str
+	end: str
+	duration: float
+	output: str
+	directory: Optional[str]
+	traceback: Optional[str]
+	returncode: Optional[int]
 
 
 class BenchShellLog(Document):
