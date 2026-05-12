@@ -426,7 +426,11 @@ def publish_update(job):
 	frappe.publish_realtime(event="agent_job_update", doctype="Agent Job", docname=job, message=message)
 
 	frappe.publish_realtime(
-		event="doc_update", doctype="Agent Job", docname=job, message={"doctype": "Agent Job", "name": job}
+		event="doc_update",
+		doctype="Agent Job",
+		docname=job,
+		message={"doctype": "Agent Job", "name": job},
+		after_commit=True,
 	)
 
 	# publish event for agent job list to update in dashboard
@@ -777,6 +781,19 @@ def update_step(step_name, step):
 			"output": output,
 			"traceback": traceback,
 		},
+	)
+
+	frappe.publish_realtime(
+		event="doc_update",
+		doctype="Agent Job Step",
+		docname=step_name,
+		message={"doctype": "Agent Job Step", "name": step_name},
+		after_commit=True,
+	)
+
+	# Force the Agent Job Step list view to refresh
+	frappe.publish_realtime(
+		event="list_update", message={"doctype": "Agent Job Step", "name": step_name}, after_commit=True
 	)
 
 
