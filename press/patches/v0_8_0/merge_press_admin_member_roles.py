@@ -36,20 +36,21 @@ def execute():
 	print(f"Updating {total} users")
 	for chunk_start in range(0, total, chunk_size):
 		chunk = users[chunk_start : chunk_start + chunk_size]
+		now_str = frappe.utils.now()
+		query = frappe.qb.into(HasRole).columns(
+			"name",
+			"creation",
+			"modified",
+			"modified_by",
+			"owner",
+			"parent",
+			"parentfield",
+			"parenttype",
+			"role",
+		)
 		for i, user in enumerate(chunk, start=chunk_start):
-			name = frappe.generate_hash(length=8)
-			now_str = frappe.utils.now()
-			frappe.qb.into(HasRole).columns(
-				"name",
-				"creation",
-				"modified",
-				"modified_by",
-				"owner",
-				"parent",
-				"parentfield",
-				"parenttype",
-				"role",
-			).insert(
+			name = frappe.generate_hash(length=10)
+			query = query.insert(
 				name,
 				now_str,
 				now_str,
@@ -59,8 +60,9 @@ def execute():
 				"roles",
 				"User",
 				"Press User",
-			).run()
+			)
 			update_progress_bar("Updating users", i, total)
+		query.run()
 		frappe.db.commit()
 
 	# Remove old roles from all users.
