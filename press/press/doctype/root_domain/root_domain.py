@@ -219,8 +219,16 @@ class RootDomain(Document):
 		proxies = frappe.get_all("Proxy Server", {"status": "Active"}, pluck="name")
 		for proxy_name in proxies:
 			proxy: ProxyServer = frappe.get_doc("Proxy Server", proxy_name)
-			proxy.append("domains", {"domain": self.name})
-			proxy.save()
+			is_exist = False
+			for domain in proxy.domains:
+				if domain.domain == self.name:
+					is_exist = True
+					break
+
+			if not is_exist:
+				proxy.append("domains", {"domain": self.name})
+				proxy.save()
+
 			proxy.setup_wildcard_hosts()
 
 
