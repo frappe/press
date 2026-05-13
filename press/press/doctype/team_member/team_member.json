@@ -1,38 +1,35 @@
 {
- "actions": [],
- "creation": "2020-03-05 18:26:34.180580",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "user",
-  "impersonate"
- ],
- "fields": [
-  {
-   "fieldname": "user",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "User",
-   "options": "User",
-   "reqd": 1
-  },
-  {
-   "fieldname": "impersonate",
-   "fieldtype": "Button",
-   "label": "Impersonate"
-  }
- ],
- "istable": 1,
- "links": [],
- "modified": "2020-07-31 11:48:59.695189",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Team Member",
- "owner": "Administrator",
- "permissions": [],
- "quick_entry": 1,
- "sort_field": "modified",
- "sort_order": "DESC",
- "track_changes": 1
+	"actions": [],
+	"creation": "2020-03-05 18:26:34.180580",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": ["user", "impersonate"],
+	"fields": [
+		{
+			"fieldname": "user",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "User",
+			"options": "User",
+			"reqd": 1
+		},
+		{
+			"fieldname": "impersonate",
+			"fieldtype": "Button",
+			"label": "Impersonate"
+		}
+	],
+	"istable": 1,
+	"links": [],
+	"modified": "2020-07-31 11:48:59.695189",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Team Member",
+	"owner": "Administrator",
+	"permissions": [],
+	"quick_entry": 1,
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"track_changes": 1
 }

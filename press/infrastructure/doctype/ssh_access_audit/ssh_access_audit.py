@@ -7,16 +7,11 @@ import json
 from functools import cached_property
 
 import frappe
-from ansible import constants, context
 from ansible.executor.task_queue_manager import TaskQueueManager
-from ansible.inventory.manager import InventoryManager
-from ansible.module_utils.common.collections import ImmutableDict
-from ansible.parsing.dataloader import DataLoader
 from ansible.playbook.play import Play
-from ansible.plugins.callback import CallbackBase
-from ansible.vars.manager import VariableManager
 from frappe.model.document import Document
 
+from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc, AnsibleCallback
 from press.utils import reconnect_on_failure
 
 SERVER_TYPES = [
@@ -28,6 +23,7 @@ SERVER_TYPES = [
 	"Monitor Server",
 	"Registry Server",
 	"Trace Server",
+	"NAT Server",
 ]
 
 
@@ -49,11 +45,13 @@ class SSHAccessAudit(Document):
 
 		hosts: DF.Table[SSHAccessAuditHost]
 		inventory: DF.Code | None
+		known_violations: DF.Table[SSHAccessAuditViolation]
 		name: DF.Int | None
 		reachable_hosts: DF.Int
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
 		suspicious_users: DF.Code | None
 		total_hosts: DF.Int
+		total_known_violations: DF.Int
 		total_violations: DF.Int
 		user_violations: DF.Int
 		violations: DF.Table[SSHAccessAuditViolation]
@@ -81,7 +79,7 @@ class SSHAccessAudit(Document):
 
 	def fetch_keys_from_servers(self):
 		try:
-			ad_hoc = AnsibleAdHoc(sources=self.inventory)
+			ad_hoc = SSHAdHoc(sources=self.inventory)
 			hosts = ad_hoc.run()
 			sorted_hosts = sorted(hosts, key=lambda host: self.inventory.index(host["host"]))
 			for host in sorted_hosts:
@@ -181,38 +179,51 @@ class SSHAccessAudit(Document):
 				}
 		return keys
 
+	def parse_users(self, json_str):
+		if not json_str:
+			return []
+		return json.loads(json_str)
+
+	def is_system_manager_key(self, key) -> bool:
+		key_info = self.known_keys.get(key, {})
+		key_doctype = key_info.get("key_doctype")
+		key_document = key_info.get("key_document")
+		if not (key_doctype and key_document):
+			return False
+		document = frappe.get_doc(key_doctype, key_document)
+		if not hasattr(document, "user"):
+			return False
+		if "System Manager" in frappe.get_roles(document.user):
+			return True
+		return False
+
 	def check_key_violations(self):
-		known_keys = self.known_keys
-		acceptable_keys = self.acceptable_keys
 		for host in self.hosts:
-			if not host.users:
-				continue
-			users = json.loads(host.users)
-			for user in users:
+			for user in self.parse_users(host.users):
 				for key in user["keys"]:
-					if key in acceptable_keys:
+					if key in self.acceptable_keys:
 						continue
 					violation = {"host": host.host, "user": user["user"], "key": key}
-					if key in known_keys:
-						violation.update(known_keys[key])
-					self.append("violations", violation)
+					if key_info := self.known_keys.get(key):
+						violation.update(key_info)
+					if self.is_system_manager_key(key):
+						self.append("known_violations", violation)
+					else:
+						self.append("violations", violation)
 
 	def check_user_violations(self):
 		suspicious_users = []
 		acceptable_users = set(["frappe", "root"])
 		for host in self.hosts:
-			if not host.users:
-				continue
-			users = json.loads(host.users)
-			for user in users:
+			for user in self.parse_users(host.users):
 				if user["user"] not in acceptable_users:
 					suspicious_users.append((host.host, user["user"]))
-
 		self.suspicious_users = json.dumps(suspicious_users, indent=1, sort_keys=True)
 
 	def set_statistics(self):
 		self.total_hosts = len(self.hosts)
 		self.reachable_hosts = len([host for host in self.hosts if host.status == "Completed"])
+		self.total_known_violations = len(self.known_violations)
 		self.total_violations = len(self.violations)
 		self.user_violations = len(json.loads(self.suspicious_users))
 
@@ -223,27 +234,9 @@ class SSHAccessAudit(Document):
 			self.status = "Success"
 
 
-class AnsibleAdHoc:
-	def __init__(self, sources):
-		constants.HOST_KEY_CHECKING = False
-		context.CLIARGS = ImmutableDict(
-			become_method="sudo",
-			check=False,
-			connection="ssh",
-			extra_vars=[],
-			remote_user="root",
-			start_at_task=None,
-			syntax=False,
-			verbosity=3,
-		)
-
-		self.loader = DataLoader()
-		self.passwords = dict({})
-
-		self.inventory = InventoryManager(loader=self.loader, sources=sources)
-		self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
-
-		self.callback = AnsibleCallback()
+class SSHAdHoc(AnsibleAdHoc):
+	def _callback(self):
+		return SSHCallback()
 
 	def run(self):
 		self.tasks = [
@@ -283,19 +276,12 @@ class AnsibleAdHoc:
 		return list(self.callback.hosts.values())
 
 
-class AnsibleCallback(CallbackBase):
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.hosts = {}
-
+class SSHCallback(AnsibleCallback):
 	def v2_runner_on_ok(self, result, *args, **kwargs):
 		self.update_task("Completed", result)
 
 	def v2_runner_on_failed(self, result, *args, **kwargs):
 		self.update_task("Completed", result)
-
-	def v2_runner_on_unreachable(self, result):
-		self.update_task("Unreachable", result)
 
 	@reconnect_on_failure()
 	def update_task(self, status, result):

@@ -16,6 +16,8 @@ def create_test_plan(
 	price_usd: float = 10.0,
 	price_inr: float = 750.0,
 	cpu_time: int = 1,
+	max_database_usage: int = 1000,
+	max_storage_usage: int = 1000,
 	plan_title: str | None = None,
 	plan_name: str | None = None,
 	allow_downgrading_from_other_plan: bool = True,
@@ -23,6 +25,7 @@ def create_test_plan(
 	release_groups: list[str] | None = None,
 	private_benches: bool = False,
 	is_trial_plan: bool = False,
+	offsite_backups: bool = False,
 ):
 	"""Create test Plan doc."""
 	plan_name = plan_name or f"Test {document_type} plan {make_autoname('.#')}"
@@ -36,11 +39,14 @@ def create_test_plan(
 			"price_inr": price_inr,
 			"price_usd": price_usd,
 			"cpu_time_per_day": cpu_time,
+			"max_database_usage": max_database_usage,
+			"max_storage_usage": max_storage_usage,
 			"allow_downgrading_from_other_plan": allow_downgrading_from_other_plan,
 			"disk": 50,
 			"instance_type": "t2.micro",
 			"private_benches": private_benches,
 			"is_trial_plan": is_trial_plan,
+			"offsite_backups": offsite_backups,
 		}
 	)
 	if allowed_apps:

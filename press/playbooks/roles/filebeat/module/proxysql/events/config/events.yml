@@ -1,0 +1,11 @@
+type: filestream
+paths:
+{{ range $i, $path := .paths }}
+  - {{$path}}
+{{ end }}
+exclude_files: [".gz$"]
+parsers:
+  - ndjson:
+      target: ""
+      keys_under_root: true
+      overwrite_keys: true

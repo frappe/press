@@ -20,3 +20,13 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright E2E artifacts
+playwright-report/
+test-results/
+tests-e2e/.env
+tests-e2e/.auth
+blob-report/
+playwright/.cache/
+*.trace.zip
+.nyc_output/

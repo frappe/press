@@ -1,16 +1,22 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
 
 import json
 import pprint
+from typing import TYPE_CHECKING
 
 import frappe
 import requests
 from boto3 import client, resource
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
+
+from press.press.doctype.site_activity.site_activity import log_site_activity
+
+if TYPE_CHECKING:
+	from press.press.doctype.backup_bucket.backup_bucket import BackupBucket
 
 
 def get_remote_key(file):
@@ -27,9 +33,7 @@ def get_remote_key(file):
 
 
 def poll_file_statuses():
-	aws_access_key = frappe.db.get_single_value(
-		"Press Settings", "offsite_backups_access_key_id"
-	)
+	aws_access_key = frappe.db.get_single_value("Press Settings", "offsite_backups_access_key_id")
 	aws_secret_key = get_decrypted_password(
 		"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
 	)
@@ -44,9 +48,7 @@ def poll_file_statuses():
 		{
 			"name": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
 			"region": default_region,
-			"access_key_id": frappe.db.get_single_value(
-				"Press Settings", "remote_access_key_id"
-			),
+			"access_key_id": frappe.db.get_single_value("Press Settings", "remote_access_key_id"),
 			"secret_access_key": get_decrypted_password(
 				"Press Settings", "Press Settings", "remote_secret_access_key"
 			),
@@ -54,7 +56,6 @@ def poll_file_statuses():
 	]
 
 	for b in frappe.get_all("Backup Bucket", ["bucket_name", "cluster", "region"]):
-
 		buckets.append(
 			{
 				"name": b["bucket_name"],
@@ -128,7 +129,7 @@ def delete_remote_backup_objects(remote_files):
 	"""Delete specified objects identified by keys in the backups bucket."""
 	remote_files = list(set([x for x in remote_files if x]))
 	if not remote_files:
-		return
+		return None
 
 	buckets = {bucket: [] for bucket in frappe.get_all("Backup Bucket", pluck="name")}
 	buckets.update({frappe.db.get_single_value("Press Settings", "aws_s3_bucket"): []})
@@ -143,9 +144,7 @@ def delete_remote_backup_objects(remote_files):
 	]
 
 	delete_s3_files(buckets)
-	frappe.db.set_value(
-		"Remote File", {"name": ("in", remote_files)}, "status", "Unavailable"
-	)
+	frappe.db.set_value("Remote File", {"name": ("in", remote_files)}, "status", "Unavailable")
 
 	return remote_files
 
@@ -174,18 +173,14 @@ class RemoteFile(Document):
 		if not self.bucket:
 			return None
 
-		elif self.bucket == frappe.db.get_single_value(
-			"Press Settings", "remote_uploads_bucket"
-		):
+		if self.bucket == frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"):
 			access_key_id = frappe.db.get_single_value("Press Settings", "remote_access_key_id")
 			secret_access_key = get_decrypted_password(
 				"Press Settings", "Press Settings", "remote_secret_access_key"
 			)
 
 		elif self.bucket:
-			access_key_id = frappe.db.get_single_value(
-				"Press Settings", "offsite_backups_access_key_id"
-			)
+			access_key_id = frappe.db.get_single_value("Press Settings", "offsite_backups_access_key_id")
 			secret_access_key = get_decrypted_password(
 				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
 			)
@@ -193,12 +188,24 @@ class RemoteFile(Document):
 		else:
 			return None
 
+		region = frappe.db.get_single_value("Press Settings", "backup_region")
+		endpoint_url = None
+
+		if frappe.db.exists("Backup Bucket", self.bucket):
+			backup_bucket: BackupBucket = frappe.get_doc("Backup Bucket", self.bucket)
+			if backup_bucket.replication_enabled:
+				region = backup_bucket.replication_region
+				endpoint_url = backup_bucket.replication_endpoint_url or endpoint_url
+			else:
+				region = backup_bucket.region
+				endpoint_url = backup_bucket.endpoint_url or endpoint_url
+
 		return client(
 			"s3",
 			aws_access_key_id=access_key_id,
 			aws_secret_access_key=secret_access_key,
-			region_name=frappe.db.get_value("Backup Bucket", self.bucket, "region")
-			or frappe.db.get_single_value("Press Settings", "backup_region"),
+			region_name=region,
+			endpoint_url=endpoint_url,
 		)
 
 	@property
@@ -215,18 +222,23 @@ class RemoteFile(Document):
 				return True
 			self.db_set("status", "Unavailable")
 			return False
-		else:
-			try:
-				return self.s3_client.head_object(Bucket=self.bucket, Key=self.file_path)
-			except Exception:
-				self.db_set("status", "Unavailable")
-				return False
+		try:
+			bucket = self.bucket
+			if frappe.db.exists("Backup Bucket", self.bucket):
+				backup_bucket: BackupBucket = frappe.get_doc("Backup Bucket", self.bucket)
+				if backup_bucket.replication_enabled:
+					bucket = backup_bucket.replication_bucket
+
+			return self.s3_client.head_object(Bucket=bucket, Key=self.file_path)
+		except Exception:
+			self.db_set("status", "Unavailable")
+			return False
 
 	@frappe.whitelist()
 	def delete_remote_object(self):
 		self.db_set("status", "Unavailable")
 		return self.s3_client.delete_object(
-			Bucket=frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
+			Bucket=self.bucket or frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
 			Key=self.file_path,
 		)
 
@@ -235,18 +247,31 @@ class RemoteFile(Document):
 
 	@frappe.whitelist()
 	def get_download_link(self):
+		# The `site` field is not set during the upload & restore of files.
+		# Not gonna play with the code here.
+		# Also, it doesn't make sense to log access while restoring.
+		if self.site:
+			log_site_activity(site=self.site, action="Access Offsite Backups")
+			frappe.db.commit()
+
+		bucket = self.bucket
+		if frappe.db.exists("Backup Bucket", bucket):
+			backup_bucket: BackupBucket = frappe.get_doc("Backup Bucket", bucket)
+			if backup_bucket.replication_enabled:
+				bucket = backup_bucket.replication_bucket
+
 		return self.url or self.s3_client.generate_presigned_url(
 			"get_object",
-			Params={"Bucket": self.bucket, "Key": self.file_path},
+			Params={"Bucket": bucket, "Key": self.file_path},
 			ExpiresIn=frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600,
 		)
 
 	def get_content(self):
 		if self.url:
 			return json.loads(requests.get(self.url).content)
-		else:
-			obj = self.s3_client.get_object(Bucket=self.bucket, Key=self.file_path)
-			return json.loads(obj["Body"].read().decode("utf-8"))
+
+		obj = self.s3_client.get_object(Bucket=self.bucket, Key=self.file_path)
+		return json.loads(obj["Body"].read().decode("utf-8"))
 
 	@property
 	def size(self) -> int:
@@ -257,11 +282,12 @@ class RemoteFile(Document):
 		"""
 		if int(self.file_size or 0):
 			return int(self.file_size or 0)
-		else:
-			response = requests.head(self.url)
-			self.file_size = int(response.headers.get("content-length", 0))
-			self.save()
-			return int(self.file_size)
+
+		assert self.url, "URL must be set to get file size"
+		response = requests.head(self.url)
+		self.file_size = int(response.headers.get("content-length", 0))
+		self.save()
+		return int(self.file_size)
 
 
 def delete_s3_files(buckets):
@@ -271,7 +297,7 @@ def delete_s3_files(buckets):
 	from press.utils import chunk
 
 	press_settings = frappe.get_single("Press Settings")
-	for bucket_name in buckets.keys():
+	for bucket_name in buckets:
 		s3 = resource(
 			"s3",
 			aws_access_key_id=press_settings.offsite_backups_access_key_id,

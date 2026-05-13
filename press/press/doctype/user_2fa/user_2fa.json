@@ -1,90 +1,91 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "field:user",
- "creation": "2024-08-21 16:10:57.634579",
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "user",
-  "totp_secret",
-  "enabled",
-  "last_verified_at"
- ],
- "fields": [
-  {
-   "fieldname": "user",
-   "fieldtype": "Link",
-   "label": "User",
-   "options": "User",
-   "unique": 1
-  },
-  {
-   "fieldname": "totp_secret",
-   "fieldtype": "Password",
-   "label": "TOTP Secret"
-  },
-  {
-   "default": "0",
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Enabled"
-  },
-  {
-   "fieldname": "last_verified_at",
-   "fieldtype": "Datetime",
-   "label": "Last Verified At"
-  }
- ],
- "grid_page_length": 50,
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-03-06 21:23:48.649044",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "User 2FA",
- "naming_rule": "By fieldname",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Admin",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Member",
-   "share": 1,
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "creation",
- "sort_order": "DESC",
- "states": []
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "field:user",
+	"creation": "2024-08-21 16:10:57.634579",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"user",
+		"totp_secret",
+		"enabled",
+		"last_verified_at",
+		"recovery_codes",
+		"recovery_codes_last_viewed_at"
+	],
+	"fields": [
+		{
+			"fieldname": "user",
+			"fieldtype": "Link",
+			"label": "User",
+			"options": "User",
+			"unique": 1
+		},
+		{
+			"fieldname": "totp_secret",
+			"fieldtype": "Password",
+			"label": "TOTP Secret"
+		},
+		{
+			"default": "0",
+			"fieldname": "enabled",
+			"fieldtype": "Check",
+			"label": "Enabled"
+		},
+		{
+			"fieldname": "last_verified_at",
+			"fieldtype": "Datetime",
+			"label": "Last Verified At"
+		},
+		{
+			"fieldname": "recovery_codes",
+			"fieldtype": "Table",
+			"label": "Recovery Codes",
+			"options": "User 2FA Recovery Code"
+		},
+		{
+			"fieldname": "recovery_codes_last_viewed_at",
+			"fieldtype": "Datetime",
+			"label": "Recovery Codes Last Viewed At"
+		}
+	],
+	"grid_page_length": 50,
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2025-06-21 16:04:54.476967",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "User 2FA",
+	"naming_rule": "By fieldname",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press User",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": []
 }

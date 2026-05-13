@@ -19,6 +19,8 @@ from press.press.doctype.team.test_team import create_test_team
 
 class TestSelfHostedServer(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		create_test_press_settings()
 
 	def tearDown(self):
@@ -263,9 +265,7 @@ class TestSelfHostedServer(FrappeTestCase):
 		self.assertEqual(pre_subscription_count, post_subscription_count - 2)
 
 
-def create_test_self_hosted_server(
-	host, database_plan=None, plan=None
-) -> SelfHostedServer:
+def create_test_self_hosted_server(host, database_plan=None, plan=None) -> SelfHostedServer:
 	"""
 	Plan: is a string that represents the application servers subscription plan name
 	Database Plan: is a string that represents the database servers subscription plan name

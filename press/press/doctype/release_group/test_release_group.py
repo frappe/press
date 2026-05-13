@@ -4,12 +4,13 @@
 from __future__ import annotations
 
 import typing
-import unittest
 from unittest.mock import Mock, patch
 
 import frappe
 from frappe.core.utils import find
+from frappe.tests.utils import FrappeTestCase
 
+from press.agent import Agent
 from press.api.bench import deploy_information
 from press.api.client import get_list
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -21,10 +22,25 @@ from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
+from press.press.doctype.server.server import BaseServer
 from press.press.doctype.team.test_team import create_test_team
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app.app import App
+
+
+def mock_free_space(space_required: int):
+	def wrapper(*args, **kwargs):
+		return space_required
+
+	return wrapper
+
+
+def mock_image_size(image_size: int):
+	def wrapper(*args, **kwargs):
+		return {"size": image_size}
+
+	return wrapper
 
 
 def create_test_release_group(
@@ -33,6 +49,8 @@ def create_test_release_group(
 	public=False,
 	frappe_version="Version 14",
 	servers: list[str] | None = None,
+	build_server: str | None = None,
+	app_sources: list[str] | None = None,
 ) -> ReleaseGroup:
 	"""
 	Create Release Group doc.
@@ -45,14 +63,18 @@ def create_test_release_group(
 			"doctype": "Release Group",
 			"version": frappe_version,
 			"enabled": True,
-			"title": f"Test ReleaseGroup {frappe.mock('name')}",
+			"title": f"Test ReleaseGroup {frappe.generate_hash(length=10)}",
 			"team": frappe.get_value("Team", {"user": user}, "name"),
 			"public": public,
+			"build_server": build_server,
 		}
 	)
-	for app in apps:
-		app_source = create_test_app_source(release_group.version, app)
-		release_group.append("apps", {"app": app.name, "source": app_source.name})
+
+	if not app_sources:
+		app_sources = [create_test_app_source(release_group.version, app).name for app in apps]
+
+	for idx, app in enumerate(apps):
+		release_group.append("apps", {"app": app.name, "source": app_sources[idx]})
 
 	if servers:
 		for server in servers:
@@ -64,8 +86,10 @@ def create_test_release_group(
 
 
 @patch.object(AppSource, "create_release", create_test_app_release)
-class TestReleaseGroup(unittest.TestCase):
+class TestReleaseGroup(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_team().name
 
 	def tearDown(self):
@@ -74,7 +98,10 @@ class TestReleaseGroup(unittest.TestCase):
 	def test_create_release_group(self):
 		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=self.team,
 		)
 		group = new_release_group(
 			"Test Group",
@@ -87,11 +114,17 @@ class TestReleaseGroup(unittest.TestCase):
 	def test_create_release_group_set_app_from_source(self):
 		app1 = create_test_app("frappe", "Frappe Framework")
 		source1 = app1.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=self.team,
 		)
 		app2 = create_test_app("erpnext", "ERPNext")
 		source2 = app2.add_source(
-			"Version 12", "https://github.com/frappe/erpnext", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/erpnext",
+			branch="version-12",
+			team=self.team,
 		)
 		group = new_release_group(
 			"Test Group",
@@ -104,7 +137,10 @@ class TestReleaseGroup(unittest.TestCase):
 	def test_create_release_group_fail_when_first_app_is_not_frappe(self):
 		app = create_test_app("erpnext", "ERPNext")
 		source = app.add_source(
-			"Version 12", "https://github.com/frappe/erpnext", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/erpnext",
+			branch="version-12",
+			team=self.team,
 		)
 		self.assertRaises(
 			frappe.ValidationError,
@@ -118,7 +154,10 @@ class TestReleaseGroup(unittest.TestCase):
 	def test_create_release_group_fail_when_duplicate_apps(self):
 		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=self.team,
 		)
 		self.assertRaises(
 			frappe.ValidationError,
@@ -135,7 +174,10 @@ class TestReleaseGroup(unittest.TestCase):
 	def test_create_release_group_fail_when_version_mismatch(self):
 		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=self.team,
 		)
 		self.assertRaises(
 			frappe.ValidationError,
@@ -149,7 +191,10 @@ class TestReleaseGroup(unittest.TestCase):
 	def test_create_release_group_fail_with_duplicate_titles(self):
 		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
+			frappe_version="Version 12",
+			repository_url="https://github.com/frappe/frappe",
+			branch="version-12",
+			team=self.team,
 		)
 		new_release_group(
 			"Test Group",
@@ -407,7 +452,7 @@ class TestReleaseGroup(unittest.TestCase):
 		for app, app_source in [(frappe_app, frappe_app_source), (hrms_app, hrms_app_source)]:
 			release_group.append("apps", {"app": app.name, "source": app_source.name})
 
-		release_group.check_dependant_apps = True
+		release_group.check_dependent_apps = True
 
 		with self.assertRaises(frappe.exceptions.ValidationError):
 			release_group.insert()
@@ -420,3 +465,97 @@ class TestReleaseGroup(unittest.TestCase):
 
 		release_group.append("apps", {"app": erpnext.name, "source": erpnext_app_source.name})
 		release_group.insert()
+
+	@patch.object(frappe, "enqueue_doc", new=Mock())
+	def test_multiple_platform_server_addition(self):
+		def create_build_and_succeed(release_group: ReleaseGroup):
+			deploy_candidate = release_group.create_deploy_candidate()
+			response = deploy_candidate.build()
+			deploy_candidate_name = response["message"]
+			frappe.db.set_value("Deploy Candidate Build", deploy_candidate_name, "status", "Success")
+
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.proxy_server.test_proxy_server import (
+			create_test_proxy_server,
+		)
+		from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
+		from press.press.doctype.server.test_server import create_test_server
+
+		cluster = create_test_cluster("Default", public=True)
+		root_domain = create_test_root_domain("local.fc.frappe.dev")
+		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
+
+		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, use_for_build=True)
+		f2_server = create_test_server(
+			cluster=cluster.name, proxy_server=n1_server.name, platform="arm64", use_for_build=True
+		)
+
+		f1_server.save()
+		f2_server.save()
+
+		rg = create_test_release_group([create_test_app()], servers=[f1_server.name])
+		frappe.db.savepoint("release_group_setup")
+
+		with self.assertRaises(frappe.ValidationError):
+			# No previous builds present
+			rg.add_server(f2_server.name, True)
+
+		frappe.db.rollback(
+			save_point="release_group_setup"
+		)  # to simulate different request/transaction after error
+		rg.reload()
+
+		create_build_and_succeed(rg)
+
+		# This server addition created a deploy candidate build
+		rg.add_server(f2_server.name, True)
+		arm_build = frappe.get_value("Deploy Candidate Build", {"group": rg.name, "platform": "arm64"})
+
+		self.assertTrue(arm_build)
+
+		# Assert added deploy candidate build has a `deploy on server` field
+		self.assertEqual(
+			frappe.get_value("Deploy Candidate Build", arm_build, "deploy_on_server"), f2_server.name
+		)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch.object(BaseServer, "calculated_increase_disk_size", Mock())
+	def test_insufficient_space(self):
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.site.test_site import create_test_bench
+
+		app = create_test_app()
+		server = create_test_server(auto_increase_storage=False)
+		test_release_group = create_test_release_group([app], servers=[server.name])
+		create_test_bench(group=test_release_group)
+
+		with (
+			patch.object(BaseServer, "free_space", mock_free_space(space_required=54000000000)),
+			patch.object(Agent, "get", mock_image_size(5.21)),
+		):  # Image size is 5.2gb:  # mocking 50 gib of storage enough space!
+			test_release_group.check_app_server_storage()
+
+		with (
+			self.assertRaises(frappe.ValidationError),
+			patch.object(BaseServer, "free_space", mock_free_space(space_required=5400000000)),
+			patch.object(Agent, "get", mock_image_size(6)),
+		):  # Image size is 6gb:  # mocking 5 gib of storage enough space!
+			test_release_group.check_app_server_storage()
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch.object(BaseServer, "calculated_increase_disk_size", Mock())
+	@patch.object(Agent, "get", mock_image_size(60))
+	@patch.object(BaseServer, "free_space", mock_free_space(space_required=5400000000))
+	def test_insufficient_space_on_auto_add_storage_servers(self):
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.site.test_site import create_test_bench
+
+		# In case of public and servers with auto increase storage
+		# We should avoid throwing space errors instead just increment it for them
+
+		app = create_test_app()
+		server = create_test_server(auto_increase_storage=1)
+		test_release_group = create_test_release_group([app], servers=[server.name])
+		create_test_bench(group=test_release_group)
+
+		test_release_group.check_app_server_storage()

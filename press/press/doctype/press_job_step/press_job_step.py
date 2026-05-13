@@ -1,11 +1,16 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
 import frappe
 from frappe.model.document import Document
 from frappe.utils.safe_exec import safe_exec
+
+if TYPE_CHECKING:
+	from press.press.doctype.press_job.press_job import PressJob
 
 
 class PressJobStep(Document):
@@ -32,7 +37,7 @@ class PressJobStep(Document):
 	# end: auto-generated types
 
 	@frappe.whitelist()
-	def execute(self):
+	def execute(self):  # noqa: C901
 		if not self.start:
 			self.start = frappe.utils.now_datetime()
 		self.status = "Running"
@@ -41,7 +46,7 @@ class PressJobStep(Document):
 			{"parent": self.job_type, "step_name": self.step_name},
 			"script",
 		)
-		job = frappe.get_doc("Press Job", self.job)
+		job: PressJob = frappe.get_doc("Press Job", self.job)
 		arguments = json.loads(job.arguments)
 		try:
 			local = {"arguments": frappe._dict(arguments), "result": None, "doc": job}
@@ -50,7 +55,9 @@ class PressJobStep(Document):
 
 			if self.wait_until_true:
 				self.attempts = self.attempts + 1
-				if result[0]:
+				if result is None:
+					self.status = "Skipped"
+				elif result[0]:
 					self.status = "Success"
 				elif result[1]:
 					self.status = "Failure"
@@ -60,11 +67,18 @@ class PressJobStep(Document):
 
 					time.sleep(1)
 			else:
-				self.status = "Success"
+				if result is not None and (isinstance(result, (list, tuple))) and len(result) == 2:
+					self.status = "Success" if result[0] else "Failure"
+					if not result[0] and not result[1]:
+						self.status = "Skipped"
+				else:
+					self.status = "Success"
 			self.result = str(result)
 		except Exception:
 			self.status = "Failure"
 			self.traceback = frappe.get_traceback(with_context=True)
+			if frappe.flags.in_test:
+				raise
 
 		self.end = frappe.utils.now_datetime()
 		self.duration = (self.end - self.start).total_seconds()
@@ -74,3 +88,8 @@ class PressJobStep(Document):
 			job.fail(local["arguments"])
 		else:
 			job.next(local["arguments"])
+
+
+def on_doctype_update():
+	if not frappe.db.has_index("tabPress Job Step", "job_status_idx"):
+		frappe.db.add_index("Press Job Step", ["job", "status"], "job_status_idx")

@@ -7,9 +7,10 @@ import json
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import get_url, random_string
+from frappe.utils import get_url, random_string, validate_email_address
 
-from press.utils import get_country_info, is_valid_email_address
+from press.guards import settings
+from press.utils import disposable_emails, get_country_info, is_valid_email_address, log_error
 from press.utils.otp import generate_otp
 from press.utils.telemetry import capture
 
@@ -28,7 +29,9 @@ class AccountRequest(Document):
 		)
 
 		agreed_to_partner_consent: DF.Check
+		agreed_to_terms: DF.Check
 		company: DF.Data | None
+		continent: DF.Data | None
 		country: DF.Data | None
 		designation: DF.Data | None
 		email: DF.Data | None
@@ -39,6 +42,7 @@ class AccountRequest(Document):
 		invited_by: DF.Data | None
 		invited_by_parent_team: DF.Check
 		ip_address: DF.Data | None
+		is_mobile: DF.Check
 		is_us_eu: DF.Check
 		last_name: DF.Data | None
 		no_of_employees: DF.Data | None
@@ -53,7 +57,7 @@ class AccountRequest(Document):
 		referral_source: DF.Data | None
 		referrer_id: DF.Data | None
 		request_key: DF.Data | None
-		role: DF.Data | None
+		request_key_expiration_time: DF.Datetime | None
 		saas: DF.Check
 		saas_app: DF.Link | None
 		send_email: DF.Check
@@ -81,6 +85,7 @@ class AccountRequest(Document):
 
 		if not self.request_key:
 			self.request_key = random_string(32)
+			self.request_key_expiration_time = frappe.utils.add_to_date(minutes=10)
 
 		if not self.otp:
 			self.otp = generate_otp()
@@ -92,6 +97,9 @@ class AccountRequest(Document):
 		geo_location = self.get_country_info() or {}
 		self.geo_location = json.dumps(geo_location, indent=1, sort_keys=True)
 		self.state = geo_location.get("regionName")
+		self.country = geo_location.get("country")
+		self.is_mobile = geo_location.get("mobile", False)
+		self.continent = geo_location.get("continent")
 
 		# check for US and EU
 		if (
@@ -103,8 +111,33 @@ class AccountRequest(Document):
 		else:
 			self.is_us_eu = False
 
+	def before_validate(self):
+		self.sanitize_email()
+
+	def sanitize_email(self):
+		# Validate and get rid of extra emails.
+		# Example: `a@example.com, b@example.com, foobar` -> `a@example.com`.
+		self.email = validate_email_address(self.email).split(",").pop(0)
+
 	def validate(self):
-		self.email = self.email.strip()
+		self.disallow_disposable_emails()
+		validate_email_address(self.email, throw=True)
+
+	@settings.enabled("disallow_disposable_emails")
+	def disallow_disposable_emails(self):
+		"""
+		Disallow temporary email providers for account requests. Throws
+		validation error if a temporary email provider is detected.
+		"""
+		if frappe.conf.developer_mode and frappe.local.dev_server:
+			return
+		if not self.email:
+			return
+		if disposable_emails.is_disposable(self.email):
+			frappe.throw(
+				"Temporary email providers are not allowed.",
+				frappe.ValidationError,
+			)
 
 	def after_insert(self):
 		# Telemetry: Only capture if it's not a saas signup or invited by parent team. Also don't capture if user already have a team
@@ -118,7 +151,7 @@ class AccountRequest(Document):
 
 		if self.is_saas_signup() and self.is_using_new_saas_flow():
 			# Telemetry: Account Request Created
-			capture("account_request_created", "fc_saas", self.email)
+			capture("account_request_created", "fc_product_trial", self.email)
 
 		if self.is_saas_signup() and not self.is_using_new_saas_flow():
 			# If user used oauth, we don't need to verification email but to track the event in stat, send this dummy event
@@ -146,6 +179,9 @@ class AccountRequest(Document):
 		return False
 
 	def reset_otp(self):
+		if not self.request_key:
+			self.request_key = random_string(32)
+			self.request_key_expiration_time = frappe.utils.add_to_date(minutes=10)
 		self.otp = generate_otp()
 		if frappe.conf.developer_mode and frappe.local.dev_server:
 			self.otp = 111111
@@ -155,7 +191,7 @@ class AccountRequest(Document):
 	def send_verification_email(self):  # noqa: C901
 		url = self.get_verification_url()
 
-		if frappe.conf.developer_mode:
+		if frappe.conf.developer_mode and frappe.local.dev_server:
 			print(f"\nSetup account URL for {self.email}:")
 			print(url)
 			print(f"\nOTP for {self.email}:")
@@ -166,7 +202,7 @@ class AccountRequest(Document):
 		subject = f"{self.otp} - OTP for Frappe Cloud Account Verification"
 		args = {}
 		sender = ""
-
+		inline_images = []
 		custom_template = self.saas_app and frappe.db.get_value(
 			"Marketplace App", self.saas_app, "custom_verify_template"
 		)
@@ -174,6 +210,7 @@ class AccountRequest(Document):
 			subject = "Verify your email for Frappe"
 			template = "saas_verify_account"
 			# If product trial(new saas flow), get the product trial details
+
 			if self.product_trial:
 				template = "product_trial_verify_account"
 				product_trial = frappe.get_doc("Product Trial", self.product_trial)
@@ -183,6 +220,23 @@ class AccountRequest(Document):
 					sender = frappe.get_value("Email Account", product_trial.email_account, "email_id")
 				if product_trial.email_full_logo:
 					args.update({"image_path": get_url(product_trial.email_full_logo, True)})
+					try:
+						logo_name = product_trial.email_full_logo[1:]
+						args.update({"logo_name": logo_name})
+						with open(frappe.utils.get_site_path("public", logo_name), "rb") as logo_file:
+							inline_images.append(
+								{
+									"filename": logo_name,
+									"filecontent": logo_file.read(),
+								}
+							)
+					except Exception as ex:
+						log_error(
+							"Error reading logo for inline images in email",
+							data=ex,
+							reference_doctype=self.doctype,
+							reference_name=self.name,
+						)
 				args.update({"header_content": product_trial.email_header_content or ""})
 			# If saas_app is set, check for email account in saas settings of that app
 			elif self.saas_app:
@@ -191,8 +245,7 @@ class AccountRequest(Document):
 					sender = frappe.get_value("Email Account", email_account, "email_id")
 		else:
 			template = "verify_account"
-
-			if self.invited_by and self.role != "Press Admin":
+			if self.invited_by:
 				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
 				template = "invite_team_member"
 
@@ -213,31 +266,59 @@ class AccountRequest(Document):
 				}
 			)
 		# Telemetry: Verification Email Sent
-		# Only capture if it's not a saas signup or invited by parent team
 		if not (self.is_saas_signup() or self.invited_by_parent_team):
 			# Telemetry: Verification Mail Sent
 			capture("verification_email_sent", "fc_signup", self.email)
-		frappe.sendmail(
-			sender=sender,
-			recipients=self.email,
-			subject=subject,
-			template=template,
-			args=args,
-			now=True,
-		)
+		if self.is_using_new_saas_flow():
+			# Telemetry: Verification Email Sent for new saas flow when coming from product page
+			capture("verification_email_sent", "fc_product_trial", self.name)
 
-	def send_login_mail(self):
+		try:
+			frappe.sendmail(
+				sender=sender,
+				recipients=self.email,
+				subject=subject,
+				template=template,
+				args=args,
+				now=True,
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+				inline_images=inline_images,
+			)
+		except frappe.ValidationError:
+			pass
+		except Exception as e:
+			log_error(
+				"Error sending verification email",
+				data=e,
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
+
+	def send_otp_mail(self, for_login: bool = True):
 		if frappe.conf.developer_mode and frappe.local.dev_server:
-			print(rf"\Login OTP for {self.email}:")
+			print(
+				f"Login OTP for {self.email}:"
+				if for_login
+				else f"OTP to view 2FA recovery codes for {self.email}:"
+			)
 			print(self.otp)
 			print()
 			return
 
-		subject = f"{self.otp} - OTP for Frappe Cloud Login"
+		if hasattr(frappe.flags, "in_test") and frappe.flags.in_test:
+			return
+
+		if for_login:
+			template = "login_otp"
+			subject = f"{self.otp} - OTP for Frappe Cloud Login"
+		else:
+			template = "2fa_recovery_codes_otp"
+			subject = f"{self.otp} - OTP to view 2FA recovery codes for Frappe Cloud"
+
 		args = {
 			"otp": self.otp,
 		}
-		template = "login_otp"
 
 		frappe.sendmail(
 			recipients=self.email,
@@ -245,11 +326,11 @@ class AccountRequest(Document):
 			template=template,
 			args=args,
 			now=True,
+			reference_doctype=self.doctype,
+			reference_name=self.name,
 		)
 
 	def get_verification_url(self):
-		if self.saas:
-			return get_url(f"/api/method/press.api.saas.validate_account_request?key={self.request_key}")
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
 
 	@property
@@ -264,3 +345,28 @@ class AccountRequest(Document):
 
 	def is_saas_signup(self):
 		return bool(self.saas_app or self.saas or self.erpnext or self.product_trial)
+
+
+def expire_request_key():
+	"""
+	Expire the request key requested 10 minutes ago.
+	"""
+	frappe.db.set_value(
+		"Account Request",
+		{
+			"request_key_expiration_time": ("<", frappe.utils.now_datetime()),
+			"request_key": ["is", "set"],
+		},
+		{
+			"request_key": "",
+			"request_key_expiration_time": None,
+		},
+		update_modified=False,
+	)
+
+
+def has_permission(doc, ptype, user):
+	user = user or frappe.session.user
+	if doc.is_new():
+		return True
+	return frappe.has_permission(doctype="Team", doc=doc.team, ptype=ptype, user=user)

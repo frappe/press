@@ -19,15 +19,13 @@ class SitePlan(Plan):
 		from frappe.core.doctype.has_role.has_role import HasRole
 		from frappe.types import DF
 
-		from press.press.doctype.site_plan_allowed_app.site_plan_allowed_app import (
-			SitePlanAllowedApp,
-		)
-		from press.press.doctype.site_plan_release_group.site_plan_release_group import (
-			SitePlanReleaseGroup,
-		)
+		from press.press.doctype.cloud_providers.cloud_providers import CloudProviders
+		from press.press.doctype.site_plan_allowed_app.site_plan_allowed_app import SitePlanAllowedApp
+		from press.press.doctype.site_plan_release_group.site_plan_release_group import SitePlanReleaseGroup
 
 		allow_downgrading_from_other_plan: DF.Check
 		allowed_apps: DF.Table[SitePlanAllowedApp]
+		cloud_providers: DF.Table[CloudProviders]
 		cluster: DF.Link | None
 		cpu_time_per_day: DF.Float
 		database_access: DF.Check
@@ -39,16 +37,21 @@ class SitePlan(Plan):
 		interval: DF.Literal["Daily", "Monthly", "Annually"]
 		is_frappe_plan: DF.Check
 		is_trial_plan: DF.Check
+		legacy_plan: DF.Check
 		max_database_usage: DF.Int
 		max_storage_usage: DF.Int
 		memory: DF.Int
+		minimum_server_price_usd: DF.Currency
 		monitor_access: DF.Check
 		offsite_backups: DF.Check
+		plan_description: DF.Data | None
 		plan_title: DF.Data | None
 		price_inr: DF.Currency
 		price_usd: DF.Currency
+		private_bench_support: DF.Check
 		private_benches: DF.Check
 		release_groups: DF.Table[SitePlanReleaseGroup]
+		restrict_based_on_dedicated_server_plan: DF.Check
 		roles: DF.Table[HasRole]
 		support_included: DF.Check
 		vcpu: DF.Int
@@ -57,6 +60,7 @@ class SitePlan(Plan):
 	dashboard_fields = (
 		"name",
 		"plan_title",
+		"plan_description",
 		"document_type",
 		"document_name",
 		"price_inr",
@@ -70,6 +74,8 @@ class SitePlan(Plan):
 		"private_benches",
 		"monitor_access",
 		"is_trial_plan",
+		"restrict_based_on_dedicated_server_plan",
+		"minimum_server_price_usd",
 	)
 
 	def get_doc(self, doc):
@@ -80,6 +86,25 @@ class SitePlan(Plan):
 	@classmethod
 	def get_ones_without_offsite_backups(cls) -> list[str]:
 		return frappe.get_all("Site Plan", filters={"offsite_backups": False}, pluck="name")
+
+	def validate(self):
+		self.validate_restrict_based_on_serve_plan()
+		self.validate_active_subscriptions()
+
+	def validate_restrict_based_on_serve_plan(self):
+		if self.restrict_based_on_dedicated_server_plan and not self.dedicated_server_plan:
+			frappe.throw(
+				"The plan is not marked as a dedicated server plan. Please mark it as a dedicated server plan before enabling restriction by server plan price."
+			)
+
+	def validate_active_subscriptions(self):
+		old_doc = self.get_doc_before_save()
+		if old_doc and old_doc.enabled and not self.enabled and not self.legacy_plan:
+			active_sub_count = frappe.db.count("Subscription", {"enabled": 1, "plan": self.name})
+			if active_sub_count > 0:
+				frappe.throw(
+					f"Cannot disable this plan. This plan is used in {active_sub_count} active subscription(s)."
+				)
 
 
 def get_plan_config(name):

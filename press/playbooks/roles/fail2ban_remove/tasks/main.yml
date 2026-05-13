@@ -1,0 +1,10 @@
+---
+- name: Stop Fail2Ban
+  service:
+    name: fail2ban
+    state: stopped
+
+- name: Remove Fail2Ban
+  apt:
+    pkg: fail2ban
+    state: absent

@@ -2,7 +2,7 @@
 // For license information, please see license.txt
 
 // Most of the code here imitates the code from
-// frappe/desk/doctype/system_console/system_console.js
+// frappe/app/doctype/system_console/system_console.js
 frappe.ui.form.on('Bench Shell', {
 	onload(frm) {
 		frappe.ui.keys.add_shortcut({

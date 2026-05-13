@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 
-import unittest
-from unittest.mock import Mock, call, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -16,9 +15,7 @@ from press.press.doctype.site_domain.site_domain import SiteDomain
 from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
 
 
-def create_test_site_domain(
-	site: str, domain: str, status: str = "Active"
-) -> SiteDomain:
+def create_test_site_domain(site: str, domain: str, status: str = "Active") -> SiteDomain:
 	"""Create test Site Domain doc."""
 	with patch.object(TLSCertificate, "obtain_certificate"):
 		site_domain = frappe.get_doc(
@@ -37,7 +34,7 @@ def create_test_site_domain(
 
 @patch.object(AgentJob, "after_insert", new=Mock())
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
-class TestSiteDomain(unittest.TestCase):
+class TestSiteDomain(FrappeTestCase):
 	"""Tests for Site Domain Document methods."""
 
 	def tearDown(self):
@@ -61,9 +58,7 @@ class TestSiteDomain(unittest.TestCase):
 		domain_name = frappe.mock("domain_name")
 
 		site_domain = create_test_site_domain(site.name, domain_name, "Pending")
-		self.assertRaises(
-			frappe.exceptions.LinkValidationError, site.set_host_name, site_domain.name
-		)
+		self.assertRaises(frappe.exceptions.LinkValidationError, site.set_host_name, site_domain.name)
 
 	def test_default_host_name_is_site_subdomain(self):
 		"""Ensure subdomain+domain is default primary host_name."""
@@ -73,12 +68,10 @@ class TestSiteDomain(unittest.TestCase):
 	def test_default_site_domain_cannot_be_deleted(self):
 		"""Ensure default site domain for a site cannot be deleted."""
 		site = create_test_site(self.site_subdomain)
-		default_domain = frappe.get_doc(
-			{"doctype": "Site Domain", "site": site.name, "name": site.name}
-		)
+		default_domain = frappe.get_doc({"doctype": "Site Domain", "site": site.name, "name": site.name})
 		site_domain2 = create_test_site_domain(site.name, "hellohello.com")
 		site.set_host_name(site_domain2.name)
-		self.assertRaises(Exception, site.remove_domain, default_domain.name)
+		self.assertRaises(frappe.ValidationError, site.remove_domain, default_domain.name)
 
 	def test_only_site_domains_can_be_host_names(self):
 		"""Ensure error is thrown if string other than site domain name is passed."""
@@ -94,9 +87,7 @@ class TestSiteDomain(unittest.TestCase):
 		site1 = create_test_site(self.site_subdomain)
 		site2 = create_test_site("testing-another")
 		site_domain = create_test_site_domain(site2.name, "hellohello.com")
-		self.assertRaises(
-			frappe.exceptions.LinkValidationError, site1.set_host_name, site_domain.name
-		)
+		self.assertRaises(frappe.exceptions.LinkValidationError, site1.set_host_name, site_domain.name)
 
 	def test_set_host_name_removes_redirect_of_domain(self):
 		"""Ensure set_host_name removes redirect of domain."""
@@ -239,7 +230,7 @@ class TestSiteDomain(unittest.TestCase):
 		new_name = "new-name.fc.dev"
 		with patch.object(Agent, "rename_upstream_site") as mock_rename_upstream_site:
 			site.rename(new_name)
-		args, kwargs = mock_rename_upstream_site.call_args
+		args, _kwargs = mock_rename_upstream_site.call_args
 		from collections import Counter
 
 		self.assertEqual(Counter(args[-1]), Counter([site_domain1.name, site_domain2.name]))
@@ -253,3 +244,19 @@ class TestSiteDomain(unittest.TestCase):
 
 		self.assertRaises(frappe.exceptions.LinkExistsError, site_domain.delete)
 		self.assertTrue(frappe.db.exists("Site Domain", {"name": site_domain.name}))
+
+	@patch("press.press.doctype.site.site.check_dns_cname_a", MagicMock())
+	def test_addition_of_system_domain_is_blocked(self):
+		"""Ensure addition of system domains is blocked."""
+		site = create_test_site("old-name")
+		self.assertRaisesRegex(
+			frappe.exceptions.ValidationError,
+			".*system reserved domain.",
+			site.add_domain,
+			"abc.fc.dev",
+		)
+		try:
+			site.add_domain("example.com")
+		except frappe.exceptions.ValidationError as e:
+			if "system reserved domain" in str(e):
+				self.fail("example.com should not be considered a system reserved domain")

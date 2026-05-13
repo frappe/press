@@ -1,75 +1,71 @@
 {
- "actions": [],
- "creation": "2021-03-16 18:37:18.284146",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "audit_type",
-  "status",
-  "telegram_group",
-  "telegram_group_topic",
-  "log"
- ],
- "fields": [
-  {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "Status",
-   "options": "Success\nFailure",
-   "read_only": 1
-  },
-  {
-   "fieldname": "audit_type",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Audit Type",
-   "options": "Bench Field Check\nBackup Record Check\nOffsite Backup Check\nRestore Offsite Backup of Site\nApp Server Replica Dirs Check\nUnbilled Subscription Check\nBilling Audit\nPartner Billing Audit",
-   "read_only": 1
-  },
-  {
-   "fieldname": "log",
-   "fieldtype": "Code",
-   "label": "Log",
-   "read_only": 1
-  },
-  {
-   "fieldname": "telegram_group",
-   "fieldtype": "Link",
-   "label": "Telegram Group",
-   "options": "Telegram Group",
-   "read_only": 1
-  },
-  {
-   "fieldname": "telegram_group_topic",
-   "fieldtype": "Data",
-   "label": "Telegram Group Topic",
-   "read_only": 1
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2023-12-15 12:15:11.614291",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Audit Log",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+	"actions": [],
+	"creation": "2021-03-16 18:37:18.284146",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"audit_type",
+		"status",
+		"telegram_group",
+		"telegram_group_topic",
+		"log"
+	],
+	"fields": [
+		{
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"label": "Status",
+			"options": "Success\nFailure",
+			"read_only": 1
+		},
+		{
+			"fieldname": "audit_type",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Audit Type",
+			"options": "Bench Field Check\nBackup Record Check\nOffsite Backup Check\nRestore Offsite Backup of Site\nApp Server Replica Dirs Check\nUnbilled Subscription Check\nBilling Audit\nServer Plan Sanity Check\nPartner Billing Audit",
+			"read_only": 1
+		},
+		{ "fieldname": "log", "fieldtype": "Code", "label": "Log", "read_only": 1 },
+		{
+			"fieldname": "telegram_group",
+			"fieldtype": "Link",
+			"label": "Telegram Group",
+			"options": "Telegram Group",
+			"read_only": 1
+		},
+		{
+			"fieldname": "telegram_group_topic",
+			"fieldtype": "Data",
+			"label": "Telegram Group Topic",
+			"read_only": 1
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2025-08-07 21:50:25.321975",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Audit Log",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
 }

@@ -15,6 +15,7 @@ class AppRename(Document):
 		from frappe.types import DF
 
 		before_migrate_script: DF.Code
+		enabled: DF.Check
 		new_name: DF.Link
 		old_name: DF.Data
 		rollback_script: DF.Code | None

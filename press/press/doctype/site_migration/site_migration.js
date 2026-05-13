@@ -33,6 +33,25 @@ frappe.ui.form.on('Site Migration', {
 					() => frm.call('continue_from_next_pending'),
 				);
 			});
+			frm.add_custom_button(__('Set Skipped to Pending'), () => {
+				frappe.confirm(
+					`Are you sure you want to set all Skipped steps to Pending?<br>
+
+					<b>Note: This could cause data loss if you don't know what you're doing</b>`,
+					() => {
+						frm.set_value(
+							'steps',
+							frm.doc.steps.map((step) => {
+								if (step.status === 'Skipped') {
+									step.status = 'Pending';
+								}
+								return step;
+							}),
+						);
+						frm.save();
+					},
+				);
+			});
 		} else if (frm.doc.status === 'Scheduled') {
 			frm.add_custom_button(__('Start'), () => {
 				frappe.confirm(
@@ -53,6 +72,19 @@ frappe.ui.form.on('Site Migration', {
 					() => frm.call('cleanup_and_fail'),
 				);
 			});
+		}
+		if (frm.is_new()) {
+			frm.dashboard.set_headline_alert(
+				__(
+					`Scheduled time not set. The migration will start immediately on save`,
+				),
+				'orange',
+			);
+		}
+	},
+	scheduled_time: function (frm) {
+		if (frm.doc.scheduled_time) {
+			frm.dashboard.clear_headline();
 		}
 	},
 });

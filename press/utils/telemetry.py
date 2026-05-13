@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from contextlib import suppress
 
 import frappe
@@ -21,11 +23,16 @@ def init_telemetry():
 		frappe.local.posthog = Posthog(posthog_project_id, host=posthog_host)
 
 
-def capture(event, app, site=None):
+def capture(event, app, distinct_id=None):
 	init_telemetry()
 	ph: Posthog = getattr(frappe.local, "posthog", None)
 	with suppress(Exception):
-		ph and ph.capture(site or frappe.local.site, f"{app}_{event}")
+		properties = {}
+		if app == "fc_product_trial":
+			properties = {"product_trial": True}
+		ph and ph.capture(
+			distinct_id=distinct_id or frappe.local.site, event=f"{app}_{event}", properties=properties
+		)
 
 
 def identify(site, **kwargs):
@@ -36,7 +43,7 @@ def identify(site, **kwargs):
 
 
 @frappe.whitelist(allow_guest=True)
-def capture_read_event(email: str = None):
+def capture_read_event(email: str | None = None):
 	try:
 		capture("read_email", "fc_signup", email)
 	except Exception as e:

@@ -30,7 +30,14 @@ class PressSettings(Document):
 		agent_repository_owner: DF.Data | None
 		agent_sentry_dsn: DF.Data | None
 		app_include_script: DF.Data | None
+		asset_store_access_key: DF.Data | None
+		asset_store_bucket_name: DF.Data | None
+		asset_store_endpoint: DF.Data | None
+		asset_store_region: DF.Data | None
+		asset_store_secret_access_key: DF.Password | None
 		auto_update_queue_size: DF.Int
+		auto_upgrade_dependencies: DF.Check
+		autoscale_discount: DF.Float
 		aws_access_key_id: DF.Data | None
 		aws_s3_bucket: DF.Data | None
 		aws_secret_access_key: DF.Password | None
@@ -45,29 +52,93 @@ class PressSettings(Document):
 		build_server: DF.Link | None
 		central_migration_server: DF.Link | None
 		certbot_directory: DF.Data
+		chat_base_url: DF.Data | None
+		chat_support_end_time: DF.Literal[
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10",
+			"11",
+			"12",
+			"13",
+			"14",
+			"15",
+			"16",
+			"17",
+			"18",
+			"19",
+			"20",
+			"21",
+			"22",
+			"23",
+			"24",
+		]
+		chat_support_start_time: DF.Literal[
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10",
+			"11",
+			"12",
+			"13",
+			"14",
+			"15",
+			"16",
+			"17",
+			"18",
+			"19",
+			"20",
+			"21",
+			"22",
+			"23",
+		]
+		chat_website_token: DF.Data | None
 		clone_directory: DF.Data | None
 		cluster: DF.Link | None
 		code_server: DF.Data | None
 		code_server_password: DF.Data | None
 		commission: DF.Float
 		compress_app_cache: DF.Check
+		cool_off_period: DF.Int
 		data_40: DF.Data | None
 		default_apps: DF.Table[AppGroup]
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
+		default_server_plan_type: DF.Link | None
+		deploy_marker: DF.Data | None
 		disable_agent_job_deduplication: DF.Check
 		disable_auto_retry: DF.Check
+		disable_binlog_indexer_service: DF.Check
+		disable_frappe_auth: DF.Check
 		disable_physical_backup: DF.Check
+		disallow_disposable_emails: DF.Check
 		docker_registry_namespace: DF.Data | None
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
 		docker_registry_username: DF.Data | None
+		docker_s3_access_key: DF.Data | None
+		docker_s3_secret_key: DF.Password | None
 		domain: DF.Link | None
+		drive_resource_link: DF.Data | None
 		eff_registration_email: DF.Data
 		email_recipients: DF.SmallText | None
 		enable_app_grouping: DF.Check
+		enable_chat: DF.Check
 		enable_email_pre_verification: DF.Check
 		enable_google_oauth: DF.Check
+		enable_server_snapshot_recovery: DF.Check
 		enable_site_pooling: DF.Check
 		enable_spam_check: DF.Check
 		enforce_storage_limits: DF.Check
@@ -79,6 +150,7 @@ class PressSettings(Document):
 		erpnext_group: DF.Link | None
 		erpnext_plan: DF.Link | None
 		erpnext_url: DF.Data | None
+		execute_incident_action: DF.Check
 		frappe_url: DF.Data | None
 		frappeio_api_key: DF.Data | None
 		frappeio_api_secret: DF.Password | None
@@ -93,9 +165,9 @@ class PressSettings(Document):
 		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
 		gst_percentage: DF.Float
-		hetzner_api_token: DF.Password | None
 		hybrid_cluster: DF.Link | None
 		hybrid_domain: DF.Link | None
+		ic_key: DF.Password | None
 		log_server: DF.Link | None
 		mailgun_api_key: DF.Data | None
 		max_allowed_screenshots: DF.Int
@@ -106,34 +178,44 @@ class PressSettings(Document):
 		minimum_rebuild_memory: DF.Int
 		monitor_server: DF.Link | None
 		monitor_token: DF.Data | None
+		new_bench_concurrency_limit: DF.Int
 		ngrok_auth_token: DF.Data | None
+		npo_discount: DF.Float
 		offsite_backups_access_key_id: DF.Data | None
 		offsite_backups_count: DF.Int
 		offsite_backups_provider: DF.Literal["AWS S3"]
 		offsite_backups_secret_access_key: DF.Password | None
 		partnership_fee_inr: DF.Int
 		partnership_fee_usd: DF.Int
+		paypal_enabled: DF.Check
 		plausible_api_key: DF.Password | None
 		plausible_site_id: DF.Data | None
 		plausible_url: DF.Data | None
 		press_monitoring_password: DF.Password | None
 		press_trial_plan: DF.Link | None
 		print_format: DF.Data | None
+		production_server_ip: DF.Data | None
 		publish_docs: DF.Check
 		razorpay_key_id: DF.Data | None
 		razorpay_key_secret: DF.Password | None
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		redis_cache_size: DF.Int
+		region_name: DF.Data | None
 		remote_access_key_id: DF.Data | None
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None
 		remote_uploads_bucket: DF.Data | None
 		root_domain: DF.Data | None
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
+		school_api_key: DF.Data | None
+		school_api_secret: DF.Password | None
+		school_url: DF.Data | None
 		send_email_notifications: DF.Check
 		send_telegram_notifications: DF.Check
-		spaces_domain: DF.Link | None
+		servers_using_alternative_http_port_for_communication: DF.SmallText | None
+		set_redis_password: DF.Check
+		shared_directory: DF.Data | None
 		spamd_api_key: DF.Data | None
 		spamd_api_secret: DF.Password | None
 		spamd_endpoint: DF.Data | None
@@ -165,9 +247,12 @@ class PressSettings(Document):
 		usd_rate: DF.Float
 		use_agent_job_callbacks: DF.Check
 		use_app_cache: DF.Check
+		use_asset_store: DF.Check
 		use_delta_builds: DF.Check
+		use_new_deploy_flow: DF.Check
 		use_staging_ca: DF.Check
 		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
+		wazuh_server: DF.Data | None
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
 
@@ -208,6 +293,7 @@ class PressSettings(Document):
 				"payment_method.attached",
 				"invoice.payment_action_required",
 				"invoice.payment_succeeded",
+				"invoice.paid",
 				"invoice.payment_failed",
 				"invoice.finalized",
 				"mandate.updated",

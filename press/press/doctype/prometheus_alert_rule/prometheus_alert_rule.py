@@ -34,7 +34,7 @@ class PrometheusAlertRule(Document):
 		annotations: DF.Code
 		description: DF.Data
 		enabled: DF.Check
-		expression: DF.Code
+		expression: DF.Code | None
 		group_by: DF.Code
 		group_interval: DF.Data
 		group_wait: DF.Data
@@ -51,6 +51,8 @@ class PrometheusAlertRule(Document):
 	def validate(self):
 		self.alert_preview = yaml.dump(self.get_rule())
 		self.route_preview = yaml.dump(self.get_route())
+		if self.enabled and not self.expression:
+			frappe.throw("Enabled alert rules require an expression")
 
 	def get_rule(self):
 		labels = json.loads(self.labels)
@@ -95,14 +97,20 @@ class PrometheusAlertRule(Document):
 		return rules_dict
 
 	def get_routes(self):
+		webhook_token = frappe.db.get_value(
+			"Monitor Server", frappe.db.get_single_value("Press Settings", "monitor_server"), "webhook_token"
+		)
+
+		callback_url = frappe.utils.get_url("api/method/press.api.monitoring.alert")
+		if webhook_token:
+			callback_url = f"{callback_url}?webhook_token={webhook_token}"
+
 		routes_dict = {
 			"route": {"receiver": "web.hook", "routes": []},
 			"receivers": [
 				{
 					"name": "web.hook",
-					"webhook_configs": [
-						{"url": frappe.utils.get_url("api/method/press.api.monitoring.alert")}
-					],
+					"webhook_configs": [{"url": callback_url}],
 				}
 			],
 		}

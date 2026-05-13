@@ -206,5 +206,13 @@
   "modified": "2020-09-18 11:54:37.058867",
   "name": "rate_limit",
   "reason": null
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Site Config Key Blacklist",
+  "key": "extra_config",
+  "modified": "2025-03-29 19:28:15.431026",
+  "name": "extra_config",
+  "reason": null
  }
 ]

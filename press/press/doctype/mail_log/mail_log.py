@@ -18,7 +18,7 @@ class MailLog(Document):
 		date: DF.Date | None
 		log: DF.Code | None
 		message: DF.Code | None
-		message_id: DF.Data | None
+		message_id: DF.SmallText | None
 		recipient: DF.Data | None
 		sender: DF.Data | None
 		site: DF.Data | None

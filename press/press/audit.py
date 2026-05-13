@@ -4,17 +4,35 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
+from typing import TypedDict
 
 import frappe
-from frappe.utils import rounded
+from frappe.utils import add_days, rounded, today
 
 from press.agent import Agent
 from press.press.doctype.server.server import Server
+from press.press.doctype.site.site import TRANSITORY_STATES
 from press.press.doctype.subscription.subscription import (
 	created_usage_records,
 	paid_plans,
 	sites_with_free_hosting,
 )
+
+
+class ServerPlanInfo(TypedDict):
+	name: str
+	plan: str
+	machine_type: str
+	vm_memory: float
+	plan_memory: float
+	vm_disk_size: float
+	plan_disk_size: float
+
+
+class Discrepancies(TypedDict):
+	machine_type: list[str]
+	memory: list[str]
+	disk_size: list[str]
 
 
 class Audit:
@@ -24,7 +42,7 @@ class Audit:
 	`audit_type` member variable needs to be set to log
 	"""
 
-	audit_type = None
+	audit_type = ""
 
 	def log(
 		self, log: dict, status: str, telegram_group: str | None = None, telegram_topic: str | None = None
@@ -132,7 +150,7 @@ class BenchFieldCheck(Audit):
 		"""
 		During SiteUpdate or SiteMigration, the status of the site is changed to Updating or Pending
 		"""
-		return frappe.db.get_value("Site", site, "status", for_update=True).endswith("ing")
+		return frappe.db.get_value("Site", site, "status", for_update=True) in TRANSITORY_STATES
 
 	def apply_potential_fixes(self):
 		fixes = self.get_potential_fixes()
@@ -337,9 +355,9 @@ class BillingAudit(Audit):
 			"Subscriptions with no usage records created": self.subscriptions_without_usage_record,
 			"Disabled teams with active sites": self.disabled_teams_with_active_sites,
 			"Sites active after trial": self.free_sites_after_trial,
-			"Teams with active sites and unpaid Invoices": self.teams_with_active_sites_and_unpaid_invoices,
 			"Prepaid Unpaid Invoices with Stripe Invoice ID set": self.prepaid_unpaid_invoices_with_stripe_invoice_id_set,
 			"Subscriptions with duplicate usage records created": self.subscriptions_with_duplicate_usage_records,
+			"Teams with active sites and unpaid Invoices": self.teams_with_active_sites_and_unpaid_invoices,
 		}
 
 		log = {a: [] for a in audits}
@@ -361,7 +379,7 @@ class BillingAudit(Audit):
 				"team": ("not in", free_teams),
 				"enabled": True,
 				"plan": ("in", self.paid_plans),
-				"name": ("not in", created_usage_records(free_sites, frappe.utils.today())),
+				"name": ("not in", created_usage_records(free_sites, add_days(today(), days=-1))),
 				"document_name": ("not in", free_sites),
 			},
 			pluck="name",
@@ -398,7 +416,7 @@ class BillingAudit(Audit):
 		)
 
 	def free_sites_after_trial(self):
-		today = frappe.utils.today()
+		yesterday = add_days(today(), days=-1)
 		free_teams = frappe.get_all("Team", {"free_account": 1}, pluck="name")
 
 		filters = {
@@ -412,7 +430,9 @@ class BillingAudit(Audit):
 		sites = frappe.db.get_all("Site", filters=filters, fields=["name", "team"], pluck="name")
 
 		# Flake doesn't allow use of duplicate keys in same dictionary
-		return frappe.get_all("Site", {"trial_end_date": ["<", today], "name": ("in", sites)}, pluck="name")
+		return frappe.get_all(
+			"Site", {"trial_end_date": ["<", yesterday], "name": ("in", sites)}, pluck="name"
+		)
 
 	def teams_with_active_sites_and_unpaid_invoices(self):
 		today = frappe.utils.getdate()
@@ -421,7 +441,9 @@ class BillingAudit(Audit):
 
 		plan = frappe.qb.DocType("Site Plan")
 		query = (
-			frappe.qb.from_(plan).select(plan.name).where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
+			frappe.qb.from_(plan)
+			.select(plan.name)
+			.where((plan.enabled == 1) & ((plan.is_frappe_plan == 1) | (plan.is_trial_plan == 1)))
 		).run(as_dict=True)
 		frappe_plans = [d.name for d in query]
 
@@ -518,6 +540,71 @@ class PartnerBillingAudit(Audit):
 		)
 
 
+class PlanAudit(Audit):
+	audit_type = "Server Plan Sanity Check"
+
+	def audit_plan_discrepancies(self, server_plan_info: list[ServerPlanInfo]):
+		"""Check for discrepancies between plan details and actual virtual machine details"""
+
+		messages = {
+			"machine_type": "Incorrect machine type compared to server plan",
+			"memory": "Incorrect memory compared to server plan",
+			"disk_size": "Incorrect disk size compared to server plan",
+		}
+
+		discrepancies = {msg: [] for msg in messages.values()}  # type:ignore
+
+		for info in server_plan_info:
+			expected_machine_type = info["plan"].split("-")[0]
+			if info["machine_type"] != expected_machine_type:
+				discrepancies[messages["machine_type"]].append(info["name"])
+			if info["vm_memory"] != info["plan_memory"]:
+				discrepancies[messages["memory"]].append(info["name"])
+			if info["vm_disk_size"] < info["plan_disk_size"]:
+				discrepancies[messages["disk_size"]].append(info["name"])
+
+		return discrepancies
+
+	def __init__(self):
+		"""Check for plan and virtual machine discrepancies"""
+		VirtualMachineDocType = frappe.qb.DocType("Virtual Machine")
+		ServerPlan = frappe.qb.DocType("Server Plan")
+		server_types = ["Server", "Database Server"]
+		server_level_discrepancies = {}
+
+		for server_type in server_types:
+			ServerDoctype = frappe.qb.DocType(server_type)
+			query = (
+				frappe.qb.from_(ServerDoctype)
+				.select(
+					ServerDoctype.name,
+					ServerDoctype.plan,
+					VirtualMachineDocType.machine_type,
+					VirtualMachineDocType.ram.as_("vm_memory"),
+					VirtualMachineDocType.disk_size.as_("vm_disk_size"),
+					ServerPlan.disk.as_("plan_disk_size"),
+					ServerPlan.memory.as_("plan_memory"),
+				)
+				.join(VirtualMachineDocType)
+				.on(VirtualMachineDocType.name == ServerDoctype.name)
+				.join(ServerPlan)
+				.on(ServerDoctype.plan == ServerPlan.name)
+				.where(ServerDoctype.status == "Active")
+				.where(ServerDoctype.is_self_hosted == False)  # noqa: E712
+				.where(ServerDoctype.cluster != "Hybrid")
+			)
+			server_plan_info: list[ServerPlanInfo] = query.run(as_dict=True)
+			discrepancies = self.audit_plan_discrepancies(server_plan_info)
+			server_level_discrepancies[server_type] = discrepancies
+
+		self.log(
+			server_level_discrepancies,
+			status="Failure"
+			if any(value for category in server_level_discrepancies.values() for value in category.values())
+			else "Success",
+		)
+
+
 def check_bench_fields():
 	BenchFieldCheck()
 
@@ -532,6 +619,10 @@ def check_offsite_backups():
 
 def check_app_server_replica_benches():
 	AppServerReplicaDirsCheck()
+
+
+def plan_audit():
+	PlanAudit()
 
 
 def billing_audit():

@@ -1,0 +1,9 @@
+---
+- name: Build Nginx with Stream Module
+  become: yes
+  hosts: all
+  vars:
+    build_dir: "/tmp/nginx_build"
+
+  roles:
+    - role: build_nginx_with_stream

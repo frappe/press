@@ -1,0 +1,70 @@
+{
+  "description": "Pipeline for parsing ProxySQL event log",
+  "processors": [
+    {
+      "rename": {
+        "field": "server",
+        "target_field": "db_server",
+        "ignore_missing": true
+      }
+    },
+    {
+      "rename": {
+        "field": "schemaname",
+        "target_field": "schema"
+      }
+    },
+    {
+      "dissect": {
+        "field": "client",
+        "pattern": "%{client_ip}:%{_client_port}"
+      }
+    },
+    {
+      "convert": {
+        "field": "duration_us",
+        "type": "long",
+        "ignore_missing": true
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": "if (ctx.duration_us != null) { ctx.duration_ms = Math.floor(ctx.duration_us / 1000); }"
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": "if (ctx.starttime_timestamp_us != null) { ctx.start_timestamp = ctx.starttime_timestamp_us/1000; }"
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": "if (ctx.endtime_timestamp_us != null) { ctx.end_timestamp = ctx.endtime_timestamp_us/1000; }"
+      }
+    },
+    {
+      "date": {
+        "field": "start_timestamp",
+        "target_field": "@timestamp",
+        "formats": ["UNIX_MS"]
+      }
+    },
+    {
+      "remove": {
+        "field": [
+          "starttime",
+          "endtime",
+          "starttime_timestamp_us",
+          "endtime_timestamp_us",
+          "client",
+          "_client_port",
+          "duration_us"
+        ],
+        "ignore_missing": true
+      }
+    }
+  ]
+}

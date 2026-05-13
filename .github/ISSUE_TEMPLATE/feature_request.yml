@@ -1,0 +1,34 @@
+name: Feature Request
+description: Propose an enhancement or new capability
+title: "[Enhancement]: "
+labels: ["enhancement"]
+
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area
+      options:
+        - Dashboard/UI
+        - Billing
+        - Backups
+        - Deployment
+        - Monitoring
+        - Notifications/Alerts
+        - Integrations/APIs
+        - Performance
+        - Security
+        - Marketplace
+        - Other
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution

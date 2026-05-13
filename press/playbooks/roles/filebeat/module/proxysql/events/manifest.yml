@@ -1,0 +1,12 @@
+module_version: 1.0
+
+var:
+  - name: paths
+    type: list
+    required: true
+    default:
+      - /var/lib/proxysql/events.log.*
+
+
+ingest_pipeline: ingest/pipeline.json
+input: config/events.yml

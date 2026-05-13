@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 
-import unittest
 from unittest.mock import patch
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.subscription.subscription import sites_with_free_hosting
@@ -35,8 +34,10 @@ def create_test_subscription(
 	return subscription
 
 
-class TestSubscription(unittest.TestCase):
+class TestSubscription(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_team()
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits")
 		self.team.payment_mode = "Prepaid Credits"

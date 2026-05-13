@@ -9,7 +9,7 @@ frappe.ui.form.on('Database Server', {
 		);
 
 		[
-			[__('Ping Agent'), 'ping_agent', false, !frm.doc.is_server_setup],
+			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true, frm.doc.is_server_prepared],
 			[
 				__('Ping Ansible Unprepared'),
@@ -25,6 +25,13 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Install Filebeat'),
+				'install_filebeat',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[__('Setup Logrotate'), 'setup_logrotate', true, frm.doc.is_server_setup],
+			[
 				__('Fetch Keys'),
 				'fetch_keys',
 				true,
@@ -38,6 +45,7 @@ frappe.ui.form.on('Database Server', {
 				!frm.doc.is_server_prepared,
 			],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[__('Update DNS Record', 'create_dns_record', true)],
 			[
 				__('Setup Rename'),
 				'rename_server',
@@ -86,6 +94,12 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.is_server_setup && frm.doc.is_performance_schema_enabled,
 			],
+			[
+				__('Toggle Read-Only Mode'),
+				'toggle_read_only_mode',
+				true,
+				frm.doc.is_server_setup,
+			],
 			[__('Restart MariaDB'), 'restart_mariadb', true, frm.doc.is_server_setup],
 			[__('Stop MariaDB'), 'stop_mariadb', true, frm.doc.is_server_setup],
 			[
@@ -94,7 +108,6 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.is_server_setup,
 			],
-			[__('Upgrade MariaDB'), 'upgrade_mariadb', true, frm.doc.is_server_setup],
 			[__('Update MariaDB'), 'update_mariadb', true, frm.doc.is_server_setup],
 			[
 				__('Upgrade MariaDB Patched'),
@@ -159,6 +172,68 @@ frappe.ui.form.on('Database Server', {
 				'mount_volumes',
 				true,
 				frm.doc.virtual_machine && frm.doc.mounts,
+			],
+			[
+				'Get Binlog Summary',
+				'get_binlog_summary',
+				true,
+				frm.doc.is_server_setup,
+			],
+			['Sync Binlogs Info', 'sync_binlogs_info', true, frm.doc.is_server_setup],
+			[
+				'Sync Replication Config',
+				'sync_replication_config',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				'Provide Frappe User DU and Find Permission',
+				'provide_frappe_user_du_and_find_permission',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				'Provide Frappe User Mariadb Table Usage Permission',
+				'provide_frappe_user_mariadb_table_usage_permission',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				'Trigger Schema Size Sync',
+				'update_database_schema_sizes',
+				false,
+				frm.doc.is_server_setup,
+			],
+			['Trigger Flush Tables', 'flush_tables', true, frm.doc.is_server_setup],
+			[
+				__('Install NAT iptables'),
+				'install_nat_iptables',
+				true,
+				frm.doc.is_server_setup && frm.doc.nat_server,
+			],
+			[
+				__('Remove NAT iptables'),
+				'remove_nat_iptables',
+				true,
+				frm.doc.is_server_setup && !frm.doc.nat_server,
+			],
+			[
+				__('Migrate to Cgroup V2'),
+				'migrate_to_cgroup_v2',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Setup MariaDB Monitor'),
+				'setup_mariadb_monitor',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Uninstall MariaDB Monitor'),
+				'uninstall_mariadb_monitor',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_mariadb_monitor_installed,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
@@ -246,19 +321,27 @@ frappe.ui.form.on('Database Server', {
 				__('Actions'),
 			);
 			frm.add_custom_button(
-				__('Update Memory Allocator'),
+				__('Update Memory Allocator Settings'),
 				() => {
 					const dialog = new frappe.ui.Dialog({
-						title: __('Update Memory Allocator'),
+						title: __('Update Memory Allocator Settings'),
 						fields: [
 							{
 								fieldtype: 'Select',
 								label: __('Memory Allocator'),
-								options: ['System', 'jemalloc', 'TCMalloc']
-									.filter((option) => option !== frm.doc.memory_allocator)
-									.join('\n'),
+								options: ['System', 'jemalloc', 'TCMalloc'].join('\n'),
+								default: frm.doc.memory_allocator || 'System',
 								fieldname: 'memory_allocator',
 								reqd: 1,
+							},
+							{
+								fieldtype: 'Int',
+								label: __('tcmalloc Release Rate'),
+								description: __(
+									'Applicable only if memory allocator is set to tcmalloc. Value must be between 1 and 10. Default is 1. Higher value means more aggressive release of memory to the OS, which can reduce memory usage but may impact performance.',
+								),
+								default: frm.doc.tcmalloc_release_rate || 1,
+								fieldname: 'tcmalloc_release_rate',
 							},
 						],
 					});
@@ -266,6 +349,38 @@ frappe.ui.form.on('Database Server', {
 					dialog.set_primary_action(__('Update'), (args) => {
 						frm.call({
 							method: 'update_memory_allocator',
+							doc: frm.doc,
+							args: args,
+							freeze: true,
+							callback: () => {
+								dialog.hide();
+								frm.refresh();
+							},
+						});
+					});
+					dialog.show();
+				},
+				__('Dangerous Actions'),
+			);
+
+			frm.add_custom_button(
+				__('Purge Binlogs'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Purge Binlogs'),
+						fields: [
+							{
+								fieldtype: 'Data',
+								label: __('To Binlog (mysql-bin.xxxxxx)'),
+								fieldname: 'to_binlog',
+								reqd: 1,
+							},
+						],
+					});
+
+					dialog.set_primary_action(__('Purge'), (args) => {
+						frm.call({
+							method: 'purge_binlogs',
 							doc: frm.doc,
 							args: args,
 							freeze: true,

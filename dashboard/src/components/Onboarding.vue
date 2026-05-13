@@ -1,0 +1,362 @@
+<template>
+	<div class="mx-auto max-w-2xl rounded-lg border-0 px-2 sm:border sm:p-8">
+		<div class="prose prose-sm max-w-none">
+			<h1 class="text-2xl font-semibold">Welcome to Frappe Cloud</h1>
+			<p>
+				Frappe Cloud makes it easy to manage sites and apps like ERPNext in an
+				easy to use dashboard with powerful features like automatic backups,
+				custom domains, SSL certificates, custom apps, automatic updates and
+				more.
+			</p>
+		</div>
+		<p class="mt-6 text-base text-ink-gray-8">
+			Complete the steps below to unlock sites, benches, dedicated servers and
+			more.
+		</p>
+		<div class="mt-6 space-y-6">
+			<div class="rounded-md">
+				<div>
+					<div class="flex items-center justify-between space-x-2">
+						<div class="flex items-center space-x-2">
+							<TextInsideCircle>1</TextInsideCircle>
+							<span class="text-base font-medium"> Account created </span>
+						</div>
+						<div
+							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
+						>
+							<lucide-check class="h-3 w-3 text-white" />
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- Step 2 - Create Site -->
+			<div v-if="pendingSiteRequest">
+				<div class="flex items-center justify-between space-x-2">
+					<div class="flex items-center space-x-2">
+						<TextInsideCircle>2</TextInsideCircle>
+						<span
+							class="text-base font-medium"
+							v-if="pendingSiteRequest.status == 'Error'"
+						>
+							There was an error creating your trial site for
+							{{ pendingSiteRequest.title }}
+						</span>
+						<span class="text-base font-medium" v-else>
+							Create your {{ pendingSiteRequest.title }} trial site
+						</span>
+					</div>
+				</div>
+				<div class="mt-2 pl-7" v-if="pendingSiteRequest.status == 'Error'">
+					<p class="mt-2 text-p-base text-ink-gray-8">
+						Please contact Frappe Cloud support by clicking on the button below.
+					</p>
+					<Button class="mt-2" link="/support"> Contact Support </Button>
+				</div>
+				<div class="mt-2 pl-7" v-else>
+					<p class="mt-2 text-p-base text-ink-gray-8">
+						You can try out the {{ pendingSiteRequest.title }} app for free by
+						clicking on the button below.
+					</p>
+					<Button
+						class="mt-2"
+						:route="{
+							name: 'SignupSetup',
+							params: { productId: pendingSiteRequest.product_trial },
+							query: {
+								account_request: pendingSiteRequest.account_request,
+							},
+						}"
+					>
+						Continue
+					</Button>
+				</div>
+			</div>
+			<div v-else-if="trialSite">
+				<div class="flex items-center justify-between space-x-2">
+					<div class="flex items-center space-x-2">
+						<TextInsideCircle>2</TextInsideCircle>
+						<span class="text-base font-medium">
+							Your trial site is ready
+						</span>
+					</div>
+					<div
+						class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
+					>
+						<lucide-check class="h-3 w-3 text-white" />
+					</div>
+				</div>
+				<div class="pl-7">
+					<div class="mt-2">
+						<a
+							class="flex items-center text-base font-medium underline"
+							:href="`https://${trialSite.host_name || trialSite.name}`"
+							target="_blank"
+						>
+							https://{{ trialSite.host_name || trialSite.name }}
+							<lucide-external-link class="ml-1 h-3.5 w-3.5 text-ink-gray-8" />
+						</a>
+					</div>
+					<p class="mt-2 text-p-base text-ink-gray-8">
+						Your trial is set to expire on
+						<span class="font-medium">
+							{{ $format.date(trialSite.trial_end_date, 'LL') }} </span
+						>. Set up billing now to ensure uninterrupted access to your site.
+					</p>
+				</div>
+			</div>
+			<div v-else class="rounded-md">
+				<div class="flex items-center space-x-2">
+					<TextInsideCircle>2</TextInsideCircle>
+					<div class="text-base font-medium">Create your first site</div>
+				</div>
+
+				<Button
+					class="ml-7 mt-4"
+					:route="{ name: 'SignupAppSelector' }"
+					variant="solid"
+				>
+					Create
+				</Button>
+			</div>
+			<!-- Step 3 - Complete Billing Setup -->
+			<div
+				class="rounded-md"
+				:class="{
+					'pointer-events-none opacity-50': !$team.doc.onboarding.site_created,
+				}"
+			>
+				<div v-if="!isBillingSetupComplete">
+					<div class="flex items-center space-x-2">
+						<TextInsideCircle>3</TextInsideCircle>
+						<span class="text-base font-medium"> Complete billing setup </span>
+					</div>
+					<div class="pl-7 mt-2" v-if="$team.doc.onboarding.site_created && trialSite">
+						<p class="text-p-base text-ink-gray-8">
+							Add your billing details and payment method to activate your
+							subscription.You won't be charged until your trial ends on
+							<span class="font-medium">
+								{{ $format.date(trialSite.trial_end_date, 'LL') }}
+							</span>
+						</p>
+						<Button class="mt-3" route="/billing"> Complete setup </Button>
+					</div>
+				</div>
+				<div v-else>
+					<div class="flex items-center justify-between space-x-2">
+						<div class="flex items-center space-x-2">
+							<TextInsideCircle>3</TextInsideCircle>
+							<span class="text-base font-medium">
+								Billing setup complete
+							</span>
+						</div>
+						<div
+							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
+						>
+							<lucide-check class="h-3 w-3 text-white" />
+						</div>
+					</div>
+					<div class="mt-1.5 pl-7 text-p-base text-ink-gray-8">
+						<span v-if="$team.doc.payment_mode === 'Card'">
+							Automatic billing is enabled
+						</span>
+						<span v-else-if="$team.doc.payment_mode === 'Prepaid Credits'">
+							Account balance: {{ $format.userCurrency($team.doc.balance) }}
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Commented out - now using single step with redirect to billing page
+			<div
+				class="rounded-md"
+				:class="{
+					'pointer-events-none opacity-50': !$team.doc.onboarding.site_created,
+				}"
+			>
+				<div v-if="!isBillingDetailsSet">
+					<div class="flex items-center space-x-2">
+						<TextInsideCircle>3</TextInsideCircle>
+						<span class="text-base font-medium"> Update billing details </span>
+					</div>
+					<div class="pl-7" v-if="$team.doc.onboarding.site_created">
+						<UpdateBillingDetailsForm @updated="onBillingAddresUpdateSuccess" />
+					</div>
+				</div>
+				<div v-else>
+					<div class="flex items-center justify-between space-x-2">
+						<div class="flex items-center space-x-2">
+							<TextInsideCircle>3</TextInsideCircle>
+							<span class="text-base font-medium">
+								Billing address updated
+							</span>
+						</div>
+						<div
+							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
+						>
+							<lucide-check class="h-3 w-3 text-white" />
+						</div>
+					</div>
+				</div>
+			</div>
+			<div
+				class="rounded-md"
+				:class="{ 'pointer-events-none opacity-50': !isBillingDetailsSet }"
+			>
+				<div v-if="!$team.doc.payment_mode">
+					<div class="flex items-center space-x-2">
+						<TextInsideCircle>4</TextInsideCircle>
+						<span class="text-base font-medium"> Add a payment mode </span>
+					</div>
+
+					<div class="mt-4 pl-7" v-if="isBillingDetailsSet">
+						<div
+							class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
+						>
+							<div
+								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
+								:class="{
+									'bg-surface-gray-2': isAutomatedBilling,
+								}"
+								@click="isAutomatedBilling = true"
+							>
+								Automated Billing
+							</div>
+							<div
+								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
+								:class="{
+									'bg-surface-gray-2': !isAutomatedBilling,
+								}"
+								@click="isAutomatedBilling = false"
+							>
+								Add Money
+							</div>
+						</div>
+
+						<div class="mt-2 w-full">
+							<div v-if="isAutomatedBilling">
+								<CardForm
+									@success="onAddCardSuccess"
+									:disableAddressForm="true"
+								/>
+							</div>
+							<div v-else class="mt-3">
+								<BuyPrepaidCreditsForm
+									:isOnboarding="true"
+									:minimumAmount="minimumAmount"
+									@success="onBuyCreditsSuccess"
+								/>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div v-else>
+					<div class="flex items-center justify-between space-x-2">
+						<div class="flex items-center space-x-2">
+							<TextInsideCircle>4</TextInsideCircle>
+							<span
+								class="text-base font-medium"
+								v-if="$team.doc.payment_mode === 'Card'"
+							>
+								Automatic billing setup completed
+							</span>
+							<span
+								class="text-base font-medium"
+								v-if="$team.doc.payment_mode === 'Prepaid Credits'"
+							>
+								Wallet balance updated
+							</span>
+						</div>
+						<div
+							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
+						>
+							<lucide-check class="h-3 w-3 text-white" />
+						</div>
+					</div>
+					<div
+						class="mt-1.5 pl-7 text-p-base text-ink-gray-8"
+						v-if="$team.doc.payment_mode === 'Prepaid Credits'"
+					>
+						Account balance: {{ $format.userCurrency($team.doc.balance) }}
+					</div>
+				</div>
+			</div>
+			-->
+		</div>
+	</div>
+</template>
+<script>
+import { defineAsyncComponent } from 'vue';
+import TextInsideCircle from './TextInsideCircle.vue';
+
+export default {
+	name: 'Onboarding',
+	emits: ['payment-mode-added'],
+	components: {
+		UpdateBillingDetailsForm: defineAsyncComponent(
+			() => import('./UpdateBillingDetailsForm.vue'),
+		),
+		CardWithDetails: defineAsyncComponent(
+			() => import('./CardWithDetails.vue'),
+		),
+		BuyPrepaidCreditsForm: defineAsyncComponent(
+			() => import('./BuyPrepaidCreditsForm.vue'),
+		),
+		OnboardingAppSelector: defineAsyncComponent(
+			() => import('./OnboardingAppSelector.vue'),
+		),
+		AlertBanner: defineAsyncComponent(() => import('./AlertBanner.vue')),
+		TextInsideCircle,
+		CardForm: defineAsyncComponent(
+			() => import('../components/billing/CardForm.vue'),
+		),
+	},
+	data() {
+		return {
+			billingInformation: {
+				cardHolderName: '',
+				country: '',
+				gstin: '',
+			},
+			isAutomatedBilling: true,
+		};
+	},
+	methods: {
+		onBuyCreditsSuccess() {
+			this.$team.reload();
+			this.$emit('payment-mode-added');
+		},
+		onAddCardSuccess() {
+			this.$team.reload();
+			this.$emit('payment-mode-added');
+		},
+		onBillingAddresUpdateSuccess() {
+			this.$team.reload();
+		},
+	},
+	computed: {
+		isBillingDetailsSet() {
+			return Boolean(this.$team.doc.billing_details?.name);
+		},
+		isBillingSetupComplete() {
+			return this.isBillingDetailsSet && Boolean(this.$team.doc.payment_mode);
+		},
+		minimumAmount() {
+			return this.$team.doc.currency == 'INR' ? 100 : 5;
+		},
+		pendingSiteRequest() {
+			return this.$team.doc.pending_site_request;
+		},
+		trialSite() {
+			return this.$team.doc.trial_sites?.[0];
+		},
+	},
+	resources: {
+		availableApps() {
+			return {
+				url: 'press.api.marketplace.get_marketplace_apps_for_onboarding',
+				auto: true,
+			};
+		},
+	},
+};
+</script>

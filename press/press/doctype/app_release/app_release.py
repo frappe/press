@@ -1,19 +1,28 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+import contextlib
 import os
 import shlex
 import shutil
 import subprocess
+import typing
 from datetime import datetime
 from typing import Optional, TypedDict
 
 import frappe
+import semantic_version as sv
+import tomli
 from frappe.model.document import Document
 
 from press.api.github import get_access_token
 from press.press.doctype.app_source.app_source import AppSource
 from press.utils import log_error
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.release_group.release_group import ReleaseGroup
+	from press.press.doctype.resource_tag.resource_tag import ResourceTag
 
 
 class AppReleaseDict(TypedDict):
@@ -41,20 +50,20 @@ class AppRelease(Document):
 		from frappe.types import DF
 
 		app: DF.Link
-		author: DF.Data | None  # noqa
-		clone_directory: DF.Text | None  # noqa
+		author: DF.Data | None
+		clone_directory: DF.Text | None
 		cloned: DF.Check
-		code_server_url: DF.Text | None  # noqa
+		code_server_url: DF.Text | None
 		hash: DF.Data
 		invalid_release: DF.Check
-		invalidation_reason: DF.Code | None  # noqa
-		message: DF.Code | None  # noqa
-		output: DF.Code | None  # noqa
+		invalidation_reason: DF.Code | None
+		message: DF.Code | None
+		output: DF.Code | None
 		public: DF.Check
 		source: DF.Link
-		status: DF.Literal["Draft", "Approved", "Awaiting Approval", "Rejected"]
+		status: DF.Literal["Draft", "Approved", "Awaiting Approval", "Rejected", "Yanked"]
 		team: DF.Link
-		timestamp: DF.Datetime | None  # noqa
+		timestamp: DF.Datetime | None
 	# end: auto-generated types
 
 	dashboard_fields = ["app", "source", "message", "hash", "author", "status"]  # noqa
@@ -63,17 +72,8 @@ class AppRelease(Document):
 	def get_list_query(query, filters=None, **list_args):
 		app_release = frappe.qb.DocType("App Release")
 		release_approve_request = frappe.qb.DocType("App Release Approval Request")
+		marketplace_app_audit = frappe.qb.DocType("Marketplace App Audit")
 
-		# Subquery to get the latest screening_status for each app_release
-		latest_approval_request = (
-			frappe.qb.from_(release_approve_request)
-			.select(release_approve_request.screening_status)
-			.where(release_approve_request.app_release == app_release.name)
-			.orderby(release_approve_request.creation, order=frappe.qb.terms.Order.desc)
-			.limit(1)
-		)
-
-		# Subquery to get the latest name for each app_release
 		approval_request_name = (
 			frappe.qb.from_(release_approve_request)
 			.select(release_approve_request.name)
@@ -82,11 +82,18 @@ class AppRelease(Document):
 			.limit(1)
 		)
 
-		# Main query that selects app_release fields and the latest screening_status and name
+		latest_audit_result = (
+			frappe.qb.from_(marketplace_app_audit)
+			.select(marketplace_app_audit.audit_result)
+			.where(marketplace_app_audit.app_release == app_release.name)
+			.orderby(marketplace_app_audit.creation, order=frappe.qb.terms.Order.desc)
+			.limit(1)
+		)
+
 		query = query.select(
 			app_release.name,
-			latest_approval_request.as_("screening_status"),
 			approval_request_name.as_("approval_request_name"),
+			latest_audit_result.as_("audit_result"),
 		)
 
 		return query  # noqa
@@ -96,14 +103,102 @@ class AppRelease(Document):
 			self.set_clone_directory()
 
 	def before_save(self):
+		# We are approving any app with the name raven, could even be a custom app with the name raven or any featured apps
+		# Weird but not hurting anyone right now
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
 		teams = frappe.get_all("Auto Release Team", {"parent": "Marketplace Settings"}, pluck="team")
 		if self.team in teams or self.app in apps:
 			self.status = "Approved"
 
+	def _has_auto_deploy_marker(self) -> tuple[bool, str | None]:
+		"""<deploy-marker>-<bench-group> | <deploy-marker>"""
+		deploy_marker = frappe.db.get_single_value("Press Settings", "deploy_marker", cache=False)
+
+		# Acts as a feature flag for global auto deploys
+		if not deploy_marker or not self.message or deploy_marker not in self.message:
+			return False, None
+
+		bench_group = self.message.split(deploy_marker)[-1]
+		bench_group = bench_group.replace("-", "", 1) if bench_group else None
+
+		return True, bench_group
+
+	def _validate_bench_group(self, bench_group: str) -> bool:
+		"""Check if bench group exists and belongs to the team"""
+		try:
+			bench_group_doc: "ReleaseGroup" = frappe.get_doc("Release Group", bench_group)
+			return bench_group_doc.team == self.team
+		except frappe.DoesNotExistError:
+			return False
+
+	def _has_running_builds(self, bench_group: str) -> bool:
+		return bool(
+			frappe.get_value(
+				"Deploy Candidate Build",
+				{"status": ("in", ("Pending", "Running", "Scheduled")), "group": bench_group},
+			)
+		)
+
+	def _deploy_bench_group(self, bench_group: str) -> None:
+		"""Deploy bench group with this particular app update
+		1. Checks if the bench group already has running deploys
+		2. Checks if the bench group has the app that is being deployed
+		3. Deploy candidate can be created from the release group
+		"""
+
+		if self._has_running_builds(bench_group):
+			return
+
+		bench_group_has_app = frappe.db.get_value(
+			"Release Group App", {"parent": bench_group, "source": self.source}
+		)
+		if not bench_group_has_app:
+			return
+
+		group: "ReleaseGroup" = frappe.get_doc("Release Group", bench_group)
+		candidate: "DeployCandidate" = group.create_deploy_candidate(
+			apps_to_update=[app for app in group.apps if app.source == self.source]
+		)
+		if candidate:
+			candidate.schedule_build_and_deploy()
+
+	def trigger_deploy_via_commit_markers(self):
+		"""Check if the commit has deploy markers and trigger deploy for no bench groups
+		passed deploy bench groups with tag auto-deploy"""
+		deploy, bench_group = self._has_auto_deploy_marker()
+
+		if not deploy:
+			return
+
+		if bench_group and not self._validate_bench_group(bench_group):
+			return
+
+		if bench_group:
+			self._deploy_bench_group(bench_group)
+
+		else:
+			ReleaseGroup: "ReleaseGroup" = frappe.qb.DocType("Release Group")
+			ResourceTag: "ResourceTag" = frappe.qb.DocType("Resource Tag")
+
+			release_groups_with_auto_deploy = (
+				frappe.qb.from_(ReleaseGroup)
+				.join(ResourceTag)
+				.on(ResourceTag.parent == ReleaseGroup.name)
+				.where(ResourceTag.tag_name == "auto-deploy")
+				.where(ReleaseGroup.enabled == 1)
+				.where(ReleaseGroup.team == self.team)
+				.select(ReleaseGroup.name)
+				.run(pluck="name")
+			)
+			for bench_group in release_groups_with_auto_deploy:
+				self._deploy_bench_group(bench_group)
+
 	def after_insert(self):
 		self.create_release_differences()
-		self.auto_deploy()
+		frappe.enqueue_doc(self.doctype, self.name, "auto_deploy", enqueue_after_commit=True)
+
+		# create a marketplace app audit for this release
+		self.create_marketplace_app_audit()
 
 	def get_source(self) -> AppSource:
 		"""Return the `App Source` associated with this `App Release`"""
@@ -267,22 +362,61 @@ class AppRelease(Document):
 			difference.insert()
 
 	def auto_deploy(self):
-		groups = frappe.get_all(
-			"Release Group App",
-			["parent"],
-			{"source": self.source, "enable_auto_deploy": True},
+		current_user = frappe.session.user
+		created_deploys = False
+		try:
+			frappe.set_user("Administrator")
+			groups = frappe.get_all(
+				"Release Group App",
+				["parent"],
+				{"source": self.source, "enable_auto_deploy": True},
+			)
+			for group in groups:
+				if frappe.get_all(
+					"Deploy Candidate Build",
+					{"status": ("in", ("Pending", "Running")), "group": group.parent},
+				):
+					continue
+				group: "ReleaseGroup" = frappe.get_doc("Release Group", group.parent)
+				apps = [app.as_dict() for app in group.apps if app.enable_auto_deploy]
+				candidate: "DeployCandidate" = group.create_deploy_candidate(apps)
+				if candidate:
+					candidate.schedule_build_and_deploy()
+					created_deploys = True
+
+			if not created_deploys:
+				self.trigger_deploy_via_commit_markers()
+
+		finally:
+			frappe.set_user(current_user)
+
+	def create_marketplace_app_audit(self):
+		"""
+		Currently, we only audit marketplace app releases. Later we can extend this to custom apps as well.
+		"""
+		# determine whether the release's source is a marketplace app
+		if not frappe.db.exists("Marketplace App", {"app": self.app}):
+			return
+
+		marketplace_app, bypass_automated_audit = frappe.db.get_value(
+			"Marketplace App", {"app": self.app}, ["name", "bypass_automated_audit"]
 		)
-		for group in groups:
-			if frappe.get_all(
-				"Deploy Candidate",
-				{"status": ("in", ("Pending", "Running")), "group": group.parent},
-			):
-				continue
-			group = frappe.get_doc("Release Group", group.parent)
-			apps = [app.as_dict() for app in group.apps if app.enable_auto_deploy]
-			candidate = group.create_deploy_candidate(apps)
-			if candidate:
-				candidate.schedule_build_and_deploy()
+		if bypass_automated_audit:
+			return
+
+		is_registered_source = frappe.db.exists(
+			"Marketplace App Version",
+			{"parent": marketplace_app, "source": self.source},
+		)
+		if not is_registered_source:
+			return
+
+		from press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit import MarketplaceAppAudit
+
+		MarketplaceAppAudit.create_for_release(
+			marketplace_app=marketplace_app,
+			app_release=self.name,
+		)
 
 
 def cleanup_unused_releases():
@@ -348,7 +482,7 @@ def get_permission_query_conditions(user):
 
 	team = get_current_team()
 
-	return f"(`tabApp Release`.`team` = {frappe.db.escape(team)} or `tabApp" " Release`.`public` = 1)"
+	return f"(`tabApp Release`.`team` = {frappe.db.escape(team)} or `tabApp Release`.`public` = 1)"
 
 
 def has_permission(doc, ptype, user):
@@ -480,31 +614,24 @@ def run(command, cwd):
 	return subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT, cwd=cwd).decode()
 
 
-def check_python_syntax(dirpath: str) -> str:
-	"""
-	Script `compileall` will compile all the Python files
-	in the given directory.
+def get_python_path(dirpath: str) -> str:
+	"""Check for python version in the pyproject.toml file if present else return bench python path"""
+	pyproject_path = os.path.join(dirpath, "pyproject.toml")
+	if os.path.isfile(pyproject_path):
+		# To handle broken toml files or missing fields
+		with open(pyproject_path, "rb") as f, contextlib.suppress(Exception):
+			pyproject_data = tomli.load(f)
+			requires_python = pyproject_data.get("project", {}).get("requires-python")
+			if requires_python:
+				version_spec = sv.SimpleSpec(requires_python)
+				if version_spec.match(sv.Version("3.14.0")):
+					# try to resolve python3.14 path
+					python_path = shutil.which("python3.14")
+					if python_path:
+						return python_path
+					return "/usr/bin/python3.14"  # Temporary hardcoding until python 3.14 until we move to build server
 
-	If there are errors then return code will be non-zero.
-
-	Flags:
-	- -q: quiet, only print errors (stdout)
-	- -o: optimize level, 0 is no optimization
-	"""
-	_python = _get_python_path()
-	command = f"{_python} -m compileall -q -o 0 {dirpath}"
-	proc = subprocess.run(
-		shlex.split(command),
-		text=True,
-		capture_output=True,
-	)
-	if proc.returncode == 0:
-		return ""
-
-	if not proc.stdout:
-		return proc.stderr
-
-	return proc.stdout
+	return _get_python_path()
 
 
 def _get_python_path() -> str:
@@ -521,6 +648,33 @@ def _get_python_path() -> str:
 		_python_path = "python3"
 
 	return _python_path
+
+
+def check_python_syntax(dirpath: str) -> str:
+	"""
+	Script `compileall` will compile all the Python files
+	in the given directory.
+
+	If there are errors then return code will be non-zero.
+
+	Flags:
+	- -q: quiet, only print errors (stdout)
+	- -o: optimize level, 0 is no optimization
+	"""
+	_python = get_python_path(dirpath)
+	command = f"{_python} -m compileall -q -o 0 {dirpath}"
+	proc = subprocess.run(
+		shlex.split(command),
+		text=True,
+		capture_output=True,
+	)
+	if proc.returncode == 0:
+		return ""
+
+	if not proc.stdout:
+		return proc.stderr
+
+	return proc.stdout
 
 
 def check_pyproject_syntax(dirpath: str) -> str:

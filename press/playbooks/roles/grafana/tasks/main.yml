@@ -3,7 +3,7 @@
   become: yes
   become_user: frappe
   file:
-    path: '{{ item }}'
+    path: "{{ item }}"
     state: directory
     mode: 0755
   with_items:
@@ -16,11 +16,15 @@
     - /home/frappe/grafana/data/dashboards
     - /home/frappe/grafana/data/plugins
 
+- name: Set Architecture
+  set_fact:
+    arch: "{{'amd64' if (ansible_architecture == 'x86_64') else 'arm64'}}"
+
 - name: Download Grafana Archive
   become: yes
   become_user: frappe
   unarchive:
-    src: https://dl.grafana.com/oss/release/grafana-10.3.1.linux-amd64.tar.gz
+    src: "https://dl.grafana.com/oss/release/grafana-12.2.1.linux-{{ arch }}.tar.gz"
     dest: /tmp
     remote_src: yes
 
@@ -28,8 +32,8 @@
   become: yes
   become_user: frappe
   copy:
-    src: '/tmp/grafana-v10.3.1/{{ item }}/'
-    dest: '/home/frappe/grafana/{{ item }}/'
+    src: "/tmp/grafana-12.2.1/{{ item }}/"
+    dest: "/home/frappe/grafana/{{ item }}/"
     mode: 0755
     remote_src: yes
   with_items:
@@ -72,9 +76,16 @@
 - name: Setup Grafana Authentication
   become: yes
   become_user: frappe
-  command: 'htpasswd -Bbc /home/frappe/agent/nginx/grafana.htpasswd frappe {{ grafana_password }}'
+  command: "htpasswd -Bbc /home/frappe/agent/nginx/grafana.htpasswd frappe {{ grafana_password }}"
 
 - name: Setup Grafana HTTP Authentication
   become: yes
   become_user: frappe
-  command: 'htpasswd -Bbc /home/frappe/agent/nginx/grafana-ui.htpasswd admin {{ grafana_password }}'
+  command: "htpasswd -Bbc /home/frappe/agent/nginx/grafana-ui.htpasswd admin {{ grafana_password }}"
+
+- name: Setup Agent NGINX
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup nginx
+  args:
+    chdir: /home/frappe/agent

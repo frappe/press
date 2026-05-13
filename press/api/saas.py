@@ -43,16 +43,16 @@ def account_request(
 	frappe.utils.validate_email_address(email, True)
 
 	if not check_subdomain_availability(subdomain, app):
-		frappe.throw(f"Subdomain {subdomain} is already taken")
+		frappe.throw(f"Subdomain {subdomain} is already taken. Please try with some other subdomain.")
 
 	all_countries = frappe.db.get_all("Country", pluck="name")
 	country = find(all_countries, lambda x: x.lower() == country.lower())
 	if not country:
-		frappe.throw("Country field should be a valid country name")
+		frappe.throw("{country} is not a valid country. Please choose the correct country value.")
 
 	team = frappe.db.get_value("Team", {"user": email})
 	if team and frappe.db.exists("Invoice", {"team": team, "status": "Unpaid", "type": "Subscription"}):
-		frappe.throw(f"Account {email} already exists with unpaid invoices")
+		frappe.throw(f"Account {email} already exists with unpaid invoices. Please clear the previous dues.")
 
 	current_user = frappe.session.user
 	try:
@@ -65,7 +65,7 @@ def account_request(
 				"erpnext": False,
 				"subdomain": subdomain,
 				"email": email,
-				"role": "Press Admin",
+				"role": "Press User",
 				"first_name": clean_html(first_name),
 				"last_name": clean_html(last_name),
 				"country": country,
@@ -80,7 +80,7 @@ def account_request(
 			source=json.loads(url_args).get("source") if url_args else "fc",
 		)
 		account_request.insert(ignore_permissions=True)
-		capture("completed_server_account_request", "fc_saas", site_name)
+		capture("completed_server_account_request", "fc_product_trial", site_name)
 	except Exception as e:
 		log_error("Account Request Creation Failed", data=e)
 		raise
@@ -111,7 +111,7 @@ def create_or_rename_saas_site(app, account_request):
 			).insert(ignore_permissions=True)
 			set_site_in_subscription_docs(saas_site.subscription_docs, saas_site.name)
 
-		capture("completed_server_site_created", "fc_saas", account_request.get_site_name())
+		capture("completed_server_site_created", "fc_product_trial", account_request.get_site_name())
 	except Exception as e:
 		log_error("Saas Site Creation or Rename failed", data=e)
 
@@ -138,14 +138,6 @@ def new_saas_site(subdomain, app):
 	frappe.db.commit()
 
 	return site
-
-
-@frappe.whitelist()
-def get_saas_site_status(site):
-	if frappe.db.exists("Site", site):
-		return {"site": site, "status": frappe.db.get_value("Site", site, "status")}
-
-	return {"site": site, "status": "Pending"}
 
 
 def get_hybrid_saas_pool(account_request):
@@ -211,35 +203,17 @@ def check_subdomain_availability(subdomain, app):
 
 
 @frappe.whitelist(allow_guest=True)
-def validate_account_request(key):
-	if not key:
-		frappe.throw("Request Key not provided")
-
-	app = frappe.db.get_value("Account Request", {"request_key": key}, "saas_app")
-	app_info = frappe.db.get_value("Saas Setup Account Generator", app, ["headless", "route"], as_dict=True)
-
-	if not app_info:
-		frappe.throw("App configurations are missing! Please contact support")
-
-	if app_info.headless:
-		headless_setup_account(key)
-	else:
-		frappe.local.response["type"] = "redirect"
-		frappe.local.response["location"] = f"/{app_info.route}?key={key}"
-
-
-@frappe.whitelist(allow_guest=True)
 def setup_account(key, business_data=None):
 	"""
 	Includes the data collection step in setup-account.html
 	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw("Invalid or Expired Key")  # nosemgrep
 
 	capture(
 		"init_server_setup_account",
-		"fc_saas",
+		"fc_product_trial",
 		account_request.get_site_name(),
 	)
 	frappe.set_user("Administrator")
@@ -268,7 +242,7 @@ def setup_account(key, business_data=None):
 	create_marketplace_subscription(account_request)
 	capture(
 		"completed_server_setup_account",
-		"fc_saas",
+		"fc_product_trial",
 		account_request.get_site_name(),
 	)
 
@@ -280,11 +254,11 @@ def headless_setup_account(key):
 	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw("Invalid or Expired Key")  # nosemgrep
 
 	capture(
 		"init_server_setup_account",
-		"fc_saas",
+		"fc_product_trial",
 		account_request.get_site_name(),
 	)
 	frappe.set_user("Administrator")
@@ -293,7 +267,7 @@ def headless_setup_account(key):
 	# create team and enable the subscriptions for site
 	capture(
 		"completed_server_setup_account",
-		"fc_saas",
+		"fc_product_trial",
 		account_request.get_site_name(),
 	)
 
@@ -364,7 +338,7 @@ def get_site_status(key, app=None):
 	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw("Invalid or Expired Key")  # nosemgrep
 
 	domain = get_saas_domain(app) if app else get_erpnext_domain()
 
@@ -375,7 +349,7 @@ def get_site_status(key, app=None):
 		as_dict=1,
 	)
 	if site:
-		capture("completed_site_allocation", "fc_saas", site.name)
+		capture("completed_site_allocation", "fc_product_trial", site.name)
 		return site
 	return {"status": "Pending"}
 
@@ -387,7 +361,7 @@ def get_site_url_and_sid(key, app=None):
 	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw("Invalid or Expired Key")
+		frappe.throw("Invalid or Expired Key")  # nosemgrep
 
 	domain = get_saas_domain(app) if app else get_erpnext_domain()
 

@@ -4,14 +4,21 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from typing import TYPE_CHECKING
 
 import frappe
+import frappe.utils
+from elasticsearch import Elasticsearch
 from frappe.model.document import Document
+from frappe.utils.password import get_decrypted_password
 
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_activity.site_activity import log_site_activity
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class SiteDatabaseUser(Document):
@@ -28,18 +35,19 @@ class SiteDatabaseUser(Document):
 		)
 
 		failed_agent_job: DF.Link | None
-		failure_reason: DF.SmallText
+		failure_reason: DF.SmallText | None
 		label: DF.Data
 		max_connections: DF.Int
 		mode: DF.Literal["read_only", "read_write", "granular"]
-		password: DF.Password
+		password: DF.Password | None
 		permissions: DF.Table[SiteDatabaseTablePermission]
 		site: DF.Link
 		status: DF.Literal["Pending", "Active", "Failed", "Archived"]
 		team: DF.Link
+		use_replica_server: DF.Check
 		user_added_in_proxysql: DF.Check
 		user_created_in_database: DF.Check
-		username: DF.Data
+		username: DF.Data | None
 	# end: auto-generated types
 
 	dashboard_fields = (
@@ -53,6 +61,7 @@ class SiteDatabaseUser(Document):
 		"failure_reason",
 		"permissions",
 		"max_connections",
+		"use_replica_server",
 	)
 
 	def validate(self):
@@ -71,7 +80,7 @@ class SiteDatabaseUser(Document):
 			)
 
 	def before_insert(self):
-		site = frappe.get_doc("Site", self.site)
+		site: Site = frappe.get_doc("Site", self.site)
 		if not site.has_permission():
 			frappe.throw("You don't have permission to create database user")
 		if not frappe.db.get_value("Site Plan", site.plan, "database_access"):
@@ -89,6 +98,21 @@ class SiteDatabaseUser(Document):
 			frappe.throw(
 				f"Your site has quota of {site.database_access_connection_limit} database connections.\nYou can't allocate more than {allowed_max_connections_for_site} connections for new user. You can drop other database users to allocate more connections."
 			)
+
+		# validate replica server availability
+		if self.use_replica_server:
+			database_server_name = frappe.db.get_value("Server", site.server, "database_server")
+			replica_exists = frappe.db.exists(
+				"Database Server",
+				{
+					"status": ["!=", "Archived"],
+					"is_primary": 0,
+					"primary": database_server_name,
+					"is_replication_setup": 1,
+				},
+			)
+			if not replica_exists:
+				frappe.throw("Replica server is not available for this site")
 
 		self.status = "Pending"
 		if not self.username:
@@ -208,10 +232,32 @@ class SiteDatabaseUser(Document):
 		database = self._get_database_name()
 		server = frappe.db.get_value("Site", self.site, "server")
 		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
-		database_server_name = frappe.db.get_value(
-			"Bench", frappe.db.get_value("Site", self.site, "bench"), "database_server"
-		)
+		database_server_name = frappe.db.get_value("Server", server, "database_server")
+
+		if self.use_replica_server:
+			# Try to find the replica server
+			replica_server_name = frappe.db.get_value(
+				"Database Server",
+				{
+					"status": ["!=", "Archived"],
+					"is_primary": 0,
+					"primary": database_server_name,
+					"is_replication_setup": 1,
+				},
+			)
+
+			if replica_server_name:
+				database_server_name = replica_server_name
+			else:
+				# We will block creation of database user with use_replica_server flag
+				# If replica server is not found
+				# But, in some edge cases, if replica server is not found
+				# we can still proceed with primary server and turn off use_replica_server flag to avoid blocking user creation
+				self.use_replica_server = False
+				self.save()
+
 		database_server = frappe.get_doc("Database Server", database_server_name)
+
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.add_proxysql_user(
 			frappe.get_doc("Site", self.site),
@@ -306,6 +352,67 @@ class SiteDatabaseUser(Document):
 		if not self.user_created_in_database and not self.user_added_in_proxysql:
 			self.status = "Archived"
 			self.save()
+
+	@dashboard_whitelist()
+	def fetch_logs(
+		self, start_timestamp: int, end_timestamp: int, search_string: str = "", client_ip: str = ""
+	):
+		if abs(start_timestamp - end_timestamp) > 2592000:
+			frappe.throw(
+				"You can only search through at max 30 days of logs. Please try again with a smaller range."
+			)
+		try:
+			log_server = frappe.db.get_single_value("Press Settings", "log_server")
+
+			if not log_server:
+				return []
+
+			query = {
+				"bool": {
+					"filter": [
+						{"term": {"event.dataset": "proxysql.events"}},
+						{"term": {"username": self.username}},
+						{
+							"range": {
+								"@timestamp": {
+									"gte": int(start_timestamp) * 1000,  # Convert to milliseconds
+									"lte": int(end_timestamp) * 1000,  # Convert to milliseconds
+								}
+							}
+						},
+					],
+					"must": [],
+					"must_not": [],
+					"should": [],
+				}
+			}
+
+			if search_string and search_string.strip() != "*":
+				query["bool"]["must"].append(
+					{"wildcard": {"query": {"value": f"*{search_string}*", "case_insensitive": True}}}
+				)
+
+			if client_ip:
+				query["bool"]["filter"].append({"term": {"client_ip": client_ip}})
+
+			url = f"https://{log_server}/elasticsearch/"
+			password = get_decrypted_password("Log Server", log_server, "kibana_password")
+			client = Elasticsearch(url, basic_auth=("frappe", password))
+			result = client.search(
+				size=500,
+				index="filebeat-*",
+				query=query,
+				_source=["query", "client_ip", "start_timestamp", "duration_ms"],
+			)
+			# Only return the _source part of each hit
+			hits = [hit["_source"] for hit in result["hits"]["hits"]]
+			for i in range(len(hits)):
+				hits[i]["start_timestamp"] = int(
+					frappe.utils.cint(hits[i].get("start_timestamp"), 0) / 1000
+				)  # Convert to seconds
+			return hits
+		except Exception:
+			frappe.throw("Failed to fetch logs from log server. Please try again later.")
 
 	@staticmethod
 	def process_job_update(job):  # noqa: C901

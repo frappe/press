@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
+from __future__ import annotations
 
 import hashlib
 import hmac
@@ -39,7 +38,7 @@ class GitHubWebhookLog(Document):
 		tag: DF.Data | None
 	# end: auto-generated types
 
-	def validate(self):
+	def validate(self):  # noqa: C901
 		secret = frappe.db.get_single_value("Press Settings", "github_webhook_secret")
 		digest = hmac.HMAC(secret.encode(), self.payload.encode(), hashlib.sha1)
 		if not hmac.compare_digest(digest.hexdigest(), self.signature):
@@ -66,6 +65,8 @@ class GitHubWebhookLog(Document):
 				self.tag = payload.ref
 			elif self.git_reference_type == "branch":
 				self.branch = payload.ref
+		elif self.event == "release":
+			self.tag = payload.release.get("tag_name")
 
 		self.payload = json.dumps(payload, indent=4, sort_keys=True)
 
@@ -199,12 +200,12 @@ class GitHubWebhookLog(Document):
 		frappe.db.delete(table, filters=(table.creation < (Now() - Interval(days=days))))
 
 
-def set_uninstalled(owner: str, repository: Optional[str] = None):
+def set_uninstalled(owner: str, repository: str | None = None):
 	for name in get_sources(owner, repository):
 		frappe.db.set_value("App Source", name, "uninstalled", True)
 
 
-def get_sources(owner: str, repository: Optional[str] = None) -> "list[str]":
+def get_sources(owner: str, repository: str | None = None) -> "list[str]":
 	filters = {"repository_owner": owner}
 	if repository:
 		filters["repository"] = repository

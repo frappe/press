@@ -60,6 +60,7 @@ frappe.ui.form.on('Release Group', {
 			},
 			__('Actions'),
 		);
+
 		frm.add_custom_button(
 			'Add Server',
 			() => {
@@ -73,19 +74,68 @@ frappe.ui.form.on('Release Group', {
 							options: 'Server',
 							reqd: 1,
 						},
+						{
+							fieldtype: 'Check',
+							fieldname: 'force_new_build',
+							label: 'Force New Build',
+							reqd: 0,
+						},
 					],
-					primary_action({ server }) {
-						frm.call('add_server', { server, deploy: true }).then((r) => {
-							if (!r.exc) {
-								frappe.show_alert(
-									`Added ${server} and deployed last successful candidate`,
-								);
-							}
-							d.hide();
-						});
+					primary_action({ server, force_new_build }) {
+						frm
+							.call('add_server', {
+								server,
+								deploy: true,
+								force_new_build: force_new_build,
+							})
+							.then((r) => {
+								if (!r.exc) {
+									frappe.show_alert(
+										`Added ${server} and deployed last successful candidate`,
+									);
+								}
+								d.hide();
+							});
 					},
 				});
 				d.show();
+			},
+			__('Actions'),
+		);
+		frm.add_custom_button(
+			'Redeploy on Missing Servers',
+			() => {
+				frappe.confirm(
+					'This will trigger a redeploy of the last successful candidate on servers which are missing a bench. Do you want to continue?',
+					() => {
+						frm.call('redeploy_on_missing_servers').then((r) => {
+							if (!r.exc) {
+								frappe.show_alert(`Redeploy triggered on missing servers`);
+							}
+						});
+					},
+				);
+			},
+			__('Actions'),
+		);
+
+		frm.add_custom_button(
+			'Clone Group',
+			() => {
+				frappe.prompt(
+					[
+						{
+							fieldtype: 'Data',
+							fieldname: 'group_title',
+							label: 'New Group Name',
+							reqd: 1,
+						},
+					],
+					({ group_title }) => {
+						frm.call('clone_group', { title: group_title });
+					},
+					'Clone Group',
+				);
 			},
 			__('Actions'),
 		);

@@ -1,0 +1,15 @@
+[Unit]
+Description=Live Syncing (Mirror) Daemon for App Server On-Premise Replica
+After=network.target
+
+[Service]
+Restart=on-failure
+RestartSec=5
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/bin/lsyncd -nodaemon /etc/on-prem-lsyncd-app/lsyncd.conf.lua
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

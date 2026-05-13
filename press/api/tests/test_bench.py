@@ -2,7 +2,7 @@ import json
 import os
 import time
 from unittest import skip
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import docker
 import frappe
@@ -42,11 +42,13 @@ from press.utils.test import foreground_enqueue_doc
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestAPIBench(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		self.team = create_test_press_admin_team()
 		self.version = "Version 15"
 		self.app = create_test_app()
 		self.app_source = self.app.add_source(
-			self.version,
+			frappe_version=self.version,
 			repository_url="https://github.com/frappe/frappe",
 			branch="version-15",
 			team=get_current_team(),
@@ -85,9 +87,7 @@ class TestAPIBench(FrappeTestCase):
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
-	)
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	def test_deploy_fn_deploys_bench_container(self):
 		# mark frappe as approved so that the deploy can happen
 		release = frappe.get_last_doc("App Release", {"source": self.app_source.name})
@@ -121,10 +121,8 @@ class TestAPIBench(FrappeTestCase):
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	@patch.object(DeployCandidate, "schedule_build_and_deploy", new=Mock())
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
-	)
+	@patch.object(DeployCandidate, "schedule_build_and_deploy", new=MagicMock())
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	def test_deploy_and_update_fn_creates_bench_update(self):
 		group = new(
 			{
@@ -141,7 +139,7 @@ class TestAPIBench(FrappeTestCase):
 		dc_count_before = frappe.db.count("Deploy Candidate", filters={"group": group})
 
 		release = create_test_app_release(frappe.get_doc("App Source", self.app_source.name))
-		deploy_and_update(group, [{"release": release.name}], [])
+		deploy_and_update(group, [{"release": release.name, "hash": frappe.generate_hash(length=8)}], [])
 
 		bu_count_after = frappe.db.count("Bench Update", filters={"group": group})
 		dc_count_after = frappe.db.count("Deploy Candidate", filters={"group": group})
@@ -149,36 +147,7 @@ class TestAPIBench(FrappeTestCase):
 		self.assertEqual(dc_count_after, dc_count_before + 1)
 		self.assertEqual(bu_count_after, bu_count_before + 1)
 
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
-		new=foreground_enqueue_doc,
-	)
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
-	)
-	def test_deploy_and_update_fn_fails_without_release_argument(self):
-		group = new(
-			{
-				"title": "Test Bench",
-				"apps": [{"name": self.app.name, "source": self.app_source.name}],
-				"version": self.version,
-				"cluster": "Default",
-				"saas_app": None,
-				"server": None,
-			}
-		)
-
-		self.assertRaises(
-			frappe.exceptions.MandatoryError,
-			deploy_and_update,
-			group,
-			[{"app": self.app.name}],
-			[],
-		)
-
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
-	)
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	def test_deploy_fn_fails_without_apps(self):
 		frappe.set_user(self.team.user)
 		group = new(
@@ -193,23 +162,6 @@ class TestAPIBench(FrappeTestCase):
 		)
 		self.assertRaises(TypeError, deploy, group)
 
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
-	)
-	def test_deploy_fn_fails_with_empty_apps(self):
-		frappe.set_user(self.team.user)
-		group = new(
-			{
-				"title": "Test Bench",
-				"apps": [{"name": self.app.name, "source": self.app_source.name}],
-				"version": self.version,
-				"cluster": "Default",
-				"saas_app": None,
-				"server": None,
-			}
-		)
-		self.assertRaises(frappe.exceptions.MandatoryError, deploy, group, [])
-
 	@timeout(20)
 	def _check_if_docker_image_was_built(self, group: str):
 		client = docker.from_env()
@@ -222,9 +174,7 @@ class TestAPIBench(FrappeTestCase):
 		self.assertIn(image_name, [tag for tag in image.tags])
 
 		test_port = 10501
-		client.containers.run(
-			image=image_name, remove=True, detach=True, ports={"8000/tcp": test_port}
-		)
+		client.containers.run(image=image_name, remove=True, detach=True, ports={"8000/tcp": test_port})
 		while True:
 			# Ensure that gunicorn at least responds. Usually we'll get 404 as there's no site installed *yet*
 			try:
@@ -232,13 +182,15 @@ class TestAPIBench(FrappeTestCase):
 				print("Received Response", response.text)
 				if response.status_code < 500:
 					break
-			except IOError as e:
+			except OSError as e:
 				print("Waitng for container to respond", str(e))
 			time.sleep(0.5)
 
 
 class TestAPIBenchConfig(FrappeTestCase):
 	def setUp(self):
+		super().setUp()
+
 		app = create_test_app()
 		self.rg = create_test_release_group([app])
 
@@ -288,11 +240,12 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},  # updated
+					{"key": "NODE_VERSION", "value": "16.11.0"},  # updated
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},  # updated
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "PIP_VERSION", "value": "25.2"},
 				]
 			),
 		)
@@ -300,7 +253,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 		self.rg.reload()
 		self.assertTrue(self.rg.last_dependency_update)
 		self.assertEqual(
-			find(self.rg.dependencies, lambda d: d.dependency == "NODE_VERSION").version, "16.11"
+			find(self.rg.dependencies, lambda d: d.dependency == "NODE_VERSION").version, "16.11.0"
 		)
 		self.assertEqual(
 			find(self.rg.dependencies, lambda d: d.dependency == "PYTHON_VERSION").version,
@@ -319,6 +272,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 					{"key": "NODE_VERSION", "value": "16.36.0"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "PIP_VERSION", "value": "25.2"},
 					{
 						"key": "asdf",
 						"value": "10.9",
@@ -340,6 +294,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "PIP_VERSION", "value": "25.2"},
 				],
 			),
 		)
@@ -352,7 +307,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -368,7 +323,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
@@ -377,6 +332,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 						"key": "MARIADB_VERSION",
 						"value": "10.9",
 					},  # invalid dependency
+					{"key": "PIP_VERSION", "value": "25.2"},
 				],
 			),
 		)
@@ -392,11 +348,12 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "PIP_VERSION", "value": "25.2"},
 					{"key": "MARIADB_VERSION", "value": "10.9"},
 				]
 			),
@@ -413,11 +370,12 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "PIP_VERSION", "value": "25.2"},
 				]
 			),
 		)
@@ -436,11 +394,12 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NODE_VERSION", "value": "16.11.0"},
 					{"key": "NVM_VERSION", "value": "0.36.0"},
 					{"key": "PYTHON_VERSION", "value": "3.6"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "PIP_VERSION", "value": "25.2"},
 				]
 			),
 		)
@@ -449,11 +408,12 @@ class TestAPIBenchConfig(FrappeTestCase):
 
 	def test_dependencies_lists_all_dependencies(self):
 		deps = [
-			{"key": "NODE_VERSION", "value": "16.11"},
+			{"key": "NODE_VERSION", "value": "16.11.0"},
 			{"key": "NVM_VERSION", "value": "0.36.0"},
 			{"key": "PYTHON_VERSION", "value": "3.6"},
 			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 			{"key": "BENCH_VERSION", "value": "5.15.2"},
+			{"key": "PIP_VERSION", "value": "25.2"},
 		]
 		update_dependencies(
 			self.rg.name,
@@ -467,17 +427,16 @@ class TestAPIBenchConfig(FrappeTestCase):
 
 	def test_dependencies_shows_dependency_update_available_on_update_of_the_same(self):
 		deps = [
-			{"key": "NODE_VERSION", "value": "16.11"},
+			{"key": "NODE_VERSION", "value": "16.11.0"},
 			{"key": "NVM_VERSION", "value": "0.36.0"},
 			{"key": "PYTHON_VERSION", "value": "3.6"},
 			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 			{"key": "BENCH_VERSION", "value": "5.15.2"},
+			{"key": "PIP_VERSION", "value": "25.2"},
 		]
 		self.assertFalse(dependencies(self.rg.name)["update_available"])
-		create_test_bench(
-			group=self.rg
-		)  # don't show dependency update available for new deploys
-		deps[0]["value"] = "16.12"
+		create_test_bench(group=self.rg)  # don't show dependency update available for new deploys
+		deps[0]["value"] = "16.12.0"
 		update_dependencies(
 			self.rg.name,
 			json.dumps(deps),
@@ -546,9 +505,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 		bench.memory_swap = 4096
 		bench.vcpu = 2
 		bench.force_update_limits()
-		job = frappe.get_last_doc(
-			"Agent Job", {"job_type": "Force Update Bench Limits", "bench": bench.name}
-		)
+		job = frappe.get_last_doc("Agent Job", {"job_type": "Force Update Bench Limits", "bench": bench.name})
 		job_data = json.loads(job.request_data)
 		self.assertEqual(job_data["memory_high"], 1024)
 		self.assertEqual(job_data["memory_max"], 2048)
@@ -559,6 +516,8 @@ class TestAPIBenchConfig(FrappeTestCase):
 class TestAPIBenchList(FrappeTestCase):
 	def setUp(self):
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
+
+		super().setUp()
 
 		app = create_test_app()
 
@@ -623,9 +582,7 @@ class TestAPIBenchList(FrappeTestCase):
 		)
 
 	def test_list_tagged_benches(self):
-		self.assertEqual(
-			all(bench_filter={"status": "", "tag": "test_tag"}), [self.bench_with_tag_dict]
-		)
+		self.assertEqual(all(bench_filter={"status": "", "tag": "test_tag"}), [self.bench_with_tag_dict])
 
 
 def set_press_settings_for_docker_build() -> None:

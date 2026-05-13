@@ -1,0 +1,171 @@
+- name: Get installed MariaDB version
+  ansible.builtin.command: mariadbd --version
+  register: mariadb_10_11_to_10_6_version_cmd
+  changed_when: false
+  failed_when: false
+
+- name: Parse installed MariaDB version
+  ansible.builtin.set_fact:
+    mariadb_10_11_to_10_6_current_version: >-
+      {{ '0.0.0' if mariadb_10_11_to_10_6_version_cmd.rc != 0 else
+         (mariadb_10_11_to_10_6_version_cmd.stdout
+          | regex_search('[0-9]+\.[0-9]+\.[0-9]+(?=-MariaDB)')
+          | default('0.0.0', true)) }}
+
+- name: Set target MariaDB version for downgrade
+  ansible.builtin.set_fact:
+    mariadb_10_11_to_10_6_target_version_prefix: '10.6.'
+    mariadb_10_11_to_10_6_requires_change: "{{ not (mariadb_10_11_to_10_6_current_version is match('^10\\.6\\..*')) }}"
+
+- name: Show detected MariaDB version
+  ansible.builtin.debug:
+    msg: "Detected MariaDB version: {{ mariadb_10_11_to_10_6_current_version }} (target branch is 10.6.x)"
+
+- name: Remove old MariaDB repository files
+  ansible.builtin.shell: rm -f /etc/apt/sources.list.d/*mariadb*.list
+  changed_when: false
+  failed_when: false
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Add MariaDB repository key
+  ansible.builtin.apt_key:
+    url: https://mariadb.org/mariadb_release_signing_key.pgp
+    state: present
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Add MariaDB 10.6 repository
+  ansible.builtin.apt_repository:
+    repo: deb https://mirror.rackspace.com/mariadb/repo/10.6/ubuntu {{ ansible_distribution_release }} main
+    state: present
+    update_cache: true
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Update APT cache
+  ansible.builtin.apt:
+    update_cache: true
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Ensure clean InnoDB shutdown mode before downgrade
+  ansible.builtin.command: mariadb -NBe "SET GLOBAL innodb_fast_shutdown=0;"
+  changed_when: false
+  failed_when: false
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Stop MariaDB service
+  ansible.builtin.systemd:
+    name: mariadb
+    state: stopped
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Get mariadb-server package candidates
+  ansible.builtin.shell: |
+    apt-cache madison mariadb-server | awk '/10\.6\./ {print $3; exit} END {exit 0}'
+  register: mariadb_10_11_to_10_6_server_10_6_version_cmd
+  changed_when: false
+  failed_when: false
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Get mariadb-client package candidates
+  ansible.builtin.shell: |
+    apt-cache madison mariadb-client | awk '/10\.6\./ {print $3; exit} END {exit 0}'
+  register: mariadb_10_11_to_10_6_client_10_6_version_cmd
+  changed_when: false
+  failed_when: false
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Set 10.6 package versions from apt-cache output
+  ansible.builtin.set_fact:
+    mariadb_10_11_to_10_6_server_10_6_version: >-
+      {{ mariadb_10_11_to_10_6_server_10_6_version_cmd.stdout | trim }}
+    mariadb_10_11_to_10_6_client_10_6_version: >-
+      {{ mariadb_10_11_to_10_6_client_10_6_version_cmd.stdout | trim }}
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Fail when 10.6 package versions are unavailable
+  ansible.builtin.fail:
+    msg: >-
+      Could not find MariaDB 10.6 package versions in APT metadata.
+      server='{{ mariadb_10_11_to_10_6_server_10_6_version | trim }}',
+      client='{{ mariadb_10_11_to_10_6_client_10_6_version | trim }}'.
+  when:
+    - mariadb_10_11_to_10_6_requires_change | bool
+    - mariadb_10_11_to_10_6_server_10_6_version | trim == '' or mariadb_10_11_to_10_6_client_10_6_version | trim == ''
+
+- name: Set MariaDB packages to 10.6 branch
+  ansible.builtin.command:
+    argv:
+      - apt-get
+      - -o
+      - Dpkg::Lock::Timeout=900
+      - -o
+      - Dpkg::Options::=--force-confdef
+      - -o
+      - Dpkg::Options::=--force-confold
+      - -y
+      - --allow-downgrades
+      - install
+      - mariadb-server={{ mariadb_10_11_to_10_6_server_10_6_version | trim }}
+      - mariadb-client={{ mariadb_10_11_to_10_6_client_10_6_version | trim }}
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+    UCF_FORCE_CONFOLD: '1'
+    NEEDRESTART_MODE: a
+  register: mariadb_10_11_to_10_6_install_result
+  changed_when: "'0 upgraded, 0 newly installed' not in (mariadb_10_11_to_10_6_install_result.stdout | default(''))"
+  async: 3600
+  poll: 15
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Set open files count limit for MariaDB
+  ansible.builtin.lineinfile:
+    dest: /lib/systemd/system/mariadb.service
+    regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
+    line: 'LimitNOFILE = infinity'
+    insertafter: '\[Service\]'
+    state: present
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Start MariaDB service
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: mariadb
+    state: started
+    enabled: true
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Run MariaDB upgrade after package version change
+  ansible.builtin.command: mariadb-upgrade
+  changed_when: false
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Get MariaDB version after downgrade
+  ansible.builtin.command: mariadbd --version
+  register: mariadb_10_11_to_10_6_post_version_cmd
+  changed_when: false
+  failed_when: false
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Parse MariaDB version after downgrade
+  ansible.builtin.set_fact:
+    mariadb_10_11_to_10_6_post_version: >-
+      {{ '0.0.0' if mariadb_10_11_to_10_6_post_version_cmd.rc != 0 else
+         (mariadb_10_11_to_10_6_post_version_cmd.stdout
+          | regex_search('[0-9]+\.[0-9]+\.[0-9]+(?=-MariaDB)')
+          | default('0.0.0', true)) }}
+  when: mariadb_10_11_to_10_6_requires_change | bool
+
+- name: Fail if MariaDB version is not in 10.6 branch after downgrade
+  ansible.builtin.fail:
+    msg: >-
+      MariaDB move to 10.6 branch did not complete as expected. Detected post-change version:
+      {{ mariadb_10_11_to_10_6_post_version }}
+  when:
+    - mariadb_10_11_to_10_6_requires_change | bool
+    - not (mariadb_10_11_to_10_6_post_version is match('^10\\.6\\..*'))
+
+- name: Skip MariaDB downgrade role when already on 10.6 branch
+  ansible.builtin.debug:
+    msg: "Skipping mariadb_10_11_to_10_6 role because installed version is {{ mariadb_10_11_to_10_6_current_version }}"
+  when: not (mariadb_10_11_to_10_6_requires_change | bool)

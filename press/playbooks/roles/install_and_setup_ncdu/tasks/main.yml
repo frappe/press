@@ -1,0 +1,14 @@
+---
+- name: Install Ncdu
+  become: yes
+  become_user: root
+  apt:
+    name: ncdu
+    state: present
+    update_cache: no
+
+  register: result
+  until: result.failed == false
+  retries: 5
+  delay: 120
+

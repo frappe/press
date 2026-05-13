@@ -22,6 +22,7 @@ def create_test_server_plan(server_type: str = "Server") -> "ServerPlan":
 			"price_inr": 1000,
 			"price_usd": 200,
 			"enabled": 1,
+			"disk": 25,
 		}
 	).insert()
 	server_plan.reload()

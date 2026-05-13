@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
@@ -36,9 +35,7 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		data_anonymized: DF.Check
 		deletion_steps: DF.Table[PersonalDataDeletionStep]
 		frappeio_data_deleted: DF.Check
-		status: DF.Literal[
-			"Pending Verification", "Deletion Verified", "Processing Deletion", "Deleted"
-		]
+		status: DF.Literal["Pending Verification", "Deletion Verified", "Processing Deletion", "Deleted"]
 		stripe_data_deleted: DF.Check
 		team: DF.Link
 		team_disabled: DF.Check
@@ -82,28 +79,18 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		return frappe.get_cached_doc("Team", self.team)
 
 	def rename_team_on_data_deletion(self):
-		if (
-			self.status == "Deleted"
-			and self.name != self.team
-			and frappe.db.exists("Team", self.team)
-		):
+		if self.status == "Deleted" and self.name != self.team and frappe.db.exists("Team", self.team):
 			frappe.rename_doc("Team", self.team, self.name)
 
 	def validate_team_owner(self):
-		if (
-			self.team_doc.user == frappe.session.user or "System Manager" in frappe.get_roles()
-		):
+		if self.team_doc.user == frappe.session.user or "System Manager" in frappe.get_roles():
 			return
 
-		frappe.throw(
-			"You need to be a Team owner to request account deletion", exc=frappe.PermissionError
-		)
+		frappe.throw("You need to be a Team owner to request account deletion", exc=frappe.PermissionError)
 
 	def validate_duplicate_request(self):
 		if frappe.db.exists(self.doctype, {"team": self.team}):
-			frappe.throw(
-				f"{self.doctype} for {self.team} already exists!", exc=frappe.DuplicateEntryError
-			)
+			frappe.throw(f"{self.doctype} for {self.team} already exists!", exc=frappe.DuplicateEntryError)
 
 	def delete_team_data(self):
 		self.db_set("status", "Processing Deletion")
@@ -169,7 +156,11 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 	@handle_exc
 	def delete_data_on_frappeio(self):
 		"""Anonymize data on frappe.io"""
-		from press.utils.billing import get_frappe_io_connection
+		from press.utils.billing import get_frappe_io_connection, is_frappe_auth_disabled
+
+		if is_frappe_auth_disabled():
+			self.db_set("frappeio_data_deleted", True, commit=True)
+			return
 
 		client = get_frappe_io_connection()
 		response = client.session.delete(
@@ -192,14 +183,10 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		members_only_in_this_team = [
 			user
 			for user in team_members
-			if not frappe.db.exists(
-				"Team Member", {"user": user, "parent": ("!=", self.team_doc.name)}
-			)
+			if not frappe.db.exists("Team Member", {"user": user, "parent": ("!=", self.team_doc.name)})
 		]
 
-		renamed_dict = {
-			x: numerate_email(self.name, i) for i, x in enumerate(members_only_in_this_team)
-		}
+		renamed_dict = {x: numerate_email(self.name, i) for i, x in enumerate(members_only_in_this_team)}
 
 		for now, then in renamed_dict.items():
 			self.append(

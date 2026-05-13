@@ -57,3 +57,7 @@ class MpesaPaymentRecord(Document):
 			{"transaction_id": self.transaction_id, "docstatus": 1},
 		):
 			frappe.throw(f"Mpesa Payment Record for transaction {self.transaction_id} already exists")
+
+
+def on_doctype_update():
+	frappe.db.add_unique("Mpesa Payment Record", ["transaction_id"], constraint_name="unique_payment_record")

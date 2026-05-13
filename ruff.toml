@@ -1,6 +1,6 @@
 line-length = 110
 indent-width = 4
-target-version = "py38"
+target-version = "py310"
 
 [format]
 quote-style = "double"
@@ -37,3 +37,5 @@ ignore = [
 
 [lint.mccabe]
 max-complexity = 8
+[lint.per-file-ignores]
+"**/test_*.py" = ["C901"]  # ignore too complex in tests

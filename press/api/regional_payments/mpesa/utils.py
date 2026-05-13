@@ -191,9 +191,7 @@ def get_gateway_controller():
 @frappe.whitelist()
 def get_tax_percentage(payment_partner):
 	team = frappe.db.get_value("Team", {"user": payment_partner}, "name")
-	mpesa_setups = frappe.get_all(
-		"Mpesa Setup", {"api_type": "Mpesa Express", "team": team}, pluck="name"
-	)
+	mpesa_setups = frappe.get_all("Mpesa Setup", {"api_type": "Mpesa Express", "team": team}, pluck="name")
 	taxes_and_charges = 0
 	for mpesa_setup in mpesa_setups:
 		payment_gateways = frappe.get_all(
@@ -278,7 +276,7 @@ def get_details_from_request_log(transaction_id):
 			amount_usd = request_data_dict.get("amount_usd")
 			exchange_rate = request_data_dict.get("exchange_rate")
 		except json.JSONDecodeError:
-			frappe.throw(_("Invalid JSON format in request_data"))
+			frappe.throw(_("Invalid JSON format in request_data"))  # nosemgrep
 			team = None
 			partner = None
 
@@ -303,7 +301,7 @@ def get_payment_gateway(partner_value):
 		pluck="name",
 	)
 	if not payment_gateway:
-		frappe.throw(_("Payment Gateway not found"), title=_("Mpesa Express Error"))
+		frappe.throw(_("Payment Gateway not found"), title=_("Mpesa Express Error"))  # nosemgrep
 	gateway = frappe.get_doc("Payment Gateway", payment_gateway[0])
 	return gateway.name
 
@@ -315,7 +313,7 @@ def get_mpesa_setup_for_team(team_name):
 	if not mpesa_setup:
 		frappe.throw(
 			_(f"Mpesa Setup not configured for the team {team_name}"), title=_("Mpesa Express Error")
-		)
+		)  # nosemgrep
 	return frappe.get_doc("Mpesa Setup", mpesa_setup[0])
 
 
@@ -366,20 +364,24 @@ def create_payment_partner_transaction(
 	team, payment_partner, exchange_rate, amount, paid_amount, payment_gateway, payload=None
 ):
 	"""Create a Payment Partner Transaction record."""
-	transaction_doc = frappe.get_doc(
-		{
-			"doctype": "Payment Partner Transaction",
-			"team": team,
-			"payment_partner": payment_partner,
-			"exchange_rate": exchange_rate,
-			"payment_gateway": payment_gateway,
-			"amount": amount,
-			"actual_amount": paid_amount,
-			"payment_transaction_details": payload,
-		}
-	)
-	transaction_doc.insert(ignore_permissions=True)
-	transaction_doc.submit()
+	try:
+		transaction_doc = frappe.get_doc(
+			{
+				"doctype": "Payment Partner Transaction",
+				"team": team,
+				"payment_partner": payment_partner,
+				"exchange_rate": exchange_rate,
+				"payment_gateway": payment_gateway,
+				"amount": amount,
+				"actual_amount": paid_amount,
+				"payment_transaction_details": payload,
+			}
+		)
+		transaction_doc.insert(ignore_permissions=True)
+		transaction_doc.submit()
+	except Exception:
+		frappe.log_error("Error creating Payment Partner Transaction")
+		raise
 	return transaction_doc.name
 
 
@@ -403,9 +405,7 @@ def fetch_payments(payment_gateway, partner, from_date, to_date):
 	partner_payments = frappe.get_all(
 		"Payment Partner Transaction", filters=filters, fields=["name", "amount", "posting_date"]
 	)
-	print("Partner Payments", partner_payments)
-	frappe.response.message = partner_payments
-	return partner_payments
+	return partner_payments  # noqa: RET504
 
 
 @frappe.whitelist()
@@ -426,6 +426,7 @@ def create_invoice_partner_site(data, gateway_controller):
 	team = data.get("team")
 	default_currency = data.get("default_currency")
 	rate = data.get("rate")
+	tax_id = data.get("tax_id")
 
 	# Validate the necessary fields
 	if not transaction_id or not amount:
@@ -443,7 +444,9 @@ def create_invoice_partner_site(data, gateway_controller):
 		"team": team,
 		"default_currency": default_currency,
 		"rate": rate,
+		"tax_id": tax_id,
 	}
+
 	# Make the POST request to your API
 	try:
 		response = requests.post(api_url, data=payload, headers=headers)
@@ -453,11 +456,19 @@ def create_invoice_partner_site(data, gateway_controller):
 			invoice_name = response_data.get("invoice_name", "")
 			return download_link, invoice_name
 		frappe.log_error(f"API Error: {response.status_code} - {response.text}")
-		frappe.throw(_("Failed to create the invoice via API"))
+		frappe.throw(
+			_(
+				"Failed to create the invoice via API. Please reach out to us at <a href='https://support.frappe.io'>support.frappe.io</a> for assistance."
+			)
+		)
 
 	except requests.exceptions.RequestException as e:
 		frappe.log_error(f"Error calling API: {e}")
-		frappe.throw(_("There was an issue connecting to the API."))
+		frappe.throw(
+			_(
+				"There was an issue connecting to the API. Please retry after some time or reach out to us at <a href='https://support.frappe.io'>support.frappe.io</a>."
+			)
+		)
 
 
 @frappe.whitelist()

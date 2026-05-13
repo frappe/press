@@ -1,0 +1,13 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Server Snapshot Plan",
+  "enabled": 1,
+  "modified": "2025-08-02 03:22:41.159681",
+  "name": "EBS Snapshot Plan",
+  "price_inr": 6.5,
+  "price_usd": 0.08,
+  "provider": "AWS EC2",
+  "title": "EBS Snapshot Plan"
+ }
+]

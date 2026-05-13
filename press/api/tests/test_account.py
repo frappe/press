@@ -13,8 +13,9 @@ class TestAccountApi(TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def _fake_signup(self, email: str = "user@test.com") -> Mock:
+	def _fake_signup(self, email: str | None = None) -> Mock:
 		"""Call press.api.account.signup without sending verification mail."""
+		email = email or frappe.mock("email")
 		with patch.object(AccountRequest, "send_verification_email") as mock_send_email:
 			signup(email)
 		return mock_send_email

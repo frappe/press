@@ -25,6 +25,10 @@ class InsufficientSpaceOnServer(ValidationError):
 	pass
 
 
+class ImageNotFoundInRegistry(ValidationError):
+	pass
+
+
 class VolumeResizeLimitError(ValidationError):
 	pass
 
@@ -45,7 +49,15 @@ class SiteAlreadyArchived(ValidationError):
 	pass
 
 
+class SiteTooManyPendingBackups(ValidationError):
+	pass
+
+
 class InactiveDomains(ValidationError):
+	pass
+
+
+class ActiveDomainsForStandalone(ValidationError):
 	pass
 
 
@@ -54,6 +66,10 @@ class DNSValidationError(ValidationError):
 
 
 class AAAARecordExists(DNSValidationError):
+	pass
+
+
+class DomainProxied(DNSValidationError):
 	pass
 
 
@@ -73,5 +89,21 @@ class MultipleCNAMERecords(DNSValidationError):
 	pass
 
 
+class DomainNoLongerPointed(DNSValidationError):
+	pass
+
+
 class TLSRetryLimitExceeded(ValidationError):
+	pass
+
+
+class ArchiveBenchError(ValidationError):
+	pass
+
+
+class MonitorServerDown(ValidationError):
+	pass
+
+
+class ReleasePipelineFailure(Exception):
 	pass

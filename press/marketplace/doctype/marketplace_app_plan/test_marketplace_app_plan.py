@@ -1,9 +1,8 @@
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
-import unittest
-
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.marketplace_app.test_marketplace_app import (
@@ -31,5 +30,5 @@ def create_test_marketplace_app_plan(app: str = "frappe"):
 	).insert(ignore_permissions=True)
 
 
-class TestMarketplaceAppPlan(unittest.TestCase):
+class TestMarketplaceAppPlan(FrappeTestCase):
 	pass

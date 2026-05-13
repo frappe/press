@@ -24,9 +24,9 @@ class SaasAppSubscription(Document):
 
 	def create_site_config_key(self):
 		if not frappe.db.exists("Site Config Key", {"key": f"sk_{self.app}"}):
-			frappe.get_doc(
-				doctype="Site Config Key", internal=True, key=f"sk_{self.app}"
-			).insert(ignore_permissions=True)
+			frappe.get_doc(doctype="Site Config Key", internal=True, key=f"sk_{self.app}").insert(
+				ignore_permissions=True
+			)
 
 	def before_insert(self):
 		self.validate_duplicate_subscription()
@@ -81,9 +81,7 @@ class SaasAppSubscription(Document):
 		# TODO: Remove this from here
 		if self.app == "erpnext_smb":
 			site = frappe.get_doc("Site", self.site)
-			config = json.loads(
-				frappe.db.get_value("Saas App Plan", self.saas_app_plan, "config")
-			)
+			config = json.loads(frappe.db.get_value("Saas App Plan", self.saas_app_plan, "config"))
 			site.update_site_config({"plan": config["plan"]})
 
 	def update_end_date(self, payment_option):
@@ -91,9 +89,7 @@ class SaasAppSubscription(Document):
 		self.end_date = add_to_date(self.end_date or datetime.today().date(), days=days)
 
 	def validate_duplicate_subscription(self):
-		already_exists = frappe.db.exists(
-			"Saas App Subscription", {"app": self.app, "site": self.site}
-		)
+		already_exists = frappe.db.exists("Saas App Subscription", {"app": self.app, "site": self.site})
 
 		if already_exists:
 			frappe.throw(
@@ -114,7 +110,7 @@ class SaasAppSubscription(Document):
 	def suspend(self):
 		self.status = "Suspended"
 		self.save(ignore_permissions=True)
-		frappe.get_doc("Site", self.site).suspend(skip_reload=True)
+		frappe.get_doc("Site", self.site).suspend()
 
 	def disable(self):
 		if self.status == "Disabled":
@@ -125,14 +121,12 @@ class SaasAppSubscription(Document):
 	def calculate_payout(self, amount, saas_app_plan=None):
 		# Amount of money that is supposed to be paidout to the developers
 		saas_app_plan = saas_app_plan or self.saas_app_plan
-		payout_percentage = frappe.db.get_value(
-			"Saas App Plan", saas_app_plan, "payout_percentage"
-		)
+		payout_percentage = frappe.db.get_value("Saas App Plan", saas_app_plan, "payout_percentage")
 		return (amount / 100) * float(payout_percentage)
 
 	def create_usage_record(self):
 		if self.is_usage_record_created():
-			return
+			return None
 
 		team_name = frappe.db.get_value("Site", self.site, "team")
 		team = frappe.get_cached_doc("Team", team_name)
@@ -202,9 +196,7 @@ def suspend_prepaid_subscriptions():
 			subscription.suspend()
 			frappe.db.commit()
 		except Exception:
-			frappe.db.rollback(
-				"Saas Subscription: Cannot suspend prepaid subscription", subscription.name
-			)
+			frappe.db.rollback("Saas Subscription: Cannot suspend prepaid subscription", subscription.name)
 
 
 def create_usage_records():

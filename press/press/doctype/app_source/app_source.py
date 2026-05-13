@@ -16,7 +16,7 @@ from press.api.github import get_access_token, get_auth_headers
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import get_current_team, log_error
 
-REQUIRED_APPS_PATTERN = re.compile(r"required_apps = \[(.*?)\]")
+REQUIRED_APPS_PATTERN = re.compile(r"^\s*(?!#)\s*required_apps\s*=\s*\[(.*?)\]", re.DOTALL | re.MULTILINE)
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -58,6 +58,7 @@ class AppSource(Document):
 	def set_required_apps(self, match: str):
 		# In the format frappe/erpnext
 		apps = match.replace("'", "").replace('"', "").replace(" ", "").split(",")
+		added_required_apps = [app.repository_url for app in self.required_apps]
 
 		for app in apps:
 			try:
@@ -65,10 +66,12 @@ class AppSource(Document):
 			except ValueError:
 				owner, repo = "frappe", app
 
-			self.append("required_apps", {"repository_url": f"https://github.com/{owner}/{repo}"})
+			repository_url = f"https://github.com/{owner}/{repo}"
+			if repository_url not in added_required_apps:
+				self.append("required_apps", {"repository_url": repository_url})
 
-	def validate_dependant_apps(self):
-		hooks_uri = f"{self.repository_owner}/{self.app}/{self.branch}/{self.app}/hooks.py"
+	def validate_dependent_apps(self):
+		hooks_uri = f"{self.repository_owner}/{self.repository}/{self.branch}/{self.app}/hooks.py"
 		raw_content_url = (
 			f"https://{get_access_token(self.github_installation_id)}@raw.githubusercontent.com/"
 			if self.github_installation_id
@@ -76,14 +79,21 @@ class AppSource(Document):
 		)
 		uri = raw_content_url + hooks_uri
 
-		response = requests.get(uri)
-		if not response.ok:
-			return
+		try:
+			response = requests.get(uri, timeout=10)
+			if not response.ok:
+				return
 
-		required_apps = REQUIRED_APPS_PATTERN.findall(response.text)
-		if required_apps:
-			required_apps = required_apps[0]
-			self.set_required_apps(match=required_apps)
+			required_apps = REQUIRED_APPS_PATTERN.findall(response.text)
+			required_apps = [required_app for required_app in required_apps if required_app]
+
+			if required_apps:
+				required_apps = required_apps[0]
+				self.set_required_apps(match=required_apps)
+
+		except Exception as e:
+			frappe.log_error(f"Error fetching hooks.py: {e}", "App Source Dependency Check")
+			return  # Continue with the save process even if validation fails
 
 	def autoname(self):
 		series = f"SRC-{self.app}-.###"
@@ -133,7 +143,7 @@ class AppSource(Document):
 		self.repository_url = self.repository_url.removesuffix(".git")
 
 		_, self.repository_owner, self.repository = self.repository_url.rsplit("/", 2)
-		self.validate_dependant_apps()
+		self.validate_dependent_apps()
 		# self.create_release()
 
 	@frappe.whitelist()

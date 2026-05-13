@@ -5,9 +5,9 @@ from dns.resolver import Resolver
 from frappe.utils import strip
 
 from press.api.server import plans
-from press.api.site import NAMESERVERS
 from press.runner import Ansible
 from press.utils import get_current_team
+from press.utils.dns import NAMESERVERS
 
 
 @frappe.whitelist()
@@ -43,8 +43,7 @@ def create_self_hosted_server(server_details, team, proxy_server):
 		).insert()
 	except frappe.DuplicateEntryError as e:
 		# Exception return  tupple like ('Self Hosted Server', 'SHS-00018.cloud.pressonprem.com')
-		server_name = e.args[1]
-		return server_name
+		return e.args[1]
 
 	return self_hosted_server.name
 
@@ -63,7 +62,7 @@ def validate_team(team):
 
 
 def get_proxy_server_for_cluster(cluster=None):
-	cluster = get_hybrid_cluster() if not cluster else cluster
+	cluster = cluster if cluster else get_hybrid_cluster()
 
 	return frappe.get_all("Proxy Server", {"cluster": cluster}, pluck="name")[0]
 
@@ -80,6 +79,10 @@ def sshkey():
 @frappe.whitelist()
 def verify(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
+	current_team = get_current_team()
+
+	if server_doc.team != current_team:
+		frappe.throw("Not permitted to access this server", frappe.PermissionError)
 
 	app_server_verified = verify_server("app", server_doc)
 	db_server_verified = verify_server("db", server_doc)
@@ -129,6 +132,11 @@ def verify_server(server_type, server_doc):
 @frappe.whitelist()
 def setup(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
+	current_team = get_current_team()
+
+	if server_doc.team != current_team:
+		frappe.throw("Not permitted to access this server", frappe.PermissionError)
+
 	server_doc.start_setup = True
 	server_doc.save()
 	server_doc.setup_server()
@@ -137,8 +145,7 @@ def setup(server):
 
 @frappe.whitelist()
 def get_plans():
-	server_plan = plans("Self Hosted Server")
-	return server_plan
+	return plans("Self Hosted Server")
 
 
 @frappe.whitelist()
@@ -167,7 +174,5 @@ def create_and_verify_selfhosted(server):
 		setup(self_hosted_server_name)
 		return frappe.get_value("Self Hosted Server", self_hosted_server_name, "server")
 
-	else:
-		frappe.throw(
-			"Server verification failed. Please check the server details and try again."
-		)
+	frappe.throw("Server verification failed. Please check the server details and try again.")
+	return None

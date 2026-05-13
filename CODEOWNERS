@@ -1,26 +1,32 @@
-# Each line is a file pattern followed by one or more owners
+# Each line specifies a file pattern followed by one or more owners. Owners
+# will be the default reviewers for everything in the repository unless a later
+# match overrides them.
 
-# These owners will be the default owners for everything in
+# Catch all.
+*                           @ssiyad
 
-# the repo. Unless a later match takes precedence
+# Wildcards.
+nginx.conf                  @adityahase
+*server                     @adityahase
+razorpay*                   @shadrak98
+ssh*                        @adityahase
+stripe*                     @shadrak98
 
-backbone/ @adityahase
-ssh* @adityahase
-nginx.conf @adityahase
-*server @adityahase
-playbooks/ @adityahase @balamurali27
+# Specific files.
+/press/agent.py             @balamurali27 @tanmoysrt @Aradhya-Tripathi
 
-site* @balamurali27
-team/ @shadrak98
-
-dashboard/ @breadgenie
-invoice/ @shadrak98
-marketplace* @breadgenie
-stripe* @shadrak98
-razorpay* @shadrak98
-subscription/ @shadrak98
-
-saas @rutwikhdev
-
-deploy* @18alantom
-press/Dockerfile @18alantom
+# Directories or sections.
+backbone/                   @adityahase
+bench*/                     @Aradhya-Tripathi
+dashboard/                  @siduck
+database_server/            @tanmoysrt
+deploy*/                    @Aradhya-Tripathi
+invoice/                    @shadrak98
+marketplace/                @prathameshkurunkar7
+partner/                    @shadrak98
+playbooks/                  @adityahase @balamurali27
+release_group*/             @Aradhya-Tripathi
+site*/                      @tanmoysrt @balamurali27
+subscription/               @shadrak98
+team/                       @shadrak98
+virtual_machine/            @balamurali27 @tanmoysrt @Aradhya-Tripathi

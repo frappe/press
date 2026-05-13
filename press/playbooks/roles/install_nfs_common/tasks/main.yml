@@ -1,0 +1,11 @@
+---
+- name: Install NFS Common with retries
+  become: yes
+  become_user: root
+  apt:
+    name: nfs-common
+    state: present
+  register: result
+  until: result.failed == false
+  retries: 5
+  delay: 120

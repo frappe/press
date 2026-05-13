@@ -2,13 +2,34 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
+import contextlib
 import json
+from typing import TypedDict
 
 import frappe
+import requests
+from frappe.utils.caching import redis_cache
+from frappe.utils.data import cint
+from requests.auth import HTTPBasicAuth
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
+
+
+class SitesDownAlertLabels(TypedDict):
+	alertname: str
+	bench: str
+	cluster: str
+	group: str
+	instance: str
+	job: str
+	server: str
+	severity: str
+
+
+class SitesDownAlert(TypedDict):
+	labels: SitesDownAlertLabels
 
 
 class MonitorServer(BaseServer):
@@ -22,7 +43,6 @@ class MonitorServer(BaseServer):
 
 		agent_password: DF.Password | None
 		cluster: DF.Link | None
-		default_server: DF.Data | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
@@ -33,20 +53,28 @@ class MonitorServer(BaseServer):
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
 		node_exporter_dashboard_path: DF.Data | None
+		only_monitor_uptime_metrics: DF.Check
+		plan: DF.Link | None
 		private_ip: DF.Data
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
 		prometheus_data_directory: DF.Data | None
+		prometheus_username: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
 		root_public_key: DF.Code | None
+		ssh_port: DF.Int
+		ssh_user: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
+		webhook_token: DF.Data | None
 	# end: auto-generated types
 
 	def validate(self):
 		self.validate_agent_password()
 		self.validate_grafana_password()
 		self.validate_monitoring_password()
+		self.validate_webhook_token()
 
 	def validate_monitoring_password(self):
 		if not self.monitoring_password:
@@ -55,6 +83,10 @@ class MonitorServer(BaseServer):
 	def validate_grafana_password(self):
 		if not self.grafana_password:
 			self.grafana_password = frappe.generate_hash(length=32)
+
+	def validate_webhook_token(self):
+		if not self.webhook_token:
+			self.webhook_token = frappe.generate_hash(length=32)
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
@@ -102,6 +134,8 @@ class MonitorServer(BaseServer):
 			ansible = Ansible(
 				playbook="monitor.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"workers": 1,
@@ -182,6 +216,8 @@ class MonitorServer(BaseServer):
 			ansible = Ansible(
 				playbook="reconfigure_monitoring.yml",
 				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
 				variables={
 					"server": self.name,
 					"monitoring_password": monitoring_password,
@@ -202,3 +238,89 @@ class MonitorServer(BaseServer):
 	@frappe.whitelist()
 	def show_grafana_password(self):
 		return self.get_password("grafana_password")
+
+	@property
+	def alerts(self):
+		print(
+			f"https://{self.name}/prometheus/api/v1/rules",
+		)
+		ret = requests.get(
+			f"https://{self.name}/prometheus/api/v1/rules",
+			auth=HTTPBasicAuth(self.prometheus_username, self.get_password("grafana_password")),
+			params={"type": "alert"},
+		)
+
+		ret.raise_for_status()
+		data = ret.json()
+		if data["status"] != "success":
+			frappe.throw("Error fetching sites down")
+		return data["data"]["groups"][0]["rules"]
+
+	@property
+	def sites_down_alerts(self) -> list[SitesDownAlert]:
+		for alert in self.alerts:
+			if not (alert["name"] == "Sites Down" and alert["state"] == "firing"):
+				continue
+			return alert["alerts"]
+		return []
+
+	@property
+	def sites_down(self):
+		sites = []
+		for alert in self.sites_down_alerts:
+			sites.append(alert["labels"]["instance"])
+		return sites
+
+	def get_sites_down_for_server(self, server: str) -> list[str]:
+		sites = []
+		for alert in self.sites_down_alerts:
+			if alert["labels"]["server"] == server:
+				sites.append(alert["labels"]["instance"])
+		return sites
+
+	@property
+	def benches_down(self):
+		benches = []
+		for alert in self.sites_down_alerts:
+			benches.append(alert["labels"]["bench"])
+		return set(benches)
+
+	def get_benches_down_for_server(self, server: str) -> set[str]:
+		benches = []
+		for alert in self.sites_down_alerts:
+			if alert["labels"]["server"] == server:
+				benches.append(alert["labels"]["bench"])
+		return set(benches)
+
+
+@redis_cache(ttl=3600)
+def get_monitor_server_ips():
+	servers = frappe.get_all(
+		"Monitor Server", filters={"status": ["!=", "Archived"]}, fields=["ip", "private_ip"]
+	)
+	ips = []
+	for server in servers:
+		if server.ip:
+			ips.append(server.ip)
+		if server.private_ip:
+			ips.append(server.private_ip)
+	return ips
+
+
+def check_monitoring_servers_rate_limit_key():
+	from press.api.monitoring import MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS
+	from press.telegram_utils import Telegram
+
+	ips = get_monitor_server_ips()
+
+	for ip in ips:
+		key = f"{frappe.conf.db_name}|rl:press.api.monitoring.targets:{ip}:{MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS}"
+		val = frappe.cache.get(key)
+		if not val:
+			continue
+		current_val = cint(val.decode("utf-8"))
+		if current_val > 100:
+			frappe.cache.delete(key)
+			with contextlib.suppress(Exception):
+				msg = f"Rate limit key for monitoring server {ip} had value {current_val} which is too high. Deleted the key.\n@adityahase @balamurali27 @tanmoysrt"
+				Telegram("Errors").send(msg)

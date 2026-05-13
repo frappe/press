@@ -25,6 +25,7 @@ class AuditLog(Document):
 			"App Server Replica Dirs Check",
 			"Unbilled Subscription Check",
 			"Billing Audit",
+			"Server Plan Sanity Check",
 			"Partner Billing Audit",
 		]
 		log: DF.Code | None

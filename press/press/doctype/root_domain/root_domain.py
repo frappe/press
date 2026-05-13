@@ -4,14 +4,20 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
-from typing import Iterable
+from typing import TYPE_CHECKING
 
 import boto3
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.utils.caching import redis_cache
 
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from collections.abc import Iterable
+
+	from press.press.doctype.proxy_server.proxy_server import ProxyServer
 
 
 class RootDomain(Document):
@@ -24,9 +30,12 @@ class RootDomain(Document):
 		from frappe.types import DF
 
 		aws_access_key_id: DF.Data | None
+		aws_region: DF.Data | None
 		aws_secret_access_key: DF.Password | None
 		default_cluster: DF.Link
+		default_proxy_server: DF.Link | None
 		dns_provider: DF.Literal["AWS Route 53", "Generic"]
+		enabled: DF.Check
 		team: DF.Link | None
 	# end: auto-generated types
 
@@ -70,6 +79,7 @@ class RootDomain(Document):
 				"route53",
 				aws_access_key_id=self.aws_access_key_id,
 				aws_secret_access_key=self.get_password("aws_secret_access_key"),
+				region_name=self.aws_region,
 			)
 		return self._boto3_client
 
@@ -87,6 +97,7 @@ class RootDomain(Document):
 			)
 		except Exception:
 			log_error("Route 53 Pagination Error", domain=self.name)
+		return []
 
 	def delete_dns_records(self, records: list[str]):
 		try:
@@ -158,12 +169,13 @@ class RootDomain(Document):
 			if to_delete:
 				self.delete_dns_records(to_delete)
 
-	def update_dns_records_for_sites(self, sites: list[str], proxy_server: str):
+	def update_dns_records_for_sites(
+		self, sites: list[str], proxy_server: str, batch_size: int = 500, ttl: int = 600
+	):
 		if self.generic_dns_provider:
 			return
 
-		# update records in batches of 500
-		batch_size = 500
+		# update records in batches
 		for i in range(0, len(sites), batch_size):
 			changes = []
 			for site in sites[i : i + batch_size]:
@@ -173,7 +185,7 @@ class RootDomain(Document):
 						"ResourceRecordSet": {
 							"Name": site,
 							"Type": "CNAME",
-							"TTL": 600,
+							"TTL": ttl,
 							"ResourceRecords": [{"Value": proxy_server}],
 						},
 					}
@@ -182,6 +194,15 @@ class RootDomain(Document):
 			self.boto3_client.change_resource_record_sets(
 				ChangeBatch={"Changes": changes}, HostedZoneId=self.hosted_zone
 			)
+
+	@frappe.whitelist()
+	def add_to_proxies(self):
+		proxies = frappe.get_all("Proxy Server", {"status": "Active"}, pluck="name")
+		for proxy_name in proxies:
+			proxy: ProxyServer = frappe.get_doc("Proxy Server", proxy_name)
+			proxy.append("domains", {"domain": self.name})
+			proxy.save()
+			proxy.setup_wildcard_hosts()
 
 
 def cleanup_cname_records():
@@ -192,3 +213,16 @@ def cleanup_cname_records():
 			continue
 
 		domain.remove_unused_cname_records()
+
+
+@redis_cache(ttl=3600)
+def get_domains():
+	return frappe.get_all("Root Domain", filters={"enabled": ["=", "1"]}, pluck="name")
+
+
+def get_matching_domain(domain: str) -> str | None:
+	root_domains = get_domains()
+	for rd in root_domains:
+		if domain == rd or domain.endswith(f".{rd}"):
+			return rd
+	return None

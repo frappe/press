@@ -40,6 +40,8 @@ class SecurityUpdate(Document):
 			ansible = Ansible(
 				playbook="security_update.yml",
 				server=server_obj,
+				user=server_obj._ssh_user(),
+				port=server_obj._ssh_port(),
 			)
 			play = ansible.run()
 			if play.status == "Success":
@@ -75,6 +77,8 @@ class SecurityUpdate(Document):
 				ansible = Ansible(
 					playbook="security_update.yml",
 					server=server_obj,
+					user=server_obj._ssh_user(),
+					port=server_obj._ssh_port(),
 					variables={"fetch_package_meta": True, "package": package},
 				)
 				play = ansible.run()

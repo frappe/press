@@ -1,0 +1,5 @@
+- name: Set memory limits for proxy processes
+  hosts: all
+  become: yes
+  roles:
+    - set_proxy_memory_limits

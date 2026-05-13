@@ -48,7 +48,7 @@ class SitePlanChange(Document):
 			and not frappe.db.get_value("Site Plan", self.to_plan, "allow_downgrading_from_other_plan")
 		):
 			frappe.throw(
-				f"Sorry, you cannot downgrade to {self.to_plan} from {self.from_plan}. <a href='https://frappecloud.com/docs/tiny-plan#why-cant-i-upgrade-to-this-plan-'><u>Why?</u></a>"
+				f"Sorry, you cannot downgrade to {self.to_plan} from {self.from_plan}. <a href='https://docs.frappe.io/cloud/tiny-plan#why-cant-i-upgrade-to-this-plan-'><u>Why?</u></a>"
 			)
 
 		if self.type == "Initial Plan":

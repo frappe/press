@@ -2,14 +2,18 @@
 	<component
 		:is="to ? 'router-link' : 'a'"
 		v-bind="to ? { to } : { href }"
-		class="border-b border-gray-800 text-gray-900 outline-gray-400 hover:border-gray-600 hover:text-gray-700"
+		:class="{
+			'text-ink-gray-9 border-b border-outline-gray-5 hover:text-ink-gray-7 hover:border-gray-600 outline-gray-400':
+				to || href,
+		}"
 	>
-		<slot
-	/></component>
+		<slot />
+	</component>
 </template>
-<script>
-export default {
-	name: 'Link',
-	props: ['href', 'to']
-};
+
+<script setup lang="ts">
+defineProps<{
+	href?: string;
+	to?: string | object;
+}>();
 </script>

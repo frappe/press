@@ -5,9 +5,11 @@
 from itertools import groupby
 
 import frappe
+from frappe.rate_limiter import rate_limit
 
 from press.exceptions import AlertRuleNotEnabled
-from press.utils import log_error
+from press.press.doctype.monitor_server.monitor_server import get_monitor_server_ips
+from press.utils import log_error, servers_using_alternative_port_for_communication
 
 
 def get_benches():
@@ -16,10 +18,14 @@ def get_benches():
 		{"is_standalone": True, "is_self_hosted": True, "status": "Active"},
 		pluck="name",
 	)
+	monitoring_disabled_servers = frappe.get_all(
+		"Server", {"is_monitoring_disabled": True, "status": ("!=", "Archived")}, pluck="name"
+	)
+	excluded_servers = set(self_hosted_stand_alone_servers + monitoring_disabled_servers)
 	sites = frappe.get_all(
 		"Site",
 		["name", "bench"],
-		{"status": "Active", "server": ("not in", self_hosted_stand_alone_servers)},
+		{"status": "Active", "server": ("not in", excluded_servers), "is_monitoring_disabled": False},
 		ignore_ifnull=True,
 	)
 	sites.sort(key=lambda x: (x.bench, x.name))
@@ -44,25 +50,63 @@ def get_benches():
 
 def get_clusters():
 	servers = {}
-	servers["proxy"] = frappe.get_all("Proxy Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
-	servers["app"] = frappe.get_all("Server", {"status": ("!=", "Archived")}, ["name", "cluster"])
-	servers["database"] = frappe.get_all(
-		"Database Server", {"status": ("!=", "Archived")}, ["name", "cluster"]
+	servers["proxy"] = frappe.get_all(
+		"Proxy Server",
+		{"status": ("!=", "Archived")},
+		["name", "cluster", "use_as_proxy_for_agent_and_metrics", "ip"],
 	)
+	servers["app"] = frappe.get_all(
+		"Server",
+		{"status": ("!=", "Archived"), "is_monitoring_disabled": False},
+		["name", "cluster", "ip", "private_ip"],
+	)
+	servers["database"] = frappe.get_all(
+		"Database Server",
+		{"status": ("!=", "Archived"), "is_monitoring_disabled": False},
+		["name", "cluster", "ip", "private_ip"],
+	)
+	servers["nfs"] = frappe.get_all(
+		"NFS Server", {"status": ("!=", "Archived")}, ["name", "cluster", "ip", "private_ip"]
+	)
+	servers["nat"] = frappe.get_all("NAT Server", {"status": ("!=", "Archived")}, ["name", "cluster", "ip"])
+
 	clusters = frappe.get_all("Cluster")
-	job_map = {
-		"proxy": ["node", "nginx", "proxysql", "mariadb_proxy"],
-		"app": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
-		"database": ["node", "mariadb"],
-	}
+	job_map = get_job_map()
+	servers_using_alternative_port = servers_using_alternative_port_for_communication()
 	for cluster in clusters:
 		cluster["jobs"] = {}
+		cluster["proxied_jobs"] = {}
 
 		for server_type, server_type_servers in servers.items():
 			for server in server_type_servers:
 				if server.cluster == cluster.name:
 					for job in job_map[server_type]:
-						cluster["jobs"].setdefault(job, []).append(server.name)
+						_server = (
+							f"{server.name}:8443"
+							if server.name in servers_using_alternative_port
+							else server.name
+						)
+
+						if server.ip:
+							cluster["jobs"].setdefault(job, []).append(_server)
+						elif server.private_ip and (
+							relevant_proxy_server := next(
+								(
+									p
+									for p in servers["proxy"]
+									if p.cluster == cluster.name and p.use_as_proxy_for_agent_and_metrics
+								),
+								None,
+							)
+						):
+							proxy_server = (
+								f"{relevant_proxy_server.name}:8443"
+								if relevant_proxy_server.name in servers_using_alternative_port
+								else relevant_proxy_server.name
+							)
+							cluster["proxied_jobs"].setdefault(job, {}).setdefault(proxy_server, []).append(
+								_server
+							)
 
 	return clusters
 
@@ -84,16 +128,41 @@ def get_tls():
 		"Monitor Server",
 		"Analytics Server",
 		"Trace Server",
+		"NFS Server",
+		"NAT Server",
 	]
 	for server_type in server_types:
-		tls += frappe.get_all(server_type, {"status": ("!=", "Archived")}, ["name"])
+		filters = {"status": ("!=", "Archived")}
+		if server_type in ("Server", "Database Server"):
+			filters["is_monitoring_disabled"] = False
+			filters["is_for_recovery"] = False
+		tls += frappe.get_all(server_type, filters, ["name"])
 
 	return tls
 
 
+def get_targets_method_rate_limit() -> int:
+	if (
+		frappe.local
+		and hasattr(frappe.local, "request_ip")
+		and frappe.local.request_ip in get_monitor_server_ips()
+	):
+		# Allow no limit for known monitor servers
+		return 1000
+
+	# For unknown IPs, allow only 2 request per minute
+	return 2
+
+
+MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS = 60
+
+
 @frappe.whitelist(allow_guest=True)
-def targets(token):
-	monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token")
+@rate_limit(limit=get_targets_method_rate_limit, seconds=MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS)
+def targets(token: str | None = None):
+	if not token:
+		frappe.throw_permission_error()
+	monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token", cache=True)
 	if token != monitor_token:
 		return None
 
@@ -102,8 +171,18 @@ def targets(token):
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
 def alert(*args, **kwargs):
+	user = frappe.session.user
 	try:
-		user = str(frappe.session.user)
+		webhook_token = frappe.db.get_value(
+			"Monitor Server",
+			frappe.db.get_single_value("Press Settings", "monitor_server", cache=True),
+			"webhook_token",
+			cache=True,
+		)
+
+		if frappe.request.args.get("webhook_token") != webhook_token:
+			raise frappe.AuthenticationError("Invalid credentials")
+
 		frappe.set_user("Administrator")
 
 		doc = frappe.get_doc(
@@ -115,8 +194,40 @@ def alert(*args, **kwargs):
 		doc.insert()
 	except AlertRuleNotEnabled:
 		pass
+
+	except frappe.AuthenticationError:
+		log_error("Alertmanager Webhook Authentication Error", args=args, kwargs=kwargs)
+
 	except Exception:
 		log_error("Alertmanager Webhook Error", args=args, kwargs=kwargs)
 		raise
+
 	finally:
 		frappe.set_user(user)
+
+
+def get_job_map() -> dict[str, list[str]]:
+	DEFAULT_JOB_MAP = {
+		"proxy": ["node", "nginx", "proxysql", "mariadb_proxy"],
+		"app": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
+		"nfs": ["node", "nginx", "docker", "cadvisor", "gunicorn", "rq"],
+		"database": ["node", "mariadb"],
+		"nat": ["node"],
+	}
+
+	if frappe.local and hasattr(frappe.local, "request_ip"):
+		if frappe.get_value(
+			"Monitor Server",
+			{"ip": frappe.local.request_ip, "status": ("!=", "Archived")},
+			"only_monitor_uptime_metrics",
+			cache=True,
+		):
+			return {
+				"proxy": ["node"],
+				"app": ["node"],
+				"nfs": ["node"],
+				"database": ["node"],
+				"nat": ["node"],
+			}
+		return DEFAULT_JOB_MAP
+	return DEFAULT_JOB_MAP

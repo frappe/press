@@ -9,21 +9,28 @@ import subprocess
 import time
 from contextlib import suppress
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import frappe
 import OpenSSL
 from frappe.model.document import Document
+from frappe.query_builder.functions import Date
 
-from press.api.site import check_dns_cname_a
 from press.exceptions import (
 	DNSValidationError,
 	TLSRetryLimitExceeded,
 )
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.runner import Ansible
 from press.utils import get_current_team, log_error
+from press.utils.dns import check_dns_cname_a
 
-RETRY_LIMIT = 5
+if TYPE_CHECKING:
+	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
+
+AUTO_RETRY_LIMIT = 5
+MANUAL_RETRY_LIMIT = 8
 
 
 class TLSCertificate(Document):
@@ -61,6 +68,16 @@ class TLSCertificate(Document):
 	def after_insert(self):
 		self.obtain_certificate()
 
+	def validate(self):
+		if self.provider == "Other":
+			if not self.team:
+				frappe.throw("Team is mandatory for custom TLS certificates.")
+
+			self.configure_full_chain()
+			self.validate_key_length()
+			self.validate_key_certificate_association()
+			self._extract_certificate_details()
+
 	def on_update(self):
 		if self.is_new():
 			return
@@ -72,7 +89,8 @@ class TLSCertificate(Document):
 	def obtain_certificate(self):
 		if self.provider != "Let's Encrypt":
 			return
-		if self.retry_count >= RETRY_LIMIT:
+
+		if self.retry_count >= MANUAL_RETRY_LIMIT:
 			frappe.throw("Retry limit exceeded. Please check the error and try again.", TLSRetryLimitExceeded)
 		(
 			user,
@@ -83,6 +101,7 @@ class TLSCertificate(Document):
 			frappe.session.data,
 			get_current_team(),
 		)
+
 		frappe.set_user(frappe.get_value("Team", team, "user"))
 		frappe.enqueue_doc(
 			self.doctype,
@@ -143,6 +162,7 @@ class TLSCertificate(Document):
 		if self.wildcard:
 			self.trigger_server_tls_setup_callback()
 			self._update_secondary_wildcard_domains()
+			self.setup_standalone_wildcard_hosts()
 
 	def _update_secondary_wildcard_domains(self):
 		"""
@@ -170,19 +190,37 @@ class TLSCertificate(Document):
 			"Registry Server",
 			"Analytics Server",
 			"Trace Server",
+			"NAT Server",
 		]
 
 		for server_doctype in server_doctypes:
 			servers = frappe.get_all(
-				server_doctype, {"status": "Active", "name": ("like", f"%.{self.domain}")}
+				server_doctype,
+				filters={
+					"status": ("not in", ["Archived", "Installing"]),
+					"name": ("like", f"%.{self.domain}"),
+				},
+				fields=["name", "status"],
 			)
 			for server in servers:
-				frappe.enqueue(
-					"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
-					server=frappe.get_doc(server_doctype, server),
-					certificate=self,
-				)
+				if server.status == "Active":
+					frappe.enqueue(
+						"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
+						server=frappe.get_doc(server_doctype, server.name),
+						certificate=self,
+						enqueue_after_commit=True,
+					)
+				else:
+					# If server is not active, mark the tls_certificate_renewal_failed field as True
+					frappe.db.set_value(
+						server_doctype,
+						server.name,
+						"tls_certificate_renewal_failed",
+						1,
+						update_modified=False,
+					)
 
+	@frappe.whitelist()
 	def trigger_site_domain_callback(self):
 		domain = frappe.db.get_value("Site Domain", {"tls_certificate": self.name}, "name")
 		if domain:
@@ -192,6 +230,30 @@ class TLSCertificate(Document):
 		with suppress(Exception):
 			frappe.get_doc("Self Hosted Server", self.name).process_tls_cert_update()
 
+	def setup_standalone_wildcard_hosts(self):
+		standalone_servers = frappe.get_all(
+			"Server",
+			filters={
+				"status": ("not in", ["Archived", "Installing"]),
+				"is_standalone_setup": 1,
+			},
+			pluck="name",
+		)
+		if standalone_servers:
+			servers = frappe.get_all(
+				"Site",
+				filters={
+					"status": ("!=", "Archived"),
+					"domain": self.domain,
+					"server": ("in", standalone_servers),
+				},
+				distinct=True,
+				pluck="server",
+			)
+
+			for server in servers:
+				frappe.get_doc("Server", server).setup_wildcard_hosts()
+
 	def _extract_certificate_details(self):
 		x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, self.certificate)
 		self.decoded_certificate = OpenSSL.crypto.dump_certificate(
@@ -199,6 +261,50 @@ class TLSCertificate(Document):
 		).decode()
 		self.issued_on = datetime.strptime(x509.get_notBefore().decode(), "%Y%m%d%H%M%SZ")
 		self.expires_on = datetime.strptime(x509.get_notAfter().decode(), "%Y%m%d%H%M%SZ")
+
+	def configure_full_chain(self):
+		if not self.full_chain:
+			self.full_chain = f"{self.certificate}\n{self.intermediate_chain}"
+
+	def _get_private_key_object(self):
+		try:
+			return OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, self.private_key)
+		except OpenSSL.crypto.Error as e:
+			log_error("TLS Private Key Exception", certificate=self.name)
+			raise e
+
+	def _get_certificate_object(self):
+		try:
+			return OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, self.full_chain)
+		except OpenSSL.crypto.Error as e:
+			log_error("Custom TLS Certificate Exception", certificate=self.name)
+			raise e
+
+	def validate_key_length(self):
+		private_key = self._get_private_key_object()
+
+		if private_key.bits() != int(self.rsa_key_size):
+			frappe.throw(
+				f"Private key length does not match the selected RSA key size. Expected {self.rsa_key_size} bits, got {private_key.bits()} bits."
+			)
+
+	def validate_key_certificate_association(self):
+		context = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_METHOD)
+		context.use_privatekey(self._get_private_key_object())
+		context.use_certificate(self._get_certificate_object())
+
+		try:
+			context.check_privatekey()
+			self.status = "Active"
+			self.retry_count = 0
+			self.error = None
+		except OpenSSL.SSL.Error as e:
+			self.error = repr(e)
+			log_error("TLS Key Certificate Association Exception", certificate=self.name)
+			frappe.throw("Private Key and Certificate do not match")
+		finally:
+			if self.error:
+				self.status = "Failure"
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("TLS Certificate")
@@ -218,19 +324,12 @@ def should_renew(site: str | None, certificate: PendingCertificate) -> bool:
 		return False
 	if frappe.db.get_value("Site", site, "status") != "Active":
 		return False
-	dns_response = check_dns_cname_a(site, certificate.domain)
+	dns_response = check_dns_cname_a(site, certificate.domain, ignore_proxying=True)
 	if dns_response["matched"]:
 		return True
-	frappe.db.set_value(
-		"TLS Certificate",
-		certificate.name,
-		{
-			"status": "Failure",
-			"error": f"DNS check failed. {dns_response.get('answer')}",
-			"retry_count": certificate.retry_count + 1,
-		},
+	raise DNSValidationError(
+		f"DNS check failed. {dns_response.get('answer')}",
 	)
-	return False
 
 
 def rollback_and_fail_tls(certificate: PendingCertificate, e: Exception):
@@ -240,7 +339,7 @@ def rollback_and_fail_tls(certificate: PendingCertificate, e: Exception):
 		certificate.name,
 		{
 			"status": "Failure",
-			"error": repr(e),
+			"error": str(e),
 			"retry_count": certificate.retry_count + 1,
 		},
 	)
@@ -254,7 +353,7 @@ def renew_tls_certificates():
 		filters={
 			"status": ("in", ("Active", "Failure")),
 			"expires_on": ("<", frappe.utils.add_days(None, 25)),
-			"retry_count": ("<", RETRY_LIMIT),
+			"retry_count": ("<", AUTO_RETRY_LIMIT),
 			"provider": "Let's Encrypt",
 		},
 		ignore_ifnull=True,
@@ -264,7 +363,9 @@ def renew_tls_certificates():
 	for certificate in pending:
 		if tls_renewal_queue_size and (renewals_attempted >= tls_renewal_queue_size):
 			break
+
 		site = frappe.db.get_value("Site Domain", {"tls_certificate": certificate.name}, "site")
+
 		try:
 			if not should_renew(site, certificate):
 				continue
@@ -286,7 +387,34 @@ def renew_tls_certificates():
 			frappe.db.commit()
 
 
-def update_server_tls_certifcate(server, certificate):
+def notify_custom_tls_renewal():
+	seven_days = frappe.utils.add_days(None, 7).date()
+	fifteen_days = frappe.utils.add_days(None, 15).date()
+
+	tls_cert = frappe.qb.DocType("TLS Certificate")
+
+	# Notify team members 15 days and 7 days before expiry
+
+	query = (
+		frappe.qb.from_(tls_cert)
+		.select(tls_cert.name, tls_cert.domain, tls_cert.team, tls_cert.expires_on)
+		.where(tls_cert.status.isin(["Active", "Failure"]))
+		.where((Date(tls_cert.expires_on) == seven_days) | (Date(tls_cert.expires_on) == fifteen_days))
+		.where(tls_cert.provider == "Other")
+	)
+
+	pending = query.run(as_dict=True)
+
+	for certificate in pending:
+		if certificate.team:
+			frappe.sendmail(
+				recipients=get_communication_info("Email", "Site Activity", "Team", certificate.team),
+				subject=f"TLS Certificate Renewal Required: {certificate.name}",
+				message=f"TLS Certificate {certificate.name} is due for renewal on {certificate.expires_on}. Please renew the certificate to avoid service disruption.",
+			)
+
+
+def update_server_tls_certifcate(server, certificate, throw_on_failure: bool = False):
 	try:
 		proxysql_admin_password = None
 		if server.doctype == "Proxy Server":
@@ -304,9 +432,19 @@ def update_server_tls_certifcate(server, certificate):
 				"proxysql_admin_password": proxysql_admin_password,
 			},
 		)
-		ansible.run()
-	except Exception:
+		play: "AnsiblePlay" = ansible.run()
+		frappe.db.set_value(
+			server.doctype,
+			server.name,
+			"tls_certificate_renewal_failed",
+			play.status != "Success",
+			# to avoid causing TimestampMismatchError in other important tasks
+			update_modified=False,
+		)
+	except Exception as e:
 		log_error("TLS Setup Exception", server=server.as_dict())
+		if throw_on_failure:
+			raise Exception(f"Failed to update TLS certificate on {server.doctype} {server.name}") from e
 
 
 def retrigger_failed_wildcard_tls_callbacks():
@@ -319,18 +457,26 @@ def retrigger_failed_wildcard_tls_callbacks():
 		"Registry Server",
 		"Analytics Server",
 		"Trace Server",
+		"NAT Server",
 	]
 	for server_doctype in server_doctypes:
-		servers = frappe.get_all(server_doctype, {"status": "Active"}, pluck="name")
+		servers = frappe.get_all(
+			server_doctype, filters={"status": "Active"}, fields=["name", "tls_certificate_renewal_failed"]
+		)
 		for server in servers:
-			plays = frappe.get_all(
-				"Ansible Play",
-				{"play": "Setup TLS Certificates", "server": server},
-				pluck="status",
-				limit=1,
-				order_by="creation DESC",
-			)
-			if plays and plays[0] != "Success":
+			previous_attempt_failed = server.tls_certificate_renewal_failed
+			if not previous_attempt_failed:
+				plays = frappe.get_all(
+					"Ansible Play",
+					{"play": "Setup TLS Certificates", "server": server.name},
+					pluck="status",
+					limit=1,
+					order_by="creation DESC",
+				)
+				if plays and plays[0] != "Success":
+					previous_attempt_failed = True
+
+			if previous_attempt_failed:
 				server_doc = frappe.get_doc(server_doctype, server)
 				frappe.enqueue(
 					"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
@@ -350,16 +496,37 @@ class BaseCA:
 		self._obtain()
 		return self._extract()
 
-	def _extract(self):
-		with open(self.certificate_file) as f:
-			certificate = f.read()
-		with open(self.full_chain_file) as f:
-			full_chain = f.read()
-		with open(self.intermediate_chain_file) as f:
-			intermediate_chain = f.read()
-		with open(self.private_key_file) as f:
-			private_key = f.read()
+	def _read_latest_certificate_file(self, file_path):
+		import glob
+		import os
+		import re
 
+		# Split path into directory and filename
+		dir_path = os.path.dirname(file_path)
+		file_name = os.path.basename(file_path)
+		parent_dir = os.path.dirname(dir_path)
+		base_dir_name = os.path.basename(dir_path)
+
+		# Look for indexed directories first (e.g., dir-0000, dir-0001, etc.)
+		indexed_dirs = glob.glob(os.path.join(parent_dir, f"{base_dir_name}-[0-9][0-9][0-9][0-9]"))
+
+		if indexed_dirs:
+			# Find directory with highest index
+			latest_dir = max(indexed_dirs, key=lambda p: int(re.search(r"-(\d+)$", p).group(1)))
+			latest_path = os.path.join(latest_dir, file_name)
+		elif os.path.exists(file_path):
+			latest_path = file_path
+		else:
+			raise FileNotFoundError(f"Certificate file not found: {file_path}")
+
+		with open(latest_path) as f:
+			return f.read()
+
+	def _extract(self):
+		certificate = self._read_latest_certificate_file(self.certificate_file)
+		full_chain = self._read_latest_certificate_file(self.full_chain_file)
+		intermediate_chain = self._read_latest_certificate_file(self.intermediate_chain_file)
+		private_key = self._read_latest_certificate_file(self.private_key_file)
 		return certificate, full_chain, intermediate_chain, private_key
 
 
@@ -391,19 +558,21 @@ class LetsEncrypt(BaseCA):
 
 	def _obtain_wildcard(self):
 		domain = frappe.get_doc("Root Domain", self.domain[2:])
-		environment = os.environ
+		environment = os.environ.copy()
 		environment.update(
 			{
 				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,
 				"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
 			}
 		)
+		if domain.aws_region:
+			environment["AWS_DEFAULT_REGION"] = domain.aws_region
 		self.run(self._certbot_command(), environment=environment)
 
 	def _obtain_naked_with_dns(self):
 		domain = frappe.get_all("Root Domain", pluck="name", limit=1)[0]
 		domain = frappe.get_doc("Root Domain", domain)
-		environment = os.environ
+		environment = os.environ.copy()
 		environment.update(
 			{
 				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,

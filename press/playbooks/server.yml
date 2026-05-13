@@ -5,6 +5,7 @@
   become_user: root
   gather_facts: yes
   roles:
+    - role: nat_iptables
     - role: essentials
     - role: user
     - role: nginx
@@ -26,3 +27,5 @@
     - role: pam
     - role: user_ssh_certificate
     - role: earlyoom_memory_limits
+    - role: install_and_setup_ncdu
+    - role: iptables

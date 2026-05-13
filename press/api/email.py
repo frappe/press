@@ -1,19 +1,25 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+from __future__ import annotations
 
 import calendar
 import json
 import secrets
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import frappe
 import requests
 from frappe.exceptions import OutgoingEmailError, TooManyRequestsError, ValidationError
+from frappe.utils import validate_email_address
 from frappe.utils.password import get_decrypted_password
 
 from press.api.developer.marketplace import get_subscription_info
 from press.api.site import site_config, update_config
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.press_settings.press_settings import PressSettings
 
 
 class EmailLimitExceeded(TooManyRequestsError):
@@ -22,6 +28,10 @@ class EmailLimitExceeded(TooManyRequestsError):
 
 class EmailSendError(OutgoingEmailError):
 	pass
+
+
+class InvalidEmail(ValidationError):
+	http_status_code = 400
 
 
 class EmailConfigError(ValidationError):
@@ -69,16 +79,13 @@ def setup(site):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_analytics(**data):
+def get_analytics(month: int, status: str, site: str, key: str):
 	"""
 	send data for a specific month
 	"""
-	month = data.get("month")
 	year = datetime.now().year
 	last_day = calendar.monthrange(year, int(month))[1]
-	status = data.get("status")
-	site = data.get("site")
-	subscription_key = data.get("key")
+	subscription_key = key
 
 	for value in (site, subscription_key):
 		if not value or not isinstance(value, str):
@@ -108,7 +115,7 @@ def validate_plan(secret_key):
 
 	if not secret_key:
 		frappe.throw(
-			"Secret key missing. Email Delivery Service seems to be improperly installed. Try uninstalling and reinstalling it.",
+			"Secret key missing. Email Delivery Service seems to be improperly installed. Try reinstalling it.",
 			EmailConfigError,
 		)
 
@@ -123,8 +130,8 @@ def validate_plan(secret_key):
 
 	if not subscription["enabled"]:
 		frappe.throw(
-			"Your subscription is not active. Try activating it from, "
-			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+			"Your subscription is not active. Try reinstalling Email Delivery Service."
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/apps",
 			EmailConfigError,
 		)
 
@@ -141,9 +148,23 @@ def validate_plan(secret_key):
 	if not count < plan_label_map[subscription["plan"]]:
 		frappe.throw(
 			"You have exceeded your quota for Email Delivery Service. Try upgrading it from, "
-			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/overview",
+			f"{frappe.utils.get_url()}/dashboard/sites/{subscription['site']}/apps",
 			EmailLimitExceeded,
 		)
+
+
+def make_spamd_request(press_settings: PressSettings, message: bytes):
+	headers = {}
+	if press_settings.spamd_api_key:
+		spamd_api_secret = get_decrypted_password("Press Settings", "Press Settings", "spamd_api_secret")
+		headers["Authorization"] = f"token {press_settings.spamd_api_key}:{spamd_api_secret}"
+	r = requests.post(
+		press_settings.spamd_endpoint,
+		headers=headers,
+		files={"message": message},
+	)
+	r.raise_for_status()
+	return r.json()
 
 
 def check_spam(message: bytes):
@@ -156,20 +177,16 @@ def check_spam(message: bytes):
 	if not press_settings.enable_spam_check:
 		return
 	try:
-		headers = {}
-		if press_settings.spamd_api_key:
-			spamd_api_secret = get_decrypted_password("Press Settings", "Press Settings", "spamd_api_secret")
-			headers["Authorization"] = f"token {press_settings.spamd_api_key}:{spamd_api_secret}"
-		resp = requests.post(
-			press_settings.spamd_endpoint,
-			headers=headers,
-			files={"message": message},
-		)
-		resp.raise_for_status()
-		data = resp.json()
-		if data["message"] > 3.5:
+		data = make_spamd_request(press_settings, message)["message"]
+		score = data.get("spam_score", 0)
+		spamd_res = data.get("spamd_response")
+		if score > 4.0:
 			frappe.throw(
-				"This email was blocked as it was flagged as spam by our system. Please review the contents and try again.",
+				f"""This email was blocked as it was flagged as spam. Please review documentation corresponding to the error codes below:
+
+docs: https://spamassassin.apache.org/old/tests_3_3_x.html
+
+{spamd_res}""",
 				SpamDetectionError,
 			)
 	except requests.exceptions.HTTPError as e:
@@ -178,31 +195,43 @@ def check_spam(message: bytes):
 			log_error("Spam Detection : Error", data=e)
 
 
+def check_recipients(recipients: str | list[str]):
+	if isinstance(recipients, str):
+		validate_email_address(recipients, throw=True)
+	elif isinstance(recipients, list):
+		for recipient in recipients:
+			validate_email_address(recipient, throw=True)
+
+
 @frappe.whitelist(allow_guest=True)
-def send_mime_mail(**data):
+def send_mime_mail(data: str):
 	"""
 	send api request to mailgun
 	"""
 	files = frappe._dict(frappe.request.files)
-	data = json.loads(data["data"])
+	data_dict = json.loads(data)
 
-	validate_plan(data["sk_mail"])
+	validate_plan(data_dict["sk_mail"])
 
 	api_key, domain = frappe.db.get_value("Press Settings", None, ["mailgun_api_key", "root_domain"])
 
 	message: bytes = files["mime"].read()
 	check_spam(message)
+	check_recipients(data_dict["recipients"])
 
 	resp = requests.post(
 		f"https://api.mailgun.net/v3/{domain}/messages.mime",
 		auth=("api", f"{api_key}"),
-		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
+		data={"to": data_dict["recipients"], "v:sk_mail": data_dict["sk_mail"]},
 		files={"message": message},
 	)
 
 	if resp.status_code == 200:
 		return "Sending"  # Not really required as v14 and up automatically marks the email q as sent
-	log_error("Email Delivery Service: Sending error", data=resp.text)
+	if resp.status_code == 400:
+		err_msg: str = resp.json().get("message", "Invalid request")
+		frappe.throw(f"Something went wrong with sending emails: {err_msg}", InvalidEmail)
+	log_error("Email Delivery Service: Sending error", response=resp.text, data=data_dict, message=message)
 	frappe.throw(
 		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
 		EmailSendError,
@@ -288,6 +317,9 @@ def event_log():
 			f"https://{host_name}/api/method/email_delivery_service.controller.update_status",
 			data=data,
 		)
+	except requests.exceptions.ConnectionError:
+		# site might be down or unreachable
+		pass
 	except Exception as e:
 		log_error("Mail App: Email status update error", data=e)
 

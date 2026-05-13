@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
 
 # import frappe
-import unittest
+from frappe.tests.utils import FrappeTestCase
 
 
-class TestSiteConfigKey(unittest.TestCase):
+class TestSiteConfigKey(FrappeTestCase):
 	pass

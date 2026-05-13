@@ -1,24 +1,24 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
 
+from __future__ import annotations
 
-import unittest
-from typing import Optional
 from unittest.mock import patch
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.account_request.account_request import AccountRequest
 
 
 def create_test_account_request(
 	subdomain: str,
-	email: str = None,
+	email: str | None = None,
 	erpnext: bool = True,
 	creation=None,
 	saas: bool = False,
-	saas_app: Optional[str] = None,
+	saas_app: str | None = None,
+	product_trial: str | None = None,
 ):
 	creation = creation or frappe.utils.now_datetime()
 	email = email or frappe.mock("email")
@@ -31,6 +31,7 @@ def create_test_account_request(
 				"erpnext": erpnext,
 				"saas": saas,
 				"saas_app": saas_app,
+				"product_trial": product_trial,
 				"otp": "",
 			}
 		).insert(ignore_if_duplicate=True)
@@ -39,5 +40,30 @@ def create_test_account_request(
 		return account_request
 
 
-class TestAccountRequest(unittest.TestCase):
-	pass
+class TestAccountRequest(FrappeTestCase):
+	def test_bare(self):
+		account_request = frappe.get_doc(
+			{
+				"doctype": "Account Request",
+				"email": frappe.mock("email"),
+			}
+		)
+
+		self.assertIsNotNone(account_request.insert())
+
+	@patch("press.utils.disposable_emails.domains")
+	def test_temporary_email_provider(self, domains):
+		frappe.db.set_value("Press Settings", "Press Settings", "disallow_disposable_emails", 1)
+		domain = frappe.mock("domain_name")
+		domains.return_value = [domain]
+
+		account_request = frappe.get_doc(
+			{
+				"doctype": "Account Request",
+				"email": "hello@" + domain,
+			}
+		)
+
+		with self.assertRaises(frappe.ValidationError):
+			account_request.insert()
+			domains.assert_called_once()

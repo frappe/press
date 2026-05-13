@@ -8,7 +8,7 @@ import json
 import os
 import time
 from enum import Enum
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 import frappe
 import frappe.utils
@@ -20,11 +20,12 @@ from press.press.doctype.physical_restoration_test.physical_restoration_test imp
 from press.utils import log_error
 
 if TYPE_CHECKING:
-	from apps.press.press.press.doctype.site.site import Site
+	from collections.abc import Callable
 
 	from press.press.doctype.physical_backup_restoration_step.physical_backup_restoration_step import (
 		PhysicalBackupRestorationStep,
 	)
+	from press.press.doctype.site.site import Site
 	from press.press.doctype.site_backup.site_backup import SiteBackup
 	from press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot import VirtualDiskSnapshot
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
@@ -94,6 +95,7 @@ class PhysicalBackupRestoration(Document):
 			(self.attach_volume_to_instance, SyncStep, NoWait, GeneralStep),
 			(self.create_mount_point, SyncStep, NoWait, GeneralStep),
 			(self.mount_volume_to_instance, SyncStep, NoWait, GeneralStep),
+			(self.allow_user_to_modify_db_files_permissions, SyncStep, NoWait, GeneralStep),
 			(self.change_permission_of_backup_directory, SyncStep, NoWait, GeneralStep),
 			(self.change_permission_of_database_directory, SyncStep, NoWait, GeneralStep),
 			(self.restore_database, AsyncStep, NoWait, GeneralStep),
@@ -344,14 +346,17 @@ class PhysicalBackupRestoration(Document):
 		devices_info_str: str = result["output"]
 		devices_info = json.loads(devices_info_str)["blockdevices"]
 
+		assert self.device is not None, "Device is not set"
 		disk_name = self.device.split("/")[-1]  # /dev/sdf -> sdf
 
 		# If disk name is sdf, it might be possible mounted as xvdf
 		# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html#device-name-limits
 		possible_disks = [disk_name, "xvd{}".format(disk_name.lstrip("sd")[-1])]
-		disk_serial = self.volume.replace("-", "").lower()
-		disk_partition_to_mount = None
 
+		assert self.volume is not None, "Volume is not set"
+		disk_serial = self.volume.replace("-", "").lower()
+
+		disk_partition_to_mount = None
 		for device_info in devices_info:
 			if device_info["type"] not in ["disk", "part"]:
 				continue
@@ -416,8 +421,20 @@ class PhysicalBackupRestoration(Document):
 			return StepStatus.Failure
 		return StepStatus.Success
 
+	def allow_user_to_modify_db_files_permissions(self) -> StepStatus:
+		"""Allow user to modify db files permissions"""
+
+		result = self.ansible_run(
+			r'echo "frappe ALL=(ALL) NOPASSWD: /bin/chown mysql\:mysql /var/lib/mysql/*/*" > /etc/sudoers.d/frappe-mysql',
+			raw_params=True,
+		)
+		if result["status"] == "Success":
+			return StepStatus.Success
+		return StepStatus.Failure
+
 	def change_permission_of_backup_directory(self) -> StepStatus:
 		"""Change permission of backup files"""
+		assert self.mount_point is not None, "Mount point is not set"
 		base_path = os.path.join(self.mount_point, "var/lib/mysql")
 		result = self.ansible_run(f"chmod 777 {base_path}")
 		if result["status"] == "Success":
@@ -811,9 +828,9 @@ class PhysicalBackupRestoration(Document):
 				return step
 		return None
 
-	def ansible_run(self, command):
-		inventory = f"{self.virtual_machine.public_ip_address},"
-		result = AnsibleAdHoc(sources=inventory).run(command, self.name)[0]
+	def ansible_run(self, command, raw_params: bool = False):
+		inventory = f"{self.destination_server},"
+		result = AnsibleAdHoc(sources=inventory).run(command, self.name, raw_params=raw_params)[0]
 		self.add_command(command, result)
 		return result
 

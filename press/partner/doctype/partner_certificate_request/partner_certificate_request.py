@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 from __future__ import annotations
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -21,4 +21,15 @@ class PartnerCertificateRequest(Document):
 		partner_team: DF.Link | None
 	# end: auto-generated types
 
-	pass
+	def validate(self):
+		if frappe.db.exists(
+			"Partner Certificate Request",
+			{
+				"partner_team": self.partner_team,
+				"partner_member_email": self.partner_member_email,
+				"course": self.course,
+			},
+		):
+			frappe.throw(
+				f"Certificate Request already exists for user {self.partner_member_name} with course {'ERPNext' if self.course == 'erpnext-distribution' else 'Frappe Framework'}"
+			)

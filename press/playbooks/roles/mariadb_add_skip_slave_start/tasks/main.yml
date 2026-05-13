@@ -1,0 +1,14 @@
+- name: Add skip-slave-start to MariaDB config
+  ansible.builtin.lineinfile:
+    path: /etc/mysql/conf.d/frappe.cnf
+    insertafter: '^\[mysqld\]'
+    line: 'skip-slave-start'
+    state: present
+
+- name: Restart MariaDB Service After Adding skip-slave-start
+  systemd:
+    daemon_reload: true
+    name: mariadb
+    state: restarted
+    enabled: yes
+  when: restart_mariadb | default(true) | bool

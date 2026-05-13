@@ -5,13 +5,7 @@
     key: '{{ primary_public_key }}'
     state: present
 
-- name: Add cron to reload nginx every 5 mins
-  cron:
-    name: reload_nginx
-    minute: '*/5'
-    job: 'sudo systemctl reload nginx'
-
-- name: Ensure agent is up and running # Might be stopped during previous failover
+- name: Ensure agent is up and running
   supervisorctl:
     name: 'agent:'
     state: started

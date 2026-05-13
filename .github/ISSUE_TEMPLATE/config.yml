@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Community Forum
+    url: https://discuss.frappe.io/c/frappe-cloud/77
+    about: For general QnA, discussions and community help.
+
+  - name: Documentation
+    url: https://docs.frappe.io/cloud/introduction
+    about: Explore the official documentation for guides and references.

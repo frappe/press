@@ -3,21 +3,23 @@
 from __future__ import annotations
 
 import json
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import frappe
 import rq
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.api.site import check_dns
 from press.exceptions import (
 	DNSValidationError,
 )
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
-from press.utils.dns import create_dns_record
+from press.utils.dns import check_dns_cname_a, create_dns_record
 from press.utils.jobs import has_job_timeout_exceeded
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 class SiteDomain(Document):
@@ -55,16 +57,37 @@ class SiteDomain(Document):
 			return domains
 		return None
 
+	def before_insert(self):
+		Site = frappe.qb.DocType("Site")
+
+		site = (
+			frappe.qb.from_(Site)
+			.select(Site.name)
+			.where(Site.name == self.domain)
+			.where(Site.name != self.site)
+			.run(as_dict=True)
+		)
+		if site:
+			frappe.throw(f"Domain {self.domain} is already taken. Please choose a different domain.")
+
+	@property
+	def agent(self):
+		server = frappe.db.get_value("Site", self.site, "server")
+		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
+		if is_standalone:
+			agent = Agent(server, server_type="Server")
+		else:
+			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
+			agent = Agent(proxy_server, server_type="Proxy Server")
+		return agent
+
 	def after_insert(self):
 		if self.default:
 			return
 
 		if self.has_root_tls_certificate:
 			server = frappe.db.get_value("Site", self.site, "server")
-			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
-
-			agent = Agent(server=proxy_server, server_type="Proxy Server")
-			agent.add_domain_to_upstream(server=server, site=self.site, domain=self.domain)
+			self.agent.add_domain_to_upstream(server=server, site=self.site, domain=self.domain)
 			return
 
 		self.create_tls_certificate()
@@ -92,7 +115,7 @@ class SiteDomain(Document):
 		return bool(frappe.db.exists("Root Domain", self.domain.split(".", 1)[1], "name"))
 
 	def setup_redirect_in_proxy(self):
-		site = frappe.get_doc("Site", self.site)
+		site: Site = frappe.get_doc("Site", self.site)
 		target = site.host_name
 		if target == self.name:
 			frappe.throw("Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError)
@@ -127,36 +150,16 @@ class SiteDomain(Document):
 			"TLS Certificate", self.tls_certificate, ["status", "creation"], as_dict=True
 		)
 		if certificate.status == "Active":
-			if frappe.utils.add_days(None, -1) > certificate.creation:
-				# This is an old (older than 1 day) certificate, we are renewing it.
-				# NGINX likely has a valid certificate, no need to reload.
-				skip_reload = True
-			else:
-				skip_reload = False
-			self.create_agent_request(skip_reload=skip_reload)
+			self.create_agent_request()
 		elif certificate.status == "Failure":
 			self.status = "Broken"
 			self.save()
 
-	def create_agent_request(self, skip_reload=False):
-		server = frappe.db.get_value("Site", self.site, "server")
-		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
-		if is_standalone:
-			agent = Agent(server, server_type="Server")
-		else:
-			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
-			agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.new_host(self, skip_reload=skip_reload)
+	def create_agent_request(self):
+		self.agent.new_host(self)
 
 	def create_remove_host_agent_request(self):
-		server = frappe.db.get_value("Site", self.site, "server")
-		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
-		if is_standalone:
-			agent = Agent(server, server_type="Server")
-		else:
-			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
-			agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.remove_host(self)
+		self.agent.remove_host(self)
 
 	def retry(self):
 		self.status = "Pending"
@@ -173,7 +176,7 @@ class SiteDomain(Document):
 			frappe.throw(msg="Primary domain cannot be deleted", exc=frappe.exceptions.LinkExistsError)
 
 		self.disavow_agent_jobs()
-		if not self.default or self.redirect_to_primary:
+		if not (self.default and self.has_root_tls_certificate) or self.redirect_to_primary:
 			self.create_remove_host_agent_request()
 		if self.status == "Active":
 			self.remove_domain_from_site_config()
@@ -190,7 +193,7 @@ class SiteDomain(Document):
 			frappe.db.set_value("Agent Job", job.name, "host", None)
 
 	def remove_domain_from_site_config(self):
-		site_doc = frappe.get_doc("Site", self.site)
+		site_doc: Site = frappe.get_doc("Site", self.site)
 		if site_doc.status == "Archived":
 			return
 		site_doc.remove_domain_from_config(self.domain)
@@ -258,7 +261,7 @@ def update_dns_type():
 		if has_job_timeout_exceeded():
 			return
 		try:
-			response = check_dns(domain.site, domain.domain)
+			response = check_dns_cname_a(domain.site, domain.domain, ignore_proxying=True)
 			if response["matched"] and response["type"] != domain.dns_type:
 				frappe.db.set_value(
 					"Site Domain", domain.name, "dns_type", response["type"], update_modified=False

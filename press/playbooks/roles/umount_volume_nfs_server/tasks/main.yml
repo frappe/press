@@ -1,0 +1,15 @@
+---
+- name: Lazily unmount shared directory
+  ansible.builtin.command: umount -l {{ shared_directory }}
+  ignore_errors: yes
+
+- name: Remove fstab entry for shared_directory
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    state: absent
+    regexp: '^\S+\s+{{ shared_directory }}\s+'
+
+- name: Delete Shared Directory
+  ansible.builtin.file:
+    path: "{{ shared_directory }}"
+    state: absent

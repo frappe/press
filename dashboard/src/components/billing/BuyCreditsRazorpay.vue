@@ -1,0 +1,176 @@
+<template>
+	<div>
+		<span
+			v-if="team.doc.currency === 'INR' || paypalEnabled"
+			class="mt-2.5 inline-flex gap-2 text-base text-ink-gray-7"
+		>
+			<FeatherIcon name="info" class="my-1 h-4" />
+			<span class="leading-5" v-if="team.doc.currency === 'INR'">
+				If you select Razorpay, you can pay using Credit Card, Debit Card, Net
+				Banking, UPI, Wallets, etc. If you are using Net Banking, it may take
+				upto 5 days for balance to reflect.
+			</span>
+			<span class="leading-5" v-if="paypalEnabled">
+				You can pay using your PayPal account. Processing may take a few minutes
+				for the balance to reflect.
+			</span>
+		</span>
+		<ErrorMessage class="mt-3" :message="createRazorpayOrder.error" />
+		<div class="mt-8">
+			<Button
+				v-if="!isPaymentComplete"
+				class="w-full"
+				size="md"
+				variant="solid"
+				:label="
+					razorpayScriptLoading
+						? 'Loading payment gateway...'
+						: `Proceed to payment using ${paypalEnabled ? 'PayPal' : 'Razorpay'}`
+				"
+				:loading="createRazorpayOrder.loading || razorpayScriptLoading"
+				@click="createRazorpayOrder.submit()"
+			/>
+			<Button
+				v-else
+				class="w-full"
+				size="md"
+				label="Confirming payment"
+				variant="solid"
+				:loading="isVerifyingPayment"
+			/>
+		</div>
+	</div>
+</template>
+<script setup>
+import { Button, createResource, ErrorMessage, FeatherIcon } from "frappe-ui";
+import { inject, onMounted, ref } from "vue";
+import { toast } from "vue-sonner";
+import { DashboardError } from "../../utils/error";
+import { loadRazorpayScript } from "../../utils/razorpay";
+
+const props = defineProps({
+	amount: {
+		type: Number,
+		default: 0,
+	},
+	minimumAmount: {
+		type: Number,
+		default: 0,
+	},
+	paypalEnabled: {
+		type: Boolean,
+		default: false,
+	},
+	type: {
+		type: String,
+		default: "Prepaid Credits",
+	},
+	docName: {
+		type: String,
+		default: null,
+	},
+});
+
+const emit = defineEmits(["success"]);
+const team = inject("team");
+
+const paypalEnabled = team.doc.currency === "USD" && props.paypalEnabled;
+const isPaymentComplete = ref(false);
+const isVerifyingPayment = ref(false);
+
+const razorpayScriptLoading = ref(!window.Razorpay);
+
+onMounted(() => {
+	loadRazorpayScript()
+		.then(() => {
+			razorpayScriptLoading.value = false;
+		})
+		.catch(() => {
+			toast.error(
+				"Failed to load payment gateway. Please refresh and try again.",
+			);
+		});
+});
+
+const createRazorpayOrder = createResource({
+	url: "press.api.billing.create_razorpay_order",
+	params: {
+		amount: props.amount,
+		transaction_type: props.type,
+		doc_name: props.docName,
+	},
+	onSuccess: async (data) => {
+		await loadRazorpayScript();
+		processOrder(data);
+	},
+	validate: () => {
+		if (props.amount < props.minimumAmount) {
+			throw new DashboardError(
+				`Amount should be equal to or greater than ${props.minimumAmount}`,
+			);
+		}
+	},
+});
+
+const handlePaymentFailed = createResource({
+	url: "press.api.billing.handle_razorpay_payment_failed",
+	onSuccess: () => {
+		console.log("Payment Failed.");
+	},
+});
+
+function processOrder(data) {
+	const options = {
+		key: data.key_id,
+		order_id: data.order_id,
+		name: "Frappe Cloud",
+		image: "https://frappe.io/files/cloud.png",
+		prefill: { email: team.doc?.user },
+		handler: handlePaymentSuccess,
+		theme: { color: "#171717" },
+		...(paypalEnabled
+			? {
+					config: {
+						display: {
+							blocks: {
+								wallets: {
+									name: "Pay using PayPal",
+									instruments: [
+										{
+											method: "wallet",
+											wallets: ["paypal"],
+										},
+									],
+								},
+							},
+							sequence: ["block.wallets"],
+							preferences: {
+								show_default_blocks: false,
+							},
+						},
+					},
+				}
+			: {}),
+	};
+
+	const rzp = new Razorpay(options);
+
+	// Opens the payment checkout frame
+	rzp.open();
+
+	// Attach failure handler
+	rzp.on("payment.failed", handlePaymentFailure);
+	// rzp.on('payment.success', this.handlePaymentSuccess);
+}
+
+function handlePaymentFailure(response) {
+	handlePaymentFailed.submit({ response });
+	toast.error("Payment failed");
+}
+
+function handlePaymentSuccess() {
+	isPaymentComplete.value = true;
+	emit("success");
+	toast.success("Payment successful");
+}
+</script>

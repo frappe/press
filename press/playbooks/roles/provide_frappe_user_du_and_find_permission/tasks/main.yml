@@ -1,0 +1,21 @@
+- name: Allow frappe user to run du
+  lineinfile:
+    path: /etc/sudoers.d/frappe
+    line: 'frappe ALL = (root) NOPASSWD: /usr/bin/du'
+    create: yes
+    state: present
+    validate: 'visudo -cf %s'
+    mode: '0440'
+    owner: root
+    group: root
+
+- name: Allow frappe user to find permission of files
+  lineinfile:
+    path: /etc/sudoers.d/frappe
+    line: 'frappe ALL = (root) NOPASSWD: /usr/bin/find'
+    create: yes
+    state: present
+    validate: 'visudo -cf %s'
+    mode: '0440'
+    owner: root
+    group: root
