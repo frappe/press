@@ -238,6 +238,8 @@ class Team(Document):
 		owner or admins can change relaxed permissions as it can lead to
 		security implications.
 		"""
+		if self.flags.ignore_permissions:
+			return
 		if self.is_new():
 			return
 		if not self.has_value_changed("relaxed_permissions"):
@@ -255,6 +257,8 @@ class Team(Document):
 		or admins must be able to change team members as it can lead to
 		security implications and unauthorized access to team resources.
 		"""
+		if self.flags.ignore_permissions:
+			return
 		if self.is_new():
 			return
 		if not self.has_value_changed("team_members"):
