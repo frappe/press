@@ -59,6 +59,9 @@ MIN_GUNICORN_WORKERS = 2
 MAX_BACKGROUND_WORKERS = 8
 MIN_BACKGROUND_WORKERS = 1
 
+BENCH_NAME_LEN_SOFT_LIMIT = 28  # soft limit to allow for -1, -2, etc in case of name clashes
+BENCH_NAME_LEN_HARD_LIMIT = 32  # maximum length allowed by bench, cannot be changed
+
 if TYPE_CHECKING:
 	from collections.abc import Generator, Iterable
 
@@ -222,10 +225,14 @@ class Bench(Document):
 	def get_bench_name(self, candidate_name, server_name, server_name_abbreviation):
 		bench_name = f"bench-{candidate_name}-{server_name}"
 
-		if len(bench_name) > 28:  # hard limit is 32. 30 to allow -1, -2, etc in next line
+		if len(bench_name) > BENCH_NAME_LEN_SOFT_LIMIT:
 			bench_name = f"bench-{candidate_name}-{server_name_abbreviation}"
 
-		return append_number_if_name_exists("Bench", bench_name, separator="-")
+		ret = append_number_if_name_exists("Bench", bench_name, separator="-")
+		assert len(ret) <= BENCH_NAME_LEN_HARD_LIMIT, (
+			f"Bench name {ret} is too long even after abbreviation. Please reduce BENCH_NAME_LEN_SOFT_LIMIT."
+		)
+		return ret
 
 	def update_config_with_rg_config(self, config: dict):
 		release_group_common_site_config = frappe.db.get_value(
