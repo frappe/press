@@ -250,6 +250,7 @@ class Team(Document):
 
 	def validate(self):
 		self.validate_duplicate_members()
+		self.validate_member_role()
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
@@ -258,6 +259,26 @@ class Team(Document):
 		self.validate_disable()
 		self.validate_billing_team()
 		self.reject_reenabling_team_for_banned_team()
+
+	def validate_member_role(self):
+		"""
+		Validate that the role assigned to each team member is a valid role.
+		This is to prevent any issues with role-based access control and ensure
+		that team members have the correct permissions based on their assigned
+		roles.
+		"""
+		# Get a list of valid roles for this team.
+		roles = [role["label"] for role in get_roles(self.name)]
+		# Validate that each team member has a valid role assigned.
+		for member in self.team_members:
+			# If the role is not in the list of valid roles, throw an error.
+			if member.role not in roles:
+				frappe.throw(
+					_("{0} is not a valid role. Please select a valid role for {1}").format(
+						member.role,
+						member.user,
+					)
+				)
 
 	def before_insert(self):
 		self.currency = "INR" if self.country == "India" else "USD"

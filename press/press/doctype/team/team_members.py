@@ -1,5 +1,8 @@
+from typing import TypedDict
+
 import frappe
 import frappe.utils
+from frappe.types.DF import Data
 from pypika import Not
 from pypika.terms import ValueWrapper
 
@@ -50,7 +53,12 @@ def get_invitations(team: str):
 	)
 
 
-def get_roles(team: str):
+class RoleDict(TypedDict):
+	label: str
+	value: str
+
+
+def get_roles(team: Data | None) -> list[RoleDict]:
 	"""
 	Get a list of roles that can be assigned to team members. This should
 	include both predefined roles and any custom roles.
