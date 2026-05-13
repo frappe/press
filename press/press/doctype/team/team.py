@@ -255,6 +255,8 @@ class Team(Document):
 		or admins must be able to change team members as it can lead to
 		security implications and unauthorized access to team resources.
 		"""
+		if self.is_new():
+			return
 		if not self.has_value_changed("team_members"):
 			return
 		if self.is_team_owner() or self.is_admin_user():
