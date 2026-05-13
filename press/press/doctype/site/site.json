@@ -12,7 +12,6 @@
   "status_before_update",
   "server",
   "archive_failed",
-  "creation_failed",
   "fatal_site_update",
   "column_break_3",
   "bench",
@@ -21,6 +20,10 @@
   "admin_password",
   "additional_system_user_created",
   "backup_timeout",
+  "section_break_aokd",
+  "creation_failed",
+  "column_break_tfvn",
+  "suspended_at",
   "config_tab",
   "hide_config",
   "host_name",
@@ -756,6 +759,20 @@
    "fieldtype": "Link",
    "label": "Fatal Site Update",
    "options": "Site Update"
+  },
+  {
+   "fieldname": "section_break_aokd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_tfvn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "suspended_at",
+   "fieldtype": "Datetime",
+   "label": "Suspended At",
+   "read_only": 1
   }
  ],
  "links": [
@@ -840,7 +857,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2026-02-09 16:05:29.084553",
+ "modified": "2026-04-12 12:56:22.557860",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

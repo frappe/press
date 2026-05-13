@@ -11,13 +11,11 @@ import frappe
 from frappe.model.document import Document
 
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
-from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
-	PressWorkflowObject,
-)
 from press.workflow_engine.utils import (
 	called_methods_in_order,
 	is_func_accept_task_id,
 	method_title,
+	serialize_and_store_value,
 )
 
 if typing.TYPE_CHECKING:
@@ -37,12 +35,21 @@ def _in_workflow_execution(instance: WorkflowBuilder | None) -> bool:
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
 _R_co = TypeVar("_R_co", covariant=True)
+_F = TypeVar("_F", bound="Callable[..., Any]")
 
 
 class _BoundTask(Generic[_P, _R_co]):
-	def __init__(self, wrapped: Callable[..., _R_co], instance: WorkflowBuilder) -> None:
+	def __init__(
+		self,
+		wrapped: Callable[..., _R_co],
+		instance: WorkflowBuilder,
+		queue: str | None = None,
+		timeout: int | None = None,
+	) -> None:
 		self._wrapped = wrapped
 		self._instance = instance
+		self._queue = queue
+		self._timeout = timeout
 		self._task_id: str | None = None
 		wraps(wrapped)(self)
 
@@ -51,7 +58,9 @@ class _BoundTask(Generic[_P, _R_co]):
 			kwargs = {**kwargs, "task_id": self._task_id}
 
 		if _in_workflow_execution(self._instance):
-			return self._instance.run_task(self._wrapped, args, kwargs)  # type: ignore[return-value]
+			return self._instance.run_task(
+				self._wrapped, args, kwargs, queue=self._queue, timeout=self._timeout
+			)  # type: ignore[return-value]
 
 		if not is_func_accept_task_id(self._wrapped):
 			kwargs = {k: v for k, v in kwargs.items() if k != "task_id"}
@@ -61,14 +70,23 @@ class _BoundTask(Generic[_P, _R_co]):
 		return self._execute(args, kwargs)  # type: ignore[arg-type]
 
 	def with_task_id(self, task_id: str) -> "_BoundTask[_P, _R_co]":
-		bound: _BoundTask[_P, _R_co] = _BoundTask(self._wrapped, self._instance)
+		bound: _BoundTask[_P, _R_co] = _BoundTask(
+			self._wrapped, self._instance, queue=self._queue, timeout=self._timeout
+		)
 		bound._task_id = task_id
 		return bound  # type: ignore[return-value]
 
 
 class _TaskDescriptor(Generic[_P, _R_co]):
-	def __init__(self, wrapped: Callable[Concatenate[Any, _P], _R_co]) -> None:
+	def __init__(
+		self,
+		wrapped: Callable[Concatenate[Any, _P], _R_co],
+		queue: str | None = None,
+		timeout: int | None = None,
+	) -> None:
 		self._wrapped = wrapped
+		self._queue = queue
+		self._timeout = timeout
 		wraps(wrapped)(self)  # type: ignore[arg-type]
 
 	def __set_name__(self, owner: type, name: str) -> None:
@@ -83,18 +101,39 @@ class _TaskDescriptor(Generic[_P, _R_co]):
 	def __get__(self, instance: Any, owner: type) -> Any:
 		if instance is None:
 			return self
-		return _BoundTask(self._wrapped, instance)
+		return _BoundTask(self._wrapped, instance, queue=self._queue, timeout=self._timeout)
 
 
-def task(wrapped: Callable[Concatenate[Any, _P], _R]) -> _TaskDescriptor[_P, _R]:
+@overload
+def task(wrapped: _F) -> _F: ...
+
+
+@overload
+def task(*, queue: str | None = None, timeout: int | None = None) -> "Callable[[_F], _F]": ...
+
+
+def task(
+	wrapped: "_F | None" = None,
+	*,
+	queue: str | None = None,
+	timeout: int | None = None,
+) -> "_F | Callable[[_F], _F]":
 	"""Mark a method as a workflow task.
 
 	When called inside an active workflow execution, the method is handed off
 	to the workflow engine (enqueued, tracked, retried). Outside a workflow
 	it behaves like a normal method call. Supports `.with_task_id()` to
 	attach an explicit task identifier.
+
+	Can be used as ``@task``, ``@task(queue="long")``, or ``@task(queue="long", timeout=3600)``.
 	"""
-	return _TaskDescriptor(wrapped)
+	if wrapped is not None:
+		return _TaskDescriptor(wrapped)  # type: ignore[return-value]
+
+	def decorator(fn: _F) -> _F:
+		return _TaskDescriptor(fn, queue=queue, timeout=timeout)  # type: ignore[return-value]
+
+	return decorator  # type: ignore[return-value]
 
 
 _Self = TypeVar("_Self")
@@ -128,14 +167,19 @@ class BoundFlow:
 		seen: set[str] = set()
 		methods = [m for m in methods if not (m[0] in seen or seen.add(m[0]))]  # type: ignore[func-returns-value]
 
+		args_type, args_value = serialize_and_store_value(args)
+		kwargs_type, kwargs_value = serialize_and_store_value(kwargs)
+
 		return (
 			frappe.get_doc(
 				{
 					"doctype": "Press Workflow",
-					"args": PressWorkflowObject.store(args) if args else None,
-					"kwargs": PressWorkflowObject.store(kwargs) if kwargs else None,
+					"args": args_value,
+					"args_type": args_type,
+					"kwargs": kwargs_value,
+					"kwargs_type": kwargs_type,
 					"linked_doctype": instance.doctype,  # type: ignore
-					"linked_docname": instance.name,  # type: ignore
+					"linked_docname": str(instance.name),  # type: ignore
 					"main_method_name": self._wrapped.__name__,
 					"main_method_title": method_title(self._wrapped),
 					"steps": [

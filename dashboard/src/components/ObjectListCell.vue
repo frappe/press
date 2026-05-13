@@ -5,7 +5,7 @@
 		:target="column.link ? '_blank' : undefined"
 		class="flex items-center"
 		:class="{
-			'text-gray-900 outline-gray-400 hover:text-gray-700': column.link,
+			'text-ink-gray-9 outline-gray-400 hover:text-ink-gray-7': column.link,
 			'justify-end': column.align === 'right',
 			'justify-center': column.align === 'center',
 		}"
@@ -39,7 +39,7 @@
 				</option>
 			</select>
 		</div>
-		<div class="text-base text-gray-600" v-else-if="column.type == 'Timestamp'">
+		<div class="text-base text-ink-gray-6" v-else-if="column.type == 'Timestamp'">
 			<div class="flex">
 				<Tooltip :text="$format.date(value)">
 					{{ value ? $dayjs(value).fromNow() : '' }}
@@ -52,7 +52,7 @@
 		<div v-else-if="column.type == 'Actions'">
 			<Dropdown v-if="showDropdown" :options="actions" @click.stop>
 				<button
-					class="flex items-center rounded bg-gray-100 px-1 py-0.5 hover:bg-gray-200"
+					class="flex items-center rounded bg-surface-gray-2 px-1 py-0.5 hover:bg-surface-gray-3"
 				>
 					<FeatherIcon name="more-horizontal" class="h-4 w-4" />
 				</button>

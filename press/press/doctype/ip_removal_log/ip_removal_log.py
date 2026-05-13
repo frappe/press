@@ -122,6 +122,7 @@ class IPRemovalLog(Document, StepHandler):
 				port=doc._ssh_port(),
 				variables={
 					"nat_gateway_ip": frappe.cache.get_value(f"{self.name}:{self.nat_server}"),
+					"is_frappe_compute": doc.provider == "Frappe Compute",
 				},
 			)
 			self.handle_ansible_play(step, ansible)

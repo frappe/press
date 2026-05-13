@@ -7,6 +7,14 @@ before deploying to production.
 
 > **NOTE**: Never do `bench update` on production. Always manually pull each app's repo and run necessary commands.
 
+## Other dependencies
+
+Apart from bench environment, there are some external dependencies that we need
+
+certbot==5.5.0
+certbot-dns-route53==2.11.0
+|-urllib3==1.26.20
+
 ## Updating Press on Production
 
 ```sh

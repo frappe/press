@@ -7,7 +7,7 @@
 				!binlog_indexer_enabled,
 		}"
 	>
-		<Header class="sticky top-0 z-10 bg-white">
+		<Header class="sticky top-0 z-10 bg-surface-white">
 			<div
 				class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
 			>
@@ -22,12 +22,12 @@
 
 				<div class="flex flex-row gap-2">
 					<Tooltip text="This is an experimental feature">
-						<div class="rounded-md bg-purple-100 p-1.5">
+						<div class="rounded-md bg-surface-pink-1 p-1.5">
 							<lucide-flask-conical class="h-4 w-4 text-purple-500" />
 						</div>
 					</Tooltip>
 					<Tooltip text="View documentation">
-						<div class="rounded-md bg-gray-100 p-1.5">
+						<div class="rounded-md bg-surface-gray-2 p-1.5">
 							<a
 								href="https://docs.frappe.io/cloud/binlog-browser"
 								target="_blank"
@@ -62,13 +62,13 @@
 		<div class="mx-5 my-2.5">
 			<div
 				v-if="!site"
-				class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+				class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 			>
 				Select a site to get started
 			</div>
 			<div
 				v-else-if="!binlog_index_state_loaded"
-				class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-gray-700"
+				class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 			>
 				<Spinner class="w-4" />
 				Loading Binlog Browser...
@@ -208,7 +208,7 @@
 					<div class="mt-3" v-if="isBinlogSearchAccessible">
 						<div
 							v-if="this.$resources?.searchBinlogs?.loading"
-							class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
+							class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 						>
 							<Spinner class="w-4" /> Searching for binlogs...
 						</div>
@@ -232,10 +232,10 @@
 
 					<!-- Block  -->
 					<div
-						class="z-1000 h-80 bg-white-overlay-900 absolute inset-0 flex justify-center items-center"
+						class="z-1000 h-80 bg-surface-white-overlay-900 absolute inset-0 flex justify-center items-center"
 						v-else
 					>
-						<div class="flex text-md text-gray-800 items-center gap-1.5">
+						<div class="flex text-md text-ink-gray-8 items-center gap-1.5">
 							<lucide-triangle-alert class="h-5 w-5 text-amber-600" />
 							To view or search SQL queries, choose a time range of less than 6
 							hours
@@ -247,25 +247,25 @@
 
 		<!-- Overlay to hide controls while building timeline -->
 		<div
-			class="z-1000 bg-white-overlay-800 absolute inset-0 flex justify-center items-center"
+			class="z-1000 bg-surface-white-overlay-800 absolute inset-0 flex justify-center items-center"
 			v-if="binlog_index_state_loaded && this.$resources?.timeline?.loading"
 		>
-			<div class="flex gap-2 text-base text-gray-800">
+			<div class="flex gap-2 text-base text-ink-gray-8 items-center">
 				<Spinner class="w-4" />
 				Building timeline...
 			</div>
 		</div>
 
 		<div
-			class="z-2000 bg-white absolute inset-0 flex justify-center items-center"
+			class="z-2000 bg-surface-white absolute inset-0 flex justify-center items-center"
 			v-if="binlog_index_state_loaded && binlog_indexer_running"
 		>
 			<div class="flex flex-col items-center gap-3 text-center px-6 max-w-lg">
-				<lucide-construction class="h-8 w-8 text-gray-800 mb-1" />
-				<h2 class="text-xl font-semibold text-gray-900">
+				<lucide-construction class="h-8 w-8 text-ink-gray-8 mb-1" />
+				<h2 class="text-xl font-semibold text-ink-gray-9">
 					Binlog Browser Temporarily Unavailable
 				</h2>
-				<p class="text-gray-600">
+				<p class="text-ink-gray-6">
 					We are indexing new binlogs. This can take up to
 					<strong>5 minutes</strong>.
 					<br />
@@ -275,28 +275,28 @@
 		</div>
 
 		<div
-			class="z-3000 bg-white absolute inset-0 flex justify-center items-center"
+			class="z-3000 bg-surface-white absolute inset-0 flex justify-center items-center"
 			v-if="binlog_index_state_loaded && !binlog_indexer_enabled"
 		>
 			<div class="flex flex-col items-center gap-3 text-center px-6 max-w-lg">
-				<lucide-construction class="h-8 w-8 text-gray-800 mb-1" />
+				<lucide-construction class="h-8 w-8 text-ink-gray-8 mb-1" />
 				<h2
-					class="text-xl font-semibold text-gray-900"
+					class="text-xl font-semibold text-ink-gray-9"
 					v-if="
 						site_hosted_on_shared_server || database_server_memory < 8 * 1024
 					"
 				>
 					Binlog Browser Not Available
 				</h2>
-				<h2 class="text-xl font-semibold text-gray-900" v-else>
+				<h2 class="text-xl font-semibold text-ink-gray-9" v-else>
 					Binlog Indexing Disabled
 				</h2>
-				<p class="text-gray-600" v-if="site_hosted_on_shared_server">
+				<p class="text-ink-gray-6" v-if="site_hosted_on_shared_server">
 					Binlog Browser is only available for sites on dedicated servers.
 					<br />
 					This site is currently on shared hosting.
 				</p>
-				<p class="text-gray-600" v-else-if="database_server_memory < 8 * 1024">
+				<p class="text-ink-gray-6" v-else-if="database_server_memory < 8 * 1024">
 					<span
 						>This feature requires at least <strong>8 GB RAM</strong> on the db
 						server.</span
@@ -306,7 +306,7 @@
 					<strong>{{ Math.round(database_server_memory / 1024) }} GB RAM</strong
 					>.
 				</p>
-				<p class="text-gray-600" v-else>
+				<p class="text-ink-gray-6" v-else>
 					Follow the
 					<a
 						href="https://docs.frappe.io/cloud/database-server-actions#enable--disable-binlog-indexer"
@@ -340,8 +340,8 @@ import {
 	FeatherIcon,
 	Spinner,
 	TextInput,
+	DateTimePicker,
 } from 'frappe-ui';
-import DateTimePicker from './extras/DateTimePicker.vue';
 import { formatValue } from '../../../utils/format';
 import LinkControl from '../../../components/LinkControl.vue';
 import BinlogResultTable from '../../../components/devtools/database/BinlogResultTable.vue';

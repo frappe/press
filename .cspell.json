@@ -16,7 +16,8 @@
         "dev-requirements.txt",
         "press/utils/country_timezone.py",
         ".secrets.baseline",
-        "**go.sum"
+        "**go.sum",
+        "libs/**"
     ],
     "words": [
         "2.4.6",
@@ -174,7 +175,6 @@
         "emaill",
         "emandate",
         "Ensenada",
-        "env",
         "EPERM",
         "equivs",
         "erikgeiser",
@@ -499,8 +499,8 @@
         "probability",
         "proces",
         "procs",
-        "promql",
         "proot",
+        "promql",
         "protoc",
         "psync",
         "ptype",
@@ -780,6 +780,17 @@
         "picklable",
         "ndarray",
         "mult",
-        "ruleid"
+        "ruleid",
+        "chatwoot",
+        "ssti",
+        "tcmalloc",
+        "libncurses",
+        "libncursesw",
+        "DWITHOUT",
+        "wextra",
+        "SONAME",
+        "decommitted",
+        "libgnutls",
+        "UDF"
     ]
 }

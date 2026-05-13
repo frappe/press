@@ -79,16 +79,13 @@ def setup(site):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_analytics(**data):
+def get_analytics(month: int, status: str, site: str, key: str):
 	"""
 	send data for a specific month
 	"""
-	month = data.get("month")
 	year = datetime.now().year
 	last_day = calendar.monthrange(year, int(month))[1]
-	status = data.get("status")
-	site = data.get("site")
-	subscription_key = data.get("key")
+	subscription_key = key
 
 	for value in (site, subscription_key):
 		if not value or not isinstance(value, str):
@@ -207,25 +204,25 @@ def check_recipients(recipients: str | list[str]):
 
 
 @frappe.whitelist(allow_guest=True)
-def send_mime_mail(**data):
+def send_mime_mail(data: str):
 	"""
 	send api request to mailgun
 	"""
 	files = frappe._dict(frappe.request.files)
-	data = json.loads(data["data"])
+	data_dict = json.loads(data)
 
-	validate_plan(data["sk_mail"])
+	validate_plan(data_dict["sk_mail"])
 
 	api_key, domain = frappe.db.get_value("Press Settings", None, ["mailgun_api_key", "root_domain"])
 
 	message: bytes = files["mime"].read()
 	check_spam(message)
-	check_recipients(data["recipients"])
+	check_recipients(data_dict["recipients"])
 
 	resp = requests.post(
 		f"https://api.mailgun.net/v3/{domain}/messages.mime",
 		auth=("api", f"{api_key}"),
-		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
+		data={"to": data_dict["recipients"], "v:sk_mail": data_dict["sk_mail"]},
 		files={"message": message},
 	)
 
@@ -234,7 +231,7 @@ def send_mime_mail(**data):
 	if resp.status_code == 400:
 		err_msg: str = resp.json().get("message", "Invalid request")
 		frappe.throw(f"Something went wrong with sending emails: {err_msg}", InvalidEmail)
-	log_error("Email Delivery Service: Sending error", response=resp.text, data=data, message=message)
+	log_error("Email Delivery Service: Sending error", response=resp.text, data=data_dict, message=message)
 	frappe.throw(
 		"Something went wrong with sending emails. Please try again later or raise a support ticket with support.frappe.io",
 		EmailSendError,

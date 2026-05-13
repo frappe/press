@@ -1,0 +1,80 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-04-15 18:36:37.062445",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "app",
+  "source",
+  "release",
+  "add_on_creation",
+  "install_on_site_creation",
+  "for_updates"
+ ],
+ "fields": [
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "App",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Add this app on creation of release group",
+   "fieldname": "add_on_creation",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Add On Creation"
+  },
+  {
+   "default": "0",
+   "description": "Install this app on by default on site created on this release group",
+   "fieldname": "install_on_site_creation",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Install on Site Creation"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "App Source",
+   "reqd": 1
+  },
+  {
+   "fieldname": "release",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Release",
+   "options": "App Release"
+  },
+  {
+   "default": "0",
+   "description": "When checked the app mentioned will be force to update to the source and release mentioned in the next update",
+   "fieldname": "for_updates",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "For Updates"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-04-16 13:58:26.956320",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Release Group Policy App",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

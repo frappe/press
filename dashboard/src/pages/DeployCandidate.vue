@@ -7,7 +7,7 @@
 			:title="error.title"
 			@done="$resources.errors.reload()"
 		/>
-		<AlertAddressableError
+		<!-- <AlertAddressableError
 			v-for="w in warnings"
 			:key="w.name"
 			class="mb-5"
@@ -15,7 +15,7 @@
 			:title="w.title"
 			type="warning"
 			@done="$resources.warnings.reload()"
-		/>
+		/> -->
 
 		<AlertBanner
 			v-if="alertMessage && !error && !warnings"
@@ -32,7 +32,7 @@
 
 		<div class="mt-3">
 			<div class="flex w-full items-center">
-				<h2 class="text-lg font-large text-gray-900">
+				<h2 class="text-lg font-large text-ink-gray-9">
 					{{ deploy.deploy_candidate }}
 				</h2>
 				<Badge class="ml-2" :label="deploy.status" />
@@ -66,34 +66,34 @@
 			<div>
 				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
 					<div>
-						<div class="text-sm font-medium text-gray-500">Creation</div>
-						<div class="mt-2 text-sm text-gray-900">
+						<div class="text-sm font-medium text-ink-gray-5">Creation</div>
+						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ $format.date(deploy.creation, 'lll') }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">Creator</div>
-						<div class="mt-2 text-sm text-gray-900">
+						<div class="text-sm font-medium text-ink-gray-5">Creator</div>
+						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ deploy.owner }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">Duration</div>
-						<div class="mt-2 text-sm text-gray-900">
+						<div class="text-sm font-medium text-ink-gray-5">Duration</div>
+						<div class="mt-2 text-sm text-ink-gray-9">
 							{{
 								deploy.build_end ? $format.duration(deploy.build_duration) : '-'
 							}}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">Start</div>
-						<div class="mt-2 text-sm text-gray-900">
+						<div class="text-sm font-medium text-ink-gray-5">Start</div>
+						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ $format.date(deploy.build_start, 'lll') }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-gray-500">End</div>
-						<div class="mt-2 text-sm text-gray-900">
+						<div class="text-sm font-medium text-ink-gray-5">End</div>
+						<div class="mt-2 text-sm text-ink-gray-9">
 							{{
 								deploy.build_end ? $format.date(deploy.build_end, 'lll') : '-'
 							}}
@@ -284,7 +284,7 @@ export default {
 				title: 'Fail Running Build',
 				message: `
 				Are you sure you want to fail this running build?<br><br>
-				<div class="text-bg-base bg-gray-100 p-2 rounded-md">
+				<div class="text-bg-base bg-surface-gray-2 p-2 rounded-md">
 				This will <strong>stop the current build immediately</strong>.  
 				All progress made so far will be <strong>discarded</strong>, and the next triggered build will start from scratch.
 				<br><br>

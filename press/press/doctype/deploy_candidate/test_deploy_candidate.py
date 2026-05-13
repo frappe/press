@@ -105,26 +105,6 @@ class TestDeployCandidate(FrappeTestCase):
 			self.fail("PermissionError raised in pre_build")
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
-	@patch.object(DeployCandidateBuild, "_build", new=Mock())
-	def test_old_style_press_admin_team_can_pre_build(self, mock_enqueue_doc, mock_commit):
-		"""
-		Test if old style press admin team can pre build
-
-		Checks permission. Make sure no PermissionError is raised
-		"""
-		app = create_test_app()
-		group = create_test_release_group([app], self.user)
-		group.db_set("team", self.team.name)
-		frappe.rename_doc("Team", self.team.name, self.user)
-		frappe.set_user(self.user)
-		deploy_candidate = create_test_deploy_candidate(group)
-		deploy_candidate_build = create_test_deploy_candidate_build(deploy_candidate, no_build=True)
-		try:
-			deploy_candidate_build.insert()
-		except frappe.PermissionError:
-			self.fail("PermissionError raised in pre_build")
-
-	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	def test_deploy_with_empty_apps_creates_deploy_candidate_with_same_release(
 		self, mock_enqueue_doc, mock_commit
 	):
@@ -406,21 +386,21 @@ def create_cache_test_apps(team: "Team") -> dict[str, "AppInfo"]:
 			"Frappe Framework",
 			"Nightly",
 			"develop",
-			"d26c67df75a95ef43d329eadd48d7998ea656856",
+			"d26c67df75a95ef43d329eadd48d7998ea656856",  # pragma: allowlist secret
 		),
 		(
 			"https://github.com/frappe/wiki",
 			"Frappe Wiki",
 			"Nightly",
 			"master",
-			"8b369c63dd90b4f36195844d4a84e2aaa3b8f39a",
+			"8b369c63dd90b4f36195844d4a84e2aaa3b8f39a",  # pragma: allowlist secret
 		),
 		(
 			"https://github.com/The-Commit-Company/raven",
 			"Raven",
 			"Nightly",
 			"develop",
-			"317de412bc4b66c21052a929021c1013bbe31335",
+			"317de412bc4b66c21052a929021c1013bbe31335",  # pragma: allowlist secret
 		),
 	]
 

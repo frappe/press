@@ -204,14 +204,41 @@ def get_default_team_for_user(user):
 	return None
 
 
+def chat_enabled():
+	if frappe.session.user == "Guest":
+		return False
+
+	if not frappe.db.get_single_value("Press Settings", "enable_chat"):
+		return False
+
+	current_team_doc = get_current_team(get_doc=True)
+
+	if not current_team_doc:
+		return False
+
+	date_diff = frappe.utils.data.get_datetime() - current_team_doc.creation
+
+	if date_diff < timedelta(days=90):
+		return True
+	return False
+
+
+def get_chat_bubble_config():
+	press_settings = frappe.get_doc("Press Settings")
+
+	return {"base_url": press_settings.chat_base_url, "website_token": press_settings.chat_website_token}
+
+
 def get_valid_teams_for_user(user):
 	teams = frappe.db.get_all("Team Member", filters={"user": user}, pluck="parent")
 	return frappe.db.get_all("Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"])
 
 
 def is_user_part_of_team(user, team):
-	"""Returns True if user is part of the team"""
-	return frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user})
+	"""Returns True if user is the team owner or an explicit member of the team"""
+	if frappe.db.get_value("Team", team, "user") == user:
+		return True
+	return bool(frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user}))
 
 
 def get_country_info():
@@ -321,6 +348,13 @@ def get_frappe_backups(url, email, password):
 def is_allowed_access_performance_tuning():
 	team = get_current_team(get_doc=True)
 	return team.enable_performance_tuning
+
+
+def get_press_base_url():
+	press_url = frappe.conf.get("press_base_url") or frappe.utils.get_url()
+	if not press_url.startswith("http://") and not press_url.startswith("https://"):
+		press_url = "https://" + press_url
+	return press_url.rstrip("/")
 
 
 class RemoteFrappeSite:

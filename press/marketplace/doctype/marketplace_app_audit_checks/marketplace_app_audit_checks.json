@@ -13,6 +13,8 @@
   "column_break_hpux",
   "check_name",
   "severity",
+  "is_internal_only",
+  "is_blocking",
   "message",
   "remediation"
  ],
@@ -74,13 +76,29 @@
    "fieldname": "remediation",
    "fieldtype": "Small Text",
    "label": "Remediation"
+  },
+  {
+   "default": "0",
+   "description": "Determines whether a check is only for internal evaluation purpose. Need not be shown to publisher.",
+   "fieldname": "is_internal_only",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Internal Only?"
+  },
+  {
+   "default": "0",
+   "description": "Determines whether the check should hard fail the audit. This is a release blocking/yanking check.",
+   "fieldname": "is_blocking",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Blocking?"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-01 14:34:34.080353",
+ "modified": "2026-04-27 11:58:08.885056",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Audit Checks",

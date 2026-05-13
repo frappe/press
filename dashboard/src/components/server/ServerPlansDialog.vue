@@ -39,9 +39,9 @@
 						@click="planType = c.name"
 						:class="[
 							planType === c.name
-								? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-								: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-							'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
+								? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+								: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+							'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 						]"
 					>
 						<div class="flex w-full items-center justify-between space-x-2">
@@ -49,7 +49,7 @@
 								{{ c.name }}
 							</span>
 							<Tooltip :text="c.description">
-								<lucide-info class="h-4 w-4 text-gray-500" />
+								<lucide-info class="h-4 w-4 text-ink-gray-5" />
 							</Tooltip>
 						</div>
 					</button>
@@ -110,21 +110,21 @@
 							@click="serverPlanType = planType.name"
 							:class="[
 								serverPlanType === planType.name
-									? 'border-gray-900 ring-1 ring-gray-900'
-									: 'border-gray-300',
-								'flex w-full flex-col overflow-hidden rounded border text-left hover:bg-gray-50',
+									? 'border-outline-gray-5 ring-1 ring-gray-900'
+									: 'border-outline-gray-2',
+								'flex w-full flex-col overflow-hidden rounded border text-left hover:bg-surface-gray-1',
 							]"
 						>
 							<div class="w-full p-3">
 								<div class="flex items-center justify-between">
 									<div class="flex w-full items-center">
-										<span class="truncate text-lg font-medium text-gray-900">
+										<span class="truncate text-lg font-medium text-ink-gray-9">
 											{{ planType.title }}
 										</span>
 									</div>
 								</div>
 								<div
-									class="mt-1 text-sm text-gray-600"
+									class="mt-1 text-sm text-ink-gray-6"
 									v-if="planType.description"
 								>
 									{{ planType.description }}
@@ -137,16 +137,16 @@
 				<!-- Single Plan Type Message -->
 				<div
 					v-else-if="Object.keys(serverPlanTypes).length === 1"
-					class="flex flex-col rounded border border-gray-300 p-3 gap-2 mb-4"
+					class="flex flex-col rounded border border-outline-gray-2 p-3 gap-2 mb-4"
 				>
-					<p class="text-base text-gray-900">
+					<p class="text-base text-ink-gray-9">
 						<span class="font-medium">{{
 							Object.values(serverPlanTypes)[0].title
 						}}</span>
 						machines are available.
 					</p>
 
-					<p class="text-base text-gray-600">
+					<p class="text-base text-ink-gray-6">
 						{{ Object.values(serverPlanTypes)[0].description }}
 					</p>
 				</div>

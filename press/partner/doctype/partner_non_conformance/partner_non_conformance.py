@@ -41,4 +41,5 @@ class PartnerNonConformance(Document):
 		"nc_statement",
 		"auditor",
 		"audit_date",
+		"partner_audit",
 	)

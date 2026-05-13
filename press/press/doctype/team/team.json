@@ -44,6 +44,7 @@
   "billing_address",
   "free_credits_allocated",
   "upi_autopay_enabled",
+  "is_trusted_team",
   "column_break_12",
   "address_html",
   "section_break_jzok",
@@ -698,6 +699,12 @@
    "fieldname": "upi_autopay_enabled",
    "fieldtype": "Check",
    "label": "UPI Autopay Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_trusted_team",
+   "fieldtype": "Check",
+   "label": "Is Trusted Team"
   }
  ],
  "grid_page_length": 50,
@@ -763,7 +770,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2026-03-18 15:58:34.156826",
+ "modified": "2026-04-21 15:12:39.866295",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

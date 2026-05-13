@@ -644,6 +644,7 @@ def fail_old_jobs():
 		},
 		"name",
 		limit=100,
+		order_by="RAND()",
 		pluck=True,
 	)
 	update_status(failed_jobs, "Failure")
@@ -657,6 +658,7 @@ def fail_old_jobs():
 		},
 		"name",
 		limit=100,
+		order_by="RAND()",
 		pluck=True,
 	)
 

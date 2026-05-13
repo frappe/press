@@ -21,10 +21,10 @@
 						v-model="searchQuery"
 					>
 						<template #prefix>
-							<lucide-search class="h-4 w-4 text-gray-500" />
+							<lucide-search class="h-4 w-4 text-ink-gray-5" />
 						</template>
 						<template #suffix>
-							<span class="text-sm text-gray-500" v-if="searchQuery">
+							<span class="text-sm text-ink-gray-5" v-if="searchQuery">
 								{{ searchQuerySummary }}
 							</span>
 						</template>
@@ -43,12 +43,12 @@
 					v-if="options.experimental"
 					text="This is an experimental feature"
 				>
-					<div class="rounded-md bg-purple-100 p-1.5">
+					<div class="rounded-md  bg-surface-pink-1 p-1.5">
 						<lucide-flask-conical class="h-4 w-4 text-purple-500" />
 					</div>
 				</Tooltip>
 				<Tooltip v-if="options.documentation" text="View documentation">
-					<div class="rounded-md bg-gray-100 p-1.5">
+					<div class="rounded-md bg-surface-gray-2 p-1.5">
 						<a :href="options.documentation" target="_blank">
 							<lucide-help-circle class="h-4 w-4" />
 						</a>
@@ -108,7 +108,7 @@
 				<template #cell="{ item, row, column }">
 					<ObjectListCell
 						:class="[
-							column == columns[0] ? ' text-gray-900' : ' text-gray-700',
+							column == columns[0] ? ' text-ink-gray-9' : ' text-ink-gray-7',
 						]"
 						:row="row"
 						:column="column"
@@ -118,7 +118,7 @@
 			</ListView>
 			<div class="px-5" v-if="filteredRows.length === 0">
 				<div
-					class="text-center text-sm leading-10 text-gray-500 pb-[1.75rem]"
+					class="text-center text-sm leading-10 text-ink-gray-5 pb-[1.75rem]"
 					v-if="isLoading"
 				>
 					Loading...
@@ -128,7 +128,7 @@
 				</div>
 				<div
 					v-else
-					class="text-center text-sm leading-10 text-gray-500 pb-[1.75rem]"
+					class="text-center text-sm leading-10 text-ink-gray-5 pb-[1.75rem]"
 				>
 					{{ emptyStateMessage }}
 				</div>
@@ -136,8 +136,7 @@
 			<div
 				class="p-2 text-right"
 				:class="{
-					'border-t bg-white bottom-0 sticky':
-						$list?.next && $list?.hasNextPage,
+					'bg-surface-white bottom-0 sticky': $list?.next && $list?.hasNextPage,
 				}"
 				v-if="$list"
 			>

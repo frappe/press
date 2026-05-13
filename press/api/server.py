@@ -859,8 +859,21 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 
 @frappe.whitelist()
 def play(play):
-	play = frappe.get_doc("Ansible Play", play)
-	play = play.as_dict()
+	play_doc = frappe.get_doc("Ansible Play", play)
+	play_team = None
+
+	if play_doc.server:
+		server_type = play_doc.server_type
+		if server_type == "Server":
+			play_team = frappe.db.get_value("Server", play_doc.server, "team")
+		elif server_type == "Database Server":
+			play_team = frappe.db.get_value("Database Server", play_doc.server, "team")
+
+	current_team = get_current_team()
+	if play_team and play_team != current_team:
+		frappe.throw("Not permitted to access this play", frappe.PermissionError)
+
+	play = play_doc.as_dict()
 	whitelisted_fields = [
 		"name",
 		"play",

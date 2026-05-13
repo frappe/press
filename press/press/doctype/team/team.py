@@ -27,6 +27,7 @@ from press.utils.billing import (
 	is_frappe_auth_disabled,
 	process_micro_debit_test_charge,
 )
+from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
 
 if TYPE_CHECKING:
@@ -83,6 +84,7 @@ class Team(Document):
 		is_developer: DF.Check
 		is_frappe_compute_internal_user: DF.Check
 		is_saas_user: DF.Check
+		is_trusted_team: DF.Check
 		is_us_eu: DF.Check
 		last_used_team: DF.Link | None
 		monthly_alert_threshold: DF.Currency
@@ -158,6 +160,7 @@ class Team(Document):
 		"hybrid_servers_enabled",
 		"relaxed_permissions",
 		"upi_autopay_enabled",
+		"default_razorpay_mandate",
 	)
 
 	def get_doc(self, doc):
@@ -397,13 +400,15 @@ class Team(Document):
 
 	@staticmethod
 	def create_user(first_name=None, last_name=None, email=None, password=None, role=None):
+		# These roles are basic and necessary for every user.
+		basic_roles = ("Press Admin", "Press Member")
 		user = frappe.new_doc("User")
 		user.first_name = first_name
 		user.last_name = last_name
 		user.email = email
 		user.owner = email
 		user.new_password = password
-		user.append_roles(role)
+		user.append_roles(role, *basic_roles)
 		user.flags.no_welcome_mail = True
 		user.save(ignore_permissions=True)
 		return user
@@ -562,6 +567,9 @@ class Team(Document):
 		):
 			self.update_billing_details_on_frappeio()
 
+		if self.has_value_changed("is_trusted_team"):
+			frappe.cache().hdel("setup_intent", self.name)
+
 	def update_draft_invoice_payment_mode(self):
 		if self.has_value_changed("payment_mode"):
 			draft_invoices = frappe.get_all(
@@ -582,6 +590,10 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def impersonate(self, member, reason):
+		frappe.only_for("System Manager")
+		member_team = frappe.db.get_value("Team Member", member, "parent")
+		if member_team != self.name:
+			frappe.throw("Member does not belong to this team", frappe.PermissionError)
 		user = frappe.db.get_value("Team Member", member, "user")
 		impersonation = frappe.get_doc(
 			{
@@ -1153,8 +1165,10 @@ class Team(Document):
 		return None
 
 	def is_payment_mode_set(self):
-		if self.payment_mode in ("Prepaid Credits", "Paid By Partner") or (
-			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
+		if (
+			self.payment_mode in ("Prepaid Credits", "Paid By Partner")
+			or (self.payment_mode == "Card" and self.default_payment_method and self.billing_address)
+			or (self.payment_mode == "UPI Autopay" and self.default_razorpay_mandate)
 		):
 			return True
 		return False
@@ -1336,7 +1350,7 @@ class Team(Document):
 		message = f"Failed Invoice Payment [{invoice}]({invoice_url}) of Partner: [{self.name}]({team_url})"
 		TelegramMessage.enqueue(message=message)
 
-	def send_email_for_failed_upi_payment(self, invoice, error_reason=None, upi_vpa=None):
+	def send_email_for_failed_upi_payment(self, invoice=None, error_reason=None, upi_vpa=None):
 		if isinstance(invoice, str):
 			invoice = frappe.get_doc("Invoice", invoice)
 
@@ -1349,7 +1363,7 @@ class Team(Document):
 			template="payment_failed_upi_autopay",
 			args={
 				"subject": subject,
-				"amount": invoice.get_formatted("amount_due_with_tax"),
+				"amount": invoice.get_formatted("amount_due_with_tax") if invoice else None,
 				"upi_vpa": upi_vpa,
 				"error_reason": error_reason,
 				"upi_autopay_link": frappe.utils.get_url("/dashboard/billing/upi-autopay"),
@@ -1786,6 +1800,49 @@ def send_budget_alert_email(team_info, invoice):
 	except Exception as e:
 		frappe.log_error(f"Failed to send budget alert email: {team_info['user']}", {e})
 		return False
+
+
+def auto_trust_teams_with_consecutive_paid_invoices():
+	"""Mark teams as trusted if their last 3 subscription invoices are all Paid."""
+	Invoice = frappe.qb.DocType("Invoice")
+	Team = frappe.qb.DocType("Team")
+
+	# Only consider non-trusted teams with at least 3 paid subscription invoices
+	teams_with_paid_invoices = (
+		frappe.qb.from_(Invoice)
+		.join(Team)
+		.on(Invoice.team == Team.name)
+		.select(Invoice.team)
+		.where(Invoice.type == "Subscription")
+		.where(Invoice.status == "Paid")
+		.where(Team.is_trusted_team == 0)
+		.where(Team.enabled == 1)
+		.groupby(Invoice.team)
+		.having(Count("*") >= 3)
+	).run(as_dict=True)
+
+	team_names = [t.team for t in teams_with_paid_invoices]
+	if not team_names:
+		return
+
+	trusted_teams = []
+	for team_name in team_names:
+		if has_job_timeout_exceeded():
+			return
+
+		# Fetch last 3 subscription invoices ordered by period_end desc
+		last_3 = frappe.db.get_all(
+			"Invoice",
+			filters={"team": team_name, "type": "Subscription"},
+			fields=["status"],
+			order_by="period_end desc",
+			limit=3,
+		)
+		if len(last_3) == 3 and all(inv.status == "Paid" for inv in last_3):
+			trusted_teams.append(team_name)
+
+	if trusted_teams:
+		frappe.db.set_value("Team", {"name": ("in", trusted_teams)}, "is_trusted_team", 1)
 
 
 def auto_enable_ssh_access_for_7_days_older_teams():

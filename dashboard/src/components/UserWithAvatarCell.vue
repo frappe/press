@@ -4,10 +4,10 @@
 			<Avatar :image="avatarImage" :label="fullName" size="lg" />
 		</div>
 		<div>
-			<div class="text-sm font-medium text-gray-900">
+			<div class="text-sm font-medium text-ink-gray-9">
 				{{ fullName }}
 			</div>
-			<div class="mt-0.5 text-sm text-gray-600">
+			<div class="mt-0.5 text-sm text-ink-gray-6">
 				{{ email }}
 			</div>
 		</div>

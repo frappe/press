@@ -6,6 +6,11 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "general_section",
+  "enable_audit_actions",
+  "audit_bench_path",
+  "column_break_wvgs",
+  "send_report_to_reviewer",
   "featured_apps_section",
   "featured_apps",
   "release_auto_approval_section",
@@ -40,12 +45,41 @@
    "fieldtype": "Table",
    "label": "Auto Release Teams",
    "options": "Auto Release Team"
+  },
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "Audit Settings"
+  },
+  {
+   "default": "0",
+   "description": "Feature flag which gives power to the Marketplace Auditor to take actions based on audit results.",
+   "fieldname": "enable_audit_actions",
+   "fieldtype": "Check",
+   "label": "Enable Audit Actions"
+  },
+  {
+   "fieldname": "column_break_wvgs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Adds reviewer to CC while sending the report.",
+   "fieldname": "send_report_to_reviewer",
+   "fieldtype": "Check",
+   "label": "Send report to reviewer"
+  },
+  {
+   "description": "Save the bench path to run semgrep inside the bench environment.",
+   "fieldname": "audit_bench_path",
+   "fieldtype": "Data",
+   "label": "Audit Bench Path"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-20 20:10:09.572230",
+ "modified": "2026-04-27 10:59:36.427387",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace Settings",

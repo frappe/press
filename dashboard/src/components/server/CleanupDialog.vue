@@ -9,7 +9,7 @@
 		<template #body-content>
 			<div
 				v-if="$resources?.cleanupSpaceEstimation?.loading"
-				class="flex h-80 w-full items-center justify-center gap-2 text-base text-gray-700"
+				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 			>
 				<Spinner class="w-4" /> Analyzing ...
 			</div>
@@ -20,7 +20,7 @@
 			>
 				Failed to fetch cleanup data.
 			</div>
-			<div v-else-if="parsedData" class="flex flex-col gap-4 text-gray-800">
+			<div v-else-if="parsedData" class="flex flex-col gap-4 text-ink-gray-8">
 				<AlertBanner
 					title="Force cleanup is only allowed if the total reclaimable space is more than or equal to 500MB."
 					type="info"

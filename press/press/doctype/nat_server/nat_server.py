@@ -26,7 +26,7 @@ class NATServer(BaseServer):
 		is_server_setup: DF.Check
 		is_static_ip: DF.Check
 		private_ip: DF.Data | None
-		provider: DF.Literal["AWS EC2"]
+		provider: DF.Literal["AWS EC2", "Frappe Compute"]
 		root_public_key: DF.Code | None
 		secondary_private_ip: DF.Data | None
 		ssh_port: DF.Data | None

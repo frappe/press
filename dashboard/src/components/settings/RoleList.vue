@@ -17,8 +17,9 @@
 		<Switch
 			v-model="relaxedPermissions"
 			label="Relaxed Permissions"
-			description="Users without a role can access resources without restrictions if this feature is enabled. Use with caution. This will be deprecated in the future and removed eventually. Please prefer creating roles and assigning users to them for better access control."
-			class="border rounded px-5 py-4 bg-yellow-50"
+			description="Users without a role can access resources without restrictions if this feature is enabled.
+      Use with caution. This will be deprecated in the future and removed eventually. Please prefer creating roles and assigning users to them for better access control."
+			class="rounded px-5 py-4 bg-surface-amber-2"
 		/>
 		<div class="grid grid-cols-3 gap-4 text-base">
 			<RouterLink
@@ -31,7 +32,7 @@
 				}"
 			>
 				<div
-					class="px-5 py-4 space-y-3 rounded shadow cursor-pointer hover:shadow-lg transition"
+					class="p-4 space-y-3 rounded shadow dark:border cursor-pointer hover:shadow-lg transition"
 				>
 					<div class="font-medium h-6">{{ role.title }}</div>
 					<div class="h-6 flex flex-wrap gap-1">
@@ -52,12 +53,12 @@
 								:placement="'top'"
 							>
 								<Avatar
-									:shape="'circle'"
+									shape="circle"
 									:ref_for="true"
 									:image="user.user_image"
 									:label="user.full_name"
 									size="lg"
-									class="border border-white"
+									class="border border-transparent"
 								/>
 							</Tooltip>
 							<div

@@ -23,12 +23,12 @@
 				v-if="this.$resources?.migrationOptions?.loading"
 				class="flex flex-col items-center justify-center h-[200px]"
 			>
-				<Spinner class="h-4 w-4 text-gray-600" />
+				<Spinner class="h-4 w-4 text-ink-gray-6" />
 			</div>
 			<div v-else class="flex flex-col gap-3">
 				<!-- Chose Migration Mode -->
 				<div class="flex flex-col gap-2">
-					<p class="text-base text-gray-800">Select Migration Type</p>
+					<p class="text-base text-ink-gray-8">Select Migration Type</p>
 					<FormControl
 						type="select"
 						:options="migrationChoices"
@@ -57,12 +57,12 @@
 				>
 					<!-- Choose Bench Type -->
 					<div
-						class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
+						class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
 					>
 						<div
 							class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"
 							:class="{
-								'bg-gray-100': benchMovementType == 'Create A New Bench',
+								'bg-surface-gray-2': benchMovementType == 'Create A New Bench',
 							}"
 							@click="benchMovementType = 'Create A New Bench'"
 						>
@@ -71,7 +71,7 @@
 						<div
 							class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"
 							:class="{
-								'bg-gray-100': benchMovementType == 'Move To Existing Bench',
+								'bg-surface-gray-2': benchMovementType == 'Move To Existing Bench',
 							}"
 							@click="benchMovementType = 'Move To Existing Bench'"
 						>
@@ -84,7 +84,7 @@
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Move To Existing Bench'"
 					>
-						<p class="text-sm text-gray-700">Select Bench</p>
+						<p class="text-sm text-ink-gray-7">Select Bench</p>
 						<FormControl
 							type="combobox"
 							:options="
@@ -109,7 +109,7 @@
 							selectedReleaseGroupToMoveTo
 						"
 					>
-						<p class="text-sm text-gray-700">Select Server</p>
+						<p class="text-sm text-ink-gray-7">Select Server</p>
 						<FormControl
 							type="combobox"
 							:options="
@@ -131,7 +131,7 @@
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Create A New Bench'"
 					>
-						<p class="text-sm text-gray-700">Provide New Bench Name</p>
+						<p class="text-sm text-ink-gray-7">Provide New Bench Name</p>
 						<FormControl
 							type="text"
 							size="md"
@@ -147,7 +147,7 @@
 						class="flex flex-col gap-2"
 						v-if="benchMovementType == 'Create A New Bench'"
 					>
-						<p class="text-sm text-gray-700">Select Server Type</p>
+						<p class="text-sm text-ink-gray-7">Select Server Type</p>
 						<FormControl
 							type="select"
 							:options="[
@@ -176,7 +176,7 @@
 							selectedServerType == 'Dedicated Server'
 						"
 					>
-						<p class="text-sm text-gray-700">Select Server</p>
+						<p class="text-sm text-ink-gray-7">Select Server</p>
 						<FormControl
 							type="combobox"
 							:options="
@@ -201,7 +201,7 @@
 				>
 					<!-- Chose The Region -->
 					<div class="flex flex-col gap-2">
-						<p class="text-sm text-gray-700">Select Region</p>
+						<p class="text-sm text-ink-gray-7">Select Region</p>
 						<FormControl
 							type="combobox"
 							:options="
@@ -219,7 +219,7 @@
 
 						<p
 							v-if="!$site.doc.group_public"
-							class="mt-1 text-sm text-gray-600"
+							class="mt-1 text-sm text-ink-gray-6"
 							:showIcon="false"
 						>
 							If the region you're looking for isn't available, please follow
@@ -244,7 +244,7 @@
 
 				<!-- Scheduling Option -->
 				<div v-if="showSchedulingOption" class="flex flex-col gap-2">
-					<p class="text-sm text-gray-700">Choose Scheduled Time</p>
+					<p class="text-sm text-ink-gray-7">Choose Scheduled Time</p>
 					<DateTimeControl v-model="scheduledTime" :hideLabel="true" />
 				</div>
 
@@ -255,10 +255,14 @@
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource, Select, Checkbox } from 'frappe-ui';
+import {
+	getCachedDocumentResource,
+	Select,
+	Checkbox,
+	FormControl,
+} from 'frappe-ui';
 import AlertBanner from '../AlertBanner.vue';
 import GenericList from '../GenericList.vue';
-import FormControl from 'frappe-ui/src/components/FormControl/FormControl.vue';
 import { dayjsIST } from '../../utils/dayjs';
 
 export default {
