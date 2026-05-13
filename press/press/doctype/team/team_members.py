@@ -18,8 +18,8 @@ def get_members(team: str):
 		.select(
 			Member.name,
 			Member.creation.as_("date"),
+			Member.role,
 			ValueWrapper("Active").as_("status"),
-			ValueWrapper("Developer").as_("role"),
 			User.email,
 			User.full_name,
 			User.user_image,
