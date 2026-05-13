@@ -797,6 +797,8 @@ class DeployCandidateBuild(Document):
 			)
 
 		self.candidate._set_additional_packages()
+		self.candidate._set_container_mounts()
+
 		dockerfile = self._generate_dockerfile()
 		# Add build steps based on dockerfile checkpoints before starting the build
 		self.add_build_steps(dockerfile)
