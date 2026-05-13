@@ -246,10 +246,12 @@ class Team(Document):
 			return
 		if self.is_team_owner() or self.is_admin_user():
 			return
-		message = _(
-			"Only team owner or admins can make changes to relaxed permissions. Please contact your team admin for the same."
+		frappe.throw(
+			_(
+				"Only team owner or admins can make changes to relaxed permissions. Please contact your team admin for the same."
+			),
+			frappe.PermissionError,
 		)
-		frappe.throw(message, frappe.PermissionError)
 
 	def perm_team_members(self):
 		"""
@@ -268,7 +270,8 @@ class Team(Document):
 		frappe.throw(
 			_(
 				"Only team owner or admins can make changes to team members. Please contact your team admin for the same."
-			)
+			),
+			frappe.PermissionError,
 		)
 
 	def validate(self):
