@@ -159,6 +159,17 @@ const progress = (promise, msgLoading, msgSuccess) => {
 									row.role,
 								);
 							}
+							if (!session.isTeamAdmin) {
+								return h(
+									Badge,
+									{
+										label: row.role,
+										theme: 'blue',
+										variant: 'subtle',
+									},
+									row.role,
+								);
+							}
 							return h(
 								Select,
 								{
