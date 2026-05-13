@@ -61,6 +61,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
+	from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 	from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
@@ -2119,8 +2120,9 @@ class BaseServer(Document, TagHelpers):
 				if not mount:
 					mount = find(
 						self.mounts,
-						lambda x: x.name
-						== row.get("item", {}).get("item", {}).get("original_item", {}).get("name"),
+						lambda x: (
+							x.name == row.get("item", {}).get("item", {}).get("original_item", {}).get("name")
+						),
 					)
 				if not mount:
 					continue
@@ -2520,7 +2522,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			certificate_name = frappe.db.get_value(
 				"TLS Certificate", {"wildcard": True, "domain": domain.domain}, "name"
 			)
-			certificate = frappe.get_doc("TLS Certificate", certificate_name)
+
+			certificate: TLSCertificate = frappe.get_doc("TLS Certificate", certificate_name)
+			if not (certificate.private_key and certificate.full_chain and certificate.intermediate_chain):
+				continue
+
 			wildcard_domains.append(
 				{
 					"domain": domain.domain,
