@@ -87,14 +87,12 @@ const updateTeam = createResource({
 });
 
 const updateRole = (member: string, role: string) => {
-	for (let m of team.doc.team_members) {
-		if (m.name === member) {
-			m.role = role;
-		}
-	}
 	updateTeam.submit({
 		fieldname: "team_members",
-		value: team.doc.team_members,
+		value: team.doc.team_members.map((m) => {
+			m.role = m.name === member ? role : m.role;
+			return m;
+		}),
 	});
 };
 
