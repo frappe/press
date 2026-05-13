@@ -222,7 +222,7 @@ class Bench(Document):
 	def get_bench_name(self, candidate_name, server_name, server_name_abbreviation):
 		bench_name = f"bench-{candidate_name}-{server_name}"
 
-		if len(bench_name) > 32:
+		if len(bench_name) > 28:  # hard limit is 32. 30 to allow -1, -2, etc in next line
 			bench_name = f"bench-{candidate_name}-{server_name_abbreviation}"
 
 		return append_number_if_name_exists("Bench", bench_name, separator="-")
