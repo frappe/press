@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
  "actions": [],
  "creation": "2022-02-08 15:13:45.929287",
  "doctype": "DocType",
@@ -417,3 +418,396 @@
  "states": [],
  "track_changes": 1
 }
+=======
+	"actions": [],
+	"creation": "2022-02-08 15:13:45.929287",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"status",
+		"server",
+		"database_server",
+		"managed_database_service",
+		"column_break_3",
+		"staging",
+		"group",
+		"team",
+		"cluster",
+		"deploy_section",
+		"candidate",
+		"build",
+		"resetting_bench",
+		"last_inplace_update_failed",
+		"column_break_gxqm",
+		"docker_image",
+		"inplace_update_docker_image",
+		"section_break_6",
+		"apps",
+		"configuration_section",
+		"background_workers",
+		"gunicorn_workers",
+		"gunicorn_threads_per_worker",
+		"port_offset",
+		"auto_scale_workers",
+		"skip_memory_limits",
+		"memory_high",
+		"memory_max",
+		"memory_swap",
+		"vcpu",
+		"column_break_11",
+		"config",
+		"bench_config",
+		"ssh_section",
+		"is_ssh_proxy_setup",
+		"failures_section",
+		"last_archive_failure",
+		"feature_flags_section",
+		"merge_all_rq_queues",
+		"merge_default_and_short_rq_queues",
+		"use_rq_workerpool",
+		"is_code_server_enabled",
+		"column_break_mtyb",
+		"environment_variables",
+		"mounts_section",
+		"mounts"
+	],
+	"fields": [
+		{
+			"fieldname": "server",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Server",
+			"options": "Server",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fetch_from": "candidate.group",
+			"fetch_if_empty": 1,
+			"fieldname": "group",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Release Group",
+			"options": "Release Group",
+			"reqd": 1,
+			"set_only_once": 1
+		},
+		{
+			"fieldname": "candidate",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Deploy Candidate",
+			"options": "Deploy Candidate",
+			"reqd": 1,
+			"search_index": 1,
+			"set_only_once": 1
+		},
+		{
+			"default": "Pending",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Status",
+			"options": "Pending\nInstalling\nUpdating\nActive\nBroken\nArchived",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "port_offset",
+			"fieldtype": "Int",
+			"label": "Port Offset",
+			"read_only": 1
+		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
+		{
+			"fieldname": "section_break_6",
+			"fieldtype": "Section Break",
+			"label": "Apps"
+		},
+		{
+			"default": "2",
+			"fieldname": "gunicorn_workers",
+			"fieldtype": "Int",
+			"label": "Gunicorn Workers",
+			"reqd": 1
+		},
+		{ "fieldname": "column_break_11", "fieldtype": "Column Break" },
+		{
+			"default": "1",
+			"fieldname": "auto_scale_workers",
+			"fieldtype": "Check",
+			"label": "Auto Scale Workers"
+		},
+		{
+			"fetch_from": "server.database_server",
+			"fieldname": "database_server",
+			"fieldtype": "Link",
+			"label": "Database Server",
+			"options": "Database Server",
+			"read_only": 1
+		},
+		{
+			"default": "1",
+			"fieldname": "background_workers",
+			"fieldtype": "Int",
+			"label": "Background Workers",
+			"reqd": 1
+		},
+		{
+			"fieldname": "bench_config",
+			"fieldtype": "Code",
+			"label": "Bench Configuration",
+			"options": "JSON",
+			"read_only": 1
+		},
+		{
+			"fieldname": "config",
+			"fieldtype": "Code",
+			"label": "Common Site Configuration",
+			"options": "JSON",
+			"read_only": 1
+		},
+		{
+			"collapsible": 1,
+			"collapsible_depends_on": "true",
+			"fieldname": "configuration_section",
+			"fieldtype": "Section Break",
+			"label": "Configuration"
+		},
+		{
+			"fieldname": "apps",
+			"fieldtype": "Table",
+			"label": "Apps",
+			"options": "Bench App",
+			"read_only": 1
+		},
+		{
+			"fieldname": "docker_image",
+			"fieldtype": "Data",
+			"label": "Docker Image",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fetch_from": "server.cluster",
+			"fieldname": "cluster",
+			"fieldtype": "Link",
+			"label": "Cluster",
+			"options": "Cluster",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fetch_from": "group.team",
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"label": "Team",
+			"options": "Team",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "staging",
+			"fieldtype": "Check",
+			"in_standard_filter": 1,
+			"label": "Staging"
+		},
+		{
+			"collapsible": 1,
+			"fieldname": "ssh_section",
+			"fieldtype": "Section Break",
+			"label": "SSH"
+		},
+		{
+			"default": "0",
+			"fieldname": "is_ssh_proxy_setup",
+			"fieldtype": "Check",
+			"label": "Is SSH Proxy Setup",
+			"read_only": 1
+		},
+		{
+			"collapsible": 1,
+			"fieldname": "failures_section",
+			"fieldtype": "Section Break",
+			"label": "Failures"
+		},
+		{
+			"fieldname": "last_archive_failure",
+			"fieldtype": "Datetime",
+			"label": "Last Archive Failure",
+			"read_only": 1
+		},
+		{
+			"collapsible": 1,
+			"fieldname": "feature_flags_section",
+			"fieldtype": "Section Break",
+			"label": "Feature Flags"
+		},
+		{
+			"fieldname": "environment_variables",
+			"fieldtype": "Table",
+			"label": "Environment Variables",
+			"options": "Bench Variable"
+		},
+		{
+			"default": "0",
+			"fetch_from": "candidate.merge_all_rq_queues",
+			"fieldname": "merge_all_rq_queues",
+			"fieldtype": "Check",
+			"label": "Merge All RQ Queues",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fetch_from": "candidate.merge_default_and_short_rq_queues",
+			"fieldname": "merge_default_and_short_rq_queues",
+			"fieldtype": "Check",
+			"label": "Merge Default and Short RQ Queues",
+			"read_only": 1
+		},
+		{ "fieldname": "column_break_mtyb", "fieldtype": "Column Break" },
+		{
+			"default": "0",
+			"depends_on": "eval: !doc.skip_memory_limits;",
+			"fieldname": "memory_high",
+			"fieldtype": "Int",
+			"label": "Memory High (MB)"
+		},
+		{
+			"default": "0",
+			"depends_on": "eval: !doc.skip_memory_limits;",
+			"fieldname": "memory_max",
+			"fieldtype": "Int",
+			"label": "Memory Max (MB)"
+		},
+		{
+			"default": "0",
+			"fieldname": "vcpu",
+			"fieldtype": "Int",
+			"label": "vCPU"
+		},
+		{
+			"depends_on": "eval: !doc.skip_memory_limits;",
+			"fieldname": "memory_swap",
+			"fieldtype": "Int",
+			"label": "Memory Swap (MB)"
+		},
+		{
+			"default": "0",
+			"fieldname": "skip_memory_limits",
+			"fieldtype": "Check",
+			"label": "Skip Memory Limits"
+		},
+		{
+			"default": "0",
+			"description": "Setting this to non-zero value will set Gunicorn worker class to gthread.",
+			"fetch_from": "group.gunicorn_threads_per_worker",
+			"fieldname": "gunicorn_threads_per_worker",
+			"fieldtype": "Int",
+			"label": "Gunicorn Threads Per Worker",
+			"non_negative": 1
+		},
+		{
+			"default": "0",
+			"fetch_from": "team.is_code_server_user",
+			"fieldname": "is_code_server_enabled",
+			"fieldtype": "Check",
+			"label": "Is Code Server Enabled",
+			"read_only": 1
+		},
+		{
+			"collapsible": 1,
+			"fieldname": "mounts_section",
+			"fieldtype": "Section Break",
+			"label": "Mounts"
+		},
+		{ "fieldname": "mounts", "fieldtype": "Table", "options": "Bench Mount" },
+		{
+			"default": "0",
+			"fetch_from": "candidate.use_rq_workerpool",
+			"fieldname": "use_rq_workerpool",
+			"fieldtype": "Check",
+			"label": "Use RQ WorkerPool"
+		},
+		{
+			"fetch_from": "server.managed_database_service",
+			"fieldname": "managed_database_service",
+			"fieldtype": "Link",
+			"label": "Managed Database Service",
+			"options": "Managed Database Service"
+		},
+		{
+			"fieldname": "deploy_section",
+			"fieldtype": "Section Break",
+			"label": "Deploy"
+		},
+		{ "fieldname": "column_break_gxqm", "fieldtype": "Column Break" },
+		{
+			"depends_on": "eval: doc.inplace_update_docker_image",
+			"description": "New image created when running an in place update.",
+			"fieldname": "inplace_update_docker_image",
+			"fieldtype": "Data",
+			"label": "In Place Update Docker Image",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"depends_on": "eval: doc.resetting_bench",
+			"description": "Attempting to reset bench after failed In Place Update.",
+			"fieldname": "resetting_bench",
+			"fieldtype": "Check",
+			"label": "Resetting Bench",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"depends_on": "eval: doc.last_inplace_update_failed",
+			"description": "Previous attempt at updating bench in place failed. Only regular deploy should be attempted.",
+			"fieldname": "last_inplace_update_failed",
+			"fieldtype": "Check",
+			"label": "Last In Place Update Failed",
+			"read_only": 1
+		},
+		{
+			"fieldname": "build",
+			"fieldtype": "Link",
+			"label": "Build",
+			"options": "Deploy Candidate Build",
+			"read_only": 1
+		}
+	],
+	"links": [],
+	"modified": "2026-02-23 20:57:55.325786",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Bench",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 }
+	],
+	"row_format": "Dynamic",
+	"rows_threshold_for_grid_search": 20,
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
+}
+>>>>>>> a1d9ca95e (fix(backend): Remove duplicate `Press User` role)

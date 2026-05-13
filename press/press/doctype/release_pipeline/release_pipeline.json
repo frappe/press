@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
  "actions": [],
  "allow_rename": 1,
  "creation": "2026-03-26 13:28:36.481790",
@@ -109,3 +110,104 @@
  "sort_order": "DESC",
  "states": []
 }
+=======
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2026-03-26 13:28:36.481790",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"team",
+		"release_group",
+		"status",
+		"workflow",
+		"pipeline_builds",
+		"is_user_addressable_failure"
+	],
+	"fields": [
+		{
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Team",
+			"options": "Team",
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "release_group",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Release Group",
+			"options": "Release Group",
+			"read_only": 1,
+			"search_index": 1
+		},
+		{
+			"default": "Pending",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Status",
+			"options": "Pending\nRunning\nPartial Success\nSuccess\nFailure\nRetrying"
+		},
+		{
+			"fieldname": "workflow",
+			"fieldtype": "Link",
+			"label": "Workflow",
+			"options": "Press Workflow"
+		},
+		{
+			"fieldname": "pipeline_builds",
+			"fieldtype": "Table",
+			"label": "Pipeline Builds",
+			"options": "Release Pipeline Build"
+		},
+		{
+			"default": "0",
+			"fieldname": "is_user_addressable_failure",
+			"fieldtype": "Check",
+			"label": "Is User Addressable Failure",
+			"read_only": 1
+		}
+	],
+	"grid_page_length": 50,
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-04-26 11:25:35.392526",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Release Pipeline",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press User",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"rows_threshold_for_grid_search": 20,
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}
+>>>>>>> a1d9ca95e (fix(backend): Remove duplicate `Press User` role)

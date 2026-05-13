@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
  "actions": [],
  "creation": "2020-01-13 15:39:20.221775",
  "doctype": "DocType",
@@ -247,3 +248,233 @@
  "states": [],
  "track_changes": 1
 }
+=======
+	"actions": [],
+	"creation": "2020-01-13 15:39:20.221775",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"app",
+		"source",
+		"team",
+		"public",
+		"cloned",
+		"column_break_3",
+		"hash",
+		"author",
+		"timestamp",
+		"message",
+		"validation_section",
+		"invalid_release",
+		"invalidation_reason",
+		"clone_section",
+		"clone_directory",
+		"column_break_9",
+		"code_server_url",
+		"section_break_26",
+		"output",
+		"status"
+	],
+	"fields": [
+		{
+			"fieldname": "hash",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Hash",
+			"read_only": 1,
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "message",
+			"fieldtype": "Code",
+			"label": "Message",
+			"read_only": 1
+		},
+		{
+			"fieldname": "author",
+			"fieldtype": "Data",
+			"label": "Author",
+			"read_only": 1
+		},
+		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
+		{
+			"fieldname": "code_server_url",
+			"fieldtype": "Text",
+			"label": "Code Server URL",
+			"read_only": 1
+		},
+		{
+			"fieldname": "output",
+			"fieldtype": "Code",
+			"label": "Output",
+			"read_only": 1
+		},
+		{ "fieldname": "section_break_26", "fieldtype": "Section Break" },
+		{
+			"fieldname": "source",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Source",
+			"options": "App Source",
+			"read_only": 1,
+			"reqd": 1,
+			"search_index": 1
+		},
+		{ "fieldname": "column_break_9", "fieldtype": "Column Break" },
+		{
+			"default": "0",
+			"fieldname": "cloned",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Cloned",
+			"read_only": 1
+		},
+		{
+			"fieldname": "clone_directory",
+			"fieldtype": "Text",
+			"label": "Clone Directory",
+			"read_only": 1
+		},
+		{
+			"fieldname": "app",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "App",
+			"options": "App",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "clone_section",
+			"fieldtype": "Section Break",
+			"label": "Clone"
+		},
+		{
+			"fetch_from": "source.team",
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"label": "Team",
+			"options": "Team",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"default": "0",
+			"fetch_from": "source.public",
+			"fieldname": "public",
+			"fieldtype": "Check",
+			"label": "Public",
+			"read_only": 1
+		},
+		{
+			"default": "Draft",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Status",
+			"options": "Draft\nApproved\nAwaiting Approval\nRejected\nYanked"
+		},
+		{
+			"fieldname": "timestamp",
+			"fieldtype": "Datetime",
+			"label": "Timestamp",
+			"read_only": 1
+		},
+		{
+			"fieldname": "validation_section",
+			"fieldtype": "Section Break",
+			"label": "Validation"
+		},
+		{
+			"default": "0",
+			"depends_on": "eval:doc.invalid_release",
+			"description": "A release is invalid if it fails validations checks. For instance if it has syntax errors.",
+			"fieldname": "invalid_release",
+			"fieldtype": "Check",
+			"label": "Invalid Release"
+		},
+		{
+			"depends_on": "eval:doc.invalid_release",
+			"fieldname": "invalidation_reason",
+			"fieldtype": "Code",
+			"label": "Invalidation Reason"
+		}
+	],
+	"in_create": 1,
+	"links": [
+		{
+			"group": "Connections",
+			"link_doctype": "Bench",
+			"link_fieldname": "release"
+		},
+		{
+			"group": "Connections",
+			"link_doctype": "Deploy Candidate",
+			"link_fieldname": "release"
+		},
+		{
+			"group": "Sources",
+			"link_doctype": "App Release Difference",
+			"link_fieldname": "source_release"
+		},
+		{
+			"group": "Destinations",
+			"link_doctype": "App Release Difference",
+			"link_fieldname": "destination_release"
+		},
+		{
+			"group": "Sources",
+			"link_doctype": "Deploy Candidate Difference",
+			"link_fieldname": "source_release"
+		},
+		{
+			"group": "Destinations",
+			"link_doctype": "Deploy Candidate Difference",
+			"link_fieldname": "destination_release"
+		}
+	],
+	"modified": "2026-02-05 12:40:24.246499",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "App Release",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{ "create": 1, "read": 1, "role": "Press User", "write": 1 },
+		{
+			"create": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Marketplace Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"rows_threshold_for_grid_search": 20,
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
+}
+>>>>>>> a1d9ca95e (fix(backend): Remove duplicate `Press User` role)

@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
  "actions": [],
  "creation": "2022-01-28 20:07:38.369240",
  "doctype": "DocType",
@@ -90,3 +91,79 @@
  "states": [],
  "track_changes": 1
 }
+=======
+	"actions": [],
+	"creation": "2022-01-28 20:07:38.369240",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": ["site", "team", "action", "reason", "job"],
+	"fields": [
+		{
+			"fieldname": "site",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Site",
+			"options": "Site",
+			"read_only": 1,
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "action",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Action",
+			"options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nClear Cache\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups\nDrop Physical Backups\nEnable Database Access\nDisable Database Access\nCreate Database User\nRemove Database User\nModify Database User Permissions\nDisable Monitoring And Alerts\nEnable Monitoring And Alerts\nAccess Offsite Backups\nArchive Notification",
+			"read_only": 1,
+			"reqd": 1,
+			"search_index": 1
+		},
+		{ "fieldname": "reason", "fieldtype": "Small Text", "label": "Reason" },
+		{
+			"fetch_from": "site.team",
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"label": "Team",
+			"options": "Team"
+		},
+		{
+			"depends_on": "eval: doc.job",
+			"fieldname": "job",
+			"fieldtype": "Link",
+			"label": "Job",
+			"options": "Agent Job"
+		}
+	],
+	"grid_page_length": 50,
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-03-04 16:45:57.739576",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Site Activity",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{ "create": 1, "role": "Press User" }
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
+}
+>>>>>>> a1d9ca95e (fix(backend): Remove duplicate `Press User` role)

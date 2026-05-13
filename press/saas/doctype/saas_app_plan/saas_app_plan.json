@@ -1,171 +1,153 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "format:SAAS-PLAN-{app}-{###}",
- "creation": "2022-03-15 11:39:32.450795",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "enabled",
-  "is_us_eu",
-  "gst_inclusive",
-  "column_break_2",
-  "is_free",
-  "section_break_3",
-  "app",
-  "section_break_6",
-  "plan",
-  "plan_title",
-  "column_break_7",
-  "site_plan",
-  "payout_percentage",
-  "annual_discount",
-  "annual_discount_inr",
-  "annual_discount_usd",
-  "section_break_8",
-  "features",
-  "section_break_11",
-  "config"
- ],
- "fields": [
-  {
-   "default": "0",
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Enabled"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_free",
-   "fieldtype": "Check",
-   "label": "Is Free"
-  },
-  {
-   "fieldname": "section_break_3",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "app",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "App",
-   "options": "Saas App",
-   "reqd": 1
-  },
-  {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Plan",
-   "options": "Site Plan",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_7",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_8",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "features",
-   "fieldtype": "Table",
-   "label": "Features",
-   "options": "Plan Feature"
-  },
-  {
-   "fieldname": "site_plan",
-   "fieldtype": "Link",
-   "label": "Site Plan",
-   "options": "Site Plan",
-   "reqd": 1
-  },
-  {
-   "fieldname": "section_break_11",
-   "fieldtype": "Section Break"
-  },
-  {
-   "description": "A json config that can be read via developer api",
-   "fieldname": "config",
-   "fieldtype": "Code",
-   "label": "Config (optional)",
-   "options": "JSON"
-  },
-  {
-   "fieldname": "payout_percentage",
-   "fieldtype": "Data",
-   "label": "Payout Percentage"
-  },
-  {
-   "fieldname": "section_break_6",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fetch_from": "plan.plan_title",
-   "fieldname": "plan_title",
-   "fieldtype": "Data",
-   "label": "Plan Title",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "is_us_eu",
-   "fieldtype": "Check",
-   "label": "US / EU"
-  },
-  {
-   "default": "0",
-   "description": "Charge gst on this plan for Indian customer",
-   "fieldname": "gst_inclusive",
-   "fieldtype": "Check",
-   "label": "GST Inclusive"
-  },
-  {
-   "fieldname": "annual_discount_inr",
-   "fieldtype": "Currency",
-   "label": "Annual Discount INR"
-  },
-  {
-   "fieldname": "annual_discount_usd",
-   "fieldtype": "Currency",
-   "label": "Annual Discount USD"
-  },
-  {
-   "default": "0",
-   "fieldname": "annual_discount",
-   "fieldtype": "Check",
-   "label": "Annual Discount"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2024-02-05 23:05:22.125111",
- "modified_by": "Administrator",
- "module": "SaaS",
- "name": "Saas App Plan",
- "naming_rule": "Expression (old style)",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "format:SAAS-PLAN-{app}-{###}",
+	"creation": "2022-03-15 11:39:32.450795",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"enabled",
+		"is_us_eu",
+		"gst_inclusive",
+		"column_break_2",
+		"is_free",
+		"section_break_3",
+		"app",
+		"section_break_6",
+		"plan",
+		"plan_title",
+		"column_break_7",
+		"site_plan",
+		"payout_percentage",
+		"annual_discount",
+		"annual_discount_inr",
+		"annual_discount_usd",
+		"section_break_8",
+		"features",
+		"section_break_11",
+		"config"
+	],
+	"fields": [
+		{
+			"default": "0",
+			"fieldname": "enabled",
+			"fieldtype": "Check",
+			"label": "Enabled"
+		},
+		{
+			"default": "0",
+			"fieldname": "is_free",
+			"fieldtype": "Check",
+			"label": "Is Free"
+		},
+		{ "fieldname": "section_break_3", "fieldtype": "Section Break" },
+		{
+			"fieldname": "app",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "App",
+			"options": "Saas App",
+			"reqd": 1
+		},
+		{
+			"fieldname": "plan",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Plan",
+			"options": "Site Plan",
+			"reqd": 1
+		},
+		{ "fieldname": "column_break_2", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_7", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_8", "fieldtype": "Section Break" },
+		{
+			"fieldname": "features",
+			"fieldtype": "Table",
+			"label": "Features",
+			"options": "Plan Feature"
+		},
+		{
+			"fieldname": "site_plan",
+			"fieldtype": "Link",
+			"label": "Site Plan",
+			"options": "Site Plan",
+			"reqd": 1
+		},
+		{ "fieldname": "section_break_11", "fieldtype": "Section Break" },
+		{
+			"description": "A json config that can be read via developer api",
+			"fieldname": "config",
+			"fieldtype": "Code",
+			"label": "Config (optional)",
+			"options": "JSON"
+		},
+		{
+			"fieldname": "payout_percentage",
+			"fieldtype": "Data",
+			"label": "Payout Percentage"
+		},
+		{ "fieldname": "section_break_6", "fieldtype": "Section Break" },
+		{
+			"fetch_from": "plan.plan_title",
+			"fieldname": "plan_title",
+			"fieldtype": "Data",
+			"label": "Plan Title",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_us_eu",
+			"fieldtype": "Check",
+			"label": "US / EU"
+		},
+		{
+			"default": "0",
+			"description": "Charge gst on this plan for Indian customer",
+			"fieldname": "gst_inclusive",
+			"fieldtype": "Check",
+			"label": "GST Inclusive"
+		},
+		{
+			"fieldname": "annual_discount_inr",
+			"fieldtype": "Currency",
+			"label": "Annual Discount INR"
+		},
+		{
+			"fieldname": "annual_discount_usd",
+			"fieldtype": "Currency",
+			"label": "Annual Discount USD"
+		},
+		{
+			"default": "0",
+			"fieldname": "annual_discount",
+			"fieldtype": "Check",
+			"label": "Annual Discount"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2024-02-05 23:05:22.125111",
+	"modified_by": "Administrator",
+	"module": "SaaS",
+	"name": "Saas App Plan",
+	"naming_rule": "Expression (old style)",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
 }
