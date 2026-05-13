@@ -229,9 +229,10 @@ class Team(Document):
 		}
 
 	def before_validate(self):
-		self.auth_relaxed_permissions()
+		self.perm_relaxed_roles()
+		self.perm_team_members()
 
-	def auth_relaxed_permissions(self):
+	def perm_relaxed_roles(self):
 		"""
 		Prevent unauthorized users from changing relaxed permissions. Only team
 		owner or admins can change relaxed permissions as it can lead to
@@ -247,6 +248,22 @@ class Team(Document):
 			"Only team owner or admins can make changes to relaxed permissions. Please contact your team admin for the same."
 		)
 		frappe.throw(message, frappe.PermissionError)
+
+	def perm_team_members(self):
+		"""
+		Prevent unauthorized users from changing team members. Only team owner
+		or admins must be able to change team members as it can lead to
+		security implications and unauthorized access to team resources.
+		"""
+		if not self.has_value_changed("team_members"):
+			return
+		if self.is_team_owner() or self.is_admin_user():
+			return
+		frappe.throw(
+			_(
+				"Only team owner or admins can make changes to team members. Please contact your team admin for the same."
+			)
+		)
 
 	def validate(self):
 		self.validate_duplicate_members()
