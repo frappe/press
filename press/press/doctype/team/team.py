@@ -32,6 +32,7 @@ from press.utils.billing import (
 )
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
+from press.utils.user import is_system_manager
 
 from .team_members import get_invitations, get_members, get_roles, remove_member
 
@@ -244,7 +245,7 @@ class Team(Document):
 			return
 		if not self.has_value_changed("relaxed_permissions"):
 			return
-		if self.is_team_owner() or self.is_admin_user():
+		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
 			return
 		frappe.throw(
 			_(
@@ -265,7 +266,7 @@ class Team(Document):
 			return
 		if not self.has_value_changed("team_members"):
 			return
-		if self.is_team_owner() or self.is_admin_user():
+		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
 			return
 		frappe.throw(
 			_(
