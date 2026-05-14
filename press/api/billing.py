@@ -255,6 +255,8 @@ def fetch_invoice_items(invoice):
 @frappe.whitelist()
 @role_guard.api("billing")
 def create_payment_intent_for_micro_debit():
+	from frappe.utils import random_string
+
 	team = get_current_team(True)
 	stripe = get_stripe()
 
@@ -262,7 +264,7 @@ def create_payment_intent_for_micro_debit():
 		"micro_debit_charge_usd" if team.currency == "USD" else "micro_debit_charge_inr"
 	)
 	amount = frappe.db.get_single_value("Press Settings", micro_debit_charge_field)
-
+	hash = random_string(10)
 	intent = stripe.PaymentIntent.create(
 		amount=int(amount * 100),
 		currency=team.currency.lower(),
@@ -272,9 +274,18 @@ def create_payment_intent_for_micro_debit():
 			"payment_for": "micro_debit_test_charge",
 		},
 		setup_future_usage="off_session",
+		payment_method_types=["card"],
 		payment_method_options={
 			"card": {
 				"request_three_d_secure": "any" if team.is_trusted_team else "automatic",
+				"mandate_options": {
+					"reference": f"Mandate-team:{team}-{hash}",
+					"amount_type": "maximum",
+					"amount": 1500000,
+					"start_date": int(frappe.utils.get_timestamp()),
+					"interval": "sporadic",
+					"supported_types": ["india"],
+				},
 			}
 		},
 	)
@@ -605,10 +616,24 @@ def payment_intent_success(payment_intent, address=None):
 		(payment_intent.get("payment_method_options") or {}).get("card", {}).get("mandate_options")
 	)
 	mandate_reference = mandate_options.get("reference") if mandate_options else None
+
+	# After confirmCardPayment with mandate_options, Stripe attaches the created mandate
+	# to the charge, not to the PaymentIntent top-level. Try in order:
+	#   1. payment_intent.mandate (set when an existing mandate is reused)
+	#   2. payment_intent.setup_intent -> SetupIntent.mandate (internal SI from setup_future_usage)
+	#   3. payment_intent.latest_charge -> Charge.mandate (where mandate ID lands after creation)
+	mandate_id = payment_intent.get("mandate")
+	if not mandate_id and payment_intent.get("setup_intent"):
+		setup_intent = stripe.SetupIntent.retrieve(payment_intent["setup_intent"])
+		mandate_id = setup_intent.get("mandate")
+	if not mandate_id and payment_intent.get("latest_charge"):
+		charge = stripe.Charge.retrieve(payment_intent["latest_charge"])
+		mandate_id = charge.get("mandate")
+
 	payment_method = team.create_payment_method(
 		payment_intent.payment_method,
 		payment_intent.id,
-		payment_intent.get("mandate"),
+		mandate_id,
 		mandate_reference,
 		set_default=True,
 		verified_with_micro_charge=True,
