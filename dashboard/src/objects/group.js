@@ -1030,6 +1030,11 @@ export default {
 			path: 'deploys/:id',
 			component: () => import('../pages/DeployCandidate.vue'),
 		},
+   	{
+			name: 'Deploy beta',
+			path: 'deployss/:id',
+			component: () => import('../pages/benches/Deploy.vue'),
+		},
 		{
 			name: 'Release Group Job',
 			path: 'jobs/:id',
