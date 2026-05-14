@@ -17,14 +17,11 @@ RECORD_FOR: dict[str, str] = {
 	"Error Log": "method",
 }
 
-Counts = TypedDict(
-	"Counts",
-	{
-		"counts": dict[str, int],
-		"date": datetime.date,
-		"total": int,
-	},
-)
+
+class Counts(TypedDict):
+	counts: dict[str, int]
+	date: datetime.date
+	total: int
 
 
 class LogCounter(Document):

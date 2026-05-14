@@ -981,6 +981,11 @@ def get_frappe_io_auth_url() -> str | None:
 	return None
 
 
+@frappe.whitelist(allow_guest=True)
+def frappe_io_login():
+	return redirect_to(get_frappe_io_auth_url() or "/")
+
+
 @frappe.whitelist()
 def get_emails():
 	team = get_current_team(get_doc=False)

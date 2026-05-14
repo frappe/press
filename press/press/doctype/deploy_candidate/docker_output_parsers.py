@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
 import typing
 from typing import Literal
 
-import dockerfile
 import frappe
 from frappe.core.utils import find
 from frappe.utils import now_datetime, rounded
@@ -211,9 +211,7 @@ def ansi_escape(text: str) -> str:
 
 
 def get_command(name: str) -> str:
-	# Strip docker flags and commands from the line
-	line = dockerfile.parse_string(name)[0]
-	command = " ".join(line.value).strip() or line.original.split(maxsplit=1)[1]
+	command = _get_run_command(name)
 	command = command.split("`#stage-", maxsplit=1)[0]
 
 	# Remove line fold slashes
@@ -225,6 +223,27 @@ def get_command(name: str) -> str:
 		splits[i] = " ".join([p.strip() for p in s.split() if len(p)])
 
 	return "\n".join([p for p in splits if len(p)])
+
+
+def _get_run_command(line: str) -> str:
+	instruction, _, value = line.partition(" ")
+	if instruction.upper() != "RUN":
+		return value
+
+	value = value.strip()
+	if value.startswith("["):
+		return value
+
+	try:
+		parts = shlex.split(value, posix=True)
+	except ValueError:
+		return value
+
+	for i, part in enumerate(parts):
+		if not part.startswith("--"):
+			return shlex.join(parts[i:])
+
+	return ""
 
 
 class StepMixin:
