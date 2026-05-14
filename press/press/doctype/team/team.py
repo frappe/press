@@ -32,6 +32,7 @@ from press.utils.billing import (
 )
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
+from press.utils.user import is_system_manager
 
 from .team_members import get_invitations, get_members, get_roles, remove_member
 
@@ -229,27 +230,54 @@ class Team(Document):
 		}
 
 	def before_validate(self):
-		self.auth_relaxed_permissions()
+		self.perm_relaxed_roles()
+		self.perm_team_members()
 
-	def auth_relaxed_permissions(self):
+	def perm_relaxed_roles(self):
 		"""
 		Prevent unauthorized users from changing relaxed permissions. Only team
 		owner or admins can change relaxed permissions as it can lead to
 		security implications.
 		"""
+		if self.flags.ignore_permissions:
+			return
 		if self.is_new():
 			return
 		if not self.has_value_changed("relaxed_permissions"):
 			return
-		if self.is_team_owner() or self.is_admin_user():
+		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
 			return
-		message = _(
-			"Only team owner or admins can make changes to relaxed permissions. Please contact your team admin for the same."
+		frappe.throw(
+			_(
+				"Only team owner or admins can make changes to relaxed permissions. Please contact your team admin for the same."
+			),
+			frappe.PermissionError,
 		)
-		frappe.throw(message, frappe.PermissionError)
+
+	def perm_team_members(self):
+		"""
+		Prevent unauthorized users from changing team members. Only team owner
+		or admins must be able to change team members as it can lead to
+		security implications and unauthorized access to team resources.
+		"""
+		if self.flags.ignore_permissions:
+			return
+		if self.is_new():
+			return
+		if not self.has_value_changed("team_members"):
+			return
+		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
+			return
+		frappe.throw(
+			_(
+				"Only team owner or admins can make changes to team members. Please contact your team admin for the same."
+			),
+			frappe.PermissionError,
+		)
 
 	def validate(self):
 		self.validate_duplicate_members()
+		self.validate_member_role()
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
@@ -258,6 +286,26 @@ class Team(Document):
 		self.validate_disable()
 		self.validate_billing_team()
 		self.reject_reenabling_team_for_banned_team()
+
+	def validate_member_role(self):
+		"""
+		Validate that the role assigned to each team member is a valid role.
+		This is to prevent any issues with role-based access control and ensure
+		that team members have the correct permissions based on their assigned
+		roles.
+		"""
+		# Get a list of valid roles for this team.
+		roles = [role["label"] for role in get_roles(self.name)]
+		# Validate that each team member has a valid role assigned.
+		for member in self.team_members:
+			# If the role is not in the list of valid roles, throw an error.
+			if member.role not in roles:
+				frappe.throw(
+					_("{0} is not a valid role. Please select a valid role for {1}").format(
+						member.role,
+						member.user,
+					)
+				)
 
 	def before_insert(self):
 		self.currency = "INR" if self.country == "India" else "USD"
