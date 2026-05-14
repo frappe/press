@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from copy import deepcopy
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final, TypeAlias, cast
 
 import frappe
 
@@ -35,7 +35,7 @@ _server_plans: Final[list[ServerPlan]] = [
 
 def get_server_plan_list(
 	filter_fn: FilterFn | None = None,
-	fields: list[str] | None = None,
+	fields: list[str] | None = None,  # TODO: enforce enabled?
 ) -> list[ServerPlan]:
 	plans = deepcopy(_server_plans) if filter_fn is None else deepcopy(list(filter(filter_fn, _server_plans)))
 
@@ -44,31 +44,36 @@ def get_server_plan_list(
 		for plan in plans:
 			plan["machine_unavailable"] = unavailable_plans.get(plan["name"], False)
 
-	role_filtered_plans = _filter_by_roles(plans)
+	role_filtered_plans: list[ServerPlan] = _filter_by_roles(plans)
 
 	if fields is None:
 		return role_filtered_plans
 
-	return [{k: v for k, v in plan.items() if k in fields} for plan in plans]
+	return cast(
+		"list[ServerPlan]", [{k: v for k, v in plan.items() if k in fields} for plan in role_filtered_plans]
+	)
 
 
 def get_server_plan_doc(
 	filter_fn: FilterFn | None = None,
-	fields: list[str] | None = None,
-) -> ServerPlan:
+	fields: list[str] | None = None,  # TODO: enforce enabled?
+) -> ServerPlan | None:
 	plans = _server_plans if filter_fn is None else list(filter(filter_fn, _server_plans))
-	doc = deepcopy(plans[0])
+	role_filtered_plans: list[ServerPlan] = _filter_by_roles(plans)
+
+	if not role_filtered_plans:
+		return None
+
+	doc = deepcopy(role_filtered_plans[0])
 
 	doc["price_per_day_inr"] = _get_price_per_day(doc, "INR")
 	doc["price_per_day_usd"] = _get_price_per_day(doc, "USD")
-
-	if fields and "machine_unavailable" in fields:
-		doc["machine_unavailable"] = _is_server_plan_unavailable(doc["name"])
+	doc["machine_unavailable"] = _is_server_plan_unavailable(doc["name"])
 
 	if fields is None:
 		return doc
 
-	return {k: v for k, v in doc.items() if k in fields}
+	return cast("ServerPlan", {k: v for k, v in doc.items() if k in fields})
 
 
 def sync_machine_availability_status_of_plans():

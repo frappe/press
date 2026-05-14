@@ -17,6 +17,18 @@ def _get_price_per_day(plan: AnyPlan, currency):
 	return rounded(price / period, 2)
 
 
+def _get_price_for_interval(plan: AnyPlan, interval, currency):
+	price_per_day = _get_price_per_day(plan, currency)
+
+	if interval == "Daily":
+		return price_per_day
+
+	if interval == "Monthly":
+		return rounded(price_per_day * 30)
+
+	return None
+
+
 def _is_server_plan_unavailable(plan: str) -> bool:
 	result = frappe.db.get_value("Server Plan Unavailability", {"server_plan": plan}, "unavailable")
 	return bool(result)

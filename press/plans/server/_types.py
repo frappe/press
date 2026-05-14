@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from frappe.types import DF
 
@@ -29,8 +29,12 @@ class ServerPlan(TypedDict):
 	plan_type: ServerPlanType
 	allow_unified_server: DF.Check
 	ignore_machine_availability_sync: DF.Check
-	machine_unavailable: DF.Check
 	roles: list[str]
+
+	# fields added to get doc [list] queries at runtime
+	machine_unavailable: DF.Check | None
+	price_per_day_inr: DF.Float | Any | None
+	price_per_day_usd: DF.Float | Any | None
 
 
 dedicated_instance_type = ServerPlanType(
