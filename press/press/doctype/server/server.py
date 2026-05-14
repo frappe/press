@@ -4113,7 +4113,9 @@ def archive_servers_with_unpaid_invoices():  # noqa: C901
 		return
 
 	db_servers = []
-	servers = frappe.get_all("Server", {"status": ("!=", "Archived"), "team": ("in", teams)}, pluck="name")
+	servers = frappe.get_all(
+		"Server", {"status": ("!=", "Archived"), "team": ("in", teams)}, pluck="name", limit=6
+	)
 	for server in servers:
 		if frappe.db.exists("Site", {"status": ("!=", "Archived"), "server": server}):
 			continue
@@ -4144,6 +4146,7 @@ def archive_servers_with_unpaid_invoices():  # noqa: C901
 		"Database Server",
 		{"name": ("not in", db_servers), "status": ("!=", "Archived"), "team": ("in", teams)},
 		pluck="name",
+		limit=6,
 	)
 	for db_server in database_servers:
 		if frappe.db.exists("Server", {"status": ("!=", "Archived"), "database_server": db_server}):
