@@ -32,5 +32,13 @@
 			"indentScriptAndStyle": false,
 			"selfCloseVoidElements": "always"
 		}
+	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		},
+		"formatter": {
+			"enabled": false
+		}
 	}
 }
