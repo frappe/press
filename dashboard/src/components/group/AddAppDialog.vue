@@ -263,7 +263,13 @@ export default {
 					type: 'Component',
 					width: '8rem',
 					component: (row) => {
-						if (row.compatible)
+						if (row.no_public_releases)
+							return h(Badge, {
+								class: 'ml-auto',
+								label: 'No Public Releases',
+								theme: 'red',
+							});
+						else if (row.compatible)
 							return h(Button, {
 								label: 'Add',
 								iconLeft: this.addedApps.includes(row) ? 'check' : 'plus',

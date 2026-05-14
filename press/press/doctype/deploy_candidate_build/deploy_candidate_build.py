@@ -833,7 +833,6 @@ class DeployCandidateBuild(Document):
 			"deploy_candidate_params": {
 				"redis_cache_size": self.candidate.redis_cache_size,
 				"is_redisearch_enabled": self.candidate.is_redisearch_enabled,
-				"environment_variables": self.candidate.environment_variables,
 				"use_rq_workerpool": self.candidate.use_rq_workerpool,
 				"merge_all_rq_queues": self.candidate.merge_all_rq_queues,
 				"merge_default_and_short_rq_queues": self.candidate.merge_default_and_short_rq_queues,
