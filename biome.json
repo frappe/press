@@ -12,6 +12,7 @@
 		"expand": "auto",
 		"useEditorconfig": true
 	},
+	"linter": { "rules": { "recommended": false } },
 	"javascript": {
 		"formatter": {
 			"jsxQuoteStyle": "double",
@@ -25,20 +26,18 @@
 			"bracketSpacing": true
 		}
 	},
+	"css": {
+		"parser": { "tailwindDirectives": true },
+		"formatter": { "enabled": false },
+		"linter": null,
+		"assist": null
+	},
 	"html": {
 		"experimentalFullSupportEnabled": true,
 		"formatter": {
 			"enabled": true,
 			"indentScriptAndStyle": false,
 			"selfCloseVoidElements": "always"
-		}
-	},
-	"css": {
-		"parser": {
-			"tailwindDirectives": true
-		},
-		"formatter": {
-			"enabled": false
 		}
 	}
 }
