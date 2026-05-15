@@ -25,14 +25,24 @@
 				<!-- Upgrade site on private bench -->
 				<div v-else-if="!$site.doc?.group_public && nextVersion">
 					<!-- If existing compatible bench found  -->
-					<div v-if="upgradeStep === 'ready_to_upgrade' && existingBenchGroup">
+					<div
+						v-if="upgradeStep === 'ready_to_upgrade' && hasExistingBenchOptions"
+					>
 						<div class="mb-4 text-base">
 							<p>
 								The site <b>{{ $site.doc.host_name }}</b> will be moved to
-								<b>{{ existingBenchGroupTitle }}</b> bench for upgrade to
-								{{ nextVersion }}.
+								<b>{{ selectedReleaseGroupTitle || 'selected bench' }}</b> bench
+								for upgrade to {{ nextVersion }}.
 							</p>
 						</div>
+						<FormControl
+							label="Select Bench"
+							type="select"
+							:options="upgradeBenchOptions"
+							v-model="selectedReleaseGroup"
+							placeholder="Select bench"
+							class="mb-4"
+						/>
 						<div class="mt-4">
 							<span class="text-xs text-ink-gray-5 mb-2"
 								>Schedule Time in IST</span
@@ -87,7 +97,9 @@
 									These apps are installed on your site, select a branch
 									compatible with {{ nextVersion }}
 								</div>
-								<table class="w-full table-fixed pb-4 border-b border-outline-gray-1">
+								<table
+									class="w-full table-fixed pb-4 border-b border-outline-gray-1"
+								>
 									<tbody>
 										<tr
 											v-for="app in appCompatibility.site_custom_apps"
@@ -194,12 +206,12 @@
 							</div>
 						</div>
 						<FormControl
-							v-if="!existingBenchGroup"
+							v-if="!hasExistingBenchOptions"
 							label="Bench Title"
 							type="text"
 							v-model="newReleaseGroupTitle"
 							placeholder="e.g., My Team - Version 15"
-							class="mt-4"
+							class="my-4"
 						/>
 						<div class="mt-4">
 							<span class="text-xs text-ink-gray-5 mb-2"
@@ -223,7 +235,9 @@
 					</div>
 				</div>
 				<AlertBanner
-					v-if="!existingBenchGroup && targetDateTime && !isScheduleTimeValid"
+					v-if="
+						!hasExistingBenchOptions && targetDateTime && !isScheduleTimeValid
+					"
 					title="Schedule time must be at least 30 minutes from now to allow for bench deployment."
 					type="warning"
 					class="my-4"
@@ -257,12 +271,13 @@
 				v-if="
 					!$site.doc?.group_public &&
 					upgradeStep === 'ready_to_upgrade' &&
-					existingBenchGroup
+					hasExistingBenchOptions
 				"
 				class="w-full"
 				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
 				variant="solid"
 				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
+				:disabled="!selectedReleaseGroup"
 				:loading="$resources.versionUpgrade.loading"
 				@click="handleUpgradeSubmit"
 			/>
@@ -271,7 +286,8 @@
 				v-if="
 					!$site.doc?.group_public &&
 					upgradeStep === 'ready_to_upgrade' &&
-					!existingBenchGroup &&
+					!hasExistingBenchOptions &&
+					!selectedReleaseGroup &&
 					!appCompatibility.can_upgrade
 				"
 				class="w-full"
@@ -285,7 +301,8 @@
 				v-if="
 					!$site.doc?.group_public &&
 					upgradeStep === 'ready_to_upgrade' &&
-					!existingBenchGroup &&
+					!hasExistingBenchOptions &&
+					!selectedReleaseGroup &&
 					appCompatibility.can_upgrade
 				"
 				class="w-full"
@@ -324,8 +341,10 @@ export default {
 			skipBackups: false,
 			skipFailingPatches: false,
 			upgradeStep: null,
-			existingBenchGroup: null,
-			existingBenchGroupTitle: null,
+			upgradeBenchOptions: [],
+			selectedReleaseGroup: null,
+			selectedReleaseGroupTitle: null,
+			hasExistingBenchOptions: false,
 			appCompatibility: {
 				incompatible: [],
 				site_custom_apps: [],
@@ -405,7 +424,7 @@ export default {
 			// Atleast 30 mins from now for deploying bench
 			if (!this.targetDateTime) return true;
 
-			if (!this.existingBenchGroup) {
+			if (!this.selectedReleaseGroup) {
 				const localTimezone = dayjs.tz.guess();
 				const minimumTime = dayjs().tz(localTimezone).add(30, 'minute');
 				return this.parsedTargetDateTime.isAfter(minimumTime);
@@ -426,7 +445,7 @@ export default {
 	},
 	resources: {
 		versionUpgrade() {
-			const destination_group = this.existingBenchGroup;
+			const destination_group = this.selectedReleaseGroup;
 			return {
 				url: 'press.api.site.version_upgrade',
 				params: {
@@ -452,12 +471,27 @@ export default {
 				},
 				auto: !this.$site.doc?.group_public,
 				onSuccess: (data) => {
-					if (data.exists) {
-						this.existingBenchGroup = data.release_group;
-						this.existingBenchGroupTitle = data.release_group_title;
+					const benches = data.benches || [];
+
+					if (benches.length) {
+						this.hasExistingBenchOptions = true;
 						this.upgradeStep = 'ready_to_upgrade';
 					} else {
 						this.$resources.checkAppCompatibility.fetch();
+						return;
+					}
+
+					this.upgradeBenchOptions = benches.map((bench) => ({
+						label: bench.release_group_title || bench.bench_name,
+						value: bench.release_group,
+					}));
+
+					if (this.upgradeBenchOptions.length === 1) {
+						this.selectedReleaseGroup = this.upgradeBenchOptions[0].value;
+						this.selectedReleaseGroupTitle = this.upgradeBenchOptions[0].label;
+					} else {
+						this.selectedReleaseGroup = null;
+						this.selectedReleaseGroupTitle = null;
 					}
 				},
 			};
@@ -502,6 +536,14 @@ export default {
 			};
 		},
 	},
+	watch: {
+		selectedReleaseGroup(value) {
+			const selectedBench = this.upgradeBenchOptions.find(
+				(bench) => bench.value === value,
+			);
+			this.selectedReleaseGroupTitle = selectedBench?.label || null;
+		},
+	},
 	methods: {
 		updateCustomAppSource(app, field, value) {
 			const appName = app.app;
@@ -526,7 +568,7 @@ export default {
 			}
 		},
 		async handleUpgradeSubmit() {
-			if (this.existingBenchGroup) {
+			if (this.selectedReleaseGroup) {
 				// Move Site to existing bench
 				this.$resources.versionUpgrade.submit();
 			} else {
@@ -567,8 +609,9 @@ export default {
 			this.skipBackups = false;
 			this.skipFailingPatches = false;
 			this.upgradeStep = null;
-			this.existingBenchGroup = null;
-			this.existingBenchGroupTitle = null;
+			this.upgradeBenchOptions = [];
+			this.selectedReleaseGroup = null;
+			this.selectedReleaseGroupTitle = null;
 			this.appCompatibility = {
 				incompatible: [],
 				site_custom_apps: [],
