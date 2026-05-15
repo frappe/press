@@ -1303,6 +1303,10 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def archive(self):  # noqa: C901
+		if self.status == "Archived":
+			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
+			return
+
 		if frappe.db.exists(
 			"Press Job",
 			{
@@ -1312,10 +1316,8 @@ class BaseServer(Document, TagHelpers):
 				"status": "Success",
 			},
 		):
-			if self.status != "Archived":
-				self.status = "Archived"
-				self.save()
-
+			self.status = "Archived"
+			self.save()
 			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
 			return
 
@@ -1325,6 +1327,22 @@ class BaseServer(Document, TagHelpers):
 				self.status = "Archived"
 				self.save()
 				return
+
+		if frappe.db.exists(
+			"Press Job",
+			{
+				"job_type": "Archive Server",
+				"server": self.name,
+				"server_type": self.doctype,
+				"status": ("in", ("Running", "Pending")),
+				"creation": (">", frappe.utils.add_to_date(frappe.utils.now(), minutes=-30)),
+			},
+		):
+			frappe.throw(
+				_(
+					"Archival of Server {0} is already in progress. Please wait for the current archival process to complete before attempting to archive again."
+				).format(self.name)
+			)
 
 		if frappe.get_all(
 			"Site",
@@ -1357,7 +1375,7 @@ class BaseServer(Document, TagHelpers):
 				frappe.db.set_value("Self Hosted Server", {"server": self.name}, "status", "Archived")
 
 		else:
-			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
+			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long", enqueue_after_commit=True)
 		self.disable_subscription()
 		self.remove_from_release_groups()
 
@@ -4123,6 +4141,7 @@ def archive_servers_with_unpaid_invoices():  # noqa: C901
 		"Server", {"status": ("!=", "Archived"), "team": ("in", teams)}, pluck="name", limit=6
 	)
 	for server in servers:
+		# TODO: cleanup to not do so many db calls
 		if frappe.db.exists("Site", {"status": ("!=", "Archived"), "server": server}):
 			continue
 
