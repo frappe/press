@@ -2593,18 +2593,20 @@ def version_upgrade(
 @protected("Site")
 def check_existing_upgrade_bench(name, version):
 	"""
-	Check if an existing next-version bench exists on the same server
-	which includes all the apps installed on the site.
+	Check if existing next-version benches exist on the same server that includes all the apps installed on the site.
 
 	Returns: {
-		"exists": bool,
-		"bench_name": str or None,
-		"release_group": str or None,
+		"benches":[{
+				"bench_name": str,
+				"release_group":str,
+				"release_group_title": str,
+			}]
 	}
 	"""
 	site_server = frappe.db.get_value("Site", name, "server")
 	current_team = get_current_team()
 	site_apps = set(frappe.db.get_all("Site App", filters={"parent": name}, pluck="app"))
+	compatible_benches = []
 
 	version_number = frappe.db.get_value("Frappe Version", version, "number")
 	next_version = frappe.db.get_value(
@@ -2618,7 +2620,7 @@ def check_existing_upgrade_bench(name, version):
 	)
 
 	if not next_version:
-		return {"exists": False, "bench_name": None, "release_group": None}
+		return {"benches": compatible_benches}
 
 	# Find private benches on same server with next version
 	Bench = frappe.qb.DocType("Bench")
@@ -2636,7 +2638,7 @@ def check_existing_upgrade_bench(name, version):
 	).run(as_dict=True)
 
 	if not benches:
-		return {"exists": False, "bench_name": None, "release_group": None, "release_group_title": None}
+		return {"benches": compatible_benches}
 
 	bench_groups = [bench.group for bench in benches]
 	all_bench_apps = frappe.db.get_all(
@@ -2651,14 +2653,15 @@ def check_existing_upgrade_bench(name, version):
 	for bench in benches:
 		bench_app_list = bench_apps_map.get(bench.group, [])
 		if site_apps.issubset(bench_app_list):
-			return {
-				"exists": True,
-				"bench_name": bench.name,
-				"release_group": bench.group,
-				"release_group_title": bench.title,
-			}
+			compatible_benches.append(
+				{
+					"bench_name": bench.name,
+					"release_group": bench.group,
+					"release_group_title": bench.title,
+				}
+			)
 
-	return {"exists": False, "bench_name": None, "release_group": None, "release_group_title": None}
+	return {"benches": compatible_benches}
 
 
 @frappe.whitelist()
