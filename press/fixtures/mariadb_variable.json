@@ -642,5 +642,19 @@
   "set_on_new_servers": 1,
   "skippable": 0,
   "title": null
+ },
+ {
+  "configurable_by_user": 0,
+  "datatype": "Str",
+  "default_value": null,
+  "doc_section": "innodb",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2026-05-15 14:49:25.118784",
+  "name": "binlog_row_metadata",
+  "set_on_new_servers": 0,
+  "skippable": 0,
+  "title": null
  }
 ]
