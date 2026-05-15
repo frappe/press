@@ -1,6 +1,6 @@
 <script setup>
 import SuccessCheckIcon from '@/components/icons/SuccessCheckIcon.vue';
-import Button from 'frappe-ui/src/components/Button/Button.vue';
+import { Button } from 'frappe-ui';
 
 // onclick continue button, close the modal
 const continueButtonClick = () => {

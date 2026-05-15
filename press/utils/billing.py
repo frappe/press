@@ -1,7 +1,8 @@
 import re
 
 import frappe
-import razorpay
+
+# import razorpay
 import stripe
 from frappe.utils import fmt_money
 
