@@ -42,6 +42,7 @@
 			<AlertCardPaymentFailed
 				class="mb-5"
 				v-if="
+					$team?.doc &&
 					cardPaymentFailure &&
 					$team.doc.payment_mode == 'Card' &&
 					isAfterFirstWeek &&
@@ -194,7 +195,12 @@ export default {
 				url: 'press.api.client.get_list',
 				params: {
 					doctype: 'Invoice',
-					fields: ['name', 'stripe_invoice_url'],
+					fields: [
+						'name',
+						'stripe_invoice_url',
+						'stripe_payment_failed',
+						'stripe_payment_error',
+					],
 					filters: { status: 'Unpaid', type: 'Subscription' },
 					order_by: 'creation desc',
 					limit: 1,
