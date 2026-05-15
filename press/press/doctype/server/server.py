@@ -4131,11 +4131,13 @@ def archive_servers_with_unpaid_invoices():  # noqa: C901
 
 		try:
 			server = frappe.get_doc("Server", server)
-			server.drop_server()  # drops both app & db server (if exists)
+			server.drop_server() if (
+				server.database_server and server.database_server not in db_servers
+			) else server.archive()
 			server.create_log("Terminated", "Archived due to unpaid invoices")
 
 			if server.database_server:
-				if not server.is_unified_server:
+				if not server.is_unified_server and server.database_server not in db_servers:
 					log_server_activity(
 						"m", server.database_server, "Terminated", "Archived due to unpaid invoices"
 					)
