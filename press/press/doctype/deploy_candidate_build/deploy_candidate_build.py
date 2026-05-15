@@ -796,6 +796,9 @@ class DeployCandidateBuild(Document):
 				}
 			)
 
+		self.candidate._set_additional_packages()
+		self.candidate._set_container_mounts()
+
 		dockerfile = self._generate_dockerfile()
 		# Add build steps based on dockerfile checkpoints before starting the build
 		self.add_build_steps(dockerfile)
@@ -830,7 +833,6 @@ class DeployCandidateBuild(Document):
 			"deploy_candidate_params": {
 				"redis_cache_size": self.candidate.redis_cache_size,
 				"is_redisearch_enabled": self.candidate.is_redisearch_enabled,
-				"environment_variables": self.candidate.environment_variables,
 				"use_rq_workerpool": self.candidate.use_rq_workerpool,
 				"merge_all_rq_queues": self.candidate.merge_all_rq_queues,
 				"merge_default_and_short_rq_queues": self.candidate.merge_default_and_short_rq_queues,

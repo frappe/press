@@ -268,6 +268,7 @@ scheduler_events = {
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.cleanup_build_directories",
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.check_builds_status",
+		"press.press.doctype.server.server.archive_servers_with_unpaid_invoices",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_oci_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_hetzner_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_internal_virtual_machines",
@@ -424,6 +425,8 @@ fixtures = [
 	"Server Storage Plan",
 	"Server Snapshot Plan",
 	"Press Webhook Event",
+	"Site Plan",
+	"Server Plan",
 ]
 # Testing
 # -------
