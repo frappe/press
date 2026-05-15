@@ -309,7 +309,7 @@ scheduler_events = {
 			"press.press.doctype.database_server.database_server.update_database_schema_sizes",
 		],
 		"* * * * * 0/5": [
-			# "press.press.doctype.agent_job.agent_job.poll_pending_jobs",
+			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
 			"press.press.doctype.press_webhook_log.press_webhook_log.process",
 			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
 			"press.press.doctype.agent_update.agent_update.process_bulk_agent_update",
@@ -355,6 +355,7 @@ scheduler_events = {
 			"press.workflow_engine.doctype.press_workflow.press_workflow.retry_workflow_callbacks",
 		],
 		"* * * * *": [
+			"press.press.doctype.agent_job.agent_job.retry_poll",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
 			"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.retry_tasks",
 			"press.press.doctype.deploy_candidate_build.deploy_candidate_build.run_scheduled_builds",

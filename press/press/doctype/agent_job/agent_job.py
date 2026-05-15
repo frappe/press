@@ -194,6 +194,8 @@ class AgentJob(Document):
 				process_job_updates(self.name)
 
 			else:
+				frappe.cache().sadd("undelivered_jobs", f"{self.server_type}:{self.server}")
+
 				self.set_status_and_next_retry_at()
 
 	def log_creation(self):
@@ -431,10 +433,14 @@ def publish_update(job):
 	frappe.publish_realtime(
 		event="doc_update", doctype="Agent Job", docname=job, message={"doctype": "Agent Job", "name": job}
 	)
+
+	# publish event for agent job list to update in dashboard
+	# we are doing this since process agent job doesn't emit list_update for job due to set_value
 	frappe.publish_realtime(event="list_update", message={"doctype": "Agent Job", "name": job})
 
-	# Force the Site form to auto-update
-	if message.get("site"):
+	# publish event for site to show job running on dashboard and update site
+	# we are doing this since process agent job doesn't emit doc_update for site due to set_value
+	if message["site"]:
 		frappe.publish_realtime(
 			event="doc_update",
 			doctype="Site",
@@ -847,6 +853,27 @@ def retry_undelivered_jobs(server):
 			else:
 				update_job_and_step_status(job_name, "Delivery Failure")
 				process_job_updates(job_name)
+
+
+def retry_poll():
+	servers = frappe.cache().smembers("undelivered_jobs")
+
+	for server_key in servers:
+		if isinstance(server_key, bytes):
+			server_key = server_key.decode()
+
+		server_type, server = server_key.split(":", 1)
+
+		frappe.cache().srem("undelivered_jobs", server_key)
+
+		retry_undelivered_jobs(
+			frappe._dict(
+				{
+					"server": server,
+					"server_type": server_type,
+				}
+			)
+		)
 
 
 def queued_jobs():
