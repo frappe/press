@@ -425,6 +425,8 @@ fixtures = [
 	"Server Storage Plan",
 	"Server Snapshot Plan",
 	"Press Webhook Event",
+	"Site Plan",
+	"Server Plan",
 ]
 # Testing
 # -------
