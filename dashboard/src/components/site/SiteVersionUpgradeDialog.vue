@@ -43,7 +43,7 @@
 							placeholder="Select bench"
 							class="mb-4"
 						/>
-						<div class="mt-4">
+						<div class="my-4">
 							<span class="text-xs text-ink-gray-5 mb-2"
 								>Schedule Time in IST</span
 							>
@@ -213,7 +213,7 @@
 							placeholder="e.g., My Team - Version 15"
 							class="my-4"
 						/>
-						<div class="mt-4">
+						<div class="my-4">
 							<span class="text-xs text-ink-gray-5 mb-2"
 								>Schedule Time in IST</span
 							>
@@ -447,7 +447,7 @@ export default {
 		versionUpgrade() {
 			const destination_group = this.selectedReleaseGroup;
 			return {
-				url: 'press.api.site.version_upgrade',
+				url: 'press.api.version_upgrade.version_upgrade',
 				params: {
 					name: this.site,
 					destination_group: destination_group,
@@ -464,7 +464,7 @@ export default {
 
 		checkExistingBench() {
 			return {
-				url: 'press.api.site.check_existing_upgrade_bench',
+				url: 'press.api.version_upgrade.check_existing_upgrade_bench',
 				params: {
 					name: this.site,
 					version: this.$site.doc?.version,
@@ -498,7 +498,7 @@ export default {
 		},
 		checkAppCompatibility() {
 			return {
-				url: 'press.api.site.check_app_compatibility_for_upgrade',
+				url: 'press.api.version_upgrade.check_app_compatibility_for_upgrade',
 				params: {
 					name: this.site,
 					version: this.$site.doc?.version,
@@ -515,7 +515,7 @@ export default {
 		},
 		createPrivateBench() {
 			return {
-				url: 'press.api.site.create_private_bench_for_site_upgrade',
+				url: 'press.api.version_upgrade.create_private_bench_for_site_upgrade',
 				onSuccess(data) {
 					this.$router.push({
 						name: 'Release Group Detail',
