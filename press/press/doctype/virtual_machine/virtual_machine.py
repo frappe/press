@@ -87,6 +87,7 @@ HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
 DIGITALOCEAN_ROOT_DISK_ID = "digital-ocean-root-disk"
 HETZNER_ACTION_RETRIES = 10  # retry count; try to keep it lower so that it doesn't surpass than default RQ job timeout of 300 seconds
 HETZNER_POLL_INTERVAL = 6  # increased from default of 1 so that we don't hit limit of 3600/hour
+BIG_SERIES = ["f", "m", "u", "t"]  # space for two more
 
 
 class VirtualMachine(Document):
@@ -189,6 +190,20 @@ class VirtualMachine(Document):
 		self.save()
 
 	def get_private_ip(self) -> str:
+		if self.index <= 256:
+			return self.get_private_ip_old_logic()
+		return self.get_private_ip_new_logic()
+
+	def get_private_ip_new_logic(self) -> str:
+		ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
+		start = ip + 2**14
+		offset = BIG_SERIES.index(self.series) * 2**13
+		index = (
+			self.index - 257
+		)  # so a max of 8192 + 256 = 8448 ips for each big series. or could remove index for consistency
+		return str(start + offset + index)
+
+	def get_private_ip_old_logic(self) -> str:
 		ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
 		index = self.index + 356
 
