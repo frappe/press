@@ -764,19 +764,15 @@ class ReleasePipeline(WorkflowBuilder):
 		# Actual Build stage
 		if orchestrate_build_monitoring := _find_step_with_method_name("orchestrate_build_monitoring"):
 			building_stage = _get_step_info(orchestrate_build_monitoring, label="Building")
-			building_stage["builds"] = (
-				[
-					{
-						"doctype": "Deploy Candidate Build",
-						"name": build.build,
-						"status": frappe.db.get_value("Deploy Candidate Build", build.build, "status"),
-						"architecture": frappe.db.get_value(
-							"Deploy Candidate Build", build.build, "platform"
-						),
-					}
-					for build in self.pipeline_builds
-				],
-			)
+			building_stage["builds"] = [
+				{
+					"doctype": "Deploy Candidate Build",
+					"name": build.build,
+					"status": frappe.db.get_value("Deploy Candidate Build", build.build, "status"),
+					"architecture": frappe.db.get_value("Deploy Candidate Build", build.build, "platform"),
+				}
+				for build in self.pipeline_builds
+			]
 			stages.append(building_stage)
 
 		# Bench Creation stage
