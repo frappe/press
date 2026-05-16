@@ -729,8 +729,14 @@ class ReleasePipeline(WorkflowBuilder):
 		steps_info: dict[str, dict[str, Any]] = {
 			task.name: {
 				**task,
+<<<<<<< HEAD
 				"start": task.start.isoformat() if task.start else None,
 				"end": task.end.isoformat() if task.end else None,
+=======
+				"start": int(task.start.timestamp()) if task.start else None,
+				"end": int(task.end.timestamp()) if task.end else None,
+				"duration": int((task.end - task.start).total_seconds()) if task.end and task.start else None,
+>>>>>>> e64d3b4aa (feat(release-pipeline): API Docs)
 			}
 			for task in frappe.get_all(
 				"Press Workflow Task",
@@ -770,6 +776,7 @@ class ReleasePipeline(WorkflowBuilder):
 		# Actual Build stage
 		if orchestrate_build_monitoring := _find_step_with_method_name("orchestrate_build_monitoring"):
 			building_stage = _get_step_info(orchestrate_build_monitoring, label="Building")
+<<<<<<< HEAD
 			build_ids = [build.build for build in self.pipeline_builds]
 			build_data = {
 				b.name: b
@@ -788,6 +795,21 @@ class ReleasePipeline(WorkflowBuilder):
 				}
 				for build in self.pipeline_builds
 			]
+=======
+			building_stage["builds"] = (
+				[
+					{
+						"doctype": "Deploy Candidate Build",
+						"name": build.build,
+						"status": frappe.db.get_value("Deploy Candidate Build", build.build, "status"),
+						"architecture": frappe.db.get_value(
+							"Deploy Candidate Build", build.build, "platform"
+						),
+					}
+					for build in self.pipeline_builds
+				],
+			)
+>>>>>>> e64d3b4aa (feat(release-pipeline): API Docs)
 			stages.append(building_stage)
 
 		# Bench Creation stage
@@ -842,8 +864,13 @@ class ReleasePipeline(WorkflowBuilder):
 			"doctype": self.doctype,
 			"name": self.name,
 			"status": self.status,
+<<<<<<< HEAD
 			"start": workflow.start.isoformat() if workflow.start else None,
 			"end": workflow.end.isoformat() if workflow.end else None,
+=======
+			"start": int(workflow.start.timestamp()) if workflow.start else None,
+			"end": int(workflow.end.timestamp()) if workflow.end else None,
+>>>>>>> e64d3b4aa (feat(release-pipeline): API Docs)
 			"duration": int((workflow.end - workflow.start).total_seconds())
 			if workflow.start and workflow.end
 			else None,

@@ -106,7 +106,10 @@ ALLOWED_DOCTYPES = [
 	"New Bench Queue",
 	"Partner Audit",
 	"Partner Non Conformance",
+<<<<<<< HEAD
 	"Team Member Resource",
+=======
+>>>>>>> e64d3b4aa (feat(release-pipeline): API Docs)
 	"Release Pipeline",
 ]
 
