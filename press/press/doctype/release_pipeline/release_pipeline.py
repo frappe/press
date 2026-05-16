@@ -777,6 +777,7 @@ class ReleasePipeline(WorkflowBuilder):
 		if orchestrate_build_monitoring := _find_step_with_method_name("orchestrate_build_monitoring"):
 			building_stage = _get_step_info(orchestrate_build_monitoring, label="Building")
 <<<<<<< HEAD
+<<<<<<< HEAD
 			build_ids = [build.build for build in self.pipeline_builds]
 			build_data = {
 				b.name: b
@@ -786,10 +787,13 @@ class ReleasePipeline(WorkflowBuilder):
 					fields=["name", "status", "platform"],
 				)
 			}
+=======
+>>>>>>> dfbae2343 (fix: remove the tuple in builds property)
 			building_stage["builds"] = [
 				{
 					"doctype": "Deploy Candidate Build",
 					"name": build.build,
+<<<<<<< HEAD
 					"status": build_data[build.build]["status"],
 					"architecture": build_data[build.build]["platform"],
 				}
@@ -810,6 +814,13 @@ class ReleasePipeline(WorkflowBuilder):
 				],
 			)
 >>>>>>> e64d3b4aa (feat(release-pipeline): API Docs)
+=======
+					"status": frappe.db.get_value("Deploy Candidate Build", build.build, "status"),
+					"architecture": frappe.db.get_value("Deploy Candidate Build", build.build, "platform"),
+				}
+				for build in self.pipeline_builds
+			]
+>>>>>>> dfbae2343 (fix: remove the tuple in builds property)
 			stages.append(building_stage)
 
 		# Bench Creation stage
