@@ -53,7 +53,7 @@ class AgentAuth(Document):
 			frappe.cache().set_value(
 				f"{self.server}_regenerate_public_key",
 				self.regenerate_public_key,
-				expires_in_sec=60,  # 1 min
+				expires_in_sec=600,  # Ansible timeout
 			)
 
 			server: BaseServer = frappe.get_doc(
