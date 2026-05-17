@@ -9,16 +9,14 @@ import {
 	Tabs,
 } from 'frappe-ui'
 
-
-
 import Stages from './Stages.vue'
 import CopyBtn from '@/components/utils/CopyBtn.vue'
 
-import { h, ref, computed, provide } from 'vue'
+import { ref, computed, provide } from 'vue'
 import { useRoute } from 'vue-router'
 import { getTeam } from '@/data/team'
 
-import { duration, date } from '@/utils/format'
+import { secsToDuration, date } from '@/utils/format'
 
 const route = useRoute()
 const team = getTeam()
@@ -72,8 +70,7 @@ const cardLabels = computed(() => {
 		'Created by': 'sidhanth@frappe.io',
 		Start: date(pipeline?.doc?.steps?.start, 'lll'),
 		End: date(pipeline?.doc?.steps?.end, 'lll'),
-		Duration: 10,
-		// Duration: duration(data?.doc?.steps?.duration),
+		Duration: secsToDuration(pipeline?.doc?.steps?.duration),
 	}
 })
 
@@ -162,6 +159,7 @@ const sidebarTabs = ref([
 				/>
 			</aside>
 
+      <!-- output -->
 			<div
 				v-show="output"
 				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 rounded flex-1"
