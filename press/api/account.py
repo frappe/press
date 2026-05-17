@@ -925,8 +925,18 @@ def feedback(team, message, note, rating, route=None):
 
 
 @frappe.whitelist()
-def get_site_count(team):
+def get_site_count():
+	team = get_current_team()
 	return frappe.db.count("Site", {"team": team, "status": ("=", "Active")})
+
+
+@frappe.whitelist()
+def is_limits_exceeded(plan_price=0):
+	team = get_current_team(get_doc=True)
+	subscribed_amount = team.total_subscribed_amount() + plan_price
+	if team.apply_limits and (team.spending_limit <= subscribed_amount):
+		return True
+	return False
 
 
 @frappe.whitelist()

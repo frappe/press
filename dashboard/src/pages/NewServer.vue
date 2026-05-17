@@ -19,6 +19,16 @@
 	</div>
 
 	<div
+		v-else-if="spendingLimitExceeded"
+		class="mx-auto mt-60 w-fit rounded-md border-2 border-dashed px-12 py-8 text-center text-gray-600"
+	>
+		<LucideAlertTriangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+		<p>
+			Your spending limit has been exceeded. Please contact support to increase
+			your limit.
+		</p>
+	</div>
+	<div
 		v-else-if="serverEnabled"
 		class="flex w-full justify-center px-4 sm:px-5"
 	>
@@ -1002,6 +1012,7 @@ export default {
 			agreedToRegionConsent: false,
 			unifiedServer: false,
 			avoidAutoResetPlanSelection: false,
+			spendingLimitExceeded: false,
 		};
 	},
 	watch: {
@@ -1367,6 +1378,15 @@ export default {
 						name: 'Server Detail Plays',
 						params: { name: server },
 					});
+				},
+			};
+		},
+		isLimitExceeded() {
+			return {
+				url: 'press.api.account.is_limits_exceeded',
+				auto: true,
+				onSuccess(response) {
+					this.spendingLimitExceeded = response;
 				},
 			};
 		},

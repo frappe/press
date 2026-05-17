@@ -90,6 +90,9 @@
   "skip_backups",
   "enable_inplace_updates",
   "relaxed_permissions",
+  "apply_limits",
+  "spending_limit",
+  "tier",
   "column_break_31",
   "database_access_enabled",
   "enable_performance_tuning",
@@ -690,7 +693,6 @@
   {
    "fieldname": "default_razorpay_mandate",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "Default Razorpay Mandate",
    "options": "Razorpay Mandate"
   },
@@ -705,6 +707,29 @@
    "fieldname": "is_trusted_team",
    "fieldtype": "Check",
    "label": "Is Trusted Team"
+  },
+  {
+   "default": "0",
+   "fieldname": "apply_limits",
+   "fieldtype": "Check",
+   "label": "Apply Limits"
+  },
+  {
+   "depends_on": "eval: doc.apply_limits == 1",
+   "description": "(in USD)",
+   "fieldname": "spending_limit",
+   "fieldtype": "Currency",
+   "label": "Spending Limit",
+   "options": "USD",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.apply_limits == 1",
+   "fieldname": "tier",
+   "fieldtype": "Link",
+   "label": "Tier",
+   "mandatory_depends_on": "eval: doc.apply_limits == 1",
+   "options": "Team Tier"
   }
  ],
  "grid_page_length": 50,
@@ -770,7 +795,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2026-04-21 15:12:39.866295",
+ "modified": "2026-05-14 11:22:47.711926",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

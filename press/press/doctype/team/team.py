@@ -49,6 +49,7 @@ class Team(Document):
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
+		apply_limits: DF.Check
 		apply_npo_discount: DF.Check
 		banned: DF.Check
 		benches_enabled: DF.Check
@@ -112,11 +113,13 @@ class Team(Document):
 		servers_enabled: DF.Check
 		skip_backups: DF.Check
 		skip_onboarding: DF.Check
+		spending_limit: DF.Currency
 		ssh_access_enabled: DF.Check
 		start_date: DF.Date | None
 		stripe_customer_id: DF.Data | None
 		team_members: DF.Table[TeamMember]
 		team_title: DF.Data | None
+		tier: DF.Link | None
 		upi_autopay_enabled: DF.Check
 		user: DF.Link | None
 		via_erpnext: DF.Check
@@ -205,6 +208,9 @@ class Team(Document):
 		doc.communication_infos = self.get_communication_infos()
 		doc.receive_budget_alerts = self.receive_budget_alerts
 		doc.monthly_alert_threshold = self.monthly_alert_threshold
+		doc.apply_limits = self.apply_limits
+		doc.spending_limit = self.spending_limit
+		doc.total_subscribed_amount = self.total_subscribed_amount()
 		doc.is_binlog_indexer_enabled = not frappe.db.get_single_value(
 			"Press Settings", "disable_binlog_indexer_service", cache=True
 		)
@@ -557,6 +563,7 @@ class Team(Document):
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
 		self.check_budget_alert_threshold()
+		self.update_tier_limit()
 
 		if (
 			not self.is_new()
@@ -583,6 +590,20 @@ class Team(Document):
 				"budget_alert_sent",
 				0,
 			)
+
+	def total_subscribed_amount(self):
+		subscriptions = frappe.get_all(
+			"Subscription", {"team": self.name, "enabled": 1}, ["name", "plan_type", "plan"]
+		)
+		total = 0
+		for sub in subscriptions:
+			total += frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") or 0
+		return total
+
+	def update_tier_limit(self):
+		if self.apply_limits and self.tier and self.tier != self.get_doc_before_save().tier:
+			self.spending_limit = frappe.db.get_value("Team Tier", self.tier, "amount") or 0
+			self.save()
 
 	@frappe.whitelist()
 	def impersonate(self, member, reason):
