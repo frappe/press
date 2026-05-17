@@ -19,7 +19,11 @@ defineProps<Props>()
 		style="--scrollbar-size: 10px"
 		:scroll-hide-delay="0"
 	>
+<<<<<<< HEAD
 		<ScrollAreaViewport class="w-full h-full" :as>
+=======
+		<ScrollAreaViewport class="w-full h-full" :is="as">
+>>>>>>> d77ce5eac (feat(scrollbar): Include as prop)
 			<slot />
 		</ScrollAreaViewport>
 
