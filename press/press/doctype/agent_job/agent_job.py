@@ -856,6 +856,10 @@ def retry_undelivered_jobs(server):
 
 
 def retry_poll():
+	flag = frappe.db.get_single_value("Press Settings", "push_feature")
+	if not flag:
+		return
+
 	servers = frappe.cache().smembers("undelivered_jobs")
 
 	for server_key in servers:

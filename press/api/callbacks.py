@@ -127,6 +127,10 @@ def callback(job_id: str | None = None):
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=10, seconds=60)
 def update_job(job, server):
+	flag = frappe.db.get_single_value("Press Settings", "push_feature")
+	if not flag:
+		return
+
 	if not job:
 		return
 

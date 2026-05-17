@@ -207,6 +207,7 @@
   "column_break_105",
   "agent_github_access_token",
   "branch",
+  "push_feature",
   "lets_encrypt_section",
   "certbot_directory",
   "webroot_directory",
@@ -1710,11 +1711,17 @@
    "fieldname": "auto_upgrade_dependencies",
    "fieldtype": "Check",
    "label": "Auto Upgrade Dependencies"
+  },
+  {
+   "default": "0",
+   "fieldname": "push_feature",
+   "fieldtype": "Check",
+   "label": "Push Feature"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-04-30 18:44:43.851468",
+ "modified": "2026-05-17 11:40:39.696033",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
