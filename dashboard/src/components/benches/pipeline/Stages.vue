@@ -11,7 +11,7 @@ import { createResource, createDocumentResource } from 'frappe-ui'
 import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
 
-import { date } from '@/utils/format'
+import { date, secsToDuration } from '@/utils/format'
 import { watch, ref, computed, inject } from 'vue'
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 
@@ -158,20 +158,28 @@ const formatCmd = (cmd: string) => {
 				@click="setOutput(build_step.output || formatCmd(build_step.command) || 'No Output') "
 			>
 				<StatusIcon :status="build_step.status" />
-				<span> {{ build_step.stage }} - {{ build_step.step }} </span>
+				<span class='mr-3'> {{ build_step.stage }} - {{ build_step.step }} </span>
 				<span class="text-ink-gray-5 ml-auto"
+<<<<<<< HEAD
 					>{{ build_step.cached ? 'Cached': build_step.duration }}</span
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+					>{{ build_step.cached ? 'Cached': secsToDuration(build_step.duration) }}</span
+>>>>>>> f3d59bb40 (fix(format): add missing secsToDuration())
 				>
 			</button>
 		</div>
 
 		<!-- steps other than 2 have no output so show some data-->
 <<<<<<< HEAD
+<<<<<<< HEAD
 		<div v-else class="flex" :class='output? "flex-col" : "flex-row"'>
 =======
 		<div v-else class="flex flex-col" :class='output? "" : "flex-row"'>
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+		<div v-else class="flex" :class='output? "flex-col" : "flex-row"'>
+>>>>>>> f3d59bb40 (fix(format): add missing secsToDuration())
 			<div class="flex flex-col gap-2 p-3">
 				<span class="text-sm font-medium text-ink-gray-4"> Start </span>
 				<span class="text-sm text-ink-gray-9"> {{ date(x.start) }} </span>
@@ -185,12 +193,16 @@ const formatCmd = (cmd: string) => {
 			<div class="flex flex-col gap-2 p-3">
 				<span class="text-sm font-medium text-ink-gray-4"> Duration </span>
 <<<<<<< HEAD
+<<<<<<< HEAD
 				<span class="text-sm text-ink-gray-9">
 					{{ secsToDuration(x.duration) }}
 				</span>
 =======
 				<span class="text-sm text-ink-gray-9"> {{ x.duration }} </span>
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+				<span class="text-sm text-ink-gray-9"> {{ secsToDuration(x.duration) }} </span>
+>>>>>>> f3d59bb40 (fix(format): add missing secsToDuration())
 			</div>
 		</div>
 	</Collapsable>
