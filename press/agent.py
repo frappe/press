@@ -997,6 +997,10 @@ class Agent:
 	def _verify_request_token(self, token: str):
 		from cryptography.exceptions import InvalidSignature
 
+		parts = token.split(".")
+		if len(parts) != 2:
+			raise ValueError("Malformed token")
+
 		payload_b64, signature_b64 = token.split(".")
 
 		payload_bytes = base64.urlsafe_b64decode(payload_b64 + "==")
