@@ -2084,7 +2084,7 @@ class VirtualMachine(Document):
 			"cluster": self.cluster,
 			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
-			"server_id": self.index,
+			"server_id": self.index + 1000000,  # u servers shouldn't cause any issues with m servers
 			"is_primary": True,
 			"team": self.team,
 			"is_unified_server": True,
