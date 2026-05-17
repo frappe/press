@@ -36,6 +36,8 @@ class AgentAuth(Document):
 		lock_key = f"agent_auth_regeneration:{self.server}"
 
 		with frappe.cache().lock(lock_key, timeout=600):
+			self.reload()
+
 			# already rotating
 			if self.regenerate_public_key:
 				return
