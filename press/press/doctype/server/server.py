@@ -1993,7 +1993,7 @@ class BaseServer(Document, TagHelpers):
 
 		public_key_b64 = base64.b64encode(public_key_bytes).decode()
 
-		frappe.cache.delete_key(f"{auth.server}_agent_public_key")
+		frappe.cache().delete_key(f"{auth.server}_agent_public_key")
 		auth.public_key = public_key_b64
 
 		return private_key_str
@@ -2012,7 +2012,11 @@ class BaseServer(Document, TagHelpers):
 				port=self._ssh_port(),
 				variables={"agent_token": agent_token},
 			)
-			ansible.run()
+			result = ansible.run()
+			if result.status != "Success":
+				log_error("Agent auth setup playbook failed", server=self.as_dict())
+				return
+
 			auth.is_agent_auth_setup = 1
 
 			auth.save(ignore_permissions=True)

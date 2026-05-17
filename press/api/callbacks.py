@@ -150,5 +150,7 @@ def update_job(job, server):
 		filters={"job_id": job["id"]},
 		as_dict=True,
 	)
+	if not job_doc:
+		return
 
 	handle_polled_job(polled_job=job, job=job_doc)
