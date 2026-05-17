@@ -802,7 +802,12 @@ class DatabaseServer(BaseServer):
 
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
-			server_ids = frappe.get_all("Database Server", fields=["server_id"], pluck="server_id")
+			server_ids = frappe.get_all(
+				"Database Server",
+				filters={"is_unified_server": self.is_unified_server},
+				fields=["server_id"],
+				pluck="server_id",
+			)
 			if server_ids:
 				self.server_id = max(server_ids or []) + 1
 			else:
