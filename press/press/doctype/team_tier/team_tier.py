@@ -15,6 +15,8 @@ class TeamTier(Document):
 		from frappe.types import DF
 
 		amount: DF.Float
+		last_invoice_amount: DF.Float
+		paying_user_since: DF.Int
 		tier: DF.Data | None
 	# end: auto-generated types
 

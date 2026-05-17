@@ -7,7 +7,10 @@
  "engine": "InnoDB",
  "field_order": [
   "tier",
-  "amount"
+  "amount",
+  "column_break_emnb",
+  "paying_user_since",
+  "last_invoice_amount"
  ],
  "fields": [
   {
@@ -21,12 +24,26 @@
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Amount (in USD)"
+  },
+  {
+   "fieldname": "column_break_emnb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "paying_user_since",
+   "fieldtype": "Int",
+   "label": "Paying user since (in Months)"
+  },
+  {
+   "fieldname": "last_invoice_amount",
+   "fieldtype": "Float",
+   "label": "Last Invoice Amount (in USD)"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-12 16:00:18.208050",
+ "modified": "2026-05-17 23:26:01.152721",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team Tier",
