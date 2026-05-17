@@ -3,6 +3,7 @@ import { ref } from 'vue'
 
 interface Props {
 	headerCss?: string
+<<<<<<< HEAD
 	disabled?: boolean
 }
 
@@ -26,6 +27,18 @@ function toggle() {
 			:class="headerCss"
 			@click.prevent="toggle"
 		>
+=======
+}
+
+defineProps<Props>()
+
+const opened = ref(false)
+</script>
+
+<template>
+	<details :open="opened" @click="opened = !opened" class='cursor-pointer'>
+		<summary class="flex items-center gap-2" :class="headerCss">
+>>>>>>> 7fb5b9f2f (feat(component): Collapsible)
 			<slot name="header" />
 			<LucideChevronRight
 				class="shrink-0 size-4 ml-auto transition-transform duration-300"
