@@ -384,6 +384,8 @@ class Team(Document):
 			frappe.throw("You have already an account with same email. Please login using the same email.")
 
 		team.team_title = "Parent Team"
+		team.apply_limits = 1
+		team.spending_limit = 100  # default spending limit for new teams, can be updated later by team admin
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
 		if account_request.invited_by_parent_team:
