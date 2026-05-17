@@ -736,8 +736,12 @@ export default {
 			},
       {
 				label: 'Pipelines',
+<<<<<<< HEAD
 				icon: LucidePocketKnife,
         condition: () => getTeam().doc?.is_desk_user,
+=======
+				icon: icon('sliders'),
+>>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 				route: 'pipelines',
         childrenRoutes: ['Release Pipeline'],
 				type: 'Component',

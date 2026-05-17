@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+<<<<<<< HEAD
 	createListResource,
 	createDocumentResource,
 	Button,
@@ -23,6 +24,30 @@ import { secsToDuration, date } from '@/utils/format'
 const team = getTeam()
 const route = useRoute()
 const socket = window.$socket
+=======
+	createResource,
+	createDocumentResource,
+	getCachedDocumentResource,
+	Button,
+	Dropdown,
+	Badge,
+	Tabs,
+} from 'frappe-ui'
+
+
+
+import Stages from './Stages.vue'
+import CopyBtn from '@/components/utils/CopyBtn.vue'
+
+import { h, ref, computed, provide } from 'vue'
+import { useRoute } from 'vue-router'
+import { getTeam } from '@/data/team'
+
+import { duration, date } from '@/utils/format'
+
+const route = useRoute()
+const team = getTeam()
+>>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 const output = ref<String | null>(null)
 
 const setOutput = (str: String | null) => {
@@ -40,20 +65,39 @@ const dropdownOptions = computed(() => {
 			condition: () => team?.doc?.is_desk_user,
 			onClick: () => {
 				window.open(
+<<<<<<< HEAD
 					`${window.location.protocol}//${window.location.host}/app/release-pipeline/${route.params.id}`,
+=======
+					`${window.location.protocol}//${window.location.host}/app/deploy-candidate-build/${this.id}`,
+>>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 					'_blank',
 				)
 			},
 		},
+<<<<<<< HEAD
+=======
+		{
+			label: 'View App Versions',
+			icon: 'package',
+			onClick: () => {
+				// this.appVersions();
+			},
+		},
+>>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 	]
 
 	return list.filter((option) => option.condition?.() ?? true)
 })
 
+<<<<<<< HEAD
 const activeBuildId = ref()
 const buildIds = computed(() => {
 	const ids = pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => x.name)
 	if (!activeBuildId.value && ids) activeBuildId.value = ids[0]
+=======
+const buildIds = computed(() => {
+	const ids = pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => x.name)
+>>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 	return ids || []
 })
 
@@ -63,6 +107,7 @@ const pipeline = createDocumentResource({
 	auto: true,
 })
 
+<<<<<<< HEAD
 const notifApiFields = {
 	doctype: 'Press Notification',
 	fields: [
@@ -137,6 +182,29 @@ onBeforeUnmount(() => {
 	socket.emit('doc_unsubscribe', 'Release Pipeline', route.params.id)
 	socket.off('doc_update', handleDocUpdate)
 })
+=======
+const cardLabels = computed(() => {
+	return {
+		'Created by': 'sidhanth@frappe.io',
+		Start: date(pipeline?.doc?.steps?.start, 'lll'),
+		End: date(pipeline?.doc?.steps?.end, 'lll'),
+		Duration: 10,
+		// Duration: duration(data?.doc?.steps?.duration),
+	}
+})
+
+const tabState = ref(0)
+const sidebarTabs = ref([
+	{
+		label: 'Tasks',
+		icon: LucideWorkflow,
+	},
+	{
+		label: 'Issues',
+		icon: LucideAlertCircle,
+	},
+])
+>>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 </script>
 
 <template>
@@ -145,6 +213,7 @@ onBeforeUnmount(() => {
 	>
 		<!-- header -->
 		<div class="flex gap-2 items-center">
+<<<<<<< HEAD
 			<router-link :to="`/groups/${route.params.name}/pipelines`">
 				<lucide-chevron-left class="size-4" />
 			</router-link>
@@ -169,10 +238,34 @@ onBeforeUnmount(() => {
 				<Button>
 					<lucide-more-horizontal class="size-4" />
 				</Button>
+=======
+			<button>
+				<lucide-chevron-left class="size-4" />
+			</button>
+
+			<h2 class="text-ink-gray-9">deploy blablablab</h2>
+			<Badge :label="'Running'" />
+
+			<Button theme="red" class="ml-auto"> Stop Deploy </Button>
+
+			<Button>
+				<lucide-refresh-ccw class="h-4 w-4" />
+			</Button>
+
+			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
+				<template v-slot="{ open }">
+					<Button>
+						<template #icon>
+							<lucide-more-horizontal class="h-4 w-4" />
+						</template>
+					</Button>
+				</template>
+>>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 			</Dropdown>
 		</div>
 
 		<!-- status cards -->
+<<<<<<< HEAD
 		<section
 			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm"
 		>
@@ -196,10 +289,21 @@ onBeforeUnmount(() => {
 				<span>
 					{{ secsToDuration(pipeline?.doc?.steps?.duration)  || '-' }}
 				</span>
+=======
+		<section class="grid grid-cols-4 gap-5">
+			<div
+				v-for="(label, key) in cardLabels"
+				:key="key"
+				class="flex flex-col gap-2 border p-4 rounded"
+			>
+				<span class="text-sm font-medium text-ink-gray-4"> {{ key }} </span>
+				<span class="text-sm text-ink-gray-9"> {{ label || '-' }} </span>
+>>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 			</div>
 		</section>
 
 		<!-- deploy steps + output -->
+<<<<<<< HEAD
 		<div class="flex rounded border p-3 flex-1 min-h-0">
 			<aside
 				class="overflow-y-auto overflow-x-hidden pr-3 px-0.5 flex-shrink-0 transition-all duration-500"
@@ -267,6 +371,40 @@ onBeforeUnmount(() => {
 			<div
 				v-show="output"
 				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 rounded transition-all duration-500 flex-1"
+=======
+		<div
+			class="grid rounded border p-3 flex-1 transition-all duration-500 min-h-0"
+			:class="[output ? 'grid-cols-[auto_1fr]' : 'grid-cols-[1fr_0fr] pr-0']"
+		>
+			<aside
+				class="w-full !min-w-[10rem] pr-3 overflow-y-auto overflow-x-hidden px-2"
+			>
+				<Tabs
+					:tabs="sidebarTabs"
+					v-model="tabState"
+					class="[&_[role=tablist]]:mb-2 [&_[role=tablist]]:px-0"
+				>
+					<template #tab-item="{ tab }">
+						<button class="flex items-center gap-2 pb-3">
+							<component :is="tab.icon" class="size-4 text-ink-gray-6" />
+							{{ tab.label }}
+
+							<Badge v-if='tab.label == "Issues"' :label="0" />
+						</button>
+					</template>
+				</Tabs>
+
+				<Stages
+					v-if="tabState == 0 "
+					:stages="pipeline?.doc?.steps?.stages"
+					:buildIds
+				/>
+			</aside>
+
+			<div
+				v-show="output"
+				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 rounded flex-1"
+>>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 			>
 				<div
 					class="flex items-center gap-2 border-b pb-2 border-outline-gray-2 mb-3 text-ink-gray-6"

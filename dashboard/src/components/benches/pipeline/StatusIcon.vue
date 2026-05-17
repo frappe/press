@@ -2,7 +2,11 @@
 import { Spinner } from 'frappe-ui'
 
 interface Props {
+<<<<<<< HEAD
 	status: 'Success' | 'Running' | 'Pending' | 'Queued' | 'Failed' | 'Warning'
+=======
+	status: 'Success' | 'Running' | 'Pending' | 'Queued' | 'Failed'
+>>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 }
 
 defineProps<Props>()
@@ -21,8 +25,12 @@ defineProps<Props>()
 		class="size-4 shrink-0 text-ink-gray-5"
 	/>
 
+<<<<<<< HEAD
   <lucide-alert-triangle v-else-if='status == "Warning"'
     class="size-4 shrink-0 text-ink-amber-3" />
 
 	<lucide-circle-x v-else class="size-4 shrink-0 text-ink-red-4" />
+=======
+	<lucide-circle-x v-else class="size-4 shrink-0 text-ink-red-3" />
+>>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 </template>
