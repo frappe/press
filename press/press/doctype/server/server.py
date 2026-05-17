@@ -270,7 +270,7 @@ class BaseServer(Document, TagHelpers):
 		if not isinstance(server, str):
 			server = server.name
 
-		storage_price = frappe.db.get_value("Server Storage Plan", {"enabled": 1}, "price_usd")
+		storage_price = frappe.db.get_value("Server Storage Plan", {"enabled": 1}, "price_usd") or 0
 		if is_limits_exceeded(storage_price * increment):
 			frappe.throw("Cannot increase storage as spending limit has been exceeded.")
 

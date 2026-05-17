@@ -604,8 +604,8 @@ class Team(Document):
 
 	def update_tier_limit(self):
 		if self.apply_limits and self.tier and self.tier != self.get_doc_before_save().tier:
-			self.spending_limit = frappe.db.get_value("Team Tier", self.tier, "amount") or 0
-			self.save()
+			new_limit = frappe.db.get_value("Team Tier", self.tier, "amount") or 100
+			frappe.db.set_value("Team", self.name, "spending_limit", new_limit)
 
 	@frappe.whitelist()
 	def impersonate(self, member, reason):

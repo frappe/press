@@ -410,7 +410,7 @@ class Invoice(Document):
 				"docstatus": 1,
 				"status": "Paid",
 			},
-			fields=["name", "status", "total"],
+			fields=["name"],
 			order_by="creation desc",
 			limit=3,
 		)
