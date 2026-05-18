@@ -1999,6 +1999,9 @@ class BaseServer(Document, TagHelpers):
 		try:
 			auth = self.agent_auth
 
+			if auth.public_key and auth.is_agent_auth_setup:
+				return
+
 			private_key = self._generate_and_activate_key()
 			agent_token = self.sign_agent_token(private_key)
 
@@ -2019,7 +2022,6 @@ class BaseServer(Document, TagHelpers):
 			auth.save(ignore_permissions=True)
 		except Exception:
 			log_error("Agent Auth Setup Exception", server=self.as_dict())
-		self.save()
 
 	@frappe.whitelist()
 	def collect_arm_images(self) -> str:
