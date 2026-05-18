@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { createResource, createDocumentResource } from 'frappe-ui'
+import { getCachedDocumentResource, createDocumentResource } from 'frappe-ui'
 import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
 
 import { date, secsToDuration } from '@/utils/format'
-import { watch, ref, computed, inject } from 'vue'
+import { watch, ref, inject, onMounted, onBeforeUnmount } from 'vue'
 
 const setOutput = inject('setOutput')
 const output = inject('output')
@@ -16,25 +16,68 @@ interface Props {
 
 const props = defineProps<Props>()
 
+// used to unsubscribe from socket events
+const wired = new Set<string>()
+
 const buildResources = ref<Record<string, any>>({})
+const socket = window.$socket
 
 watch(
-	() => props.buildIds.slice(),
+	() => props.buildIds,
 	(ids) => {
 		if (!ids?.length) return
 
 		ids.forEach((id) => {
-			buildResources.value[id] = createDocumentResource({
-				doctype: 'Deploy Candidate Build',
-				name: id,
-				auto: true,
-				fields: ['build_steps'],
-			})
+			if (!buildResources.value[id]) {
+				buildResources.value[id] = createDocumentResource({
+					doctype: 'Deploy Candidate Build',
+					name: id,
+					auto: true,
+					fields: ['build_steps'],
+				})
+			}
+
+			// socket io stuff
+			if (socket && !wired.has(id)) {
+				socket.emit('doc_subscribe', 'Deploy Candidate Build', id)
+
+				socket.on(`bench_deploy:${id}:steps`, (data) => {
+					const buildRes = buildResources.value[id]
+					if (data.name === id && buildRes) {
+						buildRes.doc.build_steps = data.steps
+					}
+				})
+
+				socket.on(`bench_deploy:${id}:finished`, () => {
+					const rgDoc = getCachedDocumentResource(
+						'Release Group',
+						buildResources.value[id]?.doc?.group,
+					)
+					if (rgDoc) rgDoc.reload()
+
+					// this.$resources.deploy.reload();
+					// this.$resources.errors.reload();
+					// this.$resources.warnings.reload();
+				})
+			}
+
+			wired.add(id)
 		})
 	},
 	{ immediate: true, deep: true },
 )
 
+onBeforeUnmount(() => {
+	const socket = window.$socket
+
+	wired.forEach((id) => {
+		socket.emit('doc_unsubscribe', 'Deploy Candidate Build', id)
+		socket.off(`bench_deploy:${id}:steps`)
+	})
+})
+
+// single line commands with && are very long
+// so make them long
 const formatCmd = (cmd: string) => {
 	return cmd
 		.split('&&')
@@ -61,7 +104,10 @@ const formatCmd = (cmd: string) => {
 				@click="setOutput(build_step.output || formatCmd(build_step.command) || 'No Output') "
 			>
 				<StatusIcon :status="build_step.status" />
-				<span class='mr-3'> {{ build_step.stage }} - {{ build_step.step }} </span>
+				<span class="mr-3">
+					{{ build_step.stage }}
+					- {{ build_step.step }}
+				</span>
 				<span class="text-ink-gray-5 ml-auto"
 					>{{ build_step.cached ? 'Cached': secsToDuration(build_step.duration) }}</span
 				>
@@ -82,7 +128,9 @@ const formatCmd = (cmd: string) => {
 
 			<div class="flex flex-col gap-2 p-3">
 				<span class="text-sm font-medium text-ink-gray-4"> Duration </span>
-				<span class="text-sm text-ink-gray-9"> {{ secsToDuration(x.duration) }} </span>
+				<span class="text-sm text-ink-gray-9">
+					{{ secsToDuration(x.duration) }}
+				</span>
 			</div>
 		</div>
 	</Collapsable>

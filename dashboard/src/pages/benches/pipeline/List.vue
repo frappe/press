@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
+import { date } from '@/utils/format'
 const route = useRoute()
 
 import { createListResource } from 'frappe-ui'
@@ -8,11 +9,12 @@ const pipelines = createListResource({
 	doctype: 'Release Pipeline',
 	auto: true,
 	fields: ['name', 'status', 'creation'],
+  orderBy: 'creation desc',
 })
 </script>
 
 <template>
-  <div class='grid'>
+  <div class='grid gap-4'>
 
 	<router-link
 		v-for="pipeline in pipelines.data"
@@ -26,6 +28,9 @@ const pipelines = createListResource({
     }"
 	>
 		{{ pipeline.name }}
+
+    {{ pipeline.status }}
+    {{ date(pipeline.creation) }}
 	</router-link>
   </div>
 </template>
