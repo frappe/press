@@ -24,7 +24,6 @@ from press.press.doctype.database_server_mariadb_variable.database_server_mariad
 	DatabaseServerMariaDBVariable,
 )
 from press.press.doctype.server.server import PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN, Agent, BaseServer, Server
-from press.press.doctype.static_ip_log.static_ip_log import create_static_ip_log
 from press.runner import Ansible
 from press.utils import get_press_base_url, log_error
 from press.utils.database import find_db_disk_info, parse_du_output_of_mysql_directory
@@ -249,12 +248,7 @@ class DatabaseServer(BaseServer):
 		if self.has_value_changed("team"):
 			self.update_subscription()
 
-		if self.has_value_changed("is_static_ip"):
-			if self.is_static_ip:
-				create_static_ip_log(self.name, self.doctype, self.ip)
-			else:
-				previous = self.get_doc_before_save()
-				create_static_ip_log(self.name, self.doctype, previous.ip, "Detached")
+		self._create_static_ip_log()
 
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)

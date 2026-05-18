@@ -28,35 +28,59 @@ class StaticIPLog(Document):
 		if self.server_type not in ("Server", "Database Server"):
 			frappe.throw("Server Type must be either 'Server' or 'Database Server'")
 
+	def before_insert(self):
+		if self.status == "Attached":
+			self._check_if_can_enable_subscription()
+		elif self.status == "Detached":
+			self._check_if_can_disable_subscription()
+		else:
+			frappe.throw("Invalid status. Status must be either 'Attached' or 'Detached'.")
+
 	def after_insert(self):
 		if self.status == "Attached":
-			# TODO: check if any other server has the same static IP and if so, end subscription for that server and create new one for this server
 			self._create_subscription()
-
 		elif self.status == "Detached":
-			# end subscription
 			self._disable_subscription()
 
-		frappe.throw("Invalid status. Status must be either 'Attached' or 'Detached'.")
-
-	def _create_subscription(self):
-		plan = frappe.get_value("Static IP Plan", {"provider": self.provider, "enabled": 1}, "name")
+	def _get_plan(self):
+		plan = frappe.db.get_value(
+			"Static IP Plan", {"provider": self.provider, "enabled": 1}, "name", cache=True
+		)
 		if not plan:
-			frappe.msgprint(f"No active Static IP Plan found for provider {self.provider}")
-			return
+			frappe.throw(f"No active Static IP Plan found for provider {self.provider}")
+		return plan
 
-		if frappe.db.exists(
+	def _check_if_can_enable_subscription(self):
+		if (
+			last_status := frappe.db.get_value(
+				"Static IP Log",
+				{
+					"static_ip": self.static_ip,
+				},
+				["status"],
+				order_by="creation desc",
+			)
+		) and last_status == "Attached":
+			# could be a case where the server wasn't synced properly
+			frappe.throw(
+				"Static IP seems to already be attached to a server. Please check the Static IP Logs."
+			)
+
+		if existing_sub := frappe.db.get_value(
 			"Subscription",
 			{
 				"enabled": 1,
-				"document_type": self.server_type,
 				"document_name": self.server,
 				"plan_type": "Static IP Plan",
-				"plan": plan,
 			},
+			["plan", "name"],
+			as_dict=True,
 		):
-			return
+			frappe.throw(
+				f"Server already has an active subscription ({existing_sub.name}) for a Static IP Plan ({existing_sub.plan}). Please check the Subscriptions."
+			)
 
+	def _create_subscription(self):
 		frappe.get_doc(
 			{
 				"doctype": "Subscription",
@@ -65,10 +89,26 @@ class StaticIPLog(Document):
 				"document_type": self.server_type,
 				"document_name": self.server,
 				"plan_type": "Static IP Plan",
-				"plan": plan,
+				"plan": self._get_plan(),
 				"interval": "Daily",
 			}
 		).insert(ignore_permissions=True)
+
+	def _check_if_can_disable_subscription(self):
+		if (
+			last_status := frappe.db.get_value(
+				"Static IP Log",
+				{
+					"server": self.server,
+					"static_ip": self.static_ip,
+				},
+				["status"],
+				order_by="creation desc",
+			)
+		) and last_status == "Detached":
+			frappe.throw(
+				"Static IP seems to already be detached from the server. Please check the Static IP Logs."
+			)
 
 	def _disable_subscription(self):
 		frappe.db.set_value(
@@ -78,6 +118,7 @@ class StaticIPLog(Document):
 				"document_type": self.server_type,
 				"document_name": self.server,
 				"plan_type": "Static IP Plan",
+				"plan": self._get_plan(),
 			},
 			"enabled",
 			0,
