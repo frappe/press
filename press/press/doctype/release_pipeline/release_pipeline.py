@@ -730,6 +730,7 @@ class ReleasePipeline(WorkflowBuilder):
 			task.name: {
 				**task,
 <<<<<<< HEAD
+<<<<<<< HEAD
 				"start": task.start.isoformat() if task.start else None,
 				"end": task.end.isoformat() if task.end else None,
 =======
@@ -737,6 +738,10 @@ class ReleasePipeline(WorkflowBuilder):
 				"end": int(task.end.timestamp()) if task.end else None,
 				"duration": int((task.end - task.start).total_seconds()) if task.end and task.start else None,
 >>>>>>> e64d3b4aa (feat(release-pipeline): API Docs)
+=======
+				"start": task.start.isoformat() if task.start else None,
+				"end": task.end.isoformat() if task.end else None,
+>>>>>>> 7cc6a65dc (fix: use isoformat() for start/end time in release_pipeline get steps_info)
 			}
 			for task in frappe.get_all(
 				"Press Workflow Task",
@@ -876,12 +881,17 @@ class ReleasePipeline(WorkflowBuilder):
 			"name": self.name,
 			"status": self.status,
 <<<<<<< HEAD
+<<<<<<< HEAD
 			"start": workflow.start.isoformat() if workflow.start else None,
 			"end": workflow.end.isoformat() if workflow.end else None,
 =======
 			"start": int(workflow.start.timestamp()) if workflow.start else None,
 			"end": int(workflow.end.timestamp()) if workflow.end else None,
 >>>>>>> e64d3b4aa (feat(release-pipeline): API Docs)
+=======
+			"start": workflow.start.isoformat() if workflow.start else None,
+			"end": workflow.end.isoformat() if workflow.end else None,
+>>>>>>> 7cc6a65dc (fix: use isoformat() for start/end time in release_pipeline get steps_info)
 			"duration": int((workflow.end - workflow.start).total_seconds())
 			if workflow.start and workflow.end
 			else None,
