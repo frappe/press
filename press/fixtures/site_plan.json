@@ -26267,7 +26267,7 @@
 		"minimum_server_price_usd": 0.0,
 		"modified": "2026-04-10 15:35:06.769507",
 		"monitor_access": 1,
-		"name": "Unlimited - Supported - Hetzner",
+		"name": "Unlimited - Low - Supported - Hetzner",
 		"offsite_backups": 1,
 		"plan_description": "",
 		"plan_title": "Small Supported",
