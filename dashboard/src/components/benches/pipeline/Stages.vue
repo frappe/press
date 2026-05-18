@@ -160,9 +160,13 @@ const formatCmd = (cmd: string) => {
 		:headerCss="`${i == stages.length-1 ? '':'border-b'} py-3`"
 		:key="x.label"
 <<<<<<< HEAD
+<<<<<<< HEAD
 		:disabled='["Pending", "Queued"].includes(x.status)'
 =======
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+		:disabled='["Pending", "Queued"].includes(x.status)'
+>>>>>>> dddcb986e (fix(deploy-ui): disable steps if they are pending)
 	>
 		<template #header>
 			<StatusIcon :status="x.status" />
@@ -188,8 +192,9 @@ const formatCmd = (cmd: string) => {
 		<div class="ml-6 my-3" v-if='x.label == "Building"'>
 			<button
 				v-for="build_step in buildResources[props.buildIds?.[0]]?.doc?.build_steps"
-				class="py-2 flex items-center gap-2 justify-start whitespace-nowrap w-full"
+				class="py-2 flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed"
 				@click="setOutput(build_step.output || formatCmd(build_step.command) || 'No Output') "
+				:disabled="build_step.status =='Pending'"
 			>
 				<StatusIcon :status="build_step.status" />
 				<span class="mr-3">
