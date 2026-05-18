@@ -823,7 +823,7 @@ class DatabaseServer(BaseServer):
 					"monitoring_password": config.monitoring_password,
 					"log_server": config.log_server,
 					"kibana_password": config.kibana_password,
-					"private_key": config.private_key,
+					"agent_token": config.agent_token,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
 					"allocator": self.memory_allocator.lower(),
@@ -867,6 +867,9 @@ class DatabaseServer(BaseServer):
 		else:
 			kibana_password = None
 
+		private_key = self._generate_and_activate_key()
+		token = self.sign_agent_token(private_key)
+
 		return frappe._dict(
 			dict(
 				agent_password=self.get_password("agent_password"),
@@ -879,7 +882,7 @@ class DatabaseServer(BaseServer):
 				),
 				log_server=log_server,
 				kibana_password=kibana_password,
-				private_key=self._generate_and_activate_key(),
+				agent_token=token,
 			)
 		)
 

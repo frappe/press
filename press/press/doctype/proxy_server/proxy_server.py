@@ -127,6 +127,7 @@ class ProxyServer(BaseServer):
 			kibana_password = None
 
 		private_key = self._generate_and_activate_key()
+		agent_token = self.sign_agent_token(private_key)
 
 		try:
 			ansible = Ansible(
@@ -147,7 +148,7 @@ class ProxyServer(BaseServer):
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
 					"press_url": frappe.utils.get_url(),
-					"private_key": private_key,
+					"agent_token": agent_token,
 				},
 			)
 			play = ansible.run()

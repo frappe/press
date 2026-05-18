@@ -3203,6 +3203,7 @@ class Server(BaseServer):
 		log_server, kibana_password = self.get_log_server()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
 		private_key = self._generate_and_activate_key()
+		agent_token = self.sign_agent_token(private_key)
 
 		# If database server is set, then define db port under configuration
 		db_port = (
@@ -3226,7 +3227,6 @@ class Server(BaseServer):
 					"agent_repository_url": agent_repository_url,
 					"agent_branch": agent_branch,
 					"agent_sentry_dsn": agent_sentry_dsn,
-					"private_key": private_key,
 					"monitoring_password": self.get_monitoring_password(),
 					"log_server": log_server,
 					"kibana_password": kibana_password,
@@ -3237,6 +3237,7 @@ class Server(BaseServer):
 					"db_port": db_port,
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
+					"agent_token": agent_token,
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					**self.get_mount_variables(),
 				},
