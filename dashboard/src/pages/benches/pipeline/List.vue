@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { date } from '@/utils/format'
 import { createListResource } from 'frappe-ui'
 
@@ -15,6 +16,9 @@ const pipelines = createListResource({
 	},
 	orderBy: 'creation desc',
 =======
+=======
+import { date } from '@/utils/format'
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 const route = useRoute()
 
 import { createListResource } from 'frappe-ui'
@@ -23,11 +27,16 @@ const pipelines = createListResource({
 	doctype: 'Release Pipeline',
 	auto: true,
 	fields: ['name', 'status', 'creation'],
+<<<<<<< HEAD
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+  orderBy: 'creation desc',
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 })
 </script>
 
 <template>
+<<<<<<< HEAD
 <<<<<<< HEAD
 	<div class="grid gap-4">
 		<table class="w-full">
@@ -80,6 +89,9 @@ const pipelines = createListResource({
 	</div>
 =======
   <div class='grid'>
+=======
+  <div class='grid gap-4'>
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 
 	<router-link
 		v-for="pipeline in pipelines.data"
@@ -93,6 +105,9 @@ const pipelines = createListResource({
     }"
 	>
 		{{ pipeline.name }}
+
+    {{ pipeline.status }}
+    {{ date(pipeline.creation) }}
 	</router-link>
   </div>
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)

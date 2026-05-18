@@ -37,12 +37,13 @@ const socket = window.$socket
 import Stages from './Stages.vue'
 import CopyBtn from '@/components/utils/CopyBtn.vue'
 
-import { ref, computed, provide } from 'vue'
+import { ref, computed, provide, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { getTeam } from '@/data/team'
 
 import { secsToDuration, date } from '@/utils/format'
 
+const socket = window.$socket
 const route = useRoute()
 const team = getTeam()
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
@@ -105,6 +106,7 @@ const pipeline = createDocumentResource({
 	auto: true,
 })
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 const notifApiFields = {
 	doctype: 'Press Notification',
@@ -181,6 +183,15 @@ onBeforeUnmount(() => {
 	socket.off('doc_update', handleDocUpdate)
 })
 =======
+=======
+watch(
+	() => pipeline.doc,
+	(newVal, oldVal) => {
+		console.log('pipeline updated', newVal)
+	},
+)
+
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 const cardLabels = computed(() => {
 	return {
 		'Created by': 'sidhanth@frappe.io',
@@ -201,7 +212,26 @@ const sidebarTabs = ref([
 		icon: LucideAlertCircle,
 	},
 ])
+<<<<<<< HEAD
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+
+// ---------------------  Realtime stuff ----------------------
+const handleDocUpdate = (x) => {
+	if (x.doctype === 'Release Pipeline' && x.name === route.params.id)
+		pipeline.reload()
+}
+
+onMounted(() => {
+	socket.emit('doc_subscribe', 'Release Pipeline', route.params.id)
+	socket.on('doc_update', handleDocUpdate)
+})
+
+onBeforeUnmount(() => {
+	socket.emit('doc_unsubscribe', 'Release Pipeline', route.params.id)
+	socket.off('doc_update', handleDocUpdate)
+})
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 </script>
 
 <template>
@@ -398,7 +428,7 @@ const sidebarTabs = ref([
 				/>
 			</aside>
 
-      <!-- output -->
+			<!-- output -->
 			<div
 				v-show="output"
 				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 rounded flex-1"

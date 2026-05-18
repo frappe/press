@@ -1,5 +1,6 @@
 <script setup lang="ts">
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { getCachedDocumentResource, createDocumentResource } from 'frappe-ui'
 import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
@@ -8,12 +9,19 @@ import { date, secsToDuration } from '@/utils/format'
 import { watch, ref, inject, onMounted, onBeforeUnmount } from 'vue'
 =======
 import { createResource, createDocumentResource } from 'frappe-ui'
+=======
+import { getCachedDocumentResource, createDocumentResource } from 'frappe-ui'
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
 
 import { date, secsToDuration } from '@/utils/format'
+<<<<<<< HEAD
 import { watch, ref, computed, inject } from 'vue'
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+import { watch, ref, inject, onMounted, onBeforeUnmount } from 'vue'
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 
 const setOutput = inject('setOutput')
 const output = inject('output')
@@ -30,6 +38,7 @@ interface Props {
 const props = defineProps<Props>()
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // used to unsubscribe from socket events
 const wired = new Set<string>()
 
@@ -39,16 +48,29 @@ const socket = window.$socket
 watch(
 	() => props.buildIds,
 =======
+=======
+// used to unsubscribe from socket events
+const wired = new Set<string>()
+
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 const buildResources = ref<Record<string, any>>({})
+const socket = window.$socket
 
 watch(
+<<<<<<< HEAD
 	() => props.buildIds.slice(),
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+	() => props.buildIds,
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 	(ids) => {
 		if (!ids?.length) return
 
 		ids.forEach((id) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 			if (!buildResources.value[id]) {
 				buildResources.value[id] = createDocumentResource({
 					doctype: 'Deploy Candidate Build',
@@ -70,8 +92,11 @@ watch(
 				})
 
 				socket.on(`bench_deploy:${id}:finished`, () => {
+<<<<<<< HEAD
 					buildResources.value[id]?.reload()
 
+=======
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 					const rgDoc = getCachedDocumentResource(
 						'Release Group',
 						buildResources.value[id]?.doc?.group,
@@ -85,6 +110,7 @@ watch(
 			}
 
 			wired.add(id)
+<<<<<<< HEAD
 =======
 			buildResources.value[id] = createDocumentResource({
 				doctype: 'Deploy Candidate Build',
@@ -93,12 +119,17 @@ watch(
 				fields: ['build_steps'],
 			})
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 		})
 	},
 	{ immediate: true, deep: true },
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 onBeforeUnmount(() => {
 	const socket = window.$socket
 
@@ -110,8 +141,11 @@ onBeforeUnmount(() => {
 
 // single line commands with && are very long
 // so make them long
+<<<<<<< HEAD
 =======
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 const formatCmd = (cmd: string) => {
 	return cmd
 		.split('&&')
@@ -158,7 +192,10 @@ const formatCmd = (cmd: string) => {
 				@click="setOutput(build_step.output || formatCmd(build_step.command) || 'No Output') "
 			>
 				<StatusIcon :status="build_step.status" />
-				<span class='mr-3'> {{ build_step.stage }} - {{ build_step.step }} </span>
+				<span class="mr-3">
+					{{ build_step.stage }}
+					- {{ build_step.step }}
+				</span>
 				<span class="text-ink-gray-5 ml-auto"
 <<<<<<< HEAD
 					>{{ build_step.cached ? 'Cached': build_step.duration }}</span
@@ -194,6 +231,7 @@ const formatCmd = (cmd: string) => {
 				<span class="text-sm font-medium text-ink-gray-4"> Duration </span>
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 				<span class="text-sm text-ink-gray-9">
 					{{ secsToDuration(x.duration) }}
 				</span>
@@ -203,6 +241,11 @@ const formatCmd = (cmd: string) => {
 =======
 				<span class="text-sm text-ink-gray-9"> {{ secsToDuration(x.duration) }} </span>
 >>>>>>> f3d59bb40 (fix(format): add missing secsToDuration())
+=======
+				<span class="text-sm text-ink-gray-9">
+					{{ secsToDuration(x.duration) }}
+				</span>
+>>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 			</div>
 		</div>
 	</Collapsable>
