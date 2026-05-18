@@ -95,9 +95,6 @@ BENCH_DATA_MNT_POINT = "/opt/volumes/benches"
 
 
 class BaseServer(Document, TagHelpers):
-	public_key: str | None
-	is_agent_auth_setup: int | None
-
 	dashboard_fields = (
 		"title",
 		"plan",
@@ -3204,6 +3201,7 @@ class Server(BaseServer):
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
 		private_key = self._generate_and_activate_key()
 		agent_token = self.sign_agent_token(private_key)
+		auth = self.agent_auth
 
 		# If database server is set, then define db port under configuration
 		db_port = (
@@ -3248,7 +3246,8 @@ class Server(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
-				self.is_agent_auth_setup = 1
+				auth.is_agent_auth_setup = 1
+				auth.save(ignore_permissions=True)
 				if self.provider == "DigitalOcean":
 					# To adjust docker permissions
 					self.reboot()

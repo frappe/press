@@ -128,6 +128,7 @@ class ProxyServer(BaseServer):
 
 		private_key = self._generate_and_activate_key()
 		agent_token = self.sign_agent_token(private_key)
+		auth = self.agent_auth
 
 		try:
 			ansible = Ansible(
@@ -156,7 +157,8 @@ class ProxyServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
-				self.is_agent_auth_setup = 1
+				auth.is_agent_auth_setup = 1
+				auth.save(ignore_permissions=True)
 			else:
 				self.status = "Broken"
 		except Exception:

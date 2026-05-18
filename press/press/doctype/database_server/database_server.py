@@ -807,6 +807,10 @@ class DatabaseServer(BaseServer):
 	def _setup_server(self):
 		config = self._get_config()
 
+		private_key = self._generate_and_activate_key()
+		agent_token = self.sign_agent_token(private_key)
+		auth = self.agent_auth
+
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_db.yml" if getattr(self, "is_self_hosted", False) else "database.yml",
@@ -823,7 +827,7 @@ class DatabaseServer(BaseServer):
 					"monitoring_password": config.monitoring_password,
 					"log_server": config.log_server,
 					"kibana_password": config.kibana_password,
-					"agent_token": config.agent_token,
+					"agent_token": agent_token,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
 					"allocator": self.memory_allocator.lower(),
@@ -843,7 +847,8 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
-				self.is_agent_auth_setup = 1
+				auth.is_agent_auth_setup = 1
+				auth.save(ignore_permissions=True)
 				self.process_hybrid_server_setup()
 				if self.provider == "DigitalOcean":
 					# Adjusting docker permissions
@@ -867,9 +872,6 @@ class DatabaseServer(BaseServer):
 		else:
 			kibana_password = None
 
-		private_key = self._generate_and_activate_key()
-		token = self.sign_agent_token(private_key)
-
 		return frappe._dict(
 			dict(
 				agent_password=self.get_password("agent_password"),
@@ -882,7 +884,6 @@ class DatabaseServer(BaseServer):
 				),
 				log_server=log_server,
 				kibana_password=kibana_password,
-				agent_token=token,
 			)
 		)
 
