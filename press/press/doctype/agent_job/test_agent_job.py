@@ -295,3 +295,55 @@ class TestAgentJob(FrappeTestCase):
 		self.assertEqual(in_execution_job.name, job.name)
 
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", True)
+
+	@patch("press.press.doctype.agent_job.agent_job.retry_undelivered_jobs")
+	def test_retry_poll_removes_server_on_success(
+		self,
+		mock_retry,
+	):
+		frappe.db.set_single_value("Press Settings", "push_feature", 1)
+
+		frappe.cache().sadd(
+			"undelivered_jobs",
+			"Server:test-server",
+		)
+
+		from press.press.doctype.agent_job.agent_job import retry_poll
+
+		retry_poll()
+
+		servers = frappe.cache().smembers("undelivered_jobs")
+
+		self.assertNotIn(
+			b"Server:test-server",
+			servers,
+		)
+
+	@patch("press.press.doctype.agent_job.agent_job.log_error")
+	@patch("press.press.doctype.agent_job.agent_job.retry_undelivered_jobs")
+	def test_retry_poll_keeps_server_on_failure(
+		self,
+		mock_retry,
+		mock_log_error,
+	):
+		mock_retry.side_effect = Exception("failure")
+
+		frappe.db.set_single_value("Press Settings", "push_feature", 1)
+
+		frappe.cache().sadd(
+			"undelivered_jobs",
+			"Server:test-server",
+		)
+
+		from press.press.doctype.agent_job.agent_job import retry_poll
+
+		retry_poll()
+
+		servers = frappe.cache().smembers("undelivered_jobs")
+
+		self.assertIn(
+			b"Server:test-server",
+			servers,
+		)
+
+		mock_log_error.assert_called_once()

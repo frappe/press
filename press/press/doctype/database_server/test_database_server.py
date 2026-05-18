@@ -150,3 +150,53 @@ class TestDatabaseServer(FrappeTestCase):
 			).value_int,
 			int(15007.248 * 0.65),
 		)
+
+	@patch("press.press.doctype.database_server.database_server.Ansible")
+	def test_setup_server_marks_agent_auth_as_setup(self, Mock_Ansible):
+		server = create_test_database_server()
+
+		server._get_config = Mock(
+			return_value=frappe._dict(
+				{
+					"agent_password": "test",  # pragma: allowlist secret
+					"agent_repository_url": "test",
+					"agent_branch": "main",
+					"monitoring_password": "test",  # pragma: allowlist secret
+					"log_server": None,
+					"kibana_password": None,
+					"mariadb_root_password": "test",  # pragma: allowlist secret
+					"certificate": frappe._dict(
+						{
+							"private_key": "key",  # pragma: allowlist secret
+							"full_chain": "chain",
+							"intermediate_chain": "intermediate",
+						}
+					),
+				}
+			)
+		)
+
+		server._generate_and_activate_key = Mock(return_value="private-key")
+		server.sign_agent_token = Mock(return_value="agent-token")
+		server.process_hybrid_server_setup = Mock()
+
+		auth = frappe._dict(
+			{
+				"is_agent_auth_setup": 0,
+				"save": Mock(),
+			}
+		)
+
+		server.agent_auth = auth
+
+		play = frappe._dict({"status": "Success"})
+		Mock_Ansible.return_value.run.return_value = play
+
+		server._setup_server()
+
+		server._generate_and_activate_key.assert_called_once()
+		server.sign_agent_token.assert_called_once_with("private-key")
+
+		self.assertEqual(auth.is_agent_auth_setup, 1)
+
+		auth.save.assert_called_once_with(ignore_permissions=True)

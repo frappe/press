@@ -1,6 +1,8 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
+from unittest.mock import patch
+
 import frappe
 import requests
 import responses
@@ -122,3 +124,58 @@ class TestAgent(FrappeTestCase):
 
 		responses.assert_call_count(f"https://{server.name}:443/agent/ping", 1)
 		self.assertEqual(frappe.db.count("Agent Request Failure", {"server": server.name}), 0)
+
+	@patch.object(Agent, "get_agent_public_key")
+	@patch.object(Agent, "get_regenerate_public_key")
+	def test_verify_request_token_fails_without_public_keys(
+		self,
+		mock_regenerate_key,
+		mock_public_key,
+	):
+		mock_public_key.return_value = None
+		mock_regenerate_key.return_value = None
+
+		agent = Agent("test-server")
+
+		self.assertRaises(
+			ValueError,
+			agent._verify_request_token,
+			"abc.def",
+		)
+
+	def test_verify_request_token_fails_for_malformed_token(self):
+		agent = Agent("test-server")
+
+		self.assertRaises(
+			ValueError,
+			agent._verify_request_token,
+			"invalid-token",
+		)
+
+	@patch.object(Agent, "_verify_request_token")
+	def test_extract_and_verify_token_raises_permission_error(
+		self,
+		mock_verify,
+	):
+		mock_verify.side_effect = ValueError()
+
+		agent = Agent("test-server")
+
+		self.assertRaises(
+			frappe.PermissionError,
+			agent.extract_and_verify_token,
+			"token",
+		)
+
+	def test_get_agent_public_key_returns_cached_key(self):
+		agent = Agent("test-server")
+
+		frappe.cache().set_value(
+			"test-server_agent_public_key",
+			"cached-key",
+		)
+
+		self.assertEqual(
+			agent.get_agent_public_key(),
+			"cached-key",
+		)

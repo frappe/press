@@ -383,3 +383,25 @@ class TestServer(FrappeTestCase):
 		)
 		self.assertEqual(len(incidents), 1)
 		self.assertEqual(incidents[0].server, self.high_mem_server.name)
+
+	@patch("press.runner.Ansible.run")
+	@patch.object(BaseServer, "sign_agent_token")
+	@patch.object(BaseServer, "_generate_and_activate_key")
+	def test_setup_agent_auth_returns_when_already_setup(
+		self,
+		mock_generate_key,
+		mock_sign_token,
+		mock_ansible_run,
+	):
+		server = create_test_server()
+
+		auth = server.agent_auth
+		auth.public_key = "public-key"
+		auth.is_agent_auth_setup = 1
+		auth.save(ignore_permissions=True)
+
+		server._setup_agent_auth()
+
+		mock_generate_key.assert_not_called()
+		mock_sign_token.assert_not_called()
+		mock_ansible_run.assert_not_called()

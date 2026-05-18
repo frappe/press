@@ -64,3 +64,53 @@ class TestProxyServer(FrappeTestCase):
 		self.assertTrue(
 			frappe.db.exists("Proxy Failover", {"primary": proxy1.name, "secondary": proxy2.name})
 		)
+
+	@patch("press.press.doctype.proxy_server.proxy_server.Ansible")
+	def test_setup_server_marks_agent_auth_as_setup(
+		self,
+		Mock_Ansible,
+	):
+		server = create_test_proxy_server()
+
+		server.get_password = Mock(return_value="password")
+		server.get_agent_repository_url = Mock(return_value="repo-url")
+
+		server._generate_and_activate_key = Mock(return_value="private-key")
+		server.sign_agent_token = Mock(return_value="agent-token")
+
+		auth = frappe._dict(
+			{
+				"is_agent_auth_setup": 0,
+				"save": Mock(),
+			}
+		)
+
+		server.agent_auth = auth
+
+		play = frappe._dict({"status": "Success"})
+		Mock_Ansible.return_value.run.return_value = play
+
+		with patch("frappe.get_doc") as mock_get_doc:
+			mock_get_doc.return_value = frappe._dict(
+				{
+					"private_key": "key",  # pragma: allowlist secret
+					"full_chain": "chain",
+					"intermediate_chain": "intermediate",
+					"get_password": Mock(return_value="monitoring-password"),
+				}
+			)
+
+			server._setup_server()
+
+		server._generate_and_activate_key.assert_called_once()
+
+		server.sign_agent_token.assert_called_once_with("private-key")
+
+		self.assertEqual(
+			auth.is_agent_auth_setup,
+			1,
+		)
+
+		auth.save.assert_called_once_with(
+			ignore_permissions=True,
+		)

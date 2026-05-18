@@ -2696,6 +2696,9 @@ def process_add_binlogs_to_indexer_agent_job_update(job: AgentJob):
 	if job.status != "Success":
 		return
 
+	if not job.data:
+		return
+
 	json_data = json.loads(job.data)
 	indexed_binlogs = json_data.get("indexed_binlogs", [])
 	frappe.db.set_value(
