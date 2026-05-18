@@ -958,21 +958,26 @@ class Agent:
 
 		public_key = frappe.cache().get_value(key)
 
-		if not public_key:
-			agent_auth: AgentAuth = frappe.get_doc(
-				"Agent Auth",
-				self.server,
+		if public_key:
+			return public_key
+
+		try:
+			agent_auth = frappe.get_doc("Agent Auth", self.server)
+		except frappe.DoesNotExistError:
+			return None
+
+		if not agent_auth.public_key:
+			return None
+
+		public_key = agent_auth.public_key
+
+		if not frappe.cache().get_value(f"{self.server}_regenerate_public_key"):
+			# Don't set cache while regenerating. Old public key may get cached again.
+			frappe.cache().set_value(
+				key,
+				public_key,
+				expires_in_sec=3600,
 			)
-
-			public_key = agent_auth.public_key
-
-			if not frappe.cache().get_value(f"{self.server}_regenerate_public_key"):
-				# Don't set cache while regenerating. Old public key may get cached again.
-				frappe.cache().set_value(
-					key,
-					public_key,
-					expires_in_sec=3600,
-				)
 
 		return public_key
 
@@ -994,26 +999,8 @@ class Agent:
 
 		return regenerate_key
 
-	def _verify_request_token(self, token: str):
+	def _is_token_verified(self, public_keys, signature, payload_bytes):
 		from cryptography.exceptions import InvalidSignature
-
-		parts = token.split(".")
-		if len(parts) != 2:
-			raise ValueError("Malformed token")
-
-		payload_b64, signature_b64 = token.split(".")
-
-		payload_bytes = base64.urlsafe_b64decode(payload_b64 + "==")
-		signature = base64.urlsafe_b64decode(signature_b64 + "==")
-
-		public_keys = [self.get_agent_public_key()]
-
-		regenerate_key = self.get_regenerate_public_key()
-
-		if regenerate_key:
-			public_keys.append(regenerate_key)
-
-		verified = False
 
 		for key in public_keys:
 			try:
@@ -1021,13 +1008,37 @@ class Agent:
 
 				public_key.verify(signature, payload_bytes)
 
-				verified = True
-				break
+				return True
 
-			except InvalidSignature:
+			except (InvalidSignature, ValueError, TypeError):
 				pass
 
-		if not verified:
+		return False
+
+	def _verify_request_token(self, token: str):
+		parts = token.split(".")
+		if len(parts) != 2:
+			raise ValueError("Malformed token")
+
+		payload_b64, signature_b64 = parts
+
+		payload_bytes = base64.urlsafe_b64decode(payload_b64 + "==")
+		signature = base64.urlsafe_b64decode(signature_b64 + "==")
+
+		public_keys = []
+
+		primary_key = self.get_agent_public_key()
+		if primary_key:
+			public_keys.append(primary_key)
+
+		regenerate_key = self.get_regenerate_public_key()
+		if regenerate_key:
+			public_keys.append(regenerate_key)
+
+		if not public_keys:
+			raise ValueError("No public keys available for verification")
+
+		if not self._is_token_verified(public_keys, signature, payload_bytes):
 			raise ValueError("Invalid token signature")
 
 		payload = json.loads(payload_bytes)

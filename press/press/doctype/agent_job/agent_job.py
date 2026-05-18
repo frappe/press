@@ -868,16 +868,17 @@ def retry_poll():
 
 		server_type, server = server_key.split(":", 1)
 
-		frappe.cache().srem("undelivered_jobs", server_key)
-
-		retry_undelivered_jobs(
-			frappe._dict(
-				{
-					"server": server,
-					"server_type": server_type,
-				}
+		try:
+			retry_undelivered_jobs(
+				frappe._dict(
+					{
+						"server": server,
+						"server_type": server_type,
+					}
+				)
 			)
-		)
+		finally:
+			frappe.cache().srem("undelivered_jobs", server_key)
 
 
 def queued_jobs():
