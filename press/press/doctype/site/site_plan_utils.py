@@ -87,6 +87,7 @@ def get_next_allowed_dedicated_product_warranty_change_date(site: str):
 			& (ToPlan.dedicated_server_plan == 1)
 			# support_included changed
 			& (FromPlan.support_included != ToPlan.support_included)
+			& (SitePlanChange.type != "Initial Plan")
 		)
 		.orderby(SitePlanChange.timestamp, order=frappe.qb.desc)
 		.limit(1)
