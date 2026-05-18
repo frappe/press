@@ -154,4 +154,9 @@ def update_job(job, server):
 	if not job_doc:
 		return
 
-	handle_polled_job(polled_job=job, job=job_doc)
+	frappe.enqueue(
+		handle_polled_job,
+		queue="short",
+		polled_job=job,
+		job=job_doc,
+	)
