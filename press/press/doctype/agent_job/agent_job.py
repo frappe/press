@@ -877,7 +877,13 @@ def retry_poll():
 					}
 				)
 			)
-		finally:
+		except Exception:
+			log_error(
+				"Retry undelivered jobs failed",
+				server=server,
+				server_type=server_type,
+			)
+		else:
 			frappe.cache().srem("undelivered_jobs", server_key)
 
 
