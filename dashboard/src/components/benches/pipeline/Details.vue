@@ -171,12 +171,12 @@ onBeforeUnmount(() => {
 			:class="[output ? 'grid-cols-[auto_1fr]' : 'grid-cols-[1fr_0fr] pr-0']"
 		>
 			<aside
-				class="w-full !min-w-[10rem] pr-3 overflow-y-auto overflow-x-hidden px-2"
+				class="w-full !min-w-[10rem] pr-3 overflow-y-auto overflow-x-hidden px-1"
 			>
 				<Tabs
 					:tabs="sidebarTabs"
 					v-model="tabState"
-					class="[&_[role=tablist]]:mb-2 [&_[role=tablist]]:px-0"
+					class="[&_[role=tablist]]:mb-2 [&_[role=tablist]]:p-0"
 				>
 					<template #tab-item="{ tab }">
 						<button class="flex items-center gap-2 pb-3">
