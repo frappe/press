@@ -1,14 +1,14 @@
 <template>
 	<div>
 		<button
-			class="flex w-full items-center justify-between rounded bg-gray-50 px-2.5 py-2 text-left text-base"
+			class="flex w-full items-center justify-between rounded bg-surface-gray-1 px-2.5 py-2 text-left text-base"
 			@click="$emit('toggle')"
 			:class="open ? 'rounded-b-none' : ''"
 		>
 			<div class="flex items-center space-x-2">
 				<FeatherIcon
 					:name="open || status == 'Running' ? 'chevron-down' : 'chevron-right'"
-					class="h-3 w-3 text-gray-600"
+					class="h-3 w-3 text-ink-gray-6"
 					:stroke-width="3"
 				/>
 				<Tooltip :text="status">
@@ -17,7 +17,7 @@
 						:class="iconClass"
 					>
 						<LoadingIndicator
-							class="h-3.5 w-3.5 text-gray-900"
+							class="h-3.5 w-3.5 text-ink-gray-9"
 							v-if="status === 'Running'"
 						/>
 						<FeatherIcon
@@ -33,12 +33,12 @@
 				</span>
 			</div>
 
-			<div class="text-gray-600" v-if="caption">
+			<div class="text-ink-gray-6" v-if="caption">
 				{{ caption }}
 			</div>
 		</button>
 		<div
-			class="overflow-auto py-2 px-2.5 text-sm bg-gray-200 rounded-b border border-gray-100"
+			class="overflow-auto py-2 px-2.5 text-sm bg-surface-gray-3 rounded-b border border-outline-gray-1"
 			v-show="open || status == 'Running'"
 			ref="output"
 		>
@@ -99,7 +99,7 @@ export default defineComponent({
 				case 'Running':
 					return 'bg-transparent';
 				default:
-					return 'bg-gray-400';
+					return 'bg-surface-gray-4';
 			}
 		},
 	},

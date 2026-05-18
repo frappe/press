@@ -1,231 +1,204 @@
 {
- "actions": [],
- "allow_rename": 1,
- "creation": "2022-08-30 12:15:23.873531",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "virtual_machine",
-  "snapshot_id",
-  "status",
-  "expired",
-  "column_break_4",
-  "cluster",
-  "region",
-  "volume_id",
-  "section_break_41e4",
-  "size",
-  "start_time",
-  "column_break_7lcz",
-  "progress",
-  "duration",
-  "section_break_12",
-  "mariadb_root_password",
-  "snapshot_purpose_section",
-  "physical_backup",
-  "column_break_xgrp",
-  "rolling_snapshot",
-  "column_break_jyxw",
-  "dedicated_snapshot"
- ],
- "fields": [
-  {
-   "fieldname": "size",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Size",
-   "read_only": 1
-  },
-  {
-   "fieldname": "virtual_machine",
-   "fieldtype": "Link",
-   "in_standard_filter": 1,
-   "label": "Virtual Machine",
-   "options": "Virtual Machine",
-   "read_only": 1,
-   "reqd": 1,
-   "search_index": 1
-  },
-  {
-   "fetch_from": "virtual_machine.cluster",
-   "fieldname": "cluster",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Cluster",
-   "options": "Cluster",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "virtual_machine.region",
-   "fieldname": "region",
-   "fieldtype": "Link",
-   "label": "Region",
-   "options": "Cloud Region",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break",
-   "read_only": 1
-  },
-  {
-   "fieldname": "progress",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Progress",
-   "read_only": 1
-  },
-  {
-   "default": "Pending",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Pending\nCompleted\nError\nRecovering\nRecoverable\nUnavailable",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "start_time",
-   "fieldtype": "Datetime",
-   "label": "Start Time",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "section_break_12",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "mariadb_root_password",
-   "fieldtype": "Password",
-   "label": "MariaDB Root Password",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_41e4",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_7lcz",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "snapshot_id",
-   "fieldtype": "Data",
-   "label": "Snapshot ID",
-   "read_only": 1,
-   "reqd": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "volume_id",
-   "fieldtype": "Data",
-   "label": "Volume ID",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "duration",
-   "fieldtype": "Duration",
-   "label": "Duration",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "physical_backup",
-   "fieldtype": "Check",
-   "in_standard_filter": 1,
-   "label": "Physical Backup"
-  },
-  {
-   "fieldname": "snapshot_purpose_section",
-   "fieldtype": "Section Break",
-   "label": "Snapshot Purpose"
-  },
-  {
-   "fieldname": "column_break_xgrp",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "rolling_snapshot",
-   "fieldtype": "Check",
-   "in_standard_filter": 1,
-   "label": "Rolling Snapshot"
-  },
-  {
-   "default": "0",
-   "fieldname": "expired",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Expired"
-  },
-  {
-   "fieldname": "column_break_jyxw",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "dedicated_snapshot",
-   "fieldtype": "Check",
-   "label": "Dedicated Snapshot"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [
-  {
-   "link_doctype": "Site Backup",
-   "link_fieldname": "database_snapshot"
-  }
- ],
- "modified": "2025-09-12 18:31:18.904020",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Virtual Disk Snapshot",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Admin",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Member",
-   "share": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "title_field": "virtual_machine"
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2022-08-30 12:15:23.873531",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"virtual_machine",
+		"snapshot_id",
+		"status",
+		"expired",
+		"column_break_4",
+		"cluster",
+		"region",
+		"volume_id",
+		"section_break_41e4",
+		"size",
+		"start_time",
+		"column_break_7lcz",
+		"progress",
+		"duration",
+		"section_break_12",
+		"mariadb_root_password",
+		"snapshot_purpose_section",
+		"physical_backup",
+		"column_break_xgrp",
+		"rolling_snapshot",
+		"column_break_jyxw",
+		"dedicated_snapshot"
+	],
+	"fields": [
+		{
+			"fieldname": "size",
+			"fieldtype": "Int",
+			"in_list_view": 1,
+			"label": "Size",
+			"read_only": 1
+		},
+		{
+			"fieldname": "virtual_machine",
+			"fieldtype": "Link",
+			"in_standard_filter": 1,
+			"label": "Virtual Machine",
+			"options": "Virtual Machine",
+			"read_only": 1,
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"fetch_from": "virtual_machine.cluster",
+			"fieldname": "cluster",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Cluster",
+			"options": "Cluster",
+			"read_only": 1
+		},
+		{
+			"fetch_from": "virtual_machine.region",
+			"fieldname": "region",
+			"fieldtype": "Link",
+			"label": "Region",
+			"options": "Cloud Region",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_4",
+			"fieldtype": "Column Break",
+			"read_only": 1
+		},
+		{
+			"fieldname": "progress",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Progress",
+			"read_only": 1
+		},
+		{
+			"default": "Pending",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Status",
+			"options": "Pending\nCompleted\nError\nRecovering\nRecoverable\nUnavailable",
+			"read_only": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "start_time",
+			"fieldtype": "Datetime",
+			"label": "Start Time",
+			"read_only": 1,
+			"search_index": 1
+		},
+		{ "fieldname": "section_break_12", "fieldtype": "Section Break" },
+		{
+			"fieldname": "mariadb_root_password",
+			"fieldtype": "Password",
+			"label": "MariaDB Root Password",
+			"read_only": 1
+		},
+		{ "fieldname": "section_break_41e4", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_7lcz", "fieldtype": "Column Break" },
+		{
+			"fieldname": "snapshot_id",
+			"fieldtype": "Data",
+			"label": "Snapshot ID",
+			"read_only": 1,
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "volume_id",
+			"fieldtype": "Data",
+			"label": "Volume ID",
+			"read_only": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "duration",
+			"fieldtype": "Duration",
+			"label": "Duration",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "physical_backup",
+			"fieldtype": "Check",
+			"in_standard_filter": 1,
+			"label": "Physical Backup"
+		},
+		{
+			"fieldname": "snapshot_purpose_section",
+			"fieldtype": "Section Break",
+			"label": "Snapshot Purpose"
+		},
+		{ "fieldname": "column_break_xgrp", "fieldtype": "Column Break" },
+		{
+			"default": "0",
+			"fieldname": "rolling_snapshot",
+			"fieldtype": "Check",
+			"in_standard_filter": 1,
+			"label": "Rolling Snapshot"
+		},
+		{
+			"default": "0",
+			"fieldname": "expired",
+			"fieldtype": "Check",
+			"hidden": 1,
+			"label": "Expired"
+		},
+		{ "fieldname": "column_break_jyxw", "fieldtype": "Column Break" },
+		{
+			"default": "0",
+			"fieldname": "dedicated_snapshot",
+			"fieldtype": "Check",
+			"label": "Dedicated Snapshot"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [
+		{ "link_doctype": "Site Backup", "link_fieldname": "database_snapshot" }
+	],
+	"modified": "2025-09-12 18:31:18.904020",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Virtual Disk Snapshot",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press User",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "virtual_machine"
 }

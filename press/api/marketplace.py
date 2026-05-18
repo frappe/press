@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe import _
 from frappe.core.utils import find
 
 from press.api.bench import options
@@ -20,7 +21,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
 )
-from press.utils import get_app_tag, get_current_team, get_last_doc, unique
+from press.utils import get_app_tag, get_current_team, get_last_doc, is_user_part_of_team, unique
 from press.utils.billing import get_frappe_io_connection
 
 if TYPE_CHECKING:
@@ -441,8 +442,9 @@ def update_app_image() -> str:
 	current_team = get_current_team()
 	app_name = frappe.form_dict.docname
 	app_team = frappe.db.get_value("Marketplace App", app_name, "team")
-	if app_team != current_team:
-		frappe.throw("Not Permitted to update app image", frappe.PermissionError)
+	# not permitted to update the app image if user is not a member of the current team
+	if app_team != current_team and not is_user_part_of_team(frappe.session.user, app_team):
+		frappe.throw(_("You are not permitted to update the app image"), frappe.PermissionError)
 
 	file_content = frappe.local.uploaded_file
 	file_name = frappe.local.uploaded_filename
@@ -466,7 +468,7 @@ def update_app_image() -> str:
 			"content": file_content,
 		}
 	)
-	_file.save(ignore_permissions=True)
+	_file.save()
 	file_url = _file.file_url
 	frappe.db.set_value("Marketplace App", app_name, "image", file_url)
 
@@ -493,9 +495,8 @@ def add_app_screenshot() -> str:
 	current_team = get_current_team()
 	app_name = frappe.form_dict.docname
 	app_team = frappe.db.get_value("Marketplace App", app_name, "team")
-	if app_team != current_team:
-		frappe.throw("Not Permitted to add app screenshot", frappe.PermissionError)
-
+	if app_team != current_team and not is_user_part_of_team(frappe.session.user, app_team):
+		frappe.throw(_("You are not permitted to add app screenshots for this app"), frappe.PermissionError)
 	file_content = frappe.local.uploaded_file
 	file_name = frappe.local.uploaded_filename
 
@@ -517,7 +518,7 @@ def add_app_screenshot() -> str:
 			"content": file_content,
 		}
 	)
-	_file.save(ignore_permissions=True)
+	_file.save()
 	file_url = _file.file_url
 
 	app_doc.append(
@@ -540,7 +541,7 @@ def remove_app_screenshot(name: str, file: str):
 		if sc.image == file:
 			frappe.delete_doc("File", file)
 			app_doc.screenshots.pop(i)
-	app_doc.save(ignore_permissions=True)
+	app_doc.save()
 
 
 ALLOWED_IMAGE_EXTENSIONS = frozenset({"png", "jpg", "jpeg", "webp"})
@@ -1234,8 +1235,8 @@ def branches(name: str):
 	installation_id = app_source.github_installation_id
 	repo_owner = app_source.repository_owner
 	repo_name = app_source.repository
-
-	return git_branches(repo_owner, repo_name, installation_id)
+	branches = git_branches(repo_owner, repo_name, installation_id)
+	return [f"{repo_owner}/{repo_name}/{branch['name']}" for branch in branches]
 
 
 @protected("Marketplace App")
@@ -1251,19 +1252,23 @@ def options_for_version(name: str):
 	frappe_version = frappe.get_all("Frappe Version", {"public": True}, pluck="name")
 	added_versions = frappe.get_all("Marketplace App Version", {"parent": name}, pluck="version")
 	app = frappe.db.get_value("Marketplace App", name, "app")
-	source = frappe.get_value("App Source", {"app": app, "team": get_current_team()})
-	branches_list = branches(source)
+	sources = frappe.get_all("App Source", {"app": app, "team": get_current_team()})
+
+	branches_list = []
+	for source in sources:
+		branches_list += branches(source)
+	branches_list = list(set(branches_list))
+
 	versions = list(set(frappe_version).difference(set(added_versions)))
-	branches_list = [branch["name"] for branch in branches_list]
 
 	return [{"version": version, "branch": branches_list} for version in versions]
 
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def add_version(name: str, branch: str, version: str):
+def add_version(name: str, repo_owner: str, repo_name: str, branch: str, version: str):
 	app = frappe.get_doc("Marketplace App", name)
-	app.add_version(version, branch)
+	app.add_version(version, repo_owner, repo_name, branch)
 
 
 @protected("Marketplace App")
@@ -1372,24 +1377,42 @@ def get_marketplace_apps() -> list[dict]:
 	return apps
 
 
-@protected("App Source")
-@frappe.whitelist()
-def add_code_review_comment(name: str, filename: str, line_number: int, comment: str):
-	try:
-		doc = frappe.get_doc("App Release Approval Request", name)
-		# Add a new comment
-		doc.append(
-			"code_comments",
-			{
-				"filename": filename,
-				"line_number": line_number,
-				"comment": comment,
-				"commented_by": frappe.session.user,
-				"time": frappe.utils.now_datetime(),
-			},
-		)
+def is_desk_user(user: str | None = None) -> bool:
+	"""
+	Checks if the given user is a system user.
 
-		doc.save()
-		return {"status": "success", "message": "Comment added successfully."}
-	except Exception as e:
-		frappe.throw(f"Unable to add comment. Something went wrong: {e!s}")
+	:param user: User to check. If None, uses the current session user.
+	:return: True if the user is a system user, False otherwise.
+	"""
+	user = user or frappe.session.user
+	user_doc = frappe.get_cached_doc("User", user)
+	return user_doc.user_type == "System User"
+
+
+@frappe.whitelist(methods=["GET"])
+def get_app_audit(app: str):
+	"""
+	Fetches the latest audit report for the given marketplace app.
+	By latest, it can be the latest release change audit or the latest submission gate audit.
+	If there is no audit report, it will return None.
+	"""
+	current_team = get_current_team()
+	app_team = frappe.db.get_value("Marketplace App", app, "team")
+	# for impersonation, the session user needs to have system user role, in that case we allow seeing other audit reports.
+	if not is_desk_user(frappe.session.user):  # noqa: SIM102 - nested if makes the logic more readable.
+		# not permitted to get the audit report if user is not a member of the team of the marketplace app
+		if app_team != current_team and not is_user_part_of_team(frappe.session.user, app_team):
+			frappe.throw(
+				_("You are not permitted to get the audit report for this app"), frappe.PermissionError
+			)
+
+	# get_all, limit 1, order by creation desc
+	audit_name = frappe.get_all(
+		"Marketplace App Audit", {"marketplace_app": app}, order_by="creation desc", limit=1, pluck="name"
+	)
+	if not audit_name:
+		return None
+
+	app_audit = frappe.get_doc("Marketplace App Audit", audit_name[0])
+
+	return app_audit.as_dict()

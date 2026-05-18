@@ -31,11 +31,16 @@ export const filterLabels = (data, query) => {
 };
 
 export const useSearch = async () => {
-	const { meta_k } = useMagicKeys();
-
-	whenever(meta_k, (n) => {
-		if (n) searchModalOpen.value = true;
+	const { meta_k, ctrl_k } = useMagicKeys({
+		passive: false,
+		onEventFired(e) {
+			if (e.key === 'k' && (e.metaKey || e.ctrlKey) && e.type === 'keydown')
+				e.preventDefault();
+		},
 	});
+
+	whenever(meta_k, (n) => { if (n) searchModalOpen.value = true; });
+	whenever(ctrl_k, (n) => { if (n) searchModalOpen.value = true; });
 
 	addIntegrations();
 };

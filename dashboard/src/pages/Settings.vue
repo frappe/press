@@ -1,5 +1,5 @@
 <template>
-	<Header class="sticky top-0 z-10 bg-white">
+	<Header class="sticky top-0 z-10 bg-surface-white">
 		<div class="flex items-center space-x-2">
 			<Breadcrumbs :items="[{ label: 'Settings', route: '/settings' }]" />
 		</div>
@@ -30,7 +30,9 @@ import { icon } from '../utils/components';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 import { getTeam } from '../data/team';
 import { session } from '../data/session';
+import { useUserStore } from '../stores/user';
 
+const user = useUserStore();
 let $team = getTeam();
 let $session = session || {};
 
@@ -48,6 +50,12 @@ const tabs = [
 			$team.doc?.user === $session.user ||
 			$session.isTeamAdmin ||
 			$session.isSystemUser,
+	},
+	{
+		label: 'Team (Beta)',
+		icon: LucideUsers,
+		routeName: 'SettingsTeamBeta',
+		condition: () => user.isBetaTester,
 	},
 	{
 		label: 'Roles',

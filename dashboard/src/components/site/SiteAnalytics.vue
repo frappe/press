@@ -1,74 +1,69 @@
 <template>
 	<div
-		class="flex flex-col justify-end items-center sticky top-0 z-20 p-3 px-5 w-full bg-white border-b justify-self-center space-y-2"
+		class="flex flex-col justify-end items-center sticky top-0 z-20 p-2 md:p-3 w-full bg-surface-white border-b justify-self-center space-y-2"
 	>
-		<div class="flex space-x-4 w-full">
-			<!-- Group all content items so spacing is consistent -->
-			<div class="flex space-x-4 w-full">
-				<!-- Start date group -->
-				<div class="flex space-x-2">
-					<label class="text-base text-gray-600 self-center whitespace-nowrap">
-						Absolute <span class="text-black">from</span>
-					</label>
-					<DateTimePicker
-						:modelValue="inputStartDate"
-						variant="subtle"
-						label="Start date"
-						:disabled="false"
-						format="D MMM YYYY, hh:mm a"
-						@update:modelValue="updateStartDate"
-					/>
-				</div>
+		<!-- Group all content items so spacing is consistent -->
+		<div class="flex gap-2 w-full overflow-auto">
+			<!-- Start date group -->
+			<label class="text-base text-ink-gray-6 self-center whitespace-nowrap">
+				Absolute <span class="pl-1 text-ink-gray-9">from</span>
+			</label>
+			<DateTimePicker
+				:modelValue="inputStartDate"
+				variant="subtle"
+				label="Start date"
+				:disabled="false"
+				format="D MMM YYYY, hh:mm a"
+				class="min-w-fit"
+				@update:modelValue="updateStartDate"
+			/>
 
-				<!-- End date group -->
-				<div class="flex space-x-2">
-					<label class="text-base self-center">to</label>
-					<DateTimePicker
-						:modelValue="inputEndDate"
-						variant="subtle"
-						label="End date"
-						:disabled="false"
-						format="D MMM YYYY, hh:mm a"
-						@update:modelValue="updateEndDate"
-					/>
-				</div>
+			<!-- End date group -->
+			<label class="text-base self-center">to</label>
+			<DateTimePicker
+				:modelValue="inputEndDate"
+				variant="subtle"
+				label="End date"
+				:disabled="false"
+				format="D MMM YYYY, hh:mm a"
+				class="min-w-fit"
+				@update:modelValue="updateEndDate"
+			/>
 
-				<!-- Divider -->
-				<div class="w-px bg-gray-200" />
+			<!-- Duration group -->
+			<label
+				class="text-base self-center text-ink-gray-6 border-l ml-1 pl-3 py-1"
+				>Relative</label
+			>
+			<FormControl
+				type="select"
+				class="w-36"
+				:options="durationOptions"
+				v-model="duration"
+			/>
 
-				<!-- Duration group -->
-				<div class="flex space-x-2">
-					<label class="text-base self-center text-gray-600">Relative</label>
-					<FormControl
-						type="select"
-						class="w-36"
-						:options="durationOptions"
-						v-model="duration"
-					/>
-				</div>
+			<!-- Grow -->
+			<div class="flex-grow" />
 
-				<!-- Grow -->
-				<div class="flex-grow" />
-
-				<Tooltip text="Copy a shareable link to this Dashboard">
-					<!-- Share button -->
-					<ActionButton
-						variant="subtle"
-						label="Share"
-						class="text-gray-300 hover:text-black duration-200"
-						@click="(e) => shareDashboard(e, `global`)"
-						:slots="{
-							prefix: shareDashboardActionPrefix,
-						}"
-					/>
-				</Tooltip>
-			</div>
+			<Tooltip text="Copy a shareable link to this Dashboard">
+				<!-- Share button -->
+				<ActionButton
+					variant="subtle"
+					label="Share"
+					class="text-ink-gray-3 hover:text-ink-gray-8 duration-200"
+					@click="(e) => shareDashboard(e, `global`)"
+					:slots="{
+						prefix: shareDashboardActionPrefix,
+					}"
+				/>
+			</Tooltip>
 		</div>
 
 		<div v-if="!!dateRangeError" class="text-red-500 text-sm">
 			{{ dateRangeError }}
 		</div>
 	</div>
+
 	<div class="space-y-4 p-5">
 		<ErrorMessage
 			:message="
@@ -116,10 +111,11 @@
 				/>
 				<template #action>
 					<router-link
-						class="text-base text-gray-600 hover:text-gray-700"
+						class="text-sm text-ink-gray-7 hover:text-ink-gray-7 flex items-center gap-1"
 						:to="{ name: 'Site Performance Request Logs' }"
 					>
-						Request Log Report →
+						Log Report
+						<LucideChevronRight class="size-4" />
 					</router-link>
 				</template>
 			</AnalyticsCard>
@@ -145,7 +141,7 @@
 		>
 			<h2 class="text-lg font-semibold">Advanced Analytics</h2>
 			<FeatherIcon
-				class="h-5 w-5 text-gray-500 hover:text-gray-700"
+				class="h-5 w-5 text-ink-gray-5 hover:text-ink-gray-7"
 				:name="showAdvancedAnalytics ? 'chevron-down' : 'chevron-right'"
 			/>
 		</div>
@@ -229,7 +225,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as reports seem to take time">
-						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-ink-gray-5" />
 					</Tooltip>
 				</template>
 				<BarChart
@@ -252,7 +248,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as run_doc_method calls seem to take time">
-						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-ink-gray-5" />
 					</Tooltip>
 				</template>
 				<BarChart
@@ -274,7 +270,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as savedocs calls seem to take time">
-						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-ink-gray-5" />
 					</Tooltip>
 				</template>
 				<BarChart
@@ -295,7 +291,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as savedocs calls seem to take time">
-						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-ink-gray-5" />
 					</Tooltip>
 				</template>
 				<BarChart
@@ -384,7 +380,7 @@
 			>
 				<template #action>
 					<Tooltip text="Shown only as reports seem to take time">
-						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-gray-500" />
+						<lucide-info class="ml-2 mr-auto h-3.5 w-3.5 text-ink-gray-5" />
 					</Tooltip>
 				</template>
 				<BarChart
@@ -417,14 +413,14 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
-				class="sm:col-span-2"
+				class="sm:col-span-2 [&_[aria-label='Copy']]:m-0"
 				title="Frequent Slow Queries"
 				@share-card="shareDashboard"
 			>
 				<template #action>
 					<Tooltip text="Show Detailed Reports">
 						<router-link
-							class="mr-auto text-base text-gray-600 hover:text-gray-700"
+							class="mr-auto text-base text-ink-gray-6 hover:text-ink-gray-7"
 							:to="{ name: 'Site Performance Slow Queries' }"
 						>
 							→
@@ -448,14 +444,14 @@
 			</AnalyticsCard>
 
 			<AnalyticsCard
-				class="sm:col-span-2"
+				class="sm:col-span-2 [&_[aria-label='Copy']]:m-0"
 				title="Top Slow Queries"
 				@share-card="shareDashboard"
 			>
 				<template #action>
 					<Tooltip text="Show Detailed Reports">
 						<router-link
-							class="mr-auto text-base text-gray-600 hover:text-gray-700"
+							class="mr-auto text-base text-ink-gray-6 hover:text-ink-gray-7"
 							:to="{ name: 'Site Performance Slow Queries' }"
 						>
 							→
@@ -490,7 +486,6 @@ import BarChart from '@/components/charts/BarChart.vue';
 import SiteUptime from './SiteUptime.vue';
 import AlertBanner from '../AlertBanner.vue';
 import AnalyticsCard from './AnalyticsCard.vue';
-import ShareIcon from '../icons/ShareIcon.vue';
 import ActionButton from '../ActionButton.vue';
 import { h } from 'vue';
 
@@ -794,7 +789,7 @@ export default {
 			};
 		},
 		shareDashboardActionPrefix() {
-			return () => h(ShareIcon, { class: 'w-4 h-4' });
+			return () => h(LucideLink, { class: 'size-3.5' });
 		},
 	},
 	methods: {

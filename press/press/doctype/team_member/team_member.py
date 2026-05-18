@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
@@ -19,6 +18,7 @@ class TeamMember(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		role: DF.Data
 		user: DF.Link
 	# end: auto-generated types
 

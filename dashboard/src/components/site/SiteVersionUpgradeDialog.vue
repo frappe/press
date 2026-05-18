@@ -10,7 +10,7 @@
 				class="flex items-center justify-center py-8"
 			>
 				<LoadingIndicator class="w-5 h-5 mr-2" />
-				<span class="text-base text-gray-600"
+				<span class="text-base text-ink-gray-6"
 					>Checking upgrade compatibility...</span
 				>
 			</div>
@@ -80,14 +80,14 @@
 							class="space-y-6 mt-4"
 						>
 							<div v-if="appCompatibility.site_custom_apps?.length > 0">
-								<div class="text-sm font-medium text-gray-700 mb-2">
+								<div class="text-sm font-medium text-ink-gray-7 mb-2">
 									Select Branch for Custom Apps
 								</div>
-								<div class="text-xs text-gray-600 mb-3">
+								<div class="text-xs text-ink-gray-6 mb-3">
 									These apps are installed on your site, select a branch
 									compatible with {{ nextVersion }}
 								</div>
-								<table class="w-full table-fixed pb-4 border-b border-gray-100">
+								<table class="w-full table-fixed pb-4 border-b border-outline-gray-1">
 									<tbody>
 										<tr
 											v-for="app in appCompatibility.site_custom_apps"
@@ -98,7 +98,7 @@
 													{{ app.title }}
 												</div>
 												<div
-													class="text-xs text-gray-600 truncate mt-1"
+													class="text-xs text-ink-gray-6 truncate mt-1"
 													:title="app.repository_url"
 												>
 													{{ app.repository_url }}
@@ -139,7 +139,7 @@
 							</div>
 
 							<div v-if="appCompatibility.other_custom_apps_on_rg?.length > 0">
-								<div class="text-sm font-medium text-gray-700 mb-2">
+								<div class="text-sm font-medium text-ink-gray-7 mb-2">
 									Other Custom Apps on Bench Group (Optional)
 								</div>
 								<table class="w-full table-fixed">
@@ -153,7 +153,7 @@
 													{{ app.title }}
 												</div>
 												<div
-													class="text-xs text-gray-600 truncate mt-1"
+													class="text-xs text-ink-gray-6 truncate mt-1"
 													:title="app.repository_url"
 												>
 													{{ app.repository_url }}
@@ -235,7 +235,7 @@
 					any failure rollback will not be possible."
 					type="warning"
 				></AlertBanner>
-				<p v-if="message && !errorMessage" class="text-sm text-gray-700">
+				<p v-if="message && !errorMessage" class="text-sm text-ink-gray-7">
 					{{ message }}
 				</p>
 				<ErrorMessage :message="errorMessage" />
@@ -311,7 +311,7 @@
 import { getCachedDocumentResource, LoadingIndicator } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
-import DateTimePicker from 'frappe-ui/src/components/DatePicker/DateTimePicker.vue';
+import { DateTimePicker } from 'frappe-ui';
 
 export default {
 	name: 'SiteVersionUpgradeDialog',

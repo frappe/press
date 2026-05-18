@@ -13,8 +13,8 @@ from press.workflow_engine.doctype.press_workflow_object.press_workflow_object i
 # On IntegrationTestCase, the doctype test records and all
 # link-field test record dependencies are recursively loaded
 # Use these module variables to add/remove to/from that list
-EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
-IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
+EXTRA_TEST_RECORD_DEPENDENCIES: list[str] = []  # eg. ["User"]
+IGNORE_TEST_RECORD_DEPENDENCIES: list[str] = []  # eg. ["User"]
 
 
 class MyCustomClass:
@@ -78,3 +78,41 @@ class IntegrationTestPressWorkflowObject(IntegrationTestCase):
 
 		summary = PressWorkflowObject.get_summary(doc_name)
 		self.assertEqual(summary, str(obj))
+
+	def test_get_summary_nonexistent(self):
+		with self.assertRaises(frappe.DoesNotExistError):
+			PressWorkflowObject.get_summary("nonexistent-doc-name")
+
+	def test_get_object_nonexistent(self):
+		with self.assertRaises(frappe.DoesNotExistError):
+			PressWorkflowObject.get_object("nonexistent-doc-name")
+
+	def test_store_and_get_none_value(self):
+		doc_name = PressWorkflowObject.store(None)
+		self.assertTrue(doc_name)
+		retrieved = PressWorkflowObject.get_object(doc_name)
+		self.assertIsNone(retrieved)
+
+	def test_store_and_get_complex_nested_object(self):
+		obj = {
+			"list_of_dicts": [{"a": 1}, {"b": 2}],
+			"dict_of_lists": {"x": [1, 2], "y": [3, 4]},
+			"nested": {"deep": {"deeper": {"value": 42}}},
+		}
+		doc_name = PressWorkflowObject.store(obj)
+		retrieved = PressWorkflowObject.get_object(doc_name)
+		self.assertEqual(retrieved, obj)
+
+	def test_delete_trashed_objects(self):
+		from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
+			delete_trashed_objects,
+		)
+
+		obj = {"key": "value"}
+		doc_name = PressWorkflowObject.store(obj)
+
+		frappe.db.set_value("Press Workflow Object", doc_name, "deleted", True)
+
+		delete_trashed_objects()
+
+		self.assertFalse(frappe.db.exists("Press Workflow Object", doc_name))

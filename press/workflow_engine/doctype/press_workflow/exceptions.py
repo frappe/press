@@ -1,11 +1,13 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
 
+from __future__ import annotations
+
 
 class PressWorkflowTaskEnqueued(Exception):
 	"""Raised when a task is enqueued and the flow needs to be paused."""
 
-	def __init__(self, message: str, workflow_name: str, task_name: str):
+	def __init__(self, message: str, workflow_name: str, task_name: str | None = None):
 		super().__init__(message)
 		self.workflow_name = workflow_name
 		self.task_name = task_name

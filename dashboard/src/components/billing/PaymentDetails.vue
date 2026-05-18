@@ -1,26 +1,26 @@
 <template>
 	<div class="flex flex-col gap-4">
-		<div class="text-lg font-semibold text-gray-900">Payment details</div>
+		<div class="text-lg font-semibold text-ink-gray-9">Payment details</div>
 		<div class="flex flex-col">
 			<div
 				v-if="team.doc.payment_mode == 'Card'"
-				class="flex items-center justify-between text-base text-gray-900"
+				class="flex items-center justify-between text-base text-ink-gray-9"
 			>
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Active Card</div>
-					<div class="overflow-hidden text-ellipsis text-gray-700">
+					<div class="overflow-hidden text-ellipsis text-ink-gray-7">
 						<div
 							v-if="team.doc.payment_method"
 							class="inline-flex items-center gap-2"
 						>
 							<component :is="cardBrandIcon(team.doc.payment_method.brand)" />
-							<div class="text-gray-700">
+							<div class="text-ink-gray-7">
 								<span>{{ team.doc.payment_method.name_on_card }}</span>
 								<span> &middot; Card ending in •••• </span>
 								<span>{{ team.doc.payment_method.last_4 }}</span>
 							</div>
 						</div>
-						<span v-else class="text-gray-700">No card added</span>
+						<span v-else class="text-ink-gray-7">No card added</span>
 					</div>
 				</div>
 				<div class="shrink-0">
@@ -36,15 +36,15 @@
 			</div>
 			<div
 				v-if="team.doc.payment_mode == 'Card'"
-				class="my-3 h-px bg-gray-100"
+				class="my-3 h-px bg-surface-gray-2"
 			/>
-			<div class="flex items-center justify-between text-base text-gray-900">
+			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Billing address</div>
-					<div v-if="billingDetailsSummary" class="leading-5 text-gray-700">
+					<div v-if="billingDetailsSummary" class="leading-5 text-ink-gray-7">
 						{{ billingDetailsSummary }}
 					</div>
-					<div v-else class="text-gray-700">No address</div>
+					<div v-else class="text-ink-gray-7">No address</div>
 				</div>
 				<div class="shrink-0">
 					<Button
@@ -62,18 +62,18 @@
 					</Button>
 				</div>
 			</div>
-			<div class="my-3 h-px bg-gray-100" />
-			<div class="flex items-center justify-between text-base text-gray-900">
+			<div class="my-3 h-px bg-surface-gray-2" />
+			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Mode of payment</div>
 					<div
 						v-if="team.doc.payment_mode"
-						class="inline-flex items-center gap-2 text-gray-700"
+						class="inline-flex items-center gap-2 text-ink-gray-7"
 					>
 						<FeatherIcon class="h-4" name="info" />
 						{{ paymentMode.description }}
 					</div>
-					<span v-else class="text-gray-700">Not set</span>
+					<span v-else class="text-ink-gray-7">Not set</span>
 				</div>
 				<div class="shrink-0">
 					<Dropdown :options="paymentModeOptions">
@@ -92,11 +92,11 @@
 					</Dropdown>
 				</div>
 			</div>
-			<div class="my-3 h-px bg-gray-100" />
-			<div class="flex items-center justify-between text-base text-gray-900">
+			<div class="my-3 h-px bg-surface-gray-2" />
+			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Credit balance</div>
-					<div class="text-gray-700">
+					<div class="text-ink-gray-7">
 						{{ availableCredits || currency + ' 0.00' }}
 					</div>
 				</div>
@@ -121,18 +121,18 @@
 					</Button>
 				</div>
 			</div>
-			<div class="my-3 h-px bg-gray-100" />
-			<div class="flex items-center justify-between text-base text-gray-900">
+			<div class="my-3 h-px bg-surface-gray-2" />
+			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
 					<div class="font-medium">Budget Alerts</div>
 					<div
 						v-if="team.doc.receive_budget_alerts"
-						class="leading-5 text-gray-700"
+						class="leading-5 text-ink-gray-7"
 					>
 						Alert threshold is set at {{ currency
 						}}{{ team.doc.monthly_alert_threshold }} per month
 					</div>
-					<div v-else class="text-gray-700">
+					<div v-else class="text-ink-gray-7">
 						Receive an email alert if monthly total exceeds limit set
 					</div>
 				</div>
@@ -302,8 +302,7 @@ const paymentModeOptions = [
 	{
 		label: 'UPI Autopay',
 		value: 'UPI Autopay',
-		condition: () =>
-			team.doc.currency === 'INR' && team.doc.upi_autopay_enabled,
+		condition: () => team.doc.currency === 'INR',
 		description: 'Your UPI will be auto-debited for monthly subscription',
 		component: () =>
 			h(DropdownItem, {
@@ -315,7 +314,7 @@ const paymentModeOptions = [
 	{
 		component: () =>
 			h('div', [
-				h('div', { class: 'border-t border-gray-200 my-1' }),
+				h('div', { class: 'border-t border-outline-gray-1 my-1' }),
 				h(DropdownItem, null, {
 					default: () =>
 						h('div', { class: 'flex gap-2' }, [
@@ -402,7 +401,11 @@ function updatePaymentMode(mode) {
 		return;
 	}
 	if (mode === 'UPI Autopay') {
-		router.push({ name: 'BillingUPIAutopay' });
+		if (team.doc.default_razorpay_mandate) {
+			if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
+		} else {
+			router.push({ name: 'BillingUPIAutopay' });
+		}
 		return;
 	}
 	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });

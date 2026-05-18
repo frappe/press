@@ -87,6 +87,7 @@ HETZNER_ROOT_DISK_ID = "hetzner-root-disk"
 DIGITALOCEAN_ROOT_DISK_ID = "digital-ocean-root-disk"
 HETZNER_ACTION_RETRIES = 10  # retry count; try to keep it lower so that it doesn't surpass than default RQ job timeout of 300 seconds
 HETZNER_POLL_INTERVAL = 6  # increased from default of 1 so that we don't hit limit of 3600/hour
+BIG_SERIES = ["f", "m", "u", "t"]  # space for two more
 
 
 class VirtualMachine(Document):
@@ -189,6 +190,20 @@ class VirtualMachine(Document):
 		self.save()
 
 	def get_private_ip(self) -> str:
+		if self.index <= 256:
+			return self.get_private_ip_old_logic()
+		return self.get_private_ip_new_logic()
+
+	def get_private_ip_new_logic(self) -> str:
+		ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
+		start = ip + 2**14
+		offset = BIG_SERIES.index(self.series) * 2**13
+		index = (
+			self.index - 257
+		)  # so a max of 8192 + 256 = 8448 ips for each big series. or could remove index for consistency
+		return str(start + offset + index)
+
+	def get_private_ip_old_logic(self) -> str:
 		ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
 		index = self.index + 356
 
@@ -208,8 +223,8 @@ class VirtualMachine(Document):
 
 		self.validate_data_disk_snapshot()
 
-		if self.series == "nat" and self.cloud_provider != "AWS EC2":
-			frappe.throw("NAT Servers are only supported on AWS EC2")
+		if self.series == "nat" and self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
+			frappe.throw("NAT Servers are only supported on AWS EC2 and Frappe Compute")
 
 	def validate_data_disk_snapshot(self):
 		if not self.is_new() or not self.data_disk_snapshot:
@@ -475,6 +490,7 @@ class VirtualMachine(Document):
 			self.get_cloud_init(),
 			vpc_id,
 			self.private_ip_address,
+			assign_public_ip=self.assign_public_ip,
 		)
 		self.instance_id = instance_id
 		self.status = "Pending"
@@ -489,6 +505,7 @@ class VirtualMachine(Document):
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 
+		droplet_tag = f"Frappe-Cloud-Production-{cluster.name.replace(' ', '-')}-{self.series}"
 		firewalls = self.client().firewalls.list()
 		firewalls = firewalls.get("firewalls", [])
 		cluster_firewall = next(fw for fw in firewalls if fw["id"] == cluster.security_group_id)
@@ -506,6 +523,7 @@ class VirtualMachine(Document):
 					"ssh_keys": [self._get_digital_ocean_ssh_key_id()],
 					"backups": False,
 					"vpc_uuid": cluster.vpc_id,
+					"tags": [droplet_tag],
 					"user_data": self.get_cloud_init() if self.virtual_machine_image else "",
 				}
 			)
@@ -515,7 +533,7 @@ class VirtualMachine(Document):
 
 		try:
 			for group in self.get_security_groups():
-				self.client().firewalls.assign_droplets(group, {"droplet_ids": [self.instance_id]})
+				self.client().firewalls.add_tags(group, {"tags": [droplet_tag]})
 		except Exception as e:
 			frappe.throw(f"Failed to assign Firewall to Digital Ocean Droplet: {e!s}")
 
@@ -1577,8 +1595,10 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def disassociate_auto_assigned_public_ip(self):
-		if self.cloud_provider != "AWS EC2":
-			frappe.throw("Public IP disassociation is currently only supported for AWS EC2 instances")
+		if self.cloud_provider not in ("AWS EC2", "Frappe Compute"):
+			frappe.throw(
+				"Public IP disassociation is currently only supported for AWS EC2 and Frappe Compute instances"
+			)
 
 		if not self.public_ip_address:
 			frappe.throw("No public IP associated with this instance.")
@@ -1590,14 +1610,19 @@ class VirtualMachine(Document):
 				"Unable to get a lock on the vm at this time. Some other process is probably underway"
 			)
 
-		ec2 = self.client()
-		instance = ec2.describe_instances(InstanceIds=[self.instance_id])
-		ec2.modify_network_interface_attribute(
-			NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
-				"NetworkInterfaceId"
-			],
-			AssociatePublicIpAddress=False,
-		)
+		if self.cloud_provider == "AWS EC2":
+			ec2 = self.client()
+			instance = ec2.describe_instances(InstanceIds=[self.instance_id])
+			ec2.modify_network_interface_attribute(
+				NetworkInterfaceId=instance["Reservations"][0]["Instances"][0]["NetworkInterfaces"][0][
+					"NetworkInterfaceId"
+				],
+				AssociatePublicIpAddress=False,
+			)
+		elif self.cloud_provider == "Frappe Compute":
+			client = self.client()
+			client.remove_public_ip_from_virtual_machine(self.instance_id)
+
 		frappe.flags.force_update_dns = True
 		self.sync()
 
@@ -1639,6 +1664,8 @@ class VirtualMachine(Document):
 			self._create_snapshots_oci(exclude_boot_volume)
 		elif self.cloud_provider == "Hetzner":
 			self._create_snapshots_hetzner()
+		elif self.cloud_provider == "Frappe Compute":
+			self._create_snapshots_frappe_compute()
 
 	def _create_snapshots_aws(
 		self,
@@ -1739,6 +1766,18 @@ class VirtualMachine(Document):
 				"virtual_machine": self.name,
 				"snapshot_id": response.image.id,
 				"volume_id": HETZNER_ROOT_DISK_ID,
+			}
+		).insert()
+		self.flags.created_snapshots.append(doc.name)
+
+	def _create_snapshots_frappe_compute(self):
+		client = self.client()
+		snapshot_id = client.create_snapshot(self.instance_id)
+		doc = frappe.get_doc(
+			{
+				"doctype": "Virtual Disk Snapshot",
+				"virtual_machine": self.name,
+				"snapshot_id": snapshot_id,
 			}
 		).insert()
 		self.flags.created_snapshots.append(doc.name)
@@ -2045,7 +2084,7 @@ class VirtualMachine(Document):
 			"cluster": self.cluster,
 			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
-			"server_id": self.index,
+			"server_id": self.index + 1000000,  # u servers shouldn't cause any issues with m servers
 			"is_primary": True,
 			"team": self.team,
 			"is_unified_server": True,
@@ -2230,7 +2269,7 @@ class VirtualMachine(Document):
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
-			"provider": "AWS EC2",
+			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 		}
 		if self.virtual_machine_image:
@@ -2878,6 +2917,32 @@ def sync_virtual_machines():
 def snapshot_oci_virtual_machines():
 	machines = frappe.get_all(
 		"Virtual Machine", {"status": "Running", "skip_automated_snapshot": 0, "cloud_provider": "OCI"}
+	)
+	for machine in machines:
+		# Skip if a snapshot has already been created today
+		if frappe.get_all(
+			"Virtual Disk Snapshot",
+			{
+				"virtual_machine": machine.name,
+				"physical_backup": 0,
+				"rolling_snapshot": 0,
+				"creation": (">=", frappe.utils.today()),
+			},
+			limit=1,
+		):
+			continue
+		try:
+			frappe.get_doc("Virtual Machine", machine.name).create_snapshots()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)
+
+
+def snapshot_frappe_compute_virtual_machines():
+	machines = frappe.get_all(
+		"Virtual Machine",
+		{"status": "Running", "skip_automated_snapshot": 0, "cloud_provider": "Frappe Compute"},
 	)
 	for machine in machines:
 		# Skip if a snapshot has already been created today

@@ -71,9 +71,9 @@ DOC_URLS = {
 	JobErr.BROKEN_PIPE_ERR: None,
 	JobErr.CANT_CONNECT_TO_MYSQL: "https://docs.frappe.io/cloud/cant-connect-to-mysql-server",
 	JobErr.LOST_CONN_TO_MYSQL: "https://docs.frappe.io/cloud/site/common-issues/lost-connection-to-mysql-server",
-	JobErr.GZIP_TAR_ERR: "https://docs.frappe.io/cloud/sites/migrate-an-existing-site#tar-gzip-command-fails-with-unexpected-eof",
+	JobErr.GZIP_TAR_ERR: "https://docs.frappe.io/cloud/sites/migrate-an-existing-site#targzip-command-fails-with-unexpected-eof",
 	JobErr.UNKNOWN_COMMAND_HYPHEN: "https://docs.frappe.io/cloud/unknown-command-",
-	JobErr.RQ_JOBS_IN_QUEUE: "https://docs.frappe.io/cloud/faq/site#how-do-i-deactivate-my-site-",
+	JobErr.RQ_JOBS_IN_QUEUE: "https://docs.frappe.io/cloud/faq/site#how-do-i-deactivate-my-site",
 }
 
 
@@ -326,13 +326,13 @@ def update_with_unknown_command_hyphen_err(details: Details, job: AgentJob):
 
 
 def update_with_rq_jobs_in_queue_err(details: Details, job: AgentJob):
-	if job.job_type not in ["Update Site Pull", "Update Site Migrate"]:
+	if job.job_type not in ["Update Site Pull", "Update Site Migrate", "Deactivate Site"]:
 		return False
 
 	details["title"] = "High number of queued jobs"
 
 	details["message"] = """<p>The job could not be processed because there are too many jobs getting queued.
-	If this continues to happen upon retry, please <b>deactivate</b> your site, wait for 5 minutes and try again. You may activate it again once the update is finished</p>
+	If this continues to happen upon retry, please <b>deactivate</b> your site, wait for some time (5-10 minutes) and try again. You may activate it again once the update is finished</p>
 	<p>Click <i>help</i> for instructions on how to deactivate your site.</p>
 
 

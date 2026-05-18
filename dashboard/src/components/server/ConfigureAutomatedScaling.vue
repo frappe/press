@@ -9,7 +9,7 @@
 		<template #body-content>
 			<div
 				v-if="$resources.configuredAutoscales.loading"
-				class="flex w-full items-center justify-center gap-2 py-32 text-gray-700"
+				class="flex w-full items-center justify-center gap-2 py-32 text-ink-gray-7"
 			>
 				<Spinner class="w-4" /> Loading
 			</div>
@@ -62,7 +62,7 @@
 
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
-import Button from 'frappe-ui/src/components/Button/Button.vue';
+import { Button } from 'frappe-ui';
 import { h } from 'vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog } from '../../utils/components';

@@ -11,6 +11,7 @@ from frappe.client import set_value as _set_value
 from frappe.handler import run_doc_method as _run_doc_method
 from frappe.model import child_table_fields, default_fields
 from frappe.model.base_document import get_controller
+from frappe.monitor import add_data_to_monitor
 from frappe.query_builder.terms import ValueWrapper
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
@@ -20,6 +21,7 @@ from press.access.support_access import has_support_access
 from press.exceptions import TeamHeaderNotInRequestError
 from press.guards import role_guard
 from press.guards.role_guard.document import has_user_permission
+from press.telemetry import sentry
 from press.utils import has_role
 
 if typing.TYPE_CHECKING:
@@ -127,7 +129,22 @@ def get_list(
 	if doctype in ["Team", "User SSH Key"]:
 		return []
 
+	context_data = {
+		"doctype": doctype,
+		"fields": fields,
+		"filters": filters,
+		"order_by": order_by,
+		"start": start,
+		"limit": limit,
+		"parent": parent,
+	}
+	add_data_to_monitor(
+		press_api_client_method="get_list",
+		press_api_client_payload=context_data,
+	)
+	sentry.set_context("press_client", {"method": "get_list", "data": context_data})
 	check_permissions(doctype)
+
 	valid_fields = validate_fields(doctype, fields)
 	valid_filters = validate_filters(doctype, filters)
 
@@ -213,10 +230,25 @@ def get_list_query(
 	document_type=lambda args: str(args.get("doctype")),
 	document_name=lambda args: str(args.get("name")),
 )
-def get(doctype, name):
+def get(doctype, name):  # noqa: C901
+	if frappe.request and frappe.request.path and frappe.request.path == "/api/method/press.api.client.get":
+		context_data = {
+			"doctype": doctype,
+			"docname": name,
+		}
+		add_data_to_monitor(
+			press_api_client_method="get_doc",
+			press_api_client_payload=context_data,
+		)
+		sentry.set_context("press_client", {"method": "get_doc", "data": context_data})
+
 	check_permissions(doctype)
+	is_support = has_support_access(doctype, name)
+	is_system_user = frappe.local.system_user()
+	check_permission = not (is_system_user or is_support)
+
 	try:
-		doc = frappe.get_doc(doctype, name)
+		doc = frappe.get_doc(doctype, name, check_permission=check_permission)
 	except frappe.DoesNotExistError:
 		controller = get_controller(doctype)
 		if hasattr(controller, "on_not_found"):
@@ -224,7 +256,7 @@ def get(doctype, name):
 		raise
 
 	if (
-		not (frappe.local.system_user() or has_support_access(doctype, name))
+		not (is_system_user or is_support)
 		and frappe.get_meta(doctype).has_field("team")
 		and doc.team != frappe.local.team().name
 	):
@@ -250,6 +282,16 @@ def get(doctype, name):
 def insert(doc=None):
 	if not doc or not doc.get("doctype"):
 		frappe.throw(frappe._("doc.doctype is required"))
+
+	context_data = {
+		"doctype": doc.get("doctype"),
+		"parent": doc.get("parent"),
+		"parenttype": doc.get("parenttype"),
+		"parentfield": doc.get("parentfield"),
+	}
+
+	add_data_to_monitor(press_api_client_method="insert_doc", press_api_client_payload=context_data)
+	sentry.set_context("press_client", {"method": "insert_doc", "data": context_data})
 
 	check_permissions(doc.get("doctype"))
 
@@ -283,6 +325,15 @@ def insert(doc=None):
 
 @frappe.whitelist(methods=["POST", "PUT"])
 def set_value(doctype: str, name: str, fieldname: dict | str, value: str | None = None):
+	context_data = {
+		"doctype": doctype,
+		"docname": name,
+		"fieldname": fieldname,
+		"value": value,
+	}
+
+	add_data_to_monitor(press_api_client_method="set_value", press_api_client_payload=context_data)
+	sentry.set_context("press_client", {"method": "set_value", "data": context_data})
 	check_permissions(doctype)
 	check_document_access(doctype, name)
 
@@ -309,6 +360,15 @@ def delete(doctype: str, name: str):
 
 @frappe.whitelist()
 def run_doc_method(dt: str, dn: str, method: str, args: dict | None = None):
+	context_data = {
+		"doctype": dt,
+		"docname": dn,
+		"method": method,
+		"args": args,
+	}
+	add_data_to_monitor(press_api_client_method="run_doc_method", press_api_client_payload=context_data)
+	sentry.set_context("press_client", {"method": "run_doc_method", "data": context_data})
+
 	check_permissions(dt)
 	check_document_access(dt, dn)
 	check_dashboard_actions(dt, dn, method)
@@ -331,6 +391,17 @@ def search_link(
 	order_by: str | None = None,
 	page_length: int | None = None,
 ):
+	context_data = {
+		"doctype": doctype,
+		"query": query,
+		"filters": filters,
+		"order_by": order_by,
+		"page_length": page_length,
+	}
+
+	add_data_to_monitor(press_api_client_method="search_link", press_api_client_payload=context_data)
+	sentry.set_context("press_client", {"method": "search_link", "data": context_data})
+
 	check_permissions(doctype)
 	if doctype == "Team" and not frappe.local.system_user():
 		raise_not_permitted()

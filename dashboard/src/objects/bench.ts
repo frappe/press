@@ -177,7 +177,7 @@ function getInPlaceUpdatesSuffix(row: Row) {
 		'div',
 		{
 			title,
-			class: 'rounded-full bg-gray-100 p-1'
+			class: 'rounded-full bg-surface-gray-2 p-1'
 		},
 		h(icon('star', 'w-3 h-3'))
 	);
@@ -188,7 +188,7 @@ function getAppPatchSuffix(row: Row) {
 		'div',
 		{
 			title: 'Apps in this bench may have been patched',
-			class: 'rounded-full bg-gray-100 p-1'
+			class: 'rounded-full bg-surface-gray-2 p-1'
 		},
 		h(icon('hash', 'w-3 h-3'))
 	);

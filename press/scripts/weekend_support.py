@@ -5,17 +5,17 @@ from itertools import cycle
 import frappe
 
 agents = [
+	"aysha@frappe.io",
+	"ritwik.p@frappe.io",
+	"balamurali@erpnext.com",
 	"jayanta@frappe.io",
 	"saurabh@erpnext.com",
-	"mangesh@frappe.io",
-	"bowrna@frappe.io",
 	"shadrak@erpnext.com",
 	"aradhya@frappe.io",
 	"sabu@frappe.io",
 	"tanmoy@frappe.io",
-	"aysha@frappe.io",
-	"ritwik.p@frappe.io",
-	"balamurali@erpnext.com",
+	"prathamesh@frappe.io",
+	"sidhant@frappe.io",
 ]
 
 

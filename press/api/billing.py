@@ -271,6 +271,11 @@ def create_payment_intent_for_micro_debit():
 		metadata={
 			"payment_for": "micro_debit_test_charge",
 		},
+		payment_method_options={
+			"card": {
+				"request_three_d_secure": "any" if team.is_trusted_team else "automatic",
+			}
+		},
 	)
 	return {"client_secret": intent["client_secret"]}
 
@@ -300,6 +305,11 @@ def create_payment_intent_for_buying_credits(amount):
 		customer=team.stripe_customer_id,
 		description="Prepaid Credits",
 		metadata=metadata,
+		payment_method_options={
+			"card": {
+				"request_three_d_secure": "any" if team.is_trusted_team else "automatic",
+			}
+		},
 	)
 	return {
 		"client_secret": intent["client_secret"],
@@ -674,8 +684,6 @@ def create_razorpay_mandate(max_amount: int, auth_type: str = "upi") -> dict:
 	team = get_current_team()
 	max_amount = int(max_amount)
 	team_doc = frappe.get_doc("Team", team)
-	if not team_doc.upi_autopay_enabled:
-		frappe.throw(_("UPI Autopay is not enabled for your account"))
 	if team_doc.currency != "INR":
 		frappe.throw(_("UPI Autopay is only available for currency INR"))
 	# Check if an active or pending mandate already exists
@@ -730,18 +738,6 @@ def get_razorpay_mandates() -> list[dict]:
 		],
 		order_by="creation desc",
 	)
-
-
-@frappe.whitelist()
-@role_guard.api("billing")
-def set_razorpay_mandate_as_default(mandate_name: str):
-	"""Set a Razorpay mandate as the default for the team"""
-	team = get_current_team()
-
-	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
-	mandate.set_default()
-
-	return {"success": True}
 
 
 @frappe.whitelist()
@@ -1117,9 +1113,11 @@ def handle_transaction_result(transaction_response, integration_request):
 
 	result_code = transaction_response.get("ResultCode")
 	status = None
+	current_user = frappe.session.user
 
 	if result_code == 0:
 		try:
+			frappe.set_user("Administrator")  # To create BT and Invoice
 			status = "Completed"
 			create_mpesa_request_log(
 				transaction_response, "Host", "Mpesa Express", integration_request, None, status
@@ -1127,6 +1125,7 @@ def handle_transaction_result(transaction_response, integration_request):
 
 			create_mpesa_payment_record(transaction_response)
 		except Exception as e:
+			frappe.set_user(current_user)  # reset to current user
 			frappe.log_error(f"Mpesa: Transaction failed with error {e}")
 
 	elif result_code == 1037:  # User unreachable (Phone off or timeout)

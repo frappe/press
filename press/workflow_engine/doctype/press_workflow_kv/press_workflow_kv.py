@@ -7,9 +7,7 @@ from typing import Any
 import frappe
 from frappe.model.document import Document
 
-from press.workflow_engine.doctype.press_workflow_object.press_workflow_object import (
-	PressWorkflowObject,
-)
+from press.workflow_engine.utils import deserialize_value, serialize_and_store_value
 
 
 class KVStoreInterface(abc.ABC):
@@ -43,10 +41,16 @@ class WorkflowKVStore(KVStoreInterface):
 			kv_doc.parenttype = self.parent_type
 			kv_doc.key = key
 
-		if kv_doc.value:
+		if kv_doc.value and kv_doc.type == "object":
 			frappe.db.set_value("Press Workflow Object", str(kv_doc.value), "deleted", True)
 
-		kv_doc.value = PressWorkflowObject.store(value, throw_on_error=throw_on_error)
+		value_type, value = serialize_and_store_value(value, throw_on_error=throw_on_error)
+		if value_type is None:
+			self.delete(key)
+			return
+
+		kv_doc.type = value_type
+		kv_doc.value = value
 		kv_doc.save(ignore_permissions=True)
 
 	def get(self, key: str) -> Any | None:
@@ -54,11 +58,11 @@ class WorkflowKVStore(KVStoreInterface):
 		if not kv_name:
 			return None
 
-		object_name = frappe.db.get_value("Press Workflow KV", kv_name, "value")
-		if not object_name:
+		value, value_type = frappe.db.get_value("Press Workflow KV", kv_name, ["value", "type"])
+		if not value:
 			return None
 
-		return PressWorkflowObject.get_object(str(object_name))
+		return deserialize_value(value_type, value)
 
 	def delete(self, key: str):
 		kv_name = self._get_kv_record_name(key)
@@ -111,5 +115,6 @@ class PressWorkflowKV(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		value: DF.Link
+		type: DF.Literal["int", "float", "string", "tuple", "list", "dict", "object"]
+		value: DF.Data | None
 	# end: auto-generated types

@@ -15,9 +15,11 @@ from frappe.utils import flt, sbool
 from press.api.github import branches, get_access_token
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
+from press.press.doctype.app.app import get_app_from_policies
 from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.bench_update.bench_update import get_bench_update
 from press.press.doctype.cluster.cluster import Cluster
+from press.press.doctype.deploy_candidate.deploy_candidate import RESTING_STATES, TRANSITORY_STATES
 from press.press.doctype.deploy_candidate_build.deploy_candidate_build import (
 	fail_and_redeploy as fail_and_redeploy_build,
 )
@@ -200,19 +202,9 @@ def exists(title):
 
 
 @frappe.whitelist()
-def get_default_apps():
-	press_settings = frappe.get_single("Press Settings")
-	default_apps = press_settings.get_default_apps()
-
-	versions, rows = get_app_versions_list()
-
-	version_based_default_apps = {v.version: [] for v in versions}
-
-	for app in default_apps:
-		for row in filter(lambda x: x.app == app, rows):
-			version_based_default_apps[row.version].append(row)
-
-	return version_based_default_apps
+def get_release_group_policy_for_bench(version: str):
+	"""Get the release group policy for a given version"""
+	return {"policies": get_app_from_policies(scope="Frappe Version", target=version, for_creation=True)}
 
 
 def get_app_versions_list(only_frappe=False):
@@ -491,7 +483,7 @@ def installable_apps(name):
 
 @frappe.whitelist()
 @protected("Release Group")
-def all_apps(name):
+def all_apps(name: str):
 	"""Return all apps in the marketplace that are not installed in the release group for adding new apps"""
 
 	release_group = frappe.get_doc("Release Group", name)
@@ -529,13 +521,22 @@ def all_apps(name):
 	total_installs_by_app = get_total_installs_by_app()
 
 	for app in marketplace_apps:
-		app["sources"] = find_all(
-			list(filter(lambda x: x.version == release_group.version, marketplace_app_sources)),
-			lambda x: x.app == app.app,
-		)
+		public_app_sources = list(filter(lambda source: source.app == app.app, marketplace_app_sources))
+
+		if not public_app_sources:
+			app["no_public_releases"] = True
+
+		app["sources"] = list(
+			filter(lambda source: source.version == release_group.version, public_app_sources)
+		)  # will be empty if there are no public releases
+
 		# for fetching repo details for incompatible apps
-		app_source = find(marketplace_app_sources, lambda x: x.app == app.app)
-		app["repo"] = f"{app_source.repository_owner}/{app_source.repository}" if app_source else None
+		app["repo"] = (
+			f"{public_app_sources[0].repository_owner}/{public_app_sources[0].repository}"
+			if app["sources"]
+			else None
+		)
+
 		app["total_installs"] = total_installs_by_app.get(app["name"], 0)
 
 	return marketplace_apps
@@ -1278,3 +1279,60 @@ def search_releases(
 	)
 
 	return q.run(as_dict=1)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def deploy_status(name: str) -> dict[str, bool | str | None]:
+	"""
+	Determine deployment state for a Release Group.
+
+	States:
+	- validating: pipeline exists, but no deploy candidate yet
+	- deploying: candidate exists and is in progress
+	- idle: no active pipeline or deployment finished
+	"""
+
+	ACTIVE_PIPELINE_STATUSES = ("Running", "Pending")
+
+	def response(is_validating=False, is_deploy_in_progress=False, candidate=None):
+		return {
+			"is_validating": is_validating,
+			"is_deploy_in_progress": is_deploy_in_progress,
+			"candidate": candidate,
+		}
+
+	pipeline_creation = frappe.db.get_value(
+		"Release Pipeline",
+		{
+			"release_group": name,
+			"status": ["in", ACTIVE_PIPELINE_STATUSES],
+		},
+		"creation",
+	)
+
+	if not pipeline_creation:
+		return response()
+
+	dc = frappe.db.get_value(
+		"Deploy Candidate Build",
+		{
+			"group": name,
+			"creation": (">", pipeline_creation),
+		},
+		["name", "status"],
+	)
+
+	if not dc:
+		return response(is_validating=True)
+
+	candidate, status = dc
+
+	# 3. Map status → UI state
+	if status in TRANSITORY_STATES:
+		return response(is_deploy_in_progress=True, candidate=candidate)
+
+	if status in RESTING_STATES:
+		return response()
+
+	return response(is_validating=True)

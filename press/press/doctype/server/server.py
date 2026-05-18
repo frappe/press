@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import datetime
 import ipaddress
 import json
@@ -14,6 +15,7 @@ from functools import cached_property
 
 import boto3
 import frappe
+import requests
 import semantic_version
 from frappe import _
 from frappe.core.utils import find, find_all
@@ -543,6 +545,7 @@ class BaseServer(Document, TagHelpers):
 			if self.doctype not in ["Database Server", "Server", "Proxy Server"] or not self.is_self_hosted:
 				self.create_dns_record()
 				self.update_virtual_machine_name()
+
 		elif (
 			self.private_ip
 			and self.doctype in ["Server", "Database Server"]
@@ -871,7 +874,7 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(self.doctype, self.name, "_install_exporters", queue="long", timeout=1200)
 
 	@frappe.whitelist()
-	def ping_ansible(self):
+	def ping_ansible(self) -> AnsiblePlay | None:
 		try:
 			ansible = Ansible(
 				playbook="ping.yml",
@@ -879,15 +882,16 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
+			return None
 
 	@frappe.whitelist()
 	def update_agent_ansible(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible")
 
-	def _update_agent_ansible(self):
+	def _update_agent_ansible(self, throw_on_failure: bool = False):
 		try:
 			agent_branch = frappe.get_value("Press Settings", "Press Settings", "branch")
 			if not agent_branch:
@@ -905,8 +909,12 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
-		except Exception:
+			play = ansible.run()
+			if throw_on_failure and play.status != "Success":
+				raise Exception("Failed to update agent")
+		except Exception as e:
+			if throw_on_failure:
+				raise e
 			log_error("Agent Update Exception", server=self.as_dict())
 
 	@frappe.whitelist()
@@ -1183,6 +1191,8 @@ class BaseServer(Document, TagHelpers):
 		return find(machine.volumes, lambda v: v.device == "/dev/sda1")
 
 	def update_virtual_machine_name(self):
+		if not self.virtual_machine:
+			return None
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
 
@@ -1292,6 +1302,10 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def archive(self):  # noqa: C901
+		if self.status == "Archived":
+			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
+			return
+
 		if frappe.db.exists(
 			"Press Job",
 			{
@@ -1301,10 +1315,8 @@ class BaseServer(Document, TagHelpers):
 				"status": "Success",
 			},
 		):
-			if self.status != "Archived":
-				self.status = "Archived"
-				self.save()
-
+			self.status = "Archived"
+			self.save()
 			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
 			return
 
@@ -1314,6 +1326,22 @@ class BaseServer(Document, TagHelpers):
 				self.status = "Archived"
 				self.save()
 				return
+
+		if frappe.db.exists(
+			"Press Job",
+			{
+				"job_type": "Archive Server",
+				"server": self.name,
+				"server_type": self.doctype,
+				"status": ("in", ("Running", "Pending")),
+				"creation": (">", frappe.utils.add_to_date(frappe.utils.now(), minutes=-30)),
+			},
+		):
+			frappe.throw(
+				_(
+					"Archival of Server {0} is already in progress. Please wait for the current archival process to complete before attempting to archive again."
+				).format(self.name)
+			)
 
 		if frappe.get_all(
 			"Site",
@@ -1346,7 +1374,7 @@ class BaseServer(Document, TagHelpers):
 				frappe.db.set_value("Self Hosted Server", {"server": self.name}, "status", "Archived")
 
 		else:
-			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
+			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long", enqueue_after_commit=True)
 		self.disable_subscription()
 		self.remove_from_release_groups()
 
@@ -1502,7 +1530,7 @@ class BaseServer(Document, TagHelpers):
 			**{"swap_size": swap_size},
 		)
 
-	def _increase_swap(self, swap_size=4):
+	def _increase_swap(self, swap_size=4, throw_on_failure: bool = False):
 		"""Increase swap by size defined"""
 		from press.api.server import calculate_swap
 
@@ -1520,16 +1548,22 @@ class BaseServer(Document, TagHelpers):
 					"swap_file": swap_file_name,
 				},
 			)
-			ansible.run()
+			play = ansible.run()
+			if play.status != "Success" and throw_on_failure:
+				raise Exception("Failed to increase swap")
+			return play
 		except Exception:
+			if throw_on_failure:
+				raise
 			log_error("Increase swap exception", doc=self)
+			return None
 
-	def increase_swap_locked(self, swap_size=4):
+	def increase_swap_locked(self, swap_size=4, throw_on_failure: bool = False):
 		with filelock(f"{self.name}-swap-update"):
-			self._increase_swap(swap_size)
+			self._increase_swap(swap_size, throw_on_failure=throw_on_failure)
 
 	@frappe.whitelist()
-	def reset_swap(self, swap_size=1):
+	def reset_swap(self, swap_size=1, now: bool = False):
 		"""
 		Replace existing swap files with new swap file of given size
 		"""
@@ -1540,6 +1574,7 @@ class BaseServer(Document, TagHelpers):
 			queue="long",
 			timeout=1200,
 			**{"swap_size": swap_size},
+			now=now,
 		)
 
 	def reset_swap_locked(self, swap_size=1):
@@ -1630,7 +1665,7 @@ class BaseServer(Document, TagHelpers):
 			log_error("Swappiness Setup Exception", doc=self)
 
 	@frappe.whitelist()
-	def update_tls_certificate(self):
+	def update_tls_certificate(self, throw_on_failure: bool = False):
 		from press.press.doctype.tls_certificate.tls_certificate import (
 			update_server_tls_certifcate,
 		)
@@ -1647,7 +1682,7 @@ class BaseServer(Document, TagHelpers):
 
 		certificate = frappe.get_last_doc("TLS Certificate", filters)
 
-		update_server_tls_certifcate(self, certificate)
+		update_server_tls_certifcate(self, certificate, throw_on_failure=throw_on_failure)
 
 	@frappe.whitelist()
 	def show_agent_version(self) -> str:
@@ -2299,7 +2334,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			timeout=8000,
 		)
 
-	def _prune_docker_system(self):
+	def _prune_docker_system(self, throw_on_failure: bool = False):
 		try:
 			ansible = Ansible(
 				playbook="docker_system_prune.yml",
@@ -2307,9 +2342,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
+			play = ansible.run()
+			if play.status != "Success" and throw_on_failure:
+				frappe.throw("Failed to prune docker system")  # nosemgrep
+			return play
 		except Exception:
 			log_error("Prune Docker System Exception", doc=self)
+			if throw_on_failure:
+				frappe.throw("Failed to prune docker system")  # nosemgrep
+			return None
 
 	def get_nat_gateway_ip(self):
 		if hasattr(self, "nat_server") and self.nat_server:
@@ -2627,6 +2668,22 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		vm_doc.sync()
 		return f"Static IP {reserved_ip_response.ip_address} allotted to the VM (OCID: {reserved_ip_response.id})"
 
+	@frappe.whitelist()
+	def migrate_to_cgroup_v2(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_migrate_to_cgroup_v2")
+
+	def _migrate_to_cgroup_v2(self):
+		try:
+			ansible = Ansible(
+				playbook="migrate_to_cgroup_v2.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Cgroup v2 Migration Exception", server=self.as_dict())
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
@@ -2652,6 +2709,7 @@ class Server(BaseServer):
 		cluster: DF.Link | None
 		communication_infos: DF.Table[CommunicationInfo]
 		database_server: DF.Link | None
+		db_healthcheck_token: DF.Password | None
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
@@ -2685,6 +2743,7 @@ class Server(BaseServer):
 		keep_files_on_server_in_offsite_backup: DF.Check
 		managed_database_service: DF.Link | None
 		mounts: DF.Table[ServerMount]
+		nat_server: DF.Link | None
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
 		platform: DF.Literal["x86_64", "arm64"]
@@ -2713,6 +2772,7 @@ class Server(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		stop_deployments: DF.Check
 		site_warranty_quota: DF.Int
+		stop_incident_actions: DF.Check
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None
@@ -2730,7 +2790,12 @@ class Server(BaseServer):
 	@role_guard.action()
 	def validate(self):
 		super().validate()
+		self.set_db_healthcheck_token()
 		self.validate_managed_database_service()
+
+	def set_db_healthcheck_token(self):
+		if not self.db_healthcheck_token:
+			self.db_healthcheck_token = frappe.generate_hash(length=64)
 
 	def validate_managed_database_service(self):
 		if getattr(self, "is_managed_database", 0):
@@ -2762,6 +2827,9 @@ class Server(BaseServer):
 			self.update_db_server()
 
 		self.set_bench_memory_limits_if_needed(save=False)
+
+		self.validate_public_server_exists_for_site_or_bench_placement()
+
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
@@ -2914,6 +2982,47 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Logrotate Setup Exception", server=self.as_dict())
+
+	def validate_public_server_exists_for_site_or_bench_placement(self) -> None:
+		"""Ensure at least one public server is available in the cluster for:
+		1. New site placement (use_for_new_sites)
+		2. New bench deployment (use_for_new_benches)
+		These flags are maintained by refresh_new_bench_and_site_server_pool background job.
+		This validation prevents failures for newly created clusters before the job runs.
+		"""
+
+		if not (self.has_value_changed("public") and self.team == "team@erpnext.com" and self.public):
+			return
+
+		servers = frappe.get_all(
+			"Server",
+			filters={"cluster": self.cluster, "public": 1},
+			fields=["use_for_new_sites", "use_for_new_benches"],
+		)
+
+		has_site_server = any(s.use_for_new_sites for s in servers)
+		has_bench_server = any(s.use_for_new_benches for s in servers)
+
+		if has_site_server and has_bench_server:
+			return
+
+		messages = []
+
+		if not has_site_server:
+			messages.append(
+				"There are no public servers in this cluster with <b>Use For New Sites</b> enabled."
+			)
+
+		if not has_bench_server:
+			messages.append(
+				"There are no public servers in this cluster with <b>Use For New Benches</b> enabled."
+			)
+
+		if messages:
+			frappe.throw(
+				" ".join(messages)
+				+ " Enable these flags to allow site creation and bench deployment on shared servers in this cluster."
+			)
 
 	@dashboard_whitelist()
 	@frappe.whitelist()
@@ -3105,6 +3214,12 @@ class Server(BaseServer):
 		except Exception:
 			log_error("Standalone Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	def get_db_healthcheck_token(self):
+		if not self.db_healthcheck_token:
+			self.set_db_healthcheck_token()
+			self.save()
+		return self.get_password("db_healthcheck_token")
 
 	@frappe.whitelist()
 	def update_benches_nginx(self):
@@ -3397,12 +3512,9 @@ class Server(BaseServer):
 		running_press_job = next((job for job in press_jobs if job.status in ("Pending", "Running")), None)
 		if press_jobs:
 			for press_job in press_jobs:
-				press_job["steps"] = frappe.get_all(
-					"Press Job Step",
-					filters={"job": press_job.name},
-					fields=["name", "step_name", "status", "result", "traceback", "start", "end", "duration"],
-					order_by="creation asc",
-				)
+				press_job["steps"] = []
+				with contextlib.suppress(frappe.DoesNotExistError):
+					press_job["steps"] = frappe.get_doc("Press Job", press_job.name).steps
 
 		return {
 			"running_press_job_type": running_press_job.job_type if running_press_job else None,
@@ -3990,45 +4102,179 @@ def is_dedicated_server(server_name):
 	return not is_public
 
 
+def get_teams_with_unpaid_invoices_over_threshold():
+	from press.press.doctype.site.site import ARCHIVE_AFTER_SUSPEND_DAYS
+	from press.press.doctype.team.suspend_sites import SUSPENSION_DAYS
+
+	threshold = frappe.utils.add_days(frappe.utils.getdate(), -(SUSPENSION_DAYS + ARCHIVE_AFTER_SUSPEND_DAYS))
+
+	invoice = frappe.qb.DocType("Invoice")
+	team = frappe.qb.DocType("Team")
+	server = frappe.qb.DocType("Server")
+	db_server = frappe.qb.DocType("Database Server")
+
+	teams = (
+		frappe.qb.from_(invoice)
+		.inner_join(team)
+		.on(invoice.team == team.name)
+		.inner_join(server)
+		.on(server.team == team.name)
+		.inner_join(db_server)
+		.on(db_server.team == team.name)
+		.where(
+			(team.enabled == 1)
+			& (team.free_account == 0)
+			& (team.extend_payment_due_suspension == 0)
+			& (invoice.status == "Unpaid")
+			& (invoice.docstatus < 2)
+			& (invoice.type == "Subscription")
+			& (invoice.period_end < threshold)
+			& ((server.status != "Archived") | (db_server.status != "Archived"))
+		)
+		.select(invoice.team)
+		.distinct()
+	).run(as_dict=True)
+
+	return {d.team for d in teams}
+
+
+def archive_servers_with_unpaid_invoices():  # noqa: C901
+	teams = get_teams_with_unpaid_invoices_over_threshold()
+	if not teams:
+		return
+
+	db_servers = []
+	servers = frappe.get_all(
+		"Server", {"status": ("!=", "Archived"), "team": ("in", teams)}, pluck="name", limit=6
+	)
+	for server in servers:
+		# TODO: cleanup to not do so many db calls
+		if frappe.db.exists("Site", {"status": ("!=", "Archived"), "server": server}):
+			continue
+
+		if frappe.db.exists("Bench", {"status": ("!=", "Archived"), "server": server}):
+			continue
+
+		try:
+			server = frappe.get_doc("Server", server)
+			server.drop_server() if (
+				server.database_server and server.database_server not in db_servers
+			) else server.archive()
+			server.create_log("Terminated", "Archived due to unpaid invoices")
+
+			if server.database_server:
+				if not server.is_unified_server and server.database_server not in db_servers:
+					log_server_activity(
+						"m", server.database_server, "Terminated", "Archived due to unpaid invoices"
+					)
+
+				db_servers.append(server.database_server)
+
+			frappe.db.commit()
+		except Exception:
+			frappe.log_error(title="Server Archival Error")
+			frappe.db.rollback()
+
+	# if say db server was left behind for some reason
+	database_servers = frappe.get_all(
+		"Database Server",
+		{"name": ("not in", db_servers), "status": ("!=", "Archived"), "team": ("in", teams)},
+		pluck="name",
+		limit=6,
+	)
+	for db_server in database_servers:
+		if frappe.db.exists("Server", {"status": ("!=", "Archived"), "database_server": db_server}):
+			continue
+
+		try:
+			server = frappe.get_doc("Database Server", db_server)
+			server.archive()
+			server.create_log("Terminated", "Archived due to unpaid invoices")
+			frappe.db.commit()
+		except Exception:
+			frappe.log_error(title="Server Archival Error")
+			frappe.db.rollback()
+
+
 def refresh_new_bench_and_site_server_pool() -> None:
 	"""Refresh `use_for_new_benches` and `use_for_new_sites` flags for public clusters
-	1. Consider active, public servers for each cluster
-	2. Compute server score as sum of site plan cpu_time_per_day for sites that aren't archived/suspended
-	3. Mark least-loaded server per cluster as eligible for new benches/sites
+	1. Consider active, public primary servers for each cluster
+	2. Fetch available memory and available vCPU for all servers in bulk from Prometheus
+	3. Mark the server with most memory for new benches and the one with most vCPU for new sites
 	"""
 	server_names, servers_by_cluster = _get_public_primary_servers_by_cluster()
 	if not server_names:
 		return
 
-	server_score_map = _get_server_cpu_time_across_sites(server_names)
-	selected_servers: set[str] = set()
+	memory_map, vcpu_map = _get_public_server_available_resources(server_names)
+	if not memory_map and not vcpu_map:
+		return
 
-	for cluster_servers in servers_by_cluster.values():
-		if not cluster_servers:
-			continue
-
-		least_loaded_server = min(
-			cluster_servers,
-			key=lambda name: (server_score_map[name], name),
+	if memory_map:
+		_refresh_bench_pool_and_raise_capacity_incidents(
+			server_names=server_names,
+			servers_by_cluster=servers_by_cluster,
+			memory_map=memory_map,
 		)
-		selected_servers.add(least_loaded_server)
 
-	if selected_servers:
-		other_servers = list(set(server_names) - selected_servers)
+	if vcpu_map:
+		selected_site_servers = {
+			_get_server_with_most_resource(cluster_servers, vcpu_map)
+			for cluster_servers in servers_by_cluster.values()
+			if cluster_servers
+		}
+		other_servers = list(set(server_names) - selected_site_servers)
 		if other_servers:
 			frappe.db.set_value(
 				"Server",
 				{"name": ["in", other_servers]},
-				{"use_for_new_benches": 0, "use_for_new_sites": 0},
+				{"use_for_new_sites": 0},
 				update_modified=False,
 			)
-
 		frappe.db.set_value(
 			"Server",
-			{"name": ["in", list(selected_servers)]},
-			{"use_for_new_benches": 1, "use_for_new_sites": 1},
+			{"name": ["in", list(selected_site_servers)]},
+			{"use_for_new_sites": 1},
 			update_modified=False,
 		)
+
+
+def _refresh_bench_pool_and_raise_capacity_incidents(
+	server_names: list[str],
+	servers_by_cluster: dict[str, list[str]],
+	memory_map: dict[str, float],
+) -> None:
+	minimum_bench_memory_bytes = 300 * 1024 * 1024
+	selected_bench_server_by_cluster = {
+		cluster: _get_server_with_most_resource(cluster_servers, memory_map)
+		for cluster, cluster_servers in servers_by_cluster.items()
+		if cluster_servers
+	}
+	selected_bench_servers = set(selected_bench_server_by_cluster.values())
+	other_servers = list(set(server_names) - selected_bench_servers)
+	if other_servers:
+		frappe.db.set_value(
+			"Server",
+			{"name": ["in", other_servers]},
+			{"use_for_new_benches": 0},
+			update_modified=False,
+		)
+	frappe.db.set_value(
+		"Server",
+		{"name": ["in", list(selected_bench_servers)]},
+		{"use_for_new_benches": 1},
+		update_modified=False,
+	)
+
+	for cluster, selected_server in selected_bench_server_by_cluster.items():
+		available_memory = memory_map.get(selected_server, 0.0)
+		if available_memory < minimum_bench_memory_bytes:
+			_create_capacity_incident_for_cluster(
+				cluster=cluster,
+				server=selected_server,
+				available_memory_bytes=available_memory,
+				minimum_required_memory_bytes=minimum_bench_memory_bytes,
+			)
 
 
 def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[str]]]:
@@ -4044,31 +4290,114 @@ def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[
 	return server_names, servers_by_cluster
 
 
-def _get_server_cpu_time_across_sites(server_names: list[str]) -> dict[str, float]:
-	from pypika.functions import Coalesce, Sum
-
-	score_map: dict[str, float] = {}
-	if not server_names:
-		return score_map
-
-	Site = frappe.qb.DocType("Site")
-	SitePlan = frappe.qb.DocType("Site Plan")
-
-	server_scores = (
-		frappe.qb.from_(Site)
-		.left_join(SitePlan)
-		.on(Site.plan == SitePlan.name)
-		.select(
-			Site.server,
-			Coalesce(Sum(SitePlan.cpu_time_per_day), 0).as_("cpu_time_per_day"),
-		)
-		.where(Site.server.isin(server_names))
-		.where(~Site.status.isin(["Archived", "Suspended"]))
-		.groupby(Site.server)
-		.run(as_dict=True)
+def _get_server_with_most_resource(server_names: list[str], resource_map: dict[str, float]) -> str:
+	return max(
+		sorted(server_names),
+		key=lambda name: resource_map.get(name, 0.0),
 	)
 
-	for server_score in server_scores:
-		score_map[server_score.server] = float(server_score.cpu_time_per_day or 0.0)
 
-	return score_map
+def _get_public_server_available_resources(
+	server_names: list[str],
+) -> tuple[dict[str, float] | None, dict[str, float] | None]:
+	"""Fetch available memory and vCPU for servers from Prometheus"""
+	if not server_names:
+		return None, None
+
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	if not monitor_server:
+		return None, None
+
+	url = f"https://{monitor_server}/prometheus/api/v1/query"
+	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
+	auth = ("frappe", str(password))
+
+	instance_matcher = "|".join(name.replace(".", "[.]") for name in server_names)
+
+	memory_query = f'avg_over_time(node_memory_MemAvailable_bytes{{instance=~"^({instance_matcher})$", job="node"}}[60m])'
+	vcpu_query = f'sum by (instance) (rate(node_cpu_seconds_total{{instance=~"^({instance_matcher})$", job="node", mode="idle"}}[60m]))'
+
+	memory_results = _query_prometheus_vector(memory_query, url, auth)
+	vcpu_results = _query_prometheus_vector(vcpu_query, url, auth)
+
+	def _build_server_map(results: list[dict] | None) -> dict[str, float] | None:
+		if results is None:
+			return None
+		server_map: dict[str, float] = {name: 0.0 for name in server_names}
+		for result in results:
+			instance = result.get("metric", {}).get("instance")
+			if not instance or instance not in server_map:
+				continue
+			with suppress(KeyError, TypeError, ValueError):
+				server_map[instance] = float(result["value"][1])
+		return server_map
+
+	return _build_server_map(memory_results), _build_server_map(vcpu_results)
+
+
+def _query_prometheus_vector(query: str, url: str, auth: tuple[str, str]) -> list[dict] | None:
+	try:
+		response = requests.get(url, params={"query": query}, auth=auth).json()
+	except requests.exceptions.RequestException as exc:
+		log_error("Public Server Pool Prometheus Query Failed", query=query, exception=exc)
+		return None
+
+	if response.get("status") != "success":
+		log_error("Public Server Pool Prometheus Query Failed", query=query, response=response)
+		return None
+
+	return response.get("data", {}).get("result")
+
+
+def _create_capacity_incident_for_cluster(
+	cluster: str,
+	server: str,
+	available_memory_bytes: float,
+	minimum_required_memory_bytes: int,
+) -> None:
+	"""Create an incident when selected bench server has insufficient memory capacity"""
+
+	subject = f"Insufficient bench capacity in cluster {cluster}"
+
+	open_incident_exists = frappe.db.exists(
+		"Incident",
+		{
+			"cluster": cluster,
+			"server": server,
+			"subject": subject,
+			"status": ["not in", ["Resolved", "Auto-Resolved", "Press-Resolved"]],
+		},
+	)
+	if open_incident_exists:
+		return
+
+	available_memory_mb = round(available_memory_bytes / 1024 / 1024, 2)
+	minimum_required_memory_mb = round(minimum_required_memory_bytes / 1024 / 1024, 2)
+
+	description = (
+		"Public server pool capacity check detected insufficient memory for new bench placement. "
+		f"Selected server: {server}. "
+		f"Available memory: {available_memory_mb} MiB. "
+		f"Minimum required per bench: {minimum_required_memory_mb} MiB. "
+		"Action required: provision a new server in this cluster or increase capacity of existing servers."
+	)
+
+	try:
+		incident = frappe.get_doc(
+			{
+				"doctype": "Incident",
+				"server": server,
+				"cluster": cluster,
+				"type": "Server Down",
+				"subject": subject,
+				"description": description,
+			}
+		)
+		incident.insert(ignore_permissions=True)
+	except Exception as exc:
+		log_error(
+			"Failed to create cluster bench capacity incident",
+			cluster=cluster,
+			server=server,
+			exception=exc,
+		)

@@ -29,7 +29,7 @@
 
 	<div
 		v-if="!$team.doc?.is_desk_user && !$session.hasBenchCreationAccess"
-		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-ink-gray-6"
 	>
 		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 		<ErrorMessage message="You aren't permitted to create new benches" />
@@ -39,7 +39,7 @@
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div>
 				<div class="flex items-center justify-between">
-					<h2 class="text-sm font-medium leading-6 text-gray-900">
+					<h2 class="text-sm font-medium leading-6 text-ink-gray-9">
 						Select Frappe Framework Version
 					</h2>
 				</div>
@@ -50,14 +50,14 @@
 							:key="version.name"
 							:class="[
 								benchVersion === version.name
-									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'bg-white text-gray-900  hover:bg-gray-50',
-								'flex cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none',
+									? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+									: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
+								'flex cursor-pointer items-center justify-between rounded border border-outline-gray-3 p-3 text-sm focus:outline-none',
 							]"
 							@click="benchVersion = version.name"
 						>
 							<span class="font-medium">{{ version.name }} </span>
-							<span class="ml-1 text-gray-600">
+							<span class="ml-1 text-ink-gray-6">
 								{{ version.status }}
 							</span>
 						</button>
@@ -68,7 +68,7 @@
 				class="flex flex-col"
 				v-if="options?.clusters.length && benchVersion && !server"
 			>
-				<h2 class="text-sm font-medium leading-6 text-gray-900">
+				<h2 class="text-sm font-medium leading-6 text-ink-gray-9">
 					Select Region
 				</h2>
 				<div class="mt-2 w-full space-y-2">
@@ -79,9 +79,9 @@
 							@click="benchRegion = c.name"
 							:class="[
 								benchRegion === c.name
-									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
-								'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
+									? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+									: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+								'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 							]"
 						>
 							<div class="flex w-full items-center justify-between">
@@ -98,7 +98,7 @@
 				</div>
 			</div>
 			<div v-if="benchVersion && (benchRegion || server)" class="flex flex-col">
-				<h2 class="text-sm font-medium leading-6 text-gray-900">
+				<h2 class="text-sm font-medium leading-6 text-ink-gray-9">
 					Enter Bench Title
 				</h2>
 				<div class="mt-2">
@@ -115,7 +115,7 @@
 				v-if="benchVersion && (benchRegion || server) && benchTitle"
 			>
 				<div
-					class="flex items-center rounded border border-gray-200 bg-gray-100 p-4 text-sm text-gray-600"
+					class="flex items-center rounded border border-outline-gray-1 bg-surface-gray-2 p-4 text-sm text-ink-gray-6"
 				>
 					<lucide-info class="mr-4 inline-block h-6 w-6" />
 					<div>
@@ -158,12 +158,11 @@
 	</div>
 </template>
 <script>
-import Summary from '../components/Summary.vue';
-import Header from '../components/Header.vue';
-import { DashboardError } from '../utils/error';
-import { h } from 'vue';
 import { Badge } from 'frappe-ui';
+import Header from '../components/Header.vue';
 import ObjectList from '../components/ObjectList.vue';
+import Summary from '../components/Summary.vue';
+import { DashboardError } from '../utils/error';
 
 export default {
 	name: 'NewReleaseGroup',
@@ -182,11 +181,15 @@ export default {
 		};
 	},
 	resources: {
-		preInstalledApps() {
+		releaseGroupPolicyApps() {
 			return {
-				url: 'press.api.bench.get_default_apps',
-				initialData: {},
-				auto: true,
+				url: 'press.api.bench.get_release_group_policy_for_bench',
+				makeParams() {
+					return {
+						version: this.benchVersion,
+					};
+				},
+				auto: !!this.benchVersion,
 			};
 		},
 		options() {
@@ -236,10 +239,9 @@ export default {
 					source: app.source.name,
 				};
 			});
-
-			// add default apps
+			// add policy apps
 			apps.push(
-				...this.preInstalledApps[this.benchVersion].map((app) => {
+				...this.releaseGroupPolicyApps.map((app) => {
 					return {
 						name: app.app,
 						source: app.source,
@@ -253,44 +255,14 @@ export default {
 		options() {
 			return this.$resources.options.data;
 		},
-		preInstalledApps() {
-			return this.$resources.preInstalledApps.data;
-		},
-		preInstalledAppsList() {
-			return {
-				data: () => this.preInstalledApps,
-				columns: [
-					{
-						label: 'Default Apps',
-						fieldname: 'app_title',
-						type: 'Component',
-						component: ({ row }) => {
-							return h(
-								'a',
-								{
-									class: 'flex items-center text-sm',
-									href: `${row.route}`,
-									target: '_blank',
-								},
-								[h('span', { class: 'ml-2' }, row.app_title)],
-							);
-						},
-					},
-				],
-			};
+		releaseGroupPolicyApps() {
+			return this.$resources.releaseGroupPolicyApps.data?.policies || [];
 		},
 		summaryOptions() {
 			return [
 				{
 					label: 'Frappe Framework Version',
 					value: this.benchVersion,
-				},
-				{
-					label: 'Preinstalled Apps',
-					value: this.preInstalledApps[this.benchVersion]
-						.map((app) => app.title)
-						.join(', '),
-					condition: () => this.preInstalledApps[this.benchVersion].length,
 				},
 				{
 					label: 'Region',

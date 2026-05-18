@@ -1,13 +1,13 @@
 <template>
-	<div class="min-h-screen bg-gray-50">
+	<div class="min-h-screen bg-surface-gray-1">
 		<LoginBox>
-			<h1 class="text-base text-gray-600">Manage Subscription</h1>
+			<h1 class="text-base text-ink-gray-6">Manage Subscription</h1>
 			<div class="mt-4">
-				<div class="text-xl font-medium text-gray-900">
+				<div class="text-xl font-medium text-ink-gray-9">
 					{{ site }}
 				</div>
 				<div
-					class="mt-1 text-base text-gray-700"
+					class="mt-1 text-base text-ink-gray-7"
 					v-if="$resources.subscription.data?.trial_end_date"
 				>
 					Trial ends
@@ -21,10 +21,10 @@
 			<div class="mt-8" v-if="$resources.subscription.data">
 				<div>
 					<button
-						class="flex w-full items-center justify-between rounded-sm bg-gray-100 p-2 hover:bg-gray-200"
+						class="flex w-full items-center justify-between rounded-sm bg-surface-gray-2 p-2 hover:bg-surface-gray-3"
 						@click="currentStep = 1"
 					>
-						<span class="text-sm font-medium text-gray-700">
+						<span class="text-sm font-medium text-ink-gray-7">
 							{{
 								$resources.subscription.data.current_plan
 									? 'Change plan'
@@ -32,7 +32,7 @@
 							}}
 						</span>
 						<span
-							class="text-sm font-bold text-gray-900"
+							class="text-sm font-bold text-ink-gray-9"
 							v-if="currentStep === 2"
 						>
 							{{ selectedPlan.plan_title }}<span class="font-normal">/mo</span>
@@ -52,10 +52,10 @@
 						>
 							<div class="flex items-center justify-between">
 								<div>
-									<span class="text-base font-medium text-gray-900">
+									<span class="text-base font-medium text-ink-gray-9">
 										{{ plan.plan_title }}
 									</span>
-									<span class="text-base text-gray-600">/mo</span>
+									<span class="text-base text-ink-gray-6">/mo</span>
 								</div>
 								<Badge
 									v-if="$resources.subscription.data.current_plan == plan.name"
@@ -67,7 +67,7 @@
 									class="h-5 w-5"
 								/>
 							</div>
-							<div class="mt-1 text-sm text-gray-600">
+							<div class="mt-1 text-sm text-ink-gray-6">
 								<span>
 									CPU {{ plan.cpu_time_per_day }}
 									{{ plan.cpu_time_per_day == 1 ? 'hour' : 'hours' }}/day
@@ -102,7 +102,7 @@
 				</div>
 				<div class="mt-2" v-if="currentStep == 2">
 					<div
-						class="rounded-sm bg-gray-100 p-2 text-sm font-medium text-gray-700"
+						class="rounded-sm bg-surface-gray-2 p-2 text-sm font-medium text-ink-gray-7"
 					>
 						Step 2: Setup billing
 					</div>

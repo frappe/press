@@ -11,7 +11,7 @@
 		/>
 		<div
 			v-else
-			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-ink-gray-6"
 		>
 			<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 			<ErrorMessage message="You aren't permitted to view the billing page" />
@@ -51,10 +51,7 @@ export default {
 			];
 
 			// Add UPI Autopay tab for INR teams
-			if (
-				this.$team?.doc?.currency === 'INR' &&
-				this.$team?.doc?.upi_autopay_enabled
-			) {
+			if (this.$team?.doc?.currency === 'INR') {
 				baseTabs.splice(5, 0, {
 					label: 'UPI Autopay',
 					route: { name: 'BillingUPIAutopay' },

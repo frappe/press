@@ -23,7 +23,7 @@
 						</li>
 					</ul>
 				</div>
-				<div class="border border-gray-200 rounded-lg p-4 mt-4 space-y-6">
+				<div class="border border-outline-gray-1 rounded-lg p-4 mt-4 space-y-6">
 					<div class="flex flex-col space-y-2">
 						<label class="font-medium">Scale Up Start Time</label>
 						<DateTimePicker
@@ -53,21 +53,21 @@
 			</div>
 			<div
 				v-else
-				class="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-6 text-center space-y-3"
+				class="flex flex-col items-center justify-center rounded-lg border border-outline-gray-1 bg-surface-gray-1 p-6 text-center space-y-3"
 			>
-				<p class="text-gray-900">Autoscale scheduling is unavailable</p>
+				<p class="text-ink-gray-9">Autoscale scheduling is unavailable</p>
 
-				<p class="text-gray-600 max-w-md">
+				<p class="text-ink-gray-6 max-w-md">
 					You can only schedule autoscale records when automatic scaling is not
 					already configured for this server.
 				</p>
 
-				<p class="text-gray-600">
+				<p class="text-ink-gray-6">
 					Please read the
 					<a
 						href="https://docs.frappe.io/cloud/application-server-horizontal-scaling"
 						target="_blank"
-						class="text-gray-900 underline hover:text-gray-700"
+						class="text-ink-gray-9 underline hover:text-ink-gray-7"
 					>
 						documentation
 					</a>

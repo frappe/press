@@ -4,12 +4,12 @@ import { toast } from 'vue-sonner';
 import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDialog.vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import PlansDialog from '../components/marketplace/PlansDialog.vue';
-import CodeReview from '../components/marketplace/CodeReview.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
 import { userCurrency, currency } from '../utils/format';
 import { getToastErrorMessage } from '../utils/toast';
 import { isMobile } from '../utils/device';
+import { RouterLink } from 'vue-router';
 import router from '../router';
 
 export default {
@@ -46,7 +46,7 @@ export default {
 								'div',
 								{
 									class:
-										'w-6 h-6 rounded bg-gray-300 text-gray-600 flex items-center justify-center',
+										'w-6 h-6 rounded bg-surface-gray-4 text-ink-gray-6 flex items-center justify-center',
 								},
 								row.title[0].toUpperCase(),
 							);
@@ -218,10 +218,28 @@ export default {
 																		label: 'Add',
 																		onClick() {
 																			if (app.addVersion.loading) return;
+
+																			const getAddVersionArgsFromOption = (
+																				option,
+																			) => {
+																				const [
+																					repo_owner,
+																					repo_name,
+																					...branch
+																				] = option.trim().split('/');
+																				return {
+																					repo_owner,
+																					repo_name,
+																					branch: branch.join('/'),
+																				};
+																			};
+
 																			toast.promise(
 																				app.addVersion.submit({
 																					version: row.version,
-																					branch: row.selectedOption,
+																					...getAddVersionArgsFromOption(
+																						row.selectedOption,
+																					),
 																				}),
 																				{
 																					loading: 'Adding new version...',
@@ -300,6 +318,18 @@ export default {
 							},
 						];
 					},
+				},
+			},
+			{
+				label: 'Audit Report',
+				icon: icon('clipboard'),
+				route: 'audit-report',
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../components/marketplace/AppAuditReport.vue'),
+				),
+				props: (app) => {
+					return { app: app.doc.name };
 				},
 			},
 			{
@@ -581,28 +611,34 @@ function showReleases(row, app) {
 									align: 'center',
 								},
 								{
-									label: 'Code Screening',
+									label: 'Audit',
 									type: 'Component',
 									width: 0.15,
 									align: 'center',
-									component: ({ row, listResource: releases, app }) => {
-										if (
-											(row.status === 'Awaiting Approval' ||
-												row.status === 'Rejected') &&
-											row.screening_status === 'Complete'
-										) {
-											return h(Button, {
-												label: 'Code Review',
-												variant: 'subtle',
-												theme: 'blue',
-												size: 'sm',
-												onClick: () =>
-													codeReview(row, app, window.is_system_user),
-											});
-										}
-										return h(Badge, {
-											label: row.screening_status || 'Not Started',
-										});
+									component: ({ row }) => {
+										const theme = {
+											Pass: 'green',
+											'Needs Improvement': 'orange',
+											Warn: 'orange',
+											Fail: 'red',
+											Inconclusive: 'gray',
+										};
+										return h(
+											RouterLink,
+											{
+												to: {
+													name: 'Marketplace App Detail Audit Report',
+													params: { name: app.doc.name },
+												},
+												class:
+													'inline-flex cursor-pointer rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400',
+											},
+											() =>
+												h(Badge, {
+													label: row.audit_result || 'Pending',
+													theme: theme[row.audit_result] || 'gray',
+												}),
+										);
 									},
 								},
 								{
@@ -680,15 +716,5 @@ function showReleases(row, app) {
 					}),
 			},
 		),
-	);
-}
-
-function codeReview(row, app, isSystemUser) {
-	renderDialog(
-		h(CodeReview, {
-			row: row,
-			app: app,
-			isSystemUser: isSystemUser,
-		}),
 	);
 }

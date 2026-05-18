@@ -4,18 +4,28 @@
 			v-for="banner in localBanners"
 			:key="banner.name"
 			:class="disableLastChildBottomMargin ? `mb-5 last:mb-0` : `mb-5`"
-			:title="`<b>${banner.title}:</b> ${banner.message}`"
+			:title="getAlertTitle(banner.title, banner.message)"
 			:type="banner.type.toLowerCase()"
 			:isDismissible="banner.is_dismissible"
 			@dismissBanner="closeBanner(banner.name)"
 		>
-			<template v-if="!!banner.help_url">
+			<template
+				v-if="
+					!!banner.help_url ||
+					(banner.has_action && banner.action_label && banner.action_script)
+				"
+			>
 				<Button
-					class="ml-auto flex flex-row items-center gap-1"
-					@click="openHelp(banner.help_url)"
+					size="sm"
+					class="ml-auto flex flex-row items-center gap-x-1"
+					@click="
+						banner.has_action
+							? exec(banner.action_script)
+							: openHelp(banner.help_url)
+					"
 					variant="outline"
 				>
-					Open help
+					{{ banner.has_action ? banner.action_label : 'Open help' }}
 					<lucide-external-link class="inline h-4 w-3 pb-0.5" />
 				</Button>
 			</template>
@@ -36,10 +46,13 @@ export default {
 			validator: (value) => !value || ['Site', 'Server'].includes(value),
 		},
 		ctx_name: {
-			type: String,
 			required: false,
 			validator: (value) =>
-				!value || (typeof value === 'string' && value.length > 0),
+				!value ||
+				(typeof value === 'string' && value.length > 0) ||
+				(Array.isArray(value) &&
+					value.every((el) => typeof el === 'string') &&
+					value.length > 0),
 		},
 		containerClass: {
 			type: String,
@@ -58,7 +71,23 @@ export default {
 			localDismissedBanners: {},
 		};
 	},
+	computed: {
+		ctxNames() {
+			return Array.isArray(this.ctx_name)
+				? this.ctx_name
+				: this.ctx_name
+					? [this.ctx_name]
+					: [];
+		},
+	},
 	methods: {
+		getAlertTitle(bannerTitle, bannerMessage) {
+			let str = '';
+			if (bannerTitle) str = str.concat(`<b>${bannerTitle}</b>`);
+			if (!!bannerTitle && !!bannerMessage) str = str.concat(': ');
+			if (bannerMessage) str = str.concat(bannerMessage);
+			return str;
+		},
 		closeBanner(bannerName) {
 			const banner = this.localBanners.find((b) => b.name === bannerName);
 			if (!banner) return;
@@ -67,7 +96,7 @@ export default {
 				(b) => b.name !== bannerName,
 			);
 
-			if (banner.is_global) {
+			if (banner.is_global || banner.type_of_scope == 'Cluster') {
 				// Persist dismissal to local storage
 				this.localDismissedBanners[bannerName] = Date.now();
 				localStorage.setItem(
@@ -82,16 +111,23 @@ export default {
 		openHelp(url) {
 			window.open(url, '_blank');
 		},
+		exec(action_script) {
+			const actionFn = new Function(
+				'_this',
+				action_script + '\nonClickAction(_this)',
+			);
+			actionFn(this);
+		},
 		trimOldDismissedBanners() {
-			// Remove dismissed banners older than 30 days from local storage
-			const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+			// Remove dismissed banners older than 60 days from local storage
+			const SIXTY_DAYS_IN_MS = 60 * 24 * 60 * 60 * 1000;
 			const now = Date.now();
 			let diff = false;
 
 			for (const [bannerName, timestamp] of Object.entries(
 				this.localDismissedBanners,
 			)) {
-				if (now - timestamp > THIRTY_DAYS) {
+				if (now - timestamp > SIXTY_DAYS_IN_MS) {
 					delete this.localDismissedBanners[bannerName];
 					diff = true;
 				}
@@ -102,6 +138,34 @@ export default {
 					'dismissed_banners',
 					JSON.stringify(this.localDismissedBanners),
 				);
+			}
+		},
+		isRelevantBanner(banner) {
+			if (banner.is_global) return true;
+
+			const ctxMatches = (list) =>
+				Array.isArray(list) &&
+				list.some((item) => this.ctxNames.includes(item));
+
+			switch (this.ctx_type) {
+				case 'Server':
+					return (
+						(banner.type_of_scope === 'Server' && ctxMatches(banner.server)) ||
+						(banner.type_of_scope === 'Cluster' && ctxMatches(banner.cluster))
+					);
+
+				case 'Site':
+					return (
+						(banner.type_of_scope === 'Site' && ctxMatches(banner.site)) ||
+						(banner.type_of_scope === 'Server' && ctxMatches(banner.server)) ||
+						(banner.type_of_scope === 'Cluster' && ctxMatches(banner.cluster))
+					);
+
+				case 'List Page':
+					return ['Team', 'Cluster', 'Server'].includes(banner.type_of_scope);
+
+				default:
+					return true;
 			}
 		},
 	},
@@ -126,24 +190,10 @@ export default {
 
 					this.trimOldDismissedBanners();
 
-					this.localBanners = (
-						this.ctx_type === 'Server'
-							? data.filter(
-									(banner) =>
-										banner.server === this.ctx_name || banner.is_global,
-								)
-							: this.ctx_type === 'Site'
-								? data.filter(
-										(banner) =>
-											banner.site === this.ctx_name || banner.is_global,
-									)
-								: this.ctx_type === 'List Page'
-									? data.filter(
-											(banner) =>
-												banner.type_of_scope === 'Team' || banner.is_global,
-										)
-									: data
-					).filter((banner) => !(banner.name in this.localDismissedBanners));
+					this.localBanners = data
+						.filter(this.isRelevantBanner)
+						.filter((banner) => banner.title || banner.message)
+						.filter((banner) => !(banner.name in this.localDismissedBanners));
 				},
 			};
 		},

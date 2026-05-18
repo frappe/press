@@ -24,6 +24,11 @@ if typing.TYPE_CHECKING:
 class VersioningError(Exception): ...
 
 
+class AppPolicyResult(typing.TypedDict):
+	app: str
+	source: str
+
+
 class App(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -313,3 +318,40 @@ def get_latest_release_of_app_from_source(app_source: AppSource) -> AppRelease |
 		return None
 
 	return frappe.get_doc("App Release", app_release_info[0])
+
+
+def get_app_from_policies(
+	scope: typing.Literal["Frappe Version", "Source", "App Release"],
+	target: str,
+	for_creation: bool = False,
+	for_installation: bool = False,
+	for_updates: bool = False,
+) -> list[AppPolicyResult]:
+	"""Get all apps based on the policy results for a given version string"""
+	ReleaseGroupPolicy = frappe.qb.DocType("Release Group Policy")
+	ReleaseGroupPolicyApp = frappe.qb.DocType("Release Group Policy App")
+
+	policy_result = (
+		frappe.qb.from_(ReleaseGroupPolicy)
+		.join(ReleaseGroupPolicyApp)
+		.on(ReleaseGroupPolicyApp.parent == ReleaseGroupPolicy.name)
+		.where(ReleaseGroupPolicy.scope == scope)
+		.where(ReleaseGroupPolicy.target == target)
+		.where(ReleaseGroupPolicy.status == "Active")
+		.select(ReleaseGroupPolicyApp.app, ReleaseGroupPolicyApp.source)
+	)
+
+	if for_creation:
+		policy_result = policy_result.where(
+			ReleaseGroupPolicyApp.add_on_creation == 1,
+		)
+
+	if for_installation:
+		policy_result = policy_result.where(
+			ReleaseGroupPolicyApp.install_on_site_creation == 1,
+		)
+
+	if for_updates:
+		policy_result = policy_result.where(ReleaseGroupPolicyApp.for_updates == 1)
+
+	return policy_result.run(as_dict=True)

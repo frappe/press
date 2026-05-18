@@ -822,10 +822,11 @@ class IncidentInvestigator(Document, StepHandler):
 		execute_action_steps = frappe.db.get_single_value(
 			"Press Settings", "execute_incident_action", cache=True
 		)
+		stop_incident_actions = frappe.db.get_value("Server", self.server, "stop_incident_actions")
 
 		pattern_detector = IncidentPatternDetector(self)
 
-		if self.action_steps and execute_action_steps:
+		if self.action_steps and execute_action_steps and not stop_incident_actions:
 			for terminal_step in self.get_steps(
 				[self.add_investigation_findings, pattern_detector.detect_patterns]
 			):
@@ -851,7 +852,7 @@ class IncidentInvestigator(Document, StepHandler):
 				enqueue_after_commit=True,
 			)
 
-		if not execute_action_steps or not self.action_steps:
+		if not execute_action_steps or not self.action_steps or stop_incident_actions:
 			self.set_status(Status.COMPLETED)
 
 	@frappe.whitelist()

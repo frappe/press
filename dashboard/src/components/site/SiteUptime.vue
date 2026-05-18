@@ -1,17 +1,23 @@
 <template>
 	<div class="flex items-center justify-center flex-grow">
 		<div
-			v-if="!data || data[0].date === undefined"
-			class="flex h-5/6 items-center justify-center"
+			v-if="loading && !showCard"
+			class="flex h-full items-center justify-center"
 		>
-			<div class="text-base text-gray-700">No data</div>
+			<LoadingText />
+		</div>
+		<div
+			v-else-if="!data || data[0].date === undefined"
+			class="flex h-5/6 items-center justify-center w-full"
+		>
+			<NoDataMsg />
 		</div>
 		<template v-else-if="filteredData?.length > 0">
 			<div
 				class="w-full h-full flex flex-col justify-center items-center px-5 py-3"
 			>
 				<div
-					class="flex justify-between mb-1 w-full text-[11px] text-gray-700 font-normal mt-1"
+					class="flex justify-between mb-1 w-full text-[11px] text-ink-gray-7 font-normal mt-1"
 				>
 					<div>
 						<template v-if="hoveringOn.key">
@@ -69,7 +75,7 @@
 								:class="[
 									'hover:brightness-[110%] border-r border-white',
 									Date.parse(d.date) < Date.parse(siteCreation || new Date(0))
-										? 'bg-gray-300'
+										? 'bg-surface-gray-4'
 										: d.value === 1
 											? 'bg-green-500'
 											: d.value === 0
@@ -79,7 +85,7 @@
 							>
 								<Tooltip
 									placement="bottom"
-									:text="`${hoveringOn.percentValue}% avg. uptime for ${interval} from ${hoveringOn.startDate} to ${hoveringOn.endDate})`"
+									:text="`${hoveringOn.percentValue}% - ${hoveringOn.startDate} to ${hoveringOn.sameDayEndDate ?? hoveringOn.endDate}`"
 								>
 									<div
 										:data-start-date="hoveringOn.startDate"
@@ -102,17 +108,17 @@
 					</Button>
 				</div>
 				<div
-					class="flex justify-between w-full text-[11px] text-gray-700 font-normal mt-1"
+					class="flex justify-between w-full text-[11px] text-ink-gray-7 font-normal mt-1"
 				>
 					<div
-						class="flex-shrink transition-all duration-300 bg-gray-200"
+						class="flex-shrink transition-all duration-300 bg-surface-gray-3"
 						:class="highlightDates ? 'bg-opacity-100' : 'bg-opacity-0'"
 					>
 						{{ firstDateTime }}
 					</div>
 
 					<div
-						class="w-fit flex-shrink transition-all duration-300 bg-gray-200"
+						class="w-fit flex-shrink transition-all duration-300 bg-surface-gray-3"
 						:class="highlightDates ? 'bg-opacity-100' : 'bg-opacity-0'"
 					>
 						{{ lastDateTime }}
@@ -128,6 +134,7 @@ import dayjs from '../../utils/dayjs';
 import { icon } from '../../utils/components';
 import { Tooltip, getCachedDocumentResource } from 'frappe-ui';
 import { uuid4 } from '@sentry/core';
+import NoDataMsg from '@/components/common/NoDataMsg.vue';
 
 export default {
 	name: 'SiteUptime',
@@ -151,6 +158,7 @@ export default {
 				endDate: null,
 				startDate: null,
 				colour: null,
+				sameDayEndDate: null,
 			},
 			highlightDates: false,
 			firstRender: true,
@@ -241,8 +249,13 @@ export default {
 			return dayjs(date).format('ddd, D MMM YYYY, hh:mm a');
 		},
 		inspectBar({ date, value }) {
-			const endDate = this.formatDate(date);
-			const startDate = this.formatDate(new Date(date) - this.timegrain * 1000);
+			let endDate = date;
+			let startDate = new Date(date) - this.timegrain * 1000;
+			const sameDayEndDate = dayjs(endDate).isSame(dayjs(startDate), 'day')
+				? dayjs(endDate).format('hh:mm a')
+				: null;
+			endDate = this.formatDate(endDate);
+			startDate = this.formatDate(startDate);
 			const percentValue = value !== -1 ? (value * 100).toFixed(2) : '0.00';
 			const colour =
 				Date.parse(date) < Date.parse(this.siteCreation)
@@ -260,6 +273,7 @@ export default {
 				endDate,
 				startDate,
 				colour,
+				sameDayEndDate,
 			};
 		},
 		getUptimeChunkId(chunkIndex) {
