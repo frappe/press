@@ -186,6 +186,13 @@ class ReleasePipeline(WorkflowBuilder):
 		# Document native methods would raise a `TimeStampMismatch` error
 		self.db_set("status", status)
 
+		frappe.publish_realtime(
+			"doc_update",
+			{ "doctype": "Release Pipeline", "name": self.name },
+			doctype="Release Pipeline",
+			docname=self.name,
+		)
+
 		if status == "Failure":
 			self.send_failure_notification()
 
