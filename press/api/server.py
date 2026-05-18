@@ -214,6 +214,10 @@ def new_unified(server: UnifiedServerDetails):
 			f"No machines of {app_plan.instance_type} are currently available in the {cluster.name} region"
 		)
 
+	server_plan_price = app_plan.price_usd
+	if team.apply_limits and is_limits_exceeded(server_plan_price):
+		frappe.throw("You have exceeded your spending limit. Please contact support to increase your limits.")
+
 	auto_increase_storage = server.get("auto_increase_storage", False)
 
 	proxy_server = frappe.get_all(
