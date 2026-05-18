@@ -102,7 +102,7 @@ function onClickSave() {
 						v-model="switchValue"
 						size="md"
 						class="px-4"
-						:disabled="nextChangeAvailableOn !== 'Available Now'"
+						:disabled="nextChangeAvailableOn !== 'Available Now' || site.doc?.dedicated_server_warranty_limit?.available <= 0"
 					/>
 				</div>
 
