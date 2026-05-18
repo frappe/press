@@ -136,7 +136,8 @@ def update_job(job, server):
 
 	verify_agent(server)
 
-	job = json.loads(job)
+	if isinstance(job, str):
+		job = json.loads(job)
 
 	job_doc = frappe.get_value(
 		"Agent Job",
