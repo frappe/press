@@ -111,18 +111,21 @@ class StaticIPLog(Document):
 			)
 
 	def _disable_subscription(self):
-		frappe.db.set_value(
-			"Subscription",
-			{
-				"enabled": 1,
-				"document_type": self.server_type,
-				"document_name": self.server,
-				"plan_type": "Static IP Plan",
-				"plan": self._get_plan(),
-			},
-			"enabled",
-			0,
-		)
+		if not (
+			sub := frappe.db.get_value(
+				"Subscription",
+				{
+					"enabled": 1,
+					"document_type": self.server_type,
+					"document_name": self.server,
+					"plan_type": "Static IP Plan",
+				},
+				"name",
+			)
+		):
+			frappe.throw(f"No active Static IP subscription found for {self.server_type} {self.server}.")
+
+		frappe.db.set_value("Subscription", sub, "enabled", 0)
 
 
 def create_static_ip_log(server: str, server_type: str, static_ip: str, status: str = "Attached"):
