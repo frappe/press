@@ -1,7 +1,9 @@
-import { computed } from 'vue';
+import { h, computed } from 'vue';
 import { getTeam } from '@/data/team';
 import { session } from '@/data/session';
 import { integrations } from './integrations';
+import { setTheme } from '@/utils/useTheme';
+import { Badge } from 'frappe-ui';
 
 export const index = computed(() => {
 	const team = getTeam();
@@ -10,12 +12,27 @@ export const index = computed(() => {
 		Settings: {
 			items: [
 				{ name: 'Profile', route: '/settings/profile', icon: LucideUser },
-				{ name: 'Team', route: '/settings/team', icon: LucideUsers },
+        
+				{
+					name: "Team",
+					route: "/settings/team",
+					icon: LucideUsers,
+					condition: 
+						team.doc?.user === session.user ||
+						session.isTeamAdmin ||
+						session.isSystemUser,
+				},
+
 				{ name: 'Developer', route: '/settings/developer', icon: LucideCode },
+
 				{
 					name: 'Roles',
 					route: '/settings/permissions/roles',
 					icon: LucideLock,
+         	condition: 
+						team.doc?.user === session.user ||
+						session.isTeamAdmin ||
+						session.isSystemUser,
 				},
 			],
 		},
@@ -185,6 +202,22 @@ export const index = computed(() => {
 							tab.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
 						}, 0);
 					},
+				},
+			],
+		},
+
+		Theme: {
+			items: [
+				{
+					name: 'Dark Mode',
+					click: () => setTheme('dark'),
+					icon: LucideSun,
+					suffix: () => h(Badge, { label: 'beta', class: 'ml-auto' }),
+				},
+				{
+					name: 'Light Mode',
+					click: () => setTheme('light'),
+					icon: LucideMoon,
 				},
 			],
 		},

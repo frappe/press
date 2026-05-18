@@ -66,7 +66,7 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 			{
 				"doctype": "Account Request",
 				"email": email,
-				"role": "Press Admin",
+				"role": "Press User",
 				"referrer_id": referrer,
 				"send_email": True,
 				"product_trial": product,
@@ -103,7 +103,7 @@ def verify_otp(account_request: str, otp: str) -> str:
 	if account_request_doc.product_trial:
 		capture("otp_verified", "fc_product_trial", account_request_doc.name)
 
-	return account_request_doc.request_key
+	return str(account_request_doc.request_key)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -215,7 +215,6 @@ def setup_account(  # noqa: C901
 
 	team = account_request.team
 	email = account_request.email
-	role = account_request.role
 	press_roles = account_request.press_roles
 
 	if is_invitation:
@@ -227,7 +226,6 @@ def setup_account(  # noqa: C901
 			last_name,
 			email,
 			password,
-			role,
 			press_roles,
 			skip_validations=True,
 		)
@@ -278,12 +276,11 @@ def accept_team_invite(key: str):
 	last_name = account_request.last_name
 	email = account_request.email
 	password = None
-	role = account_request.role
 	press_roles = account_request.press_roles
 
 	team_doc = frappe.get_doc("Team", team, ignore_permissions=True)
 	team_doc.create_user_for_member(
-		first_name, last_name, email, password, role, press_roles, skip_validations=True
+		first_name, last_name, email, password, press_roles, skip_validations=True
 	)
 
 
@@ -662,7 +659,7 @@ def new_team(email, current_team):
 		{
 			"doctype": "Account Request",
 			"email": email,
-			"role": "Press Member",
+			"role": "Press User",
 			"send_email": True,
 			"team": email,
 			"invited_by": current_team,
@@ -720,7 +717,6 @@ def update_profile_picture():
 
 @frappe.whitelist()
 def update_feature_flags(values=None):
-	frappe.only_for("Press Admin")
 	team = get_current_team(get_doc=True)
 	values = frappe.parse_json(values)
 	fields = [
@@ -1337,18 +1333,44 @@ def reset_2fa_recovery_codes():
 def get_user_banners():
 	team = get_current_team()
 
-	# fetch sites + servers for this team
-	site_server_pairs = frappe.get_all(
-		"Site",
-		filters={"team": team},
-		fields=["name", "server"],
-	)
+	Site = frappe.qb.DocType("Site")
+	Server = frappe.qb.DocType("Server")
 
-	sites = list(set([pair["name"] for pair in site_server_pairs]))
-	servers = list(set([pair["server"] for pair in site_server_pairs if pair.get("server")]))
+	user_sites = (
+		frappe.qb.from_(Site)
+		.select(Site.name, Site.server, Site.cluster)
+		.where((Site.team == team) & Site.status.notin(["Archived", "Suspended"]))
+	).run(as_dict=True)
+
+	user_servers = (
+		frappe.qb.from_(Server)
+		.select(Server.name, Server.cluster)
+		.where(
+			Server.status.notin(["Archived"])
+			& (
+				(Server.team == team)
+				| (
+					Server.name.isin(
+						[site.get("server") for site in user_sites if site.get("server")] or [""]
+					)
+				)
+			)
+		)
+	).run(as_dict=True)
+
+	user_clusters = [
+		resource.get("cluster") for resource in [*user_sites, *user_servers] if resource.get("cluster")
+	]
+
+	# flatten for easy access
+	user_sites = [site.get("name") for site in user_sites]
+	user_servers = [server.get("name") for server in user_servers]
 
 	DashboardBanner = frappe.qb.DocType("Dashboard Banner")
 	DashboardBannerTeam = frappe.qb.DocType("Dashboard Banner Team")
+	DashboardBannerSite = frappe.qb.DocType("Dashboard Banner Site")
+	DashboardBannerServer = frappe.qb.DocType("Dashboard Banner Server")
+	DashboardBannerCluster = frappe.qb.DocType("Dashboard Banner Cluster")
 	now = frappe.utils.now()
 
 	# fetch all enabled banners for this user
@@ -1356,7 +1378,18 @@ def get_user_banners():
 		frappe.qb.from_(DashboardBanner)
 		.left_join(DashboardBannerTeam)
 		.on(DashboardBannerTeam.parent == DashboardBanner.name)
-		.select("*")
+		.left_join(DashboardBannerSite)
+		.on(DashboardBannerSite.parent == DashboardBanner.name)
+		.left_join(DashboardBannerServer)
+		.on(DashboardBannerServer.parent == DashboardBanner.name)
+		.left_join(DashboardBannerCluster)
+		.on(DashboardBannerCluster.parent == DashboardBanner.name)
+		.select(
+			DashboardBanner.star,
+			DashboardBannerServer.server,
+			DashboardBannerSite.site,
+			DashboardBannerCluster.cluster,
+		)
 		.where(
 			((DashboardBanner.enabled == 1) & (DashboardBanner.is_scheduled == 0))
 			| (
@@ -1368,14 +1401,70 @@ def get_user_banners():
 		)
 		.where(
 			(DashboardBanner.is_global == 1)
-			| ((DashboardBanner.type_of_scope == "Site") & (DashboardBanner.site.isin(sites or [""])))
-			| ((DashboardBanner.type_of_scope == "Server") & (DashboardBanner.server.isin(servers or [""])))
+			| (
+				(DashboardBanner.type_of_scope == "Site")
+				& (DashboardBannerSite.site.isin(user_sites or [""]))
+			)
+			| (
+				(DashboardBanner.type_of_scope == "Server")
+				& (DashboardBannerServer.server.isin(user_servers or [""]))
+			)
+			| (
+				(DashboardBanner.type_of_scope == "Cluster")
+				& (DashboardBannerCluster.cluster.isin(user_clusters or [""]))
+			)
 			| ((DashboardBanner.type_of_scope == "Team") & (DashboardBannerTeam.team == team))
 		)
 		.run(as_dict=True)
 	)
 
-	# filter out dismissed banners)
+	banners = {}
+	for row in all_enabled_banners:
+		name = row["name"]
+
+		if name not in banners:
+			banners[name] = {
+				"name": name,
+				"type": row.get("type"),
+				"title": row.get("title"),
+				"message": row.get("message"),
+				"help_url": row.get("help_url"),
+				"has_action": row.get("has_action"),
+				"action_label": row.get("action_label"),
+				"action_script": row.get("action_script"),
+				"type_of_scope": row.get("type_of_scope"),
+				"is_dismissible": row.get("is_dismissible"),
+				"is_global": row.get("is_global"),
+				"cluster": [],
+				"server": [],
+				"site": [],
+			}
+
+		if row.get("server") and row["server"] not in banners[name]["server"]:
+			banners[name]["server"].append(row["server"])
+
+		if row.get("site") and row["site"] not in banners[name]["site"]:
+			banners[name]["site"].append(row["site"])
+
+		if row.get("cluster") and row["cluster"] not in banners[name]["cluster"]:
+			banners[name]["cluster"].append(row["cluster"])
+
+	all_enabled_banners = list(banners.values())
+
+	# [privacy] remove from payload: sites or private servers not owned by user
+	def remove_sensitive_info(banner: dict):
+		banner.update(
+			{
+				"site": list(set(user_sites) & set(banner.get("site", []) or [])),
+				"server": list(set(user_servers) & set(banner.get("server", []) or [])),
+				"cluster": list(set(user_clusters) & set(banner.get("cluster", []) or [])),
+			}
+		)
+		return banner
+
+	all_enabled_banners = [remove_sensitive_info(b) for b in all_enabled_banners]
+
+	# filter out dismissed banners
 	banner_dismissals_by_user = frappe.get_all(
 		"Dashboard Banner Dismissal",
 		filters={"user": frappe.session.user, "parent": ["in", [b["name"] for b in all_enabled_banners]]},

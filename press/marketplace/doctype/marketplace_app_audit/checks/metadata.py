@@ -83,7 +83,7 @@ def check_long_description(marketplace_app):
 			severity=severity,
 			result="Fail",
 			message="Long description is missing. Please add a long description for the marketplace app.",
-			details="The long description is missing for the marketplace app.",
+			# details="The long description is missing for the marketplace app.",
 			remediation="Please add a long description for the marketplace app.",
 		)
 

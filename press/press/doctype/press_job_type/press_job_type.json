@@ -1,48 +1,46 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "prompt",
- "creation": "2022-09-28 17:42:30.798157",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "disclaimer"
- ],
- "fields": [
-  {
-   "default": "1",
-   "fieldname": "disclaimer",
-   "fieldtype": "HTML",
-   "label": "Disclaimer",
-   "options": "<strong>The steps and callback script for press job has been deprecated and moved to code.</strong><br>\n<p>Please check press/press/doctype/press_job/jobs folder for more info</p>"
-  }
- ],
- "grid_page_length": 50,
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-04-17 02:55:16.274403",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Press Job Type",
- "naming_rule": "Set by user",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "prompt",
+	"creation": "2022-09-28 17:42:30.798157",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": ["disclaimer"],
+	"fields": [
+		{
+			"default": "1",
+			"fieldname": "disclaimer",
+			"fieldtype": "HTML",
+			"label": "Disclaimer",
+			"options": "<strong>The steps and callback script for press job has been deprecated and moved to code.</strong><br>\n<p>Please check press/press/doctype/press_job/jobs folder for more info</p>"
+		}
+	],
+	"grid_page_length": 50,
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-04-17 02:55:16.274403",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Press Job Type",
+	"naming_rule": "Set by user",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
 }

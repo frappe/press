@@ -1,62 +1,28 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import Item from './Item.vue';
-import LucideChevronRight from '~icons/lucide/chevron-right';
-import CollapseTransition from '@/components/utils/CollapseTransition.vue';
+import LucideChevronRight from "~icons/lucide/chevron-right";
+import Item from "./Item.vue";
+import type { NavItemProps } from "./types";
 
-let props = defineProps({
-	item: {
-		type: Object,
-		required: true,
-	},
-});
+interface Props extends NavItemProps {
+  children: NavItemProps[];
+}
 
-const isOpened = ref(false);
-
-const toggle = () => {
-	isOpened.value = !isOpened.value;
-};
-
-watch(
-	() => props.item.isActive,
-	() => {
-		isOpened.value = props.item.isActive;
-	},
-);
+defineProps<Props>();
 </script>
 
 <template>
-	<div
-		@click="toggle"
-		class="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-ink-gray-6 transition hover:bg-surface-gray-2"
-		:class="[
-			item.disabled ? 'pointer-events-none opacity-50' : '',
-			$attrs.class,
-		]"
-	>
-		<div class="flex w-full items-center space-x-2">
-			<component :is="item.icon" class="size-4 text-ink-gray-6" />
+  <details class="group peer" :open='isActive'>
+    <Item is="summary" :icon :name>
+      <template #suffix>
+        <LucideChevronRight class="text-ink-gray-4 size-4 transition-transform duration-200 group-open:rotate-90" />
+      </template>
+    </Item>
+  </details>
 
-			<span class="text-sm">{{ item.name }}</span>
-			<component :is="item.badge" />
-			<span class="!ml-auto">
-				<LucideChevronRight
-					class="size-4 text-gray-500 transition-transform duration-200"
-					:class="{ 'rotate-90': isOpened }"
-				/>
-			</span>
-		</div>
-	</div>
-	<CollapseTransition>
-		<div v-if="isOpened">
-			<div class="ml-5 flex flex-col gap-1">
-				<Item
-					v-for="(subItem, i) in item.children"
-					:class="{ 'mt-0.5': i !== 0 }"
-					:key="subItem.name"
-					:item="subItem"
-				/>
-			</div>
-		</div>
-	</CollapseTransition>
+  <div class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 peer-open:grid-rows-[1fr]">
+    <div class="overflow-hidden flex flex-col gap-1 ml-5">
+      <Item v-for="(subItem, i) in children" :key="subItem.name" v-bind="subItem"
+        :class="{ 'mb-1': i == children.length - 1 }" />
+    </div>
+  </div>
 </template>

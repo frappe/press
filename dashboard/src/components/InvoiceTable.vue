@@ -11,10 +11,10 @@
 		</div>
 		<div v-if="doc" class="overflow-x-auto">
 			<table
-				class="text w-full border-separate border-spacing-y-2 text-base font-normal text-gray-900"
+				class="text w-full border-separate border-spacing-y-2 text-base font-normal text-ink-gray-9"
 			>
-				<thead class="bg-gray-100">
-					<tr class="text-gray-600">
+				<thead class="bg-surface-gray-2">
+					<tr class="text-ink-gray-6">
 						<th class="rounded-l p-2 text-left font-normal">Description</th>
 						<th class="whitespace-nowrap p-2 text-right font-normal">Rate</th>
 						<th class="whitespace-nowrap p-2 text-right font-normal">
@@ -25,7 +25,7 @@
 				</thead>
 				<tbody>
 					<template v-for="(items, type) in groupedLineItems" :key="type">
-						<tr class="mt-1 bg-gray-50">
+						<tr class="mt-1 bg-surface-gray-1">
 							<td colspan="100" class="rounded p-2 text-base font-medium">
 								{{ type }}
 							</td>
@@ -33,7 +33,7 @@
 						<tr v-for="(row, i) in items" :key="row.idx">
 							<td class="py-1 pl-2 pr-2">
 								{{ row.document_name }}
-								<span v-if="row.plan" class="text-gray-700">
+								<span v-if="row.plan" class="text-ink-gray-7">
 									({{ formatPlan(row.plan) }})
 								</span>
 							</td>
