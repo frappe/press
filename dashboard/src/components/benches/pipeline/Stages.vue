@@ -93,10 +93,15 @@ watch(
 
 				socket.on(`bench_deploy:${id}:finished`, () => {
 <<<<<<< HEAD
+<<<<<<< HEAD
 					buildResources.value[id]?.reload()
 
 =======
 >>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
+=======
+					buildResources.value[id]?.reload()
+
+>>>>>>> 23ef75d55 (fix(deploy-ui): add missing resource.reload() on bench steps finish)
 					const rgDoc = getCachedDocumentResource(
 						'Release Group',
 						buildResources.value[id]?.doc?.group,
