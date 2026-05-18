@@ -1053,11 +1053,12 @@ class Agent:
 
 	def extract_and_verify_token(self, token):
 		if not token:
-			raise ValueError("Unsigned request from agent")
+			frappe.throw("Unsigned request from agent", frappe.PermissionError)
 
-		self._verify_request_token(
-			token=token,
-		)
+		try:
+			self._verify_request_token(token=token)
+		except ValueError:
+			frappe.throw_permission_error()
 
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
 		self.raise_if_past_requests_have_failed()
