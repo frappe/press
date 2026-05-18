@@ -94,6 +94,15 @@ const sidebarTabs = ref([
 	},
 ])
 
+const badgeThemes = {
+	Pending: 'gray',
+	Running: 'blue',
+	'Partial Success': 'yellow',
+	Success: 'green',
+	Failure: 'red',
+	Retrying: 'yellow',
+}
+
 // ---------------------  Realtime stuff ----------------------
 const handleDocUpdate = (x) => {
 	if (x.doctype === 'Release Pipeline' && x.name === route.params.id)
@@ -117,12 +126,15 @@ onBeforeUnmount(() => {
 	>
 		<!-- header -->
 		<div class="flex gap-2 items-center">
-			<button>
+			<router-link :to="`/groups/${route.params.name}/pipelines`">
 				<lucide-chevron-left class="size-4" />
-			</button>
+			</router-link>
 
-			<h2 class="text-ink-gray-9">deploy blablablab</h2>
-			<Badge :label="'Running'" />
+			<h2 class="text-ink-gray-9">pipeline {{ pipeline?.doc?.name }}</h2>
+			<Badge
+				:label="pipeline?.doc?.status"
+				:theme="badgeThemes[pipeline?.doc?.status] || 'gray'"
+			/>
 
 			<Button theme="red" class="ml-auto"> Stop Deploy </Button>
 

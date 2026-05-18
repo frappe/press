@@ -736,7 +736,7 @@ export default {
 			},
       {
 				label: 'Pipelines',
-				icon: icon('sliders'),
+				icon: LucidePocketKnife,
 				route: 'pipelines',
         childrenRoutes: ['Release Pipeline'],
 				type: 'Component',
