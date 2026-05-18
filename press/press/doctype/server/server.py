@@ -2768,12 +2768,8 @@ class Server(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.auto_scale_trigger.auto_scale_trigger import (
-			AutoScaleTrigger,
-		)
-		from press.press.doctype.communication_info.communication_info import (
-			CommunicationInfo,
-		)
+		from press.press.doctype.auto_scale_trigger.auto_scale_trigger import AutoScaleTrigger
+		from press.press.doctype.communication_info.communication_info import CommunicationInfo
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.server_mount.server_mount import ServerMount
 
@@ -2830,14 +2826,7 @@ class Server(BaseServer):
 		private_mac_address: DF.Data | None
 		private_vlan_id: DF.Data | None
 		provider: DF.Literal[
-			"Generic",
-			"Scaleway",
-			"AWS EC2",
-			"OCI",
-			"Hetzner",
-			"Vodacom",
-			"DigitalOcean",
-			"Frappe Compute",
+			"Generic", "Scaleway", "AWS EC2", "OCI", "Hetzner", "Vodacom", "DigitalOcean", "Frappe Compute"
 		]
 		proxy_server: DF.Link | None
 		public: DF.Check
@@ -2856,8 +2845,8 @@ class Server(BaseServer):
 		staging: DF.Check
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		stop_deployments: DF.Check
-		supported_site_quota: DF.Int
 		stop_incident_actions: DF.Check
+		supported_site_quota: DF.Int
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None
