@@ -405,3 +405,136 @@ class TestServer(FrappeTestCase):
 		mock_generate_key.assert_not_called()
 		mock_sign_token.assert_not_called()
 		mock_ansible_run.assert_not_called()
+
+	@patch("frappe.cache")
+	def test_generate_and_activate_key_sets_public_key_and_returns_private_key(
+		self,
+		mock_cache,
+	):
+		server = create_test_server()
+
+		auth = server.agent_auth
+		auth.public_key = None
+		auth.is_agent_auth_setup = 0
+
+		private_key = server._generate_and_activate_key()
+
+		self.assertIsNotNone(private_key)
+
+		self.assertIsNotNone(auth.public_key)
+
+		mock_cache.return_value.delete_key.assert_called_once_with(f"{auth.server}_agent_public_key")
+
+	def test_generate_and_activate_key_returns_none_when_already_setup(self):
+		server = create_test_server()
+
+		auth = server.agent_auth
+		auth.public_key = "public-key"
+		auth.is_agent_auth_setup = 1
+
+		result = server._generate_and_activate_key()
+
+		self.assertIsNone(result)
+
+	def test_sign_agent_token_returns_none_without_private_key(self):
+		server = create_test_server()
+
+		token = server.sign_agent_token(None)
+
+		self.assertIsNone(token)
+
+	def test_sign_agent_token_sets_expiry_and_returns_token(self):
+		server = create_test_server()
+
+		private_key = server._generate_and_activate_key()
+
+		token = server.sign_agent_token(private_key)
+
+		self.assertIsNotNone(token)
+
+		self.assertIn(".", token)
+
+		self.assertIsNotNone(server.agent_auth.expires_in)
+
+	@patch("press.runner.Ansible.run")
+	@patch.object(BaseServer, "sign_agent_token")
+	@patch.object(BaseServer, "_generate_and_activate_key")
+	def test_setup_agent_auth_marks_auth_as_setup_on_success(
+		self,
+		mock_generate_key,
+		mock_sign_token,
+		mock_ansible_run,
+	):
+		server = create_test_server()
+
+		mock_generate_key.return_value = "private-key"
+		mock_sign_token.return_value = "token"
+
+		play = frappe._dict({"status": "Success"})
+		mock_ansible_run.return_value = play
+
+		auth = server.agent_auth
+		auth.save = Mock()
+
+		server._setup_agent_auth()
+
+		mock_generate_key.assert_called_once()
+
+		mock_sign_token.assert_called_once_with("private-key")
+
+		self.assertEqual(
+			auth.is_agent_auth_setup,
+			1,
+		)
+
+		auth.save.assert_called_once_with(
+			ignore_permissions=True,
+		)
+
+	@patch("press.press.doctype.server.server.log_error")
+	@patch("press.runner.Ansible.run")
+	@patch.object(BaseServer, "sign_agent_token")
+	@patch.object(BaseServer, "_generate_and_activate_key")
+	def test_setup_agent_auth_logs_error_on_failed_playbook(
+		self,
+		mock_generate_key,
+		mock_sign_token,
+		mock_ansible_run,
+		mock_log_error,
+	):
+		server = create_test_server()
+
+		mock_generate_key.return_value = "private-key"
+		mock_sign_token.return_value = "token"
+
+		play = frappe._dict({"status": "Failure"})
+		mock_ansible_run.return_value = play
+
+		auth = server.agent_auth
+		auth.save = Mock()
+
+		server._setup_agent_auth()
+
+		self.assertEqual(
+			auth.is_agent_auth_setup,
+			0,
+		)
+
+		auth.save.assert_not_called()
+
+		mock_log_error.assert_called_once()
+
+	@patch("press.press.doctype.server.server.log_error")
+	@patch.object(BaseServer, "_generate_and_activate_key")
+	def test_setup_agent_auth_logs_error_on_exception(
+		self,
+		mock_generate_key,
+		mock_log_error,
+	):
+		server = create_test_server()
+
+		mock_generate_key.side_effect = Exception()
+
+		server._setup_agent_auth()
+
+		mock_log_error.assert_called_once()

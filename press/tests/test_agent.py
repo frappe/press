@@ -1,7 +1,10 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-from unittest.mock import patch
+import base64
+import json
+import time
+from unittest.mock import Mock, patch
 
 import frappe
 import requests
@@ -178,4 +181,125 @@ class TestAgent(FrappeTestCase):
 		self.assertEqual(
 			agent.get_agent_public_key(),
 			"cached-key",
+		)
+
+	def test_get_agent_public_key_returns_none_when_agent_auth_missing(self):
+		agent = Agent("test-server")
+
+		with patch(
+			"frappe.get_doc",
+			side_effect=frappe.DoesNotExistError,
+		):
+			self.assertIsNone(agent.get_agent_public_key())
+
+	def test_get_regenerate_public_key_clears_db_flag(self):
+		agent = Agent("test-server")
+
+		agent_auth = frappe._dict(
+			{
+				"regenerate_public_key": "old-key",
+				"save": Mock(),
+			}
+		)
+
+		with patch(
+			"frappe.get_doc",
+			return_value=agent_auth,
+		):
+			result = agent.get_regenerate_public_key()
+
+		self.assertIsNone(result)
+
+		self.assertIsNone(
+			agent_auth.regenerate_public_key,
+		)
+
+		agent_auth.save.assert_called_once_with(
+			ignore_permissions=True,
+		)
+
+	@patch.object(Agent, "_is_token_verified")
+	@patch.object(Agent, "get_regenerate_public_key")
+	@patch.object(Agent, "get_agent_public_key")
+	def test_verify_request_token_fails_for_invalid_server(
+		self,
+		mock_public_key,
+		mock_regenerate_key,
+		mock_verify,
+	):
+		mock_public_key.return_value = "public-key"
+		mock_regenerate_key.return_value = None
+		mock_verify.return_value = True
+
+		payload = (
+			base64.urlsafe_b64encode(
+				json.dumps(
+					{
+						"server": "wrong-server",
+						"exp": int(time.time()) + 1000,
+					}
+				).encode()
+			)
+			.decode()
+			.rstrip("=")
+		)
+
+		signature = (
+			base64.urlsafe_b64encode(
+				b"signature",
+			)
+			.decode()
+			.rstrip("=")
+		)
+
+		token = f"{payload}.{signature}"
+
+		agent = Agent("test-server")
+
+		self.assertRaises(
+			ValueError,
+			agent._verify_request_token,
+			token,
+		)
+
+	@patch.object(Agent, "_is_token_verified")
+	@patch.object(Agent, "get_regenerate_public_key")
+	@patch.object(Agent, "get_agent_public_key")
+	def test_verify_request_token_succeeds(
+		self,
+		mock_public_key,
+		mock_regenerate_key,
+		mock_verify,
+	):
+		mock_public_key.return_value = "public-key"
+		mock_regenerate_key.return_value = None
+		mock_verify.return_value = True
+
+		payload = (
+			base64.urlsafe_b64encode(
+				json.dumps(
+					{
+						"server": "test-server",
+						"exp": int(time.time()) + 1000,
+					}
+				).encode()
+			)
+			.decode()
+			.rstrip("=")
+		)
+
+		signature = (
+			base64.urlsafe_b64encode(
+				b"signature",
+			)
+			.decode()
+			.rstrip("=")
+		)
+
+		token = f"{payload}.{signature}"
+
+		agent = Agent("test-server")
+
+		self.assertTrue(
+			agent._verify_request_token(token),
 		)
