@@ -3004,6 +3004,24 @@ class Server(BaseServer):
 		else:
 			self.managed_database_service = ""
 
+	def sync_database_server_public_status(self):
+		if not self.database_server:
+			return
+
+		database_server_public = frappe.db.get_value(
+			"Database Server",
+			self.database_server,
+			"public",
+		)
+
+		if database_server_public != self.public:
+			frappe.db.set_value(
+				"Database Server",
+				self.database_server,
+				"public",
+				self.public,
+			)
+
 	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
 		if not self.is_new() and (
@@ -3016,10 +3034,7 @@ class Server(BaseServer):
 				bench.managed_database_service = self.managed_database_service
 				bench.save()
 
-		if self.database_server:
-			database_server_public = frappe.db.get_value("Database Server", self.database_server, "public")
-			if database_server_public != self.public:
-				frappe.db.set_value("Database Server", self.database_server, "public", self.public)
+		self.sync_database_server_public_status()
 
 		if not self.is_new() and self.has_value_changed("team"):
 			self.update_subscription()
