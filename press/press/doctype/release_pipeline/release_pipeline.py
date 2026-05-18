@@ -722,9 +722,8 @@ class ReleasePipeline(WorkflowBuilder):
 		steps_info: dict[str, dict[str, Any]] = {
 			task.name: {
 				**task,
-				"start": int(task.start.timestamp()) if task.start else None,
-				"end": int(task.end.timestamp()) if task.end else None,
-				"duration": int((task.end - task.start).total_seconds()) if task.end and task.start else None,
+				"start": task.start.isoformat() if task.start else None,
+				"end": task.end.isoformat() if task.end else None,
 			}
 			for task in frappe.get_all(
 				"Press Workflow Task",
@@ -827,8 +826,8 @@ class ReleasePipeline(WorkflowBuilder):
 			"doctype": self.doctype,
 			"name": self.name,
 			"status": self.status,
-			"start": int(workflow.start.timestamp()) if workflow.start else None,
-			"end": int(workflow.end.timestamp()) if workflow.end else None,
+			"start": workflow.start.isoformat() if workflow.start else None,
+			"end": workflow.end.isoformat() if workflow.end else None,
 			"duration": int((workflow.end - workflow.start).total_seconds())
 			if workflow.start and workflow.end
 			else None,
