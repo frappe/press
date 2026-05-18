@@ -49,6 +49,8 @@ watch(
 				})
 
 				socket.on(`bench_deploy:${id}:finished`, () => {
+					buildResources.value[id]?.reload()
+
 					const rgDoc = getCachedDocumentResource(
 						'Release Group',
 						buildResources.value[id]?.doc?.group,
