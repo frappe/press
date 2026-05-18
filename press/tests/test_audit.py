@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import Mock, patch
 
 import frappe
@@ -9,14 +9,12 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
-from press.press.doctype.server.server import BaseServer
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 
-@patch.object(BaseServer, "_setup_agent_auth", new=Mock())
 @patch.object(TelegramMessage, "enqueue", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestBackupRecordCheck(FrappeTestCase):
@@ -26,15 +24,19 @@ class TestBackupRecordCheck(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 
-		self.yesterday = frappe.utils.now_datetime().date() - timedelta(days=1)
-		self._2_hrs_before_yesterday = datetime.combine(self.yesterday, datetime.min.time()) - timedelta(
-			hours=2
-		)
+		# Anchoring to exactly 'now' prevents the backup age from shifting
+		# depending on what hour of the day the CI pipeline is executed.
+		now = frappe.utils.now_datetime()
+		self._2_hrs_before_yesterday = now - timedelta(hours=26)
+		self.yesterday = now - timedelta(days=1)
 
 	def test_audit_will_fail_if_backup_older_than_interval(self):
 		create_test_press_settings()
 		site = create_test_site(creation=self._2_hrs_before_yesterday)
+
+		# Backup created 25 hours ago (outside 24-hour interval)
 		create_test_site_backup(site.name, creation=self._2_hrs_before_yesterday + timedelta(hours=1))
+
 		BackupRecordCheck()
 		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertEqual(audit_log.status, "Failure")
@@ -43,6 +45,7 @@ class TestBackupRecordCheck(FrappeTestCase):
 		create_test_press_settings()
 		site = create_test_site(creation=self._2_hrs_before_yesterday)
 
+		# Backup created 23 hours ago (inside 24-hour interval)
 		create_test_site_backup(
 			site.name,
 			creation=self._2_hrs_before_yesterday + timedelta(hours=3),
@@ -79,7 +82,6 @@ class TestBackupRecordCheck(FrappeTestCase):
 		self.assertEqual(audit_log.status, "Success")
 
 
-@patch.object(BaseServer, "_setup_agent_auth", new=Mock())
 @patch.object(TelegramMessage, "enqueue", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestOffsiteBackupCheck(FrappeTestCase):

@@ -2735,6 +2735,9 @@ def process_remove_binlogs_from_indexer_agent_job_update(job: AgentJob):
 	if job.status != "Success":
 		return
 
+	if not job.data:
+		return
+
 	json_data = json.loads(job.data)
 	binlogs_in_disk = json_data.get("unindexed_binlogs", [])
 	frappe.db.set_value(
