@@ -192,6 +192,8 @@ class TestDatabaseServer(FrappeTestCase):
 		play = frappe._dict({"status": "Success"})
 		Mock_Ansible.return_value.run.return_value = play
 
+		server.save = Mock()
+
 		server._setup_server()
 
 		server._generate_and_activate_key.assert_called_once()

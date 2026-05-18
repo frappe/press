@@ -11,7 +11,7 @@ class TestAgentAuth(TestCase):
 		frappe.db.rollback()
 
 	def test_verify_agent_throws_without_token(self):
-		frappe.request.headers = {}
+		frappe.local.request = frappe._dict({"headers": {}})
 
 		self.assertRaises(
 			frappe.PermissionError,
@@ -24,7 +24,7 @@ class TestAgentAuth(TestCase):
 		mock_instance = Mock()
 		mock_agent.return_value = mock_instance
 
-		frappe.request.headers = {"X-Agent-Token": "test-token"}
+		frappe.local.request = frappe._dict({"headers": {"X-Agent-Token": "test-token"}})
 
 		verify_agent("test-server")
 

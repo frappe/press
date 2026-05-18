@@ -3,6 +3,7 @@
 
 from unittest.mock import patch
 
+import frappe
 from frappe.tests import IntegrationTestCase, UnitTestCase
 
 from press.press.doctype.agent_auth.agent_auth import regenerate_token
@@ -23,8 +24,8 @@ class UnitTestAgentAuth(UnitTestCase):
 		mock_enqueue_doc,
 	):
 		mock_get_all.return_value = [
-			{"name": "auth-1"},
-			{"name": "auth-2"},
+			frappe._dict({"name": "auth-1"}),
+			frappe._dict({"name": "auth-2"}),
 		]
 
 		regenerate_token()
