@@ -306,16 +306,70 @@ def _can_use_dedicated_server_plan(server: str, new_site_plan) -> bool:
 	return app_server_price_usd >= min_app_server_price_usd
 
 
-@validate_argument_types
-def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -> None:
-	if not frappe.db.exists("Site Plan", new_plan):
-		frappe.throw(f"Plan {new_plan} does not exist", frappe.DoesNotExistError)  # nosemgrep
+def _should_validate_warranty_change(
+	is_new: bool,
+	is_system_user: bool,
+	is_current_dedicated_server_plan,
+	is_current_plan_supported,
+	new_plan: str,
+) -> bool:
+	return (
+		not is_new
+		and not is_system_user
+		and is_current_dedicated_server_plan
+		and (is_current_plan_supported != is_product_warranty_enabled_for_plan_(new_plan))
+	)
 
-	is_current_plan_supported, is_current_dedicated_server_plan = frappe.db.get_value(
+
+def _validate_warranty_change_window(site: str):
+	next_warranty_change = get_next_allowed_dedicated_product_warranty_change_date(site)
+
+	if get_datetime() < next_warranty_change:
+		pretty_date = format_datetime(
+			next_warranty_change,
+			"MMM d, YYYY hh:mm a",
+		)
+
+		frappe.throw(f"Cannot change product warranty for this site before {pretty_date}")  # nosemgrep
+
+
+def _validate_warranty_quota(server: str):
+	quota = get_available_warranty_quota_for_server(server)
+
+	if quota.get("available") <= 0:
+		frappe.throw(
+			"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
+		)
+
+
+def _get_current_plan_details(site: str, is_new: bool):
+	if is_new:
+		return None, None
+
+	return frappe.db.get_value(
 		"Site Plan",
 		frappe.get_value("Site", site, "plan"),
 		["support_included", "dedicated_server_plan"],
 	)
+
+
+@validate_argument_types
+def validate_plan(
+	server: str,
+	site: str,
+	new_plan: str,
+	is_new: bool = False,
+) -> None:
+	if not frappe.db.exists("Site Plan", new_plan):
+		frappe.throw(
+			f"Plan {new_plan} does not exist",
+			frappe.DoesNotExistError,
+		)  # nosemgrep
+
+	(
+		is_current_plan_supported,
+		is_current_dedicated_server_plan,
+	) = _get_current_plan_details(site, is_new)
 
 	new_site_plan = frappe.db.get_value(
 		"Site Plan",
@@ -331,30 +385,17 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 
 	is_system_user = frappe.session.data.user_type == "System User"
 
-	next_warranty_change = get_next_allowed_dedicated_product_warranty_change_date(site)
+	should_validate_warranty = _should_validate_warranty_change(
+		is_new,
+		is_system_user,
+		is_current_dedicated_server_plan,
+		is_current_plan_supported,
+		new_plan,
+	)
 
-	if (
-		not is_new
-		and not is_system_user
-		and is_current_dedicated_server_plan
-		and (is_current_plan_supported != is_product_warranty_enabled_for_plan_(new_plan))
-		and get_datetime() < next_warranty_change
-	):
-		pretty_date = format_datetime(next_warranty_change, "MMM d, YYYY hh:mm a")
-		frappe.throw(f"Cannot change product warranty for this site before {pretty_date}")  # nosemgrep
-
-	if (
-		not is_new
-		and not is_system_user
-		and is_current_dedicated_server_plan
-		and (is_current_plan_supported != is_product_warranty_enabled_for_plan_(new_plan))
-	):
-		quota = get_available_warranty_quota_for_server(server)
-
-		if quota.get("available") <= 0:
-			frappe.throw(
-				"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
-			)
+	if should_validate_warranty:
+		_validate_warranty_change_window(site)
+		_validate_warranty_quota(server)
 
 	if new_site_plan.get("price_usd", 0) > 0:
 		return
@@ -366,7 +407,7 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 	):
 		return
 
-	if frappe.session.data.user_type == "System User":
+	if is_system_user:
 		return
 
 	frappe.throw("You are not allowed to use this plan")  # nosemgrep

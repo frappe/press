@@ -2993,7 +2993,7 @@ class Server(BaseServer):
 		self.validate_managed_database_service()
 
 	def set_db_healthcheck_token(self):
-		if not self.db_healthcheck_token:
+		if not getattr(self, "db_healthcheck_token", None):
 			self.db_healthcheck_token = frappe.generate_hash(length=64)
 
 	def validate_managed_database_service(self):
