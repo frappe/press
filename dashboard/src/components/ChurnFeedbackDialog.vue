@@ -18,11 +18,11 @@
 		v-model="show"
 	>
 		<template v-slot:body-content>
-			<p class="mb-5 text-sm text-gray-800">
+			<p class="mb-5 text-sm text-ink-gray-8">
 				Help us improve your experience by sharing your thoughts.
 			</p>
 			<div class="mt-3">
-				<span class="mb-2 block text-sm leading-4 text-gray-600">
+				<span class="mb-2 block text-sm leading-4 text-ink-gray-6">
 					Please rate your experience
 				</span>
 				<StarRatingInput v-model="rating" />

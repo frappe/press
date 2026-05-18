@@ -6,10 +6,10 @@
 					<input
 						type="checkbox"
 						id="enabled-checkbox"
-						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						class="h-4 w-4 rounded border-outline-gray-2 text-blue-600 focus:ring-blue-500"
 						v-model="currentEditingPlan.enabled"
 					/>
-					<label for="enabled-checkbox" class="ml-1 text-sm text-gray-900">
+					<label for="enabled-checkbox" class="ml-1 text-sm text-ink-gray-9">
 						Enabled
 					</label>
 				</div>
@@ -41,7 +41,7 @@
 							class="mb-3.5 flex w-full items-stretch"
 						>
 							<div
-								class="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs"
+								class="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-surface-gray-2 text-xs"
 							>
 								{{ idx + 1 }}
 							</div>

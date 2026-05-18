@@ -10,7 +10,7 @@
 			:min="minimumAmount"
 		>
 			<template #prefix>
-				<div class="grid w-4 place-items-center text-sm text-gray-700">
+				<div class="grid w-4 place-items-center text-sm text-ink-gray-7">
 					{{ $team.doc.currency === 'INR' ? '₹' : '$' }}
 				</div>
 			</template>
@@ -27,7 +27,7 @@
 			type="number"
 		>
 			<template #prefix>
-				<div class="grid w-4 place-items-center text-sm text-gray-700">
+				<div class="grid w-4 place-items-center text-sm text-ink-gray-7">
 					{{ $team.doc.currency === 'INR' ? '₹' : '$' }}
 				</div>
 			</template>
@@ -35,15 +35,15 @@
 	</div>
 
 	<div class="mt-4">
-		<div class="text-xs text-gray-600">Select Payment Gateway</div>
+		<div class="text-xs text-ink-gray-6">Select Payment Gateway</div>
 		<div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
 			<button
 				@click="paymentGateway = 'Stripe'"
 				label="Stripe"
 				class="flex h-10 items-center justify-center rounded border"
 				:class="{
-					'border-gray-300': paymentGateway !== 'Stripe',
-					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Stripe',
+					'border-outline-gray-2': paymentGateway !== 'Stripe',
+					'border-outline-gray-5 ring-1 ring-gray-900': paymentGateway === 'Stripe',
 				}"
 			>
 				<img
@@ -58,8 +58,8 @@
 				label="Razorpay"
 				class="flex h-10 items-center justify-center rounded border"
 				:class="{
-					'border-gray-300': paymentGateway !== 'Razorpay',
-					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
+					'border-outline-gray-2': paymentGateway !== 'Razorpay',
+					'border-outline-gray-5 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
 				}"
 			>
 				<RazorpayLogo class="w-24" />
@@ -70,8 +70,8 @@
 				label="PayPal"
 				class="flex h-10 items-center justify-center rounded border"
 				:class="{
-					'border-gray-300': paymentGateway !== 'Razorpay',
-					'border-gray-900 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
+					'border-outline-gray-2': paymentGateway !== 'Razorpay',
+					'border-outline-gray-5 ring-1 ring-gray-900': paymentGateway === 'Razorpay',
 				}"
 			>
 				<PayPalLogo class="h-7 w-20" />

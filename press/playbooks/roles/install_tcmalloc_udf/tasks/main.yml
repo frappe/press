@@ -1,0 +1,107 @@
+---
+- name: Fail on Unsupported Architecture
+  ansible.builtin.fail:
+    msg: "Unsupported architecture: {{ ansible_architecture }}"
+  when: ansible_architecture not in ['x86_64', 'aarch64']
+
+- name: Wait For MariaDB Port To Be Ready
+  ansible.builtin.wait_for:
+    host: "{{ mariadb_private_ip | default('127.0.0.1') }}"
+    port: 3306
+    delay: 5
+    timeout: 60
+    state: started
+
+- name: Wait Until MariaDB Responds To Query
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: "{{ mariadb_private_ip | default('127.0.0.1') }}"
+    login_port: 3306
+    query: "SELECT 1;"
+  register: db_ready
+  retries: 20
+  delay: 3
+  until:
+    - db_ready.query_result is defined
+    - db_ready.query_result | length > 0
+
+- name: Get MariaDB Version
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: "{{ mariadb_private_ip | default('127.0.0.1') }}"
+    login_port: 3306
+    query: "SELECT @@version AS version;"
+  register: mariadb_version_result
+
+- name: Set MariaDB Version Tag
+  ansible.builtin.set_fact:
+    mariadb_version_tag: >-
+      {{ mariadb_version_result.query_result[0][0]['version']
+         .split('-')[0].split('.')[:2] | join('.') }}
+
+- name: Fail on Unsupported MariaDB Version
+  ansible.builtin.fail:
+    msg: "Unsupported MariaDB version: {{ mariadb_version_tag }}. Supported: 10.4, 10.6, 11.8"
+  when: mariadb_version_tag not in ['10.4', '10.6', '11.8']
+
+- name: Get MariaDB Plugin Directory
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: "{{ mariadb_private_ip | default('127.0.0.1') }}"
+    login_port: 3306
+    query: "SELECT @@plugin_dir AS plugin_dir;"
+  register: plugin_dir_result
+
+- name: Set Plugin Directory Fact
+  ansible.builtin.set_fact:
+    mariadb_plugin_dir: "{{ plugin_dir_result.query_result[0][0]['plugin_dir'] }}"
+
+- name: Download tcmalloc_udf Shared Library
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/frappe/fc-scripts/refs/heads/develop/mariadb_tcmalloc_udf/tcmalloc_udf-mariadb{{ mariadb_version_tag }}-{{ ansible_architecture }}.so"
+    dest: "{{ mariadb_plugin_dir }}/tcmalloc_udf.so"
+    mode: "0755"
+    force: true
+
+- name: Drop Existing tcmalloc UDF Functions
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: "{{ mariadb_private_ip | default('127.0.0.1') }}"
+    login_port: 3306
+    query:
+      - "DROP FUNCTION IF EXISTS tcmalloc_available;"
+      - "DROP FUNCTION IF EXISTS tcmalloc_stats;"
+      - "DROP FUNCTION IF EXISTS tcmalloc_allocated_bytes;"
+      - "DROP FUNCTION IF EXISTS tcmalloc_heap_size;"
+      - "DROP FUNCTION IF EXISTS tcmalloc_free_bytes;"
+      - "DROP FUNCTION IF EXISTS tcmalloc_property;"
+      - "DROP FUNCTION IF EXISTS tcmalloc_release_memory;"
+
+- name: Create tcmalloc UDF Functions
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: "{{ mariadb_private_ip | default('127.0.0.1') }}"
+    login_port: 3306
+    query:
+      - "CREATE FUNCTION IF NOT EXISTS tcmalloc_available    RETURNS INTEGER SONAME 'tcmalloc_udf.so';"
+      - "CREATE FUNCTION IF NOT EXISTS tcmalloc_stats        RETURNS STRING  SONAME 'tcmalloc_udf.so';"
+      - "CREATE FUNCTION IF NOT EXISTS tcmalloc_allocated_bytes RETURNS INTEGER SONAME 'tcmalloc_udf.so';"
+      - "CREATE FUNCTION IF NOT EXISTS tcmalloc_heap_size    RETURNS INTEGER SONAME 'tcmalloc_udf.so';"
+      - "CREATE FUNCTION IF NOT EXISTS tcmalloc_free_bytes   RETURNS INTEGER SONAME 'tcmalloc_udf.so';"
+      - "CREATE FUNCTION IF NOT EXISTS tcmalloc_property     RETURNS INTEGER SONAME 'tcmalloc_udf.so';"
+      - "CREATE FUNCTION IF NOT EXISTS tcmalloc_release_memory RETURNS INTEGER SONAME 'tcmalloc_udf.so';"
+
+- name: Verify MariaDB Is Still Running After UDF Installation
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: "{{ mariadb_private_ip | default('127.0.0.1') }}"
+    login_port: 3306
+    query: "SELECT 1;"
+  register: db_final_check
+  failed_when: db_final_check.query_result is not defined or db_final_check.query_result | length == 0

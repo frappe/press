@@ -43,6 +43,10 @@ func (r *RingBuffer[T]) ForEach(fn func(idx int, v T)) {
 }
 
 func (r *RingBuffer[T]) Latest() T {
+	if r.count == 0 {
+		var zero T
+		return zero
+	}
 	idx := (r.head - 1 + r.cap) % r.cap
 	return r.data[idx]
 }

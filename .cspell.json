@@ -16,7 +16,8 @@
         "dev-requirements.txt",
         "press/utils/country_timezone.py",
         ".secrets.baseline",
-        "**go.sum"
+        "**go.sum",
+        "libs/**"
     ],
     "words": [
         "2.4.6",
@@ -615,6 +616,7 @@
         "tanmoy",
         "tanmoysrt",
         "tanxxxxxxkar",
+        "tcmalloc",
         "Telangana",
         "termenv",
         "Thgcy",
@@ -781,6 +783,15 @@
         "mult",
         "ruleid",
         "chatwoot",
-        "ssti"
+        "ssti",
+        "tcmalloc",
+        "libncurses",
+        "libncursesw",
+        "DWITHOUT",
+        "wextra",
+        "SONAME",
+        "decommitted",
+        "libgnutls",
+        "UDF"
     ]
 }

@@ -14,7 +14,7 @@
 					:disabled="!$team.doc?.payment_mode"
 				>
 					<template #suffix>
-						<lucide-chevron-down class="h-4 w-4 text-gray-300" />
+						<lucide-chevron-down class="h-4 w-4 text-ink-gray-3" />
 					</template>
 				</Button>
 			</Dropdown>

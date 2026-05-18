@@ -24,10 +24,7 @@
 		"directory"
 	],
 	"fields": [
-		{
-			"fieldname": "command",
-			"fieldtype": "Section Break"
-		},
+		{ "fieldname": "command", "fieldtype": "Section Break" },
 		{
 			"fieldname": "bench",
 			"fieldtype": "Link",
@@ -37,10 +34,7 @@
 			"options": "Bench",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_neym",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_neym", "fieldtype": "Column Break" },
 		{
 			"fieldname": "status",
 			"fieldtype": "Data",
@@ -89,10 +83,7 @@
 			"label": "Duration (seconds)",
 			"read_only": 1
 		},
-		{
-			"fieldname": "column_break_irvb",
-			"fieldtype": "Column Break"
-		},
+		{ "fieldname": "column_break_irvb", "fieldtype": "Column Break" },
 		{
 			"fieldname": "end",
 			"fieldtype": "Datetime",

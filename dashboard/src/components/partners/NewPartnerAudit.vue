@@ -7,7 +7,7 @@
 				Our team will get back to you within 2 working days to confirm the audit
 				date and share the checklist for the audit.
 			</div>
-			<div class="text-gray-600 text-base">
+			<div class="text-ink-gray-6 text-base">
 				Pick a Audit Date
 				<DatePicker class="mt-2" v-model="audit_date" :format="'DD-MM-YYYY'" />
 				<FormControl

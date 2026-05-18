@@ -4,12 +4,12 @@
 			v-if="!ready"
 			class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-8 transform"
 		>
-			<Spinner class="h-5 w-5 text-gray-600" />
+			<Spinner class="h-5 w-5 text-ink-gray-6" />
 		</div>
 		<div :class="{ 'opacity-0': !ready }">
 			<div v-show="!tryingMicroCharge">
 				<label class="block">
-					<span class="block text-xs text-gray-600">
+					<span class="block text-xs text-ink-gray-6">
 						Credit or Debit Card
 					</span>
 					<div
@@ -33,7 +33,7 @@
 			</div>
 
 			<div class="mt-3" v-show="tryingMicroCharge">
-				<p class="text-lg text-gray-800">
+				<p class="text-lg text-ink-gray-8">
 					We are attempting to charge your card with
 					<strong>{{ formattedMicroChargeAmount }}</strong> to make sure the
 					card works. This amount will be <strong>refunded</strong> back to your
@@ -141,7 +141,7 @@ export default {
 				style: style,
 				classes: {
 					complete: '',
-					focus: 'bg-gray-100',
+					focus: 'bg-surface-gray-2',
 				},
 			});
 			this.card.mount(this.$refs['card-element']);

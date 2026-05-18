@@ -130,13 +130,13 @@ export default {
 					{
 						label: 'Repo',
 						fieldname: 'repository_owner',
-						class: 'text-gray-600',
+						class: 'text-ink-gray-6',
 						width: '10rem',
 					},
 					{
 						label: 'Branch',
 						fieldname: 'branch',
-						class: 'text-gray-600',
+						class: 'text-ink-gray-6',
 						width: '10rem',
 					},
 					{

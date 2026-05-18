@@ -1,7 +1,12 @@
 <template>
 	<Transition
 		name="collapse"
-		@enter="(e) => (e.style.height = e.scrollHeight + 'px')"
+    @enter="(e) => {
+      if(e.scrollHeight != 0)
+      e.style.height = e.scrollHeight + 'px'
+    }"
+    @after-enter="e => e.style.height = 'auto'"
+		@before-leave="(e) => (e.style.height = e.scrollHeight + 'px')"
 		@leave="(e) => (e.style.height = '0')"
 	>
 		<slot />

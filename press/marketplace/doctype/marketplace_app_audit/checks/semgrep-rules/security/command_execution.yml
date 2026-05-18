@@ -17,6 +17,7 @@ rules:
     marketplace_check_id: security_os_command_exec
     marketplace_check_name: OS Command Execution
     marketplace_category: Security
+    is_blocking: true
     remediation: |
       Replace with `subprocess.run([...], shell=False)` using an argument list, and
       validate any user-controlled values. This code should be manually audited by review/security team.
@@ -42,6 +43,7 @@ rules:
     marketplace_check_id: security_subprocess_shell_true
     marketplace_check_name: Subprocess With shell=True
     marketplace_category: Security
+    is_blocking: true
     remediation: |
       Pass the command as an argument list with `shell=False` (the default):
       `subprocess.run(["cmd", arg1, arg2])`. If a shell is truly unavoidable, wrap
@@ -73,6 +75,7 @@ rules:
     marketplace_check_id: security_subprocess_exec
     marketplace_check_name: Subprocess Execution
     marketplace_category: Security
+    is_blocking: true
     remediation: |
       Needs to be reviewed by review/security team. Keep arguments as a literal list (not a concatenated
       string) and validate any user-controlled values before interpolation.
@@ -96,6 +99,7 @@ rules:
     marketplace_check_id: security_frappe_execute_in_shell
     marketplace_check_name: Frappe execute_in_shell
     marketplace_category: Security
+    is_blocking: true
     remediation: |
       Replace with `subprocess.run([...], shell=False)` using an argument list, and
       validate any user-controlled values. This code should be manually audited by review/security team.

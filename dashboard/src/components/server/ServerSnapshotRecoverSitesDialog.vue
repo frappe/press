@@ -18,7 +18,7 @@
 					</div>
 					<div class="w-full">
 						<p
-							class="rounded mb-4 p-2 text-sm text-gray-700 bg-gray-100 border"
+							class="rounded mb-4 p-2 text-sm text-ink-gray-7 bg-surface-gray-2 border"
 						>
 							Frappe Cloud will start temporary servers from the snapshot and
 							<b>backup the selected sites from the snapshot</b>. You will be
@@ -218,7 +218,7 @@ export default {
 
 <style scoped>
 td {
-	@apply px-4 py-2 border-b text-sm text-gray-800;
+	@apply px-4 py-2 border-b text-sm text-ink-gray-8;
 }
 
 tbody tr:last-child td {

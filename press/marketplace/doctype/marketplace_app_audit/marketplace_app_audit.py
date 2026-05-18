@@ -19,6 +19,8 @@ class CheckResult:
 	message: str = ""
 	details: str = ""
 	remediation: str = ""
+	is_internal_only: bool = False
+	is_blocking: bool = False
 
 
 class MarketplaceAppAudit(Document):
@@ -174,7 +176,7 @@ class MarketplaceAppAudit(Document):
 		results.extend(run_versioning_checks(clone_dir))
 		results.extend(run_dependency_checks(clone_dir))
 		results.extend(run_code_quality_checks(clone_dir))
-		results.extend(run_compatibility_checks(release.source, clone_dir))
+		results.extend(run_compatibility_checks(self.marketplace_app, release.source, clone_dir))
 		results.extend(run_semgrep_rules(clone_dir))
 
 		return results
@@ -280,8 +282,12 @@ class MarketplaceAppAudit(Document):
 		if self.audit_result == "Fail":
 			# mark "attention required" status in marketplace app
 			frappe.db.set_value("Marketplace App", self.marketplace_app, "status", "Attention Required")
-			self._yank_release()
 			self._auto_reject_approval_requests()
+
+			# only yank the release if the audit had any hard blocking failures.
+			# else the audit fails but we don't want to yank the release
+			if self.has_blocking_failures():
+				self._yank_release()
 
 	def _yank_release(self) -> None:
 		"""
@@ -335,14 +341,20 @@ class MarketplaceAppAudit(Document):
 
 		failing_checks = []
 		for check in self.audit_checks:
+			# internal only checks are not shown to the publisher in the audit report
+			if check.is_internal_only:
+				continue
+
 			if check.result in ("Fail", "Warn"):
 				details_parsed = None
 				if check.details:
-					try:
-						details_parsed = json.loads(check.details)
-					except (json.JSONDecodeError, TypeError):
-						details_parsed = None
-
+					details_parsed = json.loads(check.details)
+					occurrences = details_parsed.get("occurrences")
+					if isinstance(occurrences, list):
+						public_occurrences = [occ for occ in occurrences if not occ.get("is_internal_only")]
+						if not public_occurrences:
+							continue
+						details_parsed = {**details_parsed, "occurrences": public_occurrences}
 				failing_checks.append(
 					{
 						"severity": check.severity,
@@ -368,3 +380,19 @@ class MarketplaceAppAudit(Document):
 			template="marketplace_audit_report",
 		)
 		frappe.msgprint(f"Audit report sent to {publisher_email}")
+
+	def has_blocking_failures(self) -> bool:
+		"""True if any child row is blocking, or any Semgrep occurrence is marked blocking."""
+		for check in self.audit_checks:
+			if check.is_blocking:
+				return True
+
+			# although we are rolling up the semgrep ruleset's blocking findings to the overall audit check result, we should still check for blocking findings in the semgrep ruleset specifically.
+			# if check name starts with "Semgrep" we need to check if it has any blocking findings
+			if not check.check_name.startswith("Semgrep") or not check.details:
+				continue
+			payload = json.loads(check.details)
+			occurrences = payload.get("occurrences") or []
+			if any(occ.get("is_blocking") for occ in occurrences if isinstance(occ, dict)):
+				return True
+		return False

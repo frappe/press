@@ -28,14 +28,14 @@
 			<div class="mt-4 space-y-2">
 				<div
 					v-if="$resources.validateApp.loading && !appValidated"
-					class="flex text-base text-gray-700"
+					class="flex text-base text-ink-gray-7"
 				>
 					<LoadingIndicator class="mr-2 w-4" />
 					Validating app...
 				</div>
 				<div
 					v-if="appValidated"
-					class="flex flex-col text-base text-gray-700 space-y-2"
+					class="flex flex-col text-base text-ink-gray-7 space-y-2"
 				>
 					<div v-if="this.app.is_public" class="flex items-center gap-2">
 						<FeatherIcon

@@ -26,6 +26,7 @@ class Client:
 		cloud_init: str,
 		vpc_id: str,
 		private_ip_address: str,
+		assign_public_ip: bool,
 	):
 		return self.client.post_api(
 			"orchestrator.api.virtual_machine.new",
@@ -38,6 +39,7 @@ class Client:
 				"cloud_init": cloud_init,
 				"private_network": vpc_id,
 				"private_ip_address": private_ip_address,
+				"assign_public_ip": assign_public_ip,
 			},
 		)
 
@@ -71,6 +73,20 @@ class Client:
 
 	def reboot_virtual_machine(self, instance_id: str):
 		return self.client.post_api("orchestrator.api.virtual_machine.reboot", {"instance_id": instance_id})
+
+	def remove_public_ip_from_virtual_machine(self, instance_id: str):
+		return self.client.post_api(
+			"orchestrator.api.virtual_machine.remove_public_ip", {"instance_id": instance_id}
+		)
+
+	def create_snapshot(self, instance_id: str):
+		return self.client.post_api("orchestrator.api.snapshot.new", {"instance_id": instance_id})
+
+	def sync_snapshot(self, snapshot_id: str):
+		return _dict(self.client.get_api("orchestrator.api.snapshot.sync", {"snapshot_id": snapshot_id}))
+
+	def delete_snapshot(self, snapshot_id: str):
+		return self.client.post_api("orchestrator.api.snapshot.delete", {"snapshot_id": snapshot_id})
 
 	def create_virtual_machine_image(self, instance_id: str):
 		return self.client.post_api(

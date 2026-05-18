@@ -9,7 +9,7 @@
 				more.
 			</p>
 		</div>
-		<p class="mt-6 text-base text-gray-800">
+		<p class="mt-6 text-base text-ink-gray-8">
 			Complete the steps below to unlock sites, benches, dedicated servers and
 			more.
 		</p>
@@ -47,13 +47,13 @@
 					</div>
 				</div>
 				<div class="mt-2 pl-7" v-if="pendingSiteRequest.status == 'Error'">
-					<p class="mt-2 text-p-base text-gray-800">
+					<p class="mt-2 text-p-base text-ink-gray-8">
 						Please contact Frappe Cloud support by clicking on the button below.
 					</p>
 					<Button class="mt-2" link="/support"> Contact Support </Button>
 				</div>
 				<div class="mt-2 pl-7" v-else>
-					<p class="mt-2 text-p-base text-gray-800">
+					<p class="mt-2 text-p-base text-ink-gray-8">
 						You can try out the {{ pendingSiteRequest.title }} app for free by
 						clicking on the button below.
 					</p>
@@ -93,10 +93,10 @@
 							target="_blank"
 						>
 							https://{{ trialSite.host_name || trialSite.name }}
-							<lucide-external-link class="ml-1 h-3.5 w-3.5 text-gray-800" />
+							<lucide-external-link class="ml-1 h-3.5 w-3.5 text-ink-gray-8" />
 						</a>
 					</div>
-					<p class="mt-2 text-p-base text-gray-800">
+					<p class="mt-2 text-p-base text-ink-gray-8">
 						Your trial is set to expire on
 						<span class="font-medium">
 							{{ $format.date(trialSite.trial_end_date, 'LL') }} </span
@@ -110,7 +110,11 @@
 					<div class="text-base font-medium">Create your first site</div>
 				</div>
 
-				<Button class="ml-7 mt-4" :route="{ name: 'SignupAppSelector' }">
+				<Button
+					class="ml-7 mt-4"
+					:route="{ name: 'SignupAppSelector' }"
+					variant="solid"
+				>
 					Create
 				</Button>
 			</div>
@@ -126,8 +130,8 @@
 						<TextInsideCircle>3</TextInsideCircle>
 						<span class="text-base font-medium"> Complete billing setup </span>
 					</div>
-					<div class="pl-7 mt-2" v-if="$team.doc.onboarding.site_created">
-						<p class="text-p-base text-gray-800">
+					<div class="pl-7 mt-2" v-if="$team.doc.onboarding.site_created && trialSite">
+						<p class="text-p-base text-ink-gray-8">
 							Add your billing details and payment method to activate your
 							subscription.You won't be charged until your trial ends on
 							<span class="font-medium">
@@ -151,7 +155,7 @@
 							<lucide-check class="h-3 w-3 text-white" />
 						</div>
 					</div>
-					<div class="mt-1.5 pl-7 text-p-base text-gray-800">
+					<div class="mt-1.5 pl-7 text-p-base text-ink-gray-8">
 						<span v-if="$team.doc.payment_mode === 'Card'">
 							Automatic billing is enabled
 						</span>
@@ -206,12 +210,12 @@
 
 					<div class="mt-4 pl-7" v-if="isBillingDetailsSet">
 						<div
-							class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-gray-800"
+							class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
 						>
 							<div
 								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 								:class="{
-									'bg-gray-100': isAutomatedBilling,
+									'bg-surface-gray-2': isAutomatedBilling,
 								}"
 								@click="isAutomatedBilling = true"
 							>
@@ -220,7 +224,7 @@
 							<div
 								class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
 								:class="{
-									'bg-gray-100': !isAutomatedBilling,
+									'bg-surface-gray-2': !isAutomatedBilling,
 								}"
 								@click="isAutomatedBilling = false"
 							>
@@ -269,7 +273,7 @@
 						</div>
 					</div>
 					<div
-						class="mt-1.5 pl-7 text-p-base text-gray-800"
+						class="mt-1.5 pl-7 text-p-base text-ink-gray-8"
 						v-if="$team.doc.payment_mode === 'Prepaid Credits'"
 					>
 						Account balance: {{ $format.userCurrency($team.doc.balance) }}

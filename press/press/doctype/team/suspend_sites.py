@@ -20,11 +20,13 @@ from frappe.utils import add_days, get_first_day, get_last_day, getdate
 
 from press.utils import log_error
 
+SUSPENSION_DAYS = 14
+
 
 def execute():
 	today = getdate()
 	first_day_of_month = get_first_day(today)
-	fifteenth_day_of_month = add_days(first_day_of_month, 14)
+	fifteenth_day_of_month = add_days(first_day_of_month, SUSPENSION_DAYS)
 
 	if today >= first_day_of_month and today <= fifteenth_day_of_month:
 		return

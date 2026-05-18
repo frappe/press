@@ -131,6 +131,7 @@ permission_query_conditions = {
 	"Server Snapshot Recovery": "press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.get_permission_query_conditions",
 }
 has_permission = {
+	"Account Request": "press.press.doctype.account_request.account_request.has_permission",
 	"Site": "press.overrides.has_permission",
 	"Site Action": "press.overrides.has_permission",
 	"Site Backup": "press.overrides.has_permission",
@@ -232,6 +233,8 @@ scheduler_events = {
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",
 		"press.press.doctype.site_backup.site_backup.delete_backups_for_archived_sites_after_retention",
 		"press.press.doctype.site.site.notify_sites_before_archival",
+		"press.press.doctype.invoice.invoice.sync_paid_invoices_to_frappeio",
+		"press.press.doctype.invoice.invoice.finalize_unpaid_card_invoices",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -265,9 +268,11 @@ scheduler_events = {
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.cleanup_build_directories",
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.check_builds_status",
+		"press.press.doctype.server.server.archive_servers_with_unpaid_invoices",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_oci_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_hetzner_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_internal_virtual_machines",
+		"press.press.doctype.virtual_machine.virtual_machine.snapshot_frappe_compute_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
@@ -420,6 +425,8 @@ fixtures = [
 	"Server Storage Plan",
 	"Server Snapshot Plan",
 	"Press Webhook Event",
+	"Site Plan",
+	"Server Plan",
 ]
 # Testing
 # -------

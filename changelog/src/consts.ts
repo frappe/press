@@ -3,3 +3,4 @@
 
 export const SiteTitle = 'Frappe Cloud Changelog';
 export const SiteDescription = 'A changelog for the Frappe Cloud website';
+export const pagelimit = 5;

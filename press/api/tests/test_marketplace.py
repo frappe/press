@@ -373,20 +373,17 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.marketplace_app.reload()
 		self.assertFalse(self.marketplace_app.image)
 
-	@patch("press.api.marketplace.is_user_part_of_team", return_value=False)
-	@patch("press.api.marketplace.get_current_team")
-	def test_update_app_image_blocked_for_non_member_of_owner_team(
-		self, mock_get_current_team, _mock_is_member
-	):
+	def test_update_app_image_by_owner_without_team_member_entry(self):
+		"""Regression: team owner (Team.user) must be able to upload even when absent from Team Member table."""
+		frappe.db.delete("Team Member", {"parent": self.team.name, "user": self.team.user})
 		frappe.set_user(self.team.user)
-		mock_get_current_team.return_value = self.team.name
 		_setup_fake_upload(self.marketplace_app.name)
 
-		with self.assertRaises(frappe.PermissionError):
-			update_app_image()
+		file_url = update_app_image()
 
 		self.marketplace_app.reload()
-		self.assertFalse(self.marketplace_app.image)
+		self.assertTrue(file_url)
+		self.assertEqual(self.marketplace_app.image, file_url)
 
 	def test_add_app_screenshot_blocked_for_non_owner(self):
 		other_team = create_test_press_admin_team()
@@ -399,20 +396,17 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.marketplace_app.reload()
 		self.assertEqual(len(self.marketplace_app.screenshots), 0)
 
-	@patch("press.api.marketplace.is_user_part_of_team", return_value=False)
-	@patch("press.api.marketplace.get_current_team")
-	def test_add_app_screenshot_blocked_for_non_member_of_owner_team(
-		self, mock_get_current_team, _mock_is_member
-	):
+	def test_add_app_screenshot_by_owner_without_team_member_entry(self):
+		"""Regression: team owner (Team.user) must be able to upload even when absent from Team Member table."""
+		frappe.db.delete("Team Member", {"parent": self.team.name, "user": self.team.user})
 		frappe.set_user(self.team.user)
-		mock_get_current_team.return_value = self.team.name
 		_setup_fake_upload(self.marketplace_app.name)
 
-		with self.assertRaises(frappe.PermissionError):
-			add_app_screenshot()
+		file_url = add_app_screenshot()
 
 		self.marketplace_app.reload()
-		self.assertEqual(len(self.marketplace_app.screenshots), 0)
+		self.assertTrue(file_url)
+		self.assertEqual(len(self.marketplace_app.screenshots), 1)
 
 	def test_update_app_image_rejects_svg(self):
 		"""SVG files can contain inline <script> tags — reject to prevent stored XSS."""

@@ -2,7 +2,7 @@
 	<div class="flex items-center justify-between gap-1">
 		<div>
 			<h3 class="text-base font-medium">{{ props.actionLabel }}</h3>
-			<p class="mt-1 text-p-base text-gray-600">{{ props.description }}</p>
+			<p class="mt-1 text-p-base text-ink-gray-6">{{ props.description }}</p>
 		</div>
 		<Button
 			v-if="releaseGroup?.doc"
@@ -11,7 +11,7 @@
 		>
 			<p
 				:class="
-					group === 'Dangerous Actions' ? 'text-red-600' : 'text-gray-800'
+					group === 'Dangerous Actions' ? 'text-red-600' : 'text-ink-gray-8'
 				"
 			>
 				{{ props.buttonLabel }}

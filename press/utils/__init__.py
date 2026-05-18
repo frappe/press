@@ -130,8 +130,8 @@ def get_current_team(get_doc=False) -> Team | str:
 	# `team_name` getting injected by press.saas.api.whitelist_saas_api decorator
 	team = x_press_team if x_press_team else getattr(frappe.local, "team_name", "")
 
-	if not team and has_role("Press Admin") and frappe.db.exists("Team", {"user": frappe.session.user}):
-		# if user has_role of Press Admin then just return current user as default team
+	if not team and has_role("Press User") and frappe.db.exists("Team", {"user": frappe.session.user}):
+		# if user has_role of Press User then just return current user as default team
 		return (
 			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})
 			if get_doc
@@ -235,8 +235,10 @@ def get_valid_teams_for_user(user):
 
 
 def is_user_part_of_team(user, team):
-	"""Returns True if user is part of the team"""
-	return frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user})
+	"""Returns True if user is the team owner or an explicit member of the team"""
+	if frappe.db.get_value("Team", team, "user") == user:
+		return True
+	return bool(frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team, "user": user}))
 
 
 def get_country_info():
@@ -346,6 +348,13 @@ def get_frappe_backups(url, email, password):
 def is_allowed_access_performance_tuning():
 	team = get_current_team(get_doc=True)
 	return team.enable_performance_tuning
+
+
+def get_press_base_url():
+	press_url = frappe.conf.get("press_base_url") or frappe.utils.get_url()
+	if not press_url.startswith("http://") and not press_url.startswith("https://"):
+		press_url = "https://" + press_url
+	return press_url.rstrip("/")
 
 
 class RemoteFrappeSite:
@@ -565,16 +574,15 @@ def group_children_in_result(result, child_field_map):
 	result =
 	[
 	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'System Manager'},
-	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'Press Admin'},
-	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press Admin'},
-	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press Member'},
+	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'Press User'},
+	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press User'},
 	]
 
 	out = group_children_in_result(result, {'role': 'roles'})
 	print(out)
 	[
-	{'name': 'test1', 'full_name': 'Faris Ansari', roles: ['System Manager', 'Press Admin']},
-	{'name': 'test2', 'full_name': 'Aditya Hase', roles: ['Press Admin', 'Press Member']},
+	{'name': 'test1', 'full_name': 'Faris Ansari', roles: ['System Manager', 'Press User']},
+	{'name': 'test2', 'full_name': 'Aditya Hase', roles: ['Press User']},
 	]
 	"""
 	out = {}

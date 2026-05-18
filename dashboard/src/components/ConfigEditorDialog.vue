@@ -33,7 +33,7 @@
 							selectedConfig.value !== '__custom_key' &&
 							selectedConfig.detail
 						"
-						class="text-sm text-gray-500 mt-2 ml-1"
+						class="text-sm text-ink-gray-5 mt-2 ml-1"
 					>
 						{{ selectedConfig.detail }}
 					</div>
