@@ -286,6 +286,26 @@ def get_group_for_new_site_and_set_localisation_app(site, apps):
 	return groups[0]
 
 
+def _can_use_dedicated_server_plan(server: str, new_site_plan) -> bool:
+	if not new_site_plan.get("restrict_based_on_dedicated_server_plan", 0):
+		return True
+
+	app_server_plan = frappe.db.get_value("Server", server, "plan")
+
+	min_app_server_price_usd = new_site_plan.get(
+		"minimum_server_price_usd",
+		0,
+	)
+
+	app_server_price_usd = frappe.db.get_value(
+		"Server Plan",
+		app_server_plan,
+		"price_usd",
+	)
+
+	return app_server_price_usd >= min_app_server_price_usd
+
+
 @validate_argument_types
 def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -> None:
 	if not frappe.db.exists("Site Plan", new_plan):
@@ -330,6 +350,7 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 		and (is_current_plan_supported != is_product_warranty_enabled_for_plan_(new_plan))
 	):
 		quota = get_available_warranty_quota_for_server(server)
+
 		if quota.get("available") <= 0:
 			frappe.throw(
 				"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
@@ -341,14 +362,9 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 	if (
 		new_site_plan.get("dedicated_server_plan", 0)
 		and frappe.db.get_value("Server", server, "team") == get_current_team()
+		and _can_use_dedicated_server_plan(server, new_site_plan)
 	):
-		if not new_site_plan.get("restrict_based_on_dedicated_server_plan", 0):
-			return
-		app_server_plan = frappe.db.get_value("Server", server, "plan")
-		min_app_server_price_usd = new_site_plan.get("minimum_server_price_usd", 0)
-		app_server_price_usd = frappe.db.get_value("Server Plan", app_server_plan, "price_usd")
-		if app_server_price_usd >= min_app_server_price_usd:
-			return
+		return
 
 	if frappe.session.data.user_type == "System User":
 		return
