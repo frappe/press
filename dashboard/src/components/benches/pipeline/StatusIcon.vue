@@ -3,10 +3,14 @@ import { Spinner } from 'frappe-ui'
 
 interface Props {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	status: 'Success' | 'Running' | 'Pending' | 'Queued' | 'Failed' | 'Warning'
 =======
 	status: 'Success' | 'Running' | 'Pending' | 'Queued' | 'Failed'
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+	status: 'Success' | 'Running' | 'Pending' | 'Queued' | 'Failed' | 'Warning'
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 }
 
 defineProps<Props>()
@@ -26,11 +30,17 @@ defineProps<Props>()
 	/>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
   <lucide-alert-triangle v-else-if='status == "Warning"'
     class="size-4 shrink-0 text-ink-amber-3" />
 
 	<lucide-circle-x v-else class="size-4 shrink-0 text-ink-red-4" />
+<<<<<<< HEAD
 =======
 	<lucide-circle-x v-else class="size-4 shrink-0 text-ink-red-3" />
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 </template>

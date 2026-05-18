@@ -1,16 +1,24 @@
 <script setup lang="ts">
 import { TabsIndicator, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
+<<<<<<< HEAD
 import { computed } from 'vue'
 
 type Tab = {
 	label: string
 	value?: string
+=======
+import { computed, h } from 'vue'
+
+type Tab = {
+	label: string
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 	icon?: string
 	route?: string
 }
 
 export interface TabProps {
+<<<<<<< HEAD
 	tabs: Tab[]
 	tablistClass?: string
 	vertical?: boolean
@@ -24,6 +32,15 @@ const props = withDefaults(defineProps<TabProps>(), {
 	size: 'sm',
 })
 
+=======
+	as?: string
+	tabs: Tab[]
+	vertical?: boolean
+	dir?: 'rtl' | 'ltr'
+}
+
+const props = defineProps<TabProps>()
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 const model = defineModel<string | number>({ default: 0 })
 
 const dir = computed<'rtl' | 'ltr'>(
@@ -40,6 +57,7 @@ const indicatorXCss = `left-0 bottom-0 h-[2px] w-[--reka-tabs-indicator-size] tr
 const indicatorYCss = `end-0 top-0 w-[2px] h-[--reka-tabs-indicator-size]
                        translate-y-[--reka-tabs-indicator-position] transition-[height,transform]`
 
+<<<<<<< HEAD
 const txtCss =
 	'hover:text-ink-gray-9 data-[state=active]:text-ink-gray-9 text-ink-gray-5'
 
@@ -73,10 +91,19 @@ const btnSizeCss = {
 	sm: 'px-2',
 	md: 'px-3.5',
 }
+=======
+defineSlots<{
+	/** Custom renderer for a tab trigger (icon + label / router-link). */
+	'tab-item'?: (props: {
+		tab: { label: string; icon?: string; route?: string }
+	}) => any
+}>()
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 </script>
 
 <template>
 	<TabsRoot
+<<<<<<< HEAD
 		:dir
 		:orientation="vertical ? 'vertical' : 'horizontal'"
 		:default-value="tabs[0].label"
@@ -110,6 +137,41 @@ const btnSizeCss = {
 					{{ tab.label }}
 					<slot name="suffix" v-bind="{ tab }" />
 				</component>
+=======
+		:as
+		:dir
+		class="flex flex-1 overflow-hidden flex-col data-[orientation=vertical]:flex-row"
+		:orientation="props.vertical ? 'vertical' : 'horizontal'"
+		:default-value="props.tabs[0].label"
+		v-model="model"
+	>
+		<TabsList
+			class="relative min-h-fit flex data-[orientation=vertical]:flex-col p-1 border-b data-[orientation=vertical]:border-e gap-5"
+			:class="{
+        'overflow-x-auto overflow-y-hidden px-5': !vertical,
+        'py-3': vertical,
+      }"
+		>
+			<TabsIndicator
+				class="absolute rounded-full duration-300"
+				:class="props.vertical ? indicatorYCss : indicatorXCss"
+			>
+				<div class="w-full h-full bg-surface-gray-7" />
+			</TabsIndicator>
+
+			<TabsTrigger as="template" v-for="(tab, i) in props.tabs" :value="tab.label">
+				<slot name="tab-item" v-bind="{ tab, selected: model === i }">
+					<component
+						:is="tab.route ? 'router-link' : 'BUTTON'"
+						:to="tab.route"
+						class="flex items-center gap-1.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9 data-[state=active]:text-ink-gray-9"
+						:class="{ 'px-2.5': props.vertical, 'py-2.5': !props.vertical }"
+					>
+						<component v-if="tab.icon" :is="tab.icon" class="size-4" />
+						{{ tab.label }}
+					</component>
+				</slot>
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 			</TabsTrigger>
 		</TabsList>
 	</TabsRoot>

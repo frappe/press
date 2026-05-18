@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	createListResource,
 	createDocumentResource,
 	Button,
@@ -26,16 +27,21 @@ const route = useRoute()
 const socket = window.$socket
 =======
 	createResource,
+=======
+	createListResource,
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 	createDocumentResource,
-	getCachedDocumentResource,
 	Button,
 	Dropdown,
 	Badge,
-	Tabs,
 } from 'frappe-ui'
+
+import Tabs from '@/components/common/Tabs.vue'
 
 import Stages from './Stages.vue'
 import CopyBtn from '@/components/utils/CopyBtn.vue'
+import Collapsable from '@/components/common/Collapsable.vue'
+import StatusIcon from './StatusIcon.vue'
 
 import { ref, computed, provide, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
@@ -43,10 +49,13 @@ import { getTeam } from '@/data/team'
 
 import { secsToDuration, date } from '@/utils/format'
 
-const socket = window.$socket
-const route = useRoute()
 const team = getTeam()
+<<<<<<< HEAD
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+const route = useRoute()
+const socket = window.$socket
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 const output = ref<String | null>(null)
 
 const setOutput = (str: String | null) => {
@@ -89,7 +98,11 @@ const dropdownOptions = computed(() => {
 })
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 const activeBuildId = ref()
+=======
+const fakeids = ['2n0qbb8crp', '6lhv9d3k0j']
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 const buildIds = computed(() => {
 	const ids = pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => x.name)
 	if (!activeBuildId.value && ids) activeBuildId.value = ids[0]
@@ -108,6 +121,7 @@ const pipeline = createDocumentResource({
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const notifApiFields = {
 	doctype: 'Press Notification',
 	fields: [
@@ -123,12 +137,35 @@ const notifApiFields = {
 
 const errors = createListResource(notifApiFields)
 const warnings = createListResource(notifApiFields)
+=======
+const notifApiFields = {
+	doctype: 'Press Notification',
+	fields: ['name', 'title', 'message', 'document_name', 'class'],
+	filters: { document_type: 'Deploy Candidate Build', is_actionable: true },
+}
+
+const errors = createListResource({
+	...notifApiFields,
+	...{
+		filters: { class: 'Error' },
+		onSuccess: (data) => {
+			console.log(data)
+		},
+	},
+})
+
+const warnings = createListResource({
+	...notifApiFields,
+	...{ filters: { class: 'Warning' } },
+})
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 
 watch(
 	() => buildIds.value,
 	(x) => {
 		if (!x) return
 
+<<<<<<< HEAD
 		errors.update({
 			cache: [
 				'Press Notification Error',
@@ -147,11 +184,25 @@ watch(
 			],
 			filters: { document_name: ['in', buildIds.value], class: 'Warning' },
 		})
+=======
+		const params = {
+			cache: ['Press Notification', 'Error', 'Deploy Candidate Build', fakeids],
+			filters: { document_name: ['in', fakeids] },
+		}
+		errors.update(params)
+		warnings.update(params)
+		errors.fetch()
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 		warnings.fetch()
 	},
 )
 
+<<<<<<< HEAD
 const tabState = ref('Tasks')
+=======
+const tabState = ref('Issues')
+const tabBuildId = ref(fakeids[0])
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 
 const sidebarTabs = ref([
 	{ label: 'Tasks', icon: LucideWorkflow },
@@ -289,15 +340,9 @@ onBeforeUnmount(() => {
 				:theme="badgeThemes[pipeline?.doc?.status] || 'gray'"
 			/>
 
-			<Button theme="red" class="ml-auto"> Stop Deploy </Button>
-
-			<Button>
-				<lucide-refresh-ccw class="h-4 w-4" />
-			</Button>
-
 			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
 				<template v-slot="{ open }">
-					<Button>
+					<Button class="ml-auto">
 						<template #icon>
 							<lucide-more-horizontal class="h-4 w-4" />
 						</template>
@@ -309,8 +354,13 @@ onBeforeUnmount(() => {
 
 		<!-- status cards -->
 <<<<<<< HEAD
+<<<<<<< HEAD
 		<section
 			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm"
+=======
+		<section
+			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-medium"
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 		>
 			<div class="flex flex-col gap-2 border p-4 rounded ">
 				<b> Created by </b>
@@ -319,16 +369,25 @@ onBeforeUnmount(() => {
 
 			<div class="flex flex-col gap-2 border p-4 rounded">
 				<b> Start </b>
+<<<<<<< HEAD
 				<span> {{ date(pipeline?.doc?.steps?.start) || '-' }} </span>
+=======
+				<span> {{ date(pipeline?.doc?.steps?.start) }} </span>
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 			</div>
 
 			<div class="flex flex-col gap-2 border p-4 rounded">
 				<b> End </b>
+<<<<<<< HEAD
 				<span> {{ date(pipeline?.doc?.steps?.end)  || '-' }} </span>
+=======
+				<span> {{ date(pipeline?.doc?.steps?.end) }} </span>
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 			</div>
 
 			<div class="flex flex-col gap-2 border p-4 rounded">
 				<b> Duration </b>
+<<<<<<< HEAD
 				<span>
 					{{ secsToDuration(pipeline?.doc?.steps?.duration)  || '-' }}
 				</span>
@@ -342,6 +401,9 @@ onBeforeUnmount(() => {
 				<span class="text-sm font-medium text-ink-gray-4"> {{ key }} </span>
 				<span class="text-sm text-ink-gray-9"> {{ label || '-' }} </span>
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+				<span> {{ secsToDuration(pipeline?.doc?.steps?.duration) }} </span>
+>>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 			</div>
 		</section>
 
@@ -431,17 +493,50 @@ onBeforeUnmount(() => {
 						<button class="flex items-center gap-2 pb-3">
 							<component :is="tab.icon" class="size-4 text-ink-gray-6" />
 							{{ tab.label }}
-
-							<Badge v-if='tab.label == "Issues"' :label="0" />
+							<Badge
+								v-if='tab.label == "Issues"'
+								:label="(errors?.data?.length || 0 ) + (warnings?.data?.length || 0)"
+							/>
 						</button>
 					</template>
 				</Tabs>
 
 				<Stages
-					v-if="tabState == 0 "
+					v-if="tabState == 'Tasks'"
 					:stages="pipeline?.doc?.steps?.stages"
 					:buildIds
 				/>
+
+				<!-- list of errors -->
+				<section v-else>
+					<Tabs
+						v-if="fakeids.length > 1"
+						:tabs="fakeids.map((x) => ({ label: x }))"
+						v-model="tabBuildId"
+						class="w-fit mb-3 *:px-2"
+					/>
+
+					<div
+						v-for='x in [...(errors?.data || []), ...(warnings?.data || []) ]?.filter(x => x.document_name == tabBuildId)'
+						class="flex flex-col gap-1"
+					>
+						<Collapsable headerCss="py-2" class="mb-3">
+							<template #header>
+								<StatusIcon :status=" x.class=='Error'? 'Failed': 'Warning'" />
+
+								{{ x.title }}
+								{{ x.class }}
+								{{ x.document_name }}
+							</template>
+
+							<div
+								v-html="x.message"
+								class="leading-relaxed rounded p-3 ml-3 mb-3 text-sm"
+								:class='x.class=="Error"? " bg-surface-red-1 text-ink-red-3" :  "bg-surface-amber-1 text-ink-amber-3"'
+							/>
+						</Collapsable>
+					</div>
+				</section>
 			</aside>
 
 			<!-- output -->
