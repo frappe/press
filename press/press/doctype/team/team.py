@@ -170,6 +170,7 @@ class Team(Document):
 		"relaxed_permissions",
 		"upi_autopay_enabled",
 		"default_razorpay_mandate",
+		"tier",
 	)
 
 	def get_doc(self, doc):
