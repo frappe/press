@@ -72,14 +72,18 @@ async function onClickSave() {
 				</div>
 
 				<div class="flex w-full">
-					<div class="flex-grow">
+					<a
+						class="flex-grow"
+						href="https://docs.frappe.io/cloud/control-resources-allocated-for-site"
+						target="_blank"
+					>
 						<Button variant="ghost">
 							<template #prefix>
 								<LucideHelpCircle class="size-4" />
 							</template>
 							Learn More
 						</Button>
-					</div>
+					</a>
 
 					<div class="flex gap-3">
 						<Button @click="open = false">Cancel</Button>
