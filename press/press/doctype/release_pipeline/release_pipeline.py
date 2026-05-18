@@ -188,7 +188,11 @@ class ReleasePipeline(WorkflowBuilder):
 
 		frappe.publish_realtime(
 			"doc_update",
+<<<<<<< HEAD
 			{"doctype": "Release Pipeline", "name": self.name},
+=======
+			{ "doctype": "Release Pipeline", "name": self.name },
+>>>>>>> c0a9b264e (fix(release_pipeline): send event on status update)
 			doctype="Release Pipeline",
 			docname=self.name,
 		)
