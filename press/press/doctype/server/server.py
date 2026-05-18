@@ -26,6 +26,7 @@ from frappe.utils.synchronization import filelock
 from frappe.utils.user import is_system_user
 
 from press.agent import Agent
+from press.api.account import is_limits_exceeded
 from press.api.client import dashboard_whitelist
 from press.exceptions import VolumeResizeLimitError
 from press.guards import role_guard
@@ -282,6 +283,10 @@ class BaseServer(Document, TagHelpers):
 
 		if not isinstance(server, str):
 			server = server.name
+
+		storage_price = frappe.db.get_value("Server Storage Plan", {"enabled": 1}, "price_usd") or 0
+		if is_limits_exceeded(storage_price * increment):
+			frappe.throw("Cannot increase storage as spending limit has been exceeded.")
 
 		storage_parameters.update({"database_server" if server[0] == "m" else "server": server})
 
@@ -1460,6 +1465,9 @@ class BaseServer(Document, TagHelpers):
 				"Cannot change plan: please add a card or prepaid credits to your billing account on Frappe Cloud."
 			)
 
+		if is_limits_exceeded(new_plan.price_usd):
+			frappe.throw("You cannot change plan as total subscribed plans exceeds your spending limit.")
+
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 		instance_id = frappe.db.get_value("Virtual Machine", self.virtual_machine, "instance_id")
 		if not cluster.check_machine_availability(new_plan.instance_type, instance_id):
@@ -2199,8 +2207,9 @@ class BaseServer(Document, TagHelpers):
 				if not mount:
 					mount = find(
 						self.mounts,
-						lambda x: x.name
-						== row.get("item", {}).get("item", {}).get("original_item", {}).get("name"),
+						lambda x: (
+							x.name == row.get("item", {}).get("item", {}).get("original_item", {}).get("name")
+						),
 					)
 				if not mount:
 					continue

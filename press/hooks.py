@@ -427,6 +427,7 @@ fixtures = [
 	"Press Webhook Event",
 	"Site Plan",
 	"Server Plan",
+	"Team Tier",
 ]
 # Testing
 # -------
