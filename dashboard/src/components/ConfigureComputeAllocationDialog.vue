@@ -1,51 +1,52 @@
 <script setup lang="ts">
-import { getCachedDocumentResource, Switch } from 'frappe-ui';
-import { computed, getCurrentInstance, ref, watch } from 'vue';
+import { getCachedDocumentResource, Switch } from 'frappe-ui'
+import { computed, getCurrentInstance, ref, watch } from 'vue'
 
-const { appContext } = getCurrentInstance()!;
-const $toast = appContext.config.globalProperties.$toast;
-const props = defineProps<{ site: string }>();
-const site = getCachedDocumentResource('Site', props.site);
+const { appContext } = getCurrentInstance()!
+const $toast = appContext.config.globalProperties.$toast
+const props = defineProps<{ site: string }>()
+const site = getCachedDocumentResource('Site', props.site)
 
-const open = ref(true);
-const switchValue = ref(false);
+const open = ref(true)
+const switchValue = ref(false)
 
 const isHighPerformanceEnabled = computed(() => {
-	const sitePlanName = site.doc.current_plan.name?.toLowerCase();
-	return !sitePlanName?.includes('low');
-});
+	const sitePlanName = site.doc.current_plan.name?.toLowerCase()
+	return !sitePlanName?.includes('low')
+})
 
 watch(
 	isHighPerformanceEnabled,
 	(val) => {
-		switchValue.value = val;
+		switchValue.value = val
 	},
 	{ immediate: true },
-);
+)
 
-const LOW_PERFORMANCE_PLAN_PREFIX = 'Unlimited - Low';
-const HIGH_PERFORMANCE_PLAN_PREFIX = 'Unlimited';
+const LOW_PERFORMANCE_PLAN_PREFIX = 'Unlimited - Low'
+const HIGH_PERFORMANCE_PLAN_PREFIX = 'Unlimited'
 
 const nextSitePlanName = computed(() => {
 	if (isHighPerformanceEnabled.value) {
 		return site.doc.current_plan.name?.replace(
 			HIGH_PERFORMANCE_PLAN_PREFIX,
 			LOW_PERFORMANCE_PLAN_PREFIX,
-		);
+		)
 	} else {
 		return site.doc.current_plan.name?.replace(
 			LOW_PERFORMANCE_PLAN_PREFIX,
 			HIGH_PERFORMANCE_PLAN_PREFIX,
-		);
+		)
 	}
-});
+})
 
-function onClickSave() {
-	$toast.promise(site.setPlan.submit({ plan: nextSitePlanName }), {
+async function onClickSave() {
+	const promise = site.setPlan.submit({ plan: nextSitePlanName.value })
+	$toast.promise(promise, {
 		loading: 'Reconfiguring bench workers...',
 		success: 'Performance has been reconfigured',
 		error: 'Failed to configure performance',
-	});
+	})
 }
 </script>
 

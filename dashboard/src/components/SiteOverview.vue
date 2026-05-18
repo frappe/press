@@ -14,8 +14,7 @@
 			class="col-span-1 lg:col-span-2"
 			type="error"
 			:title="`Site creation failed. You can restore the site from a backup (from another site) or drop this site to create a new one. The site will be automatically dropped after ${$site?.doc?.creation_failure_retention_days} days if not restored.`"
-		>
-		</AlertBanner>
+		> </AlertBanner>
 
 		<AlertBanner
 			v-if="$site?.doc?.status === 'Suspended' && $site?.doc?.suspension_reason"
@@ -53,8 +52,7 @@
 			title="Site monitoring is disabled, which means we won’t be able to notify you of any downtime. Please re-enable monitoring at your earliest convenience."
 			:id="$site.name"
 			type="warning"
-		>
-		</AlertBanner>
+		> </AlertBanner>
 		<DismissableBanner
 			v-else-if="$site.doc.eol_versions.includes($site.doc.version)"
 			class="col-span-1 lg:col-span-2"
@@ -108,53 +106,51 @@
 				<div class="border-b border-r p-5 lg:border-b-0">
 					<div class="flex h-full items-center justify-between">
 						<div>
-              <div class="text-base text-ink-gray-7">Current Plan</div>
+							<div class="text-base text-ink-gray-7">Current Plan</div>
 
-              <div class="mt-2 flex justify-between">
-                <div>
-                  <div class="leading-4">
-                    <span class="flex items-center text-base text-ink-gray-9">
-                      <template v-if="$site.doc.is_dedicated_server">
-                        Dedicated Server Site
-                      </template>
+							<div class="mt-2 flex justify-between">
+								<div>
+									<div class="leading-4">
+										<span class="flex items-center text-base text-ink-gray-9">
+											<template v-if="$site.doc.is_dedicated_server">
+												Dedicated Server Site
+											</template>
 
-                      <template v-else-if="$site.doc.trial_end_date">
-                        {{ trialDays($site.doc.trial_end_date) }}
-                      </template>
+											<template v-else-if="$site.doc.trial_end_date">
+												{{ trialDays($site.doc.trial_end_date) }}
+											</template>
 
-                      <template v-else-if="currentPlan">
-                        {{ $format.planTitle(currentPlan) }}
+											<template v-else-if="currentPlan">
+												{{ $format.planTitle(currentPlan) }}
 
-                        <span v-if="currentPlan.price_inr && $isMobile">
-                          /mo
-                        </span>
+												<span v-if="currentPlan.price_inr && $isMobile">
+													/mo
+												</span>
 
-                        <span v-if="currentPlan.price_inr && !$isMobile">
-                          /month
-                        </span>
-                      </template>
+												<span v-if="currentPlan.price_inr && !$isMobile">
+													/month
+												</span>
+											</template>
 
-                      <template v-else>
-                        No plan set
-                      </template>
+											<template v-else> No plan set </template>
 
-                      <div
-                        class="ml-2 text-sm leading-3 text-ink-gray-6"
-                        v-if="
-                          currentPlan &&
-                          currentPlan.support_included &&
-                          !currentPlan.is_trial_plan
-                        "
-                      >
-                        <Tooltip text="Product support included">
-                          <lucide-badge-check class="h-4 w-4" />
-                        </Tooltip>
-                      </div>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+											<div
+												class="ml-2 text-sm leading-3 text-ink-gray-6"
+												v-if="
+											currentPlan &&
+											currentPlan.support_included &&
+											!currentPlan.is_trial_plan
+											"
+											>
+												<Tooltip text="Product support included">
+													<lucide-badge-check class="h-4 w-4" />
+												</Tooltip>
+											</div>
+										</span>
+									</div>
+								</div>
+							</div>
+						</div>
 						<template v-if="!$site.doc.is_dedicated_server">
 							<Button @click="showPlanChangeDialog">
 								{{ currentPlan?.is_trial_plan ? 'Upgrade' : 'Change' }}
@@ -231,11 +227,9 @@
 						<div>
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-ink-gray-6">
-									{{
-										currentUsageLoading
+									{{ currentUsageLoading
 											? '—'
-											: formatBytes(currentUsage.storage)
-									}}
+											: formatBytes(currentUsage.storage) }}
 									<template
 										v-if="currentPlan && !$site.doc.is_dedicated_server"
 									>
@@ -284,11 +278,9 @@
 						<div>
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-ink-gray-6">
-									{{
-										currentUsageLoading
+									{{ currentUsageLoading
 											? '—'
-											: formatBytes(currentUsage.database)
-									}}
+											: formatBytes(currentUsage.database) }}
 									<template
 										v-if="currentPlan && !$site.doc.is_dedicated_server"
 									>
@@ -319,9 +311,7 @@
 						<div v-if="d.prefix">
 							<component :is="d.prefix" />
 						</div>
-						<span>
-							{{ d.value }}
-						</span>
+						<span> {{ d.value }} </span>
 						<div v-if="d.suffix">
 							<component :is="d.suffix" />
 						</div>
@@ -365,17 +355,17 @@
 	</div>
 </template>
 <script>
-import { getCachedDocumentResource, Progress, Tooltip } from 'frappe-ui';
-import { h, defineAsyncComponent } from 'vue';
-import { toast } from 'vue-sonner';
-import InfoIcon from '~icons/lucide/info';
-import DismissableBanner from './DismissableBanner.vue';
-import { getToastErrorMessage } from '../utils/toast';
-import { renderDialog } from '../utils/components';
-import SiteDailyUsage from './SiteDailyUsage.vue';
-import AlertBanner from './AlertBanner.vue';
-import { trialDays } from '../utils/site';
-import CustomAlerts from './CustomAlerts.vue';
+import { getCachedDocumentResource, Progress, Tooltip } from 'frappe-ui'
+import { defineAsyncComponent, h } from 'vue'
+import { toast } from 'vue-sonner'
+import InfoIcon from '~icons/lucide/info'
+import { renderDialog } from '../utils/components'
+import { trialDays } from '../utils/site'
+import { getToastErrorMessage } from '../utils/toast'
+import AlertBanner from './AlertBanner.vue'
+import CustomAlerts from './CustomAlerts.vue'
+import DismissableBanner from './DismissableBanner.vue'
+import SiteDailyUsage from './SiteDailyUsage.vue'
 
 export default {
 	name: 'SiteOverview',
@@ -391,58 +381,58 @@ export default {
 		return {
 			isSetupWizardComplete: true,
 			refreshingDatabaseUsage: false,
-		};
+		}
 	},
 	mounted() {
 		if (this.$site?.doc?.status === 'Active') {
 			this.$site.isSetupWizardComplete.submit().then((res) => {
-				this.isSetupWizardComplete = res;
-			});
+				this.isSetupWizardComplete = res
+			})
 		}
 	},
 	methods: {
 		showPlanChangeDialog() {
 			let SitePlansDialog = defineAsyncComponent(
 				() => import('../components/ManageSitePlansDialog.vue'),
-			);
-			renderDialog(h(SitePlansDialog, { site: this.site }));
+			)
+			renderDialog(h(SitePlansDialog, { site: this.site }))
 		},
 		moveToPrivateBench() {
 			let SiteMigrationDialog = defineAsyncComponent(
 				() => import('./site/SiteMigration.vue'),
-			);
+			)
 			const defaultBenchName = this.$site?.doc?.group_title
 				? `${this.$site.doc.group_title} - Cloned`
-				: null;
+				: null
 			renderDialog(
 				h(SiteMigrationDialog, {
 					site: this.site,
 					defaultAction: 'Move Site To Different Server / Bench',
 					defaultNewBenchName: defaultBenchName,
 				}),
-			);
+			)
 		},
 		showEnableMonitoringDialog() {
 			let SiteEnableMonitoringDialog = defineAsyncComponent(
 				() => import('./site/SiteEnableMonitoringDialog.vue'),
-			);
-			renderDialog(h(SiteEnableMonitoringDialog, { site: this.site }));
+			)
+			renderDialog(h(SiteEnableMonitoringDialog, { site: this.site }))
 		},
 		formatBytes(v) {
-			return this.$format.bytes(v, 2, 2);
+			return this.$format.bytes(v, 2, 2)
 		},
 		loginAsAdmin() {
 			this.$site.loginAsAdmin
 				.submit({ reason: '' })
-				.then((url) => window.open(url, '_blank'));
+				.then((url) => window.open(url, '_blank'))
 		},
 		loginAsTeam() {
 			if (this.$site.doc?.additional_system_user_created) {
 				this.$site.loginAsTeam
 					.submit({ reason: '' })
-					.then((url) => window.open(url, '_blank'));
+					.then((url) => window.open(url, '_blank'))
 			} else {
-				this.loginAsAdmin();
+				this.loginAsAdmin()
 			}
 		},
 		removeTag(tag) {
@@ -455,18 +445,18 @@ export default {
 					success: `Tag ${tag.tag_name} removed`,
 					error: (e) => getToastErrorMessage(e),
 				},
-			);
+			)
 		},
 		showAddTagDialog() {
 			const TagsDialog = defineAsyncComponent(
 				() => import('../dialogs/TagsDialog.vue'),
-			);
-			renderDialog(h(TagsDialog, { doctype: 'Site', docname: this.site }));
+			)
+			renderDialog(h(TagsDialog, { doctype: 'Site', docname: this.site }))
 		},
 		trialDays,
 		refreshDatabaseUsage() {
-			this.refreshingDatabaseUsage = true;
-			this.$resources.refreshDatabaseUsage.submit();
+			this.refreshingDatabaseUsage = true
+			this.$resources.refreshDatabaseUsage.submit()
 		},
 	},
 	resources: {
@@ -478,10 +468,10 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'get_current_usage',
-					};
+					}
 				},
 				auto: true,
-			};
+			}
 		},
 		refreshDatabaseUsage() {
 			return {
@@ -491,27 +481,27 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'refresh_database_usage',
-					};
+					}
 				},
 				onSuccess: (e) => {
-					let isSynced = e?.message?.synced ?? true;
-					let refreshAfterSeconds = e?.message?.refresh_after_seconds ?? 0;
-					let refreshAfterMinutes = Math.ceil(refreshAfterSeconds / 60);
+					let isSynced = e?.message?.synced ?? true
+					let refreshAfterSeconds = e?.message?.refresh_after_seconds ?? 0
+					let refreshAfterMinutes = Math.ceil(refreshAfterSeconds / 60)
 					if (isSynced) {
-						this.refreshingDatabaseUsage = false;
+						this.refreshingDatabaseUsage = false
 						let message = refreshAfterSeconds
 							? `Database usage refreshed. You can refresh again after ${refreshAfterMinutes} minute(s).`
-							: 'Database usage refreshed.';
-						toast.success(message);
-						this.$resources.currentUsage.reload();
+							: 'Database usage refreshed.'
+						toast.success(message)
+						this.$resources.currentUsage.reload()
 					} else {
 						setTimeout(() => {
-							this.$resources.refreshDatabaseUsage.reload();
-						}, 3000);
+							this.$resources.refreshDatabaseUsage.reload()
+						}, 3000)
 					}
 				},
 				auto: false,
-			};
+			}
 		},
 	},
 	computed: {
@@ -562,12 +552,12 @@ export default {
 						() => h(InfoIcon, { class: 'h-4 w-4 text-ink-gray-5' }),
 					),
 				},
-			];
+			]
 		},
 		currentPlan() {
-			if (!this.$site?.doc?.current_plan || !this.$team?.doc) return null;
+			if (!this.$site?.doc?.current_plan || !this.$team?.doc) return null
 
-			const currency = this.$team.doc.currency;
+			const currency = this.$team.doc.currency
 			return {
 				price:
 					currency === 'INR'
@@ -579,7 +569,7 @@ export default {
 						: this.$site.doc.current_plan.price_per_day_usd,
 				currency: currency === 'INR' ? '₹' : '$',
 				...this.$site.doc.current_plan,
-			};
+			}
 		},
 		currentUsage() {
 			return (
@@ -588,14 +578,14 @@ export default {
 					storage: 0,
 					database: 0,
 				}
-			);
+			)
 		},
 		currentUsageLoading() {
-			return this.$resources?.currentUsage?.loading ?? true;
+			return this.$resources?.currentUsage?.loading ?? true
 		},
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 	},
-};
+}
 </script>

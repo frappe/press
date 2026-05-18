@@ -38,7 +38,7 @@ def get_server_site_warranty_quota(server: str | None = None, site: str | None =
 	if site:
 		server = frappe.get_value("Site", site, "server")
 
-	return frappe.get_value("Server", server, "site_warranty_quota")
+	return frappe.get_value("Server", server, "supported_site_quota")
 
 
 def get_available_warranty_quota_for_server(server: str | None) -> dict:

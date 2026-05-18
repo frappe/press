@@ -37,6 +37,7 @@ from press.press.doctype.site.site import (
 )
 from press.press.doctype.site.site_plan_utils import (
 	attach_warranty_info_to_dedicated_servers,
+	get_available_warranty_quota_for_server,
 	get_next_allowed_dedicated_product_warranty_change_date,
 	is_product_warranty_enabled_for_plan_,
 )
@@ -290,7 +291,11 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 	if not frappe.db.exists("Site Plan", new_plan):
 		frappe.throw(f"Plan {new_plan} does not exist", frappe.DoesNotExistError)  # nosemgrep
 
-	current_site_plan = frappe.get_value("Site", site, "plan")
+	is_current_plan_supported, is_current_dedicated_server_plan = frappe.db.get_value(
+		"Site Plan",
+		frappe.get_value("Site", site, "plan"),
+		["support_included", "dedicated_server_plan"],
+	)
 
 	new_site_plan = frappe.db.get_value(
 		"Site Plan",
@@ -304,20 +309,31 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 		as_dict=True,
 	)
 
+	is_system_user = frappe.session.data.user_type == "System User"
+
 	next_warranty_change = get_next_allowed_dedicated_product_warranty_change_date(site)
 
 	if (
 		not is_new
-		and not is_system_user()
-		and current_site_plan.get("dedicated_server_plan", False)
-		and (
-			is_product_warranty_enabled_for_plan_(current_site_plan)
-			!= is_product_warranty_enabled_for_plan_(new_plan)
-		)
+		and not is_system_user
+		and is_current_dedicated_server_plan
+		and (is_current_plan_supported != is_product_warranty_enabled_for_plan_(new_plan))
 		and get_datetime() < next_warranty_change
 	):
 		pretty_date = format_datetime(next_warranty_change, "MMM d, YYYY hh:mm a")
 		frappe.throw(f"Cannot change product warranty for this site before {pretty_date}")  # nosemgrep
+
+	if (
+		not is_new
+		and not is_system_user
+		and is_current_dedicated_server_plan
+		and (is_current_plan_supported != is_product_warranty_enabled_for_plan_(new_plan))
+	):
+		quota = get_available_warranty_quota_for_server(server)
+		if quota.get("available") <= 0:
+			frappe.throw(
+				"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
+			)
 
 	if new_site_plan.get("price_usd", 0) > 0:
 		return
