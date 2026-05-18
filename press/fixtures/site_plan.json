@@ -26248,14 +26248,14 @@
 		],
 		"cluster": null,
 		"cpu_time_per_day": 8000.0,
-		"custom_hide_from_pricing_page": 0,
+		"custom_hide_from_pricing_page": 1,
 		"database_access": 1,
 		"dedicated_server_plan": 1,
 		"disk": 0,
 		"docstatus": 0,
 		"doctype": "Site Plan",
 		"document_type": "Site",
-		"enabled": 0,
+		"enabled": 1,
 		"instance_type": null,
 		"interval": "Daily",
 		"is_frappe_plan": 0,
@@ -26264,7 +26264,7 @@
 		"max_database_usage": 512000,
 		"max_storage_usage": 512000,
 		"memory": 0,
-		"minimum_server_price_usd": 0.0,
+		"minimum_server_price_usd": 100.0,
 		"modified": "2026-04-10 15:35:06.769507",
 		"monitor_access": 1,
 		"name": "Unlimited - Low - Supported - Hetzner",
@@ -26276,7 +26276,7 @@
 		"private_bench_support": 0,
 		"private_benches": 1,
 		"release_groups": [],
-		"restrict_based_on_dedicated_server_plan": 0,
+		"restrict_based_on_dedicated_server_plan": 1,
 		"roles": [
 			{
 				"role": "System Manager"
@@ -27952,6 +27952,56 @@
 			}
 		],
 		"support_included": 0,
+		"vcpu": 0
+	},
+	{
+		"allow_downgrading_from_other_plan": 1,
+		"allowed_apps": [],
+		"cloud_providers": [
+			{
+				"cloud_provider": "Hetzner"
+			}
+		],
+		"cluster": null,
+		"cpu_time_per_day": 86000.0,
+		"custom_hide_from_pricing_page": 1,
+		"database_access": 1,
+		"dedicated_server_plan": 1,
+		"disk": 0,
+		"docstatus": 0,
+		"doctype": "Site Plan",
+		"document_type": "Site",
+		"enabled": 1,
+		"instance_type": null,
+		"interval": "Daily",
+		"is_frappe_plan": 0,
+		"is_trial_plan": 0,
+		"legacy_plan": 0,
+		"max_database_usage": 512000,
+		"max_storage_usage": 512000,
+		"memory": 0,
+		"minimum_server_price_usd": 100.0,
+		"modified": "2026-04-10 15:34:32.592326",
+		"monitor_access": 1,
+		"name": "Unlimited - Supported - Hetzner",
+		"offsite_backups": 1,
+		"plan_description": "",
+		"plan_title": "Large Supported",
+		"price_inr": 0.0,
+		"price_usd": 0.0,
+		"private_bench_support": 0,
+		"private_benches": 1,
+		"release_groups": [],
+		"restrict_based_on_dedicated_server_plan": 1,
+		"roles": [
+			{
+				"role": "System Manager"
+			},
+			{
+				"role": "Press User"
+			}
+		],
+		"support_included": 1,
 		"vcpu": 0
 	},
 	{
