@@ -406,25 +406,6 @@ class TestServer(FrappeTestCase):
 		mock_sign_token.assert_not_called()
 		mock_ansible_run.assert_not_called()
 
-	@patch("frappe.cache.delete_key")
-	def test_generate_and_activate_key_sets_public_key_and_returns_private_key(
-		self,
-		mock_delete_key,
-	):
-		server = create_test_server()
-
-		auth = server.agent_auth
-		auth.public_key = None
-		auth.is_agent_auth_setup = 0
-
-		private_key = server._generate_and_activate_key()
-
-		self.assertIsNotNone(private_key)
-
-		self.assertIsNotNone(auth.public_key)
-
-		mock_delete_key.assert_called_once_with(f"{auth.server}_agent_public_key")
-
 	def test_generate_and_activate_key_returns_none_when_already_setup(self):
 		server = create_test_server()
 

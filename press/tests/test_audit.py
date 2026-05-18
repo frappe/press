@@ -9,12 +9,14 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
+from press.press.doctype.server.server import BaseServer
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 
+@patch.object(BaseServer, "_setup_agent_auth", new=Mock())
 @patch.object(TelegramMessage, "enqueue", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestBackupRecordCheck(FrappeTestCase):
@@ -77,6 +79,7 @@ class TestBackupRecordCheck(FrappeTestCase):
 		self.assertEqual(audit_log.status, "Success")
 
 
+@patch.object(BaseServer, "_setup_agent_auth", new=Mock())
 @patch.object(TelegramMessage, "enqueue", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestOffsiteBackupCheck(FrappeTestCase):

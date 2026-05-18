@@ -197,7 +197,7 @@ def _new(site, server: str | None = None, ignore_plan_validation: bool = False):
 	plan = site["plan"]
 	app_plans = site.get("selected_app_plans")
 	if not ignore_plan_validation:
-		validate_plan(bench.server, plan, is_new=True)
+		validate_plan(bench.server, "", plan, is_new=True)
 
 	site = frappe.get_doc(
 		{
@@ -844,11 +844,11 @@ def _get_dedicated_server_info_for_release_group(release_group_name: str) -> dic
 
 	Returns dict with:
 	- case: str - one of:
-	        - "dedicated_only_single" - exactly one dedicated server
-	        - "dedicated_only_multiple" - multiple dedicated servers
-	        - "user_choice_single" - one dedicated server and other public server(s)
-	        "user_choice_multiple" - multiple dedicated servers and public server(s)
-	        - "no_dedicated_server"
+			- "dedicated_only_single" - exactly one dedicated server
+			- "dedicated_only_multiple" - multiple dedicated servers
+			- "user_choice_single" - one dedicated server and other public server(s)
+			"user_choice_multiple" - multiple dedicated servers and public server(s)
+			- "no_dedicated_server"
 	- dedicated_servers: list - Available dedicated servers for user selection
 	"""
 	current_team = get_current_team()
@@ -2681,9 +2681,9 @@ def check_existing_upgrade_bench(name, version):
 	which includes all the apps installed on the site.
 
 	Returns: {
-	        "exists": bool,
-	        "bench_name": str or None,
-	        "release_group": str or None,
+			"exists": bool,
+			"bench_name": str or None,
+			"release_group": str or None,
 	}
 	"""
 	site_server = frappe.db.get_value("Site", name, "server")
