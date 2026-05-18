@@ -4,6 +4,7 @@ import { ref } from 'vue'
 interface Props {
 	headerCss?: string
 <<<<<<< HEAD
+<<<<<<< HEAD
 	disabled?: boolean
 }
 
@@ -28,15 +29,27 @@ function toggle() {
 			@click.prevent="toggle"
 		>
 =======
+=======
+	disabled?: boolean
+>>>>>>> b3ef93793 (feat(Collapsible): add disabled prop)
 }
 
-defineProps<Props>()
+const props =defineProps<Props>()
 
 const opened = ref(false)
+
+function toggle() {
+	if (props.disabled) return
+	opened.value = !opened.value
+}
 </script>
 
 <template>
-	<details :open="opened" @click="opened = !opened" class='cursor-pointer'>
+	<details
+		:open="opened"
+		@click="toggle"
+		:class='disabled? "opacity-60 cursor-not-allowed":"cursor-pointer"'
+	>
 		<summary class="flex items-center gap-2" :class="headerCss">
 >>>>>>> 7fb5b9f2f (feat(component): Collapsible)
 			<slot name="header" />
