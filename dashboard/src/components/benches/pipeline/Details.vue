@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import {
-	createResource,
+	createListResource,
 	createDocumentResource,
-	getCachedDocumentResource,
 	Button,
 	Dropdown,
 	Badge,
-	Tabs,
 } from 'frappe-ui'
+
+import Tabs from '@/components/common/Tabs.vue'
 
 import Stages from './Stages.vue'
 import CopyBtn from '@/components/utils/CopyBtn.vue'
+import Collapsable from '@/components/common/Collapsable.vue'
+import StatusIcon from './StatusIcon.vue'
 
 import { ref, computed, provide, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
@@ -18,9 +20,9 @@ import { getTeam } from '@/data/team'
 
 import { secsToDuration, date } from '@/utils/format'
 
-const socket = window.$socket
-const route = useRoute()
 const team = getTeam()
+const route = useRoute()
+const socket = window.$socket
 const output = ref<String | null>(null)
 
 const setOutput = (str: String | null) => {
@@ -55,6 +57,7 @@ const dropdownOptions = computed(() => {
 	return list.filter((option) => option.condition?.() ?? true)
 })
 
+const fakeids = ['2n0qbb8crp', '6lhv9d3k0j']
 const buildIds = computed(() => {
 	const ids = pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => x.name)
 	return ids || []
@@ -66,23 +69,46 @@ const pipeline = createDocumentResource({
 	auto: true,
 })
 
+const notifApiFields = {
+	doctype: 'Press Notification',
+	fields: ['name', 'title', 'message', 'document_name', 'class'],
+	filters: { document_type: 'Deploy Candidate Build', is_actionable: true },
+}
+
+const errors = createListResource({
+	...notifApiFields,
+	...{
+		filters: { class: 'Error' },
+		onSuccess: (data) => {
+			console.log(data)
+		},
+	},
+})
+
+const warnings = createListResource({
+	...notifApiFields,
+	...{ filters: { class: 'Warning' } },
+})
+
 watch(
-	() => pipeline.doc,
-	(newVal, oldVal) => {
-		console.log('pipeline updated', newVal)
+	() => buildIds.value,
+	(x) => {
+		if (!x) return
+
+		const params = {
+			cache: ['Press Notification', 'Error', 'Deploy Candidate Build', fakeids],
+			filters: { document_name: ['in', fakeids] },
+		}
+		errors.update(params)
+		warnings.update(params)
+		errors.fetch()
+		warnings.fetch()
 	},
 )
 
-const cardLabels = computed(() => {
-	return {
-		'Created by': 'sidhanth@frappe.io',
-		Start: date(pipeline?.doc?.steps?.start, 'lll'),
-		End: date(pipeline?.doc?.steps?.end, 'lll'),
-		Duration: secsToDuration(pipeline?.doc?.steps?.duration),
-	}
-})
+const tabState = ref('Issues')
+const tabBuildId = ref(fakeids[0])
 
-const tabState = ref(0)
 const sidebarTabs = ref([
 	{
 		label: 'Tasks',
@@ -136,15 +162,9 @@ onBeforeUnmount(() => {
 				:theme="badgeThemes[pipeline?.doc?.status] || 'gray'"
 			/>
 
-			<Button theme="red" class="ml-auto"> Stop Deploy </Button>
-
-			<Button>
-				<lucide-refresh-ccw class="h-4 w-4" />
-			</Button>
-
 			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
 				<template v-slot="{ open }">
-					<Button>
+					<Button class="ml-auto">
 						<template #icon>
 							<lucide-more-horizontal class="h-4 w-4" />
 						</template>
@@ -154,14 +174,27 @@ onBeforeUnmount(() => {
 		</div>
 
 		<!-- status cards -->
-		<section class="grid grid-cols-4 gap-5">
-			<div
-				v-for="(label, key) in cardLabels"
-				:key="key"
-				class="flex flex-col gap-2 border p-4 rounded"
-			>
-				<span class="text-sm font-medium text-ink-gray-4"> {{ key }} </span>
-				<span class="text-sm text-ink-gray-9"> {{ label || '-' }} </span>
+		<section
+			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-medium"
+		>
+			<div class="flex flex-col gap-2 border p-4 rounded ">
+				<b> Created by </b>
+				<span class="text-ink-gray-9">{{ pipeline?.doc?.owner }} </span>
+			</div>
+
+			<div class="flex flex-col gap-2 border p-4 rounded">
+				<b> Start </b>
+				<span> {{ date(pipeline?.doc?.steps?.start) }} </span>
+			</div>
+
+			<div class="flex flex-col gap-2 border p-4 rounded">
+				<b> End </b>
+				<span> {{ date(pipeline?.doc?.steps?.end) }} </span>
+			</div>
+
+			<div class="flex flex-col gap-2 border p-4 rounded">
+				<b> Duration </b>
+				<span> {{ secsToDuration(pipeline?.doc?.steps?.duration) }} </span>
 			</div>
 		</section>
 
@@ -182,17 +215,50 @@ onBeforeUnmount(() => {
 						<button class="flex items-center gap-2 pb-3">
 							<component :is="tab.icon" class="size-4 text-ink-gray-6" />
 							{{ tab.label }}
-
-							<Badge v-if='tab.label == "Issues"' :label="0" />
+							<Badge
+								v-if='tab.label == "Issues"'
+								:label="(errors?.data?.length || 0 ) + (warnings?.data?.length || 0)"
+							/>
 						</button>
 					</template>
 				</Tabs>
 
 				<Stages
-					v-if="tabState == 0 "
+					v-if="tabState == 'Tasks'"
 					:stages="pipeline?.doc?.steps?.stages"
 					:buildIds
 				/>
+
+				<!-- list of errors -->
+				<section v-else>
+					<Tabs
+						v-if="fakeids.length > 1"
+						:tabs="fakeids.map((x) => ({ label: x }))"
+						v-model="tabBuildId"
+						class="w-fit mb-3 *:px-2"
+					/>
+
+					<div
+						v-for='x in [...(errors?.data || []), ...(warnings?.data || []) ]?.filter(x => x.document_name == tabBuildId)'
+						class="flex flex-col gap-1"
+					>
+						<Collapsable headerCss="py-2" class="mb-3">
+							<template #header>
+								<StatusIcon :status=" x.class=='Error'? 'Failed': 'Warning'" />
+
+								{{ x.title }}
+								{{ x.class }}
+								{{ x.document_name }}
+							</template>
+
+							<div
+								v-html="x.message"
+								class="leading-relaxed rounded p-3 ml-3 mb-3 text-sm"
+								:class='x.class=="Error"? " bg-surface-red-1 text-ink-red-3" :  "bg-surface-amber-1 text-ink-amber-3"'
+							/>
+						</Collapsable>
+					</div>
+				</section>
 			</aside>
 
 			<!-- output -->
