@@ -147,7 +147,7 @@ def update_job(job, server):
 			"callback_failure_count",
 			"job_type",
 		],
-		filters={"job_id": job["id"]},
+		filters={"job_id": job["id"], "server": server},
 		as_dict=True,
 	)
 	if not job_doc:
