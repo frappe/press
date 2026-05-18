@@ -102,7 +102,7 @@ function onClickSave() {
 						v-model="switchValue"
 						size="md"
 						class="px-4"
-						:disabled="disablePrimaryAction"
+						:disabled="nextChangeAvailableOn !== 'Available Now'"
 					/>
 				</div>
 
