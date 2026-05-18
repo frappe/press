@@ -9,9 +9,10 @@ import {
   Tooltip,
 } from "frappe-ui";
 
-import { h, nextTick, ref, watch } from "vue";
+import { h, nextTick, ref, watch, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
+
 import Scrollbar from "@/components/common/Scrollbar.vue";
 import SupportAccessDialog from "@/components/SupportAccessDialog.vue";
 
@@ -20,10 +21,13 @@ import {
   unreadSupportNotificationsCount,
 } from "@/data/notifications";
 
+import { useRealtimeNotifs } from './useRealtimeNotifs'
+
 import { dayjsLocal } from "@/utils/dayjs";
 import { getDocResource } from "@/utils/resource";
 import { renderDialog } from "@/utils/components";
 import { isMobile } from "@/utils/device";
+import { getTeam } from "@/data/team";
 
 import Item from "./Item.vue";
 
@@ -33,6 +37,7 @@ const formatHtml = (str: string) => {
 
 const scrollRef = ref(null);
 const router = useRouter();
+const team = getTeam();
 
 const loadMore = async () => {
   await resource.next();
@@ -192,6 +197,10 @@ const tabs = [
   { label: "Requests", icon: LucideKeySquare },
   { label: "Unread", icon: LucideMessageSquareDot },
 ];
+
+useRealtimeNotifs((data) => {
+	if (data.team === team.doc.name) resource.reload()
+})
 </script>
 
 <template>
