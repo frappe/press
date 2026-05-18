@@ -20,14 +20,17 @@ class StaticIPLog(Document):
 		status: DF.Literal["Attached", "Detached"]
 	# end: auto-generated types
 
+	@property
+	def provider(self):
+		return frappe.db.get_value(self.server_type, self.server, "provider", cache=True)
+
 	def validate(self):
 		if self.server_type not in ("Server", "Database Server"):
 			frappe.throw("Server Type must be either 'Server' or 'Database Server'")
 
 	def after_insert(self):
 		if self.status == "Attached":
-			# create subscription
-			# also check if any other server has the same static IP and if so, end subscription for that server and create new one for this server
+			# TODO: check if any other server has the same static IP and if so, end subscription for that server and create new one for this server
 			self._create_subscription()
 
 		elif self.status == "Detached":
@@ -39,7 +42,8 @@ class StaticIPLog(Document):
 	def _create_subscription(self):
 		plan = frappe.get_value("Static IP Plan", {"provider": self.provider, "enabled": 1}, "name")
 		if not plan:
-			frappe.throw(f"No active Static IP Plan found for provider {self.provider}")
+			frappe.msgprint(f"No active Static IP Plan found for provider {self.provider}")
+			return
 
 		if frappe.db.exists(
 			"Subscription",
@@ -48,7 +52,7 @@ class StaticIPLog(Document):
 				"document_type": self.server_type,
 				"document_name": self.server,
 				"plan_type": "Static IP Plan",
-				"plan": plan
+				"plan": plan,
 			},
 		):
 			return
@@ -62,7 +66,7 @@ class StaticIPLog(Document):
 				"document_name": self.server,
 				"plan_type": "Static IP Plan",
 				"plan": plan,
-				"interval": "Hourly",
+				"interval": "Daily",
 			}
 		).insert(ignore_permissions=True)
 
@@ -73,7 +77,7 @@ class StaticIPLog(Document):
 				"enabled": 1,
 				"document_type": self.server_type,
 				"document_name": self.server,
-				"plan": "Static IP Plan",
+				"plan_type": "Static IP Plan",
 			},
 			"enabled",
 			0,

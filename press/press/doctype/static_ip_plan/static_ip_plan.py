@@ -22,13 +22,12 @@ class StaticIPPlan(Document):
 	# end: auto-generated types
 
 	def get_price_for_interval(self, interval, currency):
-		if interval != "Hourly":
-			frappe.throw("Only hourly interval is supported for Static IP Plan")
+		price = self.price_inr if currency == "INR" else self.price_usd
 
-		if currency == "INR":
-			return frappe.utils.flt(self.price_inr, 2)
-		if currency == "USD":
-			return frappe.utils.flt(self.price_usd, 2)
+		if interval == "Hourly":
+			return frappe.utils.flt(price, 2)
+		if interval == "Daily":
+			return frappe.utils.flt(price * 24, 2)
 
-		frappe.throw(f"Currency {currency} is not supported for Static IP Plan")
+		frappe.throw("Invalid interval. Interval must be either 'Hourly' or 'Daily'.")
 		return 0.0
