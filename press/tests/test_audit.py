@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
@@ -24,19 +24,15 @@ class TestBackupRecordCheck(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 
-		# Anchoring to exactly 'now' prevents the backup age from shifting
-		# depending on what hour of the day the CI pipeline is executed.
-		now = frappe.utils.now_datetime()
-		self._2_hrs_before_yesterday = now - timedelta(hours=26)
-		self.yesterday = now - timedelta(days=1)
+		self.yesterday = frappe.utils.now_datetime().date() - timedelta(days=1)
+		self._2_hrs_before_yesterday = datetime.combine(self.yesterday, datetime.min.time()) - timedelta(
+			hours=2
+		)
 
 	def test_audit_will_fail_if_backup_older_than_interval(self):
 		create_test_press_settings()
 		site = create_test_site(creation=self._2_hrs_before_yesterday)
-
-		# Backup created 25 hours ago (outside 24-hour interval)
 		create_test_site_backup(site.name, creation=self._2_hrs_before_yesterday + timedelta(hours=1))
-
 		BackupRecordCheck()
 		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertEqual(audit_log.status, "Failure")
@@ -45,7 +41,6 @@ class TestBackupRecordCheck(FrappeTestCase):
 		create_test_press_settings()
 		site = create_test_site(creation=self._2_hrs_before_yesterday)
 
-		# Backup created 23 hours ago (inside 24-hour interval)
 		create_test_site_backup(
 			site.name,
 			creation=self._2_hrs_before_yesterday + timedelta(hours=3),
