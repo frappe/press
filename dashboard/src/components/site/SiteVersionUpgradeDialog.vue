@@ -274,7 +274,7 @@
 					hasExistingBenchOptions
 				"
 				class="w-full"
-				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
+				:class="skipBackups ? 'text-white bg-red-700' : ''"
 				variant="solid"
 				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
 				:disabled="!selectedReleaseGroup"
@@ -291,7 +291,7 @@
 					!appCompatibility.can_upgrade
 				"
 				class="w-full"
-				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
+				:class="skipBackups ? 'text-white bg-red-700' : ''"
 				variant="subtle"
 				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
 				@click="show = false"
@@ -306,7 +306,7 @@
 					appCompatibility.can_upgrade
 				"
 				class="w-full"
-				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
+				:class="skipBackups ? 'text-white bg-red-700' : ''"
 				variant="solid"
 				:label="
 					targetDateTime
