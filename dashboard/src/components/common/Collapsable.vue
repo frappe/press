@@ -9,6 +9,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+<<<<<<< HEAD
 
 const opened = ref(false)
 
@@ -35,6 +36,8 @@ function toggle() {
 }
 
 const props =defineProps<Props>()
+=======
+>>>>>>> b5f34e325 (fix(collapsable): add @click.prevent)
 
 const opened = ref(false)
 
@@ -47,11 +50,18 @@ function toggle() {
 <template>
 	<details
 		:open="opened"
-		@click="toggle"
 		:class='disabled? "opacity-60 cursor-not-allowed":"cursor-pointer"'
 	>
+<<<<<<< HEAD
 		<summary class="flex items-center gap-2" :class="headerCss">
 >>>>>>> 7fb5b9f2f (feat(component): Collapsible)
+=======
+		<summary
+			class="flex items-center gap-2"
+			:class="headerCss"
+			@click.prevent="toggle"
+		>
+>>>>>>> b5f34e325 (fix(collapsable): add @click.prevent)
 			<slot name="header" />
 			<LucideChevronRight
 				class="shrink-0 size-4 ml-auto transition-transform duration-300"
