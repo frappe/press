@@ -183,6 +183,9 @@ const formatCmd = (cmd: string) => {
 		</template>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e6ff3635e (fix(new-deploy-ui): show multiple build architechture in tab ui)
 		<div class="ml-6 my-1" v-if='x.label == "Building"'>
 			<button
 				v-for="build_step in buildResources[activeBuildId]?.doc?.build_steps"

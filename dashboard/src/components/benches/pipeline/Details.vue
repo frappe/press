@@ -240,6 +240,7 @@ watch(
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 const tabState = ref('Tasks')
 =======
 const tabState = ref('Issues')
@@ -248,6 +249,9 @@ const tabBuildId = ref(fakeids[0])
 >>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
 =======
 >>>>>>> b75bf0a79 (feat(new-deploy-flow): support multiple builds)
+=======
+const tabState = ref('Tasks')
+>>>>>>> e6ff3635e (fix(new-deploy-ui): show multiple build architechture in tab ui)
 
 const sidebarTabs = ref([
 	{ label: 'Tasks', icon: LucideWorkflow },
@@ -353,6 +357,7 @@ onBeforeUnmount(() => {
 
 			<h2 class="text-ink-gray-9">Pipeline {{ pipeline?.doc?.name }}</h2>
 
+<<<<<<< HEAD
 			<Badge
 				:label="pipeline?.doc?.status"
 				:theme="badgeThemes[pipeline?.doc?.status] || 'gray'"
@@ -380,12 +385,24 @@ onBeforeUnmount(() => {
 			</router-link>
 
 			<h2 class="text-ink-gray-9">pipeline {{ pipeline?.doc?.name }}</h2>
+=======
+>>>>>>> e6ff3635e (fix(new-deploy-ui): show multiple build architechture in tab ui)
 			<Badge
 				:label="pipeline?.doc?.status"
 				:theme="badgeThemes[pipeline?.doc?.status] || 'gray'"
+				class="mr-auto"
+			/>
+
+			<Tabs
+				variant="solid"
+				v-if="buildIds.length > 1"
+				:tabs="pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => ({ label: x.architecture,  value: x.name }))"
+				v-model="activeBuildId"
+				class=" [&_[role=tablist]]:w-fit"
 			/>
 
 			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
+<<<<<<< HEAD
 				<template v-slot="{ open }">
 					<Button class="ml-auto">
 						<template #icon>
@@ -394,6 +411,11 @@ onBeforeUnmount(() => {
 					</Button>
 				</template>
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+				<Button>
+					<lucide-more-horizontal class="size-4" />
+				</Button>
+>>>>>>> e6ff3635e (fix(new-deploy-ui): show multiple build architechture in tab ui)
 			</Dropdown>
 		</div>
 
@@ -404,8 +426,12 @@ onBeforeUnmount(() => {
 			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm"
 =======
 		<section
+<<<<<<< HEAD
 			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-medium"
 >>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
+=======
+			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-normal"
+>>>>>>> e6ff3635e (fix(new-deploy-ui): show multiple build architechture in tab ui)
 		>
 			<div class="flex flex-col gap-2 border p-4 rounded ">
 				<b> Created by </b>
@@ -415,23 +441,32 @@ onBeforeUnmount(() => {
 			<div class="flex flex-col gap-2 border p-4 rounded">
 				<b> Start </b>
 <<<<<<< HEAD
+<<<<<<< HEAD
 				<span> {{ date(pipeline?.doc?.steps?.start) || '-' }} </span>
 =======
 				<span> {{ date(pipeline?.doc?.steps?.start) }} </span>
 >>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
+=======
+				<span> {{ date(pipeline?.doc?.steps?.start) || '-' }} </span>
+>>>>>>> e6ff3635e (fix(new-deploy-ui): show multiple build architechture in tab ui)
 			</div>
 
 			<div class="flex flex-col gap-2 border p-4 rounded">
 				<b> End </b>
 <<<<<<< HEAD
+<<<<<<< HEAD
 				<span> {{ date(pipeline?.doc?.steps?.end)  || '-' }} </span>
 =======
 				<span> {{ date(pipeline?.doc?.steps?.end) }} </span>
 >>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
+=======
+				<span> {{ date(pipeline?.doc?.steps?.end)  || '-' }} </span>
+>>>>>>> e6ff3635e (fix(new-deploy-ui): show multiple build architechture in tab ui)
 			</div>
 
 			<div class="flex flex-col gap-2 border p-4 rounded">
 				<b> Duration </b>
+<<<<<<< HEAD
 <<<<<<< HEAD
 				<span>
 					{{ secsToDuration(pipeline?.doc?.steps?.duration)  || '-' }}
@@ -449,6 +484,9 @@ onBeforeUnmount(() => {
 =======
 				<span> {{ secsToDuration(pipeline?.doc?.steps?.duration) }} </span>
 >>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
+=======
+				<span> {{ secsToDuration(pipeline?.doc?.steps?.duration)  || '-' }} </span>
+>>>>>>> e6ff3635e (fix(new-deploy-ui): show multiple build architechture in tab ui)
 			</div>
 		</section>
 
@@ -527,12 +565,15 @@ onBeforeUnmount(() => {
 			:class="[output ? 'grid-cols-[auto_1fr]' : 'grid-cols-[1fr_0fr] pr-0']"
 		>
 			<aside
-				class="w-full !min-w-[10rem] pr-3 overflow-y-auto overflow-x-hidden px-1"
+				class="w-full !min-w-[30rem] pr-3 overflow-y-auto overflow-x-hidden px-0.5"
 			>
-				<div
-					class="flex items-center gap-3  [&_[role=tablist]]:px-0 mb-2 -mt-2"
-				>
-					<Tabs :tabs="sidebarTabs" v-model="tabState">
+				<div class="flex items-center gap-3  [&_[rol=tablist]]:px-0 mb-2 t-2">
+					<Tabs
+						class="w-full"
+						tablistClass="!px-0"
+						:tabs="sidebarTabs"
+						v-model="tabState"
+					>
 						<template #suffix="{ tab }">
 							<span
 								v-if='tab.label == "Issues"'
@@ -542,12 +583,6 @@ onBeforeUnmount(() => {
 							>
 						</template>
 					</Tabs>
-
-					<Tabs
-						v-if="buildIds.length > 0"
-						:tabs="buildIds.map((x) => ({ label: x }))"
-						v-model="activeBuildId"
-					/>
 				</div>
 
 				<Stages
@@ -580,8 +615,8 @@ onBeforeUnmount(() => {
 
 							<div class="w-full flex justify-end">
 								<a
-                  :href="x.assistance_url"
-                  target="_blank"
+									:href="x.assistance_url"
+									target="_blank"
 									class="bg-surface-gray-1 p-1.5 px-2.5 rounded hover:opacity-70"
 								>
 									Fix
