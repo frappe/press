@@ -101,7 +101,7 @@ const formatCmd = (cmd: string) => {
 			<span class="whitespace-nowrap"> {{ x.label }}</span>
 		</template>
 
-		<div class="ml-6 my-3" v-if='x.label == "Building"'>
+		<div class="ml-6 my-1" v-if='x.label == "Building"'>
 			<button
 				v-for="build_step in buildResources[activeBuildId]?.doc?.build_steps"
 				class="py-2 flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed"
