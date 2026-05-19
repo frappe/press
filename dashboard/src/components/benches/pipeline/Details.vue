@@ -174,7 +174,7 @@ onBeforeUnmount(() => {
 
 		<!-- status cards -->
 		<section
-			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-normal"
+			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm"
 		>
 			<div class="flex flex-col gap-2 border p-4 rounded ">
 				<b> Created by </b>
