@@ -13,7 +13,6 @@ from botocore.exceptions import ClientError
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.query_builder import Case
-from frappe.query_builder.terms import ValueWrapper
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
@@ -21,7 +20,6 @@ from frappe.utils.typing_validations import validate_argument_types
 from frappe.utils.user import is_system_user
 
 from press.access.support_access import has_support_access
-from press.guards import role_guard
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app.app import get_app_from_policies
 from press.press.doctype.marketplace_app.marketplace_app import (
@@ -2497,46 +2495,6 @@ def validate_group_for_upgrade(name, group_name):
 	if server not in [server.server for server in rg.servers]:
 		return False
 	return True
-
-
-@frappe.whitelist()
-@protected("Site")
-def get_private_groups_for_upgrade(name, version, release_groups=None):
-	team = get_current_team()
-	version_number = frappe.db.get_value("Frappe Version", version, "number")
-	next_version = frappe.db.get_value(
-		"Frappe Version",
-		{
-			"number": version_number + 1,
-			"status": ("in", ("Stable", "End of Life")),
-			"public": True,
-		},
-		"name",
-	)
-
-	ReleaseGroup = frappe.qb.DocType("Release Group")
-	ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
-
-	query = (
-		frappe.qb.from_(ReleaseGroup)
-		.select(ReleaseGroup.name, ReleaseGroup.title)
-		.join(ReleaseGroupServer)
-		.on(ReleaseGroupServer.parent == ReleaseGroup.name)
-		.where(ReleaseGroup.enabled == 1)
-		.where(ReleaseGroup.team == team)
-		.where(ReleaseGroup.public == 0)
-		.where(ReleaseGroup.version == next_version)
-		.distinct()
-	)
-
-	if role_guard.is_restricted():
-		release_groups = role_guard.permitted_documents("Release Group")
-		if not release_groups:
-			query = query.where(ValueWrapper(1) == 0)  # Hack!
-		else:
-			query = query.where(ReleaseGroup.name.isin(release_groups))
-
-	return query.run(as_dict=True)
 
 
 @frappe.whitelist()
