@@ -424,6 +424,7 @@ onBeforeUnmount(() => {
 <<<<<<< HEAD
 		<section
 			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm"
+<<<<<<< HEAD
 =======
 		<section
 <<<<<<< HEAD
@@ -432,6 +433,8 @@ onBeforeUnmount(() => {
 =======
 			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-normal"
 >>>>>>> e6ff3635e (fix(new-deploy-ui): show multiple build architechture in tab ui)
+=======
+>>>>>>> b30fa5c57 (fix(deploy-ui): use smaller font for summary cards)
 		>
 			<div class="flex flex-col gap-2 border p-4 rounded ">
 				<b> Created by </b>
