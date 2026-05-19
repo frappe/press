@@ -12,6 +12,7 @@ const output = inject('output')
 interface Props {
 	stages: any
 	buildIds: String[]
+	activeBuildId: String
 }
 
 const props = defineProps<Props>()
@@ -102,7 +103,7 @@ const formatCmd = (cmd: string) => {
 
 		<div class="ml-6 my-3" v-if='x.label == "Building"'>
 			<button
-				v-for="build_step in buildResources[props.buildIds?.[0]]?.doc?.build_steps"
+				v-for="build_step in buildResources[activeBuildId]?.doc?.build_steps"
 				class="py-2 flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed"
 				@click="setOutput(build_step.output || formatCmd(build_step.command) || 'No Output') "
 				:disabled="build_step.status =='Pending'"

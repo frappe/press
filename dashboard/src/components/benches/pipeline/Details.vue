@@ -40,16 +40,9 @@ const dropdownOptions = computed(() => {
 			condition: () => team?.doc?.is_desk_user,
 			onClick: () => {
 				window.open(
-					`${window.location.protocol}//${window.location.host}/app/deploy-candidate-build/${this.id}`,
+					`${window.location.protocol}//${window.location.host}/app/release-pipeline/${route.params.id}`,
 					'_blank',
 				)
-			},
-		},
-		{
-			label: 'View App Versions',
-			icon: 'package',
-			onClick: () => {
-				// this.appVersions();
 			},
 		},
 	]
@@ -57,9 +50,10 @@ const dropdownOptions = computed(() => {
 	return list.filter((option) => option.condition?.() ?? true)
 })
 
-const fakeids = ['2n0qbb8crp', '6lhv9d3k0j']
+const activeBuildId = ref()
 const buildIds = computed(() => {
 	const ids = pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => x.name)
+	if (!activeBuildId.value && ids) activeBuildId.value = ids[0]
 	return ids || []
 })
 
@@ -71,53 +65,52 @@ const pipeline = createDocumentResource({
 
 const notifApiFields = {
 	doctype: 'Press Notification',
-	fields: ['name', 'title', 'message', 'document_name', 'class'],
+	fields: [
+		'name',
+		'title',
+		'message',
+		'document_name',
+		'class',
+		'assistance_url',
+	],
 	filters: { document_type: 'Deploy Candidate Build', is_actionable: true },
 }
 
-const errors = createListResource({
-	...notifApiFields,
-	...{
-		filters: { class: 'Error' },
-		onSuccess: (data) => {
-			console.log(data)
-		},
-	},
-})
-
-const warnings = createListResource({
-	...notifApiFields,
-	...{ filters: { class: 'Warning' } },
-})
+const errors = createListResource(notifApiFields)
+const warnings = createListResource(notifApiFields)
 
 watch(
 	() => buildIds.value,
 	(x) => {
 		if (!x) return
 
-		const params = {
-			cache: ['Press Notification', 'Error', 'Deploy Candidate Build', fakeids],
-			filters: { document_name: ['in', fakeids] },
-		}
-		errors.update(params)
-		warnings.update(params)
+		errors.update({
+			cache: [
+				'Press Notification Error',
+				'Deploy Candidate Build',
+				buildIds.value,
+			],
+			filters: { document_name: ['in', buildIds.value], class: 'Error' },
+		})
 		errors.fetch()
+
+		warnings.update({
+			cache: [
+				'Press Notification Warning',
+				'Deploy Candidate Build',
+				buildIds.value,
+			],
+			filters: { document_name: ['in', buildIds.value], class: 'Warning' },
+		})
 		warnings.fetch()
 	},
 )
 
 const tabState = ref('Issues')
-const tabBuildId = ref(fakeids[0])
 
 const sidebarTabs = ref([
-	{
-		label: 'Tasks',
-		icon: LucideWorkflow,
-	},
-	{
-		label: 'Issues',
-		icon: LucideAlertCircle,
-	},
+	{ label: 'Tasks', icon: LucideWorkflow },
+	{ label: 'Issues', icon: LucideAlertCircle },
 ])
 
 const badgeThemes = {
@@ -206,40 +199,38 @@ onBeforeUnmount(() => {
 			<aside
 				class="w-full !min-w-[10rem] pr-3 overflow-y-auto overflow-x-hidden px-1"
 			>
-				<Tabs
-					:tabs="sidebarTabs"
-					v-model="tabState"
-					class="[&_[role=tablist]]:mb-2 [&_[role=tablist]]:p-0"
+				<div
+					class="flex items-center gap-3  [&_[role=tablist]]:px-0 mb-2 -mt-2"
 				>
-					<template #tab-item="{ tab }">
-						<button class="flex items-center gap-2 pb-3">
-							<component :is="tab.icon" class="size-4 text-ink-gray-6" />
-							{{ tab.label }}
-							<Badge
+					<Tabs :tabs="sidebarTabs" v-model="tabState">
+						<template #suffix="{ tab }">
+							<span
 								v-if='tab.label == "Issues"'
-								:label="(errors?.data?.length || 0 ) + (warnings?.data?.length || 0)"
-							/>
-						</button>
-					</template>
-				</Tabs>
+								class="bg-surface-gray-2 py-0.5 px-1 rounded text-xs leading-none"
+							>
+								{{ (errors?.data?.length || 0 ) + (warnings?.data?.length || 0) }}</span
+							>
+						</template>
+					</Tabs>
+
+					<Tabs
+						v-if="buildIds.length > 0"
+						:tabs="buildIds.map((x) => ({ label: x }))"
+						v-model="activeBuildId"
+					/>
+				</div>
 
 				<Stages
 					v-if="tabState == 'Tasks'"
 					:stages="pipeline?.doc?.steps?.stages"
 					:buildIds
+					:activeBuildId
 				/>
 
 				<!-- list of errors -->
 				<section v-else>
-					<Tabs
-						v-if="fakeids.length > 1"
-						:tabs="fakeids.map((x) => ({ label: x }))"
-						v-model="tabBuildId"
-						class="w-fit mb-3 *:px-2"
-					/>
-
 					<div
-						v-for='x in [...(errors?.data || []), ...(warnings?.data || []) ]?.filter(x => x.document_name == tabBuildId)'
+						v-for='x in [...errors?.data || [], ...warnings?.data || [] ]?.filter(x => x.document_name == activeBuildId)'
 						class="flex flex-col gap-1"
 					>
 						<Collapsable headerCss="py-2" class="mb-3">
@@ -254,8 +245,18 @@ onBeforeUnmount(() => {
 							<div
 								v-html="x.message"
 								class="leading-relaxed rounded p-3 ml-3 mb-3 text-sm"
-								:class='x.class=="Error"? " bg-surface-red-1 text-ink-red-3" :  "bg-surface-amber-1 text-ink-amber-3"'
+								:class='x.class=="Error"? " bg-surface-red-1 text-ink-red-4" :  "bg-surface-amber-1 text-ink-amber-3"'
 							/>
+
+							<div class="w-full flex justify-end">
+								<a
+                  :href="x.assistance_url"
+                  target="_blank"
+									class="bg-surface-gray-1 p-1.5 px-2.5 rounded hover:opacity-70"
+								>
+									Fix
+								</a>
+							</div>
 						</Collapsable>
 					</div>
 				</section>
