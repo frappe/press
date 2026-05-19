@@ -737,6 +737,7 @@ export default {
       {
 				label: 'Pipelines',
 				icon: LucidePocketKnife,
+        condition: () => getTeam().doc?.is_desk_user,
 				route: 'pipelines',
         childrenRoutes: ['Release Pipeline'],
 				type: 'Component',
