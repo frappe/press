@@ -4287,16 +4287,26 @@ def get_teams_with_unpaid_invoices_over_threshold():
 
 
 def archive_servers_with_unpaid_invoices():  # noqa: C901
+	def _archive_server(server):
+		try:
+			server.archive()
+			server.create_log("Terminated", "Archived due to unpaid invoices")
+			frappe.db.commit()
+			return True
+		except Exception:
+			frappe.log_error(title="Server Archival Error")
+			frappe.db.rollback()
+			return False
+
 	teams = get_teams_with_unpaid_invoices_over_threshold()
 	if not teams:
 		return
 
-	db_servers = []
+	db_servers_to_skip = []
 	servers = frappe.get_all(
 		"Server",
 		{"status": ("!=", "Archived"), "team": ("in", teams)},
 		pluck="name",
-		limit=6,
 	)
 	for server in servers:
 		# TODO: cleanup to not do so many db calls
@@ -4306,54 +4316,31 @@ def archive_servers_with_unpaid_invoices():  # noqa: C901
 		if frappe.db.exists("Bench", {"status": ("!=", "Archived"), "server": server}):
 			continue
 
-		try:
-			server = frappe.get_doc("Server", server)
-			(
-				server.drop_server()
-				if (server.database_server and server.database_server not in db_servers)
-				else server.archive()
-			)
-			server.create_log("Terminated", "Archived due to unpaid invoices")
+		_server = frappe.get_doc("Server", server)
+		if not _archive_server(_server):
+			continue
 
-			if server.database_server:
-				if not server.is_unified_server and server.database_server not in db_servers:
-					log_server_activity(
-						"m",
-						server.database_server,
-						"Terminated",
-						"Archived due to unpaid invoices",
-					)
+		if _server.database_server:
+			if not _server.is_unified_server and _server.database_server not in db_servers_to_skip:
+				_archive_server(frappe.get_doc("Database Server", _server.database_server))
 
-				db_servers.append(server.database_server)
-
-			frappe.db.commit()
-		except Exception:
-			frappe.log_error(title="Server Archival Error")
-			frappe.db.rollback()
+			db_servers_to_skip.append(_server.database_server)
 
 	# if say db server was left behind for some reason
 	database_servers = frappe.get_all(
 		"Database Server",
 		{
-			"name": ("not in", db_servers),
+			"name": ("not in", db_servers_to_skip),
 			"status": ("!=", "Archived"),
 			"team": ("in", teams),
 		},
 		pluck="name",
-		limit=6,
 	)
 	for db_server in database_servers:
 		if frappe.db.exists("Server", {"status": ("!=", "Archived"), "database_server": db_server}):
 			continue
 
-		try:
-			server = frappe.get_doc("Database Server", db_server)
-			server.archive()
-			server.create_log("Terminated", "Archived due to unpaid invoices")
-			frappe.db.commit()
-		except Exception:
-			frappe.log_error(title="Server Archival Error")
-			frappe.db.rollback()
+		_archive_server(frappe.get_doc("Database Server", db_server))
 
 
 def refresh_new_bench_and_site_server_pool() -> None:
