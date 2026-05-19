@@ -8,7 +8,10 @@ const route = useRoute()
 const pipelines = createListResource({
 	doctype: 'Release Pipeline',
 	auto: true,
-	fields: ['name', 'status', 'creation', 'duration'],
+	fields: ['name', 'status', 'creation', 'duration', 'release_group'],
+	filters: {
+		release_group: route.params.name,
+	},
 	orderBy: 'creation desc',
 })
 </script>
@@ -23,7 +26,7 @@ const pipelines = createListResource({
 				</tr>
 			</thead>
 
-      <br/>
+			<br />
 			<tbody>
 				<tr
 					v-for="pipeline in pipelines.data || []"
