@@ -74,14 +74,19 @@ const dropdownOptions = computed(() => {
 			onClick: () => {
 				window.open(
 <<<<<<< HEAD
+<<<<<<< HEAD
 					`${window.location.protocol}//${window.location.host}/app/release-pipeline/${route.params.id}`,
 =======
 					`${window.location.protocol}//${window.location.host}/app/deploy-candidate-build/${this.id}`,
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+					`${window.location.protocol}//${window.location.host}/app/release-pipeline/${route.params.id}`,
+>>>>>>> b75bf0a79 (feat(new-deploy-flow): support multiple builds)
 					'_blank',
 				)
 			},
 		},
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 		{
@@ -92,11 +97,14 @@ const dropdownOptions = computed(() => {
 			},
 		},
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+>>>>>>> b75bf0a79 (feat(new-deploy-flow): support multiple builds)
 	]
 
 	return list.filter((option) => option.condition?.() ?? true)
 })
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 const activeBuildId = ref()
@@ -110,6 +118,12 @@ const buildIds = computed(() => {
 const buildIds = computed(() => {
 	const ids = pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => x.name)
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+const activeBuildId = ref()
+const buildIds = computed(() => {
+	const ids = pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => x.name)
+	if (!activeBuildId.value && ids) activeBuildId.value = ids[0]
+>>>>>>> b75bf0a79 (feat(new-deploy-flow): support multiple builds)
 	return ids || []
 })
 
@@ -140,10 +154,18 @@ const warnings = createListResource(notifApiFields)
 =======
 const notifApiFields = {
 	doctype: 'Press Notification',
-	fields: ['name', 'title', 'message', 'document_name', 'class'],
+	fields: [
+		'name',
+		'title',
+		'message',
+		'document_name',
+		'class',
+		'assistance_url',
+	],
 	filters: { document_type: 'Deploy Candidate Build', is_actionable: true },
 }
 
+<<<<<<< HEAD
 const errors = createListResource({
 	...notifApiFields,
 	...{
@@ -159,6 +181,10 @@ const warnings = createListResource({
 	...{ filters: { class: 'Warning' } },
 })
 >>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
+=======
+const errors = createListResource(notifApiFields)
+const warnings = createListResource(notifApiFields)
+>>>>>>> b75bf0a79 (feat(new-deploy-flow): support multiple builds)
 
 watch(
 	() => buildIds.value,
@@ -166,6 +192,9 @@ watch(
 		if (!x) return
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> b75bf0a79 (feat(new-deploy-flow): support multiple builds)
 		errors.update({
 			cache: [
 				'Press Notification Error',
@@ -174,6 +203,7 @@ watch(
 			],
 			filters: { document_name: ['in', buildIds.value], class: 'Error' },
 		})
+<<<<<<< HEAD
 		errors.fetch()
 
 		warnings.update({
@@ -193,6 +223,18 @@ watch(
 		warnings.update(params)
 		errors.fetch()
 >>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
+=======
+		errors.fetch()
+
+		warnings.update({
+			cache: [
+				'Press Notification Warning',
+				'Deploy Candidate Build',
+				buildIds.value,
+			],
+			filters: { document_name: ['in', buildIds.value], class: 'Warning' },
+		})
+>>>>>>> b75bf0a79 (feat(new-deploy-flow): support multiple builds)
 		warnings.fetch()
 	},
 )
@@ -201,8 +243,11 @@ watch(
 const tabState = ref('Tasks')
 =======
 const tabState = ref('Issues')
+<<<<<<< HEAD
 const tabBuildId = ref(fakeids[0])
 >>>>>>> bbd9884f0 (feat(deploy-ui): add warnings/error tab in the sidebar)
+=======
+>>>>>>> b75bf0a79 (feat(new-deploy-flow): support multiple builds)
 
 const sidebarTabs = ref([
 	{ label: 'Tasks', icon: LucideWorkflow },
@@ -484,40 +529,38 @@ onBeforeUnmount(() => {
 			<aside
 				class="w-full !min-w-[10rem] pr-3 overflow-y-auto overflow-x-hidden px-1"
 			>
-				<Tabs
-					:tabs="sidebarTabs"
-					v-model="tabState"
-					class="[&_[role=tablist]]:mb-2 [&_[role=tablist]]:p-0"
+				<div
+					class="flex items-center gap-3  [&_[role=tablist]]:px-0 mb-2 -mt-2"
 				>
-					<template #tab-item="{ tab }">
-						<button class="flex items-center gap-2 pb-3">
-							<component :is="tab.icon" class="size-4 text-ink-gray-6" />
-							{{ tab.label }}
-							<Badge
+					<Tabs :tabs="sidebarTabs" v-model="tabState">
+						<template #suffix="{ tab }">
+							<span
 								v-if='tab.label == "Issues"'
-								:label="(errors?.data?.length || 0 ) + (warnings?.data?.length || 0)"
-							/>
-						</button>
-					</template>
-				</Tabs>
+								class="bg-surface-gray-2 py-0.5 px-1 rounded text-xs leading-none"
+							>
+								{{ (errors?.data?.length || 0 ) + (warnings?.data?.length || 0) }}</span
+							>
+						</template>
+					</Tabs>
+
+					<Tabs
+						v-if="buildIds.length > 0"
+						:tabs="buildIds.map((x) => ({ label: x }))"
+						v-model="activeBuildId"
+					/>
+				</div>
 
 				<Stages
 					v-if="tabState == 'Tasks'"
 					:stages="pipeline?.doc?.steps?.stages"
 					:buildIds
+					:activeBuildId
 				/>
 
 				<!-- list of errors -->
 				<section v-else>
-					<Tabs
-						v-if="fakeids.length > 1"
-						:tabs="fakeids.map((x) => ({ label: x }))"
-						v-model="tabBuildId"
-						class="w-fit mb-3 *:px-2"
-					/>
-
 					<div
-						v-for='x in [...(errors?.data || []), ...(warnings?.data || []) ]?.filter(x => x.document_name == tabBuildId)'
+						v-for='x in [...errors?.data || [], ...warnings?.data || [] ]?.filter(x => x.document_name == activeBuildId)'
 						class="flex flex-col gap-1"
 					>
 						<Collapsable headerCss="py-2" class="mb-3">
@@ -532,8 +575,18 @@ onBeforeUnmount(() => {
 							<div
 								v-html="x.message"
 								class="leading-relaxed rounded p-3 ml-3 mb-3 text-sm"
-								:class='x.class=="Error"? " bg-surface-red-1 text-ink-red-3" :  "bg-surface-amber-1 text-ink-amber-3"'
+								:class='x.class=="Error"? " bg-surface-red-1 text-ink-red-4" :  "bg-surface-amber-1 text-ink-amber-3"'
 							/>
+
+							<div class="w-full flex justify-end">
+								<a
+                  :href="x.assistance_url"
+                  target="_blank"
+									class="bg-surface-gray-1 p-1.5 px-2.5 rounded hover:opacity-70"
+								>
+									Fix
+								</a>
+							</div>
 						</Collapsable>
 					</div>
 				</section>
