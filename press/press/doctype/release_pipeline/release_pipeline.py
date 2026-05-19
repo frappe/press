@@ -188,7 +188,7 @@ class ReleasePipeline(WorkflowBuilder):
 
 		frappe.publish_realtime(
 			"doc_update",
-			{ "doctype": "Release Pipeline", "name": self.name },
+			{"doctype": "Release Pipeline", "name": self.name},
 			doctype="Release Pipeline",
 			docname=self.name,
 		)
@@ -770,12 +770,21 @@ class ReleasePipeline(WorkflowBuilder):
 		# Actual Build stage
 		if orchestrate_build_monitoring := _find_step_with_method_name("orchestrate_build_monitoring"):
 			building_stage = _get_step_info(orchestrate_build_monitoring, label="Building")
+			build_ids = [build.build for build in self.pipeline_builds]
+			build_data = {
+				b.name: b
+				for b in frappe.get_all(
+					"Deploy Candidate Build",
+					filters={"name": ["in", build_ids]},
+					fields=["name", "status", "platform"],
+				)
+			}
 			building_stage["builds"] = [
 				{
 					"doctype": "Deploy Candidate Build",
 					"name": build.build,
-					"status": frappe.db.get_value("Deploy Candidate Build", build.build, "status"),
-					"architecture": frappe.db.get_value("Deploy Candidate Build", build.build, "platform"),
+					"status": build_data[build.build]["status"],
+					"architecture": build_data[build.build]["platform"],
 				}
 				for build in self.pipeline_builds
 			]
