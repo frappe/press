@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { TabsIndicator, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
-import { computed, h } from 'vue'
+import { computed } from 'vue'
 
 type Tab = {
 	label: string
@@ -34,10 +34,8 @@ const indicatorYCss = `end-0 top-0 w-[2px] h-[--reka-tabs-indicator-size]
                        translate-y-[--reka-tabs-indicator-position] transition-[height,transform]`
 
 defineSlots<{
-	/** Custom renderer for a tab trigger (icon + label / router-link). */
-	'tab-item'?: (props: {
-		tab: { label: string; icon?: string; route?: string }
-	}) => any
+	default?: (props: { tab: Tab; selected: boolean }) => any
+	suffix?: (props: { tab: Tab }) => any
 }>()
 </script>
 
@@ -51,7 +49,7 @@ defineSlots<{
 		v-model="model"
 	>
 		<TabsList
-			class="relative min-h-fit flex data-[orientation=vertical]:flex-col p-1 border-b data-[orientation=vertical]:border-e gap-5"
+			class="relative flex data-[orientation=vertical]:flex-col  border-b data-[orientation=vertical]:border-e gap-5"
 			:class="{
         'overflow-x-auto overflow-y-hidden px-5': !vertical,
         'py-3': vertical,
@@ -64,8 +62,12 @@ defineSlots<{
 				<div class="w-full h-full bg-surface-gray-7" />
 			</TabsIndicator>
 
-			<TabsTrigger as="template" v-for="(tab, i) in props.tabs" :value="tab.label">
-				<slot name="tab-item" v-bind="{ tab, selected: model === i }">
+			<TabsTrigger
+				as="template"
+				v-for="(tab, i) in props.tabs"
+				:value="tab.label"
+			>
+				<slot v-bind="{ tab, selected: model === i }">
 					<component
 						:is="tab.route ? 'router-link' : 'BUTTON'"
 						:to="tab.route"
@@ -74,6 +76,8 @@ defineSlots<{
 					>
 						<component v-if="tab.icon" :is="tab.icon" class="size-4" />
 						{{ tab.label }}
+
+						<slot name="suffix" v-bind="{ tab }" />
 					</component>
 				</slot>
 			</TabsTrigger>
