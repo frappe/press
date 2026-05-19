@@ -189,10 +189,14 @@ class ReleasePipeline(WorkflowBuilder):
 		frappe.publish_realtime(
 			"doc_update",
 <<<<<<< HEAD
+<<<<<<< HEAD
 			{"doctype": "Release Pipeline", "name": self.name},
 =======
 			{ "doctype": "Release Pipeline", "name": self.name },
 >>>>>>> c0a9b264e (fix(release_pipeline): send event on status update)
+=======
+			{"doctype": "Release Pipeline", "name": self.name},
+>>>>>>> 5ae5deca5 (perf: eliminate N+1 queries when fetching pipeline build metadata)
 			doctype="Release Pipeline",
 			docname=self.name,
 		)
@@ -787,6 +791,9 @@ class ReleasePipeline(WorkflowBuilder):
 			building_stage = _get_step_info(orchestrate_build_monitoring, label="Building")
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 5ae5deca5 (perf: eliminate N+1 queries when fetching pipeline build metadata)
 			build_ids = [build.build for build in self.pipeline_builds]
 			build_data = {
 				b.name: b
@@ -796,12 +803,16 @@ class ReleasePipeline(WorkflowBuilder):
 					fields=["name", "status", "platform"],
 				)
 			}
+<<<<<<< HEAD
 =======
 >>>>>>> dfbae2343 (fix: remove the tuple in builds property)
+=======
+>>>>>>> 5ae5deca5 (perf: eliminate N+1 queries when fetching pipeline build metadata)
 			building_stage["builds"] = [
 				{
 					"doctype": "Deploy Candidate Build",
 					"name": build.build,
+<<<<<<< HEAD
 <<<<<<< HEAD
 					"status": build_data[build.build]["status"],
 					"architecture": build_data[build.build]["platform"],
@@ -826,6 +837,10 @@ class ReleasePipeline(WorkflowBuilder):
 =======
 					"status": frappe.db.get_value("Deploy Candidate Build", build.build, "status"),
 					"architecture": frappe.db.get_value("Deploy Candidate Build", build.build, "platform"),
+=======
+					"status": build_data[build.build]["status"],
+					"architecture": build_data[build.build]["platform"],
+>>>>>>> 5ae5deca5 (perf: eliminate N+1 queries when fetching pipeline build metadata)
 				}
 				for build in self.pipeline_builds
 			]
