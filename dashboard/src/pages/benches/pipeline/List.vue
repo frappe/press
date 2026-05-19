@@ -15,6 +15,7 @@ const pipelines = createListResource({
 	filters: {
 		release_group: route.params.name,
 	},
+<<<<<<< HEAD
 	orderBy: 'creation desc',
 =======
 =======
@@ -40,6 +41,8 @@ const pipelines = createListResource({
 >>>>>>> 60209a727 (fix(new-deploy-ui): add missing socket events)
 =======
 	fields: ['name', 'status', 'creation', 'duration'],
+=======
+>>>>>>> 6e937f1d1 (fix: add missing release group filter for pipeline list page)
 	orderBy: 'creation desc',
 >>>>>>> 7f92d4e83 (fix(deploy-ui): add badge status colors)
 })
