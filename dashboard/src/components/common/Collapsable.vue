@@ -6,7 +6,7 @@ interface Props {
 	disabled?: boolean
 }
 
-const props =defineProps<Props>()
+const props = defineProps<Props>()
 
 const opened = ref(false)
 
@@ -19,10 +19,13 @@ function toggle() {
 <template>
 	<details
 		:open="opened"
-		@click="toggle"
 		:class='disabled? "opacity-60 cursor-not-allowed":"cursor-pointer"'
 	>
-		<summary class="flex items-center gap-2" :class="headerCss">
+		<summary
+			class="flex items-center gap-2"
+			:class="headerCss"
+			@click.prevent="toggle"
+		>
 			<slot name="header" />
 			<LucideChevronRight
 				class="shrink-0 size-4 ml-auto transition-transform duration-300"
