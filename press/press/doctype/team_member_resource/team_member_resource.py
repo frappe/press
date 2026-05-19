@@ -45,23 +45,9 @@ class TeamMemberResource(Document):
 			)
 
 	def validate(self):
-		self.validate_team()
 		self.validate_user()
 		self.validate_document_type()
 		self.validate_document()
-
-	def validate_team(self):
-		"""
-		Validate that the team exists and that the current user has permission
-		to assign resources to the team.
-		"""
-		# Check if the current user is a member of the team.
-		if not frappe.db.exists({"doctype": "Team Member", "parent": self.team, "user": frappe.session.user}):
-			frappe.throw(_("Current user must be a member of the team to assign resources."))
-		# Check if the current user has the necessary permissions to assign resources.
-		team: Team = frappe.get_doc("Team", self.team)
-		if not (team.is_team_owner() or team.is_admin_user()):
-			frappe.throw(_("Current user must be a team owner or admin to assign resources."))
 
 	def validate_user(self):
 		"""
@@ -85,6 +71,14 @@ class TeamMemberResource(Document):
 		document_team = frappe.db.get_value(self.document_type, self.document, "team")
 		if document_team != self.team:
 			frappe.throw(_("Document {0} is not associated with team {1}").format(self.document, self.team))
+
+
+def has_permission(doc, ptype, user):
+	# Check if the current user has the necessary permissions to assign resources.
+	team: Team = frappe.get_doc("Team", doc.team)
+	if not (team.is_team_owner() or team.is_admin_user()):
+		return False
+	return True
 
 
 def sync_press_role(doc, method=None):
