@@ -19,7 +19,7 @@ defineProps<Props>()
 		style="--scrollbar-size: 10px"
 		:scroll-hide-delay="0"
 	>
-		<ScrollAreaViewport class="w-full h-full" :is="as">
+		<ScrollAreaViewport class="w-full h-full" :as>
 			<slot />
 		</ScrollAreaViewport>
 
