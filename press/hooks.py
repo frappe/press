@@ -167,6 +167,11 @@ has_permission = {
 # Hook on document methods and events
 
 doc_events = {
+	"Press Role": {
+		"after_insert": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
+		"on_update": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
+		"after_delete": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
+	},
 	"Stripe Webhook Log": {
 		"after_insert": [
 			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_webhook_events",
