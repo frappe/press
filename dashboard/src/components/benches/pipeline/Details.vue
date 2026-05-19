@@ -239,10 +239,8 @@ onBeforeUnmount(() => {
 						<Collapsable headerCss="py-2" class="mb-3">
 							<template #header>
 								<StatusIcon :status=" x.class=='Error'? 'Failed': 'Warning'" />
-
 								{{ x.title }}
 								{{ x.class }}
-								{{ x.document_name }}
 							</template>
 
 							<div
