@@ -471,6 +471,7 @@ onBeforeUnmount(() => {
 				<b> Duration </b>
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 				<span>
 					{{ secsToDuration(pipeline?.doc?.steps?.duration)  || '-' }}
 				</span>
@@ -490,10 +491,16 @@ onBeforeUnmount(() => {
 =======
 				<span> {{ secsToDuration(pipeline?.doc?.steps?.duration)  || '-' }} </span>
 >>>>>>> e6ff3635e (fix(new-deploy-ui): show multiple build architechture in tab ui)
+=======
+				<span>
+					{{ secsToDuration(pipeline?.doc?.steps?.duration)  || '-' }}
+				</span>
+>>>>>>> e87eb5adf (fix(deploy-ui): use width for animation instead of grid)
 			</div>
 		</section>
 
 		<!-- deploy steps + output -->
+<<<<<<< HEAD
 <<<<<<< HEAD
 		<div class="flex rounded border p-3 flex-1 min-h-0">
 			<aside
@@ -567,10 +574,14 @@ onBeforeUnmount(() => {
 			class="grid rounded border p-3 flex-1 transition-all duration-500 min-h-0"
 			:class="[output ? 'grid-cols-[auto_1fr]' : 'grid-cols-[1fr_0fr] pr-0']"
 		>
+=======
+		<div class="flex rounded border p-3 flex-1 min-h-0">
+>>>>>>> e87eb5adf (fix(deploy-ui): use width for animation instead of grid)
 			<aside
-				class="w-full !min-w-[30rem] pr-3 overflow-y-auto overflow-x-hidden px-0.5"
+				class="overflow-y-auto overflow-x-hidden pr-3 px-0.5 flex-shrink-0 transition-all duration-500"
+				:class="output ? 'w-[30rem]' : 'w-full'"
 			>
-				<div class="flex items-center gap-3  [&_[rol=tablist]]:px-0 mb-2 t-2">
+				<div class="flex items-center gap-3 mb-3">
 					<Tabs
 						class="w-full"
 						tablistClass="!px-0"
@@ -601,7 +612,7 @@ onBeforeUnmount(() => {
 						v-for='x in [...errors?.data || [], ...warnings?.data || [] ]?.filter(x => x.document_name == activeBuildId)'
 						class="flex flex-col gap-1"
 					>
-						<Collapsable headerCss="py-2" class="mb-3">
+						<Collapsable headerCss="py-3" class="mb-3">
 							<template #header>
 								<StatusIcon :status=" x.class=='Error'? 'Failed': 'Warning'" />
 								{{ x.title }}
@@ -631,8 +642,12 @@ onBeforeUnmount(() => {
 			<!-- output -->
 			<div
 				v-show="output"
+<<<<<<< HEAD
 				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 rounded flex-1"
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
+=======
+				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 rounded transition-all duration-500 flex-1"
+>>>>>>> e87eb5adf (fix(deploy-ui): use width for animation instead of grid)
 			>
 				<div
 					class="flex items-center gap-2 border-b pb-2 border-outline-gray-2 mb-3 text-ink-gray-6"
