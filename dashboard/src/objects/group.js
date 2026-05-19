@@ -740,12 +740,15 @@ export default {
 <<<<<<< HEAD
 				icon: LucidePocketKnife,
         condition: () => getTeam().doc?.is_desk_user,
+<<<<<<< HEAD
 =======
 				icon: icon('sliders'),
 >>>>>>> 699d08889 (refactor(deploy-ui): include layout components)
 =======
 				icon: LucidePocketKnife,
 >>>>>>> 7f92d4e83 (fix(deploy-ui): add badge status colors)
+=======
+>>>>>>> dfe2341de (fix(new-deploy-ui): show only for desk users)
 				route: 'pipelines',
         childrenRoutes: ['Release Pipeline'],
 				type: 'Component',
