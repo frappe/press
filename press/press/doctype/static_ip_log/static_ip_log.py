@@ -26,7 +26,9 @@ class StaticIPLog(Document):
 
 	def validate(self):
 		if self.server_type not in ("Server", "Database Server"):
-			frappe.throw("Server Type must be either 'Server' or 'Database Server'")
+			frappe.throw(
+				"Server Type must be either 'Server' or 'Database Server'. Please check the Server Type field."
+			)
 
 	def before_insert(self):
 		if self.status == "Attached":
