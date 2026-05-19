@@ -1390,10 +1390,14 @@ def is_desk_user(user: str | None = None) -> bool:
 
 
 @frappe.whitelist(methods=["GET"])
-def get_app_audit(app: str):
+def get_app_audit(
+	app: str,
+	app_release: str | None = None,
+	app_source: str | None = None,
+	approval_request: str | None = None,
+):
 	"""
-	Fetches the latest audit report for the given marketplace app.
-	By latest, it can be the latest release change audit or the latest submission gate audit.
+	Fetches the latest audit report for the given marketplace app or narrower context.
 	If there is no audit report, it will return None.
 	"""
 	current_team = get_current_team()
@@ -1406,9 +1410,20 @@ def get_app_audit(app: str):
 				_("You are not permitted to get the audit report for this app"), frappe.PermissionError
 			)
 
-	# get_all, limit 1, order by creation desc
+	filters = {"marketplace_app": app}
+	if approval_request:
+		filters["approval_request"] = approval_request
+	elif app_release:
+		filters["app_release"] = app_release
+	elif app_source:
+		filters["app_source"] = app_source
+
 	audit_name = frappe.get_all(
-		"Marketplace App Audit", {"marketplace_app": app}, order_by="creation desc", limit=1, pluck="name"
+		"Marketplace App Audit",
+		filters=filters,
+		order_by="creation desc",
+		limit=1,
+		pluck="name",
 	)
 	if not audit_name:
 		return None

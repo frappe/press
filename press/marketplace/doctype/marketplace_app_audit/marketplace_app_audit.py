@@ -37,6 +37,7 @@ class MarketplaceAppAudit(Document):
 		)
 
 		app_release: DF.Link
+		app_source: DF.Link
 		approval_request: DF.Link | None
 		audit_checks: DF.Table[MarketplaceAppAuditChecks]
 		audit_result: DF.Literal["Pass", "Needs Improvement", "Warn", "Fail", "Inconclusive"]
@@ -65,10 +66,18 @@ class MarketplaceAppAudit(Document):
 		# For Release Change: create a new audit record for every new release.
 		# reason: on every new commit, a new release is being created, we should create a new audit record for every new release.
 		# for old audits, we can remove old records via some scheduled job which runs once a month and clears the old records.
+		release_source = frappe.db.get_value("App Release", app_release, "source")
+
+		if not release_source:
+			frappe.throw(
+				"App release source not found. Ensure that the app source is added correctly in Versions tab for the marketplace app."
+			)
+
 		audit = frappe.new_doc("Marketplace App Audit")
 		audit.marketplace_app = marketplace_app
 		audit.app_release = app_release
 		audit.approval_request = approval_request
+		audit.app_source = release_source
 		audit.audit_type = audit_type
 		audit.status = "Queued"
 		audit.team = frappe.db.get_value("Marketplace App", marketplace_app, "team")
@@ -258,14 +267,13 @@ class MarketplaceAppAudit(Document):
 			return
 
 		if self.audit_result == "Fail":
-			# mark "attention required" status in marketplace app
-			frappe.db.set_value("Marketplace App", self.marketplace_app, "status", "Attention Required")
 			self._auto_reject_approval_requests()
 
 			# only yank the release if the audit had any hard blocking failures.
 			# else the audit fails but we don't want to yank the release
 			if self.has_blocking_failures():
 				self._yank_release()
+				self.update_marketplace_app_health()
 
 	def _yank_release(self) -> None:
 		"""
@@ -303,6 +311,33 @@ class MarketplaceAppAudit(Document):
 				f"Please review the audit results and fix the issues pointed."
 			)
 			request.save()
+
+	def update_marketplace_app_health(self) -> None:
+		"""
+		Delist the app only when every configured marketplace source has no usable release.
+		"""
+		if self.has_any_usable_source():
+			return
+
+		frappe.db.set_value("Marketplace App", self.marketplace_app, "status", "Attention Required")
+
+	def has_any_usable_source(self) -> bool:
+		marketplace_app_version = frappe.qb.DocType("Marketplace App Version")
+		app_release = frappe.qb.DocType("App Release")
+
+		usable_release = (
+			frappe.qb.from_(marketplace_app_version)
+			.inner_join(app_release)
+			.on(app_release.source == marketplace_app_version.source)
+			.select(app_release.name)
+			.where(marketplace_app_version.parenttype == "Marketplace App")
+			.where(marketplace_app_version.parent == self.marketplace_app)
+			.where(app_release.status.isin(["Approved", "Draft"]))
+			.where(app_release.invalid_release == 0)
+			.limit(1)
+			.run()
+		)
+		return bool(usable_release)
 
 	@frappe.whitelist()
 	def send_report_to_publisher(self):
