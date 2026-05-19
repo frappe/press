@@ -20,10 +20,14 @@ defineProps<Props>()
 		:scroll-hide-delay="0"
 	>
 <<<<<<< HEAD
+<<<<<<< HEAD
 		<ScrollAreaViewport class="w-full h-full" :as>
 =======
 		<ScrollAreaViewport class="w-full h-full" :is="as">
 >>>>>>> d77ce5eac (feat(scrollbar): Include as prop)
+=======
+		<ScrollAreaViewport class="w-full h-full" :as>
+>>>>>>> dcf284954 (fix(scrollbar): fix incorrect :is prop,rename it to as)
 			<slot />
 		</ScrollAreaViewport>
 
