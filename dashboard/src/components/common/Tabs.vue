@@ -5,18 +5,25 @@ import { computed } from 'vue'
 
 type Tab = {
 	label: string
+	value?: string
 	icon?: string
 	route?: string
 }
 
 export interface TabProps {
-	as?: string
 	tabs: Tab[]
+	tablistClass?: string
 	vertical?: boolean
+	variant?: 'solid' | 'line' | 'ghost'
 	dir?: 'rtl' | 'ltr'
+	size?: 'sm' | 'md'
 }
 
-const props = defineProps<TabProps>()
+const props = withDefaults(defineProps<TabProps>(), {
+	variant: 'line',
+	size: 'sm',
+})
+
 const model = defineModel<string | number>({ default: 0 })
 
 const dir = computed<'rtl' | 'ltr'>(
@@ -33,53 +40,76 @@ const indicatorXCss = `left-0 bottom-0 h-[2px] w-[--reka-tabs-indicator-size] tr
 const indicatorYCss = `end-0 top-0 w-[2px] h-[--reka-tabs-indicator-size]
                        translate-y-[--reka-tabs-indicator-position] transition-[height,transform]`
 
+const txtCss =
+	'hover:text-ink-gray-9 data-[state=active]:text-ink-gray-9 text-ink-gray-5'
+
+const btnCss = {
+	line: 'pb-2',
+	solid:
+		'hover:bg-surface-gray-2 data-[state=active]:shadow data-[state=active]:bg-surface-white data-[state=active]:dark:bg-surface-gray-3 rounded',
+	ghost:
+		'hover:bg-surface-gray-2 data-[state=active]:bg-surface-gray-2 rounded',
+}
+
+const tablistCss = {
+	line: 'border-b gap-3 px-5',
+	solid: 'bg-surface-gray-1 text-ink-gray-9 rounded border',
+	ghost: 'text-ink-gray-9 gap-1',
+}
+
 defineSlots<{
 	default?: (props: { tab: Tab; selected: boolean }) => any
 	suffix?: (props: { tab: Tab }) => any
 }>()
+
+const sizeCss = {
+	xs: 'h-6 text-xs',
+	sm: 'h-7 text-sm',
+	md: 'h-8 text-base font-medium',
+}[props.size]
+
+const btnSizeCss = {
+	xs: 'px-1.5',
+	sm: 'px-2',
+	md: 'px-3.5',
+}
 </script>
 
 <template>
 	<TabsRoot
-		:as
 		:dir
-		class="flex flex-1 overflow-hidden flex-col data-[orientation=vertical]:flex-row"
-		:orientation="props.vertical ? 'vertical' : 'horizontal'"
-		:default-value="props.tabs[0].label"
+		:orientation="vertical ? 'vertical' : 'horizontal'"
+		:default-value="tabs[0].label"
 		v-model="model"
 	>
 		<TabsList
-			class="relative flex data-[orientation=vertical]:flex-col  border-b data-[orientation=vertical]:border-e gap-5"
-			:class="{
-        'overflow-x-auto overflow-y-hidden px-5': !vertical,
-        'py-3': vertical,
-      }"
+			class="relative flex data-[orientation=vertical]:flex-col data-[orientation=vertical]:border-e"
+			:class="[tablistCss[variant],  sizeCss, tablistClass]"
 		>
 			<TabsIndicator
-				class="absolute rounded-full duration-300"
+				v-if="variant == 'line'"
+				class="absolute rounded-full"
 				:class="props.vertical ? indicatorYCss : indicatorXCss"
 			>
-				<div class="w-full h-full bg-surface-gray-7" />
+				<div class="h-full w-full bg-surface-gray-7" />
 			</TabsIndicator>
 
 			<TabsTrigger
 				as="template"
-				v-for="(tab, i) in props.tabs"
-				:value="tab.label"
+				v-for="(tab) in props.tabs"
+				:value="tab.value || tab.label"
+				:key="tab.value || tab.label"
 			>
-				<slot v-bind="{ tab, selected: model === i }">
-					<component
-						:is="tab.route ? 'router-link' : 'BUTTON'"
-						:to="tab.route"
-						class="flex items-center gap-1.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9 data-[state=active]:text-ink-gray-9"
-						:class="{ 'px-2.5': props.vertical, 'py-2.5': !props.vertical }"
-					>
-						<component v-if="tab.icon" :is="tab.icon" class="size-4" />
-						{{ tab.label }}
-
-						<slot name="suffix" v-bind="{ tab }" />
-					</component>
-				</slot>
+				<component
+					:is="tab.route ? 'router-link' : 'BUTTON'"
+					:to="tab.route"
+					class="inline-flex items-center gap-1.5 text-ink-gray-5 ransition-all duration-300"
+					:class="[ txtCss, btnCss[variant], btnSizeCss[size] ]"
+				>
+					<component v-if="tab.icon" :is="tab.icon" class="size-4" />
+					{{ tab.label }}
+					<slot name="suffix" v-bind="{ tab }" />
+				</component>
 			</TabsTrigger>
 		</TabsList>
 	</TabsRoot>
