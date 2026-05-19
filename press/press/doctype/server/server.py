@@ -61,6 +61,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
+	from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 	from press.press.doctype.virtual_machine_volume.virtual_machine_volume import VirtualMachineVolume
 
@@ -1302,6 +1303,10 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def archive(self):  # noqa: C901
+		if self.status == "Archived":
+			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
+			return
+
 		if frappe.db.exists(
 			"Press Job",
 			{
@@ -1311,10 +1316,8 @@ class BaseServer(Document, TagHelpers):
 				"status": "Success",
 			},
 		):
-			if self.status != "Archived":
-				self.status = "Archived"
-				self.save()
-
+			self.status = "Archived"
+			self.save()
 			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
 			return
 
@@ -1324,6 +1327,22 @@ class BaseServer(Document, TagHelpers):
 				self.status = "Archived"
 				self.save()
 				return
+
+		if frappe.db.exists(
+			"Press Job",
+			{
+				"job_type": "Archive Server",
+				"server": self.name,
+				"server_type": self.doctype,
+				"status": ("in", ("Running", "Pending")),
+				"creation": (">", frappe.utils.add_to_date(frappe.utils.now(), minutes=-30)),
+			},
+		):
+			frappe.throw(
+				_(
+					"Archival of Server {0} is already in progress. Please wait for the current archival process to complete before attempting to archive again."
+				).format(self.name)
+			)
 
 		if frappe.get_all(
 			"Site",
@@ -1356,7 +1375,7 @@ class BaseServer(Document, TagHelpers):
 				frappe.db.set_value("Self Hosted Server", {"server": self.name}, "status", "Archived")
 
 		else:
-			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
+			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long", enqueue_after_commit=True)
 		self.disable_subscription()
 		self.remove_from_release_groups()
 
@@ -2119,8 +2138,9 @@ class BaseServer(Document, TagHelpers):
 				if not mount:
 					mount = find(
 						self.mounts,
-						lambda x: x.name
-						== row.get("item", {}).get("item", {}).get("original_item", {}).get("name"),
+						lambda x: (
+							x.name == row.get("item", {}).get("item", {}).get("original_item", {}).get("name")
+						),
 					)
 				if not mount:
 					continue
@@ -2520,7 +2540,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			certificate_name = frappe.db.get_value(
 				"TLS Certificate", {"wildcard": True, "domain": domain.domain}, "name"
 			)
-			certificate = frappe.get_doc("TLS Certificate", certificate_name)
+
+			certificate: TLSCertificate = frappe.get_doc("TLS Certificate", certificate_name)
+			if not (certificate.private_key and certificate.full_chain and certificate.intermediate_chain):
+				continue
+
 			wildcard_domains.append(
 				{
 					"domain": domain.domain,
@@ -4069,6 +4093,99 @@ def is_dedicated_server(server_name):
 		frappe.throw("Invalid argument")
 	is_public = frappe.db.get_value("Server", server_name, "public")
 	return not is_public
+
+
+def get_teams_with_unpaid_invoices_over_threshold():
+	from press.press.doctype.site.site import ARCHIVE_AFTER_SUSPEND_DAYS
+	from press.press.doctype.team.suspend_sites import SUSPENSION_DAYS
+
+	threshold = frappe.utils.add_days(frappe.utils.getdate(), -(SUSPENSION_DAYS + ARCHIVE_AFTER_SUSPEND_DAYS))
+
+	invoice = frappe.qb.DocType("Invoice")
+	team = frappe.qb.DocType("Team")
+	server = frappe.qb.DocType("Server")
+	db_server = frappe.qb.DocType("Database Server")
+
+	teams = (
+		frappe.qb.from_(invoice)
+		.inner_join(team)
+		.on(invoice.team == team.name)
+		.inner_join(server)
+		.on(server.team == team.name)
+		.inner_join(db_server)
+		.on(db_server.team == team.name)
+		.where(
+			(team.enabled == 1)
+			& (team.free_account == 0)
+			& (team.extend_payment_due_suspension == 0)
+			& (invoice.status == "Unpaid")
+			& (invoice.docstatus < 2)
+			& (invoice.type == "Subscription")
+			& (invoice.period_end < threshold)
+			& ((server.status != "Archived") | (db_server.status != "Archived"))
+		)
+		.select(invoice.team)
+		.distinct()
+	).run(as_dict=True)
+
+	return {d.team for d in teams}
+
+
+def archive_servers_with_unpaid_invoices():  # noqa: C901
+	def _archive_server(server):
+		try:
+			server.archive()
+			server.create_log("Terminated", "Archived due to unpaid invoices")
+			frappe.db.commit()
+			return True
+		except Exception:
+			frappe.log_error(title="Server Archival Error")
+			frappe.db.rollback()
+			return False
+
+	teams = get_teams_with_unpaid_invoices_over_threshold()
+	if not teams:
+		return
+
+	db_servers_to_skip = []
+	servers = frappe.get_all(
+		"Server",
+		{"status": ("!=", "Archived"), "team": ("in", teams)},
+		pluck="name",
+	)
+	for server in servers:
+		# TODO: cleanup to not do so many db calls
+		if frappe.db.exists("Site", {"status": ("!=", "Archived"), "server": server}):
+			continue
+
+		if frappe.db.exists("Bench", {"status": ("!=", "Archived"), "server": server}):
+			continue
+
+		_server = frappe.get_doc("Server", server)
+		if not _archive_server(_server):
+			continue
+
+		if _server.database_server:
+			if not _server.is_unified_server and _server.database_server not in db_servers_to_skip:
+				_archive_server(frappe.get_doc("Database Server", _server.database_server))
+
+			db_servers_to_skip.append(_server.database_server)
+
+	# if say db server was left behind for some reason
+	database_servers = frappe.get_all(
+		"Database Server",
+		{
+			"name": ("not in", db_servers_to_skip),
+			"status": ("!=", "Archived"),
+			"team": ("in", teams),
+		},
+		pluck="name",
+	)
+	for db_server in database_servers:
+		if frappe.db.exists("Server", {"status": ("!=", "Archived"), "database_server": db_server}):
+			continue
+
+		_archive_server(frappe.get_doc("Database Server", db_server))
 
 
 def refresh_new_bench_and_site_server_pool() -> None:
