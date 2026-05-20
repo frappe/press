@@ -1043,7 +1043,8 @@ export default {
 		{
 			name: 'Deploy Candidate',
 			path: 'deploys/:id',
-			component: () => import('../pages/DeployCandidate.vue'),
+			component: () => import('../components/benches/pipeline/Details.vue'),
+      props: { deployview: true }
 		},
    	{
 			name: 'Release Pipeline',

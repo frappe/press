@@ -4,7 +4,7 @@ import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
 
 import { date, secsToDuration } from '@/utils/format'
-import { watch, ref, inject, onMounted, onBeforeUnmount } from 'vue'
+import { watch, ref, inject, onBeforeUnmount } from 'vue'
 
 const setOutput = inject('setOutput')
 const output = inject('output')
@@ -12,7 +12,10 @@ const output = inject('output')
 interface Props {
 	stages: any
 	buildIds: String[]
-	activeBuildId: String
+	activeBuildId: String | null
+  updateDummyStage?: any
+  updateDeployViewBuild? :any
+  deployview?: boolean
 }
 
 const props = defineProps<Props>()
@@ -23,6 +26,16 @@ const wired = new Set<string>()
 const buildResources = ref<Record<string, any>>({})
 const socket = window.$socket
 
+const handleDummyStage = (x) => {
+  if(!props.deployview)  return
+
+  props.updateDeployViewBuild(x)
+  props.updateDummyStage(2, x.status)
+
+  if(x.status == 'Success')
+  props.updateDummyStage(3, x.status)
+}
+
 watch(
 	() => props.buildIds,
 	(ids) => {
@@ -30,11 +43,13 @@ watch(
 
 		ids.forEach((id) => {
 			if (!buildResources.value[id]) {
+
 				buildResources.value[id] = createDocumentResource({
 					doctype: 'Deploy Candidate Build',
 					name: id,
 					auto: true,
 					fields: ['build_steps'],
+          onSuccess: handleDummyStage
 				})
 			}
 
@@ -51,6 +66,11 @@ watch(
 
 				socket.on(`bench_deploy:${id}:finished`, () => {
 					buildResources.value[id]?.reload()
+
+         if(props.updateDummyStage) {
+            props.updateDummyStage(2, "Success")
+            props.updateDummyStage(3, "Success")
+         }
 
 					const rgDoc = getCachedDocumentResource(
 						'Release Group',
@@ -87,6 +107,8 @@ const formatCmd = (cmd: string) => {
 		.map((part) => part.trim())
 		.join(' &&\n')
 }
+
+
 </script>
 
 <template>
@@ -104,7 +126,7 @@ const formatCmd = (cmd: string) => {
 		<div class="my-2 *:leading-relaxed text-sm" v-if='x.label == "Building"'>
 			<button
 				v-for="build_step in buildResources[activeBuildId]?.doc?.build_steps"
-				class="py-1.5 pr-3 pl-6 rounded flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed"
+				class="py-1.5 pr-3 pl-6 rounded flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed hover:bg-surface-gray-1"
        :class='output.val && output.val == build_step.output? "bg-surface-gray-1" :"" '
        @click="setOutput({ val: build_step.output || formatCmd(build_step.command) || 'No Output', status: build_step.status })"
 
