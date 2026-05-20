@@ -50,7 +50,7 @@ defineSlots<{
 
 const btnSizeCss = {
 	xs: 'py-1.5 text-xs',
-	sm: 'py-2 text-sm',
+	sm: 'py-1.5 px-3 text-sm',
 	md: 'py-2.5 text-base',
 }
 

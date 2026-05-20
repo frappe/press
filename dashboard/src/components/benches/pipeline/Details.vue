@@ -14,7 +14,7 @@ import CopyBtn from '@/components/utils/CopyBtn.vue'
 import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
 
-import { ref, computed, provide, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, provide, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { getTeam } from '@/data/team'
 
@@ -23,10 +23,15 @@ import { secsToDuration, date } from '@/utils/format'
 const team = getTeam()
 const route = useRoute()
 const socket = window.$socket
-const output = ref<String | null>(null)
 
-const setOutput = (str: String | null) => {
-	output.value = str
+const output = reactive({
+   val: null,
+   status: null
+})
+
+const setOutput = (opts: String | null) => {
+      output.val = opts.val
+      output.status = opts.status
 }
 
 provide('setOutput', setOutput)
@@ -141,7 +146,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<main
-		class="pipeline-page flex flex-col gap-5 py-3 px-5 w-full h-[calc(100dvh-6rem)]"
+		class="pipeline-page flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-6rem)]"
 	>
 		<!-- header -->
 		<div class="flex gap-2 items-center">
@@ -174,7 +179,7 @@ onBeforeUnmount(() => {
 
 		<!-- status cards -->
 		<section
-			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm"
+			class="grid grid-cols-4 gap-3 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm -mt-1"
 		>
 			<div class="flex flex-col gap-2 border p-4 rounded ">
 				<b> Created by </b>
@@ -200,10 +205,10 @@ onBeforeUnmount(() => {
 		</section>
 
 		<!-- deploy steps + output -->
-		<div class="flex rounded border p-3 flex-1 min-h-0">
+		<div class="flex rounded border p-3 pt-1 flex-1 min-h-0">
 			<aside
 				class="overflow-y-auto overflow-x-hidden pr-3 px-0.5 flex-shrink-0 transition-all duration-500"
-				:class="output ? 'w-[30rem]' : 'w-full'"
+				:class="output.val ? 'w-[30rem]' : 'w-full'"
 			>
 				<div class="flex items-center gap-3 mb-3">
 					<Tabs
@@ -265,20 +270,21 @@ onBeforeUnmount(() => {
 
 			<!-- output -->
 			<div
-				v-show="output"
-				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 rounded transition-all duration-500 flex-1"
+				v-show="output.val"
+				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 ml-2 rounded transition-all duration-500 flex-1"
 			>
 				<div
-					class="flex items-center gap-2 border-b pb-2 border-outline-gray-2 mb-3 text-ink-gray-6"
+					class="flex items-center gap-2 pb-2 border-outline-gray-2 mb-3 text-ink-gray-6"
 				>
 					<span>Output</span>
-					<CopyBtn :text="output" class="ml-auto" />
-					<button @click="setOutput(null)">
+					<CopyBtn :text="output?.val || ''" class="ml-auto" />
+          <button @click="setOutput({val: null, status: null})">
 						<lucide-x class="size-4" />
 					</button>
 				</div>
 
-				<pre class="font-mono text-xs overflow-auto">{{output}}</pre>
+				<pre class="font-mono text-xs overflow-auto -m-3 p-2" :class='output.status == "Failure"? "bg-surface-red-1 text-ink-red-3" :
+        ""' >{{output.val}}</pre>
 			</div>
 		</div>
 	</main>
