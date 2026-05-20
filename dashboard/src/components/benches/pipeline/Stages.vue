@@ -101,11 +101,13 @@ const formatCmd = (cmd: string) => {
 			<span class="whitespace-nowrap"> {{ x.label }}</span>
 		</template>
 
-		<div class="ml-6 my-1" v-if='x.label == "Building"'>
+		<div class="my-2 *:leading-relaxed text-sm" v-if='x.label == "Building"'>
 			<button
 				v-for="build_step in buildResources[activeBuildId]?.doc?.build_steps"
-				class="py-2 flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed"
-				@click="setOutput(build_step.output || formatCmd(build_step.command) || 'No Output') "
+				class="py-1.5 pr-3 pl-6 rounded flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed"
+       :class='output.val && output.val == build_step.output? "bg-surface-gray-1" :"" '
+       @click="setOutput({ val: build_step.output || formatCmd(build_step.command) || 'No Output', status: build_step.status })"
+
 				:disabled="build_step.status =='Pending'"
 			>
 				<StatusIcon :status="build_step.status" />
@@ -120,7 +122,7 @@ const formatCmd = (cmd: string) => {
 		</div>
 
 		<!-- steps other than 2 have no output so show some data-->
-		<div v-else class="flex" :class='output? "flex-col" : "flex-row"'>
+		<div v-else class="flex" :class='output.val? "flex-col" : "flex-row"'>
 			<div class="flex flex-col gap-2 p-3">
 				<span class="text-sm font-medium text-ink-gray-4"> Start </span>
 				<span class="text-sm text-ink-gray-9"> {{ date(x.start) }} </span>
