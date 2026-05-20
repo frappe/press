@@ -21,7 +21,7 @@ export interface TabProps {
 
 const props = withDefaults(defineProps<TabProps>(), {
 	variant: 'line',
-	size: 'sm',
+	size: 'md',
 })
 
 const model = defineModel<string | number>({ default: 0 })
@@ -34,17 +34,28 @@ const dir = computed<'rtl' | 'ltr'>(
 			: 'ltr'),
 )
 
-const indicatorXCss = `left-0 bottom-0 h-[2px] w-[--reka-tabs-indicator-size] transition-[width,transform]
+const indicatorXCss = `left-0 bottom-0 h-[1px] w-[--reka-tabs-indicator-size] transition-[width,transform]
                           translate-x-[--reka-tabs-indicator-position] translate-y-[1px]`
 
-const indicatorYCss = `end-0 top-0 w-[2px] h-[--reka-tabs-indicator-size]
+const indicatorYCss = `end-0 top-0 w-[1px] h-[--reka-tabs-indicator-size]
                        translate-y-[--reka-tabs-indicator-position] transition-[height,transform]`
 
 const txtCss =
 	'hover:text-ink-gray-9 data-[state=active]:text-ink-gray-9 text-ink-gray-5'
 
+defineSlots<{
+	default?: (props: { tab: Tab; selected: boolean }) => any
+	suffix?: (props: { tab: Tab }) => any
+}>()
+
+const btnSizeCss = {
+	xs: 'py-1.5 text-xs',
+	sm: 'py-2 text-sm',
+	md: 'py-2.5 text-base',
+}
+
 const btnCss = {
-	line: 'pb-2',
+	line: '',
 	solid:
 		'hover:bg-surface-gray-2 data-[state=active]:shadow data-[state=active]:bg-surface-white data-[state=active]:dark:bg-surface-gray-3 rounded',
 	ghost:
@@ -52,26 +63,9 @@ const btnCss = {
 }
 
 const tablistCss = {
-	line: 'border-b gap-3 px-5',
+	line: 'border-b gap-5 px-5',
 	solid: 'bg-surface-gray-1 text-ink-gray-9 rounded border',
 	ghost: 'text-ink-gray-9 gap-1',
-}
-
-defineSlots<{
-	default?: (props: { tab: Tab; selected: boolean }) => any
-	suffix?: (props: { tab: Tab }) => any
-}>()
-
-const sizeCss = {
-	xs: 'h-6 text-xs',
-	sm: 'h-7 text-sm',
-	md: 'h-8 text-base font-medium',
-}[props.size]
-
-const btnSizeCss = {
-	xs: 'px-1.5',
-	sm: 'px-2',
-	md: 'px-3.5',
 }
 </script>
 
@@ -84,7 +78,7 @@ const btnSizeCss = {
 	>
 		<TabsList
 			class="relative flex data-[orientation=vertical]:flex-col data-[orientation=vertical]:border-e"
-			:class="[tablistCss[variant],  sizeCss, tablistClass]"
+			:class="[tablistCss[variant], tablistClass]"
 		>
 			<TabsIndicator
 				v-if="variant == 'line'"
