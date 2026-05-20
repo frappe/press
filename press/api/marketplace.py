@@ -1429,7 +1429,6 @@ def get_app_audits(app: str) -> list[dict]:
 
 @frappe.whitelist(methods=["GET"])
 def get_app_audit(app: str, audit_name: str | None = None):
-	print("get_app_audit", app, audit_name)
 	"""Fetches a single audit report with all checks. Falls back to latest if no name given."""
 	_validate_app_audit_access(app)
 
