@@ -164,4 +164,4 @@ press.patches.v0_8_0.set_suspended_at_for_suspended_sites
 press.marketplace.patches.cleanup_code_screening_data
 press.patches.v0_8_0.merge_press_admin_member_roles
 press.patches.v0_8_0.team_member_default_role
-press.patches.v0_8_0.decouple_press_role_resource
+press.patches.v0_8_0.decouple_press_role_resources

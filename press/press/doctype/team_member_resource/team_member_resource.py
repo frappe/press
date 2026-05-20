@@ -7,6 +7,8 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from press.api.client import dashboard_whitelist
+
 if TYPE_CHECKING:
 	from press.press.doctype.team.team import Team
 
@@ -22,6 +24,8 @@ class TeamMemberResource(Document):
 		team: DF.Link
 		user: DF.Link
 	# end: auto-generated types
+
+	dashboard_fields = ("name", "team", "user", "document_type", "document")
 
 	def before_validate(self):
 		self.prevent_duplicate()
@@ -60,7 +64,7 @@ class TeamMemberResource(Document):
 		"""
 		Validate that the document type is one of the permitted types.
 		"""
-		permitted_document_types = ["Server", "Bench", "Site"]
+		permitted_document_types = ["Server", "Release Group", "Site"]
 		if self.document_type not in permitted_document_types:
 			frappe.throw(_("Document type must be one of {0}").format(", ".join(permitted_document_types)))
 
@@ -71,6 +75,10 @@ class TeamMemberResource(Document):
 		document_team = frappe.db.get_value(self.document_type, self.document, "team")
 		if document_team != self.team:
 			frappe.throw(_("Document {0} is not associated with team {1}").format(self.document, self.team))
+
+	@dashboard_whitelist()
+	def delete(self, *args, **kwargs):
+		super().delete(*args, **kwargs)
 
 
 def has_permission(doc, ptype, user):

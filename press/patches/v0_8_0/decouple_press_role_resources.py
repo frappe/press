@@ -12,3 +12,4 @@ def execute():
 		sync_press_role(press_role_doc)
 		update_progress_bar("Syncing Press Role Resources", index, total, absolute=True)
 		frappe.db.commit()
+	print()

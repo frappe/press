@@ -106,6 +106,7 @@ ALLOWED_DOCTYPES = [
 	"New Bench Queue",
 	"Partner Audit",
 	"Partner Non Conformance",
+	"Team Member Resource",
 ]
 
 whitelisted_methods = set()
