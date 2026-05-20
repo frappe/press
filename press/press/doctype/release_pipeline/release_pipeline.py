@@ -214,6 +214,24 @@ class ReleasePipeline(WorkflowBuilder):
 		self.update_pipeline_status("Running")  # Mark the pipeline as running!
 
 	@task(queue=_get_task_execution_queue())
+	def validate_invalid_releases(self, apps: list[dict[str, str]]):
+		"""Validate that none of the apps being deployed have invalid releases."""
+		for app in apps:
+			if not app.get("release"):
+				continue
+
+			# App release will always be present otherwise we won't be able to proceed.
+			app_info = frappe.db.get_value(
+				"App Release", app["release"], ["invalid_release", "invalidation_reason"], as_dict=True
+			)
+			if not app_info or not app_info["invalid_release"]:
+				continue
+
+			raise ReleasePipelineFailure(
+				f"Invalid release found for app {app['app']} with hash {app['hash']}. Reason: {app_info['invalidation_reason']}"
+			)
+
+	@task(queue=_get_task_execution_queue())
 	def validate_server_storages(self):
 		"""Validate server storage for all servers in the release group."""
 		self.release_group_doc.check_app_server_storage()
@@ -313,27 +331,6 @@ class ReleasePipeline(WorkflowBuilder):
 			},
 			"name",
 			order_by="creation desc",
-		)
-
-	@task(queue=_get_task_execution_queue())
-	def monitor_pre_build_validation(self, deploy_candidate_build: str):
-		"""Monitors the Deploy Candidate Build until the remote build job is created."""
-		deploy_candidate_build_status = frappe.db.get_value(
-			"Deploy Candidate Build", deploy_candidate_build, "status"
-		)
-
-		if deploy_candidate_build_status in ["Running", "Success"]:
-			return  # We have enqueued the remote agent job
-
-		if deploy_candidate_build_status == "Failure":
-			self._mark_if_user_failure(deploy_candidate_build)
-			raise ReleasePipelineFailure(
-				f"Pre Build Validation failed for Deploy Candidate Build {deploy_candidate_build}. "
-				"Please check the build logs for more details."
-			)
-
-		self.defer_current_task(
-			message=f"Waiting for remote build job to be enqueued for Deploy Candidate Build {deploy_candidate_build}",
 		)
 
 	@task(queue=_get_task_execution_queue())
@@ -523,6 +520,9 @@ class ReleasePipeline(WorkflowBuilder):
 
 		try:
 			self.validate_app_hashes(apps)  # This sets status to "Running"
+			# Let this be here for when we have a invalid release already this will ensure we
+			# Don't start the deploy with a invalid release
+			self.validate_invalid_releases(apps)
 			self.validate_server_storages()
 			self.validate_auto_scales_on_servers()
 		except (frappe.ValidationError, InsufficientSpaceOnServer) as e:
@@ -601,7 +601,6 @@ class ReleasePipeline(WorkflowBuilder):
 		"""Monitors primary and, if necessary, secondary builds."""
 		# Monitor Primary
 		self.add_build_to_pipeline(primary_build)
-		self.monitor_pre_build_validation(primary_build)
 		self.monitor_build_success(primary_build)
 
 		# Check for Secondary Architecture
@@ -616,7 +615,6 @@ class ReleasePipeline(WorkflowBuilder):
 
 			assert secondary_build, "Secondary build should be present for candidates requiring 2 builds"
 			self.add_build_to_pipeline(secondary_build)
-			self.monitor_pre_build_validation(secondary_build)
 			self.monitor_build_success(secondary_build)
 
 		if self.status == "Retrying":

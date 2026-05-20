@@ -11,14 +11,17 @@
 				{{ email }}
 			</div>
 		</div>
+		<Badge v-if="isCurrentUser" class="ml-2"> You </Badge>
 	</div>
 </template>
 
-<script setup>
-import { Avatar } from 'frappe-ui';
-const props = defineProps({
-	avatarImage: String,
-	fullName: String,
-	email: String,
-});
+<script setup lang="ts">
+import { Avatar, Badge } from 'frappe-ui';
+
+defineProps<{
+	avatarImage: string;
+	fullName: string;
+	email: string;
+	isCurrentUser: boolean;
+}>();
 </script>

@@ -27,7 +27,7 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 def google_oauth_flow():
 	config = frappe.conf.get("google_oauth_config")
 	redirect_uri = config["web"].get("redirect_uris")[0]
-	flow = Flow.from_client_config(
+	return Flow.from_client_config(
 		client_config=config,
 		scopes=[
 			"https://www.googleapis.com/auth/userinfo.profile",
@@ -36,7 +36,6 @@ def google_oauth_flow():
 		],
 		redirect_uri=redirect_uri,
 	)
-	return flow
 
 
 @frappe.whitelist(allow_guest=True)
@@ -44,9 +43,7 @@ def google_login(saas_app=None):
 	flow = google_oauth_flow()
 	authorization_url, state = flow.authorization_url()
 	minutes = 5
-	frappe.cache().set_value(
-		f"fc_oauth_state:{state}", saas_app or state, expires_in_sec=minutes * 60
-	)
+	frappe.cache().set_value(f"fc_oauth_state:{state}", saas_app or state, expires_in_sec=minutes * 60)
 	return authorization_url
 
 
@@ -84,13 +81,9 @@ def callback(code=None, state=None):
 	# phone (this may return nothing if info doesn't exists)
 	number = ""
 	if flow.credentials.refresh_token:  # returns only for the first authorization
-		credentials = Credentials.from_authorized_user_info(
-			json.loads(flow.credentials.to_json())
-		)
+		credentials = Credentials.from_authorized_user_info(json.loads(flow.credentials.to_json()))
 		service = build("people", "v1", credentials=credentials)
-		person = (
-			service.people().get(resourceName="people/me", personFields="phoneNumbers").execute()
-		)
+		person = service.people().get(resourceName="people/me", personFields="phoneNumbers").execute()
 		if person:
 			phone = person.get("phoneNumbers")
 			if phone:
@@ -120,14 +113,14 @@ def callback(code=None, state=None):
 				phone_number=number,
 			)
 			frappe.local.response.type = "redirect"
-			frappe.local.response.location = (
-				f"/dashboard/setup-account/{account_request.request_key}"
-			)
+			frappe.local.response.location = f"/dashboard/setup-account/{account_request.request_key}"
 		# login
 		else:
 			frappe.local.login_manager.login_as(email)
 			frappe.local.response.type = "redirect"
 			frappe.response.location = "/dashboard"
+
+	return None
 
 
 def create_account_request(email, first_name, last_name, phone_number=""):
@@ -140,7 +133,7 @@ def create_account_request(email, first_name, last_name, phone_number=""):
 			"last_name": last_name,
 			"phone_number": phone_number,
 			"send_email": False,
-			"role": "Press Admin",
+			"role": "Press User",
 			"oauth_signup": True,
 		}
 	).insert(ignore_permissions=True)
@@ -182,7 +175,7 @@ def saas_setup(key, app, country, subdomain):
 			"saas": True,
 			"erpnext": False,
 			"saas_app": app,
-			"role": "Press Admin",
+			"role": "Press User",
 			"country": country,
 			"subdomain": subdomain,
 		}
