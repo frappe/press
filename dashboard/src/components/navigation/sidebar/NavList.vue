@@ -22,10 +22,11 @@ import ItemGroup from "./ItemGroup.vue";
 import NotificationPanel from "./Notifications.vue";
 import SearchItem from "./SearchItem.vue";
 
+import { useRealtimeNotifs } from './useRealtimeNotifs'
+
 const $route = useRoute();
 const $team = getTeam();
 const $session = session;
-const $socket = getCurrentInstance().proxy.$socket;
 
 const navigation = computed(() => {
 	if (!$team?.doc) return [];
@@ -187,18 +188,12 @@ const navigation = computed(() => {
 	].filter((item) => item.condition ?? true);
 });
 
-onMounted(() => {
-	$socket.emit("doctype_subscribe", "Press Notification");
-	$socket.on("press_notification", (data) => {
-		if (data.team === $team.doc.name) {
-			unreadNotificationsCount.setData((data) => data + 1);
-		}
-	});
-});
+useRealtimeNotifs((data) => {
+	if (data.team === $team.doc.name) {
+		unreadNotificationsCount.setData((data) => data + 1)
+	}
+})
 
-onUnmounted(() => {
-	$socket.off("press_notification");
-});
 </script>
 
 <template>

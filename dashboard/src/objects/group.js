@@ -734,6 +734,21 @@ export default {
 					return { releaseGroup: releaseGroup.name };
 				},
 			},
+      {
+				label: 'Pipelines',
+				icon: LucidePocketKnife,
+        condition: () => getTeam().doc?.is_desk_user,
+				route: 'pipelines',
+        childrenRoutes: ['Release Pipeline'],
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../pages/benches/pipeline/List.vue'),
+				),
+				props: (releaseGroup) => {
+					return { releaseGroup: releaseGroup.name };
+				},
+			},
+
 			{
 				label: 'Regions',
 				icon: icon('globe'),
@@ -1029,6 +1044,11 @@ export default {
 			name: 'Deploy Candidate',
 			path: 'deploys/:id',
 			component: () => import('../pages/DeployCandidate.vue'),
+		},
+   	{
+			name: 'Release Pipeline',
+			path: 'pipelines/:id',
+			component: () => import('../components/benches/pipeline/Details.vue'),
 		},
 		{
 			name: 'Release Group Job',
