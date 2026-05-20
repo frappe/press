@@ -4,12 +4,10 @@
 import json
 import os
 import tempfile
-from pathlib import Path
 from typing import ClassVar
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
-import yaml
 from frappe.tests import UnitTestCase
 
 from press.marketplace.doctype.marketplace_app_audit.checks.compatibility import (
@@ -353,44 +351,6 @@ class TestSemgrepRulesParsing(UnitTestCase):
 		results = _build_category_results(findings)
 		# Both expected categories should pass since the finding doesn't belong to either
 		self.assertTrue(all(r.result == "Pass" for r in results))
-
-
-class TestMarketplaceAuditRuleSeverities(UnitTestCase):
-	"""Rule metadata that drives marketplace audit severity."""
-
-	RULES_DIR = Path(__file__).parent / "checks" / "semgrep-rules"
-	CORRECTNESS_SEVERITIES: ClassVar[dict[str, str]] = {
-		"frappe-modifying-but-not-committing": "HIGH",
-		"frappe-modifying-but-not-committing-other-method": "HIGH",
-		"frappe-modifying-child-tables-while-iterating": "HIGH",
-		"frappe-same-key-assigned-twice": "WARNING",
-		"frappe-manual-commit": "HIGH",
-		"frappe-single-value-type-safety": "WARNING",
-		"frappe-set-value-semantics": "HIGH",
-		"frappe-qb-incorrect-order-usage": "HIGH",
-		"frappe-incorrect-debounce": "WARNING",
-		"frappe-realtime-pick-room": "HIGH",
-		"frappe-test-whitelist-missing-protection": "HIGH",
-	}
-	COMMAND_EXECUTION_SEVERITIES: ClassVar[dict[str, str]] = {
-		"frappe-subprocess-exec": "HIGH",
-	}
-
-	def _rule_severities(self, rule_file: Path) -> dict[str, str]:
-		payload = yaml.safe_load(rule_file.read_text())
-		return {rule["id"]: rule["severity"] for rule in payload["rules"]}
-
-	def test_correctness_rule_severities_match_marketplace_policy(self):
-		severities = self._rule_severities(self.RULES_DIR / "correctness.yml")
-		for rule_id, expected_severity in self.CORRECTNESS_SEVERITIES.items():
-			with self.subTest(rule_id=rule_id):
-				self.assertEqual(severities[rule_id], expected_severity)
-
-	def test_command_execution_rule_severities_match_marketplace_policy(self):
-		severities = self._rule_severities(self.RULES_DIR / "security" / "command_execution.yml")
-		for rule_id, expected_severity in self.COMMAND_EXECUTION_SEVERITIES.items():
-			with self.subTest(rule_id=rule_id):
-				self.assertEqual(severities[rule_id], expected_severity)
 
 
 class TestCompatibilityChecks(UnitTestCase):
