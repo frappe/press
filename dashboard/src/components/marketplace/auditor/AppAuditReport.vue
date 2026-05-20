@@ -18,6 +18,7 @@ import type {
 	GetAppAuditResult,
 	MarketplaceAppAuditCheckRow,
 } from "@/components/marketplace/auditor/auditReportTypes";
+import TextParser from "@/components/marketplace/auditor/TextParser.vue";
 import {
 	auditResultHeadline,
 	type BadgeTheme,
@@ -28,8 +29,6 @@ import {
 	variantSeverity,
 } from "@/components/marketplace/auditor/utils";
 import dayjs from "@/utils/dayjs";
-import TextParser from "@/components/marketplace/auditor/TextParser.vue";
-
 
 const CATEGORY_ORDER = [
 	"Metadata",
@@ -274,7 +273,6 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 	const s = String(r).trim();
 	return s || undefined;
 }
-
 </script>
 
 <template>
@@ -346,9 +344,14 @@ v-else-if="auditResource.error"
 
 					<div class="space-y-4 px-3.5 py-4 sm:px-5">
 						<div v-if="checkStats.total" class="space-y-3">
-							<div
-								class="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm"
-							>
+							<div class="flex justify-between">
+								<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+
+
+
+
+
+
 								<span v-if="checkStats.pass > 0" class="font-medium text-ink-green-3">
 									{{ checkStats.pass }} passed
 								</span>
@@ -382,12 +385,14 @@ v-else-if="auditResource.error"
 									({{ failSeveritySummary }})
 								</span>
 							</div>
-							<div v-if="checkStats.blocking > 0" class="flex flex-wrap gap-2">
+								<div v-if="checkStats.blocking > 0" class="flex flex-wrap gap-2">
+
 								<Badge
 									:label="`${checkStats.blocking} blocking`"
 									theme="red"
 									size="sm"
 								/>
+							</div>
 							</div>
 						</div>
 					</div>
