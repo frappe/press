@@ -11,6 +11,7 @@ import Tabs from '@/components/common/Tabs.vue'
 
 import Stages from './Stages.vue'
 import CopyBtn from '@/components/utils/CopyBtn.vue'
+import Scrollbar from '@/components/common/Scrollbar.vue'
 import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
 
@@ -206,13 +207,12 @@ onBeforeUnmount(() => {
 
 		<!-- deploy steps + output -->
 		<div class="flex rounded border p-3 pt-1 flex-1 min-h-0">
-			<aside
-				class="overflow-y-auto overflow-x-hidden pr-3 px-0.5 flex-shrink-0 transition-all duration-500"
+			<Scrollbar
+				class="px-0.5 pr-3 transition-all duration-500 shrink-0"
 				:class="output.val ? 'w-[30rem]' : 'w-full'"
 			>
-				<div class="flex items-center gap-3 mb-3">
 					<Tabs
-						class="w-full"
+						class="w-full sticky top-0 z-10 bg-surface-white"
 						tablistClass="!px-0"
 						:tabs="sidebarTabs"
 						v-model="tabState"
@@ -226,7 +226,6 @@ onBeforeUnmount(() => {
 							>
 						</template>
 					</Tabs>
-				</div>
 
 				<Stages
 					v-if="tabState == 'Tasks'"
@@ -236,7 +235,7 @@ onBeforeUnmount(() => {
 				/>
 
 				<!-- list of errors -->
-				<section v-else>
+				<template v-else>
 					<div
 						v-for='x in [...errors?.data || [], ...warnings?.data || [] ]?.filter(x => x.document_name == activeBuildId)'
 						class="flex flex-col gap-1"
@@ -265,13 +264,13 @@ onBeforeUnmount(() => {
 							</div>
 						</Collapsable>
 					</div>
-				</section>
-			</aside>
+          </template>
+				</Scrollbar>
 
 			<!-- output -->
 			<div
 				v-show="output.val"
-				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 ml-2 rounded transition-all duration-500 flex-1"
+				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 rounded transition-all duration-500 flex-1"
 			>
 				<div
 					class="flex items-center gap-2 pb-2 border-outline-gray-2 mb-3 text-ink-gray-6"
