@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 
 import frappe
+import frappe.utils
 from frappe.model.document import Document
 from frappe.utils import get_url, random_string, validate_email_address
 
@@ -369,4 +370,7 @@ def has_permission(doc, ptype, user):
 	user = user or frappe.session.user
 	if doc.is_new():
 		return True
-	return frappe.has_permission(doctype="Team", doc=doc.team, ptype=ptype, user=user)
+	team = doc.team
+	if frappe.utils.validate_email_address(doc.team, throw=False):
+		team = frappe.db.get_value("Team", {"user": doc.team}, "name")
+	return frappe.has_permission(doctype="Team", doc=team, ptype=ptype, user=user)
