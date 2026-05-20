@@ -28,6 +28,8 @@ import {
 	variantSeverity,
 } from "@/components/marketplace/auditor/utils";
 import dayjs from "@/utils/dayjs";
+import TextParser from "@/components/marketplace/auditor/TextParser.vue";
+
 
 const CATEGORY_ORDER = [
 	"Metadata",
@@ -272,6 +274,7 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 	const s = String(r).trim();
 	return s || undefined;
 }
+
 </script>
 
 <template>
@@ -491,24 +494,24 @@ size="sm"
 													<span class="text-sm font-medium text-ink-gray-9">{{
 														row.check_name
 													}}</span>
-													<Badge
-														v-if="row.is_blocking"
-														label="Blocking"
-														theme="red"
-														size="sm"
-													/>
-												</div>
-												<p
-													v-if="row.message"
-													class="mt-1 text-sm leading-relaxed text-ink-gray-7"
-												>
-													{{ row.message }}
-												</p>
-											</div>
-											<div class="flex shrink-0 flex-wrap gap-1.5">
 												<Badge
-													:label="row.result"
-													:theme="themeCheckResult(row.result)"
+													v-if="row.is_blocking"
+													label="Blocking"
+													theme="red"
+													size="sm"
+												/>
+											</div>
+											<p
+												v-if="row.message"
+												class="mt-1 text-sm leading-relaxed text-ink-gray-7"
+											>
+												<TextParser :text="row.message" />
+											</p>
+										</div>
+										<div class="flex shrink-0 flex-wrap gap-1.5">
+											<Badge
+												:label="row.result"
+												:theme="themeCheckResult(row.result)"
 													size="sm"
 												/>
 												<Badge
@@ -559,7 +562,7 @@ v-if="row.severity" :label="row.severity"
 															v-if="occ.message"
 															class="mt-2 text-xs text-ink-gray-8 leading-normal"
 														>
-															{{ occ.message }}
+															<TextParser :text="occ.message" />
 														</p>
 													</div>
 												</div>
@@ -569,27 +572,27 @@ v-if="row.severity" :label="row.severity"
 													translate="no"
 													>{{ JSON.stringify(parsed.data, null, 2) }}</pre
 												>
-												<p
-													v-else-if="parsed.kind === 'text'"
-													class="mt-3 text-sm text-ink-gray-7"
-												>
-													{{ parsed.text }}
-												</p>
+											<p
+												v-else-if="parsed.kind === 'text'"
+												class="mt-3 text-sm text-ink-gray-7"
+											>
+												<TextParser :text="parsed.text" />
+											</p>
 											</template>
 										</template>
 
-										<div
-											v-if="remediationText(row)"
-											class="mt-4 border-l-[3px] border-l-outline-green-2 pl-3"
-										>
-											<p class="mb-0.5 text-sm font-medium text-ink-gray-6">
-												How to fix?
-											</p>
+									<div
+										v-if="remediationText(row)"
+										class="mt-4 border-l-[3px] border-l-outline-green-2 pl-3"
+									>
+										<p class="mb-0.5 text-sm font-medium text-ink-gray-6">
+											How to fix?
+										</p>
 
-											<p class="text-sm leading-relaxed text-ink-gray-7">
-												{{ remediationText(row) }}
-											</p>
-										</div>
+										<p class="text-sm leading-relaxed text-ink-gray-7">
+											<TextParser :text="remediationText(row)!" />
+										</p>
+									</div>
 									</div>
 								</div>
 							</AccordionContent>
@@ -651,34 +654,34 @@ v-if="row.severity" :label="row.severity"
 													class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
 												>
 													<div class="min-w-0">
-														<span class="text-sm font-medium text-ink-gray-9">{{
-															row.check_name
-														}}</span>
-														<p
-															v-if="row.message"
-															class="mt-1 text-sm leading-relaxed text-ink-gray-7"
-														>
-															{{ row.message }}
-														</p>
-													</div>
-													<Badge
-														:label="row.result"
-														:theme="themeCheckResult(row.result)"
-														size="sm"
-													/>
-												</div>
-												<div
-													v-if="remediationText(row)"
-													class="mt-3 border-l-[3px] border-l-outline-gray-3 pl-3"
-												>
-													<p class="mb-0.5 text-sm font-medium text-ink-gray-6">
-														How to fix
+													<span class="text-sm font-medium text-ink-gray-9">{{
+														row.check_name
+													}}</span>
+													<p
+														v-if="row.message"
+														class="mt-1 text-sm leading-relaxed text-ink-gray-7"
+													>
+														<TextParser :text="row.message" />
 													</p>
+												</div>
+												<Badge
+													:label="row.result"
+													:theme="themeCheckResult(row.result)"
+													size="sm"
+												/>
+											</div>
+											<div
+												v-if="remediationText(row)"
+												class="mt-3 border-l-[3px] border-l-outline-gray-3 pl-3"
+											>
+												<p class="mb-0.5 text-sm font-medium text-ink-gray-6">
+													How to fix
+												</p>
 
-													<p class="text-sm leading-relaxed text-ink-gray-7">
-														{{ remediationText(row) }}
-													</p>
-												</div>
+												<p class="text-sm leading-relaxed text-ink-gray-7">
+													<TextParser :text="remediationText(row)!" />
+												</p>
+											</div>
 											</div>
 										</div>
 									</AccordionContent>

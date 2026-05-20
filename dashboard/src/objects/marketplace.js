@@ -326,7 +326,7 @@ export default {
 				route: "audit-reports",
 				type: "Component",
 				component: defineAsyncComponent(
-					() => import("../components/marketplace/AppAuditReportsList.vue"),
+					() => import("../components/marketplace/auditor/AppAuditReportsList.vue"),
 				),
 				props: (app) => {
 					return { app: app.doc.name };

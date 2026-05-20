@@ -8,7 +8,7 @@ import {
 } from "frappe-ui";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import AppAuditReport from "@/components/marketplace/AppAuditReport.vue";
+import AppAuditReport from "@/components/marketplace/auditor/AppAuditReport.vue";
 import {
 	formatDt,
 	themeAuditResult,
