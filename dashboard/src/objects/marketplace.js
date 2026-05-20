@@ -326,7 +326,8 @@ export default {
 				route: "audit-reports",
 				type: "Component",
 				component: defineAsyncComponent(
-					() => import("../components/marketplace/auditor/AppAuditReportsList.vue"),
+					() =>
+						import("../components/marketplace/auditor/AppAuditReportsList.vue"),
 				),
 				props: (app) => {
 					return { app: app.doc.name };
@@ -609,37 +610,6 @@ function showReleases(row, app) {
 									type: "Badge",
 									width: 0.15,
 									align: "center",
-								},
-								{
-									label: "Audit",
-									type: "Component",
-									width: 0.15,
-									align: "center",
-									component: ({ row }) => {
-										const theme = {
-											Pass: "green",
-											"Needs Improvement": "orange",
-											Warn: "yellow",
-											Fail: "red",
-											Inconclusive: "gray",
-										};
-										return h(
-											RouterLink,
-											{
-												to: {
-													name: "Marketplace App Detail Audit Report",
-													params: { name: app.doc.name },
-												},
-												class:
-													"inline-flex cursor-pointer rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400",
-											},
-											() =>
-												h(Badge, {
-													label: row.audit_result || "Pending",
-													theme: theme[row.audit_result] || "gray",
-												}),
-										);
-									},
 								},
 								{
 									label: "",
