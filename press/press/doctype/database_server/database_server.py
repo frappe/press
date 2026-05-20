@@ -92,6 +92,7 @@ class DatabaseServer(BaseServer):
 		is_server_renamed: DF.Check
 		is_server_setup: DF.Check
 		is_stalk_setup: DF.Check
+		is_static_ip: DF.Check
 		is_unified_server: DF.Check
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
@@ -230,7 +231,7 @@ class DatabaseServer(BaseServer):
 	def on_update(self):
 		self.publish_linked_server_realtime_update()
 
-		if self.flags.in_insert or self.is_new():
+		if self.flags.in_insert:
 			return
 
 		if self.is_replication_setup and self.auto_purge_binlog_based_on_size:
@@ -244,8 +245,10 @@ class DatabaseServer(BaseServer):
 		):
 			self.update_memory_limits()
 
-		if not self.is_new() and self.has_value_changed("team"):
+		if self.has_value_changed("team"):
 			self.update_subscription()
+
+		self._create_static_ip_log()
 
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
@@ -802,7 +805,12 @@ class DatabaseServer(BaseServer):
 
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
-			server_ids = frappe.get_all("Database Server", fields=["server_id"], pluck="server_id")
+			server_ids = frappe.get_all(
+				"Database Server",
+				filters={"is_unified_server": self.is_unified_server},
+				fields=["server_id"],
+				pluck="server_id",
+			)
 			if server_ids:
 				self.server_id = max(server_ids or []) + 1
 			else:

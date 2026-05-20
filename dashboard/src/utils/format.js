@@ -44,6 +44,25 @@ export function duration(value) {
 	return dayjs.duration({ hours, minutes, seconds }).format(format);
 }
 
+export const secsToDuration = (seconds) => {
+	if (seconds == null) return '';
+	seconds = Math.floor(seconds);
+
+	if (seconds <= 0) return '0s';
+
+	const hours = Math.floor(seconds / 3600);
+	const minutes = Math.floor((seconds % 3600) / 60);
+	const secs = seconds % 60;
+
+	let parts = [];
+
+	if (hours) parts.push(`${hours}h`);
+	if (minutes) parts.push(`${minutes}m`);
+	if (secs) parts.push(`${secs}s`);
+
+	return parts.join(' ');
+}
+
 export function plural(number, singular, plural) {
 	if (typeof number === 'string') {
 		number = parseInt(number);

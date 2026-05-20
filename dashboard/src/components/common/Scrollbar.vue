@@ -4,7 +4,13 @@ import {
 	ScrollAreaViewport,
 	ScrollAreaThumb,
 	ScrollAreaScrollbar,
-} from 'reka-ui';
+} from 'reka-ui'
+
+interface Props {
+	as?: string
+}
+
+defineProps<Props>()
 </script>
 
 <template>
@@ -13,7 +19,7 @@ import {
 		style="--scrollbar-size: 10px"
 		:scroll-hide-delay="0"
 	>
-		<ScrollAreaViewport class="w-full h-full">
+		<ScrollAreaViewport class="w-full h-full" :as>
 			<slot />
 		</ScrollAreaViewport>
 
