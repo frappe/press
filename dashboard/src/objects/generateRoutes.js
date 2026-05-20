@@ -45,10 +45,12 @@ export default function generateRoutes() {
 			});
 			if (object.routes) {
 				for (let route of object.routes) {
+          const staticProps = typeof route.props === 'object' ? route.props : {};
+
 					children.push({
 						...route,
 						props: (route) => {
-							return { objectType, ...route.params };
+     				return { objectType, ...route.params, ...staticProps };
 						},
 					});
 				}
