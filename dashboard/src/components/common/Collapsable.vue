@@ -27,9 +27,9 @@ function toggle() {
 			@click.prevent="toggle"
 		>
 			<slot name="header" />
-			<LucideChevronRight
+			<LucideChevronUp
 				class="shrink-0 size-4 ml-auto transition-transform duration-300"
-				:class='opened? "rotate-90":""'
+				:class='opened? "rotate-180":""'
 			/>
 		</summary>
 	</details>
