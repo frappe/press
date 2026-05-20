@@ -31,6 +31,8 @@ export interface MarketplaceAppAuditDoc {
 	modified?: string;
 	marketplace_app?: string;
 	app_release?: string | null;
+	app_source?: string | null;
+	source_version?: string | null;
 	approval_request?: string | null;
 	team?: string | null;
 	audit_type?: string;
