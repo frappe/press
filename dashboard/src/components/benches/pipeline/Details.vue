@@ -73,7 +73,7 @@ const dropdownOptions = computed(() => {
       label: 'View App Versions',
       icon: 'package',
       onClick: appVersions,
-      condition: () => props.deployview
+      condition: () => props.deployview && deployviewBuild.value
     }
   ]
 
@@ -350,7 +350,7 @@ const stopBuild = () => {
           </button>
         </div>
 
-        <pre class="font-mono text-xs overflow-auto -m-3 p-2" :class='output.status == "Failure" ? "bg-surface-red-1 text-ink-red-3" :
+        <pre class="font-mono text-xs overflow-auto -m-3 p-1 px-3.5" :class='output.status == "Failure" ? "bg-surface-red-1 text-ink-red-3" :
           ""'>{{ output.val }}</pre>
       </div>
     </div>
