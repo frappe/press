@@ -36,7 +36,7 @@ function toggle() {
 
 	<div
 		:inert="!opened"
-		class="grid duration-500"
+		class="grid transition-[grid-template-rows] duration-500"
 		:class='opened? "grid-rows-[1fr]":"grid-rows-[0fr]"'
 	>
 		<div class="overflow-hidden"><slot /> </div>
