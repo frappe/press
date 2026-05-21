@@ -208,6 +208,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 								team: team.doc.name,
 								userId: row.email,
 								userName: row.full_name || row.email,
+								resourceCount: row.resource_count,
 								allServers: row.all_servers,
 								allReleaseGroups: row.all_release_groups,
 								allSites: row.all_sites,

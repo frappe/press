@@ -9,15 +9,15 @@ import {
 	Tooltip,
 } from 'frappe-ui'
 import { computed, ref, watch } from 'vue'
-import LucideDot from '~icons/lucide/dot'
-import LucideGlobe from '~icons/lucide/globe'
-import LucidePackage from '~icons/lucide/package'
-import LucideServer from '~icons/lucide/server'
+import ReleaseGroupIcon from '~icons/lucide/boxes'
+import SiteIcon from '~icons/lucide/panel-top-inactive'
+import ServerIcon from '~icons/lucide/server'
 
 const props = defineProps<{
 	team: string
 	userId: string
 	userName: string
+	resourceCount: number
 	allServers: boolean
 	allReleaseGroups: boolean
 	allSites: boolean
@@ -156,21 +156,22 @@ watch(
 </script>
 
 <template>
-	<div
-		class="px-3 py-2 rounded border hover:bg-gray-100 cursor-pointer flex items-center gap-3"
-		@click="open = true"
-	>
+	<div class="cursor-pointer flex items-center gap-3" @click="open = true">
 		<Tooltip v-if="allServers" text="This user can access all servers">
-			<LucideServer class="h-4 w-4" />
+			<ServerIcon class="h-4 w-4" />
 		</Tooltip>
 		<Tooltip
 			v-if="allReleaseGroups"
 			text="This user can access all release groups"
 		>
-			<LucidePackage class="h-4 w-4" />
+			<ReleaseGroupIcon class="h-4 w-4" />
 		</Tooltip>
 		<Tooltip v-if="allSites" text="This user can access all sites">
-			<LucideGlobe class="h-4 w-4" />
+			<SiteIcon class="h-4 w-4" />
+		</Tooltip>
+		<p>&mdash;</p>
+		<Tooltip text="This user has access to these many resources explicitly">
+			<p>{{ resourceCount }}</p>
 		</Tooltip>
 	</div>
 	<Dialog v-model="open" :options="{size: '2xl'}">
