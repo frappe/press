@@ -130,6 +130,7 @@ permission_query_conditions = {
 	"Server Snapshot": "press.press.doctype.server_snapshot.server_snapshot.get_permission_query_conditions",
 	"Server Snapshot Recovery": "press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.get_permission_query_conditions",
 	"Release Pipeline": "press.press.doctype.release_pipeline.release_pipeline.get_permission_query_conditions",
+	"Team Member Resource": "press.press.doctype.team_member_resource.team_member_resource.get_permission_query_conditions",
 }
 has_permission = {
 	"Team Member Resource": "press.press.doctype.team_member_resource.team_member_resource.has_permission",

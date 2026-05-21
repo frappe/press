@@ -8,6 +8,7 @@ from frappe import _
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
+from press.overrides import get_permission_query_conditions_for_doctype
 
 if TYPE_CHECKING:
 	from press.press.doctype.team.team import Team
@@ -84,6 +85,9 @@ class TeamMemberResource(Document):
 	@dashboard_whitelist()
 	def delete(self, *args, **kwargs):
 		super().delete(*args, **kwargs)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Team Member Resource")
 
 
 def has_permission(doc, ptype, user):
