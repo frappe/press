@@ -29,14 +29,14 @@ function toggle() {
 			<slot name="header" />
 			<LucideChevronUp
 				class="shrink-0 size-4 ml-auto transition-transform duration-300"
-				:class='opened? "rotate-180":""'
+				:class='opened? "":"rotate-180"'
 			/>
 		</summary>
 	</details>
 
 	<div
 		:inert="!opened"
-		class="grid transition-[grid-template-rows] duration-500"
+		class="grid duration-500"
 		:class='opened? "grid-rows-[1fr]":"grid-rows-[0fr]"'
 	>
 		<div class="overflow-hidden"><slot /> </div>
