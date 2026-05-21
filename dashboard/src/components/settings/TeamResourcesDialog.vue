@@ -6,13 +6,25 @@ import {
 	Dialog,
 	Divider,
 	MultiSelect,
+	Tooltip,
 } from 'frappe-ui'
 import { computed, ref, watch } from 'vue'
+import LucideDot from '~icons/lucide/dot'
+import LucideGlobe from '~icons/lucide/globe'
+import LucidePackage from '~icons/lucide/package'
+import LucideServer from '~icons/lucide/server'
 
 const props = defineProps<{
 	team: string
 	userId: string
 	userName: string
+	allServers: boolean
+	allReleaseGroups: boolean
+	allSites: boolean
+}>()
+
+const emits = defineEmits<{
+	update: [string, boolean]
 }>()
 
 const open = ref(false)
@@ -144,7 +156,23 @@ watch(
 </script>
 
 <template>
-	<div @click="open = true">Foobar</div>
+	<div
+		class="px-3 py-2 rounded border hover:bg-gray-100 cursor-pointer flex items-center gap-3"
+		@click="open = true"
+	>
+		<Tooltip v-if="allServers" text="This user can access all servers">
+			<LucideServer class="h-4 w-4" />
+		</Tooltip>
+		<Tooltip
+			v-if="allReleaseGroups"
+			text="This user can access all release groups"
+		>
+			<LucidePackage class="h-4 w-4" />
+		</Tooltip>
+		<Tooltip v-if="allSites" text="This user can access all sites">
+			<LucideGlobe class="h-4 w-4" />
+		</Tooltip>
+	</div>
 	<Dialog v-model="open" :options="{size: '2xl'}">
 		<template #body>
 			<div class="p-6 text-base space-y-4 font-normal">
@@ -165,9 +193,10 @@ watch(
 					class="py-3 px-4 leading-5 rounded border bg-surface-gray-1 border-outline-gray-1 text-ink-gray-8"
 				>
 					These resources can be accessed by
-					<span class="font-medium">{{ userName }}</span>
-					(<span class="font-medium">{{ userId }}</span>) as a member of this
-					team.
+					<span class="font-medium">{{ userName }}</span>(<span
+						class="font-medium"
+						>{{ userId }}</span
+					>) as a member of this team.
 				</p>
 				<div class="rounded-sm border divide-y">
 					<div
@@ -217,13 +246,25 @@ watch(
 				</p>
 				<div class="grid grid-cols-3 gap-2">
 					<div class="rounded-md border px-3 py-2">
-						<Checkbox label="All Servers" :model-value="true" />
+						<Checkbox
+							label="All Servers"
+							:model-value="allServers"
+							@update:model-value="$emit('update', 'all_servers', $event)"
+						/>
 					</div>
 					<div class="rounded-md border px-3 py-2">
-						<Checkbox label="All Benches" :model-value="true" />
+						<Checkbox
+							label="All Release Groups"
+							:model-value="allReleaseGroups"
+							@update:model-value="$emit('update', 'all_release_groups', $event)"
+						/>
 					</div>
 					<div class="rounded-md border px-3 py-2">
-						<Checkbox label="All Sites" />
+						<Checkbox
+							label="All Sites"
+							:model-value="allSites"
+							@update:model-value="$emit('update', 'all_sites', $event)"
+						/>
 					</div>
 				</div>
 				<Divider />

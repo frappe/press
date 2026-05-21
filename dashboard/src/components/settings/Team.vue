@@ -107,7 +107,6 @@ const progress = (promise, msgLoading, msgSuccess) => {
 </script>
 
 <template>
-	<TeamResourcesDialog />
 	<TeamInviteDialog
 		v-model="isInviteOpen"
 		@success="
@@ -209,6 +208,20 @@ const progress = (promise, msgLoading, msgSuccess) => {
 								team: team.doc.name,
 								userId: row.email,
 								userName: row.full_name || row.email,
+								allServers: row.all_servers,
+								allReleaseGroups: row.all_release_groups,
+								allSites: row.all_sites,
+								onUpdate: (key: string, value: boolean) => {
+									updateTeam.submit({
+										fieldname: 'team_members',
+										value: team.doc.team_members.map((m) => {
+											if (m.name === row.name) {
+												m[key] = value;
+											}
+											return m;
+										}),
+									})
+								},
 							});
 						}
 					},
