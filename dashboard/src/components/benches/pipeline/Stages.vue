@@ -31,7 +31,9 @@ const handleDummyStage = (x) => {
 
   props.updateDeployViewBuild(x)
   props.updateDummyStage(2, x.status)
-  props.updateDummyStage(3, x.status == 'Success' ? x.status: 'Pending')
+
+ const pendingState =  ['Success', 'Failure'].includes(x.status) ? x.status : 'Pending'
+  props.updateDummyStage(3, pendingState)
 }
 
 watch(
@@ -46,7 +48,6 @@ watch(
 					doctype: 'Deploy Candidate Build',
 					name: id,
 					auto: true,
-					fields: ['build_steps'],
           onSuccess: handleDummyStage
 				})
 
@@ -68,11 +69,6 @@ watch(
 
 				socket.on(`bench_deploy:${id}:finished`, () => {
 					buildResources.value[id]?.reload()
-
-         if(props.updateDummyStage) {
-            props.updateDummyStage(2, "Success")
-            props.updateDummyStage(3, "Success")
-         }
 
 					const rgDoc = getCachedDocumentResource(
 						'Release Group',
@@ -98,6 +94,7 @@ onBeforeUnmount(() => {
 	wired.forEach((id) => {
 		socket.emit('doc_unsubscribe', 'Deploy Candidate Build', id)
 		socket.off(`bench_deploy:${id}:steps`)
+    socket.off(`bench_deploy:${id}:finished`)
 	})
 })
 
