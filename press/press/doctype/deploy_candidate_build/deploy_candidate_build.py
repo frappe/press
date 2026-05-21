@@ -800,6 +800,7 @@ class DeployCandidateBuild(Document):
 		self.candidate._set_container_mounts()
 
 		dockerfile = self._generate_dockerfile()
+		user_keys, host_keys = self.candidate.generate_ssh_keys()
 		# Add build steps based on dockerfile checkpoints before starting the build
 		self.add_build_steps(dockerfile)
 		self.add_post_build_steps()
@@ -843,6 +844,11 @@ class DeployCandidateBuild(Document):
 				"dependencies": dependencies,
 			},
 		}
+		if user_keys and host_keys:
+			build_parameters["ssh_keys"] = {
+				"user": user_keys,
+				"host": host_keys,
+			}
 		if self.platform == "arm64":
 			build_parameters.update({"platform": self.platform})
 

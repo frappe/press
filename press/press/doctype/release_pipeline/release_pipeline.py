@@ -612,7 +612,7 @@ class ReleasePipeline(WorkflowBuilder):
 			primary_build = self.initiate_pre_build_validations(deploy_candidate)
 
 			return deploy_candidate, primary_build
-		except frappe.ValidationError as e:
+		except Exception as e:
 			raise ReleasePipelineFailure(f"Failed to prepare deployment: {e!s}") from e
 
 	@task(queue=_get_task_execution_queue())
