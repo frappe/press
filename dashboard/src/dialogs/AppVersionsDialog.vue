@@ -163,9 +163,7 @@ export default {
 			await this.$resources.redeployBuild
 				.submit()
 				.then((response) => {
-					this.$router.push({
-						path: response,
-					});
+          window.location.href = response
 					this.show = false;
 				})
 				.catch(() => {

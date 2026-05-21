@@ -183,7 +183,6 @@ const updateDeployViewBuild = (data) => {
   deployviewBuild.value = data
 }
 
-
 const appVersions = () => {
   const deploy = deployviewBuild.value;
   renderDialog(
@@ -288,8 +287,7 @@ const stopBuild = () => {
       <div class="flex flex-col gap-2 border p-4 rounded">
         <b> Duration </b>
         <span>
-          {{ deployview ? duration(deployviewBuild?.build_duration || '-') : secsToDuration(pipeline?.doc?.steps?.duration
-            || '-') }}
+          {{ deployview ? duration(deployviewBuild?.build_duration) || '-' : secsToDuration(pipeline?.doc?.steps?.duration) || '-' }}
         </span>
       </div>
     </section>
@@ -297,7 +295,7 @@ const stopBuild = () => {
     <!-- deploy steps + output -->
     <div class="flex rounded border p-3 pt-1 flex-1 min-h-0">
       <Scrollbar class="px-0.5 pr-3 transition-all duration-500 shrink-0" :class="output.val ? 'w-[30rem]' : 'w-full'">
-        <Tabs class="w-full sticky top-0 z-10 bg-surface-white" tablistClass="!px-0" :tabs="sidebarTabs"
+        <Tabs class="w-full sticky top-0 z-10 bg-surface-white mb-2" tablistClass="!px-0" :tabs="sidebarTabs"
           v-model="tabState">
           <template #suffix="{ tab }">
             <span v-if='tab.label == "Issues"' class="bg-surface-gray-2 py-0.5 px-1 rounded text-xs leading-none">
@@ -324,7 +322,7 @@ const stopBuild = () => {
               <div v-html="x.message" class="leading-relaxed rounded p-3 ml-3 mb-3 text-sm"
                 :class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-4" : "bg-surface-amber-1 text-ink-amber-3"' />
 
-              <div class="w-full flex justify-end">
+              <div class="w-full flex justify-end" v-if='x.assistance_url'>
                 <a :href="x.assistance_url" target="_blank"
                   class="bg-surface-gray-1 p-1.5 px-2.5 rounded hover:opacity-70">
                   Fix
