@@ -211,7 +211,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-04-23 15:31:55.323135",
+ "modified": "2026-05-06 09:11:19.314599",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Log Server",
@@ -231,6 +231,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

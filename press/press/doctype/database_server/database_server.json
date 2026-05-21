@@ -607,7 +607,7 @@
    "link_fieldname": "database_server"
   }
  ],
- "modified": "2025-05-19 18:45:32.246644",
+ "modified": "2026-05-11 15:55:02.487155",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
@@ -639,6 +639,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

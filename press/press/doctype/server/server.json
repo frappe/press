@@ -40,6 +40,7 @@
   "private_mac_address",
   "private_vlan_id",
   "agent_section",
+  "column_break_esyj",
   "agent_password",
   "column_break_pdbx",
   "disable_agent_job_auto_retry",
@@ -112,8 +113,7 @@
   {
    "fieldname": "agent_password",
    "fieldtype": "Password",
-   "label": "Agent Password",
-   "set_only_once": 1
+   "label": "Agent Password"
   },
   {
    "collapsible": 1,
@@ -202,8 +202,7 @@
    "default": "0",
    "fieldname": "use_for_new_benches",
    "fieldtype": "Check",
-   "label": "Use For New Benches",
-   "read_only": 0
+   "label": "Use For New Benches"
   },
   {
    "fieldname": "hostname",
@@ -591,10 +590,15 @@
    "fieldtype": "Select",
    "label": "Platform",
    "options": "x86_64\narm64"
+  },
+  {
+   "fieldname": "column_break_esyj",
+   "fieldtype": "Column Break",
+   "set_only_once": 1
   }
  ],
  "links": [],
- "modified": "2025-05-08 14:16:23.903981",
+ "modified": "2026-05-11 16:37:55.916112",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
@@ -626,6 +630,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

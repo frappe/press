@@ -32,10 +32,7 @@ class DatabaseServer(BaseServer):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-
-		from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
-			DatabaseServerMariaDBVariable,
-		)
+		from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import DatabaseServerMariaDBVariable
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.server_mount.server_mount import ServerMount
 

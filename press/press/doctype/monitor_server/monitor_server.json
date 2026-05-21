@@ -231,8 +231,8 @@
    "fieldname": "prometheus_username",
    "fieldtype": "Data",
    "label": "Prometheus Username"
- },
- {
+  },
+  {
    "fieldname": "ssh_user",
    "fieldtype": "Data",
    "label": "SSH User"
@@ -251,7 +251,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2025-05-07 15:11:11.557419",
+ "modified": "2026-05-06 11:03:35.006745",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",
@@ -271,6 +271,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
