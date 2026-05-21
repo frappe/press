@@ -104,8 +104,8 @@ def sync_press_role(doc, method=None):
 	doctype, ensuring that all team members have their resources updated
 	according to their assigned `Press Role`s.
 	"""
-	users = [user.user for user in doc.users]
 	team = doc.team
+	users = frappe.get_all("Team Member", filters={"parent": team}, pluck="user")
 
 	# Delete all existing `team-member-resource` entries for the team.
 	frappe.db.delete("Team Member Resource", {"team": team})
