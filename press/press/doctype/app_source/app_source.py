@@ -12,7 +12,7 @@ import requests
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 
-from press.api.github import get_access_token, get_auth_headers
+from press.api.github import GithubFetchError, get_access_token, get_auth_headers
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import get_current_team, log_error
 
@@ -288,7 +288,7 @@ class AppSource(Document):
 		token = get_access_token(self.github_installation_id)
 		if token is None:
 			# Do not edit without updating deploy_notifications.py
-			raise Exception("App installation token could not be fetched", self.app)
+			raise GithubFetchError("App installation token could not be fetched", self.app)
 
 		return f"https://x-access-token:{token}@github.com/{self.repository_owner}/{self.repository}"
 
