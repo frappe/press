@@ -19,6 +19,16 @@
 	</div>
 
 	<div
+		v-else-if="spendingLimitExceeded"
+		class="mx-auto mt-60 w-fit rounded-md border-2 border-dashed px-12 py-8 text-center text-gray-600"
+	>
+		<LucideAlertTriangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+		<p>
+			Your spending limit has been exceeded. Please contact support to increase
+			your limit.
+		</p>
+	</div>
+	<div
 		v-else-if="serverEnabled"
 		class="flex w-full justify-center px-4 sm:px-5"
 	>
@@ -46,9 +56,7 @@
 								]"
 							>
 								<div class="flex w-full items-center justify-between space-x-2">
-									<span class="text-sm font-medium">
-										{{ c.title }}
-									</span>
+									<span class="text-sm font-medium"> {{ c.title }} </span>
 									<Tooltip :text="c.description">
 										<lucide-info class="h-4 w-4 text-ink-gray-5" />
 									</Tooltip>
@@ -160,9 +168,7 @@
 									<div class="flex w-full items-center justify-between">
 										<div class="flex w-full items-center space-x-2">
 											<img :src="r.image" class="h-5 w-5 rounded-sm" />
-											<span class="text-sm font-medium">
-												{{ r.name }}
-											</span>
+											<span class="text-sm font-medium"> {{ r.name }} </span>
 										</div>
 									</div>
 								</button>
@@ -207,9 +213,7 @@
 									<div
 										class="flex w-full items-center justify-between space-x-2"
 									>
-										<span class="text-sm font-medium">
-											{{ c.name }}
-										</span>
+										<span class="text-sm font-medium"> {{ c.name }} </span>
 										<Tooltip :text="c.description">
 											<lucide-info class="h-4 w-4 text-ink-gray-5" />
 										</Tooltip>
@@ -266,9 +270,7 @@
 									<div
 										class="flex w-full items-center justify-between space-x-2"
 									>
-										<span class="text-sm font-medium">
-											{{ c.name }}
-										</span>
+										<span class="text-sm font-medium"> {{ c.name }} </span>
 										<Tooltip :text="c.description">
 											<lucide-info class="h-4 w-4 text-ink-gray-5" />
 										</Tooltip>
@@ -380,9 +382,9 @@
 									class="flex flex-col rounded-md border border-outline-gray-2 p-3 gap-2"
 								>
 									<p class="text-base text-ink-gray-9">
-										<span class="font-medium">{{
-											availableAppPlanTypes[0].title
-										}}</span>
+										<span class="font-medium"
+											>{{ availableAppPlanTypes[0].title }}</span
+										>
 										machines are available.
 									</p>
 
@@ -486,9 +488,9 @@
 									class="flex flex-col rounded-md border border-outline-gray-2 p-3 gap-2"
 								>
 									<p class="text-base text-ink-gray-9">
-										<span class="font-medium">{{
-											availableDbPlanTypes[0].title
-										}}</span>
+										<span class="font-medium"
+											>{{ availableDbPlanTypes[0].title }}</span
+										>
 										machines are available.
 									</p>
 
@@ -572,7 +574,9 @@
 						class="mb-2"
 					/>
 
-					<div class="my-4 rounded-md border bg-surface-gray-1 p-3 prose-sm prose">
+					<div
+						class="my-4 rounded-md border bg-surface-gray-1 p-3 prose-sm prose"
+					>
 						<p>
 							This feature will automatically increases the storage as it
 							reaches over <b>90%</b> of its capacity.
@@ -580,8 +584,8 @@
 
 						<p class="py-1">
 							With this feature disabled, disk capacity
-							<strong>will not increase automatically</strong> in the event your
-							server approaches or reaches its storage limit.
+							<strong>will not increase automatically</strong>
+							in the event your server approaches or reaches its storage limit.
 						</p>
 
 						<strong>Note</strong>
@@ -637,20 +641,21 @@
 						v-if="serverType === 'dedicated' && appServerPlan"
 					>
 						<div class="text-base text-ink-gray-7">
-							{{
-								unifiedServer
+							{{ unifiedServer
 									? 'Unified Server Plan'
-									: 'Application Server Plan'
-							}}
+									: 'Application Server Plan' }}
 						</div>
 						<div class="text-base font-medium">
 							{{ $format.planTitle(appServerPlan) }}/mo -
 							{{ getPlanTypeTitle(appServerPlan) }}
 						</div>
 						<div class="text-xs text-ink-gray-7">
-							{{ appServerPlan.vcpu }} vCPUs •
-							{{ $format.bytes(appServerPlan.memory, 0, 2) }} Memory •
-							{{ appServerPlan.disk }} GB Disk •
+							{{ appServerPlan.vcpu }}
+							vCPUs •
+							{{ $format.bytes(appServerPlan.memory, 0, 2) }}
+							Memory •
+							{{ appServerPlan.disk }}
+							GB Disk •
 							{{ appServerPlan.instance_type }}
 						</div>
 					</div>
@@ -666,9 +671,12 @@
 							{{ getPlanTypeTitle(dbServerPlan) }}
 						</div>
 						<div class="text-xs text-ink-gray-7">
-							{{ dbServerPlan.vcpu }} vCPUs •
-							{{ $format.bytes(dbServerPlan.memory, 0, 2) }} Memory •
-							{{ dbServerPlan.disk }} GB Disk • {{ dbServerPlan.instance_type }}
+							{{ dbServerPlan.vcpu }}
+							vCPUs •
+							{{ $format.bytes(dbServerPlan.memory, 0, 2) }}
+							Memory •
+							{{ dbServerPlan.disk }}
+							GB Disk • {{ dbServerPlan.instance_type }}
 						</div>
 					</div>
 
@@ -679,7 +687,8 @@
 					>
 						<div class="text-base text-ink-gray-7">App Server IPs</div>
 						<div class="text-base font-medium">
-							{{ appPublicIP }} / {{ appPrivateIP }}
+							{{ appPublicIP }}
+							/ {{ appPrivateIP }}
 						</div>
 					</div>
 
@@ -689,7 +698,8 @@
 					>
 						<div class="text-base text-ink-gray-7">DB Server IPs</div>
 						<div class="text-base font-medium">
-							{{ dbPublicIP }} / {{ dbPrivateIP }}
+							{{ dbPublicIP }}
+							/ {{ dbPrivateIP }}
 						</div>
 					</div>
 
@@ -722,10 +732,12 @@
 						<div class="text-base text-ink-gray-7">Total Cost</div>
 						<div class="flex flex-col space-y-1">
 							<div class="text-lg font-semibold">
-								{{ totalPerMonth }} / month
+								{{ totalPerMonth }}
+								/ month
 							</div>
 							<div class="text-base font-medium text-ink-gray-7">
-								{{ totalPerDay }} per day
+								{{ totalPerDay }}
+								per day
 							</div>
 						</div>
 					</div>
@@ -803,18 +815,19 @@
 					v-if="serverType === 'dedicated' && appServerPlan"
 				>
 					<div class="text-base text-ink-gray-7">
-						{{
-							unifiedServer ? 'Unified Server Plan' : 'Application Server Plan'
-						}}
+						{{ unifiedServer ? 'Unified Server Plan' : 'Application Server Plan' }}
 					</div>
 					<div class="text-base font-medium">
 						{{ $format.planTitle(appServerPlan) }}/mo -
 						{{ getPlanTypeTitle(appServerPlan) }}
 					</div>
 					<div class="text-sm text-ink-gray-7">
-						{{ appServerPlan.vcpu }} vCPUs •
-						{{ $format.bytes(appServerPlan.memory, 0, 2) }} Memory •
-						{{ appServerPlan.disk }} GB Disk • {{ appServerPlan.instance_type }}
+						{{ appServerPlan.vcpu }}
+						vCPUs •
+						{{ $format.bytes(appServerPlan.memory, 0, 2) }}
+						Memory •
+						{{ appServerPlan.disk }}
+						GB Disk • {{ appServerPlan.instance_type }}
 					</div>
 				</div>
 
@@ -829,9 +842,12 @@
 						{{ getPlanTypeTitle(dbServerPlan) }}
 					</div>
 					<div class="text-sm text-ink-gray-7">
-						{{ dbServerPlan.vcpu }} vCPUs •
-						{{ $format.bytes(dbServerPlan.memory, 0, 2) }} Memory •
-						{{ dbServerPlan.disk }} GB Disk • {{ dbServerPlan.instance_type }}
+						{{ dbServerPlan.vcpu }}
+						vCPUs •
+						{{ $format.bytes(dbServerPlan.memory, 0, 2) }}
+						Memory •
+						{{ dbServerPlan.disk }}
+						GB Disk • {{ dbServerPlan.instance_type }}
 					</div>
 				</div>
 
@@ -842,7 +858,8 @@
 				>
 					<div class="text-base text-ink-gray-7">App Server IPs</div>
 					<div class="text-base font-medium">
-						{{ appPublicIP }} / {{ appPrivateIP }}
+						{{ appPublicIP }}
+						/ {{ appPrivateIP }}
 					</div>
 				</div>
 
@@ -852,7 +869,8 @@
 				>
 					<div class="text-base text-ink-gray-7">DB Server IPs</div>
 					<div class="text-base font-medium">
-						{{ dbPublicIP }} / {{ dbPrivateIP }}
+						{{ dbPublicIP }}
+						/ {{ dbPrivateIP }}
 					</div>
 				</div>
 
@@ -886,7 +904,8 @@
 					<div class="flex flex-col space-y-1">
 						<div class="text-lg font-semibold">{{ totalPerMonth }} / month</div>
 						<div class="text-base font-medium text-ink-gray-7">
-							{{ totalPerDay }} per day
+							{{ totalPerDay }}
+							per day
 						</div>
 					</div>
 				</div>
@@ -962,12 +981,12 @@
 	</div>
 </template>
 <script>
-import LucideServer from '~icons/lucide/server-off';
-import Header from '../components/Header.vue';
-import ServerPlansCards from '../components/server/ServerPlansCards.vue';
-import ClickToCopy from '../components/ClickToCopyField.vue';
-import AlertBanner from '../components/AlertBanner.vue';
-import { DashboardError } from '../utils/error';
+import LucideServer from '~icons/lucide/server-off'
+import AlertBanner from '../components/AlertBanner.vue'
+import ClickToCopy from '../components/ClickToCopyField.vue'
+import Header from '../components/Header.vue'
+import ServerPlansCards from '../components/server/ServerPlansCards.vue'
+import { DashboardError } from '../utils/error'
 
 export default {
 	components: {
@@ -997,192 +1016,193 @@ export default {
 			agreedToRegionConsent: false,
 			unifiedServer: false,
 			avoidAutoResetPlanSelection: false,
-		};
+			spendingLimitExceeded: false,
+		}
 	},
 	watch: {
 		serverProvider() {
-			this.serverRegion = '';
-			this.serviceType = 'Standard';
-			this.appServerPlanType = '';
-			this.dbServerPlanType = '';
-			this.appServerPlan = '';
-			this.dbServerPlan = '';
-			this.unifiedServer = false;
-			this.enableAutoAddStorage = false;
-			this.agreedToRegionConsent = false;
-			this.resetProvisionErrorMessage();
+			this.serverRegion = ''
+			this.serviceType = 'Standard'
+			this.appServerPlanType = ''
+			this.dbServerPlanType = ''
+			this.appServerPlan = ''
+			this.dbServerPlan = ''
+			this.unifiedServer = false
+			this.enableAutoAddStorage = false
+			this.agreedToRegionConsent = false
+			this.resetProvisionErrorMessage()
 		},
 		serverRegion() {
-			this.resetProvisionErrorMessage();
+			this.resetProvisionErrorMessage()
 			// Let selectedCluster watcher handle all plan selection logic
 			// The selectedCluster computed depends on serverRegion, so it will update automatically
 		},
 		serverType() {
-			this.appServerPlan = '';
-			this.dbServerPlan = '';
-			this.serverRegion = '';
-			this.serverProvider = '';
-			this.appServerPlanType = '';
-			this.dbServerPlanType = '';
-			this.appPublicIP = '';
-			this.appPrivateIP = '';
-			this.dbPublicIP = '';
-			this.dbPrivateIP = '';
-			this.unifiedServer = false;
+			this.appServerPlan = ''
+			this.dbServerPlan = ''
+			this.serverRegion = ''
+			this.serverProvider = ''
+			this.appServerPlanType = ''
+			this.dbServerPlanType = ''
+			this.appPublicIP = ''
+			this.appPrivateIP = ''
+			this.dbPublicIP = ''
+			this.dbPrivateIP = ''
+			this.unifiedServer = false
 
 			// Auto-select first provider when server type changes to dedicated
 			if (this.serverType === 'dedicated' && this.allProviders.length > 0) {
-				this.serverProvider = this.allProviders[0].name;
+				this.serverProvider = this.allProviders[0].name
 			}
 
-			this.resetProvisionErrorMessage();
+			this.resetProvisionErrorMessage()
 		},
 		serviceType() {
-			this.resetProvisionErrorMessage();
-			if (this.avoidAutoResetPlanSelection) return;
+			this.resetProvisionErrorMessage()
+			if (this.avoidAutoResetPlanSelection) return
 
-			this.appServerPlanType = '';
-			this.dbServerPlanType = '';
-			this.appServerPlan = '';
-			this.dbServerPlan = '';
+			this.appServerPlanType = ''
+			this.dbServerPlanType = ''
+			this.appServerPlan = ''
+			this.dbServerPlan = ''
 		},
 		unifiedServer() {
-			this.resetProvisionErrorMessage();
-			if (this.avoidAutoResetPlanSelection) return;
+			this.resetProvisionErrorMessage()
+			if (this.avoidAutoResetPlanSelection) return
 
 			// Reset plan selections when unified server mode changes
 			// as available plans are filtered by allow_unified_server
-			this.appServerPlanType = '';
-			this.dbServerPlanType = '';
-			this.appServerPlan = '';
-			this.dbServerPlan = '';
+			this.appServerPlanType = ''
+			this.dbServerPlanType = ''
+			this.appServerPlan = ''
+			this.dbServerPlan = ''
 		},
 		selectedCluster(val) {
 			if (val) {
 				// Check if we have cluster defaults to apply
 				const hasDefaults =
 					this.selectedClusterDetails.default_app_server_plan_type ||
-					this.selectedClusterDetails.default_app_server_plan;
+					this.selectedClusterDetails.default_app_server_plan
 
 				if (hasDefaults) {
-					this.avoidAutoResetPlanSelection = true;
+					this.avoidAutoResetPlanSelection = true
 
 					this.unifiedServer =
-						this.selectedClusterDetails.by_default_select_unified_mode || false;
+						this.selectedClusterDetails.by_default_select_unified_mode || false
 
 					// Try to select default app plan or find available alternative
-					let selectedAppPlan = null;
+					let selectedAppPlan = null
 					if (this.selectedClusterDetails.default_app_server_plan) {
 						selectedAppPlan = this.selectAvailablePlanOrFallback(
 							this.selectedClusterDetails.default_app_server_plan,
 							'Server',
-						);
+						)
 					}
 
 					// Determine service type based on the selected app plan
 					if (selectedAppPlan?.premium) {
-						this.serviceType = 'Premium';
+						this.serviceType = 'Premium'
 					} else {
-						this.serviceType = 'Standard';
+						this.serviceType = 'Standard'
 					}
 
 					// Set plan type - always use default even if specific plan is unavailable
 					this.appServerPlanType =
-						this.selectedClusterDetails.default_app_server_plan_type || '';
+						this.selectedClusterDetails.default_app_server_plan_type || ''
 
 					// Set the specific plan only if we found an available one
-					this.appServerPlan = selectedAppPlan || '';
+					this.appServerPlan = selectedAppPlan || ''
 
 					if (this.unifiedServer) {
-						this.dbServerPlanType = '';
-						this.dbServerPlan = '';
+						this.dbServerPlanType = ''
+						this.dbServerPlan = ''
 					} else {
 						// Try to select default db plan or find available alternative
-						let selectedDbPlan = null;
+						let selectedDbPlan = null
 						if (this.selectedClusterDetails.default_db_server_plan) {
 							selectedDbPlan = this.selectAvailablePlanOrFallback(
 								this.selectedClusterDetails.default_db_server_plan,
 								'Database Server',
-							);
+							)
 						}
 
 						// Set plan type - always use default even if specific plan is unavailable
 						this.dbServerPlanType =
-							this.selectedClusterDetails.default_db_server_plan_type || '';
+							this.selectedClusterDetails.default_db_server_plan_type || ''
 
 						// Set the specific plan only if we found an available one
-						this.dbServerPlan = selectedDbPlan || '';
+						this.dbServerPlan = selectedDbPlan || ''
 					}
 
 					this.$nextTick(() => {
-						this.avoidAutoResetPlanSelection = false;
-					});
+						this.avoidAutoResetPlanSelection = false
+					})
 				} else {
 					// No defaults configured, reset values
-					this.serviceType = 'Standard';
-					this.unifiedServer = false;
-					this.appServerPlan = '';
-					this.dbServerPlan = '';
+					this.serviceType = 'Standard'
+					this.unifiedServer = false
+					this.appServerPlan = ''
+					this.dbServerPlan = ''
 
 					// Use $nextTick to ensure availableAppPlanTypes/availableDbPlanTypes
 					// computed properties have updated with the new cluster before we auto-select
 					this.$nextTick(() => {
 						if (this.availableAppPlanTypes.length > 0) {
-							this.appServerPlanType = this.availableAppPlanTypes[0].name;
+							this.appServerPlanType = this.availableAppPlanTypes[0].name
 						} else {
-							this.appServerPlanType = '';
+							this.appServerPlanType = ''
 						}
 						if (this.availableDbPlanTypes.length > 0) {
-							this.dbServerPlanType = this.availableDbPlanTypes[0].name;
+							this.dbServerPlanType = this.availableDbPlanTypes[0].name
 						} else {
-							this.dbServerPlanType = '';
+							this.dbServerPlanType = ''
 						}
-					});
+					})
 				}
 			} else {
-				this.serviceType = 'Standard';
-				this.unifiedServer = false;
-				this.appServerPlan = '';
-				this.appServerPlanType = '';
-				this.dbServerPlan = '';
-				this.dbServerPlanType = '';
+				this.serviceType = 'Standard'
+				this.unifiedServer = false
+				this.appServerPlan = ''
+				this.appServerPlanType = ''
+				this.dbServerPlan = ''
+				this.dbServerPlanType = ''
 			}
 		},
 		availableAppPlanTypes() {
-			if (this.avoidAutoResetPlanSelection) return;
+			if (this.avoidAutoResetPlanSelection) return
 
 			// Auto-select first plan type as default
 			if (this.availableAppPlanTypes.length > 0) {
-				this.appServerPlanType = this.availableAppPlanTypes[0].name;
+				this.appServerPlanType = this.availableAppPlanTypes[0].name
 			} else {
-				this.appServerPlanType = '';
+				this.appServerPlanType = ''
 			}
 		},
 		availableDbPlanTypes() {
-			if (this.avoidAutoResetPlanSelection) return;
+			if (this.avoidAutoResetPlanSelection) return
 
 			// Auto-select first plan type as default
 			if (this.availableDbPlanTypes.length > 0) {
-				this.dbServerPlanType = this.availableDbPlanTypes[0].name;
+				this.dbServerPlanType = this.availableDbPlanTypes[0].name
 			} else {
-				this.dbServerPlanType = '';
+				this.dbServerPlanType = ''
 			}
 		},
 		appServerPlanType() {
-			this.resetProvisionErrorMessage();
-			if (this.avoidAutoResetPlanSelection) return;
-			this.appServerPlan = '';
+			this.resetProvisionErrorMessage()
+			if (this.avoidAutoResetPlanSelection) return
+			this.appServerPlan = ''
 		},
 		dbServerPlanType() {
-			this.resetProvisionErrorMessage();
-			if (this.avoidAutoResetPlanSelection) return;
-			this.dbServerPlan = '';
+			this.resetProvisionErrorMessage()
+			if (this.avoidAutoResetPlanSelection) return
+			this.dbServerPlan = ''
 		},
 		appServerPlan() {
-			this.resetProvisionErrorMessage();
+			this.resetProvisionErrorMessage()
 		},
 		dbServerPlan() {
-			this.resetProvisionErrorMessage();
+			this.resetProvisionErrorMessage()
 		},
 	},
 	resources: {
@@ -1196,8 +1216,8 @@ export default {
 							...plan,
 							...(data.default_plan_type &&
 								!plan.plan_type && { plan_type: data.default_plan_type }),
-						}));
-					};
+						}))
+					}
 
 					return {
 						server_types: [
@@ -1229,7 +1249,7 @@ export default {
 							data.db_plans.filter((p) => p.premium == 1),
 						),
 						storage_plan: data.storage_plan,
-					};
+					}
 				},
 				onError(error) {
 					if (
@@ -1239,33 +1259,33 @@ export default {
 							'Servers feature is not yet enabled on your account',
 						)
 					) {
-						this.serverEnabled = false;
+						this.serverEnabled = false
 					} else {
-						console.error(error);
+						console.error(error)
 					}
 				},
-			};
+			}
 		},
 		hybridOptions() {
 			return {
 				url: 'press.api.selfhosted.options_for_new',
 				auto: true,
-			};
+			}
 		},
 		createUnifiedServer() {
 			return {
 				url: 'press.api.server.new_unified',
 				validate({ server }) {
 					if (!server.title) {
-						throw new DashboardError('Server name is required');
+						throw new DashboardError('Server name is required')
 					} else if (!server.cluster) {
-						throw new DashboardError('Please select a region');
+						throw new DashboardError('Please select a region')
 					} else if (!server.app_plan) {
-						throw new DashboardError('Please select an Unified Server Plan');
+						throw new DashboardError('Please select an Unified Server Plan')
 					} else if (Object.keys(this.$team.doc.billing_details).length === 0) {
 						throw new DashboardError(
 							"You don't have billing details added. Please add billing details from settings to continue.",
-						);
+						)
 					} else if (
 						this.$team.doc.servers_enabled == 0 &&
 						((this.$team.doc.currency == 'USD' &&
@@ -1275,33 +1295,33 @@ export default {
 					) {
 						throw new DashboardError(
 							'You need to have $200 worth of credits to create a server.',
-						);
+						)
 					}
 				},
 				onSuccess(server) {
 					this.$router.push({
 						name: 'Server Detail Plays',
 						params: { name: server.server },
-					});
+					})
 				},
-			};
+			}
 		},
 		createServer() {
 			return {
 				url: 'press.api.server.new',
 				validate({ server }) {
 					if (!server.title) {
-						throw new DashboardError('Server name is required');
+						throw new DashboardError('Server name is required')
 					} else if (!server.cluster) {
-						throw new DashboardError('Please select a region');
+						throw new DashboardError('Please select a region')
 					} else if (!server.app_plan) {
-						throw new DashboardError('Please select an App Server Plan');
+						throw new DashboardError('Please select an App Server Plan')
 					} else if (!server.db_plan) {
-						throw new DashboardError('Please select a Database Server Plan');
+						throw new DashboardError('Please select a Database Server Plan')
 					} else if (Object.keys(this.$team.doc.billing_details).length === 0) {
 						throw new DashboardError(
 							"You don't have billing details added. Please add billing details from settings to continue.",
-						);
+						)
 					} else if (
 						this.$team.doc.servers_enabled == 0 &&
 						((this.$team.doc.currency == 'USD' &&
@@ -1311,68 +1331,75 @@ export default {
 					) {
 						throw new DashboardError(
 							'You need to have $200 worth of credits to create a server.',
-						);
+						)
 					}
 				},
 				onSuccess(server) {
 					this.$router.push({
 						name: 'Server Detail Plays',
 						params: { name: server.server },
-					});
+					})
 				},
-			};
+			}
 		},
 		createHybridServer() {
 			return {
 				url: 'press.api.selfhosted.create_and_verify_selfhosted',
 				validate() {
 					if (!this.serverTitle) {
-						throw new DashboardError('Server name is required');
+						throw new DashboardError('Server name is required')
 					} else if (
 						!this.appPublicIP ||
 						!this.dbPublicIP ||
 						!this.appPrivateIP ||
 						!this.dbPrivateIP
 					) {
-						throw new DashboardError('Please fill all the IP addresses');
+						throw new DashboardError('Please fill all the IP addresses')
 					} else if (this.validateIP(this.appPublicIP)) {
 						throw new DashboardError(
 							'Please enter a valid Application Public IP',
-						);
+						)
 					} else if (this.validateIP(this.appPrivateIP)) {
 						throw new DashboardError(
 							'Please enter a valid Application Private IP',
-						);
+						)
 					} else if (this.validateIP(this.dbPublicIP)) {
-						throw new DashboardError('Please enter a valid Database Public IP');
+						throw new DashboardError('Please enter a valid Database Public IP')
 					} else if (this.validateIP(this.dbPrivateIP)) {
-						throw new DashboardError(
-							'Please enter a valid Database Private IP',
-						);
+						throw new DashboardError('Please enter a valid Database Private IP')
 						//} else if (this.dbPublicIP === this.appPublicIP) {
 						//throw new DashboardError(
 						//"Please don't use the same server as Application and Database servers",
 						//);
 					} else if (!this.agreedToRegionConsent) {
-						throw new DashboardError('Please agree to the region consent');
+						throw new DashboardError('Please agree to the region consent')
 					}
 				},
 				onSuccess(server) {
 					this.$router.push({
 						name: 'Server Detail Plays',
 						params: { name: server },
-					});
+					})
 				},
-			};
+			}
+		},
+		isLimitExceeded() {
+			return {
+				url: 'press.api.account.is_limits_exceeded',
+				auto: true,
+				onSuccess(response) {
+					this.spendingLimitExceeded = response
+				},
+			}
 		},
 	},
 	computed: {
 		options() {
-			return this.$resources.options.data;
+			return this.$resources.options.data
 		},
 		allProviders() {
-			if (!this.options?.regions_data) return [];
-			const providersMap = {};
+			if (!this.options?.regions_data) return []
+			const providersMap = {}
 			for (const regionData of Object.values(this.options.regions_data)) {
 				for (const [providerName, providerData] of Object.entries(
 					regionData.providers || {},
@@ -1383,17 +1410,17 @@ export default {
 							title: providerData.title,
 							provider_image: providerData.provider_image,
 							beta: providerData.beta,
-						};
+						}
 					}
 				}
 			}
 			return Object.values(providersMap).sort((a, b) =>
 				a.name.localeCompare(b.name),
-			);
+			)
 		},
 		regionsForProvider() {
-			if (!this.serverProvider || !this.options?.regions_data) return [];
-			const regions = [];
+			if (!this.serverProvider || !this.options?.regions_data) return []
+			const regions = []
 			for (const [regionName, regionData] of Object.entries(
 				this.options.regions_data,
 			)) {
@@ -1401,45 +1428,45 @@ export default {
 					regions.push({
 						name: regionName,
 						image: regionData.image,
-					});
+					})
 				}
 			}
-			return regions.sort((a, b) => a.name.localeCompare(b.name));
+			return regions.sort((a, b) => a.name.localeCompare(b.name))
 		},
 		providers() {
-			if (!this.serverRegion) return {};
-			if (!this.options?.regions_data) return {};
-			return this.options.regions_data[this.serverRegion]?.providers || {};
+			if (!this.serverRegion) return {}
+			if (!this.options?.regions_data) return {}
+			return this.options.regions_data[this.serverRegion]?.providers || {}
 		},
 		selectedCluster() {
-			return this.selectedClusterDetails?.cluster_name;
+			return this.selectedClusterDetails?.cluster_name
 		},
 		selectedClusterDetails() {
-			if (!this.serverRegion) return null;
-			if (!this.options?.regions_data) return null;
-			if (!this.serverProvider) return null;
+			if (!this.serverRegion) return null
+			if (!this.options?.regions_data) return null
+			if (!this.serverProvider) return null
 			return this.options.regions_data[this.serverRegion]?.providers[
 				this.serverProvider
-			];
+			]
 		},
 		hasPremiumPlansForCluster() {
 			if (!this.selectedCluster || !this.options?.app_premium_plans)
-				return false;
+				return false
 			return this.options.app_premium_plans.some(
 				(plan) =>
 					plan.cluster === this.selectedCluster &&
 					(this.unifiedServer ? plan.allow_unified_server : true),
-			);
+			)
 		},
 		availableAppPlanTypes() {
-			if (!this.selectedCluster || !this.options?.plan_types) return [];
+			if (!this.selectedCluster || !this.options?.plan_types) return []
 
-			const planTypes = [];
-			const planTypeData = this.options.plan_types;
+			const planTypes = []
+			const planTypeData = this.options.plan_types
 			const plansToCheck =
 				this.serviceType === 'Standard'
 					? this.options.app_plans
-					: this.options.app_premium_plans;
+					: this.options.app_premium_plans
 
 			for (const [key, planType] of Object.entries(planTypeData)) {
 				const hasAppPlans = plansToCheck.some(
@@ -1447,7 +1474,7 @@ export default {
 						plan.cluster === this.selectedCluster &&
 						plan.plan_type === key &&
 						(this.unifiedServer ? plan.allow_unified_server : true),
-				);
+				)
 
 				if (hasAppPlans) {
 					planTypes.push({
@@ -1455,21 +1482,21 @@ export default {
 						title: planType.title,
 						description: planType.description,
 						order: planType.order_in_list || 999,
-					});
+					})
 				}
 			}
 
-			return planTypes.sort((a, b) => a.order - b.order);
+			return planTypes.sort((a, b) => a.order - b.order)
 		},
 		availableDbPlanTypes() {
-			if (!this.selectedCluster || !this.options?.plan_types) return [];
+			if (!this.selectedCluster || !this.options?.plan_types) return []
 
-			const planTypes = [];
-			const planTypeData = this.options.plan_types;
+			const planTypes = []
+			const planTypeData = this.options.plan_types
 			const plansToCheck =
 				this.serviceType === 'Standard'
 					? this.options.db_plans
-					: this.options.db_premium_plans;
+					: this.options.db_premium_plans
 
 			for (const [key, planType] of Object.entries(planTypeData)) {
 				const hasDbPlans = plansToCheck.some(
@@ -1477,7 +1504,7 @@ export default {
 						plan.cluster === this.selectedCluster &&
 						plan.plan_type === key &&
 						(this.unifiedServer ? plan.allow_unified_server : true),
-				);
+				)
 
 				if (hasDbPlans) {
 					planTypes.push({
@@ -1485,11 +1512,11 @@ export default {
 						title: planType.title,
 						description: planType.description,
 						order: planType.order_in_list || 999,
-					});
+					})
 				}
 			}
 
-			return planTypes.sort((a, b) => a.order - b.order);
+			return planTypes.sort((a, b) => a.order - b.order)
 		},
 		filteredAppPlans() {
 			if (
@@ -1497,7 +1524,7 @@ export default {
 				!this.appServerPlanType ||
 				!this.options?.app_plans
 			)
-				return [];
+				return []
 
 			return (
 				this.serviceType === 'Standard'
@@ -1505,14 +1532,14 @@ export default {
 					: this.options.app_premium_plans
 			).filter((p) => {
 				const isARMSupportedCluster =
-					p.cluster === 'Mumbai' || p.cluster === 'Frankfurt';
+					p.cluster === 'Mumbai' || p.cluster === 'Frankfurt'
 				return (
 					p.cluster === this.selectedCluster &&
 					p.plan_type === this.appServerPlanType &&
 					(!isARMSupportedCluster || p.platform === 'arm64') &&
 					(this.unifiedServer ? p.allow_unified_server : true)
-				);
-			});
+				)
+			})
 		},
 		filteredDbPlans() {
 			if (
@@ -1520,7 +1547,7 @@ export default {
 				!this.dbServerPlanType ||
 				!this.options?.db_plans
 			)
-				return [];
+				return []
 
 			return (
 				this.serviceType === 'Standard'
@@ -1528,14 +1555,14 @@ export default {
 					: this.options.db_premium_plans
 			).filter((p) => {
 				const isARMSupportedCluster =
-					p.cluster === 'Mumbai' || p.cluster === 'Frankfurt';
+					p.cluster === 'Mumbai' || p.cluster === 'Frankfurt'
 				return (
 					p.cluster === this.selectedCluster &&
 					p.plan_type === this.dbServerPlanType &&
 					(!isARMSupportedCluster || p.platform === 'arm64') &&
 					(this.unifiedServer ? p.allow_unified_server : true)
-				);
-			});
+				)
+			})
 		},
 		showAutoAddStorageOption() {
 			return (
@@ -1545,7 +1572,7 @@ export default {
 				this.options.regions_data[this.serverRegion]?.providers[
 					this.serverProvider
 				]?.has_add_on_storage_support
-			);
+			)
 		},
 		showUnifiedServerOption() {
 			if (
@@ -1558,109 +1585,109 @@ export default {
 					]?.has_unified_server_support
 				)
 			) {
-				return false;
+				return false
 			}
 
 			// Check if there are any app plans with unified server support for this cluster
 			const plansToCheck =
 				this.serviceType === 'Standard'
 					? this.options.app_plans
-					: this.options.app_premium_plans;
+					: this.options.app_premium_plans
 
 			return plansToCheck?.some(
 				(plan) =>
 					plan.cluster === this.selectedCluster && plan.allow_unified_server,
-			);
+			)
 		},
 		_totalPerMonth() {
 			let currencyField =
-				this.$team.doc.currency == 'INR' ? 'price_inr' : 'price_usd';
+				this.$team.doc.currency == 'INR' ? 'price_inr' : 'price_usd'
 			if (this.serverType === 'dedicated') {
 				if (this.unifiedServer) {
-					if (!this.appServerPlan) return 0;
-					return this.appServerPlan[currencyField];
+					if (!this.appServerPlan) return 0
+					return this.appServerPlan[currencyField]
 				}
-				if (!this.appServerPlan || !this.dbServerPlan) return 0;
+				if (!this.appServerPlan || !this.dbServerPlan) return 0
 				return (
 					this.appServerPlan[currencyField] + this.dbServerPlan[currencyField]
-				);
+				)
 			} else if (this.serverType === 'hybrid') {
-				const hybridPlan = this.$resources.hybridOptions?.data?.plans?.[0];
-				if (!hybridPlan) return 0;
-				return hybridPlan[currencyField] * 2;
+				const hybridPlan = this.$resources.hybridOptions?.data?.plans?.[0]
+				if (!hybridPlan) return 0
+				return hybridPlan[currencyField] * 2
 			}
-			return 0;
+			return 0
 		},
 		totalPerMonth() {
-			return this.$format.userCurrency(this._totalPerMonth);
+			return this.$format.userCurrency(this._totalPerMonth)
 		},
 		totalPerDay() {
 			return this.$format.userCurrency(
 				this.$format.pricePerDay(this._totalPerMonth),
-			);
+			)
 		},
 		storagePlanRate() {
-			if (!this.$team?.doc?.currency) return -1;
+			if (!this.$team?.doc?.currency) return -1
 			try {
 				let priceField =
-					this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd';
-				console.log(this.options);
-				return this.options?.storage_plan?.[priceField] || 0;
+					this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd'
+				console.log(this.options)
+				return this.options?.storage_plan?.[priceField] || 0
 			} catch (error) {
-				return -1;
+				return -1
 			}
 		},
 		showSummary() {
 			// Show summary after provider is selected (for dedicated) or server type is hybrid
 			if (this.serverType === 'dedicated') {
-				return !!this.serverProvider;
+				return !!this.serverProvider
 			} else if (this.serverType === 'hybrid') {
-				return true;
+				return true
 			}
-			return false;
+			return false
 		},
 		selectedProviderTitle() {
 			// Get the title of the selected provider
-			if (!this.serverProvider) return '';
+			if (!this.serverProvider) return ''
 			const provider = this.allProviders.find(
 				(p) => p.name === this.serverProvider,
-			);
-			return provider?.title || this.serverProvider;
+			)
+			return provider?.title || this.serverProvider
 		},
 		canCreateServer() {
 			// Check if all required fields are filled for server creation
-			if (!this.serverTitle) return false;
+			if (!this.serverTitle) return false
 
 			if (this.serverType === 'dedicated') {
 				if (this.unifiedServer) {
-					return this.serverRegion && this.appServerPlan;
+					return this.serverRegion && this.appServerPlan
 				}
-				return this.serverRegion && this.appServerPlan && this.dbServerPlan;
+				return this.serverRegion && this.appServerPlan && this.dbServerPlan
 			} else if (this.serverType === 'hybrid') {
 				return (
 					this.appPublicIP &&
 					this.appPrivateIP &&
 					this.dbPublicIP &&
 					this.dbPrivateIP
-				);
+				)
 			}
-			return false;
+			return false
 		},
 		serverButtonLabel() {
 			if (this.serverType === 'hybrid') {
-				return 'Add Hybrid Server';
+				return 'Add Hybrid Server'
 			}
 			if (this.unifiedServer) {
-				return 'Create Unified Server';
+				return 'Create Unified Server'
 			}
-			return 'Create Server';
+			return 'Create Server'
 		},
 	},
 	methods: {
 		validateIP(ip) {
 			return !ip.match(
 				/^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
-			);
+			)
 		},
 		createServer() {
 			if (this.serverType === 'dedicated') {
@@ -1672,7 +1699,7 @@ export default {
 							app_plan: this.appServerPlan?.name,
 							auto_increase_storage: this.enableAutoAddStorage,
 						},
-					});
+					})
 				} else {
 					this.$resources.createServer.submit({
 						server: {
@@ -1682,7 +1709,7 @@ export default {
 							db_plan: this.dbServerPlan?.name,
 							auto_increase_storage: this.enableAutoAddStorage,
 						},
-					});
+					})
 				}
 			} else if (this.serverType === 'hybrid') {
 				this.$resources.createHybridServer.submit({
@@ -1694,50 +1721,50 @@ export default {
 						db_private_ip: this.dbPrivateIP,
 						plan: this.$resources.hybridOptions.data?.plans?.[0],
 					},
-				});
+				})
 			}
 		},
 		getPlanTypeTitle(plan) {
-			if (!plan?.plan_type || !this.options?.plan_types) return '';
-			const planType = this.options.plan_types[plan.plan_type];
-			return planType?.title || plan.plan_type;
+			if (!plan?.plan_type || !this.options?.plan_types) return ''
+			const planType = this.options.plan_types[plan.plan_type]
+			return planType?.title || plan.plan_type
 		},
 		getPlan(plan_name, server_type) {
-			if (!plan_name || !this.options) return null;
+			if (!plan_name || !this.options) return null
 
 			if (server_type === 'Server') {
 				return (
 					this.options.app_plans?.find((p) => p.name === plan_name) ||
 					this.options.app_premium_plans?.find((p) => p.name === plan_name) ||
 					null
-				);
+				)
 			} else if (server_type === 'Database Server') {
 				return (
 					this.options.db_plans?.find((p) => p.name === plan_name) ||
 					this.options.db_premium_plans?.find((p) => p.name === plan_name) ||
 					null
-				);
+				)
 			}
-			return null;
+			return null
 		},
 		findAvailablePlanInSameConfiguration(originalPlan, serverType) {
-			if (!originalPlan || !this.options) return null;
+			if (!originalPlan || !this.options) return null
 
 			// Get the appropriate plan list based on server type and service type
-			let planList = [];
+			let planList = []
 			if (serverType === 'Server') {
 				planList =
 					this.serviceType === 'Standard'
 						? this.options.app_plans
-						: this.options.app_premium_plans;
+						: this.options.app_premium_plans
 			} else if (serverType === 'Database Server') {
 				planList =
 					this.serviceType === 'Standard'
 						? this.options.db_plans
-						: this.options.db_premium_plans;
+						: this.options.db_premium_plans
 			}
 
-			if (!planList) return null;
+			if (!planList) return null
 
 			// Find plans in the same cluster, region, provider, and plan type that are available
 			const availablePlans = planList.filter(
@@ -1746,45 +1773,45 @@ export default {
 					plan.plan_type === originalPlan.plan_type &&
 					!plan.machine_unavailable &&
 					(this.unifiedServer ? plan.allow_unified_server : true),
-			);
+			)
 
 			// Return the first available plan, or null if none found
-			return availablePlans.length > 0 ? availablePlans[0] : null;
+			return availablePlans.length > 0 ? availablePlans[0] : null
 		},
 		selectAvailablePlanOrFallback(defaultPlanName, serverType) {
-			const defaultPlan = this.getPlan(defaultPlanName, serverType);
+			const defaultPlan = this.getPlan(defaultPlanName, serverType)
 
-			if (!defaultPlan) return null;
+			if (!defaultPlan) return null
 
 			// If the default plan is available, use it
 			if (!defaultPlan.machine_unavailable) {
-				return defaultPlan;
+				return defaultPlan
 			}
 
 			// If default plan is unavailable, try to find an alternative in same configuration
 			const alternativePlan = this.findAvailablePlanInSameConfiguration(
 				defaultPlan,
 				serverType,
-			);
+			)
 
 			if (alternativePlan) {
-				return alternativePlan;
+				return alternativePlan
 			}
 
 			// If no alternative found, return null to fall back to just plan type selection
-			return null;
+			return null
 		},
 		resetProvisionErrorMessage() {
 			try {
-				this.$resources.createHybridServer.error = null;
+				this.$resources.createHybridServer.error = null
 			} catch (_) {}
 			try {
-				this.$resources.createServer.error = null;
+				this.$resources.createServer.error = null
 			} catch (_) {}
 			try {
-				this.$resources.createUnifiedServer.error = null;
+				this.$resources.createUnifiedServer.error = null
 			} catch (_) {}
 		},
 	},
-};
+}
 </script>

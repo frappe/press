@@ -107,6 +107,7 @@ ALLOWED_DOCTYPES = [
 	"Partner Audit",
 	"Partner Non Conformance",
 	"Team Member Resource",
+	"Release Pipeline",
 ]
 
 whitelisted_methods = set()
