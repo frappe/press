@@ -47,7 +47,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const output = reactive({
-	val: null,
+	val: 'No Output',
 	status: null,
 	selectedIndex: null,
 })
@@ -321,8 +321,6 @@ const stopBuild = () => {
 </script>
 
 <template>
-  {{ pipeline?.loading ? 'loading' : '' }}
-
 	<main
 		class="pipeline-page flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-6rem)]"
 	>
@@ -400,7 +398,10 @@ const stopBuild = () => {
 		</section>
 
 		<!-- deploy steps + output -->
-		<div class="flex rounded border p-3 pt-1 flex-1 min-h-0">
+		<div
+			class="flex rounded border p-3 pt-1 flex-1 min-h-0"
+			:class='output.val? "": "!pr-0" '
+		>
 			<Scrollbar
 				class="px-0.5 pr-3 transition-all duration-500 shrink-0"
 				:class="output.val ? 'w-[30rem]' : 'w-full'"
@@ -423,65 +424,52 @@ const stopBuild = () => {
 
 				<!-- build stages -->
 				<template v-if='tabState == "Tasks"'>
-					<Collapsable
+					<template
 						v-for='x in (deployview ? dummyStages : pipeline?.doc?.steps?.stages)'
-						headerCss="py-3"
 						:key="x.label"
-						:disabled='["Pending", "Queued"].includes(x.status)'
 					>
-						<template #header>
+						<Collapsable
+							v-if="x.label == 'Building'"
+							headerCss="py-3 border-b"
+							:disabled='["Pending", "Queued"].includes(x.status)'
+						>
+							<template #header>
+								<StatusIcon :status="x.status" />
+								<span class="whitespace-nowrap"> {{ x.label }}</span>
+							</template>
+
+							<!-- build steps -->
+							<template v-if='x.label == "Building"'>
+								<button
+									v-for="(build_step, step_i) in builds[activeBuildId]?.doc?.build_steps"
+									class="leading-relaxed mb-0.5 py-1.5 pr-3 pl-6 rounded flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed hover:bg-surface-gray-1"
+									:class='output.val && output.selectedIndex == step_i? "bg-surface-gray-1" :"" '
+									@click="setOutput({ val: build_step.output || formatCmd(build_step.command) || 'No Output', status: build_step.status, selectedIndex: step_i })"
+									:disabled="build_step.status =='Pending'"
+								>
+									<StatusIcon :status="build_step.status" />
+									<span class="mr-3">
+										{{ build_step.stage }}
+										- {{ build_step.step }}
+									</span>
+									<span class="text-ink-gray-5 ml-auto"
+										>{{ build_step.cached ? 'Cached': secsToDuration(build_step.duration) }}</span
+									>
+								</button>
+							</template>
+						</Collapsable>
+
+						<div v-else class="flex items-center gap-2 py-3 border-b">
 							<StatusIcon :status="x.status" />
 							<span class="whitespace-nowrap"> {{ x.label }}</span>
-						</template>
-
-						<!-- build steps -->
-						<template v-if='x.label == "Building"'>
-							<button
-								v-for="(build_step, step_i) in builds[activeBuildId]?.doc?.build_steps"
-								class="leading-relaxed mb-0.5 py-1.5 pr-3 pl-6 rounded flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed hover:bg-surface-gray-1"
-								:class='output.val && output.selectedIndex == step_i? "bg-surface-gray-1" :"" '
-								@click="setOutput({ val: build_step.output || formatCmd(build_step.command) || 'No Output', status: build_step.status, selectedIndex: step_i })"
-								:disabled="build_step.status =='Pending'"
+							<span
+								v-if='x.status != "Failure"'
+								class="ml-auto text-sm text-ink-gray-5"
 							>
-								<StatusIcon :status="build_step.status" />
-								<span class="mr-3">
-									{{ build_step.stage }}
-									- {{ build_step.step }}
-								</span>
-								<span class="text-ink-gray-5 ml-auto"
-									>{{ build_step.cached ? 'Cached': secsToDuration(build_step.duration) }}</span
-								>
-							</button>
-						</template>
-
-						<!-- steps other than 2 have no output so show some data-->
-						<div
-							v-else
-							class="flex"
-							:class='output.val? "flex-col" : "flex-row"'
-						>
-							<div class="flex flex-col gap-2 p-3">
-								<span class="text-sm font-medium text-ink-gray-4"> Start </span>
-								<span class="text-sm text-ink-gray-9">
-									{{ date(x.start) }}
-								</span>
-							</div>
-
-							<div class="flex flex-col gap-2 p-3">
-								<span class="text-sm font-medium text-ink-gray-4"> End </span>
-								<span class="text-sm text-ink-gray-9"> {{ date(x.end) }} </span>
-							</div>
-
-							<div class="flex flex-col gap-2 p-3">
-								<span class="text-sm font-medium text-ink-gray-4">
-									Duration
-								</span>
-								<span class="text-sm text-ink-gray-9">
-									{{ secsToDuration(x.duration) }}
-								</span>
-							</div>
+								{{ secsToDuration(x.duration) }}
+							</span>
 						</div>
-					</Collapsable>
+					</template>
 				</template>
 
 				<!-- list of errors -->
