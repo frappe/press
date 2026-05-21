@@ -10,6 +10,7 @@ import {
 	Tooltip,
 } from 'frappe-ui'
 import { computed, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
 import ReleaseGroupIcon from '~icons/lucide/boxes'
 import SiteIcon from '~icons/lucide/panel-top-inactive'
 import ServerIcon from '~icons/lucide/server'
@@ -28,10 +29,12 @@ const emits = defineEmits<{
 	update: [string, boolean]
 }>()
 
-const open = ref(false)
-const resourcesToAdd = ref([])
+// Controls dialog visibility and the list of resources selected to add
+const isDialogOpen = ref(false)
+const selectedResourcesToAdd = ref([])
 
-const _resources = createListResource({
+// Existing resources assigned to this team member
+const teamMemberResources = createListResource({
 	doctype: 'Team Member Resource',
 	fields: ['name', 'team', 'user', 'document_type', 'document_name'],
 	filters: {
@@ -40,126 +43,137 @@ const _resources = createListResource({
 	},
 })
 
-const sites = createListResource({
+// Available resource pools for the team — fetched on dialog open
+const availableSites = createListResource({
 	doctype: 'Site',
 	fields: ['name'],
-	filters: {
-		team: props.team,
-	},
+	filters: { team: props.team },
 })
 
-const benches = createListResource({
+const availableBenches = createListResource({
 	doctype: 'Release Group',
 	fields: ['name'],
-	filters: {
-		team: props.team,
-	},
+	filters: { team: props.team },
 })
 
-const servers = createListResource({
+const availableServers = createListResource({
 	doctype: 'Server',
 	fields: ['name'],
-	filters: {
-		team: props.team,
-	},
+	filters: { team: props.team },
 })
 
-const _options = computed(() => {
-	let options = []
-	if (sites.data?.length) {
-		for (const site of sites.data) {
-			options.push({
-				label: site.name,
-				value: site.name,
-				document_type: 'Site',
-				document_name: site.name,
-			})
-		}
-		if (benches.data?.length) {
-			for (const bench of benches.data) {
-				options.push({
-					label: bench.name,
-					value: bench.name,
-					document_type: 'Release Group',
-					document_name: bench.name,
-				})
-			}
-		}
-	}
-	if (servers.data?.length) {
-		for (const server of servers.data) {
-			options.push({
-				label: server.name,
-				value: server.name,
-				document_type: 'Server',
-				document_name: server.name,
-			})
-		}
-	}
-	// Remove options that are already selected.
-	options = options.filter((o) => {
-		return !_resources.data?.some(
-			(r) =>
-				r.document_type === o.document_type &&
-				r.document_name === o.document_name,
-		)
-	})
-	return options
-})
+/**
+ * Builds a flat list of resource options for the MultiSelect,
+ * excluding any resources already assigned to the team member.
+ */
+const availableResourceOptions = computed(() => {
+	const allOptions = [
+		...(availableSites.data ?? []).map((site) => ({
+			label: site.name,
+			value: site.name,
+			document_type: 'Site',
+			document_name: site.name,
+		})),
+		...(availableBenches.data ?? []).map((bench) => ({
+			label: bench.name,
+			value: bench.name,
+			document_type: 'Release Group',
+			document_name: bench.name,
+		})),
+		...(availableServers.data ?? []).map((server) => ({
+			label: server.name,
+			value: server.name,
+			document_type: 'Server',
+			document_name: server.name,
+		})),
+	]
 
-const footer = computed(() => {
-	let parts = []
-	const servers = _resources.data?.filter((r) => r.document_type === 'Server')
-	if (servers?.length) {
-		parts.push(`${servers.length} Server${servers.length > 1 ? 's' : ''}`)
-	}
-	const benches = _resources.data?.filter(
-		(r) => r.document_type === 'Release Group',
+	// Filter out resources that are already assigned
+	return allOptions.filter(
+		(option) =>
+			!teamMemberResources.data?.some(
+				(existing) =>
+					existing.document_type === option.document_type &&
+					existing.document_name === option.document_name,
+			),
 	)
-	if (benches?.length) {
-		parts.push(
-			`${benches.length} Release Group${benches.length > 1 ? 's' : ''}`,
-		)
-	}
-	const sites = _resources.data?.filter((r) => r.document_type === 'Site')
-	if (sites?.length) {
-		parts.push(`${sites.length} Site${sites.length > 1 ? 's' : ''}`)
-	}
-	return parts.length ? parts.join(', ') : 'No resources selected'
 })
 
+/**
+ * Builds a human-readable summary of assigned resources by type,
+ * shown at the bottom of the dialog.
+ */
+const resourceSummary = computed(() => {
+	const counts = [
+		{ type: 'Server', label: 'Server' },
+		{ type: 'Release Group', label: 'Release Group' },
+		{ type: 'Site', label: 'Site' },
+	]
+		.map(({ type, label }) => {
+			const count =
+				teamMemberResources.data?.filter((r) => r.document_type === type)
+					.length ?? 0
+			return count > 0 ? `${count} ${label}${count > 1 ? 's' : ''}` : null
+		})
+		.filter(Boolean)
+
+	return counts.length ? counts.join(', ') : 'No resources selected'
+})
+
+// Submits inserts for each selected resource, then shows a toast on completion
 const onAddResources = () => {
-	const _r = resourcesToAdd.value
-	resourcesToAdd.value = []
-	_r.forEach((r) => {
-		const resource = _options.value.find((o) => o.value === r)!
-		_resources.insert.submit({
+	const pending = selectedResourcesToAdd.value
+	selectedResourcesToAdd.value = []
+
+	const insertPromises = pending.map((value) => {
+		const resource = availableResourceOptions.value.find(
+			(o) => o.value === value,
+		)!
+		return teamMemberResources.insert.submit({
 			team: props.team,
 			user: props.userId,
 			document_type: resource.document_type,
 			document_name: resource.document_name,
 		})
 	})
+
+	Promise.all(insertPromises).then(() => {
+		toast.success(
+			`${pending.length} resource${pending.length > 1 ? 's' : ''} added successfully`,
+		)
+	})
 }
 
+// Removes a single resource and notifies the user
+const onRemoveResource = (resourceName: string, documentName: string) => {
+	teamMemberResources.delete.submit(resourceName).then(() => {
+		toast.success(`Removed ${documentName} from resources`)
+	})
+}
+
+// Fetch all required data when dialog opens; reset state when it closes
 watch(
-	() => open.value,
+	() => isDialogOpen.value,
 	(open) => {
 		if (open) {
-			_resources.fetch()
-			servers.fetch()
-			benches.fetch()
-			sites.fetch()
+			teamMemberResources.fetch()
+			availableServers.fetch()
+			availableBenches.fetch()
+			availableSites.fetch()
 		} else {
-			resourcesToAdd.value = []
-			_resources.setData([])
+			selectedResourcesToAdd.value = []
+			teamMemberResources.setData([])
 		}
 	},
 )
 </script>
 
 <template>
-	<div class="cursor-pointer flex items-center gap-3" @click="open = true">
+	<!-- Trigger row: shows icons for implicit access + explicit resource count -->
+	<div
+		class="cursor-pointer flex items-center gap-3"
+		@click="isDialogOpen = true"
+	>
 		<Tooltip v-if="allServers" text="This user can access all servers">
 			<ServerIcon class="h-4 w-4" />
 		</Tooltip>
@@ -177,22 +191,26 @@ watch(
 			<p>{{ resourceCount }}</p>
 		</Tooltip>
 	</div>
-	<Dialog v-model="open" :options="{size: '2xl'}">
+
+	<Dialog v-model="isDialogOpen" :options="{ size: '2xl' }">
 		<template #body>
 			<div class="p-6 text-base space-y-4 font-normal">
+				<!-- Header -->
 				<div class="flex items-center justify-between">
 					<div class="text-2xl font-semibold">{{ userName }}'s Resources</div>
 					<div class="flex items-center gap-2">
 						<Button
 							icon-left="refresh-ccw"
-							:disabled="_resources.loading"
-							@click="_resources.fetch()"
+							:disabled="teamMemberResources.loading"
+							@click="teamMemberResources.fetch()"
 						>
 							Refresh
 						</Button>
-						<Button icon="x" />
+						<Button icon="x" @click="isDialogOpen = false" />
 					</div>
 				</div>
+
+				<!-- Context banner -->
 				<p
 					class="py-3 px-4 leading-5 rounded border bg-surface-gray-1 border-outline-gray-1 text-ink-gray-8"
 				>
@@ -202,9 +220,15 @@ watch(
 						>{{ userId }}</span
 					>) as a member of this team.
 				</p>
-				<div class="rounded-sm border divide-y">
+
+				<!-- Resource list -->
+				<div
+					v-if="teamMemberResources.data?.length"
+					class="rounded-sm border divide-y"
+				>
 					<div
-						v-for="resource in _resources.data"
+						v-for="resource in teamMemberResources.data"
+						:key="resource.name"
 						class="grid grid-cols-3 divide-x"
 					>
 						<div class="col-span-1 py-2 px-3 font-medium flex items-center">
@@ -214,33 +238,57 @@ watch(
 							<div class="flex items-center justify-between">
 								<div>{{ resource.document_name }}</div>
 								<Dropdown
-									:options="[{
-										label: 'Remove',
-										icon: 'trash',
-										onClick: () => _resources.delete.submit(resource.name),
-									}]"
-									:button="{ icon: 'more-horizontal', label: 'Options', variant: 'ghost' }"
+									:options="[
+										{
+											label: 'Remove',
+											icon: 'trash',
+											onClick: () =>
+												onRemoveResource(
+													resource.name,
+													resource.document_name,
+												),
+										},
+									]"
+									:button="{
+										icon: 'more-horizontal',
+										label: 'Options',
+										variant: 'ghost',
+									}"
 								/>
 							</div>
 						</div>
 					</div>
 				</div>
+
+				<!-- Empty state -->
+				<div
+					v-else
+					class="rounded-sm border py-10 flex flex-col items-center justify-center gap-2 text-ink-gray-5"
+				>
+					<ServerIcon class="h-6 w-6" />
+					<p class="text-sm">No resources have been added yet.</p>
+				</div>
+
+				<!-- Add resources -->
 				<div class="flex items-center gap-2">
 					<MultiSelect
-						v-model="resourcesToAdd"
-						:options="_options"
+						v-model="selectedResourcesToAdd"
+						:options="availableResourceOptions"
 						class="grow"
 						placeholder="Search resources..."
 					/>
 					<Button
 						icon-left="plus"
-						:disabled="!resourcesToAdd.length"
-						@click="() => onAddResources()"
+						:disabled="!selectedResourcesToAdd.length"
+						@click="onAddResources"
 					>
 						Add
 					</Button>
 				</div>
+
 				<Divider />
+
+				<!-- Implicit access toggles -->
 				<p
 					class="py-3 px-4 leading-5 rounded border bg-surface-gray-1 border-outline-gray-1 text-ink-gray-8"
 				>
@@ -271,8 +319,11 @@ watch(
 						/>
 					</div>
 				</div>
+
 				<Divider />
-				<p class="text-center">{{ footer }}</p>
+
+				<!-- Summary footer -->
+				<p class="text-center">{{ resourceSummary }}</p>
 			</div>
 		</template>
 	</Dialog>
