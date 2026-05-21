@@ -73,6 +73,7 @@ const dropdownOptions = computed(() => {
       label: 'View App Versions',
       icon: 'package',
       onClick: appVersions,
+      condition: () => props.deployview
     }
   ]
 
