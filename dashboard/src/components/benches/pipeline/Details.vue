@@ -58,8 +58,10 @@ const dropdownOptions = computed(() => {
       icon: 'external-link',
       condition: () => team?.doc?.is_desk_user,
       onClick: () => {
+        const pathname = props.deployview ? 'deploy-candidate-build' : 'release-pipeline'
+
         window.open(
-          `${window.location.protocol}//${window.location.host}/app/release-pipeline/${id}`,
+          `${window.location.protocol}//${window.location.host}/app/${pathname}/${props.id}`,
           '_blank',
         )
       },
