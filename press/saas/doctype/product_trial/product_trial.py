@@ -114,7 +114,6 @@ class ProductTrial(Document):
 		if standby_site:
 			frappe.db.set_value("Site", standby_site, "is_standby", 0)
 			frappe.db.commit()
-			site_saved = False
 			try:
 				site: Site = frappe.get_doc("Site", standby_site)
 				site.team = team
@@ -126,14 +125,12 @@ class ProductTrial(Document):
 				site.signup_time = frappe.utils.now()
 				site.generate_saas_communication_secret(create_agent_job=True, save=False)
 				site.save()  # Save is needed for create_subscription to work TODO: remove this
-				site_saved = True
 				site.reload()
 				self.set_site_domain(site, site_domain)
 			except Exception:
 				frappe.db.rollback()
-				if not site_saved:
-					frappe.db.set_value("Site", standby_site, "is_standby", 1)
-					frappe.db.commit()
+				frappe.db.set_value("Site", standby_site, "is_standby", 1)
+				frappe.db.commit()
 				raise
 		else:
 			# Create a site in the cluster, if standby site is not available
