@@ -30,6 +30,9 @@ const socket = window.$socket
 interface Props {
   deployview: boolean
   id?: string
+
+  // bench  name
+  name?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -239,7 +242,7 @@ const stopBuild = () => {
   <main class="pipeline-page flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-6rem)]">
     <!-- header -->
     <div class="flex gap-2 items-center">
-      <router-link :to="`/groups/${id}/pipelines`">
+      <router-link :to="`/groups/${name}/${deployview? 'deploys':'pipelines'}`">
         <lucide-chevron-left class="size-4" />
       </router-link>
 
