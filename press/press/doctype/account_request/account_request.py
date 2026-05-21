@@ -369,4 +369,9 @@ def has_permission(doc, ptype, user):
 	user = user or frappe.session.user
 	if doc.is_new():
 		return True
-	return frappe.has_permission(doctype="Team", doc=doc.team, ptype=ptype, user=user)
+	team = doc.team
+	if validate_email_address(team, throw=False) and (
+		team_name := frappe.db.get_value("Team", {"user": team}, "name")
+	):
+		team = team_name
+	return frappe.has_permission(doctype="Team", doc=team, ptype=ptype, user=user)
