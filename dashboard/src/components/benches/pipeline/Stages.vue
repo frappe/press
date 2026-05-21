@@ -127,10 +127,10 @@ const formatCmd = (cmd: string) => {
 
 		<div class="my-2 *:leading-relaxed text-sm" v-if='x.label == "Building"'>
 			<button
-				v-for="build_step in buildResources[activeBuildId]?.doc?.build_steps"
+				v-for="build_step, step_i in buildResources[activeBuildId]?.doc?.build_steps"
 				class="py-1.5 pr-3 pl-6 rounded flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed hover:bg-surface-gray-1"
-       :class='output.val && output.val == build_step.output? "bg-surface-gray-1" :"" '
-       @click="setOutput({ val: build_step.output || formatCmd(build_step.command) || 'No Output', status: build_step.status })"
+       :class='output.val && output.selectedIndex == step_i? "bg-surface-gray-1" :"" '
+       @click="setOutput({ val: build_step.output || formatCmd(build_step.command) || 'No Output', status: build_step.status, selectedIndex: step_i })"
 
 				:disabled="build_step.status =='Pending'"
 			>
