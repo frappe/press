@@ -12,7 +12,7 @@
 		"section_break_papi",
 		"document_type",
 		"column_break_aiab",
-		"document"
+		"document_name"
 	],
 	"fields": [
 		{
@@ -59,7 +59,7 @@
 			"fieldtype": "Column Break"
 		},
 		{
-			"fieldname": "document",
+			"fieldname": "document_name",
 			"fieldtype": "Dynamic Link",
 			"in_list_view": 1,
 			"label": "Document",
@@ -71,8 +71,8 @@
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-05-18 13:37:30.925649",
-	"modified_by": "Administrator",
+	"modified": "2026-05-21 13:38:42.774057",
+	"modified_by": "hello@ssiyad.com",
 	"module": "Press",
 	"name": "Team Member Resource",
 	"owner": "Administrator",

@@ -32,7 +32,7 @@ const resourcesToAdd = ref([])
 
 const _resources = createListResource({
 	doctype: 'Team Member Resource',
-	fields: ['name', 'team', 'user', 'document_type', 'document'],
+	fields: ['name', 'team', 'user', 'document_type', 'document_name'],
 	filters: {
 		team: props.team,
 		user: props.userId,
@@ -71,7 +71,7 @@ const _options = computed(() => {
 				label: site.name,
 				value: site.name,
 				document_type: 'Site',
-				document: site.name,
+				document_name: site.name,
 			})
 		}
 		if (benches.data?.length) {
@@ -80,7 +80,7 @@ const _options = computed(() => {
 					label: bench.name,
 					value: bench.name,
 					document_type: 'Release Group',
-					document: bench.name,
+					document_name: bench.name,
 				})
 			}
 		}
@@ -91,14 +91,16 @@ const _options = computed(() => {
 				label: server.name,
 				value: server.name,
 				document_type: 'Server',
-				document: server.name,
+				document_name: server.name,
 			})
 		}
 	}
 	// Remove options that are already selected.
 	options = options.filter((o) => {
 		return !_resources.data?.some(
-			(r) => r.document_type === o.document_type && r.document === o.document,
+			(r) =>
+				r.document_type === o.document_type &&
+				r.document_name === o.document_name,
 		)
 	})
 	return options
@@ -134,7 +136,7 @@ const onAddResources = () => {
 			team: props.team,
 			user: props.userId,
 			document_type: resource.document_type,
-			document: resource.document,
+			document_name: resource.document_name,
 		})
 	})
 }
@@ -209,7 +211,7 @@ watch(
 						</div>
 						<div class="col-span-2 py-1 px-3">
 							<div class="flex items-center justify-between">
-								<div>{{ resource.document }}</div>
+								<div>{{ resource.document_name }}</div>
 								<Dropdown
 									:options="[{
 										label: 'Remove',

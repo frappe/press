@@ -16,16 +16,19 @@ if TYPE_CHECKING:
 class TeamMemberResource(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		document: DF.DynamicLink
+		document_name: DF.DynamicLink
 		document_type: DF.Link
 		team: DF.Link
 		user: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ("name", "team", "user", "document_type", "document")
+	dashboard_fields = ("name", "team", "user", "document_type", "document_name")
 
 	def before_validate(self):
 		self.prevent_duplicate()
@@ -41,17 +44,17 @@ class TeamMemberResource(Document):
 				"team": self.team,
 				"user": self.user,
 				"document_type": self.document_type,
-				"document": self.document,
+				"document_name": self.document_name,
 			}
 		):
 			frappe.throw(
-				_("A resource with the same team, user, document type, and document already exists.")
+				_("A resource with the same team, user, document type, and document name already exists.")
 			)
 
 	def validate(self):
 		self.validate_user()
 		self.validate_document_type()
-		self.validate_document()
+		self.validate_document_name()
 
 	def validate_user(self):
 		"""
@@ -68,13 +71,15 @@ class TeamMemberResource(Document):
 		if self.document_type not in permitted_document_types:
 			frappe.throw(_("Document type must be one of {0}").format(", ".join(permitted_document_types)))
 
-	def validate_document(self):
+	def validate_document_name(self):
 		"""
 		Validate that the document exists and is associated with the team.
 		"""
-		document_team = frappe.db.get_value(self.document_type, self.document, "team")
+		document_team = frappe.db.get_value(self.document_type, self.document_name, "team")
 		if document_team != self.team:
-			frappe.throw(_("Document {0} is not associated with team {1}").format(self.document, self.team))
+			frappe.throw(
+				_("Document {0} is not associated with team {1}").format(self.document_name, self.team)
+			)
 
 	@dashboard_whitelist()
 	def delete(self, *args, **kwargs):
@@ -137,7 +142,7 @@ def sync_press_role(doc, method=None):
 				"team": team,
 				"user": user,
 				"document_type": resource.document_type,
-				"document": resource.document_name,
+				"document_name": resource.document_name,
 			}
 			if not frappe.db.exists(document):
 				# If the resource does not exist, create a new `team-member-resource` entry.
