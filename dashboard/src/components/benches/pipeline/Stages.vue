@@ -31,9 +31,7 @@ const handleDummyStage = (x) => {
 
   props.updateDeployViewBuild(x)
   props.updateDummyStage(2, x.status)
-
-  if(x.status == 'Success')
-  props.updateDummyStage(3, x.status)
+  props.updateDummyStage(3, x.status == 'Success' ? x.status: 'Pending')
 }
 
 watch(
@@ -51,6 +49,10 @@ watch(
 					fields: ['build_steps'],
           onSuccess: handleDummyStage
 				})
+
+         if (buildResources.value[id]?.doc) {
+             handleDummyStage(buildResources.value[id].doc)
+         }
 			}
 
 			// socket io stuff
