@@ -344,6 +344,8 @@ class DeployCandidate(Document):
 			# Read all generated files before cleanup
 			with open(os.path.join(ssh_directory, "ssh_host_rsa_key")) as f:
 				host_private_key = f.read()
+			with open(host_public_key_path) as f:
+				host_public_key = f.read()
 			with open(os.path.join(ssh_directory, "ssh_host_rsa_key-cert.pub")) as f:
 				host_certificate = f.read()
 
@@ -366,6 +368,7 @@ class DeployCandidate(Document):
 
 		host_keys = {
 			"private_key": host_private_key,
+			"public_key": host_public_key,
 			"certificate": host_certificate,
 			"ca_public_key": ca.public_key,
 			"principals": f"restrict,pty {self.group}",
