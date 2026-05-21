@@ -45,7 +45,7 @@ const output = reactive({
   selectedIndex: null
 })
 
-const setOutput = (opts: String | null) => {
+const setOutput = (opts) => {
   output.val = opts.val
   output.status = opts.status
   output.selectedIndex = opts.selectedIndex
@@ -325,13 +325,14 @@ const stopBuild = () => {
                 {{ x.class }}
               </template>
 
-              <div v-html="x.message" class="leading-relaxed rounded p-3 ml-3 mb-3 text-sm"
+              <div class='rounded p-3 bg-surface-red-1 flex flex-col gap-2'>
+
+              <p v-html="x.message" class="!w-full !max-w-full  prose prose-sm ml-3 mb-3 text-sm"
                 :class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-4" : "bg-surface-amber-1 text-ink-amber-3"' />
 
-              <div class="w-full flex justify-end" v-if='x.assistance_url'>
-                <a :href="x.assistance_url" target="_blank"
-                  class="bg-surface-gray-1 p-1.5 px-2.5 rounded hover:opacity-70">
-                  Fix
+                <a :href="x.assistance_url" v-if="x.assistance_url" target="_blank"
+                  class="bg-surface-white shadow p-1.5 px-2.5 rounded hover:opacity-70 ml-auto">
+                  Go to docs
                 </a>
               </div>
             </Collapsable>
