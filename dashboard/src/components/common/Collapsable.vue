@@ -4,11 +4,11 @@ import { ref } from 'vue'
 interface Props {
 	headerCss?: string
 	disabled?: boolean
+  opened?:boolean
 }
 
 const props = defineProps<Props>()
-
-const opened = ref(false)
+const opened = ref(props.opened)
 
 function toggle() {
 	if (props.disabled) return
@@ -36,7 +36,7 @@ function toggle() {
 
 	<div
 		:inert="!opened"
-		class="grid transition-[grid-template-rows] duration-500"
+		class="grid transition-[grid-template-rows] duration-300"
 		:class='opened? "grid-rows-[1fr]":"grid-rows-[0fr]"'
 	>
 		<div class="overflow-hidden"><slot /> </div>

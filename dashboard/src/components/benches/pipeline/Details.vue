@@ -17,6 +17,7 @@ import Scrollbar from '@/components/common/Scrollbar.vue'
 import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
 import AppVersionsDialog from '@/dialogs/AppVersionsDialog.vue'
+import Stages from './Stages.vue'
 
 import {
 	h,
@@ -47,27 +48,29 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const output = reactive({
+	opened: true,
 	val: 'No Output',
 	status: null,
 	selectedIndex: null,
 })
 
-// single line commands with && are very long
-// so make them long
-const formatCmd = (cmd: string) => {
-	return cmd
-		.split('&&')
-		.map((part) => part.trim())
-		.join(' &&\n')
-}
-
 const setOutput = (opts) => {
-	output.val = opts.val
+	output.val = opts.val || 'No Output'
 	output.status = opts.status
-	output.selectedIndex = opts.selectedIndex
+	output.id = opts.id
+	output.opened = opts.opened ?? true
 }
 
 const activeBuildId = ref(props.deployview ? props.id : null)
+const agentJobs = ref<Record<string, any>>({})
+
+const agentJobIds = computed(() => {
+	const benches = pipeline?.doc?.steps?.stages.at(-1)?.benches
+	return benches
+		?.map((x) => x.jobs)
+		.flat()
+		.map((x) => x.name)
+})
 
 const buildIds = props.deployview
 	? ref([props.id])
@@ -195,11 +198,43 @@ watch(
 	{ immediate: true, deep: true },
 )
 
+watch(
+	() => agentJobIds.value,
+	(ids: string[]) => {
+		if (!ids) return
+
+		ids.forEach((id: string) => {
+			if (!agentJobs.value[id]) {
+				agentJobs.value[id] = createDocumentResource({
+					doctype: 'Agent Job',
+					name: id,
+					auto: true,
+					onSuccess(data) {
+						console.log(data, 'bro')
+					},
+				})
+			}
+
+			if (socket && !wired.has(`job:${id}`)) {
+				socket.emit('doc_subscribe', 'Agent Job', id)
+
+				socket.on('agent_job_update', (data) => {
+					if (data.id !== id) return
+					const job = agentJobs.value[id]
+					if (job?.doc) job.doc = { ...job.doc, ...data }
+				})
+
+				wired.add(`job:${id}`)
+			}
+		})
+	},
+	{ immediate: true, deep: true },
+)
+
 // ---------------------  Realtime stuff ----------------------
 const handleDocUpdate = props.deployview
 	? null
 	: (x) => {
-			console.log(x, 'bro')
 			if (x.doctype === 'Release Pipeline' && x.name === props.id)
 				pipeline.reload()
 		}
@@ -212,10 +247,17 @@ onBeforeUnmount(() => {
 	}
 
 	wired.forEach((id) => {
+		if (id.startsWith('job:')) return
+
 		socket.emit('doc_unsubscribe', 'Deploy Candidate Build', id)
 		socket.off(`bench_deploy:${id}:steps`)
 		socket.off(`bench_deploy:${id}:finished`)
 	})
+
+	agentJobIds.value?.forEach((id: string) => {
+		socket.emit('doc_unsubscribe', 'Agent Job', id)
+	})
+	socket.off('agent_job_update')
 })
 
 if (!props.deployview) {
@@ -400,11 +442,11 @@ const stopBuild = () => {
 		<!-- deploy steps + output -->
 		<div
 			class="flex rounded border p-3 pt-1 flex-1 min-h-0"
-			:class='output.val? "": "!pr-0" '
+			:class='output.opened? "": "!pr-0" '
 		>
 			<Scrollbar
-				class="px-0.5 pr-3 transition-all duration-500 shrink-0"
-				:class="output.val ? 'w-[30rem]' : 'w-full'"
+				class="px-0.5 pr-3 transition-all duration-300 shrink-0"
+				:class="output.opened ? 'w-[30rem]' : 'w-full'"
 			>
 				<Tabs
 					class="w-full sticky top-0 z-10 bg-surface-white mb-2"
@@ -424,52 +466,13 @@ const stopBuild = () => {
 
 				<!-- build stages -->
 				<template v-if='tabState == "Tasks"'>
-					<template
-						v-for='x in (deployview ? dummyStages : pipeline?.doc?.steps?.stages)'
-						:key="x.label"
-					>
-						<Collapsable
-							v-if="x.label == 'Building'"
-							headerCss="py-3 border-b"
-							:disabled='["Pending", "Queued"].includes(x.status)'
-						>
-							<template #header>
-								<StatusIcon :status="x.status" />
-								<span class="whitespace-nowrap"> {{ x.label }}</span>
-							</template>
-
-							<!-- build steps -->
-							<template v-if='x.label == "Building"'>
-								<button
-									v-for="(build_step, step_i) in builds[activeBuildId]?.doc?.build_steps"
-									class="leading-relaxed mb-0.5 py-1.5 pr-3 pl-6 rounded flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed hover:bg-surface-gray-1"
-									:class='output.val && output.selectedIndex == step_i? "bg-surface-gray-1" :"" '
-									@click="setOutput({ val: build_step.output || formatCmd(build_step.command) || 'No Output', status: build_step.status, selectedIndex: step_i })"
-									:disabled="build_step.status =='Pending'"
-								>
-									<StatusIcon :status="build_step.status" />
-									<span class="mr-3">
-										{{ build_step.stage }}
-										- {{ build_step.step }}
-									</span>
-									<span class="text-ink-gray-5 ml-auto"
-										>{{ build_step.cached ? 'Cached': secsToDuration(build_step.duration) }}</span
-									>
-								</button>
-							</template>
-						</Collapsable>
-
-						<div v-else class="flex items-center gap-2 py-3 border-b">
-							<StatusIcon :status="x.status" />
-							<span class="whitespace-nowrap"> {{ x.label }}</span>
-							<span
-								v-if='x.status != "Failure"'
-								class="ml-auto text-sm text-ink-gray-5"
-							>
-								{{ secsToDuration(x.duration) }}
-							</span>
-						</div>
-					</template>
+					<Stages
+						:output
+						:setOutput
+						:stages="deployview ? dummyStages : pipeline?.doc?.steps?.stages"
+						:buildSteps="builds[activeBuildId]?.doc?.build_steps"
+						:agentJobs="agentJobs"
+					/>
 				</template>
 
 				<!-- list of errors -->
@@ -510,15 +513,15 @@ const stopBuild = () => {
 
 			<!-- output -->
 			<div
-				v-show="output.val"
-				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 rounded transition-all duration-500 flex-1"
+				v-show="output.opened"
+				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 rounded transition-all duration-300 flex-1"
 			>
 				<div
 					class="flex items-center gap-2 pb-2 border-outline-gray-2 mb-3 text-ink-gray-6"
 				>
 					<span>Output</span>
 					<CopyBtn :text="output?.val || ''" class="ml-auto" />
-					<button @click="setOutput({ val: null, status: null })">
+					<button @click="setOutput({ val: null, status: null, opened:false })">
 						<lucide-x class="size-4" />
 					</button>
 				</div>
