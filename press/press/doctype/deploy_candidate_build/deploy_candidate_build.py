@@ -859,7 +859,11 @@ class DeployCandidateBuild(Document):
 			commit=True,
 		)
 		self._set_output_parsers()
-		self.send_build_instructions_and_add_build_steps()
+		try:
+			self.send_build_instructions_and_add_build_steps()
+		except Exception as e:
+			self.handle_build_failure(exc=e)
+			return
 		self.set_status(Status.RUNNING, commit=True)
 
 	def reset_build_state(self):
