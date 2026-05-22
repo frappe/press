@@ -368,7 +368,7 @@ const stopBuild = () => {
 
 <template>
 	<main
-		class="pipeline-page flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-6rem)]"
+		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-6rem)]"
 	>
 		<!-- header -->
 		<div class="flex gap-2 items-center">
@@ -522,13 +522,13 @@ const stopBuild = () => {
 				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 rounded transition-all duration-300 flex-1"
 			>
 				<div
-					class="flex items-center gap-2 pb-2 border-outline-gray-2 mb-3 text-ink-gray-6"
+					class="flex items-center pb-2 border-outline-gray-2 mb-3 text-ink-gray-6 -mt-1 -mr-1"
 				>
 					<span>Output</span>
-					<CopyBtn :text="output?.val || ''" class="ml-auto" />
-					<button @click="setOutput({ val: null, status: null, opened:false })">
+					<CopyBtn :text="output?.val || ''" class="ml-auto smallbtn" />
+					<button class='smallbtn' @click="setOutput({ val: null, status: null, opened:false })">
 						<lucide-x class="size-4" />
-					</button>
+					</Button>
 				</div>
 
 				<pre
@@ -541,9 +541,8 @@ const stopBuild = () => {
 	</main>
 </template>
 
-<style>
-body:has(.pipeline-page) #scrollContainer {
-	overflow: hidden;
-	height: 100%;
+<style scoped>
+.smallbtn {
+   @apply hover:bg-surface-gray-3 dark:hover:bg-surface-gray-2 p-1 rounded hover:text-ink-gray-9
 }
 </style>
