@@ -10,7 +10,6 @@ import PatchAppDialog from '../components/group/PatchAppDialog.vue';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { date, duration } from '../utils/format';
 import { getToastErrorMessage } from '../utils/toast';
 import { getJobsTab } from './common/jobs';
 import { getPatchesTab } from './common/patches';
@@ -18,7 +17,7 @@ import { tagTab } from './common/tags';
 
 const pollingGroups = new Set();
 
-function pollReleasePipelineValidationStatus(group) {
+export function pollReleasePipelineValidationStatus(group) {
 	if (pollingGroups.has(group.doc.name)) return; // already polling
 	if (!group.doc.deploy_information.has_running_release_pipeline) return;
 
