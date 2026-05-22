@@ -8,17 +8,13 @@ from frappe import _
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
+from press.guards.role_guard import is_restricted
 from press.overrides import get_permission_query_conditions_for_doctype
-
-if TYPE_CHECKING:
-	from press.press.doctype.team.team import Team
 
 
 class TeamMemberResource(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -91,11 +87,7 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("T
 
 
 def has_permission(doc, ptype, user):
-	# Check if the current user has the necessary permissions to assign resources.
-	team: Team = frappe.get_doc("Team", doc.team)
-	if not (team.is_team_owner() or team.is_admin_user()):
-		return False
-	return True
+	return not is_restricted()
 
 
 def sync_press_role(doc, method=None):
