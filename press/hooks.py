@@ -130,8 +130,10 @@ permission_query_conditions = {
 	"Server Snapshot": "press.press.doctype.server_snapshot.server_snapshot.get_permission_query_conditions",
 	"Server Snapshot Recovery": "press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.get_permission_query_conditions",
 	"Release Pipeline": "press.press.doctype.release_pipeline.release_pipeline.get_permission_query_conditions",
+	"Team Member Resource": "press.press.doctype.team_member_resource.team_member_resource.get_permission_query_conditions",
 }
 has_permission = {
+	"Team Member Resource": "press.press.doctype.team_member_resource.team_member_resource.has_permission",
 	"Account Request": "press.press.doctype.account_request.account_request.has_permission",
 	"Site": "press.overrides.has_permission",
 	"Site Action": "press.overrides.has_permission",
@@ -169,6 +171,11 @@ has_permission = {
 # Hook on document methods and events
 
 doc_events = {
+	"Press Role": {
+		"after_insert": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
+		"on_update": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
+		"after_delete": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
+	},
 	"Stripe Webhook Log": {
 		"after_insert": [
 			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_webhook_events",
