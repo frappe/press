@@ -33,7 +33,7 @@ class TestBackupRecordCheck(FrappeTestCase):
 		create_test_press_settings()
 		site = create_test_site(creation=self._2_hrs_before_yesterday)
 		create_test_site_backup(site.name, creation=self._2_hrs_before_yesterday + timedelta(hours=1))
-		BackupRecordCheck()
+		BackupRecordCheck(yesterday=self.yesterday)
 		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertEqual(audit_log.status, "Failure")
 
@@ -45,7 +45,7 @@ class TestBackupRecordCheck(FrappeTestCase):
 			site.name,
 			creation=self._2_hrs_before_yesterday + timedelta(hours=3),
 		)
-		BackupRecordCheck()
+		BackupRecordCheck(yesterday=self.yesterday)
 		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertEqual(audit_log.status, "Success")
 
@@ -54,7 +54,7 @@ class TestBackupRecordCheck(FrappeTestCase):
 		site = create_test_site(creation=self._2_hrs_before_yesterday)
 		create_test_site_backup(site.name, creation=self.yesterday)
 		audit_logs_before = frappe.db.count("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
-		BackupRecordCheck()
+		BackupRecordCheck(yesterday=self.yesterday)
 		audit_logs_after = frappe.db.count("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertGreater(audit_logs_after, audit_logs_before)
 
@@ -62,7 +62,7 @@ class TestBackupRecordCheck(FrappeTestCase):
 		create_test_press_settings()
 		create_test_site()
 		# no backup
-		BackupRecordCheck()
+		BackupRecordCheck(yesterday=self.yesterday)
 
 		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertEqual(audit_log.status, "Success")
@@ -72,7 +72,7 @@ class TestBackupRecordCheck(FrappeTestCase):
 		site = create_test_site(creation=self._2_hrs_before_yesterday)
 		act = log_site_activity(site.name, "Activate Site")
 		act.db_set("creation", self._2_hrs_before_yesterday + timedelta(hours=24))
-		BackupRecordCheck()
+		BackupRecordCheck(yesterday=self.yesterday)
 		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertEqual(audit_log.status, "Success")
 

@@ -248,9 +248,9 @@ class BackupRecordCheck(Audit):
 			]
 		)
 
-	def __init__(self):
+	def __init__(self, yesterday=None):
 		log = {self.list_key: [], self.backup_summary: {}}
-		self.yesterday = frappe.utils.now_datetime().date() - timedelta(days=1)
+		self.yesterday = yesterday or frappe.utils.now_datetime().date() - timedelta(days=1)
 
 		trial_plans = tuple(frappe.get_all("Site Plan", dict(is_trial_plan=1), pluck="name"))
 		sites_with_backup_in_interval = self.get_sites_with_backup_in_interval(trial_plans)
