@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Badge } from 'frappe-ui'
 import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
 
@@ -11,6 +10,7 @@ interface Props {
 	agentJobs: any[]
 	output: any
 	setOutput: any
+	deployview: boolean
 }
 
 const props = defineProps<Props>()
@@ -28,7 +28,7 @@ const formatCmd = (cmd: string) => {
 <template>
 	<template v-for='x in stages' :key="x.name">
 		<Collapsable
-			v-if="['Building', 'Deploying'].includes(x.label)"
+			v-if="deployview ? x.label == 'Building' : ['Building', 'Deploying'].includes(x.label)"
 			headerCss="py-3 border-b"
 			:disabled='["Pending", "Queued"].includes(x.status)'
 		>
@@ -59,12 +59,12 @@ const formatCmd = (cmd: string) => {
 				</button>
 			</template>
 
-			<template v-else-if='x.label == "Deploying"'>
+			<template v-else-if='!deployview && x.label == "Deploying"'>
 				<Collapsable
 					v-for='bench in x.benches'
 					headerCss="ml-6 py-3"
 					:key="bench.name"
-          :opened="true"
+					:opened="true"
 				>
 					<template #header>
 						<LucideBoxes class="size-4" />
@@ -93,7 +93,7 @@ const formatCmd = (cmd: string) => {
 							v-for='jobstep in agentJobs?.[job.name]?.doc?.steps'
 							@click="setOutput({val: jobstep.output, status: jobstep.status, id: jobstep.name})"
 						>
-							<StatusIcon :status="jobstep.status" class='ml-2'/>
+							<StatusIcon :status="jobstep.status" class="ml-2" />
 							{{ jobstep.step_name }}
 
 							<span class="text-ink-gray-5 ml-auto">

@@ -62,15 +62,16 @@ const setOutput = (opts) => {
 }
 
 const activeBuildId = ref(props.deployview ? props.id : null)
-const agentJobs = ref<Record<string, any>>({})
-
-const agentJobIds = computed(() => {
-	const benches = pipeline?.doc?.steps?.stages.at(-1)?.benches
-	return benches
-		?.map((x) => x.jobs)
-		.flat()
-		.map((x) => x.name)
-})
+const agentJobs = props.deployview ? null : ref<Record<string, any>>({})
+const agentJobIds = props.deployview
+	? null
+	: computed(() => {
+			const benches = pipeline?.doc?.steps?.stages.at(-1)?.benches
+			return benches
+				?.map((x) => x.jobs)
+				.flat()
+				.map((x) => x.name)
+		})
 
 const buildIds = props.deployview
 	? ref([props.id])
@@ -199,9 +200,9 @@ watch(
 )
 
 watch(
-	() => agentJobIds.value,
+	() => agentJobIds?.value,
 	(ids: string[]) => {
-		if (!ids) return
+		if (props.deployview || !ids) return
 
 		ids.forEach((id: string) => {
 			if (!agentJobs.value[id]) {
@@ -254,10 +255,13 @@ onBeforeUnmount(() => {
 		socket.off(`bench_deploy:${id}:finished`)
 	})
 
-	agentJobIds.value?.forEach((id: string) => {
-		socket.emit('doc_unsubscribe', 'Agent Job', id)
-	})
-	socket.off('agent_job_update')
+	if (props.deployview) {
+		agentJobIds?.value?.forEach((id: string) => {
+			socket.emit('doc_unsubscribe', 'Agent Job', id)
+		})
+
+		socket.off('agent_job_update')
+	}
 })
 
 if (!props.deployview) {
@@ -471,7 +475,8 @@ const stopBuild = () => {
 						:setOutput
 						:stages="deployview ? dummyStages : pipeline?.doc?.steps?.stages"
 						:buildSteps="builds[activeBuildId]?.doc?.build_steps"
-						:agentJobs="agentJobs"
+						:agentJobs="deployview ? null: agentJobs"
+						:deployview
 					/>
 				</template>
 
