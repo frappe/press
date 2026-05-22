@@ -78,7 +78,7 @@ const formatCmd = (cmd: string) => {
 					<Collapsable
 						:opened="true"
 						v-for='job in bench.jobs'
-						headerCss="ml-10 py-2 border-l"
+						headerCss="ml-10 py-2"
 						:key="job.name"
 					>
 						<template #header>

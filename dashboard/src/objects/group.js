@@ -437,154 +437,22 @@ export default {
 					},
 				},
 			},
+
+      
 			{
 				label: 'Deploys',
 				route: 'deploys',
 				icon: icon('package'),
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../pages/benches/Deploys.vue'),
+				),
 				childrenRoutes: ['Deploy Candidate'],
-				type: 'list',
-				list: {
-					doctype: 'Deploy Candidate Build',
-					route: (row) => ({
-						name: 'Deploy Candidate',
-						params: { id: row.name },
-					}),
-					filters: (releaseGroup) => {
-						return {
-							group: releaseGroup.name,
-						};
-					},
-					orderBy: 'creation desc',
-					// fields: [{ apps: ['app'] }],
-					filterControls() {
-						return [
-							{
-								type: 'select',
-								label: 'Status',
-								fieldname: 'status',
-								options: [
-									'',
-									'Draft',
-									'Scheduled',
-									'Pending',
-									'Preparing',
-									'Running',
-									'Success',
-									'Failure',
-								],
-							},
-						];
-					},
-					banner({ documentResource: releaseGroup }) {
-						if (releaseGroup.doc.are_builds_suspended) {
-							return {
-								title:
-									'<b>Builds Suspended:</b> updates will be scheduled to run when builds resume.',
-								type: 'warning',
-							};
-						} else {
-							return null;
-						}
-					},
-					columns: [
-						{
-							label: 'Deploy',
-							fieldname: 'creation',
-							format(value) {
-								return `Deploy on ${date(value, 'llll')}`;
-							},
-							width: '20rem',
-						},
-						{
-							label: 'Status',
-							fieldname: 'status',
-							type: 'Badge',
-							width: 0.5,
-							suffix(row) {
-								if (!row.addressable_notification) {
-									return;
-								}
-
-								return h(
-									Tooltip,
-									{
-										text: 'Attention required!',
-										placement: 'top',
-										class: 'rounded-full bg-surface-gray-2 p-1',
-									},
-									() => h(icon('alert-circle', 'w-3 h-3'), {}),
-								);
-							},
-						},
-						{
-							label: 'Duration',
-							fieldname: 'build_duration',
-							format: duration,
-							class: 'text-ink-gray-6',
-							width: 1,
-						},
-						{
-							label: 'Deployed By',
-							fieldname: 'owner',
-							width: 1,
-						},
-					],
-					primaryAction({ listResource: deploys, documentResource: group }) {
-						return {
-							label: 'Deploy',
-							slots: {
-								prefix: icon(LucideRocket),
-							},
-							onClick() {
-								if (group.doc.deploy_information.deploy_in_progress) {
-									return toast.error(
-										'Deploy is in progress. Please wait for it to complete.',
-									);
-								} else if (group.doc.deploy_information.update_available) {
-									let UpdateReleaseGroupDialog = defineAsyncComponent(
-										() =>
-											import(
-												'../components/group/UpdateReleaseGroupDialog.vue'
-											),
-									);
-									renderDialog(
-										h(UpdateReleaseGroupDialog, {
-											bench: group.name,
-											lastDeploy: true,
-											onSuccess(candidate) {
-												group.doc.deploy_information.has_running_release_pipeline = true;
-												group.doc.deploy_information.update_available = false;
-												if (candidate) {
-													group.doc.deploy_information.last_deploy.name =
-														candidate;
-												}
-												pollReleasePipelineValidationStatus(group);
-											},
-										}),
-									);
-								} else {
-									confirmDialog({
-										title: 'Deploy without app updates?',
-										message:
-											'No app updates detected. Changes in dependencies and environment variables will be applied on deploying.',
-										onSuccess: ({ hide }) => {
-											toast.promise(group.redeploy.submit(), {
-												loading: 'Deploying...',
-												success: () => {
-													hide();
-													deploys.reload();
-													return 'Changes Deployed';
-												},
-												error: (e) => getToastErrorMessage(e),
-											});
-										},
-									});
-								}
-							},
-						};
-					},
-				},
+        	props: (releaseGroup) => ({
+					name: releaseGroup.doc.name,
+				}),
 			},
+
 			getJobsTab('Release Group'),
 			{
 				label: 'Config',
