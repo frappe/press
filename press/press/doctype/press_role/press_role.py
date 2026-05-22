@@ -10,7 +10,8 @@ from frappe.model.document import Document
 from frappe.query_builder.functions import Count
 
 from press.api.client import dashboard_whitelist
-from press.guards import team_guard
+from press.guards import role_guard, team_guard
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import get_current_team
 
 if TYPE_CHECKING:
@@ -156,6 +157,20 @@ class PressRole(Document):
 			u["user_image"] = frappe.get_value("User", u["user"], "user_image")
 			flat_users.append(u)
 		doc["users"] = flat_users
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Press Role")
+
+
+def has_permission(doc, ptype, user):
+	"""
+	Only team owners and admins can modify Press Roles. Other team members
+	can read roles but cannot create, update, or delete them.
+	"""
+	if ptype in ("write", "delete", "create") and role_guard.is_restricted():
+		return False
+
+	return True
 
 
 def create_user_resource(document: Document, _):
