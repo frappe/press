@@ -293,27 +293,30 @@ watch(
 					class="py-3 px-4 leading-5 rounded border bg-surface-gray-1 border-outline-gray-1 text-ink-gray-8"
 				>
 					Checking these boxes will implicitly give access to all resources of
-					that type. For example, checking "All Servers" will give access to all
+					that type. For example, checking "Servers" will give access to all
 					current and future servers in the team.
 				</p>
 				<div class="grid grid-cols-3 gap-2">
-					<div class="rounded-md border px-3 py-2">
+					<div class="flex items-center gap-2 rounded-md border px-3 py-2">
+						<ServerIcon class="size-4" />
 						<Checkbox
-							label="All Servers"
+							label="Servers"
 							:model-value="allServers"
 							@update:model-value="$emit('update', 'all_servers', $event)"
 						/>
 					</div>
-					<div class="rounded-md border px-3 py-2">
+					<div class="flex items-center gap-2 rounded-md border px-3 py-2">
+						<ReleaseGroupIcon class="size-4" />
 						<Checkbox
-							label="All Release Groups"
+							label="Release Groups"
 							:model-value="allReleaseGroups"
 							@update:model-value="$emit('update', 'all_release_groups', $event)"
 						/>
 					</div>
-					<div class="rounded-md border px-3 py-2">
+					<div class="flex items-center gap-2 rounded-md border px-3 py-2">
+						<SiteIcon class="size-4" />
 						<Checkbox
-							label="All Sites"
+							label="Sites"
 							:model-value="allSites"
 							@update:model-value="$emit('update', 'all_sites', $event)"
 						/>
