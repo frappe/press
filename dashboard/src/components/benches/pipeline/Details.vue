@@ -389,6 +389,7 @@ const stopBuild = () => {
 
 			<Tabs
 				variant="solid"
+        size='sm'
 				v-if="!deployview && buildIds.length > 1"
 				:tabs="pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => ({ label: x.architecture, value: x.name }))"
 				v-model="activeBuildId"
