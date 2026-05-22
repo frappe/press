@@ -1,13 +1,29 @@
 <script setup lang="ts">
-import { createListResource, Badge, Select, Button, Tooltip } from 'frappe-ui'
+import {
+	createListResource,
+	createDocumentResource,
+	Badge,
+	Select,
+	Button,
+	Tooltip,
+} from 'frappe-ui'
 import { date, duration } from '@/utils/format'
-import { ref, watch } from 'vue'
+import { defineAsyncComponent, h, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
+import { confirmDialog, renderDialog } from '@/utils/components'
+import { getToastErrorMessage } from '@/utils/toast'
+import { pollReleasePipelineValidationStatus } from '@/objects/group'
 
 interface Props {
 	name?: string
 }
-
 const props = defineProps<Props>()
+
+const group = createDocumentResource({
+	doctype: 'Release Group',
+	name: props.name,
+	auto: true,
+})
 
 const deployBuilds = createListResource({
 	doctype: 'Deploy Candidate Build',
@@ -63,6 +79,52 @@ const handleStatusChange = (status: string) => {
 	resObj.filters.status = status
 	resObj.reload()
 }
+
+function handleDeploy() {
+	if (group.doc?.deploy_information?.deploy_in_progress) {
+		return toast.error('Deploy is in progress. Please wait for it to complete.')
+	}
+
+	if (group.doc?.deploy_information?.update_available) {
+		const UpdateReleaseGroupDialog = defineAsyncComponent(
+			() => import('@/components/group/UpdateReleaseGroupDialog.vue'),
+		)
+		renderDialog(
+			h(UpdateReleaseGroupDialog, {
+				bench: group.name,
+				lastDeploy: true,
+				onSuccess(candidate: string) {
+					group.doc.deploy_information.has_running_release_pipeline = true
+					group.doc.deploy_information.update_available = false
+					if (candidate) {
+						group.doc.deploy_information.last_deploy = { name: candidate }
+					}
+					pollReleasePipelineValidationStatus(group)
+				},
+			}),
+		)
+
+		return
+	}
+
+	return confirmDialog({
+		title: 'Deploy without app updates?',
+		message:
+			'No app updates detected. Changes in dependencies and environment variables will be applied on deploying.',
+		onSuccess: ({ hide }: { hide: () => void }) => {
+			toast.promise(group.redeploy.submit(), {
+				loading: 'Deploying...',
+				success: () => {
+					hide()
+					pipelines.reload()
+					deployBuilds.reload()
+					return 'Changes Deployed'
+				},
+				error: (e: Error) => getToastErrorMessage(e),
+			})
+		},
+	})
+}
 </script>
 
 <template>
@@ -86,11 +148,13 @@ const handleStatusChange = (status: string) => {
 			<LucideHistory class="size-4" />
 		</Button>
 
-		<Button>
+		<Button
+			@click="mode == 'older' ? deployBuilds.reload() : pipelines.reload()"
+		>
 			<lucide-refresh-ccw class="size-4" />
 		</Button>
 
-		<Button>
+		<Button @click="handleDeploy" v-if='mode == "older"'>
 			<template #prefix> <LucideRocket class="size-4" /></template>
 			Deploy
 		</Button>
