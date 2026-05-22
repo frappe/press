@@ -231,6 +231,11 @@ let router = createRouter({
 					component: () => import('./components/settings/Team.vue'),
 				},
 				{
+					name: 'SettingsRolesBeta',
+					path: 'roles-beta',
+					component: () => import('./components/settings/RoleListBeta.vue'),
+				},
+				{
 					name: 'SettingsDeveloper',
 					path: 'developer',
 					component: () =>
