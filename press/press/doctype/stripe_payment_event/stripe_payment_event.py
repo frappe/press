@@ -55,6 +55,10 @@ class StripePaymentEvent(Document):
 	def handle_payment_succeeded(self):
 		invoice = frappe.get_doc("Invoice", self.invoice, for_update=True)
 
+		if invoice.status == "Paid" and invoice.amount_paid > 0:
+			# already processed by a previous webhook delivery, skip
+			return
+
 		if invoice.status == "Paid" and invoice.amount_paid == 0:
 			# check if invoice is already refunded
 			stripe = get_stripe()

@@ -1,6 +1,6 @@
 <template>
 	<div class="p-5">
-		<ObjectList :options="options" />
+		<ObjectList ref="listRef" :options="options" />
 	</div>
 </template>
 <script>
@@ -14,6 +14,23 @@ export default {
 	props: ['tab'],
 	components: {
 		ObjectList,
+	},
+	resources: {
+		setupIntentSuccess() {
+			return {
+				url: 'press.api.billing.setup_intent_success',
+				onSuccess() {
+					toast.success('Card added successfully');
+					this.$refs.listRef?.reloadListView();
+				},
+				onError(error) {
+					toast.error(error.messages?.join('\n') || 'Failed to save card');
+				},
+			};
+		},
+	},
+	mounted() {
+		this.handleStripeReturn();
 	},
 	computed: {
 		options() {
@@ -173,6 +190,25 @@ export default {
 		},
 	},
 	methods: {
+		handleStripeReturn() {
+			const params = new URLSearchParams(window.location.search);
+			const clientSecret = params.get('setup_intent_client_secret');
+			if (!clientSecret) return;
+
+			// Clean up URL params
+			window.history.replaceState({}, '', window.location.pathname);
+
+			const redirectStatus = params.get('redirect_status');
+			const setupIntentId = params.get('setup_intent');
+
+			if (redirectStatus === 'succeeded') {
+				this.$resources.setupIntentSuccess.submit({
+					setup_intent: { id: setupIntentId },
+				});
+			} else {
+				toast.error('Card authentication failed. Please try again.');
+			}
+		},
 		formatCurrency(value) {
 			if (value === 0) {
 				return '';
