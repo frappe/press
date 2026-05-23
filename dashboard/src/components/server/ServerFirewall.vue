@@ -71,7 +71,7 @@
 				],
 				rowActions: ({ row }: any) => [
 					{
-						label: 'Remove',
+						label: 'Retirer',
 						onClick: () => {
 							firewall.doc.rules = firewall.doc.rules.filter(
 								(rule: any) =>

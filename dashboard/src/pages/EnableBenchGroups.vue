@@ -6,13 +6,13 @@
 			<div class="prose prose-sm max-w-none">
 				<h1 class="text-2xl font-semibold">Benches</h1>
 				<p class="text-p-base">
-					With Benches, you get more control. You can choose which apps to
-					add, which apps to update, which region to deploy to and more.
+					Avec les Benches, vous avez plus de contrôle. Vous pouvez choisir quelles apps
+					ajouter, quelles apps mettre à jour, dans quelle région déployer et plus encore.
 				</p>
 			</div>
 			<div class="space-y-3">
 				<h2 class="text-sm font-semibold tracking-wide text-ink-gray-7">
-					Features
+					Fonctionnalités
 				</h2>
 				<ul class="space-y-2">
 					<li v-for="f in features" :key="f" class="flex items-center gap-2">
@@ -25,16 +25,16 @@
 						href="https://docs.frappe.io/cloud/what-are-benches-and-bench-groups"
 						target="_blank"
 						class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-700"
-						>Read more →</Link
+						>En savoir plus →</Link
 					>
 				</div>
 				<div v-if="!onboardingComplete" class="pt-2">
 					<p class="text-sm text-ink-gray-7">
-						Finish onboarding to start using Benches.
+						Terminez l'intégration pour commencer à utiliser les Benches.
 					</p>
 					<Button
 						:route="{ name: 'Welcome' }"
-						label="Continue Onboarding"
+						label="Continuer l'intégration"
 						class="mt-3"
 					/>
 				</div>
@@ -51,13 +51,13 @@ export default {
 	data() {
 		return {
 			features: [
-				'Containerised deployments',
-				'Custom app deployment',
-				'Access to 150+ marketplace apps',
-				'Multi-environment (e.g. Staging, Production)',
-				'Server scripts',
-				'SSH access',
-				'Dedicated workers',
+				'Déploiements conteneurisés',
+				'Déploiement d\'apps personnalisées',
+				'Accès à plus de 150 apps marketplace',
+				'Multi-environnement (ex. Staging, Production)',
+				'Scripts serveur',
+				'Accès SSH',
+				'Workers dédiés',
 			],
 		};
 	},

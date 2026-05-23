@@ -1,5 +1,5 @@
 <template>
-	<div v-if="$resources.attempt.loading">Loading...</div>
+	<div v-if="$resources.attempt.loading">Chargement...</div>
 	<div v-else class="space-y-4">
 		<div>
 			<p class="text-xs text-ink-gray-6">Endpoint</p>

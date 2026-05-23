@@ -119,7 +119,7 @@ export default {
 					'host_name',
 					'plan.plan_title as plan_title',
 					'plan.price_usd as price_usd',
-					'plan.price_inr as price_inr',
+					'plan.price_dzd as price_dzd',
 					'cluster.image as cluster_image',
 					'cluster.title as cluster_title',
 				],
@@ -273,7 +273,7 @@ export default {
 
 			return [
 				{
-					label: 'View in Desk',
+					label: 'Voir dans le bureau',
 					condition: () => this.$team?.doc?.is_desk_user,
 					onClick: () =>
 						window.open(
@@ -335,7 +335,7 @@ export default {
 							title: 'Update All Sites',
 							message: `Are you sure you want to update all sites in the bench <b>${bench.name}</b> to the latest bench?`,
 							primaryAction: {
-								label: 'Update',
+								label: 'Mettre à jour',
 								variant: 'solid',
 								onClick: ({ hide }) => {
 									toast.promise(

@@ -4,24 +4,24 @@
 			<FBreadcrumbs
 				:items="[
 					{ label: 'Sites', route: '/sites' },
-					{ label: 'New Site', route: '/sites/new' },
-					{ label: 'Creating Site' },
+					{ label: 'Nouveau site', route: '/sites/new' },
+					{ label: 'Création du site' },
 				]"
 			/>
 		</Header>
 
 		<div class="m-12 mx-auto max-w-2xl px-5">
 			<div v-if="!siteGroupDeployName" class="py-4 text-base text-ink-gray-6">
-				<p>Missing deployment information.</p>
+				<p>Informations de déploiement manquantes.</p>
 				<router-link to="/sites/new" class="mt-2 text-blue-600 underline">
-					Go back to site creation
+					Retourner à la création de site
 				</router-link>
 			</div>
 			<div v-else-if="isLoading" class="py-4 text-base text-ink-gray-6">
-				Loading...
+				Chargement...
 			</div>
 			<div v-else class="space-y-6">
-				<h1 class="text-2xl font-semibold">Creating Your Site</h1>
+				<h1 class="text-2xl font-semibold">Création de votre site</h1>
 
 				<div
 					v-if="hasFailed"
@@ -29,7 +29,7 @@
 				>
 					<lucide-alert-circle class="inline-block h-5 w-5" />
 					<p>
-						Failed to create the site.
+						Échec de la création du site.
 						<router-link class="underline" :to="failureRoute">
 							{{ failureLinkText }}
 						</router-link>
@@ -41,8 +41,8 @@
 					class="flex items-center space-x-2 rounded border border-blue-100 bg-blue-50 p-4 text-base font-medium text-blue-800"
 				>
 					<p>
-						We're spinning up a private bench and creating your site. This
-						process takes a few minutes.
+						Nous préparons un Bench privé et créons votre site. Ce
+						processus prend quelques minutes.
 					</p>
 				</div>
 
@@ -205,8 +205,8 @@ export default {
 		},
 		failureLinkText() {
 			return this.deployDoc?.status === STATUS.BENCH_DEPLOY_FAILED
-				? 'View Deploy'
-				: 'View Job';
+				? 'Voir le déploiement'
+				: 'Voir la tâche';
 		},
 		failureRoute() {
 			if (this.deployDoc?.status === STATUS.BENCH_DEPLOY_FAILED) {
@@ -232,24 +232,24 @@ export default {
 			return [
 				{
 					id: 0,
-					title: 'Initializing',
+					title: 'Initialisation',
 					icon: this.getStepIcon(0, pos),
 				},
 				{
 					id: 1,
-					title: pos > 2 ? 'Bench Deployed' : 'Deploying Bench',
+					title: pos > 2 ? 'Bench déployé' : 'Déploiement du Bench',
 					icon: this.getStepIcon(
 						[1, 2].includes(pos) ? pos : 1,
 						pos,
 						STATUS.BENCH_DEPLOY_FAILED,
 					),
-					message: 'Provisioning your private bench environment',
+					message: 'Provisionnement de votre environnement Bench privé',
 				},
 				{
 					id: 2,
-					title: pos > 4 ? 'Site Created' : 'Creating Site',
+					title: pos > 4 ? 'Site créé' : 'Création du site',
 					icon: this.getStepIcon(4, pos, STATUS.SITE_CREATION_FAILED),
-					message: 'Installing apps and setting up your site',
+					message: 'Installation des apps et configuration de votre site',
 				},
 			];
 		},

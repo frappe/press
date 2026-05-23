@@ -47,7 +47,7 @@ export default {
 
 				if (
 					row.plans &&
-					row.plans.some((plan) => plan.price_inr > 0) &&
+					row.plans.some((plan) => plan.price_dzd > 0) &&
 					row.team !== this.$site.doc?.team
 				) {
 					this.show = false;

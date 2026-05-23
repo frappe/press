@@ -47,7 +47,7 @@ watch(router.currentRoute, () => {
 
 const userDropdownOptions = [
 	{
-		label: "Change Team",
+		label: "Changer d'équipe",
 		icon: "command",
 		condition: () =>
 			$team?.doc?.valid_teams?.length > 1 || $team?.doc?.is_desk_user,
@@ -55,24 +55,24 @@ const userDropdownOptions = [
 	},
 
 	{
-		label: "Theme",
+		label: "Thème",
 		icon: LucideMoon,
 		submenu: [
-			{ label: "Light Mode", icon: "sun", onClick: () => setTheme("light") },
+			{ label: "Mode clair", icon: "sun", onClick: () => setTheme("light") },
 			// dropdown component as per this frappe-ui version doesnt support suffix slot
 			// so make the icon itself icon+label+beta badge
 			{ icon: DarkModeLabel, onClick: () => setTheme("dark") },
 		],
 	},
 
-	{ label: "Logout", icon: "log-out", onClick: $session.logout.submit },
+	{ label: "Déconnexion", icon: "log-out", onClick: $session.logout.submit },
 ];
 
 const helpDropdownOptions = [
-	{ label: "Docs", icon: LucideBookText, onClick: docs },
-	{ label: "Get Support", icon: LucideSupport, onClick: support },
-	{ label: "Share Feedback", icon: LucideMessageSquareCode, onClick: feedback },
-	{ label: "Release Notes", icon: LucideAlert, onClick: releaseNotes },
+	{ label: "Documentation", icon: LucideBookText, onClick: docs },
+	{ label: "Obtenir de l'aide", icon: LucideSupport, onClick: support },
+	{ label: "Partager un retour", icon: LucideMessageSquareCode, onClick: feedback },
+	{ label: "Notes de version", icon: LucideAlert, onClick: releaseNotes },
 ];
 </script>
 
@@ -96,10 +96,11 @@ const helpDropdownOptions = [
               <div class="text-base font-medium hidden md:flex text-ink-gray-9">
                 Frappe Cloud
               </div>
+              <!-- Frappe Cloud branding kept as-is -->
 
               <div
                 class="text-sm text-left text-ink-gray-7 truncate">
-                {{ $team?.get.loading ? 'Loading...' : $team?.doc?.user }}
+                {{ $team?.get.loading ? 'Chargement...' : $team?.doc?.user }}
               </div>
             </div>
 
@@ -122,7 +123,7 @@ const helpDropdownOptions = [
           <template #prefix>
             <LucideCircleQuestionMark class="size-4" />
           </template>
-          Help</Button>
+          Aide</Button>
       </Dropdown>
     </nav>
 

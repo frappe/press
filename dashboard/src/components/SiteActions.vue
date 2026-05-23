@@ -9,7 +9,7 @@
 			<AlertBanner
 				v-if="group.group == 'General Actions'"
 				type="warning"
-				title="Change Bench / Server / Region options moved to Migrations Tab"
+				title="Les options Changer de Bench / Serveur / Région ont été déplacées vers l'onglet Migrations"
 				class="mb-3"
 			>
 				<Button
@@ -17,7 +17,7 @@
 					variant="outline"
 					@click="openSiteMigrationsDoc"
 				>
-					View Documentation
+					Voir la documentation
 				</Button>
 			</AlertBanner>
 			<div

@@ -5,8 +5,8 @@
 	>
 		<div class="w-full overflow-auto">
 			<LoginBox
-				:title="invitedBy ? 'Invitation to join' : 'Let\'s set up your account'"
-				:subtitle="invitedBy ? `Invitation by ${invitedBy}` : ''"
+				:title="invitedBy ? 'Invitation à rejoindre' : 'Let\'s set up your account'"
+				:subtitle="invitedBy ? `Invitation de ${invitedBy}` : ''"
 			>
 				<template v-slot:logo v-if="saasProduct">
 					<div class="flex space-x-2">
@@ -19,7 +19,7 @@
 				<form class="mt-6 flex flex-col" @submit.prevent="submitForm">
 					<template v-if="is2FA">
 						<FormControl
-							label="2FA Code from your Authenticator App"
+							label="Code 2FA de votre application d'authentification"
 							placeholder="123456"
 							v-model="twoFactorCode"
 							required
@@ -44,7 +44,7 @@
 							<template v-if="!userExists">
 								<div class="flex gap-2">
 									<FormControl
-										label="First name"
+										label="Prénom"
 										type="text"
 										v-model="firstName"
 										name="fname"
@@ -54,7 +54,7 @@
 										:disabled="Boolean(oauthSignup)"
 									/>
 									<FormControl
-										label="Last name"
+										label="Nom"
 										type="text"
 										v-model="lastName"
 										name="lname"
@@ -76,14 +76,14 @@
 								type="select"
 								:options="countryOptions"
 								v-if="!isInvitation"
-								label="Country"
+								label="Pays"
 								v-model="country"
 								variant="outline"
 								required
 							/>
 							<PhoneInput
 								v-if="!isInvitation"
-								label="Phone Number(Optional)"
+								label="Numéro de téléphone (optionnel)"
 								v-model="phoneNumber"
 								:countries="countries"
 								:country="country"
@@ -105,7 +105,7 @@
 							<label
 								for="share-details-consent"
 								class="ml-2 text-base font-normal"
-								>Allow my details to be shared with a local partner</label
+								>Autoriser le partage de mes informations avec un partenaire local</label
 							>
 						</div>
 						<Button
@@ -118,7 +118,7 @@
 							type="submit"
 						>
 							{{
-								is2FA ? 'Verify' : isInvitation ? 'Accept' : 'Create account'
+								is2FA ? 'Vérifier' : isInvitation ? 'Accepter' : 'Créer un compte'
 							}}
 						</Button>
 					</template>

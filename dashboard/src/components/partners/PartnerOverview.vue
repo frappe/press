@@ -279,10 +279,10 @@ const partnerMRR = createResource({
 });
 
 function canRenew() {
-	// Allow renewal if mrr is greater than $100 or 10000 INR
+	// Allow renewal if mrr is greater than $100 or 10000 DZD
 	if (
 		((team.doc.currency === 'USD' && mrr.value >= 100) ||
-			(team.doc.currency === 'INR' && mrr.value >= 10000)) &&
+			(team.doc.currency === 'DZD' && mrr.value >= 10000)) &&
 		partnerDetails.data?.custom_number_of_certified_members >= 2
 	) {
 		showRenewalConfirmationDialog.value = true;
@@ -345,7 +345,7 @@ function calculateTierProgress(next_tier_value) {
 }
 
 function calculateNextTier(tier) {
-	const target_inr = {
+	const target_dzd = {
 		Gold: 575000,
 		Silver: 230000,
 		Bronze: 57500,
@@ -364,27 +364,27 @@ function calculateNextTier(tier) {
 		case 'Entry':
 			next_tier = 'Emerging';
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Emerging : target_usd.Emerging;
+				team.doc.currency === 'DZD' ? target_dzd.Emerging : target_usd.Emerging;
 			break;
 		case 'Emerging':
 			next_tier = 'Bronze';
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Bronze : target_usd.Bronze;
+				team.doc.currency === 'DZD' ? target_dzd.Bronze : target_usd.Bronze;
 			break;
 		case 'Bronze':
 			next_tier = 'Silver';
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Silver : target_usd.Silver;
+				team.doc.currency === 'DZD' ? target_dzd.Silver : target_usd.Silver;
 			break;
 		case 'Silver':
 			next_tier = 'Gold';
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Gold : target_usd.Gold;
+				team.doc.currency === 'DZD' ? target_dzd.Gold : target_usd.Gold;
 			break;
 		default:
 			next_tier = 'Gold';
 			nextTierTarget.value =
-				team.doc.currency === 'INR' ? target_inr.Gold : target_usd.Gold;
+				team.doc.currency === 'DZD' ? target_dzd.Gold : target_usd.Gold;
 	}
 	nextTier.value = next_tier;
 	tierProgressValue.value = calculateTierProgress(nextTierTarget.value);

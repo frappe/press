@@ -103,7 +103,7 @@ export default {
 	computed: {
 		primaryActionProps() {
 			return {
-				label: 'Confirm',
+				label: 'Confirmer',
 				variant: 'solid',
 				...this.primaryAction,
 				loading: this.isLoading,

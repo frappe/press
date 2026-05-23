@@ -15,11 +15,11 @@
 {% set neutral = {"bg": "#F3F4F6", "fg": "#4B5563", "dot": "#9CA3AF"} %}
 
 {% set result_heading = {
-    "Pass":              "Audit Passed",
-    "Needs Improvement": "Needs Improvement",
-    "Warn":              "Audit Passed with Warnings",
-    "Fail":              "Audit Failed",
-    "Inconclusive":      "Audit Inconclusive"
+    "Pass":              "Audit réussi",
+    "Needs Improvement": "Amélioration nécessaire",
+    "Warn":              "Audit réussi avec avertissements",
+    "Fail":              "Audit échoué",
+    "Inconclusive":      "Audit non concluant"
 } %}
 
 {% set font_stack = "-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" %}
@@ -44,9 +44,9 @@
     </p>
     <p style="margin: 0 0 24px; font-size: 14px; line-height: 1.5; color: #6B7280;">
         {% if issue_count > 0 -%}
-            {{ issue_count }} issue{{ 's' if issue_count != 1 else '' }} found in
+            {{ issue_count }} problème{{ 's' if issue_count != 1 else '' }} trouvé{{ 's' if issue_count != 1 else '' }} dans
         {%- else -%}
-            For
+            Pour
         {%- endif %}
         <span style="color: #111827; font-weight: 500;">{{ app_title }}</span>
     </p>
@@ -57,7 +57,7 @@
         <tr>
             <td style="padding: 14px 16px;">
                 <p style="margin: 0 0 8px; font-size: 11px; font-weight: 600; color: #6B7280;
-                              text-transform: uppercase; letter-spacing: 0.06em;">Summary</p>
+                              text-transform: uppercase; letter-spacing: 0.06em;">Résumé</p>
                 <p style="margin: 0; font-size: 13px; line-height: 1.65; color: #374151;">
                     {{ audit_summary | e | replace("\r\n", "\n") | replace("\n", "<br>") | safe }}
                 </p>
@@ -72,35 +72,35 @@
         <tr>
             <td style="padding: 14px 16px; font-size: 13px; line-height: 1.65; color: #374151;">
                 <p style="margin: 0 0 10px; font-size: 11px; font-weight: 600; color: #111827;
-                                                                          text-transform: uppercase; letter-spacing: 0.06em;">What to
-                    do next</p>
+                                                                          text-transform: uppercase; letter-spacing: 0.06em;">Prochaines
+                    étapes</p>
                 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 0 12px;">
                     <tr>
                         <td style="width: 22px; vertical-align: top; font-size: 13px; color: #111827; font-weight: 600;">1.</td>
-                        <td style="font-size: 13px; line-height: 1.65; color: #374151;">Review the failing checks below.</td>
+                        <td style="font-size: 13px; line-height: 1.65; color: #374151;">Examinez les vérifications échouées ci-dessous.</td>
                     </tr>
                     <tr>
                         <td colspan="2" style="height: 8px; font-size: 0; line-height: 0;">&nbsp;</td>
                     </tr>
                     <tr>
                         <td style="vertical-align: top; font-size: 13px; color: #111827; font-weight: 600;">2.</td>
-                        <td style="font-size: 13px; line-height: 1.65; color: #374151;">Fix all the issues, publish a new release(push to
-                            your source branch).</td>
+                        <td style="font-size: 13px; line-height: 1.65; color: #374151;">Corrigez tous les problèmes, publiez une nouvelle version (poussez vers
+                            votre branche source).</td>
                     </tr>
                     <tr>
                         <td colspan="2" style="height: 8px; font-size: 0; line-height: 0;">&nbsp;</td>
                     </tr>
                     <tr>
                         <td style="vertical-align: top; font-size: 13px; color: #111827; font-weight: 600;">3.</td>
-                        <td style="font-size: 13px; line-height: 1.65; color: #374151;">A fresh audit runs automatically on the new
-                            release.</td>
+                        <td style="font-size: 13px; line-height: 1.65; color: #374151;">Un nouvel audit s'exécute automatiquement sur la nouvelle
+                            version.</td>
                     </tr>
                 </table>
                 <!-- TODO: add a link to the dashboard app listing/audit page -->
                 {% if publisher_app_url %}
                 <p style="margin: 0; font-size: 13px; line-height: 1.65;">
-                    <a href="{{ publisher_app_url }}" style="color: #2563EB; font-weight: 500; text-decoration: none;">Check audit in
-                        dashboard &rarr;</a>
+                    <a href="{{ publisher_app_url }}" style="color: #2563EB; font-weight: 500; text-decoration: none;">Voir l'audit dans le
+                        tableau de bord &rarr;</a>
                 </p>
                 {% endif %}
             </td>
@@ -174,7 +174,7 @@
                         <td style="padding: 2px 0;">
                             <p style="margin: 0 0 3px; font-size: 10px; font-weight: 600;
                                       color: #16A34A; text-transform: uppercase; letter-spacing: 0.06em;">
-                                How to fix
+                                Comment corriger
                             </p>
                             <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #374151;">
                                 {{ check.remediation }}
@@ -192,8 +192,8 @@
     {{ utils.separator() }}
 
     <p style="margin: 0 0 16px; font-size: 12px; line-height: 1.65; color: #6B7280;">
-        This is an automated report from the Frappe Cloud Marketplace Auditor (beta).
-        If you believe this report is incorrect or need help interpreting it, reach out to
+        Ceci est un rapport automatisé de l'auditeur de la Marketplace Frappe Cloud (bêta).
+        Si vous pensez que ce rapport est incorrect ou si vous avez besoin d'aide pour l'interpréter, contactez
         {{ utils.link('support.frappe.io', 'https://support.frappe.io') }}.
     </p>
 

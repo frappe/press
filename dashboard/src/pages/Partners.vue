@@ -3,7 +3,7 @@
 		<div class="sticky top-0 z-10 shrink-0">
 			<Header>
 				<FBreadcrumbs
-					:items="[{ label: 'Partnership', route: { name: 'Partnership' } }]"
+					:items="[{ label: 'Partenariat', route: { name: 'Partnership' } }]"
 				/>
 			</Header>
 		</div>
@@ -19,7 +19,7 @@
 		>
 			<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 			<ErrorMessage
-				message="You aren't permitted to view the partner page. Please ask the team owner to provide permission for your role."
+				message="Vous n'êtes pas autorisé à voir la page partenaire. Veuillez demander au propriétaire de l'équipe de fournir les permissions pour votre rôle."
 			/>
 		</div>
 	</div>
@@ -43,17 +43,17 @@ export default {
 			currentTab: 0,
 			tabs: [
 				{
-					label: 'Overview',
+					label: 'Aperçu',
 					route: { name: 'PartnerOverview' },
 					condition: () => Boolean(this.$team.doc.erpnext_partner),
 				},
 				{
-					label: 'Website Details',
+					label: 'Détails du site web',
 					route: { name: 'PartnerWebsiteDetails' },
 					condition: () => Boolean(this.$team.doc.erpnext_partner),
 				},
 				{
-					label: 'Dashboard',
+					label: 'Tableau de bord',
 					route: { name: 'PartnerDashboard' },
 					condition: () =>
 						Boolean(
@@ -63,7 +63,7 @@ export default {
 						),
 				},
 				{
-					label: 'Customers',
+					label: 'Clients',
 					route: { name: 'PartnerCustomers' },
 					condition: () =>
 						Boolean(
@@ -73,7 +73,7 @@ export default {
 						),
 				},
 				{
-					label: 'Leads',
+					label: 'Prospects',
 					route: { name: 'PartnerLeads' },
 					condition: () =>
 						Boolean(
@@ -84,6 +84,7 @@ export default {
 				},
 				{
 					label: 'Certifications',
+
 					route: { name: 'PartnerCertificates' },
 					condition: () =>
 						Boolean(
@@ -92,7 +93,7 @@ export default {
 						),
 				},
 				{
-					label: 'Resources',
+					label: 'Ressources',
 					route: { name: 'PartnerResources' },
 					condition: () =>
 						Boolean(
@@ -102,6 +103,7 @@ export default {
 				},
 				{
 					label: 'Contributions',
+
 					route: { name: 'PartnerContributions' },
 					condition: () =>
 						Boolean(
@@ -120,7 +122,7 @@ export default {
 						),
 				},
 				{
-					label: 'Local Payment Setup',
+					label: 'Configuration paiement local',
 					route: { name: 'LocalPaymentSetup' },
 					condition: () =>
 						Boolean(
@@ -131,7 +133,7 @@ export default {
 						),
 				},
 				{
-					label: 'Partner Payout',
+					label: 'Versement partenaire',
 					route: { name: 'PartnerPayout' },
 					condition: () =>
 						Boolean(

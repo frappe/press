@@ -70,7 +70,10 @@
 			"read_only": 1,
 			"set_only_once": 1
 		},
-		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_4",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "Generic",
 			"fieldname": "provider",
@@ -99,7 +102,10 @@
 			"label": "IP",
 			"set_only_once": 1
 		},
-		{ "fieldname": "column_break_9", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_9",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fetch_from": "virtual_machine.private_ip_address",
 			"fieldname": "private_ip",
@@ -162,7 +168,10 @@
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_20", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_20",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "root_public_key",
 			"fieldtype": "Code",
@@ -195,7 +204,10 @@
 			"label": "Cluster",
 			"options": "Cluster"
 		},
-		{ "fieldname": "column_break_nzet", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_nzet",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "/home/frappe/prometheus/data",
 			"fieldname": "prometheus_data_directory",
@@ -207,7 +219,10 @@
 			"fieldtype": "Data",
 			"label": "Grafana Username"
 		},
-		{ "fieldname": "column_break_ilpd", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_ilpd",
+			"fieldtype": "Column Break"
+		},
 		{
 			"description": "Begin with / but don't end with /",
 			"fieldname": "node_exporter_dashboard_path",
@@ -220,7 +235,11 @@
 			"fieldtype": "Data",
 			"label": "Prometheus Username"
 		},
-		{ "fieldname": "ssh_user", "fieldtype": "Data", "label": "SSH User" },
+		{
+			"fieldname": "ssh_user",
+			"fieldtype": "Data",
+			"label": "SSH User"
+		},
 		{
 			"default": "22",
 			"fieldname": "ssh_port",
@@ -253,7 +272,12 @@
 		}
 	],
 	"grid_page_length": 50,
-	"links": [{ "link_doctype": "Ansible Play", "link_fieldname": "server" }],
+	"links": [
+		{
+			"link_doctype": "Ansible Play",
+			"link_fieldname": "server"
+		}
+	],
 	"modified": "2026-02-16 11:36:45.578971",
 	"modified_by": "Administrator",
 	"module": "Press",

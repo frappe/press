@@ -34,10 +34,10 @@ export default {
 			return '';
 		},
 		minimumSpentAmount() {
-			return this.$team.doc?.country == 'India' ? '₹1800' : '$25';
+			return this.$team.doc?.country == 'Algeria' ? 'د.ج1800' : '$25';
 		},
 		creditAmountInTeamCurrency() {
-			return this.$team.doc?.country == 'India' ? '₹750' : '$10';
+			return this.$team.doc?.country == 'Algeria' ? 'د.ج750' : '$10';
 		},
 	},
 };

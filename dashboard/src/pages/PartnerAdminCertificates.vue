@@ -124,7 +124,7 @@ export default {
 						{
 							type: 'data',
 							fieldname: 'search-text',
-							label: 'Search',
+							label: 'Rechercher',
 						},
 						{
 							type: 'select',

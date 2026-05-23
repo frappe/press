@@ -13,14 +13,14 @@
 			v-if="$site?.doc?.creation_failed"
 			class="col-span-1 lg:col-span-2"
 			type="error"
-			:title="`Site creation failed. You can restore the site from a backup (from another site) or drop this site to create a new one. The site will be automatically dropped after ${$site?.doc?.creation_failure_retention_days} days if not restored.`"
+			:title="`La création du site a échoué. Vous pouvez restaurer le site à partir d'une sauvegarde (d'un autre site) ou supprimer ce site pour en créer un nouveau. Le site sera automatiquement supprimé après ${$site?.doc?.creation_failure_retention_days} jours s'il n'est pas restauré.`"
 		> </AlertBanner>
 
 		<AlertBanner
 			v-if="$site?.doc?.status === 'Suspended' && $site?.doc?.suspension_reason"
 			class="col-span-1 lg:col-span-2"
 			type="error"
-			:title="`Suspension Reason : ${$site?.doc?.suspension_reason || 'Not Specified'}`"
+			:title="`Raison de la suspension : ${$site?.doc?.suspension_reason || 'Non spécifié'}`"
 		>
 			<Button
 				class="ml-auto min-w-[7rem]"
@@ -35,7 +35,7 @@
 			v-if="$site?.doc?.status === 'Active' && $site?.doc?.site_usage_exceeded"
 			class="col-span-1 lg:col-span-2"
 			type="warning"
-			title="Database or Disk usage limits exceeded. Upgrade plan or reduce usage to avoid suspension."
+			title="Les limites d'utilisation de la base de données ou du disque sont dépassées. Améliorez votre plan ou réduisez l'utilisation pour éviter la suspension."
 		>
 			<Button
 				class="ml-auto min-w-[7rem]"
@@ -56,7 +56,7 @@
 		<DismissableBanner
 			v-else-if="$site.doc.eol_versions.includes($site.doc.version)"
 			class="col-span-1 lg:col-span-2"
-			title="Your site is on an End of Life version. Upgrade to the latest version to get support, latest features and security updates."
+			title="Votre site est sur une version en fin de vie. Passez à la dernière version pour bénéficier du support, des dernières fonctionnalités et des mises à jour de sécurité."
 			:id="`${$site.name}-eol`"
 		>
 			<Button
@@ -81,7 +81,7 @@
 			type="gray"
 		>
 			<Button class="ml-auto" variant="outline" @click="showPlanChangeDialog">
-				Upgrade Plan
+				Changer de plan
 			</Button>
 		</DismissableBanner>
 
@@ -97,7 +97,7 @@
 			:id="$site.name"
 		>
 			<Button class="ml-auto" variant="outline" @click="moveToPrivateBench">
-				Move to Private Bench
+				Passer au Bench privé
 			</Button>
 		</DismissableBanner>
 
@@ -106,14 +106,14 @@
 				<div class="border-b border-r p-5 lg:border-b-0">
 					<div class="flex h-full items-center justify-between">
 						<div>
-							<div class="text-base text-ink-gray-7">Current Plan</div>
+							<div class="text-base text-ink-gray-7">Plan actuel</div>
 
 							<div class="mt-2 flex justify-between">
 								<div>
 									<div class="leading-4">
 										<span class="flex items-center text-base text-ink-gray-9">
 											<template v-if="$site.doc.is_dedicated_server">
-												Dedicated Server Site
+												Site sur serveur dédié
 											</template>
 
 											<template v-else-if="$site.doc.trial_end_date">
@@ -123,16 +123,16 @@
 											<template v-else-if="currentPlan">
 												{{ $format.planTitle(currentPlan) }}
 
-												<span v-if="currentPlan.price_inr && $isMobile">
+												<span v-if="currentPlan.price_dzd && $isMobile">
 													/mo
 												</span>
 
-												<span v-if="currentPlan.price_inr && !$isMobile">
-													/month
+												<span v-if="currentPlan.price_dzd && !$isMobile">
+													/mois
 												</span>
 											</template>
 
-											<template v-else> No plan set </template>
+											<template v-else> Aucun plan défini </template>
 
 											<div
 												class="ml-2 text-sm leading-3 text-ink-gray-6"
@@ -142,7 +142,7 @@
 											!currentPlan.is_trial_plan
 											"
 											>
-												<Tooltip text="Product support included">
+												<Tooltip text="Support produit inclus">
 													<lucide-badge-check class="h-4 w-4" />
 												</Tooltip>
 											</div>
@@ -153,12 +153,12 @@
 						</div>
 						<template v-if="!$site.doc.is_dedicated_server">
 							<Button @click="showPlanChangeDialog">
-								{{ currentPlan?.is_trial_plan ? 'Upgrade' : 'Change' }}
+								{{ currentPlan?.is_trial_plan ? 'Mettre à jour' : 'Changer' }}
 							</Button>
 						</template>
 						<template v-else>
 							<Tooltip
-								text="No individual plans needed for sites on dedicated servers"
+								text="Aucun plan individuel nécessaire pour les sites sur serveurs dédiés"
 							>
 								<LucideHelpCircle class="size-4" />
 							</Tooltip>
@@ -172,7 +172,7 @@
 					<div
 						class="flex items-center justify-between text-base text-ink-gray-7"
 					>
-						<span>Compute</span>
+						<span>Calcul</span>
 						<div class="h-7"></div>
 					</div>
 					<div class="mt-2">
@@ -204,10 +204,10 @@
 						class="flex items-center justify-between text-base text-ink-gray-7"
 					>
 						<div class="flex w-full">
-							<div class="flex-grow">Object Storage</div>
+							<div class="flex-grow">Stockage objet</div>
 
 							<Tooltip
-								text="Includes private and public file uploads and backups"
+								text="Inclut les téléchargements de fichiers privés et publics et les sauvegardes"
 							>
 								<LucideHelpCircle class="inline size-4 ml-2" />
 							</Tooltip>
@@ -244,7 +244,7 @@
 					<div
 						class="min-h-[1.75rem] flex items-center justify-between space-x-2"
 					>
-						<span class="text-base text-ink-gray-7">Database</span>
+						<span class="text-base text-ink-gray-7">Base de données</span>
 						<div class="flex items-center space-x-2">
 							<Button
 								v-if="
@@ -296,7 +296,7 @@
 		</div>
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
-				<h2 class="text-lg font-medium text-ink-gray-9">Site Information</h2>
+				<h2 class="text-lg font-medium text-ink-gray-9">Informations du site</h2>
 			</div>
 			<div>
 				<div
@@ -343,7 +343,7 @@
 			<Badge
 				variant="outline"
 				size="lg"
-				label="Add Tag"
+				label="Ajouter un tag"
 				class="cursor-pointer"
 				@click="showAddTagDialog"
 			>
@@ -441,8 +441,8 @@ export default {
 					tag: tag.tag_name,
 				}),
 				{
-					loading: 'Removing tag...',
-					success: `Tag ${tag.tag_name} removed`,
+					loading: 'Suppression du tag...',
+					success: `Tag ${tag.tag_name} retiré`,
 					error: (e) => getToastErrorMessage(e),
 				},
 			)
@@ -490,8 +490,8 @@ export default {
 					if (isSynced) {
 						this.refreshingDatabaseUsage = false
 						let message = refreshAfterSeconds
-							? `Database usage refreshed. You can refresh again after ${refreshAfterMinutes} minute(s).`
-							: 'Database usage refreshed.'
+							? `Utilisation de la base de données actualisée. Vous pouvez actualiser à nouveau après ${refreshAfterMinutes} minute(s).`
+							: 'Utilisation de la base de données actualisée.'
 						toast.success(message)
 						this.$resources.currentUsage.reload()
 					} else {
@@ -508,21 +508,21 @@ export default {
 		siteInformation() {
 			return [
 				{
-					label: 'Owned by',
+					label: 'Propriétaire',
 					value: this.$site.doc?.owner_email,
 				},
 				{
-					label: 'Created by',
+					label: 'Créé par',
 					value: this.$site.doc?.signup_by || this.$site.doc?.owner,
 				},
 				{
-					label: 'Created on',
+					label: 'Créé le',
 					value: this.$format.date(
 						this.$site.doc?.signup_time || this.$site.doc?.creation,
 					),
 				},
 				{
-					label: 'Region',
+					label: 'Région',
 					value: this.$site.doc?.cluster.title,
 					prefix: h('img', {
 						src: this.$site.doc?.cluster.image,
@@ -536,7 +536,7 @@ export default {
 					suffix: h(
 						Tooltip,
 						{
-							text: 'Use this for adding A records for your site',
+							text: 'Utilisez ceci pour ajouter des enregistrements A pour votre site',
 						},
 						() => h(InfoIcon, { class: 'h-4 w-4 text-ink-gray-5' }),
 					),
@@ -547,7 +547,7 @@ export default {
 					suffix: h(
 						Tooltip,
 						{
-							text: 'Use this for whitelisting our server on a 3rd party service',
+							text: 'Utilisez ceci pour ajouter notre serveur en liste blanche sur un service tiers',
 						},
 						() => h(InfoIcon, { class: 'h-4 w-4 text-ink-gray-5' }),
 					),
@@ -560,14 +560,14 @@ export default {
 			const currency = this.$team.doc.currency
 			return {
 				price:
-					currency === 'INR'
-						? this.$site.doc.current_plan.price_inr
+					currency === 'DZD'
+						? this.$site.doc.current_plan.price_dzd
 						: this.$site.doc.current_plan.price_usd,
 				price_per_day:
-					currency === 'INR'
-						? this.$site.doc.current_plan.price_per_day_inr
+					currency === 'DZD'
+						? this.$site.doc.current_plan.price_per_day_dzd
 						: this.$site.doc.current_plan.price_per_day_usd,
-				currency: currency === 'INR' ? '₹' : '$',
+				currency: currency === 'DZD' ? 'د.ج' : '$',
 				...this.$site.doc.current_plan,
 			}
 		},

@@ -290,7 +290,7 @@ class TestInvoice(FrappeTestCase):
 		with patch.object(Invoice, "update_transaction_details", return_value=None):
 			process_stripe_webhook(doc, "")
 
-		# balance should 755.64 after buying prepaid credits with gst applied
+		# balance should 755.64 after buying prepaid credits with tva applied
 		self.assertEqual(self.team.get_balance(), 755.64)
 
 	def test_discount_amount(self):
@@ -487,7 +487,7 @@ class TestInvoice(FrappeTestCase):
 
 	def test_tax_without_credits(self):
 		team = create_test_team("tax_without_credits@example.com")
-		frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+		frappe.db.set_single_value("Press Settings", "tva_percentage", 0.18)
 
 		invoice = frappe.get_doc(doctype="Invoice", team=team.name)
 		invoice.append("items", {"quantity": 1, "rate": 10, "amount": 10})
@@ -501,7 +501,7 @@ class TestInvoice(FrappeTestCase):
 		"""Test invoice with tax when payment mode is prepaid credits"""
 		team = create_test_team("tax_with_credits@example.com")
 		team.allocate_credit_amount(5, source="Prepaid Credits")
-		frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+		frappe.db.set_single_value("Press Settings", "tva_percentage", 0.18)
 
 		invoice = frappe.get_doc(doctype="Invoice", team=team.name)
 		invoice.append("items", {"quantity": 1, "rate": 10, "amount": 10})
@@ -520,7 +520,7 @@ class TestInvoice(FrappeTestCase):
 		team.allocate_credit_amount(5, source="Prepaid Credits")
 		frappe.db.set_value("Team", team.name, "payment_mode", "Card")
 		# team.reload()
-		frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+		frappe.db.set_single_value("Press Settings", "tva_percentage", 0.18)
 
 		invoice = frappe.get_doc(doctype="Invoice", team=team.name)
 		invoice.append("items", {"quantity": 1, "rate": 10, "amount": 10})
@@ -534,7 +534,7 @@ class TestInvoice(FrappeTestCase):
 
 	def test_tax_for_usd_accounts(self):
 		team = create_test_team("tax_for_usd_accounts@example.com", "United States")
-		frappe.db.set_single_value("Press Settings", "gst_percentage", 0.18)
+		frappe.db.set_single_value("Press Settings", "tva_percentage", 0.18)
 
 		invoice = frappe.get_doc(doctype="Invoice", team=team.name)
 		invoice.append("items", {"quantity": 1, "rate": 10, "amount": 10})

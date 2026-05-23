@@ -14,7 +14,7 @@ from frappe.tests.utils import FrappeTestCase
 def create_test_plan(
 	document_type: str,
 	price_usd: float = 10.0,
-	price_inr: float = 750.0,
+	price_dzd: float = 750.0,
 	cpu_time: int = 1,
 	max_database_usage: int = 1000,
 	max_storage_usage: int = 1000,
@@ -36,7 +36,7 @@ def create_test_plan(
 			"document_type": "Site",
 			"name": plan_name,
 			"plan_title": plan_title,
-			"price_inr": price_inr,
+			"price_dzd": price_dzd,
 			"price_usd": price_usd,
 			"cpu_time_per_day": cpu_time,
 			"max_database_usage": max_database_usage,
@@ -73,10 +73,10 @@ class TestSitePlan(FrappeTestCase):
 
 	def test_per_day_difference(self):
 		per_day_usd = self.plan.get_price_per_day("USD")
-		per_day_inr = self.plan.get_price_per_day("INR")
-		self.assertIsInstance(per_day_inr, (int, float))
+		per_day_dzd = self.plan.get_price_per_day("DZD")
+		self.assertIsInstance(per_day_dzd, (int, float))
 		self.assertIsInstance(per_day_usd, (int, float))
-		self.assertNotEqual(per_day_inr, per_day_usd)
+		self.assertNotEqual(per_day_dzd, per_day_usd)
 
 	def test_dynamic_period(self):
 		month_with_29_days = frappe.utils.get_last_day(date(2020, 2, 3))
@@ -85,12 +85,12 @@ class TestSitePlan(FrappeTestCase):
 		with patch.object(frappe.utils, "get_last_day", return_value=month_with_30_days):
 			self.assertEqual(self.plan.period, 30)
 			per_day_for_30_usd = self.plan.get_price_per_day("USD")
-			per_day_for_30_inr = self.plan.get_price_per_day("INR")
+			per_day_for_30_dzd = self.plan.get_price_per_day("DZD")
 
 		with patch.object(frappe.utils, "get_last_day", return_value=month_with_29_days):
 			self.assertEqual(self.plan.period, 29)
 			per_day_for_29_usd = self.plan.get_price_per_day("USD")
-			per_day_for_29_inr = self.plan.get_price_per_day("INR")
+			per_day_for_29_dzd = self.plan.get_price_per_day("DZD")
 
 		self.assertNotEqual(per_day_for_29_usd, per_day_for_30_usd)
-		self.assertNotEqual(per_day_for_29_inr, per_day_for_30_inr)
+		self.assertNotEqual(per_day_for_29_dzd, per_day_for_30_dzd)

@@ -21,7 +21,7 @@ export default {
 						label: 'Date',
 						fieldname: 'creation',
 						format(value) {
-							return Intl.DateTimeFormat('en-US', {
+							return Intl.DateTimeFormat('fr-FR', {
 								year: 'numeric',
 								month: 'long',
 								day: 'numeric',
@@ -32,20 +32,20 @@ export default {
 						label: 'Description',
 						format(value, row) {
 							if (row.type === 'Applied To Invoice' && row.invoice) {
-								return `Applied to Invoice ${row.invoice}`;
+								return `Appliqué à la facture ${row.invoice}`;
 							}
 
 							return row.amount < 0 ? row.type : row.source;
 						},
 					},
 					{
-						label: 'Amount',
+						label: 'Montant',
 						fieldname: 'amount',
 						align: 'right',
 						format: this.formatCurrency,
 					},
 					{
-						label: 'Balance',
+						label: 'Solde',
 						fieldname: 'ending_balance',
 						align: 'right',
 						format: this.formatCurrency,

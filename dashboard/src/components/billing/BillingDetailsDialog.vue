@@ -1,5 +1,5 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'Billing Details' }">
+	<Dialog v-model="show" :options="{ title: 'Détails de facturation' }">
 		<template #body-content>
 			<div
 				v-if="showMessage"

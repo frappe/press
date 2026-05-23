@@ -10,26 +10,26 @@
 		</p>
 		{%- if card_not_added -%}
 		<p class="mb-6">
-			You don't have enough credits for the usage of your sites on Frappe Cloud. Either transfer credits or add a
-			card for automatic billing. You can also make the payment of this invoice manually by clicking the following
-			link.
+			Vous n'avez pas assez de crédits pour l'utilisation de vos sites sur Frappe Cloud. Transférez des crédits ou ajoutez une
+			carte pour la facturation automatique. Vous pouvez également effectuer le paiement de cette facture manuellement en cliquant sur le lien
+			suivant.
 		</p>
-		{{ utils.button('Pay Invoice Now', payment_link) }}
+		{{ utils.button('Payer la facture maintenant', payment_link) }}
 		{%- endif -%}
 
 		{%- if team.default_payment_method -%}
 		<p class="mb-6">
-			We attempted to charge your card ending in <strong>{{ last_4 }}</strong> for your Frappe Cloud subscription,
-			but were unsuccessful. Please update your card details in your
-			{{ utils.link('Billing Settings', account_update_link) }}
-			or pay manually by clicking the following link.
+			Nous avons tenté de débiter votre carte se terminant par <strong>{{ last_4 }}</strong> pour votre abonnement Frappe Cloud,
+			mais sans succès. Veuillez mettre à jour les détails de votre carte dans vos
+			{{ utils.link('Paramètres de facturation', account_update_link) }}
+			ou payer manuellement en cliquant sur le lien suivant.
 		</p>
-		{{ utils.button('Pay Invoice Now', payment_link) }}
+		{{ utils.button('Payer la facture maintenant', payment_link) }}
 		{%- endif -%}
 
 		{%- if sites -%}
 		{{ utils.separator() }}
-		<p class="mt-0 mb-2">Following sites were suspended:</p>
+		<p class="mt-0 mb-2">Les sites suivants ont été suspendus :</p>
 		<ul class="list-disc">
 			{%- for site in sites -%}
 			<li class="text-sm font-medium">{{ site }}</li>

@@ -19,9 +19,9 @@
 					/>
 				</div>
 			</div>
-			<div v-show="billingInformation.country == 'India'">
+			<div v-show="billingInformation.country == 'Algeria'">
 				<FormControl
-					label="I have GSTIN"
+					label="I have NIF"
 					type="checkbox"
 					:disabled="props.disableForm"
 					v-model="gstApplicable"
@@ -29,7 +29,7 @@
 				<FormControl
 					v-if="gstApplicable"
 					class="mt-5"
-					label="GSTIN"
+					label="NIF"
 					type="text"
 					:disabled="props.disableForm"
 					v-model="billingInformation.gstin"
@@ -44,6 +44,7 @@ import { FormControl, ErrorMessage, createResource } from 'frappe-ui';
 import { ref, computed, inject, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { DashboardError } from '../../utils/error';
+import { algerianWilayas } from '@/utils/billing.js';
 
 const emit = defineEmits(['success']);
 const team = inject('team');
@@ -89,49 +90,10 @@ async function validate() {
 		billingInformation.value.gstin = 'Not Applicable';
 	}
 
-	// validate gstin
-	return await validateGST();
+	// validate NIF
+	return await validateNIF();
 }
 
-const _indianStates = [
-	'Andaman and Nicobar Islands',
-	'Andhra Pradesh',
-	'Arunachal Pradesh',
-	'Assam',
-	'Bihar',
-	'Chandigarh',
-	'Chhattisgarh',
-	'Dadra and Nagar Haveli and Daman and Diu',
-	'Delhi',
-	'Goa',
-	'Gujarat',
-	'Haryana',
-	'Himachal Pradesh',
-	'Jammu and Kashmir',
-	'Jharkhand',
-	'Karnataka',
-	'Kerala',
-	'Ladakh',
-	'Lakshadweep Islands',
-	'Madhya Pradesh',
-	'Maharashtra',
-	'Manipur',
-	'Meghalaya',
-	'Mizoram',
-	'Nagaland',
-	'Odisha',
-	'Other Territory',
-	'Puducherry',
-	'Punjab',
-	'Rajasthan',
-	'Sikkim',
-	'Tamil Nadu',
-	'Telangana',
-	'Tripura',
-	'Uttar Pradesh',
-	'Uttarakhand',
-	'West Bengal',
-];
 
 const _countryList = createResource({
 	url: 'press.api.account.country_list',
@@ -155,8 +117,8 @@ const countryList = computed(() => {
 	}));
 });
 
-const indianStates = computed(() => {
-	return _indianStates.map((state) => ({
+const algerianWilayaOptions = computed(() => {
+	return algerianWilayas.map((state) => ({
 		label: state,
 		value: state,
 	}));
@@ -201,13 +163,13 @@ const sections = computed(() => {
 			fields: [
 				{
 					fieldtype:
-						billingInformation.value.country === 'India' ? 'Select' : 'Data',
+						billingInformation.value.country === 'Algeria' ? 'Select' : 'Data',
 					label: 'State / Province / Region',
 					fieldname: 'state',
 					required: true,
 					options:
-						billingInformation.value.country === 'India'
-							? indianStates.value
+						billingInformation.value.country === 'Algeria'
+							? algerianWilayaOptions.value
 							: null,
 				},
 				{
@@ -233,15 +195,15 @@ function getInputType(field) {
 	}[field.fieldtype || 'Data'];
 }
 
-const _validateGST = createResource({
+const _validateNIF = createResource({
 	url: 'press.api.billing.validate_gst',
 	params: { address: billingInformation.value },
 });
 
-async function validateGST() {
+async function validateNIF() {
 	billingInformation.value.gstin =
 		billingInformation.value.gstin || 'Not Applicable';
-	await _validateGST.submit();
+	await _validateNIF.submit();
 }
 
 defineExpose({ updateBillingInformation, validate });

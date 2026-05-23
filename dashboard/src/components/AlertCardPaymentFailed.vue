@@ -1,7 +1,7 @@
 <template>
 	<AlertBanner :title="bannerMessage" type="warning">
 		<a class="ml-auto" :href="stripeUrl" target="_blank">
-			<Button variant="outline">Pay Now</Button>
+			<Button variant="outline">Payer maintenant</Button>
 		</a>
 	</AlertBanner>
 </template>
@@ -23,7 +23,7 @@ export default {
 	},
 	computed: {
 		bannerMessage() {
-			return `Payment failed: ${this.errorMessage} Please settle the payment to avoid site suspension.`
+			return `Échec du paiement : ${this.errorMessage} Veuillez régler le paiement pour éviter la suspension du site.`
 		},
 	},
 }

@@ -40,8 +40,8 @@ class RazorpayPaymentRecord(Document):
 		client = get_razorpay_client()
 		payment = client.payment.fetch(self.payment_id)
 		amount_with_tax = payment["amount"] / 100
-		gst = float(payment["notes"].get("gst", 0))
-		amount = amount_with_tax - gst
+		tva = float(payment["notes"].get("tva", payment["notes"].get("gst", 0)))
+		amount = amount_with_tax - tva
 		balance_transaction = team.allocate_credit_amount(
 			amount,
 			source="Prepaid Credits",
@@ -58,7 +58,7 @@ class RazorpayPaymentRecord(Document):
 			due_date=datetime.fromtimestamp(payment["created_at"]),
 			total=amount,
 			amount_due=amount,
-			gst=gst or 0,
+			tva=tva or 0,
 			amount_due_with_tax=amount_with_tax,
 			amount_paid=amount_with_tax,
 			razorpay_order_id=self.order_id,
@@ -145,7 +145,7 @@ def fetch_pending_payment_orders(hours=12):
 				"id": "pay_JhOBNkFZFi0EOX",
 				"entity": "payment",
 				"amount": 100,
-				"currency": "INR",
+				"currency": "DZD",
 				"status": "captured",
 				"order_id": "order_DaaS6LOUAASb7Y",
 				"invoice_id": null,

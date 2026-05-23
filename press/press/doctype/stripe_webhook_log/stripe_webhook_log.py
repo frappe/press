@@ -182,6 +182,8 @@ def get_invoice_id(form_dict):
 def parse_payload(payload, signature):
 	secret = frappe.db.get_single_value("Press Settings", "stripe_webhook_secret")
 	stripe = get_stripe()
+	if not stripe:
+		return None
 	try:
 		return stripe.Webhook.construct_event(payload, signature, secret)
 	except ValueError:

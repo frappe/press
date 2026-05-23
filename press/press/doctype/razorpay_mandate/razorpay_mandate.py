@@ -115,7 +115,7 @@ class RazorpayMandate(Document):
 		self.contact = contact
 		self.rrn = rrn
 		self.razorpay_signature = razorpay_signature
-		# Convert from paise to rupees
+		# Convert from smallest currency unit to main unit
 		self.authorization_fee = authorization_fee / 100 if authorization_fee else None
 		self.authorization_fee_tax = authorization_fee_tax / 100 if authorization_fee_tax else None
 		self.save(ignore_permissions=True)
@@ -271,7 +271,7 @@ def create_razorpay_mandate(
 		order_response = client.order.create(
 			{
 				"amount": 100,
-				"currency": "INR",
+				"currency": "DZD",
 				"method": "upi",
 				"customer_id": customer,
 				"receipt": "Authorize UPI Autopay",

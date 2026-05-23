@@ -56,7 +56,7 @@ class TestSubscription(FrappeTestCase):
 			document_type="ToDo",
 			interval="Daily",
 			price_usd=30,
-			price_inr=30,
+			price_dzd=30,
 		).insert()
 
 		subscription = frappe.get_doc(
@@ -70,7 +70,7 @@ class TestSubscription(FrappeTestCase):
 
 		today = frappe.utils.getdate()
 		tomorrow = frappe.utils.add_days(today, 1)
-		desired_value = plan.get_price_per_day("INR") * 2
+		desired_value = plan.get_price_per_day("DZD") * 2
 
 		is_last_day_of_month = frappe.utils.data.get_last_day(today) == today
 		yesterday = frappe.utils.add_days(today, -1)
@@ -102,7 +102,7 @@ class TestSubscription(FrappeTestCase):
 			document_type="ToDo",
 			interval="Daily",
 			price_usd=30,
-			price_inr=30,
+			price_dzd=30,
 		).insert()
 
 		subscription = frappe.get_doc(
@@ -139,7 +139,7 @@ class TestSubscription(FrappeTestCase):
 			document_type="Site",
 			interval="Daily",
 			price_usd=30,
-			price_inr=30,
+			price_dzd=30,
 			period=30,
 		).insert()
 

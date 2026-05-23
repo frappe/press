@@ -30,7 +30,7 @@
 					v-if="rows.length === 0"
 					class="text-center text-sm leading-10 text-ink-gray-5"
 				>
-					No results found
+					Aucun résultat trouvé
 				</div>
 				<ListRow v-for="(row, i) in rows" :row="row" :key="row.name">
 					<template v-slot="{ column, item }">

@@ -156,7 +156,7 @@ class PressSettings(Document):
 		frappe_url: DF.Data | None
 		frappeio_api_key: DF.Data | None
 		frappeio_api_secret: DF.Password | None
-		free_credits_inr: DF.Currency
+		free_credits_dzd: DF.Currency
 		free_credits_usd: DF.Currency
 		github_access_token: DF.Data | None
 		github_app_client_id: DF.Data | None
@@ -166,7 +166,7 @@ class PressSettings(Document):
 		github_app_public_link: DF.Data | None
 		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
-		gst_percentage: DF.Float
+		tva_percentage: DF.Float
 		hybrid_cluster: DF.Link | None
 		hybrid_domain: DF.Link | None
 		ic_key: DF.Password | None
@@ -175,7 +175,7 @@ class PressSettings(Document):
 		max_allowed_screenshots: DF.Int
 		max_concurrent_physical_restorations: DF.Int
 		max_failed_backup_attempts_in_a_day: DF.Int
-		micro_debit_charge_inr: DF.Currency
+		micro_debit_charge_dzd: DF.Currency
 		micro_debit_charge_usd: DF.Currency
 		minimum_rebuild_memory: DF.Int
 		monitor_server: DF.Link | None
@@ -187,7 +187,7 @@ class PressSettings(Document):
 		offsite_backups_count: DF.Int
 		offsite_backups_provider: DF.Literal["AWS S3"]
 		offsite_backups_secret_access_key: DF.Password | None
-		partnership_fee_inr: DF.Int
+		partnership_fee_dzd: DF.Int
 		partnership_fee_usd: DF.Int
 		paypal_enabled: DF.Check
 		plausible_api_key: DF.Password | None
@@ -198,9 +198,9 @@ class PressSettings(Document):
 		print_format: DF.Data | None
 		production_server_ip: DF.Data | None
 		publish_docs: DF.Check
-		razorpay_key_id: DF.Data | None
-		razorpay_key_secret: DF.Password | None
-		razorpay_webhook_secret: DF.Data | None
+		# razorpay_key_id: DF.Data | None  # Razorpay removed
+		# razorpay_key_secret: DF.Password | None  # Razorpay removed
+		# razorpay_webhook_secret: DF.Data | None  # Razorpay removed
 		realtime_job_updates: DF.Check
 		redis_cache_size: DF.Int
 		region_name: DF.Data | None
@@ -226,7 +226,7 @@ class PressSettings(Document):
 		staging_plan: DF.Link | None
 		standby_pool_size: DF.Int
 		standby_queue_size: DF.Int
-		stripe_inr_plan_id: DF.Data | None
+		stripe_dzd_plan_id: DF.Data | None
 		stripe_product_id: DF.Data | None
 		stripe_publishable_key: DF.Data | None
 		stripe_secret_key: DF.Password | None
@@ -253,13 +253,13 @@ class PressSettings(Document):
 		use_delta_builds: DF.Check
 		use_new_deploy_flow: DF.Check
 		use_staging_ca: DF.Check
-		verify_cards_with_micro_charge: DF.Literal["No", "Only INR", "Only USD", "Both INR and USD"]
+		verify_cards_with_micro_charge: DF.Literal["No", "Only DZD", "Only USD", "Both DZD and USD"]
 		wazuh_server: DF.Data | None
 		webroot_directory: DF.Data | None
 	# end: auto-generated types
 
 	dashboard_fields = (
-		"partnership_fee_inr",
+		"partnership_fee_dzd",
 		"partnership_fee_usd",
 	)
 
@@ -283,6 +283,8 @@ class PressSettings(Document):
 	@frappe.whitelist()
 	def create_stripe_webhook(self):
 		stripe = get_stripe()
+		if not stripe:
+			return None
 		url = frappe.utils.get_url(
 			"/api/method/press.press.doctype.stripe_webhook_log.stripe_webhook_log.stripe_webhook_handler"
 		)

@@ -1,7 +1,7 @@
 <template>
 	<div class="sticky top-0 z-10 shrink-0">
 		<Header>
-			<Breadcrumbs :items="[{ label: 'Home', route: { name: 'Home' } }]" />
+			<Breadcrumbs :items="[{ label: 'Accueil', route: { name: 'Home' } }]" />
 			<Dropdown
 				:options="[
 					{ label: 'Site', route: { name: 'New Site' } },
@@ -10,7 +10,7 @@
 			>
 				<Button
 					variant="solid"
-					label="Create new"
+					label="Créer"
 					:disabled="!$team.doc?.payment_mode"
 				>
 					<template #suffix>

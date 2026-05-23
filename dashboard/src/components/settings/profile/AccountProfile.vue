@@ -1,5 +1,5 @@
 <template>
-	<Card title="Profile" v-if="user" class="mx-auto max-w-3xl">
+	<Card title="Profil" v-if="user" class="mx-auto max-w-3xl">
 		<div class="flex items-center border-b pb-3">
 			<div class="relative">
 				<Avatar size="2xl" :label="user.first_name" :image="user.user_image" />
@@ -20,7 +20,7 @@
 								:class="{ 'opacity-50': uploading }"
 							>
 								<span v-if="uploading">{{ progress }}%</span>
-								<span v-else>Edit</span>
+								<span v-else>Modifier</span>
 							</button>
 						</div>
 					</template>
@@ -39,12 +39,12 @@
 			</div>
 		</div>
 		<ListItem
-			title="Notification Settings"
-			subtitle="Manage notification channels"
+			title="Paramètres de notification"
+			subtitle="Gérer les canaux de notification"
 			v-if="$team?.doc?.user === $session?.user"
 		>
 			<template #actions>
-				<Button @click="showCommunicationInfoDialog = true"> Manage </Button>
+				<Button @click="showCommunicationInfoDialog = true"> Gérer </Button>
 			</template>
 		</ListItem>
 		<div>
@@ -61,7 +61,7 @@
 			</ListItem>
 			<ListItem
 				class="border-t"
-				:title="user.is_2fa_enabled ? 'Disable 2FA' : 'Enable 2FA'"
+				:title="user.is_2fa_enabled ? 'Disable 2FA' : 'Activer la 2FA'"
 				:subtitle="
 					user.is_2fa_enabled
 						? 'Disable two-factor authentication for your account'
@@ -348,7 +348,7 @@ export default {
 		},
 		deactivateAccount(disableAccount2FACode) {
 			const currency = this.$team.doc.currency;
-			const minAmount = currency === 'INR' ? 410 : 5;
+			const minAmount = currency === 'DZD' ? 410 : 5;
 			if (this.draftInvoice && this.draftInvoice.amount_due > minAmount) {
 				const finalizeInvoicesDialog = defineAsyncComponent(
 					() => import('../../billing/FinalizeInvoicesDialog.vue'),
@@ -381,7 +381,7 @@ export default {
 						confirmDialog({
 							title: 'Clear Unpaid Invoice',
 							message: `You have an unpaid invoice of ${
-								invoice.currency === 'INR' ? '₹' : '$'
+								invoice.currency === 'DZD' ? 'د.ج' : '$'
 							} ${
 								invoice.amount_due
 							}. Please clear it before disabling the account.`,

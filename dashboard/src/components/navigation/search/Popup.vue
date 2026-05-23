@@ -91,7 +91,7 @@ watch(navigationIndex, () => {
 
 				<input
 					ref="inputRef"
-					placeholder="Search"
+					placeholder="Rechercher"
 					class="w-full bg-transparent !outline-none !border-0 text-sm p-0 !ring-0"
 					autofocus
 					@keydown.up.prevent="navigateUp"
@@ -145,7 +145,7 @@ watch(navigationIndex, () => {
 
 			<div v-else class="flex my-5 p-4 text-ink-gray-5">
 				<span class="flex items-center gap-2 mx-auto">
-					<LucideFrown class="size-4" /> No results found
+					<LucideFrown class="size-4" /> Aucun résultat trouvé
 				</span>
 			</div>
 		</div>

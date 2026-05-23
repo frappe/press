@@ -5,7 +5,7 @@
 	"doctype": "DocType",
 	"editable_grid": 1,
 	"engine": "InnoDB",
-	"field_order": ["type", "price_usd", "price_inr"],
+	"field_order": ["type", "price_usd", "price_dzd"],
 	"fields": [
 		{
 			"fieldname": "type",
@@ -22,7 +22,7 @@
 			"label": "Price (USD)"
 		},
 		{
-			"fieldname": "price_inr",
+			"fieldname": "price_dzd",
 			"fieldtype": "Currency",
 			"in_list_view": 1,
 			"in_preview": 1,

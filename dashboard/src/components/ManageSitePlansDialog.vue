@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		:options="{
-			title: showSetupSubscription ? 'Setup Subscription' : 'Change Plan',
+			title: showSetupSubscription ? 'Configurer l\'abonnement' : 'Changer de plan',
 			size: step === 'site-plans' ? '3xl' : '3xl',
 		}"
 		v-model="show"
@@ -34,9 +34,9 @@
 					>
 						<lucide-badge-check class="mr-2 h-5 w-12 text-ink-gray-6" />
 						<span>
-							<strong>Support</strong> covers only issues of Frappe apps and not
-							functional queries. You can raise a support ticket for Frappe
-							Cloud issues for all plans.
+							Le <strong>support</strong> couvre uniquement les problèmes des apps Frappe et non
+							les questions fonctionnelles. Vous pouvez créer un ticket de support pour les
+							problèmes Frappe Cloud pour tous les plans.
 						</span>
 					</div>
 				</div>
@@ -126,7 +126,7 @@
 				<PrepaidCreditsForm
 					v-else
 					:minimumAmount="
-						$team.doc?.currency === 'INR' ? plan.price_inr : plan.price_usd
+						$team.doc?.currency === 'DZD' ? plan.price_dzd : plan.price_usd
 					"
 					:type="'Purchase Plan'"
 					:docName="plan.name"

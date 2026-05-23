@@ -19,7 +19,7 @@
 						}}
 						-
 						{{
-							(invoice.currency === 'INR' ? '₹ ' : '$ ') + invoice.amount_due
+							(invoice.currency === 'DZD' ? 'د.ج ' : '$ ') + invoice.amount_due
 						}}
 					</li>
 				</ul>

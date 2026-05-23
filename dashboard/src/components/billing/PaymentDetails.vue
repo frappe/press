@@ -1,13 +1,13 @@
 <template>
 	<div class="flex flex-col gap-4">
-		<div class="text-lg font-semibold text-ink-gray-9">Payment details</div>
+		<div class="text-lg font-semibold text-ink-gray-9">Détails de paiement</div>
 		<div class="flex flex-col">
 			<div
 				v-if="team.doc.payment_mode == 'Card'"
 				class="flex items-center justify-between text-base text-ink-gray-9"
 			>
 				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">Active Card</div>
+					<div class="font-medium">Carte active</div>
 					<div class="overflow-hidden text-ellipsis text-ink-gray-7">
 						<div
 							v-if="team.doc.payment_method"
@@ -16,16 +16,16 @@
 							<component :is="cardBrandIcon(team.doc.payment_method.brand)" />
 							<div class="text-ink-gray-7">
 								<span>{{ team.doc.payment_method.name_on_card }}</span>
-								<span> &middot; Card ending in •••• </span>
+								<span> &middot; Carte se terminant par •••• </span>
 								<span>{{ team.doc.payment_method.last_4 }}</span>
 							</div>
 						</div>
-						<span v-else class="text-ink-gray-7">No card added</span>
+						<span v-else class="text-ink-gray-7">Aucune carte ajoutée</span>
 					</div>
 				</div>
 				<div class="shrink-0">
 					<Button
-						:label="team.doc.payment_method ? 'Change card' : 'Add card'"
+						:label="team.doc.payment_method ? 'Changer de carte' : 'Ajouter une carte'"
 						@click="changeMethod"
 					>
 						<template v-if="!team.doc.payment_method" #prefix>
@@ -40,15 +40,15 @@
 			/>
 			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">Billing address</div>
+					<div class="font-medium">Adresse de facturation</div>
 					<div v-if="billingDetailsSummary" class="leading-5 text-ink-gray-7">
 						{{ billingDetailsSummary }}
 					</div>
-					<div v-else class="text-ink-gray-7">No address</div>
+					<div v-else class="text-ink-gray-7">Aucune adresse</div>
 				</div>
 				<div class="shrink-0">
 					<Button
-						:label="billingDetailsSummary ? 'Edit ' : 'Add billing address'"
+						:label="billingDetailsSummary ? 'Modifier' : 'Ajouter une adresse de facturation'"
 						@click="
 							() => {
 								showMessage = false;
@@ -65,7 +65,7 @@
 			<div class="my-3 h-px bg-surface-gray-2" />
 			<div class="flex items-center justify-between text-base text-ink-gray-9">
 				<div class="flex flex-col gap-1.5">
-					<div class="font-medium">Mode of payment</div>
+					<div class="font-medium">Mode de paiement</div>
 					<div
 						v-if="team.doc.payment_mode"
 						class="inline-flex items-center gap-2 text-ink-gray-7"
@@ -73,7 +73,7 @@
 						<FeatherIcon class="h-4" name="info" />
 						{{ paymentMode.description }}
 					</div>
-					<span v-else class="text-ink-gray-7">Not set</span>
+					<span v-else class="text-ink-gray-7">Non défini</span>
 				</div>
 				<div class="shrink-0">
 					<Dropdown :options="paymentModeOptions">
@@ -219,7 +219,7 @@ const showAddPrepaidCreditsDialog = ref(false);
 const showAddCardDialog = ref(false);
 const showChangeCardDialog = ref(false);
 
-const currency = computed(() => (team.doc.currency == 'INR' ? '₹' : '$'));
+const currency = computed(() => (team.doc.currency == 'DZD' ? 'د.ج' : '$'));
 
 const billingDetails = createResource({
 	url: 'press.api.account.get_billing_information',
@@ -302,7 +302,7 @@ const paymentModeOptions = [
 	{
 		label: 'UPI Autopay',
 		value: 'UPI Autopay',
-		condition: () => team.doc.currency === 'INR',
+		condition: () => team.doc.currency === 'DZD',
 		description: 'Your UPI will be auto-debited for monthly subscription',
 		component: () =>
 			h(DropdownItem, {

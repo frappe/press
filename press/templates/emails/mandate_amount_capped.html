@@ -6,9 +6,9 @@
 <td class="text-base leading-6 text-gray-900">
 	<div class="p-8 bg-white">
 		<p class="mb-4 font-bold">{{ subject }}</p>
-		<p>Your UPI Autopay mandate was successfully set up, but your bank authorized a monthly limit of <strong>₹{{ confirmed_amount }}</strong> instead of the <strong>₹{{ requested_amount }}</strong> you requested.</p>
-		<p>This limit is enforced by your bank. If a future invoice exceeds <strong>₹{{ confirmed_amount }}</strong>, the auto-debit will fail. Please contact your bank to increase your UPI Autopay transaction limit.</p>
-		<p><a href="{{ upi_autopay_link }}">Manage UPI Autopay</a></p>
+		<p>Votre mandat de prélèvement automatique UPI a été configuré avec succès, mais votre banque a autorisé une limite mensuelle de <strong>{{ confirmed_amount }} DZD</strong> au lieu des <strong>{{ requested_amount }} DZD</strong> que vous avez demandés.</p>
+		<p>Cette limite est imposée par votre banque. Si une future facture dépasse <strong>{{ confirmed_amount }} DZD</strong>, le prélèvement automatique échouera. Veuillez contacter votre banque pour augmenter la limite de transaction UPI Autopay.</p>
+		<p><a href="{{ upi_autopay_link }}">Gérer UPI Autopay</a></p>
 		{{ utils.separator() }}
 		{{ utils.signature() }}
 	</div>

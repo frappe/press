@@ -42,6 +42,7 @@ import {
 import { toast } from 'vue-sonner';
 import { computed, ref } from 'vue';
 import { DashboardError } from '../../utils/error';
+import { algerianWilayas } from '@/utils/billing.js';
 
 const leadInfo = ref({
 	organization_name: '',
@@ -139,48 +140,8 @@ async function validate() {
 	}
 }
 
-const _indianStates = [
-	'Andaman and Nicobar Islands',
-	'Andhra Pradesh',
-	'Arunachal Pradesh',
-	'Assam',
-	'Bihar',
-	'Chandigarh',
-	'Chhattisgarh',
-	'Dadra and Nagar Haveli and Daman and Diu',
-	'Delhi',
-	'Goa',
-	'Gujarat',
-	'Haryana',
-	'Himachal Pradesh',
-	'Jammu and Kashmir',
-	'Jharkhand',
-	'Karnataka',
-	'Kerala',
-	'Ladakh',
-	'Lakshadweep Islands',
-	'Madhya Pradesh',
-	'Maharashtra',
-	'Manipur',
-	'Meghalaya',
-	'Mizoram',
-	'Nagaland',
-	'Odisha',
-	'Other Territory',
-	'Puducherry',
-	'Punjab',
-	'Rajasthan',
-	'Sikkim',
-	'Tamil Nadu',
-	'Telangana',
-	'Tripura',
-	'Uttar Pradesh',
-	'Uttarakhand',
-	'West Bengal',
-];
-
-const indianStates = computed(() => {
-	return _indianStates.map((state) => ({
+const algerianWilayaOptions = computed(() => {
+	return algerianWilayas.map((state) => ({
 		label: state,
 		value: state,
 	}));
@@ -267,12 +228,12 @@ const sections = computed(() => {
 					required: true,
 				},
 				{
-					fieldtype: leadInfo.value.country === 'India' ? 'Select' : 'Data',
+					fieldtype: leadInfo.value.country === 'Algeria' ? 'Select' : 'Data',
 					fieldname: 'state',
 					label: 'State / Region',
-					required: leadInfo.value.country === 'India' ? true : false,
+					required: leadInfo.value.country === 'Algeria' ? true : false,
 					options:
-						leadInfo.value.country === 'India' ? indianStates.value : null,
+						leadInfo.value.country === 'Algeria' ? algerianWilayaOptions.value : null,
 				},
 			],
 		},

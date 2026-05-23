@@ -62,7 +62,10 @@
 			"read_only": 1,
 			"set_only_once": 1
 		},
-		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_4",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "Generic",
 			"fieldname": "provider",
@@ -91,7 +94,10 @@
 			"label": "IP",
 			"set_only_once": 1
 		},
-		{ "fieldname": "column_break_9", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_9",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fetch_from": "virtual_machine.private_ip_address",
 			"fieldname": "private_ip",
@@ -144,7 +150,10 @@
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_20", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_20",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "root_public_key",
 			"fieldtype": "Code",
@@ -186,7 +195,11 @@
 			"label": "Cluster",
 			"options": "Cluster"
 		},
-		{ "fieldname": "ssh_user", "fieldtype": "Data", "label": "SSH User" },
+		{
+			"fieldname": "ssh_user",
+			"fieldtype": "Data",
+			"label": "SSH User"
+		},
 		{
 			"default": "22",
 			"fieldname": "ssh_port",
@@ -207,7 +220,12 @@
 			"options": "Server Plan"
 		}
 	],
-	"links": [{ "link_doctype": "Ansible Play", "link_fieldname": "server" }],
+	"links": [
+		{
+			"link_doctype": "Ansible Play",
+			"link_fieldname": "server"
+		}
+	],
 	"modified": "2025-11-22 15:50:53.703274",
 	"modified_by": "Administrator",
 	"module": "Press",

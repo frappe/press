@@ -10,7 +10,7 @@ from press.press.doctype.site_plan.plan import Plan
 
 
 class MarketplaceAppPlan(Plan):
-	dashboard_fields: ClassVar = ["app", "name", "title", "price_inr", "price_usd", "enabled"]
+	dashboard_fields: ClassVar = ["app", "name", "title", "price_dzd", "price_usd", "enabled"]
 
 	@staticmethod
 	def get_list_query(query):
@@ -27,7 +27,7 @@ class MarketplaceAppPlan(Plan):
 		self.update_marketplace_app_subscription_type()
 
 	def update_marketplace_app_subscription_type(self):
-		if cint(self.price_inr) > 0 or cint(self.price_usd) > 0:
+		if cint(self.price_dzd) > 0 or cint(self.price_usd) > 0:
 			frappe.db.set_value(
 				"Marketplace App",
 				self.app,

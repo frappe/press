@@ -16,7 +16,7 @@
 		"machine_unavailable",
 		"ignore_machine_availability_sync",
 		"pricing_section",
-		"price_inr",
+		"price_dzd",
 		"column_break_sjmg",
 		"price_usd",
 		"section_break_nifk",
@@ -62,33 +62,55 @@
 			"fieldtype": "Data",
 			"label": "Instance Type"
 		},
-		{ "fieldname": "column_break_ypkt", "fieldtype": "Column Break" },
-		{ "fieldname": "vcpu", "fieldtype": "Int", "label": "vCPU" },
-		{ "fieldname": "memory", "fieldtype": "Int", "label": "Memory" },
-		{ "fieldname": "disk", "fieldtype": "Int", "label": "Disk" },
+		{
+			"fieldname": "column_break_ypkt",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "vcpu",
+			"fieldtype": "Int",
+			"label": "vCPU"
+		},
+		{
+			"fieldname": "memory",
+			"fieldtype": "Int",
+			"label": "Memory"
+		},
+		{
+			"fieldname": "disk",
+			"fieldtype": "Int",
+			"label": "Disk"
+		},
 		{
 			"fieldname": "pricing_section",
 			"fieldtype": "Section Break",
 			"label": "Pricing"
 		},
 		{
-			"fieldname": "price_inr",
+			"fieldname": "price_dzd",
 			"fieldtype": "Currency",
 			"in_list_view": 1,
 			"label": "Price (INR)",
-			"options": "INR",
+			"options": "DZD",
 			"reqd": 1
 		},
-		{ "fieldname": "column_break_sjmg", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_sjmg",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "price_usd",
 			"fieldtype": "Currency",
 			"in_list_view": 1,
 			"label": "Price (USD)",
-			"options": "INR",
+			"options": "DZD",
 			"reqd": 1
 		},
-		{ "fieldname": "title", "fieldtype": "Data", "label": "Title" },
+		{
+			"fieldname": "title",
+			"fieldtype": "Data",
+			"label": "Title"
+		},
 		{
 			"fieldname": "allowed_roles_section",
 			"fieldtype": "Section Break",
@@ -128,7 +150,10 @@
 			"label": "Plan Type",
 			"options": "Server Plan Type"
 		},
-		{ "fieldname": "column_break_ppap", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_ppap",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"fieldname": "allow_unified_server",
@@ -154,7 +179,11 @@
 			"label": "Cloud Provider",
 			"options": "Cloud Provider"
 		},
-		{ "fieldname": "description", "fieldtype": "Data", "label": "Description" }
+		{
+			"fieldname": "description",
+			"fieldtype": "Data",
+			"label": "Description"
+		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],

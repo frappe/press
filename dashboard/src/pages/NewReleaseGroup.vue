@@ -6,7 +6,7 @@
 					server
 						? [
 								{
-									label: 'Servers',
+									label: 'Serveurs',
 									route: '/servers',
 								},
 								{
@@ -14,13 +14,13 @@
 									route: `/servers/${server}`,
 								},
 								{
-									label: 'New Bench',
+									label: 'Nouveau Bench',
 									route: '/groups/new',
 								},
 							]
 						: [
 								{ label: 'Benches', route: '/groups' },
-								{ label: 'New Bench', route: '/groups/new' },
+								{ label: 'Nouveau Bench', route: '/groups/new' },
 							]
 				"
 			/>
@@ -32,7 +32,7 @@
 		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-ink-gray-6"
 	>
 		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
-		<ErrorMessage message="You aren't permitted to create new benches" />
+		<ErrorMessage message="Vous n'êtes pas autorisé à créer de nouveaux Benches" />
 	</div>
 
 	<div v-else class="mx-auto max-w-2xl px-5">
@@ -40,7 +40,7 @@
 			<div>
 				<div class="flex items-center justify-between">
 					<h2 class="text-sm font-medium leading-6 text-ink-gray-9">
-						Select Frappe Framework Version
+						Sélectionner la version de Frappe Framework
 					</h2>
 				</div>
 				<div class="mt-2">

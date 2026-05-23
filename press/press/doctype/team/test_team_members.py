@@ -45,8 +45,8 @@ def create_test_team_for_members() -> str:
 				"doctype": "Team",
 				"user": email,
 				"enabled": 1,
-				"country": "India",
-				"currency": "INR",
+				"country": "Algeria",
+				"currency": "DZD",
 				"billing_name": "Test Team",
 			}
 		).insert(ignore_if_duplicate=True)

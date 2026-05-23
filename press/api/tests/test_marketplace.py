@@ -102,7 +102,7 @@ class TestAPIMarketplace(FrappeTestCase):
 		)
 		_ensure_primary_user_in_team_members(self.team.name, self.team.user)
 		self.plan_data = {
-			"price_inr": 820,
+			"price_dzd": 820,
 			"price_usd": 10,
 			"plan_title": "Test Marketplace Plan",
 			"features": ["feature 1", "feature 2"],
@@ -224,7 +224,7 @@ class TestAPIMarketplace(FrappeTestCase):
 		m_plan = create_test_marketplace_app_plan()
 
 		updated_plan_data = {
-			"price_inr": m_plan.price_inr + 100,
+			"price_dzd": m_plan.price_dzd + 100,
 			"price_usd": m_plan.price_usd + 1,
 			"title": m_plan.title + " updated",
 			"features": ["feature 3", "feature 4"],
@@ -232,7 +232,7 @@ class TestAPIMarketplace(FrappeTestCase):
 		update_app_plan(m_plan.name, updated_plan_data)
 		m_plan.reload()
 
-		self.assertEqual(m_plan.price_inr, updated_plan_data["price_inr"])
+		self.assertEqual(m_plan.price_dzd, updated_plan_data["price_dzd"])
 		self.assertEqual(m_plan.price_usd, updated_plan_data["price_usd"])
 		self.assertEqual(m_plan.title, updated_plan_data["title"])
 		self.assertEqual(m_plan.features[0].description, updated_plan_data["features"][0])

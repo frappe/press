@@ -24,8 +24,8 @@
 		"section_break_12",
 		"items",
 		"section_break_14",
-		"net_total_inr",
-		"currency_inr",
+		"net_total_dzd",
+		"currency_dzd",
 		"total_amount",
 		"column_break_15",
 		"net_total_usd",
@@ -85,10 +85,10 @@
 		{ "fieldname": "notes", "fieldtype": "Small Text", "label": "Notes" },
 		{ "fieldname": "section_break_12", "fieldtype": "Section Break" },
 		{
-			"fieldname": "net_total_inr",
+			"fieldname": "net_total_dzd",
 			"fieldtype": "Currency",
 			"label": "Net Total INR",
-			"options": "currency_inr",
+			"options": "currency_dzd",
 			"read_only": 1
 		},
 		{
@@ -121,8 +121,8 @@
 			"options": "0"
 		},
 		{
-			"default": "INR",
-			"fieldname": "currency_inr",
+			"default": "DZD",
+			"fieldname": "currency_dzd",
 			"fieldtype": "Data",
 			"hidden": 1,
 			"label": "Currency INR"

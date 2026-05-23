@@ -51,31 +51,31 @@
 						class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5"
 					>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">Creation</div>
+							<div class="text-sm font-medium text-ink-gray-5">Création</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ $format.date(job.creation, 'lll') }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">Creator</div>
+							<div class="text-sm font-medium text-ink-gray-5">Créateur</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ job.owner }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">Duration</div>
+							<div class="text-sm font-medium text-ink-gray-5">Durée</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ job.end ? $format.duration(job.duration) : '-' }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">Start</div>
+							<div class="text-sm font-medium text-ink-gray-5">Début</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ $format.date(job.start, 'lll') }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">End</div>
+							<div class="text-sm font-medium text-ink-gray-5">Fin</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ job.end ? $format.date(job.end, 'lll') : '-' }}
 							</div>
@@ -160,7 +160,7 @@ export default {
 		dropdownOptions() {
 			return [
 				{
-					label: 'View in Desk',
+					label: 'Voir dans le bureau',
 					icon: 'external-link',
 					condition: () => this.$team?.doc?.is_desk_user,
 					onClick: () => {

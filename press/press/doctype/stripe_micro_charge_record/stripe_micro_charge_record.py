@@ -29,6 +29,8 @@ class StripeMicroChargeRecord(Document):
 	@frappe.whitelist()
 	def refund(self):
 		stripe = get_stripe()
+		if not stripe:
+			return None
 		refund = stripe.Refund.create(payment_intent=self.stripe_payment_intent_id)
 
 		if refund.status == "succeeded":

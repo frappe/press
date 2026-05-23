@@ -200,8 +200,8 @@ class TestGitHubAuthorization(FrappeTestCase):
 				"Administrator",
 				"Administrator",
 				team.user,
-				"India",
-				"INR",
+				"Algeria",
+				"DZD",
 				team.user,
 			),
 		)

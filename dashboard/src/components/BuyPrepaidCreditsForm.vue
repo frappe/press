@@ -11,13 +11,13 @@
 		>
 			<template #prefix>
 				<div class="grid w-4 place-items-center text-sm text-ink-gray-7">
-					{{ $team.doc.currency === 'INR' ? '₹' : '$' }}
+					{{ $team.doc.currency === 'DZD' ? 'د.ج' : '$' }}
 				</div>
 			</template>
 		</FormControl>
 		<FormControl
-			v-if="$team.doc.currency === 'INR'"
-			:label="`Total Amount + GST (${
+			v-if="$team.doc.currency === 'DZD'"
+			:label="`Total Amount + TVA (${
 				$team.doc?.billing_info.gst_percentage * 100
 			}%)`"
 			disabled
@@ -28,14 +28,14 @@
 		>
 			<template #prefix>
 				<div class="grid w-4 place-items-center text-sm text-ink-gray-7">
-					{{ $team.doc.currency === 'INR' ? '₹' : '$' }}
+					{{ $team.doc.currency === 'DZD' ? 'د.ج' : '$' }}
 				</div>
 			</template>
 		</FormControl>
 	</div>
 
 	<div class="mt-4">
-		<div class="text-xs text-ink-gray-6">Select Payment Gateway</div>
+		<div class="text-xs text-ink-gray-6">Sélectionner la passerelle de paiement</div>
 		<div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
 			<button
 				@click="paymentGateway = 'Stripe'"
@@ -53,7 +53,7 @@
 				/>
 			</button>
 			<button
-				v-if="$team.doc.currency === 'INR' || $team.doc.razorpay_enabled"
+				v-if="$team.doc.currency === 'DZD' || $team.doc.razorpay_enabled"
 				@click="paymentGateway = 'Razorpay'"
 				label="Razorpay"
 				class="flex h-10 items-center justify-center rounded border"
@@ -153,7 +153,7 @@ export default {
 	computed: {
 		totalAmount() {
 			let creditsToBuy = this.creditsToBuy || 0;
-			if (this.$team.doc.currency === 'INR') {
+			if (this.$team.doc.currency === 'DZD') {
 				return (
 					creditsToBuy +
 					creditsToBuy * (this.$team.doc.billing_info.gst_percentage || 0)

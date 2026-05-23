@@ -1,11 +1,11 @@
 <template>
 	<div class="flex flex-1 flex-col gap-6 overflow-y-auto px-20 pb-12 pt-6">
 		<div class="flex flex-col gap-1">
-			<h2 class="text-xl font-semibold text-ink-gray-9">Team Tiers</h2>
+			<h2 class="text-xl font-semibold text-ink-gray-9">Niveaux d'équipe</h2>
 			<p class="max-w-3xl text-p-base text-ink-gray-6">
-				Team tiers determine your monthly spending limit on Frappe Cloud. You
-				are automatically moved to a higher tier once your usage and payment
-				history meet the qualifying conditions below.
+				Les niveaux d'équipe déterminent votre limite de dépenses mensuelles sur Frappe Cloud. Vous
+				êtes automatiquement déplacé vers un niveau supérieur une fois que votre utilisation et votre
+				historique de paiement remplissent les conditions ci-dessous.
 			</p>
 		</div>
 
@@ -28,7 +28,7 @@
 				<div class="flex flex-wrap items-center justify-between gap-3">
 					<div class="flex flex-col gap-1">
 						<div class="text-sm font-medium text-ink-gray-6">
-							Your current tier
+							Votre niveau actuel
 						</div>
 						<div class="flex items-center gap-2">
 							<span class="text-lg font-semibold text-ink-gray-9">
@@ -37,19 +37,19 @@
 							<Badge
 								v-if="teamTiers.data.current_tier"
 								theme="blue"
-								:label="`Spending limit ${formatAmount(teamTiers.data.spending_limit)}`"
+								:label="`Limite de dépenses ${formatAmount(teamTiers.data.spending_limit)}`"
 							/>
 						</div>
 					</div>
 					<div class="flex flex-col gap-1 text-right">
 						<div class="text-sm text-ink-gray-6">
-							Paying since
+							Client payant depuis
 							<span class="font-medium text-ink-gray-9">
 								{{ payingSinceLabel }}
 							</span>
 						</div>
 						<div class="text-sm text-ink-gray-6">
-							Last paid invoice
+							Dernière facture payée
 							<span class="font-medium text-ink-gray-9">
 								{{ formatAmount(metrics.last_invoice_amount, skip_format=1) }}
 							</span>
@@ -75,17 +75,17 @@
 							<div
 								class="text-sm font-medium uppercase tracking-wide text-ink-gray-5"
 							>
-								Tier {{ idx }}
+								Niveau {{ idx }}
 							</div>
 							<div class="text-lg font-semibold text-ink-gray-9">
 								{{ tier.tier }}
 							</div>
 						</div>
-						<Badge v-if="isCurrentTier(tier)" theme="blue" label="Current" />
+						<Badge v-if="isCurrentTier(tier)" theme="blue" label="Actuel" />
 						<Badge
 							v-else-if="qualifiesForTier(tier)"
 							theme="green"
-							label="Qualifies"
+							label="Éligible"
 						/>
 					</div>
 
@@ -93,7 +93,7 @@
 						<span class="text-3xl font-semibold text-ink-gray-9">
 							{{ formatAmount(tier.amount) }}
 						</span>
-						<span class="text-sm text-ink-gray-6">spending limit</span>
+						<span class="text-sm text-ink-gray-6">limite de dépenses</span>
 					</div>
 
 					<div class="border-t border-outline-gray-1" />
@@ -102,7 +102,7 @@
 						<div
 							class="text-xs font-medium uppercase tracking-wide text-ink-gray-5"
 						>
-							How to qualify
+							Comment se qualifier
 						</div>
 						<ul class="flex flex-col gap-2 text-sm text-ink-gray-7">
 							<li v-for="(req, i) in requirementsFor(tier, idx)" :key="i">
@@ -131,28 +131,28 @@
 					<lucide-info class="mt-0.5 h-5 w-5 shrink-0 text-ink-gray-5" />
 					<div class="flex flex-col gap-2">
 						<div class="text-base font-medium text-ink-gray-9">
-							How tier upgrades work
+							Comment fonctionnent les niveaux
 						</div>
 						<ul
 							class="flex list-disc flex-col gap-1.5 pl-5 text-sm text-ink-gray-7"
 						>
 							<li>
-								Tiers control the maximum amount your team can spend in a
-								billing cycle.
+								Les niveaux contrôlent le montant maximum que votre équipe peut dépenser
+								dans un cycle de facturation.
 							</li>
 							<li>
-								You are automatically upgraded to a higher tier when your last
-								paid subscription invoice meets that tier's threshold and you
-								have at least three consecutive paid invoices.
+								Vous êtes automatiquement promu à un niveau supérieur lorsque votre dernière
+								facture d'abonnement payée atteint le seuil de ce niveau et que vous
+								avez au moins trois factures consécutives payées.
 							</li>
 							<li>
-								New teams start at the base tier with a default spending limit.
-								Adding a payment method or buying prepaid credits is required to
-								remain at or above the base tier.
+								Les nouvelles équipes commencent au niveau de base avec une limite de dépenses par défaut.
+								L'ajout d'un mode de paiement ou l'achat de crédits prépayés est requis pour
+								rester au niveau de base ou au-dessus.
 							</li>
 							<li>
-								Need a higher limit immediately? Reach out to support and we
-								will review your account.
+								Besoin d'une limite plus élevée immédiatement ? Contactez le support et nous
+								examinerons votre compte.
 							</li>
 						</ul>
 					</div>
@@ -178,9 +178,9 @@ const metrics = computed(() => teamTiers.data?.team_metrics ?? {})
 
 function formatAmount(value, skip_format = false) {
 	if (value == null) return '—'
-	const isINR = team.doc.currency === 'INR'
-	const symbol = isINR ? '₹' : '$'
-	let amount = isINR ? Number(value) * 82 : Number(value)
+	const isDZD = team.doc.currency === 'DZD'
+	const symbol = isDZD ? 'DA' : '$'
+	let amount = isDZD ? Number(value) * 135 : Number(value)
 	if (skip_format) {
 		amount = Number(value)
 	}
@@ -191,15 +191,15 @@ function formatAmount(value, skip_format = false) {
 
 const currentTierLabel = computed(() => {
 	const current = teamTiers.data?.current_tier
-	if (!current) return 'Not set'
+	if (!current) return 'Non défini'
 	return current
 })
 
 const payingSinceLabel = computed(() => {
 	const months = metrics.value.paying_since_months ?? 0
 	if (!months) return '—'
-	if (months === 1) return '1 month'
-	return `${months} months`
+	if (months === 1) return '1 mois'
+	return `${months} mois`
 })
 
 function isCurrentTier(tier) {
@@ -209,9 +209,9 @@ function isCurrentTier(tier) {
 function tierInvoiceThresholdInTeamCurrency(tier) {
 	// tier.last_invoice_amount is stored in USD; metrics.last_invoice_amount is in team currency.
 	// Convert the tier threshold to the team's currency before comparing.
-	const isINR = team.doc.currency === 'INR'
-	return isINR
-		? Number(tier.last_invoice_amount ?? 0) * 82
+	const isDZD = team.doc.currency === 'DZD'
+	return isDZD
+		? Number(tier.last_invoice_amount ?? 0) * 135
 		: Number(tier.last_invoice_amount ?? 0)
 }
 
@@ -233,18 +233,18 @@ function requirementsFor(tier, idx) {
 	if (!tier.paying_user_since && !tier.last_invoice_amount) {
 		return [
 			{
-				text: 'Payment method added or prepaid credits available',
+				text: 'Mode de paiement ajouté ou crédits prépayés disponibles',
 				met: !!m.has_payment_method,
 			},
 		]
 	}
 	return [
 		{
-			text: `Paying user for at least ${tier.paying_user_since} months`,
+			text: `Utilisateur payant depuis au moins ${tier.paying_user_since} mois`,
 			met: (m.paying_since_months ?? 0) >= (tier.paying_user_since ?? 0),
 		},
 		{
-			text: `Last paid invoice ≥ ${formatAmount(tier.last_invoice_amount)}`,
+			text: `Dernière facture payée ≥ ${formatAmount(tier.last_invoice_amount)}`,
 			met:
 				(m.last_invoice_amount ?? 0) >=
 				tierInvoiceThresholdInTeamCurrency(tier),

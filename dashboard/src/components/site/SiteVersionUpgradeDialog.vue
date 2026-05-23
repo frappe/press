@@ -113,7 +113,7 @@
 												>
 													{{
 														loadingBranches[app.app]
-															? 'Loading...'
+															? 'Chargement...'
 															: 'Fetch Branches'
 													}}
 												</Button>
@@ -168,7 +168,7 @@
 												>
 													{{
 														loadingBranches[app.app]
-															? 'Loading...'
+															? 'Chargement...'
 															: 'Fetch Branches'
 													}}
 												</Button>

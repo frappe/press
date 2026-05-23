@@ -275,14 +275,14 @@ export default {
 			return [
 				{ label: 'View', onClick: () => window.open(image) },
 				{
-					label: 'Delete',
+					label: 'Supprimer',
 					onClick: () => {
 						confirmDialog({
 							title: 'Delete Screenshot',
 							message:
 								'Are you sure you want to delete this screenshot? This action cannot be undone.',
 							primaryAction: {
-								label: 'Delete',
+								label: 'Supprimer',
 								variant: 'solid',
 								theme: 'red',
 								onClick: ({ hide }) => {

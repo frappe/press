@@ -13,7 +13,7 @@
 
 		<div class="m-12 mx-auto max-w-2xl px-5">
 			<div v-if="$resources.app.loading" class="py-4 text-base text-ink-gray-6">
-				Loading...
+				Chargement...
 			</div>
 			<div v-else class="space-y-6">
 				<div class="mb-12 flex">

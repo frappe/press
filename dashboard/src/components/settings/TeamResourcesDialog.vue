@@ -240,7 +240,7 @@ watch(
 								<Dropdown
 									:options="[
 										{
-											label: 'Remove',
+											label: 'Retirer',
 											icon: 'trash',
 											onClick: () =>
 												onRemoveResource(

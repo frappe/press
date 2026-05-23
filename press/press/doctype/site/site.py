@@ -619,14 +619,14 @@ class Site(Document, TagHelpers):
 			plan = frappe.db.get_value(
 				"Site Plan",
 				self.subscription_plan,
-				["dedicated_server_plan", "price_inr", "price_usd", "is_trial_plan"],
+				["dedicated_server_plan", "price_dzd", "price_usd", "is_trial_plan"],
 				as_dict=True,
 			)
 			is_site_on_public_server = frappe.db.get_value("Server", self.server, "public")
 
 			# Don't allow free plan for non-system users
 			if not is_system_user():
-				is_plan_free = (plan.price_inr == 0 or plan.price_usd == 0) and not (
+				is_plan_free = (plan.price_dzd == 0 or plan.price_usd == 0) and not (
 					plan.dedicated_server_plan or plan.is_trial_plan
 				)
 				if is_plan_free:
@@ -640,9 +640,9 @@ class Site(Document, TagHelpers):
 						"private_benches": 1,
 						"dedicated_server_plan": 0,
 						"document_type": "Site",
-						"price_inr": ["!=", 0],
+						"price_dzd": ["!=", 0],
 					},
-					order_by="price_inr asc",
+					order_by="price_dzd asc",
 				)
 
 			# If site is on dedicated server, set unlimited plan
@@ -2655,7 +2655,7 @@ class Site(Document, TagHelpers):
 		if team.payment_mode == "Paid By Partner" and team.billing_team:
 			team = frappe.get_doc("Team", team.billing_team)
 
-		# Allow plan change if user just authorized a Razorpay payment
+		# Allow plan change if user just authorized a payment
 		if team.has_recent_pending_payment():
 			return
 

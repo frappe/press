@@ -1,0 +1,106 @@
+{
+	"actions": [],
+	"autoname": "hash",
+	"creation": "2024-12-01 00:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"event_type",
+		"checkout_id",
+		"invoice",
+		"team",
+		"column_break_main",
+		"payment_method",
+		"amount",
+		"status",
+		"section_break_payload",
+		"payload"
+	],
+	"fields": [
+		{
+			"fieldname": "event_type",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Event Type",
+			"read_only": 1
+		},
+		{
+			"fieldname": "checkout_id",
+			"fieldtype": "Data",
+			"label": "Checkout ID",
+			"read_only": 1
+		},
+		{
+			"fieldname": "invoice",
+			"fieldtype": "Link",
+			"label": "Invoice",
+			"options": "Invoice",
+			"search_index": 1
+		},
+		{
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"label": "Team",
+			"options": "Team",
+			"search_index": 1
+		},
+		{
+			"fieldname": "column_break_main",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "payment_method",
+			"fieldtype": "Data",
+			"label": "Payment Method",
+			"read_only": 1
+		},
+		{
+			"fieldname": "amount",
+			"fieldtype": "Currency",
+			"label": "Amount",
+			"read_only": 1
+		},
+		{
+			"fieldname": "status",
+			"fieldtype": "Data",
+			"label": "Status",
+			"read_only": 1
+		},
+		{
+			"fieldname": "section_break_payload",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "payload",
+			"fieldtype": "Code",
+			"label": "Payload",
+			"read_only": 1
+		}
+	],
+	"links": [],
+	"modified": "2024-12-01 00:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Chargily Webhook Log",
+	"naming_rule": "Random",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
+}

@@ -114,7 +114,7 @@ export default {
 		dropdownOptions() {
 			return [
 				{
-					label: 'View in Desk',
+					label: 'Voir dans le bureau',
 					icon: 'external-link',
 					condition: () => this.$team.doc?.is_desk_user,
 					onClick: () => {

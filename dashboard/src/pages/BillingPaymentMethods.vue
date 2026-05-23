@@ -1,12 +1,43 @@
 <template>
 	<div class="p-5">
-		<ObjectList :options="options" />
+		<ObjectList v-if="$team?.doc?.payment_mode === 'Card'" :options="options" />
+
+		<div
+			v-if="$team?.doc?.currency === 'DZD'"
+			class="mt-6 rounded-lg border border-gray-200 p-5"
+		>
+			<div class="flex items-center justify-between">
+				<div class="flex flex-col gap-1.5">
+					<div class="text-base font-medium text-ink-gray-9">
+						Paiement Chargily (CIB / EDAHABIA)
+					</div>
+					<div class="text-sm text-ink-gray-7">
+						Payez avec votre carte EDAHABIA ou CIB via Chargily Pay
+					</div>
+				</div>
+				<Button
+					label="Ajouter un paiement Chargily"
+					@click="showChargilyDialog = true"
+				>
+					<template #prefix>
+						<FeatherIcon class="h-4" name="plus" />
+					</template>
+				</Button>
+			</div>
+		</div>
+
+		<AddPrepaidCreditsDialog
+			v-if="showChargilyDialog"
+			v-model="showChargilyDialog"
+			@success="() => { showChargilyDialog = false; }"
+		/>
 	</div>
 </template>
 <script>
-import { defineAsyncComponent, h } from 'vue';
+import { defineAsyncComponent, h, ref } from 'vue';
 import ObjectList from '../components/ObjectList.vue';
-import { Badge, FeatherIcon, Tooltip } from 'frappe-ui';
+import AddPrepaidCreditsDialog from '../components/billing/AddPrepaidCreditsDialog.vue';
+import { Badge, Button, FeatherIcon, Tooltip } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { confirmDialog, renderDialog, icon } from '../utils/components';
 export default {
@@ -14,6 +45,14 @@ export default {
 	props: ['tab'],
 	components: {
 		ObjectList,
+		AddPrepaidCreditsDialog,
+		Button,
+		FeatherIcon,
+	},
+	data() {
+		return {
+			showChargilyDialog: false,
+		};
 	},
 	computed: {
 		options() {
@@ -27,14 +66,14 @@ export default {
 					'brand',
 					'stripe_mandate_id',
 				],
-				emptyStateMessage: 'No cards added.',
+				emptyStateMessage: 'Aucune carte ajoutée.',
 				columns: [
 					{
-						label: 'Name on Card',
+						label: 'Nom sur la carte',
 						fieldname: 'name_on_card',
 					},
 					{
-						label: 'Card',
+						label: 'Carte',
 						fieldname: 'last_4',
 						width: 1.5,
 						format(value) {
@@ -50,20 +89,20 @@ export default {
 									{
 										theme: 'green',
 									},
-									() => 'Default',
+									() => 'Par défaut',
 								);
 							}
 						},
 					},
 					{
-						label: 'Expiry',
+						label: 'Expiration',
 						width: 0.5,
 						format(value, row) {
 							return `${row.expiry_month}/${row.expiry_year}`;
 						},
 					},
 					{
-						label: 'Mandated',
+						label: 'Mandaté',
 						type: 'Component',
 						width: 1,
 						align: 'center',
@@ -85,7 +124,7 @@ export default {
 								return h(
 									Tooltip,
 									{
-										text: 'The last payment failed on this card. Please use a different card.',
+										text: 'Le dernier paiement a échoué avec cette carte. Veuillez utiliser une autre carte.',
 									},
 									() =>
 										h(FeatherIcon, {
@@ -106,7 +145,7 @@ export default {
 				rowActions: ({ listResource, row }) => {
 					return [
 						{
-							label: 'Set as default',
+							label: 'Définir par défaut',
 							onClick: () => {
 								toast.promise(
 									listResource.runDocMethod.submit({
@@ -114,24 +153,24 @@ export default {
 										name: row.name,
 									}),
 									{
-										loading: 'Setting as default...',
-										success: 'Default card set',
-										error: 'Could not set default card',
+										loading: 'Définition par défaut...',
+										success: 'Carte par défaut définie',
+										error: 'Impossible de définir la carte par défaut',
 									},
 								);
 							},
 							condition: () => !row.is_default,
 						},
 						{
-							label: 'Remove',
+							label: 'Retirer',
 							onClick: () => {
 								if (row.is_default && this.$team.doc.payment_mode === 'Card') {
-									toast.error('Cannot remove default card');
+									toast.error('Impossible de retirer la carte par défaut');
 									return;
 								}
 								confirmDialog({
-									title: 'Remove Card',
-									message: 'Are you sure you want to remove this card?',
+									title: 'Retirer la carte',
+									message: 'Êtes-vous sûr de vouloir retirer cette carte ?',
 									onSuccess: ({ hide }) => {
 										toast.promise(
 											listResource.delete.submit(row.name, {
@@ -140,12 +179,12 @@ export default {
 												},
 											}),
 											{
-												loading: 'Removing card...',
-												success: 'Card removed',
+												loading: 'Suppression de la carte...',
+												success: 'Carte retirée',
 												error: (error) =>
 													error.messages?.length
 														? error.messages.join('\n')
-														: error.message || 'Could not remove card',
+														: error.message || 'Impossible de retirer la carte',
 											},
 										);
 									},
@@ -157,7 +196,7 @@ export default {
 				orderBy: 'creation desc',
 				primaryAction() {
 					return {
-						label: 'Add Card',
+						label: 'Ajouter une carte',
 						slots: {
 							prefix: icon('plus'),
 						},

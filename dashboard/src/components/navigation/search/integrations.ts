@@ -7,7 +7,7 @@ export const integrations = reactive({
 		items: [],
 	},
 
-	Servers: {
+	Serveurs: {
 		icon: LucideServer,
 		items: [],
 	},
@@ -27,8 +27,8 @@ export const addIntegrations = () => {
 		pageLength: 10000,
 		onSuccess(data) {
 			const defaultItems = [
-				{ name: 'List', route: '/sites', icon: LucideCircleDashed },
-				{ name: 'New', route: '/sites/new', icon: LucideCirclePlus },
+				{ name: 'Liste', route: '/sites', icon: LucideCircleDashed },
+				{ name: 'Nouveau', route: '/sites/new', icon: LucideCirclePlus },
 			];
 
 			const tmp = data.map((x) => {
@@ -47,7 +47,7 @@ export const addIntegrations = () => {
 		pageLength: 10000,
 		onSuccess(data) {
 			const defaultItems = [
-				{ name: 'New', route: '/groups/new', icon: LucideCirclePlus },
+				{ name: 'Nouveau', route: '/groups/new', icon: LucideCirclePlus },
 			];
 			const tmp = data.map((x) => {
 				const route = `/groups/${x.name}/sites`;
@@ -65,14 +65,14 @@ export const addIntegrations = () => {
 		pageLength: 10000,
 		onSuccess(data) {
 			const defaultItems = [
-				{ name: 'List', route: '/servers', icon: LucideCircleDashed },
-				{ name: 'New', route: '/servers/new', icon: LucideCirclePlus },
+				{ name: 'Liste', route: '/servers', icon: LucideCircleDashed },
+				{ name: 'Nouveau', route: '/servers/new', icon: LucideCirclePlus },
 			];
 			const tmp = data.map((x) => {
 				const route = `/servers/${x.name}/overview`;
 				return { ...x, route, icon: LucideServer };
 			});
-			integrations.Servers.items = defaultItems.concat(tmp);
+			integrations.Serveurs.items = defaultItems.concat(tmp);
 		},
 	});
 };

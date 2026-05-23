@@ -25,7 +25,7 @@ from press.press.doctype.telegram_message.telegram_message import TelegramMessag
 from press.utils import get_valid_teams_for_user, has_role, log_error
 from press.utils.billing import (
 	get_frappe_io_connection,
-	get_razorpay_client,
+	get_razorpay_client,  # legacy stub
 	get_stripe,
 	is_frappe_auth_disabled,
 	process_micro_debit_test_charge,
@@ -315,7 +315,7 @@ class Team(Document):
 				)
 
 	def before_insert(self):
-		self.currency = "INR" if self.country == "India" else "USD"
+		self.currency = "DZD" if self.country == "Algeria" else "USD"
 
 		if not self.referrer_id:
 			self.set_referrer_id()
@@ -382,14 +382,18 @@ class Team(Document):
 		self.add_comment("Info", "disabled account")
 
 	def cancel_razorpay_mandates(self):
+		"""Legacy stub - Razorpay removed. Attempts to cancel any remaining legacy mandates."""
 		mandates = frappe.get_all(
 			"Razorpay Mandate",
 			filters={"team": self.name, "status": ("in", ["Active", "Pending"])},
 			pluck="name",
 		)
 		for mandate_name in mandates:
-			mandate = frappe.get_doc("Razorpay Mandate", mandate_name)
-			mandate.cancel("Team account disabled")
+			try:
+				mandate = frappe.get_doc("Razorpay Mandate", mandate_name)
+				mandate.cancel("Team account disabled")
+			except Exception:
+				pass
 
 	def enable_account(self):
 		self.unsuspend_sites("Account enabled")
@@ -531,7 +535,7 @@ class Team(Document):
 
 	def set_team_currency(self):
 		if not self.currency and self.country:
-			self.currency = "INR" if self.country == "India" else "USD"
+			self.currency = "DZD" if self.country == "Algeria" else "USD"
 
 	def get_user_list(self):
 		return [row.user for row in self.team_members]
@@ -554,7 +558,7 @@ class Team(Document):
 			)
 
 	def has_recent_pending_payment(self) -> bool:
-		"""Returns True if there's a Razorpay payment authorized in the last 5 minutes
+		"""Returns True if there's a legacy payment record authorized in the last 5 minutes
 		but not yet captured (webhook is still in processing state)."""
 		return bool(
 			frappe.db.exists(
@@ -760,25 +764,16 @@ class Team(Document):
 	def create_stripe_customer(self):
 		if not self.stripe_customer_id:
 			stripe = get_stripe()
+			if not stripe:
+				return None
 			customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
 			self.stripe_customer_id = customer.id
 			self.save()
 
 	def create_razorpay_customer(self):
-		if not self.razorpay_customer_id:
-			client = get_razorpay_client()
-			customer = client.customer.create(
-				{
-					"name": self.billing_name or get_fullname(self.user),
-					"email": self.user,
-					"fail_existing": "0",  # Don't fail if customer already exists
-					"notes": {"team": self.name},
-				}
-			)
-			self.razorpay_customer_id = customer.get("id")
-			# self.save()
-			self.db_set("razorpay_customer_id", self.razorpay_customer_id, commit=True)
-		return self.razorpay_customer_id
+		"""Legacy stub - Razorpay removed."""
+		frappe.throw("Razorpay payment gateway is no longer available.")
+		return None
 
 	@dashboard_whitelist()
 	def get_communication_infos(self):
@@ -801,7 +796,7 @@ class Team(Document):
 		if self.billing_address:
 			address_doc = frappe.get_doc("Address", self.billing_address)
 			if (address_doc.country != billing_details.country) and (
-				address_doc.country == "India" or billing_details.country == "India"
+				address_doc.country == "Algeria" or billing_details.country == "Algeria"
 			):
 				frappe.throw("Cannot change country of billing address")
 		else:
@@ -823,7 +818,7 @@ class Team(Document):
 				"state": billing_details.state,
 				"pincode": billing_details.get("postal_code", "").strip().replace(" ", ""),
 				"country": billing_details.country,
-				"gstin": billing_details.gstin,
+				"gstin": billing_details.get("nif") or billing_details.get("gstin"),
 			}
 		)
 		address_doc.save()
@@ -834,9 +829,18 @@ class Team(Document):
 		self.save()
 		self.reload()
 
-		self.update_billing_details_on_stripe(address_doc)
-		self.update_billing_details_on_frappeio()
-		self.update_billing_details_on_draft_invoices()
+		try:
+			self.update_billing_details_on_stripe(address_doc)
+		except Exception:
+			pass
+		try:
+			self.update_billing_details_on_frappeio()
+		except Exception:
+			pass
+		try:
+			self.update_billing_details_on_draft_invoices()
+		except Exception:
+			pass
 
 	def update_billing_details_on_draft_invoices(self):
 		draft_invoices = frappe.get_all("Invoice", {"team": self.name, "docstatus": 0}, pluck="name")
@@ -875,6 +879,10 @@ class Team(Document):
 
 	def update_billing_details_on_stripe(self, address=None):
 		stripe = get_stripe()
+		if not stripe:
+			return
+		if not self.stripe_customer_id:
+			return
 		if not address:
 			address = frappe.get_doc("Address", self.billing_address)
 
@@ -900,6 +908,8 @@ class Team(Document):
 		verified_with_micro_charge=False,
 	):
 		stripe = get_stripe()
+		if not stripe:
+			return None
 		payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
 
 		try:
@@ -1012,6 +1022,8 @@ class Team(Document):
 
 	def get_stripe_balance(self):
 		stripe = get_stripe()
+		if not stripe:
+			return None
 		customer_object = stripe.Customer.retrieve(self.stripe_customer_id)
 		return (customer_object["balance"] * -1) / 100
 
@@ -1250,12 +1262,12 @@ class Team(Document):
 
 	def billing_info(self):
 		micro_debit_charge_field = (
-			"micro_debit_charge_usd" if self.currency == "USD" else "micro_debit_charge_inr"
+			"micro_debit_charge_usd" if self.currency == "USD" else "micro_debit_charge_dzd"
 		)
 		amount = frappe.db.get_single_value("Press Settings", micro_debit_charge_field)
 
 		return {
-			"gst_percentage": frappe.db.get_single_value("Press Settings", "gst_percentage"),
+			"tva_percentage": frappe.db.get_single_value("Press Settings", "tva_percentage"),
 			"micro_debit_charge_amount": amount,
 			"balance": self.get_balance(),
 			"verified_micro_charge": bool(
@@ -1651,6 +1663,8 @@ def handle_payment_intent_succeeded(payment_intent):  # noqa: C901
 
 	if isinstance(payment_intent, str):
 		stripe = get_stripe()
+		if not stripe:
+			return None
 		payment_intent = stripe.PaymentIntent.retrieve(payment_intent)
 
 	metadata = payment_intent.get("metadata")
@@ -1665,8 +1679,8 @@ def handle_payment_intent_succeeded(payment_intent):  # noqa: C901
 		return
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount_with_tax = payment_intent["amount"] / 100
-	gst = float(metadata.get("gst", 0))
-	amount = amount_with_tax - gst
+	tva = float(metadata.get("tva", metadata.get("gst", 0)))
+	amount = amount_with_tax - tva
 	balance_transaction = team.allocate_credit_amount(
 		amount, source="Prepaid Credits", remark=payment_intent["id"]
 	)
@@ -1680,7 +1694,7 @@ def handle_payment_intent_succeeded(payment_intent):  # noqa: C901
 		due_date=datetime.fromtimestamp(payment_intent["created"]),
 		total=amount,
 		amount_due=amount,
-		gst=gst or 0,
+		tva=tva or 0,
 		amount_due_with_tax=amount_with_tax,
 		amount_paid=amount_with_tax,
 		stripe_payment_intent_id=payment_intent["id"],
@@ -1799,8 +1813,8 @@ def has_unsettled_invoices(team):
 
 	currency = frappe.db.get_value("Team", team, "currency")
 	minimum_amount = 5
-	if currency == "INR":
-		minimum_amount = 450
+	if currency == "DZD":
+		minimum_amount = 60000
 
 	data = frappe.get_all(
 		"Invoice",
@@ -1919,7 +1933,7 @@ def send_budget_alert_email(team_info, invoice):
 	"""
 	try:
 		team_user = team_info["user"]
-		currency = "₹" if team_info["currency"] == "INR" else "$"
+		currency = "د.ج" if team_info["currency"] == "DZD" else "$"
 
 		invoice_amount = f"{currency}{invoice['total']}"
 		alert_threshold = f"{currency}{team_info['monthly_alert_threshold']}"

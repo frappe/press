@@ -166,7 +166,7 @@ export default {
 			let { currency, billing_info } = this.$account
 				? this.$account.team
 				: this.$team.doc;
-			if (currency === 'INR') {
+			if (currency === 'DZD') {
 				return Number(
 					(
 						this.amount +

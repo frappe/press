@@ -4,20 +4,20 @@
 <td class="text-base leading-6 text-gray-900">
 	<div class="p-8 bg-white">
 		<div class="from-markdown">
-			<p>Hello,</p>
+			<p>Bonjour,</p>
 
 			<p>
-				Your Frappe Cloud cost for team <strong>{{ team_user }}</strong> has exceeded
-				the monthly budget alert threshold.
+				Vos coûts Frappe Cloud pour l'équipe <strong>{{ team_user }}</strong> ont dépassé
+				le seuil d'alerte budgétaire mensuel.
 			</p>
 
 			<h3 style="margin: 5px 0; font-weight: bold;">
-				Budget Alert Details:
+				Détails de l'alerte budgétaire :
 			</h3>
 			<table class="table">
 				<tr>
 					<td>
-						Monthly Alert Threshold:
+						Seuil d'alerte mensuel :
 					</td>
 					<td>
 						{{ alert_threshold }}
@@ -25,7 +25,7 @@
 				</tr>
 				<tr>
 					<td>
-						Month-To-Date Invoice Amount:
+						Montant de la facture du mois en cours :
 					</td>
 					<td>
 						{{ invoice_amount }}
@@ -33,7 +33,7 @@
 				</tr>
 				<tr>
 					<td>
-						Amount Over Budget:
+						Montant dépassant le budget :
 					</td>
 					<td>
 						{{ excess_amount }}
@@ -41,16 +41,16 @@
 				</tr>
 				<tr>
 					<td>
-						Invoice Period:
+						Période de facturation :
 					</td>
 					<td>
-						{{ frappe.format_date(period_start) }} to {{ frappe.format_date(period_end) }}
+						{{ frappe.format_date(period_start) }} au {{ frappe.format_date(period_end) }}
 					</td>
 				</tr>
 			</table>
 
 			<p style="margin: 20px 0">
-				To manage your budget alerts, please visit your billing settings in the Frappe Cloud dashboard.
+				Pour gérer vos alertes budgétaires, veuillez consulter vos paramètres de facturation dans le tableau de bord Frappe Cloud.
 			</p>
 
 			{{ utils.separator() }}

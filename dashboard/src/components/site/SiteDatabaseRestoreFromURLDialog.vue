@@ -122,7 +122,7 @@ export default {
 				validate() {
 					if (!this.selectedFiles.database) {
 						throw new DashboardError(
-							'Something went wrong while fetching the backups from the site',
+							"Une erreur s'est produite lors de la récupération des sauvegardes",
 						);
 					}
 				},

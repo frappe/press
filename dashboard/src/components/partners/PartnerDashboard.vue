@@ -29,7 +29,7 @@
 				:config="{
 					title: 'Contribution',
 					value: currentMonthContribution.data || 0,
-					prefix: team.doc.currency == 'INR' ? '₹' : '$',
+					prefix: team.doc.currency == 'DZD' ? 'د.ج' : '$',
 				}"
 				class="border rounded-md"
 			/>

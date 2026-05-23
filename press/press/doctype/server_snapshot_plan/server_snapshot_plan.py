@@ -14,7 +14,7 @@ class ServerSnapshotPlan(Plan):
 		from frappe.types import DF
 
 		enabled: DF.Check
-		price_inr: DF.Currency
+		price_dzd: DF.Currency
 		price_usd: DF.Currency
 		provider: DF.Literal["AWS EC2"]
 		title: DF.Data | None

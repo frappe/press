@@ -184,7 +184,7 @@ export default {
 								.map((a) => a.app)
 								.includes(app.app || app.app_title);
 							return {
-								label: 'Add',
+								label: 'Ajouter',
 								slots: {
 									icon: isAppAdded ? icon('check') : icon('plus'),
 								},
@@ -209,7 +209,7 @@ export default {
 			} else {
 				if (
 					app.subscription_type &&
-					app.plans.some((plan) => plan.price_inr > 0)
+					app.plans.some((plan) => plan.price_dzd > 0)
 				) {
 					this.selectedApp = app;
 					this.showAppPlanSelectorDialog = true;

@@ -56,7 +56,10 @@
 			"label": "Title",
 			"reqd": 1
 		},
-		{ "fieldname": "column_break_vwha", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_vwha",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "cluster",
 			"fieldtype": "Link",
@@ -80,21 +83,36 @@
 			"fieldtype": "Section Break",
 			"label": "Networking"
 		},
-		{ "fieldname": "ip", "fieldtype": "Data", "label": "IP" },
+		{
+			"fieldname": "ip",
+			"fieldtype": "Data",
+			"label": "IP"
+		},
 		{
 			"fieldname": "ssh_section",
 			"fieldtype": "Section Break",
 			"label": "SSH"
 		},
-		{ "fieldname": "ssh_user", "fieldtype": "Data", "label": "SSH User" },
+		{
+			"fieldname": "ssh_user",
+			"fieldtype": "Data",
+			"label": "SSH User"
+		},
 		{
 			"fieldname": "frappe_public_key",
 			"fieldtype": "Code",
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_sypw", "fieldtype": "Column Break" },
-		{ "fieldname": "ssh_port", "fieldtype": "Data", "label": "SSH Port" },
+		{
+			"fieldname": "column_break_sypw",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "ssh_port",
+			"fieldtype": "Data",
+			"label": "SSH Port"
+		},
 		{
 			"fieldname": "root_public_key",
 			"fieldtype": "Code",

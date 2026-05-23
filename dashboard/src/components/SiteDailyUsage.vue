@@ -1,16 +1,16 @@
 <template>
 	<div class="rounded-md border">
 		<div class="flex h-12 items-center justify-between border-b px-5">
-			<h2 class="text-lg font-medium text-ink-gray-9">Daily Usage</h2>
+			<h2 class="text-lg font-medium text-ink-gray-9">Utilisation quotidienne</h2>
 			<router-link
 				class="text-base text-ink-gray-6 hover:text-ink-gray-7"
 				:to="{ name: 'Site Analytics' }"
 			>
-				All analytics →
+				Toutes les statistiques →
 			</router-link>
 		</div>
 		<LineChart
-			title="Daily Usage"
+			title="Utilisation quotidienne"
 			type="time"
 			:key="dailyUsageData"
 			:data="dailyUsageData"
@@ -55,7 +55,7 @@ export default {
 				markLine: {
 					data: [
 						{
-							name: 'Daily Compute Limit',
+							name: 'Limite de calcul quotidienne',
 							yAxis: plan_limit,
 							label: {
 								formatter: '{b}: {c} seconds',

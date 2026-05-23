@@ -44,7 +44,7 @@ export default {
 					'period_end',
 					'mode_of_payment',
 					'status',
-					'net_total_inr',
+					'net_total_dzd',
 					'net_total_usd',
 				],
 				filterControls: () => {
@@ -75,14 +75,14 @@ export default {
 					{ label: 'Status', fieldname: 'status', type: 'Badge' },
 					{
 						label: 'Total',
-						fieldname: 'net_total_inr',
+						fieldname: 'net_total_dzd',
 						align: 'right',
 						format: (_, row) => {
 							let total = 0;
-							if (this.$team.doc.currency === 'INR') {
-								total = row.net_total_inr + row.net_total_usd * 82;
+							if (this.$team.doc.currency === 'DZD') {
+								total = row.net_total_dzd + row.net_total_usd * 82;
 							} else {
-								total = row.net_total_inr / 82 + row.net_total_usd;
+								total = row.net_total_dzd / 82 + row.net_total_usd;
 							}
 
 							return this.$format.userCurrency(total);

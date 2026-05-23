@@ -99,9 +99,9 @@ export default {
 		formatPlan(plan) {
 			let planDoc = getPlans().find((p) => p.name === plan);
 			if (planDoc) {
-				let india = this.$team.doc.currency === 'INR';
+				let isLocal = this.$team.doc.currency === 'DZD';
 				return this.$format.userCurrency(
-					india ? planDoc.price_inr : planDoc.price_usd,
+					isLocal ? planDoc.price_dzd : planDoc.price_usd,
 				);
 			}
 			return plan;

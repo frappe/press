@@ -9,20 +9,20 @@
             {{ subject }}
         </p>
         <p class="mb-6">
-            Unfortunately, we must bring to your attention that your site hosted on Frappe Cloud has been temporarily <strong>suspended</strong> due to an unpaid invoice.<br>
+            Malheureusement, nous devons porter à votre attention que votre site hébergé sur Frappe Cloud a été temporairement <strong>suspendu</strong> en raison d'une facture impayée.<br>
             <br>
-            To continue using your Frappe Cloud site, please settle your invoices by going to your <a href="https://frappecloud.com/dashboard/billing" style="color: #2563eb; text-decoration: underline;">Frappe Cloud Dashboard.</a><br>
+            Pour continuer à utiliser votre site Frappe Cloud, veuillez régler vos factures en vous rendant sur votre <a href="https://frappecloud.com/dashboard/billing" style="color: #2563eb; text-decoration: underline;">Tableau de bord Frappe Cloud.</a><br>
             <br>
-            <strong>Once your invoices are settled, your site will be activated immediately.</strong><br>
+            <strong>Une fois vos factures réglées, votre site sera activé immédiatement.</strong><br>
             <br>
-            Please complete the above steps before <strong>20th of this month</strong>, failing which your site will be dropped and if you have subscribed to $10 plan you might lose your data permanently.<br>
+            Veuillez compléter les étapes ci-dessus avant le <strong>20 de ce mois</strong>, faute de quoi votre site sera supprimé et si vous êtes abonné au plan à 10 $, vous pourriez perdre vos données de manière permanente.<br>
             <br>
-            If you have any concerns or questions, contact our support team at <a href="https://support.frappe.io" style="color: #2563eb; text-decoration: underline;">support.frappe.io</a>.
+            Si vous avez des préoccupations ou des questions, contactez notre équipe de support à <a href="https://support.frappe.io" style="color: #2563eb; text-decoration: underline;">support.frappe.io</a>.
         </p>
 
         {%- if sites -%}
 		{{ utils.separator() }}
-		<p class="mt-0 mb-2">Following sites were suspended:</p>
+		<p class="mt-0 mb-2">Les sites suivants ont été suspendus :</p>
 		<ul class="list-disc">
 			{%- for site in sites -%}
 			<li class="text-sm font-medium"><a href="https://cloud.frappe.io/dashboard/sites/{{ site }}/overview" style="color: #2563eb; text-decoration: underline;">{{ site }}</a></li>

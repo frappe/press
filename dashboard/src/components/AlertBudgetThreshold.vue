@@ -17,7 +17,7 @@ export default {
 	},
 	computed: {
 		budgetAlertMessage() {
-			return `Budget Alert: Your Frappe Cloud cost has exceeded the monthly budget alert threshold by <strong>${this.currency}${this.amount}</strong>`;
+			return `Alerte budget : Votre coût Frappe Cloud a dépassé le seuil d'alerte du budget mensuel de <strong>${this.currency}${this.amount}</strong>`;
 		},
 	},
 };

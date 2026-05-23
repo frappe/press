@@ -8,7 +8,7 @@ from frappe.model.document import Document
 class MarketplaceAppPayment(Document):
 	def has_threshold_passed(self):
 		exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate")
-		total = self.total_usd + (self.total_inr / exchange_rate) if exchange_rate > 0 else 80
+		total = self.total_usd + (self.total_dzd / exchange_rate) if exchange_rate > 0 else 80
 		return total >= frappe.db.get_single_value("Press Settings", "threshold")
 
 	def get_commission(self, total):

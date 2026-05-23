@@ -23,8 +23,8 @@ class TestPayoutOrder(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_net_amount_calculations_inr(self):
-		self.create_test_inr_invoice()
+	def test_net_amount_calculations_dzd(self):
+		self.create_test_dzd_invoice()
 		# Create a PO for this period
 		today = frappe.utils.today()
 		period_start = frappe.utils.data.get_first_day(today)
@@ -43,9 +43,9 @@ class TestPayoutOrder(FrappeTestCase):
 		self.assertEqual(po.items[0].invoice, self.test_invoice.name)
 		self.assertEqual(po.items[0].total_amount, 40.0)
 		self.assertEqual(po.items[0].net_amount, 40.0)
-		self.assertEqual(po.items[0].currency, "INR")
+		self.assertEqual(po.items[0].currency, "DZD")
 
-		self.assertEqual(po.net_total_inr, 40.0)
+		self.assertEqual(po.net_total_dzd, 40.0)
 		self.assertEqual(po.net_total_usd, 0)
 
 	def test_net_amount_calculations_usd(self):
@@ -72,10 +72,10 @@ class TestPayoutOrder(FrappeTestCase):
 		self.assertEqual(po.items[0].net_amount, 20.0)
 		self.assertEqual(po.items[0].currency, "USD")
 
-		self.assertEqual(po.net_total_inr, 0)
+		self.assertEqual(po.net_total_dzd, 0)
 		self.assertEqual(po.net_total_usd, 20.0)
 
-	def create_test_inr_invoice(self):
+	def create_test_dzd_invoice(self):
 		self.test_team = create_test_team()
 
 		self.test_invoice = frappe.get_doc(
@@ -97,7 +97,7 @@ class TestPayoutOrder(FrappeTestCase):
 				"document_type": "Marketplace App",
 				"document_name": test_mp_app.name,
 				"rate": 20,
-				"plan": "INR 100",
+				"plan": "DZD 100",
 				"quantity": 2,
 			},
 		)

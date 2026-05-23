@@ -11,7 +11,7 @@
 						v-if="showInvoice.status === 'Empty'"
 						class="text-base text-ink-gray-6"
 					>
-						Nothing to show
+						Rien à afficher
 					</div>
 					<InvoiceTable v-else :invoiceId="showInvoice.name" />
 				</template>
@@ -86,7 +86,7 @@ export default {
 						},
 						{
 							type: 'select',
-							label: 'Status',
+							label: 'Statut',
 							class: !this.$isMobile ? 'w-36' : '',
 							fieldname: 'status',
 							options: [
@@ -105,7 +105,7 @@ export default {
 				},
 				columns: [
 					{
-						label: 'Invoice',
+						label: 'Facture',
 						fieldname: 'name',
 						class: 'font-medium',
 						format(value, row) {
@@ -113,14 +113,14 @@ export default {
 								let end = dayjsLocal(row.period_end);
 								return end.format('MMMM YYYY');
 							} else if (row.type == 'Partnership Fees') {
-								return 'Partnership Fees';
+								return 'Frais de partenariat';
 							}
-							return 'Prepaid Credits';
+							return 'Crédits prépayés';
 						},
 						width: 0.8,
 					},
 					{
-						label: 'Status',
+						label: 'Statut',
 						fieldname: 'status',
 						type: 'Badge',
 						width: '150px',
@@ -143,20 +143,21 @@ export default {
 					},
 					{
 						label: 'Total',
+
 						fieldname: 'total',
 						format: this.formatCurrency,
 						align: 'right',
 						width: 0.6,
 					},
 					{
-						label: 'Amount Paid',
+						label: 'Montant payé',
 						fieldname: 'amount_paid',
 						format: this.formatCurrency,
 						align: 'right',
 						width: 0.6,
 					},
 					{
-						label: 'Amount Due',
+						label: 'Montant dû',
 						fieldname: 'amount_due_with_tax',
 						format: this.formatCurrency,
 						align: 'right',
@@ -169,7 +170,7 @@ export default {
 						Button: ({ row }) => {
 							if (row.invoice_pdf || row.mpesa_invoice_pdf) {
 								return {
-									label: 'Download Invoice',
+									label: 'Télécharger la facture',
 									slots: {
 										prefix: icon('download'),
 									},
@@ -184,7 +185,7 @@ export default {
 							}
 							if (row.status === 'Unpaid' && row.amount_due > 0) {
 								return {
-									label: 'Pay Now',
+									label: 'Payer maintenant',
 									slots: {
 										prefix: icon('external-link'),
 									},
@@ -212,10 +213,10 @@ export default {
 									onClick(e) {
 										e.stopPropagation();
 										confirmDialog({
-											title: 'Payment Failed',
-											message: `<div class="space-y-4"><p class="text-base">Your payment with the card ending <strong>${row.stripe_payment_failed_card}</strong> failed for this invoice due to the following reason:</p><div class="text-sm font-mono text-ink-gray-6 rounded p-2 bg-surface-gray-2">${row.stripe_payment_error}</div><p class="text-base">Please change your payment method to pay this invoice.</p></div>`,
+											title: 'Paiement échoué',
+											message: `<div class="space-y-4"><p class="text-base">Votre paiement avec la carte se terminant par <strong>${row.stripe_payment_failed_card}</strong> a échoué pour cette facture pour la raison suivante :</p><div class="text-sm font-mono text-ink-gray-6 rounded p-2 bg-surface-gray-2">${row.stripe_payment_error}</div><p class="text-base">Veuillez changer votre mode de paiement pour payer cette facture.</p></div>`,
 											primaryAction: {
-												label: 'Change Payment Method',
+												label: 'Changer le mode de paiement',
 												variant: 'solid',
 												onClick: ({ hide }) => {
 													hide();

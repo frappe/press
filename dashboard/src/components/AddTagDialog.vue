@@ -4,7 +4,7 @@
 			title: 'Add tag',
 			actions: [
 				{
-					label: 'Add',
+					label: 'Ajouter',
 					variant: 'solid',
 					onClick: () =>
 						addNewTag(

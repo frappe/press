@@ -240,7 +240,7 @@ const sshKeyListOptions = computed(() => ({
 				},
 			},
 			{
-				label: 'Delete',
+				label: 'Supprimer',
 				onClick() {
 					deleteSSHKey.submit({
 						doctype: 'User SSH Key',
@@ -394,13 +394,13 @@ const webhookListOptions = computed(() => ({
 				},
 			},
 			{
-				label: 'Delete',
+				label: 'Supprimer',
 				onClick() {
 					confirmDialog({
 						title: 'Delete Webhook',
 						message: `Endpoint - ${row.endpoint}<br>Are you sure you want to delete the webhook ?<br>`,
 						primaryAction: {
-							label: 'Delete',
+							label: 'Supprimer',
 							variant: 'solid',
 							theme: 'red',
 							onClick({ hide }) {

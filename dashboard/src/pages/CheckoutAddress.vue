@@ -29,12 +29,12 @@
 			/>
 			<div class="flex flex-col justify-between sm:flex-row">
 				<FormControl
-					v-if="country === 'India'"
+					v-if="country === 'Algeria'"
 					class="mb-2 w-1/3"
 					label="State/Province/Region"
 					type="select"
 					v-model="state"
-					:options="indianStates"
+					:options="algerianWilayas"
 					required
 				/>
 				<FormControl
@@ -53,9 +53,9 @@
 				/>
 			</div>
 
-			<div v-show="currency === 'INR'">
+			<div v-show="currency === 'DZD'">
 				<span class="mb-2 block text-sm leading-4 text-ink-gray-7">
-					GSTIN(only for Indian customers)
+					NIF (only for Algerian customers)
 				</span>
 				<FormControl
 					v-if="gstApplicable"
@@ -70,7 +70,7 @@
 						gstin = 'Not Applicable';
 					"
 				>
-					I don't have a GSTIN
+					I don't have a NIF
 				</Button>
 				<Button
 					v-else
@@ -80,7 +80,7 @@
 						gstin = '';
 					"
 				>
-					Add a GSTIN
+					Add a NIF
 				</Button>
 			</div>
 		</div>
@@ -96,7 +96,7 @@
 </template>
 
 <script>
-import { indianStates } from '@/utils/billing';
+import { algerianWilayas } from '@/utils/billing';
 
 export default {
 	name: 'CheckoutAddress',
@@ -111,7 +111,7 @@ export default {
 			postalCode: null,
 			gstin: 'Not Applicable',
 			gstApplicable: false,
-			indianStates: indianStates,
+			algerianWilayas: algerianWilayas,
 		};
 	},
 	resources: {

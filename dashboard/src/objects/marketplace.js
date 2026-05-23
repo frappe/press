@@ -343,7 +343,7 @@ export default {
 					filters: (app) => {
 						return { app: app.doc.name };
 					},
-					fields: ["name", "title", "price_inr", "price_usd", "enabled"],
+					fields: ["name", "title", "price_dzd", "price_usd", "enabled"],
 					columns: [
 						{
 							label: "Title",
@@ -358,10 +358,10 @@ export default {
 							},
 						},
 						{
-							label: "Price (INR)",
-							fieldname: "price_inr",
+							label: "Prix (DZD)",
+							fieldname: "price_dzd",
 							format: (value) => {
-								return currency(value, "INR");
+								return currency(value, "DZD");
 							},
 						},
 						{

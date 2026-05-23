@@ -5,7 +5,7 @@
 			title: 'Restore Backup on Another Site',
 			actions: [
 				{
-					label: 'Restore',
+					label: 'Restaurer',
 					variant: 'solid',
 					theme: 'red',
 					disabled:

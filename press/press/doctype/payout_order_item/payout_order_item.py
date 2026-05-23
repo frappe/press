@@ -15,7 +15,7 @@ class PayoutOrderItem(Document):
 		from frappe.types import DF
 
 		commission: DF.Currency
-		currency: DF.Literal["USD", "INR"]
+		currency: DF.Literal["USD", "DZD"]
 		document_name: DF.DynamicLink
 		document_type: DF.Link
 		gateway_fee: DF.Currency

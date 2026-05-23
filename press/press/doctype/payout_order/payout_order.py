@@ -24,14 +24,14 @@ class PayoutOrder(Document):
 		from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 
 		amended_from: DF.Link | None
-		currency_inr: DF.Data | None
+		currency_dzd: DF.Data | None
 		currency_usd: DF.Data | None
 		due_date: DF.Date | None
 		frappe_purchase_order: DF.Data | None
 		ignore_commission: DF.Check
 		items: DF.Table[PayoutOrderItem]
 		mode_of_payment: DF.Literal["Cash", "Credits", "Internal"]
-		net_total_inr: DF.Currency
+		net_total_dzd: DF.Currency
 		net_total_usd: DF.Currency
 		notes: DF.SmallText | None
 		period_end: DF.Date | None
@@ -47,7 +47,7 @@ class PayoutOrder(Document):
 		"period_end",
 		"team",
 		"mode_of_payment",
-		"net_total_inr",
+		"net_total_dzd",
 		"net_total_usd",
 		"status",
 		"total_amount",
@@ -115,8 +115,8 @@ class PayoutOrder(Document):
 
 			row.net_amount = row.total_amount - row.commission
 
-			if row.currency == "INR":
-				app_payment.total_inr += row.net_amount if row.net_amount > 0 else row.commission
+			if row.currency == "DZD":
+				app_payment.total_dzd += row.net_amount if row.net_amount > 0 else row.commission
 			else:
 				app_payment.total_usd += row.net_amount if row.net_amount > 0 else row.commission
 
@@ -124,28 +124,28 @@ class PayoutOrder(Document):
 
 	def validate_net_totals(self):
 		self.net_total_usd = 0
-		self.net_total_inr = 0
+		self.net_total_dzd = 0
 
 		for row in self.items:
-			if row.currency == "INR":
-				self.net_total_inr += row.net_amount
+			if row.currency == "DZD":
+				self.net_total_dzd += row.net_amount
 			else:
 				self.net_total_usd += row.net_amount
 
-		if self.net_total_usd <= 0 and self.net_total_inr <= 0:
+		if self.net_total_usd <= 0 and self.net_total_dzd <= 0:
 			self.status = "Commissioned"
-		elif (self.net_total_usd > 0 or self.net_total_inr > 0) and not self.frappe_purchase_order:
+		elif (self.net_total_usd > 0 or self.net_total_dzd > 0) and not self.frappe_purchase_order:
 			self.status = "Draft"
 
 	def compute_total_amount(self):
 		exchange_rate = frappe.db.get_single_value("Press Settings", "usd_rate")
 		if self.recipient_currency == "USD":
-			inr_in_usd = 0
-			if self.net_total_inr > 0:
-				inr_in_usd = self.net_total_inr / exchange_rate
-			self.total_amount = self.net_total_usd + inr_in_usd
-		elif self.recipient_currency == "INR":
-			self.total_amount = self.net_total_inr + (self.net_total_usd * exchange_rate)
+			dzd_in_usd = 0
+			if self.net_total_dzd > 0:
+				dzd_in_usd = self.net_total_dzd / exchange_rate
+			self.total_amount = self.net_total_usd + dzd_in_usd
+		elif self.recipient_currency == "DZD":
+			self.total_amount = self.net_total_dzd + (self.net_total_usd * exchange_rate)
 
 	def before_submit(self):
 		if self.mode_of_payment == "Cash" and (not self.frappe_purchase_order):

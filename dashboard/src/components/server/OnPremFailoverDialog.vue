@@ -461,7 +461,7 @@ export default {
 				prepared_steps.push({
 					name: step.name,
 					title: step.step_name,
-					output: step.traceback || step.result || 'No Output',
+					output: step.traceback || step.result || 'Aucune sortie',
 					status: step.status,
 					duration: step.duration
 						? this.humanizeDuration(parseInt(step.duration))

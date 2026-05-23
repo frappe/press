@@ -4,7 +4,7 @@
 			<FBreadcrumbs
 				:items="[
 					{
-						label: 'Create Site',
+						label: 'Créer un site',
 					},
 				]"
 			/>
@@ -15,7 +15,7 @@
 				v-if="$resources.installAppOptions.loading"
 				class="py-4 text-base text-ink-gray-6"
 			>
-				Loading...
+				Chargement...
 			</div>
 			<div v-else class="space-y-6">
 				<div class="mb-12 flex">
@@ -35,7 +35,7 @@
 						<div v-if="plans.length">
 							<div class="flex items-center justify-between">
 								<h2 class="text-base font-medium leading-6 text-ink-gray-9">
-									Select Plan
+									Sélectionner le plan
 								</h2>
 							</div>
 							<div class="mt-2">
@@ -45,8 +45,8 @@
 
 						<div v-if="options.private_groups.length">
 							<h2 class="text-base font-medium leading-6 text-ink-gray-9">
-								Select Bench
-								<span class="text-sm text-ink-gray-5"> (Optional) </span>
+								Sélectionner le Bench
+								<span class="text-sm text-ink-gray-5"> (Optionnel) </span>
 							</h2>
 							<div class="mt-2 w-full space-y-2">
 								<FormControl
@@ -70,7 +70,7 @@
 
 					<div>
 						<h2 class="text-base font-medium leading-6 text-ink-gray-9">
-							Select Region
+							Sélectionner la région
 						</h2>
 						<div class="mt-2 w-full space-y-2">
 							<div class="grid grid-cols-2 gap-3">
@@ -101,13 +101,13 @@
 
 					<div>
 						<h2 class="text-base font-medium leading-6 text-ink-gray-9">
-							Enter Subdomain
+							Entrer le sous-domaine
 						</h2>
 						<div class="mt-2 items-center">
 							<div class="col-span-2 flex w-full">
 								<input
 									class="dark:[color-scheme:dark] z-10 h-7 w-full flex-1 rounded rounded-r-none border border-[--surface-gray-2] bg-surface-gray-2 py-1.5 pl-2 pr-2 text-base text-ink-gray-8 placeholder-ink-gray-4 transition-colors hover:border-outline-gray-modals hover:bg-surface-gray-3 focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3"
-									placeholder="Subdomain"
+									placeholder="Sous-domaine"
 									v-model="subdomain"
 								/>
 								<div
@@ -124,7 +124,7 @@
 								v-if="$resources.subdomainExists.loading"
 								class="text-sm text-ink-gray-6"
 							>
-								Checking...
+								Vérification...
 							</div>
 							<template
 								v-else-if="
@@ -136,10 +136,10 @@
 									v-if="$resources.subdomainExists.data"
 									class="text-sm text-green-600"
 								>
-									{{ subdomain }}.{{ options.domain }} is available
+									{{ subdomain }}.{{ options.domain }} est disponible
 								</div>
 								<div v-else class="text-sm text-red-600">
-									{{ subdomain }}.{{ options.domain }} is not available
+									{{ subdomain }}.{{ options.domain }} n'est pas disponible
 								</div>
 							</template>
 						</div>
@@ -149,9 +149,9 @@
 							class="checkbox"
 							type="checkbox"
 							v-model="agreedToRegionConsent"
-							:label="`I agree that the laws of the region selected by me ${
+							:label="`J'accepte que les lois de la région que j'ai sélectionnée ${
 								this.cluster ? `(${this.cluster})` : ''
-							} shall stand applicable to me and Frappe.`"
+							} s'appliquent à moi et à Frappe.`"
 						/>
 						<ErrorMessage class="my-2" :message="$resources.newSite.error" />
 						<Button
@@ -163,13 +163,13 @@
 							@click="$resources.newSite.submit()"
 							:loading="$resources.newSite.loading"
 						>
-							Create site and install {{ appDoc.title }}
+							Créer le site et installer {{ appDoc.title }}
 						</Button>
 					</div>
 				</div>
 				<div class="flex space-x-1">
 					<div class="text-sm text-ink-gray-6">
-						Want to install <b>{{ appDoc.title }}</b> on an existing Site or
+						Vous voulez installer <b>{{ appDoc.title }}</b> sur un site ou
 						Bench?
 					</div>
 					<a
@@ -177,7 +177,7 @@
 						href="https://docs.frappe.io/cloud/installing-an-app"
 						target="_blank"
 					>
-						Read documentation
+						Lire la documentation
 					</a>
 				</div>
 			</div>
@@ -328,17 +328,17 @@ export default {
 						(this.$team.doc.onboarding.site_created ||
 							!this.appDoc.show_for_new_site)
 					) {
-						throw new DashboardError('Please add a valid payment mode');
+						throw new DashboardError('Veuillez ajouter un mode de paiement valide');
 					}
 					if (!this.selectedPlan && this.plans.length > 0) {
-						throw new DashboardError('Please select a plan');
+						throw new DashboardError('Veuillez sélectionner un plan');
 					}
 					if (!this.subdomain) {
-						throw new DashboardError('Please enter a subdomain');
+						throw new DashboardError('Veuillez entrer un sous-domaine');
 					}
 					if (!this.agreedToRegionConsent) {
 						throw new DashboardError(
-							'Please agree to the above consent to create site',
+							'Veuillez accepter le consentement ci-dessus pour créer le site',
 						);
 					}
 				},
@@ -371,11 +371,11 @@ export default {
 			return this.options.plans.map((plan) => ({
 				...plan,
 				label:
-					plan.price_inr === 0 || plan.price_usd === 0
+					plan.price_dzd === 0 || plan.price_usd === 0
 						? 'Free'
 						: `${this.$format.userCurrency(
-								this.$team.doc.currency === 'INR'
-									? plan.price_inr
+								this.$team.doc.currency === 'DZD'
+									? plan.price_dzd
 									: plan.price_usd,
 							)}/mo`,
 				sublabel: ' ',

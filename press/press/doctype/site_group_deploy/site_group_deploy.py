@@ -128,10 +128,10 @@ class SiteGroupDeploy(Document):
 				{
 					"private_benches": 1,
 					"document_type": "Site",
-					"price_inr": ["!=", 0],
+					"price_dzd": ["!=", 0],
 					"price_usd": ["!=", 0],
 				},
-				order_by="price_inr asc",
+				order_by="price_dzd asc",
 			)
 			site_plan = cheapest_private_bench_plan
 

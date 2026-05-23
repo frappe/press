@@ -4,7 +4,7 @@ import { format } from 'sql-formatter';
 import { getConfig } from 'frappe-ui';
 
 export function bytes(bytes, decimals = 2, current = 0) {
-	if (bytes === 0) return '0 Bytes';
+	if (bytes === 0) return '0 Octets';
 
 	const k = 1024;
 	const dm = decimals < 0 ? 0 : decimals;
@@ -75,9 +75,7 @@ export function plural(number, singular, plural) {
 
 export function planTitleHourly(plan) {
 	if (plan === undefined) return;
-	const $team = getTeam();
-	const india = $team.doc?.currency === 'INR';
-	const priceField = india ? 'price_inr' : 'price_usd';
+	const priceField = 'price_dzd';
 	const price =
 		plan?.block_monthly == 1 ? plan[priceField] * 12 : plan[priceField];
 
@@ -86,9 +84,7 @@ export function planTitleHourly(plan) {
 
 export function planTitle(plan) {
 	if (plan === undefined) return;
-	const $team = getTeam();
-	const india = $team.doc?.currency === 'INR';
-	const priceField = india ? 'price_inr' : 'price_usd';
+	const priceField = 'price_dzd';
 	const price =
 		plan?.block_monthly == 1 ? plan[priceField] * 12 : plan[priceField];
 	return price > 0 ? `${userCurrency(price, 0)}` : plan.plan_title;
@@ -100,10 +96,17 @@ export function userCurrency(value, fractions = 2) {
 	return currency(value, $team.doc?.currency, fractions);
 }
 
-export function currency(value, currency, fractions = 2) {
-	return new Intl.NumberFormat('en-US', {
+export function currency(value, curr, fractions = 2) {
+	if (curr === 'DZD') {
+		return new Intl.NumberFormat('fr-DZ', {
+			style: 'currency',
+			currency: 'DZD',
+			maximumFractionDigits: fractions,
+		}).format(value);
+	}
+	return new Intl.NumberFormat('fr-FR', {
 		style: 'currency',
-		currency,
+		currency: curr || 'DZD',
 		maximumFractionDigits: fractions,
 	}).format(value);
 }
@@ -160,7 +163,7 @@ export function commaSeparator(arr, separator) {
 }
 
 export function commaAnd(arr) {
-	return commaSeparator(arr, 'and');
+	return commaSeparator(arr, 'et');
 }
 
 export function formatSQL(query) {
@@ -298,27 +301,27 @@ export function prettyDate(date, mini = false) {
 		if (dayDiff < 0) {
 			if (Math.abs(dayDiff) < 1) {
 				if (Math.abs(diff) < 60) {
-					return 'now';
+					return 'maintenant';
 				} else if (Math.abs(diff) < 3600) {
-					return `in ${Math.floor(Math.abs(diff) / 60)} m`;
+					return `dans ${Math.floor(Math.abs(diff) / 60)} m`;
 				} else if (Math.abs(diff) < 86400) {
-					return `in ${Math.floor(Math.abs(diff) / 3600)} h`;
+					return `dans ${Math.floor(Math.abs(diff) / 3600)} h`;
 				}
 			}
 			if (Math.abs(dayDiff) >= 1 && Math.abs(dayDiff) < 1.5) {
-				return 'tomorrow';
+				return 'demain';
 			} else if (Math.abs(dayDiff) < 7) {
-				return 'in {0} d', [Math.floor(Math.abs(dayDiff))];
+				return 'dans {0} j', [Math.floor(Math.abs(dayDiff))];
 			} else if (Math.abs(dayDiff) < 31) {
-				return 'in {0} w', [Math.floor(Math.abs(dayDiff) / 7)];
+				return 'dans {0} sem', [Math.floor(Math.abs(dayDiff) / 7)];
 			} else if (Math.abs(dayDiff) < 365) {
-				return 'in {0} M', [Math.floor(Math.abs(dayDiff) / 30)];
+				return 'dans {0} M', [Math.floor(Math.abs(dayDiff) / 30)];
 			} else {
-				return 'in {0} y', [Math.floor(Math.abs(dayDiff) / 365)];
+				return 'dans {0} a', [Math.floor(Math.abs(dayDiff) / 365)];
 			}
 		} else if (dayDiff >= 0 && dayDiff < 1) {
 			if (diff < 60) {
-				return 'now';
+				return 'maintenant';
 			} else if (diff < 3600) {
 				return '{0} m', [Math.floor(diff / 60)];
 			} else if (diff < 86400) {
@@ -327,13 +330,13 @@ export function prettyDate(date, mini = false) {
 		} else {
 			dayDiff = Math.floor(dayDiff);
 			if (dayDiff < 7) {
-				return '{0} d', [dayDiff];
+				return '{0} j', [dayDiff];
 			} else if (dayDiff < 31) {
-				return '{0} w', [Math.floor(dayDiff / 7)];
+				return '{0} sem', [Math.floor(dayDiff / 7)];
 			} else if (dayDiff < 365) {
 				return '{0} M', [Math.floor(dayDiff / 30)];
 			} else {
-				return '{0} y', [Math.floor(dayDiff / 365)];
+				return '{0} a', [Math.floor(dayDiff / 365)];
 			}
 		}
 	} else {
@@ -341,60 +344,60 @@ export function prettyDate(date, mini = false) {
 		if (dayDiff < 0) {
 			if (Math.abs(dayDiff) < 1) {
 				if (Math.abs(diff) < 60) {
-					return 'just now';
+					return 'À l\'instant';
 				} else if (Math.abs(diff) < 120) {
-					return 'in 1 minute';
+					return 'dans 1 minute';
 				} else if (Math.abs(diff) < 3600) {
-					return `in ${Math.floor(Math.abs(diff) / 60)} minutes`;
+					return `dans ${Math.floor(Math.abs(diff) / 60)} minutes`;
 				} else if (Math.abs(diff) < 7200) {
-					return 'in 1 hour';
+					return 'dans 1 heure';
 				} else if (Math.abs(diff) < 86400) {
-					return `in ${Math.floor(Math.abs(diff) / 3600)} hours`;
+					return `dans ${Math.floor(Math.abs(diff) / 3600)} heures`;
 				}
 			}
 			if (Math.abs(dayDiff) >= 1 && Math.abs(dayDiff) < 1.5) {
-				return 'tomorrow';
+				return 'demain';
 			} else if (Math.abs(dayDiff) < 7) {
-				return 'in {0} days', [Math.floor(Math.abs(dayDiff))];
+				return 'dans {0} jours', [Math.floor(Math.abs(dayDiff))];
 			} else if (Math.abs(dayDiff) < 31) {
-				return 'in {0} weeks', [Math.floor(Math.abs(dayDiff) / 7)];
+				return 'dans {0} semaines', [Math.floor(Math.abs(dayDiff) / 7)];
 			} else if (Math.abs(dayDiff) < 365) {
-				return 'in {0} months', [Math.floor(Math.abs(dayDiff) / 30)];
+				return 'dans {0} mois', [Math.floor(Math.abs(dayDiff) / 30)];
 			} else if (Math.abs(dayDiff) < 730) {
-				return 'in 1 year';
+				return 'dans 1 an';
 			} else {
-				return 'in {0} years', [Math.floor(Math.abs(dayDiff) / 365)];
+				return 'dans {0} ans', [Math.floor(Math.abs(dayDiff) / 365)];
 			}
 		} else if (dayDiff >= 0 && dayDiff < 1) {
 			if (diff < 60) {
-				return 'just now';
+				return 'À l\'instant';
 			} else if (diff < 120) {
-				return '1 minute ago';
+				return 'il y a 1 minute';
 			} else if (diff < 3600) {
-				return `${Math.floor(diff / 60)} minutes ago`;
+				return `il y a ${Math.floor(diff / 60)} minutes`;
 			} else if (diff < 7200) {
-				return '1 hour ago';
+				return 'il y a 1 heure';
 			} else if (diff < 86400) {
-				return `${Math.floor(diff / 3600)} hours ago`;
+				return `il y a ${Math.floor(diff / 3600)} heures`;
 			}
 		} else {
 			dayDiff = Math.floor(dayDiff);
 			if (dayDiff == 1) {
-				return 'yesterday';
+				return 'hier';
 			} else if (dayDiff < 7) {
-				return `${dayDiff} days ago`;
+				return `il y a ${dayDiff} jours`;
 			} else if (dayDiff < 14) {
-				return '1 week ago';
+				return 'il y a 1 semaine';
 			} else if (dayDiff < 31) {
-				return `${Math.floor(dayDiff / 7)} weeks ago`;
+				return `il y a ${Math.floor(dayDiff / 7)} semaines`;
 			} else if (dayDiff < 62) {
-				return '1 month ago';
+				return 'il y a 1 mois';
 			} else if (dayDiff < 365) {
-				return `${Math.floor(dayDiff / 30)} months ago`;
+				return `il y a ${Math.floor(dayDiff / 30)} mois`;
 			} else if (dayDiff < 730) {
-				return '1 year ago';
+				return 'il y a 1 an';
 			} else {
-				return `${Math.floor(dayDiff / 365)} years ago`;
+				return `il y a ${Math.floor(dayDiff / 365)} ans`;
 			}
 		}
 	}

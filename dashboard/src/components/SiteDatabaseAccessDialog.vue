@@ -231,7 +231,7 @@ export default {
 									title: 'Delete Database User',
 									message: `Are you sure you want to delete the database user ?<br>`,
 									primaryAction: {
-										label: 'Delete',
+										label: 'Supprimer',
 										variant: 'solid',
 										theme: 'red',
 										onClick: ({ hide }) => {

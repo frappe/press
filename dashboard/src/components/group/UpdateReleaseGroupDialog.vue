@@ -726,7 +726,7 @@ export default {
 				this.errorMessage = error.messages.join(', ');
 			} else {
 				this.errorMessage =
-					'Internal Server Error: Deploy could not be initiated';
+					'Erreur serveur interne: Deploy could not be initiated';
 			}
 		},
 	},

@@ -10,15 +10,15 @@
 		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-ink-gray-6"
 	>
 		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
-		<ErrorMessage message="You aren't permitted to create new sites" />
+		<ErrorMessage message="Vous n'êtes pas autorisé à créer de nouveaux sites" />
 	</div>
 
 	<div v-else class="mx-auto max-w-2xl px-5">
 		<div v-if="$resources.options.loading" class="py-4 text-base text-ink-gray-6">
-			Loading...
+			Chargement...
 		</div>
 		<div v-if="$route.name === 'NewBenchSite' && !bench">
-			<div class="py-4 text-base text-ink-gray-6">Something went wrong</div>
+			<div class="py-4 text-base text-ink-gray-6">Une erreur s'est produite</div>
 		</div>
 		<div v-else-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<NewSiteAppSelector
@@ -29,7 +29,7 @@
 			<div v-if="!bench">
 				<div class="flex items-center justify-between">
 					<h2 class="text-base font-medium leading-6 text-ink-gray-9">
-						Select Frappe Framework Version
+						Sélectionner la version de Frappe Framework
 					</h2>
 				</div>
 				<div class="mt-2">
@@ -69,7 +69,7 @@
 									class="flex items-center gap-2"
 								>
 									<Tooltip
-										text="This version is under development and may have bugs. Do not use for production sites."
+										text="Cette version est en cours de développement et peut contenir des bugs. Ne pas utiliser pour les sites en production."
 									>
 										<lucide-info class="h-4 w-4 text-ink-gray-5" />
 									</Tooltip>
@@ -85,12 +85,12 @@
 			<div v-if="showLocalisationSelector" class="space-y-4">
 				<div class="flex space-x-2">
 					<FormControl
-						label="Install Local Compliance App?"
+						label="Installer l'application de conformité locale ?"
 						v-model="showLocalisationOption"
 						type="checkbox"
 					/>
 					<Tooltip
-						text="A local compliance app allows creating transactions as per statutory compliance. They're maintained by community partners."
+						text="Une application de conformité locale permet de créer des transactions conformément à la réglementation en vigueur. Elles sont maintenues par des partenaires communautaires."
 					>
 						<lucide-info class="h-4 w-4 text-ink-gray-5" />
 					</Tooltip>
@@ -99,7 +99,7 @@
 					class="w-1/2"
 					variant="outline"
 					:class="{ 'pointer-events-none opacity-50': !showLocalisationOption }"
-					label="Select Country"
+					label="Sélectionner le pays"
 					:modelValue="selectedLocalisationCountry?.value"
 					@update:modelValue="
 						selectedLocalisationCountry = localisationAppCountries.find(
@@ -121,11 +121,11 @@
 					v-if="dedicatedServerConfig?.case != 'dedicated_only_multiple'"
 					type="checkbox"
 					v-model="useDedicatedServer"
-					label="Host this site on your dedicated server"
+					label="Héberger ce site sur votre serveur dédié"
 				/>
 				<div v-if="shouldShowDedicatedServerDropdown">
 					<h2 class="text-base font-medium leading-6 text-ink-gray-9 mb-2">
-						Select Dedicated Server
+						Sélectionner le serveur dédié
 					</h2>
 					<FormControl
 						required
@@ -150,7 +150,7 @@
 				class="flex flex-col"
 			>
 				<h2 class="text-base font-medium leading-6 text-ink-gray-9">
-					Select Provider
+					Sélectionner le fournisseur
 				</h2>
 				<div class="mt-2 w-full space-y-2">
 					<div class="grid grid-cols-2 gap-3">
@@ -191,7 +191,7 @@
 				"
 			>
 				<h2 class="text-base font-medium leading-6 text-ink-gray-9">
-					Select Region
+					Sélectionner la région
 				</h2>
 				<div class="mt-2 w-full space-y-2">
 					<div class="grid grid-cols-2 gap-3">
@@ -227,14 +227,14 @@
 			>
 				<div class="flex items-center justify-between">
 					<h2 class="text-base font-medium leading-6 text-ink-gray-9">
-						Select Plan
+						Sélectionner le plan
 					</h2>
 					<div>
 						<Button link="https://frappecloud.com/pricing" variant="ghost">
 							<template #prefix>
 								<lucide-help-circle class="h-4 w-4 text-ink-gray-7" />
 							</template>
-							Help
+							Aide
 						</Button>
 					</div>
 				</div>
@@ -258,9 +258,9 @@
 					>
 						<lucide-info class="h-4 w-8 text-blue-600" />
 						<span class="ml-4">
-							Your site will be created on a
-							<strong>private bench</strong>.<br />You can install custom apps
-							and have full control over the bench.
+							Votre site sera créé sur un
+							<strong>Bench privé</strong>.<br />Vous pouvez installer des apps personnalisées
+							et avoir le contrôle total du Bench.
 						</span>
 					</div>
 				</div>
@@ -273,9 +273,9 @@
 					>
 						<lucide-badge-check class="h-4 w-8 text-ink-gray-6" />
 						<span class="ml-4">
-							<strong>Support</strong> covers only issues of Frappe apps and not
-							functional queries. You can raise a support ticket for Frappe
-							Cloud issues for all plans.
+							Le <strong>support</strong> couvre uniquement les problèmes des apps Frappe et non
+							les questions fonctionnelles. Vous pouvez créer un ticket de support pour les
+							problèmes Frappe Cloud pour tous les plans.
 						</span>
 					</div>
 				</div>
@@ -283,11 +283,11 @@
 			<div v-if="selectedVersion && plan && cluster">
 				<div class="flex justify-between items-center">
 					<h2 class="text-base font-medium leading-6 text-ink-gray-9">
-						Enter Subdomain
+						Entrer le sous-domaine
 					</h2>
 					<Tooltip
 						v-if="this.domain !== this.options.domain"
-						text="The root domain can change depending on the region you choose"
+						text="Le domaine racine peut changer selon la région que vous choisissez"
 					>
 						<lucide-help-circle class="h-4 w-4 text-ink-gray-5" />
 					</Tooltip>
@@ -296,7 +296,7 @@
 					<div class="col-span-2 flex w-full">
 						<input
 							class="dark:[color-scheme:dark] z-10 h-7 w-full flex-1 rounded rounded-r-none border border-[--surface-gray-2] bg-surface-gray-2 py-1.5 pl-2 pr-2 text-base text-ink-gray-8 placeholder-ink-gray-4 transition-colors hover:border-outline-gray-modals hover:bg-surface-gray-3 focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3"
-							placeholder="Subdomain"
+							placeholder="Sous-domaine"
 							v-model="subdomain"
 						/>
 						<div class="flex items-center rounded-r bg-surface-gray-2 px-4 text-base">
@@ -309,7 +309,7 @@
 						v-if="$resources.subdomainExists.loading"
 						class="text-base text-ink-gray-6"
 					>
-						Checking...
+						Vérification...
 					</div>
 					<template
 						v-else-if="
@@ -321,10 +321,10 @@
 							v-if="$resources.subdomainExists.data"
 							class="text-sm text-green-600"
 						>
-							{{ subdomain }}.{{ domain }} is available
+							{{ subdomain }}.{{ domain }} est disponible
 						</div>
 						<div v-else class="text-sm text-red-600">
-							{{ subdomain }}.{{ domain }} is not available
+							{{ subdomain }}.{{ domain }} n'est pas disponible
 						</div>
 					</template>
 					<ErrorMessage :message="$resources.subdomainExists.error" />
@@ -341,12 +341,12 @@
 				<FormControl
 					type="checkbox"
 					v-model="agreedToRegionConsent"
-					:label="`I agree that the laws of the region selected by me (${selectedClusterTitle}) shall stand applicable to me and Frappe.`"
+					:label="`J'accepte que les lois de la région que j'ai sélectionnée (${selectedClusterTitle}) s'appliquent à moi et à Frappe.`"
 				/>
 				<FormControl
 					class="checkbox"
 					type="checkbox"
-					label="I am okay if my details are shared with local partner"
+					label="J'accepte que mes informations soient partagées avec le partenaire local"
 					@change="(val) => (shareDetailsConsent = val.target.checked)"
 				/>
 				<ErrorMessage class="my-2" :message="$resources.newSite.error" />
@@ -360,11 +360,11 @@
 					:loading="$resources.newSite.loading"
 					:loadingText="
 						isPrivateBenchPlan
-							? 'Provisioning private bench and creating site...'
-							: 'Creating site... This may take a while...'
+							? 'Provisionnement du Bench privé et création du site...'
+							: 'Création du site... Cela peut prendre un moment...'
 					"
 				>
-					Create site
+					Créer le site
 				</Button>
 			</div>
 		</div>
@@ -600,16 +600,16 @@ export default {
 					validate() {
 						if (this.useDedicatedServer && !this.selectedDedicatedServer) {
 							throw new DashboardError(
-								'Please select a dedicated server to deploy your site.',
+								'Veuillez sélectionner un serveur dédié pour déployer votre site.',
 							);
 						}
 						if (!this.subdomain) {
-							throw new DashboardError('Please enter a subdomain');
+							throw new DashboardError('Veuillez entrer un sous-domaine');
 						}
 
 						if (!this.agreedToRegionConsent) {
 							throw new DashboardError(
-								'Please agree to the above consent to create site',
+								'Veuillez accepter le consentement ci-dessus pour créer le site',
 							);
 						}
 					},
@@ -654,12 +654,12 @@ export default {
 					},
 					validate() {
 						if (!this.subdomain) {
-							throw new DashboardError('Please enter a subdomain');
+							throw new DashboardError('Veuillez entrer un sous-domaine');
 						}
 
 						if (!this.agreedToRegionConsent) {
 							throw new DashboardError(
-								'Please agree to the above consent to create site',
+								'Veuillez accepter le consentement ci-dessus pour créer le site',
 							);
 						}
 					},
@@ -919,6 +919,7 @@ export default {
 				let group = getCachedDocumentResource('Release Group', this.bench);
 				return [
 					{ label: 'Benches', route: '/groups' },
+
 					{
 						label: group ? group.doc.title : this.bench,
 						route: {
@@ -927,7 +928,7 @@ export default {
 						},
 					},
 					{
-						label: 'New Site',
+						label: 'Nouveau site',
 						route: {
 							name: 'Release Group New Site',
 							params: { bench: this.bench },
@@ -937,19 +938,19 @@ export default {
 			}
 			return [
 				{ label: 'Sites', route: '/sites' },
-				{ label: 'New Site', route: '/sites/new' },
+				{ label: 'Nouveau site', route: '/sites/new' },
 			];
 		},
 		_totalPerMonth() {
 			let total =
-				this.$team.doc.currency == 'INR'
-					? this.selectedPlan.price_inr
+				this.$team.doc.currency == 'DZD'
+					? this.selectedPlan.price_dzd
 					: this.selectedPlan.price_usd;
 
 			for (let app of this.apps.filter((app) => app.plan)) {
 				total +=
-					this.$team.doc.currency == 'INR'
-						? app.plan.price_inr
+					this.$team.doc.currency == 'DZD'
+						? app.plan.price_dzd
 						: app.plan.price_usd;
 			}
 
@@ -970,12 +971,12 @@ export default {
 					`${
 						this.selectedVersionApps.find((a) => a.app === app.app).app_title
 					} ${
-						app.plan?.price_inr
+						app.plan?.price_dzd
 							? `- <span class="text-ink-gray-6">${this.$format.userCurrency(
-									this.$team.doc.currency == 'INR'
-										? app.plan.price_inr
+									this.$team.doc.currency == 'DZD'
+										? app.plan.price_dzd
 										: app.plan.price_usd,
-								)} per month</span>`
+								)} par mois</span>`
 							: ''
 					}`,
 				);
@@ -983,38 +984,38 @@ export default {
 
 			return [
 				{
-					label: 'Frappe Framework Version',
+					label: 'Version Frappe Framework',
 					value: this.selectedVersion?.name,
 				},
 				{
-					label: 'Region',
+					label: 'Région',
 					value: this.selectedClusterTitle,
 				},
 				{
-					label: 'Site URL',
+					label: 'URL du site',
 					value: `${this.subdomain}.${this.domain}`,
 				},
 				{
-					label: 'Site Plan',
+					label: 'Plan du site',
 					value: `${this.$format.userCurrency(
-						this.$team.doc.currency == 'INR'
-							? this.selectedPlan.price_inr
+						this.$team.doc.currency == 'DZD'
+							? this.selectedPlan.price_dzd
 							: this.selectedPlan.price_usd,
-					)} per month`,
+					)} par mois`,
 				},
 				{
-					label: 'Product Warranty',
+					label: 'Garantie produit',
 					value: this.selectedPlan.support_included
-						? 'Included'
-						: 'Not Included',
+						? 'Incluse'
+						: 'Non incluse',
 				},
 				{
 					label: 'Apps',
-					value: this.apps.length ? appPlans.join('<br>') : 'No apps selected',
+					value: this.apps.length ? appPlans.join('<br>') : 'Aucune app sélectionnée',
 				},
 				{
 					label: 'Total',
-					value: `${this.totalPerMonth} per month <div class="text-ink-gray-6">${this.totalPerDay} per day</div>`,
+					value: `${this.totalPerMonth} par mois <div class="text-ink-gray-6">${this.totalPerDay} par jour</div>`,
 					condition: () => this._totalPerMonth,
 				},
 			];

@@ -24,8 +24,8 @@
 					<h3 class="mb-4 text-lg font-semibold">Subscription Price</h3>
 					<div class="grid grid-cols-2 gap-2">
 						<FormControl
-							label="Price INR"
-							v-model="currentEditingPlan.price_inr"
+							label="Price DZD"
+							v-model="currentEditingPlan.price_dzd"
 						></FormControl>
 						<FormControl
 							label="Price USD"
@@ -107,7 +107,7 @@ export default {
 		return {
 			showEditPlanDialog: true,
 			currentEditingPlan: {
-				price_inr: 0,
+				price_dzd: 0,
 				price_usd: 0,
 				features: [''],
 				title: '',
@@ -207,7 +207,7 @@ export default {
 
 		resetCurrentEditingPlan() {
 			Object.assign(this.currentEditingPlan, {
-				price_inr: 0,
+				price_dzd: 0,
 				price_usd: 0,
 				features: [''],
 				title: '',

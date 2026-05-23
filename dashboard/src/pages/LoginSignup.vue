@@ -16,22 +16,22 @@
 								<Button
 									v-if="isLogin && !usePassword"
 									:route="{
-										name: 'Login',
+										name: 'Connexion',
 										query: { ...$route.query, use_password: 1 },
 									}"
 									icon-left="key"
 								>
-									Continue with password
+									Continuer avec le mot de passe
 								</Button>
 								<Button
 									v-else-if="isLogin && usePassword"
 									:route="{
-										name: 'Login',
+										name: 'Connexion',
 										query: { ...$route.query, use_password: undefined },
 									}"
 									icon-left="mail"
 								>
-									Continue with verification code
+									Continuer avec le code de vérification
 								</Button>
 								<Button
 									:loading="$resources.googleLogin.loading"
@@ -39,7 +39,7 @@
 								>
 									<div class="flex items-center">
 										<GoogleIcon class="w-4" />
-										<span class="ml-2">Continue with Google</span>
+										<span class="ml-2">Continuer avec Google</span>
 									</div>
 								</Button>
 							</div>
@@ -136,7 +136,7 @@
 									class="mt-2 text-sm"
 									v-if="hasForgotPassword"
 									:to="{
-										name: 'Login',
+										name: 'Connexion',
 										query: { ...$route.query, forgot: undefined },
 									}"
 								>
@@ -187,7 +187,7 @@
 										<router-link
 											class="text-sm"
 											:to="{
-												name: 'Login',
+												name: 'Connexion',
 												query: { ...$route.query, forgot: 1 },
 											}"
 										>
@@ -285,7 +285,7 @@
 									variant="solid"
 									type="submit"
 								>
-									Sign up with email
+									S'inscrire with email
 								</Button>
 							</template>
 
@@ -309,20 +309,20 @@
 							<div v-if="!(otpRequested || resetPasswordEmailSent)">
 								<span class="text-base font-normal text-ink-gray-6">
 									{{
-										$route.name == 'Login'
+										$route.name == 'Connexion'
 											? 'New member? '
-											: 'Already have an account? '
+											: 'Vous avez déjà un compte ? '
 									}}
 								</span>
 								<router-link
 									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 									:to="{
-										name: $route.name == 'Login' ? 'Signup' : 'Login',
+										name: $route.name == 'Connexion' ? 'Signup' : 'Connexion',
 										query: { ...$route.query, forgot: undefined },
 									}"
 								>
 									{{
-										$route.name == 'Login' ? 'Create a new account.' : 'Log in.'
+										$route.name == 'Connexion' ? 'Create a new account.' : 'Log in.'
 									}}
 								</router-link>
 							</div>
@@ -392,20 +392,20 @@
 							<div>
 								<span class="text-base font-normal text-ink-gray-6">
 									{{
-										$route.name == 'Login'
+										$route.name == 'Connexion'
 											? 'New member? '
-											: 'Already have an account? '
+											: 'Vous avez déjà un compte ? '
 									}}
 								</span>
 								<router-link
 									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
 									:to="{
-										name: $route.name == 'Login' ? 'Signup' : 'Login',
+										name: $route.name == 'Connexion' ? 'Signup' : 'Connexion',
 										query: { ...$route.query, forgot: undefined },
 									}"
 								>
 									{{
-										$route.name == 'Login' ? 'Create a new account.' : 'Log in.'
+										$route.name == 'Connexion' ? 'Create a new account.' : 'Log in.'
 									}}
 								</router-link>
 							</div>
@@ -543,14 +543,14 @@ export default {
 
 						if (this.$route.query?.product) {
 							this.$router.push({
-								name: 'Login',
+								name: 'Connexion',
 								query: {
 									redirect: `/dashboard/create-site/${this.$route.query.product}/setup`,
 								},
 							});
 						} else {
 							this.$router.push({
-								name: 'Login',
+								name: 'Connexion',
 							});
 						}
 					}
@@ -688,7 +688,7 @@ export default {
 						'2FA reset successfully. Please re-enable it as soon as possible!',
 					);
 					this.$router.push({
-						name: 'Login',
+						name: 'Connexion',
 						query: {
 							two_factor: undefined,
 						},
@@ -734,7 +734,7 @@ export default {
 					onSuccess: async (two_factor_enabled) => {
 						if (two_factor_enabled) {
 							this.$router.push({
-								name: 'Login',
+								name: 'Connexion',
 								query: {
 									...this.$route.query,
 									two_factor: 1,
@@ -755,7 +755,7 @@ export default {
 					onSuccess: async (two_factor_enabled) => {
 						if (two_factor_enabled) {
 							this.$router.push({
-								name: 'Login',
+								name: 'Connexion',
 								query: {
 									two_factor: 1,
 									forgot: 1,
@@ -778,7 +778,7 @@ export default {
 					onSuccess: async (two_factor_enabled) => {
 						if (two_factor_enabled) {
 							this.$router.push({
-								name: 'Login',
+								name: 'Connexion',
 								query: {
 									...this.$route.query,
 									two_factor: 1,
@@ -807,9 +807,9 @@ export default {
 						this.afterLogin(res);
 					},
 					onError: (err) => {
-						if (this.$route.name === 'Login' && this.$route.query.two_factor) {
+						if (this.$route.name === 'Connexion' && this.$route.query.two_factor) {
 							this.$router.push({
-								name: 'Login',
+								name: 'Connexion',
 								query: {
 									two_factor: undefined,
 								},
@@ -846,17 +846,17 @@ export default {
 			return this.$resources.signupSettings.data?.product_trial;
 		},
 		isLogin() {
-			return this.$route.name == 'Login' && !this.$route.query.forgot;
+			return this.$route.name == 'Connexion' && !this.$route.query.forgot;
 		},
 		hasForgotPassword() {
-			return this.$route.name == 'Login' && this.$route.query.forgot;
+			return this.$route.name == 'Connexion' && this.$route.query.forgot;
 		},
 		is2FA() {
-			return this.$route.name == 'Login' && this.$route.query.two_factor;
+			return this.$route.name == 'Connexion' && this.$route.query.two_factor;
 		},
 		is2FARecovery() {
 			return (
-				this.$route.name == 'Login' &&
+				this.$route.name == 'Connexion' &&
 				this.$route.query.two_factor &&
 				this.on2FARecovery
 			);
@@ -910,7 +910,7 @@ export default {
 				return 'Log in to your account';
 			} else {
 				if (this.saasProduct) {
-					return `Sign up to create your ${this.saasProduct.title} site`;
+					return `S'inscrire to create your ${this.saasProduct.title} site`;
 				}
 
 				return 'Create your Frappe Cloud account';

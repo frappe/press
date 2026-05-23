@@ -107,9 +107,9 @@ const markAllAsRead = (togglePopover) => {
         resource.reload();
         togglePopover();
 
-        return "All notifications marked as read";
+        return "Toutes les notifications ont été marquées comme lues";
       },
-      loading: "Marking all notifications as read...",
+      loading: "Marquage de toutes les notifications comme lues...",
       error: (error) =>
         error.messages?.length ? error.messages.join("\n") : error.message,
     },
@@ -193,9 +193,9 @@ watch(activeTab, (x) => {
 });
 
 const tabs = [
-  { label: "All", icon: LucideRows2 },
-  { label: "Requests", icon: LucideKeySquare },
-  { label: "Unread", icon: LucideMessageSquareDot },
+  { label: "Tout", icon: LucideRows2 },
+  { label: "Demandes", icon: LucideKeySquare },
+  { label: "Non lues", icon: LucideMessageSquareDot },
 ];
 
 useRealtimeNotifs((data) => {
@@ -208,6 +208,7 @@ useRealtimeNotifs((data) => {
     <!-- sidebar item -->
     <template #target="{ togglePopover }">
       <Item is='BUTTON' v-bind='$attrs' aria-label="Notifications btn" name='Notifications' @click="togglePopover">
+      <!-- name kept as 'Notifications' since it matches sidebar label -->
         <template #prefix>
 
           <span class="flex relative">
@@ -236,6 +237,7 @@ useRealtimeNotifs((data) => {
         <!-- header -->
         <div class="text-base flex items-center py-2 pl-4 pr-2 border-b">
           <span class="font-medium mr-auto"> Notifications</span>
+          <!-- Panel header - same word in French -->
 
           <Button @click="markAllAsRead(togglePopover)" variant="ghost">
             <template #icon>
@@ -254,8 +256,8 @@ useRealtimeNotifs((data) => {
           <template #tab-item="{ tab }">
             <button class="w-full flex items-center gap-2 py-2 text-ink-gray-5 aria-selected:text-ink-gray-9">
               <span class="text-sm">{{ tab.label }}</span>
-              <Badge v-if="tab.label != 'All'">{{
-                tab.label == 'Unread'
+              <Badge v-if="tab.label != 'Tout'">{{
+                tab.label == 'Non lues'
                   ? unreadNotificationsCount.data
                   : unreadSupportNotificationsCount.data
               }}</Badge>
@@ -269,7 +271,7 @@ useRealtimeNotifs((data) => {
           <!-- notif tiles = icon + info -->
           <div v-for="x in resource.data"
             class="[&_b]:font-semibold p-2 md:p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0 hover:bg-surface-gray-1"
-            @click="markAsRead(x, togglePopover)" title="Click to mark as read">
+            @click="markAsRead(x, togglePopover)" title="Cliquer pour marquer comme lu">
             <!-- type icon -->
             <div class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1 relative
               dark:bg-surface-gray-1" :class="[iconCss[x.type].bg || 'bg-surface-gray-1']">
@@ -287,7 +289,7 @@ useRealtimeNotifs((data) => {
               <Badge class="text-xs mr-auto">
                 {{ x.title }}
 
-                <Tooltip text="This notification requires your attention" :hoverDelay="0"
+                <Tooltip text="Cette notification nécessite votre attention" :hoverDelay="0"
                   v-if="x.is_actionable && !x.is_addressed">
                   <LucideCircleAlert class="size-3" />
                 </Tooltip>
@@ -301,10 +303,10 @@ useRealtimeNotifs((data) => {
         </Scrollbar>
 
         <div v-else class="text-center text-ink-gray-6 text-sm py-10">
-          No notifications to show
+          Aucune notification à afficher
         </div>
 
-        <Button @click="loadMore" v-if="resource.hasNextPage" label="Load More" size="sm" class="ml-auto my-3 mr-3" />
+        <Button @click="loadMore" v-if="resource.hasNextPage" label="Charger plus" size="sm" class="ml-auto my-3 mr-3" />
       </div>
     </template>
   </Popover>

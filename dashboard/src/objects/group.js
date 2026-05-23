@@ -146,7 +146,7 @@ export default {
 		],
 		primaryAction() {
 			return {
-				label: 'New Bench',
+				label: 'Nouveau Bench',
 				variant: 'solid',
 				slots: {
 					prefix: icon('plus'),

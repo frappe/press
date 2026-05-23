@@ -123,15 +123,24 @@
 			"label": "Root Public Key",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_20", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_20",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "frappe_public_key",
 			"fieldtype": "Code",
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_10", "fieldtype": "Column Break" },
-		{ "fieldname": "column_break_4", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_10",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_4",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "Generic",
 			"fieldname": "provider",
@@ -151,7 +160,10 @@
 			"fieldtype": "Section Break",
 			"label": "Networking"
 		},
-		{ "fieldname": "column_break_9", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_9",
+			"fieldtype": "Column Break"
+		},
 		{
 			"depends_on": "eval: doc.provider === \"Scaleway\"",
 			"fieldname": "private_mac_address",
@@ -197,7 +209,11 @@
 			"mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
 			"options": "Virtual Machine"
 		},
-		{ "fieldname": "ssh_user", "fieldtype": "Data", "label": "SSH User" },
+		{
+			"fieldname": "ssh_user",
+			"fieldtype": "Data",
+			"label": "SSH User"
+		},
 		{
 			"default": "22",
 			"fieldname": "ssh_port",
@@ -237,9 +253,21 @@
 			"fieldtype": "Data",
 			"label": "Region Endpoint"
 		},
-		{ "fieldname": "region", "fieldtype": "Data", "label": "Region" },
-		{ "fieldname": "bucket_name", "fieldtype": "Data", "label": "Bucket Name" },
-		{ "fieldname": "proxy_pass", "fieldtype": "Data", "label": "Proxy Pass" },
+		{
+			"fieldname": "region",
+			"fieldtype": "Data",
+			"label": "Region"
+		},
+		{
+			"fieldname": "bucket_name",
+			"fieldtype": "Data",
+			"label": "Bucket Name"
+		},
+		{
+			"fieldname": "proxy_pass",
+			"fieldtype": "Data",
+			"label": "Proxy Pass"
+		},
 		{
 			"fieldname": "plan",
 			"fieldtype": "Link",
@@ -247,7 +275,12 @@
 			"options": "Server Plan"
 		}
 	],
-	"links": [{ "link_doctype": "Ansible Play", "link_fieldname": "server" }],
+	"links": [
+		{
+			"link_doctype": "Ansible Play",
+			"link_fieldname": "server"
+		}
+	],
 	"modified": "2025-11-22 15:50:08.907789",
 	"modified_by": "Administrator",
 	"module": "Press",

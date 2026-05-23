@@ -2,15 +2,15 @@
 {{ header_content | striptags | trim }}
 
 {% else %}
-You're almost done!
-Just one quick step left.
+Vous y êtes presque !
+Plus qu'une dernière étape rapide.
 
 {% endif %}
-Verification Code: {{ otp }}
+Code de vérification : {{ otp }}
 {% if link %}
-Verification Link: {{ link }}
+Lien de vérification : {{ link }}
 {% endif %}
 
-Team Frappe
+L'équipe Frappe
 
-This email was sent by Frappe Cloud
+Cet e-mail a été envoyé par Frappe Cloud

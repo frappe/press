@@ -195,7 +195,7 @@ function onMigrateSite() {
 
 function onSiteReset() {
 	return confirmDialog({
-		title: 'Reset Site',
+		title: 'Réinitialiser le site',
 		message: `
             All the data from your site will be lost. Are you sure you want to reset your database?
         `,
@@ -252,12 +252,12 @@ function onTransferSite() {
 
 function onClearCache() {
 	return confirmDialog({
-		title: 'Clear Cache',
+		title: 'Vider le cache',
 		message: `<span class="rounded-sm bg-surface-gray-2 p-0.5 font-mono text-sm font-semibold">bench clear-cache</span> and
             <span class="rounded-sm bg-surface-gray-2 p-0.5 font-mono text-sm font-semibold">bench clear-website-cache</span> commands
             will be executed on your site. Are you sure you want to run these commands?`,
 		primaryAction: {
-			label: 'Clear Cache',
+			label: 'Vider le cache',
 			variant: 'solid',
 			onClick: ({ hide }) => {
 				return site.clearSiteCache.submit().then(hide);

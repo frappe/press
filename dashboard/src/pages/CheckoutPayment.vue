@@ -10,7 +10,7 @@
 			<div>
 				<label class="block">
 					<span class="block text-xs text-ink-gray-6">
-						Credit or Debit Card
+						Carte de crédit ou de débit
 					</span>
 					<div
 						class="form-input mt-2 block h-[unset] w-full py-2 pl-3"
@@ -20,7 +20,7 @@
 				</label>
 				<FormControl
 					class="mt-4"
-					label="Name on Card"
+					label="Nom sur la carte"
 					type="text"
 					v-model="cardHolderName"
 				/>
@@ -29,7 +29,7 @@
 			<div class="mt-6 flex items-center justify-between">
 				<StripeLogo />
 				<Button variant="solid" @click="submit" :loading="addingCard">
-					Save Card
+					Enregistrer la carte
 				</Button>
 			</div>
 		</div>
@@ -187,7 +187,7 @@ export default {
 			}
 		},
 		getCountryCode(country) {
-			country = 'India';
+			country = 'Algeria';
 			let code = this.$resources.countryList.data.find(
 				(d) => d.name === country,
 			).code;

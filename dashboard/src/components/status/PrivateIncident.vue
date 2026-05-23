@@ -4,7 +4,7 @@
 		<div v-if="isHistory" class="mb-6" :class="{ invisible: hasNoIncidents }">
 			<FormControl
 				type="text"
-				placeholder="Search past incidents..."
+				placeholder="Rechercher des incidents passés..."
 				v-model="searchQuery"
 				:prefix-icon="'search'"
 			>
@@ -21,7 +21,7 @@
 			:class="{ invisible: hasNoIncidents }"
 		>
 			<div class="flex items-center gap-2">
-				<span class="text-base">Active Incidents</span>
+				<span class="text-base">Incidents actifs</span>
 				<Badge
 					class="rounded-sm"
 					:label="incidentCount.data"
@@ -33,7 +33,7 @@
 				<template #prefix>
 					<LucideRefreshCw class="size-4" />
 				</template>
-				Refresh
+				Actualiser
 			</Button>
 		</div>
 
@@ -42,7 +42,7 @@
 			class="flex gap-3 justify-center items-center p-20 border rounded fade-in"
 		>
 			<LucideSpinner class="size-4 animate-spin" />
-			Loading...
+			Chargement...
 		</div>
 
 		<!-- Empty state -->
@@ -63,13 +63,13 @@
 				<LucideCheck class="h-8 w-8 text-ink-green-2" />
 			</div>
 			<h3>
-				{{ isHistory ? 'No incident history' : 'All systems operational' }}
+				{{ isHistory ? 'Aucun historique d\'incidents' : 'Tous les systèmes sont opérationnels' }}
 			</h3>
 			<p class="mt-2">
 				{{
 					isHistory
-						? 'When incidents are resolved, they will appear here.'
-						: 'There are no active incidents affecting your sites or servers.'
+						? 'Lorsque les incidents sont résolus, ils apparaîtront ici.'
+						: 'Il n\'y a aucun incident actif affectant vos sites ou serveurs.'
 				}}
 			</p>
 		</div>
@@ -137,20 +137,20 @@ const incidentTrees = computed(() =>
 		if (incident?.creation) {
 			timelineSteps.push({
 				type: 'timeline-step',
-				label: 'Created',
+				label: 'Créé',
 				time: formatDate(incident.creation),
 			});
 		}
 		if (incident?.confirmed_at) {
 			timelineSteps.push({
-				label: 'Confirmed',
+				label: 'Confirmé',
 				time: formatDate(incident.confirmed_at),
 			});
 		}
 		if (incident?.resolved_at) {
 			timelineSteps.push({
 				type: 'timeline-step',
-				label: 'Resolved',
+				label: 'Résolu',
 				time: formatDate(incident.resolved_at),
 			});
 		}

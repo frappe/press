@@ -9,27 +9,27 @@ export const index = computed(() => {
 	const team = getTeam();
 
 	const groups = {
-		Settings: {
+		'Paramètres': {
 			items: [
-				{ name: 'Profile', route: '/settings/profile', icon: LucideUser },
-        
+				{ name: 'Profil', route: '/settings/profile', icon: LucideUser },
+
 				{
-					name: "Team",
+					name: "Équipe",
 					route: "/settings/team",
 					icon: LucideUsers,
-					condition: 
+					condition:
 						team.doc?.user === session.user ||
 						session.isTeamAdmin ||
 						session.isSystemUser,
 				},
 
-				{ name: 'Developer', route: '/settings/developer', icon: LucideCode },
+				{ name: 'Développeur', route: '/settings/developer', icon: LucideCode },
 
 				{
-					name: 'Roles',
+					name: 'Rôles',
 					route: '/settings/permissions/roles',
 					icon: LucideLock,
-         	condition: 
+         	condition:
 						team.doc?.user === session.user ||
 						session.isTeamAdmin ||
 						session.isSystemUser,
@@ -37,26 +37,26 @@ export const index = computed(() => {
 			],
 		},
 
-		Status: {
+		'État': {
 			items: [
 				{
-					name: 'Ongoing Incidents',
+					name: 'Incidents en cours',
 					route: '/status/ongoing-incidents',
 					icon: LucideTriangleAlert,
 				},
 				{
-					name: 'Incident History',
+					name: 'Historique des incidents',
 					route: '/status/incident-history',
 					icon: LucideArchive,
 				},
 			],
 		},
 
-		'Dev Tools': {
+		'Outils Dev': {
 			condition: team.doc?.onboarding?.complete && !team.doc?.is_saas_user,
 			items: [
 				{
-					name: 'Database Analyzer',
+					name: 'Analyseur de base de données',
 					route: '/database-analyzer',
 					icon: LucideActivity,
 				},
@@ -66,7 +66,7 @@ export const index = computed(() => {
 					icon: LucideDatabaseZap,
 				},
 				{
-					name: 'Binlog Browser',
+					name: 'Navigateur Binlog',
 					route: '/binlog-browser',
 					icon: LucideFileSearch,
 					condition: team.doc?.is_binlog_indexer_enabled ?? false,
@@ -74,40 +74,40 @@ export const index = computed(() => {
 			],
 		},
 
-		Billing: {
+		'Facturation': {
 			condition: team.doc?.is_desk_user || session.hasBillingAccess,
 			items: [
-				{ name: 'Overview', route: '/billing', icon: LucideWalletCards },
+				{ name: 'Aperçu', route: '/billing', icon: LucideWalletCards },
 				{
-					name: 'Forecast',
+					name: 'Prévisions',
 					route: '/billing/forecast',
 					icon: LucideTrendingUpDown,
 				},
 				{
-					name: 'Invoices',
+					name: 'Factures',
 					route: '/billing/invoices',
 					icon: LucideReceiptText,
 				},
-				{ name: 'Balances', route: '/billing/balances', icon: LucideWeight },
+				{ name: 'Soldes', route: '/billing/balances', icon: LucideWeight },
 				{
-					name: 'Payment Methods',
+					name: 'Moyens de paiement',
 					route: '/billing/payment-methods',
 					icon: LucideCreditCard,
 				},
 				{
-					name: 'Marketplace Payouts',
+					name: 'Paiements Marketplace',
 					route: '/billing/payouts',
 					icon: LucideStore,
 					condition: team.doc?.is_desk_user,
 				},
 				{
-					name: 'Mpesa Invoices',
+					name: 'Factures Mpesa',
 					route: '/billing/mpesa-invoices',
 					icon: LucideReceiptText,
 					condition: team.doc?.is_desk_user,
 				},
 				{
-					name: 'UPI Autopay',
+					name: 'Prélèvement auto UPI',
 					route: '/billing/upi-autopay',
 					icon: LucideWalletCards,
 					condition: team.doc?.is_desk_user,
@@ -115,54 +115,54 @@ export const index = computed(() => {
 			],
 		},
 
-		'Partner Admin': {
+		'Admin Partenaires': {
 			condition: team.doc?.is_desk_user,
 			items: [
 				{
-					name: 'Partner List',
+					name: 'Liste des partenaires',
 					route: '/settings/partner-admin/partner-list',
 					icon: LucideShield,
 				},
 				{
-					name: 'Certificate List',
+					name: 'Liste des certificats',
 					route: '/settings/partner-admin/certificate-list',
 					icon: LucideShield,
 				},
 				{
-					name: 'Admin Leads',
+					name: 'Prospects admin',
 					route: '/settings/partner-admin/partner-admin-lead-list',
 					icon: LucideShield,
 				},
 				{
-					name: 'Admin Resources',
+					name: 'Ressources admin',
 					route: '/settings/partner-admin/admin-resources',
 					icon: LucideShield,
 				},
 				{
-					name: 'Admin Audits',
+					name: 'Audits admin',
 					route: '/settings/partner-admin/admin-audits',
 					icon: LucideShield,
 				},
 			],
 		},
 
-		Partnership: {
+		'Partenariat': {
 			condition: Boolean(team.doc?.erpnext_partner),
 			items: [
-				{ name: 'Overview', route: '/partners/overview', icon: LucideGlobe },
+				{ name: 'Aperçu', route: '/partners/overview', icon: LucideGlobe },
 				{
-					name: 'Website Details',
+					name: 'Détails du site web',
 					route: '/partners/website-details',
 					icon: LucideGlobe,
 				},
-				{ name: 'Customers', route: '/partners/customers', icon: LucideGlobe },
-				{ name: 'Leads', route: '/partners/partner-leads', icon: LucideGlobe },
+				{ name: 'Clients', route: '/partners/customers', icon: LucideGlobe },
+				{ name: 'Prospects', route: '/partners/partner-leads', icon: LucideGlobe },
 				{
-					name: 'Certificates',
+					name: 'Certificats',
 					route: '/partners/certificates',
 					icon: LucideGlobe,
 				},
-				{ name: 'Resources', route: '/partners/resources', icon: LucideGlobe },
+				{ name: 'Ressources', route: '/partners/resources', icon: LucideGlobe },
 				{
 					name: 'Contributions',
 					route: '/partners/contributions',
@@ -170,17 +170,17 @@ export const index = computed(() => {
 				},
 				{ name: 'Audits', route: '/partners/audits', icon: LucideGlobe },
 				{
-					name: 'Local Payment Setup',
+					name: 'Configuration paiement local',
 					route: '/partners/local-payment-setup',
 					icon: LucideGlobe,
 				},
 				{
-					name: 'Payout',
+					name: 'Versement',
 					route: '/partners/payment-payout',
 					icon: LucideGlobe,
 				},
 				{
-					name: 'Dashboard',
+					name: 'Tableau de bord',
 					route: '/partners/partner-dashboard',
 					icon: LucideGlobe,
 				},
@@ -189,7 +189,7 @@ export const index = computed(() => {
 		Actions: {
 			items: [
 				{
-					name: 'Access Request',
+					name: "Demande d'accès",
 					icon: LucideKey,
 					click: () => {
 						document
@@ -206,16 +206,16 @@ export const index = computed(() => {
 			],
 		},
 
-		Theme: {
+		'Thème': {
 			items: [
 				{
-					name: 'Dark Mode',
+					name: 'Mode sombre',
 					click: () => setTheme('dark'),
 					icon: LucideSun,
 					suffix: () => h(Badge, { label: 'beta', class: 'ml-auto' }),
 				},
 				{
-					name: 'Light Mode',
+					name: 'Mode clair',
 					click: () => setTheme('light'),
 					icon: LucideMoon,
 				},

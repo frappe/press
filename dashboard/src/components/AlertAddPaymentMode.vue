@@ -1,12 +1,12 @@
 <template>
 	<AlertBanner
 		:title="
-			title ?? 'Add a payment mode to start creating sites, benches, and more.'
+			title ?? 'Ajoutez un mode de paiement pour commencer à créer des sites, des benches et plus encore.'
 		"
 		:type="type ?? 'warning'"
 	>
 		<Button class="ml-auto" @click="addPaymentMode" variant="outline">
-			Add payment mode
+			Ajouter un mode de paiement
 		</Button>
 	</AlertBanner>
 </template>

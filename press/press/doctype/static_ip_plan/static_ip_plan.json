@@ -11,7 +11,7 @@
 		"column_break_zvlh",
 		"provider",
 		"pricing_section",
-		"price_inr",
+		"price_dzd",
 		"column_break_mkan",
 		"price_usd"
 	],
@@ -46,7 +46,7 @@
 		},
 		{
 			"description": "Hourly Rate",
-			"fieldname": "price_inr",
+			"fieldname": "price_dzd",
 			"fieldtype": "Currency",
 			"in_list_view": 1,
 			"label": "Price (INR)",

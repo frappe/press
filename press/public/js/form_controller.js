@@ -113,7 +113,7 @@ class FormController {
 			if ($input.attr('required')) {
 				let id = $input.attr('id');
 				let label = $(`label[for=${id}]`).text();
-				error = `${label} cannot be blank`;
+				error = `${label} ne peut pas être vide`;
 			}
 		}
 		return error;
@@ -158,7 +158,7 @@ class FormController {
 			$('.form-alert-info').html(info).toggle(Boolean(info));
 			$('.form-alert-error').html(error).toggle(Boolean(error));
 			$('#accountRequestButton').prop('disabled', false);
-			$('#accountRequestButton').html('Create Account');
+			$('#accountRequestButton').html('Créer un compte');
 		};
 		$('.form-alert-info, .form-alert-error').toggle(false);
 	}

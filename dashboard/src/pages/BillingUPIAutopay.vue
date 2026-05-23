@@ -131,7 +131,7 @@ export default {
 						label: 'Max Amount',
 						fieldname: 'max_amount',
 						format(value) {
-							return `₹${value?.toLocaleString('en-IN') || 0}`;
+							return `د.ج${value?.toLocaleString('en-IN') || 0}`;
 						},
 					},
 					{
@@ -149,7 +149,7 @@ export default {
 				rowActions: ({ listResource, row }) => {
 					return [
 						{
-							label: 'Cancel',
+							label: 'Annuler',
 							onClick: () => {
 								confirmDialog({
 									title: 'Cancel UPI Autopay',

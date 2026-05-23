@@ -14,7 +14,7 @@
 		"plan_description",
 		"interval",
 		"column_break_5",
-		"price_inr",
+		"price_dzd",
 		"price_usd",
 		"allow_downgrading_from_other_plan",
 		"legacy_plan",
@@ -74,11 +74,11 @@
 		},
 		{ "fieldname": "column_break_5", "fieldtype": "Column Break" },
 		{
-			"fieldname": "price_inr",
+			"fieldname": "price_dzd",
 			"fieldtype": "Currency",
 			"in_list_view": 1,
 			"label": "Price (INR)",
-			"options": "INR",
+			"options": "DZD",
 			"reqd": 1
 		},
 		{

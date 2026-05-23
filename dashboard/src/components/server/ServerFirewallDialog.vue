@@ -9,7 +9,7 @@
 			},
 			actions: [
 				{
-					label: 'Submit',
+					label: 'Envoyer',
 					variant: 'solid',
 					onClick: onSubmit,
 				},
