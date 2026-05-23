@@ -1335,7 +1335,7 @@ class GenerateReportReports(BackgroundJobGroupByChart):
 def get_usage(site: str, type: str, timezone: str, start: datetime, end: datetime, timegrain: int):
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
-		return {"datasets": [], "labels": []}
+		return []
 
 	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
 	password = get_decrypted_password("Log Server", log_server, "kibana_password")

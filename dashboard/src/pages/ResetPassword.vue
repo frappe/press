@@ -1,13 +1,13 @@
 <template>
 	<LoginBox
 		v-if="!$resources.validateResetKey.loading && email"
-		title="Reset Password"
-		subtitle="Set a new password for your account"
+		title="Réinitialiser le mot de passe"
+		subtitle="Définir un nouveau mot de passe pour votre compte"
 	>
 		<form class="flex flex-col" @submit.prevent="handleSubmit">
 			<div v-if="ask2FA">
 				<FormControl
-					label="2FA Code from your Authenticator App"
+					label="Code 2FA de votre application d'authentification"
 					placeholder="123456"
 					v-model="twoFactorCode"
 					required
@@ -15,7 +15,7 @@
 			</div>
 			<div v-else class="space-y-4">
 				<FormControl
-					label="Email"
+					label="E-mail"
 					class="pointer-events-none"
 					:modelValue="email"
 					name="email"
@@ -23,7 +23,7 @@
 					disabled
 				/>
 				<FormControl
-					label="Password"
+					label="Mot de passe"
 					type="password"
 					v-model="password"
 					name="password"
@@ -31,7 +31,7 @@
 					required
 				/>
 				<FormControl
-					label="Confirm Password"
+					label="Confirmer le mot de passe"
 					type="password"
 					v-model="confirmPassword"
 					name="confirm_password"

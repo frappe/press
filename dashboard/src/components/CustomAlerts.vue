@@ -25,7 +25,7 @@
 					"
 					variant="outline"
 				>
-					{{ banner.has_action ? banner.action_label : 'Open help' }}
+					{{ banner.has_action ? banner.action_label : 'Ouvrir l\'aide' }}
 					<lucide-external-link class="inline h-4 w-3 pb-0.5" />
 				</Button>
 			</template>

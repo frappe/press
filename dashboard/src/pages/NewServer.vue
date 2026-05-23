@@ -3,8 +3,8 @@
 		<Header>
 			<Breadcrumbs
 				:items="[
-					{ label: 'Servers', route: '/servers' },
-					{ label: 'New Server', route: '/servers/new' },
+					{ label: 'Serveurs', route: '/servers' },
+					{ label: 'Nouveau serveur', route: '/servers/new' },
 				]"
 			/>
 		</Header>
@@ -15,7 +15,7 @@
 		class="mx-auto mt-60 w-fit rounded-md border border-dashed px-12 py-8 text-center text-ink-gray-6"
 	>
 		<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
-		<ErrorMessage message="You aren't permitted to create new servers" />
+		<ErrorMessage message="Vous n'êtes pas autorisé à créer de nouveaux serveurs" />
 	</div>
 
 	<div
@@ -24,8 +24,8 @@
 	>
 		<LucideAlertTriangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 		<p>
-			Your spending limit has been exceeded. Please contact support to increase
-			your limit.
+			Votre limite de dépenses a été dépassée. Veuillez contacter le support pour augmenter
+			votre limite.
 		</p>
 	</div>
 	<div
@@ -40,7 +40,7 @@
 			<div class="w-full lg:min-w-[42rem] lg:max-w-[42rem] space-y-8">
 				<div class="flex flex-col" v-if="$team.doc?.hybrid_servers_enabled">
 					<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
-						Choose Server Type
+						Choisir le type de serveur
 					</h2>
 					<div class="mt-2 w-full space-y-2">
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -68,7 +68,7 @@
 
 				<div v-if="serverType" class="flex flex-col">
 					<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
-						Enter Name For Your Server<span class="text-red-500">&nbsp;*</span>
+						Entrer le nom de votre serveur<span class="text-red-500">&nbsp;*</span>
 					</h2>
 					<div class="mt-2">
 						<FormControl
@@ -83,7 +83,7 @@
 					<div class="flex flex-col" v-if="allProviders.length">
 						<div class="flex items-center justify-between items-center">
 							<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
-								Select Provider
+								Sélectionner le fournisseur
 							</h2>
 							<div>
 								<Button
@@ -94,8 +94,8 @@
 									<template #prefix>
 										<lucide-help-circle class="h-4 w-4 text-ink-gray-7" />
 									</template>
-									<span class="hidden sm:inline">Compare Features</span>
-									<span class="sm:hidden">Compare</span>
+									<span class="hidden sm:inline">Comparer les fonctionnalités</span>
+									<span class="sm:hidden">Comparer</span>
 								</Button>
 							</div>
 						</div>
@@ -124,7 +124,7 @@
 										</div>
 										<Tooltip
 											v-if="provider.beta"
-											text="This provider is in beta. Click 'Compare Features' above to learn more."
+											text="This provider is in beta. Click 'Comparer les fonctionnalités' above to learn more."
 										>
 											<Badge
 												label="Beta"
@@ -150,7 +150,7 @@
 						v-if="serverProvider && regionsForProvider.length"
 					>
 						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
-							Select Region
+							Sélectionner la région
 						</h2>
 						<div class="mt-2 w-full space-y-2">
 							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -181,7 +181,7 @@
 						class="flex flex-col space-y-2 text-sm text-ink-gray-6 w-full"
 					>
 						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
-							Deployment Mode
+							Mode de déploiement
 						</h2>
 
 						<div class="mt-2 w-full space-y-2">
@@ -189,15 +189,15 @@
 								<button
 									v-for="c in [
 										{
-											name: 'Separate Server for App and DB',
+											name: 'Serveur séparé App et BDD',
 											description:
-												'Standard deployment with dedicated App and DB servers (recommended)',
+												'Déploiement standard avec des serveurs App et BDD dédiés (recommandé)',
 											unifiedServer: false,
 										},
 										{
-											name: 'Unified Server for App and DB',
+											name: 'Serveur unifié App et BDD',
 											description:
-												'Cheaper option with a single server for both App and DB',
+												'Option moins coûteuse avec un seul serveur pour App et BDD',
 											unifiedServer: true,
 										},
 									]"
@@ -223,14 +223,14 @@
 						</div>
 					</div>
 					<!-- Chose Plan Type -->
-					<!-- Choose Service Type (Premium/Standard) -->
+					<!-- Choose Type de service (Premium/Standard) -->
 					<div
 						v-if="serverRegion && serverProvider && hasPremiumPlansForCluster"
 						class="flex flex-col"
 					>
 						<div class="flex items-center justify-between">
 							<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
-								Service Type
+								Type de service
 							</h2>
 							<div>
 								<Button
@@ -240,7 +240,7 @@
 									<template #prefix>
 										<lucide-help-circle class="h-4 w-4 text-ink-gray-7" />
 									</template>
-									<span class="hidden sm:inline">Know More</span>
+									<span class="hidden sm:inline">En savoir plus</span>
 									<span class="sm:hidden">More</span>
 								</Button>
 							</div>
@@ -251,11 +251,11 @@
 									v-for="c in [
 										{
 											name: 'Standard',
-											description: 'Includes standard support and SLAs',
+											description: 'Inclut le support standard et les SLA',
 										},
 										{
 											name: 'Premium',
-											description: 'Includes enterprise support and SLAs',
+											description: 'Inclut le support entreprise et les SLA',
 										},
 									]"
 									:key="c.name"
@@ -292,13 +292,13 @@
 										v-if="!unifiedServer"
 										class="text-base font-semibold leading-6 text-ink-gray-9"
 									>
-										Select Application Server Plan
+										Sélectionner le plan du serveur application
 									</h2>
 									<h2
 										v-else
 										class="text-base font-semibold leading-6 text-ink-gray-9"
 									>
-										Select Unified Server Plan
+										Sélectionner le plan du serveur unifié
 									</h2>
 
 									<div v-if="!unifiedServer">
@@ -311,9 +311,9 @@
 												<lucide-help-circle class="h-4 w-4 text-ink-gray-7" />
 											</template>
 											<span class="hidden sm:inline"
-												>Learn About Instance Types</span
+												>En savoir plus sur les types d'instance</span
 											>
-											<span class="sm:hidden">Learn More</span>
+											<span class="sm:hidden">En savoir plus</span>
 										</Button>
 									</div>
 									<div v-else>
@@ -326,9 +326,9 @@
 												<lucide-help-circle class="h-4 w-4 text-ink-gray-7" />
 											</template>
 											<span class="hidden sm:inline"
-												>Learn About Unified Server</span
+												>En savoir plus sur le serveur unifié</span
 											>
-											<span class="sm:hidden">Learn More</span>
+											<span class="sm:hidden">En savoir plus</span>
 										</Button>
 									</div>
 								</div>
@@ -385,7 +385,7 @@
 										<span class="font-medium"
 											>{{ availableAppPlanTypes[0].title }}</span
 										>
-										machines are available.
+										machines sont disponibles.
 									</p>
 
 									<p class="text-base text-ink-gray-6">
@@ -420,7 +420,7 @@
 							<div class="flex flex-col space-y-2">
 								<div class="flex flex-row justify-between items-center">
 									<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
-										Select Database Server Plan
+										Sélectionner le plan du serveur de base de données
 									</h2>
 									<div>
 										<Button
@@ -432,9 +432,9 @@
 												<lucide-help-circle class="h-4 w-4 text-ink-gray-7" />
 											</template>
 											<span class="hidden sm:inline"
-												>Learn About Instance Types</span
+												>En savoir plus sur les types d'instance</span
 											>
-											<span class="sm:hidden">Learn More</span>
+											<span class="sm:hidden">En savoir plus</span>
 										</Button>
 									</div>
 								</div>
@@ -491,7 +491,7 @@
 										<span class="font-medium"
 											>{{ availableDbPlanTypes[0].title }}</span
 										>
-										machines are available.
+										machines sont disponibles.
 									</p>
 
 									<p class="text-base text-ink-gray-6">
@@ -513,50 +513,50 @@
 				<div v-else-if="serverType === 'hybrid'" class="space-y-8">
 					<div class="flex flex-col space-y-2">
 						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
-							App Server IP Addresses
+							Adresses IP du serveur application
 						</h2>
 						<div class="flex flex-col sm:flex-row gap-3">
 							<FormControl
 								class="w-full"
 								v-model="appPublicIP"
-								label="Public IP"
+								label="IP publique"
 								type="text"
 							/>
 							<FormControl
 								class="w-full"
 								v-model="appPrivateIP"
-								label="Private IP"
+								label="IP privée"
 								type="text"
 							/>
 						</div>
 					</div>
 					<div class="flex flex-col space-y-2">
 						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
-							Database Server IP Addresses
+							Adresses IP du serveur de base de données
 						</h2>
 						<div class="flex flex-col sm:flex-row gap-3">
 							<FormControl
 								class="w-full"
 								v-model="dbPublicIP"
-								label="Public IP"
+								label="IP publique"
 								type="text"
 							/>
 							<FormControl
 								class="w-full"
 								v-model="dbPrivateIP"
-								label="Private IP"
+								label="IP privée"
 								type="text"
 							/>
 						</div>
 					</div>
 					<div class="flex flex-col space-y-2">
 						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
-							Add SSH Key
+							Ajouter la clé SSH
 						</h2>
 						<span class="text-xs text-ink-gray-6">
-							Add this SSH Key to
+							Ajoutez cette clé SSH au
 							<span class="font-mono">~/.ssh/authorized_keys</span>
-							file on Application and Database server</span
+							sur le serveur application et base de données</span
 						>
 						<ClickToCopy
 							:textContent="$resources.hybridOptions.data?.ssh_key || ''"
@@ -565,12 +565,12 @@
 				</div>
 
 				<div class="flex flex-col space-y-3" v-if="showAutoAddStorageOption">
-					<h2 class="text-base font-semibold">Auto Add-on Storage</h2>
+					<h2 class="text-base font-semibold">Stockage complémentaire automatique</h2>
 
 					<FormControl
 						type="checkbox"
 						v-model="enableAutoAddStorage"
-						label="Enable for Application and Database Server"
+						label="Activer pour le serveur application et base de données"
 						class="mb-2"
 					/>
 
@@ -609,11 +609,11 @@
 					class="lg:hidden rounded border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 border p-6 space-y-4"
 					v-if="showSummary"
 				>
-					<h2 class="text-md font-semibold">Summary</h2>
+					<h2 class="text-md font-semibold">Résumé</h2>
 
 					<!-- Server Name -->
 					<div class="flex flex-col space-y-1" v-if="serverTitle">
-						<div class="text-base text-ink-gray-7">Server Name</div>
+						<div class="text-base text-ink-gray-7">Nom du serveur</div>
 						<div class="text-base font-medium">{{ serverTitle }}</div>
 					</div>
 
@@ -622,7 +622,7 @@
 						class="flex flex-col space-y-1"
 						v-if="serverType === 'dedicated' && serverProvider"
 					>
-						<div class="text-base text-ink-gray-7">Server Provider</div>
+						<div class="text-base text-ink-gray-7">Fournisseur du serveur</div>
 						<div class="text-base font-medium">{{ selectedProviderTitle }}</div>
 					</div>
 
@@ -631,7 +631,7 @@
 						class="flex flex-col space-y-1"
 						v-if="serverType === 'dedicated' && serverRegion"
 					>
-						<div class="text-base text-ink-gray-7">Server Region</div>
+						<div class="text-base text-ink-gray-7">Région du serveur</div>
 						<div class="text-base font-medium">{{ serverRegion }}</div>
 					</div>
 
@@ -642,8 +642,8 @@
 					>
 						<div class="text-base text-ink-gray-7">
 							{{ unifiedServer
-									? 'Unified Server Plan'
-									: 'Application Server Plan' }}
+									? 'Plan serveur unifié'
+									: 'Plan serveur application' }}
 						</div>
 						<div class="text-base font-medium">
 							{{ $format.planTitle(appServerPlan) }}/mo -
@@ -665,7 +665,7 @@
 						class="flex flex-col space-y-1"
 						v-if="serverType === 'dedicated' && !unifiedServer && dbServerPlan"
 					>
-						<div class="text-base text-ink-gray-7">Database Server Plan</div>
+						<div class="text-base text-ink-gray-7">Plan serveur base de données</div>
 						<div class="text-base font-medium">
 							{{ $format.planTitle(dbServerPlan) }}/mo -
 							{{ getPlanTypeTitle(dbServerPlan) }}
@@ -685,7 +685,7 @@
 						class="flex flex-col space-y-1"
 						v-if="serverType === 'hybrid' && appPublicIP && appPrivateIP"
 					>
-						<div class="text-base text-ink-gray-7">App Server IPs</div>
+						<div class="text-base text-ink-gray-7">IPs du serveur application</div>
 						<div class="text-base font-medium">
 							{{ appPublicIP }}
 							/ {{ appPrivateIP }}
@@ -696,7 +696,7 @@
 						class="flex flex-col space-y-1"
 						v-if="serverType === 'hybrid' && dbPublicIP && dbPrivateIP"
 					>
-						<div class="text-base text-ink-gray-7">DB Server IPs</div>
+						<div class="text-base text-ink-gray-7">IPs du serveur BDD</div>
 						<div class="text-base font-medium">
 							{{ dbPublicIP }}
 							/ {{ dbPrivateIP }}
@@ -717,11 +717,11 @@
 						</div>
 					</div>
 
-					<!-- Auto Add-on Storage -->
+					<!-- Stockage complémentaire automatique -->
 					<div class="flex flex-col space-y-1" v-if="showAutoAddStorageOption">
-						<div class="text-base text-ink-gray-7">Auto Add-on Storage</div>
+						<div class="text-base text-ink-gray-7">Stockage complémentaire automatique</div>
 						<div class="text-base font-medium text-green-900">
-							{{ enableAutoAddStorage ? 'Enabled' : 'Disabled' }}
+							{{ enableAutoAddStorage ? 'Activé' : 'Désactivé' }}
 						</div>
 					</div>
 
@@ -729,15 +729,15 @@
 
 					<!-- Total Cost -->
 					<div class="flex flex-col space-y-2" v-if="_totalPerMonth">
-						<div class="text-base text-ink-gray-7">Total Cost</div>
+						<div class="text-base text-ink-gray-7">Coût total</div>
 						<div class="flex flex-col space-y-1">
 							<div class="text-lg font-semibold">
 								{{ totalPerMonth }}
-								/ month
+								/ mois
 							</div>
 							<div class="text-base font-medium text-ink-gray-7">
 								{{ totalPerDay }}
-								per day
+								par jour
 							</div>
 						</div>
 					</div>
@@ -747,7 +747,7 @@
 							type="checkbox"
 							size="sm"
 							variant="subtle"
-							:label="`I agree that the laws of the selected region apply to both me and Frappe.`"
+							:label="`J'accepte que les lois de la région sélectionnée s'appliquent à moi et à Frappe.`"
 							v-model="agreedToRegionConsent"
 						/>
 
@@ -783,11 +783,11 @@
 				class="hidden lg:block sticky top-[4.5rem] rounded border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 border p-6 h-fit w-[25rem] space-y-4"
 				v-if="showSummary"
 			>
-				<h2 class="text-md font-semibold">Summary</h2>
+				<h2 class="text-md font-semibold">Résumé</h2>
 
 				<!-- Server Name -->
 				<div class="flex flex-col space-y-1" v-if="serverTitle">
-					<div class="text-base text-ink-gray-7">Server Name</div>
+					<div class="text-base text-ink-gray-7">Nom du serveur</div>
 					<div class="text-base font-medium">{{ serverTitle }}</div>
 				</div>
 
@@ -796,7 +796,7 @@
 					class="flex flex-col space-y-1"
 					v-if="serverType === 'dedicated' && serverProvider"
 				>
-					<div class="text-base text-ink-gray-7">Server Provider</div>
+					<div class="text-base text-ink-gray-7">Fournisseur du serveur</div>
 					<div class="text-base font-medium">{{ selectedProviderTitle }}</div>
 				</div>
 
@@ -805,7 +805,7 @@
 					class="flex flex-col space-y-1"
 					v-if="serverType === 'dedicated' && serverRegion"
 				>
-					<div class="text-base text-ink-gray-7">Server Region</div>
+					<div class="text-base text-ink-gray-7">Région du serveur</div>
 					<div class="text-base font-medium">{{ serverRegion }}</div>
 				</div>
 
@@ -815,7 +815,7 @@
 					v-if="serverType === 'dedicated' && appServerPlan"
 				>
 					<div class="text-base text-ink-gray-7">
-						{{ unifiedServer ? 'Unified Server Plan' : 'Application Server Plan' }}
+						{{ unifiedServer ? 'Plan serveur unifié' : 'Plan serveur application' }}
 					</div>
 					<div class="text-base font-medium">
 						{{ $format.planTitle(appServerPlan) }}/mo -
@@ -836,7 +836,7 @@
 					class="flex flex-col space-y-1"
 					v-if="serverType === 'dedicated' && !unifiedServer && dbServerPlan"
 				>
-					<div class="text-base text-ink-gray-7">Database Server Plan</div>
+					<div class="text-base text-ink-gray-7">Plan serveur base de données</div>
 					<div class="text-base font-medium">
 						{{ $format.planTitle(dbServerPlan) }}/mo -
 						{{ getPlanTypeTitle(dbServerPlan) }}
@@ -856,7 +856,7 @@
 					class="flex flex-col space-y-1"
 					v-if="serverType === 'hybrid' && appPublicIP && appPrivateIP"
 				>
-					<div class="text-base text-ink-gray-7">App Server IPs</div>
+					<div class="text-base text-ink-gray-7">IPs du serveur application</div>
 					<div class="text-base font-medium">
 						{{ appPublicIP }}
 						/ {{ appPrivateIP }}
@@ -867,7 +867,7 @@
 					class="flex flex-col space-y-1"
 					v-if="serverType === 'hybrid' && dbPublicIP && dbPrivateIP"
 				>
-					<div class="text-base text-ink-gray-7">DB Server IPs</div>
+					<div class="text-base text-ink-gray-7">IPs du serveur BDD</div>
 					<div class="text-base font-medium">
 						{{ dbPublicIP }}
 						/ {{ dbPrivateIP }}
@@ -888,11 +888,11 @@
 					</div>
 				</div>
 
-				<!-- Auto Add-on Storage -->
+				<!-- Stockage complémentaire automatique -->
 				<div class="flex flex-col space-y-1" v-if="showAutoAddStorageOption">
-					<div class="text-base text-ink-gray-7">Auto Add-on Storage</div>
+					<div class="text-base text-ink-gray-7">Stockage complémentaire automatique</div>
 					<div class="text-base font-medium text-ink-gray-9">
-						{{ enableAutoAddStorage ? 'Enabled' : 'Disabled' }}
+						{{ enableAutoAddStorage ? 'Activé' : 'Désactivé' }}
 					</div>
 				</div>
 
@@ -900,12 +900,12 @@
 
 				<!-- Total Cost -->
 				<div class="flex flex-col space-y-2" v-if="_totalPerMonth">
-					<div class="text-base text-ink-gray-7">Total Cost</div>
+					<div class="text-base text-ink-gray-7">Coût total</div>
 					<div class="flex flex-col space-y-1">
-						<div class="text-lg font-semibold">{{ totalPerMonth }} / month</div>
+						<div class="text-lg font-semibold">{{ totalPerMonth }} / mois</div>
 						<div class="text-base font-medium text-ink-gray-7">
 							{{ totalPerDay }}
-							per day
+							par jour
 						</div>
 					</div>
 				</div>
@@ -923,8 +923,8 @@
 							@click.stop
 						/>
 						<div class="text-base font-medium">
-							I agree that the laws of selected region<br />
-							apply to both me and frappe
+							J'accepte que les lois de la région sélectionnée<br />
+							s'appliquent à moi et à Frappe
 						</div>
 					</div>
 
@@ -960,23 +960,22 @@
 		class="mx-auto mt-60 w-fit rounded-md border-2 border-dashed px-12 py-8 text-center text-ink-gray-6"
 	>
 		<LucideServer class="mx-auto mb-4 h-8 w-8" />
-		<p>Server feature isn't enabled for your account.</p>
-		<p>You need to have $200 worth of credits to enable this feature.</p>
+		<p>La fonctionnalité serveur n'est pas activée pour votre compte.</p>
+		<p>Vous devez avoir 200$ de crédits pour activer cette fonctionnalité.</p>
 		<p>
-			Please add it from
+			Veuillez l'ajouter depuis
 			<router-link class="underline" :to="{ name: 'BillingOverview' }"
 				>here</router-link
 			>.
 		</p>
 		<p>
-			Or you can
+			Ou vous pouvez
 			<a
 				class="underline"
 				href="https://frappecloud.com/support"
 				target="_blank"
-				>contact support</a
-			>
-			to enable it.
+				>contacter le support</a>
+			pour l'activer.
 		</p>
 	</div>
 </template>
@@ -1223,15 +1222,15 @@ export default {
 						server_types: [
 							{
 								name: 'dedicated',
-								title: 'Dedicated Server',
+								title: 'Serveur dédié',
 								description:
-									'A pair of dedicated servers managed and owned by frappe',
+									'Une paire de serveurs dédiés gérés et détenus par Frappe',
 							},
 							{
 								name: 'hybrid',
-								title: 'Hybrid Server',
+								title: 'Serveur hybride',
 								description:
-									'A pair of dedicated servers managed by frappe and owned/provisioned by you',
+									'Une paire de serveurs dédiés gérés par Frappe et détenus/provisionnés par vous',
 							},
 						],
 						regions: data.regions,
@@ -1277,24 +1276,24 @@ export default {
 				url: 'press.api.server.new_unified',
 				validate({ server }) {
 					if (!server.title) {
-						throw new DashboardError('Server name is required')
+						throw new DashboardError('Le nom du serveur est requis')
 					} else if (!server.cluster) {
-						throw new DashboardError('Please select a region')
+						throw new DashboardError('Veuillez sélectionner une région')
 					} else if (!server.app_plan) {
-						throw new DashboardError('Please select an Unified Server Plan')
+						throw new DashboardError('Veuillez sélectionner un plan serveur unifié')
 					} else if (Object.keys(this.$team.doc.billing_details).length === 0) {
 						throw new DashboardError(
-							"You don't have billing details added. Please add billing details from settings to continue.",
+							"Vous n'avez pas ajouté de détails de facturation. Veuillez ajouter des détails de facturation depuis les paramètres pour continuer.",
 						)
 					} else if (
 						this.$team.doc.servers_enabled == 0 &&
 						((this.$team.doc.currency == 'USD' &&
 							this.$team.doc.balance < 200) ||
-							(this.$team.doc.currency == 'INR' &&
+							(this.$team.doc.currency == 'DZD' &&
 								this.$team.doc.balance < 16000))
 					) {
 						throw new DashboardError(
-							'You need to have $200 worth of credits to create a server.',
+							'Vous devez avoir 200$ de crédits pour créer un serveur.',
 						)
 					}
 				},
@@ -1311,26 +1310,26 @@ export default {
 				url: 'press.api.server.new',
 				validate({ server }) {
 					if (!server.title) {
-						throw new DashboardError('Server name is required')
+						throw new DashboardError('Le nom du serveur est requis')
 					} else if (!server.cluster) {
-						throw new DashboardError('Please select a region')
+						throw new DashboardError('Veuillez sélectionner une région')
 					} else if (!server.app_plan) {
-						throw new DashboardError('Please select an App Server Plan')
+						throw new DashboardError('Veuillez sélectionner un plan serveur application')
 					} else if (!server.db_plan) {
-						throw new DashboardError('Please select a Database Server Plan')
+						throw new DashboardError('Veuillez sélectionner un plan serveur base de données')
 					} else if (Object.keys(this.$team.doc.billing_details).length === 0) {
 						throw new DashboardError(
-							"You don't have billing details added. Please add billing details from settings to continue.",
+							"Vous n'avez pas ajouté de détails de facturation. Veuillez ajouter des détails de facturation depuis les paramètres pour continuer.",
 						)
 					} else if (
 						this.$team.doc.servers_enabled == 0 &&
 						((this.$team.doc.currency == 'USD' &&
 							this.$team.doc.balance < 200) ||
-							(this.$team.doc.currency == 'INR' &&
+							(this.$team.doc.currency == 'DZD' &&
 								this.$team.doc.balance < 16000))
 					) {
 						throw new DashboardError(
-							'You need to have $200 worth of credits to create a server.',
+							'Vous devez avoir 200$ de crédits pour créer un serveur.',
 						)
 					}
 				},
@@ -1347,32 +1346,32 @@ export default {
 				url: 'press.api.selfhosted.create_and_verify_selfhosted',
 				validate() {
 					if (!this.serverTitle) {
-						throw new DashboardError('Server name is required')
+						throw new DashboardError('Le nom du serveur est requis')
 					} else if (
 						!this.appPublicIP ||
 						!this.dbPublicIP ||
 						!this.appPrivateIP ||
 						!this.dbPrivateIP
 					) {
-						throw new DashboardError('Please fill all the IP addresses')
+						throw new DashboardError('Veuillez remplir toutes les adresses IP')
 					} else if (this.validateIP(this.appPublicIP)) {
 						throw new DashboardError(
-							'Please enter a valid Application Public IP',
+							'Veuillez entrer une IP publique application valide',
 						)
 					} else if (this.validateIP(this.appPrivateIP)) {
 						throw new DashboardError(
-							'Please enter a valid Application Private IP',
+							'Veuillez entrer une IP privée application valide',
 						)
 					} else if (this.validateIP(this.dbPublicIP)) {
-						throw new DashboardError('Please enter a valid Database Public IP')
+						throw new DashboardError('Veuillez entrer une IP publique base de données valide')
 					} else if (this.validateIP(this.dbPrivateIP)) {
-						throw new DashboardError('Please enter a valid Database Private IP')
+						throw new DashboardError('Veuillez entrer une IP privée base de données valide')
 						//} else if (this.dbPublicIP === this.appPublicIP) {
 						//throw new DashboardError(
 						//"Please don't use the same server as Application and Database servers",
 						//);
 					} else if (!this.agreedToRegionConsent) {
-						throw new DashboardError('Please agree to the region consent')
+						throw new DashboardError('Veuillez accepter le consentement de la région')
 					}
 				},
 				onSuccess(server) {
@@ -1601,7 +1600,7 @@ export default {
 		},
 		_totalPerMonth() {
 			let currencyField =
-				this.$team.doc.currency == 'INR' ? 'price_inr' : 'price_usd'
+				this.$team.doc.currency == 'DZD' ? 'price_dzd' : 'price_usd'
 			if (this.serverType === 'dedicated') {
 				if (this.unifiedServer) {
 					if (!this.appServerPlan) return 0
@@ -1630,7 +1629,7 @@ export default {
 			if (!this.$team?.doc?.currency) return -1
 			try {
 				let priceField =
-					this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd'
+					this.$team.doc.currency === 'DZD' ? 'price_dzd' : 'price_usd'
 				console.log(this.options)
 				return this.options?.storage_plan?.[priceField] || 0
 			} catch (error) {
@@ -1675,12 +1674,12 @@ export default {
 		},
 		serverButtonLabel() {
 			if (this.serverType === 'hybrid') {
-				return 'Add Hybrid Server'
+				return 'Ajouter un serveur hybride'
 			}
 			if (this.unifiedServer) {
-				return 'Create Unified Server'
+				return 'Créer un serveur unifié'
 			}
-			return 'Create Server'
+			return 'Créer un serveur'
 		},
 	},
 	methods: {

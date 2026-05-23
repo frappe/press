@@ -1,54 +1,67 @@
 import re
 
 import frappe
-import razorpay
+# import razorpay  # Razorpay (Indian payment gateway) removed — replaced with generic payment
 import stripe
 from frappe.utils import fmt_money
 
 from press.exceptions import CentralServerNotSet, FrappeioServerNotSet
 from press.utils import get_current_team, log_error
 
-states_with_tin = {
-	"Andaman and Nicobar Islands": "35",
-	"Andhra Pradesh": "37",
-	"Arunachal Pradesh": "12",
-	"Assam": "18",
-	"Bihar": "10",
-	"Chandigarh": "04",
-	"Chhattisgarh": "22",
-	"Dadra and Nagar Haveli and Daman and Diu": "26",
-	"Delhi": "07",
-	"Goa": "30",
-	"Gujarat": "24",
-	"Haryana": "06",
-	"Himachal Pradesh": "02",
-	"Jammu and Kashmir": "01",
-	"Jharkhand": "20",
-	"Karnataka": "29",
-	"Kerala": "32",
-	"Ladakh": "38",
-	"Lakshadweep Islands": "31",
-	"Madhya Pradesh": "23",
-	"Maharashtra": "27",
-	"Manipur": "14",
-	"Meghalaya": "17",
-	"Mizoram": "15",
-	"Nagaland": "13",
-	"Odisha": "21",
-	"Other Territory": "97",
-	"Puducherry": "34",
-	"Punjab": "03",
-	"Rajasthan": "08",
-	"Sikkim": "11",
-	"Tamil Nadu": "33",
-	"Telangana": "36",
-	"Tripura": "16",
-	"Uttar Pradesh": "09",
-	"Uttarakhand": "05",
-	"West Bengal": "19",
+# Algerian Wilayas (provinces) with codes
+wilayas_with_code = {
+	"Adrar": "01",
+	"Chlef": "02",
+	"Laghouat": "03",
+	"Oum El Bouaghi": "04",
+	"Batna": "05",
+	"Bejaia": "06",
+	"Biskra": "07",
+	"Bechar": "08",
+	"Blida": "09",
+	"Bouira": "10",
+	"Tamanrasset": "11",
+	"Tebessa": "12",
+	"Tlemcen": "13",
+	"Tiaret": "14",
+	"Tizi Ouzou": "15",
+	"Alger": "16",
+	"Djelfa": "17",
+	"Jijel": "18",
+	"Setif": "19",
+	"Saida": "20",
+	"Skikda": "21",
+	"Sidi Bel Abbes": "22",
+	"Annaba": "23",
+	"Guelma": "24",
+	"Constantine": "25",
+	"Medea": "26",
+	"Mostaganem": "27",
+	"M Sila": "28",
+	"Mascara": "29",
+	"Ouargla": "30",
+	"Oran": "31",
+	"El Bayadh": "32",
+	"Illizi": "33",
+	"Bordj Bou Arreridj": "34",
+	"Boumerdes": "35",
+	"El Tarf": "36",
+	"Tindouf": "37",
+	"Tissemsilt": "38",
+	"El Oued": "39",
+	"Khenchela": "40",
+	"Souk Ahras": "41",
+	"Tipaza": "42",
+	"Mila": "43",
+	"Ain Defla": "44",
+	"Naama": "45",
+	"Ain Temouchent": "46",
+	"Ghardaia": "47",
+	"Relizane": "48",
 }
 
-GSTIN_FORMAT = re.compile("^[0-9]{2}[A-Z]{4}[0-9A-Z]{1}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1}$")
+# NIF (Numero d'Identification Fiscale) format for Algeria
+NIF_FORMAT = re.compile("^[0-9]{15}$")
 
 
 def format_stripe_money(amount, currency):
@@ -82,7 +95,7 @@ def get_frappe_io_connection():
 	frappe_api_secret = press_settings.get_password("frappeio_api_secret", raise_exception=False)
 
 	if not (frappe_api_key and frappe_api_secret and press_settings.frappe_url):
-		frappe.throw("Frappe.io URL not set up in Press Settings", exc=FrappeioServerNotSet)
+		return None
 
 	frappe.local.press_frappeio_conn = FrappeClient(
 		press_settings.frappe_url, api_key=frappe_api_key, api_secret=frappe_api_secret
@@ -131,6 +144,8 @@ def get_setup_intent(team):
 		currency = data[1]
 		is_trusted_team = data[2]
 		stripe = get_stripe()
+		if not stripe:
+			return None
 		hash = random_string(10)
 		intent = stripe.SetupIntent.create(
 			customer=customer_id,
@@ -167,7 +182,7 @@ def get_stripe():
 		)
 
 		if not secret_key:
-			frappe.throw("Setup stripe via Press Settings before using press.api.billing.get_stripe")
+			return None
 
 		stripe.api_key = secret_key
 		# Set the maximum number of retries for network requests
@@ -182,41 +197,17 @@ def convert_stripe_money(amount):
 	return (amount / 100) if amount else 0
 
 
-def validate_gstin_check_digit(gstin, label="GSTIN"):
-	"""Function to validate the check digit of the GSTIN."""
-	factor = 1
-	total = 0
-	code_point_chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	mod = len(code_point_chars)
-	input_chars = gstin[:-1]
-	for char in input_chars:
-		digit = factor * code_point_chars.find(char)
-		digit = (digit // mod) + (digit % mod)
-		total += digit
-		factor = 2 if factor == 1 else 1
-	if gstin[-1] != code_point_chars[((mod - (total % mod)) % mod)]:
+def validate_nif_check_digit(nif, label="NIF"):
+	"""Function to validate the NIF (Numero d'Identification Fiscale) for Algeria."""
+	if not NIF_FORMAT.match(nif):
 		frappe.throw(
-			f"""Invalid {label}! The check digit validation has failed. Please ensure you've typed the {label} correctly."""
+			f"""Invalid {label}! The format validation has failed. Please ensure you've typed the {label} correctly."""
 		)
 
 
 def get_razorpay_client():
-	from frappe.utils.password import get_decrypted_password
-
-	if not hasattr(frappe.local, "press_razorpay_client_object"):
-		key_id = frappe.db.get_single_value("Press Settings", "razorpay_key_id")
-		key_secret = get_decrypted_password(
-			"Press Settings", "Press Settings", "razorpay_key_secret", raise_exception=False
-		)
-
-		if not (key_id and key_secret):
-			frappe.throw(
-				"Setup razorpay via Press Settings before using press.api.billing.get_razorpay_client"
-			)
-
-		frappe.local.press_razorpay_client_object = razorpay.Client(auth=(key_id, key_secret))
-
-	return frappe.local.press_razorpay_client_object
+	"""Razorpay payment gateway has been removed. This stub remains for compatibility."""
+	frappe.throw("Razorpay payment gateway is not available. Please use Stripe or another supported gateway.")
 
 
 def process_micro_debit_test_charge(stripe_event):

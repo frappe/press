@@ -9,7 +9,7 @@
 		"enabled",
 		"title",
 		"pricing_section",
-		"price_inr",
+		"price_dzd",
 		"column_break_xauk",
 		"price_usd"
 	],
@@ -27,7 +27,7 @@
 			"label": "Pricing"
 		},
 		{
-			"fieldname": "price_inr",
+			"fieldname": "price_dzd",
 			"fieldtype": "Currency",
 			"label": "Price per GB (INR)"
 		},

@@ -409,7 +409,7 @@ class TestSite(FrappeTestCase):
 			document_type="Site",
 			interval="Daily",
 			price_usd=30,
-			price_inr=30,
+			price_dzd=30,
 			period=30,
 		).insert()
 		create_test_site(
@@ -566,7 +566,7 @@ class TestSite(FrappeTestCase):
 
 	def test_site_usage_exceed_tracking(self):
 		team = create_test_team()
-		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_dzd=750.0, plan_name="USD 10")
 		site = create_test_site(plan=plan_10.name, public_server=True, team=team.name)
 
 		self.assertEqual(site.status, "Active")
@@ -582,7 +582,7 @@ class TestSite(FrappeTestCase):
 
 	def test_free_sites_ignore_usage_exceed_tracking(self):
 		team = create_test_team(free_account=False)
-		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_dzd=750.0, plan_name="USD 10")
 		site = create_test_site(plan=plan_10.name, public_server=True, team=team.name, free=True)
 
 		self.assertEqual(site.status, "Active")
@@ -598,7 +598,7 @@ class TestSite(FrappeTestCase):
 
 	def test_free_team_sites_ignore_usage_exceed_tracking(self):
 		team = create_test_team(free_account=True)
-		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_dzd=750.0, plan_name="USD 10")
 		site = create_test_site(plan=plan_10.name, public_server=True, team=team.name, free=False)
 
 		self.assertEqual(site.status, "Active")
@@ -613,7 +613,7 @@ class TestSite(FrappeTestCase):
 
 	def test_sites_on_dedicated_server_ignore_usage_exceed_tracking(self):
 		team = create_test_team()
-		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_dzd=750.0, plan_name="USD 10")
 		site = create_test_site(plan=plan_10.name, public_server=False, team=team.name)
 
 		self.assertEqual(site.status, "Active")
@@ -629,8 +629,8 @@ class TestSite(FrappeTestCase):
 
 	def test_reset_disk_usage_exceed_alert_on_changing_plan(self):
 		team = create_test_team()
-		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
-		plan_20 = create_test_plan("Site", price_usd=20.0, price_inr=1500.0, plan_name="USD 20")
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_dzd=750.0, plan_name="USD 10")
+		plan_20 = create_test_plan("Site", price_usd=20.0, price_dzd=1500.0, plan_name="USD 20")
 
 		site: Site = create_test_site(plan=plan_10.name, public_server=True, team=team.name)
 		site.create_subscription(plan=plan_10.name)
@@ -648,7 +648,7 @@ class TestSite(FrappeTestCase):
 
 	def test_reset_disk_usage_exceed_alert_on_reducing_disk_size(self):
 		team = create_test_team()
-		plan_10 = create_test_plan("Site", price_usd=10.0, price_inr=750.0, plan_name="USD 10")
+		plan_10 = create_test_plan("Site", price_usd=10.0, price_dzd=750.0, plan_name="USD 10")
 		site: Site = create_test_site(plan=plan_10.name, public_server=True, team=team.name)
 		site.create_subscription(plan=plan_10.name)
 		site.current_disk_usage = 150

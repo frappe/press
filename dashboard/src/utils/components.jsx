@@ -21,7 +21,7 @@ export function icon(name, _class = '') {
  * @returns 
  */
 export function confirmDialog({
-	title = 'Untitled',
+	title = 'Sans titre',
 	fields = [],
 	message,
 	primaryAction,

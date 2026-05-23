@@ -4,13 +4,13 @@
 		v-if="$resources.signupSettings.loading"
 	>
 		<Spinner class="mr-2 w-4" />
-		<p class="text-ink-gray-8">Loading</p>
+		<p class="text-ink-gray-8">Chargement</p>
 	</div>
 	<div class="flex h-screen overflow-hidden sm:bg-surface-gray-1" v-else>
 		<div class="w-full overflow-auto">
 			<LoginBox
-				title="Get started in minutes"
-				subtitle="14 days free trial, no credit card required."
+				title="Démarrez en quelques minutes"
+				subtitle="Essai gratuit de 14 jours, aucune carte de crédit requise."
 				:class="{ 'pointer-events-none': $resources.signup?.loading }"
 				:logo="saasProduct?.logo"
 			>
@@ -21,9 +21,9 @@
 					>
 						<!-- Fields -->
 						<FormControl
-							label="Country"
+							label="Pays"
 							type="select"
-							placeholder="Select your country"
+							placeholder="Sélectionnez votre pays"
 							autocomplete="country"
 							variant="outline"
 							:options="countries"
@@ -32,7 +32,7 @@
 						/>
 						<div class="mt-5 flex flex-row gap-5">
 							<FormControl
-								label="First Name"
+								label="Prénom"
 								type="text"
 								placeholder="John"
 								variant="outline"
@@ -40,7 +40,7 @@
 								required
 							/>
 							<FormControl
-								label="Last Name"
+								label="Nom"
 								type="text"
 								placeholder="Doe"
 								variant="outline"
@@ -120,7 +120,7 @@
 								params: $route.params,
 							}"
 						>
-							Already have an account? Log in.
+							Vous avez déjà un compte ? Se connecter.
 						</router-link>
 					</div>
 				</template>

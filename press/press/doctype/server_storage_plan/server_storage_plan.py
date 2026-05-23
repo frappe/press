@@ -16,7 +16,7 @@ class ServerStoragePlan(Plan):
 		from frappe.types import DF
 
 		enabled: DF.Check
-		price_inr: DF.Currency
+		price_dzd: DF.Currency
 		price_usd: DF.Currency
 		title: DF.Data | None
 	# end: auto-generated types

@@ -6,7 +6,7 @@ from typing import List
 import frappe
 from frappe.model.document import Document
 
-from press.press.doctype.invoice.invoice import calculate_gst
+from press.press.doctype.invoice.invoice import calculate_tva
 from press.utils import get_current_team
 
 
@@ -23,19 +23,19 @@ class SaasAppPlan(Document):
 
 	def get_total_amount(self, payment_option):
 		"""
-		validates if plan is gst_inclusive, checks applicable country
+		validates if plan is tva_inclusive, checks applicable country
 		:option "Monthly" or "Annual"
 		"""
 		team = get_current_team(True)
 		amount = frappe.db.get_value("Site Plan", self.plan, f"price_{team.currency.lower()}")
 		amount = amount * 12 if payment_option == "Annual" else amount
 
-		if team.country == "India" and self.gst_inclusive:
-			amount = amount + calculate_gst(amount)
+		if team.country == "Algeria" and self.gst_inclusive:
+			amount = amount + calculate_tva(amount)
 
 		if payment_option == "Annual" and self.annual_discount:
 			amount -= (
-				self.annual_discount_inr if team.country == "India" else self.annual_discount_usd
+				self.annual_discount_dzd if team.country == "Algeria" else self.annual_discount_usd
 			)
 
 		return amount

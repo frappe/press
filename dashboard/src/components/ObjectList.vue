@@ -15,7 +15,7 @@
 				<div v-if="showControls" class="flex items-center space-x-2">
 					<TextInput
 						v-if="this.options.searchField"
-						placeholder="Search"
+						placeholder="Rechercher"
 						class="max-w-[20rem]"
 						:debounce="500"
 						v-model="searchQuery"
@@ -41,13 +41,13 @@
 				<slot name="header-right" v-bind="context" />
 				<Tooltip
 					v-if="options.experimental"
-					text="This is an experimental feature"
+					text="Ceci est une fonctionnalité expérimentale"
 				>
 					<div class="rounded-md  bg-surface-pink-1 p-1.5">
 						<lucide-flask-conical class="h-4 w-4 text-purple-500" />
 					</div>
 				</Tooltip>
-				<Tooltip v-if="options.documentation" text="View documentation">
+				<Tooltip v-if="options.documentation" text="Voir la documentation">
 					<div class="rounded-md bg-surface-gray-2 p-1.5">
 						<a :href="options.documentation" target="_blank">
 							<lucide-help-circle class="h-4 w-4" />
@@ -55,13 +55,13 @@
 					</div>
 				</Tooltip>
 				<Button
-					label="Refresh"
+					label="Actualiser"
 					v-if="$list"
 					@click="$list.reload()"
 					:loading="isLoading"
 				>
 					<template #icon>
-						<Tooltip text="Refresh">
+						<Tooltip text="Actualiser">
 							<lucide-refresh-ccw class="h-4 w-4" />
 						</Tooltip>
 					</template>
@@ -121,7 +121,7 @@
 					class="text-center text-sm leading-10 text-ink-gray-5 pb-[1.75rem]"
 					v-if="isLoading"
 				>
-					Loading...
+					Chargement...
 				</div>
 				<div v-else-if="$list?.list?.error" class="py-4 text-center">
 					<ErrorMessage :message="$list.list.error" />
@@ -145,7 +145,7 @@
 					@click="$list.next()"
 					:loading="isLoading"
 				>
-					Load more
+					Charger plus
 				</Button>
 			</div>
 		</div>
@@ -372,7 +372,7 @@ export default {
 
 			let summary;
 			if (this.filteredRows.length === 0) {
-				summary = 'No results';
+				summary = 'Aucun résultat';
 			} else if (this.filteredRows[0].rows) {
 				let total = this.rows.reduce(
 					(acc, group) => acc + group.rows.length,
@@ -448,7 +448,7 @@ export default {
 			);
 		},
 		emptyStateMessage() {
-			return this.options.emptyStateMessage || 'No results found';
+			return this.options.emptyStateMessage || 'Aucun résultat trouvé';
 		},
 		banner() {
 			if (this.options.banner) {

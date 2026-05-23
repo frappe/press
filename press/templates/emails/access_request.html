@@ -4,10 +4,10 @@
 {% block content %}
 <td class="text-base leading-6 text-gray-900">
     <div class="p-8 bg-white from-markdown">
-        <p><span class='font-medium'>Frappe has requested access to your resources.</p>
-        <p><span class='font-medium'>Reason:</span> {{ reason }}</p>
+        <p><span class='font-medium'>Frappe a demandé l'accès à vos ressources.</p>
+        <p><span class='font-medium'>Raison :</span> {{ reason }}</p>
         <div class='mb-4 space-y-2'>
-            <div class='font-semibold'>Resources:</div>
+            <div class='font-semibold'>Ressources :</div>
             {% for resource in resources %}
             <div>
                 <span class="font-medium">{{ resource.document_type }}:</span>
@@ -15,9 +15,9 @@
             </div>
             {% endfor %}
         </div>
-        {{ utils.button('View Access Requests', 'dashboard/access-requests') }}
+        {{ utils.button('Voir les demandes d\'accès', 'dashboard/access-requests') }}
         {{ utils.separator() }}
-        <p class="my-0">Team Frappe</p>
+        <p class="my-0">L'équipe Frappe</p>
     </div>
 </td>
 {% endblock %}

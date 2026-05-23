@@ -10,7 +10,7 @@
 		"column_break_nyns",
 		"provider",
 		"pricing_section",
-		"price_inr",
+		"price_dzd",
 		"column_break_vild",
 		"price_usd"
 	],
@@ -21,27 +21,37 @@
 			"fieldtype": "Check",
 			"label": "Enabled"
 		},
-		{ "fieldname": "title", "fieldtype": "Data", "label": "Title" },
+		{
+			"fieldname": "title",
+			"fieldtype": "Data",
+			"label": "Title"
+		},
 		{
 			"fieldname": "pricing_section",
 			"fieldtype": "Section Break",
 			"label": "Pricing"
 		},
 		{
-			"fieldname": "price_inr",
+			"fieldname": "price_dzd",
 			"fieldtype": "Currency",
 			"in_list_view": 1,
 			"label": "Price per GB (INR)",
 			"reqd": 1
 		},
-		{ "fieldname": "column_break_vild", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_vild",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "price_usd",
 			"fieldtype": "Currency",
 			"in_list_view": 1,
 			"label": "Price per GB (USD)"
 		},
-		{ "fieldname": "column_break_nyns", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_nyns",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "provider",
 			"fieldtype": "Select",

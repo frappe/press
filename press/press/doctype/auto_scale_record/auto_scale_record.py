@@ -800,8 +800,8 @@ def run_scheduled_scale_records():
 
 def calculate_secondary_server_price(team: str, secondary_server_plan: str) -> float:
 	"""Calculate secondary server proice with a discount"""
-	is_inr = frappe.db.get_value("Team", team, "currency") == "INR"
-	price_field = "price_inr" if is_inr else "price_usd"
+	is_dzd = frappe.db.get_value("Team", team, "currency") == "DZD"
+	price_field = "price_dzd" if is_dzd else "price_usd"
 
 	server_price = frappe.db.get_value("Server Plan", secondary_server_plan, price_field)
 	autoscale_discount = frappe.db.get_single_value("Press Settings", "autoscale_discount")

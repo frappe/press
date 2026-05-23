@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<AlertBanner
-			title="Please add your billing address to complete your Frappe Cloud profile."
+			title="Veuillez ajouter votre adresse de facturation pour compléter votre profil Frappe Cloud."
 			type="warning"
 		>
 			<Button
@@ -9,7 +9,7 @@
 				@click="showBillingDetailsDialog = true"
 				variant="outline"
 			>
-				Update Address
+				Mettre à jour l'adresse
 			</Button>
 		</AlertBanner>
 		<UpdateBillingDetails

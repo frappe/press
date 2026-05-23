@@ -74,7 +74,7 @@ def get_plans():
 				"name": current_plan.name,
 				"plan_title": current_plan.plan_title,
 				"price_usd": current_plan.price_usd,
-				"price_inr": current_plan.price_inr,
+				"price_dzd": current_plan.price_dzd,
 				"cpu_time_per_day": current_plan.cpu_time_per_day,
 				"max_storage_usage": current_plan.max_storage_usage,
 				"max_database_usage": current_plan.max_database_usage,

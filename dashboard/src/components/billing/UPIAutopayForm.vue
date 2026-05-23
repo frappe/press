@@ -15,7 +15,7 @@
 			placeholder="50000"
 		/>
 		<div class="mt-2 text-p-sm text-ink-gray-6">
-			<div class="font-medium">Range: ₹500 - ₹1,00,000</div>
+			<div class="font-medium">Range: د.ج500 - د.ج1,00,000</div>
 
 			<div class="mt-2 text-ink-gray-5 italic">
 				<strong>Important:</strong> If an invoice exceeds this limit, the
@@ -111,11 +111,11 @@ export default {
 	methods: {
 		setupAutopay() {
 			if (!this.maxAmount || this.maxAmount < 500) {
-				toast.error('Maximum amount must be at least ₹500');
+				toast.error('Maximum amount must be at least د.ج500');
 				return;
 			}
 			if (this.maxAmount > 100000) {
-				toast.error('Maximum amount cannot exceed ₹1,00,000');
+				toast.error('Maximum amount cannot exceed د.ج1,00,000');
 				return;
 			}
 			this.$emit('initiate', this.maxAmount);

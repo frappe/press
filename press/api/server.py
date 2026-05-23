@@ -711,13 +711,13 @@ def options():
 	storage_plan = frappe.db.get_value(
 		"Server Storage Plan",
 		{"enabled": 1},
-		["price_inr", "price_usd"],
+		["price_dzd", "price_usd"],
 		as_dict=True,
 	)
 	snapshot_plan = frappe.db.get_value(
 		"Server Snapshot Plan",
 		{"enabled": 1},
-		["price_inr", "price_usd"],
+		["price_dzd", "price_usd"],
 		as_dict=True,
 	)
 	return {
@@ -744,7 +744,7 @@ def secondary_server_plans(
 	platform=None,
 	current_plan: str | None = None,
 ):
-	current_price = frappe.db.get_value("Server Plan", current_plan, "price_inr")
+	current_price = frappe.db.get_value("Server Plan", current_plan, "price_dzd")
 	ServerPlan = frappe.qb.DocType("Server Plan")
 	HasRole = frappe.qb.DocType("Has Role")
 	autoscale_discount = frappe.db.get_single_value("Press Settings", "autoscale_discount")
@@ -755,7 +755,7 @@ def secondary_server_plans(
 			ServerPlan.name,
 			ServerPlan.title,
 			(ServerPlan.price_usd * autoscale_discount).as_("price_usd"),
-			(ServerPlan.price_inr * autoscale_discount).as_("price_inr"),
+			(ServerPlan.price_dzd * autoscale_discount).as_("price_dzd"),
 			ServerPlan.vcpu,
 			ServerPlan.memory,
 			ServerPlan.disk,
@@ -769,7 +769,7 @@ def secondary_server_plans(
 		.on((HasRole.parenttype == "Server Plan") & (HasRole.parent == ServerPlan.name))
 		.where(ServerPlan.server_type == name)
 		.where(ServerPlan.platform == platform)
-		.where(ServerPlan.price_inr == current_price)
+		.where(ServerPlan.price_dzd == current_price)
 		.where(ServerPlan.enabled == 1)
 	)
 	if cluster:
@@ -835,7 +835,7 @@ def plans(name, cluster=None, platform=None, resource_name=None, cpu_and_memory_
 			"title",
 			"description",
 			"price_usd",
-			"price_inr",
+			"price_dzd",
 			"vcpu",
 			"memory",
 			"disk",

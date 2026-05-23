@@ -1,7 +1,7 @@
 <template>
 	<div class="min-h-screen bg-surface-gray-1">
 		<LoginBox>
-			<h1 class="text-base text-ink-gray-6">Manage Subscription</h1>
+			<h1 class="text-base text-ink-gray-6">Gérer l'abonnement</h1>
 			<div class="mt-4">
 				<div class="text-xl font-medium text-ink-gray-9">
 					{{ site }}
@@ -10,13 +10,13 @@
 					class="mt-1 text-base text-ink-gray-7"
 					v-if="$resources.subscription.data?.trial_end_date"
 				>
-					Trial ends
+					L'essai se termine
 					{{
 						trialEndsInDaysText($resources.subscription.data?.trial_end_date)
 					}}
 				</div>
 			</div>
-			{{ success ? 'You have subscribed to the plan' : '' }}
+			{{ success ? 'Vous êtes abonné au plan' : '' }}
 			<ErrorMessage class="mt-2" :message="$resources.subscription.error" />
 			<div class="mt-8" v-if="$resources.subscription.data">
 				<div>
@@ -27,8 +27,8 @@
 						<span class="text-sm font-medium text-ink-gray-7">
 							{{
 								$resources.subscription.data.current_plan
-									? 'Change plan'
-									: 'Step 1: Select plan'
+									? 'Changer de plan'
+									: 'Étape 1 : Sélectionner le plan'
 							}}
 						</span>
 						<span
@@ -60,7 +60,7 @@
 								<Badge
 									v-if="$resources.subscription.data.current_plan == plan.name"
 								>
-									Current Plan
+									Plan actuel
 								</Badge>
 								<CheckCircleIcon
 									v-else-if="selectedPlan == plan"
@@ -84,7 +84,7 @@
 								variant="solid"
 								@click="currentStep = 2"
 							>
-								Next
+								Suivant
 							</Button>
 							<Button
 								v-else-if="
@@ -104,7 +104,7 @@
 					<div
 						class="rounded-sm bg-surface-gray-2 p-2 text-sm font-medium text-ink-gray-7"
 					>
-						Step 2: Setup billing
+						Étape 2 : Configurer la facturation
 					</div>
 					<StripeCard
 						class="mt-4"

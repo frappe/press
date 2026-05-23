@@ -107,7 +107,7 @@ export default {
 			});
 			this.uploader.on('error', () => {
 				this.uploading = false;
-				this.error = 'Error Uploading File';
+				this.error = 'Erreur lors du téléversement du fichier';
 			});
 			this.uploader.on('finish', () => {
 				this.uploading = false;
@@ -120,7 +120,7 @@ export default {
 				})
 				.catch((error) => {
 					this.uploading = false;
-					let errorMessage = 'Error Uploading File';
+					let errorMessage = 'Erreur lors du téléversement du fichier';
 					if (error._server_messages) {
 						errorMessage = JSON.parse(
 							JSON.parse(error._server_messages)[0],

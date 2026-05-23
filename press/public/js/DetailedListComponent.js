@@ -21,7 +21,7 @@ class DetailedListComponent {
 
 		new SectionHead(brief_section, this.df);
 		new SectionHead(detailed_section, {
-			description: 'Nothing selected',
+			description: 'Aucune sélection',
 		});
 		new ListComponent(brief_section, {
 			data: this.df.data,

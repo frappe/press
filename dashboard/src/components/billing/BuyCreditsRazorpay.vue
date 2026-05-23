@@ -1,11 +1,11 @@
 <template>
 	<div>
 		<span
-			v-if="team.doc.currency === 'INR' || paypalEnabled"
+			v-if="team.doc.currency === 'DZD' || paypalEnabled"
 			class="mt-2.5 inline-flex gap-2 text-base text-ink-gray-7"
 		>
 			<FeatherIcon name="info" class="my-1 h-4" />
-			<span class="leading-5" v-if="team.doc.currency === 'INR'">
+			<span class="leading-5" v-if="team.doc.currency === 'DZD'">
 				If you select Razorpay, you can pay using Credit Card, Debit Card, Net
 				Banking, UPI, Wallets, etc. If you are using Net Banking, it may take
 				upto 5 days for balance to reflect.

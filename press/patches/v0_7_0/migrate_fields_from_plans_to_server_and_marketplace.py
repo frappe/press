@@ -20,7 +20,7 @@ def execute():
 				"doctype": "Server Plan",
 				"name": plan_doc.name,
 				"title": plan_doc.plan_title,
-				"price_inr": plan_doc.price_inr,
+				"price_dzd": plan_doc.price_dzd,
 				"price_usd": plan_doc.price_usd,
 				"server_type": plan_doc.document_type,
 				"cluster": plan_doc.cluster,
@@ -37,7 +37,7 @@ def execute():
 	for marketplace_plan in frappe.get_all("Marketplace App Plan", pluck="name"):
 		map_doc = frappe.get_doc("Marketplace App Plan", marketplace_plan)
 		plan = frappe.get_all(
-			"Site Plan", {"name": map_doc.plan}, ["plan_title", "price_usd", "price_inr"]
+			"Site Plan", {"name": map_doc.plan}, ["plan_title", "price_usd", "price_dzd"]
 		)
 
 		if plan:
@@ -46,6 +46,6 @@ def execute():
 			continue
 
 		map_doc.title = plan.plan_title
-		map_doc.price_inr = plan.price_inr
+		map_doc.price_dzd = plan.price_dzd
 		map_doc.price_usd = plan.price_usd
 		map_doc.save()

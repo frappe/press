@@ -1,7 +1,7 @@
 <template>
 	<Header class="sticky top-0 z-10 bg-surface-white">
 		<div class="flex items-center space-x-2">
-			<Breadcrumbs :items="[{ label: 'Settings', route: '/settings' }]" />
+			<Breadcrumbs :items="[{ label: 'Paramètres', route: '/settings' }]" />
 		</div>
 	</Header>
 	<div>
@@ -38,12 +38,12 @@ let $session = session || {};
 
 const tabs = [
 	{
-		label: 'Profile',
+		label: 'Profil',
 		icon: LucideUser,
 		routeName: 'SettingsProfile',
 	},
 	{
-		label: 'Team',
+		label: 'Équipe',
 		icon: LucideUsers,
 		routeName: 'SettingsTeam',
 		condition: () =>
@@ -52,13 +52,13 @@ const tabs = [
 			$session.isSystemUser,
 	},
 	{
-		label: 'Team (Beta)',
+		label: 'Équipe (Beta)',
 		icon: LucideUsers,
 		routeName: 'SettingsTeamBeta',
 		condition: () => user.isBetaTester,
 	},
 	{
-		label: 'Roles',
+		label: 'Rôles',
 		icon: LucideLock,
 		routeName: 'SettingsPermission',
 		childrenRoutes: [
@@ -71,13 +71,13 @@ const tabs = [
 			$session.isSystemUser,
 	},
 	{
-		label: 'Developer',
+		label: 'Développeur',
 		icon: LucideCode,
 		routeName: 'SettingsDeveloper',
 	},
 
 	{
-		label: 'Partner Admin',
+		label: 'Admin partenaire',
 		icon: LucideShield,
 		routeName: 'SettingsPartnerAdmin',
 		condition: () => Boolean($team.doc.is_desk_user),

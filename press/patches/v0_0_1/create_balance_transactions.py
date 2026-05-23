@@ -24,6 +24,8 @@ def execute():
 		balance = team.get_stripe_balance()
 		if balance != 0:
 			stripe = get_stripe()
+			if not stripe:
+				return None
 			# reset customer balance on Stripe
 			stripe.Customer.create_balance_transaction(
 				team.stripe_customer_id,
@@ -47,7 +49,7 @@ def get_free_credits_left(team):
 
 	settings = frappe.get_doc("Press Settings")
 	total_free_credits = (
-		settings.free_credits_inr if team.currency == "INR" else settings.free_credits_usd
+		settings.free_credits_dzd if team.currency == "DZD" else settings.free_credits_usd
 	)
 
 	if not invoices:

@@ -21,7 +21,7 @@
 					variant="outline"
 					@click="copyTraceback"
 				>
-					{{ copied ? 'copied' : 'copy' }}
+					{{ copied ? 'copié' : 'copier' }}
 				</button>
 				<div
 					class="max-h-48 w-full overflow-scroll rounded-sm border border-outline-gray-1 bg-surface-gray-2 p-3 text-xs text-ink-gray-6"
@@ -37,7 +37,7 @@
 		<template v-slot:actions>
 			<div class="flex justify-end gap-5">
 				<Link v-if="doc.assistance_url" class="cursor-pointer" @click="help">
-					Help
+					Aide
 				</Link>
 
 				<Button
@@ -46,7 +46,7 @@
 					class="w-40"
 					@click="done"
 				>
-					Done
+					Terminé
 				</Button>
 			</div>
 		</template>

@@ -35,7 +35,7 @@
    "insert_after": "fax",
    "is_system_generated": 0,
    "is_virtual": 0,
-   "label": "GSTIN",
+   "label": "NIF",
    "length": 0,
    "link_filters": null,
    "mandatory_depends_on": null,

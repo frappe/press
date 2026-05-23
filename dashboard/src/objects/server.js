@@ -37,13 +37,13 @@ export default {
 	},
 	list: {
 		route: '/servers',
-		title: 'Servers',
+		title: 'Serveurs',
 		fields: [
 			'title',
 			'database_server',
 			'plan.title as plan_title',
 			'plan.price_usd as price_usd',
-			'plan.price_inr as price_inr',
+			'plan.price_dzd as price_dzd',
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title',
 			'is_unified_server',
@@ -120,7 +120,7 @@ export default {
 		],
 		primaryAction({ listResource: servers }) {
 			return {
-				label: 'New Server',
+				label: 'Nouveau serveur',
 				variant: 'solid',
 				slots: {
 					prefix: icon('plus'),
@@ -239,7 +239,7 @@ export default {
 		},
 		tabs: [
 			{
-				label: 'Overview',
+				label: 'Aperçu',
 				icon: icon('home'),
 				condition: (server) => {
 					return server.doc?.status !== 'Archived';
@@ -297,7 +297,7 @@ export default {
 					fields: [
 						'plan.plan_title as plan_title',
 						'plan.price_usd as price_usd',
-						'plan.price_inr as price_inr',
+						'plan.price_dzd as price_dzd',
 						'group.title as group_title',
 						'group.public as group_public',
 						'group.team as group_team',
@@ -367,9 +367,9 @@ export default {
 								}
 								let $team = getTeam();
 								if (row.price_usd > 0) {
-									let india = $team.doc.country == 'India';
+									let isLocal = $team.doc.country == 'Algeria';
 									let formattedValue = userCurrency(
-										india ? row.price_inr : row.price_usd,
+										isLocal ? row.price_dzd : row.price_usd,
 										0,
 									);
 									return `${formattedValue}/mo`;

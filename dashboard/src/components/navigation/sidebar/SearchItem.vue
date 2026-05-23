@@ -6,7 +6,7 @@ import Item from "./Item.vue";
 </script>
 
 <template>
-  <Item is='BUTTON' name='Search' :icon='LucideSearch' @click="() => (searchModalOpen = true)">
+  <Item is='BUTTON' name='Rechercher' :icon='LucideSearch' @click="() => (searchModalOpen = true)">
     <template #suffix>
       <span class="inline-flex items-center text-sm gap-1">
         {{ isMac() ? '⌘ K' : 'Ctrl+k' }}

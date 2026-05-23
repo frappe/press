@@ -4,7 +4,7 @@
 			title: 'Tell us why you are leaving',
 			actions: [
 				{
-					label: 'Submit',
+					label: 'Envoyer',
 					variant: 'solid',
 					loading: $resources.submitFeedback.loading,
 					onClick: () => {

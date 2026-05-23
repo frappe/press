@@ -16,7 +16,7 @@
 				<div class="border rounded-md p-2 h-[8rem] w-[16rem]">
 					<NumberChart
 						:config="{
-							title: 'Month-To-Date Cost',
+							title: 'Coût du mois en cours',
 							value: forecastData?.current_month_to_date_cost,
 							prefix: currencySymbol,
 							delta: forecastData?.mtd_change,
@@ -27,7 +27,7 @@
 				<div class="border rounded-md p-2 h-[8rem] w-[16rem]">
 					<NumberChart
 						:config="{
-							title: 'Forecasted Month End Cost',
+							title: 'Coût prévu en fin de mois',
 							value: forecastData?.forecasted_month_end,
 							prefix: currencySymbol,
 							delta: forecastData?.month_over_month_change,
@@ -52,7 +52,7 @@
 					</div>
 				</div>
 				<div v-else class="flex h-64 items-center justify-center text-ink-gray-5">
-					No usage data available for this month
+					Aucune donnée d'utilisation disponible pour ce mois
 				</div>
 			</div>
 		</div>
@@ -93,7 +93,7 @@ export default {
 		});
 
 		const currencySymbol = computed(() => {
-			return team.doc?.currency === 'INR' ? '₹' : '$';
+			return team.doc?.currency === 'DZD' ? 'DA' : '$';
 		});
 
 		const axisChartConfig = computed(() => {
@@ -108,7 +108,7 @@ export default {
 
 			// Month Labels
 			const now = new Date();
-			const formatter = new Intl.DateTimeFormat('en-US', {
+			const formatter = new Intl.DateTimeFormat('fr-FR', {
 				month: 'long',
 				year: 'numeric',
 			});
@@ -125,15 +125,15 @@ export default {
 
 			const data = [
 				{
-					period: `Last Month\n(${lastMonthName})`,
+					period: `Mois dernier\n(${lastMonthName})`,
 					...last_month_usage_breakdown,
 				},
 				{
-					period: `Month To Date\n(${currentMonthName})`,
+					period: `Mois en cours\n(${currentMonthName})`,
 					...month_to_date_usage_breakdown,
 				},
 				{
-					period: `Forecast\n(${currentMonthName})`,
+					period: `Prévision\n(${currentMonthName})`,
 					...forecasted_usage_breakdown,
 				},
 			];
@@ -151,16 +151,16 @@ export default {
 			}));
 
 			return {
-				title: 'Billing Comparison',
+				title: 'Comparaison de facturation',
 				data,
 				stacked: true,
 				xAxis: {
 					key: 'period',
-					title: 'Time Period',
+					title: 'Période',
 					type: 'category',
 				},
 				yAxis: {
-					title: `Amount (${currencySymbol.value})`,
+					title: `Montant (${currencySymbol.value})`,
 				},
 				series,
 			};
@@ -176,7 +176,7 @@ export default {
 			}
 			return {
 				data,
-				title: 'Month-To-Date Cost Breakdown',
+				title: 'Répartition des coûts du mois en cours',
 				categoryColumn: 'service',
 				valueColumn: 'amount',
 			};

@@ -72,7 +72,7 @@ export default {
 		fields: [
 			'plan.plan_title as plan_title',
 			'plan.price_usd as price_usd',
-			'plan.price_inr as price_inr',
+			'plan.price_dzd as price_dzd',
 			'group.title as group_title',
 			'group.public as group_public',
 			'group.team as group_team',
@@ -89,7 +89,7 @@ export default {
 			return [
 				{
 					type: 'select',
-					label: 'Status',
+					label: 'Statut',
 					fieldname: 'status',
 					options: [
 						'',
@@ -118,7 +118,7 @@ export default {
 				},
 				{
 					type: 'select',
-					label: 'Region',
+					label: 'Région',
 					fieldname: 'cluster',
 					options: clusterOptions,
 				},
@@ -145,7 +145,7 @@ export default {
 					return value || row.name;
 				},
 			},
-			{ label: 'Status', fieldname: 'status', type: 'Badge', width: '140px' },
+			{ label: 'Statut', fieldname: 'status', type: 'Badge', width: '140px' },
 			{
 				label: 'Plan',
 				fieldname: 'plan',
@@ -156,9 +156,9 @@ export default {
 					}
 					const $team = getTeam();
 					if (row.price_usd > 0) {
-						const india = $team.doc?.currency === 'INR';
+						const isLocal = $team.doc?.currency === 'DZD';
 						const formattedValue = userCurrency(
-							india ? row.price_inr : row.price_usd,
+							isLocal ? row.price_dzd : row.price_usd,
 							0,
 						);
 						return `${formattedValue}/mo`;
@@ -167,7 +167,7 @@ export default {
 				},
 			},
 			{
-				label: 'Region',
+				label: 'Région',
 				fieldname: 'cluster',
 				width: 1,
 				format(value, row) {
@@ -186,7 +186,7 @@ export default {
 				fieldname: 'group',
 				width: '15rem',
 				format(value, row) {
-					return row.group_public ? 'Shared' : row.group_title || value;
+					return row.group_public ? 'Partagé' : row.group_title || value;
 				},
 			},
 			{
@@ -197,7 +197,7 @@ export default {
 		],
 		primaryAction({ listResource: sites }) {
 			return {
-				label: 'New Site',
+				label: 'Nouveau site',
 				variant: 'solid',
 				slots: {
 					prefix: icon('plus'),
@@ -210,7 +210,7 @@ export default {
 		moreActions({ listResource: sites }) {
 			return [
 				{
-					label: 'Export as CSV',
+					label: 'Exporter en CSV',
 					icon: 'download',
 					onClick() {
 						const fields = [
@@ -295,7 +295,7 @@ export default {
 		},
 		tabs: [
 			{
-				label: 'Overview',
+				label: 'Aperçu',
 				icon: icon('home'),
 				route: 'overview',
 				type: 'Component',
@@ -393,7 +393,7 @@ export default {
 			},
 			getAppsTab(true),
 			{
-				label: 'Domains',
+				label: 'Domaines',
 				icon: icon('external-link'),
 				route: 'domains',
 				type: 'list',
@@ -412,7 +412,7 @@ export default {
 							fieldname: 'domain',
 						},
 						{
-							label: 'Status',
+							label: 'Statut',
 							fieldname: 'status',
 							type: 'Badge',
 						},
@@ -632,7 +632,7 @@ export default {
 				},
 			},
 			{
-				label: 'Backups',
+				label: 'Sauvegardes',
 				icon: icon('archive'),
 				route: 'backups',
 				type: 'list',
@@ -674,14 +674,14 @@ export default {
 							},
 						},
 						{
-							label: 'Status',
+							label: 'Statut',
 							fieldname: 'status',
 							width: '150px',
 							align: 'center',
 							type: 'Badge',
 						},
 						{
-							label: 'Database',
+							label: 'Base de données',
 							fieldname: 'database_size',
 							width: 0.5,
 							format(value) {
@@ -751,12 +751,12 @@ export default {
 						filters = filters.concat([
 							{
 								type: 'checkbox',
-								label: 'Physical Backups',
+								label: 'Sauvegardes physiques',
 								fieldname: 'physical',
 							},
 							{
 								type: 'checkbox',
-								label: 'Offsite Backups',
+								label: 'Sauvegardes hors site',
 								fieldname: 'offsite',
 							},
 						]);
@@ -841,7 +841,7 @@ export default {
 								condition: () => !row.physical,
 								items: [
 									{
-										label: 'Download Database',
+										label: 'Télécharger la base de données',
 										onClick() {
 											return confirmDownload(row, 'database');
 										},
@@ -1230,7 +1230,7 @@ export default {
 							width: 1,
 						},
 						{
-							label: 'Status',
+							label: 'Statut',
 							fieldname: 'status',
 							type: 'Badge',
 							width: 0.6,
@@ -1284,7 +1284,7 @@ export default {
 				},
 			},
 			{
-				label: 'Updates',
+				label: 'Mises à jour',
 				icon: icon('arrow-up-circle'),
 				route: 'updates',
 				type: 'list',
@@ -1312,7 +1312,7 @@ export default {
 							width: 0.3,
 						},
 						{
-							label: 'Status',
+							label: 'Statut',
 							fieldname: 'status',
 							type: 'Badge',
 							width: 0.5,
@@ -1668,7 +1668,7 @@ export default {
 
 			return [
 				{
-					label: 'Jobs in progress',
+					label: 'Tâches en cours',
 					slots: {
 						prefix: () => h(LoadingIndicator, { class: 'w-4 h-4' }),
 					},
@@ -1774,7 +1774,7 @@ export default {
 					},
 				},
 				{
-					label: 'Setup Site',
+					label: 'Configurer le site',
 					slots: {
 						prefix: icon('external-link'),
 					},

@@ -18,7 +18,7 @@ class PartnerTier(Document):
 		certificates_required: DF.Int
 		enabled: DF.Check
 		pmm_required: DF.Int
-		target_in_inr: DF.Float
+		target_in_dzd: DF.Float
 		target_in_usd: DF.Float
 		title: DF.Data | None
 	# end: auto-generated types

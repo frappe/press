@@ -2,13 +2,13 @@
 	<Dialog
 		v-model="showDialog"
 		:modelValue="true"
-		:options="{ title: 'Add Domain' }"
+		:options="{ title: 'Ajouter un domaine' }"
 	>
 		<template v-slot:body-content>
 			<div class="space-y-4">
 				<p class="text-p-base">
-					To add a custom domain, you must already own it. If you don't have
-					one, buy it and come back here.
+					Pour ajouter un domaine personnalisé, vous devez déjà en être propriétaire. Si vous n'en avez pas,
+					achetez-en un et revenez ici.
 				</p>
 				<FormControl
 					placeholder="www.example.com"
@@ -21,7 +21,7 @@
 					v-if="newDomain && !dnsVerified"
 					class="prose prose-sm space-y-2 prose-strong:text-ink-gray-8"
 				>
-					<p>Create one of the following DNS records:</p>
+					<p>Créez l'un des enregistrements DNS suivants :</p>
 					<ul>
 						<li>
 							<strong>CNAME</strong> record from

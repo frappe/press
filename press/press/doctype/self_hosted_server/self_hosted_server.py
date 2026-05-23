@@ -333,7 +333,7 @@ class SelfHostedServer(Document):
 		plan = frappe.new_doc("Server Plan")
 		plan.name = plan_name
 		plan.title = plan_name
-		plan.price_inr = 0
+		plan.price_dzd = 0
 		plan.price_usd = 0
 		plan.save()
 

@@ -35,7 +35,7 @@ class TestAccountApi(TestCase):
 				"city": "Mumbai",
 				"state": "Maharashtra",
 				"postal_code": "40004",
-				"country": "India",
+				"country": "Algeria",
 			}
 		)
 

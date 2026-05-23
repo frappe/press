@@ -34,7 +34,7 @@ test_bts = [
 		"amount": 200.0,
 		"ending_balance": 900.0,
 		"invoice": None,
-		"description": "Reverse amount ₹ 200.00 of BT-2022-00059 from invoice INV-2022-00121",
+		"description": "Reverse amount د.ج 200.00 of BT-2022-00059 from invoice INV-2022-00121",
 	},
 	{
 		"name": "BT-2022-00062",
@@ -43,7 +43,7 @@ test_bts = [
 		"amount": 200.0,
 		"ending_balance": 700.0,
 		"invoice": None,
-		"description": "Reverse amount ₹ 200.00 of BT-2022-00058 from invoice INV-2022-00121",
+		"description": "Reverse amount د.ج 200.00 of BT-2022-00058 from invoice INV-2022-00121",
 	},
 	{
 		"name": "BT-2022-00061",
@@ -70,7 +70,7 @@ test_bts = [
 		"amount": 200.0,
 		"ending_balance": 400.0,
 		"invoice": None,
-		"description": "Reverse amount ₹ 200.00 of BT-2022-00056 from invoice INV-2022-00121",
+		"description": "Reverse amount د.ج 200.00 of BT-2022-00056 from invoice INV-2022-00121",
 	},
 	{
 		"name": "BT-2022-00058",
@@ -79,7 +79,7 @@ test_bts = [
 		"amount": 200.0,
 		"ending_balance": 200.0,
 		"invoice": None,
-		"description": "Reverse amount ₹ 200.00 of BT-2022-00055 from invoice INV-2022-00121",
+		"description": "Reverse amount د.ج 200.00 of BT-2022-00055 from invoice INV-2022-00121",
 	},
 	{
 		"name": "BT-2022-00057",
@@ -97,7 +97,7 @@ test_bts = [
 		"amount": 200.0,
 		"ending_balance": 400.0,
 		"invoice": None,
-		"description": "Reverse amount ₹ 200.00 of BT-2022-00052 from invoice INV-2022-00121",
+		"description": "Reverse amount د.ج 200.00 of BT-2022-00052 from invoice INV-2022-00121",
 	},
 	{
 		"name": "BT-2022-00055",
@@ -106,7 +106,7 @@ test_bts = [
 		"amount": 200.0,
 		"ending_balance": 200.0,
 		"invoice": None,
-		"description": "Reverse amount ₹ 200.00 of BT-2022-00051 from invoice INV-2022-00121",
+		"description": "Reverse amount د.ج 200.00 of BT-2022-00051 from invoice INV-2022-00121",
 	},
 	{
 		"name": "BT-2022-00054",
@@ -133,7 +133,7 @@ test_bts = [
 		"amount": 200.0,
 		"ending_balance": 700.0,
 		"invoice": None,
-		"description": "Reverse amount ₹ 200.00 of BT-2022-00049 from invoice INV-2022-00120",
+		"description": "Reverse amount د.ج 200.00 of BT-2022-00049 from invoice INV-2022-00120",
 	},
 	{
 		"name": "BT-2022-00051",

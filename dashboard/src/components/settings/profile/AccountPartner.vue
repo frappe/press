@@ -37,7 +37,7 @@
 				title: 'Link Partner Account',
 				actions: [
 					{
-						label: 'Submit',
+						label: 'Envoyer',
 						variant: 'solid',
 						onClick: () => $resources.addPartnerCode.submit(),
 					},
@@ -84,7 +84,7 @@
 				title: 'Remove Partner',
 				actions: [
 					{
-						label: 'Remove',
+						label: 'Retirer',
 						variant: 'solid',
 						theme: 'red',
 						onClick: () => {

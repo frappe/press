@@ -4,7 +4,7 @@
 			title: 'Add New Member',
 			actions: [
 				{
-					label: 'Invite Member',
+					label: 'Inviter un membre',
 					variant: 'solid',
 					onClick: inviteMember,
 				},

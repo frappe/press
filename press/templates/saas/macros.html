@@ -11,10 +11,10 @@
 <div id="email-verify-wrapper" class="flex flex-row justify-center flex-wrap hidden mx-auto my-auto h-fit w-1/2">
 	<div class="text-center">
 		<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mail mx-auto mb-6"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-		<h2 class="font-size-base mt-0">Verification Email Sent!</h2>
+		<h2 class="font-size-base mt-0">E-mail de vérification envoyé !</h2>
 		<p>
-			We have sent an email to <span id="verification-email" class="font-semibold"></span>.
-			Please click on the link received to verify your login request.
+			Nous avons envoyé un e-mail à <span id="verification-email" class="font-semibold"></span>.
+			Veuillez cliquer sur le lien reçu pour vérifier votre demande de connexion.
 		</p>
 	</div>
 </div>
@@ -24,17 +24,17 @@
 	<div id="address-card-wrapper" class="flex container hidden mx-auto my-auto justify-content-center">
 		<form>
 			<div class="form-group">
-				<p>Billing Name</p>
+				<p>Nom de facturation</p>
 				<input type="text" name="billing-name" class="form-control" />
 			</div>
 			<div class="form-group">
-				<p>Address</p>
-				<input type="text" name="address" placeholder="Address" class="form-control" />
+				<p>Adresse</p>
+				<input type="text" name="address" placeholder="Adresse" class="form-control" />
 			</div>
 			<div class="form-group">
-				<p>Country</p>
+				<p>Pays</p>
 				<select id="country" class="custom-select" style="font-size: 14px;" name="country" class="form-control">
-					<option disabled selected style="font-size: 14px;">Select Country</option>
+					<option disabled selected style="font-size: 14px;">Sélectionner un pays</option>
 					{%- for country in frappe.db.get_all('Country') -%}
 					<option class="text-sm">{{ country.name }}</option>
 					{%- endfor -%}
@@ -42,38 +42,38 @@
 			</div>
 			<div class="flex">
 				<div class="form-group mr-2">
-					<p>City</p>
+					<p>Ville</p>
 					<input type="text" name="city" class="form-control" required />
 				</div>
 				<div class="form-group">
-					<p>State/Province/Region</p>
+					<p>Wilaya / Province / Région</p>
 					<input type="text" name="state" class="form-control" required />
 				</div>
 			</div>
 			<div class="form-group">
-				<p>Postal Code</p>
+				<p>Code postal</p>
 				<input type="text" name="postal-code" class="form-control" />
 			</div>
 			<div id="gstin" class="form-group hidden">
-				<p>GSTIN (applicable only for Indian customers)</p>
+				<p>NIF (applicable uniquement pour les clients algériens)</p>
 				<input type="text" name="gstin" class="form-control" />
 			</div>
 			<div id="gstinhide" class="flex hidden justify-content-between my-2">
 				<button type="button" class="btn btn-light" onclick="toggleGSTField(false)">
-					I don't have a GSTIN
+					Je n'ai pas de NIF
 				</button>
 				<span></span>
 			</div>
 			<div id="gstinshow" class="flex justify-content-between my-2">
 				<button type="button" class="btn btn-light" onclick="toggleGSTField(true)">
-					Add GSTIN
+					Ajouter un NIF
 				</button>
 				<span></span>
 			</div>
 			<div class="flex justify-content-between my-2">
 				<span></span>
 				<button type="button" class="btn btn-primary" onclick="updateBillingInfo()">
-					Save
+					Enregistrer
 				</button>
 			</div>
 		</form>
@@ -83,27 +83,27 @@
 {% macro checkout_wrapper() %}
 	<div id="checkout-wrapper" class="flex flex-col w-2/3 hidden mx-20 text-sm">
 		<div class="flex justify-content-between my-2">
-			<span>Plan</span>
+			<span>Forfait</span>
 			<span class="new-plan"></span>
 		</div>
 		<div class="flex justify-content-between my-2">
-			<span>Amount / mo.</span>
+			<span>Montant / mois</span>
 			<span class="new-plan-price"></span>
 		</div>
 		<div class="flex justify-content-between my-2">
-			<span>Billing:</span>
+			<span>Facturation :</span>
 			<select class="rounded px-2 pr-8" onchange="setTotal(this.value)">
-				<option class="pr-4" value="monthly">Monthly</option>
-				<option class="pr-4" value="annual">Annual</option>
+				<option class="pr-4" value="monthly">Mensuelle</option>
+				<option class="pr-4" value="annual">Annuelle</option>
 			</select>
 		</div>
 		<hr class="my-4">
 		<div class="flex justify-content-between my-2">
-			<span>GST (if applicable)</span>
+			<span>TVA (le cas échéant)</span>
 			<span class="gst text-red-600">-</span>
 		</div>
 		<div class="flex justify-content-between my-2">
-			<span>Discount</span>
+			<span>Remise</span>
 			<span class="discount text-green-500">-</span>
 		</div>
 		<hr class="my-4">
@@ -113,7 +113,7 @@
 		</div>
 		<form class="flex justify-content-between my-2">
 			<span></span>
-			<button type="button" class="btn btn-primary w-36" onclick="setupStripe()">Proceed To Pay</span>
+			<button type="button" class="btn btn-primary w-36" onclick="setupStripe()">Procéder au paiement</span>
 		</form>
 	</div>
 {% endmacro %}
@@ -128,19 +128,19 @@
 					stroke-linecap="round" stroke-linejoin="round" />
 			</svg>
 		</div>
-		<h2 class="font-size-base mb-2">Payment Request Received</h2>
+		<h2 class="font-size-base mb-2">Demande de paiement reçue</h2>
 	</div>
-	<span>Thank you for your payment request. We will send you a confirmation email shortly. In the meantime if you have any queries please reach us at
-		our <a href="https://frappecloud.com/support" class="text-blue-500 hover:text-blue-500">support page</a>.</span>
+	<span>Merci pour votre demande de paiement. Nous vous enverrons un e-mail de confirmation sous peu. En attendant, si vous avez des questions, veuillez nous contacter via
+		notre <a href="https://frappecloud.com/support" class="text-blue-500 hover:text-blue-500">page d'assistance</a>.</span>
 </div>
 {% endmacro %}
 
 {% macro error_card() %}
 <div id="error-wrapper" class="mx-auto my-auto hidden w-1/2">
 	<div>
-		<h2 class="font-size-base mb-2">Something Went Wrong</h2>
+		<h2 class="font-size-base mb-2">Une erreur s'est produite</h2>
 	</div>
-	<span>For some reason the payment request was could not complete. Please contact <a href="https://frappecloud.com/support" class="text-blue-500">support</a> in order to get a resolution at the earliest.</span>
+	<span>La demande de paiement n'a pas pu aboutir. Veuillez contacter le <a href="https://frappecloud.com/support" class="text-blue-500">support</a> afin d'obtenir une résolution dans les plus brefs délais.</span>
 </div>
 {% endmacro %}
 
@@ -150,19 +150,19 @@
 		<div id="card" class="hidden" ref="card-element"></div>
 		<button id="pay-btn" type="button" class="btn btn-primary w-full mt-6 py-3 rounded-lg" onclick="handlePayment()">
 			<span id="pay-btn-spinner" class="spinner-border spinner-border-sm mr-3 hidden"></span>
-			<span id="pay-btn-text">Pay Now</span>
+			<span id="pay-btn-text">Payer maintenant</span>
 		</button>
 	</div>
 {% endmacro %}
 
 {% macro load_stripe() %}
 <div id="loading-stripe" class="mx-auto my-auto hidden">
-	<span class="spinner-border spinner-border-sm mr-3" role="status"></span><span>Processing payment request</span>
+	<span class="spinner-border spinner-border-sm mr-3" role="status"></span><span>Traitement de la demande de paiement</span>
 </div>
 {% endmacro %}
 
 {% macro load_subs() %}
 <div id="loading" class="mx-auto my-auto">
-	<span class="spinner-border spinner-border-sm mr-3" role="status"></span><span>Loading Subscriptions </span>
+	<span class="spinner-border spinner-border-sm mr-3" role="status"></span><span>Chargement des abonnements </span>
 </div>
 {% endmacro %}

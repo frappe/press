@@ -27,15 +27,15 @@ from press.press.doctype.team.team import (
 )
 from press.utils import get_current_team
 from press.utils.billing import (
-	GSTIN_FORMAT,
+	NIF_FORMAT,
 	clear_setup_intent,
 	get_publishable_key,
-	get_razorpay_client,
+	get_razorpay_client,  # legacy stub
 	get_setup_intent,
 	get_stripe,
 	make_formatted_doc,
-	states_with_tin,
-	validate_gstin_check_digit,
+	wilayas_with_code,
+	validate_nif_check_digit,
 )
 from press.utils.mpesa_utils import create_mpesa_request_log
 
@@ -222,7 +222,7 @@ def details():
 	return {
 		"billing_name": team.billing_name,
 		"billing_address": billing_address,
-		"gstin": address.gstin if address else None,
+		"nif": address.gstin if address else None,
 	}
 
 
@@ -257,9 +257,11 @@ def fetch_invoice_items(invoice):
 def create_payment_intent_for_micro_debit():
 	team = get_current_team(True)
 	stripe = get_stripe()
+	if not stripe:
+		return None
 
 	micro_debit_charge_field = (
-		"micro_debit_charge_usd" if team.currency == "USD" else "micro_debit_charge_inr"
+		"micro_debit_charge_usd" if team.currency == "USD" else "micro_debit_charge_dzd"
 	)
 	amount = frappe.db.get_single_value("Press Settings", micro_debit_charge_field)
 
@@ -292,13 +294,15 @@ def create_payment_intent_for_buying_credits(amount):
 			f"Amount {amount} is less than the total unpaid amount {total_unpaid}. Please add credits to your payment method and retry again."
 		)
 
-	if team.currency == "INR":
-		gst_amount = amount * frappe.db.get_single_value("Press Settings", "gst_percentage")
-		amount += gst_amount
-		metadata.update({"gst": round(gst_amount, 2)})
+	if team.currency == "DZD":
+		tva_amount = amount * frappe.db.get_single_value("Press Settings", "tva_percentage")
+		amount += tva_amount
+		metadata.update({"tva": round(tva_amount, 2)})
 
 	amount = round(amount, 2)
 	stripe = get_stripe()
+	if not stripe:
+		return None
 	intent = stripe.PaymentIntent.create(
 		amount=int(amount * 100),
 		currency=team.currency.lower(),
@@ -321,6 +325,8 @@ def create_payment_intent_for_buying_credits(amount):
 @role_guard.api("billing")
 def create_payment_intent_for_prepaid_app(amount, metadata):
 	stripe = get_stripe()
+	if not stripe:
+		return None
 	team = get_current_team(True)
 	payment_method = frappe.get_value(
 		"Stripe Payment Method", team.default_payment_method, "stripe_payment_method_id"
@@ -569,6 +575,8 @@ def setup_intent_success(setup_intent, address=None):
 
 	# refetching the setup intent to get mandate_id from stripe
 	stripe = get_stripe()
+	if not stripe:
+		return None
 	setup_intent = stripe.SetupIntent.retrieve(setup_intent.id)
 
 	team = get_current_team(True)
@@ -592,31 +600,18 @@ def setup_intent_success(setup_intent, address=None):
 @frappe.whitelist()
 @role_guard.api("billing")
 def validate_gst(address, method=None):
+	"""Validate tax identification - NIF for Algeria, kept as validate_gst for hook compatibility."""
 	if isinstance(address, dict):
 		address = frappe._dict(address)
 
-	if address.country != "India":
+	if address.country != "Algeria":
 		return
 
-	if address.state not in states_with_tin:
-		frappe.throw("Invalid State for India.")  # nosemgrep
-
 	if not address.gstin:
-		frappe.throw("GSTIN is required for Indian customers.")  # nosemgrep
+		return
 
 	if address.gstin and address.gstin != "Not Applicable":
-		if not GSTIN_FORMAT.match(address.gstin):
-			frappe.throw(
-				"Invalid GSTIN. The input you've entered does not match the format of GSTIN. Please recheck and verify your GSTIN."
-			)
-
-		tin_code = states_with_tin[address.state]
-		if not address.gstin.startswith(tin_code):
-			frappe.throw(
-				f"GSTIN must start with {tin_code} for {address.state}. Please recheck and verify your GSTIN."
-			)
-
-		validate_gstin_check_digit(address.gstin)
+		validate_nif_check_digit(address.gstin, label="NIF")
 
 
 @frappe.whitelist()
@@ -659,183 +654,41 @@ def is_paypal_enabled() -> bool:
 @frappe.whitelist()
 @role_guard.api("billing")
 def get_or_create_razorpay_customer() -> str:
-	"""Get existing or create new Razorpay customer for current team"""
-	team = get_current_team(get_doc=True)
-	return team.create_razorpay_customer()
+	"""Legacy stub - Razorpay removed."""
+	frappe.throw("Razorpay payment gateway is no longer available.")
 
 
 @frappe.whitelist()
 @role_guard.api("billing")
 def create_razorpay_mandate(max_amount: int, auth_type: str = "upi") -> dict:
-	"""
-	Create a Razorpay mandate registration for UPI autopay (or eNACH - this is not setup currently).
-
-	Args:
-		max_amount: Maximum amount in INR for recurring debits
-		auth_type: 'upi' or 'netbanking' (for eNACH)
-
-	Returns:
-		dict with mandate_name, mandate_id, authorization_link, expires_on
-	"""
-	from press.press.doctype.razorpay_mandate.razorpay_mandate import (
-		create_razorpay_mandate as _create_mandate,
-	)
-
-	team = get_current_team()
-	max_amount = int(max_amount)
-	team_doc = frappe.get_doc("Team", team)
-	if team_doc.currency != "INR":
-		frappe.throw(_("UPI Autopay is only available for currency INR"))
-	# Check if an active or pending mandate already exists
-	existing_mandate = frappe.db.exists(
-		"Razorpay Mandate", {"team": team, "status": ("in", ["Active", "Pending"])}
-	)
-	if existing_mandate:
-		status = frappe.db.get_value("Razorpay Mandate", existing_mandate, "status")
-		if status == "Active":
-			frappe.throw(
-				_("An active UPI Autopay mandate already exists. Please cancel it before creating a new one.")
-			)
-		else:
-			frappe.throw(
-				_(
-					"A mandate authorization is already in progress. Please complete or cancel it before creating a new one."
-				)
-			)
-
-	if auth_type not in ("upi", "netbanking"):
-		frappe.throw(_("Invalid auth type. Must be 'upi' or 'netbanking'"))
-
-	if max_amount < 500:
-		frappe.throw(_("Minimum amount for setting UPI autopay must be at least ₹500"))
-
-	if max_amount > 100000:
-		frappe.throw(_("Maximum amount for setting UPI autopay is ₹100000"))
-
-	return _create_mandate(team, max_amount, auth_type)
+	"""Legacy stub - Razorpay removed."""
+	frappe.throw("Razorpay payment gateway is no longer available.")
 
 
 @frappe.whitelist()
 @role_guard.api("billing")
 def get_razorpay_mandates() -> list[dict]:
-	"""Get all Razorpay mandates for the current team"""
-	team = get_current_team()
-
-	return frappe.get_all(
-		"Razorpay Mandate",
-		filters={"team": team},
-		fields=[
-			"name",
-			"mandate_id",
-			"status",
-			"method",
-			"auth_type",
-			"max_amount",
-			"expires_on",
-			"is_default",
-			"upi_vpa",
-			"creation",
-		],
-		order_by="creation desc",
-	)
+	"""Legacy stub - Razorpay removed."""
+	return []
 
 
 @frappe.whitelist()
 @role_guard.api("billing")
 def cancel_razorpay_mandate(mandate_name: str):
-	"""Cancel a Razorpay mandate"""
-	team = get_current_team()
-
-	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
-	mandate.cancel("Cancelled by user")
-
-	return {"success": True}
+	"""Legacy stub - Razorpay removed."""
+	frappe.throw("Razorpay payment gateway is no longer available.")
 
 
 @frappe.whitelist()
 @role_guard.api("billing")
 def handle_razorpay_mandate_success(
-	razorpay_payment_id: str,
-	razorpay_order_id: str,
-	razorpay_signature: str,
-	mandate_name: str,
+	razorpay_payment_id: str = None,
+	razorpay_order_id: str = None,
+	razorpay_signature: str = None,
+	mandate_name: str = None,
 ):
-	"""
-	Handle successful Razorpay Checkout for UPI Autopay mandate authorization.
-	Verifies signature, fetches token, and activates the mandate. In case of failure,
-	update the mandate with information
-	"""
-	team = get_current_team()
-	client = get_razorpay_client()
-	# Verify the mandate belongs to this team
-	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
-	if not mandate:
-		frappe.throw(_("Mandate not found"))
-	# Verify signature
-	try:
-		client.utility.verify_payment_signature(
-			{
-				"razorpay_payment_id": razorpay_payment_id,
-				"razorpay_order_id": razorpay_order_id,
-				"razorpay_signature": razorpay_signature,
-			}
-		)
-	except Exception:
-		mandate.mark_failed(
-			error_code="SIGNATURE_VERIFICATION_FAILED",
-			error_description="Payment signature verification failed",
-		)
-		frappe.throw(_("Invalid payment signature"))
-
-	# Fetch payment details to get token_id
-	payment = client.payment.fetch(razorpay_payment_id)
-
-	# Check if payment has error
-	if payment.get("error_code"):
-		mandate.mark_failed(
-			error_code=payment.get("error_code"),
-			error_description=payment.get("error_description"),
-			error_source=payment.get("error_source"),
-			error_step=payment.get("error_step"),
-			error_reason=payment.get("error_reason"),
-		)
-		frappe.throw(_(payment.get("error_description") or "Payment failed"))
-
-	token_id = payment.get("token_id")
-	if not token_id:
-		mandate.mark_failed(
-			error_code="TOKEN_NOT_FOUND",
-			error_description="Token not found in payment response",
-		)
-		frappe.throw(_("Token not found in payment response"))
-
-	# Extract UPI VPA if available
-	upi_vpa = None
-	if payment.get("method") == "upi":
-		upi_vpa = payment.get("vpa")
-
-	# Activate the mandate with all details
-	mandate.activate(
-		token_id=token_id,
-		upi_vpa=upi_vpa,
-		authorization_payment_id=payment.get("id"),
-		contact=payment.get("contact"),
-		rrn=payment.get("acquirer_data", {}).get("rrn"),
-		authorization_fee=payment.get("fee"),
-		authorization_fee_tax=payment.get("tax"),
-		razorpay_signature=razorpay_signature,
-	)
-
-	# Set as default if this is the first mandate for the team
-	existing_active = frappe.db.count(
-		"Razorpay Mandate",
-		{"team": team, "status": "Active", "name": ("!=", mandate.name)},
-	)
-	if existing_active == 0:
-		mandate.reload()
-		mandate.set_default()
-
-	return {"success": True, "token_id": token_id}
+	"""Legacy stub - Razorpay removed."""
+	frappe.throw("Razorpay payment gateway is no longer available.")
 
 
 @frappe.whitelist()
@@ -851,46 +704,8 @@ def create_razorpay_order(amount, transaction_type, doc_name=None) -> dict | Non
 	# transaction type validations
 	_validate_razorpay_order_type(transaction_type, amount, doc_name, team.currency)
 
-	# GST for INR transactions
-	gst_amount = 0
-	if team.currency == "INR":
-		gst_amount = amount * frappe.db.get_single_value("Press Settings", "gst_percentage")
-		amount += gst_amount
-
-	# normalize type for payment record
-	payment_record_type = (
-		"Prepaid Credits" if transaction_type in ["Invoice", "Purchase Plan"] else transaction_type
-	)
-
-	amount = round(amount, 2)
-	data = {
-		"amount": int(amount * 100),
-		"currency": team.currency,
-		"notes": {
-			"Description": "Order for Frappe Cloud Prepaid Credits",
-			"Team (Frappe Cloud ID)": team.name,
-			"gst": gst_amount,
-			"Type": payment_record_type,
-		},
-	}
-
-	client = get_razorpay_client()
-	order = client.order.create(data=data)
-
-	payment_record = frappe.get_doc(
-		{
-			"doctype": "Razorpay Payment Record",
-			"order_id": order.get("id"),
-			"team": team.name,
-			"type": payment_record_type,
-		}
-	).insert(ignore_permissions=True)
-
-	return {
-		"order_id": order.get("id"),
-		"key_id": client.auth[0],
-		"payment_record": payment_record.name,
-	}
+	# Razorpay payment gateway has been removed
+	frappe.throw("Razorpay payment gateway is no longer available. Please use Stripe or another supported gateway.")
 
 
 def _validate_razorpay_order_type(transaction_type, amount, doc_name, currency):
@@ -903,9 +718,9 @@ def _validate_razorpay_order_type(transaction_type, amount, doc_name, currency):
 
 
 def _validate_prepaid_credits(amount, currency):
-	minimum_amount = 100 if currency == "INR" else 5
+	minimum_amount = 100 if currency == "DZD" else 5
 	if amount < minimum_amount:
-		currency_symbol = "₹" if currency == "INR" else "$"
+		currency_symbol = "د.ج" if currency == "DZD" else "$"
 		frappe.throw(
 			_("Amount should be at least {0}{1}").format(currency_symbol, minimum_amount)
 		)  # nosemgrep
@@ -915,10 +730,10 @@ def _validate_purchase_plan(amount, doc_name, currency):
 	exists_result = frappe.db.exists("Site Plan", doc_name)
 	if not doc_name or not exists_result:
 		frappe.throw(_("Plan {0} does not exist").format(doc_name or ""))  # nosemgrep
-	price_field = "price_inr" if currency == "INR" else "price_usd"
+	price_field = "price_dzd" if currency == "DZD" else "price_usd"
 	plan_amount = frappe.db.get_value("Site Plan", doc_name, price_field)
 	if amount < plan_amount:
-		currency_symbol = "₹" if currency == "INR" else "$"
+		currency_symbol = "د.ج" if currency == "DZD" else "$"
 		frappe.throw(
 			_(
 				"Amount should not be less than plan amount of {0}{1}. Please verify your amount and plan amount"
@@ -942,7 +757,7 @@ def _validate_invoice_payment(amount, doc_name, currency):
 			).format(doc_name)
 		)  # nosemgrep
 	if amount < invoice_amount:
-		currency_symbol = "₹" if currency == "INR" else "$"
+		currency_symbol = "د.ج" if currency == "DZD" else "$"
 		frappe.throw(
 			_("Amount should not be less than invoice amount of {0}{1}").format(
 				currency_symbol, invoice_amount
@@ -953,37 +768,54 @@ def _validate_invoice_payment(amount, doc_name, currency):
 @frappe.whitelist()
 @role_guard.api("billing")
 def handle_razorpay_payment_success(response):
-	client = get_razorpay_client()
-	client.utility.verify_payment_signature(response)
-
-	payment_record = frappe.get_doc(
-		"Razorpay Payment Record",
-		{"order_id": response.get("razorpay_order_id")},
-		for_update=True,
-	)
-	payment_record.update(
-		{
-			"payment_id": response.get("razorpay_payment_id"),
-			"signature": response.get("razorpay_signature"),
-			"status": "Captured",
-		}
-	)
-	payment_record.save(ignore_permissions=True)
+	"""Legacy stub - Razorpay removed."""
+	frappe.throw("Razorpay payment gateway is no longer available.")
 
 
 @frappe.whitelist()
 @role_guard.api("billing")
 def handle_razorpay_payment_failed(response):
-	payment_record = frappe.get_doc(
-		"Razorpay Payment Record",
-		{"order_id": response["error"]["metadata"].get("order_id")},
-		for_update=True,
+	"""Legacy stub - Razorpay removed."""
+	frappe.throw("Razorpay payment gateway is no longer available.")
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def create_chargily_checkout(amount, invoice=None):
+	"""Create a Chargily Pay checkout for buying credits or paying an invoice."""
+	from press.utils.chargily import create_checkout
+
+	team = get_current_team(get_doc=True)
+
+	description = f"Paiement - {team.name}"
+	if invoice:
+		description = f"Facture {invoice}"
+
+	checkout = create_checkout(
+		amount=amount,
+		description=description,
+		invoice_name=invoice,
+		team_name=team.name,
 	)
 
-	payment_record.payment_id = response["error"]["metadata"].get("payment_id")
-	payment_record.status = "Failed"
-	payment_record.failure_reason = response["error"]["description"]
-	payment_record.save(ignore_permissions=True)
+	return {
+		"checkout_url": checkout.get("checkout_url"),
+		"checkout_id": checkout.get("id"),
+	}
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def get_chargily_checkout_status(checkout_id):
+	"""Check status of a Chargily checkout."""
+	from press.utils.chargily import get_checkout
+
+	checkout = get_checkout(checkout_id)
+	return {
+		"status": checkout.get("status"),
+		"amount": checkout.get("amount"),
+		"payment_method": checkout.get("payment_method"),
+	}
 
 
 @frappe.whitelist()
@@ -1408,7 +1240,7 @@ def _calculate_forecast_data(
 	forecasted_month_end = 0
 	per_service_forecast: dict[str, float] = {}  # Forecasted remaining cost per service
 
-	price_field = "price_usd" if currency == "USD" else "price_inr"
+	price_field = "price_usd" if currency == "USD" else "price_dzd"
 
 	for sub in subscriptions:
 		plan = frappe.db.get_value(sub.plan_type, sub.plan, [price_field], as_dict=True)

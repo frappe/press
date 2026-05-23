@@ -37,6 +37,7 @@ ALLOWED_PATHS = [
 	"/api/method/press.press.doctype.razorpay_webhook_log.razorpay_webhook_log.razorpay_authorized_payment_handler",
 	"/api/method/press.press.doctype.razorpay_webhook_log.razorpay_webhook_log.razorpay_emandate_webhook_handler",
 	"/api/method/press.press.doctype.stripe_webhook_log.stripe_webhook_log.stripe_webhook_handler",
+	"/api/method/press.press.doctype.chargily_webhook_log.chargily_webhook_log.chargily_webhook_handler",
 	"/api/method/press.press.doctype.drip_email.drip_email.unsubscribe",
 	"/api/method/upload_file",
 	"/api/method/frappe.search.web_search",

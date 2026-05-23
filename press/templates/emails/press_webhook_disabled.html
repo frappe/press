@@ -6,10 +6,10 @@
 <td class="text-base leading-6 text-gray-900">
     <div class="p-8 bg-white from-markdown">
         <p class="mb-4">
-            Due to a high number of failed webhook deliveries in the past hour, we have disabled one of your configured webhooks.<br>
+            En raison d'un nombre élevé d'échecs de livraison de webhooks au cours de la dernière heure, nous avons désactivé l'un de vos webhooks configurés.<br>
 		</p>
-		<p class="mt-2 mb-3">Suspended webhook endpoint : <strong>{{ endpoint }}</strong></p>
-        <p>Please visit the <a href="https://frappecloud.com//dashboard/settings/developer">Frappe Cloud Dashboard</a> to review the webhook attempts and identify the issue. Once resolved, you can reactivate it directly from the dashboard. </p>
+		<p class="mt-2 mb-3">Point de terminaison du webhook suspendu : <strong>{{ endpoint }}</strong></p>
+        <p>Veuillez visiter le <a href="https://frappecloud.com//dashboard/settings/developer">Tableau de bord Frappe Cloud</a> pour examiner les tentatives de webhook et identifier le problème. Une fois résolu, vous pouvez le réactiver directement depuis le tableau de bord.</p>
         {{ utils.separator() }}
 		{{ utils.signature() }}
     </div>

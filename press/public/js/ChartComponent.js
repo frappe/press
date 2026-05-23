@@ -43,7 +43,7 @@ class ChartComponent {
                     <tbody>
                         <tr>
                             <td/>
-                            <td class="align-middle text-center w-100 pb-4">No data yet</td>
+                            <td class="align-middle text-center w-100 pb-4">Aucune donnée pour le moment</td>
                             <td/>
                         </tr>
                     </tbody>

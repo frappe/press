@@ -48,7 +48,7 @@
 										onClick: () => setAsDefault(card.name),
 										condition: () => !card.is_default,
 									},
-									{ label: 'Remove', onClick: () => removeCard(card.name) },
+									{ label: 'Retirer', onClick: () => removeCard(card.name) },
 								]"
 							>
 								<Button icon="more-horizontal" variant="ghost" />
@@ -114,7 +114,7 @@ const removeCard = (card) => {
 		title: 'Remove Card',
 		message: 'Are you sure you want to remove this card?',
 		primaryAction: {
-			label: 'Remove',
+			label: 'Retirer',
 			variant: 'solid',
 			theme: 'red',
 			onClick: ({ hide }) => {

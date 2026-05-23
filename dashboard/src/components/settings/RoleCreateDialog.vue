@@ -8,7 +8,7 @@
 			size: '2xl',
 			actions: [
 				{
-					label: 'Submit',
+					label: 'Envoyer',
 					variant: 'solid',
 					onClick: () => emit('create', title, users, resources),
 				},

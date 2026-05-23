@@ -4,24 +4,24 @@
 <td class="text-base leading-6 text-gray-900">
 	<div class="p-8 bg-white from-markdown">
 		<p class="mb-4 font-bold">
-			Server <strong>{{ server }}</strong> has used more than 90% of storage
-			available.
+			Le serveur <strong>{{ server }}</strong> a utilisé plus de 90% du stockage
+			disponible.
 		</p>
 		<p class="mb-6">
-			Your server has currently used {{ current_disk_usage }} of the available
-			{{ available_disk_space }}
+			Votre serveur a actuellement utilisé {{ current_disk_usage }} sur les
+			{{ available_disk_space }} disponibles
 			<br />
-			To ensure that the server is not overloaded we are auto increasing the
-			storage by <strong>{{ increase_by }}</strong><br />
+			Pour s'assurer que le serveur n'est pas surchargé, nous augmentons automatiquement le
+			stockage de <strong>{{ increase_by }}</strong><br />
 			<br />
 
-			To disable auto disk expansion please refer the following
+			Pour désactiver l'expansion automatique du disque, veuillez consulter la
 			<a href="https://docs.frappe.io/cloud/storage-addons" target="_blank"
 				><b>documentation</b></a
-			><br />
+			> suivante<br />
 
-			<strong>Need Help ?</strong><br />
-			Please raise a ticket on support.frappe.io for queires.
+			<strong>Besoin d'aide ?</strong><br />
+			Veuillez créer un ticket sur support.frappe.io pour vos questions.
 		</p>
 
 		{{ utils.separator() }} {{ utils.signature() }}

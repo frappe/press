@@ -261,11 +261,11 @@ def get_partner_mrr(partner_email: str, prev_month: bool = False) -> list[dict] 
 	Invoice = frappe.qb.DocType("Invoice")
 	case_stmt = Case()
 
-	if partner_currency == "INR":
+	if partner_currency == "DZD":
 		case_stmt.when(Invoice.currency == "USD", Invoice.total_before_discount * 83)
-		case_stmt.when(Invoice.currency == "INR", Invoice.total_before_discount)
+		case_stmt.when(Invoice.currency == "DZD", Invoice.total_before_discount)
 	elif partner_currency == "USD":
-		case_stmt.when(Invoice.currency == "INR", Invoice.total_before_discount / 83)
+		case_stmt.when(Invoice.currency == "DZD", Invoice.total_before_discount / 83)
 		case_stmt.when(Invoice.currency == "USD", Invoice.total_before_discount)
 
 	case_stmt.else_(Invoice.total_before_discount)
@@ -611,9 +611,9 @@ def get_prev_month_partner_contribution(partner_email: str) -> float | None:
 def calculate_partner_tier(contribution: float, currency: str) -> dict | None:
 	partner_tier = frappe.qb.DocType("Partner Tier")
 	query = frappe.qb.from_(partner_tier).select(partner_tier.name)
-	if currency == "INR":
-		query = query.where(partner_tier.target_in_inr <= contribution).orderby(
-			partner_tier.target_in_inr, order=frappe.qb.desc
+	if currency == "DZD":
+		query = query.where(partner_tier.target_in_dzd <= contribution).orderby(
+			partner_tier.target_in_dzd, order=frappe.qb.desc
 		)
 	else:
 		query = query.where(partner_tier.target_in_usd <= contribution).orderby(
@@ -938,7 +938,7 @@ def update_lead_status(lead_name: str, status: str, **kwargs: str) -> None:  # n
 			paid_plans = (
 				frappe.qb.from_(SitePlan)
 				.select(SitePlan.name)
-				.where((SitePlan.price_inr > 0) & ((SitePlan.enabled == 1) | (SitePlan.legacy_plan == 1)))
+				.where((SitePlan.price_dzd > 0) & ((SitePlan.enabled == 1) | (SitePlan.legacy_plan == 1)))
 				.run(pluck=True)
 			)
 			site_plan = result[0].plan
@@ -1035,7 +1035,7 @@ def check_certificate_exists(email: str, certificate_type: str) -> int:
 @frappe.whitelist()
 def get_fc_plans() -> list[str]:
 	site_plans = frappe.get_all(
-		"Site Plan", {"enabled": 1, "document_type": "Site", "price_inr": (">", 0)}, pluck="name"
+		"Site Plan", {"enabled": 1, "document_type": "Site", "price_dzd": (">", 0)}, pluck="name"
 	)
 	return [*site_plans, "Dedicated Server", "Managed Press"]
 

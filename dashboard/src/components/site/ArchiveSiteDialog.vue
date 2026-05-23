@@ -2,10 +2,10 @@
 	<Dialog
 		v-model="showDialog"
 		:options="{
-			title: 'Drop Site',
+			title: 'Supprimer le site',
 			actions: [
 				{
-					label: 'Drop Site',
+					label: 'Supprimer le site',
 					variant: 'solid',
 					theme: 'red',
 					onClick: handleConfirm,

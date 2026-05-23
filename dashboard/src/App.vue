@@ -9,9 +9,9 @@
         !$session.user &&
         !$route.meta.isLoginPage
       ">
-        You are not logged in.
-        <router-link to="/login" class="underline">Login</router-link> to
-        access dashboard.
+        Vous n'êtes pas connecté.
+        <router-link to="/login" class="underline">Connexion</router-link> pour
+        accéder au tableau de bord.
       </div>
 
       <router-view />

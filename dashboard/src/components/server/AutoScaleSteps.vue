@@ -94,7 +94,7 @@ export default {
 						return {
 							name: step.name,
 							title: step.title,
-							output: step.output || 'No Output',
+							output: step.output || 'Aucune sortie',
 							status: step.status,
 							isOpen: false,
 						};
@@ -120,7 +120,7 @@ export default {
 		dropdownOptions() {
 			return [
 				{
-					label: 'View in Desk',
+					label: 'Voir dans le bureau',
 					icon: 'external-link',
 					condition: () => this.$team.doc?.is_desk_user,
 					onClick: () => {

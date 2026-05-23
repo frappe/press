@@ -16,10 +16,10 @@
 			<!-- 1. Personal Details -->
 			<form class="form-step create-account-form" data-step="1" data-action="submit_account_request">
 				<div class="form-group">
-					<p>Site Name</p>
+					<p>Nom du site</p>
 					<div class="input-group">
 						<input type="text" id="subdomain" name="subdomain" class="form-control"
-							placeholder="yourcompany" autocomplete="off" onchange="validate_subdomain(this)">
+							placeholder="votreentreprise" autocomplete="off" onchange="validate_subdomain(this)">
 						<div class="input-group-append">
 							<p class="px-2 py-0 text-xs input-group-text rounded-right">.{{ domain }}</p>
 						</div>
@@ -28,23 +28,23 @@
 				</div>
 				<div class="form-row">
 					<div class="form-group col-12 col-md-6">
-						<p>First Name</p>
+						<p>Prénom</p>
 						<input type="text" id="first_name" name="first_name" class="form-control"
 							autocomplete="given-name">
 					</div>
 					<div class="form-group col-12 col-md-6">
-						<p>Last Name</p>
+						<p>Nom</p>
 						<input type="text" id="last_name" name="last_name" class="form-control"
 							autocomplete="family-name">
 					</div>
 				</div>
 				<div class="form-group">
-					<p for="country" class="">Country</p>
+					<p for="country" class="">Pays</p>
 					<select id="country" class="custom-select" name="country">
 						{%- if country_name -%}
 						<option selected="selected">{{ country_name }}</option>
 						{%- else -%}
-						<option disabled selected="selected">Select Country</option>
+						<option disabled selected="selected">Sélectionner un pays</option>
 						{%- endif -%}
 						{%- for country in frappe.db.get_all('Country') -%}
 						<option>
@@ -54,7 +54,7 @@
 					</select>
 				</div>
 				<div class="form-group">
-					<p>Email Address</p>
+					<p>Adresse e-mail</p>
 					<input type="email" id="email" class="form-control" name="email" autocomplete="email">
 				</div>
 
@@ -62,17 +62,17 @@
 					<input type="checkbox" name="user_accept_terms" id="user_accept_terms"
 						style="margin-bottom: -0.15rem;">
 					<p class="d-inline" for="user_accept_terms">
-						I agree to Frappe
-						<a href="https://frappecloud.com/terms" class="text-blue-600">Terms of Service</a>,
-						<a href="https://frappecloud.com/privacy" class="text-blue-600">Privacy Policy</a>
-						&#38;
-						<a href="https://frappecloud.com/cookie-policy" class="text-blue-600">Cookie Policy.</a>
+						J'accepte les
+						<a href="https://frappecloud.com/terms" class="text-blue-600">Conditions d'utilisation</a>,
+						la <a href="https://frappecloud.com/privacy" class="text-blue-600">Politique de confidentialité</a>
+						&#38; la
+						<a href="https://frappecloud.com/cookie-policy" class="text-blue-600">Politique de cookies</a> de Frappe.
 					</p>
 				</div>
 
 				<button id="accountRequestButton" type="submit"
-					style="width: 100%; background-color: #171717; color: white;" class="btn btn-step-1">Create
-					Account</button>
+					style="width: 100%; background-color: #171717; color: white;" class="btn btn-step-1">Créer
+					un compte</button>
 			</form>
 
 			{% if enable_google_oauth %}
@@ -80,7 +80,7 @@
 				<div class="my-2 border-t text-center text-xs">
 					<div class="-translate-y-1/2 transform">
 						<p class="bg-white px-2 text-xs uppercase leading-8 tracking-wider text-gray-800">
-							Or
+							Ou
 						</p>
 					</div>
 				</div>
@@ -96,7 +96,7 @@
 							d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
 					</svg>
 					<span>
-						Signup with Google
+						S'inscrire avec Google
 					</span>
 				</div>
 			</div>
@@ -104,10 +104,10 @@
 			<!-- 2. Verification Email Sent -->
 			<form class="form-step" data-step="2">
 				<div class="text-center">
-					<h2 class="font-size-base mt-0">Verification email sent</h2>
+					<h2 class="font-size-base mt-0">E-mail de vérification envoyé</h2>
 					<p>
-						We have sent an email to <span class="verification-email"></span>.
-						Please click on the link received to verify your email and create your account.
+						Nous avons envoyé un e-mail à <span class="verification-email"></span>.
+						Veuillez cliquer sur le lien reçu pour vérifier votre adresse e-mail et créer votre compte.
 					</p>
 				</div>
 			</form>
@@ -133,45 +133,45 @@
 			let MIN_LENGTH = 4;
 			let MAX_LENGTH = 20;
 			if (value.length < MIN_LENGTH) {
-				return `Site name cannot have less than ${MIN_LENGTH} characters`;
+				return `Le nom du site doit contenir au moins ${MIN_LENGTH} caractères`;
 			}
 			if (value.length > MAX_LENGTH) {
-				return `Site name cannot have more than ${MAX_LENGTH} characters`;
+				return `Le nom du site ne peut pas dépasser ${MAX_LENGTH} caractères`;
 			}
 			if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(value)) {
-				return "Site name should contain lowercase alphabets, numbers, and hyphens";
+				return "Le nom du site ne doit contenir que des lettres minuscules, des chiffres et des tirets";
 			}
 		},
 		first_name: value => {
 			if (!value) {
-				return 'First Name is required'
+				return 'Le prénom est requis'
 			}
 		},
 		last_name: value => {
 			if (!value) {
-				return 'Last Name is required'
+				return 'Le nom est requis'
 			}
 		},
 		email: (value) => {
 			if (!valid_email(value)) {
-				return "Invalid email";
+				return "Adresse e-mail invalide";
 			}
 		},
 		country: (value) => {
 			if (!value) {
-				return "Please enter your country name";
+				return "Veuillez saisir votre pays";
 			}
 		},
 		user_accept_terms: (value) => {
 			if (!value) {
-				return "You need to accept our Terms of Service & Privacy Policy"
+				return "Vous devez accepter nos Conditions d'utilisation et notre Politique de confidentialité"
 			}
 		}
 	};
 
 	function submit_account_request($form, values) {
 		$('#accountRequestButton').prop('disabled', true);
-		$("#accountRequestButton").html('<span class="mr-2">Signing up</span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+		$("#accountRequestButton").html('<span class="mr-2">Inscription en cours</span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
 		let url_args = frappe.utils.get_query_params();
 		let form_data = {};
 		if (Object.keys(url_args)) {
@@ -224,7 +224,7 @@
 			check_if_available(subdomain).then((available) => {
 				controller.show_input_feedback(
 					"subdomain",
-					!available ? `${subdomain}.${domain} is already taken` : `${subdomain}.${domain} is available`,
+					!available ? `${subdomain}.${domain} est déjà pris` : `${subdomain}.${domain} est disponible`,
 					!available
 				);
 			});

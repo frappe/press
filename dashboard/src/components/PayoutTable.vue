@@ -53,7 +53,7 @@
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">Total Payout</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
 							{{ formatCurrency(doc.net_total_usd, 'USD') }} +
-							{{ formatCurrency(doc.net_total_inr, 'INR') }}
+							{{ formatCurrency(doc.net_total_dzd, 'DZD') }}
 						</td>
 					</tr>
 				</tfoot>

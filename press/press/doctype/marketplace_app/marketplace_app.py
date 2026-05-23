@@ -640,8 +640,8 @@ class MarketplaceApp(WebsiteGenerator):
 				Coalesce(Sum(Case().when(payout_order_item.currency == "USD", amount_field).else_(0)), 0).as_(
 					"usd_amount"
 				),
-				Coalesce(Sum(Case().when(payout_order_item.currency == "INR", amount_field).else_(0)), 0).as_(
-					"inr_amount"
+				Coalesce(Sum(Case().when(payout_order_item.currency == "DZD", amount_field).else_(0)), 0).as_(
+					"dzd_amount"
 				),
 			)
 			.where(payout_order.team == self.team)
@@ -652,7 +652,7 @@ class MarketplaceApp(WebsiteGenerator):
 		if status:
 			query = query.where(payout_order.status == status)
 		result = query.run(as_dict=True)
-		return result[0] if result else {"usd_amount": 0, "inr_amount": 0}
+		return result[0] if result else {"usd_amount": 0, "dzd_amount": 0}
 
 	@dashboard_whitelist()
 	def site_installs(self):
@@ -717,10 +717,10 @@ class MarketplaceApp(WebsiteGenerator):
 
 		total_payout = self.get_payout_amount()
 		total_payout["converted_total_usd"] = total_payout.get("usd_amount", 0) + (
-			total_payout.get("inr_amount", 0) / exchange_rate
+			total_payout.get("dzd_amount", 0) / exchange_rate
 		)
 
-		total_payout["converted_total_inr"] = total_payout.get("inr_amount", 0) + (
+		total_payout["converted_total_dzd"] = total_payout.get("dzd_amount", 0) + (
 			total_payout.get("usd_amount", 0) * exchange_rate
 		)
 		total_payout["exchange_rate"] = exchange_rate
@@ -797,7 +797,7 @@ def get_plans_for_app(
 			"name",
 			"title",
 			"enabled",
-			"price_inr",
+			"price_dzd",
 			"price_usd",
 		],
 	)

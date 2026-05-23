@@ -8,7 +8,7 @@ export function showErrorToast(error) {
 	toast.error(errorMessage);
 }
 
-export function getToastErrorMessage(e, fallbackMessage = 'An error occurred') {
+export function getToastErrorMessage(e, fallbackMessage = 'Une erreur est survenue') {
 	const errorMessage = e.messages?.length
 		? e.messages.join('<br>')
 		: e.message || fallbackMessage;

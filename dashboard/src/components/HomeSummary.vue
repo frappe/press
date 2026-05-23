@@ -4,7 +4,7 @@
 			<div class="flex items-center justify-between">
 				<div class="text-xl font-semibold">Sites</div>
 				<Button variant="ghost" :route="{ name: 'Site List' }">
-					View all
+					Voir tout
 				</Button>
 			</div>
 			<div class="mt-4">

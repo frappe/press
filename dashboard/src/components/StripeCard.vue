@@ -223,8 +223,8 @@ export default {
 				this.$account.feature_flags.verify_cards_with_micro_charge;
 
 			const isMicroChargeApplicable =
-				verifyCardsWithMicroCharge === 'Both INR and USD' ||
-				(verifyCardsWithMicroCharge == 'Only INR' && teamCurrency === 'INR') ||
+				verifyCardsWithMicroCharge === 'Both DZD and USD' ||
+				(verifyCardsWithMicroCharge == 'Only DZD' && teamCurrency === 'DZD') ||
 				(verifyCardsWithMicroCharge === 'Only USD' && teamCurrency === 'USD');
 
 			if (isMicroChargeApplicable) {
@@ -267,8 +267,8 @@ export default {
 	},
 	computed: {
 		formattedMicroChargeAmount() {
-			const isINR = this.$account.team.currency === 'INR';
-			return isINR ? '₹100' : '$1';
+			const isDZD = this.$account.team.currency === 'DZD';
+			return isDZD ? 'د.ج100' : '$1';
 		},
 		browserTimezone() {
 			if (!window.Intl) {

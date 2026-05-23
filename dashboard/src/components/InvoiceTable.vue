@@ -16,11 +16,11 @@
 				<thead class="bg-surface-gray-2">
 					<tr class="text-ink-gray-6">
 						<th class="rounded-l p-2 text-left font-normal">Description</th>
-						<th class="whitespace-nowrap p-2 text-right font-normal">Rate</th>
+						<th class="whitespace-nowrap p-2 text-right font-normal">Tarif</th>
 						<th class="whitespace-nowrap p-2 text-right font-normal">
-							Quantity
+							Quantité
 						</th>
-						<th class="rounded-r p-2 text-right font-normal">Amount</th>
+						<th class="rounded-r p-2 text-right font-normal">Montant</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -66,7 +66,7 @@
 						<td></td>
 						<td></td>
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">
-							Total Without Discount
+							Total sans remise
 						</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
 							{{ formatCurrency(doc.total_before_discount) }}
@@ -76,7 +76,7 @@
 						<td></td>
 						<td></td>
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">
-							Total Discount Amount
+							Montant total de la remise
 						</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
 							{{
@@ -90,7 +90,7 @@
 						<td></td>
 						<td></td>
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">
-							Total (Without Tax)
+							Total (hors taxes)
 						</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
 							{{ formatCurrency(doc.total) }}
@@ -100,7 +100,7 @@
 						<td></td>
 						<td></td>
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">
-							IGST @ {{ Number(gstPercentage * 100) }}%
+							TVA @ {{ Number(gstPercentage * 100) }}%
 						</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
 							{{ doc.gst }}
@@ -109,7 +109,7 @@
 					<tr>
 						<td></td>
 						<td></td>
-						<td class="pb-2 pr-2 pt-4 text-right font-medium">Grand Total</td>
+						<td class="pb-2 pr-2 pt-4 text-right font-medium">Total général</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
 							{{ formatCurrency(doc.total + doc.gst) }}
 						</td>
@@ -123,7 +123,7 @@
 						<tr>
 							<td></td>
 							<td></td>
-							<td class="pr-2 text-right font-medium">Applied Balance</td>
+							<td class="pr-2 text-right font-medium">Solde appliqué</td>
 							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
 								- {{ formatCurrency(doc.applied_credits) }}
 							</td>
@@ -131,7 +131,7 @@
 						<tr>
 							<td></td>
 							<td></td>
-							<td class="pr-2 text-right font-medium">Amount Due</td>
+							<td class="pr-2 text-right font-medium">Montant dû</td>
 							<td class="whitespace-nowrap py-3 pr-2 text-right font-medium">
 								{{ formatCurrency(doc.amount_due_with_tax) }}
 							</td>
@@ -141,7 +141,7 @@
 			</table>
 		</div>
 		<div class="py-20 text-center" v-if="$resources.invoice.loading">
-			<Button :loading="true">Loading</Button>
+			<Button :loading="true">Chargement</Button>
 		</div>
 	</div>
 </template>
@@ -196,9 +196,9 @@ export default {
 		formatPlan(plan) {
 			let planDoc = getPlans().find((p) => p.name === plan);
 			if (planDoc) {
-				let india = this.$team.doc.currency === 'INR';
+				let isLocal = this.$team.doc.currency === 'DZD';
 				return this.$format.userCurrency(
-					india ? planDoc.price_inr : planDoc.price_usd,
+					isLocal ? planDoc.price_dzd : planDoc.price_usd,
 				);
 			}
 			return plan;

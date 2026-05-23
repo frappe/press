@@ -22,7 +22,7 @@
 							<span class="text-sm text-ink-gray-5" v-if="searchQuery">
 								{{
 									filteredRows.length === 0
-										? 'No results'
+										? 'Aucun résultat'
 										: `${filteredRows.length} of ${rows.length}`
 								}}
 							</span>
@@ -271,7 +271,7 @@ export default {
 							});
 						else if (row.compatible)
 							return h(Button, {
-								label: 'Add',
+								label: 'Ajouter',
 								iconLeft: this.addedApps.includes(row) ? 'check' : 'plus',
 
 								disabled: !row.compatible,

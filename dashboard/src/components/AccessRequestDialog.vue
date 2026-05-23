@@ -2,15 +2,15 @@
 	<Dialog
 		v-model="open"
 		:options="{
-			title: 'Access Request',
+			title: 'Demande d\'accès',
 			actions: [
 				{
-					label: 'Cancel',
+					label: 'Annuler',
 					variant: 'outline',
 					onClick: () => (open = false),
 				},
 				{
-					label: 'Request',
+					label: 'Demander',
 					variant: 'solid',
 					onClick: () => request.submit(),
 				},
@@ -19,14 +19,14 @@
 	>
 		<template #body-content>
 			<div class="space-y-4 text-base">
-				<p>Are you sure you want to request access to this resource?</p>
+				<p>Êtes-vous sûr de vouloir demander l'accès à cette ressource ?</p>
 				<div class="space-y-2">
-					<p><span class="font-medium">Type:</span> {{ props.doctype }}</p>
-					<p><span class="font-medium">Resource:</span> {{ props.docname }}</p>
+					<p><span class="font-medium">Type :</span> {{ props.doctype }}</p>
+					<p><span class="font-medium">Ressource :</span> {{ props.docname }}</p>
 				</div>
 				<Textarea
 					size="sm"
-					placeholder="Why do you need access?"
+					placeholder="Pourquoi avez-vous besoin d'un accès ?"
 					v-model="reason"
 				/>
 				<div
@@ -37,7 +37,7 @@
 					"
 					class="space-y-2"
 				>
-					<p class="font-medium">Permissions:</p>
+					<p class="font-medium">Permissions :</p>
 					<div class="grid grid-cols-2 gap-2">
 						<template v-for="(permission, key) in permissionsMeta" :key="key">
 							<Checkbox

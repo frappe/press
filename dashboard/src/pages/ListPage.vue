@@ -28,7 +28,7 @@
 				v-if="
 					$team?.doc &&
 					isMandateNotSet &&
-					$team.doc.currency === 'INR' &&
+					$team.doc.currency === 'DZD' &&
 					$team.doc.payment_mode == 'Card'
 				"
 			/>
@@ -56,7 +56,7 @@
 				class="mb-5"
 				v-if="displayBudgetAlert > 0"
 				:amount="displayBudgetAlert"
-				:currency="$team.doc.currency == 'INR' ? '₹' : '$'"
+				:currency="'د.ج'"
 			/>
 			<ObjectList :options="listOptions" />
 		</div>

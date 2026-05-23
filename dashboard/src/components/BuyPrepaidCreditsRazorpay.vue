@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<p v-if="$team.doc.currency === 'INR'" class="mt-3 text-p-sm">
+		<p v-if="$team.doc.currency === 'DZD'" class="mt-3 text-p-sm">
 			If you select Razorpay, you can pay using Credit Card, Debit Card, Net
 			Banking, UPI, Wallets, etc. If you are using Net Banking, it may take upto
 			5 days for balance to reflect.

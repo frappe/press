@@ -17,7 +17,7 @@
 			<ErrorMessage
 				class="mt-1"
 				v-if="requiredFieldNotSet.includes(field)"
-				error="This field is required"
+				error="Ce champ est requis"
 			/>
 		</div>
 	</div>

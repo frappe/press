@@ -12,7 +12,7 @@
 		"app",
 		"interval",
 		"section_break_2",
-		"price_inr",
+		"price_dzd",
 		"column_break_3",
 		"price_usd",
 		"plan_features_section",
@@ -52,7 +52,7 @@
 			"label": "Pricing"
 		},
 		{
-			"fieldname": "price_inr",
+			"fieldname": "price_dzd",
 			"fieldtype": "Currency",
 			"label": "Price (INR)",
 			"reqd": 1

@@ -35,7 +35,7 @@ provide('output', output)
 const dropdownOptions = computed(() => {
 	const list = [
 		{
-			label: 'View in Desk',
+			label: 'Voir dans le bureau',
 			icon: 'external-link',
 			condition: () => team?.doc?.is_desk_user,
 			onClick: () => {

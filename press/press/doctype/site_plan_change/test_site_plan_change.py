@@ -18,21 +18,21 @@ class TestSitePlanChange(FrappeTestCase):
 			plan_name="Tiny Plan",
 			allow_downgrading_from_other_plan=False,
 			price_usd=5.0,
-			price_inr=375.0,
+			price_dzd=375.0,
 		)
 		self.nano_plan = create_test_plan(
 			"Site",
 			plan_name="Nano Plan",
 			allow_downgrading_from_other_plan=True,
 			price_usd=7.0,
-			price_inr=525.0,
+			price_dzd=525.0,
 		)
 		self.unlimited_plan = create_test_plan(
 			"Site",
 			plan_name="Unlimited Plan",
 			allow_downgrading_from_other_plan=True,
 			price_usd=10.0,
-			price_inr=750.0,
+			price_dzd=750.0,
 		)
 		self.site = create_test_site(subdomain="testsite")
 

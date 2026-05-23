@@ -1,10 +1,10 @@
 <template>
 	<AlertBanner
-		title="Your card has expired. Please update your payment details to avoid site suspension."
+		title="Votre carte a expiré. Veuillez mettre à jour vos informations de paiement pour éviter la suspension du site."
 		type="warning"
 	>
 		<Button class="ml-auto" route="/billing" variant="outline">
-			Update Card
+			Mettre à jour la carte
 		</Button>
 	</AlertBanner>
 </template>

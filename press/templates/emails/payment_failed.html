@@ -9,28 +9,28 @@
 			{%- if subject -%}
 			{{ subject }}
 			{%- else -%}
-			Payment of {{ amount }} for Frappe Cloud was unsuccessful.
+			Le paiement de {{ amount }} pour Frappe Cloud a échoué.
 			{%- endif -%}
 		</p>
 		{%- if card_not_added -%}
 		<p class="mb-6">
-			You haven't added a card for your Frappe Cloud subscription. Your sites will be suspended until you
-			update your card details in your account.
+			Vous n'avez pas ajouté de carte pour votre abonnement Frappe Cloud. Vos sites seront suspendus jusqu'à ce que vous
+			mettiez à jour les détails de votre carte dans votre compte.
 		</p>
-		{{ utils.button('Update Billing Settings', account_update_link) }}
+		{{ utils.button('Mettre à jour les paramètres de facturation', account_update_link) }}
 		{%- else -%}
 		<p class="mb-6">
-			We attempted to charge your card ending in <strong>{{ last_4 }}</strong> for your Frappe Cloud subscription,
-			but were unsuccessful. Please update your card details in your
-			{{ utils.link('Billing Settings', account_update_link) }}
-			or pay manually by clicking the following link.
+			Nous avons tenté de débiter votre carte se terminant par <strong>{{ last_4 }}</strong> pour votre abonnement Frappe Cloud,
+			mais sans succès. Veuillez mettre à jour les détails de votre carte dans vos
+			{{ utils.link('Paramètres de facturation', account_update_link) }}
+			ou payer manuellement en cliquant sur le lien suivant.
 		</p>
-		{{ utils.button('Pay Invoice Now', payment_link) }}
+		{{ utils.button('Payer la facture maintenant', payment_link) }}
 		{%- endif -%}
 
 		{%- if sites -%}
 		{{ utils.separator() }}
-		<p class="mt-0 mb-2">Following sites were suspended:</p>
+		<p class="mt-0 mb-2">Les sites suivants ont été suspendus :</p>
 		<ul class="list-disc">
 			{%- for site in sites -%}
 			<li class="text-sm font-medium">{{ site }}</li>

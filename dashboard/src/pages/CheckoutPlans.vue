@@ -9,12 +9,12 @@
 					<div>
 						<span>
 							{{
-								subscription.currency === 'INR'
-									? '₹' + plan.price_inr
+								subscription.currency === 'DZD'
+									? 'د.ج' + plan.price_dzd
 									: '$' + plan.price_usd
 							}}
 							<span class="text-base font-normal text-ink-gray-6">
-								{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
+								{{ plan.block_monthly === 1 ? '/an' : '/mois' }}
 							</span>
 						</span>
 					</div>
@@ -33,7 +33,7 @@
 				:loading="$resources.changeSitePlan.loading"
 			>
 				{{
-					subscription.current_plan === plan.name ? 'Current Plan' : 'Buy Now'
+					subscription.current_plan === plan.name ? 'Plan actuel' : 'Acheter'
 				}}
 			</Button>
 		</div>
@@ -87,12 +87,12 @@ export default {
 			let features = [
 				`${plan.cpu_time_per_day} ` +
 					this.$plural(plan.cpu_time_per_day, 'hour', 'hours') +
-					' CPU per day',
-				this.formatBytes(plan.max_database_usage, 0, 2) + ' Database',
-				this.formatBytes(plan.max_storage_usage, 0, 2) + ' Storge',
+					' CPU par jour',
+				this.formatBytes(plan.max_database_usage, 0, 2) + ' Base de données',
+				this.formatBytes(plan.max_storage_usage, 0, 2) + ' Stockage',
 			];
 			if (plan.support_included) {
-				features.push('Product warranty + Support');
+				features.push('Garantie produit + Support');
 			}
 			return features;
 		},

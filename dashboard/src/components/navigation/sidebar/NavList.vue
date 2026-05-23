@@ -42,7 +42,7 @@ const navigation = computed(() => {
 
 	return [
 		{
-			name: "Welcome",
+			name: "Bienvenue",
 			icon: DoorOpen,
 			route: "/welcome",
 			isActive: routeName === "Welcome",
@@ -95,7 +95,7 @@ const navigation = computed(() => {
 			disabled: enforce2FA,
 		},
 		{
-			name: "Servers",
+			name: "Serveurs",
 			icon: Server,
 			route: onboardingComplete ? "/servers" : "/enable-servers",
 			isActive:
@@ -105,20 +105,20 @@ const navigation = computed(() => {
 			disabled: enforce2FA,
 		},
 		{
-			name: "Dev Tools",
+			name: "Outils Dev",
 			icon: Code,
 			route: "/devtools",
 			condition: onboardingComplete && !isSaasUser,
 			disabled: enforce2FA,
 			children: [
 				{
-					name: "Log Browser",
+					name: "Navigateur de logs",
 					icon: Logs,
 					route: "/log-browser",
 					isActive: routeName === "Log Browser",
 				},
 				{
-					name: "DB Analyzer",
+					name: "Analyseur BD",
 					icon: Activity,
 					route: "/database-analyzer",
 					isActive: routeName === "DB Analyzer",
@@ -130,7 +130,7 @@ const navigation = computed(() => {
 					isActive: routeName === "SQL Playground",
 				},
 				{
-					name: "Binlog Browser",
+					name: "Navigateur Binlog",
 					icon: FileSearch,
 					route: "/binlog-browser",
 					isActive: routeName === "Binlog Browser",
@@ -156,7 +156,7 @@ const navigation = computed(() => {
 			disabled: enforce2FA,
 		},
 		{
-			name: "Billing",
+			name: "Facturation",
 			icon: WalletCards,
 			route: "/billing",
 			isActive: routeName.startsWith("Billing"),
@@ -164,7 +164,7 @@ const navigation = computed(() => {
 			disabled: enforce2FA,
 		},
 		{
-			name: "Partnership",
+			name: "Partenariat",
 			icon: Globe,
 			route: "/partners",
 			isActive: routeName === "Partnership",
@@ -172,14 +172,14 @@ const navigation = computed(() => {
 			disabled: enforce2FA,
 		},
 		{
-			name: "Settings",
+			name: "Paramètres",
 			icon: Settings,
 			route: "/settings",
 			isActive: routeName.startsWith("Settings"),
 			disabled: enforce2FA,
 		},
 		{
-			name: "Status",
+			name: "État",
 			icon: LucideActivity,
 			route: "/status",
 			isActive: routeName === "Status",

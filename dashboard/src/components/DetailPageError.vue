@@ -21,9 +21,9 @@ const isPermissionError = computed(() => {
 
 const errorMessage = computed(() => {
 	if (isPermissionError.value) {
-		return 'You do not have permission to view this resource';
+		return 'Vous n\'avez pas la permission de voir cette ressource';
 	} else {
-		return props.error?.message || 'An unexpected error occurred';
+		return props.error?.message || 'Une erreur inattendue est survenue';
 	}
 });
 </script>

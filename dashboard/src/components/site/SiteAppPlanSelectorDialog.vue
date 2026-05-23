@@ -51,11 +51,11 @@ export default {
 			return this.app.plans.map((plan) => {
 				return {
 					label:
-						plan.price_inr === 0 || plan.price_usd === 0
+						plan.price_dzd === 0 || plan.price_usd === 0
 							? 'Free'
 							: `${this.$format.userCurrency(
-									this.$team.doc.currency === 'INR'
-										? plan.price_inr
+									this.$team.doc.currency === 'DZD'
+										? plan.price_dzd
 										: plan.price_usd,
 								)}/mo`,
 					sublabel: ' ',

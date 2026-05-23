@@ -58,7 +58,7 @@
 				size: 'lg',
 				actions: [
 					{
-						label: 'Submit',
+						label: 'Envoyer',
 						variant: 'solid',
 						onClick: () => {
 							$emit('add', userForInvite);

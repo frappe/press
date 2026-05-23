@@ -31,7 +31,7 @@ def create_test_press_admin_team(
 @patch.object(Team, "create_stripe_customer", new=Mock())
 def create_test_team(
 	email: str | None = None,
-	country="India",
+	country="Algeria",
 	free_account: bool | None = None,
 	skip_onboarding: bool | None = None,
 ) -> Team:
@@ -64,7 +64,7 @@ class TestTeam(FrappeTestCase):
 		account_request = create_test_account_request("testsubdomain")
 		team_count_before = frappe.db.count("Team")
 		with patch.object(Team, "create_stripe_customer"):
-			Team.create_new(account_request, "first name", "last name", "test@email.com", country="India")
+			Team.create_new(account_request, "first name", "last name", "test@email.com", country="Algeria")
 		team_count_after = frappe.db.count("Team")
 		self.assertGreater(team_count_after, team_count_before)
 
@@ -72,7 +72,7 @@ class TestTeam(FrappeTestCase):
 		account_request = create_test_account_request("testsubdomain")
 		with patch.object(Team, "create_stripe_customer"):
 			team = Team.create_new(
-				account_request, "first name", "last name", "test@email.com", country="India"
+				account_request, "first name", "last name", "test@email.com", country="Algeria"
 			)
 		self.assertEqual(team.billing_name, "first name last name")
 
@@ -86,8 +86,8 @@ class TestTeam(FrappeTestCase):
 	def test_new_team_has_correct_currency_set(self):
 		account_request1 = create_test_account_request("testsubdomain")
 		with patch.object(Team, "create_stripe_customer"):
-			team1 = Team.create_new(account_request1, "Jon", "Doe", "test@gmail.com", country="India")
-		self.assertEqual(team1.currency, "INR")
+			team1 = Team.create_new(account_request1, "Jon", "Doe", "test@gmail.com", country="Algeria")
+		self.assertEqual(team1.currency, "DZD")
 
 		account_request2 = create_test_account_request("testsubdomain2")
 		with patch.object(Team, "create_stripe_customer"):

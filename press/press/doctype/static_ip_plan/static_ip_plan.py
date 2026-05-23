@@ -15,14 +15,14 @@ class StaticIPPlan(Document):
 		from frappe.types import DF
 
 		enabled: DF.Check
-		price_inr: DF.Currency
+		price_dzd: DF.Currency
 		price_usd: DF.Currency
 		provider: DF.Literal["AWS EC2"]
 		title: DF.Data | None
 	# end: auto-generated types
 
 	def get_price_for_interval(self, interval, currency):
-		price = self.price_inr if currency == "INR" else self.price_usd
+		price = self.price_dzd if currency == "DZD" else self.price_usd
 
 		if interval == "Hourly":
 			return frappe.utils.flt(price, 2)

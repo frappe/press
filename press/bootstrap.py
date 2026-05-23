@@ -66,9 +66,9 @@ def complete_setup_wizard():
 	setup_complete(
 		{
 			"language": "English",
-			"country": "India",
-			"timezone": "Asia/Kolkata",
-			"currency": "INR",
+			"country": "Algeria",
+			"timezone": "Africa/Algiers",
+			"currency": "DZD",
 		}
 	)
 
@@ -279,11 +279,11 @@ def setup_teams():
 
 	signup("cloud@erpnext.com")
 	request = frappe.get_all("Account Request", ["*"], {"email": "cloud@erpnext.com"}, limit=1)[0]
-	cloud = Team.create_new(request, "Frappe", "Cloud", "FrappeCloud@1", "India", False)
+	cloud = Team.create_new(request, "Frappe", "Cloud", "FrappeCloud@1", "Algeria", False)
 
 	signup("aditya@erpnext.com")
 	request = frappe.get_all("Account Request", ["*"], {"email": "aditya@erpnext.com"}, limit=1)[0]
-	aditya = Team.create_new(request, "Aditya", "Hase", "AdityaHase@1", "India", False)
+	aditya = Team.create_new(request, "Aditya", "Hase", "AdityaHase@1", "Algeria", False)
 
 	cloud.append("team_members", {"user": aditya.name})
 	cloud.save()
@@ -301,7 +301,7 @@ def setup_plans():
 				"document_type": "Site",
 				"plan_title": plan[0],
 				"price_usd": plan[1],
-				"price_inr": plan[1] * 80,
+				"price_dzd": plan[1] * 80,
 				"cpu_time_per_day": index,
 				"max_database_usage": 1024 * index,
 				"max_storage_usage": 10240 * index,

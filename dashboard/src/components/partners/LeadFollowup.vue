@@ -58,7 +58,7 @@ const leadfollowups = computed(() => {
 		rowActions: ({ row }) => {
 			return [
 				{
-					label: 'Update',
+					label: 'Mettre à jour',
 					onClick: () => {
 						return renderDialog(
 							h(UpdateFollowupDialog, {
@@ -70,7 +70,7 @@ const leadfollowups = computed(() => {
 					},
 				},
 				{
-					label: 'Remove',
+					label: 'Retirer',
 					onClick: () => {
 						confirmDialog({
 							title: 'Delete Followup',
@@ -79,7 +79,7 @@ const leadfollowups = computed(() => {
 								row.followup_by +
 								'?',
 							primaryAction: {
-								label: 'Delete',
+								label: 'Supprimer',
 								variant: 'solid',
 								theme: 'red',
 								onClick: ({ hide }) => {

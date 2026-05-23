@@ -158,7 +158,7 @@ export default {
 					} else {
 						toast.error(
 							data.ResponseDescription ||
-								'Something went wrong. Please try again.',
+								"Une erreur s'est produite. Veuillez réessayer.",
 						);
 					}
 				},

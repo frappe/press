@@ -239,7 +239,7 @@ export default {
 						width: '0.5fr',
 						Button: ({ row }) => {
 							return {
-								label: 'Remove',
+								label: 'Retirer',
 								variant: 'subtle',
 								icon: 'x',
 								// theme: 'red',

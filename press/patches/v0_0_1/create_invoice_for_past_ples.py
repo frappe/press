@@ -42,6 +42,8 @@ def migrate_team(team):
 
 def cancel_subscription(team):
 	stripe = get_stripe()
+	if not stripe:
+		return None
 	subscription_id = frappe.db.get_value(
 		"Subscription", {"team": team}, "stripe_subscription_id"
 	)
@@ -56,6 +58,8 @@ def cancel_subscription(team):
 def create_past_invoices(team):
 	team = frappe.get_doc("Team", team)
 	stripe = get_stripe()
+	if not stripe:
+		return None
 	res = stripe.Invoice.list(customer=team.stripe_customer_id)
 	# remove the invoice with 0 amount
 	invoices = [d for d in res["data"] if d["total"] != 0]

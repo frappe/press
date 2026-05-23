@@ -5,21 +5,21 @@
 
 <td class="text-base leading-6 text-gray-900">
     <div class="p-8 bg-white from-markdown">
-        <p>Hello,</p>
+        <p>Bonjour,</p>
         <strong>
-            Attempted login to your Frappe Cloud account from site: {{ site }}
+            Tentative de connexion à votre compte Frappe Cloud depuis le site : {{ site }}
         </strong>
         <p>
-            Please confirm your email address by clicking the button below:
+            Veuillez confirmer votre adresse e-mail en cliquant sur le bouton ci-dessous :
         </p>
-        {{ utils.button('Verify Account', login_url, true) }}
+        {{ utils.button('Vérifier le compte', login_url, true) }}
         <p class="text-xs italic">
-            Note: This link can be used only once before expiry. If it's expired please generate a new link
+            Note : Ce lien ne peut être utilisé qu'une seule fois avant expiration. S'il a expiré, veuillez générer un nouveau lien
         </p>
         {{ utils.separator() }}
         <p class="m-0">
-            Thanks,<br>
-            Team Frappe
+            Merci,<br>
+            L'équipe Frappe
         </p>
     </div>
 </td>

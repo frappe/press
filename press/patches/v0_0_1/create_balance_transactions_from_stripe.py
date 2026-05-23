@@ -32,6 +32,8 @@ def execute():
 def create_balance_transactions_for_team(name):
 	team = frappe.get_doc("Team", name)
 	stripe = get_stripe()
+	if not stripe:
+		return None
 	# skip if already done
 	if frappe.db.exists(
 		"Balance Transaction", {"source": "Free Credits", "team": team.name}
@@ -48,7 +50,7 @@ def create_balance_transactions_for_team(name):
 	transactions.reverse()
 
 	if team.free_credits_allocated:
-		free_credits_left = 1800 if team.currency == "INR" else 25
+		free_credits_left = 1800 if team.currency == "DZD" else 25
 	else:
 		free_credits_left = 0
 
@@ -63,7 +65,7 @@ def create_balance_transactions_for_team(name):
 		invoice_name = ""
 		if type == "Adjustment":
 			if amount > 0:
-				free_credits = 1800 if transaction.currency == "inr" else 25
+				free_credits = 240000 if transaction.currency == "dzd" else 25
 				source = (
 					"Free Credits"
 					if team.free_credits_allocated
@@ -154,6 +156,8 @@ def apply_to_invoice(invoice, amount, free_credits_left, balance_transactions):
 
 def reset_customer_balance_on_stripe(team):
 	stripe = get_stripe()
+	if not stripe:
+		return None
 	balance = team.get_stripe_balance()
 	if balance != 0:
 		stripe.Customer.create_balance_transaction(

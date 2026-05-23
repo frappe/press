@@ -105,7 +105,7 @@ const formatCmd = (cmd: string) => {
 			<button
 				v-for="build_step in buildResources[activeBuildId]?.doc?.build_steps"
 				class="py-2 flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed"
-				@click="setOutput(build_step.output || formatCmd(build_step.command) || 'No Output') "
+				@click="setOutput(build_step.output || formatCmd(build_step.command) || 'Aucune sortie') "
 				:disabled="build_step.status =='Pending'"
 			>
 				<StatusIcon :status="build_step.status" />

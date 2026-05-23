@@ -30,6 +30,8 @@ def start_ngrok_and_set_webhook(context):
 	print(f"Inspect logs at {tunnel.api_url}")
 
 	stripe = get_stripe()
+	if not stripe:
+		return None
 	url = f"{public_url}/api/method/press.press.doctype.stripe_webhook_log.stripe_webhook_log.stripe_webhook_handler"
 	stripe.WebhookEndpoint.modify(
 		frappe.db.get_single_value("Press Settings", "stripe_webhook_endpoint_id"), url=url

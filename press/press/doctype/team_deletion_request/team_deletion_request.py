@@ -141,6 +141,8 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		from press.api.billing import get_stripe
 
 		stripe = get_stripe()
+		if not stripe:
+			return None
 		team = self.team_doc
 
 		try:

@@ -12,10 +12,10 @@
 		</div>
 
 		<span class="font-semibold text-base mt-2 text-ink-gray-6 tracking-[0.02em]"
-			>No usage yet</span
+			>Aucune utilisation pour le moment</span
 		>
 		<p class="text-ink-gray-5 leading-relaxed tracking-[0.02em]">
-			Data will appear here once activity is tracked
+			Les données apparaîtront ici une fois l'activité enregistrée
 		</p>
 	</div>
 </template>

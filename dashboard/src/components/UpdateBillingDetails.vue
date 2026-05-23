@@ -4,7 +4,7 @@
 			title: 'Update Billing Address',
 			actions: [
 				{
-					label: 'Submit',
+					label: 'Envoyer',
 					variant: 'solid',
 					loading: $resources.updateBillingInformation.loading,
 					onClick: () => $resources.updateBillingInformation.submit(),

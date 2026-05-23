@@ -56,7 +56,7 @@ def get_boot():
 				"Press Settings",
 				"Press Settings",
 				[
-					"free_credits_inr",
+					"free_credits_dzd",
 					"free_credits_usd",
 					"chat_base_url",
 					"chat_website_token",

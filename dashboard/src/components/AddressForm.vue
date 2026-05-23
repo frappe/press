@@ -6,15 +6,15 @@
 			:modelValue="address"
 			@update:modelValue="$emit('update:address', $event)"
 		/>
-		<div class="mt-4" v-show="address.country == 'India'">
+		<div class="mt-4" v-show="address.country == 'Algeria'">
 			<FormControl
-				label="I have GSTIN"
+				label="I have NIF"
 				type="checkbox"
 				v-model="gstApplicable"
 			/>
 			<FormControl
 				class="mt-2"
-				label="GSTIN"
+				label="NIF"
 				v-if="gstApplicable"
 				type="text"
 				v-model="address.gstin"
@@ -26,7 +26,7 @@
 
 <script>
 import Form from '@/components/Form.vue';
-import { indianStates } from '@/utils/billing.js';
+import { algerianWilayas } from '@/utils/billing.js';
 import { DashboardError } from '../utils/error';
 
 export default {
@@ -77,7 +77,7 @@ export default {
 				}
 			},
 		},
-		validateGST() {
+		validateNIF() {
 			return {
 				url: 'press.api.billing.validate_gst',
 				makeParams() {
@@ -95,19 +95,19 @@ export default {
 				[key]: value,
 			});
 		},
-		async validateGST() {
+		async validateNIF() {
 			this.update(
 				'gstin',
 				this.gstApplicable ? this.address.gstin : 'Not Applicable',
 			);
-			await this.$resources.validateGST.submit();
+			await this.$resources.validateNIF.submit();
 		},
 		async validateValues() {
 			let { country } = this.address;
-			let is_india = country == 'India';
+			let is_algeria = country == 'Algeria';
 			let values = this.fields
 				.flat()
-				.filter((df) => df.fieldname != 'gstin' || is_india)
+				.filter((df) => df.fieldname != 'gstin' || is_algeria)
 				.map((df) => this.address[df.fieldname]);
 
 			if (!values.every(Boolean)) {
@@ -115,7 +115,7 @@ export default {
 			}
 
 			try {
-				await this.validateGST();
+				await this.validateNIF();
 			} catch (error) {
 				throw new DashboardError(error.messages?.join('\n'));
 			}
@@ -128,8 +128,8 @@ export default {
 				value: d.name,
 			}));
 		},
-		indianStates() {
-			return indianStates.map((d) => ({
+		algerianWilayas() {
+			return algerianWilayas.map((d) => ({
 				label: d,
 				value: d,
 			}));
@@ -156,11 +156,11 @@ export default {
 					required: 1,
 				},
 				{
-					fieldtype: this.address.country === 'India' ? 'Select' : 'Data',
+					fieldtype: this.address.country === 'Algeria' ? 'Select' : 'Data',
 					label: 'State / Province / Region',
 					fieldname: 'state',
 					required: 1,
-					options: this.address.country === 'India' ? this.indianStates : null,
+					options: this.address.country === 'Algeria' ? this.algerianWilayas : null,
 				},
 				{
 					fieldtype: 'Data',

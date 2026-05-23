@@ -36,7 +36,7 @@
 							>
 								{{
 									uploading
-										? `Uploading ${progress}%`
+										? `Téléversement ${progress}%`
 										: success
 											? formatBytes(fileObj.size)
 											: error
@@ -49,12 +49,12 @@
 						<template #actions>
 							<Button
 								:loading="uploading"
-								loadingText="Uploading"
+								loadingText="Téléversement"
 								@click="openFileSelector()"
 								:disabled="uploading || success || disableUploadButton"
 								v-if="!success"
 							>
-								Upload
+								Téléverser
 							</Button>
 							<GreenCheckIcon class="w-5" v-if="success" />
 						</template>
@@ -87,36 +87,36 @@ export default {
 					icon: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.33325 9.33333V22.6667C5.33325 25.6133 10.1093 28 15.9999 28C21.8906 28 26.6666 25.6133 26.6666 22.6667V9.33333M5.33325 9.33333C5.33325 12.28 10.1093 14.6667 15.9999 14.6667C21.8906 14.6667 26.6666 12.28 26.6666 9.33333M5.33325 9.33333C5.33325 6.38667 10.1093 4 15.9999 4C21.8906 4 26.6666 6.38667 26.6666 9.33333M26.6666 16C26.6666 18.9467 21.8906 21.3333 15.9999 21.3333C10.1093 21.3333 5.33325 18.9467 5.33325 16" stroke="#1F272E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 					type: 'database',
 					ext: '.sql,.sql.gz,application/sql,application/x-gzip,application/gzip',
-					title: 'Database Backup',
+					title: 'Sauvegarde de la base de données',
 					description:
-						'Upload the database backup file. Usually file name ends in .sql.gz or .sql',
+						'Téléversez le fichier de sauvegarde de la base de données. Le nom du fichier se termine généralement par .sql.gz ou .sql',
 					file: null,
 				},
 				{
 					icon: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9.39111 6.3913H26.3476V22.2174C26.3476 25.9478 23.2955 29 19.565 29H9.39111V6.3913Z" stroke="#1F272E" stroke-width="1.5" stroke-miterlimit="10"/><path d="M13.9131 13.1739H21.8261" stroke="#1F272E" stroke-width="1.5" stroke-miterlimit="10"/><path d="M13.9131 17.6957H21.8261" stroke="#1F272E" stroke-width="1.5" stroke-miterlimit="10"/><path d="M13.9131 22.2173H19.8479" stroke="#1F272E" stroke-width="1.5" stroke-miterlimit="10"/><path d="M22.9565 6.3913V3H6V25.6087H9.3913" stroke="#1F272E" stroke-width="1.5" stroke-miterlimit="10"/></svg>',
 					type: 'public',
 					ext: 'application/x-tar',
-					title: 'Public Files',
+					title: 'Fichiers publics',
 					description:
-						'Upload the public files backup. Usually file name ends in -files.tar',
+						'Téléversez la sauvegarde des fichiers publics. Le nom du fichier se termine généralement par -files.tar',
 					file: null,
 				},
 				{
 					icon: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.39111 6.3913H25.3476V22.2174C25.3476 25.9478 22.2955 29 18.565 29H8.39111V6.3913Z" stroke="#1F272E" stroke-width="1.5" stroke-miterlimit="10"/><path d="M21.9565 6.3913V3H5V25.6087H8.3913" stroke="#1F272E" stroke-width="1.5" stroke-miterlimit="10"/></svg>',
 					type: 'private',
 					ext: 'application/x-tar',
-					title: 'Private Files',
+					title: 'Fichiers privés',
 					description:
-						'Upload the private files backup. Usually file name ends in -private-files.tar',
+						'Téléversez la sauvegarde des fichiers privés. Le nom du fichier se termine généralement par -private-files.tar',
 					file: null,
 				},
 				{
 					icon: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.39111 6.3913H25.3476V22.2174C25.3476 25.9478 22.2955 29 18.565 29H8.39111V6.3913Z" stroke="#1F272E" stroke-width="1.5" stroke-miterlimit="10"/><path d="M21.9565 6.3913V3H5V25.6087H8.3913" stroke="#1F272E" stroke-width="1.5" stroke-miterlimit="10"/></svg>',
 					type: 'config',
 					ext: 'application/json',
-					title: 'Site Config (required if backup is encrypted)',
+					title: 'Configuration du site (requis si la sauvegarde est chiffrée)',
 					description:
-						'Upload the site config file. Usually file name ends in -site_config_backup.json',
+						'Téléversez le fichier de configuration du site. Le nom du fichier se termine généralement par -site_config_backup.json',
 					file: null,
 				},
 			],
@@ -145,7 +145,7 @@ export default {
 
 			if (file.size > 5 * 1024 * 1024 * 1024) {
 				throw new Error(
-					'File size exceeds the limit of 5 GiB. Please try the <a href="https://docs.frappe.io/cloud/sites/migrate-an-existing-site#migrate-using-fc-restore-cli" class=underline>CLI tool</a>.',
+					'La taille du fichier dépasse la limite de 5 Gio. Veuillez essayer l\'<a href="https://docs.frappe.io/cloud/sites/migrate-an-existing-site#migrate-using-fc-restore-cli" class=underline>outil CLI</a>.',
 				);
 			}
 
@@ -153,7 +153,7 @@ export default {
 				// valid strings are "database.sql.gz", "database.sql", "database.sql (1).gz", "database.sql (2).gz"
 				if (!/\.sql( \(\d\))?\.gz$|\.sql$/.test(file.name)) {
 					throw new Error(
-						'Database backup file should end with the name "database.sql.gz" or "database.sql"',
+						'Le fichier de sauvegarde de la base de données doit se terminer par "database.sql.gz" ou "database.sql"',
 					);
 				}
 				if (
@@ -163,17 +163,17 @@ export default {
 						'application/sql',
 					].includes(file.type)
 				) {
-					throw new Error('Invalid database backup file');
+					throw new Error('Fichier de sauvegarde de base de données invalide');
 				}
 			}
 			if (['public', 'private'].includes(type)) {
 				if (file.type != 'application/x-tar') {
-					throw new Error(`Invalid ${type} files backup file`);
+					throw new Error(`Fichier de sauvegarde ${type} invalide`);
 				}
 			}
 			if (type === 'config') {
 				if (file.type != 'application/json') {
-					throw new Error(`Invalid ${type} files backup file`);
+					throw new Error(`Fichier de sauvegarde ${type} invalide`);
 				}
 			}
 		},

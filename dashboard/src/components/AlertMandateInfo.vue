@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<AlertBanner
-			title="Due to RBI regulations, we need to generate a mandate to process payments from your card. Please update your card to avoid site suspension."
+			title="Due to banking regulations, we need to generate a mandate to process payments from your card. Please update your card to avoid site suspension."
 			type="warning"
 		>
 			<Button
@@ -14,7 +14,7 @@
 		</AlertBanner>
 		<StripeCardDialog
 			v-model="showAddCardDialog"
-			message="Due to RBI regulations, we need to generate a mandate/consent from Indian customers to process auto debit charge from their card. Please add your card details again. Contact support for further details."
+			message="Due to banking regulations, we need to generate a mandate/consent from Algerian customers to process auto debit charge from their card. Please add your card details again. Contact support for further details."
 		/>
 	</div>
 </template>

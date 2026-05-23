@@ -86,6 +86,8 @@ class StripePaymentMethod(Document):
 	@dashboard_whitelist()
 	def set_default(self):
 		stripe = get_stripe()
+		if not stripe:
+			return None
 		# set default payment method on stripe
 		stripe.Customer.modify(
 			self.stripe_customer_id,
@@ -147,6 +149,8 @@ class StripePaymentMethod(Document):
 	def after_delete(self):
 		try:
 			stripe = get_stripe()
+			if not stripe:
+				return None
 			stripe.PaymentMethod.detach(self.stripe_payment_method_id)
 		except Exception as e:
 			log_error("Failed to detach payment method from stripe", data=e)
@@ -157,6 +161,8 @@ class StripePaymentMethod(Document):
 			return False
 
 		stripe = get_stripe()
+		if not stripe:
+			return None
 		mandate = stripe.Mandate.retrieve(self.stripe_mandate_id)
 		return mandate.status
 

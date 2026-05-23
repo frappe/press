@@ -1,6 +1,6 @@
 <template>
 	<div class="h-screen overflow-hidden">
-		<LoginBox title="Log in to your site on Frappe Cloud" :subtitle="subtitle">
+		<LoginBox title="Connectez-vous à votre site sur Frappe Cloud" :subtitle="subtitle">
 			<template v-slot:default>
 				<div>
 					<div v-if="sitePrePicked">
@@ -8,18 +8,18 @@
 							<div class="flex items-center justify-center space-x-2 text-base">
 								<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
 								<p>
-									Something went wrong while attempting to log in to your site
+									Une erreur s'est produite lors de la tentative de connexion à votre site
 								</p>
 							</div>
 							<div class="mx-4 mt-4 space-x-4">
 								<Button
-									label="Try again"
+									label="Réessayer"
 									icon-left="refresh-cw"
 									:loading="login.loading"
 									@click="loginToSite(pickedSite)"
 								/>
 								<Button
-									label="View your sites"
+									label="Voir vos sites"
 									icon-left="list"
 									:route="{
 										name: 'Site Login',
@@ -34,13 +34,13 @@
 							<div class="flex items-center justify-center space-x-2 text-base">
 								<FeatherIcon name="alert-circle" class="mr-2 h-4 w-4" />
 								<div>
-									<p>You are about to log in to your site</p>
+									<p>Vous êtes sur le point de vous connecter à votre site</p>
 									<span class="font-semibold">{{ pickedSiteDomain }}</span>
 								</div>
 							</div>
 							<div class="mx-4 mt-8 space-x-4">
 								<Button
-									label="Log in"
+									label="Se connecter"
 									icon-left="log-in"
 									variant="solid"
 									:loading="login.loading"
@@ -59,7 +59,7 @@
 					</div>
 					<form v-else-if="!sites.fetched">
 						<FormControl
-							label="Email"
+							label="E-mail"
 							type="email"
 							class="w-full"
 							:class="{
@@ -70,14 +70,14 @@
 						/>
 						<FormControl
 							v-if="showOTPField"
-							label="Verification Code"
+							label="Code de vérification"
 							v-model="otp"
 							placeholder="123456"
 							class="mt-2"
 						/>
 						<div v-if="showOTPField">
 							<Button
-								label="Verify"
+								label="Vérifier"
 								:disabled="otp.length !== 6"
 								:loading="
 									sites.loading ||
@@ -95,7 +95,7 @@
 								@click="sendOTP()"
 								:loading="sendOTPMethod.loading"
 							>
-								Resend verification code
+								Renvoyer le code de vérification
 								{{
 									otpResendCountdown > 0
 										? `in ${otpResendCountdown} seconds`
@@ -105,7 +105,7 @@
 						</div>
 						<Button
 							v-else
-							label="Submit"
+							label="Envoyer"
 							:disabled="email.length === 0"
 							:loading="
 								sites.loading ||
@@ -124,14 +124,14 @@
 							<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
 							<div class="flex flex-col gap-2">
 								<p>
-									{{ email || session.user }} is not a user of the site
+									{{ email || session.user }} n'''est pas un utilisateur du site
 									<span class="font-semibold">{{ pickedSite }}</span>
 								</p>
 							</div>
 						</div>
 						<div class="mt-8 flex w-full justify-center space-x-4">
 							<Button
-								label="View your sites"
+								label="Voir vos sites"
 								icon-left="list"
 								@click="
 									() => {
@@ -146,8 +146,8 @@
 					<div v-else class="mt-10">
 						<div v-if="sites.data.length === 0">
 							<div class="text-center text-base leading-6 text-ink-gray-7">
-								<div>No sites found for {{ email }}</div>
-								<Link :to="{ name: 'Signup' }">Sign up</Link> to create a new
+								<div>Aucun site trouvé pour {{ email }}</div>
+								<Link :to="{ name: 'Signup' }">S'''inscrire</Link> pour créer un nouveau
 								site
 							</div>
 						</div>
@@ -184,7 +184,7 @@
 				<div class="flex w-full flex-col px-4 justify-center pb-8">
 					<div v-if="sites.fetched">
 						<span class="text-base font-normal text-ink-gray-6">
-							Switch to a different account?
+							Changer de compte ?
 						</span>
 						<span
 							class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7 cursor-pointer"
@@ -195,7 +195,7 @@
 					</div>
 					<div>
 						<span class="text-base font-normal text-ink-gray-6">
-							Manage your sites?
+							Gérer vos sites ?
 						</span>
 						<router-link
 							class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
@@ -203,7 +203,7 @@
 								name: 'Login',
 							}"
 						>
-							Go to Frappe Cloud dashboard
+							Aller au tableau de bord Frappe Cloud
 						</router-link>
 					</div>
 				</div>
@@ -289,7 +289,7 @@ const login = createResource({
 
 function loginToSite(siteName) {
 	if (!siteName) {
-		toast.error('Please select a site');
+		toast.error('Veuillez sélectionner un site');
 		return;
 	}
 
@@ -306,8 +306,8 @@ function loginToSite(siteName) {
 				site: siteName,
 			}),
 			{
-				loading: 'Logging in ...',
-				success: 'Logged in',
+				loading: 'Connexion en cours...',
+				success: 'Connecté',
 				error: (e) => {
 					loginError.value = true;
 					getToastErrorMessage(e);
@@ -320,10 +320,10 @@ const sendOTPMethod = createResource({
 	url: 'press.api.site_login.send_otp',
 	validate: (data) => {
 		if (!data.email) {
-			throw new DashboardError('Please enter email');
+			throw new DashboardError('Veuillez entrer un e-mail');
 		}
 		if (!data.email.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
-			throw new DashboardError('Please enter a valid email');
+			throw new DashboardError('Veuillez entrer un e-mail valide');
 		}
 	},
 	onSuccess: () => {
@@ -335,7 +335,7 @@ const sendOTPMethod = createResource({
 
 function sendOTP() {
 	if (!email.value) {
-		toast.error('Please enter email');
+		toast.error('Veuillez entrer un e-mail');
 		return;
 	}
 
@@ -344,7 +344,7 @@ function sendOTP() {
 			email: email.value,
 		}),
 		{
-			loading: 'Sending OTP ...',
+			loading: 'Envoi du code...',
 			success: `OTP sent to ${email.value}`,
 			error: (e) => getToastErrorMessage(e),
 		},
@@ -364,7 +364,7 @@ const verifyOTPMethod = createResource({
 
 function verifyOTP() {
 	if (!otp.value) {
-		toast.error('Please enter OTP');
+		toast.error('Veuillez entrer le code');
 		return;
 	}
 
@@ -374,8 +374,8 @@ function verifyOTP() {
 			otp: otp.value,
 		}),
 		{
-			loading: 'Verifying OTP ...',
-			success: 'OTP verified',
+			loading: 'Vérification du code...',
+			success: 'Code vérifié',
 			error: (e) => getToastErrorMessage(e),
 		},
 	);
@@ -384,9 +384,9 @@ function verifyOTP() {
 function planTitle(site) {
 	if (site.trial_end_date) return trialDays(site.trial_end_date);
 	if (site.price_usd > 0 && team) {
-		const india = team?.doc?.currency === 'INR';
+		const isLocal = team?.doc?.currency === 'DZD';
 		const formattedValue = userCurrency(
-			india ? site.price_inr : site.price_usd,
+			isLocal ? site.price_dzd : site.price_usd,
 			0,
 		);
 		return `${formattedValue}/mo`;
@@ -397,12 +397,12 @@ function planTitle(site) {
 const subtitle = computed(() => {
 	if (pickedSite.value && sites.fetched && sites.data.length !== 0) return '';
 	else if (sites.fetched && sites.data.length !== 0)
-		return `Pick a site to log in to as ${email.value || session.user}`;
+		return `Choisissez un site pour vous connecter en tant que ${email.value || session.user}`;
 	else if (
 		!sites.fetched &&
 		!(sites.loading || isCookieValid.loading || session.loading)
 	)
-		return 'Enter your email to access your site';
+		return 'Entrez votre e-mail pour accéder à votre site';
 	else return '';
 });
 

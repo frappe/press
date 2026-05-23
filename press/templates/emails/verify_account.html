@@ -9,18 +9,18 @@
 
 <td class="text-base leading-6 text-gray-900">
     <div class="p-8 bg-white from-markdown">
-        <p><strong>You're almost done!</strong></p>
-        <p>Just one quick step left to get you started with Frappe Cloud!</p>
+        <p><strong>Vous y êtes presque !</strong></p>
+        <p>Plus qu'une dernière étape rapide pour commencer avec Frappe Cloud !</p>
         {% if otp %}
-        <p class="font-medium">Verification Code</p>
+        <p class="font-medium">Code de vérification</p>
         <div class="text-xl font-bold">{{ otp }}</div>
-        <p>Or click on the button to verify your account</p>
+        <p>Ou cliquez sur le bouton pour vérifier votre compte</p>
         {% else %}
-        <p>Click on the button to verify your account</p>
+        <p>Cliquez sur le bouton pour vérifier votre compte</p>
         {% endif %}
-        {{ utils.button('Verify Account', link, true) }}
+        {{ utils.button('Vérifier le compte', link, true) }}
         {{ utils.separator() }}
-        <p class="my-0">Team Frappe</p>
+        <p class="my-0">L'équipe Frappe</p>
     </div>
     {% if read_pixel_path %}
     <img src="{{ read_pixel_path }}">

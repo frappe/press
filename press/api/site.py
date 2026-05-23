@@ -1399,7 +1399,7 @@ def get_site_plans():
 			"plan_title",
 			"plan_description",
 			"price_usd",
-			"price_inr",
+			"price_dzd",
 			"cpu_time_per_day",
 			"max_storage_usage",
 			"max_database_usage",
@@ -1519,7 +1519,7 @@ def get_plans(name=None, rg=None):
 			"name",
 			"plan_title",
 			"price_usd",
-			"price_inr",
+			"price_dzd",
 			"cpu_time_per_day",
 			"max_storage_usage",
 			"max_database_usage",
@@ -1919,7 +1919,7 @@ def get_installed_apps(site, query_filters: dict | None = None):
 			app_source.plan_info = frappe.db.get_value(
 				"Marketplace App Plan",
 				subscription.plan,
-				["price_usd", "price_inr", "name", "plan"],
+				["price_usd", "price_dzd", "name", "plan"],
 				as_dict=True,
 			)
 

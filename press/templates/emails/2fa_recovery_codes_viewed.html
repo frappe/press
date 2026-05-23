@@ -3,22 +3,22 @@
 {% block content %}
 <div class="p-8 bg-white text-base leading-6 text-gray-900">
 	<div class="from-markdown">
-		<h2>Security Alert</h2>
-		<p>Hey there!</p>
+		<h2>Alerte de sécurité</h2>
+		<p>Bonjour !</p>
 		<p>
-			Your two-factor authentication recovery codes were viewed at {{ viewed_at }}.
+			Vos codes de récupération d'authentification à deux facteurs ont été consultés le {{ viewed_at }}.
 		</p>
 		<p>
-			If you did not view your recovery codes, please secure your account immediately:
+			Si vous n'avez pas consulté vos codes de récupération, veuillez sécuriser votre compte immédiatement :
 		</p>
 		<ul>
-			<li>Change your password</li>
-			<li>Generate new recovery codes</li>
-			<li>Review any recent account activity</li>
+			<li>Changez votre mot de passe</li>
+			<li>Générez de nouveaux codes de récupération</li>
+			<li>Vérifiez toute activité récente sur votre compte</li>
 		</ul>
-		<p>You can access your security settings here:</p>
-		<p><a href="{{ link }}">Security Settings</a></p>
-		<p>If you recognize this activity, you can ignore this email.</p>
+		<p>Vous pouvez accéder à vos paramètres de sécurité ici :</p>
+		<p><a href="{{ link }}">Paramètres de sécurité</a></p>
+		<p>Si vous reconnaissez cette activité, vous pouvez ignorer cet e-mail.</p>
 	</div>
 </div>
 {% endblock %}

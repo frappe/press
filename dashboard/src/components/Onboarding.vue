@@ -1,17 +1,17 @@
 <template>
 	<div class="mx-auto max-w-2xl rounded-lg border-0 px-2 sm:border sm:p-8">
 		<div class="prose prose-sm max-w-none">
-			<h1 class="text-2xl font-semibold">Welcome to Frappe Cloud</h1>
+			<h1 class="text-2xl font-semibold">Bienvenue sur Frappe Cloud</h1>
 			<p>
-				Frappe Cloud makes it easy to manage sites and apps like ERPNext in an
-				easy to use dashboard with powerful features like automatic backups,
-				custom domains, SSL certificates, custom apps, automatic updates and
-				more.
+				Frappe Cloud facilite la gestion des sites et des applications comme ERPNext
+				dans un tableau de bord facile à utiliser avec des fonctionnalités puissantes
+				comme les sauvegardes automatiques, les domaines personnalisés, les certificats SSL,
+				les applications personnalisées, les mises à jour automatiques et plus encore.
 			</p>
 		</div>
 		<p class="mt-6 text-base text-ink-gray-8">
-			Complete the steps below to unlock sites, benches, dedicated servers and
-			more.
+			Complétez les étapes ci-dessous pour débloquer les sites, les benches, les serveurs dédiés et
+			plus encore.
 		</p>
 		<div class="mt-6 space-y-6">
 			<div class="rounded-md">
@@ -19,7 +19,7 @@
 					<div class="flex items-center justify-between space-x-2">
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>1</TextInsideCircle>
-							<span class="text-base font-medium"> Account created </span>
+							<span class="text-base font-medium"> Compte créé </span>
 						</div>
 						<div
 							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
@@ -38,24 +38,24 @@
 							class="text-base font-medium"
 							v-if="pendingSiteRequest.status == 'Error'"
 						>
-							There was an error creating your trial site for
+							Une erreur est survenue lors de la création de votre site d'essai pour
 							{{ pendingSiteRequest.title }}
 						</span>
 						<span class="text-base font-medium" v-else>
-							Create your {{ pendingSiteRequest.title }} trial site
+							Créer votre site d'essai {{ pendingSiteRequest.title }}
 						</span>
 					</div>
 				</div>
 				<div class="mt-2 pl-7" v-if="pendingSiteRequest.status == 'Error'">
 					<p class="mt-2 text-p-base text-ink-gray-8">
-						Please contact Frappe Cloud support by clicking on the button below.
+						Veuillez contacter le support Frappe Cloud en cliquant sur le bouton ci-dessous.
 					</p>
-					<Button class="mt-2" link="/support"> Contact Support </Button>
+					<Button class="mt-2" link="/support"> Contacter le support </Button>
 				</div>
 				<div class="mt-2 pl-7" v-else>
 					<p class="mt-2 text-p-base text-ink-gray-8">
-						You can try out the {{ pendingSiteRequest.title }} app for free by
-						clicking on the button below.
+						Vous pouvez essayer l'application {{ pendingSiteRequest.title }} gratuitement
+						en cliquant sur le bouton ci-dessous.
 					</p>
 					<Button
 						class="mt-2"
@@ -67,7 +67,7 @@
 							},
 						}"
 					>
-						Continue
+						Continuer
 					</Button>
 				</div>
 			</div>
@@ -76,7 +76,7 @@
 					<div class="flex items-center space-x-2">
 						<TextInsideCircle>2</TextInsideCircle>
 						<span class="text-base font-medium">
-							Your trial site is ready
+							Votre site d'essai est prêt
 						</span>
 					</div>
 					<div
@@ -97,17 +97,17 @@
 						</a>
 					</div>
 					<p class="mt-2 text-p-base text-ink-gray-8">
-						Your trial is set to expire on
+						Votre essai expire le
 						<span class="font-medium">
 							{{ $format.date(trialSite.trial_end_date, 'LL') }} </span
-						>. Set up billing now to ensure uninterrupted access to your site.
+						>. Configurez la facturation maintenant pour garantir un accès ininterrompu à votre site.
 					</p>
 				</div>
 			</div>
 			<div v-else class="rounded-md">
 				<div class="flex items-center space-x-2">
 					<TextInsideCircle>2</TextInsideCircle>
-					<div class="text-base font-medium">Create your first site</div>
+					<div class="text-base font-medium">Créer votre premier site</div>
 				</div>
 
 				<Button
@@ -115,7 +115,7 @@
 					:route="{ name: 'SignupAppSelector' }"
 					variant="solid"
 				>
-					Create
+					Créer
 				</Button>
 			</div>
 			<!-- Step 3 - Complete Billing Setup -->
@@ -128,17 +128,17 @@
 				<div v-if="!isBillingSetupComplete">
 					<div class="flex items-center space-x-2">
 						<TextInsideCircle>3</TextInsideCircle>
-						<span class="text-base font-medium"> Complete billing setup </span>
+						<span class="text-base font-medium"> Compléter la configuration de facturation </span>
 					</div>
 					<div class="pl-7 mt-2" v-if="$team.doc.onboarding.site_created && trialSite">
 						<p class="text-p-base text-ink-gray-8">
-							Add your billing details and payment method to activate your
-							subscription.You won't be charged until your trial ends on
+							Ajoutez vos informations de facturation et votre mode de paiement pour activer
+							votre abonnement. Vous ne serez pas facturé avant la fin de votre essai le
 							<span class="font-medium">
 								{{ $format.date(trialSite.trial_end_date, 'LL') }}
 							</span>
 						</p>
-						<Button class="mt-3" route="/billing"> Complete setup </Button>
+						<Button class="mt-3" route="/billing"> Terminer la configuration </Button>
 					</div>
 				</div>
 				<div v-else>
@@ -146,7 +146,7 @@
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>3</TextInsideCircle>
 							<span class="text-base font-medium">
-								Billing setup complete
+								Configuration de facturation terminée
 							</span>
 						</div>
 						<div
@@ -157,10 +157,10 @@
 					</div>
 					<div class="mt-1.5 pl-7 text-p-base text-ink-gray-8">
 						<span v-if="$team.doc.payment_mode === 'Card'">
-							Automatic billing is enabled
+							La facturation automatique est activée
 						</span>
 						<span v-else-if="$team.doc.payment_mode === 'Prepaid Credits'">
-							Account balance: {{ $format.userCurrency($team.doc.balance) }}
+							Solde du compte : {{ $format.userCurrency($team.doc.balance) }}
 						</span>
 					</div>
 				</div>
@@ -341,7 +341,7 @@ export default {
 			return this.isBillingDetailsSet && Boolean(this.$team.doc.payment_mode);
 		},
 		minimumAmount() {
-			return this.$team.doc.currency == 'INR' ? 100 : 5;
+			return this.$team.doc.currency == 'DZD' ? 100 : 5;
 		},
 		pendingSiteRequest() {
 			return this.$team.doc.pending_site_request;

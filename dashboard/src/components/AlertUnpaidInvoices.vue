@@ -1,7 +1,7 @@
 <template>
 	<AlertBanner :title="outstandingBalanceMessage" type="warning">
 		<Button class="ml-auto" route="/billing" variant="outline">
-			Pay Now
+			Payer maintenant
 		</Button>
 	</AlertBanner>
 </template>
@@ -22,9 +22,9 @@ export default {
 	},
 	computed: {
 		outstandingBalanceMessage() {
-			return `Your account currently has an outstanding balance of ${this.$format.userCurrency(
+			return `Votre compte a actuellement un solde impayé de ${this.$format.userCurrency(
 				this.amount,
-			)}. Please settle the balance to avoid any site suspension.`;
+			)}. Veuillez régler le solde pour éviter toute suspension de site.`;
 		},
 	},
 };

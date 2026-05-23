@@ -210,8 +210,8 @@ export default {
 			const payout = this.installAnalytics?.total_payout;
 			if (!payout) return 0;
 
-			if (this.$team.doc.currency === 'INR') {
-				return payout.converted_total_inr || 0;
+			if (this.$team.doc.currency === 'DZD') {
+				return payout.converted_total_dzd || 0;
 			} else {
 				return payout.converted_total_usd || 0;
 			}

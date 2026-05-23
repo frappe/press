@@ -21,10 +21,10 @@
 			variant="subtle"
 			@click="
 				confirmDialog({
-					title: 'Delete',
+					title: 'Supprimer',
 					message: 'Are you sure you want to delete this role?',
 					primaryAction: {
-						label: 'Delete',
+						label: 'Supprimer',
 						theme: 'red',
 						onClick: ({ hide }) => {
 							role.delete.submit().then(() => {

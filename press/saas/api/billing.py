@@ -29,6 +29,7 @@ def update_information(billing_details: dict):
 
 @whitelist_saas_api
 def validate_gst(address: dict):
+	"""Validate tax ID - calls validate_gst (which now handles NIF for Algeria)."""
 	return billing_api.validate_gst(address)
 
 
@@ -58,14 +59,16 @@ def create_payment_intent_for_buying_credits(amount):
 	return billing_api.create_payment_intent_for_buying_credits(amount)
 
 
-# Razorpay Payment Gateway Related APIs
+# Legacy Payment Gateway APIs (Razorpay removed)
 @whitelist_saas_api
 def create_razorpay_order(amount, type, doc_name=None):
+	"""Legacy stub - Razorpay removed."""
 	return billing_api.create_razorpay_order(amount, type, doc_name=doc_name)
 
 
 @whitelist_saas_api
 def handle_razorpay_payment_failed():
+	"""Legacy stub - Razorpay removed."""
 	return billing_api.handle_razorpay_payment_failed()
 
 

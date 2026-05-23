@@ -58,6 +58,8 @@ class StripePaymentEvent(Document):
 		if invoice.status == "Paid" and invoice.amount_paid == 0:
 			# check if invoice is already refunded
 			stripe = get_stripe()
+			if not stripe:
+				return None
 			inv = stripe.Invoice.retrieve(invoice.stripe_invoice_id)
 			payment_intent = stripe.PaymentIntent.retrieve(inv.payment_intent)
 			is_refunded = payment_intent["charges"]["data"][0]["refunded"]
@@ -115,6 +117,8 @@ class StripePaymentEvent(Document):
 			if invoice.amount_paid == 0:
 				# check if invoice is already voided
 				stripe = get_stripe()
+				if not stripe:
+					return None
 				inv = stripe.Invoice.retrieve(invoice.stripe_invoice_id)
 				if inv.status == "void":
 					return
