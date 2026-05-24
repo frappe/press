@@ -23,7 +23,7 @@ const $session = session;
 const router = useRouter();
 
 const showTeamSwitcher = ref(false);
-const collapsed = ref(true);
+const collapsed = ref(false);
 
 const collapsedCss = computed(() =>
   collapsed.value
@@ -104,7 +104,7 @@ const helpDropdownOptions = [
             <FCLogo class="size-8 hidden md:flex shrink-0 rounded" />
             <LucideUser class='size-3.5 -mr-1.5 md:hidden' />
 
-            <div class="flex flex-col gap-0.5 ml-1 min-w-0 md:m-0" :class='collapsedCss'>
+            <div class="flex flex-col gap-1 ml-1 min-w-0 md:m-0" :class='collapsedCss'>
               <div class="text-base font-medium leading-none hidden md:flex text-ink-gray-9">
                 Frappe Cloud
               </div>
@@ -133,7 +133,6 @@ const helpDropdownOptions = [
         <template v-slot="{ list }">
           <template v-for="(item, _) in list" :key="item.name">
             <ItemGroup v-if="item.children" v-bind="item" />
-            <component v-else-if="item.customComponent" :is="item.customComponent" :disabled="item.disabled" />
             <Item v-else v-bind="item" />
           </template>
         </template>

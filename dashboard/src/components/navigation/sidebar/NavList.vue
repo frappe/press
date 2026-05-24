@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { h,computed, getCurrentInstance, onMounted, onUnmounted } from "vue";
+import { h,computed } from "vue";
 import { useRoute } from "vue-router";
 import { unreadNotificationsCount } from "@/data/notifications";
 import { session } from "@/data/session";
@@ -18,8 +18,7 @@ import Server from "~icons/lucide/server";
 import Settings from "~icons/lucide/settings";
 import WalletCards from "~icons/lucide/wallet-cards";
 import { isMac } from "@/utils/device";
-import { searchModalOpen } from "@/data/ui";
-import { notifPanel } from "@/data/ui";
+import { notifPanel, searchModalOpen } from "@/data/ui";
 
 import { useRealtimeNotifs } from './useRealtimeNotifs'
 
@@ -63,7 +62,7 @@ const list = computed(() => {
       is:"BUTTON",
       onClick: () => (notifPanel.value = true),
 			disabled: enforce2FA,
-      prefix: h("span", { class: "flex relative" }, [
+      prefix: () => h("span", { class: "flex relative" }, [
         h(LucideBell, { class: "size-4 text-ink-gray-6" }),
         h("span", {
           class: `size-1 bg-surface-blue-3 rounded-full absolute right-0 -top-0.5
