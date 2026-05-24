@@ -9,7 +9,6 @@
     - role: user
     - role: nginx
     - role: agent
-    - role: setup_agent_auth
     - role: bench
     - role: docker
     - role: node_exporter

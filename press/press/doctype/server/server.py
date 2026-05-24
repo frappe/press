@@ -2830,7 +2830,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			agent.enable_feature_flag()
 		else:
 			agent.disable_feature_flag()
-      
+
 	def _create_static_ip_log(self):
 		if self.provider != "AWS EC2" or not self.team:
 			return
@@ -2963,7 +2963,7 @@ class Server(BaseServer):
 		else:
 			self.managed_database_service = ""
 
-	def on_update(self):  # noqa: C901
+	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
 		if self.has_value_changed("database_server") or self.has_value_changed("managed_database_service"):
 			benches = frappe.get_all("Bench", {"server": self.name, "status": ("!=", "Archived")})

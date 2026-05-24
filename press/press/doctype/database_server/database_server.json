@@ -811,7 +811,6 @@
 			"fieldname": "agent_job_update_feature",
 			"fieldtype": "Check",
 			"label": "Agent Job Update Feature"
-			"label": "Is External Healthcheck Enabled"
 		},
 		{
 			"fieldname": "column_break_umtu",

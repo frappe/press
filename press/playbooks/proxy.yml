@@ -9,7 +9,6 @@
     - role: user
     - role: nginx
     - role: agent
-    - role: setup_agent_auth
     - role: proxy
     - role: node_exporter
     - role: user_ssh_certificate
