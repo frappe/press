@@ -8,6 +8,7 @@ import frappe
 import jwt
 import requests
 import responses
+from frappe.exceptions import ValidationError
 from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent, AgentRequestSkippedException
@@ -147,7 +148,7 @@ class TestAgent(FrappeTestCase):
 		settings.secret = ""
 		settings.save(ignore_permissions=True)
 
-		self.assertRaises(ValueError, agent.get_secret)
+		self.assertRaises(ValidationError, agent.get_secret)
 
 	def test_verify_request_token_success(self):
 		server = create_test_server()

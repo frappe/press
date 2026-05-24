@@ -1,3 +1,4 @@
+import json
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -38,7 +39,7 @@ class TestCallbacks(TestCase):
 			"job_type": "Deploy",
 		}
 
-		update_job(job={"id": "123"})
+		update_job(job=json.dumps({"id": "123"}))
 
 		mock_handle_polled_job.assert_called_once()
 
