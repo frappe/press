@@ -2976,8 +2976,6 @@ class Server(BaseServer):
 				bench.managed_database_service = self.managed_database_service
 				bench.save()
 
-		self.sync_database_server_public_status()
-
 		if self.has_value_changed("team"):
 			self.update_subscription()
 			self.update_db_server()
