@@ -18,6 +18,9 @@ import NavList from "./NavList.vue";
 import NotificationPanel from "./Notifications.vue";
 import { notifPanel } from "@/data/ui";
 
+import Item from "./Item.vue";
+import ItemGroup from "./ItemGroup.vue";
+
 const $team = getTeam();
 const $session = session;
 const router = useRouter();
