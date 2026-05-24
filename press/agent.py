@@ -950,34 +950,6 @@ class Agent:
 			return requests.request(method, url, headers=headers, files=file_objects, verify=verify)
 		return requests.request(method, url, headers=headers, json=data, verify=verify, timeout=(10, 30))
 
-	def get_agent_public_key(self):
-		key = f"{self.server}_agent_public_key"
-
-		public_key = frappe.cache().get_value(key)
-
-		if public_key:
-			return public_key
-
-		try:
-			agent_auth = frappe.get_doc("Agent Auth", self.server)
-		except frappe.DoesNotExistError:
-			return None
-
-		if not agent_auth.public_key:
-			return None
-
-		public_key = agent_auth.public_key
-
-		if not frappe.cache().get_value(f"{self.server}_regenerate_public_key"):
-			# Don't set cache while regenerating. Old public key may get cached again.
-			frappe.cache().set_value(
-				key,
-				public_key,
-				expires_in_sec=3600,
-			)
-
-		return public_key
-
 	def get_secret(self):
 		key = "agent_auth_secret"
 
