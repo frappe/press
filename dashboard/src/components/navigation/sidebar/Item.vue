@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<NavItemProps>(), {
       collapsed ? 'md:w-fit gap-2 md:gap-0' : 'gap-2 md:w-full',
     ]">
     <slot name='prefix'>
-      <component :is="prefix || icon" class="shrink-0 size-4 text-ink-gray-6" :class="isActive ? 'text-ink-gray-8' : ''" />
+      <component :is="prefix? prefix() : icon" class="shrink-0 size-4 text-ink-gray-6" :class="isActive ? 'text-ink-gray-8' : ''" />
     </slot>
 
     <span class="text-sm flex-1" :class='collapsedCss' >{{ name }}</span>
