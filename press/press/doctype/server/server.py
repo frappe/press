@@ -2825,6 +2825,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			log_error("Cgroup v2 Migration Exception", server=self.as_dict())
 
 	def update_feature(self, flag: bool):
+		if frappe.flags.in_test:
+			return
+
 		agent = Agent(self.name, self.doctype)
 		if flag:
 			agent.enable_feature_flag()
