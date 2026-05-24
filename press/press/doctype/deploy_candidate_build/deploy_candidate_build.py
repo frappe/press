@@ -93,6 +93,7 @@ STAGE_SLUG_MAP = {
 	"pull": "Pull Updates",
 	"mounts": "Setup Mounts",
 	"upload": "Upload",
+	"instant": "Instant Build",
 }
 
 # Key: (stage_slug, step_slug)
@@ -112,6 +113,17 @@ STEP_SLUG_MAP = {
 	("validate", "dependencies"): "Validate Dependencies",
 	("mounts", "create"): "Prepare Mounts",
 	("upload", "image"): "Docker Image",
+	("instant", "pull-image"): "Pull Base Image",
+	("instant", "update-apps"): "Update Apps",
+	("instant", "commit"): "Commit Image",
+}
+
+# Maps agent @step names → (stage_slug, step_slug) for instant builds
+INSTANT_BUILD_STEP_MAP = {
+	"Start Base Container": ("instant", "pull-image"),
+	"Pull App Updates": ("instant", "update-apps"),
+	"Commit Image": ("instant", "commit"),
+	"Push Docker Image": ("upload", "image"),
 }
 
 
@@ -215,6 +227,7 @@ class DeployCandidateBuild(Document):
 		docker_image_tag: DF.Data | None
 		error_key: DF.Data | None
 		group: DF.Link
+		instant_build: DF.Check
 		manually_failed: DF.Check
 		no_build: DF.Check
 		no_cache: DF.Check
@@ -333,6 +346,29 @@ class DeployCandidateBuild(Document):
 			},
 			is_path=True,
 		)
+
+	def add_instant_build_steps(self):
+		slugs = [
+			("instant", "pull-image"),
+			("instant", "update-apps"),
+			("instant", "commit"),
+		]
+		if not self.no_push:
+			slugs.append(("upload", "image"))
+
+		for stage_slug, step_slug in slugs:
+			stage, step = get_build_stage_and_step(stage_slug, step_slug, {})
+			self.append(
+				"build_steps",
+				dict(
+					status="Pending",
+					stage_slug=stage_slug,
+					step_slug=step_slug,
+					stage=stage,
+					step=step,
+				),
+			)
+		self.save()
 
 	def add_post_build_steps(self):
 		slugs = []
@@ -991,8 +1027,218 @@ class DeployCandidateBuild(Document):
 		self.set_status(Status.DRAFT)
 		self.pre_build()
 
+	def send_instant_build_instructions(self, previous_candidate: "DeployCandidate"):
+		"""Send instant build instructions to the agent for current deploy candidate build"""
+		self.set_build_server()
+		self._update_docker_image_metadata()
+		self.add_instant_build_steps()
+
+		settings = self._fetch_registry_settings()
+		Agent(self.build_server).run_instant_build(
+			{
+				"base_image": self._get_base_image_for_platform(previous_candidate),
+				"instant_build_app_instructions": self._get_instant_app_updates(previous_candidate),
+				"image_repository": self.docker_image_repository,
+				"image_tag": self.docker_image_tag,
+				"registry": {
+					"url": settings.docker_registry_url,
+					"username": settings.docker_registry_username,
+					"password": settings.docker_registry_password,
+				},
+				"deploy_candidate_build": self.name,
+				"deploy_after_build": self.deploy_after_build,
+				"no_push": self.no_push,
+			}
+		)
+		self.set_status(Status.RUNNING, commit=True)
+
+	def _get_base_image_for_platform(self, previous_candidate: "DeployCandidate") -> str:
+		build_name = (
+			previous_candidate.arm_build
+			if self.platform == "arm64"
+			else (previous_candidate.intel_build or previous_candidate.arm_build)
+		)
+		return frappe.db.get_value("Deploy Candidate Build", build_name, "docker_image")
+
+	def _get_instant_app_updates(self, previous_candidate: DeployCandidate) -> list:
+		apps = []
+		previous_releases = {app.app: app.release for app in previous_candidate.apps}
+		for app in self.candidate.apps:
+			if app.release == previous_releases[app.app]:
+				continue
+			source: AppSource = frappe.get_doc("App Source", app.source)
+			apps.append(
+				{
+					"app": app.app,
+					"url": source.get_repo_url(),
+					"hash": frappe.db.get_value("App Release", app.release, "hash"),
+				}
+			)
+		return apps
+
+	@staticmethod
+	def process_run_instant_build(job: "AgentJob", response_data: "dict | None"):
+		request_data = json.loads(job.request_data)
+		build: DeployCandidateBuild = frappe.get_doc(
+			"Deploy Candidate Build", request_data["deploy_candidate_build"]
+		)
+		build._process_instant_build_job(job, request_data)
+
+	def _process_instant_build_job(self, job: "AgentJob", request_data: dict):
+		"""
+		Processes instant build job updates. Unlike `_process_run_build`, instant builds don't
+		stream docker build output — step statuses are synced directly from agent job step records.
+		"""
+		self._set_output_parsers()
+		self._sync_instant_build_step_statuses(job)
+
+		if self.has_remote_build_failed(job, {}):
+			self.handle_build_failure(exc=None, job=job)
+		else:
+			self._update_status_from_remote_build_job(job)
+			if self.status == Status.SUCCESS.value:
+				self.update_deploy_candidate_with_build()
+				self._create_platform_instant_build_if_required_and_deploy(
+					request_data.get("deploy_after_build", True)
+				)
+
+		self.correct_upload_step_status()
+
+	def _sync_instant_build_step_statuses(self, job: "AgentJob"):
+		"""Update each instant build step's status from the corresponding agent job step."""
+		for agent_step_name, (stage_slug, step_slug) in INSTANT_BUILD_STEP_MAP.items():
+			status = job.get_step_status(agent_step_name)
+			if status and (step := self.get_step(stage_slug, step_slug)):
+				step.status = status
+		self.save(ignore_version=True)
+
+	def _create_platform_instant_build_if_required_and_deploy(self, deploy_after_build: bool):
+		"""Create a platform specific instant build if requirement enforced by the deploy candidate and deploy after build if required"""
+		requires_arm = self.candidate.requires_arm_build and not self.candidate.arm_build
+		requires_intel = self.candidate.requires_intel_build and not self.candidate.intel_build
+
+		if requires_arm or requires_intel:
+			platform = "arm64" if requires_arm else "x86_64"
+			new_dcb: DeployCandidateBuild = frappe.get_doc(
+				{
+					"doctype": "Deploy Candidate Build",
+					"deploy_candidate": self.deploy_candidate,
+					"run_build": 0,
+					"no_push": self.no_push,
+					"deploy_after_build": deploy_after_build,
+					"platform": platform,
+				}
+			).insert()
+			new_dcb.run_instant_build()
+		elif deploy_after_build:
+			self.create_deploy()
+
+	def get_previous_candidate(self) -> DeployCandidate | None:
+		"""Get the previous deploy candidate for the same group
+		Use the last bench deployed in this group as the reference to find the previous candidate
+		"""
+		last_active_build = frappe.db.get_value(
+			"Bench",
+			{"group": self.group, "status": "Active"},
+			"build",
+			order_by="creation desc",
+		)
+		if not last_active_build:
+			return None
+
+		deploy_candidate = frappe.db.get_value(
+			"Deploy Candidate Build", last_active_build, "deploy_candidate"
+		)
+
+		if not deploy_candidate:
+			# Should ideally never ever happen but still for safety
+			return None
+
+		return frappe.get_doc("Deploy Candidate", deploy_candidate)
+
+	def has_active_benches(self, previous_candidate: DeployCandidate) -> bool:
+		"""Gets arm and intel unique benches for the previous build"""
+		intel_bench = None
+		arm_bench = None
+		intel_build = previous_candidate.intel_build
+		arm_build = previous_candidate.arm_build
+
+		if intel_build:
+			intel_bench = frappe.db.get_value(
+				"Bench",
+				{"build": intel_build, "status": "Active"},
+				"name",
+			)
+
+		if arm_build:
+			arm_bench = frappe.db.get_value(
+				"Bench",
+				{"build": arm_build, "status": "Active"},
+				"name",
+			)
+
+		if not intel_bench and not arm_bench:
+			return False
+
+		if intel_build and arm_build and (not intel_bench or not arm_bench):
+			return False
+
+		return True
+
+	def can_run_instant_build(self, previous_candidate: DeployCandidate | None):
+		"""Check if the previous build and this build have similar dependencies"""
+		assert previous_candidate, "Previous deploy candidate not found."
+
+		is_public_bench_build = frappe.db.get_value("Release Group", self.group, "public")
+		if is_public_bench_build:
+			frappe.throw("Instant build cannot be run since this is a public bench build.")
+
+		current_candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", self.deploy_candidate)
+
+		# Dependencies check
+		previous_dependencies = {d.dependency: d.version for d in previous_candidate.dependencies}
+		current_dependencies = {d.dependency: d.version for d in current_candidate.dependencies}
+
+		if previous_dependencies != current_dependencies:
+			frappe.throw("Instant build cannot be run since dependencies have changed.")
+
+		# Packages check
+		previous_packages = {p.package_manager: p.package for p in previous_candidate.packages}
+		current_packages = {p.package_manager: p.package for p in current_candidate.packages}
+		if previous_packages != current_packages:
+			frappe.throw("Instant build cannot be run since packages have changed.")
+
+		# Environment variables check
+		previous_environment_variables = {ev.key: ev.value for ev in previous_candidate.environment_variables}
+		current_environment_variables = {ev.key: ev.value for ev in current_candidate.environment_variables}
+		if previous_environment_variables != current_environment_variables:
+			frappe.throw("Instant build cannot be run since environment variables have changed.")
+
+		# Finally check if active benches are present
+		if not self.has_active_benches(previous_candidate):
+			frappe.throw("Instant build cannot be run since there is no previously successful deploy.")
+
+	def run_instant_build(self):
+		"""Ensure this is called when `run_build` in insert is set to False since that will use the older flow"""
+		previous_candidate = self.get_previous_candidate()
+		self.can_run_instant_build(previous_candidate)
+
+		self.set_status(Status.PREPARING, timestamp_field="build_start", commit=True)
+		self._set_output_parsers()
+		try:
+			self.send_instant_build_instructions(previous_candidate)
+		except Exception as e:
+			self.handle_build_failure(e)
+			return
+
+		self.set_status(Status.RUNNING, commit=True)
+
 	def after_insert(self):
-		if self.run_build and self.status != Status.SCHEDULED.value:
+		if self.instant_build:
+			self.set_status(Status.DRAFT)
+			self.run_instant_build()
+
+		elif self.run_build and self.status != Status.SCHEDULED.value:
 			self.set_status(Status.DRAFT)
 			self.pre_build()
 

@@ -1109,6 +1109,8 @@ def process_job_updates(job_name: str, response_data: dict | None = None):  # no
 			AppPatch.process_patch_app(job)
 		elif job.job_type == "Run Remote Builder":
 			DeployCandidateBuild.process_run_build(job, response_data)
+		elif job.job_type == "Run Instant Build":
+			DeployCandidateBuild.process_run_instant_build(job, response_data)
 		elif job.job_type == "Create User":
 			process_create_user_job_update(job)
 		elif job.job_type == "Complete Setup Wizard":

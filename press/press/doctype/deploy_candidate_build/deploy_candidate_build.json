@@ -16,6 +16,7 @@
 		"no_cache",
 		"no_push",
 		"deploy_after_build",
+		"instant_build",
 		"run_build",
 		"scheduled_time",
 		"deploy_on_server",
@@ -103,15 +104,25 @@
 			"label": "Deploy After Build",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_9sga", "fieldtype": "Column Break" },
-		{ "fieldname": "section_break_bfxt", "fieldtype": "Section Break" },
+		{
+			"fieldname": "column_break_9sga",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "section_break_bfxt",
+			"fieldtype": "Section Break"
+		},
 		{
 			"fieldname": "build_directory",
 			"fieldtype": "Data",
 			"label": "Directory",
 			"read_only": 1
 		},
-		{ "fieldname": "output_tab", "fieldtype": "Tab Break", "label": "Output" },
+		{
+			"fieldname": "output_tab",
+			"fieldtype": "Tab Break",
+			"label": "Output"
+		},
 		{
 			"fieldname": "status",
 			"fieldtype": "Select",
@@ -131,7 +142,10 @@
 			"label": "Build Start",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_5m9f", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_5m9f",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "build_end",
 			"fieldtype": "Datetime",
@@ -176,7 +190,10 @@
 			"label": "Retry Count",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_3jie", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_3jie",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"description": "Set if the build was manually failed or cancelled.",
@@ -246,7 +263,10 @@
 			"label": "Docker image",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_gi6p", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_gi6p",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fetch_from": "group.team",
 			"fieldname": "team",
@@ -273,17 +293,35 @@
 			"label": "Deploy On Server",
 			"options": "Server",
 			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "instant_build",
+			"fieldtype": "Check",
+			"label": "Instant Build"
 		}
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [
-		{ "link_doctype": "Agent Job", "link_fieldname": "reference_name" },
-		{ "link_doctype": "Error Log", "link_fieldname": "reference_name" },
-		{ "link_doctype": "Press Notification", "link_fieldname": "document_name" },
-		{ "link_doctype": "Bench", "link_fieldname": "build" }
+		{
+			"link_doctype": "Agent Job",
+			"link_fieldname": "reference_name"
+		},
+		{
+			"link_doctype": "Error Log",
+			"link_fieldname": "reference_name"
+		},
+		{
+			"link_doctype": "Press Notification",
+			"link_fieldname": "document_name"
+		},
+		{
+			"link_doctype": "Bench",
+			"link_fieldname": "build"
+		}
 	],
-	"modified": "2026-03-16 16:23:51.449383",
+	"modified": "2026-05-24 21:17:21.658217",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Deploy Candidate Build",

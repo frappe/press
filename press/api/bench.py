@@ -803,6 +803,7 @@ def deploy_and_update(
 	apps: list,
 	sites: list | None = None,
 	run_will_fail_check: bool = True,
+	trigger_instant_deploy: bool = False,
 ):
 	use_new_deploy_flow = frappe.db.get_single_value("Press Settings", "use_new_deploy_flow") or 0
 
@@ -815,7 +816,10 @@ def deploy_and_update(
 			apps,
 			sites,
 			False,
-		).deploy(run_will_fail_check)
+		).deploy(
+			run_will_fail_check,
+			trigger_instant_deploy=trigger_instant_deploy,
+		)
 
 	# We check permissions early on and don't change permissions in the middle of the Workflow
 	current_team = get_current_team()
