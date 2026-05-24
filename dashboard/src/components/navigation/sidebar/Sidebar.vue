@@ -104,12 +104,13 @@ const helpDropdownOptions = [
             <FCLogo class="size-8 hidden md:flex shrink-0 rounded" />
             <LucideUser class='size-3.5 -mr-1.5 md:hidden' />
 
-            <div class="flex flex-col gap-1 ml-1 min-w-0 md:m-0" :class='collapsedCss'>
+            <div class="flex flex-col gap-0.5 ml-1 min-w-0 md:m-0" :class='collapsedCss'>
               <div class="text-base font-medium leading-none hidden md:flex text-ink-gray-9">
                 Frappe Cloud
               </div>
 
-              <div class="text-sm text-left leading-none text-ink-gray-7 truncate">
+              <div
+                class="text-sm text-left leading-none text-ink-gray-7 truncate">
                 {{ $team?.get.loading ? 'Loading...' : $team?.doc?.user }}
               </div>
             </div>

@@ -21,10 +21,11 @@ import { isMac } from "@/utils/device";
 import { searchModalOpen } from "@/data/ui";
 import { notifPanel } from "@/data/ui";
 
+import { useRealtimeNotifs } from './useRealtimeNotifs'
+
 const $route = useRoute();
 const $team = getTeam();
 const $session = session;
-const $socket = getCurrentInstance().proxy.$socket;
 
 const list = computed(() => {
 	if (!$team?.doc) return [];
@@ -202,18 +203,12 @@ const list = computed(() => {
 	].filter((item) => item.condition ?? true);
 });
 
-onMounted(() => {
-	$socket.emit("doctype_subscribe", "Press Notification");
-	$socket.on("press_notification", (data) => {
-		if (data.team === $team.doc.name) {
-			unreadNotificationsCount.setData((data) => data + 1);
-		}
-	});
-});
+useRealtimeNotifs((data) => {
+	if (data.team === $team.doc.name) {
+		unreadNotificationsCount.setData((data) => data + 1)
+	}
+})
 
-onUnmounted(() => {
-	$socket.off("press_notification");
-});
 </script>
 
 <template>

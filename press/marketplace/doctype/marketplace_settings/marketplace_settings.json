@@ -1,113 +1,110 @@
 {
- "actions": [],
- "allow_rename": 1,
- "creation": "2022-03-24 22:49:45.741578",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "general_section",
-  "enable_audit_actions",
-  "audit_bench_path",
-  "column_break_wvgs",
-  "send_report_to_reviewer",
-  "featured_apps_section",
-  "featured_apps",
-  "release_auto_approval_section",
-  "auto_release_apps",
-  "auto_release_teams"
- ],
- "fields": [
-  {
-   "fieldname": "featured_apps_section",
-   "fieldtype": "Section Break",
-   "label": "Featured Apps"
-  },
-  {
-   "fieldname": "featured_apps",
-   "fieldtype": "Table",
-   "label": "Featured Apps",
-   "options": "Featured App"
-  },
-  {
-   "fieldname": "release_auto_approval_section",
-   "fieldtype": "Section Break",
-   "label": "Auto Release Approval"
-  },
-  {
-   "fieldname": "auto_release_apps",
-   "fieldtype": "Table",
-   "label": "Auto Release Apps",
-   "options": "Featured App"
-  },
-  {
-   "fieldname": "auto_release_teams",
-   "fieldtype": "Table",
-   "label": "Auto Release Teams",
-   "options": "Auto Release Team"
-  },
-  {
-   "fieldname": "general_section",
-   "fieldtype": "Section Break",
-   "label": "Audit Settings"
-  },
-  {
-   "default": "0",
-   "description": "Feature flag which gives power to the Marketplace Auditor to take actions based on audit results.",
-   "fieldname": "enable_audit_actions",
-   "fieldtype": "Check",
-   "label": "Enable Audit Actions"
-  },
-  {
-   "fieldname": "column_break_wvgs",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "description": "Adds reviewer to CC while sending the report.",
-   "fieldname": "send_report_to_reviewer",
-   "fieldtype": "Check",
-   "label": "Send report to reviewer"
-  },
-  {
-   "description": "Save the bench path to run semgrep inside the bench environment.",
-   "fieldname": "audit_bench_path",
-   "fieldtype": "Data",
-   "label": "Audit Bench Path"
-  }
- ],
- "index_web_pages_for_search": 1,
- "issingle": 1,
- "links": [],
- "modified": "2026-04-27 10:59:36.427387",
- "modified_by": "Administrator",
- "module": "Marketplace",
- "name": "Marketplace Settings",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "role": "Press Marketplace Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2022-03-24 22:49:45.741578",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"general_section",
+		"enable_audit_actions",
+		"audit_bench_path",
+		"column_break_wvgs",
+		"send_report_to_reviewer",
+		"featured_apps_section",
+		"featured_apps",
+		"release_auto_approval_section",
+		"auto_release_apps",
+		"auto_release_teams"
+	],
+	"fields": [
+		{
+			"fieldname": "featured_apps_section",
+			"fieldtype": "Section Break",
+			"label": "Featured Apps"
+		},
+		{
+			"fieldname": "featured_apps",
+			"fieldtype": "Table",
+			"label": "Featured Apps",
+			"options": "Featured App"
+		},
+		{
+			"fieldname": "release_auto_approval_section",
+			"fieldtype": "Section Break",
+			"label": "Auto Release Approval"
+		},
+		{
+			"fieldname": "auto_release_apps",
+			"fieldtype": "Table",
+			"label": "Auto Release Apps",
+			"options": "Featured App"
+		},
+		{
+			"fieldname": "auto_release_teams",
+			"fieldtype": "Table",
+			"label": "Auto Release Teams",
+			"options": "Auto Release Team"
+		},
+		{
+			"fieldname": "general_section",
+			"fieldtype": "Section Break",
+			"label": "Audit Settings"
+		},
+		{
+			"default": "0",
+			"description": "Feature flag which gives power to the Marketplace Auditor to take actions based on audit results.",
+			"fieldname": "enable_audit_actions",
+			"fieldtype": "Check",
+			"label": "Enable Audit Actions"
+		},
+		{ "fieldname": "column_break_wvgs", "fieldtype": "Column Break" },
+		{
+			"default": "0",
+			"description": "Adds reviewer to CC while sending the report.",
+			"fieldname": "send_report_to_reviewer",
+			"fieldtype": "Check",
+			"label": "Send report to reviewer"
+		},
+		{
+			"description": "Save the bench path to run semgrep inside the bench environment.",
+			"fieldname": "audit_bench_path",
+			"fieldtype": "Data",
+			"label": "Audit Bench Path"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"issingle": 1,
+	"links": [],
+	"modified": "2026-04-27 10:59:36.427387",
+	"modified_by": "Administrator",
+	"module": "Marketplace",
+	"name": "Marketplace Settings",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "Press Marketplace Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
 }

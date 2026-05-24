@@ -1,105 +1,83 @@
 {
- "actions": [],
- "creation": "2020-08-10 18:57:08.745042",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "team",
-  "message",
-  "route",
-  "team_created_on",
-  "currency",
-  "last_paid_invoice",
-  "column_break_vcbh",
-  "rating",
-  "note"
- ],
- "fields": [
-  {
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Team",
-   "options": "Team",
-   "reqd": 1
-  },
-  {
-   "fieldname": "message",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Message",
-   "reqd": 1
-  },
-  {
-   "fieldname": "route",
-   "fieldtype": "Data",
-   "label": "Route"
-  },
-  {
-   "fieldname": "column_break_vcbh",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "note",
-   "fieldtype": "Small Text",
-   "label": "Note"
-  },
-  {
-   "fieldname": "rating",
-   "fieldtype": "Rating",
-   "label": "Rating"
-  },
-  {
-   "fieldname": "team_created_on",
-   "fieldtype": "Date",
-   "label": "Team Created On"
-  },
-  {
-   "fieldname": "currency",
-   "fieldtype": "Link",
-   "label": "Currency",
-   "options": "Currency"
-  },
-  {
-   "fieldname": "last_paid_invoice",
-   "fieldtype": "Currency",
-   "label": "Last Paid Invoice"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-02-03 15:48:45.990977",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Press Feedback",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "role": "Press User"
-  },
-  {
-   "create": 1,
-   "role": "Press User"
-  }
- ],
- "quick_entry": 1,
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "title_field": "team",
- "track_changes": 1
+	"actions": [],
+	"creation": "2020-08-10 18:57:08.745042",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"team",
+		"message",
+		"route",
+		"team_created_on",
+		"currency",
+		"last_paid_invoice",
+		"column_break_vcbh",
+		"rating",
+		"note"
+	],
+	"fields": [
+		{
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Team",
+			"options": "Team",
+			"reqd": 1
+		},
+		{
+			"fieldname": "message",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Message",
+			"reqd": 1
+		},
+		{ "fieldname": "route", "fieldtype": "Data", "label": "Route" },
+		{ "fieldname": "column_break_vcbh", "fieldtype": "Column Break" },
+		{ "fieldname": "note", "fieldtype": "Small Text", "label": "Note" },
+		{ "fieldname": "rating", "fieldtype": "Rating", "label": "Rating" },
+		{
+			"fieldname": "team_created_on",
+			"fieldtype": "Date",
+			"label": "Team Created On"
+		},
+		{
+			"fieldname": "currency",
+			"fieldtype": "Link",
+			"label": "Currency",
+			"options": "Currency"
+		},
+		{
+			"fieldname": "last_paid_invoice",
+			"fieldtype": "Currency",
+			"label": "Last Paid Invoice"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2025-02-03 15:48:45.990977",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Press Feedback",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{ "create": 1, "role": "Press User" }
+	],
+	"quick_entry": 1,
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "team",
+	"track_changes": 1
 }

@@ -1,103 +1,89 @@
 {
- "actions": [],
- "allow_rename": 1,
- "creation": "2022-01-28 20:07:41.467888",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "user",
-  "column_break_2",
-  "is_default",
-  "is_removed",
-  "section_break_4",
-  "ssh_public_key",
-  "ssh_fingerprint"
- ],
- "fields": [
-  {
-   "fieldname": "user",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "User",
-   "options": "User",
-   "reqd": 1
-  },
-  {
-   "fieldname": "ssh_public_key",
-   "fieldtype": "Code",
-   "label": "SSH Public Key",
-   "reqd": 1
-  },
-  {
-   "fieldname": "ssh_fingerprint",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "SSH Fingerprint",
-   "read_only": 1
-  },
-  {
-   "default": "1",
-   "fieldname": "is_default",
-   "fieldtype": "Check",
-   "label": "Is Default"
-  },
-  {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_4",
-   "fieldtype": "Section Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_removed",
-   "fieldtype": "Check",
-   "label": "Is Removed"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-01-30 17:39:14.574515",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "User SSH Key",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "if_owner": 1,
-   "read": 1,
-   "role": "Press User",
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "if_owner": 1,
-   "read": 1,
-   "role": "Press User",
-   "write": 1
-  }
- ],
- "show_title_field_in_link": 1,
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "title_field": "user",
- "track_changes": 1
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2022-01-28 20:07:41.467888",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"user",
+		"column_break_2",
+		"is_default",
+		"is_removed",
+		"section_break_4",
+		"ssh_public_key",
+		"ssh_fingerprint"
+	],
+	"fields": [
+		{
+			"fieldname": "user",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "User",
+			"options": "User",
+			"reqd": 1
+		},
+		{
+			"fieldname": "ssh_public_key",
+			"fieldtype": "Code",
+			"label": "SSH Public Key",
+			"reqd": 1
+		},
+		{
+			"fieldname": "ssh_fingerprint",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "SSH Fingerprint",
+			"read_only": 1
+		},
+		{
+			"default": "1",
+			"fieldname": "is_default",
+			"fieldtype": "Check",
+			"label": "Is Default"
+		},
+		{ "fieldname": "column_break_2", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_4", "fieldtype": "Section Break" },
+		{
+			"default": "0",
+			"fieldname": "is_removed",
+			"fieldtype": "Check",
+			"label": "Is Removed"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2025-01-30 17:39:14.574515",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "User SSH Key",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"if_owner": 1,
+			"read": 1,
+			"role": "Press User",
+			"write": 1
+		}
+	],
+	"show_title_field_in_link": 1,
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "user",
+	"track_changes": 1
 }

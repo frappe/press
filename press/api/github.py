@@ -30,6 +30,10 @@ DEFAULT_GITHUB_REDIRECT_PATH = "/dashboard"
 GITHUB_OAUTH_STATE_MAX_AGE = timedelta(minutes=10)
 
 
+class GithubFetchError(Exception):
+	pass
+
+
 class InvalidGitHubOAuthState(frappe.ValidationError):
 	pass
 
