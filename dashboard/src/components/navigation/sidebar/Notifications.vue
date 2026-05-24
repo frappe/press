@@ -9,7 +9,11 @@ import {
   Tooltip,
 } from "frappe-ui";
 
+<<<<<<< HEAD
 import { h, nextTick, ref, watch, onMounted, onUnmounted } from "vue";
+=======
+import { h, nextTick, ref, watch, inject } from "vue";
+>>>>>>> 435290b32 (feat(sidebar): collapse animation)
 import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 
@@ -29,6 +33,7 @@ import { renderDialog } from "@/utils/components";
 import { isMobile } from "@/utils/device";
 import { getTeam } from "@/data/team";
 
+const collapsedCss = inject("collapsedCss");
 import Item from "./Item.vue";
 
 const formatHtml = (str: string) => {
@@ -218,7 +223,7 @@ useRealtimeNotifs((data) => {
         </template>
 
         <template #suffix>
-          <span class="text-xs text-ink-gray-6 collapsed" v-if="unreadNotificationsCount.data > 0">
+          <span class="text-xs text-ink-gray-6" v-if="unreadNotificationsCount.data > 0" :class='collapsedCss'>
             {{
               unreadNotificationsCount.data > 99
                 ? '99+'
