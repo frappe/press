@@ -446,7 +446,7 @@ export default {
 				component: defineAsyncComponent(
 					() => import('../pages/benches/Deploys.vue'),
 				),
-				childrenRoutes: ['Deploy Candidate'],
+				childrenRoutes: ['Deploy Candidate', 'Release Pipeline'],
         	props: (releaseGroup) => ({
 					name: releaseGroup.doc.name,
 				}),
@@ -601,21 +601,6 @@ export default {
 					return { releaseGroup: releaseGroup.name };
 				},
 			},
-      {
-				label: 'Pipelines',
-				icon: LucidePocketKnife,
-        condition: () => getTeam().doc?.is_desk_user,
-				route: 'pipelines',
-        childrenRoutes: ['Release Pipeline'],
-				type: 'Component',
-				component: defineAsyncComponent(
-					() => import('../pages/benches/pipeline/List.vue'),
-				),
-				props: (releaseGroup) => {
-					return { releaseGroup: releaseGroup.name };
-				},
-			},
-
 			{
 				label: 'Regions',
 				icon: icon('globe'),
