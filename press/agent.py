@@ -977,7 +977,6 @@ class Agent:
 					"require": ["exp", "server", "jti"],
 				},
 			)
-			print(payload)
 
 		except jwt.ExpiredSignatureError as err:
 			raise ValueError("Token expired") from err
