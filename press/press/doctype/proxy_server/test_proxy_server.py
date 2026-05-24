@@ -18,6 +18,7 @@ from press.utils.test import foreground_enqueue_doc
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
+@patch.object(BaseServer, "update_feature", new=Mock())
 @patch.object(ProxyServer, "validate_domains", new=Mock())
 def create_test_proxy_server(
 	hostname: str = "n",

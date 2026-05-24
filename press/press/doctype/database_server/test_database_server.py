@@ -252,7 +252,10 @@ class TestDatabaseServer(FrappeTestCase):
 	def test_setup_server_marks_server_broken_on_exception(self, Mock_Ansible):
 		server = create_test_database_server()
 
-		Mock_Ansible.side_effect = Exception("Setup failed")
+		mock_ansible_instance = Mock()
+		mock_ansible_instance.run.side_effect = Exception("Setup failed")
+
+		Mock_Ansible.return_value = mock_ansible_instance
 
 		server._generate_secret = Mock(return_value="secret")
 		server.sign_agent_token = Mock(return_value="signed-token")
