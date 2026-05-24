@@ -6,4 +6,7 @@ export interface NavItemProps {
 	condition?: boolean;
 	disabled?: boolean;
 	isActive?: boolean;
+  prefix?: any;
+  suffix?: any;
+  onClick?: () => void;
 }

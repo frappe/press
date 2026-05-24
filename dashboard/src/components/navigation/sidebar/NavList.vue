@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, getCurrentInstance, onMounted, onUnmounted } from "vue";
+import { h,computed, getCurrentInstance, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import { unreadNotificationsCount } from "@/data/notifications";
 import { session } from "@/data/session";
@@ -17,8 +17,9 @@ import Logs from "~icons/lucide/scroll-text";
 import Server from "~icons/lucide/server";
 import Settings from "~icons/lucide/settings";
 import WalletCards from "~icons/lucide/wallet-cards";
-import NotificationPanel from "./Notifications.vue";
-import SearchItem from "./SearchItem.vue";
+import { isMac } from "@/utils/device";
+import { searchModalOpen } from "@/data/ui";
+import { notifPanel } from "@/data/ui";
 
 const $route = useRoute();
 const $team = getTeam();
@@ -47,15 +48,31 @@ const list = computed(() => {
 		},
 
 		{
-			customComponent: SearchItem,
+      icon: LucideSearch,
+      name: 'Search',
+      is:"BUTTON",
 			condition: onboardingComplete,
+      suffix: isMac() ? '⌘ K' : 'Ctrl+k',
+      onClick: () => (searchModalOpen.value = true)
 		},
 
 		{
 			name: "Notifications",
 			condition: onboardingComplete && !isSaasUser,
-			customComponent: NotificationPanel,
+      is:"BUTTON",
+      onClick: () => (notifPanel.value = true),
 			disabled: enforce2FA,
+      prefix: h("span", { class: "flex relative" }, [
+        h(LucideBell, { class: "size-4 text-ink-gray-6" }),
+        h("span", {
+          class: `size-1 bg-surface-blue-3 rounded-full absolute right-0 -top-0.5
+          ${unreadNotificationsCount.data > 0 ? "" : "hidden"}`,
+        }),
+      ]),
+      suffix:
+        unreadNotificationsCount.data > 99
+          ? "99+"
+          : unreadNotificationsCount.data,
 		},
 		{
 			name: "Sites",
