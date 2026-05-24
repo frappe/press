@@ -1494,23 +1494,26 @@ class VirtualMachine(Document):
 		for doctype in server_doctypes:
 			server = frappe.get_all(doctype, {"virtual_machine": self.name}, pluck="name")
 			if server:
-				server = server[0]
-				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
-				frappe.db.set_value(doctype, server, "private_ip", self.private_ip_address)
-				if doctype in ["Server", "Proxy Server", "NAT Server"]:
-					frappe.db.set_value(doctype, server, "is_static_ip", self.is_static_ip)
+				server = frappe.get_doc(doctype, server[0])
+				server.ip = self.public_ip_address
+				server.private_ip = self.private_ip_address
+				if doctype in ["Server", "Proxy Server", "NAT Server", "Database Server"]:
+					server.is_static_ip = self.is_static_ip
 				if doctype in ["Server", "Database Server"]:
-					frappe.db.set_value(doctype, server, "ram", self.ram)
+					server.ram = self.ram
 				if doctype in ("NAT Server",):
-					frappe.db.set_value(doctype, server, "secondary_private_ip", self.secondary_private_ip)
+					server.secondary_private_ip = self.secondary_private_ip
+
+				server.status = status_map[self.status]
+				server = server.save()
+
 				if self.public_ip_address:
 					if frappe.flags.force_update_dns or self.has_value_changed("public_ip_address"):
-						frappe.get_doc(doctype, server).create_dns_record()
+						server.create_dns_record()
 				elif self.private_ip_address and (
 					frappe.flags.force_update_dns or self.has_value_changed("private_ip_address")
 				):
-					frappe.get_doc(doctype, server).create_dns_record()
-				frappe.db.set_value(doctype, server, "status", status_map[self.status])
+					server.create_dns_record()
 
 	def update_name_tag(self, name):
 		if self.cloud_provider == "AWS EC2" and self.instance_id:

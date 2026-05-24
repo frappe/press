@@ -14,6 +14,7 @@ from frappe.utils.caching import redis_cache
 from frappe.utils.password import get_decrypted_password
 
 from press.api.agent_auth import verify_agent
+from press.api.account import is_limits_exceeded
 from press.api.analytics import auto_timespan_timegrain, get_rounded_boundaries, get_rounded_boundary
 from press.api.bench import all as all_benches
 from press.api.site import protected
@@ -214,6 +215,10 @@ def new_unified(server: UnifiedServerDetails):
 			f"No machines of {app_plan.instance_type} are currently available in the {cluster.name} region"
 		)
 
+	server_plan_price = app_plan.price_usd
+	if team.apply_limits and is_limits_exceeded(server_plan_price):
+		frappe.throw("You have exceeded your spending limit. Please contact support to increase your limits.")
+
 	auto_increase_storage = server.get("auto_increase_storage", False)
 
 	proxy_server = frappe.get_all(
@@ -246,6 +251,12 @@ def new(server):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
+
+	server_plan_price = frappe.get_value("Server Plan", server["app_plan"], "price_usd") + frappe.get_value(
+		"Server Plan", server["db_plan"], "price_usd"
+	)
+	if team.apply_limits and is_limits_exceeded(server_plan_price):
+		frappe.throw("You have exceeded your spending limit. Please contact support to increase your limits.")
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
@@ -480,9 +491,11 @@ def analytics(name, query, timezone, start, end, server_type=None):
 		),
 		"database_connections": (
 			f"""{{__name__=~"mysql_global_status_threads_connected|mysql_global_variables_max_connections", instance="{name}"}}""",
-			lambda x: "Max Connections"
-			if x["__name__"] == "mysql_global_variables_max_connections"
-			else "Connected Clients",
+			lambda x: (
+				"Max Connections"
+				if x["__name__"] == "mysql_global_variables_max_connections"
+				else "Connected Clients"
+			),
 		),
 		"innodb_bp_size": (
 			f"""mysql_global_variables_innodb_buffer_pool_size{{instance='{name}'}}""",

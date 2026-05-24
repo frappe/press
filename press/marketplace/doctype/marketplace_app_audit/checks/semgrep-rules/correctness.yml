@@ -105,7 +105,7 @@ rules:
     remediation: |
       DocType modified in self.$METHOD. Please check if modification of self.$ATTR is commited to database.
   languages: [python]
-  severity: ERROR
+  severity: HIGH
 
 - id: frappe-modifying-but-not-committing-other-method
   patterns:
@@ -166,7 +166,7 @@ rules:
     remediation: |
       self.$ANOTHER_METHOD is called from self.$METHOD, check if changes to self.$ATTR are commited to database.
   languages: [python]
-  severity: ERROR
+  severity: HIGH
 
 - id: frappe-print-function-in-doctypes
   pattern: print(...)
@@ -250,7 +250,7 @@ rules:
     remediation: |
       Child table being modified while iterating on it.
   languages: [python]
-  severity: ERROR
+  severity: HIGH
   paths:
       include:
         - "**/doctype/*"
@@ -272,7 +272,7 @@ rules:
     remediation: |
       Key `$X` is uselessly assigned twice. This could be a potential bug.
   languages: [python]
-  severity: ERROR
+  severity: WARNING
 
 - id: frappe-manual-commit
   patterns:
@@ -299,7 +299,7 @@ rules:
         - "**/tests/**"
         - "**/test_*.py"
   languages: [python]
-  severity: WARNING
+  severity: HIGH
 
 - id: frappe-redis-flush
   patterns:
@@ -352,7 +352,7 @@ rules:
     remediation: |
       If $DOCTYPE is a single doctype then using `frappe.db.get_value` is discouraged for fetching value from single doctypes. frappe.db.get_value for single doctype is not type safe, use `frappe.db.get_single_value` instead.
   languages: [python]
-  severity: ERROR
+  severity: WARNING
 
 - id: frappe-set-value-semantics
   patterns:
@@ -369,7 +369,7 @@ rules:
     remediation: |
       If $DOCTYPE is a single doctype then using `frappe.db.set_value` is discouraged for setting values in DB. Use db.set_single_value for single doctype instead.
   languages: [python]
-  severity: ERROR
+  severity: HIGH
 
 - id: frappe-after-save-controller-hook
   pattern: |
@@ -405,7 +405,7 @@ rules:
     remediation: |
       `order` in `orderby` has to be a keyword argument like `.orderby("time", order=frappe.qb.desc)`. Re-check the generated query.
   languages: [python]
-  severity: ERROR
+  severity: HIGH
 
 - id: frappe-cur-frm-usage
   pattern: cur_frm
@@ -431,7 +431,7 @@ rules:
     remediation: |
       `debounce` should be used to create a debounced version of function and should only be called once. If the function is called multiple times then each time a new debounced version of function gets created and you don't actually achieve debounce behaviour.
   languages: [javascript]
-  severity: ERROR
+  severity: WARNING
 
 - id: frappe-realtime-pick-room
   patterns:
@@ -449,7 +449,7 @@ rules:
     remediation: |
       This call will publish message to everyone on site, do you really want that? Specify doctype, docname, room or user.
   languages: [python]
-  severity: ERROR
+  severity: HIGH
 
 - id: frappe-monkey-patching-not-allowed
   patterns:
@@ -516,6 +516,6 @@ rules:
     remediation: |
       Test endpoints should use @whitelist_for_tests() instead of @frappe.whitelist() to ensure they're only accessible in test mode.
   languages: [python]
-  severity: ERROR
+  severity: HIGH
   fix: |
     @whitelist_for_tests(...)

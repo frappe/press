@@ -15,6 +15,9 @@ class TeamMember(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		all_release_groups: DF.Check
+		all_servers: DF.Check
+		all_sites: DF.Check
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data

@@ -12,16 +12,36 @@ def get_members(team: str):
 	Get a list of team members for a given team.
 	"""
 	Member = frappe.qb.DocType("Team Member")
+	MemberResource = frappe.qb.DocType("Team Member Resource")
 	User = frappe.qb.DocType("User")
+	from pypika import functions as fn
+
 	return (
 		frappe.qb.from_(Member)
 		.inner_join(User)
 		.on(Member.user == User.name)
+		.left_join(MemberResource)
+		.on((MemberResource.user == Member.user) & (MemberResource.team == Member.parent))
 		.where(Member.parent == team)
+		.groupby(
+			Member.name,
+			Member.creation,
+			Member.role,
+			Member.all_servers,
+			Member.all_release_groups,
+			Member.all_sites,
+			User.email,
+			User.full_name,
+			User.user_image,
+		)
 		.select(
 			Member.name,
 			Member.creation.as_("date"),
 			Member.role,
+			Member.all_servers,
+			Member.all_release_groups,
+			Member.all_sites,
+			fn.Count(MemberResource.name).as_("resource_count"),
 			ValueWrapper("Active").as_("status"),
 			User.email,
 			User.full_name,
