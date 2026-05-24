@@ -210,9 +210,6 @@ watch(
 					doctype: 'Agent Job',
 					name: id,
 					auto: true,
-					onSuccess(data) {
-						console.log(data, 'bro')
-					},
 				})
 			}
 

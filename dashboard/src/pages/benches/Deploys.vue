@@ -13,6 +13,7 @@ import { toast } from 'vue-sonner'
 import { confirmDialog, renderDialog } from '@/utils/components'
 import { getToastErrorMessage } from '@/utils/toast'
 import { pollReleasePipelineValidationStatus } from '@/objects/group'
+import Scrollbar from '@/components/common/Scrollbar.vue'
 
 interface Props {
 	name?: string
@@ -134,7 +135,8 @@ function handleDeploy() {
 				<LucideChevronLeft class="size-4" />
 			</template>
 		</Button>
-		<span class="font-medium" v-if='mode == "older"'> Older Deploys</span>
+
+		<div class="font-medium" v-if='mode == "older"'>Older Deploys</div>
 
 		<Select
 			:options="statusOptions"
@@ -160,45 +162,62 @@ function handleDeploy() {
 		</Button>
 	</div>
 
-	<div
-		class="bg-surface-gray-2 p-2 rounded  text-ink-gray-4 grid grid-cols-[1fr_0.5fr_0.5fr_1fr]"
-	>
-		<span class="rounded-l">Deploy</span>
-		<span>Status</span>
-		<span v-if='mode=="older"'>Duration</span>
-		<span v-else />
-		<span v-if='mode=="older"' class="rounded-r">Deployed By</span>
-		<span v-else />
-	</div>
-
-	<br />
-
-	<template
-		v-for="item in mode == 'older' ? deployBuilds.data : pipelines.data"
-		:key="item.name"
-	>
-		<router-link
-			class="hover:bg-surface-gray-1 p-2 border-b grid grid-cols-[1fr_0.5fr_0.5fr_1fr] gap-2"
-			:to="{name: mode=='older' ?'Deploy Candidate':'Release Pipeline', params: {id: item.name,name }}"
-		>
-			<span>Deploy on {{ date(item.creation) }}</span>
-
-			<Badge
-				:label="item.status"
-				:theme="badgeThemes[item.status]"
-				class="mr-auto"
+	<Scrollbar class="h-[calc(100dvh-300px)] md:h-[calc(100dvh-230px)]">
+		<div class="table w-full [&_.table-cell]:p-2">
+			<div
+				class="bg-surface-gray-2  text-ink-gray-4  sticky top-0 z-10 table-header-group"
 			>
-				<template #suffix v-if="item.addressable_notification">
-					<Tooltip text="Attention required!">
-						<LucideAlertCircle class="size-3" />
-					</Tooltip>
-				</template>
-			</Badge>
+				<div class="table-row" role="row">
+					<div class="rounded-l table-cell">Deploy</div>
+					<div class="table-cell">Status</div>
 
-			<span>{{ duration(item.build_duration) }}</span>
-			<span>{{ item.owner || item.team }}</span>
-		</router-link>
-	</template>
+					<template v-if="mode === 'older'">
+						<div class="table-cell">Duration</div>
+						<div class="table-cell rounded-r">Deployed By</div>
+					</template>
+
+					<div class="table-cell rounded-r" v-else>Team</div>
+				</div>
+			</div>
+
+			<div class="h-3 invisible">a</div>
+
+			<div class="table-row-group">
+				<router-link
+					v-for="item in mode == 'older' ? deployBuilds.data : pipelines.data"
+					:key="item.name"
+					class="hover:bg-surface-gray-1 table-row *:border-b"
+					:to="{name: mode=='older' ?'Deploy Candidate':'Release Pipeline', params: {id: item.name,name }}"
+					role="row"
+				>
+					<div class="whitespace-nowrap table-cell hover:rounded-l" role="cell">
+						Deploy on {{ date(item.creation) }}
+					</div>
+
+					<div class="table-cell" role="cell">
+						<Badge :label="item.status" :theme="badgeThemes[item.status]">
+							<template #suffix v-if="item.addressable_notification">
+								<Tooltip text="Attention required!">
+									<LucideAlertCircle class="size-3" />
+								</Tooltip>
+							</template>
+						</Badge>
+					</div>
+
+					<template v-if="mode === 'older'">
+						<div class="table-cell" role="cell">
+							{{ duration(item.build_duration) }}
+						</div>
+						<div class="table-cell hover:rounded-r" role="cell">
+							{{ item.owner }}
+						</div>
+					</template>
+
+					<div role="cell" class="table-cell" v-else>{{ item.team }}</div>
+				</router-link>
+			</div>
+		</div>
+	</Scrollbar>
 
 	<div class="w-full flex">
 		<Button
