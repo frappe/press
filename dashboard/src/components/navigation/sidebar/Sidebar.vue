@@ -15,6 +15,8 @@ import LucideMoon from "~icons/lucide/moon";
 import LucideAlert from "~icons/lucide/notebook-text";
 import DarkModeLabel from "./DarkModeLabel.vue";
 import NavList from "./NavList.vue";
+import NotificationPanel from "./Notifications.vue";
+import { notifPanel } from "@/data/ui";
 
 const $team = getTeam();
 const $session = session;
@@ -86,7 +88,7 @@ const helpDropdownOptions = [
 </script>
 
 <template>
-  <aside class="relative flex md:min-h-screen p-2 gap-1 flex-col border-r transition-[width]
+  <aside  class="relative flex md:min-h-screen p-2 gap-1 flex-col border-r transition-[width]
     bg-surface-white  md:bg-surface-gray-1 dark:bg-transparent"
     :class='collapsed ? " md:w-12" : "w-full md:w-[220px]"'>
 
@@ -96,9 +98,9 @@ const helpDropdownOptions = [
       <Dropdown :options="userDropdownOptions">
         <template v-slot="{ open }">
           <button
-            class="flex gap-2 w-fit md:w-full p-1.5 md:p-1 items-center rounded md:mb-1 bg-surface-gray-2 md:bg-transparent   hover:bg-surface-gray-2"
+            class="flex gap-2 w-fit md:w-full p-1.5 items-center rounded md:mb-1 bg-surface-gray-2 md:bg-transparent   hover:bg-surface-gray-2"
             :class="[open ? 'md:bg-surface-white dark:bg-surface-gray-2 shadow-sm' : ''
-              , collapsed? '!p-0': ''] ">
+              , collapsed? 'md:p-0': 'md:p-1'] ">
             <FCLogo class="size-8 hidden md:flex shrink-0 rounded" />
             <LucideUser class='size-3.5 -mr-1.5 md:hidden' />
 
@@ -173,5 +175,7 @@ const helpDropdownOptions = [
 
     <!-- TODO: update component name after dashboard-beta merges -->
     <SwitchTeamDialog2 v-model="showTeamSwitcher" :key="String(showTeamSwitcher)" />
+  <NotificationPanel v-if="notifPanel"/>
   </aside>
+
 </template>

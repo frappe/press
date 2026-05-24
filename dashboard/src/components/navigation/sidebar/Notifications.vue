@@ -4,16 +4,19 @@ import {
   Button,
   createListResource,
   frappeRequest,
-  Popover,
   Tabs,
   Tooltip,
 } from "frappe-ui";
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { h, nextTick, ref, watch, onMounted, onUnmounted } from "vue";
 =======
 import { h, nextTick, ref, watch, inject } from "vue";
 >>>>>>> 435290b32 (feat(sidebar): collapse animation)
+=======
+import { h, nextTick, ref, watch, onMounted, onUnmounted } from "vue";
+>>>>>>> d3db1f375 (refactor(sidebar): ditch popover for notif panel)
 import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 
@@ -30,11 +33,15 @@ import { useRealtimeNotifs } from './useRealtimeNotifs'
 import { dayjsLocal } from "@/utils/dayjs";
 import { getDocResource } from "@/utils/resource";
 import { renderDialog } from "@/utils/components";
+<<<<<<< HEAD
 import { isMobile } from "@/utils/device";
 import { getTeam } from "@/data/team";
 
 const collapsedCss = inject("collapsedCss");
 import Item from "./Item.vue";
+=======
+import { notifPanel } from "@/data/ui";
+>>>>>>> d3db1f375 (refactor(sidebar): ditch popover for notif panel)
 
 const formatHtml = (str: string) => {
   return str.replace(/<(?!\/?b\b)[^>]*>/g, "").split("\n")[0];
@@ -66,7 +73,7 @@ const resource = createListResource({
   pageLength: 10,
 });
 
-const markAsRead = (row, togglePopover) => {
+const markAsRead = (row) => {
   const docres = getDocResource({
     doctype: "Press Notification",
     name: row.name,
@@ -96,13 +103,13 @@ const markAsRead = (row, togglePopover) => {
     }
 
     if (row.route && row.type !== "Support Access") {
-      togglePopover();
+      notifPanel.value = false;
       router.push("/" + row.route);
     }
   });
 };
 
-const markAllAsRead = (togglePopover) => {
+const markAllAsRead = () => {
   toast.promise(
     frappeRequest({
       url: "/api/method/press.api.notifications.mark_all_notifications_as_read",
@@ -110,7 +117,7 @@ const markAllAsRead = (togglePopover) => {
     {
       success: () => {
         resource.reload();
-        togglePopover();
+        notifPanel.value = false;
 
         return "All notifications marked as read";
       },
@@ -203,51 +210,45 @@ const tabs = [
   { label: "Unread", icon: LucideMessageSquareDot },
 ];
 
+<<<<<<< HEAD
 useRealtimeNotifs((data) => {
 	if (data.team === team.doc.name) resource.reload()
 })
+=======
+const panelRef = ref();
+
+const handleOutsideClick = (e) => {
+  if (panelRef.value && !panelRef.value.contains(e.target)) {
+    notifPanel.value = false;
+  }
+};
+
+onMounted(() => {
+  setTimeout(() => {
+    document.addEventListener("click", handleOutsideClick);
+  }, 100);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", handleOutsideClick);
+});
+>>>>>>> d3db1f375 (refactor(sidebar): ditch popover for notif panel)
 </script>
 
 <template>
-  <Popover :placement="isMobile() ? 'top-start' : 'right-start'" popover-class="-mt-[15%] md:-mt-2.5">
-    <!-- sidebar item -->
-    <template #target="{ togglePopover }">
-      <Item is='BUTTON' v-bind='$attrs' aria-label="Notifications btn" name='Notifications' @click="togglePopover">
-        <template #prefix>
-
-          <span class="flex relative">
-            <LucideBell class="size-4 text-ink-gray-6" />
-            <span v-if="unreadNotificationsCount.data > 0"
-              class="size-1 bg-surface-blue-3 rounded-full absolute right-0 -top-0.5" />
-          </span>
-        </template>
-
-        <template #suffix>
-          <span class="text-xs text-ink-gray-6" v-if="unreadNotificationsCount.data > 0" :class='collapsedCss'>
-            {{
-              unreadNotificationsCount.data > 99
-                ? '99+'
-                : unreadNotificationsCount.data
-            }}
-          </span>
-        </template>
-      </Item>
-    </template>
-
-    <!-- floating drawer  -->
-    <template #body="{ togglePopover }">
       <div
-        class="text-ink-gray-9 bg-surface-white h-screen -ml-2.5 w-screen md:ml-2 shadow-xl md:w-[430px] flex flex-col dark:border-x">
+        ref='panelRef'
+        class="text-ink-gray-9 bg-surface-white h-screen left-0 top-12 md:top-0 md:left-full absolute  z-10  w-screen shadow-xl md:w-[430px] flex flex-col dark:border-x">
         <!-- header -->
         <div class="text-base flex items-center py-2 pl-4 pr-2 border-b">
           <span class="font-medium mr-auto"> Notifications</span>
 
-          <Button @click="markAllAsRead(togglePopover)" variant="ghost">
+          <Button @click="markAllAsRead" variant="ghost">
             <template #icon>
               <LucideCheckCheck class="size-3.5" />
             </template>
           </Button>
-          <Button variant="ghost" @click="togglePopover">
+          <Button variant="ghost" @click="notifPanel = false">
             <template #icon>
               <LucideX class="size-4" />
             </template>
@@ -269,12 +270,11 @@ useRealtimeNotifs((data) => {
         </Tabs>
 
         <!-- body -->
-        <Scrollbar ref="scrollRef" v-if="resource.data.length > 0" class='max-h-[67%] md:max-h-full'>
-
+        <Scrollbar ref="scrollRef" v-if="resource?.data?.length > 0" class='max-h-[67%] md:max-h-full'>
           <!-- notif tiles = icon + info -->
           <div v-for="x in resource.data"
             class="[&_b]:font-semibold p-2 md:p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0 hover:bg-surface-gray-1"
-            @click="markAsRead(x, togglePopover)" title="Click to mark as read">
+            @click="markAsRead(x)" title="Click to mark as read">
             <!-- type icon -->
             <div class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1 relative
               dark:bg-surface-gray-1" :class="[iconCss[x.type].bg || 'bg-surface-gray-1']">
@@ -311,6 +311,4 @@ useRealtimeNotifs((data) => {
 
         <Button @click="loadMore" v-if="resource.hasNextPage" label="Load More" size="sm" class="ml-auto my-3 mr-3" />
       </div>
-    </template>
-  </Popover>
-</template>
+ </template>
