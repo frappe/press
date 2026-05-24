@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button, Dropdown } from "frappe-ui";
-import { defineAsyncComponent, ref, watch } from "vue";
+import { defineAsyncComponent, ref, watch, provide, computed } from "vue";
 import { useRouter } from "vue-router";
 import { session } from "@/data/session";
 import { getTeam } from "@/data/team";
@@ -21,7 +21,15 @@ const $session = session;
 const router = useRouter();
 
 const showTeamSwitcher = ref(false);
-const collapsed = ref(false);
+const collapsed = ref(true);
+
+const collapsedCss = computed(() =>
+  collapsed.value
+    ? "md:w-0 md:overflow-hidden md:opacity-0 whitespace-nowrap"
+    : "md:opacity-100  whitespace-nowrap",
+);
+provide("collapsed", collapsed);
+provide("collapsedCss", collapsedCss);
 
 const SwitchTeamDialog2 = defineAsyncComponent(
   () => import("../../SwitchTeamDialog.vue"),
@@ -78,23 +86,23 @@ const helpDropdownOptions = [
 </script>
 
 <template>
-  <aside class="relative flex md:min-h-screen w-full p-2 gap-1 flex-col border-r
+  <aside class="relative flex md:min-h-screen p-2 gap-1 flex-col border-r transition-[width]
     bg-surface-white  md:bg-surface-gray-1 dark:bg-transparent"
-    :class='collapsed ? "md:w-fit [&_.collapsed]:hidden !p-1" : "md:w-auto md:min-w-[220px]"'>
+    :class='collapsed ? " md:w-12" : "w-full md:w-[220px]"'>
 
-    <div class='flex gap-2 items-center border-y md:border-0 p-2 md:p-0 -m-2 md:m-0 h-[44px]'>
+    <div class='flex gap-2 items-center border-y md:border-0 p-2 md:p-0 -m-2 md:m-0 h-[44px] md:h-auto'>
       <FCLogo class="size-6 md:hidden mr-auto" />
 
       <Dropdown :options="userDropdownOptions">
         <template v-slot="{ open }">
           <button
             class="flex gap-2 w-fit md:w-full p-1.5 md:p-1 items-center rounded md:mb-1 bg-surface-gray-2 md:bg-transparent   hover:bg-surface-gray-2"
-            :class="open ? 'md:bg-surface-white dark:bg-surface-gray-2 shadow-sm' : ''
-              ">
-            <FCLogo class="size-8  hidden md:flex shrink-0 rounded" />
+            :class="[open ? 'md:bg-surface-white dark:bg-surface-gray-2 shadow-sm' : ''
+              , collapsed? '!p-0': ''] ">
+            <FCLogo class="size-8 hidden md:flex shrink-0 rounded" />
             <LucideUser class='size-3.5 -mr-1.5 md:hidden' />
 
-            <div class="flex flex-col gap-1 ml-1 min-w-0 md:m-0 collapsed">
+            <div class="flex flex-col gap-1 ml-1 min-w-0 md:m-0" :class='collapsedCss'>
               <div class="text-base font-medium leading-none hidden md:flex text-ink-gray-9">
                 Frappe Cloud
               </div>
@@ -104,7 +112,7 @@ const helpDropdownOptions = [
               </div>
             </div>
 
-            <LucideChevronDown class="md:ml-auto size-4 collapsed" />
+            <LucideChevronDown class="md:ml-auto size-4" :class='collapsedCss' />
           </button>
         </template>
       </Dropdown>
@@ -116,7 +124,7 @@ const helpDropdownOptions = [
     </div>
 
     <nav class='flex-col flex-1 gap-1 md:flex py-3 md:p-0 md:mt-1'
-      :class="[mobileNav ? 'flex border-b' : 'hidden', collapsed ? '*:mx-auto *:w-fit' : '']">
+      :class="[mobileNav ? 'flex border-b' : 'hidden']">
 
       <NavList>
         <template v-slot="{ list }">
@@ -143,7 +151,7 @@ const helpDropdownOptions = [
 
         <Button variant="ghost" class='hidden md:flex' :class='collapsed ? "mb-2" : ""' @click='collapsed = !collapsed'>
           <template #icon>
-            <LucidePanelLeft class="size-4 transition-transform duration-300" :class='collapsed ? "rotate-180" : ""' />
+            <LucidePanelLeft class="size-4 transition-transform duration-500" :class='collapsed ? "rotate-180" : ""' />
           </template>
         </Button>
       </div>

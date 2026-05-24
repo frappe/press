@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from "frappe-ui";
 
-import { h, nextTick, ref, watch } from "vue";
+import { h, nextTick, ref, watch, inject } from "vue";
 import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 import Scrollbar from "@/components/common/Scrollbar.vue";
@@ -25,6 +25,7 @@ import { getDocResource } from "@/utils/resource";
 import { renderDialog } from "@/utils/components";
 import { isMobile } from "@/utils/device";
 
+const collapsedCss = inject("collapsedCss");
 import Item from "./Item.vue";
 
 const formatHtml = (str: string) => {
@@ -209,7 +210,7 @@ const tabs = [
         </template>
 
         <template #suffix>
-          <span class="text-xs text-ink-gray-6 collapsed" v-if="unreadNotificationsCount.data > 0">
+          <span class="text-xs text-ink-gray-6" v-if="unreadNotificationsCount.data > 0" :class='collapsedCss'>
             {{
               unreadNotificationsCount.data > 99
                 ? '99+'
