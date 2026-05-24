@@ -3,22 +3,22 @@
 
 from __future__ import annotations
 
-import base64
 import contextlib
 import datetime
 import ipaddress
 import json
 import shlex
 import typing
+import uuid
 from contextlib import suppress
 from datetime import timedelta
 from functools import cached_property
 
 import boto3
 import frappe
+import jwt
 import requests
 import semantic_version
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from frappe import _
 from frappe.core.utils import find, find_all
 from frappe.installer import subprocess
@@ -52,7 +52,6 @@ from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
 	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
-	from press.press.doctype.agent_auth.agent_auth import AgentAuth
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
@@ -65,6 +64,7 @@ if typing.TYPE_CHECKING:
 	)
 	from press.press.doctype.on_prem_failover.on_prem_failover import OnPremFailover
 	from press.press.doctype.press_job.press_job import PressJob
+	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
@@ -704,11 +704,6 @@ class BaseServer(Document, TagHelpers):
 		return settings.branch or "master"
 
 	@frappe.whitelist()
-	def regenerate_token(self):
-		agent_auth: AgentAuth = frappe.get_doc("Agent Auth", self.name)
-		agent_auth._regenerate_token()
-
-	@frappe.whitelist()
 	def ping_agent(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.ping()
@@ -1245,27 +1240,6 @@ class BaseServer(Document, TagHelpers):
 				"to_plan": plan,
 				"type": "Initial Plan",
 				"timestamp": self.creation,
-			}
-		).insert(ignore_permissions=True)
-
-	@cached_property
-	def agent_auth(self) -> AgentAuth:
-		name = frappe.db.get_value(
-			"Agent Auth",
-			{
-				"server": self.name,
-				"server_type": self.doctype,
-			},
-		)
-
-		if name:
-			return frappe.get_doc("Agent Auth", name)
-
-		return frappe.get_doc(
-			{
-				"doctype": "Agent Auth",
-				"server": self.name,
-				"server_type": self.doctype,
 			}
 		).insert(ignore_permissions=True)
 
@@ -2003,81 +1977,41 @@ class BaseServer(Document, TagHelpers):
 			"version",
 		)
 
-	def sign_agent_token(self, private_key: str):
-		if not private_key:
-			return None
-
-		auth = self.agent_auth
-
-		expires_in = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=90)).replace(
-			tzinfo=None
-		)
+	def sign_agent_token(self, secret):
+		expires_in = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=90)
 
 		payload = {
 			"server": self.name,
-			"exp": int(expires_in.timestamp()),  # 3 month
+			"server_type": self.doctype,
+			"exp": int(expires_in.timestamp()),  # 3 months
+			"jti": str(uuid.uuid4()),
 		}
 
-		payload_bytes = json.dumps(
-			payload,
-			separators=(",", ":"),
-			sort_keys=True,
-		).encode()
+		token = jwt.encode(payload, secret, algorithm="HS256")
 
-		private_key_obj = Ed25519PrivateKey.from_private_bytes(base64.b64decode(private_key))
-
-		signature = private_key_obj.sign(payload_bytes)
-
-		token = (
-			base64.urlsafe_b64encode(payload_bytes).decode().rstrip("=")
-			+ "."
-			+ base64.urlsafe_b64encode(signature).decode().rstrip("=")
-		)
-
-		auth.expires_in = expires_in
+		if not self.is_agent_auth_setup:
+			self.db_set("is_agent_auth_setup", 1)
 
 		return token
 
-	def _generate_and_activate_key(self) -> str | None:
-		from cryptography.hazmat.primitives import serialization
-		from cryptography.hazmat.primitives.asymmetric import ed25519
+	def _generate_secret(self):
+		press_settings: PressSettings = frappe.get_single("Press Settings")
+		secret = press_settings.get_value("secret")
 
-		auth = self.agent_auth
+		if secret:
+			secret = press_settings.get_password("secret")
+		else:
+			secret = frappe.generate_hash(length=64)
 
-		if auth.public_key and auth.is_agent_auth_setup:
-			return None
+			press_settings.secret = secret
+			press_settings.save(ignore_permissions=True)
 
-		key = ed25519.Ed25519PrivateKey.generate()
-
-		private_key_bytes = key.private_bytes(
-			encoding=serialization.Encoding.Raw,
-			format=serialization.PrivateFormat.Raw,
-			encryption_algorithm=serialization.NoEncryption(),
-		)
-
-		private_key_str = base64.b64encode(private_key_bytes).decode()
-
-		public_key_bytes = key.public_key().public_bytes(
-			encoding=serialization.Encoding.Raw,
-			format=serialization.PublicFormat.Raw,
-		)
-
-		public_key_b64 = base64.b64encode(public_key_bytes).decode()
-
-		frappe.cache().delete_key(f"{auth.server}_agent_public_key")
-		auth.public_key = public_key_b64
-
-		return private_key_str
+		return secret
 
 	def _setup_agent_auth(self):
 		try:
-			auth = self.agent_auth
-
-			if auth.public_key and auth.is_agent_auth_setup:
-				return
-
-			private_key = self._generate_and_activate_key()
-			agent_token = self.sign_agent_token(private_key)
+			secret = self._generate_secret()
+			agent_token = self.sign_agent_token(secret)
 
 			ansible = Ansible(
 				playbook="setup_agent_auth.yml",
@@ -2091,9 +2025,6 @@ class BaseServer(Document, TagHelpers):
 				log_error("Agent auth setup playbook failed", server=self.as_dict())
 				return
 
-			auth.is_agent_auth_setup = 1
-
-			auth.save(ignore_permissions=True)
 		except Exception:
 			log_error("Agent Auth Setup Exception", server=self.as_dict())
 
@@ -2883,6 +2814,13 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Cgroup v2 Migration Exception", server=self.as_dict())
 
+	def update_feature(self, flag: bool):
+		agent = Agent(self.name, self.doctype)
+		if flag:
+			agent.enable_feature_flag()
+		else:
+			agent.disable_feature_flag()
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
@@ -2898,6 +2836,7 @@ class Server(BaseServer):
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.server_mount.server_mount import ServerMount
 
+		agent_job_update_feature: DF.Check
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
@@ -2908,7 +2847,6 @@ class Server(BaseServer):
 		cluster: DF.Link | None
 		communication_infos: DF.Table[CommunicationInfo]
 		database_server: DF.Link | None
-		db_healthcheck_token: DF.Password | None
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
@@ -2922,6 +2860,7 @@ class Server(BaseServer):
 		ignore_incidents_till: DF.Datetime | None
 		ip: DF.Data | None
 		ipv6: DF.Data | None
+		is_agent_auth_setup: DF.Check
 		is_for_recovery: DF.Check
 		is_managed_database: DF.Check
 		is_monitoring_disabled: DF.Check
@@ -2963,15 +2902,12 @@ class Server(BaseServer):
 		self_hosted_mariadb_server: DF.Data | None
 		self_hosted_server_domain: DF.Data | None
 		set_bench_memory_limits: DF.Check
-		site_warranty_change_cooldown: DF.Int
 		skip_scheduled_backups: DF.Check
 		ssh_port: DF.Int
 		ssh_user: DF.Data | None
 		staging: DF.Check
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		stop_deployments: DF.Check
-		stop_incident_actions: DF.Check
-		supported_site_quota: DF.Int
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None
@@ -3060,6 +2996,9 @@ class Server(BaseServer):
 
 		if self.is_new() and is_dedicated_server(self.name):
 			self.set_dedicated_server_site_warranty_quota_and_cooldown()
+
+		if self.has_value_changed("agent_job_update_feature"):
+			self.update_feature(self.agent_job_update_feature)
 
 	def update_db_server(self):
 		if not self.database_server:
@@ -3349,9 +3288,8 @@ class Server(BaseServer):
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
-		private_key = self._generate_and_activate_key()
-		agent_token = self.sign_agent_token(private_key)
-		auth = self.agent_auth
+		secret = self._generate_secret()
+		agent_token = self.sign_agent_token(secret)
 
 		# If database server is set, then define db port under configuration
 		db_port = (
@@ -3396,8 +3334,7 @@ class Server(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
-				auth.is_agent_auth_setup = 1
-				auth.save(ignore_permissions=True)
+				self.is_agent_auth_setup = 1
 				if self.provider == "DigitalOcean":
 					# To adjust docker permissions
 					self.reboot()

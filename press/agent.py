@@ -3,19 +3,17 @@
 from __future__ import annotations
 
 import _io  # type: ignore
-import base64
 import json
 import os
 import re
-import time
 from contextlib import suppress
 from datetime import date
 from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
 import frappe.utils
+import jwt
 import requests
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from frappe.utils.password import get_decrypted_password
 from requests.exceptions import HTTPError
 
@@ -29,7 +27,6 @@ from press.utils import (
 if TYPE_CHECKING:
 	from io import BufferedReader
 
-	from press.press.doctype.agent_auth.agent_auth import AgentAuth
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
 	from press.press.doctype.bench.bench import Bench
@@ -981,70 +978,40 @@ class Agent:
 
 		return public_key
 
-	def get_regenerate_public_key(self):
-		key = f"{self.server}_regenerate_public_key"
+	def get_secret(self):
+		key = "agent_auth_secret"
 
-		regenerate_key = frappe.cache().get_value(key)
-		if not regenerate_key:
-			agent_auth: AgentAuth = frappe.get_doc(
-				"Agent Auth",
-				self.server,
-			)
+		secret = frappe.cache().get_value(key)
+		if not secret:
+			press_settings = frappe.get_single("Press Settings")
+			secret = press_settings.get_password("secret")
 
-			if agent_auth.regenerate_public_key:
-				agent_auth.regenerate_public_key = None
-				agent_auth.save(ignore_permissions=True)
+			if not secret:
+				raise ValueError("Agent auth secret not configured")
 
-			return None
+			frappe.cache().set_value(key, secret)
 
-		return regenerate_key
-
-	def _is_token_verified(self, public_keys, signature, payload_bytes):
-		from cryptography.exceptions import InvalidSignature
-
-		for key in public_keys:
-			try:
-				public_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(key))
-
-				public_key.verify(signature, payload_bytes)
-
-				return True
-
-			except (InvalidSignature, ValueError, TypeError):
-				pass
-
-		return False
+		return secret
 
 	def _verify_request_token(self, token: str):
-		parts = token.split(".")
-		if len(parts) != 2:
-			raise ValueError("Malformed token")
+		secret = self.get_secret()
 
-		payload_b64, signature_b64 = parts
+		try:
+			payload = jwt.decode(
+				token,
+				secret,
+				algorithms=["HS256"],
+				options={
+					"require": ["exp", "server", "jti"],
+				},
+			)
+			print(payload)
 
-		payload_bytes = base64.urlsafe_b64decode(payload_b64 + "==")
-		signature = base64.urlsafe_b64decode(signature_b64 + "==")
+		except jwt.ExpiredSignatureError as err:
+			raise ValueError("Token expired") from err
 
-		public_keys = []
-
-		primary_key = self.get_agent_public_key()
-		if primary_key:
-			public_keys.append(primary_key)
-
-		regenerate_key = self.get_regenerate_public_key()
-		if regenerate_key:
-			public_keys.append(regenerate_key)
-
-		if not public_keys:
-			raise ValueError("No public keys available for verification")
-
-		if not self._is_token_verified(public_keys, signature, payload_bytes):
-			raise ValueError("Invalid token signature")
-
-		payload = json.loads(payload_bytes)
-
-		if payload["exp"] < (time.time() - 60):
-			raise ValueError("Token expired")
+		except jwt.InvalidTokenError as err:
+			raise ValueError("Invalid token") from err
 
 		if payload["server"] != self.server:
 			raise ValueError("Invalid server")
@@ -1377,6 +1344,12 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def get_snapshot(self, bench: str):
 		return self.get(f"process-snapshot/{bench}")
+
+	def enable_feature_flag(self):
+		return self.post("server/feature/enable")
+
+	def disable_feature_flag(self):
+		return self.post("server/feature/disable")
 
 	def run_after_migrate_steps(self, site):
 		data = {

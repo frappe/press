@@ -8,6 +8,9 @@ import random
 import traceback
 from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+	from press.press.doctype.server.server import BaseServer
+
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -194,8 +197,6 @@ class AgentJob(Document):
 				process_job_updates(self.name)
 
 			else:
-				frappe.cache().sadd("undelivered_jobs", f"{self.server_type}:{self.server}")
-
 				self.set_status_and_next_retry_at()
 
 	def log_creation(self):
@@ -527,7 +528,7 @@ def poll_pending_jobs_server(server):
 	add_timer_data_to_monitor(server.server)
 
 
-def handle_polled_job(polled_job, pending_jobs=None, job=None):
+def handle_polled_job(polled_job, pending_jobs=None, job=None, raise_callback_exception=False):
 	job = job or find(pending_jobs, lambda x: x.job_id == polled_job["id"])
 	try:
 		# Update Job Status
@@ -553,12 +554,21 @@ def handle_polled_job(polled_job, pending_jobs=None, job=None):
 		# it's already logged
 		# Rollback all other changes and increment the failure count
 		frappe.db.rollback()
+
+		failure_count = job.callback_failure_count + 1
+
 		frappe.db.set_value(
 			"Agent Job",
 			job.name,
 			"callback_failure_count",
-			job.callback_failure_count + 1,
+			failure_count,
 		)
+		frappe.db.commit()
+
+		if raise_callback_exception and failure_count <= 3:
+			raise  # So that agents can retry jobs with failed callbacks
+		# After 3 failed retries, mark it as failure, and don't raise exception
+		update_job_and_step_status(job.name, "Failure")
 		frappe.db.commit()
 	except Exception:
 		log_error(
@@ -814,76 +824,100 @@ def get_next_retry_at(job_retry_count):
 
 
 @timer
-def retry_undelivered_jobs(server):
+def retry_undelivered_jobs(
+	server: "BaseServer",
+	use_exponential_backoff: bool = True,
+	use_queue_protection: bool = False,
+) -> None:
 	"""Retry undelivered jobs and update job status if max retry count is reached"""
 
 	if is_auto_retry_disabled(server):
 		return
 
 	job_types, max_retry_per_job_type = get_retryable_job_types_and_max_retry_count()
+
 	server_jobs = get_undelivered_jobs_for_server(server, job_types)
 	nowtime = now_datetime()
 
 	for server in server_jobs:
-		delivered_jobs = get_jobs_delivered_to_server(server, server_jobs[server])
+		delivered_jobs = get_jobs_delivered_to_server(
+			server,
+			server_jobs[server],
+		)
 
 		if delivered_jobs:
 			update_job_ids_for_delivered_jobs(delivered_jobs)
 
-		undelivered_jobs = list(
-			set(server_jobs[server]) - set([job["agent_job_id"] for job in delivered_jobs])
-		)
+		undelivered_jobs = list(set(server_jobs[server]) - {job["agent_job_id"] for job in delivered_jobs})
 
 		for job_name in undelivered_jobs:
-			job = AgentJob("Agent Job", job_name)
-			max_retry_count = max_retry_per_job_type[job.job_type] or 0
-
-			if not job.next_retry_at and job.name not in queued_jobs():
-				job.set_status_and_next_retry_at()
-				continue
-
-			if get_datetime(job.next_retry_at) > nowtime:
-				continue
-
-			if job.retry_count <= max_retry_count:
-				retry = job.retry_count + 1
-				frappe.db.set_value("Agent Job", job_name, "retry_count", retry, update_modified=False)
-				job.retry_in_place()
-			else:
-				update_job_and_step_status(job_name, "Delivery Failure")
-				process_job_updates(job_name)
+			process_undelivered_job(
+				job_name=job_name,
+				max_retry_per_job_type=max_retry_per_job_type,
+				nowtime=nowtime,
+				use_exponential_backoff=use_exponential_backoff,
+				use_queue_protection=use_queue_protection,
+			)
 
 
-def retry_poll():
-	flag = frappe.db.get_single_value("Press Settings", "push_feature")
-	if not flag:
+def process_undelivered_job(
+	job_name: str,
+	max_retry_per_job_type: dict[str, int],
+	nowtime,
+	use_exponential_backoff: bool = True,
+	use_queue_protection: bool = False,
+) -> None:
+	"""Process retry logic for a single undelivered job"""
+
+	job = AgentJob("Agent Job", job_name)
+
+	if use_queue_protection and job.name in queued_jobs():
+		# Prevent accidental retry duplication while still in queue
 		return
 
-	servers = frappe.cache().smembers("undelivered_jobs")
+	max_retry_count = max_retry_per_job_type[job.job_type] or 0
 
-	for server_key in servers:
-		if isinstance(server_key, bytes):
-			server_key = server_key.decode()
+	if use_exponential_backoff and not should_retry_job(job, nowtime):
+		return
 
-		server_type, server = server_key.split(":", 1)
+	if job.retry_count <= max_retry_count:
+		retry_job(job_name, job)
+		return
 
-		try:
-			retry_undelivered_jobs(
-				frappe._dict(
-					{
-						"server": server,
-						"server_type": server_type,
-					}
-				)
-			)
-		except Exception:
-			log_error(
-				"Retry undelivered jobs failed",
-				server=server,
-				server_type=server_type,
-			)
-		else:
-			frappe.cache().srem("undelivered_jobs", server_key)
+	mark_job_delivery_failure(job_name)
+
+
+def should_retry_job(job: AgentJob, nowtime) -> bool:
+	"""Check whether a job is eligible for retry"""
+
+	if not job.next_retry_at and job.name not in queued_jobs():
+		job.set_status_and_next_retry_at()
+		return False
+
+	return get_datetime(job.next_retry_at) <= nowtime
+
+
+def retry_job(job_name: str, job: AgentJob) -> None:
+	"""Retry a failed job"""
+
+	retry = job.retry_count + 1
+
+	frappe.db.set_value(
+		"Agent Job",
+		job_name,
+		"retry_count",
+		retry,
+		update_modified=False,
+	)
+
+	job.retry_in_place()
+
+
+def mark_job_delivery_failure(job_name: str) -> None:
+	"""Mark job as permanently failed"""
+
+	update_job_and_step_status(job_name, "Delivery Failure")
+	process_job_updates(job_name)
 
 
 def queued_jobs():

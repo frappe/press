@@ -975,7 +975,7 @@ def rename(name, title):
 
 
 @frappe.whitelist(allow_guest=True)
-def benches_are_idle(server: str) -> None:
+def benches_are_idle() -> None:
 	"""Shut down the secondary server if all benches are idle.
 
 	This function is only triggered by secondary servers:
@@ -984,7 +984,7 @@ def benches_are_idle(server: str) -> None:
 
 	current_user = frappe.session.user
 
-	verify_agent(server)
+	server, _ = verify_agent()
 
 	primary_server, is_server_scaled_up = frappe.db.get_value(
 		"Server", {"secondary_server": server}, ["name", "scaled_up"]

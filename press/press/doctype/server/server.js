@@ -168,7 +168,11 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
-				__('Setup Agent Auth'),
+				__(
+					frm.doc.is_agent_auth_setup
+						? 'Regenerate Agent Token'
+						: 'Setup Agent Auth',
+				),
 				'setup_agent_auth',
 				false,
 				frm.doc.is_server_setup,

@@ -198,7 +198,6 @@ doc_events = {
 scheduler_events = {
 	"weekly_long": ["press.press.doctype.marketplace_app.events.auto_review_for_missing_steps"],
 	"daily": [
-		"press.press.doctype.agent_auth.agent_auth.regenerate_token",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 		"press.press.doctype.log_counter.log_counter.record_counts",
 		"press.press.doctype.incident.incident.notify_ignored_servers",
@@ -358,7 +357,6 @@ scheduler_events = {
 			"press.workflow_engine.doctype.press_workflow.press_workflow.retry_workflow_callbacks",
 		],
 		"* * * * *": [
-			"press.press.doctype.agent_job.agent_job.retry_poll",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_physical_backup_snapshots",
 			"press.workflow_engine.doctype.press_workflow_task.press_workflow_task.retry_tasks",
 			"press.press.doctype.deploy_candidate_build.deploy_candidate_build.run_scheduled_builds",

@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import ipaddress
 import json
+from typing import Any
 
 import frappe
 from frappe.rate_limiter import rate_limit
 
 from press.agent import Agent
 from press.api.agent_auth import verify_agent
-from press.press.doctype.agent_job.agent_job import handle_polled_job
+from press.press.doctype.agent_job.agent_job import handle_polled_job, retry_undelivered_jobs
 from press.utils import log_error
 
 
@@ -115,7 +116,7 @@ def callback(job_id: str | None = None):
 	if not server:
 		frappe.throw("Not permitted", frappe.ValidationError)
 
-	verify_agent(server)
+	verify_agent()
 
 	job = verify_job_id(server, job_id)
 	if not job:
@@ -126,18 +127,13 @@ def callback(job_id: str | None = None):
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=500, seconds=60)
-def update_job(job, server):
-	flag = frappe.db.get_single_value("Press Settings", "push_feature")
-	if not flag:
-		return
-
+def update_job(job: str) -> None:
 	if not job:
 		return
 
-	verify_agent(server)
+	server, _ = verify_agent()
 
-	if isinstance(job, str):
-		job = json.loads(job)
+	parsed_job: dict[str, Any] = json.loads(job)
 
 	job_doc = frappe.get_value(
 		"Agent Job",
@@ -148,15 +144,29 @@ def update_job(job, server):
 			"callback_failure_count",
 			"job_type",
 		],
-		filters={"job_id": job["id"], "server": server},
+		filters={"job_id": parsed_job["id"], "server": server},
 		as_dict=True,
 	)
+
 	if not job_doc:
 		return
 
-	frappe.enqueue(
-		handle_polled_job,
-		queue="short",
-		polled_job=job,
+	handle_polled_job(
+		polled_job=parsed_job,
 		job=job_doc,
+		raise_callback_exception=True,
 	)
+
+
+@frappe.whitelist(allow_guest=True)
+def retry_undelivered():
+	server, server_type = verify_agent()
+
+	server_obj = frappe._dict(
+		{
+			"server": server,
+			"server_type": server_type,
+		}
+	)
+
+	retry_undelivered_jobs(server_obj, use_exponential_backoff=False, use_queue_protection=True)

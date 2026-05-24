@@ -22,6 +22,8 @@
 		"secondary_private_ip",
 		"agent_section",
 		"agent_password",
+		"is_agent_auth_setup",
+		"agent_job_update_feature",
 		"ssh_section",
 		"ssh_port",
 		"frappe_public_key",
@@ -38,14 +40,21 @@
 			"options": "Pending\nInstalling\nActive\nBroken\nArchived",
 			"read_only": 1
 		},
-		{ "fieldname": "hostname", "fieldtype": "Data", "label": "Hostname" },
+		{
+			"fieldname": "hostname",
+			"fieldtype": "Data",
+			"label": "Hostname"
+		},
 		{
 			"fieldname": "domain",
 			"fieldtype": "Link",
 			"label": "Domain",
 			"options": "Root Domain"
 		},
-		{ "fieldname": "column_break_vpdt", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_vpdt",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "cluster",
 			"fieldtype": "Link",
@@ -86,7 +95,10 @@
 			"fieldtype": "Check",
 			"label": "Is Static Ip"
 		},
-		{ "fieldname": "column_break_oygq", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_oygq",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fetch_from": "virtual_machine.private_ip_address",
 			"fieldname": "private_ip",
@@ -110,7 +122,10 @@
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_cpxp", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_cpxp",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "root_public_key",
 			"fieldtype": "Code",
@@ -148,6 +163,19 @@
 			"fieldtype": "Password",
 			"label": "Agent Password",
 			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_agent_auth_setup",
+			"fieldtype": "Check",
+			"label": "Is Agent Auth Setup",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "agent_job_update_feature",
+			"fieldtype": "Check",
+			"label": "Agent Job Update Feature"
 		}
 	],
 	"grid_page_length": 50,
@@ -159,7 +187,7 @@
 			"link_fieldname": "server"
 		}
 	],
-	"modified": "2026-04-27 11:32:03.470171",
+	"modified": "2026-05-24 18:47:22.133716",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "NAT Server",
@@ -179,7 +207,6 @@
 		}
 	],
 	"row_format": "Dynamic",
-	"rows_threshold_for_grid_search": 20,
 	"sort_field": "creation",
 	"sort_order": "DESC",
 	"states": []

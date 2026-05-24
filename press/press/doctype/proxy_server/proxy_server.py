@@ -24,6 +24,7 @@ class ProxyServer(BaseServer):
 
 		from press.press.doctype.proxy_server_domain.proxy_server_domain import ProxyServerDomain
 
+		agent_job_update_feature: DF.Check
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
@@ -41,6 +42,7 @@ class ProxyServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_agent_auth_setup: DF.Check
 		is_primary: DF.Check
 		is_proxysql_setup: DF.Check
 		is_replication_setup: DF.Check
@@ -79,6 +81,10 @@ class ProxyServer(BaseServer):
 		wireguard_private_key: DF.Password | None
 		wireguard_public_key: DF.Password | None
 	# end: auto-generated types
+
+	def on_update(self):
+		if self.has_value_changed("agent_job_update_feature"):
+			self.update_feature(self.agent_job_update_feature)
 
 	def validate(self):
 		super().validate()
@@ -126,9 +132,8 @@ class ProxyServer(BaseServer):
 		else:
 			kibana_password = None
 
-		private_key = self._generate_and_activate_key()
-		agent_token = self.sign_agent_token(private_key)
-		auth = self.agent_auth
+		secret = self._generate_secret()
+		agent_token = self.sign_agent_token(secret)
 
 		try:
 			ansible = Ansible(
@@ -157,8 +162,7 @@ class ProxyServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
-				auth.is_agent_auth_setup = 1
-				auth.save(ignore_permissions=True)
+				self.is_agent_auth_setup = 1
 			else:
 				self.status = "Broken"
 		except Exception:

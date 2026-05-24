@@ -7,7 +7,6 @@ from itertools import groupby
 import frappe
 from frappe.rate_limiter import rate_limit
 
-from press.api.agent_auth import verify_agent
 from press.exceptions import AlertRuleNotEnabled
 from press.press.doctype.monitor_server.monitor_server import get_monitor_server_ips
 from press.utils import log_error, servers_using_alternative_port_for_communication
@@ -160,9 +159,7 @@ MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS = 60
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=get_targets_method_rate_limit, seconds=MONITORING_ENDPOINT_RATE_LIMIT_WINDOW_SECONDS)
-def targets(server: str, token: str | None = None):
-	verify_agent(server)
-
+def targets(token: str | None = None):
 	if not token:
 		frappe.throw_permission_error()
 	monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token", cache=True)

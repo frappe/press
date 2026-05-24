@@ -36,6 +36,8 @@
 		"private_vlan_id",
 		"agent_section",
 		"agent_password",
+		"is_agent_auth_setup",
+		"agent_job_update_feature",
 		"column_break_mznm",
 		"disable_agent_job_auto_retry",
 		"use_as_proxy_for_agent_and_metrics",
@@ -112,7 +114,10 @@
 			"label": "Server Setup",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_3",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "agent_section",
 			"fieldtype": "Section Break",
@@ -135,7 +140,10 @@
 			"label": "Frappe Public Key",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_10", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_10",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "cluster",
 			"fieldtype": "Link",
@@ -188,7 +196,10 @@
 			"mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
 			"set_only_once": 1
 		},
-		{ "fieldname": "column_break_18", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_18",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "frappe_user_password",
 			"fieldtype": "Password",
@@ -225,7 +236,10 @@
 			"label": "SSH Certificate Authority",
 			"options": "SSH Certificate Authority"
 		},
-		{ "fieldname": "column_break_26", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_26",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"fieldname": "is_ssh_proxy_setup",
@@ -317,7 +331,11 @@
 			"fieldtype": "Data",
 			"label": "Self Hosted Server Domain"
 		},
-		{ "fieldname": "vpn_tab", "fieldtype": "Tab Break", "label": "VPN" },
+		{
+			"fieldname": "vpn_tab",
+			"fieldtype": "Tab Break",
+			"label": "VPN"
+		},
 		{
 			"default": "51820",
 			"fieldname": "wireguard_port",
@@ -361,7 +379,10 @@
 			"fieldtype": "Data",
 			"label": "Wireguard Network IP"
 		},
-		{ "fieldname": "column_break_dapz", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_dapz",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "hostname_abbreviation",
 			"fieldtype": "Data",
@@ -375,7 +396,10 @@
 			"label": "Enabled Default Routing",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_mznm", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_mznm",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "1",
 			"fieldname": "disable_agent_job_auto_retry",
@@ -473,10 +497,23 @@
 			"fieldname": "use_as_proxy_for_agent_and_metrics",
 			"fieldtype": "Check",
 			"label": "Use as Proxy for Agent and Metrics"
+		},
+		{
+			"default": "0",
+			"fieldname": "is_agent_auth_setup",
+			"fieldtype": "Check",
+			"label": "Is Agent Auth Setup",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "agent_job_update_feature",
+			"fieldtype": "Check",
+			"label": "Agent Job Update Feature"
 		}
 	],
 	"links": [],
-	"modified": "2026-03-15 19:01:43.557830",
+	"modified": "2026-05-24 18:50:03.126562",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Proxy Server",

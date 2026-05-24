@@ -16,17 +16,31 @@ class TestAgentAuth(TestCase):
 		self.assertRaises(
 			frappe.PermissionError,
 			verify_agent,
-			"test-server",
 		)
 
+	@patch("press.api.agent_auth.extract_server_from_token")
 	@patch("press.api.agent_auth.Agent")
-	def test_verify_agent_calls_extract_and_verify_token(self, mock_agent):
+	def test_verify_agent_calls_extract_and_verify_token(
+		self,
+		mock_agent,
+		mock_extract_server,
+	):
+		mock_extract_server.return_value = (
+			"test-server",
+			"Server",
+		)
+
 		mock_instance = Mock()
 		mock_agent.return_value = mock_instance
 
 		frappe.local.request = frappe._dict({"headers": {"X-Agent-Token": "test-token"}})
 
-		verify_agent("test-server")
+		server, server_type = verify_agent()
+
+		self.assertEqual(server, "test-server")
+		self.assertEqual(server_type, "Server")
+
+		mock_extract_server.assert_called_once_with("test-token")
 
 		mock_agent.assert_called_once_with("test-server")
 
