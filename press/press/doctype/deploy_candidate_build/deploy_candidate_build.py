@@ -1189,6 +1189,9 @@ class DeployCandidateBuild(Document):
 		"""Check if the previous build and this build have similar dependencies"""
 		assert previous_candidate, "Previous deploy candidate not found."
 
+		if len(previous_candidate.apps) != len(self.candidate.apps):
+			frappe.throw("Instant build cannot be run since apps have changed.")
+
 		is_public_bench_build = frappe.db.get_value("Release Group", self.group, "public")
 		if is_public_bench_build:
 			frappe.throw("Instant build cannot be run since this is a public bench build.")
@@ -1198,7 +1201,6 @@ class DeployCandidateBuild(Document):
 		# Dependencies check
 		previous_dependencies = {d.dependency: d.version for d in previous_candidate.dependencies}
 		current_dependencies = {d.dependency: d.version for d in current_candidate.dependencies}
-
 		if previous_dependencies != current_dependencies:
 			frappe.throw("Instant build cannot be run since dependencies have changed.")
 
