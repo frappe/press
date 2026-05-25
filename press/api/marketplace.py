@@ -1389,13 +1389,7 @@ def is_desk_user(user: str | None = None) -> bool:
 	return user_doc.user_type == "System User"
 
 
-@frappe.whitelist(methods=["GET"])
-def get_app_audit(app: str):
-	"""
-	Fetches the latest audit report for the given marketplace app.
-	By latest, it can be the latest release change audit or the latest submission gate audit.
-	If there is no audit report, it will return None.
-	"""
+def _validate_app_audit_access(app: str) -> None:
 	current_team = get_current_team()
 	app_team = frappe.db.get_value("Marketplace App", app, "team")
 	# for impersonation, the session user needs to have system user role, in that case we allow seeing other audit reports.
@@ -1406,13 +1400,60 @@ def get_app_audit(app: str):
 				_("You are not permitted to get the audit report for this app"), frappe.PermissionError
 			)
 
-	# get_all, limit 1, order by creation desc
-	audit_name = frappe.get_all(
-		"Marketplace App Audit", {"marketplace_app": app}, order_by="creation desc", limit=1, pluck="name"
+
+@frappe.whitelist(methods=["GET"])
+def get_app_audits(app: str) -> list[dict]:
+	"""Fetches audit report summaries for the list view."""
+	_validate_app_audit_access(app)
+
+	audits = frappe.get_all(
+		"Marketplace App Audit",
+		filters={"marketplace_app": app},
+		fields=[
+			"name",
+			"app_source",
+			"app_release",
+			"audit_type",
+			"audit_result",
+			"status",
+			"started_at",
+			"finished_at",
+		],
+		order_by="creation desc",
 	)
+	if not audits:
+		return []
+
+	return audits
+
+
+@frappe.whitelist(methods=["GET"])
+def get_app_audit(app: str, audit_name: str | None = None):
+	"""Fetches a single audit report with all checks. Falls back to latest if no name given."""
+	_validate_app_audit_access(app)
+
+	if not audit_name:
+		audit_name = frappe.db.get_value(
+			"Marketplace App Audit",
+			{"marketplace_app": app},
+			order_by="creation desc",
+		)
+
 	if not audit_name:
 		return None
 
-	app_audit = frappe.get_doc("Marketplace App Audit", audit_name[0])
+	audit = frappe.get_doc("Marketplace App Audit", audit_name)
+	if audit.marketplace_app != app:
+		frappe.throw(_("Audit does not belong to this app"), frappe.PermissionError)
 
-	return app_audit.as_dict()
+	result = audit.as_dict()
+	result["source_version"] = (
+		frappe.db.get_value(
+			"Marketplace App Version",
+			{"parent": app, "parenttype": "Marketplace App", "source": audit.app_source},
+			"version",
+		)
+		if audit.app_source
+		else None
+	)
+	return result

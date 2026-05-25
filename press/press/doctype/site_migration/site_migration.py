@@ -620,11 +620,6 @@ class SiteMigration(Document):
 				"status": "Pending",
 			},
 			{
-				"step_title": self.remove_site_from_source_proxy.__doc__,
-				"method_name": self.remove_site_from_source_proxy.__name__,
-				"status": "Pending",
-			},
-			{
 				"step_title": self.restore_site_on_destination_proxy.__doc__,
 				"method_name": self.restore_site_on_destination_proxy.__name__,
 				"status": "Pending",

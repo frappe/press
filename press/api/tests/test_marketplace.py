@@ -19,6 +19,7 @@ from press.api.marketplace import (
 	create_app_plan,
 	create_approval_request,
 	get_app,
+	get_app_audits,
 	get_apps,
 	get_apps_with_plans,
 	get_latest_approval_request,
@@ -258,11 +259,40 @@ class TestAPIMarketplace(FrappeTestCase):
 		r = releases({"app": self.marketplace_app.name, "source": self.app_source.name})
 		self.assertEqual(r[0].name, self.app_release.name)
 
+	def test_get_app_audits_returns_audit_summaries_for_app(self):
+		audit = frappe.get_doc(
+			{
+				"doctype": "Marketplace App Audit",
+				"marketplace_app": self.marketplace_app.name,
+				"app_source": self.app_source.name,
+				"app_release": self.app_release.name,
+				"team": self.team.name,
+				"audit_type": "Manual Run",
+				"status": "Completed",
+				"audit_result": "Needs Improvement",
+			}
+		).insert()
+
+		frappe.set_user(self.team.user)
+		audits = get_app_audits(self.marketplace_app.name)
+
+		self.assertEqual(len(audits), 1)
+		self.assertEqual(audits[0].name, audit.name)
+		self.assertEqual(audits[0].app_source, self.app_source.name)
+		self.assertEqual(audits[0].app_release, self.app_release.name)
+		self.assertEqual(audits[0].audit_type, "Manual Run")
+		self.assertEqual(audits[0].audit_result, "Needs Improvement")
+		self.assertEqual(audits[0].status, "Completed")
+
 	def test_app_release_approvals(self):
 		frappe.set_user(self.team.user)
-		create_approval_request(self.marketplace_app.name, self.app_release.name)
+		with patch(
+			"press.press.doctype.app_release_approval_request.app_release_approval_request.MarketplaceAppAudit.create_for_release"
+		) as create_audit:
+			create_approval_request(self.marketplace_app.name, self.app_release.name)
 		latest_approval = get_latest_approval_request(self.app_release.name)
 		self.assertIsNotNone(latest_approval)
+		create_audit.assert_called_once()
 
 	def test_new_app(self):
 		app = {

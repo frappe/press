@@ -15,7 +15,7 @@ import semantic_version as sv
 import tomli
 from frappe.model.document import Document
 
-from press.api.github import get_access_token
+from press.api.github import GithubFetchError, get_access_token
 from press.press.doctype.app_source.app_source import AppSource
 from press.utils import log_error
 
@@ -316,7 +316,7 @@ class AppRelease(Document):
 		token = get_access_token(source.github_installation_id)
 		if token is None:
 			# Do not edit without updating deploy_notifications.py
-			raise Exception("App installation token could not be fetched", self.app)
+			raise GithubFetchError("App installation token could not be fetched", self.app)
 
 		return f"https://x-access-token:{token}@github.com/{source.repository_owner}/{source.repository}"
 
@@ -394,8 +394,9 @@ class AppRelease(Document):
 		"""
 		Currently, we only audit marketplace app releases. Later we can extend this to custom apps as well.
 		"""
-		# determine whether the release's source is a marketplace app
-		if not frappe.db.exists("Marketplace App", {"app": self.app}):
+		# determine whether the release's source is a marketplace app and only if it's published.
+		# for new apps which are not published yet, the audit will be triggered by creating marketplace app approval request.
+		if not frappe.db.exists("Marketplace App", {"app": self.app, "status": "Published"}):
 			return
 
 		marketplace_app, bypass_automated_audit = frappe.db.get_value(
