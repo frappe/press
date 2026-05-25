@@ -295,6 +295,10 @@ class ReleasePipeline(WorkflowBuilder):
 		"""Start the deploy candidate build process with patch deploy flag, skipping pre-build validations."""
 		candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", deploy_candidate)
 		deploy_candidate_build = candidate.trigger_patch_deploy(ignore_permissions=True)
+		if deploy_candidate_build.get("error"):
+			raise ReleasePipelineFailure(
+				deploy_candidate_build.get("message", "Patch build could not be initiated.")
+			)
 		return deploy_candidate_build["name"]
 
 	def _get_required_build_count(self, deploy_candidate: str) -> int:
