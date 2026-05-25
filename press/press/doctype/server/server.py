@@ -2919,11 +2919,12 @@ class Server(BaseServer):
 			if database_server_public != self.public:
 				frappe.db.set_value("Database Server", self.database_server, "public", self.public)
 
+		self._create_static_ip_log()
+
 		if self.has_value_changed("team"):
 			self.update_subscription()
 			self.update_db_server()
 
-		self._create_static_ip_log()
 		self.set_bench_memory_limits_if_needed(save=False)
 		self.validate_public_server_exists_for_site_or_bench_placement()
 
