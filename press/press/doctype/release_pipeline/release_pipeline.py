@@ -267,6 +267,7 @@ class ReleasePipeline(WorkflowBuilder):
 		sites: list[dict[str, Any]],
 		run_will_fail_check: bool = False,
 		create_deploy: bool = False,
+		trigger_instant_deploy: bool = False,
 	) -> str:
 		"""Create a Deploy Candidate for the release group."""
 		assert isinstance(self.release_group, str)
@@ -278,6 +279,7 @@ class ReleasePipeline(WorkflowBuilder):
 			validate_pre_candidate_checks=False,
 			create_build=create_deploy,
 			ignore_permissions=True,
+			trigger_instant_deploy=trigger_instant_deploy,
 		)
 
 	@task(queue=_get_task_execution_queue())
@@ -287,6 +289,13 @@ class ReleasePipeline(WorkflowBuilder):
 		deploy_candidate_build = candidate.schedule_build_and_deploy(
 			ignore_permissions=True,
 		)
+		return deploy_candidate_build["name"]
+
+	@task(queue=_get_task_execution_queue())
+	def initiate_instant_deploy(self, deploy_candidate: str) -> str:
+		"""Start the deploy candidate build process with instant deploy flag which will skip the pre-build validations and directly create benches if validations are not explicitly triggered."""
+		candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", deploy_candidate)
+		deploy_candidate_build = candidate.trigger_instant_deploy(ignore_permissions=True)
 		return deploy_candidate_build["name"]
 
 	def _get_required_build_count(self, deploy_candidate: str) -> int:
@@ -590,7 +599,7 @@ class ReleasePipeline(WorkflowBuilder):
 		)
 
 	@task(queue=_get_task_execution_queue())
-	def prepare_deployment(self, apps, sites, run_will_fail_check) -> tuple[str, str]:
+	def prepare_deployment(self, apps, sites, run_will_fail_check, trigger_instant_deploy) -> tuple[str, str]:
 		"""Creates the candidate and returns the primary build name."""
 		auto_upgrade_dependencies = frappe.db.get_single_value(
 			"Press Settings",
@@ -603,13 +612,18 @@ class ReleasePipeline(WorkflowBuilder):
 				sites=sites,
 				run_will_fail_check=run_will_fail_check,
 				create_deploy=False,
+				trigger_instant_deploy=trigger_instant_deploy,
 			)
 			self.add_implicit_app_dependencies(deploy_candidate)
 
 			if auto_upgrade_dependencies:
 				self.auto_update_bench_dependency_versions(deploy_candidate)
 
-			primary_build = self.initiate_pre_build_validations(deploy_candidate)
+			primary_build = (
+				self.initiate_pre_build_validations(deploy_candidate)
+				if not trigger_instant_deploy
+				else self.initiate_instant_deploy(deploy_candidate)
+			)
 
 			return deploy_candidate, primary_build
 		except (frappe.ValidationError, GithubFetchError) as e:
@@ -691,6 +705,7 @@ class ReleasePipeline(WorkflowBuilder):
 		apps: list[dict[str, str]],
 		sites: list[dict[str, Any]],
 		run_will_fail_check: bool = False,
+		trigger_instant_deploy: bool = False,
 	):
 		"""Orchestrates the release process from validation to bench creation with recursive monitoring and retry handling"""
 		if not self.workflow:
@@ -702,7 +717,9 @@ class ReleasePipeline(WorkflowBuilder):
 			self.run_pre_release_checks(apps)
 
 			# 2. Initialization Phase
-			deploy_candidate, primary_build = self.prepare_deployment(apps, sites, run_will_fail_check)
+			deploy_candidate, primary_build = self.prepare_deployment(
+				apps, sites, run_will_fail_check, trigger_instant_deploy
+			)
 
 			# 3. Monitoring Phase (Handles 1 or 2 builds)
 			self.orchestrate_build_monitoring(deploy_candidate, primary_build)

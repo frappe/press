@@ -1141,100 +1141,19 @@ class DeployCandidateBuild(Document):
 		elif deploy_after_build:
 			self.create_deploy()
 
-	def get_previous_candidate(self) -> DeployCandidate | None:
-		"""Get the previous deploy candidate for the same group
-		Use the last bench deployed in this group as the reference to find the previous candidate
-		"""
-		last_active_build = frappe.db.get_value(
-			"Bench",
-			{"group": self.group, "status": "Active"},
-			"build",
-			order_by="creation desc",
-		)
-		if not last_active_build:
-			return None
-
-		deploy_candidate = frappe.db.get_value(
-			"Deploy Candidate Build", last_active_build, "deploy_candidate"
-		)
-
-		if not deploy_candidate:
-			# Should ideally never ever happen but still for safety
-			return None
-
-		return frappe.get_doc("Deploy Candidate", deploy_candidate)
-
-	def has_active_benches(self, previous_candidate: DeployCandidate) -> bool:
-		"""Gets arm and intel unique benches for the previous build"""
-		intel_bench = None
-		arm_bench = None
-		intel_build = previous_candidate.intel_build
-		arm_build = previous_candidate.arm_build
-
-		if intel_build:
-			intel_bench = frappe.db.get_value(
-				"Bench",
-				{"build": intel_build, "status": "Active"},
-				"name",
-			)
-
-		if arm_build:
-			arm_bench = frappe.db.get_value(
-				"Bench",
-				{"build": arm_build, "status": "Active"},
-				"name",
-			)
-
-		if not intel_bench and not arm_bench:
-			return False
-
-		if intel_build and arm_build and (not intel_bench or not arm_bench):
-			return False
-
-		return True
-
-	def can_run_instant_build(self, previous_candidate: DeployCandidate | None):
-		"""Check if the previous build and this build have similar dependencies"""
-		if not previous_candidate:
-			frappe.throw("Instant build cannot be run since there is no previous deploy candidate.")
-
-		assert previous_candidate, "Previous deploy candidate not found."
-		if len(previous_candidate.apps) != len(self.candidate.apps):
-			frappe.throw("Instant build cannot be run since apps have changed.")
-
-		is_public_bench_build = frappe.db.get_value("Release Group", self.group, "public")
-		if is_public_bench_build:
-			frappe.throw("Instant build cannot be run since this is a public bench build.")
-
-		current_candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", self.deploy_candidate)
-
-		# Dependencies check
-		previous_dependencies = {d.dependency: d.version for d in previous_candidate.dependencies}
-		current_dependencies = {d.dependency: d.version for d in current_candidate.dependencies}
-		if previous_dependencies != current_dependencies:
-			frappe.throw("Instant build cannot be run since dependencies have changed.")
-
-		# Packages check
-		previous_packages = {p.package_manager: p.package for p in previous_candidate.packages}
-		current_packages = {p.package_manager: p.package for p in current_candidate.packages}
-		if previous_packages != current_packages:
-			frappe.throw("Instant build cannot be run since packages have changed.")
-
-		# Environment variables check
-		previous_environment_variables = {ev.key: ev.value for ev in previous_candidate.environment_variables}
-		current_environment_variables = {ev.key: ev.value for ev in current_candidate.environment_variables}
-		if previous_environment_variables != current_environment_variables:
-			frappe.throw("Instant build cannot be run since environment variables have changed.")
-
-		# Finally check if active benches are present
-		if not self.has_active_benches(previous_candidate):
-			frappe.throw("Instant build cannot be run since there is no previously successful deploy.")
-
 	def run_instant_build(self):
 		"""Ensure this is called when `run_build` in insert is set to False since that will use the older flow"""
-		previous_candidate = self.get_previous_candidate()
-		self.can_run_instant_build(previous_candidate)
+		# In case after some bypass or error this is triggered without instant build being possible
+		# We need to run a check here.
+		from press.press.doctype.release_group.release_group import (
+			_get_previous_candidate,
+			can_run_instant_build,
+		)
 
+		if not can_run_instant_build(self.group):
+			frappe.throw("Instant build cannot be run.")
+
+		previous_candidate = _get_previous_candidate(self.group)
 		self.set_status(Status.PREPARING, timestamp_field="build_start", commit=True)
 		self._set_output_parsers()
 		try:

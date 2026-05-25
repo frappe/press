@@ -128,6 +128,7 @@
 				<Button v-if="canShowNext" variant="solid" label="Next" @click="next" />
 				<div v-if="canShowDeploy" class="flex gap-2">
 					<Button
+						v-if="deployInformation.can_run_instant_build"
 						variant="outline"
 						label="Deploy Instantly"
 						:loading="$resources.instantDeploy.loading"
