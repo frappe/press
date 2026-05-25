@@ -119,6 +119,9 @@ class BenchUpdate(Document):
 			else candidate.trigger_patch_deploy(ignore_permissions=ignore_permissions)
 		)
 
+		if deploy.get("error"):
+			frappe.throw(deploy.get("message", "Patch build could not be initiated."))
+
 		return deploy["name"]
 
 	def update_inplace(self) -> str:
