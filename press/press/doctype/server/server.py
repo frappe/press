@@ -3018,8 +3018,9 @@ class Server(BaseServer):
 			and self.enable_logical_replication_during_site_update
 			and frappe.db.count("Site", {"server": self.name, "status": ("!=", "Archived")}) > 1
 		):
+			# Throw error if multiple sites are present on the server
 			frappe.throw(
-				"Cannot enable logical replication during site update if multiple sites are present on the server."
+				"Cannot enable logical replication during site update if multiple sites are present on the server. Please drop the sites in order to enable logical replication."
 			)
 
 	def update_db_server(self):
