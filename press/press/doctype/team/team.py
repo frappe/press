@@ -55,6 +55,7 @@ class Team(Document):
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
+		apply_limits: DF.Check
 		apply_npo_discount: DF.Check
 		banned: DF.Check
 		benches_enabled: DF.Check
@@ -118,11 +119,13 @@ class Team(Document):
 		servers_enabled: DF.Check
 		skip_backups: DF.Check
 		skip_onboarding: DF.Check
+		spending_limit: DF.Currency
 		ssh_access_enabled: DF.Check
 		start_date: DF.Date | None
 		stripe_customer_id: DF.Data | None
 		team_members: DF.Table[TeamMember]
 		team_title: DF.Data | None
+		tier: DF.Link | None
 		upi_autopay_enabled: DF.Check
 		user: DF.Link | None
 		via_erpnext: DF.Check
@@ -167,6 +170,7 @@ class Team(Document):
 		"relaxed_permissions",
 		"upi_autopay_enabled",
 		"default_razorpay_mandate",
+		"tier",
 	)
 
 	def get_doc(self, doc):
@@ -212,6 +216,9 @@ class Team(Document):
 		doc.communication_infos = self.get_communication_infos()
 		doc.receive_budget_alerts = self.receive_budget_alerts
 		doc.monthly_alert_threshold = self.monthly_alert_threshold
+		doc.apply_limits = self.apply_limits
+		doc.spending_limit = self.spending_limit
+		doc.total_subscribed_amount = self.total_subscribed_amount()
 		doc.is_binlog_indexer_enabled = not frappe.db.get_single_value(
 			"Press Settings", "disable_binlog_indexer_service", cache=True
 		)
@@ -428,6 +435,8 @@ class Team(Document):
 			frappe.throw("You have already an account with same email. Please login using the same email.")
 
 		team.team_title = "Parent Team"
+		team.apply_limits = 1
+		team.spending_limit = 100  # default spending limit for new teams, can be updated later by team admin
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
 		if account_request.invited_by_parent_team:
@@ -606,6 +615,7 @@ class Team(Document):
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
 		self.check_budget_alert_threshold()
+		self.update_tier_limit()
 
 		if (
 			not self.is_new()
@@ -635,6 +645,20 @@ class Team(Document):
 				"budget_alert_sent",
 				0,
 			)
+
+	def total_subscribed_amount(self):
+		subscriptions = frappe.get_all(
+			"Subscription", {"team": self.name, "enabled": 1}, ["name", "plan_type", "plan"]
+		)
+		total = 0
+		for sub in subscriptions:
+			total += frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") or 0
+		return total
+
+	def update_tier_limit(self):
+		if self.apply_limits and self.tier and self.tier != self.get_doc_before_save().tier:
+			new_limit = frappe.db.get_value("Team Tier", self.tier, "amount") or 100
+			frappe.db.set_value("Team", self.name, "spending_limit", new_limit)
 
 	@frappe.whitelist()
 	def impersonate(self, member, reason):
@@ -1051,16 +1075,16 @@ class Team(Document):
 					"request_key": ("is", "set"),
 				},
 			):
-				d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
-				d.send_verification_email()
+				dd: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
+				dd.send_verification_email()
 				continue
 			frappe.utils.validate_email_address(n, throw=True)
-			d: AccountRequest = frappe.new_doc("Account Request")
-			d.team = self.name
-			d.email = n
-			d.invited_by = frappe.session.user
-			d.save()
-			d.send_email = True
+			ar: AccountRequest = frappe.new_doc("Account Request")
+			ar.team = self.name
+			ar.email = n
+			ar.invited_by = frappe.session.user
+			ar.save()
+			ar.send_email = True
 		return self.get_members()
 
 	@dashboard_whitelist()

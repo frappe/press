@@ -5,9 +5,15 @@
 	"editable_grid": 1,
 	"engine": "InnoDB",
 	"field_order": [
+		"core_section",
 		"user",
 		"role",
-		"column_break_jbmw",
+		"permissions_section",
+		"all_servers",
+		"column_break_fvgf",
+		"all_release_groups",
+		"column_break_fffy",
+		"all_sites",
 		"section_break_vjdz",
 		"impersonate"
 	],
@@ -34,17 +40,49 @@
 			"reqd": 1
 		},
 		{
-			"fieldname": "column_break_jbmw",
+			"fieldname": "section_break_vjdz",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "core_section",
+			"fieldtype": "Section Break",
+			"label": "Core"
+		},
+		{
+			"fieldname": "permissions_section",
+			"fieldtype": "Section Break",
+			"label": "Permissions"
+		},
+		{
+			"default": "0",
+			"fieldname": "all_servers",
+			"fieldtype": "Check",
+			"label": "All Servers"
+		},
+		{
+			"fieldname": "column_break_fvgf",
 			"fieldtype": "Column Break"
 		},
 		{
-			"fieldname": "section_break_vjdz",
-			"fieldtype": "Section Break"
+			"default": "0",
+			"fieldname": "all_release_groups",
+			"fieldtype": "Check",
+			"label": "All Release Groups"
+		},
+		{
+			"fieldname": "column_break_fffy",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0",
+			"fieldname": "all_sites",
+			"fieldtype": "Check",
+			"label": "All Sites"
 		}
 	],
 	"istable": 1,
 	"links": [],
-	"modified": "2026-05-13 13:44:30.534589",
+	"modified": "2026-05-20 17:58:37.789057",
 	"modified_by": "hello@ssiyad.com",
 	"module": "Press",
 	"name": "Team Member",

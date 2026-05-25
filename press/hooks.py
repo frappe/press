@@ -129,8 +129,11 @@ permission_query_conditions = {
 	"Site Database User": "press.press.doctype.site_database_user.site_database_user.get_permission_query_conditions",
 	"Server Snapshot": "press.press.doctype.server_snapshot.server_snapshot.get_permission_query_conditions",
 	"Server Snapshot Recovery": "press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.get_permission_query_conditions",
+	"Release Pipeline": "press.press.doctype.release_pipeline.release_pipeline.get_permission_query_conditions",
+	"Team Member Resource": "press.press.doctype.team_member_resource.team_member_resource.get_permission_query_conditions",
 }
 has_permission = {
+	"Team Member Resource": "press.press.doctype.team_member_resource.team_member_resource.has_permission",
 	"Account Request": "press.press.doctype.account_request.account_request.has_permission",
 	"Site": "press.overrides.has_permission",
 	"Site Action": "press.overrides.has_permission",
@@ -160,6 +163,7 @@ has_permission = {
 	"Server Snapshot Recovery": "press.overrides.has_permission",
 	"Server Firewall": "press.press.doctype.server_firewall.server_firewall.has_permission",
 	"Support Access": "press.press.doctype.support_access.support_access.has_permission",
+	"Release Pipeline": "press.overrides.has_permission",
 }
 
 # Document Events
@@ -167,6 +171,11 @@ has_permission = {
 # Hook on document methods and events
 
 doc_events = {
+	"Press Role": {
+		"after_insert": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
+		"on_update": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
+		"after_delete": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
+	},
 	"Stripe Webhook Log": {
 		"after_insert": [
 			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_webhook_events",
@@ -222,6 +231,7 @@ scheduler_events = {
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
+		"press.press.doctype.server.server.archive_servers_with_unpaid_invoices",
 		"press.press.doctype.site_domain.site_domain.update_dns_type",
 		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
 		"press.press.doctype.payment_due_extension.payment_due_extension.remove_payment_due_extension",
@@ -268,7 +278,6 @@ scheduler_events = {
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.cleanup_build_directories",
 		"press.press.doctype.deploy_candidate_build.deploy_candidate_build.check_builds_status",
-		"press.press.doctype.server.server.archive_servers_with_unpaid_invoices",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_oci_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_hetzner_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_internal_virtual_machines",
@@ -427,6 +436,7 @@ fixtures = [
 	"Press Webhook Event",
 	"Site Plan",
 	"Server Plan",
+	"Team Tier",
 ]
 # Testing
 # -------

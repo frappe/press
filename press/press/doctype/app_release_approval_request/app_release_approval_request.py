@@ -5,6 +5,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 
+from press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit import MarketplaceAppAudit
+
 
 class AppReleaseApprovalRequest(Document):
 	# begin: auto-generated types
@@ -114,7 +116,17 @@ class AppReleaseApprovalRequest(Document):
 			release.status = "Draft"
 
 		release.save(ignore_permissions=True)
-		frappe.db.commit()
+
+	def after_insert(self):
+		"""
+		App approval request creation triggers the app audit creation (this is for submission gate flow).
+		"""
+		MarketplaceAppAudit.create_for_release(
+			marketplace_app=self.marketplace_app,
+			app_release=self.app_release,
+			audit_type="Submission Gate",
+			approval_request=self.name,
+		)
 
 	def notify_publisher(self):
 		marketplace_app = frappe.get_doc("Marketplace App", self.marketplace_app)
@@ -141,35 +153,34 @@ class AppReleaseApprovalRequest(Document):
 		if bypass_automated_audit:
 			return
 
-		latest_audit = frappe.get_all(
+		approval_request_audit = frappe.get_all(
 			"Marketplace App Audit",
-			filters={"app_release": self.app_release},
+			filters={"app_release": self.app_release, "approval_request": self.name},
 			fields=["name", "status", "audit_result", "audit_summary"],
-			order_by="creation desc",
 			limit=1,
 		)
-		if not latest_audit:
+		if not approval_request_audit:
 			frappe.throw(
-				"Cannot approve: No audit found for this release. "
-				"An audit must complete successfully before approval."
+				"Cannot approve: No audit found for this release. An audit must complete successfully before approval."
 			)
 
-		audit = latest_audit[0]
-		if audit.status in ("Queued", "Running"):
+		approval_request_audit = approval_request_audit[0]
+
+		if approval_request_audit.status in ("Queued", "Running"):
 			frappe.throw(
-				f"Cannot approve: Audit {audit.name} is still {audit.status}. Please wait for it to complete."
+				f"Cannot approve: Audit {approval_request_audit.name} is still {approval_request_audit.status}. Please wait for it to complete."
 			)
 
-		if audit.status == "Failed":
+		if approval_request_audit.status == "Failed":
 			frappe.throw(
-				f"Cannot approve: Audit {audit.name} failed. Please investigate and rerun the audit."
+				f"Cannot approve: Audit {approval_request_audit.name} failed. Please investigate and rerun the audit."
 			)
 
-		if audit.audit_result not in ["Pass", "Needs Improvement"]:
+		if approval_request_audit.audit_result not in ["Pass", "Needs Improvement"]:
 			frappe.throw(
-				f"Cannot approve: Audit {audit.name} completed with result '{audit.audit_result}'. "
+				f"Cannot approve: Audit {approval_request_audit.name} completed with result '{approval_request_audit.audit_result}'. "
 				f"Only 'Pass' or 'Needs Improvement' results allow approval.\n\n"
-				f"Summary: {audit.audit_summary or 'N/A'}"
+				f"Summary: {approval_request_audit.audit_summary or 'N/A'}"
 			)
 
 	def check_release_not_yanked(self):
