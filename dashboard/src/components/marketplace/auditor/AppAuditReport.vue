@@ -1,42 +1,44 @@
 <script setup lang="ts">
 import {
-	AccordionContent,
-	AccordionHeader,
-	AccordionItem,
-	AccordionRoot,
-	AccordionTrigger,
-} from 'reka-ui';
-import {
 	Badge,
 	createResource,
 	ErrorMessage,
 	LoadingIndicator,
 	Tooltip,
-} from 'frappe-ui';
-import dayjs from '@/utils/dayjs';
-import { computed } from 'vue';
+} from "frappe-ui";
+import {
+	AccordionContent,
+	AccordionHeader,
+	AccordionItem,
+	AccordionRoot,
+	AccordionTrigger,
+} from "reka-ui";
+import { computed } from "vue";
+import type {
+	GetAppAuditResult,
+	MarketplaceAppAuditCheckRow,
+} from "@/components/marketplace/auditor/auditReportTypes";
+import TextParser from "@/components/marketplace/auditor/TextParser.vue";
 import {
 	auditResultHeadline,
+	type BadgeTheme,
 	formatDt,
 	parseAuditCheckDetails,
 	themeCheckResult,
 	themeSeverity,
-	type BadgeTheme,
-} from '@/components/marketplace/auditor/utils';
-import type {
-	GetAppAuditResult,
-	MarketplaceAppAuditCheckRow,
-} from '@/components/marketplace/auditor/auditReportTypes';
+	variantSeverity,
+} from "@/components/marketplace/auditor/utils";
+import dayjs from "@/utils/dayjs";
 
 const CATEGORY_ORDER = [
-	'Metadata',
-	'Versioning',
-	'Dependencies',
-	'Code Quality',
-	'Security',
-	'Compatibility',
-	'Correctness',
-	'Operational',
+	"Metadata",
+	"Versioning",
+	"Dependencies",
+	"Code Quality",
+	"Security",
+	"Compatibility",
+	"Correctness",
+	"Operational",
 ] as const;
 
 const SEVERITY_ORDER: Record<string, number> = {
@@ -50,22 +52,25 @@ const SEVERITY_ORDER: Record<string, number> = {
 const UNKNOWN_CATEGORY_SORT = 999;
 /**
  * Fallback ranks when ordering failing categories (lower = show first). Must be > Info (3). Arbitrary values.
- * Unknown label → 80; row has no severity → 100 (sorts after known severities). Arbitrary values.
+ * Unknown label → 80; row has no severity → 100 (sorts after known severities). Arbitrary values again.
  */
 const UNKNOWN_SEVERITY_SORT = 80;
 const NO_SEVERITY_SORT = 100;
 
 const props = defineProps<{
 	app: string;
+	auditName?: string;
 }>();
 
 const auditResource = createResource({
-	url: 'press.api.marketplace.get_app_audit',
-	method: 'GET',
+	url: "press.api.marketplace.get_app_audit",
+	method: "GET",
 	auto: true,
 	params: {
 		app: props.app,
+		audit_name: props.auditName || undefined,
 	},
+	cache: ["app-audit-report", props.auditName],
 });
 
 const doc = computed(() => auditResource.data as GetAppAuditResult);
@@ -91,7 +96,7 @@ function categoryIndex(name: string): number {
 function categoryNeedsAttention(name: string): boolean {
 	return (
 		byCategory.value[name]?.some((r) =>
-			['Fail', 'Warn', 'Error'].includes(r.result),
+			["Fail", "Warn", "Error"].includes(r.result),
 		) ?? false
 	);
 }
@@ -100,7 +105,7 @@ function categoryNeedsAttention(name: string): boolean {
 function worstIssueRank(name: string): number {
 	let rank = UNKNOWN_CATEGORY_SORT;
 	for (const r of byCategory.value[name] ?? []) {
-		if (!['Fail', 'Warn', 'Error'].includes(r.result)) continue;
+		if (!["Fail", "Warn", "Error"].includes(r.result)) continue;
 		const sev =
 			r.severity != null
 				? (SEVERITY_ORDER[r.severity] ?? UNKNOWN_SEVERITY_SORT)
@@ -138,27 +143,27 @@ const defaultOpenAttention = computed(() =>
 function categoryLabel(category: string): string {
 	const rows = byCategory.value[category] ?? [];
 	const fails = rows.filter(
-		(r) => r.result === 'Fail' || r.result === 'Error',
+		(r) => r.result === "Fail" || r.result === "Error",
 	).length;
-	const warns = rows.filter((r) => r.result === 'Warn').length;
+	const warns = rows.filter((r) => r.result === "Warn").length;
 	if (fails) return `${fails} failed`;
-	if (warns) return `${warns} warning${warns === 1 ? '' : 's'}`;
-	return 'Pass';
+	if (warns) return `${warns} warning${warns === 1 ? "" : "s"}`;
+	return "Pass";
 }
 
 function categoryTheme(category: string): BadgeTheme {
 	const rows = byCategory.value[category] ?? [];
-	if (rows.some((r) => r.result === 'Fail' || r.result === 'Error'))
-		return 'red';
-	if (rows.some((r) => r.result === 'Warn')) return 'orange';
-	return 'green';
+	if (rows.some((r) => r.result === "Fail" || r.result === "Error"))
+		return "red";
+	if (rows.some((r) => r.result === "Warn")) return "orange";
+	return "green";
 }
 
 function categoryWorstSeverity(category: string): string | undefined {
 	let worst: string | undefined;
 	let rank = 999;
 	for (const r of byCategory.value[category] ?? []) {
-		if (!['Fail', 'Warn', 'Error'].includes(r.result)) continue;
+		if (!["Fail", "Warn", "Error"].includes(r.result)) continue;
 		const s = r.severity;
 		if (!s) continue;
 		const rk = SEVERITY_ORDER[s] ?? 99;
@@ -183,9 +188,16 @@ const appDisplayName = computed(
 	// capitalize first letter and remove underscores
 	() =>
 		(doc.value?.marketplace_app || props.app)
-			.replace(/_/g, ' ')
+			.replace(/_/g, " ")
 			.replace(/\b\w/g, (char) => char.toUpperCase()),
 );
+
+const sourceContext = computed(() => {
+	const parts: string[] = [];
+	if (doc.value?.source_version) parts.push(`${doc.value.source_version}`);
+	if (doc.value?.app_source) parts.push(`Source ${doc.value.app_source}`);
+	return parts.join(" · ");
+});
 
 const checkStats = computed(() => {
 	let pass = 0;
@@ -195,10 +207,10 @@ const checkStats = computed(() => {
 	let blocking = 0;
 	for (const r of visibleChecks.value) {
 		if (r.is_blocking) blocking += 1;
-		if (r.result === 'Pass') pass += 1;
-		else if (r.result === 'Warn') warn += 1;
-		else if (r.result === 'Fail' || r.result === 'Error') fail += 1;
-		else if (r.result === 'Skipped') skipped += 1;
+		if (r.result === "Pass") pass += 1;
+		else if (r.result === "Warn") warn += 1;
+		else if (r.result === "Fail" || r.result === "Error") fail += 1;
+		else if (r.result === "Skipped") skipped += 1;
 	}
 	return {
 		pass,
@@ -217,7 +229,7 @@ const issueCount = computed(
 const failSeveritySummary = computed(() => {
 	const n = { Critical: 0, Major: 0, Minor: 0, Info: 0 };
 	for (const r of visibleChecks.value) {
-		if (r.result !== 'Fail' && r.result !== 'Error') continue;
+		if (r.result !== "Fail" && r.result !== "Error") continue;
 		if (r.severity && r.severity in n) n[r.severity as keyof typeof n] += 1;
 	}
 	const parts: string[] = [];
@@ -225,40 +237,35 @@ const failSeveritySummary = computed(() => {
 	if (n.Major) parts.push(`${n.Major} Major`);
 	if (n.Minor) parts.push(`${n.Minor} Minor`);
 	if (n.Info) parts.push(`${n.Info} Info`);
-	return parts.join(', ');
+	return parts.join(", ");
 });
 
 const runAt = computed(() => doc.value?.finished_at || doc.value?.started_at);
 const runRelative = computed(() =>
-	runAt.value ? `Ran ${dayjs(runAt.value).fromNow()}` : '',
+	runAt.value ? `Ran ${dayjs(runAt.value).fromNow()}` : "",
 );
 const runExact = computed(() => formatDt(runAt.value));
 
 const heroSurface = computed(() => {
 	const st = doc.value?.status;
-	if (st === 'Running' || st === 'Queued')
-		return 'border-blue-200/90 bg-blue-50/80';
-	if (st === 'Failed') return 'border-red-300/90 bg-red-50/90';
+	if (st === "Running" || st === "Queued")
+		return "border-outline-gray-2 bg-surface-blue-2";
+	if (st === "Failed") return "border-outline-gray-2 bg-surface-red-2";
 	const r = doc.value?.audit_result;
-	if (r === 'Fail') return 'border-red-200/90 bg-red-50/85';
-	if (r === 'Warn' || r === 'Needs Improvement')
-		return 'border-amber-200/90 bg-amber-50/80';
-	if (r === 'Pass') return 'border-green-200/80 bg-green-50/70';
-	if (r === 'Inconclusive') return 'border-outline-gray-2 bg-surface-gray-2/50';
-	return 'border-outline-gray-1 bg-surface-gray-2/40';
+	if (r === "Fail") return "border-outline-gray-2 bg-surface-red-2";
+	if (r === "Pass") return "border-outline-gray-2 bg-surface-green-2";
+	return "border-outline-gray-1 bg-surface-gray-2";
 });
 
 const heroTitleClass = computed(() => {
 	const r = doc.value?.audit_result;
-	if (r === 'Fail') return 'text-red-900';
-	if (r === 'Warn' || r === 'Needs Improvement') return 'text-amber-950';
-	if (r === 'Pass') return 'text-green-900';
-	if (r === 'Inconclusive') return 'text-ink-gray-8';
-	return 'text-ink-gray-9';
+	if (r === "Fail") return "text-ink-red-4";
+	if (r === "Pass") return "text-ink-green-3";
+	return "text-ink-gray-9";
 });
 
 const nextStepsTooltip =
-	'Review and fix the failing checks. Then push a new commit to your source branch to trigger a new audit.';
+	"Review and fix the failing checks. Then push a new commit to your source branch to trigger a new audit.";
 
 function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 	const r = row.remediation;
@@ -278,7 +285,7 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 		</div>
 
 		<ErrorMessage
-			v-else-if="auditResource.error"
+v-else-if="auditResource.error"
 			:message="auditResource.error.message"
 		/>
 
@@ -312,10 +319,16 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 									<template v-if="issueCount > 0">
 										{{ issueCount }} issue{{ issueCount === 1 ? '' : 's' }} in
 									</template>
-									<template v-else>Latest audit for</template>
+									<template v-else>Audit for</template>
 									<span class="font-medium text-ink-gray-9">{{
 										appDisplayName
 									}}</span>
+								</p>
+								<p
+									v-if="sourceContext"
+									class="text-sm leading-relaxed text-ink-gray-6"
+								>
+									{{ sourceContext }}
 								</p>
 							</div>
 							<div class="flex shrink-0 flex-col gap-2 text-sm sm:items-end">
@@ -331,13 +344,15 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 
 					<div class="space-y-4 px-3.5 py-4 sm:px-5">
 						<div v-if="checkStats.total" class="space-y-3">
-							<div
-								class="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm"
-							>
-								<span
-									v-if="checkStats.pass > 0"
-									class="font-medium text-green-800"
-								>
+							<div class="flex justify-between">
+								<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+
+
+
+
+
+
+								<span v-if="checkStats.pass > 0" class="font-medium text-ink-green-3">
 									{{ checkStats.pass }} passed
 								</span>
 								<template
@@ -348,16 +363,13 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 								>
 									<span class="text-ink-gray-4">·</span>
 								</template>
-								<span
-									v-if="checkStats.fail > 0"
-									class="font-medium text-red-800"
-									>{{ checkStats.fail }} failed</span
-								>
+								<span v-if="checkStats.fail > 0" class="font-medium text-ink-red-4">{{ checkStats.fail
+								}} failed</span>
 								<template v-if="checkStats.warn > 0">
 									<span v-if="checkStats.fail > 0" class="text-ink-gray-4"
 										>·</span
 									>
-									<span class="font-medium text-amber-800">
+									<span class="font-medium text-ink-gray-7">
 										{{ checkStats.warn }} warning{{
 											checkStats.warn === 1 ? '' : 's'
 										}}
@@ -373,12 +385,14 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 									({{ failSeveritySummary }})
 								</span>
 							</div>
-							<div v-if="checkStats.blocking > 0" class="flex flex-wrap gap-2">
+								<div v-if="checkStats.blocking > 0" class="flex flex-wrap gap-2">
+
 								<Badge
 									:label="`${checkStats.blocking} blocking`"
 									theme="red"
 									size="sm"
 								/>
+							</div>
 							</div>
 						</div>
 					</div>
@@ -386,22 +400,18 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 
 				<section
 					v-if="doc.status === 'Failed' && doc.error_traceback"
-					class="scroll-mt-20 rounded-lg border border-red-200 bg-red-50/90 px-4 py-3"
-					role="region"
-					aria-label="Audit error details"
-				>
+					class="scroll-mt-20 rounded-lg border border-outline-gray-2 bg-surface-red-2 px-4 py-3"
+					role="region" aria-label="Audit error details">
 					<div
-						class="mb-2 flex items-center gap-2 text-sm font-medium text-red-900"
-					>
+class="mb-2 flex items-center gap-2 text-sm font-medium text-ink-red-3">
 						<lucide-alert-circle
-							class="h-4 w-4 shrink-0 text-red-900"
-							aria-hidden="true"
-						/>
+class="h-4 w-4 shrink-0 text-ink-red-3" aria-hidden="true" />
+
 
 						Audit error
 					</div>
 					<pre
-						class="max-h-64 overflow-auto whitespace-pre-wrap break-words font-mono text-xs text-red-950"
+class="max-h-64 overflow-auto whitespace-pre-wrap break-words font-mono text-xs text-ink-red-4"
 						translate="no"
 						>{{ doc.error_traceback }}</pre
 					>
@@ -453,10 +463,10 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 									>
 										<span class="font-medium text-ink-gray-9">{{ cat }}</span>
 										<Badge
-											v-if="worstSeverityByCategory[cat]"
-											:label="worstSeverityByCategory[cat]"
+v-if="worstSeverityByCategory[cat]" :label="worstSeverityByCategory[cat]"
 											:theme="themeSeverity(worstSeverityByCategory[cat])"
-											size="sm"
+											:variant="variantSeverity()"
+size="sm"
 										/>
 									</span>
 									<span class="flex shrink-0 items-center gap-2">
@@ -489,30 +499,30 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 													<span class="text-sm font-medium text-ink-gray-9">{{
 														row.check_name
 													}}</span>
-													<Badge
-														v-if="row.is_blocking"
-														label="Blocking"
-														theme="red"
-														size="sm"
-													/>
-												</div>
-												<p
-													v-if="row.message"
-													class="mt-1 text-sm leading-relaxed text-ink-gray-7"
-												>
-													{{ row.message }}
-												</p>
-											</div>
-											<div class="flex shrink-0 flex-wrap gap-1.5">
 												<Badge
-													:label="row.result"
-													:theme="themeCheckResult(row.result)"
+													v-if="row.is_blocking"
+													label="Blocking"
+													theme="red"
+													size="sm"
+												/>
+											</div>
+											<p
+												v-if="row.message"
+												class="mt-1 text-sm leading-relaxed text-ink-gray-7"
+											>
+												<TextParser :text="row.message" />
+											</p>
+										</div>
+										<div class="flex shrink-0 flex-wrap gap-1.5">
+											<Badge
+												:label="row.result"
+												:theme="themeCheckResult(row.result)"
 													size="sm"
 												/>
 												<Badge
-													v-if="row.severity"
-													:label="row.severity"
+v-if="row.severity" :label="row.severity"
 													:theme="themeSeverity(row.severity)"
+:variant="variantSeverity()"
 													size="sm"
 												/>
 											</div>
@@ -555,9 +565,9 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 														</p>
 														<p
 															v-if="occ.message"
-															class="mt-2 text-xs text-ink-gray-8"
+															class="mt-2 text-xs text-ink-gray-8 leading-normal"
 														>
-															{{ occ.message }}
+															<TextParser :text="occ.message" />
 														</p>
 													</div>
 												</div>
@@ -567,27 +577,27 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 													translate="no"
 													>{{ JSON.stringify(parsed.data, null, 2) }}</pre
 												>
-												<p
-													v-else-if="parsed.kind === 'text'"
-													class="mt-3 text-sm text-ink-gray-7"
-												>
-													{{ parsed.text }}
-												</p>
+											<p
+												v-else-if="parsed.kind === 'text'"
+												class="mt-3 text-sm text-ink-gray-7"
+											>
+												<TextParser :text="parsed.text" />
+											</p>
 											</template>
 										</template>
 
-										<div
-											v-if="remediationText(row)"
-											class="mt-4 border-l-[3px] border-l-green-600/70 pl-3"
-										>
-											<p class="mb-0.5 text-sm font-medium text-ink-gray-6">
-												How to fix?
-											</p>
+									<div
+										v-if="remediationText(row)"
+										class="mt-4 border-l-[3px] border-l-outline-green-2 pl-3"
+									>
+										<p class="mb-0.5 text-sm font-medium text-ink-gray-6">
+											How to fix?
+										</p>
 
-											<p class="text-sm leading-relaxed text-ink-gray-7">
-												{{ remediationText(row) }}
-											</p>
-										</div>
+										<p class="text-sm leading-relaxed text-ink-gray-7">
+											<TextParser :text="remediationText(row)!" />
+										</p>
+									</div>
 									</div>
 								</div>
 							</AccordionContent>
@@ -649,34 +659,34 @@ function remediationText(row: MarketplaceAppAuditCheckRow): string | undefined {
 													class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
 												>
 													<div class="min-w-0">
-														<span class="text-sm font-medium text-ink-gray-9">{{
-															row.check_name
-														}}</span>
-														<p
-															v-if="row.message"
-															class="mt-1 text-sm leading-relaxed text-ink-gray-7"
-														>
-															{{ row.message }}
-														</p>
-													</div>
-													<Badge
-														:label="row.result"
-														:theme="themeCheckResult(row.result)"
-														size="sm"
-													/>
-												</div>
-												<div
-													v-if="remediationText(row)"
-													class="mt-3 border-l-[3px] border-l-green-600/70 pl-3"
-												>
-													<p class="mb-0.5 text-sm font-medium text-ink-gray-6">
-														How to fix
+													<span class="text-sm font-medium text-ink-gray-9">{{
+														row.check_name
+													}}</span>
+													<p
+														v-if="row.message"
+														class="mt-1 text-sm leading-relaxed text-ink-gray-7"
+													>
+														<TextParser :text="row.message" />
 													</p>
+												</div>
+												<Badge
+													:label="row.result"
+													:theme="themeCheckResult(row.result)"
+													size="sm"
+												/>
+											</div>
+											<div
+												v-if="remediationText(row)"
+												class="mt-3 border-l-[3px] border-l-outline-gray-3 pl-3"
+											>
+												<p class="mb-0.5 text-sm font-medium text-ink-gray-6">
+													How to fix
+												</p>
 
-													<p class="text-sm leading-relaxed text-ink-gray-7">
-														{{ remediationText(row) }}
-													</p>
-												</div>
+												<p class="text-sm leading-relaxed text-ink-gray-7">
+													<TextParser :text="remediationText(row)!" />
+												</p>
+											</div>
 											</div>
 										</div>
 									</AccordionContent>
