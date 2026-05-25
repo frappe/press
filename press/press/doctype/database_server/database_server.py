@@ -248,7 +248,9 @@ class DatabaseServer(BaseServer):
 		if self.has_value_changed("team"):
 			self.update_subscription()
 
-		self._create_static_ip_log()
+		if not self.is_unified_server:
+			# this will be handled via the server doc for unified server
+			self._create_static_ip_log()
 
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
