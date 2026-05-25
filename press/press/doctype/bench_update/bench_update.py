@@ -119,8 +119,11 @@ class BenchUpdate(Document):
 			else candidate.trigger_patch_deploy(ignore_permissions=ignore_permissions)
 		)
 
+		# Trigger patch deploy can return error if the builds are suspended
 		if deploy.get("error"):
-			frappe.throw(deploy.get("message", "Patch build could not be initiated."))
+			raise Exception(
+				deploy.get("message", "Build could not be initiated for the deploy candidate."),
+			)
 
 		return deploy["name"]
 

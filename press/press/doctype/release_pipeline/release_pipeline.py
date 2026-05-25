@@ -273,13 +273,17 @@ class ReleasePipeline(WorkflowBuilder):
 		bench_update: BenchUpdate = get_bench_update(
 			self.release_group, apps, sites, is_inplace_update=False, ignore_permissions=True
 		)
-		return bench_update.deploy(
-			run_will_fail_check=run_will_fail_check,
-			validate_pre_candidate_checks=False,
-			create_build=False,
-			ignore_permissions=True,
-			trigger_patch_deploy=trigger_patch_deploy,
-		)
+		# This is only to handle the suspended builds + patch build case.
+		try:
+			return bench_update.deploy(
+				run_will_fail_check=run_will_fail_check,
+				validate_pre_candidate_checks=False,
+				create_build=False,
+				ignore_permissions=True,
+				trigger_patch_deploy=trigger_patch_deploy,
+			)
+		except Exception as e:
+			raise ReleasePipelineFailure(f"Failed to create deploy candidate: {e!s}") from e
 
 	@task(queue=_get_task_execution_queue())
 	def initiate_pre_build_validations(self, deploy_candidate: str) -> str:
