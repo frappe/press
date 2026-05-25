@@ -897,6 +897,9 @@ class ReleaseGroup(Document, TagHelpers):
 		out.last_deploy = self.last_dc_info
 		out.deploy_in_progress = self.deploy_in_progress
 		out.has_running_release_pipeline = self.has_running_release_pipeline
+		out.can_run_instant_build = can_run_instant_build(
+			self.name
+		)  # Don't show the button if the user can't run an instant build
 		if not out.deploy_in_progress and out.has_running_release_pipeline:
 			# Check if the deploy has finished and bench creation is underway.
 			out.bench_creation_underway = bool(
@@ -2105,3 +2108,72 @@ def get_flattened_app_sources(app_sources: list[str | list[str]]) -> list[str]:
 		else:
 			flattened_sources.append(source)
 	return flattened_sources
+
+
+def _get_previous_candidate(release_group: str) -> "DeployCandidate | None":
+	"""Get previous candidate from the release group"""
+	last_active_build = frappe.db.get_value(
+		"Bench", {"group": release_group, "status": "Active"}, "build", order_by="creation desc"
+	)
+	if not last_active_build:
+		return None
+
+	deploy_candidate = frappe.db.get_value("Deploy Candidate Build", last_active_build, "deploy_candidate")
+	if not deploy_candidate:
+		return None
+
+	return frappe.get_doc("Deploy Candidate", deploy_candidate)
+
+
+def _has_active_benches(previous_candidate: "DeployCandidate") -> bool:
+	"""Check if active benches are present in case intel and arm both
+	are present in previous candidate check for both benches"""
+	intel_bench = arm_bench = None
+	if previous_candidate.intel_build:
+		intel_bench = frappe.db.get_value(
+			"Bench", {"build": previous_candidate.intel_build, "status": "Active"}, "name"
+		)
+	if previous_candidate.arm_build:
+		arm_bench = frappe.db.get_value(
+			"Bench", {"build": previous_candidate.arm_build, "status": "Active"}, "name"
+		)
+
+	if not intel_bench and not arm_bench:
+		return False
+
+	if previous_candidate.intel_build and previous_candidate.arm_build and (not intel_bench or not arm_bench):
+		return False
+
+	return True
+
+
+def can_run_instant_build(release_group: str) -> bool:
+	"""Check previous candidate against current release group state and decide if instant build can be run or not"""
+	previous_candidate = _get_previous_candidate(release_group)
+	if not previous_candidate:
+		return False
+
+	release_group_doc: ReleaseGroup = frappe.get_doc("Release Group", release_group)
+
+	if len(previous_candidate.apps) != len(release_group_doc.apps):
+		return False
+
+	if frappe.db.get_value("Release Group", release_group, "public"):
+		return False
+
+	prev_deps = {d.dependency: d.version for d in previous_candidate.dependencies}
+	curr_deps = {d.dependency: d.version for d in release_group_doc.dependencies}
+	if prev_deps != curr_deps:
+		return False
+
+	prev_pkgs = {p.package_manager: p.package for p in previous_candidate.packages}
+	curr_pkgs = {p.package_manager: p.package for p in release_group_doc.packages}
+	if prev_pkgs != curr_pkgs:
+		return False
+
+	prev_envs = {ev.key: ev.value for ev in previous_candidate.environment_variables}
+	curr_envs = {ev.key: ev.value for ev in release_group_doc.environment_variables}
+	if prev_envs != curr_envs:
+		return False
+
+	return _has_active_benches(previous_candidate)
