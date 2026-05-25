@@ -756,9 +756,13 @@ def update_with_incompatible_node(
 	if line := get_build_output_line(dcb, '"node" is incompatible with this module'):
 		app = get_app_from_incompatible_build_output_line(line)
 		version = ""
-	elif len(exc.args) == 5:
+	elif len(exc.args) >= 3:
+		# args order: (actual, app, expected, package, message, invalid_releases)
 		app = exc.args[1]
-		version = f'Expected "{exc.args[3]}", found "{exc.args[2]}". '
+		version = f'Expected "{exc.args[2]}", found "{exc.args[0]}". '
+	else:
+		app = ""
+		version = ""
 
 	details["title"] = "Incompatible Node version"
 	message = f"""
