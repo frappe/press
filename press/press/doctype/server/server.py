@@ -2769,7 +2769,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			log_error("Cgroup v2 Migration Exception", server=self.as_dict())
 
 	def _create_static_ip_log(self):
-		if self.provider != "AWS EC2" or not self.team:
+		if not self.team or not frappe.db.get_value(
+			"Static IP Plan", {"provider": self.provider, "enabled": 1}, cache=True
+		):
 			return
 
 		if frappe.db.get_value("Team", self.team, "free_account"):
