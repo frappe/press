@@ -308,6 +308,7 @@ class ProductTrial(Document):
 		These sites are safe to return to the pool because account_request and signup_time are NULL.
 		"""
 		administrator_team = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
+		grace_period_cutoff = frappe.utils.add_to_date(frappe.utils.now(), minutes=-15)
 		orphans = frappe.db.get_all(
 			"Site",
 			{
@@ -317,11 +318,14 @@ class ProductTrial(Document):
 				"account_request": ("is", "not set"),
 				"signup_time": ("is", "not set"),
 				"status": "Active",
+				"modified": ("<", grace_period_cutoff),
 			},
 			pluck="name",
 		)
 		for site in orphans:
 			frappe.db.set_value("Site", site, "is_standby", 1)
+		if orphans:
+			frappe.db.commit()
 
 	def create_standby_sites_in_each_cluster(self):
 		if not self.enable_pooling:
