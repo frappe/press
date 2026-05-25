@@ -12,6 +12,7 @@ from press.press.doctype.press_settings.test_press_settings import (
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 
@@ -33,19 +34,20 @@ class TestBackupRecordCheck(FrappeTestCase):
 		create_test_press_settings()
 		site = create_test_site(creation=self._2_hrs_before_yesterday)
 		create_test_site_backup(site.name, creation=self._2_hrs_before_yesterday + timedelta(hours=1))
-		BackupRecordCheck(yesterday=self.yesterday)
+		BackupRecordCheck()
 		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertEqual(audit_log.status, "Failure")
 
 	def test_audit_succeeds_when_backup_in_interval_exists(self):
 		create_test_press_settings()
-		site = create_test_site(creation=self._2_hrs_before_yesterday)
+		plan = create_test_plan("Site")
+		site = create_test_site(creation=self._2_hrs_before_yesterday, plan=plan.name)
 
 		create_test_site_backup(
 			site.name,
 			creation=self._2_hrs_before_yesterday + timedelta(hours=3),
 		)
-		BackupRecordCheck(yesterday=self.yesterday)
+		BackupRecordCheck()
 		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertEqual(audit_log.status, "Success")
 
@@ -54,7 +56,7 @@ class TestBackupRecordCheck(FrappeTestCase):
 		site = create_test_site(creation=self._2_hrs_before_yesterday)
 		create_test_site_backup(site.name, creation=self.yesterday)
 		audit_logs_before = frappe.db.count("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
-		BackupRecordCheck(yesterday=self.yesterday)
+		BackupRecordCheck()
 		audit_logs_after = frappe.db.count("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertGreater(audit_logs_after, audit_logs_before)
 
@@ -62,7 +64,7 @@ class TestBackupRecordCheck(FrappeTestCase):
 		create_test_press_settings()
 		create_test_site()
 		# no backup
-		BackupRecordCheck(yesterday=self.yesterday)
+		BackupRecordCheck()
 
 		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertEqual(audit_log.status, "Success")
@@ -72,7 +74,7 @@ class TestBackupRecordCheck(FrappeTestCase):
 		site = create_test_site(creation=self._2_hrs_before_yesterday)
 		act = log_site_activity(site.name, "Activate Site")
 		act.db_set("creation", self._2_hrs_before_yesterday + timedelta(hours=24))
-		BackupRecordCheck(yesterday=self.yesterday)
+		BackupRecordCheck()
 		audit_log = frappe.get_last_doc("Audit Log", {"audit_type": BackupRecordCheck.audit_type})
 		self.assertEqual(audit_log.status, "Success")
 
