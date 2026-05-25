@@ -79,6 +79,9 @@ class DatabaseServer(BaseServer):
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
 		is_agent_auth_setup: DF.Check
+		is_auto_coredump_enabled: DF.Check
+		is_external_healthcheck_enabled: DF.Check
+		is_mariadb_monitor_installed: DF.Check
 		is_binlog_indexer_running: DF.Check
 		is_for_recovery: DF.Check
 		is_monitoring_disabled: DF.Check
@@ -128,6 +131,7 @@ class DatabaseServer(BaseServer):
 		stalk_variable: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		tags: DF.Table[ResourceTag]
+		tcmalloc_release_rate: DF.Int
 		team: DF.Link | None
 		title: DF.Data | None
 		tls_certificate_renewal_failed: DF.Check

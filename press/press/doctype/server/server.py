@@ -2873,6 +2873,7 @@ class Server(BaseServer):
 		cluster: DF.Link | None
 		communication_infos: DF.Table[CommunicationInfo]
 		database_server: DF.Link | None
+		db_healthcheck_token: DF.Password | None
 		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
@@ -2928,12 +2929,15 @@ class Server(BaseServer):
 		self_hosted_mariadb_server: DF.Data | None
 		self_hosted_server_domain: DF.Data | None
 		set_bench_memory_limits: DF.Check
+		site_warranty_change_cooldown: DF.Int
 		skip_scheduled_backups: DF.Check
 		ssh_port: DF.Int
 		ssh_user: DF.Data | None
 		staging: DF.Check
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		stop_deployments: DF.Check
+		stop_incident_actions: DF.Check
+		supported_site_quota: DF.Int
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
 		title: DF.Data | None
@@ -2967,14 +2971,13 @@ class Server(BaseServer):
 			self.managed_database_service = ""
 
 	def on_update(self):
-		# If Database Server is changed for the server then change it for all the benches
-		if self.has_value_changed("database_server") or self.has_value_changed("managed_database_service"):
-			benches = frappe.get_all("Bench", {"server": self.name, "status": ("!=", "Archived")})
-			for bench in benches:
-				bench = frappe.get_doc("Bench", bench)
-				bench.database_server = self.database_server
-				bench.managed_database_service = self.managed_database_service
-				bench.save()
+		self.update_benches()
+
+		if self.database_server:
+			database_server_public = frappe.db.get_value("Database Server", self.database_server, "public")
+
+			if database_server_public != self.public:
+				frappe.db.set_value("Database Server", self.database_server, "public", self.public)
 
 		if self.has_value_changed("team"):
 			self.update_subscription()
@@ -2987,21 +2990,37 @@ class Server(BaseServer):
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
-		if (
-			self.has_value_changed("enable_logical_replication_during_site_update")
-			and self.enable_logical_replication_during_site_update
-			and frappe.db.count("Site", {"server": self.name, "status": ("!=", "Archived")}) > 1
-		):
-			# Throw error if multiple sites are present on the server
-			frappe.throw(
-				"Cannot enable logical replication during site update if multiple sites are present on the server. Please drop the sites in order to enable logical replication."
-			)
+		self.validate_logical_replication()
 
 		if self.is_new() and is_dedicated_server(self.name):
 			self.set_dedicated_server_site_warranty_quota_and_cooldown()
 
 		if self.has_value_changed("agent_job_update_feature"):
 			self.update_feature(self.agent_job_update_feature)
+
+	def update_benches(self):
+		if not (
+			self.has_value_changed("database_server") or self.has_value_changed("managed_database_service")
+		):
+			return
+
+		benches = frappe.get_all("Bench", {"server": self.name, "status": ("!=", "Archived")})
+
+		for bench in benches:
+			bench = frappe.get_doc("Bench", bench.name)
+			bench.database_server = self.database_server
+			bench.managed_database_service = self.managed_database_service
+			bench.save()
+
+	def validate_logical_replication(self):
+		if (
+			self.has_value_changed("enable_logical_replication_during_site_update")
+			and self.enable_logical_replication_during_site_update
+			and frappe.db.count("Site", {"server": self.name, "status": ("!=", "Archived")}) > 1
+		):
+			frappe.throw(
+				"Cannot enable logical replication during site update if multiple sites are present on the server."
+			)
 
 	def update_db_server(self):
 		if not self.database_server:
