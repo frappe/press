@@ -497,6 +497,52 @@ class CloneOutputParser(StepMixin):
 		return self._update_clone_steps(non_terminal_clone_steps, app_output_map)
 
 
+class InstantBuildOutputParser(StepMixin):
+	"""Parses build/push output from instant build agent job steps."""
+
+	def __init__(self, dcb: "DeployCandidateBuild") -> None:
+		self.dcb = dcb
+
+	def _get_step_data(self, job: "AgentJob", step_name: str) -> "dict | None":
+		step = self._get_agent_step(job, step_name, ["name", "status"], as_dict=True)
+		if not isinstance(step, dict):
+			return None
+
+		raw = None
+		if step["status"] == "Running":
+			raw = frappe.cache.hget("agent_job_step_output", step["name"])
+
+		if not raw:
+			raw = frappe.db.get_value("Agent Job Step", step["name"], "data")
+
+		try:
+			return json.loads(raw) if raw else None
+		except (json.JSONDecodeError, AttributeError):
+			return raw
+
+	def parse_build_output(self, job: "AgentJob") -> None:
+		data = self._get_step_data(job, "Pull App Updates")
+		if not data:
+			return
+		build_output = data if isinstance(data, str) else "\n".join(str(line) for line in data)
+		if step := self.dcb.get_step("instant", "update-apps"):
+			step.output = build_output
+			step.save()
+
+	def parse_push_output(self, job: "AgentJob") -> None:
+		data = self._get_step_data(job, "Push Docker Image")
+		push_output = data.get("push") if isinstance(data, dict) else data
+		if not push_output:
+			return
+
+		self.dcb.upload_step_updater.process(push_output)
+		self.dcb.upload_step_updater.flush_output(commit=False)
+
+	def parse_and_update(self, job: "AgentJob") -> None:
+		self.parse_build_output(job)
+		self.parse_push_output(job)
+
+
 class UploadStepUpdater:
 	"""
 	Processes the output of `client.images.push` and uses it to update
@@ -541,7 +587,7 @@ class UploadStepUpdater:
 		for line in output:
 			self._update_output(line)
 
-		last_update = self.dc.last_updated
+		last_update = self.dc.last_updated if hasattr(self.dc, "last_updated") else now_datetime()
 		duration = (now_datetime() - last_update).total_seconds()
 		self.upload_step.duration = rounded(duration, 1)
 		self.flush_output()

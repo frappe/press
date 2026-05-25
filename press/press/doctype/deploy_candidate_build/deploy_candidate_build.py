@@ -36,6 +36,7 @@ from press.press.doctype.deploy_candidate.deploy_notifications import (
 from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	CloneOutputParser,
 	DockerBuildOutputParser,
+	InstantBuildOutputParser,
 	UploadStepUpdater,
 	ValidationOutputParser,
 )
@@ -455,6 +456,7 @@ class DeployCandidateBuild(Document):
 		self.validation_output_parser = ValidationOutputParser(self)
 		self.build_output_parser = DockerBuildOutputParser(self)
 		self.upload_step_updater = UploadStepUpdater(self)
+		self.instant_build_output_parser = InstantBuildOutputParser(self)
 
 	def correct_upload_step_status(self):
 		if not (usu := self.upload_step_updater) or not usu.upload_step:
@@ -1082,15 +1084,17 @@ class DeployCandidateBuild(Document):
 		build: DeployCandidateBuild = frappe.get_doc(
 			"Deploy Candidate Build", request_data["deploy_candidate_build"]
 		)
-		build._process_instant_build_job(job, request_data)
+		build._process_instant_build_job(job, request_data, response_data)
 
-	def _process_instant_build_job(self, job: "AgentJob", request_data: dict):
+	def _process_instant_build_job(self, job: "AgentJob", request_data: dict, response_data: "dict | None"):
 		"""
 		Processes instant build job updates. Unlike `_process_run_build`, instant builds don't
-		stream docker build output — step statuses are synced directly from agent job step records.
+		stream docker build output — step statuses are synced directly from agent job step records
+		and also update the step output based on the output received
 		"""
 		self._set_output_parsers()
 		self._sync_instant_build_step_statuses(job)
+		self.instant_build_output_parser.parse_and_update(job)
 
 		if self.has_remote_build_failed(job, {}):
 			self.handle_build_failure(exc=None, job=job)
@@ -1110,6 +1114,10 @@ class DeployCandidateBuild(Document):
 			status = job.get_step_status(agent_step_name)
 			if status and (step := self.get_step(stage_slug, step_slug)):
 				step.status = status
+				# All other steps will have "Skipped" if one failed therefore break here
+				if status == "Failure":
+					break
+
 		self.save(ignore_version=True)
 
 	def _create_platform_instant_build_if_required_and_deploy(self, deploy_after_build: bool):
