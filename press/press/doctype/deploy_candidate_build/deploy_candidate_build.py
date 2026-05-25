@@ -1187,8 +1187,10 @@ class DeployCandidateBuild(Document):
 
 	def can_run_instant_build(self, previous_candidate: DeployCandidate | None):
 		"""Check if the previous build and this build have similar dependencies"""
-		assert previous_candidate, "Previous deploy candidate not found."
+		if not previous_candidate:
+			frappe.throw("Instant build cannot be run since there is no previous deploy candidate.")
 
+		assert previous_candidate, "Previous deploy candidate not found."
 		if len(previous_candidate.apps) != len(self.candidate.apps):
 			frappe.throw("Instant build cannot be run since apps have changed.")
 

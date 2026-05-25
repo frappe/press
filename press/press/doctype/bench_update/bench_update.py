@@ -90,7 +90,7 @@ class BenchUpdate(Document):
 		validate_pre_candidate_checks: bool = True,
 		create_build: bool = True,
 		ignore_permissions: bool = False,
-		trigger_instant_deploy: bool = True,
+		trigger_instant_deploy: bool = False,
 	) -> str:
 		"""Creates and returns candidate name or build name depending on the point of invocation."""
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
