@@ -342,25 +342,6 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 			["support_included", "dedicated_server_plan"],
 		) or (False, False)
 
-
-@validate_argument_types
-def validate_plan(
-	server: str,
-	site: str,
-	new_plan: str,
-	is_new: bool = False,
-) -> None:
-	if not frappe.db.exists("Site Plan", new_plan):
-		frappe.throw(
-			f"Plan {new_plan} does not exist",
-			frappe.DoesNotExistError,
-		)  # nosemgrep
-
-	(
-		is_current_plan_supported,
-		is_current_dedicated_server_plan,
-	) = _get_current_plan_details(site, is_new)
-
 	new_site_plan = frappe.db.get_value(
 		"Site Plan",
 		new_plan,
