@@ -304,8 +304,7 @@ class ProductTrial(Document):
 	def restore_orphaned_standby_sites(self):
 		"""Restore sites that got stuck with is_standby=0 due to a double-failure during signup.
 
-		Scenario: T1 committed is_standby=0 to claim the site, then T2 (site setup) failed and
-		rolled back — leaving the site with is_standby=0 but no committed user config.
+		Scenario: Transaction T1 committed is_standby=0 to claim the site, then Transaction T2 (site setup) failed and rolled back — leaving the site with is_standby=0 but no committed user config.
 		These sites are safe to return to the pool because account_request and signup_time are NULL.
 		"""
 		administrator_team = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
