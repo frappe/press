@@ -20,6 +20,10 @@
 		"column_break_wrqp",
 		"usage_record_creation_batch_size",
 		"default_server_plan_type",
+		"plans_section",
+		"default_dedicated_server_site_warranty_change_cooldown",
+		"column_break_kujg",
+		"default_dedicated_server_site_warranty_quota",
 		"invoicing_section",
 		"invoicing_column",
 		"gst_percentage",
@@ -1663,6 +1667,29 @@
 			"label": "Use New Deploy Flow"
 		},
 		{
+			"fieldname": "plans_section",
+			"fieldtype": "Section Break",
+			"label": "Plans"
+		},
+		{
+			"fieldname": "column_break_kujg",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "30",
+			"description": "Default number of days before the site warranty setting can be changed for newly created dedicated servers",
+			"fieldname": "default_dedicated_server_site_warranty_change_cooldown",
+			"fieldtype": "Int",
+			"label": "Default Dedicated Server Site Warranty change Cooldown"
+		},
+		{
+			"default": "5",
+			"description": "Default max number of sites with product warranty for newly created dedicated servers\n",
+			"fieldname": "default_dedicated_server_site_warranty_quota",
+			"fieldtype": "Int",
+			"label": "Default Dedicated Server Supported Site Quota"
+		},
+		{
 			"fieldname": "chatwoot_section",
 			"fieldtype": "Section Break",
 			"label": "Chat Support"
@@ -1720,7 +1747,7 @@
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-05-24 19:40:21.224827",
+	"modified": "2026-04-30 18:44:43.851468",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",
