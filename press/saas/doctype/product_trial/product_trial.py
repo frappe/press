@@ -301,10 +301,34 @@ class ProductTrial(Document):
 
 		return ProductTrial.get_preferred_site(filters)
 
+	def restore_orphaned_standby_sites(self):
+		"""Restore sites that got stuck with is_standby=0 due to a double-failure during signup.
+
+		Scenario: T1 committed is_standby=0 to claim the site, then T2 (site setup) failed and
+		rolled back — leaving the site with is_standby=0 but no committed user config.
+		These sites are safe to return to the pool because account_request and signup_time are NULL.
+		"""
+		administrator_team = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
+		orphans = frappe.db.get_all(
+			"Site",
+			{
+				"standby_for_product": self.name,
+				"is_standby": 0,
+				"team": administrator_team,
+				"account_request": ("is", "not set"),
+				"signup_time": ("is", "not set"),
+				"status": "Active",
+			},
+			pluck="name",
+		)
+		for site in orphans:
+			frappe.db.set_value("Site", site, "is_standby", 1)
+
 	def create_standby_sites_in_each_cluster(self):
 		if not self.enable_pooling:
 			return
 
+		self.restore_orphaned_standby_sites()
 		clusters = self.get_available_clusters()
 		for cluster in clusters:
 			try:
