@@ -74,6 +74,8 @@ def create_test_server(
 			"team": team,
 			"plan": plan,
 			"public": public,
+			"use_for_new_sites": 1 if public else 0,
+			"user_new_benches": 1 if public else 0,
 			"virtual_machine": create_test_virtual_machine(
 				platform=plan_doc.platform if plan_doc else "x86_64",
 				disk_size=plan_doc.disk if plan_doc else 25,
@@ -330,3 +332,54 @@ class TestServer(FrappeTestCase):
 		self.assertEqual(
 			len(agent_job_created), 1
 		)  # Benches marked as archived, so agent job should be created to force remove zombie benches
+
+	def test_server_with_more_memory_is_shortlisted_for_new_benches_and_incident_created_against_shortlisted_server_with_insufficient_memory(
+		self,
+	):
+		"""The server with higher available memory must be selected (use_for_new_benches=1)."""
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.incident.incident import Incident
+		from press.press.doctype.server.server import _refresh_bench_pool_and_raise_capacity_incidents
+
+		self.cluster = create_test_cluster("Default", public=True)
+		# Two servers in the same cluster with different memory levels
+		self.low_mem_server = create_test_server(cluster=self.cluster.name, public=True)
+		self.high_mem_server = create_test_server(cluster=self.cluster.name, public=True)
+
+		memory_map = {
+			self.low_mem_server.name: 200 * 1024 * 1024,  # 200 MiB
+			self.high_mem_server.name: 500 * 1024 * 1024,  # 500 MiB
+		}
+
+		_refresh_bench_pool_and_raise_capacity_incidents(
+			server_names=[self.low_mem_server.name, self.high_mem_server.name],
+			servers_by_cluster={self.cluster.name: [self.low_mem_server.name, self.high_mem_server.name]},
+			memory_map=memory_map,
+		)
+
+		self.assertEqual(frappe.db.get_value("Server", self.high_mem_server.name, "use_for_new_benches"), 1)
+		self.assertEqual(frappe.db.get_value("Server", self.low_mem_server.name, "use_for_new_benches"), 0)
+
+		# Set both servers below threshold; high_mem_server is still the best candidate
+		memory_map = {
+			self.low_mem_server.name: 50 * 1024 * 1024,  # 50 MiB
+			self.high_mem_server.name: 100 * 1024 * 1024,  # 100 MiB — best, but still < 300 MiB
+		}
+
+		with patch.object(Incident, "after_insert", new=Mock()):
+			_refresh_bench_pool_and_raise_capacity_incidents(
+				server_names=[self.low_mem_server.name, self.high_mem_server.name],
+				servers_by_cluster={self.cluster.name: [self.low_mem_server.name, self.high_mem_server.name]},
+				memory_map=memory_map,
+			)
+
+		incidents = frappe.get_all(
+			"Incident",
+			{
+				"cluster": self.cluster.name,
+				"subject": f"Insufficient bench capacity in cluster {self.cluster.name}",
+			},
+			["name", "server"],
+		)
+		self.assertEqual(len(incidents), 1)
+		self.assertEqual(incidents[0].server, self.high_mem_server.name)

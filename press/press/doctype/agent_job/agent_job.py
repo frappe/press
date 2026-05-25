@@ -572,9 +572,8 @@ def populate_output_cache(polled_job, job):
 def filter_active_servers(servers):
 	# Prepare list of all_active_servers for each server_type
 	# Return servers that are in all_active_servers
-	server_types = [server.server_type for server in servers]
 	all_active_servers = {}
-	for server_type in server_types:
+	for server_type in {server.server_type for server in servers}:
 		all_active_servers[server_type] = set(frappe.get_all(server_type, {"status": "Active"}, pluck="name"))
 
 	active_servers = []
@@ -644,6 +643,7 @@ def fail_old_jobs():
 		},
 		"name",
 		limit=100,
+		order_by="RAND()",
 		pluck=True,
 	)
 	update_status(failed_jobs, "Failure")
@@ -657,6 +657,7 @@ def fail_old_jobs():
 		},
 		"name",
 		limit=100,
+		order_by="RAND()",
 		pluck=True,
 	)
 

@@ -414,7 +414,7 @@ def notify_custom_tls_renewal():
 			)
 
 
-def update_server_tls_certifcate(server, certificate):
+def update_server_tls_certifcate(server, certificate, throw_on_failure: bool = False):
 	try:
 		proxysql_admin_password = None
 		if server.doctype == "Proxy Server":
@@ -441,8 +441,10 @@ def update_server_tls_certifcate(server, certificate):
 			# to avoid causing TimestampMismatchError in other important tasks
 			update_modified=False,
 		)
-	except Exception:
+	except Exception as e:
 		log_error("TLS Setup Exception", server=server.as_dict())
+		if throw_on_failure:
+			raise Exception(f"Failed to update TLS certificate on {server.doctype} {server.name}") from e
 
 
 def retrigger_failed_wildcard_tls_callbacks():

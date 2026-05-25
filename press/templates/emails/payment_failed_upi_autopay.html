@@ -47,6 +47,12 @@
 			<p><a href="{{ upi_autopay_link }}">Manage UPI Autopay</a></p>
 			<p><a href="{{ billing_link }}">Pay Now</a></p>
 
+		{% elif error_reason == "MANDATE_CANCELLED" %}
+			<p>Your UPI Autopay mandate has been <strong>cancelled</strong>. Your account currently has no active payment method.</p>
+			<p>To ensure uninterrupted service and avoid site suspension, please set up a new UPI Autopay mandate or update your billing details with a valid payment method.</p>
+			<p><a href="{{ upi_autopay_link }}">Set Up UPI Autopay</a></p>
+			<p><a href="{{ billing_link }}">Update Billing Details</a></p>
+
 		{% else %}
 			<p>We attempted to auto-debit <strong>{{ amount }}</strong>{% if upi_vpa %} from your UPI account (<strong>{{ upi_vpa }}</strong>){% endif %} for your Frappe Cloud subscription, but the payment failed.</p>
 			<p>Please check your UPI Autopay mandate or pay this invoice now. Your sites may be suspended if the invoice remains unpaid. If you need help, <a href="https://frappecloud.com/support">contact support</a>.</p>

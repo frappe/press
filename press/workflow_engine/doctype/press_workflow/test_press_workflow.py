@@ -107,3 +107,139 @@ class IntegrationTestPressWorkflow(FrappeTestCase):
 		wf = self.get_wf(self.doc.flow_with_args.run_as_workflow(x=4, y=5))
 		self.assertEqual(wf.status, "Success")
 		self.assertEqual(wf.get_result(), 9)
+
+	def test_force_fail(self):
+		with patch(
+			"press.workflow_engine.doctype.press_workflow.press_workflow.enqueue_workflow",
+			new=lambda *_args, **_kwargs: None,
+		):
+			wf = frappe.get_doc(
+				{
+					"doctype": "Press Workflow",
+					"linked_doctype": "Press Workflow Test",
+					"linked_docname": self.doc.name,
+					"main_method_name": "main_success",
+					"main_method_title": "Main Success",
+					"status": "Queued",
+				}
+			).insert(ignore_permissions=True)
+
+		wf.force_fail()
+		self.assertTrue(frappe.db.get_value("Press Workflow", wf.name, "is_force_failure_requested"))
+
+	def test_force_fail_already_completed(self):
+		wf_name = self.doc.main_success.run_as_workflow()
+		wf = self.get_wf(wf_name)
+		self.assertEqual(wf.status, "Success")
+
+		with self.assertRaises(frappe.ValidationError):
+			wf.force_fail()
+
+	def test_on_trash_deletes_tasks(self):
+		wf_name = self.doc.main_with_task.run_as_workflow()
+		wf = self.get_wf(wf_name)
+		self.assertEqual(wf.status, "Success")
+
+		tasks_before = frappe.get_all("Press Workflow Task", filters={"workflow": wf.name})
+		self.assertTrue(len(tasks_before) > 0)
+
+		wf.delete()
+		tasks_after = frappe.get_all("Press Workflow Task", filters={"workflow": wf.name})
+		self.assertEqual(len(tasks_after), 0)
+
+	def test_workflow_fatal_status(self):
+		wf = frappe.get_doc(
+			{
+				"doctype": "Press Workflow",
+				"linked_doctype": "Press Workflow Test",
+				"linked_docname": self.doc.name,
+				"main_method_name": "main_success",
+				"main_method_title": "Main Success",
+				"status": "Fatal",
+				"traceback": "Test traceback",
+			}
+		).insert(ignore_permissions=True)
+
+		from press.workflow_engine.doctype.press_workflow.exceptions import PressWorkflowFatalError
+
+		with self.assertRaises(PressWorkflowFatalError) as ctx:
+			wf.get_result()
+		self.assertIn("fatal error", str(ctx.exception).lower())
+		self.assertEqual(ctx.exception.traceback, "Test traceback")
+
+	def test_workflow_queued_running_error(self):
+		with patch(
+			"press.workflow_engine.doctype.press_workflow.press_workflow.enqueue_workflow",
+			new=lambda *_args, **_kwargs: None,
+		):
+			wf = frappe.get_doc(
+				{
+					"doctype": "Press Workflow",
+					"linked_doctype": "Press Workflow Test",
+					"linked_docname": self.doc.name,
+					"main_method_name": "main_success",
+					"main_method_title": "Main Success",
+					"status": "Queued",
+				}
+			).insert(ignore_permissions=True)
+
+		from press.workflow_engine.doctype.press_workflow.exceptions import PressWorkflowRunningError
+
+		with self.assertRaises(PressWorkflowRunningError):
+			wf.get_result()
+
+		wf.reload()
+		wf.status = "Running"
+		wf.save()
+		with self.assertRaises(PressWorkflowRunningError):
+			wf.get_result()
+
+	def test_workflow_success_with_none_output(self):
+		wf_name = self.doc.main_success.run_as_workflow()
+		wf = self.get_wf(wf_name)
+		self.assertEqual(wf.status, "Success")
+		result = wf.get_result()
+		self.assertEqual(result, "success output")
+
+	def test_workflow_with_skipped_steps(self):
+		wf_name = self.doc.skipped_steps_flow.run_as_workflow()
+		wf = self.get_wf(wf_name)
+		self.assertEqual(wf.status, "Success")
+
+		steps = wf.steps
+		self.assertTrue(len(steps) > 0)
+		for step in steps:
+			self.assertEqual(step.status, "Skipped")
+
+	def test_workflow_as_flow_with_multiple_tasks(self):
+		wf_name = self.doc.main_as_flow.run_as_workflow()
+		wf = self.get_wf(wf_name)
+		self.assertEqual(wf.status, "Success")
+		self.assertEqual(wf.get_result(), "flow done")
+
+		tasks = frappe.get_all("Press Workflow Task", filters={"workflow": wf.name}, pluck="name")
+		self.assertTrue(len(tasks) >= 2)
+
+	def test_workflow_with_kwargs(self):
+		wf_name = self.doc.flow_with_args.run_as_workflow(x=10, y=20)
+		wf = self.get_wf(wf_name)
+		self.assertEqual(wf.status, "Success")
+		self.assertEqual(wf.get_result(), 30)
+
+	def test_workflow_failure_with_no_exception(self):
+		wf = frappe.get_doc(
+			{
+				"doctype": "Press Workflow",
+				"linked_doctype": "Press Workflow Test",
+				"linked_docname": self.doc.name,
+				"main_method_name": "main_success",
+				"main_method_title": "Main Success",
+				"status": "Failure",
+			}
+		).insert(ignore_permissions=True)
+
+		from press.workflow_engine.doctype.press_workflow.exceptions import PressWorkflowFailedError
+
+		with self.assertRaises(PressWorkflowFailedError) as ctx:
+			wf.get_result()
+		self.assertIn("no exception was recorded", str(ctx.exception).lower())

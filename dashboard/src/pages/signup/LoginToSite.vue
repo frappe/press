@@ -19,7 +19,7 @@
 				</template>
 				<template v-slot:default>
 					<div class="flex h-40 flex-col justify-center">
-						<div class="text-base leading-5 text-gray-800">
+						<div class="text-base leading-5 text-ink-gray-8">
 							<p>It looks like something went wrong!</p>
 							<p class="">
 								Contact
@@ -56,7 +56,7 @@
 							:label="currentBuildStep"
 						/>
 						<div
-							class="flex w-full items-center space-x-2 pt-4 text-sm text-gray-600"
+							class="flex w-full items-center space-x-2 pt-4 text-sm text-ink-gray-6"
 						>
 							<lucide-info class="h-4 w-4" />
 							<span>{{ currentHelpText }}</span>

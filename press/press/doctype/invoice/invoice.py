@@ -233,6 +233,33 @@ class Invoice(Document):
 			url = self.stripe_invoice_url
 		return url
 
+	def before_validate(self):
+		self.apply_partner_discounts()
+
+	def apply_partner_discounts(self):
+		partner_discounts = {"Entry": 10, "Emerging": 10, "Bronze": 15, "Silver": 20, "Gold": 25}
+		team = frappe.get_doc("Team", self.team)
+		if team.erpnext_partner and team.partner_status == "Active" and team.partner_email:
+			result = team.get_partner_level()
+			if result:
+				partner_level = result[0]
+				certificates = result[1]
+			else:
+				partner_level = "Entry"
+				certificates = 0
+
+			discount_percent = partner_discounts.get(partner_level, 0)
+			if certificates is None:
+				certificates = 0
+			if partner_level == "Entry" and certificates < 2:
+				discount_percent = 0
+
+			for item in self.items:
+				if item.document_type in ("Site", "Server", "Database Server", "Cluster"):
+					item.discount_percentage = discount_percent
+
+			self.discount_note = "New Partner Discount"
+
 	def validate(self):
 		self.validate_team()
 		self.validate_dates()
@@ -386,10 +413,55 @@ class Invoice(Document):
 	def on_submit(self):
 		self.create_invoice_on_frappeio()
 		self.fetch_mpesa_invoice_pdf()
+		self.update_team_tier()
 
 	def on_update_after_submit(self):
 		self.create_invoice_on_frappeio()
 		self.fetch_mpesa_invoice_pdf()
+
+	def update_team_tier(self):
+		if self.type != "Subscription":
+			return
+
+		team = frappe.get_doc("Team", self.team)
+
+		if not team.apply_limits:
+			return
+
+		# Check if the last 3 subscription invoices (including current) are all paid
+		last_invoices = frappe.get_all(
+			"Invoice",
+			filters={
+				"team": self.team,
+				"type": "Subscription",
+				"docstatus": 1,
+				"status": "Paid",
+			},
+			fields=["name"],
+			order_by="creation desc",
+			limit=3,
+		)
+
+		if len(last_invoices) < 3:
+			return
+
+		current_total = flt(self.total)
+
+		tiers = frappe.get_all(
+			"Team Tier",
+			fields=["name", "tier", "last_invoice_amount"],
+			order_by="last_invoice_amount desc",
+		)
+
+		new_tier = None
+		for tier in tiers:
+			if flt(tier.last_invoice_amount) <= current_total:
+				new_tier = tier.name
+				break
+
+		if new_tier and team.tier != new_tier:
+			team.tier = new_tier
+			team.save(ignore_permissions=True)
 
 	def after_insert(self):
 		if self.get("amended_from"):
@@ -1382,6 +1454,50 @@ def finalize_draft_invoice(invoice):
 
 def calculate_gst(amount):
 	return amount * 0.18
+
+
+def sync_paid_invoices_to_frappeio():
+	"""Syncs paid invoices to frappe.io for teams that have not yet had an invoice created on frappe.io"""
+	invs = frappe.get_all(
+		"Invoice",
+		filters={"status": "Paid", "transaction_amount": (">", 0.0), "frappe_invoice": ("is", "not set")},
+		fields=["name", "team"],
+	)
+
+	for inv in invs:
+		if frappe.db.get_value("Team", inv.team, "enabled") == 1:
+			frappe.get_doc("Invoice", inv.name).create_invoice_on_frappeio()
+
+
+def finalize_unpaid_card_invoices():
+	today = frappe.utils.now()
+	Team = frappe.qb.DocType("Team")
+	Invoice = frappe.qb.DocType("Invoice")
+	invs = (
+		frappe.qb.from_(Invoice)
+		.inner_join(Team)
+		.on(Invoice.team == Team.name)
+		.select(Invoice.name)
+		.where(
+			(Invoice.status == "Unpaid")
+			& (Invoice.type == "Subscription")
+			& (Invoice.period_end < today)
+			& (Invoice.payment_mode == "Card")
+			& (Invoice.stripe_invoice_id.isnull())
+			& (Invoice.amount_due > 0)
+			& (Team.enabled == 1)
+		)
+		.run(as_dict=True)
+	)
+
+	for inv in invs:
+		invoice = frappe.get_doc("Invoice", inv.name)
+		try:
+			invoice.finalize_invoice()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			frappe.log_error(f"Failed to finalize unpaid card invoice: {invoice.name}")
 
 
 def get_permission_query_conditions(user):

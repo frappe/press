@@ -140,7 +140,7 @@ export default {
 			{
 				label: 'Sites',
 				fieldname: 'site_count',
-				class: 'text-gray-600',
+				class: 'text-ink-gray-6',
 				width: 0.25,
 			},
 		],
@@ -260,7 +260,7 @@ export default {
 									{
 										text: "What's this?",
 										placement: 'top',
-										class: 'rounded-full bg-gray-100 p-1',
+										class: 'rounded-full bg-surface-gray-2 p-1',
 									},
 									() => [
 										h(
@@ -510,7 +510,7 @@ export default {
 									{
 										text: 'Attention required!',
 										placement: 'top',
-										class: 'rounded-full bg-gray-100 p-1',
+										class: 'rounded-full bg-surface-gray-2 p-1',
 									},
 									() => h(icon('alert-circle', 'w-3 h-3'), {}),
 								);
@@ -520,7 +520,7 @@ export default {
 							label: 'Duration',
 							fieldname: 'build_duration',
 							format: duration,
-							class: 'text-gray-600',
+							class: 'text-ink-gray-6',
 							width: 1,
 						},
 						{
@@ -734,6 +734,21 @@ export default {
 					return { releaseGroup: releaseGroup.name };
 				},
 			},
+      {
+				label: 'Pipelines',
+				icon: LucidePocketKnife,
+        condition: () => getTeam().doc?.is_desk_user,
+				route: 'pipelines',
+        childrenRoutes: ['Release Pipeline'],
+				type: 'Component',
+				component: defineAsyncComponent(
+					() => import('../pages/benches/pipeline/List.vue'),
+				),
+				props: (releaseGroup) => {
+					return { releaseGroup: releaseGroup.name };
+				},
+			},
+
 			{
 				label: 'Regions',
 				icon: icon('globe'),
@@ -1029,6 +1044,11 @@ export default {
 			name: 'Deploy Candidate',
 			path: 'deploys/:id',
 			component: () => import('../pages/DeployCandidate.vue'),
+		},
+   	{
+			name: 'Release Pipeline',
+			path: 'pipelines/:id',
+			component: () => import('../components/benches/pipeline/Details.vue'),
 		},
 		{
 			name: 'Release Group Job',

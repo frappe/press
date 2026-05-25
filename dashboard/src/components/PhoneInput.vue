@@ -1,6 +1,6 @@
 <template>
 	<div class="space-y-1.5">
-		<label v-if="label" class="block text-xs text-gray-600">
+		<label v-if="label" class="block text-xs text-ink-gray-6">
 			{{ label }}
 		</label>
 		<div class="flex">
@@ -9,7 +9,7 @@
 					<button
 						type="button"
 						@click="togglePopover"
-						class="flex h-7 items-center gap-1 rounded-l border border-r-0 border-gray-100 bg-gray-100 px-2 text-sm text-gray-800 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
+						class="flex h-7 items-center gap-1 rounded-l border border-r-0 border-outline-gray-1 bg-surface-gray-2 px-2 text-sm text-ink-gray-8 hover:bg-surface-gray-3 focus:outline-none focus:ring-2 focus:ring-gray-400"
 					>
 						<span v-if="selectedCountry" class="flex items-center gap-1">
 							<img
@@ -17,30 +17,30 @@
 								:alt="selectedCountry.name"
 								class="h-3 w-4 object-cover"
 							/>
-							<span class="text-gray-600">{{ selectedCountry.isd }}</span>
+							<span class="text-ink-gray-6">{{ selectedCountry.isd }}</span>
 						</span>
-						<span v-else class="text-gray-500">+</span>
-						<FeatherIcon name="chevron-down" class="h-3 w-3 text-gray-500" />
+						<span v-else class="text-ink-gray-5">+</span>
+						<FeatherIcon name="chevron-down" class="h-3 w-3 text-ink-gray-5" />
 					</button>
 				</template>
 				<template #body="{ close }">
 					<div
-						class="mt-1 max-h-60 w-64 overflow-auto rounded-lg bg-white p-1 shadow-2xl"
+						class="mt-1 max-h-60 w-64 overflow-auto rounded-lg bg-surface-white p-1 shadow-2xl"
 					>
 						<input
 							v-model="searchQuery"
 							type="text"
 							placeholder="Search country..."
-							class="mb-1 w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:border-gray-400 focus:outline-none"
+							class="mb-1 w-full rounded border border-outline-gray-1 px-2 py-1.5 text-sm focus:border-outline-gray-3 focus:outline-none"
 							@click.stop
 						/>
 						<div
 							v-for="country in filteredCountries"
 							:key="country.name"
 							@click="selectCountry(country, close)"
-							class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-100"
+							class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-surface-gray-2"
 							:class="{
-								'bg-gray-100': selectedCountry?.name === country.name,
+								'bg-surface-gray-2': selectedCountry?.name === country.name,
 							}"
 						>
 							<img
@@ -49,11 +49,11 @@
 								class="h-3 w-4 object-cover"
 							/>
 							<span class="flex-1 truncate">{{ country.name }}</span>
-							<span class="text-gray-500">{{ country.isd }}</span>
+							<span class="text-ink-gray-5">{{ country.isd }}</span>
 						</div>
 						<div
 							v-if="filteredCountries.length === 0"
-							class="px-2 py-1.5 text-sm text-gray-500"
+							class="px-2 py-1.5 text-sm text-ink-gray-5"
 						>
 							No countries found
 						</div>
@@ -64,7 +64,7 @@
 				type="tel"
 				v-model="phoneNumber"
 				:placeholder="selectedCountry?.example || placeholder"
-				class="h-7 w-full rounded-r border border-gray-100 bg-gray-100 px-2 text-base text-gray-800 placeholder-gray-500 focus:border-gray-500 focus:bg-white focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
+				class="h-7 w-full rounded-r border border-outline-gray-1 bg-surface-gray-2 px-2 text-base text-ink-gray-8 placeholder-gray-500 focus:border-outline-gray-4 focus:bg-surface-white focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 				@input="emitValue"
 			/>
 		</div>

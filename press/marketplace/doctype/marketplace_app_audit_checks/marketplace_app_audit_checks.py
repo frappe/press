@@ -28,12 +28,16 @@ class MarketplaceAppAuditChecks(Document):
 		check_id: DF.Data
 		check_name: DF.Data
 		details: DF.Code | None
+		is_blocking: DF.Check
+		is_internal_only: DF.Check
+		is_reviewer_approved: DF.Check
 		message: DF.SmallText | None
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
 		remediation: DF.SmallText | None
 		result: DF.Literal["Pass", "Warn", "Fail", "Skipped", "Error"]
+		reviewer_comments: DF.SmallText | None
 		severity: DF.Literal["", "Critical", "Major", "Minor", "Info"]
 	# end: auto-generated types
 

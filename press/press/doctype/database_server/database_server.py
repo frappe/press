@@ -23,9 +23,9 @@ from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
 from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
 	DatabaseServerMariaDBVariable,
 )
-from press.press.doctype.server.server import PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN, Agent, BaseServer
+from press.press.doctype.server.server import PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN, Agent, BaseServer, Server
 from press.runner import Ansible
-from press.utils import log_error
+from press.utils import get_press_base_url, log_error
 from press.utils.database import find_db_disk_info, parse_du_output_of_mysql_directory
 from press.utils.jobs import has_job_timeout_exceeded
 
@@ -77,8 +77,11 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_auto_coredump_enabled: DF.Check
 		is_binlog_indexer_running: DF.Check
+		is_external_healthcheck_enabled: DF.Check
 		is_for_recovery: DF.Check
+		is_mariadb_monitor_installed: DF.Check
 		is_monitoring_disabled: DF.Check
 		is_performance_schema_enabled: DF.Check
 		is_primary: DF.Check
@@ -89,6 +92,7 @@ class DatabaseServer(BaseServer):
 		is_server_renamed: DF.Check
 		is_server_setup: DF.Check
 		is_stalk_setup: DF.Check
+		is_static_ip: DF.Check
 		is_unified_server: DF.Check
 		mariadb_root_password: DF.Password | None
 		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
@@ -125,6 +129,7 @@ class DatabaseServer(BaseServer):
 		stalk_variable: DF.Data | None
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		tags: DF.Table[ResourceTag]
+		tcmalloc_release_rate: DF.Int
 		team: DF.Link | None
 		title: DF.Data | None
 		tls_certificate_renewal_failed: DF.Check
@@ -226,7 +231,7 @@ class DatabaseServer(BaseServer):
 	def on_update(self):
 		self.publish_linked_server_realtime_update()
 
-		if self.flags.in_insert or self.is_new():
+		if self.flags.in_insert:
 			return
 
 		if self.is_replication_setup and self.auto_purge_binlog_based_on_size:
@@ -240,8 +245,10 @@ class DatabaseServer(BaseServer):
 		):
 			self.update_memory_limits()
 
-		if not self.is_new() and self.has_value_changed("team"):
+		if self.has_value_changed("team"):
 			self.update_subscription()
+
+		self._create_static_ip_log()
 
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
@@ -547,7 +554,7 @@ class DatabaseServer(BaseServer):
 	def stop_mariadb(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_stop_mariadb", timeout=1800)
 
-	def _stop_mariadb(self):
+	def _stop_mariadb(self, throw_on_failure: bool = False):
 		ansible = Ansible(
 			playbook="stop_mariadb.yml",
 			server=self,
@@ -558,8 +565,12 @@ class DatabaseServer(BaseServer):
 			},
 		)
 		play = ansible.run()
-		if play.status == "Failure":
+		if play.status != "Success":
 			log_error("MariaDB Stop Error", server=self.name)
+			if throw_on_failure:
+				frappe.throw(f"Failed to stop MariaDB on server: {self.name}")
+
+		return play
 
 	@frappe.whitelist()
 	def run_upgrade_mariadb_job(self):
@@ -568,7 +579,7 @@ class DatabaseServer(BaseServer):
 	def upgrade_mariadb(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb", timeout=1800)
 
-	def _upgrade_mariadb(self):
+	def _upgrade_mariadb(self, throw_on_failure: bool = False):
 		ansible = Ansible(
 			playbook="upgrade_mariadb.yml",
 			server=self,
@@ -579,8 +590,10 @@ class DatabaseServer(BaseServer):
 			},
 		)
 		play = ansible.run()
-		if play.status == "Failure":
+		if play.status != "Success":
 			log_error("MariaDB Upgrade Error", server=self.name)
+			if throw_on_failure:
+				frappe.throw(f"Failed to upgrade MariaDB on server: {self.name}")
 		return play
 
 	def _downgrade_mariadb_to_10_6(self):
@@ -792,7 +805,12 @@ class DatabaseServer(BaseServer):
 
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
-			server_ids = frappe.get_all("Database Server", fields=["server_id"], pluck="server_id")
+			server_ids = frappe.get_all(
+				"Database Server",
+				filters={"is_unified_server": self.is_unified_server},
+				fields=["server_id"],
+				pluck="server_id",
+			)
 			if server_ids:
 				self.server_id = max(server_ids or []) + 1
 			else:
@@ -1252,7 +1270,7 @@ class DatabaseServer(BaseServer):
 			self.doctype, self.name, "_prepare_mariadb_replica", queue="long", timeout=1200, at_front=True
 		)
 
-	def _prepare_mariadb_replica(self):
+	def _prepare_mariadb_replica(self, throw_on_failure: bool = False):
 		if self.is_primary:
 			return
 
@@ -1271,8 +1289,13 @@ class DatabaseServer(BaseServer):
 					"mariadb_server_id": self.server_id,
 				},
 			)
-			ansible.run()
+			play = ansible.run()
+			if play.status != "Success":
+				raise Exception("Failed to prepare MariaDB replica")
 		except Exception:
+			if throw_on_failure:
+				raise
+
 			log_error("MariaDB Prepare Replica Exception", server=self.as_dict())
 
 	def configure_replication(self, gtid_slave_pos: str | None = None):
@@ -1739,16 +1762,27 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server MariaDB Exporter Reconfigure Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def update_memory_allocator(self, memory_allocator):
+	def update_memory_allocator(self, memory_allocator: str, tcmalloc_release_rate: int | None = None):
+		if memory_allocator == "tcmalloc":
+			tcmalloc_release_rate = tcmalloc_release_rate or 1
+
+		if (
+			memory_allocator == "tcmalloc"
+			and tcmalloc_release_rate
+			and (tcmalloc_release_rate > 10 or tcmalloc_release_rate < 1)
+		):
+			frappe.throw("tcmalloc_release_rate must be between 1 and 10")  # nosemgrep
+
 		frappe.enqueue_doc(
 			self.doctype,
 			self.name,
 			"_update_memory_allocator",
 			memory_allocator=memory_allocator,
+			tcmalloc_release_rate=tcmalloc_release_rate,
 			enqueue_after_commit=True,
 		)
 
-	def _update_memory_allocator(self, memory_allocator):
+	def _update_memory_allocator(self, memory_allocator: str, tcmalloc_release_rate: int | None = None):
 		ansible = Ansible(
 			playbook="mariadb_memory_allocator.yml",
 			server=self,
@@ -1757,6 +1791,7 @@ class DatabaseServer(BaseServer):
 			variables={
 				"server": self.name,
 				"allocator": memory_allocator.lower(),
+				"tcmalloc_release_rate": tcmalloc_release_rate or 1,
 				"mariadb_root_password": self.get_password("mariadb_root_password"),
 			},
 		)
@@ -1776,9 +1811,18 @@ class DatabaseServer(BaseServer):
 			query_result = result.get("query_result")
 			if query_result:
 				self.reload()
-				self.memory_allocator = memory_allocator
+				self.memory_allocator = self._get_memory_allocator_display_name(query_result[0][0]["Value"])
 				self.memory_allocator_version = query_result[0][0]["Value"]
-				self.save()
+
+			self.tcmalloc_release_rate = tcmalloc_release_rate
+			self.save()
+
+	def _get_memory_allocator_display_name(self, allocator_version):
+		if "jemalloc" in allocator_version.lower():
+			return "jemalloc"
+		if "tcmalloc" in allocator_version.lower():
+			return "TCMalloc"
+		return "System"
 
 	@dashboard_whitelist()
 	def get_mariadb_variables(self):
@@ -2430,6 +2474,68 @@ systemctl restart mariadb
 	@frappe.whitelist()
 	def flush_tables(self):
 		self.agent.database_flush_tables()
+
+	@frappe.whitelist()
+	def setup_mariadb_monitor(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_mariadb_monitor", timeout=1800, queue="long")
+
+	def _setup_mariadb_monitor(self):
+		app_servers = frappe.get_all(
+			"Server",
+			filters={"status": ("!=", "Archived"), "database_server": self.name},
+			pluck="name",
+			limit=1,
+		)
+		if not app_servers:
+			return
+
+		app_server: Server = frappe.get_doc("Server", app_servers[0])
+		try:
+			ansible = Ansible(
+				playbook="install_mariadb_monitor.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={
+					"server_name": self.name,
+					"enable_external_healthcheck": self.is_external_healthcheck_enabled,
+					"external_health_check_token": app_server.get_db_healthcheck_token(),
+					"external_health_check_url": frappe.utils.get_url(
+						get_press_base_url() + "/api/method/press.api.service_health.check_db_health"
+					),
+					"enable_coredump": self.is_auto_coredump_enabled,
+					"mariadb_root_password": self.get_password("mariadb_root_password"),
+					"mariadb_private_ip": self.private_ip,
+				},
+			)
+			play = ansible.run()
+			if play.status == "Success":
+				self.is_mariadb_monitor_installed = True
+				self.save()
+		except Exception:
+			log_error("Database Server MariaDB Monitor Install Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def uninstall_mariadb_monitor(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_uninstall_mariadb_monitor", timeout=1800, queue="long")
+
+	def _uninstall_mariadb_monitor(self):
+		if not self.is_mariadb_monitor_installed:
+			return
+		try:
+			ansible = Ansible(
+				playbook="uninstall_mariadb_monitor.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			play = ansible.run()
+
+			if play.status == "Success":
+				self.is_mariadb_monitor_installed = False
+				self.save()
+		except Exception:
+			log_error("Database Server MariaDB Monitor Uninstall Exception", server=self.as_dict())
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")

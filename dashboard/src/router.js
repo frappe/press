@@ -1,7 +1,7 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import { getTeam } from './data/team';
-import generateRoutes from './objects/generateRoutes';
-import session from './data/session';
+import { createRouter, createWebHistory } from 'vue-router'
+import session from './data/session'
+import { getTeam } from './data/team'
+import generateRoutes from './objects/generateRoutes'
 
 let router = createRouter({
 	history: createWebHistory('/dashboard/'),
@@ -16,7 +16,7 @@ let router = createRouter({
 					query: {
 						is_redirect: true,
 					},
-				});
+				})
 			},
 		},
 		{
@@ -192,6 +192,11 @@ let router = createRouter({
 					component: () => import('./pages/BillingMarketplacePayouts.vue'),
 				},
 				{
+					name: 'BillingTiers',
+					path: 'tiers',
+					component: () => import('./pages/BillingTiers.vue'),
+				},
+				{
 					name: 'BillingMpesaInvoices',
 					path: 'mpesa-invoices',
 					component: () => import('./pages/BillingMpesaInvoices.vue'),
@@ -219,6 +224,11 @@ let router = createRouter({
 					name: 'SettingsTeam',
 					path: 'team',
 					component: () => import('./components/settings/TeamSettings.vue'),
+				},
+				{
+					name: 'SettingsTeamBeta',
+					path: 'team-beta',
+					component: () => import('./components/settings/Team.vue'),
 				},
 				{
 					name: 'SettingsDeveloper',
@@ -535,79 +545,79 @@ let router = createRouter({
 			component: () => import('./pages/404.vue'),
 		},
 	],
-});
+})
 
 router.beforeEach(async (to, from, next) => {
 	let isLoggedIn =
 		document.cookie.includes('user_id') &&
-		!document.cookie.includes('user_id=Guest');
+		!document.cookie.includes('user_id=Guest')
 
-	let hasTeamPrivileges = !!window.default_team;
-	let goingToLoginPage = to.matched.some((record) => record.meta.isLoginPage);
+	let hasTeamPrivileges = !!window.default_team
+	let goingToLoginPage = to.matched.some((record) => record.meta.isLoginPage)
 
 	if (isLoggedIn && hasTeamPrivileges) {
-		await waitUntilTeamLoaded();
-		let $team = getTeam();
-		let onboardingComplete = $team.doc.onboarding.complete;
-		let defaultRoute = 'Site List';
+		await waitUntilTeamLoaded()
+		let $team = getTeam()
+		let onboardingComplete = $team.doc.onboarding.complete
+		let defaultRoute = 'Site List'
 
 		// identify user in posthog
 		if (window.posthog?.__loaded) {
 			try {
 				window.posthog.identify($team.doc.user, {
 					app: 'frappe_cloud',
-				});
+				})
 			} catch (e) {
-				console.error(e);
+				console.error(e)
 			}
 		}
 
 		// if team owner/admin enforce 2fa and user has not enabled 2fa, redirect to enable 2fa
-		const Enable2FARoute = 'Enable2FA';
+		const Enable2FARoute = 'Enable2FA'
 		if (
 			to.name !== Enable2FARoute &&
 			!$team.doc.is_desk_user &&
 			$team.doc.enforce_2fa &&
 			!$team.doc.user_info.is_2fa_enabled
 		) {
-			next({ name: Enable2FARoute });
-			return;
+			next({ name: Enable2FARoute })
+			return
 		}
 
 		// if team owner/admin doesn't enforce 2fa don't allow user to visit Enable2FA route
 		if (to.name === Enable2FARoute && !$team.doc.enforce_2fa) {
-			next({ name: defaultRoute });
-			return;
+			next({ name: defaultRoute })
+			return
 		}
 
 		if (to.name.startsWith('Release Group')) {
 			if (!$team.doc.benches_enabled)
 				try {
-					await $team.setValue.submit({ benches_enabled: 1 });
+					await $team.setValue.submit({ benches_enabled: 1 })
 				} catch (e) {
-					console.warn('Auto-enable benches failed:', e);
+					console.warn('Auto-enable benches failed:', e)
 				}
 			if (!onboardingComplete) {
-				next({ name: 'Enable Benches' });
-				return;
+				next({ name: 'Enable Benches' })
+				return
 			}
 		} else if (to.name === 'Enable Benches' && onboardingComplete) {
-			next({ name: 'Release Group List' });
+			next({ name: 'Release Group List' })
 		}
 
 		if (to.name.startsWith('Server')) {
 			if (!$team.doc.servers_enabled)
 				try {
-					await $team.setValue.submit({ servers_enabled: 1 });
+					await $team.setValue.submit({ servers_enabled: 1 })
 				} catch (e) {
-					console.warn('Auto-enable servers failed:', e);
+					console.warn('Auto-enable servers failed:', e)
 				}
 			if (!onboardingComplete) {
-				next({ name: 'Enable Servers' });
-				return;
+				next({ name: 'Enable Servers' })
+				return
 			}
 		} else if (to.name === 'Enable Server' && onboardingComplete) {
-			next({ name: 'Server List' });
+			next({ name: 'Server List' })
 		}
 
 		if (goingToLoginPage) {
@@ -615,50 +625,50 @@ router.beforeEach(async (to, from, next) => {
 				next({
 					name: 'SignupSetup',
 					params: { productId: to.query.product },
-				});
+				})
 			}
 			if (to.name == 'Setup Account') {
-				next({ name: 'Team Invite', params: to.params });
+				next({ name: 'Team Invite', params: to.params })
 			}
-			next({ name: defaultRoute });
+			next({ name: defaultRoute })
 		} else {
-			next();
+			next()
 		}
 	} else {
 		if (goingToLoginPage) {
-			next();
+			next()
 		} else {
 			if (to.name == 'Site Login') {
-				next();
+				next()
 			} else if (!hasTeamPrivileges) {
-				logoutWithTeamError();
+				logoutWithTeamError()
 			} else {
-				next({ name: 'Login', query: { redirect: to.href } });
+				next({ name: 'Login', query: { redirect: to.href } })
 			}
 		}
 	}
-});
+})
 
 function waitUntilTeamLoaded() {
 	return new Promise((resolve) => {
 		let interval = setInterval(() => {
-			let team = getTeam();
+			let team = getTeam()
 			if (team?.doc) {
-				clearInterval(interval);
-				resolve();
+				clearInterval(interval)
+				resolve()
 			} else if (team?.get?.error) {
 				if (team?.get?.error?.exc_type === 'ValidationError') {
-					clearInterval(interval);
-					logoutWithTeamError();
+					clearInterval(interval)
+					logoutWithTeamError()
 				}
 			}
-		}, 100);
-	});
+		}, 100)
+	})
 }
 
 function logoutWithTeamError() {
-	session.logout.submit();
-	router.push({ name: 'Login', query: { reason: 'INVALID_TEAM' } });
+	session.logout.submit()
+	router.push({ name: 'Login', query: { reason: 'INVALID_TEAM' } })
 }
 
-export default router;
+export default router

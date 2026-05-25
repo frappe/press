@@ -11,6 +11,7 @@ import { initSocket } from './socket';
 import { subscribeToJobUpdates } from './utils/agentJob';
 import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
+import { createPinia } from 'pinia';
 import { session } from './data/session.js';
 import {
 	unreadNotificationsCount,
@@ -38,10 +39,13 @@ setConfig('defaultDocUpdateUrl', 'press.api.client.set_value');
 setConfig('defaultDocDeleteUrl', 'press.api.client.delete');
 
 let app;
+let pinia;
 let socket;
 
 getInitialData().then(() => {
+	pinia = createPinia();
 	app = createApp(App);
+	app.use(pinia);
 	app.use(router);
 	app.use(resourcesPlugin);
 	app.use(pageMetaPlugin);
@@ -226,11 +230,11 @@ function addChatBubble() {
 
 window.addEventListener('chatwoot:ready', function () {
 	const pathname = window.location.pathname;
-	const user_email = window.user_details.email || 'Guest';
+	const user_email = window.user.email || 'Guest';
 
 	if (window.$chatwoot) {
 		window.$chatwoot.setUser(user_email, {
-			name: window.user_details.name,
+			name: window.user.name,
 			email: user_email,
 		});
 		window.$chatwoot.setCustomAttributes({

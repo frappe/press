@@ -75,14 +75,14 @@
 						<div class="mt-4 space-y-2">
 							<div
 								v-if="$resources.validateApp.loading"
-								class="flex text-base text-gray-700"
+								class="flex text-base text-ink-gray-7"
 							>
 								<LoadingIndicator class="mr-2 w-4" />
 								Validating app...
 							</div>
 							<div
 								v-else-if="appValidated && app"
-								class="flex text-base text-gray-700"
+								class="flex text-base text-ink-gray-7"
 							>
 								<GreenCheckIcon class="mr-2 w-4" />
 								Found {{ app.title }} ({{ app.name }})

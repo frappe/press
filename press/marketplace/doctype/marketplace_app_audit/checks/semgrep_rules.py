@@ -1,8 +1,11 @@
 import json
+import os
 import re
 import shutil
 import subprocess
 from pathlib import Path
+
+import frappe
 
 from press.marketplace.doctype.marketplace_app_audit.marketplace_app_audit import CheckResult
 
@@ -22,6 +25,26 @@ SEMGREP_TO_AUDIT_SEVERITY = {
 SEVERITY_ORDER = {"Critical": 4, "Major": 3, "Minor": 2, "Info": 1}
 
 
+def _semgrep_argv_prefix() -> list[str] | None:
+	"""
+	How to invoke semgrep: prefer bench env (Marketplace Settings audit_bench_path), else PATH.
+	Returns argv prefix only, e.g. ["/path/to/semgrep"] or ["/path/to/python", "-m", "semgrep"].
+	"""
+	bench = (frappe.db.get_single_value("Marketplace Settings", "audit_bench_path") or "").strip()
+	if bench:
+		semgrep_bin = os.path.join(bench, "env", "bin", "semgrep")
+		python_bin = os.path.join(bench, "env", "bin", "python")
+		if os.path.isfile(semgrep_bin) and os.access(semgrep_bin, os.X_OK):
+			return [semgrep_bin]
+		if os.path.isfile(python_bin) and os.access(python_bin, os.X_OK):
+			return [python_bin, "-m", "semgrep"]
+
+	which = shutil.which("semgrep")
+	if which:
+		return [which]
+	return None
+
+
 def run_semgrep_rules(clone_dir: str) -> list[CheckResult]:
 	if not RULES_DIR.exists():
 		return [
@@ -37,7 +60,8 @@ def run_semgrep_rules(clone_dir: str) -> list[CheckResult]:
 			)
 		]
 
-	if shutil.which("semgrep") is None:
+	prefix = _semgrep_argv_prefix()
+	if prefix is None:
 		return [
 			CheckResult(
 				check_id="semgrep_unavailable",
@@ -45,9 +69,11 @@ def run_semgrep_rules(clone_dir: str) -> list[CheckResult]:
 				category=DEFAULT_CATEGORY,
 				severity="Info",
 				result="Error",
-				message="Semgrep is not installed on the audit worker.",
+				message="Semgrep is not available (no bench env binary and not on PATH).",
 				details=json.dumps({"rules_dir": str(RULES_DIR)}),
-				remediation="Install semgrep and ensure the `semgrep` binary is on PATH.",
+				remediation=(
+					"Set Marketplace Settings → Marketplace audit bench path to a bench with `env/bin/semgrep` or `pip install semgrep` in that env, or install semgrep on PATH."
+				),
 			)
 		]
 
@@ -57,16 +83,18 @@ def run_semgrep_rules(clone_dir: str) -> list[CheckResult]:
 	# --config flag: path to the Semgrep ruleset
 	# --json flag: output results in JSON format
 	# .: path to the codebase to scan
+	# scan: local rules; quiet: findings only; json: machine-readable output; cwd: cloned app
+	cmd = [
+		*prefix,
+		"scan",
+		"--config",
+		str(RULES_DIR.resolve()),
+		"--json",
+		"--quiet",
+		".",
+	]
 	completed = subprocess.run(
-		[
-			"semgrep",
-			"scan",
-			"--config",
-			str(RULES_DIR),
-			"--json",
-			"--quiet",
-			".",
-		],
+		cmd,
 		cwd=clone_dir,
 		capture_output=True,
 		text=True,
@@ -111,9 +139,6 @@ def run_semgrep_rules(clone_dir: str) -> list[CheckResult]:
 		]
 
 	results = []
-	# write the payload to a file for debugging
-	with open("semgrep_payload.json", "w") as f:
-		json.dump(payload, f, indent=2)
 	results.extend(_parse_semgrep_errors(payload.get("errors", [])))
 	results.extend(_build_category_results(payload.get("results", [])))
 
@@ -186,6 +211,10 @@ def _build_category_results(findings: list[dict]) -> list[CheckResult]:
 			)
 			continue
 
+		# blocking findings are those which have is_blocking set to true in the metadata in the semgrep rule: these are hard fail checks
+		is_any_blocking_finding = any(_is_blocking_finding(finding) for finding in category_findings)
+		# no need to check for internal only findings here: as they will be used when showing the results to the publisher(in mail/dashboard)
+
 		# if there are findings for a category, return a fail result with the highest severity
 		highest_severity = _highest_audit_severity(category_findings)
 
@@ -196,7 +225,9 @@ def _build_category_results(findings: list[dict]) -> list[CheckResult]:
 				check_name=f"Semgrep {category}",
 				category=category,
 				severity=highest_severity,
-				result="Fail" if highest_severity in {"Critical", "Major"} else "Warn",
+				result="Fail"
+				if highest_severity in {"Critical", "Major"} or is_any_blocking_finding
+				else "Warn",
 				message=f"Semgrep {category} checks found {len(category_findings)} issue(s).",
 				details=json.dumps(
 					{
@@ -204,6 +235,11 @@ def _build_category_results(findings: list[dict]) -> list[CheckResult]:
 					}
 				),
 				remediation="We observed some issues with the codebase. Please review the occurrences list and fix the issues.",
+				is_blocking=is_any_blocking_finding,
+				# is internal only should be false for semgrep ruleset, as none of the semgrep ruleset are just for internal purpose
+				# a few rules are internal only, but we should not roll them up to declare the entire ruleset as internal only
+				# is_internal_only condition will be handled when showing the results to the publisher(in mail/dashboard)
+				is_internal_only=False,
 			)
 		)
 
@@ -247,9 +283,24 @@ def _serialize_finding(finding: dict) -> dict:
 		"end": finding.get("end"),
 		"message": message,
 		"severity": extra.get("severity"),
+		"is_internal_only": _is_internal_only_finding(finding),
+		"is_blocking": _is_blocking_finding(finding),
 	}
 
 
 def _make_category_check_id(category: str) -> str:
 	raw = f"semgrep_{category.lower()}"
 	return re.sub(r"[^a-zA-Z0-9_]+", "_", raw).strip("_")
+
+
+def _metadata(finding: dict) -> dict:
+	return (finding.get("extra") or {}).get("metadata") or {}
+
+
+def _is_internal_only_finding(finding: dict) -> bool:
+	return bool(_metadata(finding).get("is_internal_only"))
+
+
+def _is_blocking_finding(finding: dict) -> bool:
+	# Only explicit true is blocking
+	return _metadata(finding).get("is_blocking") is True

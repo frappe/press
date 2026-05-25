@@ -8,7 +8,9 @@ import re
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 import shlex
+import shutil
 import subprocess
+import tempfile
 import typing
 from datetime import datetime, timedelta
 from subprocess import Popen
@@ -242,9 +244,13 @@ class DeployCandidate(Document):
 		run_now: bool = True,
 		scheduled_time: datetime | None = None,
 		retry_count: int = 0,
+		ignore_permissions: bool = False,
 	):
 		if run_now and not is_suspended():
-			return {"error": False, "name": self.build_and_deploy()}
+			return {
+				"error": False,
+				"name": self.build_and_deploy(ignore_permissions=ignore_permissions),
+			}
 
 		deploy_candidate_build = self.create_build(
 			no_cache=False,
@@ -253,12 +259,12 @@ class DeployCandidate(Document):
 			scheduled_time=scheduled_time or now(),
 			retry_count=retry_count,
 		)
-		deploy_candidate_build.insert()
+		deploy_candidate_build.insert(ignore_permissions=ignore_permissions)
 		return {"error": False, "name": deploy_candidate_build.name}
 
-	def build_and_deploy(self, no_cache: bool = False) -> str:
+	def build_and_deploy(self, no_cache: bool = False, ignore_permissions: bool = False) -> str:
 		deploy_candidate_build = self.create_build(no_cache=no_cache, deploy_after_build=True)
-		deploy_candidate_build.insert()
+		deploy_candidate_build.insert(ignore_permissions=ignore_permissions)
 		return deploy_candidate_build.name
 
 	def _set_app_cached_flags(self) -> None:
@@ -304,68 +310,71 @@ class DeployCandidate(Document):
 		if return_code:
 			raise subprocess.CalledProcessError(return_code, command)
 
-	def generate_ssh_keys(self, build_directory: str):
+	def generate_ssh_keys(self):
 		ca = frappe.db.get_single_value("Press Settings", "ssh_certificate_authority")
 		if not ca:
-			return
+			return None, None
 
 		ca = frappe.get_doc("SSH Certificate Authority", ca)
-		ssh_directory = os.path.join(build_directory, "config", "ssh")
+		tmp_dir = tempfile.mkdtemp()
+		ssh_directory = os.path.join(tmp_dir, "ssh")
+		os.makedirs(ssh_directory)
 
-		self.generate_host_keys(ca, ssh_directory)
-		self.generate_user_keys(ca, ssh_directory)
-
-		ca_public_key = os.path.join(ssh_directory, "ca.pub")
-		with open(ca_public_key, "w") as f:
-			f.write(ca.public_key)
-
-		# Generate authorized principal file
-		principals = os.path.join(ssh_directory, "principals")
-		with open(principals, "w") as f:
-			f.write(f"restrict,pty {self.group}")
-
-	def generate_host_keys(self, ca, ssh_directory):
-		# Generate host keys
-		list(
-			self.run(
-				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f ssh_host_rsa_key",
-				directory=ssh_directory,
+		try:
+			# Generate host keys and certificate
+			list(
+				self.run(
+					f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f ssh_host_rsa_key",
+					directory=ssh_directory,
+				)
 			)
-		)
+			host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
+			ca.sign(self.name, None, "+52w", host_public_key_path, 0, host_key=True)
 
-		# Generate host Certificate
-		host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
-		ca.sign(self.name, None, "+52w", host_public_key_path, 0, host_key=True)
-
-	def generate_user_keys(self, ca, ssh_directory):
-		# Generate user keys
-		list(
-			self.run(
-				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f id_rsa",
-				directory=ssh_directory,
+			# Generate user keys and certificate
+			list(
+				self.run(
+					f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f id_rsa",
+					directory=ssh_directory,
+				)
 			)
-		)
+			user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
+			ca.sign(self.name, [self.group], "+52w", user_public_key_path, 0)
 
-		# Generate user certificates
-		user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
-		ca.sign(self.name, [self.group], "+52w", user_public_key_path, 0)
+			# Read all generated files before cleanup
+			with open(os.path.join(ssh_directory, "ssh_host_rsa_key")) as f:
+				host_private_key = f.read()
+			with open(host_public_key_path) as f:
+				host_public_key = f.read()
+			with open(os.path.join(ssh_directory, "ssh_host_rsa_key-cert.pub")) as f:
+				host_certificate = f.read()
 
-		user_private_key_path = os.path.join(ssh_directory, "id_rsa")
-		with open(user_private_key_path) as f:
-			self.user_private_key = f.read()
+			with open(os.path.join(ssh_directory, "id_rsa")) as f:
+				self.user_private_key = f.read()
+			with open(user_public_key_path) as f:
+				self.user_public_key = f.read()
+			with open(os.path.join(ssh_directory, "id_rsa-cert.pub")) as f:
+				self.user_certificate = f.read()
 
-		with open(user_public_key_path) as f:
-			self.user_public_key = f.read()
+			self.save(ignore_permissions=True)
+		finally:
+			shutil.rmtree(tmp_dir)
 
-		user_certificate_path = os.path.join(ssh_directory, "id_rsa-cert.pub")
-		with open(user_certificate_path) as f:
-			self.user_certificate = f.read()
+		user_keys = {
+			"private_key": self.user_private_key,
+			"public_key": self.user_public_key,
+			"certificate": self.user_certificate,
+		}
 
-		self.save(ignore_permissions=True)
-		# Remove user key files
-		os.remove(user_private_key_path)
-		os.remove(user_public_key_path)
-		os.remove(user_certificate_path)
+		host_keys = {
+			"private_key": host_private_key,
+			"public_key": host_public_key,
+			"certificate": host_certificate,
+			"ca_public_key": ca.public_key,
+			"principals": f"restrict,pty {self.group}",
+		}
+
+		return user_keys, host_keys
 
 	def _update_packages(self, pmf: PackageManagerFiles):
 		existing_apt_packages = set()

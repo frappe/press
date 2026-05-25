@@ -36,6 +36,7 @@ class PressSettings(Document):
 		asset_store_region: DF.Data | None
 		asset_store_secret_access_key: DF.Password | None
 		auto_update_queue_size: DF.Int
+		auto_upgrade_dependencies: DF.Check
 		autoscale_discount: DF.Float
 		aws_access_key_id: DF.Data | None
 		aws_s3_bucket: DF.Data | None
@@ -113,6 +114,8 @@ class PressSettings(Document):
 		cool_off_period: DF.Int
 		data_40: DF.Data | None
 		default_apps: DF.Table[AppGroup]
+		default_dedicated_server_site_warranty_change_cooldown: DF.Int
+		default_dedicated_server_site_warranty_quota: DF.Int
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
 		default_server_plan_type: DF.Link | None
@@ -200,6 +203,7 @@ class PressSettings(Document):
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		redis_cache_size: DF.Int
+		region_name: DF.Data | None
 		remote_access_key_id: DF.Data | None
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None
@@ -373,7 +377,10 @@ class PressSettings(Document):
 		return Client(api_key_sid, api_key_secret, account_sid)
 
 	def get_default_apps(self):
-		if hasattr(self, "enable_app_grouping") and hasattr(self, "default_apps"):  # noqa
-			if self.enable_app_grouping:
-				return [app.app for app in self.default_apps]
+		if (
+			hasattr(self, "enable_app_grouping")
+			and hasattr(self, "default_apps")
+			and self.enable_app_grouping
+		):
+			return [app.app for app in self.default_apps]
 		return []
