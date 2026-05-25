@@ -364,16 +364,19 @@ class ReleasePipeline(WorkflowBuilder):
 	def monitor_build_success(self, deploy_candidate_build: str):
 		"""Monitor build till terminal state."""
 		deploy_candidate_build = self._get_latest_retried_build(deploy_candidate_build)
-		deploy_candidate_build_status = frappe.db.get_value(
-			"Deploy Candidate Build", deploy_candidate_build, "status"
+		deploy_candidate_build_doc: DeployCandidateBuild = frappe.get_doc(
+			"Deploy Candidate Build", deploy_candidate_build
 		)
 
-		if deploy_candidate_build_status == "Success":
+		if deploy_candidate_build_doc.status == "Success":
 			return  # Remote Build succeeded can mark as success and proceed
 
-		if deploy_candidate_build_status == "Failure":
+		if deploy_candidate_build_doc.status == "Failure":
 			# This will raise and enqueue the function again in case there are scheduled retries for the build
-			self._check_for_scheduled_build_retries(deploy_candidate_build)
+			# In case of patch builds we don't retry anyways therefore ignore that check here
+			if not deploy_candidate_build_doc.patch_build:
+				self._check_for_scheduled_build_retries(deploy_candidate_build)
+
 			raise ReleasePipelineFailure(
 				f"Remote build failed for Deploy Candidate Build {deploy_candidate_build}. Please check the build logs for more details."
 			)

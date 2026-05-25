@@ -1127,17 +1127,16 @@ class DeployCandidateBuild(Document):
 
 		if requires_arm or requires_intel:
 			platform = "arm64" if requires_arm else "x86_64"
-			new_dcb: DeployCandidateBuild = frappe.get_doc(
+			frappe.get_doc(
 				{
 					"doctype": "Deploy Candidate Build",
 					"deploy_candidate": self.deploy_candidate,
-					"run_build": 0,
 					"no_push": self.no_push,
 					"deploy_after_build": deploy_after_build,
 					"platform": platform,
+					"patch_build": True,
 				}
 			).insert()
-			new_dcb.run_patch_build()
 		elif deploy_after_build:
 			self.create_deploy()
 
