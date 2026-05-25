@@ -128,11 +128,11 @@
 				<Button v-if="canShowNext" variant="solid" label="Next" @click="next" />
 				<div v-if="canShowDeploy" class="flex gap-2">
 					<Button
-						v-if="deployInformation.can_run_instant_build"
+						v-if="deployInformation.can_run_patch_build"
 						variant="outline"
-						label="Deploy Instantly"
-						:loading="$resources.instantDeploy.loading"
-						@click="deployInstantly"
+						label="Deploy as Patch"
+						:loading="$resources.patchDeploy.loading"
+						@click="deployAsPatch"
 					/>
 					<Button
 						variant="solid"
@@ -572,7 +572,7 @@ export default {
 				onError: this.setErrorMessage.bind(this),
 			}
 		},
-		instantDeploy() {
+		patchDeploy() {
 			return {
 				url: 'press.api.bench.deploy_and_update',
 				params: {
@@ -580,7 +580,7 @@ export default {
 					apps: this.selectedApps,
 					sites: this.selectedSites,
 					run_will_fail_check: !this.ignoreWillFailCheck,
-					trigger_instant_deploy: true,
+					trigger_patch_deploy: true,
 				},
 				onSuccess(candidate) {
 					if (candidate) {
@@ -736,8 +736,8 @@ export default {
 				site.skip_backups = true
 			}
 		},
-		deployInstantly() {
-			this.$resources.instantDeploy.submit()
+		deployAsPatch() {
+			this.$resources.patchDeploy.submit()
 		},
 		setErrorMessage(error) {
 			this.ignoreWillFailCheck = false

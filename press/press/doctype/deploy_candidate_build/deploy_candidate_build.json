@@ -16,7 +16,7 @@
 		"no_cache",
 		"no_push",
 		"deploy_after_build",
-		"instant_build",
+		"patch_build",
 		"run_build",
 		"scheduled_time",
 		"deploy_on_server",
@@ -296,9 +296,9 @@
 		},
 		{
 			"default": "0",
-			"fieldname": "instant_build",
+			"fieldname": "patch_build",
 			"fieldtype": "Check",
-			"label": "Instant Build"
+			"label": "Patch Build"
 		}
 	],
 	"grid_page_length": 50,
@@ -321,7 +321,7 @@
 			"link_fieldname": "build"
 		}
 	],
-	"modified": "2026-05-24 21:17:21.658217",
+	"modified": "2026-05-25 17:18:16.775165",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Deploy Candidate Build",

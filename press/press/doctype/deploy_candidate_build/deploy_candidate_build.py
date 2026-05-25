@@ -36,7 +36,7 @@ from press.press.doctype.deploy_candidate.deploy_notifications import (
 from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	CloneOutputParser,
 	DockerBuildOutputParser,
-	InstantBuildOutputParser,
+	PatchBuildOutputParser,
 	UploadStepUpdater,
 	ValidationOutputParser,
 )
@@ -94,7 +94,7 @@ STAGE_SLUG_MAP = {
 	"pull": "Pull Updates",
 	"mounts": "Setup Mounts",
 	"upload": "Upload",
-	"instant": "Instant Build",
+	"patch": "Patch Build",
 }
 
 # Key: (stage_slug, step_slug)
@@ -114,16 +114,16 @@ STEP_SLUG_MAP = {
 	("validate", "dependencies"): "Validate Dependencies",
 	("mounts", "create"): "Prepare Mounts",
 	("upload", "image"): "Docker Image",
-	("instant", "pull-image"): "Pull Base Image",
-	("instant", "update-apps"): "Update Apps",
-	("instant", "commit"): "Commit Image",
+	("patch", "pull-image"): "Pull Base Image",
+	("patch", "update-apps"): "Update Apps",
+	("patch", "commit"): "Commit Image",
 }
 
 # Maps agent @step names → (stage_slug, step_slug) for instant builds
-INSTANT_BUILD_STEP_MAP = {
-	"Start Base Container": ("instant", "pull-image"),
-	"Pull App Updates": ("instant", "update-apps"),
-	"Commit Image": ("instant", "commit"),
+PATCH_BUILD_STEP_MAP = {
+	"Start Base Container": ("patch", "pull-image"),
+	"Pull App Updates": ("patch", "update-apps"),
+	"Commit Image": ("patch", "commit"),
 	"Push Docker Image": ("upload", "image"),
 }
 
@@ -228,11 +228,11 @@ class DeployCandidateBuild(Document):
 		docker_image_tag: DF.Data | None
 		error_key: DF.Data | None
 		group: DF.Link
-		instant_build: DF.Check
 		manually_failed: DF.Check
 		no_build: DF.Check
 		no_cache: DF.Check
 		no_push: DF.Check
+		patch_build: DF.Check
 		pending_duration: DF.Time | None
 		pending_end: DF.Datetime | None
 		pending_start: DF.Datetime | None
@@ -348,11 +348,11 @@ class DeployCandidateBuild(Document):
 			is_path=True,
 		)
 
-	def add_instant_build_steps(self):
+	def add_patch_build_steps(self):
 		slugs = [
-			("instant", "pull-image"),
-			("instant", "update-apps"),
-			("instant", "commit"),
+			("patch", "pull-image"),
+			("patch", "update-apps"),
+			("patch", "commit"),
 		]
 		if not self.no_push:
 			slugs.append(("upload", "image"))
@@ -456,7 +456,7 @@ class DeployCandidateBuild(Document):
 		self.validation_output_parser = ValidationOutputParser(self)
 		self.build_output_parser = DockerBuildOutputParser(self)
 		self.upload_step_updater = UploadStepUpdater(self)
-		self.instant_build_output_parser = InstantBuildOutputParser(self)
+		self.patch_build_output_parser = PatchBuildOutputParser(self)
 
 	def correct_upload_step_status(self):
 		if not (usu := self.upload_step_updater) or not usu.upload_step:
@@ -1029,17 +1029,17 @@ class DeployCandidateBuild(Document):
 		self.set_status(Status.DRAFT)
 		self.pre_build()
 
-	def send_instant_build_instructions(self, previous_candidate: "DeployCandidate"):
-		"""Send instant build instructions to the agent for current deploy candidate build"""
+	def send_patch_build_instructions(self, previous_candidate: "DeployCandidate"):
+		"""Send patch build instructions to the agent for current deploy candidate build"""
 		self.set_build_server()
 		self._update_docker_image_metadata()
-		self.add_instant_build_steps()
+		self.add_patch_build_steps()
 
 		settings = self._fetch_registry_settings()
-		Agent(self.build_server).run_instant_build(
+		Agent(self.build_server).run_patch_build(
 			{
 				"base_image": self._get_base_image_for_platform(previous_candidate),
-				"instant_build_app_instructions": self._get_instant_app_updates(previous_candidate),
+				"patch_build_app_instructions": self._get_patch_app_updates(previous_candidate),
 				"image_repository": self.docker_image_repository,
 				"image_tag": self.docker_image_tag,
 				"registry": {
@@ -1062,7 +1062,7 @@ class DeployCandidateBuild(Document):
 		)
 		return frappe.db.get_value("Deploy Candidate Build", build_name, "docker_image")
 
-	def _get_instant_app_updates(self, previous_candidate: DeployCandidate) -> list:
+	def _get_patch_app_updates(self, previous_candidate: DeployCandidate) -> list:
 		apps = []
 		previous_releases = {app.app: app.release for app in previous_candidate.apps}
 		for app in self.candidate.apps:
@@ -1079,22 +1079,22 @@ class DeployCandidateBuild(Document):
 		return apps
 
 	@staticmethod
-	def process_run_instant_build(job: "AgentJob", response_data: "dict | None"):
+	def process_run_patch_build(job: "AgentJob", response_data: "dict | None"):
 		request_data = json.loads(job.request_data)
 		build: DeployCandidateBuild = frappe.get_doc(
 			"Deploy Candidate Build", request_data["deploy_candidate_build"]
 		)
-		build._process_instant_build_job(job, request_data, response_data)
+		build._process_patch_build_job(job, request_data, response_data)
 
-	def _process_instant_build_job(self, job: "AgentJob", request_data: dict, response_data: "dict | None"):
+	def _process_patch_build_job(self, job: "AgentJob", request_data: dict, response_data: "dict | None"):
 		"""
-		Processes instant build job updates. Unlike `_process_run_build`, instant builds don't
+		Processes patch build job updates. Unlike `_process_run_build`, patch builds don't
 		stream docker build output — step statuses are synced directly from agent job step records
 		and also update the step output based on the output received
 		"""
 		self._set_output_parsers()
-		self._sync_instant_build_step_statuses(job)
-		self.instant_build_output_parser.parse_and_update(job)
+		self._sync_patch_build_step_statuses(job)
+		self.patch_build_output_parser.parse_and_update(job)
 
 		if self.has_remote_build_failed(job, {}):
 			self.handle_build_failure(exc=None, job=job)
@@ -1102,15 +1102,15 @@ class DeployCandidateBuild(Document):
 			self._update_status_from_remote_build_job(job)
 			if self.status == Status.SUCCESS.value:
 				self.update_deploy_candidate_with_build()
-				self._create_platform_instant_build_if_required_and_deploy(
+				self._create_platform_patch_build_if_required_and_deploy(
 					request_data.get("deploy_after_build", True)
 				)
 
 		self.correct_upload_step_status()
 
-	def _sync_instant_build_step_statuses(self, job: "AgentJob"):
-		"""Update each instant build step's status from the corresponding agent job step."""
-		for agent_step_name, (stage_slug, step_slug) in INSTANT_BUILD_STEP_MAP.items():
+	def _sync_patch_build_step_statuses(self, job: "AgentJob"):
+		"""Update each patch build step's status from the corresponding agent job step."""
+		for agent_step_name, (stage_slug, step_slug) in PATCH_BUILD_STEP_MAP.items():
 			status = job.get_step_status(agent_step_name)
 			if status and (step := self.get_step(stage_slug, step_slug)):
 				step.status = status
@@ -1120,8 +1120,8 @@ class DeployCandidateBuild(Document):
 
 		self.save(ignore_version=True)
 
-	def _create_platform_instant_build_if_required_and_deploy(self, deploy_after_build: bool):
-		"""Create a platform specific instant build if requirement enforced by the deploy candidate and deploy after build if required"""
+	def _create_platform_patch_build_if_required_and_deploy(self, deploy_after_build: bool):
+		"""Create a platform specific patch build if requirement enforced by the deploy candidate and deploy after build if required"""
 		requires_arm = self.candidate.requires_arm_build and not self.candidate.arm_build
 		requires_intel = self.candidate.requires_intel_build and not self.candidate.intel_build
 
@@ -1137,37 +1137,35 @@ class DeployCandidateBuild(Document):
 					"platform": platform,
 				}
 			).insert()
-			new_dcb.run_instant_build()
+			new_dcb.run_patch_build()
 		elif deploy_after_build:
 			self.create_deploy()
 
-	def run_instant_build(self):
+	def run_patch_build(self):
 		"""Ensure this is called when `run_build` in insert is set to False since that will use the older flow"""
-		# In case after some bypass or error this is triggered without instant build being possible
+		# In case after some bypass or error this is triggered without patch build being possible
 		# We need to run a check here.
 		from press.press.doctype.release_group.release_group import (
 			_get_previous_candidate,
-			can_run_instant_build,
+			can_run_patch_build,
 		)
 
-		if not can_run_instant_build(self.group):
-			frappe.throw("Instant build cannot be run.")
+		if not can_run_patch_build(self.group):
+			frappe.throw("Patch build cannot be run.")
 
 		previous_candidate = _get_previous_candidate(self.group)
 		self.set_status(Status.PREPARING, timestamp_field="build_start", commit=True)
 		self._set_output_parsers()
 		try:
-			self.send_instant_build_instructions(previous_candidate)
+			self.send_patch_build_instructions(previous_candidate)
 		except Exception as e:
 			self.handle_build_failure(e)
 			return
 
-		self.set_status(Status.RUNNING, commit=True)
-
 	def after_insert(self):
-		if self.instant_build:
+		if self.patch_build:
 			self.set_status(Status.DRAFT)
-			self.run_instant_build()
+			self.run_patch_build()
 
 		elif self.run_build and self.status != Status.SCHEDULED.value:
 			self.set_status(Status.DRAFT)

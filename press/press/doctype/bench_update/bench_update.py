@@ -90,7 +90,7 @@ class BenchUpdate(Document):
 		validate_pre_candidate_checks: bool = True,
 		create_build: bool = True,
 		ignore_permissions: bool = False,
-		trigger_instant_deploy: bool = False,
+		trigger_patch_deploy: bool = False,
 	) -> str:
 		"""Creates and returns candidate name or build name depending on the point of invocation."""
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
@@ -115,8 +115,8 @@ class BenchUpdate(Document):
 
 		deploy = (
 			candidate.schedule_build_and_deploy(ignore_permissions=ignore_permissions)
-			if not trigger_instant_deploy
-			else candidate.trigger_instant_deploy(ignore_permissions=ignore_permissions)
+			if not trigger_patch_deploy
+			else candidate.trigger_patch_deploy(ignore_permissions=ignore_permissions)
 		)
 
 		return deploy["name"]

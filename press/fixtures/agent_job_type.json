@@ -3155,30 +3155,30 @@
 		"doctype": "Agent Job Type",
 		"max_retry_count": 3,
 		"modified": "2026-05-24 19:06:17.764873",
-		"name": "Run Instant Build",
+		"name": "Run Patch Build",
 		"request_method": "POST",
 		"request_path": "/builder/instant_build",
 		"steps": [
 			{
-				"parent": "Run Instant Build",
+				"parent": "Run Patch Build",
 				"parentfield": "steps",
 				"parenttype": "Agent Job Type",
 				"step_name": "Start Base Container"
 			},
 			{
-				"parent": "Run Instant Build",
+				"parent": "Run Patch Build",
 				"parentfield": "steps",
 				"parenttype": "Agent Job Type",
 				"step_name": "Pull App Updates"
 			},
 			{
-				"parent": "Run Instant Build",
+				"parent": "Run Patch Build",
 				"parentfield": "steps",
 				"parenttype": "Agent Job Type",
 				"step_name": "Commit Image"
 			},
 			{
-				"parent": "Run Instant Build",
+				"parent": "Run Patch Build",
 				"parentfield": "steps",
 				"parenttype": "Agent Job Type",
 				"step_name": "Push Docker Image"

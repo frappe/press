@@ -497,8 +497,8 @@ class CloneOutputParser(StepMixin):
 		return self._update_clone_steps(non_terminal_clone_steps, app_output_map)
 
 
-class InstantBuildOutputParser(StepMixin):
-	"""Parses build/push output from instant build agent job steps."""
+class PatchBuildOutputParser(StepMixin):
+	"""Parses build/push output from patch build agent job steps."""
 
 	def __init__(self, dcb: "DeployCandidateBuild") -> None:
 		self.dcb = dcb
@@ -525,7 +525,7 @@ class InstantBuildOutputParser(StepMixin):
 		if not data:
 			return
 		build_output = data if isinstance(data, str) else "\n".join(str(line) for line in data)
-		if step := self.dcb.get_step("instant", "update-apps"):
+		if step := self.dcb.get_step("patch", "update-apps"):
 			step.output = build_output
 			step.save()
 

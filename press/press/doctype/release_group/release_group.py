@@ -897,7 +897,7 @@ class ReleaseGroup(Document, TagHelpers):
 		out.last_deploy = self.last_dc_info
 		out.deploy_in_progress = self.deploy_in_progress
 		out.has_running_release_pipeline = self.has_running_release_pipeline
-		out.can_run_instant_build = can_run_instant_build(
+		out.can_run_patch_build = can_run_patch_build(
 			self.name
 		)  # Don't show the button if the user can't run an instant build
 		if not out.deploy_in_progress and out.has_running_release_pipeline:
@@ -2147,15 +2147,21 @@ def _has_active_benches(previous_candidate: "DeployCandidate") -> bool:
 	return True
 
 
-def can_run_instant_build(release_group: str) -> bool:
-	"""Check previous candidate against current release group state and decide if instant build can be run or not"""
+def can_run_patch_build(release_group: str) -> bool:
+	"""Check previous candidate against current release group state and decide if patch build can be run or not"""
 	previous_candidate = _get_previous_candidate(release_group)
 	if not previous_candidate:
 		return False
 
 	release_group_doc: ReleaseGroup = frappe.get_doc("Release Group", release_group)
 
-	if len(previous_candidate.apps) != len(release_group_doc.apps):
+	# Compare app lists: same apps in same order, same source (branch)
+	if [app.app for app in previous_candidate.apps] != [app.app for app in release_group_doc.apps]:
+		return False
+
+	prev_sources = {app.app: app.source for app in previous_candidate.apps}
+	curr_sources = {app.app: app.source for app in release_group_doc.apps}
+	if prev_sources != curr_sources:
 		return False
 
 	if frappe.db.get_value("Release Group", release_group, "public"):

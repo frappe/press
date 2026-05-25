@@ -803,7 +803,7 @@ def deploy_and_update(
 	apps: list,
 	sites: list | None = None,
 	run_will_fail_check: bool = True,
-	trigger_instant_deploy: bool = False,
+	trigger_patch_deploy: bool = False,
 ):
 	use_new_deploy_flow = frappe.db.get_single_value("Press Settings", "use_new_deploy_flow") or 0
 
@@ -818,7 +818,7 @@ def deploy_and_update(
 			False,
 		).deploy(
 			run_will_fail_check,
-			trigger_instant_deploy=trigger_instant_deploy,
+			trigger_patch_deploy=trigger_patch_deploy,
 		)
 
 	# We check permissions early on and don't change permissions in the middle of the Workflow
@@ -836,7 +836,7 @@ def deploy_and_update(
 		apps=apps,
 		sites=sites,
 		run_will_fail_check=run_will_fail_check,
-		trigger_instant_deploy=trigger_instant_deploy,
+		trigger_patch_deploy=trigger_patch_deploy,
 	)
 	return None
 

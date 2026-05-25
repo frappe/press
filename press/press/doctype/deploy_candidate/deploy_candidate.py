@@ -239,16 +239,14 @@ class DeployCandidate(Document):
 		return dict(error=False, message=deploy_candidate_build.name)
 
 	@frappe.whitelist()
-	def trigger_instant_deploy(self, ignore_permissions: bool = False):
+	def trigger_patch_deploy(self, ignore_permissions: bool = False):
 		if is_suspended():
 			return dict(
 				error=True,
 				message="Builds are currently suspended. Please try again later.",
 			)
 
-		deploy_candidate_build = self.create_build(
-			no_cache=False, deploy_after_build=True, instant_build=True
-		)
+		deploy_candidate_build = self.create_build(no_cache=False, deploy_after_build=True, patch_build=True)
 		deploy_candidate_build.insert(ignore_permissions=ignore_permissions)
 		return {"error": False, "name": deploy_candidate_build.name}
 
