@@ -322,9 +322,8 @@ class ProductTrial(Document):
 			},
 			pluck="name",
 		)
-		for site in orphans:
-			frappe.db.set_value("Site", site, "is_standby", 1)
 		if orphans:
+			frappe.db.set_value("Site", {"name": ("in", orphans)}, "is_standby", 1)
 			frappe.db.commit()
 
 	def create_standby_sites_in_each_cluster(self):
