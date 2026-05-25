@@ -1345,7 +1345,7 @@ class BaseServer(Document, TagHelpers):
 		)
 
 	@frappe.whitelist()
-	def archive(self):  # noqa: C901
+	def archive(self, reason=None):  # noqa: C901
 		if self.status == "Archived":
 			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
 			return
@@ -1425,14 +1425,15 @@ class BaseServer(Document, TagHelpers):
 				self.doctype,
 				self.name,
 				"_archive",
+				reason=reason,
 				queue="long",
 				enqueue_after_commit=True,
 			)
 		self.disable_subscription()
 		self.remove_from_release_groups()
 
-	def _archive(self):
-		self.run_press_job("Archive Server")
+	def _archive(self, reason=None):
+		self.run_press_job("Archive Server", arguments={"reason": reason})
 
 	def disable_subscription(self):
 		subscription = self.subscription
@@ -4292,8 +4293,7 @@ def get_teams_with_unpaid_invoices_over_threshold():
 def archive_servers_with_unpaid_invoices():  # noqa: C901
 	def _archive_server(server):
 		try:
-			server.archive()
-			server.create_log("Terminated", "Archived due to unpaid invoices")
+			server.archive(reason="Archived due to unpaid invoices")
 			frappe.db.commit()
 			return True
 		except Exception:
