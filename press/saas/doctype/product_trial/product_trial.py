@@ -308,6 +308,8 @@ class ProductTrial(Document):
 		These sites are safe to return to the pool because account_request and signup_time are NULL.
 		"""
 		administrator_team = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
+		if not administrator_team:
+			return
 		grace_period_cutoff = frappe.utils.add_to_date(frappe.utils.now(), minutes=-15)
 		orphans = frappe.db.get_all(
 			"Site",
