@@ -179,6 +179,7 @@
 		}
 	],
 	"grid_page_length": 50,
+	"rows_threshold_for_grid_search": 20,
 	"index_web_pages_for_search": 1,
 	"links": [
 		{

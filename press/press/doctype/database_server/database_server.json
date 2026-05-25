@@ -81,6 +81,7 @@
 		"column_break_eiyu",
 		"memory_allocator",
 		"memory_allocator_version",
+		"tcmalloc_release_rate",
 		"section_break_ladc",
 		"is_performance_schema_enabled",
 		"mariadb_system_variables",
@@ -120,7 +121,13 @@
 		"binlog_index_retention_days",
 		"column_break_blnf",
 		"enable_binlog_upload_to_s3",
-		"uploaded_binlogs_retention_days"
+		"uploaded_binlogs_retention_days",
+		"monitor_tab",
+		"is_mariadb_monitor_installed",
+		"section_break_uzkb",
+		"is_external_healthcheck_enabled",
+		"column_break_umtu",
+		"is_auto_coredump_enabled"
 	],
 	"fields": [
 		{
@@ -539,8 +546,12 @@
 			"read_only": 1
 		},
 		{
-			"fieldname": "section_break_ladc",
-			"fieldtype": "Section Break"
+			"default": "1",
+			"depends_on": "eval: doc.memory_allocator == \"TCMalloc\"",
+			"fieldname": "tcmalloc_release_rate",
+			"fieldtype": "Int",
+			"label": "TCMalloc Release Rate",
+			"read_only": 1
 		},
 		{
 			"fieldname": "section_break_ladc",
@@ -796,6 +807,18 @@
 			"options": "NAT Server"
 		},
 		{
+			"fieldname": "monitor_tab",
+			"fieldtype": "Tab Break",
+			"label": "Monitor"
+		},
+		{
+			"default": "0",
+			"fieldname": "is_mariadb_monitor_installed",
+			"fieldtype": "Check",
+			"label": "Is MariaDB Monitor Installed",
+			"read_only": 1
+		},
+		{
 			"default": "0",
 			"fieldname": "is_agent_auth_setup",
 			"fieldtype": "Check",
@@ -803,14 +826,20 @@
 			"read_only": 1
 		},
 		{
+			"default": "0",
+			"fieldname": "agent_job_update_feature",
+			"fieldtype": "Check",
+			"label": "Agent Job Update Feature"
+		},
+		{
 			"fieldname": "section_break_uzkb",
 			"fieldtype": "Section Break"
 		},
 		{
 			"default": "0",
-			"fieldname": "agent_job_update_feature",
+			"fieldname": "is_external_healthcheck_enabled",
 			"fieldtype": "Check",
-			"label": "Agent Job Update Feature"
+			"label": "Is External Healthcheck Enabled"
 		},
 		{
 			"fieldname": "column_break_umtu",
@@ -844,7 +873,7 @@
 			"link_fieldname": "database_server"
 		}
 	],
-	"modified": "2026-05-24 18:48:47.951310",
+	"modified": "2026-05-19 03:59:16.146497",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Database Server",
