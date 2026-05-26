@@ -1876,7 +1876,7 @@ class VirtualMachine(Document):
 			self.client().terminate_instances(InstanceIds=[self.instance_id])
 
 	@frappe.whitelist()
-	def terminate(self):  # noqa: C901
+	def terminate(self, reason=None):  # noqa: C901
 		if self.cloud_provider == "AWS EC2":
 			self.client().terminate_instances(InstanceIds=[self.instance_id])
 
@@ -1903,7 +1903,7 @@ class VirtualMachine(Document):
 			self.client().terminate_virtual_machine(instance_id=self.instance_id)
 
 		if server := self.get_server():
-			log_server_activity(self.series, server.name, action="Terminated")
+			log_server_activity(self.series, server.name, action="Terminated", reason=reason)
 
 	def _wait_for_digital_ocean_resize_action_completion(self, action_id: int):
 		"""Wait for resize to complete before starting the droplet."""
