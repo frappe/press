@@ -29,6 +29,7 @@ def create_test_app_release(app_source: AppSource, hash: str | None = None) -> "
 			"author": "Test Author",
 			"deployable": True,
 			"status": "Approved",
+			"team": app_source.team,
 		}
 	).insert(ignore_if_duplicate=True)
 	app_release.reload()
