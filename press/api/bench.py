@@ -831,7 +831,7 @@ def deploy_and_update(
 	release_pipeline.create_release.run_as_workflow(
 		apps=apps, sites=sites, run_will_fail_check=run_will_fail_check
 	)
-	return None
+	return release_pipeline.name
 
 
 @frappe.whitelist()

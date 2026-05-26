@@ -1350,7 +1350,7 @@ class BaseServer(Document, TagHelpers):
 		)
 
 	@frappe.whitelist()
-	def archive(self):  # noqa: C901
+	def archive(self, reason=None):  # noqa: C901
 		if self.status == "Archived":
 			frappe.msgprint(_("Server {0} has already been archived.").format(self.name))
 			return
@@ -1430,14 +1430,15 @@ class BaseServer(Document, TagHelpers):
 				self.doctype,
 				self.name,
 				"_archive",
+				reason=reason,
 				queue="long",
 				enqueue_after_commit=True,
 			)
 		self.disable_subscription()
 		self.remove_from_release_groups()
 
-	def _archive(self):
-		self.run_press_job("Archive Server")
+	def _archive(self, reason=None):
+		self.run_press_job("Archive Server", arguments={"reason": reason})
 
 	def disable_subscription(self):
 		subscription = self.subscription
@@ -2835,7 +2836,9 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			agent.disable_feature_flag()
 
 	def _create_static_ip_log(self):
-		if self.provider != "AWS EC2" or not self.team:
+		if not self.team or not frappe.db.get_value(
+			"Static IP Plan", {"provider": self.provider, "enabled": 1}, cache=True
+		):
 			return
 
 		if frappe.db.get_value("Team", self.team, "free_account"):
@@ -2979,11 +2982,12 @@ class Server(BaseServer):
 			if database_server_public != self.public:
 				frappe.db.set_value("Database Server", self.database_server, "public", self.public)
 
+		self._create_static_ip_log()
+
 		if self.has_value_changed("team"):
 			self.update_subscription()
 			self.update_db_server()
 
-		self._create_static_ip_log()
 		self.set_bench_memory_limits_if_needed(save=False)
 		self.validate_public_server_exists_for_site_or_bench_placement()
 
@@ -4375,8 +4379,7 @@ def get_teams_with_unpaid_invoices_over_threshold():
 def archive_servers_with_unpaid_invoices():  # noqa: C901
 	def _archive_server(server):
 		try:
-			server.archive()
-			server.create_log("Terminated", "Archived due to unpaid invoices")
+			server.archive(reason="Archived due to unpaid invoices")
 			frappe.db.commit()
 			return True
 		except Exception:
