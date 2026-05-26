@@ -647,6 +647,8 @@ class Team(Document):
 			)
 
 	def total_subscribed_amount(self):
+		from frappe.utils import flt
+
 		subscriptions = frappe.get_all(
 			"Subscription",
 			{"team": self.name, "enabled": 1},
@@ -655,7 +657,9 @@ class Team(Document):
 		total = 0
 		for sub in subscriptions:
 			if sub.plan_type == "Server Storage Plan":
-				total += frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") * sub.additional_storage
+				total += frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") * flt(
+					sub.additional_storage
+				)
 			else:
 				total += frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") or 0
 		return total
