@@ -22,7 +22,7 @@
 			</Button>
 		</template>
 		<span
-			class="text-base font-medium text-gray-700"
+			class="text-base font-medium text-ink-gray-7"
 			v-if="!$team.doc?.partner_email"
 		>
 			Have a Frappe Partner Referral Code? Click on
@@ -51,7 +51,7 @@
 				</p>
 
 				<div
-					class="rounded bg-gray-100 p-4 mb-4 pb-2 prose prose-sm text-gray-700"
+					class="rounded bg-surface-gray-2 p-4 mb-4 pb-2 prose prose-sm text-ink-gray-7"
 				>
 					<p>
 						<strong>Note</strong>: After linking with Partner, following details
@@ -98,7 +98,7 @@
 				<div class="text-p-base pb-2">
 					This will remove the Partner associated with your account. Are you
 					sure you want to remove the Partner? <br /><br />
-					<div class="text-gray-800 bg-gray-200 p-3 rounded-md">
+					<div class="text-ink-gray-8 bg-surface-gray-3 p-3 rounded-md">
 						Your partner will no longer have access to your sites and servers
 						and will be removed as team member from your team.
 					</div>

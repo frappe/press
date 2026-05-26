@@ -13,7 +13,7 @@
 		<div class="m-12 mx-auto max-w-2xl px-5">
 			<div
 				v-if="$resources.installAppOptions.loading"
-				class="py-4 text-base text-gray-600"
+				class="py-4 text-base text-ink-gray-6"
 			>
 				Loading...
 			</div>
@@ -26,7 +26,7 @@
 					/>
 					<div class="my-1 ml-4 flex flex-col justify-between">
 						<h1 class="text-lg font-semibold">{{ appDoc.title }}</h1>
-						<p class="text-sm text-gray-600">{{ appDoc.description }}</p>
+						<p class="text-sm text-ink-gray-6">{{ appDoc.description }}</p>
 					</div>
 				</div>
 
@@ -34,7 +34,7 @@
 					<div v-if="$team.doc.onboarding.site_created">
 						<div v-if="plans.length">
 							<div class="flex items-center justify-between">
-								<h2 class="text-base font-medium leading-6 text-gray-900">
+								<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 									Select Plan
 								</h2>
 							</div>
@@ -44,9 +44,9 @@
 						</div>
 
 						<div v-if="options.private_groups.length">
-							<h2 class="text-base font-medium leading-6 text-gray-900">
+							<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 								Select Bench
-								<span class="text-sm text-gray-500"> (Optional) </span>
+								<span class="text-sm text-ink-gray-5"> (Optional) </span>
 							</h2>
 							<div class="mt-2 w-full space-y-2">
 								<FormControl
@@ -69,7 +69,7 @@
 					</div>
 
 					<div>
-						<h2 class="text-base font-medium leading-6 text-gray-900">
+						<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 							Select Region
 						</h2>
 						<div class="mt-2 w-full space-y-2">
@@ -80,9 +80,9 @@
 									@click="cluster = c.name"
 									:class="[
 										cluster === c.name
-											? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-											: 'bg-white text-gray-900  hover:bg-gray-50',
-										'flex w-full items-center rounded border p-3 text-left text-base text-gray-900',
+											? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+											: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
+										'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 									]"
 								>
 									<div class="flex w-full items-center justify-between">
@@ -100,7 +100,7 @@
 					</div>
 
 					<div>
-						<h2 class="text-base font-medium leading-6 text-gray-900">
+						<h2 class="text-base font-medium leading-6 text-ink-gray-9">
 							Enter Subdomain
 						</h2>
 						<div class="mt-2 items-center">
@@ -111,7 +111,7 @@
 									v-model="subdomain"
 								/>
 								<div
-									class="flex items-center rounded-r bg-gray-100 px-4 text-base"
+									class="flex items-center rounded-r bg-surface-gray-2 px-4 text-base"
 								>
 									.{{ options.domain }}
 								</div>
@@ -122,7 +122,7 @@
 							<ErrorMessage :message="$resources.subdomainExists.error" />
 							<div
 								v-if="$resources.subdomainExists.loading"
-								class="text-sm text-gray-600"
+								class="text-sm text-ink-gray-6"
 							>
 								Checking...
 							</div>
@@ -168,7 +168,7 @@
 					</div>
 				</div>
 				<div class="flex space-x-1">
-					<div class="text-sm text-gray-600">
+					<div class="text-sm text-ink-gray-6">
 						Want to install <b>{{ appDoc.title }}</b> on an existing Site or
 						Bench?
 					</div>

@@ -413,10 +413,55 @@ class Invoice(Document):
 	def on_submit(self):
 		self.create_invoice_on_frappeio()
 		self.fetch_mpesa_invoice_pdf()
+		self.update_team_tier()
 
 	def on_update_after_submit(self):
 		self.create_invoice_on_frappeio()
 		self.fetch_mpesa_invoice_pdf()
+
+	def update_team_tier(self):
+		if self.type != "Subscription":
+			return
+
+		team = frappe.get_doc("Team", self.team)
+
+		if not team.apply_limits:
+			return
+
+		# Check if the last 3 subscription invoices (including current) are all paid
+		last_invoices = frappe.get_all(
+			"Invoice",
+			filters={
+				"team": self.team,
+				"type": "Subscription",
+				"docstatus": 1,
+				"status": "Paid",
+			},
+			fields=["name"],
+			order_by="creation desc",
+			limit=3,
+		)
+
+		if len(last_invoices) < 3:
+			return
+
+		current_total = flt(self.total)
+
+		tiers = frappe.get_all(
+			"Team Tier",
+			fields=["name", "tier", "last_invoice_amount"],
+			order_by="last_invoice_amount desc",
+		)
+
+		new_tier = None
+		for tier in tiers:
+			if flt(tier.last_invoice_amount) <= current_total:
+				new_tier = tier.name
+				break
+
+		if new_tier and team.tier != new_tier:
+			team.tier = new_tier
+			team.save(ignore_permissions=True)
 
 	def after_insert(self):
 		if self.get("amended_from"):

@@ -12,7 +12,7 @@
 		</Header>
 
 		<div class="m-12 mx-auto max-w-2xl px-5">
-			<div v-if="$resources.app.loading" class="py-4 text-base text-gray-600">
+			<div v-if="$resources.app.loading" class="py-4 text-base text-ink-gray-6">
 				Loading...
 			</div>
 			<div v-else class="space-y-6">
@@ -24,13 +24,13 @@
 					/>
 					<div class="my-1 ml-4 flex flex-col justify-between">
 						<h1 class="text-lg font-semibold">{{ appDoc.title }}</h1>
-						<p class="text-sm text-gray-600">{{ appDoc.description }}</p>
+						<p class="text-sm text-ink-gray-6">{{ appDoc.description }}</p>
 					</div>
 				</div>
 
 				<div
 					v-if="failure"
-					class="flex items-center space-x-2 rounded border border-gray-200 bg-gray-100 p-4 text-base text-gray-700"
+					class="flex items-center space-x-2 rounded border border-outline-gray-1 bg-surface-gray-2 p-4 text-base text-ink-gray-7"
 				>
 					<lucide-alert-circle class="inline-block h-5 w-5" />
 					<p>
@@ -45,15 +45,15 @@
 						.
 					</p>
 				</div>
-				<div class="divide-y rounded-lg bg-gray-50 px-4">
+				<div class="divide-y rounded-lg bg-surface-gray-1 px-4">
 					<div
 						v-for="step in steps"
 						:key="step.id"
-						class="flex items-center border-gray-200 px-1 py-3"
+						class="flex items-center border-outline-gray-1 px-1 py-3"
 					>
 						<div class="flex items-center space-x-4">
 							<LoadingIndicator
-								class="h-4 w-4 text-gray-900"
+								class="h-4 w-4 text-ink-gray-9"
 								v-if="step.icon() === 'loading'"
 							/>
 							<FeatherIcon
@@ -64,7 +64,7 @@
 								:class="{
 									'bg-green-500': step.icon() === 'check',
 									'bg-red-500': step.icon() === 'x',
-									'bg-gray-500': step.icon() === 'clock',
+									'bg-surface-gray-10': step.icon() === 'clock',
 								}"
 							/>
 							<div class="flex flex-col space-y-1">

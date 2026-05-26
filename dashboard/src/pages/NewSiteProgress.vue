@@ -11,13 +11,13 @@
 		</Header>
 
 		<div class="m-12 mx-auto max-w-2xl px-5">
-			<div v-if="!siteGroupDeployName" class="py-4 text-base text-gray-600">
+			<div v-if="!siteGroupDeployName" class="py-4 text-base text-ink-gray-6">
 				<p>Missing deployment information.</p>
 				<router-link to="/sites/new" class="mt-2 text-blue-600 underline">
 					Go back to site creation
 				</router-link>
 			</div>
-			<div v-else-if="isLoading" class="py-4 text-base text-gray-600">
+			<div v-else-if="isLoading" class="py-4 text-base text-ink-gray-6">
 				Loading...
 			</div>
 			<div v-else class="space-y-6">
@@ -46,16 +46,16 @@
 					</p>
 				</div>
 
-				<div class="divide-y rounded-lg bg-gray-50 px-4">
+				<div class="divide-y rounded-lg bg-surface-gray-1 px-4">
 					<div
 						v-for="step in steps"
 						:key="step.id"
-						class="flex items-center border-gray-200 px-1 py-3"
+						class="flex items-center border-outline-gray-1 px-1 py-3"
 					>
 						<div class="flex items-center space-x-4">
 							<LoadingIndicator
 								v-if="step.icon === 'loading'"
-								class="h-4 w-4 text-gray-900"
+								class="h-4 w-4 text-ink-gray-9"
 							/>
 							<FeatherIcon
 								v-else
@@ -65,12 +65,12 @@
 								:class="{
 									'bg-green-500': step.icon === 'check',
 									'bg-red-500': step.icon === 'x',
-									'bg-gray-500': step.icon === 'clock',
+									'bg-surface-gray-10': step.icon === 'clock',
 								}"
 							/>
 							<div class="flex flex-col space-y-1">
 								<h5 class="text-base">{{ step.title }}</h5>
-								<p class="text-sm text-gray-600">{{ step.message }}</p>
+								<p class="text-sm text-ink-gray-6">{{ step.message }}</p>
 							</div>
 						</div>
 					</div>

@@ -19,6 +19,7 @@ from press.api.marketplace import (
 	create_app_plan,
 	create_approval_request,
 	get_app,
+	get_app_audits,
 	get_apps,
 	get_apps_with_plans,
 	get_latest_approval_request,
@@ -258,11 +259,40 @@ class TestAPIMarketplace(FrappeTestCase):
 		r = releases({"app": self.marketplace_app.name, "source": self.app_source.name})
 		self.assertEqual(r[0].name, self.app_release.name)
 
+	def test_get_app_audits_returns_audit_summaries_for_app(self):
+		audit = frappe.get_doc(
+			{
+				"doctype": "Marketplace App Audit",
+				"marketplace_app": self.marketplace_app.name,
+				"app_source": self.app_source.name,
+				"app_release": self.app_release.name,
+				"team": self.team.name,
+				"audit_type": "Manual Run",
+				"status": "Completed",
+				"audit_result": "Needs Improvement",
+			}
+		).insert()
+
+		frappe.set_user(self.team.user)
+		audits = get_app_audits(self.marketplace_app.name)
+
+		self.assertEqual(len(audits), 1)
+		self.assertEqual(audits[0].name, audit.name)
+		self.assertEqual(audits[0].app_source, self.app_source.name)
+		self.assertEqual(audits[0].app_release, self.app_release.name)
+		self.assertEqual(audits[0].audit_type, "Manual Run")
+		self.assertEqual(audits[0].audit_result, "Needs Improvement")
+		self.assertEqual(audits[0].status, "Completed")
+
 	def test_app_release_approvals(self):
 		frappe.set_user(self.team.user)
-		create_approval_request(self.marketplace_app.name, self.app_release.name)
+		with patch(
+			"press.press.doctype.app_release_approval_request.app_release_approval_request.MarketplaceAppAudit.create_for_release"
+		) as create_audit:
+			create_approval_request(self.marketplace_app.name, self.app_release.name)
 		latest_approval = get_latest_approval_request(self.app_release.name)
 		self.assertIsNotNone(latest_approval)
+		create_audit.assert_called_once()
 
 	def test_new_app(self):
 		app = {
@@ -373,20 +403,17 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.marketplace_app.reload()
 		self.assertFalse(self.marketplace_app.image)
 
-	@patch("press.api.marketplace.is_user_part_of_team", return_value=False)
-	@patch("press.api.marketplace.get_current_team")
-	def test_update_app_image_blocked_for_non_member_of_owner_team(
-		self, mock_get_current_team, _mock_is_member
-	):
+	def test_update_app_image_by_owner_without_team_member_entry(self):
+		"""Regression: team owner (Team.user) must be able to upload even when absent from Team Member table."""
+		frappe.db.delete("Team Member", {"parent": self.team.name, "user": self.team.user})
 		frappe.set_user(self.team.user)
-		mock_get_current_team.return_value = self.team.name
 		_setup_fake_upload(self.marketplace_app.name)
 
-		with self.assertRaises(frappe.PermissionError):
-			update_app_image()
+		file_url = update_app_image()
 
 		self.marketplace_app.reload()
-		self.assertFalse(self.marketplace_app.image)
+		self.assertTrue(file_url)
+		self.assertEqual(self.marketplace_app.image, file_url)
 
 	def test_add_app_screenshot_blocked_for_non_owner(self):
 		other_team = create_test_press_admin_team()
@@ -399,20 +426,17 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.marketplace_app.reload()
 		self.assertEqual(len(self.marketplace_app.screenshots), 0)
 
-	@patch("press.api.marketplace.is_user_part_of_team", return_value=False)
-	@patch("press.api.marketplace.get_current_team")
-	def test_add_app_screenshot_blocked_for_non_member_of_owner_team(
-		self, mock_get_current_team, _mock_is_member
-	):
+	def test_add_app_screenshot_by_owner_without_team_member_entry(self):
+		"""Regression: team owner (Team.user) must be able to upload even when absent from Team Member table."""
+		frappe.db.delete("Team Member", {"parent": self.team.name, "user": self.team.user})
 		frappe.set_user(self.team.user)
-		mock_get_current_team.return_value = self.team.name
 		_setup_fake_upload(self.marketplace_app.name)
 
-		with self.assertRaises(frappe.PermissionError):
-			add_app_screenshot()
+		file_url = add_app_screenshot()
 
 		self.marketplace_app.reload()
-		self.assertEqual(len(self.marketplace_app.screenshots), 0)
+		self.assertTrue(file_url)
+		self.assertEqual(len(self.marketplace_app.screenshots), 1)
 
 	def test_update_app_image_rejects_svg(self):
 		"""SVG files can contain inline <script> tags — reject to prevent stored XSS."""
