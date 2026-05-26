@@ -13,8 +13,8 @@ Tests for:
 
 from __future__ import annotations
 
-from contextlib import contextmanager
-from unittest.mock import MagicMock, patch
+from contextlib import contextmanager, nullcontext
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
@@ -103,6 +103,25 @@ def _add_press_role_user(role: PressRole, user: str) -> None:
 	"""Add a user to a Press Role directly (bypassing admin guard)."""
 	role.append("users", {"user": user})
 	role.save(ignore_permissions=True)
+
+
+def _patch_sync_press_role():
+	"""Return a context manager that silences the ``sync_press_role`` doc-event
+	hook when the ``team_member_resource`` module is present (CI environment).
+
+	On local dev the module does not exist, so we return a no-op context.
+	The hook fires on ``PressRole.after_insert`` and tries to persist a
+	``Team Member Resource`` whose ``validate_document_name`` guard rejects
+	mock/fake document names that aren't actually in the database.
+	"""
+	_TMR_MODULE = "press.press.doctype.team_member_resource.team_member_resource"
+	try:
+		import importlib
+
+		importlib.import_module(_TMR_MODULE)
+		return patch(f"{_TMR_MODULE}.sync_press_role", new=Mock())
+	except (ImportError, ModuleNotFoundError):
+		return nullcontext()
 
 
 # ═════════════════════════════════════════════════════════════════
@@ -741,6 +760,7 @@ class TestCreateUserResource(FrappeTestCase):
 			user_context(self.member_email, team=self.team.name),
 			get_current_team_ctx(self.team),
 			patch.object(Document, "_validate_links", MagicMock()),
+			_patch_sync_press_role(),
 		):
 			create_user_resource(mock_doc, None)
 		self.assertTrue(frappe.db.exists("Press Role", {"team": self.team.name, "title": expected_title}))
@@ -758,6 +778,7 @@ class TestCreateUserResource(FrappeTestCase):
 			user_context(self.member_email, team=self.team.name),
 			get_current_team_ctx(self.team),
 			patch.object(Document, "_validate_links", MagicMock()),
+			_patch_sync_press_role(),
 		):
 			create_user_resource(mock_doc, None)
 			create_user_resource(mock_doc, None)  # second call — must be a no-op
