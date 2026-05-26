@@ -1560,9 +1560,6 @@ class Cluster(Document):
 		server.save()  # Creating server before database server to use the preset agent password
 		database_server.save()
 
-		# Deliberately skipping subscription creation for database server
-		server.create_subscription(plan.name)
-
 		job = server.run_press_job(
 			"Create Server", arguments=None
 		)  # Deliberately calling via `Server` and not `Database Server`
@@ -1690,9 +1687,6 @@ class Cluster(Document):
 			server.plan = plan.name
 
 		server.save()
-
-		if create_subscription:
-			server.create_subscription(plan.name)
 
 		job_arguments: dict[str, str | bool | None] = {}
 		if setup_db_replication:

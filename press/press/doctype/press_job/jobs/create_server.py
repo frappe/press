@@ -312,6 +312,23 @@ class CreateServerJob(PressJob):
 				update_modified=False,
 			)
 
+		# Create subscription for newly provisioned servers (skip recovery servers)
+		if self.server_type in ["Server", "Database Server"] and not self.server_doc.is_for_recovery:
+			try:
+				if self.server_doc.plan and not self.server_doc.subscription:
+					self.server_doc.create_subscription(self.server_doc.plan)
+			except Exception:
+				frappe.log_error("Server Subscription Creation Error")
+
+			# For unified server, also create subscription for the linked database server
+			if self.server_type == "Server" and self.server_doc.is_unified_server:
+				try:
+					db_server = frappe.get_doc("Database Server", self.server_doc.database_server)
+					if db_server.plan and not db_server.subscription:
+						db_server.create_subscription(db_server.plan)
+				except Exception:
+					frappe.log_error("Database Server Subscription Creation Error")
+
 		# Update "Server Snapshot Recovery" record if this server is being provisioned for recovery
 		if self.server_type in ["Server", "Database Server"] and self.server_doc.is_for_recovery:
 			recovery_record_name = frappe.db.get_value(
