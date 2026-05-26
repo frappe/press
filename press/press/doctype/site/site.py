@@ -1562,11 +1562,11 @@ class Site(Document, TagHelpers):
 	@site_action(["Active"])
 	def add_domain(self, domain):
 		domain = domain.lower().strip(".")
-		response = check_dns_cname_a(self.name, domain)
 		if d := get_matching_domain(domain):
 			frappe.throw(
 				f"Cannot add {d} domain as it is a system reserved domain. Please use a different domain for your site."
 			)
+		response = check_dns_cname_a(self.name, domain)
 		if response["matched"]:
 			if frappe.db.exists("Site Domain", {"domain": domain}):
 				frappe.throw(
