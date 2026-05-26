@@ -27,17 +27,17 @@
 			>
 				<div class="flex flex-wrap items-center justify-between gap-3">
 					<div class="flex flex-col gap-1">
-						<div class="text-sm font-medium text-ink-gray-6">
-							Your current tier
+						<div class="text-sm font-normal text-ink-gray-6">
+							Your current subscribed amount
 						</div>
 						<div class="flex items-center gap-2">
-							<span class="text-lg font-semibold text-ink-gray-9">
-								{{ currentTierLabel }}
+							<span class="text-xl font-semibold text-ink-gray-9">
+								{{ formatAmount($team.doc.total_subscribed_amount) }}
 							</span>
 							<Badge
 								v-if="teamTiers.data.current_tier"
 								theme="blue"
-								:label="`Spending limit ${formatAmount(teamTiers.data.spending_limit)}`"
+								:label="`${currentTierLabel}`"
 							/>
 						</div>
 					</div>
@@ -72,11 +72,6 @@
 				>
 					<div class="flex items-start justify-between">
 						<div class="flex flex-col gap-1">
-							<div
-								class="text-sm font-medium uppercase tracking-wide text-ink-gray-5"
-							>
-								Tier {{ idx }}
-							</div>
 							<div class="text-lg font-semibold text-ink-gray-9">
 								{{ tier.tier }}
 							</div>
