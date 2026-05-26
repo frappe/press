@@ -2,9 +2,9 @@
 	<Dialog
 		v-model="show"
 		:options="{
-			size: '4xl',
-			title: lastDeploy ? 'Update Bench' : 'Deploy Bench',
-		}"
+		size: '4xl',
+		title: lastDeploy ? 'Update Bench' : 'Deploy Bench',
+	}"
 	>
 		<template #body-content>
 			<AlertBanner
@@ -15,20 +15,20 @@
 			/>
 			<AlertBanner
 				v-if="
-					benchDocResource.doc.deploy_information.apps.some((app) =>
-						app.releases.some((release) => release.is_yanked),
-					)
-				"
+				benchDocResource.doc.deploy_information.apps.some((app) =>
+					app.releases.some((release) => release.is_yanked),
+				)
+			"
 				class="mb-4"
 				title="A few commits have been yanked, <a href='https://docs.frappe.io/cloud/benches/updating_a_bench#yanked-app-releases' target='_blank' style='font-weight: bold;'>click here</a> to know more."
 				type="info"
 			/>
 			<AlertBanner
 				v-if="
-					benchDocResource.doc.deploy_information.apps.some((app) =>
-						app.releases.some((release) => release.is_mandatory),
-					)
-				"
+				benchDocResource.doc.deploy_information.apps.some((app) =>
+					app.releases.some((release) => release.is_mandatory),
+				)
+			"
 				class="mb-4"
 				title="A mandatory update is available. Please select the update to proceed."
 				type="info"
@@ -72,6 +72,49 @@
 					>
 						No active sites to update
 					</p>
+				</div>
+
+				<!-- Patch Deploy Info Step -->
+				<div
+					v-else-if="step === 'patch-deploy-info'"
+					class="flex flex-col gap-4"
+				>
+					<div
+						class="flex items-start gap-3 rounded-lg border border-outline-gray-2 bg-surface-gray-2 p-4"
+					>
+						<lucide-info class="mt-0.5 h-5 w-5 shrink-0 text-ink-blue-3" />
+						<div class="space-y-2 text-base text-ink-gray-8">
+							<p>
+								A <strong>patch deploy</strong> snapshots your existing bench
+								image, applies the new code on top, and provisions new benches
+								from it — no full image rebuild needed.
+							</p>
+							<ul class="ml-1 list-inside list-disc space-y-1 text-ink-gray-7">
+								<li>Much faster than a regular deploy</li>
+								<li>
+									New benches are created and sites are migrated, just like a
+									regular deploy
+								</li>
+								<li>Assets are only rebuilt if UI files changed</li>
+								<li>
+									Python dependencies are only reinstalled if dependency files
+									changed
+								</li>
+							</ul>
+							<p>
+								Best for small, safe changes like bug fixes. Avoid for adding or
+								removing apps, or anything that needs a clean build.
+							</p>
+						</div>
+					</div>
+					<a
+						href="https://docs.frappe.io/cloud/benches/patch-deploys"
+						target="_blank"
+						class="flex items-center gap-1.5 text-sm text-ink-blue-3 hover:underline"
+					>
+						<lucide-external-link class="h-3.5 w-3.5" />
+						Learn more in the documentation
+					</a>
 				</div>
 
 				<!-- Restrict Build Step -->
@@ -123,23 +166,36 @@
 		</template>
 		<template #actions>
 			<div class="flex items-center justify-between space-y-2">
-				<div v-if="!canShowBack"><!-- Spacer div --></div>
-				<Button v-if="canShowBack" label="Back" @click="back" />
+				<div v-if="!canShowBack || step === 'patch-deploy-info'">
+					<!-- Spacer div -->
+				</div>
+				<Button
+					v-if="canShowBack && step !== 'patch-deploy-info'"
+					label="Back"
+					@click="back"
+				/>
 				<Button v-if="canShowNext" variant="solid" label="Next" @click="next" />
-				<div v-if="canShowDeploy" class="flex gap-2">
+				<div v-if="step === 'patch-deploy-info'" class="flex gap-2">
+					<Button label="Back" @click="back" />
+					<Button
+						variant="solid"
+						label="Proceed with Patch Deploy"
+						:loading="$resources.patchDeploy.loading"
+						@click="$resources.patchDeploy.submit()"
+					/>
+				</div>
+				<div v-else-if="canShowDeploy" class="flex gap-2">
 					<Button
 						v-if="deployInformation.can_run_patch_build"
 						variant="outline"
 						label="Deploy as Patch"
-						:loading="$resources.patchDeploy.loading"
 						@click="deployAsPatch"
 					/>
 					<Button
 						variant="solid"
 						:label="deployLabel"
-						:loading="
-							$resources.deployAndUpdate.loading ||
-							$resources.updateInPlace.loading
+						:loading="$resources.deployAndUpdate.loading ||
+						$resources.updateInPlace.loading
 						"
 						@click="updateBench"
 					/>
@@ -460,7 +516,11 @@ export default {
 				return false
 			}
 
-			return this.hasUpdateAvailable || this.step === 'restrict-build'
+			return (
+				this.hasUpdateAvailable ||
+				this.step === 'restrict-build' ||
+				this.step === 'patch-deploy-info'
+			)
 		},
 		canShowNext() {
 			if (this.step === 'select-apps' && !this.lastDeploy) {
@@ -471,6 +531,10 @@ export default {
 				return false
 			}
 
+			if (this.step === 'patch-deploy-info') {
+				return false
+			}
+
 			if (this.step === 'select-sites' && !this.restrictMessage) {
 				return false
 			}
@@ -478,7 +542,7 @@ export default {
 			return true
 		},
 		canShowDeploy() {
-			return !this.canShowNext
+			return !this.canShowNext && this.step !== 'patch-deploy-info'
 		},
 		deployLabel() {
 			if (!this.lastDeploy) {
@@ -644,6 +708,8 @@ export default {
 				this.step = 'select-apps'
 			} else if (this.step === 'restrict-build') {
 				this.step = 'select-sites'
+			} else if (this.step === 'patch-deploy-info') {
+				this.step = 'select-sites'
 			}
 
 			if (this.step === 'select-apps') {
@@ -737,7 +803,7 @@ export default {
 			}
 		},
 		deployAsPatch() {
-			this.$resources.patchDeploy.submit()
+			this.step = 'patch-deploy-info'
 		},
 		setErrorMessage(error) {
 			this.ignoreWillFailCheck = false

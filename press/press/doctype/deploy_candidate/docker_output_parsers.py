@@ -524,7 +524,19 @@ class PatchBuildOutputParser(StepMixin):
 		data = self._get_step_data(job, "Pull App Updates")
 		if not data:
 			return
-		build_output = data if isinstance(data, str) else "\n".join(str(line) for line in data)
+
+		build_output = ""
+
+		if isinstance(data, str):
+			# Case of cache
+			build_output = data
+		if isinstance(data, list):
+			# Case of DB stored output, which is a list of lines
+			build_output = "\n".join(str(line) for line in data)
+		if isinstance(data, dict):
+			# Case of error output which is a dict with error details
+			build_output = data.get("output", "")
+
 		if step := self.dcb.get_step("patch", "update-apps"):
 			step.output = build_output
 			step.save()
