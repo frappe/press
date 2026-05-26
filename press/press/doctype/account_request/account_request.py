@@ -349,7 +349,7 @@ class AccountRequest(Document):
 
 def expire_request_key():
 	"""
-	Expire the request key requested 10 minutes ago.
+	Expire account request keys that have passed their expiration time.
 	"""
 	frappe.db.set_value(
 		"Account Request",
