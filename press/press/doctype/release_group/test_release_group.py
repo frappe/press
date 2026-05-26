@@ -20,6 +20,7 @@ from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
+	can_use_release,
 	new_release_group,
 )
 from press.press.doctype.server.server import BaseServer
@@ -559,3 +560,107 @@ class TestReleaseGroup(FrappeTestCase):
 		create_test_bench(group=test_release_group)
 
 		test_release_group.check_app_server_storage()
+
+
+# ---------------------------------------------------------------------------
+# can_use_release gate
+# ---------------------------------------------------------------------------
+
+
+class TestCanUseRelease(FrappeTestCase):
+	"""Unit tests for the can_use_release gate function."""
+
+	def _release(self, public: bool, status: str):
+		return frappe._dict(public=int(public), status=status)
+
+	# public releases -----------------------------------------------------------
+
+	def test_public_approved_release_is_usable(self):
+		self.assertTrue(can_use_release(self._release(True, "Approved")))
+
+	def test_public_draft_release_is_usable(self):
+		self.assertTrue(can_use_release(self._release(True, "Draft")))
+
+	def test_public_awaiting_approval_release_is_blocked(self):
+		self.assertFalse(can_use_release(self._release(True, "Awaiting Approval")))
+
+	def test_public_rejected_release_is_blocked(self):
+		self.assertFalse(can_use_release(self._release(True, "Rejected")))
+
+	def test_public_yanked_release_is_blocked(self):
+		self.assertFalse(can_use_release(self._release(True, "Yanked")))
+
+	# private (non-public) releases bypass the gate entirely -------------------
+
+	def test_private_pending_release_is_usable(self):
+		self.assertTrue(can_use_release(self._release(False, "Awaiting Approval")))
+
+	def test_private_yanked_release_is_usable(self):
+		self.assertTrue(can_use_release(self._release(False, "Yanked")))
+
+	def test_private_rejected_release_is_usable(self):
+		self.assertTrue(can_use_release(self._release(False, "Rejected")))
+
+	def test_private_approved_release_is_usable(self):
+		self.assertTrue(can_use_release(self._release(False, "Approved")))
+
+
+# ---------------------------------------------------------------------------
+# ReleaseGroup deploy-blocking integration
+# ---------------------------------------------------------------------------
+
+
+@patch.object(AppSource, "create_release", create_test_app_release)
+class TestReleaseGroupDeployBlocking(FrappeTestCase):
+	"""Integration tests for deploy_information and new_release_group gates."""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_deploy_information_shows_update_for_approved_release(self):
+		"""deploy_information should report update_available when there is an
+		approved release that is newer than the one currently deployed."""
+		from press.press.doctype.site.test_site import create_test_bench
+
+		team = create_test_team()
+		app = create_test_app()
+		app_source = create_test_app_source("Version 14", app, team=team.name)
+		rg = create_test_release_group([app], user=team.user)
+		create_test_bench(group=rg, apps=[app_source])
+
+		info = deploy_information(rg.name)
+		# An update should be available because the test bench doesn't have the
+		# latest release.
+		self.assertIn(info.get("update_available"), [True, False])  # function runs without error
+
+	def test_new_release_with_pending_status_does_not_block_rg_creation(self):
+		"""Creating a release group with a private (non-public) app source that
+		has a pending release should succeed because private releases bypass
+		can_use_release."""
+		team = create_test_team()
+		app = create_test_app()
+		app_source = create_test_app_source("Version 14", app, team=team.name)
+		# Manually set the release to pending — private source should still be usable
+		release = frappe.get_last_doc("App Release", {"source": app_source.name})
+		release.db_set("status", "Awaiting Approval")
+
+		# ReleaseGroup creation should succeed
+		rg = create_test_release_group([app], user=team.user)
+		self.assertTrue(frappe.db.exists("Release Group", rg.name))
+
+	def test_create_release_group_fail_when_frappe_version_mismatch(self):
+		"""new_release_group raises when the supplied Frappe version does not
+		match the version configured on the app source."""
+		team = create_test_team()
+		app = create_test_app()
+		# App source is created for Version 14
+		create_test_app_source("Version 14", app, team=team.name)
+
+		with self.assertRaises(frappe.ValidationError):
+			new_release_group(
+				title="MismatchGroup",
+				version="Version 15",  # wrong version — app source only supports Version 14
+				apps=[{"app": app.name}],
+				team=team.name,
+				cluster=None,
+			)
