@@ -447,7 +447,7 @@ class Invoice(Document):
 
 		current_total = flt(self.total)
 		if self.currency == "INR":
-			current_total = flt(self.total * 82, 2)
+			current_total = flt(self.total / 82, 2)
 
 		tiers = frappe.get_all(
 			"Team Tier",

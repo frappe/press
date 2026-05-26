@@ -657,7 +657,7 @@ class Team(Document):
 		total = 0
 		for sub in subscriptions:
 			if sub.plan_type == "Server Storage Plan":
-				total += frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") * flt(
+				total += (frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") or 0) * flt(
 					sub.additional_storage
 				)
 			else:
