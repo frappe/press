@@ -174,3 +174,98 @@ class TestAppSource(FrappeTestCase):
 		# Call again with same app
 		source.set_required_apps("frappe/erpnext")
 		self.assertEqual(len(source.required_apps), initial_count)
+
+	# -----------------------------------------------------------------------
+	# Task 4: Private repository URL generation (tenancy safeguards)
+	# -----------------------------------------------------------------------
+
+	@patch.object(AppSource, "after_insert", new=Mock())
+	@patch.object(AppSource, "on_update", new=Mock())
+	def test_get_repo_url_returns_plain_url_for_public_repo(self):
+		"""When no github_installation_id is set, get_repo_url() returns the
+		plain repository_url without an auth token embedded."""
+		team_name = create_test_team().name
+		app = self.create_app("publicapp", "Public App")
+		source = app.add_source(
+			frappe_version="Version 14",
+			repository_url="https://github.com/frappe/publicapp",
+			branch="main",
+			team=team_name,
+		)
+		source.github_installation_id = None
+		result = source.get_repo_url()
+		self.assertEqual(result, "https://github.com/frappe/publicapp")
+		self.assertNotIn("x-access-token", result)
+
+	@patch.object(AppSource, "after_insert", new=Mock())
+	@patch.object(AppSource, "on_update", new=Mock())
+	def test_get_repo_url_embeds_token_for_private_repo(self):
+		"""When github_installation_id is set, get_repo_url() returns an HTTPS
+		URL with the GitHub App access token embedded for cloning private repos."""
+
+		team_name = create_test_team().name
+		app = self.create_app("privateapp", "Private App")
+		source = app.add_source(
+			frappe_version="Version 14",
+			repository_url="https://github.com/myorg/privateapp",
+			branch="main",
+			team=team_name,
+		)
+		source.github_installation_id = "fake-installation-123"
+
+		with patch(
+			"press.press.doctype.app_source.app_source.get_access_token",
+			return_value="ghp_faketoken",
+		):
+			result = source.get_repo_url()
+
+		self.assertIn("x-access-token:ghp_faketoken", result)
+		self.assertIn("github.com/myorg/privateapp", result)
+
+	@patch.object(AppSource, "after_insert", new=Mock())
+	@patch.object(AppSource, "on_update", new=Mock())
+	def test_get_repo_url_raises_when_token_fetch_fails(self):
+		"""If get_access_token returns None for a private source, get_repo_url()
+		raises an exception (prevents a silent clone with no credentials)."""
+		team_name = create_test_team().name
+		app = self.create_app("privateapp2", "Private App 2")
+		source = app.add_source(
+			frappe_version="Version 14",
+			repository_url="https://github.com/myorg/privateapp2",
+			branch="main",
+			team=team_name,
+		)
+		source.github_installation_id = "bad-installation"
+
+		with patch(
+			"press.press.doctype.app_source.app_source.get_access_token",
+			return_value=None,
+		):
+			self.assertRaisesRegex(
+				Exception,
+				"App installation token could not be fetched",
+				source.get_repo_url,
+			)
+
+	@patch.object(AppSource, "after_insert", new=Mock())
+	@patch.object(AppSource, "on_update", new=Mock())
+	def test_get_access_token_falls_back_to_press_settings_for_public_source(self):
+		"""For a source without a github_installation_id, get_access_token()
+		returns the global token from Press Settings (public source flow)."""
+		team_name = create_test_team().name
+		app = self.create_app("pubsrc", "Pub Src")
+		source = app.add_source(
+			frappe_version="Version 14",
+			repository_url="https://github.com/frappe/pubsrc",
+			branch="main",
+			team=team_name,
+		)
+		source.github_installation_id = None
+
+		with patch(
+			"frappe.get_value",
+			return_value="ghs_global_token",
+		):
+			token = source.get_access_token()
+
+		self.assertEqual(token, "ghs_global_token")
