@@ -838,7 +838,7 @@ def deploy_and_update(
 		run_will_fail_check=run_will_fail_check,
 		trigger_patch_deploy=trigger_patch_deploy,
 	)
-	return None
+	return release_pipeline.name
 
 
 @frappe.whitelist()

@@ -163,10 +163,8 @@ export default {
 			await this.$resources.redeployBuild
 				.submit()
 				.then((response) => {
-					this.$router.push({
-						path: response,
-					});
 					this.show = false;
+          window.location.href = response
 				})
 				.catch(() => {
 					toast.error('Failed to redeploy');

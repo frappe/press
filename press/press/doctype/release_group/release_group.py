@@ -1926,7 +1926,7 @@ def get_status(name):
 	return (
 		"Active"
 		if frappe.get_all("Bench", {"group": name, "status": "Active"}, limit=1, order_by="creation desc")
-		else "Awaiting Deploy"
+		else "Deploying"
 	)
 
 
