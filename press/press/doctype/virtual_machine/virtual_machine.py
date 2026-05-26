@@ -1856,7 +1856,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="STOP")
 		elif self.cloud_provider == "Hetzner":
-			self.client().servers.shutdown(self.get_hetzner_server_instance(fetch_data=False))
+			self.client().servers.power_off(self.get_hetzner_server_instance(fetch_data=False))
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "power_off"})
 		elif self.cloud_provider == "Frappe Compute":
