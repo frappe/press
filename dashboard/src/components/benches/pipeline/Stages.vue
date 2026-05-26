@@ -16,7 +16,7 @@ interface Props {
 const props = defineProps<Props>()
 
 // single line commands with && are very long
-// so make them long
+// so make them multi-line
 const formatCmd = (cmd: string) => {
 	return cmd
 		.split('&&')
@@ -67,18 +67,17 @@ const formatCmd = (cmd: string) => {
 					:opened="true"
 				>
 					<template #header>
-						<LucideBoxes class="size-4" />
+						<LucideBoxes class="size-4 shrink-0" />
 						{{ bench.name }}
-						<!-- {{ bench.status}} -->
 						<span class="text-ink-gray-5 mx-1">|</span>
-						<LucideServer class="size-4 text-ink-gray-5" />
-						<span class="text-ink-gray-5"> {{ bench.server }} </span>
+						<LucideServer class="size-4 text-ink-gray-5 shrink-0" />
+						<span class="text-ink-gray-5"> {{ bench.server?.split('.')?.[0] }} </span>
 					</template>
 
 					<Collapsable
 						:opened="true"
 						v-for='job in bench.jobs'
-						headerCss="ml-10 py-2"
+						headerCss="ml-12 py-2"
 						:key="job.name"
 					>
 						<template #header>
