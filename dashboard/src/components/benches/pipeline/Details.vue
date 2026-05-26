@@ -7,6 +7,7 @@ import {
 	Button,
 	Dropdown,
 	Badge,
+  Spinner
 } from 'frappe-ui'
 
 import { toast } from 'vue-sonner'
@@ -378,6 +379,7 @@ const stopBuild = () => {
 				{{ pipeline?.doc?.name }}
 			</h2>
 
+        <Spinner v-if="pipeline?.loading"/>
 			<Badge
 				:label="deployview ? builds[activeBuildId]?.doc?.status : pipeline?.doc?.status"
 				:theme="badgeThemes[deployview ? builds[activeBuildId]?.doc?.status : pipeline?.doc?.status] || 'gray'"
@@ -517,7 +519,7 @@ const stopBuild = () => {
 			<!-- output -->
 			<div
 				v-show="output.opened"
-				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 rounded transition-all duration-300 flex-1"
+				class="overflow-auto bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 rounded transition-all duration-300 flex-1"
 			>
 				<div
 					class="flex items-center pb-2 border-outline-gray-2 mb-3 text-ink-gray-6 -mt-1 -mr-1"
