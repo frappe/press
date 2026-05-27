@@ -51,7 +51,7 @@ export default {
 			]
 
 			if (this.$team?.doc?.apply_limits && this.$team?.doc?.tier) {
-				baseTabs.push({ label: 'Tiers', route: { name: 'BillingTiers' } })
+				baseTabs.push({ label: 'Limits', route: { name: 'BillingTiers' } })
 			}
 
 			// Add UPI Autopay tab for INR teams
