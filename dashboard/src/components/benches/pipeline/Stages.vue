@@ -54,6 +54,7 @@ const isStageDisabled = (x) => {
 			:key="i"
 			class="flex items-center gap-3 py-3 border-b border-surface-gray-2 w-full"
 		>
+<<<<<<< HEAD
 			<div class="animate-pulse rounded size-4 bg-surface-gray-3 shrink-0" />
 
 			<div
@@ -77,6 +78,8 @@ const isStageDisabled = (x) => {
 			:disabled="isStageDisabled(x)"
 			:opened="x.status === 'Running' && (x.label === 'Building' || x.label === 'Deploying')"
 		>
+=======
+>>>>>>> ddca27fc0 (refactor(Collapsable): ditch extra <details> <summary tags)
 			<template #prefix>
 				<StatusIcon :status="x.status" />
 				<span class="whitespace-nowrap"> {{ x.label }}</span>
@@ -123,8 +126,22 @@ const isStageDisabled = (x) => {
 						</span>
 					</template>
 
+<<<<<<< HEAD
 					<!-- Only first job "New Bench" is useful so use it only-->
 					<template v-if="bench.jobs?.length">
+=======
+					<Collapsable
+						:opened="true"
+						v-for='job in bench.jobs'
+						headerCss="ml-12 py-2"
+						:key="job.name"
+					>
+						<template #prefix>
+							<LucideBox class="size-4" />
+							{{ job.job_type }}
+						</template>
+
+>>>>>>> ddca27fc0 (refactor(Collapsable): ditch extra <details> <summary tags)
 						<button
 							class="btn !pl-12"
 							v-for="jobstep in agentJobs?.[bench.jobs[0].name]?.doc?.steps"

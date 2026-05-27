@@ -557,8 +557,16 @@ const stopBuild = () => {
 
 				<!-- list of errors -->
 				<template v-else>
+<<<<<<< HEAD
 					<div v-for='x in errList' class="flex flex-col gap-1">
 						<Collapsable headerCss="py-3" class="mb-3" opened>
+=======
+					<div
+						v-for='x in [...errors?.data || [], ...warnings?.data || []]?.filter(x => x.document_name == activeBuildId)'
+						class="flex flex-col gap-1"
+					>
+						<Collapsable headerCss="py-3" class="mb-3">
+>>>>>>> ddca27fc0 (refactor(Collapsable): ditch extra <details> <summary tags)
 							<template #prefix>
 								<StatusIcon
 									:status="x.class == 'Error' ? 'Failed' : 'Warning'"

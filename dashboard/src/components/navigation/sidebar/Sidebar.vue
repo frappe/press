@@ -138,6 +138,7 @@ const helpDropdownOptions = [
 						<FCLogo class="size-8 hidden md:flex shrink-0 rounded" />
 						<LucideUser class="size-3.5 -mr-1.5 md:hidden" />
 
+<<<<<<< HEAD
 						<div
 							class="flex flex-col gap-0.5 ml-1 min-w-0 md:m-0"
 							:class="collapsedCss"
@@ -145,6 +146,16 @@ const helpDropdownOptions = [
 							<div class="text-base font-medium hidden md:flex text-ink-gray-9">
 								Frappe Cloud
 							</div>
+=======
+      <Dropdown :options="userDropdownOptions">
+        <template v-slot="{ open }">
+          <button
+            class="flex gap-2 w-fit md:w-full p-1.5 items-center rounded md:mb-1 bg-surface-gray-2 md:bg-transparent   hover:bg-surface-gray-2"
+            :class="[open ? 'md:bg-surface-white dark:bg-surface-gray-2 shadow-sm' : ''
+              , collapsed? 'md:p-0': 'md:p-1'] ">
+            <FCLogo class="size-8 hidden md:flex shrink-0 rounded dark:opacity-70" />
+            <LucideUser class='size-3.5 -mr-1.5 md:hidden' />
+>>>>>>> ddca27fc0 (refactor(Collapsable): ditch extra <details> <summary tags)
 
 							<div class="text-sm text-left text-ink-gray-7 truncate">
 								{{ $team?.get.loading ? 'Loading...' : $team?.doc?.user }}

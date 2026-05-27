@@ -28,7 +28,10 @@ function toggle() {
 		<div
 			class="flex items-center gap-2"
 			:class="[disabled? 'opacity-60 cursor-not-allowed':'cursor-pointer', headerCss]"
+<<<<<<< HEAD
 			:aria-expanded="opened"
+=======
+>>>>>>> ddca27fc0 (refactor(Collapsable): ditch extra <details> <summary tags)
 			@click="toggle"
 		>
 			<slot name="prefix" />
