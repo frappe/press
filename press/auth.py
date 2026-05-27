@@ -49,6 +49,7 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.core.doctype.user.user.test_password_strength",
 	"/api/method/frappe.core.doctype.user.user.update_password",
 	"/api/method/get_central_migration_data",
+	"/api/method/press.mcp.handler",
 ]
 
 ALLOWED_WILDCARD_PATHS = [
