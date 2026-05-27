@@ -20,11 +20,9 @@ from press.press.doctype.telegram_message.telegram_message import TelegramMessag
 class TestBackupRecordCheck(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
-		frappe.set_user("Administrator")
 
 	def setUp(self):
 		super().setUp()
-		frappe.set_user("Administrator")
 
 		self.yesterday = frappe.utils.now_datetime().date() - timedelta(days=1)
 		self._2_hrs_before_yesterday = datetime.combine(self.yesterday, datetime.min.time()) - timedelta(
