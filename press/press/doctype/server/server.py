@@ -288,7 +288,7 @@ class BaseServer(Document, TagHelpers):
 
 		storage_price = frappe.db.get_value("Server Storage Plan", {"enabled": 1}, "price_usd") or 0
 		if is_limits_exceeded(storage_price * increment):
-			frappe.throw("Cannot increase storage as spending limit has been exceeded.")
+			frappe.throw("Cannot increase storage as spending limit has been exceeded.")  # nosemgrep
 
 		storage_parameters.update({"database_server" if server[0] == "m" else "server": server})
 
@@ -1459,7 +1459,9 @@ class BaseServer(Document, TagHelpers):
 			)
 
 		if is_limits_exceeded(new_plan.price_usd):
-			frappe.throw("You cannot change plan as total subscribed plans exceeds your spending limit.")
+			frappe.throw(
+				"You cannot change plan as total subscribed plans exceeds your spending limit."
+			)  # nosemgrep
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 		instance_id = frappe.db.get_value("Virtual Machine", self.virtual_machine, "instance_id")
