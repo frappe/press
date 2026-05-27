@@ -915,11 +915,6 @@ class Site(Document, TagHelpers):
 	def after_insert(self):
 		self.capture_signup_event("created_first_site")
 
-		if hasattr(self, "subscription_plan") and self.subscription_plan:
-			# create subscription
-			self.create_subscription(self.subscription_plan)
-			self.reload()
-
 		if hasattr(self, "app_plans") and self.app_plans:
 			for app, plan in self.app_plans.items():
 				MarketplaceAppPlan.create_marketplace_app_subscription(
@@ -4437,6 +4432,13 @@ def process_new_site_job_update(job):  # noqa: C901
 
 		site.sync_apps()  # Sync apps for this site as well to reflect dependant apps
 		marketplace_app_hook(site=site, op="install")
+
+		# Create subscription if not already present
+		if not site.subscription and site.plan:
+			try:
+				site.create_subscription(site.plan)
+			except Exception:
+				frappe.log_error("Site Subscription Creation Error")
 	elif "Failure" in (first, second) or "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 		frappe.db.set_value("Site", job.site, "creation_failed", frappe.utils.now())
