@@ -28,6 +28,15 @@ defineProps<Props>()
 			orientation="vertical"
 		>
 			<ScrollAreaThumb
+				class="flex-1 bg-surface-gray-3 rounded-[10px] relative ..."
+			/>
+		</ScrollAreaScrollbar>
+
+		<ScrollAreaScrollbar
+			class="flex select-none touch-none p-0.5 z-20 transition-colors duration-[160ms] ease-out data-[orientation=horizontal]:h-2.5"
+			orientation="horizontal"
+		>
+			<ScrollAreaThumb
 				class="flex-1 bg-surface-gray-3 rounded-[10px] relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:w-full before:h-full before:min-w-[44px] before:min-h-[44px]"
 			/>
 		</ScrollAreaScrollbar>
