@@ -642,6 +642,9 @@ def pull_update_file_filter(file_path: str) -> bool:
 		"setup.py",
 		# Requires yarn install, build
 		"package.json",
+		"yarn.lock",
+		"package-lock.json",
+		"pnpm-lock.yaml",
 		".vue",
 		".ts",
 		".jsx",
