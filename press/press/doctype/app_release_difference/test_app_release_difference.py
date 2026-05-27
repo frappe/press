@@ -25,7 +25,7 @@ def _make_difference(source_release: str, destination_release: str) -> AppReleas
 			"destination_release": destination_release,
 			"deploy_type": "Pending",
 		}
-	).insert(ignore_permissions=True)
+	).insert(ignore_permissions=True, ignore_links=True)
 
 
 def _create_releases() -> tuple[str, str]:

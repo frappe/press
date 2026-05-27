@@ -31,7 +31,7 @@ def create_test_app_release(app_source: AppSource, hash: str | None = None) -> "
 			"status": "Approved",
 			"team": app_source.team,
 		}
-	).insert(ignore_if_duplicate=True)
+	).insert(ignore_if_duplicate=True, ignore_links=True)
 	app_release.reload()
 	return app_release
 
