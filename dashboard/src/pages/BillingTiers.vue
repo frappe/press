@@ -206,12 +206,6 @@ function formatAmount(value, skip_format = false) {
 	})}`
 }
 
-const currentTierLabel = computed(() => {
-	const current = teamTiers.data?.current_tier
-	if (!current) return 'Not set'
-	return current
-})
-
 const payingSinceLabel = computed(() => {
 	const months = metrics.value.paying_since_months ?? 0
 	if (!months) return '—'
