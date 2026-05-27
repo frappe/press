@@ -647,12 +647,21 @@ class Team(Document):
 			)
 
 	def total_subscribed_amount(self):
+		from frappe.utils import flt
+
 		subscriptions = frappe.get_all(
-			"Subscription", {"team": self.name, "enabled": 1}, ["name", "plan_type", "plan"]
+			"Subscription",
+			{"team": self.name, "enabled": 1},
+			["name", "plan_type", "plan", "additional_storage"],
 		)
 		total = 0
 		for sub in subscriptions:
-			total += frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") or 0
+			if sub.plan_type == "Server Storage Plan":
+				total += (frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") or 0) * flt(
+					sub.additional_storage
+				)
+			else:
+				total += frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") or 0
 		return total
 
 	def update_tier_limit(self):
