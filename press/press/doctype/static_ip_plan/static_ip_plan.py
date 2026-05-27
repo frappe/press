@@ -27,5 +27,5 @@ class StaticIPPlan(Document):
 		if interval == "Daily":
 			return frappe.utils.flt(price, 2)
 
-		frappe.throw("Invalid interval. Interval must be either 'Hourly' or 'Daily'.")
+		frappe.throw("Invalid interval. Interval must be 'Daily'.")
 		return 0.0
