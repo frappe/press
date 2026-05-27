@@ -357,6 +357,7 @@ def paid_plans():
 		"Server Storage Plan",
 		"Cluster Plan",
 		"Static IP Plan",
+		"Server Snapshot Plan",
 	]
 
 	for name in doctypes:

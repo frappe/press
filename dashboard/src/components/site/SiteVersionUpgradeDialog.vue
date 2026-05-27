@@ -25,15 +25,25 @@
 				<!-- Upgrade site on private bench -->
 				<div v-else-if="!$site.doc?.group_public && nextVersion">
 					<!-- If existing compatible bench found  -->
-					<div v-if="upgradeStep === 'ready_to_upgrade' && existingBenchGroup">
+					<div
+						v-if="upgradeStep === 'ready_to_upgrade' && hasExistingBenchOptions"
+					>
 						<div class="mb-4 text-base">
 							<p>
 								The site <b>{{ $site.doc.host_name }}</b> will be moved to
-								<b>{{ existingBenchGroupTitle }}</b> bench for upgrade to
-								{{ nextVersion }}.
+								<b>{{ selectedReleaseGroupTitle || 'selected bench' }}</b> bench
+								for upgrade to {{ nextVersion }}.
 							</p>
 						</div>
-						<div class="mt-4">
+						<FormControl
+							label="Select Bench"
+							type="select"
+							:options="upgradeBenchOptions"
+							v-model="selectedReleaseGroup"
+							placeholder="Select bench"
+							class="mb-4"
+						/>
+						<div class="my-4">
 							<span class="text-xs text-ink-gray-5 mb-2"
 								>Schedule Time in IST</span
 							>
@@ -87,7 +97,9 @@
 									These apps are installed on your site, select a branch
 									compatible with {{ nextVersion }}
 								</div>
-								<table class="w-full table-fixed pb-4 border-b border-outline-gray-1">
+								<table
+									class="w-full table-fixed pb-4 border-b border-outline-gray-1"
+								>
 									<tbody>
 										<tr
 											v-for="app in appCompatibility.site_custom_apps"
@@ -194,14 +206,14 @@
 							</div>
 						</div>
 						<FormControl
-							v-if="!existingBenchGroup"
+							v-if="!hasExistingBenchOptions"
 							label="Bench Title"
 							type="text"
 							v-model="newReleaseGroupTitle"
 							placeholder="e.g., My Team - Version 15"
-							class="mt-4"
+							class="my-4"
 						/>
-						<div class="mt-4">
+						<div class="my-4">
 							<span class="text-xs text-ink-gray-5 mb-2"
 								>Schedule Time in IST</span
 							>
@@ -223,7 +235,9 @@
 					</div>
 				</div>
 				<AlertBanner
-					v-if="!existingBenchGroup && targetDateTime && !isScheduleTimeValid"
+					v-if="
+						!hasExistingBenchOptions && targetDateTime && !isScheduleTimeValid
+					"
 					title="Schedule time must be at least 30 minutes from now to allow for bench deployment."
 					type="warning"
 					class="my-4"
@@ -257,12 +271,13 @@
 				v-if="
 					!$site.doc?.group_public &&
 					upgradeStep === 'ready_to_upgrade' &&
-					existingBenchGroup
+					hasExistingBenchOptions
 				"
 				class="w-full"
-				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
+				:class="skipBackups ? 'text-white bg-red-700' : ''"
 				variant="solid"
 				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
+				:disabled="!selectedReleaseGroup"
 				:loading="$resources.versionUpgrade.loading"
 				@click="handleUpgradeSubmit"
 			/>
@@ -271,11 +286,12 @@
 				v-if="
 					!$site.doc?.group_public &&
 					upgradeStep === 'ready_to_upgrade' &&
-					!existingBenchGroup &&
+					!hasExistingBenchOptions &&
+					!selectedReleaseGroup &&
 					!appCompatibility.can_upgrade
 				"
 				class="w-full"
-				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
+				:class="skipBackups ? 'text-white bg-red-700' : ''"
 				variant="subtle"
 				:label="targetDateTime ? 'Schedule Upgrade' : 'Upgrade Now'"
 				@click="show = false"
@@ -285,11 +301,12 @@
 				v-if="
 					!$site.doc?.group_public &&
 					upgradeStep === 'ready_to_upgrade' &&
-					!existingBenchGroup &&
+					!hasExistingBenchOptions &&
+					!selectedReleaseGroup &&
 					appCompatibility.can_upgrade
 				"
 				class="w-full"
-				:class="skipBackups ? 'text-white bg-red-600 hover:bg-red-700' : ''"
+				:class="skipBackups ? 'text-white bg-red-700' : ''"
 				variant="solid"
 				:label="
 					targetDateTime
@@ -312,6 +329,10 @@ import { getCachedDocumentResource, LoadingIndicator } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import AlertBanner from '../AlertBanner.vue';
 import { DateTimePicker } from 'frappe-ui';
+import dayjs from '@/utils/dayjs';
+
+const PICKER_DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
+const IST_TIMEZONE = 'Asia/Calcutta';
 
 export default {
 	name: 'SiteVersionUpgradeDialog',
@@ -324,8 +345,10 @@ export default {
 			skipBackups: false,
 			skipFailingPatches: false,
 			upgradeStep: null,
-			existingBenchGroup: null,
-			existingBenchGroupTitle: null,
+			upgradeBenchOptions: [],
+			selectedReleaseGroup: null,
+			selectedReleaseGroupTitle: null,
+			hasExistingBenchOptions: false,
 			appCompatibility: {
 				incompatible: [],
 				site_custom_apps: [],
@@ -364,13 +387,21 @@ export default {
 			}
 			return '';
 		},
-		datetimeInIST() {
+		parsedTargetDateTime() {
 			if (!this.targetDateTime) return null;
-			const datetimeInIST = this.$dayjs(this.targetDateTime).format(
-				'YYYY-MM-DDTHH:mm',
-			);
 
-			return datetimeInIST;
+			const localTimezone = dayjs.tz.guess();
+			return dayjs.tz(
+				this.targetDateTime,
+				PICKER_DATETIME_FORMAT,
+				localTimezone,
+			);
+		},
+		datetimeInIST() {
+			if (!this.parsedTargetDateTime) return null;
+			return this.parsedTargetDateTime
+				.tz(IST_TIMEZONE)
+				.format('YYYY-MM-DDTHH:mm');
 		},
 		errorMessage() {
 			return (
@@ -396,29 +427,31 @@ export default {
 		isScheduleTimeValid() {
 			// Atleast 30 mins from now for deploying bench
 			if (!this.targetDateTime) return true;
-			if (!this.existingBenchGroup) {
-				const scheduledTime = this.targetDateTime.$d
-					? this.$dayjs(this.targetDateTime.$d)
-					: this.$dayjs(this.targetDateTime);
-				const minimumTime = this.$dayjs().add(30, 'minute');
-				return scheduledTime.isAfter(minimumTime);
+
+			if (!this.selectedReleaseGroup) {
+				const localTimezone = dayjs.tz.guess();
+				const minimumTime = dayjs().tz(localTimezone).add(30, 'minute');
+				return this.parsedTargetDateTime.isAfter(minimumTime);
 			}
+
 			return true;
 		},
+
 		disableButton() {
 			if (!this.newReleaseGroupTitle || !this.hasValidCustomAppSources) {
 				return true;
 			}
-			if (this.targetDateTime && !this.isScheduleTimeValid) {
-				return true;
+			if (!this.targetDateTime) {
+				return false;
 			}
+			return !this.isScheduleTimeValid;
 		},
 	},
 	resources: {
 		versionUpgrade() {
-			const destination_group = this.existingBenchGroup;
+			const destination_group = this.selectedReleaseGroup;
 			return {
-				url: 'press.api.site.version_upgrade',
+				url: 'press.api.version_upgrade.version_upgrade',
 				params: {
 					name: this.site,
 					destination_group: destination_group,
@@ -435,26 +468,41 @@ export default {
 
 		checkExistingBench() {
 			return {
-				url: 'press.api.site.check_existing_upgrade_bench',
+				url: 'press.api.version_upgrade.check_existing_upgrade_bench',
 				params: {
 					name: this.site,
 					version: this.$site.doc?.version,
 				},
 				auto: !this.$site.doc?.group_public,
 				onSuccess: (data) => {
-					if (data.exists) {
-						this.existingBenchGroup = data.release_group;
-						this.existingBenchGroupTitle = data.release_group_title;
+					const benches = data.benches || [];
+
+					if (benches.length) {
+						this.hasExistingBenchOptions = true;
 						this.upgradeStep = 'ready_to_upgrade';
 					} else {
 						this.$resources.checkAppCompatibility.fetch();
+						return;
+					}
+
+					this.upgradeBenchOptions = benches.map((bench) => ({
+						label: bench.release_group_title || bench.bench_name,
+						value: bench.release_group,
+					}));
+
+					if (this.upgradeBenchOptions.length === 1) {
+						this.selectedReleaseGroup = this.upgradeBenchOptions[0].value;
+						this.selectedReleaseGroupTitle = this.upgradeBenchOptions[0].label;
+					} else {
+						this.selectedReleaseGroup = null;
+						this.selectedReleaseGroupTitle = null;
 					}
 				},
 			};
 		},
 		checkAppCompatibility() {
 			return {
-				url: 'press.api.site.check_app_compatibility_for_upgrade',
+				url: 'press.api.version_upgrade.check_app_compatibility_for_upgrade',
 				params: {
 					name: this.site,
 					version: this.$site.doc?.version,
@@ -471,7 +519,7 @@ export default {
 		},
 		createPrivateBench() {
 			return {
-				url: 'press.api.site.create_private_bench_for_site_upgrade',
+				url: 'press.api.version_upgrade.create_private_bench_for_site_upgrade',
 				onSuccess(data) {
 					this.$router.push({
 						name: 'Release Group Detail',
@@ -490,6 +538,14 @@ export default {
 			return {
 				url: 'press.api.github.branches',
 			};
+		},
+	},
+	watch: {
+		selectedReleaseGroup(value) {
+			const selectedBench = this.upgradeBenchOptions.find(
+				(bench) => bench.value === value,
+			);
+			this.selectedReleaseGroupTitle = selectedBench?.label || null;
 		},
 	},
 	methods: {
@@ -516,7 +572,7 @@ export default {
 			}
 		},
 		async handleUpgradeSubmit() {
-			if (this.existingBenchGroup) {
+			if (this.selectedReleaseGroup) {
 				// Move Site to existing bench
 				this.$resources.versionUpgrade.submit();
 			} else {
@@ -557,8 +613,9 @@ export default {
 			this.skipBackups = false;
 			this.skipFailingPatches = false;
 			this.upgradeStep = null;
-			this.existingBenchGroup = null;
-			this.existingBenchGroupTitle = null;
+			this.upgradeBenchOptions = [];
+			this.selectedReleaseGroup = null;
+			this.selectedReleaseGroupTitle = null;
 			this.appCompatibility = {
 				incompatible: [],
 				site_custom_apps: [],
