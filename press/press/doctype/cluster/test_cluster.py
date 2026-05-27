@@ -16,13 +16,7 @@ from press.press.doctype.proxy_server.proxy_server import ProxyServer
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.ssh_key.test_ssh_key import create_test_ssh_key
-from press.press.doctype.virtual_machine.test_virtual_machine import (
-	create_test_virtual_machine,
-)
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
-from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
-	create_test_virtual_machine_image,
-)
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
@@ -487,6 +481,10 @@ class TestClusterServerCreationGuards(FrappeTestCase):
 
 	def test_create_proxy_throws_for_inactive_cluster_before_checking_vmi(self):
 		"""Status check fires even if there were VMIs available."""
+		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
+			create_test_virtual_machine_image,
+		)
+
 		cluster = create_test_cluster(name="GuardCluster-3")
 		create_test_virtual_machine_image(cluster=cluster, series="n")
 		cluster.status = "Archived"
@@ -742,6 +740,10 @@ class TestVirtualMachineDataDiskSnapshot(FrappeTestCase):
 
 	def _create_snapshot(self, status="Completed", region="ap-south-1") -> str:
 		"""Insert a VirtualDiskSnapshot and return its name."""
+		from press.press.doctype.virtual_machine.test_virtual_machine import (
+			create_test_virtual_machine,
+		)
+
 		snap = frappe.get_doc(
 			{
 				"doctype": "Virtual Disk Snapshot",
@@ -819,6 +821,10 @@ class TestVirtualMachineVolumeHelpers(FrappeTestCase):
 
 	def _vm_with_volumes(self, volumes_data: list[dict], cloud_provider="AWS EC2") -> VirtualMachine:
 		"""Create a VM and attach in-memory volume rows (not saved)."""
+		from press.press.doctype.virtual_machine.test_virtual_machine import (
+			create_test_virtual_machine,
+		)
+
 		cluster = create_test_cluster(name="VolTestCluster")
 		vm = create_test_virtual_machine(cluster=cluster, disk_size=100)
 		vm.cloud_provider = cloud_provider
@@ -887,26 +893,33 @@ class TestVirtualMachineVolumeHelpers(FrappeTestCase):
 
 @patch.object(VirtualMachine, "client", new=MagicMock())
 class TestVirtualMachineServerRouting(FrappeTestCase):
+	def setUp(self):
+		from press.press.doctype.virtual_machine.test_virtual_machine import (
+			create_test_virtual_machine,
+		)
+
+		self._ctvm = create_test_virtual_machine
+
 	def tearDown(self):
 		frappe.db.rollback()
 
 	def test_create_database_server_works(self):
 		cluster = create_test_cluster(name="Routing-Cluster-1")
-		vm = create_test_virtual_machine(cluster=cluster, series="m")
+		vm = self._ctvm(cluster=cluster, series="m")
 		db_server = vm.create_database_server()
 		self.assertEqual(db_server.doctype, "Database Server")
 		self.assertEqual(db_server.virtual_machine, vm.name)
 
 	def test_create_proxy_server_works(self):
 		cluster = create_test_cluster(name="Routing-Cluster-2")
-		vm = create_test_virtual_machine(cluster=cluster, series="n")
+		vm = self._ctvm(cluster=cluster, series="n")
 		proxy = vm.create_proxy_server()
 		self.assertEqual(proxy.doctype, "Proxy Server")
 		self.assertEqual(proxy.virtual_machine, vm.name)
 
 	def test_create_server_works(self):
 		cluster = create_test_cluster(name="Routing-Cluster-3")
-		vm = create_test_virtual_machine(cluster=cluster, series="f")
+		vm = self._ctvm(cluster=cluster, series="f")
 		app_server = vm.create_server()
 		self.assertEqual(app_server.doctype, "Server")
 		self.assertEqual(app_server.virtual_machine, vm.name)
@@ -914,13 +927,13 @@ class TestVirtualMachineServerRouting(FrappeTestCase):
 	def test_create_unified_server_requires_u_series(self):
 		"""Only 'u' series VMs can create unified servers."""
 		cluster = create_test_cluster(name="Routing-Cluster-4")
-		vm = create_test_virtual_machine(cluster=cluster, series="f")
+		vm = self._ctvm(cluster=cluster, series="f")
 		with self.assertRaises(frappe.ValidationError):
 			vm.create_unified_server()
 
 	def test_create_nat_server_requires_nat_series(self):
 		cluster = create_test_cluster(name="Routing-Cluster-5")
-		vm = create_test_virtual_machine(cluster=cluster, series="m")
+		vm = self._ctvm(cluster=cluster, series="m")
 		vm.series = "m"
 		with self.assertRaises(frappe.ValidationError):
 			vm.create_nat_server()
@@ -928,7 +941,7 @@ class TestVirtualMachineServerRouting(FrappeTestCase):
 	def test_create_unified_server_creates_app_and_db_pair(self):
 		"""A 'u' series VM should create both Server and DatabaseServer docs."""
 		cluster = create_test_cluster(name="Routing-Cluster-6")
-		vm = create_test_virtual_machine(cluster=cluster, series="u")
+		vm = self._ctvm(cluster=cluster, series="u")
 		team = frappe.get_value("Team", {"user": "Administrator"}, "name") or "Administrator"
 		vm.team = team
 		vm.save()
@@ -968,6 +981,10 @@ class TestVirtualMachineServerRouting(FrappeTestCase):
 @patch.object(VirtualMachine, "client", new=MagicMock())
 class TestVirtualMachineStatusMaps(FrappeTestCase):
 	def setUp(self):
+		from press.press.doctype.virtual_machine.test_virtual_machine import (
+			create_test_virtual_machine,
+		)
+
 		cluster = create_test_cluster(name="StatusMapCluster")
 		self.vm = create_test_virtual_machine(cluster=cluster)
 
