@@ -1460,8 +1460,8 @@ class BaseServer(Document, TagHelpers):
 
 		if is_limits_exceeded(new_plan.price_usd):
 			frappe.throw(
-				"You cannot change plan as total subscribed plans exceeds your spending limit."
-			)  # nosemgrep
+				"Cannot change plan: the cost of your subscribed plans would exceed your spending limit. Please increase your spending limit or cancel other subscriptions before upgrading."
+			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 		instance_id = frappe.db.get_value("Virtual Machine", self.virtual_machine, "instance_id")
