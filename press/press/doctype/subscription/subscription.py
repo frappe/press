@@ -266,6 +266,7 @@ class Subscription(Document):
 		if not self.is_new():
 			return
 		filters = {
+			"enabled": 1,
 			"team": self.team,
 			"document_type": self.document_type,
 			"document_name": self.document_name,
