@@ -168,5 +168,5 @@ class TestHasBranchChanged(FrappeTestCase):
 	def test_same_branch_returns_false(self):
 		"""has_branch_changed() must return False when both releases share the same source."""
 		r1, r2 = _create_releases()
-		doc = _make_difference(r1.name, r2.name)
+		doc = _make_difference(r1, r2)
 		self.assertFalse(doc.has_branch_changed())
