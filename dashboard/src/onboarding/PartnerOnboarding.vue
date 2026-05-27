@@ -1,10 +1,19 @@
 <!-- This is the main partner onboarding page layout-->
 
-<script setup>
-import Header from '@/components/Header.vue';
-import OnboardingRightSidebarLayout from '@/onboarding/onboardingRightContainer/OnboardingRightSidebarLayout.vue';
-import OnboardingLeftContainer from '@/onboarding/onboardingLeftContainer/OnboardingLeftContainer.vue';
-import { Breadcrumbs } from 'frappe-ui';
+<script setup lang="ts">
+import { Breadcrumbs } from 'frappe-ui'
+import { inject, onMounted } from 'vue'
+import Header from '@/components/Header.vue'
+import OnboardingLeftContainer from '@/onboarding/onboardingLeftContainer/OnboardingLeftContainer.vue'
+import OnboardingRightSidebarLayout from '@/onboarding/onboardingRightContainer/OnboardingRightSidebarLayout.vue'
+import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
+
+const team = inject('team')
+const onboarding = usePartnerOnboarding(team as any)
+
+onMounted(() => {
+	onboarding.load()
+})
 </script>
 
 <template>

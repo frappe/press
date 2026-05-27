@@ -1,40 +1,54 @@
-<script setup>
-import { ref } from 'vue';
-import { Button } from 'frappe-ui';
-import CompanyInformationModal from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationModal.vue';
-import LucideChevronDown from '~icons/lucide/chevron-down';
-import LucideCircleCheck from '~icons/lucide/circle-check';
-import LucideCircleDashed from '~icons/lucide/circle-dashed';
-import LucideLock from '~icons/lucide/lock';
+<script setup lang="ts">
+import { Button } from 'frappe-ui'
+import { computed, inject, ref } from 'vue'
 import {
-	FAccordionRoot,
-	FAccordionItem,
-	FAccordionHeader,
-	FAccordionTrigger,
 	FAccordionContent,
-} from '@/onboarding/accordion';
+	FAccordionHeader,
+	FAccordionItem,
+	FAccordionRoot,
+	FAccordionTrigger,
+} from '@/onboarding/accordion'
+import PartnerOnboardingModal from '@/onboarding/modal/PartnerOnboardingModal.vue'
+import CompanyInformationModal from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationModal.vue'
+import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
+import LucideChevronDown from '~icons/lucide/chevron-down'
+import LucideCircleCheck from '~icons/lucide/circle-check'
+import LucideCircleDashed from '~icons/lucide/circle-dashed'
+import LucideLock from '~icons/lucide/lock'
 
-const openStep = ref('step-profile');
+const openStep = ref('step-profile')
+const team = inject('team')
+const onboarding = usePartnerOnboarding(team as any)
+const registrationModalOpen = ref(false)
+const companyInfoModalOpen = ref(false)
 
-const steps = [
+const steps = computed(() => [
 	{
 		value: 'step-register',
 		title: 'Register as a Frappe Partner',
 		required: true,
-		status: 'completed',
+		status: onboarding.isRegistered.value ? 'completed' : 'pending',
 		description: null,
 		summaryRight: null,
-		actionLabel: null,
+		actionLabel: onboarding.isRegistered.value ? null : 'Register as a partner',
+		onClick: () => {
+			registrationModalOpen.value = true
+		},
 	},
 	{
 		value: 'step-profile',
 		title: 'Complete your company profile',
 		required: true,
-		status: 'pending',
+		status: onboarding.isProfileComplete.value ? 'completed' : 'pending',
 		description:
 			'Before you continue, we need to know more about your company to understand how your company can benefit from becoming a Frappe Partner.',
 		summaryRight: null,
-		actionLabel: 'Fill out company information',
+		actionLabel: onboarding.isRegistered.value
+			? 'Fill out company information'
+			: null,
+		onClick: () => {
+			companyInfoModalOpen.value = true
+		},
 	},
 	{
 		value: 'step-certificates',
@@ -42,7 +56,7 @@ const steps = [
 		required: true,
 		status: 'pending',
 		description:
-			'Partners must have at least two full-time team members who are certified in ERPNext or the Frappe Framework. Certifications can be earned through Frappe School.Once a certification has been issued, link the certificate to your company. We will send a validation email to the email address attached to the certificate. Once approved, you will see changes reflected here.',
+			'Partners must have at least two full-time team members who are certified in ERPNext or the Frappe Framework. Certifications can be earned through Frappe School. Once a certification has been issued, link the certificate to your company. We will send a validation email to the email address attached to the certificate. Once approved, you will see changes reflected here.',
 		summaryRight: null,
 		actionLabel: null,
 	},
@@ -53,36 +67,18 @@ const steps = [
 		status: 'pending',
 		description:
 			'Create sites and manage hosting for your customers that use Frappe apps on Frappe Cloud consistently to cross this threshold. Based on your Billing details, we will automatically update this step’s completion.',
-		summaryRight: '$0 / $100 MRR',
-		actionLabel: null,
-	},
-	{
-		value: 'step-terms',
-		title: 'Accept Partnership terms',
-		required: true,
-		status: 'pending',
-		description: null,
 		summaryRight: null,
 		actionLabel: null,
 	},
-	{
-		value: 'step-logo',
-		title: 'Add your company logo',
-		required: false,
-		status: 'pending',
-		description: null,
-		summaryRight: null,
-		actionLabel: null,
-	},
-];
+])
 
-const canSubmit = ref(false);
-const companyInfoModalOpen = ref(false);
+const canSubmit = computed(() => false)
 </script>
 
 <template>
 	<div class="flex w-full flex-col gap-6">
 		<CompanyInformationModal v-model="companyInfoModalOpen" />
+		<PartnerOnboardingModal v-model="registrationModalOpen" />
 		<FAccordionRoot v-model="openStep">
 			<FAccordionItem
 				v-for="step in steps"
@@ -94,7 +90,7 @@ const companyInfoModalOpen = ref(false);
 					<FAccordionTrigger class="py-6">
 						<span
 							v-if="step.status === 'completed'"
-							class="inline-flex shrink-0 text-green-600"
+							class="inline-flex shrink-0 text-ink-green-3"
 							aria-hidden="true"
 						>
 							<LucideCircleCheck class="size-4" />
@@ -117,7 +113,7 @@ const companyInfoModalOpen = ref(false);
 							>
 								{{ step.title }}
 								<template v-if="step.required">
-									<span class="text-red-600"> *</span>
+									<span class="text-ink-red-4"> *</span>
 								</template>
 								<template v-else>
 									<span class="font-normal text-ink-gray-5"> Optional</span>
@@ -150,7 +146,7 @@ const companyInfoModalOpen = ref(false);
 						v-if="step.actionLabel"
 						variant="solid"
 						:label="step.actionLabel"
-						@click="companyInfoModalOpen = true"
+						@click="step.onClick"
 					/>
 				</FAccordionContent>
 			</FAccordionItem>
@@ -162,6 +158,7 @@ const companyInfoModalOpen = ref(false);
 				class="w-full sm:w-auto"
 				:disabled="!canSubmit"
 				:iconLeft="LucideLock"
+				:loading="onboarding.saving.value"
 				label="Submit for approval"
 			/>
 		</div>

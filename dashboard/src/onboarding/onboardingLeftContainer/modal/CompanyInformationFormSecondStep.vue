@@ -1,18 +1,86 @@
-<script setup>
-const emit = defineEmits(['continue']);
+<script setup lang="ts">
+import { FormControl } from 'frappe-ui'
+import type { PartnerOnboardingDoc } from '@/onboarding/usePartnerOnboarding'
+
+const emit = defineEmits(['continue'])
+const props = defineProps<{
+	form: PartnerOnboardingDoc
+}>()
+
+const verticalOptions = [
+	{ label: 'Manufacturing', value: 'Manufacturing' },
+	{ label: 'Retail', value: 'Retail' },
+	{ label: 'Services', value: 'Services' },
+	{ label: 'Education', value: 'Education' },
+	{ label: 'Healthcare', value: 'Healthcare' },
+	{ label: 'Non-profit', value: 'Non-profit' },
+]
+
+const customerRangeOptions = [
+	{ label: '1-10', value: '1-10' },
+	{ label: '11-50', value: '11-50' },
+	{ label: '51-200', value: '51-200' },
+	{ label: '201+', value: '201+' },
+]
 
 function tryContinue() {
-	emit('continue');
+	emit('continue')
 }
 
-defineExpose({ tryContinue });
+defineExpose({ tryContinue })
 </script>
 
 <template>
-	<div class="flex min-h-[200px] flex-col gap-3 py-1">
-		<p class="text-p-base text-ink-gray-6">
-			Step 2 — Add your content here (e.g. business details, focus areas, or
-			documents).
-		</p>
-	</div>
+	<form
+		id="company-information-form-2"
+		class="flex flex-col gap-5"
+		@submit.prevent="tryContinue"
+	>
+		<div class="flex flex-col gap-1">
+			<div class="flex items-center justify-between gap-2">
+				<span class="text-xs text-ink-gray-6">Verticals served</span>
+				<span class="text-xs text-ink-gray-5">Optional</span>
+			</div>
+			<FormControl
+				v-model="props.form.verticals_served"
+				type="select"
+				size="sm"
+				variant="outline"
+				placeholder="Select"
+				:options="verticalOptions"
+			/>
+		</div>
+
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+			<div class="flex flex-col gap-1">
+				<div class="flex items-center justify-between gap-2">
+					<span class="text-xs text-ink-gray-6">No. of customers</span>
+					<span class="text-xs text-ink-gray-5">Optional</span>
+				</div>
+				<FormControl
+					v-model="props.form.customer_count_range"
+					type="select"
+					size="sm"
+					variant="outline"
+					placeholder="Select"
+					:options="customerRangeOptions"
+				/>
+			</div>
+
+			<div class="flex flex-col gap-1">
+				<div class="flex items-center justify-between gap-2">
+					<span class="text-xs text-ink-gray-6">No. of ERPNext customers</span>
+					<span class="text-xs text-ink-gray-5">Optional</span>
+				</div>
+				<FormControl
+					v-model="props.form.erpnext_customer_count_range"
+					type="select"
+					size="sm"
+					variant="outline"
+					placeholder="Select"
+					:options="customerRangeOptions"
+				/>
+			</div>
+		</div>
+	</form>
 </template>

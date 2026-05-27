@@ -1,17 +1,17 @@
-<script setup>
-import { ref, computed } from 'vue';
-import { Button, Dialog } from 'frappe-ui';
-import LucideXIcon from '~icons/lucide/x';
-import FrappePartnerships from '@/onboarding/modal/FrappePartnerships.vue';
-import PartnerBenefits from '@/onboarding/modal/PartnerBenefits.vue';
-import Eligibility from '@/onboarding/modal/Eligibility.vue';
-import PartnerPlans from '@/onboarding/modal/PartnerPlans.vue';
-import PartnerRegistration from '@/onboarding/modal/PartnerRegistration.vue';
-import PostRegistrationMessage from '@/onboarding/modal/PostRegistrationMessage.vue';
-import SidebarItem from '@/onboarding/modal/SidebarItem.vue';
+<script setup lang="ts">
+import { Button, Dialog } from 'frappe-ui'
+import { computed, ref } from 'vue'
+import Eligibility from '@/onboarding/modal/Eligibility.vue'
+import FrappePartnerships from '@/onboarding/modal/FrappePartnerships.vue'
+import PartnerBenefits from '@/onboarding/modal/PartnerBenefits.vue'
+import PartnerPlans from '@/onboarding/modal/PartnerPlans.vue'
+import PartnerRegistration from '@/onboarding/modal/PartnerRegistration.vue'
+import PostRegistrationMessage from '@/onboarding/modal/PostRegistrationMessage.vue'
+import SidebarItem from '@/onboarding/modal/SidebarItem.vue'
+import LucideXIcon from '~icons/lucide/x'
 
-const open = ref(false);
-const registered = ref(false);
+const open = defineModel<boolean>({ default: false })
+const registered = ref(false)
 
 const partnerOnboardingSteps = [
 	{
@@ -39,34 +39,32 @@ const partnerOnboardingSteps = [
 		title: 'Registration',
 		component: PartnerRegistration,
 	},
-];
+]
 
-const currentStep = ref(partnerOnboardingSteps[0]);
+const currentStep = ref(partnerOnboardingSteps[0])
 
 const isLastStep = computed(
 	() => currentStep.value.id === partnerOnboardingSteps.length - 1,
-);
+)
 
 const nextStep = () => {
 	if (!isLastStep.value) {
-		currentStep.value = partnerOnboardingSteps[currentStep.value.id + 1];
+		currentStep.value = partnerOnboardingSteps[currentStep.value.id + 1]
 	}
-};
+}
 
 const previousStep = () => {
 	if (currentStep.value.id > 0) {
-		currentStep.value = partnerOnboardingSteps[currentStep.value.id - 1];
+		currentStep.value = partnerOnboardingSteps[currentStep.value.id - 1]
 	}
-};
+}
 
 const onRegistered = () => {
-	registered.value = true;
-};
+	registered.value = true
+}
 </script>
 
 <template>
-	<Button @click="open = true">Show Modal Dialog</Button>
-
 	<Dialog
 		v-model="open"
 		:disable-outside-click-to-close="true"
@@ -111,7 +109,7 @@ const onRegistered = () => {
 
 					<!-- Step content -->
 					<div
-						class="-m-1 flex-1 overflow-y-auto p-1"
+						class="-m-2 flex-1 overflow-y-auto p-2"
 						:class="registered ? 'flex justify-center items-center' : ''"
 					>
 						<PostRegistrationMessage

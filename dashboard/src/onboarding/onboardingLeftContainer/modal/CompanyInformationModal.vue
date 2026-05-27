@@ -1,81 +1,97 @@
-<script setup>
-import { computed, inject, ref, useTemplateRef, watch } from 'vue';
-import { Button, Dialog } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import LucideX from '~icons/lucide/x';
-import CompanyInformationFormFirstStep from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationFormFirstStep.vue';
-import CompanyInformationFormSecondStep from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationFormSecondStep.vue';
-import CompanyInformationFormThirdStep from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationFormThirdStep.vue';
+<script setup lang="ts">
+import { Button, Dialog } from 'frappe-ui'
+import { computed, inject, reactive, ref, useTemplateRef, watch } from 'vue'
+import { toast } from 'vue-sonner'
+import CompanyInformationFormFirstStep from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationFormFirstStep.vue'
+import CompanyInformationFormSecondStep from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationFormSecondStep.vue'
+import CompanyInformationFormThirdStep from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationFormThirdStep.vue'
+import {
+	type PartnerOnboardingDoc,
+	usePartnerOnboarding,
+} from '@/onboarding/usePartnerOnboarding'
+import LucideX from '~icons/lucide/x'
 
-const open = defineModel({ default: false });
+const open = defineModel({ default: false })
 
-const team = inject('team');
+const team = inject('team')
+const onboarding = usePartnerOnboarding(team as any)
+const draft = reactive<PartnerOnboardingDoc>({})
 
-const totalSteps = 3;
+const totalSteps = 3
 
-const currentStepIndex = ref(0);
-const formStepKey = ref(0);
+const currentStepIndex = ref(0)
+const formStepKey = ref(0)
 
-const step0Ref = useTemplateRef('step0Ref');
-const step1Ref = useTemplateRef('step1Ref');
-const step2Ref = useTemplateRef('step2Ref');
+const step0Ref = useTemplateRef('step0Ref')
+const step1Ref = useTemplateRef('step1Ref')
+const step2Ref = useTemplateRef('step2Ref')
 
-const stepRefs = [step0Ref, step1Ref, step2Ref];
+const stepRefs = [step0Ref, step1Ref, step2Ref]
 
 const displayCompanyName = computed(() => {
-	const doc = team?.doc;
+	const doc = team?.doc
 	return (
 		doc?.company_name?.trim() ||
 		doc?.billing_name?.trim() ||
 		doc?.team_title?.trim() ||
 		'your company'
-	);
-});
+	)
+})
 
 const stepIndicator = computed(
 	() => `Step ${currentStepIndex.value + 1}/${totalSteps}`,
-);
+)
 
 const primaryLabel = computed(() =>
-	currentStepIndex.value === totalSteps - 1 ? 'Submit' : 'Continue',
-);
+	currentStepIndex.value === totalSteps - 1 ? 'Save details' : 'Continue',
+)
+
+const dialogTitle = computed(
+	() => `Tell us more about ${displayCompanyName.value}`,
+)
 
 watch(open, (isOpen) => {
 	if (isOpen) {
-		currentStepIndex.value = 0;
-		formStepKey.value += 1;
+		Object.assign(draft, onboarding.form)
+		currentStepIndex.value = 0
+		formStepKey.value += 1
 	}
-});
+})
 
 function closeModal() {
-	open.value = false;
+	open.value = false
 }
 
 function goBack() {
 	if (currentStepIndex.value > 0) {
-		currentStepIndex.value -= 1;
+		currentStepIndex.value -= 1
 	}
 }
 
 function onStepContinue() {
 	if (currentStepIndex.value < totalSteps - 1) {
-		currentStepIndex.value += 1;
+		currentStepIndex.value += 1
 	} else {
-		handleSubmit();
+		handleSubmit()
 	}
 }
 
 function handlePrimaryClick() {
-	const refEl = stepRefs[currentStepIndex.value]?.value;
+	const refEl = stepRefs[currentStepIndex.value]?.value
 	if (refEl?.tryContinue) {
-		refEl.tryContinue();
+		refEl.tryContinue()
 	}
 }
 
-function handleSubmit() {
-	// Hook for persisting all steps once API exists
-	toast.success('Company information saved');
-	closeModal();
+async function handleSubmit() {
+	try {
+		Object.assign(onboarding.form, draft)
+		await onboarding.save()
+		toast.success('Company details updated')
+		closeModal()
+	} catch (error: any) {
+		toast.error(error.messages?.[0] || error.message)
+	}
 }
 </script>
 
@@ -85,75 +101,85 @@ function handleSubmit() {
 		:disable-outside-click-to-close="true"
 		:options="{
 			size: '2xl',
+			title: dialogTitle,
 		}"
 	>
-		<template #title>
-			<h2 class="text-xl font-semibold tracking-tight text-ink-gray-9">
-				Tell us more about {{ displayCompanyName }}
-			</h2>
-		</template>
-		<template #body>
-			<div class="flex max-h-[90vh] flex-col px-1 pb-2 pt-1">
-				<div class="mb-4 flex items-start justify-between gap-4">
-					<div class="min-w-0 flex-1">
-						<p class="text-xs font-medium text-ink-gray-5">
-							{{ stepIndicator }}
-						</p>
-
-						<div class="mt-4 flex w-full items-center">
-							<div
-								class="h-2 shrink-0 rounded-l bg-gray-900 transition-[width] duration-200 ease-out"
-								:style="{
-									width: `${((currentStepIndex + 1) / totalSteps) * 100}%`,
-								}"
-							/>
-							<div class="h-px min-w-0 flex-1 bg-gray-200" />
-						</div>
+		<template #body-header>
+			<div class="mb-5">
+				<div class="flex items-start justify-between gap-4">
+					<div class="min-w-0">
+						<p class="text-sm leading-5 text-ink-gray-6">{{ stepIndicator }}</p>
+						<h3
+							class="mt-1 truncate text-lg font-semibold leading-6 text-ink-gray-9"
+						>
+							{{ dialogTitle }}
+						</h3>
 					</div>
 					<button
 						type="button"
-						class="rounded-md p-1.5 text-ink-gray-6 hover:bg-gray-100 hover:text-ink-gray-9"
+						class="-mr-1 rounded-md p-1 text-ink-gray-6 hover:bg-surface-gray-2 hover:text-ink-gray-9"
 						aria-label="Close"
-						@click="close"
+						@click="closeModal"
 					>
-						<LucideX class="size-4" />
+						<LucideX class="size-5" />
 					</button>
 				</div>
 
-				<div class="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 pb-2">
-					<CompanyInformationFormFirstStep
-						v-show="currentStepIndex === 0"
-						:key="formStepKey"
-						ref="step0Ref"
-						@continue="onStepContinue"
+				<div class="mt-4 flex w-full items-center">
+					<div
+						class="h-0.5 shrink-0 bg-ink-gray-9 transition-[width] duration-200 ease-out"
+						:style="{
+							width: `${((currentStepIndex + 1) / totalSteps) * 100}%`,
+						}"
 					/>
-					<CompanyInformationFormSecondStep
-						v-show="currentStepIndex === 1"
-						ref="step1Ref"
-						@continue="onStepContinue"
-					/>
-					<CompanyInformationFormThirdStep
-						v-show="currentStepIndex === 2"
-						ref="step2Ref"
-						@continue="onStepContinue"
-					/>
+					<div class="h-px min-w-0 flex-1 bg-outline-gray-1" />
 				</div>
+			</div>
+		</template>
 
+		<template #body-content>
+			<div class="-mx-1 max-h-[62vh] min-h-[360px] overflow-y-auto px-1">
+				<CompanyInformationFormFirstStep
+					v-show="currentStepIndex === 0"
+					:key="formStepKey"
+					ref="step0Ref"
+					:form="draft"
+					@continue="onStepContinue"
+				/>
+				<CompanyInformationFormSecondStep
+					v-show="currentStepIndex === 1"
+					ref="step1Ref"
+					:form="draft"
+					@continue="onStepContinue"
+				/>
+				<CompanyInformationFormThirdStep
+					v-show="currentStepIndex === 2"
+					ref="step2Ref"
+					:form="draft"
+					@continue="onStepContinue"
+				/>
+			</div>
+		</template>
+
+		<template #actions>
+			<div class="-mx-6 border-t border-outline-gray-1 px-6 pt-4">
 				<div
-					class="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row-reverse sm:justify-between"
+					class="grid gap-2"
+					:class="currentStepIndex > 0 ? 'grid-cols-2' : 'grid-cols-1'"
 				>
-					<Button
-						variant="solid"
-						class="w-full sm:w-auto sm:min-w-[140px]"
-						:label="primaryLabel"
-						@click="handlePrimaryClick"
-					/>
 					<Button
 						v-if="currentStepIndex > 0"
 						variant="subtle"
-						class="w-full sm:w-auto"
+						class="w-full"
 						label="Back"
 						@click="goBack"
+					/>
+					<Button
+						variant="solid"
+						class="w-full"
+						:label="primaryLabel"
+						:loading="onboarding.saving.value"
+						@click="handlePrimaryClick"
 					/>
 				</div>
 			</div>

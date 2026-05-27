@@ -54,12 +54,6 @@
 			"options": "Draft\nSubmission Pending\nApproved\nRejected"
 		},
 		{
-			"fieldname": "submitted_on",
-			"fieldtype": "Datetime",
-			"label": "Submitted On",
-			"read_only": 1
-		},
-		{
 			"fieldname": "registration_section",
 			"fieldtype": "Section Break",
 			"label": "Registration"
@@ -88,10 +82,10 @@
 			"reqd": 1
 		},
 		{
-			"default": "+91-",
 			"fieldname": "contact",
 			"fieldtype": "Phone",
-			"label": "Contact"
+			"label": "Contact",
+			"reqd": 1
 		},
 		{
 			"fieldname": "company_profile_section",
@@ -190,11 +184,17 @@
 			"fieldname": "agreed_to_partnership_agreement",
 			"fieldtype": "Check",
 			"label": "I accept the Partnership agreement"
+		},
+		{
+			"fieldname": "submitted_on",
+			"fieldtype": "Datetime",
+			"label": "Submitted On",
+			"read_only": 1
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-05-26 11:03:33.174821",
+	"modified": "2026-05-27 20:50:14.283543",
 	"modified_by": "Administrator",
 	"module": "Partner",
 	"name": "Partner Onboarding",

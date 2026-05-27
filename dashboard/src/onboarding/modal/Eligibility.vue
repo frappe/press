@@ -1,6 +1,6 @@
 <script setup>
-import CertifiedIcon from '@/components/icons/Certified.vue';
-import CashIcon from '@/components/icons/CashIcon.vue';
+import CashIcon from '@/components/icons/CashIcon.vue'
+import CertifiedIcon from '@/components/icons/Certified.vue'
 
 const eligibilityCriteria = [
 	{
@@ -16,7 +16,7 @@ const eligibilityCriteria = [
 			'Host client sites with Frappe apps on Frappe Cloud consistently to get started.',
 		icon: CashIcon,
 	},
-];
+]
 </script>
 <template>
 	<p class="text-p-base text-ink-gray-6 mb-4">
@@ -25,7 +25,7 @@ const eligibilityCriteria = [
 
 	<ul
 		class="list-none list-inside"
-		v-for="eligibility in eligibilityCriterias"
+		v-for="eligibility in eligibilityCriteria"
 		:key="eligibility.title"
 	>
 		<li class="flex items-start gap-3 self-stretch mb-4">
