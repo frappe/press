@@ -32,7 +32,7 @@ const formatCmd = (cmd: string) => {
 			headerCss="py-3 border-b"
 			:disabled='["Pending", "Queued"].includes(x.status)'
 		>
-			<template #header>
+			<template #prefix>
 				<StatusIcon :status="x.status" />
 				<span class="whitespace-nowrap"> {{ x.label }}</span>
 			</template>
@@ -66,7 +66,7 @@ const formatCmd = (cmd: string) => {
 					:key="bench.name"
 					:opened="true"
 				>
-					<template #header>
+					<template #prefix>
 						<LucideBoxes class="size-4 shrink-0" />
 						{{ bench.name }}
 						<span class="text-ink-gray-5 mx-1">|</span>
@@ -80,7 +80,7 @@ const formatCmd = (cmd: string) => {
 						headerCss="ml-12 py-2"
 						:key="job.name"
 					>
-						<template #header>
+						<template #prefix>
 							<LucideBox class="size-4" />
 							{{ job.job_type }}
 						</template>
