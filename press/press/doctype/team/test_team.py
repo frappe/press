@@ -1054,3 +1054,138 @@ class TestTeamGuardDecorators(FrappeTestCase):
 			role_doc = frappe.get_doc("Press Role", self.role.name)
 			with self.assertRaises(frappe.PermissionError):
 				role_doc.add_user(outsider_email)
+
+
+# ═════════════════════════════════════════════════════════════════
+# 13. Team.total_subscribed_amount
+# ═════════════════════════════════════════════════════════════════
+
+
+class TestTeamTotalSubscribedAmount(FrappeTestCase):
+	"""total_subscribed_amount() sums price_usd across all enabled subscriptions."""
+
+	def setUp(self):
+		frappe.set_user("Administrator")
+		self.team = create_test_team()
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def test_returns_zero_when_no_subscriptions(self):
+		"""A team with no subscriptions has total = 0."""
+		total = self.team.total_subscribed_amount()
+		self.assertEqual(total, 0)
+
+	def test_sums_site_plan_subscriptions(self):
+		"""Sums price_usd for non-storage plan subscriptions."""
+		from press.press.doctype.site_plan.test_site_plan import create_test_plan
+
+		plan = create_test_plan("Site", price_usd=10.0)
+		frappe.get_doc(
+			{
+				"doctype": "Subscription",
+				"team": self.team.name,
+				"document_type": "Site",
+				"document_name": "test-site.example.com",
+				"plan_type": "Site Plan",
+				"plan": plan.name,
+				"enabled": 1,
+			}
+		).insert(ignore_permissions=True)
+
+		total = self.team.total_subscribed_amount()
+		self.assertAlmostEqual(total, 10.0, places=2)
+
+	def test_disabled_subscriptions_excluded(self):
+		"""Disabled subscriptions do not count toward the total."""
+		from press.press.doctype.site_plan.test_site_plan import create_test_plan
+
+		plan = create_test_plan("Site", price_usd=20.0)
+		frappe.get_doc(
+			{
+				"doctype": "Subscription",
+				"team": self.team.name,
+				"document_type": "Site",
+				"document_name": "test-site.example.com",
+				"plan_type": "Site Plan",
+				"plan": plan.name,
+				"enabled": 0,
+			}
+		).insert(ignore_permissions=True)
+
+		total = self.team.total_subscribed_amount()
+		self.assertEqual(total, 0)
+
+
+# ═════════════════════════════════════════════════════════════════
+# 14. Team.update_tier_limit
+# ═════════════════════════════════════════════════════════════════
+
+
+class TestTeamUpdateTierLimit(FrappeTestCase):
+	"""update_tier_limit() updates spending_limit when tier changes."""
+
+	def setUp(self):
+		frappe.set_user("Administrator")
+		self.team = create_test_team()
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def _create_tier(self, amount: float) -> str:
+		tier = frappe.get_doc(
+			{
+				"doctype": "Team Tier",
+				"tier": f"Test Tier {make_autoname('.###')}",
+				"amount": amount,
+				"last_invoice_amount": 0,
+				"paying_user_since": 0,
+			}
+		).insert(ignore_permissions=True)
+		return tier.name
+
+	def test_update_tier_limit_sets_spending_limit(self):
+		"""When apply_limits=True and tier changes, spending_limit is updated."""
+		tier_name = self._create_tier(500.0)
+
+		self.team.apply_limits = 1
+		self.team.tier = tier_name
+		self.team.save(ignore_permissions=True)
+
+		# At this point get_doc_before_save().tier is empty (or the old tier)
+		# Simulate the update by calling update_tier_limit after another tier change
+		new_tier_name = self._create_tier(750.0)
+		self.team.reload()
+		saved_tier = self.team.tier  # store as "old" tier
+
+		# Patch get_doc_before_save to return a mock with the old tier
+		with patch.object(
+			self.team.__class__,
+			"get_doc_before_save",
+			return_value=MagicMock(tier=saved_tier if saved_tier != new_tier_name else ""),
+		):
+			self.team.tier = new_tier_name
+			self.team.update_tier_limit()
+
+		refreshed = frappe.db.get_value("Team", self.team.name, "spending_limit")
+		self.assertEqual(refreshed, 750.0)
+
+	def test_no_change_when_apply_limits_false(self):
+		"""When apply_limits=False, spending_limit is NOT updated."""
+		tier_name = self._create_tier(999.0)
+		original_limit = frappe.db.get_value("Team", self.team.name, "spending_limit")
+
+		self.team.apply_limits = 0
+		self.team.tier = tier_name
+
+		with patch.object(
+			self.team.__class__,
+			"get_doc_before_save",
+			return_value=MagicMock(tier=""),
+		):
+			self.team.update_tier_limit()
+
+		current_limit = frappe.db.get_value("Team", self.team.name, "spending_limit")
+		self.assertEqual(current_limit, original_limit)

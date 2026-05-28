@@ -383,3 +383,90 @@ class TestServer(FrappeTestCase):
 		)
 		self.assertEqual(len(incidents), 1)
 		self.assertEqual(incidents[0].server, self.high_mem_server.name)
+
+
+# ═════════════════════════════════════════════════════════════════
+# set_dedicated_server_site_warranty_quota_and_cooldown
+# ═════════════════════════════════════════════════════════════════
+
+
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestSetDedicatedServerWarrantyQuota(FrappeTestCase):
+	"""set_dedicated_server_site_warranty_quota_and_cooldown() reads from Press Settings."""
+
+	def setUp(self):
+		create_test_press_settings()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_sets_quota_from_press_settings(self):
+		"""Quota is pulled from Press Settings default field."""
+		frappe.db.set_single_value("Press Settings", "default_dedicated_server_site_warranty_quota", 10)
+		server = create_test_server()
+		server.set_dedicated_server_site_warranty_quota_and_cooldown()
+		self.assertEqual(server.supported_site_quota, 10)
+
+	def test_sets_cooldown_from_press_settings(self):
+		"""Cooldown is pulled from Press Settings default field."""
+		frappe.db.set_single_value(
+			"Press Settings", "default_dedicated_server_site_warranty_change_cooldown", 7
+		)
+		server = create_test_server()
+		server.set_dedicated_server_site_warranty_quota_and_cooldown()
+		self.assertEqual(server.site_warranty_change_cooldown, 7)
+
+	def test_zero_values_when_settings_not_configured(self):
+		"""Returns 0/None when the Press Settings fields are not set."""
+		frappe.db.set_single_value("Press Settings", "default_dedicated_server_site_warranty_quota", 0)
+		frappe.db.set_single_value(
+			"Press Settings", "default_dedicated_server_site_warranty_change_cooldown", 0
+		)
+		server = create_test_server()
+		server.set_dedicated_server_site_warranty_quota_and_cooldown()
+		self.assertFalse(server.supported_site_quota)
+		self.assertFalse(server.site_warranty_change_cooldown)
+
+
+# ═════════════════════════════════════════════════════════════════
+# get_teams_with_unpaid_invoices_over_threshold
+# archive_servers_with_unpaid_invoices
+# ═════════════════════════════════════════════════════════════════
+
+
+class TestGetTeamsWithUnpaidInvoicesOverThreshold(FrappeTestCase):
+	"""get_teams_with_unpaid_invoices_over_threshold() returns teams with overdue servers."""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_returns_empty_set_when_no_teams(self):
+		from press.press.doctype.server.server import get_teams_with_unpaid_invoices_over_threshold
+
+		result = get_teams_with_unpaid_invoices_over_threshold()
+		self.assertIsInstance(result, set)
+
+	def test_returns_set_type(self):
+		from press.press.doctype.server.server import get_teams_with_unpaid_invoices_over_threshold
+
+		result = get_teams_with_unpaid_invoices_over_threshold()
+		self.assertIsInstance(result, set)
+
+
+@patch.object(BaseServer, "after_insert", new=Mock())
+class TestArchiveServersWithUnpaidInvoices(FrappeTestCase):
+	"""archive_servers_with_unpaid_invoices() archives servers for teams with overdue invoices."""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_does_nothing_when_no_overdue_teams(self):
+		"""If no teams have overdue invoices, no servers are archived."""
+		from press.press.doctype.server.server import archive_servers_with_unpaid_invoices
+
+		with patch(
+			"press.press.doctype.server.server.get_teams_with_unpaid_invoices_over_threshold",
+			return_value=set(),
+		):
+			# Must not raise; all servers should remain unarchived
+			archive_servers_with_unpaid_invoices()

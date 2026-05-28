@@ -178,3 +178,6 @@ on_prem_dr
 
 # changelog dist
 press/www/releases
+session.md
+frappe_cloud_tests_specs.md
+press/run_tests_local.py
