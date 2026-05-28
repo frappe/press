@@ -370,6 +370,38 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
+	def test_subsequent_incident_not_resolved_by_previous_resolved_alerts(self):
+		"""When a server goes down and recovers, subsequent incidents should not
+		auto-resolve due to resolved alerts from the previous recovery."""
+		site = create_test_site()
+		alert = create_test_prometheus_alert_rule()
+
+		# First incident: server goes down and recovers
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="firing")
+		first_incident: Incident = frappe.get_last_doc("Incident")
+		self.assertEqual(first_incident.status, "Validating")
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="resolved")
+		resolve_incidents()
+		first_incident.reload()
+		self.assertEqual(first_incident.status, "Auto-Resolved")
+
+		# Second incident: server goes down again
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="firing")
+		second_incident: Incident = frappe.get_last_doc("Incident")
+		self.assertNotEqual(first_incident.name, second_incident.name)
+		self.assertEqual(second_incident.status, "Validating")
+
+		# Resolve should NOT auto-resolve the second incident using old resolved alerts
+		resolve_incidents()
+		second_incident.reload()
+		self.assertEqual(second_incident.status, "Validating")
+
+		# Only when new resolved alerts come in after the second incident
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="resolved")
+		resolve_incidents()
+		second_incident.reload()
+		self.assertEqual(second_incident.status, "Auto-Resolved")
+
 	@given(get_total_and_firing_for_ongoing_incident())
 	@settings(max_examples=20, deadline=timedelta(seconds=5))
 	def test_is_enough_firing_is_true_for_ongoing_incident(self, total_firing):
@@ -381,10 +413,10 @@ class TestIncident(FrappeTestCase):
 			patch.object(
 				AlertmanagerWebhookLog,
 				"past_alert_instances",
-				new=lambda x, y: firing_instances,
+				new=lambda x, y, since=None: firing_instances,
 			),
 		):
-			self.assertTrue(alert.is_enough_firing)
+			self.assertTrue(alert.is_enough_firing())
 
 	@given(get_total_firing_and_resolved_for_resolved_incident())
 	@settings(max_examples=20, deadline=timedelta(seconds=5))
@@ -402,7 +434,7 @@ class TestIncident(FrappeTestCase):
 				side_effect=[firing_instances, resolved_instances],
 			),
 		):
-			self.assertFalse(alert.is_enough_firing)
+			self.assertFalse(alert.is_enough_firing())
 
 	def test_incident_does_not_resolve_when_other_alerts_are_still_firing_but_does_when_less_than_required_sites_are_down(
 		self,
