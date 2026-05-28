@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Button, Dialog, ErrorMessage, FormControl } from 'frappe-ui'
 import { inject, ref, useTemplateRef, watch } from 'vue'
-import { toast } from 'vue-sonner'
 import EmailInput from '@/components/EmailInput.vue'
+import { showOnboardingToast } from '@/onboarding/toast'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
 import LucideX from '~icons/lucide/x'
 
@@ -56,7 +56,8 @@ async function handleSubmit() {
 			certificate_type: certificateType.value,
 		})
 
-		toast.success(
+		showOnboardingToast(
+			'success',
 			result?.status === 'Linked'
 				? 'Certificate already linked'
 				: 'Validation email sent',

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button, Dialog } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
-import { toast } from 'vue-sonner'
+import { showOnboardingToast } from '@/onboarding/toast'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
 import LucideMail from '~icons/lucide/mail'
 import LucideX from '~icons/lucide/x'
@@ -47,9 +47,9 @@ async function resend(requestName: string) {
 	resendingRequest.value = requestName
 	try {
 		await onboarding.resendCertificateLinkRequest(requestName)
-		toast.success('Validation email sent')
+		showOnboardingToast('success', 'Validation email sent')
 	} catch (error: any) {
-		toast.error(error.messages?.[0] || error.message)
+		showOnboardingToast('error', error.messages?.[0] || error.message)
 	} finally {
 		resendingRequest.value = ''
 	}

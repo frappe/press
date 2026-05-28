@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Button, Dialog } from 'frappe-ui'
 import { computed, inject, reactive, ref, useTemplateRef, watch } from 'vue'
-import { toast } from 'vue-sonner'
 import CompanyInformationFormFirstStep from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationFormFirstStep.vue'
 import CompanyInformationFormSecondStep from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationFormSecondStep.vue'
 import CompanyInformationFormThirdStep from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationFormThirdStep.vue'
+import { showOnboardingToast } from '@/onboarding/toast'
 import {
 	type PartnerOnboardingDoc,
 	usePartnerOnboarding,
@@ -87,10 +87,10 @@ async function handleSubmit() {
 	try {
 		Object.assign(onboarding.form, draft)
 		await onboarding.save()
-		toast.success('Company details updated')
+		showOnboardingToast('success', 'Company details updated')
 		closeModal()
 	} catch (error: any) {
-		toast.error(error.messages?.[0] || error.message)
+		showOnboardingToast('error', error.messages?.[0] || error.message)
 	}
 }
 </script>
