@@ -1,7 +1,7 @@
 {
 	"actions": [],
 	"allow_rename": 1,
-	"autoname": "field:team",
+	"autoname": "format:PONB-{team}-{company_name}-{#####}",
 	"creation": "2026-05-26 00:00:00",
 	"default_view": "List",
 	"doctype": "DocType",
@@ -10,6 +10,9 @@
 		"team",
 		"status",
 		"submitted_on",
+		"reviewed_on",
+		"reviewed_by",
+		"rejection_reason",
 		"registration_section",
 		"company_name",
 		"registered_country",
@@ -43,8 +46,7 @@
 			"in_list_view": 1,
 			"label": "Team",
 			"options": "Team",
-			"reqd": 1,
-			"unique": 1
+			"reqd": 1
 		},
 		{
 			"allow_on_submit": 1,
@@ -53,7 +55,7 @@
 			"fieldtype": "Select",
 			"in_list_view": 1,
 			"label": "Status",
-			"options": "Draft\nPending Review\nApproved\nRejected"
+			"options": "Draft\nPending Review\nApproved\nRejected\nCancelled"
 		},
 		{
 			"fieldname": "registration_section",
@@ -194,6 +196,28 @@
 			"read_only": 1
 		},
 		{
+			"allow_on_submit": 1,
+			"fieldname": "reviewed_on",
+			"fieldtype": "Datetime",
+			"label": "Reviewed On",
+			"read_only": 1
+		},
+		{
+			"allow_on_submit": 1,
+			"fieldname": "reviewed_by",
+			"fieldtype": "Link",
+			"label": "Reviewed By",
+			"options": "User",
+			"read_only": 1
+		},
+		{
+			"allow_on_submit": 1,
+			"fieldname": "rejection_reason",
+			"fieldtype": "Small Text",
+			"label": "Rejection Reason",
+			"read_only": 1
+		},
+		{
 			"fieldname": "amended_from",
 			"fieldtype": "Link",
 			"label": "Amended From",
@@ -207,11 +231,11 @@
 	"index_web_pages_for_search": 1,
 	"is_submittable": 1,
 	"links": [],
-	"modified": "2026-05-28 12:02:58.326197",
+	"modified": "2026-05-28 16:40:05.986415",
 	"modified_by": "Administrator",
 	"module": "Partner",
 	"name": "Partner Onboarding",
-	"naming_rule": "By fieldname",
+	"naming_rule": "Expression",
 	"owner": "Administrator",
 	"permissions": [
 		{

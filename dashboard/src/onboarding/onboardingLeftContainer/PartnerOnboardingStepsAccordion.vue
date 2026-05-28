@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
 import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import {
 	FAccordionContent,
 	FAccordionHeader,
@@ -22,6 +23,7 @@ import LucideLock from '~icons/lucide/lock'
 const openStep = ref('step-profile')
 const team = inject('team')
 const onboarding = usePartnerOnboarding(team as any)
+const router = useRouter()
 const registrationModalOpen = ref(false)
 const companyInfoModalOpen = ref(false)
 const linkCertificateModalOpen = ref(false)
@@ -168,9 +170,11 @@ const canSubmit = computed(
 		onboarding.isCertificateRequirementComplete.value &&
 		onboarding.isMRRRequirementComplete.value,
 )
+const isApproved = computed(() => onboarding.doc.value?.status === 'Approved')
+const isRejected = computed(() => onboarding.doc.value?.status === 'Rejected')
 const submitLabel = computed(() => {
-	if (onboarding.doc.value?.status === 'Approved') return 'Approved'
-	if (onboarding.doc.value?.status === 'Rejected') return 'Rejected'
+	if (isApproved.value) return 'Become an active partner'
+	if (isRejected.value) return 'Start new application'
 	if (
 		onboarding.doc.value?.docstatus === 1 ||
 		onboarding.doc.value?.status === 'Pending Review'
@@ -179,8 +183,43 @@ const submitLabel = computed(() => {
 	}
 	return 'Submit for approval'
 })
+const submitIcon = computed(() =>
+	isApproved.value || isRejected.value ? LucideCircleCheck : LucideLock,
+)
+const canClickPrimaryAction = computed(
+	() => canSubmit.value || isApproved.value || isRejected.value,
+)
+
+async function startNewApplication() {
+	try {
+		await onboarding.unregister()
+		showOnboardingToast('success', 'You can start a new application')
+	} catch (error: any) {
+		showOnboardingToast(
+			'error',
+			error.messages?.[0] ||
+				error.message ||
+				'Could not start a new application',
+		)
+	}
+}
+
+async function openPartnerOverview() {
+	await (team as any)?.reload?.()
+	router.push({ name: 'PartnerOverview' })
+}
 
 async function submitForApproval() {
+	if (isApproved.value) {
+		await openPartnerOverview()
+		return
+	}
+
+	if (isRejected.value) {
+		await startNewApplication()
+		return
+	}
+
 	try {
 		await onboarding.submitForApproval()
 		showOnboardingToast('success', 'Details submitted for approval')
@@ -299,13 +338,34 @@ async function submitForApproval() {
 			</FAccordionItem>
 		</FAccordionRoot>
 
+		<div
+			v-if="isRejected"
+			class="max-w-prose rounded border border-outline-gray-2 bg-surface-red-2 p-4"
+		>
+			<p class="text-p-base font-medium text-ink-red-4">
+				Your application was rejected
+			</p>
+			<p class="mt-1 text-p-base text-ink-gray-7">
+				Review the feedback, make the required changes, and start a new
+				application when you are ready.
+			</p>
+			<p
+				v-if="onboarding.doc.value?.rejection_reason"
+				class="mt-3 whitespace-pre-wrap text-p-base text-ink-gray-8"
+			>
+				{{ onboarding.doc.value.rejection_reason }}
+			</p>
+		</div>
+
 		<div class="flex justify-start">
 			<Button
 				variant="solid"
 				class="w-full sm:w-auto"
-				:disabled="!canSubmit"
-				:iconLeft="LucideLock"
-				:loading="onboarding.submittingForApproval.value"
+				:disabled="!canClickPrimaryAction"
+				:iconLeft="submitIcon"
+				:loading="
+					onboarding.submittingForApproval.value || onboarding.unregistering.value
+				"
 				:label="submitLabel"
 				@click="submitForApproval"
 			/>

@@ -11,9 +11,22 @@ frappe.ui.form.on('Partner Onboarding', {
 		})
 
 		frm.add_custom_button(__('Reject'), () => {
-			frappe.confirm(__('Reject this partner onboarding request?'), () => {
-				frm.call('reject').then(() => frm.refresh())
-			})
+			frappe.prompt(
+				[
+					{
+						fieldname: 'reason',
+						fieldtype: 'Small Text',
+						label: __('Reason'),
+					},
+				],
+				(values) => {
+					frm
+						.call('reject', { reason: values.reason })
+						.then(() => frm.refresh())
+				},
+				__('Reject partner onboarding request'),
+				__('Reject'),
+			)
 		})
 	},
 })

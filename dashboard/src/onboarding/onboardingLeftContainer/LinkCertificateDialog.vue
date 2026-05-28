@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Dialog, ErrorMessage, FormControl } from 'frappe-ui'
+import { Button, Dialog, ErrorMessage } from 'frappe-ui'
 import { inject, ref, useTemplateRef, watch } from 'vue'
 import EmailInput from '@/components/EmailInput.vue'
 import { showOnboardingToast } from '@/onboarding/toast'
@@ -18,9 +18,26 @@ const submitError = ref('')
 const submitting = ref(false)
 const emailInputRef = useTemplateRef('emailInputRef')
 
-const courseTypes = [
-	{ label: 'Framework', value: 'frappe' },
-	{ label: 'ERPNext', value: 'erpnext' },
+const FrappeFrameworkLogo = new URL(
+	'../../assets/frappe-framework-logo-og.png',
+	import.meta.url,
+).href
+const ERPNextLogo = new URL(
+	'../../assets/erpnext-logo-blue.png',
+	import.meta.url,
+).href
+
+const certificateTypes = [
+	{
+		label: 'Frappe Framework',
+		value: 'frappe',
+		logo: FrappeFrameworkLogo,
+	},
+	{
+		label: 'ERPNext',
+		value: 'erpnext',
+		logo: ERPNextLogo,
+	},
 ]
 
 watch(open, (isOpen) => {
@@ -85,8 +102,7 @@ async function handleSubmit() {
 							Link certificate
 						</h3>
 						<p class="mt-2 text-p-sm leading-5 text-ink-gray-6">
-							Send a verification email to the certificate holder. Once they
-							approve it, the certificate is linked to your account.
+							Choose a certificate and send a verification email to the holder.
 						</p>
 					</div>
 					<button
@@ -100,14 +116,30 @@ async function handleSubmit() {
 				</div>
 
 				<div class="mt-5">
-					<FormControl
-						v-model="certificateType"
-						label="Certificate Type"
-						type="select"
-						size="sm"
-						variant="outline"
-						:options="courseTypes"
-					/>
+					<label class="text-p-sm text-ink-gray-6">Certificate type</label>
+					<div class="mt-2 grid grid-cols-2 gap-2">
+						<button
+							v-for="type in certificateTypes"
+							:key="type.value"
+							type="button"
+							class="flex items-center gap-3 rounded-lg border p-3 text-left transition-colors"
+							:class="certificateType === type.value
+								? 'border-outline-gray-4 bg-surface-gray-1 shadow-sm'
+								: 'border-outline-gray-2 bg-surface-white hover:border-outline-gray-3 hover:bg-surface-gray-1'
+								"
+							:aria-pressed="certificateType === type.value"
+							@click="certificateType = type.value"
+						>
+							<span
+								class="grid size-8 shrink-0 place-items-center overflow-hidden rounded-md bg-surface-white"
+							>
+								<img :src="type.logo" :alt="type.label" class="size-6" />
+							</span>
+							<span class="text-p-sm font-medium text-ink-gray-8">
+								{{ type.label }}
+							</span>
+						</button>
+					</div>
 				</div>
 
 				<EmailInput

@@ -40,8 +40,11 @@ class PartnerOnboarding(Document):
 		headquarter_city: DF.Data | None
 		incorporation_certificate: DF.Attach | None
 		registered_country: DF.Link
+		rejection_reason: DF.SmallText | None
 		revenue_currency: DF.Link | None
-		status: DF.Literal["Draft", "Pending Review", "Approved", "Rejected"]
+		reviewed_by: DF.Link | None
+		reviewed_on: DF.Datetime | None
+		status: DF.Literal["Draft", "Pending Review", "Approved", "Rejected", "Cancelled"]
 		submitted_on: DF.Datetime | None
 		team: DF.Link
 		verticals_served: DF.SmallText | None
@@ -68,6 +71,10 @@ class PartnerOnboarding(Document):
 		"agreed_to_due_diligence",
 		"agreed_to_partnership_agreement",
 	)
+
+	def before_validate(self):
+		if self.status == "Submission Pending":
+			self.status = "Pending Review"
 
 	def before_submit(self):
 		team = frappe.get_cached_doc("Team", self.team)
@@ -98,10 +105,13 @@ class PartnerOnboarding(Document):
 		team.enable_erpnext_partner_privileges()
 
 		self.status = "Approved"
+		self.reviewed_by = frappe.session.user
+		self.reviewed_on = now_datetime()
+		self.rejection_reason = None
 		self.save()
 
 	@frappe.whitelist()
-	def reject(self):
+	def reject(self, reason: str | None = None):
 		frappe.only_for("System Manager")
 
 		if self.docstatus != 1:
@@ -111,13 +121,22 @@ class PartnerOnboarding(Document):
 			frappe.throw("Only pending submissions can be rejected.")
 
 		self.status = "Rejected"
+		self.reviewed_by = frappe.session.user
+		self.reviewed_on = now_datetime()
+		self.rejection_reason = reason
 		self.save()
 
 
 def _get_partner_onboarding(team: str):
-	name = frappe.db.get_value("Partner Onboarding", {"team": team}, "name")
-	if name:
-		return frappe.get_doc("Partner Onboarding", name)
+	names = frappe.get_all(
+		"Partner Onboarding",
+		filters={"team": team, "docstatus": ["<", 2], "status": ["!=", "Cancelled"]},
+		pluck="name",
+		order_by="creation desc",
+		limit=1,
+	)
+	if names:
+		return frappe.get_doc("Partner Onboarding", names[0])
 	return None
 
 
@@ -326,6 +345,9 @@ def unregister() -> None:
 
 	if doc.docstatus == 1:
 		doc.cancel()
+	elif doc.docstatus == 0:
+		doc.status = "Cancelled"
+		doc.save()
 
 	# keep the partner onboarding request in the database for reference
 	# frappe.delete_doc("Partner Onboarding", doc.name)

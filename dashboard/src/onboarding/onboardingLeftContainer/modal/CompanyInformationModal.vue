@@ -29,11 +29,10 @@ const step2Ref = useTemplateRef('step2Ref')
 const stepRefs = [step0Ref, step1Ref, step2Ref]
 
 const displayCompanyName = computed(() => {
-	const doc = team?.doc
 	return (
-		doc?.company_name?.trim() ||
-		doc?.billing_name?.trim() ||
-		doc?.team_title?.trim() ||
+		draft.company_name?.trim() ||
+		onboarding.doc.value?.company_name?.trim() ||
+		onboarding.form.company_name?.trim() ||
 		'your company'
 	)
 })
@@ -52,7 +51,7 @@ const dialogTitle = computed(
 
 watch(open, (isOpen) => {
 	if (isOpen) {
-		Object.assign(draft, onboarding.form)
+		Object.assign(draft, onboarding.form, onboarding.doc.value || {})
 		currentStepIndex.value = 0
 		formStepKey.value += 1
 	}

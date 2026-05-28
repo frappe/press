@@ -40,7 +40,7 @@ export type PartnerOnboardingDoc = {
 	name?: string
 	team?: string
 	docstatus?: 0 | 1 | 2
-	status?: 'Draft' | 'Pending Review' | 'Approved' | 'Rejected'
+	status?: 'Draft' | 'Pending Review' | 'Approved' | 'Rejected' | 'Cancelled'
 	company_name?: string
 	registered_country?: string
 	company_email?: string
@@ -59,6 +59,9 @@ export type PartnerOnboardingDoc = {
 	incorporation_certificate?: string
 	agreed_to_due_diligence?: boolean | 0 | 1
 	agreed_to_partnership_agreement?: boolean | 0 | 1
+	reviewed_on?: string
+	reviewed_by?: string
+	rejection_reason?: string
 }
 
 const doc = ref<PartnerOnboardingDoc | null>(null)
