@@ -487,7 +487,7 @@ const stopBuild = () => {
 						class="flex flex-col gap-1"
 					>
 						<Collapsable headerCss="py-3" class="mb-3">
-							<template #header>
+							<template #prefix>
 								<StatusIcon
 									:status="x.class == 'Error' ? 'Failed' : 'Warning'"
 								/>

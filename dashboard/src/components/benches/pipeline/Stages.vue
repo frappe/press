@@ -26,18 +26,17 @@ const formatCmd = (cmd: string) => {
 </script>
 
 <template>
-	<template v-for='x in stages' :key="x.name">
+	<template v-for='(x, i) in stages' :key="x.name">
 		<Collapsable
 			v-if="deployview ? x.label == 'Building' : ['Building', 'Deploying'].includes(x.label)"
-			headerCss="py-3 border-b pr-3"
+			:headerCss="`py-3 pr-3  ${i != stages?.length-1?'aria-[expanded=false]:border-b': '' }`"
 			:disabled='["Pending", "Queued"].includes(x.status)'
 		>
-			<template #header>
+			<template #prefix>
 				<StatusIcon :status="x.status" />
 				<span class="whitespace-nowrap"> {{ x.label }}</span>
 			</template>
 
-			<hr class="invisible mt-1" />
 			<!-- build steps -->
 			<template v-if='x.label == "Building"'>
 				<button
@@ -57,21 +56,24 @@ const formatCmd = (cmd: string) => {
 						>{{ build_step.cached ? 'Cached': secsToDuration(build_step.duration) }}</span
 					>
 				</button>
+				<hr class="mt-1" />
 			</template>
 
 			<template v-else-if='!deployview && x.label == "Deploying"'>
 				<Collapsable
 					v-for='bench in x.benches'
-					headerCss="ml-6 py-3 pr-3"
+					headerCss="ml-6 py-2 pr-3 -mt-1"
 					:key="bench.name"
 					:opened="true"
 				>
-					<template #header>
+					<template #prefix>
 						<LucideBoxes class="size-4 shrink-0" />
 						{{ bench.name }}
 						<span class="text-ink-gray-5 mx-1">|</span>
 						<LucideServer class="size-4 text-ink-gray-5 shrink-0" />
-						<span class="text-ink-gray-5"> {{ bench.server?.split('.')?.[0] }} </span>
+						<span class="text-ink-gray-5">
+							{{ bench.server?.split('.')?.[0] }}
+						</span>
 					</template>
 
 					<Collapsable
@@ -80,7 +82,7 @@ const formatCmd = (cmd: string) => {
 						headerCss="ml-12 py-2 pr-3"
 						:key="job.name"
 					>
-						<template #header>
+						<template #prefix>
 							<LucideBox class="size-4" />
 							{{ job.job_type }}
 						</template>
