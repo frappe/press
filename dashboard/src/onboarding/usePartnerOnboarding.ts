@@ -335,6 +335,12 @@ export function usePartnerOnboarding(team?: TeamResource) {
 		}
 	})
 
+	useSocketEvent('partner_onboarding_mrr_updated', (data: any) => {
+		if (data?.team === teamName) {
+			void loadMRRStatus()
+		}
+	})
+
 	async function sendCertificateLinkRequest(params: {
 		user_email: string
 		certificate_type: string

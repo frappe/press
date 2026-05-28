@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
-import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
 	FAccordionContent,
@@ -28,8 +28,6 @@ const registrationModalOpen = ref(false)
 const companyInfoModalOpen = ref(false)
 const linkCertificateModalOpen = ref(false)
 const certificateStatusModalOpen = ref(false)
-const mrrStatusInitialized = ref(false)
-let mrrRefreshInterval: ReturnType<typeof setInterval> | null = null
 
 function formatCurrency(amount: number, currency: string) {
 	return new Intl.NumberFormat('en-US', {
@@ -54,35 +52,6 @@ const mrrTargetLabel = computed(() =>
 const mrrProgress = computed(() =>
 	Math.min(100, Math.max(0, onboarding.mrrStatus.value.progress || 0)),
 )
-
-watch(
-	() => onboarding.mrrStatus.value.requirement_complete,
-	(isComplete, wasComplete) => {
-		if (!mrrStatusInitialized.value) {
-			mrrStatusInitialized.value = true
-			return
-		}
-
-		if (isComplete && wasComplete === false) {
-			showOnboardingToast('success', 'Minimum MRR achieved')
-		}
-	},
-)
-
-onMounted(async () => {
-	await onboarding.loadMRRStatus()
-	mrrStatusInitialized.value = true
-
-	mrrRefreshInterval = setInterval(() => {
-		onboarding.loadMRRStatus()
-	}, 60000)
-})
-
-onUnmounted(() => {
-	if (mrrRefreshInterval) {
-		clearInterval(mrrRefreshInterval)
-	}
-})
 
 const steps = computed(() => [
 	{
