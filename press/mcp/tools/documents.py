@@ -360,6 +360,7 @@ DOCTYPES: dict[str, dict[str, Any]] = {
 
 
 ALLOWED_DOCTYPES = set(DOCTYPES.keys())
+DOCTYPE_SLUGS = {_doctype.lower().replace(" ", "-"): _doctype for _doctype in ALLOWED_DOCTYPES}
 
 BASE_DEFAULT_FIELDS = ["name", "modified"]
 BASE_FILTER_FIELDS = {"name", "creation", "modified"}
@@ -479,7 +480,7 @@ def get_doctype(doctype: str) -> dict:
 	- which doctypes are linked
 	- useful query examples, if any
 	"""
-	_validate_doctype(doctype)
+	doctype = _validate_doctype(doctype)
 	return DOCTYPES[doctype]
 
 
@@ -498,7 +499,7 @@ def list_documents(
 	Returns compact default fields only. Use next_cursor for the next page.
 	Use get_document_summary() for more detail.
 	"""
-	_validate_doctype(doctype)
+	doctype = _validate_doctype(doctype)
 	_validate_filters(doctype, filters)
 	_validate_order_by(order_by)
 
@@ -528,7 +529,7 @@ def get_document(doctype: str, name: str) -> dict:
 	Use this for quick inspection. Use get_document_summary() when you need logs,
 	tracebacks, child tables, or other detailed fields.
 	"""
-	_validate_doctype(doctype)
+	doctype = _validate_doctype(doctype)
 	_document_exists(doctype, name)
 
 	return redact(
@@ -548,7 +549,7 @@ def get_document_summary(doctype: str, name: str) -> dict:
 
 	Use get_document_field() for logs, tracebacks, child tables or payloads.
 	"""
-	_validate_doctype(doctype)
+	doctype = _validate_doctype(doctype)
 	_document_exists(doctype, name)
 
 	meta = frappe.get_meta(doctype)
@@ -572,7 +573,7 @@ def get_document_field(doctype: str, name: str, fieldname: str, max_chars: int =
 
 	Use this for large logs, tracebacks, child tables, payloads or command output.
 	"""
-	_validate_doctype(doctype)
+	doctype = _validate_doctype(doctype)
 	_document_exists(doctype, name)
 	if fieldname not in FRAPPE_DEFAULT_FIELDS and not frappe.get_meta(doctype).has_field(fieldname):
 		frappe.throw(f"Field '{fieldname}' does not exist for {doctype}")
@@ -593,7 +594,7 @@ def get_document_field(doctype: str, name: str, fieldname: str, max_chars: int =
 @system_manager_only
 def get_full_document(doctype: str, name: str, include_child_tables: bool = False) -> dict:
 	"""Fetch one raw full document. Prefer get_document_field for drilldown."""
-	_validate_doctype(doctype)
+	doctype = _validate_doctype(doctype)
 	_document_exists(doctype, name)
 
 	doc = frappe.get_doc(doctype, name).as_dict()
@@ -619,8 +620,8 @@ def get_linked_documents(
 	Example: from a Site, get linked Agent Job records.
 	Call get_doctype(linked_doctype) first if you are unsure what it contains.
 	"""
-	_validate_doctype(doctype)
-	_validate_doctype(linked_doctype)
+	doctype = _validate_doctype(doctype)
+	linked_doctype = _validate_doctype(linked_doctype)
 	_validate_order_by(order_by)
 	_document_exists(doctype, name)
 
@@ -664,7 +665,7 @@ def get_document_versions(doctype: str, name: str, days: int = 7) -> list[dict]:
 
 	Default is 7 days. Maximum is 90 days.
 	"""
-	_validate_doctype(doctype)
+	doctype = _validate_doctype(doctype)
 	_document_exists(doctype, name)
 	days = _clamp_days(days)
 
@@ -732,9 +733,18 @@ def _document_list_response(
 	}
 
 
-def _validate_doctype(doctype: str) -> None:
+def _validate_doctype(doctype: str) -> str:
+	doctype = _normalize_doctype(doctype)
 	if doctype not in ALLOWED_DOCTYPES:
 		frappe.throw(f"Doctype '{doctype}' is not available through MCP")
+	return doctype
+
+
+def _normalize_doctype(doctype: str) -> str:
+	if doctype in ALLOWED_DOCTYPES:
+		return doctype
+
+	return DOCTYPE_SLUGS.get(str(doctype or "").strip().lower(), doctype)
 
 
 def _validate_order_by(order_by: str) -> None:
