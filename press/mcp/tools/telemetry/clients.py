@@ -27,7 +27,7 @@ def prometheus_get(endpoint: str, params: dict[str, Any]) -> dict:
 	except requests.HTTPError:
 		frappe.throw(f"Prometheus request failed with HTTP {response.status_code}")
 	except requests.RequestException as e:
-		frappe.throw(f"Prometheus request failed: {e}")
+		frappe.throw(f"Prometheus request failed: {type(e).__name__}")
 
 	data = response.json()
 	if data.get("status") != "success":
@@ -52,7 +52,7 @@ def elasticsearch_post(body: dict, *, should_redact: bool = True) -> dict:
 	except requests.HTTPError:
 		frappe.throw(f"Elasticsearch request failed with HTTP {response.status_code}")
 	except requests.RequestException as e:
-		frappe.throw(f"Elasticsearch request failed: {e}")
+		frappe.throw(f"Elasticsearch request failed: {type(e).__name__}")
 
 	data = response.json()
 	return redact(data) if should_redact else data
