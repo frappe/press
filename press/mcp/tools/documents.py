@@ -769,7 +769,9 @@ def _cursor_offset(cursor: str | None) -> int:
 	try:
 		return max(0, int(cursor))
 	except Exception:
-		frappe.throw("cursor must be the next_cursor returned by list_documents")
+		frappe.throw(
+			"cursor must be the next_cursor returned by list_documents. Use the next_cursor value from the previous list_documents response."
+		)
 		return 0
 
 

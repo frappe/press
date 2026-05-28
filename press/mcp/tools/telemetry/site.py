@@ -399,7 +399,7 @@ def inspect_trace_id(trace_id: str, days: int = 30, limit: int = 20) -> dict:
 		summary      — sites, transaction types and slowest durations seen
 	"""
 	if not trace_id:
-		frappe.throw("trace_id is required")
+		frappe.throw("trace_id is required. Please provide a valid trace ID from request logs.")
 
 	days = clamp_days(days)
 	limit = clamp_limit(limit)
@@ -487,7 +487,9 @@ def get_site_performance_report(
 		data = mariadb_processlist(site)
 		return redact({"source": "agent", "site": site, "report": report, "data": data})
 
-	frappe.throw("report must be one of request_logs, slow_queries, deadlocks, processlist")
+	frappe.throw(
+		"report must be one of: request_logs, slow_queries, deadlocks, processlist. Use one of these exact values."
+	)
 	return None
 
 

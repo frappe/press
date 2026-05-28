@@ -57,14 +57,18 @@ def validate_prometheus_range(start_unix: int, end_unix: int, step: float) -> No
 		end_unix = int(end_unix)
 		step = float(step)
 	except (TypeError, ValueError):
-		frappe.throw("start_unix, end_unix and step must be numeric")
+		frappe.throw(
+			"start_unix, end_unix and step must be numeric. Please provide valid Unix timestamps and step in seconds."
+		)
 
 	if start_unix > end_unix:
-		frappe.throw("start_unix must be before end_unix")
+		frappe.throw(
+			"start_unix must be before end_unix. Please check that start_unix is a smaller timestamp."
+		)
 	if end_unix - start_unix > MAX_RANGE_SECONDS:
-		frappe.throw("Range query cannot exceed 30 days")
+		frappe.throw("Range query cannot exceed 30 days. Please reduce the time range.")
 	if step < MIN_STEP_SECONDS:
-		frappe.throw("step must be at least 60 seconds")
+		frappe.throw("step must be at least 60 seconds. Use a value of 60 or higher.")
 
 
 def step_for_hours(hours: int) -> int:

@@ -225,7 +225,9 @@ def query_release_group_metric(
 	"""Run one known release-group cadvisor metric."""
 	benches = frappe.get_all("Bench", {"status": "Active", "group": release_group}, pluck="name")
 	if not benches:
-		frappe.throw("No active benches found for release group")
+		frappe.throw(
+			"No active benches found for release group. Please check that the release group exists and has deployed benches."
+		)
 
 	query = RELEASE_GROUP_METRICS[metric]["query"].replace(
 		"$benches", "|".join(promql_regex_fragment(bench) for bench in benches)

@@ -70,7 +70,7 @@ def get_server_storage_breakdown(server: str, server_type: Literal["Server", "Da
 	For disk usage trends over time use query_server_metric(metric="space") instead.
 	"""
 	if server_type not in ("Server", "Database Server"):
-		frappe.throw("server_type must be Server or Database Server")
+		frappe.throw("server_type must be Server or Database Server. Use one of these exact values.")
 
 	data = frappe.get_doc(server_type, server).get_storage_usage()
 	return redact(

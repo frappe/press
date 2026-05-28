@@ -14,7 +14,9 @@ from press.mcp.tools.telemetry.config import DEFAULT_TIMEOUT
 def prometheus_get(endpoint: str, params: dict[str, Any]) -> dict:
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
-		frappe.throw("Monitor server not configured in Press Settings")
+		frappe.throw(
+			"Monitor server not configured in Press Settings. Please configure it under Press Settings."
+		)
 
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 	url = f"https://{monitor_server}/prometheus/api/v1/{endpoint}"
@@ -39,7 +41,7 @@ def prometheus_get(endpoint: str, params: dict[str, Any]) -> dict:
 def elasticsearch_post(body: dict, *, should_redact: bool = True) -> dict:
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
-		frappe.throw("Log server not configured in Press Settings")
+		frappe.throw("Log server not configured in Press Settings. Please configure it under Press Settings.")
 
 	password = get_decrypted_password("Log Server", log_server, "kibana_password")
 	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"

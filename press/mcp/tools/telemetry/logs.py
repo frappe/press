@@ -290,10 +290,12 @@ def _parse_elasticsearch_query(query: str | dict) -> dict:
 	try:
 		body = json.loads(query)
 	except json.JSONDecodeError:
-		frappe.throw("Elasticsearch query must be valid JSON")
+		frappe.throw("Elasticsearch query must be valid JSON. Please check the query syntax and try again.")
 
 	if not isinstance(body, dict):
-		frappe.throw("Elasticsearch query must be a JSON object")
+		frappe.throw(
+			"Elasticsearch query must be a JSON object, not an array or scalar. Please check the query format."
+		)
 
 	return body
 
