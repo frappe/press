@@ -449,13 +449,15 @@ def get_site_performance_report(
 		from press.api.analytics import request_logs
 
 		data = request_logs(site, timezone, end.strftime("%Y-%m-%d"), start=0)
-		return {
-			"source": "elasticsearch",
-			"function": "press.api.analytics.request_logs",
-			"site": site,
-			"report": report,
-			"data": data[:limit],
-		}
+		return redact(
+			{
+				"source": "elasticsearch",
+				"function": "press.api.analytics.request_logs",
+				"site": site,
+				"report": report,
+				"data": data[:limit],
+			}
+		)
 
 	if report == "slow_queries":
 		from press.api.analytics import mariadb_slow_queries

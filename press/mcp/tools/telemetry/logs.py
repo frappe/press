@@ -193,12 +193,14 @@ def get_bench_log(
 def get_bench_processes(bench: str) -> dict:
 	"""Fetch supervisor processes for a bench."""
 	processes = frappe.get_doc("Bench", bench).supervisorctl_status()
-	return {
-		"source": "agent",
-		"function": "press.api.bench.get_processes",
-		"bench": bench,
-		"processes": processes,
-	}
+	return redact(
+		{
+			"source": "agent",
+			"function": "press.api.bench.get_processes",
+			"bench": bench,
+			"processes": processes,
+		}
+	)
 
 
 def site_log_search(
