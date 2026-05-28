@@ -452,7 +452,7 @@ def validate_request_key(key, timezone=None):
 	return None
 
 
-@frappe.whitelist(methods=["GET"])
+@frappe.whitelist()
 def get_countries_with_isd_codes():
 	"""Get list of countries with their ISD codes from Frappe's country_info."""
 	import phonenumbers
