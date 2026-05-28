@@ -46,6 +46,7 @@ watch(open, (isOpen) => {
 		userEmail.value = ''
 		submitted.value = false
 		submitError.value = ''
+		onboarding.loadCertificateStatus()
 	}
 })
 
@@ -64,6 +65,16 @@ async function handleSubmit() {
 	submitError.value = ''
 
 	if (!emailInputRef.value?.validate()) return
+
+	if (
+		onboarding.hasPendingCertificateRequest(
+			userEmail.value,
+			certificateType.value,
+		)
+	) {
+		submitError.value = 'Verification email already sent to this email.'
+		return
+	}
 
 	submitting.value = true
 	try {

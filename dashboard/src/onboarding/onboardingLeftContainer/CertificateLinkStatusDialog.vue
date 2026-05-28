@@ -47,7 +47,7 @@ async function resend(requestName: string) {
 	resendingRequest.value = requestName
 	try {
 		await onboarding.resendCertificateLinkRequest(requestName)
-		showOnboardingToast('success', 'Validation email sent')
+		showOnboardingToast('success', 'Verification email sent')
 	} catch (error: any) {
 		showOnboardingToast('error', error.messages?.[0] || error.message)
 	} finally {

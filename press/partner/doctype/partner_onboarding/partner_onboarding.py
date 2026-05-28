@@ -160,8 +160,10 @@ def _clear_certificate_links(team: str) -> None:
 		)
 
 	frappe.publish_realtime(
-		"refetch_resource",
-		message={"cache_key": f"partner_onboarding_certificates:{team}"},
+		"partner_onboarding_certificates_updated",
+		message={"team": team},
+		user=frappe.session.user,
+		after_commit=True,
 	)
 
 
@@ -218,7 +220,7 @@ def _get_mrr_status(team) -> dict:
 			(invoice.partner_email == team.partner_email)
 			& (invoice.due_date == get_last_day(today()))
 			& (invoice.type == "Subscription")
-			& (invoice.docstatus < 2)
+			& (invoice.docstatus == 1)
 		)
 		.run(as_dict=True)
 	)

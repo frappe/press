@@ -1,5 +1,6 @@
 import { createResource } from 'frappe-ui'
 import { computed, reactive, ref } from 'vue'
+import { useSocketEvent } from '@/utils/useSocketEvent'
 
 type TeamResource = {
 	doc?: Record<string, any>
@@ -83,6 +84,13 @@ const certificateStatusResources = new Map<string, any>()
 const mrrStatusResources = new Map<string, any>()
 
 const baseUrl = 'press.partner.doctype.partner_onboarding.partner_onboarding'
+const certificateTypeCourses: Record<string, string[]> = {
+	frappe: [
+		'frappe-developer-certification',
+		'app-development-with-frappe-framework',
+	],
+	erpnext: ['erpnext-distribution', 'erpnext-training'],
+}
 
 const form = reactive<PartnerOnboardingDoc>({
 	company_name: '',
@@ -303,12 +311,26 @@ export function usePartnerOnboarding(team?: TeamResource) {
 	}
 
 	async function loadCertificateStatus() {
+		if (certificateStatusResource.reload) {
+			return certificateStatusResource.reload()
+		}
 		return certificateStatusResource.fetch()
 	}
 
 	async function loadMRRStatus() {
+		if (mrrStatusResource.reload) {
+			return mrrStatusResource.reload()
+		}
 		return mrrStatusResource.fetch()
 	}
+
+	const teamName = getTeamName(team)
+
+	useSocketEvent('partner_onboarding_certificates_updated', (data: any) => {
+		if (data?.team === teamName) {
+			void loadCertificateStatus()
+		}
+	})
 
 	async function sendCertificateLinkRequest(params: {
 		user_email: string
@@ -318,9 +340,7 @@ export function usePartnerOnboarding(team?: TeamResource) {
 			url: `${baseUrl}.send_certificate_link_request`,
 			auto: false,
 		})
-		const result = await resource.submit(params)
-		await loadCertificateStatus()
-		return result
+		return resource.submit(params)
 	}
 
 	async function resendCertificateLinkRequest(requestName: string) {
@@ -328,9 +348,23 @@ export function usePartnerOnboarding(team?: TeamResource) {
 			url: `${baseUrl}.resend_certificate_link_request`,
 			auto: false,
 		})
-		const result = await resource.submit({ request_name: requestName })
-		await loadCertificateStatus()
-		return result
+		return resource.submit({ request_name: requestName })
+	}
+
+	function hasPendingCertificateRequest(
+		userEmail: string,
+		certificateType: string,
+	) {
+		const normalizedEmail = userEmail.trim().toLowerCase()
+		const courses = certificateTypeCourses[certificateType] || []
+
+		return Boolean(
+			certificateStatus.value.pending_requests?.some(
+				(request) =>
+					request.user_email.toLowerCase() === normalizedEmail &&
+					courses.includes(request.course),
+			),
+		)
 	}
 
 	return {
@@ -357,5 +391,6 @@ export function usePartnerOnboarding(team?: TeamResource) {
 		loadMRRStatus,
 		sendCertificateLinkRequest,
 		resendCertificateLinkRequest,
+		hasPendingCertificateRequest,
 	}
 }

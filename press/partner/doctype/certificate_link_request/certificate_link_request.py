@@ -29,9 +29,10 @@ class CertificateLinkRequest(Document):
 		self.key = frappe.generate_hash(15)
 
 	def on_update(self):
+		self.publish_status_update()
+
 		if self.status == "Approved" and self.has_value_changed("status"):
 			self.link_certificate()
-			self.publish_status_update()
 
 	def after_insert(self):
 		self.send_validation_email()
@@ -71,8 +72,10 @@ class CertificateLinkRequest(Document):
 
 	def publish_status_update(self):
 		frappe.publish_realtime(
-			"refetch_resource",
-			message={"cache_key": f"partner_onboarding_certificates:{self.partner_team}"},
+			"partner_onboarding_certificates_updated",
+			message={"team": self.partner_team},
+			user=frappe.session.user,
+			after_commit=True,
 		)
 
 	@staticmethod

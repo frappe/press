@@ -120,7 +120,7 @@ const steps = computed(() => [
 			? 'completed'
 			: 'pending',
 		description:
-			'Link two Framework or ERPNext certificates from Frappe School. We will send approval email to each certificate holder to link the certificate.',
+			'Link two Framework or ERPNext certificates from Frappe School. We will send verification email to each certificate holder to link the certificate.',
 		summaryRight: onboarding.isCertificateRequirementComplete.value
 			? null
 			: `${onboarding.linkedCertificateCount.value} / 2 linked`,
