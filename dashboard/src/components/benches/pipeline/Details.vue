@@ -7,7 +7,7 @@ import {
 	Button,
 	Dropdown,
 	Badge,
-  Spinner
+	Spinner,
 } from 'frappe-ui'
 
 import { toast } from 'vue-sonner'
@@ -365,23 +365,31 @@ const stopBuild = () => {
 </script>
 
 <template>
+	<div
+		:class="pipeline?.get?.loading ? '' :'hidden' "
+		class="border py-3 px-5 m-5 flex rounded min-h-[200px]"
+	>
+		<span class="flex items-center gap-2 mx-auto">
+			<Spinner />
+			Loading...
+		</span>
+	</div>
 	<main
+		:class="pipeline?.get?.loading ? 'hidden' :'' "
 		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-6rem)] mt-1.5"
 	>
 		<!-- header -->
 		<div class="flex gap-2 items-center">
-      <Button :route="`/groups/${name}/deploys?pipeline=${!deployview}`">
-        <template #icon>
-				<lucide-chevron-left class="size-4" />
-        </template>
+			<Button :route="`/groups/${name}/deploys?pipeline=${!deployview}`">
+				<template #icon>
+					<lucide-chevron-left class="size-4" />
+				</template>
 			</Button>
 
 			<h2 class="text-ink-gray-9 text-lg font-medium">
 				{{ deployview ? builds[activeBuildId]?.doc?.deploy_candidate : "Pipeline" }}
 				{{ pipeline?.doc?.name }}
 			</h2>
-
-       <Spinner v-if="pipeline?.loading"/>
 
 			<Badge
 				:label="deployview ? builds[activeBuildId]?.doc?.status : pipeline?.doc?.status"
@@ -391,7 +399,7 @@ const stopBuild = () => {
 
 			<Tabs
 				variant="solid"
-        size='sm'
+				size="sm"
 				v-if="!deployview && buildIds.length > 1"
 				:tabs="pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => ({ label: x.architecture, value: x.name }))"
 				v-model="activeBuildId"
@@ -408,9 +416,9 @@ const stopBuild = () => {
 
 			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
 				<Button>
-          <template #icon>
-					<lucide-more-horizontal class="size-4" />
-          </template>
+					<template #icon>
+						<lucide-more-horizontal class="size-4" />
+					</template>
 				</Button>
 			</Dropdown>
 		</div>
@@ -531,9 +539,12 @@ const stopBuild = () => {
 				>
 					<span>Output</span>
 					<CopyBtn :text="output?.val || ''" class="ml-auto smallbtn" />
-					<button class='smallbtn' @click="setOutput({ val: null, status: null, opened:false })">
+					<button
+						class="smallbtn"
+						@click="setOutput({ val: null, status: null, opened:false })"
+					>
 						<lucide-x class="size-4" />
-					</Button>
+					</button>
 				</div>
 
 				<pre
@@ -548,6 +559,6 @@ const stopBuild = () => {
 
 <style scoped>
 .smallbtn {
-   @apply hover:bg-surface-gray-3 dark:hover:bg-surface-gray-2 p-1 rounded hover:text-ink-gray-9
+	@apply hover:bg-surface-gray-3 dark:hover:bg-surface-gray-2 p-1 rounded hover:text-ink-gray-9
 }
 </style>
