@@ -490,11 +490,13 @@ def list_documents(
 	filters: dict | None = None,
 	limit: int = 20,
 	order_by: str = "modified desc",
-) -> list[dict]:
+	cursor: str | None = None,
+) -> dict:
 	"""List recent documents for one doctype.
 
 	Call get_doctype(doctype) first if you do not know the allowed filters.
-	Returns compact default fields only. Use get_document_summary() for more detail.
+	Returns compact default fields only. Use next_cursor for the next page.
+	Use get_document_summary() for more detail.
 	"""
 	_validate_doctype(doctype)
 	_validate_filters(doctype, filters)
@@ -502,17 +504,20 @@ def list_documents(
 
 	limit = _clamp_limit(limit)
 	if limit == 0:
-		return []
+		return redact(_document_list_response(doctype, [], limit, None, order_by, filters))
 
-	return redact(
-		frappe.get_all(
-			doctype,
-			filters=filters or {},
-			fields=_get_default_fields(doctype),
-			order_by=order_by,
-			limit=limit,
-		)
+	offset = _cursor_offset(cursor)
+	rows = frappe.get_all(
+		doctype,
+		filters=filters or {},
+		fields=_get_default_fields(doctype),
+		order_by=order_by,
+		limit=limit + 1,
+		start=offset,
 	)
+	items = rows[:limit]
+	next_cursor = str(offset + limit) if len(rows) > limit else None
+	return redact(_document_list_response(doctype, items, limit, next_cursor, order_by, filters))
 
 
 @press_mcp.tool()
@@ -539,29 +544,65 @@ def get_document(doctype: str, name: str) -> dict:
 @press_mcp.tool()
 @system_manager_only
 def get_document_summary(doctype: str, name: str) -> dict:
-	"""Fetch one full document, but truncate large logs and payloads.
+	"""Fetch compact document fields and point out available large fields.
 
-	Use this before asking for a raw full document. It is safer for token usage.
+	Use get_document_field() for logs, tracebacks, child tables or payloads.
 	"""
 	_validate_doctype(doctype)
 	_document_exists(doctype, name)
 
-	doc = frappe.get_doc(doctype, name).as_dict()
-	return redact({key: _trim_large_values(key, value) for key, value in doc.items()})
+	meta = frappe.get_meta(doctype)
+	fields = _get_summary_fields(doctype)
+	values = frappe.db.get_value(doctype, name, fields, as_dict=True) or {}
+	return redact(
+		{
+			"doctype": doctype,
+			"name": name,
+			"fields": {key: _trim_large_values(key, value) for key, value in values.items()},
+			"large_fields": _large_fields(meta),
+			"child_tables": _child_tables(meta),
+		}
+	)
 
 
 @press_mcp.tool()
 @system_manager_only
-def get_full_document(doctype: str, name: str) -> dict:
-	"""Fetch one raw full document.
+def get_document_field(doctype: str, name: str, fieldname: str, max_chars: int = SUMMARY_MAX_CHARS) -> dict:
+	"""Fetch one field from a document.
 
-	Use only when get_document_summary() is not enough, because this may include
-	large logs, tracebacks, child tables, payloads, or command output.
+	Use this for large logs, tracebacks, child tables, payloads or command output.
 	"""
 	_validate_doctype(doctype)
 	_document_exists(doctype, name)
+	if fieldname not in FRAPPE_DEFAULT_FIELDS and not frappe.get_meta(doctype).has_field(fieldname):
+		frappe.throw(f"Field '{fieldname}' does not exist for {doctype}")
 
-	return redact(frappe.get_doc(doctype, name).as_dict())
+	max_chars = max(100, min(int(max_chars or SUMMARY_MAX_CHARS), 20000))
+	value = frappe.get_doc(doctype, name).as_dict().get(fieldname)
+	return redact(
+		{
+			"doctype": doctype,
+			"name": name,
+			"fieldname": fieldname,
+			"value": _trim_large_values(fieldname, value, max_chars=max_chars),
+		}
+	)
+
+
+@press_mcp.tool()
+@system_manager_only
+def get_full_document(doctype: str, name: str, include_child_tables: bool = False) -> dict:
+	"""Fetch one raw full document. Prefer get_document_field for drilldown."""
+	_validate_doctype(doctype)
+	_document_exists(doctype, name)
+
+	doc = frappe.get_doc(doctype, name).as_dict()
+	if not include_child_tables:
+		meta = frappe.get_meta(doctype)
+		for fieldname in _child_tables(meta):
+			doc.pop(fieldname, None)
+
+	return redact(doc)
 
 
 @press_mcp.tool()
@@ -602,7 +643,7 @@ def get_linked_documents(
 			filters=_get_link_filters(doctype, name, linked_doctype, link_field),
 			limit=limit - len(results),
 			order_by=order_by,
-		)
+		)["items"]
 
 		for doc in linked_docs:
 			doc_name = doc.get("name")
@@ -660,6 +701,37 @@ def _clamp_days(days: int | None) -> int:
 	return max(1, min(days, MAX_DAYS))
 
 
+def _cursor_offset(cursor: str | None) -> int:
+	if not cursor:
+		return 0
+	try:
+		return max(0, int(cursor))
+	except Exception:
+		frappe.throw("cursor must be the next_cursor returned by list_documents")
+		return 0
+
+
+def _document_list_response(
+	doctype: str,
+	items: list[dict],
+	limit: int,
+	next_cursor: str | None,
+	order_by: str,
+	filters: dict | None,
+) -> dict:
+	return {
+		"source": "frappe",
+		"doctype": doctype,
+		"filters": filters or {},
+		"order_by": order_by,
+		"items": items,
+		"returned": len(items),
+		"limit_applied": limit,
+		"has_more": bool(next_cursor),
+		"next_cursor": next_cursor,
+	}
+
+
 def _validate_doctype(doctype: str) -> None:
 	if doctype not in ALLOWED_DOCTYPES:
 		frappe.throw(f"Doctype '{doctype}' is not available through MCP")
@@ -701,6 +773,27 @@ def _get_default_fields(doctype: str) -> list[str]:
 	)
 
 
+def _get_summary_fields(doctype: str) -> list[str]:
+	meta = frappe.get_meta(doctype)
+	fields = [*BASE_DEFAULT_FIELDS, *DOCTYPES[doctype].get("default_fields", [])]
+	for field in meta.fields:
+		if field.fieldtype in {"Table", "Table MultiSelect"}:
+			continue
+		if field.fieldtype in {"Code", "HTML Editor", "Long Text", "Markdown Editor", "Text Editor"}:
+			continue
+		if field.fieldname and field.fieldname.lower() in LARGE_FIELD_NAMES:
+			continue
+		fields.append(field.fieldname)
+
+	return list(
+		dict.fromkeys(
+			fieldname
+			for fieldname in fields
+			if fieldname and (fieldname in FRAPPE_DEFAULT_FIELDS or meta.has_field(fieldname))
+		)
+	)
+
+
 def _get_link_fields(source_doctype: str, target_doctype: str) -> list[str]:
 	link_fields = []
 
@@ -721,19 +814,37 @@ def _get_link_filters(source_doctype: str, source_name: str, target_doctype: str
 	return filters
 
 
-def _trim_large_values(fieldname: str, value):
+def _trim_large_values(fieldname: str, value, *, max_chars: int = SUMMARY_MAX_CHARS):
 	if isinstance(value, str) and fieldname.lower() in LARGE_FIELD_NAMES:
-		if len(value) > SUMMARY_MAX_CHARS:
-			return value[:SUMMARY_MAX_CHARS] + "..."
+		if len(value) > max_chars:
+			return value[:max_chars] + "..."
 		return value
 
 	if isinstance(value, dict):
-		return {key: _trim_large_values(key, item) for key, item in value.items()}
+		return {key: _trim_large_values(key, item, max_chars=max_chars) for key, item in value.items()}
 
 	if isinstance(value, list):
-		return [_trim_large_values(fieldname, item) for item in value]
+		return [_trim_large_values(fieldname, item, max_chars=max_chars) for item in value]
 
 	return value
+
+
+def _large_fields(meta) -> list[str]:
+	large_types = {"Code", "HTML Editor", "Long Text", "Markdown Editor", "Text Editor"}
+	return [
+		field.fieldname
+		for field in meta.fields
+		if field.fieldname
+		and (field.fieldtype in large_types or field.fieldname.lower() in LARGE_FIELD_NAMES)
+	]
+
+
+def _child_tables(meta) -> list[str]:
+	return [
+		field.fieldname
+		for field in meta.fields
+		if field.fieldname and field.fieldtype in {"Table", "Table MultiSelect"}
+	]
 
 
 def _document_exists(doctype: str, name: str) -> None:

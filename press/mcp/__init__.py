@@ -9,5 +9,7 @@ mcp = frappe_mcp.MCP("press-mcp")
 @mcp.register()
 def handler():
 	import press.mcp.tools.documents
+	import press.mcp.tools.telemetry
 
 	_ = press.mcp.tools.documents
+	_ = press.mcp.tools.telemetry
