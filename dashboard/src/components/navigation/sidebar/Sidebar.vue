@@ -121,6 +121,7 @@ const helpDropdownOptions = [
 	<aside
 		class="relative flex md:min-h-screen p-2 gap-1 flex-col border-r transition-[width]
     bg-surface-white  md:bg-surface-gray-1 dark:bg-transparent overflow-x-hidden"
+<<<<<<< HEAD
 		:class='collapsed ? " md:w-12" : "w-full md:w-[256px]"'
 	>
 		<div
@@ -137,6 +138,12 @@ const helpDropdownOptions = [
 					>
 						<FCLogo class="size-8 hidden md:flex shrink-0 rounded" />
 						<LucideUser class="size-3.5 -mr-1.5 md:hidden" />
+=======
+		:class='collapsed ? " md:w-12" : "w-full md:w-[250px]"'
+	>
+    <div class='flex gap-2 items-center border-y md:border-0 p-2 md:p-0 -m-2 md:m-0 h-[44px] md:h-auto'>
+      <FCLogo class="size-6 md:hidden mr-auto" />
+>>>>>>> 1b4ca19a5 (fix(sidebar): set 250px as default width)
 
 <<<<<<< HEAD
 						<div
