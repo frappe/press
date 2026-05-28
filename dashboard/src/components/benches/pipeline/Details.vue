@@ -7,7 +7,6 @@ import {
 	Button,
 	Dropdown,
 	Badge,
-	Spinner,
 } from 'frappe-ui'
 
 import { toast } from 'vue-sonner'
