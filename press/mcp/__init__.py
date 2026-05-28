@@ -17,10 +17,12 @@ def handler():
 	if user_type != "System User":
 		frappe.throw("Access not allowed for this URL", frappe.AuthenticationError)
 
+	import press.mcp.tools.codebase
 	import press.mcp.tools.documents
 	import press.mcp.tools.routes
 	import press.mcp.tools.telemetry
 
+	_ = press.mcp.tools.codebase
 	_ = press.mcp.tools.documents
 	_ = press.mcp.tools.telemetry
 	_ = press.mcp.tools.routes
