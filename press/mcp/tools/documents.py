@@ -213,7 +213,14 @@ DOCTYPES: dict[str, dict[str, Any]] = {
 			{"status": "Failure"},
 			{"reference_doctype": "<doctype>", "reference_name": "<name>"},
 		],
-		"context": "Use for operation status; full doc has output/steps.",
+		"context": (
+			"Use for operation status; full doc has output/steps. "
+			"When the user asks for jobs for a Site, Bench, Server, Database Server, Proxy Server, "
+			"Site Update, Site Migration, Site Backup, or another document, call "
+			"get_agent_jobs_for_document(doctype, name). That tool first checks Link fields on the "
+			"source document that point to Agent Job and contain 'job', then queries Agent Job by "
+			"site/bench/server or reference_doctype/reference_name."
+		),
 	},
 	"Agent Job Step": {
 		"filters": ["agent_job", "status", "step_name"],
@@ -660,6 +667,60 @@ def get_linked_documents(
 
 @press_mcp.tool()
 @system_manager_only
+def get_agent_jobs_for_document(
+	doctype: str,
+	name: str,
+	limit: int = 20,
+	order_by: str = "modified desc",
+) -> list[dict]:
+	"""Find Agent Jobs for any document.
+
+	Use this instead of get_linked_documents() when looking for Agent Job records.
+
+	Lookup order:
+	1. Check Link fields on the source document that point to Agent Job and contain "job",
+		like update_job, recover_job, step_job, or job.
+	2. Query Agent Job directly:
+		- Site uses site
+		- Bench uses bench
+		- Server, Database Server, and Proxy Server use server
+		- All other doctypes use reference_doctype and reference_name
+	"""
+	doctype = _validate_doctype(doctype)
+	_validate_order_by(order_by)
+	_document_exists(doctype, name)
+
+	results: list[dict] = []
+	seen: set[Any] = set()
+	limit = _clamp_limit(limit)
+	if limit == 0:
+		return []
+
+	for job in _jobs_from_job_fields(doctype, name, limit):
+		job_name = job.get("name")
+		if job_name in seen:
+			continue
+
+		job["_link_strategy"] = "source_job_field"
+		results.append(job)
+		seen.add(job_name)
+
+		if len(results) >= limit:
+			return results
+
+	for job in _jobs_from_agent_job_fields(doctype, name, limit - len(results), order_by):
+		job_name = job.get("name")
+		if job_name in seen:
+			continue
+
+		results.append(job)
+		seen.add(job_name)
+
+	return results
+
+
+@press_mcp.tool()
+@system_manager_only
 def get_document_versions(doctype: str, name: str, days: int = 7) -> list[dict]:
 	"""Get recent change history for one document.
 
@@ -822,6 +883,92 @@ def _get_link_filters(source_doctype: str, source_name: str, target_doctype: str
 		filters[type_field] = source_doctype
 
 	return filters
+
+
+def _jobs_from_job_fields(doctype: str, name: str, limit: int) -> list[dict]:
+	job_fields = _agent_job_link_fields(doctype)
+	if not job_fields:
+		return []
+
+	doc = frappe.db.get_value(doctype, name, job_fields, as_dict=True) or {}
+	jobs: list[dict] = []
+
+	for fieldname in job_fields:
+		if len(jobs) >= limit:
+			break
+
+		job_name = doc.get(fieldname)
+		if not job_name:
+			continue
+
+		if frappe.db.exists("Agent Job", job_name):
+			job = redact(
+				frappe.db.get_value(
+					"Agent Job",
+					job_name,
+					_get_default_fields("Agent Job"),
+					as_dict=True,
+				)
+			)
+			if not job:
+				continue
+
+			job["_link_field"] = fieldname
+			jobs.append(job)
+
+	return jobs
+
+
+def _agent_job_link_fields(doctype: str) -> list[str]:
+	return [
+		field.fieldname
+		for field in frappe.get_meta(doctype).fields
+		if field.fieldname
+		and "job" in field.fieldname.lower()
+		and field.fieldtype == "Link"
+		and field.options == "Agent Job"
+	]
+
+
+def _jobs_from_agent_job_fields(
+	doctype: str,
+	name: str,
+	limit: int,
+	order_by: str,
+) -> list[dict]:
+	if limit <= 0:
+		return []
+
+	field_by_doctype = {
+		"Site": "site",
+		"Bench": "bench",
+		"Server": "server",
+		"Database Server": "server",
+		"Proxy Server": "server",
+	}
+
+	if doctype in field_by_doctype:
+		link_field = field_by_doctype[doctype]
+		filters = {link_field: name}
+		strategy = f"agent_job_{link_field}"
+	else:
+		filters = {
+			"reference_doctype": doctype,
+			"reference_name": name,
+		}
+		strategy = "agent_job_reference"
+
+	rows = list_documents(
+		"Agent Job",
+		filters=filters,
+		limit=limit,
+		order_by=order_by,
+	)["items"]
+
+	for row in rows:
+		row["_link_strategy"] = strategy
+
+	return rows
 
 
 def _trim_large_values(fieldname: str, value, *, max_chars: int = SUMMARY_MAX_CHARS):
