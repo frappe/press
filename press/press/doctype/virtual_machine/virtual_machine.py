@@ -1517,6 +1517,33 @@ class VirtualMachine(Document):
 				):
 					server.create_dns_record()
 
+		if self.has_value_changed("status") and self.status == "Running":
+			self._check_auto_cluster_threshold()
+
+	def _check_auto_cluster_threshold(self):
+		"""Enqueue auto cluster creation if this cluster has reached its VM threshold.
+
+		The ``auto_cluster_triggered`` flag is set synchronously (via
+		``db_set``) *before* the background job is enqueued so that concurrent
+		VM transitions on the same cluster cannot queue duplicate jobs.
+		"""
+		cluster = frappe.get_doc("Cluster", self.cluster)
+
+		if not cluster.enable_auto_cluster or not cluster.max_servers:
+			return
+		if cluster.auto_cluster_triggered:
+			return  # Job already queued for this cluster
+
+		running_count = cluster.get_running_vm_count()
+		if running_count < cluster.max_servers:
+			return
+
+		cluster.auto_cluster_triggered = 1
+		cluster.save()
+		frappe.db.commit()
+
+		cluster.create_auto_cluster()
+
 	def update_name_tag(self, name):
 		if self.cloud_provider == "AWS EC2" and self.instance_id:
 			self.client().create_tags(
