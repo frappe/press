@@ -117,6 +117,14 @@ PATTERNS = [
 		),
 		keep_prefix=True,
 	),
+	# HTTP/HTTPS URLs with userinfo credentials
+	RedactionPattern(
+		re.compile(
+			r"(https?://[^:@\s]+:)[^@\s]+(?=@)",
+			re.IGNORECASE,
+		),
+		keep_prefix=True,
+	),
 	# Cookie header
 	RedactionPattern(
 		re.compile(r"(Cookie:\s*).+", re.IGNORECASE),
