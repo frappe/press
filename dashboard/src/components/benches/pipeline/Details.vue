@@ -19,6 +19,7 @@ import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
 import AppVersionsDialog from '@/dialogs/AppVersionsDialog.vue'
 import Stages from './Stages.vue'
+import Loader from './Loader.vue'
 
 import {
 	h,
@@ -365,18 +366,11 @@ const stopBuild = () => {
 </script>
 
 <template>
-	<div
-		:class="pipeline?.get?.loading ? '' :'hidden' "
-		class="border py-3 px-5 m-5 flex rounded min-h-[200px]"
-	>
-		<span class="flex items-center gap-2 mx-auto">
-			<Spinner />
-			Loading...
-		</span>
-	</div>
+	<Loader v-if="pipeline?.get?.loading" />
+
 	<main
-		:class="pipeline?.get?.loading ? 'hidden' :'' "
 		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-6rem)] mt-1.5"
+		v-else
 	>
 		<!-- header -->
 		<div class="flex gap-2 items-center">
