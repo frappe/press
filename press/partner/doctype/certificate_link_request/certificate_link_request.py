@@ -19,7 +19,7 @@ class CertificateLinkRequest(Document):
 		key: DF.Data | None
 		partner: DF.Data | None
 		partner_team: DF.Link | None
-		status: DF.Literal["Approved", "Pending"]
+		status: DF.Literal["Approved", "Cancelled", "Pending"]
 		user_email: DF.Link | None
 	# end: auto-generated types
 

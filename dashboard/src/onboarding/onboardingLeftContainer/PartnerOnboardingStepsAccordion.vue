@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
 	FAccordionContent,
 	FAccordionHeader,
@@ -12,6 +12,7 @@ import PartnerOnboardingModal from '@/onboarding/modal/PartnerOnboardingModal.vu
 import CertificateLinkStatusDialog from '@/onboarding/onboardingLeftContainer/CertificateLinkStatusDialog.vue'
 import LinkCertificateDialog from '@/onboarding/onboardingLeftContainer/LinkCertificateDialog.vue'
 import CompanyInformationModal from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationModal.vue'
+import { showOnboardingToast } from '@/onboarding/toast'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
 import LucideChevronDown from '~icons/lucide/chevron-down'
 import LucideCircleCheck from '~icons/lucide/circle-check'
@@ -25,6 +26,61 @@ const registrationModalOpen = ref(false)
 const companyInfoModalOpen = ref(false)
 const linkCertificateModalOpen = ref(false)
 const certificateStatusModalOpen = ref(false)
+const mrrStatusInitialized = ref(false)
+let mrrRefreshInterval: ReturnType<typeof setInterval> | null = null
+
+function formatCurrency(amount: number, currency: string) {
+	return new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency,
+		maximumFractionDigits: 0,
+	}).format(amount || 0)
+}
+
+const mrrCurrentLabel = computed(() =>
+	formatCurrency(
+		onboarding.mrrStatus.value.current_amount,
+		onboarding.mrrStatus.value.currency,
+	),
+)
+const mrrTargetLabel = computed(() =>
+	formatCurrency(
+		onboarding.mrrStatus.value.target_amount,
+		onboarding.mrrStatus.value.currency,
+	),
+)
+const mrrProgress = computed(() =>
+	Math.min(100, Math.max(0, onboarding.mrrStatus.value.progress || 0)),
+)
+
+watch(
+	() => onboarding.mrrStatus.value.requirement_complete,
+	(isComplete, wasComplete) => {
+		if (!mrrStatusInitialized.value) {
+			mrrStatusInitialized.value = true
+			return
+		}
+
+		if (isComplete && wasComplete === false) {
+			showOnboardingToast('success', 'Minimum MRR achieved')
+		}
+	},
+)
+
+onMounted(async () => {
+	await onboarding.loadMRRStatus()
+	mrrStatusInitialized.value = true
+
+	mrrRefreshInterval = setInterval(() => {
+		onboarding.loadMRRStatus()
+	}, 60000)
+})
+
+onUnmounted(() => {
+	if (mrrRefreshInterval) {
+		clearInterval(mrrRefreshInterval)
+	}
+})
 
 const steps = computed(() => [
 	{
@@ -79,17 +135,62 @@ const steps = computed(() => [
 	},
 	{
 		value: 'step-mrr',
-		title: 'Log an MRR of at least $100 on Frappe Cloud',
+		title: `Reach ${mrrTargetLabel.value} MRR on Frappe Cloud`,
 		required: true,
-		status: 'pending',
+		status: onboarding.isMRRRequirementComplete.value ? 'completed' : 'pending',
 		description:
-			'Create sites and manage hosting for your customers that use Frappe apps on Frappe Cloud consistently to cross this threshold. Based on your Billing details, we will automatically update this step’s completion.',
-		summaryRight: null,
+			'We track this automatically from customer subscription invoices linked to your partner account. No manual update is needed.',
+		summaryRight: onboarding.isMRRRequirementComplete.value
+			? null
+			: `${mrrCurrentLabel.value} / ${mrrTargetLabel.value}`,
 		actionLabel: null,
 	},
 ])
 
-const canSubmit = computed(() => false)
+const nextPendingStep = computed(
+	() => steps.value.find((step) => step.status !== 'completed')?.value || '',
+)
+
+watch(
+	nextPendingStep,
+	(value) => {
+		openStep.value = value
+	},
+	{ immediate: true },
+)
+
+const canSubmit = computed(
+	() =>
+		onboarding.doc.value?.docstatus === 0 &&
+		onboarding.doc.value?.status === 'Draft' &&
+		onboarding.isRegistered.value &&
+		onboarding.isProfileComplete.value &&
+		onboarding.isCertificateRequirementComplete.value &&
+		onboarding.isMRRRequirementComplete.value,
+)
+const submitLabel = computed(() => {
+	if (onboarding.doc.value?.status === 'Approved') return 'Approved'
+	if (onboarding.doc.value?.status === 'Rejected') return 'Rejected'
+	if (
+		onboarding.doc.value?.docstatus === 1 ||
+		onboarding.doc.value?.status === 'Pending Review'
+	) {
+		return 'Submitted for approval'
+	}
+	return 'Submit for approval'
+})
+
+async function submitForApproval() {
+	try {
+		await onboarding.submitForApproval()
+		showOnboardingToast('success', 'Details submitted for approval')
+	} catch (error: any) {
+		showOnboardingToast(
+			'error',
+			error.messages?.[0] || error.message || 'Could not submit for approval',
+		)
+	}
+}
 </script>
 
 <template>
@@ -164,6 +265,23 @@ const canSubmit = computed(() => false)
 					>
 						{{ step.description }}
 					</p>
+					<div
+						v-if="step.value === 'step-mrr'"
+						class="mb-4 flex max-w-prose flex-col gap-2"
+					>
+						<div class="h-2 overflow-hidden rounded-full bg-surface-gray-2">
+							<div
+								class="h-full rounded-full bg-surface-gray-7 transition-all"
+								:style="{ width: `${mrrProgress}%` }"
+							/>
+						</div>
+						<div
+							class="flex items-center justify-between text-sm text-ink-gray-6"
+						>
+							<span>{{ mrrCurrentLabel }} current MRR</span>
+							<span>{{ mrrTargetLabel }} target</span>
+						</div>
+					</div>
 					<Button
 						v-if="step.actionLabel"
 						variant="solid"
@@ -187,8 +305,9 @@ const canSubmit = computed(() => false)
 				class="w-full sm:w-auto"
 				:disabled="!canSubmit"
 				:iconLeft="LucideLock"
-				:loading="onboarding.saving.value"
-				label="Submit for approval"
+				:loading="onboarding.submittingForApproval.value"
+				:label="submitLabel"
+				@click="submitForApproval"
 			/>
 		</div>
 	</div>

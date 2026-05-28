@@ -28,10 +28,19 @@ export type PartnerCertificateLinkStatus = {
 	requirement_complete: boolean
 }
 
+export type PartnerMRRStatus = {
+	current_amount: number
+	target_amount: number
+	currency: string
+	progress: number
+	requirement_complete: boolean
+}
+
 export type PartnerOnboardingDoc = {
 	name?: string
 	team?: string
-	status?: 'Draft' | 'Submission Pending' | 'Approved' | 'Rejected'
+	docstatus?: 0 | 1 | 2
+	status?: 'Draft' | 'Pending Review' | 'Approved' | 'Rejected'
 	company_name?: string
 	registered_country?: string
 	company_email?: string
@@ -60,7 +69,15 @@ const certificateStatus = ref<PartnerCertificateLinkStatus>({
 	linked_count: 0,
 	requirement_complete: false,
 })
+const mrrStatus = ref<PartnerMRRStatus>({
+	current_amount: 0,
+	target_amount: 100,
+	currency: 'USD',
+	progress: 0,
+	requirement_complete: false,
+})
 const certificateStatusResources = new Map<string, any>()
+const mrrStatusResources = new Map<string, any>()
 
 const baseUrl = 'press.partner.doctype.partner_onboarding.partner_onboarding'
 
@@ -157,6 +174,27 @@ function getCertificateStatusResource(team?: TeamResource) {
 	return certificateStatusResources.get(cacheKey)
 }
 
+function getMRRStatusResource(team?: TeamResource) {
+	const teamName = getTeamName(team)
+	const cacheKey = `partner_onboarding_mrr:${teamName}`
+
+	if (!mrrStatusResources.has(cacheKey)) {
+		mrrStatusResources.set(
+			cacheKey,
+			createResource({
+				url: `${baseUrl}.get_mrr_status`,
+				cache: cacheKey,
+				auto: false,
+				onSuccess: (status: PartnerMRRStatus) => {
+					mrrStatus.value = status
+				},
+			}),
+		)
+	}
+
+	return mrrStatusResources.get(cacheKey)
+}
+
 const getPartnerOnboarding = createResource({
 	url: `${baseUrl}.get_partner_onboarding`,
 	auto: false,
@@ -173,9 +211,39 @@ const savePartnerOnboarding = createResource({
 	},
 })
 
+const submitPartnerOnboarding = createResource({
+	url: `${baseUrl}.submit_for_approval`,
+	auto: false,
+	onSuccess: (nextDoc: PartnerOnboardingDoc) => {
+		applyDoc(nextDoc, activeTeam.value)
+	},
+})
+
+const unregisterPartnerOnboarding = createResource({
+	url: `${baseUrl}.unregister`,
+	auto: false,
+	onSuccess: () => {
+		applyDoc(null, activeTeam.value)
+		certificateStatus.value = {
+			linked_certificates: [],
+			pending_requests: [],
+			linked_count: 0,
+			requirement_complete: false,
+		}
+		mrrStatus.value = {
+			current_amount: 0,
+			target_amount: 100,
+			currency: 'USD',
+			progress: 0,
+			requirement_complete: false,
+		}
+	},
+})
+
 export function usePartnerOnboarding(team?: TeamResource) {
 	activeTeam.value = team
 	const certificateStatusResource = getCertificateStatusResource(team)
+	const mrrStatusResource = getMRRStatusResource(team)
 
 	const isRegistered = computed(() => Boolean(doc.value?.name))
 	const isProfileComplete = computed(() =>
@@ -192,6 +260,8 @@ export function usePartnerOnboarding(team?: TeamResource) {
 	)
 	const loading = computed(() => getPartnerOnboarding.loading)
 	const saving = computed(() => savePartnerOnboarding.loading)
+	const submittingForApproval = computed(() => submitPartnerOnboarding.loading)
+	const unregistering = computed(() => unregisterPartnerOnboarding.loading)
 	const certificateLoading = computed(() => certificateStatusResource.loading)
 	const linkedCertificateCount = computed(
 		() => certificateStatus.value.linked_count || 0,
@@ -204,10 +274,14 @@ export function usePartnerOnboarding(team?: TeamResource) {
 	const isCertificateRequirementComplete = computed(
 		() => certificateStatus.value.requirement_complete,
 	)
+	const isMRRRequirementComplete = computed(
+		() => mrrStatus.value.requirement_complete,
+	)
 
 	async function load() {
 		const nextDoc = await getPartnerOnboarding.fetch()
 		await loadCertificateStatus()
+		await loadMRRStatus()
 		return nextDoc
 	}
 
@@ -217,8 +291,20 @@ export function usePartnerOnboarding(team?: TeamResource) {
 		})
 	}
 
+	async function submitForApproval() {
+		return submitPartnerOnboarding.submit()
+	}
+
+	async function unregister() {
+		return unregisterPartnerOnboarding.submit()
+	}
+
 	async function loadCertificateStatus() {
 		return certificateStatusResource.fetch()
+	}
+
+	async function loadMRRStatus() {
+		return mrrStatusResource.fetch()
 	}
 
 	async function sendCertificateLinkRequest(params: {
@@ -248,17 +334,24 @@ export function usePartnerOnboarding(team?: TeamResource) {
 		doc,
 		form,
 		certificateStatus,
+		mrrStatus,
 		loading,
 		saving,
+		submittingForApproval,
+		unregistering,
 		certificateLoading,
 		isRegistered,
 		isProfileComplete,
 		linkedCertificateCount,
 		hasCertificateActivity,
 		isCertificateRequirementComplete,
+		isMRRRequirementComplete,
 		load,
 		save,
+		submitForApproval,
+		unregister,
 		loadCertificateStatus,
+		loadMRRStatus,
 		sendCertificateLinkRequest,
 		resendCertificateLinkRequest,
 	}

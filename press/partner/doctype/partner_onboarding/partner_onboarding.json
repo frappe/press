@@ -33,7 +33,8 @@
 		"incorporation_certificate",
 		"agreement_section",
 		"agreed_to_due_diligence",
-		"agreed_to_partnership_agreement"
+		"agreed_to_partnership_agreement",
+		"amended_from"
 	],
 	"fields": [
 		{
@@ -46,12 +47,13 @@
 			"unique": 1
 		},
 		{
+			"allow_on_submit": 1,
 			"default": "Draft",
 			"fieldname": "status",
 			"fieldtype": "Select",
 			"in_list_view": 1,
 			"label": "Status",
-			"options": "Draft\nSubmission Pending\nApproved\nRejected"
+			"options": "Draft\nPending Review\nApproved\nRejected"
 		},
 		{
 			"fieldname": "registration_section",
@@ -190,11 +192,22 @@
 			"fieldtype": "Datetime",
 			"label": "Submitted On",
 			"read_only": 1
+		},
+		{
+			"fieldname": "amended_from",
+			"fieldtype": "Link",
+			"label": "Amended From",
+			"no_copy": 1,
+			"options": "Partner Onboarding",
+			"print_hide": 1,
+			"read_only": 1,
+			"search_index": 1
 		}
 	],
 	"index_web_pages_for_search": 1,
+	"is_submittable": 1,
 	"links": [],
-	"modified": "2026-05-27 20:50:14.283543",
+	"modified": "2026-05-28 12:02:58.326197",
 	"modified_by": "Administrator",
 	"module": "Partner",
 	"name": "Partner Onboarding",
@@ -202,6 +215,7 @@
 	"owner": "Administrator",
 	"permissions": [
 		{
+			"cancel": 1,
 			"create": 1,
 			"delete": 1,
 			"email": 1,
@@ -211,10 +225,13 @@
 			"report": 1,
 			"role": "System Manager",
 			"share": 1,
+			"submit": 1,
 			"write": 1
 		},
 		{
+			"cancel": 1,
 			"create": 1,
+			"delete": 1,
 			"email": 1,
 			"export": 1,
 			"print": 1,
@@ -222,6 +239,7 @@
 			"report": 1,
 			"role": "Press User",
 			"share": 1,
+			"submit": 1,
 			"write": 1
 		}
 	],

@@ -6,6 +6,7 @@ from typing import Any
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import flt, get_last_day, now_datetime, today
 from pypika.enums import Order
 
 from press.guards import role_guard
@@ -25,6 +26,7 @@ class PartnerOnboarding(Document):
 		address: DF.SmallText | None
 		agreed_to_due_diligence: DF.Check
 		agreed_to_partnership_agreement: DF.Check
+		amended_from: DF.Link | None
 		annual_revenue: DF.Currency
 		certified_employees_range: DF.Data | None
 		company_email: DF.Data
@@ -39,7 +41,7 @@ class PartnerOnboarding(Document):
 		incorporation_certificate: DF.Attach | None
 		registered_country: DF.Link
 		revenue_currency: DF.Link | None
-		status: DF.Literal["Draft", "Submission Pending", "Approved", "Rejected"]
+		status: DF.Literal["Draft", "Pending Review", "Approved", "Rejected"]
 		submitted_on: DF.Datetime | None
 		team: DF.Link
 		verticals_served: DF.SmallText | None
@@ -67,12 +69,172 @@ class PartnerOnboarding(Document):
 		"agreed_to_partnership_agreement",
 	)
 
+	def before_submit(self):
+		team = frappe.get_cached_doc("Team", self.team)
+
+		if not _is_profile_complete(self):
+			frappe.throw("Complete your company profile before submitting for approval.")
+
+		if not _get_certificate_link_status(self.team)["requirement_complete"]:
+			frappe.throw("Link at least two certificates before submitting for approval.")
+
+		if not _get_mrr_status(team)["requirement_complete"]:
+			frappe.throw("Reach the minimum MRR before submitting for approval.")
+
+		self.status = "Pending Review"
+		self.submitted_on = now_datetime()
+
+	@frappe.whitelist()
+	def approve(self):
+		frappe.only_for("System Manager")
+
+		if self.docstatus != 1:
+			frappe.throw("Submit this partner onboarding request before approval.")
+
+		if self.status != "Pending Review":
+			frappe.throw("Only pending submissions can be approved.")
+
+		team = frappe.get_doc("Team", self.team)
+		team.enable_erpnext_partner_privileges()
+
+		self.status = "Approved"
+		self.save()
+
+	@frappe.whitelist()
+	def reject(self):
+		frappe.only_for("System Manager")
+
+		if self.docstatus != 1:
+			frappe.throw("Submit this partner onboarding request before rejection.")
+
+		if self.status != "Pending Review":
+			frappe.throw("Only pending submissions can be rejected.")
+
+		self.status = "Rejected"
+		self.save()
+
 
 def _get_partner_onboarding(team: str):
 	name = frappe.db.get_value("Partner Onboarding", {"team": team}, "name")
 	if name:
 		return frappe.get_doc("Partner Onboarding", name)
 	return None
+
+
+def _clear_certificate_links(team: str) -> None:
+	for certificate in frappe.get_all(
+		"Partner Certificate",
+		filters={"team": team},
+		pluck="name",
+	):
+		frappe.db.set_value("Partner Certificate", certificate, "team", None)
+
+	for request in frappe.get_all(
+		"Certificate Link Request",
+		filters={"partner_team": team, "status": "Pending"},
+		pluck="name",
+	):
+		frappe.db.set_value(
+			"Certificate Link Request",
+			request,
+			{"status": "Cancelled", "key": None},
+		)
+
+	frappe.publish_realtime(
+		"refetch_resource",
+		message={"cache_key": f"partner_onboarding_certificates:{team}"},
+	)
+
+
+def _get_certificate_link_status(team: str) -> dict:
+	partner_certificate = frappe.qb.DocType("Partner Certificate")
+	certificate_link_request = frappe.qb.DocType("Certificate Link Request")
+
+	linked_certificates = (
+		frappe.qb.from_(partner_certificate)
+		.select(
+			partner_certificate.name,
+			partner_certificate.course,
+			partner_certificate.partner_member_email.as_("user_email"),
+			partner_certificate.partner_member_name.as_("member_name"),
+		)
+		.where(partner_certificate.team == team)
+		.orderby(partner_certificate.creation, order=Order.desc)
+		.run(as_dict=True)
+	)
+	pending_requests = (
+		frappe.qb.from_(certificate_link_request)
+		.select(
+			certificate_link_request.name,
+			certificate_link_request.course,
+			certificate_link_request.user_email,
+			certificate_link_request.status,
+			certificate_link_request.creation,
+		)
+		.where(
+			(certificate_link_request.partner_team == team) & (certificate_link_request.status == "Pending")
+		)
+		.orderby(certificate_link_request.creation, order=Order.desc)
+		.run(as_dict=True)
+	)
+	linked_count = len(linked_certificates)
+
+	return {
+		"linked_certificates": linked_certificates,
+		"pending_requests": pending_requests,
+		"linked_count": linked_count,
+		"requirement_complete": linked_count >= 2,
+	}
+
+
+def _get_mrr_status(team) -> dict:
+	team_currency = team.currency or "USD"
+	target_amount = 10000 if team_currency == "INR" else 100
+
+	invoice = frappe.qb.DocType("Invoice")
+	invoices = (
+		frappe.qb.from_(invoice)
+		.select(invoice.currency, invoice.total_before_discount)
+		.where(
+			(invoice.partner_email == team.partner_email)
+			& (invoice.due_date == get_last_day(today()))
+			& (invoice.type == "Subscription")
+			& (invoice.docstatus < 2)
+		)
+		.run(as_dict=True)
+	)
+
+	current_amount = 0
+	for row in invoices:
+		if team_currency == row.currency:
+			current_amount += row.total_before_discount
+		elif team_currency == "USD":
+			current_amount += flt(row.total_before_discount / 83, 2)
+		else:
+			current_amount += flt(row.total_before_discount * 83, 2)
+
+	return {
+		"current_amount": flt(current_amount, 2),
+		"target_amount": target_amount,
+		"currency": team_currency,
+		"progress": min(100, flt((current_amount / target_amount) * 100, 2)) if target_amount else 0,
+		"requirement_complete": current_amount >= target_amount,
+	}
+
+
+def _is_profile_complete(doc: PartnerOnboarding) -> bool:
+	return all(
+		[
+			doc.company_name,
+			doc.registered_country,
+			doc.company_email,
+			doc.contact,
+			doc.address,
+			doc.headquarter_city,
+			doc.agreed_to_due_diligence,
+			doc.agreed_to_partnership_agreement,
+		]
+	)
 
 
 @frappe.whitelist()
@@ -100,6 +262,8 @@ def save_partner_onboarding(details: dict[str, Any]) -> dict:
 				"status": "Draft",
 			}
 		)
+	elif doc.docstatus != 0:
+		frappe.throw("Submitted partner onboarding details cannot be changed.")
 
 	for fieldname in PartnerOnboarding.dashboard_fields:
 		if fieldname in ("team", "status"):
@@ -119,45 +283,52 @@ def save_partner_onboarding(details: dict[str, Any]) -> dict:
 @role_guard.api("partner")
 def get_certificate_link_status() -> dict:
 	team = get_current_team(get_doc=True)
-	partner_certificate = frappe.qb.DocType("Partner Certificate")
-	certificate_link_request = frappe.qb.DocType("Certificate Link Request")
+	return _get_certificate_link_status(team.name)
 
-	linked_certificates = (
-		frappe.qb.from_(partner_certificate)
-		.select(
-			partner_certificate.name,
-			partner_certificate.course,
-			partner_certificate.partner_member_email.as_("user_email"),
-			partner_certificate.partner_member_name.as_("member_name"),
-		)
-		.where(partner_certificate.team == team.name)
-		.orderby(partner_certificate.creation, order=Order.desc)
-		.run(as_dict=True)
-	)
-	pending_requests = (
-		frappe.qb.from_(certificate_link_request)
-		.select(
-			certificate_link_request.name,
-			certificate_link_request.course,
-			certificate_link_request.user_email,
-			certificate_link_request.status,
-			certificate_link_request.creation,
-		)
-		.where(
-			(certificate_link_request.partner_team == team.name)
-			& (certificate_link_request.status == "Pending")
-		)
-		.orderby(certificate_link_request.creation, order=Order.desc)
-		.run(as_dict=True)
-	)
-	linked_count = len(linked_certificates)
 
-	return {
-		"linked_certificates": linked_certificates,
-		"pending_requests": pending_requests,
-		"linked_count": linked_count,
-		"requirement_complete": linked_count >= 2,
-	}
+@frappe.whitelist()
+@role_guard.api("partner")
+def get_mrr_status() -> dict:
+	team = get_current_team(get_doc=True)
+	return _get_mrr_status(team)
+
+
+@frappe.whitelist(methods=["POST"])
+@role_guard.api("partner")
+def submit_for_approval() -> dict:
+	team = get_current_team(get_doc=True)
+	doc = _get_partner_onboarding(team.name)
+	if not doc:
+		frappe.throw("Register as a partner before submitting for approval.")
+
+	if doc.docstatus == 1:
+		return doc.as_dict()
+
+	if doc.docstatus != 0:
+		frappe.throw("This partner onboarding request cannot be submitted.")
+
+	doc.submit()
+	return doc.as_dict()
+
+
+@frappe.whitelist(methods=["POST"])
+@role_guard.api("partner")
+def unregister() -> None:
+	team = get_current_team(get_doc=True)
+	doc = _get_partner_onboarding(team.name)
+	if not doc:
+		return
+
+	if doc.status == "Approved":
+		frappe.get_doc("Team", team.name).disable_erpnext_partner_privileges()
+
+	_clear_certificate_links(team.name)
+
+	if doc.docstatus == 1:
+		doc.cancel()
+
+	# keep the partner onboarding request in the database for reference
+	# frappe.delete_doc("Partner Onboarding", doc.name)
 
 
 @frappe.whitelist(methods=["POST"])
