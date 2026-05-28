@@ -29,7 +29,7 @@ const formatCmd = (cmd: string) => {
 	<template v-for='x in stages' :key="x.name">
 		<Collapsable
 			v-if="deployview ? x.label == 'Building' : ['Building', 'Deploying'].includes(x.label)"
-			headerCss="py-3 border-b"
+			headerCss="py-3 border-b pr-3"
 			:disabled='["Pending", "Queued"].includes(x.status)'
 		>
 			<template #header>
@@ -42,7 +42,7 @@ const formatCmd = (cmd: string) => {
 			<template v-if='x.label == "Building"'>
 				<button
 					v-for="(build_step) in buildSteps"
-					class="btn !pl-6"
+					class="btn !pl-6 !pr-3"
 					:aria-selected="output?.val && output?.id == build_step.name"
 					@click="setOutput({ val: build_step.output || formatCmd(build_step.command),
                   status: build_step.status, id: build_step.name })"
@@ -62,7 +62,7 @@ const formatCmd = (cmd: string) => {
 			<template v-else-if='!deployview && x.label == "Deploying"'>
 				<Collapsable
 					v-for='bench in x.benches'
-					headerCss="ml-6 py-3"
+					headerCss="ml-6 py-3 pr-3"
 					:key="bench.name"
 					:opened="true"
 				>
@@ -77,7 +77,7 @@ const formatCmd = (cmd: string) => {
 					<Collapsable
 						:opened="true"
 						v-for='job in bench.jobs'
-						headerCss="ml-12 py-2"
+						headerCss="ml-12 py-2 pr-3"
 						:key="job.name"
 					>
 						<template #header>
@@ -95,7 +95,7 @@ const formatCmd = (cmd: string) => {
 							<StatusIcon :status="jobstep.status" class="ml-2" />
 							{{ jobstep.step_name }}
 
-							<span class="text-ink-gray-5 ml-auto">
+							<span class="text-ink-gray-5 ml-auto pr-2">
 								{{ duration(jobstep.duration) }}</span
 							>
 						</button>
@@ -109,7 +109,7 @@ const formatCmd = (cmd: string) => {
 			<span class="whitespace-nowrap"> {{ x.label }}</span>
 			<span
 				v-if='x.status != "Failure"'
-				class="ml-auto text-sm text-ink-gray-5"
+				class="ml-auto text-sm text-ink-gray-5 pr-3"
 			>
 				{{ secsToDuration(x.duration) }}
 			</span>
