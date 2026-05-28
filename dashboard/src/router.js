@@ -590,6 +590,24 @@ router.beforeEach(async (to, from, next) => {
 			return
 		}
 
+		// if team is not a partner and trying to access partner routes, redirect to partner onboarding
+		const activePartner = Boolean(
+			$team.doc.erpnext_partner && $team.doc.partner_status === 'Active',
+		)
+		const goingToPartnerDashboard = to.matched.some(
+			(record) => record.name === 'Partnership',
+		)
+
+		if (to.name === 'Partner Onboarding' && activePartner) {
+			next({ name: 'PartnerOverview' })
+			return
+		}
+
+		if (goingToPartnerDashboard && !activePartner) {
+			next({ name: 'Partner Onboarding' })
+			return
+		}
+
 		if (to.name.startsWith('Release Group')) {
 			if (!$team.doc.benches_enabled)
 				try {
