@@ -1,30 +1,32 @@
 {
-	"actions": [],
-	"allow_rename": 1,
-	"creation": "2022-02-22 14:07:05.005498",
-	"doctype": "DocType",
-	"engine": "InnoDB",
-	"field_order": ["category"],
-	"fields": [
-		{
-			"fieldname": "category",
-			"fieldtype": "Link",
-			"in_list_view": 1,
-			"label": "Category",
-			"options": "Marketplace App Category",
-			"reqd": 1
-		}
-	],
-	"index_web_pages_for_search": 1,
-	"istable": 1,
-	"links": [],
-	"modified": "2022-02-23 14:57:18.196374",
-	"modified_by": "Administrator",
-	"module": "Press",
-	"name": "Marketplace App Categories",
-	"owner": "Administrator",
-	"permissions": [],
-	"sort_field": "modified",
-	"sort_order": "DESC",
-	"states": []
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-02-22 14:07:05.005498",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "category"
+ ],
+ "fields": [
+  {
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Category",
+   "options": "Marketplace App Category",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-02-23 14:57:18.196374",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Marketplace App Categories",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
 }

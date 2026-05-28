@@ -1,100 +1,109 @@
 {
-	"actions": [],
-	"allow_rename": 1,
-	"creation": "2023-06-16 18:29:22.245007",
-	"default_view": "List",
-	"doctype": "DocType",
-	"editable_grid": 1,
-	"engine": "InnoDB",
-	"field_order": [
-		"group",
-		"column_break_wff5",
-		"candidate",
-		"in_place_update_section",
-		"is_inplace_update",
-		"column_break_bdov",
-		"bench",
-		"section_break_nfd1",
-		"apps",
-		"sites"
-	],
-	"fields": [
-		{
-			"fieldname": "group",
-			"fieldtype": "Link",
-			"in_list_view": 1,
-			"label": "Group",
-			"options": "Release Group",
-			"reqd": 1
-		},
-		{
-			"fieldname": "sites",
-			"fieldtype": "Table",
-			"label": "Sites",
-			"options": "Bench Site Update"
-		},
-		{ "fieldname": "column_break_wff5", "fieldtype": "Column Break" },
-		{
-			"fieldname": "candidate",
-			"fieldtype": "Link",
-			"label": "Candidate",
-			"options": "Deploy Candidate",
-			"read_only": 1,
-			"search_index": 1
-		},
-		{ "fieldname": "section_break_nfd1", "fieldtype": "Section Break" },
-		{
-			"fieldname": "apps",
-			"fieldtype": "Table",
-			"label": "Apps",
-			"options": "Bench Update App"
-		},
-		{
-			"fieldname": "in_place_update_section",
-			"fieldtype": "Section Break",
-			"label": "In Place Update"
-		},
-		{
-			"default": "0",
-			"depends_on": "eval: doc.is_inplace_update",
-			"description": "A new build is not run in this case, instead container is updated using <code>docker container commit</code> which creates a new image.",
-			"fieldname": "is_inplace_update",
-			"fieldtype": "Check",
-			"label": "Is In Place Update"
-		},
-		{ "fieldname": "column_break_bdov", "fieldtype": "Column Break" },
-		{
-			"depends_on": "eval: doc.bench",
-			"description": "Bench that will be updated in place.",
-			"fieldname": "bench",
-			"fieldtype": "Link",
-			"label": "Bench",
-			"options": "Bench"
-		}
-	],
-	"index_web_pages_for_search": 1,
-	"links": [],
-	"modified": "2026-02-27 11:04:18.812692",
-	"modified_by": "Administrator",
-	"module": "Press",
-	"name": "Bench Update",
-	"owner": "Administrator",
-	"permissions": [
-		{
-			"create": 1,
-			"delete": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "System Manager",
-			"share": 1,
-			"write": 1
-		}
-	],
-	"row_format": "Dynamic",
-	"sort_field": "modified",
-	"sort_order": "DESC",
-	"states": []
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-06-16 18:29:22.245007",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "group",
+  "column_break_wff5",
+  "candidate",
+  "in_place_update_section",
+  "is_inplace_update",
+  "column_break_bdov",
+  "bench",
+  "section_break_nfd1",
+  "apps",
+  "sites"
+ ],
+ "fields": [
+  {
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Group",
+   "options": "Release Group",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sites",
+   "fieldtype": "Table",
+   "label": "Sites",
+   "options": "Bench Site Update"
+  },
+  {
+   "fieldname": "column_break_wff5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "candidate",
+   "fieldtype": "Link",
+   "label": "Candidate",
+   "options": "Deploy Candidate",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_nfd1",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "label": "Apps",
+   "options": "Bench Update App"
+  },
+  {
+   "fieldname": "in_place_update_section",
+   "fieldtype": "Section Break",
+   "label": "In Place Update"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.is_inplace_update",
+   "description": "A new build is not run in this case, instead container is updated using <code>docker container commit</code> which creates a new image.",
+   "fieldname": "is_inplace_update",
+   "fieldtype": "Check",
+   "label": "Is In Place Update"
+  },
+  {
+   "fieldname": "column_break_bdov",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.bench",
+   "description": "Bench that will be updated in place.",
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "label": "Bench",
+   "options": "Bench"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-27 11:04:18.812692",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bench Update",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
 }

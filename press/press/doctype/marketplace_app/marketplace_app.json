@@ -1,424 +1,484 @@
 {
-	"actions": [],
-	"allow_guest_to_view": 1,
-	"allow_rename": 1,
-	"creation": "2022-02-04 19:53:27.058972",
-	"doctype": "DocType",
-	"editable_grid": 1,
-	"engine": "InnoDB",
-	"field_order": [
-		"image",
-		"app",
-		"title",
-		"column_break_3",
-		"team",
-		"route",
-		"published_on",
-		"section_break_7",
-		"column_break_ccyg",
-		"frappe_approved",
-		"subscription_type",
-		"bypass_automated_audit",
-		"column_break_10",
-		"categories",
-		"published",
-		"section_break_5",
-		"sources",
-		"descriptions_tab",
-		"description",
-		"app_screenshots_section",
-		"screenshots",
-		"section_break_15",
-		"long_description",
-		"links_section",
-		"website",
-		"support",
-		"documentation",
-		"column_break_16",
-		"privacy_policy",
-		"terms_of_service",
-		"saas_tab",
-		"outgoing_email",
-		"outgoing_sender_name",
-		"signup_email_template_section",
-		"message",
-		"column_break_32",
-		"signature",
-		"column_break_30",
-		"subject",
-		"poll_method",
-		"column_break_33",
-		"custom_verify_template",
-		"subscription_update_hook",
-		"site_config_section",
-		"site_config",
-		"scripts_tab",
-		"run_after_install_script",
-		"after_install_script",
-		"run_after_uninstall_script",
-		"after_uninstall_script",
-		"review_tab",
-		"status",
-		"dashboard_tab",
-		"onboarding_related_section",
-		"show_for_site_creation",
-		"localisation_apps",
-		"section_break_tlpw",
-		"average_rating",
-		"others_section",
-		"collect_feedback"
-	],
-	"fields": [
-		{
-			"fieldname": "image",
-			"fieldtype": "Attach Image",
-			"hidden": 1,
-			"label": "Image"
-		},
-		{
-			"fetch_from": "app.title",
-			"fetch_if_empty": 1,
-			"fieldname": "title",
-			"fieldtype": "Data",
-			"in_list_view": 1,
-			"label": "Title",
-			"reqd": 1
-		},
-		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
-		{
-			"default": "Draft",
-			"fieldname": "status",
-			"fieldtype": "Select",
-			"in_list_view": 1,
-			"in_standard_filter": 1,
-			"label": "Status",
-			"options": "Draft\nPublished\nIn Review\nAttention Required\nRejected\nDisabled"
-		},
-		{ "fieldname": "section_break_5", "fieldtype": "Section Break" },
-		{
-			"default": "Please add a short description about your app here...",
-			"fieldname": "description",
-			"fieldtype": "Small Text",
-			"in_list_view": 1,
-			"label": "Description",
-			"reqd": 1
-		},
-		{
-			"fieldname": "long_description",
-			"fieldtype": "Text Editor",
-			"label": "Long Description"
-		},
-		{
-			"fieldname": "links_section",
-			"fieldtype": "Tab Break",
-			"label": "Support Links"
-		},
-		{
-			"fieldname": "website",
-			"fieldtype": "Data",
-			"label": "Website",
-			"options": "URL"
-		},
-		{
-			"fieldname": "support",
-			"fieldtype": "Data",
-			"label": "Support",
-			"options": "URL"
-		},
-		{
-			"fieldname": "privacy_policy",
-			"fieldtype": "Data",
-			"label": "Privacy Policy",
-			"options": "URL"
-		},
-		{
-			"fieldname": "documentation",
-			"fieldtype": "Data",
-			"label": "Documentation",
-			"options": "URL"
-		},
-		{
-			"fieldname": "terms_of_service",
-			"fieldtype": "Data",
-			"label": "Terms of Service",
-			"options": "URL"
-		},
-		{ "fieldname": "route", "fieldtype": "Data", "label": "Route" },
-		{
-			"default": "0",
-			"fieldname": "published",
-			"fieldtype": "Check",
-			"hidden": 1,
-			"label": "Published",
-			"read_only": 1
-		},
-		{
-			"fieldname": "app",
-			"fieldtype": "Link",
-			"label": "App",
-			"options": "App",
-			"reqd": 1,
-			"unique": 1
-		},
-		{ "fieldname": "column_break_16", "fieldtype": "Column Break" },
-		{
-			"fieldname": "team",
-			"fieldtype": "Link",
-			"in_standard_filter": 1,
-			"label": "Team",
-			"options": "Team"
-		},
-		{
-			"fieldname": "sources",
-			"fieldtype": "Table",
-			"label": "Sources",
-			"options": "Marketplace App Version"
-		},
-		{
-			"fieldname": "app_screenshots_section",
-			"fieldtype": "Section Break",
-			"label": "App Screenshots"
-		},
-		{
-			"fieldname": "screenshots",
-			"fieldtype": "Table",
-			"label": "Screenshots",
-			"options": "Marketplace App Screenshot"
-		},
-		{ "fieldname": "section_break_15", "fieldtype": "Section Break" },
-		{
-			"fieldname": "categories",
-			"fieldtype": "Table",
-			"label": "Categories",
-			"options": "Marketplace App Categories"
-		},
-		{
-			"default": "Free",
-			"fieldname": "subscription_type",
-			"fieldtype": "Select",
-			"in_list_view": 1,
-			"in_standard_filter": 1,
-			"label": "Subscription Type",
-			"options": "Free\nPaid\nFreemium"
-		},
-		{
-			"fieldname": "signup_email_template_section",
-			"fieldtype": "Section Break",
-			"label": "Signup Email Template"
-		},
-		{
-			"default": "0",
-			"fieldname": "custom_verify_template",
-			"fieldtype": "Check",
-			"label": "Use custom verify template"
-		},
-		{ "fieldname": "subject", "fieldtype": "Data", "label": "Subject" },
-		{ "fieldname": "message", "fieldtype": "Text Editor", "label": "Message" },
-		{
-			"fieldname": "signature",
-			"fieldtype": "Text Editor",
-			"label": "Signature"
-		},
-		{ "fieldname": "poll_method", "fieldtype": "Data", "label": "Poll Method" },
-		{
-			"fieldname": "subscription_update_hook",
-			"fieldtype": "Data",
-			"label": "Subscription Update Hook"
-		},
-		{ "fieldname": "saas_tab", "fieldtype": "Tab Break", "label": "SaaS" },
-		{ "fieldname": "column_break_32", "fieldtype": "Column Break" },
-		{ "fieldname": "column_break_30", "fieldtype": "Section Break" },
-		{ "fieldname": "column_break_33", "fieldtype": "Column Break" },
-		{
-			"fieldname": "descriptions_tab",
-			"fieldtype": "Tab Break",
-			"label": "Descriptions"
-		},
-		{ "fieldname": "section_break_7", "fieldtype": "Section Break" },
-		{ "fieldname": "column_break_10", "fieldtype": "Column Break" },
-		{
-			"fieldname": "outgoing_email",
-			"fieldtype": "Data",
-			"label": "Outgoing Email"
-		},
-		{
-			"fieldname": "outgoing_sender_name",
-			"fieldtype": "Data",
-			"label": "Outgoing Sender Name"
-		},
-		{
-			"fieldname": "scripts_tab",
-			"fieldtype": "Tab Break",
-			"label": "Scripts"
-		},
-		{
-			"fieldname": "after_install_script",
-			"fieldtype": "Code",
-			"label": "After Install Script",
-			"options": "Python"
-		},
-		{
-			"fieldname": "after_uninstall_script",
-			"fieldtype": "Code",
-			"label": "After Uninstall Script",
-			"options": "Python"
-		},
-		{
-			"default": "0",
-			"fieldname": "run_after_install_script",
-			"fieldtype": "Check",
-			"label": "Rut After Install Script"
-		},
-		{
-			"default": "0",
-			"fieldname": "run_after_uninstall_script",
-			"fieldtype": "Check",
-			"label": "Run After Uninstall Script"
-		},
-		{ "fieldname": "review_tab", "fieldtype": "Tab Break", "label": "Review" },
-		{
-			"default": "0",
-			"fieldname": "frappe_approved",
-			"fieldtype": "Check",
-			"label": "Frappe Approved"
-		},
-		{
-			"description": "This keys are added to site config on saas signup",
-			"fieldname": "site_config",
-			"fieldtype": "JSON",
-			"label": "Site Config"
-		},
-		{
-			"fieldname": "site_config_section",
-			"fieldtype": "Section Break",
-			"label": "Site Config"
-		},
-		{
-			"fieldname": "onboarding_related_section",
-			"fieldtype": "Section Break",
-			"label": "Onboarding/Site Creation Related"
-		},
-		{
-			"default": "0",
-			"fieldname": "show_for_site_creation",
-			"fieldtype": "Check",
-			"label": "Show for site creation"
-		},
-		{
-			"fieldname": "dashboard_tab",
-			"fieldtype": "Tab Break",
-			"label": "Dashboard"
-		},
-		{
-			"fieldname": "section_break_tlpw",
-			"fieldtype": "Section Break",
-			"label": "Marketplace Page"
-		},
-		{
-			"default": "0",
-			"fieldname": "average_rating",
-			"fieldtype": "Float",
-			"hidden": 1,
-			"label": "Average Rating",
-			"precision": "2"
-		},
-		{
-			"fieldname": "localisation_apps",
-			"fieldtype": "Table",
-			"label": "Localisation Apps",
-			"options": "Marketplace Localisation App"
-		},
-		{
-			"fieldname": "others_section",
-			"fieldtype": "Section Break",
-			"label": "Others"
-		},
-		{
-			"default": "0",
-			"fieldname": "collect_feedback",
-			"fieldtype": "Check",
-			"label": "Collect Feedback"
-		},
-		{
-			"fieldname": "published_on",
-			"fieldtype": "Date",
-			"label": "Published On"
-		},
-		{ "fieldname": "column_break_ccyg", "fieldtype": "Column Break" },
-		{
-			"default": "0",
-			"description": "This bypasses the Marketplace Automated Audit Checks. Only suggested to be checked for Frappe apps.",
-			"fieldname": "bypass_automated_audit",
-			"fieldtype": "Check",
-			"label": "Bypass Automated Audit"
-		}
-	],
-	"grid_page_length": 50,
-	"has_web_view": 1,
-	"image_field": "image",
-	"index_web_pages_for_search": 1,
-	"is_published_field": "published",
-	"links": [
-		{
-			"group": "General",
-			"link_doctype": "App Release Approval Request",
-			"link_fieldname": "marketplace_app"
-		},
-		{
-			"group": "App Subscription",
-			"link_doctype": "Marketplace App Plan",
-			"link_fieldname": "app"
-		},
-		{
-			"group": "App Subscription",
-			"link_doctype": "Marketplace App Subscription",
-			"link_fieldname": "app"
-		},
-		{
-			"group": "General",
-			"link_doctype": "Marketplace App Audit",
-			"link_fieldname": "marketplace_app"
-		}
-	],
-	"modified": "2026-04-16 12:40:05.646198",
-	"modified_by": "Administrator",
-	"module": "Press",
-	"name": "Marketplace App",
-	"owner": "Administrator",
-	"permissions": [
-		{
-			"create": 1,
-			"delete": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "System Manager",
-			"share": 1,
-			"write": 1
-		},
-		{
-			"create": 1,
-			"delete": 1,
-			"email": 1,
-			"export": 1,
-			"print": 1,
-			"read": 1,
-			"report": 1,
-			"role": "Press Marketplace Manager",
-			"select": 1,
-			"share": 1,
-			"write": 1
-		}
-	],
-	"row_format": "Dynamic",
-	"sort_field": "modified",
-	"sort_order": "DESC",
-	"states": [
-		{ "color": "Gray", "title": "Draft" },
-		{ "color": "Green", "title": "Published" }
-	],
-	"title_field": "title",
-	"track_changes": 1
+ "actions": [],
+ "allow_guest_to_view": 1,
+ "allow_rename": 1,
+ "creation": "2022-02-04 19:53:27.058972",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "image",
+  "app",
+  "title",
+  "column_break_3",
+  "team",
+  "route",
+  "published_on",
+  "section_break_7",
+  "column_break_ccyg",
+  "frappe_approved",
+  "subscription_type",
+  "bypass_automated_audit",
+  "column_break_10",
+  "categories",
+  "published",
+  "section_break_5",
+  "sources",
+  "descriptions_tab",
+  "description",
+  "app_screenshots_section",
+  "screenshots",
+  "section_break_15",
+  "long_description",
+  "links_section",
+  "website",
+  "support",
+  "documentation",
+  "column_break_16",
+  "privacy_policy",
+  "terms_of_service",
+  "saas_tab",
+  "outgoing_email",
+  "outgoing_sender_name",
+  "signup_email_template_section",
+  "message",
+  "column_break_32",
+  "signature",
+  "column_break_30",
+  "subject",
+  "poll_method",
+  "column_break_33",
+  "custom_verify_template",
+  "subscription_update_hook",
+  "site_config_section",
+  "site_config",
+  "scripts_tab",
+  "run_after_install_script",
+  "after_install_script",
+  "run_after_uninstall_script",
+  "after_uninstall_script",
+  "review_tab",
+  "status",
+  "dashboard_tab",
+  "onboarding_related_section",
+  "show_for_site_creation",
+  "localisation_apps",
+  "section_break_tlpw",
+  "average_rating",
+  "others_section",
+  "collect_feedback"
+ ],
+ "fields": [
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "Image"
+  },
+  {
+   "fetch_from": "app.title",
+   "fetch_if_empty": 1,
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPublished\nIn Review\nAttention Required\nRejected\nDisabled"
+  },
+  {
+   "fieldname": "section_break_5",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "Please add a short description about your app here...",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "long_description",
+   "fieldtype": "Text Editor",
+   "label": "Long Description"
+  },
+  {
+   "fieldname": "links_section",
+   "fieldtype": "Tab Break",
+   "label": "Support Links"
+  },
+  {
+   "fieldname": "website",
+   "fieldtype": "Data",
+   "label": "Website",
+   "options": "URL"
+  },
+  {
+   "fieldname": "support",
+   "fieldtype": "Data",
+   "label": "Support",
+   "options": "URL"
+  },
+  {
+   "fieldname": "privacy_policy",
+   "fieldtype": "Data",
+   "label": "Privacy Policy",
+   "options": "URL"
+  },
+  {
+   "fieldname": "documentation",
+   "fieldtype": "Data",
+   "label": "Documentation",
+   "options": "URL"
+  },
+  {
+   "fieldname": "terms_of_service",
+   "fieldtype": "Data",
+   "label": "Terms of Service",
+   "options": "URL"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route"
+  },
+  {
+   "default": "0",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Published",
+   "read_only": 1
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "label": "App",
+   "options": "App",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_16",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "sources",
+   "fieldtype": "Table",
+   "label": "Sources",
+   "options": "Marketplace App Version"
+  },
+  {
+   "fieldname": "app_screenshots_section",
+   "fieldtype": "Section Break",
+   "label": "App Screenshots"
+  },
+  {
+   "fieldname": "screenshots",
+   "fieldtype": "Table",
+   "label": "Screenshots",
+   "options": "Marketplace App Screenshot"
+  },
+  {
+   "fieldname": "section_break_15",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "categories",
+   "fieldtype": "Table",
+   "label": "Categories",
+   "options": "Marketplace App Categories"
+  },
+  {
+   "default": "Free",
+   "fieldname": "subscription_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Subscription Type",
+   "options": "Free\nPaid\nFreemium"
+  },
+  {
+   "fieldname": "signup_email_template_section",
+   "fieldtype": "Section Break",
+   "label": "Signup Email Template"
+  },
+  {
+   "default": "0",
+   "fieldname": "custom_verify_template",
+   "fieldtype": "Check",
+   "label": "Use custom verify template"
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Subject"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Text Editor",
+   "label": "Message"
+  },
+  {
+   "fieldname": "signature",
+   "fieldtype": "Text Editor",
+   "label": "Signature"
+  },
+  {
+   "fieldname": "poll_method",
+   "fieldtype": "Data",
+   "label": "Poll Method"
+  },
+  {
+   "fieldname": "subscription_update_hook",
+   "fieldtype": "Data",
+   "label": "Subscription Update Hook"
+  },
+  {
+   "fieldname": "saas_tab",
+   "fieldtype": "Tab Break",
+   "label": "SaaS"
+  },
+  {
+   "fieldname": "column_break_32",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_30",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_33",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "descriptions_tab",
+   "fieldtype": "Tab Break",
+   "label": "Descriptions"
+  },
+  {
+   "fieldname": "section_break_7",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "outgoing_email",
+   "fieldtype": "Data",
+   "label": "Outgoing Email"
+  },
+  {
+   "fieldname": "outgoing_sender_name",
+   "fieldtype": "Data",
+   "label": "Outgoing Sender Name"
+  },
+  {
+   "fieldname": "scripts_tab",
+   "fieldtype": "Tab Break",
+   "label": "Scripts"
+  },
+  {
+   "fieldname": "after_install_script",
+   "fieldtype": "Code",
+   "label": "After Install Script",
+   "options": "Python"
+  },
+  {
+   "fieldname": "after_uninstall_script",
+   "fieldtype": "Code",
+   "label": "After Uninstall Script",
+   "options": "Python"
+  },
+  {
+   "default": "0",
+   "fieldname": "run_after_install_script",
+   "fieldtype": "Check",
+   "label": "Rut After Install Script"
+  },
+  {
+   "default": "0",
+   "fieldname": "run_after_uninstall_script",
+   "fieldtype": "Check",
+   "label": "Run After Uninstall Script"
+  },
+  {
+   "fieldname": "review_tab",
+   "fieldtype": "Tab Break",
+   "label": "Review"
+  },
+  {
+   "default": "0",
+   "fieldname": "frappe_approved",
+   "fieldtype": "Check",
+   "label": "Frappe Approved"
+  },
+  {
+   "description": "This keys are added to site config on saas signup",
+   "fieldname": "site_config",
+   "fieldtype": "JSON",
+   "label": "Site Config"
+  },
+  {
+   "fieldname": "site_config_section",
+   "fieldtype": "Section Break",
+   "label": "Site Config"
+  },
+  {
+   "fieldname": "onboarding_related_section",
+   "fieldtype": "Section Break",
+   "label": "Onboarding/Site Creation Related"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_for_site_creation",
+   "fieldtype": "Check",
+   "label": "Show for site creation"
+  },
+  {
+   "fieldname": "dashboard_tab",
+   "fieldtype": "Tab Break",
+   "label": "Dashboard"
+  },
+  {
+   "fieldname": "section_break_tlpw",
+   "fieldtype": "Section Break",
+   "label": "Marketplace Page"
+  },
+  {
+   "default": "0",
+   "fieldname": "average_rating",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Average Rating",
+   "precision": "2"
+  },
+  {
+   "fieldname": "localisation_apps",
+   "fieldtype": "Table",
+   "label": "Localisation Apps",
+   "options": "Marketplace Localisation App"
+  },
+  {
+   "fieldname": "others_section",
+   "fieldtype": "Section Break",
+   "label": "Others"
+  },
+  {
+   "default": "0",
+   "fieldname": "collect_feedback",
+   "fieldtype": "Check",
+   "label": "Collect Feedback"
+  },
+  {
+   "fieldname": "published_on",
+   "fieldtype": "Date",
+   "label": "Published On"
+  },
+  {
+   "fieldname": "column_break_ccyg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "This bypasses the Marketplace Automated Audit Checks. Only suggested to be checked for Frappe apps.",
+   "fieldname": "bypass_automated_audit",
+   "fieldtype": "Check",
+   "label": "Bypass Automated Audit"
+  }
+ ],
+ "grid_page_length": 50,
+ "has_web_view": 1,
+ "image_field": "image",
+ "index_web_pages_for_search": 1,
+ "is_published_field": "published",
+ "links": [
+  {
+   "group": "General",
+   "link_doctype": "App Release Approval Request",
+   "link_fieldname": "marketplace_app"
+  },
+  {
+   "group": "App Subscription",
+   "link_doctype": "Marketplace App Plan",
+   "link_fieldname": "app"
+  },
+  {
+   "group": "App Subscription",
+   "link_doctype": "Marketplace App Subscription",
+   "link_fieldname": "app"
+  },
+  {
+   "group": "General",
+   "link_doctype": "Marketplace App Audit",
+   "link_fieldname": "marketplace_app"
+  }
+ ],
+ "modified": "2026-04-16 12:40:05.646198",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Marketplace App",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Marketplace Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "color": "Gray",
+   "title": "Draft"
+  },
+  {
+   "color": "Green",
+   "title": "Published"
+  }
+ ],
+ "title_field": "title",
+ "track_changes": 1
 }
