@@ -1,22 +1,23 @@
-<script setup>
-import { h, ref } from 'vue';
-import { Badge, createResource, Select } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import dayjs from '../../utils/dayjs';
-import { getTeam } from '../../data/team';
-import { confirmDialog } from '../../utils/components';
-import AlertBanner from '../../components/AlertBanner.vue';
-import ObjectList from '../ObjectList.vue';
-import UserWithAvatarCell from '../UserWithAvatarCell.vue';
-import { getToastErrorMessage } from '../../utils/toast';
-import TeamInviteDialog from './TeamInviteDialog.vue';
-import session from '@/data/session';
-import { useUserStore } from '@/stores/user';
+<script setup lang="ts">
+import { Badge, createResource, Select } from 'frappe-ui'
+import { h, ref } from 'vue'
+import { toast } from 'vue-sonner'
+import session from '@/data/session'
+import { useUserStore } from '@/stores/user'
+import AlertBanner from '../../components/AlertBanner.vue'
+import { getTeam } from '../../data/team'
+import { confirmDialog } from '../../utils/components'
+import dayjs from '../../utils/dayjs'
+import { getToastErrorMessage } from '../../utils/toast'
+import ObjectList from '../ObjectList.vue'
+import UserWithAvatarCell from '../UserWithAvatarCell.vue'
+import TeamInviteDialog from './TeamInviteDialog.vue'
+import TeamResourcesDialog from './TeamResourcesDialog.vue'
 
-const team = getTeam();
-const user = useUserStore();
+const team = getTeam()
+const user = useUserStore()
 
-const isInviteOpen = ref(false);
+const isInviteOpen = ref(false)
 
 const members = createResource({
 	url: 'run_doc_method',
@@ -27,7 +28,7 @@ const members = createResource({
 		dn: team.doc.name,
 	},
 	transform: (d) => d.message,
-});
+})
 
 const removeUser = createResource({
 	url: 'run_doc_method',
@@ -38,7 +39,7 @@ const removeUser = createResource({
 		args,
 	}),
 	onSuccess: (data) => members.setData(data),
-});
+})
 
 const roles = createResource({
 	url: 'run_doc_method',
@@ -49,7 +50,7 @@ const roles = createResource({
 		dn: team.doc.name,
 	},
 	transform: (d) => d.message,
-});
+})
 
 const sendInvitation = createResource({
 	url: 'run_doc_method',
@@ -60,7 +61,7 @@ const sendInvitation = createResource({
 		args,
 	}),
 	onSuccess: (data) => members.setData(data),
-});
+})
 
 const cancelInvitation = createResource({
 	url: 'run_doc_method',
@@ -71,15 +72,38 @@ const cancelInvitation = createResource({
 		args,
 	}),
 	onSuccess: (data) => members.setData(data),
-});
+})
+
+const updateTeam = createResource({
+	url: 'press.api.client.set_value',
+	makeParams: (args) => ({
+		doctype: 'Team',
+		name: team.doc.name,
+		fieldname: args.fieldname,
+		value: args.value,
+	}),
+	onSuccess: () => {
+		members.fetch()
+	},
+})
+
+const updateRole = (member: string, role: string) => {
+	updateTeam.submit({
+		fieldname: 'team_members',
+		value: team.doc.team_members.map((m) => {
+			m.role = m.name === member ? role : m.role
+			return m
+		}),
+	})
+}
 
 const progress = (promise, msgLoading, msgSuccess) => {
 	toast.promise(promise, {
 		loading: msgLoading,
 		success: msgSuccess,
 		error: (e) => getToastErrorMessage(e),
-	});
-};
+	})
+}
 </script>
 
 <template>
@@ -136,6 +160,17 @@ const progress = (promise, msgLoading, msgSuccess) => {
 									row.role,
 								);
 							}
+							if (!session.isTeamAdmin) {
+								return h(
+									Badge,
+									{
+										label: row.role,
+										theme: 'blue',
+										variant: 'subtle',
+									},
+									row.role,
+								);
+							}
 							return h(
 								Select,
 								{
@@ -143,6 +178,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 									variant: 'ghost',
 									modelValue: row.role,
 									options: roles.data,
+									'onUpdate:modelValue': (value) => updateRole(row.name, value),
 								},
 								row.role,
 							);
@@ -165,13 +201,30 @@ const progress = (promise, msgLoading, msgSuccess) => {
 						},
 					},
 					{
-						label: 'Joined',
-						fieldname: 'date',
-						format: (v, r) => {
-							if (r.status === 'Pending')
-								return 'Expires at ' + dayjs(v).format('LT');
-							return dayjs(v).format('LL');
-						},
+						label: 'Resources',
+						type: 'Component',
+						component: ({ row }) => {
+							return h(TeamResourcesDialog, {
+								team: team.doc.name,
+								userId: row.email,
+								userName: row.full_name || row.email,
+								resourceCount: row.resource_count,
+								allServers: row.all_servers,
+								allReleaseGroups: row.all_release_groups,
+								allSites: row.all_sites,
+								onUpdate: (key: string, value: boolean) => {
+									updateTeam.submit({
+										fieldname: 'team_members',
+										value: team.doc.team_members.map((m) => {
+											if (m.name === row.name) {
+												m[key] = value;
+											}
+											return m;
+										}),
+									})
+								},
+							});
+						}
 					},
 				],
 				rowActions: ({ row }) => {

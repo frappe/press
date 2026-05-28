@@ -40,6 +40,7 @@
 		"networking_section",
 		"ip",
 		"nat_server",
+		"is_static_ip",
 		"column_break_10",
 		"private_ip",
 		"private_mac_address",
@@ -543,6 +544,14 @@
 			"read_only": 1
 		},
 		{
+			"default": "1",
+			"depends_on": "eval: doc.memory_allocator == \"TCMalloc\"",
+			"fieldname": "tcmalloc_release_rate",
+			"fieldtype": "Int",
+			"label": "TCMalloc Release Rate",
+			"read_only": 1
+		},
+		{
 			"fieldname": "section_break_ladc",
 			"fieldtype": "Section Break"
 		},
@@ -796,14 +805,6 @@
 			"options": "NAT Server"
 		},
 		{
-			"default": "1",
-			"depends_on": "eval: doc.memory_allocator == \"TCMalloc\"",
-			"fieldname": "tcmalloc_release_rate",
-			"fieldtype": "Int",
-			"label": "TCMalloc Release Rate",
-			"read_only": 1
-		},
-		{
 			"fieldname": "monitor_tab",
 			"fieldtype": "Tab Break",
 			"label": "Monitor"
@@ -834,6 +835,13 @@
 			"fieldname": "is_auto_coredump_enabled",
 			"fieldtype": "Check",
 			"label": "Is Auto Coredump Enabled"
+		},
+		{
+			"default": "0",
+			"fieldname": "is_static_ip",
+			"fieldtype": "Check",
+			"label": "Is Static IP",
+			"read_only": 1
 		}
 	],
 	"grid_page_length": 50,
@@ -850,7 +858,7 @@
 			"link_fieldname": "database_server"
 		}
 	],
-	"modified": "2026-05-06 14:39:54.175744",
+	"modified": "2026-05-19 03:59:16.146497",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Database Server",

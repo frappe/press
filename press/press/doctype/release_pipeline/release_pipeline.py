@@ -13,6 +13,7 @@ from packaging.version import Version
 
 from press.api.github import GithubFetchError, get_dependant_apps_with_versions
 from press.exceptions import InsufficientSpaceOnServer, ReleasePipelineFailure
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import (
 	get_app_source_from_supported_versions,
 	get_latest_release_of_app_from_source,
@@ -31,6 +32,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate_build.deploy_candidate_build import DeployCandidateBuild
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.workflow_engine.doctype.press_workflow.press_workflow import PressWorkflow
+	from press.workflow_engine.doctype.press_workflow_step.press_workflow_step import PressWorkflowStep
 
 
 BENCH_TRANSITION_STATES = ["Pending", "Installing", "Updating"]
@@ -138,6 +140,12 @@ class ReleasePipeline(WorkflowBuilder):
 		workflow: DF.Link | None
 	# end: auto-generated types
 
+	dashboard_fields = (
+		"release_group",
+		"status",
+		"creation",
+	)
+
 	def send_failure_notification(self):
 		workflow = frappe.get_doc("Press Workflow", self.workflow)
 		failure_summary = self.get_failure_summary(workflow)
@@ -178,6 +186,13 @@ class ReleasePipeline(WorkflowBuilder):
 		# Document native methods would raise a `TimeStampMismatch` error
 		self.db_set("status", status)
 
+		frappe.publish_realtime(
+			"doc_update",
+			{"doctype": "Release Pipeline", "name": self.name},
+			doctype="Release Pipeline",
+			docname=self.name,
+		)
+
 		if status == "Failure":
 			self.send_failure_notification()
 
@@ -203,6 +218,10 @@ class ReleasePipeline(WorkflowBuilder):
 	def _get_task_execution_queue() -> str:
 		"""Determine the appropriate queue for task execution based on the release group."""
 		return "default" if frappe.conf.developer_mode else "build"
+
+	def get_doc(self, doc):
+		doc.steps = self.get_steps()
+		return doc
 
 	@task(queue=_get_task_execution_queue())
 	def validate_app_hashes(self, apps: list[dict[str, str]]):
@@ -697,3 +716,139 @@ class ReleasePipeline(WorkflowBuilder):
 
 	def on_workflow_failure(self, *args, **kwargs):
 		self.update_pipeline_status("Failure")
+
+	def get_steps(self):  # noqa: C901
+		workflow: PressWorkflow = frappe.get_doc("Press Workflow", self.workflow)
+
+		def _find_step_with_method_name(method_name: str) -> PressWorkflowStep:
+			for step in workflow.steps:
+				if step.step_method == method_name:
+					return step
+			return None
+
+		steps_info: dict[str, dict[str, Any]] = {
+			task.name: {
+				**task,
+				"start": task.start.isoformat() if task.start else None,
+				"end": task.end.isoformat() if task.end else None,
+			}
+			for task in frappe.get_all(
+				"Press Workflow Task",
+				# intentionally not filling up `label` field
+				filters={"name": ("in", [step.task for step in workflow.steps if step.task])},
+				fields=["name", "start", "end", "duration"],
+			)
+		}
+
+		def _get_step_info(step: PressWorkflowStep, label: str) -> dict[str, Any]:
+			if step.status in ["Running", "Success", "Failure"]:
+				return {
+					**steps_info.get(step.task, {}),
+					"label": label,
+					"status": step.status,
+				}
+
+			return {
+				"name": step.step_method,
+				"label": label,
+				"status": step.status,
+				"start": None,
+				"end": None,
+				"duration": 0,
+			}
+
+		stages = []
+
+		# Pre-release checks
+		if pre_release_checks_step := _find_step_with_method_name("run_pre_release_checks"):
+			stages.append(_get_step_info(pre_release_checks_step, label="Pre-release checks"))
+
+		# Preparing Builds
+		if prepare_build_step := _find_step_with_method_name("prepare_deployment"):
+			stages.append(_get_step_info(prepare_build_step, label="Preparing deployment"))
+
+		# Actual Build stage
+		if orchestrate_build_monitoring := _find_step_with_method_name("orchestrate_build_monitoring"):
+			building_stage = _get_step_info(orchestrate_build_monitoring, label="Building")
+			build_ids = [build.build for build in self.pipeline_builds]
+			build_data = {
+				b.name: b
+				for b in frappe.get_all(
+					"Deploy Candidate Build",
+					filters={"name": ["in", build_ids]},
+					fields=["name", "status", "platform"],
+				)
+			}
+			building_stage["builds"] = [
+				{
+					"doctype": "Deploy Candidate Build",
+					"name": build.build,
+					"status": build_data[build.build]["status"],
+					"architecture": build_data[build.build]["platform"],
+				}
+				for build in self.pipeline_builds
+			]
+			stages.append(building_stage)
+
+		# Bench Creation stage
+		if monitor_bench_creation := _find_step_with_method_name("monitor_bench_creation"):
+			bench_creation_stage = _get_step_info(monitor_bench_creation, label="Deploying")
+			bench_creation_stage["benches"] = [
+				frappe._dict(
+					{
+						"doctype": "Bench",
+						"name": bench.name,
+						"status": bench.status,
+						"server": bench.server,
+					}
+				)
+				for bench in frappe.get_all(
+					"Bench",
+					filters={
+						"build": ["in", [b.build for b in self.pipeline_builds]],
+						"team": self.team,
+					},
+					fields=["name", "status", "server"],
+				)
+			]
+
+			# Try to attach "New Bench" job references
+			new_bench_jobs = frappe.get_all(
+				"Agent Job",
+				filters={
+					"job_type": "New Bench",
+					"bench": ("in", [bench.name for bench in bench_creation_stage["benches"]]),
+				},
+				fields=["name", "bench", "status", "creation", "job_type"],
+			)
+
+			for bench in bench_creation_stage["benches"]:
+				bench["jobs"] = [
+					{
+						"doctype": "Agent Job",
+						"name": job.name,
+						"job_type": job.job_type,
+						"status": job.status,
+						"creation": int(job.creation.timestamp()) if job.creation else None,
+					}
+					for job in new_bench_jobs
+					if job.bench == bench["name"] and job.job_type == "New Bench"
+				]
+
+			if bench_creation_stage:
+				stages.append(bench_creation_stage)
+
+		return {
+			"doctype": self.doctype,
+			"name": self.name,
+			"status": self.status,
+			"start": workflow.start.isoformat() if workflow.start else None,
+			"end": workflow.end.isoformat() if workflow.end else None,
+			"duration": int((workflow.end - workflow.start).total_seconds())
+			if workflow.start and workflow.end
+			else None,
+			"stages": stages,
+		}
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Release Pipeline")

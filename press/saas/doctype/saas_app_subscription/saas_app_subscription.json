@@ -1,144 +1,124 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "format:saas-app-subscription-{app}-{#####}",
- "creation": "2022-03-21 00:27:40.169388",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "status",
-  "section_break_2",
-  "site",
-  "team",
-  "column_break_8",
-  "app",
-  "app_name",
-  "saas_app_plan",
-  "section_break_14",
-  "start_date",
-  "end_date",
-  "interval",
-  "section_break_5",
-  "secret_key",
-  "initial_plan"
- ],
- "fields": [
-  {
-   "fieldname": "site",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Site",
-   "options": "Site",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "saas_app_plan",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Saas App Plan",
-   "options": "Saas App Plan",
-   "reqd": 1
-  },
-  {
-   "default": "Active",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Status",
-   "options": "Active\nInactive\nDisabled\nSuspended"
-  },
-  {
-   "fieldname": "app",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "App",
-   "options": "Saas App",
-   "reqd": 1
-  },
-  {
-   "default": "Today",
-   "fieldname": "start_date",
-   "fieldtype": "Date",
-   "label": "Start Date"
-  },
-  {
-   "fieldname": "end_date",
-   "fieldtype": "Date",
-   "label": "End Date"
-  },
-  {
-   "fieldname": "interval",
-   "fieldtype": "Select",
-   "label": "Interval",
-   "options": "Daily\nMonthly\nAnnual"
-  },
-  {
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Team",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fetch_from": "app.title",
-   "fieldname": "app_name",
-   "fieldtype": "Data",
-   "label": "App Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "secret_key",
-   "fieldtype": "Data",
-   "label": "Secret Key"
-  },
-  {
-   "fieldname": "section_break_2",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_8",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_5",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "section_break_14",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "initial_plan",
-   "fieldtype": "Data",
-   "label": "Initial Plan"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2022-07-19 11:10:37.694326",
- "modified_by": "Administrator",
- "module": "SaaS",
- "name": "Saas App Subscription",
- "naming_rule": "Expression",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "format:saas-app-subscription-{app}-{#####}",
+	"creation": "2022-03-21 00:27:40.169388",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"status",
+		"section_break_2",
+		"site",
+		"team",
+		"column_break_8",
+		"app",
+		"app_name",
+		"saas_app_plan",
+		"section_break_14",
+		"start_date",
+		"end_date",
+		"interval",
+		"section_break_5",
+		"secret_key",
+		"initial_plan"
+	],
+	"fields": [
+		{
+			"fieldname": "site",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Site",
+			"options": "Site",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "saas_app_plan",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Saas App Plan",
+			"options": "Saas App Plan",
+			"reqd": 1
+		},
+		{
+			"default": "Active",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Status",
+			"options": "Active\nInactive\nDisabled\nSuspended"
+		},
+		{
+			"fieldname": "app",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "App",
+			"options": "Saas App",
+			"reqd": 1
+		},
+		{
+			"default": "Today",
+			"fieldname": "start_date",
+			"fieldtype": "Date",
+			"label": "Start Date"
+		},
+		{ "fieldname": "end_date", "fieldtype": "Date", "label": "End Date" },
+		{
+			"fieldname": "interval",
+			"fieldtype": "Select",
+			"label": "Interval",
+			"options": "Daily\nMonthly\nAnnual"
+		},
+		{
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"label": "Team",
+			"options": "Team",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fetch_from": "app.title",
+			"fieldname": "app_name",
+			"fieldtype": "Data",
+			"label": "App Name",
+			"read_only": 1
+		},
+		{ "fieldname": "secret_key", "fieldtype": "Data", "label": "Secret Key" },
+		{ "fieldname": "section_break_2", "fieldtype": "Section Break" },
+		{ "fieldname": "column_break_8", "fieldtype": "Column Break" },
+		{ "fieldname": "section_break_5", "fieldtype": "Section Break" },
+		{ "fieldname": "section_break_14", "fieldtype": "Section Break" },
+		{
+			"fieldname": "initial_plan",
+			"fieldtype": "Data",
+			"label": "Initial Plan"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2022-07-19 11:10:37.694326",
+	"modified_by": "Administrator",
+	"module": "SaaS",
+	"name": "Saas App Subscription",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
 }

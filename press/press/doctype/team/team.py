@@ -32,6 +32,7 @@ from press.utils.billing import (
 )
 from press.utils.jobs import has_job_timeout_exceeded
 from press.utils.telemetry import capture
+from press.utils.user import is_system_manager
 
 from .team_members import get_invitations, get_members, get_roles, remove_member
 
@@ -54,6 +55,7 @@ class Team(Document):
 		from press.press.doctype.team_member.team_member import TeamMember
 
 		account_request: DF.Link | None
+		apply_limits: DF.Check
 		apply_npo_discount: DF.Check
 		banned: DF.Check
 		benches_enabled: DF.Check
@@ -117,11 +119,13 @@ class Team(Document):
 		servers_enabled: DF.Check
 		skip_backups: DF.Check
 		skip_onboarding: DF.Check
+		spending_limit: DF.Currency
 		ssh_access_enabled: DF.Check
 		start_date: DF.Date | None
 		stripe_customer_id: DF.Data | None
 		team_members: DF.Table[TeamMember]
 		team_title: DF.Data | None
+		tier: DF.Link | None
 		upi_autopay_enabled: DF.Check
 		user: DF.Link | None
 		via_erpnext: DF.Check
@@ -166,6 +170,7 @@ class Team(Document):
 		"relaxed_permissions",
 		"upi_autopay_enabled",
 		"default_razorpay_mandate",
+		"tier",
 	)
 
 	def get_doc(self, doc):
@@ -211,6 +216,9 @@ class Team(Document):
 		doc.communication_infos = self.get_communication_infos()
 		doc.receive_budget_alerts = self.receive_budget_alerts
 		doc.monthly_alert_threshold = self.monthly_alert_threshold
+		doc.apply_limits = self.apply_limits
+		doc.spending_limit = self.spending_limit
+		doc.total_subscribed_amount = self.total_subscribed_amount()
 		doc.is_binlog_indexer_enabled = not frappe.db.get_single_value(
 			"Press Settings", "disable_binlog_indexer_service", cache=True
 		)
@@ -229,27 +237,54 @@ class Team(Document):
 		}
 
 	def before_validate(self):
-		self.auth_relaxed_permissions()
+		self.perm_relaxed_roles()
+		self.perm_team_members()
 
-	def auth_relaxed_permissions(self):
+	def perm_relaxed_roles(self):
 		"""
 		Prevent unauthorized users from changing relaxed permissions. Only team
 		owner or admins can change relaxed permissions as it can lead to
 		security implications.
 		"""
+		if self.flags.ignore_permissions:
+			return
 		if self.is_new():
 			return
 		if not self.has_value_changed("relaxed_permissions"):
 			return
-		if self.is_team_owner() or self.is_admin_user():
+		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
 			return
-		message = _(
-			"Only team owner or admins can make changes to relaxed permissions. Please contact your team admin for the same."
+		frappe.throw(
+			_(
+				"Only team owner or admins can make changes to relaxed permissions. Please contact your team admin for the same."
+			),
+			frappe.PermissionError,
 		)
-		frappe.throw(message, frappe.PermissionError)
+
+	def perm_team_members(self):
+		"""
+		Prevent unauthorized users from changing team members. Only team owner
+		or admins must be able to change team members as it can lead to
+		security implications and unauthorized access to team resources.
+		"""
+		if self.flags.ignore_permissions:
+			return
+		if self.is_new():
+			return
+		if not self.has_value_changed("team_members"):
+			return
+		if is_system_manager() or self.is_team_owner() or self.is_admin_user():
+			return
+		frappe.throw(
+			_(
+				"Only team owner or admins can make changes to team members. Please contact your team admin for the same."
+			),
+			frappe.PermissionError,
+		)
 
 	def validate(self):
 		self.validate_duplicate_members()
+		self.validate_member_role()
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
@@ -258,6 +293,26 @@ class Team(Document):
 		self.validate_disable()
 		self.validate_billing_team()
 		self.reject_reenabling_team_for_banned_team()
+
+	def validate_member_role(self):
+		"""
+		Validate that the role assigned to each team member is a valid role.
+		This is to prevent any issues with role-based access control and ensure
+		that team members have the correct permissions based on their assigned
+		roles.
+		"""
+		# Get a list of valid roles for this team.
+		roles = [role["label"] for role in get_roles(self.name)]
+		# Validate that each team member has a valid role assigned.
+		for member in self.team_members:
+			# If the role is not in the list of valid roles, throw an error.
+			if member.role not in roles:
+				frappe.throw(
+					_("{0} is not a valid role. Please select a valid role for {1}").format(
+						member.role,
+						member.user,
+					)
+				)
 
 	def before_insert(self):
 		self.currency = "INR" if self.country == "India" else "USD"
@@ -380,6 +435,8 @@ class Team(Document):
 			frappe.throw("You have already an account with same email. Please login using the same email.")
 
 		team.team_title = "Parent Team"
+		team.apply_limits = 1
+		team.spending_limit = 100  # default spending limit for new teams, can be updated later by team admin
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
 		if account_request.invited_by_parent_team:
@@ -558,6 +615,7 @@ class Team(Document):
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
 		self.check_budget_alert_threshold()
+		self.update_tier_limit()
 
 		if (
 			not self.is_new()
@@ -587,6 +645,29 @@ class Team(Document):
 				"budget_alert_sent",
 				0,
 			)
+
+	def total_subscribed_amount(self):
+		from frappe.utils import flt
+
+		subscriptions = frappe.get_all(
+			"Subscription",
+			{"team": self.name, "enabled": 1},
+			["name", "plan_type", "plan", "additional_storage"],
+		)
+		total = 0
+		for sub in subscriptions:
+			if sub.plan_type == "Server Storage Plan":
+				total += (frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") or 0) * flt(
+					sub.additional_storage
+				)
+			else:
+				total += frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") or 0
+		return total
+
+	def update_tier_limit(self):
+		if self.apply_limits and self.tier and self.tier != self.get_doc_before_save().tier:
+			new_limit = frappe.db.get_value("Team Tier", self.tier, "amount") or 100
+			frappe.db.set_value("Team", self.name, "spending_limit", new_limit)
 
 	@frappe.whitelist()
 	def impersonate(self, member, reason):
@@ -1003,16 +1084,16 @@ class Team(Document):
 					"request_key": ("is", "set"),
 				},
 			):
-				d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
-				d.send_verification_email()
+				dd: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
+				dd.send_verification_email()
 				continue
 			frappe.utils.validate_email_address(n, throw=True)
-			d: AccountRequest = frappe.new_doc("Account Request")
-			d.team = self.name
-			d.email = n
-			d.invited_by = frappe.session.user
-			d.save()
-			d.send_email = True
+			ar: AccountRequest = frappe.new_doc("Account Request")
+			ar.team = self.name
+			ar.email = n
+			ar.invited_by = frappe.session.user
+			ar.save()
+			ar.send_email = True
 		return self.get_members()
 
 	@dashboard_whitelist()
