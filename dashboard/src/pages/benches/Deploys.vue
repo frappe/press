@@ -11,6 +11,7 @@ import { date, duration } from '@/utils/format'
 import { defineAsyncComponent, h, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { confirmDialog, renderDialog } from '@/utils/components'
+import { useRoute } from 'vue-router'
 import { getToastErrorMessage } from '@/utils/toast'
 import { pollReleasePipelineValidationStatus } from '@/objects/group'
 import Scrollbar from '@/components/common/Scrollbar.vue'
@@ -63,7 +64,10 @@ const statusOptions = [
 	'Failure',
 ]
 
-const mode = ref('newer')
+const route = useRoute()
+const mode = ref(
+  route.query.pipeline === 'false' ? 'older' : 'newer'
+)
 
 watch(
 	mode,

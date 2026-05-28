@@ -366,20 +366,23 @@ const stopBuild = () => {
 
 <template>
 	<main
-		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-6rem)]"
+		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-6rem)] mt-1.5"
 	>
 		<!-- header -->
 		<div class="flex gap-2 items-center">
-			<router-link :to="`/groups/${name}/${deployview? 'deploys':'pipelines'}`">
+      <Button :route="`/groups/${name}/deploys?pipeline=${!deployview}`">
+        <template #icon>
 				<lucide-chevron-left class="size-4" />
-			</router-link>
+        </template>
+			</Button>
 
-			<h2 class="text-ink-gray-9">
+			<h2 class="text-ink-gray-9 text-lg font-medium">
 				{{ deployview ? builds[activeBuildId]?.doc?.deploy_candidate : "Pipeline" }}
 				{{ pipeline?.doc?.name }}
 			</h2>
 
-        <Spinner v-if="pipeline?.loading"/>
+       <Spinner v-if="pipeline?.loading"/>
+
 			<Badge
 				:label="deployview ? builds[activeBuildId]?.doc?.status : pipeline?.doc?.status"
 				:theme="badgeThemes[deployview ? builds[activeBuildId]?.doc?.status : pipeline?.doc?.status] || 'gray'"
@@ -405,7 +408,9 @@ const stopBuild = () => {
 
 			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
 				<Button>
+          <template #icon>
 					<lucide-more-horizontal class="size-4" />
+          </template>
 				</Button>
 			</Dropdown>
 		</div>
