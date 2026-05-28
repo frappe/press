@@ -10,6 +10,7 @@ from frappe.model.document import Document
 
 import press.utils
 from press.api.billing import get_stripe
+from press.utils.telemetry import capture_pulse
 
 
 class InvalidStripeWebhookEvent(Exception):
@@ -71,6 +72,19 @@ class StripeWebhookLog(Document):
 					"name",
 				)
 
+			failure_reason = (
+				payload.get("data", {}).get("object", {}).get("last_payment_error", {}).get("message")
+			)
+			capture_pulse(
+				"stripe_payment_failed",
+				{
+					"team": self.team,
+					"amount": 0,
+					"intent_id": self.stripe_payment_intent_id,
+					"failure_reason": failure_reason,
+				},
+			)
+
 		if (
 			self.event_type == "invoice.payment_failed"
 			and self.invoice
@@ -84,6 +98,13 @@ class StripeWebhookLog(Document):
 				self.invoice,
 				"next_payment_attempt_date",
 				frappe.utils.getdate(next_payment_attempt_date),
+			)
+			capture_pulse(
+				"stripe_invoice_failed",
+				{
+					"team": self.team,
+					"invoice": self.invoice,
+				},
 			)
 
 
