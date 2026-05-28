@@ -183,7 +183,7 @@ def _get_certificate_link_status(team: str) -> dict:
 		.orderby(partner_certificate.creation, order=Order.desc)
 		.run(as_dict=True)
 	)
-	pending_requests = (
+	link_requests = (
 		frappe.qb.from_(certificate_link_request)
 		.select(
 			certificate_link_request.name,
@@ -193,15 +193,18 @@ def _get_certificate_link_status(team: str) -> dict:
 			certificate_link_request.creation,
 		)
 		.where(
-			(certificate_link_request.partner_team == team) & (certificate_link_request.status == "Pending")
+			(certificate_link_request.partner_team == team)
+			& (certificate_link_request.status.isin(["Pending", "Approved"]))
 		)
 		.orderby(certificate_link_request.creation, order=Order.desc)
 		.run(as_dict=True)
 	)
+	pending_requests = [request for request in link_requests if request.status == "Pending"]
 	linked_count = len(linked_certificates)
 
 	return {
 		"linked_certificates": linked_certificates,
+		"link_requests": link_requests,
 		"pending_requests": pending_requests,
 		"linked_count": linked_count,
 		"requirement_complete": linked_count >= 2,
@@ -348,11 +351,8 @@ def unregister() -> None:
 	if doc.docstatus == 1:
 		doc.cancel()
 	elif doc.docstatus == 0:
-		doc.status = "Cancelled"
-		doc.save()
-
-	# keep the partner onboarding request in the database for reference
-	# frappe.delete_doc("Partner Onboarding", doc.name)
+		# delete the partner onboarding request from the database as it was not submitted for approval and in draft state
+		frappe.delete_doc("Partner Onboarding", doc.name)
 
 
 @frappe.whitelist(methods=["POST"])

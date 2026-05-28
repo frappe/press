@@ -74,7 +74,7 @@ class CertificateLinkRequest(Document):
 		frappe.publish_realtime(
 			"partner_onboarding_certificates_updated",
 			message={"team": self.partner_team},
-			user=frappe.session.user,
+			doctype="Team",
 			after_commit=True,
 		)
 

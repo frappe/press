@@ -18,12 +18,13 @@ export type PartnerCertificateLinkRequest = {
 	name: string
 	course: string
 	user_email: string
-	status: 'Pending'
+	status: 'Approved' | 'Cancelled' | 'Pending'
 	creation?: string
 }
 
 export type PartnerCertificateLinkStatus = {
 	linked_certificates: PartnerLinkedCertificate[]
+	link_requests: PartnerCertificateLinkRequest[]
 	pending_requests: PartnerCertificateLinkRequest[]
 	linked_count: number
 	requirement_complete: boolean
@@ -69,6 +70,7 @@ const doc = ref<PartnerOnboardingDoc | null>(null)
 const activeTeam = ref<TeamResource>()
 const certificateStatus = ref<PartnerCertificateLinkStatus>({
 	linked_certificates: [],
+	link_requests: [],
 	pending_requests: [],
 	linked_count: 0,
 	requirement_complete: false,
@@ -237,6 +239,7 @@ const unregisterPartnerOnboarding = createResource({
 		applyDoc(null, activeTeam.value)
 		certificateStatus.value = {
 			linked_certificates: [],
+			link_requests: [],
 			pending_requests: [],
 			linked_count: 0,
 			requirement_complete: false,
@@ -280,7 +283,7 @@ export function usePartnerOnboarding(team?: TeamResource) {
 	const hasCertificateActivity = computed(
 		() =>
 			linkedCertificateCount.value > 0 ||
-			(certificateStatus.value.pending_requests?.length || 0) > 0,
+			(certificateStatus.value.link_requests?.length || 0) > 0,
 	)
 	const isCertificateRequirementComplete = computed(
 		() => certificateStatus.value.requirement_complete,
@@ -340,7 +343,9 @@ export function usePartnerOnboarding(team?: TeamResource) {
 			url: `${baseUrl}.send_certificate_link_request`,
 			auto: false,
 		})
-		return resource.submit(params)
+		const result = await resource.submit(params)
+		await loadCertificateStatus()
+		return result
 	}
 
 	async function resendCertificateLinkRequest(requestName: string) {
@@ -348,7 +353,9 @@ export function usePartnerOnboarding(team?: TeamResource) {
 			url: `${baseUrl}.resend_certificate_link_request`,
 			auto: false,
 		})
-		return resource.submit({ request_name: requestName })
+		const result = await resource.submit({ request_name: requestName })
+		await loadCertificateStatus()
+		return result
 	}
 
 	function hasPendingCertificateRequest(

@@ -129,9 +129,11 @@ const steps = computed(() => [
 			? 'Check link status'
 			: null,
 		onClick: () => {
+			onboarding.loadCertificateStatus()
 			linkCertificateModalOpen.value = true
 		},
 		onSecondaryClick: () => {
+			onboarding.loadCertificateStatus()
 			certificateStatusModalOpen.value = true
 		},
 	},
@@ -236,8 +238,14 @@ async function submitForApproval() {
 	<div class="flex w-full flex-col gap-6">
 		<CompanyInformationModal v-model="companyInfoModalOpen" />
 		<PartnerOnboardingModal v-model="registrationModalOpen" />
-		<LinkCertificateDialog v-model="linkCertificateModalOpen" />
-		<CertificateLinkStatusDialog v-model="certificateStatusModalOpen" />
+		<LinkCertificateDialog
+			v-if="linkCertificateModalOpen"
+			v-model="linkCertificateModalOpen"
+		/>
+		<CertificateLinkStatusDialog
+			v-if="certificateStatusModalOpen"
+			v-model="certificateStatusModalOpen"
+		/>
 		<FAccordionRoot v-model="openStep">
 			<FAccordionItem
 				v-for="step in steps"

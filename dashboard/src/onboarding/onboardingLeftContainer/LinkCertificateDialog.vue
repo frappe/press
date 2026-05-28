@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button, Dialog, ErrorMessage } from 'frappe-ui'
-import { inject, ref, useTemplateRef, watch } from 'vue'
+import { inject, ref, useTemplateRef } from 'vue'
 import EmailInput from '@/components/EmailInput.vue'
 import { showOnboardingToast } from '@/onboarding/toast'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
@@ -40,19 +40,30 @@ const certificateTypes = [
 	},
 ]
 
-watch(open, (isOpen) => {
+function resetForm() {
+	certificateType.value = 'frappe'
+	userEmail.value = ''
+	submitted.value = false
+	submitError.value = ''
+}
+
+function setOpen(isOpen: boolean) {
+	open.value = isOpen
 	if (isOpen) {
-		certificateType.value = 'frappe'
-		userEmail.value = ''
-		submitted.value = false
-		submitError.value = ''
+		resetForm()
 		onboarding.loadCertificateStatus()
 	}
-})
+}
 
-watch([certificateType, userEmail], () => {
+function selectCertificateType(type: string) {
+	certificateType.value = type
 	submitError.value = ''
-})
+}
+
+function setUserEmail(email: string) {
+	userEmail.value = email
+	submitError.value = ''
+}
 
 function getErrorMessage(error: any) {
 	return (
@@ -90,7 +101,7 @@ async function handleSubmit() {
 				? 'Certificate already linked'
 				: 'Validation email sent',
 		)
-		open.value = false
+		setOpen(false)
 	} catch (error: any) {
 		submitError.value = getErrorMessage(error)
 	} finally {
@@ -101,7 +112,8 @@ async function handleSubmit() {
 
 <template>
 	<Dialog
-		v-model="open"
+		:model-value="open"
+		@update:model-value="setOpen"
 		:disable-outside-click-to-close="true"
 		:options="{ size: 'md' }"
 	>
@@ -120,7 +132,7 @@ async function handleSubmit() {
 						type="button"
 						class="-mr-1 rounded-md p-1 text-ink-gray-6 hover:bg-surface-gray-2 hover:text-ink-gray-9"
 						aria-label="Close"
-						@click="open = false"
+						@click="setOpen(false)"
 					>
 						<LucideX class="size-4" />
 					</button>
@@ -139,7 +151,7 @@ async function handleSubmit() {
 								: 'border-outline-gray-2 bg-surface-white hover:border-outline-gray-3 hover:bg-surface-gray-1'
 								"
 							:aria-pressed="certificateType === type.value"
-							@click="certificateType = type.value"
+							@click="selectCertificateType(type.value)"
 						>
 							<span
 								class="grid size-8 shrink-0 place-items-center overflow-hidden rounded-md bg-surface-white"
@@ -154,7 +166,8 @@ async function handleSubmit() {
 				</div>
 
 				<EmailInput
-					v-model="userEmail"
+					:model-value="userEmail"
+					@update:model-value="setUserEmail"
 					ref="emailInputRef"
 					class="mt-4"
 					label="User Email"

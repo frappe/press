@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button, Dialog } from 'frappe-ui'
-import { computed, inject, ref, watch } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { showOnboardingToast } from '@/onboarding/toast'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
 import LucideMail from '~icons/lucide/mail'
@@ -12,14 +12,25 @@ const team = inject('team')
 const onboarding = usePartnerOnboarding(team as any)
 const resendingRequest = ref('')
 
-const linkedCertificates = computed(
-	() => onboarding.certificateStatus.value.linked_certificates || [],
+const linkRequests = computed(
+	() => onboarding.certificateStatus.value.link_requests || [],
 )
-const pendingRequests = computed(
-	() => onboarding.certificateStatus.value.pending_requests || [],
-)
+const linkedCertificates = computed(() => {
+	const requestKeys = new Set(
+		linkRequests.value.map(
+			(request) => `${request.user_email.toLowerCase()}:${request.course}`,
+		),
+	)
+
+	return (onboarding.certificateStatus.value.linked_certificates || []).filter(
+		(certificate) =>
+			!requestKeys.has(
+				`${certificate.user_email.toLowerCase()}:${certificate.course}`,
+			),
+	)
+})
 const hasRows = computed(
-	() => linkedCertificates.value.length > 0 || pendingRequests.value.length > 0,
+	() => linkedCertificates.value.length > 0 || linkRequests.value.length > 0,
 )
 
 const courseLabels: Record<string, string> = {
@@ -29,18 +40,30 @@ const courseLabels: Record<string, string> = {
 	'erpnext-training': 'ERPNext certification',
 }
 
-watch(open, (isOpen) => {
+function setOpen(isOpen: boolean) {
+	open.value = isOpen
 	if (isOpen) {
 		onboarding.loadCertificateStatus()
 	}
-})
+}
 
 function closeModal() {
-	open.value = false
+	setOpen(false)
 }
 
 function courseLabel(course: string) {
 	return courseLabels[course] || course
+}
+
+function statusClass(status: string) {
+	if (status === 'Approved') {
+		return 'bg-surface-green-2 text-ink-green-3'
+	}
+	return 'bg-surface-amber-2 text-ink-amber-3'
+}
+
+function statusLabel(status: string) {
+	return status === 'Approved' ? 'Approved' : 'Approval pending'
 }
 
 async function resend(requestName: string) {
@@ -58,7 +81,8 @@ async function resend(requestName: string) {
 
 <template>
 	<Dialog
-		v-model="open"
+		:model-value="open"
+		@update:model-value="setOpen"
 		:disable-outside-click-to-close="true"
 		:options="{ size: '2xl', title: 'Certification link status' }"
 	>
@@ -102,7 +126,7 @@ async function resend(requestName: string) {
 					</div>
 
 					<div
-						v-for="request in pendingRequests"
+						v-for="request in linkRequests"
 						:key="request.name"
 						class="flex items-center justify-between gap-4 py-4"
 					>
@@ -116,11 +140,13 @@ async function resend(requestName: string) {
 						</div>
 						<div class="flex shrink-0 items-center gap-2">
 							<span
-								class="inline-flex items-center rounded bg-surface-amber-2 px-2 py-0.5 text-p-sm font-medium text-ink-amber-3"
+								class="inline-flex items-center rounded px-2 py-0.5 text-p-sm font-medium"
+								:class="statusClass(request.status)"
 							>
-								Approval pending
+								{{ statusLabel(request.status) }}
 							</span>
 							<Button
+								v-if="request.status === 'Pending'"
 								variant="subtle"
 								size="sm"
 								label="Resend email"
