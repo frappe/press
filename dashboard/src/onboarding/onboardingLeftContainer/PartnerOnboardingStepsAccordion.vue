@@ -9,6 +9,8 @@ import {
 	FAccordionTrigger,
 } from '@/onboarding/accordion'
 import PartnerOnboardingModal from '@/onboarding/modal/PartnerOnboardingModal.vue'
+import CertificateLinkStatusDialog from '@/onboarding/onboardingLeftContainer/CertificateLinkStatusDialog.vue'
+import LinkCertificateDialog from '@/onboarding/onboardingLeftContainer/LinkCertificateDialog.vue'
 import CompanyInformationModal from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationModal.vue'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
 import LucideChevronDown from '~icons/lucide/chevron-down'
@@ -21,6 +23,8 @@ const team = inject('team')
 const onboarding = usePartnerOnboarding(team as any)
 const registrationModalOpen = ref(false)
 const companyInfoModalOpen = ref(false)
+const linkCertificateModalOpen = ref(false)
+const certificateStatusModalOpen = ref(false)
 
 const steps = computed(() => [
 	{
@@ -54,11 +58,24 @@ const steps = computed(() => [
 		value: 'step-certificates',
 		title: 'Link at least two Frappe School certificates',
 		required: true,
-		status: 'pending',
+		status: onboarding.isCertificateRequirementComplete.value
+			? 'completed'
+			: 'pending',
 		description:
-			'Partners must have at least two full-time team members who are certified in ERPNext or the Frappe Framework. Certifications can be earned through Frappe School. Once a certification has been issued, link the certificate to your company. We will send a validation email to the email address attached to the certificate. Once approved, you will see changes reflected here.',
-		summaryRight: null,
-		actionLabel: null,
+			'Link two Framework or ERPNext certificates from Frappe School. We will send approval email to each certificate holder to link the certificate.',
+		summaryRight: onboarding.isCertificateRequirementComplete.value
+			? null
+			: `${onboarding.linkedCertificateCount.value} / 2 linked`,
+		actionLabel: onboarding.isRegistered.value ? 'Link certificate' : null,
+		secondaryActionLabel: onboarding.hasCertificateActivity.value
+			? 'Check link status'
+			: null,
+		onClick: () => {
+			linkCertificateModalOpen.value = true
+		},
+		onSecondaryClick: () => {
+			certificateStatusModalOpen.value = true
+		},
 	},
 	{
 		value: 'step-mrr',
@@ -79,6 +96,8 @@ const canSubmit = computed(() => false)
 	<div class="flex w-full flex-col gap-6">
 		<CompanyInformationModal v-model="companyInfoModalOpen" />
 		<PartnerOnboardingModal v-model="registrationModalOpen" />
+		<LinkCertificateDialog v-model="linkCertificateModalOpen" />
+		<CertificateLinkStatusDialog v-model="certificateStatusModalOpen" />
 		<FAccordionRoot v-model="openStep">
 			<FAccordionItem
 				v-for="step in steps"
@@ -134,8 +153,11 @@ const canSubmit = computed(() => false)
 					</FAccordionTrigger>
 				</FAccordionHeader>
 
-				<FAccordionContent v-if="step.description || step.actionLabel">
-					<!-- TODO:step description if contains multiple lines needs to displayed in a list format -->
+				<FAccordionContent
+					v-if="
+					step.description || step.actionLabel || step.secondaryActionLabel
+				"
+				>
 					<p
 						v-if="step.description"
 						class="mb-4 max-w-prose self-stretch text-ink-gray-6 text-p-base font-normal leading-normal tracking-wide"
@@ -147,6 +169,13 @@ const canSubmit = computed(() => false)
 						variant="solid"
 						:label="step.actionLabel"
 						@click="step.onClick"
+					/>
+					<Button
+						v-if="step.secondaryActionLabel"
+						variant="subtle"
+						class="ml-2"
+						:label="step.secondaryActionLabel"
+						@click="step.onSecondaryClick"
 					/>
 				</FAccordionContent>
 			</FAccordionItem>

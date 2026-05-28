@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { createResource, FormControl } from 'frappe-ui'
 import { computed, inject, onMounted, ref, useTemplateRef } from 'vue'
+import EmailInput from '@/components/EmailInput.vue'
 import PhoneInput from '@/components/PhoneInput.vue'
 import PostRegistrationMessage from '@/onboarding/modal/PostRegistrationMessage.vue'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
@@ -28,16 +29,15 @@ const countryOptions = computed(() => {
 
 const errors = computed(() => {
 	if (!submitted.value) return {}
-	const email = String(onboarding.form.company_email || '')
 	return {
 		company_name: !onboarding.form.company_name,
 		country: !onboarding.form.registered_country,
-		email: !email || !/^\S+@\S+\.\S+$/.test(email),
 		contact: !onboarding.form.contact,
 	}
 })
 
 const companyNameRef = useTemplateRef('companyNameRef')
+const emailInputRef = useTemplateRef('emailInputRef')
 
 onMounted(() => {
 	companyNameRef.value?.$el?.querySelector('input')?.focus()
@@ -48,7 +48,7 @@ const handleSubmit = async () => {
 	submitError.value = ''
 
 	const hasErrors = Object.values(errors.value).some(Boolean)
-	if (hasErrors) return
+	if (hasErrors || !emailInputRef.value?.validate()) return
 
 	try {
 		await onboarding.save()
@@ -102,22 +102,16 @@ const handleSubmit = async () => {
 			Registered country is required.
 		</p>
 
-		<FormControl
+		<EmailInput
 			v-model="onboarding.form.company_email"
+			ref="emailInputRef"
 			label="Company email"
-			type="email"
-			size="sm"
-			variant="outline"
 			placeholder="Email"
-			:class="{ 'has-error': errors.email }"
-		>
-			<template #prefix>
-				<lucide-mail class="h-4 w-4 text-ink-gray-4" />
-			</template>
-		</FormControl>
-		<p v-if="errors.email" class="-mt-2 text-sm text-ink-red-4">
-			Enter a valid company email.
-		</p>
+			:show-error="submitted"
+			show-icon
+			required-message="Company email is required."
+			invalid-message="Enter a valid company email."
+		/>
 
 		<PhoneInput
 			v-model="onboarding.form.contact"

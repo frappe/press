@@ -6,6 +6,28 @@ type TeamResource = {
 	reload?: () => Promise<void>
 }
 
+export type PartnerLinkedCertificate = {
+	name: string
+	course: string
+	user_email: string
+	member_name?: string
+}
+
+export type PartnerCertificateLinkRequest = {
+	name: string
+	course: string
+	user_email: string
+	status: 'Pending'
+	creation?: string
+}
+
+export type PartnerCertificateLinkStatus = {
+	linked_certificates: PartnerLinkedCertificate[]
+	pending_requests: PartnerCertificateLinkRequest[]
+	linked_count: number
+	requirement_complete: boolean
+}
+
 export type PartnerOnboardingDoc = {
 	name?: string
 	team?: string
@@ -32,6 +54,13 @@ export type PartnerOnboardingDoc = {
 
 const doc = ref<PartnerOnboardingDoc | null>(null)
 const activeTeam = ref<TeamResource>()
+const certificateStatus = ref<PartnerCertificateLinkStatus>({
+	linked_certificates: [],
+	pending_requests: [],
+	linked_count: 0,
+	requirement_complete: false,
+})
+const certificateStatusResources = new Map<string, any>()
 
 const baseUrl = 'press.partner.doctype.partner_onboarding.partner_onboarding'
 
@@ -98,6 +127,36 @@ function detailsFromForm() {
 	}
 }
 
+function getTeamName(team?: TeamResource) {
+	return (
+		team?.doc?.name ||
+		localStorage.getItem('current_team') ||
+		(window as any).default_team ||
+		''
+	)
+}
+
+function getCertificateStatusResource(team?: TeamResource) {
+	const teamName = getTeamName(team)
+	const cacheKey = `partner_onboarding_certificates:${teamName}`
+
+	if (!certificateStatusResources.has(cacheKey)) {
+		certificateStatusResources.set(
+			cacheKey,
+			createResource({
+				url: `${baseUrl}.get_certificate_link_status`,
+				cache: cacheKey,
+				auto: false,
+				onSuccess: (status: PartnerCertificateLinkStatus) => {
+					certificateStatus.value = status
+				},
+			}),
+		)
+	}
+
+	return certificateStatusResources.get(cacheKey)
+}
+
 const getPartnerOnboarding = createResource({
 	url: `${baseUrl}.get_partner_onboarding`,
 	auto: false,
@@ -116,6 +175,7 @@ const savePartnerOnboarding = createResource({
 
 export function usePartnerOnboarding(team?: TeamResource) {
 	activeTeam.value = team
+	const certificateStatusResource = getCertificateStatusResource(team)
 
 	const isRegistered = computed(() => Boolean(doc.value?.name))
 	const isProfileComplete = computed(() =>
@@ -132,9 +192,23 @@ export function usePartnerOnboarding(team?: TeamResource) {
 	)
 	const loading = computed(() => getPartnerOnboarding.loading)
 	const saving = computed(() => savePartnerOnboarding.loading)
+	const certificateLoading = computed(() => certificateStatusResource.loading)
+	const linkedCertificateCount = computed(
+		() => certificateStatus.value.linked_count || 0,
+	)
+	const hasCertificateActivity = computed(
+		() =>
+			linkedCertificateCount.value > 0 ||
+			(certificateStatus.value.pending_requests?.length || 0) > 0,
+	)
+	const isCertificateRequirementComplete = computed(
+		() => certificateStatus.value.requirement_complete,
+	)
 
 	async function load() {
-		return getPartnerOnboarding.fetch()
+		const nextDoc = await getPartnerOnboarding.fetch()
+		await loadCertificateStatus()
+		return nextDoc
 	}
 
 	async function save() {
@@ -143,14 +217,49 @@ export function usePartnerOnboarding(team?: TeamResource) {
 		})
 	}
 
+	async function loadCertificateStatus() {
+		return certificateStatusResource.fetch()
+	}
+
+	async function sendCertificateLinkRequest(params: {
+		user_email: string
+		certificate_type: string
+	}) {
+		const resource = createResource({
+			url: `${baseUrl}.send_certificate_link_request`,
+			auto: false,
+		})
+		const result = await resource.submit(params)
+		await loadCertificateStatus()
+		return result
+	}
+
+	async function resendCertificateLinkRequest(requestName: string) {
+		const resource = createResource({
+			url: `${baseUrl}.resend_certificate_link_request`,
+			auto: false,
+		})
+		const result = await resource.submit({ request_name: requestName })
+		await loadCertificateStatus()
+		return result
+	}
+
 	return {
 		doc,
 		form,
+		certificateStatus,
 		loading,
 		saving,
+		certificateLoading,
 		isRegistered,
 		isProfileComplete,
+		linkedCertificateCount,
+		hasCertificateActivity,
+		isCertificateRequirementComplete,
 		load,
 		save,
+		loadCertificateStatus,
+		sendCertificateLinkRequest,
+		resendCertificateLinkRequest,
 	}
 }

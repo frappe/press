@@ -6,8 +6,10 @@ from typing import Any
 
 import frappe
 from frappe.model.document import Document
+from pypika.enums import Order
 
 from press.guards import role_guard
+from press.partner.doctype.certificate_link_request.certificate_link_request import CertificateLinkRequest
 from press.utils import get_current_team
 
 
@@ -110,4 +112,72 @@ def save_partner_onboarding(details: dict[str, Any]) -> dict:
 	else:
 		doc.save()
 
+	return doc.as_dict()
+
+
+@frappe.whitelist()
+@role_guard.api("partner")
+def get_certificate_link_status() -> dict:
+	team = get_current_team(get_doc=True)
+	partner_certificate = frappe.qb.DocType("Partner Certificate")
+	certificate_link_request = frappe.qb.DocType("Certificate Link Request")
+
+	linked_certificates = (
+		frappe.qb.from_(partner_certificate)
+		.select(
+			partner_certificate.name,
+			partner_certificate.course,
+			partner_certificate.partner_member_email.as_("user_email"),
+			partner_certificate.partner_member_name.as_("member_name"),
+		)
+		.where(partner_certificate.team == team.name)
+		.orderby(partner_certificate.creation, order=Order.desc)
+		.run(as_dict=True)
+	)
+	pending_requests = (
+		frappe.qb.from_(certificate_link_request)
+		.select(
+			certificate_link_request.name,
+			certificate_link_request.course,
+			certificate_link_request.user_email,
+			certificate_link_request.status,
+			certificate_link_request.creation,
+		)
+		.where(
+			(certificate_link_request.partner_team == team.name)
+			& (certificate_link_request.status == "Pending")
+		)
+		.orderby(certificate_link_request.creation, order=Order.desc)
+		.run(as_dict=True)
+	)
+	linked_count = len(linked_certificates)
+
+	return {
+		"linked_certificates": linked_certificates,
+		"pending_requests": pending_requests,
+		"linked_count": linked_count,
+		"requirement_complete": linked_count >= 2,
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+@role_guard.api("partner")
+def send_certificate_link_request(user_email: str, certificate_type: str) -> dict:
+	team = get_current_team(get_doc=True)
+	return CertificateLinkRequest.create_or_resend(team.name, user_email, certificate_type)
+
+
+@frappe.whitelist(methods=["POST"])
+@role_guard.api("partner")
+def resend_certificate_link_request(request_name: str) -> dict:
+	team = get_current_team(get_doc=True)
+	doc = frappe.get_doc("Certificate Link Request", request_name)
+
+	if doc.partner_team != team.name:
+		frappe.throw("This certificate link request does not belong to your team.")
+
+	if doc.status != "Pending":
+		frappe.throw("Only pending certificate link requests can be resent.")
+
+	doc.resend()
 	return doc.as_dict()
