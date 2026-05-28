@@ -8,15 +8,7 @@ import {
   Tooltip,
 } from "frappe-ui";
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 import { h, nextTick, ref, watch, onMounted, onUnmounted } from "vue";
-=======
-import { h, nextTick, ref, watch, inject } from "vue";
->>>>>>> 435290b32 (feat(sidebar): collapse animation)
-=======
-import { h, nextTick, ref, watch, onMounted, onUnmounted } from "vue";
->>>>>>> d3db1f375 (refactor(sidebar): ditch popover for notif panel)
 import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 
@@ -33,15 +25,8 @@ import { useRealtimeNotifs } from './useRealtimeNotifs'
 import { dayjsLocal } from "@/utils/dayjs";
 import { getDocResource } from "@/utils/resource";
 import { renderDialog } from "@/utils/components";
-<<<<<<< HEAD
-import { isMobile } from "@/utils/device";
-import { getTeam } from "@/data/team";
-
-const collapsedCss = inject("collapsedCss");
-import Item from "./Item.vue";
-=======
 import { notifPanel } from "@/data/ui";
->>>>>>> d3db1f375 (refactor(sidebar): ditch popover for notif panel)
+import { getTeam } from "@/data/team";
 
 const formatHtml = (str: string) => {
   return str.replace(/<(?!\/?b\b)[^>]*>/g, "").split("\n")[0];
@@ -210,11 +195,6 @@ const tabs = [
   { label: "Unread", icon: LucideMessageSquareDot },
 ];
 
-<<<<<<< HEAD
-useRealtimeNotifs((data) => {
-	if (data.team === team.doc.name) resource.reload()
-})
-=======
 const panelRef = ref();
 
 const handleOutsideClick = (e) => {
@@ -232,7 +212,10 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener("click", handleOutsideClick);
 });
->>>>>>> d3db1f375 (refactor(sidebar): ditch popover for notif panel)
+  
+useRealtimeNotifs((data) => {
+	if (data.team === team.doc.name) resource.reload()
+})
 </script>
 
 <template>
