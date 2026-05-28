@@ -30,7 +30,10 @@
 			"label": "Title",
 			"unique": 1
 		},
-		{ "fieldname": "column_break_fnzp", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_fnzp",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "target_in_inr",
 			"fieldtype": "Float",
@@ -41,19 +44,29 @@
 			"fieldtype": "Float",
 			"label": "Target in USD"
 		},
-		{ "fieldname": "section_break_ktip", "fieldtype": "Section Break" },
+		{
+			"fieldname": "section_break_ktip",
+			"fieldtype": "Section Break"
+		},
 		{
 			"fieldname": "certificates_required",
 			"fieldtype": "Int",
 			"label": "Certificates required"
 		},
-		{ "fieldname": "column_break_udmp", "fieldtype": "Column Break" },
-		{ "fieldname": "pmm_required", "fieldtype": "Int", "label": "PMM required" }
+		{
+			"fieldname": "column_break_udmp",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "pmm_required",
+			"fieldtype": "Int",
+			"label": "PMM required"
+		}
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2025-11-06 11:10:45.077204",
+	"modified": "2026-05-29 00:08:18.637341",
 	"modified_by": "Administrator",
 	"module": "Partner",
 	"name": "Partner Tier",
@@ -71,6 +84,10 @@
 			"role": "System Manager",
 			"share": 1,
 			"write": 1
+		},
+		{
+			"read": 1,
+			"role": "Guest"
 		}
 	],
 	"row_format": "Dynamic",
