@@ -695,6 +695,26 @@ class BaseServer(Document, TagHelpers):
 		if not self.cluster:
 			frappe.throw("Default Cluster not found", frappe.ValidationError)
 
+		# Prevent adding servers to a cluster that has already reached its
+		# auto-cluster threshold.  Once ``auto_cluster_triggered`` is set the
+		# cluster is considered full; new servers must go on the successor
+		# cluster that was (or is being) auto-provisioned.
+		# An administrator can clear ``auto_cluster_triggered`` on the Cluster
+		# doc to re-enable server creation (e.g. after archiving old servers).
+		if self.is_new():
+			cluster_vals = frappe.db.get_value(
+				"Cluster",
+				self.cluster,
+				["enable_auto_cluster", "auto_cluster_triggered"],
+				as_dict=True,
+			)
+			if cluster_vals and cluster_vals.enable_auto_cluster and cluster_vals.auto_cluster_triggered:
+				frappe.throw(
+					"Cluster has reached its server threshold and a new "
+					"cluster is being provisioned. Please select a different cluster or wait for sometime and try again.",
+					frappe.ValidationError,
+				)
+
 	def validate_agent_password(self):
 		# In case of unified servers the agent password is set during creation of the virtual machine
 		if not self.agent_password:
