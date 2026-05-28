@@ -1,5 +1,6 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
+from typing import Any
 from urllib.parse import unquote, urlparse
 
 from press.mcp import mcp as press_mcp
@@ -9,7 +10,7 @@ from press.mcp.utils import system_manager_only
 DASHBOARD_PREFIX = "/dashboard"
 DESK_PREFIXES = {"app", "desk"}
 
-ROUTES = {
+ROUTES: dict[tuple[str, ...], dict[str, Any]] = {
 	("/sites", ":name", "/insights", "/jobs", ":id"): {
 		"route": "/sites/:name/insights/jobs/:id",
 		"page": "Agent Job detail inside a Site",

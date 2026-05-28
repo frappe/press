@@ -793,6 +793,7 @@
 		"decommitted",
 		"libgnutls",
 		"UDF",
-		"mcp"
+		"mcp",
+		"hicm"
 	]
 }
