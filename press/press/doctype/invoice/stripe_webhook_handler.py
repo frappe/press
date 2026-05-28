@@ -85,7 +85,7 @@ class StripeWebhookHandler:
 			log_error("Stripe Payment Event Error", event=event)
 			raise
 
-		if event_type in ("invoice.payment_succeeded", "invoice.paid"):
+		if event_type == "invoice.paid":
 			capture_pulse(
 				"stripe_invoice_succeeded",
 				{
@@ -93,7 +93,7 @@ class StripeWebhookHandler:
 					"team": self.invoice.team,
 					"amount": stripe_invoice.get("amount_paid"),
 					"currency": stripe_invoice.get("currency"),
-					"intent_id": payment_intent,
+					"intent_id": stripe_invoice.get("payment_intent"),
 				},
 			)
 

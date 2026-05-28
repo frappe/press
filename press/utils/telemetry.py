@@ -82,6 +82,7 @@ def capture_pulse(event, data):
 					]
 				}
 			),
+			timeout=10,
 		)
 	except Exception as e:
 		log_error("Failed to capture event to pulse", e)

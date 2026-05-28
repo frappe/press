@@ -79,7 +79,6 @@ class StripeWebhookLog(Document):
 				"stripe_payment_failed",
 				{
 					"team": self.team,
-					"amount": 0,
 					"intent_id": self.stripe_payment_intent_id,
 					"failure_reason": failure_reason,
 				},
