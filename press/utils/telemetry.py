@@ -53,11 +53,10 @@ def capture_read_event(email: str | None = None):
 		frappe.response.update(frappe.utils.get_imaginary_pixel_response())
 
 
-pulse_site = frappe.db.get_single_value("Press Settings", "pulse_site")
-pulse_api_key = frappe.db.get_single_value("Press Settings", "pulse_api_key")
-
-
 def capture_pulse(event, data):
+	pulse_site = frappe.db.get_single_value("Press Settings", "pulse_site")
+	pulse_api_key = frappe.db.get_single_value("Press Settings", "pulse_api_key")
+
 	if not pulse_site or not pulse_api_key:
 		return
 
