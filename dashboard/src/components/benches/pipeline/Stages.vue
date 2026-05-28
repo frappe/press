@@ -26,23 +26,22 @@ const formatCmd = (cmd: string) => {
 </script>
 
 <template>
-	<template v-for='x in stages' :key="x.name">
+	<template v-for='(x, i) in stages' :key="x.name">
 		<Collapsable
 			v-if="deployview ? x.label == 'Building' : ['Building', 'Deploying'].includes(x.label)"
-			headerCss="py-3 border-b"
+			:headerCss="`py-3 pr-2  ${i != stages?.length-1?'aria-[expanded=false]:border-b': '' }`"
 			:disabled='["Pending", "Queued"].includes(x.status)'
 		>
-			<template #header>
+			<template #prefix>
 				<StatusIcon :status="x.status" />
 				<span class="whitespace-nowrap"> {{ x.label }}</span>
 			</template>
 
-			<hr class="invisible mt-1" />
 			<!-- build steps -->
 			<template v-if='x.label == "Building"'>
 				<button
 					v-for="(build_step) in buildSteps"
-					class="btn !pl-6"
+					class="btn !pl-6 !pr-2"
 					:aria-selected="output?.val && output?.id == build_step.name"
 					@click="setOutput({ val: build_step.output || formatCmd(build_step.command),
                   status: build_step.status, id: build_step.name })"
@@ -57,30 +56,33 @@ const formatCmd = (cmd: string) => {
 						>{{ build_step.cached ? 'Cached': secsToDuration(build_step.duration) }}</span
 					>
 				</button>
+				<hr class="mt-1" />
 			</template>
 
 			<template v-else-if='!deployview && x.label == "Deploying"'>
 				<Collapsable
 					v-for='bench in x.benches'
-					headerCss="ml-6 py-3"
+					headerCss="ml-6 py-2 pr-2 -mt-1"
 					:key="bench.name"
 					:opened="true"
 				>
-					<template #header>
+					<template #prefix>
 						<LucideBoxes class="size-4 shrink-0" />
 						{{ bench.name }}
 						<span class="text-ink-gray-5 mx-1">|</span>
 						<LucideServer class="size-4 text-ink-gray-5 shrink-0" />
-						<span class="text-ink-gray-5"> {{ bench.server?.split('.')?.[0] }} </span>
+						<span class="text-ink-gray-5">
+							{{ bench.server?.split('.')?.[0] }}
+						</span>
 					</template>
 
 					<Collapsable
 						:opened="true"
 						v-for='job in bench.jobs'
-						headerCss="ml-12 py-2"
+						headerCss="ml-12 py-2 pr-2"
 						:key="job.name"
 					>
-						<template #header>
+						<template #prefix>
 							<LucideBox class="size-4" />
 							{{ job.job_type }}
 						</template>
@@ -95,7 +97,7 @@ const formatCmd = (cmd: string) => {
 							<StatusIcon :status="jobstep.status" class="ml-2" />
 							{{ jobstep.step_name }}
 
-							<span class="text-ink-gray-5 ml-auto">
+							<span class="text-ink-gray-5 ml-auto pr-1">
 								{{ duration(jobstep.duration) }}</span
 							>
 						</button>
@@ -109,7 +111,7 @@ const formatCmd = (cmd: string) => {
 			<span class="whitespace-nowrap"> {{ x.label }}</span>
 			<span
 				v-if='x.status != "Failure"'
-				class="ml-auto text-sm text-ink-gray-5"
+				class="ml-auto text-sm text-ink-gray-5 pr-2"
 			>
 				{{ secsToDuration(x.duration) }}
 			</span>

@@ -900,7 +900,7 @@ export default {
 		},
    	{
 			name: 'Release Pipeline',
-			path: 'pipelines/:id',
+			path: 'pipeline/:id',
 			component: () => import('../components/benches/pipeline/Details.vue'),
 		},
 		{
