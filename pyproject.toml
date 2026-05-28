@@ -56,7 +56,7 @@ dependencies = [
     "prometheus-api-client==0.6.0",
     "pydo==0.24.0",
     "semgrep==1.159.0",
-	"frappe-mcp==0.0.1",
+	"frappe-mcp==0.1.0",
 ]
 
 [project.scripts]
