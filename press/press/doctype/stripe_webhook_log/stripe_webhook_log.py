@@ -98,6 +98,8 @@ class StripeWebhookLog(Document):
 				"next_payment_attempt_date",
 				frappe.utils.getdate(next_payment_attempt_date),
 			)
+
+		if self.event_type == "invoice.payment_failed":
 			capture_pulse(
 				"stripe_invoice_failed",
 				{
