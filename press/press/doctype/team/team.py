@@ -666,12 +666,11 @@ class Team(Document):
 		return total
 
 	def update_tier_limit(self):
-		if (
-			not self.is_new()
-			and self.apply_limits
-			and self.tier
-			and self.tier != self.get_doc_before_save().tier
-		):
+		if self.is_new() or not self.apply_limits:
+			return
+
+		doc_before_save = self.get_doc_before_save()
+		if self.tier and doc_before_save and self.tier != doc_before_save.tier:
 			new_limit = frappe.db.get_value("Team Tier", self.tier, "amount") or 100
 			frappe.db.set_value("Team", self.name, "spending_limit", new_limit)
 
