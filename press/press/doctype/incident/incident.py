@@ -517,6 +517,7 @@ class Incident(WebsiteGenerator):
 		if not today_users:
 			return None
 
+		# self_hosted_users entries overwrite users entries when the same person appears in both tables
 		phone_by_user: dict[str, "IncidentSettingsUser | IncidentSettingsSelfHostedUser"] = {
 			row.user: row for row in incident_settings.users
 		}
@@ -616,8 +617,7 @@ Likely due to insufficient balance or incorrect credentials""",
 
 	def _attempt_call_human(self, human) -> bool:
 		"""Returns True if call was picked up (stop calling), False to continue to next human."""
-		if not (call := self.call_human(human)):
-			return True  # can't twilio; abort
+		call = self.call_human(human)
 		acknowledged = False
 		status = str(call.status)
 		try:
