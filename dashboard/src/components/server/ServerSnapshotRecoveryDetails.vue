@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex h-60 w-full items-center justify-center gap-2 text-base text-gray-700"
+		class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 		v-if="$resources?.snapshotRecovery?.loading"
 	>
 		<Spinner class="w-4" /> Loading ...

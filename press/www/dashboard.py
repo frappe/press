@@ -3,12 +3,14 @@
 
 
 import frappe
+from frappe.utils.caching import redis_cache
 
 from press.utils import (
 	chat_enabled,
 	get_default_team_for_user,
 	get_valid_teams_for_user,
 )
+from press.utils.user import is_beta_tester, is_desk_user, is_system_manager
 
 base_template_path = "templates/www/dashboard.html"
 no_cache = 1
@@ -64,8 +66,19 @@ def get_boot():
 				as_dict=True,
 			)[0]
 		),
-		user_details={
-			"email": frappe.session.user,
-			"name": frappe.db.get_value("User", frappe.session.user, "first_name", cache=True) or "",
-		},
+		user=get_user(),
 	)
+
+
+@redis_cache(user=True, ttl=60 * 5)
+def get_user():
+	user = frappe.session.user
+	full_name, email = frappe.get_value("User", user, ["full_name", "email"])
+	return {
+		"id": frappe.session.user,
+		"name": full_name,
+		"email": email,
+		"is_system_manager": is_system_manager(user),
+		"is_desk_user": is_desk_user(user),
+		"is_beta_tester": is_beta_tester(),
+	}

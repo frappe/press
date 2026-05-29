@@ -30,6 +30,10 @@ DEFAULT_GITHUB_REDIRECT_PATH = "/dashboard"
 GITHUB_OAUTH_STATE_MAX_AGE = timedelta(minutes=10)
 
 
+class GithubFetchError(Exception):
+	pass
+
+
 class InvalidGitHubOAuthState(frappe.ValidationError):
 	pass
 
@@ -589,8 +593,6 @@ def get_dependant_apps_with_versions(
 		dependency_data = AppDependencyFetch(frappe_dependencies={}, python_version=None)
 	else:
 		frappe_dependencies = pyproject.get("tool", {}).get("bench", {}).get("frappe-dependencies", {}).copy()
-		frappe_dependencies.pop("frappe", None)  # Get rid of this
-
 		dependency_data = AppDependencyFetch(
 			frappe_dependencies=frappe_dependencies,
 			python_version=pyproject.get("project", {}).get("requires-python"),

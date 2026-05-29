@@ -81,7 +81,7 @@ class SiteGroupDeploy(Document):
 			frappe.throw(f"Site with subdomain {self.subdomain} already exists")
 
 	def get_optimal_server_for_private_bench(self):
-		Server = frappe.qb.doctype("Server")
+		Server = frappe.qb.DocType("Server")
 		server = (
 			frappe.qb.from_(Server)
 			.select(Server.name)

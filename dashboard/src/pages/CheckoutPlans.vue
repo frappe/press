@@ -2,10 +2,10 @@
 	<div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
 		<div
 			v-for="plan in subscription.plans"
-			class="m-2 flex flex-col justify-between rounded-2xl border border-gray-100 p-4 shadow"
+			class="m-2 flex flex-col justify-between rounded-2xl border border-outline-gray-1 p-4 shadow"
 		>
 			<div>
-				<h4 class="flex justify-between text-xl font-semibold text-gray-900">
+				<h4 class="flex justify-between text-xl font-semibold text-ink-gray-9">
 					<div>
 						<span>
 							{{
@@ -13,7 +13,7 @@
 									? '₹' + plan.price_inr
 									: '$' + plan.price_usd
 							}}
-							<span class="text-base font-normal text-gray-600">
+							<span class="text-base font-normal text-ink-gray-6">
 								{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
 							</span>
 						</span>

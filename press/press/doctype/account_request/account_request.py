@@ -58,7 +58,6 @@ class AccountRequest(Document):
 		referrer_id: DF.Data | None
 		request_key: DF.Data | None
 		request_key_expiration_time: DF.Datetime | None
-		role: DF.Data | None
 		saas: DF.Check
 		saas_app: DF.Link | None
 		send_email: DF.Check
@@ -86,7 +85,7 @@ class AccountRequest(Document):
 
 		if not self.request_key:
 			self.request_key = random_string(32)
-			self.request_key_expiration_time = frappe.utils.add_to_date(minutes=10)
+			self.request_key_expiration_time = frappe.utils.add_to_date(hours=24)
 
 		if not self.otp:
 			self.otp = generate_otp()
@@ -182,7 +181,7 @@ class AccountRequest(Document):
 	def reset_otp(self):
 		if not self.request_key:
 			self.request_key = random_string(32)
-			self.request_key_expiration_time = frappe.utils.add_to_date(minutes=10)
+			self.request_key_expiration_time = frappe.utils.add_to_date(hours=24)
 		self.otp = generate_otp()
 		if frappe.conf.developer_mode and frappe.local.dev_server:
 			self.otp = 111111
@@ -246,7 +245,7 @@ class AccountRequest(Document):
 					sender = frappe.get_value("Email Account", email_account, "email_id")
 		else:
 			template = "verify_account"
-			if self.invited_by and self.role != "Press Admin":
+			if self.invited_by:
 				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
 				template = "invite_team_member"
 
@@ -350,7 +349,7 @@ class AccountRequest(Document):
 
 def expire_request_key():
 	"""
-	Expire the request key requested 10 minutes ago.
+	Expire account request keys that have passed their expiration time.
 	"""
 	frappe.db.set_value(
 		"Account Request",
@@ -364,3 +363,15 @@ def expire_request_key():
 		},
 		update_modified=False,
 	)
+
+
+def has_permission(doc, ptype, user):
+	user = user or frappe.session.user
+	if doc.is_new():
+		return True
+	team = doc.team
+	if validate_email_address(team, throw=False) and (
+		team_name := frappe.db.get_value("Team", {"user": team}, "name")
+	):
+		team = team_name
+	return frappe.has_permission(doctype="Team", doc=team, ptype=ptype, user=user)

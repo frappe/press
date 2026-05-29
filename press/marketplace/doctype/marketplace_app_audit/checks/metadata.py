@@ -83,7 +83,7 @@ def check_long_description(marketplace_app):
 			severity=severity,
 			result="Fail",
 			message="Long description is missing. Please add a long description for the marketplace app.",
-			details="The long description is missing for the marketplace app.",
+			# details="The long description is missing for the marketplace app.",
 			remediation="Please add a long description for the marketplace app.",
 		)
 
@@ -101,7 +101,7 @@ def check_long_description(marketplace_app):
 			check_id,
 			check_name="Long Description Contains Install Instructions",
 			category=CATEGORY,
-			severity=severity,
+			severity="Minor",
 			result="Warn",
 			message="Long description contains install instructions. Please don't add any installation instructions in the description.",
 			details=json.dumps(
@@ -120,7 +120,7 @@ def check_long_description(marketplace_app):
 			check_id,
 			check_name="Long Description Contains Architecture/Deployment Information",
 			category=CATEGORY,
-			severity=severity,
+			severity="Minor",
 			result="Warn",
 			message="Long description contains architecture/deployment information. Please don't add any architecture/deployment information in the description.",
 			details=json.dumps(
@@ -137,7 +137,7 @@ def check_long_description(marketplace_app):
 			check_id,
 			check_name="Long Description Contains Other Links",
 			category=CATEGORY,
-			severity=severity,
+			severity="Minor",
 			result="Warn",
 			message="Long description contains other links. Please don't add any other links in the description.",
 			remediation="Please remove any other links from the description.",
@@ -250,7 +250,7 @@ def check_links(marketplace_app):
 			headers = {
 				"User-Agent": "Mozilla/5.0 (compatible; MarketplaceAuditBot/1.0; +https://cloud.frappe.io)",
 			}
-			response = requests.get(link, timeout=(3, 15), headers=headers)
+			response = requests.get(link, timeout=(3, 20), headers=headers)
 			# 0k or redirect is fine.
 			if response.status_code not in [200, 301, 302]:
 				broken_links.append(link)

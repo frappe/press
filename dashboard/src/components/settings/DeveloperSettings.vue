@@ -18,7 +18,7 @@
 						:textContent="$team.doc.user_info.api_key"
 					/>
 				</div>
-				<div v-else class="pb-2 text-base text-gray-700">
+				<div v-else class="pb-2 text-base text-ink-gray-7">
 					You don't have an API key yet. Click the button above to create one.
 				</div>
 				<Dialog
@@ -48,19 +48,19 @@
 								again!
 							</p>
 							<label class="block pt-2">
-								<span class="mb-2 block text-sm leading-4 text-gray-700"
+								<span class="mb-2 block text-sm leading-4 text-ink-gray-7"
 									>API Key</span
 								>
 								<ClickToCopyField :textContent="createSecret.data.api_key" />
 							</label>
 							<label class="block pt-2">
-								<span class="mb-2 block text-sm leading-4 text-gray-700"
+								<span class="mb-2 block text-sm leading-4 text-ink-gray-7"
 									>API Secret</span
 								>
 								<ClickToCopyField :textContent="createSecret.data.api_secret" />
 							</label>
 						</div>
-						<div v-else class="text-base text-gray-700">
+						<div v-else class="text-base text-ink-gray-7">
 							API key and API secret pairs can be used to access the
 							<a href="/docs/api" class="underline" target="_blank"
 								>Frappe Cloud API</a

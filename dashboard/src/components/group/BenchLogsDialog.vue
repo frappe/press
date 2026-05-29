@@ -15,7 +15,7 @@
 							<lucide-arrow-left class="inline-block h-4 w-4" />
 						</template>
 					</Button>
-					<h2 class="ml-4 text-lg font-medium text-gray-900">{{ logName }}</h2>
+					<h2 class="ml-4 text-lg font-medium text-ink-gray-9">{{ logName }}</h2>
 					<div class="!ml-auto flex gap-2">
 						<Button @click="log.reload()" :loading="log.loading">
 							<template #icon>
@@ -32,7 +32,7 @@
 				</div>
 				<div class="mt-4">
 					<div
-						class="h-[34rem] overflow-scroll rounded border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-gray-200"
+						class="h-[34rem] overflow-scroll rounded border border-outline-gray-1 bg-gray-900 px-2.5 py-2 text-sm text-ink-gray-2"
 					>
 						<pre>{{
 							log.loading ? 'Loading...' : log?.data[logName] || 'No output'
@@ -110,7 +110,7 @@ const listOptions = ref({
 		{
 			label: 'Size',
 			fieldname: 'size',
-			class: 'text-gray-600',
+			class: 'text-ink-gray-6',
 			format(value) {
 				return `${value} kB`;
 			},

@@ -756,9 +756,13 @@ def update_with_incompatible_node(
 	if line := get_build_output_line(dcb, '"node" is incompatible with this module'):
 		app = get_app_from_incompatible_build_output_line(line)
 		version = ""
-	elif len(exc.args) == 5:
+	elif len(exc.args) >= 3:
+		# args order: (actual, app, expected, package, message, invalid_releases)
 		app = exc.args[1]
-		version = f'Expected "{exc.args[3]}", found "{exc.args[2]}". '
+		version = f'Expected "{exc.args[2]}", found "{exc.args[0]}". '
+	else:
+		app = ""
+		version = ""
 
 	details["title"] = "Incompatible Node version"
 	message = f"""
@@ -830,10 +834,11 @@ def update_with_incompatible_node_prebuild(
 	dc: "DeployCandidate",
 	exc: BaseException,
 ) -> bool:
-	if len(exc.args) != 5:
+	if len(exc.args) < 4:
 		return False
 
-	_, app, actual, expected, package_name = exc.args
+	# args order: (actual, app, expected, package_name, message, invalid_releases)
+	actual, app, expected, package_name = exc.args[0], exc.args[1], exc.args[2], exc.args[3]
 
 	package_name_str = ""
 	if isinstance(package_name, str):
@@ -862,10 +867,11 @@ def update_with_incompatible_python_prebuild(
 	dcb: "DeployCandidateBuild",
 	exc: BaseException,
 ) -> bool:
-	if len(exc.args) != 4:
+	if len(exc.args) < 3:
 		return False
 
-	_, app, actual, expected = exc.args
+	# args order: (actual, app, expected, package, message, invalid_releases)
+	actual, app, expected = exc.args[0], exc.args[1], exc.args[2]
 
 	details["title"] = "Validation Failed: Incompatible Python version"
 	message = f"""
@@ -888,23 +894,27 @@ def update_with_incompatible_app_prebuild(
 	dcb: "DeployCandidateBuild",
 	exc: BaseException,
 ) -> bool:
-	if len(exc.args) != 5:
-		return False
-
-	_, app, dep_app, actual, expected = exc.args
-
 	details["title"] = "Validation Failed: Incompatible app version"
 
-	message = f"""
-	<p><b>{app}</b> depends on version <b>{expected}</b> of <b>{dep_app}</b>.
-	Found version is <b>{actual}</b></p>
+	# Plain Exception from agent stores the traceback as the only arg (not structured)
+	if len(exc.args) == 5:
+		_, app, dep_app, actual, expected = exc.args
+		message = f"""
+		<p><b>{app}</b> depends on version <b>{expected}</b> of <b>{dep_app}</b>.
+		Found version is <b>{actual}</b></p>
 
-	<p>To fix this issue please set <b>{dep_app}</b> to version <b>{expected}</b>.</p>
-	"""
+		<p>To fix this issue please set <b>{dep_app}</b> to version <b>{expected}</b>.</p>
+		"""
+	else:
+		message = """
+		<p>An app has a Frappe dependency with an incompatible version.</p>
+
+		<p>Please check your app's <b>pyproject.toml</b> <code>[tool.bench.frappe-dependencies]</code>
+		and ensure the required app is at a compatible version before retrying.</p>
+		"""
+
 	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["incompatible-app-version"]
-
-	# Traceback is not pertinent to issue
 	details["traceback"] = None
 	return True
 
