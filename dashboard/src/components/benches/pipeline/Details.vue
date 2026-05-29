@@ -88,7 +88,12 @@ const pipeline = props.deployview
 			doctype: 'Release Pipeline',
 			name: props.id,
 			auto: true,
+			onSuccess: () => {
+				if (loader.value) loader.value = false
+			},
 		})
+
+const loader = ref(!pipeline?.doc)
 
 const notifApiFields = {
 	doctype: 'Press Notification',
@@ -234,8 +239,10 @@ watch(
 const handleDocUpdate = props.deployview
 	? null
 	: (x) => {
-			if (x.doctype === 'Release Pipeline' && x.name === props.id)
+      if (x.doctype === 'Release Pipeline' && x.name === props.id){
 				pipeline.reload()
+				if (loader.value) loader.value = false
+      }
 		}
 
 onBeforeUnmount(() => {
@@ -366,7 +373,7 @@ const stopBuild = () => {
 
 <template>
 	<Loader
-		v-if="deployview? builds[activeBuildId]?.get?.loading: pipeline?.get?.loading"
+		v-if="deployview? builds[activeBuildId]?.get?.loading: (loader)"
 	/>
 
 	<main
