@@ -437,6 +437,7 @@ class Team(Document):
 		team.team_title = "Parent Team"
 		team.apply_limits = 1
 		team.spending_limit = 100  # default spending limit for new teams, can be updated later by team admin
+		team.tier = "Beginner"
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
 		if account_request.invited_by_parent_team:
@@ -665,7 +666,12 @@ class Team(Document):
 		return total
 
 	def update_tier_limit(self):
-		if self.apply_limits and self.tier and self.tier != self.get_doc_before_save().tier:
+		if (
+			not self.is_new()
+			and self.apply_limits
+			and self.tier
+			and self.tier != self.get_doc_before_save().tier
+		):
 			new_limit = frappe.db.get_value("Team Tier", self.tier, "amount") or 100
 			frappe.db.set_value("Team", self.name, "spending_limit", new_limit)
 
