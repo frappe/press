@@ -157,5 +157,6 @@ class CertificateLinkRequest(Document):
 			frappe.throw("Please log in with the email address attached to this certificate.")
 
 		doc.status = "Approved"
-		doc.save()
+		# key + user email is sufficient to approve the request
+		doc.save(ignore_permissions=True)
 		return doc
