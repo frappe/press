@@ -1,5 +1,6 @@
 # Copyright (c) 2026, Frappe and contributors
 # For license information, please see license.txt
+import json
 from typing import Any
 
 import frappe
@@ -371,6 +372,13 @@ DOCTYPE_SLUGS = {_doctype.lower().replace(" ", "-"): _doctype for _doctype in AL
 
 BASE_DEFAULT_FIELDS = ["name", "modified"]
 BASE_FILTER_FIELDS = {"name", "creation", "modified"}
+FILTER_REQUIRED_DOCTYPES = {
+	"Agent Job",
+	"Site",
+	"Site Activity",
+	"Site Backup",
+	"Site Domain",
+}
 
 MAX_LIMIT = 50
 MAX_DAYS = 90
@@ -495,7 +503,7 @@ def get_doctype(doctype: str) -> dict:
 @system_manager_only
 def list_documents(
 	doctype: str,
-	filters: dict | None = None,
+	filters: dict[str, str | int | float | bool] | str | None = None,
 	limit: int = 20,
 	order_by: str = "modified desc",
 	cursor: str | None = None,
@@ -503,16 +511,21 @@ def list_documents(
 	"""List recent documents for one doctype.
 
 	Call get_doctype(doctype) first if you do not know the allowed filters.
+	Pass filters as a JSON object string or dict, for example '{"server": "server-name"}'.
+	Filter values must be strings, integers, floats, or booleans; lists and nested objects are not allowed.
 	Returns compact default fields only. Use next_cursor for the next page.
 	Use get_document_summary() for more detail.
 	"""
 	doctype = _validate_doctype(doctype)
+	filters = _normalize_filters(filters)
 	_validate_filters(doctype, filters)
+	_validate_required_filters(doctype, filters)
 	_validate_order_by(order_by)
 
+	requested_limit = limit
 	limit = _clamp_limit(limit)
 	if limit == 0:
-		return redact(_document_list_response(doctype, [], limit, None, order_by, filters))
+		return redact(_document_list_response(doctype, [], limit, None, order_by, filters, requested_limit))
 
 	offset = _cursor_offset(cursor)
 	rows = frappe.get_all(
@@ -525,7 +538,9 @@ def list_documents(
 	)
 	items = rows[:limit]
 	next_cursor = str(offset + limit) if len(rows) > limit else None
-	return redact(_document_list_response(doctype, items, limit, next_cursor, order_by, filters))
+	return redact(
+		_document_list_response(doctype, items, limit, next_cursor, order_by, filters, requested_limit)
+	)
 
 
 @press_mcp.tool()
@@ -781,19 +796,36 @@ def _document_list_response(
 	limit: int,
 	next_cursor: str | None,
 	order_by: str,
-	filters: dict | None,
+	filters: dict[str, str | int | float | bool] | None,
+	requested_limit: int | None = None,
 ) -> dict:
-	return {
+	applied_filters = filters or {}
+	response = {
 		"source": "frappe",
 		"doctype": doctype,
-		"filters": filters or {},
+		"filters": applied_filters,
+		"filter_input_format": "json_object_string_or_dict",
 		"order_by": order_by,
 		"items": items,
 		"returned": len(items),
+		"limit_requested": requested_limit,
 		"limit_applied": limit,
 		"has_more": bool(next_cursor),
 		"next_cursor": next_cursor,
 	}
+	if requested_limit is not None and limit != requested_limit:
+		response["limit_note"] = f"Requested limit was clamped to the maximum allowed limit of {MAX_LIMIT}."
+	if applied_filters:
+		response["note"] = (
+			"This response is scoped by filters. Keep the same filters for follow-up calls "
+			"or pagination; do not drop filters unless the user asks for global recent documents."
+		)
+
+	return _json_safe(response)
+
+
+def _json_safe(value: Any) -> Any:
+	return json.loads(frappe.as_json(value))
 
 
 def _validate_doctype(doctype: str) -> str:
@@ -815,7 +847,40 @@ def _validate_order_by(order_by: str) -> None:
 		frappe.throw(f"Order by '{order_by}' is not allowed")
 
 
-def _validate_filters(doctype: str, filters: dict | None) -> None:
+def _normalize_filters(
+	filters: dict[str, str | int | float | bool] | str | None,
+) -> dict[str, str | int | float | bool] | None:
+	if filters is None:
+		return None
+
+	raw_filters = _parse_filter_json(filters) if isinstance(filters, str) else filters
+	if not isinstance(raw_filters, dict):
+		frappe.throw('Filters must be a JSON object, for example {"server": "server-name"}.')
+		return None
+
+	normalized_filters = {}
+	for key, value in raw_filters.items():
+		if not isinstance(key, str):
+			frappe.throw("Filter field names must be strings.")
+		if not isinstance(value, str | int | float | bool):
+			frappe.throw(
+				f"Filter '{key}' must be a string, integer, float, or boolean value. Lists and nested objects are not allowed."
+			)
+		normalized_filters[key] = value
+
+	return normalized_filters
+
+
+def _parse_filter_json(filters: str) -> Any:
+	if not filters.strip():
+		return None
+	try:
+		return json.loads(filters)
+	except json.JSONDecodeError:
+		frappe.throw('Filters must be a JSON object, for example {"server": "server-name"}.')
+
+
+def _validate_filters(doctype: str, filters: dict[str, str | int | float | bool] | None) -> None:
 	if not filters:
 		return
 
@@ -831,6 +896,17 @@ def _validate_filters(doctype: str, filters: dict | None) -> None:
 
 		if fieldname not in FRAPPE_DEFAULT_FIELDS and not meta.has_field(fieldname):
 			frappe.throw(f"Filter field '{fieldname}' does not exist for {doctype}")
+
+
+def _validate_required_filters(doctype: str, filters: dict[str, str | int | float | bool] | None) -> None:
+	if doctype not in FILTER_REQUIRED_DOCTYPES or filters:
+		return
+
+	allowed_filters = sorted(set(DOCTYPES[doctype].get("filters", [])) | BASE_FILTER_FIELDS)
+	frappe.throw(
+		f"{doctype} is too large to list without filters. "
+		f"Pass at least one filter. Allowed filters: {', '.join(allowed_filters)}"
+	)
 
 
 def _get_default_fields(doctype: str) -> list[str]:
