@@ -2,14 +2,40 @@
 
 <script setup lang="ts">
 import { Breadcrumbs } from 'frappe-ui'
-import { inject, onMounted } from 'vue'
+import { computed, inject, onMounted } from 'vue'
 import Header from '@/components/Header.vue'
 import OnboardingLeftContainer from '@/onboarding/onboardingLeftContainer/OnboardingLeftContainer.vue'
 import OnboardingRightSidebarLayout from '@/onboarding/onboardingRightContainer/OnboardingRightSidebarLayout.vue'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
+import { useSocketEvent } from '@/utils/useSocketEvent'
 
 const team = inject('team')
 const onboarding = usePartnerOnboarding(team as any)
+const teamName = computed(
+	() =>
+		(team as any)?.doc?.name ||
+		localStorage.getItem('current_team') ||
+		(window as any).default_team ||
+		'',
+)
+
+useSocketEvent('partner_onboarding_certificates_updated', (data: any) => {
+	if (data?.team === teamName.value) {
+		void onboarding.loadCertificateStatus()
+	}
+})
+
+useSocketEvent('partner_onboarding_mrr_updated', (data: any) => {
+	if (data?.team === teamName.value) {
+		void onboarding.loadMRRStatus()
+	}
+})
+
+useSocketEvent('partner_onboarding_status_updated', (data: any) => {
+	if (data?.team === teamName.value) {
+		void onboarding.loadPartnerOnboarding()
+	}
+})
 
 onMounted(() => {
 	onboarding.load()

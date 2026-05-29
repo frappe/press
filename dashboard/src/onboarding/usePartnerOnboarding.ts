@@ -1,6 +1,5 @@
 import { createResource } from 'frappe-ui'
 import { computed, reactive, ref } from 'vue'
-import { useSocketEvent } from '@/utils/useSocketEvent'
 
 type TeamResource = {
 	doc?: Record<string, any>
@@ -334,26 +333,6 @@ export function usePartnerOnboarding(team?: TeamResource) {
 		return mrrStatusResource.fetch()
 	}
 
-	const teamName = getTeamName(team)
-
-	useSocketEvent('partner_onboarding_certificates_updated', (data: any) => {
-		if (data?.team === teamName) {
-			void loadCertificateStatus()
-		}
-	})
-
-	useSocketEvent('partner_onboarding_mrr_updated', (data: any) => {
-		if (data?.team === teamName) {
-			void loadMRRStatus()
-		}
-	})
-
-	useSocketEvent('partner_onboarding_status_updated', (data: any) => {
-		if (data?.team === teamName) {
-			void loadPartnerOnboarding()
-		}
-	})
-
 	async function sendCertificateLinkRequest(params: {
 		user_email: string
 		certificate_type: string
@@ -413,6 +392,7 @@ export function usePartnerOnboarding(team?: TeamResource) {
 		save,
 		submitForApproval,
 		unregister,
+		loadPartnerOnboarding,
 		loadCertificateStatus,
 		loadMRRStatus,
 		sendCertificateLinkRequest,
