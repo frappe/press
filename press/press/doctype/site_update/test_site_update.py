@@ -22,7 +22,7 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
-from press.press.doctype.site_update.site_update import SiteUpdate
+from press.press.doctype.site_update.site_update import SiteUpdate, run_scheduled_updates
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 
@@ -279,3 +279,85 @@ class TestSiteUpdate(FrappeTestCase):
 				"Success",
 				"Site Update should be successful",
 			)
+
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_run_scheduled_updates_starts_scheduled_update(self):
+		"""A scheduled update should start and succeed when all validations pass at run time."""
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+
+		past_time = frappe.utils.add_to_date(None, hours=-1)
+		site_update_name = site.schedule_update(scheduled_time=past_time)
+
+		with fake_agent_job("Update Site Pull", "Success"):
+			run_scheduled_updates()
+			poll_pending_jobs()
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update_name, "status"),
+			"Success",
+		)
+
+	def test_run_scheduled_updates_skips_if_destination_bench_missing_app(self):
+		"""Validation at scheduled run time should catch apps removed from the destination bench after scheduling."""
+		app1 = create_test_app()
+		app2 = create_test_app("app2", "App 2")
+		group = create_test_release_group([app1, app2])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+
+		past_time = frappe.utils.add_to_date(None, hours=-1)
+		site.schedule_update(scheduled_time=past_time)
+
+		bench2_doc = frappe.get_doc("Bench", bench2.name)
+		bench2_doc.apps = [a for a in bench2_doc.apps if a.app != app2.name]
+		bench2_doc.save()
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			r"doesn't have some of the apps",
+			run_scheduled_updates,
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_run_scheduled_updates_skips_if_past_update_to_same_candidates_failed(self):
+		"""Validation at scheduled run time should block if an unresolved failure exists for the same source/destination."""
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+
+		# Trigger an immediate update that fails, leaving an unresolved past failure record
+		with fake_agent_job(
+			{
+				"Update Site Pull": {"status": "Failure"},
+				"Recover Failed Site Update": {"status": "Failure"},
+			}
+		):
+			site.schedule_update()
+			poll_pending_jobs()
+			poll_pending_jobs()
+
+		# Reset site state so a new update can be scheduled
+		frappe.db.set_value("Site", site.name, "fatal_site_update", None)
+		frappe.db.set_value("Site", site.name, "status", "Active")
+
+		# Schedule the update, bypassing the past failure check — that check is what we're testing at run time
+		past_time = frappe.utils.add_to_date(None, hours=-1)
+		with patch.object(SiteUpdate, "validate_past_failed_updates"):
+			site.schedule_update(scheduled_time=past_time)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			r"has failed in the past",
+			run_scheduled_updates,
+		)
