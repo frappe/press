@@ -64,12 +64,8 @@ _SENSITIVE_PATH_PARTS = (
 	"id_ed25519",
 	"private_key",
 )
-_SENSITIVE_EXACT_PATHS = {
-	"/proc/kcore",
-	"/proc/keys",
-	"/proc/sysrq-trigger",
-}
 _SENSITIVE_PATH_PREFIXES = (
+	"/proc",
 	"/sys/firmware",
 	"/sys/kernel/debug",
 	"/sys/kernel/security",
@@ -441,14 +437,10 @@ def _is_sensitive_path(lower_path: str) -> bool:
 	if any(part in lower_path for part in _SENSITIVE_PATH_PARTS):
 		return True
 
-	if lower_path in _SENSITIVE_EXACT_PATHS:
-		return True
-
 	if lower_path.startswith(_SENSITIVE_PATH_PREFIXES):
 		return True
 
-	path_parts = lower_path.strip("/").split("/")
-	return len(path_parts) >= 3 and path_parts[0] == "proc" and path_parts[2] == "environ"
+	return False
 
 
 def _validate_service_command(command: str, safe_commands: set[str], mutating_commands: set[str]) -> str:

@@ -39,11 +39,7 @@ def get_site_apps_info(site: str) -> dict:
 		"site": site,
 		"bench": bench_name,
 		"group": site_doc.group,
-		"apps": [
-			_app_metadata(ba.app, ba.source, ba.release, ba.hash)
-			for ba in bench_apps
-			if ba.app in installed_apps
-		],
+		"apps": _apps_metadata([ba for ba in bench_apps if ba.app in installed_apps]),
 	}
 
 
@@ -62,7 +58,7 @@ def get_bench_apps_info(bench: str) -> dict:
 	return {
 		"bench": bench,
 		"group": bench_doc.group,
-		"apps": [_app_metadata(ba.app, ba.source, ba.release, ba.hash) for ba in bench_doc.apps],
+		"apps": _apps_metadata(bench_doc.apps),
 	}
 
 
@@ -106,23 +102,42 @@ def get_app_release_clone_url(release: str) -> dict:
 	return _app_clone_info(release_doc.app, release_doc.source, release, release_doc.hash)
 
 
-def _app_metadata(
-	app: str,
-	source_name: str,
-	release_name: str | None,
-	commit_hash: str | None,
-) -> dict:
-	source = frappe.get_doc("App Source", source_name)
-	return {
-		"app": app,
-		"source": source_name,
-		"release": release_name,
-		"repository_url": source.repository_url,
-		"repository_owner": source.repository_owner,
-		"repository": source.repository,
-		"branch": source.branch,
-		"hash": commit_hash,
+def _apps_metadata(apps) -> list[dict]:
+	apps = list(apps)
+	source_names = sorted({app.source for app in apps if app.source})
+	if not source_names:
+		return []
+
+	sources = {
+		source.name: source
+		for source in frappe.get_all(
+			"App Source",
+			filters={"name": ["in", source_names]},
+			fields=["name", "repository_url", "repository_owner", "repository", "branch"],
+		)
 	}
+
+	metadata = []
+	for app in apps:
+		source = sources.get(app.source)
+		if source is None:
+			frappe.throw(f"App Source {app.source!r} not found")
+			continue
+
+		metadata.append(
+			{
+				"app": app.app,
+				"source": app.source,
+				"release": app.release,
+				"repository_url": source.repository_url,
+				"repository_owner": source.repository_owner,
+				"repository": source.repository,
+				"branch": source.branch,
+				"hash": app.hash,
+			}
+		)
+
+	return metadata
 
 
 def _app_clone_info(

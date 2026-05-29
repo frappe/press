@@ -166,7 +166,7 @@ def get_bench_log(
 	max_chars: int = 20000,
 ) -> dict:
 	"""List bench logs or fetch one raw bench log."""
-	bench_doc = frappe.get_doc("Bench", bench)
+	bench_doc = _get_bench_doc(bench)
 	if log_name:
 		return redact(
 			{
@@ -192,7 +192,7 @@ def get_bench_log(
 @system_manager_only
 def get_bench_processes(bench: str) -> dict:
 	"""Fetch supervisor processes for a bench."""
-	processes = frappe.get_doc("Bench", bench).supervisorctl_status()
+	processes = _get_bench_doc(bench).supervisorctl_status()
 	return redact(
 		{
 			"source": "agent",
@@ -201,6 +201,13 @@ def get_bench_processes(bench: str) -> dict:
 			"processes": processes,
 		}
 	)
+
+
+def _get_bench_doc(bench: str):
+	if not frappe.db.exists("Bench", bench):
+		frappe.throw(f"Bench {bench!r} not found")
+
+	return frappe.get_doc("Bench", bench)
 
 
 def site_log_search(
