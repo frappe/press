@@ -145,6 +145,7 @@ class TestTeam(FrappeTestCase):
 		total = team.total_subscribed_amount()
 		self.assertEqual(total, 50)
 
+
 # ---------------------------------------------------------------------------
 # RBAC & Team Management Tests
 # ---------------------------------------------------------------------------
@@ -1092,7 +1093,7 @@ class TestTeamTotalSubscribedAmount(FrappeTestCase):
 				"plan": plan.name,
 				"enabled": 1,
 			}
-		).insert(ignore_permissions=True)
+		).insert(ignore_permissions=True, ignore_links=True)
 
 		total = self.team.total_subscribed_amount()
 		self.assertAlmostEqual(total, 10.0, places=2)
@@ -1112,7 +1113,7 @@ class TestTeamTotalSubscribedAmount(FrappeTestCase):
 				"plan": plan.name,
 				"enabled": 0,
 			}
-		).insert(ignore_permissions=True)
+		).insert(ignore_permissions=True, ignore_links=True)
 
 		total = self.team.total_subscribed_amount()
 		self.assertEqual(total, 0)

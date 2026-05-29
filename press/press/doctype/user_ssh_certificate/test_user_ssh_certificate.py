@@ -22,8 +22,9 @@ from press.press.doctype.user_ssh_certificate.user_ssh_certificate import UserSS
 
 _MODULE = "press.press.doctype.user_ssh_certificate.user_ssh_certificate"
 
-# A real-format (but tiny) ED25519 public key that can be base64-decoded.
-_VALID_KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGodspacetest test@example"
+# A synthetic ED25519 key whose base64 body is exactly 44 chars (32 zero bytes).
+# 44 chars is a valid base64 string (44 mod 4 == 0, no padding needed).
+_VALID_KEY = "ssh-ed25519 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= test@example"
 _INVALID_KEY = "ssh-rsa NotValidBase64!!!! test@example"
 
 

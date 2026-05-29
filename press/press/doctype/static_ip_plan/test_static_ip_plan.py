@@ -19,9 +19,12 @@ def create_test_static_ip_plan(
 	enabled: int = 1,
 ) -> StaticIPPlan:
 	"""Create a test Static IP Plan doc."""
+	from frappe.model.naming import make_autoname
+
 	plan = frappe.get_doc(
 		{
 			"doctype": "Static IP Plan",
+			"name": make_autoname("SIP-.####"),
 			"title": f"Test Static IP Plan {frappe.mock('name')}",
 			"provider": provider,
 			"price_usd": price_usd,
