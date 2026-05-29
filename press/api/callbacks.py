@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import ipaddress
+import json
+from typing import Any
 
 import frappe
 from frappe.rate_limiter import rate_limit
 
 from press.agent import Agent
-from press.press.doctype.agent_job.agent_job import handle_polled_job
+from press.api.agent_auth import verify_agent
+from press.press.doctype.agent_job.agent_job import handle_polled_job, retry_undelivered_jobs
 from press.utils import log_error
 
 
@@ -113,8 +116,57 @@ def callback(job_id: str | None = None):
 	if not server:
 		frappe.throw("Not permitted", frappe.ValidationError)
 
+	verify_agent()
+
 	job = verify_job_id(server, job_id)
 	if not job:
 		frappe.throw("Invalid Job Id", frappe.ValidationError)
 
 	frappe.enqueue(handle_job_updates, server=server, job_identifier=job_id)
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=500, seconds=60)
+def update_job(job: str) -> None:
+	if not job:
+		return
+
+	server, _ = verify_agent()
+
+	parsed_job: dict[str, Any] = json.loads(job)
+
+	job_doc = frappe.get_value(
+		"Agent Job",
+		fieldname=[
+			"name",
+			"job_id",
+			"status",
+			"callback_failure_count",
+			"job_type",
+		],
+		filters={"job_id": parsed_job["id"], "server": server},
+		as_dict=True,
+	)
+
+	if not job_doc:
+		return
+
+	handle_polled_job(
+		polled_job=parsed_job,
+		job=job_doc,
+		raise_callback_exception=True,
+	)
+
+
+@frappe.whitelist(allow_guest=True)
+def retry_undelivered():
+	server, server_type = verify_agent()
+
+	server_obj = frappe._dict(
+		{
+			"server": server,
+			"server_type": server_type,
+		}
+	)
+
+	retry_undelivered_jobs(server_obj, use_exponential_backoff=False, use_queue_protection=True)

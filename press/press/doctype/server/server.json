@@ -57,6 +57,8 @@
 		"agent_password",
 		"column_break_pdbx",
 		"disable_agent_job_auto_retry",
+		"is_agent_auth_setup",
+		"agent_job_update_feature",
 		"reverse_proxy_section",
 		"proxy_server",
 		"column_break_12",
@@ -227,7 +229,8 @@
 			"default": "0",
 			"fieldname": "use_for_new_benches",
 			"fieldtype": "Check",
-			"label": "Use For New Benches"
+			"label": "Use For New Benches",
+			"read_only": 1
 		},
 		{
 			"fieldname": "hostname",
@@ -248,7 +251,8 @@
 			"default": "0",
 			"fieldname": "use_for_new_sites",
 			"fieldtype": "Check",
-			"label": "Use For New Sites"
+			"label": "Use For New Sites",
+			"read_only": 1
 		},
 		{
 			"fieldname": "cluster",
@@ -786,6 +790,19 @@
 			"fieldtype": "Int",
 			"label": "Supported Site Quota",
 			"read_only_depends_on": "eval:!!doc.__islocal"
+		},
+		{
+			"default": "0",
+			"fieldname": "is_agent_auth_setup",
+			"fieldtype": "Check",
+			"label": "Is Agent Auth Setup",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "agent_job_update_feature",
+			"fieldtype": "Check",
+			"label": "Agent Job Update Feature"
 		}
 	],
 	"links": [
@@ -798,7 +815,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-05-18 10:49:09.702133",
+	"modified": "2026-05-24 18:45:56.370277",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",
@@ -819,12 +836,17 @@
 		{
 			"create": 1,
 			"read": 1,
-			"role": "Press User",
+			"role": "Press Admin",
+			"write": 1
+		},
+		{
+			"create": 1,
+			"read": 1,
+			"role": "Press Member",
 			"write": 1
 		}
 	],
 	"row_format": "Dynamic",
-	"rows_threshold_for_grid_search": 20,
 	"sort_field": "modified",
 	"sort_order": "DESC",
 	"states": [],

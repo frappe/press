@@ -49,6 +49,7 @@ class DatabaseServer(BaseServer):
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.server_mount.server_mount import ServerMount
 
+		agent_job_update_feature: DF.Check
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
@@ -77,11 +78,12 @@ class DatabaseServer(BaseServer):
 		hostname: DF.Data
 		hostname_abbreviation: DF.Data | None
 		ip: DF.Data | None
+		is_agent_auth_setup: DF.Check
 		is_auto_coredump_enabled: DF.Check
-		is_binlog_indexer_running: DF.Check
 		is_external_healthcheck_enabled: DF.Check
-		is_for_recovery: DF.Check
 		is_mariadb_monitor_installed: DF.Check
+		is_binlog_indexer_running: DF.Check
+		is_for_recovery: DF.Check
 		is_monitoring_disabled: DF.Check
 		is_performance_schema_enabled: DF.Check
 		is_primary: DF.Check
@@ -254,6 +256,9 @@ class DatabaseServer(BaseServer):
 
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
+
+		if self.has_value_changed("agent_job_update_feature"):
+			self.update_feature(self.agent_job_update_feature)
 
 	def publish_linked_server_realtime_update(self):
 		with contextlib.suppress(Exception):
@@ -821,6 +826,9 @@ class DatabaseServer(BaseServer):
 	def _setup_server(self):
 		config = self._get_config()
 
+		secret = self._generate_secret()
+		agent_token = self.sign_agent_token(secret)
+
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_db.yml" if getattr(self, "is_self_hosted", False) else "database.yml",
@@ -837,6 +845,7 @@ class DatabaseServer(BaseServer):
 					"monitoring_password": config.monitoring_password,
 					"log_server": config.log_server,
 					"kibana_password": config.kibana_password,
+					"agent_token": agent_token,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
 					"allocator": self.memory_allocator.lower(),
@@ -856,6 +865,7 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.is_agent_auth_setup = 1
 				self.process_hybrid_server_setup()
 				if self.provider == "DigitalOcean":
 					# Adjusting docker permissions
@@ -2694,6 +2704,9 @@ def process_add_binlogs_to_indexer_agent_job_update(job: AgentJob):
 	if job.status != "Success":
 		return
 
+	if not job.data:
+		return
+
 	json_data = json.loads(job.data)
 	indexed_binlogs = json_data.get("indexed_binlogs", [])
 	frappe.db.set_value(
@@ -2728,6 +2741,9 @@ def process_remove_binlogs_from_indexer_agent_job_update(job: AgentJob):
 	update_binlog_indexer_status_on_agent_job_update(job)
 
 	if job.status != "Success":
+		return
+
+	if not job.data:
 		return
 
 	json_data = json.loads(job.data)

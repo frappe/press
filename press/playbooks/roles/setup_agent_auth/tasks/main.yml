@@ -1,0 +1,9 @@
+---
+- name: Update agent token
+  become: yes
+  become_user: frappe
+  command: >
+    /home/frappe/agent/env/bin/agent setup agent-token
+    --agent-token {{ agent_token }}
+  args:
+    chdir: /home/frappe/agent

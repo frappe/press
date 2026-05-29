@@ -18,6 +18,7 @@ class LogServer(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		agent_job_update_feature: DF.Check
 		agent_password: DF.Password | None
 		cluster: DF.Link | None
 		domain: DF.Link | None
@@ -25,6 +26,7 @@ class LogServer(BaseServer):
 		frappe_user_password: DF.Password | None
 		hostname: DF.Data
 		ip: DF.Data | None
+		is_agent_auth_setup: DF.Check
 		is_server_setup: DF.Check
 		kibana_password: DF.Password | None
 		monitoring_password: DF.Password | None
@@ -40,6 +42,10 @@ class LogServer(BaseServer):
 		tls_certificate_renewal_failed: DF.Check
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
+
+	def on_update(self):
+		if self.has_value_changed("agent_job_update_feature"):
+			self.update_feature(self.agent_job_update_feature)
 
 	def validate(self):
 		self.validate_agent_password()

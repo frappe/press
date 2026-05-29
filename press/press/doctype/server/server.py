@@ -9,12 +9,14 @@ import ipaddress
 import json
 import shlex
 import typing
+import uuid
 from contextlib import suppress
 from datetime import timedelta
 from functools import cached_property
 
 import boto3
 import frappe
+import jwt
 import requests
 import semantic_version
 from frappe import _
@@ -51,9 +53,7 @@ from press.runner import Ansible
 from press.utils import fmt_timedelta, log_error
 
 if typing.TYPE_CHECKING:
-	from press.infrastructure.doctype.arm_build_record.arm_build_record import (
-		ARMBuildRecord,
-	)
+	from press.infrastructure.doctype.arm_build_record.arm_build_record import ARMBuildRecord
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.ansible_play.ansible_play import AnsiblePlay
 	from press.press.doctype.auto_scale_record.auto_scale_record import AutoScaleRecord
@@ -66,6 +66,7 @@ if typing.TYPE_CHECKING:
 	)
 	from press.press.doctype.on_prem_failover.on_prem_failover import OnPremFailover
 	from press.press.doctype.press_job.press_job import PressJob
+	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
@@ -1274,6 +1275,10 @@ class BaseServer(Document, TagHelpers):
 		return frappe.get_doc("Subscription", name) if name else None
 
 	@frappe.whitelist()
+	def setup_agent_auth(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_auth", queue="long", timeout=1200)
+
+	@frappe.whitelist()
 	def rename_server(self):
 		self.status = "Installing"
 		self.save()
@@ -1981,6 +1986,57 @@ class BaseServer(Document, TagHelpers):
 			{"parent": candidate, "dependency": dependency},
 			"version",
 		)
+
+	def sign_agent_token(self, secret):
+		expires_in = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=90)
+
+		payload = {
+			"server": self.name,
+			"server_type": self.doctype,
+			"exp": int(expires_in.timestamp()),  # 3 months
+			"jti": str(uuid.uuid4()),
+		}
+
+		token = jwt.encode(payload, secret, algorithm="HS256")
+
+		if not self.is_agent_auth_setup:
+			self.db_set("is_agent_auth_setup", 1)
+
+		return token
+
+	def _generate_secret(self):
+		press_settings: PressSettings = frappe.get_single("Press Settings")
+		secret = press_settings.get_value("secret")
+
+		if secret:
+			secret = press_settings.get_password("secret")
+		else:
+			secret = frappe.generate_hash(length=64)
+
+			press_settings.secret = secret
+			press_settings.save(ignore_permissions=True)
+
+		return secret
+
+	def _setup_agent_auth(self):
+		try:
+			secret = self._generate_secret()
+			agent_token = self.sign_agent_token(secret)
+
+			ansible = Ansible(
+				playbook="setup_agent_auth.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+				variables={"agent_token": agent_token},
+			)
+			result = ansible.run()
+			if result.status != "Success":
+				log_error("Agent auth setup playbook failed", server=self.as_dict())
+				return
+
+		except Exception:
+			log_error("Agent Auth Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def collect_arm_images(self) -> str:
@@ -2769,6 +2825,16 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 		except Exception:
 			log_error("Cgroup v2 Migration Exception", server=self.as_dict())
 
+	def update_feature(self, flag: bool):
+		if frappe.flags.in_test:
+			return
+
+		agent = Agent(self.name, self.doctype)
+		if flag:
+			agent.enable_feature_flag()
+		else:
+			agent.disable_feature_flag()
+
 	def _create_static_ip_log(self):
 		if not self.team or not frappe.db.get_value(
 			"Static IP Plan", {"provider": self.provider, "enabled": 1}, cache=True
@@ -2799,6 +2865,7 @@ class Server(BaseServer):
 		from press.press.doctype.resource_tag.resource_tag import ResourceTag
 		from press.press.doctype.server_mount.server_mount import ServerMount
 
+		agent_job_update_feature: DF.Check
 		agent_password: DF.Password | None
 		auto_add_storage_max: DF.Int
 		auto_add_storage_min: DF.Int
@@ -2823,6 +2890,7 @@ class Server(BaseServer):
 		ignore_incidents_till: DF.Datetime | None
 		ip: DF.Data | None
 		ipv6: DF.Data | None
+		is_agent_auth_setup: DF.Check
 		is_for_recovery: DF.Check
 		is_managed_database: DF.Check
 		is_monitoring_disabled: DF.Check
@@ -2894,7 +2962,7 @@ class Server(BaseServer):
 		self.validate_managed_database_service()
 
 	def set_db_healthcheck_token(self):
-		if not self.db_healthcheck_token:
+		if not getattr(self, "db_healthcheck_token", None):
 			self.db_healthcheck_token = frappe.generate_hash(length=64)
 
 	def validate_managed_database_service(self):
@@ -2905,18 +2973,12 @@ class Server(BaseServer):
 		else:
 			self.managed_database_service = ""
 
-	def on_update(self):  # noqa: C901
-		# If Database Server is changed for the server then change it for all the benches
-		if self.has_value_changed("database_server") or self.has_value_changed("managed_database_service"):
-			benches = frappe.get_all("Bench", {"server": self.name, "status": ("!=", "Archived")})
-			for bench in benches:
-				bench = frappe.get_doc("Bench", bench)
-				bench.database_server = self.database_server
-				bench.managed_database_service = self.managed_database_service
-				bench.save()
+	def on_update(self):
+		self.update_benches()
 
 		if self.database_server:
 			database_server_public = frappe.db.get_value("Database Server", self.database_server, "public")
+
 			if database_server_public != self.public:
 				frappe.db.set_value("Database Server", self.database_server, "public", self.public)
 
@@ -2932,6 +2994,29 @@ class Server(BaseServer):
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
 
+		self.validate_logical_replication()
+
+		if self.is_new() and is_dedicated_server(self.name):
+			self.set_dedicated_server_site_warranty_quota_and_cooldown()
+
+		if self.has_value_changed("agent_job_update_feature"):
+			self.update_feature(self.agent_job_update_feature)
+
+	def update_benches(self):
+		if not (
+			self.has_value_changed("database_server") or self.has_value_changed("managed_database_service")
+		):
+			return
+
+		benches = frappe.get_all("Bench", {"server": self.name, "status": ("!=", "Archived")})
+
+		for bench in benches:
+			bench = frappe.get_doc("Bench", bench.name)
+			bench.database_server = self.database_server
+			bench.managed_database_service = self.managed_database_service
+			bench.save()
+
+	def validate_logical_replication(self):
 		if (
 			self.has_value_changed("enable_logical_replication_during_site_update")
 			and self.enable_logical_replication_during_site_update
@@ -2941,9 +3026,6 @@ class Server(BaseServer):
 			frappe.throw(
 				"Cannot enable logical replication during site update if multiple sites are present on the server. Please drop the sites in order to enable logical replication."
 			)
-
-		if self.is_new() and is_dedicated_server(self.name):
-			self.set_dedicated_server_site_warranty_quota_and_cooldown()
 
 	def update_db_server(self):
 		if not self.database_server:
@@ -3233,6 +3315,8 @@ class Server(BaseServer):
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
 		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
+		secret = self._generate_secret()
+		agent_token = self.sign_agent_token(secret)
 
 		# If database server is set, then define db port under configuration
 		db_port = (
@@ -3266,6 +3350,7 @@ class Server(BaseServer):
 					"db_port": db_port,
 					"agent_repository_branch_or_commit_ref": self.get_agent_repository_branch(),
 					"agent_update_args": " --skip-repo-setup=true",
+					"agent_token": agent_token,
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					**self.get_mount_variables(),
 				},
@@ -3276,6 +3361,7 @@ class Server(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				self.is_agent_auth_setup = 1
 				if self.provider == "DigitalOcean":
 					# To adjust docker permissions
 					self.reboot()

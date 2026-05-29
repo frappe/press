@@ -213,6 +213,7 @@ class PressSettings(Document):
 		school_api_key: DF.Data | None
 		school_api_secret: DF.Password | None
 		school_url: DF.Data | None
+		secret: DF.Password | None
 		send_email_notifications: DF.Check
 		send_telegram_notifications: DF.Check
 		servers_using_alternative_http_port_for_communication: DF.SmallText | None

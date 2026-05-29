@@ -22,6 +22,7 @@ class RegistryServer(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		agent_job_update_feature: DF.Check
 		agent_password: DF.Password | None
 		bucket_name: DF.Data | None
 		container_registry_config_path: DF.Data | None
@@ -31,6 +32,7 @@ class RegistryServer(BaseServer):
 		frappe_user_password: DF.Password | None
 		hostname: DF.Data
 		ip: DF.Data
+		is_agent_auth_setup: DF.Check
 		is_mirror: DF.Check
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
@@ -57,6 +59,10 @@ class RegistryServer(BaseServer):
 		self.validate_registry_username()
 		self.validate_registry_password()
 		self.validate_monitoring_password()
+
+	def on_update(self):
+		if self.has_value_changed("agent_job_update_feature"):
+			self.update_feature(self.agent_job_update_feature)
 
 	def validate_registry_password(self):
 		if not self.registry_password:

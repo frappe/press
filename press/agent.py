@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
 import frappe.utils
+import jwt
 import requests
 from frappe.utils.password import get_decrypted_password
 from requests.exceptions import HTTPError
@@ -949,6 +950,54 @@ class Agent:
 			return requests.request(method, url, headers=headers, files=file_objects, verify=verify)
 		return requests.request(method, url, headers=headers, json=data, verify=verify, timeout=(10, 30))
 
+	def get_secret(self):
+		key = "agent_auth_secret"
+
+		secret = frappe.cache().get_value(key)
+		if not secret:
+			press_settings = frappe.get_single("Press Settings")
+			secret = press_settings.get_password("secret")
+
+			if not secret:
+				raise ValueError("Agent auth secret not configured")
+
+			frappe.cache().set_value(key, secret)
+
+		return secret
+
+	def _verify_request_token(self, token: str):
+		secret = self.get_secret()
+
+		try:
+			payload = jwt.decode(
+				token,
+				secret,
+				algorithms=["HS256"],
+				options={
+					"require": ["exp", "server", "jti"],
+				},
+			)
+
+		except jwt.ExpiredSignatureError as err:
+			raise ValueError("Token expired") from err
+
+		except jwt.InvalidTokenError as err:
+			raise ValueError("Invalid token") from err
+
+		if payload["server"] != self.server:
+			raise ValueError("Invalid server")
+
+		return True
+
+	def extract_and_verify_token(self, token):
+		if not token:
+			frappe.throw("Unsigned request from agent", frappe.PermissionError)
+
+		try:
+			self._verify_request_token(token=token)
+		except ValueError:
+			frappe.throw_permission_error()
+
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
 		self.raise_if_past_requests_have_failed()
 		response = json_response = None
@@ -956,6 +1005,7 @@ class Agent:
 			agent_job_id = agent_job.name if agent_job else None
 			response = self._make_req(method, path, data, files, agent_job_id)
 			json_response = response.json()
+
 			if raises and response.status_code >= 400:
 				output = "\n\n".join([json_response.get("output", ""), json_response.get("traceback", "")])
 				if output == "\n\n":
@@ -1026,6 +1076,7 @@ class Agent:
 		timeout = timeout or (10, 30)
 		response = requests.request(method, url, headers=headers, json=data, timeout=timeout)
 		json_response = response.json()
+
 		if raises:
 			response.raise_for_status()
 		return json_response
@@ -1264,6 +1315,12 @@ Response: {reason or getattr(result, "text", "Unknown")}
 
 	def get_snapshot(self, bench: str):
 		return self.get(f"process-snapshot/{bench}")
+
+	def enable_feature_flag(self):
+		return self.post("server/feature/enable")
+
+	def disable_feature_flag(self):
+		return self.post("server/feature/disable")
 
 	def run_after_migrate_steps(self, site):
 		data = {

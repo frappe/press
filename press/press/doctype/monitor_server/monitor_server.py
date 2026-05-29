@@ -41,6 +41,7 @@ class MonitorServer(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		agent_job_update_feature: DF.Check
 		agent_password: DF.Password | None
 		cluster: DF.Link | None
 		domain: DF.Link | None
@@ -50,6 +51,7 @@ class MonitorServer(BaseServer):
 		grafana_username: DF.Data | None
 		hostname: DF.Data
 		ip: DF.Data | None
+		is_agent_auth_setup: DF.Check
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
 		node_exporter_dashboard_path: DF.Data | None
@@ -69,6 +71,10 @@ class MonitorServer(BaseServer):
 		virtual_machine: DF.Link | None
 		webhook_token: DF.Data | None
 	# end: auto-generated types
+
+	def on_update(self):
+		if self.has_value_changed("agent_job_update_feature"):
+			self.update_feature(self.agent_job_update_feature)
 
 	def validate(self):
 		self.validate_agent_password()

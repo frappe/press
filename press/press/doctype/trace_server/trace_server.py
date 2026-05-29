@@ -17,12 +17,14 @@ class TraceServer(BaseServer):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		agent_job_update_feature: DF.Check
 		agent_password: DF.Password | None
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		hostname: DF.Data
 		ip: DF.Data
+		is_agent_auth_setup: DF.Check
 		is_server_setup: DF.Check
 		monitoring_password: DF.Password | None
 		private_ip: DF.Data

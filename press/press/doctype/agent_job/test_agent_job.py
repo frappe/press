@@ -295,3 +295,112 @@ class TestAgentJob(FrappeTestCase):
 		self.assertEqual(in_execution_job.name, job.name)
 
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", True)
+
+	@patch("press.press.doctype.agent_job.agent_job.publish_update")
+	@patch("press.press.doctype.agent_job.agent_job.process_job_updates")
+	@patch("press.press.doctype.agent_job.agent_job.skip_pending_steps")
+	@patch("press.press.doctype.agent_job.agent_job.populate_output_cache")
+	@patch("press.press.doctype.agent_job.agent_job.update_steps")
+	@patch("press.press.doctype.agent_job.agent_job.update_job")
+	@patch("press.press.doctype.agent_job.agent_job.lock_doc_updated_by_job")
+	@patch("press.press.doctype.agent_job.agent_job.frappe.db.commit", new=Mock())
+	def test_handle_polled_job_updates_status(
+		self,
+		mock_lock,
+		mock_update_job,
+		mock_update_steps,
+		mock_populate_output_cache,
+		mock_skip_pending_steps,
+		mock_process_job_updates,
+		mock_publish_update,
+	):
+		site = create_test_site()
+
+		job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "New Site",
+				"server_type": "Server",
+				"server": site.server,
+				"site": site.name,
+				"status": "Pending",
+				"job_id": 101,
+				"request_method": "POST",
+				"request_path": "test/path",
+				"request_data": "{}",
+			}
+		).insert()
+
+		polled_job = {
+			"id": 101,
+			"status": "Success",
+			"steps": [],
+			"data": {},
+		}
+
+		from press.press.doctype.agent_job.agent_job import handle_polled_job
+
+		handle_polled_job(polled_job=polled_job, job=job)
+
+		mock_lock.assert_called_once_with(job.name)
+		mock_update_job.assert_called_once_with(job.name, polled_job)
+		mock_update_steps.assert_called_once_with(job.name, polled_job)
+		mock_populate_output_cache.assert_called_once_with(polled_job, job)
+		mock_skip_pending_steps.assert_called_once_with(job.name)
+		mock_process_job_updates.assert_called_once_with(job.name, polled_job)
+		mock_publish_update.assert_called_once_with(job.name)
+
+	@patch("press.press.doctype.agent_job.agent_job.publish_update")
+	@patch("press.press.doctype.agent_job.agent_job.process_job_updates")
+	@patch("press.press.doctype.agent_job.agent_job.skip_pending_steps")
+	@patch("press.press.doctype.agent_job.agent_job.populate_output_cache")
+	@patch("press.press.doctype.agent_job.agent_job.update_steps")
+	@patch("press.press.doctype.agent_job.agent_job.update_job")
+	@patch("press.press.doctype.agent_job.agent_job.lock_doc_updated_by_job")
+	@patch("press.press.doctype.agent_job.agent_job.frappe.db.commit", new=Mock())
+	def test_handle_polled_job_does_not_update_if_same_status(
+		self,
+		mock_lock,
+		mock_update_job,
+		mock_update_steps,
+		mock_populate_output_cache,
+		mock_skip_pending_steps,
+		mock_process_job_updates,
+		mock_publish_update,
+	):
+		site = create_test_site()
+
+		job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"job_type": "New Site",
+				"server_type": "Server",
+				"server": site.server,
+				"site": site.name,
+				"status": "Success",
+				"job_id": 102,
+				"request_method": "POST",
+				"request_path": "test/path",
+				"request_data": "{}",
+			}
+		).insert()
+
+		polled_job = {
+			"id": 102,
+			"status": "Success",
+			"steps": [],
+			"data": {},
+		}
+
+		from press.press.doctype.agent_job.agent_job import handle_polled_job
+
+		handle_polled_job(polled_job=polled_job, job=job)
+
+		mock_lock.assert_not_called()
+		mock_update_job.assert_not_called()
+
+		mock_update_steps.assert_called_once_with(job.name, polled_job)
+		mock_populate_output_cache.assert_called_once_with(polled_job, job)
+		mock_skip_pending_steps.assert_called_once_with(job.name)
+		mock_process_job_updates.assert_called_once_with(job.name, polled_job)
+		mock_publish_update.assert_called_once_with(job.name)

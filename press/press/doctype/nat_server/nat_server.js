@@ -3,7 +3,7 @@
 
 frappe.ui.form.on('NAT Server', {
 	refresh(frm) {
-		[
+		;[
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true, frm.doc.is_server_setup],
@@ -16,6 +16,16 @@ frappe.ui.form.on('NAT Server', {
 				true,
 				frm.doc.is_server_setup,
 			], // added temporarily for setting up nginx & monitoring config
+			[
+				__(
+					frm.doc.is_agent_auth_setup
+						? 'Regenerate Agent Token'
+						: 'Setup Agent Auth',
+				),
+				'setup_agent_auth',
+				false,
+				frm.doc.is_server_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -27,26 +37,26 @@ frappe.ui.form.on('NAT Server', {
 								() =>
 									frm.call(method).then((r) => {
 										if (r.message) {
-											frappe.msgprint(r.message);
+											frappe.msgprint(r.message)
 										} else {
-											frm.refresh();
+											frm.refresh()
 										}
 									}),
-							);
+							)
 						} else {
 							frm.call(method).then((r) => {
 								if (r.message) {
-									frappe.msgprint(r.message);
+									frappe.msgprint(r.message)
 								} else {
-									frm.refresh();
+									frm.refresh()
 								}
-							});
+							})
 						}
 					},
 					__('Actions'),
-				);
+				)
 			}
-		});
+		})
 
 		if (frm.doc.status === 'Active' && !!frm.doc.secondary_private_ip) {
 			frm.add_custom_button(
@@ -69,7 +79,7 @@ frappe.ui.form.on('NAT Server', {
 											cluster: frm.doc.cluster,
 											secondary_private_ip: ['is', 'not set'],
 										},
-									};
+									}
 								},
 							},
 						],
@@ -85,15 +95,15 @@ frappe.ui.form.on('NAT Server', {
 								})
 								.then((r) => {
 									if (r.message) {
-										frappe.msgprint(r.message);
+										frappe.msgprint(r.message)
 									}
-								});
-							d.hide();
+								})
+							d.hide()
 						},
-					}).show();
+					}).show()
 				},
 				__('Actions'),
-			);
+			)
 		}
 	},
-});
+})

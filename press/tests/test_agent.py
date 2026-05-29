@@ -1,9 +1,14 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
+
+from datetime import datetime, timedelta, timezone
+
 import frappe
+import jwt
 import requests
 import responses
+from frappe.exceptions import ValidationError
 from frappe.tests.utils import FrappeTestCase
 
 from press.agent import Agent, AgentRequestSkippedException
@@ -122,3 +127,95 @@ class TestAgent(FrappeTestCase):
 
 		responses.assert_call_count(f"https://{server.name}:443/agent/ping", 1)
 		self.assertEqual(frappe.db.count("Agent Request Failure", {"server": server.name}), 0)
+
+	def test_get_secret_returns_cached_secret(self):
+		server = create_test_server()
+
+		agent = Agent(server.name, server.doctype)
+
+		frappe.cache().set_value("agent_auth_secret", "test-secret")
+
+		self.assertEqual(agent.get_secret(), "test-secret")
+
+	def test_get_secret_raises_if_secret_not_configured(self):
+		server = create_test_server()
+
+		agent = Agent(server.name, server.doctype)
+
+		frappe.cache().delete_value("agent_auth_secret")
+
+		settings = frappe.get_single("Press Settings")
+		settings.secret = ""
+		settings.save(ignore_permissions=True)
+
+		self.assertRaises(ValidationError, agent.get_secret)
+
+	def test_verify_request_token_success(self):
+		server = create_test_server()
+
+		agent = Agent(server.name, server.doctype)
+
+		frappe.cache().set_value("agent_auth_secret", "test-secret")
+
+		token = jwt.encode(
+			{
+				"server": server.name,
+				"jti": "123",
+				"exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+			},
+			"test-secret",
+			algorithm="HS256",
+		)
+
+		self.assertEqual(agent._verify_request_token(token), True)
+
+	def test_verify_request_token_invalid_server(self):
+		server = create_test_server()
+
+		agent = Agent(server.name, server.doctype)
+
+		frappe.cache().set_value("agent_auth_secret", "test-secret")
+
+		token = jwt.encode(
+			{
+				"server": "wrong-server",
+				"jti": "123",
+				"exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+			},
+			"test-secret",
+			algorithm="HS256",
+		)
+
+		self.assertRaises(ValueError, agent._verify_request_token, token)
+
+	def test_verify_request_token_expired(self):
+		server = create_test_server()
+
+		agent = Agent(server.name, server.doctype)
+
+		frappe.cache().set_value("agent_auth_secret", "test-secret")
+
+		token = jwt.encode(
+			{
+				"server": server.name,
+				"jti": "123",
+				"exp": datetime.now(timezone.utc) - timedelta(minutes=5),
+			},
+			"test-secret",
+			algorithm="HS256",
+		)
+
+		self.assertRaises(ValueError, agent._verify_request_token, token)
+
+	def test_verify_request_token_invalid_token(self):
+		server = create_test_server()
+
+		agent = Agent(server.name, server.doctype)
+
+		frappe.cache().set_value("agent_auth_secret", "test-secret")
+
+		self.assertRaises(
+			ValueError,
+			agent._verify_request_token,
+			"invalid-token",
+		)

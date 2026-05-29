@@ -150,3 +150,120 @@ class TestDatabaseServer(FrappeTestCase):
 			).value_int,
 			int(15007.248 * 0.65),
 		)
+
+	@patch(
+		"press.press.doctype.database_server.database_server.Ansible",
+	)
+	def test_setup_server_marks_server_active_on_success(self, Mock_Ansible):
+		server = create_test_database_server()
+
+		mock_play = Mock()
+		mock_play.status = "Success"
+
+		mock_ansible_instance = Mock()
+		mock_ansible_instance.run.return_value = mock_play
+
+		Mock_Ansible.return_value = mock_ansible_instance
+
+		server._generate_secret = Mock(return_value="secret")
+		server.sign_agent_token = Mock(return_value="signed-token")
+		server._set_mount_status = Mock()
+		server.process_hybrid_server_setup = Mock()
+		server.reboot = Mock()
+
+		server._setup_server()
+
+		server.reload()
+
+		Mock_Ansible.assert_called_once_with(
+			playbook="database.yml",
+			server=server,
+			user=server.ssh_user or "root",
+			port=server.ssh_port or 22,
+			variables={
+				"server_type": server.doctype,
+				"server": server.name,
+				"workers": "2",
+				"agent_password": Mock_Ansible.call_args.kwargs["variables"]["agent_password"],
+				"agent_repository_url": Mock_Ansible.call_args.kwargs["variables"]["agent_repository_url"],
+				"agent_branch": Mock_Ansible.call_args.kwargs["variables"]["agent_branch"],
+				"monitoring_password": Mock_Ansible.call_args.kwargs["variables"]["monitoring_password"],
+				"log_server": Mock_Ansible.call_args.kwargs["variables"]["log_server"],
+				"kibana_password": Mock_Ansible.call_args.kwargs["variables"]["kibana_password"],
+				"agent_token": "signed-token",
+				"private_ip": server.private_ip,
+				"server_id": server.server_id,
+				"allocator": server.memory_allocator.lower(),
+				"db_port": server.db_port or 3306,
+				"mariadb_root_password": Mock_Ansible.call_args.kwargs["variables"]["mariadb_root_password"],
+				"certificate_private_key": Mock_Ansible.call_args.kwargs["variables"][
+					"certificate_private_key"
+				],
+				"certificate_full_chain": Mock_Ansible.call_args.kwargs["variables"][
+					"certificate_full_chain"
+				],
+				"certificate_intermediate_chain": Mock_Ansible.call_args.kwargs["variables"][
+					"certificate_intermediate_chain"
+				],
+				"mariadb_depends_on_mounts": server.mariadb_depends_on_mounts,
+				"nat_gateway_ip": server.get_nat_gateway_ip(),
+				**server.get_mount_variables(),
+			},
+		)
+
+		self.assertEqual(server.status, "Active")
+		self.assertEqual(server.is_server_setup, 1)
+		self.assertEqual(server.is_agent_auth_setup, 1)
+
+		server.process_hybrid_server_setup.assert_called_once()
+		server._set_mount_status.assert_called_once_with(mock_play)
+
+	@patch(
+		"press.press.doctype.database_server.database_server.Ansible",
+	)
+	def test_setup_server_marks_server_broken_on_failed_play(self, Mock_Ansible):
+		server = create_test_database_server()
+
+		mock_play = Mock()
+		mock_play.status = "Failure"
+
+		mock_ansible_instance = Mock()
+		mock_ansible_instance.run.return_value = mock_play
+
+		Mock_Ansible.return_value = mock_ansible_instance
+
+		server._generate_secret = Mock(return_value="secret")
+		server.sign_agent_token = Mock(return_value="signed-token")
+		server._set_mount_status = Mock()
+
+		server._setup_server()
+
+		server.reload()
+
+		self.assertEqual(server.status, "Broken")
+		self.assertEqual(server.is_server_setup, 0)
+		self.assertEqual(server.is_agent_auth_setup, 0)
+
+		server._set_mount_status.assert_called_once_with(mock_play)
+
+	@patch(
+		"press.press.doctype.database_server.database_server.Ansible",
+	)
+	def test_setup_server_marks_server_broken_on_exception(self, Mock_Ansible):
+		server = create_test_database_server()
+
+		mock_ansible_instance = Mock()
+		mock_ansible_instance.run.side_effect = Exception("Setup failed")
+
+		Mock_Ansible.return_value = mock_ansible_instance
+
+		server._generate_secret = Mock(return_value="secret")
+		server.sign_agent_token = Mock(return_value="signed-token")
+
+		server._setup_server()
+
+		server.reload()
+
+		self.assertEqual(server.status, "Broken")
+		self.assertEqual(server.is_server_setup, 0)
+		self.assertEqual(server.is_agent_auth_setup, 0)

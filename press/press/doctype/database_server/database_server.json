@@ -48,6 +48,8 @@
 		"private_vlan_id",
 		"agent_section",
 		"agent_password",
+		"is_agent_auth_setup",
+		"agent_job_update_feature",
 		"mariadb_section",
 		"self_hosted_mariadb_server",
 		"mariadb_root_password",
@@ -815,6 +817,19 @@
 			"fieldtype": "Check",
 			"label": "Is MariaDB Monitor Installed",
 			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "is_agent_auth_setup",
+			"fieldtype": "Check",
+			"label": "Is Agent Auth Setup",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "agent_job_update_feature",
+			"fieldtype": "Check",
+			"label": "Agent Job Update Feature"
 		},
 		{
 			"fieldname": "section_break_uzkb",

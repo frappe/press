@@ -3,13 +3,23 @@
 
 frappe.ui.form.on('Analytics Server', {
 	refresh: function (frm) {
-		[
+		;[
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true],
 			[__('Ping Ansible Unprepared'), 'ping_ansible_unprepared', true],
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[
+				__(
+					frm.doc.is_agent_auth_setup
+						? 'Regenerate Agent Token'
+						: 'Setup Agent Auth',
+				),
+				'setup_agent_auth',
+				false,
+				frm.doc.is_server_setup,
+			],
 			[
 				__('Fetch Keys'),
 				'fetch_keys',
@@ -34,25 +44,25 @@ frappe.ui.form.on('Analytics Server', {
 								() =>
 									frm.call(method).then((r) => {
 										if (r.message) {
-											frappe.msgprint(r.message);
+											frappe.msgprint(r.message)
 										} else {
-											frm.refresh();
+											frm.refresh()
 										}
 									}),
-							);
+							)
 						} else {
 							frm.call(method).then((r) => {
 								if (r.message) {
-									frappe.msgprint(r.message);
+									frappe.msgprint(r.message)
 								} else {
-									frm.refresh();
+									frm.refresh()
 								}
-							});
+							})
 						}
 					},
 					__('Actions'),
-				);
+				)
 			}
-		});
+		})
 	},
-});
+})
