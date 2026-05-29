@@ -277,14 +277,15 @@ class VirtualMachine(Document):
 			frappe.delete_doc("Virtual Machine Image", image)
 
 	def on_update(self):
-		server = self.get_server()
-
-		if self.has_value_changed("has_data_volume") and server:
+		if self.has_value_changed("has_data_volume") and (server := self.get_server()):
 			server.has_data_volume = self.has_data_volume
 			server.save()
 
 		if self.has_value_changed("disk_size") and self.should_bill_addon_storage():
 			self.update_subscription_for_addon_storage()
+
+		if self.has_value_changed("status") and self.status == "Running":
+			self._create_derived_cluster_if_hit_threshold()
 
 	def check_and_attach_data_disk_snapshot_volume(self):
 		if not self.data_disk_snapshot_volume_id:
@@ -1570,17 +1571,9 @@ class VirtualMachine(Document):
 				):
 					server.create_dns_record()
 
-		if self.has_value_changed("status") and self.status == "Running":
-			self._check_auto_cluster_threshold()
-
-	def _check_auto_cluster_threshold(self):
-		"""Enqueue auto cluster creation if this cluster has reached its VM threshold.
-
-		The ``auto_cluster_triggered`` flag is set synchronously (via
-		``db_set``) *before* the background job is enqueued so that concurrent
-		VM transitions on the same cluster cannot queue duplicate jobs.
-		"""
-		cluster = frappe.get_doc("Cluster", self.cluster)
+	def _create_derived_cluster_if_hit_threshold(self):
+		"""Enqueue auto cluster creation if this cluster has reached its VM threshold."""
+		cluster = frappe.get_doc("Cluster", self.cluster, for_update=True)
 
 		if not cluster.enable_auto_cluster or not cluster.max_servers:
 			return
@@ -1591,11 +1584,9 @@ class VirtualMachine(Document):
 		if running_count < cluster.max_servers:
 			return
 
-		cluster.auto_cluster_triggered = 1
-		cluster.save()
-		frappe.db.commit()
+		cluster.db_set("auto_cluster_triggered", 1)
 
-		cluster.create_auto_cluster()
+		cluster.create_derived_cluster()
 
 	def update_name_tag(self, name):
 		if self.cloud_provider == "AWS EC2" and self.instance_id:
