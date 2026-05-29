@@ -72,10 +72,6 @@ class PartnerOnboarding(Document):
 		"agreed_to_partnership_agreement",
 	)
 
-	def before_validate(self):
-		if self.status == "Submission Pending":
-			self.status = "Pending Review"
-
 	def before_submit(self):
 		team = frappe.get_cached_doc("Team", self.team)
 
