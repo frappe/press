@@ -8,6 +8,8 @@ import frappe
 from press.mcp import mcp as press_mcp
 from press.mcp.utils import system_manager_only
 
+_CANCEL_STUCK_JOBS_LIMIT = 50
+
 
 @press_mcp.tool()
 @system_manager_only
@@ -71,6 +73,7 @@ def cancel_stuck_jobs(bench: str, confirm: bool = False) -> dict:
 		},
 		fields=["name", "job_type", "site", "creation"],
 		order_by="creation asc",
+		limit=_CANCEL_STUCK_JOBS_LIMIT,
 	)
 
 	if not stuck_jobs:
@@ -86,7 +89,8 @@ def cancel_stuck_jobs(bench: str, confirm: bool = False) -> dict:
 			"action": "cancel_stuck_jobs",
 			"bench": bench,
 			"stuck_jobs": stuck_jobs,
-			"impact": f"Will cancel {len(stuck_jobs)} stuck job(s) listed above.",
+			"impact": f"Will cancel up to {_CANCEL_STUCK_JOBS_LIMIT} stuck job(s) in this request.",
+			"limit": _CANCEL_STUCK_JOBS_LIMIT,
 			"requires_confirm": True,
 			"next_step": "Call again with confirm=True to execute.",
 		}
@@ -96,4 +100,10 @@ def cancel_stuck_jobs(bench: str, confirm: bool = False) -> dict:
 		frappe.get_doc("Agent Job", job.name).cancel_job()
 		cancelled.append({"name": job.name, "job_type": job.job_type, "site": job.site})
 
-	return {"action": "cancel_stuck_jobs", "bench": bench, "cancelled": cancelled, "status": "triggered"}
+	return {
+		"action": "cancel_stuck_jobs",
+		"bench": bench,
+		"cancelled": cancelled,
+		"limit": _CANCEL_STUCK_JOBS_LIMIT,
+		"status": "triggered",
+	}
