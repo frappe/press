@@ -3,7 +3,7 @@
 A Frappe Cloud cluster has three server types, all extending `BaseServer` (defined in `server.py`):
 
 ```
-Proxy Server (nginx)
+Proxy Server (nginx + ProxySQL)
  ├── App Server / Server (Frappe: gunicorn + redis + workers)
  │    └── Database Server (MariaDB)
  ├── App Server
@@ -29,14 +29,15 @@ Runs MariaDB. Each App Server is paired with one. Handles:
 
 ## ProxyServer
 
-Runs nginx. Routes traffic to App Servers. Handles:
+Runs nginx (HTTP routing) and ProxySQL (direct database access). Handles:
 - TLS certificate provisioning
 - Domain → upstream server mapping
 - SSH proxy for user terminal access
+- Direct MariaDB access via ProxySQL
 
 ## BaseServer
 
 Shared base class. Handles:
 - Ansible-based provisioning (`press/playbooks/`)
 - Status lifecycle: `Pending → Active / Broken / Archived`
-- VirtualMachine linkage (the underlying cloud VM)
+- Optional `VirtualMachine` linkage — servers can be provisioned automatically via cloud APIs or added manually by entering IP and credentials directly.
