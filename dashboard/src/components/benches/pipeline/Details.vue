@@ -35,7 +35,6 @@ import { getTeam } from '@/data/team'
 import { secsToDuration, date, duration } from '@/utils/format'
 
 const team = getTeam()
-const loader = ref(true)
 const socket = window.$socket
 
 interface Props {
@@ -93,6 +92,8 @@ const pipeline = props.deployview
 				if (loader.value) loader.value = false
 			},
 		})
+
+const loader = ref(!pipeline?.doc)
 
 const notifApiFields = {
 	doctype: 'Press Notification',
