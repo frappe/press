@@ -855,13 +855,17 @@ def _normalize_filters(
 
 	raw_filters = _parse_filter_json(filters) if isinstance(filters, str) else filters
 	if not isinstance(raw_filters, dict):
-		frappe.throw('Filters must be a JSON object, for example {"server": "server-name"}.')
+		frappe.throw(
+			'Filters must be a JSON object. Pass filters like {"server": "server-name"} or leave filters empty.'
+		)
 		return None
 
 	normalized_filters = {}
 	for key, value in raw_filters.items():
 		if not isinstance(key, str):
-			frappe.throw("Filter field names must be strings.")
+			frappe.throw(
+				"Filter field names must be strings. Use field names like 'server' or 'status' as object keys."
+			)
 		if not isinstance(value, str | int | float | bool):
 			frappe.throw(
 				f"Filter '{key}' must be a string, integer, float, or boolean value. Lists and nested objects are not allowed."
@@ -877,7 +881,9 @@ def _parse_filter_json(filters: str) -> Any:
 	try:
 		return json.loads(filters)
 	except json.JSONDecodeError:
-		frappe.throw('Filters must be a JSON object, for example {"server": "server-name"}.')
+		frappe.throw(
+			'Filters must be valid JSON. Pass a JSON object like {"server": "server-name"} or leave filters empty.'
+		)
 
 
 def _validate_filters(doctype: str, filters: dict[str, str | int | float | bool] | None) -> None:
