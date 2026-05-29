@@ -93,7 +93,7 @@ const helpDropdownOptions = [
 <template>
 	<aside
 		class="relative flex md:min-h-screen p-2 gap-1 flex-col border-r transition-[width]
-    bg-surface-white  md:bg-surface-gray-1 dark:bg-transparent overflow-x-hidden"
+    bg-surface-white  md:bg-surface-gray-1 dark:bg-transparent"
 		:class='collapsed ? " md:w-12" : "w-full md:w-[250px]"'
 	>
     <div class='flex gap-2 items-center border-y md:border-0 p-2 md:p-0 -m-2 md:m-0 h-[44px] md:h-auto'>
