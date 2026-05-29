@@ -12,15 +12,15 @@ const resources = [
 	},
 	{
 		title: 'Certifications guide',
-		link: '',
+		link: 'https://docs.frappe.io/school/partner-certification',
 	},
 	{
 		title: 'Getting started with Frappe Cloud',
-		link: '',
+		link: 'https://frappe.io/cloud',
 	},
 	{
 		title: 'Partnership tiers guide',
-		link: '',
+		link: 'https://frappe.io/partners/plans',
 	},
 ]
 </script>
