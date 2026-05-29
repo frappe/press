@@ -7,7 +7,6 @@ import {
 	Button,
 	Dropdown,
 	Badge,
-  Spinner
 } from 'frappe-ui'
 
 import { toast } from 'vue-sonner'
@@ -19,6 +18,7 @@ import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
 import AppVersionsDialog from '@/dialogs/AppVersionsDialog.vue'
 import Stages from './Stages.vue'
+import Loader from './Loader.vue'
 
 import {
 	h,
@@ -365,21 +365,27 @@ const stopBuild = () => {
 </script>
 
 <template>
+	<Loader
+		v-if="deployview? builds[activeBuildId]?.get?.loading: pipeline?.get?.loading"
+	/>
+
 	<main
-		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-6rem)]"
+		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-7rem)] mt-1.5"
+		v-else
 	>
 		<!-- header -->
 		<div class="flex gap-2 items-center">
-			<router-link :to="`/groups/${name}/${deployview? 'deploys':'pipelines'}`">
-				<lucide-chevron-left class="size-4" />
-			</router-link>
+			<Button :route="`/groups/${name}/deploys?pipeline=${!deployview}`">
+				<template #icon>
+					<lucide-chevron-left class="size-4" />
+				</template>
+			</Button>
 
-			<h2 class="text-ink-gray-9">
+			<h2 class="text-ink-gray-9 text-lg font-medium">
 				{{ deployview ? builds[activeBuildId]?.doc?.deploy_candidate : "Pipeline" }}
 				{{ pipeline?.doc?.name }}
 			</h2>
 
-        <Spinner v-if="pipeline?.loading"/>
 			<Badge
 				:label="deployview ? builds[activeBuildId]?.doc?.status : pipeline?.doc?.status"
 				:theme="badgeThemes[deployview ? builds[activeBuildId]?.doc?.status : pipeline?.doc?.status] || 'gray'"
@@ -388,7 +394,7 @@ const stopBuild = () => {
 
 			<Tabs
 				variant="solid"
-        size='sm'
+				size="sm"
 				v-if="!deployview && buildIds.length > 1"
 				:tabs="pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => ({ label: x.architecture, value: x.name }))"
 				v-model="activeBuildId"
@@ -405,7 +411,9 @@ const stopBuild = () => {
 
 			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
 				<Button>
-					<lucide-more-horizontal class="size-4" />
+					<template #icon>
+						<lucide-more-horizontal class="size-4" />
+					</template>
 				</Button>
 			</Dropdown>
 		</div>
@@ -487,7 +495,7 @@ const stopBuild = () => {
 						class="flex flex-col gap-1"
 					>
 						<Collapsable headerCss="py-3" class="mb-3">
-							<template #header>
+							<template #prefix>
 								<StatusIcon
 									:status="x.class == 'Error' ? 'Failed' : 'Warning'"
 								/>
@@ -526,9 +534,12 @@ const stopBuild = () => {
 				>
 					<span>Output</span>
 					<CopyBtn :text="output?.val || ''" class="ml-auto smallbtn" />
-					<button class='smallbtn' @click="setOutput({ val: null, status: null, opened:false })">
+					<button
+						class="smallbtn"
+						@click="setOutput({ val: null, status: null, opened:false })"
+					>
 						<lucide-x class="size-4" />
-					</Button>
+					</button>
 				</div>
 
 				<pre
@@ -543,6 +554,6 @@ const stopBuild = () => {
 
 <style scoped>
 .smallbtn {
-   @apply hover:bg-surface-gray-3 dark:hover:bg-surface-gray-2 p-1 rounded hover:text-ink-gray-9
+	@apply hover:bg-surface-gray-3 dark:hover:bg-surface-gray-2 p-1 rounded hover:text-ink-gray-9
 }
 </style>
