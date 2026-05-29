@@ -239,8 +239,10 @@ watch(
 const handleDocUpdate = props.deployview
 	? null
 	: (x) => {
-			if (x.doctype === 'Release Pipeline' && x.name === props.id)
+      if (x.doctype === 'Release Pipeline' && x.name === props.id){
 				pipeline.reload()
+				if (loader.value) loader.value = false
+      }
 		}
 
 onBeforeUnmount(() => {
