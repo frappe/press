@@ -31,7 +31,7 @@ class ArchiveServerJob(PressJob):
 		if self.virtual_machine_doc.status == "Terminated":
 			return
 
-		self.virtual_machine_doc.terminate()
+		self.virtual_machine_doc.terminate(reason=self.arguments_dict.get("reason", None))
 
 	@task
 	def wait_for_virtual_machine_to_terminate(self):

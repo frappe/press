@@ -329,7 +329,6 @@ scheduler_events = {
 			"press.press.doctype.bench.bench.process_bench_queue",
 		],
 		"* * * * * 0/30": [
-			"press.press.doctype.account_request.account_request.expire_request_key",
 			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
 			"press.press.doctype.site_action.site_action.process_site_actions",
 		],
@@ -384,6 +383,7 @@ scheduler_events = {
 			"press.press.doctype.server_plan.server_plan.sync_machine_availability_status_of_plans",
 		],
 		"*/30 * * * *": [
+			"press.press.doctype.account_request.account_request.expire_request_key",
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
 			"press.press.doctype.team.suspend_sites.execute",
 			"press.press.doctype.site_backup.site_backup.delete_successful_unavailable_backups_for_archived_sites",

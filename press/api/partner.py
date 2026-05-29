@@ -613,7 +613,7 @@ def calculate_partner_tier(contribution: float, currency: str) -> dict | None:
 def add_partner(referral_code: str) -> str | None:
 	team = get_current_team(get_doc=True)
 	year_ago = frappe.utils.add_to_date(years=-1)
-	is_old_team = bool(team.creation > year_ago)
+	is_old_team = bool(team.creation <= year_ago)
 	partner = frappe.get_doc("Team", {"partner_referral_code": referral_code}).name
 	if frappe.db.exists(
 		"Partner Approval Request",
