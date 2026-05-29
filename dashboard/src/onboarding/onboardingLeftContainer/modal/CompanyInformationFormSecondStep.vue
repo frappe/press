@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FormControl } from 'frappe-ui'
+import { computed } from 'vue'
 import type { PartnerOnboardingDoc } from '@/onboarding/usePartnerOnboarding'
 
 const emit = defineEmits(['continue'])
@@ -24,6 +25,20 @@ const customerRangeOptions = [
 	{ label: '201+', value: '201+' },
 ]
 
+const verticalsServed = computed<string[]>({
+	get() {
+		const value = props.form.verticals_served
+		if (!value) return []
+		return String(value)
+			.split(',')
+			.map((vertical) => vertical.trim())
+			.filter(Boolean)
+	},
+	set(value) {
+		props.form.verticals_served = value.join(', ')
+	},
+})
+
 function tryContinue() {
 	emit('continue')
 }
@@ -43,7 +58,7 @@ defineExpose({ tryContinue })
 				<span class="text-xs text-ink-gray-5">Optional</span>
 			</div>
 			<FormControl
-				v-model="props.form.verticals_served"
+				v-model="verticalsServed"
 				type="select"
 				size="sm"
 				variant="outline"

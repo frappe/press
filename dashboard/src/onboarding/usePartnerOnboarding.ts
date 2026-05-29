@@ -299,6 +299,13 @@ export function usePartnerOnboarding(team?: TeamResource) {
 		return nextDoc
 	}
 
+	async function loadPartnerOnboarding() {
+		if (getPartnerOnboarding.reload) {
+			return getPartnerOnboarding.reload()
+		}
+		return getPartnerOnboarding.fetch()
+	}
+
 	async function save() {
 		return savePartnerOnboarding.submit({
 			details: detailsFromForm(),
@@ -338,6 +345,12 @@ export function usePartnerOnboarding(team?: TeamResource) {
 	useSocketEvent('partner_onboarding_mrr_updated', (data: any) => {
 		if (data?.team === teamName) {
 			void loadMRRStatus()
+		}
+	})
+
+	useSocketEvent('partner_onboarding_status_updated', (data: any) => {
+		if (data?.team === teamName) {
+			void loadPartnerOnboarding()
 		}
 	})
 

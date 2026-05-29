@@ -109,6 +109,13 @@ class PartnerOnboarding(Document):
 		self.reviewed_on = now_datetime()
 		self.rejection_reason = None
 		self.save()
+		# publish a realtime event to update the partner onboarding status
+		frappe.publish_realtime(
+			"partner_onboarding_status_updated",
+			message={"team": self.team},
+			doctype="Team",
+			after_commit=True,
+		)
 
 	@frappe.whitelist()
 	def reject(self, reason: str | None = None):
@@ -125,6 +132,13 @@ class PartnerOnboarding(Document):
 		self.reviewed_on = now_datetime()
 		self.rejection_reason = reason
 		self.save()
+		# publish a realtime event to update the partner onboarding status
+		frappe.publish_realtime(
+			"partner_onboarding_status_updated",
+			message={"team": self.team},
+			doctype="Team",
+			after_commit=True,
+		)
 
 
 def _get_partner_onboarding(team: str):
@@ -293,7 +307,10 @@ def save_partner_onboarding(details: dict[str, Any]) -> dict:
 		if fieldname in ("team", "status"):
 			continue
 		if fieldname in details:
-			doc.set(fieldname, details[fieldname])
+			value = details[fieldname]
+			if fieldname in ("verticals_served", "existing_partnerships") and isinstance(value, list):
+				value = ", ".join(str(item).strip() for item in value if str(item).strip())
+			doc.set(fieldname, value)
 
 	if not doc.name:
 		doc.insert()
