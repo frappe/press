@@ -6,6 +6,7 @@ from __future__ import annotations
 import frappe
 
 from press.mcp import mcp as press_mcp
+from press.mcp.guardrails.redaction import redact
 from press.mcp.utils import system_manager_only
 
 
@@ -158,6 +159,6 @@ def _app_clone_info(
 	}
 
 	if error:
-		result["error"] = error
+		result["error"] = redact(error)
 
 	return result
