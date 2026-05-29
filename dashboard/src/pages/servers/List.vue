@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { Button, createListResource, TextInput, Select } from 'frappe-ui'
+import {
+	Button,
+	createListResource,
+	TextInput,
+	Select,
+	Tooltip,
+} from 'frappe-ui'
 import Header from '@/components/Header.vue'
 import { ref, reactive, watch } from 'vue'
 import { dayjsLocal } from '@/utils/dayjs'
@@ -9,6 +15,7 @@ import HetnzerLogo from '@/logo/Hetzner.vue'
 import FrappeLogo from '@/logo/Frappe.vue'
 import AwsLogo from '@/logo/Aws.vue'
 import OracleLogo from '@/logo/Oracle.vue'
+import DigitalOceanLogo from '@/logo/DigitalOcean.vue'
 
 const searchQuery = ref('')
 const benchesRes = reactive({})
@@ -109,6 +116,7 @@ const providerIcons = {
 	Hetzner: HetnzerLogo,
 	'AWS EC2': AwsLogo,
 	Oracle: OracleLogo,
+  DigitalOcean: DigitalOceanLogo,
 }
 </script>
 
@@ -176,10 +184,8 @@ const providerIcons = {
 			<div
 				class="border-b dark:border-outline-gray-2  p-4 flex gap-3 items-center"
 			>
-				<img
-					:src="`../../assets/providers/${providerIcons[server?.provider]}.svg`"
-					class="size-8"
-				/>
+
+      <component :is="providerIcons[server?.provider]" class="size-8" />
 
 				<div class="flex flex-wrap gap-2 items-center text-sm">
 					<span>{{ server?.title }}</span>
@@ -200,9 +206,21 @@ const providerIcons = {
 				class="grid gap-3 grid-cols-[1.5rem_1fr_0.5fr_0.7fr_2rem] px-4 pt-4 pb-0 items-center text-ink-gray-4 text-sm"
 			>
 				<span />
-				<span>Bench</span>
-				<span>Status</span>
-				<span>Version</span>
+				<template v-if="benchesRes[server.name]?.data.length">
+					<span>Bench</span>
+					<span>Status</span>
+					<span>Version</span>
+				</template>
+
+				<div v-else class="flex gap-2 items-center pb-4">
+					<Tooltip
+						text="Add benches via the more button or benches tab to start hosting sites"
+						:hoverDelay="0"
+					>
+						<LucideAlertCircle class="size-4" />
+					</Tooltip>
+					<span class="text-ink-gray-5">No Benches added</span>
+				</div>
 				<span />
 			</div>
 
