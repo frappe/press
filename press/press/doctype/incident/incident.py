@@ -62,6 +62,7 @@ MIN_FIRING_INSTANCES_FRACTION = (
 )
 
 DAY_HOURS = range(9, 18)
+NIGHT_SHIFT_CALL_LIMIT = 20
 CONFIRMATION_THRESHOLD_SECONDS_DAY = 5 * 60  # 5 minutes;time after which humans are called
 CONFIRMATION_THRESHOLD_SECONDS_NIGHT = (
 	10 * 60  # 10 minutes; time after which humans are called
@@ -548,7 +549,12 @@ class Incident(WebsiteGenerator):
 		incident_settings: IncidentSettings = frappe.get_cached_doc("Incident Settings")  # type: ignore
 		is_night = frappe.utils.now_datetime().hour not in DAY_HOURS
 
-		if is_night and (night_users := self.get_night_shift_humans(incident_settings)):
+		call_count = len(self.updates)
+		if (
+			is_night
+			and call_count < NIGHT_SHIFT_CALL_LIMIT
+			and (night_users := self.get_night_shift_humans(incident_settings))
+		):
 			if self.status == "Acknowledged":
 				return self._round_robin_order(night_users)
 			return night_users
