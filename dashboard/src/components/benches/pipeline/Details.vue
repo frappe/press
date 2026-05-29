@@ -35,6 +35,7 @@ import { getTeam } from '@/data/team'
 import { secsToDuration, date, duration } from '@/utils/format'
 
 const team = getTeam()
+const dataNotFound = ref(false)
 const socket = window.$socket
 
 interface Props {
@@ -88,6 +89,14 @@ const pipeline = props.deployview
 			doctype: 'Release Pipeline',
 			name: props.id,
 			auto: true,
+			onSuccess: () => {
+				if (dataNotFound.value) dataNotFound.value = false
+			},
+			onError: (err) => {
+				if (err?.exc_type === 'DoesNotExistError') {
+					dataNotFound.value = true
+				}
+			},
 		})
 
 const notifApiFields = {
@@ -366,7 +375,7 @@ const stopBuild = () => {
 
 <template>
 	<Loader
-		v-if="deployview? builds[activeBuildId]?.get?.loading: pipeline?.get?.loading"
+		v-if="deployview? builds[activeBuildId]?.get?.loading: (pipeline?.get?.loading || dataNotFound)"
 	/>
 
 	<main
