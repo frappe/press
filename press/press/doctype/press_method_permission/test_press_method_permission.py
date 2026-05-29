@@ -50,15 +50,13 @@ class TestAvailableActions(FrappeTestCase):
 		"""Returns a dict with one doctype containing one action."""
 		doctypes = ["Site"]
 		perms = {"Site": [{"checkbox_label": "Restart", "method": "restart"}]}
+		call_no = [0]
 
 		def _get_all(doctype, *args, **kwargs):
-			if not args and not kwargs:
+			if call_no[0] == 0:
+				call_no[0] += 1
 				return doctypes
-			filters = args[0] if args else kwargs.get("filters", {})
-			if isinstance(filters, str) and filters == "Site":
-				return perms["Site"]
-			if isinstance(filters, dict):
-				return perms.get(filters.get("document_type", ""), [])
+			call_no[0] += 1
 			return perms.get("Site", [])
 
 		with patch(f"{_MODULE}.frappe.get_all", side_effect=_get_all):

@@ -88,11 +88,19 @@ class TestPrometheusAlertRule(FrappeTestCase):
 		self.assertEqual(route["group_interval"], "5m")
 		self.assertEqual(route["repeat_interval"], "2h")
 
+	def _bind_methods(self, doc):
+		"""Bind get_rule and get_route onto a SimpleNamespace so validate() can call them."""
+		import types
+
+		doc.get_rule = types.MethodType(PrometheusAlertRule.get_rule, doc)
+		doc.get_route = types.MethodType(PrometheusAlertRule.get_route, doc)
+		return doc
+
 	def test_validate_raises_when_enabled_without_expression(self):
 		"""validate() raises ValidationError when enabled=True but expression is empty."""
 		import frappe
 
-		doc = self._make_doc(enabled=1, expression="")
+		doc = self._bind_methods(self._make_doc(enabled=1, expression=""))
 		with (
 			patch(f"{self._MODULE}.yaml.dump", return_value=""),
 			self.assertRaises(frappe.ValidationError),
@@ -101,6 +109,6 @@ class TestPrometheusAlertRule(FrappeTestCase):
 
 	def test_validate_passes_when_disabled_without_expression(self):
 		"""validate() does not raise when rule is disabled even if expression is empty."""
-		doc = self._make_doc(enabled=0, expression="")
+		doc = self._bind_methods(self._make_doc(enabled=0, expression=""))
 		with patch(f"{self._MODULE}.yaml.dump", return_value=""):
 			PrometheusAlertRule.validate(doc)  # must not raise

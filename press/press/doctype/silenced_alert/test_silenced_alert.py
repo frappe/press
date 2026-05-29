@@ -31,27 +31,27 @@ class TestSilencedAlertGetDuration(FrappeTestCase):
 		doc = self._doc("2026-01-01 10:00:00", "2026-01-01 11:00:00")
 		SilencedAlert.get_duration(doc)
 		self.assertIsNotNone(doc.duration)
-		# format_duration(3600) → "1 hour" (Frappe default)
-		self.assertIn("hour", doc.duration.lower())
+		# format_duration(3600) → "1h" (Frappe compact format)
+		self.assertEqual(doc.duration, "1h")
 
 	def test_zero_duration(self):
 		doc = self._doc("2026-01-01 10:00:00", "2026-01-01 10:00:00")
 		SilencedAlert.get_duration(doc)
-		# Zero seconds → "0 seconds" or similar
 		self.assertIsNotNone(doc.duration)
 
 	def test_duration_thirty_minutes(self):
 		doc = self._doc("2026-01-01 09:00:00", "2026-01-01 09:30:00")
 		SilencedAlert.get_duration(doc)
 		self.assertIsNotNone(doc.duration)
-		# 1800 seconds → "30 minutes"
-		self.assertIn("minute", doc.duration.lower())
+		# format_duration(1800) → "30m"
+		self.assertEqual(doc.duration, "30m")
 
 	def test_duration_two_days(self):
 		doc = self._doc("2026-01-01 00:00:00", "2026-01-03 00:00:00")
 		SilencedAlert.get_duration(doc)
 		self.assertIsNotNone(doc.duration)
-		self.assertIn("day", doc.duration.lower())
+		# format_duration(172800) → "2d"
+		self.assertEqual(doc.duration, "2d")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

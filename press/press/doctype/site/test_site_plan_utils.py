@@ -27,6 +27,9 @@ class TestGetServerSiteWarrantyQuota(FrappeTestCase):
 	def setUp(self):
 		frappe.set_user("Administrator")
 		create_test_press_settings()
+		# Ensure a predictable baseline: non-public servers auto-inherit quota from
+		# Press Settings, so pin it to 0 before creating the test server.
+		frappe.db.set_single_value("Press Settings", "default_dedicated_server_site_warranty_quota", 0)
 		self.team = create_test_team()
 		self.server = create_test_server(team=self.team.name)
 

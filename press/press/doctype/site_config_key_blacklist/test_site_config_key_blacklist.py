@@ -12,6 +12,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.site_config_key_blacklist.site_config_key_blacklist import (
@@ -31,8 +32,8 @@ class TestSiteConfigKeyBlacklistValidate(FrappeTestCase):
 		"""validate() calls frappe.msgprint when the key already exists as an enabled SCK."""
 		doc = self._doc()
 		with (
-			patch(f"{_MODULE}.frappe.db.exists", return_value=True),
-			patch(f"{_MODULE}.frappe.msgprint") as mock_mp,
+			patch.object(frappe.db, "exists", return_value=True),
+			patch.object(frappe, "msgprint") as mock_mp,
 		):
 			SiteConfigKeyBlacklist.validate(doc)
 		mock_mp.assert_called_once()
@@ -41,8 +42,8 @@ class TestSiteConfigKeyBlacklistValidate(FrappeTestCase):
 		"""validate() is silent when no matching enabled Site Config Key is found."""
 		doc = self._doc()
 		with (
-			patch(f"{_MODULE}.frappe.db.exists", return_value=False),
-			patch(f"{_MODULE}.frappe.msgprint") as mock_mp,
+			patch.object(frappe.db, "exists", return_value=False),
+			patch.object(frappe, "msgprint") as mock_mp,
 		):
 			SiteConfigKeyBlacklist.validate(doc)
 		mock_mp.assert_not_called()
@@ -51,8 +52,8 @@ class TestSiteConfigKeyBlacklistValidate(FrappeTestCase):
 		"""The warning message should mention the key that was found."""
 		doc = self._doc(key="rate_limit_num_requests")
 		with (
-			patch(f"{_MODULE}.frappe.db.exists", return_value=True),
-			patch(f"{_MODULE}.frappe.msgprint") as mock_mp,
+			patch.object(frappe.db, "exists", return_value=True),
+			patch.object(frappe, "msgprint") as mock_mp,
 		):
 			SiteConfigKeyBlacklist.validate(doc)
 		call_args = mock_mp.call_args
@@ -63,7 +64,7 @@ class TestSiteConfigKeyBlacklistValidate(FrappeTestCase):
 		"""validate() must NOT raise an exception — only emit a warning."""
 		doc = self._doc()
 		with (
-			patch(f"{_MODULE}.frappe.db.exists", return_value=True),
-			patch(f"{_MODULE}.frappe.msgprint"),
+			patch.object(frappe.db, "exists", return_value=True),
+			patch.object(frappe, "msgprint"),
 		):
 			SiteConfigKeyBlacklist.validate(doc)  # must not raise

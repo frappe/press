@@ -40,29 +40,29 @@ class TestPressJobArgumentsDict(FrappeTestCase):
 
 	def test_returns_dict_from_valid_json(self):
 		doc = _job(arguments={"site": "mysite.com", "action": "backup"})
-		result = PressJob.arguments_dict.fget(doc)
+		result = PressJob.arguments_dict.func(doc)
 		self.assertEqual(result["site"], "mysite.com")
 		self.assertEqual(result["action"], "backup")
 
 	def test_returns_empty_dict_when_arguments_is_none(self):
 		doc = _job(arguments=None)
-		result = PressJob.arguments_dict.fget(doc)
+		result = PressJob.arguments_dict.func(doc)
 		self.assertEqual(result, {})
 
 	def test_returns_empty_dict_when_arguments_is_empty_string(self):
 		doc = _job()
 		doc.arguments = ""
-		result = PressJob.arguments_dict.fget(doc)
+		result = PressJob.arguments_dict.func(doc)
 		self.assertEqual(result, {})
 
 	def test_returns_frappe_dict(self):
 		doc = _job(arguments={"key": "val"})
-		result = PressJob.arguments_dict.fget(doc)
+		result = PressJob.arguments_dict.func(doc)
 		self.assertIsInstance(result, frappe._dict)
 
 	def test_nested_arguments_preserved(self):
 		doc = _job(arguments={"config": {"debug": True, "level": 3}})
-		result = PressJob.arguments_dict.fget(doc)
+		result = PressJob.arguments_dict.func(doc)
 		self.assertEqual(result["config"]["debug"], True)
 
 

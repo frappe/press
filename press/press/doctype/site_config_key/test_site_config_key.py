@@ -61,9 +61,9 @@ class TestSiteConfigKeyTitleGeneration(FrappeTestCase):
 
 	def test_empty_string_title_is_replaced(self):
 		"""An empty string title is treated as missing and auto-generated."""
-		doc = _key_doc(key="rate_limit", title="")
+		doc = _key_doc(key="my_empty_title_key", title="")
 		SiteConfigKey.validate(doc)
-		self.assertEqual(doc.title, "Rate Limit")
+		self.assertEqual(doc.title, "My Empty Title Key")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

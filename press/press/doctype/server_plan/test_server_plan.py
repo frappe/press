@@ -60,10 +60,12 @@ class TestServerPlan(FrappeTestCase):
 		)
 
 	def test_monthly_price_is_30x_daily(self):
-		"""Monthly price should be price_per_day * 30 (rounded)."""
-		expected = round(self.plan.get_price_per_day("USD") * 30, 2)
+		"""Monthly price should be price_per_day * 30 (rounded to integer)."""
+		from frappe.utils import rounded
+
+		expected = rounded(self.plan.get_price_per_day("USD") * 30)
 		result = self.plan.get_price_for_interval("Monthly", "USD")
-		self.assertAlmostEqual(result, expected, places=2)
+		self.assertEqual(result, expected)
 
 	def test_unknown_interval_returns_none(self):
 		"""An unrecognised interval returns None (not an exception)."""
