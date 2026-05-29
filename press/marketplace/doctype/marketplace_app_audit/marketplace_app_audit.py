@@ -81,7 +81,9 @@ class MarketplaceAppAudit(Document):
 		audit.audit_type = audit_type
 		audit.status = "Queued"
 		audit.team = frappe.db.get_value("Marketplace App", marketplace_app, "team")
-		audit.insert()
+		# ignore permissions to avoid permission errors during audit creation when app release is created.
+		# we don't need to give full document level permissions to the user.
+		audit.insert(ignore_permissions=True)
 		audit.trigger_audit()
 		return audit
 
