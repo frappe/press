@@ -370,7 +370,7 @@ const stopBuild = () => {
 	/>
 
 	<main
-		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-6rem)] mt-1.5"
+		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-7rem)] mt-1.5"
 		v-else
 	>
 		<!-- header -->
