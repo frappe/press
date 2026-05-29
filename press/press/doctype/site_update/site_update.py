@@ -357,9 +357,9 @@ class SiteUpdate(Document):
 			self.create_update_site_agent_request()
 
 	def fail_with_notification(self, reason: str):
-		update_status(self.name, "Failure")
+		frappe.db.set_value("Site Update", self.name, "status", "Cancelled")
 		site = frappe.get_cached_doc("Site", self.site)
-		message = f"Scheduled Site Update for site <b>{site.host_name}</b> could not be started: {reason}"
+		message = f"Scheduled Site Update for site <b>{site.host_name}</b> was cancelled: {reason}"
 		create_new_notification(site.team, "Site Update", "Agent Job", None, message)
 
 	def get_before_migrate_scripts(self, rollback=False):

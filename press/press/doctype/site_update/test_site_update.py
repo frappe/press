@@ -323,7 +323,7 @@ class TestSiteUpdate(FrappeTestCase):
 
 		run_scheduled_updates()
 
-		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Failure")
+		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Cancelled")
 		self.assertTrue(frappe.db.exists("Press Notification", {"type": "Site Update", "team": site.team}))
 
 	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
@@ -359,5 +359,5 @@ class TestSiteUpdate(FrappeTestCase):
 
 		run_scheduled_updates()
 
-		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Failure")
+		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Cancelled")
 		self.assertTrue(frappe.db.exists("Press Notification", {"type": "Site Update", "team": site.team}))
