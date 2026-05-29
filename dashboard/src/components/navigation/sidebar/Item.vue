@@ -24,6 +24,7 @@ const props = withDefaults(defineProps<NavItemProps>(), {
         : 'hover:bg-surface-gray-2',
       disabled ? 'pointer-events-none opacity-50' : '',
       collapsed ? 'md:w-fit gap-2 md:gap-0' : 'gap-2 md:w-full',
+      css
     ]"
 		>
 			<slot name="prefix">
