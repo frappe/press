@@ -145,7 +145,7 @@ def list_directory_in_bench(bench: str, directory: str) -> dict:
 	Returns at most 200 shell output lines. Refuses paths that commonly contain secrets.
 	"""
 	bench_doc = _validate_bench(bench)
-	directory = _validate_safe_path(directory, path_type="directory")
+	directory = _validate_safe_bench_path(directory, path_type="directory")
 	quoted_directory = shlex.quote(directory)
 	result = _run_checked_in_bench(
 		_directory_guard(quoted_directory)
@@ -177,7 +177,7 @@ def get_file_in_bench(bench: str, file: str) -> dict:
 	private keys or other secrets.
 	"""
 	bench_doc = _validate_bench(bench)
-	file = _validate_safe_path(file, path_type="file")
+	file = _validate_safe_bench_path(file, path_type="file")
 	quoted_file = shlex.quote(file)
 	result = _run_checked_in_bench(
 		_file_guard(quoted_file)
@@ -213,7 +213,7 @@ def get_disk_usage_in_bench(bench: str, path: str) -> dict:
 	commonly contain credentials, private keys or other secrets.
 	"""
 	bench_doc = _validate_bench(bench)
-	path = _validate_safe_path(path, path_type="path")
+	path = _validate_safe_bench_path(path, path_type="path")
 	quoted_path = shlex.quote(path)
 	result = _run_checked_in_bench(
 		f"if [ ! -e {quoted_path} ]; then "
@@ -242,7 +242,7 @@ def tail_file_in_bench(bench: str, file: str, lines: int = _DEFAULT_TAIL_LINES) 
 	contain credentials, private keys or other secrets.
 	"""
 	bench_doc = _validate_bench(bench)
-	file = _validate_safe_path(file, path_type="file")
+	file = _validate_safe_bench_path(file, path_type="file")
 	lines = _validate_limit(lines, minimum=1, maximum=_MAX_TAIL_LINES, label="Lines")
 	quoted_file = shlex.quote(file)
 	result = _run_checked_in_bench(
@@ -280,7 +280,7 @@ def grep_file_in_bench(
 	successful empty output. Refuses paths that commonly contain secrets.
 	"""
 	bench_doc = _validate_bench(bench)
-	file = _validate_safe_path(file, path_type="file")
+	file = _validate_safe_bench_path(file, path_type="file")
 	pattern = _validate_grep_pattern(pattern)
 	limit = _validate_limit(limit, minimum=1, maximum=_MAX_GREP_MATCHES, label="Limit")
 	before_context = _validate_limit(
@@ -422,6 +422,16 @@ def _validate_bench(bench: str):
 		frappe.throw(f"Bench {bench_doc.name!r} does not have a server")
 
 	return bench_doc
+
+
+def _validate_safe_bench_path(path: str, path_type: str) -> str:
+	path = _validate_safe_path(path, path_type)
+	if path == "/proc" or path.startswith("/proc/") or path == "/sys" or path.startswith("/sys/"):
+		frappe.throw(
+			f"Refusing to read {path_type} path {path!r} inside bench container. Use server tools for host diagnostics."
+		)
+
+	return path
 
 
 def _run_in_bench(command: str, bench_doc) -> dict:
