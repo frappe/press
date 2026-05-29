@@ -228,9 +228,7 @@ const providerIcons = {
 				:key="server.name"
 			>
 				<!-- header -->
-				<div
-					class="border-b dark:border-outline-gray-2  p-4 flex gap-3 items-center"
-				>
+				<div class="bordered p-4 flex gap-3 items-center">
 					<component :is="providerIcons[server?.provider]" class="size-8" />
 
 					<div class="flex flex-wrap gap-2 items-center text-sm">
@@ -282,7 +280,7 @@ const providerIcons = {
 							:class="
 							(benchesRes[server.name]?.data?.length - 1 == bench_i && opened) ||
 							bench_i != benchesRes[server.name]?.data?.length - 1
-								? 'border-b dark:border-outline-gray-2'
+								? 'bordered'
 								: ''
 						"
 							@click="() => {
@@ -318,7 +316,8 @@ const providerIcons = {
 					</div>
 
 					<div
-						class="grid gap-3 grid-cols-[1.5rem_1fr_0.5fr_0.7fr_2rem] px-4 py-2 items-center border-b dark:border-outline-gray-2 text-sm text-ink-gray-5"
+						class="grid gap-3 grid-cols-[1.5rem_1fr_0.5fr_0.7fr_2rem] px-4 py-2 items-center text-sm text-ink-gray-5"
+            :class='bench_i != benchesRes[server.name]?.data?.length -1 ?  "bordered" : ""'
 					>
 						<span />
 						<span class="ml-6">Site</span>
@@ -349,7 +348,7 @@ const providerIcons = {
 
 							<div
 								v-if="site_i != sitesRes[bench.name]?.data?.length - 1"
-								class="border-b dark:border-outline-gray-2 col-span-full -mx-4"
+								class="bordered col-span-full -mx-4"
 							/>
 						</template>
 					</div>
@@ -360,6 +359,10 @@ const providerIcons = {
 </template>
 
 <style scoped>
+.bordered {
+	@apply border-b dark:border-outline-gray-2
+}
+
 .sk {
 	@apply rounded animate-pulse bg-surface-gray-3 dark:bg-surface-gray-2;
 }
