@@ -597,6 +597,109 @@ class TestIncident(FrappeTestCase):
 				to=self.test_phno_2, from_=self.from_, url="http://demo.twilio.com/docs/voice.xml"
 			)
 
+	# --- Night shift ordering tests ---
+
+	def _add_night_shifts(self, entries: list[tuple[str, str]]):
+		"""Add night shift rows to Incident Settings and clear doc cache."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		for user, day in entries:
+			settings.append("night_shifts", {"user": user, "day": day})
+		settings.save()
+
+	def _get_humans_at(self, incident: "Incident", mock_dt):
+		with (
+			patch("frappe.utils.now_datetime", return_value=mock_dt),
+			patch(
+				"press.press.doctype.incident.incident.frappe.get_cached_doc",
+				side_effect=frappe.get_doc,
+			),
+		):
+			return incident.get_humans()
+
+	def test_night_shift_users_used_during_night_hours(self):
+		"""Night shift users replace default users when a shift is defined for today."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		night_user = settings.users[0].user
+		self._add_night_shifts([(night_user, "Friday")])
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+
+		friday_2am = datetime(2024, 1, 5, 2, 0)  # Friday, outside DAY_HOURS
+		humans = self._get_humans_at(incident, friday_2am)
+
+		self.assertEqual(len(humans), 1)
+		self.assertEqual(humans[0].user, night_user)
+
+	def test_night_shift_round_robin_puts_next_user_first_on_repeat_call(self):
+		"""On repeat night call, user after acknowledged_by is first (round-robin)."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		user1 = settings.users[0].user
+		user2 = settings.users[1].user
+		self._add_night_shifts([(user1, "Friday"), (user2, "Friday")])
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+		incident.db_set("status", "Acknowledged")
+		incident.db_set("acknowledged_by", user1)
+		incident.reload()
+
+		friday_2am = datetime(2024, 1, 5, 2, 0)
+		humans = self._get_humans_at(incident, friday_2am)
+
+		self.assertEqual(humans[0].user, user2)
+
+	def test_night_shift_round_robin_wraps_around(self):
+		"""Round-robin wraps: last user acknowledged → first user goes to end, second is first."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		user1 = settings.users[0].user
+		user2 = settings.users[1].user
+		self._add_night_shifts([(user1, "Friday"), (user2, "Friday")])
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+		incident.db_set("status", "Acknowledged")
+		incident.db_set("acknowledged_by", user2)
+		incident.reload()
+
+		friday_2am = datetime(2024, 1, 5, 2, 0)
+		humans = self._get_humans_at(incident, friday_2am)
+
+		self.assertEqual(humans[0].user, user1)
+
+	def test_night_shift_falls_back_to_default_when_no_shift_for_today(self):
+		"""Falls back to all default users when no shift defined for current day."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		self._add_night_shifts([(settings.users[0].user, "Saturday")])  # Saturday only
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+
+		friday_2am = datetime(2024, 1, 5, 2, 0)  # Friday — no shift defined
+		humans = self._get_humans_at(incident, friday_2am)
+
+		self.assertEqual(len(humans), 2)
+
+	def test_night_shift_ignored_during_day_hours(self):
+		"""Night shift is not applied during DAY_HOURS even if shift exists for today."""
+		settings = frappe.get_doc("Incident Settings", "Incident Settings")
+		self._add_night_shifts([(settings.users[0].user, "Friday")])
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+
+		friday_10am = datetime(2024, 1, 5, 10, 0)  # Friday, inside DAY_HOURS
+		humans = self._get_humans_at(incident, friday_10am)
+
+		self.assertEqual(len(humans), 2)
+
+	def test_night_shift_falls_back_when_shift_user_not_in_main_users_list(self):
+		"""Falls back to default users when night shift user has no phone (not in users table)."""
+		orphan_user = create_test_press_admin_team().user
+		self._add_night_shifts([(orphan_user, "Friday")])
+
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
+
+		friday_2am = datetime(2024, 1, 5, 2, 0)
+		humans = self._get_humans_at(incident, friday_2am)
+
+		self.assertEqual(len(humans), 2)  # both default users
+
 	@patch.object(TelegramMessage, "enqueue")
 	def test_telegram_message_is_sent_when_unable_to_reach_twilio(self, mock_telegram_send):
 		print(mock_telegram_send)

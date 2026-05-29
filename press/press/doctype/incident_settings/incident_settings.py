@@ -16,6 +16,9 @@ class IncidentSettings(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.incident_settings_night_shift.incident_settings_night_shift import (
+			IncidentSettingsNightShift,
+		)
 		from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
 			IncidentSettingsSelfHostedUser,
 		)
@@ -30,6 +33,7 @@ class IncidentSettings(Document):
 		email_alerts: DF.Check
 		enable_incident_detection: DF.Check
 		grafana_screenshots: DF.Check
+		night_shifts: DF.Table[IncidentSettingsNightShift]
 		phone_call_alerts: DF.Check
 		self_hosted_users: DF.Table[IncidentSettingsSelfHostedUser]
 		users: DF.Table[IncidentSettingsUser]

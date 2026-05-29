@@ -506,6 +506,39 @@ class Incident(WebsiteGenerator):
 			deduplicate=True,
 		)
 
+	def get_night_shift_humans(
+		self,
+		incident_settings: "IncidentSettings",
+	) -> "list[IncidentSettingsUser | IncidentSettingsSelfHostedUser] | None":
+		"""Returns night shift users for today mapped to their IncidentSettingsUser records, or None if no shift defined."""
+		today = frappe.utils.now_datetime().strftime("%A")
+		today_users = [row.user for row in incident_settings.night_shifts if row.day == today]
+		if not today_users:
+			return None
+
+		phone_by_user: dict[str, "IncidentSettingsUser | IncidentSettingsSelfHostedUser"] = {
+			row.user: row for row in incident_settings.users
+		}
+		phone_by_user.update({row.user: row for row in incident_settings.self_hosted_users})
+
+		matched = [phone_by_user[u] for u in today_users if u in phone_by_user]
+		return matched or None
+
+	def _round_robin_order(self, users: list) -> list:
+		"""Rotate list so the user after acknowledged_by comes first."""
+		for i, user in enumerate(users):
+			if user.user == self.acknowledged_by:
+				return users[i + 1 :] + users[: i + 1]
+		return users
+
+	def _priority_order(self, users: list) -> list:
+		"""Put acknowledged_by first."""
+		for user in users:
+			if user.user == self.acknowledged_by:
+				users = [user] + [u for u in users if u != user]
+				break
+		return users
+
 	def get_humans(
 		self,
 	):
@@ -513,18 +546,22 @@ class Incident(WebsiteGenerator):
 		Returns a list of users who are in the incident team
 		"""
 		incident_settings: IncidentSettings = frappe.get_cached_doc("Incident Settings")  # type: ignore
-		users = incident_settings.users
+		is_night = frappe.utils.now_datetime().hour not in DAY_HOURS
+
+		if is_night and (night_users := self.get_night_shift_humans(incident_settings)):
+			if self.status == "Acknowledged":
+				return self._round_robin_order(night_users)
+			return night_users
+
+		users = list(incident_settings.users)
 		if frappe.db.exists("Self Hosted Server", {"server": self.server}) or frappe.db.get_value(
 			"Server", self.server, "is_self_hosted"
 		):
-			users = incident_settings.self_hosted_users
-		ret: DF.Table = users
-		if self.status == "Acknowledged":  # repeat the acknowledged user to be the first
-			for user in users:
-				if user.user == self.acknowledged_by:
-					ret.remove(user)
-					ret.insert(0, user)
-		return ret
+			users = list(incident_settings.self_hosted_users)
+
+		if self.status == "Acknowledged":
+			return self._priority_order(users)
+		return users
 
 	@property
 	def twilio_phone_number(self):
