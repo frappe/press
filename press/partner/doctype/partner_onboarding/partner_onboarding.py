@@ -93,7 +93,7 @@ class PartnerOnboarding(Document):
 
 	@frappe.whitelist()
 	def approve(self):
-		frappe.only_for("System Manager")
+		frappe.only_for("Partner Manager")
 
 		if self.docstatus != 1:
 			frappe.throw("Submit this partner onboarding request before approval.")
@@ -112,7 +112,7 @@ class PartnerOnboarding(Document):
 
 	@frappe.whitelist()
 	def reject(self, reason: str | None = None):
-		frappe.only_for("System Manager")
+		frappe.only_for("Partner Manager")
 
 		if self.docstatus != 1:
 			frappe.throw("Submit this partner onboarding request before rejection.")
