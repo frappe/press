@@ -484,7 +484,7 @@ class TestIncident(FrappeTestCase):
 	)
 	@patch(
 		"press.incident_management.doctype.incident_investigator.incident_investigator.frappe.enqueue_doc",
-		foreground_enqueue_doc,
+		new=Mock(),
 	)
 	def test_no_calls_before_investigator_actions(self, mock_calls_create):
 		create_test_alertmanager_webhook_log()
