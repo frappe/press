@@ -356,7 +356,7 @@ def reboot_in_server(server: str, confirm: bool = False) -> dict:
 	if frappe.db.exists("Proxy Server", server):
 		frappe.throw(_PROXY_REFUSED)
 
-	server_doctype = poly_get_doctype(["Server", "Database Server"], server)
+	server_doctype = _validate_server(server)
 	server_doc = frappe.get_doc(server_doctype, server)
 
 	provider = server_doc.provider
