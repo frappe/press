@@ -32,6 +32,7 @@ const deployBuilds = createListResource({
 	fields: ['name', 'status', 'creation', 'build_duration', 'owner'],
 	filters: {
 		group: props.name,
+		creation: ['<=', '2026-04-21 23:49:24'],
 	},
 	orderBy: 'creation desc',
 })
@@ -65,9 +66,7 @@ const statusOptions = [
 ]
 
 const route = useRoute()
-const mode = ref(
-  route.query.pipeline === 'false' ? 'older' : 'newer'
-)
+const mode = ref(route.query.pipeline === 'false' ? 'older' : 'newer')
 
 watch(
 	mode,
