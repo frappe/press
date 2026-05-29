@@ -35,7 +35,7 @@ import { getTeam } from '@/data/team'
 import { secsToDuration, date, duration } from '@/utils/format'
 
 const team = getTeam()
-const dataNotFound = ref(false)
+const loader = ref(true)
 const socket = window.$socket
 
 interface Props {
@@ -90,12 +90,7 @@ const pipeline = props.deployview
 			name: props.id,
 			auto: true,
 			onSuccess: () => {
-				if (dataNotFound.value) dataNotFound.value = false
-			},
-			onError: (err) => {
-				if (err?.exc_type === 'DoesNotExistError') {
-					dataNotFound.value = true
-				}
+				if (loader.value) loader.value = false
 			},
 		})
 
@@ -375,7 +370,7 @@ const stopBuild = () => {
 
 <template>
 	<Loader
-		v-if="deployview? builds[activeBuildId]?.get?.loading: (pipeline?.get?.loading || dataNotFound)"
+		v-if="deployview? builds[activeBuildId]?.get?.loading: (loader)"
 	/>
 
 	<main
