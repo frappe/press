@@ -42,6 +42,13 @@
   args:
     chdir: /home/frappe/agent
 
+- name: Setup Agent DB cleanup cron
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup agent-db-cleanup
+  args:
+    chdir: /home/frappe/agent
+
 - name: Run agent db patches
   become: yes
   become_user: frappe
