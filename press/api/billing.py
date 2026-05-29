@@ -310,9 +310,10 @@ def create_payment_intent_for_buying_credits(amount):
 			}
 		},
 	)
-	capture_pulse(
-		"prepaid_credits_purchase_attempted",
-		{
+	frappe.enqueue(
+		capture_pulse,
+		event="prepaid_credits_purchase_attempted",
+		data={
 			"team": team.name,
 			"amount": amount,
 			"currency": team.currency,
