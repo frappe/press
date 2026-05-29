@@ -14,6 +14,7 @@ const verticalOptions = [
 	{ label: 'Education', value: 'Education' },
 	{ label: 'Healthcare', value: 'Healthcare' },
 	{ label: 'Non-profit', value: 'Non-profit' },
+	{ label: 'Other', value: 'Other' },
 ]
 
 const customerRangeOptions = [
@@ -48,6 +49,7 @@ defineExpose({ tryContinue })
 				variant="outline"
 				placeholder="Select"
 				:options="verticalOptions"
+				multiple
 			/>
 		</div>
 

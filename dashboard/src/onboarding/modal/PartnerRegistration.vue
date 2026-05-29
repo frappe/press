@@ -27,12 +27,52 @@ const countryOptions = computed(() => {
 	}))
 })
 
+const companyNameMinLength = 2
+const companyNameMaxLength = 140
+const contactMinLength = 7
+const contactMaxLength = 20
+
+function getLengthError(
+	value: string | undefined,
+	label: string,
+	min: number,
+	max: number,
+) {
+	const trimmedValue = String(value || '').trim()
+	if (!trimmedValue) return `${label} is required.`
+	if (trimmedValue.length < min) {
+		return `${label} must be at least ${min} characters.`
+	}
+	if (trimmedValue.length > max) {
+		return `${label} must be ${max} characters or less.`
+	}
+	return ''
+}
+
+function getContactError(value: string | undefined) {
+	const trimmedValue = String(value || '').trim()
+	if (!trimmedValue) return 'Contact number is required.'
+
+	const digits = trimmedValue.replace(/\D/g, '')
+	if (digits.length < contactMinLength || digits.length > contactMaxLength) {
+		return `Contact number must be ${contactMinLength}-${contactMaxLength} digits.`
+	}
+	return ''
+}
+
 const errors = computed(() => {
 	if (!submitted.value) return {}
 	return {
-		company_name: !onboarding.form.company_name,
-		country: !onboarding.form.registered_country,
-		contact: !onboarding.form.contact,
+		company_name: getLengthError(
+			onboarding.form.company_name,
+			'Company name',
+			companyNameMinLength,
+			companyNameMaxLength,
+		),
+		country: onboarding.form.registered_country
+			? ''
+			: 'Registered country is required.',
+		contact: getContactError(onboarding.form.contact),
 	}
 })
 
@@ -82,10 +122,12 @@ const handleSubmit = async () => {
 			size="sm"
 			variant="outline"
 			placeholder="Registered company name"
+			:minlength="companyNameMinLength"
+			:maxlength="companyNameMaxLength"
 			:class="{ 'has-error': errors.company_name }"
 		/>
 		<p v-if="errors.company_name" class="-mt-2 text-sm text-ink-red-4">
-			Company name is required.
+			{{ errors.company_name }}
 		</p>
 
 		<FormControl
@@ -99,7 +141,7 @@ const handleSubmit = async () => {
 			:class="{ 'has-error': errors.country }"
 		/>
 		<p v-if="errors.country" class="-mt-2 text-sm text-ink-red-4">
-			Registered country is required.
+			{{ errors.country }}
 		</p>
 
 		<EmailInput
@@ -122,7 +164,7 @@ const handleSubmit = async () => {
 			:class="{ 'has-error': errors.contact }"
 		/>
 		<p v-if="errors.contact" class="-mt-2 text-sm text-ink-red-4">
-			Contact number is required.
+			{{ errors.contact }}
 		</p>
 
 		<p v-if="submitError" class="text-sm text-ink-red-4">

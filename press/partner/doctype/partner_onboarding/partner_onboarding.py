@@ -38,7 +38,7 @@ class PartnerOnboarding(Document):
 		erpnext_customer_count_range: DF.Data | None
 		existing_partnerships: DF.SmallText | None
 		headquarter_city: DF.Data | None
-		incorporation_certificate: DF.Attach | None
+		incorporation_certificate: DF.Data | None
 		registered_country: DF.Link
 		rejection_reason: DF.SmallText | None
 		revenue_currency: DF.Link | None

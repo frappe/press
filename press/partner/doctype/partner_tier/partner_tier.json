@@ -66,7 +66,7 @@
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-05-29 00:08:18.637341",
+	"modified": "2026-05-29 10:22:12.395176",
 	"modified_by": "Administrator",
 	"module": "Partner",
 	"name": "Partner Tier",
@@ -87,7 +87,7 @@
 		},
 		{
 			"read": 1,
-			"role": "Guest"
+			"role": "Press User"
 		}
 	],
 	"row_format": "Dynamic",

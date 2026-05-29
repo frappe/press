@@ -78,7 +78,7 @@ const onRegistered = () => {
 				<!-- hide sidebar if registered -->
 				<div
 					v-if="!registered"
-					class="flex w-[240px] shrink-0 flex-col gap-0.5 rounded-l-xl bg-gray-50 p-3"
+					class="flex w-[240px] shrink-0 flex-col gap-0.5 rounded-l-xl bg-surface-gray-1 p-3"
 				>
 					<SidebarItem
 						v-for="step in partnerOnboardingSteps"
@@ -100,7 +100,7 @@ const onRegistered = () => {
 							Interested in partnering with us?
 						</h3>
 						<button
-							class="rounded-md p-1 text-ink-gray-9 hover:bg-gray-100"
+							class="rounded-md p-1 text-ink-gray-6 hover:bg-surface-gray-2 hover:text-ink-gray-9"
 							@click="open = false"
 						>
 							<LucideXIcon class="h-4 w-4" />

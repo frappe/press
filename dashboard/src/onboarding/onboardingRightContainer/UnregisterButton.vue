@@ -27,7 +27,7 @@ const dialogOptions = computed(() => ({
 	actions: [
 		{
 			label: 'Unregister',
-			theme: 'red' as const,
+			theme: 'red',
 			variant: 'solid' as const,
 			loading: unregistering.value,
 			onClick: unregister,

@@ -58,13 +58,67 @@ watch(
 
 const submitted = ref(false)
 
+// this is so stupid that I have to do it this way because the form control does not support minlength and maxlength
+const companyNameMinLength = 2
+const companyNameMaxLength = 140
+const addressMinLength = 10
+const addressMaxLength = 300
+const cityMinLength = 2
+const cityMaxLength = 80
+const annualRevenueMaxDigits = 12
+
+function getLengthError(
+	value: string | undefined,
+	label: string,
+	min: number,
+	max: number,
+) {
+	const trimmedValue = String(value || '').trim()
+	if (!trimmedValue) return `${label} is required.`
+	if (trimmedValue.length < min) {
+		return `${label} must be at least ${min} characters.`
+	}
+	if (trimmedValue.length > max) {
+		return `${label} must be ${max} characters or less.`
+	}
+	return ''
+}
+
+function getAnnualRevenueError(value: string | number | undefined) {
+	const trimmedValue = String(value || '').trim()
+	if (!trimmedValue) return ''
+	if (!/^\d+(\.\d{1,2})?$/.test(trimmedValue)) {
+		return 'Annual revenue must be a valid amount.'
+	}
+	if (trimmedValue.replace(/\D/g, '').length > annualRevenueMaxDigits) {
+		return `Annual revenue must be ${annualRevenueMaxDigits} digits or less.`
+	}
+	return ''
+}
+
 const errors = computed(() => {
 	if (!submitted.value) return {}
 	return {
-		company_name: !props.form.company_name?.trim(),
-		address: !props.form.address?.trim(),
-		country: !props.form.registered_country,
-		headquarter_city: !props.form.headquarter_city?.trim(),
+		company_name: getLengthError(
+			props.form.company_name,
+			'Company name',
+			companyNameMinLength,
+			companyNameMaxLength,
+		),
+		address: getLengthError(
+			props.form.address,
+			'Address',
+			addressMinLength,
+			addressMaxLength,
+		),
+		country: props.form.registered_country ? '' : 'Country is required.',
+		headquarter_city: getLengthError(
+			props.form.headquarter_city,
+			'Headquarter city',
+			cityMinLength,
+			cityMaxLength,
+		),
+		annual_revenue: getAnnualRevenueError(props.form.annual_revenue),
 	}
 })
 
@@ -99,10 +153,12 @@ defineExpose({ tryContinue })
 			type="text"
 			size="sm"
 			variant="outline"
+			:minlength="companyNameMinLength"
+			:maxlength="companyNameMaxLength"
 			:class="{ 'has-error': errors.company_name }"
 		/>
 		<p v-if="errors.company_name" class="-mt-3 text-sm text-ink-red-4">
-			Company name is required.
+			{{ errors.company_name }}
 		</p>
 
 		<FormControl
@@ -112,45 +168,53 @@ defineExpose({ tryContinue })
 			size="sm"
 			variant="outline"
 			placeholder="Company's registered address"
+			:minlength="addressMinLength"
+			:maxlength="addressMaxLength"
 			:class="{ 'has-error': errors.address }"
 		/>
 		<p v-if="errors.address" class="-mt-3 text-sm text-ink-red-4">
-			Address is required.
-		</p>
-
-		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-			<FormControl
-				v-model="props.form.registered_country"
-				label="Country"
-				type="select"
-				size="sm"
-				variant="outline"
-				placeholder="Select"
-				:options="countryOptions"
-				:class="{ 'has-error': errors.country }"
-			/>
-
-			<FormControl
-				v-model="props.form.headquarter_city"
-				label="Headquarter City"
-				type="text"
-				size="sm"
-				variant="outline"
-				placeholder="Headquarter city"
-				:class="{ 'has-error': errors.headquarter_city }"
-			/>
-		</div>
-		<p
-			v-if="errors.country || errors.headquarter_city"
-			class="-mt-3 text-sm text-ink-red-4"
-		>
-			Country and headquarter city are required.
+			{{ errors.address }}
 		</p>
 
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 			<div class="flex flex-col gap-1">
+				<FormControl
+					v-model="props.form.registered_country"
+					label="Country"
+					type="select"
+					size="sm"
+					variant="outline"
+					placeholder="Select"
+					:options="countryOptions"
+					:class="{ 'has-error': errors.country }"
+				/>
+				<p v-if="errors.country" class="text-sm text-ink-red-4">
+					{{ errors.country }}
+				</p>
+			</div>
+
+			<div class="flex flex-col gap-1">
+				<FormControl
+					v-model="props.form.headquarter_city"
+					label="Headquarter city"
+					type="text"
+					size="sm"
+					variant="outline"
+					placeholder="Headquarter city"
+					:minlength="cityMinLength"
+					:maxlength="cityMaxLength"
+					:class="{ 'has-error': errors.headquarter_city }"
+				/>
+				<p v-if="errors.headquarter_city" class="text-sm text-ink-red-4">
+					{{ errors.headquarter_city }}
+				</p>
+			</div>
+		</div>
+
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+			<div class="flex flex-col gap-1">
 				<div class="flex items-center justify-between gap-2">
-					<span class="text-xs text-ink-gray-6">Annual Revenue</span>
+					<span class="text-xs text-ink-gray-6">Annual revenue</span>
 					<span class="text-xs text-ink-gray-5">Optional</span>
 				</div>
 				<div class="relative">
@@ -164,10 +228,16 @@ defineExpose({ tryContinue })
 						type="text"
 						size="sm"
 						variant="outline"
-						class="[&_input]:pl-7"
+						:class="[
+						'[&_input]:pl-7',
+						{ 'has-error': errors.annual_revenue },
+					]"
 						placeholder="Amount"
 					/>
 				</div>
+				<p v-if="errors.annual_revenue" class="text-sm text-ink-red-4">
+					{{ errors.annual_revenue }}
+				</p>
 			</div>
 
 			<div class="flex flex-col gap-1">
@@ -220,3 +290,10 @@ defineExpose({ tryContinue })
 		</div>
 	</form>
 </template>
+
+<style scoped>
+.has-error :deep(input),
+.has-error :deep(button) {
+	border-color: var(--outline-red-3);
+}
+</style>
