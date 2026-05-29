@@ -26,6 +26,7 @@ from press.press.doctype.logical_replication_backup.logical_replication_backup i
 from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 	get_physical_backup_restoration_steps,
 )
+from press.press.doctype.press_notification.press_notification import create_new_notification
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -354,6 +355,12 @@ class SiteUpdate(Document):
 			self.create_logical_replication_backup_record()
 		else:
 			self.create_update_site_agent_request()
+
+	def fail_with_notification(self, reason: str):
+		update_status(self.name, "Failure")
+		site = frappe.get_cached_doc("Site", self.site)
+		message = f"Scheduled Site Update for site <b>{site.host_name}</b> could not be started: {reason}"
+		create_new_notification(site.team, "Site Update", "Agent Job", None, message)
 
 	def get_before_migrate_scripts(self, rollback=False):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
@@ -1186,6 +1193,9 @@ def run_scheduled_updates():
 
 			site_update.validate()
 			site_update.start()
+			frappe.db.commit()
+		except frappe.ValidationError as e:
+			site_update.fail_with_notification(str(e))
 			frappe.db.commit()
 		except Exception:
 			log_error("Scheduled Site Update Error", update=update)

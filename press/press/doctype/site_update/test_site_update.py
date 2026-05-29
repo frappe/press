@@ -303,7 +303,8 @@ class TestSiteUpdate(FrappeTestCase):
 			"Success",
 		)
 
-	def test_run_scheduled_updates_skips_if_destination_bench_missing_app(self):
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
+	def test_run_scheduled_updates_fails_if_destination_bench_missing_app(self):
 		"""Validation at scheduled run time should catch apps removed from the destination bench after scheduling."""
 		app1 = create_test_app()
 		app2 = create_test_app("app2", "App 2")
@@ -314,20 +315,20 @@ class TestSiteUpdate(FrappeTestCase):
 		site = create_test_site(bench=bench1.name)
 
 		past_time = frappe.utils.add_to_date(None, hours=-1)
-		site.schedule_update(scheduled_time=past_time)
+		site_update_name = site.schedule_update(scheduled_time=past_time)
 
 		bench2_doc = frappe.get_doc("Bench", bench2.name)
 		bench2_doc.apps = [a for a in bench2_doc.apps if a.app != app2.name]
 		bench2_doc.save()
 
-		self.assertRaisesRegex(
-			frappe.ValidationError,
-			r"doesn't have some of the apps",
-			run_scheduled_updates,
-		)
+		run_scheduled_updates()
 
+		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Failure")
+		self.assertTrue(frappe.db.exists("Press Notification", {"type": "Site Update", "team": site.team}))
+
+	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_run_scheduled_updates_skips_if_past_update_to_same_candidates_failed(self):
+	def test_run_scheduled_updates_fails_if_past_update_to_same_candidates_failed(self):
 		"""Validation at scheduled run time should block if an unresolved failure exists for the same source/destination."""
 		app = create_test_app()
 		group = create_test_release_group([app])
@@ -354,10 +355,9 @@ class TestSiteUpdate(FrappeTestCase):
 		# Schedule the update, bypassing the past failure check — that check is what we're testing at run time
 		past_time = frappe.utils.add_to_date(None, hours=-1)
 		with patch.object(SiteUpdate, "validate_past_failed_updates"):
-			site.schedule_update(scheduled_time=past_time)
+			site_update_name = site.schedule_update(scheduled_time=past_time)
 
-		self.assertRaisesRegex(
-			frappe.ValidationError,
-			r"has failed in the past",
-			run_scheduled_updates,
-		)
+		run_scheduled_updates()
+
+		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Failure")
+		self.assertTrue(frappe.db.exists("Press Notification", {"type": "Site Update", "team": site.team}))
