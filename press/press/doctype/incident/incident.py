@@ -614,6 +614,25 @@ Likely due to insufficient balance or incorrect credentials""",
 			self.notify_unable_to_reach_twilio()
 			raise
 
+	def _attempt_call_human(self, human) -> bool:
+		"""Returns True if call was picked up (stop calling), False to continue to next human."""
+		if not (call := self.call_human(human)):
+			return True  # can't twilio; abort
+		acknowledged = False
+		status = str(call.status)
+		try:
+			status = str(self.wait_for_pickup(call))
+		except RetryError:
+			status = "timeout"  # not Twilio's status; mostly translates to no-answer
+		else:
+			if status in ["in-progress", "completed"]:  # call was picked up
+				acknowledged = True
+				self.status = "Acknowledged"
+				self.acknowledged_by = human.user
+		finally:
+			self.add_acknowledgment_update(human, acknowledged=acknowledged, call_status=status)
+		return acknowledged
+
 	def _call_humans(self):
 		if not self.phone_call or not self.global_phone_call_enabled:
 			return
@@ -621,23 +640,12 @@ Likely due to insufficient balance or incorrect credentials""",
 			ignore_till := frappe.db.get_value("Server", self.server, "ignore_incidents_till")
 		) and ignore_till > frappe.utils.now_datetime():
 			return
+		if not self.monitor_server.get_sites_down_for_server(str(self.server)):
+			self.resolve()
+			return
 		for human in self.get_humans():
-			if not (call := self.call_human(human)):
-				return  # can't twilio
-			acknowledged = False
-			status = str(call.status)
-			try:
-				status = str(self.wait_for_pickup(call))
-			except RetryError:
-				status = "timeout"  # not Twilio's status; mostly translates to no-answer
-			else:
-				if status in ["in-progress", "completed"]:  # call was picked up
-					acknowledged = True
-					self.status = "Acknowledged"
-					self.acknowledged_by = human.user
-					break
-			finally:
-				self.add_acknowledgment_update(human, acknowledged=acknowledged, call_status=status)
+			if self._attempt_call_human(human):
+				break
 
 	def send_sms_via_twilio(self):
 		"""

@@ -148,6 +148,9 @@ def get_total_firing_and_resolved_for_resolved_incident(draw) -> tuple[int, int,
 @patch("tenacity.nap.time", new=Mock())  # no sleep
 @patch.object(Incident, "sites_down", new=[])
 @patch.object(Incident, "down_bench", new=[])
+@patch.object(
+	Incident, "monitor_server", Mock(get_sites_down_for_server=Mock(return_value=["test-site.frappe.cloud"]))
+)
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
@@ -734,6 +737,24 @@ class TestIncident(FrappeTestCase):
 		):
 			incident.call_humans()
 		mock_telegram_send.assert_called_once()
+
+	@patch(
+		"press.press.doctype.incident.test_incident.MockTwilioCallList.create",
+		wraps=MockTwilioCallList("completed").create,
+	)
+	def test_no_calls_when_sites_recover_before_call(self, mock_calls_create):
+		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test Alert"}).insert()
+		incident.db_set("status", "Confirmed")
+
+		mock_monitor = Mock()
+		mock_monitor.get_sites_down_for_server.return_value = []
+
+		with patch.object(Incident, "monitor_server", mock_monitor):
+			incident.call_humans()
+
+		mock_calls_create.assert_not_called()
+		incident.reload()
+		self.assertEqual(incident.status, "Resolved")
 
 	def get_5_min_load_avg_prometheus_response(self, load_avg: float):
 		return {
