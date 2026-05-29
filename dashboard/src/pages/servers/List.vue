@@ -25,18 +25,23 @@ const sortBy = ref('desc')
 
 const makeSiteRes = (ids: string[]) => {
 	ids.forEach((id) => {
+		if (sitesRes[id]) return
+
 		sitesRes[id] = createListResource({
 			doctype: 'Site',
 			fields: ['name', 'status', 'bench', 'creation', 'host_name'],
 			filters: { group: id },
 			orderBy: 'creation desc',
 			pageLength: 5,
+			cache: ['sitesRes', id],
 		})
 	})
 }
 
 const makeBenchesRes = (ids: string[]) => {
 	ids.forEach((id) => {
+		if (benchesRes[id]) return
+
 		benchesRes[id] = createListResource({
 			doctype: 'Release Group',
 			pageLength: 5,
@@ -44,6 +49,7 @@ const makeBenchesRes = (ids: string[]) => {
 			fields: ['name', 'title', 'version'],
 			filters: { server: id },
 			orderBy: 'creation desc',
+			cache: ['benchesRes', id],
 			onSuccess(data) {
 				makeSiteRes(data.map((x) => x.name))
 			},
@@ -54,6 +60,8 @@ const makeBenchesRes = (ids: string[]) => {
 const servers = createListResource({
 	doctype: 'Server',
 	auto: true,
+	pageLength: 10,
+  cache:'servers list',
 	fields: [
 		'name',
 		'title',
@@ -317,7 +325,7 @@ const providerIcons = {
 
 					<div
 						class="grid gap-3 grid-cols-[1.5rem_1fr_0.5fr_0.7fr_2rem] px-4 py-2 items-center text-sm text-ink-gray-5"
-            :class='bench_i != benchesRes[server.name]?.data?.length -1 ?  "bordered" : ""'
+						:class='bench_i != benchesRes[server.name]?.data?.length -1 ?  "bordered" : ""'
 					>
 						<span />
 						<span class="ml-6">Site</span>
@@ -355,6 +363,14 @@ const providerIcons = {
 				</Collapsable>
 			</section>
 		</template>
+
+		<Button
+			class="ml-auto"
+			v-if="servers?.hasNextPage"
+			@click="servers?.next()"
+		>
+			Load more
+		</Button>
 	</div>
 </template>
 
