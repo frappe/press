@@ -38,8 +38,7 @@ from press.utils.billing import (
 	validate_gstin_check_digit,
 )
 from press.utils.mpesa_utils import create_mpesa_request_log
-
-# from press.press.doctype.paymob_callback_log.paymob_callback_log import create_payment_partner_transaction
+from press.utils.telemetry import capture_pulse
 
 
 @frappe.whitelist()
@@ -311,68 +310,20 @@ def create_payment_intent_for_buying_credits(amount):
 			}
 		},
 	)
+	frappe.enqueue(
+		capture_pulse,
+		event="prepaid_credits_purchase_attempted",
+		data={
+			"team": team.name,
+			"amount": amount,
+			"currency": team.currency,
+			"intent_id": intent["id"],
+		},
+	)
 	return {
 		"client_secret": intent["client_secret"],
 		"publishable_key": get_publishable_key(),
 	}
-
-
-@frappe.whitelist()
-@role_guard.api("billing")
-def create_payment_intent_for_prepaid_app(amount, metadata):
-	stripe = get_stripe()
-	team = get_current_team(True)
-	payment_method = frappe.get_value(
-		"Stripe Payment Method", team.default_payment_method, "stripe_payment_method_id"
-	)
-	try:
-		if not payment_method:
-			intent = stripe.PaymentIntent.create(
-				amount=amount * 100,
-				currency=team.currency.lower(),
-				customer=team.stripe_customer_id,
-				description="Prepaid App Purchase",
-				metadata=metadata,
-			)
-		else:
-			intent = stripe.PaymentIntent.create(
-				amount=amount * 100,
-				currency=team.currency.lower(),
-				customer=team.stripe_customer_id,
-				description="Prepaid App Purchase",
-				off_session=True,
-				confirm=True,
-				metadata=metadata,
-				payment_method=payment_method,
-				payment_method_options={"card": {"request_three_d_secure": "any"}},
-			)
-
-		return {
-			"payment_method": payment_method,
-			"client_secret": intent["client_secret"],
-			"publishable_key": get_publishable_key(),
-		}
-	except stripe.error.CardError as e:
-		err = e.error
-		if err.code == "authentication_required":
-			# Bring the customer back on-session to authenticate the purchase
-			return {
-				"error": "authentication_required",
-				"payment_method": err.payment_method.id,
-				"amount": amount,
-				"card": err.payment_method.card,
-				"publishable_key": get_publishable_key(),
-				"client_secret": err.payment_intent.client_secret,
-			}
-		if err.code:
-			# The card was declined for other reasons (e.g. insufficient funds)
-			# Bring the customer back on-session to ask them for a new payment method
-			return {
-				"error": err.code,
-				"payment_method": err.payment_method.id,
-				"publishable_key": get_publishable_key(),
-				"client_secret": err.payment_intent.client_secret,
-			}
 
 
 @frappe.whitelist()
