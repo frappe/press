@@ -26,7 +26,6 @@ from press.press.doctype.logical_replication_backup.logical_replication_backup i
 from press.press.doctype.physical_backup_restoration.physical_backup_restoration import (
 	get_physical_backup_restoration_steps,
 )
-from press.press.doctype.press_notification.press_notification import create_new_notification
 from press.utils import log_error
 
 if TYPE_CHECKING:
@@ -360,7 +359,22 @@ class SiteUpdate(Document):
 		frappe.db.set_value("Site Update", self.name, "status", "Cancelled")
 		site = frappe.get_cached_doc("Site", self.site)
 		message = f"Scheduled Site Update for site <b>{site.host_name}</b> was cancelled: {reason}"
-		create_new_notification(site.team, "Site Update", "Agent Job", None, message)
+		self.create_notification(site.team, message)
+
+	def create_notification(self, team: str, message: str):
+		frappe.get_doc(
+			{
+				"doctype": "Press Notification",
+				"team": team,
+				"type": "Site Update",
+				"document_type": "Site Update",
+				"document_name": self.name,
+				"reference_doctype": "Site",
+				"reference_name": self.site,
+				"message": message,
+			}
+		).insert(ignore_permissions=True)
+		frappe.publish_realtime("press_notification", doctype="Press Notification", message={"team": team})
 
 	def get_before_migrate_scripts(self, rollback=False):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
