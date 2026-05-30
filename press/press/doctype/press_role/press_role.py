@@ -119,6 +119,11 @@ class PressRole(Document):
 				frappe.throw(message, frappe.ValidationError)
 
 			document_team = frappe.db.get_value(document_type, document_name, "team")
+			if document_team is None:
+				frappe.throw(
+					_("Document {0} does not exist").format(document_name),
+					frappe.DoesNotExistError,
+				)
 			if document_team != self.team:
 				frappe.throw(
 					_("Document {0} is not associated with this team").format(document_name),
