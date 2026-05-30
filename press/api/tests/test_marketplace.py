@@ -221,7 +221,8 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.assertIsNotNone(get_subscriptions_list("frappe"))
 
 	def test_update_app_plan(self):
-		m_plan = create_test_marketplace_app_plan()
+		frappe.set_user(self.team.user)
+		m_plan = create_test_marketplace_app_plan(self.marketplace_app.name)
 
 		updated_plan_data = {
 			"price_inr": m_plan.price_inr + 100,
