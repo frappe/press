@@ -131,6 +131,11 @@ def sync_press_role(doc, method=None):
 		# Loop through the resources and create `team-member-resource` entries if
 		# they don't exist.
 		for resource in resources:
+			# Skip resources whose document no longer belongs to this team (stale data).
+			document_team = frappe.db.get_value(resource.document_type, resource.document_name, "team")
+			if document_team != team:
+				continue
+
 			# Check if a `team-member-resource` entry already exists for the team,
 			# user, document type, and document.
 			document = {

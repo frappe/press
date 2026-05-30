@@ -55,6 +55,20 @@ class TestPressRole(FrappeTestCase):
 		self.assertFalse(perm_role_user_exists)
 		self.assertRaises(frappe.ValidationError, self.perm_role.remove_user, self.team_member.name)
 
+	def test_add_resource_rejects_cross_team_document(self):
+		other_team = create_test_team()
+		self.addCleanup(frappe.delete_doc, "Team", other_team.name, force=True)
+		subdomain = frappe.generate_hash(length=8)
+		site_name = f"{subdomain}.frappe.cloud"
+		create_test_site_record(site_name, subdomain, other_team.name)
+		self.addCleanup(lambda: frappe.db.sql("DELETE FROM `tabSite` WHERE name = %s", (site_name,)))
+
+		with self.assertRaises(frappe.ValidationError):
+			self.perm_role.add_resource([{"document_type": "Site", "document_name": site_name}])
+
+		self.perm_role.reload()
+		self.assertFalse(any(r.document_name == site_name for r in self.perm_role.resources))
+
 
 # utils
 def create_permission_role(team, allow_site_creation=0):
@@ -79,3 +93,13 @@ def create_user(email):
 
 def get_users(role):
 	return role.users
+
+
+def create_test_site_record(name, subdomain, team_name):
+	"""Insert a bare Site row without running any hooks. For use in tests only."""
+	frappe.db.sql(
+		"INSERT INTO `tabSite`"
+		" (name, team, subdomain, status, server, bench, cluster, `group`)"
+		" VALUES (%s, %s, %s, 'Active', 'test-server', 'test-bench', 'Default', 'test-group')",
+		(name, team_name, subdomain),
+	)
