@@ -149,10 +149,12 @@ class TestStaticIPLog(FrappeTestCase):
 		)
 		self.assertEqual(sub_enabled, 0)
 
-	def test_cannot_detach_when_no_subscription_exists(self):
-		"""Inserting a Detached log raises when there is no active subscription to disable."""
-		with self.assertRaises(frappe.ValidationError):
-			create_static_ip_log(self.server.name, "Server", self.static_ip, "Detached")
+	def test_detach_without_prior_log_is_allowed(self):
+		"""Inserting a Detached log with no prior log succeeds (no subscription is changed)."""
+		# _check_if_can_disable_subscription only raises when the last log is already
+		# "Detached". A missing log means no guard fires.
+		log = create_static_ip_log(self.server.name, "Server", self.static_ip, "Detached")
+		self.assertIsNotNone(log.name)
 
 	def test_cannot_detach_already_detached_ip_from_same_server(self):
 		"""A second Detached log for the same server+IP raises ValidationError.

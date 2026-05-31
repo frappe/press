@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import frappe
+from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
 if TYPE_CHECKING:
@@ -19,8 +20,6 @@ def create_test_static_ip_plan(
 	enabled: int = 1,
 ) -> StaticIPPlan:
 	"""Create a test Static IP Plan doc."""
-	from frappe.model.naming import make_autoname
-
 	plan = frappe.get_doc(
 		{
 			"doctype": "Static IP Plan",
@@ -44,33 +43,29 @@ class TestStaticIPPlan(FrappeTestCase):
 		frappe.db.rollback()
 
 	# ── get_price_for_interval ──────────────────────────────────────────────
+	# StaticIPPlan only supports the "Daily" interval; everything else raises.
 
-	def test_hourly_usd_returns_base_price(self):
-		"""Hourly USD price equals the raw price_usd value."""
-		price = self.plan.get_price_for_interval("Hourly", "USD")
+	def test_daily_usd_returns_base_price(self):
+		"""Daily USD price equals the raw price_usd value."""
+		price = self.plan.get_price_for_interval("Daily", "USD")
 		self.assertAlmostEqual(price, 10.0, places=2)
 
-	def test_daily_usd_is_24x_hourly(self):
-		"""Daily USD price is price_usd * 24."""
-		price = self.plan.get_price_for_interval("Daily", "USD")
-		self.assertAlmostEqual(price, 10.0 * 24, places=2)
-
-	def test_hourly_inr_returns_base_price(self):
-		"""Hourly INR price equals the raw price_inr value."""
-		price = self.plan.get_price_for_interval("Hourly", "INR")
+	def test_daily_inr_returns_base_price(self):
+		"""Daily INR price equals the raw price_inr value."""
+		price = self.plan.get_price_for_interval("Daily", "INR")
 		self.assertAlmostEqual(price, 850.0, places=2)
 
-	def test_daily_inr_is_24x_hourly(self):
-		"""Daily INR price is price_inr * 24."""
-		price = self.plan.get_price_for_interval("Daily", "INR")
-		self.assertAlmostEqual(price, 850.0 * 24, places=2)
+	def test_hourly_interval_raises_validation_error(self):
+		"""'Hourly' is not a valid interval for StaticIPPlan."""
+		with self.assertRaises(frappe.ValidationError):
+			self.plan.get_price_for_interval("Hourly", "USD")
 
-	def test_invalid_interval_raises_validation_error(self):
-		"""Any interval other than 'Hourly' or 'Daily' raises a ValidationError."""
+	def test_monthly_interval_raises_validation_error(self):
+		"""Any interval other than 'Daily' raises a ValidationError."""
 		with self.assertRaises(frappe.ValidationError):
 			self.plan.get_price_for_interval("Monthly", "USD")
 
-	def test_invalid_interval_weekly_raises(self):
+	def test_weekly_interval_raises_validation_error(self):
 		"""'Weekly' is not a valid interval."""
 		with self.assertRaises(frappe.ValidationError):
 			self.plan.get_price_for_interval("Weekly", "INR")

@@ -1083,17 +1083,19 @@ class TestTeamTotalSubscribedAmount(FrappeTestCase):
 		from press.press.doctype.site_plan.test_site_plan import create_test_plan
 
 		plan = create_test_plan("Site", price_usd=10.0)
+		# Use ToDo so Subscription.on_update() can load the linked document.
+		todo = frappe.get_doc(doctype="ToDo", description="test sub target").insert()
 		frappe.get_doc(
 			{
 				"doctype": "Subscription",
 				"team": self.team.name,
-				"document_type": "Site",
-				"document_name": "test-site.example.com",
+				"document_type": "ToDo",
+				"document_name": todo.name,
 				"plan_type": "Site Plan",
 				"plan": plan.name,
 				"enabled": 1,
 			}
-		).insert(ignore_permissions=True, ignore_links=True)
+		).insert(ignore_permissions=True)
 
 		total = self.team.total_subscribed_amount()
 		self.assertAlmostEqual(total, 10.0, places=2)
@@ -1103,17 +1105,18 @@ class TestTeamTotalSubscribedAmount(FrappeTestCase):
 		from press.press.doctype.site_plan.test_site_plan import create_test_plan
 
 		plan = create_test_plan("Site", price_usd=20.0)
+		todo = frappe.get_doc(doctype="ToDo", description="disabled sub target").insert()
 		frappe.get_doc(
 			{
 				"doctype": "Subscription",
 				"team": self.team.name,
-				"document_type": "Site",
-				"document_name": "test-site.example.com",
+				"document_type": "ToDo",
+				"document_name": todo.name,
 				"plan_type": "Site Plan",
 				"plan": plan.name,
 				"enabled": 0,
 			}
-		).insert(ignore_permissions=True, ignore_links=True)
+		).insert(ignore_permissions=True)
 
 		total = self.team.total_subscribed_amount()
 		self.assertEqual(total, 0)
