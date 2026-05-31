@@ -9,7 +9,7 @@ import {
 	Dropdown,
 } from 'frappe-ui'
 import Header from '@/components/Header.vue'
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, h } from 'vue'
 import { dayjsLocal } from '@/utils/dayjs'
 import Collapsable from '@/components/common/Collapsable.vue'
 
@@ -21,6 +21,8 @@ import FrappeLogo from '@/logo/Frappe.vue'
 import AwsLogo from '@/logo/Aws.vue'
 import OracleLogo from '@/logo/Oracle.vue'
 import DigitalOceanLogo from '@/logo/DigitalOcean.vue'
+
+import { renderDialog } from '@/utils/components'
 
 const searchQuery = ref('')
 const benchesRes = reactive({})
@@ -74,11 +76,12 @@ const servers = createListResource({
 		'plan.title as plan_title',
 		'plan.price_usd as price_usd',
 		'plan.price_inr as price_inr',
+		'cluster.name as cluster',
 		'cluster.image as cluster_image',
 		'cluster.title as cluster_title',
 		'is_unified_server',
 	],
-	orderBy: `creation ${sortBy}`,
+	orderBy: `creation ${sortBy.value}`,
 	onSuccess(data) {
 		const serverIds = data.map((x) => x.name)
 		makeBenchesRes(serverIds)
@@ -132,38 +135,46 @@ const providerIcons = {
 	DigitalOcean: DigitalOceanLogo,
 }
 
-const addBenchDialog = ref(true)
-const serverActions = [
-	{
-		label: 'Add bench',
-		icon: LucideCirclePlus,
-		onClick: () => (addBenchDialog.value = true),
-	},
-	{
-		label: 'Visit server',
-		icon: 'external-link',
-	},
-	{
-		label: 'View backups',
-		icon: 'archive',
-	},
+const serverActions = (server) => {
+	return [
+		{
+			label: 'Add bench',
+			icon: LucideCirclePlus,
+			onClick: () => {
+				renderDialog(
+					h(AddBenchDialog, {
+						cluster: server.cluster,
+						server: server.name,
+					}),
+				)
+			},
+		},
+		{
+			label: 'Visit server',
+			icon: 'external-link',
+		},
+		{
+			label: 'View backups',
+			icon: 'archive',
+		},
 
-	{
-		label: 'Change App server plan',
-		icon: LucideArrowLeftRight,
-	},
+		{
+			label: 'Change App server plan',
+			icon: LucideArrowLeftRight,
+		},
 
-	{
-		label: 'Change DB server plan',
-		icon: LucideArrowLeftRight,
-	},
+		{
+			label: 'Change DB server plan',
+			icon: LucideArrowLeftRight,
+		},
 
-	{
-		label: 'Drop server',
-		theme: 'red',
-		icon: 'trash-2',
-	},
-]
+		{
+			label: 'Drop server',
+			theme: 'red',
+			icon: 'trash-2',
+		},
+	]
+}
 </script>
 
 <template>
@@ -172,7 +183,7 @@ const serverActions = [
 		<Button variant="solid" class="ml-auto">New Server</Button>
 	</Header>
 
-  <!-- filters -->
+	<!-- filters -->
 	<div class="flex gap-3 items-center px-5">
 		<TextInput
 			placeholder="Search"
@@ -223,7 +234,7 @@ const serverActions = [
 	</div>
 
 	<div class="p-5 text-ink-gray-8 flex flex-col gap-4">
-    <Loader v-if="servers?.list?.loading" />
+		<Loader v-if="servers?.list?.loading" />
 
 		<template v-else>
 			<section
@@ -248,7 +259,7 @@ const serverActions = [
 						<LucideMapPin class="size-4" />
 						<span>{{ server?.cluster_title }}</span>
 
-						<Dropdown :options="serverActions">
+						<Dropdown :options="serverActions(server)">
 							<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
 						</Dropdown>
 					</div>
@@ -371,6 +382,4 @@ const serverActions = [
 			Load more
 		</Button>
 	</div>
-
-	<AddBenchDialog v-model="addBenchDialog" />
 </template>
