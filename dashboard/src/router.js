@@ -9,7 +9,7 @@ let router = createRouter({
     	{
 			path: '/ser',
 			name: 'ser',
-			component: () => import('./pages/servers/List.vue'),
+			component: () => import('./pages/servers/list/Page.vue'),
 		},
 		{
 			path: '/',
