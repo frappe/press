@@ -30,6 +30,7 @@ const formatCmd = (cmd: string) => {
 			v-if="x.label === 'Building' || (!deployview && x.label === 'Deploying')"
 			:headerCss="`py-3 pr-2  ${i != stages?.length-1?'aria-[expanded=false]:border-b': '' }`"
 			:disabled='["Pending", "Queued"].includes(x.status) || (x.label == "Building" && !buildSteps?.length) || (x.label == "Deploying" && x.benches?.length == 0)'
+			:opened="x.status === 'Running' && (x.label === 'Building' || x.label === 'Deploying')"
 		>
 			<template #prefix>
 				<StatusIcon :status="x.status" />
