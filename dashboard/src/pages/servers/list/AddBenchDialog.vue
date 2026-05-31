@@ -29,7 +29,9 @@ function getAppsToInstall() {
 
 	if (!version) return []
 
-	return version.apps.map((app: any) => ({
+  const tmp = version.apps.filter((app: any) => app.name === 'frappe')
+
+	return tmp.map((app: any) => ({
 		name: app.name,
 		source: app.source.name,
 	}))
