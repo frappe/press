@@ -4,7 +4,8 @@ import { Dialog, TextInput, Button, createResource } from 'frappe-ui'
 
 interface Props {
 	cluster: string
-  server: string
+	server: string
+	onSuccess: () => void
 }
 
 const show = ref(true)
@@ -29,7 +30,7 @@ function getAppsToInstall() {
 
 	if (!version) return []
 
-  const tmp = version.apps.filter((app: any) => app.name === 'frappe')
+	const tmp = version.apps.filter((app: any) => app.name === 'frappe')
 
 	return tmp.map((app: any) => ({
 		name: app.name,
@@ -39,6 +40,10 @@ function getAppsToInstall() {
 
 const createBench = createResource({
 	url: 'press.api.bench.new',
+	onSuccess() {
+		show.value = false
+		props.onSuccess()
+	},
 })
 
 const onSubmit = () => {

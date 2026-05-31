@@ -145,6 +145,7 @@ const serverActions = (server) => {
 					h(AddBenchDialog, {
 						cluster: server.cluster,
 						server: server.name,
+            onSuccess: () => servers.reload()
 					}),
 				)
 			},
