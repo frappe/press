@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import Collapsable from '@/components/common/Collapsable.vue'
+import { duration, secsToDuration } from '@/utils/format'
 import StatusIcon from './StatusIcon.vue'
-
-import { secsToDuration, duration } from '@/utils/format'
 
 interface Props {
 	stages: any
@@ -76,32 +75,25 @@ const formatCmd = (cmd: string) => {
 						</span>
 					</template>
 
-					<Collapsable
-						:opened="true"
-						v-for='job in bench.jobs'
-						headerCss="ml-12 py-2 pr-2"
-						:key="job.name"
-					>
-						<template #prefix>
-							<LucideBox class="size-4" />
-							{{ job.job_type }}
-						</template>
-
+					<template v-if="bench.jobs?.length">
 						<button
-							class="btn !pl-16"
-							:aria-selected="output?.val && output?.id == jobstep.name"
+							class="btn !pl-12"
+							v-for="jobstep in agentJobs?.[bench.jobs[0].name]?.doc?.steps"
 							:key="jobstep.name"
-							v-for='jobstep in agentJobs?.[job.name]?.doc?.steps'
-							@click="setOutput({val: jobstep.output, status: jobstep.status, id: jobstep.name})"
+							:aria-selected="output?.val && output?.id == jobstep.name"
+							@click="setOutput({     val: jobstep.output,
+      status: jobstep.status,
+      id: jobstep.name
+    })"
 						>
 							<StatusIcon :status="jobstep.status" class="ml-2" />
 							{{ jobstep.step_name }}
 
 							<span class="text-ink-gray-5 ml-auto pr-1">
-								{{ duration(jobstep.duration) }}</span
-							>
+								{{ duration(jobstep.duration) }}
+							</span>
 						</button>
-					</Collapsable>
+					</template>
 				</Collapsable>
 			</template>
 		</Collapsable>
