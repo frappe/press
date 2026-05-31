@@ -27,9 +27,9 @@ const formatCmd = (cmd: string) => {
 <template>
 	<template v-for='(x, i) in stages' :key="x.name">
 		<Collapsable
-			v-if="deployview ? x.label == 'Building' : ['Building', 'Deploying'].includes(x.label)"
+			v-if="x.label === 'Building' || (!deployview && x.label === 'Deploying')"
 			:headerCss="`py-3 pr-2  ${i != stages?.length-1?'aria-[expanded=false]:border-b': '' }`"
-			:disabled='["Pending", "Queued"].includes(x.status)'
+			:disabled='["Pending", "Queued"].includes(x.status) || (x.label == "Building" && !buildSteps?.length) || (x.label == "Deploying" && x.benches?.length == 0)'
 		>
 			<template #prefix>
 				<StatusIcon :status="x.status" />
