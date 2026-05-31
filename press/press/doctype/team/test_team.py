@@ -1067,57 +1067,55 @@ class TestTeamTotalSubscribedAmount(FrappeTestCase):
 
 	def setUp(self):
 		frappe.set_user("Administrator")
+		from press.press.doctype.press_settings.test_press_settings import create_test_press_settings
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
+
+		create_test_press_settings()
 		self.team = create_test_team()
+		self.server_plan = create_test_server_plan()
+		# Create server with a plan so on_update sees doc.plan == sub.plan (no-op).
+		self.server = create_test_server(plan=self.server_plan.name, team=self.team.name)
 
 	def tearDown(self):
 		frappe.set_user("Administrator")
 		frappe.db.rollback()
+
+	def _make_server_sub(self, price_usd: float, enabled: int = 1):
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
+
+		plan = create_test_server_plan()
+		frappe.db.set_value("Server Plan", plan.name, "price_usd", price_usd)
+		plan.reload()
+		server = create_test_server(plan=plan.name, team=self.team.name)
+		frappe.get_doc(
+			{
+				"doctype": "Subscription",
+				"team": self.team.name,
+				"document_type": "Server",
+				"document_name": server.name,
+				"plan_type": "Server Plan",
+				"plan": plan.name,
+				"enabled": enabled,
+			}
+		).insert(ignore_permissions=True)
+		return plan
 
 	def test_returns_zero_when_no_subscriptions(self):
 		"""A team with no subscriptions has total = 0."""
 		total = self.team.total_subscribed_amount()
 		self.assertEqual(total, 0)
 
-	def test_sums_site_plan_subscriptions(self):
-		"""Sums price_usd for non-storage plan subscriptions."""
-		from press.press.doctype.site_plan.test_site_plan import create_test_plan
-
-		plan = create_test_plan("Site", price_usd=10.0)
-		# Use ToDo so Subscription.on_update() can load the linked document.
-		todo = frappe.get_doc(doctype="ToDo", description="test sub target").insert()
-		frappe.get_doc(
-			{
-				"doctype": "Subscription",
-				"team": self.team.name,
-				"document_type": "ToDo",
-				"document_name": todo.name,
-				"plan_type": "Site Plan",
-				"plan": plan.name,
-				"enabled": 1,
-			}
-		).insert(ignore_permissions=True)
-
+	def test_sums_server_plan_subscriptions(self):
+		"""total_subscribed_amount() sums price_usd of enabled Server Plan subscriptions."""
+		self._make_server_sub(price_usd=10.0)
 		total = self.team.total_subscribed_amount()
 		self.assertAlmostEqual(total, 10.0, places=2)
 
 	def test_disabled_subscriptions_excluded(self):
 		"""Disabled subscriptions do not count toward the total."""
-		from press.press.doctype.site_plan.test_site_plan import create_test_plan
-
-		plan = create_test_plan("Site", price_usd=20.0)
-		todo = frappe.get_doc(doctype="ToDo", description="disabled sub target").insert()
-		frappe.get_doc(
-			{
-				"doctype": "Subscription",
-				"team": self.team.name,
-				"document_type": "ToDo",
-				"document_name": todo.name,
-				"plan_type": "Site Plan",
-				"plan": plan.name,
-				"enabled": 0,
-			}
-		).insert(ignore_permissions=True)
-
+		self._make_server_sub(price_usd=20.0, enabled=0)
 		total = self.team.total_subscribed_amount()
 		self.assertEqual(total, 0)
 
