@@ -415,10 +415,24 @@ class Invoice(Document):
 		self.create_invoice_on_frappeio()
 		self.fetch_mpesa_invoice_pdf()
 		self.update_team_tier()
+		self.publish_partner_onboarding_mrr_update()
 
 	def on_update_after_submit(self):
 		self.create_invoice_on_frappeio()
 		self.fetch_mpesa_invoice_pdf()
+		self.publish_partner_onboarding_mrr_update()
+
+	def publish_partner_onboarding_mrr_update(self):
+		if self.type != "Subscription" or not self.partner_email:
+			return
+
+		for team in frappe.get_all("Team", {"partner_email": self.partner_email}, pluck="name"):
+			frappe.publish_realtime(
+				"partner_onboarding_mrr_updated",
+				message={"team": team},
+				doctype="Team",
+				after_commit=True,
+			)
 
 	def update_team_tier(self):
 		if self.type != "Subscription":
@@ -981,6 +995,7 @@ class Invoice(Document):
 			)
 			doc.insert()
 			doc.submit()
+		self.publish_partner_onboarding_mrr_update()
 
 	def apply_credit_balance(self):
 		# previously we used to cancel and re-apply credits, but it messed up the balance transaction history

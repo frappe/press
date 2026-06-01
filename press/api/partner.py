@@ -115,40 +115,24 @@ def get_partner_details(partner_email: str) -> dict | None:
 @frappe.whitelist()
 @role_guard.api("partner")
 def send_link_certificate_request(user_email: str, certificate_type: str) -> None:
-	cert_options = ["frappe-developer-certification", "app-development-with-frappe-framework"]
-	if certificate_type == "erpnext":
-		cert_options = ["erpnext-distribution", "erpnext-training"]
-	if not frappe.db.exists(
-		"Partner Certificate", {"partner_member_email": user_email, "course": ("in", cert_options)}
-	):
-		frappe.throw(f"No certificate found for the {user_email} with given course")
+	from press.partner.doctype.certificate_link_request.certificate_link_request import (
+		CertificateLinkRequest,
+	)
 
 	team = get_current_team(get_doc=True)
-
-	frappe.get_doc(
-		{
-			"doctype": "Certificate Link Request",
-			"partner_team": team.name,
-			"user_email": user_email,
-			"course": frappe.db.get_value(
-				"Partner Certificate",
-				{"partner_member_email": user_email, "course": ("in", cert_options)},
-				"course",
-			),
-		}
-	).insert()
+	CertificateLinkRequest.create_or_resend(team.name, user_email, certificate_type)
 
 
 @frappe.whitelist()
-@role_guard.api("partner")
 def approve_certificate_link_request(key: str) -> None:
-	cert_req_doc = frappe.get_doc("Certificate Link Request", {"key": key})
-	cert_req_doc.status = "Approved"
-	cert_req_doc.save(ignore_permissions=True)
-	frappe.db.commit()
+	from press.partner.doctype.certificate_link_request.certificate_link_request import (
+		CertificateLinkRequest,
+	)
+
+	CertificateLinkRequest.approve_from_key(key)
 
 	frappe.response.type = "redirect"
-	frappe.response.location = "/dashboard/partners/certificates"
+	frappe.response.location = "/dashboard/partner-onboarding"
 
 
 @frappe.whitelist()
@@ -1024,11 +1008,16 @@ def fetch_followup_details(id: str, lead: str) -> list[dict] | None:
 @frappe.whitelist()
 @role_guard.api("partner")
 def check_certificate_exists(email: str, certificate_type: str) -> int:
-	cert_options = ["frappe-developer-certification", "app-development-with-frappe-framework"]
-	if certificate_type == "erpnext":
-		cert_options = ["erpnext-distribution", "erpnext-training"]
+	from press.partner.doctype.certificate_link_request.certificate_link_request import (
+		CertificateLinkRequest,
+	)
+
 	return frappe.db.count(
-		"Partner Certificate", {"partner_member_email": email, "course": ("in", cert_options)}
+		"Partner Certificate",
+		{
+			"partner_member_email": email,
+			"course": ("in", CertificateLinkRequest.get_courses(certificate_type)),
+		},
 	)
 
 
