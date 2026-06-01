@@ -50,6 +50,7 @@ class TestGetRequiredAppsFromHookpy(FrappeTestCase):
 	def _run(self, hooks_content: str) -> list[str]:
 		with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
 			f.write(hooks_content)
+			f.flush()
 			path = f.name
 		try:
 			return get_required_apps_from_hookpy(path)
