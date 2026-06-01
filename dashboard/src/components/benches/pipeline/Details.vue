@@ -175,7 +175,6 @@ const setAutomaticOutput = (steps: any) => {
 		if (outputEl.value) outputEl.value.scrollTop = outputEl.value.scrollHeight
 
 		const el = stepsEl.value?.querySelector(`[data-step-id="${output?.id}"]`)
-    console.log(el)
 		el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 	})
 }
@@ -401,7 +400,7 @@ const stopBuild = () => {
 
 <template>
 	<Loader
-		v-if="deployview? builds[activeBuildId]?.get?.loading: pipeline?.get?.loading"
+		v-if="deployview? builds[activeBuildId]?.get?.loading: wired.size == 0 && pipeline?.get?.loading"
 	/>
 
 	<main
