@@ -1477,13 +1477,17 @@ class BaseServer(Document, TagHelpers):
 				f"Cannot change plan right now since the instance type {new_plan.instance_type} is not available. Try again later."
 			)
 
-		if self.provider == "Hetzner" and self.plan and self.plan == new_plan.name and upgrade_disk:
-			current_root_disk_size = frappe.db.get_value(
-				"Virtual Machine", self.virtual_machine, "root_disk_size"
+		if self.provider == "Hetzner" and self.virtual_machine:
+			current_machine_type, current_root_disk_size = frappe.db.get_value(
+				"Virtual Machine", self.virtual_machine, ["machine_type", "root_disk_size"]
 			)
-			if current_root_disk_size >= new_plan.disk:
+			if current_machine_type == new_plan.instance_type and not upgrade_disk:
 				frappe.throw(
-					"Selected plan's disk is same as or not larger than the current disk size. Please chose a plan including higher disk size availability."
+					f"Cannot resize: selected plan uses the same server type ({new_plan.instance_type}) as the current server. Choose a different plan or enable disk upgrade."
+				)
+			if upgrade_disk and current_root_disk_size >= new_plan.disk:
+				frappe.throw(
+					f"Cannot upgrade disk: selected plan's disk ({new_plan.disk} GB) is not larger than the current disk size ({current_root_disk_size} GB). Choose a plan with a larger disk."
 				)
 
 	@dashboard_whitelist()
