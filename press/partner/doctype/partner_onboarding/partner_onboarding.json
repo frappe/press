@@ -1,7 +1,7 @@
 {
 	"actions": [],
 	"allow_rename": 1,
-	"autoname": "format:PONB-{team}-{company_name}-{#####}",
+	"autoname": "format:PONB-{team}-{#####}",
 	"creation": "2026-05-26 00:00:00",
 	"default_view": "List",
 	"doctype": "DocType",
