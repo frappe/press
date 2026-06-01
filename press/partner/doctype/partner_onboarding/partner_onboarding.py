@@ -76,19 +76,16 @@ class PartnerOnboarding(Document):
 		team = frappe.get_cached_doc("Team", self.team)
 
 		if not _is_profile_complete(self):
-			frappe.throw(
-				"Complete your company profile before submitting for approval."
-			)  # nosemgrep: non-actionable-error-message - error is self-explanatory
+			# nosemgrep: non-actionable-error-message - error is self-explanatory
+			frappe.throw("Complete your company profile before submitting for approval.")
 
 		if not _get_certificate_link_status(self.team)["requirement_complete"]:
-			frappe.throw(
-				"Link at least two certificates before submitting for approval."
-			)  # nosemgrep: non-actionable-error-message - error is self-explanatory
+			# nosemgrep: non-actionable-error-message - error is self-explanatory
+			frappe.throw("Link at least two certificates before submitting for approval.")
 
 		if not _get_mrr_status(team)["requirement_complete"]:
-			frappe.throw(
-				"Reach the minimum MRR before submitting for approval."
-			)  # nosemgrep: non-actionable-error-message - error is self-explanatory
+			# nosemgrep: non-actionable-error-message - error is self-explanatory
+			frappe.throw("Reach the minimum MRR before submitting for approval.")
 
 		self.status = "Pending Review"
 		self.submitted_on = now_datetime()
@@ -98,6 +95,7 @@ class PartnerOnboarding(Document):
 		frappe.only_for("Partner Manager")
 
 		if self.docstatus != 1:
+			# nosemgrep: non-actionable-error-message - error is self-explanatory
 			frappe.throw("Submit this partner onboarding request before approval.")
 
 		if self.status != "Pending Review":
@@ -126,9 +124,8 @@ class PartnerOnboarding(Document):
 		frappe.only_for("Partner Manager")
 
 		if self.docstatus != 1:
-			frappe.throw(
-				"Submit this partner onboarding request before rejection."
-			)  # nosemgrep: non-actionable-error-message - error is self-explanatory
+			# nosemgrep: non-actionable-error-message - error is self-explanatory
+			frappe.throw("Submit this partner onboarding request before rejection.")
 
 		if self.status != "Pending Review":
 			frappe.throw(
@@ -350,9 +347,8 @@ def submit_for_approval() -> dict:
 	team = get_current_team(get_doc=True)
 	doc = _get_partner_onboarding(team.name)
 	if not doc:
-		frappe.throw(
-			"Register as a partner before submitting for approval."
-		)  # nosemgrep: non-actionable-error-message - error is self-explanatory
+		# nosemgrep: non-actionable-error-message - error is self-explanatory
+		frappe.throw("Register as a partner before submitting for approval.")
 
 	if doc.docstatus == 1:
 		return doc.as_dict()
