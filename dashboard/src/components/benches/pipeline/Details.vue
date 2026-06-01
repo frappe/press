@@ -26,7 +26,7 @@ import {
 	reactive,
 	computed,
 	watch,
-  nextTick,
+	nextTick,
 	onMounted,
 	onBeforeUnmount,
 } from 'vue'
@@ -532,12 +532,11 @@ const stopBuild = () => {
 								{{ x.class }}
 							</template>
 
-							<div class="rounded p-3 bg-surface-red-1 flex flex-col gap-2">
-								<p
-									v-html="x.message"
-									class="!w-full !max-w-full  prose prose-sm ml-3 mb-3 text-sm"
-									:class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-4" : "bg-surface-amber-1 text-ink-amber-3"'
-								/>
+							<div
+								class="rounded px-3 py-2 bg-surface-red-1 flex flex-col gap-2"
+								:class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-4" : "bg-surface-amber-1 text-ink-amber-3"'
+							>
+								<p v-html="x.message" class="leading-relaxed text-sm" />
 
 								<a
 									:href="x.assistance_url"
@@ -572,7 +571,7 @@ const stopBuild = () => {
 				</div>
 
 				<pre
-          ref="outputEl"
+					ref="outputEl"
 					class="font-mono text-xs overflow-auto -m-3 p-1 px-3.5 flex-1 min-h-0"
 					:class='output.status == "Failure" ? "bg-surface-red-1 text-ink-red-3" : ""'
 				>{{ output.val }}</pre>
