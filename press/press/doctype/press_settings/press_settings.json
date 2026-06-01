@@ -1748,7 +1748,7 @@
 			"description": "Default number of days before the site warranty setting can be changed for newly created dedicated servers",
 			"fieldname": "default_dedicated_server_site_warranty_change_cooldown",
 			"fieldtype": "Int",
-			"label": "Default Dedicated Server Site Warranty change Cooldown"
+			"label": "Default Dedicated Server Site Warranty Change Cooldown"
 		},
 		{
 			"fieldname": "column_break_vllh",
