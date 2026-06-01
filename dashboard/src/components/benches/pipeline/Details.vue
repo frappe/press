@@ -27,7 +27,6 @@ import {
 	computed,
 	watch,
 	nextTick,
-	onMounted,
 	onBeforeUnmount,
 } from 'vue'
 import { confirmDialog, renderDialog } from '@/utils/components'
@@ -90,12 +89,12 @@ const pipeline = props.deployview
 			doctype: 'Release Pipeline',
 			name: props.id,
 			auto: true,
-			onSuccess: () => {
-				if (loader.value) loader.value = false
+			onSuccess: (data) => {
+				if (data.status != 'Pending') return
+				socket.emit('doc_subscribe', 'Release Pipeline', props.id)
+				socket.on('doc_update', handleDocUpdate)
 			},
 		})
-
-const loader = ref(!pipeline?.doc)
 
 const notifApiFields = {
 	doctype: 'Press Notification',
@@ -270,7 +269,6 @@ const handleDocUpdate = props.deployview
 	: (x) => {
 			if (x.doctype === 'Release Pipeline' && x.name === props.id) {
 				pipeline.reload()
-				if (loader.value) loader.value = false
 			}
 		}
 
@@ -297,13 +295,6 @@ onBeforeUnmount(() => {
 		socket.off('agent_job_update')
 	}
 })
-
-if (!props.deployview) {
-	onMounted(() => {
-		socket.emit('doc_subscribe', 'Release Pipeline', props.id)
-		socket.on('doc_update', handleDocUpdate)
-	})
-}
 
 const tabState = ref('Tasks')
 
@@ -401,7 +392,9 @@ const stopBuild = () => {
 </script>
 
 <template>
-	<Loader v-if="deployview? builds[activeBuildId]?.get?.loading: (loader)" />
+	<Loader
+		v-if="deployview? builds[activeBuildId]?.get?.loading: pipeline?.get?.loading"
+	/>
 
 	<main
 		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-7rem)] mt-1.5"
