@@ -996,7 +996,7 @@ export default {
 														// check if any file is selected
 														if (Object.keys(payload.files).length === 0) {
 															toast.error(
-																'Please select at least one file to restore.',
+																'No backup files selected. Select at least one file (database, public, private, or config) to restore.',
 															)
 															return
 														}
@@ -1521,7 +1521,10 @@ export default {
 														},
 													),
 												)
-											} else toast.error('No app changes found')
+											} else
+												toast.error(
+													'No app changes found. The current and target benches run the same app versions, so there is nothing to update.',
+												)
 										},
 									})
 								},
@@ -1846,7 +1849,9 @@ export default {
 											!values.reason &&
 											($team.name !== site.doc.team || $team.doc.is_desk_user)
 										) {
-											throw new Error('Reason is required')
+											throw new Error(
+												'Reason is required. Enter why you are logging in as Administrator before continuing.',
+											)
 										}
 										return site.loginAsAdmin
 											.submit({ reason: values.reason })
