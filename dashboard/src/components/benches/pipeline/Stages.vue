@@ -29,7 +29,7 @@ const props = defineProps<Props>()
 		<Collapsable
 			v-if="x.label === 'Building' || (!deployview && x.label === 'Deploying')"
 			:headerCss="`py-3 pr-2  ${i != stages?.length-1?'aria-[expanded=false]:border-b': '' }`"
-			:disabled='["Pending", "Queued"].includes(x.status) || (x.label == "Building" && !buildSteps?.length) || (x.label == "Deploying" && x.benches?.length == 0)'
+			:disabled='["Pending", "Queued"].includes(x.status) || (x.label == "Building" && buildSteps?.length == 0) || (x.label == "Deploying" && x.benches?.length == 0)'
 			:opened="x.status === 'Running' && (x.label === 'Building' || x.label === 'Deploying')"
 		>
 			<template #prefix>
@@ -43,6 +43,7 @@ const props = defineProps<Props>()
 					v-for="(build_step) in buildSteps"
 					class="btn !pl-6 !pr-2"
 					:aria-selected="output?.val && output?.id == build_step.name"
+          :data-step-id="build_step.name"
 					@click="setOutput({ val: build_step.output,
                   status: build_step.status, id: build_step.name })"
 					:disabled="build_step.status =='Pending'"

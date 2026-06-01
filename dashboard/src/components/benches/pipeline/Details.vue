@@ -55,6 +55,7 @@ const output = reactive({
 	selectedIndex: null,
 })
 const outputEl = ref<HTMLElement | null>(null)
+const stepsEl = ref<HTMLElement | null>(null)
 
 const setOutput = (opts) => {
 	output.val = opts.val || 'No Output'
@@ -164,18 +165,18 @@ const handleDummyStage = (x) => {
 }
 
 const setAutomaticOutput = (steps: any) => {
-	const running = steps.find((x: any) => x.status === 'Running')
-	const lastSuccess = [...steps]
-		.reverse()
-		.find((x: any) => x.status === 'Success')
+	const obj = steps.filter((x) => x.status !== 'Pending').at(-1)
 
-	const obj = running || lastSuccess
-	output.val = obj.output
+	output.val = obj.output || 'No Output'
 	output.status = obj.status
 	output.id = obj.name
 
 	nextTick(() => {
 		if (outputEl.value) outputEl.value.scrollTop = outputEl.value.scrollHeight
+
+		const el = stepsEl.value?.querySelector(`[data-step-id="${output?.id}"]`)
+    console.log(el)
+		el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 	})
 }
 
@@ -489,6 +490,7 @@ const stopBuild = () => {
 		<div
 			class="flex rounded border p-3 pt-1 flex-1 min-h-0"
 			:class='output.opened? "": "!pr-0" '
+			ref="stepsEl"
 		>
 			<Scrollbar
 				class="px-0.5 pr-3 transition-all duration-300 shrink-0"
