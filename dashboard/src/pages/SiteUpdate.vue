@@ -135,7 +135,9 @@ export default {
 				},
 				onSuccess: (data) => {
 					if (
-						!['Success', 'Failure', 'Recovered', 'Fatal'].includes(data.status)
+						!['Success', 'Failure', 'Recovered', 'Fatal', 'Cancelled'].includes(
+							data.status,
+						)
 					) {
 						setTimeout(() => {
 							this.$resources.siteUpdate.reload()
