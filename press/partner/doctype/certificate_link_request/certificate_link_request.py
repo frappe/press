@@ -59,9 +59,13 @@ class CertificateLinkRequest(Document):
 	def link_certificate(self):
 		certificate = self.get_certificate(self.user_email, self.course)
 		if not certificate:
-			frappe.throw("Certificate linked to this request was not found.")
+			frappe.throw(
+				"Certificate linked to this request was not found. Contact support if certificate was issued by school.frappe.io and still not found."
+			)
 		if certificate.team and certificate.team != self.partner_team:
-			frappe.throw("This certificate is already linked to another partner team.")
+			frappe.throw(
+				"This certificate is already linked to another partner team. Use a certificate that is not linked elsewhere."
+			)
 
 		frappe.db.set_value(
 			"Partner Certificate",
@@ -115,7 +119,9 @@ class CertificateLinkRequest(Document):
 			return {"status": "Linked", "certificate": certificate}
 
 		if certificate.team:
-			frappe.throw("This certificate is already linked to another partner team.")
+			frappe.throw(
+				"This certificate is already linked to another partner team. Use a certificate that is not linked elsewhere."
+			)
 
 		existing_request = frappe.db.get_value(
 			"Certificate Link Request",
@@ -147,14 +153,20 @@ class CertificateLinkRequest(Document):
 	def approve_from_key(cls, key: str):
 		name = frappe.db.get_value("Certificate Link Request", {"key": key}, "name")
 		if not name:
-			frappe.throw("Invalid or expired certificate link request.")
+			frappe.throw(
+				"Invalid or expired certificate link request. Resend the link request from the Check Link Status dialog."
+			)
 
 		doc = frappe.get_doc("Certificate Link Request", name)
 		if doc.status != "Pending":
-			frappe.throw("Certificate link request has already been approved.")
+			frappe.throw(
+				"Certificate link request has already been approved. Refresh the page to see the latest status."
+			)
 
 		if doc.user_email != frappe.session.user:
-			frappe.throw("Please log in with the email address attached to this certificate.")
+			frappe.throw(
+				"Log in with the email address attached to this certificate. Then open the link again."
+			)
 
 		doc.status = "Approved"
 		# key + user email is sufficient to approve the request

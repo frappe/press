@@ -76,13 +76,19 @@ class PartnerOnboarding(Document):
 		team = frappe.get_cached_doc("Team", self.team)
 
 		if not _is_profile_complete(self):
-			frappe.throw("Complete your company profile before submitting for approval.")
+			frappe.throw(
+				"Complete your company profile before submitting for approval."
+			)  # nosemgrep: error is self-explanatory
 
 		if not _get_certificate_link_status(self.team)["requirement_complete"]:
-			frappe.throw("Link at least two certificates before submitting for approval.")
+			frappe.throw(
+				"Link at least two certificates before submitting for approval."
+			)  # nosemgrep: error is self-explanatory
 
 		if not _get_mrr_status(team)["requirement_complete"]:
-			frappe.throw("Reach the minimum MRR before submitting for approval.")
+			frappe.throw(
+				"Reach the minimum MRR before submitting for approval."
+			)  # nosemgrep: error is self-explanatory
 
 		self.status = "Pending Review"
 		self.submitted_on = now_datetime()
@@ -95,7 +101,9 @@ class PartnerOnboarding(Document):
 			frappe.throw("Submit this partner onboarding request before approval.")
 
 		if self.status != "Pending Review":
-			frappe.throw("Only pending submissions can be approved.")
+			frappe.throw(
+				"Only pending submissions can be approved. Refresh the page and open a pending review request."
+			)
 
 		team = frappe.get_doc("Team", self.team)
 		team.enable_erpnext_partner_privileges()
@@ -118,10 +126,14 @@ class PartnerOnboarding(Document):
 		frappe.only_for("Partner Manager")
 
 		if self.docstatus != 1:
-			frappe.throw("Submit this partner onboarding request before rejection.")
+			frappe.throw(
+				"Submit this partner onboarding request before rejection."
+			)  # nosemgrep: error is self-explanatory
 
 		if self.status != "Pending Review":
-			frappe.throw("Only pending submissions can be rejected.")
+			frappe.throw(
+				"Only pending submissions can be rejected. Refresh the page and open a pending review request."
+			)
 
 		self.status = "Rejected"
 		self.reviewed_by = frappe.session.user
@@ -297,7 +309,9 @@ def save_partner_onboarding(details: dict[str, Any]) -> dict:
 			}
 		)
 	elif doc.docstatus != 0:
-		frappe.throw("Submitted partner onboarding details cannot be changed.")
+		frappe.throw(
+			"Submitted partner onboarding details cannot be changed. Contact partner support if you need to update them."
+		)
 
 	for fieldname in PartnerOnboarding.dashboard_fields:
 		if fieldname in ("team", "status"):
@@ -336,13 +350,17 @@ def submit_for_approval() -> dict:
 	team = get_current_team(get_doc=True)
 	doc = _get_partner_onboarding(team.name)
 	if not doc:
-		frappe.throw("Register as a partner before submitting for approval.")
+		frappe.throw(
+			"Register as a partner before submitting for approval."
+		)  # nosemgrep: error is self-explanatory
 
 	if doc.docstatus == 1:
 		return doc.as_dict()
 
 	if doc.docstatus != 0:
-		frappe.throw("This partner onboarding request cannot be submitted.")
+		frappe.throw(
+			"This partner onboarding request cannot be submitted. Register again to start a new request."
+		)
 
 	doc.submit()
 	return doc.as_dict()
@@ -382,10 +400,14 @@ def resend_certificate_link_request(request_name: str) -> dict:
 	doc = frappe.get_doc("Certificate Link Request", request_name)
 
 	if doc.partner_team != team.name:
-		frappe.throw("This certificate link request does not belong to your team.")
+		frappe.throw(
+			"This certificate link request does not belong to your team. Open a request from your team's onboarding page."
+		)
 
 	if doc.status != "Pending":
-		frappe.throw("Only pending certificate link requests can be resent.")
+		frappe.throw(
+			"Only pending certificate link requests can be resent. Refresh the page and open a pending request."
+		)
 
 	doc.resend()
 	return doc.as_dict()
