@@ -26,6 +26,7 @@ import {
 	reactive,
 	computed,
 	watch,
+  nextTick,
 	onMounted,
 	onBeforeUnmount,
 } from 'vue'
@@ -54,6 +55,7 @@ const output = reactive({
 	status: null,
 	selectedIndex: null,
 })
+const outputEl = ref<HTMLElement | null>(null)
 
 const setOutput = (opts) => {
 	output.val = opts.val || 'No Output'
@@ -139,15 +141,20 @@ const handleDummyStage = (x) => {
 	dummyStages.value[3].status = pendingState
 }
 
-
 const setAutomaticOutput = (steps: any) => {
 	const running = steps.find((x: any) => x.status === 'Running')
-	const lastSuccess = [...steps].reverse().find((x: any) => x.status === 'Success')
+	const lastSuccess = [...steps]
+		.reverse()
+		.find((x: any) => x.status === 'Success')
+
 	const obj = running || lastSuccess
-	if (!obj?.output) return
 	output.val = obj.output
 	output.status = obj.status
 	output.id = obj.name
+
+	nextTick(() => {
+		if (outputEl.value) outputEl.value.scrollTop = outputEl.value.scrollHeight
+	})
 }
 
 watch(
@@ -565,6 +572,7 @@ const stopBuild = () => {
 				</div>
 
 				<pre
+          ref="outputEl"
 					class="font-mono text-xs overflow-auto -m-3 p-1 px-3.5 flex-1 min-h-0"
 					:class='output.status == "Failure" ? "bg-surface-red-1 text-ink-red-3" : ""'
 				>{{ output.val }}</pre>
