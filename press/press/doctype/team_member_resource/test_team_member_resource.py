@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import Mock
 
 import frappe
 from frappe.tests.ui_test_helpers import create_test_user
@@ -301,11 +300,14 @@ class TestSyncPressRole(FrappeTestCase):
 		self.add_role_resource("Site", valid_site)
 		sync_press_role(self.role)  # first sync creates the resource
 
-		# Remove the resource from the role so the second sync leaves the team empty
-		press_role_stub = Mock()
-		press_role_stub.team = self.team.name
-		sync_press_role(press_role_stub)
+		self.assertTrue(frappe.db.exists("Team Member Resource", {"team": self.team.name}))
 
-		self.assertFalse(
-			frappe.db.exists("Team Member Resource", {"team": self.team.name})
-		)
+		# Remove the resource from the role in the DB so the next sync rebuilds to empty.
+		frappe.db.delete("Press Role Resource", {"parent": self.role.name})
+		self.role.reload()
+
+		# Second sync: no resources on the role → all TeamMemberResource rows for the
+		# team must be deleted and nothing recreated.
+		sync_press_role(self.role)
+
+		self.assertFalse(frappe.db.exists("Team Member Resource", {"team": self.team.name}))

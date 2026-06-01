@@ -18,6 +18,7 @@ from press.press.doctype.press_role.press_role import (
 	create_user_resource,
 	user_has_roles,
 )
+from press.press.doctype.press_role.test_press_role import create_test_site_record
 from press.press.doctype.press_role_permission.press_role_permission import (
 	PressRolePermission,
 	is_user_part_of_admin_role,
@@ -528,33 +529,37 @@ class TestPressRoleManagement(FrappeTestCase):
 
 	# --- add_resource / remove_resource (admin-only) ----------------------
 
+	def _make_team_site(self):
+		"""Insert a bare Site row owned by this team (bypasses hooks)."""
+		subdomain = frappe.generate_hash(length=8)
+		name = f"{subdomain}.fc.dev"
+		create_test_site_record(name, subdomain, self.team.name)
+		return name
+
 	def test_admin_can_add_resource_to_role(self):
 		"""An admin must be able to add a resource to a role; guard must not block."""
 		role = self._role(admin_access=True)
 		_add_press_role_user(role, self.owner_email)
-		dummy_site = frappe.mock("name")
+		site = self._make_team_site()
 
 		with user_context(self.owner_email, team=self.team.name):
 			press_role = frappe.get_doc("Press Role", role.name)
-			# Patch save to avoid DynamicLink validation for a non-existent document.
-			with patch.object(type(press_role), "save", MagicMock()):
-				press_role.add_resource([{"document_type": "Site", "document_name": dummy_site}])
+			press_role.add_resource([{"document_type": "Site", "document_name": site}])
 
-		# The resource should have been appended in-memory even if save was mocked.
-		self.assertTrue(any(r.document_name == dummy_site for r in press_role.resources))
+		press_role.reload()
+		self.assertTrue(any(r.document_name == site for r in press_role.resources))
 
 	def test_adding_duplicate_resource_to_role_raises(self):
 		"""Appending the same resource twice to a role must raise ValidationError."""
 		role = self._role(admin_access=True)
 		_add_press_role_user(role, self.owner_email)
-		dummy_site = frappe.mock("name")
+		site = self._make_team_site()
 
 		with user_context(self.owner_email, team=self.team.name):
 			press_role = frappe.get_doc("Press Role", role.name)
-			with patch.object(type(press_role), "save", MagicMock()):
-				press_role.add_resource([{"document_type": "Site", "document_name": dummy_site}])
-				with self.assertRaises(frappe.ValidationError):
-					press_role.add_resource([{"document_type": "Site", "document_name": dummy_site}])
+			press_role.add_resource([{"document_type": "Site", "document_name": site}])
+			with self.assertRaises(frappe.ValidationError):
+				press_role.add_resource([{"document_type": "Site", "document_name": site}])
 
 	def test_admin_can_remove_resource_from_role(self):
 		"""Admin must be able to remove an existing resource from a role.
@@ -1068,14 +1073,9 @@ class TestTeamTotalSubscribedAmount(FrappeTestCase):
 	def setUp(self):
 		frappe.set_user("Administrator")
 		from press.press.doctype.press_settings.test_press_settings import create_test_press_settings
-		from press.press.doctype.server.test_server import create_test_server
-		from press.press.doctype.server_plan.test_server_plan import create_test_server_plan
 
 		create_test_press_settings()
 		self.team = create_test_team()
-		self.server_plan = create_test_server_plan()
-		# Create server with a plan so on_update sees doc.plan == sub.plan (no-op).
-		self.server = create_test_server(plan=self.server_plan.name, team=self.team.name)
 
 	def tearDown(self):
 		frappe.set_user("Administrator")
@@ -1088,7 +1088,10 @@ class TestTeamTotalSubscribedAmount(FrappeTestCase):
 		plan = create_test_server_plan()
 		frappe.db.set_value("Server Plan", plan.name, "price_usd", price_usd)
 		plan.reload()
-		server = create_test_server(plan=plan.name, team=self.team.name)
+		# Create server WITHOUT a plan — passing plan= would trigger Server.update_subscription()
+		# which auto-creates an enabled subscription, causing DuplicateEntryError when we
+		# insert our own subscription below.
+		server = create_test_server(team=self.team.name)
 		frappe.get_doc(
 			{
 				"doctype": "Subscription",
