@@ -114,6 +114,8 @@ class PressSettings(Document):
 		cool_off_period: DF.Int
 		data_40: DF.Data | None
 		default_apps: DF.Table[AppGroup]
+		default_dedicated_server_site_warranty_change_cooldown: DF.Int
+		default_dedicated_server_site_warranty_quota: DF.Int
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
 		default_server_plan_type: DF.Link | None
