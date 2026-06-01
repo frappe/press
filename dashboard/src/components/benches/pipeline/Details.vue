@@ -90,9 +90,13 @@ const pipeline = props.deployview
 			name: props.id,
 			auto: true,
 			onSuccess: (data) => {
-				if (data.status != 'Pending') return
-				socket.emit('doc_subscribe', 'Release Pipeline', props.id)
-				socket.on('doc_update', handleDocUpdate)
+				const wiredId = 'release-pipeline' + props.id
+
+				if (data.status === 'Pending' && !wired.has(wiredId)) {
+					socket.emit('doc_subscribe', 'Release Pipeline', props.id)
+					socket.on('doc_update', handleDocUpdate)
+					wired.add(wiredId)
+				}
 			},
 		})
 
@@ -107,6 +111,9 @@ const notifApiFields = {
 		'assistance_url',
 	],
 	filters: { document_type: 'Deploy Candidate Build', is_actionable: true },
+	onSuccess: () => {
+		if (wired?.size > 0 && errList?.value?.length > 0) tabState.value = 'Issues'
+	},
 }
 
 const errors = createListResource(notifApiFields)
@@ -117,6 +124,22 @@ const errList = computed(() => {
 	const activeErrListId = activeBuildId.value || pipeline?.doc?.name
 	return list.filter((x) => x.document_name == activeErrListId)
 })
+
+const fetchSetErrs = () => {
+	const errids = buildIds.value?.length > 0 ? buildIds.value : [props.id]
+
+	errors.update({
+		cache: ['Press Notification Error', 'Deploy Candidate Build', errids],
+		filters: { document_name: ['in', errids], class: 'Error' },
+	})
+	errors.fetch()
+
+	warnings.update({
+		cache: ['Press Notification Warning', 'Deploy Candidate Build', errids],
+		filters: { document_name: ['in', errids], class: 'Warning' },
+	})
+	warnings.fetch()
+}
 
 // used to unsubscribe from socket events
 const wired = new Set<string>()
@@ -158,8 +181,8 @@ const setAutomaticOutput = (steps: any) => {
 
 watch(
 	() => buildIds.value,
-	(ids: string[]) => {
-		if (!ids) return
+	(ids: string[], oldIds: string[]) => {
+		if (JSON.stringify(ids) === JSON.stringify(oldIds)) return
 
 		ids.forEach((id: string) => {
 			if (!builds.value[id]) {
@@ -203,32 +226,14 @@ watch(
 
 			if (pipeline?.doc?.status === 'Running') wired.add(id)
 		})
-
-		// ------------------------- errors and warnings
-		const errids =
-			buildIds.value?.length > 0 ? buildIds.value : [pipeline?.doc?.name]
-
-		errors.update({
-			cache: [
-				'Press Notification Error',
-				'Deploy Candidate Build',
-				buildIds.value,
-			],
-			filters: { document_name: ['in', errids], class: 'Error' },
-		})
-		errors.fetch()
-
-		warnings.update({
-			cache: [
-				'Press Notification Warning',
-				'Deploy Candidate Build',
-				buildIds.value,
-			],
-			filters: { document_name: ['in', errids], class: 'Warning' },
-		})
-		warnings.fetch()
 	},
-	{ immediate: true, deep: true },
+)
+
+watch(
+	() => pipeline?.doc?.status,
+	(x) => {
+		if (x == 'Failure') fetchSetErrs()
+	},
 )
 
 watch(
@@ -260,7 +265,6 @@ watch(
 			}
 		})
 	},
-	{ immediate: true, deep: true },
 )
 
 // ---------------------  Realtime stuff ----------------------
@@ -273,14 +277,15 @@ const handleDocUpdate = props.deployview
 		}
 
 onBeforeUnmount(() => {
-	if (!props.deployview) {
+	if (props.deployview) {
 		socket.emit('doc_unsubscribe', 'Release Pipeline', props.id)
 		socket.off('doc_update', handleDocUpdate)
-		return
 	}
 
 	wired.forEach((id) => {
 		if (id.startsWith('job:')) return
+
+		if (buildIds.value.length == 0) return
 
 		socket.emit('doc_unsubscribe', 'Deploy Candidate Build', id)
 		socket.off(`bench_deploy:${id}:steps`)
@@ -288,6 +293,8 @@ onBeforeUnmount(() => {
 	})
 
 	if (props.deployview) {
+		if (agentJobIds?.value.length == 0) return
+
 		agentJobIds?.value?.forEach((id: string) => {
 			socket.emit('doc_unsubscribe', 'Agent Job', id)
 		})
