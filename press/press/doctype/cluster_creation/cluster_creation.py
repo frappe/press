@@ -8,6 +8,7 @@ import frappe
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime
 
+from press.utils import log_error
 from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 from press.workflow_engine.doctype.press_workflow.workflow_builder import WorkflowBuilder
 
@@ -45,6 +46,7 @@ class ClusterCreation(WorkflowBuilder):
 
 	def on_workflow_failure(self, workflow: "PressWorkflow"):
 		self.db_set({"status": "Failure", "end": now_datetime()})
+		self._create_cluster_creation_incident(workflow)
 
 	@property
 	def source_cluster_doc(self) -> "Cluster":
@@ -55,7 +57,11 @@ class ClusterCreation(WorkflowBuilder):
 		self.create_cluster_record()
 		self.copy_images_if_needed()
 		self.create_proxy_server()
-		self.create_server_pairs()
+		self.wait_for_proxy_server()
+
+		for i in range(1, (self.source_cluster_doc.auto_cluster_app_server_count or 1) + 1):
+			self.create_server_pairs(i)
+			self.wait_for_server_pairs(i)
 
 	@task
 	def create_cluster_record(self):
@@ -131,16 +137,16 @@ class ClusterCreation(WorkflowBuilder):
 	def create_proxy_server(self):
 		"""Create Proxy Server"""
 		cluster: Cluster = frappe.get_doc("Cluster", self.new_cluster)
-		proxy, _ = cluster.create_server("Proxy Server", _DEFAULT_SERVER_TITLE)
+		proxy, proxy_job = cluster.create_server("Proxy Server", _DEFAULT_SERVER_TITLE)
 		self.kv.set("proxy_server", proxy.name)
+		self.kv.set("proxy_job_name", proxy_job.name)
 
 	@task
-	def create_server_pairs(self):
+	def create_server_pairs(self, pair_index=1):
 		"""Create DB and App Server Pairs"""
 		cluster: Cluster = frappe.get_doc("Cluster", self.new_cluster)
 		cluster.proxy_server = self.kv.get("proxy_server")
 
-		num_pairs = cluster.auto_cluster_app_server_count or 1
 		app_plan = (
 			frappe.get_doc("Server Plan", cluster.default_app_server_plan)
 			if cluster.default_app_server_plan
@@ -152,17 +158,85 @@ class ClusterCreation(WorkflowBuilder):
 			else None
 		)
 
-		for pair_index in range(1, num_pairs + 1):
-			db_server, _ = cluster.create_server(
-				"Database Server",
-				f"Public DB Server {pair_index}",
-				plan=db_plan,
+		db_server, db_job = cluster.create_server(
+			"Database Server",
+			f"Public DB Server {pair_index}",
+			plan=db_plan,
+		)
+		cluster.database_server = db_server.name
+		_, app_job = cluster.create_server(
+			"Server",
+			f"Public App Server {pair_index}",
+			plan=app_plan,
+			public=True,
+		)
+		self.kv.set(f"db_job_name_{pair_index}", db_job.name)
+		self.kv.set(f"app_job_name_{pair_index}", app_job.name)
+
+	@task
+	def wait_for_proxy_server(self):
+		"""Wait for Proxy Server Job"""
+		job_name = self.kv.get("proxy_job_name")
+		status = frappe.db.get_value("Press Job", job_name, "status")
+		if status in ("Pending", "Running"):
+			self.defer_current_task(f"Proxy server job {job_name} still {status}")
+		if status == "Failure":
+			raise RuntimeError(f"Proxy server creation job {job_name} failed")
+
+	@task
+	def wait_for_server_pairs(self, pair_index=1):
+		"""Wait for DB and App Server Pair Jobs"""
+		db_job_name = self.kv.get(f"db_job_name_{pair_index}")
+		app_job_name = self.kv.get(f"app_job_name_{pair_index}")
+		db_status = frappe.db.get_value("Press Job", db_job_name, "status")
+		app_status = frappe.db.get_value("Press Job", app_job_name, "status")
+		if db_status in ("Pending", "Running") or app_status in ("Pending", "Running"):
+			self.defer_current_task(
+				f"Server pair {pair_index} jobs still running (db={db_status}, app={app_status})"
 			)
-			cluster.database_server = db_server.name
-			cluster.create_server(
-				"Server",
-				f"Public App Server {pair_index}",
-				plan=app_plan,
-				public=True,
+		failures = []
+		if db_status == "Failure":
+			failures.append(f"DB server job {db_job_name}")
+		if app_status == "Failure":
+			failures.append(f"App server job {app_job_name}")
+		if failures:
+			raise RuntimeError(f"Server pair {pair_index} creation failed: {', '.join(failures)}")
+
+	def _create_cluster_creation_incident(self, workflow: "PressWorkflow") -> None:
+		cluster = self.new_cluster or self.source_cluster
+		subject = f"Auto Cluster creation failed for {cluster}"
+
+		open_incident = frappe.db.exists(
+			"Incident",
+			{
+				"cluster": cluster,
+				"subject": subject,
+				"status": ["not in", ["Resolved", "Auto-Resolved", "Press-Resolved"]],
+			},
+		)
+		if open_incident:
+			return
+
+		description = (
+			f"Auto cluster creation failed for cluster {cluster}. "
+			f"Source cluster: {self.source_cluster}. "
+			f"Workflow: {workflow.name}. "
+			"Review the workflow traceback and Press Job logs for details."
+		)
+
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "Incident",
+					"cluster": cluster,
+					"type": "Server Down",
+					"subject": subject,
+					"description": description,
+				}
+			).insert(ignore_permissions=True)
+		except Exception:
+			log_error(
+				"Failed to create cluster creation incident",
+				cluster=cluster,
+				workflow=workflow.name,
 			)
-			frappe.db.commit()
