@@ -127,6 +127,8 @@ class ResizeServerJob(PressJob):
 		self.start_virtual_machine()
 
 		# Find out the last plan change of the server
+		self.server_doc.reload()
+
 		plan_changes = frappe.get_all(
 			"Plan Change",
 			{
@@ -142,7 +144,6 @@ class ResizeServerJob(PressJob):
 			return
 
 		plan_change: PlanChange = frappe.get_doc("Plan Change", plan_changes[0].name)
-		self.server_doc.reload()
 
 		from_plan: ServerPlan = frappe.get_doc("Server Plan", plan_change.from_plan)
 		self.server_doc._change_plan(from_plan)
