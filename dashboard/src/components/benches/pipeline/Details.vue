@@ -131,13 +131,23 @@ const dummyStages = ref([
 const handleDummyStage = (x) => {
 	if (!props.deployview) return
 
-	// updateDeployViewBuild(x)
 	dummyStages.value[2].status = x.status
 
 	const pendingState = ['Success', 'Failure'].includes(x.status)
 		? x.status
 		: 'Pending'
 	dummyStages.value[3].status = pendingState
+}
+
+
+const setAutomaticOutput = (steps: any) => {
+	const running = steps.find((x: any) => x.status === 'Running')
+	const lastSuccess = [...steps].reverse().find((x: any) => x.status === 'Success')
+	const obj = running || lastSuccess
+	if (!obj?.output) return
+	output.val = obj.output
+	output.status = obj.status
+	output.id = obj.name
 }
 
 watch(
@@ -166,6 +176,7 @@ watch(
 				socket.on(`bench_deploy:${id}:steps`, (data) => {
 					const buildRes = builds.value[id]
 					if (data.name === id && buildRes) {
+						setAutomaticOutput(data.steps)
 						buildRes.doc.build_steps = data.steps
 					}
 				})
@@ -538,10 +549,10 @@ const stopBuild = () => {
 			<!-- output -->
 			<div
 				v-show="output.opened"
-				class="overflow-auto bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 rounded transition-all duration-300 flex-1"
+				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 rounded transition-all duration-300 flex-1 flex flex-col min-h-0"
 			>
 				<div
-					class="flex items-center pb-2 border-outline-gray-2 mb-3 text-ink-gray-6 -mt-1 -mr-1"
+					class="flex items-center pb-2 border-outline-gray-2 mb-3 text-ink-gray-6 -mt-1 -mr-1 shrink-0"
 				>
 					<span>Output</span>
 					<CopyBtn :text="output?.val || ''" class="ml-auto smallbtn" />
@@ -554,9 +565,8 @@ const stopBuild = () => {
 				</div>
 
 				<pre
-					class="font-mono text-xs overflow-auto -m-3 p-1 px-3.5"
-					:class='output.status == "Failure" ? "bg-surface-red-1 text-ink-red-3" :
-          ""'
+					class="font-mono text-xs overflow-auto -m-3 p-1 px-3.5 flex-1 min-h-0"
+					:class='output.status == "Failure" ? "bg-surface-red-1 text-ink-red-3" : ""'
 				>{{ output.val }}</pre>
 			</div>
 		</div>
