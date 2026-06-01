@@ -1507,7 +1507,7 @@ class VirtualMachine(Document):
 					server.secondary_private_ip = self.secondary_private_ip
 
 				server.status = status_map[self.status]
-				server = server.save()
+				server = server.save(ignore_permissions=True)
 
 				if self.public_ip_address:
 					if frappe.flags.force_update_dns or self.has_value_changed("public_ip_address"):
