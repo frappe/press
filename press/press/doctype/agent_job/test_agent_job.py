@@ -293,32 +293,38 @@ class TestAgentJob(FrappeTestCase):
 		)
 
 		self.assertEqual(in_execution_job.name, job.name)
+		# tearDown's frappe.db.rollback() resets disable_agent_job_deduplication
 
-		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", True)
 
-	# -----------------------------------------------------------------------
-	# Task 5: Agent job failure & site status transitions
-	# -----------------------------------------------------------------------
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestSiteRestoreJobStatusTransitions(FrappeTestCase):
+	"""Restore Site agent job status → site status transitions."""
 
-	def test_restore_job_failure_sets_site_broken(self):
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_press_admin_team()
+		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
+		self.team.payment_mode = "Prepaid Credits"
+		self.team.save()
+
+	def tearDown(self):
+		frappe.db.rollback()
+		frappe.set_user("Administrator")
+
+	def test_failure_sets_site_broken(self):
 		"""A Restore Site agent job that fails should mark the site as Broken."""
 		from press.press.doctype.site.site import process_restore_job_update
 
 		site = create_test_site()
 		site.db_set("status", "Installing")
 
-		job = frappe._dict(
-			status="Failure",
-			job_type="Restore Site",
-			site=site.name,
-			output="",
-		)
+		job = frappe._dict(status="Failure", job_type="Restore Site", site=site.name, output="")
 		process_restore_job_update(job, force=True)
 
 		site.reload()
 		self.assertEqual(site.status, "Broken")
 
-	def test_restore_job_success_sets_site_active(self):
+	def test_success_sets_site_active(self):
 		"""A successful Restore Site job should transition the site to Active."""
 		from press.press.doctype.site.site import Site, process_restore_job_update
 
@@ -329,67 +335,68 @@ class TestAgentJob(FrappeTestCase):
 			status="Success",
 			job_type="Restore Site",
 			site=site.name,
-			output="frappe\n",  # one app line so the parse doesn't break
+			output="frappe\n",
 		)
 		with (
 			patch("press.press.doctype.site.site.process_marketplace_hooks_for_backup_restore"),
 			patch.object(Site, "set_apps"),
-			patch("frappe.db.get_value", return_value=False),  # is_unified_server
+			patch("frappe.db.get_value", return_value=False),
 		):
 			process_restore_job_update(job, force=True)
 
 		site.reload()
 		self.assertEqual(site.status, "Active")
 
-	def test_restore_job_delivery_failure_keeps_site_active(self):
-		"""A Delivery Failure on a Restore Site job (agent never received the
-		request) should leave the site Active, not Broken."""
+	def test_delivery_failure_keeps_site_active(self):
+		"""Delivery Failure (agent never received the request) should leave the site Active."""
 		from press.press.doctype.site.site import process_restore_job_update
 
 		site = create_test_site()
 		site.db_set("status", "Active")
 
-		job = frappe._dict(
-			status="Delivery Failure",
-			job_type="Restore Site",
-			site=site.name,
-			output="",
-		)
+		job = frappe._dict(status="Delivery Failure", job_type="Restore Site", site=site.name, output="")
 		process_restore_job_update(job, force=True)
 
 		site.reload()
 		self.assertEqual(site.status, "Active")
 
-	def test_migrate_job_failure_sets_site_broken(self):
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestSiteMigrateJobStatusTransitions(FrappeTestCase):
+	"""Migrate Site agent job status → site status transitions."""
+
+	def setUp(self):
+		super().setUp()
+		self.team = create_test_press_admin_team()
+		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
+		self.team.payment_mode = "Prepaid Credits"
+		self.team.save()
+
+	def tearDown(self):
+		frappe.db.rollback()
+		frappe.set_user("Administrator")
+
+	def test_failure_sets_site_broken(self):
 		"""A failed Migrate Site agent job should mark the site as Broken."""
 		from press.press.doctype.site.site import process_migrate_site_job_update
 
 		site = create_test_site()
 		site.db_set("status", "Updating")
 
-		job = frappe._dict(
-			status="Failure",
-			job_type="Migrate Site",
-			site=site.name,
-		)
+		job = frappe._dict(status="Failure", job_type="Migrate Site", site=site.name)
 		process_migrate_site_job_update(job)
 
 		site.reload()
 		self.assertEqual(site.status, "Broken")
 
-	def test_migrate_job_running_sets_site_updating(self):
-		"""While a Migrate Site job is running, the site should be in Updating
-		state."""
+	def test_running_sets_site_updating(self):
+		"""While a Migrate Site job is running, the site should be in Updating state."""
 		from press.press.doctype.site.site import process_migrate_site_job_update
 
 		site = create_test_site()
 		site.db_set("status", "Active")
 
-		job = frappe._dict(
-			status="Running",
-			job_type="Migrate Site",
-			site=site.name,
-		)
+		job = frappe._dict(status="Running", job_type="Migrate Site", site=site.name)
 		process_migrate_site_job_update(job)
 
 		site.reload()

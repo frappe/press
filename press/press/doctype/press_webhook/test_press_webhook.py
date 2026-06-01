@@ -37,33 +37,23 @@ def _webhook(endpoint: str) -> PressWebhook:
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-class TestValidateEndpointUrlFormatValid(FrappeTestCase):
-	"""Calls that must NOT raise ValidationError."""
+class TestValidateEndpointUrlFormat(FrappeTestCase):
+	"""Tests for validate_endpoint_url_format() — valid and invalid URL cases."""
 
 	def test_https_domain_passes(self):
-		_webhook("https://example.com/hook").validate_endpoint_url_format()
+		self.assertIsNone(_webhook("https://example.com/hook").validate_endpoint_url_format())
 
 	def test_http_domain_passes(self):
-		_webhook("http://example.com/hook").validate_endpoint_url_format()
+		self.assertIsNone(_webhook("http://example.com/hook").validate_endpoint_url_format())
 
 	def test_https_domain_with_port_passes(self):
-		_webhook("https://example.com:8080/hook").validate_endpoint_url_format()
+		self.assertIsNone(_webhook("https://example.com:8080/hook").validate_endpoint_url_format())
 
 	def test_https_subdomain_passes(self):
-		_webhook("https://hooks.myapp.io/press").validate_endpoint_url_format()
+		self.assertIsNone(_webhook("https://hooks.myapp.io/press").validate_endpoint_url_format())
 
 	def test_public_ipv4_address_passes(self):
-		# 8.8.8.8 is a public IP — must not raise
-		_webhook("https://8.8.8.8/webhook").validate_endpoint_url_format()
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# validate_endpoint_url_format — invalid cases
-# ══════════════════════════════════════════════════════════════════════════════
-
-
-class TestValidateEndpointUrlFormatInvalid(FrappeTestCase):
-	"""Calls that MUST raise ValidationError."""
+		self.assertIsNone(_webhook("https://8.8.8.8/webhook").validate_endpoint_url_format())
 
 	def test_missing_scheme_raises(self):
 		with self.assertRaises(frappe.ValidationError):
@@ -78,12 +68,10 @@ class TestValidateEndpointUrlFormatInvalid(FrappeTestCase):
 			_webhook("https://example.com/hook?key=val").validate_endpoint_url_format()
 
 	def test_private_ip_raises(self):
-		# 192.168.x.x is a private/non-global IP
 		with self.assertRaises(frappe.ValidationError):
 			_webhook("https://192.168.1.100/hook").validate_endpoint_url_format()
 
 	def test_loopback_ip_raises(self):
-		# 127.0.0.1 is loopback — not global
 		with self.assertRaises(frappe.ValidationError):
 			_webhook("https://127.0.0.1/hook").validate_endpoint_url_format()
 

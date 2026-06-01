@@ -71,7 +71,7 @@ class TestTeam(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_create_new_method_works(self):
+	def test_create_new_increments_team_count(self):
 		account_request = create_test_account_request("testsubdomain")
 		team_count_before = frappe.db.count("Team")
 		with patch.object(Team, "create_stripe_customer"):

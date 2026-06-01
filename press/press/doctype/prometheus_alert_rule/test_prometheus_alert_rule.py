@@ -29,86 +29,93 @@ def create_test_prometheus_alert_rule(name="Sites Down") -> PrometheusAlertRule:
 	).insert(ignore_if_duplicate=True)
 
 
-class TestPrometheusAlertRule(FrappeTestCase):
-	"""Tests for PrometheusAlertRule.get_rule(), get_route(), and validate() guards."""
+_MODULE = "press.press.doctype.prometheus_alert_rule.prometheus_alert_rule"
 
-	_MODULE = "press.press.doctype.prometheus_alert_rule.prometheus_alert_rule"
 
-	def _make_doc(self, **kwargs):
-		from types import SimpleNamespace
+def _make_doc(**kwargs):
+	from types import SimpleNamespace
 
-		defaults = dict(
-			name="TestAlert",
-			description="Test alert description",
-			severity="Warning",
-			expression="up == 0",
-			labels='{"team": "ops"}',
-			annotations='{"summary": "Something is down"}',
-			group_by='["alertname"]',
-			group_wait="30s",
-			group_interval="5m",
-			repeat_interval="1h",
-			enabled=1,
-			alert_preview="",
-			route_preview="",
-		)
-		defaults.update(kwargs)
-		# Frappe's `get` method is used for the "for" field (reserved keyword)
-		obj = SimpleNamespace(**defaults)
-		obj.get = lambda field, default=None: getattr(obj, "for_duration", "4m")
-		return obj
+	defaults = dict(
+		name="TestAlert",
+		description="Test alert description",
+		severity="Warning",
+		expression="up == 0",
+		labels='{"team": "ops"}',
+		annotations='{"summary": "Something is down"}',
+		group_by='["alertname"]',
+		group_wait="30s",
+		group_interval="5m",
+		repeat_interval="1h",
+		enabled=1,
+		alert_preview="",
+		route_preview="",
+	)
+	defaults.update(kwargs)
+	# Frappe's `get` method is used for the "for" field (reserved keyword)
+	obj = SimpleNamespace(**defaults)
+	obj.get = lambda field, default=None: getattr(obj, "for_duration", "4m")
+	return obj
+
+
+class TestPrometheusAlertRuleRendering(FrappeTestCase):
+	"""Tests for get_rule() and get_route() rendering logic."""
 
 	def test_get_rule_includes_name_and_expression(self):
-		doc = self._make_doc(name="MyAlert", expression="probe_success == 0")
+		doc = _make_doc(name="MyAlert", expression="probe_success == 0")
 		rule = PrometheusAlertRule.get_rule(doc)
 		self.assertEqual(rule["alert"], "MyAlert")
 		self.assertEqual(rule["expr"], "probe_success == 0")
 
 	def test_get_rule_merges_severity_into_labels(self):
-		doc = self._make_doc(severity="Critical", labels='{"team": "ops"}')
+		doc = _make_doc(severity="Critical", labels='{"team": "ops"}')
 		rule = PrometheusAlertRule.get_rule(doc)
 		self.assertEqual(rule["labels"]["severity"], "critical")  # lowercased
 		self.assertEqual(rule["labels"]["team"], "ops")
 
 	def test_get_rule_merges_description_into_annotations(self):
-		doc = self._make_doc(description="My description", annotations='{"summary": "x"}')
+		doc = _make_doc(description="My description", annotations='{"summary": "x"}')
 		rule = PrometheusAlertRule.get_rule(doc)
 		self.assertEqual(rule["annotations"]["description"], "My description")
 		self.assertEqual(rule["annotations"]["summary"], "x")
 
 	def test_get_route_includes_alertname_matcher(self):
-		doc = self._make_doc(name="MyAlert")
+		doc = _make_doc(name="MyAlert")
 		route = PrometheusAlertRule.get_route(doc)
 		self.assertIn('alertname="MyAlert"', route["matchers"])
 
 	def test_get_route_includes_intervals(self):
-		doc = self._make_doc(group_wait="1m", group_interval="5m", repeat_interval="2h")
+		doc = _make_doc(group_wait="1m", group_interval="5m", repeat_interval="2h")
 		route = PrometheusAlertRule.get_route(doc)
 		self.assertEqual(route["group_wait"], "1m")
 		self.assertEqual(route["group_interval"], "5m")
 		self.assertEqual(route["repeat_interval"], "2h")
 
-	def _bind_methods(self, doc):
-		"""Bind get_rule and get_route onto a SimpleNamespace so validate() can call them."""
-		import types
 
-		doc.get_rule = types.MethodType(PrometheusAlertRule.get_rule, doc)
-		doc.get_route = types.MethodType(PrometheusAlertRule.get_route, doc)
-		return doc
+def _bind_methods(doc):
+	"""Bind get_rule and get_route onto a SimpleNamespace so validate() can call them."""
+	import types
+
+	doc.get_rule = types.MethodType(PrometheusAlertRule.get_rule, doc)
+	doc.get_route = types.MethodType(PrometheusAlertRule.get_route, doc)
+	return doc
+
+
+class TestPrometheusAlertRuleValidation(FrappeTestCase):
+	"""Tests for validate() guards."""
 
 	def test_validate_raises_when_enabled_without_expression(self):
 		"""validate() raises ValidationError when enabled=True but expression is empty."""
 		import frappe
 
-		doc = self._bind_methods(self._make_doc(enabled=1, expression=""))
+		doc = _bind_methods(_make_doc(enabled=1, expression=""))
 		with (
-			patch(f"{self._MODULE}.yaml.dump", return_value=""),
+			patch(f"{_MODULE}.yaml.dump", return_value=""),
 			self.assertRaises(frappe.ValidationError),
 		):
 			PrometheusAlertRule.validate(doc)
 
 	def test_validate_passes_when_disabled_without_expression(self):
 		"""validate() does not raise when rule is disabled even if expression is empty."""
-		doc = self._bind_methods(self._make_doc(enabled=0, expression=""))
-		with patch(f"{self._MODULE}.yaml.dump", return_value=""):
+		doc = _bind_methods(_make_doc(enabled=0, expression=""))
+		with patch(f"{_MODULE}.yaml.dump", return_value=""):
 			PrometheusAlertRule.validate(doc)  # must not raise
