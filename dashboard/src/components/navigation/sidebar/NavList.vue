@@ -20,6 +20,9 @@ const list = computed(() => {
 
 	const routeName = String($route?.name || '')
 	const onboardingComplete = $team.doc.onboarding.complete
+	const activePartner = Boolean(
+		$team.doc.erpnext_partner && $team.doc.partner_status === 'Active',
+	)
 	const isSaasUser = $team.doc.is_saas_user
 
 	const enforce2FA = Boolean(
@@ -158,9 +161,10 @@ const list = computed(() => {
 		{
 			name: 'Partnership',
 			icon: LucideGlobe,
-			route: '/partners',
-			isActive: routeName === 'Partnership',
-			condition: Boolean($team.doc.erpnext_partner),
+			route: activePartner ? '/partners' : '/partner-onboarding',
+			isActive:
+				$route.path.startsWith('/partners') ||
+				routeName === 'Partner Onboarding',
 			disabled: enforce2FA,
 		},
 
@@ -184,7 +188,7 @@ const list = computed(() => {
 
 useRealtimeNotifs((data) => {
 	if (data.team === $team.doc.name) {
-		unreadNotificationsCount.setData((data) => data + 1)
+		unreadNotificationsCount.setData((data: number) => data + 1)
 	}
 })
 </script>
