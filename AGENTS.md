@@ -23,3 +23,19 @@ bench --site <site> migrate --skip-failing
 ```
 
 See [guide-to-testing.md](guide-to-testing.md) for how to write tests for this project, and the [Frappe testing docs](https://docs.frappe.io/framework/user/en/testing) for framework-level testing reference.
+
+## Running UI Tests (Playwright)
+
+See [guide-to-ui-testing.md](guide-to-ui-testing.md) for setup and conventions.
+
+Quick reference — run from `dashboard/`:
+
+```bash
+# Headed (opens browser)
+yarn test:e2e:headed
+
+# Single file
+npx playwright test tests-e2e/tests/dashboard/site-update-banner.test.ts --headed
+```
+
+Requires a running bench (`bench start`) and `dashboard/tests-e2e/.env` with credentials.

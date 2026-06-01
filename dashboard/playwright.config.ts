@@ -15,6 +15,9 @@ export default defineConfig({
 		video: 'retain-on-failure',
 		launchOptions: {
 			args: ['--no-sandbox', '--disable-setuid-sandbox'],
+			slowMo: process.env.PLAYWRIGHT_SLOW_MO
+				? parseInt(process.env.PLAYWRIGHT_SLOW_MO)
+				: undefined,
 		},
 	},
 	reporter: [['list'], ['html', { open: 'never' }]],
