@@ -1054,7 +1054,6 @@ class BaseServer(Document, TagHelpers):
 		nfs_server_name = frappe.get_value("NFS Server", {"virtual_machine": virtual_machine}, "name")
 		return frappe.get_doc("NFS Server", nfs_server_name)
 
-	@frappe.whitelist()
 	def extend_ec2_volume(self, device=None, log: str | None = None):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
@@ -1099,7 +1098,6 @@ class BaseServer(Document, TagHelpers):
 			queue="long",
 		)
 
-	@frappe.whitelist()
 	def extend_frappe_compute_volume(self, device=None, log: str | None = None):
 		# Copied over from extend_ec2_volume
 		# Restart MariaDB if MariaDB disk is full
@@ -1773,6 +1771,9 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def configure_ssh_logging(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_configure_ssh_logging", queue="long", timeout=1200)
+
+	def _configure_ssh_logging(self):
 		try:
 			ansible = Ansible(
 				playbook="configure_ssh_logging.yml",
