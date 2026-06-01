@@ -149,6 +149,10 @@ def sync_press_role(doc, method=None):
 			if (resource.document_type, resource.document_name) not in team_owned:
 				continue
 
+			# Skip if the document does not belong to the team.
+			if frappe.db.get_value(resource.document_type, resource.document_name, "team") != team:
+				continue
+
 			# Check if a `team-member-resource` entry already exists for the team,
 			# user, document type, and document.
 			document = {
