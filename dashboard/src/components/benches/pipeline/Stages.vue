@@ -16,12 +16,12 @@ const props = defineProps<Props>()
 
 // single line commands with && are very long
 // so make them multi-line
-const formatCmd = (cmd: string) => {
-	return cmd
-		.split('&&')
-		.map((part) => part.trim())
-		.join(' &&\n')
-}
+// const formatCmd = (cmd: string) => {
+// 	return cmd
+// 		.split('&&')
+// 		.map((part) => part.trim())
+// 		.join(' &&\n')
+// }
 </script>
 
 <template>
@@ -43,7 +43,7 @@ const formatCmd = (cmd: string) => {
 					v-for="(build_step) in buildSteps"
 					class="btn !pl-6 !pr-2"
 					:aria-selected="output?.val && output?.id == build_step.name"
-					@click="setOutput({ val: build_step.output || formatCmd(build_step.command),
+					@click="setOutput({ val: build_step.output,
                   status: build_step.status, id: build_step.name })"
 					:disabled="build_step.status =='Pending'"
 				>
