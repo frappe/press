@@ -229,10 +229,6 @@ export default {
 		},
 	},
 	resources: {
-		extraResource() {
-			if (!this.options.extraResource) return
-			return this.options.extraResource(this.context)
-		},
 		list() {
 			if (this.options.data) return
 			if (this.options.list) return
@@ -263,6 +259,14 @@ export default {
 					}
 				},
 			}
+		},
+		extraResource() {
+			if (!this.options.extraResource) return
+			// Access list.data to register it as a reactive dep so the watcher
+			// re-fires when the list loads (Vue short-circuits on undefined otherwise).
+			const listRes = this.$resources.list
+			if (listRes) void listRes.data
+			return this.options.extraResource(this.context)
 		},
 	},
 	beforeUpdate() {

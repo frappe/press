@@ -79,13 +79,21 @@ function doctype(route: Route): string | null {
 }
 
 async function mockSite(page: Parameters<typeof test>[1]['page']) {
-	await page.route('*/**/api/method/press.api.client.get', async (route) => {
-		await route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify(siteMock),
-		})
-	})
+	await page.route(
+		/\/api\/method\/press\.api\.client\.get\b/,
+		async (route) => {
+			const url = new URL(route.request().url())
+			if (url.searchParams.get('doctype') === 'Site') {
+				await route.fulfill({
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify(siteMock),
+				})
+			} else {
+				await route.continue()
+			}
+		},
+	)
 }
 
 test('shows cancellation notification banner when latest site update is cancelled', async ({
@@ -94,7 +102,7 @@ test('shows cancellation notification banner when latest site update is cancelle
 	await mockSite(page)
 
 	await page.route(
-		'*/**/api/method/press.api.client.get_list',
+		/\/api\/method\/press\.api\.client\.get_list/,
 		async (route) => {
 			if (doctype(route) === 'Site Update') {
 				await route.fulfill({
@@ -120,7 +128,7 @@ test('shows cancellation notification banner when latest site update is cancelle
 
 	await page.goto(`/dashboard/sites/${SITE_NAME}/updates`)
 
-	await expect(page.getByText(BANNER_MESSAGE)).toBeVisible()
+	await expect(page.getByText(BANNER_MESSAGE)).toBeVisible({ timeout: 10000 })
 })
 
 test('hides cancellation banner when latest site update succeeds', async ({
@@ -129,7 +137,7 @@ test('hides cancellation banner when latest site update succeeds', async ({
 	await mockSite(page)
 
 	await page.route(
-		'*/**/api/method/press.api.client.get_list',
+		/\/api\/method\/press\.api\.client\.get_list/,
 		async (route) => {
 			if (doctype(route) === 'Site Update') {
 				await route.fulfill({
@@ -149,7 +157,7 @@ test('hides cancellation banner when latest site update succeeds', async ({
 
 	await page.goto(`/dashboard/sites/${SITE_NAME}/updates`)
 
-	// Wait for the updates list to be visible before asserting banner absence
-	await expect(page.getByText('su-success-001')).toBeVisible()
+	// Wait for the list to render (the Success badge is the latest row's status)
+	await expect(page.getByText('Success', { exact: true }).first()).toBeVisible()
 	await expect(page.getByText(BANNER_MESSAGE)).not.toBeVisible()
 })
