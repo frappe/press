@@ -18,7 +18,6 @@ from press.press.doctype.press_role.press_role import (
 	create_user_resource,
 	user_has_roles,
 )
-from press.press.doctype.press_role.test_press_role import create_test_site_record
 from press.press.doctype.press_role_permission.press_role_permission import (
 	PressRolePermission,
 	is_user_part_of_admin_role,
@@ -531,6 +530,8 @@ class TestPressRoleManagement(FrappeTestCase):
 
 	def _make_team_site(self):
 		"""Insert a bare Site row owned by this team (bypasses hooks)."""
+		from press.press.doctype.press_role.test_press_role import create_test_site_record
+
 		subdomain = frappe.generate_hash(length=8)
 		name = f"{subdomain}.fc.dev"
 		create_test_site_record(name, subdomain, self.team.name)
