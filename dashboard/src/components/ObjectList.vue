@@ -229,6 +229,10 @@ export default {
 		},
 	},
 	resources: {
+		extraResource() {
+			if (!this.options.extraResource) return
+			return this.options.extraResource(this.context)
+		},
 		list() {
 			if (this.options.data) return
 			if (this.options.list) return
@@ -430,6 +434,7 @@ export default {
 			return {
 				...this.options.context,
 				listResource: this.$list,
+				extraResource: this.$resources.extraResource,
 			}
 		},
 		isLoading() {

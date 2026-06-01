@@ -1293,7 +1293,7 @@ export default {
 					filters: (site) => {
 						return { site: site.doc?.name }
 					},
-					orderBy: 'creation',
+					orderBy: 'creation desc',
 					fields: [
 						'difference',
 						'update_job.end as updated_on',
@@ -1554,10 +1554,28 @@ export default {
 							},
 						]
 					},
-					banner({ documentResource: site }) {
+					extraResource({ listResource: updates }) {
+						const latest = updates?.data?.[0]
+						if (latest?.status !== 'Cancelled') return
+						return {
+							type: 'list',
+							doctype: 'Press Notification',
+							fields: ['message'],
+							filters: {
+								document_type: 'Site Update',
+								document_name: latest.name,
+							},
+							limit: 1,
+							auto: true,
+						}
+					},
+					banner({ documentResource: site, extraResource: notification }) {
+						const message = notification?.data?.[0]?.message
+						if (message) {
+							return { title: message, type: 'warning' }
+						}
 						const bannerTitle =
 							'Your site is currently on a shared bench. Upgrade to a private bench to configure auto updates and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.'
-
 						return getUpsellBanner(site, bannerTitle)
 					},
 				},
