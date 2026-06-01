@@ -530,11 +530,14 @@ class TestPressRoleManagement(FrappeTestCase):
 
 	def _make_team_site(self):
 		"""Insert a bare Site row owned by this team (bypasses hooks)."""
-		from press.press.doctype.press_role.test_press_role import create_test_site_record
-
 		subdomain = frappe.generate_hash(length=8)
 		name = f"{subdomain}.fc.dev"
-		create_test_site_record(name, subdomain, self.team.name)
+		frappe.db.sql(
+			"INSERT INTO `tabSite`"
+			" (name, team, subdomain, status, server, bench, cluster, `group`)"
+			" VALUES (%s, %s, %s, 'Active', 'test-server', 'test-bench', 'Default', 'test-group')",
+			(name, self.team.name, subdomain),
+		)
 		return name
 
 	def test_admin_can_add_resource_to_role(self):

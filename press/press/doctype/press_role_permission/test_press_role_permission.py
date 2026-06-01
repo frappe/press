@@ -42,7 +42,7 @@ class TestIsUserPartOfAdminRole(FrappeTestCase):
 
 		return patch(f"{_MODULE}.frappe.get_all", side_effect=_get_all)
 
-	@patch("press.utils.get_current_team", return_value="team-1")
+	@patch(f"{_MODULE}.get_current_team", return_value="team-1")
 	def test_returns_true_when_user_in_admin_role(self, _mock_team):
 		admin_roles = [SimpleNamespace(name="role-admin")]
 		role_users = [SimpleNamespace(name="pru-1")]
@@ -50,7 +50,7 @@ class TestIsUserPartOfAdminRole(FrappeTestCase):
 			result = is_user_part_of_admin_role("alice@example.com")
 		self.assertTrue(result)
 
-	@patch("press.utils.get_current_team", return_value="team-1")
+	@patch(f"{_MODULE}.get_current_team", return_value="team-1")
 	def test_returns_false_when_user_not_in_any_admin_role(self, _mock_team):
 		admin_roles = [SimpleNamespace(name="role-admin")]
 		role_users = []
@@ -58,14 +58,14 @@ class TestIsUserPartOfAdminRole(FrappeTestCase):
 			result = is_user_part_of_admin_role("outsider@example.com")
 		self.assertFalse(result)
 
-	@patch("press.utils.get_current_team", return_value="team-1")
+	@patch(f"{_MODULE}.get_current_team", return_value="team-1")
 	def test_returns_false_when_no_admin_roles_exist(self, _mock_team):
 		"""If the team has no admin roles, no user can be admin."""
 		with self._patch([], []):
 			result = is_user_part_of_admin_role("alice@example.com")
 		self.assertFalse(result)
 
-	@patch("press.utils.get_current_team", return_value="team-1")
+	@patch(f"{_MODULE}.get_current_team", return_value="team-1")
 	def test_uses_session_user_when_no_user_supplied(self, _mock_team):
 		"""Calling without user= falls back to frappe.session.user."""
 		admin_roles = [SimpleNamespace(name="role-admin")]
