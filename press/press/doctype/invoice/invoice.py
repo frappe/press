@@ -25,6 +25,7 @@ from press.utils.billing import (
 	is_frappe_auth_disabled,
 )
 from press.utils.jobs import has_job_timeout_exceeded
+from press.utils.telemetry import capture_pulse
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.usage_record.usage_record import UsageRecord
@@ -564,6 +565,10 @@ class Invoice(Document):
 				commit=True,
 			)
 			self.reload()
+			capture_pulse(
+				"stripe_invoice_created",
+				{"team": self.team, "invoice": self.name, "amount": amount, "currency": self.currency},
+			)
 			return invoice
 		except Exception:
 			frappe.db.rollback()
