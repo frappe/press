@@ -3034,13 +3034,11 @@ class Server(BaseServer):
 				)
 
 	def set_dedicated_server_site_warranty_quota_and_cooldown(self):
-		self.supported_site_quota = frappe.get_value(
-			"Press Settings", None, "default_dedicated_server_site_warranty_quota"
+		self.supported_site_quota = frappe.db.get_single_value(
+			"Press Settings", "default_dedicated_server_site_warranty_quota"
 		)
-		self.site_warranty_change_cooldown = frappe.get_value(
-			"Press Settings",
-			None,
-			"default_dedicated_server_site_warranty_change_cooldown",
+		self.site_warranty_change_cooldown = frappe.db.get_single_value(
+			"Press Settings", "default_dedicated_server_site_warranty_change_cooldown"
 		)
 
 	def create_secondary_server(self, plan_name: str) -> None:
