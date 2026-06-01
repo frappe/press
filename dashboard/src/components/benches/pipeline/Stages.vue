@@ -108,6 +108,7 @@ const props = defineProps<Props>()
 						</span>
 					</template>
 
+          <!-- Only first job "New Bench" is useful so use it only-->
 					<template v-if="bench.jobs?.length">
 						<button
 							class="btn !pl-12"
