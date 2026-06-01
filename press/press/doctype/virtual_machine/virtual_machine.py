@@ -1268,6 +1268,7 @@ class VirtualMachine(Document):
 		except Exception:
 			self.status = "Terminated"
 			self.save()
+			self.update_servers()
 			return
 		virtual_machine = frappe._dict(virtual_machine)
 		self.status = self.get_frappe_compute_status_map()[virtual_machine.status]

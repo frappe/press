@@ -33,6 +33,7 @@ class ArchiveServerJob(PressJob):
 			# mark it terminated directly
 			self.virtual_machine_doc.status = "Terminated"
 			self.virtual_machine_doc.save()
+			self.virtual_machine_doc.update_servers()
 			return
 
 		with suppress(Exception):
@@ -49,6 +50,7 @@ class ArchiveServerJob(PressJob):
 			self.virtual_machine_doc.sync()
 
 		if self.virtual_machine_doc.status == "Terminated":
+			self.virtual_machine_doc.update_servers()
 			return
 
 		self.defer_current_task()
