@@ -29,6 +29,34 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
+# Workers run jobs sequentially in one long-lived process, so at most one Ansible
+# instance is active at a time. Patch Ansible's hooks once at import and route
+# callbacks through this global instead of re-patching every run. run() resets
+# it on entry, so a job killed mid-run (timeout, etc.) can't leak stale state into the
+# next job the way the old unpatch-at-end-of-run pattern did.
+_current_ansible: "Ansible | None" = None
+
+
+def _patched_action_module_run(*args, **kwargs):
+	result = _action_module_run_orig(*args, **kwargs)
+	if _current_ansible:
+		_current_ansible.callback.on_async_poll(result)
+	return result
+
+
+def _patched_poll_async_result(executor, result, templar, task_vars=None):
+	if _current_ansible:
+		task = executor._task
+		_current_ansible.callback.on_async_start(task._role.get_name(), task.name, result["ansible_job_id"])
+	return _poll_async_result_orig(executor, result, templar, task_vars=task_vars)
+
+
+_action_module_run_orig = ActionModule.run
+_poll_async_result_orig = TaskExecutor._poll_async_result
+ActionModule.run = _patched_action_module_run
+TaskExecutor._poll_async_result = _patched_poll_async_result
+
+
 def reconnect_on_failure():
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
@@ -164,7 +192,6 @@ class AnsibleCallback(CallbackBase):
 
 class Ansible:
 	def __init__(self, server, playbook, user="root", variables=None, port=22):
-		self.patch()
 		self.server = server
 		self.playbook = playbook
 		self.playbook_path = frappe.get_app_path("press", "playbooks", self.playbook)
@@ -215,31 +242,9 @@ class Ansible:
 
 		return proxy_command
 
-	def patch(self):
-		def modified_action_module_run(*args, **kwargs):
-			result = self.action_module_run(*args, **kwargs)
-			self.callback.on_async_poll(result)
-			return result
-
-		def modified_poll_async_result(executor, result, templar, task_vars=None):
-			job_id = result["ansible_job_id"]
-			task = executor._task
-			self.callback.on_async_start(task._role.get_name(), task.name, job_id)
-			return self._poll_async_result(executor, result, templar, task_vars=task_vars)
-
-		if ActionModule.run.__module__ != "press.runner":
-			self.action_module_run = ActionModule.run
-			ActionModule.run = modified_action_module_run
-
-		if TaskExecutor.run.__module__ != "press.runner":
-			self._poll_async_result = TaskExecutor._poll_async_result
-			TaskExecutor._poll_async_result = modified_poll_async_result
-
-	def unpatch(self):
-		TaskExecutor._poll_async_result = self._poll_async_result
-		ActionModule.run = self.action_module_run
-
 	def run(self) -> AnsiblePlay:
+		global _current_ansible
+		_current_ansible = self
 		self.executor = PlaybookExecutor(
 			playbooks=[self.playbook_path],
 			inventory=self.inventory,
@@ -253,7 +258,6 @@ class Ansible:
 		self.callback.tasks = self.tasks
 		self.callback.task_list = self.task_list
 		self.executor.run()
-		self.unpatch()
 		return frappe.get_doc("Ansible Play", self.play)
 
 	def create_ansible_play(self):
