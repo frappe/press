@@ -26,13 +26,18 @@ const $session = session;
 const router = useRouter();
 
 const showTeamSwitcher = ref(false);
-const collapsed = ref(false);
+const collapsed = ref(localStorage.collapsed === "true")
 
 const collapsedCss = computed(() =>
   collapsed.value
     ? "md:w-0 md:overflow-hidden md:opacity-0 whitespace-nowrap"
     : "md:opacity-100  whitespace-nowrap",
 );
+
+const collapsePanel = () => {
+	localStorage.collapsed = collapsed.value = !collapsed.value
+}
+
 provide("collapsed", collapsed);
 provide("collapsedCss", collapsedCss);
 
@@ -155,7 +160,7 @@ const helpDropdownOptions = [
           </Button>
         </Dropdown>
 
-        <Button variant="ghost" class='hidden md:flex' :class='collapsed ? "mb-2" : ""' @click='collapsed = !collapsed'>
+        <Button variant="ghost" class='hidden md:flex' :class='collapsed ? "mb-2" : ""' @click='collapsePanel'>
           <template #icon>
             <LucidePanelLeft class="size-4 transition-transform duration-500" :class='collapsed ? "rotate-180" : ""' />
           </template>
