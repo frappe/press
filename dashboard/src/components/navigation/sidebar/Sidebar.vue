@@ -15,8 +15,6 @@ import LucideMoon from "~icons/lucide/moon";
 import LucideAlert from "~icons/lucide/notebook-text";
 import DarkModeLabel from "./DarkModeLabel.vue";
 import NavList from "./NavList.vue";
-import NotificationPanel from "./Notifications.vue";
-import { notifPanel } from "@/data/ui";
 
 import Item from "./Item.vue";
 import ItemGroup from "./ItemGroup.vue";
@@ -142,7 +140,9 @@ const helpDropdownOptions = [
         <template v-slot="{ list }">
           <template v-for="(item, _) in list" :key="item.name">
             <ItemGroup v-if="item.children" v-bind="item" />
+            <component v-else-if="item.customComponent" :is="item.customComponent" :disabled="item.disabled" />
             <Item v-else v-bind="item" />
+
           </template>
         </template>
       </NavList>
@@ -170,7 +170,5 @@ const helpDropdownOptions = [
 
     <!-- TODO: update component name after dashboard-beta merges -->
     <SwitchTeamDialog2 v-model="showTeamSwitcher" :key="String(showTeamSwitcher)" />
-  <NotificationPanel v-if="notifPanel"/>
   </aside>
-
 </template>
