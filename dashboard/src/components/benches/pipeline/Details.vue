@@ -177,7 +177,7 @@ watch(
 			}
 
 			// socket io stuff
-			if (socket && !wired.has(id)) {
+			if (socket && !wired.has(id) && pipeline?.doc?.status === 'Running') {
 				socket.emit('doc_subscribe', 'Deploy Candidate Build', id)
 
 				socket.on(`bench_deploy:${id}:steps`, (data) => {
@@ -202,7 +202,7 @@ watch(
 				})
 			}
 
-			wired.add(id)
+			if (pipeline?.doc?.status === 'Running') wired.add(id)
 		})
 
 		// ------------------------- errors and warnings
@@ -245,6 +245,8 @@ watch(
 					auto: true,
 				})
 			}
+
+			if (pipeline?.doc?.status != 'Running') return
 
 			if (socket && !wired.has(`job:${id}`)) {
 				socket.emit('doc_subscribe', 'Agent Job', id)
@@ -523,7 +525,7 @@ const stopBuild = () => {
 				<!-- list of errors -->
 				<template v-else>
 					<div v-for='x in errList' class="flex flex-col gap-1">
-						<Collapsable headerCss="py-3" class="mb-3">
+						<Collapsable headerCss="py-3" class="mb-3" opened>
 							<template #prefix>
 								<StatusIcon
 									:status="x.class == 'Error' ? 'Failed' : 'Warning'"
