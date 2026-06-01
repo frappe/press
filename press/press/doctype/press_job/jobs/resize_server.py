@@ -130,7 +130,7 @@ class ResizeServerJob(PressJob):
 		plan_changes = frappe.get_all(
 			"Plan Change",
 			{
-				"document_type": self.server_server_typetype,
+				"document_type": self.server_type,
 				"document_name": self.server,
 				"to_plan": self.server_doc.plan,
 				"type": ("in", ["Upgrade", "Downgrade"]),

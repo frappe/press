@@ -1476,6 +1476,10 @@ class BaseServer(Document, TagHelpers):
 			frappe.throw(
 				f"Cannot change plan right now since the instance type {new_plan.instance_type} is not available. Try again later."
 			)
+		if not cluster.check_quota(new_plan.instance_type, virtual_machine=self.virtual_machine):
+			frappe.throw(
+				f"Insufficient quota to resize to {new_plan.instance_type} in this region. Please try again after a few hours or reach out at support.frappe.io."
+			)
 
 		if self.provider == "Hetzner" and self.virtual_machine:
 			current_machine_type, current_root_disk_size = frappe.db.get_value(
