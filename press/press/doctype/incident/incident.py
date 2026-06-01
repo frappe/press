@@ -824,7 +824,13 @@ Likely due to insufficient balance or incorrect credentials""",
 	@property
 	def waited_enough_for_investigator_reactions(self) -> bool:
 		"""Check if the investigator has taken any action"""
-		investigator: IncidentInvestigator = frappe.get_doc("Incident Investigator", {"incident": self.name})
+		investigation = self.investigation or frappe.db.get_value(
+			"Incident Investigator", {"incident": self.name}, "name"
+		)
+		if not investigation:
+			return True
+
+		investigator: IncidentInvestigator = frappe.get_doc("Incident Investigator", investigation)
 		wait_time = get_wait_time_post_investigator_actions()
 		if investigator.status != "Completed":
 			return False
@@ -833,7 +839,7 @@ Likely due to insufficient balance or incorrect credentials""",
 		if (
 			investigator.status == "Completed"
 			and investigator.action_steps
-			and (investigator.modified > frappe.utils.now_datetime() - timedelta(minutes=wait_time))
+			and (investigator.modified > frappe.utils.now_datetime() - timedelta(seconds=wait_time))
 		):
 			return False
 
@@ -925,13 +931,17 @@ def resolve_incidents():
 		pluck="name",
 	)
 	for incident_name in ongoing_incidents:
-		incident = Incident("Incident", incident_name)
-		incident.check_resolved()
-		if (
-			incident.time_to_call_for_help or incident.time_to_call_for_help_again
-		) and incident.waited_enough_for_investigator_reactions:
-			incident.create_log_for_server()
-			incident.call_humans()
+		try:
+			incident = Incident("Incident", incident_name)
+			incident.check_resolved()
+			if (
+				incident.time_to_call_for_help or incident.time_to_call_for_help_again
+			) and incident.waited_enough_for_investigator_reactions:
+				incident.create_log_for_server()
+				incident.call_humans()
+				frappe.db.commit()
+		except Exception:
+			log_error(f"Error while resolving incident {incident_name}")
 
 
 def notify_ignored_servers():

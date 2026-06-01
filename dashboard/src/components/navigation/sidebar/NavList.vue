@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, getCurrentInstance, h, onMounted, onUnmounted } from 'vue'
+import { h, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { unreadNotificationsCount } from '@/data/notifications'
 import { session } from '@/data/session'
