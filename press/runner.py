@@ -1,4 +1,5 @@
 import json
+import threading
 import typing
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -29,25 +30,31 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
-# Workers run jobs sequentially in one long-lived process, so at most one Ansible
-# instance is active at a time. Patch Ansible's hooks once at import and route
-# callbacks through this global instead of re-patching every run. run() resets
-# it on entry, so a job killed mid-run (timeout, etc.) can't leak stale state into the
-# next job the way the old unpatch-at-end-of-run pattern did.
-_current_ansible: "Ansible | None" = None
+# Patch Ansible's hooks once at import and route callbacks through this thread-local
+# instead of re-patching every run. Each thread tracks its own active Ansible instance,
+# so concurrent runs in different threads don't clobber each other's callbacks. run()
+# resets it on entry, so a job killed mid-run (timeout, etc.) can't leak stale state into
+# the next job the way the old unpatch-at-end-of-run pattern did.
+_ansible_local = threading.local()
+
+
+def _get_current_ansible() -> "Ansible | None":
+	return getattr(_ansible_local, "current", None)
 
 
 def _patched_action_module_run(*args, **kwargs):
 	result = _action_module_run_orig(*args, **kwargs)
-	if _current_ansible:
-		_current_ansible.callback.on_async_poll(result)
+	current_ansible = _get_current_ansible()
+	if current_ansible:
+		current_ansible.callback.on_async_poll(result)
 	return result
 
 
 def _patched_poll_async_result(executor, result, templar, task_vars=None):
-	if _current_ansible:
+	current_ansible = _get_current_ansible()
+	if current_ansible:
 		task = executor._task
-		_current_ansible.callback.on_async_start(task._role.get_name(), task.name, result["ansible_job_id"])
+		current_ansible.callback.on_async_start(task._role.get_name(), task.name, result["ansible_job_id"])
 	return _poll_async_result_orig(executor, result, templar, task_vars=task_vars)
 
 
@@ -243,8 +250,7 @@ class Ansible:
 		return proxy_command
 
 	def run(self) -> AnsiblePlay:
-		global _current_ansible
-		_current_ansible = self
+		_ansible_local.current = self
 		self.executor = PlaybookExecutor(
 			playbooks=[self.playbook_path],
 			inventory=self.inventory,
