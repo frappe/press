@@ -2,6 +2,7 @@
 import Collapsable from '@/components/common/Collapsable.vue'
 import { duration, secsToDuration } from '@/utils/format'
 import StatusIcon from './StatusIcon.vue'
+import { Spinner } from 'frappe-ui'
 
 interface Props {
 	stages: any
@@ -25,7 +26,37 @@ const props = defineProps<Props>()
 </script>
 
 <template>
-	<template v-for='(x, i) in stages' :key="x.name">
+	<div
+		v-if="!stages || stages?.length ==0"
+		class="leading-relaxed py-2.5 text-ink-gray-5 flex flex-wrap sk-fade"
+	>
+		<div class="flex  items-center gap-2 text-sm pb-3 w-full border-b">
+			<Spinner class="size-4" />
+			<span>Deploy is queued and will start shortly...</span>
+		</div>
+
+		<div
+			v-for="i in 3"
+			:key="i"
+			class="flex items-center gap-3 py-3 border-b border-surface-gray-2 w-full"
+		>
+			<div class="animate-pulse rounded size-4 bg-surface-gray-3 shrink-0" />
+
+			<div
+				class="animate-pulse rounded h-3.5 bg-surface-gray-3"
+				:style="{ width: i % 2 === 0 ? '140px' : '180px' }"
+			/>
+
+			<div class="flex-1" />
+
+			<div
+				class="animate-pulse rounded h-3.5 bg-surface-gray-3"
+				:style="{ width: i <= 1 ? '24px' : '16px' }"
+			/>
+		</div>
+	</div>
+
+	<template v-for='(x, i) in stages' :key="x.name" v-else>
 		<Collapsable
 			v-if="x.label === 'Building' || (!deployview && x.label === 'Deploying')"
 			:headerCss="`py-3 pr-2  ${i != stages?.length-1?'aria-[expanded=false]:border-b': '' }`"
@@ -43,7 +74,7 @@ const props = defineProps<Props>()
 					v-for="(build_step) in buildSteps"
 					class="btn !pl-6 !pr-2"
 					:aria-selected="output?.val && output?.id == build_step.name"
-          :data-step-id="build_step.name"
+					:data-step-id="build_step.name"
 					@click="setOutput({ val: build_step.output,
                   status: build_step.status, id: build_step.name })"
 					:disabled="build_step.status =='Pending'"
@@ -118,5 +149,18 @@ const props = defineProps<Props>()
 	@apply leading-relaxed mb-0.5 p-1 aria-selected:bg-surface-gray-1;
 	@apply rounded flex items-center gap-2 justify-start whitespace-nowrap w-full;
 	@apply disabled:opacity-70 disabled:cursor-not-allowed hover:bg-surface-gray-1;
+}
+
+.sk-fade {
+	animation: sk-fade-in 0.25s ease-out both;
+}
+
+@keyframes sk-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 </style>

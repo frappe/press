@@ -66,17 +66,15 @@
 }
 
 .sk-fade {
-	animation: sk-fade-in 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+	animation: sk-fade-in 0.25s ease-out both;
 }
 
 @keyframes sk-fade-in {
 	from {
 		opacity: 0;
-		transform: translateY(5px);
 	}
 	to {
 		opacity: 1;
-		transform: translateY(0);
 	}
 }
 </style>
