@@ -30,6 +30,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_total_installs_by_app,
 )
 from press.press.doctype.remote_file.remote_file import get_remote_key
+from press.press.doctype.root_domain.root_domain import get_matching_domain
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site.site import (
 	Site,
@@ -2231,6 +2232,11 @@ def setup_wizard_complete(name):
 @frappe.whitelist()
 @protected("Site")
 def check_dns(name, domain):
+	domain = domain.lower().strip(".")
+	if d := get_matching_domain(domain):
+		frappe.throw(
+			f"Cannot add {d} domain as it is a system reserved domain. Please use a different domain for your site."
+		)
 	return check_dns_cname_a(name, domain)
 
 

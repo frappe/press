@@ -385,7 +385,7 @@ class ProductTrial(Document):
 
 		server = self.get_server_from_cluster(cluster)
 		cluster_domains = frappe.db.get_all(
-			"Root Domain", {"name": ("like", f"%.{self.domain}")}, ["name", "default_cluster as cluster"]
+			"Root Domain", {"name": ("like", f"%.{self.domain}"), "enabled": 1}, ["name", "default_cluster as cluster"]
 		)
 		cluster_domain = find(
 			cluster_domains,

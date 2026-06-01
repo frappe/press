@@ -951,7 +951,9 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="RESET")
 		elif self.cloud_provider == "Hetzner":
-			self.client().servers.reboot(self.get_hetzner_server_instance(fetch_data=False))
+			action = self.client().servers.power_off(self.get_hetzner_server_instance(fetch_data=False))
+			action.wait_until_finished(HETZNER_ACTION_RETRIES)  # Wait till power off
+			self.client().servers.power_on(self.get_hetzner_server_instance(fetch_data=False))
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "reboot"})
 		elif self.cloud_provider == "Frappe Compute":
@@ -1505,7 +1507,7 @@ class VirtualMachine(Document):
 					server.secondary_private_ip = self.secondary_private_ip
 
 				server.status = status_map[self.status]
-				server = server.save()
+				server = server.save(ignore_permissions=True)
 
 				if self.public_ip_address:
 					if frappe.flags.force_update_dns or self.has_value_changed("public_ip_address"):
@@ -1854,7 +1856,7 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			self.client().instance_action(instance_id=self.instance_id, action="STOP")
 		elif self.cloud_provider == "Hetzner":
-			self.client().servers.shutdown(self.get_hetzner_server_instance(fetch_data=False))
+			self.client().servers.power_off(self.get_hetzner_server_instance(fetch_data=False))
 		elif self.cloud_provider == "DigitalOcean":
 			self.client().droplet_actions.post(self.instance_id, {"type": "power_off"})
 		elif self.cloud_provider == "Frappe Compute":
@@ -1876,7 +1878,7 @@ class VirtualMachine(Document):
 			self.client().terminate_instances(InstanceIds=[self.instance_id])
 
 	@frappe.whitelist()
-	def terminate(self):  # noqa: C901
+	def terminate(self, reason=None):  # noqa: C901
 		if self.cloud_provider == "AWS EC2":
 			self.client().terminate_instances(InstanceIds=[self.instance_id])
 
@@ -1903,7 +1905,7 @@ class VirtualMachine(Document):
 			self.client().terminate_virtual_machine(instance_id=self.instance_id)
 
 		if server := self.get_server():
-			log_server_activity(self.series, server.name, action="Terminated")
+			log_server_activity(self.series, server.name, action="Terminated", reason=reason)
 
 	def _wait_for_digital_ocean_resize_action_completion(self, action_id: int):
 		"""Wait for resize to complete before starting the droplet."""

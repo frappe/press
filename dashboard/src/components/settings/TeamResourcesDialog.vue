@@ -171,24 +171,25 @@ watch(
 <template>
 	<!-- Trigger row: shows icons for implicit access + explicit resource count -->
 	<div
-		class="cursor-pointer flex items-center gap-3"
+		class="cursor-pointer flex items-center gap-1 max-w-[160px] min-w-0 overflow-hidden whitespace-nowrap"
+		:title="`${allServers ? 'All Servers, ' : ''}${allReleaseGroups ? 'All Release Groups, ' : ''}${allSites ? 'All Sites, ' : ''}${resourceCount} explicit resource${resourceCount !== 1 ? 's' : ''}`"
 		@click="isDialogOpen = true"
 	>
 		<Tooltip v-if="allServers" text="This user can access all servers">
-			<ServerIcon class="h-4 w-4" />
+			<ServerIcon class="h-4 w-4 shrink-0" />
 		</Tooltip>
 		<Tooltip
 			v-if="allReleaseGroups"
 			text="This user can access all release groups"
 		>
-			<ReleaseGroupIcon class="h-4 w-4" />
+			<ReleaseGroupIcon class="h-4 w-4 shrink-0" />
 		</Tooltip>
 		<Tooltip v-if="allSites" text="This user can access all sites">
-			<SiteIcon class="h-4 w-4" />
+			<SiteIcon class="h-4 w-4 shrink-0" />
 		</Tooltip>
-		<p>&mdash;</p>
+		<span class="shrink-0">&mdash;</span>
 		<Tooltip text="This user has access to these many resources explicitly">
-			<p>{{ resourceCount }}</p>
+			<span class="truncate min-w-[2ch]">{{ resourceCount }}</span>
 		</Tooltip>
 	</div>
 
@@ -234,9 +235,9 @@ watch(
 						<div class="col-span-1 py-2 px-3 font-medium flex items-center">
 							{{ resource.document_type }}
 						</div>
-						<div class="col-span-2 py-1 px-3">
-							<div class="flex items-center justify-between">
-								<div>{{ resource.document_name }}</div>
+						<div class="col-span-2 py-1 px-3 min-w-0">
+							<div class="flex items-center justify-between overflow-hidden">
+								<div class="truncate">{{ resource.document_name }}</div>
 								<Dropdown
 									:options="[
 										{
@@ -271,12 +272,14 @@ watch(
 
 				<!-- Add resources -->
 				<div class="flex items-center gap-2">
-					<MultiSelect
-						v-model="selectedResourcesToAdd"
-						:options="availableResourceOptions"
-						class="grow"
-						placeholder="Search resources..."
-					/>
+					<div class="min-w-0 overflow-hidden flex-1">
+						<MultiSelect
+							v-model="selectedResourcesToAdd"
+							:options="availableResourceOptions"
+							class="w-full"
+							placeholder="Search resources..."
+						/>
+					</div>
 					<Button
 						icon-left="plus"
 						:disabled="!selectedResourcesToAdd.length"

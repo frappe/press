@@ -115,6 +115,8 @@ permission_query_conditions = {
 	"Invoice": "press.press.doctype.invoice.invoice.get_permission_query_conditions",
 	"App Source": ("press.press.doctype.app_source.app_source.get_permission_query_conditions"),
 	"App Release": ("press.press.doctype.app_release.app_release.get_permission_query_conditions"),
+	"Marketplace App": "press.press.doctype.marketplace_app.marketplace_app.get_permission_query_conditions",
+	"Marketplace App Plan": "press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan.get_permission_query_conditions",
 	"Release Group": "press.press.doctype.release_group.release_group.get_permission_query_conditions",
 	"Deploy Candidate": "press.press.doctype.deploy_candidate.deploy_candidate.get_permission_query_conditions",
 	"Deploy Candidate Difference": "press.press.doctype.deploy_candidate_difference.deploy_candidate_difference.get_permission_query_conditions",
@@ -147,6 +149,8 @@ has_permission = {
 	"Invoice": "press.press.doctype.invoice.invoice.has_permission",
 	"App Source": "press.overrides.has_permission",
 	"App Release": "press.press.doctype.app_release.app_release.has_permission",
+	"Marketplace App": "press.overrides.has_permission",
+	"Marketplace App Plan": "press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan.has_permission",
 	"Release Group": "press.overrides.has_permission",
 	"Deploy Candidate": "press.overrides.has_permission",
 	"Deploy Candidate Difference": "press.overrides.has_permission",
@@ -329,7 +333,6 @@ scheduler_events = {
 			"press.press.doctype.bench.bench.process_bench_queue",
 		],
 		"* * * * * 0/30": [
-			"press.press.doctype.account_request.account_request.expire_request_key",
 			"press.press.doctype.physical_backup_restoration.physical_backup_restoration.process_scheduled_restorations",
 			"press.press.doctype.site_action.site_action.process_site_actions",
 		],
@@ -384,6 +387,7 @@ scheduler_events = {
 			"press.press.doctype.server_plan.server_plan.sync_machine_availability_status_of_plans",
 		],
 		"*/30 * * * *": [
+			"press.press.doctype.account_request.account_request.expire_request_key",
 			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
 			"press.press.doctype.team.suspend_sites.execute",
 			"press.press.doctype.site_backup.site_backup.delete_successful_unavailable_backups_for_archived_sites",

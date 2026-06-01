@@ -57,7 +57,7 @@
 			"fieldtype": "Column Break"
 		},
 		{
-			"description": "Hourly Rate",
+			"description": "Daily Rate",
 			"fieldname": "price_usd",
 			"fieldtype": "Currency",
 			"in_list_view": 1,
@@ -68,7 +68,7 @@
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2026-05-18 11:54:13.354600",
+	"modified": "2026-05-19 11:54:13.354600",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Static IP Plan",

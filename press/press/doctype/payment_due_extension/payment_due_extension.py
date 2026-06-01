@@ -33,8 +33,11 @@ class PaymentDueExtension(Document):
 		):
 			frappe.throw("An active Payment due extension record already exists for this team")
 
+	def before_submit(self):
+		if self.status != "Active":
+			self.status = "Active"
+
 	def on_submit(self):
-		self.status = "Active"
 		frappe.db.set_value("Team", self.team, "extend_payment_due_suspension", 1)
 
 	def expire(self):

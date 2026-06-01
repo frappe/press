@@ -551,7 +551,7 @@ export default {
 					// Backward compatibility in case we switch to the older deploy flow which returns a candidate
 					if (candidate) {
 						this.$router.push({
-							name: 'Deploy Candidate',
+							name: 'Release Pipeline',
 							params: {
 								id: candidate,
 								name: this.bench,
