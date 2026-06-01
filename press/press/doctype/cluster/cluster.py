@@ -1288,6 +1288,14 @@ class Cluster(Document):
 			limit=1,
 		)
 		if not plans:
+			# Fall back to plans not tied to a specific cluster (e.g. basic/shared plans).
+			plans = frappe.get_all(
+				"Server Plan",
+				filters={"instance_type": machine_type, "enabled": 1},
+				fields=["vcpu"],
+				limit=1,
+			)
+		if not plans:
 			frappe.throw(
 				f"No enabled Server Plan found for instance type {machine_type} in cluster {self.name}.",
 				frappe.ValidationError,
@@ -1306,28 +1314,37 @@ class Cluster(Document):
 		)
 		return sum(vm.vcpu or 0 for vm in vms if vm.machine_type and vm.machine_type[0].lower() in families)
 
+	def _get_quota_code_for_machine_type(self, machine_type: str) -> str:
+		m = re.match(r"^[a-z]+", machine_type.lower())
+		prefix = m.group(0)[0] if m else "t"
+		return self._AWS_INSTANCE_FAMILY_QUOTA_CODES.get(prefix, "L-1216C47A")
+
+	def _get_replaced_vm_quota_info(self, virtual_machine: str | None) -> tuple[str | None, int]:
+		"""Return (quota_code, vcpu_count) for the VM being replaced, or (None, 0)."""
+		if not virtual_machine:
+			return None, 0
+		replaced_machine_type, replaced_vcpus = frappe.db.get_value(
+			"Virtual Machine", virtual_machine, ["machine_type", "vcpu"]
+		)
+		if not replaced_machine_type:
+			return None, 0
+		return self._get_quota_code_for_machine_type(replaced_machine_type), replaced_vcpus or 0
+
 	def _check_aws_quota(
 		self, machine_type: str | list, virtual_machine: str | None = None
 	) -> bool | dict[str, bool]:
 		"""Check vCPU service quota before provisioning AWS instance(s).
 
-		virtual_machine: name of the VM being replaced (resize). When set,
-		its current vCPUs are subtracted so only the net delta is checked.
+		virtual_machine: name of the VM being replaced (resize). Its vCPUs
+		are subtracted from its own quota bucket only — not from every bucket.
 		"""
 		machine_types = [machine_type] if isinstance(machine_type, str) else machine_type
 		quota_client = self.get_aws_quota_client()
+		replaced_quota_code, replaced_vcpus = self._get_replaced_vm_quota_info(virtual_machine)
 
-		replaced_vcpus = (
-			frappe.db.get_value("Virtual Machine", virtual_machine, "vcpu") or 0 if virtual_machine else 0
-		)
-
-		# Group by quota code so we call the quota API once per bucket.
 		quota_to_types: dict[str, list[str]] = {}
 		for mt in machine_types:
-			m = re.match(r"^[a-z]+", mt.lower())
-			prefix = m.group(0)[0] if m else "t"
-			quota_code = self._AWS_INSTANCE_FAMILY_QUOTA_CODES.get(prefix, "L-1216C47A")
-			quota_to_types.setdefault(quota_code, []).append(mt)
+			quota_to_types.setdefault(self._get_quota_code_for_machine_type(mt), []).append(mt)
 
 		results: dict[str, bool] = {}
 		for quota_code, mts in quota_to_types.items():
@@ -1339,10 +1356,10 @@ class Cluster(Document):
 					results[mt] = True
 				continue
 
-			current_vcpus = self._get_aws_current_vcpu_usage(quota_code) - replaced_vcpus
+			bucket_replaced = replaced_vcpus if quota_code == replaced_quota_code else 0
+			current_vcpus = self._get_aws_current_vcpu_usage(quota_code) - bucket_replaced
 			for mt in mts:
-				needed = self._get_plan_vcpu(mt)
-				results[mt] = (current_vcpus + needed) <= limit
+				results[mt] = (current_vcpus + self._get_plan_vcpu(mt)) <= limit
 
 		if isinstance(machine_type, str):
 			return results.get(machine_type, True)
@@ -1801,11 +1818,6 @@ class Cluster(Document):
 		team = team or get_current_team()
 		plan = plan or self.get_or_create_basic_plan(doctype)
 		assert plan.instance_type is not None, "Instance type is required in the plan"
-		if not self.check_machine_availability(str(plan.instance_type)):
-			frappe.throw(
-				f"Instance type {plan.instance_type} is not available in this region. Try a different plan.",
-				frappe.ValidationError,
-			)
 		if not self.check_quota(str(plan.instance_type)):
 			frappe.throw(
 				f"Insufficient quota to provision {plan.instance_type} in this region. Please try again after a few hours or reach out at support.frappe.io.",
