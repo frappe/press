@@ -212,6 +212,19 @@ def process_new_host_job_update(job):
 
 	if updated_status != domain_status:
 		frappe.db.set_value("Site Domain", job.host, "status", updated_status)
+
+		if tls_certificate := frappe.get_value("Site Domain", job.host, "tls_certificate"):
+			cert = frappe.db.get_value(
+				"TLS Certificate",
+				tls_certificate,
+				["wildcard", "site_domain_tls_update_pending"],
+				as_dict=True,
+			)
+			if cert.wildcard and cert.site_domain_tls_update_pending and updated_status == "Active":
+				frappe.db.set_value(
+					"TLS Certificate", tls_certificate, "site_domain_tls_update_pending", False
+				)
+
 		if updated_status == "Active":
 			frappe.get_doc("Site", job.site).add_domain_to_config(job.host)
 
