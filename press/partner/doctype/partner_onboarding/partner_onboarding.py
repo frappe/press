@@ -230,8 +230,17 @@ def _get_certificate_link_status(team: str) -> dict:
 	}
 
 
+def _get_mrr_currency(team) -> str:
+	doc = _get_partner_onboarding(team.name)
+	country = doc.registered_country if doc else team.country
+
+	if country == "India":
+		return "INR"
+	return "USD"
+
+
 def _get_mrr_status(team) -> dict:
-	team_currency = team.currency or "USD"
+	team_currency = _get_mrr_currency(team)
 	target_amount = 10000 if team_currency == "INR" else 100
 
 	invoice = frappe.qb.DocType("Invoice")

@@ -65,6 +65,24 @@ export type PartnerOnboardingDoc = {
 	rejection_reason?: string
 }
 
+export function getPartnerMRRCurrency(country?: string) {
+	if (country === 'India') return 'INR'
+	return 'USD'
+}
+
+export function getPartnerMRRTargetAmount(currency: string) {
+	return currency === 'INR' ? 10000 : 100
+}
+
+export function getPartnerMRRTargetLabel(country?: string) {
+	const currency = getPartnerMRRCurrency(country)
+	return new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency,
+		maximumFractionDigits: 0,
+	}).format(getPartnerMRRTargetAmount(currency))
+}
+
 const doc = ref<PartnerOnboardingDoc | null>(null)
 const activeTeam = ref<TeamResource>()
 const certificateStatus = ref<PartnerCertificateLinkStatus>({
@@ -76,8 +94,8 @@ const certificateStatus = ref<PartnerCertificateLinkStatus>({
 })
 const mrrStatus = ref<PartnerMRRStatus>({
 	current_amount: 0,
-	target_amount: 100,
-	currency: 'USD',
+	target_amount: getPartnerMRRTargetAmount('USD'),
+	currency: getPartnerMRRCurrency(),
 	progress: 0,
 	requirement_complete: false,
 })
@@ -245,8 +263,8 @@ const unregisterPartnerOnboarding = createResource({
 		}
 		mrrStatus.value = {
 			current_amount: 0,
-			target_amount: 100,
-			currency: 'USD',
+			target_amount: getPartnerMRRTargetAmount('USD'),
+			currency: getPartnerMRRCurrency(),
 			progress: 0,
 			requirement_complete: false,
 		}

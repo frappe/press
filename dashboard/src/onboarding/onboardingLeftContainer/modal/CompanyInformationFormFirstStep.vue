@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { createResource, FormControl } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
-import type { PartnerOnboardingDoc } from '@/onboarding/usePartnerOnboarding'
+import {
+	getPartnerMRRCurrency,
+	getPartnerMRRTargetLabel,
+	type PartnerOnboardingDoc,
+} from '@/onboarding/usePartnerOnboarding'
 
 const emit = defineEmits(['continue'])
 const props = defineProps<{
@@ -43,6 +47,9 @@ const certifiedEmployeesOptions = [
 	{ label: '21+', value: '21+' },
 ]
 
+const submitted = ref(false)
+const revenueCurrencyAutoSynced = ref(true)
+
 watch(
 	() => team?.doc,
 	(doc) => {
@@ -56,7 +63,22 @@ watch(
 	{ immediate: true },
 )
 
-const submitted = ref(false)
+watch(
+	() => props.form.registered_country,
+	(country) => {
+		const nextCurrency = getPartnerMRRCurrency(country)
+
+		if (
+			country === 'India' ||
+			revenueCurrencyAutoSynced.value ||
+			props.form.revenue_currency === 'INR'
+		) {
+			props.form.revenue_currency = nextCurrency
+			revenueCurrencyAutoSynced.value = true
+		}
+	},
+	{ immediate: true },
+)
 
 // this is so stupid that I have to do it this way because the form control does not support minlength and maxlength
 const companyNameMinLength = 2
@@ -129,6 +151,10 @@ const currencyPrefix = computed(() => {
 	return '₹'
 })
 
+const mrrTargetLabel = computed(() =>
+	getPartnerMRRTargetLabel(props.form.registered_country),
+)
+
 function validate() {
 	submitted.value = true
 	return !Object.values(errors.value).some(Boolean)
@@ -149,7 +175,7 @@ defineExpose({ tryContinue })
 	>
 		<FormControl
 			v-model="props.form.company_name"
-			label="Company name"
+			label="Registered company"
 			type="text"
 			size="sm"
 			variant="outline"
@@ -180,7 +206,7 @@ defineExpose({ tryContinue })
 			<div class="flex flex-col gap-1">
 				<FormControl
 					v-model="props.form.registered_country"
-					label="Country"
+					label="Registered country"
 					type="select"
 					size="sm"
 					variant="outline"
@@ -251,7 +277,11 @@ defineExpose({ tryContinue })
 					size="sm"
 					variant="outline"
 					:options="revenueCurrencyOptions"
+					@update:model-value="revenueCurrencyAutoSynced = false"
 				/>
+				<p class="text-xs leading-4 text-ink-gray-5">
+					Partner MRR target for this country: {{ mrrTargetLabel }}.
+				</p>
 			</div>
 		</div>
 
