@@ -237,7 +237,7 @@ async function submitForApproval() {
 				class="border-b border-outline-gray-modals last:border-b-0"
 			>
 				<FAccordionHeader>
-					<FAccordionTrigger class="py-6">
+					<FAccordionTrigger class="py-3">
 						<span
 							v-if="step.status === 'completed'"
 							class="inline-flex shrink-0 text-ink-green-3"
@@ -291,7 +291,7 @@ async function submitForApproval() {
 				>
 					<p
 						v-if="step.description"
-						class="mb-4 max-w-prose self-stretch text-ink-gray-6 text-p-base font-normal leading-normal tracking-wide"
+						class="mb-2 max-w-prose self-stretch text-p-base font-normal leading-5 text-ink-gray-6"
 					>
 						{{ step.description }}
 					</p>
