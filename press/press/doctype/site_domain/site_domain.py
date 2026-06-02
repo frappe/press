@@ -220,7 +220,7 @@ def process_new_host_job_update(job):
 				["wildcard", "site_domain_tls_update_pending"],
 				as_dict=True,
 			)
-			if cert.wildcard and cert.site_domain_tls_update_pending and updated_status == "Active":
+			if cert and cert.wildcard and cert.site_domain_tls_update_pending and updated_status == "Active":
 				frappe.db.set_value(
 					"TLS Certificate", tls_certificate, "site_domain_tls_update_pending", False
 				)
