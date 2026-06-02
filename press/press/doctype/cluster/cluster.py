@@ -16,6 +16,8 @@ import frappe
 import oci
 import pydo
 from frappe.model.document import Document
+from frappe.query_builder import Criterion
+from frappe.query_builder.functions import Count, Sum
 from frappe.utils.caching import redis_cache
 from hcloud import APIException, Client
 from hcloud.firewalls.domain import FirewallRule as HetznerFirewallRule
@@ -1307,12 +1309,17 @@ class Cluster(Document):
 		families = {
 			prefix for prefix, code in self._AWS_INSTANCE_FAMILY_QUOTA_CODES.items() if code == quota_code
 		}
-		vms = frappe.get_all(
-			"Virtual Machine",
-			filters={"cluster": self.name, "status": ("!=", "Terminated")},
-			fields=["machine_type", "vcpu"],
-		)
-		return sum(vm.vcpu or 0 for vm in vms if vm.machine_type and vm.machine_type[0].lower() in families)
+		if not families:
+			return 0
+		vm = frappe.qb.DocType("Virtual Machine")
+		result = (
+			frappe.qb.from_(vm)
+			.select(Sum(vm.vcpu))
+			.where(vm.cluster == self.name)
+			.where(vm.status != "Terminated")
+			.where(Criterion.any(vm.machine_type.like(f"{prefix}%") for prefix in families))
+		).run()
+		return (result and result[0][0]) or 0
 
 	def _get_quota_code_for_machine_type(self, machine_type: str) -> str:
 		m = re.match(r"^[a-z]+", machine_type.lower())
@@ -1366,13 +1373,16 @@ class Cluster(Document):
 		return results
 
 	def _get_hetzner_current_usage(self) -> tuple[int, int]:
-		"""Return (server_count, vcpu_count) from non-terminated VMs in this cluster."""
-		vms = frappe.get_all(
-			"Virtual Machine",
-			filters={"cluster": self.name, "status": ("!=", "Terminated")},
-			fields=["vcpu"],
-		)
-		return len(vms), sum(vm.vcpu or 0 for vm in vms)
+		"""Return (server_count, vcpu_count) from all non-terminated Hetzner VMs (quota is global)."""
+		vm = frappe.qb.DocType("Virtual Machine")
+		result = (
+			frappe.qb.from_(vm)
+			.select(Count(vm.name), Sum(vm.vcpu))
+			.where(vm.cloud_provider == "Hetzner")
+			.where(vm.status != "Terminated")
+		).run()
+		count, vcpus = result[0] if result else (0, 0)
+		return count or 0, vcpus or 0
 
 	def _check_hetzner_quota(
 		self, machine_type: str | list, virtual_machine: str | None = None
