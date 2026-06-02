@@ -22,6 +22,7 @@ def _setup(apps=None, public=False):
 	rg = create_test_release_group(apps, public=public)
 	bench = create_test_bench(group=rg)
 	frappe.db.set_value("Deploy Candidate", bench.candidate, "intel_build", bench.build)
+	frappe.db.set_single_value("Press Settings", "allow_patch_builds", 1)
 	return rg, bench
 
 
