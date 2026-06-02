@@ -559,14 +559,12 @@ def process_backup_site_job_update(job):
 			site_backup.status = status
 			site_backup.save()
 
-		_send_backup_failure_email_to_user(site_backup)
+			if status == "Failure":
+				_send_backup_failure_email_to_user(site_backup)
 
 
 def _send_backup_failure_email_to_user(site_backup: SiteBackup):
 	try:
-		if site_backup.status != "Failure":
-			return
-
 		site_name = site_backup.site
 		if _has_reached_max_failed_backup_attempts(site_name):
 			recipients = get_communication_info("Email", "Site Activity", "Site", site_name)
