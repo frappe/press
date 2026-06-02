@@ -202,7 +202,7 @@ class ReleasePipeline(WorkflowBuilder):
 
 		if build not in existing_builds:
 			self.append("pipeline_builds", {"build": build})
-			self.save()
+			self.save(ignore_permissions=True)
 
 	@cached_property
 	def release_group_doc(self) -> "ReleaseGroup":
@@ -220,8 +220,7 @@ class ReleasePipeline(WorkflowBuilder):
 		return "default" if frappe.conf.developer_mode else "build"
 
 	def get_doc(self, doc):
-		if self.workflow:
-			doc.steps = self.get_steps()
+		doc.steps = self.get_steps()
 		return doc
 
 	@task(queue=_get_task_execution_queue())
@@ -321,7 +320,7 @@ class ReleasePipeline(WorkflowBuilder):
 
 		if user_addressable_failure or manually_failed:
 			self.is_user_addressable_failure = True
-			self.save()
+			self.save(ignore_permissions=True)
 
 	def _check_for_scheduled_build_retries(self, deploy_candidate_build: str):
 		"""Check if there are any scheduled retries for this build"""
@@ -554,7 +553,7 @@ class ReleasePipeline(WorkflowBuilder):
 		is_enabled = frappe.db.get_value("Release Group", self.release_group, "enabled")
 		if not is_enabled:
 			self.is_user_addressable_failure = True
-			self.save()
+			self.save(ignore_permissions=True)
 			raise ReleasePipelineFailure("Release Group is disabled. Updates can not be initiated.")
 
 		try:
@@ -720,7 +719,7 @@ class ReleasePipeline(WorkflowBuilder):
 		"""Orchestrates the release process from validation to bench creation with recursive monitoring and retry handling"""
 		if not self.workflow:
 			self.workflow = self.current_workflow
-			self.save()
+			self.save(ignore_permissions=True)
 
 		try:
 			# 1. Validation Phase
