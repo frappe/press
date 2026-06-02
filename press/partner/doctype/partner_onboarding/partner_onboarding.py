@@ -38,12 +38,12 @@ class PartnerOnboarding(Document):
 		erpnext_customer_count_range: DF.Data | None
 		existing_partnerships: DF.SmallText | None
 		headquarter_city: DF.Data | None
-		incorporation_certificate: DF.Data | None
+		incorporation_certificate: DF.Attach | None
 		registered_country: DF.Link
-		rejection_reason: DF.SmallText | None
 		revenue_currency: DF.Link | None
 		reviewed_by: DF.Link | None
 		reviewed_on: DF.Datetime | None
+		reviewer_comments: DF.SmallText | None
 		status: DF.Literal["Draft", "Pending Review", "Approved", "Rejected", "Cancelled"]
 		submitted_on: DF.Datetime | None
 		team: DF.Link
@@ -109,7 +109,7 @@ class PartnerOnboarding(Document):
 		self.status = "Approved"
 		self.reviewed_by = frappe.session.user
 		self.reviewed_on = now_datetime()
-		self.rejection_reason = None
+		self.reviewer_comments = None
 		self.save()
 		# publish a realtime event to update the partner onboarding status
 		frappe.publish_realtime(
@@ -135,7 +135,7 @@ class PartnerOnboarding(Document):
 		self.status = "Rejected"
 		self.reviewed_by = frappe.session.user
 		self.reviewed_on = now_datetime()
-		self.rejection_reason = reason
+		self.reviewer_comments = reason
 		self.save()
 		# publish a realtime event to update the partner onboarding status
 		frappe.publish_realtime(
@@ -283,6 +283,7 @@ def _is_profile_complete(doc: PartnerOnboarding) -> bool:
 			doc.contact,
 			doc.address,
 			doc.headquarter_city,
+			doc.incorporation_certificate,
 			doc.agreed_to_due_diligence,
 			doc.agreed_to_partnership_agreement,
 		]
