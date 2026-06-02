@@ -1330,9 +1330,10 @@ class Cluster(Document):
 		"""Return (quota_code, vcpu_count) for the VM being replaced, or (None, 0)."""
 		if not virtual_machine:
 			return None, 0
-		replaced_machine_type, replaced_vcpus = frappe.db.get_value(
-			"Virtual Machine", virtual_machine, ["machine_type", "vcpu"]
-		)
+		result = frappe.db.get_value("Virtual Machine", virtual_machine, ["machine_type", "vcpu"])
+		if not result:
+			return None, 0
+		replaced_machine_type, replaced_vcpus = result
 		if not replaced_machine_type:
 			return None, 0
 		return self._get_quota_code_for_machine_type(replaced_machine_type), replaced_vcpus or 0
