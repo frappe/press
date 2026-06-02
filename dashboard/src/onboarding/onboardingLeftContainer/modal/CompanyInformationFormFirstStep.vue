@@ -48,7 +48,11 @@ const certifiedEmployeesOptions = [
 ]
 
 const submitted = ref(false)
-const revenueCurrencyAutoSynced = ref(true)
+const revenueCurrencyAutoSynced = ref(
+	!props.form.revenue_currency ||
+		props.form.revenue_currency ===
+			getPartnerMRRCurrency(props.form.registered_country),
+)
 
 watch(
 	() => team?.doc,
@@ -68,11 +72,7 @@ watch(
 	(country) => {
 		const nextCurrency = getPartnerMRRCurrency(country)
 
-		if (
-			country === 'India' ||
-			revenueCurrencyAutoSynced.value ||
-			props.form.revenue_currency === 'INR'
-		) {
+		if (!props.form.revenue_currency || revenueCurrencyAutoSynced.value) {
 			props.form.revenue_currency = nextCurrency
 			revenueCurrencyAutoSynced.value = true
 		}
