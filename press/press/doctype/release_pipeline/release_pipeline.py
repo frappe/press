@@ -220,7 +220,8 @@ class ReleasePipeline(WorkflowBuilder):
 		return "default" if frappe.conf.developer_mode else "build"
 
 	def get_doc(self, doc):
-		doc.steps = self.get_steps()
+		if self.workflow:
+			doc.steps = self.get_steps()
 		return doc
 
 	@task(queue=_get_task_execution_queue())

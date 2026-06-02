@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 interface Props {
 	headerCss?: string
@@ -9,6 +9,13 @@ interface Props {
 
 const props = defineProps<Props>()
 const opened = ref(props.opened)
+
+watch(
+	() => props.opened,
+	(val) => {
+		opened.value = val
+	},
+)
 
 function toggle() {
 	if (props.disabled) return
@@ -21,7 +28,7 @@ function toggle() {
 		<div
 			class="flex items-center gap-2"
 			:class="[disabled? 'opacity-60 cursor-not-allowed':'cursor-pointer', headerCss]"
-      :aria-expanded="opened"
+			:aria-expanded="opened"
 			@click="toggle"
 		>
 			<slot name="prefix" />
