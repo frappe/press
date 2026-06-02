@@ -231,6 +231,7 @@ watch(
 			if (pipeline?.doc?.status === 'Running') wired.add(id)
 		})
 	},
+  { immediate : true }
 )
 
 watch(
