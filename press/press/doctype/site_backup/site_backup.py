@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 import frappe.utils
+from frappe import _
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 from frappe.query_builder.terms import ValueWrapper
@@ -571,8 +572,14 @@ def _send_backup_failure_email_to_user(site_backup: SiteBackup):
 			if not recipients:
 				return
 
-			subject = f"Backup attempts failed for {site_name}"
-			content = f"<p>All attempts to backup your site <b>{site_name}</b> have failed. Please initiate a backup or contact support if the issue persists.</p>"
+			subject = _("Backup attempts failed for {0}").format(site_name)
+			content = frappe.render_template(
+				"press/templates/emails/site_backup_failed.html",
+				{
+					"site_name": site_name,
+				},
+				is_path=True,
+			)
 			communication = frappe.get_doc(
 				{
 					"doctype": "Communication",
