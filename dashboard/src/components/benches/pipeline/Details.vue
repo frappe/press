@@ -282,7 +282,7 @@ const handleDocUpdate = props.deployview
 		}
 
 onBeforeUnmount(() => {
-	if (props.deployview) {
+	if (!props.deployview) {
 		socket.emit('doc_unsubscribe', 'Release Pipeline', props.id)
 		socket.off('doc_update', handleDocUpdate)
 		wired.delete('release-pipeline' + props.id)
@@ -298,7 +298,7 @@ onBeforeUnmount(() => {
 		socket.off(`bench_deploy:${id}:finished`)
 	})
 
-	if (props.deployview) {
+	if (!props.deployview) {
 		if (agentJobIds?.value?.length == 0) return
 
 		agentJobIds?.value?.forEach((id: string) => {
