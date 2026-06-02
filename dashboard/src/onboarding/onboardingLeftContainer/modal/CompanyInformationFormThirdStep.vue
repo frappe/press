@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Button, Checkbox, FileUploader, FormControl } from 'frappe-ui'
+import { Button, Checkbox, FileUploader, FormControl, Tooltip } from 'frappe-ui'
 import { computed, ref } from 'vue'
 import type { PartnerOnboardingDoc } from '@/onboarding/usePartnerOnboarding'
+import LucideHelpCircle from '~icons/lucide/help-circle'
 
 const emit = defineEmits(['continue'])
 const props = defineProps<{
@@ -42,6 +43,8 @@ const errors = computed(() => {
 
 const PARTNERSHIP_AGREEMENT_LINK = 'https://frappe.io/partners/terms'
 const documentFileTypes = ['application/pdf', 'image/*']
+const incorporationCertificateHelp =
+	'Upload your certificate of incorporation or equivalent company registration document. This helps us verify your legal entity before partnership approval.'
 
 function validateDocument(file: File) {
 	const allowedType =
@@ -109,7 +112,14 @@ defineExpose({ tryContinue })
 
 			<div class="flex flex-col gap-1">
 				<div class="flex items-center justify-between gap-2">
-					<span class="text-xs text-ink-gray-6">Incorporation certificate</span>
+					<div class="flex items-center gap-1">
+						<span class="text-xs text-ink-gray-6"
+							>Incorporation certificate</span
+						>
+						<Tooltip :text="incorporationCertificateHelp">
+							<LucideHelpCircle class="size-3 text-ink-gray-5" />
+						</Tooltip>
+					</div>
 				</div>
 				<FileUploader
 					:fileTypes="documentFileTypes"
