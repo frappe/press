@@ -34,9 +34,9 @@ from press.press.doctype.incident.incident import (
 	CALL_REPEAT_INTERVAL_NIGHT,
 	CALL_THRESHOLD_SECONDS_NIGHT,
 	CONFIRMATION_THRESHOLD_SECONDS_NIGHT,
+	MAX_ASSIGNED_CALLS_BEFORE_DEFAULT_AT_NIGHT,
 	MIN_FIRING_INSTANCES,
 	MIN_FIRING_INSTANCES_FRACTION,
-	NIGHT_SHIFT_CALL_LIMIT,
 	Incident,
 	get_wait_time_post_investigator_actions,
 	resolve_incidents,
@@ -705,7 +705,7 @@ class TestIncident(FrappeTestCase):
 		self.assertEqual(len(humans), 2)  # both default users
 
 	def test_night_shift_falls_back_to_default_after_call_limit_exceeded(self):
-		"""Falls back to default users once NIGHT_SHIFT_CALL_LIMIT attempts are exhausted."""
+		"""Falls back to default users once MAX_ASSIGNED_CALLS_BEFORE_DEFAULT_AT_NIGHT attempts are exhausted."""
 		settings = frappe.get_doc("Incident Settings", "Incident Settings")
 		night_user = settings.users[0].user
 		self._add_night_shifts([(night_user, "Friday")])
@@ -713,7 +713,7 @@ class TestIncident(FrappeTestCase):
 		incident = frappe.get_doc({"doctype": "Incident", "alertname": "Test"}).insert()
 
 		friday_2am = datetime(2024, 1, 5, 2, 0)
-		fake_updates = [Mock()] * NIGHT_SHIFT_CALL_LIMIT
+		fake_updates = [Mock()] * MAX_ASSIGNED_CALLS_BEFORE_DEFAULT_AT_NIGHT
 		with (
 			patch("frappe.utils.now_datetime", return_value=friday_2am),
 			patch(

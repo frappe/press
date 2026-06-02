@@ -33,6 +33,7 @@ class IncidentSettings(Document):
 		email_alerts: DF.Check
 		enable_incident_detection: DF.Check
 		grafana_screenshots: DF.Check
+		night_shift_call_limit: DF.Int
 		night_shifts: DF.Table[IncidentSettingsNightShift]
 		phone_call_alerts: DF.Check
 		self_hosted_users: DF.Table[IncidentSettingsSelfHostedUser]

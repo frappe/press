@@ -11,6 +11,7 @@
 		"self_hosted_users",
 		"section_break_kbro",
 		"night_shifts",
+		"night_shift_call_limit",
 		"section_break_rnxb",
 		"enable_incident_detection",
 		"phone_call_alerts",
@@ -126,12 +127,19 @@
 			"fieldtype": "Table",
 			"label": "Night Shifts",
 			"options": "Incident Settings Night Shift"
+		},
+		{
+			"default": "10",
+			"description": "Number of unanswered call attempts to night shift assignees before falling back to the full default on-call list",
+			"fieldname": "night_shift_call_limit",
+			"fieldtype": "Int",
+			"label": "Max Calls To Dedicated Persons (Night)"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-05-30 01:08:58.745003",
+	"modified": "2026-06-02 15:33:07.990491",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Incident Settings",
