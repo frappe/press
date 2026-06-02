@@ -146,7 +146,7 @@ const fetchSetErrs = () => {
 }
 
 // used to unsubscribe from socket events
-const wired = new Set<string>()
+const wired = reactive(new Set<string>())
 const builds = ref<Record<string, any>>({})
 
 const dummyStages = ref([
@@ -224,14 +224,14 @@ watch(
 					)
 					if (rgDoc) rgDoc.reload()
 
-          fetchSetErrs()
+					fetchSetErrs()
 				})
 			}
 
 			if (pipeline?.doc?.status === 'Running') wired.add(id)
 		})
 	},
-  { immediate : true }
+	{ immediate: true },
 )
 
 watch(
@@ -406,7 +406,7 @@ const stopBuild = () => {
 
 <template>
 	<Loader
-		v-if="deployview? builds[activeBuildId]?.get?.loading: wired.size == 0 && pipeline?.get?.loading"
+		v-if="deployview? builds[activeBuildId]?.get?.loading: wired.size == 0 && pipeline?.get?.loading && !pipeline?.doc"
 	/>
 
 	<main
