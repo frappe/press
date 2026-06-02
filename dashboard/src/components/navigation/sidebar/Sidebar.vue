@@ -15,8 +15,6 @@ import LucideMoon from "~icons/lucide/moon";
 import LucideAlert from "~icons/lucide/notebook-text";
 import DarkModeLabel from "./DarkModeLabel.vue";
 import NavList from "./NavList.vue";
-import NotificationPanel from "./Notifications.vue";
-import { notifPanel } from "@/data/ui";
 
 import Item from "./Item.vue";
 import ItemGroup from "./ItemGroup.vue";
@@ -26,13 +24,18 @@ const $session = session;
 const router = useRouter();
 
 const showTeamSwitcher = ref(false);
-const collapsed = ref(false);
+const collapsed = ref(localStorage.collapsed === "true")
 
 const collapsedCss = computed(() =>
   collapsed.value
     ? "md:w-0 md:overflow-hidden md:opacity-0 whitespace-nowrap"
     : "md:opacity-100  whitespace-nowrap",
 );
+
+const collapsePanel = () => {
+	localStorage.collapsed = collapsed.value = !collapsed.value
+}
+
 provide("collapsed", collapsed);
 provide("collapsedCss", collapsedCss);
 
@@ -93,8 +96,8 @@ const helpDropdownOptions = [
 <template>
 	<aside
 		class="relative flex md:min-h-screen p-2 gap-1 flex-col border-r transition-[width]
-    bg-surface-white  md:bg-surface-gray-1 dark:bg-transparent"
-		:class='collapsed ? " md:w-12" : "w-full md:w-[250px]"'
+    bg-surface-white  md:bg-surface-gray-1 dark:bg-transparent overflow-x-hidden"
+		:class='collapsed ? " md:w-12" : "w-full md:w-[256px]"'
 	>
     <div class='flex gap-2 items-center border-y md:border-0 p-2 md:p-0 -m-2 md:m-0 h-[44px] md:h-auto'>
       <FCLogo class="size-6 md:hidden mr-auto" />
@@ -119,7 +122,7 @@ const helpDropdownOptions = [
               </div>
             </div>
 
-            <LucideChevronDown class="md:ml-auto size-4" :class='collapsedCss' />
+            <LucideChevronDown class="md:ml-auto size-4 shrink-0" :class='collapsedCss' />
           </button>
         </template>
       </Dropdown>
@@ -137,7 +140,9 @@ const helpDropdownOptions = [
         <template v-slot="{ list }">
           <template v-for="(item, _) in list" :key="item.name">
             <ItemGroup v-if="item.children" v-bind="item" />
+            <component v-else-if="item.customComponent" :is="item.customComponent" :disabled="item.disabled" />
             <Item v-else v-bind="item" />
+
           </template>
         </template>
       </NavList>
@@ -155,7 +160,7 @@ const helpDropdownOptions = [
           </Button>
         </Dropdown>
 
-        <Button variant="ghost" class='hidden md:flex' :class='collapsed ? "mb-2" : ""' @click='collapsed = !collapsed'>
+        <Button variant="ghost" class='hidden md:flex' :class='collapsed ? "mb-2" : ""' @click='collapsePanel'>
           <template #icon>
             <LucidePanelLeft class="size-4 transition-transform duration-500" :class='collapsed ? "rotate-180" : ""' />
           </template>
@@ -165,7 +170,5 @@ const helpDropdownOptions = [
 
     <!-- TODO: update component name after dashboard-beta merges -->
     <SwitchTeamDialog2 v-model="showTeamSwitcher" :key="String(showTeamSwitcher)" />
-  <NotificationPanel v-if="notifPanel"/>
   </aside>
-
 </template>
