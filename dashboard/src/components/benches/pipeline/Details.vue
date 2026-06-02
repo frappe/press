@@ -254,7 +254,9 @@ const handleAgentJobUpdate = (data) => {
 watch(
 	() => agentJobIds?.value,
 	(ids: string[]) => {
-		if (props.deployview || !ids) return
+		if (props.deployview || !ids || pipeline?.doc?.status !== 'Running') {
+			return
+		}
 
 		ids.forEach((id: string) => {
 			if (!agentJobs.value[id]) {
@@ -264,8 +266,6 @@ watch(
 					auto: true,
 				})
 			}
-
-			if (pipeline?.doc?.status != 'Running') return
 
 			if (socket && !wired.has(`job:${id}`)) {
 				socket.emit('doc_subscribe', 'Agent Job', id)
@@ -297,7 +297,13 @@ onBeforeUnmount(() => {
 	}
 
 	wired.forEach((id) => {
-		if (id.startsWith('job:')) return
+		if (
+			id.startsWith('job:') ||
+			id.startsWith('release-pipeline') ||
+			id === 'agent_job_update'
+		) {
+			return
+		}
 
 		socket.emit('doc_unsubscribe', 'Deploy Candidate Build', id)
 		socket.off(`bench_deploy:${id}:steps`)
