@@ -90,6 +90,7 @@ class BenchUpdate(Document):
 		validate_pre_candidate_checks: bool = True,
 		create_build: bool = True,
 		ignore_permissions: bool = False,
+		trigger_patch_deploy: bool = False,
 	) -> str:
 		"""Creates and returns candidate name or build name depending on the point of invocation."""
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
@@ -112,7 +113,17 @@ class BenchUpdate(Document):
 			# In case we are not scheduling build from here (eg. new build flow) return candidate name here
 			return candidate.name
 
-		deploy = candidate.schedule_build_and_deploy(ignore_permissions=ignore_permissions)
+		deploy = (
+			candidate.schedule_build_and_deploy(ignore_permissions=ignore_permissions)
+			if not trigger_patch_deploy
+			else candidate.trigger_patch_deploy(ignore_permissions=ignore_permissions)
+		)
+
+		# Trigger patch deploy can return error if the builds are suspended
+		if deploy.get("error"):
+			raise Exception(
+				deploy.get("message", "Build could not be initiated for the deploy candidate."),
+			)
 
 		return deploy["name"]
 

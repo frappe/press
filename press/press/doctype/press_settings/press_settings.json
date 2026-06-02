@@ -116,6 +116,7 @@
 		"compress_app_cache",
 		"use_delta_builds",
 		"use_agent_job_callbacks",
+		"allow_patch_builds",
 		"auto_update_section",
 		"auto_update_queue_size",
 		"remote_files_section",
@@ -1771,8 +1772,8 @@
 			"fieldname": "enable_mcp",
 			"fieldtype": "Check",
 			"label": "Enable MCP"
-    },
-    {
+		},
+		{
 			"fieldname": "pulse_section",
 			"fieldtype": "Section Break",
 			"label": "Pulse"
@@ -1813,11 +1814,16 @@
 			"fieldname": "default_dedicated_server_site_warranty_quota",
 			"fieldtype": "Int",
 			"label": "Default Dedicated Server Supported Site Quota"
+		},
+		{
+			"fieldname": "allow_patch_builds",
+			"fieldtype": "Check",
+			"label": "Allow Patch Builds"
 		}
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-06-02 14:15:34.170170",
+	"modified": "2026-06-02 22:46:34.584687",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",

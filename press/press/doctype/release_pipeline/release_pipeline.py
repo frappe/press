@@ -267,19 +267,24 @@ class ReleasePipeline(WorkflowBuilder):
 		apps: list[dict[str, str]],
 		sites: list[dict[str, Any]],
 		run_will_fail_check: bool = False,
-		create_deploy: bool = False,
+		trigger_patch_deploy: bool = False,
 	) -> str:
 		"""Create a Deploy Candidate for the release group."""
 		assert isinstance(self.release_group, str)
 		bench_update: BenchUpdate = get_bench_update(
 			self.release_group, apps, sites, is_inplace_update=False, ignore_permissions=True
 		)
-		return bench_update.deploy(
-			run_will_fail_check=run_will_fail_check,
-			validate_pre_candidate_checks=False,
-			create_build=create_deploy,
-			ignore_permissions=True,
-		)
+		# This is only to handle the suspended builds + patch build case.
+		try:
+			return bench_update.deploy(
+				run_will_fail_check=run_will_fail_check,
+				validate_pre_candidate_checks=False,
+				create_build=False,
+				ignore_permissions=True,
+				trigger_patch_deploy=trigger_patch_deploy,
+			)
+		except Exception as e:
+			raise ReleasePipelineFailure(f"Failed to create deploy candidate: {e!s}") from e
 
 	@task(queue=_get_task_execution_queue())
 	def initiate_pre_build_validations(self, deploy_candidate: str) -> str:
@@ -288,6 +293,17 @@ class ReleasePipeline(WorkflowBuilder):
 		deploy_candidate_build = candidate.schedule_build_and_deploy(
 			ignore_permissions=True,
 		)
+		return deploy_candidate_build["name"]
+
+	@task(queue=_get_task_execution_queue())
+	def initiate_patch_deploy(self, deploy_candidate: str) -> str:
+		"""Start the deploy candidate build process with patch deploy flag, skipping pre-build validations."""
+		candidate: DeployCandidate = frappe.get_doc("Deploy Candidate", deploy_candidate)
+		deploy_candidate_build = candidate.trigger_patch_deploy(ignore_permissions=True)
+		if deploy_candidate_build.get("error"):
+			raise ReleasePipelineFailure(
+				deploy_candidate_build.get("message", "Patch build could not be initiated.")
+			)
 		return deploy_candidate_build["name"]
 
 	def _get_required_build_count(self, deploy_candidate: str) -> int:
@@ -357,16 +373,19 @@ class ReleasePipeline(WorkflowBuilder):
 	def monitor_build_success(self, deploy_candidate_build: str):
 		"""Monitor build till terminal state."""
 		deploy_candidate_build = self._get_latest_retried_build(deploy_candidate_build)
-		deploy_candidate_build_status = frappe.db.get_value(
-			"Deploy Candidate Build", deploy_candidate_build, "status"
+		deploy_candidate_build_doc: DeployCandidateBuild = frappe.get_doc(
+			"Deploy Candidate Build", deploy_candidate_build
 		)
 
-		if deploy_candidate_build_status == "Success":
+		if deploy_candidate_build_doc.status == "Success":
 			return  # Remote Build succeeded can mark as success and proceed
 
-		if deploy_candidate_build_status == "Failure":
+		if deploy_candidate_build_doc.status == "Failure":
 			# This will raise and enqueue the function again in case there are scheduled retries for the build
-			self._check_for_scheduled_build_retries(deploy_candidate_build)
+			# In case of patch builds we don't retry anyways therefore ignore that check here
+			if not deploy_candidate_build_doc.patch_build:
+				self._check_for_scheduled_build_retries(deploy_candidate_build)
+
 			raise ReleasePipelineFailure(
 				f"Remote build failed for Deploy Candidate Build {deploy_candidate_build}. Please check the build logs for more details."
 			)
@@ -591,7 +610,7 @@ class ReleasePipeline(WorkflowBuilder):
 		)
 
 	@task(queue=_get_task_execution_queue())
-	def prepare_deployment(self, apps, sites, run_will_fail_check) -> tuple[str, str]:
+	def prepare_deployment(self, apps, sites, run_will_fail_check, trigger_patch_deploy) -> tuple[str, str]:
 		"""Creates the candidate and returns the primary build name."""
 		auto_upgrade_dependencies = frappe.db.get_single_value(
 			"Press Settings",
@@ -603,14 +622,18 @@ class ReleasePipeline(WorkflowBuilder):
 				apps=apps,
 				sites=sites,
 				run_will_fail_check=run_will_fail_check,
-				create_deploy=False,
+				trigger_patch_deploy=trigger_patch_deploy,
 			)
 			self.add_implicit_app_dependencies(deploy_candidate)
 
 			if auto_upgrade_dependencies:
 				self.auto_update_bench_dependency_versions(deploy_candidate)
 
-			primary_build = self.initiate_pre_build_validations(deploy_candidate)
+			primary_build = (
+				self.initiate_pre_build_validations(deploy_candidate)
+				if not trigger_patch_deploy
+				else self.initiate_patch_deploy(deploy_candidate)
+			)
 
 			return deploy_candidate, primary_build
 		except (frappe.ValidationError, GithubFetchError) as e:
@@ -692,6 +715,7 @@ class ReleasePipeline(WorkflowBuilder):
 		apps: list[dict[str, str]],
 		sites: list[dict[str, Any]],
 		run_will_fail_check: bool = False,
+		trigger_patch_deploy: bool = False,
 	):
 		"""Orchestrates the release process from validation to bench creation with recursive monitoring and retry handling"""
 		if not self.workflow:
@@ -703,7 +727,9 @@ class ReleasePipeline(WorkflowBuilder):
 			self.run_pre_release_checks(apps)
 
 			# 2. Initialization Phase
-			deploy_candidate, primary_build = self.prepare_deployment(apps, sites, run_will_fail_check)
+			deploy_candidate, primary_build = self.prepare_deployment(
+				apps, sites, run_will_fail_check, trigger_patch_deploy
+			)
 
 			# 3. Monitoring Phase (Handles 1 or 2 builds)
 			self.orchestrate_build_monitoring(deploy_candidate, primary_build)
