@@ -215,25 +215,29 @@ def fake_agent_job(
 		before_insert = lambda self: None  # noqa
 
 
+def _setup_team():
+	team = create_test_press_admin_team()
+	team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
+	team.payment_mode = "Prepaid Credits"
+	team.save()
+	return team
+
+
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestAgentJob(FrappeTestCase):
+class TestLockDocUpdatedByJob(FrappeTestCase):
+	"""lock_doc_updated_by_job() respects the Site > Bench > Server hierarchy."""
+
 	def setUp(self):
 		super().setUp()
-
-		self.team = create_test_press_admin_team()
-		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
-		self.team.payment_mode = "Prepaid Credits"
-		self.team.save()
+		self.team = _setup_team()
 
 	def tearDown(self):
 		frappe.db.rollback()
 		frappe.set_user("Administrator")
 
 	def test_lock_doc_updated_by_job_respects_hierarchy(self):
-		"""
-		Site > Bench > Server
-		"""
-		site = create_test_site()  # creates job
+		"""Site > Bench > Server"""
+		site = create_test_site()
 		site.update_site_config({"maintenance_mode": "1"})
 		job = frappe.get_last_doc("Agent Job", {"job_type": "Update Site Configuration"})
 		doc_name = lock_doc_updated_by_job(job.name)
@@ -247,7 +251,7 @@ class TestAgentJob(FrappeTestCase):
 		job.db_set("bench", None)
 		doc_name = lock_doc_updated_by_job(job.name)
 		self.assertEqual(site.server, doc_name)
-		job.db_set("server", None)  # will realistically never happen
+		job.db_set("server", None)
 		doc_name = lock_doc_updated_by_job(job.name)
 		self.assertIsNone(doc_name)
 
@@ -264,6 +268,19 @@ class TestAgentJob(FrappeTestCase):
 		doc_name = lock_doc_updated_by_job(job.name)
 		self.assertEqual(site.name, doc_name)
 
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestAgentJobDeduplication(FrappeTestCase):
+	"""Agent job deduplication — no duplicate undelivered jobs for the same path."""
+
+	def setUp(self):
+		super().setUp()
+		self.team = _setup_team()
+
+	def tearDown(self):
+		frappe.db.rollback()
+		frappe.set_user("Administrator")
+
 	def test_no_duplicate_undelivered_job(self):
 		site = create_test_site()
 		site.update_site_config({"maintenance_mode": "1"})
@@ -271,7 +288,6 @@ class TestAgentJob(FrappeTestCase):
 
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", False)
 
-		# create a new job with same type and site
 		job_name = site.update_site_config({"host_name": f"https://{site.host_name}"})
 
 		self.assertEqual(job_name.name, job.name)
@@ -283,7 +299,6 @@ class TestAgentJob(FrappeTestCase):
 
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", False)
 
-		# check if similar job exists
 		agent = Agent(site.server)
 		in_execution_job = agent.get_similar_in_execution_job(
 			job_type="Update Site Configuration",
@@ -293,5 +308,105 @@ class TestAgentJob(FrappeTestCase):
 		)
 
 		self.assertEqual(in_execution_job.name, job.name)
+		# tearDown's frappe.db.rollback() resets disable_agent_job_deduplication
 
-		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", True)
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestSiteRestoreJobStatusTransitions(FrappeTestCase):
+	"""Restore Site agent job status → site status transitions."""
+
+	def setUp(self):
+		super().setUp()
+		self.team = _setup_team()
+
+	def tearDown(self):
+		frappe.db.rollback()
+		frappe.set_user("Administrator")
+
+	def test_failure_sets_site_broken(self):
+		"""A Restore Site agent job that fails should mark the site as Broken."""
+		from press.press.doctype.site.site import process_restore_job_update
+
+		site = create_test_site()
+		site.db_set("status", "Installing")
+
+		job = frappe._dict(status="Failure", job_type="Restore Site", site=site.name, output="")
+		process_restore_job_update(job, force=True)
+
+		site.reload()
+		self.assertEqual(site.status, "Broken")
+
+	def test_success_sets_site_active(self):
+		"""A successful Restore Site job should transition the site to Active."""
+		from press.press.doctype.site.site import Site, process_restore_job_update
+
+		site = create_test_site()
+		site.db_set("status", "Installing")
+
+		job = frappe._dict(
+			status="Success",
+			job_type="Restore Site",
+			site=site.name,
+			output="frappe\n",
+		)
+		with (
+			patch("press.press.doctype.site.site.process_marketplace_hooks_for_backup_restore"),
+			patch.object(Site, "set_apps"),
+			patch("frappe.db.get_value", return_value=False),
+		):
+			process_restore_job_update(job, force=True)
+
+		site.reload()
+		self.assertEqual(site.status, "Active")
+
+	def test_delivery_failure_keeps_site_active(self):
+		"""Delivery Failure (agent never received the request) should leave the site Active."""
+		from press.press.doctype.site.site import process_restore_job_update
+
+		site = create_test_site()
+		site.db_set("status", "Active")
+
+		job = frappe._dict(status="Delivery Failure", job_type="Restore Site", site=site.name, output="")
+		process_restore_job_update(job, force=True)
+
+		site.reload()
+		self.assertEqual(site.status, "Active")
+
+
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestSiteMigrateJobStatusTransitions(FrappeTestCase):
+	"""Migrate Site agent job status → site status transitions."""
+
+	def setUp(self):
+		super().setUp()
+		self.team = _setup_team()
+
+	def tearDown(self):
+		frappe.db.rollback()
+		frappe.set_user("Administrator")
+
+	def test_failure_sets_site_broken(self):
+		"""A failed Migrate Site agent job should mark the site as Broken."""
+		from press.press.doctype.site.site import process_migrate_site_job_update
+
+		site = create_test_site()
+		site.db_set("status", "Updating")
+
+		job = frappe._dict(status="Failure", job_type="Migrate Site", site=site.name)
+		process_migrate_site_job_update(job)
+
+		site.reload()
+		self.assertEqual(site.status, "Broken")
+
+	def test_running_sets_site_updating(self):
+		"""While a Migrate Site job is running, the site should be in Updating state."""
+		from press.press.doctype.site.site import process_migrate_site_job_update
+
+		site = create_test_site()
+		site.db_set("status", "Active")
+
+		job = frappe._dict(status="Running", job_type="Migrate Site", site=site.name)
+		process_migrate_site_job_update(job)
+
+		site.reload()
+		self.assertEqual(site.status, "Updating")

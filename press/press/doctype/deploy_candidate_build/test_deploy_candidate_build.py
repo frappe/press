@@ -182,3 +182,78 @@ class TestDeployCandidateBuild(FrappeTestCase):
 				self.assertEqual(newly_created_build.name, build)
 			else:
 				self.assertEqual(deploy_candidate_build.name, build)
+
+	# -----------------------------------------------------------------------
+	# Task 5: Build Pipeline unit tests
+	# -----------------------------------------------------------------------
+
+	def test_encode_dockerfile_produces_valid_base64(self, _mock_enqueue):
+		"""encode_dockerfile should base64-encode the Dockerfile content so the
+		agent can transport it as plain text."""
+		import base64
+
+		content = "FROM ubuntu:22.04\nRUN echo hello"
+		encoded = self.deploy_candidate_build.encode_dockerfile(content)
+		decoded = base64.b64decode(encoded).decode("utf-8")
+		self.assertEqual(decoded, content)
+
+	def test_encode_dockerfile_round_trips_unicode(self, _mock_enqueue):
+		"""Unicode characters in the Dockerfile must survive the encode/decode
+		round-trip unmodified."""
+		import base64
+
+		content = "# unicode: café résumé naïve\nRUN echo done"
+		encoded = self.deploy_candidate_build.encode_dockerfile(content)
+		decoded = base64.b64decode(encoded).decode("utf-8")
+		self.assertEqual(decoded, content)
+
+	def test_get_dockerfile_checkpoints_extracts_stage_slugs(self, _mock_enqueue):
+		"""_get_dockerfile_checkpoints should return every slug that follows the
+		'`#stage-<slug>`' pattern in the Dockerfile."""
+		dockerfile = (
+			"FROM ubuntu\n"
+			"# `#stage-pre-essentials`\n"
+			"RUN apt-get install python3\n"
+			"# `#stage-apps-erpnext`\n"
+			"RUN bench get-app erpnext\n"
+		)
+		checkpoints = self.deploy_candidate_build._get_dockerfile_checkpoints(dockerfile)
+		self.assertIn("pre-essentials", checkpoints)
+		self.assertIn("apps-erpnext", checkpoints)
+
+	def test_get_dockerfile_checkpoints_returns_empty_for_no_markers(self, _mock_enqueue):
+		"""When the Dockerfile has no stage markers the result should be an
+		empty list — not None or an error."""
+		dockerfile = "FROM ubuntu\nRUN echo hello\n"
+		checkpoints = self.deploy_candidate_build._get_dockerfile_checkpoints(dockerfile)
+		self.assertEqual(checkpoints, [])
+
+	def test_check_distutils_support_python_3_12(self, _mock_enqueue):
+		"""Python 3.12 dropped distutils; check_distutils_support must return
+		False so the Dockerfile removes it (DISTUTILS_SUPPORTED_VERSION = <3.12)."""
+		result = self.deploy_candidate_build.check_distutils_support("3.12.0")
+		self.assertFalse(result)
+
+	def test_check_distutils_support_python_3_11(self, _mock_enqueue):
+		"""Python 3.11 still ships distutils (< 3.12); check_distutils_support
+		must return True."""
+		result = self.deploy_candidate_build.check_distutils_support("3.11.0")
+		self.assertTrue(result)
+
+	def test_check_distutils_support_python_3_9(self, _mock_enqueue):
+		"""Python 3.9 still ships distutils; check_distutils_support must return
+		True."""
+		result = self.deploy_candidate_build.check_distutils_support("3.9.0")
+		self.assertTrue(result)
+
+	@patch.object(DeployCandidateBuild, "save", new=Mock())
+	def test_add_pre_build_steps_creates_clone_step_for_each_app(self, _mock_enqueue):
+		"""add_pre_build_steps should add at least one 'clone' step per app in
+		the deploy candidate."""
+		build = self.deploy_candidate_build
+		build.build_steps = []
+		build.add_pre_build_steps()
+		clone_steps = [s for s in build.build_steps if s.stage_slug == "clone"]
+		app_names = {app.app for app in build.candidate.apps}
+		clone_app_names = {s.step_slug for s in clone_steps}
+		self.assertTrue(app_names.issubset(clone_app_names))

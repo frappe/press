@@ -697,3 +697,69 @@ class TestSite(FrappeTestCase):
 		suspend_sites_exceeding_disk_usage_for_last_14_days()
 		site.reload()
 		self.assertEqual(site.status, "Suspended")
+
+	# -----------------------------------------------------------------------
+	# Task 4: Tenancy Violations & Safeguards
+	# -----------------------------------------------------------------------
+
+	def test_app_not_on_bench_blocks_site_creation(self):
+		"""A site that lists an app not available on the bench is rejected by
+		validate_installed_apps — this is the core 'custom app on public bench'
+		guard."""
+		rg = create_test_release_group([create_test_app()], public=True)
+		bench = create_test_bench(group=rg)
+
+		# Try to create a site that wants to install an app NOT on the bench
+		extra_app = create_test_app("customapp", "Custom App")
+		with self.assertRaises(frappe.ValidationError):
+			create_test_site(bench=bench.name, apps=["frappe", extra_app.name])
+
+	def test_first_app_on_site_must_be_frappe(self):
+		"""validate_installed_apps enforces that frappe is the first app."""
+		extra_app = create_test_app("hrms", "HRMS")
+		rg = create_test_release_group([create_test_app(), extra_app])
+		bench = create_test_bench(group=rg)
+		with self.assertRaises(frappe.ValidationError):
+			create_test_site(bench=bench.name, apps=[extra_app.name])
+
+	def test_duplicate_apps_on_site_blocked(self):
+		"""validate_installed_apps rejects sites whose app list contains
+		duplicates."""
+		rg = create_test_release_group([create_test_app()])
+		bench = create_test_bench(group=rg)
+		site = create_test_site(bench=bench.name)
+		# Manually add a duplicate app row and trigger the validator directly
+		site.append("apps", {"app": "frappe"})
+		with self.assertRaises(frappe.ValidationError):
+			site.validate_installed_apps()
+
+	def test_server_script_cannot_be_enabled_on_public_bench_version_15(self):
+		"""check_server_script_enabled_on_public_bench raises when the user
+		tries to enable server scripts on a public bench at version 15+."""
+		from press.press.doctype.release_group.release_group import ReleaseGroup
+
+		rg = create_test_release_group([create_test_app()], public=True)
+		bench = create_test_bench(group=rg)
+		site = create_test_site(bench=bench.name)
+
+		# Patch is_this_version_or_above to simulate v15
+		with (
+			patch.object(type(site), "is_group_public", new_callable=lambda: property(lambda self: True)),
+			patch.object(ReleaseGroup, "is_this_version_or_above", return_value=True),
+			self.assertRaises(frappe.ValidationError),
+		):
+			site.check_server_script_enabled_on_public_bench("server_script_enabled")
+
+	def test_server_script_can_be_enabled_on_private_bench(self):
+		"""check_server_script_enabled_on_public_bench does NOT raise for a
+		private bench, regardless of version."""
+		from press.press.doctype.release_group.release_group import ReleaseGroup
+
+		rg = create_test_release_group([create_test_app()], public=False)
+		bench = create_test_bench(group=rg)
+		site = create_test_site(bench=bench.name)
+
+		# Private bench → is_group_public is False → no error
+		with patch.object(ReleaseGroup, "is_this_version_or_above", return_value=True):
+			# Should NOT raise
+			site.check_server_script_enabled_on_public_bench("server_script_enabled")
