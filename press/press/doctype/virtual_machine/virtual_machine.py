@@ -6,6 +6,7 @@ import base64
 import ipaddress
 import time
 import typing
+from contextlib import suppress
 
 import boto3
 import botocore
@@ -583,11 +584,22 @@ class VirtualMachine(Document):
 
 		# Attach Server to Private Network
 		# Because, this allows us to provide the required private IP during network attachment
-		self.client().servers.attach_to_network(
-			server=server,
-			network=Network(id=cint(cluster.vpc_id)),
-			ip=self.private_ip_address,
-		).wait_until_finished(HETZNER_ACTION_RETRIES)
+		try:
+			self.client().servers.attach_to_network(
+				server=server,
+				network=Network(id=cint(cluster.vpc_id)),
+				ip=self.private_ip_address,
+			).wait_until_finished(HETZNER_ACTION_RETRIES)
+		except Exception:
+			# Network attachment failed (e.g. Hetzner network limit reached).
+			# Server is live on Hetzner but unusable — delete it to avoid billing.
+			with suppress(Exception):
+				self.client().servers.delete(server).wait_until_finished(HETZNER_ACTION_RETRIES)
+			self.instance_id = None
+			self.status = "Terminated"
+			self.save()
+			frappe.db.commit()
+			raise
 
 		self.status = self.get_hetzner_status_map()[server.status]
 		self.save()
@@ -1256,6 +1268,7 @@ class VirtualMachine(Document):
 		except Exception:
 			self.status = "Terminated"
 			self.save()
+			self.update_servers()
 			return
 		virtual_machine = frappe._dict(virtual_machine)
 		self.status = self.get_frappe_compute_status_map()[virtual_machine.status]

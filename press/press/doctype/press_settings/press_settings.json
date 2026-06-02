@@ -175,6 +175,10 @@
 		"aws_access_key_id",
 		"column_break_agig",
 		"aws_secret_access_key",
+		"hetzner_section",
+		"hetzner_vcpu_limit",
+		"column_break_hetzner",
+		"hetzner_server_limit",
 		"twilio_section",
 		"twilio_account_sid",
 		"twilio_api_key_sid",
@@ -1119,6 +1123,25 @@
 			"fieldname": "aws_secret_access_key",
 			"fieldtype": "Password",
 			"label": "AWS Secret Access Key"
+		},
+		{
+			"fieldname": "hetzner_section",
+			"fieldtype": "Section Break",
+			"label": "Hetzner"
+		},
+		{
+			"fieldname": "hetzner_vcpu_limit",
+			"fieldtype": "Int",
+			"label": "Hetzner vCPU Limit"
+		},
+		{
+			"fieldname": "column_break_hetzner",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "hetzner_server_limit",
+			"fieldtype": "Int",
+			"label": "Hetzner Server Limit"
 		},
 		{
 			"fieldname": "twilio_section",
