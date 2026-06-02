@@ -560,12 +560,29 @@ def process_backup_site_job_update(job):
 
 
 def get_backup_bucket(cluster, region=False):
-	bucket_for_cluster = frappe.get_all("Backup Bucket", {"cluster": cluster}, ["name", "region"], limit=1)
-	default_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
+	bucket_for_cluster = frappe.get_all(
+		"Backup Bucket", {"cluster": cluster}, ["name", "region", "endpoint_url"], limit=1
+	)
+
+	# `provider` and `endpoint_url` are only configured globally on Press Settings, so the
+	# provider is always sourced from there regardless of whether a cluster bucket is used.
+	provider = frappe.db.get_single_value("Press Settings", "offsite_backups_provider")
+
+	if bucket_for_cluster:
+		bucket_config = bucket_for_cluster[0]
+		bucket_config["provider"] = provider
+	else:
+		bucket_config = {
+			"name": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
+			"region": frappe.db.get_single_value("Press Settings", "backup_region"),
+			"endpoint_url": None,
+			"provider": provider,
+		}
 
 	if region:
-		return bucket_for_cluster[0] if bucket_for_cluster else default_bucket
-	return bucket_for_cluster[0]["name"] if bucket_for_cluster else default_bucket
+		return bucket_config
+
+	return bucket_config["name"]
 
 
 def process_deactivate_site_job_update(job: AgentJob):
