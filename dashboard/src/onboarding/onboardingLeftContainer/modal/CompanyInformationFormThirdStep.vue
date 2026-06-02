@@ -30,6 +30,8 @@ const errors = computed(() => {
 	}
 })
 
+const PARTNERSHIP_AGREEMENT_LINK = 'https://frappe.io/partners/terms'
+
 function validate() {
 	submitted.value = true
 	return !Object.values(errors.value).some(Boolean)
@@ -105,10 +107,26 @@ defineExpose({ tryContinue })
 				Due diligence confirmation is required.
 			</p>
 
-			<Checkbox
-				v-model="props.form.agreed_to_partnership_agreement"
-				label="I accept the Partnership agreement"
-			/>
+			<div class="flex items-start gap-2">
+				<Checkbox
+					v-model="props.form.agreed_to_partnership_agreement"
+					id="partnership-agreement-checkbox"
+				/>
+				<label
+					for="partnership-agreement-checkbox"
+					class="text-base font-medium text-ink-gray-8"
+				>
+					I accept the
+					<a
+						:href="PARTNERSHIP_AGREEMENT_LINK"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="underline"
+					>
+						Partnership agreement
+					</a>
+				</label>
+			</div>
 			<p
 				v-if="errors.partnership_agreement"
 				class="-mt-2 text-sm text-ink-red-4"
