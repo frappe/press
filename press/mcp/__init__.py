@@ -3,6 +3,7 @@
 
 import frappe
 import frappe_mcp
+from frappe.utils.data import sbool
 
 mcp = frappe_mcp.MCP("press-mcp")
 
@@ -16,6 +17,10 @@ def handler():
 	# Allow unchecked access to System Users
 	if user_type != "System User":
 		frappe.throw("Access not allowed for this URL", frappe.AuthenticationError)
+
+	# MCP feature flag should be enabled
+	if not sbool(str(frappe.get_value("Press Settings", None, "enable_mcp"))):
+		frappe.throw("MCP is not enabled", frappe.AuthenticationError)
 
 	import press.mcp.tools.actions
 	import press.mcp.tools.codebase

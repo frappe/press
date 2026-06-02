@@ -245,6 +245,7 @@
 		"realtime_job_updates",
 		"disable_agent_job_deduplication",
 		"disable_binlog_indexer_service",
+		"enable_mcp",
 		"column_break_rdlr",
 		"disable_auto_retry",
 		"disallow_disposable_emails",
@@ -294,7 +295,10 @@
 			"fieldtype": "Int",
 			"label": "Number of Sites in Trial"
 		},
-		{ "fieldname": "column_break_2", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_2",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "{}",
 			"fieldname": "bench_configuration",
@@ -360,7 +364,10 @@
 			"label": "Stripe Webhook Secret",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_26", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_26",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "stripe_secret_key",
 			"fieldtype": "Password",
@@ -400,7 +407,10 @@
 			"fieldtype": "Data",
 			"label": "Razorpay Webhook Secret"
 		},
-		{ "fieldname": "column_break_123", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_123",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "razorpay_key_secret",
 			"fieldtype": "Password",
@@ -412,7 +422,11 @@
 			"fieldtype": "Section Break",
 			"label": "ERPNext Authentication"
 		},
-		{ "fieldname": "erpnext_url", "fieldtype": "Data", "label": "ERPNext URL" },
+		{
+			"fieldname": "erpnext_url",
+			"fieldtype": "Data",
+			"label": "ERPNext URL"
+		},
 		{
 			"fieldname": "erpnext_api_key",
 			"fieldtype": "Data",
@@ -423,20 +437,30 @@
 			"fieldtype": "Password",
 			"label": "ERPNext API Secret"
 		},
-		{ "fieldname": "column_break_38", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_38",
+			"fieldtype": "Column Break"
+		},
 		{
 			"collapsible": 1,
 			"fieldname": "frappeio_authentication_section",
 			"fieldtype": "Section Break",
 			"label": "Frappe.io Authentication"
 		},
-		{ "fieldname": "frappe_url", "fieldtype": "Data", "label": "URL" },
+		{
+			"fieldname": "frappe_url",
+			"fieldtype": "Data",
+			"label": "URL"
+		},
 		{
 			"fieldname": "frappeio_api_key",
 			"fieldtype": "Data",
 			"label": "Frappe.io API Key"
 		},
-		{ "fieldname": "column_break_39", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_39",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "frappeio_api_secret",
 			"fieldtype": "Password",
@@ -469,14 +493,20 @@
 			"fieldtype": "Data",
 			"label": "Bucket Name"
 		},
-		{ "fieldname": "data_40", "fieldtype": "Data" },
+		{
+			"fieldname": "data_40",
+			"fieldtype": "Data"
+		},
 		{
 			"fieldname": "backup_rotation_scheme",
 			"fieldtype": "Select",
 			"label": "Backup Rotation Scheme",
 			"options": "FIFO\nGrandfather-father-son"
 		},
-		{ "fieldname": "column_break_35", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_35",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "offsite_backups_access_key_id",
 			"fieldtype": "Data",
@@ -510,14 +540,21 @@
 			"fieldtype": "Int",
 			"label": "Backup Offset"
 		},
-		{ "fieldname": "column_break_48", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_48",
+			"fieldtype": "Column Break"
+		},
 		{
 			"description": "Number of backups to take per ScheduledBackupJob",
 			"fieldname": "backup_limit",
 			"fieldtype": "Int",
 			"label": "Backup Limit"
 		},
-		{ "fieldname": "docker_tab", "fieldtype": "Tab Break", "label": "Docker" },
+		{
+			"fieldname": "docker_tab",
+			"fieldtype": "Tab Break",
+			"label": "Docker"
+		},
 		{
 			"fieldname": "section_break_59",
 			"fieldtype": "Section Break",
@@ -533,7 +570,10 @@
 			"fieldtype": "Data",
 			"label": "Docker Registry Namespace"
 		},
-		{ "fieldname": "column_break_64", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_64",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "docker_registry_username",
 			"fieldtype": "Data",
@@ -560,8 +600,15 @@
 			"fieldtype": "Data",
 			"label": "Build Directory"
 		},
-		{ "fieldname": "column_break_66", "fieldtype": "Column Break" },
-		{ "fieldname": "code_server", "fieldtype": "Data", "label": "Code Server" },
+		{
+			"fieldname": "column_break_66",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "code_server",
+			"fieldtype": "Data",
+			"label": "Code Server"
+		},
 		{
 			"fieldname": "code_server_password",
 			"fieldtype": "Data",
@@ -595,7 +642,10 @@
 			"fieldtype": "Int",
 			"label": "Link Expiry"
 		},
-		{ "fieldname": "column_break_51", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_51",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "remote_access_key_id",
 			"fieldtype": "Data",
@@ -667,7 +717,10 @@
 			"label": "ERPNext Group",
 			"options": "Release Group"
 		},
-		{ "fieldname": "column_break_89", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_89",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "erpnext_apps",
 			"fieldtype": "Table",
@@ -716,7 +769,10 @@
 			"fieldtype": "Int",
 			"label": "Standby Pool Size"
 		},
-		{ "fieldname": "column_break_95", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_95",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "1",
 			"fieldname": "standby_queue_size",
@@ -738,7 +794,10 @@
 			"fieldtype": "Data",
 			"label": "Telegram Chat ID"
 		},
-		{ "fieldname": "column_break_65", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_65",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "telegram_bot_token",
 			"fieldtype": "Data",
@@ -749,9 +808,20 @@
 			"fieldtype": "Section Break",
 			"label": "Mailgun"
 		},
-		{ "fieldname": "mailgun_api_key", "fieldtype": "Data", "label": "Api Key" },
-		{ "fieldname": "root_domain", "fieldtype": "Data", "label": "Root Domain" },
-		{ "fieldname": "column_break_117", "fieldtype": "Column Break" },
+		{
+			"fieldname": "mailgun_api_key",
+			"fieldtype": "Data",
+			"label": "Api Key"
+		},
+		{
+			"fieldname": "root_domain",
+			"fieldtype": "Data",
+			"label": "Root Domain"
+		},
+		{
+			"fieldname": "column_break_117",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "default_outgoing_id",
 			"fieldtype": "Data",
@@ -861,7 +931,10 @@
 			"fieldtype": "Data",
 			"label": "Agent Repository Owner"
 		},
-		{ "fieldname": "column_break_105", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_105",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "agent_github_access_token",
 			"fieldtype": "Data",
@@ -891,7 +964,10 @@
 			"options": "2048\n3072\n4096",
 			"reqd": 1
 		},
-		{ "fieldname": "column_break_15", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_15",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "eff_registration_email",
 			"fieldtype": "Data",
@@ -966,7 +1042,11 @@
 			"fieldtype": "Float",
 			"label": "Marketplace Commission"
 		},
-		{ "fieldname": "usd_rate", "fieldtype": "Float", "label": "USD Rate" },
+		{
+			"fieldname": "usd_rate",
+			"fieldtype": "Float",
+			"label": "USD Rate"
+		},
 		{
 			"fieldname": "press_monitoring_password",
 			"fieldtype": "Password",
@@ -1027,7 +1107,10 @@
 			"fieldtype": "Data",
 			"label": "AWS Access Key ID"
 		},
-		{ "fieldname": "column_break_agig", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_agig",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "aws_secret_access_key",
 			"fieldtype": "Password",
@@ -1043,20 +1126,32 @@
 			"fieldtype": "Data",
 			"label": "Twilio Account SID"
 		},
-		{ "fieldname": "column_break_kxuj", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_kxuj",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "twilio_phone_number",
 			"fieldtype": "Phone",
 			"label": "Twilio Phone Number"
 		},
-		{ "fieldname": "invoicing_column", "fieldtype": "Column Break" },
+		{
+			"fieldname": "invoicing_column",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "gst_percentage",
 			"fieldtype": "Float",
 			"label": "GST Percentage"
 		},
-		{ "fieldname": "column_break_tcmy", "fieldtype": "Column Break" },
-		{ "fieldname": "column_break_edst", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_tcmy",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_edst",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "twilio_api_key_sid",
 			"fieldtype": "Data",
@@ -1072,7 +1167,10 @@
 			"fieldtype": "Section Break",
 			"label": "Invoicing"
 		},
-		{ "fieldname": "column_break_qfwx", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_qfwx",
+			"fieldtype": "Column Break"
+		},
 		{
 			"description": "Fetched from frappe.io",
 			"fieldname": "print_format",
@@ -1094,7 +1192,10 @@
 			"fieldtype": "Check",
 			"label": "Compress App Cache"
 		},
-		{ "fieldname": "column_break_rdlr", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_rdlr",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"fieldname": "realtime_job_updates",
@@ -1174,9 +1275,18 @@
 			"fieldtype": "Data",
 			"label": "Branch"
 		},
-		{ "fieldname": "column_break_yhwz", "fieldtype": "Column Break" },
-		{ "fieldname": "column_break_cpry", "fieldtype": "Column Break" },
-		{ "fieldname": "column_break_wrqp", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_yhwz",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_cpry",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_wrqp",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "500",
 			"fieldname": "usage_record_creation_batch_size",
@@ -1189,7 +1299,10 @@
 			"label": "Press Trial Plan",
 			"options": "Site Plan"
 		},
-		{ "fieldname": "section_break_jstu", "fieldtype": "Section Break" },
+		{
+			"fieldname": "section_break_jstu",
+			"fieldtype": "Section Break"
+		},
 		{
 			"default": "0",
 			"fieldname": "enable_app_grouping",
@@ -1234,7 +1347,10 @@
 			"fieldtype": "Int",
 			"label": "Partnership Fee USD"
 		},
-		{ "fieldname": "column_break_yxrj", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_yxrj",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "partnership_fee_inr",
 			"fieldtype": "Int",
@@ -1272,7 +1388,10 @@
 			"fieldtype": "Data",
 			"label": "Spamd Endpoint"
 		},
-		{ "fieldname": "column_break_xhfy", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_xhfy",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "spamd_api_key",
 			"fieldtype": "Data",
@@ -1295,7 +1414,10 @@
 			"fieldtype": "Check",
 			"label": "Send Telegram Notifications"
 		},
-		{ "fieldname": "column_break_jlzi", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_jlzi",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"fieldname": "send_email_notifications",
@@ -1333,7 +1455,10 @@
 			"fieldtype": "Check",
 			"label": "Disable Frappe Auth"
 		},
-		{ "fieldname": "section_break_nloq", "fieldtype": "Section Break" },
+		{
+			"fieldname": "section_break_nloq",
+			"fieldtype": "Section Break"
+		},
 		{
 			"fieldname": "servers_using_alternative_http_port_for_communication",
 			"fieldtype": "Small Text",
@@ -1392,8 +1517,15 @@
 			"fieldtype": "Data",
 			"label": "Drive Resource Link"
 		},
-		{ "fieldname": "ic_key", "fieldtype": "Password", "label": "IC Key" },
-		{ "fieldname": "section_break_dhzi", "fieldtype": "Section Break" },
+		{
+			"fieldname": "ic_key",
+			"fieldtype": "Password",
+			"label": "IC Key"
+		},
+		{
+			"fieldname": "section_break_dhzi",
+			"fieldtype": "Section Break"
+		},
 		{
 			"fieldname": "auto_scale_section",
 			"fieldtype": "Section Break",
@@ -1450,13 +1582,20 @@
 			"fieldtype": "Section Break",
 			"label": "Frappe School Authentication"
 		},
-		{ "fieldname": "school_url", "fieldtype": "Data", "label": "School URL" },
+		{
+			"fieldname": "school_url",
+			"fieldtype": "Data",
+			"label": "School URL"
+		},
 		{
 			"fieldname": "school_api_key",
 			"fieldtype": "Data",
 			"label": "School API Key"
 		},
-		{ "fieldname": "column_break_uxxz", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_uxxz",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "school_api_secret",
 			"fieldtype": "Password",
@@ -1555,7 +1694,10 @@
 			"fieldtype": "Section Break",
 			"label": "Chat Support"
 		},
-		{ "fieldname": "column_break_srse", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_srse",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"fieldname": "enable_chat",
@@ -1586,17 +1728,27 @@
 			"label": "Chat Support End Time",
 			"options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24"
 		},
-		{ "fieldname": "region_name", "fieldtype": "Data", "label": "Region Name" },
+		{
+			"fieldname": "region_name",
+			"fieldtype": "Data",
+			"label": "Region Name"
+		},
 		{
 			"default": "0",
 			"fieldname": "auto_upgrade_dependencies",
 			"fieldtype": "Check",
 			"label": "Auto Upgrade Dependencies"
+		},
+		{
+			"default": "0",
+			"fieldname": "enable_mcp",
+			"fieldtype": "Check",
+			"label": "Enable MCP"
 		}
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-04-30 18:44:43.851468",
+	"modified": "2026-06-02 14:15:34.170170",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",
