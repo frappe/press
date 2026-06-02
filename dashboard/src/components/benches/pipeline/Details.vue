@@ -93,7 +93,7 @@ const pipeline = props.deployview
 			onSuccess: (data) => {
 				const wiredId = 'release-pipeline' + props.id
 
-				if (data.status === 'Pending' && !wired.has(wiredId)) {
+				if (['Pending', 'Running'].includes(data.status) && !wired.has(wiredId)) {
 					socket.emit('doc_subscribe', 'Release Pipeline', props.id)
 					socket.on('doc_update', handleDocUpdate)
 					wired.add(wiredId)
