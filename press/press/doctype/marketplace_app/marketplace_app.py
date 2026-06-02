@@ -20,6 +20,7 @@ from press.api.github import app, get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
 )
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import VersioningError, parse_frappe_version
 from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
@@ -31,6 +32,9 @@ from press.utils import get_current_team, get_last_doc
 if TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.site.site import Site
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Marketplace App")
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -298,6 +302,7 @@ class MarketplaceApp(WebsiteGenerator):
 				branch=to_branch,
 				version=version,
 				github_installation_id=source_doc.github_installation_id,
+				ease_versioning_constrains=True,
 			)
 			if version not in [version.version for version in source_doc.versions]:
 				source_doc.append("versions", {"version": version})
@@ -314,6 +319,7 @@ class MarketplaceApp(WebsiteGenerator):
 				branch=to_branch,
 				version=version,
 				github_installation_id=source_doc.github_installation_id,
+				ease_versioning_constrains=True,
 			)
 			source_doc.branch = to_branch
 			source_doc.save()
@@ -355,6 +361,7 @@ class MarketplaceApp(WebsiteGenerator):
 			branch=branch,
 			version=version,
 			github_installation_id=source_doc.github_installation_id,
+			ease_versioning_constrains=True,
 		)
 		if existing_source:
 			# If source with branch to switch already exists, just add version to child table of source and use the same
@@ -768,6 +775,7 @@ def validate_frappe_version_for_branch(
 		installation=github_installation_id
 		if github_installation_id
 		else frappe.get_value("Press Settings", None, "github_access_token"),
+		app_name=app_name,
 	)
 	frappe_version = app_info.get("frappe_version")
 	frappe_version = parse_frappe_version(frappe_version, app_info.get("title"), ease_versioning_constrains)

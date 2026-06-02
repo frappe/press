@@ -37,7 +37,7 @@
 						</Dropdown>
 					</div>
 				</div>
-				<div class="rounded-lg text-base text-gray-900 border">
+				<div class="rounded-lg text-base text-ink-gray-9 border">
 					<div class="p-4">
 						<div class="flex items-center justify-between pb-2">
 							<div class="font-semibold text-xl">Company Information</div>
@@ -52,11 +52,11 @@
 								Edit
 							</Button>
 						</div>
-						<div class="my-1 h-px bg-gray-100" />
+						<div class="my-1 h-px bg-surface-gray-2" />
 						<div class="pt-2">
 							<div class="grid grid-cols-2 gap-4">
 								<div v-for="item in company_info" class="flex-1">
-									<div class="text-sm text-gray-600">
+									<div class="text-sm text-ink-gray-6">
 										{{ item.label }}
 									</div>
 									<div
@@ -79,16 +79,16 @@
 					</div>
 				</div>
 
-				<div class="rounded-lg text-base text-gray-900 border">
+				<div class="rounded-lg text-base text-ink-gray-9 border">
 					<div class="p-4">
 						<div class="flex items-center justify-between pb-2">
 							<div class="font-semibold text-xl">Contact Info</div>
 						</div>
-						<div class="my-1 h-px bg-gray-100" />
+						<div class="my-1 h-px bg-surface-gray-2" />
 						<div class="pt-2">
 							<div class="grid grid-cols-2 gap-4">
 								<div v-for="item in contact_info" class="flex-1">
-									<div class="text-sm text-gray-600">
+									<div class="text-sm text-ink-gray-6">
 										{{ item.label }}
 									</div>
 									<div class="text-lg font-medium py-2">
@@ -100,16 +100,16 @@
 					</div>
 				</div>
 
-				<div class="rounded-lg text-base text-gray-900 border">
+				<div class="rounded-lg text-base text-ink-gray-9 border">
 					<div class="p-4">
 						<div class="flex items-center justify-between pb-2">
 							<div class="font-semibold text-xl">Deal Info</div>
 						</div>
-						<div class="my-1 h-px bg-gray-100" />
+						<div class="my-1 h-px bg-surface-gray-2" />
 						<div class="pt-2">
 							<div class="grid grid-cols-2 gap-4">
 								<div v-for="item in deal_info" class="flex-1">
-									<div class="text-sm text-gray-600">
+									<div class="text-sm text-ink-gray-6">
 										{{ item.label }}
 									</div>
 									<div v-if="item.label === 'Probability'" class="py-1">
@@ -125,9 +125,9 @@
 									</div>
 								</div>
 							</div>
-							<!-- <div class="my-1 h-px bg-gray-100" /> -->
+							<!-- <div class="my-1 h-px bg-surface-gray-2" /> -->
 							<div class="pt-2">
-								<div class="text-sm text-gray-600">Requirement</div>
+								<div class="text-sm text-ink-gray-6">Requirement</div>
 								<div class="text-base leading-6 font-normal py-2">
 									<div v-html="lead?.requirement"></div>
 								</div>
@@ -183,7 +183,7 @@
 		</div>
 		<div
 			v-else
-			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-ink-gray-6"
 		>
 			<lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 			<ErrorMessage message="You aren't permitted to view the this page" />

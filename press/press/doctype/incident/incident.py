@@ -824,10 +824,13 @@ Likely due to insufficient balance or incorrect credentials""",
 	@property
 	def waited_enough_for_investigator_reactions(self) -> bool:
 		"""Check if the investigator has taken any action"""
-		if not self.investigation:
+		investigation = self.investigation or frappe.db.get_value(
+			"Incident Investigator", {"incident": self.name}, "name"
+		)
+		if not investigation:
 			return True
 
-		investigator: IncidentInvestigator = frappe.get_doc("Incident Investigator", self.investigation)
+		investigator: IncidentInvestigator = frappe.get_doc("Incident Investigator", investigation)
 		wait_time = get_wait_time_post_investigator_actions()
 		if investigator.status != "Completed":
 			return False

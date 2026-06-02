@@ -1,0 +1,7 @@
+---
+- name: Migrate to cgroupv2
+  hosts: all
+  become: yes
+  become_user: root
+  roles:
+    - role: migrate_to_cgroup_v2

@@ -30,6 +30,10 @@ DEFAULT_GITHUB_REDIRECT_PATH = "/dashboard"
 GITHUB_OAUTH_STATE_MAX_AGE = timedelta(minutes=10)
 
 
+class GithubFetchError(Exception):
+	pass
+
+
 class InvalidGitHubOAuthState(frappe.ValidationError):
 	pass
 
@@ -337,7 +341,9 @@ def repository(owner: str, name: str, installation: str | None = None):
 
 
 @frappe.whitelist()
-def app(owner: str, repository: str, branch: str, installation: str | None = None):
+def app(
+	owner: str, repository: str, branch: str, installation: str | None = None, app_name: str | None = None
+):
 	headers = get_auth_headers(installation)
 	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{repository}/branches/{branch}",
@@ -360,7 +366,13 @@ def app(owner: str, repository: str, branch: str, installation: str | None = Non
 	# Force pyproject.toml as a setup file
 	if "pyproject.toml" not in tree:
 		reason = "pyproject.toml does not exist in app directory."
-		frappe.throw(f"Not a valid Frappe App! {reason}")
+		error_message = (
+			f"{app_name} is not a valid Frappe App! {reason}"
+			if app_name
+			else f"Not a valid Frappe App! {reason}"
+		)
+
+		frappe.throw(error_message)
 
 	app_name, title = _get_app_name_and_title_from_hooks(
 		owner,
@@ -589,8 +601,6 @@ def get_dependant_apps_with_versions(
 		dependency_data = AppDependencyFetch(frappe_dependencies={}, python_version=None)
 	else:
 		frappe_dependencies = pyproject.get("tool", {}).get("bench", {}).get("frappe-dependencies", {}).copy()
-		frappe_dependencies.pop("frappe", None)  # Get rid of this
-
 		dependency_data = AppDependencyFetch(
 			frappe_dependencies=frappe_dependencies,
 			python_version=pyproject.get("project", {}).get("requires-python"),

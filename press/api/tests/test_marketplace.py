@@ -19,6 +19,7 @@ from press.api.marketplace import (
 	create_app_plan,
 	create_approval_request,
 	get_app,
+	get_app_audits,
 	get_apps,
 	get_apps_with_plans,
 	get_latest_approval_request,
@@ -53,6 +54,16 @@ from press.press.doctype.release_group.test_release_group import (
 )
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
+
+
+def _ensure_primary_user_in_team_members(team_name: str, user: str) -> None:
+	"""create_test_team sets Team.user only; is_user_part_of_team reads Team Member."""
+	if frappe.db.exists("Team Member", {"parenttype": "Team", "parent": team_name, "user": user}):
+		return
+	team = frappe.get_doc("Team", team_name)
+	team.append("team_members", {"user": user})
+	team.save(ignore_permissions=True)
+
 
 PAYLOAD = [
 	{
@@ -89,6 +100,7 @@ class TestAPIMarketplace(FrappeTestCase):
 			team=self.team.name,
 			sources=[{"version": self.version, "source": self.app_source.name}],
 		)
+		_ensure_primary_user_in_team_members(self.team.name, self.team.user)
 		self.plan_data = {
 			"price_inr": 820,
 			"price_usd": 10,
@@ -209,7 +221,8 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.assertIsNotNone(get_subscriptions_list("frappe"))
 
 	def test_update_app_plan(self):
-		m_plan = create_test_marketplace_app_plan()
+		frappe.set_user(self.team.user)
+		m_plan = create_test_marketplace_app_plan(self.marketplace_app.name)
 
 		updated_plan_data = {
 			"price_inr": m_plan.price_inr + 100,
@@ -247,11 +260,40 @@ class TestAPIMarketplace(FrappeTestCase):
 		r = releases({"app": self.marketplace_app.name, "source": self.app_source.name})
 		self.assertEqual(r[0].name, self.app_release.name)
 
+	def test_get_app_audits_returns_audit_summaries_for_app(self):
+		audit = frappe.get_doc(
+			{
+				"doctype": "Marketplace App Audit",
+				"marketplace_app": self.marketplace_app.name,
+				"app_source": self.app_source.name,
+				"app_release": self.app_release.name,
+				"team": self.team.name,
+				"audit_type": "Manual Run",
+				"status": "Completed",
+				"audit_result": "Needs Improvement",
+			}
+		).insert()
+
+		frappe.set_user(self.team.user)
+		audits = get_app_audits(self.marketplace_app.name)
+
+		self.assertEqual(len(audits), 1)
+		self.assertEqual(audits[0].name, audit.name)
+		self.assertEqual(audits[0].app_source, self.app_source.name)
+		self.assertEqual(audits[0].app_release, self.app_release.name)
+		self.assertEqual(audits[0].audit_type, "Manual Run")
+		self.assertEqual(audits[0].audit_result, "Needs Improvement")
+		self.assertEqual(audits[0].status, "Completed")
+
 	def test_app_release_approvals(self):
 		frappe.set_user(self.team.user)
-		create_approval_request(self.marketplace_app.name, self.app_release.name)
+		with patch(
+			"press.press.doctype.app_release_approval_request.app_release_approval_request.MarketplaceAppAudit.create_for_release"
+		) as create_audit:
+			create_approval_request(self.marketplace_app.name, self.app_release.name)
 		latest_approval = get_latest_approval_request(self.app_release.name)
 		self.assertIsNotNone(latest_approval)
+		create_audit.assert_called_once()
 
 	def test_new_app(self):
 		app = {
@@ -308,6 +350,9 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.app_source.reload()
 		self.assertNotEqual(old_branch, self.app_source.branch)
 
+	@patch(
+		"press.press.doctype.marketplace_app.marketplace_app.validate_frappe_version_for_branch", new=Mock()
+	)
 	def test_add_version(self):
 		old_versions = len(self.marketplace_app.sources)
 		repo_owner, repo_name = self.app_source.repository_url.rstrip("/").split("/")[-2:]
@@ -315,6 +360,9 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.marketplace_app.reload()
 		self.assertEqual(old_versions + 1, len(self.marketplace_app.sources))
 
+	@patch(
+		"press.press.doctype.marketplace_app.marketplace_app.validate_frappe_version_for_branch", new=Mock()
+	)
 	def test_remove_version(self):
 		old_versions = len(self.marketplace_app.sources)
 		repo_owner, repo_name = self.app_source.repository_url.rstrip("/").split("/")[-2:]
@@ -356,16 +404,17 @@ class TestAPIMarketplace(FrappeTestCase):
 		self.marketplace_app.reload()
 		self.assertFalse(self.marketplace_app.image)
 
-	def test_add_app_screenshot_by_owner(self):
+	def test_update_app_image_by_owner_without_team_member_entry(self):
+		"""Regression: team owner (Team.user) must be able to upload even when absent from Team Member table."""
+		frappe.db.delete("Team Member", {"parent": self.team.name, "user": self.team.user})
 		frappe.set_user(self.team.user)
 		_setup_fake_upload(self.marketplace_app.name)
 
-		file_url = add_app_screenshot()
+		file_url = update_app_image()
 
 		self.marketplace_app.reload()
 		self.assertTrue(file_url)
-		self.assertEqual(len(self.marketplace_app.screenshots), 1)
-		self.assertEqual(self.marketplace_app.screenshots[0].image, file_url)
+		self.assertEqual(self.marketplace_app.image, file_url)
 
 	def test_add_app_screenshot_blocked_for_non_owner(self):
 		other_team = create_test_press_admin_team()
@@ -377,6 +426,18 @@ class TestAPIMarketplace(FrappeTestCase):
 
 		self.marketplace_app.reload()
 		self.assertEqual(len(self.marketplace_app.screenshots), 0)
+
+	def test_add_app_screenshot_by_owner_without_team_member_entry(self):
+		"""Regression: team owner (Team.user) must be able to upload even when absent from Team Member table."""
+		frappe.db.delete("Team Member", {"parent": self.team.name, "user": self.team.user})
+		frappe.set_user(self.team.user)
+		_setup_fake_upload(self.marketplace_app.name)
+
+		file_url = add_app_screenshot()
+
+		self.marketplace_app.reload()
+		self.assertTrue(file_url)
+		self.assertEqual(len(self.marketplace_app.screenshots), 1)
 
 	def test_update_app_image_rejects_svg(self):
 		"""SVG files can contain inline <script> tags — reject to prevent stored XSS."""

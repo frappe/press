@@ -1,73 +1,69 @@
 {
- "actions": [],
- "allow_rename": 1,
- "creation": "2022-01-02 00:12:06.191929",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "review",
-  "description",
-  "developer"
- ],
- "fields": [
-  {
-   "fieldname": "review",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Review",
-   "options": "App User Review",
-   "reqd": 1
-  },
-  {
-   "fieldname": "description",
-   "fieldtype": "Long Text",
-   "label": "Description"
-  },
-  {
-   "fieldname": "developer",
-   "fieldtype": "Link",
-   "label": "Developer",
-   "options": "User",
-   "reqd": 1
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-08-20 20:11:10.163419",
- "modified_by": "Administrator",
- "module": "Marketplace",
- "name": "Developer Review Reply",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Marketplace Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "title_field": "review"
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2022-01-02 00:12:06.191929",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": ["review", "description", "developer"],
+	"fields": [
+		{
+			"fieldname": "review",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Review",
+			"options": "App User Review",
+			"reqd": 1
+		},
+		{
+			"fieldname": "description",
+			"fieldtype": "Long Text",
+			"label": "Description"
+		},
+		{
+			"fieldname": "developer",
+			"fieldtype": "Link",
+			"label": "Developer",
+			"options": "User",
+			"reqd": 1
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2025-08-20 20:11:10.163419",
+	"modified_by": "Administrator",
+	"module": "Marketplace",
+	"name": "Developer Review Reply",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press Marketplace Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "review"
 }

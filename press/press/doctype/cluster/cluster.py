@@ -822,60 +822,13 @@ class Cluster(Document):
 			GroupId=self.nat_security_group_id,
 			IpPermissions=[
 				{
-					"FromPort": 465,
-					"IpProtocol": "tcp",
+					"IpProtocol": "-1",
 					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "SMTP from private network"}
+						{
+							"CidrIp": self.subnet_cidr_block,
+							"Description": "Allow everything from private network",
+						}
 					],
-					"ToPort": 465,
-				},
-				{
-					"FromPort": 587,
-					"IpProtocol": "tcp",
-					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "SMTP from private network"}
-					],
-					"ToPort": 587,
-				},
-				{
-					"FromPort": 25,
-					"IpProtocol": "tcp",
-					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "SMTP from private network"}
-					],
-					"ToPort": 25,
-				},
-				{
-					"FromPort": 143,
-					"IpProtocol": "tcp",
-					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "IMAP from private network"}
-					],
-					"ToPort": 143,
-				},
-				{
-					"FromPort": 993,
-					"IpProtocol": "tcp",
-					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "IMAP from private network"}
-					],
-					"ToPort": 993,
-				},
-				{
-					"FromPort": 995,
-					"IpProtocol": "tcp",
-					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "POP3 from private network"}
-					],
-					"ToPort": 995,
-				},
-				{
-					"FromPort": 110,
-					"IpProtocol": "tcp",
-					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "POP3 from private network"}
-					],
-					"ToPort": 110,
 				},
 			],
 		)

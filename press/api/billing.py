@@ -742,18 +742,6 @@ def get_razorpay_mandates() -> list[dict]:
 
 @frappe.whitelist()
 @role_guard.api("billing")
-def set_razorpay_mandate_as_default(mandate_name: str):
-	"""Set a Razorpay mandate as the default for the team"""
-	team = get_current_team()
-
-	mandate = frappe.get_doc("Razorpay Mandate", {"name": mandate_name, "team": team})
-	mandate.set_default()
-
-	return {"success": True}
-
-
-@frappe.whitelist()
-@role_guard.api("billing")
 def cancel_razorpay_mandate(mandate_name: str):
 	"""Cancel a Razorpay mandate"""
 	team = get_current_team()
@@ -1563,3 +1551,66 @@ def _get_usage_records_total_for_date_range(team: str, start_date, end_date):
 	)
 
 	return total_amount[0] or 0
+
+
+@frappe.whitelist()
+@role_guard.api("billing")
+def team_tiers():
+	"""Return all Team Tiers along with the current team's tier and qualification metrics."""
+	team = get_current_team(True)
+
+	tiers = frappe.get_all(
+		"Team Tier",
+		fields=["name", "tier", "amount", "paying_user_since", "last_invoice_amount"],
+		order_by="amount asc",
+	)
+
+	# Compute the team's paying-user duration (in months) and last paid subscription invoice amount
+	first_paid_invoice = frappe.get_all(
+		"Invoice",
+		filters={
+			"team": team.name,
+			"type": "Subscription",
+			"docstatus": 1,
+			"status": "Paid",
+		},
+		fields=["creation"],
+		order_by="creation asc",
+		limit=1,
+	)
+
+	paying_since_months = 0
+	if first_paid_invoice:
+		from frappe.utils import getdate, month_diff
+
+		paying_since_months = month_diff(getdate(), getdate(first_paid_invoice[0].creation)) - 1
+		if paying_since_months < 0:
+			paying_since_months = 0
+
+	last_paid_invoice = frappe.get_all(
+		"Invoice",
+		filters={
+			"team": team.name,
+			"type": "Subscription",
+			"docstatus": 1,
+			"status": "Paid",
+		},
+		fields=["total"],
+		order_by="creation desc",
+		limit=1,
+	)
+	last_invoice_amount = last_paid_invoice[0].total if last_paid_invoice else 0
+
+	has_payment_method = bool(team.payment_mode) or team.get_balance() > 0
+
+	return {
+		"tiers": tiers,
+		"current_tier": team.tier,
+		"spending_limit": team.spending_limit,
+		"currency": team.currency,
+		"team_metrics": {
+			"paying_since_months": paying_since_months,
+			"last_invoice_amount": last_invoice_amount,
+			"has_payment_method": has_payment_method,
+		},
+	}

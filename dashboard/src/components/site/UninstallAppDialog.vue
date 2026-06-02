@@ -15,7 +15,7 @@
 	>
 		<template #body-content>
 			<div class="space-y-4">
-				<p class="text-p-base text-gray-800">
+				<p class="text-p-base text-ink-gray-8">
 					Are you sure you want to uninstall the
 					<b>{{ app.title || app.app_title }}</b> app from the site
 					<b>{{ site.doc?.host_name || site.doc?.name }}</b>

@@ -1,28 +1,15 @@
 <template>
 	<div class="w-100" v-if="$appServer?.doc">
-		<CustomAlerts ctx_type="Server" :ctx_name="$appServer?.doc?.name" />
+		<CustomAlerts
+			ctx_type="Server"
+			:ctx_name="[$appServer?.doc?.name, $appServer?.doc?.cluster]"
+		/>
 		<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
 			<div
-				v-for="server in $appServer?.doc?.secondary_server
-					? $dbReplicaServer?.doc
-						? [
-								'Server',
-								'App Secondary Server',
-								'Database Server',
-								'Replication Server',
-							]
-						: ['Server', 'App Secondary Server', 'Database Server']
-					: $dbReplicaServer?.doc
-						? ['Server', 'Database Server', 'Replication Server']
-						: ['Server', 'Database Server']"
+				v-for="server in servers" 
 				class="col-span-1 rounded-md border lg:col-span-2"
 			>
 				<div
-					v-if="
-						!(
-							server === 'Database Server' && $appServer?.doc?.is_unified_server
-						)
-					"
 					class="grid grid-cols-2 lg:grid-cols-4"
 					:class="{
 						'opacity-70 pointer-events-none':
@@ -42,7 +29,7 @@
 									v-if="d.type === 'header'"
 									class="mt-2 flex flex-col space-y-2"
 								>
-									<div class="flex items-center text-base text-gray-700">
+									<div class="flex items-center text-base text-ink-gray-7">
 										<span v-if="!$appServer?.doc?.is_unified_server">{{
 											d.label
 										}}</span>
@@ -61,7 +48,7 @@
 									</div>
 
 									<div class="space-y-1">
-										<div class="flex items-center text-base text-gray-900">
+										<div class="flex items-center text-base text-ink-gray-9">
 											{{ d.value }}
 											<Tooltip v-if="d.isPremium" text="Premium Server">
 												<!-- this icon isn't available in unplugin package yet -->
@@ -75,7 +62,7 @@
 													stroke-width="2"
 													stroke-linecap="round"
 													stroke-linejoin="round"
-													class="lucide lucide-circle-parking ml-2 h-4 w-4 text-gray-600"
+													class="lucide lucide-circle-parking ml-2 h-4 w-4 text-ink-gray-6"
 												>
 													<circle cx="12" cy="12" r="10" />
 													<path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
@@ -83,9 +70,9 @@
 											</Tooltip>
 										</div>
 										<div class="flex space-x-1">
-											<div class="text-sm text-gray-600" v-html="d.subValue" />
+											<div class="text-sm text-ink-gray-6" v-html="d.subValue" />
 											<Tooltip v-if="d.help" :text="d.help">
-												<lucide-info class="h-3.5 w-3.5 text-gray-500" />
+												<lucide-info class="h-3.5 w-3.5 text-ink-gray-5" />
 											</Tooltip>
 										</div>
 									</div>
@@ -126,7 +113,7 @@
 							</div>
 							<div v-else-if="d.type === 'progress'">
 								<div class="flex items-center justify-between space-x-2">
-									<div class="text-base text-gray-700">{{ d.label }}</div>
+									<div class="text-base text-ink-gray-7">{{ d.label }}</div>
 									<div v-if="d.actions" class="flex items-center space-x-2">
 										<Badge
 											v-if="d.actionRequired"
@@ -146,21 +133,21 @@
 									<Progress size="md" :value="d.progress_value || 0" />
 									<div class="flex space-x-2">
 										<div class="mt-2 flex justify-between">
-											<div class="text-sm text-gray-600">
+											<div class="text-sm text-ink-gray-6">
 												{{ d.value }}
 											</div>
 										</div>
 										<Tooltip v-if="d.help" :text="d.help">
-											<lucide-info class="mt-2 h-4 w-4 text-gray-500" />
+											<lucide-info class="mt-2 h-4 w-4 text-ink-gray-5" />
 										</Tooltip>
 									</div>
 								</div>
 							</div>
 							<div v-else-if="d.type === 'info'">
 								<div class="flex items-center justify-between">
-									<div class="text-base text-gray-700">{{ d.label }}</div>
+									<div class="text-base text-ink-gray-7">{{ d.label }}</div>
 								</div>
-								<div class="mt-1 text-sm text-gray-600">
+								<div class="mt-1 text-sm text-ink-gray-6">
 									{{ d.value }}
 								</div>
 							</div>
@@ -171,15 +158,15 @@
 
 			<div class="rounded-md border">
 				<div class="h-12 border-b px-5 py-4">
-					<h2 class="text-lg font-medium text-gray-900">Server Information</h2>
+					<h2 class="text-lg font-medium text-ink-gray-9">Server Information</h2>
 				</div>
 				<div>
 					<div
 						v-for="d in serverInformation"
 						:key="d.label"
-						class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
+						class="flex items-center px-5 py-3 last:pb-5 even:bg-surface-gray-1"
 					>
-						<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
+						<div class="w-1/3 text-base text-ink-gray-7">{{ d.label }}</div>
 						<div class="w-2/3 text-base font-medium">{{ d.value }}</div>
 					</div>
 				</div>
@@ -524,7 +511,7 @@ export default {
 												message: `Enter the disk size you want to increase to the server <b>${
 													doc.title || doc.name
 												}</b>
-									<div class="rounded mt-4 p-2 text-sm text-gray-700 bg-gray-100 border">
+									<div class="rounded mt-4 p-2 text-sm text-ink-gray-7 bg-surface-gray-2 border">
 									You will be charged at the rate of
 									<strong>
 										${this.$format.userCurrency(doc.storage_plan[priceField])}/mo
@@ -536,7 +523,7 @@ export default {
 											: ''
 									}
 									</div>
-									<p class="mt-4 text-sm text-gray-700"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.
+									<p class="mt-4 text-sm text-ink-gray-7"><strong>Note</strong>: You can increase the storage size of the server only once in 6 hours.
 										</div>`,
 												fields: [
 													{
@@ -594,7 +581,7 @@ export default {
 										onClick: () => {
 											confirmDialog({
 												title: 'Configure Auto Increase Storage',
-												message: `<div class="rounded my-4 p-2 prose-sm prose bg-gray-50 border">
+												message: `<div class="rounded my-4 p-2 prose-sm prose bg-surface-gray-1 border">
 
 									This feature will automatically increases the storage as it reaches over <b>90%</b> of its capacity.
 
@@ -713,6 +700,21 @@ export default {
 		},
 	},
 	computed: {
+    servers() {
+      const list = ["Server"];
+
+      if (this.$appServer?.doc?.secondary_server) 
+        list.push("App Secondary Server");
+
+      if (!this.$appServer?.doc?.is_unified_server) 
+        list.push("Database Server");
+
+      if (this.$dbReplicaServer?.doc) 
+        list.push("Replication Server");
+
+      return list;
+    },
+
 		serverInformation() {
 			return [
 				{

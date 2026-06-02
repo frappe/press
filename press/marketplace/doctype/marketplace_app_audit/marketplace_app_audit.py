@@ -19,6 +19,8 @@ class CheckResult:
 	message: str = ""
 	details: str = ""
 	remediation: str = ""
+	is_internal_only: bool = False
+	is_blocking: bool = False
 
 
 class MarketplaceAppAudit(Document):
@@ -35,6 +37,7 @@ class MarketplaceAppAudit(Document):
 		)
 
 		app_release: DF.Link
+		app_source: DF.Link
 		approval_request: DF.Link | None
 		audit_checks: DF.Table[MarketplaceAppAuditChecks]
 		audit_result: DF.Literal["Pass", "Needs Improvement", "Warn", "Fail", "Inconclusive"]
@@ -60,35 +63,21 @@ class MarketplaceAppAudit(Document):
 		approval_request: str | None = None,
 		audit_type: str = "Release Change",
 	) -> "MarketplaceAppAudit | None":
-		# For Release Change: reuse the single existing audit per marketplace app
-		# reason: on every new commit, a new release is being created, we don't want to create new records for every new release.
-		# we can reuse the existing audit record and update the release.
-		if audit_type == "Release Change":
-			existing = frappe.db.get_value(
-				"Marketplace App Audit",
-				{"marketplace_app": marketplace_app, "audit_type": "Release Change"},
-				["name", "status"],
-				as_dict=True,
-			)
-			if existing:
-				if existing.status == "Running":
-					return None
+		# For Release Change: create a new audit record for every new release.
+		# reason: on every new commit, a new release is being created, we should create a new audit record for every new release.
+		# for old audits, we can remove old records via some scheduled job which runs once a month and clears the old records.
+		release_source = frappe.db.get_value("App Release", app_release, "source")
 
-				audit = frappe.get_doc("Marketplace App Audit", existing.name)
-				audit.app_release = app_release
-				audit.status = "Queued"
-				audit.audit_result = ""
-				audit.audit_summary = ""
-				audit.error_traceback = ""
-				audit.audit_checks = []
-				audit.save()
-				audit.trigger_audit()
-				return audit
+		if not release_source:
+			frappe.throw(
+				"App release source not found. Ensure that the app source is added correctly in Versions tab for the marketplace app."
+			)
 
 		audit = frappe.new_doc("Marketplace App Audit")
 		audit.marketplace_app = marketplace_app
 		audit.app_release = app_release
 		audit.approval_request = approval_request
+		audit.app_source = release_source
 		audit.audit_type = audit_type
 		audit.status = "Queued"
 		audit.team = frappe.db.get_value("Marketplace App", marketplace_app, "team")
@@ -174,7 +163,7 @@ class MarketplaceAppAudit(Document):
 		results.extend(run_versioning_checks(clone_dir))
 		results.extend(run_dependency_checks(clone_dir))
 		results.extend(run_code_quality_checks(clone_dir))
-		results.extend(run_compatibility_checks(release.source, clone_dir))
+		results.extend(run_compatibility_checks(self.marketplace_app, release.source, clone_dir))
 		results.extend(run_semgrep_rules(clone_dir))
 
 		return results
@@ -278,10 +267,13 @@ class MarketplaceAppAudit(Document):
 			return
 
 		if self.audit_result == "Fail":
-			# mark "attention required" status in marketplace app
-			frappe.db.set_value("Marketplace App", self.marketplace_app, "status", "Attention Required")
-			self._yank_release()
 			self._auto_reject_approval_requests()
+
+			# only yank the release if the audit had any hard blocking failures.
+			# else the audit fails but we don't want to yank the release
+			if self.has_blocking_failures():
+				self._yank_release()
+				self.update_marketplace_app_health()
 
 	def _yank_release(self) -> None:
 		"""
@@ -320,6 +312,33 @@ class MarketplaceAppAudit(Document):
 			)
 			request.save()
 
+	def update_marketplace_app_health(self) -> None:
+		"""
+		Delist the app only when every configured marketplace source has no usable release.
+		"""
+		if self.has_any_usable_source():
+			return
+
+		frappe.db.set_value("Marketplace App", self.marketplace_app, "status", "Attention Required")
+
+	def has_any_usable_source(self) -> bool:
+		marketplace_app_version = frappe.qb.DocType("Marketplace App Version")
+		app_release = frappe.qb.DocType("App Release")
+
+		usable_release = (
+			frappe.qb.from_(marketplace_app_version)
+			.inner_join(app_release)
+			.on(app_release.source == marketplace_app_version.source)
+			.select(app_release.name)
+			.where(marketplace_app_version.parenttype == "Marketplace App")
+			.where(marketplace_app_version.parent == self.marketplace_app)
+			.where(app_release.status.isin(["Approved", "Draft"]))
+			.where(app_release.invalid_release == 0)
+			.limit(1)
+			.run()
+		)
+		return bool(usable_release)
+
 	@frappe.whitelist()
 	def send_report_to_publisher(self):
 		"""Email the app publisher a structured audit report with all failing checks."""
@@ -335,14 +354,20 @@ class MarketplaceAppAudit(Document):
 
 		failing_checks = []
 		for check in self.audit_checks:
+			# internal only checks are not shown to the publisher in the audit report
+			if check.is_internal_only:
+				continue
+
 			if check.result in ("Fail", "Warn"):
 				details_parsed = None
 				if check.details:
-					try:
-						details_parsed = json.loads(check.details)
-					except (json.JSONDecodeError, TypeError):
-						details_parsed = None
-
+					details_parsed = json.loads(check.details)
+					occurrences = details_parsed.get("occurrences")
+					if isinstance(occurrences, list):
+						public_occurrences = [occ for occ in occurrences if not occ.get("is_internal_only")]
+						if not public_occurrences:
+							continue
+						details_parsed = {**details_parsed, "occurrences": public_occurrences}
 				failing_checks.append(
 					{
 						"severity": check.severity,
@@ -368,3 +393,19 @@ class MarketplaceAppAudit(Document):
 			template="marketplace_audit_report",
 		)
 		frappe.msgprint(f"Audit report sent to {publisher_email}")
+
+	def has_blocking_failures(self) -> bool:
+		"""True if any child row is blocking, or any Semgrep occurrence is marked blocking."""
+		for check in self.audit_checks:
+			if check.is_blocking:
+				return True
+
+			# although we are rolling up the semgrep ruleset's blocking findings to the overall audit check result, we should still check for blocking findings in the semgrep ruleset specifically.
+			# if check name starts with "Semgrep" we need to check if it has any blocking findings
+			if not check.check_name.startswith("Semgrep") or not check.details:
+				continue
+			payload = json.loads(check.details)
+			occurrences = payload.get("occurrences") or []
+			if any(occ.get("is_blocking") for occ in occurrences if isinstance(occ, dict)):
+				return True
+		return False

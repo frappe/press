@@ -1,86 +1,86 @@
 {
- "actions": [],
- "autoname": "Prompt",
- "creation": "2020-01-14 10:43:38.943661",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "steps",
-  "agent_request_section",
-  "request_path",
-  "request_method",
-  "job_retry_section",
-  "disabled_auto_retry",
-  "max_retry_count"
- ],
- "fields": [
-  {
-   "fieldname": "steps",
-   "fieldtype": "Table",
-   "label": "Steps",
-   "options": "Agent Job Type Step",
-   "reqd": 1
-  },
-  {
-   "fieldname": "agent_request_section",
-   "fieldtype": "Section Break",
-   "label": "Agent Request"
-  },
-  {
-   "fieldname": "request_path",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Request Path"
-  },
-  {
-   "fieldname": "request_method",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Request Method",
-   "options": "POST\nDELETE"
-  },
-  {
-   "default": "3",
-   "fieldname": "max_retry_count",
-   "fieldtype": "Int",
-   "label": "Max Retry Count"
-  },
-  {
-   "default": "1",
-   "fieldname": "disabled_auto_retry",
-   "fieldtype": "Check",
-   "label": "Disabled"
-  },
-  {
-   "fieldname": "job_retry_section",
-   "fieldtype": "Section Break",
-   "label": "Job Retry"
-  }
- ],
- "links": [],
- "modified": "2023-11-16 12:19:35.365980",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Agent Job Type",
- "naming_rule": "Set by user",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+	"actions": [],
+	"autoname": "Prompt",
+	"creation": "2020-01-14 10:43:38.943661",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"steps",
+		"agent_request_section",
+		"request_path",
+		"request_method",
+		"job_retry_section",
+		"disabled_auto_retry",
+		"max_retry_count"
+	],
+	"fields": [
+		{
+			"fieldname": "steps",
+			"fieldtype": "Table",
+			"label": "Steps",
+			"options": "Agent Job Type Step",
+			"reqd": 1
+		},
+		{
+			"fieldname": "agent_request_section",
+			"fieldtype": "Section Break",
+			"label": "Agent Request"
+		},
+		{
+			"fieldname": "request_path",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Request Path"
+		},
+		{
+			"fieldname": "request_method",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Request Method",
+			"options": "POST\nDELETE"
+		},
+		{
+			"default": "3",
+			"fieldname": "max_retry_count",
+			"fieldtype": "Int",
+			"label": "Max Retry Count"
+		},
+		{
+			"default": "1",
+			"fieldname": "disabled_auto_retry",
+			"fieldtype": "Check",
+			"label": "Disabled"
+		},
+		{
+			"fieldname": "job_retry_section",
+			"fieldtype": "Section Break",
+			"label": "Job Retry"
+		}
+	],
+	"links": [],
+	"modified": "2023-11-16 12:19:35.365980",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Agent Job Type",
+	"naming_rule": "Set by user",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
 }

@@ -1,240 +1,234 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "hash",
- "creation": "2024-06-24 09:20:47.114289",
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "content_section",
-  "enabled",
-  "type",
-  "title",
-  "message",
-  "help_url",
-  "column_break_mycc",
-  "is_scheduled",
-  "scheduled_start_time",
-  "scheduled_end_time",
-  "action_section",
-  "column_break_onof",
-  "has_action",
-  "action_label",
-  "action",
-  "column_break_adad",
-  "is_dismissible",
-  "scope_section",
-  "column_break_fits",
-  "is_global",
-  "column_break_udzz",
-  "type_of_scope",
-  "team",
-  "server",
-  "site",
-  "dismissals_section",
-  "user_dismissals"
- ],
- "fields": [
-  {
-   "default": "0",
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Enabled"
-  },
-  {
-   "fieldname": "message",
-   "fieldtype": "Long Text",
-   "label": "Message"
-  },
-  {
-   "fieldname": "type",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Type",
-   "options": "Info\nSuccess\nError\nWarning"
-  },
-  {
-   "fieldname": "title",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Title"
-  },
-  {
-   "fieldname": "content_section",
-   "fieldtype": "Section Break",
-   "label": "Content"
-  },
-  {
-   "description": "Select the audience segment to enable the banner for",
-   "fieldname": "scope_section",
-   "fieldtype": "Section Break",
-   "label": "Scope"
-  },
-  {
-   "default": "0",
-   "description": "Whether to display the banner for all sites across all regions",
-   "fieldname": "is_global",
-   "fieldtype": "Check",
-   "label": "Is Global"
-  },
-  {
-   "depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Team\"",
-   "description": "Recipients are users part of this Team(s)",
-   "fieldname": "team",
-   "fieldtype": "Table MultiSelect",
-   "label": "Team",
-   "mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Team\"",
-   "options": "Dashboard Banner Team"
-  },
-  {
-   "depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Server\"",
-   "description": "Recipients are users with Sites on this Server",
-   "fieldname": "server",
-   "fieldtype": "Link",
-   "label": "Server",
-   "mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Server\"",
-   "options": "Server"
-  },
-  {
-   "depends_on": "eval:!doc.is_global & doc.type_of_scope == \"Site\"",
-   "description": "Recipients are users with this Site",
-   "fieldname": "site",
-   "fieldtype": "Link",
-   "label": "Site",
-   "mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Site\"",
-   "options": "Site"
-  },
-  {
-   "fieldname": "column_break_fits",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "help_url",
-   "fieldtype": "Data",
-   "label": "Help URL"
-  },
-  {
-   "depends_on": "eval:!!doc.has_action",
-   "fieldname": "action",
-   "fieldtype": "Data",
-   "label": "Action Endpoint",
-   "mandatory_depends_on": "eval:!!doc.has_action"
-  },
-  {
-   "default": "0",
-   "description": "Whether user can dismiss the banner",
-   "fieldname": "is_dismissible",
-   "fieldtype": "Check",
-   "label": "Is Dismissible"
-  },
-  {
-   "description": "Enables action and dismiss buttons on the banner",
-   "fieldname": "action_section",
-   "fieldtype": "Section Break",
-   "label": "Actions"
-  },
-  {
-   "default": "0",
-   "description": "Whether the banner includes an action button",
-   "fieldname": "has_action",
-   "fieldtype": "Check",
-   "label": "Has Action"
-  },
-  {
-   "depends_on": "eval:!!doc.has_action",
-   "fieldname": "action_label",
-   "fieldtype": "Data",
-   "label": "Action Label",
-   "mandatory_depends_on": "eval:!!doc.has_action"
-  },
-  {
-   "fieldname": "column_break_onof",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_mycc",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_adad",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "user_dismissals",
-   "fieldtype": "Table",
-   "label": "User Dismissals",
-   "options": "Dashboard Banner Dismissal"
-  },
-  {
-   "depends_on": "eval:!doc.is_global",
-   "fieldname": "type_of_scope",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Type of scope",
-   "mandatory_depends_on": "eval:!doc.is_global",
-   "options": "Team\nServer\nSite"
-  },
-  {
-   "fieldname": "column_break_udzz",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "dismissals_section",
-   "fieldtype": "Section Break",
-   "label": "Dismissals"
-  },
-  {
-   "default": "0",
-   "description": "This toggles the enabled flag at the start and end of schedule",
-   "fieldname": "is_scheduled",
-   "fieldtype": "Check",
-   "label": "Is Scheduled",
-   "search_index": 1
-  },
-  {
-   "depends_on": "eval:!!doc.is_scheduled",
-   "fieldname": "scheduled_start_time",
-   "fieldtype": "Datetime",
-   "label": "Scheduled Start Time",
-   "mandatory_depends_on": "eval:!!doc.is_scheduled",
-   "search_index": 1
-  },
-  {
-   "depends_on": "eval:!!doc.is_scheduled",
-   "fieldname": "scheduled_end_time",
-   "fieldtype": "Datetime",
-   "label": "Scheduled End Time",
-   "mandatory_depends_on": "eval:!!doc.is_scheduled",
-   "search_index": 1
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-03-14 13:20:40.242637",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Dashboard Banner",
- "naming_rule": "Random",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "row_format": "Dynamic",
- "show_title_field_in_link": 1,
- "sort_field": "creation",
- "sort_order": "DESC",
- "states": [],
- "title_field": "title"
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "hash",
+	"creation": "2024-06-24 09:20:47.114289",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"content_section",
+		"enabled",
+		"type",
+		"title",
+		"message",
+		"help_url",
+		"column_break_mycc",
+		"is_scheduled",
+		"scheduled_start_time",
+		"scheduled_end_time",
+		"action_section",
+		"column_break_onof",
+		"has_action",
+		"action_label",
+		"action_script",
+		"column_break_adad",
+		"is_dismissible",
+		"scope_section",
+		"column_break_fits",
+		"is_global",
+		"column_break_udzz",
+		"type_of_scope",
+		"team",
+		"server",
+		"site",
+		"cluster",
+		"dismissals_section",
+		"user_dismissals"
+	],
+	"fields": [
+		{
+			"default": "0",
+			"fieldname": "enabled",
+			"fieldtype": "Check",
+			"label": "Enabled"
+		},
+		{ "fieldname": "message", "fieldtype": "Long Text", "label": "Message" },
+		{
+			"fieldname": "type",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Type",
+			"options": "Info\nSuccess\nError\nWarning"
+		},
+		{
+			"fieldname": "title",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Title"
+		},
+		{
+			"fieldname": "content_section",
+			"fieldtype": "Section Break",
+			"label": "Content"
+		},
+		{
+			"description": "Select the audience segment to enable the banner for",
+			"fieldname": "scope_section",
+			"fieldtype": "Section Break",
+			"label": "Scope"
+		},
+		{
+			"default": "0",
+			"description": "Whether to display the banner for all sites across all regions",
+			"fieldname": "is_global",
+			"fieldtype": "Check",
+			"label": "Is Global"
+		},
+		{
+			"depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Team\"",
+			"description": "Recipients are users part of this Team(s)",
+			"fieldname": "team",
+			"fieldtype": "Table MultiSelect",
+			"label": "Team",
+			"mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Team\"",
+			"options": "Dashboard Banner Team"
+		},
+		{
+			"depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Server\"",
+			"description": "Recipients are users with Sites on this Server(s)",
+			"fieldname": "server",
+			"fieldtype": "Table MultiSelect",
+			"label": "Server",
+			"mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Server\"",
+			"options": "Dashboard Banner Server"
+		},
+		{
+			"depends_on": "eval:!doc.is_global & doc.type_of_scope == \"Site\"",
+			"description": "Recipients are users with this Site(s)",
+			"fieldname": "site",
+			"fieldtype": "Table MultiSelect",
+			"label": "Site",
+			"mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Site\"",
+			"options": "Dashboard Banner Site"
+		},
+		{ "fieldname": "column_break_fits", "fieldtype": "Column Break" },
+		{
+			"depends_on": "eval:!doc.has_action",
+			"fieldname": "help_url",
+			"fieldtype": "Data",
+			"label": "Help URL"
+		},
+		{
+			"default": "0",
+			"description": "Whether user can dismiss the banner",
+			"fieldname": "is_dismissible",
+			"fieldtype": "Check",
+			"label": "Is Dismissible"
+		},
+		{
+			"description": "Enables action and dismiss buttons on the banner",
+			"fieldname": "action_section",
+			"fieldtype": "Section Break",
+			"label": "Actions"
+		},
+		{
+			"default": "0",
+			"description": "Whether the banner includes an action button",
+			"fieldname": "has_action",
+			"fieldtype": "Check",
+			"label": "Has Action"
+		},
+		{
+			"depends_on": "eval:!!doc.has_action",
+			"fieldname": "action_label",
+			"fieldtype": "Data",
+			"label": "Action Label",
+			"mandatory_depends_on": "eval:!!doc.has_action"
+		},
+		{ "fieldname": "column_break_onof", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_mycc", "fieldtype": "Column Break" },
+		{ "fieldname": "column_break_adad", "fieldtype": "Column Break" },
+		{
+			"fieldname": "user_dismissals",
+			"fieldtype": "Table",
+			"label": "User Dismissals",
+			"options": "Dashboard Banner Dismissal"
+		},
+		{
+			"depends_on": "eval:!doc.is_global",
+			"fieldname": "type_of_scope",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Type of scope",
+			"mandatory_depends_on": "eval:!doc.is_global",
+			"options": "Team\nServer\nSite\nCluster"
+		},
+		{ "fieldname": "column_break_udzz", "fieldtype": "Column Break" },
+		{
+			"fieldname": "dismissals_section",
+			"fieldtype": "Section Break",
+			"label": "Dismissals"
+		},
+		{
+			"default": "0",
+			"description": "This toggles the enabled flag at the start and end of schedule",
+			"fieldname": "is_scheduled",
+			"fieldtype": "Check",
+			"label": "Is Scheduled",
+			"search_index": 1
+		},
+		{
+			"depends_on": "eval:!!doc.is_scheduled",
+			"fieldname": "scheduled_start_time",
+			"fieldtype": "Datetime",
+			"label": "Scheduled Start Time",
+			"mandatory_depends_on": "eval:!!doc.is_scheduled",
+			"search_index": 1
+		},
+		{
+			"depends_on": "eval:!!doc.is_scheduled",
+			"fieldname": "scheduled_end_time",
+			"fieldtype": "Datetime",
+			"label": "Scheduled End Time",
+			"mandatory_depends_on": "eval:!!doc.is_scheduled",
+			"search_index": 1
+		},
+		{
+			"depends_on": "eval:!doc.is_global & doc.type_of_scope == \"Cluster\"",
+			"description": "Recipients are users with resources in this Cluster(s)",
+			"fieldname": "cluster",
+			"fieldtype": "Table MultiSelect",
+			"label": "Cluster",
+			"mandatory_depends_on": "eval:!doc.is_global && doc.type_of_scope == \"Cluster\"",
+			"options": "Dashboard Banner Cluster"
+		},
+		{
+			"default": "function onClickAction(_this) {\n  // _this = { $getDoc, $getDocumentResource, $getListResource, $getResource, $refetchResource }\n  window.open(\"https://docs.frappe.io\", '_blank');\n}",
+			"depends_on": "eval:!!doc.has_action",
+			"fieldname": "action_script",
+			"fieldtype": "Code",
+			"label": "Action Script",
+			"mandatory_depends_on": "eval:!!doc.has_action",
+			"options": "JS"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-05-04 02:58:17.388108",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Dashboard Banner",
+	"naming_rule": "Random",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"print": 1,
+			"read": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"show_title_field_in_link": 1,
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "title"
 }

@@ -23,7 +23,7 @@ def create_test_press_admin_team(
 	create_test_user(email)
 	user = frappe.get_doc("User", {"email": email})
 	user.remove_roles(*frappe.get_all("Role", pluck="name"))
-	user.add_roles("Press Admin")
+	user.add_roles("Press User")
 	return create_test_team(email, skip_onboarding=skip_onboarding, free_account=free_account)
 
 
@@ -77,9 +77,7 @@ class TestTeam(FrappeTestCase):
 		self.assertEqual(team.billing_name, "first name last name")
 
 	def test_create_user_for_member_adds_team_member(self):
-		# create system manager to pass mandatory site requirement
-		Team.create_user("sys_mgr", email="testuser1@gmail.com", role="System Manager")
-
+		Team.create_user("sys_mgr", email="testuser1@gmail.com")
 		team = create_test_team()
 		email = "testuser@frappe.cloud"
 		team.create_user_for_member("test", "user", "testuser@frappe.cloud")

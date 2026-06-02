@@ -115,6 +115,8 @@ permission_query_conditions = {
 	"Invoice": "press.press.doctype.invoice.invoice.get_permission_query_conditions",
 	"App Source": ("press.press.doctype.app_source.app_source.get_permission_query_conditions"),
 	"App Release": ("press.press.doctype.app_release.app_release.get_permission_query_conditions"),
+	"Marketplace App": "press.press.doctype.marketplace_app.marketplace_app.get_permission_query_conditions",
+	"Marketplace App Plan": "press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan.get_permission_query_conditions",
 	"Release Group": "press.press.doctype.release_group.release_group.get_permission_query_conditions",
 	"Deploy Candidate": "press.press.doctype.deploy_candidate.deploy_candidate.get_permission_query_conditions",
 	"Deploy Candidate Difference": "press.press.doctype.deploy_candidate_difference.deploy_candidate_difference.get_permission_query_conditions",
@@ -129,8 +131,12 @@ permission_query_conditions = {
 	"Site Database User": "press.press.doctype.site_database_user.site_database_user.get_permission_query_conditions",
 	"Server Snapshot": "press.press.doctype.server_snapshot.server_snapshot.get_permission_query_conditions",
 	"Server Snapshot Recovery": "press.press.doctype.server_snapshot_recovery.server_snapshot_recovery.get_permission_query_conditions",
+	"Release Pipeline": "press.press.doctype.release_pipeline.release_pipeline.get_permission_query_conditions",
+	"Team Member Resource": "press.press.doctype.team_member_resource.team_member_resource.get_permission_query_conditions",
 }
 has_permission = {
+	"Team Member Resource": "press.press.doctype.team_member_resource.team_member_resource.has_permission",
+	"Account Request": "press.press.doctype.account_request.account_request.has_permission",
 	"Site": "press.overrides.has_permission",
 	"Site Action": "press.overrides.has_permission",
 	"Site Backup": "press.overrides.has_permission",
@@ -143,6 +149,8 @@ has_permission = {
 	"Invoice": "press.press.doctype.invoice.invoice.has_permission",
 	"App Source": "press.overrides.has_permission",
 	"App Release": "press.press.doctype.app_release.app_release.has_permission",
+	"Marketplace App": "press.overrides.has_permission",
+	"Marketplace App Plan": "press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan.has_permission",
 	"Release Group": "press.overrides.has_permission",
 	"Deploy Candidate": "press.overrides.has_permission",
 	"Deploy Candidate Difference": "press.overrides.has_permission",
@@ -159,6 +167,7 @@ has_permission = {
 	"Server Snapshot Recovery": "press.overrides.has_permission",
 	"Server Firewall": "press.press.doctype.server_firewall.server_firewall.has_permission",
 	"Support Access": "press.press.doctype.support_access.support_access.has_permission",
+	"Release Pipeline": "press.overrides.has_permission",
 }
 
 # Document Events
@@ -166,6 +175,11 @@ has_permission = {
 # Hook on document methods and events
 
 doc_events = {
+	"Press Role": {
+		"after_insert": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
+		"on_update": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
+		"after_delete": "press.press.doctype.team_member_resource.team_member_resource.sync_press_role",
+	},
 	"Stripe Webhook Log": {
 		"after_insert": [
 			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_webhook_events",
@@ -221,6 +235,7 @@ scheduler_events = {
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
+		"press.press.doctype.server.server.archive_servers_with_unpaid_invoices",
 		"press.press.doctype.site_domain.site_domain.update_dns_type",
 		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
 		"press.press.doctype.payment_due_extension.payment_due_extension.remove_payment_due_extension",
@@ -232,6 +247,8 @@ scheduler_events = {
 		"press.press.doctype.agent_job.agent_job.agent_poll_count_stats_daily",
 		"press.press.doctype.site_backup.site_backup.delete_backups_for_archived_sites_after_retention",
 		"press.press.doctype.site.site.notify_sites_before_archival",
+		"press.press.doctype.invoice.invoice.sync_paid_invoices_to_frappeio",
+		"press.press.doctype.invoice.invoice.finalize_unpaid_card_invoices",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -267,6 +284,7 @@ scheduler_events = {
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_oci_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_hetzner_virtual_machines",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_aws_internal_virtual_machines",
+		"press.press.doctype.virtual_machine.virtual_machine.snapshot_frappe_compute_virtual_machines",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_expired_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
@@ -420,6 +438,9 @@ fixtures = [
 	"Server Storage Plan",
 	"Server Snapshot Plan",
 	"Press Webhook Event",
+	"Site Plan",
+	"Server Plan",
+	"Team Tier",
 ]
 # Testing
 # -------
