@@ -723,7 +723,7 @@ class Site(Document, TagHelpers):
 		if not self.team:
 			return
 
-		if self.team and frappe.get_value("Team", self.team, "user") == "Administrator":
+		if frappe.get_value("Team", self.team, "user") == "Administrator":
 			return
 
 		self.saas_communication_secret = frappe.generate_hash(length=32)
