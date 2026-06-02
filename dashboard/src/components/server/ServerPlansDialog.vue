@@ -8,7 +8,14 @@
 					label: 'Change plan',
 					variant: 'solid',
 					onClick: changePlan,
-					disabled: !plan || plan === $server?.doc.plan,
+					disabled:
+					!plan ||
+					plan?.name === $server?.doc.plan ||
+					(($server?.doc?.provider === 'Hetzner' ||
+						$server?.doc?.provider === 'DigitalOcean') &&
+						cpu_and_memory_only_resize &&
+						plan?.instance_type ===
+							$server?.doc?.current_plan?.instance_type),
 				},
 			],
 		}"
@@ -45,9 +52,7 @@
 						]"
 					>
 						<div class="flex w-full items-center justify-between space-x-2">
-							<span class="text-sm font-medium">
-								{{ c.name }}
-							</span>
+							<span class="text-sm font-medium"> {{ c.name }} </span>
 							<Tooltip :text="c.description">
 								<lucide-info class="h-4 w-4 text-ink-gray-5" />
 							</Tooltip>
@@ -79,8 +84,9 @@
 				/>
 
 				<p class="text-base leading-relaxed" v-if="!cpu_and_memory_only_resize">
-					<b>Note :</b> You won't be able to downgrade this server to a plan
-					with a smaller disk size.<br />
+					<b>Note :</b>
+					You won't be able to downgrade this server to a plan with a smaller
+					disk size.<br />
 					If you only want to upgrade CPU and memory without changing the disk
 					size, keep this option checked.
 				</p>
@@ -93,7 +99,8 @@
 				class="h-64 flex flex-row justify-center items-center gap-2"
 				v-if="$resources?.serverPlansdata?.loading"
 			>
-				<Spinner class="w-4" /> Loading Server Plans...
+				<Spinner class="w-4" />
+				Loading Server Plans...
 			</div>
 			<div v-else>
 				<!-- Server Plan Type Selection -->
@@ -140,9 +147,9 @@
 					class="flex flex-col rounded border border-outline-gray-2 p-3 gap-2 mb-4"
 				>
 					<p class="text-base text-ink-gray-9">
-						<span class="font-medium">{{
-							Object.values(serverPlanTypes)[0].title
-						}}</span>
+						<span class="font-medium"
+							>{{ Object.values(serverPlanTypes)[0].title }}</span
+						>
 						machines are available.
 					</p>
 
@@ -159,8 +166,8 @@
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource, Checkbox, Spinner } from 'frappe-ui';
-import ServerPlansCards from './ServerPlansCards.vue';
+import { Checkbox, getCachedDocumentResource, Spinner } from 'frappe-ui'
+import ServerPlansCards from './ServerPlansCards.vue'
 
 export default {
 	components: { ServerPlansCards, Checkbox, Spinner },
@@ -181,7 +188,7 @@ export default {
 			planType: 'Standard',
 			serverPlanType: '',
 			cpu_and_memory_only_resize: true,
-		};
+		}
 	},
 	watch: {
 		server: {
@@ -189,15 +196,15 @@ export default {
 			handler(serverName) {
 				if (serverName) {
 					if (this.$server?.doc?.plan) {
-						this.plan = this.$server.doc.current_plan;
-						this.serverPlanType = this.$server.doc.current_plan.plan_type;
+						this.plan = this.$server.doc.current_plan
+						this.serverPlanType = this.$server.doc.current_plan.plan_type
 					}
 				}
 			},
 		},
 		cpu_and_memory_only_resize(value) {
-			if (!this.$resources?.serverPlansdata) return;
-			this.$resources?.serverPlansdata.submit();
+			if (!this.$resources?.serverPlansdata) return
+			this.$resources?.serverPlansdata.submit()
 		},
 	},
 	resources: {
@@ -216,7 +223,7 @@ export default {
 					plans: [],
 					types: {},
 				},
-			};
+			}
 		},
 	},
 	methods: {
@@ -230,52 +237,52 @@ export default {
 				},
 				{
 					onSuccess: () => {
-						this.show = false;
+						this.show = false
 
 						const plan = this.serverPlans.find(
 							(plan) => plan.name === this.$server.doc.plan,
-						);
+						)
 
 						const formattedPlan = plan
 							? `${this.$format.planTitle(plan)}/mo`
-							: this.$server.doc.plan;
+							: this.$server.doc.plan
 
-						this.$toast.success(`Plan changed to ${formattedPlan}`);
+						this.$toast.success(`Plan changed to ${formattedPlan}`)
 					},
 				},
-			);
+			)
 		},
 	},
 	computed: {
 		$server() {
-			return getCachedDocumentResource(this.cleanedServerType, this.server);
+			return getCachedDocumentResource(this.cleanedServerType, this.server)
 		},
 		serverPlans() {
-			return this.$resources.serverPlansdata?.data?.plans || [];
+			return this.$resources.serverPlansdata?.data?.plans || []
 		},
 		serverPlanTypes() {
 			// Find out the plan_types that we have
-			let filtered_types = {};
+			let filtered_types = {}
 			this.serverPlans.forEach((plan) => {
 				filtered_types[plan.plan_type] =
-					this.$resources.serverPlansdata?.data?.types[plan.plan_type];
-			});
-			return filtered_types;
+					this.$resources.serverPlansdata?.data?.types[plan.plan_type]
+			})
+			return filtered_types
 		},
 		cleanedServerType() {
 			return this.serverType === 'Replication Server'
 				? 'Database Server'
-				: this.serverType;
+				: this.serverType
 		},
 		filteredServerPlans() {
-			let plans = [];
+			let plans = []
 			if (this.planType == 'Premium') {
-				plans = this.serverPlans.filter((p) => p.premium === 1);
+				plans = this.serverPlans.filter((p) => p.premium === 1)
 			} else {
-				plans = this.serverPlans.filter((p) => p.premium === 0);
+				plans = this.serverPlans.filter((p) => p.premium === 0)
 			}
-			return plans.filter((plan) => plan.plan_type === this.serverPlanType);
+			return plans.filter((plan) => plan.plan_type === this.serverPlanType)
 		},
 	},
-};
+}
 </script>

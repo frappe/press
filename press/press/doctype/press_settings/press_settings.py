@@ -140,6 +140,7 @@ class PressSettings(Document):
 		enable_chat: DF.Check
 		enable_email_pre_verification: DF.Check
 		enable_google_oauth: DF.Check
+		enable_mcp: DF.Check
 		enable_server_snapshot_recovery: DF.Check
 		enable_site_pooling: DF.Check
 		enable_spam_check: DF.Check
@@ -198,6 +199,8 @@ class PressSettings(Document):
 		print_format: DF.Data | None
 		production_server_ip: DF.Data | None
 		publish_docs: DF.Check
+		pulse_api_key: DF.Data | None
+		pulse_site: DF.Data | None
 		razorpay_key_id: DF.Data | None
 		razorpay_key_secret: DF.Password | None
 		razorpay_webhook_secret: DF.Data | None
