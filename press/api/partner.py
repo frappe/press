@@ -254,14 +254,19 @@ def get_partner_mrr(partner_email: str, prev_month: bool = False) -> list[dict] 
 
 	case_stmt.else_(Invoice.total_before_discount)
 
+	condition = Invoice.status == "Paid"
+	if prev_month:
+		todays_date = frappe.utils.getdate()
+		first_day = get_first_day(todays_date)
+		fifteenth_day = add_days(first_day, 14)
+
+		if todays_date >= first_day and todays_date <= fifteenth_day:
+			condition = (Invoice.status).isin(["Unpaid", "Paid"])
+
 	query = (
 		frappe.qb.from_(Invoice)
 		.select(Invoice.due_date, Sum(case_stmt).as_("total_amount"))
-		.where(
-			(Invoice.partner_email == partner_email)
-			& (Invoice.type == "Subscription")
-			& (Invoice.status == "Paid")
-		)
+		.where((Invoice.partner_email == partner_email) & (Invoice.type == "Subscription") & (condition))
 		.groupby(Invoice.due_date)
 		.orderby(Invoice.due_date, order=frappe.qb.desc)
 		.limit(12)
