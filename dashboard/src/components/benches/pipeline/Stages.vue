@@ -23,6 +23,20 @@ const props = defineProps<Props>()
 // 		.map((part) => part.trim())
 // 		.join(' &&\n')
 // }
+
+const isStageDisabled = (x) => {
+	if (['Pending', 'Queued'].includes(x.status)) return true
+
+	if (
+		x.label == 'Building' &&
+		(props.buildSteps?.length == 0 || !props.buildSteps)
+	)
+		return true
+
+	if (x.label == 'Deploying' && x.benches?.length == 0) return true
+
+	return false
+}
 </script>
 
 <template>
@@ -60,7 +74,7 @@ const props = defineProps<Props>()
 		<Collapsable
 			v-if="x.label === 'Building' || (!deployview && x.label === 'Deploying')"
 			:headerCss="`py-3 pr-2  ${i != stages?.length-1?'aria-[expanded=false]:border-b': '' }`"
-			:disabled='["Pending", "Queued"].includes(x.status) || (x.label == "Building" && buildSteps?.length == 0) || (x.label == "Deploying" && x.benches?.length == 0)'
+			:disabled="isStageDisabled(x)"
 			:opened="x.status === 'Running' && (x.label === 'Building' || x.label === 'Deploying')"
 		>
 			<template #prefix>
@@ -108,7 +122,7 @@ const props = defineProps<Props>()
 						</span>
 					</template>
 
-          <!-- Only first job "New Bench" is useful so use it only-->
+					<!-- Only first job "New Bench" is useful so use it only-->
 					<template v-if="bench.jobs?.length">
 						<button
 							class="btn !pl-12"
@@ -135,10 +149,7 @@ const props = defineProps<Props>()
 		<div v-else class="flex items-center gap-2 py-3 border-b">
 			<StatusIcon :status="x.status" />
 			<span class="whitespace-nowrap"> {{ x.label }}</span>
-			<span
-				v-if='x.status != "Failure"'
-				class="ml-auto text-sm text-ink-gray-5 pr-2"
-			>
+			<span v-if="x.duration" class="ml-auto text-sm text-ink-gray-5 pr-2">
 				{{ secsToDuration(x.duration) }}
 			</span>
 		</div>
