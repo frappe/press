@@ -162,21 +162,18 @@ async function handleSubmit() {
 		</template>
 
 		<template #actions>
-			<div class="-mx-6 border-t border-outline-gray-1 px-6 pt-4">
-				<div
-					class="grid gap-2"
-					:class="currentStepIndex > 0 ? 'grid-cols-2' : 'grid-cols-1'"
-				>
+			<div class="flex justify-end">
+				<div class="flex items-center gap-2">
 					<Button
 						v-if="currentStepIndex > 0"
 						variant="subtle"
-						class="w-full"
+						size="sm"
 						label="Back"
 						@click="goBack"
 					/>
 					<Button
 						variant="solid"
-						class="w-full"
+						size="sm"
 						:label="primaryLabel"
 						:loading="onboarding.saving.value"
 						@click="handlePrimaryClick"

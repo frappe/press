@@ -124,8 +124,8 @@ async function handleSubmit() {
 						<h3 class="text-lg font-semibold leading-6 text-ink-gray-9">
 							Link certificate
 						</h3>
-						<p class="mt-2 text-p-sm leading-5 text-ink-gray-6">
-							Choose a certificate and send a verification email to the holder.
+						<p class="mt-1.5 text-p-sm leading-5 text-ink-gray-6">
+							Choose a certificate and email the holder for verification.
 						</p>
 					</div>
 					<button
@@ -145,7 +145,7 @@ async function handleSubmit() {
 							v-for="type in certificateTypes"
 							:key="type.value"
 							type="button"
-							class="flex items-center gap-3 rounded-lg border p-3 text-left transition-colors"
+							class="flex min-w-0 items-center gap-2 rounded-md border px-3 py-2.5 text-left transition-colors"
 							:class="certificateType === type.value
 								? 'border-outline-gray-4 bg-surface-gray-1 shadow-sm'
 								: 'border-outline-gray-2 bg-surface-white hover:border-outline-gray-3 hover:bg-surface-gray-1'
@@ -154,11 +154,11 @@ async function handleSubmit() {
 							@click="selectCertificateType(type.value)"
 						>
 							<span
-								class="grid size-8 shrink-0 place-items-center overflow-hidden rounded-md bg-surface-white"
+								class="grid size-7 shrink-0 place-items-center overflow-hidden rounded bg-surface-white"
 							>
-								<img :src="type.logo" :alt="type.label" class="size-6" />
+								<img :src="type.logo" :alt="type.label" class="size-5" />
 							</span>
-							<span class="text-p-sm font-medium text-ink-gray-8">
+							<span class="truncate text-p-sm font-medium text-ink-gray-8">
 								{{ type.label }}
 							</span>
 						</button>
