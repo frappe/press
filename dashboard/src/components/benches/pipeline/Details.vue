@@ -93,6 +93,9 @@ const pipeline = props.deployview
 			onSuccess: (data) => {
 				const wiredId = 'release-pipeline' + props.id
 
+				const statuses = data?.steps?.stages?.map((x) => x.status)
+				if (statuses?.includes('Failure')) fetchSetErrs()
+
 				if (
 					['Pending', 'Running'].includes(data.status) &&
 					!wired.has(wiredId)
@@ -115,9 +118,6 @@ const notifApiFields = {
 		'assistance_url',
 	],
 	filters: { document_type: 'Deploy Candidate Build', is_actionable: true },
-	onSuccess: () => {
-		if (wired?.size > 0 && errList?.value?.length > 0) tabState.value = 'Issues'
-	},
 }
 
 const errors = createListResource(notifApiFields)
@@ -128,6 +128,13 @@ const errList = computed(() => {
 	const activeErrListId = activeBuildId.value || pipeline?.doc?.name
 	return list.filter((x) => x.document_name == activeErrListId)
 })
+
+watch(
+	() => errList.value,
+	(x) => {
+		if (x.length > 0) tabState.value = 'Issues'
+	},
+)
 
 const fetchSetErrs = () => {
 	const errids = buildIds.value?.length > 0 ? buildIds.value : [props.id]
