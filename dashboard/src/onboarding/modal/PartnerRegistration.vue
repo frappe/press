@@ -92,6 +92,7 @@ const handleSubmit = async () => {
 
 	try {
 		await onboarding.save()
+		await onboarding.loadMRRStatus()
 		registered.value = true
 		emit('registered')
 	} catch (error: any) {

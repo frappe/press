@@ -128,7 +128,11 @@ const onRegistered = () => {
 						v-if="!registered"
 						class="mt-8 flex items-center justify-between"
 					>
-						<Button variant="outline">Learn more</Button>
+						<Button
+							variant="outline"
+							link="https://docs.frappe.io/partner-guide/why-partner"
+							>Learn more</Button
+						>
 						<div class="flex items-center gap-2">
 							<Button
 								v-if="currentStep.id > 0"

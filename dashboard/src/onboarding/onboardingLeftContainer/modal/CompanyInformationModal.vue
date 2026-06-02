@@ -86,6 +86,7 @@ async function handleSubmit() {
 	try {
 		Object.assign(onboarding.form, draft)
 		await onboarding.save()
+		await onboarding.loadMRRStatus()
 		showOnboardingToast('success', 'Company details updated')
 		closeModal()
 	} catch (error: any) {
