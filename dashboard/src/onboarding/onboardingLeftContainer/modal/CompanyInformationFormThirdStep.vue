@@ -9,10 +9,19 @@ const props = defineProps<{
 }>()
 const submitted = ref(false)
 
+// ideally this should be multi select.
 const partnershipOptions = [
-	{ label: 'ERPNext', value: 'ERPNext' },
-	{ label: 'Frappe Framework', value: 'Frappe Framework' },
-	{ label: 'Other ERP', value: 'Other ERP' },
+	{ label: 'SAP', value: 'SAP' },
+	{ label: 'Odoo', value: 'Odoo' },
+	{ label: 'Oracle', value: 'Oracle' },
+	{ label: 'Microsoft', value: 'Microsoft' },
+	// { label: 'Salesforce', value: 'Salesforce' },
+	// { label: 'Zendesk', value: 'Zendesk' },
+	// { label: 'Hubspot', value: 'Hubspot' },
+	// { label: 'Shopify', value: 'Shopify' },
+	// { label: 'BigCommerce', value: 'BigCommerce' },
+	// { label: 'WooCommerce', value: 'WooCommerce' },
+	// { label: 'Other ERP', value: 'Other ERP' },
 ]
 
 const implementationOptions = [
