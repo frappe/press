@@ -2148,38 +2148,33 @@ def _has_active_benches(previous_candidate: "DeployCandidate") -> bool:
 
 
 def can_run_patch_build(release_group: str) -> bool:
-	"""Check previous candidate against current release group state and decide if patch build can be run or not"""
+	if not frappe.db.get_single_value("Press Settings", "allow_patch_builds"):
+		return False
+
 	previous_candidate = _get_previous_candidate(release_group)
 	if not previous_candidate:
-		return False
-
-	release_group_doc: ReleaseGroup = frappe.get_doc("Release Group", release_group)
-
-	# Compare app lists: same apps in same order, same source (branch)
-	if [app.app for app in previous_candidate.apps] != [app.app for app in release_group_doc.apps]:
-		return False
-
-	prev_sources = {app.app: app.source for app in previous_candidate.apps}
-	curr_sources = {app.app: app.source for app in release_group_doc.apps}
-	if prev_sources != curr_sources:
 		return False
 
 	if frappe.db.get_value("Release Group", release_group, "public"):
 		return False
 
-	prev_deps = {d.dependency: d.version for d in previous_candidate.dependencies}
-	curr_deps = {d.dependency: d.version for d in release_group_doc.dependencies}
-	if prev_deps != curr_deps:
-		return False
+	rg: ReleaseGroup = frappe.get_doc("Release Group", release_group)
+	pc = previous_candidate
 
-	prev_pkgs = {p.package_manager: p.package for p in previous_candidate.packages}
-	curr_pkgs = {p.package_manager: p.package for p in release_group_doc.packages}
-	if prev_pkgs != curr_pkgs:
-		return False
+	state_unchanged = (
+		# same apps in same order
+		[app.app for app in pc.apps] == [app.app for app in rg.apps]
+		# same source/branch per app
+		and {app.app: app.source for app in pc.apps} == {app.app: app.source for app in rg.apps}
+		# same system dependencies (e.g. Python, Node versions)
+		and {d.dependency: d.version for d in pc.dependencies}
+		== {d.dependency: d.version for d in rg.dependencies}
+		# same apt/pip packages
+		and {p.package_manager: p.package for p in pc.packages}
+		== {p.package_manager: p.package for p in rg.packages}
+		# same environment variables
+		and {ev.key: ev.value for ev in pc.environment_variables}
+		== {ev.key: ev.value for ev in rg.environment_variables}
+	)
 
-	prev_envs = {ev.key: ev.value for ev in previous_candidate.environment_variables}
-	curr_envs = {ev.key: ev.value for ev in release_group_doc.environment_variables}
-	if prev_envs != curr_envs:
-		return False
-
-	return _has_active_benches(previous_candidate)
+	return state_unchanged and _has_active_benches(pc)
