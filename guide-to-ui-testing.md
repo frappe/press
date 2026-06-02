@@ -4,17 +4,31 @@ Playwright e2e tests live in `dashboard/tests-e2e/`. They run against a real bro
 
 ## One-time setup
 
-**1. Create `dashboard/tests-e2e/.env`:**
+### 1. Create a dedicated test user
+
+Playwright needs a user with a team doc — not `Administrator`. The helper creates one with `FREE_ACCOUNT` and `SKIP_ONBOARDING` enabled, which prevents billing paywalls and the onboarding wizard from blocking tests.
+
+```bash
+bench --site <site-name> execute \
+  press.press.doctype.team.test_team.create_test_press_admin_team \
+  --kwargs '{"email": "playwright@example.com", "free_account": true, "skip_onboarding": true}'
+
+bench --site <site-name> set-password "playwright@example.com" "playwright"
+```
+
+If you prefer to do it manually: create a user, assign the Press User role, and enable `FREE_ACCOUNT` and `SKIP_ONBOARDING` on their Team.
+
+### 2. Create `dashboard/tests-e2e/.env`
 
 ```
 BASE_URL=http://<site-name>:8080
-PRESS_ADMIN_USER_EMAIL=Administrator
-PRESS_ADMIN_USER_PASSWORD=<your local admin password>
+PRESS_ADMIN_USER_EMAIL=playwright@example.com
+PRESS_ADMIN_USER_PASSWORD=playwright
 ```
 
 Use the site name (e.g. `frappe_cloud_local`) not `localhost`, and port `8080` for the Vite dev server.
 
-**2. Start the bench and the dev server** (two terminals):
+### 3. Start the bench and the dev server (two terminals)
 
 ```bash
 # Terminal 1 — bench backend
@@ -24,7 +38,7 @@ cd /path/to/frappe-bench && bench start
 cd /path/to/frappe-bench/apps/press/dashboard && yarn dev
 ```
 
-**3. Install Playwright Chromium** (once):
+### 4. Install Playwright Chromium (once)
 
 ```bash
 # Preferred: use system Chromium to avoid a 172 MB download
@@ -53,13 +67,31 @@ npx playwright test tests-e2e/tests/dashboard/site-update-banner.test.ts --heade
 yarn test:e2e:report
 ```
 
-The first run also executes `auth.setup.ts`, which logs in and saves the session to `tests-e2e/.auth/session.json`. Subsequent runs reuse it.
+The first run also executes `auth.setup.ts`, which logs in once and saves the session to `tests-e2e/.auth/session.json`. All subsequent tests in the `chromium` project reuse that session and run in parallel — login does not repeat for each test file.
 
 To use a system Chromium instead of Playwright's bundled one:
 
 ```bash
 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser yarn test:e2e:headed
 ```
+
+## Test projects and file naming
+
+The Playwright config defines three projects, each matched by filename convention:
+
+| Pattern | Project | Purpose |
+|---|---|---|
+| `*.setup.ts` | `setup` | Runs first; creates session storage for the `chromium` project |
+| `*.test.ts` | `chromium` | Standard dashboard UI tests; depend on `setup` |
+| `*.cron.spec.ts` | `cron` | Scheduled tests triggered by Frappe's scheduler; run independently of setup |
+
+The `cron` project is invoked with:
+
+```bash
+npm run test:e2e -- --project=cron
+```
+
+This keeps scheduled smoke tests (e.g. signup flows, server status checks) separate from developer-facing dashboard tests.
 
 ## Writing tests
 
