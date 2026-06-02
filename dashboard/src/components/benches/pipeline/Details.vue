@@ -145,7 +145,6 @@ const fetchSetErrs = () => {
 	warnings.fetch()
 }
 
-// used to unsubscribe from socket events
 const wired = reactive(new Set<string>())
 const builds = ref<Record<string, any>>({})
 
@@ -203,7 +202,6 @@ watch(
 				}
 			}
 
-			// socket io stuff
 			if (socket && !wired.has(id) && pipeline?.doc?.status === 'Running') {
 				socket.emit('doc_subscribe', 'Deploy Candidate Build', id)
 
@@ -241,6 +239,11 @@ watch(
 	},
 )
 
+const handleAgentJobUpdate = (data) => {
+	const job = agentJobs?.value?.[data.id]
+	if (job?.doc) job.doc = { ...job.doc, ...data }
+}
+
 watch(
 	() => agentJobIds?.value,
 	(ids: string[]) => {
@@ -259,16 +262,14 @@ watch(
 
 			if (socket && !wired.has(`job:${id}`)) {
 				socket.emit('doc_subscribe', 'Agent Job', id)
-
-				socket.on('agent_job_update', (data) => {
-					if (data.id !== id) return
-					const job = agentJobs.value[id]
-					if (job?.doc) job.doc = { ...job.doc, ...data }
-				})
-
 				wired.add(`job:${id}`)
 			}
 		})
+
+		if (socket && !wired.has('agent_job_update')) {
+			socket.on('agent_job_update', handleAgentJobUpdate)
+			wired.add('agent_job_update')
+		}
 	},
 )
 
@@ -291,21 +292,18 @@ onBeforeUnmount(() => {
 	wired.forEach((id) => {
 		if (id.startsWith('job:')) return
 
-		if (buildIds.value.length == 0) return
-
 		socket.emit('doc_unsubscribe', 'Deploy Candidate Build', id)
 		socket.off(`bench_deploy:${id}:steps`)
 		socket.off(`bench_deploy:${id}:finished`)
 	})
 
 	if (!props.deployview) {
-		if (agentJobIds?.value?.length == 0) return
-
 		agentJobIds?.value?.forEach((id: string) => {
 			socket.emit('doc_unsubscribe', 'Agent Job', id)
 		})
 
-		socket.off('agent_job_update')
+		socket.off('agent_job_update', handleAgentJobUpdate)
+		wired.delete('agent_job_update')
 	}
 })
 
@@ -389,9 +387,7 @@ const stopBuild = () => {
 					params: { dn: deploy.name },
 				})
 					.fetch()
-					.then(() => {
-						hide()
-					})
+					.then(() => hide())
 					.catch(() => {
 						hide()
 						toast.error(
