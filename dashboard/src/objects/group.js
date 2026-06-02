@@ -806,29 +806,6 @@ export default {
 					},
 				},
 				{
-					label: 'Validating Deploy',
-					slots: {
-						prefix: () => h(LoadingIndicator, { class: 'w-4 h-4' }),
-					},
-					theme: 'green',
-					condition: () =>
-						!group.doc.deploy_information.deploy_in_progress &&
-						!group.doc.deploy_information.bench_creation_underway &&
-						group.doc.deploy_information.has_running_release_pipeline,
-				},
-				{
-					label: 'Deploy in progress',
-					slots: {
-						prefix: () => h(LoadingIndicator, { class: 'w-4 h-4' }),
-					},
-					theme: 'green',
-					condition: () => group.doc.deploy_information.deploy_in_progress,
-					route: {
-						name: 'Deploy Candidate',
-						params: { id: group.doc?.deploy_information?.last_deploy?.name },
-					},
-				},
-				{
 					label: 'Options',
 					condition: () => team.doc?.is_desk_user,
 					options: [
