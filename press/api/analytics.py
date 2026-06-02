@@ -169,6 +169,29 @@ def auto_timespan_timegrain(start: datetime, end: datetime, target_points: int =
 	return (total_seconds, interval)
 
 
+# All metrics relevant to the server charts (node_exporter, mariadb_exporter, ...)
+# are scraped every 60s, see press/playbooks/roles/prometheus/templates/prometheus.yml
+PROMETHEUS_SCRAPE_INTERVAL: Final[int] = 60
+
+
+def get_rate_interval(timegrain: int, scrape_interval: int = PROMETHEUS_SCRAPE_INTERVAL) -> int:
+	"""Lookback window to use inside rate()/increase() for range queries.
+
+	Prometheus' rate()/increase() need at least two samples within their window
+	to return a value. When the window is smaller than ~2x the scrape interval it
+	intermittently sees a single sample (depending on how the step grid aligns
+	with the scrape grid), so Prometheus returns no value for those steps. The
+	charts render the resulting gaps as spikes down to zero.
+
+	The step (timegrain) controls the chart resolution; this controls the rate()
+	window. Keeping them separate and ensuring the window always spans several
+	scrapes removes the gaps. This mirrors Grafana's ``$__rate_interval``.
+	"""
+	if timegrain <= 0:
+		return scrape_interval * 4
+	return max(timegrain + scrape_interval, scrape_interval * 4)
+
+
 def parse_iso_datetime(value: str | datetime) -> datetime:
 	if isinstance(value, datetime):
 		return value
