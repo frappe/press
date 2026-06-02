@@ -62,7 +62,7 @@ export type PartnerOnboardingDoc = {
 	agreed_to_partnership_agreement?: boolean | 0 | 1
 	reviewed_on?: string
 	reviewed_by?: string
-	rejection_reason?: string
+	reviewer_comments?: string
 }
 
 export function getPartnerMRRCurrency(country?: string) {
@@ -131,6 +131,26 @@ const form = reactive<PartnerOnboardingDoc>({
 	agreed_to_due_diligence: false,
 	agreed_to_partnership_agreement: false,
 })
+
+function resetCertificateStatus() {
+	certificateStatus.value = {
+		linked_certificates: [],
+		link_requests: [],
+		pending_requests: [],
+		linked_count: 0,
+		requirement_complete: false,
+	}
+}
+
+function resetMRRStatus() {
+	mrrStatus.value = {
+		current_amount: 0,
+		target_amount: getPartnerMRRTargetAmount('USD'),
+		currency: getPartnerMRRCurrency(),
+		progress: 0,
+		requirement_complete: false,
+	}
+}
 
 function applyDoc(nextDoc: PartnerOnboardingDoc | null, team?: TeamResource) {
 	doc.value = nextDoc
@@ -254,20 +274,8 @@ const unregisterPartnerOnboarding = createResource({
 	auto: false,
 	onSuccess: () => {
 		applyDoc(null, activeTeam.value)
-		certificateStatus.value = {
-			linked_certificates: [],
-			link_requests: [],
-			pending_requests: [],
-			linked_count: 0,
-			requirement_complete: false,
-		}
-		mrrStatus.value = {
-			current_amount: 0,
-			target_amount: getPartnerMRRTargetAmount('USD'),
-			currency: getPartnerMRRCurrency(),
-			progress: 0,
-			requirement_complete: false,
-		}
+		resetCertificateStatus()
+		resetMRRStatus()
 	},
 })
 
@@ -285,6 +293,7 @@ export function usePartnerOnboarding(team?: TeamResource) {
 				form.contact &&
 				form.address &&
 				form.headquarter_city &&
+				form.incorporation_certificate &&
 				form.agreed_to_due_diligence &&
 				form.agreed_to_partnership_agreement,
 		),
@@ -299,8 +308,9 @@ export function usePartnerOnboarding(team?: TeamResource) {
 	)
 	const hasCertificateActivity = computed(
 		() =>
-			linkedCertificateCount.value > 0 ||
-			(certificateStatus.value.link_requests?.length || 0) > 0,
+			isRegistered.value &&
+			(linkedCertificateCount.value > 0 ||
+				(certificateStatus.value.link_requests?.length || 0) > 0),
 	)
 	const isCertificateRequirementComplete = computed(
 		() => certificateStatus.value.requirement_complete,
@@ -311,6 +321,11 @@ export function usePartnerOnboarding(team?: TeamResource) {
 
 	async function load() {
 		const nextDoc = await getPartnerOnboarding.fetch()
+		if (!nextDoc) {
+			resetCertificateStatus()
+			resetMRRStatus()
+			return nextDoc
+		}
 		await loadCertificateStatus()
 		await loadMRRStatus()
 		return nextDoc
@@ -338,6 +353,10 @@ export function usePartnerOnboarding(team?: TeamResource) {
 	}
 
 	async function loadCertificateStatus() {
+		if (!isRegistered.value) {
+			resetCertificateStatus()
+			return certificateStatus.value
+		}
 		if (certificateStatusResource.reload) {
 			return certificateStatusResource.reload()
 		}

@@ -12,7 +12,7 @@
 		"submitted_on",
 		"reviewed_on",
 		"reviewed_by",
-		"rejection_reason",
+		"reviewer_comments",
 		"registration_section",
 		"company_name",
 		"registered_country",
@@ -169,9 +169,8 @@
 		},
 		{
 			"fieldname": "incorporation_certificate",
-			"fieldtype": "Data",
-			"label": "Incorporation Certificate",
-			"options": "URL"
+			"fieldtype": "Attach",
+			"label": "Incorporation Certificate"
 		},
 		{
 			"fieldname": "agreement_section",
@@ -212,13 +211,6 @@
 			"read_only": 1
 		},
 		{
-			"allow_on_submit": 1,
-			"fieldname": "rejection_reason",
-			"fieldtype": "Small Text",
-			"label": "Rejection Reason",
-			"read_only": 1
-		},
-		{
 			"fieldname": "amended_from",
 			"fieldtype": "Link",
 			"label": "Amended From",
@@ -227,12 +219,19 @@
 			"print_hide": 1,
 			"read_only": 1,
 			"search_index": 1
+		},
+		{
+			"allow_on_submit": 1,
+			"fieldname": "reviewer_comments",
+			"fieldtype": "Small Text",
+			"label": "Reviewer Comments",
+			"read_only": 1
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"is_submittable": 1,
 	"links": [],
-	"modified": "2026-05-29 12:29:22.974789",
+	"modified": "2026-06-02 11:46:36.460385",
 	"modified_by": "Administrator",
 	"module": "Partner",
 	"name": "Partner Onboarding",

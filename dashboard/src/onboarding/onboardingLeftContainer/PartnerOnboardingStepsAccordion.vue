@@ -341,10 +341,10 @@ async function submitForApproval() {
 				application when you are ready.
 			</p>
 			<p
-				v-if="onboarding.doc.value?.rejection_reason"
+				v-if="onboarding.doc.value?.reviewer_comments"
 				class="mt-3 whitespace-pre-wrap text-p-base text-ink-gray-8"
 			>
-				{{ onboarding.doc.value.rejection_reason }}
+				{{ onboarding.doc.value.reviewer_comments }}
 			</p>
 		</div>
 
