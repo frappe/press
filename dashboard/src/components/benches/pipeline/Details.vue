@@ -93,7 +93,10 @@ const pipeline = props.deployview
 			onSuccess: (data) => {
 				const wiredId = 'release-pipeline' + props.id
 
-				if (['Pending', 'Running'].includes(data.status) && !wired.has(wiredId)) {
+				if (
+					['Pending', 'Running'].includes(data.status) &&
+					!wired.has(wiredId)
+				) {
 					socket.emit('doc_subscribe', 'Release Pipeline', props.id)
 					socket.on('doc_update', handleDocUpdate)
 					wired.add(wiredId)
@@ -165,7 +168,9 @@ const handleDummyStage = (x) => {
 }
 
 const setAutomaticOutput = (steps: any) => {
-	const obj = steps.filter((x) => x.status !== 'Pending').at(-1)
+	const obj = steps.filter((x) => x.status !== 'Pending')?.at(-1)
+
+	if (!obj) return
 
 	output.val = obj.output || 'No Output'
 	output.status = obj.status
@@ -280,6 +285,7 @@ onBeforeUnmount(() => {
 	if (props.deployview) {
 		socket.emit('doc_unsubscribe', 'Release Pipeline', props.id)
 		socket.off('doc_update', handleDocUpdate)
+		wired.delete('release-pipeline' + props.id)
 	}
 
 	wired.forEach((id) => {
@@ -293,7 +299,7 @@ onBeforeUnmount(() => {
 	})
 
 	if (props.deployview) {
-		if (agentJobIds?.value.length == 0) return
+		if (agentJobIds?.value?.length == 0) return
 
 		agentJobIds?.value?.forEach((id: string) => {
 			socket.emit('doc_unsubscribe', 'Agent Job', id)
