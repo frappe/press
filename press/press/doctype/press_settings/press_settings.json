@@ -22,7 +22,7 @@
 		"default_server_plan_type",
 		"plans_section",
 		"default_dedicated_server_site_warranty_change_cooldown",
-		"column_break_kujg",
+		"column_break_vllh",
 		"default_dedicated_server_site_warranty_quota",
 		"invoicing_section",
 		"invoicing_column",
@@ -62,6 +62,10 @@
 		"frappeio_api_key",
 		"column_break_39",
 		"frappeio_api_secret",
+		"pulse_section",
+		"pulse_site",
+		"column_break_whfe",
+		"pulse_api_key",
 		"backups_tab",
 		"offsite_backups_section",
 		"backup_region",
@@ -1667,12 +1671,12 @@
 			"label": "Use New Deploy Flow"
 		},
 		{
-			"fieldname": "plans_section",
+			"fieldname": "chatwoot_section",
 			"fieldtype": "Section Break",
-			"label": "Plans"
+			"label": "Chat Support"
 		},
 		{
-			"fieldname": "column_break_kujg",
+			"fieldname": "column_break_srse",
 			"fieldtype": "Column Break"
 		},
 		{
@@ -1744,6 +1748,48 @@
 			"fieldname": "enable_mcp",
 			"fieldtype": "Check",
 			"label": "Enable MCP"
+    },
+    {
+			"fieldname": "pulse_section",
+			"fieldtype": "Section Break",
+			"label": "Pulse"
+		},
+		{
+			"fieldname": "pulse_site",
+			"fieldtype": "Data",
+			"label": "Pulse Site"
+		},
+		{
+			"fieldname": "pulse_api_key",
+			"fieldtype": "Data",
+			"label": "Pulse API Key"
+		},
+		{
+			"fieldname": "column_break_whfe",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "plans_section",
+			"fieldtype": "Section Break",
+			"label": "Plans"
+		},
+		{
+			"default": "30",
+			"description": "Default number of days before the site warranty setting can be changed for newly created dedicated servers",
+			"fieldname": "default_dedicated_server_site_warranty_change_cooldown",
+			"fieldtype": "Int",
+			"label": "Default Dedicated Server Site Warranty Change Cooldown"
+		},
+		{
+			"fieldname": "column_break_vllh",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "5",
+			"description": "Default max number of sites with product warranty for newly created dedicated servers",
+			"fieldname": "default_dedicated_server_site_warranty_quota",
+			"fieldtype": "Int",
+			"label": "Default Dedicated Server Supported Site Quota"
 		}
 	],
 	"issingle": 1,

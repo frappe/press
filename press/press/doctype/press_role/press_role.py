@@ -117,6 +117,18 @@ class PressRole(Document):
 			if self.get("resources", resource_dict):
 				message = _("{0} already belongs to {1}").format(document_name, self.title)
 				frappe.throw(message, frappe.ValidationError)
+
+			document_team = frappe.db.get_value(document_type, document_name, "team")
+			if document_team is None:
+				frappe.throw(
+					_("Document {0} does not exist").format(document_name),
+					frappe.DoesNotExistError,
+				)
+			if document_team != self.team:
+				frappe.throw(
+					_("Document {0} is not associated with this team").format(document_name),
+					frappe.ValidationError,
+				)
 			self.append("resources", resource_dict)
 		self.save()
 

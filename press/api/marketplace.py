@@ -1018,6 +1018,7 @@ def get_subscriptions_list(marketplace_app: str) -> list:
 
 
 @frappe.whitelist()
+@protected("Marketplace App")
 def create_app_plan(marketplace_app: str, plan_data: dict):
 	app_plan_doc = frappe.get_doc(
 		{
@@ -1040,6 +1041,10 @@ def update_app_plan(app_plan_name: str, updated_plan_data: dict):
 		frappe.throw("Plan title is required")
 
 	app_plan_doc = frappe.get_doc("Marketplace App Plan", app_plan_name)
+	if frappe.session.data.user_type != "System User":
+		app_team = frappe.db.get_value("Marketplace App", app_plan_doc.app, "team")
+		if app_team != get_current_team():
+			frappe.throw("Not Permitted", frappe.PermissionError)
 
 	no_of_active_subscriptions = frappe.db.count(
 		"Subscription",

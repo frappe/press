@@ -88,7 +88,12 @@ const pipeline = props.deployview
 			doctype: 'Release Pipeline',
 			name: props.id,
 			auto: true,
+			onSuccess: () => {
+				if (loader.value) loader.value = false
+			},
 		})
+
+const loader = ref(!pipeline?.doc)
 
 const notifApiFields = {
 	doctype: 'Press Notification',
@@ -105,6 +110,12 @@ const notifApiFields = {
 
 const errors = createListResource(notifApiFields)
 const warnings = createListResource(notifApiFields)
+
+const errList = computed(() => {
+	const list = [...(errors?.data || []), ...(warnings?.data || [])]
+	const activeErrListId = activeBuildId.value || pipeline?.doc?.name
+	return list.filter((x) => x.document_name == activeErrListId)
+})
 
 // used to unsubscribe from socket events
 const wired = new Set<string>()
@@ -177,13 +188,16 @@ watch(
 		})
 
 		// ------------------------- errors and warnings
+		const errids =
+			buildIds.value?.length > 0 ? buildIds.value : [pipeline?.doc?.name]
+
 		errors.update({
 			cache: [
 				'Press Notification Error',
 				'Deploy Candidate Build',
 				buildIds.value,
 			],
-			filters: { document_name: ['in', buildIds.value], class: 'Error' },
+			filters: { document_name: ['in', errids], class: 'Error' },
 		})
 		errors.fetch()
 
@@ -193,7 +207,7 @@ watch(
 				'Deploy Candidate Build',
 				buildIds.value,
 			],
-			filters: { document_name: ['in', buildIds.value], class: 'Warning' },
+			filters: { document_name: ['in', errids], class: 'Warning' },
 		})
 		warnings.fetch()
 	},
@@ -234,8 +248,10 @@ watch(
 const handleDocUpdate = props.deployview
 	? null
 	: (x) => {
-			if (x.doctype === 'Release Pipeline' && x.name === props.id)
+			if (x.doctype === 'Release Pipeline' && x.name === props.id) {
 				pipeline.reload()
+				if (loader.value) loader.value = false
+			}
 		}
 
 onBeforeUnmount(() => {
@@ -365,9 +381,7 @@ const stopBuild = () => {
 </script>
 
 <template>
-	<Loader
-		v-if="deployview? builds[activeBuildId]?.get?.loading: pipeline?.get?.loading"
-	/>
+	<Loader v-if="deployview? builds[activeBuildId]?.get?.loading: (loader)" />
 
 	<main
 		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-7rem)] mt-1.5"
@@ -471,7 +485,7 @@ const stopBuild = () => {
 							v-if='tab.label == "Issues"'
 							class="bg-surface-gray-2 py-0.5 px-1 rounded text-xs leading-none"
 						>
-							{{ (errors?.data?.length || 0) + (warnings?.data?.length || 0) }}</span
+							{{ errList?.length || 0 }}</span
 						>
 					</template>
 				</Tabs>
@@ -490,10 +504,7 @@ const stopBuild = () => {
 
 				<!-- list of errors -->
 				<template v-else>
-					<div
-						v-for='x in [...errors?.data || [], ...warnings?.data || []]?.filter(x => x.document_name == activeBuildId)'
-						class="flex flex-col gap-1"
-					>
+					<div v-for='x in errList' class="flex flex-col gap-1">
 						<Collapsable headerCss="py-3" class="mb-3">
 							<template #prefix>
 								<StatusIcon
