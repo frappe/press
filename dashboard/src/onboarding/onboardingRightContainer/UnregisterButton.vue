@@ -17,9 +17,9 @@ const unregistering = onboarding.unregistering
 
 const confirmMessage = computed(() => {
 	if (onboarding.doc.value?.status === 'Approved') {
-		return 'This will remove your partner registration and revoke partner privileges on your account.'
+		return 'This removes your partner registration and partner privileges.'
 	}
-	return 'If you unregister your company from the partnership, all associated data will be deleted. You can reapply for partnership in the future, but your company will need to go through the eligibility review process again.'
+	return 'This deletes your current application. You can reapply later, but the company will need to go through review again.'
 })
 
 const dialogOptions = computed(() => ({
@@ -57,7 +57,7 @@ async function unregister() {
 <template>
 	<Dialog v-model="open" :options="dialogOptions">
 		<template #body-content>
-			<p class="text-p-base text-ink-gray-8">
+			<p class="text-p-base leading-6 text-ink-gray-8">
 				{{ confirmMessage }}
 			</p>
 		</template>

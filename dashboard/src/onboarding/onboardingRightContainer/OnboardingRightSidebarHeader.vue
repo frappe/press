@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Avatar, Badge } from 'frappe-ui'
+import { Avatar, Badge, Tooltip } from 'frappe-ui'
 import { computed, inject, ref } from 'vue'
 import UnregisterButton from '@/onboarding/onboardingRightContainer/UnregisterButton.vue'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
@@ -38,9 +38,13 @@ const statusTheme = computed(() => {
 		<div class="flex items-center gap-3">
 			<Avatar :label="companyInitial" size="lg" class="shrink-0" />
 			<div class="min-w-0 flex-1">
-				<p class="truncate text-p-base font-semibold text-ink-gray-9">
-					{{ companyName }}
-				</p>
+				<Tooltip :text="companyName">
+					<p
+						class="truncate text-p-base font-semibold text-ink-gray-9 cursor-default"
+					>
+						{{ companyName }}
+					</p>
+				</Tooltip>
 				<div class="mt-1 flex items-center gap-2">
 					<span class="text-p-sm text-ink-gray-5">Partner application</span>
 					<Badge variant="subtle" :theme="statusTheme" size="sm">
