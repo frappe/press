@@ -224,8 +224,7 @@ watch(
 					)
 					if (rgDoc) rgDoc.reload()
 
-					errors.reload()
-					warnings.reload()
+          fetchSetErrs()
 				})
 			}
 
