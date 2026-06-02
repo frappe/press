@@ -40,7 +40,7 @@
 			"fieldname": "status",
 			"fieldtype": "Select",
 			"label": "Status",
-			"options": "Approved\nPending"
+			"options": "Approved\nPending\nCancelled"
 		}
 	],
 	"grid_page_length": 50,

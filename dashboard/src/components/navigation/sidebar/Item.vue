@@ -24,6 +24,7 @@ const props = withDefaults(defineProps<NavItemProps>(), {
         : 'hover:bg-surface-gray-2',
       disabled ? 'pointer-events-none opacity-50' : '',
       collapsed ? 'md:w-fit gap-2 md:gap-0' : 'gap-2 md:w-full',
+      css
     ]"
 		>
 			<slot name="prefix">
@@ -36,7 +37,7 @@ const props = withDefaults(defineProps<NavItemProps>(), {
 
 			<span class="text-sm flex-1" :class="collapsedCss">{{ name }}</span>
 			<slot name="suffix">
-				<span v-if="suffix" :class="collapsedCss" class="text-xs"
+				<span v-if="suffix" :class="collapsedCss" class="text-xs text-ink-gray-6"
 					>{{ suffix }}
 				</span>
 			</slot>

@@ -15,6 +15,9 @@ class ArchiveServerJob(PressJob):
 
 	@task
 	def disable_termination_protection(self):
+		if not self.virtual_machine_doc.instance_id:
+			return
+
 		with suppress(Exception):
 			self.virtual_machine_doc.sync()
 
@@ -25,6 +28,14 @@ class ArchiveServerJob(PressJob):
 
 	@task(queue="long", timeout=600)
 	def terminate_virtual_machine(self):
+		if not self.virtual_machine_doc.instance_id:
+			# VM was never provisioned on the cloud provider
+			# mark it terminated directly
+			self.virtual_machine_doc.status = "Terminated"
+			self.virtual_machine_doc.save()
+			self.virtual_machine_doc.update_servers()
+			return
+
 		with suppress(Exception):
 			self.virtual_machine_doc.sync()
 
@@ -39,6 +50,7 @@ class ArchiveServerJob(PressJob):
 			self.virtual_machine_doc.sync()
 
 		if self.virtual_machine_doc.status == "Terminated":
+			self.virtual_machine_doc.update_servers()
 			return
 
 		self.defer_current_task()

@@ -9,4 +9,5 @@ export interface NavItemProps {
   prefix?: any;
   suffix?: any;
   onClick?: () => void;
+  css?: string;
 }
