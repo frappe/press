@@ -20,6 +20,10 @@
 		"column_break_wrqp",
 		"usage_record_creation_batch_size",
 		"default_server_plan_type",
+		"plans_section",
+		"default_dedicated_server_site_warranty_change_cooldown",
+		"column_break_vllh",
+		"default_dedicated_server_site_warranty_quota",
 		"invoicing_section",
 		"invoicing_column",
 		"gst_percentage",
@@ -245,6 +249,7 @@
 		"realtime_job_updates",
 		"disable_agent_job_deduplication",
 		"disable_binlog_indexer_service",
+		"enable_mcp",
 		"column_break_rdlr",
 		"disable_auto_retry",
 		"disallow_disposable_emails",
@@ -1675,6 +1680,29 @@
 			"fieldtype": "Column Break"
 		},
 		{
+			"default": "30",
+			"description": "Default number of days before the site warranty setting can be changed for newly created dedicated servers",
+			"fieldname": "default_dedicated_server_site_warranty_change_cooldown",
+			"fieldtype": "Int",
+			"label": "Default Dedicated Server Site Warranty change Cooldown"
+		},
+		{
+			"default": "5",
+			"description": "Default max number of sites with product warranty for newly created dedicated servers\n",
+			"fieldname": "default_dedicated_server_site_warranty_quota",
+			"fieldtype": "Int",
+			"label": "Default Dedicated Server Supported Site Quota"
+		},
+		{
+			"fieldname": "chatwoot_section",
+			"fieldtype": "Section Break",
+			"label": "Chat Support"
+		},
+		{
+			"fieldname": "column_break_srse",
+			"fieldtype": "Column Break"
+		},
+		{
 			"default": "0",
 			"fieldname": "enable_chat",
 			"fieldtype": "Check",
@@ -1716,6 +1744,12 @@
 			"label": "Auto Upgrade Dependencies"
 		},
 		{
+			"default": "0",
+			"fieldname": "enable_mcp",
+			"fieldtype": "Check",
+			"label": "Enable MCP"
+    },
+    {
 			"fieldname": "pulse_section",
 			"fieldtype": "Section Break",
 			"label": "Pulse"
@@ -1733,11 +1767,34 @@
 		{
 			"fieldname": "column_break_whfe",
 			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "plans_section",
+			"fieldtype": "Section Break",
+			"label": "Plans"
+		},
+		{
+			"default": "30",
+			"description": "Default number of days before the site warranty setting can be changed for newly created dedicated servers",
+			"fieldname": "default_dedicated_server_site_warranty_change_cooldown",
+			"fieldtype": "Int",
+			"label": "Default Dedicated Server Site Warranty Change Cooldown"
+		},
+		{
+			"fieldname": "column_break_vllh",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "5",
+			"description": "Default max number of sites with product warranty for newly created dedicated servers",
+			"fieldname": "default_dedicated_server_site_warranty_quota",
+			"fieldtype": "Int",
+			"label": "Default Dedicated Server Supported Site Quota"
 		}
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-05-28 11:16:56.899407",
+	"modified": "2026-06-02 14:15:34.170170",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",
