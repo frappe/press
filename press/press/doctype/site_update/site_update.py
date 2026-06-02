@@ -358,7 +358,7 @@ class SiteUpdate(Document):
 	def fail_with_notification(self, reason: str):
 		frappe.db.set_value("Site Update", self.name, "status", "Cancelled")
 		site = frappe.get_cached_doc("Site", self.site)
-		message = f"Site Update was cancelled: <b>{reason}</b>"
+		message = f"Site Update was cancelled: {reason}"
 		self.create_notification(site.team, message)
 
 	def create_notification(self, team: str, message: str):
