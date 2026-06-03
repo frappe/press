@@ -10,12 +10,6 @@ frappe.ui.form.on('NAT Server', {
 			[__('Archive Server'), 'archive', true, frm.doc.is_server_setup],
 			[__('Get Static IP'), 'get_static_ip', true, !frm.doc.is_static_ip],
 			[__('Attach NAT Security Group'), 'attach_nat_security_group', true],
-			[
-				__('Configure Monitoring'),
-				'configure_monitoring',
-				true,
-				frm.doc.is_server_setup,
-			], // added temporarily for setting up nginx & monitoring config
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -27,26 +21,26 @@ frappe.ui.form.on('NAT Server', {
 								() =>
 									frm.call(method).then((r) => {
 										if (r.message) {
-											frappe.msgprint(r.message);
+											frappe.msgprint(r.message)
 										} else {
-											frm.refresh();
+											frm.refresh()
 										}
 									}),
-							);
+							)
 						} else {
 							frm.call(method).then((r) => {
 								if (r.message) {
-									frappe.msgprint(r.message);
+									frappe.msgprint(r.message)
 								} else {
-									frm.refresh();
+									frm.refresh()
 								}
-							});
+							})
 						}
 					},
 					__('Actions'),
-				);
+				)
 			}
-		});
+		})
 
 		if (frm.doc.status === 'Active' && !!frm.doc.secondary_private_ip) {
 			frm.add_custom_button(
@@ -69,7 +63,7 @@ frappe.ui.form.on('NAT Server', {
 											cluster: frm.doc.cluster,
 											secondary_private_ip: ['is', 'not set'],
 										},
-									};
+									}
 								},
 							},
 						],
@@ -85,15 +79,15 @@ frappe.ui.form.on('NAT Server', {
 								})
 								.then((r) => {
 									if (r.message) {
-										frappe.msgprint(r.message);
+										frappe.msgprint(r.message)
 									}
-								});
-							d.hide();
+								})
+							d.hide()
 						},
-					}).show();
+					}).show()
 				},
 				__('Actions'),
-			);
+			)
 		}
 	},
-});
+})

@@ -6,11 +6,15 @@ import {
   frappeRequest,
   Tabs,
   Tooltip,
+  Popover,
 } from "frappe-ui";
 
-import { h, nextTick, ref, watch, onMounted, onUnmounted } from "vue";
+import Item from "./Item.vue";
+
+import { h, nextTick, ref, watch} from "vue";
 import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
+import { isMobile } from "@/utils/device";
 
 import Scrollbar from "@/components/common/Scrollbar.vue";
 import SupportAccessDialog from "@/components/SupportAccessDialog.vue";
@@ -25,7 +29,6 @@ import { useRealtimeNotifs } from './useRealtimeNotifs'
 import { dayjsLocal } from "@/utils/dayjs";
 import { getDocResource } from "@/utils/resource";
 import { renderDialog } from "@/utils/components";
-import { notifPanel } from "@/data/ui";
 import { getTeam } from "@/data/team";
 
 const formatHtml = (str: string) => {
@@ -58,7 +61,7 @@ const resource = createListResource({
   pageLength: 10,
 });
 
-const markAsRead = (row) => {
+const markAsRead = (row, togglePopover) => {
   const docres = getDocResource({
     doctype: "Press Notification",
     name: row.name,
@@ -88,13 +91,13 @@ const markAsRead = (row) => {
     }
 
     if (row.route && row.type !== "Support Access") {
-      notifPanel.value = false;
+    togglePopover()
       router.push("/" + row.route);
     }
   });
 };
 
-const markAllAsRead = () => {
+const markAllAsRead = (togglePopover) => {
   toast.promise(
     frappeRequest({
       url: "/api/method/press.api.notifications.mark_all_notifications_as_read",
@@ -102,7 +105,7 @@ const markAllAsRead = () => {
     {
       success: () => {
         resource.reload();
-        notifPanel.value = false;
+        togglePopover()
 
         return "All notifications marked as read";
       },
@@ -194,24 +197,6 @@ const tabs = [
   { label: "Requests", icon: LucideKeySquare },
   { label: "Unread", icon: LucideMessageSquareDot },
 ];
-
-const panelRef = ref();
-
-const handleOutsideClick = (e) => {
-  if (panelRef.value && !panelRef.value.contains(e.target)) {
-    notifPanel.value = false;
-  }
-};
-
-onMounted(() => {
-  setTimeout(() => {
-    document.addEventListener("click", handleOutsideClick);
-  }, 100);
-});
-
-onUnmounted(() => {
-  document.removeEventListener("click", handleOutsideClick);
-});
   
 useRealtimeNotifs((data) => {
 	if (data.team === team.doc.name) resource.reload()
@@ -219,19 +204,36 @@ useRealtimeNotifs((data) => {
 </script>
 
 <template>
+    <Popover :placement="isMobile() ? 'top-start' : 'right-start'" popover-class="-mt-[15%] md:-mt-2.5">
+    <!-- sidebar item -->
+    <template #target="{ togglePopover }">
+      <Item is='BUTTON' v-bind='$attrs' aria-label="Notifications btn" name='Notifications' @click="togglePopover" 
+      				:suffix="unreadNotificationsCount.data > 99 ? '99+': unreadNotificationsCount.data"
+            >
+        <template #prefix>
+
+          <span class="flex relative">
+            <LucideBell class="size-4 text-ink-gray-6" />
+            <span v-if="unreadNotificationsCount.data > 0"
+              class="size-1 bg-surface-blue-3 rounded-full absolute right-0 -top-0.5" />
+          </span>
+        </template>
+      </Item>
+    </template>
+
+    <template #body="{ togglePopover }">
       <div
-        ref='panelRef'
-        class="text-ink-gray-9 bg-surface-white h-screen left-0 top-12 md:top-0 md:left-full absolute  z-10  w-screen shadow-xl md:w-[430px] flex flex-col dark:border-x">
+        class="text-ink-gray-9 bg-surface-white h-screen -ml-2.5 w-screen md:ml-2 shadow-xl md:w-[430px] flex flex-col dark:border-x">
         <!-- header -->
         <div class="text-base flex items-center py-2 pl-4 pr-2 border-b">
           <span class="font-medium mr-auto"> Notifications</span>
 
-          <Button @click="markAllAsRead" variant="ghost">
+          <Button @click="markAllAsRead(togglePopover)" variant="ghost">
             <template #icon>
               <LucideCheckCheck class="size-3.5" />
             </template>
           </Button>
-          <Button variant="ghost" @click="notifPanel = false">
+          <Button variant="ghost" @click="togglePopover">
             <template #icon>
               <LucideX class="size-4" />
             </template>
@@ -257,7 +259,7 @@ useRealtimeNotifs((data) => {
           <!-- notif tiles = icon + info -->
           <div v-for="x in resource.data"
             class="[&_b]:font-semibold p-2 md:p-4 flex gap-4 items-center relative cursor-pointer border-b last:border-0 hover:bg-surface-gray-1"
-            @click="markAsRead(x)" title="Click to mark as read">
+            @click="markAsRead(x, togglePopover)" title="Click to mark as read">
             <!-- type icon -->
             <div class="size-8 flex-shrink-0 flex items-center p-2 rounded mb-auto mt-1 relative
               dark:bg-surface-gray-1" :class="[iconCss[x.type].bg || 'bg-surface-gray-1']">
@@ -294,4 +296,6 @@ useRealtimeNotifs((data) => {
 
         <Button @click="loadMore" v-if="resource.hasNextPage" label="Load More" size="sm" class="ml-auto my-3 mr-3" />
       </div>
+      </template>
+   </Popover>
  </template>

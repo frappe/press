@@ -128,9 +128,27 @@ def sync_press_role(doc, method=None):
 			.run(as_dict=True)
 		)
 
+		# Batch-resolve which resources still belong to this team (one query per doctype).
+		by_doctype: dict[str, list[str]] = {}
+		for resource in resources:
+			by_doctype.setdefault(resource.document_type, []).append(resource.document_name)
+
+		team_owned: set[tuple[str, str]] = set()
+		for document_type, names in by_doctype.items():
+			owned = frappe.get_all(
+				document_type,
+				filters={"name": ("in", names), "team": team},
+				pluck="name",
+			)
+			for name in owned:
+				team_owned.add((document_type, name))
+
 		# Loop through the resources and create `team-member-resource` entries if
 		# they don't exist.
 		for resource in resources:
+			if (resource.document_type, resource.document_name) not in team_owned:
+				continue
+
 			# Check if a `team-member-resource` entry already exists for the team,
 			# user, document type, and document.
 			document = {
@@ -142,4 +160,6 @@ def sync_press_role(doc, method=None):
 			}
 			if not frappe.db.exists(document):
 				# If the resource does not exist, create a new `team-member-resource` entry.
-				frappe.get_doc(document).insert(ignore_permissions=True)
+				d = frappe.get_doc(document)
+				d.flags.ignore_validate = True
+				d.insert(ignore_permissions=True)

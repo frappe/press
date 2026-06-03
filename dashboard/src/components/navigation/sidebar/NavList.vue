@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { h, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { unreadNotificationsCount } from '@/data/notifications'
 import { session } from '@/data/session'
 import { getTeam } from '@/data/team'
 import { isMac } from '@/utils/device'
-import { notifPanel, searchModalOpen } from '@/data/ui'
+import { searchModalOpen } from '@/data/ui'
 
 import { useRealtimeNotifs } from './useRealtimeNotifs'
+
+import NotificationPanel from "./Notifications.vue"
 
 const $route = useRoute()
 const $team = getTeam()
@@ -18,6 +20,9 @@ const list = computed(() => {
 
 	const routeName = String($route?.name || '')
 	const onboardingComplete = $team.doc.onboarding.complete
+	const activePartner = Boolean(
+		$team.doc.erpnext_partner && $team.doc.partner_status === 'Active',
+	)
 	const isSaasUser = $team.doc.is_saas_user
 
 	const enforce2FA = Boolean(
@@ -47,23 +52,8 @@ const list = computed(() => {
 		{
 			name: 'Notifications',
 			condition: onboardingComplete && !isSaasUser,
-			is: 'BUTTON',
-			onClick: () => (notifPanel.value = true),
-			disabled: enforce2FA,
-
-			prefix: () =>
-				h('span', { class: 'flex relative' }, [
-					h(LucideBell, { class: 'size-4 text-ink-gray-6' }),
-					h('span', {
-						class: `size-1 bg-surface-blue-3 rounded-full absolute right-0 -top-0.5
-						${unreadNotificationsCount.data > 0 ? '' : 'hidden'}`,
-					}),
-				]),
-
-			suffix:
-				unreadNotificationsCount.data > 99
-					? '99+'
-					: unreadNotificationsCount.data,
+			customComponent: NotificationPanel,
+ 			disabled: enforce2FA,
 		},
 
 		{
@@ -152,7 +142,7 @@ const list = computed(() => {
 			icon: LucideLayoutGrid,
 			route: '/apps',
 			isActive: routeName.startsWith('Marketplace'),
-			class: '-mt-1',
+			css: '-mt-1',
 			condition:
 				$team.doc?.is_desk_user ||
 				(!!$team.doc.is_developer && $session.hasAppsAccess),
@@ -171,9 +161,10 @@ const list = computed(() => {
 		{
 			name: 'Partnership',
 			icon: LucideGlobe,
-			route: '/partners',
-			isActive: routeName === 'Partnership',
-			condition: Boolean($team.doc.erpnext_partner),
+			route: activePartner ? '/partners' : '/partner-onboarding',
+			isActive:
+				$route.path.startsWith('/partners') ||
+				routeName === 'Partner Onboarding',
 			disabled: enforce2FA,
 		},
 
@@ -197,7 +188,7 @@ const list = computed(() => {
 
 useRealtimeNotifs((data) => {
 	if (data.team === $team.doc.name) {
-		unreadNotificationsCount.setData((data) => data + 1)
+		unreadNotificationsCount.setData((data: number) => data + 1)
 	}
 })
 </script>

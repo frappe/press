@@ -9,6 +9,44 @@ from frappe import cint
 from press.press.doctype.site_plan.plan import Plan
 
 
+def get_permission_query_conditions(user: str | None = None) -> str:
+	if not user:
+		user = frappe.session.user
+
+	if frappe.db.get_value("User", user, "user_type", cache=True) == "System User":
+		return ""
+
+	from press.utils import get_current_team
+
+	MarketplaceApp = frappe.qb.DocType("Marketplace App")
+	MarketplaceAppPlan = frappe.qb.DocType("Marketplace App Plan")
+	permitted_apps = (
+		frappe.qb.from_(MarketplaceApp)
+		.select(MarketplaceApp.name)
+		.where(MarketplaceApp.team == get_current_team())
+	)
+	return MarketplaceAppPlan.app.isin(permitted_apps).get_sql()
+
+
+def has_permission(doc, ptype: str, user: str | None = None) -> bool:
+	if not user:
+		user = frappe.session.user
+
+	if frappe.db.get_value("User", user, "user_type", cache=True) == "System User":
+		return True
+
+	if ptype == "create" and not doc.app:
+		return False
+
+	from press.access.support_access import has_support_access
+	from press.utils import get_current_team
+
+	if has_support_access("Marketplace App", doc.app):
+		return True
+
+	return frappe.db.get_value("Marketplace App", doc.app, "team") == get_current_team()
+
+
 class MarketplaceAppPlan(Plan):
 	dashboard_fields: ClassVar = ["app", "name", "title", "price_inr", "price_usd", "enabled"]
 
