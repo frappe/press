@@ -93,8 +93,8 @@ const openRoleDetail = (role: Role) => {
 }
 
 // ─── Permission editing (custom roles only) ───────────────────────────
-const setValueResource = createResource({
-	url: 'press.api.client.set_value',
+const setPermissionResource = createResource({
+	url: 'run_doc_method',
 })
 
 const updatePermission = (key: string, value: boolean) => {
@@ -105,12 +105,15 @@ const updatePermission = (key: string, value: boolean) => {
 	)
 		return
 
-	setValueResource.submit(
+	setPermissionResource.submit(
 		{
-			doctype: 'Press Role',
-			name: selectedRole.value.name,
-			fieldname: key,
-			value: value ? 1 : 0,
+			method: 'set_permission',
+			dt: 'Press Role',
+			dn: selectedRole.value.name,
+			args: {
+				fieldname: key,
+				value: value ? 1 : 0,
+			},
 		},
 		{
 			onSuccess: () => {

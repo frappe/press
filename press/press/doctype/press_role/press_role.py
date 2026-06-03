@@ -12,6 +12,7 @@ from frappe.query_builder.functions import Count
 from press.api.client import dashboard_whitelist
 from press.guards import role_guard, team_guard
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.team.team_members import PERMISSION_FIELDS
 from press.utils import get_current_team
 
 if TYPE_CHECKING:
@@ -129,6 +130,14 @@ class PressRole(Document):
 			message = _("Resource {0} does not belong to {1}").format(document_name, self.title)
 			frappe.throw(message, frappe.ValidationError)
 		self.remove(resources.pop())
+		self.save()
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+	def set_permission(self, fieldname: str, value: int):
+		if fieldname not in PERMISSION_FIELDS:
+			frappe.throw(_("Invalid permission field: {0}").format(fieldname))
+		setattr(self, fieldname, value)
 		self.save()
 
 	@dashboard_whitelist()
