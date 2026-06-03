@@ -156,7 +156,7 @@ class TestTeamMembers(FrappeTestCase):
 
 	def test_get_roles_returns_all_predefined_roles_when_no_team(self):
 		"""When no team is provided, only predefined roles should be returned."""
-		roles = get_roles(frappe.mock("email"))
+		roles = get_roles(None)
 		self.assertEqual(len(roles), len(PREDEFINED_ROLES))
 
 	def test_get_roles_returns_correct_role_labels_and_values(self):
