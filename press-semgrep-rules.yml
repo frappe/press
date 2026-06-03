@@ -173,10 +173,16 @@ rules:
     severity: WARNING
     languages: [python]
     patterns:
-      - pattern-inside: |
-          @frappe.whitelist(...)
-          def $FUNC(...):
-              ...
+      - pattern-either:
+        - pattern-inside: |
+            @frappe.whitelist(...)
+            def $FUNC(...):
+                ...
+        - pattern-inside: |
+            @dashboard_whitelist(...)
+            def $FUNC(...):
+                ...
+
       - pattern-either:
           - pattern: |
               Ansible(...)
