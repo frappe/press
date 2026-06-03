@@ -94,7 +94,7 @@ const isStageDisabled = (x) => {
 					:disabled="build_step.status =='Pending'"
 				>
 					<StatusIcon :status="build_step.status" />
-					<span class="mr-3">
+					<span class="mr-3 truncate">
 						{{ build_step.stage }}
 						- {{ build_step.step }}
 					</span>
