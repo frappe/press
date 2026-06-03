@@ -19,7 +19,11 @@ const formatDate = (date: Date) => {
   {posts.map((post) => (
     <li class="grid grid-cols-[150px_1fr] gap-10">
       <div class="flex flex-col items-start">
-        <a href={`${baseurl}/${post.id}`} class="sticky top-25 w-full">
+        <a
+          href={`${baseurl}/${post.id}`}
+          class="sticky top-25 w-full"
+          data-major={post.data.major}
+        >
           <span class="text-sm text-surface-gray-5 flex items-center gap-3">
             <div
               class="bg-surface-gray-5 size-2 rounded shrink-0 relative z-10 ring-4 ring-outline-gray-2"

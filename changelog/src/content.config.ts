@@ -17,6 +17,7 @@ const releases = defineCollection({
       tags: z.array(z.string()).default([]),
 			// Transform string to Date object
 			date: z.coerce.date(),
+ 			major: z.boolean().optional(),
 		}),
 });
 
