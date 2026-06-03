@@ -94,7 +94,21 @@ const pipeline = props.deployview
 				const wiredId = 'release-pipeline' + props.id
 
 				const statuses = data?.steps?.stages?.map((x) => x.status)
-				if (statuses?.includes('Failure')) fetchSetErrs()
+
+				// sometimes when build status fails and socket doesnt emit properly
+				// fallback to reloading pipeline after some interval
+				if (statuses?.includes('Failure')) {
+					fetchSetErrs()
+
+					if (
+						!wired.has('bugged-pipeline') &&
+						pipeline?.doc?.status != 'Failure'
+					) {
+						wired.add('bugged-pipeline')
+
+						setTimeout(() => pipeline.reload(), 1.5 * 60 * 1000)
+					}
+				}
 
 				if (
 					['Pending', 'Running'].includes(data.status) &&
@@ -239,13 +253,6 @@ watch(
 	{ immediate: true },
 )
 
-watch(
-	() => pipeline?.doc?.status,
-	(x) => {
-		if (x == 'Failure') fetchSetErrs()
-	},
-)
-
 const handleAgentJobUpdate = (data) => {
 	const job = agentJobs?.value?.[data.id]
 	if (job?.doc) job.doc = { ...job.doc, ...data }
@@ -267,7 +274,11 @@ watch(
 				})
 			}
 
-			if (socket && !wired.has(`job:${id}`) && pipeline?.doc?.status === 'Running' ) {
+			if (
+				socket &&
+				!wired.has(`job:${id}`) &&
+				pipeline?.doc?.status === 'Running'
+			) {
 				socket.emit('doc_subscribe', 'Agent Job', id)
 				wired.add(`job:${id}`)
 			}
