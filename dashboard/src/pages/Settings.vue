@@ -24,17 +24,17 @@
 </template>
 
 <script setup>
-import Header from '../components/Header.vue';
-import { Breadcrumbs } from 'frappe-ui';
-import { icon } from '../utils/components';
-import TabsWithRouter from '../components/TabsWithRouter.vue';
-import { getTeam } from '../data/team';
-import { session } from '../data/session';
-import { useUserStore } from '../stores/user';
+import { Breadcrumbs } from 'frappe-ui'
+import Header from '../components/Header.vue'
+import TabsWithRouter from '../components/TabsWithRouter.vue'
+import { session } from '../data/session'
+import { getTeam } from '../data/team'
+import { useUserStore } from '../stores/user'
+import { icon } from '../utils/components'
 
-const user = useUserStore();
-let $team = getTeam();
-let $session = session || {};
+const user = useUserStore()
+let $team = getTeam()
+let $session = session || {}
 
 const tabs = [
 	{
@@ -71,6 +71,12 @@ const tabs = [
 			$session.isSystemUser,
 	},
 	{
+		label: 'Roles (Beta)',
+		icon: LucideLock,
+		routeName: 'SettingsRolesBeta',
+		condition: () => user.isBetaTester,
+	},
+	{
 		label: 'Developer',
 		icon: LucideCode,
 		routeName: 'SettingsDeveloper',
@@ -88,5 +94,5 @@ const tabs = [
 			'PartnerAdminResources',
 		],
 	},
-];
+]
 </script>
