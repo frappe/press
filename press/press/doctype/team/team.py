@@ -31,7 +31,7 @@ from press.utils.billing import (
 	process_micro_debit_test_charge,
 )
 from press.utils.jobs import has_job_timeout_exceeded
-from press.utils.telemetry import capture
+from press.utils.telemetry import capture, capture_pulse
 from press.utils.user import is_system_manager
 
 from .team_members import get_invitations, get_members, get_roles, remove_member
@@ -437,6 +437,7 @@ class Team(Document):
 		team.team_title = "Parent Team"
 		team.apply_limits = 1
 		team.spending_limit = 100  # default spending limit for new teams, can be updated later by team admin
+		team.tier = "Beginner"
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
 		if account_request.invited_by_parent_team:
@@ -656,6 +657,8 @@ class Team(Document):
 		)
 		total = 0
 		for sub in subscriptions:
+			if not sub.plan_type or not sub.plan:
+				continue
 			if sub.plan_type == "Server Storage Plan":
 				total += (frappe.db.get_value(sub.plan_type, sub.plan, "price_usd") or 0) * flt(
 					sub.additional_storage
@@ -665,7 +668,11 @@ class Team(Document):
 		return total
 
 	def update_tier_limit(self):
-		if self.apply_limits and self.tier and self.tier != self.get_doc_before_save().tier:
+		if self.is_new() or not self.apply_limits:
+			return
+
+		doc_before_save = self.get_doc_before_save()
+		if self.tier and doc_before_save and self.tier != doc_before_save.tier:
 			new_limit = frappe.db.get_value("Team Tier", self.tier, "amount") or 100
 			frappe.db.set_value("Team", self.name, "spending_limit", new_limit)
 
@@ -1724,6 +1731,11 @@ def handle_payment_intent_succeeded(payment_intent):  # noqa: C901
 		# update transaction amount, fee and exchange rate
 		invoice.update_transaction_details(charge)
 		invoice.submit()
+
+	capture_pulse(
+		"stripe_payment_succeeded",
+		{"team": team.name, "amount": amount, "currency": team.currency, "intent_id": payment_intent["id"]},
+	)
 
 	_enqueue_finalize_unpaid_invoices_for_team(team.name)
 

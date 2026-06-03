@@ -23,6 +23,10 @@
 		"full_chain",
 		"private_key",
 		"section_break_cvcg",
+		"site_domain_tls_update_pending",
+		"column_break_mrfv",
+		"site_domain_tls_update_triggered_at",
+		"section_break_dhtt",
 		"error",
 		"retry_count"
 	],
@@ -62,8 +66,14 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
-		{ "fieldname": "section_break_6", "fieldtype": "Section Break" },
+		{
+			"fieldname": "column_break_3",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "section_break_6",
+			"fieldtype": "Section Break"
+		},
 		{
 			"default": "2048",
 			"fieldname": "rsa_key_size",
@@ -79,7 +89,10 @@
 			"label": "Issued On",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_8", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_8",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "expires_on",
 			"fieldtype": "Datetime",
@@ -101,7 +114,6 @@
 			"read_only_depends_on": "eval: doc.provider === \"Let's Encrypt\""
 		},
 		{
-			"devscription": "Certificate + Intermediate + Trust chain for non lets encrypt certificates",
 			"fieldname": "full_chain",
 			"fieldtype": "Code",
 			"label": "Full Chain",
@@ -132,7 +144,10 @@
 			"options": "Team",
 			"read_only": 1
 		},
-		{ "fieldname": "section_break_cvcg", "fieldtype": "Section Break" },
+		{
+			"fieldname": "section_break_cvcg",
+			"fieldtype": "Section Break"
+		},
 		{
 			"fieldname": "error",
 			"fieldtype": "Code",
@@ -154,12 +169,33 @@
 			"label": "Provider",
 			"options": "Let's Encrypt\nOther",
 			"reqd": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "site_domain_tls_update_pending",
+			"fieldtype": "Check",
+			"label": "Site Domain TLS Update Pending",
+			"search_index": 1
+		},
+		{
+			"fieldname": "column_break_mrfv",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "section_break_dhtt",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "site_domain_tls_update_triggered_at",
+			"fieldtype": "Datetime",
+			"label": "Site Domain TLS Update Triggered At",
+			"search_index": 1
 		}
 	],
 	"grid_page_length": 50,
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2025-04-07 14:24:48.585403",
+	"modified": "2026-06-02 12:33:27.692641",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "TLS Certificate",
@@ -177,7 +213,13 @@
 			"share": 1,
 			"write": 1
 		},
-		{ "create": 1, "delete": 1, "read": 1, "role": "Press User", "write": 1 }
+		{
+			"create": 1,
+			"delete": 1,
+			"read": 1,
+			"role": "Press User",
+			"write": 1
+		}
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",

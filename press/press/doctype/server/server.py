@@ -1054,7 +1054,6 @@ class BaseServer(Document, TagHelpers):
 		nfs_server_name = frappe.get_value("NFS Server", {"virtual_machine": virtual_machine}, "name")
 		return frappe.get_doc("NFS Server", nfs_server_name)
 
-	@frappe.whitelist()
 	def extend_ec2_volume(self, device=None, log: str | None = None):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
@@ -1099,7 +1098,6 @@ class BaseServer(Document, TagHelpers):
 			queue="long",
 		)
 
-	@frappe.whitelist()
 	def extend_frappe_compute_volume(self, device=None, log: str | None = None):
 		# Copied over from extend_ec2_volume
 		# Restart MariaDB if MariaDB disk is full
@@ -1476,14 +1474,22 @@ class BaseServer(Document, TagHelpers):
 			frappe.throw(
 				f"Cannot change plan right now since the instance type {new_plan.instance_type} is not available. Try again later."
 			)
-
-		if self.provider == "Hetzner" and self.plan and self.plan == new_plan.name and upgrade_disk:
-			current_root_disk_size = frappe.db.get_value(
-				"Virtual Machine", self.virtual_machine, "root_disk_size"
+		if not cluster.check_quota(new_plan.instance_type, virtual_machine=self.virtual_machine):
+			frappe.throw(
+				f"Insufficient quota to resize to {new_plan.instance_type} in this region. Please try again after a few hours or reach out at support.frappe.io."
 			)
-			if current_root_disk_size >= new_plan.disk:
+
+		if self.provider == "Hetzner" and self.virtual_machine:
+			current_machine_type, current_root_disk_size = frappe.db.get_value(
+				"Virtual Machine", self.virtual_machine, ["machine_type", "root_disk_size"]
+			)
+			if current_machine_type == new_plan.instance_type and not upgrade_disk:
 				frappe.throw(
-					"Selected plan's disk is same as or not larger than the current disk size. Please chose a plan including higher disk size availability."
+					f"Cannot resize: selected plan uses the same server type ({new_plan.instance_type}) as the current server. Choose a different plan or enable disk upgrade."
+				)
+			if upgrade_disk and current_root_disk_size >= new_plan.disk:
+				frappe.throw(
+					f"Cannot upgrade disk: selected plan's disk ({new_plan.disk} GB) is not larger than the current disk size ({current_root_disk_size} GB). Choose a plan with a larger disk."
 				)
 
 	@dashboard_whitelist()
@@ -1765,6 +1771,9 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def configure_ssh_logging(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_configure_ssh_logging", queue="long", timeout=1200)
+
+	def _configure_ssh_logging(self):
 		try:
 			ansible = Ansible(
 				playbook="configure_ssh_logging.yml",
