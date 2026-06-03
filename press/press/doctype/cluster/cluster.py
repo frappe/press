@@ -16,6 +16,8 @@ import frappe
 import oci
 import pydo
 from frappe.model.document import Document
+from frappe.query_builder import Criterion
+from frappe.query_builder.functions import Count, Sum
 from frappe.utils.caching import redis_cache
 from hcloud import APIException, Client
 from hcloud.firewalls.domain import FirewallRule as HetznerFirewallRule
@@ -132,6 +134,24 @@ class Cluster(Document):
 
 	secondary_server_series: ClassVar[str] = "fs"
 	unified_server_series: ClassVar[str] = "u"
+
+	# Maps first letter of AWS instance type to its vCPU service-quota code.
+	# Standard bucket (A/C/D/H/I/M/R/T/Z) shares one quota code.
+	_AWS_INSTANCE_FAMILY_QUOTA_CODES: ClassVar[dict[str, str]] = {
+		"a": "L-1216C47A",
+		"c": "L-1216C47A",
+		"d": "L-1216C47A",
+		"h": "L-1216C47A",
+		"i": "L-1216C47A",
+		"m": "L-1216C47A",
+		"r": "L-1216C47A",
+		"t": "L-1216C47A",
+		"z": "L-1216C47A",
+		"f": "L-74FC7D96",
+		"g": "L-DB2E81BA",
+		"p": "L-97A4D03C",
+		"x": "L-7295265B",
+	}
 
 	wait_for_aws_creds_seconds = 20
 
@@ -1254,6 +1274,194 @@ class Cluster(Document):
 
 		return True
 
+	def get_aws_quota_client(self):
+		return boto3.client(
+			"service-quotas",
+			region_name=self.region,
+			aws_access_key_id=self.aws_access_key_id,
+			aws_secret_access_key=self.get_password("aws_secret_access_key"),
+		)
+
+	def _get_plan_vcpu(self, machine_type: str) -> int:
+		plans = frappe.get_all(
+			"Server Plan",
+			filters={"instance_type": machine_type, "cluster": self.name, "enabled": 1},
+			fields=["vcpu"],
+			limit=1,
+		)
+		if not plans:
+			# Fall back to plans not tied to a specific cluster (e.g. basic/shared plans).
+			plans = frappe.get_all(
+				"Server Plan",
+				filters={"instance_type": machine_type, "enabled": 1},
+				fields=["vcpu"],
+				limit=1,
+			)
+		if not plans:
+			frappe.throw(
+				f"No enabled Server Plan found for instance type {machine_type} in cluster {self.name}.",
+				frappe.ValidationError,
+			)
+		return plans[0].vcpu or 0
+
+	def _get_aws_current_vcpu_usage(self, quota_code: str) -> int:
+		"""Sum vCPUs of non-terminated VMs in this cluster that belong to the given quota bucket."""
+		families = {
+			prefix for prefix, code in self._AWS_INSTANCE_FAMILY_QUOTA_CODES.items() if code == quota_code
+		}
+		if not families:
+			return 0
+		vm = frappe.qb.DocType("Virtual Machine")
+		result = (
+			frappe.qb.from_(vm)
+			.select(Sum(vm.vcpu))
+			.where(vm.cluster == self.name)
+			.where(vm.status != "Terminated")
+			.where(Criterion.any(vm.machine_type.like(f"{prefix}%") for prefix in families))
+		).run()
+		return (result and result[0][0]) or 0
+
+	def _get_quota_code_for_machine_type(self, machine_type: str) -> str:
+		m = re.match(r"^[a-z]+", machine_type.lower())
+		prefix = m.group(0)[0] if m else "t"
+		return self._AWS_INSTANCE_FAMILY_QUOTA_CODES.get(prefix, "L-1216C47A")
+
+	def _get_replaced_vm_quota_info(self, virtual_machine: str | None) -> tuple[str | None, int]:
+		"""Return (quota_code, vcpu_count) for the VM being replaced, or (None, 0)."""
+		if not virtual_machine:
+			return None, 0
+		result = frappe.db.get_value("Virtual Machine", virtual_machine, ["machine_type", "vcpu"])
+		if not result:
+			return None, 0
+		replaced_machine_type, replaced_vcpus = result
+		if not replaced_machine_type:
+			return None, 0
+		return self._get_quota_code_for_machine_type(replaced_machine_type), replaced_vcpus or 0
+
+	def _check_aws_quota(
+		self, machine_type: str | list, virtual_machine: str | None = None
+	) -> bool | dict[str, bool]:
+		"""Check vCPU service quota before provisioning AWS instance(s).
+
+		virtual_machine: name of the VM being replaced (resize). Its vCPUs
+		are subtracted from its own quota bucket only — not from every bucket.
+		"""
+		machine_types = [machine_type] if isinstance(machine_type, str) else machine_type
+		quota_client = self.get_aws_quota_client()
+		replaced_quota_code, replaced_vcpus = self._get_replaced_vm_quota_info(virtual_machine)
+
+		quota_to_types: dict[str, list[str]] = {}
+		for mt in machine_types:
+			quota_to_types.setdefault(self._get_quota_code_for_machine_type(mt), []).append(mt)
+
+		results: dict[str, bool] = {}
+		for quota_code, mts in quota_to_types.items():
+			try:
+				quota_resp = quota_client.get_service_quota(ServiceCode="ec2", QuotaCode=quota_code)
+				limit = int(quota_resp["Quota"]["Value"])
+			except Exception:
+				for mt in mts:
+					results[mt] = True
+				continue
+
+			bucket_replaced = replaced_vcpus if quota_code == replaced_quota_code else 0
+			current_vcpus = self._get_aws_current_vcpu_usage(quota_code) - bucket_replaced
+			for mt in mts:
+				results[mt] = (current_vcpus + self._get_plan_vcpu(mt)) <= limit
+
+		if isinstance(machine_type, str):
+			return results.get(machine_type, True)
+		return results
+
+	def _get_hetzner_current_usage(self) -> tuple[int, int]:
+		"""Return (server_count, vcpu_count) from all non-terminated Hetzner VMs (quota is global)."""
+		vm = frappe.qb.DocType("Virtual Machine")
+		result = (
+			frappe.qb.from_(vm)
+			.select(Count(vm.name), Sum(vm.vcpu))
+			.where(vm.cloud_provider == "Hetzner")
+			.where(vm.status != "Terminated")
+		).run()
+		count, vcpus = result[0] if result else (0, 0)
+		return count or 0, vcpus or 0
+
+	def _check_hetzner_quota(
+		self, machine_type: str | list, virtual_machine: str | None = None
+	) -> bool | dict[str, bool]:
+		"""Check Hetzner quota against limits configured in Press Settings.
+
+		virtual_machine: name of the VM being replaced (resize). When set,
+		server count is unchanged and its vCPUs are subtracted from usage.
+		"""
+		machine_types = [machine_type] if isinstance(machine_type, str) else machine_type
+
+		settings: "PressSettings" = frappe.get_single("Press Settings")
+		vcpu_limit = settings.hetzner_vcpu_limit or 0
+		server_limit = settings.hetzner_server_limit or 0
+
+		if not vcpu_limit and not server_limit:
+			if isinstance(machine_type, list):
+				return {mt: True for mt in machine_type}
+			return True
+
+		current_servers, current_vcpus = self._get_hetzner_current_usage()
+
+		is_resize = bool(virtual_machine)
+		replaced_vcpus = (
+			frappe.db.get_value("Virtual Machine", virtual_machine, "vcpu") or 0 if is_resize else 0
+		)
+		effective_vcpus = current_vcpus - replaced_vcpus
+
+		results: dict[str, bool] = {}
+		for mt in machine_types:
+			vcpus_needed = self._get_plan_vcpu(mt)
+			exceeds_server = not is_resize and server_limit and (current_servers + 1) > server_limit
+			exceeds_vcpu = vcpu_limit and (effective_vcpus + vcpus_needed) > vcpu_limit
+			results[mt] = not exceeds_server and not exceeds_vcpu
+
+		if isinstance(machine_type, str):
+			return results.get(machine_type, True)
+		return results
+
+	def _check_oci_quota(self, machine_type: str | list) -> bool | dict[str, bool]:
+		"""OCI quota is enforced via IAM and the limits service at creation time; always returns available."""
+		if isinstance(machine_type, list):
+			return {mt: True for mt in machine_type}
+		return True
+
+	def _check_frappe_compute_quota(
+		self, machine_type: str | list, instance_id: str | None = None
+	) -> bool | dict[str, bool]:
+		api_secret = self.get_password("frappe_compute_api_secret")
+		client = FrappeComputeClient(
+			url=self.frappe_compute_base_url,
+			api_key=self.frappe_compute_api_key,
+			api_secret=api_secret,
+		)
+		if not hasattr(client, "check_quota"):
+			if isinstance(machine_type, list):
+				return {mt: True for mt in machine_type}
+			return True
+		return client.check_quota(machine_type, instance_id=instance_id)
+
+	def check_quota(
+		self,
+		machine_type: str | list,
+		instance_id: str | None = None,
+		virtual_machine: str | None = None,
+	) -> bool | dict[str, bool]:
+		"Check if sufficient quota exists to provision the machine type in this region"
+		if self.cloud_provider == "AWS EC2":
+			return self._check_aws_quota(machine_type, virtual_machine=virtual_machine)
+		if self.cloud_provider == "OCI":
+			return self._check_oci_quota(machine_type)
+		if self.cloud_provider == "Hetzner":
+			return self._check_hetzner_quota(machine_type, virtual_machine=virtual_machine)
+		if self.cloud_provider == "Frappe Compute":
+			return self._check_frappe_compute_quota(machine_type, instance_id)
+
+		return True
+
 	def create_firewall(self, rules, is_ingress=True, description=None):
 		"""Creates a new firewall/security group and returns the firewall ID.
 
@@ -1621,6 +1829,11 @@ class Cluster(Document):
 		team = team or get_current_team()
 		plan = plan or self.get_or_create_basic_plan(doctype)
 		assert plan.instance_type is not None, "Instance type is required in the plan"
+		if not self.check_quota(str(plan.instance_type)):
+			frappe.throw(
+				f"Insufficient quota to provision {plan.instance_type} in this region. Please try again after a few hours or reach out at support.frappe.io.",
+				frappe.ValidationError,
+			)
 		vm = self.create_vm(
 			str(plan.instance_type),
 			plan.platform,

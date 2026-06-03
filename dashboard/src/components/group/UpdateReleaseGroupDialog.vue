@@ -2,9 +2,9 @@
 	<Dialog
 		v-model="show"
 		:options="{
-			size: '4xl',
-			title: lastDeploy ? 'Update Bench' : 'Deploy Bench',
-		}"
+		size: '4xl',
+		title: lastDeploy ? 'Update Bench' : 'Deploy Bench',
+	}"
 	>
 		<template #body-content>
 			<AlertBanner
@@ -15,20 +15,20 @@
 			/>
 			<AlertBanner
 				v-if="
-					benchDocResource.doc.deploy_information.apps.some((app) =>
-						app.releases.some((release) => release.is_yanked),
-					)
-				"
+				benchDocResource.doc.deploy_information.apps.some((app) =>
+					app.releases.some((release) => release.is_yanked),
+				)
+			"
 				class="mb-4"
 				title="A few commits have been yanked, <a href='https://docs.frappe.io/cloud/benches/updating_a_bench#yanked-app-releases' target='_blank' style='font-weight: bold;'>click here</a> to know more."
 				type="info"
 			/>
 			<AlertBanner
 				v-if="
-					benchDocResource.doc.deploy_information.apps.some((app) =>
-						app.releases.some((release) => release.is_mandatory),
-					)
-				"
+				benchDocResource.doc.deploy_information.apps.some((app) =>
+					app.releases.some((release) => release.is_mandatory),
+				)
+			"
 				class="mb-4"
 				title="A mandatory update is available. Please select the update to proceed."
 				type="info"
@@ -72,6 +72,49 @@
 					>
 						No active sites to update
 					</p>
+				</div>
+
+				<!-- Patch Deploy Info Step -->
+				<div
+					v-else-if="step === 'patch-deploy-info'"
+					class="flex flex-col gap-4"
+				>
+					<div
+						class="flex items-start gap-3 rounded-lg border border-outline-gray-2 bg-surface-gray-2 p-4"
+					>
+						<lucide-info class="mt-0.5 h-5 w-5 shrink-0 text-ink-blue-3" />
+						<div class="space-y-2 text-base text-ink-gray-8">
+							<p>
+								A <strong>patch deploy</strong> snapshots your existing bench
+								image, applies the new code on top, and provisions new benches
+								from it — no full image rebuild needed.
+							</p>
+							<ul class="ml-1 list-inside list-disc space-y-1 text-ink-gray-7">
+								<li>Much faster than a regular deploy</li>
+								<li>
+									New benches are created and sites are migrated, just like a
+									regular deploy
+								</li>
+								<li>Assets are only rebuilt if UI files changed</li>
+								<li>
+									Python dependencies are only reinstalled if dependency files
+									changed
+								</li>
+							</ul>
+							<p>
+								Best for small, safe changes like bug fixes. Avoid for adding or
+								removing apps, or anything that needs a clean build.
+							</p>
+						</div>
+					</div>
+					<a
+						href="https://docs.frappe.io/cloud/benches/patch-deploys"
+						target="_blank"
+						class="flex items-center gap-1.5 text-sm text-ink-blue-3 hover:underline"
+					>
+						<lucide-external-link class="h-3.5 w-3.5" />
+						Learn more in the documentation
+					</a>
 				</div>
 
 				<!-- Restrict Build Step -->
@@ -123,33 +166,54 @@
 		</template>
 		<template #actions>
 			<div class="flex items-center justify-between space-y-2">
-				<div v-if="!canShowBack"><!-- Spacer div --></div>
-				<Button v-if="canShowBack" label="Back" @click="back" />
-				<Button v-if="canShowNext" variant="solid" label="Next" @click="next" />
+				<div v-if="!canShowBack || step === 'patch-deploy-info'">
+					<!-- Spacer div -->
+				</div>
 				<Button
-					v-if="canShowDeploy"
-					variant="solid"
-					:label="deployLabel"
-					:loading="
-						$resources.deployAndUpdate.loading ||
-						$resources.updateInPlace.loading
-					"
-					@click="updateBench"
+					v-if="canShowBack && step !== 'patch-deploy-info'"
+					label="Back"
+					@click="back"
 				/>
+				<Button v-if="canShowNext" variant="solid" label="Next" @click="next" />
+				<div v-if="step === 'patch-deploy-info'" class="flex gap-2">
+					<Button label="Back" @click="back" />
+					<Button
+						variant="solid"
+						label="Proceed with Patch Deploy"
+						:loading="$resources.patchDeploy.loading"
+						@click="$resources.patchDeploy.submit()"
+					/>
+				</div>
+				<div v-else-if="canShowDeploy" class="flex gap-2">
+					<Button
+						v-if="deployInformation.can_run_patch_build"
+						variant="outline"
+						label="Deploy as Patch"
+						@click="deployAsPatch"
+					/>
+					<Button
+						variant="solid"
+						:label="deployLabel"
+						:loading="$resources.deployAndUpdate.loading ||
+						$resources.updateInPlace.loading
+						"
+						@click="updateBench"
+					/>
+				</div>
 			</div>
 		</template>
 	</Dialog>
 </template>
 
 <script>
-import { h } from 'vue';
-import { Checkbox, getCachedDocumentResource } from 'frappe-ui';
-import CommitChooser from '@/components/utils/CommitChooser.vue';
-import CommitTag from '@/components/utils/CommitTag.vue';
-import GenericList from '../../components/GenericList.vue';
-import { getTeam } from '../../data/team';
-import { DashboardError } from '../../utils/error';
-import AlertBanner from '../AlertBanner.vue';
+import { Checkbox, getCachedDocumentResource } from 'frappe-ui'
+import { h } from 'vue'
+import CommitChooser from '@/components/utils/CommitChooser.vue'
+import CommitTag from '@/components/utils/CommitTag.vue'
+import GenericList from '../../components/GenericList.vue'
+import { getTeam } from '../../data/team'
+import { DashboardError } from '../../utils/error'
+import AlertBanner from '../AlertBanner.vue'
 
 export default {
 	name: 'UpdateReleaseGroupDialog',
@@ -170,38 +234,38 @@ export default {
 			restrictMessage: '',
 			selectedApps: [],
 			selectedSites: [],
-		};
+		}
 	},
 	mounted() {
 		if (this.hasUpdateAvailable) {
-			this.step = 'select-apps';
+			this.step = 'select-apps'
 			if (!this.lastDeploy) {
 				// Preselect all updatable apps for first time deploys
 				this.handleAppSelection(
 					this.benchDocResource.doc?.deploy_information?.apps?.map(
 						(app) => app.name,
 					) || [],
-				);
+				)
 			}
 		} else if (this.hasRemovedApps) {
-			this.step = 'removed-apps';
+			this.step = 'removed-apps'
 		} else {
-			this.step = 'select-sites';
+			this.step = 'select-sites'
 		}
 	},
 	computed: {
 		updatableAppOptions() {
-			let deployInformation = this.benchDocResource.doc.deploy_information;
-			let appData = deployInformation.apps;
+			let deployInformation = this.benchDocResource.doc.deploy_information
+			let appData = deployInformation.apps
 
 			appData.forEach((app) => {
 				if (!app.releases?.length) {
-					app.disabled = true;
+					app.disabled = true
 				}
-			});
+			})
 
 			// preserving this for use in component functions
-			const vm = this;
+			const vm = this
 
 			return {
 				data: appData,
@@ -217,15 +281,15 @@ export default {
 						fieldname: 'current_hash',
 						type: 'Component',
 						component({ row: app }) {
-							if (!app.current_hash) return null;
+							if (!app.current_hash) return null
 							let tag = app.will_branch_change
 								? app.current_branch
-								: app.current_hash.slice(0, 7);
+								: app.current_hash.slice(0, 7)
 
 							return h(CommitTag, {
 								tag: tag,
 								link: `${app.repository_url}/commit/${tag}`,
-							});
+							})
 						},
 					},
 					{
@@ -237,17 +301,17 @@ export default {
 								return h(CommitTag, {
 									tag: app.branch,
 									link: `${app.repository_url}/commit/${app.branch}`,
-								});
+								})
 							}
 
 							function commitChooserOptions(app) {
 								return app.releases.map((release) => {
-									const messageMaxLength = 75;
-									let message = release.message.split('\n')[0];
+									const messageMaxLength = 75
+									let message = release.message.split('\n')[0]
 									message =
 										message.length > messageMaxLength
 											? message.slice(0, messageMaxLength) + '...'
-											: message;
+											: message
 
 									return {
 										label: release.tag
@@ -257,28 +321,28 @@ export default {
 										timestamp: release.timestamp,
 										is_yanked: release.is_yanked,
 										is_mandatory: release.is_mandatory,
-									};
-								});
+									}
+								})
 							}
 
 							function initialDeployTo(app) {
 								const next_release = app.releases.filter(
 									(release) =>
 										release.name === app.next_release && !release.is_yanked,
-								)[0];
+								)[0]
 
 								if (app.will_branch_change) {
-									return app.branch;
+									return app.branch
 								} else if (next_release) {
-									return next_release.tag || next_release.hash.slice(0, 7);
+									return next_release.tag || next_release.hash.slice(0, 7)
 								} else if (app.next_release_hash) {
-									return app.next_release_hash.slice(0, 7);
+									return app.next_release_hash.slice(0, 7)
 								} else {
-									return null;
+									return null
 								}
 							}
 
-							if (!app.releases.length) return undefined;
+							if (!app.releases.length) return undefined
 							let initialValue = {
 								label: initialDeployTo(app),
 								value:
@@ -286,7 +350,7 @@ export default {
 										(release) =>
 											release.name === app.next_release && !release.is_yanked,
 									)?.name || null, // Don't make any implicit selections
-							};
+							}
 
 							return h(CommitChooser, {
 								options: commitChooserOptions(app),
@@ -295,9 +359,9 @@ export default {
 								currentRelease: app.current_release,
 								modelValue: initialValue,
 								'onUpdate:modelValue': (value) => {
-									vm.updateNextRelease(app.name, value.value, value.hash);
+									vm.updateNextRelease(app.name, value.value, value.hash)
 								},
-							});
+							})
 						},
 					},
 					{
@@ -310,13 +374,13 @@ export default {
 									(app) => app.name === row.name,
 								)
 							) {
-								return 'Will be Uninstalled';
+								return 'Will be Uninstalled'
 							} else if (!row.will_branch_change && !row.current_hash) {
-								return 'First Deploy';
+								return 'First Deploy'
 							} else if (row.update_available) {
-								return 'Update Available';
+								return 'Update Available'
 							}
-							return 'Latest Version Deployed';
+							return 'Latest Version Deployed'
 						},
 					},
 					{
@@ -325,40 +389,40 @@ export default {
 						width: 0.5,
 						align: 'right',
 						Button({ row }) {
-							let url;
+							let url
 							if (row.current_hash && row.next_release) {
 								let hash =
 									row.releases.find(
 										(release) => release.name === row.next_release,
-									)?.hash ?? row.next_release_hash;
+									)?.hash ?? row.next_release_hash
 
 								if (hash)
-									url = `${row.repository_url}/compare/${row.current_hash}...${hash}`;
+									url = `${row.repository_url}/compare/${row.current_hash}...${hash}`
 							} else if (row.next_release) {
 								url = `${row.repository_url}/commit/${
 									row.releases.find(
 										(release) => release.name === row.next_release,
 									)?.hash ?? row.next_release_hash
-								}`;
+								}`
 							}
 
-							if (!url) return null;
+							if (!url) return null
 
 							return {
 								label: 'View',
 								variant: 'ghost',
 								onClick() {
-									window.open(url, '_blank');
+									window.open(url, '_blank')
 								},
-							};
+							}
 						},
 					},
 				],
-			};
+			}
 		},
 		removedAppOptions() {
-			let deployInformation = this.benchDocResource.doc.deploy_information;
-			let appData = deployInformation.removed_apps;
+			let deployInformation = this.benchDocResource.doc.deploy_information
+			let appData = deployInformation.removed_apps
 
 			return {
 				data: appData,
@@ -372,22 +436,22 @@ export default {
 						fieldname: 'name',
 						type: 'Badge',
 						format() {
-							return 'Will be Uninstalled';
+							return 'Will be Uninstalled'
 						},
 					},
 				],
-			};
+			}
 		},
 		siteOptions() {
-			let deployInformation = this.benchDocResource.doc.deploy_information;
-			let siteData = deployInformation.sites;
-			let team = getTeam();
+			let deployInformation = this.benchDocResource.doc.deploy_information
+			let siteData = deployInformation.sites
+			let team = getTeam()
 
 			/**
 			 * If In Place update is being used failed patches are skipped
 			 * and site backups are not taken by default.
 			 */
-			const disabled = this.useInPlaceUpdate;
+			const disabled = this.useInPlaceUpdate
 
 			return {
 				data: siteData,
@@ -407,9 +471,9 @@ export default {
 								modelValue: row.skip_failing_patches,
 								disabled,
 								'onUpdate:modelValue': (val) => {
-									row.skip_failing_patches = val;
+									row.skip_failing_patches = val
 								},
-							});
+							})
 						},
 					},
 					{
@@ -418,99 +482,107 @@ export default {
 						width: 0.3,
 						type: 'Component',
 						condition() {
-							return !!team.doc.skip_backups;
+							return !!team.doc.skip_backups
 						},
 						component({ row }) {
 							return h(Checkbox, {
 								modelValue: row.skip_backups,
 								disabled,
 								'onUpdate:modelValue': (val) => {
-									row.skip_backups = val;
+									row.skip_backups = val
 								},
-							});
+							})
 						},
 					},
 				],
-			};
+			}
 		},
 		benchDocResource() {
-			return getCachedDocumentResource('Release Group', this.bench);
+			return getCachedDocumentResource('Release Group', this.bench)
 		},
 		hasUpdateAvailable() {
 			return this.benchDocResource.doc.deploy_information.apps.some(
 				(app) => app.update_available === true,
-			);
+			)
 		},
 		hasRemovedApps() {
-			return !!this.benchDocResource.doc.deploy_information.removed_apps.length;
+			return !!this.benchDocResource.doc.deploy_information.removed_apps.length
 		},
 		deployInformation() {
-			return this.benchDocResource?.doc.deploy_information;
+			return this.benchDocResource?.doc.deploy_information
 		},
 		canShowBack() {
 			if (this.step === 'select-apps') {
-				return false;
+				return false
 			}
 
-			return this.hasUpdateAvailable || this.step === 'restrict-build';
+			return (
+				this.hasUpdateAvailable ||
+				this.step === 'restrict-build' ||
+				this.step === 'patch-deploy-info'
+			)
 		},
 		canShowNext() {
 			if (this.step === 'select-apps' && !this.lastDeploy) {
-				return false;
+				return false
 			}
 
 			if (this.step === 'restrict-build') {
-				return false;
+				return false
+			}
+
+			if (this.step === 'patch-deploy-info') {
+				return false
 			}
 
 			if (this.step === 'select-sites' && !this.restrictMessage) {
-				return false;
+				return false
 			}
 
-			return true;
+			return true
 		},
 		canShowDeploy() {
-			return !this.canShowNext;
+			return !this.canShowNext && this.step !== 'patch-deploy-info'
 		},
 		deployLabel() {
 			if (!this.lastDeploy) {
-				return 'Deploy now';
+				return 'Deploy now'
 			}
 
 			if (this.selectedSites.length === 0) {
-				return 'Skip and Deploy';
+				return 'Skip and Deploy'
 			}
 
-			let site = 'site';
+			let site = 'site'
 			if (this.selectedSites.length > 1) {
-				site = `${this.selectedSites.length} sites`;
+				site = `${this.selectedSites.length} sites`
 			}
 
 			if (this.useInPlaceUpdate) {
-				return `Update ${site} in place`;
+				return `Update ${site} in place`
 			}
 
-			return `Deploy and update ${site}`;
+			return `Deploy and update ${site}`
 		},
 		canUpdateInPlace() {
 			if (!this.benchDocResource?.doc?.enable_inplace_updates) {
-				return false;
+				return false
 			}
 
 			// In Place updates cannot take place with removed apps.
 			if (this.hasRemovedApps) {
-				return false;
+				return false
 			}
 
 			// All sites to be updated must belong to the same bench.
-			const benches = new Set(this.selectedSites.map((s) => s.bench));
+			const benches = new Set(this.selectedSites.map((s) => s.bench))
 			if (benches.size !== 1) {
-				return false;
+				return false
 			}
 
 			// Failed in place update benches have to be regular updated.
 			const inPlaceUpdateFailedBenches =
-				this.benchDocResource?.doc?.inplace_update_failed_benches ?? [];
+				this.benchDocResource?.doc?.inplace_update_failed_benches ?? []
 
 			const allSites = this.siteOptions.data
 				.filter(
@@ -518,14 +590,14 @@ export default {
 						benches.has(s.bench) ||
 						inPlaceUpdateFailedBenches.includes(s.bench),
 				)
-				.map((s) => s.name);
+				.map((s) => s.name)
 
 			// All sites under a bench should be updated
 			if (allSites.length !== this.selectedSites.length) {
-				return false;
+				return false
 			}
 
-			return true;
+			return true
 		},
 	},
 	resources: {
@@ -544,7 +616,7 @@ export default {
 						this.selectedApps.length === 0 &&
 						this.deployInformation.removed_apps.length === 0
 					) {
-						throw new DashboardError('Please select an app to proceed');
+						throw new DashboardError('Please select an app to proceed')
 					}
 				},
 				onSuccess(candidate) {
@@ -556,13 +628,39 @@ export default {
 								id: candidate,
 								name: this.bench,
 							},
-						});
+						})
 					}
-					this.show = false;
-					this.$emit('success', null);
+					this.show = false
+					this.$emit('success', null)
 				},
 				onError: this.setErrorMessage.bind(this),
-			};
+			}
+		},
+		patchDeploy() {
+			return {
+				url: 'press.api.bench.deploy_and_update',
+				params: {
+					name: this.bench,
+					apps: this.selectedApps,
+					sites: this.selectedSites,
+					run_will_fail_check: !this.ignoreWillFailCheck,
+					trigger_patch_deploy: true,
+				},
+				onSuccess(candidate) {
+					if (candidate) {
+						this.$router.push({
+							name: 'Deploy Candidate',
+							params: {
+								id: candidate,
+								name: this.bench,
+							},
+						})
+					}
+					this.show = false
+					this.$emit('success', null)
+				},
+				onError: this.setErrorMessage.bind(this),
+			}
 		},
 		updateInPlace() {
 			return {
@@ -576,67 +674,69 @@ export default {
 					this.$router.push({
 						name: 'Release Group Job',
 						params: { id },
-					});
+					})
 
-					this.restrictMessage = '';
-					this.show = false;
-					this.$emit('success', null);
+					this.restrictMessage = ''
+					this.show = false
+					this.$emit('success', null)
 				},
 				onError: this.setErrorMessage.bind(this),
-			};
+			}
 		},
 	},
 	methods: {
 		updateNextRelease(name, nextRelease, nextReleaseHash = null) {
 			const app = this.benchDocResource.doc.deploy_information.apps.find(
 				(a) => a.name === name,
-			);
+			)
 			if (app) {
-				app.next_release = nextRelease;
-				app.next_release_hash = nextReleaseHash;
+				app.next_release = nextRelease
+				app.next_release_hash = nextReleaseHash
 			}
 
 			// Update next_release in selectedApps as well
-			this.handleAppSelection(this.selectedApps.map((a) => a.app));
+			this.handleAppSelection(this.selectedApps.map((a) => a.app))
 		},
 		back() {
 			if (this.step === 'select-apps') {
-				return;
+				return
 			} else if (this.step === 'removed-apps') {
-				this.step = 'select-apps';
+				this.step = 'select-apps'
 			} else if (this.step === 'select-sites' && this.hasRemovedApps) {
-				this.step = 'removed-apps';
+				this.step = 'removed-apps'
 			} else if (this.step === 'select-sites' && !this.hasRemovedApps) {
-				this.step = 'select-apps';
+				this.step = 'select-apps'
 			} else if (this.step === 'restrict-build') {
-				this.step = 'select-sites';
+				this.step = 'select-sites'
+			} else if (this.step === 'patch-deploy-info') {
+				this.step = 'select-sites'
 			}
 
 			if (this.step === 'select-apps') {
-				this.selectedApps = [];
+				this.selectedApps = []
 			}
 		},
 		next() {
 			if (this.errorMessage) {
-				this.errorMessage = '';
+				this.errorMessage = ''
 			}
 
 			if (this.step === 'select-apps' && this.selectedApps.length === 0) {
-				this.errorMessage = 'Please select an app to proceed';
-				return;
+				this.errorMessage = 'Please select an app to proceed'
+				return
 			} else if (this.step === 'select-apps' && this.hasRemovedApps) {
-				this.step = 'removed-apps';
+				this.step = 'removed-apps'
 			} else if (this.step === 'select-apps' && !this.hasRemovedApps) {
-				this.step = 'select-sites';
+				this.step = 'select-sites'
 			} else if (this.step === 'removed-apps') {
-				this.step = 'select-sites';
+				this.step = 'select-sites'
 			} else if (this.step === 'select-sites' && this.restrictMessage) {
-				this.step = 'restrict-build';
+				this.step = 'restrict-build'
 			}
 		},
 		handleAppSelection(apps) {
-			apps = Array.from(apps);
-			let appData = this.benchDocResource.doc.deploy_information.apps;
+			apps = Array.from(apps)
+			let appData = this.benchDocResource.doc.deploy_information.apps
 
 			this.selectedApps = appData
 				.filter((app) => apps.includes(app.name))
@@ -654,81 +754,84 @@ export default {
 								(release) =>
 									release.name === app.next_release && !release.is_yanked,
 							)?.hash ?? app.next_release_hash,
-					};
-				});
+					}
+				})
 		},
 		handleSiteSelection(sites) {
-			sites = Array.from(sites);
-			let siteData = this.benchDocResource.doc.deploy_information.sites;
+			sites = Array.from(sites)
+			let siteData = this.benchDocResource.doc.deploy_information.sites
 
-			this.selectedSites = siteData.filter((site) => sites.includes(site.name));
+			this.selectedSites = siteData.filter((site) => sites.includes(site.name))
 		},
 		deployFrom(app) {
 			if (app.will_branch_change) {
-				return app.current_branch;
+				return app.current_branch
 			}
 			return app.current_hash
 				? app.current_tag || app.current_hash.slice(0, 7)
-				: null;
+				: null
 		},
 		initialDeployTo(app) {
 			return this.benchDocResource.doc.deploy_information.apps.find(
 				(a) => a.app === app.app,
-			).next_release;
+			).next_release
 		},
 		updateBench() {
 			if (this.selectedApps.length === 0 && !this.lastDeploy) {
-				this.errorMessage = 'Please select an app to proceed';
-				return;
+				this.errorMessage = 'Please select an app to proceed'
+				return
 			}
 
 			if (this.restrictMessage && !this.ignoreWillFailCheck) {
 				this.errorMessage =
-					'Please check the <b>I understand</b> box to proceed';
-				return;
+					'Please check the <b>I understand</b> box to proceed'
+				return
 			}
 
-			this.errorMessage = '';
+			this.errorMessage = ''
 			if (this.canUpdateInPlace && this.useInPlaceUpdate) {
-				this.setSkipBackupsAndFailingPatches();
-				this.$resources.updateInPlace.submit();
+				this.setSkipBackupsAndFailingPatches()
+				this.$resources.updateInPlace.submit()
 			} else {
-				this.$resources.deployAndUpdate.submit();
+				this.$resources.deployAndUpdate.submit()
 			}
 		},
 		setSkipBackupsAndFailingPatches() {
 			for (const site of this.selectedSites) {
-				site.skip_failing_patches = true;
-				site.skip_backups = true;
+				site.skip_failing_patches = true
+				site.skip_backups = true
 			}
 		},
+		deployAsPatch() {
+			this.step = 'patch-deploy-info'
+		},
 		setErrorMessage(error) {
-			this.ignoreWillFailCheck = false;
+			this.ignoreWillFailCheck = false
 			if (error?.exc_type === 'BuildValidationError') {
-				this.restrictMessage = error?.messages?.[0] ?? '';
+				this.restrictMessage = error?.messages?.[0] ?? ''
 			}
 
 			if (error?.exc_type === 'InsufficientSpaceOnServer') {
-				this.errorMessage = error?.messages?.[0] ?? '';
-				return;
+				this.errorMessage = error?.messages?.[0] ?? ''
+				return
 			}
 
 			if (error?.exc_type === 'PermissionError') {
-				this.errorMessage = error?.messages?.[0] ?? '';
-				return;
+				this.errorMessage = error?.messages?.[0] ?? ''
+				return
 			}
 
 			if (this.restrictMessage) {
-				this.step = 'restrict-build';
-				return;
+				this.step = 'restrict-build'
+				return
 			}
 			if (Array.isArray(error.messages)) {
-				this.errorMessage = error.messages.join(', ');
+				this.errorMessage = error.messages.join(', ')
 			} else {
 				this.errorMessage =
-					'Internal Server Error: Deploy could not be initiated';
+					'Internal Server Error: Deploy could not be initiated'
 			}
 		},
 	},
-};
+}
 </script>

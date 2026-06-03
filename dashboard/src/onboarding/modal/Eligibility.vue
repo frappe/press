@@ -1,8 +1,19 @@
 <script setup>
+import { computed, inject } from 'vue'
 import CashIcon from '@/components/icons/CashIcon.vue'
 import CertifiedIcon from '@/components/icons/Certified.vue'
+import {
+	getPartnerMRRTargetLabel,
+	usePartnerOnboarding,
+} from '@/onboarding/usePartnerOnboarding'
 
-const eligibilityCriteria = [
+const team = inject('team')
+const onboarding = usePartnerOnboarding(team)
+const mrrTargetLabel = computed(() =>
+	getPartnerMRRTargetLabel(onboarding.form.registered_country),
+)
+
+const eligibilityCriteria = computed(() => [
 	{
 		title: 'At least two certified team members',
 		description:
@@ -11,12 +22,12 @@ const eligibilityCriteria = [
 		icon: CertifiedIcon,
 	},
 	{
-		title: 'Minimum $100 MRR on Frappe Cloud',
+		title: `Minimum ${mrrTargetLabel.value} MRR on Frappe Cloud`,
 		description:
 			'Host client sites with Frappe apps on Frappe Cloud consistently to get started.',
 		icon: CashIcon,
 	},
-]
+])
 </script>
 <template>
 	<p class="text-p-base text-ink-gray-6 mb-4">

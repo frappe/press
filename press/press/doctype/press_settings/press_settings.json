@@ -20,6 +20,10 @@
 		"column_break_wrqp",
 		"usage_record_creation_batch_size",
 		"default_server_plan_type",
+		"plans_section",
+		"default_dedicated_server_site_warranty_change_cooldown",
+		"column_break_vllh",
+		"default_dedicated_server_site_warranty_quota",
 		"invoicing_section",
 		"invoicing_column",
 		"gst_percentage",
@@ -112,6 +116,7 @@
 		"compress_app_cache",
 		"use_delta_builds",
 		"use_agent_job_callbacks",
+		"allow_patch_builds",
 		"auto_update_section",
 		"auto_update_queue_size",
 		"remote_files_section",
@@ -171,6 +176,10 @@
 		"aws_access_key_id",
 		"column_break_agig",
 		"aws_secret_access_key",
+		"hetzner_section",
+		"hetzner_vcpu_limit",
+		"column_break_hetzner",
+		"hetzner_server_limit",
 		"twilio_section",
 		"twilio_account_sid",
 		"twilio_api_key_sid",
@@ -245,6 +254,7 @@
 		"realtime_job_updates",
 		"disable_agent_job_deduplication",
 		"disable_binlog_indexer_service",
+		"enable_mcp",
 		"column_break_rdlr",
 		"disable_auto_retry",
 		"disallow_disposable_emails",
@@ -1116,6 +1126,25 @@
 			"label": "AWS Secret Access Key"
 		},
 		{
+			"fieldname": "hetzner_section",
+			"fieldtype": "Section Break",
+			"label": "Hetzner"
+		},
+		{
+			"fieldname": "hetzner_vcpu_limit",
+			"fieldtype": "Int",
+			"label": "Hetzner vCPU Limit"
+		},
+		{
+			"fieldname": "column_break_hetzner",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "hetzner_server_limit",
+			"fieldtype": "Int",
+			"label": "Hetzner Server Limit"
+		},
+		{
 			"fieldname": "twilio_section",
 			"fieldtype": "Section Break",
 			"label": "Twilio"
@@ -1675,6 +1704,29 @@
 			"fieldtype": "Column Break"
 		},
 		{
+			"default": "30",
+			"description": "Default number of days before the site warranty setting can be changed for newly created dedicated servers",
+			"fieldname": "default_dedicated_server_site_warranty_change_cooldown",
+			"fieldtype": "Int",
+			"label": "Default Dedicated Server Site Warranty change Cooldown"
+		},
+		{
+			"default": "5",
+			"description": "Default max number of sites with product warranty for newly created dedicated servers\n",
+			"fieldname": "default_dedicated_server_site_warranty_quota",
+			"fieldtype": "Int",
+			"label": "Default Dedicated Server Supported Site Quota"
+		},
+		{
+			"fieldname": "chatwoot_section",
+			"fieldtype": "Section Break",
+			"label": "Chat Support"
+		},
+		{
+			"fieldname": "column_break_srse",
+			"fieldtype": "Column Break"
+		},
+		{
 			"default": "0",
 			"fieldname": "enable_chat",
 			"fieldtype": "Check",
@@ -1716,6 +1768,12 @@
 			"label": "Auto Upgrade Dependencies"
 		},
 		{
+			"default": "0",
+			"fieldname": "enable_mcp",
+			"fieldtype": "Check",
+			"label": "Enable MCP"
+		},
+		{
 			"fieldname": "pulse_section",
 			"fieldtype": "Section Break",
 			"label": "Pulse"
@@ -1733,11 +1791,39 @@
 		{
 			"fieldname": "column_break_whfe",
 			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "plans_section",
+			"fieldtype": "Section Break",
+			"label": "Plans"
+		},
+		{
+			"default": "30",
+			"description": "Default number of days before the site warranty setting can be changed for newly created dedicated servers",
+			"fieldname": "default_dedicated_server_site_warranty_change_cooldown",
+			"fieldtype": "Int",
+			"label": "Default Dedicated Server Site Warranty Change Cooldown"
+		},
+		{
+			"fieldname": "column_break_vllh",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "5",
+			"description": "Default max number of sites with product warranty for newly created dedicated servers",
+			"fieldname": "default_dedicated_server_site_warranty_quota",
+			"fieldtype": "Int",
+			"label": "Default Dedicated Server Supported Site Quota"
+		},
+		{
+			"fieldname": "allow_patch_builds",
+			"fieldtype": "Check",
+			"label": "Allow Patch Builds"
 		}
 	],
 	"issingle": 1,
 	"links": [],
-	"modified": "2026-05-28 11:16:56.899407",
+	"modified": "2026-06-02 22:46:34.584687",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Press Settings",

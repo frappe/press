@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Checkbox, FormControl } from 'frappe-ui'
+import { Button, Checkbox, FileUploader, FormControl, Tooltip } from 'frappe-ui'
 import { computed, ref } from 'vue'
 import type { PartnerOnboardingDoc } from '@/onboarding/usePartnerOnboarding'
+import LucideHelpCircle from '~icons/lucide/help-circle'
 
 const emit = defineEmits(['continue'])
 const props = defineProps<{
@@ -9,10 +10,19 @@ const props = defineProps<{
 }>()
 const submitted = ref(false)
 
+// ideally this should be multi select.
 const partnershipOptions = [
-	{ label: 'ERPNext', value: 'ERPNext' },
-	{ label: 'Frappe Framework', value: 'Frappe Framework' },
-	{ label: 'Other ERP', value: 'Other ERP' },
+	{ label: 'SAP', value: 'SAP' },
+	{ label: 'Odoo', value: 'Odoo' },
+	{ label: 'Oracle', value: 'Oracle' },
+	{ label: 'Microsoft', value: 'Microsoft' },
+	// { label: 'Salesforce', value: 'Salesforce' },
+	// { label: 'Zendesk', value: 'Zendesk' },
+	// { label: 'Hubspot', value: 'Hubspot' },
+	// { label: 'Shopify', value: 'Shopify' },
+	// { label: 'BigCommerce', value: 'BigCommerce' },
+	// { label: 'WooCommerce', value: 'WooCommerce' },
+	// { label: 'Other ERP', value: 'Other ERP' },
 ]
 
 const implementationOptions = [
@@ -25,10 +35,29 @@ const implementationOptions = [
 const errors = computed(() => {
 	if (!submitted.value) return {}
 	return {
+		incorporation_certificate: !props.form.incorporation_certificate,
 		due_diligence: !props.form.agreed_to_due_diligence,
 		partnership_agreement: !props.form.agreed_to_partnership_agreement,
 	}
 })
+
+const PARTNERSHIP_AGREEMENT_LINK = 'https://frappe.io/partners/terms'
+const documentFileTypes = ['application/pdf', 'image/*']
+const incorporationCertificateHelp =
+	'Upload your certificate of incorporation or equivalent company registration document. This helps us verify your legal entity before partnership approval.'
+
+function validateDocument(file: File) {
+	const allowedType =
+		file.type === 'application/pdf' || file.type.startsWith('image/')
+	if (!allowedType) return 'Upload a PDF or image file.'
+	// can change if needed - some basic validation
+	if (file.size > 10 * 1024 * 1024) return 'File size must be under 10 MB.'
+	return null
+}
+
+function onUploadSuccess(file: { file_url?: string }) {
+	props.form.incorporation_certificate = file.file_url || ''
+}
 
 function validate() {
 	submitted.value = true
@@ -83,16 +112,51 @@ defineExpose({ tryContinue })
 
 			<div class="flex flex-col gap-1">
 				<div class="flex items-center justify-between gap-2">
-					<span class="text-xs text-ink-gray-6">Incorporation certificate</span>
-					<span class="text-xs text-ink-gray-5">Optional</span>
+					<div class="flex items-center gap-1">
+						<span class="text-xs text-ink-gray-6"
+							>Incorporation certificate</span
+						>
+						<Tooltip :text="incorporationCertificateHelp">
+							<LucideHelpCircle class="size-3 text-ink-gray-5" />
+						</Tooltip>
+					</div>
 				</div>
-				<FormControl
-					v-model="props.form.incorporation_certificate"
-					type="text"
-					size="sm"
-					variant="outline"
-					placeholder="Certificate URL"
-				/>
+				<FileUploader
+					:fileTypes="documentFileTypes"
+					:validateFile="validateDocument"
+					:uploadArgs="{ private: true }"
+					@success="onUploadSuccess"
+				>
+					<template #default="{ uploading, progress, openFileSelector, error }">
+						<Button
+							variant="outline"
+							class="w-full justify-start"
+							:loading="uploading"
+							@click="openFileSelector"
+						>
+							{{ uploading
+									? `Uploading ${progress}%`
+									: props.form.incorporation_certificate
+										? 'Replace document'
+										: 'Attach document' }}
+						</Button>
+						<p
+							v-if="props.form.incorporation_certificate"
+							class="mt-1 truncate text-xs text-ink-gray-6"
+						>
+							{{ props.form.incorporation_certificate }}
+						</p>
+						<p v-if="error" class="mt-1 text-sm text-ink-red-4">
+							{{ error }}
+						</p>
+					</template>
+				</FileUploader>
+				<p
+					v-if="errors.incorporation_certificate"
+					class="text-sm text-ink-red-4"
+				>
+					Incorporation certificate is required.
+				</p>
 			</div>
 		</div>
 
@@ -105,10 +169,26 @@ defineExpose({ tryContinue })
 				Due diligence confirmation is required.
 			</p>
 
-			<Checkbox
-				v-model="props.form.agreed_to_partnership_agreement"
-				label="I accept the Partnership agreement"
-			/>
+			<div class="flex items-start gap-2">
+				<Checkbox
+					v-model="props.form.agreed_to_partnership_agreement"
+					id="partnership-agreement-checkbox"
+				/>
+				<label
+					for="partnership-agreement-checkbox"
+					class="text-base font-medium text-ink-gray-8"
+				>
+					I accept the
+					<a
+						:href="PARTNERSHIP_AGREEMENT_LINK"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="underline"
+					>
+						Partnership agreement
+					</a>
+				</label>
+			</div>
 			<p
 				v-if="errors.partnership_agreement"
 				class="-mt-2 text-sm text-ink-red-4"

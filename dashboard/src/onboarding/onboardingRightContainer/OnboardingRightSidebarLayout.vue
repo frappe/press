@@ -4,11 +4,11 @@ import OnboardingRightSidebarHeader from '@/onboarding/onboardingRightContainer/
 const resources = [
 	{
 		title: 'Benefits of becoming a partner',
-		link: '',
+		link: 'https://docs.frappe.io/partner-guide/why-partner',
 	},
 	{
 		title: 'Partner program guide',
-		link: '',
+		link: 'https://docs.frappe.io/partner-guide/guide-for-new-partners',
 	},
 	{
 		title: 'Certifications guide',

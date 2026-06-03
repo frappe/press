@@ -14,7 +14,10 @@ import CertificateLinkStatusDialog from '@/onboarding/onboardingLeftContainer/Ce
 import LinkCertificateDialog from '@/onboarding/onboardingLeftContainer/LinkCertificateDialog.vue'
 import CompanyInformationModal from '@/onboarding/onboardingLeftContainer/modal/CompanyInformationModal.vue'
 import { showOnboardingToast } from '@/onboarding/toast'
-import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
+import {
+	getPartnerMRRTargetLabel,
+	usePartnerOnboarding,
+} from '@/onboarding/usePartnerOnboarding'
 import LucideChevronDown from '~icons/lucide/chevron-down'
 import LucideCircleCheck from '~icons/lucide/circle-check'
 import LucideCircleDashed from '~icons/lucide/circle-dashed'
@@ -44,13 +47,20 @@ const mrrCurrentLabel = computed(() =>
 	),
 )
 const mrrTargetLabel = computed(() =>
-	formatCurrency(
-		onboarding.mrrStatus.value.target_amount,
-		onboarding.mrrStatus.value.currency,
-	),
+	onboarding.form.registered_country
+		? getPartnerMRRTargetLabel(onboarding.form.registered_country)
+		: formatCurrency(
+				onboarding.mrrStatus.value.target_amount,
+				onboarding.mrrStatus.value.currency,
+			),
 )
 const mrrProgress = computed(() =>
 	Math.min(100, Math.max(0, onboarding.mrrStatus.value.progress || 0)),
+)
+const canEditDraft = computed(
+	() =>
+		onboarding.doc.value?.docstatus === 0 &&
+		onboarding.doc.value?.status === 'Draft',
 )
 
 const steps = computed(() => [
@@ -74,9 +84,10 @@ const steps = computed(() => [
 		description:
 			'Before you continue, we need to know more about your company to understand how your company can benefit from becoming a Frappe Partner.',
 		summaryRight: null,
-		actionLabel: onboarding.isRegistered.value
-			? 'Fill out company information'
-			: null,
+		actionLabel:
+			onboarding.isRegistered.value && canEditDraft.value
+				? 'Fill out company information'
+				: null,
 		onClick: () => {
 			companyInfoModalOpen.value = true
 		},
@@ -93,7 +104,10 @@ const steps = computed(() => [
 		summaryRight: onboarding.isCertificateRequirementComplete.value
 			? null
 			: `${onboarding.linkedCertificateCount.value} / 2 linked`,
-		actionLabel: onboarding.isRegistered.value ? 'Link certificate' : null,
+		actionLabel:
+			onboarding.isRegistered.value && canEditDraft.value
+				? 'Link certificate'
+				: null,
 		secondaryActionLabel: onboarding.hasCertificateActivity.value
 			? 'Check link status'
 			: null,
@@ -223,7 +237,7 @@ async function submitForApproval() {
 				class="border-b border-outline-gray-modals last:border-b-0"
 			>
 				<FAccordionHeader>
-					<FAccordionTrigger class="py-6">
+					<FAccordionTrigger class="py-3">
 						<span
 							v-if="step.status === 'completed'"
 							class="inline-flex shrink-0 text-ink-green-3"
@@ -277,7 +291,7 @@ async function submitForApproval() {
 				>
 					<p
 						v-if="step.description"
-						class="mb-4 max-w-prose self-stretch text-ink-gray-6 text-p-base font-normal leading-normal tracking-wide"
+						class="mb-2 max-w-prose self-stretch text-p-base font-normal leading-5 text-ink-gray-6"
 					>
 						{{ step.description }}
 					</p>
@@ -327,10 +341,10 @@ async function submitForApproval() {
 				application when you are ready.
 			</p>
 			<p
-				v-if="onboarding.doc.value?.rejection_reason"
+				v-if="onboarding.doc.value?.reviewer_comments"
 				class="mt-3 whitespace-pre-wrap text-p-base text-ink-gray-8"
 			>
-				{{ onboarding.doc.value.rejection_reason }}
+				{{ onboarding.doc.value.reviewer_comments }}
 			</p>
 		</div>
 

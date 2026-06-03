@@ -1,4 +1,4 @@
-import { LoadingIndicator, Tooltip, frappeRequest } from 'frappe-ui';
+import { LoadingIndicator, Tooltip } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import LucideAppWindow from '~icons/lucide/app-window';
@@ -15,50 +15,7 @@ import { getJobsTab } from './common/jobs';
 import { getPatchesTab } from './common/patches';
 import { tagTab } from './common/tags';
 
-const pollingGroups = new Set();
-
-export function pollReleasePipelineValidationStatus(group) {
-	if (pollingGroups.has(group.doc.name)) return; // already polling
-	if (!group.doc.deploy_information.has_running_release_pipeline) return;
-
-	pollingGroups.add(group.doc.name);
-
-	function poll() {
-		frappeRequest({
-			url: 'press.api.bench.deploy_status',
-			params: { name: group.name },
-		})
-			.then(({ is_validating, is_deploy_in_progress, candidate }) => {
-				if (!group.doc.deploy_information.has_running_release_pipeline) {
-					pollingGroups.delete(group.doc.name);
-					return;
-				}
-
-				group.doc.deploy_information.deploy_in_progress = Boolean(
-					is_deploy_in_progress,
-				);
-
-				if (candidate) {
-					group.doc.deploy_information.last_deploy = {
-						name: candidate,
-					};
-				}
-
-				if (is_validating) {
-					setTimeout(poll, 2000); // still validating, keep polling
-				} else {
-					// Validation done
-					group.doc.deploy_information.has_running_release_pipeline = false;
-					pollingGroups.delete(group.doc.name);
-				}
-			})
-			.catch(() => {
-				pollingGroups.delete(group.doc.name);
-			});
-	}
-
-	poll();
-}
+import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline';
 
 export default {
 	doctype: 'Release Group',
@@ -846,29 +803,6 @@ export default {
 								},
 							}),
 						);
-					},
-				},
-				{
-					label: 'Validating Deploy',
-					slots: {
-						prefix: () => h(LoadingIndicator, { class: 'w-4 h-4' }),
-					},
-					theme: 'green',
-					condition: () =>
-						!group.doc.deploy_information.deploy_in_progress &&
-						!group.doc.deploy_information.bench_creation_underway &&
-						group.doc.deploy_information.has_running_release_pipeline,
-				},
-				{
-					label: 'Deploy in progress',
-					slots: {
-						prefix: () => h(LoadingIndicator, { class: 'w-4 h-4' }),
-					},
-					theme: 'green',
-					condition: () => group.doc.deploy_information.deploy_in_progress,
-					route: {
-						name: 'Deploy Candidate',
-						params: { id: group.doc?.deploy_information?.last_deploy?.name },
 					},
 				},
 				{

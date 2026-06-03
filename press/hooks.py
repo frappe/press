@@ -240,6 +240,7 @@ scheduler_events = {
 		"press.press.doctype.press_webhook_log.press_webhook_log.clean_logs_older_than_24_hours",
 		"press.press.doctype.payment_due_extension.payment_due_extension.remove_payment_due_extension",
 		"press.press.doctype.tls_certificate.tls_certificate.notify_custom_tls_renewal",
+		"press.press.doctype.tls_certificate.tls_certificate.retrigger_pending_site_domain_callbacks",
 		"press.press.doctype.site.site.suspend_sites_exceeding_disk_usage_for_last_14_days",
 		"press.press.doctype.user_2fa.user_2fa.yearly_2fa_recovery_code_reminder",
 		"press.press.doctype.registry_server.registry_server.delete_old_images_from_registry",

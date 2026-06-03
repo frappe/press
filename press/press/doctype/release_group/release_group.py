@@ -897,6 +897,9 @@ class ReleaseGroup(Document, TagHelpers):
 		out.last_deploy = self.last_dc_info
 		out.deploy_in_progress = self.deploy_in_progress
 		out.has_running_release_pipeline = self.has_running_release_pipeline
+		out.can_run_patch_build = can_run_patch_build(
+			self.name
+		)  # Don't show the button if the user can't run an instant build
 		if not out.deploy_in_progress and out.has_running_release_pipeline:
 			# Check if the deploy has finished and bench creation is underway.
 			out.bench_creation_underway = bool(
@@ -2105,3 +2108,73 @@ def get_flattened_app_sources(app_sources: list[str | list[str]]) -> list[str]:
 		else:
 			flattened_sources.append(source)
 	return flattened_sources
+
+
+def _get_previous_candidate(release_group: str) -> "DeployCandidate | None":
+	"""Get previous candidate from the release group"""
+	last_active_build = frappe.db.get_value(
+		"Bench", {"group": release_group, "status": "Active"}, "build", order_by="creation desc"
+	)
+	if not last_active_build:
+		return None
+
+	deploy_candidate = frappe.db.get_value("Deploy Candidate Build", last_active_build, "deploy_candidate")
+	if not deploy_candidate:
+		return None
+
+	return frappe.get_doc("Deploy Candidate", deploy_candidate)
+
+
+def _has_active_benches(previous_candidate: "DeployCandidate") -> bool:
+	"""Check if active benches are present in case intel and arm both
+	are present in previous candidate check for both benches"""
+	intel_bench = arm_bench = None
+	if previous_candidate.intel_build:
+		intel_bench = frappe.db.get_value(
+			"Bench", {"build": previous_candidate.intel_build, "status": "Active"}, "name"
+		)
+	if previous_candidate.arm_build:
+		arm_bench = frappe.db.get_value(
+			"Bench", {"build": previous_candidate.arm_build, "status": "Active"}, "name"
+		)
+
+	if not intel_bench and not arm_bench:
+		return False
+
+	if previous_candidate.intel_build and previous_candidate.arm_build and (not intel_bench or not arm_bench):
+		return False
+
+	return True
+
+
+def can_run_patch_build(release_group: str) -> bool:
+	if not frappe.db.get_single_value("Press Settings", "allow_patch_builds"):
+		return False
+
+	previous_candidate = _get_previous_candidate(release_group)
+	if not previous_candidate:
+		return False
+
+	if frappe.db.get_value("Release Group", release_group, "public"):
+		return False
+
+	rg: ReleaseGroup = frappe.get_doc("Release Group", release_group)
+	pc = previous_candidate
+
+	state_unchanged = (
+		# same apps in same order
+		[app.app for app in pc.apps] == [app.app for app in rg.apps]
+		# same source/branch per app
+		and {app.app: app.source for app in pc.apps} == {app.app: app.source for app in rg.apps}
+		# same system dependencies (e.g. Python, Node versions)
+		and {d.dependency: d.version for d in pc.dependencies}
+		== {d.dependency: d.version for d in rg.dependencies}
+		# same apt/pip packages
+		and {p.package_manager: p.package for p in pc.packages}
+		== {p.package_manager: p.package for p in rg.packages}
+		# same environment variables
+		and {ev.key: ev.value for ev in pc.environment_variables}
+		== {ev.key: ev.value for ev in rg.environment_variables}
+	)
+
+	return state_unchanged and _has_active_benches(pc)

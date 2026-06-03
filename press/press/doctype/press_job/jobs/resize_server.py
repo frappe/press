@@ -10,7 +10,10 @@ from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 
 if TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.plan_change.plan_change import PlanChange
 	from press.press.doctype.server.server import Server
+	from press.press.doctype.server_plan.server_plan import ServerPlan
+	from press.workflow_engine.doctype.press_workflow.press_workflow import PressWorkflow
 
 
 class ResizeServerJob(PressJob):
@@ -119,3 +122,28 @@ class ResizeServerJob(PressJob):
 
 		with suppress(Exception):
 			self.server_doc.increase_disk_size(increment=plan_disk_size - self.virtual_machine_doc.disk_size)
+
+	def on_press_job_failure(self, workflow: PressWorkflow):
+		self.start_virtual_machine()
+
+		# Find out the last plan change of the server
+		self.server_doc.reload()
+
+		plan_changes = frappe.get_all(
+			"Plan Change",
+			{
+				"document_type": self.server_type,
+				"document_name": self.server,
+				"to_plan": self.server_doc.plan,
+				"type": ("in", ["Upgrade", "Downgrade"]),
+			},
+			order_by="timestamp desc",
+			limit=1,
+		)
+		if not plan_changes:
+			return
+
+		plan_change: PlanChange = frappe.get_doc("Plan Change", plan_changes[0].name)
+
+		from_plan: ServerPlan = frappe.get_doc("Server Plan", plan_change.from_plan)
+		self.server_doc._change_plan(from_plan)
