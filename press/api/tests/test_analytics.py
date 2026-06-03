@@ -136,7 +136,7 @@ class TestPrometheusQueryAlignment(FrappeTestCase):
 		count = (rounded_end - rounded_start) // delta + 1
 		return [(rounded_start + i * delta).timestamp() for i in range(count)]
 
-	def _run(self, series_values):
+	def _run_prometheus_query(self, series_values):
 		from press.api import server
 
 		response = {"data": {"result": [{"metric": {"mode": "user"}, "values": series_values}]}}
@@ -162,7 +162,7 @@ class TestPrometheusQueryAlignment(FrappeTestCase):
 
 	def test_full_series_has_no_gaps(self):
 		labels = self._labels()
-		result = self._run([[label, "42"] for label in labels])
+		result = self._run_prometheus_query([[label, "42"] for label in labels])
 
 		values = result["datasets"][0]["values"]
 		self.assertEqual(len(values), len(labels))
@@ -174,7 +174,7 @@ class TestPrometheusQueryAlignment(FrappeTestCase):
 		# rate-window fix is what stops Prometheus from omitting these steps.
 		labels = self._labels()
 		present = [[label, "42"] for i, label in enumerate(labels) if i % 2 == 0]
-		result = self._run(present)
+		result = self._run_prometheus_query(present)
 
 		values = result["datasets"][0]["values"]
 		self.assertEqual(values[0], 42)
