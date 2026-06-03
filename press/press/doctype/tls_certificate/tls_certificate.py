@@ -15,6 +15,7 @@ import frappe
 import OpenSSL
 from frappe.model.document import Document
 from frappe.query_builder.functions import Date
+from frappe.utils import now_datetime
 
 from press.exceptions import (
 	DNSValidationError,
@@ -54,6 +55,8 @@ class TLSCertificate(Document):
 		provider: DF.Literal["Let's Encrypt", "Other"]
 		retry_count: DF.Int
 		rsa_key_size: DF.Literal["2048", "3072", "4096"]
+		site_domain_tls_update_pending: DF.Check
+		site_domain_tls_update_triggered_at: DF.Datetime | None
 		status: DF.Literal["Pending", "Active", "Expired", "Revoked", "Failure"]
 		team: DF.Link | None
 		wildcard: DF.Check
@@ -224,6 +227,10 @@ class TLSCertificate(Document):
 	def trigger_site_domain_callback(self):
 		domain = frappe.db.get_value("Site Domain", {"tls_certificate": self.name}, "name")
 		if domain:
+			self.site_domain_tls_update_pending = True
+			self.site_domain_tls_update_triggered_at = now_datetime()
+			self.save(ignore_permissions=True)
+
 			frappe.get_doc("Site Domain", domain).process_tls_certificate_update()
 
 	def trigger_self_hosted_server_callback(self):
@@ -343,6 +350,26 @@ def rollback_and_fail_tls(certificate: PendingCertificate, e: Exception):
 			"retry_count": certificate.retry_count + 1,
 		},
 	)
+
+
+def retrigger_pending_site_domain_callbacks():
+	certificates = frappe.get_all(
+		"TLS Certificate",
+		filters={
+			"status": "Active",
+			"site_domain_tls_update_pending": 1,
+			"site_domain_tls_update_triggered_at": ("<", frappe.utils.add_to_date(None, days=-1)),
+		},
+		pluck="name",
+	)
+	for certificate in certificates:
+		try:
+			certificate_doc: TLSCertificate = frappe.get_doc("TLS Certificate", certificate)
+			certificate_doc.trigger_site_domain_callback()
+		except Exception as e:
+			log_error("TLS Certificate Callback Exception", certificate=certificate, exception=e)
+		finally:
+			frappe.db.commit()
 
 
 def renew_tls_certificates():

@@ -22,6 +22,7 @@ from press.utils.test import foreground_enqueue_doc
 
 
 @patch("press.press.doctype.cluster.cluster.boto3.client", new=MagicMock())
+@patch.object(Cluster, "check_quota", new=MagicMock(return_value=True))
 def create_test_cluster(
 	name: str = "Mumbai",
 	region: str = "ap-south-1",
@@ -67,10 +68,11 @@ class TestCluster(FrappeTestCase):
 			create_test_virtual_machine_image(cluster=cluster, series=s)
 
 	@patch.object(ProxyServer, "validate_domains", new=MagicMock())  # avoid TLSCertificate validation
+	@patch.object(Cluster, "check_quota", new=MagicMock(return_value=True))
 	def _create_cluster(
 		self,
-		aws_access_key_id,
-		aws_secret_access_key,
+		aws_access_key_id=None,
+		aws_secret_access_key=None,
 		public=False,
 		add_default_servers=False,
 	) -> Cluster:

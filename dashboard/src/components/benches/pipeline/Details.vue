@@ -7,7 +7,6 @@ import {
 	Button,
 	Dropdown,
 	Badge,
-  Spinner
 } from 'frappe-ui'
 
 import { toast } from 'vue-sonner'
@@ -19,6 +18,7 @@ import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
 import AppVersionsDialog from '@/dialogs/AppVersionsDialog.vue'
 import Stages from './Stages.vue'
+import Loader from './Loader.vue'
 
 import {
 	h,
@@ -26,7 +26,7 @@ import {
 	reactive,
 	computed,
 	watch,
-	onMounted,
+	nextTick,
 	onBeforeUnmount,
 } from 'vue'
 import { confirmDialog, renderDialog } from '@/utils/components'
@@ -54,6 +54,8 @@ const output = reactive({
 	status: null,
 	selectedIndex: null,
 })
+const outputEl = ref<HTMLElement | null>(null)
+const stepsEl = ref<HTMLElement | null>(null)
 
 const setOutput = (opts) => {
 	output.val = opts.val || 'No Output'
@@ -88,6 +90,21 @@ const pipeline = props.deployview
 			doctype: 'Release Pipeline',
 			name: props.id,
 			auto: true,
+			onSuccess: (data) => {
+				const wiredId = 'release-pipeline' + props.id
+
+				const statuses = data?.steps?.stages?.map((x) => x.status)
+				if (statuses?.includes('Failure')) fetchSetErrs()
+
+				if (
+					['Pending', 'Running'].includes(data.status) &&
+					!wired.has(wiredId)
+				) {
+					socket.emit('doc_subscribe', 'Release Pipeline', props.id)
+					socket.on('doc_update', handleDocUpdate)
+					wired.add(wiredId)
+				}
+			},
 		})
 
 const notifApiFields = {
@@ -106,8 +123,36 @@ const notifApiFields = {
 const errors = createListResource(notifApiFields)
 const warnings = createListResource(notifApiFields)
 
-// used to unsubscribe from socket events
-const wired = new Set<string>()
+const errList = computed(() => {
+	const list = [...(errors?.data || []), ...(warnings?.data || [])]
+	const activeErrListId = activeBuildId.value || pipeline?.doc?.name
+	return list.filter((x) => x.document_name == activeErrListId)
+})
+
+watch(
+	() => errList.value,
+	(x) => {
+		if (x.length > 0) tabState.value = 'Issues'
+	},
+)
+
+const fetchSetErrs = () => {
+	const errids = buildIds.value?.length > 0 ? buildIds.value : [props.id]
+
+	errors.update({
+		cache: ['Press Notification Error', 'Deploy Candidate Build', errids],
+		filters: { document_name: ['in', errids], class: 'Error' },
+	})
+	errors.fetch()
+
+	warnings.update({
+		cache: ['Press Notification Warning', 'Deploy Candidate Build', errids],
+		filters: { document_name: ['in', errids], class: 'Warning' },
+	})
+	warnings.fetch()
+}
+
+const wired = reactive(new Set<string>())
 const builds = ref<Record<string, any>>({})
 
 const dummyStages = ref([
@@ -120,7 +165,6 @@ const dummyStages = ref([
 const handleDummyStage = (x) => {
 	if (!props.deployview) return
 
-	// updateDeployViewBuild(x)
 	dummyStages.value[2].status = x.status
 
 	const pendingState = ['Success', 'Failure'].includes(x.status)
@@ -129,10 +173,27 @@ const handleDummyStage = (x) => {
 	dummyStages.value[3].status = pendingState
 }
 
+const setAutomaticOutput = (steps: any) => {
+	const obj = steps.filter((x) => x.status !== 'Pending')?.at(-1)
+
+	if (!obj) return
+
+	output.val = obj.output || 'No Output'
+	output.status = obj.status
+	output.id = obj.name
+
+	nextTick(() => {
+		if (outputEl.value) outputEl.value.scrollTop = outputEl.value.scrollHeight
+
+		const el = stepsEl.value?.querySelector(`[data-step-id="${output?.id}"]`)
+		el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+	})
+}
+
 watch(
 	() => buildIds.value,
-	(ids: string[]) => {
-		if (!ids) return
+	(ids: string[], oldIds: string[]) => {
+		if (JSON.stringify(ids) === JSON.stringify(oldIds)) return
 
 		ids.forEach((id: string) => {
 			if (!builds.value[id]) {
@@ -148,13 +209,13 @@ watch(
 				}
 			}
 
-			// socket io stuff
-			if (socket && !wired.has(id)) {
+			if (socket && !wired.has(id) && pipeline?.doc?.status === 'Running') {
 				socket.emit('doc_subscribe', 'Deploy Candidate Build', id)
 
 				socket.on(`bench_deploy:${id}:steps`, (data) => {
 					const buildRes = builds.value[id]
 					if (data.name === id && buildRes) {
+						setAutomaticOutput(data.steps)
 						buildRes.doc.build_steps = data.steps
 					}
 				})
@@ -168,42 +229,34 @@ watch(
 					)
 					if (rgDoc) rgDoc.reload()
 
-					errors.reload()
-					warnings.reload()
+					fetchSetErrs()
 				})
 			}
 
-			wired.add(id)
+			if (pipeline?.doc?.status === 'Running') wired.add(id)
 		})
-
-		// ------------------------- errors and warnings
-		errors.update({
-			cache: [
-				'Press Notification Error',
-				'Deploy Candidate Build',
-				buildIds.value,
-			],
-			filters: { document_name: ['in', buildIds.value], class: 'Error' },
-		})
-		errors.fetch()
-
-		warnings.update({
-			cache: [
-				'Press Notification Warning',
-				'Deploy Candidate Build',
-				buildIds.value,
-			],
-			filters: { document_name: ['in', buildIds.value], class: 'Warning' },
-		})
-		warnings.fetch()
 	},
-	{ immediate: true, deep: true },
+	{ immediate: true },
 )
+
+watch(
+	() => pipeline?.doc?.status,
+	(x) => {
+		if (x == 'Failure') fetchSetErrs()
+	},
+)
+
+const handleAgentJobUpdate = (data) => {
+	const job = agentJobs?.value?.[data.id]
+	if (job?.doc) job.doc = { ...job.doc, ...data }
+}
 
 watch(
 	() => agentJobIds?.value,
 	(ids: string[]) => {
-		if (props.deployview || !ids) return
+		if (props.deployview || !ids || pipeline?.doc?.status !== 'Running') {
+			return
+		}
 
 		ids.forEach((id: string) => {
 			if (!agentJobs.value[id]) {
@@ -216,58 +269,56 @@ watch(
 
 			if (socket && !wired.has(`job:${id}`)) {
 				socket.emit('doc_subscribe', 'Agent Job', id)
-
-				socket.on('agent_job_update', (data) => {
-					if (data.id !== id) return
-					const job = agentJobs.value[id]
-					if (job?.doc) job.doc = { ...job.doc, ...data }
-				})
-
 				wired.add(`job:${id}`)
 			}
 		})
+
+		if (socket && !wired.has('agent_job_update')) {
+			socket.on('agent_job_update', handleAgentJobUpdate)
+			wired.add('agent_job_update')
+		}
 	},
-	{ immediate: true, deep: true },
 )
 
 // ---------------------  Realtime stuff ----------------------
 const handleDocUpdate = props.deployview
 	? null
 	: (x) => {
-			if (x.doctype === 'Release Pipeline' && x.name === props.id)
+			if (x.doctype === 'Release Pipeline' && x.name === props.id) {
 				pipeline.reload()
+			}
 		}
 
 onBeforeUnmount(() => {
 	if (!props.deployview) {
 		socket.emit('doc_unsubscribe', 'Release Pipeline', props.id)
 		socket.off('doc_update', handleDocUpdate)
-		return
+		wired.delete('release-pipeline' + props.id)
 	}
 
 	wired.forEach((id) => {
-		if (id.startsWith('job:')) return
+		if (
+			id.startsWith('job:') ||
+			id.startsWith('release-pipeline') ||
+			id === 'agent_job_update'
+		) {
+			return
+		}
 
 		socket.emit('doc_unsubscribe', 'Deploy Candidate Build', id)
 		socket.off(`bench_deploy:${id}:steps`)
 		socket.off(`bench_deploy:${id}:finished`)
 	})
 
-	if (props.deployview) {
+	if (!props.deployview) {
 		agentJobIds?.value?.forEach((id: string) => {
 			socket.emit('doc_unsubscribe', 'Agent Job', id)
 		})
 
-		socket.off('agent_job_update')
+		socket.off('agent_job_update', handleAgentJobUpdate)
+		wired.delete('agent_job_update')
 	}
 })
-
-if (!props.deployview) {
-	onMounted(() => {
-		socket.emit('doc_subscribe', 'Release Pipeline', props.id)
-		socket.on('doc_update', handleDocUpdate)
-	})
-}
 
 const tabState = ref('Tasks')
 
@@ -349,9 +400,7 @@ const stopBuild = () => {
 					params: { dn: deploy.name },
 				})
 					.fetch()
-					.then(() => {
-						hide()
-					})
+					.then(() => hide())
 					.catch(() => {
 						hide()
 						toast.error(
@@ -365,21 +414,27 @@ const stopBuild = () => {
 </script>
 
 <template>
+	<Loader
+		v-if="deployview? builds[activeBuildId]?.get?.loading: wired.size == 0 && pipeline?.get?.loading && !pipeline?.doc"
+	/>
+
 	<main
-		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-6rem)]"
+		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-7rem)] mt-1.5"
+		v-else
 	>
 		<!-- header -->
 		<div class="flex gap-2 items-center">
-			<router-link :to="`/groups/${name}/${deployview? 'deploys':'pipelines'}`">
-				<lucide-chevron-left class="size-4" />
-			</router-link>
+			<Button :route="`/groups/${name}/deploys?pipeline=${!deployview}`">
+				<template #icon>
+					<lucide-chevron-left class="size-4" />
+				</template>
+			</Button>
 
-			<h2 class="text-ink-gray-9">
+			<h2 class="text-ink-gray-9 text-lg font-medium">
 				{{ deployview ? builds[activeBuildId]?.doc?.deploy_candidate : "Pipeline" }}
 				{{ pipeline?.doc?.name }}
 			</h2>
 
-        <Spinner v-if="pipeline?.loading"/>
 			<Badge
 				:label="deployview ? builds[activeBuildId]?.doc?.status : pipeline?.doc?.status"
 				:theme="badgeThemes[deployview ? builds[activeBuildId]?.doc?.status : pipeline?.doc?.status] || 'gray'"
@@ -388,7 +443,7 @@ const stopBuild = () => {
 
 			<Tabs
 				variant="solid"
-        size='sm'
+				size="sm"
 				v-if="!deployview && buildIds.length > 1"
 				:tabs="pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => ({ label: x.architecture, value: x.name }))"
 				v-model="activeBuildId"
@@ -405,7 +460,9 @@ const stopBuild = () => {
 
 			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
 				<Button>
-					<lucide-more-horizontal class="size-4" />
+					<template #icon>
+						<lucide-more-horizontal class="size-4" />
+					</template>
 				</Button>
 			</Dropdown>
 		</div>
@@ -447,6 +504,7 @@ const stopBuild = () => {
 		<div
 			class="flex rounded border p-3 pt-1 flex-1 min-h-0"
 			:class='output.opened? "": "!pr-0" '
+			ref="stepsEl"
 		>
 			<Scrollbar
 				class="px-0.5 pr-3 transition-all duration-300 shrink-0"
@@ -463,7 +521,7 @@ const stopBuild = () => {
 							v-if='tab.label == "Issues"'
 							class="bg-surface-gray-2 py-0.5 px-1 rounded text-xs leading-none"
 						>
-							{{ (errors?.data?.length || 0) + (warnings?.data?.length || 0) }}</span
+							{{ errList?.length || 0 }}</span
 						>
 					</template>
 				</Tabs>
@@ -482,11 +540,8 @@ const stopBuild = () => {
 
 				<!-- list of errors -->
 				<template v-else>
-					<div
-						v-for='x in [...errors?.data || [], ...warnings?.data || []]?.filter(x => x.document_name == activeBuildId)'
-						class="flex flex-col gap-1"
-					>
-						<Collapsable headerCss="py-3" class="mb-3">
+					<div v-for='x in errList' class="flex flex-col gap-1">
+						<Collapsable headerCss="py-3" class="mb-3" opened>
 							<template #prefix>
 								<StatusIcon
 									:status="x.class == 'Error' ? 'Failed' : 'Warning'"
@@ -495,12 +550,11 @@ const stopBuild = () => {
 								{{ x.class }}
 							</template>
 
-							<div class="rounded p-3 bg-surface-red-1 flex flex-col gap-2">
-								<p
-									v-html="x.message"
-									class="!w-full !max-w-full  prose prose-sm ml-3 mb-3 text-sm"
-									:class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-4" : "bg-surface-amber-1 text-ink-amber-3"'
-								/>
+							<div
+								class="rounded px-3 py-2 bg-surface-red-1 flex flex-col gap-2"
+								:class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-4" : "bg-surface-amber-1 text-ink-amber-3"'
+							>
+								<p v-html="x.message" class="leading-relaxed text-sm" />
 
 								<a
 									:href="x.assistance_url"
@@ -519,22 +573,25 @@ const stopBuild = () => {
 			<!-- output -->
 			<div
 				v-show="output.opened"
-				class="overflow-auto bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 rounded transition-all duration-300 flex-1"
+				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 rounded transition-all duration-300 flex-1 flex flex-col min-h-0"
 			>
 				<div
-					class="flex items-center pb-2 border-outline-gray-2 mb-3 text-ink-gray-6 -mt-1 -mr-1"
+					class="flex items-center pb-2 border-outline-gray-2 mb-3 text-ink-gray-6 -mt-1 -mr-1 shrink-0"
 				>
 					<span>Output</span>
 					<CopyBtn :text="output?.val || ''" class="ml-auto smallbtn" />
-					<button class='smallbtn' @click="setOutput({ val: null, status: null, opened:false })">
+					<button
+						class="smallbtn"
+						@click="setOutput({ val: null, status: null, opened:false })"
+					>
 						<lucide-x class="size-4" />
-					</Button>
+					</button>
 				</div>
 
 				<pre
-					class="font-mono text-xs overflow-auto -m-3 p-1 px-3.5"
-					:class='output.status == "Failure" ? "bg-surface-red-1 text-ink-red-3" :
-          ""'
+					ref="outputEl"
+					class="font-mono text-xs overflow-auto -m-3 p-1 px-3.5 flex-1 min-h-0"
+					:class='output.status == "Failure" ? "bg-surface-red-1 text-ink-red-3" : ""'
 				>{{ output.val }}</pre>
 			</div>
 		</div>
@@ -543,6 +600,6 @@ const stopBuild = () => {
 
 <style scoped>
 .smallbtn {
-   @apply hover:bg-surface-gray-3 dark:hover:bg-surface-gray-2 p-1 rounded hover:text-ink-gray-9
+	@apply hover:bg-surface-gray-3 dark:hover:bg-surface-gray-2 p-1 rounded hover:text-ink-gray-9
 }
 </style>
