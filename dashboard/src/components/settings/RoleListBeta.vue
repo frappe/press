@@ -7,7 +7,7 @@ import {
 	FormControl,
 	Switch,
 } from 'frappe-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import { toast } from 'vue-sonner'
 import AlertBanner from '@/components/AlertBanner.vue'
 import { getTeam } from '@/data/team'
@@ -41,13 +41,19 @@ interface Role {
 // ─── Fetch roles ──────────────────────────────────────────────────────
 const rolesResource = createResource({
 	url: 'run_doc_method',
-	auto: true,
-	params: {
+	auto: false,
+	makeParams: () => ({
 		method: 'get_roles',
 		dt: 'Team',
 		dn: team.doc?.name,
-	},
+	}),
 	transform: (d: any) => d.message as Role[],
+})
+
+watchEffect(() => {
+	if (team.doc?.name) {
+		rolesResource.fetch()
+	}
 })
 
 const roles = computed(() => rolesResource.data ?? [])
