@@ -110,7 +110,10 @@ const updatePermission = (key: string, value: boolean) => {
 			onSuccess: () => {
 				;(selectedRole.value as any)[key] = value
 				rolesResource.reload()
-				toast.success(`${key.replace(/_/g, ' ')} updated`)
+				const label =
+					PERMISSION_DEFS.find((p) => p.key === key)?.label ??
+					key.replace(/_/g, ' ')
+				toast.success(`${label} updated`)
 			},
 			onError: (e: any) => toast.error(getToastErrorMessage(e)),
 		},
@@ -176,7 +179,7 @@ const deleteRole = () => {
 			<div class="space-y-2">
 				<h2 class="text-2xl font-semibold text-ink-gray-9">Roles</h2>
 				<p class="text-ink-gray-5 mt-1">
-					Roles define what actions members of your team can perform. Customise
+					Roles define what actions members of your team can perform. Customize
 					permissions for each role.
 				</p>
 			</div>
@@ -289,7 +292,7 @@ const deleteRole = () => {
 								changed.
 							</template>
 							<template v-else>
-								Customise the permissions for this role by toggling the switches
+								Customize the permissions for this role by toggling the switches
 								below.
 							</template>
 						</p>
