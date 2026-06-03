@@ -174,7 +174,6 @@
 			"write": 1
 		}
 	],
-	"row_format": "Dynamic",
 	"sort_field": "modified",
 	"sort_order": "DESC",
 	"states": [],
