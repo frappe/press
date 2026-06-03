@@ -121,7 +121,9 @@ class TestAPIBench(FrappeTestCase):
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	@patch.object(DeployCandidate, "schedule_build_and_deploy", new=MagicMock())
+	@patch.object(
+		DeployCandidate, "schedule_build_and_deploy", new=MagicMock(return_value={"name": "mock-deploy"})
+	)
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock())
 	def test_deploy_and_update_fn_creates_bench_update(self):
 		group = new(

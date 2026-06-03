@@ -84,7 +84,10 @@
 			"label": "Title",
 			"reqd": 1
 		},
-		{ "fieldname": "column_break_3", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_3",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "Draft",
 			"fieldname": "status",
@@ -94,7 +97,10 @@
 			"label": "Status",
 			"options": "Draft\nPublished\nIn Review\nAttention Required\nRejected\nDisabled"
 		},
-		{ "fieldname": "section_break_5", "fieldtype": "Section Break" },
+		{
+			"fieldname": "section_break_5",
+			"fieldtype": "Section Break"
+		},
 		{
 			"default": "Please add a short description about your app here...",
 			"fieldname": "description",
@@ -143,7 +149,11 @@
 			"label": "Terms of Service",
 			"options": "URL"
 		},
-		{ "fieldname": "route", "fieldtype": "Data", "label": "Route" },
+		{
+			"fieldname": "route",
+			"fieldtype": "Data",
+			"label": "Route"
+		},
 		{
 			"default": "0",
 			"fieldname": "published",
@@ -160,7 +170,10 @@
 			"reqd": 1,
 			"unique": 1
 		},
-		{ "fieldname": "column_break_16", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_16",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "team",
 			"fieldtype": "Link",
@@ -185,7 +198,10 @@
 			"label": "Screenshots",
 			"options": "Marketplace App Screenshot"
 		},
-		{ "fieldname": "section_break_15", "fieldtype": "Section Break" },
+		{
+			"fieldname": "section_break_15",
+			"fieldtype": "Section Break"
+		},
 		{
 			"fieldname": "categories",
 			"fieldtype": "Table",
@@ -212,30 +228,61 @@
 			"fieldtype": "Check",
 			"label": "Use custom verify template"
 		},
-		{ "fieldname": "subject", "fieldtype": "Data", "label": "Subject" },
-		{ "fieldname": "message", "fieldtype": "Text Editor", "label": "Message" },
+		{
+			"fieldname": "subject",
+			"fieldtype": "Data",
+			"label": "Subject"
+		},
+		{
+			"fieldname": "message",
+			"fieldtype": "Text Editor",
+			"label": "Message"
+		},
 		{
 			"fieldname": "signature",
 			"fieldtype": "Text Editor",
 			"label": "Signature"
 		},
-		{ "fieldname": "poll_method", "fieldtype": "Data", "label": "Poll Method" },
+		{
+			"fieldname": "poll_method",
+			"fieldtype": "Data",
+			"label": "Poll Method"
+		},
 		{
 			"fieldname": "subscription_update_hook",
 			"fieldtype": "Data",
 			"label": "Subscription Update Hook"
 		},
-		{ "fieldname": "saas_tab", "fieldtype": "Tab Break", "label": "SaaS" },
-		{ "fieldname": "column_break_32", "fieldtype": "Column Break" },
-		{ "fieldname": "column_break_30", "fieldtype": "Section Break" },
-		{ "fieldname": "column_break_33", "fieldtype": "Column Break" },
+		{
+			"fieldname": "saas_tab",
+			"fieldtype": "Tab Break",
+			"label": "SaaS"
+		},
+		{
+			"fieldname": "column_break_32",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "column_break_30",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "column_break_33",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "descriptions_tab",
 			"fieldtype": "Tab Break",
 			"label": "Descriptions"
 		},
-		{ "fieldname": "section_break_7", "fieldtype": "Section Break" },
-		{ "fieldname": "column_break_10", "fieldtype": "Column Break" },
+		{
+			"fieldname": "section_break_7",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "column_break_10",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "outgoing_email",
 			"fieldtype": "Data",
@@ -275,7 +322,11 @@
 			"fieldtype": "Check",
 			"label": "Run After Uninstall Script"
 		},
-		{ "fieldname": "review_tab", "fieldtype": "Tab Break", "label": "Review" },
+		{
+			"fieldname": "review_tab",
+			"fieldtype": "Tab Break",
+			"label": "Review"
+		},
 		{
 			"default": "0",
 			"fieldname": "frappe_approved",
@@ -344,7 +395,10 @@
 			"fieldtype": "Date",
 			"label": "Published On"
 		},
-		{ "fieldname": "column_break_ccyg", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_ccyg",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"description": "This bypasses the Marketplace Automated Audit Checks. Only suggested to be checked for Frappe apps.",
@@ -380,7 +434,7 @@
 			"link_fieldname": "marketplace_app"
 		}
 	],
-	"modified": "2026-04-16 12:40:05.646198",
+	"modified": "2026-05-30 08:44:57.088090",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Marketplace App",
@@ -410,14 +464,28 @@
 			"select": 1,
 			"share": 1,
 			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"read": 1,
+			"role": "Press User",
+			"select": 1,
+			"write": 1
 		}
 	],
 	"row_format": "Dynamic",
 	"sort_field": "modified",
 	"sort_order": "DESC",
 	"states": [
-		{ "color": "Gray", "title": "Draft" },
-		{ "color": "Green", "title": "Published" }
+		{
+			"color": "Gray",
+			"title": "Draft"
+		},
+		{
+			"color": "Green",
+			"title": "Published"
+		}
 	],
 	"title_field": "title",
 	"track_changes": 1

@@ -1,67 +1,111 @@
 <script setup lang="ts">
 import {
+	createResource,
 	createListResource,
 	createDocumentResource,
+	getCachedDocumentResource,
 	Button,
 	Dropdown,
 	Badge,
 } from 'frappe-ui'
 
+import { toast } from 'vue-sonner'
 import Tabs from '@/components/common/Tabs.vue'
 
-import Stages from './Stages.vue'
 import CopyBtn from '@/components/utils/CopyBtn.vue'
+import Scrollbar from '@/components/common/Scrollbar.vue'
 import Collapsable from '@/components/common/Collapsable.vue'
 import StatusIcon from './StatusIcon.vue'
+import AppVersionsDialog from '@/dialogs/AppVersionsDialog.vue'
+import Stages from './Stages.vue'
+import Loader from './Loader.vue'
 
-import { ref, computed, provide, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
+import {
+	h,
+	ref,
+	reactive,
+	computed,
+	watch,
+	nextTick,
+	onBeforeUnmount,
+} from 'vue'
+import { confirmDialog, renderDialog } from '@/utils/components'
 import { getTeam } from '@/data/team'
 
-import { secsToDuration, date } from '@/utils/format'
+import { secsToDuration, date, duration } from '@/utils/format'
 
 const team = getTeam()
-const route = useRoute()
 const socket = window.$socket
-const output = ref<String | null>(null)
 
-const setOutput = (str: String | null) => {
-	output.value = str
+interface Props {
+	deployview: boolean
+	id?: string
+	// bench  name
+	name?: string
 }
 
-provide('setOutput', setOutput)
-provide('output', output)
+const props = withDefaults(defineProps<Props>(), {
+	deployview: false,
+})
 
-const dropdownOptions = computed(() => {
-	const list = [
-		{
-			label: 'View in Desk',
-			icon: 'external-link',
-			condition: () => team?.doc?.is_desk_user,
-			onClick: () => {
-				window.open(
-					`${window.location.protocol}//${window.location.host}/app/release-pipeline/${route.params.id}`,
-					'_blank',
-				)
+const output = reactive({
+	opened: true,
+	val: 'No Output',
+	status: null,
+	selectedIndex: null,
+})
+const outputEl = ref<HTMLElement | null>(null)
+const stepsEl = ref<HTMLElement | null>(null)
+
+const setOutput = (opts) => {
+	output.val = opts.val || 'No Output'
+	output.status = opts.status
+	output.id = opts.id
+	output.opened = opts.opened ?? true
+}
+
+const activeBuildId = ref(props.deployview ? props.id : null)
+const agentJobs = props.deployview ? null : ref<Record<string, any>>({})
+const agentJobIds = props.deployview
+	? null
+	: computed(() => {
+			const benches = pipeline?.doc?.steps?.stages.at(-1)?.benches
+			return benches
+				?.map((x) => x.jobs)
+				.flat()
+				.map((x) => x.name)
+		})
+
+const buildIds = props.deployview
+	? ref([props.id])
+	: computed(() => {
+			const ids = pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => x.name)
+			if (!activeBuildId.value && ids) activeBuildId.value = ids[0]
+			return ids || []
+		})
+
+const pipeline = props.deployview
+	? null
+	: createDocumentResource({
+			doctype: 'Release Pipeline',
+			name: props.id,
+			auto: true,
+			onSuccess: (data) => {
+				const wiredId = 'release-pipeline' + props.id
+
+				const statuses = data?.steps?.stages?.map((x) => x.status)
+				if (statuses?.includes('Failure')) fetchSetErrs()
+
+				if (
+					['Pending', 'Running'].includes(data.status) &&
+					!wired.has(wiredId)
+				) {
+					socket.emit('doc_subscribe', 'Release Pipeline', props.id)
+					socket.on('doc_update', handleDocUpdate)
+					wired.add(wiredId)
+				}
 			},
-		},
-	]
-
-	return list.filter((option) => option.condition?.() ?? true)
-})
-
-const activeBuildId = ref()
-const buildIds = computed(() => {
-	const ids = pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => x.name)
-	if (!activeBuildId.value && ids) activeBuildId.value = ids[0]
-	return ids || []
-})
-
-const pipeline = createDocumentResource({
-	doctype: 'Release Pipeline',
-	name: route.params.id,
-	auto: true,
-})
+		})
 
 const notifApiFields = {
 	doctype: 'Press Notification',
@@ -79,32 +123,202 @@ const notifApiFields = {
 const errors = createListResource(notifApiFields)
 const warnings = createListResource(notifApiFields)
 
+const errList = computed(() => {
+	const list = [...(errors?.data || []), ...(warnings?.data || [])]
+	const activeErrListId = activeBuildId.value || pipeline?.doc?.name
+	return list.filter((x) => x.document_name == activeErrListId)
+})
+
 watch(
-	() => buildIds.value,
+	() => errList.value,
 	(x) => {
-		if (!x) return
-
-		errors.update({
-			cache: [
-				'Press Notification Error',
-				'Deploy Candidate Build',
-				buildIds.value,
-			],
-			filters: { document_name: ['in', buildIds.value], class: 'Error' },
-		})
-		errors.fetch()
-
-		warnings.update({
-			cache: [
-				'Press Notification Warning',
-				'Deploy Candidate Build',
-				buildIds.value,
-			],
-			filters: { document_name: ['in', buildIds.value], class: 'Warning' },
-		})
-		warnings.fetch()
+		if (x.length > 0) tabState.value = 'Issues'
 	},
 )
+
+const fetchSetErrs = () => {
+	const errids = buildIds.value?.length > 0 ? buildIds.value : [props.id]
+
+	errors.update({
+		cache: ['Press Notification Error', 'Deploy Candidate Build', errids],
+		filters: { document_name: ['in', errids], class: 'Error' },
+	})
+	errors.fetch()
+
+	warnings.update({
+		cache: ['Press Notification Warning', 'Deploy Candidate Build', errids],
+		filters: { document_name: ['in', errids], class: 'Warning' },
+	})
+	warnings.fetch()
+}
+
+const wired = reactive(new Set<string>())
+const builds = ref<Record<string, any>>({})
+
+const dummyStages = ref([
+	{ label: 'Pre-release checks', status: 'Success' },
+	{ label: 'Preparing for deployment', status: 'Success' },
+	{ label: 'Building', status: 'Pending' },
+	{ label: 'Deploying', status: 'Pending' },
+])
+
+const handleDummyStage = (x) => {
+	if (!props.deployview) return
+
+	dummyStages.value[2].status = x.status
+
+	const pendingState = ['Success', 'Failure'].includes(x.status)
+		? x.status
+		: 'Pending'
+	dummyStages.value[3].status = pendingState
+}
+
+const setAutomaticOutput = (steps: any) => {
+	const obj = steps.filter((x) => x.status !== 'Pending')?.at(-1)
+
+	if (!obj) return
+
+	output.val = obj.output || 'No Output'
+	output.status = obj.status
+	output.id = obj.name
+
+	nextTick(() => {
+		if (outputEl.value) outputEl.value.scrollTop = outputEl.value.scrollHeight
+
+		const el = stepsEl.value?.querySelector(`[data-step-id="${output?.id}"]`)
+		el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+	})
+}
+
+watch(
+	() => buildIds.value,
+	(ids: string[], oldIds: string[]) => {
+		if (JSON.stringify(ids) === JSON.stringify(oldIds)) return
+
+		ids.forEach((id: string) => {
+			if (!builds.value[id]) {
+				builds.value[id] = createDocumentResource({
+					doctype: 'Deploy Candidate Build',
+					name: id,
+					auto: true,
+					onSuccess: handleDummyStage,
+				})
+
+				if (builds.value[id]?.doc) {
+					handleDummyStage(builds.value[id].doc)
+				}
+			}
+
+			if (socket && !wired.has(id) && pipeline?.doc?.status === 'Running') {
+				socket.emit('doc_subscribe', 'Deploy Candidate Build', id)
+
+				socket.on(`bench_deploy:${id}:steps`, (data) => {
+					const buildRes = builds.value[id]
+					if (data.name === id && buildRes) {
+						setAutomaticOutput(data.steps)
+						buildRes.doc.build_steps = data.steps
+					}
+				})
+
+				socket.on(`bench_deploy:${id}:finished`, () => {
+					builds.value[id]?.reload()
+
+					const rgDoc = getCachedDocumentResource(
+						'Release Group',
+						builds.value[id]?.doc?.group,
+					)
+					if (rgDoc) rgDoc.reload()
+
+					fetchSetErrs()
+				})
+			}
+
+			if (pipeline?.doc?.status === 'Running') wired.add(id)
+		})
+	},
+	{ immediate: true },
+)
+
+watch(
+	() => pipeline?.doc?.status,
+	(x) => {
+		if (x == 'Failure') fetchSetErrs()
+	},
+)
+
+const handleAgentJobUpdate = (data) => {
+	const job = agentJobs?.value?.[data.id]
+	if (job?.doc) job.doc = { ...job.doc, ...data }
+}
+
+watch(
+	() => agentJobIds?.value,
+	(ids: string[]) => {
+		if (props.deployview || !ids || pipeline?.doc?.status !== 'Running') {
+			return
+		}
+
+		ids.forEach((id: string) => {
+			if (!agentJobs.value[id]) {
+				agentJobs.value[id] = createDocumentResource({
+					doctype: 'Agent Job',
+					name: id,
+					auto: true,
+				})
+			}
+
+			if (socket && !wired.has(`job:${id}`)) {
+				socket.emit('doc_subscribe', 'Agent Job', id)
+				wired.add(`job:${id}`)
+			}
+		})
+
+		if (socket && !wired.has('agent_job_update')) {
+			socket.on('agent_job_update', handleAgentJobUpdate)
+			wired.add('agent_job_update')
+		}
+	},
+)
+
+// ---------------------  Realtime stuff ----------------------
+const handleDocUpdate = props.deployview
+	? null
+	: (x) => {
+			if (x.doctype === 'Release Pipeline' && x.name === props.id) {
+				pipeline.reload()
+			}
+		}
+
+onBeforeUnmount(() => {
+	if (!props.deployview) {
+		socket.emit('doc_unsubscribe', 'Release Pipeline', props.id)
+		socket.off('doc_update', handleDocUpdate)
+		wired.delete('release-pipeline' + props.id)
+	}
+
+	wired.forEach((id) => {
+		if (
+			id.startsWith('job:') ||
+			id.startsWith('release-pipeline') ||
+			id === 'agent_job_update'
+		) {
+			return
+		}
+
+		socket.emit('doc_unsubscribe', 'Deploy Candidate Build', id)
+		socket.off(`bench_deploy:${id}:steps`)
+		socket.off(`bench_deploy:${id}:finished`)
+	})
+
+	if (!props.deployview) {
+		agentJobIds?.value?.forEach((id: string) => {
+			socket.emit('doc_unsubscribe', 'Agent Job', id)
+		})
+
+		socket.off('agent_job_update', handleAgentJobUpdate)
+		wired.delete('agent_job_update')
+	}
+})
 
 const tabState = ref('Tasks')
 
@@ -122,171 +336,270 @@ const badgeThemes = {
 	Retrying: 'yellow',
 }
 
-// ---------------------  Realtime stuff ----------------------
-const handleDocUpdate = (x) => {
-	if (x.doctype === 'Release Pipeline' && x.name === route.params.id)
-		pipeline.reload()
+const dropdownOptions = computed(() => {
+	const list = [
+		{
+			label: 'View in Desk',
+			icon: 'external-link',
+			condition: () => team?.doc?.is_desk_user,
+			onClick: () => {
+				const pathname = props.deployview
+					? 'deploy-candidate-build'
+					: 'release-pipeline'
+
+				window.open(
+					`${window.location.protocol}//${window.location.host}/app/${pathname}/${props.id}`,
+					'_blank',
+				)
+			},
+		},
+		{
+			label: 'View App Versions',
+			icon: 'package',
+			onClick: appVersions,
+			condition: () =>
+				props.deployview && builds.value[activeBuildId.value]?.doc?.group,
+		},
+	]
+
+	return list.filter((option) => option.condition?.() ?? true)
+})
+
+const appVersions = () => {
+	const deploy = builds.value[activeBuildId.value]?.doc
+	renderDialog(
+		h(AppVersionsDialog, {
+			dc_name: deploy.name,
+			group: deploy.group,
+			status: deploy.status,
+		}),
+	)
 }
 
-onMounted(() => {
-	socket.emit('doc_subscribe', 'Release Pipeline', route.params.id)
-	socket.on('doc_update', handleDocUpdate)
-})
+const stopBuild = () => {
+	const deploy = builds.value[activeBuildId.value]?.doc
 
-onBeforeUnmount(() => {
-	socket.emit('doc_unsubscribe', 'Release Pipeline', route.params.id)
-	socket.off('doc_update', handleDocUpdate)
-})
+	confirmDialog({
+		title: 'Fail Running Build',
+		message: `
+				Are you sure you want to fail this running build?<br><br>
+				<div class="text-bg-base bg-surface-gray-2 p-2 rounded-md">
+				This will <strong>stop the current build immediately</strong>.  
+				All progress made so far will be <strong>discarded</strong>, and the next triggered build will start from scratch.
+				<br><br>
+				Use this option if a build is stuck, taking unusually long, or is expected to fail.
+				</div>
+				`,
+		primaryAction: {
+			label: 'Stop Build',
+			variant: 'solid',
+			theme: 'red',
+			onClick({ hide }) {
+				createResource({
+					url: 'press.api.bench.fail_build',
+					params: { dn: deploy.name },
+				})
+					.fetch()
+					.then(() => hide())
+					.catch(() => {
+						hide()
+						toast.error(
+							'Unable to stop build please wait for the status to be updated',
+						)
+					})
+			},
+		},
+	})
+}
 </script>
 
 <template>
+	<Loader
+		v-if="deployview? builds[activeBuildId]?.get?.loading: wired.size == 0 && pipeline?.get?.loading && !pipeline?.doc"
+	/>
+
 	<main
-		class="pipeline-page flex flex-col gap-5 py-3 px-5 w-full h-[calc(100dvh-6rem)]"
+		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-7rem)] mt-1.5"
+		v-else
 	>
 		<!-- header -->
 		<div class="flex gap-2 items-center">
-			<router-link :to="`/groups/${route.params.name}/pipelines`">
-				<lucide-chevron-left class="size-4" />
-			</router-link>
+			<Button :route="`/groups/${name}/deploys?pipeline=${!deployview}`">
+				<template #icon>
+					<lucide-chevron-left class="size-4" />
+				</template>
+			</Button>
 
-			<h2 class="text-ink-gray-9">Pipeline {{ pipeline?.doc?.name }}</h2>
+			<h2 class="text-ink-gray-9 text-lg font-medium">
+				{{ deployview ? builds[activeBuildId]?.doc?.deploy_candidate : "Pipeline" }}
+				{{ pipeline?.doc?.name }}
+			</h2>
 
 			<Badge
-				:label="pipeline?.doc?.status"
-				:theme="badgeThemes[pipeline?.doc?.status] || 'gray'"
+				:label="deployview ? builds[activeBuildId]?.doc?.status : pipeline?.doc?.status"
+				:theme="badgeThemes[deployview ? builds[activeBuildId]?.doc?.status : pipeline?.doc?.status] || 'gray'"
 				class="mr-auto"
 			/>
 
 			<Tabs
 				variant="solid"
-				v-if="buildIds.length > 1"
-				:tabs="pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => ({ label: x.architecture,  value: x.name }))"
+				size="sm"
+				v-if="!deployview && buildIds.length > 1"
+				:tabs="pipeline?.doc?.steps?.stages[2]?.builds?.map((x) => ({ label: x.architecture, value: x.name }))"
 				v-model="activeBuildId"
 				class=" [&_[role=tablist]]:w-fit"
 			/>
 
+			<Button
+				@click="stopBuild"
+				v-if="deployview && builds[activeBuildId]?.doc?.status === 'Running'"
+				theme="red"
+			>
+				Stop Deploy
+			</Button>
+
 			<Dropdown v-if="dropdownOptions?.length" :options="dropdownOptions">
 				<Button>
-					<lucide-more-horizontal class="size-4" />
+					<template #icon>
+						<lucide-more-horizontal class="size-4" />
+					</template>
 				</Button>
 			</Dropdown>
 		</div>
 
 		<!-- status cards -->
 		<section
-			class="grid grid-cols-4 gap-5 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm"
+			class="grid grid-cols-4 gap-3 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm -mt-1"
 		>
 			<div class="flex flex-col gap-2 border p-4 rounded ">
 				<b> Created by </b>
-				<span class="text-ink-gray-9">{{ pipeline?.doc?.owner }} </span>
+				<span class="text-ink-gray-9"
+					>{{ deployview ?  builds[activeBuildId]?.doc?.owner : pipeline?.doc?.owner }}
+				</span>
 			</div>
 
 			<div class="flex flex-col gap-2 border p-4 rounded">
 				<b> Start </b>
-				<span> {{ date(pipeline?.doc?.steps?.start) || '-' }} </span>
+				<span>
+					{{ date(deployview ?  builds[activeBuildId]?.doc?.build_start : pipeline?.doc?.steps?.start) || '-' }}
+				</span>
 			</div>
 
 			<div class="flex flex-col gap-2 border p-4 rounded">
 				<b> End </b>
-				<span> {{ date(pipeline?.doc?.steps?.end)  || '-' }} </span>
+				<span>
+					{{ date(deployview ?  builds[activeBuildId]?.doc?.build_end : pipeline?.doc?.steps?.end) || '-' }}
+				</span>
 			</div>
 
 			<div class="flex flex-col gap-2 border p-4 rounded">
 				<b> Duration </b>
 				<span>
-					{{ secsToDuration(pipeline?.doc?.steps?.duration)  || '-' }}
+					{{ deployview ? duration( builds[activeBuildId]?.doc?.build_duration) || '-' : secsToDuration(pipeline?.doc?.steps?.duration) || '-' }}
 				</span>
 			</div>
 		</section>
 
 		<!-- deploy steps + output -->
-		<div class="flex rounded border p-3 flex-1 min-h-0">
-			<aside
-				class="overflow-y-auto overflow-x-hidden pr-3 px-0.5 flex-shrink-0 transition-all duration-500"
-				:class="output ? 'w-[30rem]' : 'w-full'"
+		<div
+			class="flex rounded border p-3 pt-1 flex-1 min-h-0"
+			:class='output.opened? "": "!pr-0" '
+			ref="stepsEl"
+		>
+			<Scrollbar
+				class="px-0.5 pr-3 transition-all duration-300 shrink-0"
+				:class="output.opened ? 'w-[30rem]' : 'w-full'"
 			>
-				<div class="flex items-center gap-3 mb-3">
-					<Tabs
-						class="w-full"
-						tablistClass="!px-0"
-						:tabs="sidebarTabs"
-						v-model="tabState"
-					>
-						<template #suffix="{ tab }">
-							<span
-								v-if='tab.label == "Issues"'
-								class="bg-surface-gray-2 py-0.5 px-1 rounded text-xs leading-none"
-							>
-								{{ (errors?.data?.length || 0 ) + (warnings?.data?.length || 0) }}</span
-							>
-						</template>
-					</Tabs>
-				</div>
+				<Tabs
+					class="w-full sticky top-0 z-10 bg-surface-white mb-2"
+					tablistClass="!px-0"
+					:tabs="sidebarTabs"
+					v-model="tabState"
+				>
+					<template #suffix="{ tab }">
+						<span
+							v-if='tab.label == "Issues"'
+							class="bg-surface-gray-2 py-0.5 px-1 rounded text-xs leading-none"
+						>
+							{{ errList?.length || 0 }}</span
+						>
+					</template>
+				</Tabs>
 
-				<Stages
-					v-if="tabState == 'Tasks'"
-					:stages="pipeline?.doc?.steps?.stages"
-					:buildIds
-					:activeBuildId
-				/>
+				<!-- build stages -->
+				<template v-if='tabState == "Tasks"'>
+					<Stages
+						:output
+						:setOutput
+						:stages="deployview ? dummyStages : pipeline?.doc?.steps?.stages"
+						:buildSteps="builds[activeBuildId]?.doc?.build_steps"
+						:agentJobs="deployview ? null: agentJobs"
+						:deployview
+					/>
+				</template>
 
 				<!-- list of errors -->
-				<section v-else>
-					<div
-						v-for='x in [...errors?.data || [], ...warnings?.data || [] ]?.filter(x => x.document_name == activeBuildId)'
-						class="flex flex-col gap-1"
-					>
-						<Collapsable headerCss="py-3" class="mb-3">
-							<template #header>
-								<StatusIcon :status=" x.class=='Error'? 'Failed': 'Warning'" />
+				<template v-else>
+					<div v-for='x in errList' class="flex flex-col gap-1">
+						<Collapsable headerCss="py-3" class="mb-3" opened>
+							<template #prefix>
+								<StatusIcon
+									:status="x.class == 'Error' ? 'Failed' : 'Warning'"
+								/>
 								{{ x.title }}
 								{{ x.class }}
 							</template>
 
 							<div
-								v-html="x.message"
-								class="leading-relaxed rounded p-3 ml-3 mb-3 text-sm"
-								:class='x.class=="Error"? " bg-surface-red-1 text-ink-red-4" :  "bg-surface-amber-1 text-ink-amber-3"'
-							/>
+								class="rounded px-3 py-2 bg-surface-red-1 flex flex-col gap-2"
+								:class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-4" : "bg-surface-amber-1 text-ink-amber-3"'
+							>
+								<p v-html="x.message" class="leading-relaxed text-sm" />
 
-							<div class="w-full flex justify-end">
 								<a
 									:href="x.assistance_url"
+									v-if="x.assistance_url"
 									target="_blank"
-									class="bg-surface-gray-1 p-1.5 px-2.5 rounded hover:opacity-70"
+									class="bg-surface-white shadow p-1.5 px-2.5 rounded hover:opacity-70 ml-auto"
 								>
-									Fix
+									Go to docs
 								</a>
 							</div>
 						</Collapsable>
 					</div>
-				</section>
-			</aside>
+				</template>
+			</Scrollbar>
 
 			<!-- output -->
 			<div
-				v-show="output"
-				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 rounded transition-all duration-500 flex-1"
+				v-show="output.opened"
+				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 rounded transition-all duration-300 flex-1 flex flex-col min-h-0"
 			>
 				<div
-					class="flex items-center gap-2 border-b pb-2 border-outline-gray-2 mb-3 text-ink-gray-6"
+					class="flex items-center pb-2 border-outline-gray-2 mb-3 text-ink-gray-6 -mt-1 -mr-1 shrink-0"
 				>
 					<span>Output</span>
-					<CopyBtn :text="output" class="ml-auto" />
-					<button @click="setOutput(null)">
+					<CopyBtn :text="output?.val || ''" class="ml-auto smallbtn" />
+					<button
+						class="smallbtn"
+						@click="setOutput({ val: null, status: null, opened:false })"
+					>
 						<lucide-x class="size-4" />
 					</button>
 				</div>
 
-				<pre class="font-mono text-xs overflow-auto">{{output}}</pre>
+				<pre
+					ref="outputEl"
+					class="font-mono text-xs overflow-auto -m-3 p-1 px-3.5 flex-1 min-h-0"
+					:class='output.status == "Failure" ? "bg-surface-red-1 text-ink-red-3" : ""'
+				>{{ output.val }}</pre>
 			</div>
 		</div>
 	</main>
 </template>
 
-<style>
-body:has(.pipeline-page) #scrollContainer {
-	overflow: hidden;
-	height: 100%;
+<style scoped>
+.smallbtn {
+	@apply hover:bg-surface-gray-3 dark:hover:bg-surface-gray-2 p-1 rounded hover:text-ink-gray-9
 }
 </style>

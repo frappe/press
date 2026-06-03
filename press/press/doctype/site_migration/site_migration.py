@@ -623,6 +623,8 @@ class SiteMigration(Document):
 				"step_title": self.remove_site_from_source_proxy.__doc__,
 				"method_name": self.remove_site_from_source_proxy.__name__,
 				"status": "Pending",
+				"condition": frappe.db.get_value("Server", self.source_server, "proxy_server")
+				!= frappe.db.get_value("Server", self.destination_server, "proxy_server"),
 			},
 			{
 				"step_title": self.restore_site_on_destination_proxy.__doc__,
@@ -646,7 +648,9 @@ class SiteMigration(Document):
 			},
 		]
 		for step in steps:
-			self.append("steps", step)
+			if step.get("condition", None) is None or step["condition"]:
+				step.pop("condition", None)
+				self.append("steps", step)
 
 	def deactivate_site_on_source_server(self):
 		"""Deactivate site on source"""

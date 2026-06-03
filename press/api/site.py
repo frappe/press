@@ -30,6 +30,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_total_installs_by_app,
 )
 from press.press.doctype.remote_file.remote_file import get_remote_key
+from press.press.doctype.root_domain.root_domain import get_matching_domain
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site.site import (
 	Site,
@@ -286,16 +287,61 @@ def get_group_for_new_site_and_set_localisation_app(site, apps):
 	return groups[0]
 
 
+def _check_warranty_restrictions(
+	site: str,
+	server: str,
+	new_plan: str,
+	is_new: bool,
+	is_system_user: bool,
+	is_current_dedicated_server_plan: bool,
+	is_current_plan_supported: bool,
+) -> None:
+	if is_new or is_system_user or not is_current_dedicated_server_plan:
+		return
+	if is_current_plan_supported == is_product_warranty_enabled_for_plan_(new_plan):
+		return
+	next_warranty_change = get_next_allowed_dedicated_product_warranty_change_date(site)
+	if get_datetime() < next_warranty_change:
+		pretty_date = format_datetime(next_warranty_change, "MMM d, YYYY hh:mm a")
+		frappe.throw(f"Cannot change product warranty for this site before {pretty_date}")  # nosemgrep
+	quota = get_available_warranty_quota_for_server(server)
+	if quota.get("available") <= 0:
+		frappe.throw(
+			"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
+		)
+
+
+def _is_plan_allowed_on_server(server: str, new_site_plan: dict) -> bool:
+	if new_site_plan.get("price_usd", 0) > 0:
+		return True
+	if not (
+		new_site_plan.get("dedicated_server_plan", 0)
+		and frappe.db.get_value("Server", server, "team") == get_current_team()
+	):
+		return False
+	if not new_site_plan.get("restrict_based_on_dedicated_server_plan", 0):
+		return True
+	app_server_plan = frappe.db.get_value("Server", server, "plan")
+	min_price = new_site_plan.get("minimum_server_price_usd", 0)
+	app_server_price = frappe.db.get_value("Server Plan", app_server_plan, "price_usd")
+	return app_server_price >= min_price
+
+
 @validate_argument_types
 def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -> None:
 	if not frappe.db.exists("Site Plan", new_plan):
 		frappe.throw(f"Plan {new_plan} does not exist", frappe.DoesNotExistError)  # nosemgrep
 
-	is_current_plan_supported, is_current_dedicated_server_plan = frappe.db.get_value(
-		"Site Plan",
-		frappe.get_value("Site", site, "plan"),
-		["support_included", "dedicated_server_plan"],
-	)
+	plan_name = frappe.get_value("Site", site, "plan")
+	if not plan_name:
+		is_current_plan_supported = False
+		is_current_dedicated_server_plan = False
+	else:
+		is_current_plan_supported, is_current_dedicated_server_plan = frappe.db.get_value(
+			"Site Plan",
+			plan_name,
+			["support_included", "dedicated_server_plan"],
+		) or (False, False)
 
 	new_site_plan = frappe.db.get_value(
 		"Site Plan",
@@ -311,46 +357,17 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 
 	is_system_user = frappe.session.data.user_type == "System User"
 
-	next_warranty_change = get_next_allowed_dedicated_product_warranty_change_date(site)
+	_check_warranty_restrictions(
+		site,
+		server,
+		new_plan,
+		is_new,
+		is_system_user,
+		is_current_dedicated_server_plan,
+		is_current_plan_supported,
+	)
 
-	if (
-		not is_new
-		and not is_system_user
-		and is_current_dedicated_server_plan
-		and (is_current_plan_supported != is_product_warranty_enabled_for_plan_(new_plan))
-		and get_datetime() < next_warranty_change
-	):
-		pretty_date = format_datetime(next_warranty_change, "MMM d, YYYY hh:mm a")
-		frappe.throw(f"Cannot change product warranty for this site before {pretty_date}")  # nosemgrep
-
-	if (
-		not is_new
-		and not is_system_user
-		and is_current_dedicated_server_plan
-		and (is_current_plan_supported != is_product_warranty_enabled_for_plan_(new_plan))
-	):
-		quota = get_available_warranty_quota_for_server(server)
-		if quota.get("available") <= 0:
-			frappe.throw(
-				"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
-			)
-
-	if new_site_plan.get("price_usd", 0) > 0:
-		return
-
-	if (
-		new_site_plan.get("dedicated_server_plan", 0)
-		and frappe.db.get_value("Server", server, "team") == get_current_team()
-	):
-		if not new_site_plan.get("restrict_based_on_dedicated_server_plan", 0):
-			return
-		app_server_plan = frappe.db.get_value("Server", server, "plan")
-		min_app_server_price_usd = new_site_plan.get("minimum_server_price_usd", 0)
-		app_server_price_usd = frappe.db.get_value("Server Plan", app_server_plan, "price_usd")
-		if app_server_price_usd >= min_app_server_price_usd:
-			return
-
-	if frappe.session.data.user_type == "System User":
+	if _is_plan_allowed_on_server(server, new_site_plan) or is_system_user:
 		return
 
 	frappe.throw("You are not allowed to use this plan")  # nosemgrep
@@ -844,11 +861,11 @@ def _get_dedicated_server_info_for_release_group(release_group_name: str) -> dic
 
 	Returns dict with:
 	- case: str - one of:
-	        - "dedicated_only_single" - exactly one dedicated server
-	        - "dedicated_only_multiple" - multiple dedicated servers
-	        - "user_choice_single" - one dedicated server and other public server(s)
-	        "user_choice_multiple" - multiple dedicated servers and public server(s)
-	        - "no_dedicated_server"
+		- "dedicated_only_single" - exactly one dedicated server
+		- "dedicated_only_multiple" - multiple dedicated servers
+		- "user_choice_single" - one dedicated server and other public server(s)
+		- "user_choice_multiple" - multiple dedicated servers and public server(s)
+		- "no_dedicated_server"
 	- dedicated_servers: list - Available dedicated servers for user selection
 	"""
 	current_team = get_current_team()
@@ -2215,6 +2232,11 @@ def setup_wizard_complete(name):
 @frappe.whitelist()
 @protected("Site")
 def check_dns(name, domain):
+	domain = domain.lower().strip(".")
+	if d := get_matching_domain(domain):
+		frappe.throw(
+			f"Cannot add {d} domain as it is a system reserved domain. Please use a different domain for your site."
+		)
 	return check_dns_cname_a(name, domain)
 
 
@@ -2681,9 +2703,9 @@ def check_existing_upgrade_bench(name, version):
 	which includes all the apps installed on the site.
 
 	Returns: {
-	        "exists": bool,
-	        "bench_name": str or None,
-	        "release_group": str or None,
+		"exists": bool,
+		"bench_name": str or None,
+		"release_group": str or None,
 	}
 	"""
 	site_server = frappe.db.get_value("Site", name, "server")

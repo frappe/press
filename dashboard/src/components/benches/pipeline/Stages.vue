@@ -1,142 +1,178 @@
 <script setup lang="ts">
-import { getCachedDocumentResource, createDocumentResource } from 'frappe-ui'
 import Collapsable from '@/components/common/Collapsable.vue'
+import { duration, secsToDuration } from '@/utils/format'
 import StatusIcon from './StatusIcon.vue'
-
-import { date, secsToDuration } from '@/utils/format'
-import { watch, ref, inject, onMounted, onBeforeUnmount } from 'vue'
-
-const setOutput = inject('setOutput')
-const output = inject('output')
+import { Spinner } from 'frappe-ui'
 
 interface Props {
 	stages: any
-	buildIds: String[]
-	activeBuildId: String
+	buildSteps: any[]
+	agentJobs: any[]
+	output: any
+	setOutput: any
+	deployview: boolean
 }
 
 const props = defineProps<Props>()
 
-// used to unsubscribe from socket events
-const wired = new Set<string>()
-
-const buildResources = ref<Record<string, any>>({})
-const socket = window.$socket
-
-watch(
-	() => props.buildIds,
-	(ids) => {
-		if (!ids?.length) return
-
-		ids.forEach((id) => {
-			if (!buildResources.value[id]) {
-				buildResources.value[id] = createDocumentResource({
-					doctype: 'Deploy Candidate Build',
-					name: id,
-					auto: true,
-					fields: ['build_steps'],
-				})
-			}
-
-			// socket io stuff
-			if (socket && !wired.has(id)) {
-				socket.emit('doc_subscribe', 'Deploy Candidate Build', id)
-
-				socket.on(`bench_deploy:${id}:steps`, (data) => {
-					const buildRes = buildResources.value[id]
-					if (data.name === id && buildRes) {
-						buildRes.doc.build_steps = data.steps
-					}
-				})
-
-				socket.on(`bench_deploy:${id}:finished`, () => {
-					buildResources.value[id]?.reload()
-
-					const rgDoc = getCachedDocumentResource(
-						'Release Group',
-						buildResources.value[id]?.doc?.group,
-					)
-					if (rgDoc) rgDoc.reload()
-
-					// this.$resources.deploy.reload();
-					// this.$resources.errors.reload();
-					// this.$resources.warnings.reload();
-				})
-			}
-
-			wired.add(id)
-		})
-	},
-	{ immediate: true, deep: true },
-)
-
-onBeforeUnmount(() => {
-	const socket = window.$socket
-
-	wired.forEach((id) => {
-		socket.emit('doc_unsubscribe', 'Deploy Candidate Build', id)
-		socket.off(`bench_deploy:${id}:steps`)
-	})
-})
-
 // single line commands with && are very long
-// so make them long
-const formatCmd = (cmd: string) => {
-	return cmd
-		.split('&&')
-		.map((part) => part.trim())
-		.join(' &&\n')
+// so make them multi-line
+// const formatCmd = (cmd: string) => {
+// 	return cmd
+// 		.split('&&')
+// 		.map((part) => part.trim())
+// 		.join(' &&\n')
+// }
+
+const isStageDisabled = (x) => {
+	if (['Pending', 'Queued'].includes(x.status)) return true
+
+	if (
+		x.label == 'Building' &&
+		(props.buildSteps?.length == 0 || !props.buildSteps)
+	)
+		return true
+
+	if (x.label == 'Deploying' && x.benches?.length == 0) return true
+
+	return false
 }
 </script>
 
 <template>
-	<Collapsable
-		v-for='(x, i) in stages'
-		:headerCss="`${i == stages.length-1 ? '':'border-b'} py-3`"
-		:key="x.label"
-		:disabled='["Pending", "Queued"].includes(x.status)'
+	<div
+		v-if="!stages || stages?.length ==0"
+		class="leading-relaxed py-2.5 text-ink-gray-5 flex flex-wrap sk-fade"
 	>
-		<template #header>
+		<div class="flex  items-center gap-2 text-sm pb-3 w-full border-b">
+			<Spinner class="size-4" />
+			<span>Deploy is queued and will start shortly...</span>
+		</div>
+
+		<div
+			v-for="i in 3"
+			:key="i"
+			class="flex items-center gap-3 py-3 border-b border-surface-gray-2 w-full"
+		>
+			<div class="animate-pulse rounded size-4 bg-surface-gray-3 shrink-0" />
+
+			<div
+				class="animate-pulse rounded h-3.5 bg-surface-gray-3"
+				:style="{ width: i % 2 === 0 ? '140px' : '180px' }"
+			/>
+
+			<div class="flex-1" />
+
+			<div
+				class="animate-pulse rounded h-3.5 bg-surface-gray-3"
+				:style="{ width: i <= 1 ? '24px' : '16px' }"
+			/>
+		</div>
+	</div>
+
+	<template v-for='(x, i) in stages' :key="x.name" v-else>
+		<Collapsable
+			v-if="x.label === 'Building' || (!deployview && x.label === 'Deploying')"
+			:headerCss="`py-3 pr-2  ${i != stages?.length-1?'aria-[expanded=false]:border-b': '' }`"
+			:disabled="isStageDisabled(x)"
+			:opened="x.status === 'Running' && (x.label === 'Building' || x.label === 'Deploying')"
+		>
+			<template #prefix>
+				<StatusIcon :status="x.status" />
+				<span class="whitespace-nowrap"> {{ x.label }}</span>
+			</template>
+
+			<!-- build steps -->
+			<template v-if='x.label == "Building"'>
+				<button
+					v-for="(build_step) in buildSteps"
+					class="btn !pl-6 !pr-2"
+					:aria-selected="output?.val && output?.id == build_step.name"
+					:data-step-id="build_step.name"
+					@click="setOutput({ val: build_step.output,
+                  status: build_step.status, id: build_step.name })"
+					:disabled="build_step.status =='Pending'"
+				>
+					<StatusIcon :status="build_step.status" />
+					<span class="mr-3">
+						{{ build_step.stage }}
+						- {{ build_step.step }}
+					</span>
+					<span class="text-ink-gray-5 ml-auto"
+						>{{ build_step.cached ? 'Cached': secsToDuration(build_step.duration) }}</span
+					>
+				</button>
+				<hr class="mt-1" />
+			</template>
+
+			<template v-else-if='!deployview && x.label == "Deploying"'>
+				<Collapsable
+					v-for='bench in x.benches'
+					headerCss="ml-6 py-2 pr-2 -mt-1"
+					:key="bench.name"
+					:opened="true"
+				>
+					<template #prefix>
+						<LucideBoxes class="size-4 shrink-0" />
+						{{ bench.name }}
+						<span class="text-ink-gray-5 mx-1">|</span>
+						<LucideServer class="size-4 text-ink-gray-5 shrink-0" />
+						<span class="text-ink-gray-5">
+							{{ bench.server?.split('.')?.[0] }}
+						</span>
+					</template>
+
+					<!-- Only first job "New Bench" is useful so use it only-->
+					<template v-if="bench.jobs?.length">
+						<button
+							class="btn !pl-12"
+							v-for="jobstep in agentJobs?.[bench.jobs[0].name]?.doc?.steps"
+							:key="jobstep.name"
+							:aria-selected="output?.val && output?.id == jobstep.name"
+							@click="setOutput({     val: jobstep.output,
+      status: jobstep.status,
+      id: jobstep.name
+    })"
+						>
+							<StatusIcon :status="jobstep.status" class="ml-2" />
+							{{ jobstep.step_name }}
+
+							<span class="text-ink-gray-5 ml-auto pr-1">
+								{{ duration(jobstep.duration) }}
+							</span>
+						</button>
+					</template>
+				</Collapsable>
+			</template>
+		</Collapsable>
+
+		<div v-else class="flex items-center gap-2 py-3 border-b">
 			<StatusIcon :status="x.status" />
 			<span class="whitespace-nowrap"> {{ x.label }}</span>
-		</template>
-
-		<div class="ml-6 my-1" v-if='x.label == "Building"'>
-			<button
-				v-for="build_step in buildResources[activeBuildId]?.doc?.build_steps"
-				class="py-2 flex items-center gap-2 justify-start whitespace-nowrap w-full disabled:opacity-70 disabled:cursor-not-allowed"
-				@click="setOutput(build_step.output || formatCmd(build_step.command) || 'No Output') "
-				:disabled="build_step.status =='Pending'"
-			>
-				<StatusIcon :status="build_step.status" />
-				<span class="mr-3">
-					{{ build_step.stage }}
-					- {{ build_step.step }}
-				</span>
-				<span class="text-ink-gray-5 ml-auto"
-					>{{ build_step.cached ? 'Cached': secsToDuration(build_step.duration) }}</span
-				>
-			</button>
+			<span v-if="x.duration" class="ml-auto text-sm text-ink-gray-5 pr-2">
+				{{ secsToDuration(x.duration) }}
+			</span>
 		</div>
-
-		<!-- steps other than 2 have no output so show some data-->
-		<div v-else class="flex" :class='output? "flex-col" : "flex-row"'>
-			<div class="flex flex-col gap-2 p-3">
-				<span class="text-sm font-medium text-ink-gray-4"> Start </span>
-				<span class="text-sm text-ink-gray-9"> {{ date(x.start) }} </span>
-			</div>
-
-			<div class="flex flex-col gap-2 p-3">
-				<span class="text-sm font-medium text-ink-gray-4"> End </span>
-				<span class="text-sm text-ink-gray-9"> {{ date(x.end) }} </span>
-			</div>
-
-			<div class="flex flex-col gap-2 p-3">
-				<span class="text-sm font-medium text-ink-gray-4"> Duration </span>
-				<span class="text-sm text-ink-gray-9">
-					{{ secsToDuration(x.duration) }}
-				</span>
-			</div>
-		</div>
-	</Collapsable>
+	</template>
 </template>
+
+<style scoped>
+.btn {
+	@apply leading-relaxed mb-0.5 p-1 aria-selected:bg-surface-gray-1;
+	@apply rounded flex items-center gap-2 justify-start whitespace-nowrap w-full;
+	@apply disabled:opacity-70 disabled:cursor-not-allowed hover:bg-surface-gray-1;
+}
+
+.sk-fade {
+	animation: sk-fade-in 0.25s ease-out both;
+}
+
+@keyframes sk-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+</style>

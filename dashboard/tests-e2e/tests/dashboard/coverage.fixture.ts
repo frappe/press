@@ -1,57 +1,62 @@
-import { test as base, expect } from "@playwright/test";
-import v8ToIstanbul from "v8-to-istanbul";
-import crypto from "crypto";
-import path from "path";
-import fs from "fs";
+import { test as base, expect } from '@playwright/test'
+import crypto from 'crypto'
+import fs from 'fs'
+import path from 'path'
+import v8ToIstanbul from 'v8-to-istanbul'
 
 const test = base.extend({
-  page: async ({ page }, use) => {
-    await page.coverage.startJSCoverage();
-    
-    await use(page);
-    
-    const coverage = await page.coverage.stopJSCoverage();
+	page: async ({ page }, use) => {
+		await page.coverage.startJSCoverage()
 
-    const assetsDir = path.join(
-      process.cwd(),
-      "../../../sites/assets/press/dashboard/assets",
-    );
+		await use(page)
 
-    // Dynamically find the entry file
-    const entryFile = fs
-      .readdirSync(assetsDir)
-      .find((f) => f.startsWith("index-") && f.endsWith(".js"));
+		const coverage = await page.coverage.stopJSCoverage()
 
-    if (!entryFile) {
-      throw new Error(`Cant find entry JS file in ${assetsDir}`);
-    }
+		try {
+			const assetsDir = path.join(
+				process.cwd(),
+				'../../../sites/assets/press/dashboard/assets',
+			)
 
-    const pathToSource = path.join(assetsDir, entryFile);
+			// Dynamically find the entry file
+			const entryFile = fs
+				.readdirSync(assetsDir)
+				.find((f) => f.startsWith('index-') && f.endsWith('.js'))
 
-    for (const entry of coverage) {
-      const converter = v8ToIstanbul(
-        pathToSource,
-        0,
-        { source: entry.source as string }
-      );
+			if (!entryFile) {
+				throw new Error(`Cant find entry JS file in ${assetsDir}`)
+			}
 
-      await converter.load();
-      converter.applyCoverage(entry.functions);
+			const pathToSource = path.join(assetsDir, entryFile)
 
-      const istanbul = converter.toIstanbul();
-      for (const [key, _] of Object.entries(istanbul)) {
-        istanbul[key].path = istanbul[key].path.replaceAll("sites", "apps/press");
-      }
-      const outputDir = "./.nyc_output";
+			for (const entry of coverage) {
+				const converter = v8ToIstanbul(pathToSource, 0, {
+					source: entry.source as string,
+				})
 
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-      }
+				await converter.load()
+				converter.applyCoverage(entry.functions)
 
-      const filename = path.join(outputDir, `${crypto.randomUUID()}.json`);
-      fs.writeFileSync(filename, JSON.stringify(istanbul));
-    }
-  }
-});
+				const istanbul = converter.toIstanbul()
+				for (const [key, _] of Object.entries(istanbul)) {
+					istanbul[key].path = istanbul[key].path.replaceAll(
+						'sites',
+						'apps/press',
+					)
+				}
+				const outputDir = './.nyc_output'
 
-export { test, expect };
+				if (!fs.existsSync(outputDir)) {
+					fs.mkdirSync(outputDir, { recursive: true })
+				}
+
+				const filename = path.join(outputDir, `${crypto.randomUUID()}.json`)
+				fs.writeFileSync(filename, JSON.stringify(istanbul))
+			}
+		} catch {
+			// Coverage collection requires a production build — skip when running against dev server
+		}
+	},
+})
+
+export { expect, test }

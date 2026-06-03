@@ -8,17 +8,13 @@ from frappe import _
 from frappe.model.document import Document
 
 from press.api.client import dashboard_whitelist
+from press.guards.role_guard import is_restricted
 from press.overrides import get_permission_query_conditions_for_doctype
-
-if TYPE_CHECKING:
-	from press.press.doctype.team.team import Team
 
 
 class TeamMemberResource(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
-
-	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
@@ -91,11 +87,7 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype("T
 
 
 def has_permission(doc, ptype, user):
-	# Check if the current user has the necessary permissions to assign resources.
-	team: Team = frappe.get_doc("Team", doc.team)
-	if not (team.is_team_owner() or team.is_admin_user()):
-		return False
-	return True
+	return not is_restricted()
 
 
 def sync_press_role(doc, method=None):
@@ -136,9 +128,27 @@ def sync_press_role(doc, method=None):
 			.run(as_dict=True)
 		)
 
+		# Batch-resolve which resources still belong to this team (one query per doctype).
+		by_doctype: dict[str, list[str]] = {}
+		for resource in resources:
+			by_doctype.setdefault(resource.document_type, []).append(resource.document_name)
+
+		team_owned: set[tuple[str, str]] = set()
+		for document_type, names in by_doctype.items():
+			owned = frappe.get_all(
+				document_type,
+				filters={"name": ("in", names), "team": team},
+				pluck="name",
+			)
+			for name in owned:
+				team_owned.add((document_type, name))
+
 		# Loop through the resources and create `team-member-resource` entries if
 		# they don't exist.
 		for resource in resources:
+			if (resource.document_type, resource.document_name) not in team_owned:
+				continue
+
 			# Check if a `team-member-resource` entry already exists for the team,
 			# user, document type, and document.
 			document = {
@@ -150,4 +160,6 @@ def sync_press_role(doc, method=None):
 			}
 			if not frappe.db.exists(document):
 				# If the resource does not exist, create a new `team-member-resource` entry.
-				frappe.get_doc(document).insert()
+				d = frappe.get_doc(document)
+				d.flags.ignore_validate = True
+				d.insert(ignore_permissions=True)

@@ -70,12 +70,21 @@ DENIED_WILDCARD_PATHS = [
 	"/api/",
 ]
 
+ALLOWED_OPTIONS_ENDPOINTS = [
+	"/api/method/press.mcp.handler",
+]
+
 
 def hook():  # noqa: C901
 	if frappe.form_dict.cmd:
 		path = f"/api/method/{frappe.form_dict.cmd}"
 	else:
 		path = frappe.request.path
+
+	# Allow access to whitelisted options endpoint
+	# Because, in OPTIONS request, user auth info doesn't get passed
+	if frappe.request.method == "OPTIONS" and path in ALLOWED_OPTIONS_ENDPOINTS:
+		return
 
 	user_type = frappe.get_cached_value("User", frappe.session.user, "user_type")
 

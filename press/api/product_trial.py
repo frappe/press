@@ -226,7 +226,7 @@ def get_request(product: str, account_request: str | None = None) -> dict:
 	domain = frappe.db.get_value("Product Trial", product, "domain")
 	prefilled_subdomain = product_trial.get_prefilled_subdomain(account_request)
 	cluster_domains = frappe.db.get_all(
-		"Root Domain", {"name": ("like", f"%.{domain}")}, ["name", "default_cluster as cluster"]
+		"Root Domain", {"name": ("like", f"%.{domain}"), "enabled": 1}, ["name", "default_cluster as cluster"]
 	)
 
 	cluster_domain = find(
