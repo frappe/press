@@ -3,7 +3,7 @@ import { render } from "astro:content";
 import { ArrowRight } from "@lucide/astro";
 import { ArrowLeft } from "@lucide/astro";
 
-const { posts, currentPage, totalPages } = Astro.props;
+const { posts, currentPage, totalPages, tags } = Astro.props;
 const baseurl = import.meta.env.BASE_URL;
 
 const formatDate = (date: Date) => {
@@ -15,7 +15,7 @@ const formatDate = (date: Date) => {
 };
 ---
 
-<ul class="mx-auto max-w-3xl my-5 px-1">
+<ul class="mx-auto max-w-page my-5 px-1">
   {posts.map((post) => (
     <li class="grid grid-cols-[150px_1fr] gap-10">
       <div class="flex flex-col items-start">
@@ -29,8 +29,31 @@ const formatDate = (date: Date) => {
         </a>
         <div class="w-px grow bg-surface-gray-2 ml-1" />
       </div>
-      <div class="prose mb-15 -mt-2">
-        {render(post).then(({ Content }) => <Content />)}
+
+      <div class="mb-15 -mt-1 flex flex-col">
+        <a
+          class="w-fit text-2xl font-semibold relative pb-1 after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full"
+          href={`${baseurl}/version/${post.id}`}
+        >
+          {post.data.title}
+        </a>
+        <p class="text-ink-gray-6 leading-relaxed mt-2 mb-5">
+          {post.data.description}
+        </p>
+
+        <!-- tags -->
+        {tags && (
+          <div class="flex gap-2">
+            {post.data.tags.map((tag) => (
+              <a
+                href={`${baseurl}/tags/${tag}`}
+                class="border border-outline-gray-1 text-ink-gray-5 capitalize px-2 py-1 text-xs rounded bg-surface-gray-2 hover:bg-surface-gray-3"
+              >
+                {tag}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </li>
   ))}
@@ -38,7 +61,7 @@ const formatDate = (date: Date) => {
 
 <!-- Pagination -->
 <div
-  class="flex gap-5 pb-10 mx-auto max-w-3xl text-sm text-ink-gray-6 justify-end"
+  class="flex gap-5 pb-10 mx-auto max-w-page text-sm text-ink-gray-6 justify-end"
 >
   {currentPage > 1 && (
     <a

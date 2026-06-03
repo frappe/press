@@ -477,6 +477,7 @@
   --min-width-40: 10rem;
   --min-width-50: 18rem;
   --max-height-52: 13rem;
+  --container-page: 65ch;
 
   /* Font sizes — UI labels */
   --text-2xs: 11px; --text-2xs--line-height: 1.15; --text-2xs--letter-spacing: 0.01em; --text-2xs--font-weight: 420;
@@ -592,4 +593,10 @@ body {
 
 video, img {
   @apply shadow-xl rounded;
+}
+
+
+
+html {
+  scrollbar-gutter: stable;
 }
