@@ -432,7 +432,7 @@ class Site(Document, TagHelpers):
 						frappe.throw(custom_message)
 					else:
 						frappe.throw(
-							f"Site is in {frappe.bold(status.lower())} state. Your site have to be active to {frappe.bold(action_name_refined)}."
+							f"Site is in {frappe.bold(status.lower())} state. Your site has to be active to {frappe.bold(action_name_refined)}."
 						)
 
 				check_allowed_actions(creation_failed, func.__name__, action_name_refined)
