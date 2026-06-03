@@ -254,7 +254,7 @@ const handleAgentJobUpdate = (data) => {
 watch(
 	() => agentJobIds?.value,
 	(ids: string[]) => {
-		if (props.deployview || !ids || pipeline?.doc?.status !== 'Running') {
+		if (props.deployview || !ids) {
 			return
 		}
 
@@ -267,7 +267,7 @@ watch(
 				})
 			}
 
-			if (socket && !wired.has(`job:${id}`)) {
+			if (socket && !wired.has(`job:${id}`) && pipeline?.doc?.status === 'Running' ) {
 				socket.emit('doc_subscribe', 'Agent Job', id)
 				wired.add(`job:${id}`)
 			}
