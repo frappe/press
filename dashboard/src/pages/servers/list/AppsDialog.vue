@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { Dialog, TextInput, Button, Checkbox, createResource } from 'frappe-ui'
-import '@/styles/checkbox.css'
 
 interface Props {
 	cluster: string
