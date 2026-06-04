@@ -207,9 +207,6 @@ const progress = (promise, msgLoading, msgSuccess) => {
 						type: 'Component',
 						component: ({ row }) => {
 							const memberRole = getMemberRole(row);
-							const roleValue = row.press_role_value
-								? row.press_role_value
-								: memberRole;
 							if (!session.isTeamAdmin) {
 								return h(
 									Badge,
@@ -227,7 +224,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 									{
 										class: 'w-min relative -left-2',
 										variant: 'ghost',
-										modelValue: roleValue,
+										modelValue: memberRole,
 										options: roles.data,
 										'onUpdate:modelValue': (value) =>
 											updateInvitationRole.submit({
@@ -243,7 +240,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 								{
 									class: 'w-min relative -left-2',
 									variant: 'ghost',
-									modelValue: roleValue,
+									modelValue: memberRole,
 									options: roles.data,
 									'onUpdate:modelValue': (value) => updateRole(row.name, value),
 								},

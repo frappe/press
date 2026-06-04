@@ -178,7 +178,6 @@ def get_invitations(team: str):
 			AccountRequest.email,
 			AccountRequest.request_key_expiration_time.as_("date"),
 			fn.Coalesce(PressRole.title, AccountRequest.press_role).as_("press_role"),
-			AccountRequest.press_role.as_("press_role_value"),
 			ValueWrapper("Pending").as_("status"),
 			User.full_name,
 			User.user_image,
