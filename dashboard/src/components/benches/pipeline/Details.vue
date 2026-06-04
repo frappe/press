@@ -166,6 +166,10 @@ const fetchSetErrs = () => {
 	warnings.fetch()
 }
 
+// pipeline.doc exists if cache exists
+// if cache exists then onSuccess wont run so fetch errs!
+if(pipeline?.doc?.status == 'Failure') fetchSetErrs()
+
 const wired = reactive(new Set<string>())
 const builds = ref<Record<string, any>>({})
 
