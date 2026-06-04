@@ -1067,6 +1067,18 @@ class Team(Document):
 	def get_members(self):
 		return get_invitations(str(self.name)) + get_members(str(self.name))
 
+	def _validate_role(self, role: str):
+		from press.press.doctype.team.team_members import get_roles
+
+		all_roles = get_roles(str(self.name))
+		if not any(r["value"] == role for r in all_roles):
+			frappe.throw(
+				_('Invalid role "{0}". Must be one of: {1}').format(
+					role, ", ".join(r["value"] for r in all_roles)
+				),
+				frappe.ValidationError,
+			)
+
 	@dashboard_whitelist()
 	@feature_preview.beta_testing()
 	@team_guard.only_admin()
@@ -1077,6 +1089,7 @@ class Team(Document):
 		handled inside team doctype itself. Account request should focus on
 		handling user management, unrelated to team.
 		"""
+		self._validate_role(role)
 		for n in names.split(","):
 			n = n.strip()
 			if frappe.db.exists("Account Request", n):
@@ -1131,7 +1144,7 @@ class Team(Document):
 	@feature_preview.beta_testing()
 	@team_guard.only_admin()
 	def update_invitation_role(self, account_request: str, role: str):
-		"""Update the role for a pending invitation."""
+		self._validate_role(role)
 		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
 		self._set_invitation_role(d, role)
 		d.flags.ignore_links = True
