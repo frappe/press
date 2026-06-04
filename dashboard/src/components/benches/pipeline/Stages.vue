@@ -111,6 +111,7 @@ const isStageDisabled = (x) => {
 					headerCss="ml-6 py-2 pr-2 -mt-1"
 					:key="bench.name"
 					:opened="true"
+					:disabled="!bench?.jobs || bench?.jobs?.length == 0"
 				>
 					<template #prefix>
 						<LucideBoxes class="size-4 shrink-0" />
