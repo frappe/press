@@ -145,46 +145,6 @@ const progress = (promise, msgLoading, msgSuccess) => {
 						fieldname: 'email',
 					},
 					{
-						label: 'Role',
-						fieldname: 'role',
-						type: 'Component',
-						component: ({ row }) => {
-							if (row.status === 'Pending') {
-								return h(
-									Badge,
-									{
-										label: 'Pending',
-										theme: 'gray',
-										variant: 'subtle',
-									},
-									row.role,
-								);
-							}
-							if (!session.isTeamAdmin) {
-								return h(
-									Badge,
-									{
-										label: row.role,
-										theme: 'blue',
-										variant: 'subtle',
-									},
-									row.role,
-								);
-							}
-							return h(
-								Select,
-								{
-									class: 'w-min relative -left-2',
-									variant: 'ghost',
-									modelValue: row.role,
-									options: roles.data,
-									'onUpdate:modelValue': (value) => updateRole(row.name, value),
-								},
-								row.role,
-							);
-						},
-					},
-					{
 						label: 'Status',
 						fieldname: 'status',
 						type: 'Component',
@@ -225,6 +185,46 @@ const progress = (promise, msgLoading, msgSuccess) => {
 								},
 							});
 						}
+					},
+					{
+						label: 'Role',
+						fieldname: 'role',
+						type: 'Component',
+						component: ({ row }) => {
+							if (row.status === 'Pending') {
+								return h(
+									Badge,
+									{
+										label: 'Pending',
+										theme: 'gray',
+										variant: 'subtle',
+									},
+									row.role,
+								);
+							}
+							if (!session.isTeamAdmin) {
+								return h(
+									Badge,
+									{
+										label: row.role,
+										theme: 'blue',
+										variant: 'subtle',
+									},
+									row.role,
+								);
+							}
+							return h(
+								Select,
+								{
+									class: 'w-min relative -left-2',
+									variant: 'ghost',
+									modelValue: row.role,
+									options: roles.data,
+									'onUpdate:modelValue': (value) => updateRole(row.name, value),
+								},
+								row.role,
+							);
+						},
 					},
 				],
 				rowActions: ({ row }) => {
