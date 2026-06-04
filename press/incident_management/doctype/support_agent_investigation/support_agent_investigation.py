@@ -82,6 +82,7 @@ class SupportAgentInvestigation(Document):
 			self.completed_at = frappe.utils.now_datetime()
 			self.failure_reason = redact(str(exc))
 			self.save(ignore_permissions=True)
+			frappe.db.commit()
 			frappe.log_error(
 				"Support Agent Investigation Failed",
 				reference_doctype=self.doctype,
