@@ -11,6 +11,20 @@ Scheduled → Pending → Running → Success
                               → Cancelled
 ```
 
+| Status | Terminal | Meaning |
+|--------|----------|---------|
+| `Scheduled` | No | Waiting for the scheduled window |
+| `Pending` | No | Queued, AgentJob not yet started |
+| `Running` | No | AgentJob in progress on the server |
+| `Success` | Yes | Update completed successfully |
+| `Failure` | **No** | AgentJob failed; a recovery job is being created automatically. This is a transient state — the record will move to `Recovering` shortly |
+| `Recovering` | No | Recovery (rollback) job is running |
+| `Recovered` | Yes | Update failed but the site was rolled back to its previous bench successfully |
+| `Fatal` | Yes | Update failed and recovery also failed; site needs manual intervention |
+| `Cancelled` | Yes | Update was cancelled before or during execution |
+
+`Failure` is **not** a terminal state. Do not treat it as a final outcome when reading a site update record — wait for the transition to `Recovered` or `Fatal`.
+
 ## Deploy types
 
 | Type | Description |

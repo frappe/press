@@ -161,7 +161,7 @@ The investigation report should vary its signals and next steps based on the cla
 
 **Report signals to surface:**
 
-- If bench is not Active or a recent deployment failed, that is the likely cause.
+- If bench is not Active or a recent deployment ended in `Fatal` or `Cancelled`, that is the likely cause. A deployment in `Failure` state is transient — a recovery job is being created; check back shortly.
 - If no deployment or incident explains it, the crash may be from an application exception. Direct the support agent to `web.error.log` (Bench Group → Sites → View Logs) to find the traceback, then `bench restart` once the root cause is understood.
 - Do not recommend `bench restart` as a first step before log review; a restart without diagnosis will recur.
 
@@ -220,7 +220,7 @@ It flags signals such as:
 
 - inactive/broken/suspended site status,
 - non-active bench status,
-- failed or running site updates,
+- fatally failed or cancelled site updates (`Fatal`, `Cancelled` are terminal failure states; `Failure` is transient — a recovery job is created shortly after and the update moves to `Recovering` → `Recovered` or `Fatal`),
 - recent failed agent jobs,
 - critical disk/database/CPU usage (≥120% flagged as a cause; ≥90% flagged as evidence),
 - broken site domains,

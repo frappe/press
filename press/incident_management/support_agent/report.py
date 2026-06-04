@@ -115,15 +115,29 @@ def _add_deployment_evidence(deployments, evidence, timeline, causes, next_steps
 	if not latest:
 		return
 
-	if latest.get("status") in {"Failure", "Fatal", "Cancelled"}:
-		evidence.append(f"Latest site update ended with {latest.get('status')}.")
-		causes.append("Recent site update failed or was cancelled.")
+	if latest.get("status") == "Fatal":
+		evidence.append("Latest site update ended with Fatal.")
+		causes.append("Recent site update failed permanently; recovery was not successful.")
 		next_steps.append(
 			"Open the latest Site Update and inspect the linked Agent Job status before retrying."
 		)
+	elif latest.get("status") == "Cancelled":
+		evidence.append("Latest site update was cancelled.")
+		causes.append("Recent site update was cancelled.")
+		next_steps.append(
+			"Open the latest Site Update and inspect the linked Agent Job status before retrying."
+		)
+	elif latest.get("status") == "Failure":
+		evidence.append("Latest site update is in Failure state; a recovery job is likely being created.")
+		causes.append("Recent site update hit a failure; recovery is in progress or pending.")
+		next_steps.append("Wait briefly for the recovery job to be created, then check its status.")
+	elif latest.get("status") == "Recovered":
+		evidence.append(
+			"Latest site update ended with Recovered — it failed but was rolled back successfully."
+		)
 	elif latest.get("status") in {"Pending", "Running", "Recovering", "Scheduled"}:
 		evidence.append(f"Latest site update is {latest.get('status')}.")
-		causes.append("A site update is currently pending or running.")
+		causes.append("A site update is currently in progress.")
 		next_steps.append(
 			"Wait for the site update to finish or investigate the linked running job if it is stuck."
 		)
@@ -214,7 +228,7 @@ def _has_blocking_signal(site, bench, deployments, errors, incidents):
 	return bool(
 		site.get("status") != "Active"
 		or bench.get("status") not in {None, "Active"}
-		or (deployments and deployments[0].get("status") in {"Failure", "Fatal"})
+		or (deployments and deployments[0].get("status") in {"Fatal", "Cancelled"})
 		or errors.get("failed_job_count")
 		or incidents
 	)

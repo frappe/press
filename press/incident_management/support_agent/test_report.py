@@ -4,7 +4,24 @@ from press.incident_management.support_agent.report import generate_report
 
 
 class TestSupportAgentReport(FrappeTestCase):
-	def test_flags_failed_site_update(self):
+	def test_fatal_site_update_is_high_confidence(self):
+		report = generate_report(
+			{
+				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
+				"bench": {"status": "Active"},
+				"deployments": [{"name": "update-1", "status": "Fatal", "creation": "now"}],
+				"background_jobs": {},
+				"backups": {},
+				"domains": {},
+				"incidents": [],
+				"errors": {},
+			}
+		)
+
+		self.assertIn("permanently", report["likely_cause"])
+		self.assertEqual(report["confidence"], "High")
+
+	def test_failure_state_site_update_is_medium_confidence(self):
 		report = generate_report(
 			{
 				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
@@ -18,8 +35,24 @@ class TestSupportAgentReport(FrappeTestCase):
 			}
 		)
 
-		self.assertEqual(report["likely_cause"], "Recent site update failed or was cancelled.")
-		self.assertEqual(report["confidence"], "High")
+		self.assertIn("recovery", report["likely_cause"])
+		self.assertEqual(report["confidence"], "Medium")
+
+	def test_recovered_site_update_produces_no_cause(self):
+		report = generate_report(
+			{
+				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
+				"bench": {"status": "Active"},
+				"deployments": [{"name": "update-1", "status": "Recovered", "creation": "now"}],
+				"background_jobs": {},
+				"backups": {},
+				"domains": {},
+				"incidents": [],
+				"errors": {},
+			}
+		)
+
+		self.assertEqual(report["confidence"], "Low")
 
 	def test_returns_low_confidence_when_no_signals(self):
 		report = generate_report(
