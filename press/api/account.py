@@ -66,7 +66,6 @@ def signup(email: str, product: str | None = None, referrer: str | None = None) 
 			{
 				"doctype": "Account Request",
 				"email": email,
-				"role": "Press User",
 				"referrer_id": referrer,
 				"send_email": True,
 				"product_trial": product,
@@ -228,6 +227,7 @@ def setup_account(  # noqa: C901
 			password,
 			press_roles,
 			skip_validations=True,
+			role=account_request.invite_role_label,
 		)
 	else:
 		# Team doesn't exist, create it
@@ -280,7 +280,13 @@ def accept_team_invite(key: str):
 
 	team_doc = frappe.get_doc("Team", team, ignore_permissions=True)
 	team_doc.create_user_for_member(
-		first_name, last_name, email, password, press_roles, skip_validations=True
+		first_name,
+		last_name,
+		email,
+		password,
+		press_roles,
+		skip_validations=True,
+		role=account_request.invite_role_label,
 	)
 
 
@@ -660,7 +666,6 @@ def new_team(email, current_team):
 		{
 			"doctype": "Account Request",
 			"email": email,
-			"role": "Press User",
 			"send_email": True,
 			"team": email,
 			"invited_by": current_team,

@@ -358,6 +358,20 @@ class AccountRequest(Document):
 	def is_using_new_saas_flow(self):
 		return bool(self.product_trial)
 
+	@property
+	def invite_role_label(self) -> str:
+		"""Resolve the role label from press_role field.
+
+		press_role may contain either a Press Role document name (for custom
+		roles) or a predefined role label stored directly (for Admin, Developer,
+		Member, Viewer). This property resolves both cases to a label suitable
+		for the Team Member's role field.
+		"""
+		if not self.press_role:
+			return "Member"
+		title = frappe.get_value("Press Role", self.press_role, "title")
+		return title or self.press_role
+
 	def is_saas_signup(self):
 		return bool(self.saas_app or self.saas or self.erpnext or self.product_trial)
 

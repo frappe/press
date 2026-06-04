@@ -74,6 +74,17 @@ const cancelInvitation = createResource({
 	onSuccess: (data) => members.setData(data),
 })
 
+const updateInvitationRole = createResource({
+	url: 'run_doc_method',
+	makeParams: (args) => ({
+		method: 'update_invitation_role',
+		dt: 'Team',
+		dn: team.doc.name,
+		args,
+	}),
+	onSuccess: (data) => members.setData(data),
+})
+
 const updateTeam = createResource({
 	url: 'press.api.client.set_value',
 	makeParams: (args) => ({
@@ -86,6 +97,10 @@ const updateTeam = createResource({
 		members.fetch()
 	},
 })
+
+const getMemberRole = (row: any): string => {
+	return row.press_role || row.role || 'Member'
+}
 
 const updateRole = (member: string, role: string) => {
 	updateTeam.submit({
@@ -112,7 +127,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 		@success="
 			(v) => {
 				progress(
-					sendInvitation.submit({ names: v }),
+					sendInvitation.submit({ names: v.names, role: v.role }),
 					'Sending Invitation...',
 					'Invitation Sent',
 				);
@@ -191,26 +206,36 @@ const progress = (promise, msgLoading, msgSuccess) => {
 						fieldname: 'role',
 						type: 'Component',
 						component: ({ row }) => {
-							if (row.status === 'Pending') {
-								return h(
-									Badge,
-									{
-										label: 'Pending',
-										theme: 'gray',
-										variant: 'subtle',
-									},
-									row.role,
-								);
-							}
+							const memberRole = getMemberRole(row);
+							const roleValue = row.press_role_value
+								? row.press_role_value
+								: memberRole;
 							if (!session.isTeamAdmin) {
 								return h(
 									Badge,
 									{
-										label: row.role,
+										label: memberRole,
 										theme: 'blue',
 										variant: 'subtle',
 									},
-									row.role,
+									memberRole,
+								);
+							}
+							if (row.status === 'Pending') {
+								return h(
+									Select,
+									{
+										class: 'w-min relative -left-2',
+										variant: 'ghost',
+										modelValue: roleValue,
+										options: roles.data,
+										'onUpdate:modelValue': (value) =>
+											updateInvitationRole.submit({
+												account_request: row.name,
+												role: value,
+											}),
+									},
+									memberRole,
 								);
 							}
 							return h(
@@ -218,11 +243,11 @@ const progress = (promise, msgLoading, msgSuccess) => {
 								{
 									class: 'w-min relative -left-2',
 									variant: 'ghost',
-									modelValue: row.role,
+									modelValue: roleValue,
 									options: roles.data,
 									'onUpdate:modelValue': (value) => updateRole(row.name, value),
 								},
-								row.role,
+								memberRole,
 							);
 						},
 					},
@@ -242,7 +267,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 									onSuccess: ({ hide }) => {
 										progress(
 											sendInvitation
-												.submit({ names: row.name })
+												.submit({ names: row.name, role: getMemberRole(row) })
 												.then(() => hide()),
 											'Sending Invitation...',
 											'Invitation Sent',
