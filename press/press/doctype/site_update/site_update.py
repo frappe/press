@@ -605,6 +605,18 @@ class SiteUpdate(Document):
 
 			# Attempt to move site to source bench
 
+			# Recovering a migrate runs heavy restore/migrate queries that can exceed the
+			# database server's max_statement_time on large sites and get killed. Proactively
+			# bump max_statement_time by an hour so the recovery isn't timed out mid-query.
+			if self.deploy_type == "Migrate":
+				old_timeout, new_timeout = site.increase_max_statement_time()
+				self.add_comment(
+					text=(
+						f"Increased <code>max_statement_time</code> on the database server from "
+						f"{old_timeout}s to {new_timeout}s before the recovery migrate job."
+					)
+				)
+
 			# Disable maintenance mode for active sites
 			activate = site.status_before_update == "Active"
 			job = agent.update_site_recover_move(

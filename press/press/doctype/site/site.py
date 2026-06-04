@@ -1174,15 +1174,33 @@ class Site(Document, TagHelpers):
 		self.status = "Pending"
 		self.save()
 
+	def increase_max_statement_time(self, increment: int = STATEMENT_TIME_INCREMENT) -> tuple[int, int]:
+		"""Increase the database server's ``max_statement_time`` by ``increment`` seconds.
+
+		``max_statement_time`` is a dynamic MariaDB variable, so the change applies
+		without a restart. Returns ``(old_value, new_value)`` in seconds.
+		"""
+		database_server = frappe.get_doc("Database Server", self.database_server_name)
+		current_timeout = database_server.get_mariadb_variable_value("max_statement_time")
+		current_timeout = int(float(current_timeout)) if current_timeout else DEFAULT_MAX_STATEMENT_TIME
+		new_timeout = current_timeout + increment
+		database_server.add_or_update_mariadb_variable(
+			"max_statement_time",
+			"value_str",
+			str(new_timeout),
+			update_variables_synchronously=True,
+		)
+		return current_timeout, new_timeout
+
 	def retry_restore_tables_after_statement_timeout(self, job) -> bool:
 		"""Recover from a Restore Site Tables job that failed because a query exceeded
 		the database server's ``max_statement_time``.
 
 		Restoring tables runs heavy queries that can exceed the configured statement
 		timeout on large sites. When that happens, bump ``max_statement_time`` on the
-		database server (a dynamic variable, so no restart is needed) and retry the
-		restore, up to ``MAX_STATEMENT_TIMEOUT_RETRIES`` times. Each additional attempt
-		is recorded as a comment on the fatal Site Update being recovered.
+		database server and retry the restore, up to ``MAX_STATEMENT_TIMEOUT_RETRIES``
+		times. Each additional attempt is recorded as a comment on the fatal Site Update
+		being recovered.
 
 		Returns True if a retry was triggered.
 		"""
@@ -1204,23 +1222,14 @@ class Site(Document, TagHelpers):
 		if failed_attempts > MAX_STATEMENT_TIMEOUT_RETRIES:
 			return False
 
-		database_server = frappe.get_doc("Database Server", self.database_server_name)
-		current_timeout = database_server.get_mariadb_variable_value("max_statement_time")
-		current_timeout = int(float(current_timeout)) if current_timeout else DEFAULT_MAX_STATEMENT_TIME
-		new_timeout = current_timeout * 2
-		database_server.add_or_update_mariadb_variable(
-			"max_statement_time",
-			"value_str",
-			str(new_timeout),
-			update_variables_synchronously=True,
-		)
+		old_timeout, new_timeout = self.increase_max_statement_time()
 
 		frappe.get_doc("Site Update", self.fatal_site_update).add_comment(
 			text=(
 				f"Restore tables attempt {failed_attempts} failed because a query exceeded "
 				f"<code>max_statement_time</code>. Increased <code>max_statement_time</code> on "
-				f"database server <b>{database_server.name}</b> from {current_timeout}s to "
-				f"{new_timeout}s and retrying restore tables."
+				f"the database server from {old_timeout}s to {new_timeout}s and retrying "
+				f"restore tables."
 			)
 		)
 
@@ -5034,6 +5043,8 @@ STATEMENT_TIMEOUT_ERROR = "max_statement_time exceeded"
 # Fallback when max_statement_time isn't explicitly set on the database server.
 # Ref: press/fixtures/mariadb_variable.json
 DEFAULT_MAX_STATEMENT_TIME = 3600
+# How much to bump max_statement_time by (in seconds) each time — one hour.
+STATEMENT_TIME_INCREMENT = 3600
 MAX_STATEMENT_TIMEOUT_RETRIES = 3
 
 
