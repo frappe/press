@@ -1067,10 +1067,10 @@ class Team(Document):
 	def get_members(self):
 		return get_invitations(str(self.name)) + get_members(str(self.name))
 
-	def _validate_role(self, role: str):
+	def _validate_role(self, role: str, all_roles=None):
 		from press.press.doctype.team.team_members import get_roles
 
-		all_roles = get_roles(str(self.name))
+		all_roles = all_roles or get_roles(str(self.name))
 		if not any(r["value"] == role for r in all_roles):
 			frappe.throw(
 				_('Invalid role "{0}". Must be one of: {1}').format(
@@ -1089,12 +1089,20 @@ class Team(Document):
 		handled inside team doctype itself. Account request should focus on
 		handling user management, unrelated to team.
 		"""
-		self._validate_role(role)
+		from press.press.doctype.team.team_members import get_roles
+
+		all_roles = get_roles(str(self.name))
+		self._validate_role(role, all_roles)
 		for n in names.split(","):
 			n = n.strip()
 			if frappe.db.exists("Account Request", n):
 				d: AccountRequest = frappe.get_doc("Account Request", n, check_permission=True)
-				self._set_invitation_role(d, role)
+				if d.team != self.name:
+					frappe.throw(
+						_("Account Request does not belong to this team."),
+						frappe.PermissionError,
+					)
+				self._set_invitation_role(d, role, all_roles)
 				d.flags.ignore_links = True
 				d.save()
 				d.send_verification_email()
@@ -1109,7 +1117,7 @@ class Team(Document):
 				},
 			):
 				dd: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
-				self._set_invitation_role(dd, role)
+				self._set_invitation_role(dd, role, all_roles)
 				dd.flags.ignore_links = True
 				dd.save()
 				dd.send_verification_email()
@@ -1118,26 +1126,22 @@ class Team(Document):
 			ar: AccountRequest = frappe.new_doc("Account Request")
 			ar.team = self.name
 			ar.email = n
-			self._set_invitation_role(ar, role)
+			self._set_invitation_role(ar, role, all_roles)
 			ar.invited_by = frappe.session.user
 			ar.send_email = True
 			ar.flags.ignore_links = True
 			ar.save()
 		return self.get_members()
 
-	def _set_invitation_role(self, account_request: AccountRequest, role: str):
-		"""Set the role on an Account Request, storing in press_role when possible."""
-		from press.press.doctype.team.team_members import get_roles
+	def _set_invitation_role(self, account_request: AccountRequest, role: str, all_roles=None):
+		if all_roles is None:
+			from press.press.doctype.team.team_members import get_roles
 
-		all_roles = get_roles(str(self.name))
+			all_roles = get_roles(str(self.name))
 		matched = [r for r in all_roles if r["value"] == role]
 		if matched and matched[0].get("name"):
-			# Custom Press Role — store the doc name in the press_role Link field
 			account_request.press_role = matched[0]["name"]
 		else:
-			# Predefined role (Admin, Developer, Member, Viewer) or unknown —
-			# store the label in press_role (bypass Link validation since
-			# there's no Press Role document for it)
 			account_request.press_role = role
 
 	@dashboard_whitelist()

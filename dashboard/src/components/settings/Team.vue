@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Badge, createResource, Select } from 'frappe-ui'
-import { h, ref } from 'vue'
+import { Badge, Combobox, createResource } from 'frappe-ui'
+import { computed, h, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import session from '@/data/session'
 import { useUserStore } from '@/stores/user'
@@ -50,6 +50,11 @@ const roles = createResource({
 		dn: team.doc.name,
 	},
 	transform: (d) => d.message,
+})
+
+const roleOptions = computed(() => {
+	if (!roles.data) return []
+	return roles.data.map((r) => ({ label: r.label, value: r.value }))
 })
 
 const sendInvitation = createResource({
@@ -112,6 +117,118 @@ const updateRole = (member: string, role: string) => {
 	})
 }
 
+const columns = computed(() => [
+	{
+		label: 'User',
+		type: 'Component',
+		component: ({ row }) => {
+			return h(UserWithAvatarCell, {
+				avatarImage: row.user_image,
+				fullName: row.full_name || row.email,
+				isCurrentUser: row.email === user.email,
+			})
+		},
+	},
+	{
+		label: 'Email',
+		fieldname: 'email',
+	},
+	{
+		label: 'Status',
+		fieldname: 'status',
+		type: 'Component',
+		component: ({ row }) => {
+			return h(
+				Badge,
+				{
+					label: row.status,
+					theme: row.status === 'Active' ? 'green' : 'gray',
+					variant: 'subtle',
+				},
+				row.status,
+			)
+		},
+	},
+	{
+		label: 'Resources',
+		type: 'Component',
+		component: ({ row }) => {
+			return h(TeamResourcesDialog, {
+				team: team.doc.name,
+				userId: row.email,
+				userName: row.full_name || row.email,
+				resourceCount: row.resource_count,
+				allServers: row.all_servers,
+				allReleaseGroups: row.all_release_groups,
+				allSites: row.all_sites,
+				onUpdate: (key: string, value: boolean) => {
+					updateTeam.submit({
+						fieldname: 'team_members',
+						value: team.doc.team_members.map((m) => {
+							if (m.name === row.name) {
+								m[key] = value
+							}
+							return m
+						}),
+					})
+				},
+			})
+		},
+	},
+	{
+		label: 'Role',
+		fieldname: 'role',
+		type: 'Component',
+		component: ({ row }) => {
+			const memberRole = getMemberRole(row)
+			if (!session.isTeamAdmin) {
+				return h(
+					Badge,
+					{
+						label: memberRole,
+						theme: 'blue',
+						variant: 'subtle',
+					},
+					memberRole,
+				)
+			}
+			if (!roleOptions.value.length) {
+				return h(
+					Badge,
+					{
+						label: memberRole,
+						theme: 'blue',
+						variant: 'subtle',
+					},
+					memberRole,
+				)
+			}
+			if (row.status === 'Pending') {
+				return h(Combobox, {
+					class: 'w-min',
+					modelValue: memberRole,
+					options: roleOptions.value,
+					openOnFocus: true,
+					openOnClick: true,
+					'onUpdate:modelValue': (value) =>
+						updateInvitationRole.submit({
+							account_request: row.name,
+							role: value,
+						}),
+				})
+			}
+			return h(Combobox, {
+				class: 'w-min',
+				modelValue: memberRole,
+				options: roleOptions.value,
+				openOnFocus: true,
+				openOnClick: true,
+				'onUpdate:modelValue': (value) => updateRole(row.name, value),
+			})
+		},
+	},
+])
+
 const progress = (promise, msgLoading, msgSuccess) => {
 	toast.promise(promise, {
 		loading: msgLoading,
@@ -143,112 +260,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 			:options="{
 				rowHeight: 50,
 				list: members,
-				columns: [
-					{
-						label: 'User',
-						type: 'Component',
-						component: ({ row }) => {
-							return h(UserWithAvatarCell, {
-								avatarImage: row.user_image,
-								fullName: row.full_name || row.email,
-								isCurrentUser: row.email === user.email,
-							});
-						},
-					},
-					{
-						label: 'Email',
-						fieldname: 'email',
-					},
-					{
-						label: 'Status',
-						fieldname: 'status',
-						type: 'Component',
-						component: ({ row }) => {
-							return h(
-								Badge,
-								{
-									label: row.status,
-									theme: row.status === 'Active' ? 'green' : 'gray',
-									variant: 'subtle',
-								},
-								row.status,
-							);
-						},
-					},
-					{
-						label: 'Resources',
-						type: 'Component',
-						component: ({ row }) => {
-							return h(TeamResourcesDialog, {
-								team: team.doc.name,
-								userId: row.email,
-								userName: row.full_name || row.email,
-								resourceCount: row.resource_count,
-								allServers: row.all_servers,
-								allReleaseGroups: row.all_release_groups,
-								allSites: row.all_sites,
-								onUpdate: (key: string, value: boolean) => {
-									updateTeam.submit({
-										fieldname: 'team_members',
-										value: team.doc.team_members.map((m) => {
-											if (m.name === row.name) {
-												m[key] = value;
-											}
-											return m;
-										}),
-									})
-								},
-							});
-						}
-					},
-					{
-						label: 'Role',
-						fieldname: 'role',
-						type: 'Component',
-						component: ({ row }) => {
-							const memberRole = getMemberRole(row);
-							if (!session.isTeamAdmin) {
-								return h(
-									Badge,
-									{
-										label: memberRole,
-										theme: 'blue',
-										variant: 'subtle',
-									},
-									memberRole,
-								);
-							}
-							if (row.status === 'Pending') {
-								return h(
-									Select,
-									{
-										class: 'w-min relative -left-2',
-										variant: 'ghost',
-										modelValue: memberRole,
-										options: roles.data,
-										'onUpdate:modelValue': (value) =>
-											updateInvitationRole.submit({
-												account_request: row.name,
-												role: value,
-											}),
-									},
-									memberRole,
-								);
-							}
-							return h(
-								Select,
-								{
-									class: 'w-min relative -left-2',
-									variant: 'ghost',
-									modelValue: memberRole,
-									options: roles.data,
-									'onUpdate:modelValue': (value) => updateRole(row.name, value),
-								},
-								memberRole,
-							);
-						},
-					},
-				],
+				columns,
 				rowActions: ({ row }) => {
 					if (!session.isTeamAdmin) return [];
 					if (row.email === user.email) return [];
