@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_url, random_string, validate_email_address
 
@@ -52,6 +53,7 @@ class AccountRequest(Document):
 		otp_generated_at: DF.Datetime | None
 		phone_number: DF.Data | None
 		plan: DF.Link | None
+		press_role: DF.Link | None
 		press_roles: DF.TableMultiSelect[AccountRequestPressRole]
 		product_trial: DF.Link | None
 		referral_source: DF.Data | None
@@ -121,6 +123,7 @@ class AccountRequest(Document):
 
 	def validate(self):
 		self.disallow_disposable_emails()
+		self.validate_press_role()
 		validate_email_address(self.email, throw=True)
 
 	@settings.enabled("disallow_disposable_emails")
@@ -136,6 +139,18 @@ class AccountRequest(Document):
 		if disposable_emails.is_disposable(self.email):
 			frappe.throw(
 				"Temporary email providers are not allowed.",
+				frappe.ValidationError,
+			)
+
+	def validate_press_role(self):
+		if not self.press_role:
+			return
+		role_team = frappe.get_value("Press Role", self.press_role, "team")
+		if role_team and role_team != self.team:
+			frappe.throw(
+				_('Press Role "{0}" does not belong to the same team as the account request.').format(
+					self.press_role
+				),
 				frappe.ValidationError,
 			)
 
