@@ -4,6 +4,7 @@ import frappe
 import frappe.utils
 from frappe.types.DF import Data
 from pypika import Not
+from pypika import functions as fn
 from pypika.terms import ValueWrapper
 
 # Permission fields that apply to both predefined and custom roles.
@@ -161,11 +162,14 @@ def get_members(team: str):
 
 def get_invitations(team: str):
 	AccountRequest = frappe.qb.DocType("Account Request")
+	PressRole = frappe.qb.DocType("Press Role")
 	User = frappe.qb.DocType("User")
 	return (
 		frappe.qb.from_(AccountRequest)
 		.left_join(User)
 		.on(AccountRequest.email == User.email)
+		.left_join(PressRole)
+		.on(AccountRequest.press_role == PressRole.name)
 		.where(AccountRequest.team == team)
 		.where(Not(AccountRequest.invited_by.isnull()))
 		.where(AccountRequest.request_key_expiration_time > frappe.utils.now_datetime())
@@ -173,6 +177,7 @@ def get_invitations(team: str):
 			AccountRequest.name,
 			AccountRequest.email,
 			AccountRequest.request_key_expiration_time.as_("date"),
+			fn.Coalesce(PressRole.title, AccountRequest.press_role).as_("press_role"),
 			ValueWrapper("Pending").as_("status"),
 			User.full_name,
 			User.user_image,
