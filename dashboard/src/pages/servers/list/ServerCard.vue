@@ -18,7 +18,6 @@ import DigitalOceanLogo from '@/logo/DigitalOcean.vue'
 import AddBenchDialog from './AddBenchDialog.vue'
 import MarketPlaceAppsDialog from './AppsDialog.vue'
 
-
 import { renderDialog } from '@/utils/components'
 
 import { dayjsLocal } from '@/utils/dayjs'
@@ -205,8 +204,9 @@ const deployBench = (e) => {
 						{{ bench.active_benches ? 'Active' : 'Awaiting Deploy' }}
 
 						<button
+							v-if="!bench.active_benches"
 							@click="deployBench"
-							class="w-full self-start text-left mb-2 hover:underline"
+							class="w-full self-start text-left mb-1 ml-4 hover:underline"
 						>
 							Deploy
 						</button>
