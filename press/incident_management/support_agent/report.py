@@ -4,10 +4,10 @@ from typing import Any
 
 
 def generate_report(payload: dict[str, Any]) -> dict[str, Any]:
-	evidence = []
-	timeline = []
-	causes = []
-	next_steps = []
+	evidence: list[str] = []
+	timeline: list[dict[str, Any]] = []
+	causes: list[str] = []
+	next_steps: list[str] = []
 	confidence = "Low"
 
 	site = payload.get("site") or {}
@@ -18,6 +18,10 @@ def generate_report(payload: dict[str, Any]) -> dict[str, Any]:
 	domains = payload.get("domains") or {}
 	incidents = payload.get("incidents") or []
 	errors = payload.get("errors") or {}
+	app_server_metrics = payload.get("app_server_metrics") or {}
+	db_server_metrics = payload.get("db_server_metrics") or {}
+	server_advanced_analytics = payload.get("server_advanced_analytics") or {}
+	site_performance = payload.get("site_performance") or {}
 
 	_add_site_evidence(site, evidence, causes, next_steps)
 	_add_bench_evidence(bench, evidence, causes, next_steps)
@@ -26,6 +30,10 @@ def generate_report(payload: dict[str, Any]) -> dict[str, Any]:
 	_add_backup_evidence(backups, evidence, timeline, next_steps)
 	_add_domain_evidence(domains, evidence, causes, next_steps)
 	_add_incident_evidence(incidents, evidence, timeline, causes, next_steps)
+	_add_server_metrics_evidence(
+		app_server_metrics, db_server_metrics, server_advanced_analytics, evidence, causes, next_steps
+	)
+	_add_performance_evidence(site_performance, evidence, causes, next_steps)
 
 	if causes:
 		confidence = "High" if _has_blocking_signal(site, bench, deployments, errors, incidents) else "Medium"
@@ -210,6 +218,99 @@ def _has_blocking_signal(site, bench, deployments, errors, incidents):
 		or errors.get("failed_job_count")
 		or incidents
 	)
+
+
+def _add_server_metrics_evidence(app_metrics, db_metrics, advanced_analytics, evidence, causes, next_steps):
+	_add_app_server_evidence(app_metrics, advanced_analytics, evidence, causes, next_steps)
+	_add_db_server_evidence(db_metrics, evidence, causes, next_steps)
+
+
+def _add_app_server_evidence(app_metrics, advanced_analytics, evidence, causes, next_steps):
+	if not app_metrics.get("available"):
+		return
+
+	cpu = app_metrics.get("cpu") or {}
+	if cpu.get("spike_detected"):
+		evidence.append(
+			f"App server CPU peaked at {cpu['peak']}% (mean {cpu['mean']}%) over the last 24 hours."
+		)
+		causes.append(
+			"App server CPU spiked. Bench containers on shared servers have no CPU limits; "
+			"another tenant may be responsible."
+		)
+		next_steps.append(
+			"Check server advanced analytics to identify whether another tenant caused the spike. "
+			"If the site's own share is small, the issue is likely a noisy neighbor."
+		)
+
+	if advanced_analytics.get("available"):
+		rank = advanced_analytics.get("target_site_rank")
+		share = advanced_analytics.get("target_site_share_percent")
+		count = advanced_analytics.get("site_count")
+		if rank and share is not None:
+			evidence.append(
+				f"Site ranks #{rank} of {count} tenants by CPU usage on the app server "
+				f"({share}% of server total)."
+			)
+
+
+def _add_db_server_evidence(db_metrics, evidence, causes, next_steps):
+	if not db_metrics.get("available"):
+		return
+
+	db_cpu = db_metrics.get("cpu") or {}
+	db_iops = db_metrics.get("iops") or {}
+
+	if db_cpu.get("spike_detected"):
+		evidence.append(
+			f"Database server CPU peaked at {db_cpu['peak']}% (mean {db_cpu['mean']}%) over the last 24 hours."
+		)
+		causes.append(
+			"Database server CPU spiked. Shared database servers have no container-level isolation; "
+			"there is no automatic fix."
+		)
+		next_steps.append(
+			"Use database server advanced analytics to identify the tenant driving CPU. "
+			"Remediation requires manually moving the site or the heavy tenant to a dedicated server."
+		)
+
+	if db_iops.get("spike_detected"):
+		evidence.append(
+			f"Database server disk I/O peaked at {db_iops['peak']} IOPS "
+			f"(mean {db_iops['mean']}) over the last 24 hours."
+		)
+		if not db_cpu.get("spike_detected"):
+			causes.append("Database server disk I/O spiked.")
+			next_steps.append(
+				"Check database server advanced analytics to identify which tenant is driving heavy disk I/O."
+			)
+
+
+def _add_performance_evidence(performance, evidence, causes, next_steps):
+	if not performance.get("available"):
+		return
+
+	endpoints = performance.get("top_slow_endpoints") or []
+	if not endpoints:
+		return
+
+	slowest = endpoints[0]
+	avg = slowest.get("avg_duration_s", 0)
+	if avg < 1.0:
+		return
+
+	evidence.append(
+		f"Slowest endpoint '{slowest['path']}' averaged {avg}s per request over the last 24 hours "
+		f"(peak {slowest.get('peak_duration_s')}s)."
+	)
+	causes.append("Slow endpoint requests are consuming web workers and may be causing 504 errors.")
+	next_steps.append(
+		"Use Frappe Recorder on the site to profile the slow endpoint. "
+		"Disable Recorder immediately after profiling to avoid further degradation."
+	)
+	if len(endpoints) > 1:
+		others = ", ".join(f"'{e['path']}'" for e in endpoints[1:3])
+		evidence.append(f"Other slow endpoints in the last 24 hours: {others}.")
 
 
 def _unique(values):

@@ -1,25 +1,47 @@
 from __future__ import annotations
 
 from collections import Counter
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 from typing import Any
 
 import frappe
 
 RECENT_LIMIT = 10
+_SPIKE_CPU_THRESHOLD = 70.0  # flag CPU spike only above this percent
+_SPIKE_RATIO = 1.5  # peak must be this many times the mean to count as a spike
+_IOPS_SPIKE_RATIO = 2.0  # IOPS has no useful absolute threshold; rely on ratio only
+_SLOW_ENDPOINT_THRESHOLD_S = 1.0  # average duration above which an endpoint is worth flagging
 
 
 def collect_site_context(site_name: str) -> dict[str, Any]:
 	site = _get_site(site_name)
+	bench = get_bench_health(site.get("bench"))
+	db_server = bench.get("database_server") if bench else None
+
+	app_server_metrics = get_server_metrics(site.get("server"))
+	db_server_metrics = get_server_metrics(db_server, is_db_server=True)
+
+	server_advanced_analytics = (
+		get_server_advanced_analytics(site.get("server"), site_name)
+		if _any_spike(app_server_metrics, db_server_metrics)
+		else None
+	)
+
 	return {
 		"site": get_site_health(site),
-		"bench": get_bench_health(site.get("bench")),
+		"bench": bench,
 		"apps": get_app_versions(site.get("bench")),
-		"deployments": get_deployment_timeline(site.name),
-		"background_jobs": get_background_job_summary(site.name),
-		"backups": get_backup_status(site.name),
-		"domains": get_domain_status(site.name),
+		"deployments": get_deployment_timeline(site_name),
+		"background_jobs": get_background_job_summary(site_name),
+		"backups": get_backup_status(site_name),
+		"domains": get_domain_status(site_name),
 		"incidents": get_platform_incidents(site),
-		"errors": get_redacted_error_summary(site.name),
+		"errors": get_redacted_error_summary(site_name),
+		"app_server_metrics": app_server_metrics,
+		"db_server_metrics": db_server_metrics,
+		"server_advanced_analytics": server_advanced_analytics,
+		"site_performance": get_site_performance_summary(site_name),
 	}
 
 
@@ -220,6 +242,164 @@ def get_redacted_error_summary(site_name: str) -> dict[str, Any]:
 		"failed_jobs_by_type": dict(by_job_type),
 		"recent_failed_jobs": failed_jobs[:RECENT_LIMIT],
 	}
+
+
+def get_server_metrics(server_name: str | None, is_db_server: bool = False) -> dict[str, Any] | None:
+	if not server_name:
+		return None
+
+	if not frappe.db.get_single_value("Press Settings", "monitor_server"):
+		return {"available": False}
+
+	from press.api.server import prometheus_query
+
+	timespan = 24 * 60 * 60
+	timegrain = 30 * 60
+
+	try:
+		cpu_data = prometheus_query(
+			f'(1 - avg(rate(node_cpu_seconds_total{{instance="{server_name}",job="node",mode="idle"}}[{timegrain}s]))) * 100',
+			lambda _: "cpu",
+			"UTC",
+			timespan,
+			timegrain,
+		)
+	except Exception:
+		return {"available": False}
+
+	result: dict[str, Any] = {
+		"available": True,
+		"cpu": _summarise_series(cpu_data, absolute_threshold=_SPIKE_CPU_THRESHOLD),
+	}
+
+	if is_db_server:
+		try:
+			iops_data = prometheus_query(
+				f'sum(rate(node_disk_reads_completed_total{{instance="{server_name}",job="node"}}[{timegrain}s]) + rate(node_disk_writes_completed_total{{instance="{server_name}",job="node"}}[{timegrain}s]))',
+				lambda _: "iops",
+				"UTC",
+				timespan,
+				timegrain,
+			)
+			result["iops"] = _summarise_series(iops_data, ratio_threshold=_IOPS_SPIKE_RATIO)
+		except Exception:
+			result["iops"] = {"available": False}
+
+	return result
+
+
+def get_server_advanced_analytics(server_name: str | None, target_site: str) -> dict[str, Any] | None:
+	"""
+	Returns anonymized per-tenant CPU share on the app server.
+	Site names are never included — only the target site's rank and share are returned.
+	Used to detect noisy neighbors when a server CPU spike is observed.
+	"""
+	if not server_name:
+		return None
+
+	from press.api.analytics import get_current_cpu_usage_for_sites_on_server
+
+	usage_by_site = get_current_cpu_usage_for_sites_on_server(server_name)
+	if not usage_by_site:
+		return {"available": False}
+
+	total = sum(usage_by_site.values())
+	if not total:
+		return {"available": False}
+
+	sorted_entries = sorted(usage_by_site.items(), key=lambda x: x[1], reverse=True)
+	site_names = [name for name, _ in sorted_entries]
+
+	target_rank = site_names.index(target_site) + 1 if target_site in site_names else None
+	target_share = round(usage_by_site.get(target_site, 0) / total * 100, 1)
+	top_5_shares = [round(v / total * 100, 1) for _, v in sorted_entries[:5]]
+
+	return {
+		"available": True,
+		"site_count": len(usage_by_site),
+		"target_site_rank": target_rank,
+		"target_site_share_percent": target_share,
+		"top_5_shares_percent": top_5_shares,
+	}
+
+
+def get_site_performance_summary(site_name: str) -> dict[str, Any]:
+	"""
+	Top slow endpoints from Elasticsearch for the last 24 hours.
+	Used to identify app-level causes of 504s and site slowness.
+	"""
+	if not frappe.db.get_single_value("Press Settings", "log_server"):
+		return {"available": False}
+
+	from press.api.analytics import AggType, ResourceType, auto_timespan_timegrain, get_request_by_
+
+	end_dt = datetime.now(tz=dt_timezone.utc)
+	start_dt = end_dt - timedelta(hours=24)
+	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+
+	try:
+		result = get_request_by_(
+			site_name,
+			AggType.AVERAGE_DURATION,
+			"UTC",
+			start_dt,
+			end_dt,
+			timespan,
+			timegrain,
+			ResourceType.SITE,
+			max_no_of_paths=5,
+		)
+	except Exception:
+		return {"available": False}
+
+	endpoints = []
+	for ds in result.get("datasets") or []:
+		values = [v for v in (ds.get("values") or []) if v is not None]
+		if values:
+			endpoints.append(
+				{
+					"path": ds.get("path"),
+					"avg_duration_s": round(sum(values) / len(values), 3),
+					"peak_duration_s": round(max(values), 3),
+				}
+			)
+
+	endpoints.sort(key=lambda x: x["avg_duration_s"], reverse=True)
+	return {"available": True, "top_slow_endpoints": endpoints[:5]}
+
+
+def _summarise_series(
+	data: dict[str, Any],
+	absolute_threshold: float | None = None,
+	ratio_threshold: float = _SPIKE_RATIO,
+) -> dict[str, Any]:
+	datasets = data.get("datasets") or []
+	all_values = [v for ds in datasets for v in (ds.get("values") or []) if v is not None]
+	if not all_values:
+		return {"available": False, "peak": None, "mean": None, "spike_detected": False}
+
+	peak = max(all_values)
+	mean = sum(all_values) / len(all_values)
+	above_threshold = absolute_threshold is None or peak >= absolute_threshold
+	spike_detected = above_threshold and mean > 0 and peak >= mean * ratio_threshold
+
+	return {
+		"available": True,
+		"peak": round(peak, 1),
+		"mean": round(mean, 1),
+		"spike_detected": spike_detected,
+	}
+
+
+def _any_spike(app_metrics: dict[str, Any] | None, db_metrics: dict[str, Any] | None) -> bool:
+	if app_metrics and app_metrics.get("cpu", {}).get("spike_detected"):
+		return True
+	if db_metrics:
+		if db_metrics.get("cpu", {}).get("spike_detected"):
+			return True
+		if db_metrics.get("iops", {}).get("spike_detected"):
+			return True
+	return False
 
 
 def _get_site(site_name: str) -> frappe._dict:
