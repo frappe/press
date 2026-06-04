@@ -1149,6 +1149,42 @@ def process_update_site_job_update(job: AgentJob):
 			handle_failure(job, site_update)
 
 
+MAX_RECOVERY_RETRIES = 3
+
+TRANSIENT_DB_ERRORS = ["MySQL server has gone away", "Lost connection to MySQL server"]
+
+
+def failed_due_to_transient_db_error(job: "AgentJob") -> bool:
+	for error in TRANSIENT_DB_ERRORS:
+		if frappe.db.exists("Agent Job Step", {"agent_job": job.name, "output": ("like", f"%{error}%")}):
+			return True
+	return False
+
+
+def should_retry_recovery(job: "AgentJob", site_update_name: str) -> bool:
+	if not failed_due_to_transient_db_error(job):
+		return False
+	site_update_creation = frappe.db.get_value("Site Update", site_update_name, "creation")
+	failed_count = frappe.db.count(
+		"Agent Job",
+		{
+			"job_type": (
+				"in",
+				["Recover Failed Site Migrate", "Recover Failed Site Pull", "Recover Failed Site Update"],
+			),
+			"site": job.site,
+			"status": "Failure",
+			"creation": (">", site_update_creation),
+		},
+	)
+	return failed_count < MAX_RECOVERY_RETRIES
+
+
+def retry_recovery(site_update_name: str) -> None:
+	frappe.db.set_value("Site Update", site_update_name, "recover_job", None)
+	frappe.get_doc("Site Update", site_update_name).trigger_recovery_job()
+
+
 def process_update_site_recover_job_update(job: AgentJob):
 	updated_status = {
 		"Pending": "Recovering",
@@ -1170,6 +1206,10 @@ def process_update_site_recover_job_update(job: AgentJob):
 		if site_bench != site_update.source_bench and move_site_step_status == "Success":
 			frappe.db.set_value("Site", job.site, "bench", site_update.source_bench)
 			frappe.db.set_value("Site", job.site, "group", site_update.group)
+
+		if updated_status == "Fatal" and should_retry_recovery(job, site_update.name):
+			retry_recovery(site_update.name)
+			return
 
 		update_status(site_update.name, updated_status)
 
