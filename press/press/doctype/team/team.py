@@ -1146,6 +1146,11 @@ class Team(Document):
 	def update_invitation_role(self, account_request: str, role: str):
 		self._validate_role(role)
 		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
+		if d.team != self.name:
+			frappe.throw(
+				_("Account Request does not belong to this team."),
+				frappe.PermissionError,
+			)
 		self._set_invitation_role(d, role)
 		d.flags.ignore_links = True
 		d.save()
