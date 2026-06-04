@@ -16,6 +16,8 @@ import OracleLogo from '@/logo/Oracle.vue'
 import DigitalOceanLogo from '@/logo/DigitalOcean.vue'
 
 import AddBenchDialog from './AddBenchDialog.vue'
+import MarketPlaceAppsDialog from './AppsDialog.vue'
+
 
 import { renderDialog } from '@/utils/components'
 
@@ -71,6 +73,13 @@ const providerIcons = {
 	DigitalOcean: DigitalOceanLogo,
 }
 
+const statusColors = {
+	Active: 'bg-surface-green-3',
+	Broken: 'bg-surface-red-3',
+	Draft: 'bg-surface-orange-3',
+	AwaitingApproval: 'bg-surface-orange-3',
+}
+
 const serverActions = (server) => {
 	return [
 		{
@@ -112,6 +121,12 @@ const serverActions = (server) => {
 		},
 	]
 }
+
+const deployBench = (e) => {
+	e.stopPropagation()
+
+	renderDialog(h(MarketPlaceAppsDialog))
+}
 </script>
 
 <template>
@@ -139,7 +154,7 @@ const serverActions = (server) => {
 
 		<!-- bench column headers -->
 		<div
-			class="grid gap-3 grid-cols-[1.5rem_1fr_0.5fr_0.7fr_2rem] px-4 pt-4 pb-0 items-center text-ink-gray-4 text-sm"
+			class="grid gap-3 grid-cols-[1.5rem_1fr_0.5fr_0.7fr_2rem] pl-6 pr-4 pt-4 pb-0 items-center text-ink-gray-4 text-sm"
 		>
 			<span />
 			<template v-if="benches?.data?.length">
@@ -163,7 +178,7 @@ const serverActions = (server) => {
 		<Collapsable v-for="(bench, bench_i) in benches?.data" :key="bench.name">
 			<template #header="{ opened, toggle }">
 				<div
-					class="grid gap-3 grid-cols-[1.5rem_1fr_0.5fr_0.7fr_2rem] px-4 py-2 cursor-pointer items-center"
+					class="grid gap-3 grid-cols-[1.5rem_1fr_0.5fr_0.7fr_2rem] pl-6 pr-4 py-2 cursor-pointer items-center"
 					:class="
 							(benches?.data?.length - 1 == bench_i && opened) ||
 							bench_i != benches?.data?.length - 1
@@ -182,12 +197,19 @@ const serverActions = (server) => {
 					<span class="flex gap-2 items-center">
 						<LucideBoxes class="size-4" /> {{ bench.title }}
 					</span>
-					<div class="flex gap-2 items-center">
+					<div class="flex flex-wrap gap-2 items-center">
 						<span
 							class="size-2 rounded-full"
-							:class="bench.active_benches ? 'bg-surface-green-3' : 'bg-surface-gray-4'"
+							:class="bench.active_benches ? 'bg-surface-green-3' : 'bg-surface-amber-3'"
 						/>
 						{{ bench.active_benches ? 'Active' : 'Awaiting Deploy' }}
+
+						<button
+							@click="deployBench"
+							class="w-full self-start text-left mb-2 hover:underline"
+						>
+							Deploy
+						</button>
 					</div>
 					<span>{{ bench.version }}</span>
 					<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
@@ -207,7 +229,7 @@ const serverActions = (server) => {
 				:class='bench_i != benches?.data?.length -1 ?  "bordered" : ""'
 			>
 				<span />
-				<span class="ml-6">Site</span>
+				<span class="ml-8">Site</span>
 				<span>Status</span>
 				<span>Created</span>
 				<span />
@@ -218,13 +240,13 @@ const serverActions = (server) => {
 					:key="site.name"
 				>
 					<span />
-					<span class="flex gap-2 items-center text-ink-gray-8 ml-6">
+					<span class="flex gap-2 items-center text-ink-gray-8 ml-8">
 						<LucideAppWindow class="size-4" /> {{ site.name }}
 					</span>
 					<div class="flex gap-2 items-center text-ink-gray-8">
 						<span
 							class="size-2 rounded-full"
-							:class="site.status === 'Active' ? 'bg-surface-green-3' : site.status === 'Broken' ? 'bg-surface-red-3' : 'bg-surface-orange-3'"
+							:class="statusColors[site.status]"
 						/>
 						{{ site.status }}
 					</div>
@@ -247,5 +269,4 @@ const serverActions = (server) => {
 .bordered {
 	@apply border-b dark:border-outline-gray-2
 }
-
 </style>
