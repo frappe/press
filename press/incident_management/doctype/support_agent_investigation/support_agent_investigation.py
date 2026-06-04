@@ -10,6 +10,7 @@ from press.access.support_access import has_support_access
 from press.incident_management.support_agent.collectors import collect_site_context
 from press.incident_management.support_agent.redaction import redact
 from press.incident_management.support_agent.report import generate_report
+from press.utils import log_error
 
 
 class SupportAgentInvestigation(Document):
@@ -83,7 +84,7 @@ class SupportAgentInvestigation(Document):
 			self.failure_reason = redact(str(exc))
 			self.save(ignore_permissions=True)
 			frappe.db.commit()
-			frappe.log_error(
+			log_error(
 				"Support Agent Investigation Failed",
 				reference_doctype=self.doctype,
 				reference_name=self.name,
