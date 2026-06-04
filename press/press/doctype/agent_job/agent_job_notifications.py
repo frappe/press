@@ -162,6 +162,11 @@ def get_details(job: AgentJob, title: str, message: str) -> Details:
 		assistance_url=None,
 	)
 
+	# Not a string match against the traceback/output, so it is checked separately.
+	if update_with_skipped_backups_update_failure(details, job):
+		details["is_actionable"] = True
+		return details
+
 	for strs, handler in handlers():
 		if isinstance(strs, str):
 			strs = [strs]
@@ -182,6 +187,27 @@ def get_details(job: AgentJob, title: str, message: str) -> Details:
 		details["assistance_url"] = None
 
 	return details
+
+
+def update_with_skipped_backups_update_failure(details: Details, job: AgentJob) -> bool:
+	"""A site update run with backups skipped can fail mid-migration and leave the
+	site's database in a partially migrated state. There is no backup to roll back
+	to, so the site cannot be recovered automatically and the user has to fix it
+	manually over SSH."""
+	if job.job_type not in ("Update Site Migrate", "Update Site Pull"):
+		return False
+
+	if not frappe.db.exists("Site Update", {"update_job": job.name, "skipped_backups": 1}):
+		return False
+
+	details["title"] = "Site update failed and cannot be recovered automatically"
+	details["message"] = f"""<p>The update for site <b>{job.site}</b> failed.</p>
+	<p>Because this update was run with backups skipped, there is no backup to restore from and the
+	site cannot be recovered automatically. The database may be left in a partially migrated state.</p>
+	<p>Please connect to the bench over SSH and fix the site manually.</p>
+	"""
+
+	return True
 
 
 def update_with_oom_err(
