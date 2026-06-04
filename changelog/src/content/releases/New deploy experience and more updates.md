@@ -36,11 +36,14 @@ https://github.com/user-attachments/assets/4d441e7f-d41d-4782-8684-c5bf74aefad9
 
 We're introducing Spend Limits. Every account is assigned a usage tier based on account activity and payment history. As your billing history grows, your account automatically becomes eligible for higher infrastructure limits. Tiers run from Tier Zero up to Tier Five, with spend limits scaling from a single trial site up to ten thousand dollars. You can view your current tier under Billing, then Tiers.
 
-Product warranty on Hetzner plans
+
+<img width="1470" height="831" alt="limits_image" src="https://github.com/user-attachments/assets/3cc06d5f-227d-44ff-933f-da1b715e0ec1" />
+
+
+### Product warranty on Hetzner plans
 
 Hetzner servers launched in February and already have over three hundred active servers. Product warranty is now enabled on all Hetzner plans at one hundred dollars and above, covering reproducible product bugs, security vulnerabilities, and defects on standard installations, all within our SLAs.
 
-<img width="1470" height="831" alt="limits_image" src="https://github.com/user-attachments/assets/3cc06d5f-227d-44ff-933f-da1b715e0ec1" />
 
 
 ### Partner Onboarding
