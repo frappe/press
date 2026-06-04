@@ -1167,7 +1167,8 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def restore_tables(self):
-		self.status_before_update = self.status
+		if not self.status_before_update:
+			self.status_before_update = self.status
 		agent = Agent(self.server)
 		agent.restore_site_tables(self)
 		self.status = "Pending"
@@ -4986,8 +4987,16 @@ def process_restore_tables_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
 		if updated_status == "Active":
-			frappe.get_doc("Site", job.site).reset_previous_status(fix_broken=True)
+			site = frappe.get_doc("Site", job.site)
+			fatal_update = site.fatal_site_update
+			site.reset_previous_status(fix_broken=True)
 			frappe.db.set_value("Site", job.site, "fatal_site_update", None)
+			if fatal_update:
+				from press.press.doctype.site_update.site_update import (
+					update_status as update_site_update_status,
+				)
+
+				update_site_update_status(fatal_update, "Recovered")
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
 			frappe.db.set_value("Site", job.site, "database_name", None)
