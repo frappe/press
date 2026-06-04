@@ -1,5 +1,5 @@
 ---
-title: 'Frappe Cloud May 2026'
+title: 'New Deployment Experience and more'
 date: '2026-05-31'
 major: true
 description: Build and deployment steps now progress in real time, with retries, logs, and failed steps visible in a single screen.
