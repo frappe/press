@@ -22,7 +22,11 @@ const list = computed(() => {
 	const onboardingComplete = $team.doc.onboarding.complete
 	const isSaasUser = $team.doc.is_saas_user
 
-	const enforce2FA = Boolean(!$team.doc.is_desk_user && $team.doc.enforce_2fa)
+	const enforce2FA = Boolean(
+		!$team.doc.is_desk_user &&
+			$team.doc.enforce_2fa &&
+			!$team.doc.user_info?.is_2fa_enabled,
+	)
 
 	return [
 		{
