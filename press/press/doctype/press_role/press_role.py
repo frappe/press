@@ -143,7 +143,19 @@ class PressRole(Document):
 		self.save()
 
 	@dashboard_whitelist()
+<<<<<<< HEAD
 	@team_guard.only_owner()
+=======
+	@team_guard.only_admin()
+	def set_permission(self, fieldname: str, value: int):
+		if fieldname not in PERMISSION_FIELDS:
+			frappe.throw(_("Invalid permission field: {0}").format(fieldname))
+		setattr(self, fieldname, value)
+		self.save()
+
+	@dashboard_whitelist()
+	@team_guard.only_admin()
+>>>>>>> fce2209fd (fix(roles): Change deletion condition)
 	def delete(self, *_args, **_kwargs):
 		return super().delete()
 
