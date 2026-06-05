@@ -1128,64 +1128,77 @@ def get_nearest_cluster_for_country(country: str | None) -> str | None:
 	return _get_closest_cluster_by_offsets(country_offsets, now_utc)
 
 
-def get_nearest_cluster_for_ip() -> str | None:
+# Approximate coordinates of each cluster, used to pick the geographically
+# nearest cluster from a user's location or from another cluster.
+CLUSTER_COORDINATES = {
+	"Mumbai": {"latitude": 19.0760, "longitude": 72.8777},
+	"Zurich": {"latitude": 47.3769, "longitude": 8.5417},
+	"Frankfurt": {"latitude": 50.1109, "longitude": 8.6821},
+	"Singapore": {"latitude": 1.3521, "longitude": 103.8198},
+	"London": {"latitude": 51.5074, "longitude": -0.1278},
+	"Virginia": {"latitude": 38.8048, "longitude": -77.0469},
+	"Jakarta": {"latitude": -6.2088, "longitude": 106.8456},
+	"Bahrain": {"latitude": 26.0667, "longitude": 50.5577},
+	"UAE": {"latitude": 24.4539, "longitude": 54.3773},
+	"KSA": {"latitude": 24.7136, "longitude": 46.6753},
+	"Cape Town": {"latitude": -33.9249, "longitude": 18.4241},
+	"Johannesburg": {"latitude": -26.2041, "longitude": 28.0473},
+}
+
+
+def _haversine_distance(latitude1, longitude1, latitude2, longitude2):
 	import math
 
-	cluster_locations = {
-		"Mumbai": {"latitude": 19.0760, "longitude": 72.8777},
-		"Zurich": {"latitude": 47.3769, "longitude": 8.5417},
-		"Frankfurt": {"latitude": 50.1109, "longitude": 8.6821},
-		"Singapore": {"latitude": 1.3521, "longitude": 103.8198},
-		"London": {"latitude": 51.5074, "longitude": -0.1278},
-		"Virginia": {"latitude": 38.8048, "longitude": -77.0469},
-		"Jakarta": {"latitude": -6.2088, "longitude": 106.8456},
-		"Bahrain": {"latitude": 26.0667, "longitude": 50.5577},
-		"UAE": {"latitude": 24.4539, "longitude": 54.3773},
-		"KSA": {"latitude": 24.7136, "longitude": 46.6753},
-		"Cape Town": {"latitude": -33.9249, "longitude": 18.4241},
-		"Johannesburg": {"latitude": -26.2041, "longitude": 28.0473},
-	}
+	latitude1_rad = math.radians(latitude1)
+	longitude1_rad = math.radians(longitude1)
+	latitude2_rad = math.radians(latitude2)
+	longitude2_rad = math.radians(longitude2)
 
-	def haversine_distance(lat1, lon1, lat2, lon2):
-		R = 6371  # Radius of Earth in kilometers
+	longitude_diff = longitude2_rad - longitude1_rad
+	latitude_diff = latitude2_rad - latitude1_rad
 
-		lat1_rad = math.radians(lat1)
-		lon1_rad = math.radians(lon1)
-		lat2_rad = math.radians(lat2)
-		lon2_rad = math.radians(lon2)
+	a = (
+		math.sin(latitude_diff / 2) ** 2
+		+ math.cos(latitude1_rad) * math.cos(latitude2_rad) * math.sin(longitude_diff / 2) ** 2
+	)
+	c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-		longitude_diff = lon2_rad - lon1_rad
-		latitude_diff = lat2_rad - lat1_rad
+	return 6371 * c  # 6371 km is the radius of the Earth
 
-		a = (
-			math.sin(latitude_diff / 2) ** 2
-			+ math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(longitude_diff / 2) ** 2
-		)
-		c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-		return R * c
-
-	user_geo_data = get_country_info()
-	if not user_geo_data:
-		return None
-
-	user_latitude = user_geo_data.get("lat", 0.0)
-	user_longitude = user_geo_data.get("lon", 0.0)
-
+def _nearest_cluster_to_coordinates(
+	latitude: float, longitude: float, candidate_clusters: set[str] | None = None
+) -> str | None:
 	min_distance = float("inf")
 	nearest_cluster = None
 
-	for cluster_name, cluster_coords in cluster_locations.items():
-		cluster_latitude = cluster_coords["latitude"]
-		cluster_longitude = cluster_coords["longitude"]
+	for cluster_name, coordinates in CLUSTER_COORDINATES.items():
+		if candidate_clusters is not None and cluster_name not in candidate_clusters:
+			continue
 
-		distance = haversine_distance(user_latitude, user_longitude, cluster_latitude, cluster_longitude)
-
+		distance = _haversine_distance(latitude, longitude, coordinates["latitude"], coordinates["longitude"])
 		if distance < min_distance:
 			min_distance = distance
 			nearest_cluster = cluster_name
 
 	return nearest_cluster
+
+
+def get_nearest_cluster_among(target_cluster: str, candidate_clusters: set[str]) -> str | None:
+	"""Return the candidate cluster geographically nearest to target_cluster."""
+	target = CLUSTER_COORDINATES.get(target_cluster)
+	if not target:
+		return None
+
+	return _nearest_cluster_to_coordinates(target["latitude"], target["longitude"], candidate_clusters)
+
+
+def get_nearest_cluster_for_ip() -> str | None:
+	user_geo_data = get_country_info()
+	if not user_geo_data:
+		return None
+
+	return _nearest_cluster_to_coordinates(user_geo_data.get("lat", 0.0), user_geo_data.get("lon", 0.0))
 
 
 def get_nearest_cluster(country: str | None = None) -> str | None:
