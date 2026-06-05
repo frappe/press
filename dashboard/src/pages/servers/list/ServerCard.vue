@@ -121,10 +121,9 @@ const serverActions = (server) => {
 	]
 }
 
-const deployBench = (e) => {
+const deployBench = (e,bench) => {
 	e.stopPropagation()
-
-	renderDialog(h(MarketPlaceAppsDialog))
+	renderDialog(h(MarketPlaceAppsDialog, { bench }))
 }
 </script>
 
@@ -205,7 +204,7 @@ const deployBench = (e) => {
 
 						<button
 							v-if="!bench.active_benches"
-							@click="deployBench"
+							@click="(e) => deployBench(e, bench)"
 							class="w-full self-start text-left mb-1 ml-4 hover:underline"
 						>
 							Deploy
