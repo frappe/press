@@ -1148,14 +1148,17 @@ class Team(Document):
 	@feature_preview.beta_testing()
 	@team_guard.only_admin()
 	def update_invitation_role(self, account_request: str, role: str):
-		self._validate_role(role)
+		from press.press.doctype.team.team_members import get_roles
+
+		all_roles = get_roles(str(self.name))
+		self._validate_role(role, all_roles)
 		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
 		if d.team != self.name:
 			frappe.throw(
 				_("Account Request does not belong to this team."),
 				frappe.PermissionError,
 			)
-		self._set_invitation_role(d, role)
+		self._set_invitation_role(d, role, all_roles)
 		d.flags.ignore_links = True
 		d.save()
 		return self.get_members()

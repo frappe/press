@@ -65,13 +65,16 @@ const close = () => {
 					label="Email addresses"
 					placeholder="name@example.com, name2@example.com"
 				/>
-				<Combobox
-					v-if="roleOptions.length > 0"
-					v-model="selectedRole"
-					:options="roleOptions"
-					label="Role"
-					open-on-focus
-				/>
+				<div v-if="roleOptions.length > 0">
+					<label class="block text-xs leading-4 text-ink-gray-5 mb-1">
+						Role
+					</label>
+					<Combobox
+						v-model="selectedRole"
+						:options="roleOptions"
+						open-on-focus
+					/>
+				</div>
 			</div>
 		</template>
 	</Dialog>
