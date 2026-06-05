@@ -730,8 +730,10 @@ def update_with_app_not_fetchable(
 		in <i>Help</i>.</p>
 		"""
 	else:
-		message = """
-		<p>App could not be fetched from GitHub.</p>
+		app_name = exc.args[1] if len(exc.args) >= 2 else ""
+		app_str = f"<b>{app_name}</b> " if app_name else "App "
+		message = f"""
+		<p>{app_str}could not be fetched from GitHub.</p>
 
 		<p>This may have been due to an invalid installation id or due
 		to an invalid repository URL.</p>
