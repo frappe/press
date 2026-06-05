@@ -346,9 +346,63 @@ class ProductTrial(Document):
 			self.create_standby_site(cluster, rule)
 			frappe.db.commit()
 
-	def create_standby_site(self, cluster: str, rule: HybridPoolItem | None = None):
-		from frappe.core.utils import find
+	def get_cluster_for_request(self, account_request: str | None) -> str | None:
+		from press.utils import get_nearest_cluster
 
+		account_request_data = None
+
+		if self.enable_hybrid_pooling:
+			fields = list({"country", *(rule.field for rule in self.hybrid_pool_rules)})
+			if account_request:
+				account_request_data = frappe.db.get_value(
+					"Account Request", account_request, fields, as_dict=True
+				)
+
+			for rule in self.hybrid_pool_rules:
+				value = account_request_data.get(rule.field) if account_request_data else None
+				if not value:
+					break
+				if rule.value == value:
+					return rule.preferred_cluster
+		elif account_request:
+			account_request_data = frappe.db.get_value(
+				"Account Request", account_request, ["country"], as_dict=True
+			)
+
+		country = account_request_data.get("country") if account_request_data else None
+		return get_nearest_cluster(country)
+
+	def get_signup_domain(self, cluster: str | None) -> str:
+		"""Cluster-specific signup domain (e.g. m.frappe.cloud), never the apex.
+
+		AWS hosted-zone limits mean signups must land on a subdomain. Falls back from
+		the resolved cluster to the nearest enabled subdomain, then to the default
+		cluster's; only returns the apex when no subdomains are configured at all.
+		"""
+		from press.utils import get_nearest_cluster_among
+
+		domain_by_cluster = {
+			d.cluster: d.name
+			for d in frappe.db.get_all(
+				"Root Domain",
+				{"name": ("like", f"%.{self.domain}"), "enabled": 1},
+				["name", "default_cluster as cluster"],
+				order_by="name",
+			)
+		}
+		if not domain_by_cluster:
+			return self.domain
+
+		nearest = cluster and get_nearest_cluster_among(cluster, set(domain_by_cluster))
+		default_cluster = frappe.db.get_value("Root Domain", self.domain, "default_cluster")
+		return (
+			domain_by_cluster.get(cluster)
+			or domain_by_cluster.get(nearest)
+			or domain_by_cluster.get(default_cluster)
+			or next(iter(domain_by_cluster.values()))
+		)
+
+	def create_standby_site(self, cluster: str, rule: HybridPoolItem | None = None):
 		administrator = frappe.db.get_value("Team", {"user": "Administrator"}, "name")
 		apps = [{"app": d.app} for d in self.apps]
 
@@ -356,18 +410,10 @@ class ProductTrial(Document):
 			apps += [{"app": rule.app}]
 
 		server = self.get_server_from_cluster(cluster)
-		cluster_domains = frappe.db.get_all(
-			"Root Domain", {"name": ("like", f"%.{self.domain}"), "enabled": 1}, ["name", "default_cluster as cluster"]
-		)
-		cluster_domain = find(
-			cluster_domains,
-			lambda d: d.cluster == cluster if cluster else False,
-		)
-		domain = cluster_domain.name if cluster_domain else self.domain
 		site = frappe.get_doc(
 			doctype="Site",
 			subdomain=self.get_unique_site_name(),
-			domain=domain,
+			domain=self.get_signup_domain(cluster),
 			group=self.release_group,
 			cluster=cluster,
 			server=server,

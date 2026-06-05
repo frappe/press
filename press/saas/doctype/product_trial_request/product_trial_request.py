@@ -228,14 +228,21 @@ class ProductTrialRequest(Document):
 		if self.status != "Pending":
 			return
 
+		product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
+		if domain == product.domain:
+			# Apex domain slipped through (geo lookup failed or stale frontend state).
+			# Re-resolve to a cluster subdomain so signups never land on the apex.
+			cluster = product.get_cluster_for_request(self.account_request)
+			domain = product.get_signup_domain(cluster)
+		else:
+			cluster = frappe.db.get_value("Root Domain", domain, "default_cluster")
+
 		self.validate_subdomain_and_domain(subdomain, domain)
 
 		try:
-			product: ProductTrial = frappe.get_doc("Product Trial", self.product_trial)
 			self.status = "Wait for Site"
 			self.site_creation_started_on = now_datetime()
 			self.domain = f"{subdomain}.{domain}"
-			cluster = frappe.db.get_value("Root Domain", domain, "default_cluster")
 			self.cluster = cluster
 			site, agent_job_name, is_standby_site = product.setup_trial_site(
 				subdomain=subdomain,
