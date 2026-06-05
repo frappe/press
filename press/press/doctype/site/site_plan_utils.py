@@ -24,7 +24,10 @@ def get_server_site_warranty_count(server: str | None = None, site: str | None =
 		.on(Site.plan == SitePlan.name)
 		.select(Count(Site.name).as_("supported_sites"))
 		.where(
-			(SitePlan.support_included == 1) & (SitePlan.dedicated_server_plan == 1) & (Site.server == server)
+			(SitePlan.support_included == 1)
+			& (SitePlan.dedicated_server_plan == 1)
+			& (Site.server == server)
+			& (Site.status.notin(["Suspended", "Archived"]))
 		)
 	)
 
