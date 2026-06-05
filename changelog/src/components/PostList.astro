@@ -15,10 +15,11 @@ const formatDate = (date: Date) => {
 };
 ---
 
-<ul class="mx-auto max-w-page my-5 px-1">
+<ul class="mx-auto max-w-page my-2 md:my-5 px-1">
   {posts.map((post) => (
-    <li class="grid grid-cols-[150px_1fr] gap-10">
-      <div class="flex flex-col items-start">
+    <li class="grid md:grid-cols-[150px_1fr] gap-6 md:gap-10">
+      <!-- desktop timeline -->
+      <div class="hidden md:flex flex-col items-start">
         <a href={`${baseurl}/${post.id}`} class="sticky top-25 w-full">
           <span class="text-sm text-surface-gray-5 flex items-center gap-3">
             <div
@@ -30,7 +31,12 @@ const formatDate = (date: Date) => {
         <div class="w-px grow bg-surface-gray-2 ml-1" />
       </div>
 
-      <div class="mb-15 -mt-1 flex flex-col">
+      <div class="mb-10 md:mb-15 flex flex-col px-4">
+        <!-- mobile date -->
+        <span class="md:hidden text-sm text-ink-gray-5 mb-2">
+          {formatDate(post.data.date)}
+        </span>
+
         <a
           class="w-fit text-2xl font-semibold relative pb-1 after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full"
           href={`${baseurl}/${post.id}`}
@@ -38,13 +44,13 @@ const formatDate = (date: Date) => {
         >
           {post.data.title}
         </a>
+
         <p class="text-ink-gray-6 leading-relaxed mt-2 mb-5">
           {post.data.description}
         </p>
 
-        <!-- tags -->
         {tags && (
-          <div class="flex gap-2">
+          <div class="flex gap-2 flex-wrap">
             {post.data.tags.map((tag) => (
               <a
                 href={`${baseurl}/tags/${tag}`}
