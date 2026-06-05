@@ -153,7 +153,7 @@ class PressRole(Document):
 		self.save()
 
 	@dashboard_whitelist()
-	@team_guard.only_owner()
+	@team_guard.only_admin()
 	def delete(self, *_args, **_kwargs):
 		return super().delete()
 
