@@ -28,9 +28,9 @@ onMounted(() => {
 	getLatestMajorBlogPath()
 })
 
-const openUrl = (latestPathName: string | null) => {
-  if (!latestPathName) return
-  window.open(`https://cloud.frappe.io${latestPathName}`)
+const openUrl = () => {
+  window.open(`https://cloud.frappe.io${latestPathName.value}`)
+  setLastBlogPathname()
 }
 </script>
 
