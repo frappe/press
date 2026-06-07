@@ -65,6 +65,8 @@ const apiRes = createResource({
 			sites: [],
 			run_will_fail_check: true,
 		})
+
+		show.value = false
 	},
 	onError(e) {
 		err.value = e.messages?.join(', ') ?? 'Failed'
@@ -141,7 +143,13 @@ const installableApps = createResource({
 				</div>
 
 				<div class="flex">
-					<Button variant="solid" class="mt-6 ml-auto" @click="submitForm">
+					<Button
+						variant="solid"
+						class="mt-6 ml-auto"
+						@click="submitForm"
+						:loading="apiRes.loading"
+						:loadingText="`Adding ${addedApps.length} apps`"
+					>
 						Deploy {{ addedApps.length }} apps
 					</Button>
 				</div>
