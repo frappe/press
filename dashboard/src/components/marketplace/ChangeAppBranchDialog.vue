@@ -36,9 +36,9 @@
 </template>
 
 <script>
-import { toast } from 'vue-sonner';
-import { getToastErrorMessage } from '../../utils/toast';
-import { DashboardError } from '../../utils/error';
+import { toast } from 'vue-sonner'
+import { DashboardError } from '../../utils/error'
+import { getToastErrorMessage } from '../../utils/toast'
 
 export default {
 	name: 'ChangeAppBranchDialog',
@@ -46,7 +46,7 @@ export default {
 		return {
 			show: true,
 			selectedBranch: null,
-		};
+		}
 	},
 	props: ['app', 'source', 'version', 'activeBranch'],
 	emits: ['branch-changed'],
@@ -58,7 +58,7 @@ export default {
 					name: this.source,
 				},
 				auto: true,
-			};
+			}
 		},
 		changeBranch() {
 			return {
@@ -71,10 +71,10 @@ export default {
 				},
 				validate() {
 					if (this.selectedBranch == this.app.branch) {
-						throw new DashboardError('Please select a different branch');
+						throw new DashboardError('Please select a different branch')
 					}
 				},
-			};
+			}
 		},
 	},
 	methods: {
@@ -82,22 +82,26 @@ export default {
 			toast.promise(this.$resources.changeBranch.submit(), {
 				loading: 'Updating branch for version...',
 				success: () => {
-					this.show = false;
-					this.$emit('branch-changed');
-					return 'Branch changed successfully';
+					this.show = false
+					this.$emit('branch-changed')
+					return 'Branch changed successfully'
 				},
 				error: (e) => getToastErrorMessage(e),
-			});
+			})
 		},
 		branchList() {
 			if (this.$resources.branches.loading || !this.$resources.branches.data) {
-				return [];
+				return []
 			}
-			return this.$resources.branches.data.map((d) => d.name);
+			// `branches` returns entries like "owner/repo/branch"; the dialog is scoped to a
+			// single source, so we only need the branch name (which may itself contain "/").
+			return this.$resources.branches.data.map((option) =>
+				option.split('/').slice(2).join('/'),
+			)
 		},
 	},
 	mounted() {
-		this.selectedBranch = this.activeBranch;
+		this.selectedBranch = this.activeBranch
 	},
-};
+}
 </script>
