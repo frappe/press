@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch, h } from 'vue'
+import { ref, reactive, watch, h, defineAsyncComponent } from 'vue'
 
 import {
 	Button,
@@ -14,9 +14,6 @@ import FrappeLogo from '@/logo/Frappe.vue'
 import AwsLogo from '@/logo/Aws.vue'
 import OracleLogo from '@/logo/Oracle.vue'
 import DigitalOceanLogo from '@/logo/DigitalOcean.vue'
-
-import AddBenchDialog from './AddBenchDialog.vue'
-import MarketPlaceAppsDialog from './AppsDialog.vue'
 
 import { renderDialog } from '@/utils/components'
 
@@ -85,6 +82,9 @@ const serverActions = (server) => {
 			label: 'Add bench',
 			icon: LucideCirclePlus,
 			onClick: () => {
+				const AddBenchDialog = defineAsyncComponent(
+					() => import('./AddBenchDialog.vue'),
+				)
 				renderDialog(
 					h(AddBenchDialog, {
 						cluster: server.cluster,
@@ -121,9 +121,18 @@ const serverActions = (server) => {
 	]
 }
 
-const deployBench = (e,bench) => {
+const deployBench = (e, bench) => {
 	e.stopPropagation()
-	renderDialog(h(MarketPlaceAppsDialog, { bench }))
+
+	const AppsDialog = defineAsyncComponent(() => import('./AppsDialog.vue'))
+	renderDialog(h(AppsDialog, { bench }))
+}
+
+const addSite = (e, bench) => {
+	e.stopPropagation()
+
+  const AddSiteDialog = defineAsyncComponent(() => import('./AddSiteDialog.vue'))
+	renderDialog(h(AddSiteDialog, { bench }))
 }
 </script>
 
@@ -227,11 +236,20 @@ const deployBench = (e,bench) => {
 				class="grid gap-3 grid-cols-[1.5rem_1fr_0.5fr_0.7fr_2rem] px-4 py-2 items-center text-sm text-ink-gray-5"
 				:class='bench_i != benches?.data?.length -1 ?  "bordered" : ""'
 			>
-				<span />
-				<span class="ml-8">Site</span>
-				<span>Status</span>
-				<span>Created</span>
-				<span />
+				<template v-if="sitesRes[bench.name]?.data?.length > 0">
+					<span />
+					<span class="ml-8">Site</span>
+					<span>Status</span>
+					<span>Created</span>
+					<span />
+				</template>
+
+				<Button variant="ghost" class="mr-auto" v-else @click="(e) => addSite(e,bench)">
+					<template #prefix>
+						<LucidePlus class="size-4" />
+					</template>
+					Add site
+				</Button>
 
 				<!-- site rows -->
 				<template
