@@ -360,6 +360,7 @@ class MarketplaceApp(WebsiteGenerator):
 				"team": self.team,
 				"repository": repo_name,
 				"repository_owner": repo_owner,
+				"enabled": 1,
 			},
 		)
 		if not template_source:
