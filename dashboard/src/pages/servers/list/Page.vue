@@ -26,6 +26,9 @@ const servers = createListResource({
 		'cluster.image as cluster_image',
 		'cluster.title as cluster_title',
 		'is_unified_server',
+    'plan.vcpu as vcpu',
+    'plan.memory as memory',
+    'plan.disk as disk',
 	],
 	orderBy: `creation ${sortBy.value}`,
 })
@@ -92,7 +95,7 @@ const toggleSort = () => {
 			placeholder="Region"
 			class="!w-fit"
 			:options="regions"
-			@update:modelValue="v => applyFilters('cluster.title', v)"
+			@update:modelValue="v => applyFilters('cluster_title', v)"
 		>
 			<template #prefix>
 				<LucideMapPin class="size-4" />

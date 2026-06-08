@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch, h, defineAsyncComponent } from 'vue'
+import { reactive, h, defineAsyncComponent } from 'vue'
 
 import {
 	Button,
@@ -121,6 +121,15 @@ const serverActions = (server) => {
 	]
 }
 
+const benchOptions = (bench) => {
+	return [
+		{
+			label: 'Visit bench',
+			route: `/groups/${bench.name}`,
+		},
+	]
+}
+
 const deployBench = (e, bench) => {
 	e.stopPropagation()
 
@@ -131,7 +140,9 @@ const deployBench = (e, bench) => {
 const addSite = (e, bench) => {
 	e.stopPropagation()
 
-  const AddSiteDialog = defineAsyncComponent(() => import('./AddSiteDialog.vue'))
+	const AddSiteDialog = defineAsyncComponent(
+		() => import('./AddSiteDialog.vue'),
+	)
 	renderDialog(h(AddSiteDialog, { bench }))
 }
 </script>
@@ -146,7 +157,11 @@ const addSite = (e, bench) => {
 				<span>{{ data?.title }}</span>
 				<div class="rounded-full size-2 bg-surface-green-3" />
 				<span>Active</span>
-				<span class="w-full text-ink-gray-6">2 vCPU, 8GB RAM, 160 Disk</span>
+				<span class="w-full text-ink-gray-6">
+					{{ data.vcpu }}
+					vCPU, {{ Math.round(data.memory/1024) }} GB RAM, {{ data.disk }} GB
+					Disk
+				</span>
 			</div>
 
 			<div class="flex items-center gap-1 text-ink-gray-6 ml-auto">
@@ -220,7 +235,12 @@ const addSite = (e, bench) => {
 						</button>
 					</div>
 					<span>{{ bench.version }}</span>
-					<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
+
+					<Dropdown :options="benchOptions(bench)">
+						<Button variant="ghost" @click="e => e.stopPropagation()"
+							><LucideEllipsis class="size-4" /></Button
+						>
+					</Dropdown>
 				</div>
 			</template>
 
@@ -244,7 +264,12 @@ const addSite = (e, bench) => {
 					<span />
 				</template>
 
-				<Button variant="ghost" class="mr-auto" v-else @click="(e) => addSite(e,bench)">
+				<Button
+					variant="ghost"
+					class="mr-auto"
+					v-else
+					@click="(e) => addSite(e,bench)"
+				>
 					<template #prefix>
 						<LucidePlus class="size-4" />
 					</template>
