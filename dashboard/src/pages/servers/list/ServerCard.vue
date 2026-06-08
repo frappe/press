@@ -130,11 +130,18 @@ const benchOptions = (bench) => {
 	]
 }
 
-const deployBench = (e, bench) => {
+const deployBench = (e, bench, server) => {
 	e.stopPropagation()
 
 	const AppsDialog = defineAsyncComponent(() => import('./AppsDialog.vue'))
-	renderDialog(h(AppsDialog, { bench }))
+
+	renderDialog(
+		h(AppsDialog, {
+			bench,
+			serverName: server.title,
+			serverImg: providerIcons[server.provider],
+		}),
+	)
 }
 
 const addSite = (e, bench) => {
@@ -219,6 +226,7 @@ const addSite = (e, bench) => {
 					<span class="flex gap-2 items-center">
 						<LucideBoxes class="size-4" /> {{ bench.title }}
 					</span>
+
 					<div class="flex flex-wrap gap-2 items-center">
 						<span
 							class="size-2 rounded-full"
@@ -228,7 +236,7 @@ const addSite = (e, bench) => {
 
 						<button
 							v-if="!bench.active_benches"
-							@click="(e) => deployBench(e, bench)"
+							@click="(e) => deployBench(e, bench, data)"
 							class="w-full self-start text-left mb-1 ml-4 hover:underline"
 						>
 							Deploy
