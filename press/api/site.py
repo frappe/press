@@ -13,7 +13,6 @@ from botocore.exceptions import ClientError
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.query_builder import Case
-from frappe.query_builder.terms import ValueWrapper
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, flt, sbool, time_diff_in_hours
 from frappe.utils.data import format_datetime, get_datetime
@@ -22,7 +21,6 @@ from frappe.utils.typing_validations import validate_argument_types
 from frappe.utils.user import is_system_user
 
 from press.access.support_access import has_support_access
-from press.guards import role_guard
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app.app import get_app_from_policies
 from press.press.doctype.marketplace_app.marketplace_app import (
@@ -134,7 +132,7 @@ def get_name_from_filters(filters: dict):
 		return None
 
 	value = values[0]
-	if isinstance(value, (int, str)):
+	if isinstance(value, int | str):
 		return value
 
 	return None
@@ -287,23 +285,43 @@ def get_group_for_new_site_and_set_localisation_app(site, apps):
 	return groups[0]
 
 
+<<<<<<< HEAD
 def _check_warranty_restrictions(
 	site: str,
 	server: str,
 	new_plan: str,
+=======
+def _validate_warranty_change(
+>>>>>>> origin/master
 	is_new: bool,
 	is_system_user: bool,
 	is_current_dedicated_server_plan: bool,
 	is_current_plan_supported: bool,
+<<<<<<< HEAD
 ) -> None:
+=======
+	new_plan: str,
+	site: str,
+	server: str,
+) -> None:
+	"""Throw if a warranty-affecting plan change is not allowed at this time."""
+>>>>>>> origin/master
 	if is_new or is_system_user or not is_current_dedicated_server_plan:
 		return
 	if is_current_plan_supported == is_product_warranty_enabled_for_plan_(new_plan):
 		return
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/master
 	next_warranty_change = get_next_allowed_dedicated_product_warranty_change_date(site)
 	if get_datetime() < next_warranty_change:
 		pretty_date = format_datetime(next_warranty_change, "MMM d, YYYY hh:mm a")
 		frappe.throw(f"Cannot change product warranty for this site before {pretty_date}")  # nosemgrep
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/master
 	quota = get_available_warranty_quota_for_server(server)
 	if quota.get("available") <= 0:
 		frappe.throw(
@@ -311,6 +329,7 @@ def _check_warranty_restrictions(
 		)
 
 
+<<<<<<< HEAD
 def _is_plan_allowed_on_server(server: str, new_site_plan: dict) -> bool:
 	if new_site_plan.get("price_usd", 0) > 0:
 		return True
@@ -318,13 +337,25 @@ def _is_plan_allowed_on_server(server: str, new_site_plan: dict) -> bool:
 		new_site_plan.get("dedicated_server_plan", 0)
 		and frappe.db.get_value("Server", server, "team") == get_current_team()
 	):
+=======
+def _is_free_dedicated_plan_allowed(server: str, new_site_plan: dict) -> bool:
+	"""Return True when a zero-price dedicated plan is permitted for *server*."""
+	if not new_site_plan.get("dedicated_server_plan", 0):
+		return False
+	if frappe.db.get_value("Server", server, "team") != get_current_team():
+>>>>>>> origin/master
 		return False
 	if not new_site_plan.get("restrict_based_on_dedicated_server_plan", 0):
 		return True
 	app_server_plan = frappe.db.get_value("Server", server, "plan")
 	min_price = new_site_plan.get("minimum_server_price_usd", 0)
+<<<<<<< HEAD
 	app_server_price = frappe.db.get_value("Server Plan", app_server_plan, "price_usd")
 	return app_server_price >= min_price
+=======
+	server_price = frappe.db.get_value("Server Plan", app_server_plan, "price_usd")
+	return server_price >= min_price
+>>>>>>> origin/master
 
 
 @validate_argument_types
@@ -332,6 +363,7 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 	if not frappe.db.exists("Site Plan", new_plan):
 		frappe.throw(f"Plan {new_plan} does not exist", frappe.DoesNotExistError)  # nosemgrep
 
+<<<<<<< HEAD
 	plan_name = frappe.get_value("Site", site, "plan")
 	if not plan_name:
 		is_current_plan_supported = False
@@ -342,6 +374,16 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 			plan_name,
 			["support_included", "dedicated_server_plan"],
 		) or (False, False)
+=======
+	if is_new:
+		is_current_plan_supported, is_current_dedicated_server_plan = False, False
+	else:
+		is_current_plan_supported, is_current_dedicated_server_plan = frappe.db.get_value(
+			"Site Plan",
+			frappe.get_value("Site", site, "plan"),
+			["support_included", "dedicated_server_plan"],
+		)
+>>>>>>> origin/master
 
 	new_site_plan = frappe.db.get_value(
 		"Site Plan",
@@ -357,17 +399,36 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 
 	is_system_user = frappe.session.data.user_type == "System User"
 
+<<<<<<< HEAD
 	_check_warranty_restrictions(
 		site,
 		server,
 		new_plan,
+=======
+	_validate_warranty_change(
+>>>>>>> origin/master
 		is_new,
 		is_system_user,
 		is_current_dedicated_server_plan,
 		is_current_plan_supported,
+<<<<<<< HEAD
 	)
 
 	if _is_plan_allowed_on_server(server, new_site_plan) or is_system_user:
+=======
+		new_plan,
+		site,
+		server,
+	)
+
+	if new_site_plan.get("price_usd", 0) > 0:
+		return
+
+	if _is_free_dedicated_plan_allowed(server, new_site_plan):
+		return
+
+	if frappe.session.data.user_type == "System User":
+>>>>>>> origin/master
 		return
 
 	frappe.throw("You are not allowed to use this plan")  # nosemgrep
@@ -864,7 +925,11 @@ def _get_dedicated_server_info_for_release_group(release_group_name: str) -> dic
 		- "dedicated_only_single" - exactly one dedicated server
 		- "dedicated_only_multiple" - multiple dedicated servers
 		- "user_choice_single" - one dedicated server and other public server(s)
+<<<<<<< HEAD
 		- "user_choice_multiple" - multiple dedicated servers and public server(s)
+=======
+		"user_choice_multiple" - multiple dedicated servers and public server(s)
+>>>>>>> origin/master
 		- "no_dedicated_server"
 	- dedicated_servers: list - Available dedicated servers for user selection
 	"""
@@ -3080,186 +3145,3 @@ def fetch_sites_data_for_export():
 		site.tags = [tag.tag_name for tag in tags if tag.parent == site.name]
 
 	return sites
-
-
-def get_next_version(version):
-	version_number = frappe.db.get_value("Frappe Version", version, "number")
-	if not version_number:
-		frappe.throw(f"Invalid Frappe version: {version}")  # nosemgrep
-
-	next_version = frappe.db.get_value(
-		"Frappe Version",
-		{
-			"number": version_number + 1,
-			"status": ("in", ("Stable", "End of Life")),
-			"public": True,
-		},
-		"name",
-	)
-	if not next_version:
-		frappe.throw(f"Next version not found for {version}")  # nosemgrep
-
-	return next_version
-
-
-def _check_public_apps_compatibility(public_apps, source_map, next_version):
-	compatible_set, _ = get_compatible_public_apps_and_sources(
-		public_apps,
-		next_version,
-	)
-	incompatible = []
-
-	for app in public_apps:
-		if app in compatible_set:
-			continue
-
-		source = source_map.get(app)
-		incompatible.append(source.app_title if source else app)
-
-	return incompatible
-
-
-def _get_apps_for_version_upgrade(  # noqa: C901
-	site_apps,
-	release_group_apps,
-	source_map,
-	compatible_map,
-	custom_source_map,
-	next_version,
-	team,
-):
-	apps = []
-	frappe_app = None
-
-	for row in release_group_apps:
-		app_name = row.app
-		source = source_map.get(row.source)
-		is_site_app = app_name in site_apps
-
-		if not source or not source.enabled:
-			if not is_site_app:
-				continue
-			frappe.throw(f"Invalid source for {app_name}")
-
-		# Public / Frappe app
-		if source.public or source.repository_owner == "frappe":
-			compatible_source = compatible_map.get(app_name)
-
-			if not compatible_source:
-				if not is_site_app:
-					continue
-				frappe.throw(
-					f"No compatible source for app {app_name} for {next_version}. Please reach out to <a href='https://support.frappe.io'>support.frappe.io</a>"
-				)
-
-			app_entry = (app_name, compatible_source)
-
-			if app_name == "frappe":
-				frappe_app = app_entry
-			else:
-				apps.append(app_entry)
-			continue
-
-		# Custom app
-		custom_source = custom_source_map.get(app_name)
-		if not custom_source:
-			if not is_site_app:
-				continue
-			frappe.throw(f"Custom app source not provided for {app_name}")
-
-		custom_source_name = _get_custom_app_upgrade_source(
-			app_name=app_name,
-			app_source=source,
-			custom_source=custom_source,
-			next_version=next_version,
-			team=team,
-		)
-		apps.append((app_name, custom_source_name))
-
-	return [frappe_app, *apps]
-
-
-def _get_custom_app_upgrade_source(
-	app_name,
-	app_source,
-	custom_source,
-	next_version,
-	team,
-):
-	from press.press.doctype.marketplace_app.marketplace_app import (
-		validate_frappe_version_for_branch,
-	)
-
-	branch = custom_source.get("branch")
-	repository_url = app_source.repository_url
-	github_installation_id = app_source.github_installation_id
-	if not branch:
-		frappe.throw(f"Branch not provided for {app_name}")  # nosemgrep
-	if not repository_url:
-		frappe.throw(f"Repository URL not provided for {app_name}")  # nosemgrep
-
-	validate_frappe_version_for_branch(
-		app_name=app_name,
-		owner=app_source.repository_owner,
-		repository=app_source.repository,
-		branch=branch,
-		version=next_version,
-		github_installation_id=github_installation_id,
-		ease_versioning_constrains=True,
-	)
-
-	existing_source = frappe.db.get_value(
-		"App Source",
-		{
-			"app": app_name,
-			"repository_url": repository_url.removesuffix(".git"),
-			"branch": branch,
-			"team": team,
-			"enabled": True,
-		},
-		"name",
-	)
-	if existing_source:
-		source_doc = frappe.get_doc("App Source", existing_source)
-		if next_version not in [v.version for v in source_doc.versions]:
-			source_doc.add_version(next_version)
-		return source_doc.name
-
-	app_doc = frappe.get_cached_doc("App", app_name)
-	custom_source = app_doc.add_source(
-		repository_url=repository_url,
-		branch=branch,
-		frappe_version=next_version,
-		team=team,
-		github_installation_id=github_installation_id,
-	)
-	return custom_source.name
-
-
-def get_compatible_public_apps_and_sources(app_names, next_version):
-	if not app_names:
-		return set(), {}
-
-	AppSource = frappe.qb.DocType("App Source")
-	AppSourceVersion = frappe.qb.DocType("App Source Version")
-	rows = (
-		frappe.qb.from_(AppSourceVersion)
-		.join(AppSource)
-		.on(AppSourceVersion.parent == AppSource.name)
-		.select(
-			AppSource.app,
-			AppSource.name.as_("source"),
-		)
-		.where(AppSourceVersion.version == next_version)
-		.where(AppSource.app.isin(app_names))
-		.where(AppSource.public == 1)
-		.where(AppSource.enabled == 1)
-	).run(as_dict=True)
-
-	compatible_apps = set()
-	compatible_sources = {}
-	for r in rows:
-		compatible_apps.add(r.app)
-		compatible_sources[r.app] = r.source
-
-	return compatible_apps, compatible_sources

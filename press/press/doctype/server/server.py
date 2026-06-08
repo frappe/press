@@ -69,6 +69,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.release_group.release_group import ReleaseGroup
 	from press.press.doctype.server_mount.server_mount import ServerMount
 	from press.press.doctype.server_plan.server_plan import ServerPlan
+	from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 	from press.press.doctype.virtual_machine_volume.virtual_machine_volume import (
 		VirtualMachineVolume,
@@ -287,7 +288,7 @@ class BaseServer(Document, TagHelpers):
 
 		storage_price = frappe.db.get_value("Server Storage Plan", {"enabled": 1}, "price_usd") or 0
 		if is_limits_exceeded(storage_price * increment):
-			frappe.throw("Cannot increase storage as spending limit has been exceeded.")
+			frappe.throw("Cannot increase storage as spending limit has been exceeded.")  # nosemgrep
 
 		storage_parameters.update({"database_server" if server[0] == "m" else "server": server})
 
@@ -1376,10 +1377,7 @@ class BaseServer(Document, TagHelpers):
 				"server": self.name,
 				"server_type": self.doctype,
 				"status": ("in", ("Running", "Pending")),
-				"creation": (
-					">",
-					frappe.utils.add_to_date(frappe.utils.now(), minutes=-30),
-				),
+				"creation": (">", frappe.utils.add_to_date(frappe.utils.now(), minutes=-30)),
 			},
 		):
 			frappe.throw(
@@ -1419,6 +1417,7 @@ class BaseServer(Document, TagHelpers):
 				frappe.db.set_value("Self Hosted Server", {"server": self.name}, "status", "Archived")
 
 		else:
+<<<<<<< HEAD
 			frappe.enqueue_doc(
 				self.doctype,
 				self.name,
@@ -1427,6 +1426,9 @@ class BaseServer(Document, TagHelpers):
 				queue="long",
 				enqueue_after_commit=True,
 			)
+=======
+			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long", enqueue_after_commit=True)
+>>>>>>> origin/master
 		self.disable_subscription()
 		self.remove_from_release_groups()
 
@@ -1466,7 +1468,9 @@ class BaseServer(Document, TagHelpers):
 			)
 
 		if is_limits_exceeded(new_plan.price_usd):
-			frappe.throw("You cannot change plan as total subscribed plans exceeds your spending limit.")
+			frappe.throw(
+				"Cannot change plan: the cost of your subscribed plans would exceed your spending limit. Please increase your spending limit or cancel other subscriptions before upgrading."
+			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 		instance_id = frappe.db.get_value("Virtual Machine", self.virtual_machine, "instance_id")
@@ -2629,7 +2633,11 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			certificate_name = frappe.db.get_value(
 				"TLS Certificate", {"wildcard": True, "domain": domain.domain}, "name"
 			)
-			certificate = frappe.get_doc("TLS Certificate", certificate_name)
+
+			certificate: TLSCertificate = frappe.get_doc("TLS Certificate", certificate_name)
+			if not (certificate.private_key and certificate.full_chain and certificate.intermediate_chain):
+				continue
+
 			wildcard_domains.append(
 				{
 					"domain": domain.domain,

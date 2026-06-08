@@ -14,8 +14,10 @@ const releases = defineCollection({
 				src: image(),
 				alt: z.string(),
 			}).optional(),
+      tags: z.array(z.string()).default([]),
 			// Transform string to Date object
 			date: z.coerce.date(),
+ 			major: z.boolean().optional(),
 		}),
 });
 

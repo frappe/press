@@ -787,6 +787,7 @@ def validate_frappe_version_for_branch(
 		installation=github_installation_id
 		if github_installation_id
 		else frappe.get_value("Press Settings", None, "github_access_token"),
+		app_name=app_name,
 	)
 	frappe_version = app_info.get("frappe_version")
 	frappe_version = parse_frappe_version(frappe_version, app_info.get("title"), ease_versioning_constrains)
