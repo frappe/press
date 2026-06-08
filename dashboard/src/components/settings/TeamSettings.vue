@@ -100,9 +100,9 @@ const teamMembersListOptions = ref({
 				},
 			},
 			{
-				label: 'Add Member',
+				label: 'Invite User',
 				variant: 'solid',
-				iconLeft: 'plus',
+				iconLeft: 'user-plus',
 				onClick() {
 					const InviteTeamMemberDialog = defineAsyncComponent(
 						() => import('./InviteTeamMemberDialog.vue'),
