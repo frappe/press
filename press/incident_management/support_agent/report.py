@@ -21,6 +21,7 @@ def generate_report(payload: dict[str, Any]) -> dict[str, Any]:
 	app_server_metrics = payload.get("app_server_metrics") or {}
 	db_server_metrics = payload.get("db_server_metrics") or {}
 	server_advanced_analytics = payload.get("server_advanced_analytics") or {}
+	bench_processes = payload.get("bench_processes") or {}
 	site_performance = payload.get("site_performance") or {}
 	web_error_log = payload.get("web_error_log") or {}
 
@@ -31,6 +32,7 @@ def generate_report(payload: dict[str, Any]) -> dict[str, Any]:
 	_add_backup_evidence(backups, evidence, timeline, next_steps)
 	_add_domain_evidence(domains, evidence, causes, next_steps)
 	_add_incident_evidence(incidents, evidence, timeline, causes, next_steps)
+	_add_bench_process_evidence(bench_processes, evidence, causes, next_steps)
 	_add_server_metrics_evidence(
 		app_server_metrics, db_server_metrics, server_advanced_analytics, evidence, causes, next_steps
 	)
@@ -97,6 +99,30 @@ def _add_bench_evidence(bench, evidence, causes, next_steps):
 
 	if bench.get("resetting_bench"):
 		evidence.append("Bench reset is currently in progress.")
+
+
+def _add_bench_process_evidence(processes, evidence, causes, next_steps):
+	if not processes.get("available"):
+		return
+
+	stopped = processes.get("stopped_processes") or []
+	if not stopped:
+		return
+
+	web_stopped = [p for p in stopped if "web" in p.get("name", "")]
+	if web_stopped:
+		name = web_stopped[0]["name"]
+		status = web_stopped[0]["status"]
+		evidence.append(f"Gunicorn web process '{name}' is {status}.")
+		causes.append("Gunicorn web workers are not running — direct cause of 502 errors.")
+		next_steps.append(
+			"Check web.error.log and recent deployments for the crash reason before restarting."
+		)
+		return
+
+	worker_stopped = [p for p in stopped if "worker" in p.get("name", "")]
+	if worker_stopped:
+		evidence.append(f"{len(worker_stopped)} background worker process(es) are not running.")
 
 
 def _add_deployment_evidence(deployments, evidence, timeline, causes, next_steps):

@@ -367,3 +367,55 @@ class TestSupportAgentReport(FrappeTestCase):
 
 		self.assertIn("web workers", report["likely_cause"])
 		self.assertTrue(any("Recorder" in step for step in report["recommended_next_steps"]))
+
+	def test_502_stopped_gunicorn_web_process_flags_direct_cause(self):
+		report = generate_report(
+			{
+				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
+				"bench": {"status": "Active"},
+				"deployments": [],
+				"background_jobs": {},
+				"backups": {},
+				"domains": {},
+				"incidents": [],
+				"errors": {},
+				"bench_processes": {
+					"available": True,
+					"total": 6,
+					"stopped_count": 1,
+					"stopped_processes": [
+						{
+							"name": "frappe-bench-frappe-web",
+							"status": "Fatal",
+							"message": "Exited too quickly (process log may have details)",
+						}
+					],
+				},
+			}
+		)
+
+		self.assertIn("Gunicorn", report["likely_cause"])
+		self.assertIn("502", report["likely_cause"])
+		self.assertTrue(any("web.error.log" in step for step in report["recommended_next_steps"]))
+
+	def test_502_all_processes_running_produces_no_process_cause(self):
+		report = generate_report(
+			{
+				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
+				"bench": {"status": "Active"},
+				"deployments": [],
+				"background_jobs": {},
+				"backups": {},
+				"domains": {},
+				"incidents": [],
+				"errors": {},
+				"bench_processes": {
+					"available": True,
+					"total": 6,
+					"stopped_count": 0,
+					"stopped_processes": [],
+				},
+			}
+		)
+
+		self.assertFalse(any("Gunicorn" in c for c in [report["likely_cause"]]))

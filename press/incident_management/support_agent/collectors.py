@@ -51,6 +51,7 @@ def collect_site_context(site_name: str) -> dict[str, Any]:
 		"app_server_metrics": app_server_metrics,
 		"db_server_metrics": db_server_metrics,
 		"server_advanced_analytics": server_advanced_analytics,
+		"bench_processes": get_bench_process_status(site.get("bench")),
 		"site_performance": get_site_performance_summary(site_name, site.get("bench")),
 		"web_error_log": get_web_error_log(site_name),
 	}
@@ -103,6 +104,27 @@ def get_bench_health(bench_name: str | None) -> dict[str, Any] | None:
 		],
 		as_dict=True,
 	)
+
+
+def get_bench_process_status(bench_name: str | None) -> dict[str, Any]:
+	if not bench_name:
+		return {"available": False}
+
+	try:
+		processes = frappe.get_doc("Bench", bench_name).supervisorctl_status()
+	except Exception:
+		return {"available": False}
+
+	_RUNNING = {"Running", "Starting"}
+	stopped = [p for p in processes if p.get("status") not in _RUNNING]
+	return {
+		"available": True,
+		"total": len(processes),
+		"stopped_count": len(stopped),
+		"stopped_processes": [
+			{"name": p["name"], "status": p["status"], "message": p.get("message")} for p in stopped
+		],
+	}
 
 
 def get_app_versions(bench_name: str | None) -> list[dict[str, Any]]:
