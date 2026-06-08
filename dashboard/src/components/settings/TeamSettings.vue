@@ -56,12 +56,12 @@ const teamMembersListOptions = ref({
 	],
 	rowActions({ row }) {
 		let team = getTeam()
-		if (row.name === team.doc.user || row.name === team.doc.user_info?.name)
+		if (row.user === team.doc.user || row.user === team.doc.user_info?.name)
 			return []
 		return [
 			{
 				label: 'Remove Member',
-				condition: () => row.name !== team.doc.user,
+				condition: () => row.user !== team.doc.user,
 				onClick() {
 					if (team.removeTeamMember.loading) return
 					confirmDialog({
@@ -70,7 +70,7 @@ const teamMembersListOptions = ref({
 						onSuccess({ hide }) {
 							if (team.removeTeamMember.loading) return
 							toast.promise(
-								team.removeTeamMember.submit({ member: row.name }),
+								team.removeTeamMember.submit({ member: row.user }),
 								{
 									loading: 'Removing Member...',
 									success: () => {
