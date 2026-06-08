@@ -88,6 +88,7 @@ Current collectors:
 - **Domains**: total count, counts by status, and per-record `status`/`dns_type`/`redirect_to_primary` — no domain names or DNS response bodies.
 - **Platform incidents**: up to 5 active incident records matching the site's server or cluster (or-filter), excluding resolved/auto-resolved/press-resolved incidents.
 - **Error summary**: 24-hour window, aggregated failed job counts by job type, up to 10 recent failed jobs listed, excluding raw output and stack traces.
+- **Bench process status**: Supervisor process list for the site's bench. Each entry records the process name, status, and message. Processes not in `Running` or `Starting` state are collected as `stopped_processes`. Collected via `Bench.supervisorctl_status()` — an agent call to the app server.
 - **Web error log**: Recent ERROR and CRITICAL entries from `web.error.log` on the site's app server. Only the gunicorn-level description and the final exception message line are captured — not full stack frames with local variables. All entries are redacted before being stored. Collects at most 10 error blocks from the last 500 log lines.
 - **Site performance summary**: Up to 20 slowest endpoints from Elasticsearch over the last 24 hours. Each endpoint includes average and peak duration, a `spike_detected` flag (peak ≥ 3× mean and peak > 2 s), and an `is_custom` flag indicating whether the endpoint belongs to a non-Frappe app. App origin is determined by checking `repository_owner` on the AppSource record — any owner other than `frappe` is treated as custom. Also includes a `has_custom_apps` flag indicating whether any non-Frappe apps are installed on the bench.
 
@@ -165,6 +166,7 @@ The investigation report should vary its signals and next steps based on the cla
 **Report signals to surface:**
 
 - If bench is not Active or a recent deployment ended in `Fatal` or `Cancelled`, that is the likely cause. A deployment in `Failure` state is transient — a recovery job is being created; check back shortly.
+- The investigation collects the supervisor process list for the bench. If the gunicorn web process (`*-frappe-web`) is not `Running`, that is a direct cause of 502 errors — surface it immediately and recommend checking `web.error.log` and recent deployments before restarting.
 - If no deployment or incident explains it, the crash may be from an application exception. The investigation automatically collects recent ERROR/CRITICAL entries from `web.error.log`. If those entries show a database connectivity error, flag it as the cause. If they show CRITICAL entries (worker timeouts or crashes), surface that. Only direct the support agent to open the log manually if no entries were collected or the log was unavailable.
 - Do not recommend `bench restart` as a first step before log review; a restart without diagnosis will recur.
 
