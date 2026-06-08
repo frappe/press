@@ -291,6 +291,8 @@ def accept_team_invite(key: str):
 		role=account_request.invite_role_label,
 	)
 
+	account_request.db_set("request_key", None)
+
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 60)
