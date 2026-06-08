@@ -1,51 +1,51 @@
 <script setup>
 // import { formatCurrency } from '@/utils/format';
-import { createResource, LoadingText, ErrorMessage } from 'frappe-ui';
-import { computed } from 'vue';
+import { createResource, ErrorMessage, LoadingText } from 'frappe-ui'
+import { computed } from 'vue'
 
 const partnerTiersResource = createResource({
-	url: '/api/method/frappe.client.get_list',
+	url: 'press.api.client.get_list',
 	params: {
 		doctype: 'Partner Tier',
 		filters: { enabled: 1 },
 		fields: ['name', 'target_in_usd', 'target_in_inr'],
-		orderBy: 'target_in_usd asc',
+		order_by: 'target_in_usd asc',
 	},
 	auto: true,
-});
+})
 
 const partnerPlans = computed(() => {
 	// modify the partnerTiers data with added discount for each tier respectively
 	let plans = partnerTiersResource.data?.map((tier) => {
-		let discount = 10;
+		let discount = 10
 		if (tier.name === 'Gold') {
-			discount = 25;
+			discount = 25
 		} else if (tier.name === 'Silver') {
-			discount = 20;
+			discount = 20
 		} else if (tier.name === 'Bronze') {
-			discount = 15;
+			discount = 15
 		} else {
-			discount = 10;
+			discount = 10
 		}
 
 		return {
 			type: tier.name,
 			mrr: tier.target_in_usd,
 			discount: discount,
-		};
-	});
+		}
+	})
 
 	// sort plans by mrr - as map messes up the order
-	plans.sort((a, b) => a.mrr - b.mrr);
-	return plans;
-});
+	plans.sort((a, b) => a.mrr - b.mrr)
+	return plans
+})
 
 const formatCurrency = (amount) => {
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: 'USD',
-	}).format(amount);
-};
+	}).format(amount)
+}
 </script>
 
 <template>
