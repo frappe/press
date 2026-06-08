@@ -248,3 +248,122 @@ class TestSupportAgentReport(FrappeTestCase):
 		)
 
 		self.assertEqual(report["confidence"], "Low")
+
+	def test_500_worker_timeout_in_web_log_flags_critical(self):
+		report = generate_report(
+			{
+				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
+				"bench": {"status": "Active"},
+				"deployments": [],
+				"background_jobs": {},
+				"backups": {},
+				"domains": {},
+				"incidents": [],
+				"errors": {},
+				"web_error_log": {
+					"available": True,
+					"error_count": 2,
+					"recent_errors": [
+						{
+							"time": "2026-06-08 10:00:00 +0000",
+							"level": "critical",
+							"description": "WORKER TIMEOUT (pid:1234)",
+						}
+					],
+				},
+			}
+		)
+
+		self.assertIn("CRITICAL", report["likely_cause"])
+		self.assertTrue(any("web_error_log" in step for step in report["recommended_next_steps"]))
+
+	def test_504_custom_app_endpoint_flagged_as_application_level(self):
+		report = generate_report(
+			{
+				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
+				"bench": {"status": "Active"},
+				"deployments": [],
+				"background_jobs": {},
+				"backups": {},
+				"domains": {},
+				"incidents": [],
+				"errors": {},
+				"site_performance": {
+					"available": True,
+					"has_custom_apps": True,
+					"top_slow_endpoints": [
+						{
+							"path": "/api/method/custom_crm.api.get_leads",
+							"avg_duration_s": 8.5,
+							"peak_duration_s": 25.0,
+							"spike_detected": False,
+							"is_custom": True,
+						}
+					],
+				},
+			}
+		)
+
+		self.assertIn("Custom app", report["likely_cause"])
+		self.assertTrue(any("Recorder" in step for step in report["recommended_next_steps"]))
+		self.assertTrue(any("non-Frappe" in e for e in report["evidence"]))
+
+	def test_504_spiky_endpoint_flagged_even_with_low_average(self):
+		report = generate_report(
+			{
+				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
+				"bench": {"status": "Active"},
+				"deployments": [],
+				"background_jobs": {},
+				"backups": {},
+				"domains": {},
+				"incidents": [],
+				"errors": {},
+				"site_performance": {
+					"available": True,
+					"has_custom_apps": False,
+					"top_slow_endpoints": [
+						{
+							"path": "/api/method/frappe.desk.query_report.run",
+							"avg_duration_s": 0.4,
+							"peak_duration_s": 18.0,
+							"spike_detected": True,
+							"is_custom": False,
+						}
+					],
+				},
+			}
+		)
+
+		self.assertTrue(any("spike" in e.lower() for e in report["evidence"]))
+		self.assertTrue(any("Recorder" in step for step in report["recommended_next_steps"]))
+
+	def test_504_frappe_endpoint_slow_flags_web_workers(self):
+		report = generate_report(
+			{
+				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
+				"bench": {"status": "Active"},
+				"deployments": [],
+				"background_jobs": {},
+				"backups": {},
+				"domains": {},
+				"incidents": [],
+				"errors": {},
+				"site_performance": {
+					"available": True,
+					"has_custom_apps": False,
+					"top_slow_endpoints": [
+						{
+							"path": "/api/method/frappe.desk.reportview.get",
+							"avg_duration_s": 5.0,
+							"peak_duration_s": 9.0,
+							"spike_detected": False,
+							"is_custom": False,
+						}
+					],
+				},
+			}
+		)
+
+		self.assertIn("web workers", report["likely_cause"])
+		self.assertTrue(any("Recorder" in step for step in report["recommended_next_steps"]))

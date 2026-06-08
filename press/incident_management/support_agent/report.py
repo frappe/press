@@ -310,23 +310,59 @@ def _add_performance_evidence(performance, evidence, causes, next_steps):
 	if not endpoints:
 		return
 
-	slowest = endpoints[0]
-	avg = slowest.get("avg_duration_s", 0)
-	if avg < 1.0:
+	slow = [e for e in endpoints if e.get("avg_duration_s", 0) >= 1.0]
+	spiky = [e for e in endpoints if e.get("spike_detected")]
+
+	if not slow and not spiky:
 		return
 
+	_add_slow_endpoint_evidence(slow, evidence, causes, next_steps)
+	_add_spiky_endpoint_evidence(spiky, evidence, next_steps)
+
+
+def _add_slow_endpoint_evidence(slow, evidence, causes, next_steps):
+	if not slow:
+		return
+
+	slowest = slow[0]
 	evidence.append(
-		f"Slowest endpoint '{slowest['path']}' averaged {avg}s per request over the last 24 hours "
-		f"(peak {slowest.get('peak_duration_s')}s)."
+		f"Slowest endpoint '{slowest['path']}' averaged {slowest['avg_duration_s']}s per request "
+		f"over the last 24 hours (peak {slowest['peak_duration_s']}s)."
 	)
-	causes.append("Slow endpoint requests are consuming web workers and may be causing 504 errors.")
+
+	custom = [e for e in slow if e.get("is_custom")]
+	if custom:
+		custom_paths = ", ".join(f"'{e['path']}'" for e in custom[:2])
+		evidence.append(f"Slow endpoints from non-Frappe apps: {custom_paths}.")
+		causes.append(
+			"Custom app endpoints are slow; the cause is likely application-level, not infrastructure."
+		)
+	else:
+		causes.append("Slow endpoint requests are consuming web workers and may be causing 504 errors.")
+
 	next_steps.append(
 		"Use Frappe Recorder on the site to profile the slow endpoint. "
 		"Disable Recorder immediately after profiling to avoid further degradation."
 	)
-	if len(endpoints) > 1:
-		others = ", ".join(f"'{e['path']}'" for e in endpoints[1:3])
+
+	if len(slow) > 1:
+		others = ", ".join(f"'{e['path']}'" for e in slow[1:3])
 		evidence.append(f"Other slow endpoints in the last 24 hours: {others}.")
+
+
+def _add_spiky_endpoint_evidence(spiky, evidence, next_steps):
+	if not spiky:
+		return
+
+	for endpoint in spiky[:2]:
+		evidence.append(
+			f"Endpoint '{endpoint['path']}' shows intermittent spikes: "
+			f"peak {endpoint['peak_duration_s']}s vs mean {endpoint['avg_duration_s']}s."
+		)
+	next_steps.append(
+		"Spiky endpoints suggest a specific document type or operation triggers the slowness. "
+		"Use Frappe Recorder to capture the slow request in context."
+	)
 
 
 def _add_web_error_evidence(web_error_log, evidence, causes, next_steps):
