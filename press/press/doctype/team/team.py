@@ -1082,7 +1082,7 @@ class Team(Document):
 					.select(PressRole.title)
 					.run(as_dict=True)
 				)
-			] or ["None"]
+			] or []
 
 		for member in self.team_members:
 			m = member.as_dict()
