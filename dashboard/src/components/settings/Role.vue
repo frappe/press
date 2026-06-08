@@ -15,6 +15,7 @@
 		</Tooltip>
 
 		<Button
+			v-if="session.userPermissions.data.owner || session.isTeamAdmin"
 			label="Delete"
 			icon-left="trash-2"
 			theme="red"
@@ -27,10 +28,17 @@
 						label: 'Delete',
 						theme: 'red',
 						onClick: ({ hide }) => {
-							role.delete.submit().then(() => {
-								hide();
-								$router.push({ name: 'SettingsPermissionRoles' });
-							});
+							role.delete
+								.submit()
+								.then(() => {
+									hide();
+									$router.push({
+										name: 'SettingsPermissionRoles',
+									});
+								})
+								.catch((e) => {
+									toast.error(getToastErrorMessage(e));
+								});
 						},
 					},
 				})
@@ -119,22 +127,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { Button, TabButtons, createDocumentResource } from 'frappe-ui';
-import RoleMembers from './RoleMembers.vue';
-import RolePermissions from './RolePermissions.vue';
-import RoleResources from './RoleResources.vue';
-import { getTeam } from '../../data/team';
-import { getSessionUser } from '../../data/session';
-import { confirmDialog } from '../../utils/components';
+import { Button, createDocumentResource, TabButtons } from 'frappe-ui'
+import { ref } from 'vue'
+import { toast } from 'vue-sonner'
+import { getSessionUser, session } from '../../data/session'
+import { getTeam } from '../../data/team'
+import { confirmDialog } from '../../utils/components'
+import { getToastErrorMessage } from '../../utils/toast'
+import RoleMembers from './RoleMembers.vue'
+import RolePermissions from './RolePermissions.vue'
+import RoleResources from './RoleResources.vue'
 
 const props = defineProps<{
-	id: string;
-}>();
+	id: string
+}>()
 
-const team = getTeam();
-const user = getSessionUser();
-const tab = ref<'members' | 'resources' | 'permissions'>('members');
+const team = getTeam()
+const user = getSessionUser()
+const tab = ref<'members' | 'resources' | 'permissions'>('members')
 
 const role = createDocumentResource({
 	doctype: 'Press Role',
@@ -146,5 +156,5 @@ const role = createDocumentResource({
 		add_resource: 'add_resource',
 		remove_resource: 'remove_resource',
 	},
-});
+})
 </script>
