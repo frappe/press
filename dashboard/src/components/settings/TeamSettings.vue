@@ -9,6 +9,7 @@ import { createResource } from 'frappe-ui'
 import { defineAsyncComponent, h, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { getTeam } from '../../data/team'
+import router from '../../router'
 import { confirmDialog, renderDialog } from '../../utils/components'
 import { getToastErrorMessage } from '../../utils/toast'
 import ObjectList from '../ObjectList.vue'
@@ -49,9 +50,37 @@ const teamMembersListOptions = ref({
 		},
 		{
 			label: 'Role',
-			fieldname: 'roles',
+			type: 'Component',
 			width: '500px',
-			format: (v) => v.join(', '),
+			component: ({ row }) => {
+				let roles = row.roles || []
+				return h(
+					'div',
+					{ class: 'flex flex-wrap gap-1.5' },
+					roles.map((role) =>
+						h(
+							'a',
+							{
+								href: router.resolve({
+									name: 'SettingsPermissionRolePermissions',
+									params: { id: role.name },
+								}).href,
+								onClick: (e) => {
+									e.preventDefault()
+									e.stopPropagation()
+									router.push({
+										name: 'SettingsPermissionRolePermissions',
+										params: { id: role.name },
+									})
+								},
+								class:
+									'font-medium no-underline border-b border-[var(--ink-gray-3)] transition-colors duration-[80ms] cursor-pointer text-ink-gray-9 hover:text-ink-gray-7',
+							},
+							role.title,
+						),
+					),
+				)
+			},
 		},
 	],
 	rowActions({ row }) {
