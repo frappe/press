@@ -15,6 +15,7 @@ from frappe.model.document import Document
 from frappe.query_builder.functions import Count
 from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_form, getdate, random_string
+from frappe.utils.caching import redis_cache
 
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
@@ -1061,6 +1062,38 @@ class Team(Document):
 	@dashboard_whitelist()
 	def get_team_members(self):
 		return get_team_members(self.name)
+
+	@dashboard_whitelist()
+	@redis_cache(ttl=60 * 5)
+	def members(self):
+		r = []
+
+		def get_roles(user: str):
+			PressRole = frappe.qb.DocType("Press Role")
+			PressRoleUser = frappe.qb.DocType("Press Role User")
+			return [
+				x.title
+				for x in (
+					frappe.qb.from_(PressRoleUser)
+					.join(PressRole)
+					.on(PressRoleUser.parent == PressRole.name)
+					.where(PressRole.team == self.name)
+					.where(PressRoleUser.user == user)
+					.select(PressRole.title)
+					.run(as_dict=True)
+				)
+			] or ["None"]
+
+		for member in self.team_members:
+			m = member.as_dict()
+			m.user = member.user
+			u = frappe.get_doc("User", m.user)
+			m.user_name = u.full_name
+			m.user_image = u.user_image
+			m.email = u.email
+			m.roles = get_roles(m.user)
+			r.append(m)
+		return r
 
 	@dashboard_whitelist()
 	@feature_preview.beta_testing()
