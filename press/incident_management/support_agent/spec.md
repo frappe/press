@@ -89,6 +89,7 @@ Current collectors:
 - **Platform incidents**: up to 5 active incident records matching the site's server or cluster (or-filter), excluding resolved/auto-resolved/press-resolved incidents.
 - **Error summary**: 24-hour window, aggregated failed job counts by job type, up to 10 recent failed jobs listed, excluding raw output and stack traces.
 - **Web error log**: Recent ERROR and CRITICAL entries from `web.error.log` on the site's app server. Only the gunicorn-level description and the final exception message line are captured — not full stack frames with local variables. All entries are redacted before being stored. Collects at most 10 error blocks from the last 500 log lines.
+- **Site performance summary**: Up to 20 slowest endpoints from Elasticsearch over the last 24 hours. Each endpoint includes average and peak duration, a `spike_detected` flag (peak ≥ 3× mean and peak > 2 s), and an `is_custom` flag indicating whether the endpoint belongs to a non-Frappe app. App origin is determined by checking `repository_owner` on the AppSource record — any owner other than `frappe` is treated as custom. Also includes a `has_custom_apps` flag indicating whether any non-Frappe apps are installed on the bench.
 
 ## Performance Investigation
 
@@ -142,8 +143,11 @@ The investigation report should vary its signals and next steps based on the cla
 
 - If a CPU spike is visible on the app server and no incident explains it, flag potential noisy neighbor (see Performance Investigation — no CPU limits on bench containers).
 - If a CPU spike is visible on the database server, flag it with the caveat that shared DB servers have no isolation and the only remediation is moving tenants.
-- If neither server shows a spike, the cause is likely app-level: slow endpoints, report queries without indexes, or missing Prepared Report setup. The agent report should say so explicitly and recommend the customer use Frappe Recorder to identify the slow endpoint. Disable Recorder immediately after profiling.
-- Common slow endpoint patterns to mention: `frappe.desk.query_report.run`, `frappe.desk.reportview.get` (list/report views with many filters and no indexes), `run_doc_method` (custom controller methods). If the "Other" category dominates, it points to a custom endpoint.
+- If neither server shows a spike, check site analytics for slow endpoints. The investigation collects the 20 slowest endpoints by average duration over 24 hours. Each endpoint has `spike_detected` (peak ≥ 3× mean and peak > 2 s) and `is_custom` (endpoint belongs to a non-Frappe app based on `repository_owner` of the AppSource).
+  - If a slow endpoint is `is_custom: true`, the cause is custom code, not infrastructure. Recommend Frappe Recorder to profile the endpoint.
+  - If an endpoint is `spike_detected: true` with a low average, the slowness is triggered by a specific document type or operation — Recorder should capture the request in context.
+  - If all slow endpoints are Frappe core (`is_custom: false`), recommend Recorder and mention common patterns: `frappe.desk.query_report.run` and `frappe.desk.reportview.get` (list/report views with missing indexes), `run_doc_method` (custom controller methods).
+- Disable Recorder immediately after profiling to avoid further degradation.
 
 ---
 
