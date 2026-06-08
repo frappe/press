@@ -1417,7 +1417,6 @@ class BaseServer(Document, TagHelpers):
 				frappe.db.set_value("Self Hosted Server", {"server": self.name}, "status", "Archived")
 
 		else:
-<<<<<<< HEAD
 			frappe.enqueue_doc(
 				self.doctype,
 				self.name,
@@ -1426,9 +1425,6 @@ class BaseServer(Document, TagHelpers):
 				queue="long",
 				enqueue_after_commit=True,
 			)
-=======
-			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long", enqueue_after_commit=True)
->>>>>>> origin/master
 		self.disable_subscription()
 		self.remove_from_release_groups()
 

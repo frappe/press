@@ -10,11 +10,8 @@ from frappe.tests.ui_test_helpers import create_test_user
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.app.test_app import create_test_app
-<<<<<<< HEAD
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_source.test_app_source import create_test_app_source
-=======
->>>>>>> origin/master
 from press.press.doctype.marketplace_app.utils import (
 	get_rating_percentage_distribution,
 	number_k_format,
@@ -61,7 +58,6 @@ def create_team_with_press_user():
 
 
 class TestMarketplaceApp(FrappeTestCase):
-<<<<<<< HEAD
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -106,8 +102,6 @@ class TestMarketplaceApp(FrappeTestCase):
 			)
 		self.assertIn("No app source found for frappe/erpnext", str(context.exception))
 
-=======
->>>>>>> origin/master
 	def create_marketplace_app_for_team(self, team):
 		app_name = f"perm_app_{frappe.generate_hash(length=8).lower()}"
 		create_test_app(app_name, app_name.replace("_", " ").title())

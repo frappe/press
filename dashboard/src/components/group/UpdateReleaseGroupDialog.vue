@@ -624,7 +624,6 @@ export default {
 					if (candidate) {
 						this.$router.push({
 							name: 'Release Pipeline',
-<<<<<<< HEAD
 							params: {
 								id: candidate,
 								name: this.bench,
@@ -651,8 +650,6 @@ export default {
 					if (candidate) {
 						this.$router.push({
 							name: 'Deploy Candidate',
-=======
->>>>>>> origin/master
 							params: {
 								id: candidate,
 								name: this.bench,
