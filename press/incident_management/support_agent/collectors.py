@@ -13,6 +13,9 @@ _SPIKE_CPU_THRESHOLD = 70.0  # flag CPU spike only above this percent
 _SPIKE_RATIO = 1.5  # peak must be this many times the mean to count as a spike
 _IOPS_SPIKE_RATIO = 2.0  # IOPS has no useful absolute threshold; rely on ratio only
 _SLOW_ENDPOINT_THRESHOLD_S = 1.0  # average duration above which an endpoint is worth flagging
+_PERF_SPIKE_PEAK_THRESHOLD_S = 2.0  # peak must exceed this to register as a performance spike
+_PERF_SPIKE_RATIO = 3.0  # peak must be this many times the mean to count as a spike
+_PERF_MAX_PATHS = 20  # fetch up to this many endpoints for anomaly analysis
 _WEB_ERROR_TAIL_LINES = 500  # scan only the tail of the log to bound processing time
 _WEB_ERROR_MAX_ERRORS = 10  # return at most this many recent error blocks
 _WEB_ERROR_LOG_REGEX = re.compile(
@@ -47,7 +50,7 @@ def collect_site_context(site_name: str) -> dict[str, Any]:
 		"app_server_metrics": app_server_metrics,
 		"db_server_metrics": db_server_metrics,
 		"server_advanced_analytics": server_advanced_analytics,
-		"site_performance": get_site_performance_summary(site_name),
+		"site_performance": get_site_performance_summary(site_name, site.get("bench")),
 		"web_error_log": get_web_error_log(site_name),
 	}
 
@@ -330,10 +333,13 @@ def get_server_advanced_analytics(server_name: str | None, target_site: str) -> 
 	}
 
 
-def get_site_performance_summary(site_name: str) -> dict[str, Any]:
+def get_site_performance_summary(site_name: str, bench_name: str | None = None) -> dict[str, Any]:
 	"""
-	Top slow endpoints from Elasticsearch for the last 24 hours.
-	Used to identify app-level causes of 504s and site slowness.
+	Slowest endpoints from Elasticsearch for the last 24 hours with anomaly detection.
+
+	Each endpoint records avg/peak duration, whether a spike was detected
+	(peak >= _PERF_SPIKE_RATIO x mean and peak > _PERF_SPIKE_PEAK_THRESHOLD_S), and
+	whether the endpoint belongs to a non-Frappe app installed on the bench.
 	"""
 	if not frappe.db.get_single_value("Press Settings", "log_server"):
 		return {"available": False}
@@ -354,25 +360,75 @@ def get_site_performance_summary(site_name: str) -> dict[str, Any]:
 			timespan,
 			timegrain,
 			ResourceType.SITE,
-			max_no_of_paths=5,
+			max_no_of_paths=_PERF_MAX_PATHS,
 		)
 	except Exception:
 		return {"available": False}
 
+	custom_apps = _get_custom_app_names(bench_name)
+
 	endpoints = []
 	for ds in result.get("datasets") or []:
 		values = [v for v in (ds.get("values") or []) if v is not None]
-		if values:
-			endpoints.append(
-				{
-					"path": ds.get("path"),
-					"avg_duration_s": round(sum(values) / len(values), 3),
-					"peak_duration_s": round(max(values), 3),
-				}
-			)
+		if not values:
+			continue
+		avg = round(sum(values) / len(values), 3)
+		peak = round(max(values), 3)
+		spike_detected = peak >= _PERF_SPIKE_PEAK_THRESHOLD_S and avg > 0 and peak >= avg * _PERF_SPIKE_RATIO
+		path = ds.get("path") or ""
+		module = _endpoint_module(path)
+		endpoints.append(
+			{
+				"path": path,
+				"avg_duration_s": avg,
+				"peak_duration_s": peak,
+				"spike_detected": spike_detected,
+				"is_custom": module is not None and module in custom_apps,
+			}
+		)
 
 	endpoints.sort(key=lambda x: x["avg_duration_s"], reverse=True)
-	return {"available": True, "top_slow_endpoints": endpoints[:5]}
+	return {
+		"available": True,
+		"has_custom_apps": bool(custom_apps),
+		"top_slow_endpoints": endpoints[:10],
+	}
+
+
+def _get_custom_app_names(bench_name: str | None) -> set[str]:
+	"""Returns the Python package names of apps whose source is not in the frappe GitHub org."""
+	if not bench_name:
+		return set()
+
+	bench_apps = frappe.get_all(
+		"Bench App",
+		filters={"parenttype": "Bench", "parent": bench_name},
+		fields=["app", "source"],
+	)
+	if not bench_apps:
+		return set()
+
+	source_names = [a.source for a in bench_apps if a.source]
+	if not source_names:
+		return set()
+
+	sources = frappe.get_all(
+		"App Source",
+		filters={"name": ("in", source_names)},
+		fields=["name", "repository_owner"],
+	)
+	owner_by_source = {s.name: (s.repository_owner or "").lower() for s in sources}
+
+	return {a.app for a in bench_apps if owner_by_source.get(a.source, "") != "frappe"}
+
+
+def _endpoint_module(path: str) -> str | None:
+	"""Extracts the Python module name from /api/method/<module>.<rest> paths."""
+	prefix = "/api/method/"
+	if not path.startswith(prefix):
+		return None
+	rest = path[len(prefix) :]
+	return rest.split(".")[0] or None
 
 
 def get_web_error_log(site_name: str) -> dict[str, Any]:
