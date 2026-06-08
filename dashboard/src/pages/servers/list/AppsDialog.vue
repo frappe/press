@@ -1,19 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive, h, defineAsyncComponent } from 'vue'
-import {
-	Dialog,
-	TextInput,
-	Button,
-	Checkbox,
-	createResource,
-	createListResource,
-} from 'frappe-ui'
-
-import { renderDialog } from '@/utils/components'
-import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline'
+import { ref, reactive } from 'vue'
+import { Dialog, TextInput, Button, Checkbox, createResource } from 'frappe-ui'
 
 interface Props {
 	bench: any
+	serverName: string
+	serverImg: any
 }
 
 const show = ref(true)
@@ -85,11 +77,13 @@ const submitForm = () => {
 const installableApps = createResource({
 	url: 'press.api.bench.all_apps',
 	transform(data) {
-		return data.map((app) => {
+		const tmp = data.map((app) => {
 			app.compatible = app.sources.length > 0
 			app.source = app.sources.length > 0 ? app.sources[0] : {}
 			return app
 		})
+
+		return tmp.filter((app) => app.source?.repository_owner === 'frappe')
 	},
 	auto: true,
 
@@ -109,50 +103,65 @@ const installableApps = createResource({
 		:options="{ title: 'Deploy apps to your bench', size:'2xl' }"
 	>
 		<template #body-content>
-			<div class="flex flex-col">
-				<TextInput
-					placeholder="Search for any Frappe app"
-					v-model="searchQuery"
-					:debounce="500"
-				>
-					<template #prefix>
-						<lucide-search class="size-4 text-ink-gray-5" />
-					</template>
-				</TextInput>
+			<div class="flex gap-2 items-center mb-5 text-sm">
+				<LucideBoxes class="size-3.5" /> {{ bench.title }}
+				<span class="bg-surface-gray-4 size-1.5 rounded-full mx-1" />
 
-				<div class="grid grid-cols-2 gap-4 mt-5">
-					<label
-						class="p-3 text-sm transition-colors duration-300  border rounded flex gap-2
+				<component :is="serverImg" class="size-4" />
+				<span>{{ serverName }}</span>
+			</div>
+
+			<TextInput
+				placeholder="Search for any Frappe app"
+				v-model="searchQuery"
+				:debounce="500"
+				class="w-[calc(50%-8px)]"
+			>
+				<template #prefix>
+					<lucide-search class="size-4 text-ink-gray-5" />
+				</template>
+			</TextInput>
+			<span />
+
+			<div
+				class="grid grid-cols-2 gap-4 mt-5 overflow-y-auto max-h-[calc(100vh-20rem)]"
+			>
+				<label
+					class="py-2.5 p-3 text-xs transition-colors duration-300  border dark:border-outline-gray-2 rounded flex gap-3
             has-[:checked]:border-outline-gray-5 hover:border-outline-gray-3"
-						v-for="app in installableApps.data"
-						:key="app.name"
-					>
-						<div class="p-2 rounded bg-surface-gray-2 row-span-full h-fit">
-							<LucideBox class="size-4" />
-						</div>
+					v-for="app in installableApps.data"
+					:key="app.name"
+				>
+					<img :src="app.image" class="size-8 rounded" />
 
-						<div class=" flex flex-col leading-relaxed overflow-hidden">
-							<span class="font-medium">{{ app.title }}</span>
-							<span class="text-ink-gray-5 truncate"
-								>{{ app?.description }}</span
-							>
-						</div>
+					<div class=" flex flex-col leading-relaxed overflow-hidden -mt-0.5">
+						<span class="font-medium">{{ app.title }}</span>
+						<span class="text-ink-gray-5 truncate">{{ app?.description }}</span>
+					</div>
 
-						<Checkbox @update:modelValue="(x) => handleAppSelection(x, app)" />
-					</label>
-				</div>
+					<Checkbox
+						class="ml-auto"
+						@update:modelValue="(x) => handleAppSelection(x, app)"
+					/>
+				</label>
+			</div>
 
-				<div class="flex">
-					<Button
-						variant="solid"
-						class="mt-6 ml-auto"
-						@click="submitForm"
-						:loading="apiRes.loading"
-						:loadingText="`Adding ${addedApps.length} apps`"
-					>
-						Deploy {{ addedApps.length }} apps
-					</Button>
-				</div>
+			<div class="flex col-span-full justify-between items-center mt-6">
+				<a
+					class="flex items-center gap-2 text-ink-gray-5"
+					href="https://docs.frappe.io/cloud/installing-an-app#sites-on-private-bench-groups"
+				>
+					<LucideInfo class="size-4" />
+					Looking for Marketplace Apps?
+				</a>
+				<Button
+					variant="solid"
+					@click="submitForm"
+					:loading="apiRes.loading"
+					:loadingText="`Adding ${addedApps.length} apps`"
+				>
+					Deploy {{ addedApps.length }} apps
+				</Button>
 			</div>
 		</template>
 	</Dialog>
