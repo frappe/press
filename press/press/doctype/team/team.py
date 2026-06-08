@@ -1082,12 +1082,17 @@ class Team(Document):
 			.join(PressRole)
 			.on(PressRoleUser.parent == PressRole.name)
 			.where(PressRole.team == self.name)
-			.select(PressRoleUser.user, PressRole.title)
+			.select(PressRoleUser.user, PressRole.title, PressRole.name)
 			.run(as_dict=True)
 		)
 		user_roles = {}
 		for row in role_rows:
-			user_roles.setdefault(row.user, []).append(row.title)
+			user_roles.setdefault(row.user, []).append(
+				{
+					"name": row.name,
+					"title": row.title,
+				}
+			)
 
 		r = []
 		for member in self.team_members:
