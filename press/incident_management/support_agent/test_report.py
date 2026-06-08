@@ -173,3 +173,78 @@ class TestSupportAgentReport(FrappeTestCase):
 		)
 
 		self.assertEqual(report["confidence"], "Low")
+
+	def test_database_error_in_web_log_flags_connectivity(self):
+		report = generate_report(
+			{
+				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
+				"bench": {"status": "Active"},
+				"deployments": [],
+				"background_jobs": {},
+				"backups": {},
+				"domains": {},
+				"incidents": [],
+				"errors": {},
+				"web_error_log": {
+					"available": True,
+					"error_count": 3,
+					"recent_errors": [
+						{
+							"time": "2026-06-08 10:00:00 +0000",
+							"level": "error",
+							"description": "Error handling request /api/method/frappe.client.get",
+							"exception": "OperationalError: (2003, \"Can't connect to MySQL server on '[REDACTED_IP]'\")",
+						}
+					],
+				},
+			}
+		)
+
+		self.assertIn("database connectivity", report["likely_cause"])
+		self.assertTrue(any("database server" in step for step in report["recommended_next_steps"]))
+
+	def test_import_error_in_web_log_flags_broken_state(self):
+		report = generate_report(
+			{
+				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
+				"bench": {"status": "Active"},
+				"deployments": [],
+				"background_jobs": {},
+				"backups": {},
+				"domains": {},
+				"incidents": [],
+				"errors": {},
+				"web_error_log": {
+					"available": True,
+					"error_count": 5,
+					"recent_errors": [
+						{
+							"time": "2026-06-08 10:00:00 +0000",
+							"level": "error",
+							"description": "Error handling request /api/method/some.endpoint",
+							"exception": "ImportError: No module named 'custom_app.hooks'",
+						}
+					],
+				},
+			}
+		)
+
+		self.assertIn("import errors", report["likely_cause"])
+		self.assertTrue(any("deployment" in step for step in report["recommended_next_steps"]))
+
+	def test_empty_web_error_log_produces_no_cause(self):
+		report = generate_report(
+			{
+				"site": {"name": "test.frappe.cloud", "status": "Active", "usage_percent": {}},
+				"bench": {"status": "Active"},
+				"deployments": [],
+				"background_jobs": {},
+				"backups": {},
+				"domains": {},
+				"incidents": [],
+				"errors": {},
+				"web_error_log": {"available": True, "error_count": 0, "recent_errors": []},
+			}
+		)
+
+		self.assertEqual(report["confidence"], "Low")

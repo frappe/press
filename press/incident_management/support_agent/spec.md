@@ -10,7 +10,7 @@ The only required input is a site name or site domain.
 
 - Do not query the hosted site's database.
 - Do not read customer documents, users, emails, invoices, tickets, or billing records.
-- Do not expose raw logs, raw request payloads, secrets, tokens, cookies, or stack traces to the report generator.
+- Do not expose raw logs, raw request payloads, secrets, tokens, cookies, or full stack traces with local variable frames to the report generator. Redacted exception message lines (last line of a traceback) are permitted and treated as structured data.
 - Do not allow the report generator to call generic Press document APIs or run arbitrary queries.
 - Do not perform remediation actions such as restarts, retries, migrations, backups, or plan changes.
 
@@ -88,6 +88,7 @@ Current collectors:
 - **Domains**: total count, counts by status, and per-record `status`/`dns_type`/`redirect_to_primary` — no domain names or DNS response bodies.
 - **Platform incidents**: up to 5 active incident records matching the site's server or cluster (or-filter), excluding resolved/auto-resolved/press-resolved incidents.
 - **Error summary**: 24-hour window, aggregated failed job counts by job type, up to 10 recent failed jobs listed, excluding raw output and stack traces.
+- **Web error log**: Recent ERROR and CRITICAL entries from `web.error.log` on the site's app server. Only the gunicorn-level description and the final exception message line are captured — not full stack frames with local variables. All entries are redacted before being stored. Collects at most 10 error blocks from the last 500 log lines.
 
 ## Performance Investigation
 
@@ -144,8 +145,6 @@ The investigation report should vary its signals and next steps based on the cla
 - If neither server shows a spike, the cause is likely app-level: slow endpoints, report queries without indexes, or missing Prepared Report setup. The agent report should say so explicitly and recommend the customer use Frappe Recorder to identify the slow endpoint. Disable Recorder immediately after profiling.
 - Common slow endpoint patterns to mention: `frappe.desk.query_report.run`, `frappe.desk.reportview.get` (list/report views with many filters and no indexes), `run_doc_method` (custom controller methods). If the "Other" category dominates, it points to a custom endpoint.
 
-**Outside the agent's scope:** Reading web workers logs directly. Direct the support agent to Bench Group → Sites → View Logs → `web.error.log`.
-
 ---
 
 ### 502 Bad Gateway
@@ -162,10 +161,8 @@ The investigation report should vary its signals and next steps based on the cla
 **Report signals to surface:**
 
 - If bench is not Active or a recent deployment ended in `Fatal` or `Cancelled`, that is the likely cause. A deployment in `Failure` state is transient — a recovery job is being created; check back shortly.
-- If no deployment or incident explains it, the crash may be from an application exception. Direct the support agent to `web.error.log` (Bench Group → Sites → View Logs) to find the traceback, then `bench restart` once the root cause is understood.
+- If no deployment or incident explains it, the crash may be from an application exception. The investigation automatically collects recent ERROR/CRITICAL entries from `web.error.log`. If those entries show a database connectivity error, flag it as the cause. If they show CRITICAL entries (worker timeouts or crashes), surface that. Only direct the support agent to open the log manually if no entries were collected or the log was unavailable.
 - Do not recommend `bench restart` as a first step before log review; a restart without diagnosis will recur.
-
-**Outside the agent's scope:** Reading `web.error.log` directly.
 
 ---
 
@@ -188,9 +185,8 @@ The investigation report should vary its signals and next steps based on the cla
 
 - If a recent site update is in Failure/Fatal state, that is the likely cause. The update may have left a partially applied migration or a failing patch.
 - If the error is intermittent (occasional pop-up rather than every request), it is likely a background job failure — direct to Scheduled Job Log and Error Log first, then `worker.err.log`.
-- If no platform signal is present and the traceback isn't visible in the UI (Werkzeug blank page), direct to `web.error.log`.
-
-**Outside the agent's scope:** Reading log files directly. The agent report names the file and location; a human must open it.
+- The investigation automatically collects recent ERROR entries from `web.error.log`. If entries show database connectivity failures (e.g. `OperationalError: Can't connect`), surface that as the cause. If entries show import errors, surface the broken-state cause. This covers the Werkzeug blank page case without requiring the support agent to open the log manually.
+- If `web.error.log` was unavailable or returned no errors but 500s are still reported, direct to `web.error.log` via Bench Group → Sites → View Logs as a fallback.
 
 ## Redaction
 
