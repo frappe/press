@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import re
+import time
 from collections import Counter
-from datetime import datetime, timedelta
-from datetime import timezone as dt_timezone
 from typing import Any
 
 import frappe
 
 RECENT_LIMIT = 10
+_PROM_TIMESPAN = 24 * 60 * 60  # seconds of history to fetch from Prometheus
+_PROM_STEP = 30 * 60  # Prometheus step size in seconds
 _SPIKE_CPU_THRESHOLD = 70.0  # flag CPU spike only above this percent
 _SPIKE_RATIO = 1.5  # peak must be this many times the mean to count as a spike
 _IOPS_SPIKE_RATIO = 2.0  # IOPS has no useful absolute threshold; rely on ratio only
@@ -261,37 +262,33 @@ def get_server_metrics(server_name: str | None, is_db_server: bool = False) -> d
 	if not frappe.db.get_single_value("Press Settings", "monitor_server"):
 		return {"available": False}
 
-	from press.api.server import prometheus_query
-
-	timespan = 24 * 60 * 60
-	timegrain = 30 * 60
+	from press.mcp.tools.telemetry.clients import prometheus_get
 
 	try:
-		cpu_data = prometheus_query(
-			f'(1 - avg(rate(node_cpu_seconds_total{{instance="{server_name}",job="node",mode="idle"}}[{timegrain}s]))) * 100',
-			lambda _: "cpu",
-			"UTC",
-			timespan,
-			timegrain,
+		cpu_response = prometheus_get(
+			"query_range",
+			_prom_params(
+				f'(1 - avg(rate(node_cpu_seconds_total{{instance="{server_name}",job="node",mode="idle"}}[{_PROM_STEP}s]))) * 100'
+			),
 		)
 	except Exception:
 		return {"available": False}
 
 	result: dict[str, Any] = {
 		"available": True,
-		"cpu": _summarise_series(cpu_data, absolute_threshold=_SPIKE_CPU_THRESHOLD),
+		"cpu": _summarise_series(_prom_values(cpu_response), absolute_threshold=_SPIKE_CPU_THRESHOLD),
 	}
 
 	if is_db_server:
 		try:
-			iops_data = prometheus_query(
-				f'sum(rate(node_disk_reads_completed_total{{instance="{server_name}",job="node"}}[{timegrain}s]) + rate(node_disk_writes_completed_total{{instance="{server_name}",job="node"}}[{timegrain}s]))',
-				lambda _: "iops",
-				"UTC",
-				timespan,
-				timegrain,
+			iops_response = prometheus_get(
+				"query_range",
+				_prom_params(
+					f'sum(rate(node_disk_reads_completed_total{{instance="{server_name}",job="node"}}[{_PROM_STEP}s])'
+					f' + rate(node_disk_writes_completed_total{{instance="{server_name}",job="node"}}[{_PROM_STEP}s]))'
+				),
 			)
-			result["iops"] = _summarise_series(iops_data, ratio_threshold=_IOPS_SPIKE_RATIO)
+			result["iops"] = _summarise_series(_prom_values(iops_response), ratio_threshold=_IOPS_SPIKE_RATIO)
 		except Exception:
 			result["iops"] = {"available": False}
 
@@ -334,65 +331,75 @@ def get_server_advanced_analytics(server_name: str | None, target_site: str) -> 
 
 
 def get_site_performance_summary(site_name: str, bench_name: str | None = None) -> dict[str, Any]:
-	"""
-	Slowest endpoints from Elasticsearch for the last 24 hours with anomaly detection.
-
-	Each endpoint records avg/peak duration, whether a spike was detected
-	(peak >= _PERF_SPIKE_RATIO x mean and peak > _PERF_SPIKE_PEAK_THRESHOLD_S), and
-	whether the endpoint belongs to a non-Frappe app installed on the bench.
-	"""
 	if not frappe.db.get_single_value("Press Settings", "log_server"):
 		return {"available": False}
 
-	from press.api.analytics import AggType, ResourceType, auto_timespan_timegrain, get_request_by_
-
-	end_dt = datetime.now(tz=dt_timezone.utc)
-	start_dt = end_dt - timedelta(hours=24)
-	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	from press.mcp.tools.telemetry.clients import elasticsearch_post
 
 	try:
-		result = get_request_by_(
-			site_name,
-			AggType.AVERAGE_DURATION,
-			"UTC",
-			start_dt,
-			end_dt,
-			timespan,
-			timegrain,
-			ResourceType.SITE,
-			max_no_of_paths=_PERF_MAX_PATHS,
-		)
+		response = elasticsearch_post(_slow_endpoint_query(site_name))
 	except Exception:
 		return {"available": False}
 
 	custom_apps = _get_custom_app_names(bench_name)
+	return {
+		"available": True,
+		"has_custom_apps": bool(custom_apps),
+		"top_slow_endpoints": _parse_slow_endpoints(response, custom_apps),
+	}
 
+
+def _slow_endpoint_query(site_name: str) -> dict:
+	return {
+		"size": 0,
+		"query": {
+			"bool": {
+				"filter": [
+					{"match_phrase": {"json.site": site_name}},
+					{"match_phrase": {"json.transaction_type": "request"}},
+					{"range": {"@timestamp": {"gte": "now-24h", "lte": "now"}}},
+				]
+			}
+		},
+		"aggs": {
+			"top": {
+				"terms": {
+					"field": "json.request.path",
+					"size": _PERF_MAX_PATHS,
+					"order": {"avg_duration_ms": "desc"},
+				},
+				"aggs": {
+					"avg_duration_ms": {"avg": {"field": "json.duration"}},
+					"max_duration_ms": {"max": {"field": "json.duration"}},
+				},
+			}
+		},
+	}
+
+
+def _parse_slow_endpoints(response: dict, custom_apps: set[str]) -> list[dict[str, Any]]:
+	buckets = response.get("aggregations", {}).get("top", {}).get("buckets", [])
 	endpoints = []
-	for ds in result.get("datasets") or []:
-		values = [v for v in (ds.get("values") or []) if v is not None]
-		if not values:
-			continue
-		avg = round(sum(values) / len(values), 3)
-		peak = round(max(values), 3)
-		spike_detected = peak >= _PERF_SPIKE_PEAK_THRESHOLD_S and avg > 0 and peak >= avg * _PERF_SPIKE_RATIO
-		path = ds.get("path") or ""
+	for bucket in buckets:
+		avg_ms = (bucket.get("avg_duration_ms") or {}).get("value") or 0
+		peak_ms = (bucket.get("max_duration_ms") or {}).get("value") or 0
+		avg_s = round(avg_ms / 1000, 3)
+		peak_s = round(peak_ms / 1000, 3)
+		spike_detected = (
+			peak_s >= _PERF_SPIKE_PEAK_THRESHOLD_S and avg_s > 0 and peak_s >= avg_s * _PERF_SPIKE_RATIO
+		)
+		path = bucket.get("key") or ""
 		module = _endpoint_module(path)
 		endpoints.append(
 			{
 				"path": path,
-				"avg_duration_s": avg,
-				"peak_duration_s": peak,
+				"avg_duration_s": avg_s,
+				"peak_duration_s": peak_s,
 				"spike_detected": spike_detected,
 				"is_custom": module is not None and module in custom_apps,
 			}
 		)
-
-	endpoints.sort(key=lambda x: x["avg_duration_s"], reverse=True)
-	return {
-		"available": True,
-		"has_custom_apps": bool(custom_apps),
-		"top_slow_endpoints": endpoints[:10],
-	}
+	return endpoints
 
 
 def _get_custom_app_names(bench_name: str | None) -> set[str]:
@@ -492,18 +499,35 @@ def _parse_web_error_blocks(lines: list[str]) -> list[dict[str, Any]]:
 	return blocks
 
 
+def _prom_params(query: str) -> dict:
+	end = int(time.time())
+	return {"query": query, "start": end - _PROM_TIMESPAN, "end": end, "step": f"{_PROM_STEP}s"}
+
+
+def _prom_values(response: dict) -> list[float]:
+	result = (response.get("data") or {}).get("result") or []
+	values = []
+	for series in result:
+		for _, v in series.get("values") or []:
+			try:
+				f = float(v)
+				if f == f:  # exclude NaN
+					values.append(f)
+			except (TypeError, ValueError):
+				pass
+	return values
+
+
 def _summarise_series(
-	data: dict[str, Any],
+	values: list[float],
 	absolute_threshold: float | None = None,
 	ratio_threshold: float = _SPIKE_RATIO,
 ) -> dict[str, Any]:
-	datasets = data.get("datasets") or []
-	all_values = [v for ds in datasets for v in (ds.get("values") or []) if v is not None]
-	if not all_values:
+	if not values:
 		return {"available": False, "peak": None, "mean": None, "spike_detected": False}
 
-	peak = max(all_values)
-	mean = sum(all_values) / len(all_values)
+	peak = max(values)
+	mean = sum(values) / len(values)
 	above_threshold = absolute_threshold is None or peak >= absolute_threshold
 	spike_detected = above_threshold and mean > 0 and peak >= mean * ratio_threshold
 
