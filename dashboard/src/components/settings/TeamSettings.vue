@@ -74,7 +74,7 @@ const teamMembersListOptions = ref({
 								{
 									loading: 'Removing Member...',
 									success: () => {
-										team.getTeamMembers.submit()
+										members.reload()
 										hide()
 										return 'Member Removed'
 									},
