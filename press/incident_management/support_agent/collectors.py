@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import re
 import time
 from collections import Counter
@@ -533,7 +534,7 @@ def _prom_values(response: dict) -> list[float]:
 		for _, v in series.get("values") or []:
 			try:
 				f = float(v)
-				if f == f:  # exclude NaN
+				if not math.isnan(f):
 					values.append(f)
 			except (TypeError, ValueError):
 				pass
