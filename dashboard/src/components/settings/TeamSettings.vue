@@ -1,8 +1,5 @@
 <template>
 	<div class="p-5">
-		<pre>
-			{{ team.getTeamMembers.data }}
-		</pre>
 		<ObjectList :options="teamMembersListOptions"></ObjectList>
 	</div>
 </template>
