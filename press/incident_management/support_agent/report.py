@@ -22,6 +22,7 @@ def generate_report(payload: dict[str, Any]) -> dict[str, Any]:
 	db_server_metrics = payload.get("db_server_metrics") or {}
 	server_advanced_analytics = payload.get("server_advanced_analytics") or {}
 	site_performance = payload.get("site_performance") or {}
+	web_error_log = payload.get("web_error_log") or {}
 
 	_add_site_evidence(site, evidence, causes, next_steps)
 	_add_bench_evidence(bench, evidence, causes, next_steps)
@@ -34,6 +35,7 @@ def generate_report(payload: dict[str, Any]) -> dict[str, Any]:
 		app_server_metrics, db_server_metrics, server_advanced_analytics, evidence, causes, next_steps
 	)
 	_add_performance_evidence(site_performance, evidence, causes, next_steps)
+	_add_web_error_evidence(web_error_log, evidence, causes, next_steps)
 
 	if causes:
 		confidence = "High" if _has_blocking_signal(site, bench, deployments, errors, incidents) else "Medium"
@@ -325,6 +327,76 @@ def _add_performance_evidence(performance, evidence, causes, next_steps):
 	if len(endpoints) > 1:
 		others = ", ".join(f"'{e['path']}'" for e in endpoints[1:3])
 		evidence.append(f"Other slow endpoints in the last 24 hours: {others}.")
+
+
+def _add_web_error_evidence(web_error_log, evidence, causes, next_steps):
+	if not web_error_log.get("available"):
+		return
+
+	count = web_error_log.get("error_count") or 0
+	if not count:
+		return
+
+	recent = web_error_log.get("recent_errors") or []
+	evidence.append(f"{count} ERROR/CRITICAL entries in web.error.log (last {len(recent)} collected).")
+	_classify_web_errors(recent, causes, next_steps)
+
+
+def _classify_web_errors(recent, causes, next_steps):
+	if _has_db_connectivity_error(recent):
+		causes.append(
+			"Web error log shows database connectivity failures — the app server cannot reach the database."
+		)
+		next_steps.append(
+			"Check database server status and network connectivity between the app server and database server."
+		)
+		return
+
+	if _has_import_error(recent):
+		causes.append(
+			"Web error log shows module import errors — the application may be in a broken state after a deployment."
+		)
+		next_steps.append(
+			"Check recent deployments; a partially applied update may have left the app in a broken state."
+		)
+		return
+
+	if _has_worker_crash(recent):
+		causes.append("Web error log shows CRITICAL entries — web workers crashed or timed out.")
+		next_steps.append(
+			"Review the web_error_log entries in this investigation's payload for the crash context."
+		)
+		return
+
+	latest = next(
+		(entry.get("exception") or entry.get("description") for entry in reversed(recent) if entry),
+		None,
+	)
+	if latest:
+		causes.append(f"Web error log shows application exceptions: {latest}")
+	next_steps.append(
+		"Review the web_error_log entries in this investigation's payload for exception details."
+	)
+
+
+def _has_db_connectivity_error(recent):
+	return any(
+		"can't connect" in (entry.get("exception") or entry.get("description") or "").lower()
+		or "operationalerror" in (entry.get("exception") or entry.get("description") or "").lower()
+		for entry in recent
+	)
+
+
+def _has_import_error(recent):
+	return any(
+		"importerror" in (entry.get("exception") or entry.get("description") or "").lower()
+		or "modulenotfounderror" in (entry.get("exception") or entry.get("description") or "").lower()
+		for entry in recent
+	)
+
+
+def _has_worker_crash(recent):
+	return any("critical" in entry.get("level", "") for entry in recent)
 
 
 def _unique(values):

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections import Counter
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
@@ -12,6 +13,11 @@ _SPIKE_CPU_THRESHOLD = 70.0  # flag CPU spike only above this percent
 _SPIKE_RATIO = 1.5  # peak must be this many times the mean to count as a spike
 _IOPS_SPIKE_RATIO = 2.0  # IOPS has no useful absolute threshold; rely on ratio only
 _SLOW_ENDPOINT_THRESHOLD_S = 1.0  # average duration above which an endpoint is worth flagging
+_WEB_ERROR_TAIL_LINES = 500  # scan only the tail of the log to bound processing time
+_WEB_ERROR_MAX_ERRORS = 10  # return at most this many recent error blocks
+_WEB_ERROR_LOG_REGEX = re.compile(
+	r"\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [+-]\d{4})\] \[(\d+)\] \[(\w+)\] (.*)"
+)
 
 
 def collect_site_context(site_name: str) -> dict[str, Any]:
@@ -42,6 +48,7 @@ def collect_site_context(site_name: str) -> dict[str, Any]:
 		"db_server_metrics": db_server_metrics,
 		"server_advanced_analytics": server_advanced_analytics,
 		"site_performance": get_site_performance_summary(site_name),
+		"web_error_log": get_web_error_log(site_name),
 	}
 
 
@@ -366,6 +373,67 @@ def get_site_performance_summary(site_name: str) -> dict[str, Any]:
 
 	endpoints.sort(key=lambda x: x["avg_duration_s"], reverse=True)
 	return {"available": True, "top_slow_endpoints": endpoints[:5]}
+
+
+def get_web_error_log(site_name: str) -> dict[str, Any]:
+	"""
+	Recent ERROR/CRITICAL entries from web.error.log, redacted.
+
+	Only the exception message line (last line of the traceback) is included —
+	not full stack frames with local variables. All entries pass through redact()
+	before being stored.
+	"""
+	from press.incident_management.support_agent.redaction import redact
+
+	try:
+		raw = frappe.get_doc("Site", site_name).get_server_log("web.error.log")
+	except Exception:
+		return {"available": False}
+
+	content = (raw or {}).get("web.error.log", "")
+	if not content:
+		return {"available": True, "error_count": 0, "recent_errors": []}
+
+	lines = content.strip().splitlines()
+	error_blocks = _parse_web_error_blocks(lines[-_WEB_ERROR_TAIL_LINES:])
+	return {
+		"available": True,
+		"error_count": len(error_blocks),
+		"recent_errors": redact(error_blocks[-_WEB_ERROR_MAX_ERRORS:]),
+	}
+
+
+def _parse_web_error_blocks(lines: list[str]) -> list[dict[str, Any]]:
+	"""
+	Parses gunicorn web.error.log lines into typed error blocks.
+
+	Each block is a dict with: time, level, description, and optionally exception
+	(the last line of the associated traceback — the exception class and message).
+	Only ERROR and CRITICAL level blocks are returned.
+	"""
+	blocks = []
+	current: dict[str, Any] | None = None
+	traceback_lines: list[str] = []
+
+	for line in lines:
+		match = _WEB_ERROR_LOG_REGEX.match(line)
+		if match:
+			if current is not None and current["level"] in ("error", "critical"):
+				if traceback_lines:
+					current["exception"] = traceback_lines[-1].strip()
+				blocks.append(current)
+			timestamp, _pid, level, description = match.groups()
+			current = {"time": timestamp, "level": level.lower(), "description": description}
+			traceback_lines = []
+		elif current is not None:
+			traceback_lines.append(line)
+
+	if current is not None and current["level"] in ("error", "critical"):
+		if traceback_lines:
+			current["exception"] = traceback_lines[-1].strip()
+		blocks.append(current)
+
+	return blocks
 
 
 def _summarise_series(
