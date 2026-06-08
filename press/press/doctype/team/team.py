@@ -1277,8 +1277,9 @@ class Team(Document):
 			}
 		)
 
-		for role in roles:
-			account_request.append("press_roles", {"press_role": role})
+		selected_role = roles[0] if roles else None
+		if selected_role:
+			account_request.press_role = selected_role
 
 		account_request.insert()
 
