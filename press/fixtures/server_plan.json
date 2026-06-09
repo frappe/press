@@ -44446,7 +44446,7 @@
 		"legacy_plan": 1,
 		"machine_unavailable": 0,
 		"memory": 32768,
-		"modified": "2026-05-21 18:10:10.676973",
+		"modified": "2026-06-09 16:00:10.676973",
 		"name": "c8i.4xlarge-ap-south-1-app",
 		"plan_type": "8akqti9qh4",
 		"platform": "x86_64",
@@ -44455,11 +44455,8 @@
 		"price_usd": 1000.0,
 		"roles": [
 			{
-				"role": "Press Admin"
+				"role": "Press User"
 			},
-			{
-				"role": "Press Member"
-			}
 		],
 		"server_type": "Server",
 		"title": "c8i.4xlarge",
