@@ -91,6 +91,7 @@ Current collectors:
 - **Bench process status**: Supervisor process list for the site's bench. Each entry records the process name, status, and message. Processes not in `Running` or `Starting` state are collected as `stopped_processes`. Collected via `Bench.supervisorctl_status()` — an agent call to the app server.
 - **Web error log**: Recent ERROR and CRITICAL entries from `web.error.log` on the site's app server. Only the gunicorn-level description and the final exception message line are captured — not full stack frames with local variables. All entries are redacted before being stored. Collects at most 10 error blocks from the last 500 log lines.
 - **Site performance summary**: Up to 20 slowest endpoints from Elasticsearch over the last 24 hours. Each endpoint includes average and peak duration, a `spike_detected` flag (peak ≥ 3× mean and peak > 2 s), and an `is_custom` flag indicating whether the endpoint belongs to a non-Frappe app. App origin is determined by checking `repository_owner` on the AppSource record — any owner other than `frappe` is treated as custom. Also includes a `has_custom_apps` flag indicating whether any non-Frappe apps are installed on the bench.
+- **Site uptime**: Instant probe result from the Prometheus blackbox exporter — `probe_success` (up/down) and `probe_http_status_code` (most recent HTTP status code from the external probe). Collected only when a monitor server is configured.
 
 ## Performance Investigation
 
@@ -240,29 +241,46 @@ The report generator returns:
 - `evidence`,
 - `timeline`.
 
-## LLM Extension Point
+## AI Analysis
 
-The LLM integration path is gated entirely on redaction. No payload may reach the model unless it has been processed by `redact` first. This is a hard requirement, not a best-effort measure — the model must never receive PII.
+After a deterministic investigation completes, a support agent can trigger an AI analysis pass by clicking **Get AI Analysis** on the investigation form. The button calls `SupportAgentInvestigation.run_llm_analysis()`.
 
-When LLM support is added:
+### What is sent
 
-- Collect all facts via the allowlisted collectors.
-- Run the full redaction pass.
-- Send only the redacted structured payload to the model.
-- The model must not receive tool access to generic Press APIs.
-- The `llm_model` field on the DocType records which model processed the investigation.
-- The LLM response must be validated before being persisted to `summary`, `likely_cause`, `recommended_next_steps`, and `confidence`.
+The model receives `payload_json` (already redacted) plus the deterministic report fields (`summary`, `likely_cause`, `confidence`, `evidence`, `recommended_next_steps`). Before the payload is sent, `site.name` is stripped — the model does not need the customer site identity to reason about platform signals.
 
-Safe future flow:
+No raw logs, no PII, and no customer documents are ever included. The redaction pipeline is the primary gate; the site name strip is an additional anonymizing step.
+
+### Privacy boundary
 
 ```text
-Support Agent Investigation
-  -> allowlisted collectors
-  -> redaction          ← PII boundary; nothing crosses this line not yet redacted
-  -> structured report prompt
-  -> LLM response validation
-  -> persisted report
+collect_site_context()
+  -> redact()                    ← strips PII (emails, IPs, tokens, secrets)
+  -> payload_json stored on doc
+  -> run_llm_analysis()
+       -> _anonymise()           ← removes site.name
+       -> Claude API (claude-sonnet-4-6, HTTPS)
+       -> llm_response stored on doc
 ```
+
+No payload reaches the model unless it has passed through both `redact()` and `_anonymise()`. This is a hard requirement.
+
+### Configuration
+
+Set **Anthropic API Key** under Press Settings → Monitoring. The key is stored encrypted and retrieved at call time via `get_decrypted_password`.
+
+### Model and output
+
+Model: `claude-sonnet-4-6` (1 024 max output tokens).
+
+The model is asked to:
+1. Confirm or refine the deterministic likely cause.
+2. Surface any signals the rule-based analysis missed.
+3. Suggest refined next steps for the support agent.
+
+The response is stored verbatim in `llm_response` on the investigation record. It is not written back to `likely_cause` or `recommended_next_steps` — the deterministic report fields remain unchanged so they can be compared side-by-side.
+
+The `llm_model` field is updated to the model ID used when the analysis runs.
 
 ## Verification
 
@@ -280,4 +298,7 @@ Run Frappe tests with an explicit site:
 ```bash
 bench --site <site> run-tests --app press --module press.incident_management.support_agent.test_redaction
 bench --site <site> run-tests --app press --module press.incident_management.support_agent.test_report
+bench --site <site> run-tests --app press --module press.incident_management.support_agent.test_investigation
 ```
+
+`test_investigation` contains end-to-end tests that mock `prometheus_get` and `elasticsearch_post` at the HTTP client level and run the full `collect_site_context → generate_report` pipeline. No real database records or network calls are needed.
