@@ -1218,6 +1218,15 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
+		for key in ("database", "public", "private"):
+			rf_name = files.get(key)
+			if rf_name:
+				rf_team = frappe.db.get_value("Remote File", rf_name, "team")
+				if rf_team != self.team:
+					frappe.throw(
+						f"Remote File {rf_name} does not belong to site's team",
+						frappe.PermissionError,
+					)
 		self.remote_database_file = files["database"]
 		self.remote_public_file = files["public"]
 		self.remote_private_file = files["private"]
