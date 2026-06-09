@@ -2936,11 +2936,13 @@ class Server(BaseServer):
 			self.update_subscription()
 			self.update_db_server()
 
-		self.set_bench_memory_limits_if_needed(save=False)
-		self.validate_public_server_exists_for_site_or_bench_placement()
-
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
+			if self.exclude_for_scheduling:
+				self.use_for_new_benches = self.use_for_new_sites = 0
+
+		self.set_bench_memory_limits_if_needed(save=False)
+		self.validate_public_server_exists_for_site_or_bench_placement()
 
 		if (
 			self.has_value_changed("enable_logical_replication_during_site_update")
@@ -3103,12 +3105,23 @@ class Server(BaseServer):
 		This validation prevents failures for newly created clusters before the job runs.
 		"""
 
-		if not (self.has_value_changed("public") and self.team == "team@erpnext.com" and self.public):
+		if (
+			self.public
+			and not self.exclude_for_scheduling
+			and self.use_for_new_sites
+			and self.use_for_new_benches
+		):
+			return
+
+		if not (
+			self.has_value_changed("public")
+			or (self.exclude_for_scheduling and self.has_value_changed("exclude_for_scheduling"))
+		):
 			return
 
 		servers = frappe.get_all(
 			"Server",
-			filters={"cluster": self.cluster, "public": 1},
+			filters={"cluster": self.cluster, "public": 1, "exclude_for_scheduling": 0},
 			fields=["use_for_new_sites", "use_for_new_benches"],
 		)
 
