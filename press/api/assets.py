@@ -96,7 +96,7 @@ def upload_asset():
 	files = frappe.request.files
 
 	if not files or "asset_file" not in files:
-		frappe.throw("No asset file uploaded")
+		frappe.throw("No file was uploaded. Please attach an asset file and try again.")
 
 	asset_file = files["asset_file"]
 	credentials = _get_asset_store_credentials()

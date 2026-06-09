@@ -89,7 +89,9 @@ def get_analytics(month: int, status: str, site: str, key: str):
 
 	for value in (site, subscription_key):
 		if not value or not isinstance(value, str):
-			frappe.throw("Invalid Request")
+			frappe.throw(
+				"This request is missing required information. Please use the unsubscribe link from the email you received."
+			)
 
 	return frappe.get_all(
 		"Mail Log",

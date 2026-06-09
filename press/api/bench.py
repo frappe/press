@@ -34,6 +34,7 @@ from press.press.doctype.release_group.release_group import (
 )
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import (
+	docs,
 	get_app_tag,
 	get_client_blacklisted_keys,
 	get_current_team,
@@ -56,13 +57,15 @@ def new(bench):
 		frappe.throw("You cannot create a new bench because your account is disabled")
 
 	if exists(bench["title"]):
-		frappe.throw("A bench exists with the same name")
+		frappe.throw("A bench group with this name already exists. Please choose a different name.")
 
 	if bench["server"] and not (
 		frappe.session.data.user_type == "System User"
 		or frappe.db.get_value("Server", bench["server"], "team") == team.name
 	):
-		frappe.throw("You can only create benches on your servers")
+		frappe.throw(
+			"You can only create benches on servers that belong to your team. Please select one of your own servers, or use a public server."
+		)
 
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(
@@ -277,7 +280,9 @@ def options():
 	clusters = Cluster.get_all_for_new_bench()
 
 	if not versions:
-		frappe.throw("Only enabled and public app sources will reflect here!")
+		frappe.throw(
+			f"Only enabled, public app sources appear here. To use a private app, add it to the bench from the Apps tab instead. {docs.doc_link(docs.CUSTOM_APP)}."
+		)
 
 	return {"versions": versions, "clusters": clusters}
 
@@ -387,7 +392,7 @@ def update_dependencies(name: str, dependencies: str):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
 	if len(rg.dependencies) != len(dependencies_dict):
-		frappe.throw("Need all required dependencies")
+		frappe.throw("Please provide a value for every dependency before saving.")
 
 	if diff := set([d["key"] for d in dependencies_dict]) - set(d.dependency for d in rg.dependencies):
 		frappe.throw("Invalid dependencies: " + ", ".join(diff))
@@ -761,7 +766,9 @@ def deploy(name, apps):
 		frappe.throw("Bench can only be deployed by the bench owner", exc=frappe.PermissionError)
 
 	if rg.deploy_in_progress:
-		frappe.throw("A deploy for this bench is already in progress")
+		frappe.throw(
+			f"A deploy for this bench is already in progress. Please wait for it to finish before starting another. {docs.doc_link(docs.UPDATE_BENCH)}."
+		)
 
 	candidate = rg.create_deploy_candidate(apps)
 	deploy_candidate_build = candidate.schedule_build_and_deploy()
@@ -777,7 +784,9 @@ def validate_app_hashes(apps: list[dict[str, str]]):
 	hashes = []
 	for app in apps:
 		if not app.get("release") or not app.get("hash"):
-			frappe.throw("Each app must have a release and hash to run deploy and update!")
+			frappe.throw(
+				"Every app needs a selected release before you can deploy or update. Please pick a version for each app and try again."
+			)
 		else:
 			hashes.append(app.get("hash"))
 
@@ -1137,7 +1146,9 @@ def fail_build(dn: str):
 	failed = fail_remote_job(dn)
 
 	if not failed:
-		frappe.throw("No running job found!")
+		frappe.throw(
+			"There's no running build job to fail. It may have already finished or been stopped. Please refresh and check the build status."
+		)
 
 
 @frappe.whitelist()
