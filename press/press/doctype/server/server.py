@@ -2823,6 +2823,7 @@ class Server(BaseServer):
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
 		enable_on_prem_failover_support: DF.Check
+		exclude_for_scheduling: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		halt_agent_jobs: DF.Check
@@ -4439,7 +4440,7 @@ def _refresh_bench_pool_and_raise_capacity_incidents(
 def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[str]]]:
 	servers = frappe.get_all(
 		"Server",
-		filters={"status": "Active", "is_primary": True, "public": True},
+		filters={"status": "Active", "is_primary": True, "public": True, "exclude_for_scheduling": False},
 		fields=["name", "cluster"],
 	)
 	server_names = [server.name for server in servers]
