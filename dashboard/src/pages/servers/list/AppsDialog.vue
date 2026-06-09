@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
 import { Dialog, TextInput, Button, Checkbox, createResource } from 'frappe-ui'
+import ServerIcon from './ServerIcon.vue'
 
 interface Props {
 	bench: any
-	serverName: string
-	serverImg: any
+  server: any
 }
 
 const show = ref(true)
@@ -113,8 +113,8 @@ const filteredApps = computed(() => {
 				<LucideBoxes class="size-3.5" /> {{ bench.title }}
 				<span class="bg-surface-gray-4 size-1.5 rounded-full mx-1" />
 
-				<component :is="serverImg" class="size-4" />
-				<span>{{ serverName }}</span>
+        <ServerIcon :provider="server.provider" />
+				<span>{{ server.title }}</span>
 			</div>
 
 			<TextInput

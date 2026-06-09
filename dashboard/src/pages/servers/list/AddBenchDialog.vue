@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { Dialog, TextInput, Button, createResource } from 'frappe-ui'
+import ServerIcon from './ServerIcon.vue'
 
 interface Props {
-	cluster: string
-	server: string
+	server: any
 	onSuccess: () => void
 }
 
@@ -56,7 +56,7 @@ const onSubmit = () => {
 		bench: {
 			title: formData.title,
 			version: formData.version,
-			cluster: props.cluster,
+			cluster: props.server.cluster,
 			saas_app: null,
 			apps: getAppsToInstall(),
 			server: props.server,
@@ -68,6 +68,11 @@ const onSubmit = () => {
 <template>
 	<Dialog v-model="show" size="lg" :options="{ title: 'Add Bench' }">
 		<template #body-content>
+			<div class="flex items-center gap-2 mb-5">
+				<ServerIcon :provider="server.provider" />
+				<span>{{ server.title }}</span>
+			</div>
+
 			<form class="flex flex-col" @submit.prevent="onSubmit">
 				<span class="text-ink-gray-5 mb-2">
 					Bench name <span class="text-ink-red-4">*</span>
@@ -79,7 +84,7 @@ const onSubmit = () => {
 					required
 				/>
 
-				<span class="mb-4 mt-5">
+				<span class="mb-2 mt-5">
 					Select version <span class="text-ink-red-4">*</span>
 				</span>
 
@@ -103,7 +108,7 @@ const onSubmit = () => {
 				<div class="flex">
 					<Button
 						variant="solid"
-						class="mt-6 ml-auto"
+						class=" ml-auto"
 						type="submit"
 						:loading="createBench.loading"
 					>

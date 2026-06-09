@@ -3,22 +3,6 @@ import { toast } from 'vue-sonner'
 import { confirmDialog } from '@/utils/components'
 import router from '@/router'
 
-import HetnzerLogo from '@/logo/Hetzner.vue'
-import FrappeLogo from '@/logo/Frappe.vue'
-import AwsLogo from '@/logo/Aws.vue'
-import OracleLogo from '@/logo/Oracle.vue'
-import DigitalOceanLogo from '@/logo/DigitalOcean.vue'
-
-
-export const providerIcons = {
-	'Frappe Compute': FrappeLogo,
-	Generic: FrappeLogo,
-	Hetzner: HetnzerLogo,
-	'AWS EC2': AwsLogo,
-	Oracle: OracleLogo,
-	DigitalOcean: DigitalOceanLogo,
-}
-
 export function dropBench(bench: any) {
 	const releaseGroup = getCachedDocumentResource('Release Group', bench.name)
 

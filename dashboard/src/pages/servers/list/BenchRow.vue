@@ -130,8 +130,7 @@ const deployBench = (e, bench, server) => {
 	renderDialog(
 		h(AppsDialog, {
 			bench,
-			serverName: server.title,
-			serverImg: providerIcons[server.provider],
+      server,
 			onDeployed: (x) => {
 				attachPipeline(x)
 			},

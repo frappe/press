@@ -3,7 +3,7 @@ import { h, defineAsyncComponent } from 'vue'
 import { Button, Tooltip, Dropdown, createListResource } from 'frappe-ui'
 
 import { renderDialog } from '@/utils/components'
-import { providerIcons } from './utils'
+import ServerIcon from './ServerIcon.vue'
 
 import BenchRow from './BenchRow.vue'
 
@@ -33,8 +33,7 @@ const serverActions = (server) => [
 			)
 			renderDialog(
 				h(AddBenchDialog, {
-					cluster: server.cluster,
-					server: server.name,
+					server: server,
 				}),
 			)
 		},
@@ -50,7 +49,7 @@ const serverActions = (server) => [
 <template>
 	<section class="shadow dark:bg-surface-cards rounded" :key="data.name">
 		<div class="bordered p-4 flex gap-3 items-center">
-			<component :is="providerIcons[data?.provider]" class="size-8" />
+			<ServerIcon :provider="data.provider" class='size-8'/>
 
 			<div class="flex flex-wrap gap-2 items-center text-sm">
 				<span>{{ data?.title }}</span>
@@ -99,7 +98,7 @@ const serverActions = (server) => [
 		<BenchRow
 			v-for="(bench, bench_i) in benches?.data"
 			:key="bench.name"
-      :bench_i="bench_i"
+			:bench_i="bench_i"
 			:data="bench"
 			:totalLength="benches?.data?.length"
 			:server="data"
