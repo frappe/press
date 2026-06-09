@@ -59,8 +59,8 @@ _BENCH_DATA = frappe._dict(
 	}
 )
 
-_PROM_EMPTY = {"status": "success", "data": {"resultType": "matrix", "result": []}}
-_ES_EMPTY = {"aggregations": {"top": {"buckets": []}}}
+_PROM_EMPTY: dict = {"status": "success", "data": {"resultType": "matrix", "result": []}}
+_ES_EMPTY: dict = {"aggregations": {"top": {"buckets": []}}}
 
 
 def _prometheus_series(values: list[float]) -> dict:
