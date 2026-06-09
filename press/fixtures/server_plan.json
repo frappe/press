@@ -28521,7 +28521,7 @@
 		"modified": "2026-06-08 12:13:55.556443",
 		"name": "m7g.large-eu-central-2-app",
 		"plan_type": "8akqti9qh4",
-		"platform": "x86_64",
+		"platform": "arm64",
 		"premium": 0,
 		"price_inr": 14400.0,
 		"price_usd": 180.0,
