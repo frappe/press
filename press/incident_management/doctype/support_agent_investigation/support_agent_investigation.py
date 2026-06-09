@@ -29,6 +29,7 @@ class SupportAgentInvestigation(Document):
 		failure_reason: DF.SmallText | None
 		likely_cause: DF.SmallText | None
 		llm_model: DF.Data | None
+		llm_response: DF.LongText | None
 		payload_json: DF.JSON | None
 		recommended_next_steps: DF.Text | None
 		redaction_version: DF.Data | None
@@ -56,6 +57,27 @@ class SupportAgentInvestigation(Document):
 			enqueue_after_commit=True,
 		)
 		return self.name
+
+	@frappe.whitelist(methods=["POST"])
+	def run_llm_analysis(self):
+		validate_site_access(self.site)
+		if self.status != "Completed":
+			frappe.throw(_("Investigation must be Completed before running AI analysis."))
+
+		from press.incident_management.support_agent import llm
+
+		payload = _loads(self.payload_json) or {}
+		report = {
+			"summary": self.summary,
+			"likely_cause": self.likely_cause,
+			"confidence": self.confidence,
+			"evidence": _loads(self.evidence_json) or [],
+			"recommended_next_steps": (self.recommended_next_steps or "").splitlines(),
+		}
+		self.llm_response = llm.analyse(self.name, payload, report)
+		self.llm_model = llm._MODEL
+		self.save(ignore_permissions=True)
+		return self.llm_response
 
 	def run(self):
 		self.status = "Running"
