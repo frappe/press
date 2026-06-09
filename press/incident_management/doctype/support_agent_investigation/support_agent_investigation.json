@@ -23,6 +23,8 @@
 		"timeline_json",
 		"errors_json",
 		"payload_json",
+		"llm_section",
+		"llm_response",
 		"failure_section",
 		"failure_reason"
 	],
@@ -68,7 +70,11 @@
 			"label": "Completed At",
 			"read_only": 1
 		},
-		{ "fieldname": "report_section", "fieldtype": "Section Break", "label": "Report" },
+		{
+			"fieldname": "report_section",
+			"fieldtype": "Section Break",
+			"label": "Report"
+		},
 		{
 			"fieldname": "summary",
 			"fieldtype": "Small Text",
@@ -131,6 +137,18 @@
 			"fieldname": "payload_json",
 			"fieldtype": "JSON",
 			"label": "Redacted Investigation Payload",
+			"read_only": 1
+		},
+		{
+			"collapsible": 1,
+			"fieldname": "llm_section",
+			"fieldtype": "Section Break",
+			"label": "AI Analysis"
+		},
+		{
+			"fieldname": "llm_response",
+			"fieldtype": "Long Text",
+			"label": "AI Response",
 			"read_only": 1
 		},
 		{
