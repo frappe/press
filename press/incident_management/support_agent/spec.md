@@ -247,7 +247,11 @@ After a deterministic investigation completes, a support agent can trigger an AI
 
 ### What is sent
 
-The model receives `payload_json` (already redacted) plus the deterministic report fields (`summary`, `likely_cause`, `confidence`, `evidence`, `recommended_next_steps`). Before the payload is sent, `site.name` is stripped — the model does not need the customer site identity to reason about platform signals.
+The model receives `payload_json` (already redacted) plus the deterministic report fields (`summary`, `likely_cause`, `confidence`, `evidence`, `recommended_next_steps`). Before the payload is sent, all platform identifiers are stripped from the `site` and `bench` sections — the model only needs structured metrics and status flags, not names or infrastructure links.
+
+Fields stripped from `site`: `name`, `bench`, `server`, `database_server`, `cluster`, `group`.
+
+Fields stripped from `bench`: `name`, `server`, `database_server`, `cluster`, `candidate`, `build`.
 
 No raw logs, no PII, and no customer documents are ever included. The redaction pipeline is the primary gate; the site name strip is an additional anonymizing step.
 
