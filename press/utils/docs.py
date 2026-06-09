@@ -52,6 +52,13 @@ MANAGE_TEAM = f"{DOCS_BASE}/managing_team_members"
 ROLE_PERMISSIONS = f"{DOCS_BASE}/role-permissions"
 CHILD_TEAMS = f"{DOCS_BASE}/create-child-teams"
 TWO_FACTOR_AUTH = f"{DOCS_BASE}/two-factor-authentication-2fa"
+SUPPORT_ACCESS = f"{DOCS_BASE}/guides/access-request"
+
+# Webhooks
+WEBHOOKS = f"{DOCS_BASE}/webhook-introduction"
+
+# Storage
+STORAGE_ADDONS = f"{DOCS_BASE}/storage-addons"
 
 
 def doc_link(url: str, text: str = "Learn more") -> str:

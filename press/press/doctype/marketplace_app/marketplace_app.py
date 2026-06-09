@@ -27,7 +27,7 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 	AppReleaseApprovalRequest,
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
-from press.utils import get_current_team, get_last_doc
+from press.utils import docs, get_current_team, get_last_doc
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
@@ -110,10 +110,14 @@ class MarketplaceApp(WebsiteGenerator):
 	@dashboard_whitelist()
 	def delete(self):
 		if self.status != "Draft":
-			frappe.throw("You can only delete an app in Draft status")
+			frappe.throw(
+				f"Only apps in Draft status can be deleted. Published apps must be unpublished first — please contact support to take this app down. {docs.doc_link(docs.MARKETPLACE)}."
+			)
 
 		if get_current_team() != self.team:
-			frappe.throw("You are not authorized to delete this app")
+			frappe.throw(
+				"Only the team that owns this app can delete it. Please switch to the owning team and try again."
+			)
 
 		super().delete()
 
@@ -138,7 +142,9 @@ class MarketplaceApp(WebsiteGenerator):
 		)
 
 		if len(approval_requests) == 0:
-			frappe.throw("No approval request exists for the given app release")
+			frappe.throw(
+				"There's no review request to cancel for this app release. It may have already been cancelled or processed."
+			)
 
 		frappe.get_doc("App Release Approval Request", approval_requests[0]).cancel()
 
@@ -206,7 +212,9 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def validate_summary(self):
 		if len(self.description) > 140:
-			frappe.throw("Marketplace App summary cannot be more than 140 characters.")
+			frappe.throw(
+				f"The app summary is {len(self.description)} characters. Please shorten it to 140 characters or fewer."
+			)
 
 	def validate_sources(self):
 		for source in self.sources:

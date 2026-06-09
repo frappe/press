@@ -601,7 +601,9 @@ class SiteUpdate(Document):
 					return
 				if physical_backup_restoration_status != "Success":
 					# just to be safe
-					frappe.throw("Physical Backup Restoration is still in progress")
+					frappe.throw(
+						"The physical backup restoration is still in progress. Please wait for it to finish before retrying the site update."
+					)
 
 			# Attempt to move site to source bench
 
