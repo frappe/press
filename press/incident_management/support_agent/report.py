@@ -22,6 +22,7 @@ def generate_report(payload: dict[str, Any]) -> dict[str, Any]:
 	db_server_metrics = payload.get("db_server_metrics") or {}
 	server_advanced_analytics = payload.get("server_advanced_analytics") or {}
 	bench_processes = payload.get("bench_processes") or {}
+	site_uptime = payload.get("site_uptime") or {}
 	site_performance = payload.get("site_performance") or {}
 	web_error_log = payload.get("web_error_log") or {}
 
@@ -33,6 +34,7 @@ def generate_report(payload: dict[str, Any]) -> dict[str, Any]:
 	_add_domain_evidence(domains, evidence, causes, next_steps)
 	_add_incident_evidence(incidents, evidence, timeline, causes, next_steps)
 	_add_bench_process_evidence(bench_processes, evidence, causes, next_steps)
+	_add_uptime_evidence(site_uptime, evidence, causes, next_steps)
 	_add_server_metrics_evidence(
 		app_server_metrics, db_server_metrics, server_advanced_analytics, evidence, causes, next_steps
 	)
@@ -123,6 +125,23 @@ def _add_bench_process_evidence(processes, evidence, causes, next_steps):
 	worker_stopped = [p for p in stopped if "worker" in p.get("name", "")]
 	if worker_stopped:
 		evidence.append(f"{len(worker_stopped)} background worker process(es) are not running.")
+
+
+def _add_uptime_evidence(site_uptime, evidence, causes, next_steps):
+	if not site_uptime.get("available"):
+		return
+
+	up = site_uptime.get("up")
+	http_status = site_uptime.get("http_status_code")
+
+	if up is False:
+		code_note = f" (HTTP {http_status})" if http_status else ""
+		evidence.append(f"Site probe is currently DOWN{code_note}.")
+		causes.append(f"Probe check reports the site is unreachable{code_note} — not a client-side issue.")
+		next_steps.append("Confirm with a second probe or browser check before escalating to infrastructure.")
+	elif http_status and http_status >= 500:
+		evidence.append(f"Site probe is responding with HTTP {http_status}.")
+		causes.append(f"Site is returning HTTP {http_status} to external probes.")
 
 
 def _add_deployment_evidence(deployments, evidence, timeline, causes, next_steps):

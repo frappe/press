@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 from typing import Any
 
@@ -23,8 +24,16 @@ def analyse(investigation_name: str, payload: dict[str, Any], report: dict[str, 
 			frappe.ValidationError,
 		)
 
-	prompt = _build_prompt(payload, report)
+	prompt = _build_prompt(_anonymise(payload), report)
 	return _call_claude(api_key, prompt)
+
+
+def _anonymise(payload: dict[str, Any]) -> dict[str, Any]:
+	"""Remove the site name before the payload leaves the platform."""
+	p = copy.deepcopy(payload)
+	if isinstance(p.get("site"), dict):
+		p["site"].pop("name", None)
+	return p
 
 
 def _build_prompt(payload: dict[str, Any], report: dict[str, Any]) -> str:
