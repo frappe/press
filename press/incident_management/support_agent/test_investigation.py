@@ -112,15 +112,11 @@ class TestSupportAgentInvestigation(FrappeTestCase):
 	) -> dict:
 		bench_doc = MagicMock()
 		bench_doc.supervisorctl_status.return_value = processes if processes is not None else []
-
-		site_doc = MagicMock()
-		site_doc.get_server_log.return_value = {"web.error.log": web_log}
+		bench_doc.get_server_log.return_value = {"web.error.log": web_log}
 
 		def _mock_get_doc(doctype, name):
 			if doctype == "Bench":
 				return bench_doc
-			if doctype == "Site":
-				return site_doc
 			return MagicMock()
 
 		def _gsv(doctype, fieldname, *args, **kwargs):
