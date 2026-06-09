@@ -28,11 +28,19 @@ def analyse(investigation_name: str, payload: dict[str, Any], report: dict[str, 
 	return _call_claude(api_key, prompt)
 
 
+_SITE_IDENTITY_FIELDS = {"name", "bench", "server", "database_server", "cluster", "group"}
+_BENCH_IDENTITY_FIELDS = {"name", "server", "database_server", "cluster", "candidate", "build"}
+
+
 def _anonymise(payload: dict[str, Any]) -> dict[str, Any]:
-	"""Remove the site name before the payload leaves the platform."""
+	"""Strip platform identifiers before the payload leaves the platform."""
 	p = copy.deepcopy(payload)
 	if isinstance(p.get("site"), dict):
-		p["site"].pop("name", None)
+		for field in _SITE_IDENTITY_FIELDS:
+			p["site"].pop(field, None)
+	if isinstance(p.get("bench"), dict):
+		for field in _BENCH_IDENTITY_FIELDS:
+			p["bench"].pop(field, None)
 	return p
 
 
