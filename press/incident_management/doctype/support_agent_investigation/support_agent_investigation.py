@@ -63,6 +63,8 @@ class SupportAgentInvestigation(Document):
 		validate_site_access(self.site)
 		if self.status != "Completed":
 			frappe.throw(_("Investigation must be Completed before running AI analysis."))
+		if not frappe.db.get_single_value("Press Settings", "anthropic_api_key"):
+			frappe.throw(_("Anthropic API key is not configured. Set it under Press Settings → Monitoring."))
 
 		from press.incident_management.support_agent import llm
 

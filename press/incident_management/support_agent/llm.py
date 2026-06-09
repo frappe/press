@@ -18,12 +18,6 @@ _TIMEOUT = 60
 def analyse(investigation_name: str, payload: dict[str, Any], report: dict[str, Any]) -> str:
 	"""Send the redacted payload and deterministic report to Claude and return its analysis."""
 	api_key = get_decrypted_password("Press Settings", "Press Settings", "anthropic_api_key")
-	if not api_key:
-		frappe.throw(
-			"Anthropic API key is not configured. Set it under Press Settings → Monitoring.",
-			frappe.ValidationError,
-		)
-
 	prompt = _build_prompt(_anonymise(payload), report)
 	return _call_claude(api_key, prompt)
 
