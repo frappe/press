@@ -53,6 +53,7 @@ def collect_site_context(site_name: str) -> dict[str, Any]:
 		"db_server_metrics": db_server_metrics,
 		"server_advanced_analytics": server_advanced_analytics,
 		"bench_processes": get_bench_process_status(site.get("bench")),
+		"site_uptime": get_site_uptime(site_name),
 		"site_performance": get_site_performance_summary(site_name, site.get("bench")),
 		"web_error_log": get_web_error_log(site_name),
 	}
@@ -126,6 +127,49 @@ def get_bench_process_status(bench_name: str | None) -> dict[str, Any]:
 			{"name": p["name"], "status": p["status"], "message": p.get("message")} for p in stopped
 		],
 	}
+
+
+def get_site_uptime(site_name: str) -> dict[str, Any]:
+	"""Current ping status and HTTP response code from the blackbox exporter."""
+	if not frappe.db.get_single_value("Press Settings", "monitor_server"):
+		return {"available": False}
+
+	from press.mcp.tools.telemetry.clients import prometheus_get
+
+	try:
+		success_response = prometheus_get(
+			"query",
+			{"query": f'probe_success{{job="site",instance="{site_name}"}}'},
+		)
+		status_response = prometheus_get(
+			"query",
+			{"query": f'probe_http_status_code{{job="site",instance="{site_name}"}}'},
+		)
+	except Exception:
+		return {"available": False}
+
+	up = _prom_instant(success_response)
+	http_status = _prom_instant(status_response)
+	return {
+		"available": True,
+		"up": bool(up) if up is not None else None,
+		"http_status_code": int(http_status) if http_status is not None else None,
+	}
+
+
+def _prom_instant(response: dict) -> float | None:
+	"""Return the first value from a Prometheus instant-query (vector) response."""
+	result = (response.get("data") or {}).get("result") or []
+	if not result:
+		return None
+	_, v = result[0].get("value") or (None, None)
+	if v is None:
+		return None
+	try:
+		f = float(v)
+		return None if math.isnan(f) else f
+	except (TypeError, ValueError):
+		return None
 
 
 def get_app_versions(bench_name: str | None) -> list[dict[str, Any]]:
