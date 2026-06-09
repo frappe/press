@@ -10,7 +10,7 @@ The only required input is a site name or site domain.
 
 - Do not query the hosted site's database.
 - Do not read customer documents, users, emails, invoices, tickets, or billing records.
-- Do not expose raw logs, raw request payloads, secrets, tokens, cookies, or stack traces to the report generator.
+- Do not expose raw logs, raw request payloads, secrets, tokens, cookies, or full stack traces with local variable frames to the report generator. Redacted exception message lines (last line of a traceback) are permitted and treated as structured data.
 - Do not allow the report generator to call generic Press document APIs or run arbitrary queries.
 - Do not perform remediation actions such as restarts, retries, migrations, backups, or plan changes.
 
@@ -88,6 +88,10 @@ Current collectors:
 - **Domains**: total count, counts by status, and per-record `status`/`dns_type`/`redirect_to_primary` — no domain names or DNS response bodies.
 - **Platform incidents**: up to 5 active incident records matching the site's server or cluster (or-filter), excluding resolved/auto-resolved/press-resolved incidents.
 - **Error summary**: 24-hour window, aggregated failed job counts by job type, up to 10 recent failed jobs listed, excluding raw output and stack traces.
+- **Bench process status**: Supervisor process list for the site's bench. Each entry records the process name, status, and message. Processes not in `Running` or `Starting` state are collected as `stopped_processes`. Collected via `Bench.supervisorctl_status()` — an agent call to the app server.
+- **Web error log**: Recent ERROR and CRITICAL entries from `web.error.log` on the site's app server. Only the gunicorn-level description and the final exception message line are captured — not full stack frames with local variables. All entries are redacted before being stored. Collects at most 10 error blocks from the last 500 log lines.
+- **Site performance summary**: Up to 20 slowest endpoints from Elasticsearch over the last 24 hours. Each endpoint includes average and peak duration, a `spike_detected` flag (peak ≥ 3× mean and peak > 2 s), and an `is_custom` flag indicating whether the endpoint belongs to a non-Frappe app. App origin is determined by checking `repository_owner` on the AppSource record — any owner other than `frappe` is treated as custom. Also includes a `has_custom_apps` flag indicating whether any non-Frappe apps are installed on the bench.
+- **Site uptime**: Instant probe result from the Prometheus blackbox exporter — `probe_success` (up/down) and `probe_http_status_code` (most recent HTTP status code from the external probe). Collected only when a monitor server is configured.
 
 ## Performance Investigation
 
@@ -141,10 +145,11 @@ The investigation report should vary its signals and next steps based on the cla
 
 - If a CPU spike is visible on the app server and no incident explains it, flag potential noisy neighbor (see Performance Investigation — no CPU limits on bench containers).
 - If a CPU spike is visible on the database server, flag it with the caveat that shared DB servers have no isolation and the only remediation is moving tenants.
-- If neither server shows a spike, the cause is likely app-level: slow endpoints, report queries without indexes, or missing Prepared Report setup. The agent report should say so explicitly and recommend the customer use Frappe Recorder to identify the slow endpoint. Disable Recorder immediately after profiling.
-- Common slow endpoint patterns to mention: `frappe.desk.query_report.run`, `frappe.desk.reportview.get` (list/report views with many filters and no indexes), `run_doc_method` (custom controller methods). If the "Other" category dominates, it points to a custom endpoint.
-
-**Outside the agent's scope:** Reading web workers logs directly. Direct the support agent to Bench Group → Sites → View Logs → `web.error.log`.
+- If neither server shows a spike, check site analytics for slow endpoints. The investigation collects the 20 slowest endpoints by average duration over 24 hours. Each endpoint has `spike_detected` (peak ≥ 3× mean and peak > 2 s) and `is_custom` (endpoint belongs to a non-Frappe app based on `repository_owner` of the AppSource).
+  - If a slow endpoint is `is_custom: true`, the cause is custom code, not infrastructure. Recommend Frappe Recorder to profile the endpoint.
+  - If an endpoint is `spike_detected: true` with a low average, the slowness is triggered by a specific document type or operation — Recorder should capture the request in context.
+  - If all slow endpoints are Frappe core (`is_custom: false`), recommend Recorder and mention common patterns: `frappe.desk.query_report.run` and `frappe.desk.reportview.get` (list/report views with missing indexes), `run_doc_method` (custom controller methods).
+- Disable Recorder immediately after profiling to avoid further degradation.
 
 ---
 
@@ -162,10 +167,9 @@ The investigation report should vary its signals and next steps based on the cla
 **Report signals to surface:**
 
 - If bench is not Active or a recent deployment ended in `Fatal` or `Cancelled`, that is the likely cause. A deployment in `Failure` state is transient — a recovery job is being created; check back shortly.
-- If no deployment or incident explains it, the crash may be from an application exception. Direct the support agent to `web.error.log` (Bench Group → Sites → View Logs) to find the traceback, then `bench restart` once the root cause is understood.
+- The investigation collects the supervisor process list for the bench. If the gunicorn web process (`*-frappe-web`) is not `Running`, that is a direct cause of 502 errors — surface it immediately and recommend checking `web.error.log` and recent deployments before restarting.
+- If no deployment or incident explains it, the crash may be from an application exception. The investigation automatically collects recent ERROR/CRITICAL entries from `web.error.log`. If those entries show a database connectivity error, flag it as the cause. If they show CRITICAL entries (worker timeouts or crashes), surface that. Only direct the support agent to open the log manually if no entries were collected or the log was unavailable.
 - Do not recommend `bench restart` as a first step before log review; a restart without diagnosis will recur.
-
-**Outside the agent's scope:** Reading `web.error.log` directly.
 
 ---
 
@@ -188,9 +192,8 @@ The investigation report should vary its signals and next steps based on the cla
 
 - If a recent site update is in Failure/Fatal state, that is the likely cause. The update may have left a partially applied migration or a failing patch.
 - If the error is intermittent (occasional pop-up rather than every request), it is likely a background job failure — direct to Scheduled Job Log and Error Log first, then `worker.err.log`.
-- If no platform signal is present and the traceback isn't visible in the UI (Werkzeug blank page), direct to `web.error.log`.
-
-**Outside the agent's scope:** Reading log files directly. The agent report names the file and location; a human must open it.
+- The investigation automatically collects recent ERROR entries from `web.error.log`. If entries show database connectivity failures (e.g. `OperationalError: Can't connect`), surface that as the cause. If entries show import errors, surface the broken-state cause. This covers the Werkzeug blank page case without requiring the support agent to open the log manually.
+- If `web.error.log` was unavailable or returned no errors but 500s are still reported, direct to `web.error.log` via Bench Group → Sites → View Logs as a fallback.
 
 ## Redaction
 
@@ -238,29 +241,50 @@ The report generator returns:
 - `evidence`,
 - `timeline`.
 
-## LLM Extension Point
+## AI Analysis
 
-The LLM integration path is gated entirely on redaction. No payload may reach the model unless it has been processed by `redact` first. This is a hard requirement, not a best-effort measure — the model must never receive PII.
+After a deterministic investigation completes, a support agent can trigger an AI analysis pass by clicking **Get AI Analysis** on the investigation form. The button calls `SupportAgentInvestigation.run_llm_analysis()`.
 
-When LLM support is added:
+### What is sent
 
-- Collect all facts via the allowlisted collectors.
-- Run the full redaction pass.
-- Send only the redacted structured payload to the model.
-- The model must not receive tool access to generic Press APIs.
-- The `llm_model` field on the DocType records which model processed the investigation.
-- The LLM response must be validated before being persisted to `summary`, `likely_cause`, `recommended_next_steps`, and `confidence`.
+The model receives `payload_json` (already redacted) plus the deterministic report fields (`summary`, `likely_cause`, `confidence`, `evidence`, `recommended_next_steps`). Before the payload is sent, all platform identifiers are stripped from the `site` and `bench` sections — the model only needs structured metrics and status flags, not names or infrastructure links.
 
-Safe future flow:
+Fields stripped from `site`: `name`, `bench`, `server`, `database_server`, `cluster`, `group`.
+
+Fields stripped from `bench`: `name`, `server`, `database_server`, `cluster`, `candidate`, `build`.
+
+No raw logs, no PII, and no customer documents are ever included. The redaction pipeline is the primary gate; the site name strip is an additional anonymizing step.
+
+### Privacy boundary
 
 ```text
-Support Agent Investigation
-  -> allowlisted collectors
-  -> redaction          ← PII boundary; nothing crosses this line not yet redacted
-  -> structured report prompt
-  -> LLM response validation
-  -> persisted report
+collect_site_context()
+  -> redact()                    ← strips PII (emails, IPs, tokens, secrets)
+  -> payload_json stored on doc
+  -> run_llm_analysis()
+       -> _anonymise()           ← removes site.name
+       -> Claude API (claude-sonnet-4-6, HTTPS)
+       -> llm_response stored on doc
 ```
+
+No payload reaches the model unless it has passed through both `redact()` and `_anonymise()`. This is a hard requirement.
+
+### Configuration
+
+Set **Anthropic API Key** under Press Settings → Monitoring. The key is stored encrypted and retrieved at call time via `get_decrypted_password`.
+
+### Model and output
+
+Model: `claude-sonnet-4-6` (1 024 max output tokens).
+
+The model is asked to:
+1. Confirm or refine the deterministic likely cause.
+2. Surface any signals the rule-based analysis missed.
+3. Suggest refined next steps for the support agent.
+
+The response is stored verbatim in `llm_response` on the investigation record. It is not written back to `likely_cause` or `recommended_next_steps` — the deterministic report fields remain unchanged so they can be compared side-by-side.
+
+The `llm_model` field is updated to the model ID used when the analysis runs.
 
 ## Verification
 
@@ -278,4 +302,7 @@ Run Frappe tests with an explicit site:
 ```bash
 bench --site <site> run-tests --app press --module press.incident_management.support_agent.test_redaction
 bench --site <site> run-tests --app press --module press.incident_management.support_agent.test_report
+bench --site <site> run-tests --app press --module press.incident_management.support_agent.test_investigation
 ```
+
+`test_investigation` contains end-to-end tests that mock `prometheus_get` and `elasticsearch_post` at the HTTP client level and run the full `collect_site_context → generate_report` pipeline. No real database records or network calls are needed.
