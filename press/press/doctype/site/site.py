@@ -1222,7 +1222,7 @@ class Site(Document, TagHelpers):
 			rf_name = files.get(key)
 			if rf_name:
 				rf_team = frappe.db.get_value("Remote File", rf_name, "team")
-				if rf_team != self.team:
+				if rf_team is not None and rf_team != self.team:
 					frappe.throw(
 						f"Remote File {rf_name} does not belong to site's team",
 						frappe.PermissionError,
