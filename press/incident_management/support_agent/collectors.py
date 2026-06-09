@@ -55,7 +55,7 @@ def collect_site_context(site_name: str) -> dict[str, Any]:
 		"bench_processes": get_bench_process_status(site.get("bench")),
 		"site_uptime": get_site_uptime(site_name),
 		"site_performance": get_site_performance_summary(site_name, site.get("bench")),
-		"web_error_log": get_web_error_log(site_name),
+		"web_error_log": get_web_error_log(site.get("bench")),
 	}
 
 
@@ -505,18 +505,19 @@ def _endpoint_module(path: str) -> str | None:
 	return rest.split(".")[0] or None
 
 
-def get_web_error_log(site_name: str) -> dict[str, Any]:
+def get_web_error_log(bench_name: str) -> dict[str, Any]:
 	"""
-	Recent ERROR/CRITICAL entries from web.error.log, redacted.
+	Recent ERROR/CRITICAL entries from the bench-level gunicorn web.error.log.
 
-	Only the exception message line (last line of the traceback) is included —
-	not full stack frames with local variables. All entries pass through redact()
-	before being stored.
+	Reads from the bench, not the site, because gunicorn's stderr is a bench-level
+	file shared across all sites on the bench. Only the exception message line (last
+	line of the traceback) is included. All entries pass through redact() before
+	being stored.
 	"""
 	from press.incident_management.support_agent.redaction import redact
 
 	try:
-		raw = frappe.get_doc("Site", site_name).get_server_log("web.error.log")
+		raw = frappe.get_doc("Bench", bench_name).get_server_log("web.error.log")
 	except Exception:
 		return {"available": False}
 
