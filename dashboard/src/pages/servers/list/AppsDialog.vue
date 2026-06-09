@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { Dialog, TextInput, Button, Checkbox, createResource } from 'frappe-ui'
 
 interface Props {
@@ -12,8 +12,11 @@ const show = ref(true)
 const props = defineProps<Props>()
 
 const searchQuery = ref('')
-
 const addedApps = reactive([])
+
+const emit = defineEmits<{
+	deployed: [pipelineId: string]
+}>()
 
 const handleAppSelection = (cond, app) => {
 	if (cond) addedApps.push(app)
@@ -25,6 +28,10 @@ const err = ref<string | null>(null)
 const deployRes = createResource({
 	url: 'press.api.bench.deploy_and_update',
 	auto: false,
+	onSuccess: (data) => {
+    emit('deployed', data)
+    show.value = false
+	},
 })
 
 const deployInfoRes = createResource({
@@ -57,8 +64,6 @@ const apiRes = createResource({
 			sites: [],
 			run_will_fail_check: true,
 		})
-
-		show.value = false
 	},
 	onError(e) {
 		err.value = e.messages?.join(', ') ?? 'Failed'
@@ -86,14 +91,15 @@ const installableApps = createResource({
 		return tmp.filter((app) => app.source?.repository_owner === 'frappe')
 	},
 	auto: true,
-
-	makeParams() {
-		return {
-			name: props.bench.name,
-			cache: ['benchInstallableApps', props.bench.version],
-		}
-	},
+	params: { name: props.bench.name },
 	initialData: [],
+})
+
+const filteredApps = computed(() => {
+	if (!searchQuery.value) return installableApps.data
+	return installableApps.data?.filter((app: any) =>
+		app.title.toLowerCase().includes(searchQuery.value.toLowerCase()),
+	)
 })
 </script>
 
@@ -114,7 +120,6 @@ const installableApps = createResource({
 			<TextInput
 				placeholder="Search for any Frappe app"
 				v-model="searchQuery"
-				:debounce="500"
 				class="w-[calc(50%-8px)]"
 			>
 				<template #prefix>
@@ -124,12 +129,12 @@ const installableApps = createResource({
 			<span />
 
 			<div
-				class="grid grid-cols-2 gap-4 mt-5 overflow-y-auto max-h-[calc(100vh-20rem)]"
+				class="grid grid-cols-2 gap-4 mt-5 overflow-y-auto min-h-[calc(100vh-25rem)] max-h-[calc(100vh-20rem)] content-start"
 			>
 				<label
 					class="py-2.5 p-3 text-xs transition-colors duration-300  border dark:border-outline-gray-2 rounded flex gap-3
             has-[:checked]:border-outline-gray-5 hover:border-outline-gray-3"
-					v-for="app in installableApps.data"
+					v-for="app in filteredApps"
 					:key="app.name"
 				>
 					<img :src="app.image" class="size-8 rounded" />
@@ -159,8 +164,9 @@ const installableApps = createResource({
 					@click="submitForm"
 					:loading="apiRes.loading"
 					:loadingText="`Adding ${addedApps.length} apps`"
+					:disabled="addedApps.length == 0"
 				>
-					Deploy {{ addedApps.length }} apps
+					Deploy {{ addedApps.length != 0 ? addedApps.length : '' }} apps
 				</Button>
 			</div>
 		</template>

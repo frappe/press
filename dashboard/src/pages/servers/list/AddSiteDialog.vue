@@ -13,6 +13,8 @@ const subdomain = ref('')
 const addedApps = reactive<any[]>([])
 const siteOptions = ref<any>({})
 
+const emit = defineEmits<{ siteCreated: [] }>()
+
 const handleAppSelection = (cond: boolean, app: any) => {
 	if (cond) addedApps.push(app)
 	else addedApps.splice(addedApps.indexOf(app), 1)
@@ -51,6 +53,7 @@ const installableApps = createResource({
 const newSite = createResource({
 	url: 'press.api.client.insert',
 	onSuccess() {
+		emit('siteCreated')
 		show.value = false
 	},
 })
