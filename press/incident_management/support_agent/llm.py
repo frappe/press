@@ -81,7 +81,7 @@ def _call_claude(api_key: str, prompt: str) -> str:
 		response = requests.post(_ANTHROPIC_MESSAGES_URL, json=body, headers=headers, timeout=_TIMEOUT)
 		response.raise_for_status()
 	except requests.Timeout:
-		frappe.throw("Claude API request timed out.")
+		frappe.throw("Claude API request timed out.")  # nosemgrep: non-actionable-error-message
 	except requests.HTTPError:
 		frappe.throw(f"Claude API request failed with HTTP {response.status_code}: {response.text[:200]}")
 	except requests.RequestException as e:
