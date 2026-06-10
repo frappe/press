@@ -268,11 +268,16 @@ onBeforeUnmount(() => {
 					@click.prevent="(e) => e.stopPropagation()"
 				>
 					<Spinner />
-					{{ benchDeployStatus }}
-					<LucideExternalLink class="size-4" />
+
+					<template v-if="!benchDeployStatus"> Deploy in queue </template>
+
+					<template v-else>
+						{{ benchDeployStatus }}
+						<LucideExternalLink class="size-4" />
+					</template>
 				</router-link>
 
-				<span>v{{ data.version }}</span>
+				<span>{{ data.version }}</span>
 
 				<Dropdown :options="benchOptions(data)">
 					<Button variant="ghost" @click="(e) => e.stopPropagation()">
