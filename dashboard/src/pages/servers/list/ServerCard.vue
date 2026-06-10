@@ -63,16 +63,16 @@ const serverActions = (server) => [
 <template>
 	<section class="shadow dark:bg-surface-cards rounded" :key="data.name">
 		<div class="bordered p-4 flex gap-3 items-center">
-			<ServerIcon :provider="data.provider" class="size-8" />
+			<ServerIcon :provider="data.provider" class="size-6 mb-auto" />
 
-			<div class="flex flex-wrap gap-2 items-center text-sm">
-				<span>{{ data?.title }}</span>
+			<div class="flex flex-wrap gap-2 items-center">
+				<span class='font-medium'>{{ data?.title }}</span>
 				<div
 					class="rounded-full size-2 mx-1"
 					:class="data.status === 'Active' ? 'bg-surface-green-3' : 'bg-surface-red-5'"
 				/>
 				<span>{{ data.status }}</span>
-				<span class="w-full text-ink-gray-6">
+				<span class="w-full text-ink-gray-6 text-sm">
 					{{ data.vcpu }}
 					vCPU, {{ Math.round(data.memory / 1024) }} GB RAM,
 					{{ data.disk }}

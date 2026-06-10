@@ -246,7 +246,7 @@ onBeforeUnmount(() => {
 					</router-link>
 				</Tooltip>
 
-				<div class="flex flex-wrap gap-2 items-center" v-if="!pipelineRes?.doc">
+				<div class="flex flex-wrap gap-x-2.5 gap-y-1.5 items-center" v-if="!pipelineRes?.doc">
 					<span
 						class="size-2 rounded-full"
 						:class="data.active_benches ? 'bg-surface-green-3' : 'bg-surface-amber-3'"
