@@ -114,16 +114,18 @@ const submitForm = () => {
 					</template>
 				</TextInput>
 
-				<div class="grid grid-cols-2 gap-4">
+				<div class="grid grid-cols-2 gap-4 mt-5">
 					<label
 						class="p-3 text-sm transition-colors duration-300 border rounded flex gap-2 has-[:checked]:border-outline-gray-5 hover:border-outline-gray-3"
 						v-for="app in filteredApps"
 						:key="app.app"
 					>
-						<div class="p-2 rounded bg-surface-gray-2 row-span-full h-fit">
-							<img v-if="app.image" :src="app.image" class="size-4 rounded" />
-							<LucideBox v-else class="size-4" />
-						</div>
+						<img
+							v-if="app.image"
+							:src="app.image"
+							class="size-8 rounded shrink-0"
+						/>
+
 						<div class="flex flex-col leading-relaxed overflow-hidden">
 							<span class="font-medium">{{ app.title }}</span>
 							<span class="text-ink-gray-5 truncate"
