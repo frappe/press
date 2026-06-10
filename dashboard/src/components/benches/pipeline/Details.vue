@@ -322,8 +322,6 @@ const dropdownOptions = computed(() => {
 			label: 'View App Versions',
 			icon: 'package',
 			onClick: appVersions,
-			condition: () =>
-				props.deployview && builds.value[activeBuildId.value]?.doc?.group,
 		},
 	]
 
@@ -337,6 +335,7 @@ const appVersions = () => {
 			dc_name: deploy.name,
 			group: deploy.group,
 			status: deploy.status,
+      isPipeline: !props.deployview,
 		}),
 	)
 }
