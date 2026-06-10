@@ -1,0 +1,100 @@
+---
+- name: Install Frappe Bench
+  become: yes
+  become_user: frappe
+  pip:
+    name: frappe-bench
+    state: latest
+
+- name: Initialize Frappe Bench
+  become: yes
+  become_user: frappe
+  command: >
+    bench init
+    --skip-assets
+    --skip-redis-config-generation
+    --python /usr/bin/python3
+    /home/frappe/benches/deadman
+  args:
+    creates: /home/frappe/benches/deadman/Pipfile
+
+- name: Create Site
+  become: yes
+  become_user: frappe
+  command: >
+    bench new-site
+    --no-mariadb-socket
+    --mariadb-root-password {{ mariadb_root_password }}
+    --admin-password {{ admin_password }}
+    {{ server }}
+  args:
+    chdir: /home/frappe/benches/deadman
+    creates: /home/frappe/benches/deadman/sites/{{ server }}/site_config.json
+
+- name: Get Deadman App
+  become: yes
+  become_user: frappe
+  command: >
+    bench get-app
+    {{ deadman_app_git_url | default('https://github.com/20vikash/deadman') }}
+    --skip-assets
+  args:
+    chdir: /home/frappe/benches/deadman
+    creates: /home/frappe/benches/deadman/apps/deadman
+
+- name: Install Deadman App
+  become: yes
+  become_user: frappe
+  command: >
+    bench --site {{ server }}
+    install-app deadman
+  args:
+    chdir: /home/frappe/benches/deadman
+
+- name: Run Migrations
+  become: yes
+  become_user: frappe
+  command: >
+    bench --site {{ server }}
+    migrate
+  args:
+    chdir: /home/frappe/benches/deadman
+
+- name: Initialize Deadman Secret
+  become: yes
+  become_user: frappe
+  command: >
+    bench --site {{ server }}
+    execute deadman.setup.initialize_deadman
+    --kwargs '{"secret":"{{ deadman_password }}"}'
+  args:
+    chdir: /home/frappe/benches/deadman
+
+- name: Enable Scheduler
+  become: yes
+  become_user: frappe
+  command: >
+    bench --site {{ server }}
+    enable-scheduler
+  args:
+    chdir: /home/frappe/benches/deadman
+
+- name: Setup Production
+  become: yes
+  become_user: root
+  command: bench setup production frappe
+  args:
+    chdir: /home/frappe/benches/deadman
+
+- name: Restart Bench
+  become: yes
+  become_user: frappe
+  command: bench restart
+  args:
+    chdir: /home/frappe/benches/deadman
+
+- name: Reload NGINX
+  become: yes
+  service:
+    name: nginx
+    state: reloaded
