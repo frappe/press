@@ -19,6 +19,7 @@ from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_for
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.guards import feature_preview, team_guard
+from press.partner.doctype.partner_onboarding.partner_onboarding import has_partner_onboarding
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -221,9 +222,6 @@ class Team(Document):
 		doc.total_subscribed_amount = self.total_subscribed_amount()
 		doc.is_binlog_indexer_enabled = not frappe.db.get_single_value(
 			"Press Settings", "disable_binlog_indexer_service", cache=True
-		)
-		from press.partner.doctype.partner_onboarding.partner_onboarding import (
-			has_partner_onboarding,
 		)
 
 		doc.has_partner_onboarding = has_partner_onboarding(self.name)

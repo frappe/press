@@ -42,12 +42,12 @@ const partnerPlans = computed(() => {
 
 const formatCurrency = (amount) => {
 	// round off without decimal places
+	const isWholeNumber = Number.isInteger(amount)
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: 'USD',
-	})
-		.format(amount)
-		.replace('.00', '')
+		maximumFractionDigits: isWholeNumber ? 0 : 2,
+	}).format(amount)
 }
 </script>
 
