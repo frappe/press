@@ -223,9 +223,9 @@ onBeforeUnmount(() => {
 					toggle()
 				}"
 			>
-				<LucideChevronUp
+				<LucideChevronRight
 					class="shrink-0 size-4 transition-transform duration-300"
-					:class="opened ? '' : 'rotate-180'"
+					:class="opened ? 'rotate-90' : ''"
 				/>
 
 				<Tooltip text="Go to bench dashboard">
