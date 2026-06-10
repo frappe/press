@@ -67,7 +67,7 @@ const serverActions = (server) => [
 			<div class="flex flex-wrap gap-2 items-center text-sm">
 				<span>{{ data?.title }}</span>
 				<div
-					class="rounded-full size-2 bg-surface-green-3"
+					class="rounded-full size-2 mx-1"
 					:class="data.status === 'Active' ? 'bg-surface-green-3' : 'bg-surface-red-5'"
 				/>
 				<span>{{ data.status }}</span>
@@ -90,7 +90,7 @@ const serverActions = (server) => [
 
 		<!-- benches header -->
 		<div
-			class="row-grid pl-6 pr-4 pt-4 pb-0 items-center text-ink-gray-4 text-sm"
+			class="row-grid pl-6 pr-4 pt-4 items-center text-ink-gray-4 text-sm"
 		>
 			<span />
 			<template v-if="benches?.data?.length">
@@ -99,7 +99,7 @@ const serverActions = (server) => [
 				<span>Version</span>
 			</template>
 
-			<div v-else class="flex gap-2 items-center pb-4 col-span-4">
+			<div v-else class="flex gap-2 items-center pb-2 col-span-4">
 				<Tooltip
 					text="Add benches via the more button or benches tab to start hosting sites"
 					:hoverDelay="0"

@@ -59,7 +59,7 @@ const onSubmit = () => {
 			cluster: props.server.cluster,
 			saas_app: null,
 			apps: getAppsToInstall(),
-			server: props.server,
+			server: props.server.name,
 		},
 	})
 }
