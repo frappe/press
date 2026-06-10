@@ -90,7 +90,7 @@ const toggleSort = () => {
 	<!-- filters -->
 	<div class="flex gap-3 items-center px-5">
 		<TextInput
-			placeholder="Search"
+			placeholder="Search server"
 			v-model="searchQuery"
 			:debounce="500"
 			@update:modelValue="v => applyFilters('title', v)"
