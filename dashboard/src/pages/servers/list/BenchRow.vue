@@ -80,6 +80,7 @@ const attachPipeline = (id: string) => {
 		onSuccess(data) {
 			if (['Success', 'Failure'].includes(data.status)) {
 				pipelineRes.value = null
+				pipelineId.value = null
 				wired.value = false
 			} else if (!wired.value) {
 				socket.emit('doc_subscribe', 'Release Pipeline', id)
@@ -219,7 +220,6 @@ onBeforeUnmount(() => {
 						: '',
 				]"
 				@click="() => {
-					// if (!opened && !sites?.data) sites?.fetch()
 					toggle()
 				}"
 			>
@@ -248,7 +248,7 @@ onBeforeUnmount(() => {
 
 				<div
 					class="flex flex-wrap gap-x-2.5 gap-y-1.5 items-center"
-					v-if="!pipelineRes?.doc"
+					v-if="!pipelineId"
 				>
 					<span
 						class="size-2 rounded-full"
@@ -272,7 +272,7 @@ onBeforeUnmount(() => {
 				>
 					<Spinner />
 
-					<template v-if="!benchDeployStatus"> Deploy in queue </template>
+					<template v-if="!benchDeployStatus">Deploy in queue</template>
 
 					<template v-else>
 						{{ benchDeployStatus }}
