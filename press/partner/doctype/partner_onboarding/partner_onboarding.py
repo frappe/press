@@ -146,10 +146,14 @@ class PartnerOnboarding(Document):
 		)
 
 
+def _active_onboarding_filters(team: str) -> dict:
+	return {"team": team, "docstatus": ["<", 2], "status": ["!=", "Cancelled"]}
+
+
 def _get_partner_onboarding(team: str):
 	names = frappe.get_all(
 		"Partner Onboarding",
-		filters={"team": team, "docstatus": ["<", 2], "status": ["!=", "Cancelled"]},
+		filters=_active_onboarding_filters(team),
 		pluck="name",
 		order_by="creation desc",
 		limit=1,
@@ -157,6 +161,11 @@ def _get_partner_onboarding(team: str):
 	if names:
 		return frappe.get_doc("Partner Onboarding", names[0])
 	return None
+
+
+def has_partner_onboarding(team: str) -> bool:
+	"""Whether the team has started (and not cancelled) a partner onboarding request."""
+	return bool(frappe.db.exists("Partner Onboarding", _active_onboarding_filters(team)))
 
 
 def _clear_certificate_links(team: str) -> None:
