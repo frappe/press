@@ -238,8 +238,7 @@ def check_for_ip_match(site_name: str, site_ip: str | None, domain_ip: str | Non
 			{"status": "Active", "cluster": cluster, "is_primary": True, "exclude_from_auto_selection": True},
 			pluck="ip",
 		)
-		if (domain_ip in secondary_ips) or (site_ip == proxy_ip and domain_ip in failed_over_ips):
-			return True
+		return domain_ip in [*secondary_ips, proxy_ip, *failed_over_ips]
 	return False
 
 
