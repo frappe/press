@@ -1150,7 +1150,11 @@ class DeployCandidateBuild(Document):
 		)
 
 		if not can_run_patch_build(self.group):
-			frappe.throw("Patch build cannot be run.")
+			frappe.throw(
+				"Patch build cannot be run for this bench group. Either patch builds are disabled in Press"
+				" Settings, no previous candidate exists, or the bench group is public. Use a regular deploy"
+				" instead."
+			)
 
 		previous_candidate = _get_previous_candidate(self.group)
 		self.set_status(Status.PREPARING, timestamp_field="build_start", commit=True)
