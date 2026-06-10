@@ -231,6 +231,11 @@ let router = createRouter({
 					component: () => import('./components/settings/Team.vue'),
 				},
 				{
+					name: 'SettingsRolesBeta',
+					path: 'roles-beta',
+					component: () => import('./components/settings/RoleListBeta.vue'),
+				},
+				{
 					name: 'SettingsDeveloper',
 					path: 'developer',
 					component: () =>
@@ -393,6 +398,11 @@ let router = createRouter({
 					component: () => import('./components/partners/PartnerDashboard.vue'),
 				},
 			],
+		},
+		{
+			name: 'Partner Onboarding',
+			path: '/partner-onboarding',
+			component: () => import('@/onboarding/PartnerOnboarding.vue'),
 		},
 		{
 			name: 'Signup Create Site',
@@ -582,6 +592,24 @@ router.beforeEach(async (to, from, next) => {
 		// if team owner/admin doesn't enforce 2fa don't allow user to visit Enable2FA route
 		if (to.name === Enable2FARoute && !$team.doc.enforce_2fa) {
 			next({ name: defaultRoute })
+			return
+		}
+
+		// if team is not a partner and trying to access partner routes, redirect to partner onboarding
+		const activePartner = Boolean(
+			$team.doc.erpnext_partner && $team.doc.partner_status === 'Active',
+		)
+		const goingToPartnerDashboard = to.matched.some(
+			(record) => record.name === 'Partnership',
+		)
+
+		if (to.name === 'Partner Onboarding' && activePartner) {
+			next({ name: 'PartnerOverview' })
+			return
+		}
+
+		if (goingToPartnerDashboard && !activePartner) {
+			next({ name: 'Partner Onboarding' })
 			return
 		}
 

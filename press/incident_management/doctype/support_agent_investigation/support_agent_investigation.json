@@ -1,0 +1,193 @@
+{
+	"actions": [],
+	"autoname": "format:SAI-{#####}",
+	"creation": "2026-06-04 00:00:00.000000",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"site",
+		"status",
+		"requested_by",
+		"column_break_status",
+		"started_at",
+		"completed_at",
+		"report_section",
+		"summary",
+		"likely_cause",
+		"recommended_next_steps",
+		"column_break_report",
+		"confidence",
+		"llm_model",
+		"redaction_version",
+		"evidence_json",
+		"timeline_json",
+		"errors_json",
+		"payload_json",
+		"llm_section",
+		"llm_response",
+		"failure_section",
+		"failure_reason"
+	],
+	"fields": [
+		{
+			"fieldname": "site",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Site",
+			"options": "Site",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"default": "Queued",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Status",
+			"options": "Queued\nRunning\nCompleted\nFailed",
+			"read_only": 1,
+			"reqd": 1
+		},
+		{
+			"fieldname": "requested_by",
+			"fieldtype": "Link",
+			"label": "Requested By",
+			"options": "User",
+			"read_only": 1
+		},
+		{ "fieldname": "column_break_status", "fieldtype": "Column Break" },
+		{
+			"fieldname": "started_at",
+			"fieldtype": "Datetime",
+			"label": "Started At",
+			"read_only": 1
+		},
+		{
+			"fieldname": "completed_at",
+			"fieldtype": "Datetime",
+			"label": "Completed At",
+			"read_only": 1
+		},
+		{
+			"fieldname": "report_section",
+			"fieldtype": "Section Break",
+			"label": "Report"
+		},
+		{
+			"fieldname": "summary",
+			"fieldtype": "Small Text",
+			"label": "Summary",
+			"read_only": 1
+		},
+		{
+			"fieldname": "likely_cause",
+			"fieldtype": "Small Text",
+			"label": "Likely Cause",
+			"read_only": 1
+		},
+		{
+			"fieldname": "recommended_next_steps",
+			"fieldtype": "Text",
+			"label": "Recommended Next Steps",
+			"read_only": 1
+		},
+		{ "fieldname": "column_break_report", "fieldtype": "Column Break" },
+		{
+			"fieldname": "confidence",
+			"fieldtype": "Select",
+			"label": "Confidence",
+			"options": "\nLow\nMedium\nHigh",
+			"read_only": 1
+		},
+		{
+			"default": "deterministic-support-agent-v1",
+			"fieldname": "llm_model",
+			"fieldtype": "Data",
+			"label": "Model",
+			"read_only": 1
+		},
+		{
+			"default": "support-agent-redaction-v1",
+			"fieldname": "redaction_version",
+			"fieldtype": "Data",
+			"label": "Redaction Version",
+			"read_only": 1
+		},
+		{
+			"fieldname": "evidence_json",
+			"fieldtype": "JSON",
+			"label": "Evidence",
+			"read_only": 1
+		},
+		{
+			"fieldname": "timeline_json",
+			"fieldtype": "JSON",
+			"label": "Timeline",
+			"read_only": 1
+		},
+		{
+			"fieldname": "errors_json",
+			"fieldtype": "JSON",
+			"label": "Errors",
+			"read_only": 1
+		},
+		{
+			"fieldname": "payload_json",
+			"fieldtype": "JSON",
+			"label": "Redacted Investigation Payload",
+			"read_only": 1
+		},
+		{
+			"collapsible": 1,
+			"fieldname": "llm_section",
+			"fieldtype": "Section Break",
+			"label": "AI Analysis"
+		},
+		{
+			"fieldname": "llm_response",
+			"fieldtype": "Long Text",
+			"label": "AI Response",
+			"read_only": 1
+		},
+		{
+			"collapsible": 1,
+			"fieldname": "failure_section",
+			"fieldtype": "Section Break",
+			"label": "Failure"
+		},
+		{
+			"fieldname": "failure_reason",
+			"fieldtype": "Small Text",
+			"label": "Failure Reason",
+			"read_only": 1
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2026-06-04 00:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Incident Management",
+	"name": "Support Agent Investigation",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC",
+	"states": [],
+	"title_field": "site",
+	"track_changes": 1
+}

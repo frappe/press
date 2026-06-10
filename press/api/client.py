@@ -87,6 +87,7 @@ ALLOWED_DOCTYPES = [
 	"Razorpay Mandate",
 	"Partner Certificate",
 	"Partner Payment Payout",
+	"Partner Tier",
 	"Deploy Candidate Build",
 	"Partner Lead",
 	"Partner Lead Type",

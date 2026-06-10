@@ -1055,3 +1055,76 @@ class TestAPISiteList(FrappeTestCase):
 
 	def test_list_tagged_sites(self):
 		self.assertEqual(all(site_filter={"status": "", "tag": "test_tag"}), [self.tagged_site_dict])
+
+
+class TestAPISiteDomain(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+		frappe.set_user("Administrator")
+
+	def test_check_dns_blocks_system_domain(self):
+		"""check_dns should throw for system reserved domains without making a DNS query."""
+		from press.api.site import check_dns
+
+		site = create_test_site()
+		with (
+			patch("press.api.site.get_matching_domain", return_value="test-system.io"),
+			patch("press.api.site.check_dns_cname_a") as mock_dns,
+		):
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"system reserved domain",
+				check_dns,
+				site.name,
+				"sub.test-system.io",
+			)
+			mock_dns.assert_not_called()
+
+	def test_check_dns_returns_dns_result_for_custom_domain(self):
+		"""check_dns should return DNS check result for non-system domains."""
+		from press.api.site import check_dns
+
+		site = create_test_site()
+		dns_result = {"matched": True, "valid": True, "type": "A", "CNAME": {}, "A": {}}
+		with (
+			patch("press.api.site.get_matching_domain", return_value=None),
+			patch("press.api.site.check_dns_cname_a", return_value=dns_result) as mock_dns,
+		):
+			result = check_dns(site.name, "example.com")
+			mock_dns.assert_called_once_with(site.name, "example.com")
+		self.assertEqual(result, dns_result)
+
+	def test_add_domain_blocks_system_domain(self):
+		"""add_domain should throw for system reserved domains without making a DNS query."""
+		from press.api.site import add_domain
+
+		site = create_test_site()
+		with (
+			patch("press.press.doctype.site.site.get_matching_domain", return_value="test-system.io"),
+			patch("press.press.doctype.site.site.check_dns_cname_a") as mock_dns,
+		):
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"system reserved domain",
+				add_domain,
+				site.name,
+				"sub.test-system.io",
+			)
+			mock_dns.assert_not_called()
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch("press.press.doctype.site_domain.site_domain.SiteDomain.create_tls_certificate", new=Mock())
+	def test_add_domain_creates_site_domain_when_dns_matches(self):
+		"""add_domain should create a Site Domain record when DNS check passes."""
+		from press.api.site import add_domain
+
+		site = create_test_site()
+		with (
+			patch("press.press.doctype.site.site.get_matching_domain", return_value=None),
+			patch(
+				"press.press.doctype.site.site.check_dns_cname_a",
+				return_value={"matched": True, "type": "A"},
+			),
+		):
+			add_domain(site.name, "example.com")
+		self.assertTrue(frappe.db.exists("Site Domain", {"site": site.name, "domain": "example.com"}))

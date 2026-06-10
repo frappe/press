@@ -36,6 +36,7 @@ from press.press.doctype.deploy_candidate.deploy_notifications import (
 from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	CloneOutputParser,
 	DockerBuildOutputParser,
+	PatchBuildOutputParser,
 	UploadStepUpdater,
 	ValidationOutputParser,
 )
@@ -93,6 +94,7 @@ STAGE_SLUG_MAP = {
 	"pull": "Pull Updates",
 	"mounts": "Setup Mounts",
 	"upload": "Upload",
+	"patch": "Patch Build",
 }
 
 # Key: (stage_slug, step_slug)
@@ -112,6 +114,17 @@ STEP_SLUG_MAP = {
 	("validate", "dependencies"): "Validate Dependencies",
 	("mounts", "create"): "Prepare Mounts",
 	("upload", "image"): "Docker Image",
+	("patch", "pull-image"): "Pull Base Image",
+	("patch", "update-apps"): "Update Apps",
+	("patch", "commit"): "Commit Image",
+}
+
+# Maps agent @step names → (stage_slug, step_slug) for instant builds
+PATCH_BUILD_STEP_MAP = {
+	"Start Base Container": ("patch", "pull-image"),
+	"Pull App Updates": ("patch", "update-apps"),
+	"Commit Image": ("patch", "commit"),
+	"Push Docker Image": ("upload", "image"),
 }
 
 
@@ -219,6 +232,7 @@ class DeployCandidateBuild(Document):
 		no_build: DF.Check
 		no_cache: DF.Check
 		no_push: DF.Check
+		patch_build: DF.Check
 		pending_duration: DF.Time | None
 		pending_end: DF.Datetime | None
 		pending_start: DF.Datetime | None
@@ -334,6 +348,29 @@ class DeployCandidateBuild(Document):
 			is_path=True,
 		)
 
+	def add_patch_build_steps(self):
+		slugs = [
+			("patch", "pull-image"),
+			("patch", "update-apps"),
+			("patch", "commit"),
+		]
+		if not self.no_push:
+			slugs.append(("upload", "image"))
+
+		for stage_slug, step_slug in slugs:
+			stage, step = get_build_stage_and_step(stage_slug, step_slug, {})
+			self.append(
+				"build_steps",
+				dict(
+					status="Pending",
+					stage_slug=stage_slug,
+					step_slug=step_slug,
+					stage=stage,
+					step=step,
+				),
+			)
+		self.save()
+
 	def add_post_build_steps(self):
 		slugs = []
 
@@ -419,6 +456,7 @@ class DeployCandidateBuild(Document):
 		self.validation_output_parser = ValidationOutputParser(self)
 		self.build_output_parser = DockerBuildOutputParser(self)
 		self.upload_step_updater = UploadStepUpdater(self)
+		self.patch_build_output_parser = PatchBuildOutputParser(self)
 
 	def correct_upload_step_status(self):
 		if not (usu := self.upload_step_updater) or not usu.upload_step:
@@ -991,8 +1029,146 @@ class DeployCandidateBuild(Document):
 		self.set_status(Status.DRAFT)
 		self.pre_build()
 
+	def send_patch_build_instructions(self, previous_candidate: "DeployCandidate"):
+		"""Send patch build instructions to the agent for current deploy candidate build"""
+		self.set_build_server()
+		self._update_docker_image_metadata()
+		self.add_patch_build_steps()
+
+		settings = self._fetch_registry_settings()
+		Agent(self.build_server).run_patch_build(
+			{
+				"base_image": self._get_base_image_for_platform(previous_candidate),
+				"patch_build_app_instructions": self._get_patch_app_updates(previous_candidate),
+				"image_repository": self.docker_image_repository,
+				"image_tag": self.docker_image_tag,
+				"registry": {
+					"url": settings.docker_registry_url,
+					"username": settings.docker_registry_username,
+					"password": settings.docker_registry_password,
+				},
+				"deploy_candidate_build": self.name,
+				"deploy_after_build": self.deploy_after_build,
+				"no_push": self.no_push,
+			}
+		)
+		self.set_status(Status.RUNNING, commit=True)
+
+	def _get_base_image_for_platform(self, previous_candidate: "DeployCandidate") -> str:
+		build_name = (
+			previous_candidate.arm_build
+			if self.platform == "arm64"
+			else (previous_candidate.intel_build or previous_candidate.arm_build)
+		)
+		return frappe.db.get_value("Deploy Candidate Build", build_name, "docker_image")
+
+	def _get_patch_app_updates(self, previous_candidate: DeployCandidate) -> list:
+		apps = []
+		previous_releases = {app.app: app.release for app in previous_candidate.apps}
+		for app in self.candidate.apps:
+			if app.release == previous_releases[app.app]:
+				continue
+			source: AppSource = frappe.get_doc("App Source", app.source)
+			apps.append(
+				{
+					"app": app.app,
+					"url": source.get_repo_url(),
+					"hash": frappe.db.get_value("App Release", app.release, "hash"),
+				}
+			)
+		return apps
+
+	@staticmethod
+	def process_run_patch_build(job: "AgentJob", response_data: "dict | None"):
+		request_data = json.loads(job.request_data)
+		build: DeployCandidateBuild = frappe.get_doc(
+			"Deploy Candidate Build", request_data["deploy_candidate_build"]
+		)
+		build._process_patch_build_job(job, request_data, response_data)
+
+	def _process_patch_build_job(self, job: "AgentJob", request_data: dict, response_data: "dict | None"):
+		"""
+		Processes patch build job updates. Unlike `_process_run_build`, patch builds don't
+		stream docker build output — step statuses are synced directly from agent job step records
+		and also update the step output based on the output received
+		"""
+		self._set_output_parsers()
+		self._sync_patch_build_step_statuses(job)
+		self.patch_build_output_parser.parse_and_update(job)
+
+		if self.has_remote_build_failed(job, {}):
+			self.handle_build_failure(exc=None, job=job)
+		else:
+			self._update_status_from_remote_build_job(job)
+			if self.status == Status.SUCCESS.value:
+				self.update_deploy_candidate_with_build()
+				self._create_platform_patch_build_if_required_and_deploy(
+					request_data.get("deploy_after_build", True)
+				)
+
+		self.correct_upload_step_status()
+
+	def _sync_patch_build_step_statuses(self, job: "AgentJob"):
+		"""Update each patch build step's status from the corresponding agent job step."""
+		for agent_step_name, (stage_slug, step_slug) in PATCH_BUILD_STEP_MAP.items():
+			status = job.get_step_status(agent_step_name)
+			if status and (step := self.get_step(stage_slug, step_slug)):
+				step.status = status
+				# All other steps will have "Skipped" if one failed therefore break here
+				if status == "Failure":
+					break
+
+		self.save(ignore_version=True)
+
+	def _create_platform_patch_build_if_required_and_deploy(self, deploy_after_build: bool):
+		"""Create a platform specific patch build if requirement enforced by the deploy candidate and deploy after build if required"""
+		requires_arm = self.candidate.requires_arm_build and not self.candidate.arm_build
+		requires_intel = self.candidate.requires_intel_build and not self.candidate.intel_build
+
+		if requires_arm or requires_intel:
+			platform = "arm64" if requires_arm else "x86_64"
+			frappe.get_doc(
+				{
+					"doctype": "Deploy Candidate Build",
+					"deploy_candidate": self.deploy_candidate,
+					"no_push": self.no_push,
+					"deploy_after_build": deploy_after_build,
+					"platform": platform,
+					"patch_build": True,
+				}
+			).insert()
+		elif deploy_after_build:
+			self.create_deploy()
+
+	def run_patch_build(self):
+		"""Ensure this is called when `run_build` in insert is set to False since that will use the older flow"""
+		# In case after some bypass or error this is triggered without patch build being possible
+		# We need to run a check here.
+		from press.press.doctype.release_group.release_group import (
+			_get_previous_candidate,
+			can_run_patch_build,
+		)
+
+		if not can_run_patch_build(self.group):
+			frappe.throw(
+				"Patch build cannot be run for this bench group. Use a regular deploy instead."
+			)
+
+		previous_candidate = _get_previous_candidate(self.group)
+		self.set_status(Status.PREPARING, timestamp_field="build_start", commit=True)
+		self._set_output_parsers()
+		try:
+			self.send_patch_build_instructions(previous_candidate)
+		except Exception as e:
+			self.handle_build_failure(e)
+			return
+
 	def after_insert(self):
-		if self.run_build and self.status != Status.SCHEDULED.value:
+		if self.patch_build:
+			self.set_status(Status.DRAFT)
+			self.run_patch_build()
+
+		elif self.run_build and self.status != Status.SCHEDULED.value:
 			self.set_status(Status.DRAFT)
 			self.pre_build()
 
@@ -1491,6 +1667,8 @@ def is_image_in_registry(image: str, group: str, settings: dict[str, str]) -> bo
 
 def on_doctype_update():
 	if frappe.flags.in_install:
+		return
+	if frappe.conf.developer_mode:
 		return
 	# Ignoring filesorts
 	# https://dev.mysql.com/doc/refman/8.4/en/order-by-optimization.html#order-by-index-use

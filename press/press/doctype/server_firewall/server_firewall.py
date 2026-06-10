@@ -80,6 +80,8 @@ class ServerFirewall(Document):
 			self.validate_port(rule.port)
 
 	def on_update(self):
+		if self.is_new():
+			return
 		self.sync()
 
 	@frappe.whitelist()

@@ -28,6 +28,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_total_installs_by_app,
 )
 from press.press.doctype.remote_file.remote_file import get_remote_key
+from press.press.doctype.root_domain.root_domain import get_matching_domain
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site.site import (
 	Site,
@@ -333,11 +334,16 @@ def validate_plan(server: str, site: str, new_plan: str, is_new: bool = False) -
 	if is_new:
 		is_current_plan_supported, is_current_dedicated_server_plan = False, False
 	else:
-		is_current_plan_supported, is_current_dedicated_server_plan = frappe.db.get_value(
-			"Site Plan",
-			frappe.get_value("Site", site, "plan"),
-			["support_included", "dedicated_server_plan"],
-		)
+		plan_name = frappe.get_value("Site", site, "plan")
+		if not plan_name:
+			is_current_plan_supported = False
+			is_current_dedicated_server_plan = False
+		else:
+			is_current_plan_supported, is_current_dedicated_server_plan = frappe.db.get_value(
+				"Site Plan",
+				plan_name,
+				["support_included", "dedicated_server_plan"],
+			) or (False, False)
 
 	new_site_plan = frappe.db.get_value(
 		"Site Plan",
@@ -866,7 +872,7 @@ def _get_dedicated_server_info_for_release_group(release_group_name: str) -> dic
 		- "dedicated_only_single" - exactly one dedicated server
 		- "dedicated_only_multiple" - multiple dedicated servers
 		- "user_choice_single" - one dedicated server and other public server(s)
-		"user_choice_multiple" - multiple dedicated servers and public server(s)
+		- "user_choice_multiple" - multiple dedicated servers and public server(s)
 		- "no_dedicated_server"
 	- dedicated_servers: list - Available dedicated servers for user selection
 	"""
@@ -2234,6 +2240,11 @@ def setup_wizard_complete(name):
 @frappe.whitelist()
 @protected("Site")
 def check_dns(name, domain):
+	domain = domain.lower().strip(".")
+	if d := get_matching_domain(domain):
+		frappe.throw(
+			f"Cannot add {d} domain as it is a system reserved domain. Please use a different domain for your site."
+		)
 	return check_dns_cname_a(name, domain)
 
 

@@ -1339,6 +1339,15 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			reference_name=reference_name,
 		)
 
+	def run_patch_build(self, data: dict):
+		return self.create_agent_job(
+			"Run Patch Build",
+			"builder/patch_build",
+			data=data,
+			reference_doctype="Deploy Candidate Build",
+			reference_name=data.get("deploy_candidate_build"),
+		)
+
 	def call_supervisorctl(self, bench: str, action: str, programs: list[str]):
 		return self.create_agent_job(
 			"Call Bench Supervisorctl",

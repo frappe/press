@@ -697,3 +697,78 @@ class TestSite(FrappeTestCase):
 		suspend_sites_exceeding_disk_usage_for_last_14_days()
 		site.reload()
 		self.assertEqual(site.status, "Suspended")
+
+	def test_unavail_bahrain_backups_marks_only_bahrain_backups_unavailable(self):
+		from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+
+		site = create_test_site("bahrainsite")
+		bahrain_backup = create_test_site_backup(site=site.name, bucket="bahrain.backups.frappe.cloud")
+		other_backup = create_test_site_backup(site=site.name, bucket="mumbai.backups.frappe.cloud")
+
+		site.unavail_bahrain_backups()
+
+		self.assertEqual(
+			frappe.db.get_value("Site Backup", bahrain_backup.name, "files_availability"),
+			"Unavailable",
+		)
+		self.assertEqual(
+			frappe.db.get_value("Site Backup", other_backup.name, "files_availability"),
+			"Available",
+		)
+
+	def test_unavail_bahrain_backups_does_not_touch_status_field(self):
+		"""files_availability is flipped, but the backup's status stays a valid option."""
+		from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+
+		site = create_test_site("bahrainsite")
+		bahrain_backup = create_test_site_backup(
+			site=site.name, bucket="bahrain.backups.frappe.cloud", status="Success"
+		)
+
+		site.unavail_bahrain_backups()
+
+		self.assertEqual(frappe.db.get_value("Site Backup", bahrain_backup.name, "status"), "Success")
+
+	def test_unavail_bahrain_backups_only_affects_the_given_site(self):
+		from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+
+		this_site = create_test_site("bahrainsite")
+		other_site = create_test_site("otherbahrainsite")
+		this_backup = create_test_site_backup(site=this_site.name, bucket="bahrain.backups.frappe.cloud")
+		other_backup = create_test_site_backup(site=other_site.name, bucket="bahrain.backups.frappe.cloud")
+
+		this_site.unavail_bahrain_backups()
+
+		self.assertEqual(
+			frappe.db.get_value("Site Backup", this_backup.name, "files_availability"),
+			"Unavailable",
+		)
+		self.assertEqual(
+			frappe.db.get_value("Site Backup", other_backup.name, "files_availability"),
+			"Available",
+		)
+
+	@patch("press.press.doctype.remote_file.remote_file.delete_remote_backup_objects")
+	def test_delete_offsite_backups_skips_bahrain_backups(self, mock_delete):
+		"""Bahrain backups must not be sent to S3 deletion while the bucket is unhealthy."""
+		from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+
+		site = create_test_site("bahrainsite")
+		bahrain_backup = create_test_site_backup(site=site.name, bucket="bahrain.backups.frappe.cloud")
+		other_backup = create_test_site_backup(site=site.name, bucket="mumbai.backups.frappe.cloud")
+
+		site.delete_offsite_backups(keep_latest=False)
+
+		deleted_files = mock_delete.call_args.args[0]
+		bahrain_files = {
+			bahrain_backup.remote_database_file,
+			bahrain_backup.remote_public_file,
+			bahrain_backup.remote_private_file,
+		}
+		other_files = {
+			other_backup.remote_database_file,
+			other_backup.remote_public_file,
+			other_backup.remote_private_file,
+		}
+		self.assertTrue(bahrain_files.isdisjoint(deleted_files))
+		self.assertTrue(other_files.issubset(set(deleted_files)))
