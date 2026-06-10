@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { createResource, FormControl } from 'frappe-ui'
-import { computed, inject, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, inject, onMounted, ref, useTemplateRef, watch } from 'vue'
 import EmailInput from '@/components/EmailInput.vue'
 import PhoneInput from '@/components/PhoneInput.vue'
 import PostRegistrationMessage from '@/onboarding/modal/PostRegistrationMessage.vue'
@@ -79,6 +79,15 @@ const errors = computed(() => {
 const companyNameRef = useTemplateRef('companyNameRef')
 const emailInputRef = useTemplateRef('emailInputRef')
 
+// The backend phone error names the rejected number, so clear it the moment
+// the user edits the contact — otherwise the stale message lingers.
+watch(
+	() => onboarding.form.contact,
+	() => {
+		submitError.value = ''
+	},
+)
+
 onMounted(() => {
 	companyNameRef.value?.$el?.querySelector('input')?.focus()
 })
@@ -96,8 +105,16 @@ const handleSubmit = async () => {
 		registered.value = true
 		emit('registered')
 	} catch (error: any) {
-		submitError.value = error.messages?.[0] || error.message
+		// Backend validation (e.g. the Phone field) wraps values in <strong>
+		// tags via frappe.bold(); strip them so they don't render as literal
+		// markup in the plain-text error below.
+		const message = error.messages?.[0] || error.message || ''
+		submitError.value = stripHtmlTags(message)
 	}
+}
+
+function stripHtmlTags(value: string) {
+	return value.replace(/<[^>]*>/g, '')
 }
 </script>
 

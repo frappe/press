@@ -222,6 +222,11 @@ class Team(Document):
 		doc.is_binlog_indexer_enabled = not frappe.db.get_single_value(
 			"Press Settings", "disable_binlog_indexer_service", cache=True
 		)
+		from press.partner.doctype.partner_onboarding.partner_onboarding import (
+			has_partner_onboarding,
+		)
+
+		doc.has_partner_onboarding = has_partner_onboarding(self.name)
 
 	def onload(self):
 		load_address_and_contact(self)

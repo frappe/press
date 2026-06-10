@@ -41,10 +41,13 @@ const partnerPlans = computed(() => {
 })
 
 const formatCurrency = (amount) => {
+	// round off without decimal places
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: 'USD',
-	}).format(amount)
+	})
+		.format(amount)
+		.replace('.00', '')
 }
 </script>
 

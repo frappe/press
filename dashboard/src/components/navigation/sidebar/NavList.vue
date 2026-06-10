@@ -163,6 +163,7 @@ const list = computed(() => {
 			isActive:
 				$route.path.startsWith('/partners') ||
 				routeName === 'Partner Onboarding',
+			condition: activePartner || Boolean($team.doc.has_partner_onboarding),
 			disabled: enforce2FA,
 		},
 
