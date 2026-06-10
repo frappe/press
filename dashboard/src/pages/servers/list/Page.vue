@@ -17,7 +17,7 @@ const servers = createListResource({
 	fields: [
 		'name',
 		'title',
-    'status',
+		'status',
 		'provider',
 		'database_server',
 		'plan.title as plan_title',
@@ -27,9 +27,9 @@ const servers = createListResource({
 		'cluster.image as cluster_image',
 		'cluster.title as cluster_title',
 		'is_unified_server',
-    'plan.vcpu as vcpu',
-    'plan.memory as memory',
-    'plan.disk as disk',
+		'plan.vcpu as vcpu',
+		'plan.memory as memory',
+		'plan.disk as disk',
 	],
 	orderBy: `creation ${sortBy.value}`,
 })
@@ -76,7 +76,9 @@ const toggleSort = () => {
 <template>
 	<Header class="sticky top-0 z-10 bg-surface-white mb-5">
 		<Breadcrumbs :items="[{ label: 'Servers', route: '/ser' }]" />
-		<Button variant="solid" class="ml-auto">New Server</Button>
+		<Button :route="{ name: 'New Server' }" variant="solid" class="ml-auto">
+			New Server
+		</Button>
 	</Header>
 
 	<!-- filters -->
