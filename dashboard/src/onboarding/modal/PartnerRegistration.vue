@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { createResource, FormControl } from 'frappe-ui'
+import { createResource, FormControl, Tooltip } from 'frappe-ui'
 import { computed, inject, onMounted, ref, useTemplateRef, watch } from 'vue'
 import EmailInput from '@/components/EmailInput.vue'
 import PhoneInput from '@/components/PhoneInput.vue'
 import PostRegistrationMessage from '@/onboarding/modal/PostRegistrationMessage.vue'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
+import LucideInfo from '~icons/lucide/info'
 
 const emit = defineEmits(['registered'])
 
@@ -153,16 +154,25 @@ function stripHtmlTags(value: string) {
 			{{ errors.company_name }}
 		</p>
 
-		<FormControl
-			v-model="onboarding.form.registered_country"
-			label="Registered country"
-			type="select"
-			size="sm"
-			variant="outline"
-			placeholder="Select"
-			:options="countryOptions"
-			:class="{ 'has-error': errors.country }"
-		/>
+		<div class="flex flex-col gap-1.5">
+			<div class="flex items-end gap-1">
+				<label class="block text-xs text-ink-gray-5">Registered country</label>
+				<Tooltip
+					text="You'll be listed as a partner in this country, subject to approval and verification."
+				>
+					<LucideInfo class="h-3 w-3 text-ink-gray-5" />
+				</Tooltip>
+			</div>
+			<FormControl
+				v-model="onboarding.form.registered_country"
+				type="select"
+				size="sm"
+				variant="outline"
+				placeholder="Select"
+				:options="countryOptions"
+				:class="{ 'has-error': errors.country }"
+			/>
+		</div>
 		<p v-if="errors.country" class="-mt-2 text-sm text-ink-red-4">
 			{{ errors.country }}
 		</p>
