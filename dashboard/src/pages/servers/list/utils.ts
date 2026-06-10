@@ -1,10 +1,13 @@
-import { getCachedDocumentResource, createDocumentResource } from 'frappe-ui'
+import { createDocumentResource } from 'frappe-ui'
 import { toast } from 'vue-sonner'
 import { confirmDialog } from '@/utils/components'
 import router from '@/router'
 
 export function dropBench(bench: any) {
-	const releaseGroup = getCachedDocumentResource('Release Group', bench.name)
+  const releaseGroup = createDocumentResource({
+    doctype: 'Release Group',
+    name: bench.name,
+  })
 
 	confirmDialog({
 		title: 'Drop Bench',
@@ -27,7 +30,6 @@ export function dropBench(bench: any) {
 					releaseGroup.delete.submit(null, {
 						onSuccess: () => {
 							hide()
-							router.push({ name: 'Release Group List' })
 						},
 					}),
 					{
