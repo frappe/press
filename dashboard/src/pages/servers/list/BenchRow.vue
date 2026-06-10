@@ -19,7 +19,6 @@ import {
 	reactive,
 	watch,
 } from 'vue'
-import { providerIcons } from './utils'
 import { dropBench } from './utils'
 
 import { dayjsLocal } from '@/utils/dayjs'
@@ -303,9 +302,11 @@ onBeforeUnmount(() => {
 		<!-- Add site empty state -->
 		<div
 			v-else-if="!sites?.list?.loading"
-			:class="['px-6 pr-4 py-2', bench_i != totalLength - 1 ? 'bordered' : '']"
+      class='row-grid px-6 pr-4 py-2 '
+			:class="[ bench_i != totalLength - 1 ? 'bordered' : '']"
 		>
-			<Button variant="ghost" @click="(e) => addSite(e, data)">
+    <span/>
+			<Button class='w-fit ml-3' variant="ghost" @click="(e) => addSite(e, data)">
 				<template #prefix>
 					<LucidePlus class="size-4" />
 				</template>
