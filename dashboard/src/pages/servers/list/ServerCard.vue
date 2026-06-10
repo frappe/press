@@ -39,10 +39,23 @@ const serverActions = (server) => [
 			)
 		},
 	},
-	{ label: 'Visit server', icon: 'external-link', route: `/servers/${server.name}` },
+	{
+		label: 'Visit server',
+		icon: 'external-link',
+		route: `/servers/${server.name}`,
+	},
 	{ label: 'View backups', icon: 'archive' },
-	{ label: 'Go to Server Actions', icon: LucideSlidersVertical, route: `/servers/${server.name}/actions` },
-	{ label: 'Drop server', theme: 'red', icon: 'trash-2', onClick: () => onDropServer(server) },
+	{
+		label: 'Go to Server Actions',
+		icon: LucideSlidersVertical,
+		route: `/servers/${server.name}/actions`,
+	},
+	{
+		label: 'Drop server',
+		theme: 'red',
+		icon: 'trash-2',
+		onClick: () => onDropServer(server),
+	},
 ]
 </script>
 
@@ -53,8 +66,11 @@ const serverActions = (server) => [
 
 			<div class="flex flex-wrap gap-2 items-center text-sm">
 				<span>{{ data?.title }}</span>
-				<div class="rounded-full size-2 bg-surface-green-3" />
-				<span>Active</span>
+				<div
+					class="rounded-full size-2 bg-surface-green-3"
+					:class="data.status === 'Active' ? 'bg-surface-green-3' : 'bg-surface-red-5'"
+				/>
+				<span>{{ data.status }}</span>
 				<span class="w-full text-ink-gray-6">
 					{{ data.vcpu }}
 					vCPU, {{ Math.round(data.memory / 1024) }} GB RAM,

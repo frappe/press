@@ -41,13 +41,13 @@ const sites = createListResource({
 	orderBy: 'creation desc',
 	pageLength: 5,
 	cache: ['sitesRes', props.data.name],
+  auto: true
 })
 
 const wired = ref(false)
 const pipelineId = ref(null)
 const pipelineRes = ref()
 
-// derive from pipeline stages
 const benchDeployStatus = computed(() => {
 	if (!pipelineRes.value?.doc) return
 
@@ -81,8 +81,7 @@ const attachPipeline = (id: string) => {
 			if (['Success', 'Failure'].includes(data.status)) {
 				pipelineRes.value = null
 				wired.value = false
-			} //
-			else if (!wired.value) {
+			} else if (!wired.value) {
 				socket.emit('doc_subscribe', 'Release Pipeline', id)
 				socket.on('doc_update', handlePipelineUpdate)
 				wired.value = true
@@ -111,11 +110,9 @@ if (!props.data.active_benches) {
 			},
 			fieldname: 'name',
 		},
-
 		auto: true,
 		onSuccess(data) {
 			if (!data?.name) return
-
 			attachPipeline(data.name)
 		},
 	})
@@ -123,13 +120,11 @@ if (!props.data.active_benches) {
 
 const deployBench = (e, bench, server) => {
 	e.stopPropagation()
-
 	const AppsDialog = defineAsyncComponent(() => import('./AppsDialog.vue'))
-
 	renderDialog(
 		h(AppsDialog, {
 			bench,
-      server,
+			server,
 			onDeployed: (x) => {
 				attachPipeline(x)
 			},
@@ -218,16 +213,15 @@ onBeforeUnmount(() => {
 		<template #header="{ opened, toggle }">
 			<div
 				:class="[
-						'row-grid pl-6 pr-4 py-2 cursor-pointer items-center',
-						(totalLength - 1 == bench_i && opened) ||
-						bench_i != totalLength - 1
-							? 'bordered'
-							: '',
-					]"
+					'row-grid pl-6 pr-4 py-2 cursor-pointer items-center',
+					(totalLength - 1 == bench_i && opened) || bench_i != totalLength - 1
+						? 'bordered'
+						: '',
+				]"
 				@click="() => {
-						if (!opened && !sites?.data) sites?.fetch()
-						toggle()
-					}"
+					// if (!opened && !sites?.data) sites?.fetch()
+					toggle()
+				}"
 			>
 				<LucideChevronUp
 					class="shrink-0 size-4 transition-transform duration-300"
@@ -240,20 +234,28 @@ onBeforeUnmount(() => {
 						:to="`/groups/${data.name}`"
 						@click.prevent="(e) => e.stopPropagation()"
 					>
-						<LucideBoxes class="size-4" /> {{ data.title }}
+						<LucideBoxes class="size-4" />
+						{{ data.title }}
+
+						<span
+							v-if="sites?.data?.length"
+							class="text-xs bg-surface-gray-2 text-ink-gray-6 rounded px-1.5 py-0.5 font-medium"
+						>
+							{{ sites.data.length }}
+						</span>
 					</router-link>
 				</Tooltip>
 
-				<div class="flex flex-wrap gap-2 items-center" v-if="!pipelineRes?.doc">
+				<div class="flex gap-2 items-center" v-if="!pipelineRes?.doc">
 					<span
-						class="size-2 rounded-full"
+						class="size-2 rounded-full shrink-0"
 						:class="data.active_benches ? 'bg-surface-green-3' : 'bg-surface-amber-3'"
 					/>
 					{{ data.active_benches ? 'Active' : 'Awaiting Deploy' }}
 					<button
 						v-if="!data.active_benches"
 						@click="(e) => deployBench(e, data, server)"
-						class="w-full self-start text-left mb-1 ml-4 hover:underline"
+						class="hover:underline text-ink-gray-6 text-sm"
 					>
 						Deploy
 					</button>
@@ -262,7 +264,7 @@ onBeforeUnmount(() => {
 				<router-link
 					v-else
 					class="flex gap-2 items-center -ml-1"
-					:to="{ name: 'Release Pipeline', params: { id: pipelineId, name: data.name }}"
+					:to="{ name: 'Release Pipeline', params: { id: pipelineId, name: data.name } }"
 					@click.prevent="(e) => e.stopPropagation()"
 				>
 					<Spinner />
@@ -270,7 +272,7 @@ onBeforeUnmount(() => {
 					<LucideExternalLink class="size-4" />
 				</router-link>
 
-				<span>{{ data.version }}</span>
+				<span>v{{ data.version }}</span>
 
 				<Dropdown :options="benchOptions(data)">
 					<Button variant="ghost" @click="(e) => e.stopPropagation()">
@@ -280,7 +282,6 @@ onBeforeUnmount(() => {
 			</div>
 		</template>
 
-		<!-- Loading state -->
 		<div class="p-10 flex" v-if="sites?.list?.loading">
 			<span class="flex gap-2 items-center m-auto">
 				<Spinner />
@@ -295,18 +296,17 @@ onBeforeUnmount(() => {
 			<span />
 			<span>Site</span>
 			<span>Status</span>
-			<span>Created</span>
+			<span>Modified / Created on</span>
 			<span />
 		</div>
 
-		<!-- Add site empty state -->
 		<div
 			v-else-if="!sites?.list?.loading"
-      class='row-grid px-6 pr-4 py-2 '
-			:class="[ bench_i != totalLength - 1 ? 'bordered' : '']"
+			class="row-grid px-6 pr-4 py-2"
+			:class="[bench_i != totalLength - 1 ? 'bordered' : '']"
 		>
-    <span/>
-			<Button class='w-fit ml-3' variant="ghost" @click="(e) => addSite(e, data)">
+			<span />
+			<Button class="w-fit ml-3" variant="ghost" @click="(e) => addSite(e, data)">
 				<template #prefix>
 					<LucidePlus class="size-4" />
 				</template>
@@ -318,25 +318,24 @@ onBeforeUnmount(() => {
 			v-for="(site, site_i) in sites?.data"
 			:key="site.name"
 			:class="[
-					'row-grid px-6 pr-4 py-2 items-center',
-					site_i != sites?.data?.length - 1 ||
-					bench_i != totalLength - 1
-						? 'bordered'
-						: '',
-				]"
+				'row-grid px-6 pr-4 py-2 items-center',
+				site_i != sites?.data?.length - 1 || bench_i != totalLength - 1
+					? 'bordered'
+					: '',
+			]"
 		>
 			<span />
-			<span class="flex gap-2 items-center text-ink-gray-8">
+			<span class="flex gap-2 items-center text-ink-gray-8 pl-4">
 				<LucideAppWindow class="size-4" /> {{ site.name }}
 			</span>
 
 			<router-link
-				v-if='["Pending", "Installing", "Updating", "Recovering"].includes(site.status)'
+				v-if="['Pending', 'Installing', 'Updating', 'Recovering'].includes(site.status)"
 				:to="`/sites/${site.name}`"
 				class="flex gap-2 items-center text-ink-gray-8"
 			>
 				<Spinner />
-				{{ data.status }}
+				{{ site.status }}
 				<LucideExternalLink class="size-4" />
 			</router-link>
 
@@ -345,9 +344,7 @@ onBeforeUnmount(() => {
 				{{ site.status }}
 			</div>
 
-			<span class="text-ink-gray-8"
-				>{{ dayjsLocal(site.creation).fromNow() }}</span
-			>
+			<span class="text-ink-gray-8">{{ dayjsLocal(site.creation).fromNow() }}</span>
 			<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
 		</div>
 	</Collapsable>
