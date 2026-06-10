@@ -17,6 +17,7 @@ const servers = createListResource({
 	fields: [
 		'name',
 		'title',
+    'status',
 		'provider',
 		'database_server',
 		'plan.title as plan_title',
