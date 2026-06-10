@@ -15,6 +15,7 @@ import LucideMoon from "~icons/lucide/moon";
 import LucideAlert from "~icons/lucide/notebook-text";
 import DarkModeLabel from "./DarkModeLabel.vue";
 import NavList from "./NavList.vue";
+import AttentionWidget from "./AttentionWidget.vue";
 
 import Item from "./Item.vue";
 import ItemGroup from "./ItemGroup.vue";
@@ -147,7 +148,9 @@ const helpDropdownOptions = [
         </template>
       </NavList>
 
-      <div :class='collapsed ? "flex-col" : "flex-row"' class='flex gap-1 justify-between items-center  mt-auto'>
+      <AttentionWidget />
+
+      <div :class='collapsed ? "flex-col" : "flex-row"' class='flex gap-1 justify-between items-center'>
         <Dropdown :options="helpDropdownOptions">
           <Button variant="ghost">
             <template #prefix v-if="!collapsed">
