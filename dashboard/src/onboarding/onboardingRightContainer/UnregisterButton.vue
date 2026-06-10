@@ -40,17 +40,19 @@ async function unregister() {
 
 	try {
 		await onboarding.unregister()
-		open.value = false
-		showOnboardingToast('success', 'Partner registration removed')
-		await team?.reload?.()
-		// reroute the user back to create site page
-		router.push({ path: '/sites' })
 	} catch (error: any) {
 		showOnboardingToast(
 			'error',
 			error.messages?.[0] || error.message || 'Could not unregister',
 		)
+		return
 	}
+
+	// onboarding.unregister() already reloads the team (see usePartnerOnboarding),
+	// so leave the onboarding page right away — don't gate routing on a reload.
+	open.value = false
+	showOnboardingToast('success', 'Partner registration removed')
+	router.push({ name: 'Site List' })
 }
 </script>
 
