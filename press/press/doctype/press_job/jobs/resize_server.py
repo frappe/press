@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 class ResizeServerJob(PressJob):
 	@flow
 	def execute(self):
+		self.remove_nat_config_if_applicable()
 		self.stop_virtual_machine()
 		self.wait_for_virtual_machine_to_stop()
 
@@ -28,8 +29,20 @@ class ResizeServerJob(PressJob):
 		self.wait_for_virtual_machine_to_start()
 
 		self.wait_for_server_to_be_accessible()
+		self.add_nat_config_if_applicable()
 		self.set_additional_config()
 		self.increase_disk_size()
+
+	@task
+	def remove_nat_config_if_applicable(self):
+		if self.server_type not in ("Server", "Database Server") or (
+			not self.server_doc.nat_server and self.server_doc.ip
+		):
+			return
+
+		play = self.server_doc._remove_nat_iptables()
+		if not play or play.status != "Success":
+			raise Exception("Failed to remove NAT configuration")
 
 	@task
 	def stop_virtual_machine(self):
@@ -94,6 +107,17 @@ class ResizeServerJob(PressJob):
 		play = self.server_doc.ping_ansible()
 		if not play or play.status != "Success":
 			self.defer_current_task()
+
+	@task
+	def add_nat_config_if_applicable(self):
+		if self.server_type not in ("Server", "Database Server") or (
+			not self.server_doc.nat_server and self.server_doc.ip
+		):
+			return
+
+		play = self.server_doc._install_nat_iptables()
+		if not play or play.status != "Success":
+			raise Exception("Failed to add NAT configuration")
 
 	@task
 	def set_additional_config(self):
