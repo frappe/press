@@ -257,7 +257,13 @@ const savePartnerOnboarding = createResource({
 	url: `${baseUrl}.save_partner_onboarding`,
 	auto: false,
 	onSuccess: (nextDoc: PartnerOnboardingDoc) => {
+		const wasRegistered = Boolean(doc.value?.name)
 		applyDoc(nextDoc, activeTeam.value)
+		// First registration creates the record — reload the team so the
+		// sidebar surfaces the "Partnership" item (see NavList.vue / Sidebar.vue).
+		if (!wasRegistered && nextDoc?.name) {
+			void activeTeam.value?.reload?.()
+		}
 	},
 })
 
@@ -276,6 +282,9 @@ const unregisterPartnerOnboarding = createResource({
 		applyDoc(null, activeTeam.value)
 		resetCertificateStatus()
 		resetMRRStatus()
+		// Record removed — reload the team so the sidebar drops "Partnership"
+		// and the "Become a Partner" entry returns to the dropdown.
+		void activeTeam.value?.reload?.()
 	},
 })
 
