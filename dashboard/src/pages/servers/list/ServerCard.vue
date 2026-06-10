@@ -3,6 +3,7 @@ import { h, defineAsyncComponent } from 'vue'
 import { Button, Tooltip, Dropdown, createListResource } from 'frappe-ui'
 
 import { renderDialog } from '@/utils/components'
+import { onDropServer } from './utils'
 import ServerIcon from './ServerIcon.vue'
 
 import BenchRow from './BenchRow.vue'
@@ -38,18 +39,17 @@ const serverActions = (server) => [
 			)
 		},
 	},
-	{ label: 'Visit server', icon: 'external-link' },
+	{ label: 'Visit server', icon: 'external-link', route: `/servers/${server.name}` },
 	{ label: 'View backups', icon: 'archive' },
-	{ label: 'Change App server plan', icon: LucideArrowLeftRight },
-	{ label: 'Change DB server plan', icon: LucideArrowLeftRight },
-	{ label: 'Drop server', theme: 'red', icon: 'trash-2' },
+	{ label: 'Go to Server Actions', icon: LucideSlidersVertical, route: `/servers/${server.name}/actions` },
+	{ label: 'Drop server', theme: 'red', icon: 'trash-2', onClick: () => onDropServer(server) },
 ]
 </script>
 
 <template>
 	<section class="shadow dark:bg-surface-cards rounded" :key="data.name">
 		<div class="bordered p-4 flex gap-3 items-center">
-			<ServerIcon :provider="data.provider" class='size-8'/>
+			<ServerIcon :provider="data.provider" class="size-8" />
 
 			<div class="flex flex-wrap gap-2 items-center text-sm">
 				<span>{{ data?.title }}</span>
