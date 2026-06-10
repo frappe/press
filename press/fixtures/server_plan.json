@@ -44456,7 +44456,7 @@
 		"roles": [
 			{
 				"role": "Press User"
-			},
+			}
 		],
 		"server_type": "Server",
 		"title": "c8i.4xlarge",
