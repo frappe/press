@@ -101,9 +101,14 @@ const handleSubmit = async () => {
 
 	try {
 		await onboarding.save()
-		await onboarding.loadMRRStatus()
 		registered.value = true
 		emit('registered')
+		// Fetch MRR in the background (fire-and-forget). It isn't shown on the
+		// success screen, and the query can be slow against a large Invoice table,
+		// so it must not block registration. We still trigger it here because the
+		// modal can be opened from the partner-onboarding page itself — in which
+		// case "Continue" doesn't re-navigate and the page's load() won't re-run.
+		void onboarding.loadMRRStatus()
 	} catch (error: any) {
 		// Backend validation (e.g. the Phone field) wraps values in <strong>
 		// tags via frappe.bold(); strip them so they don't render as literal
