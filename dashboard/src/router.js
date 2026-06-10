@@ -6,11 +6,6 @@ import generateRoutes from './objects/generateRoutes'
 let router = createRouter({
 	history: createWebHistory('/dashboard/'),
 	routes: [
-    	{
-			path: '/ser',
-			name: 'ser',
-			component: () => import('./pages/servers/list/Page.vue'),
-		},
 		{
 			path: '/',
 			name: 'Home',
@@ -105,6 +100,12 @@ let router = createRouter({
 			path: '/groups/:bench/sites/new',
 			component: () => import('./pages/NewSite.vue'),
 			props: true,
+		},
+
+     {
+			name: 'Servers',
+			path: '/servers',
+			component: () => import('./pages/servers/list/Page.vue'),
 		},
 		{
 			name: 'Server New Site',

@@ -41,7 +41,7 @@ const sites = createListResource({
 	orderBy: 'creation desc',
 	pageLength: 5,
 	cache: ['sitesRes', props.data.name],
-  auto: true
+	auto: true,
 })
 
 const wired = ref(false)
@@ -246,16 +246,16 @@ onBeforeUnmount(() => {
 					</router-link>
 				</Tooltip>
 
-				<div class="flex gap-2 items-center" v-if="!pipelineRes?.doc">
+				<div class="flex flex-wrap gap-2 items-center" v-if="!pipelineRes?.doc">
 					<span
-						class="size-2 rounded-full shrink-0"
+						class="size-2 rounded-full"
 						:class="data.active_benches ? 'bg-surface-green-3' : 'bg-surface-amber-3'"
 					/>
 					{{ data.active_benches ? 'Active' : 'Awaiting Deploy' }}
 					<button
 						v-if="!data.active_benches"
 						@click="(e) => deployBench(e, data, server)"
-						class="hover:underline text-ink-gray-6 text-sm"
+						class="w-full self-start text-left mb-1 ml-4 hover:underline"
 					>
 						Deploy
 					</button>
@@ -306,7 +306,11 @@ onBeforeUnmount(() => {
 			:class="[bench_i != totalLength - 1 ? 'bordered' : '']"
 		>
 			<span />
-			<Button class="w-fit ml-3" variant="ghost" @click="(e) => addSite(e, data)">
+			<Button
+				class="w-fit ml-3"
+				variant="ghost"
+				@click="(e) => addSite(e, data)"
+			>
 				<template #prefix>
 					<LucidePlus class="size-4" />
 				</template>
@@ -344,7 +348,9 @@ onBeforeUnmount(() => {
 				{{ site.status }}
 			</div>
 
-			<span class="text-ink-gray-8">{{ dayjsLocal(site.creation).fromNow() }}</span>
+			<span class="text-ink-gray-8"
+				>{{ dayjsLocal(site.creation).fromNow() }}</span
+			>
 			<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
 		</div>
 	</Collapsable>
