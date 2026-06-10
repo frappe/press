@@ -246,7 +246,10 @@ onBeforeUnmount(() => {
 					</router-link>
 				</Tooltip>
 
-				<div class="flex flex-wrap gap-x-2.5 gap-y-1.5 items-center" v-if="!pipelineRes?.doc">
+				<div
+					class="flex flex-wrap gap-x-2.5 gap-y-1.5 items-center"
+					v-if="!pipelineRes?.doc"
+				>
 					<span
 						class="size-2 rounded-full"
 						:class="data.active_benches ? 'bg-surface-green-3' : 'bg-surface-amber-3'"
@@ -334,9 +337,15 @@ onBeforeUnmount(() => {
 			]"
 		>
 			<span />
-			<span class="flex gap-2 items-center text-ink-gray-8 pl-4">
-				<LucideAppWindow class="size-4" /> {{ site.name }}
-			</span>
+
+			<Tooltip text="Go to site dashboard">
+				<router-link
+					class="flex gap-2 w-fit items-center hover:underline text-ink-gray-8 pl-4"
+					:to="`/sites/${site.name}`"
+				>
+					<LucideAppWindow class="size-4" /> {{ site.name }}
+				</router-link>
+			</Tooltip>
 
 			<router-link
 				v-if="['Pending', 'Installing', 'Updating', 'Recovering'].includes(site.status)"
