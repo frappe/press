@@ -113,9 +113,9 @@ def verify_otp_and_login(email: str, otp: str):
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
 	if not account_request:
-		frappe.throw(
-			"We couldn't find an account for this email address. Please sign up first, then request a one-time password to log in."
-		)
+		# Keep this message generic — do not reveal whether an account exists
+		# for this email, to avoid account enumeration.
+		frappe.throw("Please sign up first")
 
 	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 	ip_tracker = get_login_attempt_tracker(frappe.local.request_ip)
@@ -149,9 +149,9 @@ def resend_otp(account_request: str, for_2fa_keys: bool = False):
 		frappe.db.exists("Team", {"user": account_request_doc.email})
 		and not account_request_doc.product_trial
 	):
-		frappe.throw(
-			"An account already exists for this email address. Please log in instead, or sign up with a different email."
-		)
+		# Keep this message generic — do not reveal whether an account already
+		# exists for this email, to avoid account enumeration.
+		frappe.throw("Invalid Email")
 	account_request_doc.reset_otp()
 	account_request_doc.send_otp_mail(for_login=not for_2fa_keys)
 
@@ -162,9 +162,9 @@ def send_otp(email: str, for_2fa_keys: bool = False):
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
 	if not account_request or (account_request and not frappe.db.exists("User", email)):
-		frappe.throw(
-			"We couldn't find an account for this email address. Please sign up first, then request a one-time password to log in."
-		)
+		# Keep this message generic — do not reveal whether an account exists
+		# for this email, to avoid account enumeration.
+		frappe.throw("Please sign up first")
 
 	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
 
@@ -310,9 +310,9 @@ def accept_team_invite(key: str):
 @rate_limit(limit=5, seconds=60 * 60)
 def send_login_link(email):
 	if not frappe.db.exists("User", email):
-		frappe.throw(
-			"We couldn't find an account for this email address. Please check the spelling, or sign up for a new account."
-		)
+		# Keep this message generic — do not reveal whether an account exists
+		# for this email, to avoid account enumeration.
+		frappe.throw("No registered account with this email address")
 
 	key = frappe.generate_hash("Login Link", 20)
 	minutes = 10
