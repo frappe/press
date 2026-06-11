@@ -353,13 +353,16 @@ async function submitForApproval() {
 				variant="solid"
 				class="w-full sm:w-auto"
 				:disabled="!canClickPrimaryAction"
-				:iconLeft="submitIcon"
 				:loading="
 					onboarding.submittingForApproval.value || onboarding.unregistering.value
 				"
 				:label="submitLabel"
 				@click="submitForApproval"
-			/>
+			>
+				<template #prefix>
+					<component :is="submitIcon" class="size-3.5 -mr-0.5" />
+				</template>
+			</Button>
 		</div>
 	</div>
 </template>
