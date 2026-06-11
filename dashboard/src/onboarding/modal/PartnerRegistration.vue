@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { createResource, FormControl } from 'frappe-ui'
-import { computed, inject, onMounted, ref, useTemplateRef } from 'vue'
+import { createResource, FormControl, Tooltip } from 'frappe-ui'
+import { computed, inject, onMounted, ref, useTemplateRef, watch } from 'vue'
 import EmailInput from '@/components/EmailInput.vue'
 import PhoneInput from '@/components/PhoneInput.vue'
 import PostRegistrationMessage from '@/onboarding/modal/PostRegistrationMessage.vue'
 import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
+import LucideInfo from '~icons/lucide/info'
 
 const emit = defineEmits(['registered'])
 
@@ -79,6 +80,15 @@ const errors = computed(() => {
 const companyNameRef = useTemplateRef('companyNameRef')
 const emailInputRef = useTemplateRef('emailInputRef')
 
+// The backend phone error names the rejected number, so clear it the moment
+// the user edits the contact — otherwise the stale message lingers.
+watch(
+	() => onboarding.form.contact,
+	() => {
+		submitError.value = ''
+	},
+)
+
 onMounted(() => {
 	companyNameRef.value?.$el?.querySelector('input')?.focus()
 })
@@ -92,12 +102,25 @@ const handleSubmit = async () => {
 
 	try {
 		await onboarding.save()
-		await onboarding.loadMRRStatus()
 		registered.value = true
 		emit('registered')
+		// Fetch MRR in the background (fire-and-forget). It isn't shown on the
+		// success screen, and the query can be slow against a large Invoice table,
+		// so it must not block registration. We still trigger it here because the
+		// modal can be opened from the partner-onboarding page itself — in which
+		// case "Continue" doesn't re-navigate and the page's load() won't re-run.
+		void onboarding.loadMRRStatus()
 	} catch (error: any) {
-		submitError.value = error.messages?.[0] || error.message
+		// Backend validation (e.g. the Phone field) wraps values in <strong>
+		// tags via frappe.bold(); strip them so they don't render as literal
+		// markup in the plain-text error below.
+		const message = error.messages?.[0] || error.message || ''
+		submitError.value = stripHtmlTags(message)
 	}
+}
+
+function stripHtmlTags(value: string) {
+	return value.replace(/<[^>]*>/g, '')
 }
 </script>
 
@@ -131,16 +154,25 @@ const handleSubmit = async () => {
 			{{ errors.company_name }}
 		</p>
 
-		<FormControl
-			v-model="onboarding.form.registered_country"
-			label="Registered country"
-			type="select"
-			size="sm"
-			variant="outline"
-			placeholder="Select"
-			:options="countryOptions"
-			:class="{ 'has-error': errors.country }"
-		/>
+		<div class="flex flex-col gap-1.5">
+			<div class="flex items-end gap-1">
+				<label class="block text-xs text-ink-gray-5">Registered country</label>
+				<Tooltip
+					text="You'll be listed as a partner in this country, subject to approval and verification."
+				>
+					<LucideInfo class="h-3 w-3 text-ink-gray-5" />
+				</Tooltip>
+			</div>
+			<FormControl
+				v-model="onboarding.form.registered_country"
+				type="select"
+				size="sm"
+				variant="outline"
+				placeholder="Select"
+				:options="countryOptions"
+				:class="{ 'has-error': errors.country }"
+			/>
+		</div>
 		<p v-if="errors.country" class="-mt-2 text-sm text-ink-red-4">
 			{{ errors.country }}
 		</p>
