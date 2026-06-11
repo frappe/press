@@ -979,8 +979,10 @@ def should_try_update(site: Site):
 	)
 
 
-def is_site_in_deploy_hours(site):
+def is_site_in_deploy_hours(site: Site):
 	if site.status in ("Inactive", "Suspended"):
+		return True
+	if site.is_standby:
 		return True
 	server_time = datetime.now()
 	timezone = site.timezone or "Asia/Kolkata"
