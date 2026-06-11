@@ -162,6 +162,14 @@ const benchOptions = (bench) => [
 	},
 ]
 
+const siteOptions = (site) => [
+	{
+		label: 'Site Actions',
+		route: `/sites/${site.name}/actions`,
+		icon: LucideSlidersVertical,
+	},
+]
+
 const statusColors = {
 	Active: 'bg-surface-green-3',
 	Broken: 'bg-surface-red-3',
@@ -365,7 +373,9 @@ onBeforeUnmount(() => {
 			<span class="text-ink-gray-8"
 				>{{ dayjsLocal(site.creation).fromNow() }}</span
 			>
-			<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
+      <Dropdown :options="siteOptions(site)">
+        <Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
+      </Dropdown>
 		</div>
 	</Collapsable>
 </template>
