@@ -365,8 +365,12 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def configure_auto_add_storage(self, server: str, enabled: bool, min: int = 0, max: int = 0) -> None:
+		# `self` is always the app server (the dashboard dispatches on $appServer);
+		# `server` identifies the actual target, which may be a Database Server.
+		server_doc = self if server == self.name else frappe.get_doc("Database Server", server)
+
 		if not enabled:
-			frappe.db.set_value(self.doctype, self.name, "auto_increase_storage", False)
+			frappe.db.set_value(server_doc.doctype, server_doc.name, "auto_increase_storage", False)
 			return
 
 		if min < 0 or max < 0:
@@ -374,17 +378,10 @@ class BaseServer(Document, TagHelpers):
 		if min > max:
 			frappe.throw(_("Minimum storage size must be less than the maximum storage size"))
 
-		if server == self.name:
-			self.auto_increase_storage = True
-			self.auto_add_storage_min = min
-			self.auto_add_storage_max = max
-			self.save()
-		else:
-			server_doc = frappe.get_doc("Database Server", server)
-			server_doc.auto_increase_storage = True
-			server_doc.auto_add_storage_min = min
-			server_doc.auto_add_storage_max = max
-			server_doc.save()
+		server_doc.auto_increase_storage = True
+		server_doc.auto_add_storage_min = min
+		server_doc.auto_add_storage_max = max
+		server_doc.save()
 
 	@staticmethod
 	def on_not_found(name):
