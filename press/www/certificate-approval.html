@@ -1,0 +1,103 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Certificate Link Request{% endblock %}
+
+{% block page_content %}
+<div class="cert-approval">
+	<div class="cert-card">
+		{% if state == "pending" %}
+		<h1 class="cert-title">Approve certificate link</h1>
+		<p class="cert-text">
+			<strong>{{ partner }}</strong> has requested to link your
+			{% if course %}<strong>{{ course }}</strong> {% endif %}certificate to their
+			Frappe Cloud partner account.
+		</p>
+		<p class="cert-text">Approve only if you recognise this partner.</p>
+		<form method="POST" class="cert-form">
+			<input type="hidden" name="key" value="{{ frappe.form_dict.key or '' }}">
+			<input type="hidden" name="csrf_token" value="{{ frappe.session.csrf_token }}">
+			<button type="submit" class="cert-button">Approve link request</button>
+		</form>
+
+		{% elif state == "approved" %}
+		<h1 class="cert-title">Certificate linked</h1>
+		<p class="cert-text">
+			Your certificate has been linked to <strong>{{ partner }}</strong>.
+			You can close this tab.
+		</p>
+
+		{% elif state == "already_approved" %}
+		<h1 class="cert-title">Already linked</h1>
+		<p class="cert-text">
+			This request has already been approved. No further action is needed —
+			you can close this tab.
+		</p>
+
+		{% elif state == "error" %}
+		<h1 class="cert-title">Couldn't link certificate</h1>
+		<p class="cert-text">{{ error_message }}</p>
+
+		{% else %}
+		<h1 class="cert-title">Link not valid</h1>
+		<p class="cert-text">
+			This certificate link request is invalid or has expired. Please ask the
+			partner to send a new request.
+		</p>
+		{% endif %}
+	</div>
+</div>
+
+<style>
+	.cert-approval {
+		display: flex;
+		justify-content: center;
+		padding: 64px 16px;
+	}
+
+	.cert-card {
+		width: 100%;
+		max-width: 480px;
+		padding: 32px;
+		border: 1px solid #e2e2e2;
+		border-radius: 12px;
+		background: #fff;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+		text-align: center;
+	}
+
+	.cert-title {
+		font-size: 20px;
+		font-weight: 600;
+		color: #171717;
+		margin-bottom: 12px;
+	}
+
+	.cert-text {
+		font-size: 14px;
+		line-height: 1.6;
+		color: #525252;
+		margin-bottom: 12px;
+	}
+
+	.cert-form {
+		margin-top: 24px;
+	}
+
+	.cert-button {
+		display: inline-block;
+		width: 100%;
+		padding: 10px 16px;
+		font-size: 14px;
+		font-weight: 500;
+		color: #fff;
+		background: #171717;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+	}
+
+	.cert-button:hover {
+		background: #000;
+	}
+</style>
+{% endblock %}
