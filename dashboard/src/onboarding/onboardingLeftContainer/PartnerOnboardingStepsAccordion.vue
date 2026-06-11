@@ -71,7 +71,10 @@ const steps = computed(() => [
 		status: onboarding.isRegistered.value ? 'completed' : 'pending',
 		description: null,
 		summaryRight: null,
-		actionLabel: onboarding.isRegistered.value ? null : 'Register as a partner',
+		actionLabel: onboarding.isRegistered.value
+			? 'Registered'
+			: 'Register as a partner',
+		actionDisabled: onboarding.isRegistered.value,
 		onClick: () => {
 			registrationModalOpen.value = true
 		},
@@ -279,15 +282,15 @@ async function submitForApproval() {
 						</span>
 
 						<LucideChevronDown
-							class="size-4 shrink-0 text-ink-gray-6 transition-transform duration-200 group-data-[state=open]:rotate-180"
+							class="size-4 shrink-0 text-ink-gray-6 transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[state=open]:rotate-180 motion-reduce:transition-none"
 						/>
 					</FAccordionTrigger>
 				</FAccordionHeader>
 
 				<FAccordionContent
 					v-if="
-					step.description || step.actionLabel || step.secondaryActionLabel
-				"
+						step.description || step.actionLabel || step.secondaryActionLabel
+					"
 				>
 					<p
 						v-if="step.description"
@@ -315,6 +318,7 @@ async function submitForApproval() {
 					<Button
 						v-if="step.actionLabel"
 						variant="solid"
+						:disabled="'actionDisabled' in step && step.actionDisabled"
 						:label="step.actionLabel"
 						@click="step.onClick"
 					/>
@@ -353,13 +357,16 @@ async function submitForApproval() {
 				variant="solid"
 				class="w-full sm:w-auto"
 				:disabled="!canClickPrimaryAction"
-				:iconLeft="submitIcon"
 				:loading="
 					onboarding.submittingForApproval.value || onboarding.unregistering.value
 				"
 				:label="submitLabel"
 				@click="submitForApproval"
-			/>
+			>
+				<template #prefix>
+					<component :is="submitIcon" class="size-3.5 -mr-0.5" />
+				</template>
+			</Button>
 		</div>
 	</div>
 </template>
