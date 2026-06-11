@@ -2086,7 +2086,9 @@ class BaseServer(Document, TagHelpers):
 	@frappe.whitelist()
 	def start_active_benches(self):
 		benches = frappe.get_all("Bench", {"server": self.name, "status": "Active"}, pluck="name")
-		frappe.enqueue_doc(self.doctype, self.name, "_start_active_benches", benches=benches)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_start_active_benches", benches=benches, queue="long", timeout=3600
+		)
 
 	def _start_active_benches(self, benches: list[str]):
 		try:
