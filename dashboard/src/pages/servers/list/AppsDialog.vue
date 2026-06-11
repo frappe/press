@@ -19,7 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const handleAppSelection = (cond, app) => {
-	if (cond) addedApps.push(app)
+  if (cond && !addedApps.includes(app)) addedApps.push(app)
 	else addedApps.splice(addedApps.indexOf(app), 1)
 }
 
@@ -146,10 +146,13 @@ const filteredApps = computed(() => {
 
 					<Checkbox
 						class="ml-auto"
+            :modelValue="addedApps.includes(app)"
 						@update:modelValue="(x) => handleAppSelection(x, app)"
 					/>
 				</label>
 			</div>
+
+      <p v-if="err" class="text-ink-red-4 text-sm mt-3">{{ err }}</p>
 
 			<div class="flex col-span-full justify-between items-center mt-6">
 				<a
