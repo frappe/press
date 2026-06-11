@@ -52,16 +52,11 @@ export const onDropServer = (server: any) => {
 		name: server.name,
 	})
 
-	const databaseServer = createDocumentResource({
-		doctype: 'Database Server',
-		name: server.database_server,
-	})
-
 	confirmDialog({
 		title: 'Drop Server',
 		message: server.is_unified_server
-			? `<div class="prose text-base">Are you sure you want to drop your unified server?<br><br>The following server will be dropped<ul><li>${serverFullRes.doc.title} (<b>${serverFullRes.doc.name}</b>)</li></ul><br>This action cannot be undone.</div>`
-			: `<div class="prose text-base">Are you sure you want to drop your servers?<br><br>Following servers will be dropped<ul><li>${serverFullRes.doc.title} (<b>${serverFullRes.doc.name}</b>)</li><li>${databaseServer.doc.title} (<b>${server.database_server}</b>)</li></ul><br>This action cannot be undone.</div>`,
+			? `<div class="prose text-base">Are you sure you want to drop your unified server?<br><br>The following server will be dropped<ul><li>${server.title} (<b>${server.name}</b>)</li></ul><br>This action cannot be undone.</div>`
+			: `<div class="prose text-base">Are you sure you want to drop your servers?<br><br>Following servers will be dropped<ul><li>${server.title} (<b>${server.name}</b>)</li><li>${server.database_server}</li></ul><br>This action cannot be undone.</div>`,
 		fields: [
 			{
 				label: "Please type either server's name or title to confirm",
@@ -74,11 +69,11 @@ export const onDropServer = (server: any) => {
 		},
 		onSuccess({ hide, values }) {
 			if (serverFullRes.dropServer.loading) return
+			const confirmed = values.confirmServerName
 			if (
-				values.confirmServerName !== serverFullRes.doc.name &&
-				values.confirmServerName !== server.database_server &&
-				values.confirmServerName.trim() !== serverFullRes.doc.title.trim() &&
-				values.confirmServerName.trim() !== databaseServer.doc.title.trim()
+				confirmed !== server.name &&
+				confirmed !== server.database_server &&
+				confirmed.trim() !== server.title.trim()
 			) {
 				throw new Error('Server name does not match')
 			}
