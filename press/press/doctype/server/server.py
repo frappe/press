@@ -3121,7 +3121,12 @@ class Server(BaseServer):
 
 		servers = frappe.get_all(
 			"Server",
-			filters={"cluster": self.cluster, "public": 1, "exclude_for_scheduling": 0},
+			filters={
+				"cluster": self.cluster,
+				"public": 1,
+				"exclude_for_scheduling": 0,
+				"name": ("!=", self.name),
+			},
 			fields=["use_for_new_sites", "use_for_new_benches"],
 		)
 
