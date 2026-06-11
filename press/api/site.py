@@ -1069,7 +1069,7 @@ def options_for_new(for_bench: str | None = None, for_server: str | None = None)
 	default_domain = frappe.db.get_single_value("Press Settings", "domain")
 	cluster_specific_root_domains = frappe.db.get_all(
 		"Root Domain",
-		{"name": ("like", f"%.{default_domain}")},
+		{"name": ("like", f"%.{default_domain}"), "enabled": 1},
 		["name", "default_cluster as cluster"],
 	)
 
