@@ -6,7 +6,6 @@ import { ref, watch } from 'vue'
 import ServerCard from './ServerCard.vue'
 import Loader from './Loader.vue'
 
-const searchQuery = ref('')
 const sortBy = ref('desc')
 
 const servers = createListResource({
@@ -34,15 +33,6 @@ const servers = createListResource({
 	orderBy: `creation ${sortBy.value}`,
 })
 
-watch(searchQuery, (value) => {
-	servers.update({
-		filters: value ? { title: ['like', `%${value.toLowerCase()}%`] } : {},
-		start: 0,
-		pageLength: 20,
-	})
-	servers.reload()
-})
-
 const regions = [
 	'',
 	'Bahrain',
@@ -57,7 +47,7 @@ const regions = [
 	'Zurich',
 ]
 
-const applyFilters = (key: string, value: string) => {
+const applyFilters = (key: string, value: any) => {
 	servers.update({
 		filters: { ...servers.filters, [key]: value || undefined },
 		start: 0,
@@ -76,13 +66,13 @@ const toggleSort = () => {
 <template>
 	<Header class="sticky top-0 z-10 bg-surface-white mb-5">
 		<Breadcrumbs :items="[{ label: 'Servers', route: '/ser' }]" />
-    <Button class="ml-auto mr-2">
-      <template #icon>
-        <lucide-refresh-ccw class="size-4" />
-      </template>
-    </Button>
+		<Button class="ml-auto mr-2">
+			<template #icon>
+				<lucide-refresh-ccw class="size-4" />
+			</template>
+		</Button>
 
-		<Button :route="{ name: 'New Server' }" variant="solid" >
+		<Button :route="{ name: 'New Server' }" variant="solid">
 			New Server
 		</Button>
 	</Header>
@@ -91,9 +81,8 @@ const toggleSort = () => {
 	<div class="flex gap-3 items-center px-5">
 		<TextInput
 			placeholder="Search server"
-			v-model="searchQuery"
 			:debounce="500"
-			@update:modelValue="v => applyFilters('title', v)"
+			@update:modelValue="v => applyFilters('title', ['like', `%${v.toLowerCase()}%`])"
 		>
 			<template #prefix>
 				<lucide-search class="size-4 text-ink-gray-5" />
@@ -104,7 +93,7 @@ const toggleSort = () => {
 			placeholder="Region"
 			class="!w-fit"
 			:options="regions"
-			@update:modelValue="v => applyFilters('cluster_title', v)"
+			@update:modelValue="v => applyFilters('cluster.title', v)"
 		>
 			<template #prefix>
 				<LucideMapPin class="size-4" />
