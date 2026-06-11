@@ -868,7 +868,7 @@ def sites_with_available_update(server=None):
 			"skip_auto_updates": False,
 			"fatal_site_update": ("is", "not set"),
 		},
-		fields=["name", "timezone", "bench", "server", "status"],
+		fields=["name", "timezone", "bench", "server", "status", "is_standby"],
 	)
 
 
