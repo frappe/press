@@ -18,7 +18,7 @@ const benches = createListResource({
 	doctype: 'Release Group',
 	pageLength: 5,
 	auto: true,
-	fields: ['name', 'title', 'version'],
+	fields: ['name', 'title', 'version', 'active_benches', "site_count"],
 	filters: { server: props.data.name },
 	cache: ['benchesRes', props.data.name],
 	orderBy: 'creation desc',

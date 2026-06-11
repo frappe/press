@@ -238,10 +238,10 @@ onBeforeUnmount(() => {
 						{{ data.title }}
 
 						<span
-							v-if="sites?.data?.length"
+							v-if="data.site_count"
 							class="text-xs bg-surface-gray-2 text-ink-gray-6 rounded px-1.5 py-0.5 font-medium"
 						>
-							{{ sites.data.length }}
+							{{ data.site_count }}
 						</span>
 					</router-link>
 				</Tooltip>
