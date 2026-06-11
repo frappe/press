@@ -3106,6 +3106,9 @@ class Server(BaseServer):
 		a cluster being left with no usable public server before that job runs.
 		"""
 
+		if self.flags.in_insert:
+			return
+
 		became_private = not self.public and self.has_value_changed("public")
 		excluded_from_scheduling = (
 			self.public and self.exclude_for_scheduling and self.has_value_changed("exclude_for_scheduling")
