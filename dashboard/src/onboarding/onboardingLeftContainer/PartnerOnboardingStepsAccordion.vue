@@ -71,7 +71,10 @@ const steps = computed(() => [
 		status: onboarding.isRegistered.value ? 'completed' : 'pending',
 		description: null,
 		summaryRight: null,
-		actionLabel: onboarding.isRegistered.value ? null : 'Register as a partner',
+		actionLabel: onboarding.isRegistered.value
+			? 'Registered'
+			: 'Register as a partner',
+		actionDisabled: onboarding.isRegistered.value,
 		onClick: () => {
 			registrationModalOpen.value = true
 		},
@@ -286,8 +289,8 @@ async function submitForApproval() {
 
 				<FAccordionContent
 					v-if="
-					step.description || step.actionLabel || step.secondaryActionLabel
-				"
+						step.description || step.actionLabel || step.secondaryActionLabel
+					"
 				>
 					<p
 						v-if="step.description"
@@ -315,6 +318,7 @@ async function submitForApproval() {
 					<Button
 						v-if="step.actionLabel"
 						variant="solid"
+						:disabled="'actionDisabled' in step && step.actionDisabled"
 						:label="step.actionLabel"
 						@click="step.onClick"
 					/>
