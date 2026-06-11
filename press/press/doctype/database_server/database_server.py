@@ -2427,6 +2427,14 @@ systemctl restart mariadb
 				+ binlog_indexes_size
 			)
 
+			# On a unified server the application (benches, docker) and archived benches
+			# share the database disk, so they would otherwise be counted as OS usage.
+			# Break them out into their own buckets.
+			application_usage = 0
+			unused_files_usage = 0
+			if self.is_unified_server:
+				application_usage, unused_files_usage = self.get_application_storage_usage()
+
 			sites_db_name_info = frappe.get_all(
 				"Site",
 				filters={
@@ -2445,12 +2453,34 @@ systemctl restart mariadb
 				"disk_free": disk_info[0] - disk_info[1],
 				"database_usage": total_db_usage,
 				"binlog_indexes": binlog_indexes_size,
-				"os_usage": disk_info[1] - total_db_usage,
+				"os_usage": disk_info[1] - total_db_usage - application_usage - unused_files_usage,
+				"app_usage": application_usage,
+				"unused_files": unused_files_usage,
 				"database": mysql_storage_info,
 				"db_name_site_map": db_name_site_mapping,
 			}
 		except Exception:
 			frappe.throw("Failed to fetch storage usage. Try again later.")
+
+	def get_application_storage_usage(self) -> tuple[int, int]:
+		"""Application (benches + docker) and archived bench usage in KB.
+
+		Derived from the paired app server's ncdu storage breakdown so a unified
+		server's app data isn't counted as OS usage.
+		"""
+		app_server = frappe.db.get_value(
+			"Server", {"database_server": self.name, "status": ("!=", "Archived")}, "name"
+		)
+		if not app_server:
+			return 0, 0
+
+		with contextlib.suppress(Exception):
+			breakdown = frappe.get_doc("Server", app_server).get_storage_usage()
+			benches_bytes = (breakdown.get("benches") or {}).get("size", 0)
+			docker_bytes = (breakdown.get("docker") or {}).get("size", 0)
+			archived_bytes = (breakdown.get("archived") or {}).get("size", 0)
+			return int((benches_bytes + docker_bytes) / 1024), int(archived_bytes / 1024)
+		return 0, 0
 
 	def set_mariadb_mount_dependency(self, now: bool | None = None):
 		if not self.mariadb_depends_on_mounts:
