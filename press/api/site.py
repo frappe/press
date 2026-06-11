@@ -297,14 +297,22 @@ def _validate_warranty_change(
 	"""Throw if a warranty-affecting plan change is not allowed at this time."""
 	if is_new or is_system_user or not is_current_dedicated_server_plan:
 		return
-	if is_current_plan_supported == is_product_warranty_enabled_for_plan_(new_plan):
+	is_new_plan_supported = is_product_warranty_enabled_for_plan_(new_plan)
+	if is_current_plan_supported == is_new_plan_supported:
 		return
 
 	next_warranty_change = get_next_allowed_dedicated_product_warranty_change_date(site)
 	if get_datetime() < next_warranty_change:
 		pretty_date = format_datetime(next_warranty_change, "MMM d, YYYY hh:mm a")
 		frappe.throw(f"Cannot change product warranty for this site before {pretty_date}")  # nosemgrep
+<<<<<<< HEAD
 
+=======
+	# The quota check only gates enabling warranty (which consumes a slot);
+	# disabling is always allowed once the cooldown above has passed.
+	if not is_new_plan_supported:
+		return
+>>>>>>> 518365fba (fix(product-warranty-switch): Gate warranty enabling only)
 	quota = get_available_warranty_quota_for_server(server)
 	if quota.get("available") <= 0:
 		frappe.throw(
