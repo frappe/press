@@ -2890,6 +2890,7 @@ class Server(BaseServer):
 		use_for_build: DF.Check
 		use_for_new_benches: DF.Check
 		use_for_new_sites: DF.Check
+		skip_standby_site_creation: DF.Check
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
