@@ -31,9 +31,9 @@
 		{ "fieldname": "column_break_wpyz", "fieldtype": "Column Break" },
 		{
 			"fieldname": "user_email",
-			"fieldtype": "Link",
+			"fieldtype": "Data",
 			"label": "User Email",
-			"options": "User"
+			"options": "Email"
 		},
 		{ "fieldname": "key", "fieldtype": "Data", "label": "Key", "read_only": 1 },
 		{
