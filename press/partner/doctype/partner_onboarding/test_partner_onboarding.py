@@ -24,11 +24,18 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		frappe.db.rollback()
 
 	def _create_onboarding(self, team: str, status: str = "Draft"):
+		# The Register Company modal collects these four fields on first
+		# registration, so they are mandatory at creation. Supply them here
+		# to mirror a real draft record.
 		return frappe.get_doc(
 			{
 				"doctype": "Partner Onboarding",
 				"team": team,
 				"status": status,
+				"company_name": "Test Partner Company",
+				"registered_country": "India",
+				"company_email": "partner@example.com",
+				"contact": "+919876543210",
 			}
 		).insert(ignore_permissions=True)
 
