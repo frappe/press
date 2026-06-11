@@ -383,3 +383,23 @@ class TestServer(FrappeTestCase):
 		)
 		self.assertEqual(len(incidents), 1)
 		self.assertEqual(incidents[0].server, self.high_mem_server.name)
+
+	def test_disable_auto_storage_on_database_server_clears_db_flag_not_app_flag(self):
+		database_server = create_test_database_server()
+		frappe.db.set_value("Database Server", database_server.name, "auto_increase_storage", True)
+		server = create_test_server(database_server=database_server.name, auto_increase_storage=True)
+
+		# Dashboard always dispatches on the app server, passing the real target as `server`.
+		server.configure_auto_add_storage(server=database_server.name, enabled=False)
+
+		self.assertFalse(
+			frappe.db.get_value("Database Server", database_server.name, "auto_increase_storage")
+		)
+		self.assertTrue(frappe.db.get_value("Server", server.name, "auto_increase_storage"))
+
+	def test_disable_auto_storage_on_app_server_clears_app_flag(self):
+		server = create_test_server(auto_increase_storage=True)
+
+		server.configure_auto_add_storage(server=server.name, enabled=False)
+
+		self.assertFalse(frappe.db.get_value("Server", server.name, "auto_increase_storage"))
