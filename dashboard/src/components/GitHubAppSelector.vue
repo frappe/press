@@ -3,21 +3,21 @@
 		<LoadingText />
 	</div>
 	<div class="pt-2" v-else-if="!options?.authorized">
-		<div v-if="!!requiresReAuth" class="flex justify-center">
+		<div v-if="!!needsAuthorization" class="flex justify-center">
 			<Button
-				v-if="requiresReAuth"
+				variant="solid"
+				icon-left="github"
+				label="Connect To GitHub"
+				:link="installationLink"
+			/>
+		</div>
+		<div v-else-if="!!requiresReAuth" class="flex justify-center">
+			<Button
 				variant="solid"
 				icon-left="github"
 				label="Re-authorize GitHub"
 				@click="$resources.clearAccessToken.submit()"
 				:loading="$resources.clearAccessToken.loading"
-			/>
-			<Button
-				v-if="needsAuthorization"
-				variant="solid"
-				icon-left="github"
-				label="Connect To GitHub"
-				:link="installationLink"
 			/>
 		</div>
 		<div
@@ -248,7 +248,7 @@ export default {
 			)
 		},
 		requiresReAuth() {
-			return this.$resources.options?.error?.messages.some(
+			return this.$resources.options?.error?.messages?.some(
 				(msg) => msg.includes && msg.includes('Bad credentials'),
 			)
 		},
