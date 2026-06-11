@@ -368,7 +368,10 @@ class BaseServer(Document, TagHelpers):
 	def configure_auto_add_storage(self, server: str, enabled: bool, min: int = 0, max: int = 0) -> None:
 		# `self` is always the app server (the dashboard dispatches on $appServer);
 		# `server` identifies the actual target, which may be a Database Server.
+		# The dashboard API only team-checks `self`, and the disable path below writes via
+		# `set_value` (which skips permission hooks), so authorize the resolved target here.
 		server_doc = self if server == self.name else frappe.get_doc("Database Server", server)
+		server_doc.check_permission("write")
 
 		if not enabled:
 			frappe.db.set_value(server_doc.doctype, server_doc.name, "auto_increase_storage", False)
