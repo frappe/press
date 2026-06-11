@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button, createListResource, TextInput, Select } from 'frappe-ui'
 import Header from '@/components/Header.vue'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 import ServerCard from './ServerCard.vue'
 import Loader from './Loader.vue'
@@ -66,7 +66,7 @@ const toggleSort = () => {
 <template>
 	<Header class="sticky top-0 z-10 bg-surface-white mb-5">
 		<Breadcrumbs :items="[{ label: 'Servers', route: '/ser' }]" />
-		<Button class="ml-auto mr-2">
+		<Button class="ml-auto mr-2" @click="servers.reload()">
 			<template #icon>
 				<lucide-refresh-ccw class="size-4" />
 			</template>
