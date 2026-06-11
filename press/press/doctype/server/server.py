@@ -3098,25 +3098,19 @@ class Server(BaseServer):
 			log_error("Logrotate Setup Exception", server=self.as_dict())
 
 	def validate_public_server_exists_for_site_or_bench_placement(self) -> None:
-		"""Ensure at least one public server is available in the cluster for:
-		1. New site placement (use_for_new_sites)
-		2. New bench deployment (use_for_new_benches)
-		These flags are maintained by refresh_new_bench_and_site_server_pool background job.
-		This validation prevents failures for newly created clusters before the job runs.
+		"""When this server leaves the public scheduling pool, ensure another public
+		server in the cluster can still take new sites and benches.
+
+		use_for_new_sites / use_for_new_benches are maintained by the
+		refresh_new_bench_and_site_server_pool background job. Validating here stops
+		a cluster being left with no usable public server before that job runs.
 		"""
 
-		if (
-			self.public
-			and not self.exclude_for_scheduling
-			and self.use_for_new_sites
-			and self.use_for_new_benches
-		):
-			return
-
-		if not (
-			self.has_value_changed("public")
-			or (self.exclude_for_scheduling and self.has_value_changed("exclude_for_scheduling"))
-		):
+		became_private = not self.public and self.has_value_changed("public")
+		excluded_from_scheduling = (
+			self.public and self.exclude_for_scheduling and self.has_value_changed("exclude_for_scheduling")
+		)
+		if not (became_private or excluded_from_scheduling):
 			return
 
 		servers = frappe.get_all(
@@ -3137,12 +3131,10 @@ class Server(BaseServer):
 			return
 
 		messages = []
-
 		if not has_site_server:
 			messages.append(
 				"There are no public servers in this cluster with <b>Use For New Sites</b> enabled."
 			)
-
 		if not has_bench_server:
 			messages.append(
 				"There are no public servers in this cluster with <b>Use For New Benches</b> enabled."
