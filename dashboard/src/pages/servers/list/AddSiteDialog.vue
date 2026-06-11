@@ -16,7 +16,7 @@ const emit = defineEmits<{ siteCreated: [] }>()
 const formType = ref('addApps')
 
 const handleAppSelection = (cond: boolean, app: any) => {
-	if (cond) addedApps.push(app)
+  if (cond && !addedApps.includes(app)) addedApps.push(app)
 	else addedApps.splice(addedApps.indexOf(app), 1)
 }
 
@@ -132,7 +132,10 @@ const submitForm = () => {
 								>{{ app?.description }}</span
 							>
 						</div>
-						<Checkbox @update:modelValue="(x) => handleAppSelection(x, app)" />
+						<Checkbox
+							:modelValue="addedApps.includes(app)"
+							@update:modelValue="(x) => handleAppSelection(x, app)"
+						/>
 					</label>
 				</div>
 			</template>
