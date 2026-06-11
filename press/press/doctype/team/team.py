@@ -19,6 +19,7 @@ from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_for
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.guards import feature_preview, team_guard
+from press.partner.doctype.partner_onboarding.partner_onboarding import has_partner_onboarding
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -222,6 +223,8 @@ class Team(Document):
 		doc.is_binlog_indexer_enabled = not frappe.db.get_single_value(
 			"Press Settings", "disable_binlog_indexer_service", cache=True
 		)
+
+		doc.has_partner_onboarding = has_partner_onboarding(self.name)
 
 	def onload(self):
 		load_address_and_contact(self)
@@ -480,16 +483,17 @@ class Team(Document):
 		password=None,
 		press_roles=None,
 		skip_validations=False,
+		role=None,
 	):
 		user = frappe.db.get_value("User", email, ["name"], as_dict=True)
 		if not user:
 			user = self.create_user(first_name, last_name, email, password)
 
-		self.append("team_members", {"user": user.name})
+		self.append("team_members", {"user": user.name, "role": role or "Member"})
 		self.save(ignore_permissions=True)
 
-		for role in press_roles or []:
-			frappe.get_doc("Press Role", role.press_role).add_user(
+		for press_role in press_roles or []:
+			frappe.get_doc("Press Role", press_role.press_role).add_user(
 				user.name,
 				skip_validations=skip_validations,
 			)
@@ -1062,24 +1066,92 @@ class Team(Document):
 		return get_team_members(self.name)
 
 	@dashboard_whitelist()
+	def members(self):
+		users = [member.user for member in self.team_members]
+
+		user_info = {
+			u.name: u
+			for u in frappe.db.get_all(
+				"User",
+				filters={"name": ["in", users]},
+				fields=["name", "full_name", "user_image", "email"],
+			)
+		}
+
+		PressRole = frappe.qb.DocType("Press Role")
+		PressRoleUser = frappe.qb.DocType("Press Role User")
+		role_rows = (
+			frappe.qb.from_(PressRoleUser)
+			.join(PressRole)
+			.on(PressRoleUser.parent == PressRole.name)
+			.where(PressRole.team == self.name)
+			.select(PressRoleUser.user, PressRole.title, PressRole.name)
+			.run(as_dict=True)
+		)
+		user_roles = {}
+		for row in role_rows:
+			user_roles.setdefault(row.user, []).append(
+				{
+					"name": row.name,
+					"title": row.title,
+				}
+			)
+
+		r = []
+		for member in self.team_members:
+			m = member.as_dict()
+			m.user = member.user
+			u = user_info.get(m.user, {})
+			m.user_name = u.get("full_name")
+			m.user_image = u.get("user_image")
+			m.email = u.get("email")
+			m.roles = user_roles.get(m.user, [])
+			r.append(m)
+		return r
+
+	@dashboard_whitelist()
 	@feature_preview.beta_testing()
 	def get_members(self):
 		return get_invitations(str(self.name)) + get_members(str(self.name))
 
+	def _validate_role(self, role: str, all_roles=None):
+		from press.press.doctype.team.team_members import get_roles
+
+		all_roles = all_roles or get_roles(str(self.name))
+		if not any(r["value"] == role for r in all_roles):
+			frappe.throw(
+				_('Invalid role "{0}". Must be one of: {1}').format(
+					role, ", ".join(r["value"] for r in all_roles)
+				),
+				frappe.ValidationError,
+			)
+
 	@dashboard_whitelist()
 	@feature_preview.beta_testing()
 	@team_guard.only_admin()
-	def send_invitation(self, names: str):
+	def send_invitation(self, names: str, role: str = "Member"):
 		"""
 		Account request is created when a user is invited or when a user signs
-		up. This is different from a team/organization. Ideally, this should be
+		up. This is different from a team/organization. Signing up should be
 		handled inside team doctype itself. Account request should focus on
 		handling user management, unrelated to team.
 		"""
+		from press.press.doctype.team.team_members import get_roles
+
+		all_roles = get_roles(str(self.name))
+		self._validate_role(role, all_roles)
 		for n in names.split(","):
 			n = n.strip()
 			if frappe.db.exists("Account Request", n):
 				d: AccountRequest = frappe.get_doc("Account Request", n, check_permission=True)
+				if d.team != self.name:
+					frappe.throw(
+						_("Account Request does not belong to this team."),
+						frappe.PermissionError,
+					)
+				self._set_invitation_role(d, role, all_roles)
+				d.flags.ignore_links = True
+				d.save()
 				d.send_verification_email()
 				continue
 			if account_request := frappe.db.exists(
@@ -1092,15 +1164,47 @@ class Team(Document):
 				},
 			):
 				dd: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
+				self._set_invitation_role(dd, role, all_roles)
+				dd.flags.ignore_links = True
+				dd.save()
 				dd.send_verification_email()
 				continue
 			frappe.utils.validate_email_address(n, throw=True)
 			ar: AccountRequest = frappe.new_doc("Account Request")
 			ar.team = self.name
 			ar.email = n
+			self._set_invitation_role(ar, role, all_roles)
 			ar.invited_by = frappe.session.user
-			ar.save()
 			ar.send_email = True
+			ar.flags.ignore_links = True
+			ar.save()
+		return self.get_members()
+
+	def _set_invitation_role(self, account_request: AccountRequest, role: str, all_roles=None):
+		if all_roles is None:
+			from press.press.doctype.team.team_members import get_roles
+
+			all_roles = get_roles(str(self.name))
+		matched = [r for r in all_roles if r["value"] == role]
+		if matched and matched[0].get("name"):
+			account_request.press_role = matched[0]["name"]
+		else:
+			account_request.press_role = role
+
+	@dashboard_whitelist()
+	@feature_preview.beta_testing()
+	@team_guard.only_admin()
+	def update_invitation_role(self, account_request: str, role: str):
+		self._validate_role(role)
+		d: AccountRequest = frappe.get_doc("Account Request", account_request, check_permission=True)
+		if d.team != self.name:
+			frappe.throw(
+				_("Account Request does not belong to this team."),
+				frappe.PermissionError,
+			)
+		self._set_invitation_role(d, role)
+		d.flags.ignore_links = True
+		d.save()
 		return self.get_members()
 
 	@dashboard_whitelist()
@@ -1176,14 +1280,14 @@ class Team(Document):
 				"doctype": "Account Request",
 				"team": self.name,
 				"email": email,
-				"role": "Press User",
 				"invited_by": self.user,
 				"send_email": True,
 			}
 		)
 
-		for role in roles:
-			account_request.append("press_roles", {"press_role": role})
+		selected_role = roles[0] if roles else None
+		if selected_role:
+			account_request.press_role = selected_role
 
 		account_request.insert()
 

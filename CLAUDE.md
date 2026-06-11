@@ -7,6 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 @AGENTS.md
 @taste.md
 
+## Commit messages
+
+@commit-guidelines.md
+
 ## Linting and Formatting
 
 Python (via ruff — runs on pre-commit):

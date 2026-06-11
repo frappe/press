@@ -71,7 +71,7 @@ def capture_pulse(event, data):
 				{
 					"events": [
 						{
-							"event": event,
+							"event_name": event,
 							"captured_at": frappe.utils.now(),
 							"app": "press",
 							"user": None,  # can be session user if needed

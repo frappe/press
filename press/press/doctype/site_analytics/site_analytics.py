@@ -16,19 +16,11 @@ class SiteAnalytics(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from press.press.doctype.site_analytics_active.site_analytics_active import (
-			SiteAnalyticsActive,
-		)
+		from press.press.doctype.site_analytics_active.site_analytics_active import SiteAnalyticsActive
 		from press.press.doctype.site_analytics_app.site_analytics_app import SiteAnalyticsApp
-		from press.press.doctype.site_analytics_doctype.site_analytics_doctype import (
-			SiteAnalyticsDocType,
-		)
-		from press.press.doctype.site_analytics_login.site_analytics_login import (
-			SiteAnalyticsLogin,
-		)
-		from press.press.doctype.site_analytics_user.site_analytics_user import (
-			SiteAnalyticsUser,
-		)
+		from press.press.doctype.site_analytics_doctype.site_analytics_doctype import SiteAnalyticsDocType
+		from press.press.doctype.site_analytics_login.site_analytics_login import SiteAnalyticsLogin
+		from press.press.doctype.site_analytics_user.site_analytics_user import SiteAnalyticsUser
 
 		activation_level: DF.Int
 		backup_size: DF.Int

@@ -87,6 +87,7 @@ ALLOWED_DOCTYPES = [
 	"Razorpay Mandate",
 	"Partner Certificate",
 	"Partner Payment Payout",
+	"Partner Tier",
 	"Deploy Candidate Build",
 	"Partner Lead",
 	"Partner Lead Type",
@@ -257,12 +258,8 @@ def get(doctype, name):  # noqa: C901
 			return controller.on_not_found(name)
 		raise
 
-	if (
-		not (is_system_user or is_support)
-		and frappe.get_meta(doctype).has_field("team")
-		and doc.team != frappe.local.team().name
-	):
-		raise_not_permitted()
+	if not (is_system_user or is_support):
+		check_document_access(doctype, name, doc=doc)
 
 	fields = tuple(default_fields)
 	if hasattr(doc, "dashboard_fields"):
@@ -337,7 +334,8 @@ def set_value(doctype: str, name: str, fieldname: dict | str, value: str | None 
 	add_data_to_monitor(press_api_client_method="set_value", press_api_client_payload=context_data)
 	sentry.set_context("press_client", {"method": "set_value", "data": context_data})
 	check_permissions(doctype)
-	check_document_access(doctype, name)
+	if not has_support_access(doctype, name):
+		check_document_access(doctype, name)
 
 	for field in fieldname:
 		# fields mentioned in dashboard_fields are allowed to be set via set_value
@@ -354,7 +352,8 @@ def delete(doctype: str, name: str):
 	method = "delete"
 
 	check_permissions(doctype)
-	check_document_access(doctype, name)
+	if not has_support_access(doctype, name):
+		check_document_access(doctype, name)
 	check_dashboard_actions(doctype, name, method)
 
 	_run_doc_method(dt=doctype, dn=name, method=method, args=None)
@@ -372,7 +371,8 @@ def run_doc_method(dt: str, dn: str, method: str, args: dict | None = None):
 	sentry.set_context("press_client", {"method": "run_doc_method", "data": context_data})
 
 	check_permissions(dt)
-	check_document_access(dt, dn)
+	if not has_support_access(dt, dn):
+		check_document_access(dt, dn)
 	check_dashboard_actions(dt, dn, method)
 
 	_run_doc_method(
@@ -439,14 +439,14 @@ def search_link(
 	return q.run(as_dict=1)
 
 
-def check_document_access(doctype: str, name: str):
+def check_document_access(doctype: str, name: str, doc=None):
 	if frappe.local.system_user():
 		return
 
 	team = ""
 	meta = frappe.get_meta(doctype)
 	if meta.has_field("team"):
-		team = frappe.db.get_value(doctype, name, "team")
+		team = doc.team if doc else frappe.db.get_value(doctype, name, "team")
 	elif meta.has_field("bench"):
 		bench = frappe.db.get_value(doctype, name, "bench")
 		team = frappe.db.get_value("Bench", bench, "team")
@@ -457,9 +457,6 @@ def check_document_access(doctype: str, name: str):
 		return
 
 	if team == frappe.local.team().name:
-		return
-
-	if has_support_access(doctype, name):
 		return
 
 	raise_not_permitted()

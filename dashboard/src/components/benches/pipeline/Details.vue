@@ -152,6 +152,10 @@ const fetchSetErrs = () => {
 	warnings.fetch()
 }
 
+// pipeline.doc exists if cache exists
+// if cache exists then onSuccess wont run so fetch errs!
+if(pipeline?.doc?.status == 'Failure') fetchSetErrs()
+
 const wired = reactive(new Set<string>())
 const builds = ref<Record<string, any>>({})
 
@@ -357,8 +361,6 @@ const dropdownOptions = computed(() => {
 			label: 'View App Versions',
 			icon: 'package',
 			onClick: appVersions,
-			condition: () =>
-				props.deployview && builds.value[activeBuildId.value]?.doc?.group,
 		},
 	]
 
@@ -372,6 +374,7 @@ const appVersions = () => {
 			dc_name: deploy.name,
 			group: deploy.group,
 			status: deploy.status,
+      isPipeline: !props.deployview,
 		}),
 	)
 }

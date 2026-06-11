@@ -1218,6 +1218,15 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
+		for key in ("database", "public", "private"):
+			rf_name = files.get(key)
+			if rf_name:
+				rf_team = frappe.db.get_value("Remote File", rf_name, "team")
+				if rf_team is not None and rf_team != self.team:
+					frappe.throw(
+						_("Remote File {0} does not belong to site's team").format(rf_name),
+						frappe.PermissionError,
+					)
 		self.remote_database_file = files["database"]
 		self.remote_public_file = files["public"]
 		self.remote_private_file = files["private"]
@@ -1796,12 +1805,41 @@ class Site(Document, TagHelpers):
 			# the background sync job might cause timestamp mismatch error or version error
 			frappe.get_doc("Virtual Disk Snapshot", snapshot, for_update=True).delete_snapshot()
 
+	def unavail_bahrain_backups(self):
+		"""
+		Mark the files_availability of bahrain backups as Unavailable as they are facing issue with s3 and we don't want to delete the backups until the issue is resolved to proceed with archival"""
+
+		remote_files = frappe.get_all(
+			"Remote File",
+			{"status": "Available", "bucket": "bahrain.backups.frappe.cloud", "site": self.name},
+			pluck="name",
+			distinct=True,  # to skip order_by; large table
+		)
+		if not remote_files:
+			return
+
+		fields = (
+			"remote_database_file",
+			"remote_public_file",
+			"remote_private_file",
+			"remote_config_file",
+		)
+
+		for field in fields:
+			frappe.db.set_value(
+				"Site Backup",
+				{field: ("in", remote_files)},
+				"files_availability",
+				"Unavailable",
+			)
+
 	def delete_offsite_backups(self, keep_latest: bool = True):
 		from press.press.doctype.remote_file.remote_file import (
 			delete_remote_backup_objects,
 		)
 
 		log_site_activity(self.name, "Drop Offsite Backups")
+		self.unavail_bahrain_backups()  # TODO remove this after bahrain issue is resolved at aws
 
 		sites_remote_files = []
 		all_backups = frappe.get_all(

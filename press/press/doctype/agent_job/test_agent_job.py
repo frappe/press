@@ -12,9 +12,10 @@ import frappe
 import responses
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import add_days
 
 from press.agent import Agent
-from press.press.doctype.agent_job.agent_job import AgentJob, lock_doc_updated_by_job
+from press.press.doctype.agent_job.agent_job import AgentJob, fail_old_jobs, lock_doc_updated_by_job
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils.test import foreground_enqueue, foreground_enqueue_doc
@@ -174,6 +175,34 @@ def fake_agent_job_req(
 	return before_insert
 
 
+def create_test_agent_job(
+	job_type: str = "Force Remove Zombie Benches",
+	server: str | None = None,
+	server_type: str = "Server",
+	status: str = "Undelivered",
+	job_id: int = 0,
+) -> AgentJob:
+	"""Create a test Agent Job doc."""
+	from press.press.doctype.server.test_server import create_test_server
+
+	if not server:
+		server = create_test_server().name
+
+	return frappe.get_doc(
+		{
+			"doctype": "Agent Job",
+			"server": server,
+			"server_type": server_type,
+			"job_type": job_type,
+			"status": status,
+			"job_id": job_id,
+			"request_method": "POST",
+			"request_path": "benches",
+			"request_data": "{}",
+		}
+	).insert(ignore_permissions=True)
+
+
 class StepDict(TypedDict):
 	name: str
 	status: Literal["Success", "Pending", "Running", "Failure", "Skipped"]
@@ -263,6 +292,26 @@ class TestAgentJob(FrappeTestCase):
 		job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site on Upstream"})
 		doc_name = lock_doc_updated_by_job(job.name)
 		self.assertEqual(site.name, doc_name)
+
+	def _make_old(self, job_name: str):
+		# Age the job past the 2-day cutoff that fail_old_jobs uses
+		frappe.db.set_value("Agent Job", job_name, "creation", add_days(None, -3), update_modified=False)
+
+	def test_fail_old_jobs_marks_stuck_running_job_as_failure(self):
+		job = create_test_agent_job(status="Running", job_id=42)
+		self._make_old(job.name)
+
+		fail_old_jobs()
+
+		self.assertEqual(frappe.db.get_value("Agent Job", job.name, "status"), "Failure")
+
+	def test_fail_old_jobs_marks_undelivered_job_as_delivery_failure(self):
+		job = create_test_agent_job(status="Undelivered", job_id=0)
+		self._make_old(job.name)
+
+		fail_old_jobs()
+
+		self.assertEqual(frappe.db.get_value("Agent Job", job.name, "status"), "Delivery Failure")
 
 	def test_no_duplicate_undelivered_job(self):
 		site = create_test_site()
