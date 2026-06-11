@@ -103,7 +103,7 @@ let router = createRouter({
 		},
 
      {
-			name: 'Servers',
+			name: 'Server List',
 			path: '/servers',
 			component: () => import('./pages/servers/list/Page.vue'),
 		},
