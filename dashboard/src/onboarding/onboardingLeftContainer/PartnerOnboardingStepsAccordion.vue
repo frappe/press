@@ -282,7 +282,7 @@ async function submitForApproval() {
 						</span>
 
 						<LucideChevronDown
-							class="size-4 shrink-0 text-ink-gray-6 transition-transform duration-200 group-data-[state=open]:rotate-180"
+							class="size-4 shrink-0 text-ink-gray-6 transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[state=open]:rotate-180 motion-reduce:transition-none"
 						/>
 					</FAccordionTrigger>
 				</FAccordionHeader>
