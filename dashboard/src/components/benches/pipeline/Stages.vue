@@ -138,7 +138,7 @@ const isStageDisabled = (x) => {
 							{{ jobstep.step_name }}
 
 							<span class="text-ink-gray-5 ml-auto pr-1">
-								{{ duration(jobstep.duration) }}
+								{{ jobstep.duration ? duration(jobstep.duration) : '' }}
 							</span>
 						</button>
 					</template>
