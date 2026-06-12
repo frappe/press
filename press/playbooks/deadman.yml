@@ -10,4 +10,5 @@
     - role: nginx
     - role: bench
     - role: mariadb
+    - role: essentials_deadman
     - role: deadman

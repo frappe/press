@@ -1,100 +1,230 @@
 ---
-- name: Install Frappe Bench
-  become: yes
-  become_user: frappe
-  pip:
-    name: frappe-bench
-    state: latest
+- name: Create benches directory
+  file:
+    path: /home/frappe/benches
+    state: directory
+    owner: frappe
+    group: frappe
+    mode: "0755"
 
-- name: Initialize Frappe Bench
+- name: Initialize Bench
   become: yes
   become_user: frappe
   command: >
-    bench init
-    --skip-assets
-    --skip-redis-config-generation
-    --python /usr/bin/python3
+    /home/frappe/.local/bin/bench init
+    --python /usr/bin/python3.13
     /home/frappe/benches/deadman
   args:
-    creates: /home/frappe/benches/deadman/Pipfile
+    creates: /home/frappe/benches/deadman/Procfile
+  environment:
+    PATH: "/home/frappe/.local/bin:{{ ansible_env.PATH }}"
 
-- name: Create Site
+- name: Configure MariaDB socket
   become: yes
   become_user: frappe
   command: >
-    bench new-site
-    --no-mariadb-socket
+    /home/frappe/.local/bin/bench
+    set-config -g
+    db_socket
+    /run/mysqld/mysqld.sock
+  args:
+    chdir: /home/frappe/benches/deadman
+  environment:
+    PATH: "/home/frappe/.local/bin:{{ ansible_env.PATH }}"
+
+- name: Create site
+  become: yes
+  become_user: frappe
+  command: >
+    /home/frappe/.local/bin/bench new-site
+    --db-root-username root
     --mariadb-root-password {{ mariadb_root_password }}
     --admin-password {{ admin_password }}
     {{ server }}
   args:
     chdir: /home/frappe/benches/deadman
     creates: /home/frappe/benches/deadman/sites/{{ server }}/site_config.json
+  environment:
+    PATH: "/home/frappe/.local/bin:{{ ansible_env.PATH }}"
 
-- name: Get Deadman App
+- name: Get Deadman app
   become: yes
   become_user: frappe
   command: >
-    bench get-app
+    /home/frappe/.local/bin/bench get-app
     {{ deadman_app_git_url | default('https://github.com/20vikash/deadman') }}
-    --skip-assets
   args:
     chdir: /home/frappe/benches/deadman
     creates: /home/frappe/benches/deadman/apps/deadman
+  environment:
+    PATH: "/home/frappe/.local/bin:{{ ansible_env.PATH }}"
 
-- name: Install Deadman App
+- name: Ensure frappe exists in apps.txt
+  lineinfile:
+    path: /home/frappe/benches/deadman/sites/apps.txt
+    line: frappe
+    create: yes
+
+- name: Ensure deadman exists in apps.txt
+  lineinfile:
+    path: /home/frappe/benches/deadman/sites/apps.txt
+    line: deadman
+    create: yes
+
+- name: Install Deadman
   become: yes
   become_user: frappe
   command: >
-    bench --site {{ server }}
+    /home/frappe/.local/bin/bench
+    --site {{ server }}
     install-app deadman
   args:
     chdir: /home/frappe/benches/deadman
+  environment:
+    PATH: "/home/frappe/.local/bin:{{ ansible_env.PATH }}"
 
-- name: Run Migrations
+# IMPORTANT: RUN AS ROOT
+- name: Setup production
+  become: yes
+  become_user: root
+  command: >
+    /home/frappe/.local/bin/bench setup production frappe --yes
+  args:
+    chdir: /home/frappe/benches/deadman
+  environment:
+    PATH: "/home/frappe/.local/bin:{{ ansible_env.PATH }}"
+    PYTHONPATH: "/home/frappe/.local/lib/python3.13/site-packages"
+
+- name: Create SSL directory
+  file:
+    path: /etc/nginx/ssl
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Write TLS certificate
+  copy:
+    content: "{{ certificate_full_chain }}"
+    dest: "/etc/nginx/ssl/{{ domain }}.crt"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Write TLS private key
+  copy:
+    content: "{{ certificate_private_key }}"
+    dest: "/etc/nginx/ssl/{{ domain }}.key"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Replace generated nginx config
+  copy:
+    dest: /home/frappe/benches/deadman/config/nginx.conf
+    owner: frappe
+    group: frappe
+    mode: "0644"
+    content: |
+      upstream deadman {
+          server 127.0.0.1:8000;
+      }
+
+      server {
+          listen 443 ssl http2;
+          server_name {{ domain }};
+
+          ssl_certificate /etc/nginx/ssl/{{ domain }}.crt;
+          ssl_certificate_key /etc/nginx/ssl/{{ domain }}.key;
+
+          client_max_body_size 50m;
+
+          location / {
+              proxy_set_header Host $host;
+              proxy_set_header X-Frappe-Site-Name {{ server }};
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto https;
+              proxy_set_header X-Real-IP $remote_addr;
+
+              proxy_pass http://deadman;
+          }
+      }
+
+- name: Validate nginx configuration
+  command: nginx -t
+  changed_when: false
+
+- name: Generate Redis configuration
   become: yes
   become_user: frappe
   command: >
-    bench --site {{ server }}
+    /home/frappe/.local/bin/bench setup redis
+  args:
+    chdir: /home/frappe/benches/deadman
+  environment:
+    PATH: "/home/frappe/.local/bin:{{ ansible_env.PATH }}"
+
+- name: Restart supervisor
+  service:
+    name: supervisor
+    state: restarted
+
+- name: Reload nginx
+  service:
+    name: nginx
+    state: reloaded
+
+- name: Wait for Redis Queue
+  wait_for:
+    host: 127.0.0.1
+    port: 11000
+    timeout: 60
+
+- name: Wait for Redis Cache
+  wait_for:
+    host: 127.0.0.1
+    port: 13000
+    timeout: 60
+
+- name: Wait for Bench
+  wait_for:
+    host: 127.0.0.1
+    port: 8000
+    timeout: 120
+
+- name: Enable scheduler
+  become: yes
+  become_user: frappe
+  command: >
+    /home/frappe/.local/bin/bench
+    --site {{ server }}
+    enable-scheduler
+  args:
+    chdir: /home/frappe/benches/deadman
+  environment:
+    PATH: "/home/frappe/.local/bin:{{ ansible_env.PATH }}"
+
+- name: Migrate site
+  become: yes
+  become_user: frappe
+  command: >
+    /home/frappe/.local/bin/bench
+    --site {{ server }}
     migrate
   args:
     chdir: /home/frappe/benches/deadman
+  environment:
+    PATH: "/home/frappe/.local/bin:{{ ansible_env.PATH }}"
 
-- name: Initialize Deadman Secret
+- name: Initialize Deadman secret
   become: yes
   become_user: frappe
   command: >
-    bench --site {{ server }}
+    /home/frappe/.local/bin/bench
+    --site {{ server }}
     execute deadman.setup.initialize_deadman
     --kwargs '{"secret":"{{ deadman_password }}"}'
   args:
     chdir: /home/frappe/benches/deadman
-
-- name: Enable Scheduler
-  become: yes
-  become_user: frappe
-  command: >
-    bench --site {{ server }}
-    enable-scheduler
-  args:
-    chdir: /home/frappe/benches/deadman
-
-- name: Setup Production
-  become: yes
-  become_user: root
-  command: bench setup production frappe
-  args:
-    chdir: /home/frappe/benches/deadman
-
-- name: Restart Bench
-  become: yes
-  become_user: frappe
-  command: bench restart
-  args:
-    chdir: /home/frappe/benches/deadman
-
-- name: Reload NGINX
-  become: yes
-  service:
-    name: nginx
-    state: reloaded
+  environment:
+    PATH: "/home/frappe/.local/bin:{{ ansible_env.PATH }}"
