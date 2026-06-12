@@ -14,6 +14,11 @@ import { tagTab } from './common/tags';
 
 export default {
 	doctype: 'Server',
+	list: {
+		title: 'Servers',
+		route: '/servers',
+		component: () => import('../pages/servers/list/Page.vue'),
+	},
 	whitelistedMethods: {
 		increaseDiskSize: 'increase_disk_size_for_server',
 		configureAutoAddStorage: 'configure_auto_add_storage',
