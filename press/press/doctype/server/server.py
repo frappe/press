@@ -3121,17 +3121,17 @@ class Server(BaseServer):
 		servers = frappe.get_all(
 			"Server",
 			filters={
+				"name": ("!=", self.name),
+				"status": "Active",
 				"cluster": self.cluster,
 				"public": 1,
 				"exclude_for_scheduling": 0,
-				"name": ("!=", self.name),
 			},
 			fields=["use_for_new_sites", "use_for_new_benches"],
 		)
 
 		has_site_server = any(s.use_for_new_sites for s in servers)
 		has_bench_server = any(s.use_for_new_benches for s in servers)
-
 		if has_site_server and has_bench_server:
 			return
 
@@ -3144,7 +3144,6 @@ class Server(BaseServer):
 			messages.append(
 				"There are no public servers in this cluster with <b>Use For New Benches</b> enabled."
 			)
-
 		if messages:
 			frappe.throw(
 				" ".join(messages)
