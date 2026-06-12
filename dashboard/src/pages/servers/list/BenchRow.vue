@@ -310,7 +310,7 @@ onBeforeUnmount(() => {
 			class="row-grid px-6 pr-4 py-2 items-center text-sm text-ink-gray-5"
 		>
 			<span />
-			<span>Site</span>
+			<span class="ml-6">Site</span>
 			<span>Status</span>
 			<span>Modified / Created on</span>
 			<span />
@@ -348,7 +348,7 @@ onBeforeUnmount(() => {
 
 			<Tooltip text="Go to site dashboard">
 				<router-link
-					class="flex gap-2 w-fit items-center hover:underline text-ink-gray-8 pl-4"
+					class="flex gap-2 w-fit items-center hover:underline text-ink-gray-8 pl-6"
 					:to="`/sites/${site.name}`"
 				>
 					<LucideAppWindow class="size-4" /> {{ site.name }}
@@ -373,9 +373,9 @@ onBeforeUnmount(() => {
 			<span class="text-ink-gray-8"
 				>{{ dayjsLocal(site.creation).fromNow() }}</span
 			>
-      <Dropdown :options="siteOptions(site)">
-        <Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
-      </Dropdown>
+			<Dropdown :options="siteOptions(site)">
+				<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
+			</Dropdown>
 		</div>
 	</Collapsable>
 </template>
