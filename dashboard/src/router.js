@@ -102,11 +102,6 @@ let router = createRouter({
 			props: true,
 		},
 
-     {
-			name: 'Server List',
-			path: '/servers',
-			component: () => import('./pages/servers/list/Page.vue'),
-		},
 		{
 			name: 'Server New Site',
 			path: '/servers/:server/sites/new',
