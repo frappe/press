@@ -1,14 +1,14 @@
 <template>
-	<div class="sk-fade flex flex-col gap-4 py-3 px-5 w-full mt-1.5">
+	<div class="sk-fade flex flex-col gap-4 p-3 md:px-5 w-full md:mt-1.5">
 		<div class="flex gap-2 items-center">
 			<div class="sk size-7" />
 			<div class="sk h-7 w-44" />
 			<div class="sk h-7 w-16 mr-auto" />
-			<div class="sk h-7 w-20" />
+			<div class="sk h-7 w-20 hidden md:block" />
 			<div class="sk size-7" />
 		</div>
 
-		<section class="grid grid-cols-4 gap-3">
+		<section class="grid grid-cols-2 md:grid-cols-4 gap-3">
 			<div
 				v-for="i in 4"
 				:key="i"
@@ -20,10 +20,9 @@
 		</section>
 
 		<div
-			class="flex rounded border p-3 pt-0.5 gap-3 min-h-0"
-			style="height: calc(100dvh - 18rem)"
+			class="flex flex-col md:flex-row rounded border p-3 pt-0.5 gap-3 min-h-0 md:h-[calc(100dvh-18rem)]"
 		>
-			<div class="w-[30rem] shrink-0 flex flex-col py-3">
+			<div class="w-full md:w-[30rem] shrink-0 flex flex-col py-3">
 				<div class="flex gap-4 pb-3 mb-1 border-b">
 					<div class="sk h-5 w-16" />
 					<div class="sk h-5 w-16" />
@@ -48,7 +47,7 @@
 			</div>
 
 			<div
-				class="flex-1 bg-surface-gray-1 dark:bg-surface-cards rounded p-3 flex flex-col gap-3 mt-1"
+				class="flex-1 bg-surface-gray-1 dark:bg-surface-cards rounded p-3 hidden md:flex flex-col gap-3 mt-1"
 			>
 				<div class="flex items-center gap-2 pb-2 border-b">
 					<div class="sk h-4 w-12" />
