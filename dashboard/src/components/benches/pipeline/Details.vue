@@ -168,7 +168,7 @@ const fetchSetErrs = () => {
 
 // pipeline.doc exists if cache exists
 // if cache exists then onSuccess wont run so fetch errs!
-if(pipeline?.doc?.status == 'Failure') fetchSetErrs()
+if (pipeline?.doc?.status == 'Failure') fetchSetErrs()
 
 const wired = reactive(new Set<string>())
 const builds = ref<Record<string, any>>({})
@@ -385,7 +385,7 @@ const appVersions = () => {
 			dc_name: deploy.name,
 			group: deploy.group,
 			status: deploy.status,
-      isPipeline: !props.deployview,
+			isPipeline: !props.deployview,
 		}),
 	)
 }
@@ -433,7 +433,7 @@ const stopBuild = () => {
 	/>
 
 	<main
-		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-7rem)] mt-1.5"
+		class="flex flex-col gap-4 p-3 md:px-5 w-full md:h-[calc(100dvh-7rem)] md:mt-1.5"
 		v-else
 	>
 		<!-- header -->
@@ -483,30 +483,31 @@ const stopBuild = () => {
 
 		<!-- status cards -->
 		<section
-			class="grid grid-cols-4 gap-3 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm -mt-1"
+			class="flex flex-wrap md:grid grid-cols-4 gap-3 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm -mt-1
+      *:p-2 *:md:p-4 *:border"
 		>
-			<div class="flex flex-col gap-2 border p-4 rounded ">
+			<div class="flex flex-col gap-2 rounded ">
 				<b> Created by </b>
 				<span class="text-ink-gray-9"
 					>{{ deployview ?  builds[activeBuildId]?.doc?.owner : pipeline?.doc?.owner }}
 				</span>
 			</div>
 
-			<div class="flex flex-col gap-2 border p-4 rounded">
+			<div class="flex flex-col gap-2 rounded">
 				<b> Start </b>
 				<span>
 					{{ date(deployview ?  builds[activeBuildId]?.doc?.build_start : pipeline?.doc?.steps?.start) || '-' }}
 				</span>
 			</div>
 
-			<div class="flex flex-col gap-2 border p-4 rounded">
+			<div class="flex flex-col gap-2 rounded">
 				<b> End </b>
 				<span>
 					{{ date(deployview ?  builds[activeBuildId]?.doc?.build_end : pipeline?.doc?.steps?.end) || '-' }}
 				</span>
 			</div>
 
-			<div class="flex flex-col gap-2 border p-4 rounded">
+			<div class="flex flex-col gap-2 rounded">
 				<b> Duration </b>
 				<span>
 					{{ deployview ? duration( builds[activeBuildId]?.doc?.build_duration) || '-' : secsToDuration(pipeline?.doc?.steps?.duration) || '-' }}
@@ -516,13 +517,13 @@ const stopBuild = () => {
 
 		<!-- deploy steps + output -->
 		<div
-			class="flex rounded border p-3 pt-1 flex-1 min-h-0"
+			class="flex flex-col md:flex-row rounded border p-3 pt-1 flex-1 min-h-0"
 			:class='output.opened? "": "!pr-0" '
 			ref="stepsEl"
 		>
 			<Scrollbar
-				class="px-0.5 pr-3 transition-all duration-300 shrink-0"
-				:class="output.opened ? 'w-[30rem]' : 'w-full'"
+				class="px-0.5 md:pr-3 transition-all duration-300 shrink-0"
+				:class="output.opened ? 'md:w-[30rem]' : 'w-full'"
 			>
 				<Tabs
 					class="w-full sticky top-0 z-10 bg-surface-white mb-2"
