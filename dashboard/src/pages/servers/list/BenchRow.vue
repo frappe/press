@@ -172,7 +172,7 @@ const siteOptions = (site) => [
 
 const statusColors = {
 	Active: 'bg-surface-green-3',
-	Broken: 'bg-surface-red-3',
+	Broken: 'bg-surface-red-5',
 	Draft: 'bg-surface-orange-3',
 	AwaitingApproval: 'bg-surface-orange-3',
 }
