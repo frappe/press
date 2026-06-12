@@ -97,6 +97,7 @@
 		"use_for_build",
 		"platform",
 		"column_break_ktkv",
+		"exclude_for_scheduling",
 		"new_worker_allocation",
 		"set_bench_memory_limits",
 		"ram",
@@ -786,6 +787,14 @@
 			"fieldtype": "Int",
 			"label": "Supported Site Quota",
 			"read_only_depends_on": "eval:!!doc.__islocal"
+		},
+		{
+			"default": "0",
+			"depends_on": "eval: doc.public",
+			"description": "Enable to skip this server when refreshing public server pool for new benches/sites",
+			"fieldname": "exclude_for_scheduling",
+			"fieldtype": "Check",
+			"label": "Exclude being considered for new benches/sites"
 		}
 	],
 	"links": [
@@ -798,7 +807,7 @@
 			"link_fieldname": "app_server"
 		}
 	],
-	"modified": "2026-05-18 10:49:09.702133",
+	"modified": "2026-06-09 14:44:11.417294",
 	"modified_by": "Administrator",
 	"module": "Press",
 	"name": "Server",
