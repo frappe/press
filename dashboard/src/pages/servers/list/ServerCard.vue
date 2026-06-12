@@ -18,7 +18,7 @@ const benches = createListResource({
 	doctype: 'Release Group',
 	pageLength: 5,
 	auto: true,
-	fields: ['name', 'title', 'version', 'active_benches', "site_count"],
+	fields: ['name', 'title', 'version', 'active_benches', 'site_count'],
 	filters: { server: props.data.name },
 	cache: ['benchesRes', props.data.name],
 	orderBy: 'creation desc',
@@ -35,7 +35,7 @@ const serverActions = (server) => [
 			renderDialog(
 				h(AddBenchDialog, {
 					server: server,
-          onSuccess: () => benches.reload()
+					onSuccess: () => benches.reload(),
 				}),
 			)
 		},
@@ -66,7 +66,12 @@ const serverActions = (server) => [
 			<ServerIcon :provider="data.provider" class="size-6 mb-auto" />
 
 			<div class="flex flex-wrap gap-2 items-center">
-				<span class='font-medium'>{{ data?.title }}</span>
+				<Tooltip text="Go to server dashboard">
+					<router-link :to="`servers/${data.name}`" class="hover:underline">
+						<span class="font-medium">{{ data?.title }}</span>
+					</router-link>
+				</Tooltip>
+
 				<div
 					class="rounded-full size-2 mx-1"
 					:class="data.status === 'Active' ? 'bg-surface-green-3' : 'bg-surface-red-5'"
@@ -90,9 +95,7 @@ const serverActions = (server) => [
 		</div>
 
 		<!-- benches header -->
-		<div
-			class="row-grid pl-6 pr-4 pt-4 items-center text-ink-gray-4 text-sm"
-		>
+		<div class="row-grid pl-6 pr-4 pt-4 items-center text-ink-gray-4 text-sm">
 			<span />
 			<template v-if="benches?.data?.length">
 				<span>Bench</span>
