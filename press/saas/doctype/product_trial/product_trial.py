@@ -480,6 +480,7 @@ class ProductTrial(Document):
 			.where(Server.cluster == cluster)
 			.join(Bench)
 			.on(Bench.server == ReleaseGroupServer.server)
+			.where(Server.exclude_for_scheduling == 0)
 			.run(pluck="server")
 		)
 		server_sites = {}
