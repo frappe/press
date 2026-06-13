@@ -51,10 +51,9 @@
 		</div>
 		<Dialog
 			v-model="open"
-			:options="{
-				title: 'Invite',
-				size: 'lg',
-				actions: [
+			title="Invite"
+			size="lg"
+			:actions="[
 					{
 						label: 'Submit',
 						variant: 'solid',
@@ -63,17 +62,14 @@
 							open = false;
 						},
 					},
-				],
-			}"
+				]"
 		>
-			<template #body-content>
-				<div class="mb-2 text-base">Invite a team member to this role.</div>
-				<Select
-					:options="usersForInvite"
-					v-model="userForInvite"
-					placeholder="User"
-				/>
-			</template>
+			<div class="mb-2 text-base">Invite a team member to this role.</div>
+			<Select
+				:options="usersForInvite"
+				v-model="userForInvite"
+				placeholder="User"
+			/>
 		</Dialog>
 	</div>
 </template>

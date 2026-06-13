@@ -1,80 +1,75 @@
 <template>
-	<Dialog
-		v-model="show"
-		:options="{ title: `Schedule Autoscale`, size: '2xl' }"
-	>
-		<template #body-content>
-			<div
-				v-if="$resources.autoscaleTriggers?.data?.length === 0"
-				class="flex flex-col space-y-6"
+	<Dialog v-model="show" :title="`Schedule Autoscale`" size="2xl">
+		<div
+			v-if="$resources.autoscaleTriggers?.data?.length === 0"
+			class="flex flex-col space-y-6"
+		>
+			<div class="leading-relaxed">
+				<p class="font-medium mb-1">Autoscale Scheduling Rules</p>
+
+				<ul class="list-disc list-inside space-y-1">
+					<li>
+						Scale up and scale down times must be at least
+						<strong>60 minutes apart</strong>.
+					</li>
+					<li>The selected times must be in the future.</li>
+					<li>
+						A new scale up can only occur after the server has been scaled down
+						for at least <strong>5 minutes</strong>.
+					</li>
+				</ul>
+			</div>
+			<div class="border border-outline-gray-1 rounded-lg p-4 mt-4 space-y-6">
+				<div class="flex flex-col space-y-2">
+					<label class="font-medium">Scale Up Start Time</label>
+					<DateTimePicker
+						v-model="scaleUpdateTime"
+						variant="subtle"
+						placeholder="Select date & time"
+					/>
+				</div>
+
+				<div class="flex flex-col space-y-2">
+					<label class="font-medium">Scale Down Start Time</label>
+					<DateTimePicker
+						v-model="scaleDowndateTime"
+						variant="subtle"
+						placeholder="Select date & time"
+					/>
+				</div>
+			</div>
+			<Button
+				variant="solid"
+				theme="gray"
+				@click="scheduleAutoscale"
+				class="w-full rounded-lg mt-4 py-3"
 			>
-				<div class="leading-relaxed">
-					<p class="font-medium mb-1">Autoscale Scheduling Rules</p>
+				Schedule Autoscale
+			</Button>
+		</div>
+		<div
+			v-else
+			class="flex flex-col items-center justify-center rounded-lg border border-outline-gray-1 bg-surface-gray-1 p-6 text-center space-y-3"
+		>
+			<p class="text-ink-gray-9">Autoscale scheduling is unavailable</p>
 
-					<ul class="list-disc list-inside space-y-1">
-						<li>
-							Scale up and scale down times must be at least
-							<strong>60 minutes apart</strong>.
-						</li>
-						<li>The selected times must be in the future.</li>
-						<li>
-							A new scale up can only occur after the server has been scaled
-							down for at least <strong>5 minutes</strong>.
-						</li>
-					</ul>
-				</div>
-				<div class="border border-outline-gray-1 rounded-lg p-4 mt-4 space-y-6">
-					<div class="flex flex-col space-y-2">
-						<label class="font-medium">Scale Up Start Time</label>
-						<DateTimePicker
-							v-model="scaleUpdateTime"
-							variant="subtle"
-							placeholder="Select date & time"
-						/>
-					</div>
+			<p class="text-ink-gray-6 max-w-md">
+				You can only schedule autoscale records when automatic scaling is not
+				already configured for this server.
+			</p>
 
-					<div class="flex flex-col space-y-2">
-						<label class="font-medium">Scale Down Start Time</label>
-						<DateTimePicker
-							v-model="scaleDowndateTime"
-							variant="subtle"
-							placeholder="Select date & time"
-						/>
-					</div>
-				</div>
-				<Button
-					variant="solid"
-					theme="gray"
-					@click="scheduleAutoscale"
-					class="w-full rounded-lg mt-4 py-3"
+			<p class="text-ink-gray-6">
+				Please read the
+				<a
+					href="https://docs.frappe.io/cloud/application-server-horizontal-scaling"
+					target="_blank"
+					class="text-ink-gray-9 underline hover:text-ink-gray-7"
 				>
-					Schedule Autoscale
-				</Button>
-			</div>
-			<div
-				v-else
-				class="flex flex-col items-center justify-center rounded-lg border border-outline-gray-1 bg-surface-gray-1 p-6 text-center space-y-3"
-			>
-				<p class="text-ink-gray-9">Autoscale scheduling is unavailable</p>
-
-				<p class="text-ink-gray-6 max-w-md">
-					You can only schedule autoscale records when automatic scaling is not
-					already configured for this server.
-				</p>
-
-				<p class="text-ink-gray-6">
-					Please read the
-					<a
-						href="https://docs.frappe.io/cloud/application-server-horizontal-scaling"
-						target="_blank"
-						class="text-ink-gray-9 underline hover:text-ink-gray-7"
-					>
-						documentation
-					</a>
-					for more information.
-				</p>
-			</div>
-		</template>
+					documentation
+				</a>
+				for more information.
+			</p>
+		</div>
 	</Dialog>
 </template>
 

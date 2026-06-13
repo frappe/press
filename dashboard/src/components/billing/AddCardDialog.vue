@@ -1,22 +1,20 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'Add new card' }">
-		<template #body-content>
-			<div
-				v-if="showMessage"
-				class="mb-5 inline-flex gap-1.5 text-base text-ink-gray-7"
-			>
-				<FeatherIcon class="h-4" name="info" />
-				<span> Add at least one card before changing the payment mode. </span>
-			</div>
-			<CardForm
-				@success="
-					() => {
-						show = false;
-						emit('success');
-					}
-				"
-			/>
-		</template>
+	<Dialog v-model="show" title="Add new card">
+		<div
+			v-if="showMessage"
+			class="mb-5 inline-flex gap-1.5 text-base text-ink-gray-7"
+		>
+			<FeatherIcon class="h-4" name="info" />
+			<span> Add at least one card before changing the payment mode. </span>
+		</div>
+		<CardForm
+			@success="
+				() => {
+					show = false;
+					emit('success');
+				}
+			"
+		/>
 	</Dialog>
 </template>
 <script setup>

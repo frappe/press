@@ -1,55 +1,45 @@
 <template>
-	<Dialog
-		v-model="show"
-		:options="{
-			title: dialogTitle,
-			size: '2xl',
-		}"
-	>
-		<template #body-content>
-			<template v-if="updatableApps.length > 0">
-				<GenericList :options="listOptions" />
-				<div class="mt-4 flex flex-col space-y-4">
-					<DateTimeControl
-						v-model="scheduledTime"
-						label="Schedule Time in IST"
+	<Dialog v-model="show" :title="dialogTitle" size="2xl">
+		<template v-if="updatableApps.length > 0">
+			<GenericList :options="listOptions" />
+			<div class="mt-4 flex flex-col space-y-4">
+				<DateTimeControl v-model="scheduledTime" label="Schedule Time in IST" />
+				<div class="flex flex-col space-y-2">
+					<FormControl
+						label="Skip failing patches if any"
+						type="checkbox"
+						v-model="skipFailingPatches"
 					/>
-					<div class="flex flex-col space-y-2">
-						<FormControl
-							label="Skip failing patches if any"
-							type="checkbox"
-							v-model="skipFailingPatches"
-						/>
-						<FormControl
-							label="Skip taking backup for this update"
-							type="checkbox"
-							v-model="skipBackups"
-							v-if="!$site.doc.group_public"
-						/>
-						<div
-							class="flex items-center rounded border border-outline-gray-1 bg-surface-gray-2 p-4 text-sm text-ink-gray-6"
-							v-if="skipBackups"
-						>
-							<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
-							<div>
-								If the update fails, rollback will not occur as there is no
-								backup. You will have to manually fix the issues over
-								<a
-									href="https://docs.frappe.io/cloud/benches/ssh"
-									target="_blank"
-									class="underline"
-									>ssh</a
-								>.
-							</div>
+					<FormControl
+						label="Skip taking backup for this update"
+						type="checkbox"
+						v-model="skipBackups"
+						v-if="!$site.doc.group_public"
+					/>
+					<div
+						class="flex items-center rounded border border-outline-gray-1 bg-surface-gray-2 p-4 text-sm text-ink-gray-6"
+						v-if="skipBackups"
+					>
+						<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
+						<div>
+							If the update fails, rollback will not occur as there is no
+							backup. You will have to manually fix the issues over
+							<a
+								href="https://docs.frappe.io/cloud/benches/ssh"
+								target="_blank"
+								class="underline"
+								>ssh</a
+							>.
 						</div>
 					</div>
 				</div>
-			</template>
-			<div v-else class="text-center text-base text-ink-gray-6">
-				No apps to update
 			</div>
-			<ErrorMessage class="mt-4" :message="$site.scheduleUpdate.error" />
 		</template>
+		<div v-else class="text-center text-base text-ink-gray-6">
+			No apps to update
+		</div>
+		<ErrorMessage class="mt-4" :message="$site.scheduleUpdate.error" />
+
 		<template #actions>
 			<Button
 				v-if="existingUpdate"

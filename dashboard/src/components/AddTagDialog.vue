@@ -1,8 +1,7 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Add tag',
-			actions: [
+		title="Add tag"
+		:actions="[
 				{
 					label: 'Add',
 					variant: 'solid',
@@ -11,30 +10,27 @@
 							selectedTag?.value === '__new__' ? newTag : selectedTag.value,
 						),
 				},
-			],
-		}"
+			]"
 		v-model="show"
 	>
-		<template #body-content>
-			<FormControl
-				v-if="selectedTag?.value !== '__new__'"
-				label="Select tag"
-				v-model="selectedTag"
-				type="combobox"
-				:options="tagOptions"
-				:modelValue="selectedTag?.value"
-				@update:modelValue="
-					selectedTag = tagOptions.find((option) => option.value === $event)
-				"
-			/>
-			<FormControl
-				v-if="selectedTag?.value === '__new__'"
-				v-model="newTag"
-				label="Enter new tag and press enter"
-				placeholder="production, staging, testing"
-				@keydown.enter="(e) => addNewTag(e.target.value)"
-			/>
-		</template>
+		<FormControl
+			v-if="selectedTag?.value !== '__new__'"
+			label="Select tag"
+			v-model="selectedTag"
+			type="combobox"
+			:options="tagOptions"
+			:modelValue="selectedTag?.value"
+			@update:modelValue="
+				selectedTag = tagOptions.find((option) => option.value === $event)
+			"
+		/>
+		<FormControl
+			v-if="selectedTag?.value === '__new__'"
+			v-model="newTag"
+			label="Enter new tag and press enter"
+			placeholder="production, staging, testing"
+			@keydown.enter="(e) => addNewTag(e.target.value)"
+		/>
 	</Dialog>
 </template>
 <script>

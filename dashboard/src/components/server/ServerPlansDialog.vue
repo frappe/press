@@ -1,9 +1,8 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Change Plan',
-			size: '5xl',
-			actions: [
+		title="Change Plan"
+		size="5xl"
+		:actions="[
 				{
 					label: 'Change plan',
 					variant: 'solid',
@@ -17,152 +16,149 @@
 						plan?.instance_type ===
 							$server?.doc?.current_plan?.instance_type),
 				},
-			],
-		}"
+			]"
 		v-model="show"
 	>
-		<template #body-content>
-			<!-- Don't show premium plans for Hetzner & DigitalOcean -->
+		<!-- Don't show premium plans for Hetzner & DigitalOcean -->
+		<div
+			class="mb-4 mt-2 w-full space-y-2"
+			v-if="
+				this.$server?.doc?.provider != 'Hetzner' &&
+				this.$server?.doc?.provider != 'DigitalOcean'
+			"
+		>
+			<div class="grid grid-cols-2 gap-3">
+				<button
+					v-for="c in [
+						{
+							name: 'Standard',
+							description: 'Includes standard support and SLAs',
+						},
+						{
+							name: 'Premium',
+							description: 'Includes enterprise support and SLAs',
+						},
+					]"
+					:key="c.name"
+					@click="planType = c.name"
+					:class="[
+						planType === c.name
+							? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+							: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+						'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
+					]"
+				>
+					<div class="flex w-full items-center justify-between space-x-2">
+						<span class="text-sm font-medium"> {{ c.name }} </span>
+						<Tooltip :text="c.description">
+							<lucide-info class="h-4 w-4 text-ink-gray-5" />
+						</Tooltip>
+					</div>
+				</button>
+			</div>
+		</div>
+
+		<!-- CPU and Ram only upgrade choice -->
+		<div
+			v-if="
+				this.$server?.doc?.provider === 'Hetzner' ||
+				this.$server?.doc?.provider === 'DigitalOcean'
+			"
+			class="flex flex-col overflow-hidden rounded text-left w-full p-3 mb-4 cursor-pointer gap-3"
+			:class="{
+				'border-amber-300 bg-amber-100 border-2': !cpu_and_memory_only_resize,
+				'border-blue-300 bg-blue-100 border-2': cpu_and_memory_only_resize,
+			}"
+			@click.prevent="
+				cpu_and_memory_only_resize = !cpu_and_memory_only_resize
+			"
+		>
+			<Checkbox
+				class="cursor-pointer"
+				size="sm"
+				v-model="cpu_and_memory_only_resize"
+				label="CPU and Memory only resize"
+			/>
+
+			<p class="text-base leading-relaxed" v-if="!cpu_and_memory_only_resize">
+				<b>Note :</b>
+				You won't be able to downgrade this server to a plan with a smaller disk
+				size.<br />
+				If you only want to upgrade CPU and memory without changing the disk
+				size, keep this option checked.
+			</p>
+			<p v-else class="text-base leading-relaxed">
+				To view plans that include disk upgrades, uncheck this option.
+			</p>
+		</div>
+
+		<div
+			class="h-64 flex flex-row justify-center items-center gap-2"
+			v-if="$resources?.serverPlansdata?.loading"
+		>
+			<Spinner class="w-4" />
+			Loading Server Plans...
+		</div>
+		<div v-else>
+			<!-- Server Plan Type Selection -->
 			<div
-				class="mb-4 mt-2 w-full space-y-2"
-				v-if="
-					this.$server?.doc?.provider != 'Hetzner' &&
-					this.$server?.doc?.provider != 'DigitalOcean'
-				"
+				class="w-full space-y-2 mb-4"
+				v-if="Object.keys(serverPlanTypes).length > 1"
 			>
 				<div class="grid grid-cols-2 gap-3">
 					<button
-						v-for="c in [
-							{
-								name: 'Standard',
-								description: 'Includes standard support and SLAs',
-							},
-							{
-								name: 'Premium',
-								description: 'Includes enterprise support and SLAs',
-							},
-						]"
-						:key="c.name"
-						@click="planType = c.name"
+						v-for="planType in Object.values(serverPlanTypes).sort(
+							(a, b) => a.order_in_list - b.order_in_list,
+						)"
+						:key="planType.name"
+						@click="serverPlanType = planType.name"
 						:class="[
-							planType === c.name
-								? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-								: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
-							'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
+							serverPlanType === planType.name
+								? 'border-outline-gray-5 ring-1 ring-gray-900'
+								: 'border-outline-gray-2',
+							'flex w-full flex-col overflow-hidden rounded border text-left hover:bg-surface-gray-1',
 						]"
 					>
-						<div class="flex w-full items-center justify-between space-x-2">
-							<span class="text-sm font-medium"> {{ c.name }} </span>
-							<Tooltip :text="c.description">
-								<lucide-info class="h-4 w-4 text-ink-gray-5" />
-							</Tooltip>
+						<div class="w-full p-3">
+							<div class="flex items-center justify-between">
+								<div class="flex w-full items-center">
+									<span class="truncate text-lg font-medium text-ink-gray-9">
+										{{ planType.title }}
+									</span>
+								</div>
+							</div>
+							<div
+								class="mt-1 text-sm text-ink-gray-6"
+								v-if="planType.description"
+							>
+								{{ planType.description }}
+							</div>
 						</div>
 					</button>
 				</div>
 			</div>
 
-			<!-- CPU and Ram only upgrade choice -->
+			<!-- Single Plan Type Message -->
 			<div
-				v-if="
-					this.$server?.doc?.provider === 'Hetzner' ||
-					this.$server?.doc?.provider === 'DigitalOcean'
-				"
-				class="flex flex-col overflow-hidden rounded text-left w-full p-3 mb-4 cursor-pointer gap-3"
-				:class="{
-					'border-amber-300 bg-amber-100 border-2': !cpu_and_memory_only_resize,
-					'border-blue-300 bg-blue-100 border-2': cpu_and_memory_only_resize,
-				}"
-				@click.prevent="
-					cpu_and_memory_only_resize = !cpu_and_memory_only_resize
-				"
+				v-else-if="Object.keys(serverPlanTypes).length === 1"
+				class="flex flex-col rounded border border-outline-gray-2 p-3 gap-2 mb-4"
 			>
-				<Checkbox
-					class="cursor-pointer"
-					size="sm"
-					v-model="cpu_and_memory_only_resize"
-					label="CPU and Memory only resize"
-				/>
-
-				<p class="text-base leading-relaxed" v-if="!cpu_and_memory_only_resize">
-					<b>Note :</b>
-					You won't be able to downgrade this server to a plan with a smaller
-					disk size.<br />
-					If you only want to upgrade CPU and memory without changing the disk
-					size, keep this option checked.
+				<p class="text-base text-ink-gray-9">
+					<span class="font-medium"
+						>{{ Object.values(serverPlanTypes)[0].title }}</span
+					>
+					machines are available.
 				</p>
-				<p v-else class="text-base leading-relaxed">
-					To view plans that include disk upgrades, uncheck this option.
+
+				<p class="text-base text-ink-gray-6">
+					{{ Object.values(serverPlanTypes)[0].description }}
 				</p>
 			</div>
 
-			<div
-				class="h-64 flex flex-row justify-center items-center gap-2"
-				v-if="$resources?.serverPlansdata?.loading"
-			>
-				<Spinner class="w-4" />
-				Loading Server Plans...
-			</div>
-			<div v-else>
-				<!-- Server Plan Type Selection -->
-				<div
-					class="w-full space-y-2 mb-4"
-					v-if="Object.keys(serverPlanTypes).length > 1"
-				>
-					<div class="grid grid-cols-2 gap-3">
-						<button
-							v-for="planType in Object.values(serverPlanTypes).sort(
-								(a, b) => a.order_in_list - b.order_in_list,
-							)"
-							:key="planType.name"
-							@click="serverPlanType = planType.name"
-							:class="[
-								serverPlanType === planType.name
-									? 'border-outline-gray-5 ring-1 ring-gray-900'
-									: 'border-outline-gray-2',
-								'flex w-full flex-col overflow-hidden rounded border text-left hover:bg-surface-gray-1',
-							]"
-						>
-							<div class="w-full p-3">
-								<div class="flex items-center justify-between">
-									<div class="flex w-full items-center">
-										<span class="truncate text-lg font-medium text-ink-gray-9">
-											{{ planType.title }}
-										</span>
-									</div>
-								</div>
-								<div
-									class="mt-1 text-sm text-ink-gray-6"
-									v-if="planType.description"
-								>
-									{{ planType.description }}
-								</div>
-							</div>
-						</button>
-					</div>
-				</div>
-
-				<!-- Single Plan Type Message -->
-				<div
-					v-else-if="Object.keys(serverPlanTypes).length === 1"
-					class="flex flex-col rounded border border-outline-gray-2 p-3 gap-2 mb-4"
-				>
-					<p class="text-base text-ink-gray-9">
-						<span class="font-medium"
-							>{{ Object.values(serverPlanTypes)[0].title }}</span
-						>
-						machines are available.
-					</p>
-
-					<p class="text-base text-ink-gray-6">
-						{{ Object.values(serverPlanTypes)[0].description }}
-					</p>
-				</div>
-
-				<!-- Site Plans Cards -->
-				<ServerPlansCards v-model="plan" :plans="filteredServerPlans" />
-			</div>
-			<ErrorMessage class="mt-2" :message="$server.changePlan.error" />
-		</template>
+			<!-- Site Plans Cards -->
+			<ServerPlansCards v-model="plan" :plans="filteredServerPlans" />
+		</div>
+		<ErrorMessage class="mt-2" :message="$server.changePlan.error" />
 	</Dialog>
 </template>
 <script>

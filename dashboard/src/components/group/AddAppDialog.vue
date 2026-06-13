@@ -1,128 +1,116 @@
 <template>
-	<Dialog
-		:options="{
-			title: 'Add Marketplace App',
-			size: '6xl',
-		}"
-		v-model="showDialog"
-	>
-		<template #body-content>
-			<div class="flex">
-				<div>
-					<TextInput
-						placeholder="Search"
-						class="w-[20rem]"
-						:debounce="500"
-						v-model="searchQuery"
-					>
-						<template #prefix>
-							<lucide-search class="h-4 w-4 text-ink-gray-5" />
-						</template>
-						<template #suffix>
-							<span class="text-sm text-ink-gray-5" v-if="searchQuery">
-								{{ filteredRows.length === 0
-										? 'No results'
-										: `${filteredRows.length} of ${rows.length}` }}
-							</span>
-						</template>
-					</TextInput>
-				</div>
-				<div class="ml-auto flex items-center space-x-2">
-					<Button
-						@click="$resources.installableApps.reload()"
-						:loading="isLoading"
-					>
-						<template #icon>
-							<lucide-refresh-ccw class="h-4 w-4" />
-						</template>
-					</Button>
-					<Button
-						@click="
-							showDialog = false;
-							showNewAppDialog = true;
-						"
-					>
-						<template #prefix>
-							<lucide-github class="h-4 w-4" />
-							Add from GitHub
-						</template>
-					</Button>
-				</div>
-			</div>
-			<div class="mt-3 min-h-0 flex-1 overflow-y-auto">
-				<ListView
-					:columns="columns"
-					:rows="filteredRows"
-					:options="{
-						selectable: false,
-						onRowClick: () => {},
-						getRowRoute: null,
-					}"
-					row-key="name"
+	<Dialog title="Add Marketplace App" size="6xl" v-model="showDialog">
+		<div class="flex">
+			<div>
+				<TextInput
+					placeholder="Search"
+					class="w-[20rem]"
+					:debounce="500"
+					v-model="searchQuery"
 				>
-					<ListHeader>
-						<ListHeaderItem
-							v-for="column in columns"
-							:key="column.key"
-							:item="column"
-						/>
-					</ListHeader>
-					<ListRows>
-						<ListRow
-							v-for="(row, i) in filteredRows"
-							:row="row"
-							:key="row.name"
-						>
-							<template v-slot="{ column, item }">
-								<div class="flex items-center">
-									<div v-if="column.prefix" class="mr-2">
-										<component :is="column.prefix(row)" />
-									</div>
-									<Dropdown
-										:options="dropdownItems(row)"
-										right
-										v-if="column.type === 'select'"
-									>
-										<template v-slot="{ open }">
-											<Button
-												v-if="row.source.branch"
-												type="white"
-												icon-right="chevron-down"
-												class="max-w-48 truncate"
-											>
-												<span class="truncate">{{ row.source.branch }}</span>
-											</Button>
-										</template>
-									</Dropdown>
-									<component
-										v-else-if="column.type === 'Component'"
-										:is="column.component(row)"
-									/>
-									<Badge
-										v-else-if="column.type === 'Badge'"
-										v-bind="formattedValue(column, item, row)"
-									/>
-									<div v-else class="truncate text-base" :class="column.class">
-										{{ formattedValue(column, item, row) }}
-									</div>
+					<template #prefix>
+						<lucide-search class="h-4 w-4 text-ink-gray-5" />
+					</template>
+					<template #suffix>
+						<span class="text-sm text-ink-gray-5" v-if="searchQuery">
+							{{ filteredRows.length === 0
+									? 'No results'
+									: `${filteredRows.length} of ${rows.length}` }}
+						</span>
+					</template>
+				</TextInput>
+			</div>
+			<div class="ml-auto flex items-center space-x-2">
+				<Button
+					@click="$resources.installableApps.reload()"
+					:loading="isLoading"
+				>
+					<template #icon>
+						<lucide-refresh-ccw class="h-4 w-4" />
+					</template>
+				</Button>
+				<Button
+					@click="
+						showDialog = false;
+						showNewAppDialog = true;
+					"
+				>
+					<template #prefix>
+						<lucide-github class="h-4 w-4" />
+						Add from GitHub
+					</template>
+				</Button>
+			</div>
+		</div>
+		<div class="mt-3 min-h-0 flex-1 overflow-y-auto">
+			<ListView
+				:columns="columns"
+				:rows="filteredRows"
+				:options="{
+					selectable: false,
+					onRowClick: () => {},
+					getRowRoute: null,
+				}"
+				row-key="name"
+			>
+				<ListHeader>
+					<ListHeaderItem
+						v-for="column in columns"
+						:key="column.key"
+						:item="column"
+					/>
+				</ListHeader>
+				<ListRows>
+					<ListRow v-for="(row, i) in filteredRows" :row="row" :key="row.name">
+						<template v-slot="{ column, item }">
+							<div class="flex items-center">
+								<div v-if="column.prefix" class="mr-2">
+									<component :is="column.prefix(row)" />
 								</div>
-							</template>
-						</ListRow>
-					</ListRows>
-				</ListView>
-				<div class="px-5" v-if="filteredRows.length === 0">
-					<div
-						class="text-center text-sm leading-10 text-ink-gray-5"
-						v-if="isLoading"
-					>
-						Loading...
-					</div>
-					<div v-else class="text-center text-sm leading-10 text-ink-gray-5">
-						No apps available to add
-					</div>
+								<Dropdown
+									:options="dropdownItems(row)"
+									right
+									v-if="column.type === 'select'"
+								>
+									<template v-slot="{ open }">
+										<Button
+											v-if="row.source.branch"
+											type="white"
+											icon-right="chevron-down"
+											class="max-w-48 truncate"
+										>
+											<span class="truncate">{{ row.source.branch }}</span>
+										</Button>
+									</template>
+								</Dropdown>
+								<component
+									v-else-if="column.type === 'Component'"
+									:is="column.component(row)"
+								/>
+								<Badge
+									v-else-if="column.type === 'Badge'"
+									v-bind="formattedValue(column, item, row)"
+								/>
+								<div v-else class="truncate text-base" :class="column.class">
+									{{ formattedValue(column, item, row) }}
+								</div>
+							</div>
+						</template>
+					</ListRow>
+				</ListRows>
+			</ListView>
+			<div class="px-5" v-if="filteredRows.length === 0">
+				<div
+					class="text-center text-sm leading-10 text-ink-gray-5"
+					v-if="isLoading"
+				>
+					Loading...
+				</div>
+				<div v-else class="text-center text-sm leading-10 text-ink-gray-5">
+					No apps available to add
 				</div>
 			</div>
-		</template>
+		</div>
 	</Dialog>
 	<NewAppDialog
 		v-if="showNewAppDialog"

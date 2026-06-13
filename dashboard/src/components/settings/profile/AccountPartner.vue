@@ -34,56 +34,51 @@
 			<span class="text-ink-gray-5"> {{ $team.doc?.partner_email }}</span>
 		</div>
 		<Dialog
-			:options="{
-				title: 'Link Partner Account',
-				actions: [
+			title="Link Partner Account"
+			:actions="[
 					{
 						label: 'Submit',
 						variant: 'solid',
 						onClick: () => $resources.addPartnerCode.submit(),
 					},
-				],
-			}"
+				]"
 			v-model="showAddPartnerCodeDialog"
 		>
-			<template v-slot:body-content>
-				<p class="mb-4 text-p-base">
-					Enter the partner code provided by your Partner
+			<p class="mb-4 text-p-base">
+				Enter the partner code provided by your Partner
+			</p>
+
+			<div
+				class="rounded bg-surface-gray-2 p-4 mb-4 pb-2 prose prose-sm text-ink-gray-7"
+			>
+				<p>
+					<strong>Note</strong>: After linking with Partner, following details
+					shall be shared with your partner team:
 				</p>
 
-				<div
-					class="rounded bg-surface-gray-2 p-4 mb-4 pb-2 prose prose-sm text-ink-gray-7"
-				>
-					<p>
-						<strong>Note</strong>: After linking with Partner, following details
-						shall be shared with your partner team:
-					</p>
-
-					<ul class="list-disc pl-5">
-						<li>Billing name</li>
-						<li>Monthly billing amount</li>
-					</ul>
-				</div>
-				<FormControl
-					placeholder="e.g. rGjw3hJ81b"
-					v-model="code"
-					@input="referralCodeChange"
-				/>
-				<div
-					v-if="partnerExists"
-					class="mt-3 text-sm text-green-600"
-					role="alert"
-				>
-					Referral Code {{ code }} belongs to {{ partner }}
-				</div>
-			</template>
+				<ul class="list-disc pl-5">
+					<li>Billing name</li>
+					<li>Monthly billing amount</li>
+				</ul>
+			</div>
+			<FormControl
+				placeholder="e.g. rGjw3hJ81b"
+				v-model="code"
+				@input="referralCodeChange"
+			/>
+			<div
+				v-if="partnerExists"
+				class="mt-3 text-sm text-green-600"
+				role="alert"
+			>
+				Referral Code {{ code }} belongs to {{ partner }}
+			</div>
 		</Dialog>
 
 		<Dialog
 			v-model="showRemovePartnerDialog"
-			:options="{
-				title: 'Remove Partner',
-				actions: [
+			title="Remove Partner"
+			:actions="[
 					{
 						label: 'Remove',
 						variant: 'solid',
@@ -92,26 +87,23 @@
 							$resources.removePartner.submit();
 						},
 					},
-				],
-			}"
+				]"
 		>
-			<template v-slot:body-content>
-				<div class="text-p-base pb-2">
-					This will remove the Partner associated with your account. Are you
-					sure you want to remove the Partner? <br /><br />
-					<div class="text-ink-gray-8 bg-surface-gray-3 p-3 rounded-md">
-						Your partner will no longer have access to your sites and servers
-						and will be removed as team member from your team.
-					</div>
+			<div class="text-p-base pb-2">
+				This will remove the Partner associated with your account. Are you sure
+				you want to remove the Partner? <br /><br />
+				<div class="text-ink-gray-8 bg-surface-gray-3 p-3 rounded-md">
+					Your partner will no longer have access to your sites and servers and
+					will be removed as team member from your team.
 				</div>
-				<div
-					v-if="removePartnerError"
-					class="text-sm mt-2 leading-normal text-red-600"
-					role="alert"
-				>
-					{{ removePartnerError }}
-				</div>
-			</template>
+			</div>
+			<div
+				v-if="removePartnerError"
+				class="text-sm mt-2 leading-normal text-red-600"
+				role="alert"
+			>
+				{{ removePartnerError }}
+			</div>
 		</Dialog>
 	</Card>
 </template>

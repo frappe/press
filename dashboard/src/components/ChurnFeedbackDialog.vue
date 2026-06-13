@@ -1,8 +1,7 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Tell us why you are leaving',
-			actions: [
+		title="Tell us why you are leaving"
+		:actions="[
 				{
 					label: 'Submit',
 					variant: 'solid',
@@ -13,40 +12,37 @@
 						});
 					},
 				},
-			],
-		}"
+			]"
 		v-model="show"
 	>
-		<template v-slot:body-content>
-			<p class="mb-5 text-sm text-ink-gray-8">
-				Help us improve your experience by sharing your thoughts.
-			</p>
-			<div class="mt-3">
-				<span class="mb-2 block text-sm leading-4 text-ink-gray-6">
-					Please rate your experience
-				</span>
-				<StarRatingInput v-model="rating" />
-			</div>
-			<FormControl
-				class="mt-4"
-				type="select"
-				:options="options"
-				size="md"
-				variant="outline"
-				placeholder="Select a reason"
-				v-model="feedback"
-				required
-			/>
-			<FormControl
-				class="mt-4"
-				type="textarea"
-				variant="outline"
-				placeholder="I am leaving Frappe Cloud because..."
-				size="md"
-				v-model="note"
-			/>
-			<ErrorMessage class="mt-2" :message="$resources.submitFeedback.error" />
-		</template>
+		<p class="mb-5 text-sm text-ink-gray-8">
+			Help us improve your experience by sharing your thoughts.
+		</p>
+		<div class="mt-3">
+			<span class="mb-2 block text-sm leading-4 text-ink-gray-6">
+				Please rate your experience
+			</span>
+			<StarRatingInput v-model="rating" />
+		</div>
+		<FormControl
+			class="mt-4"
+			type="select"
+			:options="options"
+			size="md"
+			variant="outline"
+			placeholder="Select a reason"
+			v-model="feedback"
+			required
+		/>
+		<FormControl
+			class="mt-4"
+			type="textarea"
+			variant="outline"
+			placeholder="I am leaving Frappe Cloud because..."
+			size="md"
+			v-model="note"
+		/>
+		<ErrorMessage class="mt-2" :message="$resources.submitFeedback.error" />
 	</Dialog>
 </template>
 

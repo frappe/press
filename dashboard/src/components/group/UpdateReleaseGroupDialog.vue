@@ -1,169 +1,163 @@
 <template>
 	<Dialog
 		v-model="show"
-		:options="{
-		size: '4xl',
-		title: lastDeploy ? 'Update Bench' : 'Deploy Bench',
-	}"
+		size="4xl"
+		:title="lastDeploy ? 'Update Bench' : 'Deploy Bench'"
 	>
-		<template #body-content>
-			<AlertBanner
-				v-if="benchDocResource.doc.are_builds_suspended"
-				class="mb-4"
-				title="<b>Builds Suspended:</b> updates will be scheduled to run when builds resume."
-				type="warning"
-			/>
-			<AlertBanner
-				v-if="
-				benchDocResource.doc.deploy_information.apps.some((app) =>
-					app.releases.some((release) => release.is_yanked),
-				)
-			"
-				class="mb-4"
-				title="A few commits have been yanked, <a href='https://docs.frappe.io/cloud/benches/updating_a_bench#yanked-app-releases' target='_blank' style='font-weight: bold;'>click here</a> to know more."
-				type="info"
-			/>
-			<AlertBanner
-				v-if="
-				benchDocResource.doc.deploy_information.apps.some((app) =>
-					app.releases.some((release) => release.is_mandatory),
-				)
-			"
-				class="mb-4"
-				title="A mandatory update is available. Please select the update to proceed."
-				type="info"
-			/>
-			<!-- Update Steps -->
-			<div class="space-y-4">
-				<!-- Select Apps Step -->
-				<div v-if="step === 'select-apps'">
-					<h2 class="mb-4 text-lg font-medium">
-						{{ lastDeploy ? 'Select apps to update' : 'Deploy Apps' }}
-					</h2>
-					<GenericList
-						class="max-h-[500px]"
-						v-if="benchDocResource.doc.deploy_information.update_available"
-						:options="updatableAppOptions"
-						@update:selections="handleAppSelection"
-					/>
-					<p v-else class="text-center text-base text-ink-gray-6">
-						No apps to update
-					</p>
-				</div>
+		<AlertBanner
+			v-if="benchDocResource.doc.are_builds_suspended"
+			class="mb-4"
+			title="<b>Builds Suspended:</b> updates will be scheduled to run when builds resume."
+			type="warning"
+		/>
+		<AlertBanner
+			v-if="
+			benchDocResource.doc.deploy_information.apps.some((app) =>
+				app.releases.some((release) => release.is_yanked),
+			)
+		"
+			class="mb-4"
+			title="A few commits have been yanked, <a href='https://docs.frappe.io/cloud/benches/updating_a_bench#yanked-app-releases' target='_blank' style='font-weight: bold;'>click here</a> to know more."
+			type="info"
+		/>
+		<AlertBanner
+			v-if="
+			benchDocResource.doc.deploy_information.apps.some((app) =>
+				app.releases.some((release) => release.is_mandatory),
+			)
+		"
+			class="mb-4"
+			title="A mandatory update is available. Please select the update to proceed."
+			type="info"
+		/>
+		<!-- Update Steps -->
+		<div class="space-y-4">
+			<!-- Select Apps Step -->
+			<div v-if="step === 'select-apps'">
+				<h2 class="mb-4 text-lg font-medium">
+					{{ lastDeploy ? 'Select apps to update' : 'Deploy Apps' }}
+				</h2>
+				<GenericList
+					class="max-h-[500px]"
+					v-if="benchDocResource.doc.deploy_information.update_available"
+					:options="updatableAppOptions"
+					@update:selections="handleAppSelection"
+				/>
+				<p v-else class="text-center text-base text-ink-gray-6">
+					No apps to update
+				</p>
+			</div>
 
-				<!-- Remove Apps Step -->
-				<div v-else-if="step === 'removed-apps'">
-					<h2 class="mb-4 text-lg font-medium">These apps will be removed</h2>
-					<GenericList class="max-h-[500px]" :options="removedAppOptions" />
-				</div>
+			<!-- Remove Apps Step -->
+			<div v-else-if="step === 'removed-apps'">
+				<h2 class="mb-4 text-lg font-medium">These apps will be removed</h2>
+				<GenericList class="max-h-[500px]" :options="removedAppOptions" />
+			</div>
 
-				<!-- Select Site Step -->
-				<div v-else-if="step === 'select-sites'">
-					<h2 class="mb-4 text-lg font-medium">Select sites to update</h2>
-					<GenericList
-						class="max-h-[500px]"
-						v-if="benchDocResource.doc.deploy_information.sites.length"
-						:options="siteOptions"
-						@update:selections="handleSiteSelection"
-					/>
-					<p
-						class="text-center text-base font-medium text-ink-gray-6"
-						v-else-if="!benchDocResource.doc.deploy_information.sites.length"
-					>
-						No active sites to update
-					</p>
-				</div>
-
-				<!-- Patch Deploy Info Step -->
-				<div
-					v-else-if="step === 'patch-deploy-info'"
-					class="flex flex-col gap-4"
+			<!-- Select Site Step -->
+			<div v-else-if="step === 'select-sites'">
+				<h2 class="mb-4 text-lg font-medium">Select sites to update</h2>
+				<GenericList
+					class="max-h-[500px]"
+					v-if="benchDocResource.doc.deploy_information.sites.length"
+					:options="siteOptions"
+					@update:selections="handleSiteSelection"
+				/>
+				<p
+					class="text-center text-base font-medium text-ink-gray-6"
+					v-else-if="!benchDocResource.doc.deploy_information.sites.length"
 				>
-					<div
-						class="flex items-start gap-3 rounded-lg border border-outline-gray-2 bg-surface-gray-2 p-4"
-					>
-						<lucide-info class="mt-0.5 h-5 w-5 shrink-0 text-ink-blue-3" />
-						<div class="space-y-2 text-base text-ink-gray-8">
-							<p>
-								A <strong>patch deploy</strong> snapshots your existing bench
-								image, applies the new code on top, and provisions new benches
-								from it — no full image rebuild needed.
-							</p>
-							<ul class="ml-1 list-inside list-disc space-y-1 text-ink-gray-7">
-								<li>Much faster than a regular deploy</li>
-								<li>
-									New benches are created and sites are migrated, just like a
-									regular deploy
-								</li>
-								<li>Assets are only rebuilt if UI files changed</li>
-								<li>
-									Python dependencies are only reinstalled if dependency files
-									changed
-								</li>
-							</ul>
-							<p>
-								Best for small, safe changes like bug fixes. Avoid for adding or
-								removing apps, or anything that needs a clean build.
-							</p>
-						</div>
+					No active sites to update
+				</p>
+			</div>
+
+			<!-- Patch Deploy Info Step -->
+			<div v-else-if="step === 'patch-deploy-info'" class="flex flex-col gap-4">
+				<div
+					class="flex items-start gap-3 rounded-lg border border-outline-gray-2 bg-surface-gray-2 p-4"
+				>
+					<lucide-info class="mt-0.5 h-5 w-5 shrink-0 text-ink-blue-3" />
+					<div class="space-y-2 text-base text-ink-gray-8">
+						<p>
+							A <strong>patch deploy</strong> snapshots your existing bench
+							image, applies the new code on top, and provisions new benches
+							from it — no full image rebuild needed.
+						</p>
+						<ul class="ml-1 list-inside list-disc space-y-1 text-ink-gray-7">
+							<li>Much faster than a regular deploy</li>
+							<li>
+								New benches are created and sites are migrated, just like a
+								regular deploy
+							</li>
+							<li>Assets are only rebuilt if UI files changed</li>
+							<li>
+								Python dependencies are only reinstalled if dependency files
+								changed
+							</li>
+						</ul>
+						<p>
+							Best for small, safe changes like bug fixes. Avoid for adding or
+							removing apps, or anything that needs a clean build.
+						</p>
 					</div>
+				</div>
+				<a
+					href="https://docs.frappe.io/cloud/benches/patch-deploys"
+					target="_blank"
+					class="flex items-center gap-1.5 text-sm text-ink-blue-3 hover:underline"
+				>
+					<lucide-external-link class="h-3.5 w-3.5" />
+					Learn more in the documentation
+				</a>
+			</div>
+
+			<!-- Restrict Build Step -->
+			<div
+				v-else-if="step === 'restrict-build' && restrictMessage"
+				class="flex flex-col gap-4"
+			>
+				<div class="flex items-center gap-2">
+					<h2 class="text-lg font-medium">Build might fail</h2>
 					<a
-						href="https://docs.frappe.io/cloud/benches/patch-deploys"
+						href="https://docs.frappe.io/cloud/common-issues/build-might-fail"
 						target="_blank"
-						class="flex items-center gap-1.5 text-sm text-ink-blue-3 hover:underline"
+						class="cursor-pointer rounded-full border border-outline-gray-1 bg-surface-gray-2 p-0.5 text-base text-ink-gray-7"
 					>
-						<lucide-external-link class="h-3.5 w-3.5" />
-						Learn more in the documentation
+						<lucide-help-circle :class="`h-4 w-4 text-red-600`" />
 					</a>
 				</div>
-
-				<!-- Restrict Build Step -->
-				<div
-					v-else-if="step === 'restrict-build' && restrictMessage"
-					class="flex flex-col gap-4"
-				>
-					<div class="flex items-center gap-2">
-						<h2 class="text-lg font-medium">Build might fail</h2>
-						<a
-							href="https://docs.frappe.io/cloud/common-issues/build-might-fail"
-							target="_blank"
-							class="cursor-pointer rounded-full border border-outline-gray-1 bg-surface-gray-2 p-0.5 text-base text-ink-gray-7"
-						>
-							<lucide-help-circle :class="`h-4 w-4 text-red-600`" />
-						</a>
-					</div>
-					<p
-						class="text-base font-medium text-ink-gray-8"
-						v-html="restrictMessage"
-					></p>
-					<div class="mt-4">
-						<FormControl
-							label="I understand, run deploy anyway"
-							type="checkbox"
-							v-model="ignoreWillFailCheck"
-						/>
-					</div>
-				</div>
-
-				<div v-if="canUpdateInPlace" class="flex gap-2">
+				<p
+					class="text-base font-medium text-ink-gray-8"
+					v-html="restrictMessage"
+				></p>
+				<div class="mt-4">
 					<FormControl
-						label="Use in place update"
+						label="I understand, run deploy anyway"
 						type="checkbox"
-						v-model="useInPlaceUpdate"
+						v-model="ignoreWillFailCheck"
 					/>
-					<Tooltip text="View documentation">
-						<a
-							href="https://docs.frappe.io/cloud/in-place-updates"
-							target="_blank"
-						>
-							<lucide-help-circle :class="`h-4 w-4 text-ink-gray-6`" />
-						</a>
-					</Tooltip>
 				</div>
-
-				<ErrorMessage :message="errorMessage" />
 			</div>
-		</template>
+
+			<div v-if="canUpdateInPlace" class="flex gap-2">
+				<FormControl
+					label="Use in place update"
+					type="checkbox"
+					v-model="useInPlaceUpdate"
+				/>
+				<Tooltip text="View documentation">
+					<a
+						href="https://docs.frappe.io/cloud/in-place-updates"
+						target="_blank"
+					>
+						<lucide-help-circle :class="`h-4 w-4 text-ink-gray-6`" />
+					</a>
+				</Tooltip>
+			</div>
+
+			<ErrorMessage :message="errorMessage" />
+		</div>
+
 		<template #actions>
 			<div class="flex items-center justify-between space-y-2">
 				<div v-if="!canShowBack || step === 'patch-deploy-info'">

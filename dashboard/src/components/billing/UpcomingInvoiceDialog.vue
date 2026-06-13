@@ -1,27 +1,23 @@
 <template>
 	<Dialog
 		v-model="props.showInvoiceDialog"
-		:options="{
-			size: '3xl',
-			title: 'Total usage for this month',
-		}"
+		size="3xl"
+		title="Total usage for this month"
 	>
-		<template #body-content>
-			<template v-if="upcomingInvoice.data.upcoming_invoice">
-				<div
-					v-if="upcomingInvoice.data.upcoming_invoice.status === 'Empty'"
-					class="text-base text-ink-gray-6"
-				>
-					Nothing to show
-				</div>
-				<InvoiceTable
-					v-else
-					:invoiceId="upcomingInvoice.data.upcoming_invoice.name"
-				/>
-			</template>
-			<template v-else>
-				<div class="text-base text-ink-gray-6">Nothing to show</div>
-			</template>
+		<template v-if="upcomingInvoice.data.upcoming_invoice">
+			<div
+				v-if="upcomingInvoice.data.upcoming_invoice.status === 'Empty'"
+				class="text-base text-ink-gray-6"
+			>
+				Nothing to show
+			</div>
+			<InvoiceTable
+				v-else
+				:invoiceId="upcomingInvoice.data.upcoming_invoice.name"
+			/>
+		</template>
+		<template v-else>
+			<div class="text-base text-ink-gray-6">Nothing to show</div>
 		</template>
 	</Dialog>
 </template>

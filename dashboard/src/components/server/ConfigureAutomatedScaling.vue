@@ -1,63 +1,55 @@
 <template>
-	<Dialog
-		:options="{
-			title: 'Auto Scale Triggers',
-			size: '2xl',
-		}"
-		v-model="show"
-	>
-		<template #body-content>
-			<div
-				v-if="$resources.configuredAutoscales.loading"
-				class="flex w-full items-center justify-center gap-2 py-32 text-ink-gray-7"
-			>
-				<Spinner class="w-4" />
-				Loading
-			</div>
-			<div v-else>
-				<AlertBanner
-					type="info"
-					:showIcon="false"
+	<Dialog title="Auto Scale Triggers" size="2xl" v-model="show">
+		<div
+			v-if="$resources.configuredAutoscales.loading"
+			class="flex w-full items-center justify-center gap-2 py-32 text-ink-gray-7"
+		>
+			<Spinner class="w-4" />
+			Loading
+		</div>
+		<div v-else>
+			<AlertBanner
+				type="info"
+				:showIcon="false"
+				class="mb-3"
+				title="When both CPU and Memory thresholds are set, scaling will trigger if either condition is met.
+				<br>Please refer to the <a href='https://docs.frappe.io/cloud/application-server-horizontal-scaling#application-server-horizontal-scaling'
+				target='_blank' class='underline'>documentation</a> for more information."
+			/>
+			<div class="flex justify-end gap-2">
+				<Button
+					v-if="selectedTriggers.length > 0"
+					variant="subtle"
 					class="mb-3"
-					title="When both CPU and Memory thresholds are set, scaling will trigger if either condition is met.
-					<br>Please refer to the <a href='https://docs.frappe.io/cloud/application-server-horizontal-scaling#application-server-horizontal-scaling'
-					target='_blank' class='underline'>documentation</a> for more information."
-				/>
-				<div class="flex justify-end gap-2">
-					<Button
-						v-if="selectedTriggers.length > 0"
-						variant="subtle"
-						class="mb-3"
-						theme="red"
-						iconLeft="trash-2"
-						@click="onRemoveTrigger"
-					>
-						Remove
-					</Button>
-					<Button
-						variant="solid"
-						class="mb-3"
-						iconLeft="plus"
-						@click="openAddTriggerDialog"
-					>
-						New
-					</Button>
-					<Button
-						variant="subtle"
-						class="mb-3"
-						icon="refresh-cw"
-						:loading="$resources.configuredAutoscales.loading"
-						@click="$resources.configuredAutoscales.submit()"
-					>
-						Refresh
-					</Button>
-				</div>
-				<GenericList
-					:options="autoScaleTriggerOptions"
-					@update:selections="onSelectionUpdate"
-				/>
+					theme="red"
+					iconLeft="trash-2"
+					@click="onRemoveTrigger"
+				>
+					Remove
+				</Button>
+				<Button
+					variant="solid"
+					class="mb-3"
+					iconLeft="plus"
+					@click="openAddTriggerDialog"
+				>
+					New
+				</Button>
+				<Button
+					variant="subtle"
+					class="mb-3"
+					icon="refresh-cw"
+					:loading="$resources.configuredAutoscales.loading"
+					@click="$resources.configuredAutoscales.submit()"
+				>
+					Refresh
+				</Button>
 			</div>
-		</template>
+			<GenericList
+				:options="autoScaleTriggerOptions"
+				@update:selections="onSelectionUpdate"
+			/>
+		</div>
 	</Dialog>
 </template>
 

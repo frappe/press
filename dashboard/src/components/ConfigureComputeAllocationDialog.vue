@@ -51,52 +51,44 @@ async function onClickSave() {
 </script>
 
 <template>
-	<Dialog
-		:options="{
-			title: 'Configure compute allocation',
-			size: 'xl',
-		}"
-		v-model="open"
-	>
-		<template #body-content>
-			<div class="flex flex-col gap-7 text-base">
-				<div class="flex w-full space-x-4">
-					<div class="flex flex-col flex-grow space-y-3">
-						<p class="font-semibold">Enable higher compute allocation</p>
-						<p class="text-ink-gray-6 leading-normal">
-							Maximize computing power for this site, or share resources equally
-							with sites on this server.
-						</p>
-					</div>
-					<Switch v-model="switchValue" size="md" class="px-4" />
+	<Dialog title="Configure compute allocation" size="xl" v-model="open">
+		<div class="flex flex-col gap-7 text-base">
+			<div class="flex w-full space-x-4">
+				<div class="flex flex-col flex-grow space-y-3">
+					<p class="font-semibold">Enable higher compute allocation</p>
+					<p class="text-ink-gray-6 leading-normal">
+						Maximize computing power for this site, or share resources equally
+						with sites on this server.
+					</p>
 				</div>
+				<Switch v-model="switchValue" size="md" class="px-4" />
+			</div>
 
-				<div class="flex w-full">
-					<a
-						class="flex-grow"
-						href="https://docs.frappe.io/cloud/control-resources-allocated-for-site"
-						target="_blank"
+			<div class="flex w-full">
+				<a
+					class="flex-grow"
+					href="https://docs.frappe.io/cloud/control-resources-allocated-for-site"
+					target="_blank"
+				>
+					<Button variant="ghost">
+						<template #prefix>
+							<LucideHelpCircle class="size-4" />
+						</template>
+						Learn More
+					</Button>
+				</a>
+
+				<div class="flex gap-3">
+					<Button @click="open = false">Cancel</Button>
+					<Button
+						:loading="site.setPlan.loading"
+						:disabled="switchValue === isHighPerformanceEnabled"
+						variant="solid"
+						@click="onClickSave"
+						>Save changes</Button
 					>
-						<Button variant="ghost">
-							<template #prefix>
-								<LucideHelpCircle class="size-4" />
-							</template>
-							Learn More
-						</Button>
-					</a>
-
-					<div class="flex gap-3">
-						<Button @click="open = false">Cancel</Button>
-						<Button
-							:loading="site.setPlan.loading"
-							:disabled="switchValue === isHighPerformanceEnabled"
-							variant="solid"
-							@click="onClickSave"
-							>Save changes</Button
-						>
-					</div>
 				</div>
 			</div>
-		</template>
+		</div>
 	</Dialog>
 </template>

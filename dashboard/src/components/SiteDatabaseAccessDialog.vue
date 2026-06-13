@@ -1,40 +1,36 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Manage Database Users',
-			size: planSupportsDatabaseAccess ? '4xl' : 'xl',
-		}"
+		title="Manage Database Users"
+		:size="planSupportsDatabaseAccess ? '4xl' : 'xl'"
 		v-model="show"
 	>
-		<template #body-content>
-			<!-- Not available on current plan, upsell higher plans -->
-			<div v-if="!planSupportsDatabaseAccess">
-				<div>
-					<p class="text-base">
-						Database access is not available on your current plan. <br />Please
-						upgrade to a higher plan to use this feature.
-					</p>
+		<!-- Not available on current plan, upsell higher plans -->
+		<div v-if="!planSupportsDatabaseAccess">
+			<div>
+				<p class="text-base">
+					Database access is not available on your current plan. <br />Please
+					upgrade to a higher plan to use this feature.
+				</p>
 
-					<Button
-						class="mt-4 w-full"
-						variant="solid"
-						@click="showChangePlanDialog = true"
-					>
-						Upgrade Site Plan
-					</Button>
-					<ManageSitePlansDialog
-						:site="site"
-						v-model="showChangePlanDialog"
-						v-if="showChangePlanDialog"
-					/>
-				</div>
+				<Button
+					class="mt-4 w-full"
+					variant="solid"
+					@click="showChangePlanDialog = true"
+				>
+					Upgrade Site Plan
+				</Button>
+				<ManageSitePlansDialog
+					:site="site"
+					v-model="showChangePlanDialog"
+					v-if="showChangePlanDialog"
+				/>
 			</div>
+		</div>
 
-			<!-- Available on the current plan -->
-			<div v-else>
-				<ObjectList :options="listOptions" />
-			</div>
-		</template>
+		<!-- Available on the current plan -->
+		<div v-else>
+			<ObjectList :options="listOptions" />
+		</div>
 	</Dialog>
 
 	<SiteDatabaseUserCredentialDialog

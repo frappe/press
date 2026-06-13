@@ -1,9 +1,8 @@
 <template>
 	<Dialog
-		:options="{
-			title: `Select Plan for ${app?.app_title || app?.title}`,
-			size: '3xl',
-			actions: [
+		:title="`Select Plan for ${app?.app_title || app?.title}`"
+		size="3xl"
+		:actions="[
 				{
 					label: 'Select Plan',
 					variant: 'solid',
@@ -13,13 +12,10 @@
 						show = false;
 					},
 				},
-			],
-		}"
+			]"
 		v-model="show"
 	>
-		<template #body-content>
-			<PlansCards v-model="selectedPlan" :plans="plans" />
-		</template>
+		<PlansCards v-model="selectedPlan" :plans="plans" />
 	</Dialog>
 </template>
 

@@ -248,37 +248,32 @@ const deleteRole = () => {
 		<!-- Create Role Dialog -->
 		<Dialog
 			v-model="showCreateDialog"
-			:options="{
-				title: 'Create Role',
-				message: 'Enter a name for the new role.',
-				size: 'sm',
-				actions: [
+			title="Create Role"
+			message="Enter a name for the new role."
+			size="sm"
+			:actions="[
 					{
 						label: 'Create',
 						variant: 'solid',
 						onClick: createRole,
 					},
-				],
-			}"
+				]"
 		>
-			<template #body-content>
-				<FormControl
-					v-model="newRoleName"
-					type="text"
-					placeholder="e.g. Website Manager"
-					@keydown.enter="createRole"
-				/>
-			</template>
+			<FormControl
+				v-model="newRoleName"
+				type="text"
+				placeholder="e.g. Website Manager"
+				@keydown.enter="createRole"
+			/>
 		</Dialog>
 
 		<!-- Role Detail Dialog -->
 		<Dialog
 			v-if="selectedRole"
 			v-model="showDetailDialog"
-			:options="{
-				title: selectedRole!.label,
-				size: 'lg',
-			actions: selectedRole && !selectedRole.is_predefined && (session.userPermissions.data.owner || session.isTeamAdmin)
+			:title="selectedRole!.label"
+			size="lg"
+			:actions="selectedRole && !selectedRole.is_predefined && (session.userPermissions.data.owner || session.isTeamAdmin)
 				? [
 							{
 								label: 'Delete',
@@ -287,106 +282,103 @@ const deleteRole = () => {
 								onClick: deleteRole,
 							},
 					  ]
-					: [],
-			}"
+					: []"
 		>
-			<template #body-content>
-				<div class="space-y-6 text-base">
-					<!-- Type indicator -->
-					<div
-						class="flex items-center gap-2 px-4 py-3 rounded border bg-surface-gray-1 text-ink-gray-7"
-					>
-						<LucideInfo class="size-5 shrink-0" />
-						<p class="leading-5">
-							<template v-if="selectedRole.is_predefined">
-								This is a standard role. Its permissions are fixed and cannot be
-								changed.
-							</template>
-							<template v-else>
-								Customize the permissions for this role by toggling the switches
-								below.
-							</template>
-						</p>
-					</div>
+			<div class="space-y-6 text-base">
+				<!-- Type indicator -->
+				<div
+					class="flex items-center gap-2 px-4 py-3 rounded border bg-surface-gray-1 text-ink-gray-7"
+				>
+					<LucideInfo class="size-5 shrink-0" />
+					<p class="leading-5">
+						<template v-if="selectedRole.is_predefined">
+							This is a standard role. Its permissions are fixed and cannot be
+							changed.
+						</template>
+						<template v-else>
+							Customize the permissions for this role by toggling the switches
+							below.
+						</template>
+					</p>
+				</div>
 
-					<!-- Important -->
-					<div class="space-y-2">
-						<div class="font-semibold text-sm uppercase tracking-wider">
-							Important
-						</div>
-						<Switch
-							class="px-2 h-10"
-							size="sm"
-							:label="'Administrator'"
-							:model-value="selectedRole.admin_access"
-							:disabled="selectedRole.is_predefined"
-							@update:model-value="(v: boolean) => updatePermission('admin_access', v)"
-						/>
+				<!-- Important -->
+				<div class="space-y-2">
+					<div class="font-semibold text-sm uppercase tracking-wider">
+						Important
 					</div>
+					<Switch
+						class="px-2 h-10"
+						size="sm"
+						:label="'Administrator'"
+						:model-value="selectedRole.admin_access"
+						:disabled="selectedRole.is_predefined"
+						@update:model-value="(v: boolean) => updatePermission('admin_access', v)"
+					/>
+				</div>
 
-					<!-- General -->
-					<div class="space-y-2">
-						<hr class="mb-8 w-1/3 mx-auto" />
-						<div class="font-semibold text-sm uppercase tracking-wider">
-							General
-						</div>
-						<div class="divide-y">
-							<div
-								v-for="perm in [
-									{ key: 'allow_site_creation', label: 'Create Sites' },
-									{ key: 'allow_bench_creation', label: 'Create Release Groups' },
-									{ key: 'allow_server_creation', label: 'Create Servers' },
-									{ key: 'allow_apps', label: 'Marketplace' },
-									{ key: 'allow_webhook_configuration', label: 'Webhooks' },
-									{ key: 'allow_billing', label: 'Billing' },
-									{ key: 'allow_partner', label: 'Partner Management' },
-								]"
-								:key="perm.key"
-							>
-								<Switch
-									class="px-2 h-10"
-									size="sm"
-									:label="perm.label"
-									:model-value="(selectedRole as any)[perm.key]"
-									:disabled="selectedRole.is_predefined"
-									@update:model-value="(v: boolean) => updatePermission(perm.key, v)"
-								/>
-							</div>
-						</div>
+				<!-- General -->
+				<div class="space-y-2">
+					<hr class="mb-8 w-1/3 mx-auto" />
+					<div class="font-semibold text-sm uppercase tracking-wider">
+						General
 					</div>
-
-					<!-- Partner permissions (conditional) -->
-					<div
-						v-if="selectedRole.allow_partner && (team.doc?.erpnext_partner || team.doc?.is_desk_user)"
-						class="space-y-2"
-					>
-						<hr class="mb-8 w-1/3 mx-auto" />
-						<div class="font-semibold text-sm uppercase tracking-wider">
-							Partner Permissions
-						</div>
-						<div class="divide-y">
-							<div
-								v-for="perm in [
-									{ key: 'allow_dashboard', label: 'Dashboard' },
-									{ key: 'allow_customer', label: 'Customer' },
-									{ key: 'allow_leads', label: 'Leads' },
-									{ key: 'allow_contribution', label: 'Contribution' },
-								]"
-								:key="perm.key"
-							>
-								<Switch
-									class="px-2 h-10"
-									size="sm"
-									:label="perm.label"
-									:model-value="(selectedRole as any)[perm.key]"
-									:disabled="selectedRole.is_predefined"
-									@update:model-value="(v: boolean) => updatePermission(perm.key, v)"
-								/>
-							</div>
+					<div class="divide-y">
+						<div
+							v-for="perm in [
+								{ key: 'allow_site_creation', label: 'Create Sites' },
+								{ key: 'allow_bench_creation', label: 'Create Release Groups' },
+								{ key: 'allow_server_creation', label: 'Create Servers' },
+								{ key: 'allow_apps', label: 'Marketplace' },
+								{ key: 'allow_webhook_configuration', label: 'Webhooks' },
+								{ key: 'allow_billing', label: 'Billing' },
+								{ key: 'allow_partner', label: 'Partner Management' },
+							]"
+							:key="perm.key"
+						>
+							<Switch
+								class="px-2 h-10"
+								size="sm"
+								:label="perm.label"
+								:model-value="(selectedRole as any)[perm.key]"
+								:disabled="selectedRole.is_predefined"
+								@update:model-value="(v: boolean) => updatePermission(perm.key, v)"
+							/>
 						</div>
 					</div>
 				</div>
-			</template>
+
+				<!-- Partner permissions (conditional) -->
+				<div
+					v-if="selectedRole.allow_partner && (team.doc?.erpnext_partner || team.doc?.is_desk_user)"
+					class="space-y-2"
+				>
+					<hr class="mb-8 w-1/3 mx-auto" />
+					<div class="font-semibold text-sm uppercase tracking-wider">
+						Partner Permissions
+					</div>
+					<div class="divide-y">
+						<div
+							v-for="perm in [
+								{ key: 'allow_dashboard', label: 'Dashboard' },
+								{ key: 'allow_customer', label: 'Customer' },
+								{ key: 'allow_leads', label: 'Leads' },
+								{ key: 'allow_contribution', label: 'Contribution' },
+							]"
+							:key="perm.key"
+						>
+							<Switch
+								class="px-2 h-10"
+								size="sm"
+								:label="perm.label"
+								:model-value="(selectedRole as any)[perm.key]"
+								:disabled="selectedRole.is_predefined"
+								@update:model-value="(v: boolean) => updatePermission(perm.key, v)"
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
 		</Dialog>
 	</div>
 </template>

@@ -1,38 +1,34 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Update Billing Address',
-			actions: [
+		title="Update Billing Address"
+		:actions="[
 				{
 					label: 'Submit',
 					variant: 'solid',
 					loading: $resources.updateBillingInformation.loading,
 					onClick: () => $resources.updateBillingInformation.submit(),
 				},
-			],
-		}"
+			]"
 		:modelValue="show"
 		@update:modelValue="$emit('update:show', $event)"
 	>
-		<template v-slot:body-content>
-			<p class="mb-5 text-sm text-ink-gray-7" v-if="message">
-				{{ message }}
-			</p>
-			<FormControl
-				class="mt-4"
-				v-model="billingInformation.billing_name"
-				label="Billing Name"
-			/>
-			<AddressForm
-				ref="address-form"
-				class="mt-4"
-				v-model:address="billingInformation"
-			/>
-			<ErrorMessage
-				class="mt-2"
-				:message="$resources.updateBillingInformation.error"
-			/>
-		</template>
+		<p class="mb-5 text-sm text-ink-gray-7" v-if="message">
+			{{ message }}
+		</p>
+		<FormControl
+			class="mt-4"
+			v-model="billingInformation.billing_name"
+			label="Billing Name"
+		/>
+		<AddressForm
+			ref="address-form"
+			class="mt-4"
+			v-model:address="billingInformation"
+		/>
+		<ErrorMessage
+			class="mt-2"
+			:message="$resources.updateBillingInformation.error"
+		/>
 	</Dialog>
 </template>
 

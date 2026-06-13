@@ -1,65 +1,61 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Add New Webhook',
-			actions: [
+		title="Add New Webhook"
+		:actions="[
 				{
 					label: 'Add Webhook',
 					variant: 'solid',
 					onClick: addWebhook,
 					loading: $resources?.addWebhook?.loading,
 				},
-			],
-		}"
+			]"
 	>
-		<template #body-content>
-			<div class="space-y-4">
-				<FormControl label="Endpoint" v-model="endpoint" />
-				<div>
-					<FormControl label="Secret" v-model="secret">
-						<template #suffix>
-							<FeatherIcon
-								class="w-4 cursor-pointer"
-								name="refresh-ccw"
-								@click="generateRandomSecret"
-							/>
-						</template>
-					</FormControl>
-					<p class="mt-2 text-sm text-ink-gray-7">
-						<strong>Note:</strong>
-						Secret is optional. Check
-						<a
-							href="https://docs.frappe.io/cloud/webhook-introduction"
-							class="underline"
-							target="_blank"
-							>the documentation</a
-						>
-						to learn more
-					</p>
-				</div>
-				<p class="text-base font-medium text-ink-gray-9">
-					Select the webhook events
+		<div class="space-y-4">
+			<FormControl label="Endpoint" v-model="endpoint" />
+			<div>
+				<FormControl label="Secret" v-model="secret">
+					<template #suffix>
+						<FeatherIcon
+							class="w-4 cursor-pointer"
+							name="refresh-ccw"
+							@click="generateRandomSecret"
+						/>
+					</template>
+				</FormControl>
+				<p class="mt-2 text-sm text-ink-gray-7">
+					<strong>Note:</strong>
+					Secret is optional. Check
+					<a
+						href="https://docs.frappe.io/cloud/webhook-introduction"
+						class="underline"
+						target="_blank"
+						>the documentation</a
+					>
+					to learn more
 				</p>
-				<div
-					class="text-center text-sm leading-10 text-ink-gray-5"
-					v-if="$resources.events.loading"
-				>
-					Loading...
-				</div>
-				<div class="mt-6 flex flex-col gap-4" v-else>
-					<Switch
-						v-for="event in $resources.events.data"
-						:key="event.name"
-						:label="event.name"
-						:description="event.description"
-						:modelValue="isEventSelected(event.name)"
-						@update:modelValue="selectEvent(event.name)"
-						size="sm"
-					/>
-				</div>
-				<ErrorMessage :message="errorMessage || $resources.addWebhook.error" />
 			</div>
-		</template>
+			<p class="text-base font-medium text-ink-gray-9">
+				Select the webhook events
+			</p>
+			<div
+				class="text-center text-sm leading-10 text-ink-gray-5"
+				v-if="$resources.events.loading"
+			>
+				Loading...
+			</div>
+			<div class="mt-6 flex flex-col gap-4" v-else>
+				<Switch
+					v-for="event in $resources.events.data"
+					:key="event.name"
+					:label="event.name"
+					:description="event.description"
+					:modelValue="isEventSelected(event.name)"
+					@update:modelValue="selectEvent(event.name)"
+					size="sm"
+				/>
+			</div>
+			<ErrorMessage :message="errorMessage || $resources.addWebhook.error" />
+		</div>
 	</Dialog>
 </template>
 

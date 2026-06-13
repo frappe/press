@@ -1,50 +1,44 @@
 <template>
-	<Dialog
-		:options="{
-			title: 'Restore from an existing site',
-		}"
-		v-model="showRestoreDialog"
-	>
-		<template #body-content>
-			<div
-				class="mb-6 flex items-center rounded border border-outline-gray-1 bg-surface-gray-2 p-4 text-sm text-ink-gray-6"
+	<Dialog title="Restore from an existing site" v-model="showRestoreDialog">
+		<div
+			class="mb-6 flex items-center rounded border border-outline-gray-1 bg-surface-gray-2 p-4 text-sm text-ink-gray-6"
+		>
+			<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
+			<div>
+				This will overwrite the current <b>data</b> & <b>apps</b> in your site
+				with those from the backup
+			</div>
+		</div>
+		<div class="space-y-4">
+			<FormControl label="Site URL" v-model="siteURL" />
+			<FormControl label="Email" v-model="email" />
+			<FormControl label="Password" type="password" v-model="password" />
+			<div class="flex text-base" v-if="$resources.getBackupLinks.data">
+				<GreenCheckIcon class="mr-2 w-4" />
+				Found latest backups from {{ fetchedBackupFileTimestamp }}
+			</div>
+			<Button
+				v-else
+				@click="$resources.getBackupLinks.submit()"
+				:loading="$resources.getBackupLinks.loading"
 			>
-				<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
-				<div>
-					This will overwrite the current <b>data</b> & <b>apps</b> in your site
-					with those from the backup
-				</div>
-			</div>
-			<div class="space-y-4">
-				<FormControl label="Site URL" v-model="siteURL" />
-				<FormControl label="Email" v-model="email" />
-				<FormControl label="Password" type="password" v-model="password" />
-				<div class="flex text-base" v-if="$resources.getBackupLinks.data">
-					<GreenCheckIcon class="mr-2 w-4" />
-					Found latest backups from {{ fetchedBackupFileTimestamp }}
-				</div>
-				<Button
-					v-else
-					@click="$resources.getBackupLinks.submit()"
-					:loading="$resources.getBackupLinks.loading"
-				>
-					Get Backups
-				</Button>
-			</div>
-			<div class="mt-3">
-				<FormControl
-					label="Skip failing patches (if any patch fails)"
-					type="checkbox"
-					v-model="skipFailingPatches"
-				/>
-			</div>
-			<ErrorMessage
-				class="mt-2"
-				:message="
-					$resources.restoreBackup.error || $resources.getBackupLinks.error
-				"
+				Get Backups
+			</Button>
+		</div>
+		<div class="mt-3">
+			<FormControl
+				label="Skip failing patches (if any patch fails)"
+				type="checkbox"
+				v-model="skipFailingPatches"
 			/>
-		</template>
+		</div>
+		<ErrorMessage
+			class="mt-2"
+			:message="
+				$resources.restoreBackup.error || $resources.getBackupLinks.error
+			"
+		/>
+
 		<template #actions>
 			<Button
 				class="w-full"

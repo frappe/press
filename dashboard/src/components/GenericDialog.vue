@@ -1,14 +1,12 @@
 <template>
-	<Dialog :options="options" v-model="show">
-		<template v-slot:body-content>
-			<slot>
-				<GenericDialogField
-					v-for="field in fields"
-					:key="field.fieldname"
-					:field="field"
-				/>
-			</slot>
-		</template>
+	<Dialog v-bind="options" v-model="show">
+		<slot>
+			<GenericDialogField
+				v-for="field in fields"
+				:key="field.fieldname"
+				:field="field"
+			/>
+		</slot>
 	</Dialog>
 </template>
 <script>

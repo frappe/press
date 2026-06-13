@@ -1,14 +1,6 @@
 <template>
-	<Dialog
-		:options="{
-			title: `Processes - ${bench}`,
-			size: '4xl',
-		}"
-		v-model="show"
-	>
-		<template #body-content>
-			<ObjectList :options="listOptions" />
-		</template>
+	<Dialog :title="`Processes - ${bench}`" size="4xl" v-model="show">
+		<ObjectList :options="listOptions" />
 	</Dialog>
 </template>
 

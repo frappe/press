@@ -1,8 +1,6 @@
 <template>
-	<Dialog v-model="show" :options="options">
-		<template #body-content>
-			<slot />
-		</template>
+	<Dialog v-model="show" v-bind="options">
+		<slot />
 	</Dialog>
 </template>
 <script>

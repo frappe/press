@@ -1,14 +1,6 @@
 <template>
-	<Dialog
-		v-model="show"
-		:options="{
-			title: 'Install app on your site',
-			size: '4xl',
-		}"
-	>
-		<template #body-content>
-			<ObjectList :options="listOptions" />
-		</template>
+	<Dialog v-model="show" title="Install app on your site" size="4xl">
+		<ObjectList :options="listOptions" />
 	</Dialog>
 </template>
 

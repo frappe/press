@@ -1,35 +1,33 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'New Lead', size: '2xl' }">
-		<template #body-content>
-			<div class="flex flex-col gap-5">
-				<div
-					v-for="section in sections"
-					:key="section.name"
-					class="grid gap-4"
-					:class="'grid-cols-' + section.columns"
-				>
-					<div v-for="field in section.fields" :key="field.name">
-						<FormControl
-							v-model="leadInfo[field.fieldname]"
-							:label="field.label || field.fieldname"
-							:type="getInputType(field)"
-							:name="field.fieldname"
-							:options="field.options"
-							:required="field.required"
-						/>
-					</div>
-				</div>
-				<ErrorMessage :message="errorMessage" />
-				<div>
-					<Button
-						class="w-full"
-						variant="solid"
-						label="Create Lead"
-						@click="_newLeadInfo"
+	<Dialog v-model="show" title="New Lead" size="2xl">
+		<div class="flex flex-col gap-5">
+			<div
+				v-for="section in sections"
+				:key="section.name"
+				class="grid gap-4"
+				:class="'grid-cols-' + section.columns"
+			>
+				<div v-for="field in section.fields" :key="field.name">
+					<FormControl
+						v-model="leadInfo[field.fieldname]"
+						:label="field.label || field.fieldname"
+						:type="getInputType(field)"
+						:name="field.fieldname"
+						:options="field.options"
+						:required="field.required"
 					/>
 				</div>
 			</div>
-		</template>
+			<ErrorMessage :message="errorMessage" />
+			<div>
+				<Button
+					class="w-full"
+					variant="solid"
+					label="Create Lead"
+					@click="_newLeadInfo"
+				/>
+			</div>
+		</div>
 	</Dialog>
 </template>
 <script setup>

@@ -1,37 +1,33 @@
 <template>
 	<Dialog
 		v-if="source"
-		:options="{
-			title: 'Change Branch for ' + version + ' of ' + app,
-			actions: [
+		:title="'Change Branch for ' + version + ' of ' + app"
+		:actions="[
 				{
 					label: 'Change Branch',
 					variant: 'solid',
 					loading: $resources.changeBranch.loading,
 					onClick: () => changeBranch(),
 				},
-			],
-		}"
+			]"
 		v-model="show"
 	>
-		<template v-slot:body-content>
-			<div v-if="$resources.branches.loading" class="mt-2 flex justify-center">
-				<LoadingText />
-			</div>
-			<ErrorMessage
-				v-else-if="$resources.branches.error"
-				:message="$resources.branches.error"
-			/>
-			<select
-				v-else-if="$resources.branches.data"
-				class="form-select block w-full"
-				v-model="selectedBranch"
-			>
-				<option v-for="branch in branchList()" :key="branch">
-					{{ branch }}
-				</option>
-			</select>
-		</template>
+		<div v-if="$resources.branches.loading" class="mt-2 flex justify-center">
+			<LoadingText />
+		</div>
+		<ErrorMessage
+			v-else-if="$resources.branches.error"
+			:message="$resources.branches.error"
+		/>
+		<select
+			v-else-if="$resources.branches.data"
+			class="form-select block w-full"
+			v-model="selectedBranch"
+		>
+			<option v-for="branch in branchList()" :key="branch">
+				{{ branch }}
+			</option>
+		</select>
 	</Dialog>
 </template>
 

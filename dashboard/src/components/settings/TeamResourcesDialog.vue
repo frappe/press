@@ -193,7 +193,7 @@ watch(
 		</Tooltip>
 	</div>
 
-	<Dialog v-model="isDialogOpen" :options="{ size: '2xl' }">
+	<Dialog v-model="isDialogOpen" size="2xl">
 		<template #body>
 			<div class="p-6 text-base space-y-4 font-normal">
 				<!-- Header -->

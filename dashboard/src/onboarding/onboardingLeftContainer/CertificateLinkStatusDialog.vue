@@ -84,7 +84,8 @@ async function resend(requestName: string) {
 		:model-value="open"
 		@update:model-value="setOpen"
 		:disable-outside-click-to-close="true"
-		:options="{ size: '2xl', title: 'Certification link status' }"
+		size="2xl"
+		title="Certification link status"
 	>
 		<template #body-header>
 			<div class="flex items-start justify-between gap-4">
@@ -102,66 +103,64 @@ async function resend(requestName: string) {
 			</div>
 		</template>
 
-		<template #body-content>
-			<div class="-mx-1 max-h-80 overflow-y-auto px-1">
-				<div v-if="hasRows" class="divide-y divide-outline-gray-1">
-					<div
-						v-for="certificate in linkedCertificates"
-						:key="certificate.name"
-						class="flex items-center justify-between gap-4 py-4"
-					>
-						<div class="min-w-0">
-							<p class="truncate text-p-base font-medium text-ink-gray-9">
-								{{ certificate.user_email }}
-							</p>
-							<p class="truncate text-p-sm text-ink-gray-6">
-								{{ courseLabel(certificate.course) }}
-							</p>
-						</div>
-						<span
-							class="inline-flex shrink-0 items-center rounded bg-surface-green-2 px-2 py-0.5 text-p-sm font-medium text-ink-green-3"
-						>
-							Linked
-						</span>
+		<div class="-mx-1 max-h-80 overflow-y-auto px-1">
+			<div v-if="hasRows" class="divide-y divide-outline-gray-1">
+				<div
+					v-for="certificate in linkedCertificates"
+					:key="certificate.name"
+					class="flex items-center justify-between gap-4 py-4"
+				>
+					<div class="min-w-0">
+						<p class="truncate text-p-base font-medium text-ink-gray-9">
+							{{ certificate.user_email }}
+						</p>
+						<p class="truncate text-p-sm text-ink-gray-6">
+							{{ courseLabel(certificate.course) }}
+						</p>
 					</div>
-
-					<div
-						v-for="request in linkRequests"
-						:key="request.name"
-						class="flex items-center justify-between gap-4 py-4"
+					<span
+						class="inline-flex shrink-0 items-center rounded bg-surface-green-2 px-2 py-0.5 text-p-sm font-medium text-ink-green-3"
 					>
-						<div class="min-w-0">
-							<p class="truncate text-p-base font-medium text-ink-gray-9">
-								{{ courseLabel(request.course) }}
-							</p>
-							<p class="truncate text-p-sm text-ink-gray-6">
-								{{ request.user_email }}
-							</p>
-						</div>
-						<div class="flex shrink-0 items-center gap-2">
-							<span
-								class="inline-flex items-center rounded px-2 py-0.5 text-p-sm font-medium"
-								:class="statusClass(request.status)"
-							>
-								{{ statusLabel(request.status) }}
-							</span>
-							<Button
-								v-if="request.status === 'Pending'"
-								variant="subtle"
-								size="sm"
-								label="Resend email"
-								:icon-left="LucideMail"
-								:loading="resendingRequest === request.name"
-								@click="resend(request.name)"
-							/>
-						</div>
-					</div>
+						Linked
+					</span>
 				</div>
 
-				<p v-else class="py-6 text-p-base text-ink-gray-6">
-					No linked certificates or pending requests found.
-				</p>
+				<div
+					v-for="request in linkRequests"
+					:key="request.name"
+					class="flex items-center justify-between gap-4 py-4"
+				>
+					<div class="min-w-0">
+						<p class="truncate text-p-base font-medium text-ink-gray-9">
+							{{ courseLabel(request.course) }}
+						</p>
+						<p class="truncate text-p-sm text-ink-gray-6">
+							{{ request.user_email }}
+						</p>
+					</div>
+					<div class="flex shrink-0 items-center gap-2">
+						<span
+							class="inline-flex items-center rounded px-2 py-0.5 text-p-sm font-medium"
+							:class="statusClass(request.status)"
+						>
+							{{ statusLabel(request.status) }}
+						</span>
+						<Button
+							v-if="request.status === 'Pending'"
+							variant="subtle"
+							size="sm"
+							label="Resend email"
+							:icon-left="LucideMail"
+							:loading="resendingRequest === request.name"
+							@click="resend(request.name)"
+						/>
+					</div>
+				</div>
 			</div>
-		</template>
+
+			<p v-else class="py-6 text-p-base text-ink-gray-6">
+				No linked certificates or pending requests found.
+			</p>
+		</div>
 	</Dialog>
 </template>

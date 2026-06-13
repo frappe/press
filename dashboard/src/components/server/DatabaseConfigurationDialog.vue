@@ -2,22 +2,21 @@
 	<Dialog
 		v-model="showDialog"
 		:modelValue="true"
-		:options="{ title: 'Database Configuration', size: '3xl' }"
+		title="Database Configuration"
+		size="3xl"
 	>
-		<template v-slot:body-content>
-			<div
-				class="flex h-[200px] w-full items-center justify-center"
-				v-if="this.$resources.mariadbVariables.loading"
-			>
-				<div class="flex flex-row items-center gap-2 text-ink-gray-7">
-					<Spinner class="w-4" />
-					Loading database configurations
-				</div>
+		<div
+			class="flex h-[200px] w-full items-center justify-center"
+			v-if="this.$resources.mariadbVariables.loading"
+		>
+			<div class="flex flex-row items-center gap-2 text-ink-gray-7">
+				<Spinner class="w-4" />
+				Loading database configurations
 			</div>
-			<div v-else>
-				<ObjectList :options="listOptions" />
-			</div>
-		</template>
+		</div>
+		<div v-else>
+			<ObjectList :options="listOptions" />
+		</div>
 	</Dialog>
 </template>
 <script>

@@ -6,324 +6,122 @@
 				:subtitle="subtitle"
 				:class="{ 'pointer-events-none': $resources.signup.loading }"
 			>
-				<template v-slot:default>
-					<div v-if="!(resetPasswordEmailSent || otpRequested)">
-						<div
-							class="mb-4 flex flex-col"
-							v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
-						>
-							<div class="flex flex-col gap-2">
-								<Button
-									v-if="isLogin && !usePassword"
-									:route="{
-										name: 'Login',
-										query: { ...$route.query, use_password: 1 },
-									}"
-									icon-left="key"
-								>
-									Continue with password
-								</Button>
-								<Button
-									v-else-if="isLogin && usePassword"
-									:route="{
-										name: 'Login',
-										query: { ...$route.query, use_password: undefined },
-									}"
-									icon-left="mail"
-								>
-									Continue with verification code
-								</Button>
-								<Button
-									:loading="$resources.googleLogin.loading"
-									@click="$resources.googleLogin.submit()"
-								>
-									<div class="flex items-center">
-										<GoogleIcon class="w-4" />
-										<span class="ml-2">Continue with Google</span>
-									</div>
-								</Button>
-							</div>
-						</div>
-						<form class="flex flex-col" @submit.prevent="submitForm">
-							<!-- 2FA Section -->
-							<template v-if="is2FA && !is2FARecovery">
-								<FormControl
-									label="2FA Code from your Authenticator App"
-									placeholder="123456"
-									v-model="twoFactorCode"
-									variant="outline"
-									required
-								/>
-								<ErrorMessage
-									class="mt-2"
-									:message="$resources.verify2FA.error"
-								/>
-								<Button
-									class="mt-4"
-									label="Verify"
-									variant="solid"
-									:loading="
-										$resources.verify2FA.loading ||
-										$resources.recover2FA.loading ||
-										$resources.resetPassword.loading ||
-										$session.login.loading
-									"
-									@click="
-										$resources.verify2FA.submit({
-											user: email,
-											totp_code: twoFactorCode,
-										})
-									"
-								/>
-								<Button
-									class="mt-2"
-									variant="ghost"
-									label="Reset 2FA"
-									@click="on2FARecovery = true"
-								/>
-							</template>
-
-							<!-- 2FA Recovery Section -->
-							<template v-else-if="is2FARecovery">
-								<FormControl
-									label="Recovery Code"
-									placeholder="C6BD7F3DC3C5777D"
-									v-model="twoFactorRecoveryCode"
-									variant="outline"
-									required
-								/>
-								<ErrorMessage
-									class="mt-2"
-									:message="$resources.recover2FA.error"
-								/>
-								<Button
-									class="mt-4"
-									label="Reset"
-									variant="solid"
-									:loading="
-										$resources.verify2FA.loading ||
-										$resources.recover2FA.loading ||
-										$resources.resetPassword.loading ||
-										$session.login.loading
-									"
-									@click="
-										$resources.recover2FA.submit({
-											user: email,
-											recovery_code: twoFactorRecoveryCode,
-										})
-									"
-								/>
-								<Button
-									class="mt-2"
-									variant="ghost"
-									label="Back to 2FA Verification"
-									@click="on2FARecovery = false"
-								/>
-							</template>
-
-							<!-- Forgot Password Section -->
-							<template v-else-if="hasForgotPassword">
-								<FormControl
-									label="Email"
-									type="email"
-									placeholder="johndoe@mail.com"
-									autocomplete="email"
-									v-model="email"
-									variant="outline"
-									required
-								/>
-								<router-link
-									class="mt-2 text-sm"
-									v-if="hasForgotPassword"
-									:to="{
-										name: 'Login',
-										query: { ...$route.query, forgot: undefined },
-									}"
-								>
-									I remember my password
-								</router-link>
-								<Button
-									type="submit"
-									class="mt-4"
-									:loading="$resources.resetPassword.loading"
-									variant="solid"
-								>
-									Reset Password
-								</Button>
-							</template>
-
-							<!-- Login Section -->
-							<template v-else-if="isLogin">
-								<FormControl
-									label="Email"
-									placeholder="johndoe@mail.com"
-									autocomplete="email"
-									v-model="email"
-									:disabled="otpSent && !usePassword"
-									variant="outline"
-									required
-								/>
-								<!-- OAuth Authentication -->
-								<template v-if="isOauthLogin && !usePassword">
-									<Button class="mt-4" variant="solid" type="submit">
-										Log in with {{ oauthProviderName }}
-									</Button>
-								</template>
-
-								<!-- Password Authentication -->
-								<template v-if="!isOauthLogin && usePassword">
-									<FormControl
-										class="mt-4"
-										label="Password"
-										type="password"
-										placeholder="•••••"
-										v-model="password"
-										variant="outline"
-										name="password"
-										autocomplete="current-password"
-										required
-									/>
-									<div class="mt-2 flex flex-col gap-2">
-										<router-link
-											class="text-sm"
-											:to="{
-												name: 'Login',
-												query: { ...$route.query, forgot: 1 },
-											}"
-										>
-											Forgot Password?
-										</router-link>
-									</div>
-									<Button
-										class="mt-4"
-										variant="solid"
-										:loading="$session.login.loading"
-										type="submit"
-									>
-										Log In
-									</Button>
-								</template>
-
-								<!-- OTP Authentication -->
-								<template v-else-if="!isOauthLogin && !usePassword">
-									<!-- OTP Verification Input (when OTP is sent) -->
-									<template v-if="otpSent">
-										<FormControl
-											class="mt-4"
-											label="Verification code"
-											placeholder="123456"
-											variant="outline"
-											ref="otpInput"
-											v-model="otp"
-											required
-										/>
-										<div class="mt-4 space-y-2">
-											<Button
-												class="w-full"
-												:loading="$resources.verifyOTPAndLogin.loading"
-												variant="solid"
-												@click="verifyOTPAndLogin"
-											>
-												Submit verification code
-											</Button>
-											<Button
-												class="w-full"
-												:loading="$resources.sendOTP.loading"
-												variant="outline"
-												:disabled="otpResendCountdown > 0"
-												@click="$resources.sendOTP.submit()"
-											>
-												Resend verification code
-												{{ otpResendCountdown > 0
-														? `in ${otpResendCountdown} seconds`
-														: '' }}
-											</Button>
-										</div>
-									</template>
-
-									<!-- Initial OTP Request Button -->
-									<template v-else>
-										<Button
-											class="mt-4"
-											:loading="$resources.sendOTP.loading"
-											variant="solid"
-											@click="$resources.sendOTP.submit()"
-										>
-											Send verification code
-										</Button>
-									</template>
-								</template>
-
-								<!-- Error Messages -->
-								<ErrorMessage
-									class="mt-2"
-									:message="
-										$session.login.error ||
-										$resources.is2FAEnabled.error ||
-										$resources.sendOTP.error ||
-										$resources.verifyOTPAndLogin.error
-									"
-								/>
-							</template>
-
-							<!-- Signup Section -->
-							<template v-else>
-								<FormControl
-									label="Email"
-									type="email"
-									placeholder="johndoe@mail.com"
-									autocomplete="email"
-									variant="outline"
-									v-model="email"
-									required
-								/>
-								<Button
-									class="mt-4"
-									:loading="$resources.signup.loading"
-									variant="solid"
-									type="submit"
-								>
-									Sign up with email
-								</Button>
-							</template>
-
-							<ErrorMessage class="mt-2" :message="error" />
-						</form>
-						<div
-							class="mt-4 flex flex-col"
-							v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
-						>
-							<div v-if="$route.name === 'Signup'">
-								<span class="text-base font-normal text-ink-gray-6">
-									{{ 'By signing up, you agree to our ' }}
-								</span>
-								<a
-									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
-									href="https://frappecloud.com/policies"
-								>
-									Terms & Policies
-								</a>
-							</div>
-							<div v-if="!(otpRequested || resetPasswordEmailSent)">
-								<span class="text-base font-normal text-ink-gray-6">
-									{{ $route.name == 'Login'
-											? 'New member? '
-											: 'Already have an account? ' }}
-								</span>
-								<router-link
-									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
-									:to="{
-										name: $route.name == 'Login' ? 'Signup' : 'Login',
-										query: { ...$route.query, forgot: undefined },
-									}"
-								>
-									{{ $route.name == 'Login' ? 'Create a new account.' : 'Log in.' }}
-								</router-link>
-							</div>
+				<div v-if="!(resetPasswordEmailSent || otpRequested)">
+					<div
+						class="mb-4 flex flex-col"
+						v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
+					>
+						<div class="flex flex-col gap-2">
+							<Button
+								v-if="isLogin && !usePassword"
+								:route="{
+									name: 'Login',
+									query: { ...$route.query, use_password: 1 },
+								}"
+								icon-left="key"
+							>
+								Continue with password
+							</Button>
+							<Button
+								v-else-if="isLogin && usePassword"
+								:route="{
+									name: 'Login',
+									query: { ...$route.query, use_password: undefined },
+								}"
+								icon-left="mail"
+							>
+								Continue with verification code
+							</Button>
+							<Button
+								:loading="$resources.googleLogin.loading"
+								@click="$resources.googleLogin.submit()"
+							>
+								<div class="flex items-center">
+									<GoogleIcon class="w-4" />
+									<span class="ml-2">Continue with Google</span>
+								</div>
+							</Button>
 						</div>
 					</div>
-					<div v-else-if="otpRequested">
-						<form class="flex flex-col">
+					<form class="flex flex-col" @submit.prevent="submitForm">
+						<!-- 2FA Section -->
+						<template v-if="is2FA && !is2FARecovery">
+							<FormControl
+								label="2FA Code from your Authenticator App"
+								placeholder="123456"
+								v-model="twoFactorCode"
+								variant="outline"
+								required
+							/>
+							<ErrorMessage
+								class="mt-2"
+								:message="$resources.verify2FA.error"
+							/>
+							<Button
+								class="mt-4"
+								label="Verify"
+								variant="solid"
+								:loading="
+									$resources.verify2FA.loading ||
+									$resources.recover2FA.loading ||
+									$resources.resetPassword.loading ||
+									$session.login.loading
+								"
+								@click="
+									$resources.verify2FA.submit({
+										user: email,
+										totp_code: twoFactorCode,
+									})
+								"
+							/>
+							<Button
+								class="mt-2"
+								variant="ghost"
+								label="Reset 2FA"
+								@click="on2FARecovery = true"
+							/>
+						</template>
+
+						<!-- 2FA Recovery Section -->
+						<template v-else-if="is2FARecovery">
+							<FormControl
+								label="Recovery Code"
+								placeholder="C6BD7F3DC3C5777D"
+								v-model="twoFactorRecoveryCode"
+								variant="outline"
+								required
+							/>
+							<ErrorMessage
+								class="mt-2"
+								:message="$resources.recover2FA.error"
+							/>
+							<Button
+								class="mt-4"
+								label="Reset"
+								variant="solid"
+								:loading="
+									$resources.verify2FA.loading ||
+									$resources.recover2FA.loading ||
+									$resources.resetPassword.loading ||
+									$session.login.loading
+								"
+								@click="
+									$resources.recover2FA.submit({
+										user: email,
+										recovery_code: twoFactorRecoveryCode,
+									})
+								"
+							/>
+							<Button
+								class="mt-2"
+								variant="ghost"
+								label="Back to 2FA Verification"
+								@click="on2FARecovery = false"
+							/>
+						</template>
+
+						<!-- Forgot Password Section -->
+						<template v-else-if="hasForgotPassword">
 							<FormControl
 								label="Email"
 								type="email"
@@ -333,84 +131,282 @@
 								variant="outline"
 								required
 							/>
-							<FormControl
-								label="Verification code"
-								type="text"
-								class="mt-4"
-								placeholder="123456"
-								maxlength="6"
-								v-model="otp"
-								required
-								variant="outline"
-							/>
-							<ErrorMessage
-								class="mt-2"
-								:message="$resources.verifyOTP.error"
-							/>
+							<router-link
+								class="mt-2 text-sm"
+								v-if="hasForgotPassword"
+								:to="{
+									name: 'Login',
+									query: { ...$route.query, forgot: undefined },
+								}"
+							>
+								I remember my password
+							</router-link>
 							<Button
 								type="submit"
 								class="mt-4"
+								:loading="$resources.resetPassword.loading"
 								variant="solid"
-								:loading="$resources.verifyOTP.loading"
-								@click="$resources.verifyOTP.submit()"
 							>
-								Verify
+								Reset Password
 							</Button>
-							<Button
-								class="mt-2"
+						</template>
+
+						<!-- Login Section -->
+						<template v-else-if="isLogin">
+							<FormControl
+								label="Email"
+								placeholder="johndoe@mail.com"
+								autocomplete="email"
+								v-model="email"
+								:disabled="otpSent && !usePassword"
 								variant="outline"
-								:loading="$resources.resendOTP.loading"
-								@click="$resources.resendOTP.submit()"
-								:disabled="otpResendCountdown > 0"
+								required
+							/>
+							<!-- OAuth Authentication -->
+							<template v-if="isOauthLogin && !usePassword">
+								<Button class="mt-4" variant="solid" type="submit">
+									Log in with {{ oauthProviderName }}
+								</Button>
+							</template>
+
+							<!-- Password Authentication -->
+							<template v-if="!isOauthLogin && usePassword">
+								<FormControl
+									class="mt-4"
+									label="Password"
+									type="password"
+									placeholder="•••••"
+									v-model="password"
+									variant="outline"
+									name="password"
+									autocomplete="current-password"
+									required
+								/>
+								<div class="mt-2 flex flex-col gap-2">
+									<router-link
+										class="text-sm"
+										:to="{
+											name: 'Login',
+											query: { ...$route.query, forgot: 1 },
+										}"
+									>
+										Forgot Password?
+									</router-link>
+								</div>
+								<Button
+									class="mt-4"
+									variant="solid"
+									:loading="$session.login.loading"
+									type="submit"
+								>
+									Log In
+								</Button>
+							</template>
+
+							<!-- OTP Authentication -->
+							<template v-else-if="!isOauthLogin && !usePassword">
+								<!-- OTP Verification Input (when OTP is sent) -->
+								<template v-if="otpSent">
+									<FormControl
+										class="mt-4"
+										label="Verification code"
+										placeholder="123456"
+										variant="outline"
+										ref="otpInput"
+										v-model="otp"
+										required
+									/>
+									<div class="mt-4 space-y-2">
+										<Button
+											class="w-full"
+											:loading="$resources.verifyOTPAndLogin.loading"
+											variant="solid"
+											@click="verifyOTPAndLogin"
+										>
+											Submit verification code
+										</Button>
+										<Button
+											class="w-full"
+											:loading="$resources.sendOTP.loading"
+											variant="outline"
+											:disabled="otpResendCountdown > 0"
+											@click="$resources.sendOTP.submit()"
+										>
+											Resend verification code
+											{{ otpResendCountdown > 0
+													? `in ${otpResendCountdown} seconds`
+													: '' }}
+										</Button>
+									</div>
+								</template>
+
+								<!-- Initial OTP Request Button -->
+								<template v-else>
+									<Button
+										class="mt-4"
+										:loading="$resources.sendOTP.loading"
+										variant="solid"
+										@click="$resources.sendOTP.submit()"
+									>
+										Send verification code
+									</Button>
+								</template>
+							</template>
+
+							<!-- Error Messages -->
+							<ErrorMessage
+								class="mt-2"
+								:message="
+									$session.login.error ||
+									$resources.is2FAEnabled.error ||
+									$resources.sendOTP.error ||
+									$resources.verifyOTPAndLogin.error
+								"
+							/>
+						</template>
+
+						<!-- Signup Section -->
+						<template v-else>
+							<FormControl
+								label="Email"
+								type="email"
+								placeholder="johndoe@mail.com"
+								autocomplete="email"
+								variant="outline"
+								v-model="email"
+								required
+							/>
+							<Button
+								class="mt-4"
+								:loading="$resources.signup.loading"
+								variant="solid"
+								type="submit"
 							>
-								Resend verification code
-								{{ otpResendCountdown > 0
-										? `in ${otpResendCountdown} seconds`
-										: '' }}
+								Sign up with email
 							</Button>
-						</form>
-						<div class="mt-4 space-y-2">
-							<div v-if="$route.name === 'Signup'">
-								<span class="text-base font-normal text-ink-gray-6">
-									{{ 'By signing up, you agree to our ' }}
-								</span>
-								<a
-									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
-									href="https://frappecloud.com/policies"
-								>
-									Terms & Policies
-								</a>
-							</div>
-							<div>
-								<span class="text-base font-normal text-ink-gray-6">
-									{{ $route.name == 'Login'
-											? 'New member? '
-											: 'Already have an account? ' }}
-								</span>
-								<router-link
-									class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
-									:to="{
-										name: $route.name == 'Login' ? 'Signup' : 'Login',
-										query: { ...$route.query, forgot: undefined },
-									}"
-								>
-									{{ $route.name == 'Login' ? 'Create a new account.' : 'Log in.' }}
-								</router-link>
-							</div>
+						</template>
+
+						<ErrorMessage class="mt-2" :message="error" />
+					</form>
+					<div
+						class="mt-4 flex flex-col"
+						v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
+					>
+						<div v-if="$route.name === 'Signup'">
+							<span class="text-base font-normal text-ink-gray-6">
+								{{ 'By signing up, you agree to our ' }}
+							</span>
+							<a
+								class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
+								href="https://frappecloud.com/policies"
+							>
+								Terms & Policies
+							</a>
+						</div>
+						<div v-if="!(otpRequested || resetPasswordEmailSent)">
+							<span class="text-base font-normal text-ink-gray-6">
+								{{ $route.name == 'Login'
+										? 'New member? '
+										: 'Already have an account? ' }}
+							</span>
+							<router-link
+								class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
+								:to="{
+									name: $route.name == 'Login' ? 'Signup' : 'Login',
+									query: { ...$route.query, forgot: undefined },
+								}"
+							>
+								{{ $route.name == 'Login' ? 'Create a new account.' : 'Log in.' }}
+							</router-link>
 						</div>
 					</div>
-					<div
-						class="text-p-base text-ink-gray-7"
-						v-else-if="resetPasswordEmailSent"
-					>
-						<p>
-							You will receive an email with instructions to reset your password
-							if an account with the provided email (<span class="font-medium"
-								>{{ email }}</span
-							>) exists.
-						</p>
+				</div>
+				<div v-else-if="otpRequested">
+					<form class="flex flex-col">
+						<FormControl
+							label="Email"
+							type="email"
+							placeholder="johndoe@mail.com"
+							autocomplete="email"
+							v-model="email"
+							variant="outline"
+							required
+						/>
+						<FormControl
+							label="Verification code"
+							type="text"
+							class="mt-4"
+							placeholder="123456"
+							maxlength="6"
+							v-model="otp"
+							required
+							variant="outline"
+						/>
+						<ErrorMessage class="mt-2" :message="$resources.verifyOTP.error" />
+						<Button
+							type="submit"
+							class="mt-4"
+							variant="solid"
+							:loading="$resources.verifyOTP.loading"
+							@click="$resources.verifyOTP.submit()"
+						>
+							Verify
+						</Button>
+						<Button
+							class="mt-2"
+							variant="outline"
+							:loading="$resources.resendOTP.loading"
+							@click="$resources.resendOTP.submit()"
+							:disabled="otpResendCountdown > 0"
+						>
+							Resend verification code
+							{{ otpResendCountdown > 0
+									? `in ${otpResendCountdown} seconds`
+									: '' }}
+						</Button>
+					</form>
+					<div class="mt-4 space-y-2">
+						<div v-if="$route.name === 'Signup'">
+							<span class="text-base font-normal text-ink-gray-6">
+								{{ 'By signing up, you agree to our ' }}
+							</span>
+							<a
+								class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
+								href="https://frappecloud.com/policies"
+							>
+								Terms & Policies
+							</a>
+						</div>
+						<div>
+							<span class="text-base font-normal text-ink-gray-6">
+								{{ $route.name == 'Login'
+										? 'New member? '
+										: 'Already have an account? ' }}
+							</span>
+							<router-link
+								class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
+								:to="{
+									name: $route.name == 'Login' ? 'Signup' : 'Login',
+									query: { ...$route.query, forgot: undefined },
+								}"
+							>
+								{{ $route.name == 'Login' ? 'Create a new account.' : 'Log in.' }}
+							</router-link>
+						</div>
 					</div>
-				</template>
+				</div>
+				<div
+					class="text-p-base text-ink-gray-7"
+					v-else-if="resetPasswordEmailSent"
+				>
+					<p>
+						You will receive an email with instructions to reset your password
+						if an account with the provided email (<span class="font-medium"
+							>{{ email }}</span
+						>) exists.
+					</p>
+				</div>
+
 				<template v-slot:logo v-if="saasProduct">
 					<div class="flex space-x-2">
 						<img

@@ -1,32 +1,30 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'Budget Alerts' }">
-		<template #body-content>
-			<div class="flex flex-col gap-4">
-				<Switch
-					v-model="receiveBudgetAlerts"
-					label="Enable Budget Alerts"
-					:description="`Receive an email alert when monthly spend exceeds limit`"
-				/>
-				<div v-if="receiveBudgetAlerts">
-					<FormControl
-						v-model="monthlyAlertLimit"
-						:label="`Monthly Alert Limit (${team?.doc?.currency})`"
-						:placeholder="`Enter amount in ${team?.doc?.currency}`"
-						type="number"
-						:min="0"
-						:step="1000"
-					/>
-				</div>
-				<ErrorMessage class="mt-2" :message="errorMessage" />
-				<Button
-					class="w-full mt-4"
-					variant="solid"
-					label="Save"
-					:loading="team.setValue.loading"
-					@click="saveSettings"
+	<Dialog v-model="show" title="Budget Alerts">
+		<div class="flex flex-col gap-4">
+			<Switch
+				v-model="receiveBudgetAlerts"
+				label="Enable Budget Alerts"
+				:description="`Receive an email alert when monthly spend exceeds limit`"
+			/>
+			<div v-if="receiveBudgetAlerts">
+				<FormControl
+					v-model="monthlyAlertLimit"
+					:label="`Monthly Alert Limit (${team?.doc?.currency})`"
+					:placeholder="`Enter amount in ${team?.doc?.currency}`"
+					type="number"
+					:min="0"
+					:step="1000"
 				/>
 			</div>
-		</template>
+			<ErrorMessage class="mt-2" :message="errorMessage" />
+			<Button
+				class="w-full mt-4"
+				variant="solid"
+				label="Save"
+				:loading="team.setValue.loading"
+				@click="saveSettings"
+			/>
+		</div>
 	</Dialog>
 </template>
 <script setup>

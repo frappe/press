@@ -32,14 +32,10 @@
 		<ObjectList class="mt-3" :options="listOptions" />
 		<Dialog
 			v-model="showAppVersionDialog"
-			:options="{
-				title: `Apps in ${$releaseGroup.getAppVersions.params?.args.bench}`,
-				size: '6xl',
-			}"
+			:title="`Apps in ${$releaseGroup.getAppVersions.params?.args.bench}`"
+			size="6xl"
 		>
-			<template #body-content>
-				<ObjectList :options="appVersionOptions" />
-			</template>
+			<ObjectList :options="appVersionOptions" />
 		</Dialog>
 	</div>
 </template>

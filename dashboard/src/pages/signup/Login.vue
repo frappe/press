@@ -14,101 +14,99 @@
 				:class="{ 'pointer-events-none': $resources.signup?.loading }"
 				:logo="saasProduct?.logo"
 			>
-				<template v-slot:default>
-					<form class="flex flex-col" @submit.prevent="">
-						<FormControl
-							class="w-full"
-							label="Email"
-							type="email"
-							placeholder="johndoe@mail.com"
-							variant="outline"
-							autocomplete="email"
-							v-model="email"
-							required
-						/>
-						<FormControl
-							v-if="isLoginWithEmail"
-							class="mt-4 w-full"
-							label="Verification Code"
-							type="text"
-							placeholder="5 digit verification code"
-							variant="outline"
-							v-model="code"
-							required
-						/>
+				<form class="flex flex-col" @submit.prevent="">
+					<FormControl
+						class="w-full"
+						label="Email"
+						type="email"
+						placeholder="johndoe@mail.com"
+						variant="outline"
+						autocomplete="email"
+						v-model="email"
+						required
+					/>
+					<FormControl
+						v-if="isLoginWithEmail"
+						class="mt-4 w-full"
+						label="Verification Code"
+						type="text"
+						placeholder="5 digit verification code"
+						variant="outline"
+						v-model="code"
+						required
+					/>
 
-						<!-- Error Message -->
-						<ErrorMessage
-							class="mt-2"
-							:message="
-								this.$resources?.sendVerificationCodeForLogin?.error ||
-								this.$resources?.loginUsingCode?.error
-							"
-						/>
-						<!-- Buttons -->
-						<div
-							class="mt-5 flex flex-col items-center gap-3"
-							v-if="!isLoginWithEmail"
+					<!-- Error Message -->
+					<ErrorMessage
+						class="mt-2"
+						:message="
+							this.$resources?.sendVerificationCodeForLogin?.error ||
+							this.$resources?.loginUsingCode?.error
+						"
+					/>
+					<!-- Buttons -->
+					<div
+						class="mt-5 flex flex-col items-center gap-3"
+						v-if="!isLoginWithEmail"
+					>
+						<Button
+							:loading="$resources.sendVerificationCodeForLogin?.loading"
+							@click="$resources.sendVerificationCodeForLogin.submit()"
+							variant="solid"
+							class="w-full font-medium"
+							type="button"
 						>
-							<Button
-								:loading="$resources.sendVerificationCodeForLogin?.loading"
-								@click="$resources.sendVerificationCodeForLogin.submit()"
-								variant="solid"
-								class="w-full font-medium"
-								type="button"
-							>
-								Login with email
-							</Button>
-							<p v-if="isGoogleOAuthEnabled">or</p>
-							<Button
-								v-if="isGoogleOAuthEnabled"
-								variant="subtle"
-								class="w-full font-medium"
-								type="button"
-								:loading="$resources.signupWithOAuth?.loading"
-								@click="$resources.signupWithOAuth.submit()"
-							>
-								<div class="flex flex-row items-center gap-1">
-									<GoogleIconSolid class="w-4" />
-									Login with Google
-								</div>
-							</Button>
-						</div>
-						<!-- buttons to handle email verification -->
-						<div class="mt-5 flex flex-col items-center gap-2" v-else>
-							<Button
-								:loading="$resources.loginUsingCode?.loading || isRedirecting"
-								variant="solid"
-								class="w-full font-medium"
-								type="full"
-								@click="$resources.loginUsingCode.submit()"
-							>
-								Verify
-							</Button>
-							<Button
-								:loading="$resources.loginUsingCode?.loading"
-								variant="outline"
-								class="w-full font-medium"
-								type="button"
-								@click="$resources.sendVerificationCodeForLogin.submit()"
-							>
-								Didn't get email? Resend
-							</Button>
-						</div>
-					</form>
-
-					<div class="mt-6 text-center">
-						<router-link
-							class="text-center text-base font-medium text-ink-gray-9 hover:text-ink-gray-7"
-							:to="{
-								name: 'SaaSSignup',
-								params: $route.params,
-							}"
+							Login with email
+						</Button>
+						<p v-if="isGoogleOAuthEnabled">or</p>
+						<Button
+							v-if="isGoogleOAuthEnabled"
+							variant="subtle"
+							class="w-full font-medium"
+							type="button"
+							:loading="$resources.signupWithOAuth?.loading"
+							@click="$resources.signupWithOAuth.submit()"
 						>
-							New member? Create a new account.
-						</router-link>
+							<div class="flex flex-row items-center gap-1">
+								<GoogleIconSolid class="w-4" />
+								Login with Google
+							</div>
+						</Button>
 					</div>
-				</template>
+					<!-- buttons to handle email verification -->
+					<div class="mt-5 flex flex-col items-center gap-2" v-else>
+						<Button
+							:loading="$resources.loginUsingCode?.loading || isRedirecting"
+							variant="solid"
+							class="w-full font-medium"
+							type="full"
+							@click="$resources.loginUsingCode.submit()"
+						>
+							Verify
+						</Button>
+						<Button
+							:loading="$resources.loginUsingCode?.loading"
+							variant="outline"
+							class="w-full font-medium"
+							type="button"
+							@click="$resources.sendVerificationCodeForLogin.submit()"
+						>
+							Didn't get email? Resend
+						</Button>
+					</div>
+				</form>
+
+				<div class="mt-6 text-center">
+					<router-link
+						class="text-center text-base font-medium text-ink-gray-9 hover:text-ink-gray-7"
+						:to="{
+							name: 'SaaSSignup',
+							params: $route.params,
+						}"
+					>
+						New member? Create a new account.
+					</router-link>
+				</div>
 			</LoginBox>
 		</div>
 	</div>

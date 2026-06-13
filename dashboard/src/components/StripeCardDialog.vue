@@ -1,11 +1,9 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'Add new card' }">
-		<template #body-content>
-			<p class="text-sm mb-5 text-ink-gray-7" v-if="message">
-				{{ message }}
-			</p>
-			<CardForm @success="show = false" />
-		</template>
+	<Dialog v-model="show" title="Add new card">
+		<p class="text-sm mb-5 text-ink-gray-7" v-if="message">
+			{{ message }}
+		</p>
+		<CardForm @success="show = false" />
 	</Dialog>
 </template>
 <script>

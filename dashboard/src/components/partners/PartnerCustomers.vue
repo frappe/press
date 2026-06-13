@@ -3,41 +3,30 @@
 		<ObjectList :options="partnerCustomerList" />
 		<Dialog
 			v-model="contributionDialog"
-			:options="{
-				size: '3xl',
-				title: 'Last 6 Month\'s Contribution',
-			}"
+			size="3xl"
+			:title="'Last 6 Month\'s Contribution'"
 		>
-			<template #body-content>
-				<template v-if="showInvoice">
-					<div
-						v-if="showInvoice.status === 'Empty'"
-						class="text-base text-ink-gray-6"
-					>
-						Nothing to show
-					</div>
-					<PartnerCustomerInvoices
-						:customerTeam="showInvoice.name"
-						:customerCurrency="showInvoice.currency"
-					/>
-				</template>
-			</template>
-		</Dialog>
-		<Dialog
-			v-model="transferCreditsDialog"
-			:options="{ title: 'Transfer Credits' }"
-		>
-			<template #body-content>
-				<p class="pb-3 text-p-base">
-					Enter the equivalent amount of credits (in {{ $team.doc.currency }})
-					you wish to transfer.
-				</p>
-				<FormControl placeholder="Amount" v-model="amount" autocomplete="off" />
-				<ErrorMessage
-					class="mt-2"
-					:message="$resources.transferCredits.error"
+			<template v-if="showInvoice">
+				<div
+					v-if="showInvoice.status === 'Empty'"
+					class="text-base text-ink-gray-6"
+				>
+					Nothing to show
+				</div>
+				<PartnerCustomerInvoices
+					:customerTeam="showInvoice.name"
+					:customerCurrency="showInvoice.currency"
 				/>
 			</template>
+		</Dialog>
+		<Dialog v-model="transferCreditsDialog" title="Transfer Credits">
+			<p class="pb-3 text-p-base">
+				Enter the equivalent amount of credits (in {{ $team.doc.currency }}) you
+				wish to transfer.
+			</p>
+			<FormControl placeholder="Amount" v-model="amount" autocomplete="off" />
+			<ErrorMessage class="mt-2" :message="$resources.transferCredits.error" />
+
 			<template #actions>
 				<Button
 					type="primary"
@@ -57,29 +46,23 @@
 		</Dialog>
 		<Dialog
 			v-model="showConfirmationDialog"
-			:options="{ title: 'Credits Transferred Successfully' }"
+			title="Credits Transferred Successfully"
 		>
-			<template #body-content>
-				<p class="text-p-base">
-					{{ formatCurrency(amount) }}
-					credits have been transferred to
-					<strong>{{ customerTeam.billing_name }}</strong>
-				</p>
-				<span class="text-base font-medium text-ink-gray-7"
-					>Credits available: {{ creditBalance() }}</span
-				>
-			</template>
+			<p class="text-p-base">
+				{{ formatCurrency(amount) }}
+				credits have been transferred to
+				<strong>{{ customerTeam.billing_name }}</strong>
+			</p>
+			<span class="text-base font-medium text-ink-gray-7"
+				>Credits available: {{ creditBalance() }}</span
+			>
 		</Dialog>
 		<Dialog
 			v-model="showApprovalRequestsDialog"
-			:options="{
-				title: 'Customer Approval Requests',
-				size: '6xl',
-			}"
+			title="Customer Approval Requests"
+			size="6xl"
 		>
-			<template #body-content>
-				<PartnerApprovalRequests />
-			</template>
+			<PartnerApprovalRequests />
 		</Dialog>
 	</div>
 </template>

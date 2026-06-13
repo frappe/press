@@ -1,49 +1,47 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'Update Followup Details' }">
-		<template #body-content>
-			<div class="flex flex-col gap-4">
-				<div
-					v-for="section in sections"
-					:key="section.name"
-					class="grid gap-4"
-					:class="`grid-cols-${section.columns}`"
-				>
-					<div v-for="field in section.fields" :key="field.name">
-						<div
+	<Dialog v-model="show" title="Update Followup Details">
+		<div class="flex flex-col gap-4">
+			<div
+				v-for="section in sections"
+				:key="section.name"
+				class="grid gap-4"
+				:class="`grid-cols-${section.columns}`"
+			>
+				<div v-for="field in section.fields" :key="field.name">
+					<div
+						v-if="field.fieldtype === 'Date'"
+						class="text-ink-gray-6 h-1.5 text-xs"
+					>
+						{{ field.label }}
+						<DatePicker
+							class="mt-1.5"
 							v-if="field.fieldtype === 'Date'"
-							class="text-ink-gray-6 h-1.5 text-xs"
-						>
-							{{ field.label }}
-							<DatePicker
-								class="mt-1.5"
-								v-if="field.fieldtype === 'Date'"
-								v-model="followup_details[field.fieldname]"
-								:label="field.label || field.fieldname"
-								:name="field.fieldname"
-								:required="field.required"
-								:format="'DD-MM-YYYY'"
-							/>
-						</div>
-						<FormControl
-							v-else
 							v-model="followup_details[field.fieldname]"
 							:label="field.label || field.fieldname"
-							:type="getInputType(field)"
 							:name="field.fieldname"
-							:options="field.options"
+							:required="field.required"
+							:format="'DD-MM-YYYY'"
 						/>
 					</div>
-				</div>
-				<div>
-					<Button
-						class="w-full"
-						variant="solid"
-						label="Update Followup Details"
-						@click="updateFollowup.submit()"
+					<FormControl
+						v-else
+						v-model="followup_details[field.fieldname]"
+						:label="field.label || field.fieldname"
+						:type="getInputType(field)"
+						:name="field.fieldname"
+						:options="field.options"
 					/>
 				</div>
 			</div>
-		</template>
+			<div>
+				<Button
+					class="w-full"
+					variant="solid"
+					label="Update Followup Details"
+					@click="updateFollowup.submit()"
+				/>
+			</div>
+		</div>
 	</Dialog>
 </template>
 <script setup>

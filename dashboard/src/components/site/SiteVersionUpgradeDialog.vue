@@ -1,45 +1,207 @@
 <template>
-	<Dialog
-		v-model="show"
-		@close="resetValues"
-		:options="{ title: 'Upgrade Site Version' }"
-	>
-		<template #body-content>
-			<div
-				v-if="loadingUpgradeData"
-				class="flex items-center justify-center py-8"
+	<Dialog v-model="show" @close="resetValues" title="Upgrade Site Version">
+		<div
+			v-if="loadingUpgradeData"
+			class="flex items-center justify-center py-8"
+		>
+			<LoadingIndicator class="w-5 h-5 mr-2" />
+			<span class="text-base text-ink-gray-6"
+				>Checking upgrade compatibility...</span
 			>
-				<LoadingIndicator class="w-5 h-5 mr-2" />
-				<span class="text-base text-ink-gray-6"
-					>Checking upgrade compatibility...</span
+		</div>
+
+		<div v-else class="space-y-4">
+			<!-- Upgrade site on public bench -->
+			<p v-if="$site.doc?.group_public && nextVersion" class="text-base">
+				The site <b>{{ $site.doc.host_name }}</b> will be upgraded to
+				<b>{{ nextVersion }}</b>
+			</p>
+
+			<!-- Upgrade site on private bench -->
+			<div v-else-if="!$site.doc?.group_public && nextVersion">
+				<!-- If existing compatible bench found  -->
+				<div v-if="upgradeStep === 'ready_to_upgrade' && existingBenchGroup">
+					<div class="mb-4 text-base">
+						<p>
+							The site <b>{{ $site.doc.host_name }}</b> will be moved to
+							<b>{{ existingBenchGroupTitle }}</b>
+							bench for upgrade to
+							{{ nextVersion }}.
+						</p>
+					</div>
+					<div class="mt-4">
+						<span class="text-xs text-ink-gray-5 mb-2"
+							>Schedule Time in IST</span
+						>
+						<DateTimePicker v-model="targetDateTime" />
+					</div>
+					<FormControl
+						label="Skip failing patches if any"
+						type="checkbox"
+						v-model="skipFailingPatches"
+					/>
+					<FormControl
+						label="Skip backups"
+						type="checkbox"
+						v-model="skipBackups"
+						class="ml-4"
+					/>
+				</div>
+
+				<AlertBanner
+					v-else-if="
+						upgradeStep === 'ready_to_upgrade' &&
+						!appCompatibility.can_upgrade
+					"
+					:title="`Migration isn't possible due to incompatible app(s): <b>${appCompatibility.incompatible.join(', ')}</b>`"
+					type="error"
+				/>
+
+				<div
+					v-else-if="
+						upgradeStep === 'ready_to_upgrade' && appCompatibility.can_upgrade
+					"
 				>
-			</div>
-
-			<div v-else class="space-y-4">
-				<!-- Upgrade site on public bench -->
-				<p v-if="$site.doc?.group_public && nextVersion" class="text-base">
-					The site <b>{{ $site.doc.host_name }}</b> will be upgraded to
-					<b>{{ nextVersion }}</b>
-				</p>
-
-				<!-- Upgrade site on private bench -->
-				<div v-else-if="!$site.doc?.group_public && nextVersion">
-					<!-- If existing compatible bench found  -->
-					<div v-if="upgradeStep === 'ready_to_upgrade' && existingBenchGroup">
-						<div class="mb-4 text-base">
-							<p>
-								The site <b>{{ $site.doc.host_name }}</b> will be moved to
-								<b>{{ existingBenchGroupTitle }}</b>
-								bench for upgrade to
-								{{ nextVersion }}.
-							</p>
-						</div>
-						<div class="mt-4">
-							<span class="text-xs text-ink-gray-5 mb-2"
-								>Schedule Time in IST</span
+					<AlertBanner
+						v-if="!appCompatibility.site_custom_apps?.length"
+						:title="`The site <b>${$site.doc.host_name || $site.doc.name}</b> will be moved to a new <b>${nextVersion}</b> bench for upgrade.`"
+						type="warning"
+						class="mb-4"
+					/>
+					<div
+						v-else-if="
+							appCompatibility.site_custom_apps?.length > 0 ||
+							appCompatibility.other_custom_apps_on_rg?.length > 0
+						"
+						class="space-y-6 mt-4"
+					>
+						<div v-if="appCompatibility.site_custom_apps?.length > 0">
+							<div class="text-sm font-medium text-ink-gray-7 mb-2">
+								Select Branch for Custom Apps
+							</div>
+							<div class="text-xs text-ink-gray-6 mb-3">
+								These apps are installed on your site, select a branch
+								compatible with {{ nextVersion }}
+							</div>
+							<table
+								class="w-full table-fixed pb-4 border-b border-outline-gray-1"
 							>
-							<DateTimePicker v-model="targetDateTime" />
+								<tbody>
+									<tr
+										v-for="app in appCompatibility.site_custom_apps"
+										:key="app.app"
+									>
+										<td class="py-3 w-3/5">
+											<div class="font-medium text-sm">
+												{{ app.title }}
+											</div>
+											<div
+												class="text-xs text-ink-gray-6 truncate mt-1"
+												:title="app.repository_url"
+											>
+												{{ app.repository_url }}
+											</div>
+										</td>
+										<td class="py-3 w-2/5">
+											<Button
+												v-if="!appBranches[app.app]"
+												size="sm"
+												:loading="loadingBranches[app.app]"
+												@click="fetchAppBranches(app)"
+											>
+												{{ loadingBranches[app.app]
+														? 'Loading...'
+														: 'Fetch Branches' }}
+											</Button>
+											<FormControl
+												v-else
+												type="combobox"
+												:options="
+													appBranches[app.app].map((b) => ({
+														label: b,
+														value: b,
+													}))
+												"
+												:modelValue="customAppSources[app.app]?.branch"
+												@update:modelValue="
+													updateCustomAppSource(app, 'branch', $event)
+												"
+												placeholder="Select Branch"
+											/>
+										</td>
+									</tr>
+								</tbody>
+							</table>
 						</div>
+
+						<div v-if="appCompatibility.other_custom_apps_on_rg?.length > 0">
+							<div class="text-sm font-medium text-ink-gray-7 mb-2">
+								Other Custom Apps on Bench Group (Optional)
+							</div>
+							<table class="w-full table-fixed">
+								<tbody>
+									<tr
+										v-for="app in appCompatibility.other_custom_apps_on_rg"
+										:key="app.app"
+									>
+										<td class="py-3 w-3/5">
+											<div class="font-medium text-sm">
+												{{ app.title }}
+											</div>
+											<div
+												class="text-xs text-ink-gray-6 truncate mt-1"
+												:title="app.repository_url"
+											>
+												{{ app.repository_url }}
+											</div>
+										</td>
+										<td class="py-3 w-2/5">
+											<Button
+												v-if="!appBranches[app.app]"
+												size="sm"
+												:loading="loadingBranches[app.app]"
+												@click="fetchAppBranches(app)"
+											>
+												{{ loadingBranches[app.app]
+														? 'Loading...'
+														: 'Fetch Branches' }}
+											</Button>
+											<FormControl
+												v-else
+												type="combobox"
+												:options="
+													appBranches[app.app].map((b) => ({
+														label: b,
+														value: b,
+													}))
+												"
+												:modelValue="customAppSources[app.app]?.branch"
+												@update:modelValue="
+													updateCustomAppSource(app, 'branch', $event)
+												"
+												placeholder="Select Branch"
+											/>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+					<FormControl
+						v-if="!existingBenchGroup"
+						label="Bench Title"
+						type="text"
+						v-model="newReleaseGroupTitle"
+						placeholder="e.g., My Team - Version 15"
+						class="mt-4"
+					/>
+					<div class="mt-4">
+						<span class="text-xs text-ink-gray-5 mb-2"
+							>Schedule Time in IST</span
+						>
+						<DateTimePicker v-model="targetDateTime" />
+					</div>
+					<div class="mt-4">
 						<FormControl
 							label="Skip failing patches if any"
 							type="checkbox"
@@ -52,193 +214,25 @@
 							class="ml-4"
 						/>
 					</div>
-
-					<AlertBanner
-						v-else-if="
-							upgradeStep === 'ready_to_upgrade' &&
-							!appCompatibility.can_upgrade
-						"
-						:title="`Migration isn't possible due to incompatible app(s): <b>${appCompatibility.incompatible.join(', ')}</b>`"
-						type="error"
-					/>
-
-					<div
-						v-else-if="
-							upgradeStep === 'ready_to_upgrade' && appCompatibility.can_upgrade
-						"
-					>
-						<AlertBanner
-							v-if="!appCompatibility.site_custom_apps?.length"
-							:title="`The site <b>${$site.doc.host_name || $site.doc.name}</b> will be moved to a new <b>${nextVersion}</b> bench for upgrade.`"
-							type="warning"
-							class="mb-4"
-						/>
-						<div
-							v-else-if="
-								appCompatibility.site_custom_apps?.length > 0 ||
-								appCompatibility.other_custom_apps_on_rg?.length > 0
-							"
-							class="space-y-6 mt-4"
-						>
-							<div v-if="appCompatibility.site_custom_apps?.length > 0">
-								<div class="text-sm font-medium text-ink-gray-7 mb-2">
-									Select Branch for Custom Apps
-								</div>
-								<div class="text-xs text-ink-gray-6 mb-3">
-									These apps are installed on your site, select a branch
-									compatible with {{ nextVersion }}
-								</div>
-								<table
-									class="w-full table-fixed pb-4 border-b border-outline-gray-1"
-								>
-									<tbody>
-										<tr
-											v-for="app in appCompatibility.site_custom_apps"
-											:key="app.app"
-										>
-											<td class="py-3 w-3/5">
-												<div class="font-medium text-sm">
-													{{ app.title }}
-												</div>
-												<div
-													class="text-xs text-ink-gray-6 truncate mt-1"
-													:title="app.repository_url"
-												>
-													{{ app.repository_url }}
-												</div>
-											</td>
-											<td class="py-3 w-2/5">
-												<Button
-													v-if="!appBranches[app.app]"
-													size="sm"
-													:loading="loadingBranches[app.app]"
-													@click="fetchAppBranches(app)"
-												>
-													{{ loadingBranches[app.app]
-															? 'Loading...'
-															: 'Fetch Branches' }}
-												</Button>
-												<FormControl
-													v-else
-													type="combobox"
-													:options="
-														appBranches[app.app].map((b) => ({
-															label: b,
-															value: b,
-														}))
-													"
-													:modelValue="customAppSources[app.app]?.branch"
-													@update:modelValue="
-														updateCustomAppSource(app, 'branch', $event)
-													"
-													placeholder="Select Branch"
-												/>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-
-							<div v-if="appCompatibility.other_custom_apps_on_rg?.length > 0">
-								<div class="text-sm font-medium text-ink-gray-7 mb-2">
-									Other Custom Apps on Bench Group (Optional)
-								</div>
-								<table class="w-full table-fixed">
-									<tbody>
-										<tr
-											v-for="app in appCompatibility.other_custom_apps_on_rg"
-											:key="app.app"
-										>
-											<td class="py-3 w-3/5">
-												<div class="font-medium text-sm">
-													{{ app.title }}
-												</div>
-												<div
-													class="text-xs text-ink-gray-6 truncate mt-1"
-													:title="app.repository_url"
-												>
-													{{ app.repository_url }}
-												</div>
-											</td>
-											<td class="py-3 w-2/5">
-												<Button
-													v-if="!appBranches[app.app]"
-													size="sm"
-													:loading="loadingBranches[app.app]"
-													@click="fetchAppBranches(app)"
-												>
-													{{ loadingBranches[app.app]
-															? 'Loading...'
-															: 'Fetch Branches' }}
-												</Button>
-												<FormControl
-													v-else
-													type="combobox"
-													:options="
-														appBranches[app.app].map((b) => ({
-															label: b,
-															value: b,
-														}))
-													"
-													:modelValue="customAppSources[app.app]?.branch"
-													@update:modelValue="
-														updateCustomAppSource(app, 'branch', $event)
-													"
-													placeholder="Select Branch"
-												/>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-						</div>
-						<FormControl
-							v-if="!existingBenchGroup"
-							label="Bench Title"
-							type="text"
-							v-model="newReleaseGroupTitle"
-							placeholder="e.g., My Team - Version 15"
-							class="mt-4"
-						/>
-						<div class="mt-4">
-							<span class="text-xs text-ink-gray-5 mb-2"
-								>Schedule Time in IST</span
-							>
-							<DateTimePicker v-model="targetDateTime" />
-						</div>
-						<div class="mt-4">
-							<FormControl
-								label="Skip failing patches if any"
-								type="checkbox"
-								v-model="skipFailingPatches"
-							/>
-							<FormControl
-								label="Skip backups"
-								type="checkbox"
-								v-model="skipBackups"
-								class="ml-4"
-							/>
-						</div>
-					</div>
 				</div>
-				<AlertBanner
-					v-if="!existingBenchGroup && targetDateTime && !isScheduleTimeValid"
-					title="Schedule time must be at least 30 minutes from now to allow for bench deployment."
-					type="warning"
-					class="my-4"
-				> </AlertBanner>
-				<AlertBanner
-					v-if="skipBackups"
-					title="Backups will not be taken during the upgrade process and in case of
-					any failure rollback will not be possible."
-					type="warning"
-				></AlertBanner>
-				<p v-if="message && !errorMessage" class="text-sm text-ink-gray-7">
-					{{ message }}
-				</p>
-				<ErrorMessage :message="errorMessage" />
 			</div>
-		</template>
+			<AlertBanner
+				v-if="!existingBenchGroup && targetDateTime && !isScheduleTimeValid"
+				title="Schedule time must be at least 30 minutes from now to allow for bench deployment."
+				type="warning"
+				class="my-4"
+			> </AlertBanner>
+			<AlertBanner
+				v-if="skipBackups"
+				title="Backups will not be taken during the upgrade process and in case of
+				any failure rollback will not be possible."
+				type="warning"
+			></AlertBanner>
+			<p v-if="message && !errorMessage" class="text-sm text-ink-gray-7">
+				{{ message }}
+			</p>
+			<ErrorMessage :message="errorMessage" />
+		</div>
 
 		<template v-if="$site.doc?.group_public || upgradeStep" #actions>
 			<!-- Public bench upgrade -->

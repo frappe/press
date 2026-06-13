@@ -1,23 +1,15 @@
 <template>
-	<Dialog
-		v-model="show"
-		:options="{
-			title,
-		}"
-		@close="closeDialog"
-	>
-		<template #body-content>
-			<TFARecoveryCodes
-				v-if="is2FAEnabled && recoveryCodes.length"
-				:recoveryCodes="recoveryCodes"
-			/>
-			<Configure2FA
-				v-else
-				@enabled="closeDialog"
-				@disabled="closeDialog"
-				@update-recovery-codes="(codes) => (recoveryCodes = codes)"
-			/>
-		</template>
+	<Dialog v-model="show" @close="closeDialog">
+		<TFARecoveryCodes
+			v-if="is2FAEnabled && recoveryCodes.length"
+			:recoveryCodes="recoveryCodes"
+		/>
+		<Configure2FA
+			v-else
+			@enabled="closeDialog"
+			@disabled="closeDialog"
+			@update-recovery-codes="(codes) => (recoveryCodes = codes)"
+		/>
 	</Dialog>
 </template>
 

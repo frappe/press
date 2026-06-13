@@ -1,81 +1,75 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Edit Webhook',
-			actions: [
+		title="Edit Webhook"
+		:actions="[
 				{
 					label: 'Save Changes',
 					variant: 'solid',
 					onClick: updateWebhook,
 					loading: this.$resources.updateWebhook.loading,
 				},
-			],
-		}"
+			]"
 	>
-		<template #body-content>
-			<div class="space-y-4">
-				<div>
-					<FormControl label="Endpoint" v-model="endpoint" />
-					<p class="mt-1.5 text-sm text-ink-gray-7">
-						If you change the endpoint, make sure to activate the webhook again.
-					</p>
-				</div>
-				<div v-if="!updateSecret">
-					<p class="block text-xs text-ink-gray-6">Secret</p>
-					<div
-						class="mt-1 flex items-center justify-between text-base text-ink-gray-7"
-					>
-						<p>Want to change the secret?</p>
-						<Button @click="updateSecret = true">Edit Secret</Button>
-					</div>
-				</div>
-				<div v-else>
-					<FormControl label="Secret" v-model="secret">
-						<template #suffix>
-							<FeatherIcon
-								class="w-4 cursor-pointer"
-								name="refresh-ccw"
-								@click="generateRandomSecret"
-							/>
-						</template>
-					</FormControl>
-					<p class="mt-1.5 text-sm text-ink-gray-7">
-						<secret>Note:</secret>
-						Secret is optional. Check
-						<a
-							href="https://docs.frappe.io/cloud/webhook-introduction"
-							class="underline"
-							target="_blank"
-							>the documentation</a
-						>
-						to learn more
-					</p>
-				</div>
-				<p class="text-base font-medium text-ink-gray-9">
-					Select the webhook events
+		<div class="space-y-4">
+			<div>
+				<FormControl label="Endpoint" v-model="endpoint" />
+				<p class="mt-1.5 text-sm text-ink-gray-7">
+					If you change the endpoint, make sure to activate the webhook again.
 				</p>
+			</div>
+			<div v-if="!updateSecret">
+				<p class="block text-xs text-ink-gray-6">Secret</p>
 				<div
-					class="text-center text-sm leading-10 text-ink-gray-5"
-					v-if="$resources.events.loading"
+					class="mt-1 flex items-center justify-between text-base text-ink-gray-7"
 				>
-					Loading...
+					<p>Want to change the secret?</p>
+					<Button @click="updateSecret = true">Edit Secret</Button>
 				</div>
-				<div class="mt-6 flex flex-col gap-3" v-else>
-					<Switch
-						v-for="event in $resources.events.data"
-						:key="event.name"
-						:label="event.name"
-						:description="event.description"
-						:modelValue="isEventSelected(event.name)"
-						@update:modelValue="selectEvent(event.name)"
-						size="sm"
-					/>
-				</div>
-				<ErrorMessage
-					:message="errorMessage || $resources.updateWebhook.error"
+			</div>
+			<div v-else>
+				<FormControl label="Secret" v-model="secret">
+					<template #suffix>
+						<FeatherIcon
+							class="w-4 cursor-pointer"
+							name="refresh-ccw"
+							@click="generateRandomSecret"
+						/>
+					</template>
+				</FormControl>
+				<p class="mt-1.5 text-sm text-ink-gray-7">
+					<secret>Note:</secret>
+					Secret is optional. Check
+					<a
+						href="https://docs.frappe.io/cloud/webhook-introduction"
+						class="underline"
+						target="_blank"
+						>the documentation</a
+					>
+					to learn more
+				</p>
+			</div>
+			<p class="text-base font-medium text-ink-gray-9">
+				Select the webhook events
+			</p>
+			<div
+				class="text-center text-sm leading-10 text-ink-gray-5"
+				v-if="$resources.events.loading"
+			>
+				Loading...
+			</div>
+			<div class="mt-6 flex flex-col gap-3" v-else>
+				<Switch
+					v-for="event in $resources.events.data"
+					:key="event.name"
+					:label="event.name"
+					:description="event.description"
+					:modelValue="isEventSelected(event.name)"
+					@update:modelValue="selectEvent(event.name)"
+					size="sm"
 				/>
 			</div>
-		</template>
+			<ErrorMessage :message="errorMessage || $resources.updateWebhook.error" />
+		</div>
 	</Dialog>
 </template>
 

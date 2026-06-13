@@ -1,47 +1,46 @@
 <template>
-	<Dialog :options="{ title: 'Add Currency Exchange', size: 'lg' }">
-		<template #body-content>
-			<div class="grid grid-cols-2 gap-4">
-				<FormControl
-					label="From Currency"
-					v-model="fromCurrency"
-					variant="subtle"
-					:options="['USD']"
-					name="from_currency"
-					type="select"
-					class="mb-5"
-				/>
+	<Dialog title="Add Currency Exchange" size="lg">
+		<div class="grid grid-cols-2 gap-4">
+			<FormControl
+				label="From Currency"
+				v-model="fromCurrency"
+				variant="subtle"
+				:options="['USD']"
+				name="from_currency"
+				type="select"
+				class="mb-5"
+			/>
 
-				<FormControl
-					label="To Currency"
-					v-model="toCurrency"
-					name="to_currency"
-					variant="subtle"
-					:options="['KES']"
-					type="select"
-					class="mb-5"
-				/>
+			<FormControl
+				label="To Currency"
+				v-model="toCurrency"
+				name="to_currency"
+				variant="subtle"
+				:options="['KES']"
+				type="select"
+				class="mb-5"
+			/>
 
-				<FormControl
-					label="Exchange Rate"
-					v-model="exchangeRate"
-					name="exchange_rate"
-					class="mb-5"
-					type="number"
-					required
-				/>
-			</div>
+			<FormControl
+				label="Exchange Rate"
+				v-model="exchangeRate"
+				name="exchange_rate"
+				class="mb-5"
+				type="number"
+				required
+			/>
+		</div>
 
-			<div class="mt-4 flex w-full items-center justify-center">
-				<Button
-					@click="saveExchangeRate"
-					class="justify-center w-full"
-					variant="solid"
-					type="primary"
-					>Add Currency Exchange</Button
-				>
-			</div>
-		</template>
+		<div class="mt-4 flex w-full items-center justify-center">
+			<Button
+				@click="saveExchangeRate"
+				class="justify-center w-full"
+				variant="solid"
+				type="primary"
+				>Add Currency Exchange</Button
+			>
+		</div>
+
 		<ErrorMessage class="mt-2" :message="ErrorMessage" />
 	</Dialog>
 </template>

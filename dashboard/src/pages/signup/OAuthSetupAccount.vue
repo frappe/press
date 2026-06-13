@@ -14,75 +14,73 @@
 				:class="{ 'pointer-events-none': $resources.setupAccount?.loading }"
 				:logo="saasProduct?.logo"
 			>
-				<template v-slot:default>
-					<form
-						class="flex flex-col"
-						@submit.prevent="this.$resources.setupAccount.submit()"
-					>
-						<!-- Fields -->
-						<FormControl
-							label="Email"
-							type="email"
-							placeholder="johndoe@mail.com"
-							variant="outline"
-							autocomplete="email"
-							v-model="email"
-							required
-							disabled
-						/>
-						<FormControl
-							class="mt-5"
-							label="Country"
-							type="select"
-							placeholder="Select your country"
-							autocomplete="country"
-							variant="outline"
-							:options="countries"
-							v-model="country"
-							required
-						/>
-						<div class="mt-5 text-base">
-							<label class="leading-6 tracking-normal">
-								<FormControl
-									type="checkbox"
-									v-model="terms_accepted"
-									class="mr-0.5 py-1 align-baseline"
-								/>
-								I agree to Frappe&nbsp;
-								<Link href="https://frappecloud.com/terms" target="_blank">
-									Terms of Service
-								</Link>
-								,&nbsp;
-								<Link href="https://frappecloud.com/privacy" target="_blank">
-									Privacy Policy
-								</Link>
-								&nbsp;&&nbsp;
-								<Link
-									href="https://frappecloud.com/cookie-policy"
-									target="_blank"
-								>
-									Cookie Policy
-								</Link>
-							</label>
-						</div>
-						<!-- Error Message -->
-						<ErrorMessage
-							class="mt-2"
-							:message="this.$resources?.setupAccount?.error"
-						/>
-						<!-- Buttons -->
-						<div class="mt-8 flex flex-col items-center gap-3">
-							<Button
-								:loading="$resources.setupAccount?.loading || isRedirecting"
-								variant="solid"
-								class="w-full font-medium"
-								type="submit"
+				<form
+					class="flex flex-col"
+					@submit.prevent="this.$resources.setupAccount.submit()"
+				>
+					<!-- Fields -->
+					<FormControl
+						label="Email"
+						type="email"
+						placeholder="johndoe@mail.com"
+						variant="outline"
+						autocomplete="email"
+						v-model="email"
+						required
+						disabled
+					/>
+					<FormControl
+						class="mt-5"
+						label="Country"
+						type="select"
+						placeholder="Select your country"
+						autocomplete="country"
+						variant="outline"
+						:options="countries"
+						v-model="country"
+						required
+					/>
+					<div class="mt-5 text-base">
+						<label class="leading-6 tracking-normal">
+							<FormControl
+								type="checkbox"
+								v-model="terms_accepted"
+								class="mr-0.5 py-1 align-baseline"
+							/>
+							I agree to Frappe&nbsp;
+							<Link href="https://frappecloud.com/terms" target="_blank">
+								Terms of Service
+							</Link>
+							,&nbsp;
+							<Link href="https://frappecloud.com/privacy" target="_blank">
+								Privacy Policy
+							</Link>
+							&nbsp;&&nbsp;
+							<Link
+								href="https://frappecloud.com/cookie-policy"
+								target="_blank"
 							>
-								Create Account
-							</Button>
-						</div>
-					</form>
-				</template>
+								Cookie Policy
+							</Link>
+						</label>
+					</div>
+					<!-- Error Message -->
+					<ErrorMessage
+						class="mt-2"
+						:message="this.$resources?.setupAccount?.error"
+					/>
+					<!-- Buttons -->
+					<div class="mt-8 flex flex-col items-center gap-3">
+						<Button
+							:loading="$resources.setupAccount?.loading || isRedirecting"
+							variant="solid"
+							class="w-full font-medium"
+							type="submit"
+						>
+							Create Account
+						</Button>
+					</div>
+				</form>
 			</LoginBox>
 		</div>
 	</div>

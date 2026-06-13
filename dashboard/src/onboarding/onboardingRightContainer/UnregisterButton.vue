@@ -57,11 +57,9 @@ async function unregister() {
 </script>
 
 <template>
-	<Dialog v-model="open" :options="dialogOptions">
-		<template #body-content>
-			<p class="-mt-2 -mb-3 text-p-base leading-6 text-ink-gray-8">
-				{{ confirmMessage }}
-			</p>
-		</template>
+	<Dialog v-model="open" v-bind="dialogOptions">
+		<p class="-mt-2 -mb-3 text-p-base leading-6 text-ink-gray-8">
+			{{ confirmMessage }}
+		</p>
 	</Dialog>
 </template>

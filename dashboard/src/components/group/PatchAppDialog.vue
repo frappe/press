@@ -1,94 +1,90 @@
 <template>
-	<Dialog v-if="show" :options="{ title, position: 'top' }" v-model="show">
-		<template v-slot:body-content>
-			<div class="flex flex-col gap-4">
-				<p class="text-base text-ink-gray-6">
-					You can select the app patch by either entering the patch URL, or by
-					selecting a patch file.
-				</p>
-				<div class="flex flex-col gap-2">
-					<FormControl
-						v-if="!app"
-						class="w-full"
-						v-model="applyToApp"
-						label="Select app"
-						placeholder="Select app to patch"
-						type="select"
-						variant="outline"
-						:options="$resources.apps.data"
-					/>
-
-					<!-- Patch Selector (URL or File) -->
-					<div class="flex w-full items-end gap-1">
-						<FormControl
-							v-if="!patch"
-							class="w-full"
-							label="Patch URL"
-							type="data"
-							v-model="patchURL"
-							variant="outline"
-							placeholder="Enter patch URL"
-						/>
-						<FormControl
-							v-else
-							class="w-full"
-							label="Patch File Name"
-							type="data"
-							variant="outline"
-							v-model="patchFileName"
-							placeholder="Set patch file name"
-						/>
-
-						<!-- File Selector -->
-						<input
-							ref="fileSelector"
-							type="file"
-							:accept="['text/x-patch', 'text/x-diff', 'application/x-patch']"
-							class="hidden"
-							@change="onPatchFileSelect"
-						/>
-						<Button
-							@click="$refs.fileSelector.click()"
-							title="Select patch file"
-						>
-							<FeatherIcon name="file-text" class="h-5 w-5 text-ink-gray-6" />
-						</Button>
-
-						<!-- Clear Patch File -->
-						<Button @click="clear" v-if="patch" title="Clear patch file">
-							<FeatherIcon name="x" class="h-5 w-5 text-ink-gray-6" />
-						</Button>
-					</div>
-				</div>
-				<ErrorMessage class="-mt-2 w-full" :message="error" />
-				<h3 class="mt-4 text-base font-semibold">Patch Config</h3>
+	<Dialog v-if="show" :title="title" position="top" v-model="show">
+		<div class="flex flex-col gap-4">
+			<p class="text-base text-ink-gray-6">
+				You can select the app patch by either entering the patch URL, or by
+				selecting a patch file.
+			</p>
+			<div class="flex flex-col gap-2">
 				<FormControl
-					v-if="!applyToAllBenches && !applyToLatestDeploy"
-					v-model="applyToBench"
-					label="Select bench"
+					v-if="!app"
+					class="w-full"
+					v-model="applyToApp"
+					label="Select app"
+					placeholder="Select app to patch"
 					type="select"
 					variant="outline"
-					:options="$resources.benches.data"
+					:options="$resources.apps.data"
 				/>
-				<FormControl
-					v-if="!applyToLatestDeploy"
-					label="Apply patch to all active benches"
-					type="checkbox"
-					v-model="applyToAllBenches"
-				/>
-				<FormControl
-					v-if="!applyToAllBenches"
-					label="Apply patch to all active benches from the latest deploy"
-					type="checkbox"
-					v-model="applyToLatestDeploy"
-				/>
-				<FormControl
-					label="Build assets after applying patch"
-					type="checkbox"
-					v-model="buildAssets"
-				/>
+
+				<!-- Patch Selector (URL or File) -->
+				<div class="flex w-full items-end gap-1">
+					<FormControl
+						v-if="!patch"
+						class="w-full"
+						label="Patch URL"
+						type="data"
+						v-model="patchURL"
+						variant="outline"
+						placeholder="Enter patch URL"
+					/>
+					<FormControl
+						v-else
+						class="w-full"
+						label="Patch File Name"
+						type="data"
+						variant="outline"
+						v-model="patchFileName"
+						placeholder="Set patch file name"
+					/>
+
+					<!-- File Selector -->
+					<input
+						ref="fileSelector"
+						type="file"
+						:accept="['text/x-patch', 'text/x-diff', 'application/x-patch']"
+						class="hidden"
+						@change="onPatchFileSelect"
+					/>
+					<Button @click="$refs.fileSelector.click()" title="Select patch file">
+						<FeatherIcon name="file-text" class="h-5 w-5 text-ink-gray-6" />
+					</Button>
+
+					<!-- Clear Patch File -->
+					<Button @click="clear" v-if="patch" title="Clear patch file">
+						<FeatherIcon name="x" class="h-5 w-5 text-ink-gray-6" />
+					</Button>
+				</div>
 			</div>
-		</template>
+			<ErrorMessage class="-mt-2 w-full" :message="error" />
+			<h3 class="mt-4 text-base font-semibold">Patch Config</h3>
+			<FormControl
+				v-if="!applyToAllBenches && !applyToLatestDeploy"
+				v-model="applyToBench"
+				label="Select bench"
+				type="select"
+				variant="outline"
+				:options="$resources.benches.data"
+			/>
+			<FormControl
+				v-if="!applyToLatestDeploy"
+				label="Apply patch to all active benches"
+				type="checkbox"
+				v-model="applyToAllBenches"
+			/>
+			<FormControl
+				v-if="!applyToAllBenches"
+				label="Apply patch to all active benches from the latest deploy"
+				type="checkbox"
+				v-model="applyToLatestDeploy"
+			/>
+			<FormControl
+				label="Build assets after applying patch"
+				type="checkbox"
+				v-model="buildAssets"
+			/>
+		</div>
+
 		<template v-slot:actions>
 			<Button
 				variant="solid"

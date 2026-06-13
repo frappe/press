@@ -1,9 +1,8 @@
 <template>
 	<!-- This page is named as SiteMigration but the doctype is `Site Action` -->
 	<Dialog
-		:options="{
-			title: 'Migrate Site',
-			actions: selectedMigrationMode
+		title="Migrate Site"
+		:actions="selectedMigrationMode
 				? [
 						{
 							label: selectedMigrationChoiceDetails?.button_label || 'Proceed',
@@ -12,246 +11,243 @@
 							onClick: triggerMigration,
 						},
 					]
-				: [],
-			size: 'xl',
-		}"
+				: []"
+		size="xl"
 		v-model="show"
 		@close="resetValues"
 	>
-		<template #body-content>
-			<div
-				v-if="this.$resources?.migrationOptions?.loading"
-				class="flex flex-col items-center justify-center h-[200px]"
-			>
-				<Spinner class="h-4 w-4 text-ink-gray-6" />
+		<div
+			v-if="this.$resources?.migrationOptions?.loading"
+			class="flex flex-col items-center justify-center h-[200px]"
+		>
+			<Spinner class="h-4 w-4 text-ink-gray-6" />
+		</div>
+		<div v-else class="flex flex-col gap-3">
+			<!-- Chose Migration Mode -->
+			<div class="flex flex-col gap-2">
+				<p class="text-base text-ink-gray-8">Select Migration Type</p>
+				<FormControl
+					type="select"
+					:options="migrationChoices"
+					size="md"
+					variant="outline"
+					placeholder="Select Migration Option"
+					v-model="selectedMigrationMode"
+					required
+				/>
 			</div>
-			<div v-else class="flex flex-col gap-3">
-				<!-- Chose Migration Mode -->
-				<div class="flex flex-col gap-2">
-					<p class="text-base text-ink-gray-8">Select Migration Type</p>
+
+			<!-- Warning -->
+			<AlertBanner
+				v-if="warningMessage"
+				:type="'warning'"
+				:title="warningMessage"
+				:show-icon="false"
+			/>
+
+			<!-- Move Site To Different Server / Bench -->
+			<div
+				v-if="
+					selectedMigrationMode == 'Move Site To Different Server / Bench'
+				"
+				class="flex flex-col gap-3"
+			>
+				<!-- Choose Bench Type -->
+				<div
+					class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
+				>
+					<div
+						class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"
+						:class="{
+							'bg-surface-gray-2': benchMovementType == 'Create A New Bench',
+						}"
+						@click="benchMovementType = 'Create A New Bench'"
+					>
+						New Bench
+					</div>
+					<div
+						class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"
+						:class="{
+							'bg-surface-gray-2': benchMovementType == 'Move To Existing Bench',
+						}"
+						@click="benchMovementType = 'Move To Existing Bench'"
+					>
+						Existing Bench
+					</div>
+				</div>
+
+				<!-- Choose Release Group (For Existing) -->
+				<div
+					class="flex flex-col gap-2"
+					v-if="benchMovementType == 'Move To Existing Bench'"
+				>
+					<p class="text-sm text-ink-gray-7">Select Bench</p>
 					<FormControl
-						type="select"
-						:options="migrationChoices"
+						type="combobox"
+						:options="
+							availableReleaseGroups.map((e) => ({
+								label: e.title,
+								value: e.name,
+							}))
+						"
 						size="md"
 						variant="outline"
-						placeholder="Select Migration Option"
-						v-model="selectedMigrationMode"
+						placeholder="Choose Release Group"
+						v-model="selectedReleaseGroupToMoveTo"
+						required
+					/>
+				</div>
+				<!-- Choose Server (For Existing) -->
+				<!-- Because, Release group can have multiple server -->
+				<div
+					class="flex flex-col gap-2"
+					v-if="
+						benchMovementType == 'Move To Existing Bench' &&
+						selectedReleaseGroupToMoveTo
+					"
+				>
+					<p class="text-sm text-ink-gray-7">Select Server</p>
+					<FormControl
+						type="combobox"
+						:options="
+							availableServersForSelectedReleaseGroup.map((e) => ({
+								label: e.title ? `${e.title} (${e.name})` : e.name,
+								value: e.name,
+							}))
+						"
+						size="md"
+						variant="outline"
+						placeholder="Choose Server"
+						v-model="selectedServerToMoveTo"
 						required
 					/>
 				</div>
 
-				<!-- Warning -->
-				<AlertBanner
-					v-if="warningMessage"
-					:type="'warning'"
-					:title="warningMessage"
-					:show-icon="false"
-				/>
-
-				<!-- Move Site To Different Server / Bench -->
+				<!-- New Bench Group Name (For New) -->
 				<div
+					class="flex flex-col gap-2"
+					v-if="benchMovementType == 'Create A New Bench'"
+				>
+					<p class="text-sm text-ink-gray-7">Provide New Bench Name</p>
+					<FormControl
+						type="text"
+						size="md"
+						variant="outline"
+						placeholder="Provide New Bench Name"
+						v-model="newBenchGroupName"
+						required
+					/>
+				</div>
+
+				<!-- Choose Server Type (For New) -->
+				<div
+					class="flex flex-col gap-2"
+					v-if="benchMovementType == 'Create A New Bench'"
+				>
+					<p class="text-sm text-ink-gray-7">Select Server Type</p>
+					<FormControl
+						type="select"
+						:options="[
+							{
+								label: 'Shared Server',
+								value: 'Shared Server',
+							},
+							{
+								label: 'Dedicated Server',
+								value: 'Dedicated Server',
+							},
+						]"
+						size="md"
+						variant="outline"
+						placeholder="Select Server Type"
+						v-model="selectedServerType"
+						required
+					/>
+				</div>
+
+				<!-- Choose The Server (For New + Dedicated) -->
+				<div
+					class="flex flex-col gap-2"
 					v-if="
-						selectedMigrationMode == 'Move Site To Different Server / Bench'
+						benchMovementType == 'Create A New Bench' &&
+						selectedServerType == 'Dedicated Server'
 					"
-					class="flex flex-col gap-3"
 				>
-					<!-- Choose Bench Type -->
-					<div
-						class="flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
-					>
-						<div
-							class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"
-							:class="{
-								'bg-surface-gray-2': benchMovementType == 'Create A New Bench',
-							}"
-							@click="benchMovementType = 'Create A New Bench'"
-						>
-							New Bench
-						</div>
-						<div
-							class="w-1/2 text-base cursor-pointer rounded-sm py-2 text-center transition-all"
-							:class="{
-								'bg-surface-gray-2': benchMovementType == 'Move To Existing Bench',
-							}"
-							@click="benchMovementType = 'Move To Existing Bench'"
-						>
-							Existing Bench
-						</div>
-					</div>
-
-					<!-- Choose Release Group (For Existing) -->
-					<div
-						class="flex flex-col gap-2"
-						v-if="benchMovementType == 'Move To Existing Bench'"
-					>
-						<p class="text-sm text-ink-gray-7">Select Bench</p>
-						<FormControl
-							type="combobox"
-							:options="
-								availableReleaseGroups.map((e) => ({
-									label: e.title,
-									value: e.name,
-								}))
-							"
-							size="md"
-							variant="outline"
-							placeholder="Choose Release Group"
-							v-model="selectedReleaseGroupToMoveTo"
-							required
-						/>
-					</div>
-					<!-- Choose Server (For Existing) -->
-					<!-- Because, Release group can have multiple server -->
-					<div
-						class="flex flex-col gap-2"
-						v-if="
-							benchMovementType == 'Move To Existing Bench' &&
-							selectedReleaseGroupToMoveTo
+					<p class="text-sm text-ink-gray-7">Select Server</p>
+					<FormControl
+						type="combobox"
+						:options="
+							dedicatedServersForNewReleaseGroup.map((e) => ({
+								label: e.title ? `${e.title} (${e.name})` : e.name,
+								value: e.name,
+							}))
 						"
-					>
-						<p class="text-sm text-ink-gray-7">Select Server</p>
-						<FormControl
-							type="combobox"
-							:options="
-								availableServersForSelectedReleaseGroup.map((e) => ({
-									label: e.title ? `${e.title} (${e.name})` : e.name,
-									value: e.name,
-								}))
-							"
-							size="md"
-							variant="outline"
-							placeholder="Choose Server"
-							v-model="selectedServerToMoveTo"
-							required
-						/>
-					</div>
-
-					<!-- New Bench Group Name (For New) -->
-					<div
-						class="flex flex-col gap-2"
-						v-if="benchMovementType == 'Create A New Bench'"
-					>
-						<p class="text-sm text-ink-gray-7">Provide New Bench Name</p>
-						<FormControl
-							type="text"
-							size="md"
-							variant="outline"
-							placeholder="Provide New Bench Name"
-							v-model="newBenchGroupName"
-							required
-						/>
-					</div>
-
-					<!-- Choose Server Type (For New) -->
-					<div
-						class="flex flex-col gap-2"
-						v-if="benchMovementType == 'Create A New Bench'"
-					>
-						<p class="text-sm text-ink-gray-7">Select Server Type</p>
-						<FormControl
-							type="select"
-							:options="[
-								{
-									label: 'Shared Server',
-									value: 'Shared Server',
-								},
-								{
-									label: 'Dedicated Server',
-									value: 'Dedicated Server',
-								},
-							]"
-							size="md"
-							variant="outline"
-							placeholder="Select Server Type"
-							v-model="selectedServerType"
-							required
-						/>
-					</div>
-
-					<!-- Choose The Server (For New + Dedicated) -->
-					<div
-						class="flex flex-col gap-2"
-						v-if="
-							benchMovementType == 'Create A New Bench' &&
-							selectedServerType == 'Dedicated Server'
-						"
-					>
-						<p class="text-sm text-ink-gray-7">Select Server</p>
-						<FormControl
-							type="combobox"
-							:options="
-								dedicatedServersForNewReleaseGroup.map((e) => ({
-									label: e.title ? `${e.title} (${e.name})` : e.name,
-									value: e.name,
-								}))
-							"
-							size="md"
-							variant="outline"
-							placeholder="Select Server"
-							v-model="selectedServerToMoveTo"
-							required
-						/>
-					</div>
+						size="md"
+						variant="outline"
+						placeholder="Select Server"
+						v-model="selectedServerToMoveTo"
+						required
+					/>
 				</div>
-
-				<!-- Move Site to Different Region -->
-				<div
-					v-else-if="selectedMigrationMode === 'Move Site To Different Region'"
-					class="flex flex-col gap-3"
-				>
-					<!-- Chose The Region -->
-					<div class="flex flex-col gap-2">
-						<p class="text-sm text-ink-gray-7">Select Region</p>
-						<FormControl
-							type="combobox"
-							:options="
-								availableRegionsToMoveSiteTo.map((e) => ({
-									label: e.title,
-									value: e.name,
-								}))
-							"
-							size="md"
-							variant="outline"
-							placeholder="Select Region"
-							v-model="selectedRegion"
-							required
-						/>
-
-						<p
-							v-if="!$site.doc.group_public"
-							class="mt-1 text-sm text-ink-gray-6"
-							:showIcon="false"
-						>
-							If the region you're looking for isn't available, please follow
-							<a
-								href="https://docs.frappe.io/cloud/site/site-migrations/move-site-to-different-region"
-								target="_blank"
-								class="underline"
-								>this documentation</a
-							>
-							to add it.
-						</p>
-					</div>
-				</div>
-
-				<!-- Checkbox  -->
-				<Checkbox
-					v-if="selectedMigrationMode"
-					v-model="skipFailingPatches"
-					label="Skip Failing Patches"
-					size="sm"
-				/>
-
-				<!-- Scheduling Option -->
-				<div v-if="showSchedulingOption" class="flex flex-col gap-2">
-					<p class="text-sm text-ink-gray-7">Choose Scheduled Time</p>
-					<DateTimeControl v-model="scheduledTime" :hideLabel="true" />
-				</div>
-
-				<!-- Error Message -->
-				<ErrorMessage :message="errorMessage" />
 			</div>
-		</template>
+
+			<!-- Move Site to Different Region -->
+			<div
+				v-else-if="selectedMigrationMode === 'Move Site To Different Region'"
+				class="flex flex-col gap-3"
+			>
+				<!-- Chose The Region -->
+				<div class="flex flex-col gap-2">
+					<p class="text-sm text-ink-gray-7">Select Region</p>
+					<FormControl
+						type="combobox"
+						:options="
+							availableRegionsToMoveSiteTo.map((e) => ({
+								label: e.title,
+								value: e.name,
+							}))
+						"
+						size="md"
+						variant="outline"
+						placeholder="Select Region"
+						v-model="selectedRegion"
+						required
+					/>
+
+					<p
+						v-if="!$site.doc.group_public"
+						class="mt-1 text-sm text-ink-gray-6"
+						:showIcon="false"
+					>
+						If the region you're looking for isn't available, please follow
+						<a
+							href="https://docs.frappe.io/cloud/site/site-migrations/move-site-to-different-region"
+							target="_blank"
+							class="underline"
+							>this documentation</a
+						>
+						to add it.
+					</p>
+				</div>
+			</div>
+
+			<!-- Checkbox  -->
+			<Checkbox
+				v-if="selectedMigrationMode"
+				v-model="skipFailingPatches"
+				label="Skip Failing Patches"
+				size="sm"
+			/>
+
+			<!-- Scheduling Option -->
+			<div v-if="showSchedulingOption" class="flex flex-col gap-2">
+				<p class="text-sm text-ink-gray-7">Choose Scheduled Time</p>
+				<DateTimeControl v-model="scheduledTime" :hideLabel="true" />
+			</div>
+
+			<!-- Error Message -->
+			<ErrorMessage :message="errorMessage" />
+		</div>
 	</Dialog>
 </template>
 <script>

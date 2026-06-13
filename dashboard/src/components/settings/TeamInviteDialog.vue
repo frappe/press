@@ -38,10 +38,9 @@ const close = () => {
 <template>
 	<Dialog
 		v-model="open"
-		:options="{
-			title: 'Invite users',
-			icon: 'user-plus',
-			actions: [
+		title="Invite users"
+		icon="user-plus"
+		:actions="[
 				{
 					label: 'Invite',
 					variant: 'solid',
@@ -54,25 +53,22 @@ const close = () => {
 						selectedRole = 'Member';
 					},
 				},
-			],
-		}"
+			]"
 		@close="close"
 	>
-		<template #body-content>
-			<div class="space-y-4">
-				<FormControl
-					v-model="email"
-					label="Email addresses"
-					placeholder="name@example.com, name2@example.com"
-				/>
-				<FormControl
-					v-if="roleOptions.length > 0"
-					v-model="selectedRole"
-					type="select"
-					label="Role"
-					:options="roleOptions"
-				/>
-			</div>
-		</template>
+		<div class="space-y-4">
+			<FormControl
+				v-model="email"
+				label="Email addresses"
+				placeholder="name@example.com, name2@example.com"
+			/>
+			<FormControl
+				v-if="roleOptions.length > 0"
+				v-model="selectedRole"
+				type="select"
+				label="Role"
+				:options="roleOptions"
+			/>
+		</div>
 	</Dialog>
 </template>

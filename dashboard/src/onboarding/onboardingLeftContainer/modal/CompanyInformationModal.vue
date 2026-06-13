@@ -99,10 +99,8 @@ async function handleSubmit() {
 	<Dialog
 		v-model="open"
 		:disable-outside-click-to-close="true"
-		:options="{
-			size: '2xl',
-			title: dialogTitle,
-		}"
+		size="2xl"
+		:title="dialogTitle"
 	>
 		<template #body-header>
 			<div class="mb-5">
@@ -137,29 +135,27 @@ async function handleSubmit() {
 			</div>
 		</template>
 
-		<template #body-content>
-			<div class="-mx-1 max-h-[62vh] min-h-[360px] overflow-y-auto px-1">
-				<CompanyInformationFormFirstStep
-					v-show="currentStepIndex === 0"
-					:key="formStepKey"
-					ref="step0Ref"
-					:form="draft"
-					@continue="onStepContinue"
-				/>
-				<CompanyInformationFormSecondStep
-					v-show="currentStepIndex === 1"
-					ref="step1Ref"
-					:form="draft"
-					@continue="onStepContinue"
-				/>
-				<CompanyInformationFormThirdStep
-					v-show="currentStepIndex === 2"
-					ref="step2Ref"
-					:form="draft"
-					@continue="onStepContinue"
-				/>
-			</div>
-		</template>
+		<div class="-mx-1 max-h-[62vh] min-h-[360px] overflow-y-auto px-1">
+			<CompanyInformationFormFirstStep
+				v-show="currentStepIndex === 0"
+				:key="formStepKey"
+				ref="step0Ref"
+				:form="draft"
+				@continue="onStepContinue"
+			/>
+			<CompanyInformationFormSecondStep
+				v-show="currentStepIndex === 1"
+				ref="step1Ref"
+				:form="draft"
+				@continue="onStepContinue"
+			/>
+			<CompanyInformationFormThirdStep
+				v-show="currentStepIndex === 2"
+				ref="step2Ref"
+				:form="draft"
+				@continue="onStepContinue"
+			/>
+		</div>
 
 		<template #actions>
 			<div class="flex justify-end">

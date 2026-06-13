@@ -1,23 +1,15 @@
 <template>
 	<div class="p-4">
 		<ObjectList :options="partnerInvoices" />
-		<Dialog
-			v-model="invoiceDialog"
-			:options="{
-				size: '4xl',
-				title: 'Invoice Details',
-			}"
-		>
-			<template #body-content>
-				<template v-if="showInvoice">
-					<div
-						v-if="showInvoice.status === 'Empty'"
-						class="text-base text-ink-gray-6"
-					>
-						Nothing to show
-					</div>
-					<InvoiceDetail v-else :invoiceId="showInvoice.name" />
-				</template>
+		<Dialog v-model="invoiceDialog" size="4xl" title="Invoice Details">
+			<template v-if="showInvoice">
+				<div
+					v-if="showInvoice.status === 'Empty'"
+					class="text-base text-ink-gray-6"
+				>
+					Nothing to show
+				</div>
+				<InvoiceDetail v-else :invoiceId="showInvoice.name" />
 			</template>
 		</Dialog>
 	</div>

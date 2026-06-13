@@ -1,9 +1,8 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Add app from GitHub',
-			size: 'xl',
-			actions: [
+		title="Add app from GitHub"
+		size="xl"
+		:actions="[
 				{
 					label: isAppOnBench
 						? 'Update App'
@@ -18,8 +17,7 @@
 						!selectedBranch?.value,
 					onClick: addAppHandler,
 				},
-			],
-		}"
+			]"
 		v-model="show"
 		@update:modelValue="
 			() => {
@@ -27,85 +25,83 @@
 			}
 		"
 	>
-		<template #body-content>
-			<FTabs :tabs="tabs" v-model="tabIndex">
-				<template #tab-item="{ tab }">
-					<div
-						class="flex cursor-pointer items-center gap-1.5 py-3 text-base transition"
-					>
-						{{ tab.label }}
-					</div>
-				</template>
-				<template #tab-panel="{ tab }">
-					<div class="-ml-0.5 p-1">
-						<div v-if="tab.value === 'public-github-app'" class="space-y-4">
-							<div class="mt-4 flex items-end space-x-2">
-								<FormControl
-									class="grow"
-									label="GitHub URL"
-									v-model="githubAppLink"
-									autocomplete="off"
-								/>
-								<Button
-									v-if="!selectedBranch"
-									label="Fetch Branches"
-									:loading="$resources.branches.loading"
-									@click="
-										$resources.branches.submit({
-											owner: appOwner,
-											name: appName,
-										})
-									"
-								/>
-								<Combobox
-									v-else
-									:options="branchOptions"
-									:modelValue="selectedBranch?.value"
-									allow-custom-value
-									@update:modelValue="onChangeBranchDebounce"
-								/>
-							</div>
-						</div>
-						<div v-else-if="tab.value === 'your-github-app'" class="pt-4">
-							<GitHubAppSelector
-								@validateApp="validateApp"
-								@fieldChange="appValidated = false"
+		<FTabs :tabs="tabs" v-model="tabIndex">
+			<template #tab-item="{ tab }">
+				<div
+					class="flex cursor-pointer items-center gap-1.5 py-3 text-base transition"
+				>
+					{{ tab.label }}
+				</div>
+			</template>
+			<template #tab-panel="{ tab }">
+				<div class="-ml-0.5 p-1">
+					<div v-if="tab.value === 'public-github-app'" class="space-y-4">
+						<div class="mt-4 flex items-end space-x-2">
+							<FormControl
+								class="grow"
+								label="GitHub URL"
+								v-model="githubAppLink"
+								autocomplete="off"
+							/>
+							<Button
+								v-if="!selectedBranch"
+								label="Fetch Branches"
+								:loading="$resources.branches.loading"
+								@click="
+									$resources.branches.submit({
+										owner: appOwner,
+										name: appName,
+									})
+								"
+							/>
+							<Combobox
+								v-else
+								:options="branchOptions"
+								:modelValue="selectedBranch?.value"
+								allow-custom-value
+								@update:modelValue="onChangeBranchDebounce"
 							/>
 						</div>
-						<div class="mt-4 space-y-2">
-							<div
-								v-if="$resources.validateApp.loading"
-								class="flex text-base text-ink-gray-7"
-							>
-								<LoadingIndicator class="mr-2 w-4" />
-								Validating app...
-							</div>
-							<div
-								v-else-if="appValidated && app"
-								class="flex text-base text-ink-gray-7"
-							>
-								<GreenCheckIcon class="mr-2 w-4" />
-								Found {{ app.title }} ({{ app.name }})
-							</div>
+					</div>
+					<div v-else-if="tab.value === 'your-github-app'" class="pt-4">
+						<GitHubAppSelector
+							@validateApp="validateApp"
+							@fieldChange="appValidated = false"
+						/>
+					</div>
+					<div class="mt-4 space-y-2">
+						<div
+							v-if="$resources.validateApp.loading"
+							class="flex text-base text-ink-gray-7"
+						>
+							<LoadingIndicator class="mr-2 w-4" />
+							Validating app...
+						</div>
+						<div
+							v-else-if="appValidated && app"
+							class="flex text-base text-ink-gray-7"
+						>
+							<GreenCheckIcon class="mr-2 w-4" />
+							Found {{ app.title }} ({{ app.name }})
 						</div>
 					</div>
-				</template>
-			</FTabs>
-			<AlertBanner
-				v-if="isAppOnBench"
-				class="mt-4"
-				:show-icon="false"
-				:title="
-					`App <strong>${app.name}</strong> already exists on this Bench. ` +
-					`Clicking on Update App will change app source to the selected one.`
-				"
-				type="warning"
-			/>
+				</div>
+			</template>
+		</FTabs>
+		<AlertBanner
+			v-if="isAppOnBench"
+			class="mt-4"
+			:show-icon="false"
+			:title="
+				`App <strong>${app.name}</strong> already exists on this Bench. ` +
+				`Clicking on Update App will change app source to the selected one.`
+			"
+			type="warning"
+		/>
 
-			<ErrorMessage
-				:message="$resources.validateApp.error || $resources.branches.error"
-			/>
-		</template>
+		<ErrorMessage
+			:message="$resources.validateApp.error || $resources.branches.error"
+		/>
 	</Dialog>
 </template>
 

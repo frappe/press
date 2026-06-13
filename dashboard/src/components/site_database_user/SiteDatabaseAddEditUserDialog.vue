@@ -1,108 +1,104 @@
 <template>
 	<Dialog
-		:options="{
-			title: isEditMode ? 'Edit Database User' : 'Add Database User',
-			size: '2xl',
-		}"
+		:title="isEditMode ? 'Edit Database User' : 'Add Database User'"
+		size="2xl"
 		v-model="showDialog"
 	>
-		<template #body-content>
-			<div class="flex flex-col gap-2">
-				<AlertBanner
-					v-if="
-						isEditMode &&
-						this.$resources?.databaseUser?.doc?.status === 'Failed' &&
-						this.$resources?.databaseUser?.doc?.failure_reason
-					"
-					:title="this.$resources?.databaseUser?.doc?.failure_reason"
-					type="error"
-				> </AlertBanner>
-				<FormControl
-					class="mt-2"
-					type="text"
-					variant="subtle"
-					label="Label (to identify the user)"
-					v-model="label"
-				/>
-				<FormControl
-					type="select"
-					:options="[
-						{
-							label: 'Read only access to all the tables',
-							value: 'read_only',
-						},
-						{
-							label: 'Read/Write access to all the tables',
-							value: 'read_write',
-						},
-						{
-							label: 'Granular access',
-							value: 'granular',
-						},
-					]"
-					variant="subtle"
-					:disabled="false"
-					label="Access Mode"
-					v-model="mode"
-				/>
-				<FormControl
-					v-if="!isEditMode"
-					class="mt-2"
-					type="number"
-					variant="subtle"
-					label="Database Connections"
-					v-model="database_connections"
-				/>
-				<Checkbox
-					v-if="!isEditMode && isReplicaServerAvailable"
-					class="mt-2"
-					label="Use Replica Server"
-					size="sm"
-					v-model="use_replica_server"
-				/>
-				<!-- Permission configuration for Granular Mode -->
-				<div v-if="mode == 'granular'">
-					<div
-						v-if="isLoadingTableSchemas"
-						class="flex w-full flex-col items-center justify-center gap-2 text-base text-ink-gray-7"
-					>
-						<span class="flex flex-row gap-2 py-20">
-							<Spinner class="w-4" />
-							Fetching table schemas
-						</span>
-						<p class="text-sm">This can take upto 5 minutes</p>
-					</div>
-					<div v-else class="mt-2">
-						<p class="text-sm font-medium text-ink-gray-6">
-							Configure Permissions
-						</p>
-						<ObjectList :options="listOptions" />
-						<div class="mt-4 flex w-full gap-2">
-							<Button
-								variant="outline"
-								iconLeft="plus"
-								@click="addNewTablePermissionEntry"
-								>Add Table</Button
-							>
-							<Button
-								variant="outline"
-								iconLeft="refresh-ccw"
-								:loading="isLoadingTableSchemas"
-								@click="() => fetchTableSchemas(true)"
-								>Refresh Schema</Button
-							>
-						</div>
+		<div class="flex flex-col gap-2">
+			<AlertBanner
+				v-if="
+					isEditMode &&
+					this.$resources?.databaseUser?.doc?.status === 'Failed' &&
+					this.$resources?.databaseUser?.doc?.failure_reason
+				"
+				:title="this.$resources?.databaseUser?.doc?.failure_reason"
+				type="error"
+			> </AlertBanner>
+			<FormControl
+				class="mt-2"
+				type="text"
+				variant="subtle"
+				label="Label (to identify the user)"
+				v-model="label"
+			/>
+			<FormControl
+				type="select"
+				:options="[
+					{
+						label: 'Read only access to all the tables',
+						value: 'read_only',
+					},
+					{
+						label: 'Read/Write access to all the tables',
+						value: 'read_write',
+					},
+					{
+						label: 'Granular access',
+						value: 'granular',
+					},
+				]"
+				variant="subtle"
+				:disabled="false"
+				label="Access Mode"
+				v-model="mode"
+			/>
+			<FormControl
+				v-if="!isEditMode"
+				class="mt-2"
+				type="number"
+				variant="subtle"
+				label="Database Connections"
+				v-model="database_connections"
+			/>
+			<Checkbox
+				v-if="!isEditMode && isReplicaServerAvailable"
+				class="mt-2"
+				label="Use Replica Server"
+				size="sm"
+				v-model="use_replica_server"
+			/>
+			<!-- Permission configuration for Granular Mode -->
+			<div v-if="mode == 'granular'">
+				<div
+					v-if="isLoadingTableSchemas"
+					class="flex w-full flex-col items-center justify-center gap-2 text-base text-ink-gray-7"
+				>
+					<span class="flex flex-row gap-2 py-20">
+						<Spinner class="w-4" />
+						Fetching table schemas
+					</span>
+					<p class="text-sm">This can take upto 5 minutes</p>
+				</div>
+				<div v-else class="mt-2">
+					<p class="text-sm font-medium text-ink-gray-6">
+						Configure Permissions
+					</p>
+					<ObjectList :options="listOptions" />
+					<div class="mt-4 flex w-full gap-2">
+						<Button
+							variant="outline"
+							iconLeft="plus"
+							@click="addNewTablePermissionEntry"
+							>Add Table</Button
+						>
+						<Button
+							variant="outline"
+							iconLeft="refresh-ccw"
+							:loading="isLoadingTableSchemas"
+							@click="() => fetchTableSchemas(true)"
+							>Refresh Schema</Button
+						>
 					</div>
 				</div>
 			</div>
-			<ErrorMessage
-				:message="
-					this.$resources?.createDatabaseUser?.error ||
-					this.$resources?.updateDatabaseUser?.error
-				"
-				class="mt-2"
-			/>
-		</template>
+		</div>
+		<ErrorMessage
+			:message="
+				this.$resources?.createDatabaseUser?.error ||
+				this.$resources?.updateDatabaseUser?.error
+			"
+			class="mt-2"
+		/>
 
 		<template #actions>
 			<Button

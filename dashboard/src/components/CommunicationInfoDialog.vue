@@ -1,74 +1,69 @@
 <template>
-	<Dialog
-		:options="{ title: 'Notification Configuration', size: '3xl' }"
-		v-model="showDialog"
-	>
-		<template #body-content>
-			<div class="flex flex-col w-full">
-				<AlertBanner
-					v-if="referenceDoctype === 'Team'"
-					title="Notifications will go to the General channel by default. If General isn't available, they'll be delivered to registered email addresses."
-					type="info"
-					:showIcon="false"
-					class="mb-3"
-				/>
+	<Dialog title="Notification Configuration" size="3xl" v-model="showDialog">
+		<div class="flex flex-col w-full">
+			<AlertBanner
+				v-if="referenceDoctype === 'Team'"
+				title="Notifications will go to the General channel by default. If General isn't available, they'll be delivered to registered email addresses."
+				type="info"
+				:showIcon="false"
+				class="mb-3"
+			/>
 
-				<AlertBanner
-					v-else
-					title="Notifications will go to the General channel by default. If General isn't available, they'll be delivered through team-level channels."
-					type="info"
-					:showIcon="false"
-					class="mb-3"
-				/>
+			<AlertBanner
+				v-else
+				title="Notifications will go to the General channel by default. If General isn't available, they'll be delivered through team-level channels."
+				type="info"
+				:showIcon="false"
+				class="mb-3"
+			/>
 
-				<div class="flex justify-end gap-2">
-					<Button
-						variant="solid"
-						class="mb-3"
-						iconLeft="plus"
-						@click="
-							currentCommunicationInfos.push({
-								channel: 'Email',
-								type: 'General',
-								value: '',
-							})
-						"
-					>
-						New
-					</Button>
-					<Button
-						variant="subtle"
-						class="mb-3"
-						icon="refresh-cw"
-						:loading="$resources.getCommunicationInfos.loading"
-						@click="$resources.getCommunicationInfos.submit"
-					>
-						Refresh
-					</Button>
-				</div>
-				<div
-					v-if="$resources.getCommunicationInfos.loading"
-					class="flex w-full items-center justify-center gap-2 py-20 text-ink-gray-7"
+			<div class="flex justify-end gap-2">
+				<Button
+					variant="solid"
+					class="mb-3"
+					iconLeft="plus"
+					@click="
+						currentCommunicationInfos.push({
+							channel: 'Email',
+							type: 'General',
+							value: '',
+						})
+					"
 				>
-					<Spinner class="w-4" />
-					Loading data...
-				</div>
-				<div v-else>
-					<GenericList class="w-100" :options="communicationInfosListOptions" />
-					<ErrorMessage
-						class="mt-2"
-						:message="$resources.updateCommunicationInfos.error"
-					/>
-					<Button
-						variant="solid"
-						class="w-full mt-5"
-						@click="$resources?.updateCommunicationInfos?.submit"
-						:loading="$resources?.updateCommunicationInfos?.loading"
-						>Update Settings</Button
-					>
-				</div>
+					New
+				</Button>
+				<Button
+					variant="subtle"
+					class="mb-3"
+					icon="refresh-cw"
+					:loading="$resources.getCommunicationInfos.loading"
+					@click="$resources.getCommunicationInfos.submit"
+				>
+					Refresh
+				</Button>
 			</div>
-		</template>
+			<div
+				v-if="$resources.getCommunicationInfos.loading"
+				class="flex w-full items-center justify-center gap-2 py-20 text-ink-gray-7"
+			>
+				<Spinner class="w-4" />
+				Loading data...
+			</div>
+			<div v-else>
+				<GenericList class="w-100" :options="communicationInfosListOptions" />
+				<ErrorMessage
+					class="mt-2"
+					:message="$resources.updateCommunicationInfos.error"
+				/>
+				<Button
+					variant="solid"
+					class="w-full mt-5"
+					@click="$resources?.updateCommunicationInfos?.submit"
+					:loading="$resources?.updateCommunicationInfos?.loading"
+					>Update Settings</Button
+				>
+			</div>
+		</div>
 	</Dialog>
 </template>
 

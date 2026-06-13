@@ -58,10 +58,9 @@
 		</div>
 		<Dialog
 			v-model="open"
-			:options="{
-				title: 'Include',
-				size: 'lg',
-				actions: [
+			title="Include"
+			size="lg"
+			:actions="[
 					{
 						label: 'Submit',
 						variant: 'solid',
@@ -70,32 +69,26 @@
 							open = false;
 						},
 					},
-				],
-			}"
+				]"
 		>
-			<template #body-content>
-				<div class="mb-2 text-base">Include a resource in this role.</div>
-				<MultiSelect
-					:options="resourcesToIncludeOptions"
-					:model-value="
-						resourcesToIncludeModel.map((item) => item.document_name)
-					"
-					@update:model-value="
-						resourcesToIncludeModel = resourcesToIncludeOptions.filter(
-							(option) => $event.includes(option.value),
-						)
-					"
-					placeholder="Select resources"
-				>
-					<template #option="{ item }">
-						<FeatherIcon
-							class="size-4 mr-2"
-							:name="icons[item.document_type]"
-						/>
-						{{ item.label }}
-					</template>
-				</MultiSelect>
-			</template>
+			<div class="mb-2 text-base">Include a resource in this role.</div>
+			<MultiSelect
+				:options="resourcesToIncludeOptions"
+				:model-value="
+					resourcesToIncludeModel.map((item) => item.document_name)
+				"
+				@update:model-value="
+					resourcesToIncludeModel = resourcesToIncludeOptions.filter(
+						(option) => $event.includes(option.value),
+					)
+				"
+				placeholder="Select resources"
+			>
+				<template #option="{ item }">
+					<FeatherIcon class="size-4 mr-2" :name="icons[item.document_type]" />
+					{{ item.label }}
+				</template>
+			</MultiSelect>
 		</Dialog>
 	</div>
 </template>

@@ -1,159 +1,150 @@
 <template>
-	<Dialog
-		v-if="role"
-		:options="{ title: `${role.title}`, size: 'xl' }"
-		v-model="show"
-	>
-		<template v-slot:body-content>
-			<FTabs
-				:tabs="[
-					{
-						label: 'Members',
-						value: 'members',
-					},
-					{
-						label: 'Settings',
-						value: 'settings',
-					},
-				]"
-				v-model="tabIndex"
-			>
-				<template #tab-item="{ tab }">
-					<div
-						class="flex cursor-pointer items-center gap-1.5 py-3 text-base text-ink-gray-6 duration-300 ease-in-out hover:border-outline-gray-3 hover:text-ink-gray-9 focus:outline-none focus:transition-none [&>div]:pl-0"
-					>
-						<span>{{ tab.label }}</span>
-					</div>
-				</template>
-				<template #tab-panel="{ tab }">
-					<div v-if="tab.value === 'members'" class="text-base">
-						<div class="my-4 flex gap-2">
-							<div class="flex-1">
-								<FormControl
-									type="combobox"
-									:options="autoCompleteList"
-									:modelValue="member?.value"
-									@update:modelValue="
-										member = autoCompleteList.find(
-											(option) => option.value === $event,
-										)
-									"
-									placeholder="Select a member to add"
-								/>
-							</div>
-							<Button
-								variant="solid"
-								label="Add Member"
-								:disabled="!member?.value"
-								:loading="$resources.role.addUser?.loading"
-								@click="() => addUser(member.value)"
+	<Dialog v-if="role" :title="`${role.title}`" size="xl" v-model="show">
+		<FTabs
+			:tabs="[
+				{
+					label: 'Members',
+					value: 'members',
+				},
+				{
+					label: 'Settings',
+					value: 'settings',
+				},
+			]"
+			v-model="tabIndex"
+		>
+			<template #tab-item="{ tab }">
+				<div
+					class="flex cursor-pointer items-center gap-1.5 py-3 text-base text-ink-gray-6 duration-300 ease-in-out hover:border-outline-gray-3 hover:text-ink-gray-9 focus:outline-none focus:transition-none [&>div]:pl-0"
+				>
+					<span>{{ tab.label }}</span>
+				</div>
+			</template>
+			<template #tab-panel="{ tab }">
+				<div v-if="tab.value === 'members'" class="text-base">
+					<div class="my-4 flex gap-2">
+						<div class="flex-1">
+							<FormControl
+								type="combobox"
+								:options="autoCompleteList"
+								:modelValue="member?.value"
+								@update:modelValue="
+									member = autoCompleteList.find(
+										(option) => option.value === $event,
+									)
+								"
+								placeholder="Select a member to add"
 							/>
 						</div>
-						<div class="rounded border px-3">
-							<div class="mt-2 text-ink-gray-6">Members</div>
-							<div
-								v-if="roleUsers.length === 0"
-								class="p-6 text-center text-ink-gray-5"
-							>
-								<span>No members added to this role.</span>
-							</div>
-							<div v-else class="flex flex-col divide-y">
-								<div
-									v-for="user in roleUsers"
-									class="flex justify-between py-3"
-								>
-									<UserWithAvatarCell
-										:avatarImage="user.user_image"
-										:fullName="user.full_name"
-										:email="user.user"
-										:key="user.user"
-									/>
-									<Button variant="ghost" @click="() => removeUser(user.user)">
-										<template #icon>
-											<lucide-x class="h-4 w-4 text-ink-gray-6" />
-										</template>
-									</Button>
-								</div>
+						<Button
+							variant="solid"
+							label="Add Member"
+							:disabled="!member?.value"
+							:loading="$resources.role.addUser?.loading"
+							@click="() => addUser(member.value)"
+						/>
+					</div>
+					<div class="rounded border px-3">
+						<div class="mt-2 text-ink-gray-6">Members</div>
+						<div
+							v-if="roleUsers.length === 0"
+							class="p-6 text-center text-ink-gray-5"
+						>
+							<span>No members added to this role.</span>
+						</div>
+						<div v-else class="flex flex-col divide-y">
+							<div v-for="user in roleUsers" class="flex justify-between py-3">
+								<UserWithAvatarCell
+									:avatarImage="user.user_image"
+									:fullName="user.full_name"
+									:email="user.user"
+									:key="user.user"
+								/>
+								<Button variant="ghost" @click="() => removeUser(user.user)">
+									<template #icon>
+										<lucide-x class="h-4 w-4 text-ink-gray-6" />
+									</template>
+								</Button>
 							</div>
 						</div>
 					</div>
-					<div v-else-if="tab.value === 'settings'" class="mt-4 text-base">
-						<div class="space-y-3">
-							<div class="rounded border p-4">
-								<Switch
-									class="ml-2"
-									v-model="adminAccess"
-									label="Admin Access"
-									description="Grants team owner like access to the members. Includes access to all pages and settings."
-								/>
-							</div>
-							<div class="space-y-1 rounded border p-4">
-								<h2 class="mb-2 ml-2 font-semibold">Page Access</h2>
-								<Switch
-									v-model="allowBilling"
-									label="Allow Billing Access"
-									:disabled="adminAccess"
-								/>
-								<Switch
-									v-model="allowApps"
-									label="Allow Apps Access"
-									:disabled="adminAccess"
-								/>
-								<Switch
-									v-if="$team.doc.erpnext_partner"
-									v-model="allowPartner"
-									label="Allow Partner Access"
-									:disabled="adminAccess"
-								/>
-								<Switch
-									v-model="allowSiteCreation"
-									label="Allow Site Creation"
-									:disabled="adminAccess"
-								/>
-								<Switch
-									v-model="allowBenchCreation"
-									label="Allow Bench Creation"
-									:disabled="adminAccess"
-								/>
-								<Switch
-									v-model="allowServerCreation"
-									label="Allow Server Creation"
-									:disabled="adminAccess"
-								/>
-								<Switch
-									v-model="allowWebhookConfiguration"
-									label="Allow Webhook Configuration"
-									:disabled="adminAccess"
-								/>
-							</div>
-							<div v-if="allowPartner" class="space-y-1 rounded border p-4">
-								<h2 class="mb-2 ml-2 font-semibold">Partner Permissions</h2>
-								<Switch
-									v-model="allowDashboard"
-									label="Allow Dashboard Access"
-									:disabled="adminAccess"
-								/>
-								<Switch
-									v-model="allowLeads"
-									label="Allow Leads Access"
-									:disabled="adminAccess"
-								/>
-								<Switch
-									v-model="allowCustomer"
-									label="Allow Customer Access"
-									:disabled="adminAccess"
-								/>
-								<Switch
-									v-model="allowContribution"
-									label="Allow Contribution Access"
-									:disabled="adminAccess"
-								/>
-							</div>
+				</div>
+				<div v-else-if="tab.value === 'settings'" class="mt-4 text-base">
+					<div class="space-y-3">
+						<div class="rounded border p-4">
+							<Switch
+								class="ml-2"
+								v-model="adminAccess"
+								label="Admin Access"
+								description="Grants team owner like access to the members. Includes access to all pages and settings."
+							/>
+						</div>
+						<div class="space-y-1 rounded border p-4">
+							<h2 class="mb-2 ml-2 font-semibold">Page Access</h2>
+							<Switch
+								v-model="allowBilling"
+								label="Allow Billing Access"
+								:disabled="adminAccess"
+							/>
+							<Switch
+								v-model="allowApps"
+								label="Allow Apps Access"
+								:disabled="adminAccess"
+							/>
+							<Switch
+								v-if="$team.doc.erpnext_partner"
+								v-model="allowPartner"
+								label="Allow Partner Access"
+								:disabled="adminAccess"
+							/>
+							<Switch
+								v-model="allowSiteCreation"
+								label="Allow Site Creation"
+								:disabled="adminAccess"
+							/>
+							<Switch
+								v-model="allowBenchCreation"
+								label="Allow Bench Creation"
+								:disabled="adminAccess"
+							/>
+							<Switch
+								v-model="allowServerCreation"
+								label="Allow Server Creation"
+								:disabled="adminAccess"
+							/>
+							<Switch
+								v-model="allowWebhookConfiguration"
+								label="Allow Webhook Configuration"
+								:disabled="adminAccess"
+							/>
+						</div>
+						<div v-if="allowPartner" class="space-y-1 rounded border p-4">
+							<h2 class="mb-2 ml-2 font-semibold">Partner Permissions</h2>
+							<Switch
+								v-model="allowDashboard"
+								label="Allow Dashboard Access"
+								:disabled="adminAccess"
+							/>
+							<Switch
+								v-model="allowLeads"
+								label="Allow Leads Access"
+								:disabled="adminAccess"
+							/>
+							<Switch
+								v-model="allowCustomer"
+								label="Allow Customer Access"
+								:disabled="adminAccess"
+							/>
+							<Switch
+								v-model="allowContribution"
+								label="Allow Contribution Access"
+								:disabled="adminAccess"
+							/>
 						</div>
 					</div>
-				</template>
-			</FTabs>
-		</template>
+				</div>
+			</template>
+		</FTabs>
 	</Dialog>
 </template>
 

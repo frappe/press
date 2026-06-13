@@ -1,29 +1,22 @@
 <template>
-	<Dialog
-		:options="{
-			title: 'Settings',
-		}"
-		v-model="show"
-	>
-		<template #body-content>
-			<div class="mt-8 flex flex-col gap-4">
-				<Switch
-					v-model="enforce2FA"
-					label="Enforce 2FA"
-					description="Require all team members to enable 2FA"
-				/>
-				<Switch
-					v-model="enableBenchGroups"
-					label="Enable Benches"
-					description="Enable benches for your team"
-				/>
-				<Switch
-					v-model="enableServers"
-					label="Enable Servers"
-					description="Enable servers for your team"
-				/>
-			</div>
-		</template>
+	<Dialog title="Settings" v-model="show">
+		<div class="mt-8 flex flex-col gap-4">
+			<Switch
+				v-model="enforce2FA"
+				label="Enforce 2FA"
+				description="Require all team members to enable 2FA"
+			/>
+			<Switch
+				v-model="enableBenchGroups"
+				label="Enable Benches"
+				description="Enable benches for your team"
+			/>
+			<Switch
+				v-model="enableServers"
+				label="Enable Servers"
+				description="Enable servers for your team"
+			/>
+		</div>
 	</Dialog>
 </template>
 

@@ -1,96 +1,94 @@
 <template>
-	<Dialog :options="{ title: 'Add M-Pesa Credentials', size: 'xl' }">
-		<template #body-content>
-			<div class="grid grid-cols-2 gap-5">
-				<FormControl
-					label="Mpesa Setup ID"
-					v-model="mpesaSetupDetails.mpesa_setup_id"
-					name="mpesa_setup_id"
-					class="mb-3"
-					type="text"
-					placeholder="Test Mpesa"
-				/>
+	<Dialog title="Add M-Pesa Credentials" size="xl">
+		<div class="grid grid-cols-2 gap-5">
+			<FormControl
+				label="Mpesa Setup ID"
+				v-model="mpesaSetupDetails.mpesa_setup_id"
+				name="mpesa_setup_id"
+				class="mb-3"
+				type="text"
+				placeholder="Test Mpesa"
+			/>
 
-				<FormControl
-					label="Consumer Key"
-					v-model="mpesaSetupDetails.consumer_key"
-					name="consumer_key"
-					class="mb-3"
-					type="text"
-					placeholder="Enter Consumer Key"
-				/>
+			<FormControl
+				label="Consumer Key"
+				v-model="mpesaSetupDetails.consumer_key"
+				name="consumer_key"
+				class="mb-3"
+				type="text"
+				placeholder="Enter Consumer Key"
+			/>
 
-				<FormControl
-					label="Consumer Secret"
-					v-model="mpesaSetupDetails.consumer_secret"
-					name="consumer_secret"
-					class="mb-3"
-					type="text"
-					placeholder="Enter Consumer Secret"
-				/>
+			<FormControl
+				label="Consumer Secret"
+				v-model="mpesaSetupDetails.consumer_secret"
+				name="consumer_secret"
+				class="mb-3"
+				type="text"
+				placeholder="Enter Consumer Secret"
+			/>
 
-				<FormControl
-					label="Pass Key"
-					v-model="mpesaSetupDetails.pass_key"
-					name="pass_key"
-					class="mb-3"
-					type="text"
-					placeholder="Enter Pass Key"
-				/>
+			<FormControl
+				label="Pass Key"
+				v-model="mpesaSetupDetails.pass_key"
+				name="pass_key"
+				class="mb-3"
+				type="text"
+				placeholder="Enter Pass Key"
+			/>
 
-				<FormControl
-					label="Business Short Code"
-					v-model="mpesaSetupDetails.short_code"
-					name="short_code"
-					class="mb-3"
-					type="text"
-					placeholder="Enter Short Code"
-				/>
+			<FormControl
+				label="Business Short Code"
+				v-model="mpesaSetupDetails.short_code"
+				name="short_code"
+				class="mb-3"
+				type="text"
+				placeholder="Enter Short Code"
+			/>
 
-				<FormControl
-					label="Initiator Name"
-					v-model="mpesaSetupDetails.initiator_name"
-					name="initiator_name"
-					class="mb-3"
-					type="text"
-					placeholder="e.g John Doe"
-				/>
+			<FormControl
+				label="Initiator Name"
+				v-model="mpesaSetupDetails.initiator_name"
+				name="initiator_name"
+				class="mb-3"
+				type="text"
+				placeholder="e.g John Doe"
+			/>
 
-				<FormControl
-					label="Security Credential"
-					v-model="mpesaSetupDetails.security_credential"
-					name="security_credential"
-					class="mb-3"
-					type="text"
-					placeholder="Enter Security Credential"
-				/>
+			<FormControl
+				label="Security Credential"
+				v-model="mpesaSetupDetails.security_credential"
+				name="security_credential"
+				class="mb-3"
+				type="text"
+				placeholder="Enter Security Credential"
+			/>
 
-				<FormControl
-					label="Till Number"
-					v-model="mpesaSetupDetails.till_number"
-					name="till_number"
-					class="mb-3"
-					type="text"
-					placeholder="1234567"
-				/>
+			<FormControl
+				label="Till Number"
+				v-model="mpesaSetupDetails.till_number"
+				name="till_number"
+				class="mb-3"
+				type="text"
+				placeholder="1234567"
+			/>
 
-				<!-- <div class="flex items-center">
-					<input v-model="sandBox" type="checkbox" class="mr-2" />
-					<label class="text-sm font-medium text-ink-gray-7">Sandbox Mode</label>
-				</div> -->
-				<ErrorMessage class="mt-2" :message="errorMessage" />
-			</div>
+			<!-- <div class="flex items-center">
+				<input v-model="sandBox" type="checkbox" class="mr-2" />
+				<label class="text-sm font-medium text-ink-gray-7">Sandbox Mode</label>
+			</div> -->
+			<ErrorMessage class="mt-2" :message="errorMessage" />
+		</div>
 
-			<div class="mt-4 flex w-full bg-red-300 items-center justify-center">
-				<Button
-					@click="saveMpesaCredentials"
-					variant="solid"
-					class="justify-center w-full"
-				>
-					Save
-				</Button>
-			</div>
-		</template>
+		<div class="mt-4 flex w-full bg-red-300 items-center justify-center">
+			<Button
+				@click="saveMpesaCredentials"
+				variant="solid"
+				class="justify-center w-full"
+			>
+				Save
+			</Button>
+		</div>
 	</Dialog>
 </template>
 

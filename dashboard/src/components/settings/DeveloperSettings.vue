@@ -23,10 +23,9 @@
 				</div>
 				<Dialog
 					v-model="showCreateSecretDialog"
-					:options="{
-						title: 'API Access',
-						size: 'xl',
-						actions: [
+					title="API Access"
+					size="xl"
+					:actions="[
 							{
 								label: $team.doc.user_info.api_key
 									? 'Regenerate API Secret'
@@ -38,35 +37,31 @@
 									createSecret.submit();
 								},
 							},
-						],
-					}"
+						]"
 				>
-					<template #body-content>
-						<div v-if="createSecret.data">
-							<p class="text-base">
-								Please copy the API secret now. You won’t be able to see it
-								again!
-							</p>
-							<label class="block pt-2">
-								<span class="mb-2 block text-sm leading-4 text-ink-gray-7"
-									>API Key</span
-								>
-								<ClickToCopyField :textContent="createSecret.data.api_key" />
-							</label>
-							<label class="block pt-2">
-								<span class="mb-2 block text-sm leading-4 text-ink-gray-7"
-									>API Secret</span
-								>
-								<ClickToCopyField :textContent="createSecret.data.api_secret" />
-							</label>
-						</div>
-						<div v-else class="text-base text-ink-gray-7">
-							API key and API secret pairs can be used to access the
-							<a href="/docs/api" class="underline" target="_blank"
-								>Frappe Cloud API</a
-							>.
-						</div>
-					</template>
+					<div v-if="createSecret.data">
+						<p class="text-base">
+							Please copy the API secret now. You won’t be able to see it again!
+						</p>
+						<label class="block pt-2">
+							<span class="mb-2 block text-sm leading-4 text-ink-gray-7"
+								>API Key</span
+							>
+							<ClickToCopyField :textContent="createSecret.data.api_key" />
+						</label>
+						<label class="block pt-2">
+							<span class="mb-2 block text-sm leading-4 text-ink-gray-7"
+								>API Secret</span
+							>
+							<ClickToCopyField :textContent="createSecret.data.api_secret" />
+						</label>
+					</div>
+					<div v-else class="text-base text-ink-gray-7">
+						API key and API secret pairs can be used to access the
+						<a href="/docs/api" class="underline" target="_blank"
+							>Frappe Cloud API</a
+						>.
+					</div>
 				</Dialog>
 			</div>
 			<div

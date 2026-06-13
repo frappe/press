@@ -1,20 +1,15 @@
 <template>
 	<div class="p-5">
 		<ObjectList :options="options" />
-		<Dialog
-			v-model="payoutDialog"
-			:options="{ size: '6xl', title: showPayout?.name }"
-		>
-			<template #body-content>
-				<template v-if="showPayout">
-					<div
-						v-if="showPayout.status === 'Empty'"
-						class="text-base text-ink-gray-6"
-					>
-						Nothing to show
-					</div>
-					<PayoutTable v-else :payoutId="showPayout.name" />
-				</template>
+		<Dialog v-model="payoutDialog" size="6xl" :title="showPayout?.name">
+			<template v-if="showPayout">
+				<div
+					v-if="showPayout.status === 'Empty'"
+					class="text-base text-ink-gray-6"
+				>
+					Nothing to show
+				</div>
+				<PayoutTable v-else :payoutId="showPayout.name" />
 			</template>
 		</Dialog>
 	</div>

@@ -1,96 +1,81 @@
 <template>
-	<Dialog
-		:options="{
-			title: 'Binlog Index Status',
-			size: '2xl',
-		}"
-		v-model="show"
-		@close="hide"
-	>
-		<template #body-content>
+	<Dialog title="Binlog Index Status" size="2xl" v-model="show" @close="hide">
+		<div
+			v-if="$resources?.binlogs?.loading"
+			class="flex w-full items-center justify-center gap-2 py-32 text-ink-gray-7"
+		>
+			<Spinner class="w-4" />
+			Loading
+		</div>
+		<div v-else>
+			<ObjectList
+				:options="binlogsOptions"
+				ref="list"
+				@update:selections="handleSelection"
+			/>
 			<div
-				v-if="$resources?.binlogs?.loading"
-				class="flex w-full items-center justify-center gap-2 py-32 text-ink-gray-7"
+				class="flex items-center justify-between py-3"
+				v-if="totalBinlogs > 0"
 			>
-				<Spinner class="w-4" />
-				Loading
-			</div>
-			<div v-else>
-				<ObjectList
-					:options="binlogsOptions"
-					ref="list"
-					@update:selections="handleSelection"
-				/>
-				<div
-					class="flex items-center justify-between py-3"
-					v-if="totalBinlogs > 0"
-				>
-					<div class="flex flex-shrink-0 items-center gap-2">
-						<select class="form-select block text-sm" v-model="pageSize">
-							<option :value="10">
-								10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-							</option>
-							<option :value="20">
-								50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-							</option>
-							<option :value="50">
-								100&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-							</option>
-						</select>
-						<p class="text-sm text-ink-gray-6">Per Page</p>
-					</div>
-					<div class="flex flex-shrink-0 items-center gap-2">
-						<p class="tnum text-sm text-ink-gray-6">
-							{{ pageStart }}
-							- {{ pageEnd }} of {{ totalBinlogs }} binlogs
-						</p>
-						<div class="flex gap-2">
-							<Button
-								variant="ghost"
-								@click="goToPreviousPage()"
-								:disabled="!hasPreviousPage"
-								iconLeft="arrow-left"
-							>
-								Prev
-							</Button>
-							<Button
-								variant="ghost"
-								@click="goToNextPage()"
-								:disabled="!hasNextPage"
-								iconRight="arrow-right"
-							>
-								Next
-							</Button>
-						</div>
+				<div class="flex flex-shrink-0 items-center gap-2">
+					<select class="form-select block text-sm" v-model="pageSize">
+						<option :value="10">10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+						<option :value="20">50&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+						<option :value="50">100&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+					</select>
+					<p class="text-sm text-ink-gray-6">Per Page</p>
+				</div>
+				<div class="flex flex-shrink-0 items-center gap-2">
+					<p class="tnum text-sm text-ink-gray-6">
+						{{ pageStart }}
+						- {{ pageEnd }} of {{ totalBinlogs }} binlogs
+					</p>
+					<div class="flex gap-2">
+						<Button
+							variant="ghost"
+							@click="goToPreviousPage()"
+							:disabled="!hasPreviousPage"
+							iconLeft="arrow-left"
+						>
+							Prev
+						</Button>
+						<Button
+							variant="ghost"
+							@click="goToNextPage()"
+							:disabled="!hasNextPage"
+							iconRight="arrow-right"
+						>
+							Next
+						</Button>
 					</div>
 				</div>
-
-				<AlertBanner
-					v-if="selectedBinlogs.length > 0"
-					class="mt-2 mb-2"
-					title="Indexing a large number of files at once can momentarily increase database load. We recommend indexing no more than 500 MB per batch."
-					type="warning"
-					:show-icon="false"
-				/>
-
-				<ErrorMessage
-					:message="$resources.indexBinlogs.error"
-					v-if="$resources.indexBinlogs.error"
-					class="pt-2 pb-3"
-				/>
-
-				<!-- Index button -->
-				<Button
-					class="w-full"
-					variant="solid"
-					:disabled="selectedBinlogs.length === 0"
-					@click.prevent="$resources?.indexBinlogs?.submit()"
-					:loading="$resources?.indexBinlogs?.loading"
-				>
-					Index Binlogs
-				</Button>
 			</div>
-		</template>
+
+			<AlertBanner
+				v-if="selectedBinlogs.length > 0"
+				class="mt-2 mb-2"
+				title="Indexing a large number of files at once can momentarily increase database load. We recommend indexing no more than 500 MB per batch."
+				type="warning"
+				:show-icon="false"
+			/>
+
+			<ErrorMessage
+				:message="$resources.indexBinlogs.error"
+				v-if="$resources.indexBinlogs.error"
+				class="pt-2 pb-3"
+			/>
+
+			<!-- Index button -->
+			<Button
+				class="w-full"
+				variant="solid"
+				:disabled="selectedBinlogs.length === 0"
+				@click.prevent="$resources?.indexBinlogs?.submit()"
+				:loading="$resources?.indexBinlogs?.loading"
+			>
+				Index Binlogs
+			</Button>
+		</div>
 	</Dialog>
 </template>
 <script>

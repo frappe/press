@@ -171,31 +171,29 @@
 						>
 					</div>
 				</template>
-				<template #default>
-					<div
-						v-if="this.$resources.databaseProcesses.loading"
-						class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
-					>
-						<Spinner class="w-4" />
-						Loading Database Processes
-					</div>
-					<ResultTable
-						v-else
-						class="mt-2"
-						:columns="databaseProcesses.columns"
-						:data="databaseProcesses.data"
-						:alignColumns="alignColumns"
-						:cellFormatters="cellFormatters"
-						:fullViewFormatters="fullViewFormatters"
-						actionHeaderLabel="Kill"
-						:actionComponent="DatabaseProcessKillButton"
-						:actionComponentProps="{
-							site: this.site,
-						}"
-						:enableCSVExport="false"
-						:borderLess="true"
-					/>
-				</template>
+				<div
+					v-if="this.$resources.databaseProcesses.loading"
+					class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
+				>
+					<Spinner class="w-4" />
+					Loading Database Processes
+				</div>
+				<ResultTable
+					v-else
+					class="mt-2"
+					:columns="databaseProcesses.columns"
+					:data="databaseProcesses.data"
+					:alignColumns="alignColumns"
+					:cellFormatters="cellFormatters"
+					:fullViewFormatters="fullViewFormatters"
+					actionHeaderLabel="Kill"
+					:actionComponent="DatabaseProcessKillButton"
+					:actionComponentProps="{
+						site: this.site,
+					}"
+					:enableCSVExport="false"
+					:borderLess="true"
+				/>
 			</ToggleContent>
 
 			<!-- Database Locks -->
@@ -222,29 +220,27 @@
 						>
 					</div>
 				</template>
-				<template #default>
-					<div
-						v-if="
-							this.$resources.databaseLocks.loading &&
-							!databaseLocks?.data?.length
-						"
-						class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
-					>
-						<Spinner class="w-4" />
-						Loading Database Locks
-					</div>
-					<ResultTable
-						v-else
-						class="mt-2"
-						:columns="databaseLocks.columns"
-						:data="databaseLocks.data"
-						:alignColumns="alignColumns"
-						:cellFormatters="cellFormatters"
-						:fullViewFormatters="fullViewFormatters"
-						:enableCSVExport="false"
-						:borderLess="true"
-					/>
-				</template>
+				<div
+					v-if="
+						this.$resources.databaseLocks.loading &&
+						!databaseLocks?.data?.length
+					"
+					class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
+				>
+					<Spinner class="w-4" />
+					Loading Database Locks
+				</div>
+				<ResultTable
+					v-else
+					class="mt-2"
+					:columns="databaseLocks.columns"
+					:data="databaseLocks.data"
+					:alignColumns="alignColumns"
+					:cellFormatters="cellFormatters"
+					:fullViewFormatters="fullViewFormatters"
+					:enableCSVExport="false"
+					:borderLess="true"
+				/>
 			</ToggleContent>
 
 			<!-- Queries Information -->

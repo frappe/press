@@ -115,76 +115,74 @@ async function handleSubmit() {
 		:model-value="open"
 		@update:model-value="setOpen"
 		:disable-outside-click-to-close="true"
-		:options="{ size: 'md' }"
+		size="md"
 	>
-		<template #body-main>
-			<form class="bg-surface-modal p-6" @submit.prevent="handleSubmit">
-				<div class="flex items-start justify-between gap-4">
-					<div>
-						<h3 class="text-lg font-semibold leading-6 text-ink-gray-9">
-							Link certificate
-						</h3>
-						<p class="mt-1.5 text-p-sm leading-5 text-ink-gray-6">
-							Choose a certificate and email the holder for verification.
-						</p>
-					</div>
+		<form class="bg-surface-modal p-6" @submit.prevent="handleSubmit">
+			<div class="flex items-start justify-between gap-4">
+				<div>
+					<h3 class="text-lg font-semibold leading-6 text-ink-gray-9">
+						Link certificate
+					</h3>
+					<p class="mt-1.5 text-p-sm leading-5 text-ink-gray-6">
+						Choose a certificate and email the holder for verification.
+					</p>
+				</div>
+				<button
+					type="button"
+					class="-mr-1 rounded-md p-1 text-ink-gray-6 hover:bg-surface-gray-2 hover:text-ink-gray-9"
+					aria-label="Close"
+					@click="setOpen(false)"
+				>
+					<LucideX class="size-4" />
+				</button>
+			</div>
+
+			<div class="mt-5">
+				<label class="text-p-sm text-ink-gray-6">Certificate type</label>
+				<div class="mt-2 grid grid-cols-2 gap-2">
 					<button
+						v-for="type in certificateTypes"
+						:key="type.value"
 						type="button"
-						class="-mr-1 rounded-md p-1 text-ink-gray-6 hover:bg-surface-gray-2 hover:text-ink-gray-9"
-						aria-label="Close"
-						@click="setOpen(false)"
+						class="flex min-w-0 items-center gap-2 rounded-md border px-3 py-2.5 text-left transition-colors"
+						:class="certificateType === type.value
+							? 'border-outline-gray-4 bg-surface-gray-1 shadow-sm'
+							: 'border-outline-gray-2 bg-surface-white hover:border-outline-gray-3 hover:bg-surface-gray-1'
+							"
+						:aria-pressed="certificateType === type.value"
+						@click="selectCertificateType(type.value)"
 					>
-						<LucideX class="size-4" />
+						<span
+							class="grid size-7 shrink-0 place-items-center overflow-hidden rounded bg-surface-white"
+						>
+							<img :src="type.logo" :alt="type.label" class="size-5" />
+						</span>
+						<span class="truncate text-p-sm font-medium text-ink-gray-8">
+							{{ type.label }}
+						</span>
 					</button>
 				</div>
+			</div>
 
-				<div class="mt-5">
-					<label class="text-p-sm text-ink-gray-6">Certificate type</label>
-					<div class="mt-2 grid grid-cols-2 gap-2">
-						<button
-							v-for="type in certificateTypes"
-							:key="type.value"
-							type="button"
-							class="flex min-w-0 items-center gap-2 rounded-md border px-3 py-2.5 text-left transition-colors"
-							:class="certificateType === type.value
-								? 'border-outline-gray-4 bg-surface-gray-1 shadow-sm'
-								: 'border-outline-gray-2 bg-surface-white hover:border-outline-gray-3 hover:bg-surface-gray-1'
-								"
-							:aria-pressed="certificateType === type.value"
-							@click="selectCertificateType(type.value)"
-						>
-							<span
-								class="grid size-7 shrink-0 place-items-center overflow-hidden rounded bg-surface-white"
-							>
-								<img :src="type.logo" :alt="type.label" class="size-5" />
-							</span>
-							<span class="truncate text-p-sm font-medium text-ink-gray-8">
-								{{ type.label }}
-							</span>
-						</button>
-					</div>
-				</div>
+			<EmailInput
+				:model-value="userEmail"
+				@update:model-value="setUserEmail"
+				ref="emailInputRef"
+				class="mt-4"
+				label="User Email"
+				:show-error="submitted"
+				required-message="User email is required."
+			/>
 
-				<EmailInput
-					:model-value="userEmail"
-					@update:model-value="setUserEmail"
-					ref="emailInputRef"
-					class="mt-4"
-					label="User Email"
-					:show-error="submitted"
-					required-message="User email is required."
-				/>
+			<ErrorMessage v-if="submitError" class="mt-4" :message="submitError" />
 
-				<ErrorMessage v-if="submitError" class="mt-4" :message="submitError" />
-
-				<Button
-					variant="solid"
-					class="mt-6 w-full"
-					label="Send verification email"
-					:loading="submitting"
-					@click="handleSubmit"
-				/>
-			</form>
-		</template>
+			<Button
+				variant="solid"
+				class="mt-6 w-full"
+				label="Send verification email"
+				:loading="submitting"
+				@click="handleSubmit"
+			/>
+		</form>
 	</Dialog>
 </template>

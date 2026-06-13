@@ -1,67 +1,63 @@
 <template>
 	<Dialog
-		:options="{
-			title: `Edit ${dependency.title}`,
-			actions: [
+		:title="`Edit ${dependency.title}`"
+		:actions="[
 				{
 					label: 'Update',
 					variant: 'solid',
 					loading: groupDocResource?.updateDependency?.loading,
 					onClick: updateDependency,
 				},
-			],
-		}"
+			]"
 		v-model="showDialog"
 	>
-		<template #body-content>
-			<div class="space-y-4">
-				<!-- Custom dependency version -->
-				<div v-if="useCustomVersion">
-					<FormControl
-						type="data"
-						:label="`Custom ${dependency.title}`"
-						placeholder="Please enter a custom version"
-						description="Please ensure entered version of this dependency exists before setting it"
-						v-model="customVersion"
-					/>
-				</div>
-
-				<!-- Non custom version -->
+		<div class="space-y-4">
+			<!-- Custom dependency version -->
+			<div v-if="useCustomVersion">
 				<FormControl
-					v-else
-					type="select"
-					:disabled="useCustomVersion"
-					:label="dependency.title"
-					placeholder="Please select a version"
-					:options="dependencyOptions"
-					v-model="selectedDependencyVersion"
-				/>
-
-				<!-- Use Custom Version Checkbox -->
-				<div class="flex items-center gap-2">
-					<FormControl
-						type="checkbox"
-						label="Use Custom Version"
-						v-model="useCustomVersion"
-					/>
-					<Tooltip text="View documentation">
-						<a
-							class="no-underline"
-							target="_blank"
-							href="https://docs.frappe.io/cloud/benches/editing-bench-dependency-version#setting-a-custom-version"
-							><FeatherIcon
-								name="help-circle"
-								class="h-3 w-3 text-ink-gray-7"
-							></FeatherIcon></a
-						>
-					</Tooltip>
-				</div>
-
-				<ErrorMessage
-					:message="groupDocResource?.updateDependency?.error || error"
+					type="data"
+					:label="`Custom ${dependency.title}`"
+					placeholder="Please enter a custom version"
+					description="Please ensure entered version of this dependency exists before setting it"
+					v-model="customVersion"
 				/>
 			</div>
-		</template>
+
+			<!-- Non custom version -->
+			<FormControl
+				v-else
+				type="select"
+				:disabled="useCustomVersion"
+				:label="dependency.title"
+				placeholder="Please select a version"
+				:options="dependencyOptions"
+				v-model="selectedDependencyVersion"
+			/>
+
+			<!-- Use Custom Version Checkbox -->
+			<div class="flex items-center gap-2">
+				<FormControl
+					type="checkbox"
+					label="Use Custom Version"
+					v-model="useCustomVersion"
+				/>
+				<Tooltip text="View documentation">
+					<a
+						class="no-underline"
+						target="_blank"
+						href="https://docs.frappe.io/cloud/benches/editing-bench-dependency-version#setting-a-custom-version"
+						><FeatherIcon
+							name="help-circle"
+							class="h-3 w-3 text-ink-gray-7"
+						></FeatherIcon></a
+					>
+				</Tooltip>
+			</div>
+
+			<ErrorMessage
+				:message="groupDocResource?.updateDependency?.error || error"
+			/>
+		</div>
 	</Dialog>
 </template>
 

@@ -1,43 +1,37 @@
 <template>
 	<Dialog
 		v-model="show"
-		:options="{
-			title: 'Authenticate to view 2FA recovery codes',
-		}"
+		title="Authenticate to view 2FA recovery codes"
 		@close="closeDialog"
 	>
-		<template #body-content>
-			<TFARecoveryCodes
-				v-if="recoveryCodes.length"
-				:recoveryCodes="recoveryCodes"
-				@close="closeDialog"
-				@reset="() => $resources.resetRecoveryCodes.submit()"
-				with-reset
+		<TFARecoveryCodes
+			v-if="recoveryCodes.length"
+			:recoveryCodes="recoveryCodes"
+			@close="closeDialog"
+			@reset="() => $resources.resetRecoveryCodes.submit()"
+			with-reset
+		/>
+		<div class="space-y-4" v-else>
+			<FormControl
+				label="Email"
+				type="email"
+				:modelValue="$team.doc.user"
+				name="email"
+				disabled
 			/>
-			<div class="space-y-4" v-else>
-				<FormControl
-					label="Email"
-					type="email"
-					:modelValue="$team.doc.user"
-					name="email"
-					disabled
-				/>
-				<FormControl
-					v-if="isOTPSent"
-					label="Verification Code"
-					type="text"
-					placeholder="123456"
-					v-model="verificationCode"
-					name="verificationCode"
-					autocomplete="one-time-code"
-					required
-				/>
-				<ErrorMessage
-					class="mt-2"
-					:message="$resources.getRecoveryCodes.error"
-				/>
-			</div>
-		</template>
+			<FormControl
+				v-if="isOTPSent"
+				label="Verification Code"
+				type="text"
+				placeholder="123456"
+				v-model="verificationCode"
+				name="verificationCode"
+				autocomplete="one-time-code"
+				required
+			/>
+			<ErrorMessage class="mt-2" :message="$resources.getRecoveryCodes.error" />
+		</div>
+
 		<template v-if="!recoveryCodes.length" #actions>
 			<Button
 				v-if="!isOTPSent"

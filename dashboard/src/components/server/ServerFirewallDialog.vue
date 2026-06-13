@@ -1,77 +1,73 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Add Firewall Rule',
-			size: 'lg',
-			icon: {
+		title="Add Firewall Rule"
+		size="lg"
+		:icon="{
 				name: 'shield',
 				appearance: 'info',
-			},
-			actions: [
+			}"
+		:actions="[
 				{
 					label: 'Submit',
 					variant: 'solid',
 					onClick: onSubmit,
 				},
-			],
-		}"
+			]"
 		:model-value="modelValue"
 		@update:model-value="$emit('update:modelValue', $event)"
 		@close="onClose"
 	>
-		<template #body-content>
-			<div class="space-y-4">
-				<FormControl
-					v-model="values.source"
-					label="Source"
-					placeholder="1.2.3.4"
-					type="text"
-					size="sm"
-					variant="subtle"
-				/>
-				<FormControl
-					v-model="values.port"
-					label="Port"
-					type="text"
-					size="sm"
-					variant="subtle"
-				/>
-				<FormControl
-					v-model="values.protocol"
-					label="Protocol"
-					type="select"
-					:options="[
-						{
-							label: 'TCP',
-							value: 'TCP',
-						},
-						{
-							label: 'UDP',
-							value: 'UDP',
-						},
-					]"
-					size="sm"
-					variant="subtle"
-				/>
-				<FormControl
-					v-model="values.action"
-					label="Action"
-					type="select"
-					:options="[
-						{
-							label: 'Deny',
-							value: 'Deny',
-						},
-						{
-							label: 'Allow',
-							value: 'Allow',
-						},
-					]"
-					size="sm"
-					variant="subtle"
-				/>
-			</div>
-		</template>
+		<div class="space-y-4">
+			<FormControl
+				v-model="values.source"
+				label="Source"
+				placeholder="1.2.3.4"
+				type="text"
+				size="sm"
+				variant="subtle"
+			/>
+			<FormControl
+				v-model="values.port"
+				label="Port"
+				type="text"
+				size="sm"
+				variant="subtle"
+			/>
+			<FormControl
+				v-model="values.protocol"
+				label="Protocol"
+				type="select"
+				:options="[
+					{
+						label: 'TCP',
+						value: 'TCP',
+					},
+					{
+						label: 'UDP',
+						value: 'UDP',
+					},
+				]"
+				size="sm"
+				variant="subtle"
+			/>
+			<FormControl
+				v-model="values.action"
+				label="Action"
+				type="select"
+				:options="[
+					{
+						label: 'Deny',
+						value: 'Deny',
+					},
+					{
+						label: 'Allow',
+						value: 'Allow',
+					},
+				]"
+				size="sm"
+				variant="subtle"
+			/>
+		</div>
 	</Dialog>
 </template>
 

@@ -16,16 +16,14 @@
 
 		<Dialog
 			v-model="showSetupDialog"
-			:options="{ title: 'Setup UPI Autopay' }"
+			title="Setup UPI Autopay"
 			:class="{ 'razorpay-active': razorpayOpen }"
 		>
-			<template #body-content>
-				<UPIAutopayForm
-					v-if="showSetupDialog"
-					@success="onAutopaySuccess"
-					@initiate="handleInitiate"
-				/>
-			</template>
+			<UPIAutopayForm
+				v-if="showSetupDialog"
+				@success="onAutopaySuccess"
+				@initiate="handleInitiate"
+			/>
 		</Dialog>
 		<UPIAutopayForm
 			v-if="razorpayProcessing"

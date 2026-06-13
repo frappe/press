@@ -1,12 +1,6 @@
 <template>
-	<Dialog
-		:options="{
-			title: 'SSH Access',
-			size: 'xl',
-		}"
-		v-model="show"
-	>
-		<template #body-content v-if="$bench.doc">
+	<Dialog title="SSH Access" size="xl" v-model="show">
+		<template v-if="$bench.doc">
 			<div v-if="certificate" class="space-y-3 [&_pre]:text-ink-gray-6 -mt-3">
 				<template v-if="isWindows">
 					<p class="text-base">Step 1: Set the encoding to UTF-8</p>

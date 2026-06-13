@@ -1,39 +1,34 @@
 <template>
-	<Dialog v-model="showDialog" :options="{ title }">
-		<template #body-content>
+	<Dialog v-model="showDialog" :title="title">
+		<div class="space-y-4">
+			<p class="text-p-base text-ink-gray-8" v-if="message" v-html="message" />
 			<div class="space-y-4">
-				<p
-					class="text-p-base text-ink-gray-8"
-					v-if="message"
-					v-html="message"
-				/>
-				<div class="space-y-4">
-					<template v-for="field in fields" :key="field.fieldname">
-						<LinkControl
-							v-if="field.type == 'link'"
-							v-bind="field"
-							v-model="values[field.fieldname]"
-							v-show="
-								typeof field.condition === 'function'
-									? field.condition(this.values)
-									: true
-							"
-						/>
-						<FormControl
-							v-else
-							v-bind="field"
-							v-model="values[field.fieldname]"
-							v-show="
-								typeof field.condition === 'function'
-									? field.condition(this.values)
-									: true
-							"
-						/>
-					</template>
-				</div>
+				<template v-for="field in fields" :key="field.fieldname">
+					<LinkControl
+						v-if="field.type == 'link'"
+						v-bind="field"
+						v-model="values[field.fieldname]"
+						v-show="
+							typeof field.condition === 'function'
+								? field.condition(this.values)
+								: true
+						"
+					/>
+					<FormControl
+						v-else
+						v-bind="field"
+						v-model="values[field.fieldname]"
+						v-show="
+							typeof field.condition === 'function'
+								? field.condition(this.values)
+								: true
+						"
+					/>
+				</template>
 			</div>
-			<ErrorMessage class="mt-2" :message="error" />
-		</template>
+		</div>
+		<ErrorMessage class="mt-2" :message="error" />
+
 		<template #actions>
 			<Button class="w-full" v-bind="primaryActionProps" />
 		</template>

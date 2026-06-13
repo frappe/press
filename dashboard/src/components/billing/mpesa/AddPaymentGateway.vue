@@ -1,73 +1,71 @@
 <template>
-	<Dialog :options="{ title: 'Add Payment Gateway', size: 'lg' }">
-		<template #body-content>
-			<div class="flex flex-col gap-4">
+	<Dialog title="Add Payment Gateway" size="lg">
+		<div class="flex flex-col gap-4">
+			<FormControl
+				label="Gateway Name"
+				v-model="paymentGatewayDetails.gateway_name"
+				name="gateway_name"
+				type="text"
+				placeholder="Enter Gateway Name"
+			/>
+			<FormControl
+				label="Endpoint URL"
+				v-model="paymentGatewayDetails.url"
+				name="url"
+				type="text"
+				placeholder="https://xyz.com/api/method/<endpoint>"
+			/>
+			<div class="flex gap-4">
 				<FormControl
-					label="Gateway Name"
-					v-model="paymentGatewayDetails.gateway_name"
-					name="gateway_name"
+					label="API Key"
+					v-model="paymentGatewayDetails.api_key"
+					name="api_key"
 					type="text"
-					placeholder="Enter Gateway Name"
+					placeholder="Enter API Key"
 				/>
-				<FormControl
-					label="Endpoint URL"
-					v-model="paymentGatewayDetails.url"
-					name="url"
-					type="text"
-					placeholder="https://xyz.com/api/method/<endpoint>"
-				/>
-				<div class="flex gap-4">
-					<FormControl
-						label="API Key"
-						v-model="paymentGatewayDetails.api_key"
-						name="api_key"
-						type="text"
-						placeholder="Enter API Key"
-					/>
 
-					<FormControl
-						label="API Secret"
-						v-model="paymentGatewayDetails.api_secret"
-						name="api_secret"
-						type="text"
-						placeholder="Enter API Secret"
-					/>
-				</div>
-
-				<div class="flex gap-4">
-					<FormControl
-						label="Currency"
-						v-model="paymentGatewayDetails.currency"
-						name="currency"
-						type="text"
-						placeholder="e.g KES"
-					/>
-					<FormControl
-						label="Taxes and Charges(%)"
-						v-model="paymentGatewayDetails.taxes_and_charges"
-						name="taxes_and_charges"
-						type="text"
-						placeholder="Enter Taxes and Charges"
-					/>
-				</div>
 				<FormControl
-					label="Print Format"
-					v-model="paymentGatewayDetails.print_format"
-					name="print_format"
+					label="API Secret"
+					v-model="paymentGatewayDetails.api_secret"
+					name="api_secret"
 					type="text"
-					placeholder="Default"
+					placeholder="Enter API Secret"
 				/>
 			</div>
 
-			<div class="mt-4 flex w-full bg-red-300 items-center justify-center">
-				<Button
-					@click="savePaymentGateway"
-					variant="solid"
-					class="justify-center w-full font-bold"
-					>Save</Button
-				>
+			<div class="flex gap-4">
+				<FormControl
+					label="Currency"
+					v-model="paymentGatewayDetails.currency"
+					name="currency"
+					type="text"
+					placeholder="e.g KES"
+				/>
+				<FormControl
+					label="Taxes and Charges(%)"
+					v-model="paymentGatewayDetails.taxes_and_charges"
+					name="taxes_and_charges"
+					type="text"
+					placeholder="Enter Taxes and Charges"
+				/>
 			</div>
-		</template>
+			<FormControl
+				label="Print Format"
+				v-model="paymentGatewayDetails.print_format"
+				name="print_format"
+				type="text"
+				placeholder="Default"
+			/>
+		</div>
+
+		<div class="mt-4 flex w-full bg-red-300 items-center justify-center">
+			<Button
+				@click="savePaymentGateway"
+				variant="solid"
+				class="justify-center w-full font-bold"
+				>Save</Button
+			>
+		</div>
 	</Dialog>
 </template>
 

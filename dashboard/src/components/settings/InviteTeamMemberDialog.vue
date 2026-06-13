@@ -1,29 +1,25 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Invite User',
-			actions: [
+		title="Invite User"
+		:actions="[
 				{
 					label: 'Invite Member',
 					variant: 'solid',
 					onClick: inviteMember,
 				},
-			],
-		}"
+			]"
 		v-model="show"
 	>
-		<template #body-content>
-			<div class="space-y-4">
-				<FormControl label="Email" v-model="email" />
-				<FormControl
-					v-if="roleOptions.length > 0"
-					type="select"
-					label="Role *"
-					:options="roleOptions"
-					v-model="selectedRole"
-				/>
-			</div>
-		</template>
+		<div class="space-y-4">
+			<FormControl label="Email" v-model="email" />
+			<FormControl
+				v-if="roleOptions.length > 0"
+				type="select"
+				label="Role *"
+				:options="roleOptions"
+				v-model="selectedRole"
+			/>
+		</div>
 	</Dialog>
 </template>
 

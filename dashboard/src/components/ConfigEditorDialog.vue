@@ -1,81 +1,77 @@
 <template>
 	<Dialog
-		:options="{
-			title: config ? 'Edit Config' : 'Add Config',
-			actions: [
+		:title="config ? 'Edit Config' : 'Add Config'"
+		:actions="[
 				{
 					label: config ? 'Edit Key' : 'Add Key',
 					variant: 'solid',
 					loading: docResource?.updateConfig?.loading,
 					onClick: addConfig,
 				},
-			],
-		}"
+			]"
 		v-model="showDialog"
 	>
-		<template v-slot:body-content>
-			<div class="space-y-4">
-				<div :class="{ 'pointer-events-none': config }">
-					<FormControl
-						type="combobox"
-						label="Config Name"
-						:options="keyOptions"
-						:modelValue="selectedConfig?.value"
-						@update:modelValue="
-							selectedConfig = keyOptions.find(
-								(option) => option.value === $event,
-							)
-						"
-					/>
-					<div
-						v-if="
-							selectedConfig &&
-							selectedConfig.value !== '__custom_key' &&
-							selectedConfig.detail
-						"
-						class="text-sm text-ink-gray-5 mt-2 ml-1"
-					>
-						{{ selectedConfig.detail }}
-					</div>
-				</div>
+		<div class="space-y-4">
+			<div :class="{ 'pointer-events-none': config }">
 				<FormControl
-					type="text"
-					label="Key"
-					:modelValue="
-						selectedConfig?.value === '__custom_key'
-							? key
-							: selectedConfig?.value
-					"
+					type="combobox"
+					label="Config Name"
+					:options="keyOptions"
+					:modelValue="selectedConfig?.value"
 					@update:modelValue="
-						selectedConfig?.value === '__custom_key' ? (key = $event) : null
+						selectedConfig = keyOptions.find(
+							(option) => option.value === $event,
+						)
 					"
-					:disabled="selectedConfig?.value !== '__custom_key'"
-					autocomplete="off"
 				/>
-				<FormControl
-					type="select"
-					label="Type"
-					:modelValue="selectedConfig?.type || type"
-					@update:modelValue="type = $event"
-					:options="[
-						'String',
-						'Number',
-						'JSON',
-						'Boolean',
-						selectedConfig?.value !== '__custom_key' ? 'Password' : null,
-					]"
-					:disabled="selectedConfig?.value !== '__custom_key'"
-					autocomplete="off"
-				/>
-				<FormControl
-					v-bind="valueInputProps"
-					label="Value"
-					v-model="value"
-					autocomplete="off"
-				/>
-				<ErrorMessage class="mt-2" :message="error" />
+				<div
+					v-if="
+						selectedConfig &&
+						selectedConfig.value !== '__custom_key' &&
+						selectedConfig.detail
+					"
+					class="text-sm text-ink-gray-5 mt-2 ml-1"
+				>
+					{{ selectedConfig.detail }}
+				</div>
 			</div>
-		</template>
+			<FormControl
+				type="text"
+				label="Key"
+				:modelValue="
+					selectedConfig?.value === '__custom_key'
+						? key
+						: selectedConfig?.value
+				"
+				@update:modelValue="
+					selectedConfig?.value === '__custom_key' ? (key = $event) : null
+				"
+				:disabled="selectedConfig?.value !== '__custom_key'"
+				autocomplete="off"
+			/>
+			<FormControl
+				type="select"
+				label="Type"
+				:modelValue="selectedConfig?.type || type"
+				@update:modelValue="type = $event"
+				:options="[
+					'String',
+					'Number',
+					'JSON',
+					'Boolean',
+					selectedConfig?.value !== '__custom_key' ? 'Password' : null,
+				]"
+				:disabled="selectedConfig?.value !== '__custom_key'"
+				autocomplete="off"
+			/>
+			<FormControl
+				v-bind="valueInputProps"
+				label="Value"
+				v-model="value"
+				autocomplete="off"
+			/>
+			<ErrorMessage class="mt-2" :message="error" />
+		</div>
 	</Dialog>
 </template>
 <script>

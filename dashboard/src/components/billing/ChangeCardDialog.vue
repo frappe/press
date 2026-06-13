@@ -2,59 +2,58 @@
 	<div>
 		<Dialog
 			v-model="show"
-			:options="{ title: 'Choose active card' }"
-			:disableOutsideClickToClose="confirmDialogOpened"
+			title="Choose active card"
+			:dismissible="!(confirmDialogOpened)"
 		>
-			<template #body-content>
-				<div v-if="cards.data?.length" class="flex flex-col gap-2.5">
-					<div
-						v-for="card in cards.data"
-						:key="card.name"
-						class="flex justify-between gap-2 rounded p-2.5 text-base text-ink-gray-9 hover:bg-surface-gray-2"
-					>
-						<div class="flex gap-2">
-							<component :is="cardBrandIcon(card.brand)" class="my-auto" />
-							<div>
-								<div class="flex h-7 items-center gap-1 font-medium">
-									<div>{{ card.name_on_card }}</div>
-									<div>&middot;</div>
-									<div class="flex gap-1 text-ink-gray-7">
-										<div>Card ending in ••••</div>
-										<div>{{ card.last_4 }}</div>
-									</div>
-									<Badge
-										v-if="card.is_default"
-										class="ml-1.5"
-										label="Default"
-										variant="outline"
-										theme="green"
-									/>
+			<div v-if="cards.data?.length" class="flex flex-col gap-2.5">
+				<div
+					v-for="card in cards.data"
+					:key="card.name"
+					class="flex justify-between gap-2 rounded p-2.5 text-base text-ink-gray-9 hover:bg-surface-gray-2"
+				>
+					<div class="flex gap-2">
+						<component :is="cardBrandIcon(card.brand)" class="my-auto" />
+						<div>
+							<div class="flex h-7 items-center gap-1 font-medium">
+								<div>{{ card.name_on_card }}</div>
+								<div>&middot;</div>
+								<div class="flex gap-1 text-ink-gray-7">
+									<div>Card ending in ••••</div>
+									<div>{{ card.last_4 }}</div>
 								</div>
-								<div class="text-ink-gray-6">
-									Expiry
-									{{ card.expiry_month < 10
-											? `0${card.expiry_month}`
-											: card.expiry_month }}/{{ card.expiry_year }}
-								</div>
+								<Badge
+									v-if="card.is_default"
+									class="ml-1.5"
+									label="Default"
+									variant="outline"
+									theme="green"
+								/>
+							</div>
+							<div class="text-ink-gray-6">
+								Expiry
+								{{ card.expiry_month < 10
+										? `0${card.expiry_month}`
+										: card.expiry_month }}/{{ card.expiry_year }}
 							</div>
 						</div>
-						<div v-if="cards.data.length > 1 && !card.is_default">
-							<Dropdown
-								:options="[
-									{
-										label: 'Set as default',
-										onClick: () => setAsDefault(card.name),
-										condition: () => !card.is_default,
-									},
-									{ label: 'Remove', onClick: () => removeCard(card.name) },
-								]"
-							>
-								<Button icon="more-horizontal" variant="ghost" />
-							</Dropdown>
-						</div>
+					</div>
+					<div v-if="cards.data.length > 1 && !card.is_default">
+						<Dropdown
+							:options="[
+								{
+									label: 'Set as default',
+									onClick: () => setAsDefault(card.name),
+									condition: () => !card.is_default,
+								},
+								{ label: 'Remove', onClick: () => removeCard(card.name) },
+							]"
+						>
+							<Button icon="more-horizontal" variant="ghost" />
+						</Dropdown>
 					</div>
 				</div>
-			</template>
+			</div>
+
 			<template #actions>
 				<Button
 					label="Add new card"

@@ -16,45 +16,43 @@
 				]"
 				:logo="saasProduct?.logo"
 			>
-				<template v-slot:default>
-					<form
-						class="flex flex-col"
-						@submit.prevent="$resources.verifyCode.submit"
+				<form
+					class="flex flex-col"
+					@submit.prevent="$resources.verifyCode.submit"
+				>
+					<FormControl
+						label="Verification Code"
+						type="text"
+						variant="outline"
+						placeholder="5 digit verification code"
+						maxlength="5"
+						v-model="code"
+						required
+					/>
+					<ErrorMessage class="mt-2" :message="$resources.verifyCode.error" />
+					<Button
+						class="mt-8"
+						variant="solid"
+						:loading="
+							$resources.verifyCode?.loading ||
+							$resources.setupAccount?.loading
+						"
+						loading-text="Verifying..."
+						type="submit"
 					>
-						<FormControl
-							label="Verification Code"
-							type="text"
-							variant="outline"
-							placeholder="5 digit verification code"
-							maxlength="5"
-							v-model="code"
-							required
-						/>
-						<ErrorMessage class="mt-2" :message="$resources.verifyCode.error" />
-						<Button
-							class="mt-8"
-							variant="solid"
-							:loading="
-								$resources.verifyCode?.loading ||
-								$resources.setupAccount?.loading
-							"
-							loading-text="Verifying..."
-							type="submit"
-						>
-							Verify
-						</Button>
-						<Button
-							class="mt-2"
-							variant="outline"
-							type="button"
-							loading-text="Resending mail..."
-							:loading="$resources.resendOTP?.loading"
-							@click="$resources.resendOTP.submit()"
-						>
-							Didn't get email? Resend
-						</Button>
-					</form>
-				</template>
+						Verify
+					</Button>
+					<Button
+						class="mt-2"
+						variant="outline"
+						type="button"
+						loading-text="Resending mail..."
+						:loading="$resources.resendOTP?.loading"
+						@click="$resources.resendOTP.submit()"
+					>
+						Didn't get email? Resend
+					</Button>
+				</form>
 			</SaaSLoginBox>
 		</div>
 	</div>

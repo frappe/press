@@ -1,70 +1,66 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Monitoring & Alerts are Disabled',
-			size: '2xl',
-		}"
+		title="Monitoring & Alerts are Disabled"
+		size="2xl"
 		v-model="showDialog"
 	>
-		<template #body-content>
+		<div
+			v-if="$resources.siteResource.loading"
+			class="flex w-full items-center justify-center gap-2 py-20 text-ink-gray-7"
+		>
+			<Spinner class="w-4" />
+			Loading data...
+		</div>
+		<div v-else-if="siteDoc?.is_monitoring_disabled" class="w-full">
+			<p class="mb-2 text-ink-gray-8 text-base font-medium">
+				Cause of disabling monitoring :
+			</p>
 			<div
-				v-if="$resources.siteResource.loading"
-				class="flex w-full items-center justify-center gap-2 py-20 text-ink-gray-7"
+				class="rounded border bg-surface-gray-1 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-ful"
 			>
-				<Spinner class="w-4" />
-				Loading data...
+				{{ siteDoc.reason_for_disabling_monitoring || 'Unknown Reason' }}
 			</div>
-			<div v-else-if="siteDoc?.is_monitoring_disabled" class="w-full">
-				<p class="mb-2 text-ink-gray-8 text-base font-medium">
-					Cause of disabling monitoring :
+
+			<!-- Result -->
+			<div
+				v-if="enabledMonitoring === false"
+				class="flex flex-col gap-2 mt-4 w-full"
+			>
+				<AlertBanner
+					type="error"
+					:showIcon="true"
+					title="Failed to enable monitoring"
+				/>
+				<p class="mt-1 text-ink-gray-8 text-base font-medium">Reason -</p>
+				<div
+					class="rounded border bg-surface-gray-1 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-full"
+					style="line-height: inherit"
+				>
+					{{ reasonForFailureInEnablingMonitoring }}
+				</div>
+				<p class="mt-1 text-ink-gray-8 text-base font-medium">
+					Possible Solution -
 				</p>
 				<div
-					class="rounded border bg-surface-gray-1 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-ful"
+					class="rounded border bg-surface-gray-1 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-full"
+					style="line-height: inherit"
 				>
-					{{ siteDoc.reason_for_disabling_monitoring || 'Unknown Reason' }}
+					{{ solutionToResolveIssue }}
 				</div>
-
-				<!-- Result -->
-				<div
-					v-if="enabledMonitoring === false"
-					class="flex flex-col gap-2 mt-4 w-full"
-				>
-					<AlertBanner
-						type="error"
-						:showIcon="true"
-						title="Failed to enable monitoring"
-					/>
-					<p class="mt-1 text-ink-gray-8 text-base font-medium">Reason -</p>
-					<div
-						class="rounded border bg-surface-gray-1 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-full"
-						style="line-height: inherit"
-					>
-						{{ reasonForFailureInEnablingMonitoring }}
-					</div>
-					<p class="mt-1 text-ink-gray-8 text-base font-medium">
-						Possible Solution -
-					</p>
-					<div
-						class="rounded border bg-surface-gray-1 p-2 text-base font-normalprose prose-sm space-y-2 whitespace-break-spaces w-full"
-						style="line-height: inherit"
-					>
-						{{ solutionToResolveIssue }}
-					</div>
-				</div>
-
-				<Button
-					variant="solid"
-					class="w-full mt-4"
-					:loading="$resources.enableMonitoring?.loading"
-					@click="$resources.enableMonitoring?.submit"
-				>
-					Check & Enable Monitoring
-				</Button>
 			</div>
-			<div v-else>
-				Monitoring is enabled already. No action is required from your end.
-			</div>
-		</template>
+
+			<Button
+				variant="solid"
+				class="w-full mt-4"
+				:loading="$resources.enableMonitoring?.loading"
+				@click="$resources.enableMonitoring?.submit"
+			>
+				Check & Enable Monitoring
+			</Button>
+		</div>
+		<div v-else>
+			Monitoring is enabled already. No action is required from your end.
+		</div>
 	</Dialog>
 </template>
 <script>

@@ -1,52 +1,46 @@
 <template>
 	<div>
-		<Dialog
-			:show="show"
-			v-model="show"
-			:options="{ title: 'Apply for Certification' }"
-		>
-			<template #body-content>
-				<div v-if="!showMessage">
-					<p class="pb-3 text-p-base">
-						Enter the details to apply for a certificate.
-					</p>
-					<FormControl
-						class="py-2"
-						name="certificate_type"
-						type="select"
-						:options="courseTypes"
-						label="Certificate Type"
-						v-model="certificateType"
-					/>
-					<FormControl
-						class="pt-2"
-						name="member_name"
-						type="select"
-						:options="memberList"
-						label="Member Name"
-						v-model="userName"
-					/>
+		<Dialog :show="show" v-model="show" title="Apply for Certification">
+			<div v-if="!showMessage">
+				<p class="pb-3 text-p-base">
+					Enter the details to apply for a certificate.
+				</p>
+				<FormControl
+					class="py-2"
+					name="certificate_type"
+					type="select"
+					:options="courseTypes"
+					label="Certificate Type"
+					v-model="certificateType"
+				/>
+				<FormControl
+					class="pt-2"
+					name="member_name"
+					type="select"
+					:options="memberList"
+					label="Member Name"
+					v-model="userName"
+				/>
 
-					<div class="pt-4 pb-3">
-						<Button
-							class="w-full"
-							variant="solid"
-							label="Apply for Certificate"
-							@click="handleApplyForCertificate()"
-						/>
-					</div>
-					<ErrorMessage :message="errorMessage" />
+				<div class="pt-4 pb-3">
+					<Button
+						class="w-full"
+						variant="solid"
+						label="Apply for Certificate"
+						@click="handleApplyForCertificate()"
+					/>
 				</div>
-				<div v-else>
-					<p class="text-p-base">
-						You have used both of your free certifications. Please navigate to
-						<a :href="batch_link" target="_blank" class="underline">
-							this batch
-						</a>
-						and complete the billing process to enroll in the paid batch.
-					</p>
-				</div>
-			</template>
+				<ErrorMessage :message="errorMessage" />
+			</div>
+			<div v-else>
+				<p class="text-p-base">
+					You have used both of your free certifications. Please navigate to
+					<a :href="batch_link" target="_blank" class="underline">
+						this batch
+					</a>
+					and complete the billing process to enroll in the paid batch.
+				</p>
+			</div>
 		</Dialog>
 	</div>
 </template>

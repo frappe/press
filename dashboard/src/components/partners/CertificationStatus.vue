@@ -3,12 +3,10 @@
 		<Dialog
 			:show="show"
 			v-model="show"
-			:options="{ title: 'Certification Request Status' }"
+			title="Certification Request Status"
 			size="xl"
 		>
-			<template #body-content>
-				<ObjectList :options="requestList"></ObjectList>
-			</template>
+			<ObjectList :options="requestList"></ObjectList>
 		</Dialog>
 	</div>
 </template>

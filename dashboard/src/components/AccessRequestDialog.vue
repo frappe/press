@@ -1,9 +1,8 @@
 <template>
 	<Dialog
 		v-model="open"
-		:options="{
-			title: 'Access Request',
-			actions: [
+		title="Access Request"
+		:actions="[
 				{
 					label: 'Cancel',
 					variant: 'outline',
@@ -14,47 +13,44 @@
 					variant: 'solid',
 					onClick: () => request.submit(),
 				},
-			],
-		}"
+			]"
 	>
-		<template #body-content>
-			<div class="space-y-4 text-base">
-				<p>Are you sure you want to request access to this resource?</p>
-				<div class="space-y-2">
-					<p><span class="font-medium">Type:</span> {{ props.doctype }}</p>
-					<p><span class="font-medium">Resource:</span> {{ props.docname }}</p>
-				</div>
-				<Textarea
-					size="sm"
-					placeholder="Why do you need access?"
-					v-model="reason"
-				/>
-				<div
-					v-if="
-						Object.values(permissionsMeta).find(
-							(permission) => permission.enabled,
-						)
-					"
-					class="space-y-2"
-				>
-					<p class="font-medium">Permissions:</p>
-					<div class="grid grid-cols-2 gap-2">
-						<template v-for="(permission, key) in permissionsMeta" :key="key">
-							<Checkbox
-								v-if="permission.enabled"
-								:model-value="permissionsState[key]"
-								:label="permission.label"
-								@update:model-value="
-									(value: boolean) => {
-										permissionsState[key] = value;
-									}
-								"
-							/>
-						</template>
-					</div>
+		<div class="space-y-4 text-base">
+			<p>Are you sure you want to request access to this resource?</p>
+			<div class="space-y-2">
+				<p><span class="font-medium">Type:</span> {{ props.doctype }}</p>
+				<p><span class="font-medium">Resource:</span> {{ props.docname }}</p>
+			</div>
+			<Textarea
+				size="sm"
+				placeholder="Why do you need access?"
+				v-model="reason"
+			/>
+			<div
+				v-if="
+					Object.values(permissionsMeta).find(
+						(permission) => permission.enabled,
+					)
+				"
+				class="space-y-2"
+			>
+				<p class="font-medium">Permissions:</p>
+				<div class="grid grid-cols-2 gap-2">
+					<template v-for="(permission, key) in permissionsMeta" :key="key">
+						<Checkbox
+							v-if="permission.enabled"
+							:model-value="permissionsState[key]"
+							:label="permission.label"
+							@update:model-value="
+								(value: boolean) => {
+									permissionsState[key] = value;
+								}
+							"
+						/>
+					</template>
 				</div>
 			</div>
-		</template>
+		</div>
 	</Dialog>
 </template>
 

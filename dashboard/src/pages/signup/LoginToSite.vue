@@ -17,20 +17,18 @@
 						/>
 					</div>
 				</template>
-				<template v-slot:default>
-					<div class="flex h-40 flex-col justify-center">
-						<div class="text-base leading-5 text-ink-gray-8">
-							<p>It looks like something went wrong!</p>
-							<p class="">
-								Contact
-								<a href="mailto:support@frappe.io" class="underline">
-									support@frappe.io
-								</a>
-								to resolve the issue
-							</p>
-						</div>
+				<div class="flex h-40 flex-col justify-center">
+					<div class="text-base leading-5 text-ink-gray-8">
+						<p>It looks like something went wrong!</p>
+						<p class="">
+							Contact
+							<a href="mailto:support@frappe.io" class="underline">
+								support@frappe.io
+							</a>
+							to resolve the issue
+						</p>
 					</div>
-				</template>
+				</div>
 			</LoginBox>
 			<LoginBox
 				v-else
@@ -48,21 +46,19 @@
 						/>
 					</div>
 				</template>
-				<template v-slot:default>
-					<div class="flex mt-12 flex-col items-center justify-center">
-						<Progress
-							size="lg"
-							:value="progressCount"
-							:label="currentBuildStep"
-						/>
-						<div
-							class="flex w-full items-center space-x-2 pt-4 text-sm text-ink-gray-6"
-						>
-							<lucide-info class="h-4 w-4" />
-							<span>{{ currentHelpText }}</span>
-						</div>
+				<div class="flex mt-12 flex-col items-center justify-center">
+					<Progress
+						size="lg"
+						:value="progressCount"
+						:label="currentBuildStep"
+					/>
+					<div
+						class="flex w-full items-center space-x-2 pt-4 text-sm text-ink-gray-6"
+					>
+						<lucide-info class="h-4 w-4" />
+						<span>{{ currentHelpText }}</span>
 					</div>
-				</template>
+				</div>
 			</LoginBox>
 		</div>
 	</div>

@@ -120,75 +120,69 @@
 		<Dialog
 			:show="showPartnerContributionDialog"
 			v-model="showPartnerContributionDialog"
-			:options="{ size: '5xl', title: 'Contributions of this month' }"
+			size="5xl"
+			title="Contributions of this month"
 		>
-			<template #body-content>
-				<PartnerContribution :partnerEmail="team.doc.partner_email" />
-			</template>
+			<PartnerContribution :partnerEmail="team.doc.partner_email" />
 		</Dialog>
 
 		<Dialog
 			:show="showRenewalErrorDialog"
 			v-model="showRenewalErrorDialog"
-			:options="{
-				title: 'Renewal Eligibility',
-			}"
+			title="Renewal Eligibility"
 		>
-			<template #body-content>
-				<p
-					class="text-base leading-relaxed align-center tracking-wide text-ink-gray-7"
+			<p
+				class="text-base leading-relaxed align-center tracking-wide text-ink-gray-7"
+			>
+				<LucideAlertTriangle class="inline h-4 w-4 text-red-500" />
+				You do not meet the Partnership renewal criteria.
+			</p>
+			<div class="flex my-4 gap-4">
+				<div
+					class="flex-1 justify-center text-left p-5 rounded-md bg-surface-gray-1"
 				>
-					<LucideAlertTriangle class="inline h-4 w-4 text-red-500" />
-					You do not meet the Partnership renewal criteria.
-				</p>
-				<div class="flex my-4 gap-4">
-					<div
-						class="flex-1 justify-center text-left p-5 rounded-md bg-surface-gray-1"
-					>
-						<div class="flex flex-col gap-2">
-							<p>
-								<span class="font-semibold text-3xl"
-									>{{ formatCurrency(mrr) }}</span
-								><span class="text-base text-ink-gray-6">
-									/
-									{{ formatCurrency(team.doc.currency === 'USD' ? 100 : 10000) }}</span
-								>
-							</p>
-							<div class="font-normal text-ink-gray-7 tracking-wide">MRR</div>
-						</div>
+					<div class="flex flex-col gap-2">
+						<p>
+							<span class="font-semibold text-3xl"
+								>{{ formatCurrency(mrr) }}</span
+							><span class="text-base text-ink-gray-6">
+								/
+								{{ formatCurrency(team.doc.currency === 'USD' ? 100 : 10000) }}</span
+							>
+						</p>
+						<div class="font-normal text-ink-gray-7 tracking-wide">MRR</div>
 					</div>
-					<div
-						class="flex-1 justify-center text-left p-5 rounded-md bg-surface-gray-1"
-					>
-						<div class="flex flex-col gap-2">
-							<p>
-								<span class="font-semibold text-3xl"
-									>{{ partnerDetails.data?.custom_number_of_certified_members || 0 }}</span
-								><span class="text-base text-ink-gray-6"> / 2</span>
-							</p>
-							<div class="font-normal text-ink-gray-7 tracking-wide">
-								Certifications
-							</div>
+				</div>
+				<div
+					class="flex-1 justify-center text-left p-5 rounded-md bg-surface-gray-1"
+				>
+					<div class="flex flex-col gap-2">
+						<p>
+							<span class="font-semibold text-3xl"
+								>{{ partnerDetails.data?.custom_number_of_certified_members || 0 }}</span
+							><span class="text-base text-ink-gray-6"> / 2</span>
+						</p>
+						<div class="font-normal text-ink-gray-7 tracking-wide">
+							Certifications
 						</div>
 					</div>
 				</div>
-				<Button
-					class="w-full"
-					label="Contact Support"
-					variant="outline"
-					size="md"
-					icon-right="external-link"
-					@click="openSupport"
-				/>
-			</template>
+			</div>
+			<Button
+				class="w-full"
+				label="Contact Support"
+				variant="outline"
+				size="md"
+				icon-right="external-link"
+				@click="openSupport"
+			/>
 		</Dialog>
 
 		<Dialog
 			:show="showRenewalConfirmationDialog"
 			v-model="showRenewalConfirmationDialog"
-			:options="{
-				title: 'Renewal Confirmation',
-				actions: [
+			title="Renewal Confirmation"
+			:actions="[
 					{
 						label: 'I Agree',
 						variant: 'solid',
@@ -200,21 +194,18 @@
 							});
 						},
 					},
-				],
-			}"
+				]"
 		>
-			<template #body-content>
-				<p class="text-base leading-6 text-ink-gray-7">
-					By clicking "I Agree", you confirm that you have read and accepted the
-					terms and conditions of the
-					<a
-						href="https://frappe.io/partners/terms"
-						target="_blank"
-						class="underline"
-						><strong>Frappe Partnership Agreement</strong></a
-					>.
-				</p>
-			</template>
+			<p class="text-base leading-6 text-ink-gray-7">
+				By clicking "I Agree", you confirm that you have read and accepted the
+				terms and conditions of the
+				<a
+					href="https://frappe.io/partners/terms"
+					target="_blank"
+					class="underline"
+					><strong>Frappe Partnership Agreement</strong></a
+				>.
+			</p>
 		</Dialog>
 	</div>
 </template>

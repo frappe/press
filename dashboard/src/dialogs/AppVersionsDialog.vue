@@ -1,72 +1,64 @@
 <template>
-	<Dialog
-		:options="{
-			title: 'App Versions',
-			size: '2xl',
-		}"
-		v-model="show"
-	>
-		<template #body-content>
-			<div
-				v-if="$resources?.showAppVersions?.loading"
-				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
-			>
-				<Spinner class="w-4" />
-				Fetching app versions ...
-			</div>
-			<div
-				v-else-if="$resources?.showAppVersions?.error"
-				class="flex h-80 w-full items-center justify-center text-red-600"
-			>
-				Failed to fetch app versions
-			</div>
-			<ListView
-				v-else
-				class="h-80"
-				:columns="columns"
-				:rows="formattedRows"
-				:options="{
-					resizeColumn: true,
-					selectable: false,
-					onRowClick: handleRowClick,
-				}"
-				row-key="name"
-			>
-				<ListHeader>
-					<ListHeaderItem
-						v-for="column in columns"
-						:key="column.key"
-						:item="column"
-					/>
-				</ListHeader>
-				<ListRows>
-					<ListRow v-for="(row, i) in formattedRows" :row="row" :key="row.name">
-						<template v-slot="{ column, item }">
-							<div class="truncate text-base" :class="column.class">
-								<template v-if="column.class === 'font-mono'">
-									<Badge :label="item" />
-								</template>
+	<Dialog title="App Versions" size="2xl" v-model="show">
+		<div
+			v-if="$resources?.showAppVersions?.loading"
+			class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
+		>
+			<Spinner class="w-4" />
+			Fetching app versions ...
+		</div>
+		<div
+			v-else-if="$resources?.showAppVersions?.error"
+			class="flex h-80 w-full items-center justify-center text-red-600"
+		>
+			Failed to fetch app versions
+		</div>
+		<ListView
+			v-else
+			class="h-80"
+			:columns="columns"
+			:rows="formattedRows"
+			:options="{
+				resizeColumn: true,
+				selectable: false,
+				onRowClick: handleRowClick,
+			}"
+			row-key="name"
+		>
+			<ListHeader>
+				<ListHeaderItem
+					v-for="column in columns"
+					:key="column.key"
+					:item="column"
+				/>
+			</ListHeader>
+			<ListRows>
+				<ListRow v-for="(row, i) in formattedRows" :row="row" :key="row.name">
+					<template v-slot="{ column, item }">
+						<div class="truncate text-base" :class="column.class">
+							<template v-if="column.class === 'font-mono'">
+								<Badge :label="item" />
+							</template>
 
-								<template v-else> {{ item }} </template>
-							</div>
-						</template>
-					</ListRow>
-				</ListRows>
-			</ListView>
-			<Button
-				v-if="
-					!['Draft', 'Preparing', 'Running', 'Pending'].includes(status) &&
-					!$resources?.redeployBuild?.loading && !isPipeline
-				"
-				variant="solid"
-				iconLeft=""
-				theme="gray"
-				@click="onRedeploy()"
-				class="mt-4 w-full rounded"
-			>
-				Redeploy
-			</Button>
-		</template>
+							<template v-else> {{ item }} </template>
+						</div>
+					</template>
+				</ListRow>
+			</ListRows>
+		</ListView>
+		<Button
+			v-if="
+				!['Draft', 'Preparing', 'Running', 'Pending'].includes(status) &&
+				!$resources?.redeployBuild?.loading && !isPipeline
+			"
+			variant="solid"
+			iconLeft=""
+			theme="gray"
+			@click="onRedeploy()"
+			class="mt-4 w-full rounded"
+		>
+			Redeploy
+		</Button>
 	</Dialog>
 </template>
 

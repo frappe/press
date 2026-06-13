@@ -1,53 +1,48 @@
 <template>
-	<Dialog
-		v-model="showRestoreDialog"
-		:disableOutsideClickToClose="true"
-		:options="{ title: 'Restore' }"
-	>
-		<template v-slot:body-content>
-			<div class="space-y-4">
-				<p class="text-base">Restore your site using a previous backup.</p>
-				<div
-					class="flex items-center rounded border border-outline-gray-1 bg-surface-gray-2 p-4 text-sm text-ink-gray-6"
-				>
-					<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
-					<div>
-						This will overwrite all <b>data</b> & <b>apps</b> in your site with
-						those from the backup
-					</div>
+	<Dialog v-model="showRestoreDialog" :dismissible="false" title="Restore">
+		<div class="space-y-4">
+			<p class="text-base">Restore your site using a previous backup.</p>
+			<div
+				class="flex items-center rounded border border-outline-gray-1 bg-surface-gray-2 p-4 text-sm text-ink-gray-6"
+			>
+				<lucide-alert-triangle class="mr-4 inline-block h-6 w-6" />
+				<div>
+					This will overwrite all <b>data</b> & <b>apps</b> in your site with
+					those from the backup
 				</div>
-				<BackupFilesUploader
-					ref="backupFilesUploader"
-					v-model:backupFiles="selectedFiles"
-					:site="this.site"
-					:disableUploadButton="this.uploadingFiles"
-					:onError="
-						(errorMessage) => {
-							this.errorMessageFromUploader = errorMessage;
-							this.uploadingFiles = false;
-						}
-					"
-					@uploadComplete="(files) => startRestore(files)"
-					@abortUpload="(e) => failureHandler(e)"
-				/>
 			</div>
-			<div class="mt-3">
-				<!-- Skip Failing Checkbox -->
-				<input
-					id="skip-failing"
-					type="checkbox"
-					class="h-4 w-4 rounded border-outline-gray-2 text-blue-600 focus:ring-blue-500"
-					v-model="skipFailingPatches"
-				/>
-				<label for="skip-failing" class="ml-2 text-sm text-ink-gray-9">
-					Skip failing patches (if any patch fails)
-				</label>
-			</div>
-			<ErrorMessage
-				class="mt-2"
-				:message="$resources.restoreBackup.error || errorMessageFromUploader"
+			<BackupFilesUploader
+				ref="backupFilesUploader"
+				v-model:backupFiles="selectedFiles"
+				:site="this.site"
+				:disableUploadButton="this.uploadingFiles"
+				:onError="
+					(errorMessage) => {
+						this.errorMessageFromUploader = errorMessage;
+						this.uploadingFiles = false;
+					}
+				"
+				@uploadComplete="(files) => startRestore(files)"
+				@abortUpload="(e) => failureHandler(e)"
 			/>
-		</template>
+		</div>
+		<div class="mt-3">
+			<!-- Skip Failing Checkbox -->
+			<input
+				id="skip-failing"
+				type="checkbox"
+				class="h-4 w-4 rounded border-outline-gray-2 text-blue-600 focus:ring-blue-500"
+				v-model="skipFailingPatches"
+			/>
+			<label for="skip-failing" class="ml-2 text-sm text-ink-gray-9">
+				Skip failing patches (if any patch fails)
+			</label>
+		</div>
+		<ErrorMessage
+			class="mt-2"
+			:message="$resources.restoreBackup.error || errorMessageFromUploader"
+		/>
+
 		<template v-slot:actions>
 			<Button
 				class="w-full"

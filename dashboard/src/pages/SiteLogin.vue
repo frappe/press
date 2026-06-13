@@ -1,110 +1,83 @@
 <template>
 	<div class="h-screen overflow-hidden">
 		<LoginBox title="Log in to your site on Frappe Cloud" :subtitle="subtitle">
-			<template v-slot:default>
-				<div>
-					<div v-if="sitePrePicked">
-						<div v-if="loginError">
-							<div class="flex items-center justify-center space-x-2 text-base">
-								<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
-								<p>
-									Something went wrong while attempting to log in to your site
-								</p>
-							</div>
-							<div class="mx-4 mt-4 space-x-4">
-								<Button
-									label="Try again"
-									icon-left="refresh-cw"
-									:loading="login.loading"
-									@click="loginToSite(pickedSite)"
-								/>
-								<Button
-									label="View your sites"
-									icon-left="list"
-									:route="{
-										name: 'Site Login',
-									}"
-								/>
-							</div>
+			<div>
+				<div v-if="sitePrePicked">
+					<div v-if="loginError">
+						<div class="flex items-center justify-center space-x-2 text-base">
+							<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
+							<p>
+								Something went wrong while attempting to log in to your site
+							</p>
 						</div>
-						<div
-							v-else-if="isPickedSiteValid"
-							class="mt-8 flex flex-col items-center justify-center space-x-2 text-base"
-						>
-							<div class="flex items-center justify-center space-x-2 text-base">
-								<FeatherIcon name="alert-circle" class="mr-2 h-4 w-4" />
-								<div>
-									<p>You are about to log in to your site</p>
-									<span class="font-semibold">{{ pickedSiteDomain }}</span>
-								</div>
-							</div>
-							<div class="mx-4 mt-8 space-x-4">
-								<Button
-									label="Log in"
-									icon-left="log-in"
-									variant="solid"
-									:loading="login.loading"
-									@click="loginToSite(pickedSite)"
-								/>
-							</div>
+						<div class="mx-4 mt-4 space-x-4">
+							<Button
+								label="Try again"
+								icon-left="refresh-cw"
+								:loading="login.loading"
+								@click="loginToSite(pickedSite)"
+							/>
+							<Button
+								label="View your sites"
+								icon-left="list"
+								:route="{
+									name: 'Site Login',
+								}"
+							/>
 						</div>
 					</div>
 					<div
-						v-else-if="
-							$session.loading || isCookieValid.loading || sites.loading
-						"
-						class="mx-auto flex items-center justify-center space-x-2 text-base"
+						v-else-if="isPickedSiteValid"
+						class="mt-8 flex flex-col items-center justify-center space-x-2 text-base"
 					>
-						<LoadingText />
-					</div>
-					<form v-else-if="!sites.fetched">
-						<FormControl
-							label="Email"
-							type="email"
-							class="w-full"
-							:class="{
-								'pointer-events-none': showOTPField,
-							}"
-							v-model="email"
-							placeholder="johndoe@mail.com"
-						/>
-						<FormControl
-							v-if="showOTPField"
-							label="Verification Code"
-							v-model="otp"
-							placeholder="123456"
-							class="mt-2"
-						/>
-						<div v-if="showOTPField">
-							<Button
-								label="Verify"
-								:disabled="otp.length !== 6"
-								:loading="
-									sites.loading ||
-									sendOTPMethod.loading ||
-									verifyOTPMethod.loading
-								"
-								variant="solid"
-								class="mt-4 w-full"
-								@click="verifyOTP"
-							/>
-							<Button
-								variant="outline"
-								class="mt-2 w-full"
-								:disabled="otpResendCountdown > 0"
-								@click="sendOTP()"
-								:loading="sendOTPMethod.loading"
-							>
-								Resend verification code
-								{{ otpResendCountdown > 0
-										? `in ${otpResendCountdown} seconds`
-										: '' }}
-							</Button>
+						<div class="flex items-center justify-center space-x-2 text-base">
+							<FeatherIcon name="alert-circle" class="mr-2 h-4 w-4" />
+							<div>
+								<p>You are about to log in to your site</p>
+								<span class="font-semibold">{{ pickedSiteDomain }}</span>
+							</div>
 						</div>
+						<div class="mx-4 mt-8 space-x-4">
+							<Button
+								label="Log in"
+								icon-left="log-in"
+								variant="solid"
+								:loading="login.loading"
+								@click="loginToSite(pickedSite)"
+							/>
+						</div>
+					</div>
+				</div>
+				<div
+					v-else-if="
+						$session.loading || isCookieValid.loading || sites.loading
+					"
+					class="mx-auto flex items-center justify-center space-x-2 text-base"
+				>
+					<LoadingText />
+				</div>
+				<form v-else-if="!sites.fetched">
+					<FormControl
+						label="Email"
+						type="email"
+						class="w-full"
+						:class="{
+							'pointer-events-none': showOTPField,
+						}"
+						v-model="email"
+						placeholder="johndoe@mail.com"
+					/>
+					<FormControl
+						v-if="showOTPField"
+						label="Verification Code"
+						v-model="otp"
+						placeholder="123456"
+						class="mt-2"
+					/>
+					<div v-if="showOTPField">
 						<Button
-							v-else
-							label="Submit"
-							:disabled="email.length === 0"
+							label="Verify"
+							:disabled="otp.length !== 6"
 							:loading="
 								sites.loading ||
 								sendOTPMethod.loading ||
@@ -112,73 +85,98 @@
 							"
 							variant="solid"
 							class="mt-4 w-full"
-							@click="sendOTP"
+							@click="verifyOTP"
 						/>
-					</form>
-					<div v-else-if="pickedSite">
-						<div
-							class="mt-8 flex items-center justify-center space-x-2 text-base"
+						<Button
+							variant="outline"
+							class="mt-2 w-full"
+							:disabled="otpResendCountdown > 0"
+							@click="sendOTP()"
+							:loading="sendOTPMethod.loading"
 						>
-							<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
-							<div class="flex flex-col gap-2">
-								<p>
-									{{ email || session.user }}
-									is not a user of the site
-									<span class="font-semibold">{{ pickedSite }}</span>
-								</p>
-							</div>
-						</div>
-						<div class="mt-8 flex w-full justify-center space-x-4">
-							<Button
-								label="View your sites"
-								icon-left="list"
-								@click="
-									() => {
-										$router.push({
-											name: 'Site Login',
-										});
-									}
-								"
-							/>
-						</div>
+							Resend verification code
+							{{ otpResendCountdown > 0
+									? `in ${otpResendCountdown} seconds`
+									: '' }}
+						</Button>
 					</div>
-					<div v-else class="mt-10">
-						<div v-if="sites.data.length === 0">
-							<div class="text-center text-base leading-6 text-ink-gray-7">
-								<div>No sites found for {{ email }}</div>
-								<Link :to="{ name: 'Signup' }">Sign up</Link> to create a new
-								site
-							</div>
-						</div>
-						<div class="space-y-2" v-else>
-							<div
-								v-for="site in sites.data"
-								:key="site.name"
-								class="flex items-center justify-between rounded-md px-3 py-2 hover:cursor-pointer hover:bg-surface-gray-2"
-								@click="loginToSite(site.name)"
-							>
-								<div
-									class="flex min-h-[40px] w-full items-center justify-between"
-								>
-									<div class="space-y-2">
-										<div class="text-base text-ink-gray-8">
-											{{ site.host_name || site.name }}
-										</div>
-									</div>
-									<FeatherIcon name="external-link" class="h-4 w-4" />
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<ErrorMessage
-						class="mt-4"
-						:message="
-							sites.error || sendOTPMethod.error || verifyOTPMethod.error
+					<Button
+						v-else
+						label="Submit"
+						:disabled="email.length === 0"
+						:loading="
+							sites.loading ||
+							sendOTPMethod.loading ||
+							verifyOTPMethod.loading
 						"
+						variant="solid"
+						class="mt-4 w-full"
+						@click="sendOTP"
 					/>
+				</form>
+				<div v-else-if="pickedSite">
+					<div
+						class="mt-8 flex items-center justify-center space-x-2 text-base"
+					>
+						<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
+						<div class="flex flex-col gap-2">
+							<p>
+								{{ email || session.user }}
+								is not a user of the site
+								<span class="font-semibold">{{ pickedSite }}</span>
+							</p>
+						</div>
+					</div>
+					<div class="mt-8 flex w-full justify-center space-x-4">
+						<Button
+							label="View your sites"
+							icon-left="list"
+							@click="
+								() => {
+									$router.push({
+										name: 'Site Login',
+									});
+								}
+							"
+						/>
+					</div>
 				</div>
-			</template>
+				<div v-else class="mt-10">
+					<div v-if="sites.data.length === 0">
+						<div class="text-center text-base leading-6 text-ink-gray-7">
+							<div>No sites found for {{ email }}</div>
+							<Link :to="{ name: 'Signup' }">Sign up</Link> to create a new site
+						</div>
+					</div>
+					<div class="space-y-2" v-else>
+						<div
+							v-for="site in sites.data"
+							:key="site.name"
+							class="flex items-center justify-between rounded-md px-3 py-2 hover:cursor-pointer hover:bg-surface-gray-2"
+							@click="loginToSite(site.name)"
+						>
+							<div
+								class="flex min-h-[40px] w-full items-center justify-between"
+							>
+								<div class="space-y-2">
+									<div class="text-base text-ink-gray-8">
+										{{ site.host_name || site.name }}
+									</div>
+								</div>
+								<FeatherIcon name="external-link" class="h-4 w-4" />
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<ErrorMessage
+					class="mt-4"
+					:message="
+						sites.error || sendOTPMethod.error || verifyOTPMethod.error
+					"
+				/>
+			</div>
+
 			<template v-slot:footer>
 				<div class="flex w-full flex-col px-4 justify-center pb-8">
 					<div v-if="sites.fetched">

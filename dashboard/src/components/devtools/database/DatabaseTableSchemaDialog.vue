@@ -1,58 +1,51 @@
 <template>
-	<Dialog
-		:options="{
-			title: 'Browse Schema',
-			size: '2xl',
-		}"
-	>
-		<template #body-content>
-			<p class="mb-2 text-sm text-ink-gray-7">Select Table</p>
-			<div class="flex flex-row gap-2">
-				<FormControl
-					class="w-full"
-					type="combobox"
-					:options="autocompleteOptions"
-					:modelValue="selectedSchema?.value"
-					@update:modelValue="
-						selectedSchema = autocompleteOptions.find(
-							(option) => option.value === $event,
-						)
-					"
-				/>
-				<Button
-					icon="copy"
-					@click="copyTableNameToClipboard"
-					v-if="selectedSchema"
-				/>
-			</div>
-			<div
-				class="mt-3 flex flex-row gap-2"
-				v-if="selectedSchema && showSQLActions"
+	<Dialog title="Browse Schema" size="2xl">
+		<p class="mb-2 text-sm text-ink-gray-7">Select Table</p>
+		<div class="flex flex-row gap-2">
+			<FormControl
+				class="w-full"
+				type="combobox"
+				:options="autocompleteOptions"
+				:modelValue="selectedSchema?.value"
+				@update:modelValue="
+					selectedSchema = autocompleteOptions.find(
+						(option) => option.value === $event,
+					)
+				"
+			/>
+			<Button
+				icon="copy"
+				@click="copyTableNameToClipboard"
+				v-if="selectedSchema"
+			/>
+		</div>
+		<div
+			class="mt-3 flex flex-row gap-2"
+			v-if="selectedSchema && showSQLActions"
+		>
+			<Button
+				iconLeft="play"
+				class="grow"
+				variant="outline"
+				@click="viewTop100Rows"
+				>View Top 100 Rows</Button
 			>
-				<Button
-					iconLeft="play"
-					class="grow"
-					variant="outline"
-					@click="viewTop100Rows"
-					>View Top 100 Rows</Button
-				>
-				<Button
-					iconLeft="play"
-					class="grow"
-					variant="outline"
-					@click="viewLast100Rows"
-					>View Last 100 Rows</Button
-				>
-				<Button
-					iconLeft="play"
-					class="grow"
-					variant="outline"
-					@click="viewAllRows"
-					>View All Rows</Button
-				>
-			</div>
-			<ObjectList :options="listOptions" v-if="selectedSchema" />
-		</template>
+			<Button
+				iconLeft="play"
+				class="grow"
+				variant="outline"
+				@click="viewLast100Rows"
+				>View Last 100 Rows</Button
+			>
+			<Button
+				iconLeft="play"
+				class="grow"
+				variant="outline"
+				@click="viewAllRows"
+				>View All Rows</Button
+			>
+		</div>
+		<ObjectList :options="listOptions" v-if="selectedSchema" />
 	</Dialog>
 </template>
 <script>

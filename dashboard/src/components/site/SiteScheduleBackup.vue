@@ -1,61 +1,57 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Schedule Backup',
-			actions: [
+		title="Schedule Backup"
+		:actions="[
 				{
 					label: 'Schedule Backup',
 					loading: this.site?.backup?.loading,
 					variant: 'solid',
 					onClick: scheduleBackup,
 				},
-			],
-		}"
+			]"
 		v-model="show"
 		@close="resetValues"
 	>
-		<template #body-content>
-			<div class="flex flex-col gap-3">
-				<p
-					class="text-md text-base text-ink-gray-8"
-					v-if="!this.$site?.doc?.allow_physical_backup_by_user"
-				>
-					Are you sure you want to backup your site ?
-				</p>
+		<div class="flex flex-col gap-3">
+			<p
+				class="text-md text-base text-ink-gray-8"
+				v-if="!this.$site?.doc?.allow_physical_backup_by_user"
+			>
+				Are you sure you want to backup your site ?
+			</p>
+			<AlertBanner
+				v-if="this.$site?.doc?.allow_physical_backup_by_user"
+				title="Backup can cause some downtime on your site. It depends on the size of your database."
+				type="info"
+				:showIcon="false"
+			> </AlertBanner>
+			<div v-if="this.$site?.doc?.allow_physical_backup_by_user">
+				<FormControl
+					variant="outline"
+					type="checkbox"
+					label="Physical Backup"
+					v-model="isPhysical"
+				> </FormControl>
+			</div>
+
+			<div v-if="this.$site?.doc?.allow_physical_backup_by_user">
+				<FormControl
+					variant="outline"
+					type="checkbox"
+					label="Backup Public & Private Files"
+					v-model="includeFiles"
+					:disabled="isPhysical"
+				> </FormControl>
+
 				<AlertBanner
-					v-if="this.$site?.doc?.allow_physical_backup_by_user"
-					title="Backup can cause some downtime on your site. It depends on the size of your database."
-					type="info"
+					v-if="isPhysical"
+					class="mt-2"
+					title="Physical Backup can't backup your site's private and public files currently."
+					type="warning"
 					:showIcon="false"
 				> </AlertBanner>
-				<div v-if="this.$site?.doc?.allow_physical_backup_by_user">
-					<FormControl
-						variant="outline"
-						type="checkbox"
-						label="Physical Backup"
-						v-model="isPhysical"
-					> </FormControl>
-				</div>
-
-				<div v-if="this.$site?.doc?.allow_physical_backup_by_user">
-					<FormControl
-						variant="outline"
-						type="checkbox"
-						label="Backup Public & Private Files"
-						v-model="includeFiles"
-						:disabled="isPhysical"
-					> </FormControl>
-
-					<AlertBanner
-						v-if="isPhysical"
-						class="mt-2"
-						title="Physical Backup can't backup your site's private and public files currently."
-						type="warning"
-						:showIcon="false"
-					> </AlertBanner>
-				</div>
 			</div>
-		</template>
+		</div>
 	</Dialog>
 </template>
 

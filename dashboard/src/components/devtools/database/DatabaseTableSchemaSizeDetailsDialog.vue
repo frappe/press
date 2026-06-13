@@ -1,13 +1,6 @@
 <template>
-	<Dialog
-		:options="{
-			title: 'Table Size',
-			size: '7xl',
-		}"
-	>
-		<template #body-content>
-			<ObjectList :options="listOptions" />
-		</template>
+	<Dialog title="Table Size" size="7xl">
+		<ObjectList :options="listOptions" />
 	</Dialog>
 </template>
 <script>

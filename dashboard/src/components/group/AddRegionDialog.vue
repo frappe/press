@@ -1,9 +1,8 @@
 <template>
 	<Dialog
 		v-model="showDialog"
-		:options="{
-			title: 'Add Region',
-			actions: [
+		title="Add Region"
+		:actions="[
 				{
 					label: 'Add Region',
 					variant: 'solid',
@@ -22,32 +21,29 @@
 							},
 						),
 				},
-			],
-		}"
+			]"
 	>
-		<template #body-content>
-			<div class="space-y-4">
-				<FormControl
-					type="combobox"
-					label="Choose Region"
-					:options="regionOptions"
-					:modelValue="selectedRegion?.value"
-					@update:modelValue="
-						selectedRegion = regionOptions.find(
-							(option) => option.value === $event,
-						)
-					"
-				>
-					<template #prefix>
-						<img :src="selectedRegion?.image" class="mr-2 h-4" />
-					</template>
-					<template #item-prefix="{ active, selected, option }">
-						<img v-if="option?.image" :src="option.image" class="mr-2 h-4" />
-					</template>
-				</FormControl>
-				<ErrorMessage :message="groupDocResource.addRegion.error" />
-			</div>
-		</template>
+		<div class="space-y-4">
+			<FormControl
+				type="combobox"
+				label="Choose Region"
+				:options="regionOptions"
+				:modelValue="selectedRegion?.value"
+				@update:modelValue="
+					selectedRegion = regionOptions.find(
+						(option) => option.value === $event,
+					)
+				"
+			>
+				<template #prefix>
+					<img :src="selectedRegion?.image" class="mr-2 h-4" />
+				</template>
+				<template #item-prefix="{ active, selected, option }">
+					<img v-if="option?.image" :src="option.image" class="mr-2 h-4" />
+				</template>
+			</FormControl>
+			<ErrorMessage :message="groupDocResource.addRegion.error" />
+		</div>
 	</Dialog>
 </template>
 

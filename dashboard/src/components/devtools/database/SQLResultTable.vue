@@ -160,18 +160,14 @@ const downloadCSV = async () => {
 <template>
 	<!-- Full Value -->
 	<Dialog
-		:options="{
-			title: fullViewDialogHeader,
-			size: '2xl',
-		}"
+		:title="fullViewDialogHeader" size="2xl"
 		v-model="showFullViewDialog"
 	>
-		<template #body-content>
-			<pre
-				class="mt-2 whitespace-pre-wrap rounded-lg border-2 border-outline-gray-1 bg-surface-gray-2 p-3 text-sm text-ink-gray-7"
-				>{{ fullViewDialogBody }}</pre
-			>
-		</template>
+		<pre
+			class="mt-2 whitespace-pre-wrap rounded-lg border-2 border-outline-gray-1 bg-surface-gray-2 p-3 text-sm text-ink-gray-7"
+			>{{ fullViewDialogBody }}</pre
+		>
+	
 	</Dialog>
 	<!-- Table -->
 	<div

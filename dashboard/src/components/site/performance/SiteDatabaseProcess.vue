@@ -1,46 +1,42 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Database Process',
-			size: 'xl',
-		}"
+		title="Database Process" size="xl"
 		v-model="show"
 		:modelValue="true"
 	>
-		<template #body-content>
-			<div class="flex flex-col gap-1">
-				<p class="ml-1 font-mono text-sm">Host: {{ host }}</p>
-				<p class="ml-1 font-mono text-sm">User: {{ user }}</p>
-				<p class="ml-1 font-mono text-sm" v-if="state">State: {{ state }}</p>
-				<p class="ml-1 font-mono text-sm" v-if="command">
-					Command: {{ command }}
-				</p>
+		<div class="flex flex-col gap-1">
+			<p class="ml-1 font-mono text-sm">Host: {{ host }}</p>
+			<p class="ml-1 font-mono text-sm">User: {{ user }}</p>
+			<p class="ml-1 font-mono text-sm" v-if="state">State: {{ state }}</p>
+			<p class="ml-1 font-mono text-sm" v-if="command">
+				Command: {{ command }}
+			</p>
 
-				<div v-if="query">
-					<p class="ml-1 font-mono text-sm">Query:</p>
-					<pre
-						class="mt-1 whitespace-pre-wrap rounded-lg border-2 border-outline-gray-1 bg-surface-gray-2 p-3 text-sm text-ink-gray-7"
-						>{{ query }}</pre
-					>
-				</div>
-				<ErrorMessage
-					class="mt-2"
-					:message="$resources.killDatabaseProcess.error"
-				/>
-				<div class="mt-2 flex text-sm">
-					<Button
-						variant="solid"
-						theme="red"
-						class="w-full"
-						@click="$resources.killDatabaseProcess.submit()"
-						:loading="$resources.killDatabaseProcess.loading"
-						loadingText="Killing Database Process"
-					>
-						Kill Database Process
-					</Button>
-				</div>
+			<div v-if="query">
+				<p class="ml-1 font-mono text-sm">Query:</p>
+				<pre
+					class="mt-1 whitespace-pre-wrap rounded-lg border-2 border-outline-gray-1 bg-surface-gray-2 p-3 text-sm text-ink-gray-7"
+					>{{ query }}</pre
+				>
 			</div>
-		</template>
+			<ErrorMessage
+				class="mt-2"
+				:message="$resources.killDatabaseProcess.error"
+			/>
+			<div class="mt-2 flex text-sm">
+				<Button
+					variant="solid"
+					theme="red"
+					class="w-full"
+					@click="$resources.killDatabaseProcess.submit()"
+					:loading="$resources.killDatabaseProcess.loading"
+					loadingText="Killing Database Process"
+				>
+					Kill Database Process
+				</Button>
+			</div>
+		</div>
+	
 	</Dialog>
 </template>
 

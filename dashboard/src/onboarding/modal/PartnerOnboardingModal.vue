@@ -81,10 +81,8 @@ const onContinue = () => {
 	<Dialog
 		v-model="open"
 		:disable-outside-click-to-close="true"
-		:options="{
-			size: '4xl',
-			title: 'Interested in partnering with us?',
-		}"
+		size="4xl"
+		title="Interested in partnering with us?"
 	>
 		<template #body>
 			<div class="flex min-h-[480px]">

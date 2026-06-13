@@ -1,6 +1,6 @@
 <template>
-	<Dialog :options="{ title: 'Switch Team' }" v-model="show">
-		<template #body-content v-if="$team?.doc">
+	<Dialog title="Switch Team" v-model="show">
+		<template v-if="$team?.doc">
 			<div class="rounded bg-surface-gray-2 px-3 py-2.5">
 				<div class="text-base text-ink-gray-9">
 					Signed in as

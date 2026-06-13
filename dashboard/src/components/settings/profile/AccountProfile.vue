@@ -112,31 +112,26 @@
 			</ListItem>
 		</div>
 		<Dialog
-			:options="{
-				title: 'Update Profile Information',
-				actions: [
+			title="Update Profile Information"
+			:actions="[
 					{
 						variant: 'solid',
 						label: 'Save Changes',
 						onClick: () => $resources.updateProfile.submit(),
 					},
-				],
-			}"
+				]"
 			v-model="showProfileEditDialog"
 		>
-			<template v-slot:body-content>
-				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<FormControl label="First Name" v-model="user.first_name" />
-					<FormControl label="Last Name" v-model="user.last_name" />
-				</div>
-				<ErrorMessage class="mt-4" :message="$resources.updateProfile.error" />
-			</template>
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+				<FormControl label="First Name" v-model="user.first_name" />
+				<FormControl label="Last Name" v-model="user.last_name" />
+			</div>
+			<ErrorMessage class="mt-4" :message="$resources.updateProfile.error" />
 		</Dialog>
 
 		<Dialog
-			:options="{
-				title: 'Disable Account',
-				actions: [
+			title="Disable Account"
+			:actions="[
 					{
 						label: 'Disable Account',
 						variant: 'solid',
@@ -144,59 +139,52 @@
 						loading: $resources.disableAccount.loading,
 						onClick: () => deactivateAccount(disableAccount2FACode),
 					},
-				],
-			}"
+				]"
 			v-model="showDisableAccountDialog"
 		>
-			<template v-slot:body-content>
-				<div class="prose text-base">
-					By confirming this action:
-					<ul>
-						<li>Your account will be disabled</li>
-						<li>
-							Your active sites will be suspended immediately and will be
-							deleted after a week.
-						</li>
-						<li>Your account billing will be stopped</li>
-					</ul>
-					You can log in later to enable your account. Do you want to continue?
-				</div>
-				<FormControl
-					v-if="user.is_2fa_enabled"
-					class="mt-4"
-					label="Enter your 2FA code to confirm"
-					v-model="disableAccount2FACode"
-				/>
-				<ErrorMessage class="mt-2" :message="$resources.disableAccount.error" />
-			</template>
+			<div class="prose text-base">
+				By confirming this action:
+				<ul>
+					<li>Your account will be disabled</li>
+					<li>
+						Your active sites will be suspended immediately and will be deleted
+						after a week.
+					</li>
+					<li>Your account billing will be stopped</li>
+				</ul>
+				You can log in later to enable your account. Do you want to continue?
+			</div>
+			<FormControl
+				v-if="user.is_2fa_enabled"
+				class="mt-4"
+				label="Enter your 2FA code to confirm"
+				v-model="disableAccount2FACode"
+			/>
+			<ErrorMessage class="mt-2" :message="$resources.disableAccount.error" />
 		</Dialog>
 
 		<Dialog
-			:options="{
-				title: 'Enable Account',
-				actions: [
+			title="Enable Account"
+			:actions="[
 					{
 						label: 'Enable Account',
 						variant: 'solid',
 						loading: $resources.enableAccount.loading,
 						onClick: () => $resources.enableAccount.submit(),
 					},
-				],
-			}"
+				]"
 			v-model="showEnableAccountDialog"
 		>
-			<template v-slot:body-content>
-				<div class="prose text-base">
-					By confirming this action:
-					<ul>
-						<li>Your account will be enabled</li>
-						<li>Your suspended sites will become active</li>
-						<li>Your account billing will be resumed</li>
-					</ul>
-					Do you want to continue?
-				</div>
-				<ErrorMessage class="mt-2" :message="$resources.enableAccount.error" />
-			</template>
+			<div class="prose text-base">
+				By confirming this action:
+				<ul>
+					<li>Your account will be enabled</li>
+					<li>Your suspended sites will become active</li>
+					<li>Your account billing will be resumed</li>
+				</ul>
+				Do you want to continue?
+			</div>
+			<ErrorMessage class="mt-2" :message="$resources.enableAccount.error" />
 		</Dialog>
 
 		<AddPrepaidCreditsDialog

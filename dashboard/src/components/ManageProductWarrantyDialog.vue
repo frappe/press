@@ -82,100 +82,92 @@ function onClickSave() {
 </script>
 
 <template>
-	<Dialog
-		:options="{
-			title: 'Manage Product Warranty',
-			size: 'xl',
-		}"
-		v-model="open"
-	>
-		<template #body-content>
-			<div class="flex flex-col gap-4 text-base">
-				<div class="flex w-full space-x-4">
-					<div class="flex flex-col flex-grow space-y-3">
-						<p class="font-semibold">Enable product warranty</p>
-						<p class="text-ink-gray-6 leading-normal">
-							Get support for issues with Frappe apps, not functional queries
-						</p>
-					</div>
-					<Switch
-						v-model="switchValue"
-						size="md"
-						class="px-4"
-						:disabled="nextChangeAvailableOn !== 'Available Now' || (site.doc?.dedicated_server_warranty_limit?.available <= 0 && !isSupportEnabled)"
-					/>
+	<Dialog title="Manage Product Warranty" size="xl" v-model="open">
+		<div class="flex flex-col gap-4 text-base">
+			<div class="flex w-full space-x-4">
+				<div class="flex flex-col flex-grow space-y-3">
+					<p class="font-semibold">Enable product warranty</p>
+					<p class="text-ink-gray-6 leading-normal">
+						Get support for issues with Frappe apps, not functional queries
+					</p>
 				</div>
+				<Switch
+					v-model="switchValue"
+					size="md"
+					class="px-4"
+					:disabled="nextChangeAvailableOn !== 'Available Now' || (site.doc?.dedicated_server_warranty_limit?.available <= 0 && !isSupportEnabled)"
+				/>
+			</div>
 
-				<hr />
+			<hr />
 
-				<div class="flex flex-col gap-2 w-full">
-					<div class="flex">
-						<p class="flex-grow text-ink-gray-6">
-							Warranty limit for this server
-						</p>
-						<p
-							v-if="!site.doc?.dedicated_server_warranty_limit?.total"
-							class="text-ink-gray-4 font-normal"
-						>
-							Not Applicable
-						</p>
-						<p
-							v-else-if="site.doc?.dedicated_server_warranty_limit?.available <= 0"
-							class="text-ink-red-4"
-						>
-							{{ site.doc?.dedicated_server_warranty_limit?.available < 0 ? "Exceeded" : "Reached" }}
-							({{ site.doc?.dedicated_server_warranty_limit?.consumed }}
-							/
-							{{ site.doc?.dedicated_server_warranty_limit?.total }}
-							sites)
-						</p>
-						<p v-else>
-							{{ site.doc?.dedicated_server_warranty_limit?.consumed }}
-							/
-							{{ site.doc?.dedicated_server_warranty_limit?.total }}
-							sites
-						</p>
-					</div>
-					<div class="flex">
-						<p class="flex-grow text-ink-gray-6">Next change available after</p>
-						<p
-							:class="
-								nextChangeAvailableOn === 'Available Now'
-									? 'text-ink-green-3 font-medium'
-									: ''
-							"
-						>
-							{{ nextChangeAvailableOn }}
-						</p>
-					</div>
-				</div>
-
-				<div class="flex w-full">
-					<a
-						class="flex-grow"
-						href="https://docs.frappe.io/cloud/getting-started/plans-pricing/change-product-warranty-for-dedicated-sites"
-						target="_blank"
+			<div class="flex flex-col gap-2 w-full">
+				<div class="flex">
+					<p class="flex-grow text-ink-gray-6">
+						Warranty limit for this server
+					</p>
+					<p
+						v-if="!site.doc?.dedicated_server_warranty_limit?.total"
+						class="text-ink-gray-4 font-normal"
 					>
-						<Button variant="ghost">
-							<template #prefix>
-								<LucideHelpCircle class="size-4" />
-							</template>
-							Learn More
-						</Button>
-					</a>
-
-					<div class="flex gap-3">
-						<Button @click="open = false">Cancel</Button>
-						<Button
-							:loading="site.setPlan.loading"
-							:disabled="disablePrimaryAction"
-							variant="solid"
-							@click="onClickSave"
-							>Save changes</Button
-						>
-					</div>
+						Not Applicable
+					</p>
+					<p
+						v-else-if="site.doc?.dedicated_server_warranty_limit?.available <= 0"
+						class="text-ink-red-4"
+					>
+						{{ site.doc?.dedicated_server_warranty_limit?.available < 0 ? "Exceeded" : "Reached" }}
+						({{ site.doc?.dedicated_server_warranty_limit?.consumed }}
+						/
+						{{ site.doc?.dedicated_server_warranty_limit?.total }}
+						sites)
+					</p>
+					<p v-else>
+						{{ site.doc?.dedicated_server_warranty_limit?.consumed }}
+						/
+						{{ site.doc?.dedicated_server_warranty_limit?.total }}
+						sites
+					</p>
+				</div>
+				<div class="flex">
+					<p class="flex-grow text-ink-gray-6">Next change available after</p>
+					<p
+						:class="
+							nextChangeAvailableOn === 'Available Now'
+								? 'text-ink-green-3 font-medium'
+								: ''
+						"
+					>
+						{{ nextChangeAvailableOn }}
+					</p>
 				</div>
 			</div>
-		</template>
+
+			<div class="flex w-full">
+				<a
+					class="flex-grow"
+					href="https://docs.frappe.io/cloud/getting-started/plans-pricing/change-product-warranty-for-dedicated-sites"
+					target="_blank"
+				>
+					<Button variant="ghost">
+						<template #prefix>
+							<LucideHelpCircle class="size-4" />
+						</template>
+						Learn More
+					</Button>
+				</a>
+
+				<div class="flex gap-3">
+					<Button @click="open = false">Cancel</Button>
+					<Button
+						:loading="site.setPlan.loading"
+						:disabled="disablePrimaryAction"
+						variant="solid"
+						@click="onClickSave"
+						>Save changes</Button
+					>
+				</div>
+			</div>
+		</div>
 	</Dialog>
 </template>

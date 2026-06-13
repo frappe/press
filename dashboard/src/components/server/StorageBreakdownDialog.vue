@@ -1,101 +1,93 @@
 <template>
-	<Dialog
-		:options="{
-			title: title,
-			size: '2xl',
-		}"
-		v-model="show"
-	>
-		<template #body-content>
-			<div
-				v-if="
-					$resources?.databaseServerStorageBreakdown?.loading ||
-					$resources?.applicationServerStorageBreakdown?.loading
-				"
-				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
-			>
-				<Spinner class="w-4" />
-				Analyzing ...
-			</div>
-			<div
-				v-else-if="
-					$resources?.databaseServerStorageBreakdown?.error ||
+	<Dialog :title="title" size="2xl" v-model="show">
+		<div
+			v-if="
+				$resources?.databaseServerStorageBreakdown?.loading ||
+				$resources?.applicationServerStorageBreakdown?.loading
+			"
+			class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
+		>
+			<Spinner class="w-4" />
+			Analyzing ...
+		</div>
+		<div
+			v-else-if="
+				$resources?.databaseServerStorageBreakdown?.error ||
+				$resources?.applicationServerStorageBreakdown?.error
+			"
+			class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
+		>
+			<ErrorMessage
+				:message="
+					$resources.databaseServerStorageBreakdown.error ||
 					$resources?.applicationServerStorageBreakdown?.error
 				"
-				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
-			>
-				<ErrorMessage
-					:message="
-						$resources.databaseServerStorageBreakdown.error ||
-						$resources?.applicationServerStorageBreakdown?.error
-					"
-				/>
-			</div>
-			<div v-else>
+			/>
+		</div>
+		<div v-else>
+			<StorageBreakupChart
+				:colorPalette="colorPalette"
+				:data="
+					serverType == 'Database Server'
+						? databaseStorageBreakdown
+						: applicationServerBreakDown
+				"
+				:keyFormatter="keyFormatter"
+				:valueFormatter="(key, value) => formatSizeInKB(value)"
+				:stickyKeys="['free', 'os']"
+				:hiddenKeysInSlider="['free']"
+				:isTree="serverType === 'Server'"
+			/>
+
+			<div v-if="serverType === 'Database Server' && noOfDatabases">
+				<div
+					v-if="noOfDatabases > 1"
+					class="my-3 flex flex-row items-center justify-between px-1.5"
+				>
+					<div class="flex flex-row items-center gap-1">
+						<p class="text-base font-semibold text-ink-gray-8">
+							Usage of
+							{{ noOfDatabases > topNDatabases && !showAllDatabases
+									? `Top ${topNDatabases} Databases`
+									: `${noOfDatabases} Databases` }}
+						</p>
+					</div>
+					<Button
+						variant="outline"
+						@click="showAllDatabases = !showAllDatabases"
+					>
+						{{ showAllDatabases ? 'Show Less' : 'Show All' }}
+					</Button>
+				</div>
 				<StorageBreakupChart
-					:colorPalette="colorPalette"
-					:data="
-						serverType == 'Database Server'
-							? databaseStorageBreakdown
-							: applicationServerBreakDown
-					"
+					:showSlider="false"
+					:data="dbStorageUsage"
 					:keyFormatter="keyFormatter"
 					:valueFormatter="(key, value) => formatSizeInKB(value)"
-					:stickyKeys="['free', 'os']"
-					:hiddenKeysInSlider="['free']"
-					:isTree="serverType === 'Server'"
+					:showTopN="
+						showAllDatabases
+							? noOfDatabases
+							: Math.min(noOfDatabases, topNDatabases)
+					"
 				/>
-
-				<div v-if="serverType === 'Database Server' && noOfDatabases">
-					<div
-						v-if="noOfDatabases > 1"
-						class="my-3 flex flex-row items-center justify-between px-1.5"
-					>
-						<div class="flex flex-row items-center gap-1">
-							<p class="text-base font-semibold text-ink-gray-8">
-								Usage of
-								{{ noOfDatabases > topNDatabases && !showAllDatabases
-										? `Top ${topNDatabases} Databases`
-										: `${noOfDatabases} Databases` }}
-							</p>
-						</div>
-						<Button
-							variant="outline"
-							@click="showAllDatabases = !showAllDatabases"
-						>
-							{{ showAllDatabases ? 'Show Less' : 'Show All' }}
-						</Button>
-					</div>
-					<StorageBreakupChart
-						:showSlider="false"
-						:data="dbStorageUsage"
-						:keyFormatter="keyFormatter"
-						:valueFormatter="(key, value) => formatSizeInKB(value)"
-						:showTopN="
-							showAllDatabases
-								? noOfDatabases
-								: Math.min(noOfDatabases, topNDatabases)
-						"
-					/>
-				</div>
-
-				<div v-if="serverType === 'Database Server'" class="mt-4">
-					<AlertBanner
-						title="Are you looking to purge binary logs or reduce retention to free up space ?"
-						type="info"
-						:showIcon="false"
-					>
-						<Button
-							class="ml-auto"
-							variant="outline"
-							link="https://docs.frappe.io/cloud/database-server-actions#view--purge-binlogs"
-						>
-							Docs
-						</Button>
-					</AlertBanner>
-				</div>
 			</div>
-		</template>
+
+			<div v-if="serverType === 'Database Server'" class="mt-4">
+				<AlertBanner
+					title="Are you looking to purge binary logs or reduce retention to free up space ?"
+					type="info"
+					:showIcon="false"
+				>
+					<Button
+						class="ml-auto"
+						variant="outline"
+						link="https://docs.frappe.io/cloud/database-server-actions#view--purge-binlogs"
+					>
+						Docs
+					</Button>
+				</AlertBanner>
+			</div>
+		</div>
 	</Dialog>
 </template>
 <script>

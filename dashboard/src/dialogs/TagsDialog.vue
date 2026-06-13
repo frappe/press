@@ -1,37 +1,35 @@
 <template>
-	<Dialog v-model="showDialog" :options="{ title: 'Add Tag' }">
-		<template #body-content>
-			<div class="space-y-2">
-				<FormControl
-					type="checkbox"
-					label="Create new tag"
-					v-model="showNewTagInput"
+	<Dialog v-model="showDialog" title="Add Tag">
+		<div class="space-y-2">
+			<FormControl
+				type="checkbox"
+				label="Create new tag"
+				v-model="showNewTagInput"
+			/>
+			<div class="flex items-center space-x-2">
+				<Combobox
+					v-if="!showNewTagInput"
+					v-model="selectedTag"
+					:options="tagOptions"
+					placeholder="Select an existing tag"
+					class="w-full"
+					open-on-focus
 				/>
-				<div class="flex items-center space-x-2">
-					<Combobox
-						v-if="!showNewTagInput"
-						v-model="selectedTag"
-						:options="tagOptions"
-						placeholder="Select an existing tag"
-						class="w-full"
-						open-on-focus
-					/>
-					<FormControl
-						v-else
-						v-model="selectedTag"
-						type="text"
-						placeholder="new-category"
-						class="w-full"
-					/>
-					<Button
-						label="Add"
-						icon-left="plus"
-						@click="addTag"
-						:disabled="!selectedTag"
-					/>
-				</div>
+				<FormControl
+					v-else
+					v-model="selectedTag"
+					type="text"
+					placeholder="new-category"
+					class="w-full"
+				/>
+				<Button
+					label="Add"
+					icon-left="plus"
+					@click="addTag"
+					:disabled="!selectedTag"
+				/>
 			</div>
-		</template>
+		</div>
 	</Dialog>
 </template>
 

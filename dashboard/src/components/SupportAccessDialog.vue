@@ -1,84 +1,76 @@
 <template>
-	<Dialog
-		v-model="open"
-		:options="{
-			title: 'Access Request',
-			actions,
-		}"
-	>
-		<template #body-content>
-			<div class="space-y-4 text-base">
+	<Dialog v-model="open" title="Access Request">
+		<div class="space-y-4 text-base">
+			<div
+				v-if="banner"
+				class="py-3 px-4 font-medium rounded border"
+				:class="{
+					'bg-green-50 border-green-200 text-green-800':
+						banner.type === 'success',
+					'bg-red-50 border-red-200 text-red-800': banner.type === 'error',
+					'bg-surface-gray-1 border-outline-gray-1 text-ink-gray-8':
+						banner.type === 'neutral',
+				}"
+			>
+				{{ banner.message }}
+			</div>
+			<p v-if="isReceived && isPending" class="leading-normal">
+				Do you want to accept or reject this access request?
+			</p>
+			<div class="rounded-sm border divide-y">
 				<div
-					v-if="banner"
-					class="py-3 px-4 font-medium rounded border"
-					:class="{
-						'bg-green-50 border-green-200 text-green-800':
-							banner.type === 'success',
-						'bg-red-50 border-red-200 text-red-800': banner.type === 'error',
-						'bg-surface-gray-1 border-outline-gray-1 text-ink-gray-8':
-							banner.type === 'neutral',
-					}"
+					v-for="resource in request.doc?.resources"
+					class="grid grid-cols-3 divide-x"
 				>
-					{{ banner.message }}
-				</div>
-				<p v-if="isReceived && isPending" class="leading-normal">
-					Do you want to accept or reject this access request?
-				</p>
-				<div class="rounded-sm border divide-y">
-					<div
-						v-for="resource in request.doc?.resources"
-						class="grid grid-cols-3 divide-x"
-					>
-						<div class="col-span-1 py-2 px-3 font-medium">
-							{{ resource.document_type }}
-						</div>
-						<div class="col-span-2 py-2 px-3">
-							<Link
-								:to="
-									resourceLink(resource.document_type, resource.document_name)
-								"
-								@click="
-									() =>
-										resourceLink(
-											resource.document_type,
-											resource.document_name,
-										) && (open = false)
-								"
-							>
-								{{ resource.document_name }}
-							</Link>
-						</div>
+					<div class="col-span-1 py-2 px-3 font-medium">
+						{{ resource.document_type }}
 					</div>
-				</div>
-				<div class="flex items-center gap-2">
-					<div>Valid For</div>
-					<div>
-						<Select
-							v-model="request.doc.allowed_for"
-							:options="validityOptions"
-							:disabled="!isPending"
-						/>
-					</div>
-				</div>
-				<div v-if="request.doc?.reason" class="space-y-2">
-					<p class="font-medium">Reason:</p>
-					<p class="leading-relaxed">{{ request.doc?.reason }}</p>
-				</div>
-				<div v-if="permissions.length" class="space-y-2">
-					<p class="font-medium">Permissions:</p>
-					<div class="flex flex-wrap gap-2">
-						<Badge
-							v-for="permission in permissions"
-							variant="outline"
-							:theme="permission.color"
-							size="lg"
+					<div class="col-span-2 py-2 px-3">
+						<Link
+							:to="
+								resourceLink(resource.document_type, resource.document_name)
+							"
+							@click="
+								() =>
+									resourceLink(
+										resource.document_type,
+										resource.document_name,
+									) && (open = false)
+							"
 						>
-							{{ permission.label }}
-						</Badge>
+							{{ resource.document_name }}
+						</Link>
 					</div>
 				</div>
 			</div>
-		</template>
+			<div class="flex items-center gap-2">
+				<div>Valid For</div>
+				<div>
+					<Select
+						v-model="request.doc.allowed_for"
+						:options="validityOptions"
+						:disabled="!isPending"
+					/>
+				</div>
+			</div>
+			<div v-if="request.doc?.reason" class="space-y-2">
+				<p class="font-medium">Reason:</p>
+				<p class="leading-relaxed">{{ request.doc?.reason }}</p>
+			</div>
+			<div v-if="permissions.length" class="space-y-2">
+				<p class="font-medium">Permissions:</p>
+				<div class="flex flex-wrap gap-2">
+					<Badge
+						v-for="permission in permissions"
+						variant="outline"
+						:theme="permission.color"
+						size="lg"
+					>
+						{{ permission.label }}
+					</Badge>
+				</div>
+			</div>
+		</div>
 	</Dialog>
 </template>
 

@@ -1,48 +1,40 @@
 <template>
-	<Dialog
-		:options="{
-			title: `Bench Logs - ${bench}`,
-			size: '6xl',
-		}"
-		v-model="show"
-	>
-		<template #body-content>
-			<ObjectList v-if="!showLog" :options="listOptions" />
-			<div v-else>
-				<div class="flex items-center">
-					<Button @click="showLog = false">
+	<Dialog :title="`Bench Logs - ${bench}`" size="6xl" v-model="show">
+		<ObjectList v-if="!showLog" :options="listOptions" />
+		<div v-else>
+			<div class="flex items-center">
+				<Button @click="showLog = false">
+					<template #icon>
+						<lucide-arrow-left class="inline-block h-4 w-4" />
+					</template>
+				</Button>
+				<h2 class="ml-4 text-lg font-medium text-ink-gray-9">
+					{{ logName }}
+				</h2>
+				<div class="!ml-auto flex gap-2">
+					<Button @click="log.reload()" :loading="log.loading">
 						<template #icon>
-							<lucide-arrow-left class="inline-block h-4 w-4" />
+							<lucide-refresh-ccw class="h-4 w-4" />
 						</template>
 					</Button>
-					<h2 class="ml-4 text-lg font-medium text-ink-gray-9">
-						{{ logName }}
-					</h2>
-					<div class="!ml-auto flex gap-2">
-						<Button @click="log.reload()" :loading="log.loading">
-							<template #icon>
-								<lucide-refresh-ccw class="h-4 w-4" />
-							</template>
-						</Button>
-						<Button @click="navigateToLogBrowser">
-							<template #prefix>
-								<lucide-sparkle class="h-4 w-4" />
-							</template>
-							View in Log Browser
-						</Button>
-					</div>
-				</div>
-				<div class="mt-4">
-					<div
-						class="h-[34rem] overflow-scroll rounded border border-outline-gray-1 bg-gray-900 px-2.5 py-2 text-sm text-ink-gray-2"
-					>
-						<pre>{{
-							log.loading ? 'Loading...' : log?.data[logName] || 'No output'
-						}}</pre>
-					</div>
+					<Button @click="navigateToLogBrowser">
+						<template #prefix>
+							<lucide-sparkle class="h-4 w-4" />
+						</template>
+						View in Log Browser
+					</Button>
 				</div>
 			</div>
-		</template>
+			<div class="mt-4">
+				<div
+					class="h-[34rem] overflow-scroll rounded border border-outline-gray-1 bg-gray-900 px-2.5 py-2 text-sm text-ink-gray-2"
+				>
+					<pre>{{
+						log.loading ? 'Loading...' : log?.data[logName] || 'No output'
+					}}</pre>
+				</div>
+			</div>
+		</div>
 	</Dialog>
 </template>
 

@@ -1,31 +1,27 @@
 <template>
 	<Dialog
-		:options="{
-			title: selectedWebhookAttemptId
+		:title="selectedWebhookAttemptId
 				? `Webhook Attempt - ${selectedWebhookAttemptId}`
-				: 'Webhook Attempts',
-			size: '4xl',
-		}"
+				: 'Webhook Attempts'"
+		size="4xl"
 	>
-		<template #body-content>
-			<p class="text-sm mb-2 text-ink-gray-7" v-if="!selectedWebhookAttemptId">
-				<strong>Note:</strong>
-				You can only view logs of last 24 hours
-			</p>
-			<ObjectList :options="listOptions" v-if="!selectedWebhookAttemptId" />
-			<Button
-				class="mb-2"
-				iconLeft="arrow-left"
-				v-if="selectedWebhookAttemptId"
-				@click="selectedWebhookAttemptId = null"
-			>
-				Back
-			</Button>
-			<WebhookAttemptDetails
-				:id="selectedWebhookAttemptId"
-				v-if="selectedWebhookAttemptId"
-			/>
-		</template>
+		<p class="text-sm mb-2 text-ink-gray-7" v-if="!selectedWebhookAttemptId">
+			<strong>Note:</strong>
+			You can only view logs of last 24 hours
+		</p>
+		<ObjectList :options="listOptions" v-if="!selectedWebhookAttemptId" />
+		<Button
+			class="mb-2"
+			iconLeft="arrow-left"
+			v-if="selectedWebhookAttemptId"
+			@click="selectedWebhookAttemptId = null"
+		>
+			Back
+		</Button>
+		<WebhookAttemptDetails
+			:id="selectedWebhookAttemptId"
+			v-if="selectedWebhookAttemptId"
+		/>
 	</Dialog>
 </template>
 <script>

@@ -1,91 +1,87 @@
 <template>
 	<Dialog
-		:options="{
-			title: `Database User (${db_user_name}) Logs`,
-			size: '5xl',
-		}"
+		:title="`Database User (${db_user_name}) Logs`"
+		size="5xl"
 		v-model="showDialog"
 	>
-		<template #body-content>
-			<div>
-				<!-- Top Bar -->
-				<form
-					class="flex w-full flex-row items-center gap-2"
-					@submit.prevent="this.$resources.logs.submit()"
+		<div>
+			<!-- Top Bar -->
+			<form
+				class="flex w-full flex-row items-center gap-2"
+				@submit.prevent="this.$resources.logs.submit()"
+			>
+				<FormControl
+					class="w-full"
+					type="text"
+					size="sm"
+					variant="subtle"
+					icon-left="search"
+					placeholder="Search Keywords (Optional)"
+					v-model="search_string"
+				/>
+				<FormControl
+					class="w-full"
+					type="text"
+					size="sm"
+					variant="subtle"
+					placeholder="Client IP (Optional)"
+					v-model="client_ip"
+				/>
+				<div class="min-w-[11rem] max-w-[11rem] text-base">
+					<DateTimePicker
+						v-model="start_time"
+						variant="subtle"
+						placeholder="Start Time"
+						label="Start Time"
+						:disabled="false"
+					/>
+				</div>
+				<div class="min-w-[11rem] max-w-[11rem] text-base">
+					<DateTimePicker
+						v-model="end_time"
+						variant="subtle"
+						placeholder="End Time"
+						:disabled="false"
+					/>
+				</div>
+				<Button
+					variant="solid"
+					theme="gray"
+					size="sm"
+					loadingText="Searching"
+					:loading="this.$resources.logs.loading"
+					iconLeft="search"
+					@click="this.$resources.logs.submit()"
 				>
-					<FormControl
-						class="w-full"
-						type="text"
-						size="sm"
-						variant="subtle"
-						icon-left="search"
-						placeholder="Search Keywords (Optional)"
-						v-model="search_string"
-					/>
-					<FormControl
-						class="w-full"
-						type="text"
-						size="sm"
-						variant="subtle"
-						placeholder="Client IP (Optional)"
-						v-model="client_ip"
-					/>
-					<div class="min-w-[11rem] max-w-[11rem] text-base">
-						<DateTimePicker
-							v-model="start_time"
-							variant="subtle"
-							placeholder="Start Time"
-							label="Start Time"
-							:disabled="false"
-						/>
-					</div>
-					<div class="min-w-[11rem] max-w-[11rem] text-base">
-						<DateTimePicker
-							v-model="end_time"
-							variant="subtle"
-							placeholder="End Time"
-							:disabled="false"
-						/>
-					</div>
-					<Button
-						variant="solid"
-						theme="gray"
-						size="sm"
-						loadingText="Searching"
-						:loading="this.$resources.logs.loading"
-						iconLeft="search"
-						@click="this.$resources.logs.submit()"
-					>
-						Search
-					</Button>
-				</form>
+					Search
+				</Button>
+			</form>
 
-				<!-- Result -->
-				<div class="mt-5">
-					<div
-						v-if="this.$resources.logs.loading"
-						class="flex h-[14.5rem] w-full items-center justify-center gap-2 py-20 text-base text-ink-gray-7"
-					>
-						<Spinner class="w-4" />
-						Fetching logs...
-					</div>
-					<div v-else>
-						<SQLResultTable
-							:columns="['Timestamp', 'Client IP', 'Query', 'Duration (ms)']"
-							:data="this.logs"
-							:hideIndexColumn="true"
-							:isTruncateText="true"
-							:truncateLength="70"
-						/>
-						<p class="mt-2 text-sm text-ink-gray-7">
-							<span class="font-semibold">NOTE :</span>
-							Search result will show max 500 logs.
-						</p>
-					</div>
+			<!-- Result -->
+			<div class="mt-5">
+				<div
+					v-if="this.$resources.logs.loading"
+					class="flex h-[14.5rem] w-full items-center justify-center gap-2 py-20 text-base text-ink-gray-7"
+				>
+					<Spinner class="w-4" />
+					Fetching logs...
+				</div>
+				<div v-else>
+					<SQLResultTable
+						:columns="['Timestamp', 'Client IP', 'Query', 'Duration (ms)']"
+						:data="this.logs"
+						:hideIndexColumn="true"
+						:isTruncateText="true"
+						:truncateLength="70"
+					/>
+					<p class="mt-2 text-sm text-ink-gray-7">
+						<span class="font-semibold">NOTE :</span>
+						Search result will show max 500 logs.
+					</p>
 				</div>
 			</div>
-			<ErrorMessage :message="this.$resources?.logs?.error" class="mt-2" />
-		</template>
+		</div>
+		<ErrorMessage :message="this.$resources?.logs?.error" class="mt-2" />
 	</Dialog>
 </template>
 <script>

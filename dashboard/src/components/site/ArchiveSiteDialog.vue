@@ -1,55 +1,51 @@
 <template>
 	<Dialog
 		v-model="showDialog"
-		:options="{
-			title: 'Drop Site',
-			actions: [
+		title="Drop Site"
+		:actions="[
 				{
 					label: 'Drop Site',
 					variant: 'solid',
 					theme: 'red',
 					onClick: handleConfirm,
 				},
-			],
-		}"
+			]"
 	>
-		<template #body-content>
-			<div class="space-y-4">
-				<AlertBanner
-					:title="`Site <b>${site.doc?.host_name || site.doc?.name}</b> will be archived. All files and backups will be permanently deleted.`"
-					type="warning"
-				> </AlertBanner>
-				<div class="space-y-4 flex flex-col">
+		<div class="space-y-4">
+			<AlertBanner
+				:title="`Site <b>${site.doc?.host_name || site.doc?.name}</b> will be archived. All files and backups will be permanently deleted.`"
+				type="warning"
+			> </AlertBanner>
+			<div class="space-y-4 flex flex-col">
+				<FormControl
+					type="text"
+					label="Please type the site name to confirm"
+					placeholder="Site name"
+					v-model="confirmSiteName"
+					required
+				/>
+				<div>
 					<FormControl
-						type="text"
-						label="Please type the site name to confirm"
-						placeholder="Site name"
-						v-model="confirmSiteName"
-						required
+						type="checkbox"
+						label="Create offsite backup before site drop"
+						v-model="createOffsiteBackup"
 					/>
-					<div>
-						<FormControl
-							type="checkbox"
-							label="Create offsite backup before site drop"
-							v-model="createOffsiteBackup"
-						/>
-						<span class="block text-xs text-ink-gray-5 ml-[1.4rem]"
-							>Recoverable up to 6 months</span
-						>
-					</div>
-					<div>
-						<FormControl
-							type="checkbox"
-							label="Force drop site"
-							v-model="forceDrop"
-						/>
-						<span class="block text-xs text-ink-gray-5 ml-[1.4rem]"
-							>Drop the site even if there are pending operations</span
-						>
-					</div>
+					<span class="block text-xs text-ink-gray-5 ml-[1.4rem]"
+						>Recoverable up to 6 months</span
+					>
+				</div>
+				<div>
+					<FormControl
+						type="checkbox"
+						label="Force drop site"
+						v-model="forceDrop"
+					/>
+					<span class="block text-xs text-ink-gray-5 ml-[1.4rem]"
+						>Drop the site even if there are pending operations</span
+					>
 				</div>
 			</div>
-		</template>
+		</div>
 	</Dialog>
 </template>
 

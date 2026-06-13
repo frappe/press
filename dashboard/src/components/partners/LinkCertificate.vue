@@ -1,54 +1,48 @@
 <template>
 	<div>
-		<Dialog
-			:show="show"
-			v-model="show"
-			:options="{ title: 'Link Certificate' }"
-		>
-			<template #body-content>
-				<p class="pb-3 text-p-base">Enter the details to link a certificate.</p>
-				<FormControl
-					class="py-2"
-					name="certificate_type"
-					type="select"
-					:options="courseTypes"
-					label="Certificate Type"
-					v-model="certificateType"
-					@change="emailChange"
-				/>
-				<FormControl
-					class="pt-2"
-					name="user_email"
-					type="text"
-					label="User Email"
-					v-model="userEmail"
-					@input="emailChange"
-				/>
-				<div class="mt-2">
-					<div v-if="certExist" class="text-sm text-green-600" role="alert">
-						Found {{ certCount }} certificates with email {{ userEmail }} of
-						{{ courseTypes.find((course) => course.value === certificateType)
-								?.label }}
-						type.
-					</div>
+		<Dialog :show="show" v-model="show" title="Link Certificate">
+			<p class="pb-3 text-p-base">Enter the details to link a certificate.</p>
+			<FormControl
+				class="py-2"
+				name="certificate_type"
+				type="select"
+				:options="courseTypes"
+				label="Certificate Type"
+				v-model="certificateType"
+				@change="emailChange"
+			/>
+			<FormControl
+				class="pt-2"
+				name="user_email"
+				type="text"
+				label="User Email"
+				v-model="userEmail"
+				@input="emailChange"
+			/>
+			<div class="mt-2">
+				<div v-if="certExist" class="text-sm text-green-600" role="alert">
+					Found {{ certCount }} certificates with email {{ userEmail }} of
+					{{ courseTypes.find((course) => course.value === certificateType)
+							?.label }}
+					type.
 				</div>
+			</div>
 
-				<ErrorMessage
-					v-if="certExist === false"
-					class="mt-4"
-					:message="`No certificates found for ${userEmail}.`"
+			<ErrorMessage
+				v-if="certExist === false"
+				class="mt-4"
+				:message="`No certificates found for ${userEmail}.`"
+			/>
+
+			<div class="pt-4">
+				<Button
+					class="w-full"
+					variant="solid"
+					:loading="linkCertificate.loading"
+					label="Link Certificate"
+					@click="linkCertificate.submit()"
 				/>
-
-				<div class="pt-4">
-					<Button
-						class="w-full"
-						variant="solid"
-						:loading="linkCertificate.loading"
-						label="Link Certificate"
-						@click="linkCertificate.submit()"
-					/>
-				</div>
-			</template>
+			</div>
 		</Dialog>
 	</div>
 </template>

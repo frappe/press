@@ -1,66 +1,62 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Select Secondary Application Server Plan',
-			size: '5xl',
-			actions: [
+		title="Select Secondary Application Server Plan"
+		size="5xl"
+		:actions="[
 				{
 					label: 'Setup Secondary Server',
 					variant: 'solid',
 					onClick: setupSecondaryServer,
 					disabled: !$resources.secondaryServerPlans.data?.length,
 				},
-			],
-		}"
+			]"
 		v-model="show"
 	>
-		<template #body-content>
-			<div class="mb-4 mt-2 w-full space-y-2">
-				<div class="grid grid-cols-2 gap-3">
-					<button
-						v-for="c in [
-							{
-								name: 'Standard',
-								description: 'Includes standard support and SLAs',
-							},
-							{
-								name: 'Premium',
-								description: 'Includes enterprise support and SLAs',
-							},
-						]"
-						:key="c.name"
-						@click="planType = c.name"
-						:class="[
-							planType === c.name
-								? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-1'
-								: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
-							'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
-						]"
-					>
-						<div class="flex w-full items-center justify-between space-x-2">
-							<span class="text-sm font-medium"> {{ c.name }} </span>
-							<Tooltip :text="c.description">
-								<lucide-info class="h-4 w-4 text-ink-gray-5" />
-							</Tooltip>
-						</div>
-					</button>
-				</div>
+		<div class="mb-4 mt-2 w-full space-y-2">
+			<div class="grid grid-cols-2 gap-3">
+				<button
+					v-for="c in [
+						{
+							name: 'Standard',
+							description: 'Includes standard support and SLAs',
+						},
+						{
+							name: 'Premium',
+							description: 'Includes enterprise support and SLAs',
+						},
+					]"
+					:key="c.name"
+					@click="planType = c.name"
+					:class="[
+						planType === c.name
+							? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-1'
+							: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+						'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
+					]"
+				>
+					<div class="flex w-full items-center justify-between space-x-2">
+						<span class="text-sm font-medium"> {{ c.name }} </span>
+						<Tooltip :text="c.description">
+							<lucide-info class="h-4 w-4 text-ink-gray-5" />
+						</Tooltip>
+					</div>
+				</button>
 			</div>
-			<ServerPlansCards
-				v-model="plan"
-				:plans="
-					planType === 'Premium'
-						? $resources.secondaryServerPlans.data.filter(
-								(p) => p.premium === 1,
-							)
-						: $resources.secondaryServerPlans.data.filter(
-								(p) => p.premium === 0,
-							)
-				"
-				:hourly-pricing="true"
-			/>
-			<ErrorMessage class="mt-2" :message="$server.changePlan.error" />
-		</template>
+		</div>
+		<ServerPlansCards
+			v-model="plan"
+			:plans="
+				planType === 'Premium'
+					? $resources.secondaryServerPlans.data.filter(
+							(p) => p.premium === 1,
+						)
+					: $resources.secondaryServerPlans.data.filter(
+							(p) => p.premium === 0,
+						)
+			"
+			:hourly-pricing="true"
+		/>
+		<ErrorMessage class="mt-2" :message="$server.changePlan.error" />
 	</Dialog>
 </template>
 <script>

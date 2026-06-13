@@ -1,17 +1,15 @@
 <template>
 	<Dialog
-		:options="{
-			title: 'Add a new Marketplace App',
-			size: 'xl',
-			actions: [
+		title="Add a new Marketplace App"
+		size="xl"
+		:actions="[
 				{
 					label: 'Add App',
 					variant: 'solid',
 					disabled: !appValidated || !this.app.is_public,
 					onClick: addApp,
 				},
-			],
-		}"
+			]"
 		v-model="show"
 		@update:modelValue="
 			() => {
@@ -19,58 +17,56 @@
 			}
 		"
 	>
-		<template #body-content>
-			<GitHubAppSelector
-				class="pt-2"
-				@validateApp="validateApp"
-				@fieldChange="appValidated = false"
-			/>
-			<div class="mt-4 space-y-2">
-				<div
-					v-if="$resources.validateApp.loading && !appValidated"
-					class="flex text-base text-ink-gray-7"
-				>
-					<LoadingIndicator class="mr-2 w-4" />
-					Validating app...
+		<GitHubAppSelector
+			class="pt-2"
+			@validateApp="validateApp"
+			@fieldChange="appValidated = false"
+		/>
+		<div class="mt-4 space-y-2">
+			<div
+				v-if="$resources.validateApp.loading && !appValidated"
+				class="flex text-base text-ink-gray-7"
+			>
+				<LoadingIndicator class="mr-2 w-4" />
+				Validating app...
+			</div>
+			<div
+				v-if="appValidated"
+				class="flex flex-col text-base text-ink-gray-7 space-y-2"
+			>
+				<div v-if="this.app.is_public" class="flex items-center gap-2">
+					<FeatherIcon
+						class="w-4 p-0.5 text-white rounded bg-green-500"
+						name="check"
+						:stroke-width="3"
+					/>
+					<span>
+						Found <strong>{{ this.app.title }}</strong> ({{ this.app.name }}).
+						We will automatically find the compatible Frappe version for this
+						app.
+					</span>
 				</div>
-				<div
-					v-if="appValidated"
-					class="flex flex-col text-base text-ink-gray-7 space-y-2"
-				>
-					<div v-if="this.app.is_public" class="flex items-center gap-2">
+				<div v-else>
+					<div class="flex items-center gap-2">
 						<FeatherIcon
-							class="w-4 p-0.5 text-white rounded bg-green-500"
-							name="check"
-							:stroke-width="3"
+							class="w-4 p-0.5 text-white rounded bg-red-500"
+							name="x"
 						/>
 						<span>
-							Found <strong>{{ this.app.title }}</strong> ({{ this.app.name }}).
-							We will automatically find the compatible Frappe version for this
-							app.
+							The GitHub repository is private. Please ensure the repository is
+							public to proceed.
 						</span>
 					</div>
-					<div v-else>
-						<div class="flex items-center gap-2">
-							<FeatherIcon
-								class="w-4 p-0.5 text-white rounded bg-red-500"
-								name="x"
-							/>
-							<span>
-								The GitHub repository is private. Please ensure the repository
-								is public to proceed.
-							</span>
-						</div>
-						<Link
-							href="https://frappecloud.com/marketplace/terms"
-							class="font-medium text-blue-600 hover:underline"
-						>
-							Read our Terms and Policy
-						</Link>
-					</div>
+					<Link
+						href="https://frappecloud.com/marketplace/terms"
+						class="font-medium text-blue-600 hover:underline"
+					>
+						Read our Terms and Policy
+					</Link>
 				</div>
 			</div>
-			<ErrorMessage :message="$resources.validateApp.error" />
-		</template>
+		</div>
+		<ErrorMessage :message="$resources.validateApp.error" />
 	</Dialog>
 </template>
 

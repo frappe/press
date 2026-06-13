@@ -14,117 +14,115 @@
 				:class="{ 'pointer-events-none': $resources.signup?.loading }"
 				:logo="saasProduct?.logo"
 			>
-				<template v-slot:default>
-					<form
-						class="flex flex-col"
-						@submit.prevent="this.$resources.signup.submit()"
-					>
-						<!-- Fields -->
+				<form
+					class="flex flex-col"
+					@submit.prevent="this.$resources.signup.submit()"
+				>
+					<!-- Fields -->
+					<FormControl
+						label="Country"
+						type="select"
+						placeholder="Select your country"
+						autocomplete="country"
+						variant="outline"
+						:options="countries"
+						v-model="country"
+						required
+					/>
+					<div class="mt-5 flex flex-row gap-5">
 						<FormControl
-							label="Country"
-							type="select"
-							placeholder="Select your country"
-							autocomplete="country"
+							label="First Name"
+							type="text"
+							placeholder="John"
 							variant="outline"
-							:options="countries"
-							v-model="country"
+							v-model="first_name"
 							required
 						/>
-						<div class="mt-5 flex flex-row gap-5">
-							<FormControl
-								label="First Name"
-								type="text"
-								placeholder="John"
-								variant="outline"
-								v-model="first_name"
-								required
-							/>
-							<FormControl
-								label="Last Name"
-								type="text"
-								placeholder="Doe"
-								variant="outline"
-								v-model="last_name"
-								required
-							/>
-						</div>
 						<FormControl
-							class="mt-5"
-							label="Email"
-							type="email"
-							placeholder="johndoe@mail.com"
+							label="Last Name"
+							type="text"
+							placeholder="Doe"
 							variant="outline"
-							autocomplete="email"
-							v-model="email"
+							v-model="last_name"
 							required
 						/>
-						<div class="mt-5 text-base">
-							<label class="leading-6 tracking-normal">
-								<FormControl
-									type="checkbox"
-									v-model="terms_accepted"
-									class="mr-0.5 py-1 align-baseline"
-								/>
-								I agree to Frappe&nbsp;
-								<Link href="https://frappecloud.com/terms" target="_blank">
-									Terms of Service
-								</Link>
-								,&nbsp;
-								<Link href="https://frappecloud.com/privacy" target="_blank">
-									Privacy Policy
-								</Link>
-								&nbsp;&&nbsp;
-								<Link
-									href="https://frappecloud.com/cookie-policy"
-									target="_blank"
-								>
-									Cookie Policy
-								</Link>
-							</label>
-						</div>
-						<!-- Error Message -->
-						<ErrorMessage
-							class="mt-2"
-							:message="this.$resources?.signup?.error"
-						/>
-						<!-- Buttons -->
-						<div class="mt-8 flex flex-col items-center gap-3">
-							<Button
-								:loading="$resources.signup?.loading"
-								variant="solid"
-								class="w-full font-medium"
-								type="submit"
-							>
-								Create Account
-							</Button>
-							<p v-if="isGoogleOAuthEnabled">or</p>
-							<Button
-								v-if="isGoogleOAuthEnabled"
-								:loading="$resources.signupWithOAuth?.loading"
-								@click="$resources.signupWithOAuth.submit()"
-								variant="subtle"
-								class="w-full font-medium"
-								type="button"
-							>
-								<div class="flex flex-row items-center gap-1">
-									<GoogleIconSolid class="w-4" />
-									Sign up with Google
-								</div>
-							</Button>
-						</div>
-					</form>
-					<div class="mt-6 text-center">
-						<router-link
-							class="text-center text-base font-medium text-ink-gray-9 hover:text-ink-gray-7"
-							:to="{
-								name: 'SaaSLogin',
-								params: $route.params,
-							}"
-						>
-							Already have an account? Log in.
-						</router-link>
 					</div>
-				</template>
+					<FormControl
+						class="mt-5"
+						label="Email"
+						type="email"
+						placeholder="johndoe@mail.com"
+						variant="outline"
+						autocomplete="email"
+						v-model="email"
+						required
+					/>
+					<div class="mt-5 text-base">
+						<label class="leading-6 tracking-normal">
+							<FormControl
+								type="checkbox"
+								v-model="terms_accepted"
+								class="mr-0.5 py-1 align-baseline"
+							/>
+							I agree to Frappe&nbsp;
+							<Link href="https://frappecloud.com/terms" target="_blank">
+								Terms of Service
+							</Link>
+							,&nbsp;
+							<Link href="https://frappecloud.com/privacy" target="_blank">
+								Privacy Policy
+							</Link>
+							&nbsp;&&nbsp;
+							<Link
+								href="https://frappecloud.com/cookie-policy"
+								target="_blank"
+							>
+								Cookie Policy
+							</Link>
+						</label>
+					</div>
+					<!-- Error Message -->
+					<ErrorMessage
+						class="mt-2"
+						:message="this.$resources?.signup?.error"
+					/>
+					<!-- Buttons -->
+					<div class="mt-8 flex flex-col items-center gap-3">
+						<Button
+							:loading="$resources.signup?.loading"
+							variant="solid"
+							class="w-full font-medium"
+							type="submit"
+						>
+							Create Account
+						</Button>
+						<p v-if="isGoogleOAuthEnabled">or</p>
+						<Button
+							v-if="isGoogleOAuthEnabled"
+							:loading="$resources.signupWithOAuth?.loading"
+							@click="$resources.signupWithOAuth.submit()"
+							variant="subtle"
+							class="w-full font-medium"
+							type="button"
+						>
+							<div class="flex flex-row items-center gap-1">
+								<GoogleIconSolid class="w-4" />
+								Sign up with Google
+							</div>
+						</Button>
+					</div>
+				</form>
+				<div class="mt-6 text-center">
+					<router-link
+						class="text-center text-base font-medium text-ink-gray-9 hover:text-ink-gray-7"
+						:to="{
+							name: 'SaaSLogin',
+							params: $route.params,
+						}"
+					>
+						Already have an account? Log in.
+					</router-link>
+				</div>
 			</LoginBox>
 		</div>
 	</div>

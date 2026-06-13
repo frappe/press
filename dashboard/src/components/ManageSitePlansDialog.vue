@@ -1,139 +1,136 @@
 <template>
 	<Dialog
-		:options="{
-			title: showSetupSubscription ? 'Setup Subscription' : 'Change Plan',
-			size: step === 'site-plans' ? '3xl' : '3xl',
-		}"
+		:title="showSetupSubscription ? 'Setup Subscription' : 'Change Plan'"
+		:size="step === 'site-plans' ? '3xl' : '3xl'"
 		v-model="show"
 	>
-		<template #body-content>
-			<!-- steps are for users without payment method added,
-		 otherwise user will only go through just the initial step to change plan  -->
+		<!-- steps are for users without payment method added,
+	 otherwise user will only go through just the initial step to change plan  -->
 
-			<div v-if="step === 'site-plans'">
-				<!-- doing this weird thing because progress with intervals doesn't rerender on moving to new step for some reason -->
-				<!-- TODO: fix it in frappe-ui -->
-				<Progress
-					v-if="showSetupSubscription"
-					class="my-8"
-					size="md"
-					:label="progressLabel"
-					:interval-count="3"
-					:intervals="true"
-					:value="32"
-				/>
-				<SitePlansCards
-					v-model="plan"
-					:isPrivateBenchSite="!$site.doc.group_public"
-					:isDedicatedServerSite="$site.doc.is_dedicated_server"
-					:selectedProvider="$site.doc.server_provider"
-				/>
-				<div class="mt-4 text-xs text-ink-gray-7">
-					<div
-						class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base font-medium text-ink-gray-8"
-					>
-						<lucide-badge-check class="mr-2 h-5 w-12 text-ink-gray-6" />
-						<span>
-							<strong>Support</strong>
-							covers only issues of Frappe apps and not functional queries. You
-							can raise a support ticket for Frappe Cloud issues for all plans.
-						</span>
-					</div>
-				</div>
-				<ErrorMessage class="mt-2" :message="$site.setPlan.error" />
-			</div>
-
-			<div v-else-if="step === 'billing-details'">
-				<Progress
-					class="my-8"
-					size="md"
-					:label="progressLabel"
-					:interval-count="3"
-					:intervals="true"
-					:value="65"
-				/>
-				<div class="mb-5 inline-flex gap-1.5 text-base text-ink-gray-7">
-					<FeatherIcon class="h-4" name="info" />
-					<span> Add billing details to your account before proceeding.</span>
-				</div>
-				<BillingDetails
-					ref="billingRef"
-					@back="step = 'site-plans'"
-					@success="step = 'add-payment-mode'"
-				/>
-			</div>
-
-			<div v-else-if="step === 'add-payment-mode'">
-				<Progress
-					class="my-8"
-					:label="progressLabel"
-					size="md"
-					:interval-count="3"
-					:intervals="true"
-					:value="99"
-				/>
+		<div v-if="step === 'site-plans'">
+			<!-- doing this weird thing because progress with intervals doesn't rerender on moving to new step for some reason -->
+			<!-- TODO: fix it in frappe-ui -->
+			<Progress
+				v-if="showSetupSubscription"
+				class="my-8"
+				size="md"
+				:label="progressLabel"
+				:interval-count="3"
+				:intervals="true"
+				:value="32"
+			/>
+			<SitePlansCards
+				v-model="plan"
+				:isPrivateBenchSite="!$site.doc.group_public"
+				:isDedicatedServerSite="$site.doc.is_dedicated_server"
+				:selectedProvider="$site.doc.server_provider"
+			/>
+			<div class="mt-4 text-xs text-ink-gray-7">
 				<div
-					class="mb-5 flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
+					class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base font-medium text-ink-gray-8"
 				>
-					<div
-						class="w-1/2 cursor-pointer rounded-[7px] py-1.5 text-center transition-all"
-						:class="{
-							'bg-surface-gray-2': isAutomatedBilling,
-						}"
-						@click="isAutomatedBilling = true"
-					>
-						Add Card
-					</div>
-					<div
-						class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
-						:class="{
-							'bg-surface-gray-2': !isAutomatedBilling,
-						}"
-						@click="isAutomatedBilling = false"
-					>
-						Add Prepaid Credits
-					</div>
+					<lucide-badge-check class="mr-2 h-5 w-12 text-ink-gray-6" />
+					<span>
+						<strong>Support</strong>
+						covers only issues of Frappe apps and not functional queries. You
+						can raise a support ticket for Frappe Cloud issues for all plans.
+					</span>
 				</div>
-
-				<div>
-					<div
-						v-if="isAutomatedBilling"
-						class="mb-5 flex items-center gap-2 text-sm text-ink-gray-7"
-					>
-						<FeatherIcon class="h-4" name="info" />
-						<span>
-							Adding a card will enable automated billing for your account. You
-							will be charged automatically at the end of your billing cycle.
-						</span>
-					</div>
-					<div
-						v-else
-						class="mb-5 flex items-center gap-2 text-sm text-ink-gray-7"
-					>
-						<FeatherIcon class="h-4" name="info" />
-						<span>
-							Adding prepaid credits will allow you to manually recharge your
-							account balance. You can use this balance to pay for your plan.
-						</span>
-					</div>
-				</div>
-
-				<CardForm
-					v-if="isAutomatedBilling"
-					@success="paymentModeAdded"
-					:showAddressForm="false"
-				/>
-				<PrepaidCreditsForm
-					v-else
-					:minimumAmount="
-						$team.doc?.currency === 'INR' ? plan.price_inr : plan.price_usd
-					"
-					:type="'Purchase Plan'"
-					:docName="plan.name"
-					@success="paymentModeAdded"
-				/>
 			</div>
-		</template>
+			<ErrorMessage class="mt-2" :message="$site.setPlan.error" />
+		</div>
+
+		<div v-else-if="step === 'billing-details'">
+			<Progress
+				class="my-8"
+				size="md"
+				:label="progressLabel"
+				:interval-count="3"
+				:intervals="true"
+				:value="65"
+			/>
+			<div class="mb-5 inline-flex gap-1.5 text-base text-ink-gray-7">
+				<FeatherIcon class="h-4" name="info" />
+				<span> Add billing details to your account before proceeding.</span>
+			</div>
+			<BillingDetails
+				ref="billingRef"
+				@back="step = 'site-plans'"
+				@success="step = 'add-payment-mode'"
+			/>
+		</div>
+
+		<div v-else-if="step === 'add-payment-mode'">
+			<Progress
+				class="my-8"
+				:label="progressLabel"
+				size="md"
+				:interval-count="3"
+				:intervals="true"
+				:value="99"
+			/>
+			<div
+				class="mb-5 flex w-full flex-row gap-2 rounded-md border p-1 text-p-base text-ink-gray-8"
+			>
+				<div
+					class="w-1/2 cursor-pointer rounded-[7px] py-1.5 text-center transition-all"
+					:class="{
+						'bg-surface-gray-2': isAutomatedBilling,
+					}"
+					@click="isAutomatedBilling = true"
+				>
+					Add Card
+				</div>
+				<div
+					class="w-1/2 cursor-pointer rounded-sm py-1.5 text-center transition-all"
+					:class="{
+						'bg-surface-gray-2': !isAutomatedBilling,
+					}"
+					@click="isAutomatedBilling = false"
+				>
+					Add Prepaid Credits
+				</div>
+			</div>
+
+			<div>
+				<div
+					v-if="isAutomatedBilling"
+					class="mb-5 flex items-center gap-2 text-sm text-ink-gray-7"
+				>
+					<FeatherIcon class="h-4" name="info" />
+					<span>
+						Adding a card will enable automated billing for your account. You
+						will be charged automatically at the end of your billing cycle.
+					</span>
+				</div>
+				<div
+					v-else
+					class="mb-5 flex items-center gap-2 text-sm text-ink-gray-7"
+				>
+					<FeatherIcon class="h-4" name="info" />
+					<span>
+						Adding prepaid credits will allow you to manually recharge your
+						account balance. You can use this balance to pay for your plan.
+					</span>
+				</div>
+			</div>
+
+			<CardForm
+				v-if="isAutomatedBilling"
+				@success="paymentModeAdded"
+				:showAddressForm="false"
+			/>
+			<PrepaidCreditsForm
+				v-else
+				:minimumAmount="
+					$team.doc?.currency === 'INR' ? plan.price_inr : plan.price_usd
+				"
+				:type="'Purchase Plan'"
+				:docName="plan.name"
+				@success="paymentModeAdded"
+			/>
+		</div>
+
 		<template #actions v-if="step === 'site-plans'">
 			<Button
 				variant="solid"

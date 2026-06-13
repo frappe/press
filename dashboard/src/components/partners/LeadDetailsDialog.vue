@@ -1,12 +1,10 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'Lead Details', size: '2xl' }">
-		<template #body-content>
-			<LeadDetailsForm
-				@success="() => emit('success')"
-				:model-value="leadInfo"
-				@update:model-value="Object.assign(leadInfo, $event)"
-			/>
-		</template>
+	<Dialog v-model="show" title="Lead Details" size="2xl">
+		<LeadDetailsForm
+			@success="() => emit('success')"
+			:model-value="leadInfo"
+			@update:model-value="Object.assign(leadInfo, $event)"
+		/>
 	</Dialog>
 </template>
 <script setup>

@@ -1,27 +1,25 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'Add Lost Reason' }">
-		<template #body-content>
-			<div class="flex flex-col gap-5">
-				<FormControl
-					v-model="reason"
-					label="Lost Reason"
-					name="reason"
-					type="select"
-					:options="lostReasonOptions"
-				/>
-				<FormControl
-					v-if="reason === 'Other'"
-					v-model="other_reason"
-					label="Other Reason (specify)"
-					type="textarea"
-					name="other_reason"
-				/>
-				<ErrorMessage :message="errorMessage" />
-				<Button variant="solid" @click="() => updateStatus.submit()"
-					>Submit</Button
-				>
-			</div>
-		</template>
+	<Dialog v-model="show" title="Add Lost Reason">
+		<div class="flex flex-col gap-5">
+			<FormControl
+				v-model="reason"
+				label="Lost Reason"
+				name="reason"
+				type="select"
+				:options="lostReasonOptions"
+			/>
+			<FormControl
+				v-if="reason === 'Other'"
+				v-model="other_reason"
+				label="Other Reason (specify)"
+				type="textarea"
+				name="other_reason"
+			/>
+			<ErrorMessage :message="errorMessage" />
+			<Button variant="solid" @click="() => updateStatus.submit()"
+				>Submit</Button
+			>
+		</div>
 	</Dialog>
 </template>
 <script setup>

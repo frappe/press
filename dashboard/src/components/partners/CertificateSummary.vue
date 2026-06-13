@@ -1,16 +1,11 @@
 <template>
 	<div>
-		<Dialog
-			v-model="show"
-			:options="{ title: 'Evaluation Summary', size: 'xl' }"
-		>
-			<template #body-content>
-				<div :class="`bg-${color}-50 p-4 rounded-lg`">
-					<p :class="`text-p-base text-${color}-800`">
-						{{ summary }}
-					</p>
-				</div>
-			</template>
+		<Dialog v-model="show" title="Evaluation Summary" size="xl">
+			<div :class="`bg-${color}-50 p-4 rounded-lg`">
+				<p :class="`text-p-base text-${color}-800`">
+					{{ summary }}
+				</p>
+			</div>
 		</Dialog>
 	</div>
 </template>

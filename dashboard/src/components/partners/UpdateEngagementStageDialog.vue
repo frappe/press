@@ -1,28 +1,26 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'Update Engagement Stage' }">
-		<template #body-content>
-			<div class="flex flex-col gap-5">
-				<FormControl
-					:required="true"
-					v-model="proposed_plan"
-					label="Proposed Plan"
-					type="select"
-					name="proposed_plan"
-					:options="sitePlanOptions"
-				/>
-				<FormControl
-					v-model="expected_close_date"
-					label="Expected Close Date"
-					type="date"
-					name="expected_close_date"
-					:required="true"
-				/>
-				<ErrorMessage :message="errorMessage" />
-				<Button variant="solid" @click="() => updateStatus.submit()"
-					>Submit</Button
-				>
-			</div>
-		</template>
+	<Dialog v-model="show" title="Update Engagement Stage">
+		<div class="flex flex-col gap-5">
+			<FormControl
+				:required="true"
+				v-model="proposed_plan"
+				label="Proposed Plan"
+				type="select"
+				name="proposed_plan"
+				:options="sitePlanOptions"
+			/>
+			<FormControl
+				v-model="expected_close_date"
+				label="Expected Close Date"
+				type="date"
+				name="expected_close_date"
+				:required="true"
+			/>
+			<ErrorMessage :message="errorMessage" />
+			<Button variant="solid" @click="() => updateStatus.submit()"
+				>Submit</Button
+			>
+		</div>
 	</Dialog>
 </template>
 <script setup>

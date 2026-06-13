@@ -84,19 +84,18 @@
 		<Dialog
 			:show="showUpdateWebsiteInfo"
 			v-model="showUpdateWebsiteInfo"
-			:options="{ title: 'Update Website Info', size: '4xl' }"
+			title="Update Website Info"
+			size="4xl"
 		>
-			<template #body-content>
-				<WebsiteInfoDialog
-					v-model="partnerDetails.data"
-					@success="
-						() => {
-							partnerDetails.reload();
-							showUpdateWebsiteInfo = false;
-						}
-					"
-				/>
-			</template>
+			<WebsiteInfoDialog
+				v-model="partnerDetails.data"
+				@success="
+					() => {
+						partnerDetails.reload();
+						showUpdateWebsiteInfo = false;
+					}
+				"
+			/>
 		</Dialog>
 	</div>
 </template>

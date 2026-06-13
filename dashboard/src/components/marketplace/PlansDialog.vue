@@ -1,83 +1,81 @@
 <template>
-	<Dialog :options="{ title: 'Edit Plan' }" v-model="showEditPlanDialog">
-		<template v-slot:body-content>
-			<div>
-				<div class="mb-4">
-					<input
-						type="checkbox"
-						id="enabled-checkbox"
-						class="h-4 w-4 rounded border-outline-gray-2 text-blue-600 focus:ring-blue-500"
-						v-model="currentEditingPlan.enabled"
-					/>
-					<label for="enabled-checkbox" class="ml-1 text-sm text-ink-gray-9">
-						Enabled
-					</label>
-				</div>
-				<div class="mb-4">
+	<Dialog title="Edit Plan" v-model="showEditPlanDialog">
+		<div>
+			<div class="mb-4">
+				<input
+					type="checkbox"
+					id="enabled-checkbox"
+					class="h-4 w-4 rounded border-outline-gray-2 text-blue-600 focus:ring-blue-500"
+					v-model="currentEditingPlan.enabled"
+				/>
+				<label for="enabled-checkbox" class="ml-1 text-sm text-ink-gray-9">
+					Enabled
+				</label>
+			</div>
+			<div class="mb-4">
+				<FormControl
+					placeholder="My Pro Plan"
+					label="Name"
+					v-model="currentEditingPlan.title"
+				></FormControl>
+			</div>
+			<div class="mb-8">
+				<h3 class="mb-4 text-lg font-semibold">Subscription Price</h3>
+				<div class="grid grid-cols-2 gap-2">
 					<FormControl
-						placeholder="My Pro Plan"
-						label="Name"
-						v-model="currentEditingPlan.title"
+						label="Price INR"
+						v-model="currentEditingPlan.price_inr"
+					></FormControl>
+					<FormControl
+						label="Price USD"
+						v-model="currentEditingPlan.price_usd"
 					></FormControl>
 				</div>
-				<div class="mb-8">
-					<h3 class="mb-4 text-lg font-semibold">Subscription Price</h3>
-					<div class="grid grid-cols-2 gap-2">
-						<FormControl
-							label="Price INR"
-							v-model="currentEditingPlan.price_inr"
-						></FormControl>
-						<FormControl
-							label="Price USD"
-							v-model="currentEditingPlan.price_usd"
-						></FormControl>
+			</div>
+			<div>
+				<h3 class="mb-4 text-lg font-semibold">Features</h3>
+				<div>
+					<div
+						v-for="(feature, idx) in currentEditingPlan.features"
+						class="mb-3.5 flex w-full items-stretch"
+					>
+						<div
+							class="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-surface-gray-2 text-xs"
+						>
+							{{ idx + 1 }}
+						</div>
+
+						<div class="w-full">
+							<FormControl
+								class="w-full"
+								v-model="currentEditingPlan.features[idx]"
+							></FormControl>
+						</div>
+
+						<Button
+							v-if="idx > 0"
+							class="ml-3 rounded-full"
+							icon="x"
+							@click="deleteFeatureInput(idx)"
+						></Button>
 					</div>
 				</div>
 				<div>
-					<h3 class="mb-4 text-lg font-semibold">Features</h3>
-					<div>
-						<div
-							v-for="(feature, idx) in currentEditingPlan.features"
-							class="mb-3.5 flex w-full items-stretch"
-						>
-							<div
-								class="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-surface-gray-2 text-xs"
-							>
-								{{ idx + 1 }}
-							</div>
+					<Button icon-left="plus" @click="addFeatureInput">Add</Button>
+				</div>
 
-							<div class="w-full">
-								<FormControl
-									class="w-full"
-									v-model="currentEditingPlan.features[idx]"
-								></FormControl>
-							</div>
-
-							<Button
-								v-if="idx > 0"
-								class="ml-3 rounded-full"
-								icon="x"
-								@click="deleteFeatureInput(idx)"
-							></Button>
-						</div>
-					</div>
-					<div>
-						<Button icon-left="plus" @click="addFeatureInput">Add</Button>
-					</div>
-
-					<div>
-						<ErrorMessage
-							class="mt-3"
-							:message="$resources.updateAppPlan.error"
-						/>
-						<ErrorMessage
-							class="mt-3"
-							:message="$resources.createAppPlan.error"
-						/>
-					</div>
+				<div>
+					<ErrorMessage
+						class="mt-3"
+						:message="$resources.updateAppPlan.error"
+					/>
+					<ErrorMessage
+						class="mt-3"
+						:message="$resources.createAppPlan.error"
+					/>
 				</div>
 			</div>
-		</template>
+		</div>
 
 		<template #actions>
 			<Button

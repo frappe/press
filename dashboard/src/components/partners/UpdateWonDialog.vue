@@ -1,52 +1,50 @@
 <template>
-	<Dialog v-model="show" :options="{ title: 'Add Won Details' }">
-		<template #body-content>
-			<div class="flex flex-col gap-5">
-				<FormControl
-					v-model="resource_type"
-					label="Resource Type"
-					type="select"
-					name="resource_type"
-					:options="[
-						{ label: 'Site', value: 'Site' },
-						{ label: 'Server Name', value: 'Server' },
-						{ label: 'Account Email ID', value: 'Team' },
-					]"
-					:required="true"
-				/>
-				<FormControl
-					v-if="resource_type == 'Site'"
-					v-model="site_url"
-					label="Site URL"
-					type="data"
-					name="site_url"
-					:required="true"
-					placeholder="e.g. example.m.frappe.cloud"
-				/>
-				<FormControl
-					v-if="resource_type == 'Server'"
-					v-model="server_name"
-					label="Server Name"
-					type="data"
-					name="server_name"
-					placeholder="e.g. f1-mumbai.frappe.cloud"
-					:required="true"
-				/>
-				<FormControl
-					v-if="resource_type == 'Team'"
-					v-model="team_name"
-					label="Account Email ID"
-					type="data"
-					name="team_name"
-					placeholder="e.g. jondoe@example.com"
-					:required="true"
-				/>
-				<ErrorMessage :message="errorMessage" />
-				<Button variant="solid" @click="() => updateStatus.submit()"
-					>Submit</Button
-				>
-			</div>
-		</template>
+	<Dialog v-model="show" title="Add Won Details">
+		<div class="flex flex-col gap-5">
+			<FormControl
+				v-model="resource_type"
+				label="Resource Type"
+				type="select"
+				name="resource_type"
+				:options="[
+					{ label: 'Site', value: 'Site' },
+					{ label: 'Server Name', value: 'Server' },
+					{ label: 'Account Email ID', value: 'Team' },
+				]"
+				:required="true"
+			/>
+			<FormControl
+				v-if="resource_type == 'Site'"
+				v-model="site_url"
+				label="Site URL"
+				type="data"
+				name="site_url"
+				:required="true"
+				placeholder="e.g. example.m.frappe.cloud"
+			/>
+			<FormControl
+				v-if="resource_type == 'Server'"
+				v-model="server_name"
+				label="Server Name"
+				type="data"
+				name="server_name"
+				placeholder="e.g. f1-mumbai.frappe.cloud"
+				:required="true"
+			/>
+			<FormControl
+				v-if="resource_type == 'Team'"
+				v-model="team_name"
+				label="Account Email ID"
+				type="data"
+				name="team_name"
+				placeholder="e.g. jondoe@example.com"
+				:required="true"
+			/>
+			<ErrorMessage :message="errorMessage" />
+			<Button variant="solid" @click="() => updateStatus.submit()"
+				>Submit</Button
+			>
+		</div>
 	</Dialog>
 </template>
 <script setup>
