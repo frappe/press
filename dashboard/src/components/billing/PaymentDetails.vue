@@ -1,6 +1,6 @@
 <template>
 	<div class="flex flex-col gap-4">
-		<div class="text-lg font-semibold text-ink-gray-9">Payment details</div>
+		<div class="text-xl-semibold text-ink-gray-9">Payment details</div>
 		<div class="flex flex-col">
 			<div
 				v-if="team.doc.payment_mode == 'Card'"

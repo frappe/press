@@ -11,7 +11,7 @@
 		</div>
 		<div v-if="doc" class="overflow-x-auto">
 			<table
-				class="text w-full border-separate border-spacing-y-2 text-base font-normal text-ink-gray-9"
+				class="text w-full border-separate border-spacing-y-2 text-base text-ink-gray-9"
 			>
 				<thead class="bg-surface-gray-2">
 					<tr class="text-ink-gray-6">
@@ -26,7 +26,7 @@
 				<tbody>
 					<template v-for="(items, type) in groupedLineItems" :key="type">
 						<tr class="mt-1 bg-surface-gray-1">
-							<td colspan="100" class="rounded p-2 text-base font-medium">
+							<td colspan="100" class="rounded p-2 text-base-medium">
 								{{ type }}
 							</td>
 						</tr>

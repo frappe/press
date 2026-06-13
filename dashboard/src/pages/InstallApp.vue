@@ -25,7 +25,7 @@
 						:alt="appDoc.name"
 					/>
 					<div class="my-1 ml-4 flex flex-col justify-between">
-						<h1 class="text-lg font-semibold">{{ appDoc.title }}</h1>
+						<h1 class="text-xl-semibold">{{ appDoc.title }}</h1>
 						<p class="text-sm text-ink-gray-6">{{ appDoc.description }}</p>
 					</div>
 				</div>
@@ -34,7 +34,7 @@
 					<div v-if="$team.doc.onboarding.site_created">
 						<div v-if="plans.length">
 							<div class="flex items-center justify-between">
-								<h2 class="text-base font-medium leading-6 text-ink-gray-9">
+								<h2 class="text-base-medium leading-6 text-ink-gray-9">
 									Select Plan
 								</h2>
 							</div>
@@ -44,7 +44,7 @@
 						</div>
 
 						<div v-if="options.private_groups.length">
-							<h2 class="text-base font-medium leading-6 text-ink-gray-9">
+							<h2 class="text-base-medium leading-6 text-ink-gray-9">
 								Select Bench
 								<span class="text-sm text-ink-gray-5"> (Optional) </span>
 							</h2>
@@ -69,7 +69,7 @@
 					</div>
 
 					<div>
-						<h2 class="text-base font-medium leading-6 text-ink-gray-9">
+						<h2 class="text-base-medium leading-6 text-ink-gray-9">
 							Select Region
 						</h2>
 						<div class="mt-2 w-full space-y-2">
@@ -80,15 +80,15 @@
 									@click="cluster = c.name"
 									:class="[
 										cluster === c.name
-											? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-											: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
+											? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+											: 'bg-surface-base text-ink-gray-9  hover:bg-surface-gray-1',
 										'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 									]"
 								>
 									<div class="flex w-full items-center justify-between">
 										<div class="flex w-full items-center space-x-2">
 											<img :src="c.image" class="h-5 w-5" />
-											<span class="text-sm font-medium"> {{ c.title }} </span>
+											<span class="text-sm-medium"> {{ c.title }} </span>
 										</div>
 										<Badge v-if="c.beta" :label="c.beta ? 'Beta' : ''" />
 									</div>
@@ -98,13 +98,13 @@
 					</div>
 
 					<div>
-						<h2 class="text-base font-medium leading-6 text-ink-gray-9">
+						<h2 class="text-base-medium leading-6 text-ink-gray-9">
 							Enter Subdomain
 						</h2>
 						<div class="mt-2 items-center">
 							<div class="col-span-2 flex w-full">
 								<input
-									class="dark:[color-scheme:dark] z-10 h-7 w-full flex-1 rounded rounded-r-none border border-[--surface-gray-2] bg-surface-gray-2 py-1.5 pl-2 pr-2 text-base text-ink-gray-8 placeholder-ink-gray-4 transition-colors hover:border-outline-gray-modals hover:bg-surface-gray-3 focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+									class="dark:[color-scheme:dark] z-10 h-7 w-full flex-1 rounded rounded-r-none border border-[--surface-gray-2] bg-surface-gray-2 py-1.5 pl-2 pr-2 text-base text-ink-gray-8 placeholder-ink-gray-4 transition-colors hover:border-outline-elevation-2 hover:bg-surface-gray-3 focus:border-outline-gray-4 focus:bg-surface-base focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 									placeholder="Subdomain"
 									v-model="subdomain"
 								/>

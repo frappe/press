@@ -24,7 +24,7 @@
 		<div class="mt-3">
 			<div>
 				<div class="flex items-center">
-					<h2 class="text-lg font-medium text-ink-gray-9">
+					<h2 class="text-xl-medium text-ink-gray-9">
 						{{ job.job_type }}
 					</h2>
 					<Badge class="ml-2" :label="job.status" />
@@ -53,31 +53,31 @@
 						class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5"
 					>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">Creation</div>
+							<div class="text-sm-medium text-ink-gray-5">Creation</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ $format.date(job.creation, 'lll') }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">Creator</div>
+							<div class="text-sm-medium text-ink-gray-5">Creator</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ job.owner }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">Duration</div>
+							<div class="text-sm-medium text-ink-gray-5">Duration</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ job.end ? $format.duration(job.duration) : '-' }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">Start</div>
+							<div class="text-sm-medium text-ink-gray-5">Start</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ $format.date(job.start, 'lll') }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">End</div>
+							<div class="text-sm-medium text-ink-gray-5">End</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ job.end ? $format.date(job.end, 'lll') : '-' }}
 							</div>

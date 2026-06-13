@@ -5,13 +5,13 @@
 			class="m-2 flex flex-col justify-between rounded-2xl border border-outline-gray-1 p-4 shadow"
 		>
 			<div>
-				<h4 class="flex justify-between text-xl font-semibold text-ink-gray-9">
+				<h4 class="flex justify-between text-3xl-semibold text-ink-gray-9">
 					<div>
 						<span>
 							{{ subscription.currency === 'INR'
 									? '₹' + plan.price_inr
 									: '$' + plan.price_usd }}
-							<span class="text-base font-normal text-ink-gray-6">
+							<span class="text-base text-ink-gray-6">
 								{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
 							</span>
 						</span>

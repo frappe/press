@@ -21,7 +21,7 @@
 				Loading...
 			</div>
 			<div v-else class="space-y-6">
-				<h1 class="text-2xl font-semibold">Creating Your Site</h1>
+				<h1 class="text-4xl-semibold">Creating Your Site</h1>
 
 				<div
 					v-if="hasFailed"
@@ -38,7 +38,7 @@
 
 				<div
 					v-if="!hasFailed"
-					class="flex items-center space-x-2 rounded border border-blue-100 bg-blue-50 p-4 text-base font-medium text-blue-800"
+					class="flex items-center space-x-2 rounded border border-blue-100 bg-blue-50 p-4 text-base-medium text-blue-800"
 				>
 					<p>
 						We're spinning up a private bench and creating your site. This

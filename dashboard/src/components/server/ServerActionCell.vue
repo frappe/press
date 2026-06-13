@@ -1,7 +1,7 @@
 <template>
 	<div class="flex items-center justify-between gap-1">
 		<div>
-			<h3 class="text-base font-medium">{{ props.actionLabel }}</h3>
+			<h3 class="text-base-medium">{{ props.actionLabel }}</h3>
 			<p class="mt-1 text-p-base text-ink-gray-6">{{ props.description }}</p>
 		</div>
 		<Button

@@ -11,7 +11,7 @@ defineProps<Props>()
 <template>
 	<lucide-circle-check
 		v-if='status == "Success"'
-		class="size-4 text-ink-green-3 shrink-0"
+		class="size-4 text-ink-green-6 shrink-0"
 	/>
 
 	<Spinner v-else-if='status== "Running"' class="size-4 shrink-0" />
@@ -23,8 +23,8 @@ defineProps<Props>()
 
 	<lucide-alert-triangle
 		v-else-if='status == "Warning"'
-		class="size-4 shrink-0 text-ink-amber-3"
+		class="size-4 shrink-0 text-ink-amber-6"
 	/>
 
-	<lucide-circle-x v-else class="size-4 shrink-0 text-ink-red-4" />
+	<lucide-circle-x v-else class="size-4 shrink-0 text-ink-red-8" />
 </template>

@@ -98,13 +98,11 @@
 							<input
 								id="share-details-consent"
 								type="checkbox"
-								class="rounded-sm mt-[1px] bg-surface-white border-outline-gray-4 text-ink-gray-9 hover:border-outline-gray-5 focus:ring-offset-0 focus:border-outline-gray-8 active:border-outline-gray-6 transition hover:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3 active:bg-surface-gray-2 w-3.5 h-3.5 checkbox"
+								class="rounded-sm mt-[1px] bg-surface-base border-outline-gray-4 text-ink-gray-9 hover:border-outline-gray-7 focus:ring-offset-0 focus:border-outline-gray-8 active:border-outline-gray-6 transition hover:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3 active:bg-surface-gray-2 w-3.5 h-3.5 checkbox"
 								v-model="shareDetailsConsent"
 							/>
 
-							<label
-								for="share-details-consent"
-								class="ml-2 text-base font-normal"
+							<label for="share-details-consent" class="ml-2 text-base"
 								>Allow my details to be shared with a local partner</label
 							>
 						</div>
@@ -122,11 +120,11 @@
 					</template>
 				</form>
 				<div class="mt-4" v-if="!is2FA && !isInvitation">
-					<span class="text-base font-normal text-ink-gray-6">
+					<span class="text-base text-ink-gray-6">
 						{{ 'By signing up, you agree to our ' }}
 					</span>
 					<a
-						class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
+						class="text-base text-ink-gray-9 underline hover:text-ink-gray-7"
 						href="https://frappecloud.com/policies"
 					>
 						Terms & Policies

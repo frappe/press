@@ -5,7 +5,7 @@
 			:key="group.group"
 			class="divide-y rounded border border-outline-gray-1 p-5"
 		>
-			<div class="pb-3 text-lg font-semibold">{{ group.group }}</div>
+			<div class="pb-3 text-xl-semibold">{{ group.group }}</div>
 			<AlertBanner
 				v-if="group.group == 'General Actions'"
 				type="warning"

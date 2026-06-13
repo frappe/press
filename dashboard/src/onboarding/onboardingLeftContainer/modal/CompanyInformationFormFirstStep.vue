@@ -183,7 +183,7 @@ defineExpose({ tryContinue })
 			:maxlength="companyNameMaxLength"
 			:class="{ 'has-error': errors.company_name }"
 		/>
-		<p v-if="errors.company_name" class="-mt-3 text-sm text-ink-red-4">
+		<p v-if="errors.company_name" class="-mt-3 text-sm text-ink-red-8">
 			{{ errors.company_name }}
 		</p>
 
@@ -198,7 +198,7 @@ defineExpose({ tryContinue })
 			:maxlength="addressMaxLength"
 			:class="{ 'has-error': errors.address }"
 		/>
-		<p v-if="errors.address" class="-mt-3 text-sm text-ink-red-4">
+		<p v-if="errors.address" class="-mt-3 text-sm text-ink-red-8">
 			{{ errors.address }}
 		</p>
 
@@ -214,7 +214,7 @@ defineExpose({ tryContinue })
 					:options="countryOptions"
 					:class="{ 'has-error': errors.country }"
 				/>
-				<p v-if="errors.country" class="text-sm text-ink-red-4">
+				<p v-if="errors.country" class="text-sm text-ink-red-8">
 					{{ errors.country }}
 				</p>
 			</div>
@@ -231,7 +231,7 @@ defineExpose({ tryContinue })
 					:maxlength="cityMaxLength"
 					:class="{ 'has-error': errors.headquarter_city }"
 				/>
-				<p v-if="errors.headquarter_city" class="text-sm text-ink-red-4">
+				<p v-if="errors.headquarter_city" class="text-sm text-ink-red-8">
 					{{ errors.headquarter_city }}
 				</p>
 			</div>
@@ -261,7 +261,7 @@ defineExpose({ tryContinue })
 						placeholder="Amount"
 					/>
 				</div>
-				<p v-if="errors.annual_revenue" class="text-sm text-ink-red-4">
+				<p v-if="errors.annual_revenue" class="text-sm text-ink-red-8">
 					{{ errors.annual_revenue }}
 				</p>
 			</div>
@@ -324,6 +324,6 @@ defineExpose({ tryContinue })
 <style scoped>
 .has-error :deep(input),
 .has-error :deep(button) {
-	border-color: var(--outline-red-3);
+	border-color: var(--outline-red-4);
 }
 </style>

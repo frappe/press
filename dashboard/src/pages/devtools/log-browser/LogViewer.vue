@@ -69,7 +69,7 @@
 										}"
 									>
 										<div
-											class="flex items-center truncate px-3 py-2 text-base font-semibold"
+											class="flex items-center truncate px-3 py-2 text-base-semibold"
 										>
 											<FlexRender
 												v-if="!header.isPlaceholder"

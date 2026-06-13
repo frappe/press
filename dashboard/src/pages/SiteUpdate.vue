@@ -16,7 +16,7 @@
 
 		<div class="mt-3">
 			<div class="flex w-full items-center">
-				<h2 class="text-lg font-medium text-ink-gray-9">
+				<h2 class="text-xl-medium text-ink-gray-9">
 					Update Site {{ siteUpdate.deploy_type }}
 				</h2>
 				<Badge class="ml-2" :label="siteUpdate.status" />
@@ -43,19 +43,19 @@
 			<div>
 				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
 					<div>
-						<div class="text-sm font-medium text-ink-gray-5">Creation</div>
+						<div class="text-sm-medium text-ink-gray-5">Creation</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ $format.date(siteUpdate.creation, 'lll') }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-ink-gray-5">Creator</div>
+						<div class="text-sm-medium text-ink-gray-5">Creator</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ siteUpdate.owner }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-ink-gray-5">Duration</div>
+						<div class="text-sm-medium text-ink-gray-5">Duration</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ siteUpdate.update_duration
 									? this.format_seconds(siteUpdate.update_duration)
@@ -63,13 +63,13 @@
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-ink-gray-5">Start</div>
+						<div class="text-sm-medium text-ink-gray-5">Start</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ $format.date(siteUpdate.update_start, 'lll') }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-ink-gray-5">End</div>
+						<div class="text-sm-medium text-ink-gray-5">End</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ siteUpdate.update_end
 									? $format.date(siteUpdate.update_end, 'lll')

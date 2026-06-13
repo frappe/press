@@ -5,7 +5,7 @@
 		>
 			<template v-for="(item, i) in linkItems" :key="item.label">
 				<router-link
-					class="flex items-center rounded px-0.5 py-1 text-lg font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+					class="flex items-center rounded px-0.5 py-1 text-xl-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
 					:class="[
 						i == linkItems.length - 1
 							? 'text-ink-gray-9'

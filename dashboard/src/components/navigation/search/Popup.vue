@@ -81,7 +81,7 @@ watch(navigationIndex, () => {
 		@click.self="close"
 	>
 		<div
-			class="mt-[15vh] w-full max-w-lg overflow-hidden rounded bg-surface-cards shadow-lg modal-enter"
+			class="mt-[15vh] w-full max-w-lg overflow-hidden rounded bg-surface-elevation-1 shadow-lg modal-enter"
 			@keydown.esc.prevent="close"
 			@keydown.enter.prevent="navigateEnter(close)"
 		>

@@ -3,7 +3,7 @@
 		class="flex flex-1 flex-col gap-6 overflow-y-auto px-20 pb-12 pt-6 lg:px-60 xl:px-96"
 	>
 		<div class="flex flex-col gap-1">
-			<h2 class="text-xl font-semibold text-ink-gray-9">Spending Limits</h2>
+			<h2 class="text-3xl-semibold text-ink-gray-9">Spending Limits</h2>
 			<p class="text-p-base text-ink-gray-5">
 				These determine your monthly spending limit on Frappe Cloud. You are
 				automatically moved to a higher tier once your usage and payment history
@@ -31,7 +31,7 @@
 					<div class="flex flex-col gap-1">
 						<div class="text-sm text-ink-gray-6">Current subscribed amount</div>
 						<div class="flex items-center gap-2">
-							<span class="text-xl font-semibold text-ink-gray-9">
+							<span class="text-3xl-semibold text-ink-gray-9">
 								{{ formatAmount($team.doc.total_subscribed_amount) }}
 							</span>
 						</div>
@@ -55,7 +55,7 @@
 
 			<!-- Tiers table -->
 			<div
-				class="overflow-hidden rounded-lg border border-outline-gray-2 bg-surface-white"
+				class="overflow-hidden rounded-lg border border-outline-gray-2 bg-surface-base"
 			>
 				<table class="w-full text-left">
 					<thead>
@@ -85,7 +85,7 @@
 						>
 							<td class="px-4 py-4 align-middle">
 								<div class="flex flex-wrap items-center gap-2">
-									<span class="text-sm font-semibold text-ink-gray-9">
+									<span class="text-sm-semibold text-ink-gray-9">
 										{{ tier.tier }}
 									</span>
 									<Badge
@@ -104,7 +104,7 @@
 									>
 										<lucide-check-circle-2
 											v-if="req.met"
-											class="h-3.5 w-3.5 shrink-0 text-ink-green-3"
+											class="h-3.5 w-3.5 shrink-0 text-ink-green-6"
 										/>
 										<lucide-circle
 											v-else
@@ -120,7 +120,7 @@
 								</ul>
 							</td>
 							<td class="px-4 py-4 text-right align-middle">
-								<span class="text-sm font-semibold text-ink-gray-9">
+								<span class="text-sm-semibold text-ink-gray-9">
 									{{ formatAmount(tier.amount) }}
 								</span>
 							</td>
@@ -130,12 +130,12 @@
 			</div>
 
 			<!-- How tiers work -->
-			<div class="rounded-lg border border-outline-gray-2 bg-surface-white p-5">
+			<div class="rounded-lg border border-outline-gray-2 bg-surface-base p-5">
 				<div class="flex items-start">
 					<div class="flex flex-col gap-2">
 						<div class="flex items-center gap-2">
 							<lucide-info class="h-5 w-5 shrink-0 text-ink-gray-5" />
-							<div class="text-base font-medium text-ink-gray-9">
+							<div class="text-base-medium text-ink-gray-9">
 								How tier upgrades work
 							</div>
 						</div>
@@ -163,7 +163,7 @@
 										href="https://support.frappe.io"
 										target="_blank"
 										rel="noopener noreferrer"
-										class="text-ink-blue-3 underline underline-offset-2 hover:text-ink-blue-4"
+										class="text-ink-blue-6 underline underline-offset-2 hover:text-ink-blue-8"
 									>
 										support
 									</a>

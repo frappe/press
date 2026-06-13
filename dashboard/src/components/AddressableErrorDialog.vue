@@ -16,7 +16,7 @@
 
 		<div v-if="doc.traceback" class="relative mt-6">
 			<button
-				class="absolute right-2 top-2 rounded-sm border border-outline-gray-1 bg-surface-white p-1 text-xs text-ink-gray-6"
+				class="absolute right-2 top-2 rounded-sm border border-outline-gray-1 bg-surface-base p-1 text-xs text-ink-gray-6"
 				variant="outline"
 				@click="copyTraceback"
 			>

@@ -108,7 +108,7 @@ async function handleSubmit() {
 					<div class="min-w-0">
 						<p class="text-sm leading-5 text-ink-gray-6">{{ stepIndicator }}</p>
 						<h3
-							class="mt-1 truncate text-lg font-semibold leading-6 text-ink-gray-9"
+							class="mt-1 truncate text-xl-semibold leading-6 text-ink-gray-9"
 						>
 							{{ dialogTitle }}
 						</h3>

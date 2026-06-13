@@ -4,7 +4,7 @@
 			<Avatar :image="avatarImage" :label="fullName" size="lg" />
 		</div>
 		<div>
-			<div class="text-sm font-medium text-ink-gray-9">
+			<div class="text-sm-medium text-ink-gray-9">
 				{{ fullName }}
 			</div>
 			<div class="mt-0.5 text-sm text-ink-gray-6">

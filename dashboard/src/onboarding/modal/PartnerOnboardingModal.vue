@@ -107,7 +107,7 @@ const onContinue = () => {
 						class="mb-6 flex items-center justify-between"
 						v-if="!registered"
 					>
-						<h3 class="text-2xl font-semibold text-ink-gray-8">
+						<h3 class="text-4xl-semibold text-ink-gray-8">
 							Interested in partnering with us?
 						</h3>
 						<button

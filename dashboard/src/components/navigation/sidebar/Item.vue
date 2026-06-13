@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<NavItemProps>(), {
 			class="flex text-left items-center rounded w-full py-1.5 px-2 text-ink-gray-7 transition"
 			:class="[
       isActive
-        ? 'bg-surface-gray-2 md:bg-surface-white dark:bg-surface-gray-2 text-ink-gray-8 md:shadow-sm'
+        ? 'bg-surface-gray-2 md:bg-surface-base dark:bg-surface-gray-2 text-ink-gray-8 md:shadow-sm'
         : 'hover:bg-surface-gray-2',
       disabled ? 'pointer-events-none opacity-50' : '',
       collapsed ? 'md:w-fit gap-2 md:gap-0' : 'gap-2 md:w-full',

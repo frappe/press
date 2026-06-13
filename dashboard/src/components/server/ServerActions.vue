@@ -8,7 +8,7 @@
 			:key="group.group"
 			class="divide-y rounded border border-outline-gray-1 p-5"
 		>
-			<div class="pb-3 text-lg font-semibold">{{ group.group }}</div>
+			<div class="pb-3 text-xl-semibold">{{ group.group }}</div>
 			<div
 				class="py-3 first:pt-0 last:pb-0"
 				v-for="row in group.actions"

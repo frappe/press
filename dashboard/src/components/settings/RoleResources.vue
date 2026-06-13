@@ -108,9 +108,9 @@ const props = withDefaults(
 )
 
 const colorClasses = {
-	'Release Group': 'bg-surface-blue-2 text-ink-blue-2',
-	Server: 'bg-surface-amber-1 text-ink-amber-2',
-	Site: 'bg-surface-green-2 text-ink-green-2',
+	'Release Group': 'bg-surface-blue-2 text-ink-blue-5',
+	Server: 'bg-surface-amber-1 text-ink-amber-5',
+	Site: 'bg-surface-green-2 text-ink-green-5',
 }
 
 const emit = defineEmits<{

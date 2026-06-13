@@ -188,7 +188,7 @@ const deleteRole = () => {
 		<!-- Header -->
 		<div class="flex items-center justify-between">
 			<div class="space-y-2">
-				<h2 class="text-2xl font-semibold text-ink-gray-9">Roles</h2>
+				<h2 class="text-4xl-semibold text-ink-gray-9">Roles</h2>
 				<p class="text-ink-gray-5 mt-1">
 					Roles define what actions members of your team can perform. Customize
 					permissions for each role.
@@ -211,11 +211,11 @@ const deleteRole = () => {
 			<div
 				v-for="role in roles"
 				:key="role.value"
-				class="rounded-lg border p-4 space-y-3 cursor-pointer hover:shadow-lg transition-shadow bg-surface-white"
+				class="rounded-lg border p-4 space-y-3 cursor-pointer hover:shadow-lg transition-shadow bg-surface-base"
 				@click="openRoleDetail(role)"
 			>
 				<div class="flex items-center justify-between gap-2">
-					<div class="font-medium text-base truncate">{{ role.label }}</div>
+					<div class=" text-base-medium truncate">{{ role.label }}</div>
 					<Badge :theme="role.is_predefined ? 'blue' : 'green'">
 						{{ role.is_predefined ? 'Standard' : 'Custom' }}
 					</Badge>
@@ -245,7 +245,7 @@ const deleteRole = () => {
 			class="flex flex-col items-center justify-center py-20 text-ink-gray-5"
 		>
 			<LucideLock class="h-10 w-10 mb-3" />
-			<p class="text-lg">No roles found</p>
+			<p class="text-xl">No roles found</p>
 			<p class="text-sm">Create a role to get started.</p>
 		</div>
 
@@ -308,7 +308,7 @@ const deleteRole = () => {
 
 				<!-- Important -->
 				<div class="space-y-2">
-					<div class="font-semibold text-sm uppercase tracking-wider">
+					<div class=" text-sm-semibold uppercase tracking-wider">
 						Important
 					</div>
 					<Switch
@@ -324,9 +324,7 @@ const deleteRole = () => {
 				<!-- General -->
 				<div class="space-y-2">
 					<hr class="mb-8 w-1/3 mx-auto" />
-					<div class="font-semibold text-sm uppercase tracking-wider">
-						General
-					</div>
+					<div class=" text-sm-semibold uppercase tracking-wider">General</div>
 					<div class="divide-y">
 						<div
 							v-for="perm in [
@@ -358,7 +356,7 @@ const deleteRole = () => {
 					class="space-y-2"
 				>
 					<hr class="mb-8 w-1/3 mx-auto" />
-					<div class="font-semibold text-sm uppercase tracking-wider">
+					<div class=" text-sm-semibold uppercase tracking-wider">
 						Partner Permissions
 					</div>
 					<div class="divide-y">

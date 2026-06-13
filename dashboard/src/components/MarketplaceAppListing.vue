@@ -3,7 +3,7 @@
 		<div>
 			<div class="flex justify-between border-b pb-4">
 				<div>
-					<h2 class="text-lg font-medium text-ink-gray-9">App Profile</h2>
+					<h2 class="text-xl-medium text-ink-gray-9">App Profile</h2>
 					<p class="mt-1 text-sm leading-6 text-ink-gray-6">
 						This information will be displayed publicly on the marketplace. Make
 						sure you enter correct information without any broken links and
@@ -16,7 +16,7 @@
 			</div>
 			<div class="grid grid-cols-1 gap-x-5 border-b py-6 md:grid-cols-2">
 				<div class="border-r pr-6">
-					<span class="text-base font-medium">Profile</span>
+					<span class="text-base-medium">Profile</span>
 					<div class="group relative my-4 flex">
 						<div class="flex flex-col">
 							<Avatar
@@ -42,7 +42,7 @@
 								<div class="ml-4">
 									<button
 										@click="openFileSelector()"
-										class="absolute inset-0 grid w-11.5 place-items-center rounded-lg bg-black text-xs font-medium text-white opacity-0 transition hover:opacity-50 focus:opacity-50 focus:outline-none"
+										class="absolute inset-0 grid w-11.5 place-items-center rounded-lg bg-black text-xs-medium text-white opacity-0 transition hover:opacity-50 focus:opacity-50 focus:outline-none"
 										:class="{ 'opacity-50': uploading }"
 									>
 										<span v-if="uploading">{{ progress }}%</span>
@@ -62,7 +62,7 @@
 						/>
 					</div>
 					<div class="sm:col-span-4">
-						<span class="text-base font-medium">Links</span>
+						<span class="text-base-medium">Links</span>
 						<div>
 							<FormControl
 								class="mt-4"
@@ -109,7 +109,7 @@
 				</div>
 				<div class="hidden md:block">
 					<div class="flex w-full">
-						<span class="text-base font-medium">Screenshots and Videos</span>
+						<span class="text-base-medium">Screenshots and Videos</span>
 						<FileUploader
 							class="ml-auto"
 							@success="() => imageAddSuccess('Added screenshot')"
@@ -153,7 +153,7 @@
 				</div>
 			</div>
 			<div class="mt-6">
-				<span class="text-base font-medium">Description</span>
+				<span class="text-base-medium">Description</span>
 				<FormControl
 					class="mt-4"
 					label="Summary"
@@ -164,7 +164,7 @@
 				<div class="mt-4">
 					<span class="text-xs text-ink-gray-6">Description</span>
 					<TextEditor
-						class="mt-1 block w-full rounded border border-outline-gray-1 bg-surface-gray-2 px-2 py-1.5 text-base text-ink-gray-8 placeholder-gray-500 transition-colors hover:border-outline-gray-1 hover:bg-surface-gray-3 focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
+						class="mt-1 block w-full rounded border border-outline-gray-1 bg-surface-gray-2 px-2 py-1.5 text-base text-ink-gray-8 placeholder-gray-500 transition-colors hover:border-outline-gray-1 hover:bg-surface-gray-3 focus:border-outline-gray-4 focus:bg-surface-base focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 						ref="textEditor"
 						editor-class="rounded-b-lg max-w-[unset] prose-sm pb-[10vh]"
 						:content="marketplaceApp.long_description"

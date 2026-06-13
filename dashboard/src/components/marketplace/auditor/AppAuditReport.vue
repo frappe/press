@@ -260,8 +260,8 @@ const heroSurface = computed(() => {
 
 const heroTitleClass = computed(() => {
 	const r = doc.value?.audit_result;
-	if (r === "Fail") return "text-ink-red-4";
-	if (r === "Pass") return "text-ink-green-3";
+	if (r === "Fail") return "text-ink-red-8";
+	if (r === "Pass") return "text-ink-green-6";
 	return "text-ink-gray-9";
 });
 
@@ -301,7 +301,7 @@ v-else-if="auditResource.error"
 			<template v-else>
 				<section
 					id="audit-report-heading"
-					class="scroll-mt-16 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-white shadow-xs"
+					class="scroll-mt-16 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-base shadow-xs"
 					aria-labelledby="audit-summary-title"
 				>
 					<div class="border-b px-4 py-4 sm:px-5 sm:py-5" :class="heroSurface">
@@ -311,7 +311,7 @@ v-else-if="auditResource.error"
 							<div class="min-w-0 space-y-2">
 								<h2
 									id="audit-summary-title"
-									class="text-xl font-semibold leading-snug sm:text-[1.35rem]"
+									class="text-3xl-semibold leading-snug sm:text-[1.35rem]"
 									:class="heroTitleClass"
 								>
 									{{ auditResultHeadline(doc.audit_result) }}
@@ -353,7 +353,7 @@ v-else-if="auditResource.error"
 
 
 
-								<span v-if="checkStats.pass > 0" class="font-medium text-ink-green-3">
+								<span v-if="checkStats.pass > 0" class="font-medium text-ink-green-6">
 									{{ checkStats.pass }} passed
 								</span>
 								<template
@@ -364,7 +364,7 @@ v-else-if="auditResource.error"
 								>
 									<span class="text-ink-gray-4">·</span>
 								</template>
-								<span v-if="checkStats.fail > 0" class="font-medium text-ink-red-4">{{ checkStats.fail
+								<span v-if="checkStats.fail > 0" class="font-medium text-ink-red-8">{{ checkStats.fail
 								}} failed</span>
 								<template v-if="checkStats.warn > 0">
 									<span v-if="checkStats.fail > 0" class="text-ink-gray-4"
@@ -401,14 +401,14 @@ v-else-if="auditResource.error"
 
 				<section
 					v-if="doc.status === 'Failed' && doc.error_traceback"
-					class="scroll-mt-20 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-white"
+					class="scroll-mt-20 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-base"
 					role="region" aria-label="Audit error details">
 					<div class="border-b border-outline-gray-1 px-4 py-3">
 						<div class="flex min-w-0 items-start gap-2.5">
 							<lucide-alert-circle
-class="mt-0.5 h-4 w-4 shrink-0 text-ink-red-3" aria-hidden="true" />
+class="mt-0.5 h-4 w-4 shrink-0 text-ink-red-6" aria-hidden="true" />
 							<div class="min-w-0 space-y-0.5">
-								<p class="text-sm font-medium text-ink-red-3">Audit error</p>
+								<p class="text-sm-medium text-ink-red-6">Audit error</p>
 								<p class="text-xs leading-relaxed text-ink-gray-5">
 									The audit could not complete. Share this traceback with support
 									if you need help.
@@ -429,7 +429,7 @@ class="max-h-64 overflow-auto whitespace-pre-wrap break-words pr-7 font-mono tex
 					<div class="flex flex-wrap items-center justify-between gap-2 px-1">
 						<h3
 							id="audit-checks-heading"
-							class="text-base font-semibold text-ink-gray-9"
+							class="text-base-semibold text-ink-gray-9"
 						>
 							Check results
 						</h3>
@@ -458,7 +458,7 @@ class="max-h-64 overflow-auto whitespace-pre-wrap break-words pr-7 font-mono tex
 							v-for="cat in attentionCategories"
 							:key="cat"
 							:value="accordionValue(cat)"
-							class="scroll-mt-20 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-white shadow-xs"
+							class="scroll-mt-20 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-base shadow-xs"
 						>
 							<AccordionHeader class="flex" as="h4">
 								<AccordionTrigger
@@ -504,7 +504,7 @@ size="sm"
 										>
 											<div class="min-w-0">
 												<div class="flex flex-wrap items-center gap-2">
-													<span class="text-sm font-medium text-ink-gray-9">{{
+													<span class="text-sm-medium text-ink-gray-9">{{
 														row.check_name
 													}}</span>
 												<Badge
@@ -558,7 +558,7 @@ v-if="row.severity" :label="row.severity"
 														</div>
 														<p
 															v-if="occ.rule_id"
-															class="font-mono text-xs font-semibold leading-snug text-ink-gray-9"
+															class="font-mono text-xs-semibold leading-snug text-ink-gray-9"
 														>
 															{{ occ.rule_id }}
 														</p>
@@ -581,7 +581,7 @@ v-if="row.severity" :label="row.severity"
 												</div>
 												<pre
 													v-else-if="parsed.kind === 'object'"
-													class="mt-3 max-h-48 overflow-auto rounded border border-outline-gray-2 bg-surface-white p-2 font-mono text-xs text-ink-gray-8"
+													class="mt-3 max-h-48 overflow-auto rounded border border-outline-gray-2 bg-surface-base p-2 font-mono text-xs text-ink-gray-8"
 													translate="no"
 													>{{ JSON.stringify(parsed.data, null, 2) }}</pre
 												>
@@ -596,9 +596,9 @@ v-if="row.severity" :label="row.severity"
 
 									<div
 										v-if="remediationText(row)"
-										class="mt-4 border-l-[3px] border-l-outline-green-2 pl-3"
+										class="mt-4 border-l-[3px] border-l-outline-green-3 pl-3"
 									>
-										<p class="mb-0.5 text-sm font-medium text-ink-gray-6">
+										<p class="mb-0.5 text-sm-medium text-ink-gray-6">
 											How to fix?
 										</p>
 
@@ -614,10 +614,10 @@ v-if="row.severity" :label="row.severity"
 
 					<details
 						v-if="passedOnlyCategories.length"
-						class="group overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-white shadow-xs [&_summary::-webkit-details-marker]:hidden"
+						class="group overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-base shadow-xs [&_summary::-webkit-details-marker]:hidden"
 					>
 						<summary
-							class="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-ink-gray-9 transition-colors hover:bg-surface-gray-2 focus-visible:bg-surface-gray-2"
+							class="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-left text-sm-medium text-ink-gray-9 transition-colors hover:bg-surface-gray-2 focus-visible:bg-surface-gray-2"
 						>
 							<span>Passed checks ({{ passedOnlyCategories.length }})</span>
 							<lucide-chevron-down
@@ -655,7 +655,7 @@ v-if="row.severity" :label="row.severity"
 										</AccordionTrigger>
 									</AccordionHeader>
 									<AccordionContent
-										class="audit-acc-content overflow-hidden border-t border-outline-gray-2 bg-surface-white"
+										class="audit-acc-content overflow-hidden border-t border-outline-gray-2 bg-surface-base"
 									>
 										<div class="space-y-4 px-4 py-3">
 											<div
@@ -667,7 +667,7 @@ v-if="row.severity" :label="row.severity"
 													class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
 												>
 													<div class="min-w-0">
-													<span class="text-sm font-medium text-ink-gray-9">{{
+													<span class="text-sm-medium text-ink-gray-9">{{
 														row.check_name
 													}}</span>
 													<p
@@ -687,7 +687,7 @@ v-if="row.severity" :label="row.severity"
 												v-if="remediationText(row)"
 												class="mt-3 border-l-[3px] border-l-outline-gray-3 pl-3"
 											>
-												<p class="mb-0.5 text-sm font-medium text-ink-gray-6">
+												<p class="mb-0.5 text-sm-medium text-ink-gray-6">
 													How to fix
 												</p>
 

@@ -57,7 +57,7 @@ const btnSizeCss = {
 const btnCss = {
 	line: '',
 	solid:
-		'hover:bg-surface-gray-2 data-[state=active]:shadow data-[state=active]:bg-surface-white data-[state=active]:dark:bg-surface-gray-3 rounded',
+		'hover:bg-surface-gray-2 data-[state=active]:shadow data-[state=active]:bg-surface-base data-[state=active]:dark:bg-surface-gray-3 rounded',
 	ghost:
 		'hover:bg-surface-gray-2 data-[state=active]:bg-surface-gray-2 rounded',
 }
@@ -85,7 +85,7 @@ const tablistCss = {
 				class="absolute rounded-full"
 				:class="props.vertical ? indicatorYCss : indicatorXCss"
 			>
-				<div class="h-full w-full bg-surface-gray-7" />
+				<div class="h-full w-full bg-surface-gray-10" />
 			</TabsIndicator>
 
 			<TabsTrigger

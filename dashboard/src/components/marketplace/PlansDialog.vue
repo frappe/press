@@ -20,7 +20,7 @@
 				></FormControl>
 			</div>
 			<div class="mb-8">
-				<h3 class="mb-4 text-lg font-semibold">Subscription Price</h3>
+				<h3 class="mb-4 text-xl-semibold">Subscription Price</h3>
 				<div class="grid grid-cols-2 gap-2">
 					<FormControl
 						label="Price INR"
@@ -33,7 +33,7 @@
 				</div>
 			</div>
 			<div>
-				<h3 class="mb-4 text-lg font-semibold">Features</h3>
+				<h3 class="mb-4 text-xl-semibold">Features</h3>
 				<div>
 					<div
 						v-for="(feature, idx) in currentEditingPlan.features"

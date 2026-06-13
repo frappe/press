@@ -15,7 +15,7 @@
 	>
 		<div class="space-y-4">
 			<div class="space-y-2 leading-relaxed">
-				<div class="font-medium text-lg">Title</div>
+				<div class=" text-xl-medium">Title</div>
 				<FormControl
 					v-model="title"
 					type="text"
@@ -25,7 +25,7 @@
 				/>
 			</div>
 			<div class="space-y-2 leading-relaxed">
-				<div class="font-medium text-lg">Users</div>
+				<div class=" text-xl-medium">Users</div>
 				<FormControl
 					type="select"
 					size="sm"
@@ -49,7 +49,7 @@
 				</div>
 			</div>
 			<div class="space-y-2 leading-relaxed">
-				<div class="font-medium text-lg">Resources</div>
+				<div class=" text-xl-medium">Resources</div>
 				<FormControl
 					type="select"
 					size="sm"

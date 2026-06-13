@@ -123,7 +123,7 @@ const helpDropdownOptions = [
 <template>
 	<aside
 		class="relative flex md:min-h-screen p-2 gap-1 flex-col border-r transition-[width]
-    bg-surface-white  md:bg-surface-gray-1 dark:bg-transparent overflow-x-hidden"
+    bg-surface-base  md:bg-surface-gray-1 dark:bg-transparent overflow-x-hidden"
 		:class='collapsed ? " md:w-12" : "w-full md:w-[256px]"'
 	>
 		<div
@@ -135,7 +135,7 @@ const helpDropdownOptions = [
 				<template v-slot="{ open }">
 					<button
 						class="flex gap-2 w-fit md:w-full p-1.5 items-center rounded md:mb-1 bg-surface-gray-2 md:bg-transparent   hover:bg-surface-gray-2"
-						:class="[open ? 'md:bg-surface-white dark:bg-surface-gray-2 shadow-sm' : ''
+						:class="[open ? 'md:bg-surface-base dark:bg-surface-gray-2 shadow-sm' : ''
               , collapsed? 'md:p-0': 'md:p-1'] "
 					>
 						<FCLogo class="size-8 hidden md:flex shrink-0 rounded" />
@@ -145,7 +145,7 @@ const helpDropdownOptions = [
 							class="flex flex-col gap-0.5 ml-1 min-w-0 md:m-0"
 							:class="collapsedCss"
 						>
-							<div class="text-base font-medium hidden md:flex text-ink-gray-9">
+							<div class="text-base-medium hidden md:flex text-ink-gray-9">
 								Frappe Cloud
 							</div>
 

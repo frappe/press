@@ -43,13 +43,13 @@
 					@click="planType = c.name"
 					:class="[
 						planType === c.name
-							? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-							: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+							? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+							: 'border-outline-gray-3 bg-surface-base text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 						'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 					]"
 				>
 					<div class="flex w-full items-center justify-between space-x-2">
-						<span class="text-sm font-medium"> {{ c.name }} </span>
+						<span class="text-sm-medium"> {{ c.name }} </span>
 						<Tooltip :text="c.description">
 							<lucide-info class="h-4 w-4 text-ink-gray-5" />
 						</Tooltip>
@@ -114,7 +114,7 @@
 						@click="serverPlanType = planType.name"
 						:class="[
 							serverPlanType === planType.name
-								? 'border-outline-gray-5 ring-1 ring-gray-900'
+								? 'border-outline-gray-7 ring-1 ring-gray-900'
 								: 'border-outline-gray-2',
 							'flex w-full flex-col overflow-hidden rounded border text-left hover:bg-surface-gray-1',
 						]"
@@ -122,7 +122,7 @@
 						<div class="w-full p-3">
 							<div class="flex items-center justify-between">
 								<div class="flex w-full items-center">
-									<span class="truncate text-lg font-medium text-ink-gray-9">
+									<span class="truncate text-xl-medium text-ink-gray-9">
 										{{ planType.title }}
 									</span>
 								</div>

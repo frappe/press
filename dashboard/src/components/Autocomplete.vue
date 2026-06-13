@@ -33,17 +33,17 @@
 							@change="handleQueryChange"
 							:displayValue="getDisplayValue"
 							:placeholder="!modelValue ? placeholder : null"
-							class="focus:ring-outline-gray-3 h-full w-full rounded border border-outline-gray-1 bg-surface-gray-2 bg-transparent pl-2 pr-5 text-base text-ink-gray-8 placeholder-gray-500 transition-colors focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
+							class="focus:ring-outline-gray-3 h-full w-full rounded border border-outline-gray-1 bg-surface-gray-2 bg-transparent pl-2 pr-5 text-base text-ink-gray-8 placeholder-gray-500 transition-colors focus:border-outline-gray-4 focus:bg-surface-base focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 						/>
 					</div>
 				</template>
 				<template #body="{ isOpen, togglePopover }">
 					<div v-show="isOpen">
 						<ComboboxOptions
-							class="bg-surface-white absolute right-0 z-[999] max-h-[15rem] w-full overflow-y-auto rounded-lg p-0 shadow-2xl"
+							class="bg-surface-base absolute right-0 z-[999] max-h-[15rem] w-full overflow-y-auto rounded-lg p-0 shadow-2xl"
 							v-show="filteredOptions.length"
 						>
-							<div class="w-full list-none bg-surface-white px-1.5 py-1.5">
+							<div class="w-full list-none bg-surface-base px-1.5 py-1.5">
 								<ComboboxOption
 									v-for="option in filteredOptions"
 									v-slot="{ active, selected }"
@@ -62,7 +62,7 @@
 								>
 									<span
 										v-if="String(option.value).startsWith('_separator')"
-										class="!text-text-icons-gray-5 flex w-full items-center gap-2 px-2.5 pb-2 pt-3 text-xs font-medium"
+										class="!text-text-icons-gray-5 flex w-full items-center gap-2 px-2.5 pb-2 pt-3 text-xs-medium"
 									>
 										{{ option.label }}
 									</span>

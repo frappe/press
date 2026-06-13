@@ -57,9 +57,9 @@ function courseLabel(course: string) {
 
 function statusClass(status: string) {
 	if (status === 'Approved') {
-		return 'bg-surface-green-2 text-ink-green-3'
+		return 'bg-surface-green-2 text-ink-green-6'
 	}
-	return 'bg-surface-amber-2 text-ink-amber-3'
+	return 'bg-surface-amber-2 text-ink-amber-6'
 }
 
 function statusLabel(status: string) {
@@ -89,7 +89,7 @@ async function resend(requestName: string) {
 	>
 		<template #body-header>
 			<div class="flex items-start justify-between gap-4">
-				<h3 class="text-lg font-semibold leading-6 text-ink-gray-9">
+				<h3 class="text-xl-semibold leading-6 text-ink-gray-9">
 					Certification link status
 				</h3>
 				<button
@@ -111,7 +111,7 @@ async function resend(requestName: string) {
 					class="flex items-center justify-between gap-4 py-4"
 				>
 					<div class="min-w-0">
-						<p class="truncate text-p-base font-medium text-ink-gray-9">
+						<p class="truncate text-p-base-medium text-ink-gray-9">
 							{{ certificate.user_email }}
 						</p>
 						<p class="truncate text-p-sm text-ink-gray-6">
@@ -119,7 +119,7 @@ async function resend(requestName: string) {
 						</p>
 					</div>
 					<span
-						class="inline-flex shrink-0 items-center rounded bg-surface-green-2 px-2 py-0.5 text-p-sm font-medium text-ink-green-3"
+						class="inline-flex shrink-0 items-center rounded bg-surface-green-2 px-2 py-0.5 text-p-sm-medium text-ink-green-6"
 					>
 						Linked
 					</span>
@@ -131,7 +131,7 @@ async function resend(requestName: string) {
 					class="flex items-center justify-between gap-4 py-4"
 				>
 					<div class="min-w-0">
-						<p class="truncate text-p-base font-medium text-ink-gray-9">
+						<p class="truncate text-p-base-medium text-ink-gray-9">
 							{{ courseLabel(request.course) }}
 						</p>
 						<p class="truncate text-p-sm text-ink-gray-6">
@@ -140,7 +140,7 @@ async function resend(requestName: string) {
 					</div>
 					<div class="flex shrink-0 items-center gap-2">
 						<span
-							class="inline-flex items-center rounded px-2 py-0.5 text-p-sm font-medium"
+							class="inline-flex items-center rounded px-2 py-0.5 text-p-sm-medium"
 							:class="statusClass(request.status)"
 						>
 							{{ statusLabel(request.status) }}

@@ -26,15 +26,15 @@ const resources = [
 </script>
 
 <template>
-	<div class="rounded-lg border border-outline-gray-1 bg-surface-white p-4">
+	<div class="rounded-lg border border-outline-gray-1 bg-surface-base p-4">
 		<OnboardingRightSidebarHeader />
 	</div>
 	<div
-		class="flex h-full flex-col overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-white"
+		class="flex h-full flex-col overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-base"
 	>
 		<!-- Title: Resources -->
 		<div class="px-4 py-3">
-			<p class="text-p-sm font-medium text-ink-gray-5">Resources</p>
+			<p class="text-p-sm-medium text-ink-gray-5">Resources</p>
 		</div>
 
 		<div class="px-1.5">

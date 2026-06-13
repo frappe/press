@@ -1,8 +1,8 @@
 <template>
-	<div class="flex flex-col rounded-md border bg-surface-white p-10 shadow-sm">
+	<div class="flex flex-col rounded-md border bg-surface-base p-10 shadow-sm">
 		<div class="flex items-center">
 			<GreenCheckIcon class="mr-2 h-5 w-5" />
-			<h2 class="text-lg font-medium text-ink-gray-9">
+			<h2 class="text-xl-medium text-ink-gray-9">
 				{{ title }}
 			</h2>
 		</div>

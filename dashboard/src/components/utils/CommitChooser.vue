@@ -12,7 +12,7 @@
 			<div
 				v-if="isOpen"
 				@vue:mounted="focusSearch()"
-				class="relative mt-1 rounded-lg bg-surface-modal text-base shadow-2xl"
+				class="relative mt-1 rounded-lg bg-surface-elevation-2 text-base shadow-2xl"
 			>
 				<div
 					class="max-h-[15rem] w-[clamp(0px,50vw,40rem)] overflow-y-auto px-1.5 pb-1.5 pt-1.5"
@@ -33,7 +33,7 @@
 
 					<div
 						v-if="!searchQuery.length"
-						class="text-xs font-medium text-ink-gray-5 py-2 pl-2"
+						class="text-xs-medium text-ink-gray-5 py-2 pl-2"
 					>
 						Recent
 					</div>
@@ -77,14 +77,11 @@
 							</span>
 							<span
 								v-if="option.is_mandatory"
-								class="text-xs text-blue-500 font-medium"
+								class="text-xs-medium text-blue-500"
 							>
 								Mandatory
 							</span>
-							<span
-								v-if="option.is_yanked"
-								class="text-xs text-red-500 font-medium"
-							>
+							<span v-if="option.is_yanked" class="text-xs-medium text-red-500">
 								Yanked
 							</span>
 						</div>

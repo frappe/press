@@ -45,7 +45,7 @@
 					class="my-3 flex flex-row items-center justify-between px-1.5"
 				>
 					<div class="flex flex-row items-center gap-1">
-						<p class="text-base font-semibold text-ink-gray-8">
+						<p class="text-base-semibold text-ink-gray-8">
 							Usage of
 							{{ noOfDatabases > topNDatabases && !showAllDatabases
 									? `Top ${topNDatabases} Databases`

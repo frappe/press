@@ -10,12 +10,12 @@
 			</div>
 			<!-- card -->
 			<div
-				class="mx-auto w-full bg-surface-white px-4 py-8 sm:mt-6 sm:w-3/6 sm:rounded-2xl sm:px-6 sm:py-6 sm:shadow-2xl"
+				class="mx-auto w-full bg-surface-base px-4 py-8 sm:mt-6 sm:w-3/6 sm:rounded-2xl sm:px-6 sm:py-6 sm:shadow-2xl"
 			>
 				<!-- title -->
 				<div class="mb-7.5 text-center">
 					<p
-						class="text-center text-lg font-medium leading-5 tracking-tight text-ink-gray-9"
+						class="text-center text-xl-medium leading-5 tracking-tight text-ink-gray-9"
 					>
 						Choose an app below to create your first site.
 					</p>

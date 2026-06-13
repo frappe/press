@@ -19,7 +19,7 @@
 
 		<div class="mt-3">
 			<div class="flex w-full items-center">
-				<h2 class="text-lg font-medium text-ink-gray-9">
+				<h2 class="text-xl-medium text-ink-gray-9">
 					{{ siteAction.action_type }}
 				</h2>
 				<Badge class="ml-2" :label="siteAction.status" />
@@ -46,11 +46,9 @@
 			<div>
 				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
 					<div>
-						<div class="text-sm font-medium text-ink-gray-5">
-							Destination Bench
-						</div>
+						<div class="text-sm-medium text-ink-gray-5">Destination Bench</div>
 						<div
-							class="mt-2 text-sm text-ink-blue-3 font-medium"
+							class="mt-2 text-sm-medium text-ink-blue-6"
 							@click="openDestinationBenchPage"
 							v-if="destinationReleaseGroupName"
 							style="cursor: pointer"
@@ -61,11 +59,9 @@
 						<div class="mt-2 text-sm text-ink-gray-9" v-else>-</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-ink-gray-5">
-							Destination Server
-						</div>
+						<div class="text-sm-medium text-ink-gray-5">Destination Server</div>
 						<div
-							class="mt-2 text-sm text-ink-blue-3 font-medium"
+							class="mt-2 text-sm-medium text-ink-blue-6"
 							@click="openDestinationServerPage"
 							v-if="destinationServerName"
 							style="cursor: pointer"
@@ -75,19 +71,19 @@
 						<div class="mt-2 text-sm text-ink-gray-9" v-else>-</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-ink-gray-5">Creation</div>
+						<div class="text-sm-medium text-ink-gray-5">Creation</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ $format.date(siteAction.creation, 'lll') }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-ink-gray-5">Creator</div>
+						<div class="text-sm-medium text-ink-gray-5">Creator</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ siteAction.owner }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-ink-gray-5">Duration</div>
+						<div class="text-sm-medium text-ink-gray-5">Duration</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ siteAction.duration
 									? this.format_seconds(siteAction.duration)
@@ -95,13 +91,13 @@
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-ink-gray-5">Start</div>
+						<div class="text-sm-medium text-ink-gray-5">Start</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ siteAction.start ? $format.date(siteAction.start, 'lll') : '-' }}
 						</div>
 					</div>
 					<div>
-						<div class="text-sm font-medium text-ink-gray-5">End</div>
+						<div class="text-sm-medium text-ink-gray-5">End</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
 							{{ siteAction.end ? $format.date(siteAction.end, 'lll') : '-' }}
 						</div>

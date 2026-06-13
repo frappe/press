@@ -29,13 +29,13 @@
 					@click="planType = c.name"
 					:class="[
 						planType === c.name
-							? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-1'
-							: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+							? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-1'
+							: 'border-outline-gray-3 bg-surface-base text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 						'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 					]"
 				>
 					<div class="flex w-full items-center justify-between space-x-2">
-						<span class="text-sm font-medium"> {{ c.name }} </span>
+						<span class="text-sm-medium"> {{ c.name }} </span>
 						<Tooltip :text="c.description">
 							<lucide-info class="h-4 w-4 text-ink-gray-5" />
 						</Tooltip>

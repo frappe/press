@@ -117,10 +117,10 @@ async function handleSubmit() {
 		:disable-outside-click-to-close="true"
 		size="md"
 	>
-		<form class="bg-surface-modal p-6" @submit.prevent="handleSubmit">
+		<form class="bg-surface-elevation-2 p-6" @submit.prevent="handleSubmit">
 			<div class="flex items-start justify-between gap-4">
 				<div>
-					<h3 class="text-lg font-semibold leading-6 text-ink-gray-9">
+					<h3 class="text-xl-semibold leading-6 text-ink-gray-9">
 						Link certificate
 					</h3>
 					<p class="mt-1.5 text-p-sm leading-5 text-ink-gray-6">
@@ -147,17 +147,17 @@ async function handleSubmit() {
 						class="flex min-w-0 items-center gap-2 rounded-md border px-3 py-2.5 text-left transition-colors"
 						:class="certificateType === type.value
 							? 'border-outline-gray-4 bg-surface-gray-1 shadow-sm'
-							: 'border-outline-gray-2 bg-surface-white hover:border-outline-gray-3 hover:bg-surface-gray-1'
+							: 'border-outline-gray-2 bg-surface-base hover:border-outline-gray-3 hover:bg-surface-gray-1'
 							"
 						:aria-pressed="certificateType === type.value"
 						@click="selectCertificateType(type.value)"
 					>
 						<span
-							class="grid size-7 shrink-0 place-items-center overflow-hidden rounded bg-surface-white"
+							class="grid size-7 shrink-0 place-items-center overflow-hidden rounded bg-surface-base"
 						>
 							<img :src="type.logo" :alt="type.label" class="size-5" />
 						</span>
-						<span class="truncate text-p-sm font-medium text-ink-gray-8">
+						<span class="truncate text-p-sm-medium text-ink-gray-8">
 							{{ type.label }}
 						</span>
 					</button>

@@ -11,7 +11,7 @@
 			</div>
 		</div>
 
-		<span class="font-semibold text-base mt-2 text-ink-gray-6 tracking-[0.02em]"
+		<span class=" text-base-semibold mt-2 text-ink-gray-6 tracking-[0.02em]"
 			>No usage yet</span
 		>
 		<p class="text-ink-gray-5 leading-relaxed tracking-[0.02em]">

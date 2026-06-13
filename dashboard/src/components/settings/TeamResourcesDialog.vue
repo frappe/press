@@ -195,10 +195,10 @@ watch(
 
 	<Dialog v-model="isDialogOpen" size="2xl">
 		<template #body>
-			<div class="p-6 text-base space-y-4 font-normal">
+			<div class="p-6 text-base space-y-4">
 				<!-- Header -->
 				<div class="flex items-center justify-between">
-					<div class="text-2xl font-semibold">{{ userName }}'s Resources</div>
+					<div class="text-4xl-semibold">{{ userName }}'s Resources</div>
 					<div class="flex items-center gap-2">
 						<Button
 							icon-left="lucide-refresh-ccw"

@@ -294,7 +294,7 @@
 		</div>
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
-				<h2 class="text-lg font-medium text-ink-gray-9">Site Information</h2>
+				<h2 class="text-xl-medium text-ink-gray-9">Site Information</h2>
 			</div>
 			<div>
 				<div

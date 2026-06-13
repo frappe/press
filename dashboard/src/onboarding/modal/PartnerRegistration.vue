@@ -150,7 +150,7 @@ function stripHtmlTags(value: string) {
 			:maxlength="companyNameMaxLength"
 			:class="{ 'has-error': errors.company_name }"
 		/>
-		<p v-if="errors.company_name" class="-mt-2 text-sm text-ink-red-4">
+		<p v-if="errors.company_name" class="-mt-2 text-sm text-ink-red-8">
 			{{ errors.company_name }}
 		</p>
 
@@ -173,7 +173,7 @@ function stripHtmlTags(value: string) {
 				:class="{ 'has-error': errors.country }"
 			/>
 		</div>
-		<p v-if="errors.country" class="-mt-2 text-sm text-ink-red-4">
+		<p v-if="errors.country" class="-mt-2 text-sm text-ink-red-8">
 			{{ errors.country }}
 		</p>
 
@@ -196,11 +196,11 @@ function stripHtmlTags(value: string) {
 			placeholder="Mobile number"
 			:class="{ 'has-error': errors.contact }"
 		/>
-		<p v-if="errors.contact" class="-mt-2 text-sm text-ink-red-4">
+		<p v-if="errors.contact" class="-mt-2 text-sm text-ink-red-8">
 			{{ errors.contact }}
 		</p>
 
-		<p v-if="submitError" class="text-sm text-ink-red-4">
+		<p v-if="submitError" class="text-sm text-ink-red-8">
 			{{ submitError }}
 		</p>
 	</form>
@@ -209,6 +209,6 @@ function stripHtmlTags(value: string) {
 <style scoped>
 .has-error :deep(input),
 .has-error :deep(button) {
-	border-color: var(--outline-red-3);
+	border-color: var(--outline-red-4);
 }
 </style>

@@ -49,7 +49,7 @@
 		/>
 
 		<div v-if="selectedSite" class="mt-4">
-			<p class="text text-base text-ink-gray-8 font-semibold mb-4">
+			<p class="text text-base-semibold text-ink-gray-8 mb-4">
 				Please select the data you want to restore :
 			</p>
 			<div class="flex flex-col gap-2">

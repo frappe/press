@@ -38,15 +38,15 @@
 					<thead class="bg-surface-gray-2">
 						<tr>
 							<th
-								class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
+								class="px-4 py-2 text-left text-sm-medium text-ink-gray-7 border-b"
 							></th>
 							<th
-								class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
+								class="px-4 py-2 text-left text-sm-medium text-ink-gray-7 border-b"
 							>
 								App Server
 							</th>
 							<th
-								class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
+								class="px-4 py-2 text-left text-sm-medium text-ink-gray-7 border-b"
 							>
 								Database Server
 							</th>
@@ -111,7 +111,7 @@
 					</Button>
 
 					<div class="flex flex-row items-center gap-1">
-						<p class="text-sm font-medium text-ink-gray-8">
+						<p class="text-sm-medium text-ink-gray-8">
 							{{ sites.length }}
 							Site{{ sites.length > 1 ? 's' : '' }}
 							Recoverable

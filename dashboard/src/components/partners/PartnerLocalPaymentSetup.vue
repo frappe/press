@@ -10,7 +10,7 @@
 					<div>M-Pesa Express Credentials</div>
 					<Button @click="showAddMpesaDialog = true">Edit</Button>
 				</div>
-				<div class="overflow-hidden text-ellipsis text-base font-medium">
+				<div class="overflow-hidden text-ellipsis text-base-medium">
 					<span class="font-normal text-ink-gray-6"
 						>{{ mpesaSetupId || 'Not Set' }}</span
 					>
@@ -33,7 +33,7 @@
 						>Edit</Button
 					>
 				</div>
-				<div class="overflow-hidden text-ellipsis text-base font-medium">
+				<div class="overflow-hidden text-ellipsis text-base-medium">
 					<span class="font-normal text-ink-gray-6"
 						>{{ paymentGatewayID || 'Not set' }}</span
 					>
@@ -52,7 +52,7 @@
 					<div>Partner Payment Payout</div>
 					<Button @click="showPartnerPaymentPayout = true">Edit</Button>
 				</div>
-				<div class="overflow-hidden text-ellipsis text-base font-medium">
+				<div class="overflow-hidden text-ellipsis text-base-medium">
 					<span class="font-normal text-ink-gray-6">Not set</span>
 				</div>
 			</div>

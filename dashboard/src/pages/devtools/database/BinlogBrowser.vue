@@ -7,7 +7,7 @@
 				!binlog_indexer_enabled,
 		}"
 	>
-		<Header class="sticky top-0 z-10 bg-surface-white">
+		<Header class="sticky top-0 z-10 bg-surface-base">
 			<div
 				class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
 			>
@@ -259,12 +259,12 @@
 		</div>
 
 		<div
-			class="z-2000 bg-surface-white absolute inset-0 flex justify-center items-center"
+			class="z-2000 bg-surface-base absolute inset-0 flex justify-center items-center"
 			v-if="binlog_index_state_loaded && binlog_indexer_running"
 		>
 			<div class="flex flex-col items-center gap-3 text-center px-6 max-w-lg">
 				<lucide-construction class="h-8 w-8 text-ink-gray-8 mb-1" />
-				<h2 class="text-xl font-semibold text-ink-gray-9">
+				<h2 class="text-3xl-semibold text-ink-gray-9">
 					Binlog Browser Temporarily Unavailable
 				</h2>
 				<p class="text-ink-gray-6">
@@ -277,20 +277,20 @@
 		</div>
 
 		<div
-			class="z-3000 bg-surface-white absolute inset-0 flex justify-center items-center"
+			class="z-3000 bg-surface-base absolute inset-0 flex justify-center items-center"
 			v-if="binlog_index_state_loaded && !binlog_indexer_enabled"
 		>
 			<div class="flex flex-col items-center gap-3 text-center px-6 max-w-lg">
 				<lucide-construction class="h-8 w-8 text-ink-gray-8 mb-1" />
 				<h2
-					class="text-xl font-semibold text-ink-gray-9"
+					class="text-3xl-semibold text-ink-gray-9"
 					v-if="
 						site_hosted_on_shared_server || database_server_memory < 8 * 1024
 					"
 				>
 					Binlog Browser Not Available
 				</h2>
-				<h2 class="text-xl font-semibold text-ink-gray-9" v-else>
+				<h2 class="text-3xl-semibold text-ink-gray-9" v-else>
 					Binlog Indexing Disabled
 				</h2>
 				<p class="text-ink-gray-6" v-if="site_hosted_on_shared_server">

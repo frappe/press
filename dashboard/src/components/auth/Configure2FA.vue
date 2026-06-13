@@ -20,7 +20,7 @@
 
 			<!-- Steps for user to follow -->
 			<div class="rounded border border-outline-gray-1 bg-surface-gray-1 p-4">
-				<h3 class="text-lg font-semibold">Steps to Disable 2FA</h3>
+				<h3 class="text-xl-semibold">Steps to Disable 2FA</h3>
 				<ol class="mt-2 list-disc pl-2 text-sm">
 					<li>Open the authenticator app</li>
 					<li>Enter the code from the app below</li>
@@ -47,7 +47,7 @@
 
 			<!-- Steps for user to follow -->
 			<div class="rounded border border-outline-gray-1 bg-surface-gray-1 p-4">
-				<h3 class="text-lg font-semibold">Steps to Enable 2FA</h3>
+				<h3 class="text-xl-semibold">Steps to Enable 2FA</h3>
 				<ol class="ml-1 mt-2 list-disc pl-2 text-sm text-ink-gray-7">
 					<li>
 						Download an authenticator app on your phone, such as
@@ -96,7 +96,7 @@
 				v-if="showSetupKey"
 				class="rounded border border-outline-gray-1 bg-surface-gray-1 p-4"
 			>
-				<h3 class="text-lg font-semibold">Setup Key</h3>
+				<h3 class="text-xl-semibold">Setup Key</h3>
 				<p class="mt-2 text-sm">
 					{{ setupKey }}
 				</p>

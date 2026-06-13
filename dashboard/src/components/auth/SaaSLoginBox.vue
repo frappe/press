@@ -15,15 +15,15 @@
 			</div>
 			<!-- card -->
 			<div
-				class="mx-auto w-full bg-surface-white px-4 py-8 sm:mt-6 sm:w-112 sm:rounded-2xl sm:px-6 sm:py-6 sm:shadow-2xl"
+				class="mx-auto w-full bg-surface-base px-4 py-8 sm:mt-6 sm:w-112 sm:rounded-2xl sm:px-6 sm:py-6 sm:shadow-2xl"
 			>
 				<!-- title -->
 				<div class="mb-7.5 text-center">
-					<p class="mb-2 text-2xl font-semibold leading-6 text-ink-gray-9">
+					<p class="mb-2 text-4xl-semibold leading-6 text-ink-gray-9">
 						{{ title }}
 					</p>
 					<p
-						class="break-words text-base font-normal leading-[21px] text-ink-gray-7"
+						class="break-words text-base leading-[21px] text-ink-gray-7"
 						v-if="subtitle"
 					>
 						<template

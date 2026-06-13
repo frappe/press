@@ -7,7 +7,7 @@
 		>
 			<img :src="app.image" class="h-6 w-6" />
 			<div class="flex flex-col gap-1">
-				<p class="text-lg font-medium leading-snug text-ink-gray-9">
+				<p class="text-xl-medium leading-snug text-ink-gray-9">
 					{{ app.title }}
 				</p>
 				<p

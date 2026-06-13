@@ -41,7 +41,7 @@
 								class="mr-2 h-8 w-8 rounded"
 							/>
 							<div class="space-y-1">
-								<p class="text-lg font-medium">{{ app.title }}</p>
+								<p class="text-xl-medium">{{ app.title }}</p>
 								<p class="line-clamp-1 text-sm text-ink-gray-6">
 									{{ app.description }}
 								</p>
@@ -58,11 +58,11 @@
 				/>
 			</div>
 			<template #footer>
-				<span class="ml-4 text-base font-normal text-ink-gray-6">
+				<span class="ml-4 text-base text-ink-gray-6">
 					{{ 'Skip creating a site? ' }}
 				</span>
 				<router-link
-					class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
+					class="text-base text-ink-gray-9 underline hover:text-ink-gray-7"
 					:to="{
 						name: 'Site List',
 					}"

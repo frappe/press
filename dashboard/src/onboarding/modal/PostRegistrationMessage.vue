@@ -13,7 +13,7 @@ const emit = defineEmits(['continue'])
 <template>
 	<div class="flex flex-col gap-3.5 self-stretch justify-center items-center">
 		<SuccessCheckIcon class="w-10 h-10" />
-		<h2 class="text-2xl font-semibold text-ink-gray-8">
+		<h2 class="text-4xl-semibold text-ink-gray-8">
 			Thank you for registering as a Frappe partner!
 		</h2>
 		<p class="text-p-base text-ink-gray-6 min-w-[400px]">

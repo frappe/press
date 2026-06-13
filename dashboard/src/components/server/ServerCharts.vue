@@ -159,7 +159,7 @@
 			class="!mt-6 flex w-fit cursor-pointer space-x-2"
 			@click="toggleAdvancedAnalytics"
 		>
-			<h2 class="text-lg font-semibold">Advanced Analytics</h2>
+			<h2 class="text-xl-semibold">Advanced Analytics</h2>
 			<span
 				:class="[showAdvancedAnalytics ? 'lucide-chevron-down' : 'lucide-chevron-right', 'h-5 w-5 text-ink-gray-5 hover:text-ink-gray-7']"
 			/>

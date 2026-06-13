@@ -161,9 +161,7 @@
 
 			<div class="rounded-md border">
 				<div class="h-12 border-b px-5 py-4">
-					<h2 class="text-lg font-medium text-ink-gray-9">
-						Server Information
-					</h2>
+					<h2 class="text-xl-medium text-ink-gray-9">Server Information</h2>
 				</div>
 				<div>
 					<div
@@ -172,7 +170,7 @@
 						class="flex items-center px-5 py-3 last:pb-5 even:bg-surface-gray-1"
 					>
 						<div class="w-1/3 text-base text-ink-gray-7">{{ d.label }}</div>
-						<div class="w-2/3 text-base font-medium">{{ d.value }}</div>
+						<div class="w-2/3 text-base-medium">{{ d.value }}</div>
 					</div>
 				</div>
 			</div>

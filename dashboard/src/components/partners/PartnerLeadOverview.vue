@@ -9,7 +9,7 @@
 				<div class="flex justify-between">
 					<div class="flex gap-3">
 						<div>
-							<h1 class="text-3xl font-semibold">
+							<h1 class="text-5xl-semibold">
 								{{ lead?.organization_name }}
 							</h1>
 						</div>
@@ -39,7 +39,7 @@
 				<div class="rounded-lg text-base text-ink-gray-9 border">
 					<div class="p-4">
 						<div class="flex items-center justify-between pb-2">
-							<div class="font-semibold text-xl">Company Information</div>
+							<div class=" text-3xl-semibold">Company Information</div>
 							<Button
 								variant="subtle"
 								@click="
@@ -69,7 +69,7 @@
 											label="Starter Pack"
 										/>
 									</div>
-									<div v-else class="text-lg font-medium py-2">
+									<div v-else class="text-xl-medium py-2">
 										{{ item.value || '-' }}
 									</div>
 								</div>
@@ -81,7 +81,7 @@
 				<div class="rounded-lg text-base text-ink-gray-9 border">
 					<div class="p-4">
 						<div class="flex items-center justify-between pb-2">
-							<div class="font-semibold text-xl">Contact Info</div>
+							<div class=" text-3xl-semibold">Contact Info</div>
 						</div>
 						<div class="my-1 h-px bg-surface-gray-2" />
 						<div class="pt-2">
@@ -90,7 +90,7 @@
 									<div class="text-sm text-ink-gray-6">
 										{{ item.label }}
 									</div>
-									<div class="text-lg font-medium py-2">
+									<div class="text-xl-medium py-2">
 										{{ item.value || '-' }}
 									</div>
 								</div>
@@ -102,7 +102,7 @@
 				<div class="rounded-lg text-base text-ink-gray-9 border">
 					<div class="p-4">
 						<div class="flex items-center justify-between pb-2">
-							<div class="font-semibold text-xl">Deal Info</div>
+							<div class=" text-3xl-semibold">Deal Info</div>
 						</div>
 						<div class="my-1 h-px bg-surface-gray-2" />
 						<div class="pt-2">
@@ -119,7 +119,7 @@
 											:label="item.value"
 										/>
 									</div>
-									<div v-else class="text-lg font-medium py-2">
+									<div v-else class="text-xl-medium py-2">
 										{{ item.value || '-' }}
 									</div>
 								</div>
@@ -127,7 +127,7 @@
 							<!-- <div class="my-1 h-px bg-surface-gray-2" /> -->
 							<div class="pt-2">
 								<div class="text-sm text-ink-gray-6">Requirement</div>
-								<div class="text-base leading-6 font-normal py-2">
+								<div class="text-base leading-6 py-2">
 									<div v-html="lead?.requirement"></div>
 								</div>
 							</div>

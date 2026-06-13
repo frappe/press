@@ -1,5 +1,5 @@
 <template>
-	<Header class="sticky top-0 z-10 bg-surface-white">
+	<Header class="sticky top-0 z-10 bg-surface-base">
 		<div
 			class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
 		>

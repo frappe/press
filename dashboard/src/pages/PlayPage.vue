@@ -10,7 +10,7 @@
 		<div class="mt-3">
 			<div>
 				<div class="flex items-center">
-					<h2 class="text-lg font-medium text-ink-gray-9">{{ play.play }}</h2>
+					<h2 class="text-xl-medium text-ink-gray-9">{{ play.play }}</h2>
 					<Badge class="ml-2" :label="play.status" />
 					<div class="ml-auto space-x-2">
 						<Button
@@ -35,31 +35,31 @@
 				<div>
 					<div class="mt-4 grid grid-cols-5 gap-4">
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">Creation</div>
+							<div class="text-sm-medium text-ink-gray-5">Creation</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ $format.date(play.creation, 'lll') }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">Creator</div>
+							<div class="text-sm-medium text-ink-gray-5">Creator</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ play.owner }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">Duration</div>
+							<div class="text-sm-medium text-ink-gray-5">Duration</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ $format.duration(play.duration) }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">Start</div>
+							<div class="text-sm-medium text-ink-gray-5">Start</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ $format.date(play.start, 'lll') }}
 							</div>
 						</div>
 						<div>
-							<div class="text-sm font-medium text-ink-gray-5">End</div>
+							<div class="text-sm-medium text-ink-gray-5">End</div>
 							<div class="mt-2 text-sm text-ink-gray-9">
 								{{ $format.date(play.end, 'lll') }}
 							</div>

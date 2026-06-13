@@ -57,7 +57,7 @@ defineExpose({ validate })
 				<LucideMail class="h-4 w-4 text-ink-gray-4" />
 			</template>
 		</FormControl>
-		<p v-if="error" class="mt-1 text-sm text-ink-red-4">
+		<p v-if="error" class="mt-1 text-sm text-ink-red-8">
 			{{ error }}
 		</p>
 	</div>
@@ -65,6 +65,6 @@ defineExpose({ validate })
 
 <style scoped>
 .has-error :deep(input) {
-	border-color: var(--outline-red-3);
+	border-color: var(--outline-red-4);
 }
 </style>

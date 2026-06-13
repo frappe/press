@@ -4,7 +4,7 @@
 			<div class="flex flex-col gap-2.5 px-4 py-3">
 				<div class="flex items-center justify-between">
 					<div class="flex flex-col gap-1.5">
-						<div class="text-lg font-semibold">Recurring Charges</div>
+						<div class="text-xl-semibold">Recurring Charges</div>
 						<div class="text-ink-gray-7">
 							<span>Next charge date — </span>
 							<span>{{ currentMonthEnd() }}</span>

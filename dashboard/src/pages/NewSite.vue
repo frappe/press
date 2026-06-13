@@ -31,7 +31,7 @@
 			/>
 			<div v-if="!bench">
 				<div class="flex items-center justify-between">
-					<h2 class="text-base font-medium leading-6 text-ink-gray-9">
+					<h2 class="text-base-medium leading-6 text-ink-gray-9">
 						Select Frappe Framework Version
 					</h2>
 				</div>
@@ -54,8 +54,8 @@
 							<button
 								:class="[
 									version === v.name
-										? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-										: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
+										? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+										: 'bg-surface-base text-ink-gray-9  hover:bg-surface-gray-1',
 									v.disabled && 'opacity-50 hover:cursor-default',
 									'flex w-full cursor-pointer items-center justify-between rounded border border-outline-gray-3 p-3 text-sm focus:outline-none',
 								]"
@@ -125,7 +125,7 @@
 					label="Host this site on your dedicated server"
 				/>
 				<div v-if="shouldShowDedicatedServerDropdown">
-					<h2 class="text-base font-medium leading-6 text-ink-gray-9 mb-2">
+					<h2 class="text-base-medium leading-6 text-ink-gray-9 mb-2">
 						Select Dedicated Server
 					</h2>
 					<FormControl
@@ -150,7 +150,7 @@
 				"
 				class="flex flex-col"
 			>
-				<h2 class="text-base font-medium leading-6 text-ink-gray-9">
+				<h2 class="text-base-medium leading-6 text-ink-gray-9">
 					Select Provider
 				</h2>
 				<div class="mt-2 w-full space-y-2">
@@ -161,8 +161,8 @@
 							@click="provider = p.name"
 							:class="[
 								provider === p.name
-									? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-									: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+									? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+									: 'border-outline-gray-3 bg-surface-base text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 								'flex w-full items-center rounded-md border p-2 text-left text-base text-ink-gray-9',
 							]"
 						>
@@ -173,7 +173,7 @@
 										:src="p.image"
 										class="h-5 w-5 rounded-sm"
 									/>
-									<span class="text-sm font-medium"> {{ p.title }} </span>
+									<span class="text-sm-medium"> {{ p.title }} </span>
 								</div>
 							</div>
 						</button>
@@ -189,7 +189,7 @@
 					(provider || bench)
 				"
 			>
-				<h2 class="text-base font-medium leading-6 text-ink-gray-9">
+				<h2 class="text-base-medium leading-6 text-ink-gray-9">
 					Select Region
 				</h2>
 				<div class="mt-2 w-full space-y-2">
@@ -200,15 +200,15 @@
 							@click="cluster = c.name"
 							:class="[
 								cluster === c.name
-									? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-									: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
+									? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+									: 'bg-surface-base text-ink-gray-9  hover:bg-surface-gray-1',
 								'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 							]"
 						>
 							<div class="flex w-full items-center justify-between">
 								<div class="flex w-full items-center space-x-2">
 									<img :src="c.image" class="h-5 w-5" />
-									<span class="text-sm font-medium"> {{ c.title }} </span>
+									<span class="text-sm-medium"> {{ c.title }} </span>
 								</div>
 								<Badge v-if="c.beta" :label="c.beta ? 'Beta' : ''" />
 							</div>
@@ -223,7 +223,7 @@
 				:class="isDedicatedServerSite ? 'hidden' : ''"
 			>
 				<div class="flex items-center justify-between">
-					<h2 class="text-base font-medium leading-6 text-ink-gray-9">
+					<h2 class="text-base-medium leading-6 text-ink-gray-9">
 						Select Plan
 					</h2>
 					<div>
@@ -251,7 +251,7 @@
 				</div>
 				<div v-if="isPrivateBenchPlan" class="mt-4 text-xs text-ink-gray-7">
 					<div
-						class="flex items-center rounded bg-blue-50 p-2 text-p-base font-medium text-blue-800"
+						class="flex items-center rounded bg-blue-50 p-2 text-p-base-medium text-blue-800"
 					>
 						<lucide-info class="h-4 w-8 text-blue-600" />
 						<span class="ml-4">
@@ -266,7 +266,7 @@
 					class="mt-4 text-xs text-ink-gray-7"
 				>
 					<div
-						class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base font-medium text-ink-gray-8"
+						class="flex items-center rounded bg-surface-gray-1 p-2 text-p-base-medium text-ink-gray-8"
 					>
 						<lucide-badge-check class="h-4 w-8 text-ink-gray-6" />
 						<span class="ml-4">
@@ -279,7 +279,7 @@
 			</div>
 			<div v-if="selectedVersion && plan && cluster">
 				<div class="flex justify-between items-center">
-					<h2 class="text-base font-medium leading-6 text-ink-gray-9">
+					<h2 class="text-base-medium leading-6 text-ink-gray-9">
 						Enter Subdomain
 					</h2>
 					<Tooltip
@@ -292,7 +292,7 @@
 				<div class="mt-2 items-center">
 					<div class="col-span-2 flex w-full">
 						<input
-							class="dark:[color-scheme:dark] z-10 h-7 w-full flex-1 rounded rounded-r-none border border-[--surface-gray-2] bg-surface-gray-2 py-1.5 pl-2 pr-2 text-base text-ink-gray-8 placeholder-ink-gray-4 transition-colors hover:border-outline-gray-modals hover:bg-surface-gray-3 focus:border-outline-gray-4 focus:bg-surface-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+							class="dark:[color-scheme:dark] z-10 h-7 w-full flex-1 rounded rounded-r-none border border-[--surface-gray-2] bg-surface-gray-2 py-1.5 pl-2 pr-2 text-base text-ink-gray-8 placeholder-ink-gray-4 transition-colors hover:border-outline-elevation-2 hover:bg-surface-gray-3 focus:border-outline-gray-4 focus:bg-surface-base focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 							placeholder="Subdomain"
 							v-model="subdomain"
 						/>

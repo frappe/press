@@ -4,7 +4,7 @@
 			class="mx-auto max-w-2xl rounded-lg border-0 px-2 py-8 sm:border sm:p-8 space-y-8 mt-10"
 		>
 			<div class="prose prose-sm max-w-none">
-				<h1 class="text-2xl font-semibold">Servers</h1>
+				<h1 class="text-4xl-semibold">Servers</h1>
 				<p class="text-p-base">
 					With Servers on Frappe Cloud, you now get dedicated compute resources
 					for your sites. Servers come in pairs (Application + Database). You
@@ -13,9 +13,7 @@
 				</p>
 			</div>
 			<div class="space-y-3">
-				<h2 class="text-sm font-semibold tracking-wide text-ink-gray-7">
-					Features
-				</h2>
+				<h2 class="text-sm-semibold tracking-wide text-ink-gray-7">Features</h2>
 				<ul class="space-y-2">
 					<li v-for="f in features" :key="f" class="flex items-center gap-2">
 						<GreenCheckIcon class="h-4 w-4 shrink-0" />
@@ -26,7 +24,7 @@
 					<Link
 						href="https://docs.frappe.io/cloud/servers/servers-introduction"
 						target="_blank"
-						class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-700"
+						class="inline-flex items-center text-sm-medium text-indigo-600 hover:text-indigo-700"
 						>Read more →</Link
 					>
 				</div>

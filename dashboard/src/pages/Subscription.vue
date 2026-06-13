@@ -3,7 +3,7 @@
 		<LoginBox>
 			<h1 class="text-base text-ink-gray-6">Manage Subscription</h1>
 			<div class="mt-4">
-				<div class="text-xl font-medium text-ink-gray-9">
+				<div class="text-3xl-medium text-ink-gray-9">
 					{{ site }}
 				</div>
 				<div
@@ -22,15 +22,12 @@
 						class="flex w-full items-center justify-between rounded-sm bg-surface-gray-2 p-2 hover:bg-surface-gray-3"
 						@click="currentStep = 1"
 					>
-						<span class="text-sm font-medium text-ink-gray-7">
+						<span class="text-sm-medium text-ink-gray-7">
 							{{ $resources.subscription.data.current_plan
 									? 'Change plan'
 									: 'Step 1: Select plan' }}
 						</span>
-						<span
-							class="text-sm font-bold text-ink-gray-9"
-							v-if="currentStep === 2"
-						>
+						<span class="text-sm-bold text-ink-gray-9" v-if="currentStep === 2">
 							{{ selectedPlan.plan_title }}<span class="font-normal">/mo</span>
 						</span>
 					</button>
@@ -48,7 +45,7 @@
 						>
 							<div class="flex items-center justify-between">
 								<div>
-									<span class="text-base font-medium text-ink-gray-9">
+									<span class="text-base-medium text-ink-gray-9">
 										{{ plan.plan_title }}
 									</span>
 									<span class="text-base text-ink-gray-6">/mo</span>
@@ -99,7 +96,7 @@
 				</div>
 				<div class="mt-2" v-if="currentStep == 2">
 					<div
-						class="rounded-sm bg-surface-gray-2 p-2 text-sm font-medium text-ink-gray-7"
+						class="rounded-sm bg-surface-gray-2 p-2 text-sm-medium text-ink-gray-7"
 					>
 						Step 2: Setup billing
 					</div>

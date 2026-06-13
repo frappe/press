@@ -3,7 +3,7 @@
 		<div class="p-4 my-4 rounded border-[1.5px]">
 			<div class="flex justify-between">
 				<div class="flex flex-col gap-2.5">
-					<div class="text-2xl font-medium">
+					<div class="text-4xl-medium">
 						{{ ncSummaryDoc?.doc?.nc_statement }}
 					</div>
 					<div class="flex items-center gap-2.5 text-base text-ink-gray-5">
@@ -25,7 +25,7 @@
 		</div>
 		<div class="p-4 my-4 rounded border-[1.5px]">
 			<div class="flex flex-col gap-4">
-				<div class="flex font-semibold gap-2.5 text-lg">Audit Information</div>
+				<div class="flex gap-2.5 text-xl-semibold">Audit Information</div>
 				<div class="grid grid-cols-2">
 					<div class="flex flex-col gap-1">
 						<div class="text-base text-ink-gray-6">Conducted By</div>
@@ -44,9 +44,7 @@
 		</div>
 		<div class="p-4 my-4 rounded border-[1.5px]">
 			<div class="flex flex-col gap-4">
-				<div class="flex gap-2.5 font-semibold text-lg">
-					Closure Information
-				</div>
+				<div class="flex gap-2.5 text-xl-semibold">Closure Information</div>
 				<div class="grid grid-cols-2">
 					<div class="flex flex-col gap-1">
 						<div class="text-base text-ink-gray-6">Closed By</div>
@@ -67,7 +65,7 @@
 			v-if="ncSummaryDoc?.doc?.nc_description"
 			class="p-4 my-4 flex flex-col gap-2.5 rounded border-[1.5px]"
 		>
-			<div class="text-lg font-semibold pb-1">Description</div>
+			<div class="text-xl-semibold pb-1">Description</div>
 			<div
 				class="text-base text-ink-gray-8 whitespace-pre-line leading-relaxed"
 			>
@@ -78,7 +76,7 @@
 			v-if="ncSummaryDoc?.doc?.measures_to_close_nc"
 			class="p-4 my-4 flex flex-col gap-2.5 rounded border-[1.5px]"
 		>
-			<div class="text-lg font-semibold pb-1">Measures to be taken</div>
+			<div class="text-xl-semibold pb-1">Measures to be taken</div>
 			<div
 				class="text-base text-ink-gray-8 whitespace-pre-line leading-relaxed"
 			>
@@ -92,7 +90,7 @@
 			class="flex flex-col gap-6 items-center justify-center h-96 border-[1px] rounded p-5 ml-5"
 		>
 			<span class="lucide-file-text mr-2 h-10 w-10 text-ink-gray-5" />
-			<div class="text-lg text-ink-gray-6">
+			<div class="text-xl text-ink-gray-6">
 				Select a Non Conformance to view details
 			</div>
 		</div>

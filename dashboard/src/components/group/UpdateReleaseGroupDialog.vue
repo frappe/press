@@ -34,7 +34,7 @@
 		<div class="space-y-4">
 			<!-- Select Apps Step -->
 			<div v-if="step === 'select-apps'">
-				<h2 class="mb-4 text-lg font-medium">
+				<h2 class="mb-4 text-xl-medium">
 					{{ lastDeploy ? 'Select apps to update' : 'Deploy Apps' }}
 				</h2>
 				<GenericList
@@ -50,13 +50,13 @@
 
 			<!-- Remove Apps Step -->
 			<div v-else-if="step === 'removed-apps'">
-				<h2 class="mb-4 text-lg font-medium">These apps will be removed</h2>
+				<h2 class="mb-4 text-xl-medium">These apps will be removed</h2>
 				<GenericList class="max-h-[500px]" :options="removedAppOptions" />
 			</div>
 
 			<!-- Select Site Step -->
 			<div v-else-if="step === 'select-sites'">
-				<h2 class="mb-4 text-lg font-medium">Select sites to update</h2>
+				<h2 class="mb-4 text-xl-medium">Select sites to update</h2>
 				<GenericList
 					class="max-h-[500px]"
 					v-if="benchDocResource.doc.deploy_information.sites.length"
@@ -64,7 +64,7 @@
 					@update:selections="handleSiteSelection"
 				/>
 				<p
-					class="text-center text-base font-medium text-ink-gray-6"
+					class="text-center text-base-medium text-ink-gray-6"
 					v-else-if="!benchDocResource.doc.deploy_information.sites.length"
 				>
 					No active sites to update
@@ -76,7 +76,7 @@
 				<div
 					class="flex items-start gap-3 rounded-lg border border-outline-gray-2 bg-surface-gray-2 p-4"
 				>
-					<lucide-info class="mt-0.5 h-5 w-5 shrink-0 text-ink-blue-3" />
+					<lucide-info class="mt-0.5 h-5 w-5 shrink-0 text-ink-blue-6" />
 					<div class="space-y-2 text-base text-ink-gray-8">
 						<p>
 							A <strong>patch deploy</strong> snapshots your existing bench
@@ -104,7 +104,7 @@
 				<a
 					href="https://docs.frappe.io/cloud/benches/patch-deploys"
 					target="_blank"
-					class="flex items-center gap-1.5 text-sm text-ink-blue-3 hover:underline"
+					class="flex items-center gap-1.5 text-sm text-ink-blue-6 hover:underline"
 				>
 					<lucide-external-link class="h-3.5 w-3.5" />
 					Learn more in the documentation
@@ -117,7 +117,7 @@
 				class="flex flex-col gap-4"
 			>
 				<div class="flex items-center gap-2">
-					<h2 class="text-lg font-medium">Build might fail</h2>
+					<h2 class="text-xl-medium">Build might fail</h2>
 					<a
 						href="https://docs.frappe.io/cloud/common-issues/build-might-fail"
 						target="_blank"
@@ -127,7 +127,7 @@
 					</a>
 				</div>
 				<p
-					class="text-base font-medium text-ink-gray-8"
+					class="text-base-medium text-ink-gray-8"
 					v-html="restrictMessage"
 				></p>
 				<div class="mt-4">

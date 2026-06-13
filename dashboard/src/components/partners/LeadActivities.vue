@@ -1,7 +1,7 @@
 <template>
 	<div class="mt-5 px-60">
 		<div class="flex justify-between px-10 pb-5">
-			<div class="font-semibold text-lg">Activity</div>
+			<div class=" text-xl-semibold">Activity</div>
 			<div>
 				<Dropdown :options="commentOptions">
 					<template #default="{ comment }">
@@ -21,7 +21,7 @@
 				class="activity px-3 sm:px-10 grid grid-cols-[30px_minmax(auto,_1fr)] gap-2 sm:gap-4"
 			>
 				<div
-					class="z-0 relative flex justify-center before:absolute before:left-[50%] before:-z-[1] before:top-0 before:border-l before:border-outline-gray-modals before:h-full"
+					class="z-0 relative flex justify-center before:absolute before:left-[50%] before:-z-[1] before:top-0 before:border-l before:border-outline-elevation-2 before:h-full"
 				>
 					<component :is="activity.icon" class="text-ink-gray-4" />
 				</div>
@@ -68,7 +68,7 @@
 							<div class="flex items-center justify-stretch gap-2 text-base">
 								<div
 									v-if="activity.other_versions"
-									class="inline-flex flex-wrap gap-1.5 text-ink-gray-8 font-normal text-sm"
+									class="inline-flex flex-wrap gap-1.5 text-ink-gray-8 text-sm"
 								>
 									<span>{{ activity.show_others ? 'Hide' : 'Show' }}</span>
 									<span> +{{ activity.other_versions.length }} </span>

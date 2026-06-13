@@ -39,7 +39,7 @@
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div>
 				<div class="flex items-center justify-between">
-					<h2 class="text-sm font-medium leading-6 text-ink-gray-9">
+					<h2 class="text-sm-medium leading-6 text-ink-gray-9">
 						Select Frappe Framework Version
 					</h2>
 				</div>
@@ -50,8 +50,8 @@
 							:key="version.name"
 							:class="[
 								benchVersion === version.name
-									? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-									: 'bg-surface-white text-ink-gray-9  hover:bg-surface-gray-1',
+									? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+									: 'bg-surface-base text-ink-gray-9  hover:bg-surface-gray-1',
 								'flex cursor-pointer items-center justify-between rounded border border-outline-gray-3 p-3 text-sm focus:outline-none',
 							]"
 							@click="benchVersion = version.name"
@@ -66,9 +66,7 @@
 				class="flex flex-col"
 				v-if="options?.clusters.length && benchVersion && !server"
 			>
-				<h2 class="text-sm font-medium leading-6 text-ink-gray-9">
-					Select Region
-				</h2>
+				<h2 class="text-sm-medium leading-6 text-ink-gray-9">Select Region</h2>
 				<div class="mt-2 w-full space-y-2">
 					<div class="grid grid-cols-2 gap-3">
 						<button
@@ -77,15 +75,15 @@
 							@click="benchRegion = c.name"
 							:class="[
 								benchRegion === c.name
-									? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-									: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+									? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+									: 'border-outline-gray-3 bg-surface-base text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 								'flex w-full items-center rounded border p-3 text-left text-base text-ink-gray-9',
 							]"
 						>
 							<div class="flex w-full items-center justify-between">
 								<div class="flex w-full items-center space-x-2">
 									<img :src="c.image" class="h-5 w-5" />
-									<span class="text-sm font-medium"> {{ c.title }} </span>
+									<span class="text-sm-medium"> {{ c.title }} </span>
 								</div>
 								<Badge v-if="c.beta" :label="c.beta ? 'Beta' : ''" />
 							</div>
@@ -94,7 +92,7 @@
 				</div>
 			</div>
 			<div v-if="benchVersion && (benchRegion || server)" class="flex flex-col">
-				<h2 class="text-sm font-medium leading-6 text-ink-gray-9">
+				<h2 class="text-sm-medium leading-6 text-ink-gray-9">
 					Enter Bench Title
 				</h2>
 				<div class="mt-2">

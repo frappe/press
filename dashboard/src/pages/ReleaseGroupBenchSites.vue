@@ -142,7 +142,7 @@ export default {
 						<div class="flex items-center">
 							<Tooltip text="View bench details">
 								<a
-									class="text-base font-medium leading-6 text-ink-gray-9 cursor-pointer"
+									class="text-base-medium leading-6 text-ink-gray-9 cursor-pointer"
 									href={`/dashboard/benches/${bench.name}`}
 								>
 									{bench.group}

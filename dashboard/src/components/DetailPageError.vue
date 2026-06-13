@@ -1,6 +1,6 @@
 <template>
 	<div v-if="error" class="mx-auto text-center w-fit">
-		<p class="text-sm font-medium">
+		<p class="text-sm-medium">
 			{{ errorMessage }}
 		</p>
 	</div>

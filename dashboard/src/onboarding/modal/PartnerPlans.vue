@@ -59,15 +59,15 @@ const formatCurrency = (amount) => {
 			class="flex items-center justify-between px-3 py-2 bg-surface-gray-1 rounded-md"
 		>
 			<div class="flex items-center gap-1.5 w-1/3">
-				<span class="text-p-base font-medium text-ink-gray-5"> Tier </span>
+				<span class="text-p-base-medium text-ink-gray-5"> Tier </span>
 			</div>
 			<div class="flex items-center justify-end gap-1.5 w-1/3">
-				<span class="text-p-base font-medium text-ink-gray-5 text-right">
+				<span class="text-p-base-medium text-ink-gray-5 text-right">
 					Min sales/month
 				</span>
 			</div>
 			<div class="flex items-center justify-end gap-1.5 w-1/3">
-				<span class="text-p-base font-medium text-ink-gray-5 text-right">
+				<span class="text-p-base-medium text-ink-gray-5 text-right">
 					Hosting discount
 				</span>
 			</div>
@@ -98,7 +98,7 @@ const formatCurrency = (amount) => {
 				class="flex items-center justify-between px-3 py-2"
 			>
 				<div class="flex items-center gap-1.5 w-1/3">
-					<span class="text-p-base font-medium text-ink-gray-9">
+					<span class="text-p-base-medium text-ink-gray-9">
 						{{ plan.type }}
 					</span>
 					<span v-if="plan.badge">{{ plan.badge }}</span>

@@ -23,7 +23,7 @@
 						:alt="appDoc.name"
 					/>
 					<div class="my-1 ml-4 flex flex-col justify-between">
-						<h1 class="text-lg font-semibold">{{ appDoc.title }}</h1>
+						<h1 class="text-xl-semibold">{{ appDoc.title }}</h1>
 						<p class="text-sm text-ink-gray-6">{{ appDoc.description }}</p>
 					</div>
 				</div>

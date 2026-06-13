@@ -14,7 +14,7 @@
 		<div v-else>
 			<!-- Status -->
 			<div class="flex flex-row justify-between items-center">
-				<div class="text-base font-medium text-ink-gray-8">Current Status</div>
+				<div class="text-base-medium text-ink-gray-8">Current Status</div>
 				<Button
 					variant="subtle"
 					theme="red"
@@ -38,15 +38,15 @@
 					<thead class="bg-surface-gray-2">
 						<tr>
 							<th
-								class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
+								class="px-4 py-2 text-left text-sm-medium text-ink-gray-7 border-b"
 							></th>
 							<th
-								class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
+								class="px-4 py-2 text-left text-sm-medium text-ink-gray-7 border-b"
 							>
 								App Server
 							</th>
 							<th
-								class="px-4 py-2 text-left text-sm font-medium text-ink-gray-7 border-b"
+								class="px-4 py-2 text-left text-sm-medium text-ink-gray-7 border-b"
 							>
 								Database Server
 							</th>
@@ -216,7 +216,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 
 			<!-- Jobs -->
 			<div
-				class="text-base font-medium text-ink-gray-8 mt-4"
+				class="text-base-medium text-ink-gray-8 mt-4"
 				v-if="jobs && jobs.length"
 			>
 				Recent Jobs
@@ -255,19 +255,19 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 					>
 						<div class="mt-1 mb-1 flex flex-row justify-between w-full px-2">
 							<div>
-								<div class="text-sm font-medium text-ink-gray-5">Start</div>
+								<div class="text-sm-medium text-ink-gray-5">Start</div>
 								<div class="mt-2 text-sm text-ink-gray-9">
 									{{ job.start ? $format.date(job.start, 'lll') : '-' }}
 								</div>
 							</div>
 							<div>
-								<div class="text-sm font-medium text-ink-gray-5">End</div>
+								<div class="text-sm-medium text-ink-gray-5">End</div>
 								<div class="mt-2 text-sm text-ink-gray-9">
 									{{ job.end ? $format.date(job.end, 'lll') : '-' }}
 								</div>
 							</div>
 							<div>
-								<div class="text-sm font-medium text-ink-gray-5">Duration</div>
+								<div class="text-sm-medium text-ink-gray-5">Duration</div>
 								<div class="mt-2 text-sm text-ink-gray-9">
 									{{ job.duration ? humanizeDuration(job.duration) : '-' }}
 								</div>

@@ -146,14 +146,14 @@ defineExpose({ tryContinue })
 						>
 							{{ props.form.incorporation_certificate }}
 						</p>
-						<p v-if="error" class="mt-1 text-sm text-ink-red-4">
+						<p v-if="error" class="mt-1 text-sm text-ink-red-8">
 							{{ error }}
 						</p>
 					</template>
 				</FileUploader>
 				<p
 					v-if="errors.incorporation_certificate"
-					class="text-sm text-ink-red-4"
+					class="text-sm text-ink-red-8"
 				>
 					Incorporation certificate is required.
 				</p>
@@ -165,7 +165,7 @@ defineExpose({ tryContinue })
 				v-model="props.form.agreed_to_due_diligence"
 				label="I shall abide by the due diligence"
 			/>
-			<p v-if="errors.due_diligence" class="-mt-2 text-sm text-ink-red-4">
+			<p v-if="errors.due_diligence" class="-mt-2 text-sm text-ink-red-8">
 				Due diligence confirmation is required.
 			</p>
 
@@ -176,7 +176,7 @@ defineExpose({ tryContinue })
 				/>
 				<label
 					for="partnership-agreement-checkbox"
-					class="text-base font-medium text-ink-gray-8"
+					class="text-base-medium text-ink-gray-8"
 				>
 					I accept the
 					<a
@@ -191,7 +191,7 @@ defineExpose({ tryContinue })
 			</div>
 			<p
 				v-if="errors.partnership_agreement"
-				class="-mt-2 text-sm text-ink-red-4"
+				class="-mt-2 text-sm text-ink-red-8"
 			>
 				Partnership agreement acceptance is required.
 			</p>

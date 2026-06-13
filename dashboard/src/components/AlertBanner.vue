@@ -16,10 +16,10 @@ const emit = defineEmits<{
 }>()
 
 const colors = {
-	info: { bg: 'bg-surface-blue-2', text: 'text-ink-blue-3' },
-	success: { bg: 'bg-surface-green-2', text: 'text-ink-green-3' },
-	error: { bg: 'bg-surface-red-2', text: 'text-ink-red-3' },
-	warning: { bg: 'bg-surface-amber-2', text: 'text-ink-amber-3' },
+	info: { bg: 'bg-surface-blue-2', text: 'text-ink-blue-6' },
+	success: { bg: 'bg-surface-green-2', text: 'text-ink-green-6' },
+	error: { bg: 'bg-surface-red-2', text: 'text-ink-red-6' },
+	warning: { bg: 'bg-surface-amber-2', text: 'text-ink-amber-6' },
 	general: { bg: 'bg-surface-gray-2', text: 'text-ink-gray-3' },
 }
 </script>
@@ -52,7 +52,7 @@ const colors = {
 				v-if="isDismissible"
 			>
 				<Button
-					class="ml-1 transition-colors focus:outline-none text-ink-gray-8 bg-surface-gray-7 bg-opacity-0 hover:bg-opacity-[4%] active:bg-opacity-[8%] h-7 w-7 rounded"
+					class="ml-1 transition-colors focus:outline-none text-ink-gray-8 bg-surface-gray-10 bg-opacity-0 hover:bg-opacity-[4%] active:bg-opacity-[8%] h-7 w-7 rounded"
 					variant="ghost"
 					@click="$emit('dismissBanner')"
 				>

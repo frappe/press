@@ -15,7 +15,7 @@
 					class="flex flex-col overflow-hidden rounded-md border text-left hover:bg-surface-gray-1"
 					:class="[
 						modelValue?.name === plan?.name
-							? 'border-outline-gray-5 ring-1 ring-gray-900'
+							? 'border-outline-gray-7 ring-1 ring-gray-900'
 							: 'border-outline-gray-2',
 						{
 							'pointer-events-none opacity-50': plan?.disabled,
@@ -29,11 +29,11 @@
 					<div
 						class="h-16 w-full border-b p-3"
 						:class="[
-							modelValue === plan ? 'border-outline-gray-5 ring-1 ring-gray-900' : '',
+							modelValue === plan ? 'border-outline-gray-7 ring-1 ring-gray-900' : '',
 						]"
 					>
 						<div class="flex items-center justify-between">
-							<div class="flex w-full items-center text-lg">
+							<div class="flex w-full items-center text-xl">
 								<span class="truncate font-medium text-ink-gray-9">
 									<!-- Needed for app plan selector -->
 									<template v-if="plan.label">{{ plan.label }}</template>

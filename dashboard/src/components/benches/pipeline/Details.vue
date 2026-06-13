@@ -444,7 +444,7 @@ const stopBuild = () => {
 				</template>
 			</Button>
 
-			<h2 class="text-ink-gray-9 text-lg font-medium">
+			<h2 class="text-ink-gray-9 text-xl-medium">
 				{{ deployview ? builds[activeBuildId]?.doc?.deploy_candidate : "Pipeline" }}
 				{{ pipeline?.doc?.name }}
 			</h2>
@@ -526,7 +526,7 @@ const stopBuild = () => {
 				:class="output.opened ? 'md:w-[30rem]' : 'w-full'"
 			>
 				<Tabs
-					class="w-full sticky top-0 z-10 bg-surface-white mb-2"
+					class="w-full sticky top-0 z-10 bg-surface-base mb-2"
 					tablistClass="!px-0"
 					:tabs="sidebarTabs"
 					v-model="tabState"
@@ -567,7 +567,7 @@ const stopBuild = () => {
 
 							<div
 								class="rounded px-3 py-2 bg-surface-red-1 flex flex-col gap-2"
-								:class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-4" : "bg-surface-amber-1 text-ink-amber-3"'
+								:class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-8" : "bg-surface-amber-1 text-ink-amber-6"'
 							>
 								<p v-html="x.message" class="leading-relaxed text-sm" />
 
@@ -575,7 +575,7 @@ const stopBuild = () => {
 									:href="x.assistance_url"
 									v-if="x.assistance_url"
 									target="_blank"
-									class="bg-surface-white shadow p-1.5 px-2.5 rounded hover:opacity-70 ml-auto"
+									class="bg-surface-base shadow p-1.5 px-2.5 rounded hover:opacity-70 ml-auto"
 								>
 									Go to docs
 								</a>
@@ -588,7 +588,7 @@ const stopBuild = () => {
 			<!-- output -->
 			<div
 				v-show="output.opened"
-				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-cards p-3 mt-2 rounded transition-all duration-300 flex-1 flex flex-col min-h-0"
+				class="overflow-hidden bg-surface-gray-1 dark:bg-surface-elevation-1 p-3 mt-2 rounded transition-all duration-300 flex-1 flex flex-col min-h-0"
 			>
 				<div
 					class="flex items-center pb-2 border-outline-gray-2 mb-3 text-ink-gray-6 -mt-1 -mr-1 shrink-0"
@@ -606,7 +606,7 @@ const stopBuild = () => {
 				<pre
 					ref="outputEl"
 					class="font-mono text-xs overflow-auto -m-3 p-1 px-3.5 flex-1 min-h-0"
-					:class='output.status == "Failure" ? "bg-surface-red-1 text-ink-red-3" : ""'
+					:class='output.status == "Failure" ? "bg-surface-red-1 text-ink-red-6" : ""'
 				>{{ output.val }}</pre>
 			</div>
 		</div>

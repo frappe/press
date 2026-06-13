@@ -60,7 +60,7 @@
 				v-else
 				class="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-surface-green-1"
 			>
-				<LucideCheck class="h-8 w-8 text-ink-green-2" />
+				<LucideCheck class="h-8 w-8 text-ink-green-5" />
 			</div>
 			<h3>
 				{{ isHistory ? 'No incident history' : 'All systems operational' }}

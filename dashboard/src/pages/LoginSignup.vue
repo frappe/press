@@ -293,24 +293,24 @@
 						v-if="!hasForgotPassword && !isOauthLogin && !is2FA"
 					>
 						<div v-if="$route.name === 'Signup'">
-							<span class="text-base font-normal text-ink-gray-6">
+							<span class="text-base text-ink-gray-6">
 								{{ 'By signing up, you agree to our ' }}
 							</span>
 							<a
-								class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
+								class="text-base text-ink-gray-9 underline hover:text-ink-gray-7"
 								href="https://frappecloud.com/policies"
 							>
 								Terms & Policies
 							</a>
 						</div>
 						<div v-if="!(otpRequested || resetPasswordEmailSent)">
-							<span class="text-base font-normal text-ink-gray-6">
+							<span class="text-base text-ink-gray-6">
 								{{ $route.name == 'Login'
 										? 'New member? '
 										: 'Already have an account? ' }}
 							</span>
 							<router-link
-								class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
+								class="text-base text-ink-gray-9 underline hover:text-ink-gray-7"
 								:to="{
 									name: $route.name == 'Login' ? 'Signup' : 'Login',
 									query: { ...$route.query, forgot: undefined },
@@ -367,24 +367,24 @@
 					</form>
 					<div class="mt-4 space-y-2">
 						<div v-if="$route.name === 'Signup'">
-							<span class="text-base font-normal text-ink-gray-6">
+							<span class="text-base text-ink-gray-6">
 								{{ 'By signing up, you agree to our ' }}
 							</span>
 							<a
-								class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
+								class="text-base text-ink-gray-9 underline hover:text-ink-gray-7"
 								href="https://frappecloud.com/policies"
 							>
 								Terms & Policies
 							</a>
 						</div>
 						<div>
-							<span class="text-base font-normal text-ink-gray-6">
+							<span class="text-base text-ink-gray-6">
 								{{ $route.name == 'Login'
 										? 'New member? '
 										: 'Already have an account? ' }}
 							</span>
 							<router-link
-								class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
+								class="text-base text-ink-gray-9 underline hover:text-ink-gray-7"
 								:to="{
 									name: $route.name == 'Login' ? 'Signup' : 'Login',
 									query: { ...$route.query, forgot: undefined },

@@ -5,7 +5,7 @@
 				class="mx-auto min-w-[48rem] max-w-3xl space-y-6 rounded-md border p-4"
 			>
 				<div class="flex items-center justify-between">
-					<div class="text-xl font-semibold">API Access</div>
+					<div class="text-3xl-semibold">API Access</div>
 					<Button @click="showCreateSecretDialog = true"
 						>{{ $team.doc?.user_info?.api_key
 							? 'Regenerate API Secret'
@@ -68,7 +68,7 @@
 				class="mx-auto min-w-[48rem] max-w-3xl space-y-6 rounded-md border p-4"
 			>
 				<div class="flex items-center justify-between">
-					<div class="text-xl font-semibold">SSH Keys</div>
+					<div class="text-3xl-semibold">SSH Keys</div>
 				</div>
 				<ObjectList :options="sshKeyListOptions" />
 			</div>
@@ -77,7 +77,7 @@
 				class="mx-auto min-w-[48rem] max-w-3xl space-y-6 rounded-md border p-4"
 			>
 				<div class="flex items-center justify-between">
-					<div class="text-xl font-semibold">Webhooks</div>
+					<div class="text-3xl-semibold">Webhooks</div>
 				</div>
 				<ObjectList :options="webhookListOptions" />
 				<AddNewWebhookDialog

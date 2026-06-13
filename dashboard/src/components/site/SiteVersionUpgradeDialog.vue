@@ -76,7 +76,7 @@
 						class="space-y-6 mt-4"
 					>
 						<div v-if="appCompatibility.site_custom_apps?.length > 0">
-							<div class="text-sm font-medium text-ink-gray-7 mb-2">
+							<div class="text-sm-medium text-ink-gray-7 mb-2">
 								Select Branch for Custom Apps
 							</div>
 							<div class="text-xs text-ink-gray-6 mb-3">
@@ -92,7 +92,7 @@
 										:key="app.app"
 									>
 										<td class="py-3 w-3/5">
-											<div class="font-medium text-sm">
+											<div class=" text-sm-medium">
 												{{ app.title }}
 											</div>
 											<div
@@ -135,7 +135,7 @@
 						</div>
 
 						<div v-if="appCompatibility.other_custom_apps_on_rg?.length > 0">
-							<div class="text-sm font-medium text-ink-gray-7 mb-2">
+							<div class="text-sm-medium text-ink-gray-7 mb-2">
 								Other Custom Apps on Bench Group (Optional)
 							</div>
 							<table class="w-full table-fixed">
@@ -145,7 +145,7 @@
 										:key="app.app"
 									>
 										<td class="py-3 w-3/5">
-											<div class="font-medium text-sm">
+											<div class=" text-sm-medium">
 												{{ app.title }}
 											</div>
 											<div

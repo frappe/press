@@ -9,7 +9,7 @@
 		</div>
 		<div v-else>
 			<div v-if="databaseCredential">
-				<p class="mb-2 text-base font-semibold text-ink-gray-7">
+				<p class="mb-2 text-base-semibold text-ink-gray-7">
 					Using an Analytics or Business Intelligence Tool
 				</p>
 				<p class="mb-2 text-base">
@@ -38,9 +38,7 @@
 				</p>
 			</div>
 			<div class="pb-2 pt-5">
-				<p class="mb-2 text-base font-semibold text-ink-gray-7">
-					Using MariaDB CLI
-				</p>
+				<p class="mb-2 text-base-semibold text-ink-gray-7">Using MariaDB CLI</p>
 				<p class="mb-2 text-base">
 					Run this command in your terminal to access MariaDB console
 				</p>
@@ -52,7 +50,7 @@
 				</p>
 			</div>
 			<div class="pb-2 pt-5">
-				<p class="mb-2 text-base font-semibold text-ink-gray-7">SSL Info</p>
+				<p class="mb-2 text-base-semibold text-ink-gray-7">SSL Info</p>
 				<p class="text-sm">
 					You need to <b>use SSL</b> to connect to the database.
 				</p>
@@ -69,7 +67,7 @@
 				/>
 			</div>
 			<div class="pb-2 pt-5">
-				<p class="mb-2 text-base font-semibold text-ink-gray-7">Need Help?</p>
+				<p class="mb-2 text-base-semibold text-ink-gray-7">Need Help?</p>
 				<p class="text-sm">
 					Please check out the
 					<a

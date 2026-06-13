@@ -136,7 +136,7 @@
 			<div
 				class="p-2 text-right"
 				:class="{
-					'bg-surface-white bottom-0 sticky': $list?.next && $list?.hasNextPage,
+					'bg-surface-base bottom-0 sticky': $list?.next && $list?.hasNextPage,
 				}"
 				v-if="$list"
 			>

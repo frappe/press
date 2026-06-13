@@ -15,7 +15,7 @@
 				/>
 				<div
 					v-else
-					class="size-14 bg-surface-gray-3 flex m-auto items-center rounded justify-center text-ink-gray-5 font-semibold text-2xl"
+					class="size-14 bg-surface-gray-3 flex m-auto items-center rounded justify-center text-ink-gray-5 text-4xl-semibold"
 				>
 					{{ user.full_name
 							.split(' ')

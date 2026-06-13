@@ -237,13 +237,13 @@ async function submitForApproval() {
 				v-for="step in steps"
 				:key="step.value"
 				:value="step.value"
-				class="border-b border-outline-gray-modals last:border-b-0"
+				class="border-b border-outline-elevation-2 last:border-b-0"
 			>
 				<FAccordionHeader>
 					<FAccordionTrigger class="py-3">
 						<span
 							v-if="step.status === 'completed'"
-							class="inline-flex shrink-0 text-ink-green-3"
+							class="inline-flex shrink-0 text-ink-green-6"
 							aria-hidden="true"
 						>
 							<LucideCircleCheck class="size-4" />
@@ -258,7 +258,7 @@ async function submitForApproval() {
 
 						<span class="min-w-0 flex-1">
 							<span
-								class="text-base font-medium"
+								class="text-base-medium"
 								:class="{
 									'text-ink-gray-5 line-through': step.status === 'completed',
 									'text-ink-gray-8': step.status !== 'completed',
@@ -266,7 +266,7 @@ async function submitForApproval() {
 							>
 								{{ step.title }}
 								<template v-if="step.required">
-									<span class="text-ink-red-4"> *</span>
+									<span class="text-ink-red-8"> *</span>
 								</template>
 								<template v-else>
 									<span class="font-normal text-ink-gray-5"> Optional</span>
@@ -276,7 +276,7 @@ async function submitForApproval() {
 
 						<span
 							v-if="step.summaryRight"
-							class="shrink-0 whitespace-nowrap pr-2 text-sm font-normal text-ink-gray-6"
+							class="shrink-0 whitespace-nowrap pr-2 text-sm text-ink-gray-6"
 						>
 							{{ step.summaryRight }}
 						</span>
@@ -294,7 +294,7 @@ async function submitForApproval() {
 				>
 					<p
 						v-if="step.description"
-						class="mb-2 max-w-prose self-stretch text-p-base font-normal leading-5 text-ink-gray-6"
+						class="mb-2 max-w-prose self-stretch text-p-base leading-5 text-ink-gray-6"
 					>
 						{{ step.description }}
 					</p>
@@ -304,7 +304,7 @@ async function submitForApproval() {
 					>
 						<div class="h-2 overflow-hidden rounded-full bg-surface-gray-2">
 							<div
-								class="h-full rounded-full bg-surface-gray-7 transition-all"
+								class="h-full rounded-full bg-surface-gray-10 transition-all"
 								:style="{ width: `${mrrProgress}%` }"
 							/>
 						</div>
@@ -337,7 +337,7 @@ async function submitForApproval() {
 			v-if="isRejected"
 			class="max-w-prose rounded border border-outline-gray-2 bg-surface-red-2 p-4"
 		>
-			<p class="text-p-base font-medium text-ink-red-4">
+			<p class="text-p-base-medium text-ink-red-8">
 				Your application was rejected
 			</p>
 			<p class="mt-1 text-p-base text-ink-gray-7">

@@ -6,7 +6,7 @@
 				class="h-12 w-12 rounded-lg border"
 				:alt="$app.name"
 			/>
-			<h1 class="text-xl font-semibold">
+			<h1 class="text-3xl-semibold">
 				{{ $app.title }}
 			</h1>
 		</div>

@@ -8,7 +8,7 @@
 		]"
 	>
 		<div class="flex items-center border-b p-3 gap-2">
-			<h3 class="text-base font-medium text-ink-gray-9">{{ title }}</h3>
+			<h3 class="text-base-medium text-ink-gray-9">{{ title }}</h3>
 			<slot name="action"></slot>
 
 			<button

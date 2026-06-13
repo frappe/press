@@ -3,7 +3,7 @@
 		<div>
 			<div class="flex justify-start">
 				<img class="mr-2 h-4" v-if="image" :src="image" :alt="title" />
-				<h3 class="text-base font-medium text-ink-gray-9">
+				<h3 class="text-base-medium text-ink-gray-9">
 					{{ title }}
 				</h3>
 			</div>

@@ -23,8 +23,8 @@ const statusClasses = {
 
 const timelineDotClasses = {
 	Created: 'text-ink-gray-6',
-	Confirmed: 'text-ink-amber-3',
-	Resolved: 'text-ink-green-2',
+	Confirmed: 'text-ink-amber-6',
+	Resolved: 'text-ink-green-5',
 }
 
 const actionStatusClasses = {
@@ -43,11 +43,11 @@ const props = defineProps<Props>()
 
 <template>
 	<details
-		class="group/card mb-5 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-cards transition-all fade-in"
+		class="group/card mb-5 overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-elevation-1 transition-all fade-in"
 	>
 		<!-- Card header & toggle btn -->
 		<summary
-			class="w-full flex cursor-pointer items-center gap-2.5 p-3 group-open/card:bg-surface-gray-1 hover:bg-surface-gray-1 transition-colors truncate text-sm font-medium text-ink-gray-9"
+			class="w-full flex cursor-pointer items-center gap-2.5 p-3 group-open/card:bg-surface-gray-1 hover:bg-surface-gray-1 transition-colors truncate text-sm-medium text-ink-gray-9"
 		>
 			<LucideChevronRight
 				class="size-4 shrink-0 text-ink-gray-6 transition-transform group-open/card:rotate-90"
@@ -74,7 +74,7 @@ const props = defineProps<Props>()
 				<div class="mb-2 flex items-center gap-2.5">
 					<LucideClock class="size-3.5" />
 					<span
-						class="text-sm font-semibold uppercase tracking-widest text-ink-gray-6"
+						class="text-sm-semibold uppercase tracking-widest text-ink-gray-6"
 						>Timeline</span
 					>
 				</div>
@@ -91,7 +91,7 @@ const props = defineProps<Props>()
 								timelineDotClasses[step.label] || 'border-outline-gray-3',
 							]"
 						/>
-						<span class="flex-1 text-sm font-medium text-ink-gray-7"
+						<span class="flex-1 text-sm-medium text-ink-gray-7"
 							>{{ step.label }}</span
 						>
 						<span class="text-sm text-ink-gray-5">{{ step.time }}</span>
@@ -103,7 +103,7 @@ const props = defineProps<Props>()
 			<div v-if="data.investigation" class="mt-4">
 				<div class="mb-4 flex items-center gap-1.5">
 					<LucideZap class="size-3.5" />
-					<span class="text-sm font-semibold uppercase tracking-widest">
+					<span class="text-sm-semibold uppercase tracking-widest">
 						Investigation
 					</span>
 				</div>
@@ -125,7 +125,7 @@ const props = defineProps<Props>()
 							<LucideServer v-if="group.label === 'Server'" class="size-3" />
 							<LucideDatabase v-else class="size-3" />
 
-							<span class="text-sm font-semibold"> {{ group.label }} </span>
+							<span class="text-sm-semibold"> {{ group.label }} </span>
 
 							<LucideChevronRight
 								class="ml-auto size-3.5 transition-transform group-open/investigation:rotate-90"
@@ -151,7 +151,7 @@ const props = defineProps<Props>()
 
 							<div
 								v-else-if="step.is_likely_cause"
-								class="flex shrink-0 items-center gap-1.5 text-ink-amber-3"
+								class="flex shrink-0 items-center gap-1.5 text-ink-amber-6"
 							>
 								<LucideAlert class="size-3" />
 								<span class="text-sm">Likely Cause</span>
@@ -159,7 +159,7 @@ const props = defineProps<Props>()
 
 							<div
 								v-else
-								class="flex shrink-0 items-center gap-1 text-ink-green-3"
+								class="flex shrink-0 items-center gap-1 text-ink-green-6"
 							>
 								<LucideCheck class="size-3" />
 								<span class="text-sm">Passed</span>
@@ -178,7 +178,7 @@ const props = defineProps<Props>()
 					class="group-open/actions:pb-4 flex items-center gap-1.5 cursor-pointer"
 				>
 					<LucideWrench class="size-3.5" />
-					<span class="text-sm font-semibold uppercase tracking-widest">
+					<span class="text-sm-semibold uppercase tracking-widest">
 						Action Taken
 					</span>
 					<LucideChevronRight

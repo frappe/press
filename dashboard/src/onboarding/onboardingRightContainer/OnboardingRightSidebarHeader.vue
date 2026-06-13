@@ -45,15 +45,12 @@ const showTooltip = computed(() => {
 			<div class="min-w-0 flex-1">
 				<Tooltip v-if="showTooltip" :text="companyName">
 					<p
-						class="truncate text-p-base font-semibold text-ink-gray-9 cursor-default"
+						class="truncate text-p-base-semibold text-ink-gray-9 cursor-default"
 					>
 						{{ companyName }}
 					</p>
 				</Tooltip>
-				<p
-					v-else
-					class="text-p-base font-semibold text-ink-gray-9 cursor-default"
-				>
+				<p v-else class="text-p-base-semibold text-ink-gray-9 cursor-default">
 					{{ companyName }}
 				</p>
 				<div class="mt-1 flex items-center gap-2">

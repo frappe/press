@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex flex-col justify-end items-center sticky top-0 z-20 p-2 md:p-3 w-full bg-surface-white border-b justify-self-center space-y-2"
+		class="flex flex-col justify-end items-center sticky top-0 z-20 p-2 md:p-3 w-full bg-surface-base border-b justify-self-center space-y-2"
 	>
 		<!-- Group all content items so spacing is consistent -->
 		<div class="flex gap-2 w-full overflow-auto">
@@ -139,7 +139,7 @@
 			class="!mt-6 flex w-fit cursor-pointer space-x-2"
 			@click="toggleAdvancedAnalytics"
 		>
-			<h2 class="text-lg font-semibold">Advanced Analytics</h2>
+			<h2 class="text-xl-semibold">Advanced Analytics</h2>
 			<span
 				:class="[showAdvancedAnalytics ? 'lucide-chevron-down' : 'lucide-chevron-right', 'h-5 w-5 text-ink-gray-5 hover:text-ink-gray-7']"
 			/>

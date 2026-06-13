@@ -47,7 +47,7 @@
 			</div>
 
 			<div
-				class="flex-1 bg-surface-gray-1 dark:bg-surface-cards rounded p-3 hidden md:flex flex-col gap-3 mt-1"
+				class="flex-1 bg-surface-gray-1 dark:bg-surface-elevation-1 rounded p-3 hidden md:flex flex-col gap-3 mt-1"
 			>
 				<div class="flex items-center gap-2 pb-2 border-b">
 					<div class="sk h-4 w-12" />

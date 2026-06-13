@@ -98,7 +98,7 @@
 
 				<div class="mt-6 text-center">
 					<router-link
-						class="text-center text-base font-medium text-ink-gray-9 hover:text-ink-gray-7"
+						class="text-center text-base-medium text-ink-gray-9 hover:text-ink-gray-7"
 						:to="{
 							name: 'SaaSSignup',
 							params: $route.params,

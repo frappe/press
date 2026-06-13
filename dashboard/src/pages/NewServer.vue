@@ -47,7 +47,7 @@
 			<!-- Main configuration section -->
 			<div class="w-full lg:min-w-[42rem] lg:max-w-[42rem] space-y-8">
 				<div class="flex flex-col" v-if="$team.doc?.hybrid_servers_enabled">
-					<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
+					<h2 class="text-base-semibold leading-6 text-ink-gray-9">
 						Choose Server Type
 					</h2>
 					<div class="mt-2 w-full space-y-2">
@@ -58,13 +58,13 @@
 								@click="serverType = c.name"
 								:class="[
 									serverType === c.name
-										? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-										: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+										? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+										: 'border-outline-gray-3 bg-surface-base text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 									'flex w-full items-center rounded-md border p-3 text-left text-base text-ink-gray-9',
 								]"
 							>
 								<div class="flex w-full items-center justify-between space-x-2">
-									<span class="text-sm font-medium"> {{ c.title }} </span>
+									<span class="text-sm-medium"> {{ c.title }} </span>
 									<Tooltip :text="c.description">
 										<lucide-info class="h-4 w-4 text-ink-gray-5" />
 									</Tooltip>
@@ -75,14 +75,14 @@
 				</div>
 
 				<div v-if="serverType" class="flex flex-col">
-					<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
+					<h2 class="text-base-semibold leading-6 text-ink-gray-9">
 						Enter Name For Your Server<span class="text-red-500">&nbsp;*</span>
 					</h2>
 					<div class="mt-2">
 						<FormControl
 							v-model="serverTitle"
 							type="text"
-							class="block rounded-md border-outline-gray-2 shadow-sm focus:border-outline-gray-5 focus:ring-gray-900 sm:text-sm"
+							class="block rounded-md border-outline-gray-2 shadow-sm focus:border-outline-gray-7 focus:ring-gray-900 sm:text-sm"
 						/>
 					</div>
 				</div>
@@ -90,7 +90,7 @@
 					<!-- Choose Server Provider -->
 					<div class="flex flex-col" v-if="allProviders.length">
 						<div class="flex items-center justify-between items-center">
-							<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
+							<h2 class="text-base-semibold leading-6 text-ink-gray-9">
 								Select Provider
 							</h2>
 							<div>
@@ -115,8 +115,8 @@
 									@click="serverProvider = provider.name"
 									:class="[
 										serverProvider === provider.name
-											? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-											: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+											? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+											: 'border-outline-gray-3 bg-surface-base text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 										'flex w-full items-center rounded-md border p-2 text-left text-base text-ink-gray-9',
 									]"
 								>
@@ -126,9 +126,7 @@
 												:src="provider.provider_image"
 												class="h-5 w-5 rounded-sm"
 											/>
-											<span class="text-sm font-medium">
-												{{ provider.title }}
-											</span>
+											<span class="text-sm-medium"> {{ provider.title }} </span>
 										</div>
 										<Tooltip
 											v-if="provider.beta"
@@ -157,7 +155,7 @@
 						class="flex flex-col"
 						v-if="serverProvider && regionsForProvider.length"
 					>
-						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
+						<h2 class="text-base-semibold leading-6 text-ink-gray-9">
 							Select Region
 						</h2>
 						<div class="mt-2 w-full space-y-2">
@@ -168,15 +166,15 @@
 									@click="serverRegion = r.name"
 									:class="[
 										serverRegion === r.name
-											? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-											: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+											? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+											: 'border-outline-gray-3 bg-surface-base text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 										'flex w-full items-center rounded-md border p-2 text-left text-base text-ink-gray-9',
 									]"
 								>
 									<div class="flex w-full items-center justify-between">
 										<div class="flex w-full items-center space-x-2">
 											<img :src="r.image" class="h-5 w-5 rounded-sm" />
-											<span class="text-sm font-medium"> {{ r.name }} </span>
+											<span class="text-sm-medium"> {{ r.name }} </span>
 										</div>
 									</div>
 								</button>
@@ -188,7 +186,7 @@
 						v-if="showUnifiedServerOption"
 						class="flex flex-col space-y-2 text-sm text-ink-gray-6 w-full"
 					>
-						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
+						<h2 class="text-base-semibold leading-6 text-ink-gray-9">
 							Deployment Mode
 						</h2>
 
@@ -213,15 +211,15 @@
 									@click="unifiedServer = c.unifiedServer"
 									:class="[
 										unifiedServer == c.unifiedServer
-											? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-											: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+											? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+											: 'border-outline-gray-3 bg-surface-base text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-ink-gray-9',
 									]"
 								>
 									<div
 										class="flex w-full items-center justify-between space-x-2"
 									>
-										<span class="text-sm font-medium"> {{ c.name }} </span>
+										<span class="text-sm-medium"> {{ c.name }} </span>
 										<Tooltip :text="c.description">
 											<lucide-info class="h-4 w-4 text-ink-gray-5" />
 										</Tooltip>
@@ -237,7 +235,7 @@
 						class="flex flex-col"
 					>
 						<div class="flex items-center justify-between">
-							<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
+							<h2 class="text-base-semibold leading-6 text-ink-gray-9">
 								Service Type
 							</h2>
 							<div>
@@ -270,15 +268,15 @@
 									@click="serviceType = c.name"
 									:class="[
 										serviceType === c.name
-											? 'border-outline-gray-5 ring-1 ring-gray-900 hover:bg-surface-gray-2'
-											: 'border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
+											? 'border-outline-gray-7 ring-1 ring-gray-900 hover:bg-surface-gray-2'
+											: 'border-outline-gray-3 bg-surface-base text-ink-gray-9 ring-gray-200 hover:bg-surface-gray-1',
 										'flex w-full items-center rounded-md border p-2.5 text-left text-base text-ink-gray-9',
 									]"
 								>
 									<div
 										class="flex w-full items-center justify-between space-x-2"
 									>
-										<span class="text-sm font-medium"> {{ c.name }} </span>
+										<span class="text-sm-medium"> {{ c.name }} </span>
 										<Tooltip :text="c.description">
 											<lucide-info class="h-4 w-4 text-ink-gray-5" />
 										</Tooltip>
@@ -298,13 +296,13 @@
 								<div class="flex flex-row justify-between items-center">
 									<h2
 										v-if="!unifiedServer"
-										class="text-base font-semibold leading-6 text-ink-gray-9"
+										class="text-base-semibold leading-6 text-ink-gray-9"
 									>
 										Select Application Server Plan
 									</h2>
 									<h2
 										v-else
-										class="text-base font-semibold leading-6 text-ink-gray-9"
+										class="text-base-semibold leading-6 text-ink-gray-9"
 									>
 										Select Unified Server Plan
 									</h2>
@@ -353,7 +351,7 @@
 											@click="appServerPlanType = planType.name"
 											:class="[
 												appServerPlanType === planType.name
-													? 'border-outline-gray-5 ring-1 ring-gray-900 z-10'
+													? 'border-outline-gray-7 ring-1 ring-gray-900 z-10'
 													: 'border-outline-gray-2 z-0',
 												index === 0
 													? 'rounded-t-md sm:rounded-l-md sm:rounded-tr-none'
@@ -367,7 +365,7 @@
 												<div class="flex items-center justify-between">
 													<div class="flex w-full items-center">
 														<span
-															class="truncate text-base font-semibold text-ink-gray-9"
+															class="truncate text-base-semibold text-ink-gray-9"
 														>
 															{{ planType.title }}
 														</span>
@@ -427,7 +425,7 @@
 						>
 							<div class="flex flex-col space-y-2">
 								<div class="flex flex-row justify-between items-center">
-									<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
+									<h2 class="text-base-semibold leading-6 text-ink-gray-9">
 										Select Database Server Plan
 									</h2>
 									<div>
@@ -459,7 +457,7 @@
 											@click="dbServerPlanType = planType.name"
 											:class="[
 												dbServerPlanType === planType.name
-													? 'border-outline-gray-5 ring-1 ring-gray-900 z-10'
+													? 'border-outline-gray-7 ring-1 ring-gray-900 z-10'
 													: 'border-outline-gray-2 z-0',
 												index === 0
 													? 'rounded-t-md sm:rounded-l-md sm:rounded-tr-none'
@@ -473,7 +471,7 @@
 												<div class="flex items-center justify-between">
 													<div class="flex w-full items-center">
 														<span
-															class="truncate text-base font-semibold text-ink-gray-9"
+															class="truncate text-base-semibold text-ink-gray-9"
 														>
 															{{ planType.title }}
 														</span>
@@ -520,7 +518,7 @@
 				</div>
 				<div v-else-if="serverType === 'hybrid'" class="space-y-8">
 					<div class="flex flex-col space-y-2">
-						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
+						<h2 class="text-base-semibold leading-6 text-ink-gray-9">
 							App Server IP Addresses
 						</h2>
 						<div class="flex flex-col sm:flex-row gap-3">
@@ -539,7 +537,7 @@
 						</div>
 					</div>
 					<div class="flex flex-col space-y-2">
-						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
+						<h2 class="text-base-semibold leading-6 text-ink-gray-9">
 							Database Server IP Addresses
 						</h2>
 						<div class="flex flex-col sm:flex-row gap-3">
@@ -558,7 +556,7 @@
 						</div>
 					</div>
 					<div class="flex flex-col space-y-2">
-						<h2 class="text-base font-semibold leading-6 text-ink-gray-9">
+						<h2 class="text-base-semibold leading-6 text-ink-gray-9">
 							Add SSH Key
 						</h2>
 						<span class="text-xs text-ink-gray-6">
@@ -573,7 +571,7 @@
 				</div>
 
 				<div class="flex flex-col space-y-3" v-if="showAutoAddStorageOption">
-					<h2 class="text-base font-semibold">Auto Add-on Storage</h2>
+					<h2 class="text-base-semibold">Auto Add-on Storage</h2>
 
 					<FormControl
 						type="checkbox"
@@ -614,7 +612,7 @@
 
 				<!-- Mobile only Summary -->
 				<div
-					class="lg:hidden rounded border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 border p-6 space-y-4"
+					class="lg:hidden rounded border-outline-gray-3 bg-surface-base text-ink-gray-9 ring-gray-200 border p-6 space-y-4"
 					v-if="showSummary"
 				>
 					<h2 class="text-md font-semibold">Summary</h2>
@@ -622,7 +620,7 @@
 					<!-- Server Name -->
 					<div class="flex flex-col space-y-1" v-if="serverTitle">
 						<div class="text-base text-ink-gray-7">Server Name</div>
-						<div class="text-base font-medium">{{ serverTitle }}</div>
+						<div class="text-base-medium">{{ serverTitle }}</div>
 					</div>
 
 					<!-- Server Provider (Dedicated only) -->
@@ -631,7 +629,7 @@
 						v-if="serverType === 'dedicated' && serverProvider"
 					>
 						<div class="text-base text-ink-gray-7">Server Provider</div>
-						<div class="text-base font-medium">{{ selectedProviderTitle }}</div>
+						<div class="text-base-medium">{{ selectedProviderTitle }}</div>
 					</div>
 
 					<!-- Server Region (Dedicated only) -->
@@ -640,7 +638,7 @@
 						v-if="serverType === 'dedicated' && serverRegion"
 					>
 						<div class="text-base text-ink-gray-7">Server Region</div>
-						<div class="text-base font-medium">{{ serverRegion }}</div>
+						<div class="text-base-medium">{{ serverRegion }}</div>
 					</div>
 
 					<!-- App/Unified Server Plan (Dedicated only) -->
@@ -653,7 +651,7 @@
 									? 'Unified Server Plan'
 									: 'Application Server Plan' }}
 						</div>
-						<div class="text-base font-medium">
+						<div class="text-base-medium">
 							{{ $format.planTitle(appServerPlan) }}/mo -
 							{{ getPlanTypeTitle(appServerPlan) }}
 						</div>
@@ -674,7 +672,7 @@
 						v-if="serverType === 'dedicated' && !unifiedServer && dbServerPlan"
 					>
 						<div class="text-base text-ink-gray-7">Database Server Plan</div>
-						<div class="text-base font-medium">
+						<div class="text-base-medium">
 							{{ $format.planTitle(dbServerPlan) }}/mo -
 							{{ getPlanTypeTitle(dbServerPlan) }}
 						</div>
@@ -694,7 +692,7 @@
 						v-if="serverType === 'hybrid' && appPublicIP && appPrivateIP"
 					>
 						<div class="text-base text-ink-gray-7">App Server IPs</div>
-						<div class="text-base font-medium">
+						<div class="text-base-medium">
 							{{ appPublicIP }}
 							/ {{ appPrivateIP }}
 						</div>
@@ -705,7 +703,7 @@
 						v-if="serverType === 'hybrid' && dbPublicIP && dbPrivateIP"
 					>
 						<div class="text-base text-ink-gray-7">DB Server IPs</div>
-						<div class="text-base font-medium">
+						<div class="text-base-medium">
 							{{ dbPublicIP }}
 							/ {{ dbPrivateIP }}
 						</div>
@@ -720,7 +718,7 @@
 						"
 					>
 						<div class="text-base text-ink-gray-7">Plan</div>
-						<div class="text-base font-medium">
+						<div class="text-base-medium">
 							{{ $format.planTitle($resources.hybridOptions.data.plans[0]) }}/mo
 						</div>
 					</div>
@@ -728,7 +726,7 @@
 					<!-- Auto Add-on Storage -->
 					<div class="flex flex-col space-y-1" v-if="showAutoAddStorageOption">
 						<div class="text-base text-ink-gray-7">Auto Add-on Storage</div>
-						<div class="text-base font-medium text-green-900">
+						<div class="text-base-medium text-green-900">
 							{{ enableAutoAddStorage ? 'Enabled' : 'Disabled' }}
 						</div>
 					</div>
@@ -739,11 +737,8 @@
 					<div class="flex flex-col space-y-2" v-if="_totalPerMonth">
 						<div class="text-base text-ink-gray-7">Total Cost</div>
 						<div class="flex flex-col space-y-1">
-							<div class="text-lg font-semibold">
-								{{ totalPerMonth }}
-								/ month
-							</div>
-							<div class="text-base font-medium text-ink-gray-7">
+							<div class="text-xl-semibold">{{ totalPerMonth }}/ month</div>
+							<div class="text-base-medium text-ink-gray-7">
 								{{ totalPerDay }}
 								per day
 							</div>
@@ -788,7 +783,7 @@
 
 			<!-- Desktop only Summary -->
 			<div
-				class="hidden lg:block sticky top-[4.5rem] rounded border-outline-gray-3 bg-surface-white text-ink-gray-9 ring-gray-200 border p-6 h-fit w-[25rem] space-y-4"
+				class="hidden lg:block sticky top-[4.5rem] rounded border-outline-gray-3 bg-surface-base text-ink-gray-9 ring-gray-200 border p-6 h-fit w-[25rem] space-y-4"
 				v-if="showSummary"
 			>
 				<h2 class="text-md font-semibold">Summary</h2>
@@ -796,7 +791,7 @@
 				<!-- Server Name -->
 				<div class="flex flex-col space-y-1" v-if="serverTitle">
 					<div class="text-base text-ink-gray-7">Server Name</div>
-					<div class="text-base font-medium">{{ serverTitle }}</div>
+					<div class="text-base-medium">{{ serverTitle }}</div>
 				</div>
 
 				<!-- Server Provider (Dedicated only) -->
@@ -805,7 +800,7 @@
 					v-if="serverType === 'dedicated' && serverProvider"
 				>
 					<div class="text-base text-ink-gray-7">Server Provider</div>
-					<div class="text-base font-medium">{{ selectedProviderTitle }}</div>
+					<div class="text-base-medium">{{ selectedProviderTitle }}</div>
 				</div>
 
 				<!-- Server Region (Dedicated only) -->
@@ -814,7 +809,7 @@
 					v-if="serverType === 'dedicated' && serverRegion"
 				>
 					<div class="text-base text-ink-gray-7">Server Region</div>
-					<div class="text-base font-medium">{{ serverRegion }}</div>
+					<div class="text-base-medium">{{ serverRegion }}</div>
 				</div>
 
 				<!-- App/Unified Server Plan (Dedicated only) -->
@@ -825,7 +820,7 @@
 					<div class="text-base text-ink-gray-7">
 						{{ unifiedServer ? 'Unified Server Plan' : 'Application Server Plan' }}
 					</div>
-					<div class="text-base font-medium">
+					<div class="text-base-medium">
 						{{ $format.planTitle(appServerPlan) }}/mo -
 						{{ getPlanTypeTitle(appServerPlan) }}
 					</div>
@@ -845,7 +840,7 @@
 					v-if="serverType === 'dedicated' && !unifiedServer && dbServerPlan"
 				>
 					<div class="text-base text-ink-gray-7">Database Server Plan</div>
-					<div class="text-base font-medium">
+					<div class="text-base-medium">
 						{{ $format.planTitle(dbServerPlan) }}/mo -
 						{{ getPlanTypeTitle(dbServerPlan) }}
 					</div>
@@ -865,7 +860,7 @@
 					v-if="serverType === 'hybrid' && appPublicIP && appPrivateIP"
 				>
 					<div class="text-base text-ink-gray-7">App Server IPs</div>
-					<div class="text-base font-medium">
+					<div class="text-base-medium">
 						{{ appPublicIP }}
 						/ {{ appPrivateIP }}
 					</div>
@@ -876,7 +871,7 @@
 					v-if="serverType === 'hybrid' && dbPublicIP && dbPrivateIP"
 				>
 					<div class="text-base text-ink-gray-7">DB Server IPs</div>
-					<div class="text-base font-medium">
+					<div class="text-base-medium">
 						{{ dbPublicIP }}
 						/ {{ dbPrivateIP }}
 					</div>
@@ -891,7 +886,7 @@
 					"
 				>
 					<div class="text-base text-ink-gray-7">Plan</div>
-					<div class="text-base font-medium">
+					<div class="text-base-medium">
 						{{ $format.planTitle($resources.hybridOptions.data.plans[0]) }}/mo
 					</div>
 				</div>
@@ -899,7 +894,7 @@
 				<!-- Auto Add-on Storage -->
 				<div class="flex flex-col space-y-1" v-if="showAutoAddStorageOption">
 					<div class="text-base text-ink-gray-7">Auto Add-on Storage</div>
-					<div class="text-base font-medium text-ink-gray-9">
+					<div class="text-base-medium text-ink-gray-9">
 						{{ enableAutoAddStorage ? 'Enabled' : 'Disabled' }}
 					</div>
 				</div>
@@ -910,8 +905,8 @@
 				<div class="flex flex-col space-y-2" v-if="_totalPerMonth">
 					<div class="text-base text-ink-gray-7">Total Cost</div>
 					<div class="flex flex-col space-y-1">
-						<div class="text-lg font-semibold">{{ totalPerMonth }} / month</div>
-						<div class="text-base font-medium text-ink-gray-7">
+						<div class="text-xl-semibold">{{ totalPerMonth }} / month</div>
+						<div class="text-base-medium text-ink-gray-7">
 							{{ totalPerDay }}
 							per day
 						</div>
@@ -930,7 +925,7 @@
 							v-model="agreedToRegionConsent"
 							@click.stop
 						/>
-						<div class="text-base font-medium">
+						<div class="text-base-medium">
 							I agree that the laws of selected region<br />
 							apply to both me and frappe
 						</div>

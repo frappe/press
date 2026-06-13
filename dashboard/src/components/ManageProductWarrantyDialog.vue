@@ -114,7 +114,7 @@ function onClickSave() {
 					</p>
 					<p
 						v-else-if="site.doc?.dedicated_server_warranty_limit?.available <= 0"
-						class="text-ink-red-4"
+						class="text-ink-red-8"
 					>
 						{{ site.doc?.dedicated_server_warranty_limit?.available < 0 ? "Exceeded" : "Reached" }}
 						({{ site.doc?.dedicated_server_warranty_limit?.consumed }}
@@ -134,7 +134,7 @@ function onClickSave() {
 					<p
 						:class="
 							nextChangeAvailableOn === 'Available Now'
-								? 'text-ink-green-3 font-medium'
+								? 'text-ink-green-6 font-medium'
 								: ''
 						"
 					>

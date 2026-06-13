@@ -180,22 +180,20 @@
 			<template v-slot:footer>
 				<div class="flex w-full flex-col px-4 justify-center pb-8">
 					<div v-if="sites.fetched">
-						<span class="text-base font-normal text-ink-gray-6">
+						<span class="text-base text-ink-gray-6">
 							Switch to a different account?
 						</span>
 						<span
-							class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7 cursor-pointer"
+							class="text-base text-ink-gray-9 underline hover:text-ink-gray-7 cursor-pointer"
 							@click="goBack"
 						>
 							Logout
 						</span>
 					</div>
 					<div>
-						<span class="text-base font-normal text-ink-gray-6">
-							Manage your sites?
-						</span>
+						<span class="text-base text-ink-gray-6"> Manage your sites? </span>
 						<router-link
-							class="text-base font-normal text-ink-gray-9 underline hover:text-ink-gray-7"
+							class="text-base text-ink-gray-9 underline hover:text-ink-gray-7"
 							:to="{
 								name: 'Login',
 							}"

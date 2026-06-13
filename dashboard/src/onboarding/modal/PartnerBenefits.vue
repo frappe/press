@@ -45,7 +45,7 @@ const benefits = [
 			<li class="flex items-start gap-3 self-stretch mb-4">
 				<component :is="benefit.icon" class="w-5 h-5" />
 				<div class="flex flex-col gap-1 items-start flex-1">
-					<p class="text-p-base font-medium text-ink-gray-8">
+					<p class="text-p-base-medium text-ink-gray-8">
 						{{ benefit.title }}
 					</p>
 					<p class="text-p-base text-ink-gray-6">

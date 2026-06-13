@@ -1,7 +1,7 @@
 <template>
 	<div class="mx-auto max-w-2xl rounded-lg border-0 px-2 sm:border sm:p-8">
 		<div class="prose prose-sm max-w-none">
-			<h1 class="text-2xl font-semibold">Welcome to Frappe Cloud</h1>
+			<h1 class="text-4xl-semibold">Welcome to Frappe Cloud</h1>
 			<p>
 				Frappe Cloud makes it easy to manage sites and apps like ERPNext in an
 				easy to use dashboard with powerful features like automatic backups,
@@ -19,7 +19,7 @@
 					<div class="flex items-center justify-between space-x-2">
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>1</TextInsideCircle>
-							<span class="text-base font-medium"> Account created </span>
+							<span class="text-base-medium"> Account created </span>
 						</div>
 						<div
 							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
@@ -35,13 +35,13 @@
 					<div class="flex items-center space-x-2">
 						<TextInsideCircle>2</TextInsideCircle>
 						<span
-							class="text-base font-medium"
+							class="text-base-medium"
 							v-if="pendingSiteRequest.status == 'Error'"
 						>
 							There was an error creating your trial site for
 							{{ pendingSiteRequest.title }}
 						</span>
-						<span class="text-base font-medium" v-else>
+						<span class="text-base-medium" v-else>
 							Create your {{ pendingSiteRequest.title }} trial site
 						</span>
 					</div>
@@ -75,9 +75,7 @@
 				<div class="flex items-center justify-between space-x-2">
 					<div class="flex items-center space-x-2">
 						<TextInsideCircle>2</TextInsideCircle>
-						<span class="text-base font-medium">
-							Your trial site is ready
-						</span>
+						<span class="text-base-medium"> Your trial site is ready </span>
 					</div>
 					<div
 						class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
@@ -88,7 +86,7 @@
 				<div class="pl-7">
 					<div class="mt-2">
 						<a
-							class="flex items-center text-base font-medium underline"
+							class="flex items-center text-base-medium underline"
 							:href="`https://${trialSite.host_name || trialSite.name}`"
 							target="_blank"
 						>
@@ -108,7 +106,7 @@
 			<div v-else class="rounded-md">
 				<div class="flex items-center space-x-2">
 					<TextInsideCircle>2</TextInsideCircle>
-					<div class="text-base font-medium">Create your first site</div>
+					<div class="text-base-medium">Create your first site</div>
 				</div>
 
 				<Button
@@ -129,7 +127,7 @@
 				<div v-if="!isBillingSetupComplete">
 					<div class="flex items-center space-x-2">
 						<TextInsideCircle>3</TextInsideCircle>
-						<span class="text-base font-medium"> Complete billing setup </span>
+						<span class="text-base-medium"> Complete billing setup </span>
 					</div>
 					<div
 						class="pl-7 mt-2"
@@ -149,9 +147,7 @@
 					<div class="flex items-center justify-between space-x-2">
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>3</TextInsideCircle>
-							<span class="text-base font-medium">
-								Billing setup complete
-							</span>
+							<span class="text-base-medium"> Billing setup complete </span>
 						</div>
 						<div
 							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
@@ -180,7 +176,7 @@
 				<div v-if="!isBillingDetailsSet">
 					<div class="flex items-center space-x-2">
 						<TextInsideCircle>3</TextInsideCircle>
-						<span class="text-base font-medium"> Update billing details </span>
+						<span class="text-base-medium"> Update billing details </span>
 					</div>
 					<div class="pl-7" v-if="$team.doc.onboarding.site_created">
 						<UpdateBillingDetailsForm @updated="onBillingAddresUpdateSuccess" />
@@ -190,7 +186,7 @@
 					<div class="flex items-center justify-between space-x-2">
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>3</TextInsideCircle>
-							<span class="text-base font-medium">
+							<span class="text-base-medium">
 								Billing address updated
 							</span>
 						</div>
@@ -209,7 +205,7 @@
 				<div v-if="!$team.doc.payment_mode">
 					<div class="flex items-center space-x-2">
 						<TextInsideCircle>4</TextInsideCircle>
-						<span class="text-base font-medium"> Add a payment mode </span>
+						<span class="text-base-medium"> Add a payment mode </span>
 					</div>
 
 					<div class="mt-4 pl-7" v-if="isBillingDetailsSet">
@@ -258,13 +254,13 @@
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>4</TextInsideCircle>
 							<span
-								class="text-base font-medium"
+								class="text-base-medium"
 								v-if="$team.doc.payment_mode === 'Card'"
 							>
 								Automatic billing setup completed
 							</span>
 							<span
-								class="text-base font-medium"
+								class="text-base-medium"
 								v-if="$team.doc.payment_mode === 'Prepaid Credits'"
 							>
 								Wallet balance updated

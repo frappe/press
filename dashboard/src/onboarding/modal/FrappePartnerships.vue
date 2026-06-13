@@ -7,7 +7,7 @@
 			class="h-auto w-full rounded-lg object-cover"
 		/>
 		<div class="space-y-2">
-			<p class="text-p-base font-medium text-ink-gray-9">
+			<p class="text-p-base-medium text-ink-gray-9">
 				Meet a global community of committed open source entrepreneurs
 			</p>
 

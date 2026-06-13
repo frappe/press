@@ -13,7 +13,7 @@
 					<lucide-arrow-left class="inline-block h-4 w-4" />
 				</template>
 			</Button>
-			<h2 class="text-lg font-medium text-ink-gray-9">{{ logName }}</h2>
+			<h2 class="text-xl-medium text-ink-gray-9">{{ logName }}</h2>
 			<div class="!ml-auto flex gap-2">
 				<Button
 					:route="{
@@ -42,7 +42,7 @@
 		</div>
 
 		<div
-			class="mt-5 flex rounded bg-surface-gray-7 dark:bg-surface-gray-1 p-4 text-sm text-ink-gray-2 dark:text-ink-gray-8"
+			class="mt-5 flex rounded bg-surface-gray-10 dark:bg-surface-gray-1 p-4 text-sm text-ink-gray-2 dark:text-ink-gray-8"
 		>
 			<span v-if="$resources.log.loading" class="flex items-center gap-2">
 				<Spinner />

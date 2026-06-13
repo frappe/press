@@ -57,7 +57,7 @@
 				</div>
 			</div>
 			<ErrorMessage class="-mt-2 w-full" :message="error" />
-			<h3 class="mt-4 text-base font-semibold">Patch Config</h3>
+			<h3 class="mt-4 text-base-semibold">Patch Config</h3>
 			<FormControl
 				v-if="!applyToAllBenches && !applyToLatestDeploy"
 				v-model="applyToBench"

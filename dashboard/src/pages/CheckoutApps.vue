@@ -10,7 +10,7 @@
 				alt="Logo"
 				class="rounded h-[68px] hover:scale-105 transition-all"
 			/>
-			<span class="text-sm mt-3 font-semibold">{{ sub.title }}</span>
+			<span class="text-sm-semibold mt-3">{{ sub.title }}</span>
 		</div>
 	</div>
 </template>

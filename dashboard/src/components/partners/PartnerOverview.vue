@@ -3,7 +3,7 @@
 		<div class="flex flex-col">
 			<div class="text-ink-gray-5">Welcome back!</div>
 			<div class="flex items-center gap-3">
-				<h1 class="text-3xl font-semibold">
+				<h1 class="text-5xl-semibold">
 					{{ partnerDetails.data?.company_name }}
 				</h1>
 				<Badge
@@ -19,7 +19,7 @@
 				<div class="flex">
 					<div class="flex items-center gap-0.5">
 						<span class="lucide-award h-5 w-5 text-ink-gray-7" />
-						<h3 class="text-xl font-semibold">
+						<h3 class="text-3xl-semibold">
 							{{ partnerDetails.data?.partner_type }}
 							Tier
 						</h3>
@@ -33,7 +33,7 @@
 						:hint="false"
 					>
 						<template #hint>
-							<span class="text-base font-medium text-ink-gray-5">
+							<span class="text-base-medium text-ink-gray-5">
 								{{ formatNumber(nextTierTarget) }}
 								to reach {{ nextTier }}
 							</span>
@@ -53,7 +53,7 @@
 								@click="showPartnerContributionDialog = true"
 							/>
 						</div>
-						<div class="text-xl font-semibold py-2">
+						<div class="text-3xl-semibold py-2">
 							{{ formatCurrency(currentMonthContribution.data) || '0.0' }}
 						</div>
 						<div class="text-sm text-ink-gray-6">
@@ -69,7 +69,7 @@
 							<Button label="View" @click="routeToCertification()" />
 						</div>
 						<div class="flex items-center">
-							<div class="text-xl font-semibold py-2">
+							<div class="text-3xl-semibold py-2">
 								{{ partnerDetails.data?.custom_number_of_certified_members || 0 }}
 							</div>
 						</div>
@@ -97,7 +97,7 @@
 					</div>
 					<div class="flex items-center justify-between">
 						<div class="flex flex-col gap-1">
-							<span class="text-xl font-semibold text-ink-gray-7">
+							<span class="text-3xl-semibold text-ink-gray-7">
 								{{ formatDate(partnerDetails.data?.end_date) }}
 							</span>
 							<span class="text-sm text-ink-gray-6"
@@ -143,8 +143,7 @@
 				>
 					<div class="flex flex-col gap-2">
 						<p>
-							<span class="font-semibold text-3xl"
-								>{{ formatCurrency(mrr) }}</span
+							<span class=" text-5xl-semibold">{{ formatCurrency(mrr) }}</span
 							><span class="text-base text-ink-gray-6">
 								/
 								{{ formatCurrency(team.doc.currency === 'USD' ? 100 : 10000) }}</span
@@ -158,7 +157,7 @@
 				>
 					<div class="flex flex-col gap-2">
 						<p>
-							<span class="font-semibold text-3xl"
+							<span class=" text-5xl-semibold"
 								>{{ partnerDetails.data?.custom_number_of_certified_members || 0 }}</span
 							><span class="text-base text-ink-gray-6"> / 2</span>
 						</p>

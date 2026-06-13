@@ -1,7 +1,7 @@
 <template>
 	<div class="flex divide-x p-5">
 		<div class="w-1/5">
-			<div class="text-lg text-ink-gray-6 flex">Non Conformance List</div>
+			<div class="text-xl text-ink-gray-6 flex">Non Conformance List</div>
 			<template v-for="tab in tabs">
 				<router-link
 					:to="{ name: tab.value, params: { nc: tab.name } }"

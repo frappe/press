@@ -1,6 +1,6 @@
 <template>
 	<section>
-		<h2 class="text-xl font-medium text-ink-gray-9">{{ title }}</h2>
+		<h2 class="text-3xl-medium text-ink-gray-9">{{ title }}</h2>
 		<p class="text-base text-ink-gray-5" v-if="description">
 			{{ description }}
 		</p>

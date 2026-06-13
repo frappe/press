@@ -141,7 +141,7 @@ const columns = computed(() => [
 		<div
 			class="p-2 text-right"
 			:class="{
-				'bg-surface-white bottom-0 sticky':
+				'bg-surface-base bottom-0 sticky':
 					dependencyListResource?.next && dependencyListResource?.hasNextPage,
 			}"
 			v-if="dependencyListResource"
@@ -165,7 +165,7 @@ const columns = computed(() => [
 				<code>pyproject.toml</code>. For more information, refer to the Frappe
 				Cloud
 				<a
-					class="text-ink-blue-2"
+					class="text-ink-blue-5"
 					href="https://docs.frappe.io/cloud/faq/installing-app-apt-dependencies"
 					target="_blank"
 				>

@@ -1,5 +1,5 @@
 <template>
-	<Header class="sticky top-0 z-10 bg-surface-white">
+	<Header class="sticky top-0 z-10 bg-surface-base">
 		<div
 			class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
 		>
@@ -43,9 +43,7 @@
 			<!-- Database Size Analyzer -->
 			<div>
 				<div class="flex flex-row items-center justify-between">
-					<p class="text-base font-medium text-ink-gray-8">
-						Database Size Breakup
-					</p>
+					<p class="text-base-medium text-ink-gray-8">Database Size Breakup</p>
 					<div class="flex flex-row gap-2">
 						<Button @click="this.showTableSchemaSizeDetailsDialog = true">
 							View Details

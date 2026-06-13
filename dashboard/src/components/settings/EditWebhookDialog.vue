@@ -47,9 +47,7 @@
 					to learn more
 				</p>
 			</div>
-			<p class="text-base font-medium text-ink-gray-9">
-				Select the webhook events
-			</p>
+			<p class="text-base-medium text-ink-gray-9">Select the webhook events</p>
 			<div
 				class="text-center text-sm leading-10 text-ink-gray-5"
 				v-if="$resources.events.loading"

@@ -129,47 +129,47 @@ const openSupportAccess = (e, name) => {
 const iconCss = {
 	'Site Update': {
 		icon: LucideRefreshCw,
-		txt: 'text-ink-green-2',
+		txt: 'text-ink-green-5',
 		bg: 'bg-surface-green-1',
 	},
 	'Site Migrate': {
 		icon: LucideArrowUpCircle,
-		txt: 'text-ink-green-2',
+		txt: 'text-ink-green-5',
 		bg: 'bg-surface-green-1',
 	},
 	'Version Upgrade': {
 		icon: LucideArrowUpCircle,
-		txt: 'text-ink-green-2',
+		txt: 'text-ink-green-5',
 		bg: 'bg-surface-green-1',
 	},
 	'Bench Deploy': {
 		icon: LucideRocket,
-		txt: 'text-ink-green-2',
+		txt: 'text-ink-green-5',
 		bg: 'bg-surface-green-1',
 	},
 	'Site Recovery': {
 		icon: LucideShieldCheck,
-		txt: 'text-ink-green-2',
+		txt: 'text-ink-green-5',
 		bg: 'bg-surface-green-1',
 	},
 	'Agent Job Failure': {
 		icon: LucideAlertTriangle,
-		txt: 'text-ink-red-4',
+		txt: 'text-ink-red-8',
 		bg: 'bg-surface-red-1',
 	},
 	'Downtime/Performance': {
 		icon: LucideActivity,
-		txt: 'text-ink-red-4',
+		txt: 'text-ink-red-8',
 		bg: 'bg-surface-red-1',
 	},
 	'Support Access': {
 		icon: LucideKey,
-		txt: 'text-ink-amber-3',
+		txt: 'text-ink-amber-6',
 		bg: 'bg-surface-amber-1',
 	},
 	'Auto Scale': {
 		icon: LucideTrendingUp,
-		txt: 'text-ink-red-4',
+		txt: 'text-ink-red-8',
 		bg: 'bg-surface-red-1',
 	},
 }
@@ -232,7 +232,7 @@ useRealtimeNotifs((data) => {
 
 		<template #body="{ togglePopover }">
 			<div
-				class="text-ink-gray-9 bg-surface-white h-screen -ml-2.5 w-screen md:ml-2 shadow-xl md:w-[430px] flex flex-col dark:border-x"
+				class="text-ink-gray-9 bg-surface-base h-screen -ml-2.5 w-screen md:ml-2 shadow-xl md:w-[430px] flex flex-col dark:border-x"
 			>
 				<!-- header -->
 				<div class="text-base flex items-center py-2 pl-4 pr-2 border-b">
@@ -290,7 +290,7 @@ useRealtimeNotifs((data) => {
 						>
 							<span
 								v-if="x.read == 0"
-								class="p-0.5 ring-outline-gray-2 ring-2 bg-surface-gray-7 absolute rounded top-0 left-0"
+								class="p-0.5 ring-outline-gray-2 ring-2 bg-surface-gray-10 absolute rounded top-0 left-0"
 							/>
 							<component
 								:is="iconCss[x.type].icon || LucideCircleAlert"

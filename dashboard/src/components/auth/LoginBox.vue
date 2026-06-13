@@ -9,17 +9,15 @@
 				</slot>
 			</div>
 			<div
-				class="mx-auto w-full bg-surface-white px-4 py-6 sm:w-96 sm:rounded-lg"
+				class="mx-auto w-full bg-surface-base px-4 py-6 sm:w-96 sm:rounded-lg"
 			>
 				<div class="mb-2" v-if="title">
-					<span
-						class="text-2xl font-bold leading-5 tracking-tight text-ink-gray-9"
-					>
+					<span class="text-4xl-bold leading-5 tracking-tight text-ink-gray-9">
 						{{ title }}
 					</span>
 				</div>
 				<p
-					class="mb-6 break-words text-base font-normal leading-[21px] text-ink-gray-7"
+					class="mb-6 break-words text-base leading-[21px] text-ink-gray-7"
 					v-if="subtitle"
 				>
 					{{ subtitle }}

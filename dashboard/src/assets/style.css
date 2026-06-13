@@ -1,7 +1,7 @@
 @import "frappe-ui/style.css";
 
 body {
-	background-color: var(--surface-white);
+	background-color: var(--surface-base);
 	color: var(--ink-gray-9);
   @apply text-base;
 }
@@ -17,13 +17,13 @@ body {
 	--scrollbar-size: 4px;
 	--scrollbar-thumb: var(--surface-gray-4);
 	--scrollbar-bg: transparent;
-	--scrollbar-thumb-hover: var(--surface-gray-5);
+	--scrollbar-thumb-hover: var(--surface-gray-8);
 }
 
 [data-theme="dark"] {
 	--scrollbar-thumb: var(--surface-gray-2);
 	--scrollbar-thumb-hover: var(--surface-gray-3);
-	--surface-modal: var(--surface-cards);
+	--surface-elevation-2: var(--surface-elevation-1);
 }
 
 /* needed as theme switcher dynamically adds this class 
