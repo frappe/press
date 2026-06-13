@@ -145,28 +145,28 @@
 						</div>
 					</div>
 					<div class="flex flex-row items-center gap-2">
-						<div class="w-[12rem] text-base" :autoClose="false">
+						<div class="w-[12rem] text-base">
 							<DateTimePicker
 								v-model="start"
 								variant="outline"
 								placeholder="Start Time"
 								:disabled="isProcessingQueries"
-								:disableTextInput="true"
+								:typeable="false"
 								:clearable="false"
-								:maxDateTime="end"
+								:max="end"
 							/>
 						</div>
 						<FeatherIcon name="arrow-right" class="h-5 w-5 stroke-gray-700" />
-						<div class="w-[12rem] text-base" :autoClose="true">
+						<div class="w-[12rem] text-base">
 							<DateTimePicker
 								v-model="end"
 								variant="outline"
 								placeholder="End Time"
 								:disabled="isProcessingQueries"
-								:disableTextInput="true"
+								:typeable="false"
 								:clearable="false"
-								:minDateTime="start"
-								:maxDateTime="Date()"
+								:min="start"
+								:max="Date()"
 							/>
 						</div>
 					</div>
