@@ -49,4 +49,25 @@ def create_test_product_trial(
 
 
 class TestProductTrial(FrappeTestCase):
-	pass
+	def setUp(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+
+		create_test_cluster("Mumbai", public=True)
+		create_test_cluster("Bahrain", region="me-south-1", public=True)
+		self.product = create_test_product_trial(create_test_app("signup_domain_app"))
+		create_test_root_domain("m.local.fc.frappe.dev", default_cluster="Mumbai")
+		create_test_root_domain("b.local.fc.frappe.dev", default_cluster="Bahrain")
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_signup_domain_uses_subdomain_of_resolved_cluster(self):
+		self.assertEqual(self.product.get_signup_domain("Mumbai"), "m.local.fc.frappe.dev")
+
+	def test_signup_domain_falls_back_to_nearest_subdomain_when_cluster_has_none(self):
+		# UAE has no subdomain; Bahrain is the nearest cluster that does
+		self.assertEqual(self.product.get_signup_domain("UAE"), "b.local.fc.frappe.dev")
+
+	def test_signup_domain_returns_apex_only_when_no_subdomains_exist(self):
+		self.product.domain = create_test_root_domain("solo.fc.frappe.dev").name
+		self.assertEqual(self.product.get_signup_domain("Mumbai"), "solo.fc.frappe.dev")

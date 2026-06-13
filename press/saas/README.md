@@ -10,6 +10,31 @@ It has 2 doctypes.
 In **Site** doctype, there will be a field `standby_for_product`, this field should have the link to the product trial (e.g. erpnext, crm)
 If `is_standby` field is checked, that site can be allocated to a user.
 
+#### Signup Domains (apex vs. cluster subdomains)
+
+A Product Trial's **Domain** is the *apex* (e.g. `frappe.cloud`). Signups must **never**
+land on the apex — AWS Route 53 hosted-zone limits mean we spread sites across per-cluster
+subdomains (`m.frappe.cloud` = Mumbai, `v.frappe.cloud` = Virginia, …), each a `Root
+Domain` whose `default_cluster` names the cluster it serves. The subdomain a signup gets
+is the **signup domain**.
+
+Resolution (both on `ProductTrial`):
+1. `get_cluster_for_request(account_request)` → target cluster (hybrid-pool rules, else
+   `get_nearest_cluster(country)`, falling back to IP geolocation).
+2. `get_signup_domain(cluster)` → the cluster's enabled `*.{apex}` subdomain, falling back
+   to the **nearest** enabled subdomain (`get_nearest_cluster_among`, by cluster
+   coordinates — e.g. UAE → Bahrain), then the apex's `default_cluster` subdomain. Returns
+   the apex *only* when no subdomains exist.
+
+`create_site` re-resolves server-side, so an apex posted by a stale frontend (or a failed
+geo lookup) can't slip through; `create_standby_site` uses the same resolver for pooled
+sites.
+
+> [!CAUTION]
+> Old bug: when the cluster resolved to `None` (geo lookup down, no country on the Account
+> Request) or to a cluster with no `*.frappe.cloud` subdomain, it silently fell back to the
+> apex. Keep `get_signup_domain`'s "never apex" invariant intact.
+
 #### Configure a new Product Trial
 - Create a new record in `Product Trial` doctype
 - **Details Tab**

@@ -176,69 +176,19 @@ def _get_or_create_site_request(product: str, team_name: str, account_request: s
 	).insert(ignore_permissions=True)
 
 
-def _get_cluster_for_request(product_trial: ProductTrial, account_request: str | None) -> str | None:
-	from press.utils import get_nearest_cluster
-
-	account_request_data = None
-
-	if product_trial.enable_hybrid_pooling:
-		cluster = ""
-		fields = list({"country", *(rule.field for rule in product_trial.hybrid_pool_rules)})
-		if account_request:
-			account_request_data = frappe.db.get_value(
-				"Account Request",
-				account_request,
-				fields,
-				as_dict=True,
-			)
-
-		for rule in product_trial.hybrid_pool_rules:
-			value = account_request_data.get(rule.field) if account_request_data else None
-			if not value:
-				break
-			if rule.value == value:
-				cluster = rule.preferred_cluster
-				break
-
-		if cluster:
-			return cluster
-
-		country = account_request_data.get("country") if account_request_data else None
-		return get_nearest_cluster(country)
-
-	if account_request:
-		account_request_data = frappe.db.get_value(
-			"Account Request", account_request, ["country"], as_dict=True
-		)
-	country = account_request_data.get("country") if account_request_data else None
-	return get_nearest_cluster(country)
-
-
 @frappe.whitelist(methods=["POST"])
 def get_request(product: str, account_request: str | None = None) -> dict:
-	from frappe.core.utils import find
-
 	team = frappe.local.team()
 	site_request = _get_or_create_site_request(product, team.name, account_request)
 
 	product_trial: ProductTrial = frappe.get_doc("Product Trial", product)
-	cluster = _get_cluster_for_request(product_trial, account_request)
-	domain = frappe.db.get_value("Product Trial", product, "domain")
-	prefilled_subdomain = product_trial.get_prefilled_subdomain(account_request)
-	cluster_domains = frappe.db.get_all(
-		"Root Domain", {"name": ("like", f"%.{domain}"), "enabled": 1}, ["name", "default_cluster as cluster"]
-	)
-
-	cluster_domain = find(
-		cluster_domains,
-		lambda d: d.cluster == cluster if cluster else False,
-	)
+	cluster = product_trial.get_cluster_for_request(account_request)
 
 	return {
 		"name": site_request.name,
 		"site": site_request.site,
 		"product_trial": site_request.product_trial,
-		"domain": cluster_domain["name"] if cluster_domain else domain,
+		"domain": product_trial.get_signup_domain(cluster),
 		"status": site_request.status,
-		"prefilled_subdomain": prefilled_subdomain,
+		"prefilled_subdomain": product_trial.get_prefilled_subdomain(account_request),
 	}
