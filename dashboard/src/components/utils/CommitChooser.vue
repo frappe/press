@@ -102,8 +102,8 @@
 </template>
 
 <script>
-import { Popover, Button, debounce, FormControl } from 'frappe-ui';
-import { nextTick } from 'vue';
+import { Popover, Button, debounce, FormControl } from 'frappe-ui'
+import { nextTick } from 'vue'
 
 export default {
 	name: 'CommitChooser',
@@ -115,7 +115,7 @@ export default {
 		return {
 			searchQuery: '',
 			queryResult: [],
-		};
+		}
 	},
 	props: [
 		'options',
@@ -135,26 +135,26 @@ export default {
 				value: option.value,
 				hash: option.hash,
 				timestamp: option.timestamp,
-			});
-			togglePopover();
+			})
+			togglePopover()
 		},
 		isSelected(option) {
-			return this.modelValue?.value === option.value;
+			return this.modelValue?.value === option.value
 		},
 		isVersion(tag) {
-			return tag.match(/^v\d+\.\d+\.\d+$/);
+			return tag.match(/^v\d+\.\d+\.\d+$/)
 		},
 		onQueryChange() {
 			debounce(() => {
-				this.$resources.releases.reload();
-			}, 300)();
+				this.$resources.releases.reload()
+			}, 300)()
 		},
 		focusSearch() {
 			nextTick(() => {
 				// Focus the input element inside popover FormControl
-				const el = this.$refs.searchInput?.$el?.querySelector('input');
-				el?.focus();
-			});
+				const el = this.$refs.searchInput?.$el?.querySelector('input')
+				el?.focus()
+			})
 		},
 	},
 	resources: {
@@ -176,25 +176,25 @@ export default {
 						value: release.name,
 						timestamp: release.timestamp,
 						hash: release.hash,
-					}));
+					}))
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		displayedOptions() {
 			return this.searchQuery.length
 				? this.$resources.releases.data
-				: this.options;
+				: this.options
 		},
 	},
 	watch: {
 		searchQuery(newQuery) {
 			if (newQuery.length === 0) {
-				this.queryResult = [];
-				return;
+				this.queryResult = []
+				return
 			}
 		},
 	},
-};
+}
 </script>

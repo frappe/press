@@ -14,7 +14,7 @@
 	>
 </template>
 <script>
-import { toast } from 'vue-sonner';
+import { toast } from 'vue-sonner'
 export default {
 	props: {
 		row: { type: Object, required: true },
@@ -24,7 +24,7 @@ export default {
 		return {
 			isJobRunning: false,
 			jobName: null,
-		};
+		}
 	},
 	resources: {
 		addIndex() {
@@ -40,26 +40,26 @@ export default {
 							table: this.row['Table'],
 							column: this.row['Column'],
 						},
-					};
+					}
 				},
 				onSuccess: (data) => {
 					if (data?.message) {
 						if (data?.message?.success) {
-							toast.success(data?.message?.message);
-							this.isJobRunning = true;
-							this.jobName = data?.message?.job_name;
+							toast.success(data?.message?.message)
+							this.isJobRunning = true
+							this.jobName = data?.message?.job_name
 						} else {
-							toast.error(data?.message?.message);
+							toast.error(data?.message?.message)
 						}
 					}
 				},
 				auto: false,
-			};
+			}
 		},
 	},
 	methods: {
 		addIndex() {
-			this.$resources.addIndex.submit();
+			this.$resources.addIndex.submit()
 		},
 		viewJob() {
 			if (this.jobName) {
@@ -68,9 +68,9 @@ export default {
 						`/sites/${this.site}/insights/jobs/${this.jobName}`,
 					).href,
 					'_blank',
-				);
+				)
 			}
 		},
 	},
-};
+}
 </script>

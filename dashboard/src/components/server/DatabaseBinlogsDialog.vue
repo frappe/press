@@ -11,7 +11,8 @@
 				v-if="$resources.binlogs.loading"
 				class="flex w-full items-center justify-center gap-2 py-32 text-ink-gray-7"
 			>
-				<Spinner class="w-4" /> Loading
+				<Spinner class="w-4" />
+				Loading
 			</div>
 			<div v-else>
 				<ObjectList
@@ -39,7 +40,8 @@
 					</div>
 					<div class="flex flex-shrink-0 items-center gap-2">
 						<p class="tnum text-sm text-ink-gray-6">
-							{{ pageStart }} - {{ pageEnd }} of {{ totalBinlogs }} binlogs
+							{{ pageStart }}
+							- {{ pageEnd }} of {{ totalBinlogs }} binlogs
 						</p>
 						<div class="flex gap-2">
 							<Button
@@ -66,18 +68,17 @@
 					title="To purge binlogs, select the oldest binlog you want to delete. It and all earlier binlogs will be removed."
 					type="info"
 					:showIcon="false"
-				>
-				</AlertBanner>
+				> </AlertBanner>
 			</div>
 		</template>
 	</Dialog>
 </template>
 <script>
-import { toast } from 'vue-sonner';
-import { confirmDialog } from '../../utils/components';
-import { bytes, date } from '../../utils/format';
-import ObjectList from '../ObjectList.vue';
-import { getToastErrorMessage } from '../../utils/toast';
+import { toast } from 'vue-sonner'
+import { confirmDialog } from '../../utils/components'
+import { bytes, date } from '../../utils/format'
+import ObjectList from '../ObjectList.vue'
+import { getToastErrorMessage } from '../../utils/toast'
 
 export default {
 	name: 'DatabaseBinlogsDialog',
@@ -98,7 +99,7 @@ export default {
 			purgeFrom: null,
 			selectingOtherRows: false,
 			previousSelections: new Set(),
-		};
+		}
 	},
 	resources: {
 		binlogs() {
@@ -111,24 +112,24 @@ export default {
 						dn: this.databaseServer,
 						method: 'get_binlogs_info',
 						args: {},
-					};
+					}
 				},
 				onSuccess: (data) => {
 					if (data?.message) {
 						// reset selections
-						this.page = 1;
-						this.purgeFrom = null;
-						this.lastPurgeFrom = null;
-						this.previousSelections = new Set();
-						this.selectingOtherRows = false;
+						this.page = 1
+						this.purgeFrom = null
+						this.lastPurgeFrom = null
+						this.previousSelections = new Set()
+						this.selectingOtherRows = false
 					}
 				},
 				initialData: [],
 				auto: true,
-			};
+			}
 		},
 		purgeBinlogs() {
-			if (!this.purgeFrom) return;
+			if (!this.purgeFrom) return
 
 			return {
 				url: 'press.api.client.run_doc_method',
@@ -141,38 +142,38 @@ export default {
 						args: {
 							to_binlog: this.purgeFrom,
 						},
-					};
+					}
 				},
 				auto: false,
-			};
+			}
 		},
 	},
 	computed: {
 		pageStart() {
-			return (this.page - 1) * this.pageSize + 1;
+			return (this.page - 1) * this.pageSize + 1
 		},
 		pageEnd() {
-			return Math.min(this.page * this.pageSize, this.totalBinlogs);
+			return Math.min(this.page * this.pageSize, this.totalBinlogs)
 		},
 		totalBinlogs() {
-			return this.binlogs.length;
+			return this.binlogs.length
 		},
 		hasPreviousPage() {
-			return this.page > 1;
+			return this.page > 1
 		},
 		hasNextPage() {
-			return this.page * this.pageSize < this.binlogs.length;
+			return this.page * this.pageSize < this.binlogs.length
 		},
 		paginatedBinlogs() {
-			const start = (this.page - 1) * this.pageSize;
-			const end = start + this.pageSize;
-			return this.binlogs.slice(start, end);
+			const start = (this.page - 1) * this.pageSize
+			const end = start + this.pageSize
+			return this.binlogs.slice(start, end)
 		},
 		binlogs() {
-			return this.$resources?.binlogs?.data?.message || [];
+			return this.$resources?.binlogs?.data?.message || []
 		},
 		sortedBinlogNames() {
-			return this.binlogs.map((b) => b.name).sort();
+			return this.binlogs.map((b) => b.name).sort()
 		},
 		binlogsOptions() {
 			return {
@@ -187,7 +188,7 @@ export default {
 						fieldname: 'size',
 						class: 'text-ink-gray-6',
 						format(value) {
-							return bytes(value);
+							return bytes(value)
 						},
 					},
 					{
@@ -195,7 +196,7 @@ export default {
 						fieldname: 'modified_at',
 						align: 'right',
 						format(value) {
-							return value ? date(value, 'lll') : '';
+							return value ? date(value, 'lll') : ''
 						},
 					},
 				],
@@ -213,7 +214,7 @@ export default {
 						label: 'Remove Binlogs',
 						disabled: !this.purgeFrom,
 						onClick: () => {
-							this.closeDialog();
+							this.closeDialog()
 							confirmDialog({
 								title: 'Remove Binlogs',
 								message: `Are you sure you want to remove binlogs from <b>${this.purgeFrom} (${this.purgeFromDate})</b> and all older ones?\nThis action cannot be undone.`,
@@ -223,24 +224,24 @@ export default {
 									theme: 'red',
 									onClick: ({ hide }) => {
 										if (this.$resources.purgeBinlogs.loading) {
-											return;
+											return
 										}
-										const purgeFrom = this.purgeFrom;
-										const purgeFromDate = this.purgeFromDate;
+										const purgeFrom = this.purgeFrom
+										const purgeFromDate = this.purgeFromDate
 										return toast.promise(
 											this.$resources.purgeBinlogs.submit(),
 											{
 												loading: 'Purging binlogs...',
 												success: () => {
-													hide();
-													return `Binlogs from ${purgeFrom} (${purgeFromDate}) have been removed`;
+													hide()
+													return `Binlogs from ${purgeFrom} (${purgeFromDate}) have been removed`
 												},
 												error: (e) => getToastErrorMessage(e),
 											},
-										);
+										)
 									},
 								},
-							});
+							})
 						},
 					},
 					{
@@ -250,44 +251,44 @@ export default {
 						onClick: () => this.$resources.binlogs.reload(),
 					},
 				],
-			};
+			}
 		},
 		purgeFromDate() {
-			if (!this.purgeFrom) return null;
-			const binlog = this.binlogs.find((b) => b.name === this.purgeFrom);
-			return binlog ? date(binlog.modified_at, 'lll') : '---';
+			if (!this.purgeFrom) return null
+			const binlog = this.binlogs.find((b) => b.name === this.purgeFrom)
+			return binlog ? date(binlog.modified_at, 'lll') : '---'
 		},
 	},
 	methods: {
 		goToNextPage() {
 			if (this.hasNextPage) {
-				this.page += 1;
+				this.page += 1
 			}
 		},
 		goToPreviousPage() {
 			if (this.hasPreviousPage) {
-				this.page -= 1;
+				this.page -= 1
 			}
 		},
 		handleSelection(selections) {
 			if (this.selectingOtherRows) {
-				console.log('Currently selecting other rows, ignoring selection event');
-				return;
+				console.log('Currently selecting other rows, ignoring selection event')
+				return
 			}
 
-			const sortedSelections = Array.from(selections).sort().reverse();
+			const sortedSelections = Array.from(selections).sort().reverse()
 			if (sortedSelections.length == 0) {
-				this.purgeFrom = null;
-				this.selectingOtherRows = false;
-				return;
+				this.purgeFrom = null
+				this.selectingOtherRows = false
+				return
 			}
 
-			this.selectingOtherRows = true;
-			const reversedSortedBinlogNames = [...this.sortedBinlogNames].reverse();
+			this.selectingOtherRows = true
+			const reversedSortedBinlogNames = [...this.sortedBinlogNames].reverse()
 
-			this.purgeFrom = sortedSelections[0];
+			this.purgeFrom = sortedSelections[0]
 			if (!this.purgeFrom) {
-				return;
+				return
 			}
 
 			setTimeout(() => {
@@ -296,70 +297,70 @@ export default {
 					const unselectedBinlog = this.findFirstMissingAndNextAvailable(
 						sortedSelections,
 						reversedSortedBinlogNames,
-					).firstMissing;
+					).firstMissing
 					if (unselectedBinlog) {
-						this.$refs.list.toggleRowSelection(unselectedBinlog);
-						console.log('Reversing selection to', unselectedBinlog);
+						this.$refs.list.toggleRowSelection(unselectedBinlog)
+						console.log('Reversing selection to', unselectedBinlog)
 					}
 				} else {
 					// find index of purgeFrom in sorted binlog names
-					const purgeIndex = reversedSortedBinlogNames.indexOf(this.purgeFrom);
+					const purgeIndex = reversedSortedBinlogNames.indexOf(this.purgeFrom)
 					for (let i = 0; i < reversedSortedBinlogNames.length; i++) {
-						const binlog = reversedSortedBinlogNames[i];
+						const binlog = reversedSortedBinlogNames[i]
 						if (i < purgeIndex && selections.has(binlog)) {
 							// console.log("Trying to deselect", binlog);
-							this.$refs.list.toggleRowSelection(binlog);
+							this.$refs.list.toggleRowSelection(binlog)
 						}
 						if (i >= purgeIndex && !selections.has(binlog)) {
 							// console.log("Trying to select", binlog);
-							this.$refs.list.toggleRowSelection(binlog);
+							this.$refs.list.toggleRowSelection(binlog)
 						}
 					}
 
-					this.lastPurgeFrom = this.purgeFrom;
-					this.previousSelections = new Set(sortedSelections);
+					this.lastPurgeFrom = this.purgeFrom
+					this.previousSelections = new Set(sortedSelections)
 				}
-				this.selectingOtherRows = false;
-			}, 150);
+				this.selectingOtherRows = false
+			}, 150)
 		},
 		findFirstMissingAndNextAvailable(selections, fullList) {
-			const selectionSet = new Set(selections);
-			const startIdx = fullList.indexOf(selections[0]);
+			const selectionSet = new Set(selections)
+			const startIdx = fullList.indexOf(selections[0])
 
-			let firstMissing = null;
-			let nextAvailable = null;
+			let firstMissing = null
+			let nextAvailable = null
 
 			for (let i = startIdx; i < fullList.length; i++) {
-				const binlog = fullList[i];
+				const binlog = fullList[i]
 
 				if (!selectionSet.has(binlog)) {
-					firstMissing = binlog;
+					firstMissing = binlog
 
 					// find next available selection *after* this missing one
 					for (let j = i + 1; j < fullList.length; j++) {
 						if (selectionSet.has(fullList[j])) {
-							nextAvailable = fullList[j];
-							break;
+							nextAvailable = fullList[j]
+							break
 						}
 					}
-					break;
+					break
 				}
 			}
 
 			if (nextAvailable === null && selections.length > 0) {
-				nextAvailable = selections[0];
+				nextAvailable = selections[0]
 			}
 
-			return { firstMissing, nextAvailable };
+			return { firstMissing, nextAvailable }
 		},
 		showDialog() {
-			this.show = true;
-			this.$emit('update:show', true);
+			this.show = true
+			this.$emit('update:show', true)
 		},
 		closeDialog() {
-			this.show = false;
-			this.$emit('update:show', false);
+			this.show = false
+			this.$emit('update:show', false)
 		},
 	},
-};
+}
 </script>

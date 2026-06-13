@@ -4,9 +4,9 @@
 	</div>
 </template>
 <script>
-import ObjectList from '../ObjectList.vue';
-import { currency } from '../../utils/format';
-import dayjs from '../../utils/dayjs';
+import ObjectList from '../ObjectList.vue'
+import { currency } from '../../utils/format'
+import dayjs from '../../utils/dayjs'
 
 export default {
 	name: 'PartnerCustomerInvoices',
@@ -18,7 +18,7 @@ export default {
 		return {
 			team: this.customerTeam,
 			currency: this.customerCurrency,
-		};
+		}
 	},
 	computed: {
 		options() {
@@ -36,7 +36,7 @@ export default {
 								year: 'numeric',
 								month: 'short',
 								day: 'numeric',
-							}).format(new Date(value));
+							}).format(new Date(value))
 						},
 					},
 					{ label: 'Total', fieldname: 'total', format: this.formatCurrency },
@@ -54,16 +54,16 @@ export default {
 					],
 					partner_customer: true,
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		formatCurrency(value) {
 			if (value === 0) {
-				return '';
+				return ''
 			}
-			return currency(value, this.currency);
+			return currency(value, this.currency)
 		},
 	},
-};
+}
 </script>

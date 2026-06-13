@@ -1,20 +1,20 @@
 <template>
 	<FTabs v-if="visibleTabs?.length" v-model="currentTab" :tabs="visibleTabs">
 		<!-- TAB BUTTONS -->
-    <template #tab-item="{ tab, selected }">
+		<template #tab-item="{ tab, selected }">
 			<slot name="tab-item" :tab="tab" :selected="selected" />
-    </template>
-		
+		</template>
+
 		<!-- TAB CONTENT -->
-    <template #tab-panel="{ tab }">
+		<template #tab-panel="{ tab }">
 			<slot name="tab-content" :tab="tab">
 				<router-view :tab="tab" />
 			</slot>
-    </template>
+		</template>
 	</FTabs>
 </template>
 <script>
-import { Tabs } from 'frappe-ui';
+import { Tabs } from 'frappe-ui'
 
 export default {
 	name: 'TabsWithRouter',
@@ -30,34 +30,34 @@ export default {
 					tab.label in this.document.tabs_access &&
 					!this.document.tabs_access[tab.label]
 				) {
-					return false;
+					return false
 				} else if (tab.condition) {
-					return tab.condition({ doc: this.document });
+					return tab.condition({ doc: this.document })
 				} else {
-					return true;
+					return true
 				}
-			});
+			})
 		},
 		currentTab: {
 			get() {
 				for (let tab of this.visibleTabs) {
-					let tabRouteName = tab.routeName || tab.route.name;
+					let tabRouteName = tab.routeName || tab.route.name
 					if (
 						this.$route.name === tabRouteName ||
 						tab.childrenRoutes?.includes(this.$route.name)
 					) {
-						return this.visibleTabs.indexOf(tab);
+						return this.visibleTabs.indexOf(tab)
 					}
 				}
-				return 0;
+				return 0
 			},
 			set(value) {
-				const tab = this.visibleTabs[value];
+				const tab = this.visibleTabs[value]
 				if (tab.route) {
-					this.$router.push(tab.route);
+					this.$router.push(tab.route)
 				}
-			}
+			},
 		},
 	},
-};
+}
 </script>

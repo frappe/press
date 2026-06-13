@@ -50,8 +50,9 @@
 								/>
 								I agree to Frappe&nbsp;
 								<Link href="https://frappecloud.com/terms" target="_blank">
-									Terms of Service </Link
-								>,&nbsp;
+									Terms of Service
+								</Link>
+								,&nbsp;
 								<Link href="https://frappecloud.com/privacy" target="_blank">
 									Privacy Policy
 								</Link>
@@ -87,8 +88,8 @@
 	</div>
 </template>
 <script>
-import { Spinner } from 'frappe-ui';
-import LoginBox from '../../components/auth/SaaSLoginBox.vue';
+import { Spinner } from 'frappe-ui'
+import LoginBox from '../../components/auth/SaaSLoginBox.vue'
 
 export default {
 	name: 'SaaSSignupOAuthSetupAccount',
@@ -104,7 +105,7 @@ export default {
 			country: null,
 			terms_accepted: false,
 			isRedirecting: false,
-		};
+		}
 	},
 	resources: {
 		setupAccount() {
@@ -114,13 +115,13 @@ export default {
 					return {
 						key: this.key,
 						country: this.country,
-					};
+					}
 				},
 				onSuccess: (data) => {
-					this.isRedirecting = true;
-					window.location.href = data?.location;
+					this.isRedirecting = true
+					window.location.href = data?.location
 				},
-			};
+			}
 		},
 		signupSettings() {
 			return {
@@ -135,19 +136,19 @@ export default {
 				auto: true,
 				onSuccess(res) {
 					if (res && res.country) {
-						this.country = res.country;
+						this.country = res.country
 					}
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		saasProduct() {
-			return this.$resources.signupSettings.data?.product_trial;
+			return this.$resources.signupSettings.data?.product_trial
 		},
 		countries() {
-			return this.$resources.signupSettings.data?.countries || [];
+			return this.$resources.signupSettings.data?.countries || []
 		},
 	},
-};
+}
 </script>

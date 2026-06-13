@@ -37,10 +37,10 @@
 </template>
 
 <script>
-import AddressForm from '../components/AddressForm.vue';
-import StripeLogo from '@/components/StripeLogo.vue';
-import { loadStripe } from '@stripe/stripe-js';
-import { frappeRequest } from 'frappe-ui';
+import AddressForm from '../components/AddressForm.vue'
+import StripeLogo from '@/components/StripeLogo.vue'
+import { loadStripe } from '@stripe/stripe-js'
+import { frappeRequest } from 'frappe-ui'
 
 export default {
 	name: 'StripeCard',
@@ -59,17 +59,17 @@ export default {
 			cardHolderName: '',
 			gstNotApplicable: false,
 			addingCard: false,
-		};
+		}
 	},
 	async mounted() {
-		this.setupCard();
+		this.setupCard()
 	},
 	resources: {
 		countryList() {
 			return {
 				url: 'press.api.account.country_list',
 				auto: true,
-			};
+			}
 		},
 	},
 	methods: {
@@ -77,13 +77,13 @@ export default {
 			let result = await frappeRequest({
 				url: 'press.api.developer.marketplace.get_publishable_key_and_setup_intent',
 				params: { secret_key: this.secretKey },
-			});
+			})
 			//window.posthog.capture('init_client_add_card', 'fc_signup');
-			let { publishable_key, setup_intent } = result;
-			this.setupIntent = setup_intent;
-			this.stripe = await loadStripe(publishable_key);
-			this.elements = this.stripe.elements();
-			let theme = this.$theme;
+			let { publishable_key, setup_intent } = result
+			this.setupIntent = setup_intent
+			this.stripe = await loadStripe(publishable_key)
+			this.elements = this.stripe.elements()
+			let theme = this.$theme
 			let style = {
 				base: {
 					color: theme.colors.black,
@@ -98,7 +98,7 @@ export default {
 					color: theme.colors.red['600'],
 					iconColor: theme.colors.red['600'],
 				},
-			};
+			}
 			this.card = this.elements.create('card', {
 				hidePostalCode: true,
 				style: style,
@@ -106,29 +106,29 @@ export default {
 					complete: '',
 					focus: 'bg-surface-gray-2',
 				},
-			});
-			this.card.mount(this.$refs['card-element']);
+			})
+			this.card.mount(this.$refs['card-element'])
 
 			this.card.addEventListener('change', (event) => {
-				this.cardErrorMessage = event.error?.message || null;
-			});
+				this.cardErrorMessage = event.error?.message || null
+			})
 			this.card.addEventListener('ready', () => {
-				this.ready = true;
-			});
+				this.ready = true
+			})
 		},
 		async submit() {
-			this.addingCard = true;
+			this.addingCard = true
 
-			let message;
+			let message
 			if (!this.address) {
-				message = await this.$refs['address-form'].validateValues();
+				message = await this.$refs['address-form'].validateValues()
 			}
 			if (message) {
-				this.errorMessage = message;
-				this.addingCard = false;
-				return;
+				this.errorMessage = message
+				this.addingCard = false
+				return
 			} else {
-				this.errorMessage = null;
+				this.errorMessage = null
 			}
 
 			const { setupIntent, error } = await this.stripe.confirmCardSetup(
@@ -148,14 +148,14 @@ export default {
 						},
 					},
 				},
-			);
+			)
 
 			if (error) {
-				this.addingCard = false;
-				let errorMessage = error.message;
+				this.addingCard = false
+				let errorMessage = error.message
 				// fix for duplicate error message
 				if (errorMessage != 'Your card number is incomplete.') {
-					this.errorMessage = errorMessage;
+					this.errorMessage = errorMessage
 				}
 			} else {
 				if (setupIntent.status === 'succeeded') {
@@ -166,9 +166,9 @@ export default {
 								secret_key: this.secretKey,
 								setup_intent: setupIntent,
 							},
-						});
+						})
 
-						this.addingCard = false;
+						this.addingCard = false
 
 						await frappeRequest({
 							url: 'press.api.developer.marketplace.change_site_plan',
@@ -176,23 +176,23 @@ export default {
 								secret_key: this.secretKey,
 								plan: this.selectedPlan.name,
 							},
-						});
-						this.$emit('update:step', 4);
+						})
+						this.$emit('update:step', 4)
 					} catch (error) {
-						console.error(error);
-						this.addingCard = false;
-						this.errorMessage = error.messages.join('\n');
+						console.error(error)
+						this.addingCard = false
+						this.errorMessage = error.messages.join('\n')
 					}
 				}
 			}
 		},
 		getCountryCode(country) {
-			country = 'India';
+			country = 'India'
 			let code = this.$resources.countryList.data.find(
 				(d) => d.name === country,
-			).code;
-			return code.toUpperCase();
+			).code
+			return code.toUpperCase()
 		},
 	},
-};
+}
 </script>

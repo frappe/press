@@ -38,10 +38,10 @@ import {
 	FormControl,
 	createResource,
 	createListResource,
-} from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import { computed, ref } from 'vue';
-import { DashboardError } from '../../utils/error';
+} from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import { computed, ref } from 'vue'
+import { DashboardError } from '../../utils/error'
 
 const leadInfo = ref({
 	organization_name: '',
@@ -53,8 +53,8 @@ const leadInfo = ref({
 	state: '',
 	requirement: '',
 	status: '',
-});
-const show = defineModel();
+})
+const show = defineModel()
 
 const _domainList = [
 	'Distribution',
@@ -66,75 +66,75 @@ const _domainList = [
 	'Services',
 	'Non Profit',
 	'Other',
-];
+]
 
 const domainList = computed(() => {
 	return _domainList.map((domain) => ({
 		label: domain,
 		value: domain,
-	}));
-});
+	}))
+})
 
 const _leadTypeList = createListResource({
 	doctype: 'Partner Lead Type',
 	fields: ['name'],
 	cache: 'leadTypeList',
 	auto: true,
-});
+})
 const leadTypeList = computed(() => {
 	return (_leadTypeList.data || []).map((type) => ({
 		label: type.name,
 		value: type.name,
-	}));
-});
+	}))
+})
 
 const _countryList = createResource({
 	url: 'press.api.account.country_list',
 	cache: 'countryList',
 	auto: true,
-});
+})
 
 const countryList = computed(() => {
 	return (_countryList.data || []).map((d) => ({
 		label: d.name,
 		value: d.name,
-	}));
-});
+	}))
+})
 
-const errorMessage = ref('');
+const errorMessage = ref('')
 const newLeadInfo = createResource({
 	url: 'press.api.partner.add_new_lead',
 	makeParams: () => {
 		return {
 			lead_details: leadInfo.value,
-		};
+		}
 	},
 	validate: async () => {
-		let error = await validate();
+		let error = await validate()
 		if (error) {
-			errorMessage.value = error;
-			throw new DashboardError(error);
+			errorMessage.value = error
+			throw new DashboardError(error)
 		}
 	},
 	onSuccess: () => {
-		toast.success('New Lead created successfully');
-		show.value = false;
+		toast.success('New Lead created successfully')
+		show.value = false
 	},
 	onError: (e) => {
-		errorMessage.value = e.messages[0] || 'Failed to create lead';
-		toast.error(errorMessage.value);
+		errorMessage.value = e.messages[0] || 'Failed to create lead'
+		toast.error(errorMessage.value)
 	},
-});
+})
 
 function _newLeadInfo() {
-	newLeadInfo.submit();
+	newLeadInfo.submit()
 }
 
 async function validate() {
 	// validate mandatory fields
 	for (let field of sections.value.flatMap((s) => s.fields)) {
 		if (field.required && !leadInfo.value[field.fieldname]) {
-			return `${field.label} is required`;
+			return `${field.label} is required`
 		}
 	}
 }
@@ -177,14 +177,14 @@ const _indianStates = [
 	'Uttar Pradesh',
 	'Uttarakhand',
 	'West Bengal',
-];
+]
 
 const indianStates = computed(() => {
 	return _indianStates.map((state) => ({
 		label: state,
 		value: state,
-	}));
-});
+	}))
+})
 
 const sections = computed(() => {
 	return [
@@ -288,8 +288,8 @@ const sections = computed(() => {
 				},
 			],
 		},
-	];
-});
+	]
+})
 
 function getInputType(field) {
 	return {
@@ -300,6 +300,6 @@ function getInputType(field) {
 		Password: 'password',
 		Text: 'textarea',
 		Date: 'date',
-	}[field.fieldtype || 'Data'];
+	}[field.fieldtype || 'Data']
 }
 </script>

@@ -53,7 +53,7 @@
 	</Dialog>
 </template>
 <script>
-import { Button, Dialog, FeatherIcon, ErrorMessage } from 'frappe-ui';
+import { Button, Dialog, FeatherIcon, ErrorMessage } from 'frappe-ui'
 
 export default {
 	props: {
@@ -71,7 +71,7 @@ export default {
 			show: true,
 			copied: false,
 			error: '',
-		};
+		}
 	},
 	resources: {
 		notification() {
@@ -82,19 +82,19 @@ export default {
 				whitelistedMethods: {
 					markAsAddressed: 'mark_as_addressed',
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		doc() {
-			return this.$resources.notification.doc ?? null;
+			return this.$resources.notification.doc ?? null
 		},
 	},
 	methods: {
 		async copyTraceback() {
-			await navigator.clipboard.writeText(this.doc.traceback);
-			this.copied = true;
-			setTimeout(() => (this.copied = false), 4000);
+			await navigator.clipboard.writeText(this.doc.traceback)
+			this.copied = true
+			setTimeout(() => (this.copied = false), 4000)
 		},
 		async done() {
 			// if (this.doc.assistance_url && !this.helpViewed) {
@@ -103,15 +103,15 @@ export default {
 			// 	return;
 			// }
 
-			await this.$resources.notification.markAsAddressed.submit();
-			this.show = false;
-			this.$emit('done');
+			await this.$resources.notification.markAsAddressed.submit()
+			this.show = false
+			this.$emit('done')
 		},
 		help() {
-			this.error = '';
-			this.helpViewed = true;
-			window.open(this.doc.assistance_url, '_blank');
+			this.error = ''
+			this.helpViewed = true
+			window.open(this.doc.assistance_url, '_blank')
 		},
 	},
-};
+}
 </script>

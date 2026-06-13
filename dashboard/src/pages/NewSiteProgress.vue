@@ -81,8 +81,8 @@
 </template>
 
 <script>
-import { Breadcrumbs } from 'frappe-ui';
-import Header from '../components/Header.vue';
+import { Breadcrumbs } from 'frappe-ui'
+import Header from '../components/Header.vue'
 
 const STATUS = {
 	PENDING: 'Pending',
@@ -92,7 +92,7 @@ const STATUS = {
 	CREATING_SITE: 'Creating Site',
 	SITE_CREATED: 'Site Created',
 	SITE_CREATION_FAILED: 'Site Creation Failed',
-};
+}
 
 const STATUS_ORDER = [
 	STATUS.PENDING,
@@ -102,10 +102,10 @@ const STATUS_ORDER = [
 	STATUS.CREATING_SITE,
 	STATUS.SITE_CREATED,
 	STATUS.SITE_CREATION_FAILED,
-];
+]
 
-const REDIRECT_DELAY_SUCCESS = 1000;
-const REDIRECT_DELAY_ERROR = 2000;
+const REDIRECT_DELAY_SUCCESS = 1000
+const REDIRECT_DELAY_ERROR = 2000
 
 export default {
 	name: 'NewSiteProgress',
@@ -124,31 +124,31 @@ export default {
 			'doc_subscribe',
 			'Site Group Deploy',
 			this.siteGroupDeployName,
-		);
+		)
 
-		this.$socket.on('doc_update', this.handleDocUpdate);
+		this.$socket.on('doc_update', this.handleDocUpdate)
 	},
 	beforeUnmount() {
-		this.$socket.off('doc_update', this.handleDocUpdate);
+		this.$socket.off('doc_update', this.handleDocUpdate)
 	},
 	methods: {
 		handleDocUpdate() {
-			this.$resources.siteGroupDeploy.reload();
+			this.$resources.siteGroupDeploy.reload()
 		},
 		getStatusPosition(status) {
-			return STATUS_ORDER.indexOf(status);
+			return STATUS_ORDER.indexOf(status)
 		},
 		getStepIcon(stepPosition, currentPosition, failedStatus = null) {
 			if (failedStatus && this.deployDoc?.status === failedStatus) {
-				return 'x';
+				return 'x'
 			}
 			if (currentPosition === stepPosition) {
-				return 'loading';
+				return 'loading'
 			}
 			if (currentPosition > stepPosition) {
-				return 'check';
+				return 'check'
 			}
-			return 'clock';
+			return 'clock'
 		},
 		redirectOnComplete(doc) {
 			const redirectMap = {
@@ -167,16 +167,16 @@ export default {
 					params: { name: doc.site },
 					delay: REDIRECT_DELAY_ERROR,
 				},
-			};
+			}
 
-			const redirect = redirectMap[doc.status];
+			const redirect = redirectMap[doc.status]
 			if (redirect) {
 				setTimeout(() => {
 					this.$router.push({
 						name: redirect.name,
 						params: redirect.params,
-					});
-				}, redirect.delay);
+					})
+				}, redirect.delay)
 			}
 		},
 	},
@@ -188,46 +188,46 @@ export default {
 				name: this.siteGroupDeployName,
 				auto: true,
 				onSuccess: this.redirectOnComplete,
-			};
+			}
 		},
 	},
 	computed: {
 		deployDoc() {
-			return this.$resources.siteGroupDeploy.doc;
+			return this.$resources.siteGroupDeploy.doc
 		},
 		isLoading() {
-			return this.$resources.siteGroupDeploy.loading;
+			return this.$resources.siteGroupDeploy.loading
 		},
 		hasFailed() {
 			return [STATUS.SITE_CREATION_FAILED, STATUS.BENCH_DEPLOY_FAILED].includes(
 				this.deployDoc?.status,
-			);
+			)
 		},
 		failureLinkText() {
 			return this.deployDoc?.status === STATUS.BENCH_DEPLOY_FAILED
 				? 'View Deploy'
-				: 'View Job';
+				: 'View Job'
 		},
 		failureRoute() {
 			if (this.deployDoc?.status === STATUS.BENCH_DEPLOY_FAILED) {
 				return {
 					name: 'Release Group Detail Deploys',
 					params: { name: this.deployDoc.release_group },
-				};
+				}
 			}
 			if (this.deployDoc?.status === STATUS.SITE_CREATION_FAILED) {
 				return {
 					name: 'Site Jobs',
 					params: { name: this.deployDoc.site },
-				};
+				}
 			}
-			return null;
+			return null
 		},
 		currentStatusPosition() {
-			return this.getStatusPosition(this.deployDoc?.status);
+			return this.getStatusPosition(this.deployDoc?.status)
 		},
 		steps() {
-			const pos = this.currentStatusPosition;
+			const pos = this.currentStatusPosition
 
 			return [
 				{
@@ -251,8 +251,8 @@ export default {
 					icon: this.getStepIcon(4, pos, STATUS.SITE_CREATION_FAILED),
 					message: 'Installing apps and setting up your site',
 				},
-			];
+			]
 		},
 	},
-};
+}
 </script>

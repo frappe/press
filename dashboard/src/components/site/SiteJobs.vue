@@ -3,9 +3,9 @@
 </template>
 
 <script>
-import { isMobile } from '../../utils/device';
-import { duration } from '../../utils/format';
-import ObjectList from '../ObjectList.vue';
+import { isMobile } from '../../utils/device'
+import { duration } from '../../utils/format'
+import ObjectList from '../ObjectList.vue'
 
 export default {
 	name: 'SiteJobs',
@@ -15,7 +15,7 @@ export default {
 	},
 	computed: {
 		logsOptions() {
-			const doctype = 'Site';
+			const doctype = 'Site'
 			return {
 				doctype: 'Agent Job',
 				filters: {
@@ -25,7 +25,7 @@ export default {
 					return {
 						name: 'Site Job',
 						params: { id: row.name },
-					};
+					}
 				},
 				orderBy: 'creation desc',
 				searchField: 'job_type',
@@ -49,7 +49,7 @@ export default {
 								pageLength: 100,
 							},
 						},
-					];
+					]
 				},
 				columns: [
 					{
@@ -74,8 +74,8 @@ export default {
 						fieldname: 'duration',
 						width: 0.35,
 						format(value, row) {
-							if (row.job_id === 0 || !row.end) return;
-							return duration(value);
+							if (row.job_id === 0 || !row.end) return
+							return duration(value)
 						},
 					},
 					{
@@ -90,8 +90,8 @@ export default {
 						align: 'right',
 					},
 				].filter((c) => (c.condition ? c.condition() : true)),
-			};
+			}
 		},
 	},
-};
+}
 </script>

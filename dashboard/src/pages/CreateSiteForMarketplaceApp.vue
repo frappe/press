@@ -36,11 +36,9 @@
 					<p>
 						Failed to install the app.
 						<router-link class="underline" :to="failureRoute">
-							{{
-								$resources.siteGroupDeploy.doc?.status === 'Bench Deploy Failed'
+							{{ $resources.siteGroupDeploy.doc?.status === 'Bench Deploy Failed'
 									? 'View Deploy'
-									: 'View Job'
-							}}
+									: 'View Job' }}
 						</router-link>
 						.
 					</p>
@@ -79,8 +77,8 @@
 </template>
 
 <script>
-import { Breadcrumbs } from 'frappe-ui';
-import Header from '../components/Header.vue';
+import { Breadcrumbs } from 'frappe-ui'
+import Header from '../components/Header.vue'
 
 export default {
 	props: {
@@ -92,7 +90,7 @@ export default {
 	pageMeta() {
 		return {
 			title: `Install ${this.appDoc.title} - Frappe Cloud`,
-		};
+		}
 	},
 	components: {
 		FBreadcrumbs: Breadcrumbs,
@@ -101,18 +99,18 @@ export default {
 	data() {
 		return {
 			siteGroupDeployName: this.$route.query.siteGroupDeployName,
-		};
+		}
 	},
 	mounted() {
 		this.$socket.emit(
 			'doc_subscribe',
 			'Site Group Deploy',
 			this.siteGroupDeployName,
-		);
+		)
 
 		this.$socket.on('doc_update', () => {
-			this.$resources.siteGroupDeploy.reload();
-		});
+			this.$resources.siteGroupDeploy.reload()
+		})
 	},
 	resources: {
 		app() {
@@ -122,7 +120,7 @@ export default {
 					app: this.app,
 				},
 				auto: true,
-			};
+			}
 		},
 		siteGroupDeploy() {
 			return {
@@ -135,18 +133,18 @@ export default {
 							this.$router.push({
 								name: 'Site Detail Overview',
 								params: { name: doc.site },
-							});
-						}, 1000);
+							})
+						}, 1000)
 					}
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		failure() {
 			return ['Site Creation Failed', 'Bench Deploy Failed'].includes(
 				this.$resources.siteGroupDeploy.doc?.status,
-			);
+			)
 		},
 		failureRoute() {
 			if (this.$resources.siteGroupDeploy.doc?.status === 'Bench Deploy Failed')
@@ -155,18 +153,18 @@ export default {
 					params: {
 						name: this.$resources.siteGroupDeploy.doc.release_group,
 					},
-				};
+				}
 			else if (
 				this.$resources.siteGroupDeploy.doc?.status === 'Site Creation Failed'
 			)
 				return {
 					name: 'Site Jobs',
 					params: { name: this.$resources.siteGroupDeploy.doc.site },
-				};
+				}
 		},
 		steps() {
 			const statusPosition = (status) => {
-				if (!status) return -1;
+				if (!status) return -1
 
 				return [
 					'Pending',
@@ -176,9 +174,9 @@ export default {
 					'Creating Site',
 					'Site Created',
 					'Site Creation Failed',
-				].indexOf(status);
-			};
-			const status = this.$resources.siteGroupDeploy?.doc?.status;
+				].indexOf(status)
+			}
+			const status = this.$resources.siteGroupDeploy?.doc?.status
 
 			return [
 				{
@@ -188,9 +186,9 @@ export default {
 					status: 'Pending',
 					icon: () => {
 						if (statusPosition(status) === 0) {
-							return 'loading';
+							return 'loading'
 						} else if (statusPosition(status) > 0) {
-							return 'check';
+							return 'check'
 						}
 					},
 					message: 'This should take a few minutes',
@@ -203,13 +201,13 @@ export default {
 					status: 'Deploying Bench',
 					icon: () => {
 						if (status === 'Bench Deploy Failed') {
-							return 'x';
+							return 'x'
 						} else if (statusPosition(status) === 1) {
-							return 'loading';
+							return 'loading'
 						} else if (statusPosition(status) > 1) {
-							return 'check';
+							return 'check'
 						} else {
-							return 'clock';
+							return 'clock'
 						}
 					},
 					message: 'This should take a few minutes',
@@ -221,22 +219,22 @@ export default {
 					status: 'Creating Site',
 					icon: () => {
 						if (status === 'Site Creation Failed') {
-							return 'x';
+							return 'x'
 						} else if (statusPosition(status) === 4) {
-							return 'loading';
+							return 'loading'
 						} else if (statusPosition(status) > 4) {
-							return 'check';
+							return 'check'
 						} else {
-							return 'clock';
+							return 'clock'
 						}
 					},
 					message: 'This should take a few minutes',
 				},
-			];
+			]
 		},
 		appDoc() {
-			return this.$resources.app.data || {};
+			return this.$resources.app.data || {}
 		},
 	},
-};
+}
 </script>

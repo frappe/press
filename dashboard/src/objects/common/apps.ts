@@ -1,19 +1,19 @@
-import { defineAsyncComponent, h } from 'vue';
-import { toast } from 'vue-sonner';
-import { getTeam } from '../../data/team';
-import router from '../../router';
-import { confirmDialog, icon, renderDialog } from '../../utils/components';
-import { planTitle } from '../../utils/format';
+import { defineAsyncComponent, h } from 'vue'
+import { toast } from 'vue-sonner'
+import { getTeam } from '../../data/team'
+import router from '../../router'
+import { confirmDialog, icon, renderDialog } from '../../utils/components'
+import { planTitle } from '../../utils/format'
 import type {
 	ColumnField,
 	DialogConfig,
 	FilterField,
 	Tab,
 	TabList,
-} from './types';
-import { getUpsellBanner } from '.';
-import { isMobile } from '../../utils/device';
-import { getToastErrorMessage } from '../../utils/toast';
+} from './types'
+import { getUpsellBanner } from '.'
+import { isMobile } from '../../utils/device'
+import { getToastErrorMessage } from '../../utils/toast'
 
 export function getAppsTab(forSite: boolean) {
 	return {
@@ -25,11 +25,11 @@ export function getAppsTab(forSite: boolean) {
 			return forSite && docResource.doc?.status !== 'Archived'
 		},
 		list: getAppsTabList(forSite),
-	} satisfies Tab as Tab;
+	} satisfies Tab as Tab
 }
 
 function getAppsTabList(forSite: boolean) {
-	const options = forSite ? siteAppListOptions : benchAppListOptions;
+	const options = forSite ? siteAppListOptions : benchAppListOptions
 	const list: TabList = {
 		doctype: '',
 		filters: () => ({}),
@@ -37,7 +37,7 @@ function getAppsTabList(forSite: boolean) {
 		columns: getAppsTabColumns(forSite),
 		searchField: !forSite ? 'title' : undefined,
 		filterControls: (r) => {
-			if (forSite) return [];
+			if (forSite) return []
 			else
 				return [
 					{
@@ -48,7 +48,7 @@ function getAppsTabList(forSite: boolean) {
 						options: [
 							'',
 							...new Set(
-								r.listResource.data?.map((i) => String(i.branch)) || []
+								r.listResource.data?.map((i) => String(i.branch)) || [],
 							),
 						],
 					},
@@ -61,16 +61,16 @@ function getAppsTabList(forSite: boolean) {
 							'',
 							...new Set(
 								r.listResource.data?.map(
-									(i) => String(i.repository_url).split('/').at(-2) || ''
-								) || []
+									(i) => String(i.repository_url).split('/').at(-2) || '',
+								) || [],
 							),
 						],
 					},
-				] satisfies FilterField[];
+				] satisfies FilterField[]
 		},
-	};
+	}
 
-	return list;
+	return list
 }
 
 function getAppsTabColumns(forSite: boolean) {
@@ -81,7 +81,7 @@ function getAppsTabColumns(forSite: boolean) {
 			width: 1,
 			suffix(row) {
 				if (!row.is_app_patched) {
-					return;
+					return
 				}
 
 				return h(
@@ -90,8 +90,8 @@ function getAppsTabColumns(forSite: boolean) {
 						title: 'App has been patched',
 						class: 'rounded-full bg-surface-gray-2 p-1',
 					},
-					h(icon('hash', 'w-3 h-3'))
-				);
+					h(icon('hash', 'w-3 h-3')),
+				)
 			},
 			format: (value, row) => value || row.app_title,
 		},
@@ -100,9 +100,9 @@ function getAppsTabColumns(forSite: boolean) {
 			width: 0.75,
 			class: 'text-ink-gray-6 text-sm',
 			format(_, row) {
-				const planText = planTitle(row.plan_info);
-				if (planText) return `${planText}/mo`;
-				else return 'Free';
+				const planText = planTitle(row.plan_info)
+				if (planText) return `${planText}/mo`
+				else return 'Free'
 			},
 		},
 		{
@@ -117,7 +117,7 @@ function getAppsTabColumns(forSite: boolean) {
 			type: 'Badge',
 			width: 1,
 			link: (value, row) => {
-				return `${row.repository_url}/tree/${value}`;
+				return `${row.repository_url}/tree/${value}`
 			},
 		},
 		{
@@ -126,10 +126,10 @@ function getAppsTabColumns(forSite: boolean) {
 			type: 'Badge',
 			width: 1,
 			link: (value, row) => {
-				return `${row.repository_url}/commit/${value}`;
+				return `${row.repository_url}/commit/${value}`
 			},
 			format(value) {
-				return String(value).slice(0, 7);
+				return String(value).slice(0, 7)
 			},
 		},
 		{
@@ -137,23 +137,23 @@ function getAppsTabColumns(forSite: boolean) {
 			fieldname: 'commit_message',
 			width: '30rem',
 		},
-	];
+	]
 
-	if (forSite) return appTabColumns;
-	return appTabColumns.filter((c) => c.label !== 'Plan');
+	if (forSite) return appTabColumns
+	return appTabColumns.filter((c) => c.label !== 'Plan')
 }
 
 const siteAppListOptions: Partial<TabList> = {
 	doctype: 'Site App',
 	pageLength: 999,
 	filters: (res) => {
-		return { parenttype: 'Site', parent: res.doc?.name };
+		return { parenttype: 'Site', parent: res.doc?.name }
 	},
 	banner({ documentResource: site }) {
 		const bannerTitle =
-			'Your site is currently on a shared bench. Upgrade plan to install custom apps, enable server scripts and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.';
+			'Your site is currently on a shared bench. Upgrade plan to install custom apps, enable server scripts and <a href="https://frappecloud.com/shared-hosting#benches" class="underline" target="_blank">more</a>.'
 
-		return getUpsellBanner(site, bannerTitle);
+		return getUpsellBanner(site, bannerTitle)
 	},
 	primaryAction({ listResource: apps, documentResource: site }) {
 		return {
@@ -163,29 +163,29 @@ const siteAppListOptions: Partial<TabList> = {
 			},
 			onClick() {
 				const InstallAppDialog = defineAsyncComponent(
-					() => import('../../components/site/InstallAppDialog.vue')
-				);
+					() => import('../../components/site/InstallAppDialog.vue'),
+				)
 
 				renderDialog(
 					h(InstallAppDialog, {
 						site: site.name,
 						onInstalled() {
-							apps.reload();
+							apps.reload()
 						},
-					})
-				);
+					}),
+				)
 			},
-		};
+		}
 	},
 	rowActions({ row, listResource: apps, documentResource: site }) {
-		let $team = getTeam();
+		let $team = getTeam()
 
 		return [
 			{
 				label: 'View in Desk',
 				condition: () => $team.doc?.is_desk_user,
 				onClick() {
-					window.open(`/app/app-source/${row.name}`, '_blank');
+					window.open(`/app/app-source/${row.name}`, '_blank')
 				},
 			},
 			{
@@ -193,19 +193,19 @@ const siteAppListOptions: Partial<TabList> = {
 				condition: () => row.plan_info && row.plans.length > 1,
 				onClick() {
 					let SiteAppPlanChangeDialog = defineAsyncComponent(
-						() => import('../../components/site/SiteAppPlanSelectDialog.vue')
-					);
+						() => import('../../components/site/SiteAppPlanSelectDialog.vue'),
+					)
 					renderDialog(
 						h(SiteAppPlanChangeDialog, {
 							app: row,
 							currentPlan: row.plans.find(
-								(plan: Record<string, any>) => plan.name === row.plan_info.name
+								(plan: Record<string, any>) => plan.name === row.plan_info.name,
 							),
 							onPlanChanged() {
-								apps.reload();
+								apps.reload()
 							},
-						})
-					);
+						}),
+					)
 				},
 			},
 			{
@@ -213,35 +213,35 @@ const siteAppListOptions: Partial<TabList> = {
 				condition: () => row.app !== 'frappe',
 				onClick() {
 					const UninstallAppDialog = defineAsyncComponent(
-						() => import('../../components/site/UninstallAppDialog.vue')
-					);
+						() => import('../../components/site/UninstallAppDialog.vue'),
+					)
 					renderDialog(
 						h(UninstallAppDialog, {
 							app: row,
 							site: site,
-						})
-					);
+						}),
+					)
 				},
 			},
-		];
+		]
 	},
-};
+}
 
 const benchAppListOptions: Partial<TabList> = {
 	doctype: 'Bench App',
 	filters: (res) => {
-		return { parenttype: 'Bench', parent: res.doc?.name };
+		return { parenttype: 'Bench', parent: res.doc?.name }
 	},
 	rowActions({ row }) {
-		let $team = getTeam();
+		let $team = getTeam()
 		return [
 			{
 				label: 'View in Desk',
 				condition: () => $team.doc?.is_desk_user,
 				onClick() {
-					window.open(`/app/app-release/${row.release}`, '_blank');
+					window.open(`/app/app-release/${row.release}`, '_blank')
 				},
 			},
-		];
+		]
 	},
-};
+}

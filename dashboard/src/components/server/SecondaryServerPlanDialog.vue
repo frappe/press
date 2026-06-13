@@ -38,9 +38,7 @@
 						]"
 					>
 						<div class="flex w-full items-center justify-between space-x-2">
-							<span class="text-sm font-medium">
-								{{ c.name }}
-							</span>
+							<span class="text-sm font-medium"> {{ c.name }} </span>
 							<Tooltip :text="c.description">
 								<lucide-info class="h-4 w-4 text-ink-gray-5" />
 							</Tooltip>
@@ -66,8 +64,8 @@
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import ServerPlansCards from './ServerPlansCards.vue';
+import { getCachedDocumentResource } from 'frappe-ui'
+import ServerPlansCards from './ServerPlansCards.vue'
 
 export default {
 	components: { ServerPlansCards },
@@ -82,7 +80,7 @@ export default {
 			show: true,
 			plan: null,
 			planType: 'Standard',
-		};
+		}
 	},
 	watch: {
 		server: {
@@ -90,7 +88,7 @@ export default {
 			handler(serverName) {
 				if (serverName) {
 					if (this.$server?.doc?.plan) {
-						this.plan = this.$server.doc.current_plan;
+						this.plan = this.$server.doc.current_plan
 					}
 				}
 			},
@@ -108,7 +106,7 @@ export default {
 				},
 				auto: true,
 				initialData: [],
-			};
+			}
 		},
 	},
 	methods: {
@@ -117,21 +115,21 @@ export default {
 				{ server_plan: this.plan.name },
 				{
 					onSuccess: () => {
-						this.show = false;
-						this.$toast.success('Starting secondary server setup');
+						this.show = false
+						this.$toast.success('Starting secondary server setup')
 						this.$router.push({
 							path: this.$server.doc.name,
 							path: 'plays',
-						});
+						})
 					},
 				},
-			);
+			)
 		},
 	},
 	computed: {
 		$server() {
-			return getCachedDocumentResource('Server', this.server);
+			return getCachedDocumentResource('Server', this.server)
 		},
 	},
-};
+}
 </script>

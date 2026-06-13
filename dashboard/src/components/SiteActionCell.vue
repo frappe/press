@@ -21,15 +21,15 @@
 </template>
 
 <script setup>
-import { debounce, getCachedDocumentResource } from 'frappe-ui';
-import { defineAsyncComponent, h, onMounted } from 'vue';
-import { toast } from 'vue-sonner';
-import { confirmDialog, renderDialog } from '../utils/components';
-import { getToastErrorMessage } from '../utils/toast';
-import router from '../router';
-import { isLastSite } from '../data/team';
-import CommunicationInfoDialog from './CommunicationInfoDialog.vue';
-import { useRoute } from 'vue-router';
+import { debounce, getCachedDocumentResource } from 'frappe-ui'
+import { defineAsyncComponent, h, onMounted } from 'vue'
+import { toast } from 'vue-sonner'
+import { confirmDialog, renderDialog } from '../utils/components'
+import { getToastErrorMessage } from '../utils/toast'
+import router from '../router'
+import { isLastSite } from '../data/team'
+import CommunicationInfoDialog from './CommunicationInfoDialog.vue'
+import { useRoute } from 'vue-router'
 
 const props = defineProps({
 	siteName: { type: String, required: true },
@@ -38,17 +38,17 @@ const props = defineProps({
 	description: { type: String, required: true },
 	buttonLabel: { type: String, required: true },
 	group: { type: String, required: false },
-});
+})
 
-const site = getCachedDocumentResource('Site', props.siteName);
-const route = useRoute();
+const site = getCachedDocumentResource('Site', props.siteName)
+const route = useRoute()
 
 onMounted(() => {
-	const queryAction = route.query['action'];
+	const queryAction = route.query['action']
 	if (props.actionLabel === queryAction) {
-		getSiteActionHandler(queryAction);
+		getSiteActionHandler(queryAction)
 	}
-});
+})
 
 function getSiteActionHandler(action) {
 	const actionDialogs = {
@@ -73,11 +73,11 @@ function getSiteActionHandler(action) {
 		'Schedule backup': defineAsyncComponent(
 			() => import('./site/SiteScheduleBackup.vue'),
 		),
-	};
+	}
 	if (actionDialogs[action]) {
-		const dialog = h(actionDialogs[action], { site: site.doc.name });
-		renderDialog(dialog);
-		return;
+		const dialog = h(actionDialogs[action], { site: site.doc.name })
+		renderDialog(dialog)
+		return
 	}
 
 	const actionHandlers = {
@@ -90,9 +90,9 @@ function getSiteActionHandler(action) {
 		'Reset site': onSiteReset,
 		'Clear cache': onClearCache,
 		'Schedule backup': onScheduleBackup,
-	};
+	}
 	if (actionHandlers[action]) {
-		actionHandlers[action].call(this);
+		actionHandlers[action].call(this)
 	}
 }
 
@@ -102,7 +102,7 @@ function onNotificationSettings() {
 			referenceDoctype: 'Site',
 			referenceName: site.doc.name,
 		}),
-	);
+	)
 }
 
 function onDeactivateSite() {
@@ -121,10 +121,10 @@ function onDeactivateSite() {
 			variant: 'solid',
 			theme: 'red',
 			onClick({ hide }) {
-				return site.deactivate.submit().then(hide);
+				return site.deactivate.submit().then(hide)
 			},
 		},
-	});
+	})
 }
 
 function onActivateSite() {
@@ -139,23 +139,23 @@ function onActivateSite() {
 			label: 'Activate',
 			variant: 'solid',
 			onClick({ hide }) {
-				return site.activate.submit().then(hide);
+				return site.activate.submit().then(hide)
 			},
 		},
-	});
+	})
 }
 
 function onDropSite() {
 	const ArchiveSiteDialog = defineAsyncComponent(
 		() => import('./site/ArchiveSiteDialog.vue'),
-	);
+	)
 
 	return renderDialog(
 		h(ArchiveSiteDialog, {
 			site: site,
 			modelValue: true,
 		}),
-	);
+	)
 }
 
 function onMigrateSite() {
@@ -183,14 +183,14 @@ function onMigrateSite() {
 			theme: 'red',
 			onClick: ({ hide, values }) => {
 				if (values.confirmSiteName !== site.doc.name) {
-					throw new Error('Site name does not match');
+					throw new Error('Site name does not match')
 				}
 				return site.migrate
 					.submit({ skip_failing_patches: values.skipFailingPatches })
-					.then(hide);
+					.then(hide)
 			},
 		},
-	});
+	})
 }
 
 function onSiteReset() {
@@ -211,12 +211,12 @@ function onSiteReset() {
 			theme: 'red',
 			onClick: ({ hide, values }) => {
 				if (values.confirmSiteName !== site.doc.name) {
-					throw new Error('Site name does not match.');
+					throw new Error('Site name does not match.')
 				}
-				return site.reinstall.submit().then(hide);
+				return site.reinstall.submit().then(hide)
 			},
 		},
-	});
+	})
 }
 
 function onTransferSite() {
@@ -240,14 +240,14 @@ function onTransferSite() {
 				return site.sendTransferRequest
 					.submit({ team_mail_id: values.email, reason: values.reason || '' })
 					.then(() => {
-						hide();
+						hide()
 						toast.success(
 							`Transfer request sent to ${values.email} successfully.`,
-						);
-					});
+						)
+					})
 			},
 		},
-	});
+	})
 }
 
 function onClearCache() {
@@ -260,16 +260,16 @@ function onClearCache() {
 			label: 'Clear Cache',
 			variant: 'solid',
 			onClick: ({ hide }) => {
-				return site.clearSiteCache.submit().then(hide);
+				return site.clearSiteCache.submit().then(hide)
 			},
 		},
-	});
+	})
 }
 
 function onScheduleBackup() {
 	router.push({
 		name: 'Site Detail Backups',
 		params: { name: site.doc.name },
-	});
+	})
 }
 </script>

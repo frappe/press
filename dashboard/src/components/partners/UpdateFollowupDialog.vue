@@ -47,9 +47,9 @@
 	</Dialog>
 </template>
 <script setup>
-import { createResource, Dialog, FormControl, DatePicker } from 'frappe-ui';
-import { computed, reactive, ref } from 'vue';
-import { getTeam } from '../../data/team';
+import { createResource, Dialog, FormControl, DatePicker } from 'frappe-ui'
+import { computed, reactive, ref } from 'vue'
+import { getTeam } from '../../data/team'
 
 const props = defineProps({
 	id: {
@@ -58,8 +58,8 @@ const props = defineProps({
 	leadId: {
 		type: String,
 	},
-});
-const show = defineModel();
+})
+const show = defineModel()
 const followup_details = reactive({
 	followup_date: '',
 	followup_by: '',
@@ -67,17 +67,17 @@ const followup_details = reactive({
 	spoke_to: '',
 	designation: '',
 	discussion: '',
-});
+})
 
 createResource({
 	url: 'press.api.partner.fetch_followup_details',
 	auto: true,
 	makeParams: () => {
-		return { id: props.id, lead: props.leadId };
+		return { id: props.id, lead: props.leadId }
 	},
 	onSuccess: (data) => {
-		if (!data) return '';
-		let res = data[0];
+		if (!data) return ''
+		let res = data[0]
 		Object.assign(followup_details, {
 			followup_date: new Date(res.date).toISOString() || '',
 			followup_by: res.followup_by || '',
@@ -85,9 +85,9 @@ createResource({
 			spoke_to: res.spoke_to || '',
 			designation: res.designation || '',
 			discussion: res.discussion || '',
-		});
+		})
 	},
-});
+})
 
 const updateFollowup = createResource({
 	url: 'press.api.partner.update_followup_details',
@@ -96,13 +96,13 @@ const updateFollowup = createResource({
 			id: props.id || '',
 			lead: props.leadId,
 			followup_details: followup_details,
-		};
+		}
 	},
 	onSuccess: () => {
-		show.value = false;
-		window.location.reload();
+		show.value = false
+		window.location.reload()
 	},
-});
+})
 
 const _communicationTypes = [
 	'Email',
@@ -114,22 +114,22 @@ const _communicationTypes = [
 	'Demo',
 	'DC',
 	'Online session',
-];
+]
 const communicationTypes = computed(() => {
 	return _communicationTypes.map((type) => ({
 		label: type,
 		value: type,
-	}));
-});
+	}))
+})
 
-const team = getTeam();
-const members = ref([]);
+const team = getTeam()
+const members = ref([])
 team.getTeamMembers.submit().then((data) => {
 	members.value = data.map((member) => ({
 		label: member.first_name + ' ' + member.last_name,
 		value: member.name,
-	}));
-});
+	}))
+})
 
 const sections = computed(() => {
 	return [
@@ -189,8 +189,8 @@ const sections = computed(() => {
 				},
 			],
 		},
-	];
-});
+	]
+})
 
 function getInputType(field) {
 	return {
@@ -201,6 +201,6 @@ function getInputType(field) {
 		Password: 'password',
 		Text: 'textarea',
 		Date: 'date',
-	}[field.fieldtype || 'Data'];
+	}[field.fieldtype || 'Data']
 }
 </script>

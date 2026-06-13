@@ -26,14 +26,14 @@
 							{{ resource.document_title }}
 						</span>
 
-						<span class="mb-2 text-ink-gray-5">{{
-							resource.document_name
-						}}</span>
-						<span class="text-ink-gray-5 text-xs">{{
-							resource.document_type == 'Release Group'
+						<span class="mb-2 text-ink-gray-5"
+							>{{ resource.document_name }}</span
+						>
+						<span class="text-ink-gray-5 text-xs"
+							>{{ resource.document_type == 'Release Group'
 								? 'Bench'
-								: resource.document_type
-						}}</span>
+								: resource.document_type }}</span
+						>
 					</div>
 				</div>
 				<Button
@@ -101,41 +101,41 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { Button, FeatherIcon, MultiSelect } from 'frappe-ui';
-import { teamResources } from './data';
+import { computed, ref } from 'vue'
+import { Button, FeatherIcon, MultiSelect } from 'frappe-ui'
+import { teamResources } from './data'
 
 const props = withDefaults(
 	defineProps<{
-		resources?: Array<any>;
+		resources?: Array<any>
 	}>(),
 	{
 		resources: () => [],
 	},
-);
+)
 
 const colorClasses = {
 	'Release Group': 'bg-surface-blue-2 text-ink-blue-2',
 	Server: 'bg-surface-amber-1 text-ink-amber-2',
 	Site: 'bg-surface-green-2 text-ink-green-2',
-};
+}
 
 const emit = defineEmits<{
-	include: [Array<{ document_type: string; document_name: string }>];
-	remove: [document_type: string, document_name: string];
-}>();
+	include: [Array<{ document_type: string; document_name: string }>]
+	remove: [document_type: string, document_name: string]
+}>()
 
 const icons = {
 	'Release Group': 'package',
 	Server: 'server',
 	Site: 'globe',
-};
+}
 
-const open = ref(false);
+const open = ref(false)
 
 const resourcesToIncludeModel = ref<
 	Array<{ document_type: string; document_name: string }>
->([]);
+>([])
 const resourcesToIncludeOptions = computed(() => {
 	return teamResources.value.filter(
 		(resource) =>
@@ -144,8 +144,8 @@ const resourcesToIncludeOptions = computed(() => {
 					r.document_type === resource.document_type &&
 					r.document_name === resource.document_name,
 			),
-	);
-});
+	)
+})
 
 const toLink = (resource: any) => {
 	if (resource.document_type === 'Site') {
@@ -154,22 +154,22 @@ const toLink = (resource: any) => {
 			params: {
 				name: resource.document_name,
 			},
-		};
+		}
 	} else if (resource.document_type === 'Server') {
 		return {
 			name: 'Server Detail',
 			params: {
 				name: resource.document_name,
 			},
-		};
+		}
 	} else if (resource.document_type === 'Release Group') {
 		return {
 			name: 'Release Group Detail',
 			params: {
 				name: resource.document_name,
 			},
-		};
+		}
 	}
-	return '#';
-};
+	return '#'
+}
 </script>

@@ -11,8 +11,8 @@
 </template>
 
 <script>
-import Configure2FA from '../components/auth/Configure2FA.vue';
-import AlertBanner from '../components/AlertBanner.vue';
+import Configure2FA from '../components/auth/Configure2FA.vue'
+import AlertBanner from '../components/AlertBanner.vue'
 
 export default {
 	components: {
@@ -21,14 +21,14 @@ export default {
 	},
 	methods: {
 		handleEnabled() {
-			this.$team.reload();
+			this.$team.reload()
 
 			// sometimes the reload is too fast
 			// and the user is not redirected back here due to the 2FA requirement
 			setTimeout(() => {
-				this.$router.push({ name: 'Site List' });
-			}, 100);
+				this.$router.push({ name: 'Site List' })
+			}, 100)
 		},
 	},
-};
+}
 </script>

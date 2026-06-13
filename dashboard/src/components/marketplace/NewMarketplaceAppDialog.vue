@@ -75,10 +75,10 @@
 </template>
 
 <script>
-import { toast } from 'vue-sonner';
-import GitHubAppSelector from '../GitHubAppSelector.vue';
-import LinkControl from '../LinkControl.vue';
-import { getToastErrorMessage } from '../../utils/toast';
+import { toast } from 'vue-sonner'
+import GitHubAppSelector from '../GitHubAppSelector.vue'
+import LinkControl from '../LinkControl.vue'
+import { getToastErrorMessage } from '../../utils/toast'
 
 export default {
 	components: {
@@ -94,23 +94,23 @@ export default {
 			selectedGithubUser: null,
 			selectedGithubRepository: null,
 			frappeVersion: '',
-		};
+		}
 	},
 	resources: {
 		validateApp() {
 			return {
 				url: 'press.api.github.app',
 				onSuccess: async (data) => {
-					this.appValidated = true;
+					this.appValidated = true
 					if (!data) {
-						return;
+						return
 					}
 
-					const repo_owner = this.selectedGithubUser?.login;
-					const repo = this.selectedGithubRepository || data.name;
-					const repository_url = `https://github.com/${repo_owner}/${repo}`;
-					this.app = {};
-					const isPublic = await this.checkRepoVisibility(repo_owner, repo);
+					const repo_owner = this.selectedGithubUser?.login
+					const repo = this.selectedGithubRepository || data.name
+					const repository_url = `https://github.com/${repo_owner}/${repo}`
+					this.app = {}
+					const isPublic = await this.checkRepoVisibility(repo_owner, repo)
 
 					this.app = {
 						name: data.name,
@@ -120,9 +120,9 @@ export default {
 						branch: this.selectedBranch.value,
 						is_public: isPublic,
 						frappe_version: data.frappe_version,
-					};
+					}
 				},
-			};
+			}
 		},
 		addApp() {
 			return {
@@ -133,9 +133,9 @@ export default {
 							...this.app,
 							doctype: 'Marketplace App',
 						},
-					};
+					}
 				},
-			};
+			}
 		},
 	},
 	methods: {
@@ -143,45 +143,45 @@ export default {
 			toast.promise(this.$resources.addApp.submit(), {
 				loading: 'Adding new app...',
 				success: () => {
-					this.show = false;
+					this.show = false
 					this.$router.push({
 						name: 'Marketplace App Detail Listing',
 						params: { name: this.app.name },
-					});
-					return 'New app added';
+					})
+					return 'New app added'
 				},
 				error: (e) => getToastErrorMessage(e),
-			});
+			})
 		},
 		validateApp(data) {
 			this.selectedBranch = {
 				label: data.branch,
 				value: data.branch,
-			};
-			this.selectedGithubRepository = data.repository;
-			this.selectedGithubUser = data.selectedGithubUser;
+			}
+			this.selectedGithubRepository = data.repository
+			this.selectedGithubUser = data.selectedGithubUser
 
 			this.$resources.validateApp.submit({
 				...data,
 				installation: data.selectedGithubUser.id,
-			});
+			})
 		},
 		async checkRepoVisibility(owner, repo) {
 			try {
 				const response = await fetch(
 					`https://api.github.com/repos/${owner}/${repo}`,
-				);
+				)
 				if (!response.ok) {
-					throw new Error('Repository not found or private');
+					throw new Error('Repository not found or private')
 				}
 
-				const repoData = await response.json();
-				return !repoData.private; // Returns true if public, false if private
+				const repoData = await response.json()
+				return !repoData.private // Returns true if public, false if private
 			} catch (error) {
-				console.error(error);
-				return false; // Assume false if there was an error
+				console.error(error)
+				return false // Assume false if there was an error
 			}
 		},
 	},
-};
+}
 </script>

@@ -13,8 +13,8 @@
 </template>
 
 <script>
-import { Button, Dropdown } from 'frappe-ui';
-import { icon } from '../utils/components';
+import { Button, Dropdown } from 'frappe-ui'
+import { icon } from '../utils/components'
 
 export default {
 	name: 'ActionButton',
@@ -29,7 +29,7 @@ export default {
 				!this.$attrs.options &&
 				this.allowed(this.$attrs.label)
 			) {
-				return this.$attrs;
+				return this.$attrs
 			}
 		},
 		dropdownProps() {
@@ -37,12 +37,12 @@ export default {
 				this.$attrs.condition &&
 				!this.$attrs.condition(this.$attrs.context)
 			) {
-				return;
+				return
 			}
 
 			const options = this.$attrs.options?.filter((option) =>
 				this.allowed(option.label),
-			);
+			)
 
 			if (options?.length) {
 				return {
@@ -56,18 +56,18 @@ export default {
 					...this.$attrs,
 					label: this.$attrs.label,
 					options,
-				};
+				}
 			}
 		},
 	},
 	methods: {
 		allowed(action) {
 			if (this.$attrs.actionsAccess && action in this.$attrs.actionsAccess) {
-				return this.$attrs.actionsAccess[action];
+				return this.$attrs.actionsAccess[action]
 			} else {
-				return true;
+				return true
 			}
 		},
 	},
-};
+}
 </script>

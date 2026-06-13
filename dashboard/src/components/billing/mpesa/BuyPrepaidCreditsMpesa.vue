@@ -69,9 +69,9 @@
 </template>
 
 <script>
-import { toast } from 'vue-sonner';
-import { DashboardError } from '../../../utils/error';
-import { frappeRequest, ErrorMessage } from 'frappe-ui';
+import { toast } from 'vue-sonner'
+import { DashboardError } from '../../../utils/error'
+import { frappeRequest, ErrorMessage } from 'frappe-ui'
 export default {
 	name: 'BuyPrepaidCreditsMpesa',
 	props: {
@@ -108,7 +108,7 @@ export default {
 			amountWithTax: 0,
 			showTaxInfo: false,
 			maximumAmount: 150000,
-		};
+		}
 	},
 	resources: {
 		requestForPayment() {
@@ -125,28 +125,28 @@ export default {
 					exchange_rate: this.exchangeRate,
 				},
 				validate() {
-					const pattern = /^[A-Z]\d{9}[A-Z]$/;
+					const pattern = /^[A-Z]\d{9}[A-Z]$/
 					if (this.amount < this.minimumAmount) {
 						throw new DashboardError(
 							`Amount is less than the minimum allowed: ${this.minimumAmount}`,
-						);
+						)
 					}
 					if (this.amount > this.maximumAmount) {
 						throw new DashboardError(
 							`Amount is more than the maximum allowed: ${this.maximumAmount}`,
-						);
+						)
 					}
-					const partnerValue = this.getPartnerValue();
+					const partnerValue = this.getPartnerValue()
 					if (!partnerValue || !this.phoneNumberInput) {
 						throw new DashboardError(
 							'Both partner and phone number are required for payment.',
-						);
+						)
 					}
 					if (!this.taxIdInput) {
-						throw new DashboardError('Tax ID is required for payment.');
+						throw new DashboardError('Tax ID is required for payment.')
 					}
 					if (this.taxIdInput && !pattern.test(this.taxIdInput)) {
-						throw new DashboardError('Invalid Tax Id');
+						throw new DashboardError('Invalid Tax Id')
 					}
 				},
 				async onSuccess(data) {
@@ -154,44 +154,44 @@ export default {
 						toast.success(
 							data.ResponseDescription ||
 								'Please follow the instructions on your phone',
-						);
+						)
 					} else {
 						toast.error(
 							data.ResponseDescription ||
 								'Something went wrong. Please try again.',
-						);
+						)
 					}
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		getPartnerValue() {
-			if (!this.partnerInput) return null;
+			if (!this.partnerInput) return null
 			if (typeof this.partnerInput === 'object' && this.partnerInput !== null) {
-				return this.partnerInput.value || this.partnerInput;
+				return this.partnerInput.value || this.partnerInput
 			}
-			return this.partnerInput;
+			return this.partnerInput
 		},
 		async onPayClick() {
-			this.paymentInProgress = true;
+			this.paymentInProgress = true
 			try {
-				const response = await this.$resources.requestForPayment.submit();
+				const response = await this.$resources.requestForPayment.submit()
 				if (response.ResponseCode === '0') {
 					toast.success(
 						response.Success ||
 							'Payment Initiated successfully, check your phone for instructions',
-					);
-					this.$emit('success');
+					)
+					this.$emit('success')
 				} else {
-					throw new Error(response.ResponseDescription || 'Payment failed');
+					throw new Error(response.ResponseDescription || 'Payment failed')
 				}
 			} catch (error) {
 				this.paymentErrorMessage =
-					error.message || 'Payment failed. Please try again.';
-				toast.error(this.paymentErrorMessage);
+					error.message || 'Payment failed. Please try again.'
+				toast.error(this.paymentErrorMessage)
 			} finally {
-				this.paymentInProgress = false;
+				this.paymentInProgress = false
 			}
 		},
 		async fetchTeams() {
@@ -199,20 +199,20 @@ export default {
 				const response = await frappeRequest({
 					url: '/api/method/press.api.regional_payments.mpesa.utils.display_mpesa_payment_partners',
 					method: 'GET',
-				});
+				})
 				if (Array.isArray(response)) {
-					this.teams = response;
+					this.teams = response
 				} else {
-					console.log('No Data');
+					console.log('No Data')
 				}
 			} catch (error) {
-				this.errorMessage = `Failed to fetch teams ${error.message}`;
+				this.errorMessage = `Failed to fetch teams ${error.message}`
 			}
 		},
 		totalAmountWithTax() {
 			const amountWithTax =
-				this.amountKES + (this.amountKES * this.taxPercentage) / 100;
-			this.amountWithTax = Math.round(amountWithTax);
+				this.amountKES + (this.amountKES * this.taxPercentage) / 100
+			this.amountWithTax = Math.round(amountWithTax)
 		},
 		async fetchTaxPercentage() {
 			try {
@@ -222,28 +222,28 @@ export default {
 					params: {
 						payment_partner: this.getPartnerValue(),
 					},
-				});
-				this.taxPercentage = taxPercentage;
+				})
+				this.taxPercentage = taxPercentage
 			} catch (error) {
-				this.errorMessage = `Failed to fetch tax percentage ${error.message}`;
+				this.errorMessage = `Failed to fetch tax percentage ${error.message}`
 			}
 		},
 	},
 	watch: {
 		partnerInput() {
-			this.fetchTaxPercentage();
-			this.totalAmountWithTax();
-			this.showTaxInfo = true;
+			this.fetchTaxPercentage()
+			this.totalAmountWithTax()
+			this.showTaxInfo = true
 		},
 		amountKES() {
-			this.totalAmountWithTax();
+			this.totalAmountWithTax()
 		},
 		taxPercentage() {
-			this.totalAmountWithTax();
+			this.totalAmountWithTax()
 		},
 	},
 	mounted() {
-		this.fetchTeams();
+		this.fetchTeams()
 	},
-};
+}
 </script>

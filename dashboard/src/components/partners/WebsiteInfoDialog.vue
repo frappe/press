@@ -28,12 +28,12 @@
 	</div>
 </template>
 <script setup>
-import { FormControl, createResource } from 'frappe-ui';
-import { computed } from 'vue';
-import { toast } from 'vue-sonner';
+import { FormControl, createResource } from 'frappe-ui'
+import { computed } from 'vue'
+import { toast } from 'vue-sonner'
 
-const websiteInfo = defineModel();
-const emit = defineEmits(['success']);
+const websiteInfo = defineModel()
+const emit = defineEmits(['success'])
 
 const updateWebsiteInfo = createResource({
 	url: 'press.api.partner.update_website_info',
@@ -41,13 +41,13 @@ const updateWebsiteInfo = createResource({
 		website_info: websiteInfo.value,
 	},
 	onSuccess: () => {
-		toast.success('Website info updated successfully');
-		emit('success');
+		toast.success('Website info updated successfully')
+		emit('success')
 	},
-});
+})
 
 function _updateWebsiteInfo() {
-	updateWebsiteInfo.submit();
+	updateWebsiteInfo.submit()
 }
 
 const sections = computed(() => {
@@ -128,8 +128,8 @@ const sections = computed(() => {
 				},
 			],
 		},
-	];
-});
+	]
+})
 
 function getInputType(field) {
 	return {
@@ -140,6 +140,6 @@ function getInputType(field) {
 		Password: 'password',
 		Text: 'textarea',
 		Date: 'date',
-	}[field.fieldtype || 'Data'];
+	}[field.fieldtype || 'Data']
 }
 </script>

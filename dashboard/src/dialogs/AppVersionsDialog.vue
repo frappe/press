@@ -11,7 +11,8 @@
 				v-if="$resources?.showAppVersions?.loading"
 				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 			>
-				<Spinner class="w-4" /> Fetching app versions ...
+				<Spinner class="w-4" />
+				Fetching app versions ...
 			</div>
 			<div
 				v-else-if="$resources?.showAppVersions?.error"
@@ -46,9 +47,7 @@
 									<Badge :label="item" />
 								</template>
 
-								<template v-else>
-									{{ item }}
-								</template>
+								<template v-else> {{ item }} </template>
 							</div>
 						</template>
 					</ListRow>
@@ -79,8 +78,8 @@ import {
 	ListRows,
 	ListView,
 	Spinner,
-} from 'frappe-ui';
-import { toast } from 'vue-sonner';
+} from 'frappe-ui'
+import { toast } from 'vue-sonner'
 export default {
 	name: 'AppVersionsDialog',
 	props: ['group', 'dc_name', 'status', 'isPipeline'],
@@ -95,7 +94,7 @@ export default {
 	data() {
 		return {
 			show: true,
-		};
+		}
 	},
 	computed: {
 		formattedRows() {
@@ -104,7 +103,7 @@ export default {
 					...item,
 					repository: `${item.repository_owner}/${item.repository}`,
 				})) || []
-			);
+			)
 		},
 		columns() {
 			return [
@@ -129,7 +128,7 @@ export default {
 					key: 'repository',
 					width: 2,
 				},
-			];
+			]
 		},
 	},
 	resources: {
@@ -140,10 +139,10 @@ export default {
 					return {
 						name: this.group,
 						dc_name: this.dc_name,
-					};
+					}
 				},
 				auto: true,
-			};
+			}
 		},
 		redeployBuild() {
 			return {
@@ -152,10 +151,10 @@ export default {
 					return {
 						name: this.group,
 						dc_name: this.dc_name,
-					};
+					}
 				},
 				auto: false,
-			};
+			}
 		},
 	},
 	methods: {
@@ -163,16 +162,16 @@ export default {
 			await this.$resources.redeployBuild
 				.submit()
 				.then((response) => {
-					this.show = false;
-          window.location.href = response
+					this.show = false
+					window.location.href = response
 				})
 				.catch(() => {
-					toast.error('Failed to redeploy');
-				});
+					toast.error('Failed to redeploy')
+				})
 		},
 		handleRowClick(row) {
-			window.open(`${row.repository_url}/commits/${row.hash}`, '_blank');
+			window.open(`${row.repository_url}/commits/${row.hash}`, '_blank')
 		},
 	},
-};
+}
 </script>

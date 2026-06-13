@@ -114,10 +114,10 @@
 	</div>
 </template>
 <script>
-import { Spinner } from 'frappe-ui';
-import LoginBox from '../../components/auth/SaaSLoginBox.vue';
-import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
-import { toast } from 'vue-sonner';
+import { Spinner } from 'frappe-ui'
+import LoginBox from '../../components/auth/SaaSLoginBox.vue'
+import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'SaaSSignup',
@@ -133,19 +133,19 @@ export default {
 			code: '',
 			isLoginWithEmail: false,
 			isRedirecting: false,
-		};
+		}
 	},
 	watch: {
 		email() {
-			this.isLoginWithEmail = false;
+			this.isLoginWithEmail = false
 		},
 	},
 	computed: {
 		saasProduct() {
-			return this.$resources.signupSettings.data?.product_trial || {};
+			return this.$resources.signupSettings.data?.product_trial || {}
 		},
 		isGoogleOAuthEnabled() {
-			return this.$resources.signupSettings.data?.enable_google_oauth || false;
+			return this.$resources.signupSettings.data?.enable_google_oauth || false
 		},
 	},
 	resources: {
@@ -162,10 +162,10 @@ export default {
 				auto: true,
 				onSuccess(res) {
 					if (res && res.country) {
-						this.country = res.country;
+						this.country = res.country
 					}
 				},
-			};
+			}
 		},
 		sendVerificationCodeForLogin() {
 			return {
@@ -176,10 +176,10 @@ export default {
 				},
 				auto: false,
 				onSuccess() {
-					this.isLoginWithEmail = true;
-					toast.success('Verification code sent to your email');
+					this.isLoginWithEmail = true
+					toast.success('Verification code sent to your email')
 				},
-			};
+			}
 		},
 		loginUsingCode() {
 			return {
@@ -191,9 +191,9 @@ export default {
 				},
 				auto: false,
 				onSuccess: (data) => {
-					this.moveToSiteLoginPage(data);
+					this.moveToSiteLoginPage(data)
 				},
-			};
+			}
 		},
 		signupWithOAuth() {
 			return {
@@ -203,17 +203,17 @@ export default {
 				},
 				auto: false,
 				onSuccess(url) {
-					window.location.href = url;
+					window.location.href = url
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		loginWithEmail() {
-			this.isLoginWithEmail = true;
+			this.isLoginWithEmail = true
 		},
 		moveToSiteLoginPage(product_trial_request) {
-			this.isRedirecting = true;
+			this.isRedirecting = true
 			window.location.href = this.$router.resolve({
 				name: 'SignupLoginToSite',
 				params: {
@@ -222,8 +222,8 @@ export default {
 				query: {
 					product_trial_request,
 				},
-			}).href;
+			}).href
 		},
 	},
-};
+}
 </script>

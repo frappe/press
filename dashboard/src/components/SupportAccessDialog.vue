@@ -83,37 +83,37 @@
 </template>
 
 <script setup lang="ts">
-import Link from './Link.vue';
+import Link from './Link.vue'
 import {
 	Badge,
 	Select,
 	createResource,
 	createDocumentResource,
-} from 'frappe-ui';
-import { computed, ref, watch } from 'vue';
-import { getTeam } from '../data/team';
-import { toast } from 'vue-sonner';
+} from 'frappe-ui'
+import { computed, ref, watch } from 'vue'
+import { getTeam } from '../data/team'
+import { toast } from 'vue-sonner'
 
 const props = defineProps<{
-	name: string;
-}>();
+	name: string
+}>()
 
-const open = ref(true);
-const team = getTeam();
+const open = ref(true)
+const team = getTeam()
 
 const request = createDocumentResource({
 	doctype: 'Support Access',
 	name: props.name,
 	auto: true,
-});
+})
 
 const isReceived = computed(() => {
-	return team.doc?.name === request.doc?.target_team;
-});
+	return team.doc?.name === request.doc?.target_team
+})
 
 const isPending = computed(() => {
-	return request.doc?.status === 'Pending';
-});
+	return request.doc?.status === 'Pending'
+})
 
 const validityOptions = [
 	{ label: '3 Hours', value: '3' },
@@ -122,7 +122,7 @@ const validityOptions = [
 	{ label: '1 Day', value: '24' },
 	{ label: '3 Days', value: '72' },
 	{ label: '7 Days', value: '168' },
-];
+]
 
 const permissions = computed(() =>
 	[
@@ -147,7 +147,7 @@ const permissions = computed(() =>
 			color: 'green',
 		},
 	].filter((p) => p.requested),
-);
+)
 
 const update = createResource({
 	url: 'press.api.client.set_value',
@@ -160,38 +160,38 @@ const update = createResource({
 		},
 	}),
 	onSuccess: (data: any) => {
-		toast.success(`Request ${data.status}`);
-		open.value = false;
+		toast.success(`Request ${data.status}`)
+		open.value = false
 	},
-});
+})
 
 const banner = computed(() => {
 	if (request.doc?.status === 'Accepted') {
 		return {
 			type: 'success',
 			message: 'This request has been accepted.',
-		};
+		}
 	} else if (request.doc?.status === 'Rejected') {
 		return {
 			type: 'error',
 			message: 'This request has been rejected.',
-		};
+		}
 	} else if (request.doc?.status === 'Revoked') {
 		return {
 			type: 'neutral',
 			message: 'This request has been revoked.',
-		};
+		}
 	} else if (request.doc?.status === 'Forfeited') {
 		return {
 			type: 'neutral',
 			message: 'This request has been forfeited.',
-		};
+		}
 	}
-});
+})
 
 const actions = computed(() => {
-	const actions = [];
-	const isExpired = new Date(request.doc.access_allowed_till) < new Date();
+	const actions = []
+	const isExpired = new Date(request.doc.access_allowed_till) < new Date()
 
 	if (request.doc?.status === 'Pending' && isReceived.value) {
 		actions.push(
@@ -203,7 +203,7 @@ const actions = computed(() => {
 					update.submit({
 						status: 'Rejected',
 						allowed_for: request.doc.allowed_for,
-					});
+					})
 				},
 			},
 			{
@@ -213,10 +213,10 @@ const actions = computed(() => {
 					update.submit({
 						status: 'Accepted',
 						allowed_for: request.doc.allowed_for,
-					});
+					})
 				},
 			},
-		);
+		)
 	}
 
 	if (request.doc?.status === 'Accepted' && isReceived.value && !isExpired) {
@@ -228,9 +228,9 @@ const actions = computed(() => {
 				update.submit({
 					status: 'Revoked',
 					allowed_for: request.doc.allowed_for,
-				});
+				})
 			},
-		});
+		})
 	}
 
 	if (request.doc?.status === 'Accepted' && !isReceived.value && !isExpired) {
@@ -242,13 +242,13 @@ const actions = computed(() => {
 				update.submit({
 					status: 'Forfeited',
 					allowed_for: request.doc.allowed_for,
-				});
+				})
 			},
-		});
+		})
 	}
 
-	return actions;
-});
+	return actions
+})
 
 const resourceLink = (documentType: string, documentName: string) => {
 	switch (documentType) {
@@ -258,21 +258,21 @@ const resourceLink = (documentType: string, documentName: string) => {
 				params: {
 					name: documentName,
 				},
-			};
+			}
 		case 'Release Group':
 			return {
 				name: 'Release Group Detail',
 				params: {
 					name: documentName,
 				},
-			};
+			}
 		case 'Bench':
 			return {
 				name: 'Bench Detail',
 				params: {
 					name: documentName,
 				},
-			};
+			}
 	}
-};
+}
 </script>

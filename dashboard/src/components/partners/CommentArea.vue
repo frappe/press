@@ -37,13 +37,13 @@
 <script setup>
 // import UserAvatar from '@/components/UserAvatar.vue'
 // import AttachmentItem from '@/components/AttachmentItem.vue'
-import { Tooltip } from 'frappe-ui';
-import { timeAgo } from '../../utils/format';
+import { Tooltip } from 'frappe-ui'
+import { timeAgo } from '../../utils/format'
 const props = defineProps({
 	activity: Object,
-});
+})
 
 function formatDate(date) {
-	return new Date(date).toLocaleString();
+	return new Date(date).toLocaleString()
 }
 </script>

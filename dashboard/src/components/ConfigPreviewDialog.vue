@@ -20,26 +20,26 @@ export default {
 	data() {
 		return {
 			showDialog: true,
-		};
+		}
 	},
 	computed: {
 		configPreview() {
-			let obj = {};
+			let obj = {}
 			for (let d of this.configs) {
-				let value = d.value;
+				let value = d.value
 				if (['Boolean', 'Number'].includes(d.type)) {
-					value = Number(d.value);
+					value = Number(d.value)
 				} else if (d.type === 'JSON') {
 					try {
-						value = JSON.parse(d.value);
+						value = JSON.parse(d.value)
 					} catch (error) {
-						value = {};
+						value = {}
 					}
 				}
-				obj[d.key] = value;
+				obj[d.key] = value
 			}
-			return JSON.stringify(obj, null, '&nbsp; ');
+			return JSON.stringify(obj, null, '&nbsp; ')
 		},
 	},
-};
+}
 </script>

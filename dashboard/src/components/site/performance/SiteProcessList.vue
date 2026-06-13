@@ -20,9 +20,9 @@
 	</div>
 </template>
 <script>
-import { toast } from 'vue-sonner';
-import PerformanceReport from './PerformanceReport.vue';
-import SiteDatabaseProcess from './SiteDatabaseProcess.vue';
+import { toast } from 'vue-sonner'
+import PerformanceReport from './PerformanceReport.vue'
+import SiteDatabaseProcess from './SiteDatabaseProcess.vue'
 
 export default {
 	name: 'SiteMariaDBProcessList',
@@ -35,11 +35,11 @@ export default {
 		return {
 			show: false,
 			selectedRow: null,
-		};
+		}
 	},
 	resources: {
 		processList() {
-			if (!this.name) return;
+			if (!this.name) return
 			return {
 				url: 'press.api.analytics.mariadb_processlist',
 				params: {
@@ -47,7 +47,7 @@ export default {
 				},
 				auto: true,
 				initialData: [],
-			};
+			}
 		},
 	},
 	computed: {
@@ -83,8 +83,8 @@ export default {
 					},
 				],
 				onRowClick: (row) => {
-					this.selectedRow = row;
-					this.show = true;
+					this.selectedRow = row
+					this.show = true
 				},
 				secondaryAction: () => {
 					return {
@@ -92,17 +92,17 @@ export default {
 						icon: 'refresh-ccw',
 						loading: this.$resources.processList.loading,
 						onClick: () => this.$resources.processList.reload(),
-					};
+					}
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		processKilledCallback() {
-			toast.success('Database Process Killed');
-			this.show = false;
-			this.$resources.processList.reload();
+			toast.success('Database Process Killed')
+			this.show = false
+			this.$resources.processList.reload()
 		},
 	},
-};
+}
 </script>

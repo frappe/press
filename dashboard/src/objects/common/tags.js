@@ -1,7 +1,7 @@
-import { h, defineAsyncComponent } from 'vue';
-import { confirmDialog, icon, renderDialog } from '../../utils/components';
-import { toast } from 'vue-sonner';
-import { getToastErrorMessage } from '../../utils/toast';
+import { h, defineAsyncComponent } from 'vue'
+import { confirmDialog, icon, renderDialog } from '../../utils/components'
+import { toast } from 'vue-sonner'
+import { getToastErrorMessage } from '../../utils/toast'
 
 export function tagTab(doctype) {
 	return {
@@ -11,7 +11,7 @@ export function tagTab(doctype) {
 			return (
 				doctype != 'Server' ||
 				(doctype == 'Server' && record.doc?.status !== 'Archived')
-			);
+			)
 		},
 		route: 'tags',
 		type: 'list',
@@ -21,7 +21,7 @@ export function tagTab(doctype) {
 				return {
 					parent: documentResource.name,
 					parenttype: documentResource.doctype,
-				};
+				}
 			},
 			orderBy: 'creation desc',
 			columns: [
@@ -39,25 +39,25 @@ export function tagTab(doctype) {
 					onClick() {
 						let AddTagDialog = defineAsyncComponent(
 							() => import('../../components/AddTagDialog.vue'),
-						);
+						)
 						renderDialog(
 							h(AddTagDialog, {
 								doctype: documentResource.doctype,
 								docname: documentResource.name,
 								onAdded() {
-									tags.reload();
+									tags.reload()
 								},
 							}),
-						);
+						)
 					},
-				};
+				}
 			},
 			rowActions({ row, listResource: tags, documentResource }) {
 				return [
 					{
 						label: 'Remove',
 						onClick() {
-							if (documentResource.removeTag.loading) return;
+							if (documentResource.removeTag.loading) return
 							confirmDialog({
 								title: 'Remove Tag',
 								message: `Are you sure you want to remove the tag <b>${row.tag_name}</b>?`,
@@ -68,23 +68,23 @@ export function tagTab(doctype) {
 										},
 										{
 											onSuccess() {
-												tags.reload();
-												hide();
+												tags.reload()
+												hide()
 											},
 										},
-									);
+									)
 									toast.promise(documentResource.removeTag.promise, {
 										loading: 'Removing tag...',
 										success: () => `Tag ${row.tag_name} removed`,
 										error: (e) =>
 											getToastErrorMessage(e, 'Failed to remove tag'),
-									});
+									})
 								},
-							});
+							})
 						},
 					},
-				];
+				]
 			},
 		},
-	};
+	}
 }

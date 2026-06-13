@@ -50,7 +50,8 @@
 					v-if="$resources.getCommunicationInfos.loading"
 					class="flex w-full items-center justify-center gap-2 py-20 text-ink-gray-7"
 				>
-					<Spinner class="w-4" /> Loading data...
+					<Spinner class="w-4" />
+					Loading data...
 				</div>
 				<div v-else>
 					<GenericList class="w-100" :options="communicationInfosListOptions" />
@@ -72,10 +73,10 @@
 </template>
 
 <script>
-import { h } from 'vue';
-import { Select, TextInput } from 'frappe-ui';
-import GenericList from './GenericList.vue';
-import AlertBanner from './AlertBanner.vue';
+import { h } from 'vue'
+import { Select, TextInput } from 'frappe-ui'
+import GenericList from './GenericList.vue'
+import AlertBanner from './AlertBanner.vue'
 
 export default {
 	name: 'CommunicationInfoDialog',
@@ -101,11 +102,11 @@ export default {
 		return {
 			showDialog: true,
 			currentCommunicationInfos: [],
-		};
+		}
 	},
 	mounted() {
 		if (this.referenceDoctype && this.referenceName) {
-			this.$resources.getCommunicationInfos.submit();
+			this.$resources.getCommunicationInfos.submit()
 		}
 	},
 	resources: {
@@ -117,13 +118,13 @@ export default {
 						dt: this.referenceDoctype,
 						dn: this.referenceName,
 						method: 'get_communication_infos',
-					};
+					}
 				},
 				onSuccess: (data) => {
-					this.currentCommunicationInfos = data.message || [];
+					this.currentCommunicationInfos = data.message || []
 				},
 				auto: false,
-			};
+			}
 		},
 		updateCommunicationInfos() {
 			return {
@@ -134,14 +135,14 @@ export default {
 						dn: this.referenceName,
 						method: 'update_communication_infos',
 						args: { values: this.currentCommunicationInfos },
-					};
+					}
 				},
 				auto: false,
 				onSuccess: () => {
-					this.$toast.success('Notification settings updated');
-					this.hide();
+					this.$toast.success('Notification settings updated')
+					this.hide()
 				},
-			};
+			}
 		},
 	},
 	computed: {
@@ -170,11 +171,11 @@ export default {
 										})),
 										modelValue: row.type,
 										'onUpdate:modelValue': (value) => {
-											row.type = value;
+											row.type = value
 										},
 									}),
 								],
-							);
+							)
 						},
 					},
 					{
@@ -210,11 +211,11 @@ export default {
 													],
 										modelValue: row.channel,
 										'onUpdate:modelValue': (value) => {
-											row.channel = value;
+											row.channel = value
 										},
 									}),
 								],
-							);
+							)
 						},
 					},
 					{
@@ -227,9 +228,9 @@ export default {
 								class: 'w-full',
 								modelValue: row.value,
 								'onUpdate:modelValue': (value) => {
-									row.value = value;
+									row.value = value
 								},
-							});
+							})
 						},
 					},
 					{
@@ -244,24 +245,24 @@ export default {
 								icon: 'x',
 								// theme: 'red',
 								onClick: () => {
-									this.removeCommunicationInfo(row);
+									this.removeCommunicationInfo(row)
 								},
-							};
+							}
 						},
 					},
 				],
-			};
+			}
 		},
 		filteredCommunicationInfos() {
 			return this.currentCommunicationInfos.filter(
 				(info) => info.channel && info.type && info.value,
-			);
+			)
 		},
 		filteredCommunicationTypes() {
 			if (this.referenceDoctype == 'Server') {
-				return ['General', 'Incident', 'Server Activity'];
+				return ['General', 'Incident', 'Server Activity']
 			} else if (this.referenceDoctype == 'Site') {
-				return ['General', 'Site Activity'];
+				return ['General', 'Site Activity']
 			}
 			return [
 				'General',
@@ -270,12 +271,12 @@ export default {
 				'Server Activity',
 				'Site Activity',
 				'Marketplace',
-			];
+			]
 		},
 	},
 	methods: {
 		refreshCommunicationInfos() {
-			this.$resources.getCommunicationInfos.submit();
+			this.$resources.getCommunicationInfos.submit()
 		},
 		removeCommunicationInfo(row) {
 			this.currentCommunicationInfos = this.currentCommunicationInfos.filter(
@@ -285,12 +286,12 @@ export default {
 						info.type === row.type &&
 						info.value === row.value
 					),
-			);
+			)
 		},
 		hide() {
-			this.showDialog = false;
-			this.$emit('close');
+			this.showDialog = false
+			this.$emit('close')
 		},
 	},
-};
+}
 </script>

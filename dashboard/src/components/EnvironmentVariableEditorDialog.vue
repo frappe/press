@@ -39,7 +39,7 @@ import {
 	ErrorMessage,
 	FormControl,
 	getCachedDocumentResource,
-} from 'frappe-ui';
+} from 'frappe-ui'
 
 export default {
 	name: 'EnvironmentVariableEditorDialog',
@@ -56,12 +56,12 @@ export default {
 			key: null,
 			value: null,
 			error: null,
-		};
+		}
 	},
 	async mounted() {
 		if (this.environment_variable) {
-			this.key = this.environment_variable.key;
-			this.value = this.environment_variable.value;
+			this.key = this.environment_variable.key
+			this.value = this.environment_variable.value
 		}
 	},
 	methods: {
@@ -70,23 +70,23 @@ export default {
 				this.docResource = getCachedDocumentResource(
 					'Release Group',
 					this.group,
-				);
+				)
 			}
-			if (!this.docResource) return;
-			let key = this.key;
-			let value = this.value;
-			let environment_variables = { [key]: value };
+			if (!this.docResource) return
+			let key = this.key
+			let value = this.value
+			let environment_variables = { [key]: value }
 			this.docResource.updateEnvironmentVariable.submit(
 				{ environment_variables },
 				{
 					onSuccess: () => {
-						this.$emit('success');
-						this.showDialog = false;
+						this.$emit('success')
+						this.showDialog = false
 					},
 				},
-			);
-			this.error = this.docResource.updateEnvironmentVariable.error;
+			)
+			this.error = this.docResource.updateEnvironmentVariable.error
 		},
 	},
-};
+}
 </script>

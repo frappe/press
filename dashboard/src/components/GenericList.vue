@@ -54,8 +54,8 @@ import {
 	ListHeaderItem,
 	ListRow,
 	ListSelectBanner,
-} from 'frappe-ui';
-import ObjectListCell from './ObjectListCell.vue';
+} from 'frappe-ui'
+import ObjectListCell from './ObjectListCell.vue'
 
 export default {
 	name: 'GenericList',
@@ -77,38 +77,38 @@ export default {
 						fieldname,
 						key: fieldname,
 						label: fieldname,
-					};
-				});
+					}
+				})
 			}
 			return this.options.columns
 				.filter((column) => {
 					if (column.condition) {
-						return column.condition(this.context);
+						return column.condition(this.context)
 					}
-					return true;
+					return true
 				})
 				.map((column) => {
 					if (!column.key) {
-						column.key = column.fieldname;
+						column.key = column.fieldname
 					}
-					return column;
-				});
+					return column
+				})
 		},
 		rows() {
-			return this.options.data;
+			return this.options.data
 		},
 		context() {
-			return this.options.context;
+			return this.options.context
 		},
 	},
 	methods: {
 		getRowRoute(row) {
 			if (this.options.route) {
-				let route = this.options.route(row);
-				return route || this.$route;
+				let route = this.options.route(row)
+				return route || this.$route
 			}
-			return null;
+			return null
 		},
 	},
-};
+}
 </script>

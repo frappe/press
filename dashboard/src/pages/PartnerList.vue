@@ -4,14 +4,14 @@
 	</div>
 </template>
 <script>
-import ObjectList from '../components/ObjectList.vue';
+import ObjectList from '../components/ObjectList.vue'
 export default {
 	name: 'PartnerList',
 	components: {
 		ObjectList,
 	},
 	data() {
-		return {};
+		return {}
 	},
 	computed: {
 		partnerTeams() {
@@ -26,12 +26,12 @@ export default {
 									email: d.partner_email,
 									country: d.country,
 									tier: d.partner_tier || '',
-								};
-							});
+								}
+							})
 						},
 						initialData: [],
 						auto: true,
-					};
+					}
 				},
 				columns: [
 					{
@@ -55,7 +55,7 @@ export default {
 					},
 				],
 				onRowClick(row) {
-					console.log('clicked', row);
+					console.log('clicked', row)
 				},
 				filterControls() {
 					return [
@@ -85,10 +85,10 @@ export default {
 							label: 'Active Partners',
 							fieldname: 'active_only',
 						},
-					];
+					]
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

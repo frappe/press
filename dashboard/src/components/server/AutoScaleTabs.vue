@@ -43,12 +43,12 @@ export default {
 				{ label: 'Scheduled', value: 'Scheduled' },
 			],
 			ready: false,
-		};
+		}
 	},
 	methods: {
 		isActiveTab(tab) {
-			return tab.value === this.$route.name;
+			return tab.value === this.$route.name
 		},
 	},
-};
+}
 </script>

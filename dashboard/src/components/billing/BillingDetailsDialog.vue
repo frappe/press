@@ -21,17 +21,17 @@
 	</Dialog>
 </template>
 <script setup>
-import BillingDetails from './BillingDetails.vue';
-import { FeatherIcon, Dialog } from 'frappe-ui';
-import { ref } from 'vue';
+import BillingDetails from './BillingDetails.vue'
+import { FeatherIcon, Dialog } from 'frappe-ui'
+import { ref } from 'vue'
 
 const props = defineProps({
 	showMessage: {
 		type: Boolean,
 		default: false,
 	},
-});
-const emit = defineEmits(['success']);
-const show = defineModel();
-const billingRef = ref(null);
+})
+const emit = defineEmits(['success'])
+const show = defineModel()
+const billingRef = ref(null)
 </script>

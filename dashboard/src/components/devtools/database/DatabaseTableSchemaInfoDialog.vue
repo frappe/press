@@ -11,9 +11,9 @@
 	</Dialog>
 </template>
 <script>
-import { Badge } from 'frappe-ui';
-import ObjectList from '../../ObjectList.vue';
-import { h } from 'vue';
+import { Badge } from 'frappe-ui'
+import ObjectList from '../../ObjectList.vue'
+import { h } from 'vue'
 
 export default {
 	name: 'DatabaseTableSchemaInfoDialog',
@@ -42,7 +42,7 @@ export default {
 						fieldname: 'is_nullable',
 						width: 0.2,
 						format(value) {
-							return value ? 'Yes' : 'No';
+							return value ? 'Yes' : 'No'
 						},
 						align: 'center',
 					},
@@ -53,8 +53,8 @@ export default {
 						align: 'center',
 					},
 				],
-			};
+			}
 		},
 	},
-};
+}
 </script>

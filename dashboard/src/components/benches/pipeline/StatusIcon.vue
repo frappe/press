@@ -21,8 +21,10 @@ defineProps<Props>()
 		class="size-4 shrink-0 text-ink-gray-5"
 	/>
 
-  <lucide-alert-triangle v-else-if='status == "Warning"'
-    class="size-4 shrink-0 text-ink-amber-3" />
+	<lucide-alert-triangle
+		v-else-if='status == "Warning"'
+		class="size-4 shrink-0 text-ink-amber-3"
+	/>
 
 	<lucide-circle-x v-else class="size-4 shrink-0 text-ink-red-4" />
 </template>

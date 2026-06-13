@@ -7,8 +7,8 @@
 </template>
 
 <script>
-import dayjs from '../../../utils/dayjs';
-import PerformanceReport from './PerformanceReport.vue';
+import dayjs from '../../../utils/dayjs'
+import PerformanceReport from './PerformanceReport.vue'
 
 export default {
 	name: 'SiteRequestLogs',
@@ -20,7 +20,7 @@ export default {
 		return {
 			date: null,
 			start: 0,
-		};
+		}
 	},
 	computed: {
 		requestLogsOptions() {
@@ -30,7 +30,7 @@ export default {
 						url: 'press.api.analytics.request_logs',
 						makeParams: (params) => {
 							// for filterControls to work
-							if (params) return params;
+							if (params) return params
 
 							return {
 								site: this.name,
@@ -38,21 +38,21 @@ export default {
 								sort: 'CPU Time (Descending)',
 								date: this.today,
 								start: this.start,
-							};
+							}
 						},
 						auto: true,
 						initialData: [],
 						transform: (data) => {
 							return data.map((log) => {
-								log.time = dayjs(log.timestamp).format('HH:mm:ss z');
-								log.method = log.request.method;
-								log.path = log.request.path;
-								log.status = log.request.status_code;
-								log.cpu_time = log.duration / 1000000;
-								return log;
-							});
+								log.time = dayjs(log.timestamp).format('HH:mm:ss z')
+								log.method = log.request.method
+								log.path = log.request.path
+								log.status = log.request.status_code
+								log.cpu_time = log.duration / 1000000
+								return log
+							})
 						},
-					};
+					}
 				},
 				columns: [
 					{ label: 'Time', fieldname: 'time', width: 1 },
@@ -94,11 +94,11 @@ export default {
 						default: this.today,
 					},
 				],
-			};
+			}
 		},
 		today() {
-			return dayjs().format('YYYY-MM-DD');
+			return dayjs().format('YYYY-MM-DD')
 		},
 	},
-};
+}
 </script>

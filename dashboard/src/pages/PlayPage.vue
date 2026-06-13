@@ -75,10 +75,10 @@
 	</div>
 </template>
 <script>
-import { FeatherIcon, Tooltip } from 'frappe-ui';
-import { duration } from '../utils/format';
-import { getObject } from '../objects';
-import JobStep from '../components/JobStep.vue';
+import { FeatherIcon, Tooltip } from 'frappe-ui'
+import { duration } from '../utils/format'
+import { getObject } from '../objects'
+import JobStep from '../components/JobStep.vue'
 
 export default {
 	name: 'PlayPage',
@@ -92,24 +92,24 @@ export default {
 				name: this.id,
 				transform(play) {
 					for (let task of play.tasks) {
-						task.title = task.task;
-						task.duration = duration(task.duration);
-						task.isOpen = false;
+						task.title = task.task
+						task.duration = duration(task.duration)
+						task.isOpen = false
 					}
-					return play;
+					return play
 				},
 				onSuccess() {
-					this.lastLoaded = Date.now();
+					this.lastLoaded = Date.now()
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		object() {
-			return getObject(this.objectType);
+			return getObject(this.objectType)
 		},
 		play() {
-			return this.$resources.play.doc;
+			return this.$resources.play.doc
 		},
 		dropdownOptions() {
 			return [
@@ -121,28 +121,28 @@ export default {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/ansible-play/${this.id}`,
 							'_blank',
-						);
+						)
 					},
 				},
-			].filter((option) => option.condition?.() ?? true);
+			].filter((option) => option.condition?.() ?? true)
 		},
 	},
 	mounted() {
-		this.$socket.emit('doc_subscribe', 'Ansible Play', this.id);
+		this.$socket.emit('doc_subscribe', 'Ansible Play', this.id)
 		this.$socket.on('ansible_play_update', (data) => {
 			if (data.id === this.id) {
-				this.reload();
+				this.reload()
 			}
-		});
+		})
 		// reload play every minute, in case socket is not working
 		this.reloadInterval = setInterval(() => {
-			this.reload();
-		}, 1000 * 60);
+			this.reload()
+		}, 1000 * 60)
 	},
 	beforeUnmount() {
-		this.$socket.emit('doc_unsubscribe', 'Ansible Play', this.id);
-		this.$socket.off('ansible_play_update');
-		clearInterval(this.reloadInterval);
+		this.$socket.emit('doc_unsubscribe', 'Ansible Play', this.id)
+		this.$socket.off('ansible_play_update')
+		clearInterval(this.reloadInterval)
 	},
 	methods: {
 		reload() {
@@ -151,9 +151,9 @@ export default {
 				// reload if play was loaded more than 5 seconds ago
 				Date.now() - this.lastLoaded > 5000
 			) {
-				this.$resources.play.reload();
+				this.$resources.play.reload()
 			}
 		},
 	},
-};
+}
 </script>

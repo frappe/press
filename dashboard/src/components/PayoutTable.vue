@@ -25,7 +25,8 @@
 								{{ row.site }}
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right">
-								{{ formatCurrency(row.rate, row.currency) }} X
+								{{ formatCurrency(row.rate, row.currency) }}
+								X
 								{{ row.quantity }}
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right">
@@ -52,7 +53,8 @@
 						<td></td>
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">Total Payout</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
-							{{ formatCurrency(doc.net_total_usd, 'USD') }} +
+							{{ formatCurrency(doc.net_total_usd, 'USD') }}
+							+
 							{{ formatCurrency(doc.net_total_inr, 'INR') }}
 						</td>
 					</tr>
@@ -74,18 +76,18 @@ export default {
 				type: 'document',
 				doctype: 'Payout Order',
 				name: this.payoutId,
-			};
+			}
 		},
 	},
 	computed: {
 		doc() {
-			return this.$resources.invoice.doc;
+			return this.$resources.invoice.doc
 		},
 	},
 	methods: {
 		formatCurrency(value, currency) {
-			return this.$format.currency(value, currency);
+			return this.$format.currency(value, currency)
 		},
 	},
-};
+}
 </script>

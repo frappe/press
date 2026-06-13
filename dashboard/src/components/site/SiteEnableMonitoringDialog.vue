@@ -11,7 +11,8 @@
 				v-if="$resources.siteResource.loading"
 				class="flex w-full items-center justify-center gap-2 py-20 text-ink-gray-7"
 			>
-				<Spinner class="w-4" /> Loading data...
+				<Spinner class="w-4" />
+				Loading data...
 			</div>
 			<div v-else-if="siteDoc?.is_monitoring_disabled" class="w-full">
 				<p class="mb-2 text-ink-gray-8 text-base font-medium">
@@ -67,8 +68,8 @@
 	</Dialog>
 </template>
 <script>
-import AlertBanner from '../AlertBanner.vue';
-import { toast } from 'vue-sonner';
+import AlertBanner from '../AlertBanner.vue'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'SiteEnableMonitoringDialog',
@@ -87,7 +88,7 @@ export default {
 			enabledMonitoring: null,
 			reasonForFailureInEnablingMonitoring: '',
 			solutionToResolveIssue: '',
-		};
+		}
 	},
 	resources: {
 		siteResource() {
@@ -96,7 +97,7 @@ export default {
 				doctype: 'Site',
 				name: this.site,
 				auto: true,
-			};
+			}
 		},
 		enableMonitoring() {
 			return {
@@ -106,36 +107,35 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'enable_monitoring',
-					};
+					}
 				},
 				auto: false,
 				onSuccess: (e) => {
 					if (e?.message) {
-						this.enabledMonitoring = e?.message?.enabled ?? null;
-						this.reasonForFailureInEnablingMonitoring =
-							e?.message?.reason ?? '';
-						this.solutionToResolveIssue = e?.message?.solution ?? '';
+						this.enabledMonitoring = e?.message?.enabled ?? null
+						this.reasonForFailureInEnablingMonitoring = e?.message?.reason ?? ''
+						this.solutionToResolveIssue = e?.message?.solution ?? ''
 
 						if (this.enabledMonitoring) {
-							toast.success('Monitoring enabled successfully');
-							this.hide();
+							toast.success('Monitoring enabled successfully')
+							this.hide()
 						} else {
-							toast.error('Failed to enable monitoring');
+							toast.error('Failed to enable monitoring')
 						}
 					}
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		siteDoc() {
-			return this.$resources?.siteResource?.doc ?? {};
+			return this.$resources?.siteResource?.doc ?? {}
 		},
 	},
 	methods: {
 		hide() {
-			this.showDialog = false;
+			this.showDialog = false
 		},
 	},
-};
+}
 </script>

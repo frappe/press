@@ -4,11 +4,11 @@
 	</div>
 </template>
 <script>
-import { defineAsyncComponent, h } from 'vue';
-import ObjectList from '../components/ObjectList.vue';
-import { Badge, FeatherIcon, Tooltip } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import { confirmDialog, renderDialog, icon } from '../utils/components';
+import { defineAsyncComponent, h } from 'vue'
+import ObjectList from '../components/ObjectList.vue'
+import { Badge, FeatherIcon, Tooltip } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import { confirmDialog, renderDialog, icon } from '../utils/components'
 export default {
 	name: 'BillingPaymentMethods',
 	props: ['tab'],
@@ -38,10 +38,10 @@ export default {
 						fieldname: 'last_4',
 						width: 1.5,
 						format(value) {
-							return `•••• ${value}`;
+							return `•••• ${value}`
 						},
 						prefix: (row) => {
-							return this.cardBrandIcon(row.brand);
+							return this.cardBrandIcon(row.brand)
 						},
 						suffix(row) {
 							if (row.is_default) {
@@ -51,7 +51,7 @@ export default {
 										theme: 'green',
 									},
 									() => 'Default',
-								);
+								)
 							}
 						},
 					},
@@ -59,7 +59,7 @@ export default {
 						label: 'Expiry',
 						width: 0.5,
 						format(value, row) {
-							return `${row.expiry_month}/${row.expiry_year}`;
+							return `${row.expiry_month}/${row.expiry_year}`
 						},
 					},
 					{
@@ -72,7 +72,7 @@ export default {
 								return h(FeatherIcon, {
 									name: 'check-circle',
 									class: 'h-4 w-4 text-green-600',
-								});
+								})
 							}
 						},
 					},
@@ -92,7 +92,7 @@ export default {
 											name: 'alert-circle',
 											class: 'h-4 w-4 text-red-600',
 										}),
-								);
+								)
 							}
 						},
 					},
@@ -118,7 +118,7 @@ export default {
 										success: 'Default card set',
 										error: 'Could not set default card',
 									},
-								);
+								)
 							},
 							condition: () => !row.is_default,
 						},
@@ -126,8 +126,8 @@ export default {
 							label: 'Remove',
 							onClick: () => {
 								if (row.is_default && this.$team.doc.payment_mode === 'Card') {
-									toast.error('Cannot remove default card');
-									return;
+									toast.error('Cannot remove default card')
+									return
 								}
 								confirmDialog({
 									title: 'Remove Card',
@@ -136,7 +136,7 @@ export default {
 										toast.promise(
 											listResource.delete.submit(row.name, {
 												onSuccess() {
-													hide();
+													hide()
 												},
 											}),
 											{
@@ -147,12 +147,12 @@ export default {
 														? error.messages.join('\n')
 														: error.message || 'Could not remove card',
 											},
-										);
+										)
 									},
-								});
+								})
 							},
 						},
-					];
+					]
 				},
 				orderBy: 'creation desc',
 				primaryAction() {
@@ -164,20 +164,20 @@ export default {
 						onClick: () => {
 							let StripeCardDialog = defineAsyncComponent(
 								() => import('../components/StripeCardDialog.vue'),
-							);
-							renderDialog(StripeCardDialog);
+							)
+							renderDialog(StripeCardDialog)
 						},
-					};
+					}
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		formatCurrency(value) {
 			if (value === 0) {
-				return '';
+				return ''
 			}
-			return this.$format.userCurrency(value);
+			return this.$format.userCurrency(value)
 		},
 		cardBrandIcon(brand) {
 			let component = {
@@ -199,9 +199,9 @@ export default {
 				'union-pay': defineAsyncComponent(
 					() => import('@/components/icons/cards/UnionPay.vue'),
 				),
-			}[brand || 'generic'];
-			return h(component, { class: 'h-4 w-6' });
+			}[brand || 'generic']
+			return h(component, { class: 'h-4 w-6' })
 		},
 	},
-};
+}
 </script>

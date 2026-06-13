@@ -72,7 +72,7 @@
 </template>
 
 <script>
-import { toast } from 'vue-sonner';
+import { toast } from 'vue-sonner'
 export default {
 	name: 'AddPaymentGateway',
 	data() {
@@ -89,7 +89,7 @@ export default {
 				print_format: '',
 			},
 			integrationLogo: null,
-		};
+		}
 	},
 	resources: {
 		getPaymentGatewayDetails() {
@@ -104,10 +104,10 @@ export default {
 						api_secret: data.api_secret,
 						taxes_and_charges: data.taxes_and_charges,
 						print_format: data.print_format,
-					});
+					})
 				},
 				auto: true,
-			};
+			}
 		},
 		createPaymentGatewaySettings() {
 			return {
@@ -115,24 +115,24 @@ export default {
 				makeParams() {
 					return {
 						gateway_details: this.paymentGatewayDetails,
-					};
+					}
 				},
 				validate() {
-					let fields = Object.values(this.paymentGatewayDetails);
+					let fields = Object.values(this.paymentGatewayDetails)
 					if (fields.includes('')) {
-						this.errorMessage = 'Please fill required values';
-						return 'Please fill required values';
+						this.errorMessage = 'Please fill required values'
+						return 'Please fill required values'
 						// throw new DashboardError('Please fill required values');
 					}
 				},
 				async onSuccess(data) {
 					if (data) {
-						toast.success('Payment Gateway settings saved', data);
+						toast.success('Payment Gateway settings saved', data)
 					} else {
-						toast.error('Error saving Payment Gateway settings');
+						toast.error('Error saving Payment Gateway settings')
 					}
 				},
-			};
+			}
 		},
 		fetchGatewayController() {
 			return {
@@ -142,31 +142,31 @@ export default {
 				onSuccess: (res) => {
 					Object.assign(this.paymentGatewayDetails, {
 						gateway_controller: res,
-					});
+					})
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		handleFileUpload(event) {
-			this.integrationLogo = event.target.files[0];
+			this.integrationLogo = event.target.files[0]
 		},
 
 		async savePaymentGateway() {
 			try {
-				await this.$resources.createPaymentGatewaySettings.submit();
-				this.$emit('closeDialog');
+				await this.$resources.createPaymentGatewaySettings.submit()
+				this.$emit('closeDialog')
 			} catch (error) {
 				this.$toast.error(
 					`Error saving Payment Gateway settings: ${error.message}`,
-				);
+				)
 			}
 		},
 	},
 	watch: {
 		integrationLogo: function () {
-			this.handleFileUpload();
+			this.handleFileUpload()
 		},
 	},
-};
+}
 </script>

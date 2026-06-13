@@ -118,23 +118,23 @@ import {
 	ComboboxInput,
 	ComboboxOption,
 	ComboboxOptions,
-} from '@headlessui/vue';
-import { ComputedRef, PropType, computed, ref, watch } from 'vue';
-import { Popover } from 'frappe-ui';
+} from '@headlessui/vue'
+import { ComputedRef, PropType, computed, ref, watch } from 'vue'
+import { Popover } from 'frappe-ui'
 
 type Option = {
-	label: string;
-	value: string;
-};
+	label: string
+	value: string
+}
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue'])
 
 type Action = {
-	label: String;
-	handler: () => void;
-	icon: string;
-	component?: any;
-};
+	label: String
+	handler: () => void
+	icon: string
+	component?: any
+}
 
 const props = defineProps({
 	options: {
@@ -159,26 +159,26 @@ const props = defineProps({
 		type: Object as PropType<Action>,
 		default: null,
 	},
-});
+})
 
-const query = ref('');
-const multiple = computed(() => Array.isArray(props.modelValue));
-const nullable = computed(() => !multiple.value);
-const filteredOptions = ref(props.options);
+const query = ref('')
+const multiple = computed(() => Array.isArray(props.modelValue))
+const nullable = computed(() => !multiple.value)
+const filteredOptions = ref(props.options)
 
 const getDisplayValue = (option: Option | Option[]) => {
 	if (Array.isArray(option)) {
-		return option.map((o) => o.label).join(', ');
+		return option.map((o) => o.label).join(', ')
 	} else if (option) {
-		return option.label || option.value || '';
+		return option.label || option.value || ''
 	} else {
-		return '';
+		return ''
 	}
-};
+}
 
 const value = computed(() => {
 	if (!props.modelValue) {
-		return null;
+		return null
 	}
 	return (
 		filteredOptions.value.find(
@@ -187,30 +187,30 @@ const value = computed(() => {
 			label: props.modelValue,
 			value: props.modelValue,
 		}
-	);
-}) as ComputedRef<Option>;
+	)
+}) as ComputedRef<Option>
 
-watch(() => query.value || props.options, updateOptions, { immediate: true });
+watch(() => query.value || props.options, updateOptions, { immediate: true })
 
 async function updateOptions() {
 	if (!query.value) {
-		filteredOptions.value = props.options;
+		filteredOptions.value = props.options
 	} else {
 		filteredOptions.value = props.options.filter((option) => {
-			const label = option.label.toLowerCase();
-			const value = option.label.toLowerCase();
-			const queryLower = query.value.toLowerCase();
-			return label.includes(queryLower) || value.includes(query.value);
-		});
+			const label = option.label.toLowerCase()
+			const value = option.label.toLowerCase()
+			const queryLower = query.value.toLowerCase()
+			return label.includes(queryLower) || value.includes(query.value)
+		})
 	}
 }
 
 function handleQueryChange(event: Event) {
-	query.value = (event.target as HTMLInputElement).value;
+	query.value = (event.target as HTMLInputElement).value
 	if (props.allowInputAsOption && !filteredOptions.value.length) {
-		emit('update:modelValue', query.value);
+		emit('update:modelValue', query.value)
 	}
 }
 
-const clearValue = () => emit('update:modelValue', null);
+const clearValue = () => emit('update:modelValue', null)
 </script>

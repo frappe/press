@@ -13,21 +13,21 @@ export default {
 	data() {
 		return {
 			_show: true,
-		};
+		}
 	},
 	computed: {
 		show: {
 			get() {
-				return this.modelValue != null ? this.modelValue : this._show;
+				return this.modelValue != null ? this.modelValue : this._show
 			},
 			set(value) {
 				if (this.modelValue != null) {
-					this.$emit('update:modelValue', value);
+					this.$emit('update:modelValue', value)
 				} else {
-					this._show = value;
+					this._show = value
 				}
 			},
 		},
 	},
-};
+}
 </script>

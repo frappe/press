@@ -25,22 +25,22 @@
 	</Dialog>
 </template>
 <script setup>
-import { Dialog, FormControl, createResource } from 'frappe-ui';
-import { DashboardError } from '../../utils/error';
-import { ref, defineEmits, computed } from 'vue';
+import { Dialog, FormControl, createResource } from 'frappe-ui'
+import { DashboardError } from '../../utils/error'
+import { ref, defineEmits, computed } from 'vue'
 
-const emit = defineEmits(['update']);
-const show = defineModel();
+const emit = defineEmits(['update'])
+const show = defineModel()
 const props = defineProps({
 	lead_id: {
 		type: String,
 		required: true,
 	},
-});
+})
 
-const reason = ref();
-const other_reason = ref();
-const errorMessage = ref('');
+const reason = ref()
+const other_reason = ref()
+const errorMessage = ref('')
 const updateStatus = createResource({
 	url: 'press.api.partner.update_lead_status',
 	makeParams: () => {
@@ -49,27 +49,27 @@ const updateStatus = createResource({
 			status: 'Lost',
 			lost_reason: reason.value,
 			other_reason: other_reason.value,
-		};
+		}
 	},
 	validate: () => {
 		if (reason.value === undefined) {
-			let error = 'Please select a Lost Reason';
-			errorMessage.value = error;
-			throw new DashboardError(error);
+			let error = 'Please select a Lost Reason'
+			errorMessage.value = error
+			throw new DashboardError(error)
 		} else if (
 			reason.value === 'Other' &&
 			(other_reason.value === undefined || other_reason.value.trim() === '')
 		) {
-			let error = 'Please specify the other Reason';
-			errorMessage.value = error;
-			throw new DashboardError(error);
+			let error = 'Please specify the other Reason'
+			errorMessage.value = error
+			throw new DashboardError(error)
 		}
 	},
 	onSuccess: () => {
-		emit('update');
-		show.value = false;
+		emit('update')
+		show.value = false
 	},
-});
+})
 
 const _lostReasonOptions = [
 	'Lost to Competitor',
@@ -80,12 +80,12 @@ const _lostReasonOptions = [
 	'Free User',
 	'Not Interested Anymore',
 	'Other',
-];
+]
 
 const lostReasonOptions = computed(() => {
 	return _lostReasonOptions.map((reason) => ({
 		label: reason,
 		value: reason,
-	}));
-});
+	}))
+})
 </script>

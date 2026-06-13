@@ -26,8 +26,8 @@
 <script>
 // https://github.com/eggert/tz/blob/main/backward add more if required.
 const TZ_BACKWARD_COMPATBILITY_MAP = {
-	'Asia/Calcutta': 'Asia/Kolkata'
-};
+	'Asia/Calcutta': 'Asia/Kolkata',
+}
 
 export default {
 	name: 'Form',
@@ -36,56 +36,56 @@ export default {
 	data() {
 		return {
 			requiredFieldNotSet: [],
-			guessedTimezone: ''
-		};
+			guessedTimezone: '',
+		}
 	},
 	mounted() {
-		this.guessedTimezone = this.guessTimezone();
+		this.guessedTimezone = this.guessTimezone()
 	},
 	watch: {
 		fields: {
 			handler(new_fields) {
 				let timezoneFields = new_fields.filter(
-					f => f.fieldtype === 'Select' && f.fieldname.endsWith('_tz')
-				);
+					(f) => f.fieldtype === 'Select' && f.fieldname.endsWith('_tz'),
+				)
 				for (let field of timezoneFields) {
 					if (!field.options) {
-						field.options = [];
+						field.options = []
 					}
 					if (
 						this.guessedTimezone &&
 						field.options.includes(this.guessedTimezone)
 					) {
-						this.onChange(this.guessedTimezone, field);
+						this.onChange(this.guessedTimezone, field)
 					}
 				}
 			},
-			deep: true
-		}
+			deep: true,
+		},
 	},
 	methods: {
 		onChange(value, field) {
-			this.checkRequired(field, value);
-			this.updateValue(field.fieldname, value);
+			this.checkRequired(field, value)
+			this.updateValue(field.fieldname, value)
 		},
 		updateValue(fieldname, value) {
 			let values = Object.assign({}, this.modelValue, {
-				[fieldname]: value
-			});
-			this.$emit('update:modelValue', values);
+				[fieldname]: value,
+			})
+			this.$emit('update:modelValue', values)
 		},
 		checkRequired(field, value) {
 			if (field.required) {
 				if (!value) {
-					this.requiredFieldNotSet.push(field);
-					return false;
+					this.requiredFieldNotSet.push(field)
+					return false
 				} else {
 					this.requiredFieldNotSet = this.requiredFieldNotSet.filter(
-						f => f !== field
-					);
+						(f) => f !== field,
+					)
 				}
 			}
-			return true;
+			return true
 		},
 		getBindProps(field) {
 			return {
@@ -98,9 +98,9 @@ export default {
 				required: field.required || false,
 				rows: field.rows,
 				placeholder: field.placeholder,
-				'onUpdate:modelValue': value => this.onChange(value, field),
-				onBlur: e => this.checkRequired(field, e)
-			};
+				'onUpdate:modelValue': (value) => this.onChange(value, field),
+				onBlur: (e) => this.checkRequired(field, e),
+			}
 		},
 		getInputType(field) {
 			return {
@@ -110,21 +110,21 @@ export default {
 				Check: 'checkbox',
 				Password: 'password',
 				Text: 'textarea',
-				Date: 'date'
-			}[field.fieldtype || 'Data'];
+				Date: 'date',
+			}[field.fieldtype || 'Data']
 		},
 		guessTimezone() {
 			try {
-				let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+				let tz = Intl.DateTimeFormat().resolvedOptions().timeZone
 				if (TZ_BACKWARD_COMPATBILITY_MAP[tz]) {
-					return TZ_BACKWARD_COMPATBILITY_MAP[tz];
+					return TZ_BACKWARD_COMPATBILITY_MAP[tz]
 				}
-				return tz;
+				return tz
 			} catch (e) {
-				console.error("Couldn't guess timezone", e);
-				return null;
+				console.error("Couldn't guess timezone", e)
+				return null
 			}
-		}
-	}
-};
+		},
+	},
+}
 </script>

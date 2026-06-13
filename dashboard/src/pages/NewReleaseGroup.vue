@@ -57,9 +57,7 @@
 							@click="benchVersion = version.name"
 						>
 							<span class="font-medium">{{ version.name }} </span>
-							<span class="ml-1 text-ink-gray-6">
-								{{ version.status }}
-							</span>
+							<span class="ml-1 text-ink-gray-6"> {{ version.status }} </span>
 						</button>
 					</div>
 				</div>
@@ -87,9 +85,7 @@
 							<div class="flex w-full items-center justify-between">
 								<div class="flex w-full items-center space-x-2">
 									<img :src="c.image" class="h-5 w-5" />
-									<span class="text-sm font-medium">
-										{{ c.title }}
-									</span>
+									<span class="text-sm font-medium"> {{ c.title }} </span>
 								</div>
 								<Badge v-if="c.beta" :label="c.beta ? 'Beta' : ''" />
 							</div>
@@ -158,11 +154,11 @@
 	</div>
 </template>
 <script>
-import { Badge } from 'frappe-ui';
-import Header from '../components/Header.vue';
-import ObjectList from '../components/ObjectList.vue';
-import Summary from '../components/Summary.vue';
-import { DashboardError } from '../utils/error';
+import { Badge } from 'frappe-ui'
+import Header from '../components/Header.vue'
+import ObjectList from '../components/ObjectList.vue'
+import Summary from '../components/Summary.vue'
+import { DashboardError } from '../utils/error'
 
 export default {
 	name: 'NewReleaseGroup',
@@ -178,7 +174,7 @@ export default {
 			benchVersion: '',
 			benchRegion: '',
 			agreedToRegionConsent: false,
-		};
+		}
 	},
 	resources: {
 		releaseGroupPolicyApps() {
@@ -187,10 +183,10 @@ export default {
 				makeParams() {
 					return {
 						version: this.benchVersion,
-					};
+					}
 				},
 				auto: !!this.benchVersion,
-			};
+			}
 		},
 		options() {
 			return {
@@ -200,31 +196,31 @@ export default {
 					clusters: [],
 				},
 				auto: true,
-			};
+			}
 		},
 		createBench() {
 			return {
 				url: 'press.api.bench.new',
 				validate() {
 					if (!this.benchTitle) {
-						throw new DashboardError('Bench Title cannot be blank');
+						throw new DashboardError('Bench Title cannot be blank')
 					}
 					if (!this.benchVersion) {
-						throw new DashboardError('Select a version to create bench');
+						throw new DashboardError('Select a version to create bench')
 					}
 					if (!this.agreedToRegionConsent) {
 						throw new DashboardError(
 							'Please agree to the above consent to create bench',
-						);
+						)
 					}
 				},
 				onSuccess(groupName) {
 					this.$router.push({
 						name: 'Release Group Detail Apps',
 						params: { name: groupName },
-					});
+					})
 				},
-			};
+			}
 		},
 	},
 	methods: {
@@ -237,26 +233,26 @@ export default {
 				return {
 					name: app.name,
 					source: app.source.name,
-				};
-			});
+				}
+			})
 			// add policy apps
 			apps.push(
 				...this.releaseGroupPolicyApps.map((app) => {
 					return {
 						name: app.app,
 						source: app.source,
-					};
+					}
 				}),
-			);
-			return apps;
+			)
+			return apps
 		},
 	},
 	computed: {
 		options() {
-			return this.$resources.options.data;
+			return this.$resources.options.data
 		},
 		releaseGroupPolicyApps() {
-			return this.$resources.releaseGroupPolicyApps.data?.policies || [];
+			return this.$resources.releaseGroupPolicyApps.data?.policies || []
 		},
 		summaryOptions() {
 			return [
@@ -278,8 +274,8 @@ export default {
 					label: 'Title',
 					value: this.benchTitle,
 				},
-			];
+			]
 		},
 	},
-};
+}
 </script>

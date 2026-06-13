@@ -45,7 +45,8 @@
 			class="mt-5 flex rounded bg-surface-gray-7 dark:bg-surface-gray-1 p-4 text-sm text-ink-gray-2 dark:text-ink-gray-8"
 		>
 			<span v-if="$resources.log.loading" class="flex items-center gap-2">
-				<Spinner /> Loading...
+				<Spinner />
+				Loading...
 			</span>
 
 			<pre v-else class="flex-1 min-w-0 overflow-auto">{{
@@ -58,10 +59,10 @@
 </template>
 
 <script>
-import { FeatherIcon, Spinner } from 'frappe-ui';
-import { getObject } from '../objects';
-import { unreachable } from '../objects/common';
-import CopyBtn from '@/components/utils/CopyBtn.vue';
+import { FeatherIcon, Spinner } from 'frappe-ui'
+import { getObject } from '../objects'
+import { unreachable } from '../objects/common'
+import CopyBtn from '@/components/utils/CopyBtn.vue'
 
 export default {
 	name: 'LogPage',
@@ -69,11 +70,11 @@ export default {
 	components: { FeatherIcon },
 	resources: {
 		log() {
-			const url = this.forSite ? 'press.api.site.log' : 'press.api.bench.log';
-			const params = { log: this.logName, name: this.name };
+			const url = this.forSite ? 'press.api.site.log' : 'press.api.bench.log'
+			const params = { log: this.logName, name: this.name }
 			if (!this.forSite) {
-				params.name = `bench-${this.name?.split('-')[1]}`;
-				params.bench = this.name;
+				params.name = `bench-${this.name?.split('-')[1]}`
+				params.bench = this.name
 			}
 
 			return {
@@ -81,26 +82,26 @@ export default {
 				params,
 				auto: true,
 				transform(log) {
-					return log[this.logName];
+					return log[this.logName]
 				},
 				onSuccess() {
-					this.lastLoaded = Date.now();
+					this.lastLoaded = Date.now()
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		forSite() {
-			if (this.objectType === 'Site') return true;
-			if (this.objectType === 'Bench') return false;
-			throw unreachable;
+			if (this.objectType === 'Site') return true
+			if (this.objectType === 'Bench') return false
+			throw unreachable
 		},
 		object() {
-			return getObject(this.objectType);
+			return getObject(this.objectType)
 		},
 		log() {
-			return this.$resources.log.data;
+			return this.$resources.log.data
 		},
 	},
-};
+}
 </script>

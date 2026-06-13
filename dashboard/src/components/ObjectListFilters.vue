@@ -43,9 +43,9 @@
 	</component>
 </template>
 <script>
-import { Tooltip, Dialog } from 'frappe-ui';
-import DialogWrapper from './DialogWrapper.vue';
-import FilterControl from './FilterControl.vue';
+import { Tooltip, Dialog } from 'frappe-ui'
+import DialogWrapper from './DialogWrapper.vue'
+import FilterControl from './FilterControl.vue'
 
 export default {
 	name: 'ObjectListFilters',
@@ -60,33 +60,33 @@ export default {
 	data() {
 		return {
 			showDialog: false,
-		};
+		}
 	},
 	methods: {
 		onFilterControlChange(control, value) {
 			if (value == '' || value == null) {
-				control.value = undefined;
+				control.value = undefined
 			} else {
-				control.value = value;
+				control.value = value
 			}
-			this.$emit('update:filter', control);
+			this.$emit('update:filter', control)
 		},
 	},
 	computed: {
 		wrapperProps() {
 			if (!this.$isMobile) {
-				return {};
+				return {}
 			}
 			return {
 				modelValue: this.showDialog,
 				'onUpdate:modelValue': (value) => {
-					this.showDialog = value;
+					this.showDialog = value
 				},
 				options: {
 					title: 'Filters',
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

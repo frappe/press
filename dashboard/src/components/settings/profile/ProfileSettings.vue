@@ -9,9 +9,9 @@
 </template>
 
 <script setup>
-import AccountProfile from './AccountProfile.vue';
-import AccountReferral from './AccountReferral.vue';
-import AccountPartner from './AccountPartner.vue';
+import AccountProfile from './AccountProfile.vue'
+import AccountReferral from './AccountReferral.vue'
+import AccountPartner from './AccountPartner.vue'
 
-document.title = 'Settings - Profile';
+document.title = 'Settings - Profile'
 </script>

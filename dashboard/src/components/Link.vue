@@ -13,7 +13,7 @@
 
 <script setup lang="ts">
 defineProps<{
-	href?: string;
-	to?: string | object;
-}>();
+	href?: string
+	to?: string | object
+}>()
 </script>

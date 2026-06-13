@@ -6,8 +6,8 @@
 			<div class="prose prose-sm max-w-none">
 				<h1 class="text-2xl font-semibold">Benches</h1>
 				<p class="text-p-base">
-					With Benches, you get more control. You can choose which apps to
-					add, which apps to update, which region to deploy to and more.
+					With Benches, you get more control. You can choose which apps to add,
+					which apps to update, which region to deploy to and more.
 				</p>
 			</div>
 			<div class="space-y-3">
@@ -43,7 +43,7 @@
 	</div>
 </template>
 <script>
-import Link from '@/components/Link.vue';
+import Link from '@/components/Link.vue'
 
 export default {
 	name: 'EnableBenchGroups',
@@ -59,20 +59,20 @@ export default {
 				'SSH access',
 				'Dedicated workers',
 			],
-		};
+		}
 	},
 	computed: {
 		benchesEnabled() {
-			return Boolean(this.$team.doc.benches_enabled);
+			return Boolean(this.$team.doc.benches_enabled)
 		},
 		onboardingComplete() {
-			return Boolean(this.$team.doc.onboarding?.complete);
+			return Boolean(this.$team.doc.onboarding?.complete)
 		},
 	},
 	mounted() {
 		if (this.onboardingComplete && this.$team.doc.benches_enabled) {
-			this.$router.push({ name: 'Release Group List' });
+			this.$router.push({ name: 'Release Group List' })
 		}
 	},
-};
+}
 </script>

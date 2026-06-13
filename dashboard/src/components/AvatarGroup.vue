@@ -11,8 +11,8 @@
 </template>
 
 <script setup>
-import { Avatar } from 'frappe-ui';
+import { Avatar } from 'frappe-ui'
 const props = defineProps({
 	users: { type: Array, required: true },
-});
+})
 </script>

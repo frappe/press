@@ -38,9 +38,9 @@
 	</div>
 </template>
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import SiteActionCell from './SiteActionCell.vue';
-import AlertBanner from './AlertBanner.vue';
+import { getCachedDocumentResource } from 'frappe-ui'
+import SiteActionCell from './SiteActionCell.vue'
+import AlertBanner from './AlertBanner.vue'
 
 export default {
 	name: 'SiteActions',
@@ -48,22 +48,22 @@ export default {
 	components: { SiteActionCell, AlertBanner },
 	computed: {
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 		actions() {
 			const groupedActions = this.$site.doc.actions.reduce((acc, action) => {
-				const group = action.group || 'General Actions';
+				const group = action.group || 'General Actions'
 				if (!acc[group]) {
-					acc[group] = [];
+					acc[group] = []
 				}
-				acc[group].push(action);
-				return acc;
-			}, {});
+				acc[group].push(action)
+				return acc
+			}, {})
 
 			return Object.keys(groupedActions).map((group) => ({
 				group,
 				actions: groupedActions[group],
-			}));
+			}))
 		},
 	},
 	methods: {
@@ -71,8 +71,8 @@ export default {
 			window.open(
 				'https://docs.frappe.io/cloud/site/site-migrations/introduction-to-site-migration',
 				'_blank',
-			);
+			)
 		},
 	},
-};
+}
 </script>

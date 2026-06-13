@@ -40,57 +40,57 @@
 	</div>
 </template>
 <script setup>
-import { FormControl, ErrorMessage, createResource } from 'frappe-ui';
-import { ref, computed, inject, watch } from 'vue';
-import { toast } from 'vue-sonner';
-import { DashboardError } from '../../utils/error';
+import { FormControl, ErrorMessage, createResource } from 'frappe-ui'
+import { ref, computed, inject, watch } from 'vue'
+import { toast } from 'vue-sonner'
+import { DashboardError } from '../../utils/error'
 
-const emit = defineEmits(['success']);
-const team = inject('team');
+const emit = defineEmits(['success'])
+const team = inject('team')
 
-const billingInformation = defineModel();
+const billingInformation = defineModel()
 const props = defineProps({
 	disableForm: { type: Boolean, default: false },
-});
+})
 
 const updateBillingInformation = createResource({
 	url: 'press.api.account.update_billing_information',
 	makeParams: () => {
-		return { billing_details: billingInformation.value };
+		return { billing_details: billingInformation.value }
 	},
 	validate: async () => {
-		let error = await validate();
-		if (error) throw new DashboardError(error);
+		let error = await validate()
+		if (error) throw new DashboardError(error)
 	},
 	onSuccess: () => {
-		toast.success('Billing information updated');
-		emit('success');
+		toast.success('Billing information updated')
+		emit('success')
 	},
-});
+})
 
-const gstApplicable = ref(false);
+const gstApplicable = ref(false)
 
 watch(
 	() => billingInformation.value.gstin,
 	(gstin) => {
-		gstApplicable.value = gstin && gstin !== 'Not Applicable';
+		gstApplicable.value = gstin && gstin !== 'Not Applicable'
 	},
-);
+)
 
 async function validate() {
 	// validate mandatory fields
 	for (let field of sections.value.flatMap((s) => s.fields)) {
 		if (field.required && !billingInformation.value[field.fieldname]) {
-			return `${field.label} is required`;
+			return `${field.label} is required`
 		}
 	}
 
 	if (!gstApplicable.value) {
-		billingInformation.value.gstin = 'Not Applicable';
+		billingInformation.value.gstin = 'Not Applicable'
 	}
 
 	// validate gstin
-	return await validateGST();
+	return await validateGST()
 }
 
 const _indianStates = [
@@ -131,36 +131,36 @@ const _indianStates = [
 	'Uttar Pradesh',
 	'Uttarakhand',
 	'West Bengal',
-];
+]
 
 const _countryList = createResource({
 	url: 'press.api.account.country_list',
 	cache: 'countryList',
 	auto: true,
 	onSuccess: () => {
-		let userCountry = team.doc?.country;
+		let userCountry = team.doc?.country
 		if (userCountry) {
-			let country = countryList.value?.find((d) => d.label === userCountry);
+			let country = countryList.value?.find((d) => d.label === userCountry)
 			if (country) {
-				billingInformation.value.country = country.value;
+				billingInformation.value.country = country.value
 			}
 		}
 	},
-});
+})
 
 const countryList = computed(() => {
 	return (_countryList.data || []).map((d) => ({
 		label: d.name,
 		value: d.name,
-	}));
-});
+	}))
+})
 
 const indianStates = computed(() => {
 	return _indianStates.map((state) => ({
 		label: state,
 		value: state,
-	}));
-});
+	}))
+})
 
 const sections = computed(() => {
 	return [
@@ -218,8 +218,8 @@ const sections = computed(() => {
 				},
 			],
 		},
-	];
-});
+	]
+})
 
 function getInputType(field) {
 	return {
@@ -230,19 +230,19 @@ function getInputType(field) {
 		Password: 'password',
 		Text: 'textarea',
 		Date: 'date',
-	}[field.fieldtype || 'Data'];
+	}[field.fieldtype || 'Data']
 }
 
 const _validateGST = createResource({
 	url: 'press.api.billing.validate_gst',
 	params: { address: billingInformation.value },
-});
+})
 
 async function validateGST() {
 	billingInformation.value.gstin =
-		billingInformation.value.gstin || 'Not Applicable';
-	await _validateGST.submit();
+		billingInformation.value.gstin || 'Not Applicable'
+	await _validateGST.submit()
 }
 
-defineExpose({ updateBillingInformation, validate });
+defineExpose({ updateBillingInformation, validate })
 </script>

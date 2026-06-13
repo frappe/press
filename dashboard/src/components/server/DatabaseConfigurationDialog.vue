@@ -21,9 +21,9 @@
 	</Dialog>
 </template>
 <script>
-import { Spinner } from 'frappe-ui';
-import ObjectList from '../ObjectList.vue';
-import { toast } from 'vue-sonner';
+import { Spinner } from 'frappe-ui'
+import ObjectList from '../ObjectList.vue'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'DatabaseConfigurationDialog',
@@ -35,7 +35,7 @@ export default {
 	data() {
 		return {
 			showDialog: true,
-		};
+		}
 	},
 	resources: {
 		mariadbVariables() {
@@ -52,10 +52,10 @@ export default {
 				onError: () => {
 					toast.error(
 						'Failed to fetch database configurations. Please try again later.',
-					);
-					this.showDialog = false;
+					)
+					this.showDialog = false
 				},
-			};
+			}
 		},
 	},
 	computed: {
@@ -74,8 +74,8 @@ export default {
 						width: '300px',
 					},
 				],
-			};
+			}
 		},
 	},
-};
+}
 </script>

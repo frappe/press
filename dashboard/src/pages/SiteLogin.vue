@@ -96,11 +96,9 @@
 								:loading="sendOTPMethod.loading"
 							>
 								Resend verification code
-								{{
-									otpResendCountdown > 0
+								{{ otpResendCountdown > 0
 										? `in ${otpResendCountdown} seconds`
-										: ''
-								}}
+										: '' }}
 							</Button>
 						</div>
 						<Button
@@ -124,7 +122,8 @@
 							<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
 							<div class="flex flex-col gap-2">
 								<p>
-									{{ email || session.user }} is not a user of the site
+									{{ email || session.user }}
+									is not a user of the site
 									<span class="font-semibold">{{ pickedSite }}</span>
 								</p>
 							</div>
@@ -213,52 +212,52 @@
 </template>
 
 <script setup>
-import { computed, inject, ref } from 'vue';
-import { toast } from 'vue-sonner';
-import { createResource } from 'frappe-ui';
-import LoginBox from '../components/auth/LoginBox.vue';
-import { getToastErrorMessage } from '../utils/toast';
-import { trialDays } from '../utils/site';
-import { userCurrency } from '../utils/format';
-import { useRoute } from 'vue-router';
-import { DashboardError } from '../utils/error';
+import { computed, inject, ref } from 'vue'
+import { toast } from 'vue-sonner'
+import { createResource } from 'frappe-ui'
+import LoginBox from '../components/auth/LoginBox.vue'
+import { getToastErrorMessage } from '../utils/toast'
+import { trialDays } from '../utils/site'
+import { userCurrency } from '../utils/format'
+import { useRoute } from 'vue-router'
+import { DashboardError } from '../utils/error'
 
-const team = inject('team');
-const session = inject('session');
+const team = inject('team')
+const session = inject('session')
 
-const route = useRoute();
-const pickedSite = computed(() => route.query.site);
-const isPickedSiteValid = ref(false);
+const route = useRoute()
+const pickedSite = computed(() => route.query.site)
+const isPickedSiteValid = ref(false)
 
-const email = ref(localStorage.getItem('product_site_user') || '');
-const otp = ref('');
-const showOTPField = ref(false);
-const loginError = ref(false);
-const otpResendCountdown = ref(0);
+const email = ref(localStorage.getItem('product_site_user') || '')
+const otp = ref('')
+const showOTPField = ref(false)
+const loginError = ref(false)
+const otpResendCountdown = ref(0)
 
 setInterval(() => {
 	if (otpResendCountdown.value > 0) {
-		otpResendCountdown.value -= 1;
+		otpResendCountdown.value -= 1
 	}
-}, 1000);
+}, 1000)
 
 const goBack = () => {
-	sites.reset();
-	showOTPField.value = false;
-};
+	sites.reset()
+	showOTPField.value = false
+}
 
 const isCookieValid = createResource({
 	url: 'press.api.site_login.check_session_id',
 	auto: !session.user,
 	onSuccess: (session_user_email) => {
 		if (session_user_email) {
-			email.value = session_user_email;
+			email.value = session_user_email
 			sites.submit({
 				user: session_user_email,
-			});
+			})
 		}
 	},
-});
+})
 
 const sites = createResource({
 	url: 'press.api.site_login.get_product_sites_of_user',
@@ -273,24 +272,24 @@ const sites = createResource({
 				data.find((site) => site.name === pickedSite.value) ||
 				data.find((site) => site.host_name === pickedSite.value)
 			) {
-				isPickedSiteValid.value = true;
+				isPickedSiteValid.value = true
 			}
 		}
 	},
-});
+})
 
 const login = createResource({
 	url: 'press.api.site_login.login_to_site',
 	onSuccess: (url) => {
-		const newTab = pickedSite.value ? '_self' : '_blank';
-		window.open(url, newTab);
+		const newTab = pickedSite.value ? '_self' : '_blank'
+		window.open(url, newTab)
 	},
-});
+})
 
 function loginToSite(siteName) {
 	if (!siteName) {
-		toast.error('Please select a site');
-		return;
+		toast.error('Please select a site')
+		return
 	}
 
 	// avoid toast if user is coming from their site to login
@@ -298,7 +297,7 @@ function loginToSite(siteName) {
 		login.submit({
 			email: email.value || session.user,
 			site: siteName,
-		});
+		})
 	else
 		toast.promise(
 			login.submit({
@@ -309,34 +308,34 @@ function loginToSite(siteName) {
 				loading: 'Logging in ...',
 				success: 'Logged in',
 				error: (e) => {
-					loginError.value = true;
-					getToastErrorMessage(e);
+					loginError.value = true
+					getToastErrorMessage(e)
 				},
 			},
-		);
+		)
 }
 
 const sendOTPMethod = createResource({
 	url: 'press.api.site_login.send_otp',
 	validate: (data) => {
 		if (!data.email) {
-			throw new DashboardError('Please enter email');
+			throw new DashboardError('Please enter email')
 		}
 		if (!data.email.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
-			throw new DashboardError('Please enter a valid email');
+			throw new DashboardError('Please enter a valid email')
 		}
 	},
 	onSuccess: () => {
-		showOTPField.value = true;
-		otpResendCountdown.value = 30;
-		if (email.value) localStorage.setItem('site_login_email', email.value);
+		showOTPField.value = true
+		otpResendCountdown.value = 30
+		if (email.value) localStorage.setItem('site_login_email', email.value)
 	},
-});
+})
 
 function sendOTP() {
 	if (!email.value) {
-		toast.error('Please enter email');
-		return;
+		toast.error('Please enter email')
+		return
 	}
 
 	toast.promise(
@@ -348,7 +347,7 @@ function sendOTP() {
 			success: `OTP sent to ${email.value}`,
 			error: (e) => getToastErrorMessage(e),
 		},
-	);
+	)
 }
 
 const verifyOTPMethod = createResource({
@@ -356,16 +355,16 @@ const verifyOTPMethod = createResource({
 	onSuccess: () => {
 		sites.submit({
 			user: email.value,
-		});
-		otp.value = '';
-		sendOTPMethod.error = '';
+		})
+		otp.value = ''
+		sendOTPMethod.error = ''
 	},
-});
+})
 
 function verifyOTP() {
 	if (!otp.value) {
-		toast.error('Please enter OTP');
-		return;
+		toast.error('Please enter OTP')
+		return
 	}
 
 	toast.promise(
@@ -378,47 +377,47 @@ function verifyOTP() {
 			success: 'OTP verified',
 			error: (e) => getToastErrorMessage(e),
 		},
-	);
+	)
 }
 
 function planTitle(site) {
-	if (site.trial_end_date) return trialDays(site.trial_end_date);
+	if (site.trial_end_date) return trialDays(site.trial_end_date)
 	if (site.price_usd > 0 && team) {
-		const india = team?.doc?.currency === 'INR';
+		const india = team?.doc?.currency === 'INR'
 		const formattedValue = userCurrency(
 			india ? site.price_inr : site.price_usd,
 			0,
-		);
-		return `${formattedValue}/mo`;
+		)
+		return `${formattedValue}/mo`
 	}
-	return site.plan_title;
+	return site.plan_title
 }
 
 const subtitle = computed(() => {
-	if (pickedSite.value && sites.fetched && sites.data.length !== 0) return '';
+	if (pickedSite.value && sites.fetched && sites.data.length !== 0) return ''
 	else if (sites.fetched && sites.data.length !== 0)
-		return `Pick a site to log in to as ${email.value || session.user}`;
+		return `Pick a site to log in to as ${email.value || session.user}`
 	else if (
 		!sites.fetched &&
 		!(sites.loading || isCookieValid.loading || session.loading)
 	)
-		return 'Enter your email to access your site';
-	else return '';
-});
+		return 'Enter your email to access your site'
+	else return ''
+})
 
 const sitePrePicked = computed(() => {
 	if (pickedSite.value && sites.fetched && sites.data.length !== 0) {
 		return sites.data.find(
 			(site) =>
 				site.name === pickedSite.value || site.host_name === pickedSite.value,
-		);
+		)
 	}
-	return false;
-});
+	return false
+})
 
 const pickedSiteDomain = computed(() => {
 	if (sitePrePicked.value)
-		return sitePrePicked.value.host_name || sitePrePicked.value.name;
-	return '';
-});
+		return sitePrePicked.value.host_name || sitePrePicked.value.name
+	return ''
+})
 </script>

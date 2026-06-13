@@ -32,12 +32,12 @@
 	</div>
 </template>
 <script>
-import { LoadingText } from 'frappe-ui';
+import { LoadingText } from 'frappe-ui'
 export default {
 	name: 'Card',
 	props: ['title', 'subtitle', 'loading', 'stopOverflow'],
 	components: {
-		LoadingText
-	}
-};
+		LoadingText,
+	},
+}
 </script>

@@ -27,9 +27,9 @@
 </template>
 
 <script>
-import { defineAsyncComponent } from 'vue';
-import Header from '../components/Header.vue';
-import HomeSummary from '../components/HomeSummary.vue';
+import { defineAsyncComponent } from 'vue'
+import Header from '../components/Header.vue'
+import HomeSummary from '../components/HomeSummary.vue'
 
 export default {
 	name: 'Home',
@@ -40,5 +40,5 @@ export default {
 			() => import('../components/Onboarding.vue'),
 		),
 	},
-};
+}
 </script>

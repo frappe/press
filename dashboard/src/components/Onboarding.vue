@@ -99,8 +99,9 @@
 					<p class="mt-2 text-p-base text-ink-gray-8">
 						Your trial is set to expire on
 						<span class="font-medium">
-							{{ $format.date(trialSite.trial_end_date, 'LL') }} </span
-						>. Set up billing now to ensure uninterrupted access to your site.
+							{{ $format.date(trialSite.trial_end_date, 'LL') }}
+						</span>. Set up billing now to ensure uninterrupted access to your
+						site.
 					</p>
 				</div>
 			</div>
@@ -130,7 +131,10 @@
 						<TextInsideCircle>3</TextInsideCircle>
 						<span class="text-base font-medium"> Complete billing setup </span>
 					</div>
-					<div class="pl-7 mt-2" v-if="$team.doc.onboarding.site_created && trialSite">
+					<div
+						class="pl-7 mt-2"
+						v-if="$team.doc.onboarding.site_created && trialSite"
+					>
 						<p class="text-p-base text-ink-gray-8">
 							Add your billing details and payment method to activate your
 							subscription.You won't be charged until your trial ends on
@@ -285,8 +289,8 @@
 	</div>
 </template>
 <script>
-import { defineAsyncComponent } from 'vue';
-import TextInsideCircle from './TextInsideCircle.vue';
+import { defineAsyncComponent } from 'vue'
+import TextInsideCircle from './TextInsideCircle.vue'
 
 export default {
 	name: 'Onboarding',
@@ -318,36 +322,36 @@ export default {
 				gstin: '',
 			},
 			isAutomatedBilling: true,
-		};
+		}
 	},
 	methods: {
 		onBuyCreditsSuccess() {
-			this.$team.reload();
-			this.$emit('payment-mode-added');
+			this.$team.reload()
+			this.$emit('payment-mode-added')
 		},
 		onAddCardSuccess() {
-			this.$team.reload();
-			this.$emit('payment-mode-added');
+			this.$team.reload()
+			this.$emit('payment-mode-added')
 		},
 		onBillingAddresUpdateSuccess() {
-			this.$team.reload();
+			this.$team.reload()
 		},
 	},
 	computed: {
 		isBillingDetailsSet() {
-			return Boolean(this.$team.doc.billing_details?.name);
+			return Boolean(this.$team.doc.billing_details?.name)
 		},
 		isBillingSetupComplete() {
-			return this.isBillingDetailsSet && Boolean(this.$team.doc.payment_mode);
+			return this.isBillingDetailsSet && Boolean(this.$team.doc.payment_mode)
 		},
 		minimumAmount() {
-			return this.$team.doc.currency == 'INR' ? 100 : 5;
+			return this.$team.doc.currency == 'INR' ? 100 : 5
 		},
 		pendingSiteRequest() {
-			return this.$team.doc.pending_site_request;
+			return this.$team.doc.pending_site_request
 		},
 		trialSite() {
-			return this.$team.doc.trial_sites?.[0];
+			return this.$team.doc.trial_sites?.[0]
 		},
 	},
 	resources: {
@@ -355,8 +359,8 @@ export default {
 			return {
 				url: 'press.api.marketplace.get_marketplace_apps_for_onboarding',
 				auto: true,
-			};
+			}
 		},
 	},
-};
+}
 </script>

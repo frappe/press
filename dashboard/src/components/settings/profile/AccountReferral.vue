@@ -11,7 +11,8 @@
 				Invite someone to Frappe Cloud and
 				<strong>
 					get
-					{{ creditAmountInTeamCurrency }} in Frappe Cloud credits</strong
+					{{ creditAmountInTeamCurrency }}
+					in Frappe Cloud credits</strong
 				>
 				when they sign up and spend at least {{ minimumSpentAmount }}!
 			</span>
@@ -19,7 +20,7 @@
 	</Card>
 </template>
 <script>
-import ClickToCopyField from '../../ClickToCopyField.vue';
+import ClickToCopyField from '../../ClickToCopyField.vue'
 
 export default {
 	name: 'AccountReferral',
@@ -29,16 +30,16 @@ export default {
 	computed: {
 		referralLink() {
 			if (this.$team.doc?.referrer_id) {
-				return `${location.origin}/dashboard/signup?referrer=${this.$team.doc?.referrer_id}`;
+				return `${location.origin}/dashboard/signup?referrer=${this.$team.doc?.referrer_id}`
 			}
-			return '';
+			return ''
 		},
 		minimumSpentAmount() {
-			return this.$team.doc?.country == 'India' ? '₹1800' : '$25';
+			return this.$team.doc?.country == 'India' ? '₹1800' : '$25'
 		},
 		creditAmountInTeamCurrency() {
-			return this.$team.doc?.country == 'India' ? '₹750' : '$10';
+			return this.$team.doc?.country == 'India' ? '₹750' : '$10'
 		},
 	},
-};
+}
 </script>

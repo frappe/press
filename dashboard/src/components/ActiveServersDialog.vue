@@ -8,7 +8,8 @@
 						class="font-semibold"
 						v-for="server in $resources.activeServers.data"
 					>
-						{{ server.title }} - {{ server.name }}
+						{{ server.title }}
+						- {{ server.name }}
 					</li>
 				</ul>
 			</div>
@@ -26,7 +27,7 @@ export default {
 	data() {
 		return {
 			showDialog: true,
-		};
+		}
 	},
 	resources: {
 		activeServers: {
@@ -36,8 +37,8 @@ export default {
 	},
 	methods: {
 		redirectToServer() {
-			window.location = '/servers';
+			window.location = '/servers'
 		},
 	},
-};
+}
 </script>

@@ -28,8 +28,8 @@
 </template>
 
 <script>
-import AlertBanner from '../../AlertBanner.vue';
-import ClickToCopy from '../../../components/ClickToCopyField.vue';
+import AlertBanner from '../../AlertBanner.vue'
+import ClickToCopy from '../../../components/ClickToCopyField.vue'
 
 export default {
 	props: {
@@ -51,21 +51,21 @@ export default {
 		downloadCodes() {
 			const blob = new Blob([this.recoveryCodesStr], {
 				type: 'text/plain',
-			});
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = 'recovery_codes.txt';
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
+			})
+			const url = URL.createObjectURL(blob)
+			const a = document.createElement('a')
+			a.href = url
+			a.download = 'recovery_codes.txt'
+			document.body.appendChild(a)
+			a.click()
+			document.body.removeChild(a)
+			URL.revokeObjectURL(url)
 		},
 	},
 	computed: {
 		recoveryCodesStr() {
-			return this.recoveryCodes.join('\n');
+			return this.recoveryCodes.join('\n')
 		},
 	},
-};
+}
 </script>

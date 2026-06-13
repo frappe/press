@@ -26,7 +26,8 @@
 			v-if="!$team.doc?.partner_email"
 		>
 			Have a Frappe Partner Referral Code? Click on
-			<strong>Add Partner Code</strong> to link with your Partner team.
+			<strong>Add Partner Code</strong>
+			to link with your Partner team.
 		</span>
 		<div class="prose-sm flex flex-col" v-else>
 			<span v-if="partner_billing_name"> {{ partner_billing_name }}</span>
@@ -115,9 +116,9 @@
 	</Card>
 </template>
 <script>
-import { Card, FormControl, frappeRequest, debounce } from 'frappe-ui';
-import { DashboardError } from '../../../utils/error';
-import { toast } from 'vue-sonner';
+import { Card, FormControl, frappeRequest, debounce } from 'frappe-ui'
+import { DashboardError } from '../../../utils/error'
+import { toast } from 'vue-sonner'
 export default {
 	name: 'AccountPartner',
 	components: {
@@ -133,7 +134,7 @@ export default {
 			partner: '',
 			errorMessage: '',
 			removePartnerError: '',
-		};
+		}
 	},
 	resources: {
 		addPartnerCode() {
@@ -143,19 +144,19 @@ export default {
 					referral_code: this.code,
 				},
 				onSuccess(data) {
-					this.showAddPartnerCodeDialog = false;
+					this.showAddPartnerCodeDialog = false
 					if (data === 'Request already sent') {
-						toast.error('Approval Request has already been sent to Partner');
+						toast.error('Approval Request has already been sent to Partner')
 					} else {
 						toast.success(
 							'Approval Request has been sent to Partner. Please wait for Partner to accept the request',
-						);
+						)
 					}
 				},
 				onError() {
-					throw new DashboardError('Failed to add Partner Code');
+					throw new DashboardError('Failed to add Partner Code')
 				},
-			};
+			}
 		},
 		partnerName() {
 			return {
@@ -164,48 +165,48 @@ export default {
 				params: {
 					partner_email: this.$team.doc?.partner_email,
 				},
-			};
+			}
 		},
 		removePartner() {
 			return {
 				url: 'press.api.partner.remove_partner',
 				onSuccess() {
-					this.showRemovePartnerDialog = false;
-					toast.success('Partner removed successfully');
+					this.showRemovePartnerDialog = false
+					toast.success('Partner removed successfully')
 				},
 				onError(e) {
 					this.removePartnerError =
-						e?.messages[0] || 'Failed to remove Partner. Please try again.';
+						e?.messages[0] || 'Failed to remove Partner. Please try again.'
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		referralCodeChange: debounce(async function (e) {
-			let code = e.target.value;
-			this.partnerExists = false;
+			let code = e.target.value
+			this.partnerExists = false
 
 			let result = await frappeRequest({
 				url: 'press.api.partner.validate_partner_code',
 				params: { code: code },
-			});
+			})
 
-			let isValidCode = result[0];
-			let partnerName = result[1];
+			let isValidCode = result[0]
+			let partnerName = result[1]
 
 			if (isValidCode) {
-				this.partnerExists = true;
-				this.referralCode = code;
-				this.partner = partnerName;
+				this.partnerExists = true
+				this.referralCode = code
+				this.partner = partnerName
 			} else {
-				this.errorMessage = `${code} is Invalid Referral Code`;
+				this.errorMessage = `${code} is Invalid Referral Code`
 			}
 		}, 500),
 	},
 	computed: {
 		partner_billing_name() {
-			return this.$resources.partnerName.data;
+			return this.$resources.partnerName.data
 		},
 	},
-};
+}
 </script>

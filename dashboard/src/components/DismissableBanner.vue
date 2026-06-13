@@ -10,7 +10,7 @@
 </template>
 
 <script>
-import AlertBanner from './AlertBanner.vue';
+import AlertBanner from './AlertBanner.vue'
 
 export default {
 	props: {
@@ -26,37 +26,37 @@ export default {
 	data() {
 		return {
 			_show: true,
-		};
+		}
 	},
 	components: { AlertBanner },
 	computed: {
 		show: {
 			get() {
-				if (!this._show) return false;
+				if (!this._show) return false
 
 				const dismissedDate = parseInt(
 					localStorage.getItem(`dismissed-banner-${this.id}`),
-				);
-				if (!dismissedDate) return true;
+				)
+				if (!dismissedDate) return true
 
-				const currentDate = Date.now();
-				const diff = currentDate - dismissedDate;
+				const currentDate = Date.now()
+				const diff = currentDate - dismissedDate
 
 				// 7 days
-				if (diff > 1000 * 60 * 60 * 24 * 7) return true;
+				if (diff > 1000 * 60 * 60 * 24 * 7) return true
 
-				return false;
+				return false
 			},
 			set(value) {
-				this._show = value;
+				this._show = value
 			},
 		},
 	},
 	methods: {
 		dismiss() {
-			this.show = false;
-			localStorage.setItem(`dismissed-banner-${this.id}`, Date.now());
+			this.show = false
+			localStorage.setItem(`dismissed-banner-${this.id}`, Date.now())
 		},
 	},
-};
+}
 </script>

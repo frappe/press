@@ -11,8 +11,8 @@
 	/>
 </template>
 <script>
-import { FormControl } from 'frappe-ui';
-import ListSelection from './ListSelection.vue';
+import { FormControl } from 'frappe-ui'
+import ListSelection from './ListSelection.vue'
 
 export default {
 	name: 'GenericDialogField',
@@ -20,12 +20,12 @@ export default {
 	components: { FormControl, ListSelection },
 	computed: {
 		autocompleteOptions() {
-			let options = [];
+			let options = []
 			if (this.field.fieldtype === 'Autocomplete') {
 				if (this.field.options instanceof Array) {
-					options = this.field.options;
+					options = this.field.options
 				} else {
-					options = this.field.options.data || [];
+					options = this.field.options.data || []
 				}
 			}
 			return options.map((option) => {
@@ -33,11 +33,11 @@ export default {
 					return {
 						label: option,
 						value: option,
-					};
+					}
 				}
-				return option;
-			});
+				return option
+			})
 		},
 	},
-};
+}
 </script>

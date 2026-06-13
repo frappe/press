@@ -10,6 +10,6 @@
 <script>
 export default {
 	name: 'CardDetails',
-	props: ['showDetails']
-};
+	props: ['showDetails'],
+}
 </script>

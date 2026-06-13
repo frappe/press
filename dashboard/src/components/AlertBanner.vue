@@ -1,19 +1,19 @@
 <script setup lang="ts">
 interface Props {
-	title?: string;
-	type?: string;
-	showIcon?: boolean;
-	isDismissible?: number;
+	title?: string
+	type?: string
+	showIcon?: boolean
+	isDismissible?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
 	showIcon: true,
 	type: 'info',
-});
+})
 
 const emit = defineEmits<{
-	(e: 'dismissBanner'): void;
-}>();
+	(e: 'dismissBanner'): void
+}>()
 
 const colors = {
 	info: { bg: 'bg-surface-blue-2', text: 'text-ink-blue-3' },
@@ -21,7 +21,7 @@ const colors = {
 	error: { bg: 'bg-surface-red-2', text: 'text-ink-red-3' },
 	warning: { bg: 'bg-surface-amber-2', text: 'text-ink-amber-3' },
 	general: { bg: 'bg-surface-gray-2', text: 'text-ink-gray-3' },
-};
+}
 </script>
 
 <template>

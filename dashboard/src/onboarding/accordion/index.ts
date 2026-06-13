@@ -1,5 +1,5 @@
-export { default as FAccordionRoot } from './FAccordionRoot.vue';
-export { default as FAccordionItem } from './FAccordionItem.vue';
-export { default as FAccordionHeader } from './FAccordionHeader.vue';
-export { default as FAccordionTrigger } from './FAccordionTrigger.vue';
-export { default as FAccordionContent } from './FAccordionContent.vue';
+export { default as FAccordionRoot } from './FAccordionRoot.vue'
+export { default as FAccordionItem } from './FAccordionItem.vue'
+export { default as FAccordionHeader } from './FAccordionHeader.vue'
+export { default as FAccordionTrigger } from './FAccordionTrigger.vue'
+export { default as FAccordionContent } from './FAccordionContent.vue'

@@ -34,9 +34,9 @@
 					>
 						<lucide-badge-check class="mr-2 h-5 w-12 text-ink-gray-6" />
 						<span>
-							<strong>Support</strong> covers only issues of Frappe apps and not
-							functional queries. You can raise a support ticket for Frappe
-							Cloud issues for all plans.
+							<strong>Support</strong>
+							covers only issues of Frappe apps and not functional queries. You
+							can raise a support ticket for Frappe Cloud issues for all plans.
 						</span>
 					</div>
 				</div>
@@ -147,12 +147,12 @@
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource, createResource, Progress } from 'frappe-ui';
-import SitePlansCards from './SitePlansCards.vue';
-import { getPlans, getPlan } from '../data/plans';
-import CardForm from './billing/CardForm.vue';
-import BillingDetails from './billing/BillingDetails.vue';
-import PrepaidCreditsForm from './billing/PrepaidCreditsForm.vue';
+import { getCachedDocumentResource, createResource, Progress } from 'frappe-ui'
+import SitePlansCards from './SitePlansCards.vue'
+import { getPlans, getPlan } from '../data/plans'
+import CardForm from './billing/CardForm.vue'
+import BillingDetails from './billing/BillingDetails.vue'
+import PrepaidCreditsForm from './billing/PrepaidCreditsForm.vue'
 
 export default {
 	name: 'ManageSitePlansDialog',
@@ -180,7 +180,7 @@ export default {
 			changePaymentMode: createResource({
 				url: 'press.api.billing.change_payment_mode',
 			}),
-		};
+		}
 	},
 	watch: {
 		site: {
@@ -188,7 +188,7 @@ export default {
 			handler(siteName) {
 				if (siteName) {
 					if (this.$site?.doc?.plan) {
-						this.plan = getPlan(this.$site.doc.plan);
+						this.plan = getPlan(this.$site.doc.plan)
 					}
 				}
 			},
@@ -200,12 +200,12 @@ export default {
 				!this.$team.doc.billing_details ||
 				!Object.keys(this.$team.doc.billing_details).length
 			) {
-				this.step = 'billing-details';
-				this.$team.reload();
+				this.step = 'billing-details'
+				this.$team.reload()
 			} else if (!this.$team.doc.payment_mode) {
-				this.step = 'add-payment-mode';
+				this.step = 'add-payment-mode'
 			} else {
-				this.changePlan();
+				this.changePlan()
 			}
 		},
 		changePlan() {
@@ -213,51 +213,49 @@ export default {
 				{ plan: this.plan.name },
 				{
 					onSuccess: () => {
-						this.show = false;
+						this.show = false
 						let plan = getPlans().find(
 							(plan) => plan.name === this.$site.doc.plan,
-						);
+						)
 						// let formattedPlan = plan
 						// 	? `${this.$format.planTitle(plan)}/mo`
 						// 	: this.$site.doc.plan;
 						// this.$toast.success(`Plan changed to ${formattedPlan}`);
-						this.$toast.success(`Plan changed successfully`);
+						this.$toast.success(`Plan changed successfully`)
 					},
 				},
-			);
+			)
 		},
 		async paymentModeAdded() {
 			this.$site.setPlan.submit(
 				{ plan: this.plan.name },
 				{
 					onSuccess: async () => {
-						const mode = this.isAutomatedBilling ? 'Card' : 'Prepaid Credits';
+						const mode = this.isAutomatedBilling ? 'Card' : 'Prepaid Credits'
 
-						await new Promise((resolve) => setTimeout(resolve, 1000));
-						await this.$team.reload();
+						await new Promise((resolve) => setTimeout(resolve, 1000))
+						await this.$team.reload()
 
 						this.changePaymentMode.submit(
 							{ mode },
 							{
 								onSuccess: () => {
-									this.show = false;
-									this.$toast.success('Plan changed and payment mode updated!');
+									this.show = false
+									this.$toast.success('Plan changed and payment mode updated!')
 								},
 								onError: () => {
-									this.show = false;
-									this.$toast.success('Plan changed successfully');
-									console.warn(
-										'Payment mode sync failed, but plan is updated.',
-									);
+									this.show = false
+									this.$toast.success('Plan changed successfully')
+									console.warn('Payment mode sync failed, but plan is updated.')
 								},
 							},
-						);
+						)
 					},
 					onError: (err) => {
-						this.$toast.error(err.message || 'Failed to change plan');
+						this.$toast.error(err.message || 'Failed to change plan')
 					},
 				},
-			);
+			)
 		},
 		// async paymentModeAdded() {
 		// 	await this.$team.reload();
@@ -274,32 +272,32 @@ export default {
 	},
 	computed: {
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 		showSetupSubscription() {
 			return (
 				!this.$team.doc.payment_mode ||
 				!this.$team.doc.billing_details ||
 				!Object.keys(this.$team.doc.billing_details).length
-			);
+			)
 		},
 		nextButtonLabel() {
 			if (this.showSetupSubscription) {
-				return this.plan ? 'Next' : 'Select Plan';
+				return this.plan ? 'Next' : 'Select Plan'
 			}
 			return this.$site.doc?.current_plan?.is_trial_plan
 				? 'Upgrade Plan'
-				: 'Change plan';
+				: 'Change plan'
 		},
 		progressLabel() {
 			if (this.step === 'site-plans') {
-				return 'Select a plan';
+				return 'Select a plan'
 			} else if (this.step === 'billing-details') {
-				return 'Add billing details';
+				return 'Add billing details'
 			} else if (this.step === 'add-payment-mode') {
-				return 'Add payment mode';
+				return 'Add payment mode'
 			}
 		},
 	},
-};
+}
 </script>

@@ -22,8 +22,8 @@
 </template>
 
 <script>
-import Configure2FA from '../../auth/Configure2FA.vue';
-import TFARecoveryCodes from './TFARecoveryCodes.vue';
+import Configure2FA from '../../auth/Configure2FA.vue'
+import TFARecoveryCodes from './TFARecoveryCodes.vue'
 
 export default {
 	props: {
@@ -39,35 +39,35 @@ export default {
 	data() {
 		return {
 			recoveryCodes: [],
-		};
+		}
 	},
 	methods: {
 		closeDialog() {
-			this.show = false;
-			this.recoveryCodes = [];
+			this.show = false
+			this.recoveryCodes = []
 		},
 	},
 	computed: {
 		is2FAEnabled() {
-			return this.$team.doc?.user_info?.is_2fa_enabled;
+			return this.$team.doc?.user_info?.is_2fa_enabled
 		},
 		show: {
 			get() {
-				return this.modelValue;
+				return this.modelValue
 			},
 			set(value) {
-				this.$emit('update:modelValue', value);
+				this.$emit('update:modelValue', value)
 			},
 		},
 		title() {
 			if (this.is2FAEnabled && this.recoveryCodes.length) {
-				return 'Two-Factor Authentication Recovery Codes';
+				return 'Two-Factor Authentication Recovery Codes'
 			} else if (this.is2FAEnabled) {
-				return 'Disable Two-Factor Authentication';
+				return 'Disable Two-Factor Authentication'
 			} else {
-				return 'Enable Two-Factor Authentication';
+				return 'Enable Two-Factor Authentication'
 			}
 		},
 	},
-};
+}
 </script>

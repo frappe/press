@@ -12,7 +12,8 @@
 				v-if="$resources?.binlogs?.loading"
 				class="flex w-full items-center justify-center gap-2 py-32 text-ink-gray-7"
 			>
-				<Spinner class="w-4" /> Loading
+				<Spinner class="w-4" />
+				Loading
 			</div>
 			<div v-else>
 				<ObjectList
@@ -40,7 +41,8 @@
 					</div>
 					<div class="flex flex-shrink-0 items-center gap-2">
 						<p class="tnum text-sm text-ink-gray-6">
-							{{ pageStart }} - {{ pageEnd }} of {{ totalBinlogs }} binlogs
+							{{ pageStart }}
+							- {{ pageEnd }} of {{ totalBinlogs }} binlogs
 						</p>
 						<div class="flex gap-2">
 							<Button
@@ -92,8 +94,8 @@
 	</Dialog>
 </template>
 <script>
-import { Dialog } from 'frappe-ui';
-import { date } from '../../../utils/format';
+import { Dialog } from 'frappe-ui'
+import { date } from '../../../utils/format'
 
 export default {
 	name: 'BinlogBrowserIndexStatusDialog',
@@ -105,20 +107,20 @@ export default {
 			page: 1,
 			pageSize: 10,
 			selectedBinlogs: [],
-		};
+		}
 	},
 	mounted() {
-		this.fetchBinlogStatus();
+		this.fetchBinlogStatus()
 	},
 	watch: {
 		pageSize() {
-			this.page = 1;
+			this.page = 1
 		},
 	},
 	resources: {
 		binlogs() {
 			if (!this.database_server) {
-				return;
+				return
 			}
 			return {
 				url: 'press.api.client.run_doc_method',
@@ -127,18 +129,18 @@ export default {
 						dt: 'Database Server',
 						dn: this.database_server,
 						method: 'get_binlogs_indexing_status',
-					};
+					}
 				},
 				onSuccess: (data) => {
 					if (data?.message) {
 						// reset selections
-						this.page = 1;
-						this.selectedBinlogs = [];
+						this.page = 1
+						this.selectedBinlogs = []
 					}
 				},
 				initialData: [],
 				auto: false,
-			};
+			}
 		},
 		indexBinlogs() {
 			return {
@@ -151,23 +153,23 @@ export default {
 						args: {
 							binlog_file_names: this.selectedBinlogs,
 						},
-					};
+					}
 				},
 				onSuccess: (data) => {
 					if (data?.message) {
-						this.hide();
-						let url = `/dashboard/servers/${this.server}/jobs/${data.message}`;
-						window.open(url, '_blank');
+						this.hide()
+						let url = `/dashboard/servers/${this.server}/jobs/${data.message}`
+						window.open(url, '_blank')
 					}
 				},
 				initialData: [],
 				auto: false,
-			};
+			}
 		},
 	},
 	computed: {
 		binlogs() {
-			return this.$resources?.binlogs?.data?.message || [];
+			return this.$resources?.binlogs?.data?.message || []
 		},
 		binlogsOptions() {
 			return {
@@ -182,7 +184,7 @@ export default {
 						fieldname: 'size_mb',
 						class: 'text-ink-gray-6',
 						format(value) {
-							return value ? `${value} MB` : '';
+							return value ? `${value} MB` : ''
 						},
 					},
 					{
@@ -191,7 +193,7 @@ export default {
 						width: 0.25,
 						type: 'Icon',
 						Icon(value) {
-							return value ? 'check' : '';
+							return value ? 'check' : ''
 						},
 					},
 					{
@@ -199,7 +201,7 @@ export default {
 						fieldname: 'file_modification_time',
 						align: 'right',
 						format(value) {
-							return value ? date(value, 'lll') : '';
+							return value ? date(value, 'lll') : ''
 						},
 					},
 				],
@@ -217,51 +219,51 @@ export default {
 						onClick: () => this.fetchBinlogStatus(),
 					},
 				],
-			};
+			}
 		},
 		pageStart() {
-			return (this.page - 1) * this.pageSize + 1;
+			return (this.page - 1) * this.pageSize + 1
 		},
 		pageEnd() {
-			return Math.min(this.page * this.pageSize, this.totalBinlogs);
+			return Math.min(this.page * this.pageSize, this.totalBinlogs)
 		},
 		totalBinlogs() {
-			return this.binlogs.length;
+			return this.binlogs.length
 		},
 		hasPreviousPage() {
-			return this.page > 1;
+			return this.page > 1
 		},
 		hasNextPage() {
-			return this.page * this.pageSize < this.binlogs.length;
+			return this.page * this.pageSize < this.binlogs.length
 		},
 		paginatedBinlogs() {
-			const start = (this.page - 1) * this.pageSize;
-			const end = start + this.pageSize;
-			return this.binlogs.slice(start, end);
+			const start = (this.page - 1) * this.pageSize
+			const end = start + this.pageSize
+			return this.binlogs.slice(start, end)
 		},
 	},
 	methods: {
 		fetchBinlogStatus() {
-			this.$resources?.binlogs?.submit();
+			this.$resources?.binlogs?.submit()
 		},
 		goToNextPage() {
 			if (this.hasNextPage) {
-				this.page += 1;
+				this.page += 1
 			}
 		},
 		goToPreviousPage() {
 			if (this.hasPreviousPage) {
-				this.page -= 1;
+				this.page -= 1
 			}
 		},
 		handleSelection(selections) {
-			this.selectedBinlogs = [...selections];
+			this.selectedBinlogs = [...selections]
 		},
 		hide() {
-			this.show = false;
-			this.$emit('update:modelValue', false);
-			this.$emit('close');
+			this.show = false
+			this.$emit('update:modelValue', false)
+			this.$emit('close')
 		},
 	},
-};
+}
 </script>

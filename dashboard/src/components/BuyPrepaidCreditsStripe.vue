@@ -46,10 +46,10 @@
 	</div>
 </template>
 <script>
-import StripeLogo from '@/components/StripeLogo.vue';
-import { loadStripe } from '@stripe/stripe-js';
-import { toast } from 'vue-sonner';
-import { DashboardError } from '../utils/error';
+import StripeLogo from '@/components/StripeLogo.vue'
+import { loadStripe } from '@stripe/stripe-js'
+import { toast } from 'vue-sonner'
+import { DashboardError } from '../utils/error'
 
 export default {
 	name: 'BuyPrepaidCreditsStripe',
@@ -71,7 +71,7 @@ export default {
 			cardErrorMessage: null,
 			errorMessage: null,
 			paymentInProgress: false,
-		};
+		}
 	},
 	resources: {
 		createPaymentIntent() {
@@ -87,16 +87,16 @@ export default {
 					) {
 						throw new DashboardError(
 							`Amount must be greater than or equal to ${this.minimumAmount}`,
-						);
+						)
 					}
 				},
 				async onSuccess(data) {
-					this.step = 'Setting up Stripe';
-					let { publishable_key, client_secret } = data;
-					this.clientSecret = client_secret;
-					this.stripe = await loadStripe(publishable_key);
-					this.elements = this.stripe.elements();
-					let theme = this.$theme;
+					this.step = 'Setting up Stripe'
+					let { publishable_key, client_secret } = data
+					this.clientSecret = client_secret
+					this.stripe = await loadStripe(publishable_key)
+					this.elements = this.stripe.elements()
+					let theme = this.$theme
 					let style = {
 						base: {
 							color: theme.colors.black,
@@ -111,7 +111,7 @@ export default {
 							color: theme.colors.red['600'],
 							iconColor: theme.colors.red['600'],
 						},
-					};
+					}
 					this.card = this.elements.create('card', {
 						hidePostalCode: true,
 						style: style,
@@ -119,45 +119,45 @@ export default {
 							complete: '',
 							focus: 'bg-surface-gray-2',
 						},
-					});
+					})
 
-					this.step = 'Add Card Details';
+					this.step = 'Add Card Details'
 					this.$nextTick(() => {
-						this.card.mount(this.$refs['card-element']);
-					});
+						this.card.mount(this.$refs['card-element'])
+					})
 
 					this.card.addEventListener('change', (event) => {
-						this.cardErrorMessage = event.error?.message || null;
-					});
+						this.cardErrorMessage = event.error?.message || null
+					})
 					this.card.addEventListener('ready', () => {
-						this.ready = true;
-					});
+						this.ready = true
+					})
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		setupStripe() {
-			this.$resources.createPaymentIntent.submit();
+			this.$resources.createPaymentIntent.submit()
 		},
 		async onBuyClick() {
-			this.paymentInProgress = true;
+			this.paymentInProgress = true
 			let payload = await this.stripe.confirmCardPayment(this.clientSecret, {
 				payment_method: {
 					card: this.card,
 				},
-			});
+			})
 
 			if (payload.error) {
-				this.errorMessage = payload.error.message;
-				this.paymentInProgress = false;
+				this.errorMessage = payload.error.message
+				this.paymentInProgress = false
 			} else {
 				toast.success(
 					'Payment processed successfully, we will update your account shortly on confirmation from Stripe',
-				);
-				this.paymentInProgress = false;
-				this.$emit('success');
-				this.errorMessage = null;
+				)
+				this.paymentInProgress = false
+				this.$emit('success')
+				this.errorMessage = null
 			}
 		},
 	},
@@ -165,18 +165,18 @@ export default {
 		totalAmount() {
 			let { currency, billing_info } = this.$account
 				? this.$account.team
-				: this.$team.doc;
+				: this.$team.doc
 			if (currency === 'INR') {
 				return Number(
 					(
 						this.amount +
 						this.amount * (billing_info.gst_percentage || 0)
 					).toFixed(2),
-				);
+				)
 			} else {
-				return this.amount;
+				return this.amount
 			}
 		},
 	},
-};
+}
 </script>

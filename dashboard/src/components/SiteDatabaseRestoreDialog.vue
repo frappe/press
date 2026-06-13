@@ -56,21 +56,19 @@
 				:loading="$resources.restoreBackup.loading || uploadingFiles"
 				@click="() => startUploadFiles()"
 			>
-				{{
-					uploadingFiles
+				{{ uploadingFiles
 						? 'Uploading Files...'
 						: $resources.restoreBackup.loading
 							? 'Triggering Restore...'
-							: 'Upload & Restore'
-				}}
+							: 'Upload & Restore' }}
 			</Button>
 		</template>
 	</Dialog>
 </template>
 <script>
-import { Button } from 'frappe-ui';
-import BackupFilesUploader from './BackupFilesUploader.vue';
-import { toast } from 'vue-sonner';
+import { Button } from 'frappe-ui'
+import BackupFilesUploader from './BackupFilesUploader.vue'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'SiteDatabaseRestoreDialog',
@@ -96,38 +94,38 @@ export default {
 			skipFailingPatches: false,
 			errorMessageFromUploader: '',
 			uploadingFiles: false,
-		};
+		}
 	},
 	methods: {
 		async startUploadFiles() {
-			this.errorMessageFromUploader = '';
-			this.uploadingFiles = true;
-			const success = await this.$refs.backupFilesUploader.uploadFiles();
+			this.errorMessageFromUploader = ''
+			this.uploadingFiles = true
+			const success = await this.$refs.backupFilesUploader.uploadFiles()
 			if (!success) {
-				this.uploadingFiles = false;
+				this.uploadingFiles = false
 			}
 			if (this.$refs.backupFilesUploader.isAllFilesUploaded()) {
-				this.startRestore(this.selectedFiles);
+				this.startRestore(this.selectedFiles)
 			}
 		},
 		startRestore(files) {
-			this.uploadingFiles = false;
+			this.uploadingFiles = false
 			if (files) {
-				this.selectedFiles = files;
+				this.selectedFiles = files
 			}
 			this.$resources.restoreBackup.submit({
 				name: this.site,
 				files: this.selectedFiles,
 				skip_failing_patches: this.skipFailingPatches,
-			});
+			})
 		},
 		failureHandler(e) {
-			if (e) return;
-			this.uploadingFiles = false;
+			if (e) return
+			this.uploadingFiles = false
 			this.errorMessageFromUploader =
-				'Failed to upload files. Please try again.';
-			this.showRestoreDialog = false;
-			toast.error(this.errorMessageFromUploader);
+				'Failed to upload files. Please try again.'
+			this.showRestoreDialog = false
+			toast.error(this.errorMessageFromUploader)
 		},
 	},
 	resources: {
@@ -135,21 +133,21 @@ export default {
 			return {
 				url: 'press.api.site.restore',
 				onSuccess() {
-					this.selectedFiles = {};
+					this.selectedFiles = {}
 					this.$router.push({
 						name: 'Site Jobs',
 						params: { name: this.site },
-					});
-					this.showRestoreDialog = false;
-					this.$toast.success('Restoration triggered successfully.');
+					})
+					this.showRestoreDialog = false
+					this.$toast.success('Restoration triggered successfully.')
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		filesUploaded() {
-			return this.selectedFiles.database;
+			return this.selectedFiles.database
 		},
 	},
-};
+}
 </script>

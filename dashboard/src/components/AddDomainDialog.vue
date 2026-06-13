@@ -24,13 +24,15 @@
 					<p>Create one of the following DNS records:</p>
 					<ul>
 						<li>
-							<strong>CNAME</strong> record from
+							<strong>CNAME</strong>
+							record from
 							<strong>{{ newDomain }}</strong>
 							to
 							<strong>{{ site.name }}</strong>
 						</li>
 						<li>
-							<strong>A</strong> record from
+							<strong>A</strong>
+							record from
 							<strong>{{ newDomain }}</strong>
 							to
 							<strong>{{ site.inbound_ip }}</strong>
@@ -40,8 +42,7 @@
 				<div v-if="dnsResult && !dnsResult.matched" class="space-y-2">
 					<p class="text-base">
 						Received following DNS query responses for
-						<span class="font-semibold text-ink-gray-7">{{ newDomain }}</span
-						>.
+						<span class="font-semibold text-ink-gray-7">{{ newDomain }}</span>.
 					</p>
 					<div
 						v-if="newDomain && dnsResult.CNAME && !dnsResult.CNAME.matched"
@@ -126,7 +127,7 @@
 	</Dialog>
 </template>
 <script>
-import { DashboardError } from '../utils/error';
+import { DashboardError } from '../utils/error'
 
 export default {
 	name: 'AddDomainDialog',
@@ -141,58 +142,58 @@ export default {
 		return {
 			showDialog: true,
 			newDomain: null,
-		};
+		}
 	},
 	methods: {
 		preprocessDomain() {
 			if (this.newDomain) {
 				// Remove the URL protocol if present (http://, https://, wss://)
 				// Example: "https://cooldomain.in" → "cooldomain.in"
-				this.newDomain = this.newDomain.replace(/(^\w+:|^)\/\//, '');
+				this.newDomain = this.newDomain.replace(/(^\w+:|^)\/\//, '')
 
 				// Remove everything after the first '/' to keep only the root domain
 				// Example: "cooldomain.in/path/to/glory" → "cooldomain.in"
-				this.newDomain = this.newDomain.split('/')[0];
-				this.verifyDns();
+				this.newDomain = this.newDomain.split('/')[0]
+				this.verifyDns()
 			}
 		},
 		verifyDns() {
 			this.$resources.checkDNS.submit({
 				name: this.site.name,
 				domain: this.newDomain,
-			});
+			})
 		},
 	},
 	resources: {
 		checkDNS: {
 			url: 'press.api.site.check_dns',
 			validate() {
-				if (!this.newDomain) throw new DashboardError('Domain cannot be empty');
+				if (!this.newDomain) throw new DashboardError('Domain cannot be empty')
 			},
 		},
 		addDomain: {
 			url: 'press.api.site.add_domain',
 			onSuccess() {
-				this.$resources.checkDNS.reset();
-				this.$emit('domainAdded');
-				this.showDialog = false;
+				this.$resources.checkDNS.reset()
+				this.$emit('domainAdded')
+				this.showDialog = false
 			},
 		},
 		retryAddDomain: {
 			url: 'press.api.site.retry_add_domain',
 			onSuccess() {
-				this.$emit('domainAdded');
+				this.$emit('domainAdded')
 				// this.$resources.domains.fetch();
 			},
 		},
 	},
 	computed: {
 		dnsVerified() {
-			return this.dnsResult?.matched;
+			return this.dnsResult?.matched
 		},
 		dnsResult() {
-			return this.$resources.checkDNS.data;
+			return this.$resources.checkDNS.data
 		},
 	},
-};
+}
 </script>

@@ -15,5 +15,5 @@ const props = defineProps({
 		type: Number,
 		default: 3.5,
 	},
-});
+})
 </script>

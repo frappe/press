@@ -1,92 +1,92 @@
-import { Badge, Button, Combobox } from "frappe-ui";
-import { defineAsyncComponent, h } from "vue";
-import { RouterLink } from "vue-router";
-import { toast } from "vue-sonner";
-import GenericDialog from "../components/GenericDialog.vue";
-import ChangeAppBranchDialog from "../components/marketplace/ChangeAppBranchDialog.vue";
-import PlansDialog from "../components/marketplace/PlansDialog.vue";
-import ObjectList from "../components/ObjectList.vue";
-import router from "../router";
-import { confirmDialog, icon, renderDialog } from "../utils/components";
-import { isMobile } from "../utils/device";
-import { currency, userCurrency } from "../utils/format";
-import { getToastErrorMessage } from "../utils/toast";
+import { Badge, Button, Combobox } from 'frappe-ui'
+import { defineAsyncComponent, h } from 'vue'
+import { RouterLink } from 'vue-router'
+import { toast } from 'vue-sonner'
+import GenericDialog from '../components/GenericDialog.vue'
+import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDialog.vue'
+import PlansDialog from '../components/marketplace/PlansDialog.vue'
+import ObjectList from '../components/ObjectList.vue'
+import router from '../router'
+import { confirmDialog, icon, renderDialog } from '../utils/components'
+import { isMobile } from '../utils/device'
+import { currency, userCurrency } from '../utils/format'
+import { getToastErrorMessage } from '../utils/toast'
 
 export default {
-	doctype: "Marketplace App",
+	doctype: 'Marketplace App',
 	whitelistedMethods: {
-		removeVersion: "remove_version",
-		addVersion: "add_version",
-		siteInstalls: "site_installs",
-		createApprovalRequest: "create_approval_request",
-		cancelApprovalRequest: "cancel_approval_request",
-		yankAppRelease: "yank_app_release",
-		unyankAppRelease: "unyank_app_release",
-		updateListing: "update_listing",
-		markAppReadyForReview: "mark_app_ready_for_review",
+		removeVersion: 'remove_version',
+		addVersion: 'add_version',
+		siteInstalls: 'site_installs',
+		createApprovalRequest: 'create_approval_request',
+		cancelApprovalRequest: 'cancel_approval_request',
+		yankAppRelease: 'yank_app_release',
+		unyankAppRelease: 'unyank_app_release',
+		updateListing: 'update_listing',
+		markAppReadyForReview: 'mark_app_ready_for_review',
 	},
 	list: {
-		route: "/apps",
-		title: "Marketplace",
-		fields: ["image", "title", "status", "description"],
+		route: '/apps',
+		title: 'Marketplace',
+		fields: ['image', 'title', 'status', 'description'],
 		columns: [
 			{
-				label: "App",
-				fieldname: "title",
-				class: "font-medium",
+				label: 'App',
+				fieldname: 'title',
+				class: 'font-medium',
 				width: 0.3,
 				prefix(row) {
 					return row.image
-						? h("img", {
+						? h('img', {
 								src: row.image,
-								class: "w-6 h-6 rounded-sm",
+								class: 'w-6 h-6 rounded-sm',
 								alt: row.title,
 							})
 						: h(
-								"div",
+								'div',
 								{
 									class:
-										"w-6 h-6 rounded bg-surface-gray-4 text-ink-gray-6 flex items-center justify-center",
+										'w-6 h-6 rounded bg-surface-gray-4 text-ink-gray-6 flex items-center justify-center',
 								},
 								row.title[0].toUpperCase(),
-							);
+							)
 				},
 			},
 			{
-				label: "Status",
-				type: "Badge",
-				fieldname: "status",
+				label: 'Status',
+				type: 'Badge',
+				fieldname: 'status',
 				width: 0.3,
 			},
 			{
-				label: "Description",
-				fieldname: "description",
-				width: "40rem",
+				label: 'Description',
+				fieldname: 'description',
+				width: '40rem',
 			},
 		],
 		primaryAction() {
 			return {
-				label: "New App",
-				variant: "solid",
+				label: 'New App',
+				variant: 'solid',
 				slots: {
-					prefix: icon("plus"),
+					prefix: icon('plus'),
 				},
 				onClick() {
 					const NewMarketplaceAppDialog = defineAsyncComponent(
 						() =>
-							import("../components/marketplace/NewMarketplaceAppDialog.vue"),
-					);
+							import('../components/marketplace/NewMarketplaceAppDialog.vue'),
+					)
 
-					renderDialog(h(NewMarketplaceAppDialog));
+					renderDialog(h(NewMarketplaceAppDialog))
 				},
-			};
+			}
 		},
 	},
 	detail: {
-		titleField: "name",
-		route: "/apps/:name",
+		titleField: 'name',
+		route: '/apps/:name',
 		statusBadge({ documentResource: app }) {
-			return { label: app.doc.status };
+			return { label: app.doc.status }
 		},
 		breadcrumbs({ items, documentResource: app }) {
 			return [
@@ -95,78 +95,78 @@ export default {
 					label: app.doc.title,
 					route: `/apps/${app.doc.name}`,
 				},
-			];
+			]
 		},
 		tabs: [
 			{
-				label: "Analytics",
-				icon: icon("bar-chart-2"),
-				route: "analytics",
-				type: "Component",
+				label: 'Analytics',
+				icon: icon('bar-chart-2'),
+				route: 'analytics',
+				type: 'Component',
 				component: defineAsyncComponent(
-					() => import("../components/marketplace/MarketplaceAppAnalytics.vue"),
+					() => import('../components/marketplace/MarketplaceAppAnalytics.vue'),
 				),
 				props: (app) => {
-					return { app: app.doc.name };
+					return { app: app.doc.name }
 				},
 			},
 			{
-				label: "Listing",
-				icon: icon("shopping-cart"),
-				route: "listing",
-				type: "Component",
+				label: 'Listing',
+				icon: icon('shopping-cart'),
+				route: 'listing',
+				type: 'Component',
 				component: defineAsyncComponent(
-					() => import("../components/MarketplaceAppListing.vue"),
+					() => import('../components/MarketplaceAppListing.vue'),
 				),
 				props: (app) => {
-					return { app: app };
+					return { app: app }
 				},
 			},
 			{
-				label: "Versions",
-				icon: icon("package"),
-				route: "versions",
-				type: "list",
+				label: 'Versions',
+				icon: icon('package'),
+				route: 'versions',
+				type: 'list',
 				list: {
-					doctype: "Marketplace App Version",
+					doctype: 'Marketplace App Version',
 					filters: (app) => {
-						return { parent: app.doc.name, parenttype: "Marketplace App" };
+						return { parent: app.doc.name, parenttype: 'Marketplace App' }
 					},
 					fields: [
-						"source.repository_owner as repository_owner",
-						"source.repository as repository",
-						"source.branch as branch",
+						'source.repository_owner as repository_owner',
+						'source.repository as repository',
+						'source.branch as branch',
 					],
 					columns: [
 						{
-							label: "Version",
-							fieldname: "version",
+							label: 'Version',
+							fieldname: 'version',
 							width: 0.5,
 						},
 						{
-							label: "Source",
-							fieldname: "source",
+							label: 'Source',
+							fieldname: 'source',
 							width: 0.5,
 						},
 						{
-							label: "Repository",
+							label: 'Repository',
 							width: 0.5,
 							format: (value, row) => {
-								return `${row.repository_owner}/${row.repository}`;
+								return `${row.repository_owner}/${row.repository}`
 							},
 						},
 						{
-							label: "Branch",
-							fieldname: "branch",
-							type: "Badge",
+							label: 'Branch',
+							fieldname: 'branch',
+							type: 'Badge',
 							width: 0.5,
 						},
 					],
 					primaryAction({ listResource: versions, documentResource: app }) {
 						return {
-							label: "New Version",
+							label: 'New Version',
 							slots: {
-								prefix: icon("plus"),
+								prefix: icon('plus'),
 							},
 							onClick() {
 								renderDialog(
@@ -175,49 +175,49 @@ export default {
 										{
 											options: {
 												title: `Add version support for ${app.doc.title}`,
-												size: "4xl",
+												size: '4xl',
 											},
 										},
 										{
 											default: () =>
 												h(ObjectList, {
 													options: {
-														label: "Version",
-														fieldname: "version",
-														fieldtype: "ListSelection",
+														label: 'Version',
+														fieldname: 'version',
+														fieldtype: 'ListSelection',
 														columns: [
 															{
-																label: "Version",
-																fieldname: "version",
+																label: 'Version',
+																fieldname: 'version',
 															},
 															{
-																label: "Branch",
-																type: "Component",
+																label: 'Branch',
+																type: 'Component',
 																component({ row }) {
 																	if (!row.selectedOption) {
-																		row.selectedOption = row.branch[0];
+																		row.selectedOption = row.branch[0]
 																	}
 																	return h(Combobox, {
 																		modelValue: row.selectedOption,
 																		options: row.branch,
 																		allowCustomValue: true,
-																		"onUpdate:modelValue": (value) => {
-																			row.selectedOption = value;
+																		'onUpdate:modelValue': (value) => {
+																			row.selectedOption = value
 																		},
-																	});
+																	})
 																},
 															},
 															{
-																label: "",
-																fieldname: "",
-																align: "right",
-																type: "Button",
-																width: "5rem",
+																label: '',
+																fieldname: '',
+																align: 'right',
+																type: 'Button',
+																width: '5rem',
 																Button({ row, listResource: versionsOptions }) {
 																	return {
-																		label: "Add",
+																		label: 'Add',
 																		onClick() {
-																			if (app.addVersion.loading) return;
+																			if (app.addVersion.loading) return
 
 																			const getAddVersionArgsFromOption = (
 																				option,
@@ -226,13 +226,13 @@ export default {
 																					repo_owner,
 																					repo_name,
 																					...branch
-																				] = option.trim().split("/");
+																				] = option.trim().split('/')
 																				return {
 																					repo_owner,
 																					repo_name,
-																					branch: branch.join("/"),
-																				};
-																			};
+																					branch: branch.join('/'),
+																				}
+																			}
 
 																			toast.promise(
 																				app.addVersion.submit({
@@ -242,50 +242,50 @@ export default {
 																					),
 																				}),
 																				{
-																					loading: "Adding new version...",
+																					loading: 'Adding new version...',
 																					success: () => {
-																						versions.reload();
-																						versionsOptions.reload();
-																						return "New version added";
+																						versions.reload()
+																						versionsOptions.reload()
+																						return 'New version added'
 																					},
 																					error: (e) => getToastErrorMessage(e),
 																				},
-																			);
+																			)
 																		},
-																	};
+																	}
 																},
 															},
 														],
 														resource() {
 															return {
-																url: "press.api.marketplace.options_for_version",
+																url: 'press.api.marketplace.options_for_version',
 																params: {
 																	name: app.doc.name,
 																},
 																auto: true,
-															};
+															}
 														},
 													},
 												}),
 										},
 									),
-								);
+								)
 							},
-						};
+						}
 					},
 					rowActions({ row, listResource: versions, documentResource: app }) {
 						return [
 							{
-								label: "Show Releases",
+								label: 'Show Releases',
 								slots: {
-									prefix: icon("plus"),
+									prefix: icon('plus'),
 								},
 								onClick() {
-									showReleases(row, app);
+									showReleases(row, app)
 								},
 							},
 							{
-								label: "Change Branch",
+								label: 'Change Branch',
 								onClick() {
 									renderDialog(
 										h(ChangeAppBranchDialog, {
@@ -294,176 +294,176 @@ export default {
 											version: row.version,
 											activeBranch: row.branch,
 											onBranchChanged() {
-												versions.reload();
+												versions.reload()
 											},
 										}),
-									);
+									)
 								},
 							},
 							{
-								label: "Remove Version",
+								label: 'Remove Version',
 								onClick() {
 									toast.promise(
 										app.removeVersion.submit({ version: row.version }),
 										{
-											loading: "Removing version...",
+											loading: 'Removing version...',
 											success: () => {
-												versions.reload();
-												return "Version removed successfully";
+												versions.reload()
+												return 'Version removed successfully'
 											},
 											error: (e) => getToastErrorMessage(e),
 										},
-									);
+									)
 								},
 							},
-						];
+						]
 					},
 				},
 			},
 			{
-				label: "Audit Reports",
-				icon: icon("clipboard"),
-				route: "audit-reports",
-				type: "Component",
+				label: 'Audit Reports',
+				icon: icon('clipboard'),
+				route: 'audit-reports',
+				type: 'Component',
 				component: defineAsyncComponent(
 					() =>
-						import("../components/marketplace/auditor/AppAuditReportsList.vue"),
+						import('../components/marketplace/auditor/AppAuditReportsList.vue'),
 				),
 				props: (app) => {
-					return { app: app.doc.name };
+					return { app: app.doc.name }
 				},
 			},
 			{
-				label: "Pricing",
-				icon: icon("dollar-sign"),
-				route: "pricing",
-				type: "list",
+				label: 'Pricing',
+				icon: icon('dollar-sign'),
+				route: 'pricing',
+				type: 'list',
 				list: {
-					doctype: "Marketplace App Plan",
+					doctype: 'Marketplace App Plan',
 					filters: (app) => {
-						return { app: app.doc.name };
+						return { app: app.doc.name }
 					},
-					fields: ["name", "title", "price_inr", "price_usd", "enabled"],
+					fields: ['name', 'title', 'price_inr', 'price_usd', 'enabled'],
 					columns: [
 						{
-							label: "Title",
-							fieldname: "title",
+							label: 'Title',
+							fieldname: 'title',
 						},
 						{
-							label: "Enabled",
-							type: "Badge",
-							fieldname: "enabled",
+							label: 'Enabled',
+							type: 'Badge',
+							fieldname: 'enabled',
 							format: (value) => {
-								return value == 1 ? "Enabled" : "Disabled";
+								return value == 1 ? 'Enabled' : 'Disabled'
 							},
 						},
 						{
-							label: "Price (INR)",
-							fieldname: "price_inr",
+							label: 'Price (INR)',
+							fieldname: 'price_inr',
 							format: (value) => {
-								return currency(value, "INR");
+								return currency(value, 'INR')
 							},
 						},
 						{
-							label: "Price (USD)",
-							fieldname: "price_usd",
+							label: 'Price (USD)',
+							fieldname: 'price_usd',
 							format: (value) => {
-								return currency(value, "USD");
+								return currency(value, 'USD')
 							},
 						},
 					],
 					primaryAction({ listResource: plans, documentResource: app }) {
 						return {
-							label: "New Plan",
+							label: 'New Plan',
 							slots: {
-								prefix: icon("plus"),
+								prefix: icon('plus'),
 							},
 							onClick() {
 								renderDialog(
 									h(PlansDialog, {
 										app: app.doc.name,
 										onPlanCreated() {
-											plans.reload();
+											plans.reload()
 										},
 									}),
-								);
+								)
 							},
-						};
+						}
 					},
 					rowActions({ row, listResource: plans, documentResource: app }) {
 						return [
 							{
-								label: "Edit",
+								label: 'Edit',
 								onClick() {
 									renderDialog(
 										h(PlansDialog, {
 											app: app.doc.name,
 											plan: row,
 											onPlanUpdated() {
-												plans.reload();
+												plans.reload()
 											},
 										}),
-									);
+									)
 								},
 							},
-						];
+						]
 					},
 				},
 			},
 			{
-				label: "Subscriptions",
-				icon: icon("users"),
-				route: "subscription",
-				type: "list",
+				label: 'Subscriptions',
+				icon: icon('users'),
+				route: 'subscription',
+				type: 'list',
 				list: {
-					doctype: "Subscription",
+					doctype: 'Subscription',
 					filters: (app) => {
 						return {
-							document_type: "Marketplace App",
+							document_type: 'Marketplace App',
 							document_name: app.name,
-						};
+						}
 					},
-					fields: ["site", "enabled", "team"],
+					fields: ['site', 'enabled', 'team'],
 					filterControls() {
 						return [
 							{
-								type: "select",
-								label: "Status",
-								class: !isMobile() ? "w-24" : "",
-								fieldname: "enabled",
-								options: ["", "Active", "Disabled"],
+								type: 'select',
+								label: 'Status',
+								class: !isMobile() ? 'w-24' : '',
+								fieldname: 'enabled',
+								options: ['', 'Active', 'Disabled'],
 							},
-						];
+						]
 					},
 					columns: [
 						{
-							label: "Site",
-							fieldname: "site",
+							label: 'Site',
+							fieldname: 'site',
 							width: 0.6,
 						},
 						{
-							label: "Status",
-							type: "Badge",
-							fieldname: "enabled",
+							label: 'Status',
+							type: 'Badge',
+							fieldname: 'enabled',
 							width: 0.3,
 							format: (value) => {
-								return value ? "Active" : "Disabled";
+								return value ? 'Active' : 'Disabled'
 							},
 						},
 						{
-							label: "Price",
-							fieldname: "price",
+							label: 'Price',
+							fieldname: 'price',
 							width: 0.3,
 							format: (value) => {
-								return userCurrency(value);
+								return userCurrency(value)
 							},
 						},
 						{
-							label: "Active For",
-							fieldname: "active_for",
+							label: 'Active For',
+							fieldname: 'active_for',
 							width: 0.3,
 							format: (value) => {
-								return value + (value == 1 ? " day" : " days");
+								return value + (value == 1 ? ' day' : ' days')
 							},
 						},
 					],
@@ -473,84 +473,84 @@ export default {
 		actions({ documentResource: app }) {
 			return [
 				{
-					label: "View in Marketplace",
+					label: 'View in Marketplace',
 					slots: {
-						prefix: icon("external-link"),
+						prefix: icon('external-link'),
 					},
-					condition: () => app.doc.status === "Published",
+					condition: () => app.doc.status === 'Published',
 					onClick() {
 						window.open(
 							`${window.location.origin}/marketplace/apps/${app.name}`,
-							"_blank",
-						);
+							'_blank',
+						)
 					},
 				},
 				{
-					label: "Guidelines",
+					label: 'Guidelines',
 					slots: {
-						icon: icon("help-circle"),
+						icon: icon('help-circle'),
 					},
-					condition: () => app.doc.status === "Draft",
+					condition: () => app.doc.status === 'Draft',
 					onClick() {
 						window.open(
-							"https://docs.frappe.io/cloud/marketplace/marketplace-guidelines",
-							"_blank",
-						);
+							'https://docs.frappe.io/cloud/marketplace/marketplace-guidelines',
+							'_blank',
+						)
 					},
 				},
 				{
-					label: "Complete Listing",
-					variant: "solid",
+					label: 'Complete Listing',
+					variant: 'solid',
 					slots: {
-						prefix: icon("alert-circle"),
+						prefix: icon('alert-circle'),
 					},
-					condition: () => app.doc.status === "Draft",
+					condition: () => app.doc.status === 'Draft',
 					onClick() {
 						const AppListingStepsDialog = defineAsyncComponent(
 							() =>
-								import("../components/marketplace/AppListingStepsDialog.vue"),
-						);
+								import('../components/marketplace/AppListingStepsDialog.vue'),
+						)
 
 						renderDialog(
 							h(AppListingStepsDialog, {
 								app: app.doc.name,
 							}),
-						);
+						)
 					},
 				},
 				,
 				{
-					label: "Options",
-					condition: () => app.doc.status === "Draft",
+					label: 'Options',
+					condition: () => app.doc.status === 'Draft',
 					options: [
 						{
-							label: "Delete",
-							icon: icon("trash-2"),
-							condition: () => app.doc.status === "Draft",
+							label: 'Delete',
+							icon: icon('trash-2'),
+							condition: () => app.doc.status === 'Draft',
 							onClick() {
 								confirmDialog({
 									title: `Delete App ${app.doc.title}`,
-									message: "Are you sure you want to delete this app?",
+									message: 'Are you sure you want to delete this app?',
 									onSuccess({ hide }) {
 										toast.promise(app.delete.submit(), {
-											loading: "Deleting app...",
+											loading: 'Deleting app...',
 											success: () => {
-												hide();
-												router.push({ name: "Marketplace App List" });
-												return "App deleted successfully";
+												hide()
+												router.push({ name: 'Marketplace App List' })
+												return 'App deleted successfully'
 											},
 											error: (e) => getToastErrorMessage(e),
-										});
+										})
 									},
-								});
+								})
 							},
 						},
 					],
 				},
-			];
+			]
 		},
 	},
-};
+}
 
 function showReleases(row, app) {
 	renderDialog(
@@ -559,88 +559,88 @@ function showReleases(row, app) {
 			{
 				options: {
 					title: `Releases for ${app.doc.title} on ${row.branch} branch`,
-					size: "6xl",
+					size: '6xl',
 				},
 			},
 			{
 				default: () =>
 					h(ObjectList, {
 						options: {
-							label: "Version",
-							type: "list",
-							doctype: "App Release",
+							label: 'Version',
+							type: 'list',
+							doctype: 'App Release',
 							filters: {
 								app: app.doc.name,
 								source: row.source,
 							},
-							fields: ["message", "tag", "author", "status"],
-							orderBy: "creation desc",
+							fields: ['message', 'tag', 'author', 'status'],
+							orderBy: 'creation desc',
 							columns: [
 								{
-									label: "Commit Message",
-									fieldname: "message",
-									class: "truncate",
+									label: 'Commit Message',
+									fieldname: 'message',
+									class: 'truncate',
 									width: 0.4,
 									format: (value) => {
 										return value.length > 50
 											? `${value.slice(0, 50)}...`
-											: value;
+											: value
 									},
 								},
 								{
-									label: "Hash",
-									fieldname: "hash",
-									class: "w-24",
-									type: "Badge",
+									label: 'Hash',
+									fieldname: 'hash',
+									class: 'w-24',
+									type: 'Badge',
 									width: 0.15,
-									align: "center",
+									align: 'center',
 									format: (value) => {
-										return value.slice(0, 7);
+										return value.slice(0, 7)
 									},
 								},
 								{
-									label: "Author",
-									fieldname: "author",
+									label: 'Author',
+									fieldname: 'author',
 									width: 0.15,
-									align: "center",
+									align: 'center',
 								},
 								{
-									label: "Status",
-									fieldname: "status",
-									type: "Badge",
+									label: 'Status',
+									fieldname: 'status',
+									type: 'Badge',
 									width: 0.15,
-									align: "center",
+									align: 'center',
 								},
 								{
-									label: "",
-									fieldname: "",
-									align: "right",
-									type: "Button",
+									label: '',
+									fieldname: '',
+									align: 'right',
+									type: 'Button',
 									width: 0.2,
 									Button({ row, listResource: releases }) {
-										let label = "";
-										let successMessage = "";
-										let loadingMessage = "";
+										let label = ''
+										let successMessage = ''
+										let loadingMessage = ''
 
-										if (row.status == "Approved") {
-											label = "Yank";
-											successMessage = "The release has been yanked";
-											loadingMessage = "Yanking release...";
+										if (row.status == 'Approved') {
+											label = 'Yank'
+											successMessage = 'The release has been yanked'
+											loadingMessage = 'Yanking release...'
 										}
-										if (row.status == "Yanked") {
-											label = "Unyank";
-											successMessage = "The release has been unyanked";
-											loadingMessage = "Unyanking release...";
+										if (row.status == 'Yanked') {
+											label = 'Unyank'
+											successMessage = 'The release has been unyanked'
+											loadingMessage = 'Unyanking release...'
 										}
-										if (row.status === "Awaiting Approval") {
-											label = "Cancel";
-											successMessage = "The release has been cancelled";
-											loadingMessage = "Cancelling release approval request...";
-										} else if (row.status === "Draft") {
-											label = "Submit";
-											loadingMessage = "Submitting release for approval...";
+										if (row.status === 'Awaiting Approval') {
+											label = 'Cancel'
+											successMessage = 'The release has been cancelled'
+											loadingMessage = 'Cancelling release approval request...'
+										} else if (row.status === 'Draft') {
+											label = 'Submit'
+											loadingMessage = 'Submitting release for approval...'
 											successMessage =
-												"The release has been submitted for approval";
+												'The release has been submitted for approval'
 										}
 
 										return {
@@ -664,21 +664,21 @@ function showReleases(row, app) {
 														app.unyankAppRelease.submit({
 															hash: row.hash,
 														}),
-												};
+												}
 
-												const action = actions[row.status.replace(" ", "")];
-												if (!action) return;
+												const action = actions[row.status.replace(' ', '')]
+												if (!action) return
 
 												toast.promise(action(), {
 													loading: loadingMessage,
 													success: () => {
-														releases.reload();
-														return successMessage;
+														releases.reload()
+														return successMessage
 													},
 													error: (e) => getToastErrorMessage(e),
-												});
+												})
 											},
-										};
+										}
 									},
 								},
 							],
@@ -686,5 +686,5 @@ function showReleases(row, app) {
 					}),
 			},
 		),
-	);
+	)
 }

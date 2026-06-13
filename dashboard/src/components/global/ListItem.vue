@@ -23,9 +23,9 @@ export default {
 	props: ['image', 'title', 'subtitle', 'description'],
 	computed: {
 		secondaryText() {
-			let text = this.subtitle || this.description || '';
-			return text.replace('\n', '<br>');
-		}
-	}
-};
+			let text = this.subtitle || this.description || ''
+			return text.replace('\n', '<br>')
+		},
+	},
+}
 </script>

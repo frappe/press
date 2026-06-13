@@ -83,22 +83,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { Dialog, FormControl } from 'frappe-ui';
-import { teamMembers, teamResources } from './data';
+import { computed, ref } from 'vue'
+import { Dialog, FormControl } from 'frappe-ui'
+import { teamMembers, teamResources } from './data'
 
 defineProps<{
-	modelValue: boolean;
-}>();
+	modelValue: boolean
+}>()
 
 const emit = defineEmits<{
-	create: [title: string, users: string[], resources: string[]];
-	'update:modelValue': [value: boolean];
-}>();
+	create: [title: string, users: string[], resources: string[]]
+	'update:modelValue': [value: boolean]
+}>()
 
-const title = ref('');
-const users = ref<string[]>([]);
-const resources = ref<any[]>([]);
+const title = ref('')
+const users = ref<string[]>([])
+const resources = ref<any[]>([])
 
 const resourceOptions = computed(() => {
 	return teamResources.value.filter(
@@ -108,6 +108,6 @@ const resourceOptions = computed(() => {
 					r.document_type === resource.document_type &&
 					r.document_name === resource.document_name,
 			),
-	);
-});
+	)
+})
 </script>

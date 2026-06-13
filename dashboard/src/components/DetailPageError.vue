@@ -7,23 +7,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed } from 'vue'
 
 const props = defineProps<{
-	doctype: string;
-	docname: string;
-	error?: Error;
-}>();
+	doctype: string
+	docname: string
+	error?: Error
+}>()
 
 const isPermissionError = computed(() => {
-	return props.error?.message.endsWith('PermissionError');
-});
+	return props.error?.message.endsWith('PermissionError')
+})
 
 const errorMessage = computed(() => {
 	if (isPermissionError.value) {
-		return 'You do not have permission to view this resource';
+		return 'You do not have permission to view this resource'
 	} else {
-		return props.error?.message || 'An unexpected error occurred';
+		return props.error?.message || 'An unexpected error occurred'
 	}
-});
+})
 </script>

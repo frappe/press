@@ -11,7 +11,7 @@
 	</AlertBanner>
 </template>
 <script>
-import AlertBanner from './AlertBanner.vue';
+import AlertBanner from './AlertBanner.vue'
 
 export default {
 	name: 'AlertAddPaymentMode',
@@ -22,12 +22,12 @@ export default {
 	components: { AlertBanner },
 	methods: {
 		addPaymentMode() {
-			this.$team.reload();
+			this.$team.reload()
 
 			this.$router.push({
 				name: 'BillingOverview',
-			});
+			})
 		},
 	},
-};
+}
 </script>

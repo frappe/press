@@ -68,9 +68,9 @@
 	</div>
 </template>
 <script>
-import { toast } from 'vue-sonner';
-import { validateSubdomain } from '../../utils/site';
-import LoginBox from '../../components/auth/LoginBox.vue';
+import { toast } from 'vue-sonner'
+import { validateSubdomain } from '../../utils/site'
+import LoginBox from '../../components/auth/LoginBox.vue'
 
 export default {
 	name: 'SignupSetup',
@@ -83,7 +83,7 @@ export default {
 			progressErrorCount: 0,
 			findingClosestServer: false,
 			subdomain: '',
-		};
+		}
 	},
 	resources: {
 		siteRequest() {
@@ -103,16 +103,16 @@ export default {
 							query: {
 								product_trial_request: data.name,
 							},
-						});
+						})
 					}
 					if (data.prefilled_subdomain) {
-						this.subdomain = data.prefilled_subdomain;
+						this.subdomain = data.prefilled_subdomain
 					}
 				},
 				onError(error) {
-					toast.error(error.messages.join('\n'));
+					toast.error(error.messages.join('\n'))
 				},
-			};
+			}
 		},
 		saasProduct() {
 			return {
@@ -120,7 +120,7 @@ export default {
 				doctype: 'Product Trial',
 				name: this.productId,
 				auto: true,
-			};
+			}
 		},
 		createSite() {
 			return {
@@ -134,7 +134,7 @@ export default {
 							subdomain: this.subdomain,
 							domain: this.domain,
 						},
-					};
+					}
 				},
 				auto: false,
 				onSuccess: (data) => {
@@ -144,47 +144,47 @@ export default {
 						query: {
 							product_trial_request: this.$resources.siteRequest.data.name,
 						},
-					});
+					})
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		saasProduct() {
-			return this.$resources.saasProduct?.doc;
+			return this.$resources.saasProduct?.doc
 		},
 		domain() {
 			return (
 				this.$resources.siteRequest?.data?.domain || this.saasProduct?.domain
-			);
+			)
 		},
 		subdomainError() {
-			return validateSubdomain(this.subdomain);
+			return validateSubdomain(this.subdomain)
 		},
 	},
 	mounted() {
 		this.$nextTick(() => {
-			this.$refs.subdomainInput?.focus();
-		});
-		this.email = localStorage.getItem('login_email');
+			this.$refs.subdomainInput?.focus()
+		})
+		this.email = localStorage.getItem('login_email')
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
 				app: 'frappe_cloud',
 				action: 'login_signup',
-			});
+			})
 
-			window.posthog.startSessionRecording();
+			window.posthog.startSessionRecording()
 		}
 	},
 	methods: {
 		async createSite() {
-			return this.$resources.createSite.submit();
+			return this.$resources.createSite.submit()
 		},
 		redirectToLogin() {
 			this.$router.push({
 				name: 'Login',
-			});
+			})
 		},
 	},
-};
+}
 </script>

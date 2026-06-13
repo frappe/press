@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { getTeam } from '@/data/team';
+import { getTeam } from '@/data/team'
 
-const $team = getTeam();
-defineOptions({ name: 'PartnerAdmin' });
+const $team = getTeam()
+defineOptions({ name: 'PartnerAdmin' })
 
 const tabs = [
 	{ label: 'Partner List', route: { name: 'PartnerList' } },
@@ -10,7 +10,7 @@ const tabs = [
 	{ label: 'Leads', route: { name: 'PartnerAdminLeads' } },
 	{ label: 'Resources', route: { name: 'PartnerAdminResources' } },
 	{ label: 'Audits', route: { name: 'PartnerAdminAudits' } },
-];
+]
 </script>
 
 <template>

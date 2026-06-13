@@ -45,7 +45,9 @@
 									</template>
 									<template v-else>
 										{{ $format.planTitle(plan) }}
-										<span v-if="plan.price_inr" class="text-ink-gray-7">/mo</span>
+										<span v-if="plan.price_inr" class="text-ink-gray-7"
+											>/mo</span
+										>
 									</template>
 								</span>
 								<Tooltip text="Product support included">
@@ -57,19 +59,15 @@
 							</div>
 						</div>
 						<div class="mt-1 text-sm text-ink-gray-6" v-if="!hourlyPricing">
-							<template v-if="plan.sublabel">
-								{{ plan.sublabel }}
-							</template>
+							<template v-if="plan.sublabel"> {{ plan.sublabel }} </template>
 							<template v-else-if="plan.price_inr || plan.price_usd">
-								{{
-									$format.userCurrency(
+								{{ $format.userCurrency(
 										$format.pricePerDay(
 											$team.doc.currency === 'INR'
 												? plan.price_inr
 												: plan.price_usd,
 										),
-									)
-								}}/day
+									) }}/day
 							</template>
 						</div>
 					</div>
@@ -83,9 +81,7 @@
 									"
 								/>
 								<span>{{ feature.value }} </span>
-								<span class="ml-1 text-ink-gray-6">
-									{{ feature.label }}
-								</span>
+								<span class="ml-1 text-ink-gray-6"> {{ feature.label }} </span>
 							</div>
 						</div>
 					</div>
@@ -99,8 +95,8 @@
 </template>
 
 <script>
-import { Tooltip } from 'frappe-ui';
-import { icon } from '../utils/components';
+import { Tooltip } from 'frappe-ui'
+import { icon } from '../utils/components'
 
 export default {
 	components: {
@@ -122,8 +118,8 @@ export default {
 	},
 	methods: {
 		_icon(iconName, classes) {
-			return icon(iconName, classes);
+			return icon(iconName, classes)
 		},
 	},
-};
+}
 </script>

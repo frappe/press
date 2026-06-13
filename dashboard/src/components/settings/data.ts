@@ -1,8 +1,8 @@
-import { createListResource } from 'frappe-ui';
-import { getTeam } from '../../data/team';
-import { computed } from 'vue';
+import { createListResource } from 'frappe-ui'
+import { getTeam } from '../../data/team'
+import { computed } from 'vue'
 
-const team = getTeam();
+const team = getTeam()
 
 const sites = createListResource({
 	doctype: 'Site',
@@ -11,7 +11,7 @@ const sites = createListResource({
 	filters: {
 		team: team.doc?.name,
 	},
-});
+})
 
 const servers = createListResource({
 	doctype: 'Server',
@@ -20,7 +20,7 @@ const servers = createListResource({
 	filters: {
 		team: team.doc?.name,
 	},
-});
+})
 
 const releaseGroups = createListResource({
 	doctype: 'Release Group',
@@ -29,7 +29,7 @@ const releaseGroups = createListResource({
 	filters: {
 		team: team.doc?.name,
 	},
-});
+})
 
 export const teamMembers = (ignore: string[] = []) => {
 	return team.doc?.team_members
@@ -37,16 +37,16 @@ export const teamMembers = (ignore: string[] = []) => {
 		.map((user: any) => ({
 			label: user.user,
 			value: user.user,
-		}));
-};
+		}))
+}
 
 export const teamResources = computed(() => {
 	const r: {
-		document_type: string;
-		document_name: string;
-		label: string;
-		value: string;
-	}[] = [];
+		document_type: string
+		document_name: string
+		label: string
+		value: string
+	}[] = []
 	if (sites.data) {
 		r.push(
 			...sites.data.map((site: any) => ({
@@ -55,7 +55,7 @@ export const teamResources = computed(() => {
 				label: site.name,
 				value: site.name,
 			})),
-		);
+		)
 	}
 	if (servers.data) {
 		r.push(
@@ -65,7 +65,7 @@ export const teamResources = computed(() => {
 				label: server.name,
 				value: server.name,
 			})),
-		);
+		)
 	}
 	if (releaseGroups.data) {
 		r.push(
@@ -75,7 +75,7 @@ export const teamResources = computed(() => {
 				label: rg.name,
 				value: rg.name,
 			})),
-		);
+		)
 	}
-	return r;
-});
+	return r
+})

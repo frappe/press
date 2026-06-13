@@ -29,7 +29,8 @@
 						<div class="mb-4 text-base">
 							<p>
 								The site <b>{{ $site.doc.host_name }}</b> will be moved to
-								<b>{{ existingBenchGroupTitle }}</b> bench for upgrade to
+								<b>{{ existingBenchGroupTitle }}</b>
+								bench for upgrade to
 								{{ nextVersion }}.
 							</p>
 						</div>
@@ -87,7 +88,9 @@
 									These apps are installed on your site, select a branch
 									compatible with {{ nextVersion }}
 								</div>
-								<table class="w-full table-fixed pb-4 border-b border-outline-gray-1">
+								<table
+									class="w-full table-fixed pb-4 border-b border-outline-gray-1"
+								>
 									<tbody>
 										<tr
 											v-for="app in appCompatibility.site_custom_apps"
@@ -111,11 +114,9 @@
 													:loading="loadingBranches[app.app]"
 													@click="fetchAppBranches(app)"
 												>
-													{{
-														loadingBranches[app.app]
+													{{ loadingBranches[app.app]
 															? 'Loading...'
-															: 'Fetch Branches'
-													}}
+															: 'Fetch Branches' }}
 												</Button>
 												<FormControl
 													v-else
@@ -166,11 +167,9 @@
 													:loading="loadingBranches[app.app]"
 													@click="fetchAppBranches(app)"
 												>
-													{{
-														loadingBranches[app.app]
+													{{ loadingBranches[app.app]
 															? 'Loading...'
-															: 'Fetch Branches'
-													}}
+															: 'Fetch Branches' }}
 												</Button>
 												<FormControl
 													v-else
@@ -227,8 +226,7 @@
 					title="Schedule time must be at least 30 minutes from now to allow for bench deployment."
 					type="warning"
 					class="my-4"
-				>
-				</AlertBanner>
+				> </AlertBanner>
 				<AlertBanner
 					v-if="skipBackups"
 					title="Backups will not be taken during the upgrade process and in case of
@@ -308,10 +306,10 @@
 </template>
 
 <script>
-import { getCachedDocumentResource, LoadingIndicator } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import AlertBanner from '../AlertBanner.vue';
-import { DateTimePicker } from 'frappe-ui';
+import { getCachedDocumentResource, LoadingIndicator } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import AlertBanner from '../AlertBanner.vue'
+import { DateTimePicker } from 'frappe-ui'
 
 export default {
 	name: 'SiteVersionUpgradeDialog',
@@ -336,7 +334,7 @@ export default {
 			customAppSources: {}, // { app_name: { branch, source } }
 			appBranches: {},
 			loadingBranches: {},
-		};
+		}
 	},
 
 	computed: {
@@ -344,33 +342,33 @@ export default {
 			return (
 				this.$resources.checkExistingBench?.loading ||
 				this.$resources.checkAppCompatibility?.loading
-			);
+			)
 		},
 		nextVersion() {
-			const nextNumber = Number(this.$site.doc?.version.split(' ')[1]);
+			const nextNumber = Number(this.$site.doc?.version.split(' ')[1])
 			if (
 				isNaN(nextNumber) ||
 				this.$site.doc?.version === this.$site.doc?.latest_frappe_version
 			)
-				return null;
+				return null
 
-			return `Version ${nextNumber + 1}`;
+			return `Version ${nextNumber + 1}`
 		},
 		message() {
 			if (this.$site.doc?.version === this.$site.doc?.latest_frappe_version) {
-				return 'This site is already on the latest version.';
+				return 'This site is already on the latest version.'
 			} else if (this.$site.doc?.version === 'Nightly') {
-				return "This site is on a nightly version and doesn't need to be upgraded.";
+				return "This site is on a nightly version and doesn't need to be upgraded."
 			}
-			return '';
+			return ''
 		},
 		datetimeInIST() {
-			if (!this.targetDateTime) return null;
+			if (!this.targetDateTime) return null
 			const datetimeInIST = this.$dayjs(this.targetDateTime).format(
 				'YYYY-MM-DDTHH:mm',
-			);
+			)
 
-			return datetimeInIST;
+			return datetimeInIST
 		},
 		errorMessage() {
 			return (
@@ -378,45 +376,45 @@ export default {
 				this.$resources.checkExistingBench.error ||
 				this.$resources.checkAppCompatibility.error ||
 				this.$resources.createPrivateBench.error
-			);
+			)
 		},
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 		hasValidCustomAppSources() {
 			// Only site custom apps need mandatory branch selection
-			const siteCustomApps = this.appCompatibility.site_custom_apps || [];
-			if (siteCustomApps.length === 0) return true;
+			const siteCustomApps = this.appCompatibility.site_custom_apps || []
+			if (siteCustomApps.length === 0) return true
 
 			return siteCustomApps.every((app) => {
-				const branch = this.customAppSources[app.app]?.branch;
-				return branch ? true : false;
-			});
+				const branch = this.customAppSources[app.app]?.branch
+				return branch ? true : false
+			})
 		},
 		isScheduleTimeValid() {
 			// Atleast 30 mins from now for deploying bench
-			if (!this.targetDateTime) return true;
+			if (!this.targetDateTime) return true
 			if (!this.existingBenchGroup) {
 				const scheduledTime = this.targetDateTime.$d
 					? this.$dayjs(this.targetDateTime.$d)
-					: this.$dayjs(this.targetDateTime);
-				const minimumTime = this.$dayjs().add(30, 'minute');
-				return scheduledTime.isAfter(minimumTime);
+					: this.$dayjs(this.targetDateTime)
+				const minimumTime = this.$dayjs().add(30, 'minute')
+				return scheduledTime.isAfter(minimumTime)
 			}
-			return true;
+			return true
 		},
 		disableButton() {
 			if (!this.newReleaseGroupTitle || !this.hasValidCustomAppSources) {
-				return true;
+				return true
 			}
 			if (this.targetDateTime && !this.isScheduleTimeValid) {
-				return true;
+				return true
 			}
 		},
 	},
 	resources: {
 		versionUpgrade() {
-			const destination_group = this.existingBenchGroup;
+			const destination_group = this.existingBenchGroup
 			return {
 				url: 'press.api.site.version_upgrade',
 				params: {
@@ -427,10 +425,10 @@ export default {
 					scheduled_datetime: this.datetimeInIST,
 				},
 				onSuccess: (data) => {
-					toast.success("Site's version upgrade has been scheduled.");
-					this.show = false;
+					toast.success("Site's version upgrade has been scheduled.")
+					this.show = false
 				},
-			};
+			}
 		},
 
 		checkExistingBench() {
@@ -443,14 +441,14 @@ export default {
 				auto: !this.$site.doc?.group_public,
 				onSuccess: (data) => {
 					if (data.exists) {
-						this.existingBenchGroup = data.release_group;
-						this.existingBenchGroupTitle = data.release_group_title;
-						this.upgradeStep = 'ready_to_upgrade';
+						this.existingBenchGroup = data.release_group
+						this.existingBenchGroupTitle = data.release_group_title
+						this.upgradeStep = 'ready_to_upgrade'
 					} else {
-						this.$resources.checkAppCompatibility.fetch();
+						this.$resources.checkAppCompatibility.fetch()
 					}
 				},
-			};
+			}
 		},
 		checkAppCompatibility() {
 			return {
@@ -460,14 +458,14 @@ export default {
 					version: this.$site.doc?.version,
 				},
 				onSuccess: (data) => {
-					this.appCompatibility = data;
-					this.upgradeStep = 'ready_to_upgrade';
+					this.appCompatibility = data
+					this.upgradeStep = 'ready_to_upgrade'
 
 					if (!data.can_upgrade) {
-						toast.error('Migration blocked - incompatible apps found');
+						toast.error('Migration blocked - incompatible apps found')
 					}
 				},
-			};
+			}
 		},
 		createPrivateBench() {
 			return {
@@ -478,64 +476,64 @@ export default {
 						params: {
 							name: data,
 						},
-					});
+					})
 					toast.success('New bench deployment started', {
 						description: `Site app versions will be upgraded after successful deployment.`,
-					});
-					this.show = false;
+					})
+					this.show = false
 				},
-			};
+			}
 		},
 		branches() {
 			return {
 				url: 'press.api.github.branches',
-			};
+			}
 		},
 	},
 	methods: {
 		updateCustomAppSource(app, field, value) {
-			const appName = app.app;
+			const appName = app.app
 			if (!this.customAppSources[appName]) {
-				this.customAppSources[appName] = { branch: '' };
+				this.customAppSources[appName] = { branch: '' }
 			}
-			this.customAppSources[appName][field] = value;
+			this.customAppSources[appName][field] = value
 		},
 		async fetchAppBranches(app) {
-			this.loadingBranches[app.app] = true;
+			this.loadingBranches[app.app] = true
 			try {
 				const data = await this.$resources.branches.fetch({
 					owner: app.repository_owner,
 					name: app.repository,
 					app_source: app.source || '',
-				});
-				this.appBranches[app.app] = (data || []).map((branch) => branch.name);
+				})
+				this.appBranches[app.app] = (data || []).map((branch) => branch.name)
 			} catch (error) {
-				toast.error(`Failed to fetch branches for ${app.title}`);
+				toast.error(`Failed to fetch branches for ${app.title}`)
 			} finally {
-				this.loadingBranches[app.app] = false;
+				this.loadingBranches[app.app] = false
 			}
 		},
 		async handleUpgradeSubmit() {
 			if (this.existingBenchGroup) {
 				// Move Site to existing bench
-				this.$resources.versionUpgrade.submit();
+				this.$resources.versionUpgrade.submit()
 			} else {
 				// handle new bench deploy
-				const custom_app_sources = [];
+				const custom_app_sources = []
 				const custom_apps = [
 					...this.appCompatibility.site_custom_apps,
 					...this.appCompatibility.other_custom_apps_on_rg,
-				];
+				]
 				custom_apps.forEach((app) => {
-					let branch = this.customAppSources[app.app]?.branch || '';
+					let branch = this.customAppSources[app.app]?.branch || ''
 					if (branch) {
 						custom_app_sources.push({
 							app: app.app,
 							branch: this.customAppSources[app.app]?.branch || app.branch,
 							repository_url: app.repository_url,
-						});
+						})
 					}
-				});
+				})
 
 				try {
 					await this.$resources.createPrivateBench.fetch({
@@ -546,30 +544,30 @@ export default {
 						scheduled_time: this.datetimeInIST,
 						skip_failing_patches: this.skipFailingPatches,
 						skip_backups: this.skipBackups,
-					});
+					})
 				} catch (error) {
-					toast.error('Failed to create bench');
+					toast.error('Failed to create bench')
 				}
 			}
 		},
 		resetValues() {
-			this.targetDateTime = null;
-			this.skipBackups = false;
-			this.skipFailingPatches = false;
-			this.upgradeStep = null;
-			this.existingBenchGroup = null;
-			this.existingBenchGroupTitle = null;
+			this.targetDateTime = null
+			this.skipBackups = false
+			this.skipFailingPatches = false
+			this.upgradeStep = null
+			this.existingBenchGroup = null
+			this.existingBenchGroupTitle = null
 			this.appCompatibility = {
 				incompatible: [],
 				site_custom_apps: [],
 				other_custom_apps_on_rg: [],
 				can_upgrade: false,
-			};
-			this.newReleaseGroupTitle = '';
-			this.customAppSources = {};
-			this.appBranches = {};
-			this.loadingBranches = {};
+			}
+			this.newReleaseGroupTitle = ''
+			this.customAppSources = {}
+			this.appBranches = {}
+			this.loadingBranches = {}
 		},
 	},
-};
+}
 </script>

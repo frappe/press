@@ -191,14 +191,14 @@
 	</div>
 </template>
 <script>
-import { Badge } from 'frappe-ui';
-import LeadDetailsDialog from './LeadDetailsDialog.vue';
-import UpdateWonDialog from './UpdateWonDialog.vue';
-import { h } from 'vue';
-import DropdownItem from '../billing/DropdownItem.vue';
-import UpdateEngagementStageDialog from './UpdateEngagementStageDialog.vue';
-import UpdateLostDialog from './UpdateLostDialog.vue';
-import { toast } from 'vue-sonner';
+import { Badge } from 'frappe-ui'
+import LeadDetailsDialog from './LeadDetailsDialog.vue'
+import UpdateWonDialog from './UpdateWonDialog.vue'
+import { h } from 'vue'
+import DropdownItem from '../billing/DropdownItem.vue'
+import UpdateEngagementStageDialog from './UpdateEngagementStageDialog.vue'
+import UpdateLostDialog from './UpdateLostDialog.vue'
+import { toast } from 'vue-sonner'
 export default {
 	name: 'PartnerLeadOverview',
 	components: {
@@ -218,7 +218,7 @@ export default {
 			showUpdateLostDialog: false,
 			errorMessage: null,
 			status: null,
-		};
+		}
 	},
 	emits: ['success'],
 	resources: {
@@ -227,7 +227,7 @@ export default {
 				type: 'document',
 				doctype: 'Partner Lead',
 				name: this.$route.params.leadId,
-			};
+			}
 		},
 		updateStatus() {
 			return {
@@ -236,16 +236,16 @@ export default {
 					return {
 						lead_name: this.lead.name,
 						status: params.status,
-					};
+					}
 				},
 				onSuccess: () => {
-					this.$resources.lead.reload();
+					this.$resources.lead.reload()
 				},
 				onError: (e) => {
-					this.errorMessage = e.messages[0] || 'Failed to update status';
-					toast.error(this.errorMessage);
+					this.errorMessage = e.messages[0] || 'Failed to update status'
+					toast.error(this.errorMessage)
 				},
-			};
+			}
 		},
 	},
 	computed: {
@@ -285,7 +285,7 @@ export default {
 					value: this.lead?.is_starter_pack,
 					condition: this.lead?.is_starter_pack !== undefined,
 				},
-			].filter((d) => d.condition ?? true);
+			].filter((d) => d.condition ?? true)
 		},
 		contact_info() {
 			return [
@@ -298,7 +298,7 @@ export default {
 				{ label: 'State', value: this.lead?.state },
 				{ label: 'Territory', value: this.lead?.territory },
 				{ label: 'Contact', value: this.lead?.contact_no },
-			];
+			]
 		},
 		deal_info() {
 			return [
@@ -323,10 +323,10 @@ export default {
 					value: this.lead?.site_url,
 					condition: this.lead?.status === 'Won',
 				},
-			].filter((d) => d.condition ?? true);
+			].filter((d) => d.condition ?? true)
 		},
 		lead() {
-			return this.$resources.lead.doc;
+			return this.$resources.lead.doc
 		},
 		statusOptions() {
 			return [
@@ -337,7 +337,7 @@ export default {
 						h(DropdownItem, {
 							label: 'Open',
 							onClick: () => {
-								this._updateStatus('Open');
+								this._updateStatus('Open')
 							},
 						}),
 				},
@@ -348,7 +348,7 @@ export default {
 						h(DropdownItem, {
 							label: 'Qualification',
 							onClick: () => {
-								this._updateStatus('Qualification');
+								this._updateStatus('Qualification')
 							},
 						}),
 				},
@@ -359,7 +359,7 @@ export default {
 						h(DropdownItem, {
 							label: 'Demo/Making',
 							onClick: () => {
-								this._updateStatus('Demo/Making');
+								this._updateStatus('Demo/Making')
 							},
 						}),
 				},
@@ -370,7 +370,7 @@ export default {
 						h(DropdownItem, {
 							label: 'Follow Up',
 							onClick: () => {
-								this._updateStatus('Follow Up');
+								this._updateStatus('Follow Up')
 							},
 						}),
 				},
@@ -381,7 +381,7 @@ export default {
 						h(DropdownItem, {
 							label: 'Proposal/Quotation',
 							onClick: () => {
-								this._updateStatus('Proposal/Quotation');
+								this._updateStatus('Proposal/Quotation')
 							},
 						}),
 				},
@@ -392,7 +392,7 @@ export default {
 						h(DropdownItem, {
 							label: 'Negotiation',
 							onClick: () => {
-								this._updateStatus('Negotiation');
+								this._updateStatus('Negotiation')
 							},
 						}),
 				},
@@ -403,7 +403,7 @@ export default {
 						h(DropdownItem, {
 							label: 'Ready to Close',
 							onClick: () => {
-								this._updateStatus('Ready to Close');
+								this._updateStatus('Ready to Close')
 							},
 						}),
 				},
@@ -414,7 +414,7 @@ export default {
 						h(DropdownItem, {
 							label: 'Won',
 							onClick: () => {
-								this._updateStatus('Won');
+								this._updateStatus('Won')
 							},
 						}),
 				},
@@ -425,7 +425,7 @@ export default {
 						h(DropdownItem, {
 							label: 'Lost',
 							onClick: () => {
-								this._updateStatus('Lost');
+								this._updateStatus('Lost')
 							},
 						}),
 				},
@@ -436,7 +436,7 @@ export default {
 						h(DropdownItem, {
 							label: 'Junk',
 							onClick: () => {
-								this._updateStatus('Junk');
+								this._updateStatus('Junk')
 							},
 						}),
 				},
@@ -447,11 +447,11 @@ export default {
 						h(DropdownItem, {
 							label: 'Closed',
 							onClick: () => {
-								this._updateStatus('Closed');
+								this._updateStatus('Closed')
 							},
 						}),
 				},
-			];
+			]
 		},
 		themeMap() {
 			return {
@@ -466,30 +466,30 @@ export default {
 				Lost: 'red',
 				Junk: 'gray',
 				Closed: 'gray',
-			};
+			}
 		},
 		probabilityTheme() {
 			return {
 				Hot: 'red',
 				Warm: 'orange',
 				Cold: 'blue',
-			};
+			}
 		},
 	},
 	methods: {
 		_updateStatus(status) {
-			if (status === this.lead.status && status !== 'In Process') return;
+			if (status === this.lead.status && status !== 'In Process') return
 			if (['Ready to Close', 'Proposal/Quotation'].includes(status)) {
-				this.status = status;
-				this.showUpdateEngagementStageDialog = true;
+				this.status = status
+				this.showUpdateEngagementStageDialog = true
 			} else if (status === 'Won') {
-				this.showUpdateWonDialog = true;
+				this.showUpdateWonDialog = true
 			} else if (status === 'Lost') {
-				this.showUpdateLostDialog = true;
+				this.showUpdateLostDialog = true
 			} else {
-				this.$resources.updateStatus.submit({ status: status });
+				this.$resources.updateStatus.submit({ status: status })
 			}
 		},
 	},
-};
+}
 </script>

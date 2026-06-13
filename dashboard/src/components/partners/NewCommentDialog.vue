@@ -52,21 +52,21 @@
 	</Dialog>
 </template>
 <script setup>
-import { ref, computed, defineEmits, defineProps } from 'vue';
-import { TextEditor, TextEditorFixedMenu, TextEditorContent } from 'frappe-ui';
+import { ref, computed, defineEmits, defineProps } from 'vue'
+import { TextEditor, TextEditorFixedMenu, TextEditorContent } from 'frappe-ui'
 
-const commentEditor = ref('');
+const commentEditor = ref('')
 const editor = computed(() => {
-	return commentEditor.value.editor;
-});
+	return commentEditor.value.editor
+})
 
-const props = defineProps(['members']);
+const props = defineProps(['members'])
 
-const content = defineModel('content');
-const emits = defineEmits(['update:show', 'save-comment']);
+const content = defineModel('content')
+const emits = defineEmits(['update:show', 'save-comment'])
 function saveComment() {
-	const commentContent = editor.value.getHTML();
-	emits('save-comment', commentContent);
-	emits('update:show', false);
+	const commentContent = editor.value.getHTML()
+	emits('save-comment', commentContent)
+	emits('update:show', false)
 }
 </script>

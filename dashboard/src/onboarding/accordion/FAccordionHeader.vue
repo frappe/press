@@ -1,7 +1,7 @@
 <script setup>
-import { AccordionHeader } from 'reka-ui';
+import { AccordionHeader } from 'reka-ui'
 
-defineOptions({ inheritAttrs: false });
+defineOptions({ inheritAttrs: false })
 </script>
 
 <template>

@@ -133,11 +133,11 @@
 </template>
 
 <script>
-import Header from '../../../components/Header.vue';
-import LinkControl from '../../../components/LinkControl.vue';
-import LogList from './LogList.vue';
-import LogViewer from './LogViewer.vue';
-import { Breadcrumbs } from 'frappe-ui';
+import Header from '../../../components/Header.vue'
+import LinkControl from '../../../components/LinkControl.vue'
+import LogList from './LogList.vue'
+import LogViewer from './LogViewer.vue'
+import { Breadcrumbs } from 'frappe-ui'
 
 export default {
 	components: {
@@ -154,12 +154,12 @@ export default {
 	},
 	mounted() {
 		if (!this.mode) {
-			this.$router.push({ name: 'Log Browser', params: { mode: 'bench' } });
+			this.$router.push({ name: 'Log Browser', params: { mode: 'bench' } })
 		}
 	},
 	updated() {
 		if (!this.mode) {
-			this.$router.push({ name: 'Log Browser', params: { mode: 'bench' } });
+			this.$router.push({ name: 'Log Browser', params: { mode: 'bench' } })
 		}
 	},
 	data() {
@@ -167,7 +167,7 @@ export default {
 			site: this.mode === 'site' ? this.docName : null || null,
 			bench: this.mode === 'bench' ? this.docName : null || null,
 			searchLogQuery: '',
-		};
+		}
 	},
 	resources: {
 		log() {
@@ -180,13 +180,13 @@ export default {
 				},
 				initialData: [],
 				auto: this.logId,
-			};
+			}
 		},
 	},
 	computed: {
 		log() {
-			return this.$resources.log?.data;
+			return this.$resources.log?.data
 		},
 	},
-};
+}
 </script>

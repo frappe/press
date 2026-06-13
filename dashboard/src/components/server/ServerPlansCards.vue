@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import PlansCards from '../PlansCards.vue';
+import PlansCards from '../PlansCards.vue'
 
 export default {
 	props: {
@@ -52,17 +52,17 @@ export default {
 							value: plan.instance_type,
 						},
 					],
-				};
-			});
+				}
+			})
 		},
 		selectedPlan: {
 			get() {
-				return this.modelValue;
+				return this.modelValue
 			},
 			set(value) {
-				this.$emit('update:modelValue', value);
+				this.$emit('update:modelValue', value)
 			},
 		},
 	},
-};
+}
 </script>

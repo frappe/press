@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { isMobile } from '@/utils/device';
+import { onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { isMobile } from '@/utils/device'
 
-defineOptions({ name: 'SiteInsights' });
+defineOptions({ name: 'SiteInsights' })
 
 const tabs = [
 	{
@@ -30,16 +30,16 @@ const tabs = [
 		value: 'Site Jobs',
 		children: ['Site Job'],
 	},
-];
+]
 
-const route = useRoute();
-const router = useRouter();
+const route = useRoute()
+const router = useRouter()
 
 onMounted(() => {
 	if (route.name === 'Site Insights') {
-		router.push({ name: 'Site Analytics' });
+		router.push({ name: 'Site Analytics' })
 	}
-});
+})
 </script>
 
 <template>

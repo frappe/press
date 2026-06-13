@@ -1,12 +1,10 @@
 <template>
-	<FPopover ref="rootRef" class="w-full" :matchTargetWidth='true'>
+	<FPopover ref="rootRef" class="w-full" :matchTargetWidth="true">
 		<template #target="{ togglePopover }" class="w-full">
 			<Button @click="togglePopover()" class="px-4">
-				{{
-					columns.length == 0
+				{{ columns.length == 0
 						? 'All Columns Allowed'
-						: `${columns.length} Columns Selected`
-				}}
+						: `${columns.length} Columns Selected` }}
 			</Button>
 		</template>
 		<template #body="{ isOpen, togglePopover }" class="w-full">
@@ -33,7 +31,7 @@
 	</FPopover>
 </template>
 <script>
-import { Popover, Checkbox } from 'frappe-ui';
+import { Popover, Checkbox } from 'frappe-ui'
 
 export default {
 	name: 'SiteDatabaseColumnsSelector',
@@ -46,47 +44,47 @@ export default {
 	data() {
 		return {
 			searchQuery: '',
-		};
+		}
 	},
 	mounted() {
-		this.searchQuery = '';
+		this.searchQuery = ''
 	},
 	computed: {
 		columns() {
-			return this.modelValue;
+			return this.modelValue
 		},
 		allAvailableColumns() {
 			return this.availableColumns
 				.reduce(
 					(acc, item) => {
-						return acc.includes(item) ? acc : [...acc, item];
+						return acc.includes(item) ? acc : [...acc, item]
 					},
 					[...this.modelValue],
 				)
-				.sort();
+				.sort()
 		},
 		filteredColumns() {
 			return this.allAvailableColumns.filter((column) =>
 				column.toLowerCase().includes(this.searchQuery.toLowerCase()),
-			);
+			)
 		},
 	},
 	methods: {
 		isChecked(column) {
-			return this.columns.includes(column);
+			return this.columns.includes(column)
 		},
 		toggleSelection(column, event) {
-			event.preventDefault();
-			event.stopPropagation();
+			event.preventDefault()
+			event.stopPropagation()
 			if (this.isChecked(column)) {
 				this.$emit(
 					'update:modelValue',
 					this.columns.filter((c) => c != column),
-				);
+				)
 			} else {
-				this.$emit('update:modelValue', [...this.columns, column]);
+				this.$emit('update:modelValue', [...this.columns, column])
 			}
 		},
 	},
-};
+}
 </script>

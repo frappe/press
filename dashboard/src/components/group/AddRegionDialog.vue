@@ -52,7 +52,7 @@
 </template>
 
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
+import { getCachedDocumentResource } from 'frappe-ui'
 
 export default {
 	name: 'AddRegionDialog',
@@ -62,7 +62,7 @@ export default {
 			showDialog: true,
 			selectedRegion: null,
 			groupDocResource: getCachedDocumentResource('Release Group', this.group),
-		};
+		}
 	},
 	computed: {
 		regionOptions() {
@@ -71,7 +71,7 @@ export default {
 				value: r.name,
 				image: r.image,
 				beta: r.beta,
-			}));
+			}))
 		},
 	},
 	resources: {
@@ -83,8 +83,8 @@ export default {
 				},
 				auto: true,
 				initialData: [],
-			};
+			}
 		},
 	},
-};
+}
 </script>

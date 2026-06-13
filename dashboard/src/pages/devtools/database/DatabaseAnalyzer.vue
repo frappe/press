@@ -96,9 +96,9 @@
 							style="background-color: #e86c13"
 						></div>
 						<span class="text-sm text-ink-gray-8">Data Size</span
-						><span class="ml-auto text-sm text-ink-gray-8">{{
-							formatSizeInMB(this.databaseSizeBreakup.data_size)
-						}}</span>
+						><span class="ml-auto text-sm text-ink-gray-8"
+							>{{ formatSizeInMB(this.databaseSizeBreakup.data_size) }}</span
+						>
 					</div>
 					<div
 						class="flex w-full items-center justify-start gap-x-2 border-t py-3"
@@ -176,7 +176,8 @@
 						v-if="this.$resources.databaseProcesses.loading"
 						class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 					>
-						<Spinner class="w-4" /> Loading Database Processes
+						<Spinner class="w-4" />
+						Loading Database Processes
 					</div>
 					<ResultTable
 						v-else
@@ -229,7 +230,8 @@
 						"
 						class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 					>
-						<Spinner class="w-4" /> Loading Database Locks
+						<Spinner class="w-4" />
+						Loading Database Locks
 					</div>
 					<ResultTable
 						v-else
@@ -388,27 +390,28 @@
 			class="flex h-full min-h-[80vh] w-full items-center justify-center gap-2 text-ink-gray-7"
 			v-else
 		>
-			<Spinner class="w-4" /> Loading Table Schemas
+			<Spinner class="w-4" />
+			Loading Table Schemas
 		</div>
 	</div>
 </template>
 <script>
-import Header from '../../../components/Header.vue';
-import { Tabs, Breadcrumbs, Switch } from 'frappe-ui';
-import LinkControl from '../../../components/LinkControl.vue';
-import ObjectList from '../../../components/ObjectList.vue';
-import { h, markRaw } from 'vue';
-import { toast } from 'vue-sonner';
-import { formatValue } from '../../../utils/format';
-import ToggleContent from '../../../components/ToggleContent.vue';
-import ResultTable from '../../../components/devtools/database/SQLResultTable.vue';
-import DatabaseProcessKillButton from '../../../components/devtools/database/DatabaseProcessKillButton.vue';
-import DatabaseTableSchemaDialog from '../../../components/devtools/database/DatabaseTableSchemaDialog.vue';
-import DatabaseTableSchemaSizeDetailsDialog from '../../../components/devtools/database/DatabaseTableSchemaSizeDetailsDialog.vue';
-import DatabaseAddIndexButton from '../../../components/devtools/database/DatabaseAddIndexButton.vue';
-import DatabasePerformanceSchemaDisabledNotice from '../../../components/devtools/database/DatabasePerformanceSchemaDisabledNotice.vue';
-import { confirmDialog } from '../../../utils/components';
-import { set } from '@vueuse/core';
+import Header from '../../../components/Header.vue'
+import { Tabs, Breadcrumbs, Switch } from 'frappe-ui'
+import LinkControl from '../../../components/LinkControl.vue'
+import ObjectList from '../../../components/ObjectList.vue'
+import { h, markRaw } from 'vue'
+import { toast } from 'vue-sonner'
+import { formatValue } from '../../../utils/format'
+import ToggleContent from '../../../components/ToggleContent.vue'
+import ResultTable from '../../../components/devtools/database/SQLResultTable.vue'
+import DatabaseProcessKillButton from '../../../components/devtools/database/DatabaseProcessKillButton.vue'
+import DatabaseTableSchemaDialog from '../../../components/devtools/database/DatabaseTableSchemaDialog.vue'
+import DatabaseTableSchemaSizeDetailsDialog from '../../../components/devtools/database/DatabaseTableSchemaSizeDetailsDialog.vue'
+import DatabaseAddIndexButton from '../../../components/devtools/database/DatabaseAddIndexButton.vue'
+import DatabasePerformanceSchemaDisabledNotice from '../../../components/devtools/database/DatabasePerformanceSchemaDisabledNotice.vue'
+import { confirmDialog } from '../../../utils/components'
+import { set } from '@vueuse/core'
 
 export default {
 	name: 'DatabaseAnalyzer',
@@ -442,46 +445,46 @@ export default {
 			DatabaseProcessKillButton: markRaw(DatabaseProcessKillButton),
 			DatabaseAddIndexButton: markRaw(DatabaseAddIndexButton),
 			refreshingDatabaseUsage: false,
-		};
+		}
 	},
 	mounted() {
-		const url = new URL(window.location.href);
-		const site_name = url.searchParams.get('site');
+		const url = new URL(window.location.href)
+		const site_name = url.searchParams.get('site')
 		if (site_name) {
-			this.site = site_name;
+			this.site = site_name
 		}
-		this.autoRefreshDatabaseLocksInBackground();
+		this.autoRefreshDatabaseLocksInBackground()
 	},
 	watch: {
 		site(site_name) {
-			if (!site_name) return;
+			if (!site_name) return
 			// set site to query param ?site=site_name
-			const url = new URL(window.location.href);
-			url.searchParams.set('site', site_name);
-			window.history.pushState({}, '', url);
+			const url = new URL(window.location.href)
+			url.searchParams.set('site', site_name)
+			window.history.pushState({}, '', url)
 
 			// reset state
-			this.data = null;
-			this.errorMessage = null;
+			this.data = null
+			this.errorMessage = null
 			this.fetchTableSchemas({
 				site_name: site_name,
-			});
-			this.$resources.site.submit();
+			})
+			this.$resources.site.submit()
 			this.$resources.databasePerformanceReport.submit({
 				dt: 'Site',
 				dn: site_name,
 				method: 'get_database_performance_report',
-			});
+			})
 			this.$resources.databaseProcesses.submit({
 				dt: 'Site',
 				dn: site_name,
 				method: 'fetch_database_processes',
-			});
+			})
 			this.$resources.databaseLocks.submit({
 				dt: 'Site',
 				dn: site_name,
 				method: 'fetch_database_locks',
-			});
+			})
 		},
 	},
 	resources: {
@@ -490,10 +493,10 @@ export default {
 				url: 'press.api.client.get',
 				initialData: {},
 				makeParams: () => {
-					return { doctype: 'Site', name: this.site };
+					return { doctype: 'Site', name: this.site }
 				},
 				auto: false,
-			};
+			}
 		},
 		tableSchemas() {
 			return {
@@ -508,15 +511,15 @@ export default {
 						args: {
 							reload: this.forceSchemaRefresh,
 						},
-					};
-				},
-				onSuccess: (data) => {
-					this.forceSchemaRefresh = false;
-					if (data?.message?.loading) {
-						setTimeout(this.fetchTableSchemas, 5000);
 					}
 				},
-			};
+				onSuccess: (data) => {
+					this.forceSchemaRefresh = false
+					if (data?.message?.loading) {
+						setTimeout(this.fetchTableSchemas, 5000)
+					}
+				},
+			}
 		},
 		optimizeTable() {
 			return {
@@ -524,22 +527,22 @@ export default {
 				initialData: {},
 				auto: false,
 				onSuccess: (data) => {
-					console.log(data);
+					console.log(data)
 					if (data?.message) {
 						if (data?.message?.success) {
-							toast.success(data?.message?.message);
+							toast.success(data?.message?.message)
 							console.log(
 								`/sites/${this.site}/insights/jobs/${data?.message?.job_name}`,
-							);
+							)
 							this.$router.push(
 								`/sites/${this.site}/insights/jobs/${data?.message?.job_name}`,
-							);
+							)
 						} else {
-							toast.error(data?.message?.message);
+							toast.error(data?.message?.message)
 						}
 					}
 				},
-			};
+			}
 		},
 		databasePerformanceReport() {
 			return {
@@ -550,10 +553,10 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'get_database_performance_report',
-					};
+					}
 				},
 				auto: false,
-			};
+			}
 		},
 		suggestDatabaseIndexes() {
 			return {
@@ -564,22 +567,22 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'suggest_database_indexes',
-					};
+					}
 				},
 				onSuccess: (data) => {
 					if (data?.message) {
 						this.fetchingDatabaseIndex =
 							this.$resources.suggestDatabaseIndexes?.data?.message?.loading ??
-							false;
+							false
 						if (this.fetchingDatabaseIndex) {
 							setTimeout(() => {
-								this.$resources.suggestDatabaseIndexes.submit();
-							}, 5000);
+								this.$resources.suggestDatabaseIndexes.submit()
+							}, 5000)
 						}
 					}
 				},
 				auto: false,
-			};
+			}
 		},
 		databaseProcesses() {
 			return {
@@ -590,10 +593,10 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'fetch_database_processes',
-					};
+					}
 				},
 				auto: false,
-			};
+			}
 		},
 		databaseLocks() {
 			return {
@@ -604,10 +607,10 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'fetch_database_locks',
-					};
+					}
 				},
 				auto: false,
-			};
+			}
 		},
 		refreshDatabaseUsage() {
 			return {
@@ -617,55 +620,55 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'refresh_database_usage',
-					};
+					}
 				},
 				onSuccess: (e) => {
-					let isSynced = e?.message?.synced ?? true;
-					let refreshAfterSeconds = e?.message?.refresh_after_seconds ?? 0;
-					let refreshAfterMinutes = Math.ceil(refreshAfterSeconds / 60);
+					let isSynced = e?.message?.synced ?? true
+					let refreshAfterSeconds = e?.message?.refresh_after_seconds ?? 0
+					let refreshAfterMinutes = Math.ceil(refreshAfterSeconds / 60)
 					if (isSynced) {
-						this.refreshingDatabaseUsage = false;
+						this.refreshingDatabaseUsage = false
 						let message = refreshAfterSeconds
 							? `Database usage refreshed. You can refresh again after ${refreshAfterMinutes} minute(s).`
-							: 'Database usage refreshed.';
-						toast.success(message);
+							: 'Database usage refreshed.'
+						toast.success(message)
 						this.fetchTableSchemas({
 							reload: true,
-						});
+						})
 					} else {
 						setTimeout(() => {
-							this.$resources.refreshDatabaseUsage.reload();
-						}, 3000);
+							this.$resources.refreshDatabaseUsage.reload()
+						}, 3000)
 					}
 				},
 				auto: false,
-			};
+			}
 		},
 	},
 	computed: {
 		site_info() {
-			return this.$resources.site.data;
+			return this.$resources.site.data
 		},
 		isRequiredInformationReceived() {
-			if (this.$resources.site?.loading ?? true) return false;
-			if (this.$resources.tableSchemas.loading) return false;
-			if (this.$resources.tableSchemas?.data?.message?.loading) return false;
-			if (!this.$resources.tableSchemas?.data?.message?.data) return false;
-			if (this.$resources.tableSchemas?.data?.message?.data == {}) return false;
+			if (this.$resources.site?.loading ?? true) return false
+			if (this.$resources.tableSchemas.loading) return false
+			if (this.$resources.tableSchemas?.data?.message?.loading) return false
+			if (!this.$resources.tableSchemas?.data?.message?.data) return false
+			if (this.$resources.tableSchemas?.data?.message?.data == {}) return false
 			if (!this.$resources.databasePerformanceReport?.data?.message)
-				return false;
-			return true;
+				return false
+			return true
 		},
 		tableSchemas() {
-			if (!this.isRequiredInformationReceived) return [];
-			let result = this.$resources.tableSchemas?.data?.message?.data ?? [];
-			return result;
+			if (!this.isRequiredInformationReceived) return []
+			let result = this.$resources.tableSchemas?.data?.message?.data ?? []
+			return result
 		},
 		tableSizeInfo() {
-			if (!this.isRequiredInformationReceived) return [];
-			let data = [];
+			if (!this.isRequiredInformationReceived) return []
+			let data = []
 			for (const tableName in this.tableSchemas) {
-				const table = this.tableSchemas[tableName];
+				const table = this.tableSchemas[tableName]
 				data.push({
 					table_name: tableName,
 					data_size_mb: (table.size.data_length / (1024 * 1024)).toFixed(3),
@@ -673,12 +676,12 @@ export default {
 					data_free_mb: (table.size.data_free / (1024 * 1024)).toFixed(3),
 					total_size_mb: (table.size.total_size / (1024 * 1024)).toFixed(3),
 					no_of_columns: table.columns.length,
-				});
+				})
 			}
-			return data;
+			return data
 		},
 		tableAnalysisTableOptions() {
-			if (!this.isRequiredInformationReceived) return [];
+			if (!this.isRequiredInformationReceived) return []
 			return {
 				data: () => this.tableSizeInfo,
 				hideControls: true,
@@ -695,13 +698,13 @@ export default {
 									class: 'truncate text-base cursor-copy',
 									onClick() {
 										if ('clipboard' in navigator) {
-											navigator.clipboard.writeText(row.table_name);
-											toast.success('Copied to clipboard');
+											navigator.clipboard.writeText(row.table_name)
+											toast.success('Copied to clipboard')
 										}
 									},
 								},
 								[row.table_name],
-							);
+							)
 						},
 					},
 					{
@@ -715,29 +718,29 @@ export default {
 						width: 0.5,
 					},
 				],
-			};
+			}
 		},
 		databaseSizeBreakup() {
-			if (!this.isRequiredInformationReceived) return null;
+			if (!this.isRequiredInformationReceived) return null
 			let data_size = this.tableSizeInfo.reduce(
 				(a, b) => a + parseFloat(b.data_size_mb),
 				0,
-			);
-			data_size = data_size.toFixed(2);
+			)
+			data_size = data_size.toFixed(2)
 
 			let index_size = this.tableSizeInfo.reduce(
 				(a, b) => a + parseFloat(b.index_size_mb),
 				0,
-			);
-			index_size = index_size.toFixed(2);
+			)
+			index_size = index_size.toFixed(2)
 
 			let claimable_size = this.tableSizeInfo.reduce(
 				(a, b) => a + parseFloat(b.data_free_mb),
 				0,
-			);
+			)
 
 			let database_size_limit =
-				this.site_info.current_plan.max_database_usage.toFixed(2);
+				this.site_info.current_plan.max_database_usage.toFixed(2)
 
 			return {
 				data_size,
@@ -757,23 +760,23 @@ export default {
 				claimable_size_percentage: parseInt(
 					(claimable_size / database_size_limit) * 100,
 				),
-			};
+			}
 		},
 		isPerformanceSchemaEnabled() {
-			const result = this.$resources.databasePerformanceReport?.data?.message;
-			if (!result) return false;
-			return result['is_performance_schema_enabled'];
+			const result = this.$resources.databasePerformanceReport?.data?.message
+			if (!result) return false
+			return result['is_performance_schema_enabled']
 		},
 		queryTabs() {
-			if (!this.isRequiredInformationReceived) return [];
-			const result = this.$resources.databasePerformanceReport?.data?.message;
-			if (!result) return [];
+			if (!this.isRequiredInformationReceived) return []
+			const result = this.$resources.databasePerformanceReport?.data?.message
+			if (!result) return []
 			let prepared_result = [
 				{
 					label: 'Slow Queries',
 					columns: ['Rows Examined', 'Rows Sent', 'Calls', 'Duration', 'Query'],
 					data: result['slow_queries'].map((e) => {
-						return [e.rows_examined, e.rows_sent, e.count, e.duration, e.query];
+						return [e.rows_examined, e.rows_sent, e.count, e.duration, e.query]
 					}),
 				},
 				{
@@ -785,23 +788,23 @@ export default {
 							e['calls'],
 							e['avg_time_ms'],
 							e['query'],
-						];
+						]
 					}),
 				},
 				{
 					label: 'Full Table Scan Queries',
 					columns: ['Rows Examined', 'Rows Sent', 'Calls', 'Query'],
 					data: result['top_10_queries_with_full_table_scan'].map((e) => {
-						return [e['rows_examined'], e['rows_sent'], e['calls'], e['query']];
+						return [e['rows_examined'], e['rows_sent'], e['calls'], e['query']]
 					}),
 				},
-			];
-			return prepared_result;
+			]
+			return prepared_result
 		},
 		databaseIndexesTab() {
-			if (!this.isRequiredInformationReceived) return [];
-			const result = this.$resources.databasePerformanceReport?.data?.message;
-			if (!result) return [];
+			if (!this.isRequiredInformationReceived) return []
+			const result = this.$resources.databasePerformanceReport?.data?.message
+			if (!result) return []
 			let prepared_result = [
 				{
 					label: 'Suggested Indexes',
@@ -824,37 +827,37 @@ export default {
 							e['dominant_index_columns'],
 							e['redundant_index_name'],
 							e['redundant_index_columns'],
-						];
+						]
 					}),
 				},
 				{
 					label: 'Unused Indexes',
 					columns: ['Table Name', 'Index Name'],
 					data: result['unused_indexes'].map((e) => {
-						return [e['table_name'], e['index_name']];
+						return [e['table_name'], e['index_name']]
 					}),
 				},
-			];
-			return prepared_result;
+			]
+			return prepared_result
 		},
 		suggestedDatabaseIndexes() {
-			if (!this.isRequiredInformationReceived) return [];
+			if (!this.isRequiredInformationReceived) return []
 			const result =
-				this.$resources.suggestDatabaseIndexes?.data?.message?.data ?? [];
-			let data = [];
+				this.$resources.suggestDatabaseIndexes?.data?.message?.data ?? []
+			let data = []
 			for (const record of result) {
 				for (const index of record.suggested_indexes) {
-					data.push([index.table, index.column, record.normalized]);
+					data.push([index.table, index.column, record.normalized])
 				}
 			}
 			return {
 				columns: ['Table', 'Column', 'Slow Query'],
 				data: data,
-			};
+			}
 		},
 		databaseProcesses() {
-			if (!this.isRequiredInformationReceived) return null;
-			const result = this.$resources.databaseProcesses.data?.message ?? [];
+			if (!this.isRequiredInformationReceived) return null
+			const result = this.$resources.databaseProcesses.data?.message ?? []
 			return {
 				columns: ['ID', 'State', 'Time', 'User', 'Host', 'Command', 'Query'],
 				data: result.map((e) => {
@@ -866,15 +869,15 @@ export default {
 						e['db_user_host'],
 						e['command'],
 						e['query'],
-					];
+					]
 				}),
-			};
+			}
 		},
 		databaseLocks() {
-			if (!this.isRequiredInformationReceived) return null;
+			if (!this.isRequiredInformationReceived) return null
 			// 		fields = ["lock_id", "trx_id", "trx_query", "lock_mode", "lock_type", "lock_table", "lock_index", "trx_state", "trx_operation_state", "trx_started", "trx_rows_locked", "trx_rows_modified"]
 
-			const result = this.$resources.databaseLocks.data?.message ?? [];
+			const result = this.$resources.databaseLocks.data?.message ?? []
 			return {
 				columns: [
 					'ID',
@@ -900,9 +903,9 @@ export default {
 						e['trx_query'],
 						e['trx_rows_locked'],
 						e['trx_rows_modified'],
-					];
+					]
 				}),
-			};
+			}
 		},
 		cellFormatters() {
 			return {
@@ -912,12 +915,12 @@ export default {
 				'Avg Time': (v) => formatValue(v, 'durationMilliseconds'),
 				Duration: (v) => formatValue(v, 'durationSeconds'),
 				Time: (v) => formatValue(v, 'durationSeconds'),
-			};
+			}
 		},
 		fullViewFormatters() {
 			return {
 				Query: (v) => formatValue(v, 'sql'),
-			};
+			}
 		},
 		alignColumns() {
 			return {
@@ -928,18 +931,18 @@ export default {
 				'Avg Time': 'right',
 				Duration: 'right',
 				Time: 'right',
-			};
+			}
 		},
 	},
 	methods: {
 		fetchTableSchemas({ site_name = null, reload = false } = {}) {
-			if (!site_name) site_name = this.site;
-			if (!site_name) return;
-			this.forceSchemaRefresh = reload;
-			this.$resources.tableSchemas.submit();
+			if (!site_name) site_name = this.site
+			if (!site_name) return
+			this.forceSchemaRefresh = reload
+			this.$resources.tableSchemas.submit()
 		},
 		optimizeTable(tableName = null) {
-			this.showTableSchemaSizeDetailsDialog = false;
+			this.showTableSchemaSizeDetailsDialog = false
 
 			confirmDialog({
 				title: 'Optimize Database Tables',
@@ -950,7 +953,7 @@ export default {
 					label: 'Optimize',
 					variant: 'solid',
 					onClick: ({ hide }) => {
-						hide();
+						hide()
 						this.$resources.optimizeTable.submit({
 							dt: 'Site',
 							dn: this.site,
@@ -958,54 +961,54 @@ export default {
 							args: {
 								tables: tableName ? [tableName] : [],
 							},
-						});
+						})
 					},
 				},
-			});
+			})
 		},
 		viewTableSchemaDetails(tableName) {
-			this.showTableSchemaSizeDetailsDialog = false;
-			this.preSelectedSchemaForSchemaDialog = tableName;
-			this.showTableSchemasDialog = true;
+			this.showTableSchemaSizeDetailsDialog = false
+			this.preSelectedSchemaForSchemaDialog = tableName
+			this.showTableSchemasDialog = true
 		},
 		formatSizeInMB(mb) {
-			if (!mb) return '0 MB';
-			if (isNaN(mb)) return '0 MB';
+			if (!mb) return '0 MB'
+			if (isNaN(mb)) return '0 MB'
 			try {
-				let floatMB = parseFloat(mb);
+				let floatMB = parseFloat(mb)
 				if (floatMB < 1) {
-					let kb = floatMB * 1024; // Convert MB to KB
-					return `${Math.round(kb)} KB`; // Return KB without decimal
+					let kb = floatMB * 1024 // Convert MB to KB
+					return `${Math.round(kb)} KB` // Return KB without decimal
 				} else if (floatMB < 1024) {
-					return `${Math.round(floatMB)} MB`; // Return MB without decimal
+					return `${Math.round(floatMB)} MB` // Return MB without decimal
 				} else {
-					let gb = floatMB / 1024; // Convert MB to GB
-					return `${gb.toFixed(1)} GB`; // Return GB with 1 decimal
+					let gb = floatMB / 1024 // Convert MB to GB
+					return `${gb.toFixed(1)} GB` // Return GB with 1 decimal
 				}
 			} catch (error) {
-				return `${mb} MB`; // Return MB without decimal
+				return `${mb} MB` // Return MB without decimal
 			}
 		},
 		refreshDatabaseUsage() {
-			this.refreshingDatabaseUsage = true;
-			this.$resources.refreshDatabaseUsage.submit();
+			this.refreshingDatabaseUsage = true
+			this.$resources.refreshDatabaseUsage.submit()
 		},
 		autoRefreshDatabaseLocksInBackground() {
 			setInterval(() => {
 				if (this.autoRefreshDatabaseLocks && this.site) {
-					this.$resources.databaseLocks.submit();
+					this.$resources.databaseLocks.submit()
 				}
-			}, 5000);
+			}, 5000)
 		},
 		formatTrxStarted(value) {
-			if (!value) return '';
+			if (!value) return ''
 			try {
-				const diff = parseInt((new Date() - new Date(value)) / 1000);
-				return this.$format.formatSeconds(diff) + ' ago';
+				const diff = parseInt((new Date() - new Date(value)) / 1000)
+				return this.$format.formatSeconds(diff) + ' ago'
 			} catch (error) {
-				return value;
+				return value
 			}
 		},
 	},
-};
+}
 </script>

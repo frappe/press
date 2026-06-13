@@ -51,7 +51,9 @@
 							v-if="columns?.length || props.log?.length"
 							class="w-full border-separate border-spacing-0"
 						>
-							<thead class="z-5 sticky top-0 z-10 w-full rounded bg-surface-gray-2">
+							<thead
+								class="z-5 sticky top-0 z-10 w-full rounded bg-surface-gray-2"
+							>
 								<tr
 									v-for="headerGroup in table.getHeaderGroups()"
 									:key="headerGroup.id"
@@ -166,7 +168,8 @@
 						<div></div>
 						<div class="flex flex-shrink-0 items-center justify-end gap-3">
 							<p class="tnum text-sm text-ink-gray-6">
-								{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
+								{{ pageStart }}
+								- {{ pageEnd }} of {{ totalRows }} rows
 							</p>
 							<div class="flex gap-2">
 								<Button
@@ -203,57 +206,57 @@ import {
 	getExpandedRowModel,
 	getPaginationRowModel,
 	useVueTable,
-} from '@tanstack/vue-table';
-import { computed, ref } from 'vue';
+} from '@tanstack/vue-table'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
 	log: {
 		type: Array,
 		required: true,
 	},
-});
+})
 
-const searchLogQuery = ref('');
-const levelFilter = ref('');
-const sortOrder = ref('desc');
+const searchLogQuery = ref('')
+const levelFilter = ref('')
+const sortOrder = ref('desc')
 
 const columnFilters = computed(() => {
-	const filters = [];
+	const filters = []
 	if (levelFilter.value) {
 		filters.push({
 			id: 'level',
 			value: levelFilter.value,
-		});
+		})
 	}
 	if (searchLogQuery.value) {
 		filters.push({
 			id: 'description',
 			value: searchLogQuery.value,
-		});
+		})
 	}
-	return filters;
-});
+	return filters
+})
 
-const logEntries = computed(() => props.log);
+const logEntries = computed(() => props.log)
 const columns = computed(() => {
-	const columns = Object.keys(logEntries.value[0] || {});
+	const columns = Object.keys(logEntries.value[0] || {})
 	columns.sort((a, b) => {
-		if (a === 'description') return 1;
-		if (b === 'description') return -1;
-		return 0;
-	});
+		if (a === 'description') return 1
+		if (b === 'description') return -1
+		return 0
+	})
 
-	return columns.length ? columns : ['description'];
-});
+	return columns.length ? columns : ['description']
+})
 const sortingState = computed(() => {
-	if (!sortOrder.value) return [];
+	if (!sortOrder.value) return []
 	return [
 		{
 			id: 'time',
 			desc: sortOrder.value === 'desc',
 		},
-	];
-});
+	]
+})
 
 const table = useVueTable({
 	data: logEntries.value,
@@ -265,14 +268,14 @@ const table = useVueTable({
 			enableSorting: column === 'time' ? true : false,
 			sortingFn: column === 'time' ? 'datetime' : null,
 			isNumber: false,
-		};
+		}
 	}),
 	state: {
 		get columnFilters() {
-			return columnFilters.value;
+			return columnFilters.value
 		},
 		get sorting() {
-			return sortingState.value;
+			return sortingState.value
 		},
 	},
 	initialState: {
@@ -288,35 +291,35 @@ const table = useVueTable({
 	getExpandedRowModel: getExpandedRowModel(),
 	getFilteredRowModel: getFilteredRowModel(),
 	getPaginationRowModel: getPaginationRowModel(),
-});
+})
 
-const pageLength = computed(() => table.getState().pagination.pageSize);
-const currPage = computed(() => table.getState().pagination.pageIndex + 1);
+const pageLength = computed(() => table.getState().pagination.pageSize)
+const currPage = computed(() => table.getState().pagination.pageIndex + 1)
 
-const totalRows = computed(() => props.log.length);
+const totalRows = computed(() => props.log.length)
 const pageStart = computed(() =>
 	totalRows.value ? (currPage.value - 1) * pageLength.value + 1 : 0,
-);
+)
 const pageEnd = computed(() => {
-	const end = currPage.value * pageLength.value;
-	return end > props.log.length ? props.log.length : end;
-});
+	const end = currPage.value * pageLength.value
+	return end > props.log.length ? props.log.length : end
+})
 
 function capitalizeFirstLetter(string) {
-	if (!string) return '';
-	return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+	if (!string) return ''
+	return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase()
 }
 
 function getBadgeLabel(cell) {
-	return capitalizeFirstLetter(getValueFromCell(cell));
+	return capitalizeFirstLetter(getValueFromCell(cell))
 }
 
 function getValueFromCell(cell) {
-	return cell.row.original[cell.column.columnDef.accessorKey];
+	return cell.row.original[cell.column.columnDef.accessorKey]
 }
 
 function handleExpand(row) {
-	const toggleExpandedHandler = row.getToggleExpandedHandler();
-	if (row.getCanExpand()) toggleExpandedHandler();
+	const toggleExpandedHandler = row.getToggleExpandedHandler()
+	if (row.getCanExpand()) toggleExpandedHandler()
 }
 </script>

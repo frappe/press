@@ -37,16 +37,14 @@
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right">
 								{{ row.quantity }}
-								{{
-									[
+								{{ [
 										'Site',
 										'Release Group',
 										'Server',
 										'Database Server',
 									].includes(row.document_type)
 										? $format.plural(row.quantity, 'day', 'days')
-										: ''
-								}}
+										: '' }}
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right font-medium">
 								{{ row.amount }}
@@ -59,7 +57,7 @@
 	</div>
 </template>
 <script>
-import { getPlans } from '../../data/plans';
+import { getPlans } from '../../data/plans'
 
 export default {
 	name: 'InvoiceDetail',
@@ -67,45 +65,45 @@ export default {
 	data() {
 		return {
 			_invoiceItems: null,
-		};
+		}
 	},
 	resources: {
 		invoiceItems() {
 			return {
 				url: 'press.api.partner.get_invoice_items',
 				makeParams() {
-					return { invoice: this.invoiceId };
+					return { invoice: this.invoiceId }
 				},
 				auto: true,
 				onSuccess(data) {
-					this._invoiceItems = data;
+					this._invoiceItems = data
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		groupedLineItems() {
-			if (!this._invoiceItems) return {};
-			const groupedLineItems = {};
+			if (!this._invoiceItems) return {}
+			const groupedLineItems = {}
 			for (let item of this._invoiceItems) {
-				let key = item.billing_name + ' (' + item.user + ')';
-				groupedLineItems[key] = groupedLineItems[key] || [];
-				groupedLineItems[key].push(item);
+				let key = item.billing_name + ' (' + item.user + ')'
+				groupedLineItems[key] = groupedLineItems[key] || []
+				groupedLineItems[key].push(item)
 			}
-			return groupedLineItems;
+			return groupedLineItems
 		},
 	},
 	methods: {
 		formatPlan(plan) {
-			let planDoc = getPlans().find((p) => p.name === plan);
+			let planDoc = getPlans().find((p) => p.name === plan)
 			if (planDoc) {
-				let india = this.$team.doc.currency === 'INR';
+				let india = this.$team.doc.currency === 'INR'
 				return this.$format.userCurrency(
 					india ? planDoc.price_inr : planDoc.price_usd,
-				);
+				)
 			}
-			return plan;
+			return plan
 		},
 	},
-};
+}
 </script>

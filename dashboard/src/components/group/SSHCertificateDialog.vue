@@ -114,14 +114,14 @@
 </template>
 
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
+import { getCachedDocumentResource } from 'frappe-ui'
 
 export default {
 	props: ['bench', 'releaseGroup'],
 	data() {
 		return {
 			show: true,
-		};
+		}
 	},
 	resources: {
 		bench() {
@@ -131,37 +131,37 @@ export default {
 				name: this.bench,
 				onSuccess(doc) {
 					if (doc.is_ssh_proxy_setup && doc.user_ssh_key) {
-						this.$releaseGroup.getCertificate.reload();
+						this.$releaseGroup.getCertificate.reload()
 					}
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		$bench() {
-			return this.$resources.bench;
+			return this.$resources.bench
 		},
 		$releaseGroup() {
-			return getCachedDocumentResource('Release Group', this.releaseGroup);
+			return getCachedDocumentResource('Release Group', this.releaseGroup)
 		},
 		certificate() {
-			return this.$releaseGroup.getCertificate.data;
+			return this.$releaseGroup.getCertificate.data
 		},
 		sshCommand() {
-			if (!this.$bench.doc) return;
-			return `ssh ${this.$bench.doc.name}@${this.$bench.doc.proxy_server} -p 2222`;
+			if (!this.$bench.doc) return
+			return `ssh ${this.$bench.doc.name}@${this.$bench.doc.proxy_server} -p 2222`
 		},
 		certificateCommand() {
 			if (this.certificate) {
 				return `echo '${this.certificate.ssh_certificate?.trim()}' > ~/.ssh/id_${
 					this.certificate.key_type
-				}-cert.pub`;
+				}-cert.pub`
 			}
-			return null;
+			return null
 		},
 		isWindows() {
-			return navigator.userAgent.includes('Windows');
+			return navigator.userAgent.includes('Windows')
 		},
 	},
-};
+}
 </script>

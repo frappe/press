@@ -13,16 +13,9 @@
 </template>
 
 <script setup>
-import { init } from 'echarts';
-import {
-	computed,
-	ref,
-	onMounted,
-	onBeforeUnmount,
-	watch,
-	nextTick,
-} from 'vue';
-import { useAxisChartOptions } from 'frappe-ui';
+import { init } from 'echarts'
+import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useAxisChartOptions } from 'frappe-ui'
 
 const props = defineProps({
 	data: {
@@ -33,9 +26,9 @@ const props = defineProps({
 		type: Function,
 		required: false,
 	},
-});
+})
 
-const error = ref('');
+const error = ref('')
 const options = computed(() => {
 	try {
 		return useAxisChartOptions({
@@ -80,110 +73,110 @@ const options = computed(() => {
 					},
 				},
 			},
-		});
+		})
 	} catch (e) {
-		error.value = e.message;
-		return {};
+		error.value = e.message
+		return {}
 	}
-});
+})
 
-let chart;
-const chartDiv = ref();
+let chart
+const chartDiv = ref()
 
 function debounce(func, wait) {
-	let timeout;
+	let timeout
 	return function executedFunction(...args) {
 		const later = () => {
-			clearTimeout(timeout);
-			func(...args);
-		};
-		clearTimeout(timeout);
-		timeout = setTimeout(later, wait);
-	};
+			clearTimeout(timeout)
+			func(...args)
+		}
+		clearTimeout(timeout)
+		timeout = setTimeout(later, wait)
+	}
 }
 
 function onZoomEventHandler(event) {
-	if (!props.onZoomEvent) return;
-	if (!props.data || props.data.length < 2) return;
+	if (!props.onZoomEvent) return
+	if (!props.data || props.data.length < 2) return
 
-	const info = event.batch?.[0] || event;
+	const info = event.batch?.[0] || event
 
-	let startValue, endValue;
+	let startValue, endValue
 
 	if ('startValue' in info) {
-		startValue = info.startValue;
-		endValue = info.endValue;
+		startValue = info.startValue
+		endValue = info.endValue
 	} else {
-		const data = props.data;
-		const len = data.length;
+		const data = props.data
+		const len = data.length
 
-		const startIndex = Math.floor((info.start / 100) * (len - 1));
-		const endIndex = Math.floor((info.end / 100) * (len - 1));
+		const startIndex = Math.floor((info.start / 100) * (len - 1))
+		const endIndex = Math.floor((info.end / 100) * (len - 1))
 
-		startValue = data[startIndex].timestamp;
-		endValue = data[endIndex].timestamp;
+		startValue = data[startIndex].timestamp
+		endValue = data[endIndex].timestamp
 	}
 
 	// Find actual matching data entries
-	const data = props.data;
-	const startItem = data.find((d) => d.timestamp >= startValue) || data[0];
+	const data = props.data
+	const startItem = data.find((d) => d.timestamp >= startValue) || data[0]
 	const endItem =
-		data.find((d) => d.timestamp >= endValue) || data[data.length - 1];
+		data.find((d) => d.timestamp >= endValue) || data[data.length - 1]
 
-	props.onZoomEvent(startItem, endItem);
+	props.onZoomEvent(startItem, endItem)
 }
 
-const onZoomEventHandlerDebounced = debounce(onZoomEventHandler, 1000);
+const onZoomEventHandlerDebounced = debounce(onZoomEventHandler, 1000)
 
 function enableDataZoomSelectAutomatically() {
-	if (!chart) return;
+	if (!chart) return
 
-	const zr = chart.getZr();
+	const zr = chart.getZr()
 	zr.on('mousemove', function handler() {
 		chart.dispatchAction({
 			type: 'takeGlobalCursor',
 			key: 'dataZoomSelect',
 			dataZoomSelectActive: true,
-		});
-		zr.off('mousemove', handler); // Remove after trigerring the event
-	});
+		})
+		zr.off('mousemove', handler) // Remove after trigerring the event
+	})
 }
 
 onMounted(() => {
-	if (!chartDiv.value) return;
+	if (!chartDiv.value) return
 
-	chart = init(chartDiv.value, 'light', { renderer: 'svg' });
-	chart.setOption({ ...options.value }, true);
+	chart = init(chartDiv.value, 'light', { renderer: 'svg' })
+	chart.setOption({ ...options.value }, true)
 
 	nextTick(() => {
-		enableDataZoomSelectAutomatically();
-	});
+		enableDataZoomSelectAutomatically()
+	})
 
 	chart.on('datazoom', function (zoom) {
-		onZoomEventHandlerDebounced(zoom);
-	});
+		onZoomEventHandlerDebounced(zoom)
+	})
 
 	const resizeDebounce = debounce(() => {
 		chart.resize({
 			animation: {
 				duration: 300,
 			},
-		});
-	}, 250);
+		})
+	}, 250)
 
-	let resizeObserver = new ResizeObserver(resizeDebounce);
-	setTimeout(() => resizeObserver.observe(chartDiv.value), 500);
-	onBeforeUnmount(() => resizeObserver.unobserve(chartDiv.value));
-});
+	let resizeObserver = new ResizeObserver(resizeDebounce)
+	setTimeout(() => resizeObserver.observe(chartDiv.value), 500)
+	onBeforeUnmount(() => resizeObserver.unobserve(chartDiv.value))
+})
 
 watch(
 	() => options.value,
 	(newOptions) => {
 		if (chart) {
-			chart.setOption(newOptions, true);
-			enableDataZoomSelectAutomatically();
+			chart.setOption(newOptions, true)
+			enableDataZoomSelectAutomatically()
 		}
 	},
 	{ deep: true },
-);
+)
 </script>

@@ -37,9 +37,9 @@
 			<div class="mt-3 space-y-4" v-show="tryingMicroCharge">
 				<p class="text-base text-ink-gray-7">
 					We are attempting to charge your card with
-					<strong>{{ formattedMicroChargeAmount }}</strong> to make sure the
-					card works. This amount will be <strong>refunded</strong> back to your
-					account.
+					<strong>{{ formattedMicroChargeAmount }}</strong>
+					to make sure the card works. This amount will be
+					<strong>refunded</strong> back to your account.
 				</p>
 			</div>
 
@@ -79,8 +79,8 @@
 	</div>
 </template>
 <script setup>
-import NewAddressForm from './NewAddressForm.vue';
-import PoweredByStripeLogo from '../../logo/PoweredByStripeLogo.vue';
+import NewAddressForm from './NewAddressForm.vue'
+import PoweredByStripeLogo from '../../logo/PoweredByStripeLogo.vue'
 import {
 	FeatherIcon,
 	Button,
@@ -88,42 +88,42 @@ import {
 	Spinner,
 	ErrorMessage,
 	createResource,
-} from 'frappe-ui';
-import { currency } from '../../utils/format';
-import { loadStripe } from '@stripe/stripe-js';
-import { ref, reactive, computed, inject, onMounted } from 'vue';
-import { toast } from 'vue-sonner';
+} from 'frappe-ui'
+import { currency } from '../../utils/format'
+import { loadStripe } from '@stripe/stripe-js'
+import { ref, reactive, computed, inject, onMounted } from 'vue'
+import { toast } from 'vue-sonner'
 
-const emit = defineEmits(['success']);
+const emit = defineEmits(['success'])
 const props = defineProps({
 	disableAddressForm: { type: Boolean, default: true },
-});
+})
 
-const team = inject('team');
+const team = inject('team')
 
-const stripe = ref(null);
-const elements = ref(null);
-const card = ref(null);
-const ready = ref(false);
-const _setupIntent = ref(null);
-const errorMessage = ref(null);
-const cardErrorMessage = ref(null);
-const addingCard = ref(false);
-const tryingMicroCharge = ref(false);
-const showAddAnotherCardButton = ref(false);
-const microChargeCompleted = ref(false);
+const stripe = ref(null)
+const elements = ref(null)
+const card = ref(null)
+const ready = ref(false)
+const _setupIntent = ref(null)
+const errorMessage = ref(null)
+const cardErrorMessage = ref(null)
+const addingCard = ref(false)
+const tryingMicroCharge = ref(false)
+const showAddAnotherCardButton = ref(false)
+const microChargeCompleted = ref(false)
 
-onMounted(() => setupStripeIntent());
+onMounted(() => setupStripeIntent())
 
-const cardElementRef = ref(null);
+const cardElementRef = ref(null)
 
 const getPublishedKeyAndSetupIntent = createResource({
 	url: 'press.api.billing.get_publishable_key_and_setup_intent',
 	onSuccess: async (data) => {
-		const { publishable_key, setup_intent } = data;
-		_setupIntent.value = setup_intent;
-		stripe.value = await loadStripe(publishable_key);
-		elements.value = stripe.value.elements();
+		const { publishable_key, setup_intent } = data
+		_setupIntent.value = setup_intent
+		stripe.value = await loadStripe(publishable_key)
+		elements.value = stripe.value.elements()
 		const style = {
 			base: {
 				color: '#171717',
@@ -153,7 +153,7 @@ const getPublishedKeyAndSetupIntent = createResource({
 				color: '#C7C7C7',
 				iconColor: '#C7C7C7',
 			},
-		};
+		}
 		card.value = elements.value.create('card', {
 			hidePostalCode: true,
 			style: style,
@@ -161,50 +161,50 @@ const getPublishedKeyAndSetupIntent = createResource({
 				complete: '',
 				focus: 'bg-surface-gray-2',
 			},
-		});
-		card.value.mount(cardElementRef.value);
+		})
+		card.value.mount(cardElementRef.value)
 		card.value.addEventListener('change', (event) => {
-			cardErrorMessage.value = event.error?.message || null;
-		});
+			cardErrorMessage.value = event.error?.message || null
+		})
 		card.value.addEventListener('ready', () => {
-			ready.value = true;
-		});
+			ready.value = true
+		})
 	},
-});
+})
 
 const countryList = createResource({
 	url: 'press.api.account.country_list',
 	cache: 'countryList',
 	auto: true,
-});
+})
 
 const browserTimezone = computed(() => {
 	if (!window.Intl) {
-		return null;
+		return null
 	}
-	return Intl.DateTimeFormat().resolvedOptions().timeZone;
-});
+	return Intl.DateTimeFormat().resolvedOptions().timeZone
+})
 
 const billingInformation = reactive({
 	cardHolderName: '',
 	country: '',
 	gstin: '',
-});
+})
 
 createResource({
 	url: 'press.api.account.get_billing_information',
 	params: { timezone: browserTimezone.value },
 	auto: true,
 	onSuccess: (data) => {
-		billingInformation.country = data?.country;
-		billingInformation.address = data?.address_line1;
-		billingInformation.city = data?.city;
-		billingInformation.state = data?.state;
-		billingInformation.postal_code = data?.pincode;
+		billingInformation.country = data?.country
+		billingInformation.address = data?.address_line1
+		billingInformation.city = data?.city
+		billingInformation.state = data?.state
+		billingInformation.postal_code = data?.pincode
 		billingInformation.gstin =
-			data?.gstin == 'Not Applicable' ? '' : data?.gstin;
+			data?.gstin == 'Not Applicable' ? '' : data?.gstin
 	},
-});
+})
 
 const setupIntentSuccess = createResource({
 	url: 'press.api.billing.setup_intent_success',
@@ -212,64 +212,64 @@ const setupIntentSuccess = createResource({
 		return {
 			setup_intent: setupIntent,
 			address: billingInformation,
-		};
+		}
 	},
 	onSuccess: async ({ payment_method_name }) => {
-		addingCard.value = false;
-		toast.success('Card added successfully');
-		emit('success');
+		addingCard.value = false
+		toast.success('Card added successfully')
+		emit('success')
 	},
 	onError: (error) => {
-		console.error(error);
-		addingCard.value = false;
-		errorMessage.value = error.messages.join('\n');
-		toast.error(errorMessage.value);
+		console.error(error)
+		addingCard.value = false
+		errorMessage.value = error.messages.join('\n')
+		toast.error(errorMessage.value)
 	},
-});
+})
 
 const verifyCardWithMicroCharge = createResource({
 	url: 'press.api.billing.create_payment_intent_for_micro_debit',
 	onSuccess: async (paymentIntent) => {
-		let { client_secret } = paymentIntent;
+		let { client_secret } = paymentIntent
 
 		let payload = await stripe.value.confirmCardPayment(client_secret, {
 			payment_method: { card: card.value },
-		});
+		})
 
 		if (payload.paymentIntent?.status === 'succeeded') {
-			microChargeCompleted.value = true;
-			submit();
+			microChargeCompleted.value = true
+			submit()
 		} else {
-			tryingMicroCharge.value = false;
-			errorMessage.value = payload.error?.message;
+			tryingMicroCharge.value = false
+			errorMessage.value = payload.error?.message
 		}
 	},
 	onError: (error) => {
-		console.error(error);
-		tryingMicroCharge.value = false;
-		errorMessage.value = error.messages.join('\n');
+		console.error(error)
+		tryingMicroCharge.value = false
+		errorMessage.value = error.messages.join('\n')
 	},
-});
+})
 
 async function setupStripeIntent() {
-	await getPublishedKeyAndSetupIntent.submit();
-	const { first_name, last_name = '' } = team.doc?.user_info;
-	const fullname = `${first_name} ${last_name ?? ''}`;
-	billingInformation.cardHolderName = fullname.trimEnd();
+	await getPublishedKeyAndSetupIntent.submit()
+	const { first_name, last_name = '' } = team.doc?.user_info
+	const fullname = `${first_name} ${last_name ?? ''}`
+	billingInformation.cardHolderName = fullname.trimEnd()
 }
 
-const addressFormRef = ref(null);
+const addressFormRef = ref(null)
 
 async function submit() {
-	addingCard.value = true;
-	let message = await addressFormRef.value.validate();
+	addingCard.value = true
+	let message = await addressFormRef.value.validate()
 
 	if (message) {
-		errorMessage.value = message;
-		addingCard.value = false;
-		return;
+		errorMessage.value = message
+		addingCard.value = false
+		return
 	} else {
-		errorMessage.value = null;
+		errorMessage.value = null
 	}
 
 	const { setupIntent, error } = await stripe.value.confirmCardSetup(
@@ -289,68 +289,68 @@ async function submit() {
 				},
 			},
 		},
-	);
+	)
 	if (error) {
-		addingCard.value = false;
-		let declineCode = error.decline_code;
-		let _errorMessage = error.message;
+		addingCard.value = false
+		let declineCode = error.decline_code
+		let _errorMessage = error.message
 		if (declineCode === 'do_not_honor') {
 			errorMessage.value =
-				"Your card was declined. It might be due to insufficient funds or you might've exceeded your daily limit. Please try with another card or contact your bank.";
-			showAddAnotherCardButton.value = true;
+				"Your card was declined. It might be due to insufficient funds or you might've exceeded your daily limit. Please try with another card or contact your bank."
+			showAddAnotherCardButton.value = true
 		} else if (declineCode === 'transaction_not_allowed') {
 			errorMessage.value =
-				'Your card was declined. It might be due to restrictions on your card, like international transactions or online payments. Please try with another card or contact your bank.';
-			showAddAnotherCardButton.value = true;
+				'Your card was declined. It might be due to restrictions on your card, like international transactions or online payments. Please try with another card or contact your bank.'
+			showAddAnotherCardButton.value = true
 		} else if (_errorMessage != 'Your card number is incomplete.') {
-			errorMessage.value = _errorMessage;
+			errorMessage.value = _errorMessage
 		}
 	} else {
 		if (setupIntent?.status === 'succeeded') {
-			setupIntentSuccess.submit({ setupIntent });
+			setupIntentSuccess.submit({ setupIntent })
 		}
 	}
 }
 
 async function verifyWithMicroChargeIfApplicable() {
-	const teamCurrency = team.doc?.currency;
-	const verifyCardsWithMicroCharge = window.verify_cards_with_micro_charge;
+	const teamCurrency = team.doc?.currency
+	const verifyCardsWithMicroCharge = window.verify_cards_with_micro_charge
 	const isMicroChargeApplicable =
 		verifyCardsWithMicroCharge === 'Both INR and USD' ||
 		(verifyCardsWithMicroCharge == 'Only INR' && teamCurrency === 'INR') ||
-		(verifyCardsWithMicroCharge === 'Only USD' && teamCurrency === 'USD');
+		(verifyCardsWithMicroCharge === 'Only USD' && teamCurrency === 'USD')
 	if (isMicroChargeApplicable) {
-		await _verifyWithMicroCharge();
+		await _verifyWithMicroCharge()
 	} else {
-		submit();
+		submit()
 	}
 }
 
 async function _verifyWithMicroCharge() {
-	tryingMicroCharge.value = true;
-	return verifyCardWithMicroCharge.submit();
+	tryingMicroCharge.value = true
+	return verifyCardWithMicroCharge.submit()
 }
 
 function getCountryCode(country) {
-	let code = countryList.data.find((d) => d.name === country).code;
-	return code.toUpperCase();
+	let code = countryList.data.find((d) => d.name === country).code
+	return code.toUpperCase()
 }
 
 async function clearForm() {
-	ready.value = false;
-	errorMessage.value = null;
-	showAddAnotherCardButton.value = false;
-	card.value = null;
-	setupStripeIntent();
+	ready.value = false
+	errorMessage.value = null
+	showAddAnotherCardButton.value = false
+	card.value = null
+	setupStripeIntent()
 }
 
 const formattedMicroChargeAmount = computed(() => {
 	if (!team.doc?.currency) {
-		return 0;
+		return 0
 	}
 	return currency(
 		team.doc?.billing_info?.micro_debit_charge_amount,
 		team.doc?.currency,
-	);
-});
+	)
+})
 </script>

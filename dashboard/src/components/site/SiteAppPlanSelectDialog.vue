@@ -8,9 +8,9 @@
 </template>
 
 <script>
-import { getToastErrorMessage } from '../../utils/toast';
-import SiteAppPlanSelectorDialog from './SiteAppPlanSelectorDialog.vue';
-import { toast } from 'vue-sonner';
+import { getToastErrorMessage } from '../../utils/toast'
+import SiteAppPlanSelectorDialog from './SiteAppPlanSelectorDialog.vue'
+import { toast } from 'vue-sonner'
 
 export default {
 	components: {
@@ -21,7 +21,7 @@ export default {
 	data() {
 		return {
 			showDialog: true,
-		};
+		}
 	},
 	resources: {
 		changeAppPlan: {
@@ -41,14 +41,14 @@ export default {
 					{
 						loading: 'Changing plan...',
 						success: () => {
-							this.$emit('plan-changed', plan);
-							return 'Plan changed successfully';
+							this.$emit('plan-changed', plan)
+							return 'Plan changed successfully'
 						},
 						error: (e) => getToastErrorMessage(e),
 					},
-				);
-			else this.$emit('plan-selected', plan);
+				)
+			else this.$emit('plan-selected', plan)
 		},
 	},
-};
+}
 </script>

@@ -2,9 +2,9 @@
 	<div class="upi-autopay-form">
 		<p class="mb-6 text-p-base text-ink-gray-7">
 			Simplify your billing by authorizing
-			<strong>recurring monthly payments</strong> for your Frappe Cloud invoices
-			via Razorpay. Once set up, we’ll handle your future invoices
-			automatically—no manual intervention required.
+			<strong>recurring monthly payments</strong>
+			for your Frappe Cloud invoices via Razorpay. Once set up, we’ll handle
+			your future invoices automatically—no manual intervention required.
 		</p>
 		<FormControl
 			label="Monthly Autopay Limit"
@@ -18,9 +18,9 @@
 			<div class="font-medium">Range: ₹500 - ₹1,00,000</div>
 
 			<div class="mt-2 text-ink-gray-5 italic">
-				<strong>Important:</strong> If an invoice exceeds this limit, the
-				auto-debit will fail. Set this slightly higher than your typical bill to
-				ensure uninterrupted service.
+				<strong>Important:</strong>
+				If an invoice exceeds this limit, the auto-debit will fail. Set this
+				slightly higher than your typical bill to ensure uninterrupted service.
 			</div>
 		</div>
 		<ErrorMessage
@@ -42,9 +42,9 @@
 </template>
 
 <script>
-import { FormControl, Button, ErrorMessage } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import { loadRazorpayScript } from '../../utils/razorpay';
+import { FormControl, Button, ErrorMessage } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import { loadRazorpayScript } from '../../utils/razorpay'
 
 export default {
 	name: 'UPIAutopayForm',
@@ -62,12 +62,12 @@ export default {
 		return {
 			maxAmount: this.passedAmount || null,
 			pendingMandateName: '',
-		};
+		}
 	},
 	mounted() {
-		loadRazorpayScript();
+		loadRazorpayScript()
 		if (this.isBackground) {
-			this.$resources.createRazorpayMandate.submit();
+			this.$resources.createRazorpayMandate.submit()
 		}
 	},
 	resources: {
@@ -79,51 +79,51 @@ export default {
 					auth_type: 'upi',
 				},
 				onSuccess(data) {
-					this.pendingMandateName = data.mandate_name;
-					this.openRazorpayCheckout(data);
+					this.pendingMandateName = data.mandate_name
+					this.openRazorpayCheckout(data)
 				},
 				onError(error) {
-					toast.error(error.messages?.[0] || 'Failed to create mandate');
+					toast.error(error.messages?.[0] || 'Failed to create mandate')
 				},
-			};
+			}
 		},
 		handleMandateSuccess() {
 			return {
 				url: 'press.api.billing.handle_razorpay_mandate_success',
 				onSuccess() {
-					toast.success('UPI Autopay authorized successfully!');
-					this.$emit('success');
+					toast.success('UPI Autopay authorized successfully!')
+					this.$emit('success')
 				},
 				onError(error) {
-					toast.error(error.messages?.[0] || 'Failed to verify authorization');
+					toast.error(error.messages?.[0] || 'Failed to verify authorization')
 				},
-			};
+			}
 		},
 		cancelMandate() {
 			return {
 				url: 'press.api.billing.cancel_razorpay_mandate',
 				onSuccess() {
-					this.$emit('cancel');
+					this.$emit('cancel')
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		setupAutopay() {
 			if (!this.maxAmount || this.maxAmount < 500) {
-				toast.error('Maximum amount must be at least ₹500');
-				return;
+				toast.error('Maximum amount must be at least ₹500')
+				return
 			}
 			if (this.maxAmount > 100000) {
-				toast.error('Maximum amount cannot exceed ₹1,00,000');
-				return;
+				toast.error('Maximum amount cannot exceed ₹1,00,000')
+				return
 			}
-			this.$emit('initiate', this.maxAmount);
+			this.$emit('initiate', this.maxAmount)
 			// this.$resources.createRazorpayMandate.submit();
 		},
 
 		async openRazorpayCheckout(orderData) {
-			await loadRazorpayScript();
+			await loadRazorpayScript()
 			const options = {
 				key: orderData.key_id,
 				order_id: orderData.order_id,
@@ -136,31 +136,31 @@ export default {
 					// would show the dialog overlay, which gets an accidental outside
 					// click from Razorpay's iframe removal and closes the dialog before
 					// the success emit fires.
-					this.handlePaymentSuccess(response);
+					this.handlePaymentSuccess(response)
 				},
 				modal: {
 					ondismiss: () => {
-						toast.info('Authorization cancelled');
+						toast.info('Authorization cancelled')
 						this.$resources.cancelMandate.submit({
 							mandate_name: this.pendingMandateName,
-						});
+						})
 					},
 				},
 				theme: {
 					color: '#171717',
 				},
-			};
+			}
 
-			const rzp = new window.Razorpay(options);
+			const rzp = new window.Razorpay(options)
 			rzp.on('payment.failed', (response) => {
-				this.handlePaymentFailure(response);
-			});
-			rzp.open();
-			this.$emit('opened');
+				this.handlePaymentFailure(response)
+			})
+			rzp.open()
+			this.$emit('opened')
 		},
 
 		handlePaymentSuccess(response) {
-			const loadingToast = toast.loading('Verifying authorization...');
+			const loadingToast = toast.loading('Verifying authorization...')
 			this.$resources.handleMandateSuccess
 				.submit({
 					razorpay_payment_id: response.razorpay_payment_id,
@@ -169,14 +169,14 @@ export default {
 					mandate_name: this.pendingMandateName,
 				})
 				.finally(() => {
-					toast.dismiss(loadingToast);
-				});
+					toast.dismiss(loadingToast)
+				})
 		},
 
 		handlePaymentFailure(response) {
-			const error = response.error;
-			toast.error(error.description || 'Authorization failed');
+			const error = response.error
+			toast.error(error.description || 'Authorization failed')
 		},
 	},
-};
+}
 </script>

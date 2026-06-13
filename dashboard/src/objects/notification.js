@@ -1,11 +1,11 @@
-import { h } from 'vue';
-import router from '../router';
-import { getDocResource } from '../utils/resource';
-import { unreadNotificationsCount } from '../data/notifications';
-import { Tooltip, frappeRequest } from 'frappe-ui';
-import { icon } from '../utils/components';
-import { getTeam } from '../data/team';
-import { toast } from 'vue-sonner';
+import { h } from 'vue'
+import router from '../router'
+import { getDocResource } from '../utils/resource'
+import { unreadNotificationsCount } from '../data/notifications'
+import { Tooltip, frappeRequest } from 'frappe-ui'
+import { icon } from '../utils/components'
+import { getTeam } from '../data/team'
+import { toast } from 'vue-sonner'
 
 const getNotification = (name) => {
 	return getDocResource({
@@ -14,15 +14,15 @@ const getNotification = (name) => {
 		whitelistedMethods: {
 			markNotificationAsRead: 'mark_as_read',
 		},
-	});
-};
+	})
+}
 
 export default {
 	doctype: 'Press Notification',
 	whitelistedMethods: {},
 	list: {
 		resource() {
-			let $team = getTeam();
+			let $team = getTeam()
 			return {
 				type: 'list',
 				doctype: 'Press Notification',
@@ -32,7 +32,7 @@ export default {
 					read: 'Unread',
 				},
 				cache: ['Notifications'],
-			};
+			}
 		},
 		route: '/notifications',
 		title: 'Notifications',
@@ -46,15 +46,15 @@ export default {
 					options: ['All', 'Unread'],
 					default: 'Unread',
 				},
-			];
+			]
 		},
 		onRowClick(row) {
-			const notification = getNotification(row.name);
+			const notification = getNotification(row.name)
 
 			notification.markNotificationAsRead.submit().then(() => {
-				unreadNotificationsCount.setData((data) => data - 1);
-				if (row.route) router.push(row.route);
-			});
+				unreadNotificationsCount.setData((data) => data - 1)
+				if (row.route) router.push(row.route)
+			})
 		},
 		actions({ listResource: notifications }) {
 			return [
@@ -70,8 +70,8 @@ export default {
 							}),
 							{
 								success: () => {
-									notifications.reload();
-									return 'All notifications marked as read';
+									notifications.reload()
+									return 'All notifications marked as read'
 								},
 								loading: 'Marking all notifications as read...',
 								error: (error) =>
@@ -79,10 +79,10 @@ export default {
 										? error.messages.join('\n')
 										: error.message,
 							},
-						);
+						)
 					},
 				},
-			];
+			]
 		},
 		columns: [
 			{
@@ -90,11 +90,11 @@ export default {
 				fieldname: 'title',
 				width: '20rem',
 				format(value, row) {
-					return value || row.type;
+					return value || row.type
 				},
 				suffix(row) {
 					if (row.is_actionable && !row.is_addressed) {
-						let AlertIcon = icon('alert-circle');
+						let AlertIcon = icon('alert-circle')
 						return h(
 							Tooltip,
 							{
@@ -110,7 +110,7 @@ export default {
 										h(AlertIcon),
 									),
 							},
-						);
+						)
 					}
 				},
 			},
@@ -126,7 +126,7 @@ export default {
 						innerHTML: row.message
 							.replace(/<(?!\/?b\b)[^>]*>/g, '')
 							.split('\n')[0],
-					});
+					})
 				},
 			},
 			{
@@ -138,4 +138,4 @@ export default {
 		],
 	},
 	routes: [],
-};
+}

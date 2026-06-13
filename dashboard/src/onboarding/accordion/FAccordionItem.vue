@@ -1,7 +1,7 @@
 <script setup>
-import { AccordionItem } from 'reka-ui';
+import { AccordionItem } from 'reka-ui'
 
-defineOptions({ inheritAttrs: false });
+defineOptions({ inheritAttrs: false })
 </script>
 
 <template>

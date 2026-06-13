@@ -15,9 +15,9 @@
 </template>
 
 <script>
-import AlertBanner from '../../AlertBanner.vue';
-import PerformanceReport from './PerformanceReport.vue';
-import SiteSlowQueryDialog from './SiteSlowQueryDialog.vue';
+import AlertBanner from '../../AlertBanner.vue'
+import PerformanceReport from './PerformanceReport.vue'
+import SiteSlowQueryDialog from './SiteSlowQueryDialog.vue'
 
 export default {
 	props: ['name', 'siteVersion'],
@@ -31,7 +31,7 @@ export default {
 			show: false,
 			selectedQuery: '',
 			selectedQueryDuration: 0,
-		};
+		}
 	},
 	computed: {
 		slowQueriesOptions() {
@@ -40,9 +40,9 @@ export default {
 				documentation: 'https://docs.frappe.io/cloud/performance-tuning',
 				data: () => this.$resources.slowQueries.data.data,
 				onRowClick: (row) => {
-					this.selectedQuery = row.query;
-					this.selectedQueryDuration = row.duration;
-					this.show = true;
+					this.selectedQuery = row.query
+					this.selectedQueryDuration = row.duration
+					this.show = true
 				},
 				emptyStateMessage: 'No slow queries found',
 				columns: [
@@ -90,29 +90,29 @@ export default {
 						onClick: () => this.$resources.slowQueries.reload(),
 					},
 				],
-			};
+			}
 		},
 	},
 	methods: {
 		getDateTimeRange() {
 			const formatDateTime = (date) => {
-				return this.$dayjs(date).format('YYYY-MM-DD HH:mm:ss');
-			};
+				return this.$dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+			}
 
-			const now = new Date();
-			const startDateTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-			const endDateTime = formatDateTime(now);
-			const startDateTimeFormatted = formatDateTime(startDateTime);
+			const now = new Date()
+			const startDateTime = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+			const endDateTime = formatDateTime(now)
+			const startDateTimeFormatted = formatDateTime(startDateTime)
 
 			return {
 				startDateTime: startDateTimeFormatted,
 				endDateTime: endDateTime,
-			};
+			}
 		},
 	},
 	resources: {
 		slowQueries() {
-			const { startDateTime, endDateTime } = this.getDateTimeRange();
+			const { startDateTime, endDateTime } = this.getDateTimeRange()
 			return {
 				url: 'press.api.analytics.mariadb_slow_queries',
 				params: {
@@ -126,8 +126,8 @@ export default {
 				},
 				auto: true,
 				initialData: { columns: [], data: [] },
-			};
+			}
 		},
 	},
-};
+}
 </script>

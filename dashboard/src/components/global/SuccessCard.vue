@@ -15,6 +15,6 @@
 <script>
 export default {
 	name: 'SuccessCard',
-	props: ['title', 'message']
-};
+	props: ['title', 'message'],
+}
 </script>

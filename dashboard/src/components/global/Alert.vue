@@ -30,15 +30,15 @@ export default {
 		title: String,
 		type: {
 			type: String,
-			default: 'warning'
-		}
+			default: 'warning',
+		},
 	},
 	computed: {
 		classes() {
 			return {
-				warning: 'text-ink-gray-7 bg-surface-gray-1'
-			}[this.type];
-		}
-	}
-};
+				warning: 'text-ink-gray-7 bg-surface-gray-1',
+			}[this.type]
+		},
+	},
+}
 </script>

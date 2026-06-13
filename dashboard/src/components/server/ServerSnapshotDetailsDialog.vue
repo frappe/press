@@ -12,7 +12,9 @@
 					</div>
 					<div>
 						<p class="text-xs text-ink-gray-6">Progress</p>
-						<p class="mt-2 text-sm text-ink-gray-7">{{ snapshot?.progress }}%</p>
+						<p class="mt-2 text-sm text-ink-gray-7">
+							{{ snapshot?.progress }}%
+						</p>
 					</div>
 					<div>
 						<p class="text-xs text-ink-gray-6">Mode</p>
@@ -29,9 +31,7 @@
 					<div>
 						<p class="text-xs text-ink-gray-6">Size</p>
 						<p class="mt-2 text-sm text-ink-gray-7">
-							{{
-								snapshot?.total_size_gb ? `${snapshot.total_size_gb} GB` : '--'
-							}}
+							{{ snapshot?.total_size_gb ? `${snapshot.total_size_gb} GB` : '--' }}
 						</p>
 					</div>
 				</div>
@@ -84,20 +84,16 @@
 							<tr>
 								<td>Timestamp</td>
 								<td>
-									{{
-										$format.utcDate(
+									{{ $format.utcDate(
 											snapshot?.app_server_snapshot_start_time,
 											'llll',
-										)
-									}}
+										) }}
 								</td>
 								<td>
-									{{
-										$format.utcDate(
+									{{ $format.utcDate(
 											snapshot?.database_server_snapshot_start_time,
 											'llll',
-										)
-									}}
+										) }}
 								</td>
 							</tr>
 						</tbody>
@@ -119,7 +115,8 @@
 
 						<div class="flex flex-row items-center gap-1">
 							<p class="text-sm font-medium text-ink-gray-8">
-								{{ sites.length }} Site{{ sites.length > 1 ? 's' : '' }}
+								{{ sites.length }}
+								Site{{ sites.length > 1 ? 's' : '' }}
 								Recoverable
 							</p>
 						</div>
@@ -140,11 +137,11 @@
 </template>
 
 <script>
-import { Checkbox } from 'frappe-ui';
-import ObjectList from '../ObjectList.vue';
-import { confirmDialog, icon } from '../../utils/components';
-import ServerSnapshotRecoveryDetails from './ServerSnapshotRecoveryDetails.vue';
-import { toast } from 'vue-sonner';
+import { Checkbox } from 'frappe-ui'
+import ObjectList from '../ObjectList.vue'
+import { confirmDialog, icon } from '../../utils/components'
+import ServerSnapshotRecoveryDetails from './ServerSnapshotRecoveryDetails.vue'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'ServerSnapshotDetailsDialog',
@@ -166,7 +163,7 @@ export default {
 			showRecoverSitePrompt: false,
 			selectedSitesForRecovery: [],
 			selectedSnapshotRecoveryId: null,
-		};
+		}
 	},
 	resources: {
 		snapshot() {
@@ -175,25 +172,25 @@ export default {
 				doctype: 'Server Snapshot',
 				name: this.name,
 				auto: true,
-			};
+			}
 		},
 	},
 	computed: {
 		snapshot() {
-			return this.$resources.snapshot?.doc || {};
+			return this.$resources.snapshot?.doc || {}
 		},
 		sites() {
-			return this.snapshot?.site_list_json || [];
+			return this.snapshot?.site_list_json || []
 		},
 		sitesMapped() {
 			return this.sites.map((site) => {
 				return {
 					name: site,
-				};
-			});
+				}
+			})
 		},
 	},
-};
+}
 </script>
 
 <style scoped>

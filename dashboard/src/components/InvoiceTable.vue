@@ -43,8 +43,7 @@
 							<td class="py-1 pl-2 pr-2 text-right">
 								{{ row.quantity }}
 
-								{{
-									[
+								{{ [
 										'Site',
 										'Server',
 										'Database Server',
@@ -52,8 +51,7 @@
 										'Cluster',
 									].includes(row.document_type) && !row.plan?.includes('hour')
 										? $format.plural(row.quantity, 'day', 'days')
-										: 'hours'
-								}}
+										: 'hours' }}
 							</td>
 							<td class="py-1 pl-2 pr-2 text-right font-medium">
 								{{ formatCurrency(row.amount) }}
@@ -79,11 +77,9 @@
 							Total Discount Amount
 						</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
-							{{
-								$team.doc.erpnext_partner
+							{{ $team.doc.erpnext_partner
 									? formatCurrency(doc.total_discount_amount)
-									: formatCurrency(0)
-							}}
+									: formatCurrency(0) }}
 						</td>
 					</tr>
 					<tr v-if="doc.gst > 0">
@@ -146,7 +142,7 @@
 	</div>
 </template>
 <script>
-import { getPlans } from '../data/plans';
+import { getPlans } from '../data/plans'
 
 export default {
 	name: 'InvoiceTable',
@@ -157,7 +153,7 @@ export default {
 				type: 'document',
 				doctype: 'Invoice',
 				name: this.invoiceId,
-			};
+			}
 		},
 		downloadInvoiceAsCSV() {
 			return {
@@ -165,65 +161,65 @@ export default {
 				makeParams() {
 					return {
 						invoice: this.invoiceId,
-					};
+					}
 				},
 				onSuccess(data) {
-					const filename = `${this.invoiceId}.csv`;
-					this.downloadAsCSV(data, filename);
+					const filename = `${this.invoiceId}.csv`
+					this.downloadAsCSV(data, filename)
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		groupedLineItems() {
-			if (!this.doc) return {};
-			const groupedLineItems = {};
+			if (!this.doc) return {}
+			const groupedLineItems = {}
 			for (let item of this.doc.items) {
 				groupedLineItems[item.document_type] =
-					groupedLineItems[item.document_type] || [];
-				groupedLineItems[item.document_type].push(item);
+					groupedLineItems[item.document_type] || []
+				groupedLineItems[item.document_type].push(item)
 			}
-			return groupedLineItems;
+			return groupedLineItems
 		},
 		doc() {
-			return this.$resources.invoice.doc;
+			return this.$resources.invoice.doc
 		},
 		gstPercentage() {
-			return this.$team.doc.billing_info.gst_percentage;
+			return this.$team.doc.billing_info.gst_percentage
 		},
 	},
 	methods: {
 		formatPlan(plan) {
-			let planDoc = getPlans().find((p) => p.name === plan);
+			let planDoc = getPlans().find((p) => p.name === plan)
 			if (planDoc) {
-				let india = this.$team.doc.currency === 'INR';
+				let india = this.$team.doc.currency === 'INR'
 				return this.$format.userCurrency(
 					india ? planDoc.price_inr : planDoc.price_usd,
-				);
+				)
 			}
-			return plan;
+			return plan
 		},
 		formatCurrency(value) {
-			if (!this.doc) return;
-			let currency = this.doc.currency;
-			return this.$format.currency(value, currency);
+			if (!this.doc) return
+			let currency = this.doc.currency
+			return this.$format.currency(value, currency)
 		},
 		downloadAsCSV(data, filename) {
-			if (!data || data.length === 0) return;
-			let result = [];
-			result[0] = Object.keys(data[0]);
+			if (!data || data.length === 0) return
+			let result = []
+			result[0] = Object.keys(data[0])
 			data.forEach((row) => {
-				result.push(Object.values(row));
-			});
-			const csv = result.map((row) => Object.values(row).join(',')).join('\n');
-			const blob = new Blob([csv], { type: 'text/csv' });
-			const url = window.URL.createObjectURL(blob);
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = filename;
-			a.click();
-			window.URL.revokeObjectURL(url);
+				result.push(Object.values(row))
+			})
+			const csv = result.map((row) => Object.values(row).join(',')).join('\n')
+			const blob = new Blob([csv], { type: 'text/csv' })
+			const url = window.URL.createObjectURL(blob)
+			const a = document.createElement('a')
+			a.href = url
+			a.download = filename
+			a.click()
+			window.URL.revokeObjectURL(url)
 		},
 	},
-};
+}
 </script>

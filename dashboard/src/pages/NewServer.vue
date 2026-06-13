@@ -25,8 +25,8 @@
 		<LucideAlertTriangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
 		<p>
 			Your spending limit has been exceeded. Please
-			<a href="https://support.frappe.io" target="_blank">contact support</a> to
-			increase your limit.
+			<a href="https://support.frappe.io" target="_blank">contact support</a>
+			to increase your limit.
 		</p>
 	</div>
 	<div

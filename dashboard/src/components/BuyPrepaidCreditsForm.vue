@@ -98,10 +98,10 @@
 	/>
 </template>
 <script>
-import BuyPrepaidCreditsStripe from './BuyPrepaidCreditsStripe.vue';
-import BuyPrepaidCreditsRazorpay from './BuyPrepaidCreditsRazorpay.vue';
-import RazorpayLogo from '../../src/logo/RazorpayLogo.vue';
-import PayPalLogo from '../../src/logo/PayPalLogo.vue';
+import BuyPrepaidCreditsStripe from './BuyPrepaidCreditsStripe.vue'
+import BuyPrepaidCreditsRazorpay from './BuyPrepaidCreditsRazorpay.vue'
+import RazorpayLogo from '../../src/logo/RazorpayLogo.vue'
+import PayPalLogo from '../../src/logo/PayPalLogo.vue'
 
 export default {
 	name: 'BuyPrepaidCreditsForm',
@@ -115,7 +115,7 @@ export default {
 		return {
 			paymentGateway: null,
 			creditsToBuy: this.minimumAmount,
-		};
+		}
 	},
 	resources: {
 		paypalEnabled() {
@@ -123,12 +123,12 @@ export default {
 				url: 'press.api.billing.is_paypal_enabled',
 				cache: 'paypalEnabled',
 				auto: true,
-			};
+			}
 		},
 	},
 	mounted() {
 		if (this.$team.doc.currency === 'USD' && !this.$team.doc.razorpay_enabled) {
-			this.paymentGateway = 'Stripe';
+			this.paymentGateway = 'Stripe'
 		}
 	},
 	props: {
@@ -147,21 +147,21 @@ export default {
 	emits: ['success'],
 	methods: {
 		onSuccess() {
-			this.$emit('success');
+			this.$emit('success')
 		},
 	},
 	computed: {
 		totalAmount() {
-			let creditsToBuy = this.creditsToBuy || 0;
+			let creditsToBuy = this.creditsToBuy || 0
 			if (this.$team.doc.currency === 'INR') {
 				return (
 					creditsToBuy +
 					creditsToBuy * (this.$team.doc.billing_info.gst_percentage || 0)
-				).toFixed(2);
+				).toFixed(2)
 			} else {
-				return creditsToBuy;
+				return creditsToBuy
 			}
 		},
 	},
-};
+}
 </script>

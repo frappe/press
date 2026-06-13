@@ -1,11 +1,11 @@
 <script setup>
-import { AccordionRoot } from 'reka-ui';
+import { AccordionRoot } from 'reka-ui'
 
 /**
  * Styled Accordion root (Reka UI). Pair with FAccordionItem / FAccordionHeader /
  * FAccordionTrigger / FAccordionContent. Intended to mirror future frappe-ui API.
  */
-defineOptions({ inheritAttrs: false });
+defineOptions({ inheritAttrs: false })
 </script>
 
 <template>

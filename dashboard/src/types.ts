@@ -1,1 +1,1 @@
-export type Platform = 'win' | 'mac' | 'linux' | 'unknown';
+export type Platform = 'win' | 'mac' | 'linux' | 'unknown'

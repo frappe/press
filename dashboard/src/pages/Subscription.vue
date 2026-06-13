@@ -11,9 +11,7 @@
 					v-if="$resources.subscription.data?.trial_end_date"
 				>
 					Trial ends
-					{{
-						trialEndsInDaysText($resources.subscription.data?.trial_end_date)
-					}}
+					{{ trialEndsInDaysText($resources.subscription.data?.trial_end_date) }}
 				</div>
 			</div>
 			{{ success ? 'You have subscribed to the plan' : '' }}
@@ -25,11 +23,9 @@
 						@click="currentStep = 1"
 					>
 						<span class="text-sm font-medium text-ink-gray-7">
-							{{
-								$resources.subscription.data.current_plan
+							{{ $resources.subscription.data.current_plan
 									? 'Change plan'
-									: 'Step 1: Select plan'
-							}}
+									: 'Step 1: Select plan' }}
 						</span>
 						<span
 							class="text-sm font-bold text-ink-gray-9"
@@ -74,7 +70,8 @@
 								</span>
 								<span class="mx-1"> &middot; </span>
 								<span>
-									{{ formatBytes(plan.max_storage_usage, 0, 2) }} Database
+									{{ formatBytes(plan.max_storage_usage, 0, 2) }}
+									Database
 								</span>
 							</div>
 						</button>
@@ -116,14 +113,14 @@
 	</div>
 </template>
 <script>
-import { defineAsyncComponent } from 'vue';
-import { Badge, ErrorMessage, TextInput } from 'frappe-ui';
-import LoginBox from '../components/auth/LoginBox.vue';
-import CheckCircleIcon from '@/components/icons/CheckCircleIcon.vue';
+import { defineAsyncComponent } from 'vue'
+import { Badge, ErrorMessage, TextInput } from 'frappe-ui'
+import LoginBox from '../components/auth/LoginBox.vue'
+import CheckCircleIcon from '@/components/icons/CheckCircleIcon.vue'
 
 const StripeCard = defineAsyncComponent(
 	() => import('@/components/StripeCard.vue'),
-);
+)
 
 export default {
 	name: 'Subscription',
@@ -141,7 +138,7 @@ export default {
 			currentStep: 1,
 			selectedPlan: null,
 			success: false,
-		};
+		}
 	},
 	resources: {
 		subscription() {
@@ -155,10 +152,10 @@ export default {
 					if (data?.current_plan && data?.plans) {
 						this.selectedPlan = data.plans.find(
 							(plan) => plan.name === data.current_plan,
-						);
+						)
 					}
 				},
-			};
+			}
 		},
 		setSubscriptionPlan() {
 			return {
@@ -168,12 +165,12 @@ export default {
 					plan: this.selectedPlan?.name,
 				},
 				onSuccess() {
-					this.currentStep = 1;
-					this.selectedPlan = null;
-					this.$resources.subscription.reload();
+					this.currentStep = 1
+					this.selectedPlan = null
+					this.$resources.subscription.reload()
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

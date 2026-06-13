@@ -32,9 +32,9 @@ export default {
 	},
 	methods: {
 		selectSubscription(sub) {
-			this.$emit('update:selectedSubscription', sub);
-			this.$emit('update:step', 2);
+			this.$emit('update:selectedSubscription', sub)
+			this.$emit('update:step', 2)
 		},
 	},
-};
+}
 </script>

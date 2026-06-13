@@ -58,20 +58,20 @@
 </template>
 
 <script setup lang="ts">
-import { createResource } from 'frappe-ui';
-import { ref } from 'vue';
-import dayjs from '../utils/dayjs';
+import { createResource } from 'frappe-ui'
+import { ref } from 'vue'
+import dayjs from '../utils/dayjs'
 
 const props = defineProps<{
-	doctype: string;
-	docname: string;
-}>();
+	doctype: string
+	docname: string
+}>()
 
 const emit = defineEmits<{
-	openRequestDialog: [];
-}>();
+	openRequestDialog: []
+}>()
 
-const open = ref(true);
+const open = ref(true)
 
 const status = createResource({
 	url: 'press.api.access.status',
@@ -80,5 +80,5 @@ const status = createResource({
 		doctype: props.doctype,
 		docname: props.docname,
 	},
-});
+})
 </script>

@@ -47,8 +47,8 @@
 </template>
 
 <script>
-import { toast } from 'vue-sonner';
-import { FormControl, ErrorMessage } from 'frappe-ui';
+import { toast } from 'vue-sonner'
+import { FormControl, ErrorMessage } from 'frappe-ui'
 
 export default {
 	name: 'AddExchangeRate',
@@ -57,7 +57,7 @@ export default {
 			fromCurrency: 'KES',
 			toCurrency: 'USD',
 			exchangeRate: '',
-		};
+		}
 	},
 
 	resources: {
@@ -71,38 +71,38 @@ export default {
 				},
 				validate() {
 					if (!this.fromCurrency || !this.toCurrency || !this.exchangeRate) {
-						toast.error('All fields are required');
-						return false;
+						toast.error('All fields are required')
+						return false
 					}
 				},
 				async onSuccess() {
 					if (data) {
-						toast.success('Currency Exchange Added Successfully');
-						this.$emit('close');
+						toast.success('Currency Exchange Added Successfully')
+						this.$emit('close')
 					} else {
-						toast.error('Failed to add currency exchange');
+						toast.error('Failed to add currency exchange')
 					}
 				},
-			};
+			}
 		},
 	},
 
 	methods: {
 		async saveExchangeRate() {
 			try {
-				const response = await this.$resources.addCurrencyExchange.submit();
+				const response = await this.$resources.addCurrencyExchange.submit()
 				if (response) {
-					this.$toast.success('Currency Exchange Added Successfully');
-					this.fromCurrency = '';
-					this.toCurrency = '';
-					this.exchangeRate = '';
+					this.$toast.success('Currency Exchange Added Successfully')
+					this.fromCurrency = ''
+					this.toCurrency = ''
+					this.exchangeRate = ''
 				}
-				this.$emit('closeDialog');
+				this.$emit('closeDialog')
 			} catch (error) {
-				console.log(error);
-				this.$toast.error(`Error adding currency exchange: ${error.message}`);
+				console.log(error)
+				this.$toast.error(`Error adding currency exchange: ${error.message}`)
 			}
 		},
 	},
-};
+}
 </script>

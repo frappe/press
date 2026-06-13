@@ -76,43 +76,43 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue';
-import { FormControl } from 'frappe-ui';
+import { reactive } from 'vue'
+import { FormControl } from 'frappe-ui'
 
 defineProps<{
-	modelValue: boolean;
-}>();
+	modelValue: boolean
+}>()
 
 const emit = defineEmits<{
-	(event: 'update:modelValue', open: boolean): void;
+	(event: 'update:modelValue', open: boolean): void
 	(
 		event: 'submit',
 		values: {
-			source: string;
-			port: string;
-			protocol: string;
-			action: string;
+			source: string
+			port: string
+			protocol: string
+			action: string
 		},
-	): void;
-}>();
+	): void
+}>()
 
 const values = reactive({
 	source: '',
 	port: '',
 	protocol: 'TCP',
 	action: 'Deny',
-});
+})
 
 const onClose = () => {
-	values.source = '';
-	values.port = '';
-	values.protocol = 'TCP';
-	values.action = 'Deny';
-	emit('update:modelValue', false);
-};
+	values.source = ''
+	values.port = ''
+	values.protocol = 'TCP'
+	values.action = 'Deny'
+	emit('update:modelValue', false)
+}
 
 const onSubmit = () => {
-	emit('submit', values);
-	onClose();
-};
+	emit('submit', values)
+	onClose()
+}
 </script>

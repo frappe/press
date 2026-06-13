@@ -13,6 +13,6 @@
 <script>
 export default {
 	name: 'Section',
-	props: ['title', 'description']
-};
+	props: ['title', 'description'],
+}
 </script>

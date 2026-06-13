@@ -9,7 +9,7 @@
 	/>
 </template>
 <script>
-import FoldStep from './FoldStep.vue';
+import FoldStep from './FoldStep.vue'
 
 export default {
 	name: 'JobStep',
@@ -27,11 +27,11 @@ export default {
 	methods: {
 		handleToggle() {
 			if (this.emitToggleEvent) {
-				this.$emit('toggleStep', this.step, !this.step.isOpen);
+				this.$emit('toggleStep', this.step, !this.step.isOpen)
 			} else {
-				this.step.isOpen = !this.step.isOpen;
+				this.step.isOpen = !this.step.isOpen
 			}
 		},
 	},
-};
+}
 </script>

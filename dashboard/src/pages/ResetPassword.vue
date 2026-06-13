@@ -73,7 +73,7 @@
 </template>
 
 <script>
-import LoginBox from '../components/auth/LoginBox.vue';
+import LoginBox from '../components/auth/LoginBox.vue'
 
 export default {
 	name: 'ResetPassword',
@@ -88,7 +88,7 @@ export default {
 			password: null,
 			confirmPassword: null,
 			passwordError: null,
-		};
+		}
 	},
 	resources: {
 		validateResetKey() {
@@ -98,10 +98,10 @@ export default {
 					key: this.requestKey,
 				},
 				onSuccess(email) {
-					this.email = email || null;
+					this.email = email || null
 				},
 				auto: true,
-			};
+			}
 		},
 		resetPassword() {
 			return {
@@ -111,36 +111,36 @@ export default {
 					password: this.password,
 				},
 				onSuccess() {
-					window.location.reload();
+					window.location.reload()
 				},
-			};
+			}
 		},
 		is2FAEnabled() {
 			return {
 				url: 'press.api.account.is_2fa_enabled',
-			};
+			}
 		},
 		verify2FA() {
 			return {
 				url: 'press.api.account.verify_2fa',
 				onSuccess: async () => {
-					await this.$resources.resetPassword.submit();
+					await this.$resources.resetPassword.submit()
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		handleSubmit() {
-			this.passwordError = null;
+			this.passwordError = null
 			if (!this.ask2FA && this.password !== this.confirmPassword) {
-				this.passwordError = 'Passwords do not match';
-				return;
+				this.passwordError = 'Passwords do not match'
+				return
 			}
 			if (this.ask2FA) {
 				this.$resources.verify2FA.submit({
 					user: this.email,
 					totp_code: this.twoFactorCode,
-				});
+				})
 			} else {
 				this.$resources.is2FAEnabled.submit(
 					{
@@ -149,15 +149,15 @@ export default {
 					{
 						onSuccess: (is2FAEnabled) => {
 							if (is2FAEnabled) {
-								this.ask2FA = true;
+								this.ask2FA = true
 							} else {
-								this.$resources.resetPassword.submit();
+								this.$resources.resetPassword.submit()
 							}
 						},
 					},
-				);
+				)
 			}
 		},
 	},
-};
+}
 </script>

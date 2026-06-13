@@ -25,34 +25,34 @@
 	</div>
 </template>
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import ReleaseGroupActionCell from './ReleaseGroupActionCell.vue';
+import { getCachedDocumentResource } from 'frappe-ui'
+import ReleaseGroupActionCell from './ReleaseGroupActionCell.vue'
 
 export default {
 	props: ['releaseGroup'],
 	components: { ReleaseGroupActionCell },
 	computed: {
 		$releaseGroup() {
-			return getCachedDocumentResource('Release Group', this.releaseGroup);
+			return getCachedDocumentResource('Release Group', this.releaseGroup)
 		},
 		actions() {
 			const groupedActions = this.$releaseGroup.doc.actions.reduce(
 				(acc, action) => {
-					const group = action.group || 'General Actions';
+					const group = action.group || 'General Actions'
 					if (!acc[group]) {
-						acc[group] = [];
+						acc[group] = []
 					}
-					acc[group].push(action);
-					return acc;
+					acc[group].push(action)
+					return acc
 				},
 				{},
-			);
+			)
 
 			return Object.keys(groupedActions).map((group) => ({
 				group,
 				actions: groupedActions[group],
-			}));
+			}))
 		},
 	},
-};
+}
 </script>

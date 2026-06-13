@@ -51,7 +51,10 @@
 						<DonutChart :config="donutConfig" />
 					</div>
 				</div>
-				<div v-else class="flex h-64 items-center justify-center text-ink-gray-5">
+				<div
+					v-else
+					class="flex h-64 items-center justify-center text-ink-gray-5"
+				>
 					No usage data available for this month
 				</div>
 			</div>
@@ -67,8 +70,8 @@ import {
 	AxisChart,
 	DonutChart,
 	NumberChart,
-} from 'frappe-ui';
-import { inject, computed } from 'vue';
+} from 'frappe-ui'
+import { inject, computed } from 'vue'
 
 export default {
 	name: 'BillingForecast',
@@ -80,48 +83,48 @@ export default {
 		NumberChart,
 	},
 	setup() {
-		const team = inject('team');
+		const team = inject('team')
 
 		const forecastResource = createResource({
 			url: 'press.api.billing.billing_forecast',
 			cache: 'forecastResource',
 			auto: true,
-		});
+		})
 
 		const forecastData = computed(() => {
-			return forecastResource.data;
-		});
+			return forecastResource.data
+		})
 
 		const currencySymbol = computed(() => {
-			return team.doc?.currency === 'INR' ? '₹' : '$';
-		});
+			return team.doc?.currency === 'INR' ? '₹' : '$'
+		})
 
 		const axisChartConfig = computed(() => {
-			const forecastDataValue = forecastData.value;
+			const forecastDataValue = forecastData.value
 			if (
 				!forecastDataValue.last_month_cost &&
 				!forecastDataValue.forecasted_month_end &&
 				!forecastDataValue.current_month_to_date_cost
 			) {
-				return {};
+				return {}
 			}
 
 			// Month Labels
-			const now = new Date();
+			const now = new Date()
 			const formatter = new Intl.DateTimeFormat('en-US', {
 				month: 'long',
 				year: 'numeric',
-			});
-			const currentMonthName = formatter.format(now);
+			})
+			const currentMonthName = formatter.format(now)
 			const lastMonthName = formatter.format(
 				new Date(now.getFullYear(), now.getMonth() - 1, 1),
-			);
+			)
 
 			const {
 				last_month_usage_breakdown = {},
 				month_to_date_usage_breakdown = {},
 				forecasted_usage_breakdown = {},
-			} = forecastDataValue.usage_breakdown;
+			} = forecastDataValue.usage_breakdown
 
 			const data = [
 				{
@@ -136,19 +139,19 @@ export default {
 					period: `Forecast\n(${currentMonthName})`,
 					...forecasted_usage_breakdown,
 				},
-			];
+			]
 
 			// set of unique services from all breakdowns
 			const uniqueServices = new Set([
 				...Object.keys(last_month_usage_breakdown),
 				...Object.keys(month_to_date_usage_breakdown),
 				...Object.keys(forecasted_usage_breakdown),
-			]);
+			])
 
 			const series = Array.from(uniqueServices, (service) => ({
 				name: service,
 				type: 'bar',
-			}));
+			}))
 
 			return {
 				title: 'Billing Comparison',
@@ -163,24 +166,23 @@ export default {
 					title: `Amount (${currencySymbol.value})`,
 				},
 				series,
-			};
-		});
+			}
+		})
 
 		const donutConfig = computed(() => {
-			const data = [];
+			const data = []
 			let usage_breakdown =
-				forecastData.value?.usage_breakdown?.month_to_date_usage_breakdown ||
-				{};
+				forecastData.value?.usage_breakdown?.month_to_date_usage_breakdown || {}
 			for (let key in usage_breakdown) {
-				data.push({ service: key, amount: usage_breakdown[key] });
+				data.push({ service: key, amount: usage_breakdown[key] })
 			}
 			return {
 				data,
 				title: 'Month-To-Date Cost Breakdown',
 				categoryColumn: 'service',
 				valueColumn: 'amount',
-			};
-		});
+			}
+		})
 
 		return {
 			$resources: {
@@ -191,7 +193,7 @@ export default {
 			forecastData,
 			axisChartConfig,
 			donutConfig,
-		};
+		}
 	},
-};
+}
 </script>

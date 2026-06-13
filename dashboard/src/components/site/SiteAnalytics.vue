@@ -478,16 +478,16 @@
 </template>
 
 <script>
-import { TabButtons, DateTimePicker, Button, Tooltip } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import dayjs, { dayjsFloorToMinutes } from '../../utils/dayjs';
-import LineChart from '@/components/charts/LineChart.vue';
-import BarChart from '@/components/charts/BarChart.vue';
-import SiteUptime from './SiteUptime.vue';
-import AlertBanner from '../AlertBanner.vue';
-import AnalyticsCard from './AnalyticsCard.vue';
-import ActionButton from '../ActionButton.vue';
-import { h } from 'vue';
+import { TabButtons, DateTimePicker, Button, Tooltip } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import dayjs, { dayjsFloorToMinutes } from '../../utils/dayjs'
+import LineChart from '@/components/charts/LineChart.vue'
+import BarChart from '@/components/charts/BarChart.vue'
+import SiteUptime from './SiteUptime.vue'
+import AlertBanner from '../AlertBanner.vue'
+import AnalyticsCard from './AnalyticsCard.vue'
+import ActionButton from '../ActionButton.vue'
+import { h } from 'vue'
 
 export default {
 	name: 'SiteAnalytics',
@@ -529,23 +529,23 @@ export default {
 				{ label: 'Last 7 days', value: '7d' },
 				{ label: 'Last 15 days', value: '15d' },
 			],
-		};
+		}
 	},
 	mounted() {
 		// Initialize date range from URL if present
-		const start = dayjs(this.$route.query.start);
-		const end = dayjs(this.$route.query.end);
+		const start = dayjs(this.$route.query.start)
+		const end = dayjs(this.$route.query.end)
 		if (start.isValid && end.isValid && start.isBefore(end)) {
-			this.updateStartDate(start);
-			this.updateEndDate(end);
+			this.updateStartDate(start)
+			this.updateEndDate(end)
 		} else {
-			this.applyDefaultDateRange();
+			this.applyDefaultDateRange()
 		}
 
 		// Highlight card if element hash found in URL
 		if (typeof this.$route.hash === 'string') {
-			const slug = this.$route.hash.replace('#', '');
-			this.highlightCard(slug);
+			const slug = this.$route.hash.replace('#', '')
+			this.highlightCard(slug)
 		}
 	},
 	resources: {
@@ -559,7 +559,7 @@ export default {
 					end: this.logicalEndDate,
 				},
 				auto: this.logicalStartDate && this.logicalEndDate,
-			};
+			}
 		},
 		advancedAnalytics() {
 			return {
@@ -574,7 +574,7 @@ export default {
 					this.showAdvancedAnalytics &&
 					this.logicalStartDate &&
 					this.logicalEndDate,
-			};
+			}
 		},
 		slowLogsCount() {
 			return {
@@ -591,7 +591,7 @@ export default {
 					this.showAdvancedAnalytics &&
 					this.logicalStartDate &&
 					this.logicalEndDate,
-			};
+			}
 		},
 		slowLogsDuration() {
 			return {
@@ -608,7 +608,7 @@ export default {
 					this.showAdvancedAnalytics &&
 					this.logicalStartDate &&
 					this.logicalEndDate,
-			};
+			}
 		},
 	},
 	computed: {
@@ -624,13 +624,13 @@ export default {
 				this.$theme.colors.cyan[500],
 				this.$theme.colors.gray[500],
 				this.$theme.colors.orange[500],
-			];
+			]
 		},
 		usageCounterData() {
-			let data = this.$resources.analytics.data?.usage_counter;
-			if (!data) return;
+			let data = this.$resources.analytics.data?.usage_counter
+			if (!data) return
 
-			let plan_limit = this.$resources.analytics.data?.plan_limit;
+			let plan_limit = this.$resources.analytics.data?.plan_limit
 
 			return {
 				datasets: [data.map((d) => [+new Date(d.date), d.value / 1000000])],
@@ -651,188 +651,187 @@ export default {
 					],
 					symbol: ['none', 'none'],
 				},
-			};
+			}
 		},
 		requestCountData() {
-			let requestCount = this.$resources.analytics.data?.request_count;
-			if (!requestCount) return;
+			let requestCount = this.$resources.analytics.data?.request_count
+			if (!requestCount) return
 
 			return {
 				datasets: [requestCount.map((d) => [+new Date(d.date), d.value])],
-			};
+			}
 		},
 		requestCountByPathData() {
 			let requestCountByPath =
-				this.$resources.advancedAnalytics.data?.request_count_by_path;
-			if (!requestCountByPath) return;
+				this.$resources.advancedAnalytics.data?.request_count_by_path
+			if (!requestCountByPath) return
 
-			return requestCountByPath;
+			return requestCountByPath
 		},
 		requestDurationByPathData() {
 			let requestDurationByPath =
-				this.$resources.advancedAnalytics.data?.request_duration_by_path;
-			if (!requestDurationByPath) return;
+				this.$resources.advancedAnalytics.data?.request_duration_by_path
+			if (!requestDurationByPath) return
 
-			return requestDurationByPath;
+			return requestDurationByPath
 		},
 		queryReportRunReportsData() {
 			let queryReportRunReports =
-				this.$resources.advancedAnalytics.data?.query_report_run_reports;
-			if (!queryReportRunReports) return;
+				this.$resources.advancedAnalytics.data?.query_report_run_reports
+			if (!queryReportRunReports) return
 
-			return queryReportRunReports;
+			return queryReportRunReports
 		},
 		runDocMethodMethodnamesData() {
 			let runDocMethodMethodnames =
-				this.$resources.advancedAnalytics.data?.run_doc_method_methodnames;
-			if (!runDocMethodMethodnames) return;
+				this.$resources.advancedAnalytics.data?.run_doc_method_methodnames
+			if (!runDocMethodMethodnames) return
 
-			return runDocMethodMethodnames;
+			return runDocMethodMethodnames
 		},
 		saveDocsDoctypesData() {
 			let saveDocDoctypes =
-				this.$resources.advancedAnalytics.data?.save_docs_doctypes;
-			if (!saveDocDoctypes) return;
+				this.$resources.advancedAnalytics.data?.save_docs_doctypes
+			if (!saveDocDoctypes) return
 
-			return saveDocDoctypes;
+			return saveDocDoctypes
 		},
 		saveDocsActionData() {
 			let saveDocActions =
-				this.$resources.advancedAnalytics.data?.save_docs_actions;
-			if (!saveDocActions) return;
+				this.$resources.advancedAnalytics.data?.save_docs_actions
+			if (!saveDocActions) return
 
-			return saveDocActions;
+			return saveDocActions
 		},
 		generateReportReportsData() {
 			let generateReportReports =
-				this.$resources.advancedAnalytics.data?.generate_report_reports;
-			if (!generateReportReports) return;
+				this.$resources.advancedAnalytics.data?.generate_report_reports
+			if (!generateReportReports) return
 
-			return generateReportReports;
+			return generateReportReports
 		},
 		averageRequestDurationByPathData() {
 			let averageRequestDurationByPath =
-				this.$resources.advancedAnalytics.data
-					?.average_request_duration_by_path;
-			if (!averageRequestDurationByPath) return;
+				this.$resources.advancedAnalytics.data?.average_request_duration_by_path
+			if (!averageRequestDurationByPath) return
 
-			return averageRequestDurationByPath;
+			return averageRequestDurationByPath
 		},
 		requestCountByIPData() {
 			let requestCountByIP =
-				this.$resources.advancedAnalytics.data?.request_count_by_ip;
-			if (!requestCountByIP) return;
+				this.$resources.advancedAnalytics.data?.request_count_by_ip
+			if (!requestCountByIP) return
 
-			return requestCountByIP;
+			return requestCountByIP
 		},
 		backgroundJobCountByMethodData() {
 			let backgroundJobCountByMethod =
-				this.$resources.advancedAnalytics.data?.background_job_count_by_method;
-			if (!backgroundJobCountByMethod) return;
+				this.$resources.advancedAnalytics.data?.background_job_count_by_method
+			if (!backgroundJobCountByMethod) return
 
-			return backgroundJobCountByMethod;
+			return backgroundJobCountByMethod
 		},
 		backgroundJobDurationByMethodData() {
 			let backgroundJobDurationByMethod =
 				this.$resources.advancedAnalytics.data
-					?.background_job_duration_by_method;
-			if (!backgroundJobDurationByMethod) return;
+					?.background_job_duration_by_method
+			if (!backgroundJobDurationByMethod) return
 
-			return backgroundJobDurationByMethod;
+			return backgroundJobDurationByMethod
 		},
 		averageBackgroundJobDurationByMethodData() {
 			let averageBackgroundJobDurationByMethod =
 				this.$resources.advancedAnalytics.data
-					?.average_background_job_duration_by_method;
-			if (!averageBackgroundJobDurationByMethod) return;
+					?.average_background_job_duration_by_method
+			if (!averageBackgroundJobDurationByMethod) return
 
-			return averageBackgroundJobDurationByMethod;
+			return averageBackgroundJobDurationByMethod
 		},
 		slowLogsDurationData() {
-			const slowLogs = this.$resources.slowLogsDuration.data;
-			if (!slowLogs) return;
+			const slowLogs = this.$resources.slowLogsDuration.data
+			if (!slowLogs) return
 
-			return slowLogs;
+			return slowLogs
 		},
 		slowLogsCountData() {
-			const slowLogs = this.$resources.slowLogsCount.data;
-			if (!slowLogs) return;
+			const slowLogs = this.$resources.slowLogsCount.data
+			if (!slowLogs) return
 
-			return slowLogs;
+			return slowLogs
 		},
 		requestTimeData() {
-			let requestCpuTime = this.$resources.analytics.data?.request_cpu_time;
-			if (!requestCpuTime) return;
+			let requestCpuTime = this.$resources.analytics.data?.request_cpu_time
+			if (!requestCpuTime) return
 
 			return {
 				datasets: [
 					requestCpuTime.map((d) => [+new Date(d.date), d.value / 1000000]),
 				],
-			};
+			}
 		},
 		jobCountData() {
-			let jobCount = this.$resources.advancedAnalytics.data?.job_count;
-			if (!jobCount) return;
+			let jobCount = this.$resources.advancedAnalytics.data?.job_count
+			if (!jobCount) return
 
 			return {
 				datasets: [jobCount.map((d) => [+new Date(d.date), d.value])],
-			};
+			}
 		},
 		jobTimeData() {
-			let jobCpuTime = this.$resources.advancedAnalytics.data?.job_cpu_time;
-			if (!jobCpuTime) return;
+			let jobCpuTime = this.$resources.advancedAnalytics.data?.job_cpu_time
+			if (!jobCpuTime) return
 
 			return {
 				datasets: [
 					jobCpuTime.map((d) => [+new Date(d.date), d.value / 1000000]),
 				],
-			};
+			}
 		},
 		shareDashboardActionPrefix() {
-			return () => h(LucideLink, { class: 'size-3.5' });
+			return () => h(LucideLink, { class: 'size-3.5' })
 		},
 	},
 	methods: {
 		toggleAdvancedAnalytics() {
-			this.showAdvancedAnalytics = !this.showAdvancedAnalytics;
+			this.showAdvancedAnalytics = !this.showAdvancedAnalytics
 		},
 		handleDataZoom(evt) {
-			clearTimeout(this._zoomTimeout);
+			clearTimeout(this._zoomTimeout)
 
 			this._zoomTimeout = setTimeout(() => {
-				const { startDate, endDate } = evt;
-				this.updateStartDate(startDate);
-				this.updateEndDate(endDate);
-			}, 500); // debounce
+				const { startDate, endDate } = evt
+				this.updateStartDate(startDate)
+				this.updateEndDate(endDate)
+			}, 500) // debounce
 		},
 		dateFormatter(dateString) {
 			return dayjs(dateString, 'YYYY-MM-DD HH:mm:ss').format(
 				'MMM D, YYYY h:mm A',
-			);
+			)
 		},
 		resetDateRangeError(msg = null) {
-			this.dateRangeError = msg;
+			this.dateRangeError = msg
 		},
 		resetDurationField(value = null) {
-			this.duration = value;
+			this.duration = value
 		},
 		applyDefaultDateRange() {
-			this.duration = this.defaultDuration;
+			this.duration = this.defaultDuration
 		},
 		syncLogicalDateRange() {
-			this.logicalStartDate = this.inputStartDate;
-			this.logicalEndDate = this.inputEndDate;
+			this.logicalStartDate = this.inputStartDate
+			this.logicalEndDate = this.inputEndDate
 		},
 		validateDateRange(start = this.inputStartDate, end = this.inputEndDate) {
-			return dayjs(start).isBefore(dayjs(end));
+			return dayjs(start).isBefore(dayjs(end))
 		},
 		updateStartDate(newStartDate, resetDuration = true) {
-			this.resetDateRangeError();
+			this.resetDateRangeError()
 			if (resetDuration) {
-				this.resetDurationField();
+				this.resetDurationField()
 			}
 
-			this.inputStartDate = dayjs(newStartDate);
+			this.inputStartDate = dayjs(newStartDate)
 
 			if (this.allowTimestampSyncToUrl) {
 				// Update the query params
@@ -842,22 +841,22 @@ export default {
 						start: this.inputStartDate?.toISOString(),
 						end: this.inputEndDate?.toISOString(),
 					},
-				});
+				})
 			}
 
 			if (!this.validateDateRange()) {
-				this.dateRangeError = 'Invalid date range';
+				this.dateRangeError = 'Invalid date range'
 			} else {
-				this.syncLogicalDateRange();
+				this.syncLogicalDateRange()
 			}
 		},
 		updateEndDate(newEndDate, resetDuration = true) {
-			this.resetDateRangeError();
+			this.resetDateRangeError()
 			if (resetDuration) {
-				this.resetDurationField();
+				this.resetDurationField()
 			}
 
-			this.inputEndDate = dayjs(newEndDate);
+			this.inputEndDate = dayjs(newEndDate)
 
 			if (this.allowTimestampSyncToUrl) {
 				// Update the query params
@@ -867,54 +866,54 @@ export default {
 						start: this.inputStartDate?.toISOString(),
 						end: this.inputEndDate?.toISOString(),
 					},
-				});
+				})
 			}
 
 			if (!this.validateDateRange()) {
-				this.dateRangeError = 'Invalid date range';
+				this.dateRangeError = 'Invalid date range'
 			} else {
-				this.syncLogicalDateRange();
+				this.syncLogicalDateRange()
 			}
 		},
 		highlightCard(slug) {
-			if (!slug) return;
+			if (!slug) return
 
 			document.getElementById(slug)?.scrollIntoView({
 				behavior: 'smooth',
 				block: 'center',
-			});
+			})
 		},
 		shareDashboard(evt, context = 'card') {
 			if (!['card', 'global'].includes(context))
-				throw new Error('Invalid share context');
+				throw new Error('Invalid share context')
 
 			if (context === 'card') {
 				const url = new URL(
 					`${window.location.href}?start=${this.inputStartDate}&end=${this.inputEndDate}`,
-				);
-				url.hash = `#${evt}`;
-				navigator.clipboard?.writeText(url.toString());
-				toast.success('Card link copied to clipboard!');
+				)
+				url.hash = `#${evt}`
+				navigator.clipboard?.writeText(url.toString())
+				toast.success('Card link copied to clipboard!')
 			} else if (context === 'global') {
 				const url = new URL(
 					`${window.location.href}?start=${this.inputStartDate}&end=${this.inputEndDate}`,
-				);
-				navigator.clipboard?.writeText(url.toString());
-				toast.success('Dashboard link copied to clipboard!');
+				)
+				navigator.clipboard?.writeText(url.toString())
+				toast.success('Dashboard link copied to clipboard!')
 			}
 		},
 	},
 	watch: {
 		duration(newValue) {
-			if (!newValue) return;
-			this.now = dayjs();
+			if (!newValue) return
+			this.now = dayjs()
 			// floor to 15 minutes to avoid issues with caching
-			const flooredEndDate = dayjsFloorToMinutes(this.now, 15);
-			this.updateEndDate(flooredEndDate, false);
-			const int = parseInt(newValue.slice(0, -1));
-			const unit = newValue.slice(-1);
-			this.updateStartDate(dayjs(this.inputEndDate).subtract(int, unit), false);
+			const flooredEndDate = dayjsFloorToMinutes(this.now, 15)
+			this.updateEndDate(flooredEndDate, false)
+			const int = parseInt(newValue.slice(0, -1))
+			const unit = newValue.slice(-1)
+			this.updateStartDate(dayjs(this.inputEndDate).subtract(int, unit), false)
 		},
 	},
-};
+}
 </script>

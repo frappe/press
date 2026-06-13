@@ -68,7 +68,9 @@
 			class="p-4 my-4 flex flex-col gap-2.5 rounded border-[1.5px]"
 		>
 			<div class="text-lg font-semibold pb-1">Description</div>
-			<div class="text-base text-ink-gray-8 whitespace-pre-line leading-relaxed">
+			<div
+				class="text-base text-ink-gray-8 whitespace-pre-line leading-relaxed"
+			>
 				{{ ncSummaryDoc?.doc?.nc_description }}
 			</div>
 		</div>
@@ -77,7 +79,9 @@
 			class="p-4 my-4 flex flex-col gap-2.5 rounded border-[1.5px]"
 		>
 			<div class="text-lg font-semibold pb-1">Measures to be taken</div>
-			<div class="text-base text-ink-gray-8 whitespace-pre-line leading-relaxed">
+			<div
+				class="text-base text-ink-gray-8 whitespace-pre-line leading-relaxed"
+			>
 				{{ ncSummaryDoc?.doc?.measures_to_close_nc }}
 			</div>
 		</div>
@@ -95,23 +99,23 @@
 	</div>
 </template>
 <script setup>
-import { defineProps, watch } from 'vue';
-import { createDocumentResource } from 'frappe-ui';
+import { defineProps, watch } from 'vue'
+import { createDocumentResource } from 'frappe-ui'
 
 const props = defineProps({
 	nc: {
 		type: String,
 		required: true,
 	},
-});
+})
 
 const theme_map = {
 	Open: 'blue',
 	Closed: 'green',
 	WIP: 'orange',
-};
+}
 
-let ncSummaryDoc = {};
+let ncSummaryDoc = {}
 
 watch(
 	() => props.nc,
@@ -120,18 +124,18 @@ watch(
 			ncSummaryDoc = createDocumentResource({
 				doctype: 'Partner Non Conformance',
 				name: props.nc,
-			});
+			})
 		}
 	},
 	{ immediate: true },
-);
+)
 
 const formatDate = (dateString) => {
-	if (!dateString) return '-';
+	if (!dateString) return '-'
 	return new Date(dateString).toLocaleDateString('en-US', {
 		year: 'numeric',
 		month: 'long',
 		day: 'numeric',
-	});
-};
+	})
+}
 </script>

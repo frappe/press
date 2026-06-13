@@ -1,5 +1,5 @@
 <script setup>
-const props = defineProps(['heading']);
+const props = defineProps(['heading'])
 </script>
 
 <template>

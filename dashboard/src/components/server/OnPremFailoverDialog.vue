@@ -21,7 +21,9 @@
 			<div v-else>
 				<!-- Status -->
 				<div class="flex flex-row justify-between items-center">
-					<div class="text-base font-medium text-ink-gray-8">Current Status</div>
+					<div class="text-base font-medium text-ink-gray-8">
+						Current Status
+					</div>
 					<Button
 						variant="subtle"
 						theme="red"
@@ -40,7 +42,9 @@
 						Stop Replication
 					</Button>
 				</div>
-				<div class="overflow-hidden rounded-md border border-outline-gray-2 mt-2">
+				<div
+					class="overflow-hidden rounded-md border border-outline-gray-2 mt-2"
+				>
 					<table class="min-w-full">
 						<thead class="bg-surface-gray-2">
 							<tr>
@@ -68,50 +72,38 @@
 							<tr>
 								<td>Wireguard Setup</td>
 								<td>
-									{{
-										appServerStatusFlags?.wireguard_setup_completed
+									{{ appServerStatusFlags?.wireguard_setup_completed
 											? 'Yes'
-											: 'No'
-									}}
+											: 'No' }}
 								</td>
 								<td>
-									{{
-										databaseServerStatusFlags?.wireguard_setup_completed
+									{{ databaseServerStatusFlags?.wireguard_setup_completed
 											? 'Yes'
-											: 'No'
-									}}
+											: 'No' }}
 								</td>
 							</tr>
 							<tr>
 								<td>On-Prem Reachable</td>
 								<td>
-									{{
-										appServerStatusFlags?.on_prem_server_reachable
+									{{ appServerStatusFlags?.on_prem_server_reachable
 											? 'Yes'
-											: 'No'
-									}}
+											: 'No' }}
 								</td>
 								<td>
-									{{
-										databaseServerStatusFlags?.on_prem_server_reachable
+									{{ databaseServerStatusFlags?.on_prem_server_reachable
 											? 'Yes'
-											: 'No'
-									}}
+											: 'No' }}
 								</td>
 							</tr>
 							<tr>
 								<td>On-Prem SSHable</td>
 								<td>
-									{{
-										appServerStatusFlags?.on_prem_server_sshable ? 'Yes' : 'No'
-									}}
+									{{ appServerStatusFlags?.on_prem_server_sshable ? 'Yes' : 'No' }}
 								</td>
 								<td>
-									{{
-										databaseServerStatusFlags?.on_prem_server_sshable
+									{{ databaseServerStatusFlags?.on_prem_server_sshable
 											? 'Yes'
-											: 'No'
-									}}
+											: 'No' }}
 								</td>
 							</tr>
 							<tr>
@@ -120,9 +112,7 @@
 									{{ appServerStatusFlags?.setup_completed ? 'Yes' : 'No' }}
 								</td>
 								<td>
-									{{
-										databaseServerStatusFlags?.setup_completed ? 'Yes' : 'No'
-									}}
+									{{ databaseServerStatusFlags?.setup_completed ? 'Yes' : 'No' }}
 								</td>
 							</tr>
 						</tbody>
@@ -225,12 +215,10 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 											this.databaseServerStatusFlags?.setup_completed)
 									"
 								>
-									{{
-										runningPressJobType
+									{{ runningPressJobType
 											? `Running ${runningPressJobType}...`
 											: `Start On-Prem
-									Replication Setup`
-									}}
+									Replication Setup` }}
 								</Button>
 							</div>
 						</div>
@@ -294,7 +282,9 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 									</div>
 								</div>
 								<div>
-									<div class="text-sm font-medium text-ink-gray-5">Duration</div>
+									<div class="text-sm font-medium text-ink-gray-5">
+										Duration
+									</div>
 									<div class="mt-2 text-sm text-ink-gray-9">
 										{{ job.duration ? humanizeDuration(job.duration) : '-' }}
 									</div>
@@ -331,13 +321,13 @@ tbody tr:last-child td {
 }
 </style>
 <script>
-import { Button } from 'frappe-ui';
-import ClickToCopyField from '../ClickToCopyField.vue';
-import { confirmDialog } from '../../utils/components';
+import { Button } from 'frappe-ui'
+import ClickToCopyField from '../ClickToCopyField.vue'
+import { confirmDialog } from '../../utils/components'
 
-import { toast } from 'vue-sonner';
-import Badge from '../global/Badge.vue';
-import JobStep from '../JobStep.vue';
+import { toast } from 'vue-sonner'
+import Badge from '../global/Badge.vue'
+import JobStep from '../JobStep.vue'
 
 export default {
 	name: 'OnPremFailoverDialog',
@@ -361,7 +351,7 @@ export default {
 			openedJobSection: null,
 			openedJobStep: null,
 			initialDataFetched: false,
-		};
+		}
 	},
 	resources: {
 		onPremFailoverConfig() {
@@ -374,16 +364,16 @@ export default {
 						dn: this.appServer,
 						method: 'generate_on_prem_failover_config',
 						args: {},
-					};
+					}
 				},
 				onSuccess: () => {
-					this.initialDataFetched = true;
+					this.initialDataFetched = true
 					setTimeout(() => {
-						this.$resources.onPremFailoverConfig.reload();
-					}, 5000);
+						this.$resources.onPremFailoverConfig.reload()
+					}, 5000)
 				},
 				auto: true,
-			};
+			}
 		},
 		startOnPremReplicationSetup() {
 			return {
@@ -394,17 +384,17 @@ export default {
 						dn: this.appServer,
 						method: 'start_on_prem_server_replication',
 						args: {},
-					};
+					}
 				},
 				onSuccess: () => {
-					toast.success('On-Prem Replication Setup Started');
-					this.$resources.onPremFailoverConfig.reload();
-					this.isSetupGuideVisible = false;
+					toast.success('On-Prem Replication Setup Started')
+					this.$resources.onPremFailoverConfig.reload()
+					this.isSetupGuideVisible = false
 				},
 				onError: () => {
-					toast.error('Failed to start replication setup. Please try again.');
+					toast.error('Failed to start replication setup. Please try again.')
 				},
-			};
+			}
 		},
 		stopOnPremReplicationSetup() {
 			return {
@@ -415,48 +405,48 @@ export default {
 						dn: this.appServer,
 						method: 'stop_on_prem_server_replication',
 						args: {},
-					};
+					}
 				},
 				onSuccess: () => {
-					toast.success('On-Prem Replication Setup Stopped');
-					this.$resources.onPremFailoverConfig.reload();
+					toast.success('On-Prem Replication Setup Stopped')
+					this.$resources.onPremFailoverConfig.reload()
 				},
 				onError: () => {
-					toast.error('Failed to stop replication setup. Please try again.');
+					toast.error('Failed to stop replication setup. Please try again.')
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		onPremFailoverConfig() {
-			return this.$resources?.onPremFailoverConfig?.data?.message || {};
+			return this.$resources?.onPremFailoverConfig?.data?.message || {}
 		},
 		statusFlags() {
-			return this.onPremFailoverConfig?.status || {};
+			return this.onPremFailoverConfig?.status || {}
 		},
 		appServerStatusFlags() {
-			return this.onPremFailoverConfig?.status?.app_server || {};
+			return this.onPremFailoverConfig?.status?.app_server || {}
 		},
 		databaseServerStatusFlags() {
-			return this.onPremFailoverConfig?.status?.db_server || {};
+			return this.onPremFailoverConfig?.status?.db_server || {}
 		},
 		wireguardConfig() {
-			return this.onPremFailoverConfig?.wireguard_config || '';
+			return this.onPremFailoverConfig?.wireguard_config || ''
 		},
 		authorizedKeys() {
-			return this.onPremFailoverConfig?.authorized_ssh_keys || '';
+			return this.onPremFailoverConfig?.authorized_ssh_keys || ''
 		},
 		jobs() {
-			return this.onPremFailoverConfig?.jobs || [];
+			return this.onPremFailoverConfig?.jobs || []
 		},
 		runningPressJobType() {
-			return this.onPremFailoverConfig?.running_press_job_type || null;
+			return this.onPremFailoverConfig?.running_press_job_type || null
 		},
 		steps() {
-			if (!this.openedJobSection) return [];
-			const job = this.jobs.find((job) => job.name === this.openedJobSection);
-			const steps = job?.steps || [];
-			let prepared_steps = [];
+			if (!this.openedJobSection) return []
+			const job = this.jobs.find((job) => job.name === this.openedJobSection)
+			const steps = job?.steps || []
+			let prepared_steps = []
 			steps.forEach((step) => {
 				prepared_steps.push({
 					name: step.name,
@@ -468,28 +458,28 @@ export default {
 						: '',
 					stage: null,
 					isOpen: step.name === this.openedJobStep,
-				});
-			});
-			return prepared_steps;
+				})
+			})
+			return prepared_steps
 		},
 	},
 	methods: {
 		toggleSetupGuide() {
-			this.isSetupGuideVisible = !this.isSetupGuideVisible;
+			this.isSetupGuideVisible = !this.isSetupGuideVisible
 		},
 		humanizeDuration(seconds) {
-			seconds = Math.floor(seconds);
+			seconds = Math.floor(seconds)
 
-			const h = Math.floor(seconds / 3600);
-			const m = Math.floor((seconds % 3600) / 60);
-			const s = seconds % 60;
+			const h = Math.floor(seconds / 3600)
+			const m = Math.floor((seconds % 3600) / 60)
+			const s = seconds % 60
 
-			const parts = [];
-			if (h) parts.push(`${h}h`);
-			if (m) parts.push(`${m}m`);
-			if (s || parts.length === 0) parts.push(`${s}s`);
+			const parts = []
+			if (h) parts.push(`${h}h`)
+			if (m) parts.push(`${m}m`)
+			if (s || parts.length === 0) parts.push(`${s}s`)
 
-			return parts.join(' ');
+			return parts.join(' ')
 		},
 		stopReplication() {
 			confirmDialog({
@@ -504,12 +494,12 @@ export default {
 						return this.$resources?.stopOnPremReplicationSetup
 							?.submit()
 							.then(() => {
-								hide();
-							});
+								hide()
+							})
 					},
 				},
-			});
+			})
 		},
 	},
-};
+}
 </script>

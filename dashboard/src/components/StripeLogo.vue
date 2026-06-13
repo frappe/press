@@ -27,6 +27,6 @@
 </template>
 <script>
 export default {
-	name: 'StripeLogo'
-};
+	name: 'StripeLogo',
+}
 </script>

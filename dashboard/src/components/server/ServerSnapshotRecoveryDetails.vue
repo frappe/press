@@ -3,7 +3,8 @@
 		class="flex h-60 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 		v-if="$resources?.snapshotRecovery?.loading"
 	>
-		<Spinner class="w-4" /> Loading ...
+		<Spinner class="w-4" />
+		Loading ...
 	</div>
 	<div>
 		<ObjectList :options="siteOptions" />
@@ -11,8 +12,8 @@
 </template>
 
 <script>
-import { Spinner } from 'frappe-ui';
-import ObjectList from '../ObjectList.vue';
+import { Spinner } from 'frappe-ui'
+import ObjectList from '../ObjectList.vue'
 export default {
 	name: 'ServerSnapshotRecoveryDetails',
 	props: {
@@ -26,7 +27,7 @@ export default {
 		ObjectList,
 	},
 	data() {
-		return {};
+		return {}
 	},
 	resources: {
 		snapshotRecovery() {
@@ -38,12 +39,12 @@ export default {
 				whitelistedMethods: {
 					downloadBackup: 'download_backup',
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		sites() {
-			return this.$resources?.snapshotRecovery?.doc?.sites_data || [];
+			return this.$resources?.snapshotRecovery?.doc?.sites_data || []
 		},
 		siteOptions() {
 			return {
@@ -57,9 +58,9 @@ export default {
 						align: 'left',
 						format(value) {
 							if (value.length > 15) {
-								return value.substring(0, 15) + '...';
+								return value.substring(0, 15) + '...'
 							}
-							return value;
+							return value
 						},
 					},
 					{
@@ -76,7 +77,7 @@ export default {
 						type: 'Icon',
 						align: 'center',
 						Icon(value) {
-							return value ? 'check' : 'x';
+							return value ? 'check' : 'x'
 						},
 					},
 					{
@@ -86,7 +87,7 @@ export default {
 						type: 'Icon',
 						align: 'center',
 						Icon(value) {
-							return value ? 'check' : 'x';
+							return value ? 'check' : 'x'
 						},
 					},
 					{
@@ -96,13 +97,13 @@ export default {
 						type: 'Icon',
 						align: 'center',
 						Icon(value) {
-							return value ? 'check' : 'x';
+							return value ? 'check' : 'x'
 						},
 					},
 				],
 				rowActions: ({ row }) => {
 					if (row.status !== 'Success') {
-						return [];
+						return []
 					}
 					return [
 						{
@@ -111,36 +112,36 @@ export default {
 								{
 									label: 'Download Database',
 									onClick: () => {
-										return this.download(row, 'database');
+										return this.download(row, 'database')
 									},
 									condition: () => row.database_backup_available,
 								},
 								{
 									label: 'Download Public Files',
 									onClick: () => {
-										return this.download(row, 'public');
+										return this.download(row, 'public')
 									},
 									condition: () => row.public_files_backup_available,
 								},
 								{
 									label: 'Download Private Files',
 									onClick: () => {
-										return this.download(row, 'private');
+										return this.download(row, 'private')
 									},
 									condition: () => row.private_files_backup_available,
 								},
 								{
 									label: 'Download Encryption Key',
 									onClick: () => {
-										return this.download(row, 'encryption_key');
+										return this.download(row, 'encryption_key')
 									},
 									condition: () => row.encryption_key_available,
 								},
 							],
 						},
-					];
+					]
 				},
-			};
+			}
 		},
 	},
 	methods: {
@@ -149,28 +150,28 @@ export default {
 				{ site: row.site, file_type: type },
 				{
 					onSuccess(r) {
-						const data = r.message;
+						const data = r.message
 						if (!data) {
-							return;
+							return
 						}
 						if (type === 'encryption_key') {
 							// Create a file
-							const blob = new Blob([data], { type: 'text/plain' });
-							const url = window.URL.createObjectURL(blob);
-							const a = document.createElement('a');
-							a.href = url;
-							a.download = `${row.site}_${type}.txt`;
-							document.body.appendChild(a);
-							a.click();
-							document.body.removeChild(a);
-							window.URL.revokeObjectURL(url);
+							const blob = new Blob([data], { type: 'text/plain' })
+							const url = window.URL.createObjectURL(blob)
+							const a = document.createElement('a')
+							a.href = url
+							a.download = `${row.site}_${type}.txt`
+							document.body.appendChild(a)
+							a.click()
+							document.body.removeChild(a)
+							window.URL.revokeObjectURL(url)
 						} else {
-							window.open(r.message);
+							window.open(r.message)
 						}
 					},
 				},
-			);
+			)
 		},
 	},
-};
+}
 </script>

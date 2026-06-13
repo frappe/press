@@ -5,11 +5,11 @@
 </template>
 
 <script>
-import ObjectList from '../ObjectList.vue';
-import { currency } from '../../utils/format';
-import { Button } from 'frappe-ui';
-import { icon } from '../../utils/components';
-import router from '../../router';
+import ObjectList from '../ObjectList.vue'
+import { currency } from '../../utils/format'
+import { Button } from 'frappe-ui'
+import { icon } from '../../utils/components'
+import router from '../../router'
 
 export default {
 	components: { ObjectList, Button },
@@ -17,7 +17,7 @@ export default {
 		return {
 			currency: 'USD',
 			debugData: null,
-		};
+		}
 	},
 	computed: {
 		options() {
@@ -39,7 +39,7 @@ export default {
 								year: 'numeric',
 								month: 'short',
 								day: 'numeric',
-							}).format(new Date(value));
+							}).format(new Date(value))
 						},
 					},
 					{
@@ -72,22 +72,22 @@ export default {
 							prefix: icon('plus'),
 						},
 						onClick() {
-							router.push({ name: 'PartnerNewPayout' });
+							router.push({ name: 'PartnerNewPayout' })
 						},
-					};
+					}
 				},
 				orderBy: 'posting_date desc',
 				emptyStateText: 'No payouts found',
-			};
+			}
 		},
 	},
 	methods: {
 		formatCurrency(value) {
 			if (value === 0 || value === null || value === undefined) {
-				return 'N/A';
+				return 'N/A'
 			}
-			return currency(value, this.currency);
+			return currency(value, this.currency)
 		},
 	},
-};
+}
 </script>

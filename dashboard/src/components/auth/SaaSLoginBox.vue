@@ -42,8 +42,8 @@
 </template>
 
 <script>
-import FCLogo from '@/components/icons/FCLogo.vue';
-import { notify } from '@/utils/toast';
+import FCLogo from '@/components/icons/FCLogo.vue'
+import { notify } from '@/utils/toast'
 
 export default {
 	name: 'SaaSLoginBox',
@@ -52,20 +52,20 @@ export default {
 		FCLogo,
 	},
 	mounted() {
-		const params = new URLSearchParams(window.location.search);
+		const params = new URLSearchParams(window.location.search)
 
 		if (params.get('showRemoteLoginError')) {
 			notify({
 				title: 'Token Invalid or Expired',
 				color: 'red',
 				icon: 'x',
-			});
+			})
 		}
 	},
 	methods: {
 		redirectForFrappeioAuth() {
-			window.location = '/f-login';
+			window.location = '/f-login'
 		},
 	},
-};
+}
 </script>

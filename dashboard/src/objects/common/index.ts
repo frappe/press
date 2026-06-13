@@ -1,16 +1,16 @@
-import { defineAsyncComponent, h } from 'vue';
-import { renderDialog } from '../../utils/components';
+import { defineAsyncComponent, h } from 'vue'
+import { renderDialog } from '../../utils/components'
 import type {
 	BannerConfig,
 	ColumnField,
 	DocumentResource,
 	Route,
 	Row,
-} from './types';
-import { trialDays } from '../../utils/site';
-import { planTitle } from '../../utils/format';
+} from './types'
+import { trialDays } from '../../utils/site'
+import { planTitle } from '../../utils/format'
 
-export const unreachable = Error('unreachable'); // used to indicate that a codepath is unreachable
+export const unreachable = Error('unreachable') // used to indicate that a codepath is unreachable
 
 export const clusterOptions = [
 	'',
@@ -24,7 +24,7 @@ export const clusterOptions = [
 	'UAE',
 	'Virginia',
 	'Zurich',
-];
+]
 
 export function getUpsellBanner(site: DocumentResource, title: string) {
 	if (
@@ -33,7 +33,7 @@ export function getUpsellBanner(site: DocumentResource, title: string) {
 		site.doc.current_plan?.is_trial_plan ||
 		!site.doc.group_public
 	)
-		return;
+		return
 
 	return {
 		title: title,
@@ -45,12 +45,12 @@ export function getUpsellBanner(site: DocumentResource, title: string) {
 			variant: 'outline',
 			onClick() {
 				let SitePlansDialog = defineAsyncComponent(
-					() => import('../../components/ManageSitePlansDialog.vue')
-				);
-				renderDialog(h(SitePlansDialog, { site: site.name }));
+					() => import('../../components/ManageSitePlansDialog.vue'),
+				)
+				renderDialog(h(SitePlansDialog, { site: site.name }))
 			},
 		},
-	} satisfies BannerConfig as BannerConfig;
+	} satisfies BannerConfig as BannerConfig
 }
 
 export function getSitesTabColumns(forBenchTab: boolean) {
@@ -59,11 +59,11 @@ export function getSitesTabColumns(forBenchTab: boolean) {
 			label: 'Site',
 			fieldname: 'host_name',
 			format(value, row) {
-				return value || row.name;
+				return value || row.name
 			},
 			prefix: () => {
-				if (forBenchTab) return;
-				return h('div', { class: 'ml-2 w-3.5 h-3.5' });
+				if (forBenchTab) return
+				return h('div', { class: 'ml-2 w-3.5 h-3.5' })
 			},
 		},
 		{
@@ -82,7 +82,7 @@ export function getSitesTabColumns(forBenchTab: boolean) {
 						src: row.cluster_image,
 						class: 'w-4 h-4',
 						alt: row.cluster_title,
-					});
+					})
 			},
 		},
 		{
@@ -90,12 +90,12 @@ export function getSitesTabColumns(forBenchTab: boolean) {
 			width: 0.5,
 			format(value, row) {
 				if (row.trial_end_date) {
-					return trialDays(row.trial_end_date);
+					return trialDays(row.trial_end_date)
 				}
-				return planTitle(row);
+				return planTitle(row)
 			},
 		},
-	] satisfies ColumnField[] as ColumnField[];
+	] satisfies ColumnField[] as ColumnField[]
 }
 
 export function siteTabFilterControls() {
@@ -124,12 +124,12 @@ export function siteTabFilterControls() {
 				'Zurich',
 			],
 		},
-	];
+	]
 }
 
 export function sitesTabRoute(r: Row) {
 	return {
 		name: 'Site Detail',
 		params: { name: r.name },
-	} satisfies Route as Route;
+	} satisfies Route as Route
 }

@@ -20,8 +20,8 @@
 	</div>
 </template>
 <script>
-import ObjectList from '../components/ObjectList.vue';
-import PayoutTable from '../components/PayoutTable.vue';
+import ObjectList from '../components/ObjectList.vue'
+import PayoutTable from '../components/PayoutTable.vue'
 
 export default {
 	name: 'BillingMarketplacePayouts',
@@ -30,7 +30,7 @@ export default {
 		return {
 			payoutDialog: false,
 			showPayout: null,
-		};
+		}
 	},
 	components: {
 		ObjectList,
@@ -56,7 +56,7 @@ export default {
 							fieldname: 'status',
 							options: ['', 'Draft', 'Paid', 'Commissioned'],
 						},
-					];
+					]
 				},
 				orderBy: 'creation desc',
 				columns: [
@@ -68,7 +68,7 @@ export default {
 								year: 'numeric',
 								month: 'short',
 								day: 'numeric',
-							}).format(new Date(value));
+							}).format(new Date(value))
 						},
 					},
 					{ label: 'Payment Mode', fieldname: 'mode_of_payment' },
@@ -78,23 +78,23 @@ export default {
 						fieldname: 'net_total_inr',
 						align: 'right',
 						format: (_, row) => {
-							let total = 0;
+							let total = 0
 							if (this.$team.doc.currency === 'INR') {
-								total = row.net_total_inr + row.net_total_usd * 82;
+								total = row.net_total_inr + row.net_total_usd * 82
 							} else {
-								total = row.net_total_inr / 82 + row.net_total_usd;
+								total = row.net_total_inr / 82 + row.net_total_usd
 							}
 
-							return this.$format.userCurrency(total);
+							return this.$format.userCurrency(total)
 						},
 					},
 				],
 				onRowClick: (row) => {
-					this.showPayout = row;
-					this.payoutDialog = true;
+					this.showPayout = row
+					this.payoutDialog = true
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

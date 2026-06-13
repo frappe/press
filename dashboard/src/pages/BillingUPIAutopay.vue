@@ -39,14 +39,14 @@
 	</div>
 </template>
 <script>
-import { h } from 'vue';
-import ObjectList from '../components/ObjectList.vue';
-import BillingDetailsDialog from '../components/billing/BillingDetailsDialog.vue';
-import UPIAutopayForm from '../components/billing/UPIAutopayForm.vue';
-import { FeatherIcon, Dialog, Button } from 'frappe-ui';
-import Badge from '@/components/global/Badge.vue';
-import { toast } from 'vue-sonner';
-import { confirmDialog, icon } from '../utils/components';
+import { h } from 'vue'
+import ObjectList from '../components/ObjectList.vue'
+import BillingDetailsDialog from '../components/billing/BillingDetailsDialog.vue'
+import UPIAutopayForm from '../components/billing/UPIAutopayForm.vue'
+import { FeatherIcon, Dialog, Button } from 'frappe-ui'
+import Badge from '@/components/global/Badge.vue'
+import { toast } from 'vue-sonner'
+import { confirmDialog, icon } from '../utils/components'
 
 export default {
 	name: 'BillingUPIAutopay',
@@ -65,35 +65,35 @@ export default {
 			tempAmount: null,
 			loadingToast: null,
 			showBillingDetailsDialog: false,
-		};
+		}
 	},
 	resources: {
 		billingDetails() {
 			return {
 				url: 'press.api.account.get_billing_information',
 				auto: true,
-			};
+			}
 		},
 		cancelMandate() {
 			return {
 				url: 'press.api.billing.cancel_razorpay_mandate',
 				onSuccess() {
-					toast.success('Mandate cancelled');
+					toast.success('Mandate cancelled')
 				},
 				onError() {
-					toast.error('Could not cancel mandate');
+					toast.error('Could not cancel mandate')
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		billingDetailsSummary() {
-			const d = this.$resources.billingDetails.data;
-			if (!d) return '';
-			const { billing_name, address_line1, city, state, country, pincode } = d;
+			const d = this.$resources.billingDetails.data
+			if (!d) return ''
+			const { billing_name, address_line1, city, state, country, pincode } = d
 			return [billing_name, address_line1, city, state, country, pincode]
 				.filter(Boolean)
-				.join(', ');
+				.join(', ')
 		},
 		options() {
 			return {
@@ -116,7 +116,7 @@ export default {
 						label: 'UPI ID',
 						fieldname: 'upi_vpa',
 						format(value) {
-							return value || '-';
+							return value || '-'
 						},
 					},
 					{
@@ -124,14 +124,14 @@ export default {
 						fieldname: 'status',
 						type: 'Component',
 						component({ row }) {
-							return h(Badge, { label: row.status });
+							return h(Badge, { label: row.status })
 						},
 					},
 					{
 						label: 'Max Amount',
 						fieldname: 'max_amount',
 						format(value) {
-							return `₹${value?.toLocaleString('en-IN') || 0}`;
+							return `₹${value?.toLocaleString('en-IN') || 0}`
 						},
 					},
 					{
@@ -161,22 +161,22 @@ export default {
 												mandate_name: row.name,
 											})
 											.then(() => {
-												listResource.reload();
-												hide();
-											});
+												listResource.reload()
+												hide()
+											})
 									},
-								});
+								})
 							},
 							condition: () =>
 								row.status === 'Active' || row.status === 'Pending',
 						},
-					];
+					]
 				},
 				orderBy: 'creation desc',
 				primaryAction: ({ listResource }) => {
 					const hasActiveMandate = listResource.data?.some(
 						(mandate) => mandate.status === 'Active',
-					);
+					)
 					if (!hasActiveMandate) {
 						return {
 							label: 'Setup Autopay',
@@ -185,40 +185,40 @@ export default {
 							},
 							onClick: () => {
 								if (!this.billingDetailsSummary) {
-									this.showBillingDetailsDialog = true;
-									return;
+									this.showBillingDetailsDialog = true
+									return
 								}
-								this.showSetupDialog = true;
+								this.showSetupDialog = true
 							},
-						};
+						}
 					}
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		handleInitiate(amount) {
-			this.tempAmount = amount;
-			this.showSetupDialog = false;
-			this.loadingToast = toast.loading('Opening payment window...');
+			this.tempAmount = amount
+			this.showSetupDialog = false
+			this.loadingToast = toast.loading('Opening payment window...')
 			this.$nextTick(() => {
-				this.razorpayProcessing = true;
-			});
+				this.razorpayProcessing = true
+			})
 		},
 		onAutopaySuccess() {
-			this.razorpayProcessing = false;
-			this.showSetupDialog = false;
-			this.$refs.mandateList?.reloadListView();
-			this.$team.reload();
+			this.razorpayProcessing = false
+			this.showSetupDialog = false
+			this.$refs.mandateList?.reloadListView()
+			this.$team.reload()
 		},
 		onAutopayCancel() {
-			this.razorpayProcessing = false;
-			this.$refs.mandateList?.reloadListView();
+			this.razorpayProcessing = false
+			this.$refs.mandateList?.reloadListView()
 		},
 		dismissLoadingToast() {
-			toast.dismiss(this.loadingToast);
-			this.loadingToast = null;
+			toast.dismiss(this.loadingToast)
+			this.loadingToast = null
 		},
 	},
-};
+}
 </script>

@@ -67,8 +67,9 @@
 								/>
 								I agree to Frappe&nbsp;
 								<Link href="https://frappecloud.com/terms" target="_blank">
-									Terms of Service </Link
-								>,&nbsp;
+									Terms of Service
+								</Link>
+								,&nbsp;
 								<Link href="https://frappecloud.com/privacy" target="_blank">
 									Privacy Policy
 								</Link>
@@ -129,9 +130,9 @@
 	</div>
 </template>
 <script>
-import { Spinner } from 'frappe-ui';
-import LoginBox from '../../components/auth/SaaSLoginBox.vue';
-import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
+import { Spinner } from 'frappe-ui'
+import LoginBox from '../../components/auth/SaaSLoginBox.vue'
+import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue'
 
 export default {
 	name: 'SaaSSignup',
@@ -148,17 +149,17 @@ export default {
 			last_name: '',
 			country: null,
 			terms_accepted: false,
-		};
+		}
 	},
 	computed: {
 		saasProduct() {
-			return this.$resources.signupSettings.data?.product_trial;
+			return this.$resources.signupSettings.data?.product_trial
 		},
 		countries() {
-			return this.$resources.signupSettings.data?.countries || [];
+			return this.$resources.signupSettings.data?.countries || []
 		},
 		isGoogleOAuthEnabled() {
-			return this.$resources.signupSettings.data?.enable_google_oauth || false;
+			return this.$resources.signupSettings.data?.enable_google_oauth || false
 		},
 	},
 	resources: {
@@ -176,7 +177,7 @@ export default {
 				},
 				validate() {
 					if (!this.terms_accepted) {
-						throw new Error('Please accept the terms of service');
+						throw new Error('Please accept the terms of service')
 					}
 				},
 				onSuccess(account_request) {
@@ -186,9 +187,9 @@ export default {
 							email: this.email,
 							account_request: account_request,
 						},
-					});
+					})
 				},
-			};
+			}
 		},
 		signupSettings() {
 			return {
@@ -203,10 +204,10 @@ export default {
 				auto: true,
 				onSuccess(res) {
 					if (res && res.country) {
-						this.country = res.country;
+						this.country = res.country
 					}
 				},
-			};
+			}
 		},
 		signupWithOAuth() {
 			return {
@@ -216,17 +217,17 @@ export default {
 				},
 				auto: false,
 				onSuccess(url) {
-					window.location.href = url;
+					window.location.href = url
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		getReferrerIfAny() {
-			const params = location.search;
-			const searchParams = new URLSearchParams(params);
-			return searchParams.get('referrer');
+			const params = location.search
+			const searchParams = new URLSearchParams(params)
+			return searchParams.get('referrer')
 		},
 	},
-};
+}
 </script>

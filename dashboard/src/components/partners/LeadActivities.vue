@@ -40,24 +40,22 @@
 							>
 								<span class="font-medium">{{ activity.owner }}</span>
 								<span class="text-ink-gray-5">{{ activity.type }}</span>
-								<span v-if="activity.data?.field_label">{{
-									activity.data.field_label
-								}}</span>
-								<span v-if="activity.value" class="text-ink-gray-5">{{
-									activity.value
-								}}</span>
-								<span
-									class="truncate max-w-xs"
-									v-if="activity.data?.old_value"
+								<span v-if="activity.data?.field_label"
+									>{{ activity.data.field_label }}</span
+								>
+								<span v-if="activity.value" class="text-ink-gray-5"
+									>{{ activity.value }}</span
+								>
+								<span class="truncate max-w-xs" v-if="activity.data?.old_value"
 									>{{ activity.data.old_value }}</span
 								>
 								<span v-else>{{ activity.data?.value }}</span>
-								<span v-if="activity?.to" class="text-ink-gray-5">{{
-									activity.to
-								}}</span>
-								<span class="truncate max-w-xs">{{
-									activity.data?.new_value
-								}}</span>
+								<span v-if="activity?.to" class="text-ink-gray-5"
+									>{{ activity.to }}</span
+								>
+								<span class="truncate max-w-xs"
+									>{{ activity.data?.new_value }}</span
+								>
 							</div>
 							<div class="ml-auto whitespace-nowrap">
 								<Tooltip :text="formatDate(activity.creation)">
@@ -115,9 +113,9 @@
 												{{ activity.data.old_value }}
 											</div>
 										</span>
-										<span v-if="activity.activity_type === 'changed'">{{
-											'to'
-										}}</span>
+										<span v-if="activity.activity_type === 'changed'"
+											>{{ 'to' }}</span
+										>
 										<span
 											v-if="activity.data?.new_value"
 											class="max-w-xs font-medium text-ink-gray-8"
@@ -168,76 +166,76 @@
 	</div>
 </template>
 <script setup>
-import { createResource, Tooltip, Button, FeatherIcon, call } from 'frappe-ui';
-import { useRoute } from 'vue-router';
-import DotIcon from '../icons/DotIcon.vue';
-import SelectIcon from '../icons/SelectIcon.vue';
-import { computed, h, ref, watch, onMounted } from 'vue';
-import { timeAgo, startCase } from '../../utils/format';
-import CommentArea from './CommentArea.vue';
-import CommentIcon from '../icons/CommentIcon.vue';
-import DropdownItem from '../billing/DropdownItem.vue';
-import NewCommentDialog from './NewCommentDialog.vue';
-import { session } from '../../data/session';
-import { getTeam } from '../../data/team';
+import { createResource, Tooltip, Button, FeatherIcon, call } from 'frappe-ui'
+import { useRoute } from 'vue-router'
+import DotIcon from '../icons/DotIcon.vue'
+import SelectIcon from '../icons/SelectIcon.vue'
+import { computed, h, ref, watch, onMounted } from 'vue'
+import { timeAgo, startCase } from '../../utils/format'
+import CommentArea from './CommentArea.vue'
+import CommentIcon from '../icons/CommentIcon.vue'
+import DropdownItem from '../billing/DropdownItem.vue'
+import NewCommentDialog from './NewCommentDialog.vue'
+import { session } from '../../data/session'
+import { getTeam } from '../../data/team'
 
-const route = useRoute();
+const route = useRoute()
 
 const all_activities = createResource({
 	url: 'press.api.partner.get_lead_activities',
 	makeParams: () => {
 		return {
 			name: route.params.leadId,
-		};
+		}
 	},
 	cache: ['all_activities', route.params.leadId],
 	auto: true,
 	transform: (versions) => {
-		return { versions };
+		return { versions }
 	},
-});
+})
 
 function get_activities() {
-	if (!all_activities.data?.versions) return [];
-	return [...all_activities.data.versions];
+	if (!all_activities.data?.versions) return []
+	return [...all_activities.data.versions]
 }
 
 const activities = computed(() => {
-	let _activities = get_activities();
+	let _activities = get_activities()
 	_activities.forEach((activity) => {
 		if (activity.activity_type == 'comment') {
-			activity.icon = CommentIcon;
+			activity.icon = CommentIcon
 		} else {
-			activity.icon = DotIcon;
+			activity.icon = DotIcon
 		}
-		update_activities_details(activity);
-	});
-	return sortByCreation(_activities);
-});
+		update_activities_details(activity)
+	})
+	return sortByCreation(_activities)
+})
 
 function update_activities_details(activity) {
-	activity.owner_name = activity.owner;
-	activity.type = '';
-	activity.value = '';
-	activity.to = '';
+	activity.owner_name = activity.owner
+	activity.type = ''
+	activity.value = ''
+	activity.to = ''
 
 	if (activity.activity_type == 'creation') {
-		activity.type = activity.data;
+		activity.type = activity.data
 	} else if (activity.activity_type == 'added') {
-		activity.type = 'added';
-		activity.value = 'as';
+		activity.type = 'added'
+		activity.value = 'as'
 	} else if (activity.activity_type == 'removed') {
-		activity.type = 'removed';
-		activity.value = 'value';
+		activity.type = 'removed'
+		activity.value = 'value'
 	} else if (activity.activity_type == 'changed') {
-		activity.type = 'changed';
-		activity.value = 'from';
-		activity.to = 'to';
+		activity.type = 'changed'
+		activity.value = 'from'
+		activity.to = 'to'
 	}
 }
 
-let newComment = ref('');
-let showNewCommentDialog = ref(false);
+let newComment = ref('')
+let showNewCommentDialog = ref(false)
 const commentOptions = computed(() => {
 	return [
 		{
@@ -247,7 +245,7 @@ const commentOptions = computed(() => {
 				h(DropdownItem, {
 					label: 'New Comment',
 					onClick: () => {
-						showNewCommentDialog.value = true;
+						showNewCommentDialog.value = true
 					},
 				}),
 		},
@@ -262,16 +260,16 @@ const commentOptions = computed(() => {
 		// 			},
 		// 		}),
 		// },
-	];
-});
+	]
+})
 
 watch(newComment, () => {
-	saveComment();
-});
+	saveComment()
+})
 
 async function saveComment() {
 	if (!newComment.value) {
-		return;
+		return
 	}
 	let comment = await call('frappe.desk.form.utils.add_comment', {
 		reference_doctype: 'Partner Lead',
@@ -279,35 +277,35 @@ async function saveComment() {
 		content: newComment.value,
 		comment_email: session.user,
 		comment_by: session.userFullName,
-	});
+	})
 
 	if (comment) {
-		newComment.value = '';
-		showNewCommentDialog.value = false;
-		all_activities.reload();
+		newComment.value = ''
+		showNewCommentDialog.value = false
+		all_activities.reload()
 	}
 }
 
-const team = getTeam();
-let memberList = ref([]);
+const team = getTeam()
+let memberList = ref([])
 const getMembers = async () => {
-	let members = await team.getTeamMembers.submit();
+	let members = await team.getTeamMembers.submit()
 	memberList.value = members.map((member) => {
-		return { label: member.full_name, value: member.name };
-	});
-};
+		return { label: member.full_name, value: member.name }
+	})
+}
 
 onMounted(() => {
-	getMembers();
-});
+	getMembers()
+})
 
 function formatDate(date) {
-	return new Date(date).toLocaleString();
+	return new Date(date).toLocaleString()
 }
 
 function sortByCreation(list) {
 	return list
 		.sort((a, b) => new Date(a.creation) - new Date(b.creation))
-		.reverse();
+		.reverse()
 }
 </script>

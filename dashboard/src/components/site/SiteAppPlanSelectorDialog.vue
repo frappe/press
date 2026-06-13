@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import PlansCards from '../PlansCards.vue';
+import PlansCards from '../PlansCards.vue'
 
 export default {
 	props: ['app', 'modelValue', 'currentPlan'],
@@ -35,16 +35,16 @@ export default {
 	data() {
 		return {
 			selectedPlan: this.currentPlan,
-		};
+		}
 	},
 	computed: {
 		show: {
 			get() {
-				return this.modelValue;
+				return this.modelValue
 			},
 			set(val) {
-				this.$emit('update:modelValue', val);
-				if (!val) this.selectedPlan = null;
+				this.$emit('update:modelValue', val)
+				if (!val) this.selectedPlan = null
 			},
 		},
 		plans() {
@@ -64,9 +64,9 @@ export default {
 						value: f,
 						icon: 'check-circle',
 					})),
-				};
-			});
+				}
+			})
 		},
 	},
-};
+}
 </script>

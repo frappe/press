@@ -1,23 +1,23 @@
-import { h, computed } from 'vue';
-import { getTeam } from '@/data/team';
-import { session } from '@/data/session';
-import { integrations } from './integrations';
-import { setTheme } from '@/utils/useTheme';
-import { Badge } from 'frappe-ui';
+import { h, computed } from 'vue'
+import { getTeam } from '@/data/team'
+import { session } from '@/data/session'
+import { integrations } from './integrations'
+import { setTheme } from '@/utils/useTheme'
+import { Badge } from 'frappe-ui'
 
 export const index = computed(() => {
-	const team = getTeam();
+	const team = getTeam()
 
 	const groups = {
 		Settings: {
 			items: [
 				{ name: 'Profile', route: '/settings/profile', icon: LucideUser },
-        
+
 				{
-					name: "Team",
-					route: "/settings/team",
+					name: 'Team',
+					route: '/settings/team',
 					icon: LucideUsers,
-					condition: 
+					condition:
 						team.doc?.user === session.user ||
 						session.isTeamAdmin ||
 						session.isSystemUser,
@@ -29,7 +29,7 @@ export const index = computed(() => {
 					name: 'Roles',
 					route: '/settings/permissions/roles',
 					icon: LucideLock,
-         	condition: 
+					condition:
 						team.doc?.user === session.user ||
 						session.isTeamAdmin ||
 						session.isSystemUser,
@@ -194,13 +194,13 @@ export const index = computed(() => {
 					click: () => {
 						document
 							.querySelector('button[aria-label="Notifications btn"]')
-							.click();
+							.click()
 						setTimeout(() => {
 							const tab = document.querySelectorAll(
 								'.PopoverContent [role="tab"]',
-							)[1];
-							tab.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-						}, 0);
+							)[1]
+							tab.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+						}, 0)
 					},
 				},
 			],
@@ -221,13 +221,13 @@ export const index = computed(() => {
 				},
 			],
 		},
-	};
+	}
 
 	for (const [key, value] of Object.entries(integrations)) {
 		groups[key] = {
 			...value,
 			items: value.items.filter((item) => item.condition ?? true),
-		};
+		}
 	}
 
 	return Object.fromEntries(
@@ -240,5 +240,5 @@ export const index = computed(() => {
 					items: section.items.filter((item) => item.condition ?? true),
 				},
 			]),
-	);
-});
+	)
+})

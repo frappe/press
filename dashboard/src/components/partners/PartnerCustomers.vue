@@ -61,7 +61,8 @@
 		>
 			<template #body-content>
 				<p class="text-p-base">
-					{{ formatCurrency(amount) }} credits have been transferred to
+					{{ formatCurrency(amount) }}
+					credits have been transferred to
 					<strong>{{ customerTeam.billing_name }}</strong>
 				</p>
 				<span class="text-base font-medium text-ink-gray-7"
@@ -83,12 +84,12 @@
 	</div>
 </template>
 <script>
-import PartnerCustomerInvoices from './PartnerCustomerInvoices.vue';
-import ObjectList from '../ObjectList.vue';
-import { Dialog, ErrorMessage } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import { userCurrency } from '../../utils/format';
-import PartnerApprovalRequests from './PartnerApprovalRequests.vue';
+import PartnerCustomerInvoices from './PartnerCustomerInvoices.vue'
+import ObjectList from '../ObjectList.vue'
+import { Dialog, ErrorMessage } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import { userCurrency } from '../../utils/format'
+import PartnerApprovalRequests from './PartnerApprovalRequests.vue'
 
 export default {
 	name: 'PartnerCustomers',
@@ -108,19 +109,19 @@ export default {
 			amount: 0.0,
 			showConfirmationDialog: false,
 			showApprovalRequestsDialog: false,
-		};
+		}
 	},
 	resources: {
 		transferCredits() {
 			return {
 				url: 'press.api.partner.transfer_credits',
 				onSuccess(data) {
-					this.amount = data;
-					this.transferCreditsDialog = false;
-					this.showConfirmationDialog = true;
-					toast.success('Credits Transferred');
+					this.amount = data
+					this.transferCreditsDialog = false
+					this.showConfirmationDialog = true
+					toast.success('Credits Transferred')
 				},
-			};
+			}
 		},
 		getBalance: {
 			url: 'press.api.billing.get_balance_credit',
@@ -141,12 +142,12 @@ export default {
 									payment_mode: d.payment_mode || '',
 									currency: d.currency,
 									name: d.name,
-								};
-							});
+								}
+							})
 						},
 						initialData: [],
 						auto: true,
-					};
+					}
 				},
 				columns: [
 					{
@@ -175,10 +176,10 @@ export default {
 							return {
 								label: 'View',
 								onClick: () => {
-									this.showInvoice = row;
-									this.contributionDialog = true;
+									this.showInvoice = row
+									this.contributionDialog = true
 								},
-							};
+							}
 						},
 					},
 					{
@@ -191,10 +192,10 @@ export default {
 							return {
 								label: 'Transfer Credits',
 								onClick: () => {
-									this.transferCreditsDialog = true;
-									this.customerTeam = row;
+									this.transferCreditsDialog = true
+									this.customerTeam = row
 								},
-							};
+							}
 						},
 					},
 				],
@@ -203,26 +204,26 @@ export default {
 						{
 							label: 'Customer Approval Requests',
 							onClick: () => {
-								this.showApprovalRequestsDialog = true;
+								this.showApprovalRequestsDialog = true
 							},
 						},
-					];
+					]
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		formatCurrency(value) {
 			if (value === 0) {
-				return '';
+				return ''
 			}
-			return userCurrency(value);
+			return userCurrency(value)
 		},
 		creditBalance() {
 			return this.formatCurrency(
 				parseFloat(this.$resources.getBalance.data) - parseFloat(this.amount),
-			);
+			)
 		},
 	},
-};
+}
 </script>

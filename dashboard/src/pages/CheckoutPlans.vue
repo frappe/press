@@ -8,11 +8,9 @@
 				<h4 class="flex justify-between text-xl font-semibold text-ink-gray-9">
 					<div>
 						<span>
-							{{
-								subscription.currency === 'INR'
+							{{ subscription.currency === 'INR'
 									? '₹' + plan.price_inr
-									: '$' + plan.price_usd
-							}}
+									: '$' + plan.price_usd }}
 							<span class="text-base font-normal text-ink-gray-6">
 								{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
 							</span>
@@ -32,16 +30,14 @@
 				@click="selectPlan(plan)"
 				:loading="$resources.changeSitePlan.loading"
 			>
-				{{
-					subscription.current_plan === plan.name ? 'Current Plan' : 'Buy Now'
-				}}
+				{{ subscription.current_plan === plan.name ? 'Current Plan' : 'Buy Now' }}
 			</Button>
 		</div>
 	</div>
 </template>
 
 <script>
-import FeatureList from '@/components/FeatureList.vue';
+import FeatureList from '@/components/FeatureList.vue'
 
 export default {
 	name: 'Apps',
@@ -61,26 +57,26 @@ export default {
 		changeSitePlan() {
 			return {
 				url: 'press.api.developer.marketplace.change_site_plan',
-			};
+			}
 		},
 	},
 	methods: {
 		selectPlan(plan) {
-			this.$emit('update:selectedPlan', plan);
-			this.capturePosthogEvent();
+			this.$emit('update:selectedPlan', plan)
+			this.capturePosthogEvent()
 
 			if (Object.keys(this.subscription.address).length > 0) {
 				if (this.subscription.has_billing_info) {
 					this.$resources.changeSitePlan.submit({
 						secret_key: this.secretKey,
 						plan: plan.name,
-					});
-					this.$emit('update:step', 4);
+					})
+					this.$emit('update:step', 4)
 				} else {
-					this.$emit('update:step', 3);
+					this.$emit('update:step', 3)
 				}
 			} else {
-				this.$emit('update:step', 2);
+				this.$emit('update:step', 2)
 			}
 		},
 		getPlanFeatures(plan) {
@@ -90,19 +86,19 @@ export default {
 					' CPU per day',
 				this.formatBytes(plan.max_database_usage, 0, 2) + ' Database',
 				this.formatBytes(plan.max_storage_usage, 0, 2) + ' Storge',
-			];
+			]
 			if (plan.support_included) {
-				features.push('Product warranty + Support');
+				features.push('Product warranty + Support')
 			}
-			return features;
+			return features
 		},
 		capturePosthogEvent() {
 			if (window.posthog) {
 				window.posthog.capture('fc_subscribe_plan_selected', {
 					distinct_id: this.team,
-				});
+				})
 			}
 		},
 	},
-};
+}
 </script>

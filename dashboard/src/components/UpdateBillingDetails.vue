@@ -37,9 +37,9 @@
 </template>
 
 <script>
-import { DashboardError } from '../utils/error';
-import AddressForm from './AddressForm.vue';
-import { toast } from 'vue-sonner';
+import { DashboardError } from '../utils/error'
+import AddressForm from './AddressForm.vue'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'UpdateBillingDetails',
@@ -59,7 +59,7 @@ export default {
 				gstin: '',
 				billing_name: '',
 			},
-		};
+		}
 	},
 	resources: {
 		currentBillingInformation() {
@@ -79,10 +79,10 @@ export default {
 									? ''
 									: billingInformation.gstin,
 							billing_name: billingInformation.billing_name,
-						});
+						})
 					}
 				},
-			};
+			}
 		},
 		updateBillingInformation() {
 			return {
@@ -90,27 +90,25 @@ export default {
 				makeParams() {
 					return {
 						billing_details: this.billingInformation,
-					};
+					}
 				},
 				onSuccess() {
-					this.$emit('update:show', false);
-					toast.success('Address updated successfully!');
-					this.$emit('updated');
+					this.$emit('update:show', false)
+					toast.success('Address updated successfully!')
+					this.$emit('updated')
 				},
 				validate() {
-					var billing_name = this.billingInformation.billing_name.trim();
-					var billingNameRegex = /^[a-zA-Z0-9\-\'\,\.\(\)\s]+$/;
-					var billingNameValid = billingNameRegex.test(billing_name);
+					var billing_name = this.billingInformation.billing_name.trim()
+					var billingNameRegex = /^[a-zA-Z0-9\-\'\,\.\(\)\s]+$/
+					var billingNameValid = billingNameRegex.test(billing_name)
 					if (!billingNameValid) {
-						throw new DashboardError(
-							'Billing Name contains invalid characters',
-						);
+						throw new DashboardError('Billing Name contains invalid characters')
 					}
-					this.billingInformation.billing_name = billing_name;
-					return this.$refs['address-form'].validateValues();
+					this.billingInformation.billing_name = billing_name
+					return this.$refs['address-form'].validateValues()
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

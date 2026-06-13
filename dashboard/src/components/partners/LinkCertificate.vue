@@ -27,10 +27,8 @@
 				<div class="mt-2">
 					<div v-if="certExist" class="text-sm text-green-600" role="alert">
 						Found {{ certCount }} certificates with email {{ userEmail }} of
-						{{
-							courseTypes.find((course) => course.value === certificateType)
-								?.label
-						}}
+						{{ courseTypes.find((course) => course.value === certificateType)
+								?.label }}
 						type.
 					</div>
 				</div>
@@ -56,59 +54,59 @@
 </template>
 
 <script setup>
-import { defineEmits, ref } from 'vue';
-import { createResource, frappeRequest, debounce } from 'frappe-ui';
-import { toast } from 'vue-sonner';
+import { defineEmits, ref } from 'vue'
+import { createResource, frappeRequest, debounce } from 'frappe-ui'
+import { toast } from 'vue-sonner'
 
 const courseTypes = [
 	{ label: 'Framework', value: 'frappe' },
 	{ label: 'ERPNext', value: 'erpnext' },
-];
-const show = ref(true);
+]
+const show = ref(true)
 
-const userEmail = ref('');
-const certificateType = ref('');
+const userEmail = ref('')
+const certificateType = ref('')
 const linkCertificate = createResource({
 	url: 'press.api.partner.send_link_certificate_request',
 	makeParams: () => {
 		return {
 			user_email: userEmail.value,
 			certificate_type: certificateType.value,
-		};
+		}
 	},
 	validate: () => {
 		if (!userEmail.value || !certificateType.value) {
-			throw new Error('Please select a member and certificate type');
+			throw new Error('Please select a member and certificate type')
 		}
 	},
 	onSuccess: () => {
-		show.value = false;
-		emit('success');
-		toast.success('Email has been sent to the user for linking certificate.');
+		show.value = false
+		emit('success')
+		toast.success('Email has been sent to the user for linking certificate.')
 	},
 	onError: (error) => {
-		console.error(error);
+		console.error(error)
 	},
-});
+})
 
-const certCount = ref(0);
-const certExist = ref(null);
+const certCount = ref(0)
+const certExist = ref(null)
 const emailChange = debounce(async () => {
-	if (!userEmail.value) return;
+	if (!userEmail.value) return
 	let response = await frappeRequest({
 		url: 'press.api.partner.check_certificate_exists',
 		params: {
 			email: userEmail.value,
 			certificate_type: certificateType.value,
 		},
-	});
+	})
 	if (response > 0) {
-		certCount.value = response;
-		certExist.value = true;
+		certCount.value = response
+		certExist.value = true
 	} else {
-		certExist.value = false;
+		certExist.value = false
 	}
-}, 500);
+}, 500)
 
-const emit = defineEmits(['success']);
+const emit = defineEmits(['success'])
 </script>

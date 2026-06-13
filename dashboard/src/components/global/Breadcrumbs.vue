@@ -14,9 +14,7 @@
 					:to="item.route"
 				>
 					<slot name="prefix" :item="item" />
-					<span>
-						{{ item.label }}
-					</span>
+					<span> {{ item.label }} </span>
 				</router-link>
 				<span
 					v-if="i != linkItems.length - 1"
@@ -30,21 +28,21 @@
 	<slot name="actions" />
 </template>
 <script setup>
-import { computed } from 'vue';
+import { computed } from 'vue'
 
 const props = defineProps({
 	items: {
 		type: Array,
-		required: true
-	}
-});
+		required: true,
+	},
+})
 
 const items = computed(() => {
-	return (props.items || []).filter(Boolean);
-});
+	return (props.items || []).filter(Boolean)
+})
 
 const linkItems = computed(() => {
-	let lastTwo = items.value.slice(-2);
-	return lastTwo;
-});
+	let lastTwo = items.value.slice(-2)
+	return lastTwo
+})
 </script>

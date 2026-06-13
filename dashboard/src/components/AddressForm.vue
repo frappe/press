@@ -25,9 +25,9 @@
 </template>
 
 <script>
-import Form from '@/components/Form.vue';
-import { indianStates } from '@/utils/billing.js';
-import { DashboardError } from '../utils/error';
+import Form from '@/components/Form.vue'
+import { indianStates } from '@/utils/billing.js'
+import { DashboardError } from '../utils/error'
 
 export default {
 	name: 'AddressForm',
@@ -39,27 +39,27 @@ export default {
 	data() {
 		return {
 			gstApplicable: false,
-		};
+		}
 	},
 	mounted() {
 		if (this.address?.gstin && this.address.gstin !== 'Not Applicable') {
-			this.gstApplicable = true;
+			this.gstApplicable = true
 		} else {
-			this.update('gstin', 'Not Applicable');
+			this.update('gstin', 'Not Applicable')
 		}
 	},
 	watch: {
 		'address.gstin'(gstin) {
-			this.update('gstin', gstin);
+			this.update('gstin', gstin)
 		},
 		gstApplicable(gstApplicable) {
 			if (gstApplicable) {
 				this.update(
 					'gstin',
 					this.address.gstin === 'Not Applicable' ? '' : this.address.gstin,
-				);
+				)
 			} else {
-				this.update('gstin', 'Not Applicable');
+				this.update('gstin', 'Not Applicable')
 			}
 		},
 	},
@@ -68,11 +68,11 @@ export default {
 			url: 'press.api.account.country_list',
 			auto: true,
 			onSuccess() {
-				let userCountry = this.$team?.doc.country;
+				let userCountry = this.$team?.doc.country
 				if (userCountry) {
-					let country = this.countryList.find((d) => d.label === userCountry);
+					let country = this.countryList.find((d) => d.label === userCountry)
 					if (country) {
-						this.update('country', country.value);
+						this.update('country', country.value)
 					}
 				}
 			},
@@ -83,9 +83,9 @@ export default {
 				makeParams() {
 					return {
 						address: this.address,
-					};
+					}
 				},
-			};
+			}
 		},
 	},
 	methods: {
@@ -93,31 +93,31 @@ export default {
 			this.$emit('update:address', {
 				...this.address,
 				[key]: value,
-			});
+			})
 		},
 		async validateGST() {
 			this.update(
 				'gstin',
 				this.gstApplicable ? this.address.gstin : 'Not Applicable',
-			);
-			await this.$resources.validateGST.submit();
+			)
+			await this.$resources.validateGST.submit()
 		},
 		async validateValues() {
-			let { country } = this.address;
-			let is_india = country == 'India';
+			let { country } = this.address
+			let is_india = country == 'India'
 			let values = this.fields
 				.flat()
 				.filter((df) => df.fieldname != 'gstin' || is_india)
-				.map((df) => this.address[df.fieldname]);
+				.map((df) => this.address[df.fieldname])
 
 			if (!values.every(Boolean)) {
-				throw new DashboardError('Please fill required values');
+				throw new DashboardError('Please fill required values')
 			}
 
 			try {
-				await this.validateGST();
+				await this.validateGST()
 			} catch (error) {
-				throw new DashboardError(error.messages?.join('\n'));
+				throw new DashboardError(error.messages?.join('\n'))
 			}
 		},
 	},
@@ -126,13 +126,13 @@ export default {
 			return (this.$resources.countryList.data || []).map((d) => ({
 				label: d.name,
 				value: d.name,
-			}));
+			}))
 		},
 		indianStates() {
 			return indianStates.map((d) => ({
 				label: d,
 				value: d,
-			}));
+			}))
 		},
 		fields() {
 			return [
@@ -168,8 +168,8 @@ export default {
 					fieldname: 'postal_code',
 					required: 1,
 				},
-			];
+			]
 		},
 	},
-};
+}
 </script>

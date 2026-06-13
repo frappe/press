@@ -84,7 +84,7 @@ import {
 	ErrorMessage,
 	FormControl,
 	getCachedDocumentResource,
-} from 'frappe-ui';
+} from 'frappe-ui'
 
 export default {
 	name: 'ConfigEditorDialog',
@@ -103,25 +103,25 @@ export default {
 			type: null,
 			value: null,
 			error: null,
-		};
+		}
 	},
 	async mounted() {
 		if (this.config) {
-			await this.$resources.standardKeys.promise;
+			await this.$resources.standardKeys.promise
 			this.selectedConfig = this.keyOptions.find(
 				(option) => this.config.key === option.value,
-			);
+			)
 			if (this.selectedConfig) {
-				this.key = this.selectedConfig?.value;
-				this.type = this.selectedConfig?.type;
+				this.key = this.selectedConfig?.value
+				this.type = this.selectedConfig?.type
 			} else {
 				this.selectedConfig = this.keyOptions.find(
 					(option) => '__custom_key' === option.value,
-				);
-				this.key = this.config.key;
-				this.type = this.config.type;
+				)
+				this.key = this.config.key
+				this.type = this.config.type
 			}
-			this.value = this.config.type === 'Password' ? '' : this.config.value;
+			this.value = this.config.type === 'Password' ? '' : this.config.value
 		}
 	},
 	resources: {
@@ -131,53 +131,53 @@ export default {
 				cache: 'Site Config Standard Keys',
 				initialData: [],
 				auto: true,
-			};
+			}
 		},
 	},
 	methods: {
 		addConfig() {
 			if (this.site) {
-				this.docResource = getCachedDocumentResource('Site', this.site);
+				this.docResource = getCachedDocumentResource('Site', this.site)
 			} else if (this.group) {
 				this.docResource = getCachedDocumentResource(
 					'Release Group',
 					this.group,
-				);
+				)
 			}
-			if (!this.docResource) return;
+			if (!this.docResource) return
 			let key =
 				this.selectedConfig?.value == '__custom_key'
 					? this.key
-					: this.selectedConfig?.value;
-			let type = this.selectedConfig?.type || this.type;
-			let value = this.value;
+					: this.selectedConfig?.value
+			let type = this.selectedConfig?.type || this.type
+			let value = this.value
 			if (type === 'JSON') {
 				try {
-					value = JSON.parse(value);
+					value = JSON.parse(value)
 				} catch (e) {
-					this.error = 'Invalid JSON';
-					return;
+					this.error = 'Invalid JSON'
+					return
 				}
 			} else if (type === 'Boolean') {
-				value = value === '1' ? true : false;
+				value = value === '1' ? true : false
 			} else if (type === 'Number') {
-				value = Number(value);
+				value = Number(value)
 			}
 
-			let config = { [key]: value };
+			let config = { [key]: value }
 
 			this.docResource.updateConfig.submit(
 				{ config },
 				{
 					onSuccess: () => {
-						this.$emit('success');
-						this.showDialog = false;
+						this.$emit('success')
+						this.showDialog = false
 					},
 					onError: (error) => {
-						this.error = error;
+						this.error = error
 					},
 				},
-			);
+			)
 		},
 	},
 	computed: {
@@ -185,14 +185,14 @@ export default {
 			let customKeyOption = {
 				label: 'Custom Key',
 				value: '__custom_key',
-			};
+			}
 			let standardKeyOptions = this.$resources.standardKeys.data.map((key) => ({
 				label: key.title,
 				value: key.key,
 				type: key.type,
 				detail: key.description, // anti-pattern to avoid showing description in dropdown
-			}));
-			return [customKeyOption, ...standardKeyOptions];
+			}))
+			return [customKeyOption, ...standardKeyOptions]
 		},
 		valueInputProps() {
 			let type = {
@@ -200,13 +200,13 @@ export default {
 				Number: 'number',
 				JSON: 'textarea',
 				Boolean: 'select',
-			}[this.selectedConfig?.type || this.type];
+			}[this.selectedConfig?.type || this.type]
 
 			return {
 				type,
 				options: type === 'select' ? ['1', '0'] : null,
-			};
+			}
 		},
 	},
-};
+}
 </script>

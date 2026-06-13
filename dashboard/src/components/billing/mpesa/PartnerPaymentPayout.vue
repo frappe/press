@@ -67,8 +67,12 @@
 					</thead>
 					<tbody>
 						<tr v-for="payment in payments" :key="payment.name">
-							<td class="border border-outline-gray-2 p-2">{{ payment.name }}</td>
-							<td class="border border-outline-gray-2 p-2">{{ payment.amount }}</td>
+							<td class="border border-outline-gray-2 p-2">
+								{{ payment.name }}
+							</td>
+							<td class="border border-outline-gray-2 p-2">
+								{{ payment.amount }}
+							</td>
 							<td class="border border-outline-gray-2 p-2">
 								{{ payment.posting_date }}
 							</td>
@@ -97,8 +101,8 @@
 </template>
 
 <script>
-import { toast } from 'vue-sonner';
-import { frappeRequest } from 'frappe-ui';
+import { toast } from 'vue-sonner'
+import { frappeRequest } from 'frappe-ui'
 
 export default {
 	name: 'PartnerPaymentPayout',
@@ -112,7 +116,7 @@ export default {
 			payments: [],
 			fetchAttempted: false,
 			paymentGatewayList: [],
-		};
+		}
 	},
 	resources: {
 		createPaymentPartnerPayout() {
@@ -127,29 +131,29 @@ export default {
 					payments: this.payments,
 				},
 				onSuccess: () => {
-					toast.success('Payments submitted successfully');
-					this.$emit('close');
+					toast.success('Payments submitted successfully')
+					this.$emit('close')
 				},
 				onError: (error) => {
-					toast.error(`Error submitting payments: ${error.message}`);
+					toast.error(`Error submitting payments: ${error.message}`)
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		async createAndSubmitPayout() {
 			try {
-				this.paymentInProgress = true;
-				await this.$resources.createPaymentPartnerPayout.submit();
+				this.paymentInProgress = true
+				await this.$resources.createPaymentPartnerPayout.submit()
 			} catch (error) {
-				toast.error(`Error submitting payments: ${error.message}`);
+				toast.error(`Error submitting payments: ${error.message}`)
 			} finally {
-				this.paymentInProgress = false;
+				this.paymentInProgress = false
 			}
 		},
 		async fetchPayments() {
 			try {
-				this.fetchAttempted = true;
+				this.fetchAttempted = true
 				const response = await frappeRequest({
 					url: 'press.api.regional_payments.mpesa.utils.fetch_payments',
 					method: 'GET',
@@ -159,14 +163,14 @@ export default {
 						from_date: this.fromDate,
 						to_date: this.toDate,
 					},
-				});
+				})
 				if (Array.isArray(response)) {
-					this.payments = response;
+					this.payments = response
 				} else {
-					console.log('No Data');
+					console.log('No Data')
 				}
 			} catch (error) {
-				toast.error(`Error fetching payments: ${error.message}`);
+				toast.error(`Error fetching payments: ${error.message}`)
 			}
 		},
 		async fetchPartners() {
@@ -174,14 +178,14 @@ export default {
 				const response = await frappeRequest({
 					url: '/api/method/press.api.regional_payments.mpesa.utils.display_payment_partners',
 					method: 'GET',
-				});
+				})
 				if (Array.isArray(response)) {
-					this.partnerList = response;
+					this.partnerList = response
 				} else {
-					console.log('No Data');
+					console.log('No Data')
 				}
 			} catch (error) {
-				this.errorMessage = `Failed to fetch teams ${error.message}`;
+				this.errorMessage = `Failed to fetch teams ${error.message}`
 			}
 		},
 
@@ -190,22 +194,22 @@ export default {
 				const response = await frappeRequest({
 					url: '/api/method/press.api.regional_payments.mpesa.utils.display_payment_gateway',
 					method: 'GET',
-				});
+				})
 				if (Array.isArray(response)) {
-					this.paymentGatewayList = response;
+					this.paymentGatewayList = response
 				} else {
-					console.log('No Data');
+					console.log('No Data')
 				}
 			} catch (error) {
-				this.errorMessage = `Failed to fetch payment gateway ${error.message}`;
+				this.errorMessage = `Failed to fetch payment gateway ${error.message}`
 			}
 		},
 	},
 	mounted() {
-		this.fetchPartners();
-		this.fetchPaymentGateway();
+		this.fetchPartners()
+		this.fetchPaymentGateway()
 	},
-};
+}
 </script>
 
 <style scoped>

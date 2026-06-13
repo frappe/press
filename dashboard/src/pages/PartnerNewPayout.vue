@@ -128,10 +128,10 @@ import {
 	Badge,
 	frappeRequest,
 	Breadcrumbs,
-} from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import ObjectList from '../components/ObjectList.vue';
-import Header from '../components/Header.vue';
+} from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import ObjectList from '../components/ObjectList.vue'
+import Header from '../components/Header.vue'
 
 export default {
 	components: {
@@ -157,20 +157,20 @@ export default {
 			paymentGateways: [],
 			transactions: [],
 			paymentPayout: [],
-		};
+		}
 	},
 	computed: {
 		total_amount() {
 			return this.transactions.reduce(
 				(acc, transaction) => acc + transaction.amount,
 				0,
-			);
+			)
 		},
 		commission() {
-			return (this.total_amount * this.partnerCommission) / 100;
+			return (this.total_amount * this.partnerCommission) / 100
 		},
 		net_amount() {
-			return this.total_amount - this.commission;
+			return this.total_amount - this.commission
 		},
 		transactionOptions() {
 			return {
@@ -194,13 +194,13 @@ export default {
 				],
 				data: () => this.transactions,
 				emptyStateText: 'No transactions fetched',
-			};
+			}
 		},
 		breadcrumbs() {
 			return [
 				{ label: 'Partner Payment Payout', route: '/partners/payment-payout' },
 				{ label: 'New Payment Payout', route: '/payment-payout/New' },
-			];
+			]
 		},
 	},
 	resources: {
@@ -217,8 +217,8 @@ export default {
 				},
 				validate: () => {
 					if (this.transactions.length === 0) {
-						toast.error('No transactions to submit');
-						return false;
+						toast.error('No transactions to submit')
+						return false
 					}
 				},
 				onSuccess: (data) => {
@@ -226,14 +226,14 @@ export default {
 						toast.success('Payout Submitted Successfully!', {
 							duration: 1000,
 							onAutoClose: () => {
-								this.$router.push({ name: 'PartnerPayout' });
+								this.$router.push({ name: 'PartnerPayout' })
 							},
-						});
+						})
 					} else {
-						toast.error('Failed to submit payout');
+						toast.error('Failed to submit payout')
 					}
 				},
-			};
+			}
 		},
 		fetchTransactions() {
 			return {
@@ -247,14 +247,14 @@ export default {
 				},
 				onSuccess: (data) => {
 					if (data.length > 0) {
-						this.transactions = data || [];
-						this.fetchPayoutTransactions = false;
+						this.transactions = data || []
+						this.fetchPayoutTransactions = false
 					} else {
-						toast.info('No transactions found');
-						this.fetchPayoutTransactions = false;
+						toast.info('No transactions found')
+						this.fetchPayoutTransactions = false
 					}
 				},
-			};
+			}
 		},
 		fetchPartners() {
 			return {
@@ -262,12 +262,12 @@ export default {
 				auto: true,
 				onSuccess: (data) => {
 					if (Array.isArray(data)) {
-						this.partners = data;
+						this.partners = data
 					} else {
-						console.log('No Data');
+						console.log('No Data')
 					}
 				},
-			};
+			}
 		},
 	},
 	methods: {
@@ -278,14 +278,14 @@ export default {
 					params: {
 						payment_partner: this.partnerInput.value,
 					},
-				});
+				})
 				if (Array.isArray(response)) {
-					this.paymentGateways = response;
+					this.paymentGateways = response
 				} else {
-					console.log('No Data');
+					console.log('No Data')
 				}
 			} catch (error) {
-				this.errorMessage = `Failed to fetch teams ${error.message}`;
+				this.errorMessage = `Failed to fetch teams ${error.message}`
 			}
 		},
 		async fetchPercentageCommission() {
@@ -295,14 +295,14 @@ export default {
 					params: {
 						partner: this.partnerInput.value,
 					},
-				});
+				})
 				if (response) {
-					this.partnerCommission = response;
+					this.partnerCommission = response
 				} else {
-					console.log('No Data');
+					console.log('No Data')
 				}
 			} catch (error) {
-				this.errorMessage = `Failed to fetch teams ${error.message}`;
+				this.errorMessage = `Failed to fetch teams ${error.message}`
 			}
 		},
 
@@ -310,17 +310,17 @@ export default {
 			return new Intl.NumberFormat('en-US', {
 				style: 'currency',
 				currency: 'USD',
-			}).format(value);
+			}).format(value)
 		},
 		formatDate(value) {
-			return new Date(value).toLocaleDateString();
+			return new Date(value).toLocaleDateString()
 		},
 	},
 	watch: {
 		partnerInput() {
-			this.fetchPaymentGateways();
-			this.fetchPercentageCommission();
+			this.fetchPaymentGateways()
+			this.fetchPercentageCommission()
 		},
 	},
-};
+}
 </script>

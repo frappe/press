@@ -10,19 +10,19 @@
 				<b>Snapshot Modes:</b>
 				<ul>
 					<li>
-						<b>Consistent:</b> Stops services (like the database and containers)
-						while taking the snapshot. Your websites will be temporarily down,
-						but this ensures a reliable backup that can be restored safely.
+						<b>Consistent:</b>
+						Stops services (like the database and containers) while taking the
+						snapshot. Your websites will be temporarily down, but this ensures a
+						reliable backup that can be restored safely.
 					</li>
 					<li>
-						<b>Non-Consistent:</b> Takes the snapshot without stopping services.
-						It's faster and your sites stay online, but the backup might not
-						restore perfectly.
+						<b>Non-Consistent:</b>
+						Takes the snapshot without stopping services. It's faster and your
+						sites stay online, but the backup might not restore perfectly.
 					</li>
 				</ul>
 				<br />
-				The snapshot will cost <b>{{ snapshotPlanRate }}</b
-				>.
+				The snapshot will cost <b>{{ snapshotPlanRate }}</b>.
 			</div>
 			<div class="mt-4 text-sm text-ink-gray-7" label="Consistent Snapshot">
 				<Checkbox
@@ -50,7 +50,7 @@
 </template>
 
 <script>
-import { Checkbox } from 'frappe-ui';
+import { Checkbox } from 'frappe-ui'
 export default {
 	name: 'ServerNewSnapshotDialog',
 	components: {
@@ -70,14 +70,14 @@ export default {
 		return {
 			show: true,
 			consistent_snapshot: true,
-		};
+		}
 	},
 	resources: {
 		options() {
 			return {
 				url: 'press.api.server.options',
 				auto: true,
-			};
+			}
 		},
 		create_snapshot() {
 			return {
@@ -90,35 +90,35 @@ export default {
 						args: {
 							consistent: this.consistent_snapshot,
 						},
-					};
+					}
 				},
 				onSuccess: () => {
-					this.show = false;
-					this.onSnapshotCreated();
+					this.show = false
+					this.onSnapshotCreated()
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		options() {
-			return this.$resources?.options?.data ?? {};
+			return this.$resources?.options?.data ?? {}
 		},
 		snapshotPlanRate() {
-			if (!this.$team?.doc?.currency) return -1;
+			if (!this.$team?.doc?.currency) return -1
 			try {
 				let priceField =
-					this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd';
+					this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd'
 				return (
 					(this.options?.snapshot_plan?.[priceField] || 0) +
 					' ' +
 					this.$team.doc.currency +
 					' / GB / month'
-				);
+				)
 			} catch (error) {
-				console.error('Error fetching snapshot plan rate:', error);
-				return -1;
+				console.error('Error fetching snapshot plan rate:', error)
+				return -1
 			}
 		},
 	},
-};
+}
 </script>

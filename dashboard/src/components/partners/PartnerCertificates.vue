@@ -5,13 +5,13 @@
 </template>
 
 <script>
-import { h } from 'vue';
-import { FeatherIcon, Tooltip } from 'frappe-ui';
-import { icon, renderDialog } from '../../utils/components';
-import ObjectList from '../ObjectList.vue';
-import PartnerCertificateRequest from './PartnerCertificateRequest.vue';
-import LinkCertificate from './LinkCertificate.vue';
-import CertificationStatus from './CertificationStatus.vue';
+import { h } from 'vue'
+import { FeatherIcon, Tooltip } from 'frappe-ui'
+import { icon, renderDialog } from '../../utils/components'
+import ObjectList from '../ObjectList.vue'
+import PartnerCertificateRequest from './PartnerCertificateRequest.vue'
+import LinkCertificate from './LinkCertificate.vue'
+import CertificationStatus from './CertificationStatus.vue'
 export default {
 	name: 'PartnerCertificates',
 	components: {
@@ -23,7 +23,7 @@ export default {
 	data() {
 		return {
 			showApplyForCertificateDialog: false,
-		};
+		}
 	},
 	computed: {
 		partnerCertificatesList() {
@@ -40,8 +40,8 @@ export default {
 						width: 0.6,
 						class: 'truncate',
 						format: (value) => {
-							if (!value) return '';
-							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
 						},
 					},
 					{
@@ -50,8 +50,8 @@ export default {
 						width: 0.8,
 						class: 'truncate',
 						format: (value) => {
-							if (!value) return '';
-							return value.length > 30 ? `${value.slice(0, 30)}...` : value;
+							if (!value) return ''
+							return value.length > 30 ? `${value.slice(0, 30)}...` : value
 						},
 					},
 					{
@@ -63,7 +63,7 @@ export default {
 								year: 'numeric',
 								month: 'long',
 								day: 'numeric',
-							}).format(new Date(value));
+							}).format(new Date(value))
 						},
 					},
 					{
@@ -72,7 +72,7 @@ export default {
 						format(value) {
 							return value == 'frappe-developer-certification'
 								? 'Framework'
-								: 'ERPNext';
+								: 'ERPNext'
 						},
 						width: 0.5,
 					},
@@ -100,7 +100,7 @@ export default {
 											name: 'check-circle',
 											class: 'h-4 w-4 text-green-600',
 										}),
-								);
+								)
 							}
 						},
 					},
@@ -115,10 +115,10 @@ export default {
 									prefix: icon('external-link'),
 								},
 								onClick: (e) => {
-									e.stopPropagation();
-									window.open(row.certificate_link);
+									e.stopPropagation()
+									window.open(row.certificate_link)
 								},
-							};
+							}
 						},
 						width: 0.5,
 					},
@@ -136,10 +136,10 @@ export default {
 									h(PartnerCertificateRequest, {
 										show: true,
 										onSuccess: () => {
-											console.log('success');
+											console.log('success')
 										},
 									}),
-								);
+								)
 							},
 						},
 						{
@@ -152,13 +152,13 @@ export default {
 									h(LinkCertificate, {
 										show: true,
 										onSuccess: () => {
-											console.log('Certificate linked successfully');
+											console.log('Certificate linked successfully')
 										},
 									}),
-								);
+								)
 							},
 						},
-					];
+					]
 				},
 				moreActions() {
 					return [
@@ -169,10 +169,10 @@ export default {
 									h(CertificationStatus, {
 										show: true,
 									}),
-								);
+								)
 							},
 						},
-					];
+					]
 				},
 				filterControls() {
 					return [
@@ -185,11 +185,11 @@ export default {
 								{ label: 'ERPNext', value: 'erpnext-distribution' },
 							],
 						},
-					];
+					]
 				},
 				orderBy: 'creation desc',
-			};
+			}
 		},
 	},
-};
+}
 </script>

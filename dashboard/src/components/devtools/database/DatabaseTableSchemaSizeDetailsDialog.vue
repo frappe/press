@@ -11,9 +11,9 @@
 	</Dialog>
 </template>
 <script>
-import { h } from 'vue';
-import ObjectList from '../../ObjectList.vue';
-import { toast } from 'vue-sonner';
+import { h } from 'vue'
+import ObjectList from '../../ObjectList.vue'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'DatabaseTableSchemaSizeDetails',
@@ -40,20 +40,20 @@ export default {
 	},
 	computed: {
 		listOptions() {
-			if (!this.tableSchemas) return {};
-			let data = [];
+			if (!this.tableSchemas) return {}
+			let data = []
 			for (const tableName in this.tableSchemas) {
-				const table = this.tableSchemas[tableName];
+				const table = this.tableSchemas[tableName]
 				data.push({
 					table_name: tableName,
 					index_size: this.bytesToMB(table.size.index_length),
 					data_size: this.bytesToMB(table.size.data_length),
 					data_free: this.bytesToMB(table.size.data_free) || 0,
 					total_size: this.bytesToMB(table.size.total_size),
-				});
+				})
 			}
 			// sort in the order of total_size
-			data.sort((a, b) => b.total_size - a.total_size);
+			data.sort((a, b) => b.total_size - a.total_size)
 			return {
 				data: () => data,
 				hideControls: true,
@@ -71,13 +71,13 @@ export default {
 									class: 'truncate text-base cursor-copy',
 									onClick() {
 										if ('clipboard' in navigator) {
-											navigator.clipboard.writeText(row.table_name);
-											toast.success('Copied to clipboard');
+											navigator.clipboard.writeText(row.table_name)
+											toast.success('Copied to clipboard')
 										}
 									},
 								},
 								[row.table_name],
-							);
+							)
 						},
 					},
 					{
@@ -112,12 +112,12 @@ export default {
 									class:
 										'inline-flex items-center justify-center gap-2 transition-colors focus:outline-none text-ink-gray-8 bg-surface-gray-2 hover:bg-surface-gray-3 active:bg-surface-gray-4 focus-visible:ring focus-visible:ring-gray-400 h-7 text-base px-2 rounded',
 									onClick: (_) => {
-										console.log(row.table_name);
-										this.optimizeTable(row.table_name);
+										console.log(row.table_name)
+										this.optimizeTable(row.table_name)
 									},
 								},
 								['Optimize Table'],
-							);
+							)
 						},
 					},
 					{
@@ -132,21 +132,21 @@ export default {
 									class:
 										'inline-flex items-center justify-center gap-2 transition-colors focus:outline-none text-ink-gray-8 bg-surface-gray-2 hover:bg-surface-gray-3 active:bg-surface-gray-4 focus-visible:ring focus-visible:ring-gray-400 h-7 text-base px-2 rounded',
 									onClick: () => {
-										this.viewSchemaDetails(row.table_name);
+										this.viewSchemaDetails(row.table_name)
 									},
 								},
 								['View Schema'],
-							);
+							)
 						},
 					},
 				],
-			};
+			}
 		},
 	},
 	methods: {
 		bytesToMB(bytes) {
-			return (bytes / (1024 * 1024)).toFixed(2);
+			return (bytes / (1024 * 1024)).toFixed(2)
 		},
 	},
-};
+}
 </script>

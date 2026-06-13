@@ -154,16 +154,16 @@
 }
 </style>
 <script>
-import { toast } from 'vue-sonner';
-import Header from '../../../components/Header.vue';
-import { Tabs, Breadcrumbs } from 'frappe-ui';
-import SQLCodeEditor from '../../../components/devtools/database/SQLCodeEditor.vue';
-import { confirmDialog } from '../../../utils/components';
-import DatabaseSQLPlaygroundLog from '../../../components/devtools/database/DatabaseSQLPlaygroundLog.vue';
-import DatabaseTableSchemaDialog from '../../../components/devtools/database/DatabaseTableSchemaDialog.vue';
-import SQLResult from '../../../components/devtools/database/SQLResult.vue';
-import LinkControl from '../../../components/LinkControl.vue';
-import { getToastErrorMessage } from '../../../utils/toast';
+import { toast } from 'vue-sonner'
+import Header from '../../../components/Header.vue'
+import { Tabs, Breadcrumbs } from 'frappe-ui'
+import SQLCodeEditor from '../../../components/devtools/database/SQLCodeEditor.vue'
+import { confirmDialog } from '../../../utils/components'
+import DatabaseSQLPlaygroundLog from '../../../components/devtools/database/DatabaseSQLPlaygroundLog.vue'
+import DatabaseTableSchemaDialog from '../../../components/devtools/database/DatabaseTableSchemaDialog.vue'
+import SQLResult from '../../../components/devtools/database/SQLResult.vue'
+import LinkControl from '../../../components/LinkControl.vue'
+import { getToastErrorMessage } from '../../../utils/toast'
 
 export default {
 	name: 'DatabaseSQLPlayground',
@@ -191,7 +191,7 @@ export default {
 			mode: 'read-only',
 			showLogsDialog: false,
 			showTableSchemasDialog: false,
-		};
+		}
 	},
 	mounted() {},
 	watch: {
@@ -199,24 +199,24 @@ export default {
 			window.localStorage.setItem(
 				`sql_playground_query_${this.site}`,
 				this.query,
-			);
+			)
 		},
 		site(site_name) {
 			// reset state
-			this.execution_successful = null;
-			this.data = null;
-			this.errorMessage = null;
-			this.failedQuery = null;
-			this.mode = 'read-only';
-			this.showLogsDialog = false;
-			this.showTableSchemasDialog = false;
+			this.execution_successful = null
+			this.data = null
+			this.errorMessage = null
+			this.failedQuery = null
+			this.mode = 'read-only'
+			this.showLogsDialog = false
+			this.showTableSchemasDialog = false
 
 			// recover query and fetch table schemas
 			this.query =
-				window.localStorage.getItem(`sql_playground_query_${this.site}`) || '';
+				window.localStorage.getItem(`sql_playground_query_${this.site}`) || ''
 			this.fetchTableSchemas({
 				site_name: site_name,
-			});
+			})
 		},
 	},
 	resources: {
@@ -224,22 +224,22 @@ export default {
 			return {
 				url: 'press.api.client.run_doc_method',
 				onSuccess: (data) => {
-					this.execution_successful = data?.message?.success || false;
+					this.execution_successful = data?.message?.success || false
 					if (!this.execution_successful) {
-						this.errorMessage = data?.message?.data ?? 'Unknown error';
-						this.failedQuery = data?.message?.failed_query ?? '';
-						this.data = [];
+						this.errorMessage = data?.message?.data ?? 'Unknown error'
+						this.failedQuery = data?.message?.failed_query ?? ''
+						this.data = []
 					} else {
-						this.data = data?.message?.data ?? [];
-						this.errorMessage = null;
+						this.data = data?.message?.data ?? []
+						this.errorMessage = null
 					}
-					this.tabIndex = 0; // reset tab index for results
+					this.tabIndex = 0 // reset tab index for results
 				},
 				onError: (e) => {
-					toast.error(getToastErrorMessage(e, 'Failed to run SQL query'));
+					toast.error(getToastErrorMessage(e, 'Failed to run SQL query'))
 				},
 				auto: false,
-			};
+			}
 		},
 		tableSchemas() {
 			return {
@@ -248,18 +248,18 @@ export default {
 				auto: false,
 				onSuccess: (data) => {
 					if (data?.message?.loading) {
-						setTimeout(this.fetchTableSchemas, 5000);
+						setTimeout(this.fetchTableSchemas, 5000)
 					}
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		sqlSchemaForAutocompletion() {
 			const tableSchemas =
-				this.$resources.tableSchemas?.data?.message?.data ?? {};
-			if (!tableSchemas || !Object.keys(tableSchemas).length) return null;
-			let childrenSchemas = {};
+				this.$resources.tableSchemas?.data?.message?.data ?? {}
+			if (!tableSchemas || !Object.keys(tableSchemas).length) return null
+			let childrenSchemas = {}
 			for (const tableName in tableSchemas) {
 				childrenSchemas[tableName] = {
 					self: { label: tableName, type: 'table' },
@@ -268,44 +268,44 @@ export default {
 						type: 'column',
 						detail: x.data_type,
 					})),
-				};
+				}
 			}
 			return {
 				self: { label: 'SQL Schema', type: 'schema' },
 				children: childrenSchemas,
-			};
+			}
 		},
 		isAutoCompletionReady() {
-			if (this.$resources.tableSchemas.loading) return false;
-			if (this.$resources.tableSchemas?.data?.message?.loading) return false;
-			if (!this.$resources.tableSchemas?.data?.message?.data) return false;
-			if (this.$resources.tableSchemas?.data?.message?.data == {}) return false;
-			if (!this.sqlSchemaForAutocompletion) return false;
-			return true;
+			if (this.$resources.tableSchemas.loading) return false
+			if (this.$resources.tableSchemas?.data?.message?.loading) return false
+			if (!this.$resources.tableSchemas?.data?.message?.data) return false
+			if (this.$resources.tableSchemas?.data?.message?.data == {}) return false
+			if (!this.sqlSchemaForAutocompletion) return false
+			return true
 		},
 		sqlResultTabs() {
-			if (!this.data || !this.data.length) return [];
-			let data = [];
-			let queryNo = 1;
+			if (!this.data || !this.data.length) return []
+			let data = []
+			let queryNo = 1
 			for (let i = 0; i < this.data.length; i++) {
 				data.push({
 					label: `Query ${queryNo++}`,
 					...this.data[i],
-				});
+				})
 			}
-			return data;
+			return data
 		},
 	},
 	methods: {
 		handleCodeSelected(selectedCode) {
-			this.selectedQuery = selectedCode;
+			this.selectedQuery = selectedCode
 		},
 		handleCodeUnselected() {
-			this.selectedQuery = null;
+			this.selectedQuery = null
 		},
 		fetchTableSchemas({ site_name = null, reload = false } = {}) {
-			if (!site_name) site_name = this.site;
-			if (!site_name) return;
+			if (!site_name) site_name = this.site
+			if (!site_name) return
 			this.$resources.tableSchemas.submit({
 				dt: 'Site',
 				dn: site_name,
@@ -313,10 +313,10 @@ export default {
 				args: {
 					reload,
 				},
-			});
+			})
 		},
 		runSQLQuery(ignore_validation = false, run_selected_query = false) {
-			if (!this.query) return;
+			if (!this.query) return
 			if (this.mode === 'read-only' || ignore_validation) {
 				this.$resources.runSQLQuery.submit({
 					dt: 'Site',
@@ -326,8 +326,8 @@ export default {
 						query: run_selected_query ? this.selectedQuery : this.query,
 						commit: this.mode === 'read-write',
 					},
-				});
-				return;
+				})
+				return
 			}
 
 			confirmDialog({
@@ -340,15 +340,15 @@ Are you sure you want to run the query?`,
 					label: 'Run Query',
 					variant: 'solid',
 					onClick: ({ hide }) => {
-						this.runSQLQuery(true, run_selected_query);
-						hide();
+						this.runSQLQuery(true, run_selected_query)
+						hide()
 					},
 				},
-			});
+			})
 		},
 		runSelectedSQLQuery() {
 			if (!this.selectedQuery) {
-				return;
+				return
 			}
 			confirmDialog({
 				title: 'Verify Query',
@@ -361,47 +361,47 @@ Are you sure you want to run the query?
 					label: 'Run Query',
 					variant: 'solid',
 					onClick: ({ hide }) => {
-						this.runSQLQuery(false, true);
-						hide();
+						this.runSQLQuery(false, true)
+						hide()
 					},
 				},
-			});
+			})
 		},
 		toggleLogsDialog() {
-			this.showLogsDialog = !this.showLogsDialog;
+			this.showLogsDialog = !this.showLogsDialog
 		},
 		toggleTableSchemasDialog() {
 			if (!this.isAutoCompletionReady) {
-				toast.error('Table schemas are still loading. Please wait.');
-				return;
+				toast.error('Table schemas are still loading. Please wait.')
+				return
 			}
-			this.showTableSchemasDialog = !this.showTableSchemasDialog;
+			this.showTableSchemasDialog = !this.showTableSchemasDialog
 		},
 		rerunQuery(query) {
-			this.query = query;
-			this.showLogsDialog = false;
+			this.query = query
+			this.showLogsDialog = false
 		},
 		runSQLQueryForViewingTable(query) {
 			// set read-only mode
-			this.mode = 'read-only';
-			this.showTableSchemasDialog = false;
-			this.query = query;
-			this.runSQLQuery();
+			this.mode = 'read-only'
+			this.showTableSchemasDialog = false
+			this.query = query
+			this.runSQLQuery()
 		},
 		prettifySQLError(msg) {
-			if (typeof msg !== 'string') return null;
+			if (typeof msg !== 'string') return null
 			// if error message in (state, message) format, try to parse it
-			const regex = /\((\d+),\s*['"](.*?)['"]\)/;
-			const match = msg.match(regex);
+			const regex = /\((\d+),\s*['"](.*?)['"]\)/
+			const match = msg.match(regex)
 
 			if (match) {
-				const statusCode = match[1];
-				const errorMessage = match[2];
-				return `#${statusCode} - ${errorMessage}`;
+				const statusCode = match[1]
+				const errorMessage = match[2]
+				return `#${statusCode} - ${errorMessage}`
 			} else {
-				return msg;
+				return msg
 			}
 		},
 	},
-};
+}
 </script>

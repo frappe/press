@@ -36,14 +36,14 @@
 	</Dialog>
 </template>
 <script setup>
-import { Dialog, DatePicker, createResource } from 'frappe-ui';
-import { ref } from 'vue';
-import { toast } from 'vue-sonner';
+import { Dialog, DatePicker, createResource } from 'frappe-ui'
+import { ref } from 'vue'
+import { toast } from 'vue-sonner'
 
-const show = defineModel();
-const audit_date = ref('');
-const audit_type = ref('Online');
-const errorMessage = ref('');
+const show = defineModel()
+const audit_date = ref('')
+const audit_type = ref('Online')
+const errorMessage = ref('')
 
 const newAuditRequest = createResource({
 	url: 'press.api.partner.create_audit_request',
@@ -51,14 +51,14 @@ const newAuditRequest = createResource({
 		return {
 			audit_date: audit_date.value,
 			audit_type: audit_type.value,
-		};
+		}
 	},
 	onSuccess: () => {
-		toast.success('Audit request created successfully');
-		show.value = false;
+		toast.success('Audit request created successfully')
+		show.value = false
 	},
 	onError: (err) => {
-		errorMessage.value = err.messages[0] || 'Failed to create audit request';
+		errorMessage.value = err.messages[0] || 'Failed to create audit request'
 	},
-});
+})
 </script>

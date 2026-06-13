@@ -22,27 +22,27 @@
 	</div>
 </template>
 <script setup>
-import { onMounted, defineProps, ref } from 'vue';
-import router from '../../router';
-import { createListResource } from 'frappe-ui';
-import { useRoute } from 'vue-router';
+import { onMounted, defineProps, ref } from 'vue'
+import router from '../../router'
+import { createListResource } from 'frappe-ui'
+import { useRoute } from 'vue-router'
 
-const route = useRoute();
+const route = useRoute()
 
 const props = defineProps({
 	partner_audit: {
 		type: String,
 		required: true,
 	},
-});
+})
 
-const tabs = ref([]);
+const tabs = ref([])
 
 const theme_map = {
 	Open: 'blue',
 	Closed: 'green',
 	WIP: 'orange',
-};
+}
 
 const ncList = createListResource({
 	doctype: 'Partner Non Conformance',
@@ -65,18 +65,18 @@ const ncList = createListResource({
 			value: 'PartnerNCSummary',
 			name: nc.name,
 			status: nc.status,
-		}));
+		}))
 	},
 	orderBy: 'modified desc',
-});
+})
 
 const isActiveTab = (tab) => {
-	return [tab.name].find((child) => child === route.params.nc);
-};
+	return [tab.name].find((child) => child === route.params.nc)
+}
 
 onMounted(() => {
 	if (route.name === 'PartnerNCList') {
-		router.replace({ name: 'PartnerNCSummary' });
+		router.replace({ name: 'PartnerNCSummary' })
 	}
-});
+})
 </script>

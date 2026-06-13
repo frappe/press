@@ -13,13 +13,13 @@
 </template>
 
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import { defineAsyncComponent, h } from 'vue';
-import { toast } from 'vue-sonner';
-import { renderDialog } from '../../utils/components';
-import router from '../../router';
-import ObjectList from '../ObjectList.vue';
-import { getToastErrorMessage } from '../../utils/toast';
+import { getCachedDocumentResource } from 'frappe-ui'
+import { defineAsyncComponent, h } from 'vue'
+import { toast } from 'vue-sonner'
+import { renderDialog } from '../../utils/components'
+import router from '../../router'
+import ObjectList from '../ObjectList.vue'
+import { getToastErrorMessage } from '../../utils/toast'
 
 export default {
 	props: {
@@ -35,26 +35,26 @@ export default {
 	data() {
 		return {
 			show: true,
-		};
+		}
 	},
 	computed: {
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 		listOptions() {
 			const handleInstall = (row) => {
-				if (this.$site.installApp.loading) return;
+				if (this.$site.installApp.loading) return
 
 				if (
 					row.plans &&
 					row.plans.some((plan) => plan.price_inr > 0) &&
 					row.team !== this.$site.doc?.team
 				) {
-					this.show = false;
+					this.show = false
 
 					let SiteAppPlanSelectDialog = defineAsyncComponent(
 						() => import('./SiteAppPlanSelectDialog.vue'),
-					);
+					)
 
 					renderDialog(
 						h(SiteAppPlanSelectDialog, {
@@ -75,17 +75,17 @@ export default {
 													name: this.site,
 													id: jobId,
 												},
-											});
-											this.$emit('installed');
-											this.show = false;
-											return 'App will be installed shortly';
+											})
+											this.$emit('installed')
+											this.show = false
+											return 'App will be installed shortly'
 										},
 										error: (e) => getToastErrorMessage(e),
 									},
-								);
+								)
 							},
 						}),
-					);
+					)
 				} else {
 					toast.promise(
 						this.$site.installApp.submit({
@@ -100,16 +100,16 @@ export default {
 										name: this.site,
 										id: jobId,
 									},
-								});
-								this.$emit('installed');
-								this.show = false;
-								return 'App will be installed shortly';
+								})
+								this.$emit('installed')
+								this.show = false
+								return 'App will be installed shortly'
 							},
 							error: (e) => getToastErrorMessage(e),
 						},
-					);
+					)
 				}
-			};
+			}
 			return {
 				label: 'App',
 				fieldname: 'app',
@@ -149,9 +149,9 @@ export default {
 							return {
 								label: 'Install',
 								onClick: () => {
-									handleInstall(row);
+									handleInstall(row)
 								},
-							};
+							}
 						},
 					},
 				],
@@ -162,10 +162,10 @@ export default {
 							name: this.site,
 						},
 						auto: true,
-					};
+					}
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

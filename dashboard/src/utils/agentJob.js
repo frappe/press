@@ -1,62 +1,62 @@
-import { frappeRequest } from 'frappe-ui';
-import { reactive } from 'vue';
+import { frappeRequest } from 'frappe-ui'
+import { reactive } from 'vue'
 
-let states = {};
+let states = {}
 export function pollJobStatus(jobId, stopFunction) {
 	if (!states[jobId]) {
-		states[jobId] = reactive({ status: null, loading: false });
+		states[jobId] = reactive({ status: null, loading: false })
 	}
-	let state = states[jobId];
-	state.loading = true;
+	let state = states[jobId]
+	state.loading = true
 	fetchJobStatus(jobId).then((status) => {
-		state.status = status;
-	});
+		state.status = status
+	})
 	if (stopFunction(state.status)) {
-		state.loading = false;
-		return;
+		state.loading = false
+		return
 	}
 	setTimeout(() => {
-		pollJobStatus(jobId, stopFunction);
-	}, 1000);
-	return state;
+		pollJobStatus(jobId, stopFunction)
+	}, 1000)
+	return state
 }
 
 function fetchJobStatus(jobId) {
 	return frappeRequest({
 		url: 'press.api.site.get_job_status',
 		params: { job_name: jobId },
-	}).then((result) => result.status);
+	}).then((result) => result.status)
 }
 
-let runningJobs = reactive({});
+let runningJobs = reactive({})
 export function subscribeToJobUpdates(socket) {
 	// listening to site's doc_update event
 	// check agent_job.py for more details
 	socket.on('doc_update', (data) => {
-		let job = runningJobs[data.id];
+		let job = runningJobs[data.id]
 		if (!job) {
-			job = data;
-			runningJobs[data.id] = job;
+			job = data
+			runningJobs[data.id] = job
 		}
-		Object.assign(job, data);
-	});
+		Object.assign(job, data)
+	})
 }
 
 export function getRunningJobs({ id, name, site, bench, server }) {
 	if (id) {
-		return runningJobs[id];
+		return runningJobs[id]
 	}
 	if (name) {
-		return Object.values(runningJobs).filter((job) => job.name === name);
+		return Object.values(runningJobs).filter((job) => job.name === name)
 	}
 	if (site) {
-		return Object.values(runningJobs).filter((job) => job.site === site);
+		return Object.values(runningJobs).filter((job) => job.site === site)
 	}
 	if (bench) {
-		return Object.values(runningJobs).filter((job) => job.bench === bench);
+		return Object.values(runningJobs).filter((job) => job.bench === bench)
 	}
 	if (server) {
-		return Object.values(runningJobs).filter((job) => job.server === server);
+		return Object.values(runningJobs).filter((job) => job.server === server)
 	}
-	return runningJobs;
+	return runningJobs
 }

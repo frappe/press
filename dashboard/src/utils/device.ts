@@ -1,23 +1,23 @@
-import type { Platform } from '../types';
+import type { Platform } from '../types'
 
 export function getPlatform(): Platform {
-	const ua = navigator.userAgent.toLowerCase();
+	const ua = navigator.userAgent.toLowerCase()
 
 	if (ua.indexOf('win') > -1) {
-		return 'win';
+		return 'win'
 	} else if (ua.indexOf('mac') > -1) {
-		return 'mac';
+		return 'mac'
 	} else if (ua.indexOf('x11') > -1 || ua.indexOf('linux') > -1) {
-		return 'linux';
+		return 'linux'
 	}
 
-	return 'unknown';
+	return 'unknown'
 }
 
 export function isMobile(): boolean {
-	return window.innerWidth < 640;
+	return window.innerWidth < 640
 }
 
 export function isMac(): boolean {
-	return getPlatform() === 'mac';
+	return getPlatform() === 'mac'
 }

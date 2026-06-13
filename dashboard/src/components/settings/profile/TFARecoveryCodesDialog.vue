@@ -71,8 +71,8 @@
 </template>
 
 <script>
-import TFARecoveryCodes from './TFARecoveryCodes.vue';
-import { toast } from 'vue-sonner';
+import TFARecoveryCodes from './TFARecoveryCodes.vue'
+import { toast } from 'vue-sonner'
 
 export default {
 	props: {
@@ -89,56 +89,56 @@ export default {
 			recoveryCodes: [],
 			verificationCode: '',
 			isOTPSent: false,
-		};
+		}
 	},
 	resources: {
 		sendOTP() {
 			return {
 				url: 'press.api.account.send_otp',
 				onSuccess() {
-					this.isOTPSent = true;
-					toast.success('Verification code sent to your email.');
+					this.isOTPSent = true
+					toast.success('Verification code sent to your email.')
 				},
 				onError(error) {
-					toast.error(error.message || 'Failed to send verification code.');
+					toast.error(error.message || 'Failed to send verification code.')
 				},
-			};
+			}
 		},
 		getRecoveryCodes() {
 			return {
 				url: 'press.api.account.get_2fa_recovery_codes',
 				onSuccess(codes) {
-					this.recoveryCodes = codes;
+					this.recoveryCodes = codes
 				},
-			};
+			}
 		},
 		resetRecoveryCodes() {
 			return {
 				url: 'press.api.account.reset_2fa_recovery_codes',
 				onSuccess(codes) {
-					this.recoveryCodes = codes;
-					toast.success('Recovery codes have been reset.');
+					this.recoveryCodes = codes
+					toast.success('Recovery codes have been reset.')
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		closeDialog() {
-			this.show = false;
-			this.recoveryCodes = [];
-			this.verificationCode = '';
-			this.isOTPSent = false;
+			this.show = false
+			this.recoveryCodes = []
+			this.verificationCode = ''
+			this.isOTPSent = false
 		},
 	},
 	computed: {
 		show: {
 			get() {
-				return this.modelValue;
+				return this.modelValue
 			},
 			set(value) {
-				this.$emit('update:modelValue', value);
+				this.$emit('update:modelValue', value)
 			},
 		},
 	},
-};
+}
 </script>

@@ -4,18 +4,18 @@
 	</div>
 </template>
 <script setup>
-import { useRoute } from 'vue-router';
-import { computed, h } from 'vue';
-import ObjectList from '../ObjectList.vue';
-import UpdateFollowupDialog from './UpdateFollowupDialog.vue';
-import { confirmDialog, renderDialog } from '../../utils/components';
-import { toast } from 'vue-sonner';
-import { createResource } from 'frappe-ui';
-import { date } from '../../utils/format';
+import { useRoute } from 'vue-router'
+import { computed, h } from 'vue'
+import ObjectList from '../ObjectList.vue'
+import UpdateFollowupDialog from './UpdateFollowupDialog.vue'
+import { confirmDialog, renderDialog } from '../../utils/components'
+import { toast } from 'vue-sonner'
+import { createResource } from 'frappe-ui'
+import { date } from '../../utils/format'
 
-const route = useRoute();
+const route = useRoute()
 
-const showUpdateFollowupDialog = defineModel(false);
+const showUpdateFollowupDialog = defineModel(false)
 const leadfollowups = computed(() => {
 	return {
 		doctype: 'Lead Followup',
@@ -29,7 +29,7 @@ const leadfollowups = computed(() => {
 				fieldname: 'date',
 				width: '100px',
 				format(value) {
-					return date(value, 'll');
+					return date(value, 'll')
 				},
 			},
 			{
@@ -66,7 +66,7 @@ const leadfollowups = computed(() => {
 								id: row.name,
 								leadId: route.params.leadId,
 							}),
-						);
+						)
 					},
 				},
 				{
@@ -88,13 +88,13 @@ const leadfollowups = computed(() => {
 											id: row.name,
 											lead_name: route.params.leadId,
 										})
-										.then(hide);
+										.then(hide)
 								},
 							},
-						});
+						})
 					},
 				},
-			];
+			]
 		},
 		primaryAction: () => {
 			return {
@@ -104,25 +104,25 @@ const leadfollowups = computed(() => {
 					prefix: 'plus',
 				},
 				onClick: () => {
-					showUpdateFollowupDialog.value = true;
+					showUpdateFollowupDialog.value = true
 					return renderDialog(
 						h(UpdateFollowupDialog, {
 							modelValue: true,
 							id: '',
 							leadId: route.params.leadId,
 						}),
-					);
+					)
 				},
-			};
+			}
 		},
 		orderBy: 'date desc',
-	};
-});
+	}
+})
 
 const deleteFollowup = createResource({
 	url: 'press.api.partner.delete_followup',
 	onSuccess: () => {
-		toast.success('Followup deleted successfully');
+		toast.success('Followup deleted successfully')
 	},
-});
+})
 </script>

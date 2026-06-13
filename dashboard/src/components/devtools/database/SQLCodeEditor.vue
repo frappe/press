@@ -11,10 +11,10 @@
 	/>
 </template>
 <script>
-import { MySQL, sql } from '@codemirror/lang-sql';
-import { autocompletion } from '@codemirror/autocomplete';
-import { Codemirror } from 'vue-codemirror';
-import { shallowRef } from 'vue';
+import { MySQL, sql } from '@codemirror/lang-sql'
+import { autocompletion } from '@codemirror/autocomplete'
+import { Codemirror } from 'vue-codemirror'
+import { shallowRef } from 'vue'
 
 export default {
 	name: 'SQLCodeEditor',
@@ -26,10 +26,10 @@ export default {
 	computed: {
 		query: {
 			get() {
-				return this.$props.query;
+				return this.$props.query
 			},
 			set(value) {
-				this.$emit('update:query', value);
+				this.$emit('update:query', value)
 			},
 		},
 		extensions() {
@@ -45,7 +45,7 @@ export default {
 						maxRenderedOptions: 10,
 						icons: false,
 					}),
-				];
+				]
 			}
 			return [
 				sql({
@@ -59,43 +59,40 @@ export default {
 					maxRenderedOptions: 10,
 					icons: false,
 				}),
-			];
+			]
 		},
 	},
 	setup(props, { emit }) {
 		// Codemirror EditorView instance ref
-		const view = shallowRef();
+		const view = shallowRef()
 		const handleReady = (payload) => {
-			view.value = payload.view;
-			view.value.dom.addEventListener('mouseup', handleSelectionChange);
-		};
+			view.value = payload.view
+			view.value.dom.addEventListener('mouseup', handleSelectionChange)
+		}
 
 		const handleSelectionChange = () => {
-			if (!view.value) return;
+			if (!view.value) return
 
-			const { state } = view.value;
-			const selection = state.selection.main;
+			const { state } = view.value
+			const selection = state.selection.main
 
 			// Get the selected text
 			if (!selection.empty) {
-				const selectedText = state.doc.sliceString(
-					selection.from,
-					selection.to,
-				);
+				const selectedText = state.doc.sliceString(selection.from, selection.to)
 				if ((selectedText ?? '').trim() === '') {
-					emit('codeUnselected');
-					return;
+					emit('codeUnselected')
+					return
 				}
-				emit('codeSelected', selectedText);
+				emit('codeSelected', selectedText)
 			} else {
-				emit('codeUnselected');
+				emit('codeUnselected')
 			}
-		};
+		}
 		return {
 			handleReady,
-		};
+		}
 	},
-};
+}
 </script>
 <style>
 .cm-focused {

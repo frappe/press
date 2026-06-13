@@ -60,8 +60,8 @@
 	</div>
 </template>
 <script>
-import { toast } from 'vue-sonner';
-import SaaSLoginBox from '../../components/auth/SaaSLoginBox.vue';
+import { toast } from 'vue-sonner'
+import SaaSLoginBox from '../../components/auth/SaaSLoginBox.vue'
 
 export default {
 	name: 'SaaSSignupVerifyEmail',
@@ -75,7 +75,7 @@ export default {
 			email: this.$route.query.email,
 			code: '',
 			requestKey: '',
-		};
+		}
 	},
 	resources: {
 		signupSettings() {
@@ -86,7 +86,7 @@ export default {
 					fetch_countries: false,
 				},
 				auto: true,
-			};
+			}
 		},
 		verifyCode() {
 			return {
@@ -96,10 +96,10 @@ export default {
 					otp: this.code,
 				},
 				onSuccess: (key) => {
-					this.requestKey = key;
-					this.$resources.setupAccount.submit();
+					this.requestKey = key
+					this.$resources.setupAccount.submit()
 				},
-			};
+			}
 		},
 		resendOTP() {
 			return {
@@ -108,13 +108,13 @@ export default {
 					account_request: this.account_request,
 				},
 				onSuccess() {
-					this.otp = '';
-					toast.success('Resent OTP to your email');
+					this.otp = ''
+					toast.success('Resent OTP to your email')
 				},
 				onerror() {
-					toast.error('Failed to resend OTP');
+					toast.error('Failed to resend OTP')
 				},
-			};
+			}
 		},
 		setupAccount() {
 			return {
@@ -122,18 +122,18 @@ export default {
 				makeParams() {
 					return {
 						key: this.requestKey,
-					};
+					}
 				},
 				onSuccess: (data) => {
-					window.location.href = data?.location;
+					window.location.href = data?.location
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		saasProduct() {
-			return this.$resources.signupSettings.data?.product_trial;
+			return this.$resources.signupSettings.data?.product_trial
 		},
 	},
-};
+}
 </script>

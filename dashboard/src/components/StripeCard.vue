@@ -35,9 +35,9 @@
 			<div class="mt-3" v-show="tryingMicroCharge">
 				<p class="text-lg text-ink-gray-8">
 					We are attempting to charge your card with
-					<strong>{{ formattedMicroChargeAmount }}</strong> to make sure the
-					card works. This amount will be <strong>refunded</strong> back to your
-					account.
+					<strong>{{ formattedMicroChargeAmount }}</strong>
+					to make sure the card works. This amount will be
+					<strong>refunded</strong> back to your account.
 				</p>
 
 				<Button class="mt-2" :loading="true">Attempting Test Charge</Button>
@@ -56,9 +56,9 @@
 </template>
 
 <script>
-import AddressForm from './AddressForm.vue';
-import StripeLogo from '@/components/StripeLogo.vue';
-import { loadStripe } from '@stripe/stripe-js';
+import AddressForm from './AddressForm.vue'
+import StripeLogo from '@/components/StripeLogo.vue'
+import { loadStripe } from '@stripe/stripe-js'
 
 export default {
 	name: 'StripeCard',
@@ -82,14 +82,14 @@ export default {
 			gstNotApplicable: false,
 			addingCard: false,
 			tryingMicroCharge: false,
-		};
+		}
 	},
 	async mounted() {
-		this.setupCard();
+		this.setupCard()
 
-		let { first_name, last_name = '' } = this.$account.user;
-		let fullname = first_name + ' ' + last_name;
-		this.billingInformation.cardHolderName = fullname.trimEnd();
+		let { first_name, last_name = '' } = this.$account.user
+		let fullname = first_name + ' ' + last_name
+		this.billingInformation.cardHolderName = fullname.trimEnd()
 	},
 	resources: {
 		countryList: 'press.api.account.country_list',
@@ -101,26 +101,26 @@ export default {
 				},
 				auto: true,
 				onSuccess(data) {
-					this.billingInformation.country = data?.country;
-					this.billingInformation.address = data?.address_line1;
-					this.billingInformation.city = data?.city;
-					this.billingInformation.state = data?.state;
-					this.billingInformation.postal_code = data?.pincode;
+					this.billingInformation.country = data?.country
+					this.billingInformation.address = data?.address_line1
+					this.billingInformation.city = data?.city
+					this.billingInformation.state = data?.state
+					this.billingInformation.postal_code = data?.pincode
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		async setupCard() {
 			let result = await this.$call(
 				'press.api.billing.get_publishable_key_and_setup_intent',
-			);
+			)
 			//window.posthog.capture('init_client_add_card', 'fc_signup');
-			let { publishable_key, setup_intent } = result;
-			this.setupIntent = setup_intent;
-			this.stripe = await loadStripe(publishable_key);
-			this.elements = this.stripe.elements();
-			let theme = this.$theme;
+			let { publishable_key, setup_intent } = result
+			this.setupIntent = setup_intent
+			this.stripe = await loadStripe(publishable_key)
+			this.elements = this.stripe.elements()
+			let theme = this.$theme
 			let style = {
 				base: {
 					color: theme.colors.black,
@@ -135,7 +135,7 @@ export default {
 					color: theme.colors.red['600'],
 					iconColor: theme.colors.red['600'],
 				},
-			};
+			}
 			this.card = this.elements.create('card', {
 				hidePostalCode: true,
 				style: style,
@@ -143,29 +143,29 @@ export default {
 					complete: '',
 					focus: 'bg-surface-gray-2',
 				},
-			});
-			this.card.mount(this.$refs['card-element']);
+			})
+			this.card.mount(this.$refs['card-element'])
 
 			this.card.addEventListener('change', (event) => {
-				this.cardErrorMessage = event.error?.message || null;
-			});
+				this.cardErrorMessage = event.error?.message || null
+			})
 			this.card.addEventListener('ready', () => {
-				this.ready = true;
-			});
+				this.ready = true
+			})
 		},
 		async submit() {
-			this.addingCard = true;
+			this.addingCard = true
 
-			let message;
+			let message
 			if (!this.withoutAddress) {
-				message = await this.$refs['address-form'].validateValues();
+				message = await this.$refs['address-form'].validateValues()
 			}
 			if (message) {
-				this.errorMessage = message;
-				this.addingCard = false;
-				return;
+				this.errorMessage = message
+				this.addingCard = false
+				return
 			} else {
-				this.errorMessage = null;
+				this.errorMessage = null
 			}
 
 			const { setupIntent, error } = await this.stripe.confirmCardSetup(
@@ -185,14 +185,14 @@ export default {
 						},
 					},
 				},
-			);
+			)
 
 			if (error) {
-				this.addingCard = false;
-				let errorMessage = error.message;
+				this.addingCard = false
+				let errorMessage = error.message
 				// fix for duplicate error message
 				if (errorMessage != 'Your card number is incomplete.') {
-					this.errorMessage = errorMessage;
+					this.errorMessage = errorMessage
 				}
 			} else {
 				if (setupIntent.status === 'succeeded') {
@@ -203,79 +203,79 @@ export default {
 								setup_intent: setupIntent,
 								address: this.withoutAddress ? null : this.billingInformation,
 							},
-						);
+						)
 						//window.posthog.capture('completed_client_add_card', 'fc_signup');
 
-						await this.verifyWithMicroChargeIfApplicable(payment_method_name);
+						await this.verifyWithMicroChargeIfApplicable(payment_method_name)
 
-						this.addingCard = false;
+						this.addingCard = false
 					} catch (error) {
-						console.error(error);
-						this.addingCard = false;
-						this.errorMessage = error.messages.join('\n');
+						console.error(error)
+						this.addingCard = false
+						this.errorMessage = error.messages.join('\n')
 					}
 				}
 			}
 		},
 		async verifyWithMicroChargeIfApplicable(paymentMethodName) {
-			const teamCurrency = this.$account.team.currency;
+			const teamCurrency = this.$account.team.currency
 			const verifyCardsWithMicroCharge =
-				this.$account.feature_flags.verify_cards_with_micro_charge;
+				this.$account.feature_flags.verify_cards_with_micro_charge
 
 			const isMicroChargeApplicable =
 				verifyCardsWithMicroCharge === 'Both INR and USD' ||
 				(verifyCardsWithMicroCharge == 'Only INR' && teamCurrency === 'INR') ||
-				(verifyCardsWithMicroCharge === 'Only USD' && teamCurrency === 'USD');
+				(verifyCardsWithMicroCharge === 'Only USD' && teamCurrency === 'USD')
 
 			if (isMicroChargeApplicable) {
-				await this._verifyWithMicroCharge(paymentMethodName);
+				await this._verifyWithMicroCharge(paymentMethodName)
 			} else {
-				this.$emit('complete');
+				this.$emit('complete')
 			}
 		},
 
 		async _verifyWithMicroCharge(paymentMethodName) {
-			this.tryingMicroCharge = true;
+			this.tryingMicroCharge = true
 
 			const paymentIntent = await this.$call(
 				'press.api.billing.create_payment_intent_for_micro_debit',
 				{
 					payment_method_name: paymentMethodName,
 				},
-			);
+			)
 
-			let { client_secret: clientSecret } = paymentIntent;
+			let { client_secret: clientSecret } = paymentIntent
 
 			let payload = await this.stripe.confirmCardPayment(clientSecret, {
 				payment_method: {
 					card: this.card,
 				},
-			});
+			})
 
 			if (payload.paymentIntent.status === 'succeeded') {
-				this.$emit('complete');
+				this.$emit('complete')
 			}
 
-			this.tryingMicroCharge = false;
+			this.tryingMicroCharge = false
 		},
 		getCountryCode(country) {
 			let code = this.$resources.countryList.data.find(
 				(d) => d.name === country,
-			).code;
-			return code.toUpperCase();
+			).code
+			return code.toUpperCase()
 		},
 	},
 	computed: {
 		formattedMicroChargeAmount() {
-			const isINR = this.$account.team.currency === 'INR';
-			return isINR ? '₹100' : '$1';
+			const isINR = this.$account.team.currency === 'INR'
+			return isINR ? '₹100' : '$1'
 		},
 		browserTimezone() {
 			if (!window.Intl) {
-				return null;
+				return null
 			}
-			return Intl.DateTimeFormat().resolvedOptions().timeZone;
+			return Intl.DateTimeFormat().resolvedOptions().timeZone
 		},
 	},
-};
+}
 </script>

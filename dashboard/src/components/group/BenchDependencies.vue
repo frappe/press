@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { icon, renderDialog } from '@/utils/components';
-import { createListResource, FeatherIcon, ListView, Tooltip } from 'frappe-ui';
-import { computed, defineAsyncComponent, h } from 'vue';
+import { icon, renderDialog } from '@/utils/components'
+import { createListResource, FeatherIcon, ListView, Tooltip } from 'frappe-ui'
+import { computed, defineAsyncComponent, h } from 'vue'
 
-defineOptions({ name: 'BenchDependencies' });
+defineOptions({ name: 'BenchDependencies' })
 
 const props = defineProps({
 	releaseGroup: {
@@ -12,7 +12,7 @@ const props = defineProps({
 	releaseGroupDocumentResource: {
 		type: Object,
 	},
-});
+})
 
 const dependencyListResource = createListResource({
 	doctype: 'Release Group Dependency',
@@ -24,14 +24,14 @@ const dependencyListResource = createListResource({
 	limit: 20,
 	limit_page_length: 20,
 	auto: true,
-});
+})
 
 const columns = computed(() => [
 	{
 		label: 'Dependency',
 		fieldname: 'dependency',
 		format(_: any, row: any) {
-			return row.title;
+			return row.title
 		},
 	},
 	{
@@ -39,15 +39,15 @@ const columns = computed(() => [
 		fieldname: 'version',
 		suffix(row: any) {
 			if (!row.is_custom) {
-				return;
+				return
 			}
 
 			return h('div', { title: 'Custom version' }, [
 				h(icon('alert-circle', 'w-3 h-3')),
-			]);
+			])
 		},
 		format(_: any, row: any) {
-			return row.version;
+			return row.version
 		},
 	},
 	{
@@ -62,21 +62,21 @@ const columns = computed(() => [
 				onClick() {
 					let DependencyEditorDialog = defineAsyncComponent(
 						() => import('../../components/group/DependencyEditorDialog.vue'),
-					);
+					)
 					renderDialog(
 						h(DependencyEditorDialog, {
 							group: props.releaseGroupDocumentResource?.doc,
 							dependency: row,
 							onSuccess() {
-								dependencyListResource.reload();
+								dependencyListResource.reload()
 							},
 						}),
-					);
+					)
 				},
 			},
 		],
 	},
-]);
+])
 </script>
 
 <template>

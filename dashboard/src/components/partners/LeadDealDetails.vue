@@ -4,11 +4,11 @@
 	</div>
 </template>
 <script>
-import LeadFollowup from './LeadFollowup.vue';
+import LeadFollowup from './LeadFollowup.vue'
 export default {
 	name: 'LeadDealDetails',
 	components: {
 		LeadFollowup,
 	},
-};
+}
 </script>

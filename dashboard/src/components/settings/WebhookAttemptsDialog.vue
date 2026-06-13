@@ -9,7 +9,8 @@
 	>
 		<template #body-content>
 			<p class="text-sm mb-2 text-ink-gray-7" v-if="!selectedWebhookAttemptId">
-				<strong>Note:</strong> You can only view logs of last 24 hours
+				<strong>Note:</strong>
+				You can only view logs of last 24 hours
 			</p>
 			<ObjectList :options="listOptions" v-if="!selectedWebhookAttemptId" />
 			<Button
@@ -28,11 +29,11 @@
 	</Dialog>
 </template>
 <script>
-import { Breadcrumbs, Badge } from 'frappe-ui';
-import Header from '../Header.vue';
-import ObjectList from '../ObjectList.vue';
-import { h } from 'vue';
-import WebhookAttemptDetails from './WebhookAttemptDetails.vue';
+import { Breadcrumbs, Badge } from 'frappe-ui'
+import Header from '../Header.vue'
+import ObjectList from '../ObjectList.vue'
+import { h } from 'vue'
+import WebhookAttemptDetails from './WebhookAttemptDetails.vue'
 
 export default {
 	name: 'WebhookAttempts',
@@ -46,7 +47,7 @@ export default {
 	data() {
 		return {
 			selectedWebhookAttemptId: null,
-		};
+		}
 	},
 	resources: {
 		attempts() {
@@ -57,7 +58,7 @@ export default {
 				},
 				inititalData: [],
 				auto: true,
-			};
+			}
 		},
 	},
 	computed: {
@@ -90,7 +91,7 @@ export default {
 								: h(Badge, {
 										label: row.status,
 										theme: 'red',
-									});
+									})
 						},
 					},
 					{
@@ -98,8 +99,8 @@ export default {
 						fieldname: 'response_status_code',
 						width: 0.1,
 						format: (val) => {
-							if (!val || parseInt(val) === 0) return '-';
-							return val;
+							if (!val || parseInt(val) === 0) return '-'
+							return val
 						},
 						align: 'center',
 					},
@@ -108,15 +109,15 @@ export default {
 						fieldname: 'timestamp',
 						width: 0.3,
 						format(value) {
-							return new Date(value).toLocaleString();
+							return new Date(value).toLocaleString()
 						},
 					},
 				],
 				onRowClick: (row) => {
-					this.selectedWebhookAttemptId = row.name;
+					this.selectedWebhookAttemptId = row.name
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

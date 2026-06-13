@@ -1,5 +1,5 @@
-import { reactive, watch } from 'vue';
-import { createListResource } from 'frappe-ui';
+import { reactive, watch } from 'vue'
+import { createListResource } from 'frappe-ui'
 
 export const integrations = reactive({
 	Sites: {
@@ -16,7 +16,7 @@ export const integrations = reactive({
 		icon: LucideBoxes,
 		items: [],
 	},
-});
+})
 
 export const addIntegrations = () => {
 	let siteList = createListResource({
@@ -29,15 +29,15 @@ export const addIntegrations = () => {
 			const defaultItems = [
 				{ name: 'List', route: '/sites', icon: LucideCircleDashed },
 				{ name: 'New', route: '/sites/new', icon: LucideCirclePlus },
-			];
+			]
 
 			const tmp = data.map((x) => {
-				const route = `/sites/${x.name}/overview`;
-				return { ...x, route, icon: LucideEarth };
-			});
-			integrations.Sites.items = defaultItems.concat(tmp);
+				const route = `/sites/${x.name}/overview`
+				return { ...x, route, icon: LucideEarth }
+			})
+			integrations.Sites.items = defaultItems.concat(tmp)
 		},
-	});
+	})
 
 	let benches = createListResource({
 		auto: true,
@@ -48,14 +48,14 @@ export const addIntegrations = () => {
 		onSuccess(data) {
 			const defaultItems = [
 				{ name: 'New', route: '/groups/new', icon: LucideCirclePlus },
-			];
+			]
 			const tmp = data.map((x) => {
-				const route = `/groups/${x.name}/sites`;
-				return { ...x, route, icon: LucideBoxes };
-			});
-			integrations.Benches.items = defaultItems.concat(tmp);
+				const route = `/groups/${x.name}/sites`
+				return { ...x, route, icon: LucideBoxes }
+			})
+			integrations.Benches.items = defaultItems.concat(tmp)
 		},
-	});
+	})
 
 	let serverList = createListResource({
 		auto: true,
@@ -67,12 +67,12 @@ export const addIntegrations = () => {
 			const defaultItems = [
 				{ name: 'List', route: '/servers', icon: LucideCircleDashed },
 				{ name: 'New', route: '/servers/new', icon: LucideCirclePlus },
-			];
+			]
 			const tmp = data.map((x) => {
-				const route = `/servers/${x.name}/overview`;
-				return { ...x, route, icon: LucideServer };
-			});
-			integrations.Servers.items = defaultItems.concat(tmp);
+				const route = `/servers/${x.name}/overview`
+				return { ...x, route, icon: LucideServer }
+			})
+			integrations.Servers.items = defaultItems.concat(tmp)
 		},
-	});
-};
+	})
+}

@@ -1,7 +1,7 @@
 <script setup>
-import { AccordionTrigger } from 'reka-ui';
+import { AccordionTrigger } from 'reka-ui'
 
-defineOptions({ inheritAttrs: false });
+defineOptions({ inheritAttrs: false })
 </script>
 
 <template>

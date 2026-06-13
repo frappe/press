@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import { Switch, getCachedDocumentResource } from 'frappe-ui';
+import { Switch, getCachedDocumentResource } from 'frappe-ui'
 
 export default {
 	props: {
@@ -26,20 +26,20 @@ export default {
 	data() {
 		return {
 			show: true,
-		};
+		}
 	},
 	computed: {
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 		enableAutoUpdate: {
 			get() {
-				return !this.$site?.doc.skip_auto_updates;
+				return !this.$site?.doc.skip_auto_updates
 			},
 			set(value) {
-				this.$site.setValue.submit({ skip_auto_updates: !value });
+				this.$site.setValue.submit({ skip_auto_updates: !value })
 			},
 		},
 	},
-};
+}
 </script>

@@ -5,8 +5,8 @@
 </template>
 
 <script>
-import AlertBanner from './AlertBanner.vue';
-import { addressableErrorDialog } from '../utils/components';
+import AlertBanner from './AlertBanner.vue'
+import { addressableErrorDialog } from '../utils/components'
 
 export default {
 	name: 'AlertAddressableError',
@@ -22,8 +22,8 @@ export default {
 	},
 	methods: {
 		show() {
-			addressableErrorDialog(this.name, () => this.$emit('done'));
+			addressableErrorDialog(this.name, () => this.$emit('done'))
 		},
 	},
-};
+}
 </script>

@@ -68,8 +68,8 @@
 	</div>
 </template>
 <script>
-import LoginBox from '../../components/auth/LoginBox.vue';
-import { Progress } from 'frappe-ui';
+import LoginBox from '../../components/auth/LoginBox.vue'
+import { Progress } from 'frappe-ui'
 
 export default {
 	name: 'SignupLoginToSite',
@@ -83,7 +83,7 @@ export default {
 			product_trial_request: this.$route.query.product_trial_request,
 			progressCount: 0,
 			currentBuildStep: 'Configuring your setup',
-		};
+		}
 	},
 	resources: {
 		saasProduct() {
@@ -92,7 +92,7 @@ export default {
 				doctype: 'Product Trial',
 				name: this.productId,
 				auto: true,
-			};
+			}
 		},
 		siteRequest() {
 			return {
@@ -104,13 +104,13 @@ export default {
 				onSuccess(doc) {
 					if (doc.status === 'Site Created') {
 						setTimeout(() => {
-							this.loginToSite();
-						}, 2000);
+							this.loginToSite()
+						}, 2000)
 					} else if (
 						doc.status === 'Wait for Site' ||
 						doc.status === 'Prefilling Setup Wizard'
 					) {
-						this.$resources.siteRequest.getProgress.reload();
+						this.$resources.siteRequest.getProgress.reload()
 					}
 				},
 				whitelistedMethods: {
@@ -120,14 +120,14 @@ export default {
 							return {
 								current_progress:
 									this.$resources.siteRequest.getProgress.data?.progress || 0,
-							};
+							}
 						},
 						onSuccess: (data) => {
 							if (data.current_step === 'Site Created') {
 								setTimeout(() => {
-									this.loginToSite();
-								}, 2000);
-								return;
+									this.loginToSite()
+								}, 2000)
+								return
 							}
 
 							const currentStepMap = {
@@ -136,13 +136,13 @@ export default {
 								'Prefilling Setup Wizard': 'Configuring your site',
 								'Adding Domain': 'Configuring your site',
 								'Site Created': 'Almost there',
-							};
+							}
 
 							this.currentBuildStep =
 								currentStepMap[data.current_step] ||
 								data.current_step ||
-								this.currentBuildStep;
-							this.progressCount += 1;
+								this.currentBuildStep
+							this.progressCount += 1
 
 							if (
 								!(
@@ -150,56 +150,56 @@ export default {
 									this.progressCount <= 10
 								)
 							) {
-								this.progressCount = Math.round(data.progress * 10) / 10;
+								this.progressCount = Math.round(data.progress * 10) / 10
 								setTimeout(() => {
 									if (
 										['Site Created', 'Error'].includes(
 											this.$resources.siteRequest.doc.status,
 										)
 									)
-										return;
+										return
 
-									this.$resources.siteRequest.getProgress.reload();
-								}, 2000);
+									this.$resources.siteRequest.getProgress.reload()
+								}, 2000)
 							}
 						},
 					},
 					getLoginSid: {
 						method: 'get_login_sid',
 						onSuccess(loginURL) {
-							window.open(loginURL, '_self');
+							window.open(loginURL, '_self')
 						},
 					},
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		saasProduct() {
-			return this.$resources.saasProduct.doc;
+			return this.$resources.saasProduct.doc
 		},
 		currentHelpText() {
 			const defaultHelpTexts = [
 				'Find anything with the Awesome bar!',
 				'All Frappe apps are open-source!',
 				'You can install more apps later!',
-			];
+			]
 
 			const productHelpTexts = this.saasProduct?.help_texts
 				? this.saasProduct.help_texts.map((t) => t.help_text)
-				: [];
+				: []
 			const helpTexts = productHelpTexts.length
 				? productHelpTexts
-				: defaultHelpTexts;
-			const helpTextIndex = Math.floor(this.progressCount) % helpTexts.length;
+				: defaultHelpTexts
+			const helpTextIndex = Math.floor(this.progressCount) % helpTexts.length
 
-			return helpTexts[helpTextIndex] || defaultHelpTexts[0];
+			return helpTexts[helpTextIndex] || defaultHelpTexts[0]
 		},
 	},
 	methods: {
 		loginToSite() {
-			this.$resources.siteRequest.getLoginSid.submit();
+			this.$resources.siteRequest.getLoginSid.submit()
 		},
 	},
-};
+}
 </script>

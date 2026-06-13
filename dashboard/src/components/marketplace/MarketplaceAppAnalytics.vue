@@ -134,9 +134,9 @@
 </template>
 
 <script>
-import { DateTime } from 'luxon';
-import LineChart from '@/components/charts/LineChart.vue';
-import { LoadingIndicator } from 'frappe-ui';
+import { DateTime } from 'luxon'
+import LineChart from '@/components/charts/LineChart.vue'
+import { LoadingIndicator } from 'frappe-ui'
 
 export default {
 	name: 'MarketplaceAppAnalytics',
@@ -149,7 +149,7 @@ export default {
 	},
 	methods: {
 		formatDate(data) {
-			return data.map((d) => d.date);
+			return data.map((d) => d.date)
 		},
 		getChartOptions(yFormatter) {
 			return {
@@ -163,17 +163,17 @@ export default {
 				},
 				tooltipOptions: {
 					formatTooltipX: (d) => {
-						return DateTime.fromISO(d).toLocaleString(DateTime.DATE_MED);
+						return DateTime.fromISO(d).toLocaleString(DateTime.DATE_MED)
 					},
 					formatTooltipY: yFormatter,
 				},
-			};
+			}
 		},
 		mapChartAnalytics(data) {
-			if (!data) return;
+			if (!data) return
 			return {
 				datasets: [data.map((d) => [+new Date(d.date), d.value])],
-			};
+			}
 		},
 	},
 	resources: {
@@ -184,7 +184,7 @@ export default {
 				params: {
 					name: this.app,
 				},
-			};
+			}
 		},
 		plausible_analytics() {
 			return {
@@ -193,7 +193,7 @@ export default {
 				params: {
 					name: this.app,
 				},
-			};
+			}
 		},
 	},
 	computed: {
@@ -202,20 +202,20 @@ export default {
 				!this.$resources.analytics.loading &&
 				this.$resources.analytics.data
 			) {
-				return this.$resources.analytics.data;
+				return this.$resources.analytics.data
 			}
-			return {};
+			return {}
 		},
 		totalEarnings() {
-			const payout = this.installAnalytics?.total_payout;
-			if (!payout) return 0;
+			const payout = this.installAnalytics?.total_payout
+			if (!payout) return 0
 
 			if (this.$team.doc.currency === 'INR') {
-				return payout.converted_total_inr || 0;
+				return payout.converted_total_inr || 0
 			} else {
-				return payout.converted_total_usd || 0;
+				return payout.converted_total_usd || 0
 			}
 		},
 	},
-};
+}
 </script>

@@ -19,8 +19,8 @@
 	/>
 </template>
 <script>
-import { FormControl, debounce } from 'frappe-ui';
-import { nextTick } from 'vue';
+import { FormControl, debounce } from 'frappe-ui'
+import { nextTick } from 'vue'
 
 export default {
 	name: 'LinkControl',
@@ -34,26 +34,26 @@ export default {
 		return {
 			query: '',
 			currentValidValueInOptions: null,
-		};
+		}
 	},
 	beforeUnmount() {
-		const root = this.$refs.formControl?.$el;
-		const input = root?.querySelector('input');
+		const root = this.$refs.formControl?.$el
+		const input = root?.querySelector('input')
 
-		if (!input) return;
+		if (!input) return
 
-		input.removeEventListener('input', this.onNativeInput);
+		input.removeEventListener('input', this.onNativeInput)
 	},
 	mounted() {
 		nextTick(() => {
-			const root = this.$refs.formControl?.$el;
-			if (!root) return;
+			const root = this.$refs.formControl?.$el
+			if (!root) return
 
-			const input = root.querySelector('input');
+			const input = root.querySelector('input')
 
-			if (!input) return;
-			input.addEventListener('input', this.onNativeInput);
-		});
+			if (!input) return
+			input.addEventListener('input', this.onNativeInput)
+		})
 	},
 	resources: {
 		options() {
@@ -73,28 +73,28 @@ export default {
 						label: option.label || option.value,
 						description: option.label ? option.value : undefined,
 						value: option.value,
-					}));
+					}))
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		onQuery: debounce(function (query) {
-			this.query = query.trim();
+			this.query = query.trim()
 		}, 500),
 		onNativeInput(e) {
-			this.onQuery(e.target.value);
+			this.onQuery(e.target.value)
 		},
 	},
 	computed: {
 		autocompleteOptions() {
-			let options = this.$resources.options.data || [];
+			let options = this.$resources.options.data || []
 			const currentValueInOptions = options.find(
 				(o) => o.value === this.modelValue,
-			);
+			)
 
 			if (currentValueInOptions) {
-				this.currentValidValueInOptions = currentValueInOptions;
+				this.currentValidValueInOptions = currentValueInOptions
 			}
 
 			if (
@@ -102,11 +102,11 @@ export default {
 				!currentValueInOptions &&
 				this.currentValidValueInOptions
 			) {
-				options = [this.currentValidValueInOptions, ...options];
+				options = [this.currentValidValueInOptions, ...options]
 			}
 
-			return options;
+			return options
 		},
 	},
-};
+}
 </script>

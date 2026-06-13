@@ -5,9 +5,9 @@
 </template>
 
 <script>
-import { frappeRequest } from 'frappe-ui';
-import ObjectList from '../components/ObjectList.vue';
-import { icon } from '../utils/components';
+import { frappeRequest } from 'frappe-ui'
+import ObjectList from '../components/ObjectList.vue'
+import { icon } from '../utils/components'
 
 export default {
 	name: 'BillingMpesaInvoices',
@@ -16,31 +16,31 @@ export default {
 			invoices: [],
 			loading: false,
 			errorMessage: null,
-		};
+		}
 	},
 	components: {
 		ObjectList,
 	},
 	methods: {
 		async fetchInvoices() {
-			this.loading = true;
+			this.loading = true
 			try {
 				const response = await frappeRequest({
 					url: '/api/method/press.api.regional_payments.mpesa.utils.display_invoices_by_partner',
 					method: 'GET',
-				});
-				this.invoices = response;
+				})
+				this.invoices = response
 			} catch (error) {
-				this.errorMessage = `Failed to load invoices. ${error}`;
+				this.errorMessage = `Failed to load invoices. ${error}`
 			} finally {
-				this.loading = false;
+				this.loading = false
 			}
 		},
 		formatCurrency(value) {
 			return new Intl.NumberFormat('en-US', {
 				style: 'currency',
 				currency: 'Ksh',
-			}).format(value);
+			}).format(value)
 		},
 	},
 	computed: {
@@ -101,19 +101,19 @@ export default {
 										prefix: icon('download'),
 									},
 									onClick: () => {
-										window.open(row.local_invoice);
+										window.open(row.local_invoice)
 									},
-								};
+								}
 							}
 						},
 					},
 				],
 				orderBy: 'posting_date desc',
-			};
+			}
 		},
 	},
 	mounted() {
-		this.fetchInvoices();
+		this.fetchInvoices()
 	},
-};
+}
 </script>

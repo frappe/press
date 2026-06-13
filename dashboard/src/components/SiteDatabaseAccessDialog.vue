@@ -61,16 +61,16 @@
 	/>
 </template>
 <script>
-import { defineAsyncComponent } from 'vue';
-import { getCachedDocumentResource } from 'frappe-ui';
-import ClickToCopyField from './ClickToCopyField.vue';
-import ObjectList from './ObjectList.vue';
-import { date } from '../utils/format';
-import { confirmDialog, icon } from '../utils/components';
-import SiteDatabaseUserCredentialDialog from './site_database_user/SiteDatabaseUserCredentialDialog.vue';
-import SiteDatabaseAddEditUserDialog from './site_database_user/SiteDatabaseAddEditUserDialog.vue';
-import SiteDatabaseUserLogs from './site_database_user/SiteDatabaseUserLogs.vue';
-import { toast } from 'vue-sonner';
+import { defineAsyncComponent } from 'vue'
+import { getCachedDocumentResource } from 'frappe-ui'
+import ClickToCopyField from './ClickToCopyField.vue'
+import ObjectList from './ObjectList.vue'
+import { date } from '../utils/format'
+import { confirmDialog, icon } from '../utils/components'
+import SiteDatabaseUserCredentialDialog from './site_database_user/SiteDatabaseUserCredentialDialog.vue'
+import SiteDatabaseAddEditUserDialog from './site_database_user/SiteDatabaseAddEditUserDialog.vue'
+import SiteDatabaseUserLogs from './site_database_user/SiteDatabaseUserLogs.vue'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'SiteDatabaseAccessDialog',
@@ -95,17 +95,17 @@ export default {
 			showDatabaseUserCredentialDialog: false,
 			showDatabaseAddEditUserDialog: false,
 			showDatabaseUserLogsDialog: false,
-		};
+		}
 	},
 	watch: {
 		showDatabaseUserCredentialDialog(val) {
 			if (!val) {
-				this.show = true;
+				this.show = true
 			}
 		},
 		showDatabaseAddEditUserDialog(val) {
 			if (!val) {
-				this.show = true;
+				this.show = true
 			}
 		},
 	},
@@ -114,16 +114,16 @@ export default {
 			return {
 				url: 'press.api.client.run_doc_method',
 				onSuccess() {
-					toast.success('Database User will be deleted shortly');
+					toast.success('Database User will be deleted shortly')
 				},
 				onError(err) {
 					toast.error(
 						err.messages.length
 							? err.messages.join('\n')
 							: 'Failed to initiate database user deletion',
-					);
+					)
 				},
-			};
+			}
 		},
 	},
 	computed: {
@@ -143,7 +143,7 @@ export default {
 							fieldname: 'status',
 							options: ['', 'Pending', 'Active', 'Failed'],
 						},
-					];
+					]
 				},
 				columns: [
 					{
@@ -182,7 +182,7 @@ export default {
 								read_only: 'Read Only',
 								read_write: 'Read/Write',
 								granular: 'Granular',
-							}[value];
+							}[value]
 						},
 					},
 
@@ -195,38 +195,38 @@ export default {
 				],
 				rowActions: ({ row, listResource, documentResource }) => {
 					if (row.status === 'Archived' || row.status === 'Pending') {
-						return [];
+						return []
 					}
 					return [
 						{
 							label: 'View Logs',
 							onClick: () => {
-								this.show = false;
-								this.selectedUser = row.name;
-								this.selectedUserLabel = row.label;
-								this.showDatabaseUserLogsDialog = true;
+								this.show = false
+								this.selectedUser = row.name
+								this.selectedUserLabel = row.label
+								this.showDatabaseUserLogsDialog = true
 							},
 						},
 						{
 							label: 'View Credential',
 							onClick: () => {
-								this.show = false;
-								this.selectedUser = row.name;
-								this.showDatabaseUserCredentialDialog = true;
+								this.show = false
+								this.selectedUser = row.name
+								this.showDatabaseUserCredentialDialog = true
 							},
 						},
 						{
 							label: 'Configure User',
 							onClick: () => {
-								this.selectedUser = row.name;
-								this.show = false;
-								this.showDatabaseAddEditUserDialog = true;
+								this.selectedUser = row.name
+								this.show = false
+								this.showDatabaseAddEditUserDialog = true
 							},
 						},
 						{
 							label: 'Delete User',
 							onClick: () => {
-								this.show = false;
+								this.show = false
 								confirmDialog({
 									title: 'Delete Database User',
 									message: `Are you sure you want to delete the database user ?<br>`,
@@ -239,23 +239,23 @@ export default {
 												dt: 'Site Database User',
 												dn: row.name,
 												method: 'archive',
-											});
+											})
 											this.$resources.deleteSiteDatabaseUser.promise.then(
 												() => {
-													hide();
-													this.show = true;
+													hide()
+													this.show = true
 												},
-											);
-											return this.$resources.deleteSiteDatabaseUser.promise;
+											)
+											return this.$resources.deleteSiteDatabaseUser.promise
 										},
 									},
 									onSuccess: () => {
-										listResource.refresh();
+										listResource.refresh()
 									},
-								});
+								})
 							},
 						},
-					];
+					]
 				},
 				primaryAction: () => {
 					return {
@@ -265,28 +265,28 @@ export default {
 							prefix: icon('plus'),
 						},
 						onClick: () => {
-							this.show = false;
-							this.selectedUser = null;
-							this.showDatabaseAddEditUserDialog = true;
+							this.show = false
+							this.selectedUser = null
+							this.showDatabaseAddEditUserDialog = true
 						},
-					};
+					}
 				},
-			};
+			}
 		},
 		sitePlan() {
-			return this.$site.doc.current_plan;
+			return this.$site.doc.current_plan
 		},
 		planSupportsDatabaseAccess() {
-			return this.sitePlan?.database_access;
+			return this.sitePlan?.database_access
 		},
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 	},
 	methods: {
 		hideSiteDatabaseAddEditUserDialog() {
-			this.showDatabaseAddEditUserDialog = false;
+			this.showDatabaseAddEditUserDialog = false
 		},
 	},
-};
+}
 </script>

@@ -87,7 +87,7 @@
 </template>
 
 <script>
-import AlertBanner from '../AlertBanner.vue';
+import AlertBanner from '../AlertBanner.vue'
 
 export default {
 	name: 'SelectSiteForRestore',
@@ -106,7 +106,7 @@ export default {
 			restoreDatabase: this.database_backup_exists,
 			restorePublic: this.public_backup_exists,
 			restorePrivate: this.private_backup_exists,
-		};
+		}
 	},
 	components: {
 		AlertBanner,
@@ -120,7 +120,7 @@ export default {
 				filters: { name: ['!=', this.site] },
 				pageLength: 500,
 				auto: true,
-			};
+			}
 		},
 	},
 	methods: {
@@ -131,9 +131,9 @@ export default {
 				restorePublic: this.restorePublic,
 				restorePrivate: this.restorePrivate,
 				restoreConfig: this.restoreDatabase, // Always restore config if database is restored
-			});
-			this.showDialog = false;
+			})
+			this.showDialog = false
 		},
 	},
-};
+}
 </script>

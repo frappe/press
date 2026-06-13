@@ -11,7 +11,8 @@
 				v-if="$resources?.cleanupSpaceEstimation?.loading"
 				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 			>
-				<Spinner class="w-4" /> Analyzing ...
+				<Spinner class="w-4" />
+				Analyzing ...
 			</div>
 
 			<div
@@ -26,8 +27,7 @@
 					type="info"
 					:showIcon="false"
 					v-if="parsedData.total < 0.5"
-				>
-				</AlertBanner>
+				> </AlertBanner>
 				<AlertBanner
 					title="
                     Once a cleanup is run it can take some time to reflect in the server
@@ -35,24 +35,23 @@
 					type="info"
 					:showIcon="false"
 					v-if="parsedData.total >= 0.5"
-				>
-				</AlertBanner>
+				> </AlertBanner>
 				<div class="rounded-md">
 					<p>
 						This action will <strong>permanently remove</strong> the following:
 					</p>
 					<ul class="list-disc ml-5 mt-3 space-y-2">
 						<li>
-							<strong>Archived folders</strong> — contain recently archived
-							benches and sites.
+							<strong>Archived folders</strong>
+							— contain recently archived benches and sites.
 						</li>
 						<li>
-							<strong>Docker images & containers</strong> — all unused Docker
-							images and containers will be removed.
+							<strong>Docker images & containers</strong>
+							— all unused Docker images and containers will be removed.
 						</li>
 						<li>
-							<strong>Temporary files</strong> — cleanup will remove previously
-							created temporary files.
+							<strong>Temporary files</strong>
+							— cleanup will remove previously created temporary files.
 						</li>
 					</ul>
 
@@ -106,8 +105,8 @@
 </template>
 
 <script>
-import { Spinner } from 'frappe-ui';
-import { toast } from 'vue-sonner';
+import { Spinner } from 'frappe-ui'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'CleanupDialog',
@@ -126,10 +125,10 @@ export default {
 	data() {
 		return {
 			show: true,
-		};
+		}
 	},
 	mounted() {
-		this.$resources.cleanupSpaceEstimation.submit();
+		this.$resources.cleanupSpaceEstimation.submit()
 	},
 	resources: {
 		cleanupSpaceEstimation() {
@@ -138,27 +137,27 @@ export default {
 				makeParams: () => {
 					return {
 						name: this.server.doc.name,
-					};
+					}
 				},
 				auto: false,
-			};
+			}
 		},
 	},
 	computed: {
 		parsedData() {
-			const raw = this.$resources.cleanupSpaceEstimation?.data;
-			if (!raw) return null;
+			const raw = this.$resources.cleanupSpaceEstimation?.data
+			if (!raw) return null
 			return {
 				archived: raw.archived ?? '0.0B',
 				images: raw.images ?? '0.0B',
 				total: raw.total ?? 0,
-			};
+			}
 		},
 	},
 	methods: {
 		formatSize(valueInGB) {
-			if (valueInGB > 1) return `${valueInGB.toFixed(2)}GB`;
-			return `${(valueInGB * 1024).toFixed(2)}MB`;
+			if (valueInGB > 1) return `${valueInGB.toFixed(2)}GB`
+			return `${(valueInGB * 1024).toFixed(2)}MB`
 		},
 		onCleanup() {
 			toast.promise(
@@ -168,15 +167,15 @@ export default {
 				{
 					loading: 'Starting cleanup...',
 					success: () => {
-						this.show = false;
-						return 'Cleanup started';
+						this.show = false
+						return 'Cleanup started'
 					},
 					error: (err) => {
-						return 'Failed to start cleanup';
+						return 'Failed to start cleanup'
 					},
 				},
-			);
+			)
 		},
 	},
-};
+}
 </script>

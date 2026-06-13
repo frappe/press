@@ -109,7 +109,7 @@ import {
 	FeatherIcon,
 	FileUploader,
 	FormControl,
-} from 'frappe-ui';
+} from 'frappe-ui'
 
 export default {
 	name: 'PatchAppDialog',
@@ -127,16 +127,16 @@ export default {
 	},
 	watch: {
 		app(value) {
-			this.show = !!value;
-			this.applyToApp = value || '';
+			this.show = !!value
+			this.applyToApp = value || ''
 		},
 		show(value) {
-			this.error = '';
+			this.error = ''
 			if (value) {
-				return;
+				return
 			}
 
-			setTimeout(this.clearApp, 150);
+			setTimeout(this.clearApp, 150)
 		},
 	},
 	data() {
@@ -151,37 +151,36 @@ export default {
 			applyToBench: '',
 			applyToAllBenches: false,
 			applyToLatestDeploy: false,
-		};
+		}
 	},
 	computed: {
 		title() {
-			const app = this.app || this.applyToApp;
+			const app = this.app || this.applyToApp
 			if (app) {
-				return `Apply a patch to ${app}`;
+				return `Apply a patch to ${app}`
 			}
 
-			return 'Apply a patch';
+			return 'Apply a patch'
 		},
 	},
 	methods: {
 		clearApp() {
-			this.$emit('clear-app-to-patch');
+			this.$emit('clear-app-to-patch')
 		},
 		validate() {
 			if (!this.$resources.benches.data.length) {
-				this.error =
-					'This group has no benches, patch cannot be applied.';
-				return false;
+				this.error = 'This group has no benches, patch cannot be applied.'
+				return false
 			}
 
 			if (this.patch && !this.patchFileName) {
-				this.error = 'Please enter a patch file Name.';
-				return false;
+				this.error = 'Please enter a patch file Name.'
+				return false
 			}
 
 			if (!this.patch && !this.patchURL) {
-				this.error = 'Please enter the patch URL or select a patch file.';
-				return false;
+				this.error = 'Please enter the patch URL or select a patch file.'
+				return false
 			}
 
 			if (
@@ -190,38 +189,38 @@ export default {
 				!this.applyToLatestDeploy
 			) {
 				this.error =
-					'Please select a bench or check Apply patch to all active benches';
-				return false;
+					'Please select a bench or check Apply patch to all active benches'
+				return false
 			}
 
 			if (!this.app && !this.applyToApp) {
-				this.error = 'Please select an app to patch.';
-				return false;
+				this.error = 'Please select an app to patch.'
+				return false
 			}
 
 			if (this.patchURL && !this.patchURL.split('?')[0].endsWith('.patch')) {
 				this.error =
-					'Patch URL does not have a `.patch` extension. Please enter a valid URL,';
-				return false;
+					'Patch URL does not have a `.patch` extension. Please enter a valid URL,'
+				return false
 			}
 
-			return true;
+			return true
 		},
 		applyPatch() {
 			if (!this.validate()) {
-				return;
+				return
 			}
 
 			if (!this.patchFileName && this.patchURL) {
-				const patchURL = this.patchURL.split('?')[0];
-				this.patchFileName = patchURL.split('/').at(-1);
+				const patchURL = this.patchURL.split('?')[0]
+				this.patchFileName = patchURL.split('/').at(-1)
 			}
 
 			if (!this.patchFileName.endsWith('.patch')) {
-				this.patchFileName += '.patch';
+				this.patchFileName += '.patch'
 			}
 
-			const app = this.app || this.applyToApp;
+			const app = this.app || this.applyToApp
 			const args = {
 				release_group: this.group,
 				app,
@@ -234,28 +233,28 @@ export default {
 					patch_all_benches: this.applyToAllBenches,
 					patch_latest_deploy: this.applyToLatestDeploy,
 				},
-			};
-
-			this.$resources.applyPatch.submit(args);
-		},
-		async onPatchFileSelect(e) {
-			this.error = '';
-			const file = e.target.files?.[0];
-			if (!file) {
-				return;
 			}
 
-			this.patch = await file.text();
-			this.patchFileName = file.name;
+			this.$resources.applyPatch.submit(args)
+		},
+		async onPatchFileSelect(e) {
+			this.error = ''
+			const file = e.target.files?.[0]
+			if (!file) {
+				return
+			}
+
+			this.patch = await file.text()
+			this.patchFileName = file.name
 		},
 		clear() {
-			this.error = '';
-			this.patch = '';
-			this.patchFileName = '';
+			this.error = ''
+			this.patch = ''
+			this.patchFileName = ''
 		},
 		close() {
-			this.show = false;
-			this.clear();
+			this.show = false
+			this.clear()
 		},
 	},
 	resources: {
@@ -271,16 +270,16 @@ export default {
 				},
 				onSuccess(data) {
 					if (data.length === 1) {
-						this.applyToApp = data[0].value;
+						this.applyToApp = data[0].value
 					}
 				},
 				onError(data) {
-					this.error = data;
+					this.error = data
 				},
 				transform(data) {
-					return data.map(({ name }) => ({ value: name, label: name }));
+					return data.map(({ name }) => ({ value: name, label: name }))
 				},
-			};
+			}
 		},
 		benches() {
 			return {
@@ -294,40 +293,39 @@ export default {
 				auto: true,
 				onSuccess(data) {
 					if (data.length > 0) {
-						this.applyToBench = data.at(-1).value;
-						return;
+						this.applyToBench = data.at(-1).value
+						return
 					}
 
-					this.error =
-						'This group has no benches, patch cannot be applied.';
+					this.error = 'This group has no benches, patch cannot be applied.'
 				},
 				onError(data) {
-					this.error = data;
+					this.error = data
 				},
 				transform(data) {
-					return data.map(({ name }) => ({ value: name, label: name }));
+					return data.map(({ name }) => ({ value: name, label: name }))
 				},
-			};
+			}
 		},
 		applyPatch() {
 			return {
 				url: 'press.api.bench.apply_patch',
 				onSuccess() {
-					this.close();
+					this.close()
 					this.$router.push({
 						name: 'Release Group Detail Jobs',
 						params: { name: this.group },
-					});
+					})
 				},
 				onError(error) {
 					if (error.messages.length) {
-						this.error = error.messages.join('\n');
+						this.error = error.messages.join('\n')
 					} else {
-						this.error = error.message;
+						this.error = error.message
 					}
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

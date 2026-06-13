@@ -19,6 +19,6 @@
 export default {
 	name: 'CardWithDetails',
 	props: ['title', 'subtitle', 'showDetails'],
-	inject: ['viewportWidth']
-};
+	inject: ['viewportWidth'],
+}
 </script>

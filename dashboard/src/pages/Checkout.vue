@@ -40,11 +40,11 @@
 </template>
 
 <script>
-import Apps from './CheckoutApps.vue';
-import Plans from './CheckoutPlans.vue';
-import Address from './CheckoutAddress.vue';
-import Payment from './CheckoutPayment.vue';
-import PlanChangeSuccessful from './PlanChangeSuccessful.vue';
+import Apps from './CheckoutApps.vue'
+import Plans from './CheckoutPlans.vue'
+import Address from './CheckoutAddress.vue'
+import Payment from './CheckoutPayment.vue'
+import PlanChangeSuccessful from './PlanChangeSuccessful.vue'
 
 export default {
 	name: 'Checkout',
@@ -63,7 +63,7 @@ export default {
 			step: 1,
 			newAddress: {},
 			errorMessage: null,
-		};
+		}
 	},
 	resources: {
 		subscription() {
@@ -74,13 +74,13 @@ export default {
 				},
 				auto: true,
 				onSuccess(r) {
-					this.errorMessage = null;
+					this.errorMessage = null
 				},
 				onError(e) {
-					this.errorMessage = e;
+					this.errorMessage = e
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

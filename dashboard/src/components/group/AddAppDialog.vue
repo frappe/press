@@ -20,11 +20,9 @@
 						</template>
 						<template #suffix>
 							<span class="text-sm text-ink-gray-5" v-if="searchQuery">
-								{{
-									filteredRows.length === 0
+								{{ filteredRows.length === 0
 										? 'No results'
-										: `${filteredRows.length} of ${rows.length}`
-								}}
+										: `${filteredRows.length} of ${rows.length}` }}
 							</span>
 						</template>
 					</TextInput>
@@ -144,11 +142,11 @@ import {
 	TextInput,
 	Badge,
 	Button,
-} from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import { h } from 'vue';
-import { getToastErrorMessage } from '../../utils/toast';
-import NewAppDialog from '../NewAppDialog.vue';
+} from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import { h } from 'vue'
+import { getToastErrorMessage } from '../../utils/toast'
+import NewAppDialog from '../NewAppDialog.vue'
 
 export default {
 	name: 'AddAppDialog',
@@ -176,16 +174,16 @@ export default {
 			selectedAppSources: [],
 			showDialog: true,
 			addedApps: [],
-		};
+		}
 	},
 	resources: {
 		addApp: {
 			url: 'press.api.bench.add_app',
 			onSuccess() {
-				this.$emit('appAdd');
+				this.$emit('appAdd')
 			},
 			onError(e) {
-				toast.error(getToastErrorMessage(e));
+				toast.error(getToastErrorMessage(e))
 			},
 		},
 		installableApps() {
@@ -196,20 +194,20 @@ export default {
 				},
 				transform(data) {
 					return data.map((app) => {
-						app.compatible = app.sources.length > 0;
-						app.source = app.sources.length > 0 ? app.sources[0] : {};
-						return app;
-					});
+						app.compatible = app.sources.length > 0
+						app.source = app.sources.length > 0 ? app.sources[0] : {}
+						return app
+					})
 				},
 				auto: true,
 				cache: ['benchInstallableApps', this.group.version],
 				initialData: [],
-			};
+			}
 		},
 	},
 	computed: {
 		rows() {
-			return this.$resources.installableApps.data;
+			return this.$resources.installableApps.data
 		},
 		columns() {
 			return [
@@ -231,7 +229,7 @@ export default {
 											'w-6 h-6 rounded bg-surface-gray-4 text-ink-gray-6 flex items-center justify-center',
 									},
 									row.title[0].toUpperCase(),
-								);
+								)
 					},
 				},
 				{
@@ -240,8 +238,8 @@ export default {
 					class: 'text-ink-gray-6',
 					width: '15rem',
 					format(value, row) {
-						if (!row.sources.length) return value;
-						return `${row.source.repository_owner}/${row.source.repository}`;
+						if (!row.sources.length) return value
+						return `${row.source.repository_owner}/${row.source.repository}`
 					},
 				},
 				{
@@ -254,8 +252,8 @@ export default {
 							return {
 								label: s.branch,
 								value: s.name,
-							};
-						});
+							}
+						})
 					},
 				},
 				{
@@ -268,7 +266,7 @@ export default {
 								class: 'ml-auto',
 								label: 'No Public Releases',
 								theme: 'red',
-							});
+							})
 						else if (row.compatible)
 							return h(Button, {
 								label: 'Add',
@@ -280,67 +278,67 @@ export default {
 									'pointer-events-none': this.addedApps.includes(row),
 								},
 								onClick: () => this.addApp(row),
-							});
+							})
 						else
 							return h(Badge, {
 								class: 'ml-auto',
 								label: 'Not Compatible',
 								theme: 'red',
-							});
+							})
 					},
 				},
-			];
+			]
 		},
 		filteredRows() {
 			let rows = this.rows.sort((a, b) => {
 				// Sort by compatible first, then by total installs
 				if (a.compatible && !b.compatible) {
-					return -1;
+					return -1
 				} else if (!a.compatible && b.compatible) {
-					return 1;
+					return 1
 				} else if (a.total_installs != b.total_installs) {
-					return b.total_installs - a.total_installs;
+					return b.total_installs - a.total_installs
 				} else {
-					return a.title.localeCompare(b.title);
+					return a.title.localeCompare(b.title)
 				}
-			});
+			})
 
-			if (!this.searchQuery) return rows;
-			let query = this.searchQuery.toLowerCase();
+			if (!this.searchQuery) return rows
+			let query = this.searchQuery.toLowerCase()
 
 			return rows.filter((row) => {
 				let values = this.columns.map((column) => {
-					let value = row[column.key];
+					let value = row[column.key]
 					if (column.format) {
-						value = column.format(value, row);
+						value = column.format(value, row)
 					}
-					return value;
-				});
+					return value
+				})
 				for (let value of values) {
 					if (value && value.toLowerCase?.().includes(query)) {
-						return true;
+						return true
 					}
 				}
-				return false;
-			});
+				return false
+			})
 		},
 		isLoading() {
 			return (
 				this.$resources.addApp.loading ||
 				this.$resources.installableApps.loading
-			);
+			)
 		},
 	},
 	methods: {
 		addAppFromGithub(app, isUpdate) {
-			app.group = this.group.name;
-			this.$emit('newApp', app, isUpdate);
+			app.group = this.group.name
+			this.$emit('newApp', app, isUpdate)
 		},
 		addApp(row) {
 			if (!this.selectedAppSources.includes(row))
-				this.selectedAppSources.push(row);
+				this.selectedAppSources.push(row)
 
-			let app = this.selectedAppSources.find((app) => app.name === row.name);
+			let app = this.selectedAppSources.find((app) => app.name === row.name)
 
 			this.$resources.addApp
 				.submit({
@@ -349,37 +347,37 @@ export default {
 					app: app.name,
 				})
 				.then(() => {
-					this.addedApps.push(app);
-				});
+					this.addedApps.push(app)
+				})
 		},
 		dropdownItems(row) {
 			return row.sources.map((source) => ({
 				label: `${source.repository_owner}/${source.repository}:${source.branch}`,
 				icon: row.source.name === source.name ? 'check' : null,
 				onClick: () => this.selectSource(row, source),
-			}));
+			}))
 		},
 		selectSource(app, source) {
-			app.source = source;
+			app.source = source
 			this.selectedAppSources = this.filteredRows.map((_app) => {
 				if (app.name === _app.app) {
 					return {
 						app: app.name,
 						source,
-					};
+					}
 				}
-				return _app;
-			});
+				return _app
+			})
 		},
 		formattedValue(column, value, row) {
-			let formattedValue = column.format ? column.format(value, row) : value;
+			let formattedValue = column.format ? column.format(value, row) : value
 			if (formattedValue == null) {
-				formattedValue = '';
+				formattedValue = ''
 			}
 			return typeof formattedValue === 'object'
 				? formattedValue
-				: String(formattedValue);
+				: String(formattedValue)
 		},
 	},
-};
+}
 </script>

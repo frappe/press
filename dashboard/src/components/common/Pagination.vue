@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import LucideLeft from '~icons/lucide/chevron-left';
-import LucideRight from '~icons/lucide/chevron-right';
-import LucideChevronsLeft from '~icons/lucide/chevrons-left';
-import LucideChevronsRight from '~icons/lucide/chevrons-right';
-import LucideElipsis from '~icons/lucide/ellipsis';
+import LucideLeft from '~icons/lucide/chevron-left'
+import LucideRight from '~icons/lucide/chevron-right'
+import LucideChevronsLeft from '~icons/lucide/chevrons-left'
+import LucideChevronsRight from '~icons/lucide/chevrons-right'
+import LucideElipsis from '~icons/lucide/ellipsis'
 
 import {
 	PaginationEllipsis,
@@ -14,16 +14,16 @@ import {
 	PaginationNext,
 	PaginationPrev,
 	PaginationRoot,
-} from 'reka-ui';
+} from 'reka-ui'
 
 interface Props {
-	totalPages: number;
-	limit?: number;
+	totalPages: number
+	limit?: number
 }
 
 withDefaults(defineProps<Props>(), {
 	limit: 10,
-});
+})
 </script>
 
 <template>

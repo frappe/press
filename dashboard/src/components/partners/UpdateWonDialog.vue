@@ -50,24 +50,24 @@
 	</Dialog>
 </template>
 <script setup>
-import { Dialog, FormControl, createResource } from 'frappe-ui';
-import { ref, defineEmits, watch } from 'vue';
-import { DashboardError } from '../../utils/error';
+import { Dialog, FormControl, createResource } from 'frappe-ui'
+import { ref, defineEmits, watch } from 'vue'
+import { DashboardError } from '../../utils/error'
 
-const emit = defineEmits(['update']);
-const show = defineModel();
+const emit = defineEmits(['update'])
+const show = defineModel()
 const props = defineProps({
 	lead_id: {
 		type: String,
 		required: true,
 	},
-});
+})
 
-const site_url = ref();
-const server_name = ref();
-const team_name = ref();
-const resource_type = ref();
-const errorMessage = ref('');
+const site_url = ref()
+const server_name = ref()
+const team_name = ref()
+const resource_type = ref()
+const errorMessage = ref('')
 const updateStatus = createResource({
 	url: 'press.api.partner.update_lead_status',
 	makeParams: () => {
@@ -77,7 +77,7 @@ const updateStatus = createResource({
 			site_url: site_url.value,
 			server_name: server_name.value,
 			team_name: team_name.value,
-		};
+		}
 	},
 	validate: () => {
 		if (
@@ -85,23 +85,23 @@ const updateStatus = createResource({
 			server_name.value === undefined ||
 			team_name.value === undefined
 		) {
-			let error = 'Please fill all the required fields';
-			errorMessage.value = error;
-			throw new DashboardError(error);
+			let error = 'Please fill all the required fields'
+			errorMessage.value = error
+			throw new DashboardError(error)
 		}
 	},
 	onSuccess: () => {
-		emit('update');
-		show.value = false;
+		emit('update')
+		show.value = false
 	},
 	onError: (e) => {
-		errorMessage.value = e.messages[0] || 'Failed to update lead as won';
+		errorMessage.value = e.messages[0] || 'Failed to update lead as won'
 	},
-});
+})
 
 watch(resource_type, () => {
-	site_url.value = '';
-	server_name.value = '';
-	team_name.value = '';
-});
+	site_url.value = ''
+	server_name.value = ''
+	team_name.value = ''
+})
 </script>

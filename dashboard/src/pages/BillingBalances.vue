@@ -4,7 +4,7 @@
 	</div>
 </template>
 <script>
-import ObjectList from '../components/ObjectList.vue';
+import ObjectList from '../components/ObjectList.vue'
 export default {
 	name: 'BillingBalances',
 	props: ['tab'],
@@ -25,17 +25,17 @@ export default {
 								year: 'numeric',
 								month: 'long',
 								day: 'numeric',
-							}).format(new Date(value));
+							}).format(new Date(value))
 						},
 					},
 					{
 						label: 'Description',
 						format(value, row) {
 							if (row.type === 'Applied To Invoice' && row.invoice) {
-								return `Applied to Invoice ${row.invoice}`;
+								return `Applied to Invoice ${row.invoice}`
 							}
 
-							return row.amount < 0 ? row.type : row.source;
+							return row.amount < 0 ? row.type : row.source
 						},
 					},
 					{
@@ -56,16 +56,16 @@ export default {
 					team: this.$team.name,
 				},
 				orderBy: 'creation desc',
-			};
+			}
 		},
 	},
 	methods: {
 		formatCurrency(value) {
 			if (value === 0) {
-				return '';
+				return ''
 			}
-			return this.$format.userCurrency(value);
+			return this.$format.userCurrency(value)
 		},
 	},
-};
+}
 </script>

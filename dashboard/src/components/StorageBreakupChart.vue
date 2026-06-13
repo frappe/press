@@ -64,8 +64,8 @@
 					<li><b>env</b> – the Python virtual environment</li>
 					<li><b>node_modules</b> – dependencies for Node.js applications</li>
 					<li>
-						<b>assets</b> – static files such as images, stylesheets, or
-						compiled assets
+						<b>assets</b>
+						– static files such as images, stylesheets, or compiled assets
 					</li>
 				</ul>
 				In addition, only Docker images and active containers are considered in
@@ -76,7 +76,7 @@
 </template>
 
 <script>
-import { Tree } from 'frappe-ui';
+import { Tree } from 'frappe-ui'
 
 export default {
 	name: 'StorageBreakupChart',
@@ -127,36 +127,36 @@ export default {
 	},
 	computed: {
 		dataKeys() {
-			if (this.isTree) return [];
+			if (this.isTree) return []
 
-			let keys = Object.keys(this.data);
+			let keys = Object.keys(this.data)
 			if (this.stickyKeys.length > 0) {
-				const sticky = this.stickyKeys.filter((key) => key in this.data);
+				const sticky = this.stickyKeys.filter((key) => key in this.data)
 				const rest = Object.keys(this.data)
 					.filter((key) => !this.stickyKeys.includes(key))
-					.sort((a, b) => Number(this.data[b]) - Number(this.data[a]));
-				return sticky.concat(rest).slice(0, this.showTopN || keys.length);
+					.sort((a, b) => Number(this.data[b]) - Number(this.data[a]))
+				return sticky.concat(rest).slice(0, this.showTopN || keys.length)
 			}
 			return keys
 				.sort((a, b) => Number(this.data[b]) - Number(this.data[a]))
-				.splice(0, this.showTopN || keys.length);
+				.splice(0, this.showTopN || keys.length)
 		},
 		total() {
-			if (this.isTree) return 1;
+			if (this.isTree) return 1
 			return (
 				Object.values(this.data).reduce((a, b) => Number(a) + Number(b), 0) || 1
-			);
+			)
 		},
 	},
 	methods: {
 		getPercentage(key) {
-			if (this.isTree) return 0;
+			if (this.isTree) return 0
 
 			if (this.hiddenKeysInSlider.includes(key)) {
-				return 0; // Return 0% for hidden keys in slider
+				return 0 // Return 0% for hidden keys in slider
 			}
-			return ((Number(this.data[key]) / this.total) * 100).toFixed(2);
+			return ((Number(this.data[key]) / this.total) * 100).toFixed(2)
 		},
 	},
-};
+}
 </script>

@@ -9,7 +9,7 @@
 	</Dialog>
 </template>
 <script>
-import CardForm from './billing/CardForm.vue';
+import CardForm from './billing/CardForm.vue'
 export default {
 	name: 'StripeCardDialog',
 	props: ['modelValue', 'message'],
@@ -20,21 +20,21 @@ export default {
 	data() {
 		return {
 			_show: true,
-		};
+		}
 	},
 	computed: {
 		show: {
 			get() {
-				return this.modelValue == null ? this._show : this.modelValue;
+				return this.modelValue == null ? this._show : this.modelValue
 			},
 			set(value) {
 				if (this.modelValue == null) {
-					this._show = value;
-					return;
+					this._show = value
+					return
 				}
-				this.$emit('update:modelValue', value);
+				this.$emit('update:modelValue', value)
 			},
 		},
 	},
-};
+}
 </script>

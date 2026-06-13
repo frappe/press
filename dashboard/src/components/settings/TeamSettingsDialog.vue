@@ -28,40 +28,40 @@
 </template>
 
 <script>
-import { Switch } from 'frappe-ui';
+import { Switch } from 'frappe-ui'
 
 export default {
 	data() {
 		return {
 			show: true,
-		};
+		}
 	},
 	components: { Switch },
 	computed: {
 		enforce2FA: {
 			get() {
-				return Boolean(this.$team?.doc.enforce_2fa);
+				return Boolean(this.$team?.doc.enforce_2fa)
 			},
 			set(value) {
-				this.$team.setValue.submit({ enforce_2fa: value });
+				this.$team.setValue.submit({ enforce_2fa: value })
 			},
 		},
 		enableBenchGroups: {
 			get() {
-				return Boolean(this.$team?.doc.benches_enabled);
+				return Boolean(this.$team?.doc.benches_enabled)
 			},
 			set(value) {
-				this.$team.setValue.submit({ benches_enabled: value });
+				this.$team.setValue.submit({ benches_enabled: value })
 			},
 		},
 		enableServers: {
 			get() {
-				return Boolean(this.$team?.doc.servers_enabled);
+				return Boolean(this.$team?.doc.servers_enabled)
 			},
 			set(value) {
-				this.$team.setValue.submit({ servers_enabled: value });
+				this.$team.setValue.submit({ servers_enabled: value })
 			},
 		},
 	},
-};
+}
 </script>

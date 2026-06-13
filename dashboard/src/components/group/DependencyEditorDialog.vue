@@ -52,8 +52,8 @@
 							><FeatherIcon
 								name="help-circle"
 								class="h-3 w-3 text-ink-gray-7"
-							></FeatherIcon
-						></a>
+							></FeatherIcon></a
+						>
 					</Tooltip>
 				</div>
 
@@ -66,7 +66,7 @@
 </template>
 
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
+import { getCachedDocumentResource } from 'frappe-ui'
 
 export default {
 	name: 'DependencyEditorDialog',
@@ -85,21 +85,21 @@ export default {
 				'Release Group',
 				this.group.name,
 			),
-		};
+		}
 	},
 	mounted() {
 		if (this.dependency.is_custom) {
-			this.useCustomVersion = true;
-			this.customVersion = this.dependency.version;
+			this.useCustomVersion = true
+			this.customVersion = this.dependency.version
 		} else {
-			this.selectedDependencyVersion = this.dependency.version;
+			this.selectedDependencyVersion = this.dependency.version
 		}
 	},
 	computed: {
 		dependencyOptions() {
-			const versions = new Set(this.$resources.dependencyVersions.data ?? []);
+			const versions = new Set(this.$resources.dependencyVersions.data ?? [])
 			if (!this.dependency.is_custom) {
-				versions.add(this.dependency.version);
+				versions.add(this.dependency.version)
 			}
 
 			return Array.from(versions)
@@ -107,14 +107,14 @@ export default {
 				.map((v) => ({
 					label: v,
 					value: v,
-				}));
+				}))
 		},
 		version() {
 			if (this.useCustomVersion) {
-				return this.customVersion;
+				return this.customVersion
 			}
 
-			return this.selectedDependencyVersion;
+			return this.selectedDependencyVersion
 		},
 	},
 	resources: {
@@ -129,34 +129,34 @@ export default {
 					supported_frappe_version: this.group.version,
 				},
 				transform(data) {
-					return data.map((d) => d.version);
+					return data.map((d) => d.version)
 				},
 				orderBy: 'version asc',
 				pageLength: 1000,
 				auto: true,
-			};
+			}
 		},
 	},
 	methods: {
 		setErrorIfCannotUpdate() {
 			if (!this.version) {
-				const verb = this.useCustomVersion ? 'enter' : 'select';
-				this.error = `Please ${verb} a version`;
-				return true;
+				const verb = this.useCustomVersion ? 'enter' : 'select'
+				this.error = `Please ${verb} a version`
+				return true
 			}
 
 			if (this.dependency.version === this.version) {
-				const verb = this.useCustomVersion ? 'Entered' : 'selected';
-				this.error = `${verb} version is same as the previous version`;
-				return true;
+				const verb = this.useCustomVersion ? 'Entered' : 'selected'
+				this.error = `${verb} version is same as the previous version`
+				return true
 			}
 
-			this.error = '';
-			return false;
+			this.error = ''
+			return false
 		},
 		updateDependency() {
 			if (this.setErrorIfCannotUpdate()) {
-				return;
+				return
 			}
 
 			this.groupDocResource.updateDependency.submit(
@@ -167,12 +167,12 @@ export default {
 				},
 				{
 					onSuccess: () => {
-						this.$emit('success');
-						this.showDialog = false;
+						this.$emit('success')
+						this.showDialog = false
 					},
 				},
-			);
+			)
 		},
 	},
-};
+}
 </script>

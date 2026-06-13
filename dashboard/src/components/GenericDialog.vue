@@ -12,8 +12,8 @@
 	</Dialog>
 </template>
 <script>
-import { Dialog } from 'frappe-ui';
-import GenericDialogField from './GenericDialogField.vue';
+import { Dialog } from 'frappe-ui'
+import GenericDialogField from './GenericDialogField.vue'
 
 export default {
 	name: 'GenericDialog',
@@ -22,7 +22,7 @@ export default {
 	data() {
 		return {
 			show: true,
-		};
+		}
 	},
-};
+}
 </script>

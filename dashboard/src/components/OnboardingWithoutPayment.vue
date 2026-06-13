@@ -41,7 +41,7 @@
 	</div>
 </template>
 <script>
-import OnboardingAppSelector from './OnboardingAppSelector.vue';
+import OnboardingAppSelector from './OnboardingAppSelector.vue'
 
 export default {
 	name: 'Onboarding',
@@ -53,13 +53,13 @@ export default {
 			return {
 				url: 'press.api.marketplace.get_marketplace_apps_for_onboarding',
 				auto: true,
-			};
+			}
 		},
 	},
 	methods: {
 		redirectForFrappeioAuth() {
-			window.location = '/f-login';
+			window.location = '/f-login'
 		},
 	},
-};
+}
 </script>

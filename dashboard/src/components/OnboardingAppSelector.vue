@@ -19,7 +19,8 @@
 			<div class="mt-auto flex w-fit flex-row gap-1 text-ink-gray-6">
 				<DownloadIcon class="h-3 w-3" />
 				<span class="ml-0.5 text-[12px] leading-3">
-					{{ this.$format.numberK(app.total_installs || '0') }} installs
+					{{ this.$format.numberK(app.total_installs || '0') }}
+					installs
 				</span>
 			</div>
 			<Button size="sm" variant="outline" theme="gray" class="mt-1">
@@ -29,7 +30,7 @@
 	</div>
 </template>
 <script>
-import DownloadIcon from '~icons/lucide/download';
+import DownloadIcon from '~icons/lucide/download'
 
 export default {
 	name: 'OnboardingAppSelector',
@@ -41,7 +42,7 @@ export default {
 		getAccountRequestForProductSignup() {
 			return {
 				url: 'press.api.product_trial.get_account_request_for_product_signup',
-			};
+			}
 		},
 	},
 	methods: {
@@ -56,8 +57,8 @@ export default {
 							account_request: account_request,
 						},
 					}),
-				);
+				)
 		},
 	},
-};
+}
 </script>

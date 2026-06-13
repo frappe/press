@@ -11,7 +11,7 @@
 </template>
 
 <script>
-import { Badge as FrappeUIBadge } from 'frappe-ui';
+import { Badge as FrappeUIBadge } from 'frappe-ui'
 
 export default {
 	name: 'Badge',
@@ -21,7 +21,7 @@ export default {
 	},
 	computed: {
 		_color() {
-			if (this.theme) return this.theme;
+			if (this.theme) return this.theme
 			return {
 				Approved: 'green',
 				Recovering: 'orange',
@@ -86,8 +86,8 @@ export default {
 				Requested: 'orange',
 				'In Progress': 'blue',
 				'On Hold': 'gray',
-			}[this.label];
+			}[this.label]
 		},
 	},
-};
+}
 </script>

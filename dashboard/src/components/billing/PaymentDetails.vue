@@ -129,8 +129,9 @@
 						v-if="team.doc.receive_budget_alerts"
 						class="leading-5 text-ink-gray-7"
 					>
-						Alert threshold is set at {{ currency
-						}}{{ team.doc.monthly_alert_threshold }} per month
+						Alert threshold is set at {{ currency }}
+						{{ team.doc.monthly_alert_threshold }}
+						per month
 					</div>
 					<div v-else class="text-ink-gray-7">
 						Receive an email alert if monthly total exceeds limit set
@@ -142,8 +143,7 @@
 							team.doc.receive_budget_alerts ? 'Edit' : 'Set Budget Alert'
 						"
 						@click="showBudgetAlertDialog = true"
-					>
-					</Button>
+					> </Button>
 				</div>
 			</div>
 		</div>
@@ -190,54 +190,54 @@
 	/>
 </template>
 <script setup>
-import DropdownItem from './DropdownItem.vue';
-import BillingDetailsDialog from './BillingDetailsDialog.vue';
-import BudgetAlertDialog from './BudgetAlertDialog.vue';
-import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue';
-import AddCardDialog from './AddCardDialog.vue';
-import ChangeCardDialog from './ChangeCardDialog.vue';
-import { Dropdown, Button, FeatherIcon, createResource } from 'frappe-ui';
+import DropdownItem from './DropdownItem.vue'
+import BillingDetailsDialog from './BillingDetailsDialog.vue'
+import BudgetAlertDialog from './BudgetAlertDialog.vue'
+import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue'
+import AddCardDialog from './AddCardDialog.vue'
+import ChangeCardDialog from './ChangeCardDialog.vue'
+import { Dropdown, Button, FeatherIcon, createResource } from 'frappe-ui'
 import {
 	cardBrandIcon,
 	confirmDialog,
 	renderDialog,
-} from '../../utils/components';
-import { computed, ref, inject, h, defineAsyncComponent } from 'vue';
-import router from '../../router';
+} from '../../utils/components'
+import { computed, ref, inject, h, defineAsyncComponent } from 'vue'
+import router from '../../router'
 
-const team = inject('team');
+const team = inject('team')
 const {
 	availableCredits,
 	upcomingInvoice,
 	currentBillingAmount,
 	unpaidInvoices,
-} = inject('billing');
+} = inject('billing')
 
-const showBillingDetailsDialog = ref(false);
-const showBudgetAlertDialog = ref(false);
-const showAddPrepaidCreditsDialog = ref(false);
-const showAddCardDialog = ref(false);
-const showChangeCardDialog = ref(false);
+const showBillingDetailsDialog = ref(false)
+const showBudgetAlertDialog = ref(false)
+const showAddPrepaidCreditsDialog = ref(false)
+const showAddCardDialog = ref(false)
+const showChangeCardDialog = ref(false)
 
-const currency = computed(() => (team.doc.currency == 'INR' ? '₹' : '$'));
+const currency = computed(() => (team.doc.currency == 'INR' ? '₹' : '$'))
 
 const billingDetails = createResource({
 	url: 'press.api.account.get_billing_information',
 	cache: 'billingDetails',
 	auto: true,
-});
+})
 
 const changePaymentMode = createResource({
 	url: 'press.api.billing.change_payment_mode',
 	onSuccess: () => setTimeout(() => team.reload(), 1000),
-});
+})
 
 const billingDetailsSummary = computed(() => {
-	let _billingDetails = billingDetails.data;
-	if (!_billingDetails) return '';
+	let _billingDetails = billingDetails.data
+	if (!_billingDetails) return ''
 
 	const { billing_name, address_line1, city, state, country, pincode, gstin } =
-		_billingDetails || {};
+		_billingDetails || {}
 	return [
 		billing_name,
 		address_line1,
@@ -248,8 +248,8 @@ const billingDetailsSummary = computed(() => {
 		gstin == 'Not Applicable' ? '' : gstin,
 	]
 		.filter(Boolean)
-		.join(', ');
-});
+		.join(', ')
+})
 
 const paymentModeOptions = [
 	{
@@ -292,8 +292,8 @@ const paymentModeOptions = [
 							label: 'Change Payment Mode',
 							variant: 'solid',
 							onClick: ({ hide }) => {
-								updatePaymentMode('Paid By Partner');
-								hide();
+								updatePaymentMode('Paid By Partner')
+								hide()
 							},
 						},
 					}),
@@ -331,17 +331,17 @@ const paymentModeOptions = [
 				}),
 			]),
 	},
-];
+]
 
 const paymentMode = computed(() => {
-	return paymentModeOptions.find((o) => o.value === team.doc.payment_mode);
-});
+	return paymentModeOptions.find((o) => o.value === team.doc.payment_mode)
+})
 
 function payUnpaidInvoices() {
-	let _unpaidInvoices = unpaidInvoices.data;
+	let _unpaidInvoices = unpaidInvoices.data
 	if (_unpaidInvoices.length > 1) {
 		if (team.doc.payment_mode === 'Prepaid Credits') {
-			showAddPrepaidCreditsDialog.value = true;
+			showAddPrepaidCreditsDialog.value = true
 		} else {
 			confirmDialog({
 				title: 'Multiple unpaid invoices',
@@ -351,72 +351,72 @@ function payUnpaidInvoices() {
 					label: 'Go to invoices',
 					variant: 'solid',
 					onClick: ({ hide }) => {
-						router.push({ name: 'BillingInvoices' });
-						hide();
+						router.push({ name: 'BillingInvoices' })
+						hide()
 					},
 				},
-			});
+			})
 		}
 	} else {
-		let invoice = _unpaidInvoices[0];
+		let invoice = _unpaidInvoices[0]
 		if (invoice.stripe_invoice_url && team.doc.payment_mode === 'Card') {
 			window.open(
 				`/api/method/press.api.client.run_doc_method?dt=Invoice&dn=${invoice.name}&method=stripe_payment_url`,
-			);
+			)
 		} else {
-			showAddPrepaidCreditsDialog.value = true;
+			showAddPrepaidCreditsDialog.value = true
 		}
 	}
 }
 
-const showMessage = ref(false);
+const showMessage = ref(false)
 function updatePaymentMode(mode) {
-	showMessage.value = false;
+	showMessage.value = false
 	if (!billingDetailsSummary.value) {
-		showMessage.value = true;
-		showBillingDetailsDialog.value = true;
-		return;
+		showMessage.value = true
+		showBillingDetailsDialog.value = true
+		return
 	}
 	if (mode === 'Prepaid Credits' && team.doc.balance === 0) {
-		showMessage.value = true;
-		showAddPrepaidCreditsDialog.value = true;
-		return;
+		showMessage.value = true
+		showAddPrepaidCreditsDialog.value = true
+		return
 	} else if (mode === 'Card' && !team.doc.payment_method) {
-		showMessage.value = true;
-		showAddCardDialog.value = true;
+		showMessage.value = true
+		showAddCardDialog.value = true
 	} else if (
 		mode === 'Paid By Partner' &&
 		Boolean(unpaidInvoices.data.length > 0)
 	) {
-		payUnpaidInvoices();
-		return;
+		payUnpaidInvoices()
+		return
 	} else if (
 		mode === 'Paid By Partner' &&
 		Boolean(currentBillingAmount.value)
 	) {
 		const finalizeInvoicesDialog = defineAsyncComponent(
 			() => import('./FinalizeInvoicesDialog.vue'),
-		);
-		renderDialog(h(finalizeInvoicesDialog));
-		return;
+		)
+		renderDialog(h(finalizeInvoicesDialog))
+		return
 	}
 	if (mode === 'UPI Autopay') {
 		if (team.doc.default_razorpay_mandate) {
-			if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
+			if (!changePaymentMode.loading) changePaymentMode.submit({ mode })
 		} else {
-			router.push({ name: 'BillingUPIAutopay' });
+			router.push({ name: 'BillingUPIAutopay' })
 		}
-		return;
+		return
 	}
-	if (!changePaymentMode.loading) changePaymentMode.submit({ mode });
+	if (!changePaymentMode.loading) changePaymentMode.submit({ mode })
 }
 
 function changeMethod() {
 	if (team.doc.payment_method) {
-		showChangeCardDialog.value = true;
+		showChangeCardDialog.value = true
 	} else {
-		showMessage.value = false;
-		showAddCardDialog.value = true;
+		showMessage.value = false
+		showAddCardDialog.value = true
 	}
 }
 </script>

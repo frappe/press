@@ -70,7 +70,7 @@ export default {
 		return {
 			searchLogQuery: '',
 			logId: this.$route.params.logId,
-		};
+		}
 	},
 	resources: {
 		benchLogs() {
@@ -82,7 +82,7 @@ export default {
 				},
 				auto: this.mode === 'bench' && this.bench,
 				cache: ['BenchLogs', this.bench],
-			};
+			}
 		},
 		siteLogs() {
 			return {
@@ -92,16 +92,16 @@ export default {
 				},
 				auto: this.mode === 'site' && this.site,
 				cache: ['SiteLogs', this.site],
-			};
+			}
 		},
 	},
 	computed: {
 		logs() {
-			let logs = [];
+			let logs = []
 			if (this.mode === 'bench') {
-				logs = this.$resources.benchLogs?.data || [];
+				logs = this.$resources.benchLogs?.data || []
 			} else if (this.mode === 'site') {
-				logs = this.$resources.siteLogs?.data || [];
+				logs = this.$resources.siteLogs?.data || []
 			}
 
 			// filter out rotated logs that ends with .1, .2, .3, etc
@@ -111,23 +111,23 @@ export default {
 			if (this.searchLogQuery) {
 				logs = logs.filter((log) =>
 					log.name.toLowerCase().includes(this.searchLogQuery.toLowerCase()),
-				);
+				)
 			}
 
-			return logs;
+			return logs
 		},
 		bench() {
 			if (this.mode === 'bench') {
-				return this.docName;
+				return this.docName
 			}
-			return null;
+			return null
 		},
 		site() {
 			if (this.mode === 'site') {
-				return this.docName;
+				return this.docName
 			}
-			return null;
+			return null
 		},
 	},
-};
+}
 </script>

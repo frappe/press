@@ -43,7 +43,7 @@ import {
 	Dialog,
 	FormControl,
 	getCachedDocumentResource,
-} from 'frappe-ui';
+} from 'frappe-ui'
 
 export default {
 	name: 'AddTagDialog',
@@ -55,7 +55,7 @@ export default {
 			selectedTag: null,
 			newTag: '',
 			show: true,
-		};
+		}
 	},
 	resources: {
 		existingTags() {
@@ -66,18 +66,18 @@ export default {
 				fields: ['tag'],
 				pageLength: 1000,
 				auto: true,
-			};
+			}
 		},
 	},
 	methods: {
 		addNewTag(value) {
-			if (!value) return;
-			let $doc = getCachedDocumentResource(this.doctype, this.docname);
-			if (!$doc) return;
+			if (!value) return
+			let $doc = getCachedDocumentResource(this.doctype, this.docname)
+			if (!$doc) return
 			return $doc.addTag.submit({ tag: value }).then(() => {
-				this.$emit('added', value);
-				this.show = false;
-			});
+				this.$emit('added', value)
+				this.show = false
+			})
 		},
 	},
 	computed: {
@@ -88,8 +88,8 @@ export default {
 					label: d.tag,
 					value: d.tag,
 				})),
-			];
+			]
 		},
 	},
-};
+}
 </script>

@@ -4,7 +4,7 @@
 	</div>
 </template>
 <script>
-import ObjectList from '../components/ObjectList.vue';
+import ObjectList from '../components/ObjectList.vue'
 export default {
 	name: 'PartnerAdminLeads',
 	components: {
@@ -16,12 +16,12 @@ export default {
 				url: 'press.api.partner.get_lead_owners',
 				auto: true,
 				initialData: [],
-			};
+			}
 		},
 	},
 	computed: {
 		partnerAdminLeadsList() {
-			let leadOwners = this.$resources.leadOwners.data || [];
+			let leadOwners = this.$resources.leadOwners.data || []
 			return {
 				doctype: 'Partner Lead',
 				columns: [
@@ -31,8 +31,8 @@ export default {
 						width: 0.6,
 						class: 'truncate',
 						format: (value) => {
-							if (!value) return '';
-							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
 						},
 					},
 					{
@@ -41,8 +41,8 @@ export default {
 						width: 0.6,
 						class: 'truncate',
 						format: (value) => {
-							if (!value) return '';
-							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
 						},
 					},
 					{
@@ -56,8 +56,8 @@ export default {
 						width: 0.6,
 						class: 'truncate',
 						format: (value) => {
-							if (!value) return '';
-							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
 						},
 					},
 					{
@@ -128,16 +128,16 @@ export default {
 							fieldname: 'is_starter_pack',
 							label: 'Starter Pack',
 						},
-					];
+					]
 				},
 				onRowClick: (row) => {
 					this.$router.push({
 						name: 'LeadOverview',
 						params: { leadId: row.name },
-					});
+					})
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

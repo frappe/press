@@ -11,9 +11,9 @@
 					<Button @click="showAddMpesaDialog = true">Edit</Button>
 				</div>
 				<div class="overflow-hidden text-ellipsis text-base font-medium">
-					<span class="font-normal text-ink-gray-6">{{
-						mpesaSetupId || 'Not Set'
-					}}</span>
+					<span class="font-normal text-ink-gray-6"
+						>{{ mpesaSetupId || 'Not Set' }}</span
+					>
 				</div>
 			</div>
 
@@ -34,9 +34,9 @@
 					>
 				</div>
 				<div class="overflow-hidden text-ellipsis text-base font-medium">
-					<span class="font-normal text-ink-gray-6">{{
-						paymentGatewayID || 'Not set'
-					}}</span>
+					<span class="font-normal text-ink-gray-6"
+						>{{ paymentGatewayID || 'Not set' }}</span
+					>
 				</div>
 			</div>
 			<!-- End of Payment Gateway Adding -->
@@ -68,7 +68,7 @@
 </template>
 
 <script>
-import { defineAsyncComponent } from 'vue';
+import { defineAsyncComponent } from 'vue'
 
 export default {
 	name: 'LocalPaymentSetup',
@@ -91,19 +91,19 @@ export default {
 			showPartnerPaymentPayout: false,
 			mpesaSetupId: '',
 			paymentGatewayID: '',
-		};
+		}
 	},
 	resources: {
 		fetchLocalPaymentSetupDetails() {
 			return {
 				url: 'press.api.partner.get_local_payment_setup',
 				onSuccess(data) {
-					this.mpesaSetupId = data.mpesa_setup;
-					this.paymentGatewayID = data.payment_gateway;
+					this.mpesaSetupId = data.mpesa_setup
+					this.paymentGatewayID = data.payment_gateway
 				},
 				auto: true,
-			};
+			}
 		},
 	},
-};
+}
 </script>

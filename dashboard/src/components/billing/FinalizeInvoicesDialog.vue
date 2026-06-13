@@ -11,23 +11,20 @@
 						class="font-semibold"
 						v-for="invoice in $resources.unpaidInvoices.data"
 					>
-						{{
-							date(invoice.period_end).toLocaleString({
+						{{ date(invoice.period_end).toLocaleString({
 								month: 'long',
 								year: 'numeric',
-							})
-						}}
+							}) }}
 						-
-						{{
-							(invoice.currency === 'INR' ? '₹ ' : '$ ') + invoice.amount_due
-						}}
+						{{ (invoice.currency === 'INR' ? '₹ ' : '$ ') + invoice.amount_due }}
 					</li>
 				</ul>
 				Please finalize and settle them before removing all payment methods,
 				switching to Paid by Partner method or disabling the account. You can
 				check the details of invoices and make the payment from
-				<Link to="/billing/invoices/">here</Link>. It might take up to 2 hours
-				for the payment to reflect against your invoices.
+				<Link to="/billing/invoices/">here</Link>
+				. It might take up to 2 hours for the payment to reflect against your
+				invoices.
 			</div>
 		</template>
 		<template #actions>
@@ -43,8 +40,8 @@
 </template>
 
 <script>
-import { date } from '../../utils/format';
-import { toast } from 'vue-sonner';
+import { date } from '../../utils/format'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'FinalizeInvoicesDialog',
@@ -54,14 +51,14 @@ export default {
 	data() {
 		return {
 			showDialog: true,
-		};
+		}
 	},
 	resources: {
 		finalizeInvoices: {
 			url: 'press.api.billing.finalize_invoices',
 			onSuccess() {
-				this.showDialog = false;
-				toast.success('Invoices finalized successfully');
+				this.showDialog = false
+				toast.success('Invoices finalized successfully')
 			},
 		},
 		unpaidInvoices: {
@@ -72,5 +69,5 @@ export default {
 	methods: {
 		date,
 	},
-};
+}
 </script>

@@ -21,19 +21,19 @@
 </template>
 
 <script setup>
-import { createDocumentResource, getCachedDocumentResource } from 'frappe-ui';
-import { h, onMounted } from 'vue';
-import { toast } from 'vue-sonner';
-import router from '../../router';
-import { confirmDialog, renderDialog } from '../../utils/components';
-import { getToastErrorMessage } from '../../utils/toast';
-import CommunicationInfoDialog from '../CommunicationInfoDialog.vue';
-import CleanupDialog from './CleanupDialog.vue';
-import DatabaseBinlogsDialog from './DatabaseBinlogsDialog.vue';
-import DatabaseConfigurationDialog from './DatabaseConfigurationDialog.vue';
-import SecondaryServerPlanDialog from './SecondaryServerPlanDialog.vue';
-import OnPremFailoverDialog from './OnPremFailoverDialog.vue';
-import { useRoute } from 'vue-router';
+import { createDocumentResource, getCachedDocumentResource } from 'frappe-ui'
+import { h, onMounted } from 'vue'
+import { toast } from 'vue-sonner'
+import router from '../../router'
+import { confirmDialog, renderDialog } from '../../utils/components'
+import { getToastErrorMessage } from '../../utils/toast'
+import CommunicationInfoDialog from '../CommunicationInfoDialog.vue'
+import CleanupDialog from './CleanupDialog.vue'
+import DatabaseBinlogsDialog from './DatabaseBinlogsDialog.vue'
+import DatabaseConfigurationDialog from './DatabaseConfigurationDialog.vue'
+import SecondaryServerPlanDialog from './SecondaryServerPlanDialog.vue'
+import OnPremFailoverDialog from './OnPremFailoverDialog.vue'
+import { useRoute } from 'vue-router'
 
 const props = defineProps({
 	serverName: { type: String, required: true },
@@ -43,17 +43,17 @@ const props = defineProps({
 	description: { type: String, required: true },
 	buttonLabel: { type: String, required: true },
 	group: { type: String, required: false },
-});
+})
 
-const server = getCachedDocumentResource(props.serverType, props.serverName);
-const route = useRoute();
+const server = getCachedDocumentResource(props.serverType, props.serverName)
+const route = useRoute()
 
 onMounted(() => {
-	const queryAction = route.query['action'];
+	const queryAction = route.query['action']
 	if (props.actionLabel === queryAction) {
-		getServerActionHandler(queryAction);
+		getServerActionHandler(queryAction)
 	}
-});
+})
 
 function getServerActionHandler(action) {
 	const actionHandlers = {
@@ -76,20 +76,20 @@ function getServerActionHandler(action) {
 		'Update Binlog Size Limit': onUpdateBinlogSizeLimit,
 		'Manage Database Binlogs': onViewMariaDBBinlogs,
 		'Manage On-Prem Replication': onManageOnPremFailover,
-	};
+	}
 	if (actionHandlers[action]) {
-		actionHandlers[action].call(this);
+		actionHandlers[action].call(this)
 	}
 }
 
 function onNotificationSettings() {
-	if (!server?.doc) return;
+	if (!server?.doc) return
 	return renderDialog(
 		h(CommunicationInfoDialog, {
 			referenceDoctype: 'Server',
 			referenceName: server.doc.name,
 		}),
-	);
+	)
 }
 
 function onCleanupServer() {
@@ -98,7 +98,7 @@ function onCleanupServer() {
 			server: server,
 			title: 'Server Cleanup',
 		}),
-	);
+	)
 }
 
 function onTeardownSecondaryServer() {
@@ -145,8 +145,8 @@ function onTeardownSecondaryServer() {
 						this.$router.push({
 							path: server,
 							path: 'plays',
-						});
-						hide();
+						})
+						hide()
 					},
 				}),
 				{
@@ -157,9 +157,9 @@ function onTeardownSecondaryServer() {
 							? error.messages.join('\n')
 							: 'Failed to drop servers',
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onSetupSecondaryServer() {
@@ -200,14 +200,14 @@ function onSetupSecondaryServer() {
 			label: 'Choose Plan',
 		},
 		onSuccess({ hide, values }) {
-			hide();
+			hide()
 			renderDialog(
 				h(SecondaryServerPlanDialog, {
 					server: server.doc.name,
 				}),
-			);
+			)
 		},
-	});
+	})
 }
 
 function onRebootServer() {
@@ -224,14 +224,14 @@ function onRebootServer() {
 			label: 'Reboot Server',
 		},
 		onSuccess({ hide, values }) {
-			if (server.reboot.loading) return;
+			if (server.reboot.loading) return
 			if (values.confirmServerName !== server.doc.name) {
-				throw new Error('Server name does not match');
+				throw new Error('Server name does not match')
 			}
 			toast.promise(
 				server.reboot.submit(null, {
 					onSuccess() {
-						hide();
+						hide()
 					},
 				}),
 				{
@@ -239,9 +239,9 @@ function onRebootServer() {
 					success: 'Server rebooted',
 					error: 'Failed to reboot server',
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onRenameServer() {
@@ -257,7 +257,7 @@ function onRenameServer() {
 			label: 'Rename',
 		},
 		onSuccess({ hide, values }) {
-			if (server.rename.loading) return;
+			if (server.rename.loading) return
 			toast.promise(
 				server.rename.submit(
 					{
@@ -265,7 +265,7 @@ function onRenameServer() {
 					},
 					{
 						onSuccess() {
-							hide();
+							hide()
 						},
 					},
 				),
@@ -274,9 +274,9 @@ function onRenameServer() {
 					success: 'Title updated',
 					error: 'Failed to update title',
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onEnableAutoDiskExpansion() {
@@ -287,13 +287,13 @@ function onEnableAutoDiskExpansion() {
 			label: 'Enable',
 		},
 		onSuccess({ hide, values }) {
-			if (server.toggleAutoIncreaseStorage.loading) return;
+			if (server.toggleAutoIncreaseStorage.loading) return
 			toast.promise(
 				server.toggleAutoIncreaseStorage.submit(
 					{ enable: true },
 					{
 						onSuccess() {
-							hide();
+							hide()
 						},
 					},
 				),
@@ -302,9 +302,9 @@ function onEnableAutoDiskExpansion() {
 					success: 'Enabling',
 					error: 'Failed to enable auto disk expansion',
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onDisableAutoDiskExpansion() {
@@ -316,13 +316,13 @@ function onDisableAutoDiskExpansion() {
 			theme: 'red',
 		},
 		onSuccess({ hide, values }) {
-			if (server.toggleAutoIncreaseStorage.loading) return;
+			if (server.toggleAutoIncreaseStorage.loading) return
 			toast.promise(
 				server.toggleAutoIncreaseStorage.submit(
 					{ enable: false },
 					{
 						onSuccess() {
-							hide();
+							hide()
 						},
 					},
 				),
@@ -331,16 +331,16 @@ function onDisableAutoDiskExpansion() {
 					success: 'Disabled',
 					error: 'Failed to disable auto disk expansion',
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onDropServer() {
 	const databaseServer = createDocumentResource({
 		doctype: 'Database Server',
 		name: server.doc.database_server,
-	});
+	})
 
 	confirmDialog({
 		title: 'Drop Server',
@@ -358,32 +358,32 @@ function onDropServer() {
 			theme: 'red',
 		},
 		onSuccess({ hide, values }) {
-			if (server.dropServer.loading) return;
+			if (server.dropServer.loading) return
 			if (
 				values.confirmServerName !== server.doc.name &&
 				values.confirmServerName !== server.doc.database_server &&
 				values.confirmServerName.trim() !== server.doc.title.trim() &&
 				values.confirmServerName.trim() !== databaseServer.doc.title.trim()
 			) {
-				throw new Error('Server name does not match');
+				throw new Error('Server name does not match')
 			}
 			toast.promise(server.dropServer.submit().then(hide), {
 				loading: 'Dropping...',
 				success: () => {
-					router.push({ name: 'Server List' });
-					return 'Server dropped';
+					router.push({ name: 'Server List' })
+					return 'Server dropped'
 				},
 				error: (error) =>
 					error.messages.length
 						? error.messages.join('\n')
 						: 'Failed to drop servers',
-			});
+			})
 		},
-	});
+	})
 }
 
 function onEnableBinlogIndexing() {
-	if (!server.enableBinlogIndexing) return;
+	if (!server.enableBinlogIndexing) return
 	confirmDialog({
 		title: 'Enable Binlog Indexing',
 		message: `Are you sure you want to enable the Binlog Indexing on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Binlog indexes will consume additional disk space (10% of total binlog size). It can take upto 1 day to index existing binlogs depending on the size of binlogs.`,
@@ -391,11 +391,11 @@ function onEnableBinlogIndexing() {
 			label: 'Enable Binlog Indexing',
 		},
 		onSuccess({ hide }) {
-			if (server.enableBinlogIndexing.loading) return;
+			if (server.enableBinlogIndexing.loading) return
 			toast.promise(
 				server.enableBinlogIndexing.submit(null, {
 					onSuccess() {
-						hide();
+						hide()
 					},
 				}),
 				{
@@ -403,13 +403,13 @@ function onEnableBinlogIndexing() {
 					success: 'Binlog Indexing enabled',
 					error: 'Failed to enable Binlog Indexing',
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onDisableBinlogIndexing() {
-	if (!server.disableBinlogIndexing) return;
+	if (!server.disableBinlogIndexing) return
 	confirmDialog({
 		title: 'Disable Binlog Indexing',
 		message: `Are you sure you want to disable the Binlog Indexing on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Disabling binlog indexing will remove all existing binlog indexes from the server.`,
@@ -417,11 +417,11 @@ function onDisableBinlogIndexing() {
 			label: 'Disable Binlog Indexing',
 		},
 		onSuccess({ hide }) {
-			if (server.disableBinlogIndexing.loading) return;
+			if (server.disableBinlogIndexing.loading) return
 			toast.promise(
 				server.disableBinlogIndexing.submit(null, {
 					onSuccess() {
-						hide();
+						hide()
 					},
 				}),
 				{
@@ -429,13 +429,13 @@ function onDisableBinlogIndexing() {
 					success: 'Binlog Indexing disabled',
 					error: 'Failed to disable Binlog Indexing',
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onEnablePerformanceSchema() {
-	if (!server.enablePerformanceSchema) return;
+	if (!server.enablePerformanceSchema) return
 	confirmDialog({
 		title: 'Enable Performance Schema',
 		message: `Are you sure you want to enable the Performance Schema on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Your database server will be restarted to apply the changes. Your sites will face few minutes of downtime.`,
@@ -449,14 +449,14 @@ function onEnablePerformanceSchema() {
 			label: 'Enable Performance Schema',
 		},
 		onSuccess({ hide, values }) {
-			if (server.enablePerformanceSchema.loading) return;
+			if (server.enablePerformanceSchema.loading) return
 			if (values.confirmServerName !== server.doc.name) {
-				throw new Error('Server name does not match');
+				throw new Error('Server name does not match')
 			}
 			toast.promise(
 				server.enablePerformanceSchema.submit(null, {
 					onSuccess() {
-						hide();
+						hide()
 					},
 				}),
 				{
@@ -464,13 +464,13 @@ function onEnablePerformanceSchema() {
 					success: 'Performance Schema enabled',
 					error: 'Failed to enable Performance Schema',
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onDisablePerformanceSchema() {
-	if (!server.disablePerformanceSchema) return;
+	if (!server.disablePerformanceSchema) return
 	confirmDialog({
 		title: 'Disable Performance Schema',
 		message: `Are you sure you want to disable the Performance Schema on the database server <b>${server.doc.name}</b> ?<br><br><b>Note:</b> Your database server will be restarted to apply the changes. Your sites will face few minutes of downtime.`,
@@ -484,14 +484,14 @@ function onDisablePerformanceSchema() {
 			label: 'Disable Performance Schema',
 		},
 		onSuccess({ hide, values }) {
-			if (server.disablePerformanceSchema.loading) return;
+			if (server.disablePerformanceSchema.loading) return
 			if (values.confirmServerName !== server.doc.name) {
-				throw new Error('Server name does not match');
+				throw new Error('Server name does not match')
 			}
 			toast.promise(
 				server.disablePerformanceSchema.submit(null, {
 					onSuccess() {
-						hide();
+						hide()
 					},
 				}),
 				{
@@ -499,13 +499,13 @@ function onDisablePerformanceSchema() {
 					success: 'Performance Schema disabled',
 					error: 'Failed to disable Performance Schema',
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onUpdateInnodbBufferPoolSize() {
-	if (!server.updateInnodbBufferPoolSize) return;
+	if (!server.updateInnodbBufferPoolSize) return
 	confirmDialog({
 		title: 'Update InnoDB Buffer Pool Size',
 		message: `Are you sure you want to change the InnoDB Buffer Pool Size of the database server <b>${server.doc.name}</b> ? <br><br> Recommended Buffer Pool Size is <b>${server.doc.mariadb_variables_recommended_values.innodb_buffer_pool_size} MB</b>`,
@@ -521,7 +521,7 @@ function onUpdateInnodbBufferPoolSize() {
 			label: 'Update InnoDB Buffer Pool Size',
 		},
 		onSuccess({ hide, values }) {
-			if (server.updateInnodbBufferPoolSize.loading) return;
+			if (server.updateInnodbBufferPoolSize.loading) return
 			toast.promise(
 				server.updateInnodbBufferPoolSize.submit(
 					{
@@ -529,7 +529,7 @@ function onUpdateInnodbBufferPoolSize() {
 					},
 					{
 						onSuccess() {
-							hide();
+							hide()
 						},
 					},
 				),
@@ -543,13 +543,13 @@ function onUpdateInnodbBufferPoolSize() {
 						),
 					duration: 5000,
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onPurgeBinlogsForcefully() {
-	if (!server.purgeBinlogsForcefully) return;
+	if (!server.purgeBinlogsForcefully) return
 	confirmDialog({
 		title: 'Forcefully Purge Binlogs',
 		message: `Are you sure you want to forcefully purge binlogs on the database server <b>${server.doc.name}</b>?<br><br>This action will reboot the database as well.`,
@@ -566,7 +566,7 @@ function onPurgeBinlogsForcefully() {
 			theme: 'red',
 		},
 		onSuccess({ hide, values }) {
-			if (server.purgeBinlogsForcefully.loading) return;
+			if (server.purgeBinlogsForcefully.loading) return
 			toast.promise(
 				server.purgeBinlogsForcefully.submit(
 					{
@@ -574,7 +574,7 @@ function onPurgeBinlogsForcefully() {
 					},
 					{
 						onSuccess() {
-							hide();
+							hide()
 						},
 					},
 				),
@@ -583,13 +583,13 @@ function onPurgeBinlogsForcefully() {
 					success: 'Binlogs purged successfully',
 					error: 'Failed to purge binlogs',
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onUpdateBinlogRetention() {
-	if (!server.updateBinlogRetention) return;
+	if (!server.updateBinlogRetention) return
 	confirmDialog({
 		title: 'Update Binlog Retention',
 		message: `Are you sure you want to change the Binlog Retention of the database server <b>${server.doc.name}</b> ? <br><br> Recommended Binlog Retention is <b>${server.doc.mariadb_variables_recommended_values.expire_logs_days} days</b>`,
@@ -605,7 +605,7 @@ function onUpdateBinlogRetention() {
 			label: 'Update Binlog Retention',
 		},
 		onSuccess({ hide, values }) {
-			if (server.updateBinlogRetention.loading) return;
+			if (server.updateBinlogRetention.loading) return
 			toast.promise(
 				server.updateBinlogRetention.submit(
 					{
@@ -613,7 +613,7 @@ function onUpdateBinlogRetention() {
 					},
 					{
 						onSuccess() {
-							hide();
+							hide()
 						},
 					},
 				),
@@ -627,13 +627,13 @@ function onUpdateBinlogRetention() {
 						),
 					duration: 5000,
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onUpdateBinlogSizeLimit() {
-	if (!server.updateBinlogSizeLimit) return;
+	if (!server.updateBinlogSizeLimit) return
 	confirmDialog({
 		title: 'Update Binlog Size Limit',
 		message: `You can limit the amount of space that binlog can use at max. If the size exceeds the limit, the oldest binlog files will be deleted automatically.`,
@@ -656,7 +656,7 @@ function onUpdateBinlogSizeLimit() {
 			label: 'Update Binlog Size Limit',
 		},
 		onSuccess({ hide, values }) {
-			if (server.updateBinlogSizeLimit.loading) return;
+			if (server.updateBinlogSizeLimit.loading) return
 			toast.promise(
 				server.updateBinlogSizeLimit.submit(
 					{
@@ -665,7 +665,7 @@ function onUpdateBinlogSizeLimit() {
 					},
 					{
 						onSuccess() {
-							hide();
+							hide()
 						},
 					},
 				),
@@ -679,18 +679,18 @@ function onUpdateBinlogSizeLimit() {
 						),
 					duration: 5000,
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onViewMariaDBBinlogs() {
-	if (!server.getBinlogsInfo) return;
+	if (!server.getBinlogsInfo) return
 	renderDialog(
 		h(DatabaseBinlogsDialog, {
 			databaseServer: server.doc.name,
 		}),
-	);
+	)
 }
 
 function onManageOnPremFailover() {
@@ -698,11 +698,11 @@ function onManageOnPremFailover() {
 		h(OnPremFailoverDialog, {
 			appServer: server.doc.name,
 		}),
-	);
+	)
 }
 
 function onUpdateMaxDBConnections() {
-	if (!server.updateMaxDbConnections) return;
+	if (!server.updateMaxDbConnections) return
 	confirmDialog({
 		title: 'Update Max DB Connections',
 		message: `Are you sure you want to change the Max DB Connections of the database server <b>${server.doc.name}</b> ?<br><br> Recommended Max DB Connections is <b>${server.doc.mariadb_variables_recommended_values.max_connections}</b>`,
@@ -718,7 +718,7 @@ function onUpdateMaxDBConnections() {
 			label: 'Update Max DB Connections',
 		},
 		onSuccess({ hide, values }) {
-			if (server.updateMaxDbConnections.loading) return;
+			if (server.updateMaxDbConnections.loading) return
 			toast.promise(
 				server.updateMaxDbConnections.submit(
 					{
@@ -726,7 +726,7 @@ function onUpdateMaxDBConnections() {
 					},
 					{
 						onSuccess() {
-							hide();
+							hide()
 						},
 					},
 				),
@@ -740,9 +740,9 @@ function onUpdateMaxDBConnections() {
 						),
 					duration: 5000,
 				},
-			);
+			)
 		},
-	});
+	})
 }
 
 function onViewDatabaseConfiguration() {
@@ -750,6 +750,6 @@ function onViewDatabaseConfiguration() {
 		h(DatabaseConfigurationDialog, {
 			name: server.doc.name,
 		}),
-	);
+	)
 }
 </script>

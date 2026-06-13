@@ -1,13 +1,13 @@
 <script setup>
-import SuccessCheckIcon from '@/components/icons/SuccessCheckIcon.vue';
-import { Button } from 'frappe-ui';
+import SuccessCheckIcon from '@/components/icons/SuccessCheckIcon.vue'
+import { Button } from 'frappe-ui'
 
 // onclick continue button, close the modal
 const continueButtonClick = () => {
-	emit('continue');
-};
+	emit('continue')
+}
 
-const emit = defineEmits(['continue']);
+const emit = defineEmits(['continue'])
 </script>
 
 <template>

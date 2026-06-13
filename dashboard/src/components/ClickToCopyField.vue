@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import CopyBtn from '@/components/utils/CopyBtn.vue';
+import CopyBtn from '@/components/utils/CopyBtn.vue'
 
 interface Props {
-	textContent: string;
+	textContent: string
 }
 
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 </script>
 
 <template>

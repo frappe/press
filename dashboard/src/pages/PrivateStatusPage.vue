@@ -24,9 +24,9 @@
 </template>
 
 <script setup>
-import Header from '../components/Header.vue';
-import { Breadcrumbs } from 'frappe-ui';
-import TabsWithRouter from '../components/TabsWithRouter.vue';
+import Header from '../components/Header.vue'
+import { Breadcrumbs } from 'frappe-ui'
+import TabsWithRouter from '../components/TabsWithRouter.vue'
 
 const tabs = [
 	{
@@ -39,5 +39,5 @@ const tabs = [
 		icon: LucideArchive,
 		routeName: 'IncidentHistory',
 	},
-];
+]
 </script>

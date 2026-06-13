@@ -74,9 +74,9 @@
 	</div>
 </template>
 <script>
-import { getTeam } from '../../data/team';
-import OnboardingAppSelector from './../../components/OnboardingAppSelector.vue';
-import LoginBox from './../../components/auth/LoginBox.vue';
+import { getTeam } from '../../data/team'
+import OnboardingAppSelector from './../../components/OnboardingAppSelector.vue'
+import LoginBox from './../../components/auth/LoginBox.vue'
 
 export default {
 	name: 'Welcome',
@@ -87,41 +87,41 @@ export default {
 	data() {
 		return {
 			selectedApp: null,
-		};
+		}
 	},
 	resources: {
 		availableApps() {
 			return {
 				url: 'press.api.marketplace.get_marketplace_apps_for_onboarding',
 				auto: true,
-			};
+			}
 		},
 		getAccountRequestForProductSignup() {
 			return {
 				url: 'press.api.product_trial.get_account_request_for_product_signup',
-			};
+			}
 		},
 	},
 	beforeRouteEnter(to, from, next) {
-		let $team = getTeam();
-		window.$team = $team;
+		let $team = getTeam()
+		window.$team = $team
 		if ($team.doc.onboarding.complete && $team.doc.onboarding.site_created) {
-			next({ name: 'Site List' });
+			next({ name: 'Site List' })
 		} else if (to.query.is_redirect && $team.doc.onboarding.site_created) {
-			next({ name: 'Site List' });
+			next({ name: 'Site List' })
 		} else {
-			next();
+			next()
 		}
 	},
 	mounted() {
-		this.email = localStorage.getItem('login_email');
+		this.email = localStorage.getItem('login_email')
 		if (window.posthog?.__loaded) {
 			window.posthog.identify(this.email || window.posthog.get_distinct_id(), {
 				app: 'frappe_cloud',
-				action: 'login_signup'
-			});
+				action: 'login_signup',
+			})
 
-			window.posthog.startSessionRecording();
+			window.posthog.startSessionRecording()
 		}
 	},
 	methods: {
@@ -136,8 +136,8 @@ export default {
 							account_request: account_request,
 						},
 					}),
-				);
+				)
 		},
 	},
-};
+}
 </script>

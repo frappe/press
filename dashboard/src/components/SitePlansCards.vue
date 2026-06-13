@@ -3,8 +3,8 @@
 </template>
 
 <script>
-import PlansCards from './PlansCards.vue';
-import { getPlans } from '../data/plans';
+import PlansCards from './PlansCards.vue'
+import { getPlans } from '../data/plans'
 
 export default {
 	name: 'SitePlansCards',
@@ -27,17 +27,17 @@ export default {
 	computed: {
 		currentPlan: {
 			get() {
-				return this.modelValue;
+				return this.modelValue
 			},
 			set(value) {
-				this.$emit('update:modelValue', value);
+				this.$emit('update:modelValue', value)
 			},
 		},
 		plans() {
-			let plans = getPlans();
+			let plans = getPlans()
 
 			if (this.isPrivateBenchSite) {
-				plans = plans.filter((plan) => plan.private_benches);
+				plans = plans.filter((plan) => plan.private_benches)
 			}
 			if (this.isDedicatedServerSite) {
 				plans = plans.filter(
@@ -45,9 +45,9 @@ export default {
 						plan.dedicated_server_plan &&
 						(!plan.restrict_based_on_dedicated_server_plan ||
 							this.serverPlanPrice >= plan.minimum_server_price_usd),
-				);
+				)
 			} else {
-				plans = plans.filter((plan) => !plan.dedicated_server_plan);
+				plans = plans.filter((plan) => !plan.dedicated_server_plan)
 			}
 			if (this.selectedCluster) {
 				plans = plans.map((plan) => {
@@ -58,8 +58,8 @@ export default {
 							(plan.clusters.length == 0
 								? false
 								: !plan.clusters.includes(this.selectedCluster)),
-					};
-				});
+					}
+				})
 			}
 			if (this.selectedApps) {
 				plans = plans.map((plan) => {
@@ -72,8 +72,8 @@ export default {
 								: !this.selectedApps.every((app) =>
 										plan.allowed_apps.includes(app.app),
 									)),
-					};
-				});
+					}
+				})
 			}
 			if (this.selectedVersion) {
 				plans = plans.map((plan) => {
@@ -84,16 +84,16 @@ export default {
 							(plan.bench_versions.length == 0
 								? false
 								: !plan.bench_versions.includes(this.selectedVersion)),
-					};
-				});
+					}
+				})
 			}
 			if (this.hideRestrictedPlans) {
-				plans = plans.filter((plan) => !plan.restricted_plan);
+				plans = plans.filter((plan) => !plan.restricted_plan)
 			}
 			if (this.selectedProvider) {
 				const provider = ['Generic', 'Scaleway'].includes(this.selectedProvider)
 					? 'AWS EC2'
-					: this.selectedProvider;
+					: this.selectedProvider
 
 				plans = plans.map((plan) => {
 					return {
@@ -103,11 +103,11 @@ export default {
 							(plan.cloud_providers && plan.cloud_providers.length > 0
 								? !plan.cloud_providers.includes(provider)
 								: false),
-					};
-				});
+					}
+				})
 			}
 
-			plans = plans.filter((plan) => !plan.disabled);
+			plans = plans.filter((plan) => !plan.disabled)
 
 			return plans.map((plan) => {
 				return {
@@ -151,22 +151,22 @@ export default {
 							value: plan.monitor_access ? 'Advanced Monitoring' : '',
 						},
 					].filter((feature) => feature.condition ?? true),
-				};
-			});
+				}
+			})
 		},
 	},
 	watch: {
 		plans: {
 			immediate: true,
 			handler: function (plans) {
-				if (!this.isDedicatedServerSite) return;
+				if (!this.isDedicatedServerSite) return
 
-				if (!plans.length) return;
+				if (!plans.length) return
 
-				const bestPlan = this.getBestDedicatedSitePlan();
+				const bestPlan = this.getBestDedicatedSitePlan()
 
 				if (bestPlan) {
-					this.currentPlan = bestPlan;
+					this.currentPlan = bestPlan
 				}
 			},
 		},
@@ -174,21 +174,21 @@ export default {
 	methods: {
 		// Currently best plan is determined based on warranty and CPU time only (may change later)
 		getBestDedicatedSitePlan() {
-			let filteredPlans = this.plans;
+			let filteredPlans = this.plans
 
 			if (this.serverSupportQuotaAvailable) {
-				filteredPlans = filteredPlans.filter((plan) => plan.support_included);
+				filteredPlans = filteredPlans.filter((plan) => plan.support_included)
 			}
 
 			const bestPlan = filteredPlans.reduce((best, curr) => {
 				return parseFloat(curr.cpu_time_per_day) >
 					parseFloat(best.cpu_time_per_day)
 					? curr
-					: best;
-			});
+					: best
+			})
 
-			return bestPlan;
+			return bestPlan
 		},
 	},
-};
+}
 </script>

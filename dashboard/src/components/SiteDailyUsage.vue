@@ -24,8 +24,8 @@
 	</div>
 </template>
 <script>
-import dayjs from '../utils/dayjs';
-import LineChart from '@/components/charts/LineChart.vue';
+import dayjs from '../utils/dayjs'
+import LineChart from '@/components/charts/LineChart.vue'
 
 export default {
 	name: 'CPUUsage',
@@ -33,19 +33,19 @@ export default {
 	components: { LineChart },
 	resources: {
 		requestCounter() {
-			let localTimezone = dayjs.tz.guess();
+			let localTimezone = dayjs.tz.guess()
 			return {
 				url: 'press.api.analytics.daily_usage',
 				params: { name: this.site, timezone: localTimezone },
 				auto: true,
-			};
+			}
 		},
 	},
 	computed: {
 		dailyUsageData() {
-			let dailyUsageData = this.$resources.requestCounter.data?.data;
-			if (!dailyUsageData) return;
-			let plan_limit = this.$resources.requestCounter.data.plan_limit;
+			let dailyUsageData = this.$resources.requestCounter.data?.data
+			if (!dailyUsageData) return
+			let plan_limit = this.$resources.requestCounter.data.plan_limit
 
 			return {
 				datasets: [
@@ -68,8 +68,8 @@ export default {
 					],
 					symbol: ['none', 'none'],
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

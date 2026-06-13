@@ -13,15 +13,15 @@
 	</div>
 </template>
 <script setup>
-import { ref, computed, h } from 'vue';
-import { createResource } from 'frappe-ui';
-import ObjectList from '../ObjectList.vue';
-import { renderDialog } from '../../utils/components';
-import CertificateSummary from './CertificateSummary.vue';
-import { session } from '../../data/session';
+import { ref, computed, h } from 'vue'
+import { createResource } from 'frappe-ui'
+import ObjectList from '../ObjectList.vue'
+import { renderDialog } from '../../utils/components'
+import CertificateSummary from './CertificateSummary.vue'
+import { session } from '../../data/session'
 
-const show = ref(true);
-const $session = session || {};
+const show = ref(true)
+const $session = session || {}
 
 const certRequestList = createResource({
 	url: 'press.api.partner.get_certification_requests',
@@ -35,11 +35,11 @@ const certRequestList = createResource({
 					certificate_type: row.course,
 					status: row.status,
 					summary: row.summary || '',
-				};
+				}
 			}) || []
-		);
+		)
 	},
-});
+})
 const requestList = computed(() => {
 	return {
 		data: () => certRequestList.data,
@@ -71,9 +71,9 @@ const requestList = computed(() => {
 						summary: row.summary,
 						color: row.status === 'In Process' ? 'yellow' : 'blue',
 					}),
-				);
+				)
 			}
 		},
-	};
-});
+	}
+})
 </script>

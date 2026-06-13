@@ -2,7 +2,7 @@
 	<AlertBanner :title="budgetAlertMessage" type="warning"> </AlertBanner>
 </template>
 <script>
-import AlertBanner from './AlertBanner.vue';
+import AlertBanner from './AlertBanner.vue'
 export default {
 	name: 'AlertBudgetThreshold',
 	components: { AlertBanner },
@@ -17,8 +17,8 @@ export default {
 	},
 	computed: {
 		budgetAlertMessage() {
-			return `Budget Alert: Your Frappe Cloud cost has exceeded the monthly budget alert threshold by <strong>${this.currency}${this.amount}</strong>`;
+			return `Budget Alert: Your Frappe Cloud cost has exceeded the monthly budget alert threshold by <strong>${this.currency}${this.amount}</strong>`
 		},
 	},
-};
+}
 </script>

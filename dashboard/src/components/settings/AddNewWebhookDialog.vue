@@ -26,7 +26,8 @@
 						</template>
 					</FormControl>
 					<p class="mt-2 text-sm text-ink-gray-7">
-						<strong>Note:</strong> Secret is optional. Check
+						<strong>Note:</strong>
+						Secret is optional. Check
 						<a
 							href="https://docs.frappe.io/cloud/webhook-introduction"
 							class="underline"
@@ -63,8 +64,8 @@
 </template>
 
 <script>
-import { Switch } from 'frappe-ui';
-import { toast } from 'vue-sonner';
+import { Switch } from 'frappe-ui'
+import { toast } from 'vue-sonner'
 
 export default {
 	emits: ['success'],
@@ -74,12 +75,12 @@ export default {
 			secret: '',
 			selectedEvents: [],
 			errorMessage: '',
-		};
+		}
 	},
 	components: { Switch },
 	mounted() {
 		if (this.selectedEvents.length) {
-			this.selectedEvents = this.selectedEvents.map((event) => event.name);
+			this.selectedEvents = this.selectedEvents.map((event) => event.name)
 		}
 	},
 	resources: {
@@ -88,7 +89,7 @@ export default {
 				url: 'press.api.webhook.available_events',
 				inititalData: [],
 				auto: true,
-			};
+			}
 		},
 		addWebhook() {
 			return {
@@ -99,10 +100,10 @@ export default {
 					events: this.selectedEvents,
 				},
 				onSuccess() {
-					toast.success('Webhook added successfully');
-					this.$emit('success');
+					toast.success('Webhook added successfully')
+					this.$emit('success')
 				},
-			};
+			}
 		},
 	},
 	computed: {},
@@ -116,30 +117,30 @@ export default {
 							Math.floor(Math.random() * 62)
 						],
 				)
-				.join('');
+				.join('')
 		},
 		selectEvent(event) {
 			if (this.selectedEvents.includes(event)) {
-				this.selectedEvents = this.selectedEvents.filter((e) => e !== event);
+				this.selectedEvents = this.selectedEvents.filter((e) => e !== event)
 			} else {
-				this.selectedEvents.push(event);
+				this.selectedEvents.push(event)
 			}
 		},
 		isEventSelected(event) {
-			return this.selectedEvents.includes(event);
+			return this.selectedEvents.includes(event)
 		},
 		addWebhook() {
 			if (!this.endpoint) {
-				this.errorMessage = 'Provide a valid webhook endpoint';
-				return;
+				this.errorMessage = 'Provide a valid webhook endpoint'
+				return
 			}
 			if (!this.selectedEvents.length) {
-				this.errorMessage = 'Please enable at least one event';
-				return;
+				this.errorMessage = 'Please enable at least one event'
+				return
 			}
-			this.errorMessage = '';
-			this.$resources.addWebhook.submit();
+			this.errorMessage = ''
+			this.$resources.addWebhook.submit()
 		},
 	},
-};
+}
 </script>

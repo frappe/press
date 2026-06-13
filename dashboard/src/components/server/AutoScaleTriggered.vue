@@ -3,14 +3,14 @@
 </template>
 
 <script>
-import { h } from 'vue';
-import { duration } from '../../utils/format';
-import ObjectList from '../ObjectList.vue';
-import Badge from '../global/Badge.vue';
-import { renderDialog } from '../../utils/components';
-import { defineAsyncComponent } from 'vue';
+import { h } from 'vue'
+import { duration } from '../../utils/format'
+import ObjectList from '../ObjectList.vue'
+import Badge from '../global/Badge.vue'
+import { renderDialog } from '../../utils/components'
+import { defineAsyncComponent } from 'vue'
 
-import { confirmDialog, icon } from '../../utils/components';
+import { confirmDialog, icon } from '../../utils/components'
 export default {
 	name: 'AutoScale',
 	props: {
@@ -46,7 +46,7 @@ export default {
 						params: {
 							id: row.name,
 						},
-					});
+					})
 				},
 				orderBy: 'creation desc',
 
@@ -104,11 +104,11 @@ export default {
 									name: this.name,
 								},
 							),
-						);
+						)
 					},
 				}),
-			};
+			}
 		},
 	},
-};
+}
 </script>

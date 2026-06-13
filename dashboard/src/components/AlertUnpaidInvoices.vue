@@ -6,7 +6,7 @@
 	</AlertBanner>
 </template>
 <script>
-import AlertBanner from './AlertBanner.vue';
+import AlertBanner from './AlertBanner.vue'
 
 export default {
 	name: 'AlertUnpaidInvoices',
@@ -24,8 +24,8 @@ export default {
 		outstandingBalanceMessage() {
 			return `Your account currently has an outstanding balance of ${this.$format.userCurrency(
 				this.amount,
-			)}. Please settle the balance to avoid any site suspension.`;
+			)}. Please settle the balance to avoid any site suspension.`
 		},
 	},
-};
+}
 </script>

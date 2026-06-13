@@ -12,7 +12,7 @@
 	</div>
 </template>
 <script>
-import ObjectList from '../components/ObjectList.vue';
+import ObjectList from '../components/ObjectList.vue'
 export default {
 	name: 'DetailTab',
 	props: ['document', 'tab'],
@@ -21,10 +21,10 @@ export default {
 	},
 	methods: {
 		getFilters(tab) {
-			return tab.list.filters ? tab.list.filters(this.document) : {};
+			return tab.list.filters ? tab.list.filters(this.document) : {}
 		},
 		getProps(tab) {
-			return tab.props ? tab.props(this.document) : {};
+			return tab.props ? tab.props(this.document) : {}
 		},
 	},
 	computed: {
@@ -35,8 +35,8 @@ export default {
 				context: {
 					documentResource: this.document,
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

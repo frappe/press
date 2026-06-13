@@ -40,7 +40,8 @@
 						</template>
 					</FormControl>
 					<p class="mt-1.5 text-sm text-ink-gray-7">
-						<secret>Note:</secret> Secret is optional. Check
+						<secret>Note:</secret>
+						Secret is optional. Check
 						<a
 							href="https://docs.frappe.io/cloud/webhook-introduction"
 							class="underline"
@@ -79,9 +80,9 @@
 </template>
 
 <script>
-import { Switch } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import { getToastErrorMessage } from '../../utils/toast';
+import { Switch } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import { getToastErrorMessage } from '../../utils/toast'
 
 export default {
 	emits: ['success'],
@@ -93,12 +94,12 @@ export default {
 			updateSecret: false,
 			selectedEvents: [],
 			errorMessage: '',
-		};
+		}
 	},
 	components: { Switch },
 	mounted() {
 		if (this.selectedEvents.length) {
-			this.selectedEvents = this.selectedEvents.map((event) => event.name);
+			this.selectedEvents = this.selectedEvents.map((event) => event.name)
 		}
 	},
 	resources: {
@@ -107,7 +108,7 @@ export default {
 				url: 'press.api.webhook.available_events',
 				inititalData: [],
 				auto: true,
-			};
+			}
 		},
 		fetchWebhookInfo() {
 			return {
@@ -118,17 +119,17 @@ export default {
 				},
 				auto: true,
 				onSuccess: (doc) => {
-					this.endpoint = doc.endpoint;
-					this.selectedEvents = doc.events.map((event) => event.event);
+					this.endpoint = doc.endpoint
+					this.selectedEvents = doc.events.map((event) => event.event)
 				},
-			};
+			}
 		},
 		updateWebhook() {
 			return {
 				url: 'press.api.webhook.update',
 				validate: () => {
 					if (!this.selectedEvents) {
-						return 'Please enable at least one event';
+						return 'Please enable at least one event'
 					}
 				},
 				makeParams: () => {
@@ -137,12 +138,12 @@ export default {
 						endpoint: this.endpoint,
 						secret: this.updateSecret ? this.secret : '',
 						events: this.selectedEvents,
-					};
+					}
 				},
 				onSuccess: () => {
-					toast.success('Webhook updated successfully');
-					const activationRequired = this.webhook.endpoint !== this.endpoint;
-					this.$emit('success', activationRequired);
+					toast.success('Webhook updated successfully')
+					const activationRequired = this.webhook.endpoint !== this.endpoint
+					this.$emit('success', activationRequired)
 				},
 				onError: (e) => {
 					toast.error(
@@ -150,9 +151,9 @@ export default {
 							e,
 							'Failed to update webhook. Please try again',
 						),
-					);
+					)
 				},
-			};
+			}
 		},
 	},
 	computed: {},
@@ -166,26 +167,26 @@ export default {
 							Math.floor(Math.random() * 62)
 						],
 				)
-				.join('');
+				.join('')
 		},
 		selectEvent(event) {
 			if (this.selectedEvents.includes(event)) {
-				this.selectedEvents = this.selectedEvents.filter((e) => e !== event);
+				this.selectedEvents = this.selectedEvents.filter((e) => e !== event)
 			} else {
-				this.selectedEvents.push(event);
+				this.selectedEvents.push(event)
 			}
 		},
 		isEventSelected(event) {
-			return this.selectedEvents.includes(event);
+			return this.selectedEvents.includes(event)
 		},
 		updateWebhook() {
 			if (this.selectedEvents.length === 0) {
-				this.errorMessage = 'Please select at least one event to add';
-				return;
+				this.errorMessage = 'Please select at least one event to add'
+				return
 			}
-			this.errorMessage = '';
-			this.$resources.updateWebhook.submit();
+			this.errorMessage = ''
+			this.$resources.updateWebhook.submit()
 		},
 	},
-};
+}
 </script>

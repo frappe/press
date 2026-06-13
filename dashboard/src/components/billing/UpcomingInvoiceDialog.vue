@@ -27,11 +27,11 @@
 </template>
 
 <script setup>
-import { inject, ref } from 'vue';
-import InvoiceTable from '../InvoiceTable.vue';
+import { inject, ref } from 'vue'
+import InvoiceTable from '../InvoiceTable.vue'
 
-const { upcomingInvoice } = inject('billing');
+const { upcomingInvoice } = inject('billing')
 const props = defineProps({
 	showInvoiceDialog: Boolean,
-});
+})
 </script>

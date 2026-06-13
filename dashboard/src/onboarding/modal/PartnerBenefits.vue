@@ -1,8 +1,8 @@
 <script setup>
-import Points1Icon from '@/components/icons/Points-1.vue';
-import People1Icon from '@/components/icons/People-1.vue';
-import MoneyIcon from '@/components/icons/Money.vue';
-import ChatGroupIcon from '@/components/icons/ChatGroup.vue';
+import Points1Icon from '@/components/icons/Points-1.vue'
+import People1Icon from '@/components/icons/People-1.vue'
+import MoneyIcon from '@/components/icons/Money.vue'
+import ChatGroupIcon from '@/components/icons/ChatGroup.vue'
 
 const benefits = [
 	{
@@ -28,7 +28,7 @@ const benefits = [
 			'Get a perfect closure to your deals with Frappe-backed advantages.',
 		icon: ChatGroupIcon,
 	},
-];
+]
 </script>
 
 <template>

@@ -86,8 +86,9 @@
 					<li>Enter the code from the authenticator app below</li>
 				</ol>
 				<p class="mt-4 text-sm text-ink-gray-7">
-					<strong>Note:</strong> If you lose access to your authenticator app,
-					your account will be locked out. Make sure to backup your vault/key.
+					<strong>Note:</strong>
+					If you lose access to your authenticator app, your account will be
+					locked out. Make sure to backup your vault/key.
 				</p>
 			</div>
 
@@ -134,9 +135,9 @@
 </template>
 
 <script>
-import VueQrcode from 'vue-qrcode';
-import { toast } from 'vue-sonner';
-import AlertBanner from '../AlertBanner.vue';
+import VueQrcode from 'vue-qrcode'
+import { toast } from 'vue-sonner'
+import AlertBanner from '../AlertBanner.vue'
 
 export default {
 	emits: ['enabled', 'disabled', 'update-recovery-codes'],
@@ -145,7 +146,7 @@ export default {
 			qrUrl: '', // not storing as computed property to avoid re-fetching on dialog close
 			totpCode: '',
 			showSetupKey: false,
-		};
+		}
 	},
 	components: {
 		AlertBanner,
@@ -160,29 +161,29 @@ export default {
 				{
 					loading: 'Enabling 2FA...',
 					success: (recoveryCodes) => {
-						this.totpCode = '';
-						this.$emit('update-recovery-codes', recoveryCodes);
+						this.totpCode = ''
+						this.$emit('update-recovery-codes', recoveryCodes)
 
 						// avoid flickering of 2FA dialog
 						setTimeout(() => {
-							this.$team.reload();
-						}, 500);
+							this.$team.reload()
+						}, 500)
 
-						return '2FA enabled successfully';
+						return '2FA enabled successfully'
 					},
 					error(err) {
 						if (err.messages) {
 							if (err.messages.includes('Invalid TOTP code')) {
-								return 'Invalid TOTP code. Please try again.';
+								return 'Invalid TOTP code. Please try again.'
 							} else {
-								return err.messages.join('.');
+								return err.messages.join('.')
 							}
 						} else {
-							return 'Failed to enable 2FA';
+							return 'Failed to enable 2FA'
 						}
 					},
 				},
-			);
+			)
 		},
 		disable2FA() {
 			toast.promise(
@@ -192,30 +193,30 @@ export default {
 				{
 					loading: 'Disabling 2FA...',
 					success: () => {
-						this.totpCode = '';
+						this.totpCode = ''
 
 						// avoid flickering of 2FA dialog
 						setTimeout(() => {
-							this.$team.reload();
-						}, 500);
+							this.$team.reload()
+						}, 500)
 
-						this.$emit('disabled');
+						this.$emit('disabled')
 
-						return '2FA disabled successfully';
+						return '2FA disabled successfully'
 					},
 					error(err) {
 						if (err.messages) {
 							if (err.messages.includes('Invalid TOTP code')) {
-								return 'Invalid TOTP code. Please try again.';
+								return 'Invalid TOTP code. Please try again.'
 							} else {
-								return err.messages.join('.');
+								return err.messages.join('.')
 							}
 						} else {
-							return 'Failed to disable 2FA';
+							return 'Failed to disable 2FA'
 						}
 					},
 				},
-			);
+			)
 		},
 	},
 	resources: {
@@ -224,29 +225,29 @@ export default {
 				url: 'press.api.account.get_2fa_qr_code_url',
 				auto: true,
 				onSuccess(qr_code_url) {
-					this.qrUrl = qr_code_url;
+					this.qrUrl = qr_code_url
 				},
-			};
+			}
 		},
 		enable2FA() {
 			return {
 				url: 'press.api.account.enable_2fa',
-			};
+			}
 		},
 		disable2FA() {
 			return {
 				url: 'press.api.account.disable_2fa',
-			};
+			}
 		},
 	},
 	computed: {
 		setupKey() {
-			if (!this.qrUrl) return null;
-			return this.qrUrl.match(/secret=(.*?)&issuer/)[1];
+			if (!this.qrUrl) return null
+			return this.qrUrl.match(/secret=(.*?)&issuer/)[1]
 		},
 		is2FAEnabled() {
-			return this.$team.doc?.user_info?.is_2fa_enabled;
+			return this.$team.doc?.user_info?.is_2fa_enabled
 		},
 	},
-};
+}
 </script>

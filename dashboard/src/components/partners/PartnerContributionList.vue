@@ -23,13 +23,13 @@
 	</div>
 </template>
 <script setup>
-import ObjectList from '../ObjectList.vue';
-import { computed, ref } from 'vue';
-import InvoiceDetail from './InvoiceDetail.vue';
-import { currency } from '../../utils/format';
+import ObjectList from '../ObjectList.vue'
+import { computed, ref } from 'vue'
+import InvoiceDetail from './InvoiceDetail.vue'
+import { currency } from '../../utils/format'
 
-let showInvoice = ref(null);
-const invoiceDialog = ref(false);
+let showInvoice = ref(null)
+const invoiceDialog = ref(false)
 const partnerInvoices = computed(() => {
 	return {
 		resource() {
@@ -46,10 +46,10 @@ const partnerInvoices = computed(() => {
 							total_before_discount: d.total_before_discount || '',
 							currency: d.currency || '',
 							status: d.status || '',
-						};
-					});
+						}
+					})
 				},
-			};
+			}
 		},
 		columns: [
 			{
@@ -61,13 +61,13 @@ const partnerInvoices = computed(() => {
 				fieldname: 'due_date',
 				format(value) {
 					if (!value) {
-						return '';
+						return ''
 					}
 					return Intl.DateTimeFormat('en-US', {
 						year: 'numeric',
 						month: 'short',
 						day: 'numeric',
-					}).format(new Date(value));
+					}).format(new Date(value))
 				},
 				align: 'center',
 			},
@@ -92,7 +92,7 @@ const partnerInvoices = computed(() => {
 				fieldname: 'total_before_discount',
 				align: 'right',
 				format(value, row) {
-					return currency(value, row.currency);
+					return currency(value, row.currency)
 				},
 			},
 		],
@@ -109,13 +109,13 @@ const partnerInvoices = computed(() => {
 					fieldname: 'due_date',
 					label: 'Due Date',
 				},
-			];
+			]
 		},
 		orderBy: 'creation desc',
 		onRowClick(row) {
-			showInvoice = row;
-			invoiceDialog.value = true;
+			showInvoice = row
+			invoiceDialog.value = true
 		},
-	};
-});
+	}
+})
 </script>

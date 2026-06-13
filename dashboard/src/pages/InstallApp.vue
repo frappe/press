@@ -88,9 +88,7 @@
 									<div class="flex w-full items-center justify-between">
 										<div class="flex w-full items-center space-x-2">
 											<img :src="c.image" class="h-5 w-5" />
-											<span class="text-sm font-medium">
-												{{ c.title }}
-											</span>
+											<span class="text-sm font-medium"> {{ c.title }} </span>
 										</div>
 										<Badge v-if="c.beta" :label="c.beta ? 'Beta' : ''" />
 									</div>
@@ -136,10 +134,12 @@
 									v-if="$resources.subdomainExists.data"
 									class="text-sm text-green-600"
 								>
-									{{ subdomain }}.{{ options.domain }} is available
+									{{ subdomain }}.{{ options.domain }}
+									is available
 								</div>
 								<div v-else class="text-sm text-red-600">
-									{{ subdomain }}.{{ options.domain }} is not available
+									{{ subdomain }}.{{ options.domain }}
+									is not available
 								</div>
 							</template>
 						</div>
@@ -186,11 +186,11 @@
 </template>
 
 <script>
-import { Breadcrumbs, debounce } from 'frappe-ui';
-import Header from '../components/Header.vue';
-import PlansCards from '../components/PlansCards.vue';
-import { DashboardError } from '../utils/error';
-import { validateSubdomain } from '../utils/site';
+import { Breadcrumbs, debounce } from 'frappe-ui'
+import Header from '../components/Header.vue'
+import PlansCards from '../components/PlansCards.vue'
+import { DashboardError } from '../utils/error'
+import { validateSubdomain } from '../utils/site'
 
 export default {
 	name: 'InstallApp',
@@ -203,7 +203,7 @@ export default {
 	pageMeta() {
 		return {
 			title: `Install ${this.appDoc.title} - Frappe Cloud`,
-		};
+		}
 	},
 	components: {
 		FBreadcrumbs: Breadcrumbs,
@@ -220,15 +220,15 @@ export default {
 			agreedToRegionConsent: false,
 			sitePlan: null,
 			trial: false,
-		};
+		}
 	},
 	watch: {
 		subdomain: {
 			handler: debounce(function (value) {
-				let invalidMessage = validateSubdomain(value);
-				this.$resources.subdomainExists.error = invalidMessage;
+				let invalidMessage = validateSubdomain(value)
+				this.$resources.subdomainExists.error = invalidMessage
 				if (!invalidMessage) {
-					this.$resources.subdomainExists.submit();
+					this.$resources.subdomainExists.submit()
 				}
 			}, 500),
 		},
@@ -241,7 +241,7 @@ export default {
 					app: this.app,
 				},
 				auto: true,
-			};
+			}
 		},
 		installAppOptions() {
 			return {
@@ -257,13 +257,12 @@ export default {
 					private_groups: [],
 				},
 				onSuccess() {
-					this.cluster =
-						this.$resources.installAppOptions.data?.closest_cluster;
+					this.cluster = this.$resources.installAppOptions.data?.closest_cluster
 					if (this.$resources.installAppOptions.data?.plans.length > 0) {
-						this.selectedPlan = this.$resources.installAppOptions.data.plans[0];
+						this.selectedPlan = this.$resources.installAppOptions.data.plans[0]
 					}
 				},
-			};
+			}
 		},
 		subdomainExists() {
 			return {
@@ -272,38 +271,38 @@ export default {
 					return {
 						domain: this.$resources.installAppOptions.data?.domain,
 						subdomain: this.subdomain,
-					};
+					}
 				},
 				validate() {
-					let error = validateSubdomain(this.subdomain);
+					let error = validateSubdomain(this.subdomain)
 					if (error) {
-						throw new DashboardError(error);
+						throw new DashboardError(error)
 					}
 				},
 				transform(data) {
-					return !Boolean(data);
+					return !Boolean(data)
 				},
-			};
+			}
 		},
 		getTrialPlan() {
 			return {
 				url: 'press.api.site.get_trial_plan',
 				auto: true,
-			};
+			}
 		},
 		newSite() {
-			if (!this.options) return;
+			if (!this.options) return
 
 			return {
 				url: 'press.api.marketplace.create_site_for_app',
 				makeParams() {
 					this.sitePlan = this.selectedGroup
 						? this.options.private_site_plan
-						: this.options.public_site_plan;
+						: this.options.public_site_plan
 
 					if (!this.$team.doc.onboarding.site_created) {
-						this.sitePlan = this.trialPlan;
-						this.trial = true;
+						this.sitePlan = this.trialPlan
+						this.trial = true
 					}
 					return {
 						subdomain: this.subdomain,
@@ -320,7 +319,7 @@ export default {
 						cluster: this.cluster,
 						group: this.selectedGroup?.value,
 						trial: this.trial,
-					};
+					}
 				},
 				validate() {
 					if (
@@ -328,18 +327,18 @@ export default {
 						(this.$team.doc.onboarding.site_created ||
 							!this.appDoc.show_for_new_site)
 					) {
-						throw new DashboardError('Please add a valid payment mode');
+						throw new DashboardError('Please add a valid payment mode')
 					}
 					if (!this.selectedPlan && this.plans.length > 0) {
-						throw new DashboardError('Please select a plan');
+						throw new DashboardError('Please select a plan')
 					}
 					if (!this.subdomain) {
-						throw new DashboardError('Please enter a subdomain');
+						throw new DashboardError('Please enter a subdomain')
 					}
 					if (!this.agreedToRegionConsent) {
 						throw new DashboardError(
 							'Please agree to the above consent to create site',
-						);
+						)
 					}
 				},
 				onSuccess: (doc) => {
@@ -347,27 +346,27 @@ export default {
 						this.$router.push({
 							name: 'Site Jobs',
 							params: { name: doc.name },
-						});
+						})
 					} else if (doc.doctype === 'Site Group Deploy') {
 						this.$router.push({
 							name: 'CreateSiteForMarketplaceApp',
 							params: { app: this.app },
 							query: { siteGroupDeployName: doc.name },
-						});
+						})
 					}
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		appDoc() {
-			return this.$resources.app.data || {};
+			return this.$resources.app.data || {}
 		},
 		options() {
-			return this.$resources.installAppOptions.data;
+			return this.$resources.installAppOptions.data
 		},
 		plans() {
-			if (!this.$resources?.installAppOptions) return [];
+			if (!this.$resources?.installAppOptions) return []
 			return this.options.plans.map((plan) => ({
 				...plan,
 				label:
@@ -383,20 +382,20 @@ export default {
 					value: f,
 					icon: 'check-circle',
 				})),
-			}));
+			}))
 		},
 		regions() {
 			if (!this.selectedGroup) {
-				return this.options.clusters;
+				return this.options.clusters
 			} else {
 				return this.options.private_groups.find(
 					(g) => g.name === this.selectedGroup.value,
-				).clusters;
+				).clusters
 			}
 		},
 		trialPlan() {
-			return this.$resources.getTrialPlan.data;
+			return this.$resources.getTrialPlan.data
 		},
 	},
-};
+}
 </script>

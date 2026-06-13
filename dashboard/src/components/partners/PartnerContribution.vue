@@ -4,8 +4,8 @@
 	</div>
 </template>
 <script>
-import GenericList from '../GenericList.vue';
-import { currency, userCurrency } from '../../utils/format';
+import GenericList from '../GenericList.vue'
+import { currency, userCurrency } from '../../utils/format'
 export default {
 	name: 'PartnerContribution',
 	props: ['partnerEmail'],
@@ -15,7 +15,7 @@ export default {
 	data() {
 		return {
 			partnerContributions: [],
-		};
+		}
 	},
 	resources: {
 		getPartnerContribution() {
@@ -34,10 +34,10 @@ export default {
 							currency: d.currency,
 							total: d.total_before_discount,
 							partner_total: d.partner_total,
-						};
-					});
+						}
+					})
 				},
-			};
+			}
 		},
 	},
 	computed: {
@@ -63,7 +63,7 @@ export default {
 								year: 'numeric',
 								month: 'short',
 								day: 'numeric',
-							}).format(new Date(value));
+							}).format(new Date(value))
 						},
 						width: 0.6,
 					},
@@ -78,9 +78,9 @@ export default {
 						fieldname: 'total',
 						format(value, columns) {
 							if (value === 0) {
-								return '';
+								return ''
 							}
-							return currency(value, columns.currency);
+							return currency(value, columns.currency)
 						},
 						align: 'right',
 						width: 0.6,
@@ -89,14 +89,14 @@ export default {
 						label: 'Partner Total',
 						fieldname: 'partner_total',
 						format(value) {
-							return userCurrency(value);
+							return userCurrency(value)
 						},
 						align: 'right',
 						width: 0.6,
 					},
 				],
-			};
+			}
 		},
 	},
-};
+}
 </script>

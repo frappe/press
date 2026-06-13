@@ -19,8 +19,8 @@
 	</div>
 </template>
 <script>
-import AlertBanner from './AlertBanner.vue';
-import UpdateBillingDetails from './UpdateBillingDetails.vue';
+import AlertBanner from './AlertBanner.vue'
+import UpdateBillingDetails from './UpdateBillingDetails.vue'
 
 export default {
 	name: 'AlertAddressDetails',
@@ -28,7 +28,7 @@ export default {
 	data() {
 		return {
 			showBillingDetailsDialog: false,
-		};
+		}
 	},
-};
+}
 </script>

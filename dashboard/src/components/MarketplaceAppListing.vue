@@ -129,8 +129,7 @@
 									@click="openFileSelector()"
 									icon-left="plus"
 									label="Add"
-								>
-								</Button>
+								> </Button>
 							</template>
 						</FileUploader>
 					</div>
@@ -172,8 +171,7 @@
 						@change="marketplaceApp.long_description = $event"
 						:editable="editable"
 						:bubbleMenu="true"
-					>
-					</TextEditor>
+					> </TextEditor>
 				</div>
 			</div>
 		</div>
@@ -181,11 +179,11 @@
 </template>
 
 <script>
-import { TextEditor } from 'frappe-ui';
-import FileUploader from '@/components/FileUploader.vue';
-import { toast } from 'vue-sonner';
-import { getToastErrorMessage } from '../utils/toast';
-import { confirmDialog } from '../utils/components';
+import { TextEditor } from 'frappe-ui'
+import FileUploader from '@/components/FileUploader.vue'
+import { toast } from 'vue-sonner'
+import { getToastErrorMessage } from '../utils/toast'
+import { confirmDialog } from '../utils/components'
 
 export default {
 	name: 'MarketplaceAppOverview',
@@ -208,7 +206,7 @@ export default {
 				description: '',
 				long_description: '',
 			},
-		};
+		}
 	},
 	resources: {
 		updateListing() {
@@ -220,9 +218,9 @@ export default {
 						dn: this.app.doc.name,
 						method: 'update_listing',
 						args: this.marketplaceApp,
-					};
+					}
 				},
-			};
+			}
 		},
 		listingData() {
 			return {
@@ -232,44 +230,44 @@ export default {
 						dt: 'Marketplace App',
 						dn: this.app.doc.name,
 						method: 'listing_details',
-					};
+					}
 				},
 				auto: true,
 				onSuccess(response) {
-					this.marketplaceApp = { ...this.marketplaceApp, ...response.message };
+					this.marketplaceApp = { ...this.marketplaceApp, ...response.message }
 				},
 				onError(e) {
-					toast.error(getToastErrorMessage(e, 'Failed to fetch listing data'));
+					toast.error(getToastErrorMessage(e, 'Failed to fetch listing data'))
 				},
-			};
+			}
 		},
 		removeScreenshot() {
 			return {
 				url: 'press.api.marketplace.remove_app_screenshot',
-			};
+			}
 		},
 	},
 	methods: {
 		imageAddSuccess(message) {
-			this.$resources.listingData.reload();
-			toast.success(message);
+			this.$resources.listingData.reload()
+			toast.success(message)
 		},
 		imageAddFailure(e) {
-			toast.error(e);
+			toast.error(e)
 		},
 		updateListing() {
 			toast.promise(this.$resources.updateListing.submit(), {
 				success: () => {
-					this.editing = false;
-					return 'Updated successfully';
+					this.editing = false
+					return 'Updated successfully'
 				},
 				loading: 'Updating listing...',
 				error: (err) => {
 					return err.messages?.length
 						? err.messages.join('\n')
-						: err.message || 'Failed to update listing';
+						: err.message || 'Failed to update listing'
 				},
-			});
+			})
 		},
 		dropdownOptions(image) {
 			return [
@@ -294,49 +292,49 @@ export default {
 										{
 											loading: 'Deleting screenshot...',
 											success: () => {
-												this.$resources.listingData.reload();
-												hide();
-												return 'Screenshot deleted successfully';
+												this.$resources.listingData.reload()
+												hide()
+												return 'Screenshot deleted successfully'
 											},
 											error: (err) => {
 												return err.messages?.length
 													? err.messages.join('\n')
-													: err.message || 'Failed to delete screenshot';
+													: err.message || 'Failed to delete screenshot'
 											},
 										},
-									);
+									)
 								},
 							},
-						});
+						})
 					},
 				},
-			];
+			]
 		},
 		validateLink(link) {
-			const value = this.marketplaceApp[link] ?? '';
+			const value = this.marketplaceApp[link] ?? ''
 
 			// Regular expression to validate URL format
 			const urlPattern =
-				/^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/[\w\-._~:\/?#[\]@!$&'()*+,;=]*)?$/;
+				/^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/[\w\-._~:\/?#[\]@!$&'()*+,;=]*)?$/
 
 			// Check if the link is empty
 			if (!value.trim()) {
-				this.$toast.error(`${link.replace('_', ' ')} link is empty`);
-				return false;
+				this.$toast.error(`${link.replace('_', ' ')} link is empty`)
+				return false
 			}
 
 			// Check if the link contains a valid URL
 			if (!urlPattern.test(value.trim())) {
-				this.$toast.error(`${link.replace('_', ' ')} contains an invalid URL`);
-				return false;
+				this.$toast.error(`${link.replace('_', ' ')} contains an invalid URL`)
+				return false
 			}
-			return true;
+			return true
 		},
 	},
 	computed: {
 		profileImageUrl() {
-			return this.app.doc.image;
+			return this.app.doc.image
 		},
 	},
-};
+}
 </script>

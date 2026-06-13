@@ -1,6 +1,6 @@
-import { onMounted } from "vue";
+import { onMounted } from 'vue'
 
-type Theme = "light" | "dark" | "system";
+type Theme = 'light' | 'dark' | 'system'
 
 /*
 const getSystemTheme = (): "light" | "dark" => {
@@ -11,26 +11,26 @@ const getSystemTheme = (): "light" | "dark" => {
 */
 
 export const setTheme = (name: Theme) => {
-  document.documentElement.classList.add('no-transition');
+	document.documentElement.classList.add('no-transition')
 
-  // let themeType = name == "system" ? getSystemTheme() : name;
-  document.documentElement.setAttribute("data-theme", name);
-  localStorage.setItem("theme", name);
+	// let themeType = name == "system" ? getSystemTheme() : name;
+	document.documentElement.setAttribute('data-theme', name)
+	localStorage.setItem('theme', name)
 
-    requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      document.documentElement.classList.remove('no-transition');
-    });
-  });
-};
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			document.documentElement.classList.remove('no-transition')
+		})
+	})
+}
 
 export const initTheme = () => {
-  onMounted(() => {
-    // let storedTheme = localStorage.getItem("theme") as Theme || 'system';
-    let storedTheme = localStorage.getItem("theme") as Theme || 'light';
-    setTheme(storedTheme);
+	onMounted(() => {
+		// let storedTheme = localStorage.getItem("theme") as Theme || 'system';
+		let storedTheme = (localStorage.getItem('theme') as Theme) || 'light'
+		setTheme(storedTheme)
 
-    /* 
+		/* 
 
     TODO: add back when dark theme is stable
 
@@ -46,5 +46,5 @@ export const initTheme = () => {
       mediaQuery.removeEventListener("change", handleSystemThemeChange);
     };
     */
-  });
-};
+	})
+}

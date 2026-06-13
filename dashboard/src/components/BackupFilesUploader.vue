@@ -34,15 +34,13 @@
 								class="text-base"
 								:class="error ? 'text-red-500' : 'text-ink-gray-6'"
 							>
-								{{
-									uploading
+								{{ uploading
 										? `Uploading ${progress}%`
 										: success
 											? formatBytes(fileObj.size)
 											: error
 												? null
-												: file.description
-								}}
+												: file.description }}
 								<span v-if="error" v-html="error" />
 							</span>
 						</template>
@@ -65,9 +63,9 @@
 	</div>
 </template>
 <script>
-import FileUploader from './FileUploader.vue';
-import { createResource } from 'frappe-ui';
-import { toast } from 'vue-sonner';
+import FileUploader from './FileUploader.vue'
+import { createResource } from 'frappe-ui'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'BackupFilesUploader',
@@ -126,27 +124,27 @@ export default {
 				private: 0,
 				config: 0,
 			},
-		};
+		}
 	},
 	methods: {
 		onFileUpload(file, data) {
-			let backupFiles = Object.assign({}, this.backupFiles);
-			backupFiles[file.type] = data;
-			this.$emit('update:backupFiles', backupFiles);
+			let backupFiles = Object.assign({}, this.backupFiles)
+			backupFiles[file.type] = data
+			this.$emit('update:backupFiles', backupFiles)
 			if (this.isAllFilesUploaded(backupFiles)) {
-				this.$emit('uploadComplete', backupFiles);
+				this.$emit('uploadComplete', backupFiles)
 			}
 		},
 		onFileUploadFailure(e) {
-			this.$emit('abortUpload', e);
+			this.$emit('abortUpload', e)
 		},
 		async backupFileChecker(file, type) {
-			this.fileSize[type] = file?.size ?? 0;
+			this.fileSize[type] = file?.size ?? 0
 
 			if (file.size > 5 * 1024 * 1024 * 1024) {
 				throw new Error(
 					'File size exceeds the limit of 5 GiB. Please try the <a href="https://docs.frappe.io/cloud/sites/migrate-an-existing-site#migrate-using-fc-restore-cli" class=underline>CLI tool</a>.',
-				);
+				)
 			}
 
 			if (type === 'database') {
@@ -154,7 +152,7 @@ export default {
 				if (!/\.sql( \(\d\))?\.gz$|\.sql$/.test(file.name)) {
 					throw new Error(
 						'Database backup file should end with the name "database.sql.gz" or "database.sql"',
-					);
+					)
 				}
 				if (
 					![
@@ -163,54 +161,54 @@ export default {
 						'application/sql',
 					].includes(file.type)
 				) {
-					throw new Error('Invalid database backup file');
+					throw new Error('Invalid database backup file')
 				}
 			}
 			if (['public', 'private'].includes(type)) {
 				if (file.type != 'application/x-tar') {
-					throw new Error(`Invalid ${type} files backup file`);
+					throw new Error(`Invalid ${type} files backup file`)
 				}
 			}
 			if (type === 'config') {
 				if (file.type != 'application/json') {
-					throw new Error(`Invalid ${type} files backup file`);
+					throw new Error(`Invalid ${type} files backup file`)
 				}
 			}
 		},
 		async checkServerDiskSize() {
 			if (!this.site) {
 				// If site is not provided, we cannot check the disk size
-				return true;
+				return true
 			}
 			let post = createResource({
 				url: 'press.api.site.validate_restoration_space_requirements',
 				method: 'POST',
-			});
+			})
 			return post.fetch({
 				name: this.site,
 				db_file_size: this.fileSize.database || 0,
 				public_file_size: this.fileSize.public || 0,
 				private_file_size: this.fileSize.private || 0,
-			});
+			})
 		},
 		isAllFilesUploaded(backupFiles) {
 			return (
 				Object.values(backupFiles || this.backupFiles).filter((e) => e)
 					.length === this.files.filter((e) => e.file).length
-			);
+			)
 		},
 		async uploadFiles() {
-			let response = await this.checkServerDiskSize();
+			let response = await this.checkServerDiskSize()
 			if (!response.allowed_to_upload) {
-				let errorMessage = '';
+				let errorMessage = ''
 				if (response.is_insufficient_space_on_app_server) {
 					let requiredGB = Math.round(
 						(response.required_space_on_app_server -
 							response.free_space_on_app_server) /
 							(1024 * 1024 * 1024),
 						2,
-					);
-					errorMessage += `Insufficient space on app server. Please add ${requiredGB} GB more storage.`;
+					)
+					errorMessage += `Insufficient space on app server. Please add ${requiredGB} GB more storage.`
 				}
 				if (response.is_insufficient_space_on_db_server) {
 					let requiredGB = Math.round(
@@ -218,34 +216,34 @@ export default {
 							response.free_space_on_db_server) /
 							(1024 * 1024 * 1024),
 						2,
-					);
-					errorMessage += ` Insufficient space on database server. Please add ${requiredGB} GB more storage.`;
+					)
+					errorMessage += ` Insufficient space on database server. Please add ${requiredGB} GB more storage.`
 				}
 				if (!errorMessage) {
-					errorMessage = 'Failed to upload files. Please try again later.';
+					errorMessage = 'Failed to upload files. Please try again later.'
 				}
 				if (this.onError) {
-					this.onError(errorMessage);
+					this.onError(errorMessage)
 				}
-				toast.error(errorMessage);
-				return false;
+				toast.error(errorMessage)
+				return false
 			}
 
 			if (this.$refs.database) {
-				this.$refs.database[0].uploadFile();
+				this.$refs.database[0].uploadFile()
 			}
 			if (this.$refs.public) {
-				this.$refs.public[0].uploadFile();
+				this.$refs.public[0].uploadFile()
 			}
 			if (this.$refs.private) {
-				this.$refs.private[0].uploadFile();
+				this.$refs.private[0].uploadFile()
 			}
 			if (this.$refs.config) {
-				this.$refs.config[0].uploadFile();
+				this.$refs.config[0].uploadFile()
 			}
 
-			return true;
+			return true
 		},
 	},
-};
+}
 </script>

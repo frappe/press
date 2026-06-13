@@ -13,7 +13,7 @@ import { toast } from 'vue-sonner'
 import { confirmDialog, renderDialog } from '@/utils/components'
 import { useRoute } from 'vue-router'
 import { getToastErrorMessage } from '@/utils/toast'
-import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline';
+import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline'
 import Scrollbar from '@/components/common/Scrollbar.vue'
 
 interface Props {

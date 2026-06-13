@@ -28,9 +28,9 @@
 </template>
 
 <script>
-import { getTeam } from '../../data/team';
-import { getDocResource } from '../../utils/resource';
-import { DashboardError } from '../../utils/error';
+import { getTeam } from '../../data/team'
+import { getDocResource } from '../../utils/resource'
+import { DashboardError } from '../../utils/error'
 
 export default {
 	props: {
@@ -43,16 +43,16 @@ export default {
 				review: this.reviewId,
 				reply: '',
 			},
-		};
+		}
 	},
 	computed: {
 		$app() {
 			let appDoc = getDocResource({
 				doctype: 'Marketplace App',
 				name: this.marketplaceApp,
-			});
+			})
 
-			return appDoc?.doc;
+			return appDoc?.doc
 		},
 	},
 	resources: {
@@ -60,19 +60,19 @@ export default {
 			url: 'press.api.marketplace.submit_developer_reply',
 			validate() {
 				if (!this.reply.reply) {
-					throw new DashboardError('Reply cannot be empty');
+					throw new DashboardError('Reply cannot be empty')
 				}
-				const team = getTeam();
+				const team = getTeam()
 				if (!team.doc.is_developer) {
 					throw new DashboardError(
 						'You must be a developer to reply to reviews',
-					);
+					)
 				}
 			},
 			onSuccess() {
-				window.location.href = `/marketplace/apps/${this.marketplaceApp}`;
+				window.location.href = `/marketplace/apps/${this.marketplaceApp}`
 			},
 		},
 	},
-};
+}
 </script>

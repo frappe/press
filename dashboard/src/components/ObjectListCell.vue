@@ -39,7 +39,10 @@
 				</option>
 			</select>
 		</div>
-		<div class="text-base text-ink-gray-6" v-else-if="column.type == 'Timestamp'">
+		<div
+			class="text-base text-ink-gray-6"
+			v-else-if="column.type == 'Timestamp'"
+		>
 			<div class="flex">
 				<Tooltip :text="$format.date(value)">
 					{{ value ? $dayjs(value).fromNow() : '' }}
@@ -67,8 +70,8 @@
 	</component>
 </template>
 <script>
-import { Tooltip } from 'frappe-ui';
-import ActionButton from './ActionButton.vue';
+import { Tooltip } from 'frappe-ui'
+import ActionButton from './ActionButton.vue'
 
 export default {
 	name: 'ObjectListCell',
@@ -80,70 +83,70 @@ export default {
 	},
 	computed: {
 		value() {
-			return this.row[this.column.key];
+			return this.row[this.column.key]
 		},
 		theme() {
-			const theme = this.column.theme;
+			const theme = this.column.theme
 			if (typeof theme === 'function') {
-				return theme(this.value, this.row);
+				return theme(this.value, this.row)
 			}
 
-			return theme;
+			return theme
 		},
 		formattedValue() {
 			let formattedValue = this.column.format
 				? this.column.format(this.value, this.row)
-				: this.value;
+				: this.value
 			if (formattedValue == null) {
-				formattedValue = '';
+				formattedValue = ''
 			}
 			return typeof formattedValue === 'object'
 				? formattedValue
-				: String(formattedValue);
+				: String(formattedValue)
 		},
 		formattedDate() {
-			if (!this.value) return '';
+			if (!this.value) return ''
 			if (this.value.includes(' ')) {
-				return this.$format.date(this.value, 'lll');
+				return this.$format.date(this.value, 'lll')
 			}
-			return this.$format.date(this.value, 'll');
+			return this.$format.date(this.value, 'll')
 		},
 		icon() {
-			return this.column.type === 'Icon' && this.column.Icon(this.value);
+			return this.column.type === 'Icon' && this.column.Icon(this.value)
 		},
 		actions() {
-			if (!this.column.type === 'Actions') return;
-			let actions = this.column.actions(this.row);
-			return actions;
+			if (!this.column.type === 'Actions') return
+			let actions = this.column.actions(this.row)
+			return actions
 		},
 		button() {
-			if (!this.column.type === 'Button') return;
-			return this.column.Button(this.contextWithRow);
+			if (!this.column.type === 'Button') return
+			return this.column.Button(this.contextWithRow)
 		},
 		cellClass() {
-			if (!this.column.class) return;
-			if (typeof this.column.class == 'string') return this.column.class;
-			return this.column.class(this.contextWithRow);
+			if (!this.column.class) return
+			if (typeof this.column.class == 'string') return this.column.class
+			return this.column.class(this.contextWithRow)
 		},
 		contextWithRow() {
 			return {
 				...this.context,
 				row: this.row,
-			};
+			}
 		},
 		showDropdown() {
 			let filteredOptions = (this.actions || [])
 				.filter(Boolean)
-				.filter((option) => (option.condition ? option.condition() : true));
+				.filter((option) => (option.condition ? option.condition() : true))
 
-			return filteredOptions.length > 0;
+			return filteredOptions.length > 0
 		},
 	},
 	components: { Tooltip, ActionButton },
 	methods: {
 		fireOnClick({ value }) {
-			this.formattedValue.find((obj) => obj?.value === value)?.onClick?.();
+			this.formattedValue.find((obj) => obj?.value === value)?.onClick?.()
 		},
 	},
-};
+}
 </script>

@@ -8,9 +8,8 @@
 				<p class="text-p-base">
 					With Servers on Frappe Cloud, you now get dedicated compute resources
 					for your sites. Servers come in pairs (Application + Database). You
-					can run as many sites and benches as you want. All other features
-					like Private Benches, SSH Access, Database Access work as is with
-					servers.
+					can run as many sites and benches as you want. All other features like
+					Private Benches, SSH Access, Database Access work as is with servers.
 				</p>
 			</div>
 			<div class="space-y-3">
@@ -46,7 +45,7 @@
 	</div>
 </template>
 <script>
-import Link from '@/components/Link.vue';
+import Link from '@/components/Link.vue'
 
 export default {
 	name: 'EnableServers',
@@ -61,20 +60,20 @@ export default {
 				'Alerts for resource consumption',
 				'Features to install, upgrade, backup, monitor & develop apps',
 			],
-		};
+		}
 	},
 	computed: {
 		serversEnabled() {
-			return Boolean(this.$team?.doc?.servers_enabled);
+			return Boolean(this.$team?.doc?.servers_enabled)
 		},
 		onboardingComplete() {
-			return Boolean(this.$team.doc.onboarding?.complete);
+			return Boolean(this.$team.doc.onboarding?.complete)
 		},
 	},
 	mounted() {
 		if (this.onboardingComplete && this.$team.doc.servers_enabled) {
-			this.$router.push({ name: 'Server List' });
+			this.$router.push({ name: 'Server List' })
 		}
 	},
-};
+}
 </script>

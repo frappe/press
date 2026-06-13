@@ -4,7 +4,7 @@
 	</div>
 </template>
 <script>
-import ObjectList from '../ObjectList.vue';
+import ObjectList from '../ObjectList.vue'
 
 export default {
 	name: 'PartnerAdminAudits',
@@ -28,8 +28,8 @@ export default {
 						width: 0.8,
 						class: 'truncate',
 						format: (value) => {
-							if (!value) return '';
-							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
 						},
 					},
 					{
@@ -49,8 +49,8 @@ export default {
 						width: 0.8,
 						class: 'truncate',
 						format: (value) => {
-							if (!value) return '';
-							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
 						},
 					},
 					{
@@ -65,12 +65,12 @@ export default {
 						fieldname: 'proposed_audit_date',
 						width: 0.8,
 						format(value) {
-							if (!value) return '';
+							if (!value) return ''
 							return Intl.DateTimeFormat('en-US', {
 								year: 'numeric',
 								month: 'long',
 								day: 'numeric',
-							}).format(new Date(value));
+							}).format(new Date(value))
 						},
 					},
 					{
@@ -78,12 +78,12 @@ export default {
 						fieldname: 'audit_date',
 						width: 0.8,
 						format(value) {
-							if (!value) return '';
+							if (!value) return ''
 							return Intl.DateTimeFormat('en-US', {
 								year: 'numeric',
 								month: 'long',
 								day: 'numeric',
-							}).format(new Date(value));
+							}).format(new Date(value))
 						},
 					},
 				],
@@ -119,16 +119,16 @@ export default {
 								{ label: 'Hybrid', value: 'Hybrid' },
 							],
 						},
-					];
+					]
 				},
 				onRowClick: (row) => {
 					this.$router.push({
 						name: 'PartnerNCList',
 						params: { partner_audit: row.name },
-					});
+					})
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

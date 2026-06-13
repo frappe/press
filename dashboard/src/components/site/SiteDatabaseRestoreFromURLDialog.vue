@@ -59,8 +59,8 @@
 	</Dialog>
 </template>
 <script>
-import { date } from '../../utils/format';
-import { DashboardError } from '../../utils/error';
+import { date } from '../../utils/format'
+import { DashboardError } from '../../utils/error'
 
 export default {
 	name: 'SiteDatabaseRestoreDialog',
@@ -82,7 +82,7 @@ export default {
 			},
 			showRestoreDialog: true,
 			skipFailingPatches: false,
-		};
+		}
 	},
 	resources: {
 		getBackupLinks() {
@@ -95,21 +95,21 @@ export default {
 				},
 				validate() {
 					if (!this.siteURL) {
-						throw new DashboardError('Site URL is required');
+						throw new DashboardError('Site URL is required')
 					}
 					if (!this.email) {
-						throw new DashboardError('Email is required');
+						throw new DashboardError('Email is required')
 					}
 					if (!this.password) {
-						throw new DashboardError('Password is required');
+						throw new DashboardError('Password is required')
 					}
 				},
 				onSuccess(remoteFiles) {
 					for (let file of remoteFiles) {
-						this.selectedFiles[file.type] = file.remote_file;
+						this.selectedFiles[file.type] = file.remote_file
 					}
 				},
-			};
+			}
 		},
 		restoreBackup() {
 			return {
@@ -123,35 +123,32 @@ export default {
 					if (!this.selectedFiles.database) {
 						throw new DashboardError(
 							'Something went wrong while fetching the backups from the site',
-						);
+						)
 					}
 				},
 				onSuccess() {
-					this.siteURL = '';
-					this.email = '';
-					this.password = '';
-					this.showRestoreDialog = false;
+					this.siteURL = ''
+					this.email = ''
+					this.password = ''
+					this.showRestoreDialog = false
 
 					this.$router.push({
 						name: 'Site Jobs',
 						params: { name: this.site },
-					});
+					})
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		fetchedBackupFileTimestamp() {
-			if (!this.$resources.getBackupLinks.data) return '';
+			if (!this.$resources.getBackupLinks.data) return ''
 
-			let backup = this.$resources.getBackupLinks.data[0];
-			let timestamp_string = backup.file_name
-				.split('-')[0]
-				.split('_')
-				.join('T');
+			let backup = this.$resources.getBackupLinks.data[0]
+			let timestamp_string = backup.file_name.split('-')[0].split('_').join('T')
 
-			return date(timestamp_string);
+			return date(timestamp_string)
 		},
 	},
-};
+}
 </script>

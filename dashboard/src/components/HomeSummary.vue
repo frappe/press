@@ -33,7 +33,7 @@ export default {
 	name: 'HomeSummary',
 	resources: {
 		home() {
-			if (!this.$team.doc?.name) return;
+			if (!this.$team.doc?.name) return
 			return {
 				url: 'press.api.client.run_doc_method',
 				cache: ['home_data', this.$team.doc.name],
@@ -42,16 +42,16 @@ export default {
 						dt: 'Team',
 						dn: this.$team.doc.name,
 						method: 'get_home_data',
-					};
+					}
 				},
 				auto: true,
-			};
+			}
 		},
 	},
 	computed: {
 		sites() {
-			return this.$resources.home.data?.message.sites || [];
+			return this.$resources.home.data?.message.sites || []
 		},
 	},
-};
+}
 </script>

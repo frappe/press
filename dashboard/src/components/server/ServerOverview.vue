@@ -6,7 +6,7 @@
 		/>
 		<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
 			<div
-				v-for="server in servers" 
+				v-for="server in servers"
 				class="col-span-1 rounded-md border lg:col-span-2"
 			>
 				<div
@@ -30,9 +30,9 @@
 									class="mt-2 flex flex-col space-y-2"
 								>
 									<div class="flex items-center text-base text-ink-gray-7">
-										<span v-if="!$appServer?.doc?.is_unified_server">{{
-											d.label
-										}}</span>
+										<span v-if="!$appServer?.doc?.is_unified_server"
+											>{{ d.label }}</span
+										>
 										<span v-else>Unified Server Plan</span>
 										<Badge
 											v-if="
@@ -70,7 +70,10 @@
 											</Tooltip>
 										</div>
 										<div class="flex space-x-1">
-											<div class="text-sm text-ink-gray-6" v-html="d.subValue" />
+											<div
+												class="text-sm text-ink-gray-6"
+												v-html="d.subValue"
+											/>
 											<Tooltip v-if="d.help" :text="d.help">
 												<lucide-info class="h-3.5 w-3.5 text-ink-gray-5" />
 											</Tooltip>
@@ -158,7 +161,9 @@
 
 			<div class="rounded-md border">
 				<div class="h-12 border-b px-5 py-4">
-					<h2 class="text-lg font-medium text-ink-gray-9">Server Information</h2>
+					<h2 class="text-lg font-medium text-ink-gray-9">
+						Server Information
+					</h2>
 				</div>
 				<div>
 					<div
@@ -178,18 +183,18 @@
 </template>
 
 <script>
-import { toast } from 'vue-sonner';
-import { h, defineAsyncComponent } from 'vue';
-import { getCachedDocumentResource, Progress } from 'frappe-ui';
-import { confirmDialog, renderDialog } from '../../utils/components';
-import StorageBreakdownDialog from './StorageBreakdownDialog.vue';
-import ServerPlansDialog from './ServerPlansDialog.vue';
-import { getToastErrorMessage } from '../../utils/toast';
-import ServerLoadAverage from './ServerLoadAverage.vue';
-import { getDocResource } from '../../utils/resource';
-import { createResource } from 'frappe-ui';
-import Badge from '../global/Badge.vue';
-import CustomAlerts from '../CustomAlerts.vue';
+import { toast } from 'vue-sonner'
+import { h, defineAsyncComponent } from 'vue'
+import { getCachedDocumentResource, Progress } from 'frappe-ui'
+import { confirmDialog, renderDialog } from '../../utils/components'
+import StorageBreakdownDialog from './StorageBreakdownDialog.vue'
+import ServerPlansDialog from './ServerPlansDialog.vue'
+import { getToastErrorMessage } from '../../utils/toast'
+import ServerLoadAverage from './ServerLoadAverage.vue'
+import { getDocResource } from '../../utils/resource'
+import { createResource } from 'frappe-ui'
+import Badge from '../global/Badge.vue'
+import CustomAlerts from '../CustomAlerts.vue'
 
 export default {
 	props: ['server'],
@@ -206,22 +211,22 @@ export default {
 			startedScaleUp: false,
 			startedScaleDown: false,
 			autoscaleDiscount: null,
-		};
+		}
 	},
 	async mounted() {
 		const get = createResource({
 			url: 'press.api.server.get_autoscale_discount',
 			method: 'GET',
-		});
+		})
 
-		this.autoscaleDiscount = await get.fetch();
+		this.autoscaleDiscount = await get.fetch()
 	},
 
 	methods: {
 		showPlanChangeDialog(serverType) {
 			let ServerPlansDialog = defineAsyncComponent(
 				() => import('./ServerPlansDialog.vue'),
-			);
+			)
 			renderDialog(
 				h(ServerPlansDialog, {
 					server:
@@ -234,7 +239,7 @@ export default {
 									: null,
 					serverType,
 				}),
-			);
+			)
 		},
 		showStorageBreakdownDialog(serverType, ignoreUnifiedServer = false) {
 			if (
@@ -259,24 +264,24 @@ export default {
 						},
 					],
 					onSuccess: ({ values, hide }) => {
-						hide();
+						hide()
 						if (values.breakdownType === 'database') {
 							this.showStorageBreakdownDialog(
 								'Database Server',
 								(ignoreUnifiedServer = true),
-							);
+							)
 						} else {
 							this.showStorageBreakdownDialog(
 								'Server',
 								(ignoreUnifiedServer = true),
-							);
+							)
 						}
 					},
-				});
+				})
 			} else {
 				let StorageBreakdownDialog = defineAsyncComponent(
 					() => import('./StorageBreakdownDialog.vue'),
-				);
+				)
 				renderDialog(
 					h(StorageBreakdownDialog, {
 						server:
@@ -289,60 +294,60 @@ export default {
 										: null,
 						serverType,
 					}),
-				);
+				)
 			}
 		},
 		scaleUp() {
 			toast.promise(this.$appServer.scaleUp.submit({}), {
 				loading: () => {
-					this.startedScaleUp = true;
-					return 'Starting scale up…';
+					this.startedScaleUp = true
+					return 'Starting scale up…'
 				},
 				success: () => {
-					this.startedScaleUp = false;
+					this.startedScaleUp = false
 					this.$router.push({
 						path: this.$appServer.name,
 						path: 'auto-scale',
-					});
-					return 'Scale-up started. Please wait a few minutes.';
+					})
+					return 'Scale-up started. Please wait a few minutes.'
 				},
 				error: (e) => {
-					this.startedScaleUp = false;
+					this.startedScaleUp = false
 					if (Array.isArray(e.messages)) {
-						return e.messages.join(', ');
+						return e.messages.join(', ')
 					}
-					return e.message || 'Scale-up failed';
+					return e.message || 'Scale-up failed'
 				},
-			});
+			})
 		},
 		scaleDown() {
 			toast.promise(this.$appServer.scaleDown.submit({}), {
 				loading: () => {
-					this.startedScaleDown = true;
-					return 'Starting scale down…';
+					this.startedScaleDown = true
+					return 'Starting scale down…'
 				},
 				success: () => {
-					this.startedScaleDown = false;
+					this.startedScaleDown = false
 					this.$router.push({
 						path: this.$appServer.name,
 						path: 'auto-scale',
-					});
-					return 'Scale-down started. Please wait a few minutes.';
+					})
+					return 'Scale-down started. Please wait a few minutes.'
 				},
 				error: (e) => {
-					this.startedScaleDown = false;
+					this.startedScaleDown = false
 					if (Array.isArray(e.messages)) {
-						return e.messages.join(', ');
+						return e.messages.join(', ')
 					}
-					return e.message || 'Scale-down failed';
+					return e.message || 'Scale-down failed'
 				},
-			});
+			})
 		},
 		currentUsage(serverType) {
-			if (!this.$appServer?.doc) return [];
-			if (!this.$dbServer?.doc) return [];
+			if (!this.$appServer?.doc) return []
+			if (!this.$dbServer?.doc) return []
 
-			let formatBytes = (v) => this.$format.bytes(v, 0, 2);
+			let formatBytes = (v) => this.$format.bytes(v, 0, 2)
 
 			let doc =
 				serverType === 'Server'
@@ -353,37 +358,37 @@ export default {
 							? this.$dbServer.doc
 							: serverType === 'Replication Server'
 								? this.$dbReplicaServer?.doc
-								: null;
+								: null
 
-			if (!doc) return [];
+			if (!doc) return []
 
-			let currentPlan = doc.current_plan;
-			let currentUsage = doc.usage;
-			let diskSize = doc.disk_size;
-			let additionalStorage = diskSize - (currentPlan?.disk || 0);
+			let currentPlan = doc.current_plan
+			let currentUsage = doc.usage
+			let diskSize = doc.disk_size
+			let additionalStorage = diskSize - (currentPlan?.disk || 0)
 			let additionalStorageIncrementRecommendation =
-				doc.recommended_storage_increment;
-			let price = 0;
+				doc.recommended_storage_increment
+			let price = 0
 			// not using $format.planTitle cuz of manual calculation of add-on storage plan
 			let priceField =
-				this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd';
+				this.$team.doc.currency === 'INR' ? 'price_inr' : 'price_usd'
 
-			let planDescription = '';
+			let planDescription = ''
 			if (!currentPlan?.name) {
-				planDescription = 'No plan selected';
+				planDescription = 'No plan selected'
 			} else if (currentPlan.price_usd > 0) {
-				price = currentPlan[priceField];
+				price = currentPlan[priceField]
 				if (serverType === 'App Secondary Server') {
 					planDescription = this.autoscaleDiscount
 						? `${this.$format.userCurrency(
 								this.$format.pricePerHour(price) * this.autoscaleDiscount,
 							)}/hour`
-						: '';
+						: ''
 				} else {
-					planDescription = `${this.$format.userCurrency(price, 0)}/mo`;
+					planDescription = `${this.$format.userCurrency(price, 0)}/mo`
 				}
 			} else {
-				planDescription = currentPlan.plan_title;
+				planDescription = currentPlan.plan_title
 			}
 
 			if (
@@ -412,7 +417,7 @@ export default {
 						type: 'info',
 						value: 'Uses primary server storage configuration',
 					},
-				];
+				]
 			}
 
 			return [
@@ -548,14 +553,14 @@ export default {
 															},
 															{
 																onSuccess: () => {
-																	hide();
+																	hide()
 																	this.$router.push({
 																		name: 'Server Detail Plays',
 																		params: { name: this.$appServer.name },
-																	});
+																	})
 																},
 																onError(e) {
-																	console.error(e);
+																	console.error(e)
 																},
 															},
 														),
@@ -568,9 +573,9 @@ export default {
 																	'Failed to increase disk size',
 																),
 														},
-													);
+													)
 												},
-											});
+											})
 										},
 									},
 									{
@@ -620,7 +625,7 @@ export default {
 															value: i * 5,
 														})),
 														condition: (values) => {
-															return values.auto_increase_storage;
+															return values.auto_increase_storage
 														},
 													},
 													{
@@ -635,7 +640,7 @@ export default {
 															value: i * 5,
 														})),
 														condition: (values) => {
-															return values.auto_increase_storage;
+															return values.auto_increase_storage
 														},
 													},
 												],
@@ -650,16 +655,16 @@ export default {
 															},
 															{
 																onSuccess: () => {
-																	hide();
+																	hide()
 
 																	if (doc.name === this.$appServer.name)
-																		this.$appServer.reload();
+																		this.$appServer.reload()
 																	else if (doc.name === this.$dbServer.name)
-																		this.$dbServer.reload();
+																		this.$dbServer.reload()
 																	else if (
 																		doc.name === this.$replicationServer.name
 																	)
-																		this.$replicationServer.reload();
+																		this.$replicationServer.reload()
 																},
 															},
 														),
@@ -670,12 +675,12 @@ export default {
 																return err.messages.length
 																	? err.messages.join('/n')
 																	: err.message ||
-																			'Failed to configure auto increase storage';
+																			'Failed to configure auto increase storage'
 															},
 														},
-													);
+													)
 												},
-											});
+											})
 										},
 									},
 									{
@@ -683,37 +688,35 @@ export default {
 										icon: 'pie-chart',
 										variant: 'ghost',
 										onClick: () => {
-											this.showStorageBreakdownDialog(serverType);
+											this.showStorageBreakdownDialog(serverType)
 										},
 									},
 								]
 									.filter((e) => e.hidden !== true)
 									.filter((e) => {
 										if (e.condition) {
-											return e.condition();
+											return e.condition()
 										}
-										return true;
+										return true
 									}),
 							},
 						]),
-			];
+			]
 		},
 	},
 	computed: {
-    servers() {
-      const list = ["Server"];
+		servers() {
+			const list = ['Server']
 
-      if (this.$appServer?.doc?.secondary_server) 
-        list.push("App Secondary Server");
+			if (this.$appServer?.doc?.secondary_server)
+				list.push('App Secondary Server')
 
-      if (!this.$appServer?.doc?.is_unified_server) 
-        list.push("Database Server");
+			if (!this.$appServer?.doc?.is_unified_server) list.push('Database Server')
 
-      if (this.$dbReplicaServer?.doc) 
-        list.push("Replication Server");
+			if (this.$dbReplicaServer?.doc) list.push('Replication Server')
 
-      return list;
-    },
+			return list
+		},
 
 		serverInformation() {
 			return [
@@ -753,16 +756,16 @@ export default {
 					label: 'Created on',
 					value: this.$format.date(this.$appServer.doc.creation),
 				},
-			].filter((d) => d.value);
+			].filter((d) => d.value)
 		},
 		$appServer() {
-			return getCachedDocumentResource('Server', this.server);
+			return getCachedDocumentResource('Server', this.server)
 		},
 		$appSecondaryServer() {
 			return getDocResource({
 				doctype: 'Server',
 				name: this.$appServer.doc.secondary_server,
-			});
+			})
 		},
 		$dbServer() {
 			// Should mirror the whitelistedMethods in ServerActions.vue
@@ -784,7 +787,7 @@ export default {
 					updateBinlogSizeLimit: 'update_binlog_size_limit',
 					getBinlogsInfo: 'get_binlogs_info',
 				},
-			});
+			})
 		},
 		$dbReplicaServer() {
 			return getDocResource({
@@ -795,8 +798,8 @@ export default {
 					reboot: 'reboot',
 					rename: 'rename',
 				},
-			});
+			})
 		},
 	},
-};
+}
 </script>

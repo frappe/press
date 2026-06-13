@@ -20,16 +20,16 @@
 	</Dialog>
 </template>
 <script setup>
-import CardForm from './CardForm.vue';
-import { Dialog, FeatherIcon } from 'frappe-ui';
+import CardForm from './CardForm.vue'
+import { Dialog, FeatherIcon } from 'frappe-ui'
 
 const props = defineProps({
 	showMessage: {
 		type: Boolean,
 		default: false,
 	},
-});
+})
 
-const emit = defineEmits(['success']);
-const show = defineModel();
+const emit = defineEmits(['success'])
+const show = defineModel()
 </script>

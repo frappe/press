@@ -95,21 +95,21 @@
 </template>
 
 <script setup lang="ts">
-import { createDocumentResource, Switch } from 'frappe-ui';
-import ObjectList from '../../components/ObjectList.vue';
-import ServerFirewallDialog from './ServerFirewallDialog.vue';
-import { ref } from 'vue';
+import { createDocumentResource, Switch } from 'frappe-ui'
+import ObjectList from '../../components/ObjectList.vue'
+import ServerFirewallDialog from './ServerFirewallDialog.vue'
+import { ref } from 'vue'
 
 const props = defineProps<{
-	id: string;
-}>();
+	id: string
+}>()
 
-const openAddDialog = ref(false);
+const openAddDialog = ref(false)
 
 const firewall = createDocumentResource({
 	doctype: 'Server Firewall',
 	name: props.id,
 	auto: true,
 	cache: ['Server', 'Firewall', props.id],
-});
+})
 </script>

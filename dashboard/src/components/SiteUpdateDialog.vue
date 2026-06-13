@@ -73,11 +73,11 @@
 	</Dialog>
 </template>
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import DateTimeControl from './DateTimeControl.vue';
-import GenericList from './GenericList.vue';
-import dayjs, { dayjsIST } from '../utils/dayjs';
-import { toast } from 'vue-sonner';
+import { getCachedDocumentResource } from 'frappe-ui'
+import DateTimeControl from './DateTimeControl.vue'
+import GenericList from './GenericList.vue'
+import dayjs, { dayjsIST } from '../utils/dayjs'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'SiteUpdateDialog',
@@ -98,7 +98,7 @@ export default {
 			skipFailingPatches: false,
 			scheduledTime: '',
 			skipBackups: false,
-		};
+		}
 	},
 	resources: {
 		siteUpdate() {
@@ -112,18 +112,18 @@ export default {
 				},
 				auto: !!this.existingUpdate,
 				onSuccess: (doc) => {
-					this.initializeValues(doc);
+					this.initializeValues(doc)
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		scheduledTimeInIST() {
-			if (!this.scheduledTime) return;
-			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm');
+			if (!this.scheduledTime) return
+			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm')
 		},
 		scheduledTimeInLocal() {
-			return dayjs(this.scheduledTime).format('lll');
+			return dayjs(this.scheduledTime).format('lll')
 		},
 		listOptions() {
 			return {
@@ -135,7 +135,7 @@ export default {
 						label: 'App',
 						fieldname: 'app',
 						format(value, row) {
-							return row.title || value;
+							return row.title || value
 						},
 					},
 					{
@@ -144,17 +144,17 @@ export default {
 						format(value, row) {
 							return row.will_branch_change
 								? row.current_branch
-								: row.current_tag || row.current_hash.slice(0, 7);
+								: row.current_tag || row.current_hash.slice(0, 7)
 						},
 						link(value, row) {
 							if (row.will_branch_change) {
-								return `${row.repository_url}/tree/${row.current_branch}`;
+								return `${row.repository_url}/tree/${row.current_branch}`
 							}
 							if (row.current_tag) {
-								return `${row.repository_url}/releases/tag/${row.current_tag}`;
+								return `${row.repository_url}/releases/tag/${row.current_tag}`
 							}
 							if (row.current_hash) {
-								return `${row.repository_url}/commit/${row.current_hash}`;
+								return `${row.repository_url}/commit/${row.current_hash}`
 							}
 						},
 					},
@@ -164,41 +164,41 @@ export default {
 						format(value, row) {
 							return row.will_branch_change
 								? row.branch
-								: row.next_tag || row.next_hash.slice(0, 7);
+								: row.next_tag || row.next_hash.slice(0, 7)
 						},
 						link(value, row) {
 							if (row.will_branch_change) {
-								return `${row.repository_url}/tree/${row.branch}`;
+								return `${row.repository_url}/tree/${row.branch}`
 							}
 							if (row.next_tag) {
-								return `${row.repository_url}/releases/tag/${row.next_tag}`;
+								return `${row.repository_url}/releases/tag/${row.next_tag}`
 							}
 							if (row.next_hash) {
-								return `${row.repository_url}/commit/${row.next_hash}`;
+								return `${row.repository_url}/commit/${row.next_hash}`
 							}
 						},
 					},
 				],
-			};
+			}
 		},
 		updatableApps() {
-			if (!this.$site.doc.update_information.update_available) return [];
+			if (!this.$site.doc.update_information.update_available) return []
 			let installedApps = this.$site.doc.update_information.installed_apps.map(
 				(d) => d.app,
-			);
+			)
 			return this.$site.doc.update_information.apps.filter((app) =>
 				installedApps.includes(app.app),
-			);
+			)
 		},
 		$site() {
-			return getCachedDocumentResource('Site', this.site);
+			return getCachedDocumentResource('Site', this.site)
 		},
 		siteUpdate() {
-			return this.$resources.siteUpdate;
+			return this.$resources.siteUpdate
 		},
 		dialogTitle() {
-			if (this.existingUpdate) return 'Edit Scheduled Update';
-			else return 'Updates Available';
+			if (this.existingUpdate) return 'Edit Scheduled Update'
+			else return 'Updates Available'
 		},
 	},
 	methods: {
@@ -211,12 +211,12 @@ export default {
 				},
 				{
 					onSuccess: () => {
-						this.$site.reload();
-						this.show = false;
-						this.$router.push({ name: 'Site Detail Updates' });
+						this.$site.reload()
+						this.show = false
+						this.$router.push({ name: 'Site Detail Updates' })
 					},
 				},
-			);
+			)
 		},
 		editUpdate() {
 			toast.promise(
@@ -229,24 +229,24 @@ export default {
 				{
 					loading: 'Editing scheduled update...',
 					success: () => {
-						this.show = false;
-						this.$site.reload();
-						this.siteUpdate.reload();
-						return 'Scheduled update edited successfully';
+						this.show = false
+						this.$site.reload()
+						this.siteUpdate.reload()
+						return 'Scheduled update edited successfully'
 					},
 					error: (err) => {
 						return err.messages.length
 							? err.messages[0]
-							: err.message || 'Failed to edit scheduled update';
+							: err.message || 'Failed to edit scheduled update'
 					},
 				},
-			);
+			)
 		},
 		initializeValues(doc) {
-			this.skipFailingPatches = doc.skipped_failing_patches;
-			this.skipBackups = doc.skipped_backups;
-			this.scheduledTime = dayjs(doc.scheduled_time).format('YYYY-MM-DDTHH:mm');
+			this.skipFailingPatches = doc.skipped_failing_patches
+			this.skipBackups = doc.skipped_backups
+			this.scheduledTime = dayjs(doc.scheduled_time).format('YYYY-MM-DDTHH:mm')
 		},
 	},
-};
+}
 </script>

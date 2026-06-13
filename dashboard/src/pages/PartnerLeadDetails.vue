@@ -23,9 +23,9 @@
 	</div>
 </template>
 <script>
-import Header from '../components/Header.vue';
-import { Breadcrumbs, Tabs } from 'frappe-ui';
-import TabsWithRouter from '../components/TabsWithRouter.vue';
+import Header from '../components/Header.vue'
+import { Breadcrumbs, Tabs } from 'frappe-ui'
+import TabsWithRouter from '../components/TabsWithRouter.vue'
 export default {
 	name: 'PartnerLeadDetails',
 	components: {
@@ -40,7 +40,7 @@ export default {
 				type: 'document',
 				doctype: 'Partner Lead',
 				name: this.$route.params.leadId,
-			};
+			}
 		},
 	},
 	data() {
@@ -51,18 +51,18 @@ export default {
 				{ label: 'Follow-up', route: { name: 'LeadDealDetails' } },
 				{ label: 'Activities', route: { name: 'LeadActivities' } },
 			],
-		};
+		}
 	},
 	computed: {
 		lead() {
-			return this.$resources.lead;
+			return this.$resources.lead
 		},
 	},
 	methods: {
 		openIndDesk() {
-			const deskUrl = `${window.location.protocol}//${window.location.host}/app/partner-lead/${this.lead.name}`;
-			window.open(deskUrl, '_blank');
+			const deskUrl = `${window.location.protocol}//${window.location.host}/app/partner-lead/${this.lead.name}`
+			window.open(deskUrl, '_blank')
 		},
 	},
-};
+}
 </script>

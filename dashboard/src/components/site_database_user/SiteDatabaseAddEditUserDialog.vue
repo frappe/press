@@ -16,8 +16,7 @@
 					"
 					:title="this.$resources?.databaseUser?.doc?.failure_reason"
 					type="error"
-				>
-				</AlertBanner>
+				> </AlertBanner>
 				<FormControl
 					class="mt-2"
 					type="text"
@@ -68,7 +67,8 @@
 						class="flex w-full flex-col items-center justify-center gap-2 text-base text-ink-gray-7"
 					>
 						<span class="flex flex-row gap-2 py-20">
-							<Spinner class="w-4" /> Fetching table schemas
+							<Spinner class="w-4" />
+							Fetching table schemas
 						</span>
 						<p class="text-sm">This can take upto 5 minutes</p>
 					</div>
@@ -130,14 +130,14 @@
 	</Dialog>
 </template>
 <script>
-import { h } from 'vue';
-import ObjectList from '../ObjectList.vue';
-import { ErrorMessage, FormControl, Checkbox } from 'frappe-ui';
-import { icon } from '../../utils/components';
-import { toast } from 'vue-sonner';
-import AlertBanner from '../AlertBanner.vue';
-import SiteDatabaseColumnsSelector from './SiteDatabaseColumnsSelector.vue';
-import { DashboardError } from '../../utils/error';
+import { h } from 'vue'
+import ObjectList from '../ObjectList.vue'
+import { ErrorMessage, FormControl, Checkbox } from 'frappe-ui'
+import { icon } from '../../utils/components'
+import { toast } from 'vue-sonner'
+import AlertBanner from '../AlertBanner.vue'
+import SiteDatabaseColumnsSelector from './SiteDatabaseColumnsSelector.vue'
+import { DashboardError } from '../../utils/error'
 
 export default {
 	name: 'SiteDatabaseAddEditUserDialog',
@@ -159,14 +159,14 @@ export default {
 			use_replica_server: false,
 			permissions: [],
 			lastGeneratedRowId: 0,
-		};
+		}
 	},
 	mounted() {
-		this.fetchTableSchemas();
+		this.fetchTableSchemas()
 		if (!this.isEditMode) {
-			this.addNewTablePermissionEntry();
+			this.addNewTablePermissionEntry()
 		} else {
-			this.$resources.databaseUser.reload();
+			this.$resources.databaseUser.reload()
 		}
 	},
 	resources: {
@@ -177,10 +177,10 @@ export default {
 				auto: false,
 				onSuccess: (data) => {
 					if (data?.message?.loading) {
-						setTimeout(this.fetchTableSchemas, 5000);
+						setTimeout(this.fetchTableSchemas, 5000)
 					}
 				},
-			};
+			}
 		},
 		databaseUser() {
 			return {
@@ -189,24 +189,24 @@ export default {
 				name: this.db_user_name,
 				auto: false,
 				onSuccess: (data) => {
-					this.label = data?.label;
-					this.mode = data?.mode;
+					this.label = data?.label
+					this.mode = data?.mode
 					let fetched_permissions = (data?.permissions ?? []).map((x) => {
 						return {
 							...x,
 							columns: x.selected_columns.split('\n').filter((x) => x),
-						};
-					});
-					this.permissions = fetched_permissions;
-					this.database_connections = data?.max_connections ?? 1;
+						}
+					})
+					this.permissions = fetched_permissions
+					this.database_connections = data?.max_connections ?? 1
 				},
-			};
+			}
 		},
 		createDatabaseUser() {
 			return {
 				url: 'press.api.client.insert',
 				makeParams() {
-					let permissions = [];
+					let permissions = []
 					this.permissions.forEach((permission) => {
 						if (permission.table) {
 							permissions.push({
@@ -214,9 +214,9 @@ export default {
 								mode: permission.mode,
 								allow_all_columns: permission.columns.length == 0,
 								selected_columns: permission.columns.join('\n'),
-							});
+							})
 						}
-					});
+					})
 					return {
 						doc: {
 							doctype: 'Site Database User',
@@ -228,23 +228,23 @@ export default {
 							max_connections: parseInt(this.database_connections || 1),
 							use_replica_server: this.use_replica_server,
 						},
-					};
+					}
 				},
 				validate() {
 					if (!this.label)
-						throw new DashboardError('Please provide a label for the user');
+						throw new DashboardError('Please provide a label for the user')
 				},
 				onSuccess() {
-					toast.success('User created successfully');
-					this.$emit('success');
+					toast.success('User created successfully')
+					this.$emit('success')
 				},
-			};
+			}
 		},
 		updateDatabaseUser() {
 			return {
 				url: 'press.api.client.run_doc_method',
 				makeParams() {
-					let permissions = [];
+					let permissions = []
 					this.permissions.forEach((permission) => {
 						if (permission.table) {
 							permissions.push({
@@ -252,9 +252,9 @@ export default {
 								mode: permission.mode,
 								allow_all_columns: permission.columns.length == 0,
 								selected_columns: permission.columns.join('\n'),
-							});
+							})
 						}
-					});
+					})
 					return {
 						dt: 'Site Database User',
 						dn: this.db_user_name,
@@ -264,17 +264,17 @@ export default {
 							mode: this.mode,
 							permissions: permissions,
 						},
-					};
+					}
 				},
 				validate() {
 					if (!this.label)
-						throw new DashboardError('Please provide a label for the user');
+						throw new DashboardError('Please provide a label for the user')
 				},
 				onSuccess() {
-					toast.success('User updated successfully');
-					this.$emit('success');
+					toast.success('User updated successfully')
+					this.$emit('success')
 				},
-			};
+			}
 		},
 		replicaServerAvailability() {
 			return {
@@ -284,10 +284,10 @@ export default {
 						dt: 'Site',
 						dn: this.site,
 						method: 'is_replica_server_available',
-					};
+					}
 				},
 				auto: true,
-			};
+			}
 		},
 	},
 	computed: {
@@ -306,10 +306,10 @@ export default {
 								type: 'autocomplete',
 								modelValue: row.table,
 								'onUpdate:modelValue': (newValue) => {
-									row.table = newValue?.value || '';
+									row.table = newValue?.value || ''
 								},
 								options: this.autocompleteTableOptions,
-							});
+							})
 						},
 					},
 					{
@@ -334,9 +334,9 @@ export default {
 								],
 								modelValue: row.mode,
 								'onUpdate:modelValue': (newValue) => {
-									row.mode = newValue;
+									row.mode = newValue
 								},
-							});
+							})
 						},
 					},
 					{
@@ -350,9 +350,9 @@ export default {
 								modelValue: row.columns,
 								availableColumns: this.getColumns(row.table),
 								'onUpdate:modelValue': (newValues) => {
-									row.columns = [...newValues];
+									row.columns = [...newValues]
 								},
-							});
+							})
 						},
 					},
 					{
@@ -368,53 +368,53 @@ export default {
 								},
 								variant: 'subtle',
 								onClick: (event) => {
-									this.removePermissionEntry(row.name);
-									event.stopPropagation();
+									this.removePermissionEntry(row.name)
+									event.stopPropagation()
 								},
-							};
+							}
 						},
 					},
 				],
-			};
+			}
 		},
 		showDialog: {
 			get() {
-				return this.modelValue;
+				return this.modelValue
 			},
 			set(value) {
-				this.$emit('update:modelValue', value);
+				this.$emit('update:modelValue', value)
 			},
 		},
 		isEditMode() {
-			return !!this.db_user_name;
+			return !!this.db_user_name
 		},
 		isLoadingTableSchemas() {
-			if (this.$resources?.tableSchemas?.loading) return true;
-			if (this.$resources?.tableSchemas?.data?.message?.loading) return true;
-			return false;
+			if (this.$resources?.tableSchemas?.loading) return true
+			if (this.$resources?.tableSchemas?.data?.message?.loading) return true
+			return false
 		},
 		tableNames() {
-			if (this.isLoadingTableSchemas) return [];
-			if (!this.$resources?.tableSchemas?.data?.message?.data) return [];
-			return Object.keys(this.$resources?.tableSchemas?.data?.message?.data);
+			if (this.isLoadingTableSchemas) return []
+			if (!this.$resources?.tableSchemas?.data?.message?.data) return []
+			return Object.keys(this.$resources?.tableSchemas?.data?.message?.data)
 		},
 		autocompleteTableOptions() {
-			if (this.isLoadingTableSchemas) return [];
-			if (!this.$resources?.tableSchemas?.data?.message?.data) return [];
+			if (this.isLoadingTableSchemas) return []
+			if (!this.$resources?.tableSchemas?.data?.message?.data) return []
 			return Object.keys(
 				this.$resources?.tableSchemas?.data?.message?.data,
 			).map((x) => ({
 				label: x,
 				value: x,
-			}));
+			}))
 		},
 		isReplicaServerAvailable() {
-			return this.$resources?.replicaServerAvailability?.data?.message ?? false;
+			return this.$resources?.replicaServerAvailability?.data?.message ?? false
 		},
 	},
 	methods: {
 		fetchTableSchemas(reload = false) {
-			if (!this.site) return;
+			if (!this.site) return
 			this.$resources.tableSchemas.submit({
 				dt: 'Site',
 				dn: this.site,
@@ -422,23 +422,22 @@ export default {
 				args: {
 					reload,
 				},
-			});
+			})
 		},
 		getColumns(table) {
-			if (!table) return [];
-			if (this.isLoadingTableSchemas) return [];
-			if (!this.$resources?.tableSchemas?.data?.message?.data) return [];
+			if (!table) return []
+			if (this.isLoadingTableSchemas) return []
+			if (!this.$resources?.tableSchemas?.data?.message?.data) return []
 			let columnSchemas =
-				this.$resources?.tableSchemas?.data?.message?.data[table]?.columns ??
-				[];
-			let columns = [];
+				this.$resources?.tableSchemas?.data?.message?.data[table]?.columns ?? []
+			let columns = []
 			columnSchemas.forEach((x) => {
-				columns.push(x.column);
-			});
-			return columns;
+				columns.push(x.column)
+			})
+			return columns
 		},
 		addNewTablePermissionEntry() {
-			this.lastGeneratedRowId = this.lastGeneratedRowId + 1;
+			this.lastGeneratedRowId = this.lastGeneratedRowId + 1
 			this.permissions = [
 				...this.permissions,
 				{
@@ -447,11 +446,11 @@ export default {
 					mode: 'read_only',
 					columns: [],
 				},
-			];
+			]
 		},
 		removePermissionEntry(name) {
-			this.permissions = this.permissions.filter((x) => x.name !== name);
+			this.permissions = this.permissions.filter((x) => x.name !== name)
 		},
 	},
-};
+}
 </script>

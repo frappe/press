@@ -6,11 +6,11 @@
 			>
 				<div class="flex items-center justify-between">
 					<div class="text-xl font-semibold">API Access</div>
-					<Button @click="showCreateSecretDialog = true">{{
-						$team.doc?.user_info?.api_key
+					<Button @click="showCreateSecretDialog = true"
+						>{{ $team.doc?.user_info?.api_key
 							? 'Regenerate API Secret'
-							: 'Create New API Key'
-					}}</Button>
+							: 'Create New API Key' }}</Button
+					>
 				</div>
 				<div v-if="$team.doc?.user_info?.api_key">
 					<ClickToCopyField
@@ -113,82 +113,82 @@
 </template>
 
 <script setup>
-import { Badge, createResource } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import { computed, h, onMounted, ref } from 'vue';
-import { confirmDialog, icon } from '../../utils/components';
-import ObjectList from '../ObjectList.vue';
-import { getTeam } from '../../data/team';
-import { date } from '../../utils/format';
-import ClickToCopyField from '../ClickToCopyField.vue';
-import AddNewWebhookDialog from './AddNewWebhookDialog.vue';
-import ActivateWebhookDialog from './ActivateWebhookDialog.vue';
-import EditWebhookDialog from './EditWebhookDialog.vue';
-import { useRouter } from 'vue-router';
-import WebhookAttemptsDialog from './WebhookAttemptsDialog.vue';
-import { session } from '../../data/session';
+import { Badge, createResource } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import { computed, h, onMounted, ref } from 'vue'
+import { confirmDialog, icon } from '../../utils/components'
+import ObjectList from '../ObjectList.vue'
+import { getTeam } from '../../data/team'
+import { date } from '../../utils/format'
+import ClickToCopyField from '../ClickToCopyField.vue'
+import AddNewWebhookDialog from './AddNewWebhookDialog.vue'
+import ActivateWebhookDialog from './ActivateWebhookDialog.vue'
+import EditWebhookDialog from './EditWebhookDialog.vue'
+import { useRouter } from 'vue-router'
+import WebhookAttemptsDialog from './WebhookAttemptsDialog.vue'
+import { session } from '../../data/session'
 
-const $team = getTeam();
-const router = useRouter();
-let showCreateSecretDialog = ref(false);
-const showAddWebhookDialog = ref(false);
-const showActivateWebhookDialog = ref(false);
-const showEditWebhookDialog = ref(false);
-const showWebhookAttempts = ref(false);
-const selectedWebhook = ref(null);
+const $team = getTeam()
+const router = useRouter()
+let showCreateSecretDialog = ref(false)
+const showAddWebhookDialog = ref(false)
+const showActivateWebhookDialog = ref(false)
+const showEditWebhookDialog = ref(false)
+const showWebhookAttempts = ref(false)
+const selectedWebhook = ref(null)
 
 const createSecret = createResource({
 	url: 'press.api.account.create_api_secret',
 	onSuccess() {
 		if ($team.doc.user_info.api_key) {
-			toast.success('API Secret regenerated successfully');
+			toast.success('API Secret regenerated successfully')
 		} else {
-			toast.success('API Secret created successfully');
+			toast.success('API Secret created successfully')
 		}
 	},
-});
+})
 
 const addSSHKey = createResource({
 	url: 'press.api.client.insert',
 	onSuccess() {
-		toast.success('SSH Key added successfully');
+		toast.success('SSH Key added successfully')
 	},
 	onError(err) {
 		toast.error(
 			err.messages.length
 				? err.messages.join('\n')
 				: 'SSH Key could not be added',
-		);
+		)
 	},
-});
+})
 
 const makeKeyDefault = createResource({
 	url: 'press.api.account.mark_key_as_default',
 	onSuccess() {
-		toast.success('SSH Key updated successfully');
+		toast.success('SSH Key updated successfully')
 	},
 	onError(err) {
 		toast.error(
 			err.messages.length
 				? err.messages.join('\n')
 				: 'SSH Key could not be marked as default',
-		);
+		)
 	},
-});
+})
 
 const deleteSSHKey = createResource({
 	url: 'press.api.client.delete',
 	onSuccess() {
-		toast.success('SSH Key deleted successfully');
+		toast.success('SSH Key deleted successfully')
 	},
 	onError(err) {
 		toast.error(
 			err.messages.length
 				? err.messages.join('\n')
 				: 'SSH Key could not be deleted',
-		);
+		)
 	},
-});
+})
 
 const sshKeyListOptions = computed(() => ({
 	resource() {
@@ -196,7 +196,7 @@ const sshKeyListOptions = computed(() => ({
 			url: 'press.api.account.get_user_ssh_keys',
 			initialData: [],
 			auto: true,
-		};
+		}
 	},
 	columns: [
 		{
@@ -211,7 +211,7 @@ const sshKeyListOptions = computed(() => ({
 							theme: 'green',
 							class: 'ml-2',
 						})
-					: null;
+					: null
 			},
 		},
 		{
@@ -226,7 +226,7 @@ const sshKeyListOptions = computed(() => ({
 			label: 'Add SSH Key',
 			slots: { prefix: icon('plus') },
 			onClick: () => renderAddNewKeyDialog(listResource),
-		};
+		}
 	},
 	rowActions({ row }) {
 		return [
@@ -236,7 +236,7 @@ const sshKeyListOptions = computed(() => ({
 				onClick() {
 					makeKeyDefault.submit({
 						key_name: row.name,
-					});
+					})
 				},
 			},
 			{
@@ -245,12 +245,12 @@ const sshKeyListOptions = computed(() => ({
 					deleteSSHKey.submit({
 						doctype: 'User SSH Key',
 						name: row.name,
-					});
+					})
 				},
 			},
-		];
+		]
 	},
-}));
+}))
 
 function renderAddNewKeyDialog(listResource) {
 	confirmDialog({
@@ -270,7 +270,7 @@ function renderAddNewKeyDialog(listResource) {
 			label: 'Add SSH Key',
 			variant: 'solid',
 			onClick({ hide, values }) {
-				if (!values.sshKey) throw new Error('SSH Key is required');
+				if (!values.sshKey) throw new Error('SSH Key is required')
 				addSSHKey
 					.submit({
 						doc: {
@@ -280,15 +280,15 @@ function renderAddNewKeyDialog(listResource) {
 						},
 					})
 					.then(() => {
-						listResource.reload();
-						hide();
+						listResource.reload()
+						hide()
 					})
 					.catch((error) => {
-						toast.error(error.message);
-					});
+						toast.error(error.message)
+					})
 			},
 		},
-	});
+	})
 }
 
 const webhookListResource = createResource({
@@ -299,22 +299,22 @@ const webhookListResource = createResource({
 	},
 	initialData: [],
 	auto: false,
-});
+})
 
 const deleteWebhook = createResource({
 	url: 'press.api.client.delete',
 	onSuccess() {
-		toast.success('Webhook deleted successfully');
-		webhookListResource.reload();
+		toast.success('Webhook deleted successfully')
+		webhookListResource.reload()
 	},
 	onError(err) {
 		toast.error(
 			err.messages.length
 				? err.messages.join('\n')
 				: 'Webhook could not be deleted',
-		);
+		)
 	},
-});
+})
 
 const webhookListOptions = computed(() => ({
 	data: () => webhookListResource.data,
@@ -340,7 +340,7 @@ const webhookListOptions = computed(() => ({
 					: h(Badge, {
 							label: 'Disabled',
 							theme: 'red',
-						});
+						})
 			},
 		},
 	],
@@ -350,8 +350,8 @@ const webhookListOptions = computed(() => ({
 				label: 'Activate',
 				condition: () => !Boolean(row.enabled),
 				onClick() {
-					selectedWebhook.value = row;
-					showActivateWebhookDialog.value = true;
+					selectedWebhook.value = row
+					showActivateWebhookDialog.value = true
 				},
 			},
 			{
@@ -372,25 +372,25 @@ const webhookListOptions = computed(() => ({
 										dn: row.name,
 										method: 'disable',
 									})
-									.then(hide);
-								return disableWebhook.promise;
+									.then(hide)
+								return disableWebhook.promise
 							},
 						},
-					});
+					})
 				},
 			},
 			{
 				label: 'Attempts',
 				onClick: () => {
-					selectedWebhook.value = row;
-					showWebhookAttempts.value = true;
+					selectedWebhook.value = row
+					showWebhookAttempts.value = true
 				},
 			},
 			{
 				label: 'Edit',
 				onClick() {
-					selectedWebhook.value = row;
-					showEditWebhookDialog.value = true;
+					selectedWebhook.value = row
+					showEditWebhookDialog.value = true
 				},
 			},
 			{
@@ -409,67 +409,67 @@ const webhookListOptions = computed(() => ({
 										doctype: 'Press Webhook',
 										name: row.name,
 									})
-									.then(hide);
-								return deleteWebhook.promise;
+									.then(hide)
+								return deleteWebhook.promise
 							},
 						},
-					});
+					})
 				},
 			},
-		];
+		]
 	},
 	primaryAction() {
 		return {
 			label: 'Add Webhook',
 			slots: { prefix: icon('plus') },
 			onClick: () => (showAddWebhookDialog.value = true),
-		};
+		}
 	},
 	secondaryAction() {
 		return {
 			label: 'Refresh',
 			icon: 'refresh-ccw',
 			onClick: () => webhookListResource.reload(),
-		};
+		}
 	},
-}));
+}))
 
 const disableWebhook = createResource({
 	url: 'press.api.client.run_doc_method',
 	onSuccess() {
-		toast.success('Webhook disabled successfully');
-		webhookListResource.reload();
+		toast.success('Webhook disabled successfully')
+		webhookListResource.reload()
 	},
 	onError(err) {
 		toast.error(
 			err.messages.length
 				? err.messages.join('\n')
 				: 'Webhook could not be disabled',
-		);
+		)
 	},
-});
+})
 
 const onNewWebhookSuccess = () => {
-	webhookListResource.reload();
-	showAddWebhookDialog.value = false;
-};
+	webhookListResource.reload()
+	showAddWebhookDialog.value = false
+}
 
 const onWebHookActivated = () => {
-	webhookListResource.reload();
-	showActivateWebhookDialog.value = false;
-};
+	webhookListResource.reload()
+	showActivateWebhookDialog.value = false
+}
 
 const onWebHookUpdated = (activationRequired) => {
-	webhookListResource.reload();
-	showEditWebhookDialog.value = false;
+	webhookListResource.reload()
+	showEditWebhookDialog.value = false
 	if (activationRequired) {
-		showActivateWebhookDialog.value = true;
+		showActivateWebhookDialog.value = true
 	}
-};
+}
 
 onMounted(() => {
 	if (session.hasWebhookConfigurationAccess) {
-		webhookListResource.fetch();
+		webhookListResource.fetch()
 	}
-});
+})
 </script>

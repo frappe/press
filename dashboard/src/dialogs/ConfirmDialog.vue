@@ -2,7 +2,11 @@
 	<Dialog v-model="showDialog" :options="{ title }">
 		<template #body-content>
 			<div class="space-y-4">
-				<p class="text-p-base text-ink-gray-8" v-if="message" v-html="message" />
+				<p
+					class="text-p-base text-ink-gray-8"
+					v-if="message"
+					v-html="message"
+				/>
 				<div class="space-y-4">
 					<template v-for="field in fields" :key="field.fieldname">
 						<LinkControl
@@ -36,8 +40,8 @@
 	</Dialog>
 </template>
 <script>
-import { ErrorMessage, FormControl } from 'frappe-ui';
-import LinkControl from '../components/LinkControl.vue';
+import { ErrorMessage, FormControl } from 'frappe-ui'
+import LinkControl from '../components/LinkControl.vue'
 
 export default {
 	name: 'ConfirmDialog',
@@ -51,54 +55,53 @@ export default {
 			values:
 				// set default values for fields
 				this.fields.reduce((acc, field) => {
-					acc[field.fieldname] = field.default || null;
-					return acc;
+					acc[field.fieldname] = field.default || null
+					return acc
 				}, {}),
-		};
+		}
 	},
 	components: { FormControl, ErrorMessage, LinkControl },
 	methods: {
 		onConfirm() {
-			this.error = null;
+			this.error = null
 			try {
-				let primaryActionHandler =
-					this.primaryAction?.onClick || this.onSuccess;
+				let primaryActionHandler = this.primaryAction?.onClick || this.onSuccess
 				let result = primaryActionHandler({
 					hide: this.hide,
 					values: this.values,
-				});
+				})
 				if (result?.then) {
-					this.isLoading = true;
+					this.isLoading = true
 					result
 						.then(() => (this.isLoading = false))
 						.catch((error) => {
-							this.error = error;
-							this.isLoading = false;
-						});
+							this.error = error
+							this.isLoading = false
+						})
 				}
 			} catch (error) {
-				this.error = error;
-				this.isLoading = false;
+				this.error = error
+				this.isLoading = false
 			}
 		},
 		show() {
-			this.showDialog = true;
+			this.showDialog = true
 		},
 		hide() {
-			this.showDialog = false;
+			this.showDialog = false
 		},
 		handleKeydown(event) {
 			if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-				event.preventDefault();
-				this.onConfirm();
+				event.preventDefault()
+				this.onConfirm()
 			}
 		},
 	},
 	mounted() {
-		document.addEventListener('keydown', this.handleKeydown);
+		document.addEventListener('keydown', this.handleKeydown)
 	},
 	beforeUnmount() {
-		document.removeEventListener('keydown', this.handleKeydown);
+		document.removeEventListener('keydown', this.handleKeydown)
 	},
 	computed: {
 		primaryActionProps() {
@@ -108,8 +111,8 @@ export default {
 				...this.primaryAction,
 				loading: this.isLoading,
 				onClick: this.onConfirm,
-			};
+			}
 		},
 	},
-};
+}
 </script>

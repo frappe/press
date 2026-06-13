@@ -3,13 +3,13 @@
 </template>
 
 <script>
-import { h, defineAsyncComponent } from 'vue';
-import { renderDialog } from '../../utils/components';
-import { date } from '../../utils/format';
-import { icon } from '../../utils/components';
-import ObjectList from '../ObjectList.vue';
+import { h, defineAsyncComponent } from 'vue'
+import { renderDialog } from '../../utils/components'
+import { date } from '../../utils/format'
+import { icon } from '../../utils/components'
+import ObjectList from '../ObjectList.vue'
 
-import Badge from '../global/Badge.vue';
+import Badge from '../global/Badge.vue'
 
 export default {
 	name: 'AutoScale',
@@ -66,9 +66,9 @@ export default {
 						width: 1,
 						format(row, value) {
 							if (value.status !== 'Scheduled') {
-								return '-';
+								return '-'
 							}
-							return date(row, 'LLL');
+							return date(row, 'LLL')
 						},
 					},
 					{
@@ -100,8 +100,8 @@ export default {
 							),
 						),
 				}),
-			};
+			}
 		},
 	},
-};
+}
 </script>

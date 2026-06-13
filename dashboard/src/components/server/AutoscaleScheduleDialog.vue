@@ -79,8 +79,8 @@
 </template>
 
 <script>
-import { Dialog, DateTimePicker } from 'frappe-ui';
-import { toast } from 'vue-sonner';
+import { Dialog, DateTimePicker } from 'frappe-ui'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'AutoscaleScheduleDialog',
@@ -106,7 +106,7 @@ export default {
 			show: true,
 			scaleUpdateTime: null,
 			scaleDowndateTime: null,
-		};
+		}
 	},
 
 	resources: {
@@ -114,10 +114,10 @@ export default {
 			return {
 				url: 'press.api.server.get_configured_autoscale_triggers',
 				makeParams: () => {
-					return { name: this.server };
+					return { name: this.server }
 				},
 				auto: true,
-			};
+			}
 		},
 		scheduleAutoscale() {
 			return {
@@ -127,55 +127,55 @@ export default {
 						name: this.server,
 						scheduled_scale_up_time: this.scaleUpdateTime,
 						scheduled_scale_down_time: this.scaleDowndateTime,
-					};
+					}
 				},
 				auto: false,
-			};
+			}
 		},
 	},
 
 	methods: {
 		scheduleAutoscale() {
 			if (!this.scaleUpdateTime || !this.scaleDowndateTime) {
-				return toast.error('Both times are required.');
+				return toast.error('Both times are required.')
 			}
 
-			const now = new Date();
-			const up = new Date(this.scaleUpdateTime);
-			const down = new Date(this.scaleDowndateTime);
+			const now = new Date()
+			const up = new Date(this.scaleUpdateTime)
+			const down = new Date(this.scaleDowndateTime)
 
 			// Future validation
 			if (up <= now) {
-				return toast.error('Scale up time must be in the future.');
+				return toast.error('Scale up time must be in the future.')
 			}
 			if (down <= now) {
-				return toast.error('Scale down time must be in the future.');
+				return toast.error('Scale down time must be in the future.')
 			}
 
 			// Need a 30 minutes
-			const diffMinutes = (down - up) / (1000 * 60);
+			const diffMinutes = (down - up) / (1000 * 60)
 			if (diffMinutes < 60) {
 				return toast.error(
 					'Scale down time must be at least 60 minutes after scale up.',
-				);
+				)
 			}
 
 			toast.promise(this.$resources.scheduleAutoscale.submit(), {
 				loading: 'Scheduling autoscale...',
 				success: () => {
-					this.show = false;
-					this.reloadListView();
-					return 'Scheduled autoscale';
+					this.show = false
+					this.reloadListView()
+					return 'Scheduled autoscale'
 				},
 				error: (err) => {
 					if (Array.isArray(err.messages)) {
-						return err.messages.join(', ');
+						return err.messages.join(', ')
 					} else {
-						return 'Failed to scheduled autoscale';
+						return 'Failed to scheduled autoscale'
 					}
 				},
-			});
+			})
 		},
 	},
-};
+}
 </script>

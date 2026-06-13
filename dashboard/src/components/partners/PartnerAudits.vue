@@ -4,13 +4,13 @@
 	</div>
 </template>
 <script setup>
-import { computed, inject, h } from 'vue';
-import ObjectList from '../ObjectList.vue';
-import { icon, renderDialog } from '../../utils/components';
-import router from '../../router';
-import NewPartnerAudit from './NewPartnerAudit.vue';
+import { computed, inject, h } from 'vue'
+import ObjectList from '../ObjectList.vue'
+import { icon, renderDialog } from '../../utils/components'
+import router from '../../router'
+import NewPartnerAudit from './NewPartnerAudit.vue'
 
-const team = inject('team');
+const team = inject('team')
 
 const partnerAuditsList = computed(() => {
 	return {
@@ -43,24 +43,24 @@ const partnerAuditsList = computed(() => {
 				label: 'Requested Date',
 				fieldname: 'proposed_audit_date',
 				format(value) {
-					if (!value) return '';
+					if (!value) return ''
 					return Intl.DateTimeFormat('en-US', {
 						year: 'numeric',
 						month: 'long',
 						day: 'numeric',
-					}).format(new Date(value));
+					}).format(new Date(value))
 				},
 			},
 			{
 				label: 'Audit Date',
 				fieldname: 'audit_date',
 				format(value) {
-					if (!value) return '';
+					if (!value) return ''
 					return Intl.DateTimeFormat('en-US', {
 						year: 'numeric',
 						month: 'long',
 						day: 'numeric',
-					}).format(new Date(value));
+					}).format(new Date(value))
 				},
 			},
 		],
@@ -85,7 +85,7 @@ const partnerAuditsList = computed(() => {
 						{ label: 'Cancelled', value: 'Cancelled' },
 					],
 				},
-			];
+			]
 		},
 		actions() {
 			return [
@@ -99,17 +99,17 @@ const partnerAuditsList = computed(() => {
 							h(NewPartnerAudit, {
 								modelValue: true,
 							}),
-						);
+						)
 					},
 				},
-			];
+			]
 		},
 		onRowClick: (row) => {
 			router.push({
 				name: 'PartnerNCList',
 				params: { partner_audit: row.name },
-			});
+			})
 		},
-	};
-});
+	}
+})
 </script>

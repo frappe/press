@@ -68,13 +68,13 @@
 </template>
 
 <script>
-import { Checkbox } from 'frappe-ui';
-import ObjectList from '../ObjectList.vue';
-import { date } from '../../utils/format';
-import { confirmDialog, icon } from '../../utils/components';
-import RestoreSnapshotIcon from '~icons/lucide/database-backup';
-import ServerSnapshotRecoveryDetails from './ServerSnapshotRecoveryDetails.vue';
-import { toast } from 'vue-sonner';
+import { Checkbox } from 'frappe-ui'
+import ObjectList from '../ObjectList.vue'
+import { date } from '../../utils/format'
+import { confirmDialog, icon } from '../../utils/components'
+import RestoreSnapshotIcon from '~icons/lucide/database-backup'
+import ServerSnapshotRecoveryDetails from './ServerSnapshotRecoveryDetails.vue'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'ServerSnapshotDetailsDialog',
@@ -95,7 +95,7 @@ export default {
 			showRecoverSitePrompt: false,
 			selectedSitesForRecovery: [],
 			selectedSnapshotRecoveryId: null,
-		};
+		}
 	},
 	resources: {
 		snapshot() {
@@ -110,15 +110,15 @@ export default {
 					deleteSnapshots: 'delete_snapshots',
 				},
 				auto: true,
-			};
+			}
 		},
 	},
 	computed: {
 		snapshot() {
-			return this.$resources.snapshot?.doc || {};
+			return this.$resources.snapshot?.doc || {}
 		},
 		sites() {
-			return this.snapshot?.site_list_json || [];
+			return this.snapshot?.site_list_json || []
 		},
 		snapshotRecoveryOptions() {
 			return {
@@ -135,7 +135,7 @@ export default {
 						width: 0.5,
 						type: 'Text',
 						format(value) {
-							return date(value, 'llll');
+							return date(value, 'llll')
 						},
 					},
 					{
@@ -160,22 +160,22 @@ export default {
 							prefix: icon(RestoreSnapshotIcon),
 						},
 						onClick: () => {
-							this.showRecoverSitePrompt = true;
-							this.selectedSitesForRecovery = [];
+							this.showRecoverSitePrompt = true
+							this.selectedSitesForRecovery = []
 						},
-					};
+					}
 				},
 				onRowClick: (record) => {
-					this.selectedSnapshotRecoveryId = record.name;
+					this.selectedSnapshotRecoveryId = record.name
 				},
-			};
+			}
 		},
 		sitesMapped() {
 			return this.sites.map((site) => {
 				return {
 					name: site,
-				};
-			});
+				}
+			})
 		},
 		availableSitesForRecoveryOptions() {
 			return {
@@ -189,12 +189,12 @@ export default {
 						type: 'Text',
 					},
 				],
-			};
+			}
 		},
 	},
 	methods: {
 		handleSitesSelection(data) {
-			this.selectedSitesForRecovery = Array.from(data);
+			this.selectedSitesForRecovery = Array.from(data)
 		},
 		recoverSites() {
 			toast.promise(
@@ -204,16 +204,16 @@ export default {
 				{
 					loading: 'Requesting snapshot recovery...',
 					success: () => {
-						this.showRecoverSitePrompt = false;
-						this.selectedSitesForRecovery = [];
-						return 'Snapshot recovery request submitted successfully';
+						this.showRecoverSitePrompt = false
+						this.selectedSitesForRecovery = []
+						return 'Snapshot recovery request submitted successfully'
 					},
 					error: 'Failed to request snapshot recovery',
 				},
-			);
+			)
 		},
 	},
-};
+}
 </script>
 
 <style scoped>

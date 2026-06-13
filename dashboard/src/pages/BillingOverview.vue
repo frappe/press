@@ -12,24 +12,24 @@
 </template>
 
 <script setup>
-import BillingSummary from '../components/billing/BillingSummary.vue';
-import PaymentDetails from '../components/billing/PaymentDetails.vue';
-import { Spinner, createResource } from 'frappe-ui';
-import { computed, provide, inject } from 'vue';
+import BillingSummary from '../components/billing/BillingSummary.vue'
+import PaymentDetails from '../components/billing/PaymentDetails.vue'
+import { Spinner, createResource } from 'frappe-ui'
+import { computed, provide, inject } from 'vue'
 
-const team = inject('team');
+const team = inject('team')
 
 const upcomingInvoice = createResource({
 	url: 'press.api.billing.upcoming_invoice',
 	cache: 'upcomingInvoice',
 	auto: true,
-});
+})
 
 const unpaidInvoices = createResource({
 	url: 'press.api.billing.get_unpaid_invoices',
 	cache: ['unpaidInvoices', team.name],
 	auto: true,
-});
+})
 
 provide('billing', {
 	upcomingInvoice,
@@ -38,5 +38,5 @@ provide('billing', {
 		() => upcomingInvoice.data?.upcoming_invoice?.total,
 	),
 	unpaidInvoices,
-});
+})
 </script>

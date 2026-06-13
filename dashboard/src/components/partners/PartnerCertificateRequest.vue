@@ -52,80 +52,80 @@
 </template>
 
 <script setup>
-import { defineEmits, onMounted, ref } from 'vue';
-import { createResource } from 'frappe-ui';
-import { getTeam } from '../../data/team';
-import { toast } from 'vue-sonner';
+import { defineEmits, onMounted, ref } from 'vue'
+import { createResource } from 'frappe-ui'
+import { getTeam } from '../../data/team'
+import { toast } from 'vue-sonner'
 
 const courseTypes = [
 	{ label: 'Framework', value: 'frappe-developer-certification' },
 	{ label: 'ERPNext', value: 'erpnext-distribution' },
-];
-const show = ref(true);
-const errorMessage = ref('');
+]
+const show = ref(true)
+const errorMessage = ref('')
 
-const team = getTeam();
-const memberList = ref([]);
+const team = getTeam()
+const memberList = ref([])
 const getMembers = async () => {
-	let members = await team.getTeamMembers.submit();
+	let members = await team.getTeamMembers.submit()
 	memberList.value = members.map((member) => {
-		return { label: member.full_name, value: member.name };
-	});
-};
+		return { label: member.full_name, value: member.name }
+	})
+}
 onMounted(() => {
-	getMembers();
-});
+	getMembers()
+})
 
-const userName = ref('');
-const certificateType = ref('');
+const userName = ref('')
+const certificateType = ref('')
 const applyForCertificate = createResource({
 	url: 'press.api.partner.apply_for_certificate',
 	makeParams: () => {
 		return {
 			member_name: userName.value,
 			certificate_type: certificateType.value,
-		};
+		}
 	},
 	onSuccess: () => {
-		show.value = false;
-		toast.success('Certificate application submitted successfully.');
-		emit('success');
+		show.value = false
+		toast.success('Certificate application submitted successfully.')
+		emit('success')
 	},
 	onError: (error) => {
-		errorMessage.value = 'Certificate Request already exists for this member.';
+		errorMessage.value = 'Certificate Request already exists for this member.'
 	},
-});
+})
 
-const showMessage = ref(false);
+const showMessage = ref(false)
 
 const checkCertification = createResource({
 	url: 'press.api.partner.can_apply_for_certificate',
 	onSuccess: (data) => {
-		showMessage.value = !data;
+		showMessage.value = !data
 	},
-});
+})
 
-let batch_link = ref('');
+let batch_link = ref('')
 async function handleApplyForCertificate() {
 	if (!userName.value || !certificateType.value) {
-		toast.error('Please select a member and certificate type');
-		return;
+		toast.error('Please select a member and certificate type')
+		return
 	}
 
 	try {
-		await checkCertification.submit();
+		await checkCertification.submit()
 		if (showMessage.value) {
-			batch_link.value = `https://school.frappe.io/lms/billing/certificate/${certificateType.value}`;
+			batch_link.value = `https://school.frappe.io/lms/billing/certificate/${certificateType.value}`
 			throw new Error(
 				'You are not eligible for a free certification at this time.',
-			);
+			)
 		}
-		await applyForCertificate.submit();
+		await applyForCertificate.submit()
 	} catch (error) {
-		console.error(error);
-		toast.error(error.message || 'An unexpected error occurred.');
+		console.error(error)
+		toast.error(error.message || 'An unexpected error occurred.')
 	}
 }
 
-const emit = defineEmits(['success']);
+const emit = defineEmits(['success'])
 </script>

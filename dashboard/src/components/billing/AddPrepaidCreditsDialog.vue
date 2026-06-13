@@ -25,8 +25,8 @@
 	</Dialog>
 </template>
 <script setup>
-import PrepaidCreditsForm from './PrepaidCreditsForm.vue';
-import { Dialog, FeatherIcon } from 'frappe-ui';
+import PrepaidCreditsForm from './PrepaidCreditsForm.vue'
+import { Dialog, FeatherIcon } from 'frappe-ui'
 
 const props = defineProps({
 	showMessage: {
@@ -45,8 +45,8 @@ const props = defineProps({
 		type: String,
 		default: 'Prepaid Credits',
 	},
-});
+})
 
-const emit = defineEmits(['success']);
-const show = defineModel();
+const emit = defineEmits(['success'])
+const show = defineModel()
 </script>

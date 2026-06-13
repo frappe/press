@@ -7,11 +7,11 @@
 	</div>
 </template>
 <script setup>
-import { createResource } from 'frappe-ui';
+import { createResource } from 'frappe-ui'
 
 const resourceURL = createResource({
 	url: 'press.api.partner.get_resource_url',
 	auto: true,
 	cache: true,
-});
+})
 </script>

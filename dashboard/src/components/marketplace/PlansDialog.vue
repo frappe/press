@@ -95,9 +95,9 @@
 </template>
 
 <script>
-import { toast } from 'vue-sonner';
-import { DashboardError } from '../../utils/error';
-import { getToastErrorMessage } from '../../utils/toast';
+import { toast } from 'vue-sonner'
+import { DashboardError } from '../../utils/error'
+import { getToastErrorMessage } from '../../utils/toast'
 
 export default {
 	name: 'PlanDialog',
@@ -113,13 +113,13 @@ export default {
 				title: '',
 				enabled: true,
 			},
-		};
+		}
 	},
 	mounted() {
 		if (this.plan) {
-			Object.assign(this.currentEditingPlan, this.plan);
-			this.currentEditingPlan.enabled = Boolean(this.plan.enabled);
-			this.currentEditingPlan.features = Array.from(this.plan.features); // Non-reference copy
+			Object.assign(this.currentEditingPlan, this.plan)
+			this.currentEditingPlan.enabled = Boolean(this.plan.enabled)
+			this.currentEditingPlan.features = Array.from(this.plan.features) // Non-reference copy
 		}
 	},
 	resources: {
@@ -131,44 +131,44 @@ export default {
 					include_disabled: true,
 				},
 				auto: true,
-			};
+			}
 		},
 		updateAppPlan() {
 			return {
 				url: 'press.api.marketplace.update_app_plan',
 				onSuccess() {
-					this.refreshState();
+					this.refreshState()
 				},
-			};
+			}
 		},
 		createAppPlan() {
 			return {
 				url: 'press.api.marketplace.create_app_plan',
 				validate() {
 					if (!this.currentEditingPlan.title) {
-						throw new DashboardError('Plan name is required');
+						throw new DashboardError('Plan name is required')
 					}
 				},
 				onSuccess() {
-					this.refreshState();
+					this.refreshState()
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		editPlan() {
 			if (this.plan) {
-				Object.assign(this.currentEditingPlan, this.plan);
-				this.currentEditingPlan.enabled = Boolean(this.plan.enabled);
-				this.currentEditingPlan.features = Array.from(this.plan.features); // Non-reference copy
+				Object.assign(this.currentEditingPlan, this.plan)
+				this.currentEditingPlan.enabled = Boolean(this.plan.enabled)
+				this.currentEditingPlan.features = Array.from(this.plan.features) // Non-reference copy
 			}
-			this.showEditPlanDialog = true;
+			this.showEditPlanDialog = true
 		},
 		addFeatureInput() {
-			this.currentEditingPlan.features.push('');
+			this.currentEditingPlan.features.push('')
 		},
 		deleteFeatureInput(idx) {
-			this.currentEditingPlan.features.splice(idx, 1);
+			this.currentEditingPlan.features.splice(idx, 1)
 		},
 
 		savePlan() {
@@ -185,24 +185,24 @@ export default {
 				{
 					loading: 'Saving plan...',
 					success: () => {
-						this.showEditPlanDialog = false;
+						this.showEditPlanDialog = false
 						if (this.currentEditingPlan.name) {
-							this.$emit('plan-updated', this.currentEditingPlan);
-							return 'Plan updated successfully';
+							this.$emit('plan-updated', this.currentEditingPlan)
+							return 'Plan updated successfully'
 						} else {
-							this.$emit('plan-created', this.currentEditingPlan);
-							return 'Plan created successfully';
+							this.$emit('plan-created', this.currentEditingPlan)
+							return 'Plan created successfully'
 						}
 					},
 					error: (e) => getToastErrorMessage(e),
 				},
-			);
+			)
 		},
 
 		refreshState() {
-			this.$resources.appPlans.fetch();
-			this.showEditPlanDialog = false;
-			this.resetCurrentEditingPlan();
+			this.$resources.appPlans.fetch()
+			this.showEditPlanDialog = false
+			this.resetCurrentEditingPlan()
 		},
 
 		resetCurrentEditingPlan() {
@@ -212,11 +212,11 @@ export default {
 				features: [''],
 				title: '',
 				enabled: true,
-			});
+			})
 
-			this.$resources.updateAppPlan.error = null;
-			this.$resources.createAppPlan.error = null;
+			this.$resources.updateAppPlan.error = null
+			this.$resources.createAppPlan.error = null
 		},
 	},
-};
+}
 </script>

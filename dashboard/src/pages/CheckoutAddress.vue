@@ -96,7 +96,7 @@
 </template>
 
 <script>
-import { indianStates } from '@/utils/billing';
+import { indianStates } from '@/utils/billing'
 
 export default {
 	name: 'CheckoutAddress',
@@ -112,7 +112,7 @@ export default {
 			gstin: 'Not Applicable',
 			gstApplicable: false,
 			indianStates: indianStates,
-		};
+		}
 	},
 	resources: {
 		updateBillingDetails() {
@@ -137,11 +137,11 @@ export default {
 						city: this.city,
 						state: this.state,
 						pincode: this.postalCode,
-					});
-					this.$emit('update:step', 3);
+					})
+					this.$emit('update:step', 3)
 				},
-			};
+			}
 		},
 	},
-};
+}
 </script>

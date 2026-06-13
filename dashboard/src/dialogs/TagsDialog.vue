@@ -36,8 +36,8 @@
 </template>
 
 <script>
-import { Combobox, ErrorMessage, getCachedDocumentResource } from 'frappe-ui';
-import { toast } from 'vue-sonner';
+import { Combobox, ErrorMessage, getCachedDocumentResource } from 'frappe-ui'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'TagsDialog',
@@ -49,7 +49,7 @@ export default {
 			showNewTagInput: false,
 			newTag: '',
 			selectedTag: null,
-		};
+		}
 	},
 	resources: {
 		availableTags() {
@@ -60,15 +60,15 @@ export default {
 				fields: ['tag'],
 				pageLength: 1000,
 				auto: true,
-			};
+			}
 		},
 	},
 	computed: {
 		$doc() {
-			return getCachedDocumentResource(this.doctype, this.docname);
+			return getCachedDocumentResource(this.doctype, this.docname)
 		},
 		tagOptions() {
-			const docTags = this.$doc.doc.tags.map((t) => t.tag_name);
+			const docTags = this.$doc.doc.tags.map((t) => t.tag_name)
 			return [
 				...(this.$resources.availableTags.data || [])
 					.filter((t) => !docTags.includes(t.tag))
@@ -76,26 +76,26 @@ export default {
 						label: t.tag || 'No label',
 						value: t.tag,
 					})),
-			];
+			]
 		},
 	},
 	methods: {
 		addTag() {
-			const tag = this.selectedTag;
+			const tag = this.selectedTag
 			toast.promise(this.$doc.addTag.submit({ tag }), {
 				success: () => {
-					this.selectedTag = null;
-					return 'Tag added successfully';
+					this.selectedTag = null
+					return 'Tag added successfully'
 				},
 				loading: 'Adding tag...',
 				error: 'Failed to add tag',
-			});
+			})
 		},
 	},
 	watch: {
 		showNewTagInput() {
-			this.selectedTag = null;
+			this.selectedTag = null
 		},
 	},
-};
+}
 </script>

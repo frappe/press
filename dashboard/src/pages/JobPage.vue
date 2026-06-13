@@ -24,7 +24,9 @@
 		<div class="mt-3">
 			<div>
 				<div class="flex items-center">
-					<h2 class="text-lg font-medium text-ink-gray-9">{{ job.job_type }}</h2>
+					<h2 class="text-lg font-medium text-ink-gray-9">
+						{{ job.job_type }}
+					</h2>
 					<Badge class="ml-2" :label="job.status" />
 					<div class="ml-auto flex items-center space-x-2">
 						<Button
@@ -91,11 +93,11 @@
 	</div>
 </template>
 <script>
-import { FeatherIcon, Tooltip } from 'frappe-ui';
-import AlertAddressableError from '../components/AlertAddressableError.vue';
-import { duration } from '../utils/format';
-import { getObject } from '../objects';
-import JobStep from '../components/JobStep.vue';
+import { FeatherIcon, Tooltip } from 'frappe-ui'
+import AlertAddressableError from '../components/AlertAddressableError.vue'
+import { duration } from '../utils/format'
+import { getObject } from '../objects'
+import JobStep from '../components/JobStep.vue'
 
 export default {
 	name: 'JobPage',
@@ -109,25 +111,25 @@ export default {
 				name: this.id,
 				transform(job) {
 					for (let step of job.steps) {
-						step.title = step.step_name;
-						step.duration = duration(step.duration);
+						step.title = step.step_name
+						step.duration = duration(step.duration)
 						step.isOpen =
 							this.job?.steps?.find((s) => s.name === step.name)?.isOpen ||
-							false;
+							false
 					}
 
 					// on delivery failure, there'll be no output for any step
 					// so show the job output (error) in the first step
 					if (['Undelivered', 'Delivery Failure'].includes(job.status)) {
-						job.steps[0].output = job.output;
+						job.steps[0].output = job.output
 					}
 
-					return job;
+					return job
 				},
 				onSuccess() {
-					this.lastLoaded = Date.now();
+					this.lastLoaded = Date.now()
 				},
-			};
+			}
 		},
 		errors() {
 			return {
@@ -144,18 +146,18 @@ export default {
 				},
 				limit: 1,
 				orderBy: 'creation desc',
-			};
+			}
 		},
 	},
 	computed: {
 		object() {
-			return getObject(this.objectType);
+			return getObject(this.objectType)
 		},
 		job() {
-			return this.$resources.job.doc;
+			return this.$resources.job.doc
 		},
 		error() {
-			return this.$resources.errors?.data?.[0] ?? null;
+			return this.$resources.errors?.data?.[0] ?? null
 		},
 		dropdownOptions() {
 			return [
@@ -167,39 +169,39 @@ export default {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/agent-job/${this.id}`,
 							'_blank',
-						);
+						)
 					},
 				},
-			].filter((option) => option.condition?.() ?? true);
+			].filter((option) => option.condition?.() ?? true)
 		},
 	},
 	mounted() {
-		this.$socket.emit('doc_subscribe', 'Agent Job', this.id);
+		this.$socket.emit('doc_subscribe', 'Agent Job', this.id)
 		this.$socket.on('agent_job_update', (data) => {
 			if (data.id === this.id) {
 				data.steps = data.steps.map((step) => {
-					step.title = step.step_name;
-					step.duration = duration(step.duration);
+					step.title = step.step_name
+					step.duration = duration(step.duration)
 					step.isOpen =
-						this.job?.steps?.find((s) => s.name === step.name)?.isOpen || false;
-					return step;
-				});
+						this.job?.steps?.find((s) => s.name === step.name)?.isOpen || false
+					return step
+				})
 
 				this.$resources.job.doc = {
 					...this.$resources.job.doc,
 					...data,
-				};
+				}
 			}
-		});
+		})
 		// reload job every minute, in case socket is not working
 		this.reloadInterval = setInterval(() => {
-			this.reload();
-		}, 1000 * 60);
+			this.reload()
+		}, 1000 * 60)
 	},
 	beforeUnmount() {
-		this.$socket.emit('doc_unsubscribe', 'Agent Job', this.id);
-		this.$socket.off('agent_job_update');
-		clearInterval(this.reloadInterval);
+		this.$socket.emit('doc_unsubscribe', 'Agent Job', this.id)
+		this.$socket.off('agent_job_update')
+		clearInterval(this.reloadInterval)
 	},
 	methods: {
 		reload() {
@@ -208,9 +210,9 @@ export default {
 				// reload if job was loaded more than 5 seconds ago
 				Date.now() - this.lastLoaded > 5000
 			) {
-				this.$resources.job.reload();
+				this.$resources.job.reload()
 			}
 		},
 	},
-};
+}
 </script>

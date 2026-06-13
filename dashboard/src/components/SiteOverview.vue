@@ -189,9 +189,7 @@
 								<div class="text-sm text-ink-gray-6">
 									{{ currentUsageLoading ? '—' : currentUsage.cpu }}
 									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
-									<template
-										v-if="currentPlan"
-									>
+									<template v-if="currentPlan">
 										of {{ currentPlan?.cpu_time_per_day }} hours
 									</template>
 								</div>

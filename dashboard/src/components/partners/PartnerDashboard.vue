@@ -84,9 +84,9 @@
 	</div>
 </template>
 <script setup>
-import { inject, computed } from 'vue';
-import { createResource, NumberChart, AxisChart, DonutChart } from 'frappe-ui';
-const team = inject('team');
+import { inject, computed } from 'vue'
+import { createResource, NumberChart, AxisChart, DonutChart } from 'frappe-ui'
+const team = inject('team')
 
 const partnerDetails = createResource({
 	url: 'press.api.partner.get_partner_details',
@@ -95,7 +95,7 @@ const partnerDetails = createResource({
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
 const currentMonthContribution = createResource({
 	url: 'press.api.partner.get_current_month_partner_contribution',
@@ -104,7 +104,7 @@ const currentMonthContribution = createResource({
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
 let partnerInvoices = createResource({
 	url: 'press.api.partner.get_partner_mrr',
@@ -113,7 +113,7 @@ let partnerInvoices = createResource({
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
 let axisConfigData = computed(
 	() =>
@@ -121,13 +121,13 @@ let axisConfigData = computed(
 			date: d.due_date,
 			amount: d.total_amount || 0,
 		})) || [],
-);
+)
 
 let dashboardStats = createResource({
 	url: 'press.api.partner.get_dashboard_stats',
 	auto: true,
 	cache: 'dashboardStats',
-});
+})
 
 let sitePlanData = computed(
 	() =>
@@ -135,7 +135,7 @@ let sitePlanData = computed(
 			plans: d.plan,
 			count: d.count,
 		})) || [],
-);
+)
 
 let partnerCustomerDistribution = createResource({
 	url: 'press.api.partner.get_partner_contribution_list',
@@ -144,7 +144,7 @@ let partnerCustomerDistribution = createResource({
 	params: {
 		partner_email: team.doc.partner_email,
 	},
-});
+})
 
 let partnerCustomerData = computed(
 	() =>
@@ -152,5 +152,5 @@ let partnerCustomerData = computed(
 			team: d.customer_name,
 			amount: d.partner_total || 0,
 		})) || [],
-);
+)
 </script>

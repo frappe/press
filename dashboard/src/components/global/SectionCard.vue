@@ -6,6 +6,6 @@
 
 <script>
 export default {
-	name: 'SectionCard'
-};
+	name: 'SectionCard',
+}
 </script>

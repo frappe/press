@@ -11,7 +11,8 @@
 				v-if="$resources.configuredAutoscales.loading"
 				class="flex w-full items-center justify-center gap-2 py-32 text-ink-gray-7"
 			>
-				<Spinner class="w-4" /> Loading
+				<Spinner class="w-4" />
+				Loading
 			</div>
 			<div v-else>
 				<AlertBanner
@@ -61,14 +62,14 @@
 </template>
 
 <script>
-import { getCachedDocumentResource } from 'frappe-ui';
-import { Button } from 'frappe-ui';
-import { h } from 'vue';
-import { toast } from 'vue-sonner';
-import { confirmDialog } from '../../utils/components';
-import AlertBanner from '../AlertBanner.vue';
-import GenericList from '../GenericList.vue';
-import Badge from '../global/Badge.vue';
+import { getCachedDocumentResource } from 'frappe-ui'
+import { Button } from 'frappe-ui'
+import { h } from 'vue'
+import { toast } from 'vue-sonner'
+import { confirmDialog } from '../../utils/components'
+import AlertBanner from '../AlertBanner.vue'
+import GenericList from '../GenericList.vue'
+import Badge from '../global/Badge.vue'
 
 export default {
 	name: 'AutoScale',
@@ -84,7 +85,7 @@ export default {
 			show: true,
 			selectedTriggers: [],
 			triggers: [],
-		};
+		}
 	},
 
 	resources: {
@@ -95,15 +96,15 @@ export default {
 				auto: true,
 				initialData: [],
 				onSuccess: (data) => {
-					this.triggers = [...(data || [])];
+					this.triggers = [...(data || [])]
 				},
-			};
+			}
 		},
 	},
 
 	computed: {
 		server() {
-			return getCachedDocumentResource('Server', this.name);
+			return getCachedDocumentResource('Server', this.name)
 		},
 		autoScaleTriggerOptions() {
 			return {
@@ -126,7 +127,7 @@ export default {
 							return h(Badge, {
 								label: row.action,
 								theme: row.action === 'Scale Down' ? 'orange' : 'green',
-							});
+							})
 						},
 					},
 				],
@@ -134,16 +135,16 @@ export default {
 					title: 'No Autoscale Triggers found',
 					description: 'You have not configured any autoscale triggers yet',
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		onSelectionUpdate(selection) {
-			this.selectedTriggers = Array.from(selection || []);
+			this.selectedTriggers = Array.from(selection || [])
 		},
 
 		onRemoveTrigger() {
-			const server = this.server;
+			const server = this.server
 			toast.promise(
 				server.removeAutomatedScalingTriggers.submit({
 					triggers: this.selectedTriggers,
@@ -151,18 +152,18 @@ export default {
 				{
 					loading: 'Removing trigger...',
 					success: () => {
-						this.$resources.configuredAutoscales.submit();
-						this.selectedTriggers = [];
-						return 'Removed Trigger';
+						this.$resources.configuredAutoscales.submit()
+						this.selectedTriggers = []
+						return 'Removed Trigger'
 					},
 					error: 'Failed to remove trigger',
 				},
-			);
+			)
 		},
 
 		openAddTriggerDialog() {
-			this.show = false;
-			const server = this.server;
+			this.show = false
+			const server = this.server
 
 			confirmDialog({
 				title: 'Add Autoscaling Trigger',
@@ -201,11 +202,11 @@ export default {
 					label: 'Add Trigger',
 				},
 				onSuccess: ({ hide, values }) => {
-					const threshold = parseFloat(values.threshold);
+					const threshold = parseFloat(values.threshold)
 
 					if (isNaN(threshold)) {
-						toast.error('Threshold must be a valid number');
-						return;
+						toast.error('Threshold must be a valid number')
+						return
 					}
 
 					toast.promise(
@@ -217,15 +218,15 @@ export default {
 						{
 							loading: 'Adding trigger...',
 							success: () => {
-								hide();
-								return 'Trigger added';
+								hide()
+								return 'Trigger added'
 							},
 							error: 'Failed to add trigger',
 						},
-					);
+					)
 				},
-			});
+			})
 		},
 	},
-};
+}
 </script>

@@ -39,9 +39,7 @@
 					:key="team.name"
 				>
 					<div class="flex items-center space-x-2 px-0.5">
-						<span class="text-base text-ink-gray-8">
-							{{ team.user }}
-						</span>
+						<span class="text-base text-ink-gray-8"> {{ team.user }} </span>
 						<Button
 							v-if="$team.doc.is_desk_user"
 							icon="external-link"
@@ -91,9 +89,9 @@
 	</Dialog>
 </template>
 <script>
-import { TextInput } from 'frappe-ui';
-import { switchToTeam } from '../data/team';
-import LinkControl from './LinkControl.vue';
+import { TextInput } from 'frappe-ui'
+import { switchToTeam } from '../data/team'
+import LinkControl from './LinkControl.vue'
 
 export default {
 	name: 'SwitchTeamDialog',
@@ -103,52 +101,52 @@ export default {
 	computed: {
 		show: {
 			get() {
-				return this.modelValue;
+				return this.modelValue
 			},
 			set(value) {
-				this.$emit('update:modelValue', value);
+				this.$emit('update:modelValue', value)
 			},
 		},
 		sortedTeams() {
-			const validTeams = this.$team?.doc?.valid_teams;
-			if (!validTeams) return [];
+			const validTeams = this.$team?.doc?.valid_teams
+			if (!validTeams) return []
 
 			const sorted = [...validTeams].sort((a, b) => {
-				return a.user.localeCompare(b.user);
-			});
+				return a.user.localeCompare(b.user)
+			})
 
 			return [
 				...sorted.filter((team) => team.user === this.$session.user),
 				...sorted.filter((team) => team.user !== this.$session.user),
-			];
+			]
 		},
 		filteredTeams() {
 			if (!this.searchQuery.trim()) {
-				return this.sortedTeams;
+				return this.sortedTeams
 			}
-			const query = this.searchQuery.toLowerCase();
+			const query = this.searchQuery.toLowerCase()
 			return this.sortedTeams.filter(
 				(team) =>
 					team.user.toLowerCase().includes(query) ||
 					team.name.toLowerCase().includes(query),
-			);
+			)
 		},
 	},
 	data() {
 		return {
 			selectedTeam: null,
 			searchQuery: '',
-		};
+		}
 	},
 	methods: {
 		switchToTeam,
 	},
 	mounted() {
 		setTimeout(() => {
-			const textInput = this.$refs.searchRef?.$el;
-			const inputHtmlElement = textInput?.querySelector('input');
-			inputHtmlElement?.focus();
-		}, 200);
+			const textInput = this.$refs.searchRef?.$el
+			const inputHtmlElement = textInput?.querySelector('input')
+			inputHtmlElement?.focus()
+		}, 200)
 	},
-};
+}
 </script>

@@ -26,14 +26,14 @@
 	</Dialog>
 </template>
 <script setup>
-import { Dialog, FormControl, createResource } from 'frappe-ui';
-import { defineEmits, ref } from 'vue';
-import { getPlans } from '../../data/plans';
-import { DashboardError } from '../../utils/error';
+import { Dialog, FormControl, createResource } from 'frappe-ui'
+import { defineEmits, ref } from 'vue'
+import { getPlans } from '../../data/plans'
+import { DashboardError } from '../../utils/error'
 
-const emit = defineEmits(['update']);
-const show = defineModel();
-const errorMessage = ref('');
+const emit = defineEmits(['update'])
+const show = defineModel()
+const errorMessage = ref('')
 const props = defineProps({
 	lead_id: {
 		type: String,
@@ -43,18 +43,18 @@ const props = defineProps({
 		type: String,
 		required: true,
 	},
-});
+})
 
-const sitePlans = getPlans();
+const sitePlans = getPlans()
 const sitePlanOptions = ref(
 	sitePlans.map((plan) => ({
 		label: plan.name,
 		value: plan.name,
 	})),
-);
+)
 
-const proposed_plan = ref();
-const expected_close_date = ref();
+const proposed_plan = ref()
+const expected_close_date = ref()
 const updateStatus = createResource({
 	url: 'press.api.partner.update_lead_status',
 	makeParams: () => {
@@ -63,21 +63,21 @@ const updateStatus = createResource({
 			status: props.status,
 			proposed_plan: proposed_plan.value,
 			expected_close_date: expected_close_date.value,
-		};
+		}
 	},
 	validate: () => {
 		if (
 			proposed_plan.value === undefined ||
 			expected_close_date.value === undefined
 		) {
-			let error = 'Please select a Proposed Plan and Expected Close Date';
-			errorMessage.value = error;
-			throw new DashboardError(error);
+			let error = 'Please select a Proposed Plan and Expected Close Date'
+			errorMessage.value = error
+			throw new DashboardError(error)
 		}
 	},
 	onSuccess: () => {
-		emit('update');
-		show.value = false;
+		emit('update')
+		show.value = false
 	},
-});
+})
 </script>

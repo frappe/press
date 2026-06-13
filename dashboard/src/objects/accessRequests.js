@@ -1,7 +1,7 @@
-import { h } from 'vue';
-import { renderDialog } from '../utils/components';
-import SupportAccessDialog from '../components/SupportAccessDialog.vue';
-import { getTeam } from '../data/team';
+import { h } from 'vue'
+import { renderDialog } from '../utils/components'
+import SupportAccessDialog from '../components/SupportAccessDialog.vue'
+import { getTeam } from '../data/team'
 
 export default {
 	doctype: 'Support Access',
@@ -15,7 +15,7 @@ export default {
 			source: 'Received',
 		},
 		filterControls() {
-			const team = getTeam();
+			const team = getTeam()
 
 			return [
 				{
@@ -40,14 +40,14 @@ export default {
 					placeholder: 'Status',
 					condition: true,
 				},
-			].filter(({ condition }) => !!condition);
+			].filter(({ condition }) => !!condition)
 		},
 		onRowClick(row) {
 			renderDialog(
 				h(SupportAccessDialog, {
 					name: row.name,
 				}),
-			);
+			)
 		},
 		columns: [
 			{
@@ -56,9 +56,9 @@ export default {
 				width: '250px',
 				format: (_, row) => {
 					if (row.resource_count > 1) {
-						return row.resource_count + ' Resources';
+						return row.resource_count + ' Resources'
 					} else {
-						return row.resource_name;
+						return row.resource_name
 					}
 				},
 			},
@@ -72,7 +72,7 @@ export default {
 						Pending: 'gray',
 						Accepted: 'green',
 						Rejected: 'red',
-					}[value];
+					}[value]
 				},
 			},
 			{
@@ -95,4 +95,4 @@ export default {
 			},
 		],
 	},
-};
+}

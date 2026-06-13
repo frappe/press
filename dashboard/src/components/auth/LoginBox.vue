@@ -8,7 +8,9 @@
 					</div>
 				</slot>
 			</div>
-			<div class="mx-auto w-full bg-surface-white px-4 py-6 sm:w-96 sm:rounded-lg">
+			<div
+				class="mx-auto w-full bg-surface-white px-4 py-6 sm:w-96 sm:rounded-lg"
+			>
 				<div class="mb-2" v-if="title">
 					<span
 						class="text-2xl font-bold leading-5 tracking-tight text-ink-gray-9"
@@ -30,8 +32,8 @@
 </template>
 
 <script>
-import { toast } from 'vue-sonner';
-import FCLogo from '@/components/icons/FCLogo.vue';
+import { toast } from 'vue-sonner'
+import FCLogo from '@/components/icons/FCLogo.vue'
 
 export default {
 	name: 'LoginBox',
@@ -40,16 +42,16 @@ export default {
 		FCLogo,
 	},
 	mounted() {
-		const params = new URLSearchParams(window.location.search);
+		const params = new URLSearchParams(window.location.search)
 
 		if (params.get('showRemoteLoginError')) {
-			toast.error('Token Invalid or Expired');
+			toast.error('Token Invalid or Expired')
 		}
 	},
 	methods: {
 		redirectForFrappeioAuth() {
-			window.location = '/f-login';
+			window.location = '/f-login'
 		},
 	},
-};
+}
 </script>

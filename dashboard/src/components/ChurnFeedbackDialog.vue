@@ -51,9 +51,9 @@
 </template>
 
 <script>
-import { FormControl } from 'frappe-ui';
-import StarRatingInput from './StarRatingInput.vue';
-import { DashboardError } from '../utils/error';
+import { FormControl } from 'frappe-ui'
+import StarRatingInput from './StarRatingInput.vue'
+import { DashboardError } from '../utils/error'
 
 export default {
 	name: 'ChurnFeedbackDialog',
@@ -69,7 +69,7 @@ export default {
 			note: '',
 			show: true,
 			rating: 0,
-		};
+		}
 	},
 	resources: {
 		submitFeedback() {
@@ -82,15 +82,15 @@ export default {
 						route: this.$route?.name,
 						note: this.note,
 						rating: this.rating,
-					};
+					}
 				},
 				validate() {
 					if (!this.feedback) {
-						throw new DashboardError('Please select a reason');
+						throw new DashboardError('Please select a reason')
 					}
 
 					if (this.rating == 0) {
-						throw new DashboardError('Please rate your experience');
+						throw new DashboardError('Please rate your experience')
 					}
 
 					if (
@@ -101,18 +101,18 @@ export default {
 						].includes(this.feedback) &&
 						!this.note
 					) {
-						throw new DashboardError('Please provide a brief reason');
+						throw new DashboardError('Please provide a brief reason')
 					}
 				},
 				onSuccess() {
-					this.show = false;
-					this.$emit('updated');
+					this.show = false
+					this.$emit('updated')
 
 					setTimeout(() => {
-						window.location.href = '/dashboard';
-					}, 1000);
+						window.location.href = '/dashboard'
+					}, 1000)
 				},
-			};
+			}
 		},
 	},
 	computed: {
@@ -131,8 +131,8 @@ export default {
 				'ERPNext is too complex for my needs',
 				'My reason is not listed here',
 				'I was testing the product',
-			];
+			]
 		},
 	},
-};
+}
 </script>

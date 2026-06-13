@@ -17,7 +17,8 @@
 			<div class="space-y-4">
 				<p class="text-p-base text-ink-gray-8">
 					Are you sure you want to uninstall the
-					<b>{{ app.title || app.app_title }}</b> app from the site
+					<b>{{ app.title || app.app_title }}</b>
+					app from the site
 					<b>{{ site.doc?.host_name || site.doc?.name }}</b>
 					?
 				</p>
@@ -25,8 +26,7 @@
 					title="All <b>doctypes</b> & <b>modules</b>, along with all the
 						<b>data</b> within this app will be removed from the site."
 					type="warning"
-				>
-				</AlertBanner>
+				> </AlertBanner>
 				<div class="">
 					<FormControl
 						type="checkbox"
@@ -64,13 +64,13 @@
 </template>
 
 <script setup lang="ts">
-import { createResource } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import { useRouter } from 'vue-router';
-import { DocumentResource } from '../../objects/common/types';
-import { getToastErrorMessage } from '../../utils/toast';
-import { PropType, ref } from 'vue';
-import AlertBanner from '../AlertBanner.vue';
+import { createResource } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import { useRouter } from 'vue-router'
+import { DocumentResource } from '../../objects/common/types'
+import { getToastErrorMessage } from '../../utils/toast'
+import { PropType, ref } from 'vue'
+import AlertBanner from '../AlertBanner.vue'
 
 const props = defineProps({
 	site: {
@@ -81,15 +81,15 @@ const props = defineProps({
 		type: Object,
 		required: true,
 	},
-});
+})
 
-const router = useRouter();
+const router = useRouter()
 
-const showDialog = defineModel<boolean>({ default: true });
-const giveFeedback = ref(false);
-const feedback = ref('');
-const specifyFeedback = ref('');
-const createOffsiteBackup = ref(true);
+const showDialog = defineModel<boolean>({ default: true })
+const giveFeedback = ref(false)
+const feedback = ref('')
+const specifyFeedback = ref('')
+const createOffsiteBackup = ref(true)
 const feedbackOptions = [
 	'Switched to another tool',
 	'Was just testing, not a long-term user',
@@ -98,7 +98,7 @@ const feedbackOptions = [
 	'Prefer self-hosting over Frappe Cloud',
 	'Too expensive for my use case',
 	'Other',
-].map((option) => ({ label: option, value: option }));
+].map((option) => ({ label: option, value: option }))
 
 const uninstallApp = createResource({
 	url: 'press.api.client.run_doc_method',
@@ -113,25 +113,25 @@ const uninstallApp = createResource({
 				feedback.value === 'Other' ? specifyFeedback.value : feedback.value,
 		},
 	}),
-});
+})
 
 const handleConfirm = () => {
-	if (uninstallApp.loading) return;
+	if (uninstallApp.loading) return
 
 	toast.promise(uninstallApp.submit(), {
 		loading: 'Scheduling app uninstall...',
 		success: (jobId: { message: string }) => {
-			showDialog.value = false;
+			showDialog.value = false
 			router.push({
 				name: 'Site Job',
 				params: {
 					name: props.site.name,
 					id: jobId.message,
 				},
-			});
-			return 'App uninstall scheduled';
+			})
+			return 'App uninstall scheduled'
 		},
 		error: (e: Error) => getToastErrorMessage(e),
-	});
-};
+	})
+}
 </script>

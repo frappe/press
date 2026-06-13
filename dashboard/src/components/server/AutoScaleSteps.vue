@@ -56,11 +56,9 @@
 					<div>
 						<div class="text-sm font-medium text-ink-gray-5">Duration</div>
 						<div class="mt-2 text-sm text-ink-gray-9">
-							{{
-								autoScale.duration != null
+							{{ autoScale.duration != null
 									? $format.duration(autoScale.duration)
-									: '-'
-							}}
+									: '-' }}
 						</div>
 					</div>
 				</div>
@@ -74,7 +72,7 @@
 	</div>
 </template>
 <script>
-import JobStep from '../JobStep.vue';
+import JobStep from '../JobStep.vue'
 export default {
 	name: 'AutoScaleSteps',
 	props: ['id'],
@@ -83,7 +81,7 @@ export default {
 	},
 	resources: {
 		autoScale() {
-			if (!this.id) return;
+			if (!this.id) return
 			return {
 				type: 'document',
 				doctype: 'Auto Scale Record',
@@ -97,25 +95,25 @@ export default {
 							output: step.output || 'No Output',
 							status: step.status,
 							isOpen: false,
-						};
-					});
+						}
+					})
 				},
 				onSuccess: (data) => {
 					if (!['Success', 'Failure'].includes(data.status)) {
 						setTimeout(() => {
-							this.$resources.autoScale.reload();
-						}, 5000);
+							this.$resources.autoScale.reload()
+						}, 5000)
 					}
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		autoScale() {
-			return this.$resources.autoScale?.doc ?? {};
+			return this.$resources.autoScale?.doc ?? {}
 		},
 		steps() {
-			return this.$resources.autoScale?.doc?.steps || [];
+			return this.$resources.autoScale?.doc?.steps || []
 		},
 		dropdownOptions() {
 			return [
@@ -127,11 +125,11 @@ export default {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/auto-scale-record/${this.id}`,
 							'_blank',
-						);
+						)
 					},
 				},
-			].filter((option) => option.condition?.() ?? true);
+			].filter((option) => option.condition?.() ?? true)
 		},
 	},
-};
+}
 </script>

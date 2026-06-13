@@ -95,9 +95,9 @@
 </template>
 
 <script>
-import { toast } from 'vue-sonner';
-import { DashboardError } from '../../../utils/error';
-import { ErrorMessage } from 'frappe-ui';
+import { toast } from 'vue-sonner'
+import { DashboardError } from '../../../utils/error'
+import { ErrorMessage } from 'frappe-ui'
 export default {
 	name: 'AddMpesaCredentials',
 	data() {
@@ -114,7 +114,7 @@ export default {
 				// sandBox: false,
 			},
 			errorMessage: '',
-		};
+		}
 	},
 	resources: {
 		createMpesaSetup() {
@@ -123,25 +123,25 @@ export default {
 				makeParams() {
 					return {
 						mpesa_details: this.mpesaSetupDetails,
-					};
+					}
 				},
 				validate() {
-					let fields = Object.values(this.mpesaSetupDetails);
+					let fields = Object.values(this.mpesaSetupDetails)
 					if (fields.includes('')) {
-						this.errorMessage = 'Please fill required values';
-						return 'Please fill required values';
+						this.errorMessage = 'Please fill required values'
+						return 'Please fill required values'
 						// throw new DashboardError('Please fill required values');
 					}
 				},
 				onSuccess(data) {
 					if (data) {
-						toast.success('M-Pesa credentials saved', data);
+						toast.success('M-Pesa credentials saved', data)
 					} else {
-						toast.error('Error saving M-Pesa credentials');
+						toast.error('Error saving M-Pesa credentials')
 					}
-					this.$emit('closeDialog');
+					this.$emit('closeDialog')
 				},
-			};
+			}
 		},
 		fetchMpesaSetup() {
 			return {
@@ -156,16 +156,16 @@ export default {
 						short_code: data.business_shortcode,
 						till_number: data.till_number,
 						initiator_name: data.initiator_name,
-					});
+					})
 				},
 				auto: true,
-			};
+			}
 		},
 	},
 	methods: {
 		saveMpesaCredentials() {
-			this.$resources.createMpesaSetup.submit();
+			this.$resources.createMpesaSetup.submit()
 		},
 	},
-};
+}
 </script>

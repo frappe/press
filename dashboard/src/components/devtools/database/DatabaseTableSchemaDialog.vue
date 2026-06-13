@@ -56,11 +56,11 @@
 	</Dialog>
 </template>
 <script>
-import { h } from 'vue';
-import { FormControl } from 'frappe-ui';
-import ObjectList from '../../ObjectList.vue';
-import { icon } from '../../../utils/components';
-import { toast } from 'vue-sonner';
+import { h } from 'vue'
+import { FormControl } from 'frappe-ui'
+import ObjectList from '../../ObjectList.vue'
+import { icon } from '../../../utils/components'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'DatabaseTableSchemaDialog',
@@ -90,14 +90,14 @@ export default {
 	data() {
 		return {
 			selectedSchema: null,
-		};
+		}
 	},
 	mounted() {
-		this.preSelectSchema();
+		this.preSelectSchema()
 	},
 	watch: {
 		preSelectedSchema() {
-			this.preSelectSchema();
+			this.preSelectSchema()
 		},
 	},
 	computed: {
@@ -108,13 +108,13 @@ export default {
 						? `${x} (${this.bytesToMB(this.tableSchemas[x].size.total_size)}MB)`
 						: x,
 				value: x,
-			}));
+			}))
 		},
 		listOptions() {
-			if (!this.selectedSchema || !this.selectedSchema.value) return {};
+			if (!this.selectedSchema || !this.selectedSchema.value) return {}
 			return {
 				data: () => {
-					return this.tableSchemas?.[this.selectedSchema.value]?.columns ?? [];
+					return this.tableSchemas?.[this.selectedSchema.value]?.columns ?? []
 				},
 				hideControls: true,
 				columns: [
@@ -130,13 +130,13 @@ export default {
 									class: 'truncate text-base cursor-copy',
 									onClick() {
 										if ('clipboard' in navigator) {
-											navigator.clipboard.writeText(row.column);
-											toast.success('Copied to clipboard');
+											navigator.clipboard.writeText(row.column)
+											toast.success('Copied to clipboard')
 										}
 									},
 								},
 								[row.column],
-							);
+							)
 						},
 					},
 					{
@@ -157,7 +157,7 @@ export default {
 						width: 0.15,
 						type: 'Icon',
 						Icon(value) {
-							return value ? 'check' : 'x';
+							return value ? 'check' : 'x'
 						},
 						align: 'center',
 					},
@@ -169,50 +169,50 @@ export default {
 						component({ row }) {
 							return row.index_info.is_indexed
 								? icon('check', 'w-4 w-4')
-								: icon('x', 'w-4 w-4');
+								: icon('x', 'w-4 w-4')
 						},
 					},
 				],
-			};
+			}
 		},
 	},
 	methods: {
 		copyTableNameToClipboard() {
 			if ('clipboard' in navigator) {
-				navigator.clipboard.writeText(this.selectedSchema.value);
-				toast.success('Copied to clipboard');
+				navigator.clipboard.writeText(this.selectedSchema.value)
+				toast.success('Copied to clipboard')
 			}
 		},
 		viewTop100Rows() {
 			this.$emit(
 				'runSQLQuery',
 				`SELECT * FROM \`${this.selectedSchema.value}\` LIMIT 100;`,
-			);
+			)
 		},
 		viewLast100Rows() {
 			this.$emit(
 				'runSQLQuery',
 				`SELECT * FROM \`${this.selectedSchema.value}\` ORDER BY name DESC LIMIT 100;`,
-			);
+			)
 		},
 		viewAllRows() {
 			this.$emit(
 				'runSQLQuery',
 				`SELECT * FROM \`${this.selectedSchema.value}\`;`,
-			);
+			)
 		},
 		bytesToMB(bytes) {
-			return (bytes / (1024 * 1024)).toFixed(2);
+			return (bytes / (1024 * 1024)).toFixed(2)
 		},
 		preSelectSchema() {
-			if (!this.preSelectedSchema) return;
-			if (!this.tableSchemas) return;
-			if (this.autocompleteOptions.length == 0) return;
+			if (!this.preSelectedSchema) return
+			if (!this.tableSchemas) return
+			if (this.autocompleteOptions.length == 0) return
 			this.selectedSchema = {
 				label: this.preSelectedSchema,
 				value: this.preSelectedSchema,
-			};
+			}
 		},
 	},
-};
+}
 </script>

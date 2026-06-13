@@ -28,9 +28,7 @@
 						/>
 					</div>
 				</Tooltip>
-				<span>
-					{{ title }}
-				</span>
+				<span> {{ title }} </span>
 			</div>
 
 			<div class="text-ink-gray-6" v-if="caption">
@@ -47,8 +45,8 @@
 	</div>
 </template>
 <script lang="ts">
-import { LoadingIndicator } from 'frappe-ui';
-import { defineComponent } from 'vue';
+import { LoadingIndicator } from 'frappe-ui'
+import { defineComponent } from 'vue'
 
 export default defineComponent({
 	name: 'FoldStep',
@@ -63,45 +61,45 @@ export default defineComponent({
 	watch: {
 		body(val, oldVal) {
 			if (val === oldVal) {
-				return;
+				return
 			}
 
 			this.$nextTick(() => {
-				this.$refs.output.scrollTop = this.$refs.output.scrollHeight;
-			});
+				this.$refs.output.scrollTop = this.$refs.output.scrollHeight
+			})
 		},
 	},
 	computed: {
 		icon(): string {
 			switch (this.status) {
 				case 'Success':
-					return 'check';
+					return 'check'
 				case 'Failure':
-					return 'x';
+					return 'x'
 				case 'Delivery Failure':
-					return 'x';
+					return 'x'
 				case 'Pending':
-					return 'clock';
+					return 'clock'
 				case 'Skipped':
-					return 'minus';
+					return 'minus'
 				default:
-					return 'circle';
+					return 'circle'
 			}
 		},
 		iconClass(): string {
 			switch (this.status) {
 				case 'Success':
-					return 'bg-green-500';
+					return 'bg-green-500'
 				case 'Failure':
-					return 'bg-red-500';
+					return 'bg-red-500'
 				case 'Delivery Failure':
-					return 'bg-red-500';
+					return 'bg-red-500'
 				case 'Running':
-					return 'bg-transparent';
+					return 'bg-transparent'
 				default:
-					return 'bg-surface-gray-4';
+					return 'bg-surface-gray-4'
 			}
 		},
 	},
-});
+})
 </script>

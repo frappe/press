@@ -1,20 +1,20 @@
 export function throttle(func: Function, wait: number) {
-	let timeout = 0;
-	let pending = false;
+	let timeout = 0
+	let pending = false
 
 	return (...args: any) => {
 		if (timeout) {
-			pending = true;
-			return;
+			pending = true
+			return
 		}
 
-		func(...args);
+		func(...args)
 		timeout = setTimeout(() => {
-			timeout = 0;
+			timeout = 0
 			if (pending) {
-				func(...args);
-				pending = false;
+				func(...args)
+				pending = false
 			}
-		}, wait);
-	};
+		}, wait)
+	}
 }

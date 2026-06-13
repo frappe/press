@@ -66,11 +66,9 @@
 				{{ isHistory ? 'No incident history' : 'All systems operational' }}
 			</h3>
 			<p class="mt-2">
-				{{
-					isHistory
+				{{ isHistory
 						? 'When incidents are resolved, they will appear here.'
-						: 'There are no active incidents affecting your sites or servers.'
-				}}
+						: 'There are no active incidents affecting your sites or servers.' }}
 			</p>
 		</div>
 
@@ -95,78 +93,78 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { Badge, Button, FormControl, createResource } from 'frappe-ui';
-import { useRoute } from 'vue-router';
-import LucideRefreshCw from '~icons/lucide/refresh-cw';
-import LucideSpinner from '~icons/lucide/loader-circle';
-import IncidentCard from './IncidentCard.vue';
-import Pagination from '@/components/common/Pagination.vue';
+import { ref, computed, watch } from 'vue'
+import { Badge, Button, FormControl, createResource } from 'frappe-ui'
+import { useRoute } from 'vue-router'
+import LucideRefreshCw from '~icons/lucide/refresh-cw'
+import LucideSpinner from '~icons/lucide/loader-circle'
+import IncidentCard from './IncidentCard.vue'
+import Pagination from '@/components/common/Pagination.vue'
 
-const currentPage = ref(1);
-const limit = 10;
+const currentPage = ref(1)
+const limit = 10
 
-defineOptions({ name: 'IncidentHistory' });
+defineOptions({ name: 'IncidentHistory' })
 
-const searchQuery = ref('');
+const searchQuery = ref('')
 
-const route = useRoute();
-const isHistory = computed(() => route.name == 'IncidentHistory');
+const route = useRoute()
+const isHistory = computed(() => route.name == 'IncidentHistory')
 
 const hasNoIncidents = computed(
 	() => !incidents.loading && (!incidents.data || incidents.data.length === 0),
-);
+)
 
 const filteredData = computed(() => {
-	const data = incidents.data || [];
-	if (!isHistory.value || !searchQuery.value) return data;
+	const data = incidents.data || []
+	if (!isHistory.value || !searchQuery.value) return data
 
-	const query = searchQuery.value.toLowerCase();
+	const query = searchQuery.value.toLowerCase()
 
 	return data.filter(
 		(incident) =>
 			incident?.server?.toLowerCase().includes(query) ||
 			incident?.name?.toLowerCase().includes(query),
-	);
-});
+	)
+})
 
 const incidentTrees = computed(() =>
 	filteredData.value.map((incident) => {
 		// Timeline
-		const timelineSteps = [];
+		const timelineSteps = []
 		if (incident?.creation) {
 			timelineSteps.push({
 				type: 'timeline-step',
 				label: 'Created',
 				time: formatDate(incident.creation),
-			});
+			})
 		}
 		if (incident?.confirmed_at) {
 			timelineSteps.push({
 				label: 'Confirmed',
 				time: formatDate(incident.confirmed_at),
-			});
+			})
 		}
 		if (incident?.resolved_at) {
 			timelineSteps.push({
 				type: 'timeline-step',
 				label: 'Resolved',
 				time: formatDate(incident.resolved_at),
-			});
+			})
 		}
 
 		// Investigation
-		let investigation = null;
+		let investigation = null
 		if (incident?.investigation_name) {
 			const findings = incident.investigation_findings
 				? typeof incident.investigation_findings === 'string'
 					? JSON.parse(incident.investigation_findings)
 					: incident.investigation_findings
-				: [];
+				: []
 			const grouped = findings.reduce((acc, step) => {
-				(acc[step.step_type] ||= []).push(step);
-				return acc;
-			}, {});
+				;(acc[step.step_type] ||= []).push(step)
+				return acc
+			}, {})
 			investigation = {
 				name: incident.investigation_name,
 				status: incident.investigation_status,
@@ -174,24 +172,24 @@ const incidentTrees = computed(() =>
 					label,
 					steps,
 				})),
-			};
+			}
 		}
 
 		// Action steps
-		let actionSteps = null;
+		let actionSteps = null
 		if (incident?.investigation_action_steps) {
 			const labels = incident.investigation_action_steps
 				.split(',')
-				.map((s) => s.trim());
+				.map((s) => s.trim())
 			const statuses = incident.investigation_action_steps_status
 				? incident.investigation_action_steps_status
 						.split(',')
 						.map((s) => s.trim())
-				: [];
+				: []
 			actionSteps = labels.map((label, idx) => ({
 				label,
 				status: statuses[idx] || 'Unknown',
-			}));
+			}))
 		}
 
 		return {
@@ -201,24 +199,24 @@ const incidentTrees = computed(() =>
 			timelineSteps,
 			investigation,
 			actionSteps,
-		};
+		}
 	}),
-);
+)
 
 const incidents = createResource({
 	url: 'press.api.incident.get_incidents',
 	makeParams: () => {
-		return { page: currentPage.value, limit, resolved: isHistory.value };
+		return { page: currentPage.value, limit, resolved: isHistory.value }
 	},
 	transform: (data) => {
 		if (data.length !== 0 && data.length < limit) {
-			const dataToAdd = limit - data.length;
-			data.push(...Array(dataToAdd).fill(null));
-			return data;
+			const dataToAdd = limit - data.length
+			data.push(...Array(dataToAdd).fill(null))
+			return data
 		}
 	},
 	auto: true,
-});
+})
 
 const incidentCount = createResource({
 	url: 'press.api.incident.get_incident_count',
@@ -226,28 +224,28 @@ const incidentCount = createResource({
 		resolved: isHistory.value,
 	},
 	auto: true,
-});
+})
 
 watch(isHistory, () => {
-	incidents.fetch();
-	searchQuery.value = '';
-});
+	incidents.fetch()
+	searchQuery.value = ''
+})
 
 watch(currentPage, () => {
-	incidents.fetch();
-});
+	incidents.fetch()
+})
 
-const refresh = () => incidents.reload();
+const refresh = () => incidents.reload()
 const formatDate = (dateStr: string) => {
-	if (!dateStr) return '';
+	if (!dateStr) return ''
 	return new Date(dateStr).toLocaleString(undefined, {
 		month: 'short',
 		day: 'numeric',
 		hour: '2-digit',
 		minute: '2-digit',
 		year: 'numeric',
-	});
-};
+	})
+}
 </script>
 
 <style scoped>

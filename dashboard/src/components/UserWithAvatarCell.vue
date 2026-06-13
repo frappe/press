@@ -16,12 +16,12 @@
 </template>
 
 <script setup lang="ts">
-import { Avatar, Badge } from 'frappe-ui';
+import { Avatar, Badge } from 'frappe-ui'
 
 defineProps<{
-	avatarImage: string;
-	fullName: string;
-	email: string;
-	isCurrentUser: boolean;
-}>();
+	avatarImage: string
+	fullName: string
+	email: string
+	isCurrentUser: boolean
+}>()
 </script>

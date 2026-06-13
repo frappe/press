@@ -8,7 +8,8 @@
 				v-if="$resources.databaseCredential.loading"
 				class="flex w-full items-center justify-center gap-2 py-20 text-ink-gray-7"
 			>
-				<Spinner class="w-4" /> Loading
+				<Spinner class="w-4" />
+				Loading
 			</div>
 			<div v-else>
 				<div v-if="databaseCredential">
@@ -36,9 +37,8 @@
 					</p>
 					<p class="ml-1 font-mono text-sm">Use SSL: Yes</p>
 					<p class="ml-1 font-mono text-sm">
-						Max Database Connection{{
-							databaseCredential?.max_connections > 1 ? 's' : ''
-						}}: {{ databaseCredential?.max_connections }}
+						Max Database Connection{{ databaseCredential?.max_connections > 1 ? 's' : '' }}:
+						{{ databaseCredential?.max_connections }}
 					</p>
 				</div>
 				<div class="pb-2 pt-5">
@@ -51,8 +51,8 @@
 					<ClickToCopyField class="ml-1" :textContent="dbAccessCommand" />
 					<p class="mt-3 text-sm">
 						Note: You should have a
-						<span class="font-mono">mariadb</span> client installed on your
-						computer.
+						<span class="font-mono">mariadb</span>
+						client installed on your computer.
 					</p>
 				</div>
 				<div class="pb-2 pt-5">
@@ -90,8 +90,8 @@
 	</Dialog>
 </template>
 <script>
-import ClickToCopyField from '../ClickToCopyField.vue';
-import { toast } from 'vue-sonner';
+import ClickToCopyField from '../ClickToCopyField.vue'
+import { toast } from 'vue-sonner'
 
 export default {
 	name: 'SiteDatabaseUserCredentialDialog',
@@ -99,7 +99,7 @@ export default {
 	emits: ['update:modelValue'],
 	components: { ClickToCopyField },
 	data() {
-		return {};
+		return {}
 	},
 	resources: {
 		databaseCredential() {
@@ -110,11 +110,11 @@ export default {
 						dt: 'Site Database User',
 						dn: this.name,
 						method: 'get_credential',
-					};
+					}
 				},
 				initialData: {},
 				auto: true,
-			};
+			}
 		},
 		downloadSSLCert() {
 			return {
@@ -122,39 +122,39 @@ export default {
 				makeParams: () => {
 					return {
 						domain: this.databaseCredential?.host ?? '',
-					};
+					}
 				},
 				auto: false,
 				onSuccess: (data) => {
 					// create a blob and trigger a download
-					const blob = new Blob([data], { type: 'text/plain' });
-					const filename = `${this.databaseCredential?.host ?? ''}.pem`;
-					const link = document.createElement('a');
-					link.href = URL.createObjectURL(blob);
-					link.download = filename;
-					link.click();
-					URL.revokeObjectURL(link.href);
-					toast.success('SSL Certificate downloaded successfully');
+					const blob = new Blob([data], { type: 'text/plain' })
+					const filename = `${this.databaseCredential?.host ?? ''}.pem`
+					const link = document.createElement('a')
+					link.href = URL.createObjectURL(blob)
+					link.download = filename
+					link.click()
+					URL.revokeObjectURL(link.href)
+					toast.success('SSL Certificate downloaded successfully')
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		databaseCredential() {
-			return this.$resources?.databaseCredential?.data?.message ?? {};
+			return this.$resources?.databaseCredential?.data?.message ?? {}
 		},
 		dbAccessCommand() {
-			if (!this.databaseCredential) return '';
-			return `mysql -u ${this.databaseCredential.username} -p -h ${this.databaseCredential.host} -P ${this.databaseCredential.port} --ssl --ssl-verify-server-cert`;
+			if (!this.databaseCredential) return ''
+			return `mysql -u ${this.databaseCredential.username} -p -h ${this.databaseCredential.host} -P ${this.databaseCredential.port} --ssl --ssl-verify-server-cert`
 		},
 		showDialog: {
 			get() {
-				return this.modelValue;
+				return this.modelValue
 			},
 			set(value) {
-				this.$emit('update:modelValue', value);
+				this.$emit('update:modelValue', value)
 			},
 		},
 	},
-};
+}
 </script>

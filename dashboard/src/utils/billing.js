@@ -35,5 +35,5 @@ export const indianStates = [
 	'Tripura',
 	'Uttar Pradesh',
 	'Uttarakhand',
-	'West Bengal'
-];
+	'West Bengal',
+]

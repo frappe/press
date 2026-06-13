@@ -15,7 +15,7 @@
 	</div>
 </template>
 <script setup>
-const show = defineModel();
+const show = defineModel()
 const props = defineProps({
 	summary: {
 		type: String,
@@ -25,5 +25,5 @@ const props = defineProps({
 		type: String,
 		default: 'blue',
 	},
-});
+})
 </script>

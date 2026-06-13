@@ -158,10 +158,10 @@
 </template>
 
 <script>
-import { Switch, Tabs } from 'frappe-ui';
-import { toast } from 'vue-sonner';
-import UserWithAvatarCell from '../UserWithAvatarCell.vue';
-import { getToastErrorMessage } from '../../utils/toast';
+import { Switch, Tabs } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import UserWithAvatarCell from '../UserWithAvatarCell.vue'
+import { getToastErrorMessage } from '../../utils/toast'
 
 export default {
 	props: {
@@ -177,7 +177,7 @@ export default {
 			member: {},
 			show: true,
 			tabIndex: 0,
-		};
+		}
 	},
 	resources: {
 		role() {
@@ -190,26 +190,26 @@ export default {
 					removeUser: 'remove_user',
 					bulkDelete: 'delete_permissions',
 				},
-			};
+			}
 		},
 	},
 	computed: {
 		role() {
-			return this.$resources.role.doc;
+			return this.$resources.role.doc
 		},
 		roleUsers() {
-			return this.role?.users || [];
+			return this.role?.users || []
 		},
 		autoCompleteList() {
 			const isNotGroupMember = (u) =>
-				!this.roleUsers.map(({ user }) => user).includes(u);
+				!this.roleUsers.map(({ user }) => user).includes(u)
 			return this.$team.doc.team_members
 				?.filter(({ user }) => isNotGroupMember(user))
-				.map(({ user }) => ({ label: user, value: user }));
+				.map(({ user }) => ({ label: user, value: user }))
 		},
 		adminAccess: {
 			get() {
-				return !!this.role?.admin_access;
+				return !!this.role?.admin_access
 			},
 			set(value) {
 				this.$resources.role.setValue.submit(
@@ -217,12 +217,12 @@ export default {
 						admin_access: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
-				);
+				)
 			},
 		},
 		allowBilling: {
 			get() {
-				return !!this.role?.allow_billing;
+				return !!this.role?.allow_billing
 			},
 			set(value) {
 				this.$resources.role.setValue.submit(
@@ -230,12 +230,12 @@ export default {
 						allow_billing: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
-				);
+				)
 			},
 		},
 		allowApps: {
 			get() {
-				return !!this.role?.allow_apps;
+				return !!this.role?.allow_apps
 			},
 			set(value) {
 				this.$resources.role.setValue.submit(
@@ -243,12 +243,12 @@ export default {
 						allow_apps: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
-				);
+				)
 			},
 		},
 		allowPartner: {
 			get() {
-				return !!this.role?.allow_partner;
+				return !!this.role?.allow_partner
 			},
 			set(value) {
 				this.$resources.role.setValue.submit(
@@ -256,12 +256,12 @@ export default {
 						allow_partner: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
-				);
+				)
 			},
 		},
 		allowSiteCreation: {
 			get() {
-				return !!this.role?.allow_site_creation;
+				return !!this.role?.allow_site_creation
 			},
 			set(value) {
 				this.$resources.role.setValue.submit(
@@ -269,12 +269,12 @@ export default {
 						allow_site_creation: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
-				);
+				)
 			},
 		},
 		allowBenchCreation: {
 			get() {
-				return !!this.role?.allow_bench_creation;
+				return !!this.role?.allow_bench_creation
 			},
 			set(value) {
 				this.$resources.role.setValue.submit(
@@ -282,12 +282,12 @@ export default {
 						allow_bench_creation: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
-				);
+				)
 			},
 		},
 		allowServerCreation: {
 			get() {
-				return !!this.role?.allow_server_creation;
+				return !!this.role?.allow_server_creation
 			},
 			set(value) {
 				this.$resources.role.setValue.submit(
@@ -295,12 +295,12 @@ export default {
 						allow_server_creation: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
-				);
+				)
 			},
 		},
 		allowWebhookConfiguration: {
 			get() {
-				return !!this.role?.allow_webhook_configuration;
+				return !!this.role?.allow_webhook_configuration
 			},
 			set(value) {
 				this.$resources.role.setValue.submit(
@@ -308,12 +308,12 @@ export default {
 						allow_webhook_configuration: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
-				);
+				)
 			},
 		},
 		allowDashboard: {
 			get() {
-				return !!this.role?.allow_dashboard;
+				return !!this.role?.allow_dashboard
 			},
 			set(value) {
 				this.$resources.role.setValue.submit(
@@ -321,12 +321,12 @@ export default {
 						allow_dashboard: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
-				);
+				)
 			},
 		},
 		allowLeads: {
 			get() {
-				return !!this.role?.allow_leads;
+				return !!this.role?.allow_leads
 			},
 			set(value) {
 				this.$resources.role.setValue.submit(
@@ -334,12 +334,12 @@ export default {
 						allow_leads: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
-				);
+				)
 			},
 		},
 		allowCustomer: {
 			get() {
-				return !!this.role?.allow_customer;
+				return !!this.role?.allow_customer
 			},
 			set(value) {
 				this.$resources.role.setValue.submit(
@@ -347,12 +347,12 @@ export default {
 						allow_customer: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
-				);
+				)
 			},
 		},
 		allowContribution: {
 			get() {
-				return !!this.role?.allow_contribution;
+				return !!this.role?.allow_contribution
 			},
 			set(value) {
 				this.$resources.role.setValue.submit(
@@ -360,7 +360,7 @@ export default {
 						allow_contribution: value,
 					},
 					{ onSuccess: this.$session.roles.reload },
-				);
+				)
 			},
 		},
 	},
@@ -369,19 +369,19 @@ export default {
 			return toast.promise(this.$resources.role.addUser.submit({ user }), {
 				loading: `Adding ${user} to ${this.role.title}`,
 				success: () => {
-					this.member = {};
-					return `${user} added to ${this.role.title}`;
+					this.member = {}
+					return `${user} added to ${this.role.title}`
 				},
 				error: (e) => getToastErrorMessage(e),
-			});
+			})
 		},
 		removeUser(user) {
 			return toast.promise(this.$resources.role.removeUser.submit({ user }), {
 				loading: `Removing ${user} from ${this.role.title}`,
 				success: () => `${user} removed from ${this.role.title}`,
 				error: (e) => getToastErrorMessage(e),
-			});
+			})
 		},
 	},
-};
+}
 </script>

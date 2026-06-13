@@ -1,78 +1,78 @@
 <script setup lang="ts">
-import { onMounted, useTemplateRef, computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, useTemplateRef, computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
-import LucideX from '~icons/lucide/x';
-import LucideSearch from '~icons/lucide/search';
-import Scrollbar from '@/components/common/Scrollbar.vue';
+import LucideX from '~icons/lucide/x'
+import LucideSearch from '~icons/lucide/search'
+import Scrollbar from '@/components/common/Scrollbar.vue'
 
-import { filterLabels, highlightMatch } from './utils';
-import { index } from './index';
+import { filterLabels, highlightMatch } from './utils'
+import { index } from './index'
 
-const searchQuery = ref('');
-const inputRef = useTemplateRef<HTMLInputElement>('inputRef');
+const searchQuery = ref('')
+const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
 
-import { searchModalOpen } from '@/data/ui';
+import { searchModalOpen } from '@/data/ui'
 
-const close = () => (searchModalOpen.value = false);
+const close = () => (searchModalOpen.value = false)
 
 onMounted(() => {
-	inputRef.value?.focus();
-});
+	inputRef.value?.focus()
+})
 
-const router = useRouter();
+const router = useRouter()
 
 // filter
-const list = ref(index.value);
+const list = ref(index.value)
 
 const flatList = computed(() =>
 	Object.values(list.value).flatMap((v) => v.items),
-);
+)
 
 watch(searchQuery, () => {
-	const filtered = filterLabels(index.value, searchQuery.value);
-	list.value = filtered;
+	const filtered = filterLabels(index.value, searchQuery.value)
+	list.value = filtered
 
 	const optionEls = document
 		.getElementById('search-results')
-		?.querySelectorAll('[role="option"]');
-	if (optionEls) optionEls.value = optionEls;
+		?.querySelectorAll('[role="option"]')
+	if (optionEls) optionEls.value = optionEls
 
-	navigationIndex.value = 0;
-});
+	navigationIndex.value = 0
+})
 
 // arrow up/down navigation
-const navigationIndex = ref(0);
+const navigationIndex = ref(0)
 
 const navigateEnter = (close) => {
-	const item = flatList.value[navigationIndex.value];
+	const item = flatList.value[navigationIndex.value]
 	if (item) {
-		if (item.route) router.push(item.route);
-		if (item.click) item?.click();
+		if (item.route) router.push(item.route)
+		if (item.click) item?.click()
 
-		close();
+		close()
 	}
-};
+}
 
 const navigateUp = () => {
 	if (navigationIndex.value > 0) {
-		navigationIndex.value--;
+		navigationIndex.value--
 	}
-};
+}
 
 const navigateDown = () => {
 	if (navigationIndex.value < flatList.value.length - 1) {
-		navigationIndex.value++;
+		navigationIndex.value++
 	}
-};
+}
 
 watch(navigationIndex, () => {
 	const els = document
 		.getElementById('search-results')
-		?.querySelectorAll('[role="option"]');
+		?.querySelectorAll('[role="option"]')
 
-	els?.[navigationIndex.value]?.scrollIntoView({ block: 'center' });
-});
+	els?.[navigationIndex.value]?.scrollIntoView({ block: 'center' })
+})
 </script>
 
 <template>
@@ -117,9 +117,7 @@ watch(navigationIndex, () => {
 				>
 					<template v-for="(v, k) in list">
 						<!-- group name -->
-						<span class="text-ink-gray-4 uppercase p-2">
-							{{ k }}
-						</span>
+						<span class="text-ink-gray-4 uppercase p-2"> {{ k }} </span>
 
 						<div class="flex flex-col mb-3">
 							<router-link
@@ -145,7 +143,8 @@ watch(navigationIndex, () => {
 
 			<div v-else class="flex my-5 p-4 text-ink-gray-5">
 				<span class="flex items-center gap-2 mx-auto">
-					<LucideFrown class="size-4" /> No results found
+					<LucideFrown class="size-4" />
+					No results found
 				</span>
 			</div>
 		</div>

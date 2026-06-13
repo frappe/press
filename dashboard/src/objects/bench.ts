@@ -1,17 +1,17 @@
-import { Tooltip } from 'frappe-ui';
-import LucideAppWindow from '~icons/lucide/app-window';
-import type { VNode } from 'vue';
-import { defineAsyncComponent, h } from 'vue';
-import { getTeam, switchToTeam } from '../data/team';
-import { icon } from '../utils/components';
+import { Tooltip } from 'frappe-ui'
+import LucideAppWindow from '~icons/lucide/app-window'
+import type { VNode } from 'vue'
+import { defineAsyncComponent, h } from 'vue'
+import { getTeam, switchToTeam } from '../data/team'
+import { icon } from '../utils/components'
 import {
 	clusterOptions,
 	getSitesTabColumns,
 	sitesTabRoute,
-	siteTabFilterControls
-} from './common';
-import { getAppsTab } from './common/apps';
-import { getJobsTab } from './common/jobs';
+	siteTabFilterControls,
+} from './common'
+import { getAppsTab } from './common/apps'
+import { getJobsTab } from './common/jobs'
 import type {
 	Breadcrumb,
 	BreadcrumbArgs,
@@ -22,18 +22,18 @@ import type {
 	List,
 	RouteDetail,
 	Row,
-	Tab
-} from './common/types';
-import { getLogsTab } from './tabs/site/logs';
-import { getPatchesTab } from './common/patches';
+	Tab,
+} from './common/types'
+import { getLogsTab } from './tabs/site/logs'
+import { getPatchesTab } from './common/patches'
 
 export default {
 	doctype: 'Bench',
 	whitelistedMethods: {},
 	detail: getDetail(),
 	list: getList(),
-	routes: getRoutes()
-} satisfies DashboardObject as DashboardObject;
+	routes: getRoutes(),
+} satisfies DashboardObject as DashboardObject
 
 function getDetail() {
 	return {
@@ -42,7 +42,7 @@ function getDetail() {
 		route: '/benches/:name',
 		tabs: getTabs(),
 		actions: ({ documentResource: res }) => {
-			const team = getTeam();
+			const team = getTeam()
 			return [
 				{
 					label: 'Options',
@@ -55,26 +55,26 @@ function getDetail() {
 							onClick() {
 								window.open(
 									`${window.location.protocol}//${window.location.host}/app/bench/${res.name}`,
-									'_blank'
-								);
-							}
+									'_blank',
+								)
+							},
 						},
 						{
 							label: 'Impersonate Team',
 							icon: defineAsyncComponent(
-								() => import('~icons/lucide/venetian-mask')
+								() => import('~icons/lucide/venetian-mask'),
 							),
 							condition: () => window.is_system_user ?? false,
 							onClick() {
-								switchToTeam(res.doc.team);
-							}
-						}
-					]
-				}
-			];
-		}
+								switchToTeam(res.doc.team)
+							},
+						},
+					],
+				},
+			]
+		},
 		// breadcrumbs // use default breadcrumbs
-	} satisfies Detail as Detail;
+	} satisfies Detail as Detail
 }
 
 function getTabs() {
@@ -84,8 +84,8 @@ function getTabs() {
 		getJobsTab('Bench'),
 		getProcessesTab(),
 		getLogsTab(false),
-		getPatchesTab(true)
-	] satisfies Tab[] as Tab[];
+		getPatchesTab(true),
+	] satisfies Tab[] as Tab[]
 }
 
 function getRoutes() {
@@ -93,14 +93,14 @@ function getRoutes() {
 		{
 			name: 'Bench Job',
 			path: 'jobs/:id',
-			component: () => import('../pages/JobPage.vue')
+			component: () => import('../pages/JobPage.vue'),
 		},
 		{
 			name: 'Bench Log',
 			path: 'logs/:logName',
-			component: () => import('../pages/LogPage.vue')
-		}
-	] satisfies RouteDetail[] as RouteDetail[];
+			component: () => import('../pages/LogPage.vue'),
+		},
+	] satisfies RouteDetail[] as RouteDetail[]
 }
 
 function getList() {
@@ -111,7 +111,7 @@ function getList() {
 			'group.title as group_title',
 			'cluster.name as cluster_name',
 			'cluster.image as cluster_image',
-			'cluster.title as cluster_title'
+			'cluster.title as cluster_title',
 		],
 		orderBy: 'creation desc',
 		searchField: 'name',
@@ -120,67 +120,67 @@ function getList() {
 				label: 'Bench',
 				fieldname: 'name',
 				class: 'font-medium',
-				suffix: getBenchTitleSuffix
+				suffix: getBenchTitleSuffix,
 			},
 			{
 				label: 'Status',
 				fieldname: 'status',
 				type: 'Badge',
-				width: '100px'
+				width: '100px',
 			},
 			{
 				label: 'Sites',
 				fieldname: 'site_count',
 				type: 'Number',
 				width: '100px',
-				align: 'right'
+				align: 'right',
 			},
 			{
 				label: 'Region',
 				fieldname: 'cluster',
 				width: 0.75,
 				format: (value, row) => String(row.cluster_title || value || ''),
-				prefix: getClusterImagePrefix
+				prefix: getClusterImagePrefix,
 			},
-			{ label: 'Bench', fieldname: 'group_title', width: '350px' }
+			{ label: 'Bench', fieldname: 'group_title', width: '350px' },
 		],
-		filterControls
-	} satisfies List as List;
+		filterControls,
+	} satisfies List as List
 }
 
 function getBenchTitleSuffix(row: Row) {
-	const ch: VNode[] = [];
-	if (row.inplace_update_docker_image) ch.push(getInPlaceUpdatesSuffix(row));
-	if (row.has_app_patch_applied) ch.push(getAppPatchSuffix(row));
-	if (!ch.length) return;
+	const ch: VNode[] = []
+	if (row.inplace_update_docker_image) ch.push(getInPlaceUpdatesSuffix(row))
+	if (row.has_app_patch_applied) ch.push(getAppPatchSuffix(row))
+	if (!ch.length) return
 
 	return h(
 		'div',
 		{
-			class: 'flex flex-row gap-2'
+			class: 'flex flex-row gap-2',
 		},
-		ch
-	);
+		ch,
+	)
 }
 
 function getInPlaceUpdatesSuffix(row: Row) {
 	const count = Number(
-		String(row.inplace_update_docker_image).split('-').at(-1)
-	);
+		String(row.inplace_update_docker_image).split('-').at(-1),
+	)
 
-	let title = 'Bench has been updated in place';
+	let title = 'Bench has been updated in place'
 	if (!Number.isNaN(count) && count > 1) {
-		title += ` ${count} times`;
+		title += ` ${count} times`
 	}
 
 	return h(
 		'div',
 		{
 			title,
-			class: 'rounded-full bg-surface-gray-2 p-1'
+			class: 'rounded-full bg-surface-gray-2 p-1',
 		},
-		h(icon('star', 'w-3 h-3'))
-	);
+		h(icon('star', 'w-3 h-3')),
+	)
 }
 
 function getAppPatchSuffix(row: Row) {
@@ -188,20 +188,20 @@ function getAppPatchSuffix(row: Row) {
 		'div',
 		{
 			title: 'Apps in this bench may have been patched',
-			class: 'rounded-full bg-surface-gray-2 p-1'
+			class: 'rounded-full bg-surface-gray-2 p-1',
 		},
-		h(icon('hash', 'w-3 h-3'))
-	);
+		h(icon('hash', 'w-3 h-3')),
+	)
 }
 
 function getClusterImagePrefix(row: Row) {
-	if (!row.cluster_image) return;
+	if (!row.cluster_image) return
 
 	return h('img', {
 		src: row.cluster_image,
 		class: 'w-4 h-4',
-		alt: row.cluster_title
-	});
+		alt: row.cluster_title,
+	})
 }
 
 function filterControls() {
@@ -217,24 +217,24 @@ function filterControls() {
 				'Installing',
 				'Updating',
 				'Broken',
-				'Archived'
-			]
+				'Archived',
+			],
 		},
 		{
 			type: 'link',
 			label: 'Bench',
 			fieldname: 'group',
 			options: {
-				doctype: 'Release Group'
-			}
+				doctype: 'Release Group',
+			},
 		},
 		{
 			type: 'select',
 			label: 'Region',
 			fieldname: 'cluster',
-			options: clusterOptions
-		}
-	] satisfies FilterField[] as FilterField[];
+			options: clusterOptions,
+		},
+	] satisfies FilterField[] as FilterField[]
 }
 
 export function getSitesTab() {
@@ -245,10 +245,10 @@ export function getSitesTab() {
 		type: 'list',
 		list: {
 			doctype: 'Site',
-			filters: r => ({
+			filters: (r) => ({
 				group: r.doc.group,
 				bench: r.name,
-				skip_team_filter_for_system_user_and_support_agent: true
+				skip_team_filter_for_system_user_and_support_agent: true,
 			}),
 			fields: [
 				'name',
@@ -258,24 +258,24 @@ export function getSitesTab() {
 				'plan.price_usd as price_usd',
 				'plan.price_inr as price_inr',
 				'cluster.image as cluster_image',
-				'cluster.title as cluster_title'
+				'cluster.title as cluster_title',
 			],
 			orderBy: 'creation desc, bench desc',
 			pageLength: 99999,
 			columns: getSitesTabColumns(true),
 			filterControls: siteTabFilterControls,
 			route: sitesTabRoute,
-			primaryAction: r => {
+			primaryAction: (r) => {
 				return {
 					label: 'New Site',
 					slots: {
-						prefix: icon('plus', 'w-4 h-4')
+						prefix: icon('plus', 'w-4 h-4'),
 					},
 					route: {
 						name: 'Release Group New Site',
-						params: { bench: r.documentResource.doc.group }
-					}
-				};
+						params: { bench: r.documentResource.doc.group },
+					},
+				}
 			},
 			rowActions: ({ row }) => [
 				{
@@ -284,17 +284,17 @@ export function getSitesTab() {
 					onClick() {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/site/${row.name}`,
-							'_blank'
-						);
-					}
-				}
-			]
-		}
-	} satisfies Tab;
+							'_blank',
+						)
+					},
+				},
+			],
+		},
+	} satisfies Tab
 }
 
 export function getProcessesTab() {
-	const url = 'press.api.bench.get_processes';
+	const url = 'press.api.bench.get_processes'
 	return {
 		label: 'Processes',
 		icon: icon('cpu'),
@@ -304,17 +304,17 @@ export function getProcessesTab() {
 			resource({ documentResource: res }) {
 				return {
 					params: {
-						name: res.name
+						name: res.name,
 					},
 					url,
 					auto: true,
-					cache: ['ObjectList', url, res.name]
-				};
+					cache: ['ObjectList', url, res.name],
+				}
 			},
 			columns: getProcessesColumns(),
-			rowActions: () => [] // TODO: allow issuing supectl commands
-		}
-	} satisfies Tab as Tab;
+			rowActions: () => [], // TODO: allow issuing supectl commands
+		},
+	} satisfies Tab as Tab
 }
 
 export function getProcessesColumns() {
@@ -326,66 +326,66 @@ export function getProcessesColumns() {
 		Stopped: 'gray',
 		Exited: 'gray',
 		Unknown: 'gray',
-		Fatal: 'red'
-	};
+		Fatal: 'red',
+	}
 
-	type Status = keyof typeof processStatusColorMap;
+	type Status = keyof typeof processStatusColorMap
 	return [
 		{
 			label: 'Name',
 			width: 2,
-			fieldname: 'name'
+			fieldname: 'name',
 		},
 		{
 			label: 'Group',
 			width: 1.5,
 			fieldname: 'group',
-			format: v => String(v ?? '')
+			format: (v) => String(v ?? ''),
 		},
 		{
 			label: 'Status',
 			type: 'Badge',
 			width: 0.7,
 			fieldname: 'status',
-			theme: value => processStatusColorMap[value as Status] ?? 'gray',
+			theme: (value) => processStatusColorMap[value as Status] ?? 'gray',
 			suffix: ({ message }) => {
 				if (!message) {
-					return;
+					return
 				}
 
 				return h(
 					Tooltip,
 					{
 						text: message,
-						placement: 'top'
+						placement: 'top',
 					},
-					() => h(icon('alert-circle', 'w-3 h-3'))
-				);
-			}
+					() => h(icon('alert-circle', 'w-3 h-3')),
+				)
+			},
 		},
 		{
 			label: 'Uptime',
-			fieldname: 'uptime_string'
-		}
-	] satisfies ColumnField[] as ColumnField[];
+			fieldname: 'uptime_string',
+		},
+	] satisfies ColumnField[] as ColumnField[]
 }
 
 function breadcrumbs({ items, documentResource: bench }: BreadcrumbArgs) {
-	const $team = getTeam();
+	const $team = getTeam()
 	const benchCrumb = {
 		label: bench.doc?.name,
-		route: `/benches/${bench.doc?.name}`
-	};
+		route: `/benches/${bench.doc?.name}`,
+	}
 
 	if (bench.doc.group_team == $team.doc?.name || $team.doc?.is_desk_user) {
 		return [
 			{
 				label: bench.doc?.group_title,
-				route: `/groups/${bench.doc?.group}`
+				route: `/groups/${bench.doc?.group}`,
 			},
-			benchCrumb
-		] satisfies Breadcrumb[];
+			benchCrumb,
+		] satisfies Breadcrumb[]
 	}
 
-	return [...items.slice(0, -1), benchCrumb] satisfies Breadcrumb[];
+	return [...items.slice(0, -1), benchCrumb] satisfies Breadcrumb[]
 }

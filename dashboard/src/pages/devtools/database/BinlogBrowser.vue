@@ -46,7 +46,8 @@
 						@click.prevent="() => (show_binlog_index_status_dialog = true)"
 					>
 						<div class="flex flex-row items-center gap-1">
-							<lucide-package-search class="h-4 w-4" /> Binlogs
+							<lucide-package-search class="h-4 w-4" />
+							Binlogs
 						</div>
 					</Button>
 
@@ -210,7 +211,8 @@
 							v-if="this.$resources?.searchBinlogs?.loading"
 							class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 						>
-							<Spinner class="w-4" /> Searching for binlogs...
+							<Spinner class="w-4" />
+							Searching for binlogs...
 						</div>
 						<BinlogResultTable
 							v-else
@@ -296,14 +298,19 @@
 					<br />
 					This site is currently on shared hosting.
 				</p>
-				<p class="text-ink-gray-6" v-else-if="database_server_memory < 8 * 1024">
+				<p
+					class="text-ink-gray-6"
+					v-else-if="database_server_memory < 8 * 1024"
+				>
 					<span
 						>This feature requires at least <strong>8 GB RAM</strong> on the db
 						server.</span
 					>
 					<br />
 					Currently, the server has only
-					<strong>{{ Math.round(database_server_memory / 1024) }} GB RAM</strong
+					<strong
+						>{{ Math.round(database_server_memory / 1024) }}
+						GB RAM</strong
 					>.
 				</p>
 				<p class="text-ink-gray-6" v-else>
@@ -331,8 +338,8 @@
 	</div>
 </template>
 <script>
-import BinlogBrowserChart from '../../../components/devtools/database/BinlogBrowserChart.vue';
-import Header from '../../../components/Header.vue';
+import BinlogBrowserChart from '../../../components/devtools/database/BinlogBrowserChart.vue'
+import Header from '../../../components/Header.vue'
 import {
 	Tabs,
 	Breadcrumbs,
@@ -341,10 +348,10 @@ import {
 	Spinner,
 	TextInput,
 	DateTimePicker,
-} from 'frappe-ui';
-import { formatValue } from '../../../utils/format';
-import LinkControl from '../../../components/LinkControl.vue';
-import BinlogResultTable from '../../../components/devtools/database/BinlogResultTable.vue';
+} from 'frappe-ui'
+import { formatValue } from '../../../utils/format'
+import LinkControl from '../../../components/LinkControl.vue'
+import BinlogResultTable from '../../../components/devtools/database/BinlogResultTable.vue'
 
 export default {
 	name: 'BinlogBrowser',
@@ -388,65 +395,65 @@ export default {
 			event_size_comparator: '',
 			event_size: null,
 			show_binlog_index_status_dialog: false,
-		};
+		}
 	},
 	mounted() {
-		this.loadFromURLParams();
+		this.loadFromURLParams()
 
 		// Listen for browser back/forward button
-		window.addEventListener('popstate', this.handlePopState);
+		window.addEventListener('popstate', this.handlePopState)
 	},
 	beforeUnmount() {
 		// Clean up event listener
-		window.removeEventListener('popstate', this.handlePopState);
+		window.removeEventListener('popstate', this.handlePopState)
 	},
 	watch: {
 		site(site_name) {
-			if (!site_name) return;
+			if (!site_name) return
 			// set site to query param ?site=site_name
-			this.updateURLParams();
+			this.updateURLParams()
 
 			// reset state
-			this.data = null;
-			this.errorMessage = null;
-			this.binlog_index_state_loaded = false;
-			this.binlog_indexer_enabled = false;
-			this.binlog_indexer_running = false;
-			this.site_hosted_on_shared_server = false;
-			this.database_server_memory = 0;
+			this.data = null
+			this.errorMessage = null
+			this.binlog_index_state_loaded = false
+			this.binlog_indexer_enabled = false
+			this.binlog_indexer_running = false
+			this.site_hosted_on_shared_server = false
+			this.database_server_memory = 0
 
-			this.$resources.site.submit();
+			this.$resources.site.submit()
 		},
 		tableName() {
-			this.refreshDataWithDebounce();
+			this.refreshDataWithDebounce()
 		},
 		type() {
-			this.refreshDataWithDebounce();
+			this.refreshDataWithDebounce()
 		},
 		start() {
-			this.refreshDataWithDebounce();
+			this.refreshDataWithDebounce()
 		},
 		end() {
-			this.refreshDataWithDebounce();
+			this.refreshDataWithDebounce()
 		},
 		event_size_comparator(newVal) {
 			if (newVal && this.event_size) {
-				this.refreshDataWithDebounce();
+				this.refreshDataWithDebounce()
 			}
 
 			if (newVal === '') {
-				this.event_size = 0;
-				this.refreshDataWithDebounce();
+				this.event_size = 0
+				this.refreshDataWithDebounce()
 			}
 		},
 		event_size(newVal) {
 			if (newVal && this.event_size_comparator) {
-				this.refreshDataWithDebounce();
+				this.refreshDataWithDebounce()
 			}
 		},
 		isBinlogIndexerAvailable(newVal) {
-			if (!newVal) return;
-			this.refreshDataWithDebounce();
+			if (!newVal) return
+			this.refreshDataWithDebounce()
 		},
 	},
 	resources: {
@@ -455,15 +462,15 @@ export default {
 				url: 'press.api.client.get',
 				initialData: {},
 				makeParams: () => {
-					return { doctype: 'Site', name: this.site };
+					return { doctype: 'Site', name: this.site }
 				},
 				auto: false,
 				onSuccess: (data) => {
 					if (data) {
-						this.fetchBinlogServiceStatus();
+						this.fetchBinlogServiceStatus()
 					}
 				},
-			};
+			}
 		},
 		timeline() {
 			return {
@@ -472,10 +479,10 @@ export default {
 				auto: false,
 				onSuccess: (data) => {
 					if (data?.message) {
-						this.resetSearch();
+						this.resetSearch()
 					}
 				},
-			};
+			}
 		},
 		binlogIndexingServiceStatus() {
 			return {
@@ -488,20 +495,20 @@ export default {
 						dn: this.site,
 						method: 'binlog_indexing_service_status',
 						args: {},
-					};
+					}
 				},
 				onSuccess: (data) => {
 					if (data?.message) {
-						this.binlog_index_state_loaded = true;
-						this.binlog_indexer_enabled = data.message?.enabled;
-						this.binlog_indexer_running = data.message?.indexer_running;
+						this.binlog_index_state_loaded = true
+						this.binlog_indexer_enabled = data.message?.enabled
+						this.binlog_indexer_running = data.message?.indexer_running
 						this.site_hosted_on_shared_server =
-							data.message?.hosted_on_shared_server;
-						this.database_server = data.message?.database_server;
-						this.database_server_memory = data.message?.database_server_memory;
+							data.message?.hosted_on_shared_server
+						this.database_server = data.message?.database_server
+						this.database_server_memory = data.message?.database_server_memory
 					}
 				},
-			};
+			}
 		},
 		searchBinlogs() {
 			return {
@@ -510,20 +517,20 @@ export default {
 				auto: false,
 				onSuccess: (data) => {
 					if (data?.message) {
-						this.queryIds = [];
-						this.result = [];
-						let rowIds = data?.message;
-						let binlogs = Object.keys(rowIds).sort();
+						this.queryIds = []
+						this.result = []
+						let rowIds = data?.message
+						let binlogs = Object.keys(rowIds).sort()
 						for (let i = 0; i < binlogs.length; i++) {
-							let binlogRowIds = rowIds[binlogs[i]];
+							let binlogRowIds = rowIds[binlogs[i]]
 							for (let j = 0; j < binlogRowIds.length; j++) {
-								this.queryIds.push(`${binlogs[i]}:${binlogRowIds[j]}`);
+								this.queryIds.push(`${binlogs[i]}:${binlogRowIds[j]}`)
 							}
 						}
-						this.searchResultReady = true;
+						this.searchResultReady = true
 					}
 				},
-			};
+			}
 		},
 		fetchQueriesFromBinlog() {
 			return {
@@ -532,141 +539,141 @@ export default {
 				auto: false,
 				onSuccess: (data) => {
 					if (data?.message) {
-						let binlogs = Object.keys(data.message);
-						binlogs.sort();
-						this.result = [];
+						let binlogs = Object.keys(data.message)
+						binlogs.sort()
+						this.result = []
 						for (let i = 0; i < binlogs.length; i++) {
-							let binlogRowIds = Object.keys(data.message[binlogs[i]]);
-							binlogRowIds.sort();
+							let binlogRowIds = Object.keys(data.message[binlogs[i]])
+							binlogRowIds.sort()
 							for (let j = 0; j < binlogRowIds.length; j++) {
-								let queryInfo = data.message[binlogs[i]][binlogRowIds[j]];
+								let queryInfo = data.message[binlogs[i]][binlogRowIds[j]]
 								this.result.push([
 									queryInfo[1],
 									queryInfo[4],
 									queryInfo[0],
 									new Date(queryInfo[5] * 1000).toLocaleString(),
 									queryInfo[2],
-								]);
+								])
 							}
 						}
 					}
 				},
-			};
+			}
 		},
 	},
 	methods: {
 		loadFromURLParams() {
-			const url = new URL(window.location.href);
-			const site_name = url.searchParams.get('site');
-			const startParam = url.searchParams.get('start');
-			const endParam = url.searchParams.get('end');
+			const url = new URL(window.location.href)
+			const site_name = url.searchParams.get('site')
+			const startParam = url.searchParams.get('start')
+			const endParam = url.searchParams.get('end')
 
 			// Load from query params if available
 			if (startParam && endParam) {
-				const startDate = new Date(parseInt(startParam) * 1000);
-				const endDate = new Date(parseInt(endParam) * 1000);
-				this.start = startDate.toLocaleString();
-				this.end = endDate.toLocaleString();
+				const startDate = new Date(parseInt(startParam) * 1000)
+				const endDate = new Date(parseInt(endParam) * 1000)
+				this.start = startDate.toLocaleString()
+				this.end = endDate.toLocaleString()
 			} else {
 				// Default to last 24 hours
-				const now = new Date();
-				this.end = now.toLocaleString();
-				const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-				this.start = oneDayAgo.toLocaleString();
+				const now = new Date()
+				this.end = now.toLocaleString()
+				const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+				this.start = oneDayAgo.toLocaleString()
 			}
 
 			if (url.searchParams.get('type')) {
-				this.type = url.searchParams.get('type');
+				this.type = url.searchParams.get('type')
 			}
 
 			if (url.searchParams.get('table')) {
-				this.tableName = url.searchParams.get('table');
+				this.tableName = url.searchParams.get('table')
 			}
 
 			if (url.searchParams.get('event_size_comparator')) {
 				this.event_size_comparator = url.searchParams.get(
 					'event_size_comparator',
-				);
+				)
 			}
 
 			if (url.searchParams.get('event_size')) {
-				this.event_size = parseInt(url.searchParams.get('event_size'));
+				this.event_size = parseInt(url.searchParams.get('event_size'))
 			}
 
 			if (site_name) {
-				this.site = site_name;
+				this.site = site_name
 			}
 
 			// Initialize lastPushedState with current URL
-			this.lastPushedState = window.location.href;
+			this.lastPushedState = window.location.href
 		},
 		handlePopState() {
 			// When user clicks back/forward, reload from URL without triggering watchers
-			const url = new URL(window.location.href);
-			const site_name = url.searchParams.get('site');
-			const startParam = url.searchParams.get('start');
-			const endParam = url.searchParams.get('end');
+			const url = new URL(window.location.href)
+			const site_name = url.searchParams.get('site')
+			const startParam = url.searchParams.get('start')
+			const endParam = url.searchParams.get('end')
 
 			if (startParam && endParam) {
-				const startDate = new Date(parseInt(startParam) * 1000);
-				const endDate = new Date(parseInt(endParam) * 1000);
-				this.start = startDate.toLocaleString();
-				this.end = endDate.toLocaleString();
+				const startDate = new Date(parseInt(startParam) * 1000)
+				const endDate = new Date(parseInt(endParam) * 1000)
+				this.start = startDate.toLocaleString()
+				this.end = endDate.toLocaleString()
 			}
 
 			if (site_name) {
-				this.site = site_name;
+				this.site = site_name
 			}
 		},
 		updateURLParams() {
-			const url = new URL(window.location.href);
+			const url = new URL(window.location.href)
 
 			if (this.site) {
-				url.searchParams.set('site', this.site);
+				url.searchParams.set('site', this.site)
 			}
 
 			if (this.start && this.end) {
-				const startTimestamp = parseInt(new Date(this.start).getTime() / 1000);
-				const endTimestamp = parseInt(new Date(this.end).getTime() / 1000);
-				url.searchParams.set('start', startTimestamp);
-				url.searchParams.set('end', endTimestamp);
+				const startTimestamp = parseInt(new Date(this.start).getTime() / 1000)
+				const endTimestamp = parseInt(new Date(this.end).getTime() / 1000)
+				url.searchParams.set('start', startTimestamp)
+				url.searchParams.set('end', endTimestamp)
 			}
 
 			if (this.type) {
-				url.searchParams.set('type', this.type);
+				url.searchParams.set('type', this.type)
 			} else {
-				url.searchParams.delete('type');
+				url.searchParams.delete('type')
 			}
 
 			if (this.tableName) {
-				url.searchParams.set('table', this.tableName);
+				url.searchParams.set('table', this.tableName)
 			} else {
-				url.searchParams.delete('table');
+				url.searchParams.delete('table')
 			}
 
 			if (this.event_size_comparator && this.event_size) {
 				url.searchParams.set(
 					'event_size_comparator',
 					this.event_size_comparator,
-				);
-				url.searchParams.set('event_size', this.event_size);
+				)
+				url.searchParams.set('event_size', this.event_size)
 			} else {
-				url.searchParams.delete('event_size_comparator');
-				url.searchParams.delete('event_size');
+				url.searchParams.delete('event_size_comparator')
+				url.searchParams.delete('event_size')
 			}
 
 			// Only push state if it's different from the last pushed state
-			const newState = url.toString();
+			const newState = url.toString()
 			if (this.lastPushedState !== newState) {
-				window.history.pushState({}, '', url);
-				this.lastPushedState = newState;
+				window.history.pushState({}, '', url)
+				this.lastPushedState = newState
 			}
 		},
 		fetchBinlogTimeline() {
-			if (!this.start || !this.end || !this.site) return;
-			if (this.$resources.timeline?.loading ?? true) return;
-			if (!this.binlog_indexer_enabled) return;
-			if (this.binlog_indexer_running) return;
+			if (!this.start || !this.end || !this.site) return
+			if (this.$resources.timeline?.loading ?? true) return
+			if (!this.binlog_indexer_enabled) return
+			if (this.binlog_indexer_running) return
 
 			this.$resources.timeline.submit({
 				dt: 'Site',
@@ -682,12 +689,12 @@ export default {
 						: this.event_size_comparator,
 					event_size: !this.event_size_comparator ? null : this.event_size,
 				},
-			});
+			})
 		},
 		searchBinlogs() {
-			if (this.$resources.searchBinlogs?.loading ?? true) return;
-			if (!this.binlog_indexer_enabled) return;
-			if (this.binlog_indexer_running) return;
+			if (this.$resources.searchBinlogs?.loading ?? true) return
+			if (!this.binlog_indexer_enabled) return
+			if (this.binlog_indexer_running) return
 			this.$resources.searchBinlogs.submit({
 				dt: 'Site',
 				dn: this.site,
@@ -703,29 +710,29 @@ export default {
 						: this.event_size_comparator,
 					event_size: !this.event_size_comparator ? null : this.event_size,
 				},
-			});
+			})
 		},
 		fetchQueries(start, end) {
-			if (this.$resources.fetchQueriesFromBinlog?.loading ?? true) return;
-			if (!this.binlog_indexer_enabled) return;
-			if (this.binlog_indexer_running) return;
+			if (this.$resources.fetchQueriesFromBinlog?.loading ?? true) return
+			if (!this.binlog_indexer_enabled) return
+			if (this.binlog_indexer_running) return
 
-			let lastQueryIndex = this.result.length;
+			let lastQueryIndex = this.result.length
 			if (lastQueryIndex >= this.queryIds.length) {
-				return;
+				return
 			}
-			if (this.$resources.fetchQueriesFromBinlog?.loading ?? true) return;
+			if (this.$resources.fetchQueriesFromBinlog?.loading ?? true) return
 
 			// Load 50 queries at a time
-			const queriesToLoad = this.queryIds.slice(start, end);
-			let rowIds = {};
+			const queriesToLoad = this.queryIds.slice(start, end)
+			let rowIds = {}
 			queriesToLoad.forEach((q) => {
-				const [binlog, rowId] = q.split(':');
+				const [binlog, rowId] = q.split(':')
 				if (!rowIds[binlog]) {
-					rowIds[binlog] = [];
+					rowIds[binlog] = []
 				}
-				rowIds[binlog].push(parseInt(rowId));
-			});
+				rowIds[binlog].push(parseInt(rowId))
+			})
 
 			if (Object.keys(rowIds).length > 0) {
 				this.$resources.fetchQueriesFromBinlog.submit({
@@ -735,128 +742,128 @@ export default {
 					args: {
 						row_ids: rowIds,
 					},
-				});
+				})
 			}
 		},
 		fetchBinlogServiceStatus() {
 			if (this.binlog_status_check_interval_ref) {
-				clearInterval(this.binlog_status_check_interval_ref);
+				clearInterval(this.binlog_status_check_interval_ref)
 			}
-			if (!this.site) return;
-			if (this.$resources?.binlogIndexingServiceStatus?.loading ?? true) return;
+			if (!this.site) return
+			if (this.$resources?.binlogIndexingServiceStatus?.loading ?? true) return
 
-			this.$resources.binlogIndexingServiceStatus.submit();
+			this.$resources.binlogIndexingServiceStatus.submit()
 			this.binlog_status_check_interval_ref = setInterval(() => {
-				this.$resources.binlogIndexingServiceStatus.submit();
-			}, 5000);
+				this.$resources.binlogIndexingServiceStatus.submit()
+			}, 5000)
 		},
 		onZoomEvent(start, end) {
 			if (!start || !end) {
-				return;
+				return
 			}
-			this.start = null;
-			this.end = null;
-			this.start = start['timestamp'].toLocaleString();
-			this.end = end['timestamp'].toLocaleString();
+			this.start = null
+			this.end = null
+			this.start = start['timestamp'].toLocaleString()
+			this.end = end['timestamp'].toLocaleString()
 		},
 		refreshDataWithDebounce() {
-			clearTimeout(this.timer);
+			clearTimeout(this.timer)
 			this.timer = setTimeout(() => {
 				if (this.tableName && this.tableName.indexOf('%') === -1) {
-					this.tableName = '%' + this.tableName.trim() + '%';
+					this.tableName = '%' + this.tableName.trim() + '%'
 				}
-				this.updateURLParams();
-				this.fetchBinlogTimeline();
-			}, 1000);
+				this.updateURLParams()
+				this.fetchBinlogTimeline()
+			}, 1000)
 		},
 		resetSearch() {
-			this.queryIds = [];
-			this.result = [];
-			this.searchResultReady = false;
+			this.queryIds = []
+			this.result = []
+			this.searchResultReady = false
 			if (this.isBinlogSearchAccessible) {
-				this.searchBinlogs();
+				this.searchBinlogs()
 			}
 		},
 	},
 	computed: {
 		isRequiredInformationReceived() {
-			if (this.$resources.site?.loading ?? true) return false;
-			return true;
+			if (this.$resources.site?.loading ?? true) return false
+			return true
 		},
 		isBinlogIndexerAvailable() {
-			return this.binlog_indexer_enabled && !this.binlog_indexer_running;
+			return this.binlog_indexer_enabled && !this.binlog_indexer_running
 		},
 		timeline() {
-			return this.$resources?.timeline?.data?.message ?? {};
+			return this.$resources?.timeline?.data?.message ?? {}
 		},
 		tables() {
-			return ['All Tables', ...(this.timeline?.tables ?? [])];
+			return ['All Tables', ...(this.timeline?.tables ?? [])]
 		},
 		barChartData() {
 			if (!this.timeline?.dataset) {
-				return [];
+				return []
 			}
 			// Convert the timestamp to Date
 			const convertedDataset = this.timeline.dataset.map((entry) => {
-				const date = new Date(entry.timestamp * 1000);
+				const date = new Date(entry.timestamp * 1000)
 				return {
 					...entry,
 					timestamp: date,
-				};
-			});
+				}
+			})
 
-			return convertedDataset;
+			return convertedDataset
 		},
 		tableColumns() {
-			let columns = ['Type', 'Table', 'Query', 'Timestamp', 'Event Size'];
+			let columns = ['Type', 'Table', 'Query', 'Timestamp', 'Event Size']
 			if (!this.showTypeColumn && !this.showTableColumn) {
-				columns = columns.slice(2);
+				columns = columns.slice(2)
 			} else if (!this.showTypeColumn) {
-				columns = columns.slice(1);
+				columns = columns.slice(1)
 			} else if (!this.showTableColumn) {
-				columns = columns.filter((col) => col !== 'Table');
+				columns = columns.filter((col) => col !== 'Table')
 			}
-			return columns;
+			return columns
 		},
 		tableRows() {
-			if (!this.result) return [];
-			let result = this.result;
+			if (!this.result) return []
+			let result = this.result
 			if (!this.showTypeColumn && !this.showTableColumn) {
-				result = result.map((row) => row.slice(2));
+				result = result.map((row) => row.slice(2))
 			} else if (!this.showTypeColumn) {
-				result = result.map((row) => [row[1], row[2], row[3]]);
+				result = result.map((row) => [row[1], row[2], row[3]])
 			} else if (!this.showTableColumn) {
-				result = result.map((row) => [row[0], row[2], row[3]]);
+				result = result.map((row) => [row[0], row[2], row[3]])
 			}
-			return result;
+			return result
 		},
 		cellFormatters() {
 			return {
 				'Event Size': (v) => formatValue(v, 'bytes'),
-			};
+			}
 		},
 		fullViewFormatters() {
 			return {
 				Query: (v) => formatValue(v, 'sql'),
-			};
+			}
 		},
 		isBinlogSearchAccessible() {
 			if (!this.site || !this.start || !this.end) {
-				return false;
+				return false
 			}
 			// Ensure the selected time range is <= 6 hours
-			const startTime = new Date(this.start).getTime();
-			const endTime = new Date(this.end).getTime();
-			const sixHoursInMs = 6 * 60 * 60 * 1000;
-			return endTime - startTime <= sixHoursInMs;
+			const startTime = new Date(this.start).getTime()
+			const endTime = new Date(this.end).getTime()
+			const sixHoursInMs = 6 * 60 * 60 * 1000
+			return endTime - startTime <= sixHoursInMs
 		},
 		isProcessingQueries() {
 			return (
 				this.$resources?.timeline?.loading ||
 				this.$resources?.searchBinlogs?.loading ||
 				this.$resources?.fetchQueriesFromBinlog?.loading
-			);
+			)
 		},
 	},
-};
+}
 </script>

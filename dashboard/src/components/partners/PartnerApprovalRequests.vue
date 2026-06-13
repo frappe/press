@@ -4,11 +4,11 @@
 	</div>
 </template>
 <script>
-import { h } from 'vue';
-import { toast } from 'vue-sonner';
-import { FeatherIcon, Tooltip, Badge, Button } from 'frappe-ui';
-import ObjectList from '../ObjectList.vue';
-import Clock from '~icons/lucide/clock';
+import { h } from 'vue'
+import { toast } from 'vue-sonner'
+import { FeatherIcon, Tooltip, Badge, Button } from 'frappe-ui'
+import ObjectList from '../ObjectList.vue'
+import Clock from '~icons/lucide/clock'
 export default {
 	name: 'PartnerApprovalRequests',
 	components: {
@@ -26,8 +26,8 @@ export default {
 						width: 0.8,
 						class: 'truncate',
 						format: (value) => {
-							if (!value) return '';
-							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
 						},
 					},
 					{
@@ -36,8 +36,8 @@ export default {
 						width: 0.8,
 						class: 'truncate',
 						format: (value) => {
-							if (!value) return '';
-							return value.length > 25 ? `${value.slice(0, 25)}...` : value;
+							if (!value) return ''
+							return value.length > 25 ? `${value.slice(0, 25)}...` : value
 						},
 					},
 					{
@@ -49,7 +49,7 @@ export default {
 								year: 'numeric',
 								month: 'long',
 								day: 'numeric',
-							}).format(new Date(value));
+							}).format(new Date(value))
 						},
 					},
 					{
@@ -70,7 +70,7 @@ export default {
 											name: 'check-circle',
 											class: 'h-4 w-4 text-green-600',
 										}),
-								);
+								)
 							} else {
 								return h(
 									Tooltip,
@@ -81,7 +81,7 @@ export default {
 										h(Clock, {
 											class: 'h-4 w-4 text-yellow-500',
 										}),
-								);
+								)
 							}
 						},
 					},
@@ -103,7 +103,7 @@ export default {
 											name: 'check-circle',
 											class: 'h-4 w-4 text-green-600',
 										}),
-								);
+								)
 							} else {
 								return h(
 									Tooltip,
@@ -114,7 +114,7 @@ export default {
 										h(Clock, {
 											class: 'h-4 w-4 text-yellow-500',
 										}),
-								);
+								)
 							}
 						},
 					},
@@ -140,9 +140,9 @@ export default {
 												success: 'Approval request sent to Frappe',
 												error: 'Failed to Approve',
 											},
-										);
+										)
 									},
-								});
+								})
 							} else if (
 								row.status === 'Pending' &&
 								row.approved_by_frappe === 0
@@ -152,7 +152,7 @@ export default {
 									theme: 'blue',
 									variant: 'subtle',
 									size: 'md',
-								});
+								})
 							}
 						},
 					},
@@ -161,8 +161,8 @@ export default {
 					partner: this.$team.doc.name,
 				},
 				orderBy: 'creation desc',
-			};
+			}
 		},
 	},
-};
+}
 </script>

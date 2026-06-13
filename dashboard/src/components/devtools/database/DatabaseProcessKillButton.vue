@@ -12,7 +12,7 @@
 	>
 </template>
 <script>
-import { toast } from 'vue-sonner';
+import { toast } from 'vue-sonner'
 export default {
 	props: {
 		row: { type: Object, required: true },
@@ -21,7 +21,7 @@ export default {
 	data() {
 		return {
 			isKilled: false,
-		};
+		}
 	},
 	resources: {
 		killProcess() {
@@ -36,20 +36,20 @@ export default {
 						args: {
 							id: this.row.ID,
 						},
-					};
+					}
 				},
 				onSuccess: (data) => {
-					this.isKilled = true;
-					toast.success('Database Process Killed');
+					this.isKilled = true
+					toast.success('Database Process Killed')
 				},
 				auto: false,
-			};
+			}
 		},
 	},
 	methods: {
 		killProcess() {
-			this.$resources.killProcess.submit();
+			this.$resources.killProcess.submit()
 		},
 	},
-};
+}
 </script>

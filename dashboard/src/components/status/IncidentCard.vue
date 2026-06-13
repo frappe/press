@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import LucideChevronRight from '~icons/lucide/chevron-right';
-import LucideClock from '~icons/lucide/clock';
-import LucideCheck from '~icons/lucide/circle-check';
-import LucideZap from '~icons/lucide/zap';
-import LucideServer from '~icons/lucide/server';
-import LucideDatabase from '~icons/lucide/database';
-import LucideBan from '~icons/lucide/ban';
-import LucideAlert from '~icons/lucide/alert-triangle';
-import LucideWrench from '~icons/lucide/wrench';
-import { Badge } from 'frappe-ui';
+import LucideChevronRight from '~icons/lucide/chevron-right'
+import LucideClock from '~icons/lucide/clock'
+import LucideCheck from '~icons/lucide/circle-check'
+import LucideZap from '~icons/lucide/zap'
+import LucideServer from '~icons/lucide/server'
+import LucideDatabase from '~icons/lucide/database'
+import LucideBan from '~icons/lucide/ban'
+import LucideAlert from '~icons/lucide/alert-triangle'
+import LucideWrench from '~icons/lucide/wrench'
+import { Badge } from 'frappe-ui'
 
 const statusClasses = {
 	Validating: 'orange',
@@ -19,26 +19,26 @@ const statusClasses = {
 	'Auto-Resolved': 'green',
 	'Press-Resolved': 'green',
 	default: 'red',
-};
+}
 
 const timelineDotClasses = {
 	Created: 'text-ink-gray-6',
 	Confirmed: 'text-ink-amber-3',
 	Resolved: 'text-ink-green-2',
-};
+}
 
 const actionStatusClasses = {
 	Success: 'green',
 	Failure: 'red',
 	Pending: 'amber',
 	default: 'gray',
-};
-
-interface Props {
-	data: any;
 }
 
-const props = defineProps<Props>();
+interface Props {
+	data: any
+}
+
+const props = defineProps<Props>()
 </script>
 
 <template>
@@ -91,9 +91,9 @@ const props = defineProps<Props>();
 								timelineDotClasses[step.label] || 'border-outline-gray-3',
 							]"
 						/>
-						<span class="flex-1 text-sm font-medium text-ink-gray-7">{{
-							step.label
-						}}</span>
+						<span class="flex-1 text-sm font-medium text-ink-gray-7"
+							>{{ step.label }}</span
+						>
 						<span class="text-sm text-ink-gray-5">{{ step.time }}</span>
 					</div>
 				</div>
@@ -110,9 +110,7 @@ const props = defineProps<Props>();
 
 				<div class="rounded-lg bg-surface-gray-1 px-4 py-3">
 					<div class="mb-2.5 flex items-center justify-between">
-						<span class="text-sm">
-							{{ data.investigation.name }}
-						</span>
+						<span class="text-sm"> {{ data.investigation.name }} </span>
 						<Badge :label="data.investigation.status" variant="solid" />
 					</div>
 
@@ -127,9 +125,7 @@ const props = defineProps<Props>();
 							<LucideServer v-if="group.label === 'Server'" class="size-3" />
 							<LucideDatabase v-else class="size-3" />
 
-							<span class="text-sm font-semibold">
-								{{ group.label }}
-							</span>
+							<span class="text-sm font-semibold"> {{ group.label }} </span>
 
 							<LucideChevronRight
 								class="ml-auto size-3.5 transition-transform group-open/investigation:rotate-90"

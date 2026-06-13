@@ -1,5 +1,5 @@
 <script setup>
-import PartnerOnboardingStepsAccordion from '@/onboarding/onboardingLeftContainer/PartnerOnboardingStepsAccordion.vue';
+import PartnerOnboardingStepsAccordion from '@/onboarding/onboardingLeftContainer/PartnerOnboardingStepsAccordion.vue'
 </script>
 
 <template>
