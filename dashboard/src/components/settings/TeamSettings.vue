@@ -46,6 +46,21 @@ const teamMembersListOptions = ref({
 			},
 		},
 		{
+			label: 'Access',
+			type: 'Component',
+			width: '100px',
+			component: ({ row }) => {
+				return h(
+					Badge,
+					{
+						variant: 'subtle',
+						theme: row.has_admin_access ? 'blue' : 'green',
+					},
+					row.has_admin_access ? 'Admin' : 'Member',
+				)
+			},
+		},
+		{
 			label: 'Role',
 			type: 'Component',
 			component: ({ row }) => {
