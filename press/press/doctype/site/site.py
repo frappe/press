@@ -135,6 +135,7 @@ SERVER_SCRIPT_DISABLED_VERSION = (
 	15  # version from which server scripts were disabled on public benches. No longer set in site
 )
 TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
+MAX_FILE_SIZE_LIMIT = 250 * 1024 * 1024  # 250 MB, as set in agent nginx config
 
 
 class Site(Document, TagHelpers):
@@ -2426,6 +2427,14 @@ class Site(Document, TagHelpers):
 				f"You <a class='underline' href='https://docs.frappe.io/cloud/enable-server-script'>cannot enable server scripts</a> on public benches. Please move to a <a class='underline' href='{PRIVATE_BENCH_DOC}'>private bench</a>."
 			)
 
+	def validate_max_file_size(self, key: str, value: Any):
+		if key != "max_file_size":
+			return
+		if value > MAX_FILE_SIZE_LIMIT:
+			frappe.throw(
+				f"Max file size cannot exceed {MAX_FILE_SIZE_LIMIT} MB. Please use a tool like <a class='underline' href='https://cloud.frappe.io/marketplace/apps/frappe_s3_attachment'>s3-attachments</a> to upload larger files."
+			)
+
 	def validate_encryption_key(self, key: str, value: Any):
 		if key != "encryption_key" or key != "backup_encryption_key":
 			return
@@ -2464,6 +2473,7 @@ class Site(Document, TagHelpers):
 				)  # nosemgrep
 			self.check_server_script_enabled_on_public_bench(key)
 			self.validate_encryption_key(key, value)
+			self.validate_max_file_size(key, value)
 
 			_type = self._site_config_key_type(key, value)
 
