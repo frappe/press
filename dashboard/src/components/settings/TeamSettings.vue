@@ -5,6 +5,7 @@
 </template>
 
 <script setup>
+<<<<<<< HEAD
 import { defineAsyncComponent, h, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { getTeam } from '../../data/team';
@@ -12,6 +13,30 @@ import { confirmDialog, renderDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
 import { getToastErrorMessage } from '../../utils/toast';
+=======
+import { Badge, createResource } from 'frappe-ui'
+import { defineAsyncComponent, h, ref } from 'vue'
+import { toast } from 'vue-sonner'
+import { getTeam } from '../../data/team'
+import router from '../../router'
+import { confirmDialog, renderDialog } from '../../utils/components'
+import { getToastErrorMessage } from '../../utils/toast'
+import ObjectList from '../ObjectList.vue'
+import UserWithAvatarCell from '../UserWithAvatarCell.vue'
+
+const team = getTeam()
+
+const members = createResource({
+	url: 'run_doc_method',
+	auto: true,
+	params: {
+		method: 'members',
+		dt: 'Team',
+		dn: team.doc.name,
+	},
+	transform: (d) => d.message,
+})
+>>>>>>> 8e4e28555 (fix(dashboard): Team: use `Badge` for roles)
 
 const team = getTeam();
 team.getTeamMembers.submit();
@@ -26,9 +51,50 @@ const teamMembersListOptions = ref({
 			component: ({ row }) => {
 				return h(UserWithAvatarCell, {
 					avatarImage: row.user_image,
+<<<<<<< HEAD
 					fullName: row.full_name,
 					email: row.email,
 				});
+=======
+					fullName: row.user_name,
+				})
+			},
+		},
+		{
+			label: 'Email',
+			fieldname: 'email',
+		},
+		{
+			label: 'Role',
+			type: 'Component',
+			width: '500px',
+			component: ({ row }) => {
+				let roles = row.roles || []
+				return h(
+					'div',
+					{ class: 'flex flex-wrap gap-1.5' },
+					roles.map((role) =>
+						h(
+							Badge,
+							{
+								key: role.name,
+								variant: 'subtle',
+								class: 'cursor-pointer',
+								style: { marginRight: '4px' },
+								onClick: (e) => {
+									e.preventDefault()
+									e.stopPropagation()
+									router.push({
+										name: 'SettingsPermissionRolePermissions',
+										params: { id: role.name },
+									})
+								},
+							},
+							role.title,
+						),
+					),
+				)
+>>>>>>> 8e4e28555 (fix(dashboard): Team: use `Badge` for roles)
 			},
 			width: 1,
 		},
