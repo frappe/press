@@ -11,6 +11,7 @@ export default {
 		'./src2/**/*.vue',
 		'./src/assets/*.css',
 		'./node_modules/frappe-ui/src/components/**/*.{vue,js,ts}',
+		'./node_modules/frappe-ui/src/molecules/**/*.{vue,js,ts}',
 	],
 	theme: {
 		extend: {

@@ -163,15 +163,15 @@
 				/>
 				<div class="mt-4">
 					<span class="text-xs text-ink-gray-6">Description</span>
-					<TextEditor
+					<Editor
 						class="mt-1 block w-full rounded border border-outline-gray-1 bg-surface-gray-2 px-2 py-1.5 text-base text-ink-gray-8 placeholder-gray-500 transition-colors hover:border-outline-gray-1 hover:bg-surface-gray-3 focus:border-outline-gray-4 focus:bg-surface-base focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
-						ref="textEditor"
-						editor-class="rounded-b-lg max-w-[unset] prose-sm pb-[10vh]"
-						:content="marketplaceApp.long_description"
-						@change="marketplaceApp.long_description = $event"
+						v-model="marketplaceApp.long_description"
 						:editable="editable"
-						:bubbleMenu="true"
-					> </TextEditor>
+						:extensions="extensions"
+					>
+						<EditorBubbleMenu :items="articleToolbar" />
+						<EditorContent class="rounded-b-lg max-w-[unset] prose-sm pb-[10vh]" />
+					</Editor>
 				</div>
 			</div>
 		</div>
@@ -179,7 +179,7 @@
 </template>
 
 <script>
-import { TextEditor } from 'frappe-ui'
+import { Editor, EditorContent, EditorBubbleMenu, RichTextKit, articleToolbar } from 'frappe-ui/editor'
 import FileUploader from '@/components/FileUploader.vue'
 import { toast } from 'vue-sonner'
 import { getToastErrorMessage } from '../utils/toast'
@@ -190,7 +190,15 @@ export default {
 	props: ['app'],
 	components: {
 		FileUploader,
-		TextEditor,
+		Editor,
+		EditorContent,
+		EditorBubbleMenu,
+	},
+	setup() {
+		return {
+			articleToolbar,
+			extensions: [RichTextKit],
+		}
 	},
 	data() {
 		return {
