@@ -68,13 +68,6 @@
 	<RoleMembers
 		v-if="tab === 'members'"
 		:users="role.doc?.users"
-		@add="
-			(id: string) => {
-				role.add_user.submit({
-					user: id,
-				});
-			}
-		"
 		@remove="
 			(id: string) => {
 				role.remove_user.submit({

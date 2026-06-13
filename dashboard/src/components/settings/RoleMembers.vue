@@ -17,13 +17,11 @@
 					v-else
 					class="size-14 bg-surface-gray-3 flex m-auto items-center rounded justify-center text-ink-gray-5 font-semibold text-2xl"
 				>
-					{{
-						user.full_name
+					{{ user.full_name
 							.split(' ')
 							.map((s: string) => s.charAt(0))
 							.join('')
-							.toUpperCase()
-					}}
+							.toUpperCase() }}
 				</div>
 				<div class="flex flex-col text-sm flex-1">
 					<span class="font-medium mb-1">{{ user.full_name }}</span>
@@ -47,62 +45,23 @@
 		>
 			No members to show
 		</div>
-
-		<div>
-			<Button label="Invite" icon-left="user" @click="open = !open" />
-		</div>
-		<Dialog
-			v-model="open"
-			:options="{
-				title: 'Invite',
-				size: 'lg',
-				actions: [
-					{
-						label: 'Submit',
-						variant: 'solid',
-						onClick: () => {
-							$emit('add', userForInvite);
-							open = false;
-						},
-					},
-				],
-			}"
-		>
-			<template #body-content>
-				<div class="mb-2 text-base">Invite a team member to this role.</div>
-				<Select
-					:options="usersForInvite"
-					v-model="userForInvite"
-					placeholder="User"
-				/>
-			</template>
-		</Dialog>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { Button, Dialog, Select } from 'frappe-ui';
-import { dayjsLocal } from '../../utils/dayjs';
-import { teamMembers } from './data';
+import { Button } from 'frappe-ui'
+import { dayjsLocal } from '../../utils/dayjs'
 
-const props = withDefaults(
+withDefaults(
 	defineProps<{
-		users?: Array<any>;
+		users?: Array<any>
 	}>(),
 	{
 		users: () => [],
 	},
-);
+)
 
 defineEmits<{
-	add: [id: string];
-	remove: [id: string];
-}>();
-
-const open = ref(false);
-const userForInvite = ref<string>('');
-const usersForInvite = computed(() =>
-	teamMembers(props.users.map((u) => u.user)),
-);
+	remove: [id: string]
+}>()
 </script>
