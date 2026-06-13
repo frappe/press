@@ -15,12 +15,14 @@
 		<template #body-content>
 			<div class="space-y-4">
 				<FormControl label="Email" v-model="email" />
-				<FormControl
+				<Combobox
 					v-if="roleOptions.length > 0"
-					type="select"
-					label="Role *"
-					:options="roleOptions"
 					v-model="selectedRole"
+					label="Role *"
+					required
+					:options="roleOptions"
+					placeholder="Select a role"
+					open-on-focus
 				/>
 			</div>
 		</template>
@@ -28,11 +30,14 @@
 </template>
 
 <script>
+import { Combobox } from 'frappe-ui'
 import { toast } from 'vue-sonner'
+import router from '../../router'
 import { DashboardError } from '../../utils/error'
 import { getToastErrorMessage } from '../../utils/toast'
 
 export default {
+	components: { Combobox },
 	data() {
 		return {
 			email: '',
@@ -53,13 +58,37 @@ export default {
 	},
 	computed: {
 		roleOptions() {
-			let options = [{ label: 'Admin', value: 'Admin' }]
+			let roleItems = [{ label: 'Admin', value: 'Admin' }]
 			if (this.$resources.roles.data) {
 				for (let role of this.$resources.roles.data) {
-					options.push({ label: role.title, value: role.name })
+					roleItems.push({ label: role.title, value: role.name })
 				}
 			}
-			return options
+			return [
+				{
+					group: 'Roles',
+					hideLabel: true,
+					options: roleItems,
+				},
+				{
+					group: 'Actions',
+					hideLabel: true,
+					options: [
+						{
+							type: 'custom',
+							key: 'create_role',
+							label: 'Create Role',
+							condition: () => true,
+							onClick: () => {
+								router.push({
+									name: 'SettingsPermissionRoles',
+									query: { createRole: 'true' },
+								})
+							},
+						},
+					],
+				},
+			]
 		},
 	},
 	methods: {
