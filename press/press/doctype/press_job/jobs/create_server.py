@@ -9,7 +9,6 @@ from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 if TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
 	from press.press.doctype.server_snapshot_recovery.server_snapshot_recovery import ServerSnapshotRecovery
-	from press.press.doctype.virtual_machine_image.virtual_machine_image import VirtualMachineImage
 
 
 class CreateServerJob(PressJob):
@@ -193,16 +192,19 @@ class CreateServerJob(PressJob):
 
 	@task(queue="long", timeout=1200)
 	def create_and_mount_volumes_hetzner(self):
+		# Hetzner images cannot carry a data volume (Hetzner snapshots the root disk only),
+		# so unlike AWS we create the data volume fresh for every server. Its size mirrors
+		# the AWS knob: the server plan's disk.
 		if self.server_doc.provider != "Hetzner" or not self.virtual_machine:
 			return
 
-		if not self.virtual_machine_doc.virtual_machine_image:
+		vm = self.virtual_machine_doc
+		if not vm.virtual_machine_image:
 			return
 
-		vmi: VirtualMachineImage = frappe.get_doc(
-			"Virtual Machine Image", self.virtual_machine_doc.virtual_machine_image
-		)
-		if not vmi.has_data_volume:
+		# Idempotency: a retried task must not attach a second data volume
+		if vm.has_data_volume or len(vm.volumes) > 1:
+			self._mount_hetzner_data_volume()
 			return
 
 		server = self.server_doc
@@ -211,18 +213,27 @@ class CreateServerJob(PressJob):
 		else:
 			data_disk_size = 25
 
-		self.virtual_machine_doc.attach_new_volume(data_disk_size)
+		vm.attach_new_volume(data_disk_size)
+		self._sync_virtual_machine_until_success()
 
+		vm.has_data_volume = True
+		vm.save(ignore_version=True)  # propagates has_data_volume to the Server (VirtualMachine.on_update)
+
+		self._mount_hetzner_data_volume()
+
+	def _sync_virtual_machine_until_success(self):
 		max_sync_tries = 100
 		while max_sync_tries:
 			try:
 				self.virtual_machine_doc.sync()
-				break
+				return
 			except Exception as e:
 				max_sync_tries -= 1
 				if max_sync_tries <= 0:
 					raise e
 
+	def _mount_hetzner_data_volume(self):
+		server = self.server_doc
 		server.validate_mounts()
 		server.save(ignore_version=True)
 		server.mount_volumes(now=True)
