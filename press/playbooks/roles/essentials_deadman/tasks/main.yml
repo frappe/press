@@ -18,9 +18,9 @@
       - libmariadb-dev-compat
       - ansible
 
-- name: Check if Python 3.13 exists
-  command: which python3.13
-  register: python313_exists
+- name: Check if Python 3.14 exists
+  command: which python3.14
+  register: python314_exists
   failed_when: false
   changed_when: false
 
@@ -28,21 +28,20 @@
   apt_repository:
     repo: ppa:deadsnakes/ppa
     state: present
-  when: python313_exists.rc != 0
+  when: python314_exists.rc != 0
 
 - name: Update apt cache after adding PPA
   apt:
     update_cache: yes
-  when: python313_exists.rc != 0
+  when: python314_exists.rc != 0
 
-- name: Install Python 3.13
+- name: Install Python 3.14
   apt:
     state: present
     name:
-      - python3.13
-      - python3.13-dev
-      - python3.13-venv
-      - python3-pip
+      - python3.14
+      - python3.14-dev
+      - python3.14-venv
 
 - name: Install NodeSource repository
   shell: curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
@@ -63,8 +62,7 @@
   become: yes
   become_user: frappe
   shell: |
-    python3.13 -m pip install --user --upgrade pip
-    python3.13 -m pip install --user uv
+    curl -LsSf https://astral.sh/uv/install.sh | sh
   args:
     creates: /home/frappe/.local/bin/uv
 
@@ -72,7 +70,7 @@
   become: yes
   become_user: frappe
   shell: |
-    python3.13 -m pip install --user frappe-bench
+    /home/frappe/.local/bin/uv tool install frappe-bench
   args:
     creates: /home/frappe/.local/bin/bench
 
@@ -86,7 +84,7 @@
   become: yes
   become_user: frappe
   shell: |
-    python3.13 --version
+    python3.14 --version
     node --version
     yarn --version
     /home/frappe/.local/bin/uv --version
