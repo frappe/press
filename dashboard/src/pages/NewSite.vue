@@ -373,9 +373,7 @@
 </template>
 <script>
 import {
-	Autocomplete,
 	ErrorMessage,
-	FeatherIcon,
 	FormControl,
 	TextInput,
 	Tooltip,
@@ -401,10 +399,8 @@ export default {
 		FBreadcrumbs: Breadcrumbs,
 		NewSiteAppSelector,
 		SitePlansCards,
-		Autocomplete,
 		ErrorMessage,
 		FormControl,
-		FeatherIcon,
 		TextInput,
 		Tooltip,
 		Summary,

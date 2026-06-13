@@ -76,7 +76,6 @@
 </template>
 <script>
 import {
-	Autocomplete,
 	ErrorMessage,
 	FormControl,
 	getCachedDocumentResource,
@@ -86,7 +85,6 @@ export default {
 	name: 'ConfigEditorDialog',
 	props: ['site', 'group', 'config'],
 	components: {
-		Autocomplete,
 		FormControl,
 		ErrorMessage,
 	},

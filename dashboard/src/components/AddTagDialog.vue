@@ -35,7 +35,6 @@
 </template>
 <script>
 import {
-	Autocomplete,
 	Dialog,
 	FormControl,
 	getCachedDocumentResource,
@@ -45,7 +44,7 @@ export default {
 	name: 'AddTagDialog',
 	props: ['doctype', 'docname'],
 	emits: ['added', 'removed'],
-	components: { Dialog, Autocomplete, FormControl },
+	components: { Dialog, FormControl },
 	data() {
 		return {
 			selectedTag: null,

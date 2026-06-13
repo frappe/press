@@ -31,7 +31,6 @@
 </template>
 <script>
 import {
-	Autocomplete,
 	ErrorMessage,
 	FormControl,
 	getCachedDocumentResource,
@@ -41,7 +40,6 @@ export default {
 	name: 'EnvironmentVariableEditorDialog',
 	props: ['group', 'environment_variable'],
 	components: {
-		Autocomplete,
 		FormControl,
 		ErrorMessage,
 	},

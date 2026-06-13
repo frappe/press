@@ -122,9 +122,7 @@
 
 <script>
 import {
-	FeatherIcon,
 	Button,
-	Autocomplete,
 	Badge,
 	frappeRequest,
 	Breadcrumbs,
@@ -135,9 +133,7 @@ import Header from '../components/Header.vue'
 
 export default {
 	components: {
-		FeatherIcon,
 		Button,
-		Autocomplete,
 		Badge,
 		ObjectList,
 		FBreadcrumbs: Breadcrumbs,
