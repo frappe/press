@@ -38,8 +38,8 @@
 				<template #prefix>
 					<img :src="selectedRegion?.image" class="mr-2 h-4" />
 				</template>
-				<template #item-prefix="{ active, selected, option }">
-					<img v-if="option?.image" :src="option.image" class="mr-2 h-4" />
+				<template #item-prefix="{ active, selected, item }">
+					<img v-if="item?.image" :src="item.image" class="mr-2 h-4" />
 				</template>
 			</FormControl>
 			<ErrorMessage :message="groupDocResource.addRegion.error" />

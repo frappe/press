@@ -820,7 +820,7 @@ export default {
 						return [
 							{
 								group: 'Details',
-								items: [
+								options: [
 									{
 										label: 'View Job',
 										onClick() {
@@ -835,7 +835,7 @@ export default {
 							{
 								group: 'Download',
 								condition: () => !row.physical,
-								items: [
+								options: [
 									{
 										label: 'Download Database',
 										onClick() {
@@ -868,7 +868,7 @@ export default {
 							{
 								group: 'Restore',
 								condition: () => row.offsite || row.physical,
-								items: [
+								options: [
 									{
 										label: 'Restore Backup',
 										condition: () => site.doc.status !== 'Archived',

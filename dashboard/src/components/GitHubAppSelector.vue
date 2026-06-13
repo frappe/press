@@ -55,10 +55,10 @@
 				/>
 				<FeatherIcon v-else name="users" class="mr-2 h-4 w-4" />
 			</template>
-			<template #item-prefix="{ active, selected, option }">
+			<template #item-prefix="{ active, selected, item }">
 				<img
-					v-if="option?.image"
-					:src="option.image"
+					v-if="item?.image"
+					:src="item.image"
 					class="mr-2 h-4 w-4 rounded-full"
 				/>
 				<FeatherIcon v-else name="user" class="mr-2 h-4 w-4" />
@@ -92,9 +92,9 @@
 			<template #prefix>
 				<FeatherIcon name="book" class="mr-2 h-4 w-4" />
 			</template>
-			<template #item-prefix="{ active, selected, option }">
+			<template #item-prefix="{ active, selected, item }">
 				<FeatherIcon
-					:name="option.value.private ? 'lock' : 'book'"
+					:name="item.value.private ? 'lock' : 'book'"
 					class="mr-2 h-4 w-4"
 				/>
 			</template>

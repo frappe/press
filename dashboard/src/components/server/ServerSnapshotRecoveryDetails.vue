@@ -108,7 +108,7 @@ export default {
 					return [
 						{
 							group: 'Download',
-							items: [
+							options: [
 								{
 									label: 'Download Database',
 									onClick: () => {
