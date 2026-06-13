@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Button, Dialog } from 'frappe-ui'
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import Eligibility from '@/onboarding/modal/Eligibility.vue'
 import FrappePartnerships from '@/onboarding/modal/FrappePartnerships.vue'
 import PartnerBenefits from '@/onboarding/modal/PartnerBenefits.vue'
@@ -8,10 +9,13 @@ import PartnerPlans from '@/onboarding/modal/PartnerPlans.vue'
 import PartnerRegistration from '@/onboarding/modal/PartnerRegistration.vue'
 import PostRegistrationMessage from '@/onboarding/modal/PostRegistrationMessage.vue'
 import SidebarItem from '@/onboarding/modal/SidebarItem.vue'
+import { usePartnerOnboarding } from '@/onboarding/usePartnerOnboarding'
 import LucideXIcon from '~icons/lucide/x'
 
 const open = defineModel<boolean>({ default: false })
 const registered = ref(false)
+const router = useRouter()
+const onboarding = usePartnerOnboarding(inject('team') as any)
 
 const partnerOnboardingSteps = [
 	{
@@ -61,6 +65,15 @@ const previousStep = () => {
 
 const onRegistered = () => {
 	registered.value = true
+}
+
+// The record now exists — close the modal and take the user to the full
+// onboarding workflow. If they are already on that page this is a no-op.
+const onContinue = () => {
+	open.value = false
+	if (router.currentRoute.value.name !== 'Partner Onboarding') {
+		router.push('/partner-onboarding')
+	}
 }
 </script>
 
@@ -112,10 +125,7 @@ const onRegistered = () => {
 						class="-m-2 flex-1 overflow-y-auto p-2"
 						:class="registered ? 'flex justify-center items-center' : ''"
 					>
-						<PostRegistrationMessage
-							v-if="registered"
-							@continue="open = false"
-						/>
+						<PostRegistrationMessage v-if="registered" @continue="onContinue" />
 						<component
 							v-else
 							:is="currentStep.component"
@@ -149,6 +159,7 @@ const onRegistered = () => {
 								variant="solid"
 								type="submit"
 								form="registration-form"
+								:loading="onboarding.saving.value"
 							>
 								Register as a partner
 							</Button>

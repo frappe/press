@@ -233,8 +233,8 @@
 			"link_fieldname": "product_trial"
 		}
 	],
-	"modified": "2026-02-23 10:28:53.892118",
 	"modified_by": "Administrator",
+	"modified": "2026-06-10 13:12:45.263617",
 	"module": "SaaS",
 	"name": "Product Trial",
 	"naming_rule": "Set by user",
@@ -249,6 +249,16 @@
 			"read": 1,
 			"report": 1,
 			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Site Manager",
 			"share": 1,
 			"write": 1
 		}
