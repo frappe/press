@@ -1,0 +1,87 @@
+{
+	"autoname": "autoincrement",
+	"creation": "2026-05-29 00:00:00.000000",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"source_cluster",
+		"new_cluster",
+		"column_break_1",
+		"status",
+		"section_break_2",
+		"start",
+		"end",
+		"duration"
+	],
+	"fields": [
+		{
+			"fieldname": "source_cluster",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Source Cluster",
+			"options": "Cluster",
+			"reqd": 1,
+			"search_index": 1,
+			"set_only_once": 1
+		},
+		{
+			"fieldname": "new_cluster",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "New Cluster",
+			"options": "Cluster",
+			"read_only": 1
+		},
+		{
+			"fieldname": "column_break_1",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+			"label": "Status",
+			"options": "Pending\nRunning\nSuccess\nFailure",
+			"read_only": 1,
+			"reqd": 1,
+			"search_index": 1
+		},
+		{
+			"fieldname": "section_break_2",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "start",
+			"fieldtype": "Datetime",
+			"label": "Start",
+			"read_only": 1
+		},
+		{
+			"fieldname": "end",
+			"fieldtype": "Datetime",
+			"label": "End",
+			"read_only": 1
+		},
+		{
+			"default": "0",
+			"fieldname": "duration",
+			"fieldtype": "Duration",
+			"label": "Duration",
+			"read_only": 1
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"modified": "2026-05-29 00:00:00.000000",
+	"modified_by": "Administrator",
+	"module": "Press",
+	"name": "Cluster Creation",
+	"naming_rule": "Autoincrement",
+	"owner": "Administrator",
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
+}
