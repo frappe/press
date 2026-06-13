@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { createResource } from 'frappe-ui'
+import { Badge, createResource } from 'frappe-ui'
 import { defineAsyncComponent, h, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { getTeam } from '../../data/team'
@@ -36,22 +36,33 @@ const teamMembersListOptions = ref({
 		{
 			label: 'User',
 			type: 'Component',
-			width: '500px',
+			width: '300px',
 			component: ({ row }) => {
 				return h(UserWithAvatarCell, {
 					avatarImage: row.user_image,
 					fullName: row.user_name,
+					email: row.email,
 				})
 			},
 		},
 		{
-			label: 'Email',
-			fieldname: 'email',
+			label: 'Access',
+			type: 'Component',
+			width: '100px',
+			component: ({ row }) => {
+				return h(
+					Badge,
+					{
+						variant: 'subtle',
+						theme: row.has_admin_access ? 'blue' : 'green',
+					},
+					row.has_admin_access ? 'Admin' : 'Member',
+				)
+			},
 		},
 		{
 			label: 'Role',
 			type: 'Component',
-			width: '500px',
 			component: ({ row }) => {
 				let roles = row.roles || []
 				return h(
@@ -59,12 +70,12 @@ const teamMembersListOptions = ref({
 					{ class: 'flex flex-wrap gap-1.5' },
 					roles.map((role) =>
 						h(
-							'a',
+							Badge,
 							{
-								href: router.resolve({
-									name: 'SettingsPermissionRolePermissions',
-									params: { id: role.name },
-								}).href,
+								key: role.name,
+								variant: 'subtle',
+								class: 'cursor-pointer',
+								style: { marginRight: '4px' },
 								onClick: (e) => {
 									e.preventDefault()
 									e.stopPropagation()
@@ -73,8 +84,6 @@ const teamMembersListOptions = ref({
 										params: { id: role.name },
 									})
 								},
-								class:
-									'font-medium no-underline border-b border-[var(--ink-gray-3)] transition-colors duration-[80ms] cursor-pointer text-ink-gray-9 hover:text-ink-gray-7',
 							},
 							role.title,
 						),
