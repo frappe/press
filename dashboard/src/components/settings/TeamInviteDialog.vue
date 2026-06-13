@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { createResource } from 'frappe-ui'
+import { Combobox, createResource } from 'frappe-ui'
 import { computed, ref } from 'vue'
 import { getTeam } from '../../data/team'
 
@@ -65,13 +65,16 @@ const close = () => {
 					label="Email addresses"
 					placeholder="name@example.com, name2@example.com"
 				/>
-				<FormControl
-					v-if="roleOptions.length > 0"
-					v-model="selectedRole"
-					type="select"
-					label="Role"
-					:options="roleOptions"
-				/>
+				<div v-if="roleOptions.length > 0">
+					<label class="block text-xs leading-4 text-ink-gray-5 mb-1">
+						Role
+					</label>
+					<Combobox
+						v-model="selectedRole"
+						:options="roleOptions"
+						open-on-focus
+					/>
+				</div>
 			</div>
 		</template>
 	</Dialog>
