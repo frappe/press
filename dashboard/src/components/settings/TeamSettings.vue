@@ -36,22 +36,18 @@ const teamMembersListOptions = ref({
 		{
 			label: 'User',
 			type: 'Component',
-			width: '500px',
+			width: '300px',
 			component: ({ row }) => {
 				return h(UserWithAvatarCell, {
 					avatarImage: row.user_image,
 					fullName: row.user_name,
+					email: row.email,
 				})
 			},
 		},
 		{
-			label: 'Email',
-			fieldname: 'email',
-		},
-		{
 			label: 'Role',
 			type: 'Component',
-			width: '500px',
 			component: ({ row }) => {
 				let roles = row.roles || []
 				return h(
