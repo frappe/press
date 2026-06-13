@@ -15,6 +15,7 @@
 		<template #body-content>
 			<div class="space-y-4">
 				<FormControl label="Email" v-model="email" />
+<<<<<<< HEAD
 				<div
 					v-if="$resources.roles.data?.length > 0"
 					class="flex items-center space-x-2"
@@ -58,17 +59,37 @@
 						/>
 					</div>
 				</div>
+=======
+				<Combobox
+					v-if="roleOptions.length > 0"
+					v-model="selectedRole"
+					label="Role *"
+					required
+					:options="roleOptions"
+					placeholder="Select a role"
+					open-on-focus
+				/>
+>>>>>>> 5a4d74fda (feat(dashboard): Team: use combobox for roles when inviting user)
 			</div>
 		</template>
 	</Dialog>
 </template>
 
 <script>
+<<<<<<< HEAD
 import { toast } from 'vue-sonner';
 import { DashboardError } from '../../utils/error';
 import { getToastErrorMessage } from '../../utils/toast';
+=======
+import { Combobox } from 'frappe-ui'
+import { toast } from 'vue-sonner'
+import router from '../../router'
+import { DashboardError } from '../../utils/error'
+import { getToastErrorMessage } from '../../utils/toast'
+>>>>>>> 5a4d74fda (feat(dashboard): Team: use combobox for roles when inviting user)
 
 export default {
+	components: { Combobox },
 	data() {
 		return {
 			email: '',
@@ -90,6 +111,7 @@ export default {
 	},
 	computed: {
 		roleOptions() {
+<<<<<<< HEAD
 			return this.$resources.roles.data
 				.filter((role) => {
 					return !this.selectedRoles.some(
@@ -100,6 +122,39 @@ export default {
 					label: role.title,
 					value: role.name,
 				}));
+=======
+			let roleItems = [{ label: 'Admin', value: 'Admin' }]
+			if (this.$resources.roles.data) {
+				for (let role of this.$resources.roles.data) {
+					roleItems.push({ label: role.title, value: role.name })
+				}
+			}
+			return [
+				{
+					group: 'Roles',
+					hideLabel: true,
+					options: roleItems,
+				},
+				{
+					group: 'Actions',
+					hideLabel: true,
+					options: [
+						{
+							type: 'custom',
+							key: 'create_role',
+							label: 'Create Role',
+							condition: () => true,
+							onClick: () => {
+								router.push({
+									name: 'SettingsPermissionRoles',
+									query: { createRole: 'true' },
+								})
+							},
+						},
+					],
+				},
+			]
+>>>>>>> 5a4d74fda (feat(dashboard): Team: use combobox for roles when inviting user)
 		},
 	},
 	methods: {
