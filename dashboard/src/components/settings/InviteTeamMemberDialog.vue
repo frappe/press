@@ -16,7 +16,7 @@
 			<div class="space-y-4">
 				<FormControl label="Email" v-model="email" />
 				<Combobox
-					v-if="roleOptions.length > 0"
+					v-if="roleOptions[0]?.options?.length > 0"
 					v-model="selectedRole"
 					label="Role *"
 					required
