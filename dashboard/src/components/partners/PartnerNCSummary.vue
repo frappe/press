@@ -91,7 +91,7 @@
 		<div
 			class="flex flex-col gap-6 items-center justify-center h-96 border-[1px] rounded p-5 ml-5"
 		>
-			<FeatherIcon name="file-text" class="mr-2 h-10 w-10 text-ink-gray-5" />
+			<span class="lucide-file-text mr-2 h-10 w-10 text-ink-gray-5" />
 			<div class="text-lg text-ink-gray-6">
 				Select a Non Conformance to view details
 			</div>

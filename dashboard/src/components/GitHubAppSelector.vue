@@ -6,7 +6,7 @@
 		<div v-if="!!needsAuthorization" class="flex justify-center">
 			<Button
 				variant="solid"
-				icon-left="github"
+				icon-left="lucide-github"
 				label="Connect To GitHub"
 				:link="installationLink"
 			/>
@@ -14,7 +14,7 @@
 		<div v-else-if="!!requiresReAuth" class="flex justify-center">
 			<Button
 				variant="solid"
-				icon-left="github"
+				icon-left="lucide-github"
 				label="Re-authorize GitHub"
 				@click="$resources.clearAccessToken.submit()"
 				:loading="$resources.clearAccessToken.loading"
@@ -53,7 +53,7 @@
 					:src="selectedGithubUserData?.image"
 					class="mr-2 h-4 w-4 rounded-full"
 				/>
-				<FeatherIcon v-else name="users" class="mr-2 h-4 w-4" />
+				<span v-else class="lucide-users mr-2 h-4 w-4" />
 			</template>
 			<template #item-prefix="{ active, selected, item }">
 				<img
@@ -61,7 +61,7 @@
 					:src="item.image"
 					class="mr-2 h-4 w-4 rounded-full"
 				/>
-				<FeatherIcon v-else name="user" class="mr-2 h-4 w-4" />
+				<span v-else class="lucide-user mr-2 h-4 w-4" />
 			</template>
 		</FormControl>
 		<span class="text-sm text-ink-gray-6">
@@ -90,12 +90,11 @@
 			"
 		>
 			<template #prefix>
-				<FeatherIcon name="book" class="mr-2 h-4 w-4" />
+				<span class="lucide-book mr-2 h-4 w-4" />
 			</template>
 			<template #item-prefix="{ active, selected, item }">
-				<FeatherIcon
-					:name="item.value.private ? 'lock' : 'book'"
-					class="mr-2 h-4 w-4"
+				<span
+					:class="[item.value.private ? 'lucide-lock' : 'lucide-book', 'mr-2 h-4 w-4']"
 				/>
 			</template>
 		</FormControl>
@@ -117,7 +116,7 @@
 				@update:modelValue="onChangeBranchDebounce"
 			>
 				<template #prefix>
-					<FeatherIcon name="git-branch" class="mr-2 h-4 w-4" />
+					<span class="lucide-git-branch mr-2 h-4 w-4" />
 				</template>
 			</Combobox>
 		</div>

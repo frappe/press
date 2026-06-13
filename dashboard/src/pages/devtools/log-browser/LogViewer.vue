@@ -176,7 +176,7 @@
 									variant="ghost"
 									@click="table.previousPage()"
 									:disabled="!table.getCanPreviousPage()"
-									iconLeft="arrow-left"
+									iconLeft="lucide-arrow-left"
 								>
 									Prev
 								</Button>
@@ -184,7 +184,7 @@
 									variant="ghost"
 									@click="table.nextPage()"
 									:disabled="!table.getCanNextPage()"
-									iconRight="arrow-right"
+									iconRight="lucide-arrow-right"
 								>
 									Next
 								</Button>

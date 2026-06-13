@@ -1,10 +1,9 @@
 <template>
 	<div class="block w-full">
 		<div class="flex items-center rounded-md p-3 text-base" :class="classes">
-			<FeatherIcon
+			<span
 				v-if="type === 'warning'"
-				name="alert-circle"
-				class="h-5 w-5 text-ink-gray-9"
+				class="lucide-alert-circle h-5 w-5 text-ink-gray-9"
 			/>
 			<div class="ml-2 w-full">
 				<div class="flex flex-col md:flex-row md:items-baseline">

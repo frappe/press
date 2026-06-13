@@ -5,7 +5,7 @@
 				<div v-if="sitePrePicked">
 					<div v-if="loginError">
 						<div class="flex items-center justify-center space-x-2 text-base">
-							<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
+							<span class="lucide-alert-triangle mr-2 h-4 w-4" />
 							<p>
 								Something went wrong while attempting to log in to your site
 							</p>
@@ -13,13 +13,13 @@
 						<div class="mx-4 mt-4 space-x-4">
 							<Button
 								label="Try again"
-								icon-left="refresh-cw"
+								icon-left="lucide-refresh-cw"
 								:loading="login.loading"
 								@click="loginToSite(pickedSite)"
 							/>
 							<Button
 								label="View your sites"
-								icon-left="list"
+								icon-left="lucide-list"
 								:route="{
 									name: 'Site Login',
 								}"
@@ -31,7 +31,7 @@
 						class="mt-8 flex flex-col items-center justify-center space-x-2 text-base"
 					>
 						<div class="flex items-center justify-center space-x-2 text-base">
-							<FeatherIcon name="alert-circle" class="mr-2 h-4 w-4" />
+							<span class="lucide-alert-circle mr-2 h-4 w-4" />
 							<div>
 								<p>You are about to log in to your site</p>
 								<span class="font-semibold">{{ pickedSiteDomain }}</span>
@@ -40,7 +40,7 @@
 						<div class="mx-4 mt-8 space-x-4">
 							<Button
 								label="Log in"
-								icon-left="log-in"
+								icon-left="lucide-log-in"
 								variant="solid"
 								:loading="login.loading"
 								@click="loginToSite(pickedSite)"
@@ -118,7 +118,7 @@
 					<div
 						class="mt-8 flex items-center justify-center space-x-2 text-base"
 					>
-						<FeatherIcon name="alert-triangle" class="mr-2 h-4 w-4" />
+						<span class="lucide-alert-triangle mr-2 h-4 w-4" />
 						<div class="flex flex-col gap-2">
 							<p>
 								{{ email || session.user }}
@@ -130,7 +130,7 @@
 					<div class="mt-8 flex w-full justify-center space-x-4">
 						<Button
 							label="View your sites"
-							icon-left="list"
+							icon-left="lucide-list"
 							@click="
 								() => {
 									$router.push({
@@ -163,7 +163,7 @@
 										{{ site.host_name || site.name }}
 									</div>
 								</div>
-								<FeatherIcon name="external-link" class="h-4 w-4" />
+								<span class="lucide-external-link h-4 w-4" />
 							</div>
 						</div>
 					</div>

@@ -156,7 +156,7 @@
 								:max="end"
 							/>
 						</div>
-						<FeatherIcon name="arrow-right" class="h-5 w-5 stroke-gray-700" />
+						<span class="lucide-arrow-right h-5 w-5 stroke-gray-700" />
 						<div class="w-[12rem] text-base">
 							<DateTimePicker
 								v-model="end"
@@ -199,7 +199,7 @@
 								this.$resources?.fetchQueriesFromBinlog?.loading
 							"
 							loadingText="Searching"
-							iconLeft="search"
+							iconLeft="lucide-search"
 						>
 							Search
 						</Button>

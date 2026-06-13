@@ -24,7 +24,7 @@
 				/>
 				<Button
 					label="Add"
-					icon-left="plus"
+					icon-left="lucide-plus"
 					@click="addTag"
 					:disabled="!selectedTag"
 				/>

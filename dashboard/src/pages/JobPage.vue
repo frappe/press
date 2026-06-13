@@ -163,7 +163,7 @@ export default {
 			return [
 				{
 					label: 'View in Desk',
-					icon: 'external-link',
+					icon: 'lucide-external-link',
 					condition: () => this.$team?.doc?.is_desk_user,
 					onClick: () => {
 						window.open(

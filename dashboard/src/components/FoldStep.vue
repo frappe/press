@@ -6,10 +6,8 @@
 			:class="open ? 'rounded-b-none' : ''"
 		>
 			<div class="flex items-center space-x-2">
-				<FeatherIcon
-					:name="open || status == 'Running' ? 'chevron-down' : 'chevron-right'"
-					class="h-3 w-3 text-ink-gray-6"
-					:stroke-width="3"
+				<span
+					:class="[open || status == 'Running' ? 'lucide-chevron-down' : 'lucide-chevron-right', 'h-3 w-3 text-ink-gray-6']"
 				/>
 				<Tooltip :text="status">
 					<div
@@ -20,12 +18,7 @@
 							class="h-3.5 w-3.5 text-ink-gray-9"
 							v-if="status === 'Running'"
 						/>
-						<FeatherIcon
-							v-else
-							:name="icon"
-							class="h-3 w-3 text-white"
-							:stroke-width="3"
-						/>
+						<span :class="[icon, 'h-3 w-3 text-white']" v-else />
 					</div>
 				</Tooltip>
 				<span> {{ title }} </span>
@@ -73,17 +66,17 @@ export default defineComponent({
 		icon(): string {
 			switch (this.status) {
 				case 'Success':
-					return 'check'
+					return 'lucide-check'
 				case 'Failure':
-					return 'x'
+					return 'lucide-x'
 				case 'Delivery Failure':
-					return 'x'
+					return 'lucide-x'
 				case 'Pending':
-					return 'clock'
+					return 'lucide-clock'
 				case 'Skipped':
-					return 'minus'
+					return 'lucide-minus'
 				default:
-					return 'circle'
+					return 'lucide-circle'
 			}
 		},
 		iconClass(): string {

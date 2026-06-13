@@ -21,7 +21,7 @@
 				<Button
 					variant="solid"
 					class="mb-3"
-					iconLeft="plus"
+					iconLeft="lucide-plus"
 					@click="
 						currentCommunicationInfos.push({
 							channel: 'Email',
@@ -35,7 +35,7 @@
 				<Button
 					variant="subtle"
 					class="mb-3"
-					icon="refresh-cw"
+					icon="lucide-refresh-cw"
 					:loading="$resources.getCommunicationInfos.loading"
 					@click="$resources.getCommunicationInfos.submit"
 				>
@@ -237,7 +237,7 @@ export default {
 							return {
 								label: 'Remove',
 								variant: 'subtle',
-								icon: 'x',
+								icon: 'lucide-x',
 								// theme: 'red',
 								onClick: () => {
 									this.removeCommunicationInfo(row)

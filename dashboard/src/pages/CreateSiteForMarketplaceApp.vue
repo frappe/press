@@ -54,11 +54,9 @@
 								class="h-4 w-4 text-ink-gray-9"
 								v-if="step.icon() === 'loading'"
 							/>
-							<FeatherIcon
+							<span
+								:class="[step.icon(), 'h-5 w-5 rounded-full p-0.5 text-white']"
 								v-else
-								:name="step.icon()"
-								class="h-5 w-5 rounded-full p-0.5 text-white"
-								:stroke-width="3"
 								:class="{
 									'bg-green-500': step.icon() === 'check',
 									'bg-red-500': step.icon() === 'x',

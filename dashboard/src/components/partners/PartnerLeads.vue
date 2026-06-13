@@ -209,7 +209,7 @@ export default {
 						label: 'Add Lead',
 						variant: 'solid',
 						slots: {
-							prefix: icon('plus'),
+							prefix: icon('lucide-plus'),
 						},
 						onClick: () => {
 							return renderDialog(

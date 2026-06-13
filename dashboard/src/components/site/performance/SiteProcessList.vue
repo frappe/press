@@ -89,7 +89,7 @@ export default {
 				secondaryAction: () => {
 					return {
 						label: 'Refresh',
-						icon: 'refresh-ccw',
+						icon: 'lucide-refresh-ccw',
 						loading: this.$resources.processList.loading,
 						onClick: () => this.$resources.processList.reload(),
 					}

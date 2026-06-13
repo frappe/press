@@ -255,7 +255,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 					return [
 						{
 							label: 'Resend Invitation',
-							icon: 'send',
+							icon: 'lucide-send',
 							condition: () => row.status === 'Pending',
 							onClick: () => {
 								confirmDialog({
@@ -275,7 +275,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 						},
 						{
 							label: 'Cancel Invitation',
-							icon: 'user-minus',
+							icon: 'lucide-user-minus',
 							condition: () => row.status === 'Pending',
 							onClick: () => {
 								confirmDialog({
@@ -295,7 +295,7 @@ const progress = (promise, msgLoading, msgSuccess) => {
 						},
 						{
 							label: 'Remove Member',
-							icon: 'user-minus',
+							icon: 'lucide-user-minus',
 							condition: () => row.status === 'Active',
 							onClick() {
 								confirmDialog({

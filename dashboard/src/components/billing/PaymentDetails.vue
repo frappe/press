@@ -29,7 +29,7 @@
 						@click="changeMethod"
 					>
 						<template v-if="!team.doc.payment_method" #prefix>
-							<FeatherIcon class="h-4" name="plus" />
+							<span class="lucide-plus h-4" />
 						</template>
 					</Button>
 				</div>
@@ -57,7 +57,7 @@
 						"
 					>
 						<template v-if="!billingDetailsSummary" #prefix>
-							<FeatherIcon class="h-4" name="plus" />
+							<span class="lucide-plus h-4" />
 						</template>
 					</Button>
 				</div>
@@ -70,7 +70,7 @@
 						v-if="team.doc.payment_mode"
 						class="inline-flex items-center gap-2 text-ink-gray-7"
 					>
-						<FeatherIcon class="h-4" name="info" />
+						<span class="lucide-info h-4" />
 						{{ paymentMode.description }}
 					</div>
 					<span v-else class="text-ink-gray-7">Not set</span>
@@ -82,9 +82,8 @@
 								:label="team.doc.payment_mode ? paymentMode.label : 'Set mode'"
 							>
 								<template #suffix>
-									<FeatherIcon
-										:name="open ? 'chevron-up' : 'chevron-down'"
-										class="h-4"
+									<span
+										:class="[open ? 'lucide-chevron-up' : 'lucide-chevron-down', 'h-4']"
 									/>
 								</template>
 							</Button>
@@ -116,7 +115,7 @@
 						"
 					>
 						<template #prefix>
-							<FeatherIcon class="h-4" name="plus" />
+							<span class="lucide-plus h-4" />
 						</template>
 					</Button>
 				</div>
@@ -196,7 +195,7 @@ import BudgetAlertDialog from './BudgetAlertDialog.vue'
 import AddPrepaidCreditsDialog from './AddPrepaidCreditsDialog.vue'
 import AddCardDialog from './AddCardDialog.vue'
 import ChangeCardDialog from './ChangeCardDialog.vue'
-import { Dropdown, Button, FeatherIcon, createResource } from 'frappe-ui'
+import { Dropdown, Button, createResource } from 'frappe-ui'
 import {
 	cardBrandIcon,
 	confirmDialog,
@@ -326,7 +325,7 @@ const paymentModeOptions = [
 								},
 								'Alternate Payment Methods',
 							),
-							h(FeatherIcon, { name: 'external-link', class: 'h-4' }),
+							h('span', { class: 'lucide-external-link h-4' }),
 						]),
 				}),
 			]),

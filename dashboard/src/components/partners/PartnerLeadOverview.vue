@@ -27,9 +27,8 @@
 							<template #default="{ open }">
 								<Button :label="lead?.status || 'Status'" variant="solid">
 									<template #suffix>
-										<FeatherIcon
-											:name="open ? 'chevron-up' : 'chevron-down'"
-											class="h-4"
+										<span
+											:class="[open ? 'lucide-chevron-up' : 'lucide-chevron-down', 'h-4']"
 										/>
 									</template>
 								</Button>

@@ -50,7 +50,7 @@ function getDetail() {
 					options: [
 						{
 							label: 'View in Desk',
-							icon: icon('external-link'),
+							icon: icon('lucide-external-link'),
 							condition: () => team.doc?.is_desk_user,
 							onClick() {
 								window.open(
@@ -179,7 +179,7 @@ function getInPlaceUpdatesSuffix(row: Row) {
 			title,
 			class: 'rounded-full bg-surface-gray-2 p-1',
 		},
-		h(icon('star', 'w-3 h-3')),
+		h(icon('lucide-star', 'w-3 h-3')),
 	)
 }
 
@@ -190,7 +190,7 @@ function getAppPatchSuffix(row: Row) {
 			title: 'Apps in this bench may have been patched',
 			class: 'rounded-full bg-surface-gray-2 p-1',
 		},
-		h(icon('hash', 'w-3 h-3')),
+		h(icon('lucide-hash', 'w-3 h-3')),
 	)
 }
 
@@ -269,7 +269,7 @@ export function getSitesTab() {
 				return {
 					label: 'New Site',
 					slots: {
-						prefix: icon('plus', 'w-4 h-4'),
+						prefix: icon('lucide-plus', 'w-4 h-4'),
 					},
 					route: {
 						name: 'Release Group New Site',
@@ -297,7 +297,7 @@ export function getProcessesTab() {
 	const url = 'press.api.bench.get_processes'
 	return {
 		label: 'Processes',
-		icon: icon('cpu'),
+		icon: icon('lucide-cpu'),
 		route: 'processes',
 		type: 'list',
 		list: {
@@ -359,7 +359,7 @@ export function getProcessesColumns() {
 						text: message,
 						placement: 'top',
 					},
-					() => h(icon('alert-circle', 'w-3 h-3')),
+					() => h(icon('lucide-alert-circle', 'w-3 h-3')),
 				)
 			},
 		},

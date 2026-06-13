@@ -6,7 +6,7 @@
 
 <script>
 import { h } from 'vue'
-import { FeatherIcon, Tooltip } from 'frappe-ui'
+import { Tooltip } from 'frappe-ui'
 import { icon, renderDialog } from '../../utils/components'
 import ObjectList from '../ObjectList.vue'
 import PartnerCertificateRequest from './PartnerCertificateRequest.vue'
@@ -96,9 +96,8 @@ export default {
 										text: 'Free Certification',
 									},
 									() =>
-										h(FeatherIcon, {
-											name: 'check-circle',
-											class: 'h-4 w-4 text-green-600',
+										h('span', {
+											class: 'lucide-check-circle h-4 w-4 text-green-600',
 										}),
 								)
 							}
@@ -112,7 +111,7 @@ export default {
 							return {
 								label: 'View',
 								slots: {
-									prefix: icon('external-link'),
+									prefix: icon('lucide-external-link'),
 								},
 								onClick: (e) => {
 									e.stopPropagation()
@@ -129,7 +128,7 @@ export default {
 						{
 							label: 'Apply for Certification',
 							slots: {
-								prefix: icon('plus'),
+								prefix: icon('lucide-plus'),
 							},
 							onClick: () => {
 								renderDialog(
@@ -145,7 +144,7 @@ export default {
 						{
 							label: 'Link Certificate',
 							slots: {
-								prefix: icon('link'),
+								prefix: icon('lucide-link'),
 							},
 							onClick: () => {
 								renderDialog(

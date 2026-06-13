@@ -83,7 +83,7 @@
 				<div v-if="parsedData.total >= 0.5">
 					<Button
 						variant="solid"
-						iconLeft="trash-2"
+						iconLeft="lucide-trash-2"
 						theme="red"
 						@click="onCleanup()"
 						class="w-full rounded"

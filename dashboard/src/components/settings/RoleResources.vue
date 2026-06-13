@@ -14,7 +14,7 @@
 						class="m-auto size-14 rounded-lg flex items-center justify-center p-3"
 						:class="colorClasses[resource.document_type]"
 					>
-						<FeatherIcon class="size-6" :name="icons[resource.document_type]" />
+						<span :class="[icons[resource.document_type], 'size-6']" />
 					</div>
 
 					<div class="flex flex-col min-w-0">
@@ -37,7 +37,7 @@
 					</div>
 				</div>
 				<Button
-					icon="trash-2"
+					icon="lucide-trash-2"
 					theme="red"
 					class="opacity-0 group-hover:opacity-100 transition mb-auto ml-auto"
 					@click.prevent.stop="
@@ -54,7 +54,7 @@
 			No resources to show
 		</div>
 		<div>
-			<Button label="Include" icon-left="globe" @click="open = !open" />
+			<Button label="Include" icon-left="lucide-globe" @click="open = !open" />
 		</div>
 		<Dialog
 			v-model="open"
@@ -85,7 +85,7 @@
 				placeholder="Select resources"
 			>
 				<template #option="{ item }">
-					<FeatherIcon class="size-4 mr-2" :name="icons[item.document_type]" />
+					<span :class="[icons[item.document_type], 'size-4 mr-2']" />
 					{{ item.label }}
 				</template>
 			</MultiSelect>
@@ -95,7 +95,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Button, FeatherIcon, MultiSelect } from 'frappe-ui'
+import { Button, MultiSelect } from 'frappe-ui'
 import { teamResources } from './data'
 
 const props = withDefaults(
@@ -119,9 +119,9 @@ const emit = defineEmits<{
 }>()
 
 const icons = {
-	'Release Group': 'package',
-	Server: 'server',
-	Site: 'globe',
+	'Release Group': 'lucide-package',
+	Server: 'lucide-server',
+	Site: 'lucide-globe',
 }
 
 const open = ref(false)

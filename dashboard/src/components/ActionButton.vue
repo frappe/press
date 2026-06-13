@@ -50,7 +50,7 @@ export default {
 						label: 'Options',
 						variant: 'ghost',
 						slots: {
-							icon: icon('more-horizontal'),
+							icon: icon('lucide-more-horizontal'),
 						},
 					},
 					...this.$attrs,

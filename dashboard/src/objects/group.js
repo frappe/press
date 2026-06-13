@@ -105,7 +105,7 @@ export default {
 				label: 'New Bench',
 				variant: 'solid',
 				slots: {
-					prefix: icon('plus'),
+					prefix: icon('lucide-plus'),
 				},
 				onClick() {
 					router.push({ name: 'New Release Group' })
@@ -159,7 +159,7 @@ export default {
 			},
 			{
 				label: 'Apps',
-				icon: icon('grid'),
+				icon: icon('lucide-grid'),
 				route: 'apps',
 				type: 'list',
 				list: {
@@ -225,7 +225,7 @@ export default {
 												href: 'https://docs.frappe.io/cloud/faq/app-installation-issue',
 												target: '_blank',
 											},
-											[h(icon('help-circle', 'w-3 h-3'), {})],
+											[h(icon('lucide-help-circle', 'w-3 h-3'), {})],
 										),
 									],
 								)
@@ -350,7 +350,7 @@ export default {
 						return {
 							label: 'Add App',
 							slots: {
-								prefix: icon('plus'),
+								prefix: icon('lucide-plus'),
 							},
 							onClick() {
 								renderDialog(
@@ -397,7 +397,7 @@ export default {
 			{
 				label: 'Deploys',
 				route: 'deploys',
-				icon: icon('package'),
+				icon: icon('lucide-package'),
 				type: 'Component',
 				component: defineAsyncComponent(
 					() => import('../pages/benches/Deploys.vue'),
@@ -411,7 +411,7 @@ export default {
 			getJobsTab('Release Group'),
 			{
 				label: 'Config',
-				icon: icon('settings'),
+				icon: icon('lucide-settings'),
 				route: 'bench-config',
 				type: 'list',
 				list: {
@@ -455,7 +455,7 @@ export default {
 						return {
 							label: 'Add Config',
 							slots: {
-								prefix: icon('plus'),
+								prefix: icon('lucide-plus'),
 							},
 							onClick() {
 								let ConfigEditorDialog = defineAsyncComponent(
@@ -476,7 +476,7 @@ export default {
 						return {
 							label: 'Preview',
 							slots: {
-								prefix: icon('eye'),
+								prefix: icon('lucide-eye'),
 							},
 							onClick() {
 								let ConfigPreviewDialog = defineAsyncComponent(
@@ -547,7 +547,7 @@ export default {
 			},
 			{
 				label: 'Actions',
-				icon: icon('sliders'),
+				icon: icon('lucide-sliders'),
 				route: 'actions',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -559,7 +559,7 @@ export default {
 			},
 			{
 				label: 'Regions',
-				icon: icon('globe'),
+				icon: icon('lucide-globe'),
 				route: 'regions',
 				type: 'list',
 				list: {
@@ -594,7 +594,7 @@ export default {
 						return {
 							label: 'Add Region',
 							slots: {
-								prefix: icon('plus'),
+								prefix: icon('lucide-plus'),
 							},
 							onClick() {
 								let AddRegionDialog = defineAsyncComponent(
@@ -616,7 +616,7 @@ export default {
 			getPatchesTab(false),
 			{
 				label: 'Dependencies',
-				icon: icon('box'),
+				icon: icon('lucide-box'),
 				route: 'bench-dependencies',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -631,7 +631,7 @@ export default {
 			},
 			{
 				label: 'Env',
-				icon: icon('tool'),
+				icon: icon('lucide-wrench'),
 				route: 'bench-environment-variable',
 				type: 'list',
 				list: {
@@ -661,7 +661,7 @@ export default {
 						return {
 							label: 'Add Environment Variable',
 							slots: {
-								prefix: icon('plus'),
+								prefix: icon('lucide-plus'),
 							},
 							onClick() {
 								let EnvironmentVariableEditorDialog = defineAsyncComponent(
@@ -809,7 +809,7 @@ export default {
 					options: [
 						{
 							label: 'View in Desk',
-							icon: icon('external-link'),
+							icon: icon('lucide-external-link'),
 							condition: () => team.doc?.is_desk_user,
 							onClick() {
 								window.open(

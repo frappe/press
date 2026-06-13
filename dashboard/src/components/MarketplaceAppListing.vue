@@ -127,7 +127,7 @@
 								<Button
 									:loading="uploading"
 									@click="openFileSelector()"
-									icon-left="plus"
+									icon-left="lucide-plus"
 									label="Add"
 								> </Button>
 							</template>

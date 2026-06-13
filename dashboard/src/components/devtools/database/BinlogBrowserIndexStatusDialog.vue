@@ -35,7 +35,7 @@
 							variant="ghost"
 							@click="goToPreviousPage()"
 							:disabled="!hasPreviousPage"
-							iconLeft="arrow-left"
+							iconLeft="lucide-arrow-left"
 						>
 							Prev
 						</Button>
@@ -43,7 +43,7 @@
 							variant="ghost"
 							@click="goToNextPage()"
 							:disabled="!hasNextPage"
-							iconRight="arrow-right"
+							iconRight="lucide-arrow-right"
 						>
 							Next
 						</Button>
@@ -199,7 +199,7 @@ export default {
 				actions: () => [
 					{
 						label: 'Refresh',
-						icon: 'refresh-ccw',
+						icon: 'lucide-refresh-ccw',
 						loading: this.$resources?.binlogs?.loading,
 						onClick: () => this.fetchBinlogStatus(),
 					},

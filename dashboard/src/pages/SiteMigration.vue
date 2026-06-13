@@ -176,7 +176,7 @@ export default {
 			return [
 				{
 					label: 'View in Desk',
-					icon: 'external-link',
+					icon: 'lucide-external-link',
 					condition: () => this.$team.doc?.is_desk_user,
 					onClick: () => {
 						window.open(
@@ -187,7 +187,7 @@ export default {
 				},
 				{
 					label: 'Start Now',
-					icon: 'play',
+					icon: 'lucide-play',
 					condition: () => this.siteAction?.status === 'Scheduled',
 					onClick: () => {
 						let startNowAction = createResource({
@@ -213,7 +213,7 @@ export default {
 				},
 				{
 					label: 'Cancel',
-					icon: 'x',
+					icon: 'lucide-x',
 					condition: () => this.siteAction?.status === 'Scheduled',
 					onClick: () => {
 						let cancelAction = createResource({

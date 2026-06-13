@@ -5,8 +5,8 @@
 		<ObjectList :options="listOptions" v-if="!selectedRow" />
 		<div v-else>
 			<div class="flex flex-row items-center justify-between">
-				<Button icon="arrow-left" @click="selectedRow = null">Back</Button>
-				<Button variant="outline" iconLeft="play" @click="rerunQuery"
+				<Button icon="lucide-arrow-left" @click="selectedRow = null">Back</Button>
+				<Button variant="outline" iconLeft="lucide-play" @click="rerunQuery"
 					>Re-run Query</Button
 				>
 			</div>

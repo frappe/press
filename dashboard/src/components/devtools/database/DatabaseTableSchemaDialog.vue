@@ -14,7 +14,7 @@
 				"
 			/>
 			<Button
-				icon="copy"
+				icon="lucide-copy"
 				@click="copyTableNameToClipboard"
 				v-if="selectedSchema"
 			/>
@@ -24,21 +24,21 @@
 			v-if="selectedSchema && showSQLActions"
 		>
 			<Button
-				iconLeft="play"
+				iconLeft="lucide-play"
 				class="grow"
 				variant="outline"
 				@click="viewTop100Rows"
 				>View Top 100 Rows</Button
 			>
 			<Button
-				iconLeft="play"
+				iconLeft="lucide-play"
 				class="grow"
 				variant="outline"
 				@click="viewLast100Rows"
 				>View Last 100 Rows</Button
 			>
 			<Button
-				iconLeft="play"
+				iconLeft="lucide-play"
 				class="grow"
 				variant="outline"
 				@click="viewAllRows"
@@ -161,8 +161,8 @@ export default {
 						type: 'Component',
 						component({ row }) {
 							return row.index_info.is_indexed
-								? icon('check', 'w-4 w-4')
-								: icon('x', 'w-4 w-4')
+								? icon('lucide-check', 'w-4 w-4')
+								: icon('lucide-x', 'w-4 w-4')
 						},
 					},
 				],

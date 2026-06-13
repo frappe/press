@@ -35,10 +35,8 @@
 				class="flex flex-col text-base text-ink-gray-7 space-y-2"
 			>
 				<div v-if="this.app.is_public" class="flex items-center gap-2">
-					<FeatherIcon
-						class="w-4 p-0.5 text-white rounded bg-green-500"
-						name="check"
-						:stroke-width="3"
+					<span
+						class="lucide-check w-4 p-0.5 text-white rounded bg-green-500"
 					/>
 					<span>
 						Found <strong>{{ this.app.title }}</strong> ({{ this.app.name }}).
@@ -48,10 +46,7 @@
 				</div>
 				<div v-else>
 					<div class="flex items-center gap-2">
-						<FeatherIcon
-							class="w-4 p-0.5 text-white rounded bg-red-500"
-							name="x"
-						/>
+						<span class="lucide-x w-4 p-0.5 text-white rounded bg-red-500" />
 						<span>
 							The GitHub repository is private. Please ensure the repository is
 							public to proceed.

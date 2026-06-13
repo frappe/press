@@ -4,7 +4,7 @@
 			v-if="showMessage"
 			class="mb-5 inline-flex gap-1.5 text-base text-ink-gray-7"
 		>
-			<FeatherIcon class="h-4" name="info" />
+			<span class="lucide-info h-4" />
 			<span> Add at least one card before changing the payment mode. </span>
 		</div>
 		<CardForm
@@ -19,7 +19,7 @@
 </template>
 <script setup>
 import CardForm from './CardForm.vue'
-import { Dialog, FeatherIcon } from 'frappe-ui'
+import { Dialog } from 'frappe-ui'
 
 const props = defineProps({
 	showMessage: {

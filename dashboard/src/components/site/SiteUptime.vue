@@ -140,9 +140,9 @@ export default {
 	name: 'SiteUptime',
 	props: ['data', 'loading', 'timegrain', 'site'],
 	components: {
-		Help: icon('help-circle'),
-		Right: icon('arrow-right'),
-		Left: icon('arrow-left'),
+		Help: icon('lucide-help-circle'),
+		Right: icon('lucide-arrow-right'),
+		Left: icon('lucide-arrow-left'),
 	},
 	emits: ['datazoom'],
 	data() {

@@ -69,7 +69,7 @@ export default {
 						variant: 'solid',
 
 						slots: {
-							prefix: icon('plus'),
+							prefix: icon('lucide-plus'),
 						},
 						onClick() {
 							router.push({ name: 'PartnerNewPayout' })

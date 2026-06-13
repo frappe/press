@@ -267,7 +267,7 @@ const downloadCSV = async () => {
 		>
 			<Button
 				@click="downloadCSV"
-				iconLeft="download"
+				iconLeft="lucide-download"
 				variant="ghost"
 				v-if="enableCSVExport"
 				>Download as CSV</Button
@@ -303,7 +303,7 @@ const downloadCSV = async () => {
 							variant="ghost"
 							@click="table.previousPage()"
 							:disabled="!table.getCanPreviousPage()"
-							iconLeft="arrow-left"
+							iconLeft="lucide-arrow-left"
 						>
 							Prev
 						</Button>
@@ -311,7 +311,7 @@ const downloadCSV = async () => {
 							variant="ghost"
 							@click="table.nextPage()"
 							:disabled="!table.getCanNextPage()"
-							iconRight="arrow-right"
+							iconRight="lucide-arrow-right"
 						>
 							Next
 						</Button>

@@ -31,7 +31,7 @@
 					>
 				</div>
 				<Button
-					icon="trash-2"
+					icon="lucide-trash-2"
 					theme="red"
 					class="opacity-0 group-hover:opacity-100 transition mb-auto"
 					@click="$emit('remove', user.user)"
@@ -47,7 +47,7 @@
 		</div>
 
 		<div>
-			<Button label="Invite" icon-left="user" @click="open = !open" />
+			<Button label="Invite" icon-left="lucide-user" @click="open = !open" />
 		</div>
 		<Dialog
 			v-model="open"

@@ -144,7 +144,7 @@ export default {
 							return {
 								label: isAppAdded ? 'check' : 'plus',
 								slots: {
-									icon: isAppAdded ? icon('check') : icon('plus'),
+									icon: isAppAdded ? icon('lucide-check') : icon('lucide-plus'),
 								},
 								variant: isAppAdded ? 'outline' : 'subtle',
 								onClick: (event) => {
@@ -184,7 +184,7 @@ export default {
 							return {
 								label: 'Add',
 								slots: {
-									icon: isAppAdded ? icon('check') : icon('plus'),
+									icon: isAppAdded ? icon('lucide-check') : icon('lucide-plus'),
 								},
 								variant: isAppAdded ? 'outline' : 'subtle',
 								onClick: (event) => {

@@ -39,7 +39,7 @@ const close = () => {
 	<Dialog
 		v-model="open"
 		title="Invite users"
-		icon="user-plus"
+		icon="lucide-user-plus"
 		:actions="[
 				{
 					label: 'Invite',

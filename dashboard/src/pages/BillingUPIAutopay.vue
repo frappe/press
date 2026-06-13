@@ -179,7 +179,7 @@ export default {
 						return {
 							label: 'Setup Autopay',
 							slots: {
-								prefix: icon('plus'),
+								prefix: icon('lucide-plus'),
 							},
 							onClick: () => {
 								if (!this.billingDetailsSummary) {

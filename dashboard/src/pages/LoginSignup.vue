@@ -18,7 +18,7 @@
 									name: 'Login',
 									query: { ...$route.query, use_password: 1 },
 								}"
-								icon-left="key"
+								icon-left="lucide-key"
 							>
 								Continue with password
 							</Button>
@@ -28,7 +28,7 @@
 									name: 'Login',
 									query: { ...$route.query, use_password: undefined },
 								}"
-								icon-left="mail"
+								icon-left="lucide-mail"
 							>
 								Continue with verification code
 							</Button>

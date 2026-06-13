@@ -47,12 +47,12 @@
 						@change="onPatchFileSelect"
 					/>
 					<Button @click="$refs.fileSelector.click()" title="Select patch file">
-						<FeatherIcon name="file-text" class="h-5 w-5 text-ink-gray-6" />
+						<span class="lucide-file-text h-5 w-5 text-ink-gray-6" />
 					</Button>
 
 					<!-- Clear Patch File -->
 					<Button @click="clear" v-if="patch" title="Clear patch file">
-						<FeatherIcon name="x" class="h-5 w-5 text-ink-gray-6" />
+						<span class="lucide-x h-5 w-5 text-ink-gray-6" />
 					</Button>
 				</div>
 			</div>

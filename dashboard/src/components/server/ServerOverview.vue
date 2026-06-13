@@ -507,7 +507,7 @@ export default {
 								actions: [
 									{
 										label: 'Increase Storage',
-										icon: 'plus',
+										icon: 'lucide-plus',
 										variant: 'ghost',
 										condition: () => doc.provider != 'Hetzner',
 										onClick: () => {
@@ -580,7 +580,7 @@ export default {
 									},
 									{
 										label: 'Configure Auto Increase Storage',
-										icon: 'tool',
+										icon: 'lucide-wrench',
 										variant: 'ghost',
 										condition: () => doc.provider != 'Hetzner',
 										onClick: () => {
@@ -685,7 +685,7 @@ export default {
 									},
 									{
 										label: 'Storage Breakdown',
-										icon: 'pie-chart',
+										icon: 'lucide-pie-chart',
 										variant: 'ghost',
 										onClick: () => {
 											this.showStorageBreakdownDialog(serverType)

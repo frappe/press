@@ -15,7 +15,7 @@
 					type="text"
 					size="sm"
 					variant="subtle"
-					icon-left="search"
+					icon-left="lucide-search"
 					placeholder="Search Keywords (Optional)"
 					v-model="search_string"
 				/>
@@ -50,7 +50,7 @@
 					size="sm"
 					loadingText="Searching"
 					:loading="this.$resources.logs.loading"
-					iconLeft="search"
+					iconLeft="lucide-search"
 					@click="this.$resources.logs.submit()"
 				>
 					Search

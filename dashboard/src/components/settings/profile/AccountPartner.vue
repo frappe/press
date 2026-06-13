@@ -8,14 +8,14 @@
 		<template #actions>
 			<Button
 				v-if="!$team.doc?.partner_email"
-				icon-left="edit"
+				icon-left="lucide-edit"
 				@click="showAddPartnerCodeDialog = true"
 			>
 				Add Partner Code
 			</Button>
 			<Button
 				v-else
-				icon-left="trash-2"
+				icon-left="lucide-trash-2"
 				@click="showRemovePartnerDialog = true"
 			>
 				Unlink Partner

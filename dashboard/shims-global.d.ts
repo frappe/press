@@ -1,7 +1,7 @@
 declare global {
 	interface Window {
-		is_system_user?: boolean;
+		is_system_user?: boolean
 	}
 }
 
-export {};
+export {}

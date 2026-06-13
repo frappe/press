@@ -123,7 +123,7 @@ export default {
 				label: 'New Server',
 				variant: 'solid',
 				slots: {
-					prefix: icon('plus'),
+					prefix: icon('lucide-plus'),
 				},
 				onClick() {
 					router.push({ name: 'New Server' })
@@ -178,13 +178,13 @@ export default {
 					button: {
 						label: 'Options',
 						slots: {
-							icon: icon('more-horizontal'),
+							icon: icon('lucide-more-horizontal'),
 						},
 					},
 					options: [
 						{
 							label: 'View in Desk',
-							icon: icon('external-link'),
+							icon: icon('lucide-external-link'),
 							condition: () => $team.doc?.is_desk_user,
 							onClick() {
 								window.open(
@@ -199,7 +199,7 @@ export default {
 						},
 						{
 							label: 'View DB in Desk',
-							icon: icon('external-link'),
+							icon: icon('lucide-external-link'),
 							condition: () => $team.doc?.is_desk_user,
 							onClick() {
 								window.open(
@@ -212,7 +212,7 @@ export default {
 						},
 						{
 							label: 'View Replication DB in Desk',
-							icon: icon('external-link'),
+							icon: icon('lucide-external-link'),
 							condition: () =>
 								$team.doc?.is_desk_user && server.doc.replication_server,
 							onClick() {
@@ -226,7 +226,7 @@ export default {
 						},
 						{
 							label: 'Visit Server',
-							icon: icon('external-link'),
+							icon: icon('lucide-external-link'),
 							condition: () =>
 								server.doc.status === 'Active' && $team.doc?.is_desk_user,
 							onClick() {
@@ -240,7 +240,7 @@ export default {
 		tabs: [
 			{
 				label: 'Overview',
-				icon: icon('home'),
+				icon: icon('lucide-home'),
 				condition: (server) => {
 					return server.doc?.status !== 'Archived'
 				},
@@ -255,7 +255,7 @@ export default {
 			},
 			{
 				label: 'Analytics',
-				icon: icon('bar-chart-2'),
+				icon: icon('lucide-bar-chart-2'),
 				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'analytics',
 				type: 'Component',
@@ -270,7 +270,7 @@ export default {
 			},
 			{
 				label: 'Bench Analytics',
-				icon: icon('bar-chart-2'),
+				icon: icon('lucide-bar-chart-2'),
 				condition: (server) => server.doc?.status !== 'Archived',
 				route: 'bench-group-analytics',
 				type: 'Component',
@@ -393,7 +393,7 @@ export default {
 						return {
 							label: 'New Site',
 							slots: {
-								prefix: icon('plus'),
+								prefix: icon('lucide-plus'),
 							},
 							onClick() {
 								router.push({
@@ -407,7 +407,7 @@ export default {
 			},
 			{
 				label: 'Benches',
-				icon: icon('package'),
+				icon: icon('lucide-package'),
 				condition: (server) => {
 					return server.doc?.status !== 'Archived'
 				},
@@ -484,7 +484,7 @@ export default {
 						return {
 							label: 'New Bench',
 							slots: {
-								prefix: icon('plus'),
+								prefix: icon('lucide-plus'),
 							},
 							onClick() {
 								router.push({
@@ -498,7 +498,7 @@ export default {
 			},
 			{
 				label: 'Snapshots',
-				icon: icon('camera'),
+				icon: icon('lucide-camera'),
 				condition: (server) => {
 					if (!server?.doc) return true
 					return server?.doc?.provider === 'AWS EC2'
@@ -644,7 +644,7 @@ export default {
 						return {
 							label: 'New Snapshot',
 							slots: {
-								prefix: icon('camera'),
+								prefix: icon('lucide-camera'),
 							},
 							onClick() {
 								renderDialog(
@@ -820,7 +820,7 @@ export default {
 			getJobsTab('Server'),
 			{
 				label: 'Plays',
-				icon: icon('play'),
+				icon: icon('lucide-play'),
 				condition: (server) => {
 					return server.doc?.status !== 'Archived'
 				},
@@ -901,7 +901,7 @@ export default {
 			},
 			{
 				label: 'Actions',
-				icon: icon('sliders'),
+				icon: icon('lucide-sliders'),
 				condition: (server) => {
 					return server.doc?.status !== 'Archived'
 				},
@@ -914,7 +914,7 @@ export default {
 			},
 			{
 				label: 'Auto Scale',
-				icon: icon('maximize-2'),
+				icon: icon('lucide-maximize-2'),
 				route: 'auto-scale',
 				type: 'Component',
 				condition: (server) => {
@@ -948,7 +948,7 @@ export default {
 			},
 			{
 				label: 'Firewall',
-				icon: icon('shield'),
+				icon: icon('lucide-shield'),
 				condition: (server) => {
 					return (
 						server.doc?.status !== 'Archived' && !server.doc?.is_self_hosted
@@ -968,7 +968,7 @@ export default {
 			tagTab('Server'),
 			{
 				label: 'Activity',
-				icon: icon('activity'),
+				icon: icon('lucide-activity'),
 				route: 'activity',
 				type: 'list',
 				condition: (server) => {

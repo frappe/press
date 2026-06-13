@@ -196,7 +196,7 @@ export default {
 				label: 'New Site',
 				variant: 'solid',
 				slots: {
-					prefix: icon('plus'),
+					prefix: icon('lucide-plus'),
 				},
 				onClick() {
 					router.push({ name: 'New Site' })
@@ -207,7 +207,7 @@ export default {
 			return [
 				{
 					label: 'Export as CSV',
-					icon: 'download',
+					icon: 'lucide-download',
 					onClick() {
 						const fields = [
 							'host_name',
@@ -292,7 +292,7 @@ export default {
 		tabs: [
 			{
 				label: 'Overview',
-				icon: icon('home'),
+				icon: icon('lucide-home'),
 				route: 'overview',
 				type: 'Component',
 				condition: (site) => site.doc?.status !== 'Archived',
@@ -305,7 +305,7 @@ export default {
 			},
 			{
 				label: 'Insights',
-				icon: icon('bar-chart-2'),
+				icon: icon('lucide-bar-chart-2'),
 				route: 'insights',
 				type: 'Component',
 				condition: (site) => site.doc?.status !== 'Archived',
@@ -390,7 +390,7 @@ export default {
 			getAppsTab(true),
 			{
 				label: 'Domains',
-				icon: icon('external-link'),
+				icon: icon('lucide-external-link'),
 				route: 'domains',
 				type: 'list',
 				condition: (site) => {
@@ -467,7 +467,7 @@ export default {
 						return {
 							label: 'Add Domain',
 							slots: {
-								prefix: icon('plus'),
+								prefix: icon('lucide-plus'),
 							},
 							onClick() {
 								renderDialog(
@@ -629,7 +629,7 @@ export default {
 			},
 			{
 				label: 'Backups',
-				icon: icon('archive'),
+				icon: icon('lucide-archive'),
 				route: 'backups',
 				type: 'list',
 				list: {
@@ -1025,7 +1025,7 @@ export default {
 						return {
 							label: 'Schedule Backup',
 							slots: {
-								prefix: icon('upload-cloud'),
+								prefix: icon('lucide-upload-cloud'),
 							},
 							loading: site.backup.loading,
 							onClick() {
@@ -1072,7 +1072,7 @@ export default {
 			},
 			{
 				label: 'Site Config',
-				icon: icon('settings'),
+				icon: icon('lucide-settings'),
 				route: 'site-config',
 				type: 'list',
 				condition: (site) => {
@@ -1115,7 +1115,7 @@ export default {
 						return {
 							label: 'Add Config',
 							slots: {
-								prefix: icon('plus'),
+								prefix: icon('lucide-plus'),
 							},
 							onClick() {
 								let ConfigEditorDialog = defineAsyncComponent(
@@ -1136,7 +1136,7 @@ export default {
 						return {
 							label: 'Preview',
 							slots: {
-								prefix: icon('eye'),
+								prefix: icon('lucide-eye'),
 							},
 							onClick() {
 								let ConfigPreviewDialog = defineAsyncComponent(
@@ -1260,7 +1260,7 @@ export default {
 						return {
 							label: 'Trigger Migration',
 							slots: {
-								prefix: icon('upload-cloud'),
+								prefix: icon('lucide-upload-cloud'),
 							},
 							loading: site.backup.loading,
 							onClick() {
@@ -1281,7 +1281,7 @@ export default {
 			},
 			{
 				label: 'Updates',
-				icon: icon('arrow-up-circle'),
+				icon: icon('lucide-arrow-up-circle'),
 				route: 'updates',
 				type: 'list',
 				condition: (site) => {
@@ -1509,7 +1509,9 @@ export default {
 																						label: 'View',
 																						variant: 'ghost',
 																						slots: {
-																							prefix: icon('external-link'),
+																							prefix: icon(
+																								'lucide-external-link',
+																							),
 																						},
 																						link: row.diff_url,
 																					}
@@ -1538,7 +1540,7 @@ export default {
 							{
 								label: 'Configure',
 								slots: {
-									prefix: icon('settings'),
+									prefix: icon('lucide-settings'),
 								},
 								onClick() {
 									let ConfigureAutoUpdateDialog = defineAsyncComponent(
@@ -1585,7 +1587,7 @@ export default {
 			},
 			{
 				label: 'Actions',
-				icon: icon('sliders'),
+				icon: icon('lucide-sliders'),
 				route: 'actions',
 				type: 'Component',
 				condition: (site) => {
@@ -1599,7 +1601,7 @@ export default {
 
 			{
 				label: 'Activity',
-				icon: icon('activity'),
+				icon: icon('lucide-activity'),
 				route: 'activity',
 				type: 'list',
 				condition: (site) => site.doc?.status !== 'Archived',
@@ -1707,7 +1709,7 @@ export default {
 					label: 'Update Available',
 					variant: site.doc?.setup_wizard_complete ? 'solid' : 'subtle',
 					slots: {
-						prefix: icon('alert-circle'),
+						prefix: icon('lucide-alert-circle'),
 					},
 					condition() {
 						return (
@@ -1729,7 +1731,7 @@ export default {
 				{
 					label: 'Update Scheduled',
 					slots: {
-						prefix: icon('calendar'),
+						prefix: icon('lucide-calendar'),
 					},
 					condition: () => site.doc?.has_scheduled_updates,
 					onClick() {
@@ -1742,7 +1744,7 @@ export default {
 				{
 					label: 'Enable Monitoring',
 					slots: {
-						prefix: icon('activity'),
+						prefix: icon('lucide-activity'),
 					},
 					condition: () => site.doc?.is_monitoring_disabled,
 					onClick() {
@@ -1776,7 +1778,7 @@ export default {
 				{
 					label: 'Visit Site',
 					slots: {
-						prefix: icon('external-link'),
+						prefix: icon('lucide-external-link'),
 					},
 					condition: () =>
 						site.doc.status !== 'Archived' && site.doc?.setup_wizard_complete,
@@ -1793,7 +1795,7 @@ export default {
 				{
 					label: 'Setup Site',
 					slots: {
-						prefix: icon('external-link'),
+						prefix: icon('lucide-external-link'),
 					},
 					variant: 'solid',
 					loading: site.loginAsAdmin.loading || site.loginAsTeam.loading,
@@ -1817,7 +1819,7 @@ export default {
 					options: [
 						{
 							label: 'View in Desk',
-							icon: 'external-link',
+							icon: 'lucide-external-link',
 							condition: () => $team.doc?.is_desk_user,
 							onClick: () => {
 								window.open(
@@ -1828,7 +1830,7 @@ export default {
 						},
 						{
 							label: 'Login As Administrator',
-							icon: 'external-link',
+							icon: 'lucide-external-link',
 							condition: () => ['Active', 'Broken'].includes(site.doc.status),
 							onClick: () => {
 								confirmDialog({

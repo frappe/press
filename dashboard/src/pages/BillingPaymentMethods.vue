@@ -6,7 +6,7 @@
 <script>
 import { defineAsyncComponent, h } from 'vue'
 import ObjectList from '../components/ObjectList.vue'
-import { Badge, FeatherIcon, Tooltip } from 'frappe-ui'
+import { Badge, Tooltip } from 'frappe-ui'
 import { toast } from 'vue-sonner'
 import { confirmDialog, renderDialog, icon } from '../utils/components'
 export default {
@@ -69,9 +69,8 @@ export default {
 						align: 'center',
 						component({ row }) {
 							if (row.stripe_mandate_id) {
-								return h(FeatherIcon, {
-									name: 'check-circle',
-									class: 'h-4 w-4 text-green-600',
+								return h('span', {
+									class: 'lucide-check-circle h-4 w-4 text-green-600',
 								})
 							}
 						},
@@ -88,9 +87,8 @@ export default {
 										text: 'The last payment failed on this card. Please use a different card.',
 									},
 									() =>
-										h(FeatherIcon, {
-											name: 'alert-circle',
-											class: 'h-4 w-4 text-red-600',
+										h('span', {
+											class: 'lucide-alert-circle h-4 w-4 text-red-600',
 										}),
 								)
 							}
@@ -159,7 +157,7 @@ export default {
 					return {
 						label: 'Add Card',
 						slots: {
-							prefix: icon('plus'),
+							prefix: icon('lucide-plus'),
 						},
 						onClick: () => {
 							let StripeCardDialog = defineAsyncComponent(

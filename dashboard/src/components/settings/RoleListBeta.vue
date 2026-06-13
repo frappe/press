@@ -194,7 +194,11 @@ const deleteRole = () => {
 					permissions for each role.
 				</p>
 			</div>
-			<Button variant="solid" icon-left="plus" @click="showCreateDialog = true">
+			<Button
+				variant="solid"
+				icon-left="lucide-plus"
+				@click="showCreateDialog = true"
+			>
 				Create Role
 			</Button>
 		</div>

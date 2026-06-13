@@ -19,21 +19,21 @@
 			<div class="flex justify-center gap-2">
 				<Button
 					label="Discard"
-					icon-left="trash-2"
+					icon-left="lucide-trash-2"
 					theme="gray"
 					:disabled="!firewall.isDirty"
 					@click.stop.prevent="() => firewall.reload()"
 				/>
 				<Button
 					label="Save"
-					icon-left="save"
+					icon-left="lucide-save"
 					theme="green"
 					:disabled="!firewall.isDirty"
 					@click.stop.prevent="() => firewall.save.submit()"
 				/>
 				<Button
 					label="Add Rule"
-					icon-left="plus"
+					icon-left="lucide-plus"
 					variant="solid"
 					@click="openAddDialog = !openAddDialog"
 				/>

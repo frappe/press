@@ -58,7 +58,7 @@ export default {
 			notify({
 				title: 'Token Invalid or Expired',
 				color: 'red',
-				icon: 'x',
+				icon: 'lucide-x',
 			})
 		}
 	},

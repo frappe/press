@@ -4,7 +4,7 @@
 			<Button
 				class="font-mono text-xs"
 				:label="modelValue?.label || 'Select'"
-				icon-right="chevron-down"
+				icon-right="lucide-chevron-down"
 				@click="togglePopover"
 			/>
 		</template>

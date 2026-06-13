@@ -85,7 +85,7 @@ export default {
 				actions: () => [
 					{
 						label: 'Refresh',
-						icon: 'refresh-ccw',
+						icon: 'lucide-refresh-ccw',
 						loading: this.$resources.slowQueries.loading,
 						onClick: () => this.$resources.slowQueries.reload(),
 					},

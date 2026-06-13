@@ -1,6 +1,6 @@
-import plugin from 'tailwindcss/plugin';
-import frappeUIPreset from 'frappe-ui/tailwind';
-import containerQueries from '@tailwindcss/container-queries';
+import plugin from 'tailwindcss/plugin'
+import frappeUIPreset from 'frappe-ui/tailwind'
+import containerQueries from '@tailwindcss/container-queries'
 
 export default {
 	presets: [frappeUIPreset],
@@ -50,12 +50,12 @@ export default {
 						'colors.blue.500',
 					)} 100%)`,
 				},
-			});
+			})
 			addUtilities({
 				'.bg-gradient-none': {
 					'background-image': 'none',
 				},
-			});
+			})
 		}),
 	],
-};
+}

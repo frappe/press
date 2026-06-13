@@ -55,13 +55,13 @@
 						<Button
 							v-if="idx > 0"
 							class="ml-3 rounded-full"
-							icon="x"
+							icon="lucide-x"
 							@click="deleteFeatureInput(idx)"
 						></Button>
 					</div>
 				</div>
 				<div>
-					<Button icon-left="plus" @click="addFeatureInput">Add</Button>
+					<Button icon-left="lucide-plus" @click="addFeatureInput">Add</Button>
 				</div>
 
 				<div>

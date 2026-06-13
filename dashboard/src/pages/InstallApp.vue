@@ -380,7 +380,7 @@ export default {
 				sublabel: ' ',
 				features: plan.features.map((f) => ({
 					value: f,
-					icon: 'check-circle',
+					icon: 'lucide-check-circle',
 				})),
 			}))
 		},

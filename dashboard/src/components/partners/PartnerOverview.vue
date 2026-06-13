@@ -18,7 +18,7 @@
 			<div class="flex flex-col gap-2.5 p-4">
 				<div class="flex">
 					<div class="flex items-center gap-0.5">
-						<FeatherIcon name="award" class="h-5 w-5 text-ink-gray-7" />
+						<span class="lucide-award h-5 w-5 text-ink-gray-7" />
 						<h3 class="text-xl font-semibold">
 							{{ partnerDetails.data?.partner_type }}
 							Tier
@@ -173,7 +173,7 @@
 				label="Contact Support"
 				variant="outline"
 				size="md"
-				icon-right="external-link"
+				icon-right="lucide-external-link"
 				@click="openSupport"
 			/>
 		</Dialog>

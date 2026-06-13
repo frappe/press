@@ -211,7 +211,7 @@ const options = ref({
 	legend: {
 		type: 'scroll',
 		top: 'bottom',
-		icon: 'circle',
+		icon: 'lucide-circle',
 		show: data.value.datasets.length > 1,
 	},
 	series: data.value.datasets.map((dataset, i) => {

@@ -34,7 +34,7 @@
 				class="mx-auto mt-4"
 				label="Skip to Dashboard"
 				variant="ghost"
-				icon-right="arrow-right"
+				icon-right="lucide-arrow-right"
 				:route="{ name: 'Site List' }"
 			/>
 		</div>

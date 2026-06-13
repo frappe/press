@@ -29,9 +29,8 @@
 			<div v-else>
 				<FormControl label="Secret" v-model="secret">
 					<template #suffix>
-						<FeatherIcon
-							class="w-4 cursor-pointer"
-							name="refresh-ccw"
+						<span
+							class="lucide-refresh-ccw w-4 cursor-pointer"
 							@click="generateRandomSecret"
 						/>
 					</template>

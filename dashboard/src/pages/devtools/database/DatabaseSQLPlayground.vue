@@ -41,7 +41,7 @@
 					v-model="site"
 				/>
 				<Button
-					icon="refresh-ccw"
+					icon="lucide-refresh-ccw"
 					variant="subtle"
 					:loading="site && !isAutoCompletionReady"
 					:disabled="!site"
@@ -78,12 +78,14 @@
 			<div class="mt-2 flex flex-row items-center justify-between">
 				<div class="flex gap-2">
 					<Button
-						iconLeft="table"
+						iconLeft="lucide-table"
 						@click="toggleTableSchemasDialog"
 						:disabled="!isAutoCompletionReady"
 						>Tables</Button
 					>
-					<Button iconLeft="file-text" @click="toggleLogsDialog">Logs</Button>
+					<Button iconLeft="lucide-file-text" @click="toggleLogsDialog"
+						>Logs</Button
+					>
 				</div>
 
 				<div class="flex gap-2">
@@ -91,7 +93,7 @@
 						v-if="selectedQuery"
 						@click="runSelectedSQLQuery"
 						:loading="$resources.runSQLQuery.loading"
-						iconLeft="play"
+						iconLeft="lucide-play"
 						variant="outline"
 					>
 						Run Selected Query
@@ -99,7 +101,7 @@
 					<Button
 						@click="() => runSQLQuery()"
 						:loading="$resources.runSQLQuery.loading"
-						iconLeft="play"
+						iconLeft="lucide-play"
 						variant="solid"
 						>Run Query</Button
 					>

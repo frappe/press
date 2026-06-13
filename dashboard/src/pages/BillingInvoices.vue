@@ -166,7 +166,7 @@ export default {
 								return {
 									label: 'Download Invoice',
 									slots: {
-										prefix: icon('download'),
+										prefix: icon('lucide-download'),
 									},
 									onClick: () => {
 										if (row.mpesa_invoice_pdf) {
@@ -181,7 +181,7 @@ export default {
 								return {
 									label: 'Pay Now',
 									slots: {
-										prefix: icon('external-link'),
+										prefix: icon('lucide-external-link'),
 									},
 									onClick: (e) => {
 										e.stopPropagation()
@@ -203,7 +203,7 @@ export default {
 								return h(Button, {
 									variant: 'ghost',
 									theme: 'red',
-									icon: 'alert-circle',
+									icon: 'lucide-alert-circle',
 									onClick(e) {
 										e.stopPropagation()
 										confirmDialog({

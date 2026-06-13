@@ -89,7 +89,7 @@
 								></component>
 								<Button
 									v-else
-									:iconLeft="actionButton.icon"
+									:iconLeft="lucide-actionButton.icon"
 									class="text-text-icons-gray-8 w-full rounded-none text-xs"
 									@click="actionButton.handler"
 								>
@@ -106,7 +106,7 @@
 			@click="clearValue"
 			v-show="modelValue"
 		>
-			<FeatherIcon name="x" class="mt-3.5 h-4 w-4 stroke-gray-700" />
+			<span class="lucide-x mt-3.5 h-4 w-4 stroke-gray-700" />
 		</div>
 	</div>
 </template>

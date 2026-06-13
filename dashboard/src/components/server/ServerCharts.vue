@@ -160,9 +160,8 @@
 			@click="toggleAdvancedAnalytics"
 		>
 			<h2 class="text-lg font-semibold">Advanced Analytics</h2>
-			<FeatherIcon
-				class="h-5 w-5 text-ink-gray-5 hover:text-ink-gray-7"
-				:name="showAdvancedAnalytics ? 'chevron-down' : 'chevron-right'"
+			<span
+				:class="[showAdvancedAnalytics ? 'lucide-chevron-down' : 'lucide-chevron-right', 'h-5 w-5 text-ink-gray-5 hover:text-ink-gray-7']"
 			/>
 		</div>
 

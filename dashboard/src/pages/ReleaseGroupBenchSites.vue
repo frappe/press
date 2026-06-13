@@ -136,8 +136,8 @@ export default {
 					if (!bench?.status) return
 
 					const options = this.benchOptions(bench)
-					const IconHash = icon('hash', 'w-3 h-3')
-					const IconStar = icon('star', 'w-3 h-3')
+					const IconHash = icon('lucide-hash', 'w-3 h-3')
+					const IconStar = icon('lucide-star', 'w-3 h-3')
 					return (
 						<div class="flex items-center">
 							<Tooltip text="View bench details">
@@ -187,7 +187,7 @@ export default {
 					return {
 						label: 'New Site',
 						slots: {
-							prefix: icon('plus', 'w-4 h-4'),
+							prefix: icon('lucide-plus', 'w-4 h-4'),
 						},
 						disabled:
 							!this.$resources.benches.data?.length ||

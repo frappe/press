@@ -18,7 +18,7 @@ import { getToastErrorMessage } from '../../utils/toast'
 export function getAppsTab(forSite: boolean) {
 	return {
 		label: 'Apps',
-		icon: icon('grid'),
+		icon: icon('lucide-grid'),
 		route: 'apps',
 		type: 'list',
 		condition: (docResource) => {
@@ -90,7 +90,7 @@ function getAppsTabColumns(forSite: boolean) {
 						title: 'App has been patched',
 						class: 'rounded-full bg-surface-gray-2 p-1',
 					},
-					h(icon('hash', 'w-3 h-3')),
+					h(icon('lucide-hash', 'w-3 h-3')),
 				)
 			},
 			format: (value, row) => value || row.app_title,
@@ -159,7 +159,7 @@ const siteAppListOptions: Partial<TabList> = {
 		return {
 			label: 'Install App',
 			slots: {
-				prefix: icon('plus'),
+				prefix: icon('lucide-plus'),
 			},
 			onClick() {
 				const InstallAppDialog = defineAsyncComponent(

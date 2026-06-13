@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { icon, renderDialog } from '@/utils/components'
-import { createListResource, FeatherIcon, ListView, Tooltip } from 'frappe-ui'
+import { createListResource, ListView, Tooltip } from 'frappe-ui'
 import { computed, defineAsyncComponent, h } from 'vue'
 
 defineOptions({ name: 'BenchDependencies' })
@@ -43,7 +43,7 @@ const columns = computed(() => [
 			}
 
 			return h('div', { title: 'Custom version' }, [
-				h(icon('alert-circle', 'w-3 h-3')),
+				h(icon('lucide-alert-circle', 'w-3 h-3')),
 			])
 		},
 		format(_: any, row: any) {
@@ -158,7 +158,7 @@ const columns = computed(() => [
 		<div
 			class="text-ink-gray-5 select-none text-xs flex items-center w-full p-2 mb-3 rounded-md bg-surface-gray-1"
 		>
-			<FeatherIcon name="info" class="size-4 inline-block mx-2" />
+			<span class="lucide-info size-4 inline-block mx-2" />
 			<span>
 				To include system package dependencies for your app, define them in your
 				app's

@@ -98,7 +98,7 @@ export default {
 								return {
 									label: 'Download Invoice',
 									slots: {
-										prefix: icon('download'),
+										prefix: icon('lucide-download'),
 									},
 									onClick: () => {
 										window.open(row.local_invoice)

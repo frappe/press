@@ -4,7 +4,7 @@
 			v-if="team.doc.currency === 'INR' || paypalEnabled"
 			class="mt-2.5 inline-flex gap-2 text-base text-ink-gray-7"
 		>
-			<FeatherIcon name="info" class="my-1 h-4" />
+			<span class="lucide-info my-1 h-4" />
 			<span class="leading-5" v-if="team.doc.currency === 'INR'">
 				If you select Razorpay, you can pay using Credit Card, Debit Card, Net
 				Banking, UPI, Wallets, etc. If you are using Net Banking, it may take
@@ -42,7 +42,7 @@
 	</div>
 </template>
 <script setup>
-import { Button, createResource, ErrorMessage, FeatherIcon } from 'frappe-ui'
+import { Button, createResource, ErrorMessage } from 'frappe-ui'
 import { inject, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { DashboardError } from '../../utils/error'

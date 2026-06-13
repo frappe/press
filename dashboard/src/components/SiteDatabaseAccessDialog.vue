@@ -258,7 +258,7 @@ export default {
 						label: 'Add User',
 						variant: 'solid',
 						slots: {
-							prefix: icon('plus'),
+							prefix: icon('lucide-plus'),
 						},
 						onClick: () => {
 							this.show = false

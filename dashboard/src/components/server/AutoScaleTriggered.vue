@@ -93,7 +93,7 @@ export default {
 
 				primaryAction: () => ({
 					label: 'Configure Automated Scaling',
-					slots: { prefix: icon('settings') },
+					slots: { prefix: icon('lucide-settings') },
 					onClick: () => {
 						renderDialog(
 							h(

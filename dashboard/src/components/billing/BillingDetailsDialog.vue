@@ -4,7 +4,7 @@
 			v-if="showMessage"
 			class="mb-5 inline-flex gap-1.5 text-base text-ink-gray-7"
 		>
-			<FeatherIcon class="h-4" name="info" />
+			<span class="lucide-info h-4" />
 			<span> Add billing details to your account before proceeding.</span>
 		</div>
 		<BillingDetails
@@ -20,7 +20,7 @@
 </template>
 <script setup>
 import BillingDetails from './BillingDetails.vue'
-import { FeatherIcon, Dialog } from 'frappe-ui'
+import { Dialog } from 'frappe-ui'
 import { ref } from 'vue'
 
 const props = defineProps({

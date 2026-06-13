@@ -69,7 +69,7 @@
 
 				<Dropdown v-if="moreActions.length" :options="moreActions">
 					<Button>
-						<FeatherIcon name="more-horizontal" class="h-4 w-4" />
+						<span class="lucide-more-horizontal h-4 w-4" />
 					</Button>
 				</Dropdown>
 

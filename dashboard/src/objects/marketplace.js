@@ -69,7 +69,7 @@ export default {
 				label: 'New App',
 				variant: 'solid',
 				slots: {
-					prefix: icon('plus'),
+					prefix: icon('lucide-plus'),
 				},
 				onClick() {
 					const NewMarketplaceAppDialog = defineAsyncComponent(
@@ -100,7 +100,7 @@ export default {
 		tabs: [
 			{
 				label: 'Analytics',
-				icon: icon('bar-chart-2'),
+				icon: icon('lucide-bar-chart-2'),
 				route: 'analytics',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -112,7 +112,7 @@ export default {
 			},
 			{
 				label: 'Listing',
-				icon: icon('shopping-cart'),
+				icon: icon('lucide-shopping-cart'),
 				route: 'listing',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -124,7 +124,7 @@ export default {
 			},
 			{
 				label: 'Versions',
-				icon: icon('package'),
+				icon: icon('lucide-package'),
 				route: 'versions',
 				type: 'list',
 				list: {
@@ -166,7 +166,7 @@ export default {
 						return {
 							label: 'New Version',
 							slots: {
-								prefix: icon('plus'),
+								prefix: icon('lucide-plus'),
 							},
 							onClick() {
 								renderDialog(
@@ -278,7 +278,7 @@ export default {
 							{
 								label: 'Show Releases',
 								slots: {
-									prefix: icon('plus'),
+									prefix: icon('lucide-plus'),
 								},
 								onClick() {
 									showReleases(row, app)
@@ -322,7 +322,7 @@ export default {
 			},
 			{
 				label: 'Audit Reports',
-				icon: icon('clipboard'),
+				icon: icon('lucide-clipboard'),
 				route: 'audit-reports',
 				type: 'Component',
 				component: defineAsyncComponent(
@@ -335,7 +335,7 @@ export default {
 			},
 			{
 				label: 'Pricing',
-				icon: icon('dollar-sign'),
+				icon: icon('lucide-dollar-sign'),
 				route: 'pricing',
 				type: 'list',
 				list: {
@@ -376,7 +376,7 @@ export default {
 						return {
 							label: 'New Plan',
 							slots: {
-								prefix: icon('plus'),
+								prefix: icon('lucide-plus'),
 							},
 							onClick() {
 								renderDialog(
@@ -412,7 +412,7 @@ export default {
 			},
 			{
 				label: 'Subscriptions',
-				icon: icon('users'),
+				icon: icon('lucide-users'),
 				route: 'subscription',
 				type: 'list',
 				list: {
@@ -475,7 +475,7 @@ export default {
 				{
 					label: 'View in Marketplace',
 					slots: {
-						prefix: icon('external-link'),
+						prefix: icon('lucide-external-link'),
 					},
 					condition: () => app.doc.status === 'Published',
 					onClick() {
@@ -488,7 +488,7 @@ export default {
 				{
 					label: 'Guidelines',
 					slots: {
-						icon: icon('help-circle'),
+						icon: icon('lucide-help-circle'),
 					},
 					condition: () => app.doc.status === 'Draft',
 					onClick() {
@@ -502,7 +502,7 @@ export default {
 					label: 'Complete Listing',
 					variant: 'solid',
 					slots: {
-						prefix: icon('alert-circle'),
+						prefix: icon('lucide-alert-circle'),
 					},
 					condition: () => app.doc.status === 'Draft',
 					onClick() {
@@ -525,7 +525,7 @@ export default {
 					options: [
 						{
 							label: 'Delete',
-							icon: icon('trash-2'),
+							icon: icon('lucide-trash-2'),
 							condition: () => app.doc.status === 'Draft',
 							onClick() {
 								confirmDialog({

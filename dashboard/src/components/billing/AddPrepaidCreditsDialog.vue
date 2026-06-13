@@ -4,7 +4,7 @@
 			v-if="showMessage"
 			class="mb-5 inline-flex gap-1.5 text-base text-ink-gray-7"
 		>
-			<FeatherIcon class="h-4" name="info" />
+			<span class="lucide-info h-4" />
 			<span>
 				Add credits to your account before changing the payment mode.
 			</span>
@@ -24,7 +24,7 @@
 </template>
 <script setup>
 import PrepaidCreditsForm from './PrepaidCreditsForm.vue'
-import { Dialog, FeatherIcon } from 'frappe-ui'
+import { Dialog } from 'frappe-ui'
 
 const props = defineProps({
 	showMessage: {

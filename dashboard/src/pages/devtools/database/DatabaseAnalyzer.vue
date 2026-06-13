@@ -27,7 +27,7 @@
 				<Button
 					:disabled="!site"
 					variant="subtle"
-					iconLeft="refresh-ccw"
+					iconLeft="lucide-refresh-ccw"
 					@click="refreshDatabaseUsage"
 					:loading="
 						site && (refreshingDatabaseUsage || !isRequiredInformationReceived)
@@ -165,7 +165,7 @@
 						<Button
 							:loading="this.$resources.databaseProcesses.loading"
 							loading-text="Refreshing"
-							icon-left="rotate-ccw"
+							icon-left="lucide-rotate-ccw"
 							@click.stop="this.$resources.databaseProcesses.submit()"
 							>Refresh</Button
 						>
@@ -214,7 +214,7 @@
 						<Button
 							:loading="this.$resources.databaseLocks.loading"
 							loading-text="Refreshing"
-							icon-left="rotate-ccw"
+							icon-left="lucide-rotate-ccw"
 							@click.stop="this.$resources.databaseLocks.submit()"
 							>Refresh</Button
 						>

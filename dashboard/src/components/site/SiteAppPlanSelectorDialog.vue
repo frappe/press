@@ -58,7 +58,7 @@ export default {
 					...plan,
 					features: plan.features.map((f) => ({
 						value: f,
-						icon: 'check-circle',
+						icon: 'lucide-check-circle',
 					})),
 				}
 			})

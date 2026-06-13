@@ -304,7 +304,7 @@ watch(
 						variant="ghost"
 						@click="table.previousPage()"
 						:disabled="!isPreviousPageAvailable || loadingData"
-						iconLeft="arrow-left"
+						iconLeft="lucide-arrow-left"
 					>
 						Prev
 					</Button>
@@ -312,7 +312,7 @@ watch(
 						variant="ghost"
 						@click="table.nextPage()"
 						:disabled="!isNextPageAvailable || loadingData"
-						iconRight="arrow-right"
+						iconRight="lucide-arrow-right"
 					>
 						Next
 					</Button>

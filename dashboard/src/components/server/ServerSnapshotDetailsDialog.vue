@@ -105,7 +105,7 @@
 				>
 					<Button
 						variant="ghost"
-						:icon="showSiteList ? 'chevron-down' : 'chevron-right'"
+						:icon="lucide-showSiteList ? 'chevron-down' : 'chevron-right'"
 					>
 						{{ showSiteList ? 'Show Less' : 'Show All' }}
 					</Button>

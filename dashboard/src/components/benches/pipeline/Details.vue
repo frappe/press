@@ -355,7 +355,7 @@ const dropdownOptions = computed(() => {
 	const list = [
 		{
 			label: 'View in Desk',
-			icon: 'external-link',
+			icon: 'lucide-external-link',
 			condition: () => team?.doc?.is_desk_user,
 			onClick: () => {
 				const pathname = props.deployview
@@ -370,7 +370,7 @@ const dropdownOptions = computed(() => {
 		},
 		{
 			label: 'View App Versions',
-			icon: 'package',
+			icon: 'lucide-package',
 			onClick: appVersions,
 		},
 	]

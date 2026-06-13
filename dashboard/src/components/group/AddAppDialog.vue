@@ -76,7 +76,7 @@
 										<Button
 											v-if="row.source.branch"
 											type="white"
-											icon-right="chevron-down"
+											icon-right="lucide-chevron-down"
 											class="max-w-48 truncate"
 										>
 											<span class="truncate">{{ row.source.branch }}</span>

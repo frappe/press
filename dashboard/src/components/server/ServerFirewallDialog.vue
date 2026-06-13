@@ -2,7 +2,7 @@
 	<Dialog
 		title="Add Firewall Rule"
 		size="lg"
-		:icon="{
+		:icon="lucide-{
 				name: 'shield',
 				appearance: 'info',
 			}"

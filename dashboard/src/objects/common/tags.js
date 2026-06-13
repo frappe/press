@@ -6,7 +6,7 @@ import { getToastErrorMessage } from '../../utils/toast'
 export function tagTab(doctype) {
 	return {
 		label: 'Tags',
-		icon: icon('tag'),
+		icon: icon('lucide-tag'),
 		condition: (record) => {
 			return (
 				doctype != 'Server' ||
@@ -34,7 +34,7 @@ export function tagTab(doctype) {
 				return {
 					label: 'Add Tag',
 					slots: {
-						prefix: icon('plus'),
+						prefix: icon('lucide-plus'),
 					},
 					onClick() {
 						let AddTagDialog = defineAsyncComponent(

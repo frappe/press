@@ -7,9 +7,8 @@
 					<template #default="{ comment }">
 						<Button variant="subtle" size="md" label="New">
 							<template #suffix>
-								<FeatherIcon
-									:name="comment ? 'chevron-up' : 'chevron-down'"
-									class="h-4 w-4"
+								<span
+									:class="[comment ? 'lucide-chevron-up' : 'lucide-chevron-down', 'h-4 w-4']"
 								/>
 							</template>
 						</Button>
@@ -98,9 +97,8 @@
 										>
 											{{ activity.data.field_label }}
 										</span>
-										<FeatherIcon
-											name="arrow-right"
-											class="mx-1 h-4 w-4 text-ink-gray-5"
+										<span
+											class="lucide-arrow-right mx-1 h-4 w-4 text-ink-gray-5"
 										/>
 										<span v-if="activity.activity_type">
 											{{ startCase(activity.activity_type) }}
@@ -166,7 +164,7 @@
 	</div>
 </template>
 <script setup>
-import { createResource, Tooltip, Button, FeatherIcon, call } from 'frappe-ui'
+import { createResource, Tooltip, Button, call } from 'frappe-ui'
 import { useRoute } from 'vue-router'
 import DotIcon from '../icons/DotIcon.vue'
 import SelectIcon from '../icons/SelectIcon.vue'

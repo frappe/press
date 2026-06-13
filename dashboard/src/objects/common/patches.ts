@@ -18,7 +18,7 @@ type Status = keyof typeof statusTheme
 export function getPatchesTab(forBench: boolean) {
 	return {
 		label: 'Patches',
-		icon: icon('hash'),
+		icon: icon('lucide-hash'),
 		route: 'patches',
 		type: 'list',
 		list: {
@@ -51,7 +51,7 @@ export function getPatchesTab(forBench: boolean) {
 				return {
 					label: 'Apply Patch',
 					slots: {
-						prefix: icon('plus'),
+						prefix: icon('lucide-plus'),
 					},
 					onClick() {
 						const group = doc.doctype === 'Bench' ? doc.doc.group : doc.name

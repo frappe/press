@@ -11,13 +11,13 @@
 			{{ role.doc?.title }}
 		</h3>
 		<Tooltip text="Admin Role" v-if="role.doc?.admin_access">
-			<FeatherIcon name="shield" class="h-5 w-5 text-ink-gray-7" />
+			<span class="lucide-shield h-5 w-5 text-ink-gray-7" />
 		</Tooltip>
 
 		<Button
 			v-if="session.userPermissions.data.owner || session.isTeamAdmin"
 			label="Delete"
-			icon-left="trash-2"
+			icon-left="lucide-trash-2"
 			theme="red"
 			variant="subtle"
 			@click="

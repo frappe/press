@@ -22,7 +22,7 @@
 					variant="subtle"
 					class="mb-3"
 					theme="red"
-					iconLeft="trash-2"
+					iconLeft="lucide-trash-2"
 					@click="onRemoveTrigger"
 				>
 					Remove
@@ -30,7 +30,7 @@
 				<Button
 					variant="solid"
 					class="mb-3"
-					iconLeft="plus"
+					iconLeft="lucide-plus"
 					@click="openAddTriggerDialog"
 				>
 					New
@@ -38,7 +38,7 @@
 				<Button
 					variant="subtle"
 					class="mb-3"
-					icon="refresh-cw"
+					icon="lucide-refresh-cw"
 					:loading="$resources.configuredAutoscales.loading"
 					@click="$resources.configuredAutoscales.submit()"
 				>

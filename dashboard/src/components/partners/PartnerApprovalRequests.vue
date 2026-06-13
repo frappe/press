@@ -6,7 +6,7 @@
 <script>
 import { h } from 'vue'
 import { toast } from 'vue-sonner'
-import { FeatherIcon, Tooltip, Badge, Button } from 'frappe-ui'
+import { Tooltip, Badge, Button } from 'frappe-ui'
 import ObjectList from '../ObjectList.vue'
 import Clock from '~icons/lucide/clock'
 export default {
@@ -66,9 +66,8 @@ export default {
 										text: 'Approved',
 									},
 									() =>
-										h(FeatherIcon, {
-											name: 'check-circle',
-											class: 'h-4 w-4 text-green-600',
+										h('span', {
+											class: 'lucide-check-circle h-4 w-4 text-green-600',
 										}),
 								)
 							} else {
@@ -99,9 +98,8 @@ export default {
 										text: 'Approved',
 									},
 									() =>
-										h(FeatherIcon, {
-											name: 'check-circle',
-											class: 'h-4 w-4 text-green-600',
+										h('span', {
+											class: 'lucide-check-circle h-4 w-4 text-green-600',
 										}),
 								)
 							} else {

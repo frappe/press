@@ -77,13 +77,13 @@
 					<div class="mt-4 flex w-full gap-2">
 						<Button
 							variant="outline"
-							iconLeft="plus"
+							iconLeft="lucide-plus"
 							@click="addNewTablePermissionEntry"
 							>Add Table</Button
 						>
 						<Button
 							variant="outline"
-							iconLeft="refresh-ccw"
+							iconLeft="lucide-refresh-ccw"
 							:loading="isLoadingTableSchemas"
 							@click="() => fetchTableSchemas(true)"
 							>Refresh Schema</Button
@@ -360,7 +360,7 @@ export default {
 							return {
 								label: true ? 'check' : 'plus',
 								slots: {
-									icon: icon('x'),
+									icon: icon('lucide-x'),
 								},
 								variant: 'subtle',
 								onClick: (event) => {

@@ -33,7 +33,7 @@
 				<p class="mt-1 text-base text-ink-gray-6">{{ user.email }}</p>
 			</div>
 			<div class="ml-auto">
-				<Button icon-left="edit" @click="showProfileEditDialog = true">
+				<Button icon-left="lucide-edit" @click="showProfileEditDialog = true">
 					Edit
 				</Button>
 			</div>

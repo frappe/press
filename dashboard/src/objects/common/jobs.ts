@@ -12,7 +12,7 @@ export function getJobsTab(doctype: JobDocTypes) {
 
 	return {
 		label: 'Jobs',
-		icon: icon('truck'),
+		icon: icon('lucide-truck'),
 		condition: (record) =>
 			(doctype === 'Server' && record.doc?.status !== 'Archived') ||
 			doctype !== 'Server',

@@ -44,7 +44,7 @@ const buttonProps = computed(() => {
 	if (props.doc) {
 		return {
 			label: '',
-			icon: 'unlock',
+			icon: 'lucide-unlock',
 		}
 	} else {
 		return {

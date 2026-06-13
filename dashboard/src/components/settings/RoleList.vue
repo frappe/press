@@ -2,13 +2,13 @@
 	<div class="space-y-5">
 		<div class="ml-auto mr-0 w-max space-x-2">
 			<Button
-				icon-left="refresh-cw"
+				icon-left="lucide-refresh-cw"
 				label="Reload"
 				variant="subtle"
 				@click="() => roles.reload()"
 			/>
 			<Button
-				icon-left="plus"
+				icon-left="lucide-plus"
 				variant="solid"
 				label="Create Role"
 				@click="showCreateDialog = !showCreateDialog"
@@ -76,7 +76,7 @@
 		</div>
 		<Button
 			v-if="roles.hasNextPage"
-			icon-left="plus"
+			icon-left="lucide-plus"
 			label="Load More"
 			@click="() => roles.next()"
 		/>

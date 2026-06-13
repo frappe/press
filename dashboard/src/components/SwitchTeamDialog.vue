@@ -42,7 +42,7 @@
 						<span class="text-base text-ink-gray-8"> {{ team.user }} </span>
 						<Button
 							v-if="$team.doc.is_desk_user"
-							icon="external-link"
+							icon="lucide-external-link"
 							:link="`/app/team/${team.name}`"
 							variant="ghost"
 							size="sm"

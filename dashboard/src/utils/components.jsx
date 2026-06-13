@@ -1,18 +1,13 @@
-import { FeatherIcon } from 'frappe-ui'
 import { h, isVNode, ref, defineAsyncComponent } from 'vue'
 import AddressableErrorDialog from '../components/AddressableErrorDialog.vue'
 import DialogWrapper from '../components/DialogWrapper.vue'
 import ConfirmDialog from '../dialogs/ConfirmDialog.vue'
 
 export function icon(name, _class = '') {
-	let iconComponent
 	if (typeof name !== 'string' && name?.render) {
-		iconComponent = name
-		name = undefined
-	} else {
-		iconComponent = FeatherIcon
+		return () => h(name, { class: _class || 'w-4 h-4' })
 	}
-	return () => h(iconComponent, { name, class: _class || 'w-4 h-4' })
+	return () => h('span', { class: `${name} ${_class || 'w-4 h-4'}` })
 }
 
 /**

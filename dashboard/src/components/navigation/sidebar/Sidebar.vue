@@ -80,7 +80,7 @@ watch(router.currentRoute, () => {
 const userDropdownOptions = [
 	{
 		label: 'Change Team',
-		icon: 'command',
+		icon: 'lucide-command',
 		condition: () =>
 			$team?.doc?.valid_teams?.length > 1 || $team?.doc?.is_desk_user,
 		onClick: () => (showTeamSwitcher.value = true),
@@ -90,7 +90,11 @@ const userDropdownOptions = [
 		label: 'Theme',
 		icon: LucideMoon,
 		submenu: [
-			{ label: 'Light Mode', icon: 'sun', onClick: () => setTheme('light') },
+			{
+				label: 'Light Mode',
+				icon: 'lucide-sun',
+				onClick: () => setTheme('light'),
+			},
 			// dropdown component as per this frappe-ui version doesnt support suffix slot
 			// so make the icon itself icon+label+beta badge
 			{ icon: DarkModeLabel, onClick: () => setTheme('dark') },
@@ -104,7 +108,7 @@ const userDropdownOptions = [
 		onClick: () => (partnerRegistrationModalOpen.value = true),
 	},
 
-	{ label: 'Logout', icon: 'log-out', onClick: $session.logout.submit },
+	{ label: 'Logout', icon: 'lucide-log-out', onClick: $session.logout.submit },
 ]
 
 const helpDropdownOptions = [

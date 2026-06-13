@@ -50,7 +50,7 @@
 				:value="65"
 			/>
 			<div class="mb-5 inline-flex gap-1.5 text-base text-ink-gray-7">
-				<FeatherIcon class="h-4" name="info" />
+				<span class="lucide-info h-4" />
 				<span> Add billing details to your account before proceeding.</span>
 			</div>
 			<BillingDetails
@@ -97,7 +97,7 @@
 					v-if="isAutomatedBilling"
 					class="mb-5 flex items-center gap-2 text-sm text-ink-gray-7"
 				>
-					<FeatherIcon class="h-4" name="info" />
+					<span class="lucide-info h-4" />
 					<span>
 						Adding a card will enable automated billing for your account. You
 						will be charged automatically at the end of your billing cycle.
@@ -107,7 +107,7 @@
 					v-else
 					class="mb-5 flex items-center gap-2 text-sm text-ink-gray-7"
 				>
-					<FeatherIcon class="h-4" name="info" />
+					<span class="lucide-info h-4" />
 					<span>
 						Adding prepaid credits will allow you to manually recharge your
 						account balance. You can use this balance to pay for your plan.

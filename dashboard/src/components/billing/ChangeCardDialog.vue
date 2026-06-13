@@ -48,7 +48,7 @@
 								{ label: 'Remove', onClick: () => removeCard(card.name) },
 							]"
 						>
-							<Button icon="more-horizontal" variant="ghost" />
+							<Button icon="lucide-more-horizontal" variant="ghost" />
 						</Dropdown>
 					</div>
 				</div>
@@ -62,7 +62,7 @@
 					@click="emit('addCard')"
 				>
 					<template #prefix>
-						<FeatherIcon name="plus" class="h-4" />
+						<span class="lucide-plus h-4" />
 					</template>
 				</Button>
 			</template>

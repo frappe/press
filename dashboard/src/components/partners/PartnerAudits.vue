@@ -92,7 +92,7 @@ const partnerAuditsList = computed(() => {
 				{
 					label: 'Request for Audit',
 					slots: {
-						prefix: icon('plus'),
+						prefix: icon('lucide-plus'),
 					},
 					onClick: () => {
 						return renderDialog(

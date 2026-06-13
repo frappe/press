@@ -20,7 +20,7 @@
 					theme="red"
 					size="sm"
 					class="ml-2"
-					icon-left="pause"
+					icon-left="lucide-pause"
 					v-if="
 						appServerStatusFlags &&
 						databaseServerStatusFlags &&
@@ -112,7 +112,7 @@
 			<div class="output-container mt-4">
 				<div class="flex flex-row items-center gap-1">
 					<Button
-						:icon="isSetupGuideVisible ? 'chevron-down' : 'chevron-right'"
+						:icon="lucide-isSetupGuideVisible ? 'chevron-down' : 'chevron-right'"
 						variant="ghost"
 						@click="toggleSetupGuide"
 					></Button>
@@ -226,7 +226,7 @@ command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | bash
 					<div class="flex flex-row items-center justify-between">
 						<div class="flex flex-row items-center gap-1">
 							<Button
-								:icon="
+								:icon="lucide-
 									openedJobSection === job.name
 										? 'chevron-down'
 										: 'chevron-right'

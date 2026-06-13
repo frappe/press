@@ -7,14 +7,14 @@
 			@click="onClick"
 		>
 			<template v-if="active" #suffix>
-				<FeatherIcon class="h-4" name="check" />
+				<span class="lucide-check h-4" />
 			</template>
 			<slot />
 		</Button>
 	</div>
 </template>
 <script setup>
-import { Button, FeatherIcon } from 'frappe-ui'
+import { Button } from 'frappe-ui'
 const props = defineProps({
 	label: String,
 	active: Boolean,

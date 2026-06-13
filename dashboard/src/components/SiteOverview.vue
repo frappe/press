@@ -253,11 +253,11 @@
 								"
 								variant="ghost"
 								link="https://docs.frappe.io/cloud/faq/site#what-is-using-up-all-my-database-size"
-								icon="help-circle"
+								icon="lucide-help-circle"
 							/>
 							<Button
 								variant="ghost"
-								icon="refresh-ccw"
+								icon="lucide-refresh-ccw"
 								@click="refreshDatabaseUsage"
 								:loading="refreshingDatabaseUsage"
 							/>

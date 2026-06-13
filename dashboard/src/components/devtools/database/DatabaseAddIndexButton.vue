@@ -7,7 +7,7 @@
 		@click="addIndex"
 		:loading="this.$resources.addIndex.loading"
 		loadingText="Adding Index"
-		iconLeft="plus"
+		iconLeft="lucide-plus"
 		variant="ghost"
 		class="w-full"
 		>Add DB Index</Button

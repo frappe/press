@@ -1,12 +1,12 @@
-import path from 'path';
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import vueJsx from '@vitejs/plugin-vue-jsx';
-import frappeui from 'frappe-ui/vite';
-import pluginRewriteAll from 'vite-plugin-rewrite-all';
-import { sentryVitePlugin } from '@sentry/vite-plugin';
-import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path'
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import vueJsx from '@vitejs/plugin-vue-jsx'
+import frappeui from 'frappe-ui/vite'
+import pluginRewriteAll from 'vite-plugin-rewrite-all'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
+import dotenv from 'dotenv'
+dotenv.config()
 
 export default defineConfig({
 	plugins: [
@@ -52,4 +52,4 @@ export default defineConfig({
 	build: {
 		chunkSizeWarningLimit: 2000,
 	},
-});
+})

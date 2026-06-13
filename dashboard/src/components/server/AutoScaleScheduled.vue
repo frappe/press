@@ -86,7 +86,7 @@ export default {
 
 				primaryAction: () => ({
 					label: 'Schedule Auto Scale',
-					slots: { prefix: icon('clock') },
+					slots: { prefix: icon('lucide-clock') },
 					onClick: () =>
 						renderDialog(
 							h(

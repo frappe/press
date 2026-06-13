@@ -54,7 +54,7 @@
 					@click="clearForm"
 				>
 					<template #prefix>
-						<FeatherIcon class="h-4" name="plus" />
+						<span class="lucide-plus h-4" />
 					</template>
 				</Button>
 				<Button

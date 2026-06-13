@@ -5,7 +5,7 @@
 		@click="killProcess"
 		:loading="this.$resources.killProcess.loading"
 		loadingText="Killing"
-		iconLeft="x"
+		iconLeft="lucide-x"
 		variant="ghost"
 		class="w-full"
 		>Kill</Button

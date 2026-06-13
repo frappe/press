@@ -61,7 +61,7 @@ export default {
 				{
 					label: 'Mark all as read',
 					slots: {
-						prefix: icon('check-circle'),
+						prefix: icon('lucide-check-circle'),
 					},
 					async onClick() {
 						toast.promise(
@@ -94,7 +94,7 @@ export default {
 				},
 				suffix(row) {
 					if (row.is_actionable && !row.is_addressed) {
-						let AlertIcon = icon('alert-circle')
+						let AlertIcon = icon('lucide-alert-circle')
 						return h(
 							Tooltip,
 							{

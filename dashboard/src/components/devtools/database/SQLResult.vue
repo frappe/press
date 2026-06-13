@@ -7,7 +7,7 @@
 		<div class="output-container mt-2 !p-2">
 			<div class="flex flex-row items-center gap-1">
 				<Button
-					:icon="isSQLQueryVisible ? 'chevron-down' : 'chevron-right'"
+					:icon="lucide-isSQLQueryVisible ? 'chevron-down' : 'chevron-right'"
 					variant="ghost"
 					@click="toggleSQLQuerySection"
 				></Button>

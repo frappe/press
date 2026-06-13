@@ -12,7 +12,7 @@
 		<ObjectList :options="listOptions" v-if="!selectedWebhookAttemptId" />
 		<Button
 			class="mb-2"
-			iconLeft="arrow-left"
+			iconLeft="lucide-arrow-left"
 			v-if="selectedWebhookAttemptId"
 			@click="selectedWebhookAttemptId = null"
 		>

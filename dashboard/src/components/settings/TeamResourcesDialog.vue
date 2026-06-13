@@ -201,13 +201,13 @@ watch(
 					<div class="text-2xl font-semibold">{{ userName }}'s Resources</div>
 					<div class="flex items-center gap-2">
 						<Button
-							icon-left="refresh-ccw"
+							icon-left="lucide-refresh-ccw"
 							:disabled="teamMemberResources.loading"
 							@click="teamMemberResources.fetch()"
 						>
 							Refresh
 						</Button>
-						<Button icon="x" @click="isDialogOpen = false" />
+						<Button icon="lucide-x" @click="isDialogOpen = false" />
 					</div>
 				</div>
 
@@ -242,7 +242,7 @@ watch(
 									:options="[
 										{
 											label: 'Remove',
-											icon: 'trash',
+											icon: 'lucide-trash',
 											onClick: () =>
 												onRemoveResource(
 													resource.name,
@@ -251,7 +251,7 @@ watch(
 										},
 									]"
 									:button="{
-										icon: 'more-horizontal',
+										icon: 'lucide-more-horizontal',
 										label: 'Options',
 										variant: 'ghost',
 									}"
@@ -281,7 +281,7 @@ watch(
 						/>
 					</div>
 					<Button
-						icon-left="plus"
+						icon-left="lucide-plus"
 						:disabled="!selectedResourcesToAdd.length"
 						@click="onAddResources"
 					>

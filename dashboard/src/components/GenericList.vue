@@ -16,11 +16,7 @@
 				<template v-for="column in columns" :key="column.field">
 					<ListHeaderItem :item="column">
 						<template #prefix>
-							<FeatherIcon
-								v-if="column.icon"
-								:name="column.icon"
-								class="h-4 w-4"
-							/>
+							<span :class="[column.icon, 'h-4 w-4']" v-if="column.icon" />
 						</template>
 					</ListHeaderItem>
 				</template>

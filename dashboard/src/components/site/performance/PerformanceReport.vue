@@ -1,7 +1,7 @@
 <template>
 	<div class="m-5">
 		<div class="flex items-center space-x-4">
-			<Button @click="goBack" icon="arrow-left" label="Go Back" />
+			<Button @click="goBack" icon="lucide-arrow-left" label="Go Back" />
 			<h2 class="font-semibold">{{ title }}</h2>
 		</div>
 		<div v-if="$site.doc?.current_plan?.monitor_access" class="mt-5">

@@ -6,7 +6,7 @@
 				type="text"
 				placeholder="Search past incidents..."
 				v-model="searchQuery"
-				:prefix-icon="'search'"
+				:prefix-icon="'lucide-search'"
 			>
 				<template #prefix>
 					<LucideSearch class="size-3.5 text-ink-gray-6 p-0" />

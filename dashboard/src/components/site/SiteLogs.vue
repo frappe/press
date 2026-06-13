@@ -104,7 +104,7 @@ export default {
 						},
 						{
 							label: 'Refresh',
-							icon: 'refresh-ccw',
+							icon: 'lucide-refresh-ccw',
 							loading: this.$resources.logs.loading,
 							onClick: () => this.$resources.logs.reload(),
 						},

@@ -219,7 +219,7 @@ const sshKeyListOptions = computed(() => ({
 	primaryAction({ listResource }) {
 		return {
 			label: 'Add SSH Key',
-			slots: { prefix: icon('plus') },
+			slots: { prefix: icon('lucide-plus') },
 			onClick: () => renderAddNewKeyDialog(listResource),
 		}
 	},
@@ -416,14 +416,14 @@ const webhookListOptions = computed(() => ({
 	primaryAction() {
 		return {
 			label: 'Add Webhook',
-			slots: { prefix: icon('plus') },
+			slots: { prefix: icon('lucide-plus') },
 			onClick: () => (showAddWebhookDialog.value = true),
 		}
 	},
 	secondaryAction() {
 		return {
 			label: 'Refresh',
-			icon: 'refresh-ccw',
+			icon: 'lucide-refresh-ccw',
 			onClick: () => webhookListResource.reload(),
 		}
 	},

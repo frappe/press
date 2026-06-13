@@ -2,7 +2,7 @@
 	<div>
 		<div class="flex justify-end mb-3">
 			<Button
-				icon-left="download"
+				icon-left="lucide-download"
 				class="shrink-0"
 				@click="$resources.downloadInvoiceAsCSV.submit"
 			>

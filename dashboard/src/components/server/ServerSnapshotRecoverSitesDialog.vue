@@ -5,7 +5,7 @@
 			<div v-if="showRecoverSitePrompt" class="w-full flex flex-col">
 				<div class="flex flex-row gap-2 items-center mb-4">
 					<Button
-						icon="chevron-left"
+						icon="lucide-chevron-left"
 						variant="outline"
 						@click="showRecoverSitePrompt = false"
 						>Back</Button
@@ -47,7 +47,7 @@
 			<div v-else-if="selectedSnapshotRecoveryId">
 				<div class="flex flex-row gap-2 items-center mb-4">
 					<Button
-						icon="chevron-left"
+						icon="lucide-chevron-left"
 						variant="outline"
 						@click="selectedSnapshotRecoveryId = null"
 						>Back</Button

@@ -4,7 +4,7 @@
 			<h2 class="text-lg font-medium text-ink-gray-9">Load Average</h2>
 			<div class="flex items-center space-x-2">
 				<Button
-					icon="help-circle"
+					icon="lucide-help-circle"
 					variant="ghost"
 					:link="'https://docs.frappe.io/cloud/servers/guidelines-for-choosing-a-server-plan#load-average'"
 				/>

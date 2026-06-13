@@ -8,7 +8,7 @@ export function getLogsTab(forSite: boolean) {
 
 	return {
 		label: 'Logs',
-		icon: icon('file-text'),
+		icon: icon('lucide-file-text'),
 		route: 'logs',
 		childrenRoutes: [childRoute],
 		type: 'list',

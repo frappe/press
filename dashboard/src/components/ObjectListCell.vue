@@ -21,7 +21,7 @@
 			<Badge :label="formattedValue" :theme="theme" v-if="formattedValue" />
 		</template>
 		<template v-else-if="column.type === 'Icon'">
-			<FeatherIcon v-if="icon" class="h-4 w-4" :name="icon" />
+			<span :class="[icon, 'h-4 w-4']" v-if="icon" />
 		</template>
 		<template v-else-if="column.type === 'Button'">
 			<ActionButton v-if="button" v-bind="button" />
@@ -57,7 +57,7 @@
 				<button
 					class="flex items-center rounded bg-surface-gray-2 px-1 py-0.5 hover:bg-surface-gray-3"
 				>
-					<FeatherIcon name="more-horizontal" class="h-4 w-4" />
+					<span class="lucide-more-horizontal h-4 w-4" />
 				</button>
 			</Dropdown>
 		</div>

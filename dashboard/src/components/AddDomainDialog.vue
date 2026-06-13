@@ -75,16 +75,14 @@
 				</div>
 			</div>
 			<p class="flex text-base" v-if="dnsVerified === false">
-				<FeatherIcon
-					name="x"
-					class="mr-2 h-5 w-5 rounded-full bg-red-100 p-1 text-red-500"
+				<span
+					class="lucide-x mr-2 h-5 w-5 rounded-full bg-red-100 p-1 text-red-500"
 				/>
 				DNS Verification Failed
 			</p>
 			<p class="flex text-base" v-if="dnsVerified === true">
-				<FeatherIcon
-					name="check"
-					class="mr-2 h-5 w-5 rounded-full bg-green-100 p-1 text-green-500"
+				<span
+					class="lucide-check mr-2 h-5 w-5 rounded-full bg-green-100 p-1 text-green-500"
 				/>
 				DNS records successfully verified. Click on Add Domain.
 			</p>
