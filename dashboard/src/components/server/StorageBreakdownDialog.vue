@@ -14,7 +14,8 @@
 				"
 				class="flex h-80 w-full items-center justify-center gap-2 text-base text-ink-gray-7"
 			>
-				<Spinner class="w-4" /> Analyzing ...
+				<Spinner class="w-4" />
+				Analyzing ...
 			</div>
 			<div
 				v-else-if="
@@ -53,11 +54,9 @@
 						<div class="flex flex-row items-center gap-1">
 							<p class="text-base font-semibold text-ink-gray-8">
 								Usage of
-								{{
-									noOfDatabases > topNDatabases && !showAllDatabases
+								{{ noOfDatabases > topNDatabases && !showAllDatabases
 										? `Top ${topNDatabases} Databases`
-										: `${noOfDatabases} Databases`
-								}}
+										: `${noOfDatabases} Databases` }}
 							</p>
 						</div>
 						<Button
@@ -100,9 +99,9 @@
 	</Dialog>
 </template>
 <script>
-import { Spinner } from 'frappe-ui';
-import StorageBreakupChart from '../StorageBreakupChart.vue';
-import { h } from 'vue';
+import { Spinner } from 'frappe-ui'
+import { h } from 'vue'
+import StorageBreakupChart from '../StorageBreakupChart.vue'
 
 export default {
 	name: 'StorageBreakdown',
@@ -145,13 +144,13 @@ export default {
 			],
 			topNDatabases: 5, // Default to showing top 10 databases
 			showAllDatabases: false,
-		};
+		}
 	},
 	mounted() {
 		if (this.serverType == 'Database Server') {
-			this.$resources.databaseServerStorageBreakdown.submit();
+			this.$resources.databaseServerStorageBreakdown.submit()
 		} else {
-			this.$resources.applicationServerStorageBreakdown.submit();
+			this.$resources.applicationServerStorageBreakdown.submit()
 		}
 	},
 	resources: {
@@ -163,10 +162,10 @@ export default {
 						dt: 'Server',
 						dn: this.server,
 						method: 'get_storage_usage',
-					};
+					}
 				},
 				auto: false,
-			};
+			}
 		},
 		databaseServerStorageBreakdown() {
 			return {
@@ -176,25 +175,25 @@ export default {
 						dt: 'Database Server',
 						dn: this.server,
 						method: 'get_storage_usage',
-					};
+					}
 				},
 				auto: false,
-			};
+			}
 		},
 	},
 	computed: {
 		applicationServerBreakDown() {
 			if (!this.$resources.applicationServerStorageBreakdown?.data?.message)
-				return {};
+				return {}
 
 			let message =
-				this.$resources.applicationServerStorageBreakdown.data.message;
+				this.$resources.applicationServerStorageBreakdown.data.message
 
 			const getDisplaySize = (formattedSize) => {
-				var units = formattedSize.slice(-2);
-				var sizeFormatted = formattedSize.replace(units, '');
-				return `${sizeFormatted} ${units}`;
-			};
+				var units = formattedSize.slice(-2)
+				var sizeFormatted = formattedSize.replace(units, '')
+				return `${sizeFormatted} ${units}`
+			}
 
 			const transformNode = (node, isRoot = false) => {
 				const transformed = {
@@ -203,35 +202,35 @@ export default {
 						? `${node.name}`
 						: `${node.name} (${getDisplaySize(node.size_formatted)})`,
 					children: [],
-				};
+				}
 
 				if (node.children && node.children.length > 0) {
 					transformed.children = node.children.map((child) =>
 						transformNode(child),
-					);
+					)
 				}
 
-				return transformed;
-			};
+				return transformed
+			}
 
 			const additionalUsage = (
 				(message.total.size - (message.benches.size + message.docker.size)) /
 				1024 ** 3
-			).toFixed(2);
+			).toFixed(2)
 			const totalCalculatedSize = (
 				(message.benches.size + message.docker.size) /
 				1024 ** 3
-			).toFixed(2);
+			).toFixed(2)
 
 			const treeData = {
 				name: 'server-storage',
 				label: `Server Storage Breakdown (${totalCalculatedSize} GB)`,
 				additionalUsage: `${additionalUsage} GB`,
 				children: [],
-			};
+			}
 
 			if (message.benches) {
-				treeData.children.push(transformNode(message.benches, true));
+				treeData.children.push(transformNode(message.benches, true))
 			}
 
 			if (message.docker) {
@@ -250,16 +249,16 @@ export default {
 							children: [],
 						},
 					],
-				};
-				treeData.children.push(dockerNode);
+				}
+				treeData.children.push(dockerNode)
 			}
 
-			return treeData;
+			return treeData
 		},
 		databaseStorageBreakdown() {
 			if (!this.$resources.databaseServerStorageBreakdown?.data?.message)
-				return {};
-			let message = this.$resources.databaseServerStorageBreakdown.data.message;
+				return {}
+			let message = this.$resources.databaseServerStorageBreakdown.data.message
 			let data = {
 				free: message.disk_free,
 				os: message.os_usage,
@@ -273,31 +272,34 @@ export default {
 					(partialSum, a) => partialSum + a,
 					0,
 				),
-			};
-			return data;
+			}
+			// Unified servers also host the application and archived benches.
+			if (message.app_usage) data.app_usage = message.app_usage
+			if (message.unused_files) data.unused_files = message.unused_files
+			return data
 		},
 		noOfDatabases() {
-			if (this.serverType !== 'Database Server') return 0;
+			if (this.serverType !== 'Database Server') return 0
 			if (!this.$resources.databaseServerStorageBreakdown?.data?.message)
-				return 0;
-			let message = this.$resources.databaseServerStorageBreakdown.data.message;
-			return Object.keys(message.database.schema || {}).length;
+				return 0
+			let message = this.$resources.databaseServerStorageBreakdown.data.message
+			return Object.keys(message.database.schema || {}).length
 		},
 		dbStorageUsage() {
-			if (this.serverType !== 'Database Server') return {};
+			if (this.serverType !== 'Database Server') return {}
 			if (!this.$resources.databaseServerStorageBreakdown?.data?.message)
-				return {};
-			let message = this.$resources.databaseServerStorageBreakdown.data.message;
-			return message.database.schema || {};
+				return {}
+			let message = this.$resources.databaseServerStorageBreakdown.data.message
+			return message.database.schema || {}
 		},
 		dbNameSiteMapping() {
-			if (this.serverType !== 'Database Server') return {};
+			if (this.serverType !== 'Database Server') return {}
 			if (!this.$resources.databaseServerStorageBreakdown?.data?.message)
-				return {};
+				return {}
 			return (
 				this.$resources.databaseServerStorageBreakdown.data.message
 					?.db_name_site_map ?? {}
-			);
+			)
 		},
 	},
 	methods: {
@@ -314,7 +316,7 @@ export default {
 						`${this.dbNameSiteMapping[key]} (${key})`,
 						h('span', { style: 'margin-left: 0.25em;' }, '↗'),
 					],
-				);
+				)
 			}
 			return (
 				{
@@ -327,23 +329,25 @@ export default {
 					db_core: 'MariaDB Core',
 					db_other: 'MariaDB Owned System Files',
 					binlog_indexes: 'MariaDB Binlog Indexes (Binlog Browser)',
+					app_usage: 'Application Server (Benches, Docker)',
+					unused_files: 'Unused Files (Archived Benches)',
 				}[key] || key
-			);
+			)
 		},
 		formatSizeInKB(kb) {
 			try {
-				let floatKB = parseFloat(kb);
+				let floatKB = parseFloat(kb)
 				if (floatKB > 1024 * 512) {
-					return `${Math.round(floatKB / 1024 / 1024).toFixed(1)} GB`;
+					return `${Math.round(floatKB / 1024 / 1024).toFixed(1)} GB`
 				} else if (floatKB > 512) {
-					return `${Math.round(floatKB / 1024).toFixed(1)} MB`;
+					return `${Math.round(floatKB / 1024).toFixed(1)} MB`
 				} else {
-					return `${floatKB} KB`;
+					return `${floatKB} KB`
 				}
 			} catch (error) {
-				return `${kb} KB`;
+				return `${kb} KB`
 			}
 		},
 	},
-};
+}
 </script>
