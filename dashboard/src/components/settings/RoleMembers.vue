@@ -45,14 +45,46 @@
 		>
 			No members to show
 		</div>
+
+		<div>
+			<Button label="Invite" icon-left="user" @click="open = !open" />
+		</div>
+		<Dialog
+			v-model="open"
+			:options="{
+				title: 'Invite',
+				size: 'lg',
+				actions: [
+					{
+						label: 'Submit',
+						variant: 'solid',
+						onClick: () => {
+							$emit('add', userForInvite);
+							open = false;
+						},
+					},
+				],
+			}"
+		>
+			<template #body-content>
+				<div class="mb-2 text-base">Invite a team member to this role.</div>
+				<Select
+					:options="usersForInvite"
+					v-model="userForInvite"
+					placeholder="User"
+				/>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { Button } from 'frappe-ui'
+import { Button, Dialog, Select } from 'frappe-ui'
+import { computed, ref } from 'vue'
 import { dayjsLocal } from '../../utils/dayjs'
+import { teamMembers } from './data'
 
-withDefaults(
+const props = withDefaults(
 	defineProps<{
 		users?: Array<any>
 	}>(),
@@ -62,6 +94,13 @@ withDefaults(
 )
 
 defineEmits<{
+	add: [id: string]
 	remove: [id: string]
 }>()
+
+const open = ref(false)
+const userForInvite = ref<string>('')
+const usersForInvite = computed(() =>
+	teamMembers(props.users.map((u) => u.user)),
+)
 </script>
