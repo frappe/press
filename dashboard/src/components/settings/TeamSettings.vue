@@ -48,6 +48,10 @@ const teamMembersListOptions = ref({
 		{
 			label: 'User',
 			type: 'Component',
+<<<<<<< HEAD
+=======
+			width: '300px',
+>>>>>>> 7d7e6a7f3 (fix(dashboard): Team: remove email column)
 			component: ({ row }) => {
 				return h(UserWithAvatarCell, {
 					avatarImage: row.user_image,
@@ -57,17 +61,13 @@ const teamMembersListOptions = ref({
 				});
 =======
 					fullName: row.user_name,
+					email: row.email,
 				})
 			},
 		},
 		{
-			label: 'Email',
-			fieldname: 'email',
-		},
-		{
 			label: 'Role',
 			type: 'Component',
-			width: '500px',
 			component: ({ row }) => {
 				let roles = row.roles || []
 				return h(
