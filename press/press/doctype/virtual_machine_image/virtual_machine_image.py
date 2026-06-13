@@ -64,7 +64,7 @@ class VirtualMachineImage(Document):
 		if (
 			self.cloud_provider == "Hetzner" or self.cloud_provider == "DigitalOcean"
 		) and self.has_data_volume:
-			frappe.throw("Hetzner Virtual Machine Images cannot have data volumes.")
+			frappe.throw("Hetzner and Digital Ocean machine images can't include data volumes. Please create the image without a data volume, or use an AWS EC2 machine.")
 
 		if self.cloud_provider == "DigitalOcean":
 			snapshots = self.client.droplets.list_snapshots(self.instance_id)

@@ -74,7 +74,7 @@ class TLSCertificate(Document):
 	def validate(self):
 		if self.provider == "Other":
 			if not self.team:
-				frappe.throw("Team is mandatory for custom TLS certificates.")
+				frappe.throw("Please select the team that owns this custom TLS certificate before saving.")
 
 			self.configure_full_chain()
 			self.validate_key_length()
@@ -308,7 +308,9 @@ class TLSCertificate(Document):
 		except OpenSSL.SSL.Error as e:
 			self.error = repr(e)
 			log_error("TLS Key Certificate Association Exception", certificate=self.name)
-			frappe.throw("Private Key and Certificate do not match")
+			frappe.throw(
+				"The private key doesn't match the certificate. Please upload the private key that was used to generate this certificate."
+			)
 		finally:
 			if self.error:
 				self.status = "Failure"

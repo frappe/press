@@ -199,12 +199,12 @@ class Cluster(Document):
 			servers = client.servers.get_all()
 
 			if servers is None:
-				frappe.throw("API token does not have read access to the Hetzner Cloud.")
+				frappe.throw("This Hetzner Cloud API token doesn't have read access. Please generate a token with read and write permissions and enter it again.")
 
 		except APIException as e:
 			# Handle specific API exceptions like unauthorized access
 			if e.code == "unauthorized":
-				frappe.throw("API token is invalid or does not have the correct permissions.")
+				frappe.throw("This Hetzner Cloud API token is invalid or lacks the required permissions. Please generate a new token with read and write access and enter it again.")
 			else:
 				frappe.throw(f"An error occurred while validating the API token: {e}")
 
@@ -241,7 +241,7 @@ class Cluster(Document):
 				"Flush Table Execution Hour is required when Enable Periodic Flush Table is checked."
 			)
 		if not (0 <= self.flush_table_execution_hour <= 23):
-			frappe.throw("Flush Table Execution Hour must be between 0 and 23.")
+			frappe.throw("Please enter the flush table execution hour as a number between 0 and 23 (24-hour clock).")
 
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":

@@ -529,7 +529,10 @@ class Site(Document, TagHelpers):
 
 		site_apps = [app.app for app in self.apps]
 		if len(site_apps) != len(set(site_apps)):
-			frappe.throw("App {app.app} is already on installed on the bench. Cannot add the same app twice")
+			duplicates = sorted({app for app in site_apps if site_apps.count(app) > 1})
+			frappe.throw(
+				f"These apps are listed more than once: {', '.join(duplicates)}. Each app can only be installed once — please remove the duplicates."
+			)
 
 		# Install apps in the same order as bench
 		if self.is_new():

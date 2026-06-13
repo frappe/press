@@ -149,15 +149,11 @@ class PayoutOrder(Document):
 
 	def before_submit(self):
 		if self.mode_of_payment == "Cash" and (not self.frappe_purchase_order):
-			frappe.throw(
-				"Frappe Purchase Order is required before marking this cash payout as Paid"
-			)
+			frappe.throw("Please enter the Frappe Purchase Order before marking this cash payout as Paid.")
 		self.status = "Paid"
 
 
-def get_invoice_item_for_po_item(
-	invoice_name: str, payout_order_item: PayoutOrderItem
-) -> InvoiceItem | None:
+def get_invoice_item_for_po_item(invoice_name: str, payout_order_item: PayoutOrderItem) -> InvoiceItem | None:
 	try:
 		if payout_order_item.invoice_item:
 			item = frappe.get_doc("Invoice Item", payout_order_item.invoice_item)
@@ -186,9 +182,7 @@ def get_invoice_item_for_po_item(
 
 def create_marketplace_payout_orders_monthly(period_start=None, period_end=None):
 	period_start, period_end = (
-		(period_start, period_end)
-		if period_start and period_end
-		else get_current_period_boundaries()
+		(period_start, period_end) if period_start and period_end else get_current_period_boundaries()
 	)
 	items = get_unaccounted_marketplace_invoice_items()
 
@@ -197,9 +191,7 @@ def create_marketplace_payout_orders_monthly(period_start=None, period_end=None)
 		try:
 			item_names = [i.name for i in items]
 
-			po_exists = frappe.db.exists(
-				"Payout Order", {"team": app_team, "period_end": period_end}
-			)
+			po_exists = frappe.db.exists("Payout Order", {"team": app_team, "period_end": period_end})
 
 			if not po_exists:
 				create_payout_order_from_invoice_item_names(
@@ -266,9 +258,7 @@ def get_unaccounted_marketplace_invoice_items():
 		.where(invoice.status == "Paid")
 		.where(invoice_item.document_type == "Marketplace App")
 		.where(invoice_item.has_marketplace_payout_completed == 0)
-		.select(
-			invoice_item.name, invoice_item.document_name, marketplace_app.team.as_("app_team")
-		)
+		.select(invoice_item.name, invoice_item.document_name, marketplace_app.team.as_("app_team"))
 		.distinct()
 		.run(as_dict=True)
 	)
