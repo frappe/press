@@ -2424,6 +2424,15 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			timeout=8000,
 		)
 
+	def prune_clone_directory(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_prune_clone_directory",
+			queue="long",
+			timeout=8000,
+		)
+
 	def _prune_docker_system(self, throw_on_failure: bool = False):
 		try:
 			ansible = Ansible(
@@ -2440,6 +2449,25 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="{mountpoint}"}}
 			log_error("Prune Docker System Exception", doc=self)
 			if throw_on_failure:
 				frappe.throw("Failed to prune docker system")  # nosemgrep
+			return None
+
+	def _prune_clone_directory(self, throw_on_failure: bool = False):
+		"""Prune clone directory to free up space on build server"""
+		try:
+			ansible = Ansible(
+				playbook="prune_clones_directory.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			play = ansible.run()
+			if play.status != "Success" and throw_on_failure:
+				frappe.throw("Failed to prune clones directory")  # nosemgrep
+			return play
+		except Exception:
+			log_error("Prune Build Directory Exception", doc=self)
+			if throw_on_failure:
+				frappe.throw("Failed to prune clones directory")  # nosemgrep
 			return None
 
 	def get_nat_gateway_ip(self):
