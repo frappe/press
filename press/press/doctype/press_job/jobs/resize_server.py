@@ -117,7 +117,7 @@ class ResizeServerJob(PressJob):
 
 		play = self.server_doc._install_nat_iptables()
 		if not play or play.status != "Success":
-			raise Exception("Failed to add NAT configuration")
+			self.defer_current_task()
 
 	@task
 	def set_additional_config(self):
@@ -149,6 +149,8 @@ class ResizeServerJob(PressJob):
 
 	def on_press_job_failure(self, workflow: PressWorkflow):
 		self.start_virtual_machine()
+		# TODO: fix this; this won't really do much as the vm might've just been brought up but it's better than nothing
+		self.add_nat_config_if_applicable()
 
 		# Find out the last plan change of the server
 		self.server_doc.reload()
