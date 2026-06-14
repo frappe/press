@@ -434,11 +434,10 @@ class Cluster(Document):
 				name=self.ssh_key,
 				public_key=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
 			)
-		except APIException:
+		except APIException as e:
 			# If the SSH key already exists, retrieve it
-			existing_keys = client.ssh_keys.get_all(name=self.ssh_key)
-			if len(existing_keys) == 0:
-				frappe.throw(f"SSH Key creation failed and '{self.ssh_key}' not found on Hetzner Cloud.")
+			if e.code != "uniqueness_error":
+				raise
 
 		try:
 			# Create Server Firewall
