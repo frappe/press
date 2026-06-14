@@ -437,7 +437,7 @@ class Cluster(Document):
 		except APIException as e:
 			# If the SSH key already exists, retrieve it
 			if e.code != "uniqueness_error":
-				raise
+				frappe.throw(f"Failed to create SSH key on Hetzner: {e!s}")
 
 		try:
 			# Create Server Firewall
