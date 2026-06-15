@@ -5,6 +5,7 @@ const billingNameRegex = /^[a-zA-Z0-9',.()&+/\s-]+$/
 
 export function validateBillingName(billingName) {
 	const trimmedName = (billingName || '').trim()
+	if (!trimmedName) return ''
 	return billingNameRegex.test(trimmedName) ? trimmedName : null
 }
 
