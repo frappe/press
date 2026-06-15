@@ -399,3 +399,15 @@ export function prettyDate(date, mini = false) {
 		}
 	}
 }
+
+// allow only bold tags
+export const sanitizeHtml = (str) => {
+	if (!str) return '';
+
+	return str
+		.replace(/\[b\]/g, '<b>')
+		.replace(/\[\/b\]/g, '</b>')
+		.replace(/<b[^>]*>/g, '<b>')
+		.replace(/<(?!\/?b\b)[^>]*>/g, '')
+		.split('\n')[0];
+}

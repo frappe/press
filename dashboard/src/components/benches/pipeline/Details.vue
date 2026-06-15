@@ -32,7 +32,7 @@ import {
 import { confirmDialog, renderDialog } from '@/utils/components'
 import { getTeam } from '@/data/team'
 
-import { secsToDuration, date, duration } from '@/utils/format'
+import { secsToDuration, date, duration, sanitizeHtml } from '@/utils/format'
 
 const team = getTeam()
 const socket = window.$socket
@@ -571,7 +571,7 @@ const stopBuild = () => {
 								class="rounded px-3 py-2 bg-surface-red-1 flex flex-col gap-2"
 								:class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-4" : "bg-surface-amber-1 text-ink-amber-3"'
 							>
-								<p v-html="x.message" class="leading-relaxed text-sm" />
+								<p v-html="sanitizeHtml(x.message)" class="leading-relaxed text-sm" />
 
 								<a
 									:href="x.assistance_url"
