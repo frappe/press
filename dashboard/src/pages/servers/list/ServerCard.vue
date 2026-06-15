@@ -67,7 +67,7 @@ const serverActions = (server) => [
 
 			<div class="flex flex-wrap gap-2 items-center">
 				<Tooltip text="Go to server dashboard">
-					<router-link :to="`servers/${data.name}`" class="hover:underline">
+					<router-link :to="`/servers/${data.name}`" class="hover:underline">
 						<span class="font-medium">{{ data?.title }}</span>
 					</router-link>
 				</Tooltip>

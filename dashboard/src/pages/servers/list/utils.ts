@@ -84,7 +84,7 @@ export const onDropServer = (server: any) => {
 					return 'Server dropped'
 				},
 				error: (error) =>
-					error.messages.length
+					error.messages?.length
 						? error.messages.join('\n')
 						: 'Failed to drop servers',
 			})
