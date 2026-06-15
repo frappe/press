@@ -1,5 +1,23 @@
 [
 	{
+		"disabled_auto_retry": 0,
+		"docstatus": 0,
+		"doctype": "Agent Job Type",
+		"max_retry_count": 6,
+		"modified": "2026-06-15 00:00:00.000000",
+		"name": "Setup Bench Command Guard",
+		"request_method": "POST",
+		"request_path": "/benches/{bench}/command-guard",
+		"steps": [
+			{
+				"parent": "Setup Bench Command Guard",
+				"parentfield": "steps",
+				"parenttype": "Agent Job Type",
+				"step_name": "Setup Bench Command Guard"
+			}
+		]
+	},
+	{
 		"disabled_auto_retry": 1,
 		"docstatus": 0,
 		"doctype": "Agent Job Type",

@@ -54,6 +54,20 @@ BENCH_QUEUE_EXECUTION_LOCK_KEY = "process_bench_queue_lock"
 
 EMPTY_BENCH_COURTESY_DAYS = 3
 
+# Bench (frappe) subcommands that mutate state Press manages and would put
+# Press's view of a site out of sync if run directly over SSH on a production bench. The
+# guard wrapper installed on the bench refuses these; the list is sent to the
+# agent so it can be updated from Press without rebuilding the image.
+BLOCKED_BENCH_COMMANDS = [
+	"drop-site",
+	"migrate",
+	"restore",
+	"reinstall",
+	"remove-app",
+	"uninstall-app",
+	"set-config",
+]
+
 MAX_GUNICORN_WORKERS = 36
 MIN_GUNICORN_WORKERS = 2
 MAX_BACKGROUND_WORKERS = 8
@@ -486,6 +500,15 @@ class Bench(Document):
 	def create_agent_request(self):
 		agent = Agent(self.server)
 		agent.new_bench(self)
+
+	def setup_command_guard(self):
+		"""Install the wrapper that blocks destructive bench commands run over SSH.
+
+		The wrapper lives on the container filesystem (not the image), so it is
+		(re)installed every time a bench becomes Active — including freshly built
+		containers from a redeploy.
+		"""
+		Agent(self.server).setup_bench_command_guard(self.name)
 
 	def _mark_applied_patch_as_archived(self):
 		frappe.db.set_value(
@@ -1343,6 +1366,23 @@ def cancel_and_retry_bench_job_if_required(job: AgentJob) -> bool:
 	return True
 
 
+def backfill_command_guard_on_active_benches():
+	"""Install the bench command guard on every running bench.
+
+	New benches get the guard automatically when they turn Active (see
+	process_new_bench_job_update); this covers benches that were already running
+	before the feature shipped. Run once after the agent endpoint is deployed:
+	`bench execute press.press.doctype.bench.bench.backfill_command_guard_on_active_benches`
+	"""
+	for name in frappe.get_all("Bench", {"status": "Active"}, pluck="name"):
+		try:
+			Bench("Bench", name).setup_command_guard()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error("Failed to install bench command guard", bench=name)
+
+
 def process_new_bench_job_update(job: AgentJob):  # noqa: C901
 	bench = Bench("Bench", job.bench)
 
@@ -1363,6 +1403,9 @@ def process_new_bench_job_update(job: AgentJob):  # noqa: C901
 	if bench.team != "Administrator":
 		bench.status = updated_status  # just to ensure the status got changed in webhook payload, reload_doc is costly here
 		create_webhook_event("Bench Status Update", bench, bench.team)
+
+	if updated_status == "Active":
+		bench.setup_command_guard()
 
 	# check if new bench related to a site group deploy
 	site_group_deploy = frappe.db.get_value(
