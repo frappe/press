@@ -46,7 +46,12 @@ const apiRes = createResource({
 	url: 'press.api.bench.add_apps',
 	auto: false,
 	async onSuccess() {
-		const info = await deployInfoRes.submit({ name: props.bench.name })
+		let info
+		try {
+			info = await deployInfoRes.submit({ name: props.bench.name })
+		} catch {
+			return
+		}
 
 		const apps = info.apps
 			.filter((a) => addedApps.find((x) => x.name === a.name))
