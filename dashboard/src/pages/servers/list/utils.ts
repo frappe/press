@@ -50,6 +50,9 @@ export const onDropServer = (server: any) => {
 	const serverFullRes = createDocumentResource({
 		doctype: 'Server',
 		name: server.name,
+		whitelistedMethods: {
+			dropServer: 'drop_server',
+		},
 	})
 
 	confirmDialog({
