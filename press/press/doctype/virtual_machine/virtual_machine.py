@@ -502,7 +502,7 @@ class VirtualMachine(Document):
 	def _provision_digital_ocean(self):
 		"""Provision a Digital Ocean Droplet"""
 		if not self.machine_image:
-			frappe.throw("Machine Image is required to provision Hetzner Virtual Machine.")
+			frappe.throw("Machine Image is required to provision Digital Ocean Virtual Machine.")
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 
@@ -561,13 +561,13 @@ class VirtualMachine(Document):
 				name=self.name,
 				server_type=ServerType(name=self.machine_type),
 				image=Image(cint(self.machine_image)),
-				networks=[],
+				networks=[],  # Don't attach to any network during creation
 				firewalls=[
 					Firewall(id=cint(security_group_id)) for security_group_id in self.get_security_groups()
 				],
 				location=Location(name=cluster.region),
 				public_net=ServerCreatePublicNetwork(
-					enable_ipv4=True,
+					enable_ipv4=bool(self.assign_public_ip),
 					enable_ipv6=False,
 				),
 				ssh_keys=[SSHKey(name=self.ssh_key)],
@@ -1252,7 +1252,8 @@ class VirtualMachine(Document):
 		self.ram = server_instance.server_type.memory * 1024
 
 		self.private_ip_address = server_instance.private_net[0].ip if server_instance.private_net else ""
-		self.public_ip_address = server_instance.public_net.ipv4.ip
+		if self.assign_public_ip:
+			self.public_ip_address = server_instance.public_net.ipv4.ip
 
 		self.termination_protection = server_instance.protection.get("delete", False)
 
