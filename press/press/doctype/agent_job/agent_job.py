@@ -634,31 +634,29 @@ def fail_old_jobs():
 			process_job_updates(job)
 		frappe.db.commit()
 
-	failed_jobs = frappe.db.get_values(
+	failed_jobs = frappe.db.get_all(
 		"Agent Job",
 		{
 			"status": ("in", ["Pending", "Running"]),
 			"job_id": ("!=", 0),
 			"creation": ("<", add_days(None, -2)),
 		},
-		"name",
 		limit=100,
 		order_by="RAND()",
-		pluck=True,
+		pluck="name",
 	)
 	update_status(failed_jobs, "Failure")
 
-	delivery_failed_jobs = frappe.db.get_values(
+	delivery_failed_jobs = frappe.db.get_all(
 		"Agent Job",
 		{
 			"job_id": 0,
 			"creation": ("<", add_days(None, -2)),
 			"status": ("!=", "Delivery Failure"),
 		},
-		"name",
 		limit=100,
 		order_by="RAND()",
-		pluck=True,
+		pluck="name",
 	)
 
 	update_status(delivery_failed_jobs, "Delivery Failure")
