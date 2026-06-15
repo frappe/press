@@ -63,11 +63,16 @@ const filteredApps = computed(() => {
 	)
 })
 
+const err = ref<string | null>(null)
+
 const newSite = createResource({
 	url: 'press.api.client.insert',
 	onSuccess() {
 		emit('siteCreated')
 		show.value = false
+	},
+	onError(e) {
+		err.value = e.messages?.join(', ') ?? 'Failed to create site'
 	},
 })
 
@@ -156,6 +161,8 @@ const submitForm = () => {
 						</div>
 					</template>
 				</TextInput>
+
+				<p v-if="err" class="text-ink-red-4 text-sm mt-2">{{ err }}</p>
 
 				<div class="leading-relaxed mt-5">
 					<span class="font-medium"
