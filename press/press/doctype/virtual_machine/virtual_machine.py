@@ -562,58 +562,26 @@ class VirtualMachine(Document):
 
 		cluster = frappe.get_doc("Cluster", self.cluster)
 
-		print("Before VM Creation Call")
-		print("machine_type=" + str(self.machine_type))
-		print("machine_image=" + str(self.machine_image))
-		print("region=" + str(cluster.region))
-		print("ssh_key=" + str(self.ssh_key))
-		print("security_groups=" + str(self.get_security_groups()))
-
-		print("Before VM Creation Call")
-
-		try:
-			server = (
-				self.client()
-				.servers.create(
-					name=self.name,
-					server_type=ServerType(name=self.machine_type),
-					image=Image(cint(self.machine_image)),
-					networks=[],
-					firewalls=[
-						Firewall(id=cint(security_group_id))
-						for security_group_id in self.get_security_groups()
-					],
-					location=Location(name=cluster.region),
-					public_net=ServerCreatePublicNetwork(
-						enable_ipv4=True,
-						enable_ipv6=False,
-					),
-					ssh_keys=[SSHKey(name=self.ssh_key)],
-					user_data=self.get_cloud_init() if self.virtual_machine_image else "",
-				)
-				.server
-			)
-
-		except Exception as e:
-			frappe.log_error(
-				title="Hetzner VM Provision Failed",
-				message=frappe.as_json(
-					{
-						"vm": self.name,
-						"machine_type": self.machine_type,
-						"machine_image": self.machine_image,
-						"cluster_region": cluster.region,
-						"ssh_key": self.ssh_key,
-						"security_groups": self.get_security_groups(),
-						"error": str(e),
-						"code": getattr(e, "code", None),
-					},
-					indent=2,
+		server = (
+			self.client()
+			.servers.create(
+				name=self.name,
+				server_type=ServerType(name=self.machine_type),
+				image=Image(cint(self.machine_image)),
+				networks=[],
+				firewalls=[
+					Firewall(id=cint(security_group_id)) for security_group_id in self.get_security_groups()
+				],
+				location=Location(name=cluster.region),
+				public_net=ServerCreatePublicNetwork(
+					enable_ipv4=True,
+					enable_ipv6=False,
 				),
+				ssh_keys=[SSHKey(name=self.ssh_key)],
+				user_data=self.get_cloud_init() if self.virtual_machine_image else "",
 			)
-			raise
-
-		print("After VM Creation Call")
+			.server
+		)
 
 		self.instance_id = server.id
 		self.save()

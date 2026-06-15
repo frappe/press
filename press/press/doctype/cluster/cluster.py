@@ -859,10 +859,6 @@ class Cluster(Document):
 		except APIException as e:
 			frappe.throw(f"Failed to provision NAT firewall on Hetzner: {e!s}")
 
-		frappe.msgprint(
-			"To add this cluster to monitoring, go to the Monitor Server and trigger the 'Reconfigure Monitor Server' action from the Actions menu."
-		)
-
 	def create_nat_security_group(self):
 		client = self.get_aws_client()
 		response = client.create_security_group(
