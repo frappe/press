@@ -2063,7 +2063,7 @@ class BaseServer(Document, TagHelpers):
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
 				},
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("NAT Iptables Setup Exception", server=self.as_dict())
 
@@ -2079,7 +2079,7 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("NAT Iptables Removal Exception", server=self.as_dict())
 
