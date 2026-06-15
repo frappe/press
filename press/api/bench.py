@@ -491,7 +491,7 @@ def all_apps(name: str):
 	marketplace_apps = frappe.get_all(
 		"Marketplace App",
 		filters={"status": "Published", "app": ("not in", installed_apps)},
-		fields=["name", "title", "image", "app"],
+		fields=["name", "title", "image", "app", "description"],
 	)
 
 	if not marketplace_apps:
