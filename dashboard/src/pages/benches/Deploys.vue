@@ -39,7 +39,7 @@ const deployBuilds = createListResource({
 
 const pipelines = createListResource({
 	doctype: 'Release Pipeline',
-	fields: ['name', 'status', 'creation', 'team'],
+	fields: ['name', 'status', 'creation', 'team.user as team'],
 	filters: {
 		release_group: props.name,
 	},

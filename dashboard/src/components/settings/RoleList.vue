@@ -104,23 +104,34 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { createListResource, createResource, Switch } from 'frappe-ui';
-import RoleCreateDialog from './RoleCreateDialog.vue';
-import { getTeam } from '../../data/team';
+import { createListResource, createResource, Switch } from 'frappe-ui'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { getTeam } from '../../data/team'
+import RoleCreateDialog from './RoleCreateDialog.vue'
 
-const showCreateDialog = ref(false);
+const showCreateDialog = ref(false)
 
-const team = getTeam();
+const route = useRoute()
+const router = useRouter()
+
+onMounted(() => {
+	if (route.query.createRole === 'true') {
+		showCreateDialog.value = true
+		router.replace({ query: {} })
+	}
+})
+
+const team = getTeam()
 
 const relaxedPermissions = computed({
 	get() {
-		return Boolean(team.doc?.relaxed_permissions);
+		return Boolean(team.doc?.relaxed_permissions)
 	},
 	set(value: boolean) {
-		team.setValue.submit({ relaxed_permissions: value });
+		team.setValue.submit({ relaxed_permissions: value })
 	},
-});
+})
 
 const roles = createListResource({
 	doctype: 'Press Role',
@@ -137,16 +148,16 @@ const roles = createListResource({
 	sortBy: 'title',
 	sortOrder: 'asc',
 	auto: true,
-});
+})
 
 const insert = createResource({
 	url: 'press.api.client.insert',
 	auto: false,
 	onSuccess: () => {
-		roles.reload();
-		showCreateDialog.value = false;
+		roles.reload()
+		showCreateDialog.value = false
 	},
-});
+})
 
 const permissions = (role) => {
 	return [
@@ -175,6 +186,6 @@ const permissions = (role) => {
 			label: 'Webhook',
 			color: 'green',
 		},
-	].filter((permission) => role[permission.key]);
-};
+	].filter((permission) => role[permission.key])
+}
 </script>
