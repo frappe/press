@@ -37,6 +37,9 @@ const deployRes = createResource({
 const deployInfoRes = createResource({
 	url: 'press.api.bench.deploy_information',
 	auto: false,
+	onError(e) {
+		err.value = e.messages?.join(', ') ?? 'Failed to fetch deploy information'
+	},
 })
 
 const apiRes = createResource({
