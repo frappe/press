@@ -377,6 +377,12 @@ onBeforeUnmount(() => {
 				<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
 			</Dropdown>
 		</div>
+
+		<div v-if="sites.hasNextPage" class="px-6 py-2 border-t dark:border-outline-gray-2">
+			<Button variant="ghost" @click="sites.next()" :loading="sites.list?.loading">
+				Load more
+			</Button>
+		</div>
 	</Collapsable>
 </template>
 
