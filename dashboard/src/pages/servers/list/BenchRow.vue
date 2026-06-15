@@ -79,6 +79,8 @@ const attachPipeline = (id: string) => {
 		auto: true,
 		onSuccess(data) {
 			if (['Success', 'Failure'].includes(data.status)) {
+				socket.emit('doc_unsubscribe', 'Release Pipeline', id)
+				socket.off('doc_update', handlePipelineUpdate)
 				pipelineRes.value = null
 				pipelineId.value = null
 				wired.value = false
@@ -91,14 +93,12 @@ const attachPipeline = (id: string) => {
 	})
 }
 
-if (!props.data.active_benches) {
-	onBeforeUnmount(() => {
-		if (pipelineId.value) {
-			socket.emit('doc_unsubscribe', 'Release Pipeline', pipelineId.value)
-			socket.off('doc_update', handlePipelineUpdate)
-		}
-	})
-}
+onBeforeUnmount(() => {
+	if (pipelineId.value) {
+		socket.emit('doc_unsubscribe', 'Release Pipeline', pipelineId.value)
+		socket.off('doc_update', handlePipelineUpdate)
+	}
+})
 
 if (!props.data.active_benches) {
 	createResource({

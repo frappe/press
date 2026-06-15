@@ -101,7 +101,7 @@ const installableApps = createResource({
 const filteredApps = computed(() => {
 	if (!searchQuery.value) return installableApps.data
 	return installableApps.data?.filter((app: any) =>
-		app.title.toLowerCase().includes(searchQuery.value.toLowerCase()),
+		app.title?.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
 </script>
