@@ -44,6 +44,9 @@ const createBench = createResource({
 		show.value = false
 		props.onSuccess()
 	},
+	onError(e) {
+		err.value = e.messages?.join(', ') ?? 'Failed to create bench'
+	},
 })
 
 const onSubmit = () => {

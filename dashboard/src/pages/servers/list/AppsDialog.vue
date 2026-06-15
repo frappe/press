@@ -32,6 +32,9 @@ const deployRes = createResource({
     emit('deployed', data)
     show.value = false
 	},
+	onError(e) {
+		err.value = e.messages?.join(', ') ?? 'Failed to deploy'
+	},
 })
 
 const deployInfoRes = createResource({
