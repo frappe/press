@@ -445,8 +445,10 @@ const stopBuild = () => {
 			</Button>
 
 			<h2 class="text-ink-gray-9 text-lg font-medium">
-				{{ deployview ? builds[activeBuildId]?.doc?.deploy_candidate : "Pipeline" }}
-				{{ pipeline?.doc?.name }}
+				<template v-if="deployview">
+					{{ builds[activeBuildId]?.doc?.deploy_candidate }}
+				</template>
+				<template v-else> Deploy </template>
 			</h2>
 
 			<Badge
