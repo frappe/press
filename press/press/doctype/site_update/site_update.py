@@ -905,11 +905,8 @@ def schedule_updates_server(server):
 	# Shuffle sites list, to achieve this
 	random.shuffle(sites)
 
-	benches = {}
 	update_triggered_count = 0
 	for site in sites:
-		if site.bench in benches:
-			continue
 		if update_triggered_count > queue_size:
 			break
 		if not should_try_update(site) or frappe.db.exists(
