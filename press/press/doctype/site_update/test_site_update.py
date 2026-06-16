@@ -22,7 +22,12 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
-from press.press.doctype.site_update.site_update import SiteUpdate, run_scheduled_updates
+from press.press.doctype.site_update.site_update import (
+	SiteUpdate,
+	is_site_in_deploy_hours,
+	run_scheduled_updates,
+	sites_with_available_update,
+)
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 
@@ -325,6 +330,25 @@ class TestSiteUpdate(FrappeTestCase):
 
 		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Cancelled")
 		self.assertTrue(frappe.db.exists("Press Notification", {"type": "Site Update", "team": site.team}))
+
+	def test_standby_site_is_updated_even_outside_deploy_hours(self):
+		"""A standby site must bypass the deploy-hours filter; regression for is_standby not being fetched."""
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		create_test_deploy_candidate_differences(bench2.candidate)
+		site = create_test_site(bench=bench1.name)
+		frappe.db.set_value("Site", site.name, "is_standby", 1)
+
+		[fetched_site] = [s for s in sites_with_available_update(bench1.server) if s.name == site.name]
+
+		# is_standby must be selected, otherwise the deploy-hours bypass is a silent no-op
+		self.assertTrue(fetched_site.is_standby)
+		# With no deploy hours configured a non-standby site would be filtered out;
+		# the standby site must still pass.
+		with patch("press.press.doctype.site_update.site_update.frappe.get_hooks", return_value=[]):
+			self.assertTrue(is_site_in_deploy_hours(fetched_site))
 
 	@patch("press.press.doctype.site_update.site_update.frappe.db.commit", new=MagicMock)
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)

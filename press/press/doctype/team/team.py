@@ -1085,7 +1085,7 @@ class Team(Document):
 			.join(PressRole)
 			.on(PressRoleUser.parent == PressRole.name)
 			.where(PressRole.team == self.name)
-			.select(PressRoleUser.user, PressRole.title, PressRole.name)
+			.select(PressRoleUser.user, PressRole.title, PressRole.name, PressRole.admin_access)
 			.run(as_dict=True)
 		)
 		user_roles = {}
@@ -1094,6 +1094,7 @@ class Team(Document):
 				{
 					"name": row.name,
 					"title": row.title,
+					"admin_access": row.admin_access,
 				}
 			)
 
@@ -1106,6 +1107,7 @@ class Team(Document):
 			m.user_image = u.get("user_image")
 			m.email = u.get("email")
 			m.roles = user_roles.get(m.user, [])
+			m.has_admin_access = any(r.get("admin_access") for r in m.roles)
 			r.append(m)
 		return r
 

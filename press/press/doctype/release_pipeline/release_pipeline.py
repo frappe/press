@@ -144,6 +144,7 @@ class ReleasePipeline(WorkflowBuilder):
 		"release_group",
 		"status",
 		"creation",
+		"team",
 	)
 
 	def send_failure_notification(self):

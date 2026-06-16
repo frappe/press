@@ -129,15 +129,11 @@ class TestAPISite(FrappeTestCase):
 		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, public=True)
 
 		group = create_test_release_group(
-			[frappe_app, allowed_app, disallowed_app], public=True, frappe_version="Version 15"
+			[frappe_app, allowed_app, disallowed_app],
+			public=True,
+			frappe_version="Version 15",
+			servers=[f1_server.name],
 		)
-		group.append(
-			"servers",
-			{
-				"server": f1_server.name,
-			},
-		)
-		group.save()
 		create_test_bench(group=group, server=f1_server.name)
 
 		plan = create_test_plan("Site", allowed_apps=[frappe_app.name, allowed_app.name])
@@ -172,14 +168,12 @@ class TestAPISite(FrappeTestCase):
 		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
 		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, public=True)
 
-		group = create_test_release_group([frappe_app, another_app], public=True, frappe_version="Version 15")
-		group.append(
-			"servers",
-			{
-				"server": f1_server.name,
-			},
+		group = create_test_release_group(
+			[frappe_app, another_app],
+			public=True,
+			frappe_version="Version 15",
+			servers=[f1_server.name],
 		)
-		group.save()
 		create_test_bench(group=group, server=f1_server.name)
 
 		plan = create_test_plan("Site", allowed_apps=[])
@@ -213,24 +207,14 @@ class TestAPISite(FrappeTestCase):
 		n2_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
 		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name, public=True)
 
-		rg1 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
-		rg1.append(
-			"servers",
-			{
-				"server": f1_server.name,
-			},
+		rg1 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15", servers=[f1_server.name]
 		)
-		rg1.save()
 		create_test_bench(group=rg1, server=f1_server.name)
 
-		rg2 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
-		rg2.append(
-			"servers",
-			{
-				"server": f2_server.name,
-			},
+		rg2 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15", servers=[f2_server.name]
 		)
-		rg2.save()
 		rg2_bench = create_test_bench(group=rg2, server=f2_server.name)
 
 		plan = create_test_plan("Site", allowed_apps=[], release_groups=[rg2.name])
@@ -273,24 +257,14 @@ class TestAPISite(FrappeTestCase):
 		n2_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
 		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name, public=True)
 
-		rg1 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
-		rg1.append(
-			"servers",
-			{
-				"server": f1_server.name,
-			},
+		rg1 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15", servers=[f1_server.name]
 		)
-		rg1.save()
 		rg1_bench = create_test_bench(group=rg1, server=f1_server.name)
 
-		rg2 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
-		rg2.append(
-			"servers",
-			{
-				"server": f2_server.name,
-			},
+		rg2 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15", servers=[f2_server.name]
 		)
-		rg2.save()
 		create_test_bench(group=rg2, server=f2_server.name)
 
 		plan = create_test_plan("Site", allowed_apps=[], release_groups=[], plan_title="Unlimited Plan")
