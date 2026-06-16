@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, createListResource, TextInput, Select } from 'frappe-ui'
+import { Button, createListResource, TextInput, Combobox } from 'frappe-ui'
 import Header from '@/components/Header.vue'
 import { ref } from 'vue'
 
@@ -34,18 +34,26 @@ const servers = createListResource({
 	orderBy: `creation ${sortBy.value}`,
 })
 
-const regions = [
-	'',
-	'Bahrain',
-	'Cape Town',
-	'Frankfurt',
-	'KSA',
-	'London',
-	'Mumbai',
-	'Singapore',
-	'UAE',
-	'Virginia',
-	'Zurich',
+const regionOptions = [
+	{ label: 'Bahrain', value: 'Bahrain' },
+	{ label: 'Cape Town', value: 'Cape Town' },
+	{ label: 'Frankfurt', value: 'Frankfurt' },
+	{ label: 'KSA', value: 'KSA' },
+	{ label: 'London', value: 'London' },
+	{ label: 'Mumbai', value: 'Mumbai' },
+	{ label: 'Singapore', value: 'Singapore' },
+	{ label: 'UAE', value: 'UAE' },
+	{ label: 'Virginia', value: 'Virginia' },
+	{ label: 'Zurich', value: 'Zurich' },
+]
+
+const statusOptions = [
+	{ label: 'Active', value: 'Active' },
+	{ label: 'Pending', value: 'pending' },
+	{
+		label: 'Archived',
+		value: 'archived',
+	},
 ]
 
 const applyFilters = (key: string, value: any) => {
@@ -90,28 +98,29 @@ const toggleSort = () => {
 			</template></TextInput
 		>
 
-		<Select
+		<Combobox
 			placeholder="Region"
-			class="!w-fit"
-			:options="regions"
+			:openOnFocus="true"
+			class="!w-36"
+			:options="regionOptions"
 			@update:modelValue="v => applyFilters('cluster.title', v)"
 		>
 			<template #prefix>
 				<LucideMapPin class="size-4" />
 			</template>
-		</Select>
+		</Combobox>
 
-		<Select
+		<Combobox
 			placeholder="Status"
-			class="!w-fit"
-			:options="['' , 'Active', 'Pending', 'Archived']"
+			class="!w-32"
+			:openOnFocus="true"
+			:options="regionOptions"
 			@update:modelValue="v => applyFilters('status', v)"
-			w
 		>
 			<template #prefix>
-				<span class="rounded size-2 bg-gray-500" />
+				<span class="rounded size-2 bg-gray-500 shrink-0" />
 			</template>
-		</Select>
+		</Combobox>
 
 		<Button class="ml-auto" @click="toggleSort">
 			<template #prefix>
