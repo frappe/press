@@ -65,7 +65,7 @@ const serverActions = (server) => [
 		<div class="bordered p-4 flex gap-3 items-center">
 			<ServerIcon :provider="data.provider" class="size-6 mb-auto" />
 
-			<div class="flex flex-wrap gap-2 items-center">
+			<div class="flex flex-wrap gap-1.5 items-center">
 				<Tooltip text="Go to server dashboard">
 					<router-link :to="`/servers/${data.name}`" class="hover:underline">
 						<span class="font-medium">{{ data?.title }}</span>
@@ -73,10 +73,10 @@ const serverActions = (server) => [
 				</Tooltip>
 
 				<div
-					class="rounded-full size-2 mx-1"
+					class="rounded-full size-1.5 ml-1"
 					:class="data.status === 'Active' ? 'bg-surface-green-3' : 'bg-surface-red-5'"
 				/>
-				<span>{{ data.status }}</span>
+				<span class='text-xs'>{{ data.status }}</span>
 				<span class="w-full text-ink-gray-6 text-sm">
 					{{ data.vcpu }}
 					vCPU, {{ Math.round(data.memory / 1024) }} GB RAM,
@@ -101,7 +101,7 @@ const serverActions = (server) => [
 		</div>
 
 		<!-- benches header -->
-		<div class="row-grid pl-6 pr-4 pt-4 items-center text-ink-gray-4 text-sm">
+		<div class="row-grid pl-6 pr-4 pt-4 items-center text-ink-gray-5 text-sm">
 			<span />
 			<template v-if="benches?.data?.length">
 				<span>Bench</span>
