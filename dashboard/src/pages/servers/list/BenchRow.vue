@@ -38,7 +38,10 @@ const props = defineProps<Props>()
 const sites = createListResource({
 	doctype: 'Site',
 	fields: ['name', 'status', 'bench', 'creation', 'host_name'],
-	filters: { group: props.data.name },
+	filters: {
+		group: props.data.name,
+		skip_team_filter_for_system_user_and_support_agent: true,
+	},
 	orderBy: 'creation desc',
 	pageLength: 5,
 	cache: ['sitesRes', props.data.name],
@@ -53,7 +56,7 @@ const benchDeployStatus = computed(() => {
 	if (!pipelineRes.value?.doc) return
 
 	let status = 'Deploy in Queue'
-	const stages = pipelineRes.value.doc.steps.stages
+	const stages = pipelineRes.value.doc.steps?.stages ?? []
 	const firstRunning = stages.find((x) => x.status === 'Running')
 
 	if (firstRunning) status = firstRunning.label
