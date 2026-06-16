@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+	Badge,
 	Button,
 	Dropdown,
 	Spinner,
@@ -170,12 +171,17 @@ const siteOptions = (site) => [
 	},
 ]
 
-const statusColors = {
-	Active: 'bg-surface-green-3',
-	Broken: 'bg-surface-red-5',
-	Draft: 'bg-surface-orange-3',
-	AwaitingApproval: 'bg-surface-orange-3',
+const siteStatusBadges: Record<string, { theme: 'green' | 'red' | 'orange' | 'blue' | 'gray' | null; dot: string }> = {
+	Active: { theme: null, dot: 'bg-surface-green-3' },
+	Inactive: { theme: 'gray', dot: 'bg-surface-gray-4' },
+	Suspended: { theme: 'gray', dot: 'bg-surface-gray-4' },
+	Archived: { theme: 'gray', dot: 'bg-surface-gray-4' },
+	Broken: { theme: 'red', dot: 'bg-surface-red-5' },
+	Draft: { theme: 'orange', dot: 'bg-surface-orange-3' },
+	AwaitingApproval: { theme: 'orange', dot: 'bg-surface-orange-3' },
+	'Update Available': { theme: 'blue', dot: 'bg-surface-blue-3' },
 }
+const defaultSiteStatusBadge = { theme: 'gray' as const, dot: 'bg-surface-gray-4' }
 
 const transientSiteStatuses = [
 	'Pending',
@@ -258,17 +264,22 @@ onBeforeUnmount(() => {
 					class="flex flex-wrap gap-x-2.5 gap-y-1.5 items-center"
 					v-if="!pipelineId"
 				>
-					<span
-						class="size-2 rounded-full"
-						:class="data.active_benches ? 'bg-surface-green-3' : 'bg-surface-amber-3'"
-					/>
-					{{ data.active_benches ? 'Active' : 'Awaiting Deploy' }}
+					<Badge
+						variant="subtle"
+						:theme='data.active_benches? null : "orange" '
+					>
+						<span
+							class="size-1.5 rounded-full shrink-0 mr-0.5"
+							:class="data.active_benches ? 'bg-surface-green-3' : 'bg-surface-amber-3'"
+						/>
+						{{ data.active_benches ? 'Active' : 'Awaiting Deploy' }}
+					</Badge>
+
 					<button
 						v-if="!data.active_benches"
 						@click="(e) => deployBench(e, data, server)"
-						class="w-full self-start text-left mb-1 ml-4 hover:underline"
 					>
-						Deploy
+						<LucideRocket class="size-3.5" />
 					</button>
 				</div>
 
@@ -365,10 +376,18 @@ onBeforeUnmount(() => {
 				<LucideExternalLink class="size-4" />
 			</router-link>
 
-			<div v-else class="flex gap-2 items-center text-ink-gray-8">
-				<span class="size-2 rounded-full" :class="statusColors[site.status]" />
+			<Badge
+				v-else
+				variant="subtle"
+        class='w-fit'
+				:theme="siteStatusBadges[site.status]?.theme"
+			>
+				<span
+					class="size-1.5 rounded-full shrink-0 mr-0.5"
+					:class="(siteStatusBadges[site.status] || defaultSiteStatusBadge).dot"
+				/>
 				{{ site.status }}
-			</div>
+			</Badge>
 
 			<span class="text-ink-gray-8"
 				>{{ dayjsLocal(site.creation).fromNow() }}</span
@@ -378,8 +397,15 @@ onBeforeUnmount(() => {
 			</Dropdown>
 		</div>
 
-		<div v-if="sites.hasNextPage" class="px-6 py-2 border-t dark:border-outline-gray-2">
-			<Button variant="ghost" @click="sites.next()" :loading="sites.list?.loading">
+		<div
+			v-if="sites.hasNextPage"
+			class="px-6 py-2 border-t dark:border-outline-gray-2"
+		>
+			<Button
+				variant="ghost"
+				@click="sites.next()"
+				:loading="sites.list?.loading"
+			>
 				Load more
 			</Button>
 		</div>
