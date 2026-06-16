@@ -171,7 +171,10 @@ const siteOptions = (site) => [
 	},
 ]
 
-const siteStatusBadges: Record<string, { theme: 'green' | 'red' | 'orange' | 'blue' | 'gray' | null; dot: string }> = {
+const siteStatusBadges: Record<
+	string,
+	{ theme: 'green' | 'red' | 'orange' | 'blue' | 'gray' | null; dot: string }
+> = {
 	Active: { theme: null, dot: 'bg-surface-green-3' },
 	Inactive: { theme: 'gray', dot: 'bg-surface-gray-4' },
 	Suspended: { theme: 'gray', dot: 'bg-surface-gray-4' },
@@ -181,7 +184,10 @@ const siteStatusBadges: Record<string, { theme: 'green' | 'red' | 'orange' | 'bl
 	AwaitingApproval: { theme: 'orange', dot: 'bg-surface-orange-3' },
 	'Update Available': { theme: 'blue', dot: 'bg-surface-blue-3' },
 }
-const defaultSiteStatusBadge = { theme: 'gray' as const, dot: 'bg-surface-gray-4' }
+const defaultSiteStatusBadge = {
+	theme: 'gray' as const,
+	dot: 'bg-surface-gray-4',
+}
 
 const transientSiteStatuses = [
 	'Pending',
@@ -252,10 +258,9 @@ onBeforeUnmount(() => {
 						{{ data.title }}
 
 						<span
-							v-if="data.site_count"
 							class="text-xs bg-surface-gray-2 text-ink-gray-6 rounded px-1.5 py-0.5 font-medium"
 						>
-							{{ data.site_count }}
+							{{ data.site_count || 0 }}
 						</span>
 					</router-link>
 				</Tooltip>
@@ -278,6 +283,7 @@ onBeforeUnmount(() => {
 					<button
 						v-if="!data.active_benches"
 						@click="(e) => deployBench(e, data, server)"
+						class="p-1 rounded-sm -ml-1 hover:bg-surface-gray-2"
 					>
 						<LucideRocket class="size-3.5" />
 					</button>
@@ -379,7 +385,7 @@ onBeforeUnmount(() => {
 			<Badge
 				v-else
 				variant="subtle"
-        class='w-fit'
+				class="w-fit"
 				:theme="siteStatusBadges[site.status]?.theme"
 			>
 				<span
