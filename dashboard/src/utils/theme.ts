@@ -1,7 +1,5 @@
-import resolveConfig from 'tailwindcss/resolveConfig'
-import tailwindConfig from '../../tailwind.config.js'
+import { generateColorPalette } from 'frappe-ui/tailwind/tokens.js'
 
-export const config = resolveConfig(tailwindConfig)
-export const theme = config.theme
-
+export const theme = { colors: generateColorPalette() }
+export const config = { theme }
 export default theme
