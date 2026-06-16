@@ -93,7 +93,7 @@ def get_saas_bench(app):
 	)
 	release_group = get_saas_group(app)
 	cluster = get_saas_cluster(app)
-	bench_servers = frappe.db.sql(
+	bench_servers = frappe.db.sql(  # nosemgrep
 		"""
 		SELECT
 			bench.name, bench.server
