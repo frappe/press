@@ -25,6 +25,7 @@ const servers = createListResource({
 		'cluster.name as cluster',
 		'cluster.image as cluster_image',
 		'cluster.title as cluster_title',
+		'cluster.country as cluster_country',
 		'is_unified_server',
 		'plan.vcpu as vcpu',
 		'plan.memory as memory',
