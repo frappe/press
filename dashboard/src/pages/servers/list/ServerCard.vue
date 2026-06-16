@@ -86,8 +86,14 @@ const serverActions = (server) => [
 			</div>
 
 			<div class="flex items-center gap-1 text-ink-gray-6 ml-auto">
-				<LucideMapPin class="size-4" />
-				<span>{{ data?.cluster_title }}</span>
+				<img
+					v-if="data?.cluster_image"
+					:src="data.cluster_image"
+					:alt="data?.cluster_title"
+					class="size-4 mr-1"
+				/>
+				<LucideMapPin v-else class="size-4" />
+				<span>{{ data?.cluster_title }}{{ data?.cluster_country ? `, ${data.cluster_country}` : '' }}</span>
 				<Dropdown :options="serverActions(data)">
 					<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
 				</Dropdown>
