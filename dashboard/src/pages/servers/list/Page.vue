@@ -106,7 +106,7 @@ const toggleSort = () => {
 			@update:modelValue="v => applyFilters('cluster.title', v)"
 		>
 			<template #prefix>
-				<LucideMapPin class="size-4" />
+				<LucideMapPin class="size-4 text-ink-gray-5" />
 			</template>
 		</Combobox>
 
@@ -118,7 +118,7 @@ const toggleSort = () => {
 			@update:modelValue="v => applyFilters('status', v)"
 		>
 			<template #prefix>
-				<span class="rounded size-2 bg-gray-500 shrink-0" />
+				<span class="rounded size-1.5 bg-gray-500 shrink-0 m-0.5" />
 			</template>
 		</Combobox>
 
