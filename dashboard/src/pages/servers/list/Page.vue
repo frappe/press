@@ -49,10 +49,10 @@ const regionOptions = [
 
 const statusOptions = [
 	{ label: 'Active', value: 'Active' },
-	{ label: 'Pending', value: 'pending' },
+	{ label: 'Pending', value: 'Pending' },
 	{
 		label: 'Archived',
-		value: 'archived',
+		value: 'Archived',
 	},
 ]
 
@@ -114,7 +114,7 @@ const toggleSort = () => {
 			placeholder="Status"
 			class="!w-32"
 			:openOnFocus="true"
-			:options="regionOptions"
+			:options="statusOptions"
 			@update:modelValue="v => applyFilters('status', v)"
 		>
 			<template #prefix>
