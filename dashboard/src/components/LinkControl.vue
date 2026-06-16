@@ -1,6 +1,5 @@
 <template>
 	<FormControl
-		ref="formControl"
 		v-bind="$attrs"
 		type="combobox"
 		:label="label"
@@ -16,11 +15,11 @@
 				}
 			}
 		"
+		@update:query="onQuery"
 	/>
 </template>
 <script>
 import { FormControl, debounce } from 'frappe-ui'
-import { nextTick } from 'vue'
 
 export default {
 	name: 'LinkControl',
@@ -35,25 +34,6 @@ export default {
 			query: '',
 			currentValidValueInOptions: null,
 		}
-	},
-	beforeUnmount() {
-		const root = this.$refs.formControl?.$el
-		const input = root?.querySelector('input')
-
-		if (!input) return
-
-		input.removeEventListener('input', this.onNativeInput)
-	},
-	mounted() {
-		nextTick(() => {
-			const root = this.$refs.formControl?.$el
-			if (!root) return
-
-			const input = root.querySelector('input')
-
-			if (!input) return
-			input.addEventListener('input', this.onNativeInput)
-		})
 	},
 	resources: {
 		options() {
@@ -82,9 +62,6 @@ export default {
 		onQuery: debounce(function (query) {
 			this.query = query.trim()
 		}, 500),
-		onNativeInput(e) {
-			this.onQuery(e.target.value)
-		},
 	},
 	computed: {
 		autocompleteOptions() {
