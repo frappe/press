@@ -15,13 +15,13 @@ from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.site.site import (
 	DEFAULT_MAX_STATEMENT_TIME,
 	STATEMENT_TIME_INCREMENT,
