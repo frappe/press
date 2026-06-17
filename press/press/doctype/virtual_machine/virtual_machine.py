@@ -556,9 +556,6 @@ class VirtualMachine(Document):
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
 
-		if self.series == "nat":
-			cluster.add_hetzner_nat_route()  # Route needed for outbound connection
-
 		server = (
 			self.client()
 			.servers.create(
@@ -603,6 +600,9 @@ class VirtualMachine(Document):
 			self.save()
 			frappe.db.commit()
 			raise
+
+		if self.series == "nat":
+			cluster.add_hetzner_nat_route(self.private_ip_address)  # Route needed for outbound connection
 
 		self.status = self.get_hetzner_status_map()[server.status]
 		self.save()

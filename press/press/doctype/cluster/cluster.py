@@ -404,8 +404,6 @@ class Cluster(Document):
 		)
 
 	def add_hetzner_nat_route(self, nat_ip):
-		from ipaddress import ip_address, ip_network
-
 		from hcloud.networks.domain import NetworkRoute
 
 		client = self.get_hetzner_client()
@@ -414,16 +412,15 @@ class Cluster(Document):
 		if not network:
 			frappe.throw(f"Hetzner network {self.vpc_id} not found")
 
-		# Avoid duplicate route
 		for route in network.routes:
-			if str(route.destination) == "0.0.0.0/0" and str(route.gateway) == nat_ip:
+			if route.destination == "0.0.0.0/0" and route.gateway == nat_ip:
 				return
 
 		action = client.networks.add_route(
 			network=network,
 			route=NetworkRoute(
-				destination=ip_network("0.0.0.0/0"),
-				gateway=ip_address(nat_ip),
+				destination="0.0.0.0/0",
+				gateway=nat_ip,
 			),
 		)
 
