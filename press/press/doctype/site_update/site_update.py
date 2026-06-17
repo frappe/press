@@ -1168,6 +1168,8 @@ TRANSIENT_DB_ERRORS = ["MySQL server has gone away", "Lost connection to MySQL s
 
 def failed_due_to_transient_db_error(job: "AgentJob") -> bool:
 	for error in TRANSIENT_DB_ERRORS:
+		if error in (job.traceback or "") or error in (job.output or ""):
+			return True
 		if frappe.db.exists("Agent Job Step", {"agent_job": job.name, "output": ("like", f"%{error}%")}):
 			return True
 	return False
@@ -1194,7 +1196,11 @@ def should_retry_recovery(job: "AgentJob", site_update_name: str) -> bool:
 
 def retry_recovery(site_update_name: str) -> None:
 	frappe.db.set_value("Site Update", site_update_name, "recover_job", None)
-	frappe.get_doc("Site Update", site_update_name).trigger_recovery_job()
+	# Reflect that recovery is in progress; trigger_recovery_job creates a fresh recover job.
+	update_status(site_update_name, "Recovering")
+	site_update = frappe.get_doc("Site Update", site_update_name)
+	frappe.db.set_value("Site", site_update.site, "status", "Recovering")
+	site_update.trigger_recovery_job()
 
 
 def process_update_site_recover_job_update(job: AgentJob):
