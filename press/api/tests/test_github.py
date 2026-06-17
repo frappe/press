@@ -105,6 +105,45 @@ class TestGitHubAuthorization(FrappeTestCase):
 		self.assertNotIn("code", log_error.call_args.kwargs)
 		self.assertEqual(frappe.flags.redirect_location, frappe.utils.get_url("/dashboard"))
 
+	def test_get_context_starts_user_authorization_when_install_callback_has_no_code(self):
+		from press.api.github import GITHUB_OAUTH_AUTHORIZE_URL
+
+		state = self._encode_github_oauth_state(self.team.name, "/dashboard/sites")
+		self._set_form_dict(state=state, installation_id="123", setup_action="install")
+
+		with (
+			self.assertRaises(frappe.Redirect),
+			patch(
+				"press.api.github.frappe.db.get_single_value",
+				return_value="client-id",
+			),
+			patch("press.www.github.authorize.obtain_access_token") as obtain_access_token,
+		):
+			self._get_context()(None)
+
+		obtain_access_token.assert_not_called()
+		self.assertTrue(frappe.flags.redirect_location.startswith(GITHUB_OAUTH_AUTHORIZE_URL))
+		self.assertIn(f"state={state}", frappe.flags.redirect_location)
+		self.assertIn("client_id=client-id", frappe.flags.redirect_location)
+
+	def test_get_context_does_not_start_authorization_when_user_denied_install(self):
+		state = self._encode_github_oauth_state(self.team.name, "/dashboard/sites")
+		self._set_form_dict(state=state, error="access_denied")
+
+		with self.assertRaises(frappe.Redirect):
+			self._get_context()(None)
+
+		self.assertEqual(frappe.flags.redirect_location, frappe.utils.get_url("/dashboard"))
+
+	def test_get_github_callback_login_redirect_preserves_state_without_code(self):
+		from press.api.github import get_github_callback_login_redirect
+
+		state = self._encode_github_oauth_state(self.team.name, "/dashboard/sites")
+		callback_url = f"/github/authorize?{urlencode({'state': state})}"
+		expected = frappe.utils.get_url(f"/dashboard/login?{urlencode({'redirect': callback_url})}")
+
+		self.assertEqual(get_github_callback_login_redirect(None, state), expected)
+
 	def test_obtain_access_token_redacts_oauth_code_and_token_from_logs(self):
 		response = {
 			"access_token": "secret-token",
