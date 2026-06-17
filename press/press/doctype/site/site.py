@@ -1174,12 +1174,14 @@ class Site(Document, TagHelpers):
 		self.status = "Pending"
 		self.save()
 
-	def increase_max_statement_time(self, increment: int = STATEMENT_TIME_INCREMENT) -> tuple[int, int]:
+	def increase_max_statement_time(self, increment: int | None = None) -> tuple[int, int]:
 		"""Increase the database server's ``max_statement_time`` by ``increment`` seconds.
 
 		``max_statement_time`` is a dynamic MariaDB variable, so the change applies
 		without a restart. Returns ``(old_value, new_value)`` in seconds.
 		"""
+		# Constant is defined at module bottom, so resolve at call time, not in the signature.
+		increment = STATEMENT_TIME_INCREMENT if increment is None else increment
 		database_server = frappe.get_doc("Database Server", self.database_server_name)
 		current_timeout = database_server.get_mariadb_variable_value("max_statement_time")
 		current_timeout = int(float(current_timeout)) if current_timeout else DEFAULT_MAX_STATEMENT_TIME
