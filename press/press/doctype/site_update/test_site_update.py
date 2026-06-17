@@ -448,6 +448,19 @@ class TestSiteUpdate(FrappeTestCase):
 			site_update,
 			"Site's fatal_site_update should be set after exhausting recovery retries",
 		)
+		retry_comments = frappe.db.count(
+			"Comment",
+			{
+				"reference_doctype": "Site Update",
+				"reference_name": site_update,
+				"content": ("like", "%retrying recovery%"),
+			},
+		)
+		self.assertEqual(
+			retry_comments,
+			MAX_RECOVERY_RETRIES - 1,
+			"Each retried recover job should be logged as a comment on the Site Update",
+		)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 	def test_restore_tables_success_activates_site_and_marks_site_update_as_recovered(self):
