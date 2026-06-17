@@ -2055,6 +2055,9 @@ class BaseServer(Document, TagHelpers):
 		frappe.enqueue_doc(self.doctype, self.name, "_install_nat_iptables")
 
 	def _install_nat_iptables(self):
+		vm: VirtualMachine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		cluster: Cluster = frappe.get_doc("Cluster", vm.cluster)
+
 		try:
 			ansible = Ansible(
 				playbook="nat_iptables.yml",
@@ -2063,6 +2066,12 @@ class BaseServer(Document, TagHelpers):
 				port=self._ssh_port(),
 				variables={
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
+					"cloud_provider": vm.cloud_provider,
+					"network_gateway": (
+						str(ip_network(cluster.cidr_block).network_address + 1)
+						if vm.cloud_provider == "Hetzner" and cluster.cidr_block
+						else ""
+					),
 				},
 			)
 			ansible.run()
