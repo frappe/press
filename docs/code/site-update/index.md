@@ -67,10 +67,9 @@ handled by `process_restore_tables_job_update`:
 - **On success**, the site is reactivated, `fatal_site_update` is cleared, and
   the Site Update is marked `Recovered`.
 - **On failure because a query exceeded `max_statement_time`**
-  (`restore_tables_failed_due_to_statement_timeout`), Press bumps
-  `max_statement_time` by one hour and retries the restore, up to
-  `MAX_STATEMENT_TIMEOUT_RETRIES` (3) times. Each retry is recorded as a comment
-  on the fatal Site Update.
+  (`restore_tables_failed_due_to_statement_timeout`), Press retries the restore,
+  up to `MAX_STATEMENT_TIMEOUT_RETRIES` (3) times. Each retry is recorded as a
+  comment on the fatal Site Update.
 
 ## Skipped backups
 
@@ -111,8 +110,7 @@ Update fails
                   statement timeout,                  success
                   < 3 attempts                            │
                           │                               ▼
-                          └─ bump max_statement_time   Recovered
-                             and retry
+                          └─ retry                     Recovered
 ```
 
 ## Key constants

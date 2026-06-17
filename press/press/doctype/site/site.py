@@ -1209,10 +1209,9 @@ class Site(Document, TagHelpers):
 		the database server's ``max_statement_time``.
 
 		Restoring tables runs heavy queries that can exceed the configured statement
-		timeout on large sites. When that happens, bump ``max_statement_time`` on the
-		database server and retry the restore, up to ``MAX_STATEMENT_TIMEOUT_RETRIES``
-		times. Each additional attempt is recorded as a comment on the fatal Site Update
-		being recovered.
+		timeout on large sites. When that happens, retry the restore up to
+		``MAX_STATEMENT_TIMEOUT_RETRIES`` times. Each additional attempt is recorded as
+		a comment on the fatal Site Update being recovered.
 
 		Returns True if a retry was triggered.
 		"""
@@ -1234,14 +1233,10 @@ class Site(Document, TagHelpers):
 		if failed_attempts > MAX_STATEMENT_TIMEOUT_RETRIES:
 			return False
 
-		old_timeout, new_timeout = self.increase_max_statement_time()
-
 		frappe.get_doc("Site Update", self.fatal_site_update).add_comment(
 			text=(
 				f"Restore tables attempt {failed_attempts} failed because a query exceeded "
-				f"<code>max_statement_time</code>. Increased <code>max_statement_time</code> on "
-				f"the database server from {old_timeout}s to {new_timeout}s and retrying "
-				f"restore tables."
+				f"<code>max_statement_time</code>. Retrying restore tables."
 			)
 		)
 

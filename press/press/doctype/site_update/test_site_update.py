@@ -515,7 +515,7 @@ class TestSiteUpdate(FrappeTestCase):
 
 	@patch.object(DatabaseServer, "_update_mariadb_system_variables", new=Mock())
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_restore_tables_retries_and_bumps_max_statement_time_on_timeout(self):
+	def test_restore_tables_retries_on_statement_timeout(self):
 		group = create_test_release_group([create_test_app()])
 		bench = create_test_bench(group=group)
 		site = create_test_site(bench=bench.name)
@@ -533,16 +533,7 @@ class TestSiteUpdate(FrappeTestCase):
 			data={"output": "max_statement_time exceeded"},
 		):
 			site.restore_tables()  # first attempt
-			poll_pending_jobs()  # fails with timeout -> bumps and retries
-
-		# max_statement_time was bumped by an hour on the database server
-		database_server = frappe.get_doc("Database Server", site.database_server_name)
-		row = find(
-			database_server.mariadb_system_variables,
-			lambda x: x.mariadb_variable == "max_statement_time",
-		)
-		self.assertIsNotNone(row, "max_statement_time should be set after a statement timeout")
-		self.assertEqual(row.value_str, str(DEFAULT_MAX_STATEMENT_TIME + STATEMENT_TIME_INCREMENT))
+			poll_pending_jobs()  # fails with timeout -> retries
 
 		# a fresh Restore Site Tables job was triggered for the retry
 		self.assertEqual(
