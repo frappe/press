@@ -413,8 +413,16 @@ class Cluster(Document):
 			frappe.throw(f"Hetzner network {self.vpc_id} not found")
 
 		for route in network.routes:
-			if route.destination == "0.0.0.0/0" and route.gateway == nat_ip:
-				return
+			if route.destination == "0.0.0.0/0":
+				if route.gateway == nat_ip:
+					return
+
+				client.networks.delete_route(
+					network=network,
+					route=route,
+				)
+
+				break
 
 		action = client.networks.add_route(
 			network=network,
