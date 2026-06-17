@@ -106,34 +106,35 @@ class NATServer(BaseServer):
 
 	@frappe.whitelist()
 	def attach_nat_security_group(self):
-		if self.provider == "AWS EC2":
-			vm = frappe.get_doc("Virtual Machine", self.virtual_machine)
-			ec2 = vm.client()
-			response = ec2.describe_instances(InstanceIds=[vm.instance_id])
-			sgs = [
-				sg["GroupId"]
-				for reservation in response["Reservations"]
-				for instance in reservation["Instances"]
-				for sg in instance["SecurityGroups"]
-			]
+		if self.provider != "AWS EC2":
+			frappe.throw(
+				"This action is only applicable to AWS EC2 NAT instances. "
+				"No manual security group attachment is required for Hetzner."
+			)
+			return None
 
-			nat_sg = frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id")
-			if not nat_sg:
-				frappe.throw(
-					"NAT Security Group not found for the cluster. Please set it in the Cluster doctype."
-				)
+		vm = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		ec2 = vm.client()
+		response = ec2.describe_instances(InstanceIds=[vm.instance_id])
+		sgs = [
+			sg["GroupId"]
+			for reservation in response["Reservations"]
+			for instance in reservation["Instances"]
+			for sg in instance["SecurityGroups"]
+		]
 
-			if nat_sg in sgs:
-				frappe.throw(
-					"NAT Security Group is already attached to the instance. No changes are required to be made."
-				)
+		nat_sg = frappe.db.get_value("Cluster", self.cluster, "nat_security_group_id")
+		if not nat_sg:
+			frappe.throw(
+				"NAT Security Group not found for the cluster. Please set it in the Cluster doctype."
+			)
 
-			sgs.append(nat_sg)
-			ec2.modify_instance_attribute(InstanceId=vm.instance_id, Groups=sgs)
+		if nat_sg in sgs:
+			frappe.throw(
+				"NAT Security Group is already attached to the instance. No changes are required to be made."
+			)
 
-			return "NAT Security Group attached successfully"
-		frappe.throw(
-			"This action is only applicable to AWS EC2 NAT instances. "
-			"No manual security group attachment is required for Hetzner."
-		)
-		return None
+		sgs.append(nat_sg)
+		ec2.modify_instance_attribute(InstanceId=vm.instance_id, Groups=sgs)
+
+		return "NAT Security Group attached successfully"
