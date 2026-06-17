@@ -403,6 +403,32 @@ class Cluster(Document):
 			"To add this cluster to monitoring, go to the Monitor Server and trigger the 'Reconfigure Monitor Server' action from the Actions menu."
 		)
 
+	def add_hetzner_nat_route(self, nat_ip):
+		from ipaddress import ip_address, ip_network
+
+		from hcloud.networks.domain import NetworkRoute
+
+		client = self.get_hetzner_client()
+
+		network = client.networks.get_by_id(int(self.vpc_id))
+		if not network:
+			frappe.throw(f"Hetzner network {self.vpc_id} not found")
+
+		# Avoid duplicate route
+		for route in network.routes:
+			if str(route.destination) == "0.0.0.0/0" and str(route.gateway) == nat_ip:
+				return
+
+		action = client.networks.add_route(
+			network=network,
+			route=NetworkRoute(
+				destination=ip_network("0.0.0.0/0"),
+				gateway=ip_address(nat_ip),
+			),
+		)
+
+		action.wait_until_finished()
+
 	def provision_on_hetzner(self):
 		try:
 			# Get Hetzner API token from Press Settings
