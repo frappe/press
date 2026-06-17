@@ -63,9 +63,9 @@ def new(bench):
 		frappe.session.data.user_type == "System User"
 		or frappe.db.get_value("Server", bench["server"], "team") == team.name
 	):
-		frappe.throw(
-			"You can only create benches on servers that belong to your team. Please select one of your own servers, or use a public server."
-		)
+		# Keep this message generic — do not reveal anything about servers the
+		# requesting team doesn't own, to avoid server enumeration.
+		frappe.throw("You can only create benches on your servers")
 
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(
