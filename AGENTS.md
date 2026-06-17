@@ -22,7 +22,7 @@ If the test site is missing doctypes, migrate it first (use `--skip-failing` to 
 bench --site <site> migrate --skip-failing
 ```
 
-See [guide-to-testing.md](guide-to-testing.md) for how to write tests for this project, and the [Frappe testing docs](https://docs.frappe.io/framework/user/en/testing) for framework-level testing reference.
+See [docs/code/testing](docs/code/testing/index.md) for how to write tests for this project, and the [Frappe testing docs](https://docs.frappe.io/framework/user/en/testing) for framework-level testing reference.
 
 ## Running UI Tests (Playwright)
 
