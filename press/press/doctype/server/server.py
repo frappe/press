@@ -369,8 +369,15 @@ class BaseServer(Document, TagHelpers):
 
 	@dashboard_whitelist()
 	def configure_auto_add_storage(self, server: str, enabled: bool, min: int = 0, max: int = 0) -> None:
+		# `self` is always the app server (the dashboard dispatches on $appServer);
+		# `server` identifies the actual target, which may be a Database Server.
+		# The dashboard API only team-checks `self`, and the disable path below writes via
+		# `set_value` (which skips permission hooks), so authorize the resolved target here.
+		server_doc = self if server == self.name else frappe.get_doc("Database Server", server)
+		server_doc.check_permission("write")
+
 		if not enabled:
-			frappe.db.set_value(self.doctype, self.name, "auto_increase_storage", False)
+			frappe.db.set_value(server_doc.doctype, server_doc.name, "auto_increase_storage", False)
 			return
 
 		if min < 0 or max < 0:
@@ -378,17 +385,10 @@ class BaseServer(Document, TagHelpers):
 		if min > max:
 			frappe.throw(_("Minimum storage size must be less than the maximum storage size"))
 
-		if server == self.name:
-			self.auto_increase_storage = True
-			self.auto_add_storage_min = min
-			self.auto_add_storage_max = max
-			self.save()
-		else:
-			server_doc = frappe.get_doc("Database Server", server)
-			server_doc.auto_increase_storage = True
-			server_doc.auto_add_storage_min = min
-			server_doc.auto_add_storage_max = max
-			server_doc.save()
+		server_doc.auto_increase_storage = True
+		server_doc.auto_add_storage_min = min
+		server_doc.auto_add_storage_max = max
+		server_doc.save()
 
 	@staticmethod
 	def on_not_found(name):
@@ -2075,7 +2075,7 @@ class BaseServer(Document, TagHelpers):
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
 				},
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("NAT Iptables Setup Exception", server=self.as_dict())
 
@@ -2091,14 +2091,16 @@ class BaseServer(Document, TagHelpers):
 				user=self._ssh_user(),
 				port=self._ssh_port(),
 			)
-			ansible.run()
+			return ansible.run()
 		except Exception:
 			log_error("NAT Iptables Removal Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def start_active_benches(self):
 		benches = frappe.get_all("Bench", {"server": self.name, "status": "Active"}, pluck="name")
-		frappe.enqueue_doc(self.doctype, self.name, "_start_active_benches", benches=benches)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_start_active_benches", benches=benches, queue="long", timeout=3600
+		)
 
 	def _start_active_benches(self, benches: list[str]):
 		try:
@@ -2835,6 +2837,7 @@ class Server(BaseServer):
 		domain: DF.Link | None
 		enable_logical_replication_during_site_update: DF.Check
 		enable_on_prem_failover_support: DF.Check
+		exclude_for_scheduling: DF.Check
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None
 		halt_agent_jobs: DF.Check
@@ -2902,6 +2905,7 @@ class Server(BaseServer):
 		use_for_build: DF.Check
 		use_for_new_benches: DF.Check
 		use_for_new_sites: DF.Check
+		skip_standby_site_creation: DF.Check
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
@@ -2947,11 +2951,13 @@ class Server(BaseServer):
 			self.update_subscription()
 			self.update_db_server()
 
-		self.set_bench_memory_limits_if_needed(save=False)
-		self.validate_public_server_exists_for_site_or_bench_placement()
-
 		if self.public:
 			self.auto_add_storage_min = max(self.auto_add_storage_min, PUBLIC_SERVER_AUTO_ADD_STORAGE_MIN)
+			if self.exclude_for_scheduling:
+				self.use_for_new_benches = self.use_for_new_sites = 0
+
+		self.set_bench_memory_limits_if_needed(save=False)
+		self.validate_public_server_exists_for_site_or_bench_placement()
 
 		if (
 			self.has_value_changed("enable_logical_replication_during_site_update")
@@ -3107,40 +3113,50 @@ class Server(BaseServer):
 			log_error("Logrotate Setup Exception", server=self.as_dict())
 
 	def validate_public_server_exists_for_site_or_bench_placement(self) -> None:
-		"""Ensure at least one public server is available in the cluster for:
-		1. New site placement (use_for_new_sites)
-		2. New bench deployment (use_for_new_benches)
-		These flags are maintained by refresh_new_bench_and_site_server_pool background job.
-		This validation prevents failures for newly created clusters before the job runs.
+		"""When this server leaves the public scheduling pool, ensure another public
+		server in the cluster can still take new sites and benches.
+
+		use_for_new_sites / use_for_new_benches are maintained by the
+		refresh_new_bench_and_site_server_pool background job. Validating here stops
+		a cluster being left with no usable public server before that job runs.
 		"""
 
-		if not (self.has_value_changed("public") and self.team == "team@erpnext.com" and self.public):
+		if self.flags.in_insert:
+			return
+
+		became_private = not self.public and self.has_value_changed("public")
+		excluded_from_scheduling = (
+			self.public and self.exclude_for_scheduling and self.has_value_changed("exclude_for_scheduling")
+		)
+		if not (became_private or excluded_from_scheduling):
 			return
 
 		servers = frappe.get_all(
 			"Server",
-			filters={"cluster": self.cluster, "public": 1},
+			filters={
+				"name": ("!=", self.name),
+				"status": "Active",
+				"cluster": self.cluster,
+				"public": 1,
+				"exclude_for_scheduling": 0,
+			},
 			fields=["use_for_new_sites", "use_for_new_benches"],
 		)
 
 		has_site_server = any(s.use_for_new_sites for s in servers)
 		has_bench_server = any(s.use_for_new_benches for s in servers)
-
 		if has_site_server and has_bench_server:
 			return
 
 		messages = []
-
 		if not has_site_server:
 			messages.append(
 				"There are no public servers in this cluster with <b>Use For New Sites</b> enabled."
 			)
-
 		if not has_bench_server:
 			messages.append(
 				"There are no public servers in this cluster with <b>Use For New Benches</b> enabled."
 			)
-
 		if messages:
 			frappe.throw(
 				" ".join(messages)
@@ -4451,7 +4467,7 @@ def _refresh_bench_pool_and_raise_capacity_incidents(
 def _get_public_primary_servers_by_cluster() -> tuple[list[str], dict[str, list[str]]]:
 	servers = frappe.get_all(
 		"Server",
-		filters={"status": "Active", "is_primary": True, "public": True},
+		filters={"status": "Active", "is_primary": True, "public": True, "exclude_for_scheduling": False},
 		fields=["name", "cluster"],
 	)
 	server_names = [server.name for server in servers]

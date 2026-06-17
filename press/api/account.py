@@ -264,6 +264,8 @@ def setup_account(  # noqa: C901
 		capture("completed_signup", "fc_signup", account_request.email)
 	frappe.local.login_manager.login_as(email)
 
+	account_request.db_set("request_key", None)
+
 	return account_request.name
 
 
@@ -304,6 +306,8 @@ def accept_team_invite(key: str):
 		skip_validations=True,
 		role=account_request.invite_role_label,
 	)
+
+	account_request.db_set("request_key", None)
 
 
 @frappe.whitelist(allow_guest=True)

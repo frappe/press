@@ -32,7 +32,7 @@ import {
 import { confirmDialog, renderDialog } from '@/utils/components'
 import { getTeam } from '@/data/team'
 
-import { secsToDuration, date, duration } from '@/utils/format'
+import { secsToDuration, date, duration, sanitizeHtml } from '@/utils/format'
 
 const team = getTeam()
 const socket = window.$socket
@@ -168,7 +168,7 @@ const fetchSetErrs = () => {
 
 // pipeline.doc exists if cache exists
 // if cache exists then onSuccess wont run so fetch errs!
-if(pipeline?.doc?.status == 'Failure') fetchSetErrs()
+if (pipeline?.doc?.status == 'Failure') fetchSetErrs()
 
 const wired = reactive(new Set<string>())
 const builds = ref<Record<string, any>>({})
@@ -372,8 +372,6 @@ const dropdownOptions = computed(() => {
 			label: 'View App Versions',
 			icon: 'package',
 			onClick: appVersions,
-			condition: () =>
-				props.deployview && builds.value[activeBuildId.value]?.doc?.group,
 		},
 	]
 
@@ -387,6 +385,7 @@ const appVersions = () => {
 			dc_name: deploy.name,
 			group: deploy.group,
 			status: deploy.status,
+			isPipeline: !props.deployview,
 		}),
 	)
 }
@@ -434,7 +433,7 @@ const stopBuild = () => {
 	/>
 
 	<main
-		class="flex flex-col gap-4 py-3 px-5 w-full h-[calc(100dvh-7rem)] mt-1.5"
+		class="flex flex-col gap-4 p-3 md:px-5 w-full md:h-[calc(100dvh-7rem)] md:mt-1.5"
 		v-else
 	>
 		<!-- header -->
@@ -446,8 +445,10 @@ const stopBuild = () => {
 			</Button>
 
 			<h2 class="text-ink-gray-9 text-lg font-medium">
-				{{ deployview ? builds[activeBuildId]?.doc?.deploy_candidate : "Pipeline" }}
-				{{ pipeline?.doc?.name }}
+				<template v-if="deployview">
+					{{ builds[activeBuildId]?.doc?.deploy_candidate }}
+				</template>
+				<template v-else> Deploy </template>
 			</h2>
 
 			<Badge
@@ -484,30 +485,31 @@ const stopBuild = () => {
 
 		<!-- status cards -->
 		<section
-			class="grid grid-cols-4 gap-3 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm -mt-1"
+			class="flex flex-wrap md:grid grid-cols-4 gap-3 [&_b]:text-ink-gray-4 [&_b]:font-normal text-sm -mt-1
+      *:p-2 *:md:p-4 *:border"
 		>
-			<div class="flex flex-col gap-2 border p-4 rounded ">
+			<div class="flex flex-col gap-2 rounded ">
 				<b> Created by </b>
 				<span class="text-ink-gray-9"
 					>{{ deployview ?  builds[activeBuildId]?.doc?.owner : pipeline?.doc?.owner }}
 				</span>
 			</div>
 
-			<div class="flex flex-col gap-2 border p-4 rounded">
+			<div class="flex flex-col gap-2 rounded">
 				<b> Start </b>
 				<span>
 					{{ date(deployview ?  builds[activeBuildId]?.doc?.build_start : pipeline?.doc?.steps?.start) || '-' }}
 				</span>
 			</div>
 
-			<div class="flex flex-col gap-2 border p-4 rounded">
+			<div class="flex flex-col gap-2 rounded">
 				<b> End </b>
 				<span>
 					{{ date(deployview ?  builds[activeBuildId]?.doc?.build_end : pipeline?.doc?.steps?.end) || '-' }}
 				</span>
 			</div>
 
-			<div class="flex flex-col gap-2 border p-4 rounded">
+			<div class="flex flex-col gap-2 rounded">
 				<b> Duration </b>
 				<span>
 					{{ deployview ? duration( builds[activeBuildId]?.doc?.build_duration) || '-' : secsToDuration(pipeline?.doc?.steps?.duration) || '-' }}
@@ -517,13 +519,13 @@ const stopBuild = () => {
 
 		<!-- deploy steps + output -->
 		<div
-			class="flex rounded border p-3 pt-1 flex-1 min-h-0"
+			class="flex flex-col md:flex-row rounded border p-3 pt-1 flex-1 min-h-0"
 			:class='output.opened? "": "!pr-0" '
 			ref="stepsEl"
 		>
 			<Scrollbar
-				class="px-0.5 pr-3 transition-all duration-300 shrink-0"
-				:class="output.opened ? 'w-[30rem]' : 'w-full'"
+				class="px-0.5 md:pr-3 transition-all duration-300 shrink-0"
+				:class="output.opened ? 'md:w-[30rem]' : 'w-full'"
 			>
 				<Tabs
 					class="w-full sticky top-0 z-10 bg-surface-white mb-2"
@@ -569,7 +571,7 @@ const stopBuild = () => {
 								class="rounded px-3 py-2 bg-surface-red-1 flex flex-col gap-2"
 								:class='x.class == "Error" ? " bg-surface-red-1 text-ink-red-4" : "bg-surface-amber-1 text-ink-amber-3"'
 							>
-								<p v-html="x.message" class="leading-relaxed text-sm" />
+								<p v-html="sanitizeHtml(x.message)" class="leading-relaxed text-sm" />
 
 								<a
 									:href="x.assistance_url"

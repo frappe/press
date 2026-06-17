@@ -72,6 +72,7 @@ def get_erpnext_bench():
 			bench.server = server.name
 		WHERE
 			server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
+			AND server.skip_standby_site_creation = 0
 		ORDER BY
 			server.use_for_new_sites DESC, bench.creation DESC
 		LIMIT 1

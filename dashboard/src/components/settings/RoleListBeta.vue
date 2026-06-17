@@ -10,6 +10,7 @@ import {
 import { computed, ref, watchEffect } from 'vue'
 import { toast } from 'vue-sonner'
 import AlertBanner from '@/components/AlertBanner.vue'
+import { session } from '@/data/session'
 import { getTeam } from '@/data/team'
 import { getToastErrorMessage } from '@/utils/toast'
 
@@ -165,6 +166,7 @@ const deleteRoleResource = createResource({
 		rolesResource.reload()
 		toast.success('Role deleted')
 	},
+	onError: (e: any) => toast.error(getToastErrorMessage(e)),
 })
 
 const deleteRole = () => {
@@ -276,8 +278,8 @@ const deleteRole = () => {
 			:options="{
 				title: selectedRole!.label,
 				size: 'lg',
-				actions: selectedRole && !selectedRole.is_predefined
-					? [
+			actions: selectedRole && !selectedRole.is_predefined && (session.userPermissions.data.owner || session.isTeamAdmin)
+				? [
 							{
 								label: 'Delete',
 								theme: 'red',

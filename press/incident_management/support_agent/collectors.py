@@ -1,17 +1,28 @@
 from __future__ import annotations
 
+import math
+import re
+import time
 from collections import Counter
-from datetime import datetime, timedelta
-from datetime import timezone as dt_timezone
 from typing import Any
 
 import frappe
 
 RECENT_LIMIT = 10
+_PROM_TIMESPAN = 24 * 60 * 60  # seconds of history to fetch from Prometheus
+_PROM_STEP = 30 * 60  # Prometheus step size in seconds
 _SPIKE_CPU_THRESHOLD = 70.0  # flag CPU spike only above this percent
 _SPIKE_RATIO = 1.5  # peak must be this many times the mean to count as a spike
 _IOPS_SPIKE_RATIO = 2.0  # IOPS has no useful absolute threshold; rely on ratio only
 _SLOW_ENDPOINT_THRESHOLD_S = 1.0  # average duration above which an endpoint is worth flagging
+_PERF_SPIKE_PEAK_THRESHOLD_S = 2.0  # peak must exceed this to register as a performance spike
+_PERF_SPIKE_RATIO = 3.0  # peak must be this many times the mean to count as a spike
+_PERF_MAX_PATHS = 20  # fetch up to this many endpoints for anomaly analysis
+_WEB_ERROR_TAIL_LINES = 500  # scan only the tail of the log to bound processing time
+_WEB_ERROR_MAX_ERRORS = 10  # return at most this many recent error blocks
+_WEB_ERROR_LOG_REGEX = re.compile(
+	r"\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [+-]\d{4})\] \[(\d+)\] \[(\w+)\] (.*)"
+)
 
 
 def collect_site_context(site_name: str) -> dict[str, Any]:
@@ -41,7 +52,10 @@ def collect_site_context(site_name: str) -> dict[str, Any]:
 		"app_server_metrics": app_server_metrics,
 		"db_server_metrics": db_server_metrics,
 		"server_advanced_analytics": server_advanced_analytics,
-		"site_performance": get_site_performance_summary(site_name),
+		"bench_processes": get_bench_process_status(site.get("bench")),
+		"site_uptime": get_site_uptime(site_name),
+		"site_performance": get_site_performance_summary(site_name, site.get("bench")),
+		"web_error_log": get_web_error_log(site.get("bench")),
 	}
 
 
@@ -92,6 +106,70 @@ def get_bench_health(bench_name: str | None) -> dict[str, Any] | None:
 		],
 		as_dict=True,
 	)
+
+
+def get_bench_process_status(bench_name: str | None) -> dict[str, Any]:
+	if not bench_name:
+		return {"available": False}
+
+	try:
+		processes = frappe.get_doc("Bench", bench_name).supervisorctl_status()
+	except Exception:
+		return {"available": False}
+
+	_RUNNING = {"Running", "Starting"}
+	stopped = [p for p in processes if p.get("status") not in _RUNNING]
+	return {
+		"available": True,
+		"total": len(processes),
+		"stopped_count": len(stopped),
+		"stopped_processes": [
+			{"name": p["name"], "status": p["status"], "message": p.get("message")} for p in stopped
+		],
+	}
+
+
+def get_site_uptime(site_name: str) -> dict[str, Any]:
+	"""Current ping status and HTTP response code from the blackbox exporter."""
+	if not frappe.db.get_single_value("Press Settings", "monitor_server"):
+		return {"available": False}
+
+	from press.mcp.tools.telemetry.clients import prometheus_get
+
+	try:
+		success_response = prometheus_get(
+			"query",
+			{"query": f'probe_success{{job="site",instance="{site_name}"}}'},
+		)
+		status_response = prometheus_get(
+			"query",
+			{"query": f'probe_http_status_code{{job="site",instance="{site_name}"}}'},
+		)
+	except Exception:
+		return {"available": False}
+
+	up = _prom_instant(success_response)
+	http_status = _prom_instant(status_response)
+	return {
+		"available": True,
+		"up": bool(up) if up is not None else None,
+		"http_status_code": int(http_status) if http_status is not None else None,
+	}
+
+
+def _prom_instant(response: dict) -> float | None:
+	"""Return the first value from a Prometheus instant-query (vector) response."""
+	result = (response.get("data") or {}).get("result") or []
+	if not result:
+		return None
+	_, v = result[0].get("value") or (None, None)
+	if v is None:
+		return None
+	try:
+		f = float(v)
+		return None if math.isnan(f) else f
+	except (TypeError, ValueError):
+		return None
 
 
 def get_app_versions(bench_name: str | None) -> list[dict[str, Any]]:
@@ -251,37 +329,33 @@ def get_server_metrics(server_name: str | None, is_db_server: bool = False) -> d
 	if not frappe.db.get_single_value("Press Settings", "monitor_server"):
 		return {"available": False}
 
-	from press.api.server import prometheus_query
-
-	timespan = 24 * 60 * 60
-	timegrain = 30 * 60
+	from press.mcp.tools.telemetry.clients import prometheus_get
 
 	try:
-		cpu_data = prometheus_query(
-			f'(1 - avg(rate(node_cpu_seconds_total{{instance="{server_name}",job="node",mode="idle"}}[{timegrain}s]))) * 100',
-			lambda _: "cpu",
-			"UTC",
-			timespan,
-			timegrain,
+		cpu_response = prometheus_get(
+			"query_range",
+			_prom_params(
+				f'(1 - avg(rate(node_cpu_seconds_total{{instance="{server_name}",job="node",mode="idle"}}[{_PROM_STEP}s]))) * 100'
+			),
 		)
 	except Exception:
 		return {"available": False}
 
 	result: dict[str, Any] = {
 		"available": True,
-		"cpu": _summarise_series(cpu_data, absolute_threshold=_SPIKE_CPU_THRESHOLD),
+		"cpu": _summarise_series(_prom_values(cpu_response), absolute_threshold=_SPIKE_CPU_THRESHOLD),
 	}
 
 	if is_db_server:
 		try:
-			iops_data = prometheus_query(
-				f'sum(rate(node_disk_reads_completed_total{{instance="{server_name}",job="node"}}[{timegrain}s]) + rate(node_disk_writes_completed_total{{instance="{server_name}",job="node"}}[{timegrain}s]))',
-				lambda _: "iops",
-				"UTC",
-				timespan,
-				timegrain,
+			iops_response = prometheus_get(
+				"query_range",
+				_prom_params(
+					f'sum(rate(node_disk_reads_completed_total{{instance="{server_name}",job="node"}}[{_PROM_STEP}s])'
+					f' + rate(node_disk_writes_completed_total{{instance="{server_name}",job="node"}}[{_PROM_STEP}s]))'
+				),
 			)
-			result["iops"] = _summarise_series(iops_data, ratio_threshold=_IOPS_SPIKE_RATIO)
+			result["iops"] = _summarise_series(_prom_values(iops_response), ratio_threshold=_IOPS_SPIKE_RATIO)
 		except Exception:
 			result["iops"] = {"available": False}
 
@@ -323,63 +397,205 @@ def get_server_advanced_analytics(server_name: str | None, target_site: str) -> 
 	}
 
 
-def get_site_performance_summary(site_name: str) -> dict[str, Any]:
-	"""
-	Top slow endpoints from Elasticsearch for the last 24 hours.
-	Used to identify app-level causes of 504s and site slowness.
-	"""
+def get_site_performance_summary(site_name: str, bench_name: str | None = None) -> dict[str, Any]:
 	if not frappe.db.get_single_value("Press Settings", "log_server"):
 		return {"available": False}
 
-	from press.api.analytics import AggType, ResourceType, auto_timespan_timegrain, get_request_by_
-
-	end_dt = datetime.now(tz=dt_timezone.utc)
-	start_dt = end_dt - timedelta(hours=24)
-	timespan, timegrain = auto_timespan_timegrain(start_dt, end_dt)
+	from press.mcp.tools.telemetry.clients import elasticsearch_post
 
 	try:
-		result = get_request_by_(
-			site_name,
-			AggType.AVERAGE_DURATION,
-			"UTC",
-			start_dt,
-			end_dt,
-			timespan,
-			timegrain,
-			ResourceType.SITE,
-			max_no_of_paths=5,
-		)
+		response = elasticsearch_post(_slow_endpoint_query(site_name))
 	except Exception:
 		return {"available": False}
 
-	endpoints = []
-	for ds in result.get("datasets") or []:
-		values = [v for v in (ds.get("values") or []) if v is not None]
-		if values:
-			endpoints.append(
-				{
-					"path": ds.get("path"),
-					"avg_duration_s": round(sum(values) / len(values), 3),
-					"peak_duration_s": round(max(values), 3),
-				}
-			)
+	custom_apps = _get_custom_app_names(bench_name)
+	return {
+		"available": True,
+		"has_custom_apps": bool(custom_apps),
+		"top_slow_endpoints": _parse_slow_endpoints(response, custom_apps),
+	}
 
-	endpoints.sort(key=lambda x: x["avg_duration_s"], reverse=True)
-	return {"available": True, "top_slow_endpoints": endpoints[:5]}
+
+def _slow_endpoint_query(site_name: str) -> dict:
+	return {
+		"size": 0,
+		"query": {
+			"bool": {
+				"filter": [
+					{"match_phrase": {"json.site": site_name}},
+					{"match_phrase": {"json.transaction_type": "request"}},
+					{"range": {"@timestamp": {"gte": "now-24h", "lte": "now"}}},
+				]
+			}
+		},
+		"aggs": {
+			"top": {
+				"terms": {
+					"field": "json.request.path",
+					"size": _PERF_MAX_PATHS,
+					"order": {"avg_duration_ms": "desc"},
+				},
+				"aggs": {
+					"avg_duration_ms": {"avg": {"field": "json.duration"}},
+					"max_duration_ms": {"max": {"field": "json.duration"}},
+				},
+			}
+		},
+	}
+
+
+def _parse_slow_endpoints(response: dict, custom_apps: set[str]) -> list[dict[str, Any]]:
+	buckets = response.get("aggregations", {}).get("top", {}).get("buckets", [])
+	endpoints = []
+	for bucket in buckets:
+		avg_ms = (bucket.get("avg_duration_ms") or {}).get("value") or 0
+		peak_ms = (bucket.get("max_duration_ms") or {}).get("value") or 0
+		avg_s = round(avg_ms / 1000, 3)
+		peak_s = round(peak_ms / 1000, 3)
+		spike_detected = (
+			peak_s >= _PERF_SPIKE_PEAK_THRESHOLD_S and avg_s > 0 and peak_s >= avg_s * _PERF_SPIKE_RATIO
+		)
+		path = bucket.get("key") or ""
+		module = _endpoint_module(path)
+		endpoints.append(
+			{
+				"path": path,
+				"avg_duration_s": avg_s,
+				"peak_duration_s": peak_s,
+				"spike_detected": spike_detected,
+				"is_custom": module is not None and module in custom_apps,
+			}
+		)
+	return endpoints
+
+
+def _get_custom_app_names(bench_name: str | None) -> set[str]:
+	"""Returns the Python package names of apps whose source is not in the frappe GitHub org."""
+	if not bench_name:
+		return set()
+
+	bench_apps = frappe.get_all(
+		"Bench App",
+		filters={"parenttype": "Bench", "parent": bench_name},
+		fields=["app", "source"],
+	)
+	if not bench_apps:
+		return set()
+
+	source_names = [a.source for a in bench_apps if a.source]
+	if not source_names:
+		return set()
+
+	sources = frappe.get_all(
+		"App Source",
+		filters={"name": ("in", source_names)},
+		fields=["name", "repository_owner"],
+	)
+	owner_by_source = {s.name: (s.repository_owner or "").lower() for s in sources}
+
+	return {a.app for a in bench_apps if owner_by_source.get(a.source, "") != "frappe"}
+
+
+def _endpoint_module(path: str) -> str | None:
+	"""Extracts the Python module name from /api/method/<module>.<rest> paths."""
+	prefix = "/api/method/"
+	if not path.startswith(prefix):
+		return None
+	rest = path[len(prefix) :]
+	return rest.split(".")[0] or None
+
+
+def get_web_error_log(bench_name: str) -> dict[str, Any]:
+	"""
+	Recent ERROR/CRITICAL entries from the bench-level gunicorn web.error.log.
+
+	Reads from the bench, not the site, because gunicorn's stderr is a bench-level
+	file shared across all sites on the bench. Only the exception message line (last
+	line of the traceback) is included. All entries pass through redact() before
+	being stored.
+	"""
+	from press.incident_management.support_agent.redaction import redact
+
+	try:
+		raw = frappe.get_doc("Bench", bench_name).get_server_log("web.error.log")
+	except Exception:
+		return {"available": False}
+
+	content = (raw or {}).get("web.error.log", "")
+	if not content:
+		return {"available": True, "error_count": 0, "recent_errors": []}
+
+	lines = content.strip().splitlines()
+	error_blocks = _parse_web_error_blocks(lines[-_WEB_ERROR_TAIL_LINES:])
+	return {
+		"available": True,
+		"error_count": len(error_blocks),
+		"recent_errors": redact(error_blocks[-_WEB_ERROR_MAX_ERRORS:]),
+	}
+
+
+def _parse_web_error_blocks(lines: list[str]) -> list[dict[str, Any]]:
+	"""
+	Parses gunicorn web.error.log lines into typed error blocks.
+
+	Each block is a dict with: time, level, description, and optionally exception
+	(the last line of the associated traceback — the exception class and message).
+	Only ERROR and CRITICAL level blocks are returned.
+	"""
+	blocks = []
+	current: dict[str, Any] | None = None
+	traceback_lines: list[str] = []
+
+	for line in lines:
+		match = _WEB_ERROR_LOG_REGEX.match(line)
+		if match:
+			if current is not None and current["level"] in ("error", "critical"):
+				if traceback_lines:
+					current["exception"] = traceback_lines[-1].strip()
+				blocks.append(current)
+			timestamp, _pid, level, description = match.groups()
+			current = {"time": timestamp, "level": level.lower(), "description": description}
+			traceback_lines = []
+		elif current is not None:
+			traceback_lines.append(line)
+
+	if current is not None and current["level"] in ("error", "critical"):
+		if traceback_lines:
+			current["exception"] = traceback_lines[-1].strip()
+		blocks.append(current)
+
+	return blocks
+
+
+def _prom_params(query: str) -> dict:
+	end = int(time.time())
+	return {"query": query, "start": end - _PROM_TIMESPAN, "end": end, "step": f"{_PROM_STEP}s"}
+
+
+def _prom_values(response: dict) -> list[float]:
+	result = (response.get("data") or {}).get("result") or []
+	values = []
+	for series in result:
+		for _, v in series.get("values") or []:
+			try:
+				f = float(v)
+				if not math.isnan(f):
+					values.append(f)
+			except (TypeError, ValueError):
+				pass
+	return values
 
 
 def _summarise_series(
-	data: dict[str, Any],
+	values: list[float],
 	absolute_threshold: float | None = None,
 	ratio_threshold: float = _SPIKE_RATIO,
 ) -> dict[str, Any]:
-	datasets = data.get("datasets") or []
-	all_values = [v for ds in datasets for v in (ds.get("values") or []) if v is not None]
-	if not all_values:
+	if not values:
 		return {"available": False, "peak": None, "mean": None, "spike_detected": False}
 
-	peak = max(all_values)
-	mean = sum(all_values) / len(all_values)
+	peak = max(values)
+	mean = sum(values) / len(values)
 	above_threshold = absolute_threshold is None or peak >= absolute_threshold
 	spike_detected = above_threshold and mean > 0 and peak >= mean * ratio_threshold
 

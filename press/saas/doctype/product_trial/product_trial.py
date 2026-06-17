@@ -357,7 +357,9 @@ class ProductTrial(Document):
 
 		server = self.get_server_from_cluster(cluster)
 		cluster_domains = frappe.db.get_all(
-			"Root Domain", {"name": ("like", f"%.{self.domain}"), "enabled": 1}, ["name", "default_cluster as cluster"]
+			"Root Domain",
+			{"name": ("like", f"%.{self.domain}"), "enabled": 1},
+			["name", "default_cluster as cluster"],
 		)
 		cluster_domain = find(
 			cluster_domains,
@@ -478,6 +480,7 @@ class ProductTrial(Document):
 			.join(Server)
 			.on(Server.name == ReleaseGroupServer.server)
 			.where(Server.cluster == cluster)
+			.where(Server.skip_standby_site_creation == 0)
 			.join(Bench)
 			.on(Bench.server == ReleaseGroupServer.server)
 			.run(pluck="server")

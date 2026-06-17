@@ -257,7 +257,16 @@ const savePartnerOnboarding = createResource({
 	url: `${baseUrl}.save_partner_onboarding`,
 	auto: false,
 	onSuccess: (nextDoc: PartnerOnboardingDoc) => {
+		const wasRegistered = Boolean(doc.value?.name)
 		applyDoc(nextDoc, activeTeam.value)
+		// First registration only needs the sidebar to surface the "Partnership"
+		// item (see NavList.vue / Sidebar.vue). The backend doesn't mutate the
+		// Team here — the sole delta is the computed `has_partner_onboarding`
+		// flag — so set it optimistically instead of triggering a heavy full
+		// Team reload (balance, billing, subscriptions, ...).
+		if (!wasRegistered && nextDoc?.name && activeTeam.value?.doc) {
+			activeTeam.value.doc.has_partner_onboarding = true
+		}
 	},
 })
 
@@ -276,6 +285,9 @@ const unregisterPartnerOnboarding = createResource({
 		applyDoc(null, activeTeam.value)
 		resetCertificateStatus()
 		resetMRRStatus()
+		// Record removed — reload the team so the sidebar drops "Partnership"
+		// and the "Become a Partner" entry returns to the dropdown.
+		void activeTeam.value?.reload?.()
 	},
 })
 
@@ -326,8 +338,9 @@ export function usePartnerOnboarding(team?: TeamResource) {
 			resetMRRStatus()
 			return nextDoc
 		}
-		await loadCertificateStatus()
-		await loadMRRStatus()
+		// Certificate and MRR status are independent — fetch them concurrently so
+		// the partner-onboarding page renders without waiting on a serial chain.
+		await Promise.all([loadCertificateStatus(), loadMRRStatus()])
 		return nextDoc
 	}
 

@@ -841,9 +841,21 @@ class Site(Document, TagHelpers):
 
 	def install_marketplace_conf(self, app: str, plan: str | None = None):
 		if plan:
-			MarketplaceAppPlan.create_marketplace_app_subscription(self.name, app, plan, self.team)
+			subscription = MarketplaceAppPlan.create_marketplace_app_subscription(
+				self.name, app, plan, self.team
+			)
 		else:
-			create_free_app_subscription(app, self.name)
+			subscription = create_free_app_subscription(app, self.name)
+
+		# Marketplace apps authenticate to the Marketplace Developer API with a per-site
+		# secret read from their own site_config as `sk_<app>`. The secret lives on the
+		# Subscription doc; push it to the running site so the key reaches the bench.
+		# `update_site_config` (not `_update_configuration`) is required because the site
+		# is already live and arbitrary config changes are not propagated on save.
+		# A free app without a free plan yields no subscription, so there's nothing to push.
+		if subscription:
+			self.update_site_config({f"sk_{subscription.document_name}": subscription.secret_key})
+
 		marketplace_app_hook(app=app, site=self, op="install")
 
 	def uninstall_marketplace_conf(self, app: str):
@@ -1221,6 +1233,15 @@ class Site(Document, TagHelpers):
 	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
+		for key in ("database", "public", "private"):
+			rf_name = files.get(key)
+			if rf_name:
+				rf_team = frappe.db.get_value("Remote File", rf_name, "team")
+				if rf_team is not None and rf_team != self.team:
+					frappe.throw(
+						_("Remote File {0} does not belong to site's team").format(rf_name),
+						frappe.PermissionError,
+					)
 		self.remote_database_file = files["database"]
 		self.remote_public_file = files["public"]
 		self.remote_private_file = files["private"]

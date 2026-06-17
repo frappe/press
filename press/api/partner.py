@@ -126,18 +126,6 @@ def send_link_certificate_request(user_email: str, certificate_type: str) -> Non
 
 
 @frappe.whitelist()
-def approve_certificate_link_request(key: str) -> None:
-	from press.partner.doctype.certificate_link_request.certificate_link_request import (
-		CertificateLinkRequest,
-	)
-
-	CertificateLinkRequest.approve_from_key(key)
-
-	frappe.response.type = "redirect"
-	frappe.response.location = "/dashboard/partner-onboarding"
-
-
-@frappe.whitelist()
 @role_guard.api("partner")
 def get_resource_url() -> str | None:
 	return frappe.db.get_value("Press Settings", "Press Settings", "drive_resource_link")
