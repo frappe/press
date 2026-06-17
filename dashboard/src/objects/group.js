@@ -746,10 +746,7 @@ export default {
 			let { documentResource: group } = context;
 			let team = getTeam();
 
-			if (
-				group.doc?.deploy_information?.has_running_release_pipeline &&
-				!group.doc?.deploy_information?.deploy_in_progress
-			) {
+			if (group.doc?.deploy_information?.has_running_release_pipeline) {
 				pollReleasePipelineValidationStatus(group);
 			}
 
