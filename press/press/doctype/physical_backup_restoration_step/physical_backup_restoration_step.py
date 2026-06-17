@@ -34,4 +34,6 @@ class PhysicalBackupRestorationStep(Document):
 
 	def validate(self):
 		if self.is_async and self.wait_for_completion:
-			frappe.throw("Cannot wait for completion on async kind of step")
+			frappe.throw(
+				"This step runs asynchronously and can't be waited on for completion. Please poll its status instead."
+			)

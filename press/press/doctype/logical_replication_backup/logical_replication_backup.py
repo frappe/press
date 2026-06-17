@@ -254,7 +254,9 @@ class LogicalReplicationBackup(Document):
 			return self.post_migrate_stage_status
 		if self.execution_stage == "Failover":
 			return self.failover_stage_status
-		frappe.throw("Invalid execution stage for getting stage status")
+		frappe.throw(
+			"Invalid execution stage while getting stage status. Please retry the replication backup from the start."
+		)
 		return None
 
 	@stage_status.setter
@@ -266,7 +268,9 @@ class LogicalReplicationBackup(Document):
 		elif self.execution_stage == "Failover":
 			self.failover_stage_status = value
 		else:
-			frappe.throw("Invalid execution stage for setting stage status.")
+			frappe.throw(
+				"Invalid execution stage while setting stage status. Please retry the replication backup from the start."
+			)
 
 	@property
 	def site_doc(self) -> "Site":
@@ -333,14 +337,18 @@ class LogicalReplicationBackup(Document):
 		try:
 			return json.loads(self.site_replication_config or "{}")
 		except json.JSONDecodeError:
-			frappe.throw("Invalid site replication config JSON format.")
+			frappe.throw(
+				"The site replication config is not valid JSON. Please correct the JSON and try again."
+			)
 
 	@property
 	def bench_replication_config_dict(self) -> dict:  # type: ignore[return-value]
 		try:
 			return json.loads(self.bench_replication_config or "{}")
 		except json.JSONDecodeError:
-			frappe.throw("Invalid bench replication config JSON format.")
+			frappe.throw(
+				"The bench replication config is not valid JSON. Please correct the JSON and try again."
+			)
 
 	def after_insert(self):
 		self.populate_server_infos()
@@ -700,7 +708,9 @@ class LogicalReplicationBackup(Document):
 			.get("gtid_current_pos", "")
 		)
 		if not self.initial_binlog_position_of_new_primary_db:
-			frappe.throw("Failed to gather initial binlog position from new master database server")
+			frappe.throw(
+				"Could not read the initial binlog position from the new master database server. Please ensure it is running and reachable, then retry."
+			)
 		self.save()
 		return StepStatus.Success
 

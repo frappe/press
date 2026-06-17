@@ -32,7 +32,7 @@ class MariaDBVariable(Document):
 
 	def get_default_value(self):
 		if not (value := self.default_value):
-			frappe.throw("Default Value is required")
+			frappe.throw("Please set a default value for this MariaDB variable.")
 		match self.datatype:
 			case "Int":
 				return int(value)

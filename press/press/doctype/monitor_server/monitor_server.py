@@ -253,7 +253,9 @@ class MonitorServer(BaseServer):
 		ret.raise_for_status()
 		data = ret.json()
 		if data["status"] != "success":
-			frappe.throw("Error fetching sites down")
+			frappe.throw(
+				"Could not fetch the list of down sites from the monitor server. Please ensure it is reachable and try again."
+			)
 		return data["data"]["groups"][0]["rules"]
 
 	@property

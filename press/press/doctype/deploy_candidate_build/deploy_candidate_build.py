@@ -1150,7 +1150,7 @@ class DeployCandidateBuild(Document):
 		)
 
 		if not can_run_patch_build(self.group):
-			frappe.throw("Patch build cannot be run.")
+			frappe.throw("This patch build can't be run. Please trigger a regular build instead.")
 
 		previous_candidate = _get_previous_candidate(self.group)
 		self.set_status(Status.PREPARING, timestamp_field="build_start", commit=True)

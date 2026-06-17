@@ -52,7 +52,7 @@ class PrometheusAlertRule(Document):
 		self.alert_preview = yaml.dump(self.get_rule())
 		self.route_preview = yaml.dump(self.get_route())
 		if self.enabled and not self.expression:
-			frappe.throw("Enabled alert rules require an expression")
+			frappe.throw("Please add an expression for this alert rule before enabling it.")
 
 	def get_rule(self):
 		labels = json.loads(self.labels)
