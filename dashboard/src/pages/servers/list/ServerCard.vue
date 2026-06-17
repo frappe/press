@@ -63,7 +63,9 @@ const serverActions = (server) => [
 <template>
 	<section class="shadow dark:bg-surface-cards rounded" :key="data.name">
 		<div class="bordered p-4 flex gap-3 items-center">
-			<ServerIcon :provider="data.provider" class="size-6 mb-auto" />
+			<Tooltip :text="data.provider">
+				<ServerIcon :provider="data.provider" class="size-6 mb-auto" />
+			</Tooltip>
 
 			<div class="flex flex-wrap gap-1.5 items-center">
 				<Tooltip text="Go to server dashboard">
@@ -76,7 +78,7 @@ const serverActions = (server) => [
 					class="rounded-full size-1.5 ml-1"
 					:class="data.status === 'Active' ? 'bg-surface-green-3' : 'bg-surface-red-5'"
 				/>
-				<span class='text-xs'>{{ data.status }}</span>
+				<span class="text-xs">{{ data.status }}</span>
 				<span class="w-full text-ink-gray-6 text-sm">
 					{{ data.vcpu }}
 					vCPU, {{ Math.round(data.memory / 1024) }} GB RAM,
@@ -93,7 +95,10 @@ const serverActions = (server) => [
 					class="size-4 mr-1"
 				/>
 				<LucideMapPin v-else class="size-4" />
-				<span>{{ data?.cluster_title }}{{ data?.cluster_country ? `, ${data.cluster_country}` : '' }}</span>
+				<span
+					>{{ data?.cluster_title }}
+					{{ data?.cluster_country ? `, ${data.cluster_country}` : '' }}</span
+				>
 				<Dropdown :options="serverActions(data)">
 					<Button variant="ghost"><LucideEllipsis class="size-4" /></Button>
 				</Dropdown>
@@ -130,8 +135,15 @@ const serverActions = (server) => [
 			:server="data"
 		/>
 
-		<div v-if="benches.hasNextPage" class="px-6 py-2 border-t dark:border-outline-gray-2">
-			<Button variant="ghost" @click="benches.next()" :loading="benches.list?.loading">
+		<div
+			v-if="benches.hasNextPage"
+			class="px-6 py-2 border-t dark:border-outline-gray-2"
+		>
+			<Button
+				variant="ghost"
+				@click="benches.next()"
+				:loading="benches.list?.loading"
+			>
 				Load more
 			</Button>
 		</div>

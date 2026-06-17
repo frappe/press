@@ -251,22 +251,26 @@ onBeforeUnmount(() => {
 					:class="opened ? 'rotate-90' : ''"
 				/>
 
-				<Tooltip text="Go to bench dashboard">
-					<router-link
-						class="flex gap-2 items-center hover:underline w-fit"
-						:to="`/groups/${data.name}`"
-						@click.prevent="(e) => e.stopPropagation()"
-					>
-						<LucideBoxes class="size-4" />
-						{{ data.title }}
+				<div class="flex gap-2 items-center w-fit">
+					<Tooltip text="Go to bench dashboard">
+						<router-link
+							class="hover:underline flex gap-2"
+							:to="`/groups/${data.name}`"
+							@click.prevent="(e) => e.stopPropagation()"
+						>
+							<LucideBoxes class="size-4" />
+							{{ data.title }}
+						</router-link>
+					</Tooltip>
 
+          <Tooltip :text="`${data.site_count || 0} sites`">
 						<span
 							class="text-xs bg-surface-gray-2 text-ink-gray-6 rounded px-1.5 py-0.5 font-medium"
 						>
 							{{ data.site_count || 0 }}
 						</span>
-					</router-link>
-				</Tooltip>
+					</Tooltip>
+				</div>
 
 				<div
 					class="flex flex-wrap gap-x-2.5 gap-y-1.5 items-center"
