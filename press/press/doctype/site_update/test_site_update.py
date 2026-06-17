@@ -6,9 +6,11 @@ import json
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
+from press.press.doctype.agent_job.agent_job_notifications import get_details
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
@@ -19,10 +21,16 @@ from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_diffe
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-from press.press.doctype.site.site import Site
+from press.press.doctype.database_server.database_server import DatabaseServer
+from press.press.doctype.site.site import (
+	DEFAULT_MAX_STATEMENT_TIME,
+	STATEMENT_TIME_INCREMENT,
+	Site,
+)
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.site_update.site_update import (
+	MAX_RECOVERY_RETRIES,
 	SiteUpdate,
 	is_site_in_deploy_hours,
 	run_scheduled_updates,
@@ -32,10 +40,16 @@ from press.press.doctype.subscription.test_subscription import create_test_subsc
 
 
 @patch.object(SiteUpdate, "start", new=Mock())
-def create_test_site_update(site: str, destination_group: str, status: str) -> SiteUpdate:
-	return frappe.get_doc(
+def create_test_site_update(
+	site: str, destination_group: str, status: str, ignore_validate: bool = False
+) -> SiteUpdate:
+	doc = frappe.get_doc(
 		dict(doctype="Site Update", site=site, destination_group=destination_group, status=status)
-	).insert(ignore_if_duplicate=True)
+	)
+	# Tests that only need a Site Update record in a given status (e.g. a Fatal update to
+	# recover from) can skip validation, which otherwise requires a real destination bench.
+	doc.flags.ignore_validate = ignore_validate
+	return doc.insert(ignore_if_duplicate=True)
 
 
 class TestSiteUpdate(FrappeTestCase):
@@ -385,3 +399,197 @@ class TestSiteUpdate(FrappeTestCase):
 
 		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Cancelled")
 		self.assertTrue(frappe.db.exists("Press Notification", {"type": "Site Update", "team": site.team}))
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_recovery_retries_on_transient_mysql_error_and_goes_fatal_after_max_retries(self):
+		app1 = create_test_app()
+		app2 = create_test_app("app2", "App 2")
+
+		group = create_test_release_group([app1, app2])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+
+		create_test_deploy_candidate_differences(bench2.candidate)
+
+		site = create_test_site(bench=bench1.name)
+		plan = create_test_plan(site.doctype, cpu_time=8)
+		create_test_subscription(site.name, plan.name, site.team)
+		site.reload()
+
+		with fake_agent_job(
+			{
+				"Update Site Pull": {"status": "Failure"},
+				"Recover Failed Site Update": {
+					"status": "Failure",
+					"data": {"output": "MySQL server has gone away"},
+				},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()  # Update fails, recovery job 1 created
+
+			for _ in range(MAX_RECOVERY_RETRIES - 1):
+				poll_pending_jobs()  # Recovery fails with mysql error, retries
+				self.assertEqual(
+					frappe.get_value("Site Update", site_update, "status"),
+					"Recovering",
+					"Site Update should still be Recovering while retrying after MySQL error",
+				)
+
+			poll_pending_jobs()  # Final recovery fails, max retries exhausted
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update, "status"),
+			"Fatal",
+			f"Site Update should be Fatal after {MAX_RECOVERY_RETRIES} failed recovery attempts with MySQL error",
+		)
+		self.assertEqual(
+			frappe.get_value("Site", site.name, "fatal_site_update"),
+			site_update,
+			"Site's fatal_site_update should be set after exhausting recovery retries",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_restore_tables_success_activates_site_and_marks_site_update_as_recovered(self):
+		app1 = create_test_app()
+
+		group = create_test_release_group([app1])
+		bench1 = create_test_bench(group=group)
+
+		site = create_test_site(bench=bench1.name)
+		fatal_site_update = create_test_site_update(site.name, bench1.group, "Fatal", ignore_validate=True)
+
+		# Simulate state after failed update + failed recovery
+		site.status = "Broken"
+		site.status_before_update = "Active"
+		site.fatal_site_update = fatal_site_update.name
+		site.save()
+
+		with fake_agent_job("Restore Site Tables", "Success"):
+			site.restore_tables()
+			poll_pending_jobs()
+
+		site.reload()
+		self.assertEqual(
+			site.status,
+			"Active",
+			"Site should be Active after successful restore_tables",
+		)
+		self.assertIsNone(
+			site.fatal_site_update,
+			"fatal_site_update should be cleared after restore_tables success",
+		)
+		self.assertEqual(
+			frappe.get_value("Site Update", fatal_site_update.name, "status"),
+			"Recovered",
+			"Site Update should be Recovered after restore_tables success",
+		)
+
+	@patch.object(DatabaseServer, "_update_mariadb_system_variables", new=Mock())
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_increase_max_statement_time_bumps_value_by_an_hour(self):
+		group = create_test_release_group([create_test_app()])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name)
+
+		old_timeout, new_timeout = site.increase_max_statement_time()
+
+		self.assertEqual(old_timeout, DEFAULT_MAX_STATEMENT_TIME)
+		self.assertEqual(new_timeout, DEFAULT_MAX_STATEMENT_TIME + STATEMENT_TIME_INCREMENT)
+
+		database_server = frappe.get_doc("Database Server", site.database_server_name)
+		row = find(
+			database_server.mariadb_system_variables,
+			lambda x: x.mariadb_variable == "max_statement_time",
+		)
+		self.assertIsNotNone(row, "max_statement_time should be set on the database server")
+		self.assertEqual(row.value_str, str(new_timeout))
+
+	@patch.object(DatabaseServer, "_update_mariadb_system_variables", new=Mock())
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_restore_tables_retries_and_bumps_max_statement_time_on_timeout(self):
+		group = create_test_release_group([create_test_app()])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name)
+		fatal_site_update = create_test_site_update(site.name, bench.group, "Fatal", ignore_validate=True)
+
+		# Simulate state after a failed update whose recovery left the site Broken
+		site.status = "Broken"
+		site.status_before_update = "Active"
+		site.fatal_site_update = fatal_site_update.name
+		site.save()
+
+		with fake_agent_job(
+			"Restore Site Tables",
+			"Failure",
+			data={"output": "max_statement_time exceeded"},
+		):
+			site.restore_tables()  # first attempt
+			poll_pending_jobs()  # fails with timeout -> bumps and retries
+
+		# max_statement_time was bumped by an hour on the database server
+		database_server = frappe.get_doc("Database Server", site.database_server_name)
+		row = find(
+			database_server.mariadb_system_variables,
+			lambda x: x.mariadb_variable == "max_statement_time",
+		)
+		self.assertIsNotNone(row, "max_statement_time should be set after a statement timeout")
+		self.assertEqual(row.value_str, str(DEFAULT_MAX_STATEMENT_TIME + STATEMENT_TIME_INCREMENT))
+
+		# a fresh Restore Site Tables job was triggered for the retry
+		self.assertEqual(
+			frappe.db.count("Agent Job", {"job_type": "Restore Site Tables", "site": site.name}),
+			2,
+			"A new Restore Site Tables job should be triggered after the timeout",
+		)
+
+		# the retry is recorded as a comment on the fatal Site Update
+		self.assertTrue(
+			frappe.db.exists(
+				"Comment",
+				{
+					"reference_doctype": "Site Update",
+					"reference_name": fatal_site_update.name,
+					"content": ("like", "%max_statement_time%"),
+				},
+			),
+			"The retry should be recorded as a comment on the fatal Site Update",
+		)
+
+		# the site update stays Fatal while the retry is in flight
+		self.assertEqual(
+			frappe.get_value("Site Update", fatal_site_update.name, "status"),
+			"Fatal",
+			"Site Update should remain Fatal while restore tables is retried",
+		)
+
+	def test_skipped_backups_update_failure_notification_directs_user_to_ssh(self):
+		group = create_test_release_group([create_test_app()])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name)
+		site_update = create_test_site_update(site.name, bench.group, "Fatal", ignore_validate=True)
+		frappe.db.set_value(
+			"Site Update",
+			site_update.name,
+			{"skipped_backups": 1, "update_job": "test-update-job"},
+		)
+
+		job = frappe._dict(
+			name="test-update-job",
+			job_type="Update Site Migrate",
+			site=site.name,
+			traceback="",
+			output="some migration error",
+		)
+
+		details = get_details(job, "", "")
+
+		self.assertTrue(
+			details["is_actionable"],
+			"A skipped-backups update failure should be actionable",
+		)
+		self.assertEqual(
+			details["title"],
+			"Site update failed and cannot be recovered automatically",
+		)
+		self.assertIn("SSH", details["message"])
