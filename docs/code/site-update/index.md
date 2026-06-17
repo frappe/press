@@ -66,10 +66,9 @@ handled by `process_restore_tables_job_update`:
 
 - **On success**, the site is reactivated, `fatal_site_update` is cleared, and
   the Site Update is marked `Recovered`.
-- **On failure because a query exceeded `max_statement_time`**
-  (`restore_tables_failed_due_to_statement_timeout`), Press retries the restore,
-  up to `MAX_STATEMENT_TIMEOUT_RETRIES` (3) times. Each retry is recorded as a
-  comment on the fatal Site Update.
+- **On failure**, the site stays `Broken`. Statement timeouts are avoided
+  proactively by the one-hour `max_statement_time` bump done before the recovery
+  migrate (see above), so there is no per-attempt retry loop here.
 
 ## Skipped backups
 
@@ -107,10 +106,10 @@ Update fails
                                           │
                           ┌───────────────┴───────────────┐
                           │                               │
-                  statement timeout,                  success
-                  < 3 attempts                            │
-                          │                               ▼
-                          └─ retry                     Recovered
+                      failure                         success
+                          │                               │
+                          ▼                               ▼
+                       Broken                         Recovered
 ```
 
 ## Key constants
@@ -118,6 +117,6 @@ Update fails
 | Constant | Value | Meaning |
 |----------|-------|---------|
 | `MAX_RECOVERY_RETRIES` | 3 | Recovery retries allowed on transient DB errors. |
-| `MAX_STATEMENT_TIMEOUT_RETRIES` | 3 | Restore-tables retries allowed on `max_statement_time` timeouts. |
-| `STATEMENT_TIME_INCREMENT` | 3600 | Seconds (one hour) `max_statement_time` is bumped by each time. |
+| `STATEMENT_TIME_INCREMENT` | 3600 | Seconds (one hour) `max_statement_time` is bumped by before a recovery migrate on large sites. |
+| `LARGE_DATABASE_SIZE` | 1024 | DB size (MB) above which the `max_statement_time` bump is applied. |
 | `DEFAULT_MAX_STATEMENT_TIME` | 3600 | Assumed `max_statement_time` when it isn't set on the database server. |

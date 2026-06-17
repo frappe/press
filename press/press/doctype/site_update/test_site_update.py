@@ -513,55 +513,6 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertIsNotNone(row, "max_statement_time should be set on the database server")
 		self.assertEqual(row.value_str, str(new_timeout))
 
-	@patch.object(DatabaseServer, "_update_mariadb_system_variables", new=Mock())
-	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_restore_tables_retries_on_statement_timeout(self):
-		group = create_test_release_group([create_test_app()])
-		bench = create_test_bench(group=group)
-		site = create_test_site(bench=bench.name)
-		fatal_site_update = create_test_site_update(site.name, bench.group, "Fatal", ignore_validate=True)
-
-		# Simulate state after a failed update whose recovery left the site Broken
-		site.status = "Broken"
-		site.status_before_update = "Active"
-		site.fatal_site_update = fatal_site_update.name
-		site.save()
-
-		with fake_agent_job(
-			"Restore Site Tables",
-			"Failure",
-			data={"output": "max_statement_time exceeded"},
-		):
-			site.restore_tables()  # first attempt
-			poll_pending_jobs()  # fails with timeout -> retries
-
-		# a fresh Restore Site Tables job was triggered for the retry
-		self.assertEqual(
-			frappe.db.count("Agent Job", {"job_type": "Restore Site Tables", "site": site.name}),
-			2,
-			"A new Restore Site Tables job should be triggered after the timeout",
-		)
-
-		# the retry is recorded as a comment on the fatal Site Update
-		self.assertTrue(
-			frappe.db.exists(
-				"Comment",
-				{
-					"reference_doctype": "Site Update",
-					"reference_name": fatal_site_update.name,
-					"content": ("like", "%max_statement_time%"),
-				},
-			),
-			"The retry should be recorded as a comment on the fatal Site Update",
-		)
-
-		# the site update stays Fatal while the retry is in flight
-		self.assertEqual(
-			frappe.get_value("Site Update", fatal_site_update.name, "status"),
-			"Fatal",
-			"Site Update should remain Fatal while restore tables is retried",
-		)
-
 	def test_skipped_backups_update_failure_notification_directs_user_to_ssh(self):
 		group = create_test_release_group([create_test_app()])
 		bench = create_test_bench(group=group)

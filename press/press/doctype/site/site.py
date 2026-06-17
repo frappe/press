@@ -1204,45 +1204,6 @@ class Site(Document, TagHelpers):
 		)
 		return current_timeout, new_timeout
 
-	def retry_restore_tables_after_statement_timeout(self, job) -> bool:
-		"""Recover from a Restore Site Tables job that failed because a query exceeded
-		the database server's ``max_statement_time``.
-
-		Restoring tables runs heavy queries that can exceed the configured statement
-		timeout on large sites. When that happens, retry the restore up to
-		``MAX_STATEMENT_TIMEOUT_RETRIES`` times. Each additional attempt is recorded as
-		a comment on the fatal Site Update being recovered.
-
-		Returns True if a retry was triggered.
-		"""
-		if not self.fatal_site_update:
-			return False
-		if not restore_tables_failed_due_to_statement_timeout(job):
-			return False
-
-		fatal_update_creation = frappe.db.get_value("Site Update", self.fatal_site_update, "creation")
-		failed_attempts = frappe.db.count(
-			"Agent Job",
-			{
-				"job_type": "Restore Site Tables",
-				"site": self.name,
-				"status": "Failure",
-				"creation": (">", fatal_update_creation),
-			},
-		)
-		if failed_attempts > MAX_STATEMENT_TIMEOUT_RETRIES:
-			return False
-
-		frappe.get_doc("Site Update", self.fatal_site_update).add_comment(
-			text=(
-				f"Restore tables attempt {failed_attempts} failed because a query exceeded "
-				f"<code>max_statement_time</code>. Retrying restore tables."
-			)
-		)
-
-		self.restore_tables()
-		return True
-
 	@dashboard_whitelist()
 	def clear_site_cache(self):
 		agent = Agent(self.server)
@@ -5045,25 +5006,11 @@ def update_records_for_rename(job):
 	frappe.rename_doc("Site Domain", job.site, new_name)
 
 
-# MariaDB kills queries that run longer than max_statement_time with this message.
-STATEMENT_TIMEOUT_ERROR = "max_statement_time exceeded"
 # Fallback when max_statement_time isn't explicitly set on the database server.
 # Ref: press/fixtures/mariadb_variable.json
 DEFAULT_MAX_STATEMENT_TIME = 3600
 # How much to bump max_statement_time by (in seconds) each time — one hour.
 STATEMENT_TIME_INCREMENT = 3600
-MAX_STATEMENT_TIMEOUT_RETRIES = 3
-
-
-def restore_tables_failed_due_to_statement_timeout(job) -> bool:
-	if STATEMENT_TIMEOUT_ERROR in (job.traceback or "") or STATEMENT_TIMEOUT_ERROR in (job.output or ""):
-		return True
-	return bool(
-		frappe.db.exists(
-			"Agent Job Step",
-			{"agent_job": job.name, "output": ("like", f"%{STATEMENT_TIMEOUT_ERROR}%")},
-		)
-	)
 
 
 def process_restore_tables_job_update(job):
@@ -5088,10 +5035,6 @@ def process_restore_tables_job_update(job):
 
 				update_site_update_status(fatal_update, "Recovered")
 		else:
-			if updated_status == "Broken" and frappe.get_doc(
-				"Site", job.site
-			).retry_restore_tables_after_statement_timeout(job):
-				return
 			frappe.db.set_value("Site", job.site, "status", updated_status)
 			frappe.db.set_value("Site", job.site, "database_name", None)
 			create_site_status_update_webhook_event(job.site)
