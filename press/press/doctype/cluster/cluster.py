@@ -417,10 +417,11 @@ class Cluster(Document):
 				if route.gateway == nat_ip:
 					return
 
-				client.networks.delete_route(
+				action = client.networks.delete_route(
 					network=network,
 					route=route,
 				)
+				action.wait_until_finished()
 
 				break
 
