@@ -153,7 +153,7 @@ function onClickSave() {
 				<div class="flex w-full">
 					<a
 						class="flex-grow"
-						href="https://docs.frappe.io/cloud/servers/plans-pricing/change-product-warranty-for-dedicated-sites"
+						href="https://docs.frappe.io/cloud/getting-started/plans-pricing/change-product-warranty-for-dedicated-sites"
 						target="_blank"
 					>
 						<Button variant="ghost">

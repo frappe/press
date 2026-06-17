@@ -20,6 +20,7 @@ from press.api.github import app, get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
 )
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import VersioningError, parse_frappe_version
 from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
@@ -31,6 +32,9 @@ from press.utils import get_current_team, get_last_doc
 if TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
 	from press.press.doctype.site.site import Site
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Marketplace App")
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -345,11 +349,25 @@ class MarketplaceApp(WebsiteGenerator):
 				["App Source", "repository_owner", "=", repo_owner],
 			],
 		)
-		source_doc: "AppSource" = (
-			frappe.get_doc("App Source", existing_source)
-			if existing_source
-			else frappe.get_doc("App Source", self.sources[0].source)
+		# When the branch isn't an existing source yet, copy connection details from any source the
+		# team already has for the same repository — the same sources that populate the dashboard's
+		# branch dropdown. We can't rely on self.sources, which may be empty (e.g. all versions of a
+		# draft app were removed) even though App Source records still exist.
+		template_source = existing_source or frappe.db.exists(
+			"App Source",
+			{
+				"app": self.app,
+				"team": self.team,
+				"repository": repo_name,
+				"repository_owner": repo_owner,
+				"enabled": 1,
+			},
 		)
+		if not template_source:
+			frappe.throw(
+				_("No app source found for {0}/{1} to add a version from.").format(repo_owner, repo_name)
+			)
+		source_doc: "AppSource" = frappe.get_doc("App Source", template_source)
 		validate_frappe_version_for_branch(
 			app_name=self.app,
 			owner=source_doc.repository_owner,
@@ -377,9 +395,7 @@ class MarketplaceApp(WebsiteGenerator):
 					"app": self.app,
 					"team": self.team,
 					"branch": branch,
-					"repository_url": frappe.db.get_value(
-						"App Source", {"name": self.sources[0].source}, "repository_url"
-					),
+					"repository_url": source_doc.repository_url,
 					"public": 1,
 				}
 			)

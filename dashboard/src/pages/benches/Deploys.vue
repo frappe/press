@@ -11,8 +11,9 @@ import { date, duration } from '@/utils/format'
 import { defineAsyncComponent, h, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { confirmDialog, renderDialog } from '@/utils/components'
+import { useRoute } from 'vue-router'
 import { getToastErrorMessage } from '@/utils/toast'
-import { pollReleasePipelineValidationStatus } from '@/objects/group'
+import { pollReleasePipelineValidationStatus } from '@/utils/pollReleasePipeline';
 import Scrollbar from '@/components/common/Scrollbar.vue'
 
 interface Props {
@@ -31,13 +32,14 @@ const deployBuilds = createListResource({
 	fields: ['name', 'status', 'creation', 'build_duration', 'owner'],
 	filters: {
 		group: props.name,
+		creation: ['<=', '2026-04-21 23:49:24'],
 	},
 	orderBy: 'creation desc',
 })
 
 const pipelines = createListResource({
 	doctype: 'Release Pipeline',
-	fields: ['name', 'status', 'creation', 'team'],
+	fields: ['name', 'status', 'creation', 'team.user as team'],
 	filters: {
 		release_group: props.name,
 	},
@@ -63,7 +65,8 @@ const statusOptions = [
 	'Failure',
 ]
 
-const mode = ref('newer')
+const route = useRoute()
+const mode = ref(route.query.pipeline === 'false' ? 'older' : 'newer')
 
 watch(
 	mode,

@@ -75,7 +75,7 @@ def create_test_server(
 			"plan": plan,
 			"public": public,
 			"use_for_new_sites": 1 if public else 0,
-			"user_new_benches": 1 if public else 0,
+			"use_for_new_benches": 1 if public else 0,
 			"virtual_machine": create_test_virtual_machine(
 				platform=plan_doc.platform if plan_doc else "x86_64",
 				disk_size=plan_doc.disk if plan_doc else 25,
@@ -383,3 +383,54 @@ class TestServer(FrappeTestCase):
 		)
 		self.assertEqual(len(incidents), 1)
 		self.assertEqual(incidents[0].server, self.high_mem_server.name)
+
+	def test_disable_auto_storage_on_database_server_clears_db_flag_not_app_flag(self):
+		database_server = create_test_database_server()
+		frappe.db.set_value("Database Server", database_server.name, "auto_increase_storage", True)
+		server = create_test_server(database_server=database_server.name, auto_increase_storage=True)
+
+		# Dashboard always dispatches on the app server, passing the real target as `server`.
+		server.configure_auto_add_storage(server=database_server.name, enabled=False)
+
+		self.assertFalse(
+			frappe.db.get_value("Database Server", database_server.name, "auto_increase_storage")
+		)
+		self.assertTrue(frappe.db.get_value("Server", server.name, "auto_increase_storage"))
+
+	def test_disable_auto_storage_on_app_server_clears_app_flag(self):
+		server = create_test_server(auto_increase_storage=True)
+
+		server.configure_auto_add_storage(server=server.name, enabled=False)
+
+		self.assertFalse(frappe.db.get_value("Server", server.name, "auto_increase_storage"))
+
+	def test_configure_auto_storage_rejects_another_teams_database_server(self):
+		"""The dashboard API only team-checks the app server. A Press User must not be able to
+		flip auto_increase_storage on another team's Database Server by passing its name as the
+		`server` argument — the disable path writes via set_value, which skips permission hooks."""
+		from frappe.tests.ui_test_helpers import create_test_user
+
+		attacker_email = frappe.mock("email")
+		create_test_user(attacker_email)
+		attacker = frappe.get_doc("User", {"email": attacker_email})
+		attacker.remove_roles(*frappe.get_all("Role", pluck="name"))
+		attacker.add_roles("Press User")
+		attacker_team = create_test_team(attacker_email)
+
+		own_database_server = create_test_database_server()
+		frappe.db.set_value("Database Server", own_database_server.name, "team", attacker_team.name)
+		server = create_test_server(database_server=own_database_server.name, team=attacker_team.name)
+
+		victim_database_server = create_test_database_server()
+		frappe.db.set_value(
+			"Database Server",
+			victim_database_server.name,
+			{"team": create_test_team().name, "auto_increase_storage": True},
+		)
+
+		with self.set_user(attacker_team.user), self.assertRaises(frappe.PermissionError):
+			server.configure_auto_add_storage(server=victim_database_server.name, enabled=False)
+
+		self.assertTrue(
+			frappe.db.get_value("Database Server", victim_database_server.name, "auto_increase_storage")
+		)

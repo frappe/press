@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_url, random_string, validate_email_address
 
@@ -52,6 +53,7 @@ class AccountRequest(Document):
 		otp_generated_at: DF.Datetime | None
 		phone_number: DF.Data | None
 		plan: DF.Link | None
+		press_role: DF.Link | None
 		press_roles: DF.TableMultiSelect[AccountRequestPressRole]
 		product_trial: DF.Link | None
 		referral_source: DF.Data | None
@@ -85,7 +87,7 @@ class AccountRequest(Document):
 
 		if not self.request_key:
 			self.request_key = random_string(32)
-			self.request_key_expiration_time = frappe.utils.add_to_date(minutes=10)
+			self.request_key_expiration_time = frappe.utils.add_to_date(hours=24)
 
 		if not self.otp:
 			self.otp = generate_otp()
@@ -121,6 +123,7 @@ class AccountRequest(Document):
 
 	def validate(self):
 		self.disallow_disposable_emails()
+		self.validate_press_role()
 		validate_email_address(self.email, throw=True)
 
 	@settings.enabled("disallow_disposable_emails")
@@ -136,6 +139,18 @@ class AccountRequest(Document):
 		if disposable_emails.is_disposable(self.email):
 			frappe.throw(
 				"Temporary email providers are not allowed.",
+				frappe.ValidationError,
+			)
+
+	def validate_press_role(self):
+		if not self.press_role:
+			return
+		role_team = frappe.get_value("Press Role", self.press_role, "team")
+		if role_team and role_team != self.team:
+			frappe.throw(
+				_('Press Role "{0}" does not belong to the same team as the account request.').format(
+					self.press_role
+				),
 				frappe.ValidationError,
 			)
 
@@ -181,7 +196,7 @@ class AccountRequest(Document):
 	def reset_otp(self):
 		if not self.request_key:
 			self.request_key = random_string(32)
-			self.request_key_expiration_time = frappe.utils.add_to_date(minutes=10)
+			self.request_key_expiration_time = frappe.utils.add_to_date(hours=24)
 		self.otp = generate_otp()
 		if frappe.conf.developer_mode and frappe.local.dev_server:
 			self.otp = 111111
@@ -343,13 +358,27 @@ class AccountRequest(Document):
 	def is_using_new_saas_flow(self):
 		return bool(self.product_trial)
 
+	@property
+	def invite_role_label(self) -> str:
+		"""Resolve the role label from press_role field.
+
+		press_role may contain either a Press Role document name (for custom
+		roles) or a predefined role label stored directly (for Admin, Developer,
+		Member, Viewer). This property resolves both cases to a label suitable
+		for the Team Member's role field.
+		"""
+		if not self.press_role:
+			return "Member"
+		title = frappe.get_value("Press Role", self.press_role, "title")
+		return title or self.press_role
+
 	def is_saas_signup(self):
 		return bool(self.saas_app or self.saas or self.erpnext or self.product_trial)
 
 
 def expire_request_key():
 	"""
-	Expire the request key requested 10 minutes ago.
+	Expire account request keys that have passed their expiration time.
 	"""
 	frappe.db.set_value(
 		"Account Request",

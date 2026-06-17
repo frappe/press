@@ -730,8 +730,10 @@ def update_with_app_not_fetchable(
 		in <i>Help</i>.</p>
 		"""
 	else:
-		message = """
-		<p>App could not be fetched from GitHub.</p>
+		app_name = exc.args[1] if len(exc.args) >= 2 else ""
+		app_str = f"<b>{app_name}</b> " if app_name else "App "
+		message = f"""
+		<p>{app_str}could not be fetched from GitHub.</p>
 
 		<p>This may have been due to an invalid installation id or due
 		to an invalid repository URL.</p>
@@ -1164,11 +1166,22 @@ def check_if_app_updated(old_dcb: "DeployCandidateBuild", new_dc: "DeployCandida
 	if old_hash != new_hash:
 		return
 
+	# The app itself wasn't updated, but the build may still succeed if the
+	# user changed the bench dependencies. Don't block the retry in that case.
+	if dependencies_changed(old_dcb.candidate, new_dc):
+		return
+
 	title = new_app.title or old_app.title
 	frappe.throw(
 		f"App <b>{title}</b> has not been updated since previous failing build. Release hash is <b>{new_hash[:10]}</b>.",
 		BuildValidationError,
 	)
+
+
+def dependencies_changed(old_dc: "DeployCandidate", new_dc: "DeployCandidate") -> bool:
+	old = {d.dependency: d.version for d in old_dc.dependencies}
+	new = {d.dependency: d.version for d in new_dc.dependencies}
+	return old != new
 
 
 def get_dc_app(dc: "DeployCandidate", app_name: str) -> "DeployCandidateApp | None":

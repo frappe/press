@@ -9,16 +9,16 @@ frappe.ui.form.on('Site', {
 					server: frm.doc.server,
 					status: 'Active',
 				},
-			};
-		});
+			}
+		})
 		frm.set_query('host_name', () => {
 			return {
 				filters: {
 					site: frm.doc.name,
 					status: 'Active',
 				},
-			};
-		});
+			}
+		})
 	},
 	refresh: async function (frm) {
 		frm.dashboard.set_headline_alert(
@@ -29,16 +29,16 @@ frappe.ui.form.on('Site', {
 					<div class="col-sm-4">Disk Usage: ${frm.doc.current_disk_usage}%</div>
 				</div>
 			</div>`,
-		);
-		frm.add_web_link(`https://${frm.doc.name}/apps`, __('Visit Site'));
-		frm.add_web_link(`/dashboard/sites/${frm.doc.name}`, __('Visit Dashboard'));
+		)
+		frm.add_web_link(`https://${frm.doc.name}/apps`, __('Visit Site'))
+		frm.add_web_link(`/dashboard/sites/${frm.doc.name}`, __('Visit Dashboard'))
 
-		let site = frm.get_doc();
+		let site = frm.get_doc()
 		let account = await frappe
 			.call({
 				method: 'press.api.account.get',
 			})
-			.then((resp) => resp.message);
+			.then((resp) => resp.message)
 
 		if (site.status == 'Active') {
 			frm.add_custom_button(
@@ -46,7 +46,7 @@ frappe.ui.form.on('Site', {
 				() => {
 					if (account) {
 						if (site.team === account.team.name) {
-							login_as_admin(site.name);
+							login_as_admin(site.name)
 						} else {
 							new frappe.ui.Dialog({
 								title: 'Login as Adminstrator',
@@ -60,26 +60,26 @@ frappe.ui.form.on('Site', {
 								primary_action_label: 'Login',
 								primary_action(values) {
 									if (values) {
-										let reason = values.reason;
-										console.log(reason);
-										login_as_admin(site.name, reason);
+										let reason = values.reason
+										console.log(reason)
+										login_as_admin(site.name, reason)
 									} else {
-										frappe.throw(__('Reason field should not be empty'));
+										frappe.throw(__('Reason field should not be empty'))
 									}
-									this.hide();
+									this.hide()
 								},
-							}).show();
+							}).show()
 						}
 					} else {
 						frappe.throw(
 							__(
 								"Couldn't retrieve account. Check Error Log for more information",
 							),
-						);
+						)
 					}
 				},
 				__('Actions'),
-			);
+			)
 		}
 
 		if (!site.is_monitoring_disabled) {
@@ -98,24 +98,24 @@ frappe.ui.form.on('Site', {
 								.call('disable_monitoring', {
 									reason,
 								})
-								.then((r) => frm.refresh());
+								.then((r) => frm.refresh())
 						},
 						__('Provide Reason'),
-					);
+					)
 				},
 				__('Actions'),
-			);
+			)
 		} else {
 			frm.add_custom_button(
 				__('Enable Monitoring'),
 				() => {
-					frappe.msgprint('Go to Dashboard to re-enable monitoring.');
+					frappe.msgprint('Go to Dashboard to re-enable monitoring.')
 				},
 				__('Actions'),
-			);
+			)
 		}
 
-		[
+		;[
 			[__('Backup'), 'backup'],
 			[__('Physical Backup'), 'physical_backup'],
 			[__('Sync Info'), 'sync_info'],
@@ -123,12 +123,12 @@ frappe.ui.form.on('Site', {
 			frm.add_custom_button(
 				label,
 				() => {
-					frm.call(method).then((r) => frm.refresh());
+					frm.call(method).then((r) => frm.refresh())
 				},
 				__('Actions'),
-			);
-		});
-		[
+			)
+		})
+		;[
 			[__('Sync Apps'), 'sync_apps'],
 			[__('Migrate'), 'migrate'],
 			[__('Update'), 'schedule_update'],
@@ -168,32 +168,32 @@ frappe.ui.form.on('Site', {
 						frappe.confirm(
 							`Are you sure you want to ${label.toLowerCase()} this site?`,
 							() => frm.call(method).then((r) => frm.refresh()),
-						);
+						)
 					},
 					__('Actions'),
-				);
+				)
 			}
-		});
+		})
 
 		frm.add_custom_button(
 			__('Update Skip Failing Patches'),
 			() => {
-				frm.call('schedule_update', { skip_failing_patches: true });
+				frm.call('schedule_update', { skip_failing_patches: true })
 			},
 			__('Actions'),
-		);
+		)
 
 		frm.add_custom_button(
 			__('Force Archive'),
 			() => {
 				frappe.confirm(`Are you sure you want to force drop this site?`, () =>
 					frm.call('archive', { force: true }).then((r) => frm.refresh()),
-				);
+				)
 			},
 			__('Actions'),
-		);
+		)
 
-		[
+		;[
 			[__('Suspend'), 'suspend'],
 			[__('Unsuspend'), 'unsuspend'],
 		].forEach(([label, method]) => {
@@ -212,15 +212,31 @@ frappe.ui.form.on('Site', {
 								.call(method, {
 									reason,
 								})
-								.then((r) => frm.refresh());
+								.then((r) => frm.refresh())
 						},
 						__('Provide Reason'),
-					);
+					)
 				},
 				__('Actions'),
-			);
-		});
-		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
+			)
+		})
+		frm.add_custom_button(
+			__('Investigate'),
+			() => {
+				frappe
+					.call({
+						method:
+							'press.incident_management.doctype.support_agent_investigation.support_agent_investigation.create_investigation',
+						args: { site: frm.doc.name },
+					})
+					.then((r) => {
+						frappe.set_route('Form', 'Support Agent Investigation', r.message)
+					})
+			},
+			__('Actions'),
+		)
+
+		frm.toggle_enable(['host_name'], frm.doc.status === 'Active')
 
 		frm.add_custom_button(
 			__('Replicate Site'),
@@ -238,17 +254,17 @@ frappe.ui.form.on('Site', {
 					primary_action({ subdomain }) {
 						frappe.set_route('List', 'Site Replication', {
 							site: frm.doc.name,
-						});
+						})
 						frappe.new_doc('Site Replication', {
 							site: frm.doc.name,
 							subdomain: subdomain,
-						});
+						})
 					},
-				});
-				dialog.show();
+				})
+				dialog.show()
 			},
 			__('Actions'),
-		);
+		)
 
 		frm.add_custom_button(
 			__('Update DNS Record'),
@@ -270,14 +286,14 @@ frappe.ui.form.on('Site', {
 								value: args.value,
 							})
 							.then(() => {
-								dialog.hide();
-							});
+								dialog.hide()
+							})
 					},
-				});
-				dialog.show();
+				})
+				dialog.show()
 			},
 			__('Dangerous Actions'),
-		);
+		)
 
 		frm.add_custom_button(
 			__('Move to Group'),
@@ -296,7 +312,7 @@ frappe.ui.form.on('Site', {
 										['server', '=', frm.doc.server],
 										['name', '!=', frm.doc.group],
 									],
-								};
+								}
 							},
 						},
 						{
@@ -305,7 +321,7 @@ frappe.ui.form.on('Site', {
 							fieldname: 'skip_failing_patches',
 						},
 					],
-				});
+				})
 
 				dialog.set_primary_action(__('Move Site'), (args) => {
 					frm
@@ -314,15 +330,15 @@ frappe.ui.form.on('Site', {
 							skip_failing_patches: args.skip_failing_patches,
 						})
 						.then((r) => {
-							dialog.hide();
-							frm.refresh();
-						});
-				});
+							dialog.hide()
+							frm.refresh()
+						})
+				})
 
-				dialog.show();
+				dialog.show()
 			},
 			__('Actions'),
-		);
+		)
 
 		frm.add_custom_button(
 			__('Forcefully Remove Site'),
@@ -342,7 +358,7 @@ frappe.ui.form.on('Site', {
 										['name', '!=', frm.doc.bench],
 										['status', '!=', 'Archived'],
 									],
-								};
+								}
 							},
 						},
 						{
@@ -352,43 +368,43 @@ frappe.ui.form.on('Site', {
 							reqd: 1,
 						},
 					],
-				});
+				})
 
 				dialog.set_primary_action(__('Forcefully Remove Site'), (args) => {
 					if (!args.confirmation) {
-						frappe.throw(__("Please confirm that you know what you're doing"));
+						frappe.throw(__("Please confirm that you know what you're doing"))
 					}
 					frm
 						.call('forcefully_remove_site', {
 							bench: args.bench,
 						})
 						.then((r) => {
-							dialog.hide();
-							frm.refresh();
+							dialog.hide()
+							frm.refresh()
 							if (r.message.job) {
 								message = `
 Removing site from **${r.message.bench}**.
 
-Track progress [here](https://${r.message.server}/agent/jobs/${r.message.job}).`;
-								frappe.msgprint(frappe.markdown(message), 'Removing Site');
+Track progress [here](https://${r.message.server}/agent/jobs/${r.message.job}).`
+								frappe.msgprint(frappe.markdown(message), 'Removing Site')
 							} else {
 								message = `
 Couldn't remove site from **${r.message.bench}**.
 \`\`\`
 ${r.message.error}
-\`\`\``;
+\`\`\``
 								frappe.msgprint(
 									frappe.markdown(message),
 									'Failed to Remove Site',
-								);
+								)
 							}
-						});
-				});
+						})
+				})
 
-				dialog.show();
+				dialog.show()
 			},
 			__('Dangerous Actions'),
-		);
+		)
 
 		frm.add_custom_button(
 			__('Forcefully Move Site'),
@@ -408,7 +424,7 @@ ${r.message.error}
 										['name', '!=', frm.doc.bench],
 										['status', '!=', 'Archived'],
 									],
-								};
+								}
 							},
 						},
 						{
@@ -423,11 +439,11 @@ ${r.message.error}
 							fieldname: 'deactivate',
 						},
 					],
-				});
+				})
 
 				dialog.set_primary_action(__('Forcefully Move Site'), (args) => {
 					if (!args.confirmation) {
-						frappe.throw(__("Please confirm that you know what you're doing"));
+						frappe.throw(__("Please confirm that you know what you're doing"))
 					}
 					frm
 						.call('move_to_bench', {
@@ -435,17 +451,17 @@ ${r.message.error}
 							deactivate: args.deactivate,
 						})
 						.then(() => {
-							dialog.hide();
-							frm.refresh();
-						});
-				});
+							dialog.hide()
+							frm.refresh()
+						})
+				})
 
-				dialog.show();
+				dialog.show()
 			},
 			__('Dangerous Actions'),
-		);
+		)
 
-		[
+		;[
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],
 			[__('Restore Tables'), 'restore_tables'],
@@ -458,13 +474,13 @@ ${r.message.error}
 					frappe.confirm(
 						`Are you sure you want to perform the action on this site ?`,
 						() => frm.call(method).then((r) => frm.refresh()),
-					);
+					)
 				},
 				__('Dangerous Actions'),
-			);
-		});
+			)
+		})
 	},
-});
+})
 
 function login_as_admin(site_name, reason = null) {
 	frappe
@@ -477,17 +493,17 @@ function login_as_admin(site_name, reason = null) {
 		})
 		.then(
 			(res) => {
-				console.log(site_name, res.message.sid);
+				console.log(site_name, res.message.sid)
 				if (res) {
 					window.open(
 						`https://${site_name}/app?sid=${res.message.sid}`,
 						'_blank',
-					);
+					)
 				}
 			},
 			(error) => {
-				console.log(error);
-				frappe.throw(__(`An error occurred!!`));
+				console.log(error)
+				frappe.throw(__(`An error occurred!!`))
 			},
-		);
+		)
 }

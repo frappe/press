@@ -1,0 +1,291 @@
+{
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "format:PONB-{team}-{#####}",
+	"creation": "2026-05-26 00:00:00",
+	"default_view": "List",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"team",
+		"status",
+		"submitted_on",
+		"reviewed_on",
+		"reviewed_by",
+		"reviewer_comments",
+		"registration_section",
+		"company_name",
+		"registered_country",
+		"company_email",
+		"contact",
+		"company_profile_section",
+		"address",
+		"headquarter_city",
+		"column_break_profile",
+		"annual_revenue",
+		"revenue_currency",
+		"employee_range",
+		"certified_employees_range",
+		"customers_section",
+		"verticals_served",
+		"customer_count_range",
+		"erpnext_customer_count_range",
+		"existing_partnerships_section",
+		"existing_partnerships",
+		"erp_implementations_range",
+		"incorporation_certificate",
+		"agreement_section",
+		"agreed_to_due_diligence",
+		"agreed_to_partnership_agreement",
+		"amended_from"
+	],
+	"fields": [
+		{
+			"fieldname": "team",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Team",
+			"options": "Team",
+			"reqd": 1
+		},
+		{
+			"allow_on_submit": 1,
+			"default": "Draft",
+			"fieldname": "status",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Status",
+			"options": "Draft\nPending Review\nApproved\nRejected\nCancelled"
+		},
+		{
+			"fieldname": "registration_section",
+			"fieldtype": "Section Break",
+			"label": "Registration"
+		},
+		{
+			"fieldname": "company_name",
+			"fieldtype": "Data",
+			"in_global_search": 1,
+			"in_list_view": 1,
+			"label": "Company Name",
+			"reqd": 1
+		},
+		{
+			"fieldname": "registered_country",
+			"fieldtype": "Link",
+			"label": "Registered Country",
+			"options": "Country",
+			"reqd": 1
+		},
+		{
+			"fieldname": "company_email",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Company Email",
+			"options": "Email",
+			"reqd": 1
+		},
+		{
+			"fieldname": "contact",
+			"fieldtype": "Phone",
+			"label": "Contact",
+			"reqd": 1
+		},
+		{
+			"fieldname": "company_profile_section",
+			"fieldtype": "Section Break",
+			"label": "Company Profile"
+		},
+		{
+			"fieldname": "address",
+			"fieldtype": "Small Text",
+			"label": "Address"
+		},
+		{
+			"fieldname": "headquarter_city",
+			"fieldtype": "Data",
+			"label": "Headquarter City"
+		},
+		{
+			"fieldname": "column_break_profile",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "annual_revenue",
+			"fieldtype": "Currency",
+			"label": "Annual Revenue",
+			"options": "revenue_currency"
+		},
+		{
+			"fieldname": "revenue_currency",
+			"fieldtype": "Link",
+			"label": "Revenue Currency",
+			"options": "Currency"
+		},
+		{
+			"fieldname": "employee_range",
+			"fieldtype": "Data",
+			"label": "No. of Employees"
+		},
+		{
+			"fieldname": "certified_employees_range",
+			"fieldtype": "Data",
+			"label": "No. of Certified Employees"
+		},
+		{
+			"fieldname": "customers_section",
+			"fieldtype": "Section Break",
+			"label": "Customers"
+		},
+		{
+			"fieldname": "verticals_served",
+			"fieldtype": "Small Text",
+			"label": "Verticals Served"
+		},
+		{
+			"fieldname": "customer_count_range",
+			"fieldtype": "Data",
+			"label": "No. of Customers"
+		},
+		{
+			"fieldname": "erpnext_customer_count_range",
+			"fieldtype": "Data",
+			"label": "No. of ERPNext Customers"
+		},
+		{
+			"fieldname": "existing_partnerships_section",
+			"fieldtype": "Section Break",
+			"label": "Existing Partnerships"
+		},
+		{
+			"fieldname": "existing_partnerships",
+			"fieldtype": "Small Text",
+			"label": "Existing Partnerships"
+		},
+		{
+			"fieldname": "erp_implementations_range",
+			"fieldtype": "Data",
+			"label": "No. of ERP Implementations"
+		},
+		{
+			"fieldname": "incorporation_certificate",
+			"fieldtype": "Attach",
+			"label": "Incorporation Certificate"
+		},
+		{
+			"fieldname": "agreement_section",
+			"fieldtype": "Section Break",
+			"label": "Agreement"
+		},
+		{
+			"default": "0",
+			"fieldname": "agreed_to_due_diligence",
+			"fieldtype": "Check",
+			"label": "I shall abide by the due diligence"
+		},
+		{
+			"default": "0",
+			"fieldname": "agreed_to_partnership_agreement",
+			"fieldtype": "Check",
+			"label": "I accept the Partnership agreement"
+		},
+		{
+			"fieldname": "submitted_on",
+			"fieldtype": "Datetime",
+			"label": "Submitted On",
+			"read_only": 1
+		},
+		{
+			"allow_on_submit": 1,
+			"fieldname": "reviewed_on",
+			"fieldtype": "Datetime",
+			"label": "Reviewed On",
+			"read_only": 1
+		},
+		{
+			"allow_on_submit": 1,
+			"fieldname": "reviewed_by",
+			"fieldtype": "Link",
+			"label": "Reviewed By",
+			"options": "User",
+			"read_only": 1
+		},
+		{
+			"fieldname": "amended_from",
+			"fieldtype": "Link",
+			"label": "Amended From",
+			"no_copy": 1,
+			"options": "Partner Onboarding",
+			"print_hide": 1,
+			"read_only": 1,
+			"search_index": 1
+		},
+		{
+			"allow_on_submit": 1,
+			"fieldname": "reviewer_comments",
+			"fieldtype": "Small Text",
+			"label": "Reviewer Comments",
+			"read_only": 1
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"is_submittable": 1,
+	"links": [],
+	"modified": "2026-06-02 11:46:36.460385",
+	"modified_by": "Administrator",
+	"module": "Partner",
+	"name": "Partner Onboarding",
+	"naming_rule": "Expression",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"cancel": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		},
+		{
+			"cancel": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Press User",
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		},
+		{
+			"amend": 1,
+			"cancel": 1,
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Partner Manager",
+			"select": 1,
+			"share": 1,
+			"submit": 1,
+			"write": 1
+		}
+	],
+	"row_format": "Dynamic",
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
+}

@@ -80,6 +80,8 @@ class ServerFirewall(Document):
 			self.validate_port(rule.port)
 
 	def on_update(self):
+		if self.get_doc_before_save() is None:
+			return
 		self.sync()
 
 	@frappe.whitelist()

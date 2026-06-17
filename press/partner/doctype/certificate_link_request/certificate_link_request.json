@@ -31,16 +31,16 @@
 		{ "fieldname": "column_break_wpyz", "fieldtype": "Column Break" },
 		{
 			"fieldname": "user_email",
-			"fieldtype": "Link",
+			"fieldtype": "Data",
 			"label": "User Email",
-			"options": "User"
+			"options": "Email"
 		},
 		{ "fieldname": "key", "fieldtype": "Data", "label": "Key", "read_only": 1 },
 		{
 			"fieldname": "status",
 			"fieldtype": "Select",
 			"label": "Status",
-			"options": "Approved\nPending"
+			"options": "Approved\nPending\nCancelled"
 		}
 	],
 	"grid_page_length": 50,

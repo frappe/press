@@ -115,40 +115,12 @@ def get_partner_details(partner_email: str) -> dict | None:
 @frappe.whitelist()
 @role_guard.api("partner")
 def send_link_certificate_request(user_email: str, certificate_type: str) -> None:
-	cert_options = ["frappe-developer-certification", "app-development-with-frappe-framework"]
-	if certificate_type == "erpnext":
-		cert_options = ["erpnext-distribution", "erpnext-training"]
-	if not frappe.db.exists(
-		"Partner Certificate", {"partner_member_email": user_email, "course": ("in", cert_options)}
-	):
-		frappe.throw(f"No certificate found for the {user_email} with given course")
+	from press.partner.doctype.certificate_link_request.certificate_link_request import (
+		CertificateLinkRequest,
+	)
 
 	team = get_current_team(get_doc=True)
-
-	frappe.get_doc(
-		{
-			"doctype": "Certificate Link Request",
-			"partner_team": team.name,
-			"user_email": user_email,
-			"course": frappe.db.get_value(
-				"Partner Certificate",
-				{"partner_member_email": user_email, "course": ("in", cert_options)},
-				"course"
-			),
-		}
-	).insert()
-
-
-@frappe.whitelist()
-@role_guard.api("partner")
-def approve_certificate_link_request(key: str) -> None:
-	cert_req_doc = frappe.get_doc("Certificate Link Request", {"key": key})
-	cert_req_doc.status = "Approved"
-	cert_req_doc.save(ignore_permissions=True)
-	frappe.db.commit()
-
-	frappe.response.type = "redirect"
-	frappe.response.location = "/dashboard/partners/certificates"
+	CertificateLinkRequest.create_or_resend(team.name, user_email, certificate_type)
 
 
 @frappe.whitelist()
@@ -270,14 +242,19 @@ def get_partner_mrr(partner_email: str, prev_month: bool = False) -> list[dict] 
 
 	case_stmt.else_(Invoice.total_before_discount)
 
+	condition = Invoice.status == "Paid"
+	if prev_month:
+		todays_date = frappe.utils.getdate()
+		first_day = get_first_day(todays_date)
+		fifteenth_day = add_days(first_day, 14)
+
+		if todays_date >= first_day and todays_date <= fifteenth_day:
+			condition = (Invoice.status).isin(["Unpaid", "Paid"])
+
 	query = (
 		frappe.qb.from_(Invoice)
 		.select(Invoice.due_date, Sum(case_stmt).as_("total_amount"))
-		.where(
-			(Invoice.partner_email == partner_email)
-			& (Invoice.type == "Subscription")
-			& (Invoice.status == "Paid")
-		)
+		.where((Invoice.partner_email == partner_email) & (Invoice.type == "Subscription") & (condition))
 		.groupby(Invoice.due_date)
 		.orderby(Invoice.due_date, order=frappe.qb.desc)
 		.limit(12)
@@ -629,7 +606,7 @@ def calculate_partner_tier(contribution: float, currency: str) -> dict | None:
 def add_partner(referral_code: str) -> str | None:
 	team = get_current_team(get_doc=True)
 	year_ago = frappe.utils.add_to_date(years=-1)
-	is_old_team = bool(team.creation > year_ago)
+	is_old_team = bool(team.creation <= year_ago)
 	partner = frappe.get_doc("Team", {"partner_referral_code": referral_code}).name
 	if frappe.db.exists(
 		"Partner Approval Request",
@@ -1024,11 +1001,16 @@ def fetch_followup_details(id: str, lead: str) -> list[dict] | None:
 @frappe.whitelist()
 @role_guard.api("partner")
 def check_certificate_exists(email: str, certificate_type: str) -> int:
-	cert_options = ["frappe-developer-certification", "app-development-with-frappe-framework"]
-	if certificate_type == "erpnext":
-		cert_options = ["erpnext-distribution", "erpnext-training"]
+	from press.partner.doctype.certificate_link_request.certificate_link_request import (
+		CertificateLinkRequest,
+	)
+
 	return frappe.db.count(
-		"Partner Certificate", {"partner_member_email": email, "course": ("in", cert_options)}
+		"Partner Certificate",
+		{
+			"partner_member_email": email,
+			"course": ("in", CertificateLinkRequest.get_courses(certificate_type)),
+		},
 	)
 
 

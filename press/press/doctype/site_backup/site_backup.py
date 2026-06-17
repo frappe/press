@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import frappe
 import frappe.utils
+from frappe import _
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 from frappe.query_builder.terms import ValueWrapper
@@ -20,6 +21,7 @@ from press.guards import role_guard
 from press.guards.role_guard.document import has_user_permission
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.ansible_console.ansible_console import AnsibleAdHoc
+from press.press.doctype.communication_info.communication_info import get_communication_info
 
 if TYPE_CHECKING:
 	from datetime import date
@@ -500,10 +502,10 @@ def process_backup_site_job_update(job):
 	backup = backups[0]
 	if job.status != backup.status:
 		status = job.status
-		if job.status == "Delivery Failure":
+		if status == "Delivery Failure":
 			status = "Failure"
 
-		if job.status == "Success":
+		if status == "Success":
 			if frappe.get_value("Site Backup", backup.name, "physical"):
 				doc: SiteBackup = frappe.get_doc("Site Backup", backup.name)
 				doc.files_availability = "Available"
@@ -558,14 +560,75 @@ def process_backup_site_job_update(job):
 			site_backup.status = status
 			site_backup.save()
 
+			_send_backup_failure_email_to_user(site_backup)
+
+
+def _send_backup_failure_email_to_user(site_backup: SiteBackup):
+	try:
+		if site_backup.status != "Failure":
+			return
+
+		site_name = site_backup.site
+		if _has_reached_max_failed_backup_attempts(site_name):
+			recipients = get_communication_info("Email", "Site Activity", "Site", site_name)
+			if not recipients:
+				return
+
+			subject = _("Backup attempts failed for {0}").format(site_name)
+			content = frappe.render_template(
+				"press/templates/emails/site_backup_failed.html",
+				{
+					"site_name": site_name,
+				},
+				is_path=True,
+			)
+			communication = frappe.get_doc(
+				{
+					"doctype": "Communication",
+					"communication_type": "Communication",
+					"communication_medium": "Email",
+					"reference_doctype": "Site Backup",
+					"reference_name": site_backup.name,
+					"subject": subject,
+					"content": content,
+					"is_notification": True,
+					"recipients": ", ".join(recipients),
+				}
+			)
+			communication.insert(ignore_permissions=True)
+			communication.send_email()
+	except Exception:
+		frappe.log_error(
+			title="Failed to send backup failure email",
+			reference_doctype="Site Backup",
+			reference_name=site_backup.name,
+		)
+
 
 def get_backup_bucket(cluster, region=False):
-	bucket_for_cluster = frappe.get_all("Backup Bucket", {"cluster": cluster}, ["name", "region"], limit=1)
-	default_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
+	bucket_for_cluster = frappe.get_all(
+		"Backup Bucket", {"cluster": cluster}, ["name", "region", "endpoint_url"], limit=1
+	)
+
+	# `provider` and `endpoint_url` are only configured globally on Press Settings, so the
+	# provider is always sourced from there regardless of whether a cluster bucket is used.
+	provider = frappe.db.get_single_value("Press Settings", "offsite_backups_provider")
+
+	if bucket_for_cluster:
+		bucket_config = bucket_for_cluster[0]
+		bucket_config["provider"] = provider
+	else:
+		bucket_config = {
+			"name": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
+			"region": frappe.db.get_single_value("Press Settings", "backup_region"),
+			"endpoint_url": None,
+			"provider": provider,
+		}
 
 	if region:
-		return bucket_for_cluster[0] if bucket_for_cluster else default_bucket
-	return bucket_for_cluster[0]["name"] if bucket_for_cluster else default_bucket
+		return bucket_config
+
+	return bucket_config["name"]
 
 
 def process_deactivate_site_job_update(job: AgentJob):
@@ -850,3 +913,25 @@ def delete_backups_for_archived_sites_after_retention():
 			)
 
 	frappe.db.commit()
+
+
+def _has_reached_max_failed_backup_attempts(site_name: str) -> bool:
+	max_backup_attempts = (
+		frappe.get_cached_value(
+			"Press Settings",
+			"Press Settings",
+			"max_failed_backup_attempts_in_a_day",
+		)
+		or 6
+	)
+
+	backup_failures = frappe.db.count(
+		"Site Backup",
+		{
+			"site": site_name,
+			"status": ("in", ["Failure", "Delivery Failure"]),
+			"creation": (">=", frappe.utils.add_days(None, -1)),
+		},
+	)
+
+	return backup_failures == max_backup_attempts

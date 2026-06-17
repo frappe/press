@@ -10,12 +10,16 @@ from press.workflow_engine.doctype.press_workflow.decorators import flow, task
 
 if TYPE_CHECKING:
 	from press.press.doctype.database_server.database_server import DatabaseServer
+	from press.press.doctype.plan_change.plan_change import PlanChange
 	from press.press.doctype.server.server import Server
+	from press.press.doctype.server_plan.server_plan import ServerPlan
+	from press.workflow_engine.doctype.press_workflow.press_workflow import PressWorkflow
 
 
 class ResizeServerJob(PressJob):
 	@flow
 	def execute(self):
+		self.remove_nat_config_if_applicable()
 		self.stop_virtual_machine()
 		self.wait_for_virtual_machine_to_stop()
 
@@ -25,8 +29,20 @@ class ResizeServerJob(PressJob):
 		self.wait_for_virtual_machine_to_start()
 
 		self.wait_for_server_to_be_accessible()
+		self.add_nat_config_if_applicable()
 		self.set_additional_config()
 		self.increase_disk_size()
+
+	@task
+	def remove_nat_config_if_applicable(self):
+		if self.server_type not in ("Server", "Database Server") or (
+			not self.server_doc.nat_server and self.server_doc.ip
+		):
+			return
+
+		play = self.server_doc._remove_nat_iptables()
+		if not play or play.status != "Success":
+			raise Exception("Failed to remove NAT configuration")
 
 	@task
 	def stop_virtual_machine(self):
@@ -93,6 +109,17 @@ class ResizeServerJob(PressJob):
 			self.defer_current_task()
 
 	@task
+	def add_nat_config_if_applicable(self):
+		if self.server_type not in ("Server", "Database Server") or (
+			not self.server_doc.nat_server and self.server_doc.ip
+		):
+			return
+
+		play = self.server_doc._install_nat_iptables()
+		if not play or play.status != "Success":
+			self.defer_current_task()
+
+	@task
 	def set_additional_config(self):
 		if self.server_type not in ["Server", "Database Server"]:
 			return
@@ -119,3 +146,30 @@ class ResizeServerJob(PressJob):
 
 		with suppress(Exception):
 			self.server_doc.increase_disk_size(increment=plan_disk_size - self.virtual_machine_doc.disk_size)
+
+	def on_press_job_failure(self, workflow: PressWorkflow):
+		self.start_virtual_machine()
+		# TODO: fix this; this won't really do much as the vm might've just been brought up but it's better than nothing
+		self.add_nat_config_if_applicable()
+
+		# Find out the last plan change of the server
+		self.server_doc.reload()
+
+		plan_changes = frappe.get_all(
+			"Plan Change",
+			{
+				"document_type": self.server_type,
+				"document_name": self.server,
+				"to_plan": self.server_doc.plan,
+				"type": ("in", ["Upgrade", "Downgrade"]),
+			},
+			order_by="timestamp desc",
+			limit=1,
+		)
+		if not plan_changes:
+			return
+
+		plan_change: PlanChange = frappe.get_doc("Plan Change", plan_changes[0].name)
+
+		from_plan: ServerPlan = frappe.get_doc("Server Plan", plan_change.from_plan)
+		self.server_doc._change_plan(from_plan)

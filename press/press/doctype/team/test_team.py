@@ -95,3 +95,41 @@ class TestTeam(FrappeTestCase):
 				account_request2, "John", "Meyer", "jonmeyer@gmail.com", country="Pakistan"
 			)
 		self.assertEqual(team2.currency, "USD")
+
+	def test_total_subscribed_amount_skips_legacy_subscriptions_with_null_plan_fields(self):
+		team = create_test_team()
+		plan = frappe.get_doc(
+			{
+				"doctype": "Site Plan",
+				"name": "Test-Plan-USD-50",
+				"document_type": "Site",
+				"interval": "Daily",
+				"price_usd": 50,
+				"price_inr": 3000,
+			}
+		).insert()
+
+		def make_sub(todo_desc):
+			todo = frappe.get_doc(doctype="ToDo", description=todo_desc).insert()
+			return frappe.get_doc(
+				{
+					"doctype": "Subscription",
+					"document_type": "ToDo",
+					"document_name": todo.name,
+					"team": team.name,
+					"plan_type": "Site Plan",
+					"plan": plan.name,
+					"enabled": 1,
+				}
+			).insert()
+
+		make_sub("valid")
+
+		null_plan_type_sub = make_sub("null plan_type")
+		frappe.db.set_value("Subscription", null_plan_type_sub.name, "plan_type", None)
+
+		null_plan_sub = make_sub("null plan")
+		frappe.db.set_value("Subscription", null_plan_sub.name, "plan", None)
+
+		total = team.total_subscribed_amount()
+		self.assertEqual(total, 50)

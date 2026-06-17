@@ -129,15 +129,11 @@ class TestAPISite(FrappeTestCase):
 		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, public=True)
 
 		group = create_test_release_group(
-			[frappe_app, allowed_app, disallowed_app], public=True, frappe_version="Version 15"
+			[frappe_app, allowed_app, disallowed_app],
+			public=True,
+			frappe_version="Version 15",
+			servers=[f1_server.name],
 		)
-		group.append(
-			"servers",
-			{
-				"server": f1_server.name,
-			},
-		)
-		group.save()
 		create_test_bench(group=group, server=f1_server.name)
 
 		plan = create_test_plan("Site", allowed_apps=[frappe_app.name, allowed_app.name])
@@ -172,14 +168,12 @@ class TestAPISite(FrappeTestCase):
 		n1_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
 		f1_server = create_test_server(cluster=cluster.name, proxy_server=n1_server.name, public=True)
 
-		group = create_test_release_group([frappe_app, another_app], public=True, frappe_version="Version 15")
-		group.append(
-			"servers",
-			{
-				"server": f1_server.name,
-			},
+		group = create_test_release_group(
+			[frappe_app, another_app],
+			public=True,
+			frappe_version="Version 15",
+			servers=[f1_server.name],
 		)
-		group.save()
 		create_test_bench(group=group, server=f1_server.name)
 
 		plan = create_test_plan("Site", allowed_apps=[])
@@ -213,24 +207,14 @@ class TestAPISite(FrappeTestCase):
 		n2_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
 		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name, public=True)
 
-		rg1 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
-		rg1.append(
-			"servers",
-			{
-				"server": f1_server.name,
-			},
+		rg1 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15", servers=[f1_server.name]
 		)
-		rg1.save()
 		create_test_bench(group=rg1, server=f1_server.name)
 
-		rg2 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
-		rg2.append(
-			"servers",
-			{
-				"server": f2_server.name,
-			},
+		rg2 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15", servers=[f2_server.name]
 		)
-		rg2.save()
 		rg2_bench = create_test_bench(group=rg2, server=f2_server.name)
 
 		plan = create_test_plan("Site", allowed_apps=[], release_groups=[rg2.name])
@@ -273,24 +257,14 @@ class TestAPISite(FrappeTestCase):
 		n2_server = create_test_proxy_server(cluster=cluster.name, domain=root_domain.name)
 		f2_server = create_test_server(cluster=cluster.name, proxy_server=n2_server.name, public=True)
 
-		rg1 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
-		rg1.append(
-			"servers",
-			{
-				"server": f1_server.name,
-			},
+		rg1 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15", servers=[f1_server.name]
 		)
-		rg1.save()
 		rg1_bench = create_test_bench(group=rg1, server=f1_server.name)
 
-		rg2 = create_test_release_group([frappe_app], public=True, frappe_version="Version 15")
-		rg2.append(
-			"servers",
-			{
-				"server": f2_server.name,
-			},
+		rg2 = create_test_release_group(
+			[frappe_app], public=True, frappe_version="Version 15", servers=[f2_server.name]
 		)
-		rg2.save()
 		create_test_bench(group=rg2, server=f2_server.name)
 
 		plan = create_test_plan("Site", allowed_apps=[], release_groups=[], plan_title="Unlimited Plan")
@@ -1062,3 +1036,144 @@ class TestAPISiteList(FrappeTestCase):
 
 	def test_list_tagged_sites(self):
 		self.assertEqual(all(site_filter={"status": "", "tag": "test_tag"}), [self.tagged_site_dict])
+
+
+class TestAPISiteDomain(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+		frappe.set_user("Administrator")
+
+	def test_check_dns_blocks_system_domain(self):
+		"""check_dns should throw for system reserved domains without making a DNS query."""
+		from press.api.site import check_dns
+
+		site = create_test_site()
+		with (
+			patch("press.api.site.get_matching_domain", return_value="test-system.io"),
+			patch("press.api.site.check_dns_cname_a") as mock_dns,
+		):
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"system reserved domain",
+				check_dns,
+				site.name,
+				"sub.test-system.io",
+			)
+			mock_dns.assert_not_called()
+
+	def test_check_dns_returns_dns_result_for_custom_domain(self):
+		"""check_dns should return DNS check result for non-system domains."""
+		from press.api.site import check_dns
+
+		site = create_test_site()
+		dns_result = {"matched": True, "valid": True, "type": "A", "CNAME": {}, "A": {}}
+		with (
+			patch("press.api.site.get_matching_domain", return_value=None),
+			patch("press.api.site.check_dns_cname_a", return_value=dns_result) as mock_dns,
+		):
+			result = check_dns(site.name, "example.com")
+			mock_dns.assert_called_once_with(site.name, "example.com")
+		self.assertEqual(result, dns_result)
+
+	def test_add_domain_blocks_system_domain(self):
+		"""add_domain should throw for system reserved domains without making a DNS query."""
+		from press.api.site import add_domain
+
+		site = create_test_site()
+		with (
+			patch("press.press.doctype.site.site.get_matching_domain", return_value="test-system.io"),
+			patch("press.press.doctype.site.site.check_dns_cname_a") as mock_dns,
+		):
+			self.assertRaisesRegex(
+				frappe.ValidationError,
+				"system reserved domain",
+				add_domain,
+				site.name,
+				"sub.test-system.io",
+			)
+			mock_dns.assert_not_called()
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch("press.press.doctype.site_domain.site_domain.SiteDomain.create_tls_certificate", new=Mock())
+	def test_add_domain_creates_site_domain_when_dns_matches(self):
+		"""add_domain should create a Site Domain record when DNS check passes."""
+		from press.api.site import add_domain
+
+		site = create_test_site()
+		with (
+			patch("press.press.doctype.site.site.get_matching_domain", return_value=None),
+			patch(
+				"press.press.doctype.site.site.check_dns_cname_a",
+				return_value={"matched": True, "type": "A"},
+			),
+		):
+			add_domain(site.name, "example.com")
+		self.assertTrue(frappe.db.exists("Site Domain", {"site": site.name, "domain": "example.com"}))
+
+
+class TestCheckWarrantyRestrictions(FrappeTestCase):
+	"""Tests for _check_warranty_restrictions.
+
+	The cooldown applies to both enabling and disabling. The server quota,
+	however, only gates enabling (which consumes a slot) — disabling is
+	always allowed once the cooldown has passed.
+	"""
+
+	def _check(self, *, current_supported, new_supported, quota_available=0, cooldown_active=False):
+		from press.api.site import _check_warranty_restrictions
+
+		now = datetime.datetime.now()
+		next_change = now + datetime.timedelta(days=1) if cooldown_active else now
+		with (
+			patch(
+				"press.api.site.is_product_warranty_enabled_for_plan_",
+				return_value=new_supported,
+			),
+			patch(
+				"press.api.site.get_next_allowed_dedicated_product_warranty_change_date",
+				return_value=next_change,
+			),
+			patch(
+				"press.api.site.get_available_warranty_quota_for_server",
+				return_value={"available": quota_available},
+			),
+		):
+			_check_warranty_restrictions(
+				site="test-site.frappe.cloud",
+				server="test-server",
+				new_plan="test-plan",
+				is_new=False,
+				is_system_user=False,
+				is_current_dedicated_server_plan=True,
+				is_current_plan_supported=current_supported,
+			)
+
+	def test_disabling_warranty_allowed_even_when_quota_exhausted(self):
+		"""Disabling support on a server with no quota left must not throw."""
+		self._check(current_supported=True, new_supported=False, quota_available=0)
+
+	def test_enabling_warranty_blocked_when_quota_exhausted(self):
+		"""Enabling support on a server with no quota left must throw."""
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"exhausted the site warranty quota",
+			self._check,
+			current_supported=False,
+			new_supported=True,
+			quota_available=0,
+		)
+
+	def test_enabling_warranty_allowed_when_quota_available(self):
+		"""Enabling support with quota left must not throw."""
+		self._check(current_supported=False, new_supported=True, quota_available=1)
+
+	def test_disabling_warranty_blocked_during_cooldown(self):
+		"""Disabling support is still subject to the cooldown window."""
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Cannot change product warranty for this site before",
+			self._check,
+			current_supported=True,
+			new_supported=False,
+			cooldown_active=True,
+		)

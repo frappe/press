@@ -50,7 +50,10 @@
 			"read_only": 1,
 			"reqd": 1
 		},
-		{ "fieldname": "column_break_2", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_2",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "frappe_section",
 			"fieldtype": "Section Break",
@@ -79,7 +82,10 @@
 			"label": "Time Zone",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_8", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_8",
+			"fieldtype": "Column Break"
+		},
 		{
 			"default": "0",
 			"fieldname": "scheduler_enabled",
@@ -124,7 +130,10 @@
 			"label": "Files Size",
 			"read_only": 1
 		},
-		{ "fieldname": "section_break_17", "fieldtype": "Section Break" },
+		{
+			"fieldname": "section_break_17",
+			"fieldtype": "Section Break"
+		},
 		{
 			"fieldname": "users",
 			"fieldtype": "Table",
@@ -171,7 +180,10 @@
 			"label": "Domain",
 			"read_only": 1
 		},
-		{ "fieldname": "column_break_26", "fieldtype": "Column Break" },
+		{
+			"fieldname": "column_break_26",
+			"fieldtype": "Column Break"
+		},
 		{
 			"fieldname": "last_active",
 			"fieldtype": "Table",
@@ -182,8 +194,8 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2022-09-29 18:13:51.797874",
 	"modified_by": "Administrator",
+	"modified": "2026-06-10 12:54:30.902613",
 	"module": "Press",
 	"name": "Site Analytics",
 	"owner": "Administrator",
@@ -199,8 +211,18 @@
 			"role": "System Manager",
 			"share": 1,
 			"write": 1
+		},
+		{
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Site Manager",
+			"share": 1
 		}
 	],
+	"row_format": "Dynamic",
 	"sort_field": "modified",
 	"sort_order": "DESC",
 	"states": [],
