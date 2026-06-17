@@ -8,6 +8,7 @@ import requests
 from press.api.github import (
 	InvalidGitHubOAuthState,
 	decode_github_oauth_state,
+	encode_github_oauth_state,
 	get_github_authorize_url,
 	get_github_callback_login_redirect,
 )
@@ -49,12 +50,17 @@ def get_context(context):
 
 def start_user_authorization(state):
 	try:
-		decode_github_oauth_state(state)
+		decoded_state = decode_github_oauth_state(state)
 	except InvalidGitHubOAuthState:
 		log_error("GitHub OAuth Authorization Error")
 		return
 
-	frappe.flags.redirect_location = get_github_authorize_url(state)
+	# Re-issue the state so the authorization leg gets a fresh validity window.
+	# The original was minted before the install wizard, which may already have
+	# eaten most of GITHUB_OAUTH_STATE_MAX_AGE; reusing it risks the final
+	# code-bearing callback failing decode and silently skipping the refresh.
+	fresh_state = encode_github_oauth_state(decoded_state["team"], decoded_state["redirect_url"])
+	frappe.flags.redirect_location = get_github_authorize_url(fresh_state)
 	raise frappe.Redirect
 
 
