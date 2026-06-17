@@ -608,7 +608,8 @@ class SiteUpdate(Document):
 			# Recovering a migrate runs heavy restore/migrate queries that can exceed the
 			# database server's max_statement_time on large sites and get killed. Proactively
 			# bump max_statement_time by an hour so the recovery isn't timed out mid-query.
-			if self.deploy_type == "Migrate":
+			# Only large sites are at risk, so skip the bump for small databases.
+			if self.deploy_type == "Migrate" and site.database_size > LARGE_DATABASE_SIZE:
 				old_timeout, new_timeout = site.increase_max_statement_time()
 				self.add_comment(
 					text=(
@@ -1162,6 +1163,11 @@ def process_update_site_job_update(job: AgentJob):
 
 
 MAX_RECOVERY_RETRIES = 3
+
+# Only proactively bump max_statement_time for sites whose database is larger than
+# this (Site Usage records the database size in MB); smaller sites won't hit the
+# statement timeout during a recovery migrate.
+LARGE_DATABASE_SIZE = 1024  # 1 GB in MB
 
 TRANSIENT_DB_ERRORS = ["MySQL server has gone away", "Lost connection to MySQL server"]
 

@@ -1174,6 +1174,16 @@ class Site(Document, TagHelpers):
 		self.status = "Pending"
 		self.save()
 
+	@property
+	def database_size(self) -> int:
+		"""Latest known database size in MB, or 0 if we have no usage data yet.
+
+		Site Usage stores sizes in MB, not bytes — see Site Usage's README.
+		"""
+		return (
+			frappe.db.get_value("Site Usage", {"site": self.name}, "database", order_by="creation desc") or 0
+		)
+
 	def increase_max_statement_time(self, increment: int | None = None) -> tuple[int, int]:
 		"""Increase the database server's ``max_statement_time`` by ``increment`` seconds.
 

@@ -485,6 +485,14 @@ class TestSiteUpdate(FrappeTestCase):
 			"Site Update should be Recovered after restore_tables success",
 		)
 
+	def test_database_size_returns_latest_usage_in_mb(self):
+		site = create_test_site()
+		self.assertEqual(site.database_size, 0)
+
+		frappe.get_doc(doctype="Site Usage", site=site.name, database=1536).insert()  # 1.5 GB in MB
+
+		self.assertEqual(site.database_size, 1536)
+
 	@patch.object(DatabaseServer, "_update_mariadb_system_variables", new=Mock())
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 	def test_increase_max_statement_time_bumps_value_by_an_hour(self):
