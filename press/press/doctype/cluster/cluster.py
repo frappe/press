@@ -854,6 +854,15 @@ class Cluster(Document):
 	def create_nat_security_group_hetzner(self):
 		client = self.get_hetzner_client()
 
+		# Reuse existing firewall if already created
+		if self.nat_security_group_id:
+			try:
+				firewall = client.firewalls.get_by_id(int(self.nat_security_group_id))
+				if firewall:
+					return firewall
+			except APIException:
+				pass
+
 		try:
 			response = client.firewalls.create(
 				name=f"Frappe Cloud - {self.name} - NAT - Security Group",
@@ -884,8 +893,13 @@ class Cluster(Document):
 			self.nat_security_group_id = response.firewall.id
 			self.save()
 
+			return response.firewall
+
 		except APIException as e:
-			frappe.throw(f"Failed to provision NAT firewall on Hetzner: {e!s}")
+			frappe.throw(
+				f"Failed to provision NAT firewall on Hetzner. "
+				f"Please verify Hetzner API access and firewall configuration. Error: {e!s}"
+			)
 
 	def create_nat_security_group(self):
 		client = self.get_aws_client()
