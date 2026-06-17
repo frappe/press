@@ -132,5 +132,8 @@ class NATServer(BaseServer):
 			ec2.modify_instance_attribute(InstanceId=vm.instance_id, Groups=sgs)
 
 			return "NAT Security Group attached successfully"
-		frappe.throw("This is only for AWS")
+		frappe.throw(
+			"This action is only applicable to AWS EC2 NAT instances. "
+			"No manual security group attachment is required for Hetzner."
+		)
 		return None
