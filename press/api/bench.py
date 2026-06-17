@@ -767,7 +767,7 @@ def deploy(name, apps):
 
 	if rg.deploy_in_progress:
 		frappe.throw(
-			f"A deploy for this bench is already in progress. Please wait for it to finish before starting another. {docs.doc_link(docs.UPDATE_BENCH)}."
+			f"A deploy for this bench is already in progress. Please wait for it to finish, or stop the current deploy, before starting another. {docs.doc_link(docs.UPDATE_BENCH)}."
 		)
 
 	candidate = rg.create_deploy_candidate(apps)
