@@ -100,6 +100,7 @@ class VirtualMachine(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from press.press.doctype.cluster.cluster import Cluster
 		from press.press.doctype.virtual_machine_temporary_volume.virtual_machine_temporary_volume import (
 			VirtualMachineTemporaryVolume,
 		)
@@ -553,7 +554,10 @@ class VirtualMachine(Document):
 		if not self.machine_image:
 			frappe.throw("Machine Image is required to provision Hetzner Virtual Machine.")
 
-		cluster = frappe.get_doc("Cluster", self.cluster)
+		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
+
+		if self.series == "nat":
+			cluster.add_hetzner_nat_route()  # Route needed for outbound connection
 
 		server = (
 			self.client()
