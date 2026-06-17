@@ -3318,7 +3318,11 @@ class Server(BaseServer):
 					"agent_update_args": " --skip-repo-setup=true",
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
 					"cloud_provider": self.provider,
-					"network_gateway": str(ip_network(cluster.cidr_block).network_address + 1),
+					"network_gateway": (
+						str(ip_network(cluster.cidr_block).network_address + 1)
+						if self.provider == "Hetzner" and cluster.cidr_block
+						else ""
+					),
 					**self.get_mount_variables(),
 				},
 			)
