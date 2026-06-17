@@ -7,6 +7,7 @@ import json
 import re
 import subprocess
 from datetime import datetime
+from ipaddress import ip_network
 from typing import TYPE_CHECKING, Any, Literal
 
 import frappe
@@ -820,6 +821,7 @@ class DatabaseServer(BaseServer):
 
 	def _setup_server(self):
 		config = self._get_config()
+		cluster = frappe.get_doc("Cluster", self.cluster)
 
 		try:
 			ansible = Ansible(
@@ -847,6 +849,8 @@ class DatabaseServer(BaseServer):
 					"certificate_intermediate_chain": config.certificate.intermediate_chain,
 					"mariadb_depends_on_mounts": self.mariadb_depends_on_mounts,
 					"nat_gateway_ip": self.get_nat_gateway_ip(),
+					"cloud_provider": self.provider,
+					"network_gateway": str(ip_network(cluster.cidr_block).network_address + 1),
 					**self.get_mount_variables(),
 				},
 			)
