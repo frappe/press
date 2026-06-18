@@ -564,6 +564,7 @@ class Agent:
 		data = {
 			"with_files": site_backup.with_files,
 			"agent_job_timeout": site.backup_timeout,
+			"stream": bool(frappe.get_value("Server", site.server, "stream_backups")),
 		}
 		if site_backup.offsite:
 			backups_path = os.path.join(site.name, str(date.today()))
