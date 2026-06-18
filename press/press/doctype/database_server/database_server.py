@@ -1307,6 +1307,13 @@ class DatabaseServer(BaseServer):
 		if self.is_primary:
 			return
 
+		# Provisioning steps run as separate jobs. The preceding Prepare step leaves
+		# MariaDB running, but a retry of Configure in isolation could hit a stopped
+		# server and fail with a connection-refused deep in the agent. Make sure it is
+		# up before issuing replication commands (restart_mysql.yml uses a Type=notify
+		# unit, so it returns only once MariaDB accepts connections).
+		self._restart_mariadb()
+
 		primary_db: "DatabaseServer" = frappe.get_doc("Database Server", self.primary)
 
 		agent = self.agent

@@ -149,6 +149,29 @@ class TestDatabaseServer(FrappeTestCase):
 		self.assertTrue(replica.is_replication_setup)
 		self.assertFalse(replica.auto_purge_binlog_based_on_size)
 
+	@patch.object(DatabaseServer, "_restart_mariadb")
+	@patch.object(Agent, "configure_replication", return_value={"success": True})
+	def test_configure_replication_starts_mariadb_before_contacting_agent(
+		self, mock_agent_configure, mock_restart
+	):
+		"""Configure runs as a separate job from Prepare; a stopped MariaDB would fail
+		with connection-refused in the agent. configure_replication must start MariaDB
+		before contacting the agent."""
+		call_order = []
+		mock_restart.side_effect = lambda *a, **k: call_order.append("restart")
+		mock_agent_configure.side_effect = lambda *a, **k: call_order.append("agent") or {"success": True}
+
+		primary = create_test_database_server()
+		replica = create_test_database_server()
+		replica.is_primary = False
+		replica.primary = primary.name
+		replica.save()
+
+		replica.configure_replication()
+
+		mock_restart.assert_called_once()
+		self.assertEqual(call_order, ["restart", "agent"])
+
 	@patch("press.press.doctype.database_server.database_server.Ansible", new=Mock())
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
