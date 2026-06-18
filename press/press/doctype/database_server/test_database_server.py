@@ -9,6 +9,7 @@ from frappe.core.utils import find
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
+from press.agent import Agent
 from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.virtual_machine.test_virtual_machine import create_test_virtual_machine
@@ -128,6 +129,25 @@ class TestDatabaseServer(FrappeTestCase):
 		Mock_Ansible.side_effect = Exception()
 		server = create_test_database_server()
 		self.assertRaises(Exception, server.reconfigure_mariadb_exporter)  # noqa
+
+	@patch.object(Agent, "configure_replication", return_value={"success": True})
+	def test_configure_replication_disables_binlog_auto_purge_on_replica(self, _):
+		"""New DB servers default binlog auto purge on, but on_update forbids it for
+		replication-configured servers. configure_replication must clear the flag as the
+		server becomes a replica instead of tripping that guard and failing provisioning."""
+		primary = create_test_database_server()
+		replica = create_test_database_server()
+		replica.is_primary = False
+		replica.primary = primary.name
+		replica.auto_purge_binlog_based_on_size = True
+		replica.is_replication_setup = False
+		replica.save()
+
+		replica.configure_replication()
+		replica.reload()
+
+		self.assertTrue(replica.is_replication_setup)
+		self.assertFalse(replica.auto_purge_binlog_based_on_size)
 
 	@patch("press.press.doctype.database_server.database_server.Ansible", new=Mock())
 	@patch(
