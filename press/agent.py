@@ -577,7 +577,10 @@ class Agent:
 				{
 					"keep_files_locally_after_offsite_backup": bool(
 						frappe.get_value("Server", site.server, "keep_files_on_server_in_offsite_backup")
-					)
+					),
+					# Streaming only applies to offsite backups (agent streams the
+					# artifacts straight to S3), so only send it for offsite jobs.
+					"stream": bool(frappe.get_value("Server", site.server, "stream_backups")),
 				}
 			)
 
