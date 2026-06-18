@@ -564,7 +564,6 @@ class Agent:
 		data = {
 			"with_files": site_backup.with_files,
 			"agent_job_timeout": site.backup_timeout,
-			"stream": bool(frappe.get_value("Server", site.server, "stream_backups")),
 		}
 		if site_backup.offsite:
 			backups_path = os.path.join(site.name, str(date.today()))
@@ -578,7 +577,10 @@ class Agent:
 				{
 					"keep_files_locally_after_offsite_backup": bool(
 						frappe.get_value("Server", site.server, "keep_files_on_server_in_offsite_backup")
-					)
+					),
+					# Streaming only applies to offsite backups (agent streams the
+					# artifacts straight to S3), so only send it for offsite jobs.
+					"stream": bool(frappe.get_value("Server", site.server, "stream_backups")),
 				}
 			)
 
