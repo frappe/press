@@ -160,9 +160,9 @@ def get_current_team(get_doc=False) -> Team | str:
 	return team
 
 
+@redis_cache(user=True, ttl=60)
 def _get_current_team():
-	if not getattr(frappe.local, "_current_team", None):
-		frappe.local._current_team = get_current_team(get_doc=True)
+	frappe.local._current_team = get_current_team(get_doc=True)
 	return frappe.local._current_team
 
 
