@@ -2888,6 +2888,7 @@ class Server(BaseServer):
 		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
 		stop_deployments: DF.Check
 		stop_incident_actions: DF.Check
+		stream_backups: DF.Check
 		supported_site_quota: DF.Int
 		tags: DF.Table[ResourceTag]
 		team: DF.Link | None
