@@ -285,17 +285,17 @@ onBeforeUnmount(() => {
 
 				<router-link
 					v-else
-					class="flex gap-2 items-center -ml-1"
+					class="flex gap-2 items-center ml-0.5 text-xs"
 					:to="{ name: 'Release Pipeline', params: { id: pipelineId, name: data.name } }"
 					@click.prevent="(e) => e.stopPropagation()"
 				>
-					<Spinner />
+					<Spinner class="!size-3.5" />
 
 					<template v-if="!benchDeployStatus">Deploy in queue</template>
 
 					<template v-else>
 						{{ benchDeployStatus }}
-						<LucideExternalLink class="size-4" />
+						<LucideExternalLink class="size-3.5" />
 					</template>
 				</router-link>
 
