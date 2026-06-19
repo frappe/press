@@ -1176,7 +1176,7 @@ def process_update_site_job_update(job: AgentJob):
 
 # Above this DB size (Site Usage records it in MB) a recovery migrate risks the
 # statement timeout, so only then is the max_statement_time bump worthwhile.
-LARGE_DATABASE_SIZE = 1024  # 1 GB in MB
+LARGE_DATABASE_SIZE = 2048  # 2 GB in MB
 
 # Database errors a retry can recover from — the server dropping the connection, not a
 # genuine data/migration problem.

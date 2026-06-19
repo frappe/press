@@ -122,5 +122,5 @@ Update fails
 | Constant | Value | Meaning |
 |----------|-------|---------|
 | `STATEMENT_TIME_INCREMENT` | 3600 | Seconds (one hour) `max_statement_time` is bumped by before a recovery migrate on large sites. |
-| `LARGE_DATABASE_SIZE` | 1024 | DB size (MB) above which the `max_statement_time` bump is applied. |
+| `LARGE_DATABASE_SIZE` | 2048 | DB size (MB) above which the `max_statement_time` bump is applied. |
 | `DEFAULT_MAX_STATEMENT_TIME` | 3600 | Assumed `max_statement_time` when it isn't set on the database server. |
