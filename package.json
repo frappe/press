@@ -25,7 +25,8 @@
     "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
-    "@commitlint/config-conventional": "^19.6.0",
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^19.8.1",
     "@playwright/test": "^1.56.0",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/forms": "^0.4.0",
