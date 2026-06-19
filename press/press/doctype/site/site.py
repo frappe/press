@@ -5026,14 +5026,11 @@ def process_restore_tables_job_update(job):
 	if updated_status != site_status:
 		if updated_status == "Active":
 			site = frappe.get_doc("Site", job.site)
-			fatal_update = site.fatal_site_update
 			site.reset_previous_status(fix_broken=True)
-			if fatal_update:
+			if site.fatal_site_update:
 				# The site is back up, but the update itself failed for good. Keep it Fatal and
 				# just mark the cause resolved (this also clears the site's fatal_site_update).
-				frappe.get_doc("Site Update", fatal_update).set_cause_of_failure_is_resolved()
-			else:
-				frappe.db.set_value("Site", job.site, "fatal_site_update", None)
+				frappe.get_doc("Site Update", site.fatal_site_update).set_cause_of_failure_is_resolved()
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
 			frappe.db.set_value("Site", job.site, "database_name", None)
