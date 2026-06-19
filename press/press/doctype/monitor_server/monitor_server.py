@@ -241,20 +241,28 @@ class MonitorServer(BaseServer):
 
 	@property
 	def alerts(self):
-		print(
-			f"https://{self.name}/prometheus/api/v1/rules",
-		)
 		ret = requests.get(
 			f"https://{self.name}/prometheus/api/v1/rules",
-			auth=HTTPBasicAuth(self.prometheus_username, self.get_password("grafana_password")),
+			auth=HTTPBasicAuth("frappe", self.get_password("grafana_password")),
 			params={"type": "alert"},
+			timeout=15,
 		)
 
 		ret.raise_for_status()
+
 		data = ret.json()
-		if data["status"] != "success":
-			frappe.throw("Error fetching sites down")
-		return data["data"]["groups"][0]["rules"]
+
+		if data.get("status") != "success":
+			frappe.throw("Error fetching alerts from Prometheus")
+
+		groups = data.get("data", {}).get("groups", [])
+
+		alerts = []
+
+		for group in groups:
+			alerts.extend(group.get("rules", []))
+
+		return alerts
 
 	@property
 	def sites_down_alerts(self) -> list[SitesDownAlert]:
