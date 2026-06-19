@@ -3182,6 +3182,10 @@ class Server(BaseServer):
 		frappe.enqueue_doc(self.doctype, self.name, "_setup_ncdu")
 
 	@frappe.whitelist()
+	def setup_rclone(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_rclone")
+
+	@frappe.whitelist()
 	def install_nfs_common(self):
 		"""Install nfs common on this server"""
 		frappe.enqueue_doc(self.doctype, self.name, "_install_nfs_common")
@@ -3209,6 +3213,18 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Install and ncdu Setup Exception", server=self.as_dict())
+
+	def _setup_rclone(self):
+		try:
+			ansible = Ansible(
+				playbook="install_rclone.yml",
+				server=self,
+				user=self._ssh_user(),
+				port=self._ssh_port(),
+			)
+			ansible.run()
+		except Exception:
+			log_error("Install Rclone Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def add_upstream_to_proxy(self):
