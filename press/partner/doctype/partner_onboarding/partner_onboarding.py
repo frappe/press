@@ -237,13 +237,32 @@ def _get_mrr_currency(team) -> str:
 def _get_mrr_subscription_invoices(team_name: str) -> list:
 	"""Pick the invoice cycle that best represents the team's MRR.
 
-	Past the 15th the current month's billing cycle has accrued enough usage
-	to be representative, so we count it even when still Unpaid — the partner
-	is assumed to settle the invoice due at month end. Earlier in the month
-	that cycle is too young, so we fall back to last month's settled (Paid)
-	invoice instead.
+	A team in its first billing month only has a current month invoice, still
+	in Draft, so we count that one. Once a previous cycle exists we look at
+	last month's invoice instead: past the 15th that cycle is settled enough
+	to only count it if Paid, otherwise we also accept it as Unpaid since the
+	partner is assumed to settle it by month end.
 	"""
 	invoice = frappe.qb.DocType("Invoice")
+	subscription_invoice_count = frappe.db.count(
+		"Invoice",
+		filters={"team": team_name, "type": "Subscription", "docstatus": ["<", 2]},
+	)
+
+	if subscription_invoice_count <= 1:
+		current_month_due_date = get_last_day(today())
+		query = (
+			frappe.qb.from_(invoice)
+			.select(invoice.currency, invoice.total_before_discount)
+			.where(
+				(invoice.team == team_name)
+				& (invoice.type == "Subscription")
+				& (invoice.due_date == current_month_due_date)
+				& (invoice.docstatus < 2)
+			)
+		)
+		return query.run(as_dict=True)
+
 	last_month_due_date = get_last_day(add_months(today(), -1))
 	query = (
 		frappe.qb.from_(invoice)
