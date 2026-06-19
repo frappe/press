@@ -1218,11 +1218,8 @@ def process_update_site_recover_job_update(job: AgentJob):
 		"Failure": "Fatal",
 		"Delivery Failure": "Fatal",
 	}[job.status]
-	site_update = frappe.get_all(
-		"Site Update",
-		fields=["name", "status", "source_bench", "group"],
-		filters={"recover_job": job.name},
-	)[0]
+	site_update_name = frappe.db.get_value("Site Update", {"recover_job": job.name}, "name")
+	site_update = frappe.get_doc("Site Update", site_update_name)
 	if updated_status != site_update.status:
 		site_bench = frappe.db.get_value("Site", job.site, "bench")
 		move_site_step_status = frappe.db.get_value(
@@ -1234,25 +1231,24 @@ def process_update_site_recover_job_update(job: AgentJob):
 
 		update_status(site_update.name, updated_status)
 
-		recovery = frappe.get_doc("Site Update", site_update.name)
 		if updated_status == "Recovering":
 			frappe.db.set_value("Site", job.site, "status", "Recovering")
 		elif updated_status == "Recovered":
 			frappe.get_doc("Site", job.site).reset_previous_status()
-			recovery.restore_max_statement_time()
+			site_update.restore_max_statement_time()
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
 			frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
 			# Site is back on the source bench but its table restore failed; re-issue just that
 			# (it stays Fatal, cause resolved on success).
-			restored = (
+			fallback_triggered = (
 				job.job_type == "Recover Failed Site Migrate"
 				and move_site_step_status == "Success"
 				and restore_tables_after_failed_recovery(job, site_update.name)
 			)
 			# The fallback restore needs the bumped timeout, so leave the revert to its callback.
-			if not restored:
-				recovery.restore_max_statement_time()
+			if not fallback_triggered:
+				site_update.restore_max_statement_time()
 
 
 def mark_stuck_updates_as_fatal():
