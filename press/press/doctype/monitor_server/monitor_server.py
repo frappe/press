@@ -156,6 +156,7 @@ class MonitorServer(BaseServer):
 					"clusters_json": json.dumps(clusters),
 					"private_ip": self.private_ip,
 					"grafana_password": self.get_password("grafana_password"),
+					"prometheus_username": self.prometheus_username,
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
@@ -229,6 +230,7 @@ class MonitorServer(BaseServer):
 					"log_servers_json": json.dumps(log_servers),
 					"clusters_json": json.dumps(clusters),
 					"grafana_password": self.get_password("grafana_password"),
+					"prometheus_username": self.prometheus_username,
 				},
 			)
 			ansible.run()
@@ -243,7 +245,7 @@ class MonitorServer(BaseServer):
 	def alerts(self):
 		ret = requests.get(
 			f"https://{self.name}/prometheus/api/v1/rules",
-			auth=HTTPBasicAuth("frappe", self.get_password("grafana_password")),
+			auth=HTTPBasicAuth(self.prometheus_username, self.get_password("grafana_password")),
 			params={"type": "alert"},
 			timeout=15,
 		)
