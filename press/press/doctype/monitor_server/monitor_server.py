@@ -255,7 +255,13 @@ class MonitorServer(BaseServer):
 		data = ret.json()
 
 		if data.get("status") != "success":
-			frappe.throw("Error fetching alerts from Prometheus")
+			frappe.throw(
+				"""
+			Failed to fetch alerts from Prometheus.
+
+			Please verify that Prometheus is running and reachable.
+			"""
+			)
 
 		groups = data.get("data", {}).get("groups", [])
 
