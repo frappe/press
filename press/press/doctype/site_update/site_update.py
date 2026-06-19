@@ -605,10 +605,8 @@ class SiteUpdate(Document):
 
 			# Attempt to move site to source bench
 
-			# Recovering a migrate runs heavy restore/migrate queries that can exceed the
-			# database server's max_statement_time on large sites and get killed. Proactively
-			# bump max_statement_time by an hour so the recovery isn't timed out mid-query.
-			# Only large sites are at risk, so skip the bump for small databases.
+			# A migrate recovery's heavy queries can exceed max_statement_time on large sites
+			# and get killed, so bump it by an hour first. Small databases aren't at risk.
 			if self.deploy_type == "Migrate" and site.database_size > LARGE_DATABASE_SIZE:
 				old_timeout, new_timeout = site.increase_max_statement_time()
 				self.add_comment(
@@ -1162,19 +1160,14 @@ def process_update_site_job_update(job: AgentJob):
 			handle_failure(job, site_update)
 
 
-# Only proactively bump max_statement_time for sites whose database is larger than
-# this (Site Usage records the database size in MB); smaller sites won't hit the
-# statement timeout during a recovery migrate.
+# Above this DB size (Site Usage records it in MB) a recovery migrate risks the
+# statement timeout, so only then is the max_statement_time bump worthwhile.
 LARGE_DATABASE_SIZE = 1024  # 1 GB in MB
 
 
 def restore_tables_after_failed_recovery(failed_job: "AgentJob", site_update_name: str) -> None:
-	# A failed migrate recovery has already moved the site back to the source bench, so
-	# only its table restore is left undone. Re-running the recovery would fail at "Move
-	# Site" (the site directory is no longer on the destination bench), so restore the
-	# backed-up tables directly instead. The Restore Site Tables job brings the site back
-	# up through its own callback (leaving this update Fatal with its cause of failure
-	# marked resolved); we only link it here for traceability.
+	# The failed recovery already moved the site back, so re-running it would fail at the
+	# non-idempotent "Move Site"; just re-issue the leftover table restore (linked below).
 	site_update = frappe.get_doc("Site Update", site_update_name)
 	restore_job = frappe.get_doc("Site", site_update.site).restore_tables()
 	site_update.add_comment(
@@ -1217,9 +1210,8 @@ def process_update_site_recover_job_update(job: AgentJob):
 			frappe.db.set_value("Site", job.site, "status", "Broken")
 			frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
 			if job.job_type == "Recover Failed Site Migrate":
-				# Migrate recovery failed mid table-restore; attempt a one-shot Restore Site
-				# Tables to bring the site back up (its callback leaves this update Fatal but
-				# marks its cause of failure resolved on success).
+				# A migrate recovery failed mid table-restore; one-shot Restore Site Tables to
+				# bring the site back up (it stays Fatal, cause resolved on success).
 				restore_tables_after_failed_recovery(job, site_update.name)
 
 
