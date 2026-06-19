@@ -432,7 +432,11 @@ class TestSiteUpdate(FrappeTestCase):
 					"status": "Failure",
 					"steps": [{"name": "Move Site", "status": "Success"}],
 				},
-				"Recover Failed Site Migrate": {"status": "Failure"},
+				# Recovery moved the site back but its table restore failed, so the fallback runs.
+				"Recover Failed Site Migrate": {
+					"status": "Failure",
+					"steps": [{"name": "Move Site", "status": "Success"}],
+				},
 				"Restore Site Tables": {"status": "Success"},
 			}
 		):
@@ -490,7 +494,10 @@ class TestSiteUpdate(FrappeTestCase):
 					"status": "Failure",
 					"steps": [{"name": "Move Site", "status": "Success"}],
 				},
-				"Recover Failed Site Migrate": {"status": "Failure"},
+				"Recover Failed Site Migrate": {
+					"status": "Failure",
+					"steps": [{"name": "Move Site", "status": "Success"}],
+				},
 				"Restore Site Tables": {"status": "Failure"},
 			}
 		):
@@ -508,6 +515,38 @@ class TestSiteUpdate(FrappeTestCase):
 			frappe.get_value("Site", site.name, "fatal_site_update"),
 			site_update,
 			"Site's fatal_site_update should be set after recovery gives up",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_failed_migrate_recovery_before_move_site_does_not_restore_tables(self):
+		# If recovery fails at/before Move Site the site is still on the destination bench,
+		# so restoring tables would target the wrong bench — the fallback must not run.
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [{"name": "Move Site", "status": "Success"}],
+				},
+				"Recover Failed Site Migrate": {
+					"status": "Failure",
+					"steps": [{"name": "Move Site", "status": "Failure"}],
+				},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()  # Update fails, migrate recovery created
+			poll_pending_jobs()  # Migrate recovery fails before moving the site back
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update, "status"),
+			"Fatal",
+			"Site Update should be Fatal when recovery fails before Move Site",
+		)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"Restore Site Tables must not run when recovery failed before Move Site",
 		)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
