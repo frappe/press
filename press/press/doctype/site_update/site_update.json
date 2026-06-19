@@ -35,6 +35,7 @@
 		"physical_backup_restoration",
 		"recover_job",
 		"cause_of_failure_is_resolved",
+		"previous_max_statement_time",
 		"section_break_gmrz",
 		"update_start",
 		"column_break_jtqs",
@@ -180,6 +181,16 @@
 			"hide_seconds": 1,
 			"label": "Cause of Failure is Resolved",
 			"no_copy": 1
+		},
+		{
+			"description": "max_statement_time on the database server before the recovery migrate bump, restored once recovery finishes",
+			"fieldname": "previous_max_statement_time",
+			"fieldtype": "Int",
+			"hide_days": 1,
+			"hide_seconds": 1,
+			"label": "Previous Max Statement Time",
+			"no_copy": 1,
+			"read_only": 1
 		},
 		{
 			"fieldname": "column_break_14",

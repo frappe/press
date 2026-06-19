@@ -62,6 +62,7 @@ class SiteUpdate(Document):
 		group: DF.Link | None
 		logical_replication_backup: DF.Link | None
 		physical_backup_restoration: DF.Link | None
+		previous_max_statement_time: DF.Int
 		recover_job: DF.Link | None
 		scheduled_time: DF.Datetime | None
 		server: DF.Link | None
@@ -548,12 +549,21 @@ class SiteUpdate(Document):
 		if self.deploy_type != "Migrate" or site.database_size <= LARGE_DATABASE_SIZE:
 			return
 		old_timeout, new_timeout = site.increase_max_statement_time()
+		# Stash the old value so restore_max_statement_time can put it back once recovery ends.
+		self.db_set("previous_max_statement_time", old_timeout)
 		self.add_comment(
 			text=(
 				f"Increased <code>max_statement_time</code> on the database server from "
 				f"{old_timeout}s to {new_timeout}s before the recovery migrate job."
 			)
 		)
+
+	def restore_max_statement_time(self) -> None:
+		# No-op unless a recovery migrate bumped it (see bump_max_statement_time_before_recovery).
+		if not self.previous_max_statement_time:
+			return
+		frappe.get_doc("Site", self.site).set_max_statement_time(self.previous_max_statement_time)
+		self.db_set("previous_max_statement_time", 0)
 
 	@frappe.whitelist()
 	def trigger_recovery_job(self):  # noqa: C901
@@ -1168,8 +1178,25 @@ def process_update_site_job_update(job: AgentJob):
 # statement timeout, so only then is the max_statement_time bump worthwhile.
 LARGE_DATABASE_SIZE = 1024  # 1 GB in MB
 
+# Database errors a retry can recover from — the server dropping the connection, not a
+# genuine data/migration problem.
+TRANSIENT_DB_ERRORS = ["MySQL server has gone away", "Lost connection to MySQL server"]
 
-def restore_tables_after_failed_recovery(failed_job: "AgentJob", site_update_name: str) -> None:
+
+def failed_due_to_transient_db_error(job: "AgentJob") -> bool:
+	for error in TRANSIENT_DB_ERRORS:
+		if error in (job.output or "") or error in (job.traceback or ""):
+			return True
+		if frappe.db.exists("Agent Job Step", {"agent_job": job.name, "output": ("like", f"%{error}%")}):
+			return True
+	return False
+
+
+def restore_tables_after_failed_recovery(failed_job: "AgentJob", site_update_name: str) -> bool:
+	# Only a transient DB hiccup (e.g. the server dropping the connection mid-restore) is
+	# safely retryable; other failures need manual attention, so leave the site Fatal.
+	if not failed_due_to_transient_db_error(failed_job):
+		return False
 	# The failed recovery already moved the site back, so re-running it would fail at the
 	# non-idempotent "Move Site"; just re-issue the leftover table restore (linked below).
 	site_update = frappe.get_doc("Site Update", site_update_name)
@@ -1180,6 +1207,7 @@ def restore_tables_after_failed_recovery(failed_job: "AgentJob", site_update_nam
 			f"triggered <a href='/app/agent-job/{restore_job}'>Restore Site Tables</a> to recover the site."
 		)
 	)
+	return True
 
 
 def process_update_site_recover_job_update(job: AgentJob):
@@ -1206,17 +1234,25 @@ def process_update_site_recover_job_update(job: AgentJob):
 
 		update_status(site_update.name, updated_status)
 
+		recovery = frappe.get_doc("Site Update", site_update.name)
 		if updated_status == "Recovering":
 			frappe.db.set_value("Site", job.site, "status", "Recovering")
 		elif updated_status == "Recovered":
 			frappe.get_doc("Site", job.site).reset_previous_status()
+			recovery.restore_max_statement_time()
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
 			frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
-			if job.job_type == "Recover Failed Site Migrate" and move_site_step_status == "Success":
-				# Site is back on the source bench but its table restore failed; re-issue just
-				# that (it stays Fatal, cause resolved on success).
-				restore_tables_after_failed_recovery(job, site_update.name)
+			# Site is back on the source bench but its table restore failed; re-issue just that
+			# (it stays Fatal, cause resolved on success).
+			restored = (
+				job.job_type == "Recover Failed Site Migrate"
+				and move_site_step_status == "Success"
+				and restore_tables_after_failed_recovery(job, site_update.name)
+			)
+			# The fallback restore needs the bumped timeout, so leave the revert to its callback.
+			if not restored:
+				recovery.restore_max_statement_time()
 
 
 def mark_stuck_updates_as_fatal():

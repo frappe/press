@@ -136,6 +136,12 @@ SERVER_SCRIPT_DISABLED_VERSION = (
 )
 TRANSITORY_STATES = ["Updating", "Recovering", "Pending", "Installing"]
 
+# Fallback when max_statement_time isn't explicitly set on the database server.
+# Ref: press/fixtures/mariadb_variable.json
+DEFAULT_MAX_STATEMENT_TIME = 3600
+# How much to bump max_statement_time by (in seconds) each time — one hour.
+STATEMENT_TIME_INCREMENT = 3600
+
 
 class Site(Document, TagHelpers):
 	# begin: auto-generated types
@@ -1185,24 +1191,27 @@ class Site(Document, TagHelpers):
 			frappe.db.get_value("Site Usage", {"site": self.name}, "database", order_by="creation desc") or 0
 		)
 
-	def increase_max_statement_time(self, increment: int | None = None) -> tuple[int, int]:
+	def set_max_statement_time(self, seconds: int) -> None:
+		"""Set the database server's ``max_statement_time`` (a dynamic MariaDB variable, so
+		the change applies without a restart)."""
+		database_server = frappe.get_doc("Database Server", self.database_server_name)
+		database_server.add_or_update_mariadb_variable(
+			"max_statement_time",
+			"value_str",
+			str(seconds),
+			update_variables_synchronously=True,
+		)
+
+	def increase_max_statement_time(self, increment: int = STATEMENT_TIME_INCREMENT) -> tuple[int, int]:
 		"""Increase the database server's ``max_statement_time`` by ``increment`` seconds.
 
-		``max_statement_time`` is a dynamic MariaDB variable, so the change applies
-		without a restart. Returns ``(old_value, new_value)`` in seconds.
+		Returns ``(old_value, new_value)`` in seconds.
 		"""
-		# Constant is defined at module bottom, so resolve at call time, not in the signature.
-		increment = STATEMENT_TIME_INCREMENT if increment is None else increment
 		database_server = frappe.get_doc("Database Server", self.database_server_name)
 		current_timeout = database_server.get_mariadb_variable_value("max_statement_time")
 		current_timeout = int(float(current_timeout)) if current_timeout else DEFAULT_MAX_STATEMENT_TIME
 		new_timeout = current_timeout + increment
-		database_server.add_or_update_mariadb_variable(
-			"max_statement_time",
-			"value_str",
-			str(new_timeout),
-			update_variables_synchronously=True,
-		)
+		self.set_max_statement_time(new_timeout)
 		return current_timeout, new_timeout
 
 	@dashboard_whitelist()
@@ -5007,13 +5016,6 @@ def update_records_for_rename(job):
 	frappe.rename_doc("Site Domain", job.site, new_name)
 
 
-# Fallback when max_statement_time isn't explicitly set on the database server.
-# Ref: press/fixtures/mariadb_variable.json
-DEFAULT_MAX_STATEMENT_TIME = 3600
-# How much to bump max_statement_time by (in seconds) each time — one hour.
-STATEMENT_TIME_INCREMENT = 3600
-
-
 def process_restore_tables_job_update(job):
 	updated_status = {
 		"Pending": "Pending",
@@ -5026,15 +5028,23 @@ def process_restore_tables_job_update(job):
 	if updated_status != site_status:
 		if updated_status == "Active":
 			site = Site("Site", job.site)
+			fatal_update = site.fatal_site_update
 			site.reset_previous_status(fix_broken=True)
-			if site.fatal_site_update:
+			if fatal_update:
 				# The site is back up, but the update itself failed for good. Keep it Fatal and
 				# just mark the cause resolved (this also clears the site's fatal_site_update).
-				frappe.get_doc("Site Update", site.fatal_site_update).set_cause_of_failure_is_resolved()
+				site_update = frappe.get_doc("Site Update", fatal_update)
+				site_update.restore_max_statement_time()
+				site_update.set_cause_of_failure_is_resolved()
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
 			frappe.db.set_value("Site", job.site, "database_name", None)
 			create_site_status_update_webhook_event(job.site)
+			# A failed recovery fallback ends here; put back any bumped max_statement_time.
+			if job.status == "Failure" and (
+				fatal_update := frappe.db.get_value("Site", job.site, "fatal_site_update")
+			):
+				frappe.get_doc("Site Update", fatal_update).restore_max_statement_time()
 
 
 def process_create_user_job_update(job):
