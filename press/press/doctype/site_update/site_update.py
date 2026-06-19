@@ -925,7 +925,6 @@ def schedule_updates_server(server):
 			site.schedule_update()
 			update_triggered_count += 1
 			frappe.db.commit()
-			benches[site.bench] = True
 		except Exception:
 			log_error("Site Update Exception", site=site)
 			frappe.db.rollback()
