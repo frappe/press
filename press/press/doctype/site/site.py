@@ -4519,7 +4519,7 @@ def process_new_site_job_update(job):  # noqa: C901
 
 	if "Success" == first == second:
 		updated_status = "Active"
-		site: Site = Site("Site", job.site)
+		site = Site("Site", job.site)
 		is_unified_server = frappe.db.get_value("Server", site.server, "is_unified_server")
 		# Only noticed this on unified servers
 		if is_unified_server:
@@ -4774,7 +4774,7 @@ def process_install_app_site_job_update(job):
 		"Delivery Failure": "Active",
 	}[job.status]
 
-	site: Site = frappe.get_doc("Site", job.site)
+	site = Site("Site", job.site)
 
 	if job.status == "Success":
 		# Always sync apps on success to ensure installed app is shown
@@ -4799,7 +4799,7 @@ def process_uninstall_app_site_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status")
 	_create_site_backup_from_agent_job(job)
 	if updated_status != site_status:
-		site: Site = frappe.get_doc("Site", job.site)
+		site = Site("Site", job.site)
 		site.sync_apps()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
@@ -4868,7 +4868,7 @@ def process_reinstall_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		create_site_status_update_webhook_event(job.site)
 	if job.status == "Success":
-		site: Site = Site("Site", job.site)
+		site = Site("Site", job.site)
 		frappe.db.set_value("Site", site.name, "setup_wizard_complete", 0)
 		frappe.db.set_value("Site", site.name, "database_name", None)
 		frappe.db.set_value("Site", site.name, "additional_system_user_created", False)
@@ -4890,7 +4890,7 @@ def process_migrate_site_job_update(job):
 	}[job.status]
 
 	if updated_status == "Active":
-		site: Site = frappe.get_doc("Site", job.site)
+		site = Site("Site", job.site)
 		if site.status_before_update:
 			site.reset_previous_status(fix_broken=True)
 			return
@@ -4986,7 +4986,7 @@ def process_move_site_to_bench_job_update(job):
 		create_site_status_update_webhook_event(job.site)
 		return
 	if job.status == "Success":
-		site = frappe.get_doc("Site", job.site)
+		site = Site("Site", job.site)
 		site.reset_previous_status(fix_broken=True)
 
 
@@ -5025,7 +5025,7 @@ def process_restore_tables_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
 		if updated_status == "Active":
-			site = frappe.get_doc("Site", job.site)
+			site = Site("Site", job.site)
 			site.reset_previous_status(fix_broken=True)
 			if site.fatal_site_update:
 				# The site is back up, but the update itself failed for good. Keep it Fatal and
@@ -5535,7 +5535,7 @@ def process_refresh_database_usage_job_update(job: AgentJob):
 	if not job.site:
 		return
 
-	site: Site = frappe.get_doc("Site", job.site)
+	site = Site("Site", job.site)
 	with suppress(Exception):
 		# Don't throw error on failure of syncing also
 		site.sync_info()
