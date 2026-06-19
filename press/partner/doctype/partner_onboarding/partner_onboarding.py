@@ -257,13 +257,8 @@ def _get_mrr_subscription_invoices(team_name: str) -> list:
 	)
 
 	if getdate(today()).day > 15:
-		# Current cycle is representative. Count it even when still a draft,
-		# Unpaid invoice (Unpaid invoices are not submitted, so docstatus is 0)
-		# — the partner is assumed to settle the invoice due at month end.
 		query = query.where(invoice.status == "Paid")
 	else:
-		# Too early in the cycle to trust it, so require last month's settled
-		# (Paid, hence submitted) invoice instead.
 		query = query.where(invoice.status.isin(["Paid", "Unpaid"]))
 
 	return query.run(as_dict=True)
