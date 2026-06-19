@@ -30,7 +30,6 @@ from press.press.doctype.site.site import (
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.site_update.site_update import (
-	MAX_RECOVERY_RETRIES,
 	SiteUpdate,
 	is_site_in_deploy_hours,
 	run_scheduled_updates,
@@ -400,70 +399,119 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertEqual(frappe.get_value("Site Update", site_update_name, "status"), "Cancelled")
 		self.assertTrue(frappe.db.exists("Press Notification", {"type": "Site Update", "team": site.team}))
 
-	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_recovery_retries_on_transient_mysql_error_and_goes_fatal_after_max_retries(self):
-		app1 = create_test_app()
-		app2 = create_test_app("app2", "App 2")
-
-		group = create_test_release_group([app1, app2])
+	def _migrate_site_with_difference(self) -> Site:
+		app = create_test_app()
+		group = create_test_release_group([app])
 		bench1 = create_test_bench(group=group)
 		bench2 = create_test_bench(group=group, server=bench1.server)
-
 		create_test_deploy_candidate_differences(bench2.candidate)
+		# Mark the site's app as a Migrate in the difference so the update's deploy_type is
+		# Migrate and recovery uses "Recover Failed Site Migrate".
+		difference = frappe.get_doc(
+			"Deploy Candidate Difference",
+			{"source": bench1.candidate, "destination": bench2.candidate},
+		)
+		app_row = find(difference.apps, lambda row: row.app == app.name)
+		if app_row:
+			app_row.deploy_type = "Migrate"
+		else:
+			difference.append("apps", {"app": app.name, "deploy_type": "Migrate"})
+		difference.flags.ignore_validate = True
+		difference.save()
+		return create_test_site(bench=bench1.name)
 
-		site = create_test_site(bench=bench1.name)
-		plan = create_test_plan(site.doctype, cpu_time=8)
-		create_test_subscription(site.name, plan.name, site.team)
-		site.reload()
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_failed_migrate_recovery_restores_site_tables_and_resolves_fatal_update(self):
+		site = self._migrate_site_with_difference()
 
 		with fake_agent_job(
 			{
-				"Update Site Pull": {"status": "Failure"},
-				"Recover Failed Site Update": {
+				# Move Site succeeding moves the site to the destination bench, so its
+				# recovery is a "Recover Failed Site Migrate".
+				"Update Site Migrate": {
 					"status": "Failure",
-					"data": {"output": "MySQL server has gone away"},
+					"steps": [{"name": "Move Site", "status": "Success"}],
 				},
+				"Recover Failed Site Migrate": {"status": "Failure"},
+				"Restore Site Tables": {"status": "Success"},
 			}
 		):
 			site_update = site.schedule_update()
-			poll_pending_jobs()  # Update fails, recovery job 1 created
+			poll_pending_jobs()  # Update fails, migrate recovery created
+			poll_pending_jobs()  # Migrate recovery fails, Restore Site Tables triggered
 
-			for _ in range(MAX_RECOVERY_RETRIES - 1):
-				poll_pending_jobs()  # Recovery fails with mysql error, retries
-				self.assertEqual(
-					frappe.get_value("Site Update", site_update, "status"),
-					"Recovering",
-					"Site Update should still be Recovering while retrying after MySQL error",
-				)
+			restore_job = frappe.get_value(
+				"Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}, "name"
+			)
+			self.assertTrue(
+				restore_job,
+				"A failed migrate recovery should trigger a Restore Site Tables job",
+			)
 
-			poll_pending_jobs()  # Final recovery fails, max retries exhausted
+			poll_pending_jobs()  # Restore succeeds, site brought back up
 
+		# The update itself failed for good, so it stays Fatal — but with its cause of
+		# failure marked resolved, since the fallback restore brought the site back up.
 		self.assertEqual(
 			frappe.get_value("Site Update", site_update, "status"),
 			"Fatal",
-			f"Site Update should be Fatal after {MAX_RECOVERY_RETRIES} failed recovery attempts with MySQL error",
+			"Site Update should stay Fatal after the fallback table restore",
+		)
+		self.assertTrue(
+			frappe.get_value("Site Update", site_update, "cause_of_failure_is_resolved"),
+			"Site Update's cause of failure should be marked resolved after the fallback restore succeeds",
 		)
 		self.assertEqual(
-			frappe.get_value("Site", site.name, "fatal_site_update"),
-			site_update,
-			"Site's fatal_site_update should be set after exhausting recovery retries",
+			frappe.get_value("Site", site.name, "status"),
+			"Active",
+			"Site should be Active after the fallback table restore succeeds",
 		)
-		retry_comments = frappe.db.count(
+		restore_comments = frappe.db.count(
 			"Comment",
 			{
 				"reference_doctype": "Site Update",
 				"reference_name": site_update,
-				"content": ("like", "%retrying recovery%"),
+				"content": ("like", "%Restore Site Tables%"),
 			},
 		)
 		self.assertEqual(
-			retry_comments,
-			MAX_RECOVERY_RETRIES - 1,
-			"Each retried recover job should be logged as a comment on the Site Update",
+			restore_comments,
+			1,
+			"The fallback table restore job should be referenced in a comment on the Site Update",
 		)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-	def test_restore_tables_success_activates_site_and_marks_site_update_as_recovered(self):
+	def test_failed_migrate_recovery_then_failed_table_restore_goes_fatal(self):
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [{"name": "Move Site", "status": "Success"}],
+				},
+				"Recover Failed Site Migrate": {"status": "Failure"},
+				"Restore Site Tables": {"status": "Failure"},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()  # Update fails, migrate recovery created
+			poll_pending_jobs()  # Migrate recovery fails, Restore Site Tables triggered
+			poll_pending_jobs()  # Table restore also fails, recovery gives up
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update, "status"),
+			"Fatal",
+			"Site Update should be Fatal after the fallback table restore also fails",
+		)
+		self.assertEqual(
+			frappe.get_value("Site", site.name, "fatal_site_update"),
+			site_update,
+			"Site's fatal_site_update should be set after recovery gives up",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_restore_tables_success_activates_site_and_resolves_fatal_update(self):
 		app1 = create_test_app()
 
 		group = create_test_release_group([app1])
@@ -494,8 +542,12 @@ class TestSiteUpdate(FrappeTestCase):
 		)
 		self.assertEqual(
 			frappe.get_value("Site Update", fatal_site_update.name, "status"),
-			"Recovered",
-			"Site Update should be Recovered after restore_tables success",
+			"Fatal",
+			"Site Update should stay Fatal after restore_tables success",
+		)
+		self.assertTrue(
+			frappe.get_value("Site Update", fatal_site_update.name, "cause_of_failure_is_resolved"),
+			"Site Update's cause of failure should be marked resolved after restore_tables success",
 		)
 
 	def test_database_size_returns_latest_usage_in_mb(self):

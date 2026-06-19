@@ -1170,9 +1170,10 @@ class Site(Document, TagHelpers):
 		if not self.status_before_update:
 			self.status_before_update = self.status
 		agent = Agent(self.server)
-		agent.restore_site_tables(self)
+		job = agent.restore_site_tables(self)
 		self.status = "Pending"
 		self.save()
+		return job.name
 
 	@property
 	def database_size(self) -> int:
@@ -5027,13 +5028,12 @@ def process_restore_tables_job_update(job):
 			site = frappe.get_doc("Site", job.site)
 			fatal_update = site.fatal_site_update
 			site.reset_previous_status(fix_broken=True)
-			frappe.db.set_value("Site", job.site, "fatal_site_update", None)
 			if fatal_update:
-				from press.press.doctype.site_update.site_update import (
-					update_status as update_site_update_status,
-				)
-
-				update_site_update_status(fatal_update, "Recovered")
+				# The site is back up, but the update itself failed for good. Keep it Fatal and
+				# just mark the cause resolved (this also clears the site's fatal_site_update).
+				frappe.get_doc("Site Update", fatal_update).set_cause_of_failure_is_resolved()
+			else:
+				frappe.db.set_value("Site", job.site, "fatal_site_update", None)
 		else:
 			frappe.db.set_value("Site", job.site, "status", updated_status)
 			frappe.db.set_value("Site", job.site, "database_name", None)

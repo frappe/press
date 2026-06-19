@@ -1162,62 +1162,27 @@ def process_update_site_job_update(job: AgentJob):
 			handle_failure(job, site_update)
 
 
-MAX_RECOVERY_RETRIES = 3
-
 # Only proactively bump max_statement_time for sites whose database is larger than
 # this (Site Usage records the database size in MB); smaller sites won't hit the
 # statement timeout during a recovery migrate.
 LARGE_DATABASE_SIZE = 1024  # 1 GB in MB
 
-TRANSIENT_DB_ERRORS = ["MySQL server has gone away", "Lost connection to MySQL server"]
 
-
-def failed_due_to_transient_db_error(job: "AgentJob") -> bool:
-	for error in TRANSIENT_DB_ERRORS:
-		if error in (job.traceback or "") or error in (job.output or ""):
-			return True
-		if frappe.db.exists("Agent Job Step", {"agent_job": job.name, "output": ("like", f"%{error}%")}):
-			return True
-	return False
-
-
-def should_retry_recovery(job: "AgentJob", site_update_name: str) -> bool:
-	if not failed_due_to_transient_db_error(job):
-		return False
-	site_update_creation = frappe.db.get_value("Site Update", site_update_name, "creation")
-	failed_count = frappe.db.count(
-		"Agent Job",
-		{
-			"job_type": (
-				"in",
-				["Recover Failed Site Migrate", "Recover Failed Site Pull", "Recover Failed Site Update"],
-			),
-			"site": job.site,
-			"status": "Failure",
-			"creation": (">", site_update_creation),
-		},
-	)
-	return failed_count < MAX_RECOVERY_RETRIES
-
-
-def retry_recovery(failed_job: "AgentJob", site_update_name: str) -> None:
-	# trigger_recovery_job overwrites recover_job with the next job, so leave a trail of
-	# each failed recover job here — otherwise the retried jobs are only findable via the
-	# Agent Job list.
+def restore_tables_after_failed_recovery(failed_job: "AgentJob", site_update_name: str) -> None:
+	# A failed migrate recovery has already moved the site back to the source bench, so
+	# only its table restore is left undone. Re-running the recovery would fail at "Move
+	# Site" (the site directory is no longer on the destination bench), so restore the
+	# backed-up tables directly instead. The Restore Site Tables job brings the site back
+	# up through its own callback (leaving this update Fatal with its cause of failure
+	# marked resolved); we only link it here for traceability.
 	site_update = frappe.get_doc("Site Update", site_update_name)
+	restore_job = frappe.get_doc("Site", site_update.site).restore_tables()
 	site_update.add_comment(
 		text=(
-			f"Recover job <a href='/app/agent-job/{failed_job.name}'>{failed_job.name}</a> failed with a "
-			f"transient database error; retrying recovery."
+			f"Recover job <a href='/app/agent-job/{failed_job.name}'>{failed_job.name}</a> failed; "
+			f"triggered <a href='/app/agent-job/{restore_job}'>Restore Site Tables</a> to recover the site."
 		)
 	)
-	# db_set clears it on the in-memory doc too, so trigger_recovery_job's recover_job
-	# guard doesn't short-circuit on the stale value.
-	site_update.db_set("recover_job", None)
-	# Reflect that recovery is in progress; trigger_recovery_job creates a fresh recover job.
-	update_status(site_update_name, "Recovering")
-	frappe.db.set_value("Site", site_update.site, "status", "Recovering")
-	site_update.trigger_recovery_job()
 
 
 def process_update_site_recover_job_update(job: AgentJob):
@@ -1242,10 +1207,6 @@ def process_update_site_recover_job_update(job: AgentJob):
 			frappe.db.set_value("Site", job.site, "bench", site_update.source_bench)
 			frappe.db.set_value("Site", job.site, "group", site_update.group)
 
-		if updated_status == "Fatal" and should_retry_recovery(job, site_update.name):
-			retry_recovery(job, site_update.name)
-			return
-
 		update_status(site_update.name, updated_status)
 
 		if updated_status == "Recovering":
@@ -1255,6 +1216,10 @@ def process_update_site_recover_job_update(job: AgentJob):
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
 			frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
+			if job.job_type == "Recover Failed Site Migrate":
+				# Migrate recovery failed mid table-restore; attempt a one-shot Restore Site
+				# Tables to recover the site (its callback marks this update Recovered on success).
+				restore_tables_after_failed_recovery(job, site_update.name)
 
 
 def mark_stuck_updates_as_fatal():
