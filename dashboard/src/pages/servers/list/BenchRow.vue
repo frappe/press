@@ -52,22 +52,9 @@ const wired = ref(false)
 const pipelineId = ref(null)
 const pipelineRes = ref()
 
-const benchDeployStatus = computed(() => {
-	if (!pipelineRes.value?.doc) return
-
-	let status = 'Deploy in Queue'
-	const stages = pipelineRes.value.doc.steps?.stages ?? []
-	const firstRunning = stages.find((x) => x.status === 'Running')
-
-	if (firstRunning) status = firstRunning.label
-	const firstFailure = stages.find((x) => x.status === 'Failure')
-	if (firstFailure) status = 'Failed'
-
-	if (pipelineRes.value.doc.status == 'Success')
-		status = 'Deployed Successfully'
-
-	return status
-})
+const benchDeployStatus = computed(() =>
+	!pipelineRes.value?.doc ? null : 'Deploying',
+)
 
 const handlePipelineUpdate = (x) => {
 	if (x.doctype === 'Release Pipeline' && x.name === pipelineId.value) {
@@ -263,7 +250,7 @@ onBeforeUnmount(() => {
 						</router-link>
 					</Tooltip>
 
-          <Tooltip :text="`${data.site_count || 0} sites`">
+					<Tooltip :text="`${data.site_count || 0} sites`">
 						<span
 							class="text-xs bg-surface-gray-2 text-ink-gray-6 rounded px-1.5 py-0.5 font-medium"
 						>
