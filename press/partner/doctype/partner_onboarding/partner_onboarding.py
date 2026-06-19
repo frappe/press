@@ -244,24 +244,27 @@ def _get_mrr_subscription_invoices(team_name: str) -> list:
 	invoice instead.
 	"""
 	invoice = frappe.qb.DocType("Invoice")
+	last_month_due_date = get_last_day(add_months(today(), -1))
 	query = (
 		frappe.qb.from_(invoice)
 		.select(invoice.currency, invoice.total_before_discount)
-		.where((invoice.team == team_name) & (invoice.type == "Subscription"))
+		.where(
+			(invoice.team == team_name)
+			& (invoice.type == "Subscription")
+			& (invoice.due_date == last_month_due_date)
+			& (invoice.docstatus < 2)
+		)
 	)
 
 	if getdate(today()).day > 15:
 		# Current cycle is representative. Count it even when still a draft,
 		# Unpaid invoice (Unpaid invoices are not submitted, so docstatus is 0)
 		# — the partner is assumed to settle the invoice due at month end.
-		query = query.where((invoice.due_date == get_last_day(today())) & (invoice.docstatus < 2))
+		query = query.where(invoice.status == "Paid")
 	else:
 		# Too early in the cycle to trust it, so require last month's settled
 		# (Paid, hence submitted) invoice instead.
-		last_month_due_date = get_last_day(add_months(today(), -1))
-		query = query.where(
-			(invoice.due_date == last_month_due_date) & (invoice.status == "Paid") & (invoice.docstatus == 1)
-		)
+		query = query.where(invoice.status.isin(["Paid", "Unpaid"]))
 
 	return query.run(as_dict=True)
 
