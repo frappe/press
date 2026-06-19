@@ -511,6 +511,35 @@ class TestSiteUpdate(FrappeTestCase):
 		)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_skipped_backups_update_failure_goes_fatal_without_attempting_recovery(self):
+		# With backups skipped there is no backup to roll back to, so a failed update must
+		# go straight to Fatal — no recover job and, in particular, no Restore Site Tables
+		# fallback (there are no tables to restore).
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"steps": [{"name": "Move Site", "status": "Success"}],
+				},
+			}
+		):
+			site_update = site.schedule_update(skip_backups=True)
+			poll_pending_jobs()  # Update fails
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update, "status"),
+			"Fatal",
+			"A skipped-backups update failure should go straight to Fatal",
+		)
+		for job_type in ("Recover Failed Site Migrate", "Recover Failed Site Update", "Restore Site Tables"):
+			self.assertFalse(
+				frappe.db.exists("Agent Job", {"site": site.name, "job_type": job_type}),
+				f"A skipped-backups update failure should not trigger a {job_type} job",
+			)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 	def test_restore_tables_success_activates_site_and_resolves_fatal_update(self):
 		app1 = create_test_app()
 
