@@ -7,6 +7,7 @@ Guidelines for writing good code in this project.
 - Choose clean code over clever code.
 - Write object-oriented code. Behaviour belongs on the object it describes.
 - Keep functions small — 10 lines is a good target. If a function needs a comment to explain what a block does, that block should be its own function.
+- Keep comments short — one line is best, two lines at most. A comment that needs more is a sign the code should be clearer or the explanation belongs in a doc.
 - Keep files between 100 and 300 lines. A file that keeps growing is a sign that it is doing too many things.
 - Avoid abbreviations. Spell names out. Short names are fine only for loop variables or genuinely obvious abbreviations (`doc`, `e`).
 - Reuse. Write as little code as possible. If you are about to write something that sounds general, check whether it already exists.
