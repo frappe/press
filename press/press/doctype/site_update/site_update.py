@@ -542,6 +542,19 @@ class SiteUpdate(Document):
 		except Exception:
 			return []
 
+	def bump_max_statement_time_before_recovery(self, site: "Site") -> None:
+		# A migrate recovery's heavy queries can exceed max_statement_time on large sites
+		# and get killed, so bump it by an hour first. Small databases aren't at risk.
+		if self.deploy_type != "Migrate" or site.database_size <= LARGE_DATABASE_SIZE:
+			return
+		old_timeout, new_timeout = site.increase_max_statement_time()
+		self.add_comment(
+			text=(
+				f"Increased <code>max_statement_time</code> on the database server from "
+				f"{old_timeout}s to {new_timeout}s before the recovery migrate job."
+			)
+		)
+
 	@frappe.whitelist()
 	def trigger_recovery_job(self):  # noqa: C901
 		if self.recover_job:
@@ -605,16 +618,7 @@ class SiteUpdate(Document):
 
 			# Attempt to move site to source bench
 
-			# A migrate recovery's heavy queries can exceed max_statement_time on large sites
-			# and get killed, so bump it by an hour first. Small databases aren't at risk.
-			if self.deploy_type == "Migrate" and site.database_size > LARGE_DATABASE_SIZE:
-				old_timeout, new_timeout = site.increase_max_statement_time()
-				self.add_comment(
-					text=(
-						f"Increased <code>max_statement_time</code> on the database server from "
-						f"{old_timeout}s to {new_timeout}s before the recovery migrate job."
-					)
-				)
+			self.bump_max_statement_time_before_recovery(site)
 
 			# Disable maintenance mode for active sites
 			activate = site.status_before_update == "Active"
