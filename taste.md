@@ -31,6 +31,7 @@ Guidelines for writing good code in this project.
 ## Frappe-specific
 
 - Use `frappe.db.set_value` for single-field updates on existing records; use `doc.save()` when multiple fields change together.
+- Prefer the controller class directly — `Site("Site", name)` over `frappe.get_doc("Site", name)` — especially when that controller is defined in the same file. It's shorter, and it gives the type checker and the reader the concrete type.
 - Use `frappe.get_cached_doc` for documents that are read frequently and not mutated.
 - Prefer `frappe.db.exists` for existence checks over `frappe.get_value` with a null check.
 - `ignore_permissions=True` is acceptable inside scheduled jobs and background hooks that run as Administrator, where the permission model does not apply.
