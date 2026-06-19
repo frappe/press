@@ -202,6 +202,9 @@ class PressSettings(Document):
 		publish_docs: DF.Check
 		pulse_api_key: DF.Data | None
 		pulse_site: DF.Data | None
+		raven_access_key_id: DF.Data | None
+		raven_secret_access_key: DF.Password | None
+		raven_url: DF.Data | None
 		razorpay_key_id: DF.Data | None
 		razorpay_key_secret: DF.Password | None
 		razorpay_webhook_secret: DF.Data | None
