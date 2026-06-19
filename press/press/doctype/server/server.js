@@ -49,8 +49,8 @@ frappe.ui.form.on('Server', {
 				const res = await frm.call(method);
 				if (res.message && method == 'ping_agent_job') {
 					frappe.msgprint(
-						`Agejt Job <a href="/app/agent-job/${res?.message}">${res?.message}</a> created.`,
-					);
+						`Agent Job <a href="/app/agent-job/${res?.message}">${res?.message}</a> created.`,
+					)
 				} else if (res.message) {
 					frappe.msgprint(res.message);
 				} else {
