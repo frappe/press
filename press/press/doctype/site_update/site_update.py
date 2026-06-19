@@ -1218,7 +1218,8 @@ def process_update_site_recover_job_update(job: AgentJob):
 			frappe.db.set_value("Site", job.site, "fatal_site_update", site_update.name)
 			if job.job_type == "Recover Failed Site Migrate":
 				# Migrate recovery failed mid table-restore; attempt a one-shot Restore Site
-				# Tables to recover the site (its callback marks this update Recovered on success).
+				# Tables to bring the site back up (its callback leaves this update Fatal but
+				# marks its cause of failure resolved on success).
 				restore_tables_after_failed_recovery(job, site_update.name)
 
 

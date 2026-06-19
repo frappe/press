@@ -2,8 +2,8 @@
 
 When a site update (a `Pull` or `Migrate` deploy onto a new bench) fails, Press
 tries to put the site back the way it was before the update. This page covers
-that recovery flow — what runs automatically, when it retries, and when it gives
-up and asks a human to step in.
+that recovery flow — what runs automatically, the one-shot table restore Press
+falls back to, and when it gives up and asks a human to step in.
 
 The logic lives in the **Site Update** doctype
 (`press/press/doctype/site_update/site_update.py`) and the **Site** doctype
@@ -42,33 +42,39 @@ variable stored as a row in the Database Server's variables child table, so the
 change applies without a restart. The bump is recorded as a comment on the Site
 Update.
 
-### Retrying on transient database errors
+### When recovery fails
 
-A recovery job can fail for reasons that have nothing to do with the site — for
-example the database server briefly dropping the connection
-(`MySQL server has gone away`, `Lost connection to MySQL server`). These are
-detected from the recover job's output/traceback (and its step output) by
-`failed_due_to_transient_db_error`.
-
-When recovery fails with a transient error and fewer than
-`MAX_RECOVERY_RETRIES` (3) recovery attempts have failed, Press schedules a
-fresh recovery job instead of going fatal (`should_retry_recovery` →
-`retry_recovery`). The Site Update stays in `Recovering` while it retries.
-
-Once the retries are exhausted, the Site Update goes `Fatal`, the site is marked
+If the recovery job fails, the Site Update goes `Fatal`, the site is marked
 `Broken`, and `Site.fatal_site_update` is set to the failed update.
+
+When a **migrate** recovery (`Recover Failed Site Migrate`) is the one that
+failed, Press makes one automatic attempt to bring the site back up before
+leaving it for a human (`restore_tables_after_failed_recovery`):
+
+- A failed migrate recovery has *already moved the site back* to the source
+  bench; only its table restore is left undone. Re-running the whole recovery
+  would fail at "Move Site" because the agent's `move_site` is not idempotent —
+  the site directory is no longer on the destination bench.
+- So instead of re-running the recovery, Press re-issues just a
+  `Restore Site Tables` job (see below) and links it on the Site Update as a
+  comment for traceability.
 
 ## Restoring tables after a fatal update
 
-A site stuck on a `Fatal` Site Update can be recovered by restoring its tables
-from the backup (`Site.restore_tables`, an `Restore Site Tables` agent job),
-handled by `process_restore_tables_job_update`:
+Restoring a site's tables from its backup (`Site.restore_tables`, a
+`Restore Site Tables` agent job) is what brings a `Fatal` site back up — both
+the automatic fallback above and a manual operator click go through the same
+job, handled by `process_restore_tables_job_update`:
 
-- **On success**, the site is reactivated, `fatal_site_update` is cleared, and
-  the Site Update is marked `Recovered`.
-- **On failure**, the site stays `Broken`. Statement timeouts are avoided
-  proactively by the one-hour `max_statement_time` bump done before the recovery
-  migrate (see above), so there is no per-attempt retry loop here.
+- **On success**, the site is reactivated. If it was stuck on a fatal update,
+  that update **stays `Fatal`** but its cause of failure is marked resolved
+  (`set_cause_of_failure_is_resolved`, which also clears the site's
+  `fatal_site_update`). The site is usable again; the update itself still failed
+  and is recorded as such.
+- **On failure**, the site stays `Broken` and `fatal_site_update` remains set.
+  Statement timeouts are avoided proactively by the one-hour `max_statement_time`
+  bump done before the recovery migrate (see above), so there is no per-attempt
+  retry loop here.
 
 ## Skipped backups
 
@@ -92,16 +98,13 @@ Update fails
         │
         ▼
      Recovering ──► (recover job)
-        │                │
-        │   transient DB error, < 3 attempts
-        │                │
-        │◄───────────────┘ retry
         │
         ├─ recover success ─────────► Recovered
         │
-        └─ retries exhausted ───────► Fatal  (site Broken, fatal_site_update set)
+        └─ recover failure ─────────► Fatal  (site Broken, fatal_site_update set)
                                           │
-                                          ▼
+                       migrate recovery? one-shot restore_tables fallback
+                                          │
                                    restore_tables
                                           │
                           ┌───────────────┴───────────────┐
@@ -109,14 +112,15 @@ Update fails
                       failure                         success
                           │                               │
                           ▼                               ▼
-                       Broken                         Recovered
+                       Broken                    Fatal, cause resolved
+                  (fatal_site_update             (site Active again,
+                       remains set)               fatal_site_update cleared)
 ```
 
 ## Key constants
 
 | Constant | Value | Meaning |
 |----------|-------|---------|
-| `MAX_RECOVERY_RETRIES` | 3 | Recovery retries allowed on transient DB errors. |
 | `STATEMENT_TIME_INCREMENT` | 3600 | Seconds (one hour) `max_statement_time` is bumped by before a recovery migrate on large sites. |
 | `LARGE_DATABASE_SIZE` | 1024 | DB size (MB) above which the `max_statement_time` bump is applied. |
 | `DEFAULT_MAX_STATEMENT_TIME` | 3600 | Assumed `max_statement_time` when it isn't set on the database server. |
