@@ -204,7 +204,8 @@ def update_with_skipped_backups_update_failure(details: Details, job: AgentJob) 
 	details["message"] = f"""<p>The update for site <b>{job.site}</b> failed.</p>
 	<p>Because this update was run with backups skipped, there is no backup to restore from and the
 	site cannot be recovered automatically. The database may be left in a partially migrated state.</p>
-	<p>Please connect to the bench over SSH and fix the site manually.</p>
+	<p>Please <a class="underline" href="https://docs.frappe.io/cloud/benches/ssh">connect to the bench over SSH</a> and
+	fix the site manually.</p>
 	"""
 
 	return True
