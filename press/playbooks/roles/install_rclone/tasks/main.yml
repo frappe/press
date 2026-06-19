@@ -1,0 +1,10 @@
+---
+- name: Check if Rclone is Installed
+  command: rclone version
+  register: rclone_version
+  ignore_errors: true
+  changed_when: false
+
+- name: Install Rclone
+  shell: curl https://rclone.org/install.sh | bash
+  when: rclone_version.rc != 0
