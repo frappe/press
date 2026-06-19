@@ -589,6 +589,40 @@ class TestSiteUpdate(FrappeTestCase):
 		)
 
 	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
+	def test_transient_error_in_update_job_does_not_restore_tables(self):
+		# The transient-error check looks at the recover job, not the failed update job. A
+		# transient error during the update must not, on its own, trigger the fallback.
+		site = self._migrate_site_with_difference()
+
+		with fake_agent_job(
+			{
+				"Update Site Migrate": {
+					"status": "Failure",
+					"data": {"output": "Lost connection to MySQL server during query"},
+					"steps": [{"name": "Move Site", "status": "Success"}],
+				},
+				# Recovery fails for an unrelated, non-transient reason.
+				"Recover Failed Site Migrate": {
+					"status": "Failure",
+					"data": {"output": "Table 'tabFoo' doesn't exist"},
+					"steps": [{"name": "Move Site", "status": "Success"}],
+				},
+			}
+		):
+			site_update = site.schedule_update()
+			poll_pending_jobs()  # Update fails with a transient error, migrate recovery created
+			poll_pending_jobs()  # Recovery fails for a non-transient reason
+
+		self.assertEqual(
+			frappe.get_value("Site Update", site_update, "status"),
+			"Fatal",
+		)
+		self.assertFalse(
+			frappe.db.exists("Agent Job", {"site": site.name, "job_type": "Restore Site Tables"}),
+			"A transient error in the update job must not trigger Restore Site Tables",
+		)
+
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 	def test_skipped_backups_update_failure_goes_fatal_without_attempting_recovery(self):
 		# With backups skipped there is no backup to roll back to, so a failed update must
 		# go straight to Fatal — no recover job and, in particular, no Restore Site Tables
