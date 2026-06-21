@@ -105,6 +105,37 @@ investigation, to diagnose a past incident. All time-windowed collectors (server
 probe, slow endpoints, background jobs, error summary) look back from this point rather than from
 the wall clock.
 
+## Investigation Flow
+
+```
+incident_time (or now)
+   |  anchor all windows back from here
+   v
+collect facts -> redact PII -> evaluate signals
+   |
+   +- metrics -- both servers silent --+- monitor up     -> BOTH SERVERS DOWN ......... High
+   |                                   +- monitor silent -> MONITOR DOWN (caveat only)
+   |          \- one server silent ----------------------> THAT SERVER DOWN ......... High
+   |
+   +- disk >= 98% --+- DB  -> DB DISK FULL -> 500s ........................ High
+   |                \- app -> APP DISK FULL -> assorted errors ............ High
+   |
+   +- IOPS spike ---+- iowait high   -> DB I/O-BOUND ...................... cause
+   |                \- iowait normal -> throughput only .................. not a cause
+   |
+   +- incident -----+- own server   -> likely cause ...................... High
+   |                \- cluster only -> unlikely unless cluster-wide
+   |
+   \- slow custom endpoint in last 1h -> LIVE PROBLEM ................... High
+              |
+              v
+   >= 2 causes? --yes--> uptime graph: earliest signal = CAUSE, later = SYMPTOMS
+              \--no---> single likely_cause
+              |
+              v
+   report: cause / next_steps / confidence --> (optional) AI analysis
+```
+
 ## Performance Investigation
 
 Performance tickets require a structured escalation path through platform-observable signals before conclusions can be drawn.
