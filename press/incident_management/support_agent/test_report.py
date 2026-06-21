@@ -419,3 +419,206 @@ class TestSupportAgentReport(FrappeTestCase):
 		)
 
 		self.assertFalse(any("Gunicorn" in c for c in [report["likely_cause"]]))
+
+	def _base(self, **overrides):
+		payload = {
+			"site": {"name": "test.frappe.cloud", "status": "Active", "server": "s1", "usage_percent": {}},
+			"bench": {"status": "Active"},
+			"deployments": [],
+			"background_jobs": {},
+			"backups": {},
+			"domains": {},
+			"incidents": [],
+			"errors": {},
+		}
+		payload.update(overrides)
+		return payload
+
+	def test_db_disk_full_is_high_confidence_500_cause(self):
+		report = generate_report(
+			self._base(
+				db_server_metrics={
+					"available": True,
+					"has_data": True,
+					"disk": {"available": True, "percent": 99.2, "full": True},
+				}
+			)
+		)
+
+		self.assertIn("Database server disk is full", report["likely_cause"])
+		self.assertIn("500", report["likely_cause"])
+		self.assertEqual(report["confidence"], "High")
+
+	def test_app_disk_full_is_flagged_but_not_necessarily_500(self):
+		report = generate_report(
+			self._base(
+				app_server_metrics={
+					"available": True,
+					"has_data": True,
+					"disk": {"available": True, "percent": 98.5, "full": True},
+				}
+			)
+		)
+
+		self.assertIn("App server disk is full", report["likely_cause"])
+		self.assertIn("not always 500", report["likely_cause"])
+
+	def test_disk_below_threshold_is_not_full(self):
+		report = generate_report(
+			self._base(
+				db_server_metrics={
+					"available": True,
+					"has_data": True,
+					"disk": {"available": True, "percent": 91.0, "full": False},
+				}
+			)
+		)
+
+		self.assertEqual(report["confidence"], "Low")
+
+	def test_both_servers_silent_with_healthy_monitor_flags_outage(self):
+		report = generate_report(
+			self._base(
+				app_server_metrics={"available": True, "has_data": False},
+				db_server_metrics={"available": True, "has_data": False},
+				monitor_health={"available": True, "has_data": True},
+			)
+		)
+
+		self.assertIn("both", report["likely_cause"].lower())
+		self.assertEqual(report["confidence"], "High")
+
+	def test_both_servers_silent_with_dead_monitor_blames_monitor(self):
+		report = generate_report(
+			self._base(
+				app_server_metrics={"available": True, "has_data": False},
+				db_server_metrics={"available": True, "has_data": False},
+				monitor_health={"available": True, "has_data": False},
+			)
+		)
+
+		self.assertTrue(any("monitoring server" in e for e in report["evidence"]))
+		# Monitor being down is a caveat, not a customer-facing cause.
+		self.assertEqual(report["confidence"], "Low")
+
+	def test_single_server_silent_flags_that_server_down(self):
+		report = generate_report(
+			self._base(
+				app_server_metrics={"available": True, "has_data": False},
+				db_server_metrics={"available": True, "has_data": True, "cpu": {}},
+				monitor_health={"available": True, "has_data": True},
+			)
+		)
+
+		self.assertIn("App server appears to be down", report["likely_cause"])
+		self.assertEqual(report["confidence"], "High")
+
+	def test_db_iops_spike_without_iowait_is_not_a_cause(self):
+		report = generate_report(
+			self._base(
+				db_server_metrics={
+					"available": True,
+					"has_data": True,
+					"cpu": {"available": True, "spike_detected": False},
+					"iops": {"available": True, "peak": 5000, "mean": 1000, "spike_detected": True},
+					"iowait": {"available": True, "peak": 3.0, "spike_detected": False},
+				}
+			)
+		)
+
+		self.assertEqual(report["confidence"], "Low")
+		self.assertTrue(any("unlikely to be the bottleneck" in e for e in report["evidence"]))
+
+	def test_db_iops_spike_with_high_iowait_flags_io_bound(self):
+		report = generate_report(
+			self._base(
+				db_server_metrics={
+					"available": True,
+					"has_data": True,
+					"cpu": {"available": True, "spike_detected": False},
+					"iops": {"available": True, "peak": 5000, "mean": 1000, "spike_detected": True},
+					"iowait": {"available": True, "peak": 45.0, "mean": 10.0, "spike_detected": True},
+				}
+			)
+		)
+
+		self.assertIn("I/O-bound", report["likely_cause"])
+
+	def test_cluster_only_incident_is_not_a_cause(self):
+		report = generate_report(
+			self._base(
+				incidents=[{"name": "INC-1", "server": "other-server", "cluster": "c1", "creation": "now"}]
+			)
+		)
+
+		self.assertTrue(any("unlikely to be the cause" in e for e in report["evidence"]))
+		self.assertEqual(report["confidence"], "Low")
+
+	def test_incident_on_own_server_is_a_cause(self):
+		report = generate_report(
+			self._base(incidents=[{"name": "INC-1", "server": "s1", "cluster": "c1", "creation": "now"}])
+		)
+
+		self.assertIn("own server", report["likely_cause"])
+		self.assertEqual(report["confidence"], "High")
+
+	def test_recent_custom_slow_endpoint_is_high_confidence(self):
+		report = generate_report(
+			self._base(
+				site_performance={
+					"available": True,
+					"has_custom_apps": True,
+					"recent_window_hours": 1,
+					"top_slow_endpoints": [],
+					"top_slow_endpoints_recent": [
+						{
+							"path": "/api/method/custom_crm.api.get_leads",
+							"avg_duration_s": 6.0,
+							"peak_duration_s": 12.0,
+							"is_custom": True,
+						}
+					],
+				}
+			)
+		)
+
+		self.assertIn("last hour", report["likely_cause"])
+		self.assertEqual(report["confidence"], "High")
+
+	def test_multiple_signals_prompt_earliest_signal_correlation(self):
+		report = generate_report(
+			self._base(
+				db_server_metrics={
+					"available": True,
+					"has_data": True,
+					"cpu": {"available": True, "peak": 95.0, "mean": 40.0, "spike_detected": True},
+				},
+				site_performance={
+					"available": True,
+					"has_custom_apps": False,
+					"top_slow_endpoints": [
+						{
+							"path": "/api/method/frappe.desk.reportview.get",
+							"avg_duration_s": 6.0,
+							"peak_duration_s": 9.0,
+							"is_custom": False,
+						}
+					],
+				},
+			)
+		)
+
+		self.assertTrue(any("started earliest" in step for step in report["recommended_next_steps"]))
+
+	def test_single_signal_has_no_correlation_note(self):
+		report = generate_report(
+			self._base(
+				db_server_metrics={
+					"available": True,
+					"has_data": True,
+					"cpu": {"available": True, "peak": 95.0, "mean": 40.0, "spike_detected": True},
+				}
+			)
+		)
+
+		self.assertFalse(any("started earliest" in step for step in report["recommended_next_steps"]))
