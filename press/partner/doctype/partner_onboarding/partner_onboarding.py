@@ -6,11 +6,14 @@ from typing import Any
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import flt, get_last_day, now_datetime, today
+from frappe.utils import add_months, flt, get_last_day, getdate, now_datetime, today
 from pypika.enums import Order
 
 from press.guards import role_guard
-from press.partner.doctype.certificate_link_request.certificate_link_request import CertificateLinkRequest
+from press.partner.doctype.certificate_link_request.certificate_link_request import (
+	CertificateLinkRequest,
+	notify_partner_team,
+)
 from press.utils import get_current_team
 
 
@@ -111,13 +114,7 @@ class PartnerOnboarding(Document):
 		self.reviewed_on = now_datetime()
 		self.reviewer_comments = None
 		self.save()
-		# publish a realtime event to update the partner onboarding status
-		frappe.publish_realtime(
-			"partner_onboarding_status_updated",
-			message={"team": self.team},
-			doctype="Team",
-			after_commit=True,
-		)
+		notify_partner_team(self.team, "partner_onboarding_status_updated")
 
 	@frappe.whitelist()
 	def reject(self, reason: str | None = None):
@@ -137,19 +134,17 @@ class PartnerOnboarding(Document):
 		self.reviewed_on = now_datetime()
 		self.reviewer_comments = reason
 		self.save()
-		# publish a realtime event to update the partner onboarding status
-		frappe.publish_realtime(
-			"partner_onboarding_status_updated",
-			message={"team": self.team},
-			doctype="Team",
-			after_commit=True,
-		)
+		notify_partner_team(self.team, "partner_onboarding_status_updated")
+
+
+def _active_onboarding_filters(team: str) -> dict:
+	return {"team": team, "docstatus": ["<", 2], "status": ["!=", "Cancelled"]}
 
 
 def _get_partner_onboarding(team: str):
 	names = frappe.get_all(
 		"Partner Onboarding",
-		filters={"team": team, "docstatus": ["<", 2], "status": ["!=", "Cancelled"]},
+		filters=_active_onboarding_filters(team),
 		pluck="name",
 		order_by="creation desc",
 		limit=1,
@@ -157,6 +152,11 @@ def _get_partner_onboarding(team: str):
 	if names:
 		return frappe.get_doc("Partner Onboarding", names[0])
 	return None
+
+
+def has_partner_onboarding(team: str) -> bool:
+	"""Whether the team has started (and not cancelled) a partner onboarding request."""
+	return bool(frappe.db.exists("Partner Onboarding", _active_onboarding_filters(team)))
 
 
 def _clear_certificate_links(team: str) -> None:
@@ -178,12 +178,7 @@ def _clear_certificate_links(team: str) -> None:
 			{"status": "Cancelled", "key": None},
 		)
 
-	frappe.publish_realtime(
-		"partner_onboarding_certificates_updated",
-		message={"team": team},
-		user=frappe.session.user,
-		after_commit=True,
-	)
+	notify_partner_team(team, "partner_onboarding_certificates_updated")
 
 
 def _get_certificate_link_status(team: str) -> dict:
@@ -239,22 +234,60 @@ def _get_mrr_currency(team) -> str:
 	return "USD"
 
 
+def _get_mrr_subscription_invoices(team_name: str) -> list:
+	"""Pick the invoice cycle that best represents the team's MRR.
+
+	A team in its first billing month only has a current month invoice, still
+	in Draft, so we count that one. Once a previous cycle exists we look at
+	last month's invoice instead: past the 15th that cycle is settled enough
+	to only count it if Paid, otherwise we also accept it as Unpaid since the
+	partner is assumed to settle it by month end.
+	"""
+	invoice = frappe.qb.DocType("Invoice")
+	subscription_invoice_count = frappe.db.count(
+		"Invoice",
+		filters={"team": team_name, "type": "Subscription", "docstatus": ["<", 2]},
+	)
+
+	if subscription_invoice_count <= 1:
+		current_month_due_date = get_last_day(today())
+		query = (
+			frappe.qb.from_(invoice)
+			.select(invoice.currency, invoice.total_before_discount)
+			.where(
+				(invoice.team == team_name)
+				& (invoice.type == "Subscription")
+				& (invoice.due_date == current_month_due_date)
+				& (invoice.docstatus < 2)
+			)
+		)
+		return query.run(as_dict=True)
+
+	last_month_due_date = get_last_day(add_months(today(), -1))
+	query = (
+		frappe.qb.from_(invoice)
+		.select(invoice.currency, invoice.total_before_discount)
+		.where(
+			(invoice.team == team_name)
+			& (invoice.type == "Subscription")
+			& (invoice.due_date == last_month_due_date)
+			& (invoice.docstatus < 2)
+		)
+	)
+
+	if getdate(today()).day > 15:
+		query = query.where(invoice.status == "Paid")
+	else:
+		query = query.where(invoice.status.isin(["Paid", "Unpaid"]))
+
+	return query.run(as_dict=True)
+
+
 def _get_mrr_status(team) -> dict:
 	team_currency = _get_mrr_currency(team)
 	target_amount = 10000 if team_currency == "INR" else 100
 
-	invoice = frappe.qb.DocType("Invoice")
-	invoices = (
-		frappe.qb.from_(invoice)
-		.select(invoice.currency, invoice.total_before_discount)
-		.where(
-			(invoice.partner_email == team.partner_email)
-			& (invoice.due_date == get_last_day(today()))
-			& (invoice.type == "Subscription")
-			& (invoice.docstatus == 1)
-		)
-		.run(as_dict=True)
-	)
+	invoices = _get_mrr_subscription_invoices(team.name)
 
 	current_amount = 0
 	for row in invoices:
@@ -300,6 +333,13 @@ def get_partner_onboarding() -> dict | None:
 	return doc.as_dict()
 
 
+def _sync_company_name_to_team(team, company_name: str | None) -> None:
+	"""The company name is the team's identity (shown to certificate holders,
+	in partner listings, etc.), so keep it on the Team as the source of truth."""
+	if company_name and company_name != team.company_name:
+		frappe.db.set_value("Team", team.name, "company_name", company_name)
+
+
 @frappe.whitelist(methods=["POST"])
 @role_guard.api("partner")
 def save_partner_onboarding(details: dict[str, Any]) -> dict:
@@ -333,6 +373,8 @@ def save_partner_onboarding(details: dict[str, Any]) -> dict:
 		doc.insert()
 	else:
 		doc.save()
+
+	_sync_company_name_to_team(team, doc.company_name)
 
 	return doc.as_dict()
 

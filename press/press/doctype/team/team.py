@@ -19,6 +19,7 @@ from frappe.utils import add_to_date, get_fullname, get_last_day, get_url_to_for
 from press.api.client import dashboard_whitelist
 from press.exceptions import FrappeioServerNotSet
 from press.guards import feature_preview, team_guard
+from press.partner.doctype.partner_onboarding.partner_onboarding import has_partner_onboarding
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.communication_info.communication_info import get_communication_info
 from press.press.doctype.telegram_message.telegram_message import TelegramMessage
@@ -222,6 +223,8 @@ class Team(Document):
 		doc.is_binlog_indexer_enabled = not frappe.db.get_single_value(
 			"Press Settings", "disable_binlog_indexer_service", cache=True
 		)
+
+		doc.has_partner_onboarding = has_partner_onboarding(self.name)
 
 	def onload(self):
 		load_address_and_contact(self)
@@ -741,7 +744,7 @@ class Team(Document):
 		client = get_frappe_io_connection()
 		data = client.get_value("Partner", "start_date", {"email": self.partner_email})
 		if not data:
-			frappe.throw("Partner not found on frappe.io")  # nosemgrep
+			return frappe.utils.getdate()
 		return frappe.utils.getdate(data.get("start_date"))
 
 	def create_referral_bonus(self, referrer_id):
@@ -1082,7 +1085,7 @@ class Team(Document):
 			.join(PressRole)
 			.on(PressRoleUser.parent == PressRole.name)
 			.where(PressRole.team == self.name)
-			.select(PressRoleUser.user, PressRole.title, PressRole.name)
+			.select(PressRoleUser.user, PressRole.title, PressRole.name, PressRole.admin_access)
 			.run(as_dict=True)
 		)
 		user_roles = {}
@@ -1091,6 +1094,7 @@ class Team(Document):
 				{
 					"name": row.name,
 					"title": row.title,
+					"admin_access": row.admin_access,
 				}
 			)
 
@@ -1103,6 +1107,7 @@ class Team(Document):
 			m.user_image = u.get("user_image")
 			m.email = u.get("email")
 			m.roles = user_roles.get(m.user, [])
+			m.has_admin_access = any(r.get("admin_access") for r in m.roles)
 			r.append(m)
 		return r
 

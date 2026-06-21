@@ -144,6 +144,7 @@ class ReleasePipeline(WorkflowBuilder):
 		"release_group",
 		"status",
 		"creation",
+		"team",
 	)
 
 	def send_failure_notification(self):
@@ -191,6 +192,7 @@ class ReleasePipeline(WorkflowBuilder):
 			{"doctype": "Release Pipeline", "name": self.name},
 			doctype="Release Pipeline",
 			docname=self.name,
+			after_commit=True,
 		)
 
 		if status == "Failure":

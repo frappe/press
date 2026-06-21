@@ -577,7 +577,10 @@ class Agent:
 				{
 					"keep_files_locally_after_offsite_backup": bool(
 						frappe.get_value("Server", site.server, "keep_files_on_server_in_offsite_backup")
-					)
+					),
+					# Streaming only applies to offsite backups (agent streams the
+					# artifacts straight to S3), so only send it for offsite jobs.
+					"stream": bool(frappe.get_value("Server", site.server, "stream_backups")),
 				}
 			)
 
@@ -1980,8 +1983,8 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
 
 		settings = frappe.get_single("Press Settings")
-		backup_bucket = get_backup_bucket(cluster, region=True)
-		bucket_name = backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
+		backup_bucket_config = get_backup_bucket(cluster, region=True)
+		bucket_name = backup_bucket_config.get("name")
 
 		if not (settings.aws_s3_bucket or bucket_name):
 			return None
@@ -1989,7 +1992,9 @@ Response: {reason or getattr(result, "text", "Unknown")}
 		auth = {
 			"ACCESS_KEY": settings.offsite_backups_access_key_id,
 			"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
-			"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
+			"REGION": backup_bucket_config.get("region"),
+			"PROVIDER": backup_bucket_config.get("provider"),
+			"ENDPOINT_URL": backup_bucket_config.get("endpoint_url"),
 		}
 
 		return {
