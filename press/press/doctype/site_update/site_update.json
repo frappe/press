@@ -186,8 +186,6 @@
 			"description": "max_statement_time on the database server before the recovery migrate bump, restored once recovery finishes",
 			"fieldname": "previous_max_statement_time",
 			"fieldtype": "Int",
-			"hide_days": 1,
-			"hide_seconds": 1,
 			"label": "Previous Max Statement Time",
 			"no_copy": 1,
 			"read_only": 1
