@@ -2,18 +2,23 @@ from __future__ import annotations
 
 import math
 import re
-import time
 from collections import Counter
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import frappe
+
+if TYPE_CHECKING:
+	import datetime
 
 RECENT_LIMIT = 10
 _PROM_TIMESPAN = 24 * 60 * 60  # seconds of history to fetch from Prometheus
 _PROM_STEP = 30 * 60  # Prometheus step size in seconds
+_RECENT_WINDOW_HOURS = 1  # "is the customer hurting right now" window
 _SPIKE_CPU_THRESHOLD = 70.0  # flag CPU spike only above this percent
 _SPIKE_RATIO = 1.5  # peak must be this many times the mean to count as a spike
 _IOPS_SPIKE_RATIO = 2.0  # IOPS has no useful absolute threshold; rely on ratio only
+_IOWAIT_THRESHOLD = 20.0  # percent CPU spent waiting on disk before I/O is the bottleneck
+_DISK_FULL_THRESHOLD = 98.0  # filesystem usage percent at which disk is genuinely full
 _SLOW_ENDPOINT_THRESHOLD_S = 1.0  # average duration above which an endpoint is worth flagging
 _PERF_SPIKE_PEAK_THRESHOLD_S = 2.0  # peak must exceed this to register as a performance spike
 _PERF_SPIKE_RATIO = 3.0  # peak must be this many times the mean to count as a spike
@@ -25,13 +30,16 @@ _WEB_ERROR_LOG_REGEX = re.compile(
 )
 
 
-def collect_site_context(site_name: str) -> dict[str, Any]:
+def collect_site_context(
+	site_name: str, incident_time: datetime.datetime | str | None = None
+) -> dict[str, Any]:
+	reference_time = _reference_time(incident_time)
 	site = _get_site(site_name)
 	bench = get_bench_health(site.get("bench"))
 	db_server = bench.get("database_server") if bench else None
 
-	app_server_metrics = get_server_metrics(site.get("server"))
-	db_server_metrics = get_server_metrics(db_server, is_db_server=True)
+	app_server_metrics = get_server_metrics(site.get("server"), reference_time)
+	db_server_metrics = get_server_metrics(db_server, reference_time, is_db_server=True)
 
 	server_advanced_analytics = (
 		get_server_advanced_analytics(site.get("server"), site_name)
@@ -43,20 +51,31 @@ def collect_site_context(site_name: str) -> dict[str, Any]:
 		"site": get_site_health(site),
 		"bench": bench,
 		"apps": get_app_versions(site.get("bench")),
+		"incident_time": reference_time.isoformat(),
 		"deployments": get_deployment_timeline(site_name),
-		"background_jobs": get_background_job_summary(site_name),
+		"background_jobs": get_background_job_summary(site_name, reference_time),
 		"backups": get_backup_status(site_name),
 		"domains": get_domain_status(site_name),
 		"incidents": get_platform_incidents(site),
-		"errors": get_redacted_error_summary(site_name),
+		"errors": get_redacted_error_summary(site_name, reference_time),
 		"app_server_metrics": app_server_metrics,
 		"db_server_metrics": db_server_metrics,
+		"monitor_health": get_monitor_health(reference_time),
 		"server_advanced_analytics": server_advanced_analytics,
 		"bench_processes": get_bench_process_status(site.get("bench")),
-		"site_uptime": get_site_uptime(site_name),
-		"site_performance": get_site_performance_summary(site_name, site.get("bench")),
+		"site_uptime": get_site_uptime(site_name, reference_time),
+		"site_performance": get_site_performance_summary(site_name, site.get("bench"), reference_time),
 		"web_error_log": get_web_error_log(site.get("bench")),
 	}
+
+
+def _reference_time(incident_time: datetime.datetime | str | None) -> datetime.datetime:
+	"""The moment the investigation is anchored to — the reported incident time, or now."""
+	if not incident_time:
+		return frappe.utils.now_datetime()
+	if isinstance(incident_time, str):
+		return frappe.utils.get_datetime(incident_time)
+	return incident_time
 
 
 def get_site_health(site: frappe._dict) -> dict[str, Any]:
@@ -129,21 +148,22 @@ def get_bench_process_status(bench_name: str | None) -> dict[str, Any]:
 	}
 
 
-def get_site_uptime(site_name: str) -> dict[str, Any]:
-	"""Current ping status and HTTP response code from the blackbox exporter."""
+def get_site_uptime(site_name: str, reference_time: datetime.datetime) -> dict[str, Any]:
+	"""Ping status and HTTP response code from the blackbox exporter at the incident time."""
 	if not frappe.db.get_single_value("Press Settings", "monitor_server"):
 		return {"available": False}
 
 	from press.mcp.tools.telemetry.clients import prometheus_get
 
+	at = str(reference_time.timestamp())
 	try:
 		success_response = prometheus_get(
 			"query",
-			{"query": f'probe_success{{job="site",instance="{site_name}"}}'},
+			{"query": f'probe_success{{job="site",instance="{site_name}"}}', "time": at},
 		)
 		status_response = prometheus_get(
 			"query",
-			{"query": f'probe_http_status_code{{job="site",instance="{site_name}"}}'},
+			{"query": f'probe_http_status_code{{job="site",instance="{site_name}"}}', "time": at},
 		)
 	except Exception:
 		return {"available": False}
@@ -208,8 +228,8 @@ def get_deployment_timeline(site_name: str) -> list[dict[str, Any]]:
 	)
 
 
-def get_background_job_summary(site_name: str) -> dict[str, Any]:
-	since = frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=-24)
+def get_background_job_summary(site_name: str, reference_time: datetime.datetime) -> dict[str, Any]:
+	since = frappe.utils.add_to_date(reference_time, hours=-24)
 	jobs = frappe.get_all(
 		"Agent Job",
 		filters={"site": site_name, "creation": (">", since)},
@@ -299,8 +319,8 @@ def get_platform_incidents(site: frappe._dict) -> list[dict[str, Any]]:
 	)
 
 
-def get_redacted_error_summary(site_name: str) -> dict[str, Any]:
-	since = frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=-24)
+def get_redacted_error_summary(site_name: str, reference_time: datetime.datetime) -> dict[str, Any]:
+	since = frappe.utils.add_to_date(reference_time, hours=-24)
 	failed_jobs = frappe.get_all(
 		"Agent Job",
 		filters={
@@ -322,7 +342,9 @@ def get_redacted_error_summary(site_name: str) -> dict[str, Any]:
 	}
 
 
-def get_server_metrics(server_name: str | None, is_db_server: bool = False) -> dict[str, Any] | None:
+def get_server_metrics(
+	server_name: str | None, reference_time: datetime.datetime, is_db_server: bool = False
+) -> dict[str, Any] | None:
 	if not server_name:
 		return None
 
@@ -331,35 +353,106 @@ def get_server_metrics(server_name: str | None, is_db_server: bool = False) -> d
 
 	from press.mcp.tools.telemetry.clients import prometheus_get
 
-	try:
-		cpu_response = prometheus_get(
-			"query_range",
-			_prom_params(
-				f'(1 - avg(rate(node_cpu_seconds_total{{instance="{server_name}",job="node",mode="idle"}}[{_PROM_STEP}s]))) * 100'
-			),
-		)
-	except Exception:
+	end = reference_time.timestamp()
+	cpu_response = _safe_query(prometheus_get, "query_range", _prom_range(_cpu_query(server_name), end))
+	if cpu_response is None:
+		# The monitor is configured but the query errored — we cannot conclude anything.
 		return {"available": False}
 
+	cpu_values = _prom_values(cpu_response)
 	result: dict[str, Any] = {
 		"available": True,
-		"cpu": _summarise_series(_prom_values(cpu_response), absolute_threshold=_SPIKE_CPU_THRESHOLD),
+		# No data points despite a successful query means nothing is being scraped — the
+		# server (or its node exporter) is likely down. The report cross-checks both servers.
+		"has_data": bool(cpu_values),
+		"cpu": _summarise_series(cpu_values, absolute_threshold=_SPIKE_CPU_THRESHOLD),
+		"disk": _summarise_disk(
+			_safe_query(prometheus_get, "query", {"query": _disk_usage_query(server_name), "time": str(end)})
+		),
 	}
 
 	if is_db_server:
-		try:
-			iops_response = prometheus_get(
-				"query_range",
-				_prom_params(
-					f'sum(rate(node_disk_reads_completed_total{{instance="{server_name}",job="node"}}[{_PROM_STEP}s])'
-					f' + rate(node_disk_writes_completed_total{{instance="{server_name}",job="node"}}[{_PROM_STEP}s]))'
-				),
-			)
-			result["iops"] = _summarise_series(_prom_values(iops_response), ratio_threshold=_IOPS_SPIKE_RATIO)
-		except Exception:
-			result["iops"] = {"available": False}
+		result["iowait"] = _summarise_series(
+			_prom_values(
+				_safe_query(prometheus_get, "query_range", _prom_range(_iowait_query(server_name), end))
+			),
+			absolute_threshold=_IOWAIT_THRESHOLD,
+		)
+		result["iops"] = _summarise_series(
+			_prom_values(
+				_safe_query(prometheus_get, "query_range", _prom_range(_iops_query(server_name), end))
+			),
+			ratio_threshold=_IOPS_SPIKE_RATIO,
+		)
 
 	return result
+
+
+def get_monitor_health(reference_time: datetime.datetime) -> dict[str, Any]:
+	"""Whether the monitor server is reporting its own node-exporter metrics.
+
+	Used to disambiguate 'every server is silent': if the monitor itself is scraping fine,
+	silent app/db servers are genuinely down; if even the monitor is silent, the monitor
+	(not the servers) is the problem.
+	"""
+	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+	if not monitor_server:
+		return {"available": False}
+
+	from press.mcp.tools.telemetry.clients import prometheus_get
+
+	end = reference_time.timestamp()
+	response = _safe_query(prometheus_get, "query_range", _prom_range(_cpu_query(monitor_server), end))
+	if response is None:
+		return {"available": False}
+
+	return {"available": True, "has_data": bool(_prom_values(response))}
+
+
+def _safe_query(prometheus_get, endpoint: str, params: dict) -> dict | None:
+	try:
+		return prometheus_get(endpoint, params)
+	except Exception:
+		return None
+
+
+def _cpu_query(server_name: str) -> str:
+	return (
+		f'(1 - avg(rate(node_cpu_seconds_total{{instance="{server_name}",job="node",mode="idle"}}'
+		f"[{_PROM_STEP}s]))) * 100"
+	)
+
+
+def _iowait_query(server_name: str) -> str:
+	return (
+		f'avg(rate(node_cpu_seconds_total{{instance="{server_name}",job="node",mode="iowait"}}'
+		f"[{_PROM_STEP}s])) * 100"
+	)
+
+
+def _iops_query(server_name: str) -> str:
+	return (
+		f'sum(rate(node_disk_reads_completed_total{{instance="{server_name}",job="node"}}[{_PROM_STEP}s])'
+		f' + rate(node_disk_writes_completed_total{{instance="{server_name}",job="node"}}[{_PROM_STEP}s]))'
+	)
+
+
+def _disk_usage_query(server_name: str) -> str:
+	selector = f'instance="{server_name}",job="node",fstype!~"tmpfs|overlay|squashfs|devtmpfs"'
+	return (
+		f"max(100 * (1 - node_filesystem_avail_bytes{{{selector}}}"
+		f" / node_filesystem_size_bytes{{{selector}}}))"
+	)
+
+
+def _summarise_disk(response: dict | None) -> dict[str, Any]:
+	if response is None:
+		return {"available": False}
+	percent = _prom_instant(response)
+	if percent is None:
+		return {"available": False}
+	percent = round(percent, 1)
+	return {"available": True, "percent": percent, "full": percent >= _DISK_FULL_THRESHOLD}
 
 
 def get_server_advanced_analytics(server_name: str | None, target_site: str) -> dict[str, Any] | None:
@@ -397,14 +490,20 @@ def get_server_advanced_analytics(server_name: str | None, target_site: str) -> 
 	}
 
 
-def get_site_performance_summary(site_name: str, bench_name: str | None = None) -> dict[str, Any]:
+def get_site_performance_summary(
+	site_name: str, bench_name: str | None, reference_time: datetime.datetime
+) -> dict[str, Any]:
 	if not frappe.db.get_single_value("Press Settings", "log_server"):
 		return {"available": False}
 
 	from press.mcp.tools.telemetry.clients import elasticsearch_post
 
+	lte = reference_time.isoformat()
+	day_ago = frappe.utils.add_to_date(reference_time, hours=-24).isoformat()
+	hour_ago = frappe.utils.add_to_date(reference_time, hours=-_RECENT_WINDOW_HOURS).isoformat()
 	try:
-		response = elasticsearch_post(_slow_endpoint_query(site_name))
+		response = elasticsearch_post(_slow_endpoint_query(site_name, day_ago, lte))
+		recent_response = elasticsearch_post(_slow_endpoint_query(site_name, hour_ago, lte))
 	except Exception:
 		return {"available": False}
 
@@ -412,11 +511,13 @@ def get_site_performance_summary(site_name: str, bench_name: str | None = None) 
 	return {
 		"available": True,
 		"has_custom_apps": bool(custom_apps),
+		"recent_window_hours": _RECENT_WINDOW_HOURS,
 		"top_slow_endpoints": _parse_slow_endpoints(response, custom_apps),
+		"top_slow_endpoints_recent": _parse_slow_endpoints(recent_response, custom_apps),
 	}
 
 
-def _slow_endpoint_query(site_name: str) -> dict:
+def _slow_endpoint_query(site_name: str, gte: str, lte: str) -> dict:
 	return {
 		"size": 0,
 		"query": {
@@ -424,7 +525,7 @@ def _slow_endpoint_query(site_name: str) -> dict:
 				"filter": [
 					{"match_phrase": {"json.site": site_name}},
 					{"match_phrase": {"json.transaction_type": "request"}},
-					{"range": {"@timestamp": {"gte": "now-24h", "lte": "now"}}},
+					{"range": {"@timestamp": {"gte": gte, "lte": lte}}},
 				]
 			}
 		},
@@ -567,13 +668,13 @@ def _parse_web_error_blocks(lines: list[str]) -> list[dict[str, Any]]:
 	return blocks
 
 
-def _prom_params(query: str) -> dict:
-	end = int(time.time())
+def _prom_range(query: str, end: float) -> dict:
+	end = int(end)
 	return {"query": query, "start": end - _PROM_TIMESPAN, "end": end, "step": f"{_PROM_STEP}s"}
 
 
-def _prom_values(response: dict) -> list[float]:
-	result = (response.get("data") or {}).get("result") or []
+def _prom_values(response: dict | None) -> list[float]:
+	result = ((response or {}).get("data") or {}).get("result") or []
 	values = []
 	for series in result:
 		for _, v in series.get("values") or []:

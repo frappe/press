@@ -8,6 +8,7 @@
 		"site",
 		"status",
 		"requested_by",
+		"incident_time",
 		"column_break_status",
 		"started_at",
 		"completed_at",
@@ -56,6 +57,12 @@
 			"label": "Requested By",
 			"options": "User",
 			"read_only": 1
+		},
+		{
+			"description": "A moment when the site was facing the issue (not necessarily when it started). Defaults to now; metric and log windows look back from this point.",
+			"fieldname": "incident_time",
+			"fieldtype": "Datetime",
+			"label": "Incident Time"
 		},
 		{ "fieldname": "column_break_status", "fieldtype": "Column Break" },
 		{
