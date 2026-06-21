@@ -20,29 +20,37 @@ def generate_report(payload: dict[str, Any]) -> dict[str, Any]:
 	errors = payload.get("errors") or {}
 	app_server_metrics = payload.get("app_server_metrics") or {}
 	db_server_metrics = payload.get("db_server_metrics") or {}
+	monitor_health = payload.get("monitor_health") or {}
 	server_advanced_analytics = payload.get("server_advanced_analytics") or {}
 	bench_processes = payload.get("bench_processes") or {}
 	site_uptime = payload.get("site_uptime") or {}
 	site_performance = payload.get("site_performance") or {}
 	web_error_log = payload.get("web_error_log") or {}
 
+	high_confidence = False
 	_add_site_evidence(site, evidence, causes, next_steps)
 	_add_bench_evidence(bench, evidence, causes, next_steps)
 	_add_deployment_evidence(deployments, evidence, timeline, causes, next_steps)
 	_add_job_evidence(jobs, errors, evidence, timeline, causes, next_steps)
 	_add_backup_evidence(backups, evidence, timeline, next_steps)
 	_add_domain_evidence(domains, evidence, causes, next_steps)
-	_add_incident_evidence(incidents, evidence, timeline, causes, next_steps)
+	_add_incident_evidence(incidents, site, evidence, timeline, causes, next_steps)
 	_add_bench_process_evidence(bench_processes, evidence, causes, next_steps)
 	_add_uptime_evidence(site_uptime, evidence, causes, next_steps)
+	high_confidence |= _add_metric_availability_evidence(
+		app_server_metrics, db_server_metrics, monitor_health, evidence, causes, next_steps
+	)
 	_add_server_metrics_evidence(
 		app_server_metrics, db_server_metrics, server_advanced_analytics, evidence, causes, next_steps
 	)
-	_add_performance_evidence(site_performance, evidence, causes, next_steps)
+	high_confidence |= _add_disk_evidence(app_server_metrics, db_server_metrics, evidence, causes, next_steps)
+	high_confidence |= _add_performance_evidence(site_performance, evidence, causes, next_steps)
 	_add_web_error_evidence(web_error_log, evidence, causes, next_steps)
 
 	if causes:
-		confidence = "High" if _has_blocking_signal(site, bench, deployments, errors, incidents) else "Medium"
+		blocking = high_confidence or _has_blocking_signal(site, bench, deployments, errors, incidents)
+		confidence = "High" if blocking else "Medium"
+		_add_multi_signal_note(causes, next_steps)
 	else:
 		causes.append("No obvious platform-side issue found from the read-only checks.")
 		next_steps.append(
@@ -244,15 +252,26 @@ def _add_domain_evidence(domains, evidence, causes, next_steps):
 		)
 
 
-def _add_incident_evidence(incidents, evidence, timeline, causes, next_steps):
+def _add_incident_evidence(incidents, site, evidence, timeline, causes, next_steps):
 	if not incidents:
 		return
 
-	evidence.append(f"{len(incidents)} active platform incidents match the site server or cluster.")
-	causes.append("An active platform incident may be affecting this site.")
-	next_steps.append(
-		"Correlate user impact with the matching Incident records before site-specific remediation."
-	)
+	server_incidents = _server_incidents(incidents, site)
+	cluster_only = [incident for incident in incidents if incident not in server_incidents]
+
+	if server_incidents:
+		evidence.append(f"{len(server_incidents)} active incident(s) on this site's own server.")
+		causes.append("An active incident on the site's own server is likely affecting it.")
+		next_steps.append(
+			"Correlate user impact with the Incident records on this server before site-specific remediation."
+		)
+
+	if cluster_only:
+		evidence.append(
+			f"{len(cluster_only)} active incident(s) elsewhere in the same cluster — unlikely to be the "
+			"cause unless every server in the cluster is down."
+		)
+
 	for incident in incidents:
 		timeline.append(
 			{
@@ -277,8 +296,104 @@ def _has_blocking_signal(site, bench, deployments, errors, incidents):
 		or bench.get("status") not in {None, "Active"}
 		or (deployments and deployments[0].get("status") in {"Fatal", "Cancelled"})
 		or errors.get("failed_job_count")
-		or incidents
+		or _server_incidents(incidents, site)
 	)
+
+
+def _server_incidents(incidents, site):
+	server = site.get("server")
+	return [incident for incident in incidents if server and incident.get("server") == server]
+
+
+def _add_multi_signal_note(causes, next_steps):
+	"""With more than one cause, several signals are firing at once and some are symptoms of
+	the others (a slow query drives DB CPU up, not the reverse). The deterministic report
+	can't order them by onset, so it points the agent at the uptime graph to do so by eye."""
+	if len(causes) < 2:
+		return
+	next_steps.insert(
+		0,
+		"Multiple signals are present. Open the site's uptime graph around the incident time and "
+		"find which signal started earliest — that one is the likely cause; signals that began "
+		"later are probably symptoms (e.g. a slow query can drive DB CPU up, not the reverse).",
+	)
+
+
+def _add_metric_availability_evidence(app_metrics, db_metrics, monitor_health, evidence, causes, next_steps):
+	"""No metrics from a server means it (or its node exporter) is down. When *both* servers
+	are silent, the monitor's own metrics break the tie: if the monitor is scraping fine, both
+	servers are genuinely down; if even the monitor is silent, the monitor is the problem.
+	Returns True for a real, high-confidence outage cause."""
+	app_missing = _metrics_missing(app_metrics)
+	db_missing = _metrics_missing(db_metrics)
+
+	if app_missing and db_missing:
+		monitor_up = monitor_health.get("available") and monitor_health.get("has_data")
+		if monitor_up:
+			evidence.append(
+				"Neither the app nor the database server is reporting metrics, but the monitor is "
+				"scraping fine — both servers are down."
+			)
+			causes.append(
+				"Both the app and database servers appear to be down — neither is reporting metrics."
+			)
+			next_steps.append("Check both servers and the network/cluster between them immediately.")
+			return True
+
+		evidence.append(
+			"No metrics from the app server, the database server, or the monitor's own node exporter "
+			"— the monitoring server itself is likely down."
+		)
+		next_steps.append(
+			"Verify the monitor server is up; the absence of metric spikes below is unreliable until it is."
+		)
+		return False
+
+	if app_missing:
+		evidence.append("App server is reporting no metrics while the database server is.")
+		causes.append("App server appears to be down — it is not reporting any metrics to the monitor.")
+		next_steps.append("Check the app server and its node exporter before any other remediation.")
+		return True
+
+	if db_missing:
+		evidence.append("Database server is reporting no metrics while the app server is.")
+		causes.append("Database server appears to be down — it is not reporting any metrics to the monitor.")
+		next_steps.append("Check the database server and its node exporter before any other remediation.")
+		return True
+
+	return False
+
+
+def _metrics_missing(metrics):
+	# Only "missing" when the collector explicitly reported a successful query with zero data.
+	return bool(metrics.get("available") and metrics.get("has_data") is False)
+
+
+def _add_disk_evidence(app_metrics, db_metrics, evidence, causes, next_steps):
+	high_confidence = False
+
+	db_disk = db_metrics.get("disk") or {}
+	if db_disk.get("full"):
+		evidence.append(f"Database server disk is {db_disk['percent']}% full.")
+		causes.append(
+			"Database server disk is full — MariaDB cannot write, which commonly surfaces as 500 errors."
+		)
+		next_steps.append(
+			"Free space or grow the database server volume immediately; a full DB disk halts writes."
+		)
+		high_confidence = True
+
+	app_disk = app_metrics.get("disk") or {}
+	if app_disk.get("full"):
+		evidence.append(f"App server disk is {app_disk['percent']}% full.")
+		causes.append(
+			"App server disk is full — this causes failed writes, broken deploys, and assorted "
+			"errors (not always 500)."
+		)
+		next_steps.append("Free space or grow the app server volume.")
+		high_confidence = True
+
+	return high_confidence
 
 
 def _add_server_metrics_evidence(app_metrics, db_metrics, advanced_analytics, evidence, causes, next_steps):
@@ -320,7 +435,6 @@ def _add_db_server_evidence(db_metrics, evidence, causes, next_steps):
 		return
 
 	db_cpu = db_metrics.get("cpu") or {}
-	db_iops = db_metrics.get("iops") or {}
 
 	if db_cpu.get("spike_detected"):
 		evidence.append(
@@ -335,34 +449,72 @@ def _add_db_server_evidence(db_metrics, evidence, causes, next_steps):
 			"Remediation requires manually moving the site or the heavy tenant to a dedicated server."
 		)
 
-	if db_iops.get("spike_detected"):
+	_add_db_iops_evidence(db_metrics, db_cpu, evidence, causes, next_steps)
+
+
+def _add_db_iops_evidence(db_metrics, db_cpu, evidence, causes, next_steps):
+	"""IOPS on its own is low signal — a high count is usually just throughput, not a problem.
+	Disk I/O is only the bottleneck when CPU iowait confirms the server is actually stalled
+	waiting on disk. Without elevated iowait, IOPS is noted but never raised as a cause."""
+	iops = db_metrics.get("iops") or {}
+	if not iops.get("spike_detected"):
+		return
+
+	iowait = db_metrics.get("iowait") or {}
+
+	if iowait.get("spike_detected") and not db_cpu.get("spike_detected"):
 		evidence.append(
-			f"Database server disk I/O peaked at {db_iops['peak']} IOPS "
-			f"(mean {db_iops['mean']}) over the last 24 hours."
+			f"Database server disk I/O peaked at {iops['peak']} IOPS with elevated CPU iowait "
+			f"(peak {iowait['peak']}%) — the server is I/O-bound."
 		)
-		if not db_cpu.get("spike_detected"):
-			causes.append("Database server disk I/O spiked.")
-			next_steps.append(
-				"Check database server advanced analytics to identify which tenant is driving heavy disk I/O."
-			)
+		causes.append("Database server is I/O-bound: high disk I/O coincides with high CPU iowait.")
+		next_steps.append(
+			"Check database server advanced analytics to identify which tenant is driving heavy disk I/O."
+		)
+	else:
+		evidence.append(
+			f"Database server disk I/O peaked at {iops['peak']} IOPS, but CPU iowait is not elevated "
+			"— high throughput, unlikely to be the bottleneck."
+		)
 
 
 def _add_performance_evidence(performance, evidence, causes, next_steps):
 	if not performance.get("available"):
-		return
+		return False
+
+	high_confidence = _add_recent_custom_slow_evidence(performance, evidence, causes, next_steps)
 
 	endpoints = performance.get("top_slow_endpoints") or []
 	if not endpoints:
-		return
+		return high_confidence
 
 	slow = [e for e in endpoints if e.get("avg_duration_s", 0) >= 1.0]
 	spiky = [e for e in endpoints if e.get("spike_detected")]
 
 	if not slow and not spiky:
-		return
+		return high_confidence
 
 	_add_slow_endpoint_evidence(slow, evidence, causes, next_steps)
 	_add_spiky_endpoint_evidence(spiky, evidence, next_steps)
+	return high_confidence
+
+
+def _add_recent_custom_slow_evidence(performance, evidence, causes, next_steps):
+	"""Slow custom-app requests in the last hour are almost always the live problem — the
+	customer is hurting now, not 24 hours ago. Highest-confidence performance signal we have."""
+	recent = performance.get("top_slow_endpoints_recent") or []
+	window = performance.get("recent_window_hours", 1)
+	custom_slow = [e for e in recent if e.get("is_custom") and e.get("avg_duration_s", 0) >= 1.0]
+	if not custom_slow:
+		return False
+
+	paths = ", ".join(f"'{e['path']}'" for e in custom_slow[:2])
+	evidence.append(f"Custom app endpoints are slow in the last {window}h (live): {paths}.")
+	causes.append("Slow custom app requests in the last hour are almost certainly the current problem.")
+	next_steps.append(
+		"Profile these endpoints with Frappe Recorder now — the issue is live. Disable Recorder right after."
+	)
+	return True
 
 
 def _add_slow_endpoint_evidence(slow, evidence, causes, next_steps):
