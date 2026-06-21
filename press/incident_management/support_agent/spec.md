@@ -91,7 +91,19 @@ Current collectors:
 - **Bench process status**: Supervisor process list for the site's bench. Each entry records the process name, status, and message. Processes not in `Running` or `Starting` state are collected as `stopped_processes`. Collected via `Bench.supervisorctl_status()` — an agent call to the app server.
 - **Web error log**: Recent ERROR and CRITICAL entries from `web.error.log` on the site's app server. Only the gunicorn-level description and the final exception message line are captured — not full stack frames with local variables. All entries are redacted before being stored. Collects at most 10 error blocks from the last 500 log lines.
 - **Site performance summary**: Up to 20 slowest endpoints from Elasticsearch over the last 24 hours. Each endpoint includes average and peak duration, a `spike_detected` flag (peak ≥ 3× mean and peak > 2 s), and an `is_custom` flag indicating whether the endpoint belongs to a non-Frappe app. App origin is determined by checking `repository_owner` on the AppSource record — any owner other than `frappe` is treated as custom. Also includes a `has_custom_apps` flag indicating whether any non-Frappe apps are installed on the bench.
-- **Site uptime**: Instant probe result from the Prometheus blackbox exporter — `probe_success` (up/down) and `probe_http_status_code` (most recent HTTP status code from the external probe). Collected only when a monitor server is configured.
+- **Site uptime**: Probe result from the Prometheus blackbox exporter at the incident time — `probe_success` (up/down) and `probe_http_status_code`. Collected only when a monitor server is configured.
+- **Server disk usage**: Fullest filesystem percentage on the app and database servers (instant query at the incident time). `full` is flagged at ≥ 98%.
+- **Database iowait**: Percent of CPU spent waiting on disk. Used to qualify IOPS — disk I/O is only treated as a bottleneck when iowait is also elevated (≥ 20%).
+- **Monitor health**: Whether the monitor server is reporting its own node-exporter metrics. Used to tell "both servers are down" apart from "the monitor is down" when neither app nor DB server reports metrics.
+- **Recent slow endpoints**: A second slow-endpoint query over the last hour (in addition to 24 h), so a problem happening *right now* is surfaced separately from historical averages.
+
+## Time Anchoring
+
+Every investigation is anchored to an `incident_time` — a moment when the site was facing the
+issue (not necessarily when it started). It defaults to now and can be set when creating the
+investigation, to diagnose a past incident. All time-windowed collectors (server metrics, uptime
+probe, slow endpoints, background jobs, error summary) look back from this point rather than from
+the wall clock.
 
 ## Performance Investigation
 
@@ -228,9 +240,15 @@ It flags signals such as:
 - critical disk/database/CPU usage (≥120% flagged as a cause; ≥90% flagged as evidence),
 - broken site domains,
 - latest failed backup,
-- matching active platform incidents.
+- incidents on the site's **own server** (incidents elsewhere in the same cluster are noted but treated as unlikely causes unless the whole cluster is down),
+- a server reporting **no metrics** (likely down); if *both* servers are silent, the monitor's own metrics decide between "both servers down" and "monitor down",
+- **disk full** (≥ 98%) on the database server (commonly a 500) or the app server (assorted errors, not always 500),
+- a database **IOPS** spike — but only raised as a cause when CPU **iowait** is also elevated; otherwise it is just high throughput,
+- **slow custom-app endpoints in the last hour**, treated as the live cause with high confidence.
 
-Confidence is `High` if any blocking signal is present (non-Active site or bench, fatal deployment, failed jobs, or active incidents), `Medium` if other causes were found, and `Low` if no causes were found.
+When more than one cause is found, the report adds a step directing the agent to the uptime graph to find which signal started earliest — the earliest signal is the cause; later ones are likely symptoms (a slow query drives DB CPU up, not the reverse).
+
+Confidence is `High` if any blocking signal is present (non-Active site or bench, fatal deployment, failed jobs, own-server incident, a single server down, disk full, or live slow custom endpoints), `Medium` if other causes were found, and `Low` if no causes were found.
 
 The report generator returns:
 
