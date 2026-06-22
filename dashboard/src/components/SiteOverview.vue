@@ -166,7 +166,7 @@
 					</div>
 				</div>
 				<div
-					v-if="$site.doc.is_dedicated_server"
+					v-if="!$site.doc.is_dedicated_server"
 					class="border-b p-5 lg:border-b-0 lg:border-r"
 				>
 					<div
@@ -190,7 +190,7 @@
 									{{ currentUsageLoading ? '—' : currentUsage.cpu }}
 									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
 									<template
-										v-if="currentPlan && !$site.doc.is_dedicated_server"
+										v-if="currentPlan"
 									>
 										of {{ currentPlan?.cpu_time_per_day }} hours
 									</template>

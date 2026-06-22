@@ -1066,6 +1066,52 @@ class Team(Document):
 		return get_team_members(self.name)
 
 	@dashboard_whitelist()
+	def members(self):
+		users = [member.user for member in self.team_members]
+
+		user_info = {
+			u.name: u
+			for u in frappe.db.get_all(
+				"User",
+				filters={"name": ["in", users]},
+				fields=["name", "full_name", "user_image", "email"],
+			)
+		}
+
+		PressRole = frappe.qb.DocType("Press Role")
+		PressRoleUser = frappe.qb.DocType("Press Role User")
+		role_rows = (
+			frappe.qb.from_(PressRoleUser)
+			.join(PressRole)
+			.on(PressRoleUser.parent == PressRole.name)
+			.where(PressRole.team == self.name)
+			.select(PressRoleUser.user, PressRole.title, PressRole.name, PressRole.admin_access)
+			.run(as_dict=True)
+		)
+		user_roles = {}
+		for row in role_rows:
+			user_roles.setdefault(row.user, []).append(
+				{
+					"name": row.name,
+					"title": row.title,
+					"admin_access": row.admin_access,
+				}
+			)
+
+		r = []
+		for member in self.team_members:
+			m = member.as_dict()
+			m.user = member.user
+			u = user_info.get(m.user, {})
+			m.user_name = u.get("full_name")
+			m.user_image = u.get("user_image")
+			m.email = u.get("email")
+			m.roles = user_roles.get(m.user, [])
+			m.has_admin_access = any(r.get("admin_access") for r in m.roles)
+			r.append(m)
+		return r
+
+	@dashboard_whitelist()
 	@feature_preview.beta_testing()
 	def get_members(self):
 		return get_invitations(str(self.name)) + get_members(str(self.name))
@@ -1241,8 +1287,9 @@ class Team(Document):
 			}
 		)
 
-		for role in roles:
-			account_request.append("press_roles", {"press_role": role})
+		selected_role = roles[0] if roles else None
+		if selected_role:
+			account_request.press_role = selected_role
 
 		account_request.insert()
 

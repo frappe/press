@@ -93,11 +93,12 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		onboarding.db_set("status", "Cancelled")
 		self.assertFalse(has_partner_onboarding(team.name))
 
-	def test_mrr_after_mid_month_counts_unpaid_current_invoice(self):
-		"""Past the 15th, an Unpaid current-month invoice over the threshold
-		is enough — we assume the partner will pay."""
+	def test_mrr_new_team_counts_unpaid_current_month_invoice(self):
+		"""A team in its first billing month only has a Draft/Unpaid current
+		invoice, so it is counted regardless of the day of the month — the
+		partner should not be blocked by billing timing."""
 		team = create_test_team()
-		with freeze_time(AFTER_MID_MONTH):
+		with freeze_time(BEFORE_MID_MONTH):
 			self._create_subscription_invoice(team.name, get_last_day(today()), 12000, status="Unpaid")
 			status = _get_mrr_status(team)
 
@@ -106,7 +107,7 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		self.assertEqual(status["current_amount"], 12000)
 		self.assertTrue(status["requirement_complete"])
 
-	def test_mrr_after_mid_month_below_threshold_is_incomplete(self):
+	def test_mrr_new_team_below_threshold_is_incomplete(self):
 		team = create_test_team()
 		with freeze_time(AFTER_MID_MONTH):
 			self._create_subscription_invoice(team.name, get_last_day(today()), 5000, status="Unpaid")
@@ -115,45 +116,40 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		self.assertEqual(status["current_amount"], 5000)
 		self.assertFalse(status["requirement_complete"])
 
-	def test_mrr_after_mid_month_ignores_other_months(self):
-		"""Only the current cycle counts after the 15th."""
-		team = create_test_team()
-		with freeze_time(AFTER_MID_MONTH):
-			last_month_due = get_last_day(add_months(today(), -1))
-			self._create_subscription_invoice(team.name, last_month_due, 12000, status="Paid", submitted=True)
-			status = _get_mrr_status(team)
-
-		self.assertEqual(status["current_amount"], 0)
-		self.assertFalse(status["requirement_complete"])
-
-	def test_mrr_before_mid_month_uses_last_month_paid_invoice(self):
-		"""On/before the 15th, last month's settled invoice is used."""
+	def test_mrr_established_team_before_mid_month_counts_unpaid_last_month(self):
+		"""Once a previous cycle exists, on/before the 15th last month's invoice
+		is used even when still Unpaid — it is assumed to settle by month end.
+		The current-month invoice that makes the team established is ignored."""
 		team = create_test_team()
 		with freeze_time(BEFORE_MID_MONTH):
 			last_month_due = get_last_day(add_months(today(), -1))
-			self._create_subscription_invoice(team.name, last_month_due, 12000, status="Paid", submitted=True)
+			self._create_subscription_invoice(team.name, last_month_due, 12000, status="Unpaid")
+			self._create_subscription_invoice(team.name, get_last_day(today()), 5000, status="Unpaid")
 			status = _get_mrr_status(team)
 
 		self.assertEqual(status["current_amount"], 12000)
 		self.assertTrue(status["requirement_complete"])
 
-	def test_mrr_before_mid_month_ignores_unpaid_last_month_invoice(self):
-		"""An unpaid (unsubmitted) last-month invoice does not count early in
-		the cycle."""
+	def test_mrr_established_team_after_mid_month_requires_paid_last_month(self):
+		"""Past the 15th last month's cycle should be settled, so only a Paid
+		last-month invoice counts; the current-month invoice is ignored."""
 		team = create_test_team()
-		with freeze_time(BEFORE_MID_MONTH):
+		with freeze_time(AFTER_MID_MONTH):
 			last_month_due = get_last_day(add_months(today(), -1))
-			self._create_subscription_invoice(team.name, last_month_due, 12000, status="Unpaid")
+			self._create_subscription_invoice(team.name, last_month_due, 12000, status="Paid", submitted=True)
+			self._create_subscription_invoice(team.name, get_last_day(today()), 5000, status="Unpaid")
 			status = _get_mrr_status(team)
 
-		self.assertEqual(status["current_amount"], 0)
-		self.assertFalse(status["requirement_complete"])
+		self.assertEqual(status["current_amount"], 12000)
+		self.assertTrue(status["requirement_complete"])
 
-	def test_mrr_before_mid_month_ignores_current_month_invoice(self):
-		"""The young current-month invoice is not used before the 15th."""
+	def test_mrr_established_team_after_mid_month_ignores_unpaid_last_month(self):
+		"""Past the 15th an Unpaid last-month invoice is too unsettled to count."""
 		team = create_test_team()
-		with freeze_time(BEFORE_MID_MONTH):
-			self._create_subscription_invoice(team.name, get_last_day(today()), 12000, status="Unpaid")
+		with freeze_time(AFTER_MID_MONTH):
+			last_month_due = get_last_day(add_months(today(), -1))
+			self._create_subscription_invoice(team.name, last_month_due, 12000, status="Unpaid")
+			self._create_subscription_invoice(team.name, get_last_day(today()), 5000, status="Unpaid")
 			status = _get_mrr_status(team)
 
 		self.assertEqual(status["current_amount"], 0)

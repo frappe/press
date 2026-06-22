@@ -253,6 +253,12 @@
 			"label": "Use For New Sites"
 		},
 		{
+			"default": "0",
+			"fieldname": "skip_standby_site_creation",
+			"fieldtype": "Check",
+			"label": "Skip Standby Site Creation"
+		},
+		{
 			"fieldname": "cluster",
 			"fieldtype": "Link",
 			"in_list_view": 1,

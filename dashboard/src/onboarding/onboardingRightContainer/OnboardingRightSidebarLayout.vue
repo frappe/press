@@ -37,19 +37,21 @@ const resources = [
 			<p class="text-p-sm font-medium text-ink-gray-5">Resources</p>
 		</div>
 
-		<div
-			v-for="(resource, index) in resources"
-			:key="resource.title"
-			class="border-b border-outline-gray-1 px-4 py-3 transition-colors hover:bg-surface-gray-1"
-			:class="{ 'border-b-0': index === resources.length - 1 }"
-		>
-			<a
-				:href="resource.link"
-				target="_blank"
-				class="block text-p-sm leading-5 text-ink-gray-8"
+		<div class="px-1.5">
+			<div
+				v-for="(resource, index) in resources"
+				:key="resource.title"
+				class="border-b border-outline-gray-1 px-4 py-3 transition-colors hover:bg-surface-gray-1"
+				:class="{ 'border-b-0': index === resources.length - 1 }"
 			>
-				{{ resource.title }}
-			</a>
+				<a
+					:href="resource.link"
+					target="_blank"
+					class="block text-p-sm leading-5 text-ink-gray-8"
+				>
+					{{ resource.title }}
+				</a>
+			</div>
 		</div>
 	</div>
 </template>
