@@ -137,9 +137,7 @@ def send_verification_code(domain: str, route: str = ""):
 	team_name = site_info.get("team")
 	team_info = frappe.get_value("Team", team_name, ["name", "enabled", "user", "enforce_2fa"], as_dict=True)
 	if not team_info or not team_info.get("enabled"):
-		frappe.throw(
-			"Your Frappe Cloud team is currently disabled. Please re-enable it from your billing settings, or contact support to restore access."
-		)
+		frappe.throw("Your Frappe Cloud team is disabled currently.")
 
 	check_if_user_can_login(team_info, site_info)
 
@@ -234,9 +232,7 @@ def check_if_user_can_login(team_info, site_info):
 
 	# restrict to SaaS Site
 	if not (site_info.get("standby_for") or site_info.get("standby_for_product")):
-		frappe.throw(
-			"This login method is only available for SaaS sites. Please log in to Frappe Cloud directly instead."
-		)
+		frappe.throw("Only SaaS sites are allowed to login to Frappe Cloud via current method.")
 
 
 def send_email_with_verification_code(email, otp):

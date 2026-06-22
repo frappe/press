@@ -113,8 +113,6 @@ def verify_otp_and_login(email: str, otp: str):
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
 	if not account_request:
-		# Keep this message generic — do not reveal whether an account exists
-		# for this email, to avoid account enumeration.
 		frappe.throw("Please sign up first")
 
 	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
@@ -140,17 +138,13 @@ def resend_otp(account_request: str, for_2fa_keys: bool = False):
 		account_request_doc.otp_generated_at
 		and (frappe.utils.now_datetime() - account_request_doc.otp_generated_at).seconds < 30
 	):
-		frappe.throw(
-			"Please wait 30 seconds before requesting a new one-time password. Check your inbox and spam folder for the code we already sent."
-		)
+		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
 
 	# ensure no team has been created with this email
 	if (
 		frappe.db.exists("Team", {"user": account_request_doc.email})
 		and not account_request_doc.product_trial
 	):
-		# Keep this message generic — do not reveal whether an account already
-		# exists for this email, to avoid account enumeration.
 		frappe.throw("Invalid Email")
 	account_request_doc.reset_otp()
 	account_request_doc.send_otp_mail(for_login=not for_2fa_keys)
@@ -162,8 +156,6 @@ def send_otp(email: str, for_2fa_keys: bool = False):
 	account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
 
 	if not account_request or (account_request and not frappe.db.exists("User", email)):
-		# Keep this message generic — do not reveal whether an account exists
-		# for this email, to avoid account enumeration.
 		frappe.throw("Please sign up first")
 
 	account_request_doc: "AccountRequest" = frappe.get_doc("Account Request", account_request)
@@ -173,9 +165,7 @@ def send_otp(email: str, for_2fa_keys: bool = False):
 		account_request_doc.otp_generated_at
 		and (frappe.utils.now_datetime() - account_request_doc.otp_generated_at).seconds < 30
 	):
-		frappe.throw(
-			"Please wait 30 seconds before requesting a new one-time password. Check your inbox and spam folder for the code we already sent."
-		)
+		frappe.throw("Please wait for 30 seconds before requesting a new OTP")
 
 	account_request_doc.reset_otp()
 	account_request_doc.send_otp_mail(for_login=not for_2fa_keys)
@@ -199,13 +189,11 @@ def setup_account(  # noqa: C901
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
-		frappe.throw(
-			"This sign-up link is invalid or has expired. Please start the sign-up process again to receive a new link."
-		)
+		frappe.throw("Invalid or Expired Key")
 
 	if not user_exists:
 		if not first_name:
-			frappe.throw("Please enter your first name to continue.")
+			frappe.throw("First Name is required")
 
 		if not is_invitation and not country:
 			frappe.throw("Country is required")
@@ -275,14 +263,10 @@ def accept_team_invite(key: str):
 	account_request = get_account_request_from_key(key)
 
 	if not account_request:
-		frappe.throw(
-			"This invitation link is invalid or has expired. Please ask a team owner to send you a new invite."
-		)
+		frappe.throw("Invalid or Expired Key")
 
 	if not account_request.invited_by:
-		frappe.throw(
-			"This link isn't tied to a team invitation. Please ask a team owner to invite you, then use the link in that email."
-		)
+		frappe.throw("You are not invited by any team")
 
 	if frappe.session.user != account_request.email:
 		frappe.throw(
@@ -314,8 +298,6 @@ def accept_team_invite(key: str):
 @rate_limit(limit=5, seconds=60 * 60)
 def send_login_link(email):
 	if not frappe.db.exists("User", email):
-		# Keep this message generic — do not reveal whether an account exists
-		# for this email, to avoid account enumeration.
 		frappe.throw("No registered account with this email address")
 
 	key = frappe.generate_hash("Login Link", 20)
