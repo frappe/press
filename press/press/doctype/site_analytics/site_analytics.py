@@ -76,7 +76,10 @@ def _get_last_logins(analytics):
 def _get_sales_data(analytics):
 	sales_data = []
 	for row in analytics.get("activation", {}).get("sales_data", []):
-		doctype, count = next(iter(row.items()))
+		item = next(iter(row.items()), None)
+		if not item:
+			continue
+		doctype, count = item
 		if count:
 			sales_data.append(
 				{
