@@ -744,7 +744,7 @@ class Team(Document):
 		client = get_frappe_io_connection()
 		data = client.get_value("Partner", "start_date", {"email": self.partner_email})
 		if not data:
-			frappe.throw("Partner not found on frappe.io")  # nosemgrep
+			return frappe.utils.getdate()
 		return frappe.utils.getdate(data.get("start_date"))
 
 	def create_referral_bonus(self, referrer_id):

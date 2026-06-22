@@ -29,12 +29,22 @@ export function pollReleasePipelineValidationStatus(group) {
 					}
 				}
 
-				if (is_validating) {
-					setTimeout(poll, 2000) // still validating, keep polling
+				if (is_validating || is_deploy_in_progress) {
+					group.doc.status = 'Deploying'
+					setTimeout(poll, 2000) // still validating or building, keep polling
 				} else {
-					// Validation done
-					group.doc.deploy_information.has_running_release_pipeline = false
-					pollingGroups.delete(group.doc.name)
+					// Deploy finished (idle)
+					group
+						.reload()
+						.then(() => {
+							pollingGroups.delete(group.doc.name)
+							if (group.doc.deploy_information.has_running_release_pipeline) {
+								pollReleasePipelineValidationStatus(group)
+							}
+						})
+						.catch(() => {
+							pollingGroups.delete(group.doc.name)
+						})
 				}
 			})
 			.catch(() => {

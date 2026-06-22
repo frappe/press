@@ -95,11 +95,13 @@ def on_login(login_manager):
 
 
 def before_job():
+	frappe.local._current_team = None
 	frappe.local.team = _get_current_team
 	frappe.local.system_user = _system_user
 
 
 def before_request():
+	frappe.local._current_team = None
 	frappe.local.team = _get_current_team
 	frappe.local.system_user = _system_user
 
