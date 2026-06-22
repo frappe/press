@@ -1198,8 +1198,11 @@ Response: {reason or getattr(result, "text", "Unknown")}
 			result = self.get(f"benches/{site.bench}/sites/{site.name}/sid")
 		return result and result.get("sid")
 
-	def get_site_info(self, site):
-		result = self.get(f"benches/{site.bench}/sites/{site.name}/info")
+	def get_site_info(self, site, database_only=False):
+		path = f"benches/{site.bench}/sites/{site.name}/info"
+		if database_only:
+			path += "?database_only=1"
+		result = self.get(path)
 		if result:
 			return result["data"]
 		return None
