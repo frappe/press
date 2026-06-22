@@ -245,6 +245,12 @@ def process_add_domain_to_upstream_job_update(job):
 	if updated_status != domain_status:
 		frappe.db.set_value("Site Domain", domain, "status", updated_status)
 
+		# Domains activated via this path must also land in the site's `domains`
+		# config (same as `process_new_host_job_update`), else they're missing from
+		# `frappe.conf.domains` and reports opened on them fail PDF generation.
+		if updated_status == "Active":
+			frappe.get_doc("Site", job.site).add_domain_to_config(domain)
+
 	if job.status in ["Failure", "Delivery Failure"]:
 		frappe.db.set_value(
 			"Product Trial Request", {"domain": request_data.get("domain")}, "status", "Error"
