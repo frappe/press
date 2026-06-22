@@ -85,6 +85,13 @@ const disablePrimaryAction = computed(
 	() => switchValue.value === isSupportEnabled.value || isToggleDisabled.value,
 )
 
+// The cooldown only blocks disabling, so this date is relevant only while
+// warranty is on and the cooldown has not yet elapsed. Hide it otherwise — when
+// the change is possible there is nothing to wait for.
+const showNextChangeAvailableOn = computed(
+	() => isSupportEnabled.value && !cooldownPassed.value,
+)
+
 function onClickSave() {
 	$toast.promise(site.setPlan.submit({ plan: nextSitePlanName.value }), {
 		loading: 'Changing product warranty...',
@@ -149,17 +156,9 @@ function onClickSave() {
 							sites
 						</p>
 					</div>
-					<div class="flex">
+					<div v-if="showNextChangeAvailableOn" class="flex">
 						<p class="flex-grow text-ink-gray-6">Next change available after</p>
-						<p
-							:class="
-								nextChangeAvailableOn === 'Available Now'
-									? 'text-ink-green-3 font-medium'
-									: ''
-							"
-						>
-							{{ nextChangeAvailableOn }}
-						</p>
+						<p>{{ nextChangeAvailableOn }}</p>
 					</div>
 				</div>
 
