@@ -644,3 +644,112 @@ class TestSupportAgentReport(FrappeTestCase):
 		)
 
 		self.assertEqual(report["confidence"], "Low")
+
+	def test_inactive_site_is_high_confidence_cause(self):
+		payload = self._base()
+		payload["site"]["status"] = "Suspended"
+		report = generate_report(payload)
+
+		self.assertIn("not Active", report["likely_cause"])
+		self.assertIn("Suspended", report["likely_cause"])
+		self.assertEqual(report["confidence"], "High")
+
+	def test_inactive_bench_is_high_confidence_cause(self):
+		report = generate_report(self._base(bench={"status": "Broken"}))
+
+		self.assertIn("Bench is not Active", report["likely_cause"])
+		self.assertEqual(report["confidence"], "High")
+
+	def test_critical_usage_is_flagged_as_cause(self):
+		payload = self._base()
+		payload["site"]["usage_percent"] = {"disk": 130}
+		report = generate_report(payload)
+
+		self.assertIn("Disk usage is critically over quota", report["likely_cause"])
+
+	def test_high_usage_is_evidence_not_a_cause(self):
+		payload = self._base()
+		payload["site"]["usage_percent"] = {"database": 95}
+		report = generate_report(payload)
+
+		self.assertTrue(any("high at 95%" in e for e in report["evidence"]))
+		self.assertEqual(report["confidence"], "Low")
+
+	def test_cancelled_site_update_is_high_confidence(self):
+		report = generate_report(
+			self._base(deployments=[{"name": "u1", "status": "Cancelled", "creation": "now"}])
+		)
+
+		self.assertIn("cancelled", report["likely_cause"])
+		self.assertEqual(report["confidence"], "High")
+
+	def test_in_progress_site_update_is_a_cause(self):
+		report = generate_report(
+			self._base(deployments=[{"name": "u1", "status": "Running", "creation": "now"}])
+		)
+
+		self.assertIn("in progress", report["likely_cause"])
+
+	def test_failed_agent_jobs_are_high_confidence(self):
+		report = generate_report(self._base(errors={"failed_job_count": 4, "window_hours": 24}))
+
+		self.assertIn("agent jobs are failing", report["likely_cause"])
+		self.assertEqual(report["confidence"], "High")
+
+	def test_broken_domains_are_flagged(self):
+		report = generate_report(self._base(domains={"counts_by_status": {"Broken": 2}}))
+
+		self.assertIn("DNS/TLS", report["likely_cause"])
+
+	def test_failed_backup_adds_next_step_without_cause(self):
+		report = generate_report(self._base(backups={"latest": {"status": "Failure"}, "recent": []}))
+
+		self.assertTrue(any("backup health" in step for step in report["recommended_next_steps"]))
+		self.assertEqual(report["confidence"], "Low")
+
+	def test_stopped_worker_process_is_evidence_not_a_cause(self):
+		report = generate_report(
+			self._base(
+				bench_processes={
+					"available": True,
+					"stopped_processes": [{"name": "frappe-bench-frappe-short-worker", "status": "Fatal"}],
+				}
+			)
+		)
+
+		self.assertTrue(any("background worker" in e for e in report["evidence"]))
+		self.assertEqual(report["confidence"], "Low")
+
+	def test_noisy_neighbor_share_is_surfaced_as_evidence(self):
+		report = generate_report(
+			self._base(
+				app_server_metrics={
+					"available": True,
+					"has_data": True,
+					"cpu": {"available": True, "peak": 90.0, "mean": 30.0, "spike_detected": True},
+				},
+				server_advanced_analytics={
+					"available": True,
+					"target_site_rank": 4,
+					"target_site_share_percent": 5.0,
+					"site_count": 12,
+				},
+			)
+		)
+
+		self.assertTrue(any("ranks #4 of 12" in e for e in report["evidence"]))
+
+	def test_generic_web_error_surfaces_exception_message(self):
+		report = generate_report(
+			self._base(
+				web_error_log={
+					"available": True,
+					"error_count": 1,
+					"recent_errors": [
+						{"level": "error", "description": "boom", "exception": "ValueError: nope"}
+					],
+				}
+			)
+		)
+
+		self.assertIn("ValueError: nope", report["likely_cause"])
