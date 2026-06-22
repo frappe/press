@@ -139,7 +139,9 @@ class AgentUpdate(Document):
 			frappe.throw("Please select at least one server type")
 
 		if not self.restart_web_workers and not self.restart_rq_workers and not self.restart_redis:
-			frappe.throw("An agent update must restart something. Please enable at least 'restart web workers'.")
+			frappe.throw(
+				"An agent update must restart something. Please enable at least 'restart web workers'."
+			)
 
 		if self.restart_redis:  # noqa: SIM102
 			if not self.restart_rq_workers or not self.restart_web_workers:
@@ -175,10 +177,14 @@ class AgentUpdate(Document):
 		# Verify rollback commit hash
 		if self.auto_rollback_changes and self.rollback_to_specific_commit:
 			if not self.default_rollback_commit:
-				frappe.throw("Please enter the commit hash to roll back to, since 'rollback to specific commit' is enabled.")
+				frappe.throw(
+					"Please enter the commit hash to roll back to, since 'rollback to specific commit' is enabled."
+				)
 
 			if self.fetch_commit_date(self.default_rollback_commit) is None:
-				frappe.throw("We couldn't find that rollback commit hash in the agent repository. Please check the hash and try again.")
+				frappe.throw(
+					"We couldn't find that rollback commit hash in the agent repository. Please check the hash and try again."
+				)
 
 		# Add servers
 		self.add_server_entries()
@@ -223,10 +229,14 @@ class AgentUpdate(Document):
 		frappe.db.get_value(self.doctype, self.name, "name", for_update=True)
 
 		if self.status != "Pending":
-			frappe.throw("Updates can only be split while the status is Pending. This update has already started, so it can no longer be split.")
+			frappe.throw(
+				"Updates can only be split while the status is Pending. This update has already started, so it can no longer be split."
+			)
 
 		if not self.servers:
-			frappe.throw("There are no servers on this update to split. Please add servers before splitting into batches.")
+			frappe.throw(
+				"There are no servers on this update to split. Please add servers before splitting into batches."
+			)
 
 		if len(self.servers) < no_of_batches:
 			frappe.throw(
@@ -383,7 +393,9 @@ class AgentUpdate(Document):
 	@frappe.whitelist()
 	def force_continue(self):
 		if self.status not in ["Failure", "Partial Success"]:
-			frappe.throw("Force continue is only available after a Failure or Partial Success. This update is still in another state, so there's nothing to continue.")
+			frappe.throw(
+				"Force continue is only available after a Failure or Partial Success. This update is still in another state, so there's nothing to continue."
+			)
 
 		# Reset failed updates
 		for failed_update in self.servers:
@@ -413,7 +425,9 @@ class AgentUpdate(Document):
 	@frappe.whitelist()
 	def execute(self):
 		if self.status not in ["Pending", "Running"]:
-			frappe.throw("This update can only be executed while it is Pending or Running. It has already finished, so there's nothing to execute.")
+			frappe.throw(
+				"This update can only be executed while it is Pending or Running. It has already finished, so there's nothing to execute."
+			)
 
 		if self._process_next_step():
 			frappe.enqueue_doc(

@@ -235,7 +235,9 @@ class DatabaseServer(BaseServer):
 			return
 
 		if self.is_replication_setup and self.auto_purge_binlog_based_on_size:
-			frappe.throw("Binlog auto-purge can't be enabled while replication is set up, since replicas may still need those binlogs. Please disable replication first, or manage binlog retention manually.")
+			frappe.throw(
+				"Binlog auto-purge can't be enabled while replication is set up, since replicas may still need those binlogs. Please disable replication first, or manage binlog retention manually."
+			)
 
 		self.update_mariadb_system_variables()
 		if (
@@ -778,7 +780,9 @@ class DatabaseServer(BaseServer):
 	@dashboard_whitelist()
 	def update_binlog_size_limit(self, enabled: bool, percent_of_disk_size: int):
 		if self.is_part_of_replica:
-			frappe.throw("The binlog size limit can't be changed on a database replica. Please update it on the primary database server instead.")
+			frappe.throw(
+				"The binlog size limit can't be changed on a database replica. Please update it on the primary database server instead."
+			)
 
 		if percent_of_disk_size is None:
 			percent_of_disk_size = 0
@@ -1699,7 +1703,9 @@ class DatabaseServer(BaseServer):
 	def set_innodb_force_recovery(self, value: int):
 		"""Set innodb_force_recovery to the given value"""
 		if value < 0 or value > 6:
-			frappe.throw("innodb_force_recovery must be between 0 and 6. Please enter a value in that range (use the lowest value that lets the database start).")
+			frappe.throw(
+				"innodb_force_recovery must be between 0 and 6. Please enter a value in that range (use the lowest value that lets the database start)."
+			)
 		self.add_or_update_mariadb_variable(
 			"innodb_force_recovery", "value_str", str(value), skip=False, persist=True, save=True
 		)
@@ -1886,7 +1892,9 @@ Latest binlog : {latest_binlog.get("name", "")} - {last_binlog_size_mb} MB {last
 	@dashboard_whitelist()
 	def get_binlogs_indexing_status(self):
 		if not self.enable_binlog_indexing:
-			frappe.throw("Binlog indexing isn't enabled for this server. Please enable binlog indexing in the server settings before using this feature.")
+			frappe.throw(
+				"Binlog indexing isn't enabled for this server. Please enable binlog indexing in the server settings before using this feature."
+			)
 
 		data = frappe.db.get_all(
 			"MariaDB Binlog",
@@ -2233,10 +2241,14 @@ systemctl restart mariadb
 			return None
 
 		if not self.enable_binlog_indexing:
-			frappe.throw("Binlog indexing isn't enabled for this server. Please enable binlog indexing in the server settings before using this feature.")
+			frappe.throw(
+				"Binlog indexing isn't enabled for this server. Please enable binlog indexing in the server settings before using this feature."
+			)
 
 		if self._is_binlog_indexing_related_operation_running() or self.is_binlog_indexer_running:
-			frappe.throw("Another binlog indexing operation is already running on this server. Please wait for it to finish before starting another.")
+			frappe.throw(
+				"Another binlog indexing operation is already running on this server. Please wait for it to finish before starting another."
+			)
 
 		job = self.agent.add_binlogs_to_indexer(binlog_file_names)
 		return job.name
