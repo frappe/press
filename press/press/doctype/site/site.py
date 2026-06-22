@@ -1177,7 +1177,7 @@ class Site(Document, TagHelpers):
 		):
 			raise Exception(f"Remote File {self.remote_database_file} is unavailable on S3")
 
-		if self.remote_database_file and not frappe.get_doc("Remote File", self.remote_config_file).exists():
+		if self.remote_config_file and not frappe.get_doc("Remote File", self.remote_config_file).exists():
 			raise Exception(f"Remote File {self.remote_config_file} is unavailable on S3")
 
 		agent = Agent(self.server)
