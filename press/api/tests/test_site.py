@@ -1105,7 +1105,7 @@ class TestAPISiteDomain(FrappeTestCase):
 
 
 class TestCheckWarrantyRestrictions(FrappeTestCase):
-	"""Tests for _check_warranty_restrictions.
+	"""Tests for _validate_warranty_change.
 
 	The cooldown applies to both enabling and disabling. The server quota,
 	however, only gates enabling (which consumes a slot) — disabling is
@@ -1113,7 +1113,7 @@ class TestCheckWarrantyRestrictions(FrappeTestCase):
 	"""
 
 	def _check(self, *, current_supported, new_supported, quota_available=0, cooldown_active=False):
-		from press.api.site import _check_warranty_restrictions
+		from press.api.site import _validate_warranty_change
 
 		now = datetime.datetime.now()
 		next_change = now + datetime.timedelta(days=1) if cooldown_active else now
@@ -1131,7 +1131,7 @@ class TestCheckWarrantyRestrictions(FrappeTestCase):
 				return_value={"available": quota_available},
 			),
 		):
-			_check_warranty_restrictions(
+			_validate_warranty_change(
 				site="test-site.frappe.cloud",
 				server="test-server",
 				new_plan="test-plan",
