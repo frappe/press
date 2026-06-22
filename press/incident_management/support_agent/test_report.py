@@ -622,3 +622,25 @@ class TestSupportAgentReport(FrappeTestCase):
 		)
 
 		self.assertFalse(any("started earliest" in step for step in report["recommended_next_steps"]))
+
+	def test_probe_down_flags_site_unreachable(self):
+		report = generate_report(
+			self._base(site_uptime={"available": True, "up": False, "http_status_code": 502})
+		)
+
+		self.assertIn("unreachable", report["likely_cause"])
+		self.assertIn("502", report["likely_cause"])
+
+	def test_probe_http_5xx_flags_server_error(self):
+		report = generate_report(
+			self._base(site_uptime={"available": True, "up": True, "http_status_code": 503})
+		)
+
+		self.assertIn("503", report["likely_cause"])
+
+	def test_probe_up_produces_no_uptime_cause(self):
+		report = generate_report(
+			self._base(site_uptime={"available": True, "up": True, "http_status_code": 200})
+		)
+
+		self.assertEqual(report["confidence"], "Low")
