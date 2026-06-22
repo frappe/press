@@ -20,10 +20,16 @@
     content: "{{ certificate_intermediate_chain }}"
     dest: /home/frappe/agent/tls/chain.pem
 
-- name: Restart NGINX
+- name: Reload NGINX
+  command: nginx -s reload
+  ignore_errors: yes
+  register: nginx_reload
+
+- name: Restart NGINX if not running
   service:
     name: nginx
     state: restarted
+  when: nginx_reload is failed
 
 - name: Copy ProxySQL TLS (Private Key)
   copy:

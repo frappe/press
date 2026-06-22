@@ -1189,6 +1189,9 @@ class Site(Document, TagHelpers):
 		):
 			raise Exception(f"Remote File {self.remote_database_file} is unavailable on S3")
 
+		if self.remote_config_file and not frappe.get_doc("Remote File", self.remote_config_file).exists():
+			raise Exception(f"Remote File {self.remote_config_file} is unavailable on S3")
+
 		agent = Agent(self.server)
 		job = agent.restore_site(self, skip_failing_patches=skip_failing_patches)
 		log_site_activity(self.name, "Restore", job=job.name)
@@ -5205,7 +5208,7 @@ def get_suspended_time(site: str):
 
 
 def archive_suspended_sites():
-	archive_at_once = 6
+	archive_at_once = 15
 	archive_threshold = frappe.utils.add_to_date(frappe.utils.now(), days=-ARCHIVE_AFTER_SUSPEND_DAYS)
 
 	SiteTable = frappe.qb.DocType("Site")

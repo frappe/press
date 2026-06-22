@@ -1,3 +1,6 @@
 .astro
 dist
 node_modules
+
+!src/pages/tags/
+!src/pages/tags/**
