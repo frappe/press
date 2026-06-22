@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import frappe
+import requests
 
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
@@ -117,3 +118,15 @@ class DeadmanServer(BaseServer):
 			)
 
 		self.save()
+
+	def send_capability_heartbeat(self, capability_name):
+		response = requests.post(
+			f"https://{self.hostname}.{self.domain}/api/method/deadman.api.capability.update_capability_heartbeat",
+			data={
+				"capability_name": capability_name,
+				"password": self.deadman_password,
+			},
+			timeout=15,
+		)
+
+		response.raise_for_status()

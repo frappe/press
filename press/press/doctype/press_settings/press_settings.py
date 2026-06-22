@@ -30,6 +30,7 @@ class PressSettings(Document):
 		agent_repository_owner: DF.Data | None
 		agent_sentry_dsn: DF.Data | None
 		allow_patch_builds: DF.Check
+		anthropic_api_key: DF.Password | None
 		app_include_script: DF.Data | None
 		asset_store_access_key: DF.Data | None
 		asset_store_bucket_name: DF.Data | None
@@ -114,6 +115,7 @@ class PressSettings(Document):
 		compress_app_cache: DF.Check
 		cool_off_period: DF.Int
 		data_40: DF.Data | None
+		deadman_server: DF.Link | None
 		default_apps: DF.Table[AppGroup]
 		default_dedicated_server_site_warranty_change_cooldown: DF.Int
 		default_dedicated_server_site_warranty_quota: DF.Int
@@ -169,6 +171,8 @@ class PressSettings(Document):
 		github_pat_token: DF.Data | None
 		github_webhook_secret: DF.Data | None
 		gst_percentage: DF.Float
+		hetzner_server_limit: DF.Int
+		hetzner_vcpu_limit: DF.Int
 		hybrid_cluster: DF.Link | None
 		hybrid_domain: DF.Link | None
 		ic_key: DF.Password | None
