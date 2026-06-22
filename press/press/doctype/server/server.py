@@ -1830,6 +1830,12 @@ class BaseServer(Document, TagHelpers):
 		if not self.virtual_machine:
 			return
 		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		if machine.data_disk_snapshot and not machine.data_disk_snapshot_attached:
+			# The VMI's default data volume is about to be deleted and replaced by the
+			# volume created from data_disk_snapshot. Don't seed mounts off the doomed
+			# volume — sync_attached_volumes seeds them after the snapshot volume is
+			# attached, once data_disk_snapshot_attached is set.
+			return
 		if machine.has_data_volume and len(machine.volumes) > 1 and not self.mounts:
 			self.fetch_volumes_from_virtual_machine()
 			self.set_default_mount_points()
