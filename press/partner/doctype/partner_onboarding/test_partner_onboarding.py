@@ -71,8 +71,8 @@ class IntegrationTestPartnerOnboarding(IntegrationTestCase):
 		).insert()
 		if submitted:
 			# Paid Subscription invoices are submitted in production, but the
-			# "Invoice must be Paid to be submitted" guard makes a normal submit
-			# awkward in tests — force the persisted state the query reads.
+			# balance-due submit guard makes a normal submit awkward in tests —
+			# force the persisted state the query reads.
 			frappe.db.set_value(
 				"Invoice", invoice.name, {"status": status, "docstatus": 1}, update_modified=False
 			)
