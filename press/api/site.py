@@ -299,17 +299,37 @@ def _validate_warranty_change(
 		return
 	if is_current_plan_supported == is_product_warranty_enabled_for_plan_(new_plan):
 		return
+<<<<<<< HEAD
 
+=======
+	if is_new_plan_supported:
+		# Enabling warranty is gated only by the server quota (it consumes a slot).
+		# The cooldown deliberately does not apply: the only enable the cooldown
+		# would block is a site reclaiming the slot it itself just gave up, which
+		# is legitimate as long as a slot is free. Rotating support to a *different*
+		# site is already prevented by the quota plus the cooldown on disabling.
+		quota = get_available_warranty_quota_for_server(server)
+		if quota.get("available") <= 0:
+			frappe.throw(
+				"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
+			)
+		return
+	# Disabling warranty is gated by the cooldown to deter freeing a slot only to
+	# rotate it onto another site.
+>>>>>>> bbed08696 (fix(site): Allow enabling product warranty irrespective of cooldown)
 	next_warranty_change = get_next_allowed_dedicated_product_warranty_change_date(site)
 	if get_datetime() < next_warranty_change:
 		pretty_date = format_datetime(next_warranty_change, "MMM d, YYYY hh:mm a")
 		frappe.throw(f"Cannot change product warranty for this site before {pretty_date}")  # nosemgrep
+<<<<<<< HEAD
 
 	quota = get_available_warranty_quota_for_server(server)
 	if quota.get("available") <= 0:
 		frappe.throw(
 			"You have exhausted the site warranty quota for this server. To increase limit, please contact support."
 		)
+=======
+>>>>>>> bbed08696 (fix(site): Allow enabling product warranty irrespective of cooldown)
 
 
 def _is_free_dedicated_plan_allowed(server: str, new_site_plan: dict) -> bool:

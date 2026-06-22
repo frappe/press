@@ -66,10 +66,23 @@ const nextChangeAvailableOn = computed(() => {
 	}
 })
 
+const hasWarrantyQuota = computed(
+	() => site.doc?.dedicated_server_warranty_limit?.available > 0,
+)
+
+const cooldownPassed = computed(
+	() => nextChangeAvailableOn.value === 'Available Now',
+)
+
+// Enabling warranty is gated only by available quota (the cooldown does not
+// apply, so a site can reclaim a free slot any time); disabling is gated by the
+// cooldown.
+const isToggleDisabled = computed(() =>
+	isSupportEnabled.value ? !cooldownPassed.value : !hasWarrantyQuota.value,
+)
+
 const disablePrimaryAction = computed(
-	() =>
-		switchValue.value === isSupportEnabled.value ||
-		nextChangeAvailableOn.value !== 'Available Now',
+	() => switchValue.value === isSupportEnabled.value || isToggleDisabled.value,
 )
 
 function onClickSave() {
@@ -102,7 +115,7 @@ function onClickSave() {
 						v-model="switchValue"
 						size="md"
 						class="px-4"
-						:disabled="nextChangeAvailableOn !== 'Available Now' || (site.doc?.dedicated_server_warranty_limit?.available <= 0 && !isSupportEnabled)"
+						:disabled="isToggleDisabled"
 					/>
 				</div>
 

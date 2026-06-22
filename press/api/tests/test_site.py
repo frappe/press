@@ -1102,3 +1102,96 @@ class TestAPISiteDomain(FrappeTestCase):
 		):
 			add_domain(site.name, "example.com")
 		self.assertTrue(frappe.db.exists("Site Domain", {"site": site.name, "domain": "example.com"}))
+<<<<<<< HEAD
+=======
+
+
+class TestCheckWarrantyRestrictions(FrappeTestCase):
+	"""Tests for _check_warranty_restrictions.
+
+	Enabling support is gated only by the server quota (it consumes a slot) and is
+	allowed irrespective of the cooldown, so a site can reclaim a free slot any
+	time. Disabling support is gated only by the cooldown, which deters freeing a
+	slot only to rotate it onto another site.
+	"""
+
+	def _check(self, *, current_supported, new_supported, quota_available=0, cooldown_active=False):
+		from press.api.site import _check_warranty_restrictions
+
+		now = datetime.datetime.now()
+		next_change = now + datetime.timedelta(days=1) if cooldown_active else now
+		with (
+			patch(
+				"press.api.site.is_product_warranty_enabled_for_plan_",
+				return_value=new_supported,
+			),
+			patch(
+				"press.api.site.get_next_allowed_dedicated_product_warranty_change_date",
+				return_value=next_change,
+			),
+			patch(
+				"press.api.site.get_available_warranty_quota_for_server",
+				return_value={"available": quota_available},
+			),
+		):
+			_check_warranty_restrictions(
+				site="test-site.frappe.cloud",
+				server="test-server",
+				new_plan="test-plan",
+				is_new=False,
+				is_system_user=False,
+				is_current_dedicated_server_plan=True,
+				is_current_plan_supported=current_supported,
+			)
+
+	def test_disabling_warranty_allowed_even_when_quota_exhausted(self):
+		"""Disabling support on a server with no quota left must not throw."""
+		self._check(current_supported=True, new_supported=False, quota_available=0)
+
+	def test_enabling_warranty_blocked_when_quota_exhausted(self):
+		"""Enabling support on a server with no quota left must throw."""
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"exhausted the site warranty quota",
+			self._check,
+			current_supported=False,
+			new_supported=True,
+			quota_available=0,
+		)
+
+	def test_enabling_warranty_allowed_when_quota_available(self):
+		"""Enabling support with quota left must not throw."""
+		self._check(current_supported=False, new_supported=True, quota_available=1)
+
+	def test_enabling_warranty_allowed_during_cooldown_when_quota_available(self):
+		"""Reclaiming a free slot is allowed even while the cooldown is active."""
+		self._check(
+			current_supported=False,
+			new_supported=True,
+			quota_available=1,
+			cooldown_active=True,
+		)
+
+	def test_enabling_warranty_blocked_when_quota_exhausted_during_cooldown(self):
+		"""Enabling with no free slot must throw on quota, not silently pass."""
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"exhausted the site warranty quota",
+			self._check,
+			current_supported=False,
+			new_supported=True,
+			quota_available=0,
+			cooldown_active=True,
+		)
+
+	def test_disabling_warranty_blocked_during_cooldown(self):
+		"""Disabling support is still subject to the cooldown window."""
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Cannot change product warranty for this site before",
+			self._check,
+			current_supported=True,
+			new_supported=False,
+			cooldown_active=True,
+		)
+>>>>>>> bbed08696 (fix(site): Allow enabling product warranty irrespective of cooldown)
