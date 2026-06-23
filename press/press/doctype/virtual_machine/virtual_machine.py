@@ -237,8 +237,8 @@ class VirtualMachine(Document):
 >>>>>>> b19622c34 (feat(cluster): Add NAT security group to hetzner)
 =======
 			frappe.throw(
-				"NAT Servers are only supported on AWS EC2, Frappe Compute, and Hetzner."
-				"Check if NAT server has supported providers."
+				"NAT Servers are only supported on AWS EC2, Frappe Compute, and Hetzner. "
+				f"Change the cloud provider from {self.cloud_provider} to a supported provider."
 			)
 >>>>>>> 1cf19dfee (fix(virtual-machine): Fix semgrep issues)
 
@@ -518,8 +518,8 @@ class VirtualMachine(Document):
 		"""Provision a Digital Ocean Droplet"""
 		if not self.machine_image:
 			frappe.throw(
-				"Machine Image is required to provision Digital Ocean Virtual Machine."
-				"Check if Machine Image is set."
+				"Machine Image is required to provision a DigitalOcean Virtual Machine. "
+				"Set the Machine Image field and try again."
 			)
 
 		cluster: Cluster = frappe.get_doc("Cluster", self.cluster)
