@@ -77,7 +77,12 @@ export default {
 			product_trial_request: this.$route.query.product_trial_request,
 			progressCount: 0,
 			currentBuildStep: 'Configuring your setup',
+			fakeProgressInterval: null,
+			progressPollTimeout: null,
 		};
+	},
+	beforeUnmount() {
+		this.stopProgressTimers();
 	},
 	resources: {
 		saasProduct() {
@@ -97,12 +102,16 @@ export default {
 				auto: true,
 				onSuccess(doc) {
 					if (doc.status === 'Site Created') {
+						this.stopProgressTimers();
 						this.showCompleteProgress();
 						setTimeout(() => {
 							this.loginToSite();
 						}, 500);
 					} else if (this.isSiteProvisioning(doc.status)) {
+						this.startFakeProgress();
 						this.$resources.siteRequest.getProgress.reload();
+					} else if (doc.status === 'Error') {
+						this.stopProgressTimers();
 					}
 				},
 				whitelistedMethods: {
@@ -115,6 +124,7 @@ export default {
 						},
 						onSuccess: (data) => {
 							if (data.current_step === 'Site Created') {
+								this.stopProgressTimers();
 								this.showCompleteProgress();
 								setTimeout(() => {
 									this.loginToSite();
@@ -135,6 +145,7 @@ export default {
 								data.current_step ||
 								this.currentBuildStep;
 							const nextProgress = Number(data.progress || 0);
+							this.startFakeProgress();
 
 							if (
 								!(
@@ -147,13 +158,16 @@ export default {
 									95,
 								);
 								this.progressCount = Math.round(visibleProgress * 10) / 10;
-								setTimeout(() => {
+								clearTimeout(this.progressPollTimeout);
+								this.progressPollTimeout = setTimeout(() => {
 									if (
 										['Site Created', 'Error'].includes(
 											this.$resources.siteRequest.doc.status,
 										)
-									)
+									) {
+										this.stopProgressTimers();
 										return;
+									}
 
 									this.$resources.siteRequest.getProgress.reload();
 								}, 2000);
@@ -196,6 +210,23 @@ export default {
 		},
 	},
 	methods: {
+		startFakeProgress() {
+			if (this.fakeProgressInterval) return;
+
+			this.fakeProgressInterval = setInterval(() => {
+				if (this.progressCount >= 95) return;
+
+				this.progressCount = Math.round(
+					Math.min(this.progressCount + 0.3, 95) * 10,
+				) / 10;
+			}, 1000);
+		},
+		stopProgressTimers() {
+			clearInterval(this.fakeProgressInterval);
+			clearTimeout(this.progressPollTimeout);
+			this.fakeProgressInterval = null;
+			this.progressPollTimeout = null;
+		},
 		showCompleteProgress() {
 			this.progressCount = 100;
 			this.currentBuildStep = 'Almost there';
